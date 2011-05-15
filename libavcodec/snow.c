@@ -2074,7 +2074,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     ff_init_range_decoder(c, buf, buf_size);
     ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
 
-    s->current_picture.pict_type= FF_I_TYPE; //FIXME I vs. P
+    s->current_picture.pict_type= AV_PICTURE_TYPE_I; //FIXME I vs. P
     if(decode_header(s)<0)
         return -1;
     common_init_after_header(avctx);
@@ -3651,7 +3651,7 @@ static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)
     coef_sum = (uint64_t)coef_sum * coef_sum >> 16;
     assert(coef_sum < INT_MAX);
 
-    if(pict->pict_type == FF_I_TYPE){
+    if(pict->pict_type == AV_PICTURE_TYPE_I){
         s->m.current_picture.mb_var_sum= coef_sum;
         s->m.current_picture.mc_mb_var_sum= 0;
     }else{
@@ -3720,7 +3720,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     if(avctx->flags&CODEC_FLAG_PASS2){
         s->m.pict_type =
         pict->pict_type= s->m.rc_context.entry[avctx->frame_number].new_pict_type;
-        s->keyframe= pict->pict_type==FF_I_TYPE;
+        s->keyframe= pict->pict_type==AV_PICTURE_TYPE_I;
         if(!(avctx->flags&CODEC_FLAG_QSCALE)) {
             pict->quality= ff_rate_estimate_qscale(&s->m, 0);
             if (pict->quality < 0)
@@ -3729,7 +3729,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }else{
         s->keyframe= avctx->gop_size==0 || avctx->frame_number % avctx->gop_size == 0;
         s->m.pict_type=
-        pict->pict_type= s->keyframe ? FF_I_TYPE : FF_P_TYPE;
+        pict->pict_type= s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     }
 
     if(s->pass1_rc && avctx->frame_number == 0)
@@ -3748,7 +3748,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     s->m.current_picture_ptr= &s->m.current_picture;
     s->m.last_picture.pts= s->m.current_picture.pts;
     s->m.current_picture.pts= pict->pts;
-    if(pict->pict_type == FF_P_TYPE){
+    if(pict->pict_type == AV_PICTURE_TYPE_P){
         int block_width = (width +15)>>4;
         int block_height= (height+15)>>4;
         int stride= s->current_picture.linesize[0];
@@ -3797,13 +3797,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
 
 redo_frame:
 
-    if(pict->pict_type == FF_I_TYPE)
+    if(pict->pict_type == AV_PICTURE_TYPE_I)
         s->spatial_decomposition_count= 5;
     else
         s->spatial_decomposition_count= 5;
 
     s->m.pict_type = pict->pict_type;
-    s->qbias= pict->pict_type == FF_P_TYPE ? 2 : 0;
+    s->qbias= pict->pict_type == AV_PICTURE_TYPE_P ? 2 : 0;
 
     common_init_after_header(avctx);
 
@@ -3836,12 +3836,12 @@ redo_frame:
             predict_plane(s, s->spatial_idwt_buffer, plane_index, 0);
 
             if(   plane_index==0
-               && pict->pict_type == FF_P_TYPE
+               && pict->pict_type == AV_PICTURE_TYPE_P
                && !(avctx->flags&CODEC_FLAG_PASS2)
                && s->m.me.scene_change_score > s->avctx->scenechange_threshold){
                 ff_init_range_encoder(c, buf, buf_size);
                 ff_build_rac_states(c, 0.05*(1LL<<32), 256-8);
-                pict->pict_type= FF_I_TYPE;
+                pict->pict_type= AV_PICTURE_TYPE_I;
                 s->keyframe=1;
                 s->current_picture.key_frame=1;
                 goto redo_frame;
@@ -3887,7 +3887,7 @@ redo_frame:
                     if(!QUANTIZE2)
                         quantize(s, b, b->ibuf, b->buf, b->stride, s->qbias);
                     if(orientation==0)
-                        decorrelate(s, b, b->ibuf, b->stride, pict->pict_type == FF_P_TYPE, 0);
+                        decorrelate(s, b, b->ibuf, b->stride, pict->pict_type == AV_PICTURE_TYPE_P, 0);
                     encode_subband(s, b, b->ibuf, b->parent ? b->parent->ibuf : NULL, b->stride, orientation);
                     assert(b->parent==NULL || b->parent->stride == b->stride*2);
                     if(orientation==0)
@@ -3914,7 +3914,7 @@ redo_frame:
             predict_plane(s, s->spatial_idwt_buffer, plane_index, 1);
         }else{
             //ME/MC only
-            if(pict->pict_type == FF_I_TYPE){
+            if(pict->pict_type == AV_PICTURE_TYPE_I){
                 for(y=0; y<h; y++){
                     for(x=0; x<w; x++){
                         s->current_picture.data[plane_index][y*s->current_picture.linesize[plane_index] + x]=

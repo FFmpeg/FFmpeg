@@ -129,7 +129,7 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
     }
 
     // TODO: support multiple rects
-    if (h->num_rects > 1)
+    if (h->num_rects != 1)
         av_log(avctx, AV_LOG_WARNING, "Only single rects supported (%d in subtitle.)\n", h->num_rects);
 
     // TODO: render text-based subtitles into bitmaps

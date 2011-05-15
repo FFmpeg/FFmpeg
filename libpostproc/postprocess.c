@@ -86,6 +86,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 //#define DEBUG_BRIGHTNESS
 #include "postprocess.h"
 #include "postprocess_internal.h"
+#include "libavutil/avstring.h"
 
 unsigned postproc_version(void)
 {
@@ -766,7 +767,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
     ppMode->maxClippedThreshold= 0.01;
     ppMode->error=0;
 
-    strncpy(temp, name, GET_MODE_BUFFER_SIZE);
+    av_strlcpy(temp, name, GET_MODE_BUFFER_SIZE);
 
     av_log(NULL, AV_LOG_DEBUG, "pp: %s\n", name);
 
@@ -1103,4 +1104,3 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
         }
     }
 }
-

@@ -263,9 +263,9 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return -1;
         }
         else switch(s->bps) {
-//            case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
+            case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
             case 2: avctx->sample_fmt = AV_SAMPLE_FMT_S16; break;
-//            case 3: avctx->sample_fmt = AV_SAMPLE_FMT_S24; break;
+            case 3: avctx->bits_per_coded_sample = 24;
             case 4: avctx->sample_fmt = AV_SAMPLE_FMT_S32; break;
             default:
                 av_log_ask_for_sample(s->avctx,
@@ -325,7 +325,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
         int cur_chan = 0, framelen = s->frame_length;
         int32_t *p;
 
-        if (*data_size < (framelen * s->channels * 2)) {
+        if (*data_size < (framelen * s->channels * av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8)) {
             av_log(avctx, AV_LOG_ERROR, "Output buffer size is too small.\n");
             return -1;
         }
@@ -442,6 +442,13 @@ static int tta_decode_frame(AVCodecContext *avctx,
 
         // convert to output buffer
         switch(s->bps) {
+            case 1: {
+                uint8_t *samples = data;
+                for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+                    *samples++ = *p + 0x80;
+                *data_size = samples - (uint8_t *)data;
+                break;
+            }
             case 2: {
                 uint16_t *samples = data;
                 for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++) {
@@ -449,6 +456,13 @@ static int tta_decode_frame(AVCodecContext *avctx,
 //                    *samples++ = (unsigned char)(*p >> 8);
                     *samples++ = *p;
                 }
+                *data_size = (uint8_t *)samples - (uint8_t *)data;
+                break;
+            }
+            case 3: {
+                int32_t *samples = data;
+                for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+                    *samples++ = AV_RN32(p) << 8;
                 *data_size = (uint8_t *)samples - (uint8_t *)data;
                 break;
             }

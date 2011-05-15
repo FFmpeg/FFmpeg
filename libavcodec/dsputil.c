@@ -43,15 +43,15 @@ uint8_t ff_cropTbl[256 + 2 * MAX_NEG_CROP] = {0, };
 uint32_t ff_squareTbl[512] = {0, };
 
 #define BIT_DEPTH 9
-#include "dsputil_internal.h"
+#include "dsputil_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 10
-#include "dsputil_internal.h"
+#include "dsputil_template.c"
 #undef BIT_DEPTH
 
 #define BIT_DEPTH 8
-#include "dsputil_internal.h"
+#include "dsputil_template.c"
 
 // 0x7f7f7f7f or 0x7f7f7f7f7f7f7f7f or whatever, depending on the cpu's native arithmetic size
 #define pb_7f (~0UL/255 * 0x7f)

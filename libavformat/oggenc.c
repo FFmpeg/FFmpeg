@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/opt.h"
 #include "libavutil/random_seed.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"
@@ -62,8 +63,25 @@ typedef struct OGGPageList {
 } OGGPageList;
 
 typedef struct {
+    const AVClass *class;
     OGGPageList *page_list;
+    int pref_size; ///< preferred page size (0 => fill all segments)
 } OGGContext;
+
+
+static const AVOption options[] = {
+    { "oggpagesize", "Set preferred Ogg page size.",
+      offsetof(OGGContext, pref_size), FF_OPT_TYPE_INT, {.dbl=0}, 0, MAX_PAGE_SIZE, AV_OPT_FLAG_ENCODING_PARAM},
+    { NULL },
+};
+
+static const AVClass ogg_muxer_class = {
+    "Ogg muxer",
+    av_default_item_name,
+    options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 
 static void ogg_update_checksum(AVFormatContext *s, AVIOContext *pb, int64_t crc_offset)
 {
@@ -174,6 +192,7 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
                            uint8_t *data, unsigned size, int64_t granule)
 {
     OGGStreamContext *oggstream = st->priv_data;
+    OGGContext *ogg = s->priv_data;
     int total_segments = size / 255 + 1;
     uint8_t *p = data;
     int i, segments, len, flush = 0;
@@ -209,8 +228,9 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
         if (i == total_segments)
             page->granule = granule;
 
-        if (page->segments_count == 255) {
-            ogg_buffer_page(s, oggstream);
+        if(page->segments_count == 255 ||
+           (ogg->pref_size > 0 && page->size >= ogg->pref_size)) {
+           ogg_buffer_page(s, oggstream);
         }
     }
 
@@ -514,4 +534,5 @@ AVOutputFormat ff_ogg_muxer = {
     ogg_write_header,
     ogg_write_packet,
     ogg_write_trailer,
+    .priv_class = &ogg_muxer_class,
 };

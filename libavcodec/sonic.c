@@ -796,7 +796,7 @@ static av_cold int sonic_decode_init(AVCodecContext *avctx)
     if (get_bits1(&gb)) // XXX FIXME
         av_log(avctx, AV_LOG_INFO, "Custom quant table\n");
 
-    s->block_align = (int)(2048.0*(s->samplerate/44100))/s->downsampling;
+    s->block_align = (int)(2048.0*s->samplerate/44100)/s->downsampling;
     s->frame_size = s->channels*s->block_align*s->downsampling;
 //    avctx->frame_size = s->block_align;
 

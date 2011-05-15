@@ -1,5 +1,4 @@
 /*
- * TIFF tables
  * Copyright (c) 2006 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
@@ -19,13 +18,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/**
- * TIFF tables
- * @file
- * @author Konstantin Shishkov
- */
 #ifndef AVCODEC_TIFF_H
 #define AVCODEC_TIFF_H
+
+/**
+ * @file
+ * TIFF tables
+ *
+ * For more information about the TIFF format, check the official docs at:
+ * http://partners.adobe.com/public/developer/tiff/index.html
+ */
 
 #include <stdint.h>
 

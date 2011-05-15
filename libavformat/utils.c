@@ -967,7 +967,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if((s->flags & AVFMT_FLAG_IGNDTS) && pkt->pts != AV_NOPTS_VALUE)
         pkt->dts= AV_NOPTS_VALUE;
 
-    if (st->codec->codec_id != CODEC_ID_H264 && pc && pc->pict_type == FF_B_TYPE)
+    if (st->codec->codec_id != CODEC_ID_H264 && pc && pc->pict_type == AV_PICTURE_TYPE_B)
         //FIXME Set low_delay = 0 when has_b_frames = 1
         st->codec->has_b_frames = 1;
 
@@ -983,7 +983,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     /* XXX: need has_b_frame, but cannot get it if the codec is
         not initialized */
     if (delay &&
-        pc && pc->pict_type != FF_B_TYPE)
+        pc && pc->pict_type != AV_PICTURE_TYPE_B)
         presentation_delayed = 1;
 
     if(pkt->pts != AV_NOPTS_VALUE && pkt->dts != AV_NOPTS_VALUE && pkt->dts > pkt->pts && st->pts_wrap_bits<63
@@ -1111,7 +1111,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
         /* keyframe computation */
         if (pc->key_frame == 1)
             pkt->flags |= AV_PKT_FLAG_KEY;
-        else if (pc->key_frame == -1 && pc->pict_type == FF_I_TYPE)
+        else if (pc->key_frame == -1 && pc->pict_type == AV_PICTURE_TYPE_I)
             pkt->flags |= AV_PKT_FLAG_KEY;
     }
     if (pc)
@@ -1173,8 +1173,9 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
                     compute_pkt_fields(s, st, st->parser, pkt);
 
                     if((s->iformat->flags & AVFMT_GENERIC_INDEX) && pkt->flags & AV_PKT_FLAG_KEY){
+                        int64_t pos= (st->parser->flags & PARSER_FLAG_COMPLETE_FRAMES) ? pkt->pos : st->parser->frame_offset;
                         ff_reduce_index(s, st->index);
-                        av_add_index_entry(st, st->parser->frame_offset, pkt->dts,
+                        av_add_index_entry(st, pos, pkt->dts,
                                            0, 0, AVINDEX_KEYFRAME);
                     }
 
@@ -1867,18 +1868,23 @@ static int av_has_duration(AVFormatContext *ic)
  */
 static void av_update_stream_timings(AVFormatContext *ic)
 {
-    int64_t start_time, start_time1, end_time, end_time1;
+    int64_t start_time, start_time1, start_time_text, end_time, end_time1;
     int64_t duration, duration1;
     int i;
     AVStream *st;
 
     start_time = INT64_MAX;
+    start_time_text = INT64_MAX;
     end_time = INT64_MIN;
     duration = INT64_MIN;
     for(i = 0;i < ic->nb_streams; i++) {
         st = ic->streams[i];
         if (st->start_time != AV_NOPTS_VALUE && st->time_base.den) {
             start_time1= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
+            if (st->codec->codec_id == CODEC_ID_DVB_TELETEXT) {
+                if (start_time1 < start_time_text)
+                    start_time_text = start_time1;
+            } else
             if (start_time1 < start_time)
                 start_time = start_time1;
             if (st->duration != AV_NOPTS_VALUE) {
@@ -1894,6 +1900,8 @@ static void av_update_stream_timings(AVFormatContext *ic)
                 duration = duration1;
         }
     }
+    if (start_time == INT64_MAX || (start_time > start_time_text && start_time - start_time_text < AV_TIME_BASE))
+        start_time = start_time_text;
     if (start_time != INT64_MAX) {
         ic->start_time = start_time;
         if (end_time != INT64_MIN) {
@@ -2814,8 +2822,6 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
 
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
 {
-    int ret;
-
     if (s->oformat->priv_data_size > 0) {
         s->priv_data = av_mallocz(s->oformat->priv_data_size);
         if (!s->priv_data)
@@ -3144,12 +3150,12 @@ static int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacke
 {
     AVStream *st = s->streams[ pkt ->stream_index];
     AVStream *st2= s->streams[ next->stream_index];
-    int64_t a= st2->time_base.num * (int64_t)st ->time_base.den;
-    int64_t b= st ->time_base.num * (int64_t)st2->time_base.den;
-    int64_t dts1 = av_rescale_rnd(pkt->dts, b, a, AV_ROUND_DOWN);
-    if (dts1==next->dts && dts1==av_rescale_rnd(pkt->dts, b, a, AV_ROUND_UP))
+    int comp = av_compare_ts(next->dts, st2->time_base, pkt->dts,
+                             st->time_base);
+
+    if (comp == 0)
         return pkt->stream_index < next->stream_index;
-    return dts1 < next->dts;
+    return comp > 0;
 }
 
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){

@@ -1384,7 +1384,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int l
 
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
-    const int h264_high_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
     c->pix_abs[0][1] = sad16_x2_altivec;
     c->pix_abs[0][2] = sad16_y2_altivec;
@@ -1399,10 +1399,10 @@ void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
     c->pix_sum = pix_sum_altivec;
     c->diff_pixels = diff_pixels_altivec;
     c->get_pixels = get_pixels_altivec;
-    if (!h264_high_depth)
+    if (!high_bit_depth)
     c->clear_block = clear_block_altivec;
     c->add_bytes= add_bytes_altivec;
-    if (!h264_high_depth) {
+    if (!high_bit_depth) {
     c->put_pixels_tab[0][0] = put_pixels16_altivec;
     /* the two functions do the same thing, so use the same code */
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;

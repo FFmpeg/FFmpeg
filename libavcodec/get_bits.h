@@ -127,7 +127,7 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 #   define OPEN_READER(name, gb)                \
     unsigned int name##_index = (gb)->index;    \
-    int name##_cache          = 0
+    av_unused unsigned int name##_cache
 
 #   define CLOSE_READER(name, gb) (gb)->index = name##_index
 

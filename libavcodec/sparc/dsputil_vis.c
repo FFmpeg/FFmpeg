@@ -3953,7 +3953,7 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
 {
   /* VIS-specific optimizations */
   int accel = vis_level ();
-  const int h264_high_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+  const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
   if (accel & ACCEL_SPARC_VIS) {
       if(avctx->idct_algo==FF_IDCT_SIMPLEVIS){
@@ -3963,7 +3963,7 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
           c->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
       }
 
-      if (!h264_high_depth) {
+      if (!high_bit_depth) {
       c->put_pixels_tab[0][0] = MC_put_o_16_vis;
       c->put_pixels_tab[0][1] = MC_put_x_16_vis;
       c->put_pixels_tab[0][2] = MC_put_y_16_vis;

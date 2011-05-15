@@ -49,6 +49,7 @@ OBJS-$(CONFIG_BFI_DEMUXER)               += bfi.o
 OBJS-$(CONFIG_BINK_DEMUXER)              += bink.o
 OBJS-$(CONFIG_C93_DEMUXER)               += c93.o vocdec.o voc.o
 OBJS-$(CONFIG_CAF_DEMUXER)               += cafdec.o caf.o mov.o riff.o isom.o
+OBJS-$(CONFIG_CAF_MUXER)                 += cafenc.o caf.o riff.o isom.o
 OBJS-$(CONFIG_CAVSVIDEO_DEMUXER)         += cavsvideodec.o rawdec.o
 OBJS-$(CONFIG_CAVSVIDEO_MUXER)           += rawenc.o
 OBJS-$(CONFIG_CDG_DEMUXER)               += cdg.o
@@ -300,7 +301,8 @@ OBJS-$(CONFIG_WEBM_MUXER)                += matroskaenc.o matroska.o \
                                             flacenc_header.o avlanguage.o
 OBJS-$(CONFIG_WSAUD_DEMUXER)             += westwood.o
 OBJS-$(CONFIG_WSVQA_DEMUXER)             += westwood.o
-OBJS-$(CONFIG_WTV_DEMUXER)               += wtv.o asf.o asfdec.o mpegts.o riff.o
+OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv.o asfdec.o asf.o asfcrypt.o \
+                                            avlanguage.o mpegts.o isom.o riff.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wv.o apetag.o
 OBJS-$(CONFIG_XA_DEMUXER)                += xa.o
 OBJS-$(CONFIG_XWMA_DEMUXER)              += xwma.o riff.o

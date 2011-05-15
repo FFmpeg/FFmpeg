@@ -130,8 +130,7 @@ do { \
 
 /** Do inverse transform on 8x8 block
 */
-static void vc1_inv_trans_8x8_altivec(DCTELEM block[64],
-                                      int sign, int rangered)
+static void vc1_inv_trans_8x8_altivec(DCTELEM block[64])
 {
     vector signed short src0, src1, src2, src3, src4, src5, src6, src7;
     vector signed int s0, s1, s2, s3, s4, s5, s6, s7;
@@ -145,9 +144,6 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64],
     const vector unsigned int vec_2 = vec_splat_u32(2);
     const vector  signed int vec_1s = vec_splat_s32(1);
     const vector unsigned int vec_1 = vec_splat_u32(1);
-    const vector unsigned short rangered_shift = vec_splat_u16(1);
-    const vector   signed short signed_bias = vec_sl(vec_splat_s16(4),
-                                                     vec_splat_u16(4));
 
     src0 = vec_ld(  0, block);
     src1 = vec_ld( 16, block);
@@ -217,27 +213,6 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64],
     src6 = vec_pack(sE, s6);
     src7 = vec_pack(sF, s7);
 
-    if (rangered) {
-        if (!sign) {
-            src0 = vec_sub(src0, signed_bias);
-            src1 = vec_sub(src1, signed_bias);
-            src2 = vec_sub(src2, signed_bias);
-            src3 = vec_sub(src3, signed_bias);
-            src4 = vec_sub(src4, signed_bias);
-            src5 = vec_sub(src5, signed_bias);
-            src6 = vec_sub(src6, signed_bias);
-            src7 = vec_sub(src7, signed_bias);
-        }
-        src0 = vec_sl(src0, rangered_shift);
-        src1 = vec_sl(src1, rangered_shift);
-        src2 = vec_sl(src2, rangered_shift);
-        src3 = vec_sl(src3, rangered_shift);
-        src4 = vec_sl(src4, rangered_shift);
-        src5 = vec_sl(src5, rangered_shift);
-        src6 = vec_sl(src6, rangered_shift);
-        src7 = vec_sl(src7, rangered_shift);
-    }
-
     vec_st(src0,  0, block);
     vec_st(src1, 16, block);
     vec_st(src2, 32, block);
@@ -246,36 +221,6 @@ static void vc1_inv_trans_8x8_altivec(DCTELEM block[64],
     vec_st(src5, 80, block);
     vec_st(src6, 96, block);
     vec_st(src7,112, block);
-}
-
-static void vc1_inv_trans_8x8_add_altivec(uint8_t *dest, int stride, DCTELEM *b)
-{
-    vc1_inv_trans_8x8_altivec(b, 0, 0);
-    ff_add_pixels_clamped_c(b, dest, stride);
-}
-
-static void vc1_inv_trans_8x8_put_signed_altivec(uint8_t *dest, int stride, DCTELEM *b)
-{
-    vc1_inv_trans_8x8_altivec(b, 1, 0);
-    ff_put_signed_pixels_clamped_c(b, dest, stride);
-}
-
-static void vc1_inv_trans_8x8_put_signed_rangered_altivec(uint8_t *dest, int stride, DCTELEM *b)
-{
-    vc1_inv_trans_8x8_altivec(b, 1, 1);
-    ff_put_signed_pixels_clamped_c(b, dest, stride);
-}
-
-static void vc1_inv_trans_8x8_put_altivec(uint8_t *dest, int stride, DCTELEM *b)
-{
-    vc1_inv_trans_8x8_altivec(b, 0, 0);
-    ff_put_pixels_clamped_c(b, dest, stride);
-}
-
-static void vc1_inv_trans_8x8_put_rangered_altivec(uint8_t *dest, int stride, DCTELEM *b)
-{
-    vc1_inv_trans_8x8_altivec(b, 0, 1);
-    ff_put_pixels_clamped_c(b, dest, stride);
 }
 
 /** Do inverse transform on 8x4 part of block
@@ -396,11 +341,7 @@ void ff_vc1dsp_init_altivec(VC1DSPContext* dsp)
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
-    dsp->vc1_inv_trans_8x8_add = vc1_inv_trans_8x8_add_altivec;
-    dsp->vc1_inv_trans_8x8_put_signed[0] = vc1_inv_trans_8x8_put_signed_altivec;
-    dsp->vc1_inv_trans_8x8_put_signed[1] = vc1_inv_trans_8x8_put_signed_rangered_altivec;
-    dsp->vc1_inv_trans_8x8_put[0] = vc1_inv_trans_8x8_put_altivec;
-    dsp->vc1_inv_trans_8x8_put[1] = vc1_inv_trans_8x8_put_rangered_altivec;
+    dsp->vc1_inv_trans_8x8 = vc1_inv_trans_8x8_altivec;
     dsp->vc1_inv_trans_8x4 = vc1_inv_trans_8x4_altivec;
     dsp->put_no_rnd_vc1_chroma_pixels_tab[0] = put_no_rnd_vc1_chroma_mc8_altivec;
     dsp->avg_no_rnd_vc1_chroma_pixels_tab[0] = avg_no_rnd_vc1_chroma_mc8_altivec;

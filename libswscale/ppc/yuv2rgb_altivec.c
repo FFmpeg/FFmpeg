@@ -817,7 +817,7 @@ ff_yuv2packedX_altivec(SwsContext *c,
         for (j=0; j<chrFilterSize; j++) {
             X  = vec_ld (0, &chrSrc[j][i/2]);
             U  = vec_mradds (X, CCoeffs[j], U);
-            X  = vec_ld (0, &chrSrc[j][i/2+2048]);
+            X  = vec_ld (0, &chrSrc[j][i/2+VOFW]);
             V  = vec_mradds (X, CCoeffs[j], V);
         }
 
@@ -895,7 +895,7 @@ ff_yuv2packedX_altivec(SwsContext *c,
         for (j=0; j<chrFilterSize; j++) {
             X  = vec_ld (0, &chrSrc[j][i/2]);
             U  = vec_mradds (X, CCoeffs[j], U);
-            X  = vec_ld (0, &chrSrc[j][i/2+2048]);
+            X  = vec_ld (0, &chrSrc[j][i/2+VOFW]);
             V  = vec_mradds (X, CCoeffs[j], V);
         }
 

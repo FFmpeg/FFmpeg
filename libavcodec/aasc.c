@@ -50,8 +50,8 @@ static av_cold int aasc_decode_init(AVCodecContext *avctx)
     AascContext *s = avctx->priv_data;
 
     s->avctx = avctx;
-
     avctx->pix_fmt = PIX_FMT_BGR24;
+    avcodec_get_frame_defaults(&s->frame);
 
     return 0;
 }

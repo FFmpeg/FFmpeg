@@ -1298,6 +1298,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     float *out_samples_flt = (float *)data;
     int16_t *out_samples = (int16_t *)data;
     int blk, ch, err;
+    int data_size_orig, data_size_tmp;
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
 
@@ -1314,6 +1315,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     init_get_bits(&s->gbc, buf, buf_size * 8);
 
     /* parse the syncinfo */
+    data_size_orig = *data_size;
     *data_size = 0;
     err = parse_frame_header(s);
 
@@ -1397,6 +1399,11 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
     for (ch = 0; ch < s->out_channels; ch++)
         output[ch] = s->output[channel_map[ch]];
+    data_size_tmp = s->num_blocks * 256 * avctx->channels;
+    data_size_tmp *= avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? sizeof(*out_samples_flt) : sizeof(*out_samples);
+    if (data_size_orig < data_size_tmp)
+        return -1;
+    *data_size = data_size_tmp;
     for (blk = 0; blk < s->num_blocks; blk++) {
         if (!err && decode_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
@@ -1410,8 +1417,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             out_samples += 256 * s->out_channels;
         }
     }
-    *data_size = s->num_blocks * 256 * avctx->channels;
-    *data_size *= avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? sizeof(*out_samples_flt) : sizeof(*out_samples);
     return FFMIN(buf_size, s->frame_size);
 }
 

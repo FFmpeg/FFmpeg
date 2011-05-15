@@ -829,7 +829,7 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
     memset(compressor_name,0,32);
     /* FIXME not sure, ISO 14496-1 draft where it shall be set to 0 */
     if (track->mode == MODE_MOV && track->enc->codec && track->enc->codec->name)
-        strncpy(compressor_name,track->enc->codec->name,31);
+        av_strlcpy(compressor_name,track->enc->codec->name,32);
     avio_w8(pb, strlen(compressor_name));
     avio_write(pb, compressor_name, 31);
 

@@ -49,7 +49,7 @@ static int encode_picture_lossless(AVCodecContext *avctx, unsigned char *buf, in
     init_put_bits(&s->pb, buf, buf_size);
 
     *p = *pict;
-    p->pict_type= FF_I_TYPE;
+    p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
     ff_mjpeg_encode_picture_header(s);

@@ -1,0 +1,4 @@
+267a152a73cbc5ac4694a6e3b254be34 *./tests/data/vsynth1/msvideo1.avi
+2162264 ./tests/data/vsynth1/msvideo1.avi
+cf15dd12b8347567ae350383bf4ef4bb *./tests/data/msvideo1.vsynth1.out.yuv
+stddev:   11.81 PSNR: 26.68 MAXDIFF:  151 bytes:  7603200/  7603200

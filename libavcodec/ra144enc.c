@@ -54,7 +54,7 @@ static av_cold int ra144_encode_init(AVCodecContext * avctx)
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
     ractx->avctx = avctx;
     ret = ff_lpc_init(&ractx->lpc_ctx, avctx->frame_size, LPC_ORDER,
-                      AV_LPC_TYPE_LEVINSON);
+                      FF_LPC_TYPE_LEVINSON);
     return ret;
 }
 
@@ -461,7 +461,7 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
                                     32)];
 
     ff_lpc_calc_coefs(&ractx->lpc_ctx, lpc_data, NBLOCKS * BLOCKSIZE, LPC_ORDER,
-                      LPC_ORDER, 16, lpc_coefs, shift, AV_LPC_TYPE_LEVINSON,
+                      LPC_ORDER, 16, lpc_coefs, shift, FF_LPC_TYPE_LEVINSON,
                       0, ORDER_METHOD_EST, 12, 0);
     for (i = 0; i < LPC_ORDER; i++)
         block_coefs[NBLOCKS - 1][i] = -(lpc_coefs[LPC_ORDER - 1][i] <<

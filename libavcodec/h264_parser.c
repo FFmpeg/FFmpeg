@@ -117,7 +117,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
     const uint8_t *ptr;
 
     /* set some sane default values */
-    s->pict_type = FF_I_TYPE;
+    s->pict_type = AV_PICTURE_TYPE_I;
     s->key_frame = 0;
 
     h->s.avctx= avctx;

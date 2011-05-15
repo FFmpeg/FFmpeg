@@ -202,7 +202,7 @@ restart_poll:
 
     size = dv_produce_packet(dv->dv_demux, pkt,
                              dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE),
-                             DV1394_PAL_FRAME_SIZE);
+                             DV1394_PAL_FRAME_SIZE, -1);
     dv->index = (dv->index + 1) % DV1394_RING_FRAMES;
     dv->done++; dv->avail--;
 

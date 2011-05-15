@@ -19,7 +19,6 @@ integer.c               128bit integer math
 lls.c
 mathematics.c           greatest common divisor, integer sqrt, integer log2, ...
 mem.c                   memory allocation routines with guaranteed alignment
-softfloat.c
 
 Headers:
 bswap.h                 big/little/native-endian conversion code

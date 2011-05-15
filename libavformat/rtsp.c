@@ -808,6 +808,10 @@ void ff_rtsp_parse_line(RTSPMessageHeader *reply, const char *buf,
         p += strspn(p, SPACE_CHARS);
         if (method && !strcmp(method, "PLAY"))
             rtsp_parse_rtp_info(rt, p);
+    } else if (av_stristart(p, "Public:", &p) && rt) {
+        if (strstr(p, "GET_PARAMETER") &&
+            method && !strcmp(method, "OPTIONS"))
+            rt->get_parameter_supported = 1;
     }
 }
 

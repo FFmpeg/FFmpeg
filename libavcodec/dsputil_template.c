@@ -27,7 +27,7 @@
  * DSP utils
  */
 
-#include "h264_high_depth.h"
+#include "high_bit_depth.h"
 
 static inline void FUNC(copy_block2)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
@@ -886,7 +886,6 @@ H264_CHROMA_MC(avg_       , op_avg)
 #undef op_avg
 #undef op_put
 
-#if 1
 #define H264_LOWPASS(OPNAME, OP, OP2) \
 static av_unused void FUNC(OPNAME ## h264_qpel2_h_lowpass)(uint8_t *p_dst, uint8_t *p_src, int dstStride, int srcStride){\
     const int h=2;\
@@ -1347,7 +1346,6 @@ H264_MC(avg_, 16)
 #undef op_put
 #undef op2_avg
 #undef op2_put
-#endif
 
 #if BIT_DEPTH == 8
 #   define put_h264_qpel8_mc00_8_c  ff_put_pixels8x8_8_c
@@ -1391,3 +1389,4 @@ static void FUNCC(clear_blocks)(DCTELEM *blocks)
 {
     memset(blocks, 0, sizeof(dctcoef)*6*64);
 }
+

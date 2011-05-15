@@ -218,7 +218,7 @@ static int decode_slice(MpegEncContext *s){
 //printf("%d %d %06X\n", ret, get_bits_count(&s->gb), show_bits(&s->gb, 24));
             ret= s->decode_mb(s, s->block);
 
-            if (s->pict_type!=FF_B_TYPE)
+            if (s->pict_type!=AV_PICTURE_TYPE_B)
                 ff_h263_update_motion_val(s);
 
             if(ret<0){
@@ -310,7 +310,7 @@ static int decode_slice(MpegEncContext *s){
         int max_extra=7;
 
         /* no markers in M$ crap */
-        if(s->msmpeg4_version && s->pict_type==FF_I_TYPE)
+        if(s->msmpeg4_version && s->pict_type==AV_PICTURE_TYPE_I)
             max_extra+= 17;
 
         /* buggy padding but the frame should still end approximately at the bitstream end */
@@ -600,16 +600,16 @@ retry:
 
     // for skipping the frame
     s->current_picture.pict_type= s->pict_type;
-    s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
+    s->current_picture.key_frame= s->pict_type == AV_PICTURE_TYPE_I;
 
     /* skip B-frames if we don't have reference frames */
-    if(s->last_picture_ptr==NULL && (s->pict_type==FF_B_TYPE || s->dropable)) return get_consumed_bytes(s, buf_size);
+    if(s->last_picture_ptr==NULL && (s->pict_type==AV_PICTURE_TYPE_B || s->dropable)) return get_consumed_bytes(s, buf_size);
 #if FF_API_HURRY_UP
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && s->pict_type==FF_B_TYPE) return get_consumed_bytes(s, buf_size);
 #endif
-    if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
-       || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
+    if(   (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==AV_PICTURE_TYPE_B)
+       || (avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=AV_PICTURE_TYPE_I)
        ||  avctx->skip_frame >= AVDISCARD_ALL)
         return get_consumed_bytes(s, buf_size);
 #if FF_API_HURRY_UP
@@ -618,16 +618,16 @@ retry:
 #endif
 
     if(s->next_p_frame_damaged){
-        if(s->pict_type==FF_B_TYPE)
+        if(s->pict_type==AV_PICTURE_TYPE_B)
             return get_consumed_bytes(s, buf_size);
         else
             s->next_p_frame_damaged=0;
     }
 
-    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && s->pict_type==FF_B_TYPE){
+    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && s->pict_type==AV_PICTURE_TYPE_B){
         s->me.qpel_put= s->dsp.put_2tap_qpel_pixels_tab;
         s->me.qpel_avg= s->dsp.avg_2tap_qpel_pixels_tab;
-    }else if((!s->no_rounding) || s->pict_type==FF_B_TYPE){
+    }else if((!s->no_rounding) || s->pict_type==AV_PICTURE_TYPE_B){
         s->me.qpel_put= s->dsp.put_qpel_pixels_tab;
         s->me.qpel_avg= s->dsp.avg_qpel_pixels_tab;
     }else{
@@ -680,7 +680,7 @@ retry:
         decode_slice(s);
     }
 
-    if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==FF_I_TYPE)
+    if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==AV_PICTURE_TYPE_I)
         if(!CONFIG_MSMPEG4_DECODER || msmpeg4_decode_ext_header(s, buf_size) < 0){
             s->error_status_table[s->mb_num-1]= AC_ERROR|DC_ERROR|MV_ERROR;
         }
@@ -730,7 +730,7 @@ intrax8_decoded:
 
 assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
 assert(s->current_picture.pict_type == s->pict_type);
-    if (s->pict_type == FF_B_TYPE || s->low_delay) {
+    if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
         *pict= *(AVFrame*)s->current_picture_ptr;
     } else if (s->last_picture_ptr != NULL) {
         *pict= *(AVFrame*)s->last_picture_ptr;

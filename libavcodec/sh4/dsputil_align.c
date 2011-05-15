@@ -333,9 +333,9 @@ DEFFUNC(avg,no_rnd,xy,16,OP_XY,PACK)
 
 void dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
 {
-        const int h264_high_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+        const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
-        if (!h264_high_depth) {
+        if (!high_bit_depth) {
         c->put_pixels_tab[0][0] = put_rnd_pixels16_o;
         c->put_pixels_tab[0][1] = put_rnd_pixels16_x;
         c->put_pixels_tab[0][2] = put_rnd_pixels16_y;
@@ -405,7 +405,7 @@ void dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
     dspfunc(avg_qpel, 1, 8);
     /* dspfunc(avg_no_rnd_qpel, 1, 8); */
 
-    if (!h264_high_depth) {
+    if (!high_bit_depth) {
     dspfunc(put_h264_qpel, 0, 16);
     dspfunc(put_h264_qpel, 1, 8);
     dspfunc(put_h264_qpel, 2, 4);
@@ -415,7 +415,7 @@ void dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
     }
 
 #undef dspfunc
-    if (!h264_high_depth) {
+    if (!high_bit_depth) {
     c->put_h264_chroma_pixels_tab[0]= put_h264_chroma_mc8_sh4;
     c->put_h264_chroma_pixels_tab[1]= put_h264_chroma_mc4_sh4;
     c->put_h264_chroma_pixels_tab[2]= put_h264_chroma_mc2_sh4;

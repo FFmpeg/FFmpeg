@@ -331,6 +331,11 @@ typedef struct RTSPState {
      * Polling array for udp
      */
     struct pollfd *p;
+
+    /**
+     * Whether the server supports the GET_PARAMETER method.
+     */
+    int get_parameter_supported;
 } RTSPState;
 
 /**

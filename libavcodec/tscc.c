@@ -141,6 +141,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->height = avctx->height;
 
+    avcodec_get_frame_defaults(&c->pic);
     // Needed if zlib unused or init aborted before inflateInit
     memset(&(c->zstream), 0, sizeof(z_stream));
     switch(avctx->bits_per_coded_sample){

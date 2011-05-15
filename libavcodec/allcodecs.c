@@ -158,7 +158,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (MSMPEG4V2, msmpeg4v2);
     REGISTER_ENCDEC  (MSMPEG4V3, msmpeg4v3);
     REGISTER_DECODER (MSRLE, msrle);
-    REGISTER_DECODER (MSVIDEO1, msvideo1);
+    REGISTER_ENCDEC  (MSVIDEO1, msvideo1);
     REGISTER_DECODER (MSZH, mszh);
     REGISTER_DECODER (MXPEG, mxpeg);
     REGISTER_DECODER (NUV, nuv);
@@ -184,6 +184,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (RV20, rv20);
     REGISTER_DECODER (RV30, rv30);
     REGISTER_DECODER (RV40, rv40);
+    REGISTER_DECODER (S302M, s302m);
     REGISTER_ENCDEC  (SGI, sgi);
     REGISTER_DECODER (SMACKER, smacker);
     REGISTER_DECODER (SMC, smc);

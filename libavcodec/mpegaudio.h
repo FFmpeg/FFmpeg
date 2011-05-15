@@ -58,12 +58,9 @@
 
 #define MP3_MASK 0xFFFE0CCF
 
-#if CONFIG_MPEGAUDIO_HP
+#ifndef FRAC_BITS
 #define FRAC_BITS   23   /* fractional bits for sb_samples and dct */
 #define WFRAC_BITS  16   /* fractional bits for window */
-#else
-#define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
-#define WFRAC_BITS  14   /* fractional bits for window */
 #endif
 
 #define FRAC_ONE    (1 << FRAC_BITS)
@@ -150,9 +147,6 @@ typedef struct MPADecodeContext {
     DECLARE_ALIGNED(16, INTFLOAT, sb_samples)[MPA_MAX_CHANNELS][36][SBLIMIT];
     INTFLOAT mdct_buf[MPA_MAX_CHANNELS][SBLIMIT * 18]; /* previous samples, for layer 3 MDCT */
     GranuleDef granules[2][2]; /* Used in Layer 3 */
-#ifdef DEBUG
-    int frame_count;
-#endif
     int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
     int dither_state;
     int error_recognition;

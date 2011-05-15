@@ -192,6 +192,7 @@ static av_cold int ir2_decode_init(AVCodecContext *avctx){
     Ir2Context * const ic = avctx->priv_data;
     static VLC_TYPE vlc_tables[1 << CODE_VLC_BITS][2];
 
+    avcodec_get_frame_defaults(&ic->picture);
     ic->avctx = avctx;
 
     avctx->pix_fmt= PIX_FMT_YUV410P;

@@ -47,6 +47,10 @@ typedef enum {
 
 static av_cold int decode_init(AVCodecContext *avctx)
 {
+    C93DecoderContext * const c93 = avctx->priv_data;
+
+    avcodec_get_frame_defaults(&c93->pictures[0]);
+    avcodec_get_frame_defaults(&c93->pictures[1]);
     avctx->pix_fmt = PIX_FMT_PAL8;
     return 0;
 }
@@ -137,10 +141,10 @@ static int decode_frame(AVCodecContext *avctx, void *data,
     stride = newpic->linesize[0];
 
     if (buf[0] & C93_FIRST_FRAME) {
-        newpic->pict_type = FF_I_TYPE;
+        newpic->pict_type = AV_PICTURE_TYPE_I;
         newpic->key_frame = 1;
     } else {
-        newpic->pict_type = FF_P_TYPE;
+        newpic->pict_type = AV_PICTURE_TYPE_P;
         newpic->key_frame = 0;
     }
 

@@ -72,7 +72,7 @@ AVCodecParserContext *av_parser_init(int codec_id)
         }
     }
     s->fetch_timestamp=1;
-    s->pict_type = FF_I_TYPE;
+    s->pict_type = AV_PICTURE_TYPE_I;
     s->key_frame = -1;
     s->convergence_duration = 0;
     s->dts_sync_point       = INT_MIN;
@@ -223,7 +223,7 @@ int av_parser_change(AVCodecParserContext *s,
     *poutbuf_size= buf_size;
     if(avctx->extradata){
         if(  (keyframe && (avctx->flags2 & CODEC_FLAG2_LOCAL_HEADER))
-            /*||(s->pict_type != FF_I_TYPE && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_NOKEY))*/
+            /*||(s->pict_type != AV_PICTURE_TYPE_I && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_NOKEY))*/
             /*||(? && (s->flags & PARSER_FLAG_DUMP_EXTRADATA_AT_BEGIN)*/){
             int size= buf_size + avctx->extradata_size;
             *poutbuf_size= size;

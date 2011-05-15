@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "h264_high_depth.h"
+#include "high_bit_depth.h"
 
 #ifndef AVCODEC_H264IDCT_INTERNAL_H
 #define AVCODEC_H264IDCT_INTERNAL_H

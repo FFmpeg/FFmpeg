@@ -147,6 +147,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
     case PIX_FMT_YUV420P9BE:
     case PIX_FMT_YUV420P10LE:
     case PIX_FMT_YUV420P10BE:
+    case PIX_FMT_YUV422P10LE:
+    case PIX_FMT_YUV422P10BE:
         w_align= 16; //FIXME check for non mpeg style codecs and use less alignment
         h_align= 16;
         if(s->codec_id == CODEC_ID_MPEG2VIDEO || s->codec_id == CODEC_ID_MJPEG || s->codec_id == CODEC_ID_AMV || s->codec_id == CODEC_ID_THP || s->codec_id == CODEC_ID_H264)
@@ -354,9 +356,18 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     }
     s->internal_buffer_count++;
 
-    if(s->pkt) pic->pkt_pts= s->pkt->pts;
-    else       pic->pkt_pts= AV_NOPTS_VALUE;
+    if (s->pkt) {
+        pic->pkt_pts = s->pkt->pts;
+        pic->pkt_pos = s->pkt->pos;
+    } else {
+        pic->pkt_pts = AV_NOPTS_VALUE;
+        pic->pkt_pos = -1;
+    }
     pic->reordered_opaque= s->reordered_opaque;
+    pic->sample_aspect_ratio = s->sample_aspect_ratio;
+    pic->width               = s->width;
+    pic->height              = s->height;
+    pic->format              = s->pix_fmt;
 
     if(s->debug&FF_DEBUG_BUFFERS)
         av_log(s, AV_LOG_DEBUG, "default_get_buffer called on pic %p, %d buffers used\n", pic, s->internal_buffer_count);
@@ -461,7 +472,10 @@ void avcodec_get_frame_defaults(AVFrame *pic){
     memset(pic, 0, sizeof(AVFrame));
 
     pic->pts = pic->best_effort_timestamp = AV_NOPTS_VALUE;
+    pic->pkt_pos = -1;
     pic->key_frame= 1;
+    pic->sample_aspect_ratio = (AVRational){0, 1};
+    pic->format = -1;           /* unknown */
 }
 
 AVFrame *avcodec_alloc_frame(void){
@@ -684,8 +698,7 @@ int avcodec_encode_subtitle(AVCodecContext *avctx, uint8_t *buf, int buf_size,
         av_log(avctx, AV_LOG_ERROR, "start_display_time must be 0.\n");
         return -1;
     }
-    if(sub->num_rects == 0 || !sub->rects)
-        return -1;
+
     ret = avctx->codec->encode(avctx, buf, buf_size, sub);
     avctx->frame_number++;
     return ret;
@@ -743,6 +756,18 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
             ret = avctx->codec->decode(avctx, picture, got_picture_ptr,
                               avpkt);
             picture->pkt_dts= avpkt->dts;
+
+            if(!avctx->has_b_frames){
+            picture->pkt_pos= avpkt->pos;
+            if (!picture->sample_aspect_ratio.num)
+                picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
+            if (!picture->width)
+                picture->width = avctx->width;
+            if (!picture->height)
+                picture->height = avctx->height;
+            if (picture->format == PIX_FMT_NONE)
+                picture->format = avctx->pix_fmt;
+            }
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;
@@ -1334,9 +1359,9 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op))
 unsigned int ff_toupper4(unsigned int x)
 {
     return     toupper( x     &0xFF)
-    + (toupper((x>>8 )&0xFF)<<8 )
-    + (toupper((x>>16)&0xFF)<<16)
-    + (toupper((x>>24)&0xFF)<<24);
+            + (toupper((x>>8 )&0xFF)<<8 )
+            + (toupper((x>>16)&0xFF)<<16)
+            + (toupper((x>>24)&0xFF)<<24);
 }
 
 #if !HAVE_PTHREADS

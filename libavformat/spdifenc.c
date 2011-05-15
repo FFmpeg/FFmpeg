@@ -86,14 +86,19 @@ typedef struct IEC61937Context {
 } IEC61937Context;
 
 static const AVOption options[] = {
-{ "spdif_flags", "IEC 61937 encapsulation flags", offsetof(IEC61937Context, spdif_flags), FF_OPT_TYPE_FLAGS, 0, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "spdif_flags" },
-{ "be", "output in big-endian format (for use as s16be)", 0, FF_OPT_TYPE_CONST, SPDIF_FLAG_BIGENDIAN, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "spdif_flags" },
-{ "dtshd_rate", "mux complete DTS frames in HD mode at the specified IEC958 rate (in Hz, default 0=disabled)", offsetof(IEC61937Context, dtshd_rate), FF_OPT_TYPE_INT, 0, 0, 768000, AV_OPT_FLAG_ENCODING_PARAM },
-{ "dtshd_fallback_time", "min secs to strip HD for after an overflow (-1: till the end, default 60)", offsetof(IEC61937Context, dtshd_fallback), FF_OPT_TYPE_INT, 60, -1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
+{ "spdif_flags", "IEC 61937 encapsulation flags", offsetof(IEC61937Context, spdif_flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "spdif_flags" },
+{ "be", "output in big-endian format (for use as s16be)", 0, FF_OPT_TYPE_CONST, {.dbl = SPDIF_FLAG_BIGENDIAN},  0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "spdif_flags" },
+{ "dtshd_rate", "mux complete DTS frames in HD mode at the specified IEC958 rate (in Hz, default 0=disabled)", offsetof(IEC61937Context, dtshd_rate), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 768000, AV_OPT_FLAG_ENCODING_PARAM },
+{ "dtshd_fallback_time", "min secs to strip HD for after an overflow (-1: till the end, default 60)", offsetof(IEC61937Context, dtshd_fallback), FF_OPT_TYPE_INT, {.dbl = 60}, -1, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM },
 { NULL },
 };
 
-static const AVClass class = { "spdif", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
+static const AVClass class = {
+    .class_name     = "spdif",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
 
 static int spdif_header_ac3(AVFormatContext *s, AVPacket *pkt)
 {

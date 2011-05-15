@@ -26,7 +26,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  1
-#define LIBAVFILTER_VERSION_MINOR 77
+#define LIBAVFILTER_VERSION_MINOR 78
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -112,7 +112,7 @@ typedef struct AVFilterBufferRefAudioProps {
 typedef struct AVFilterBufferRefVideoProps {
     int w;                      ///< image width
     int h;                      ///< image height
-    AVRational pixel_aspect;    ///< pixel aspect ratio
+    AVRational sample_aspect_ratio; ///< sample aspect ratio
     int interlaced;             ///< is frame interlaced
     int top_field_first;        ///< field order
     enum AVPictureType pict_type; ///< picture type of the frame
@@ -619,6 +619,8 @@ struct AVFilterLink {
      * input link is assumed to be an unchangeable property.
      */
     AVRational time_base;
+
+    struct AVFilterPool *pool;
 };
 
 /**

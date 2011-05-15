@@ -308,7 +308,7 @@ static void find_best_tables(MpegEncContext * s)
                     int intra_luma_count  = s->ac_stats[1][0][level][run][last];
                     int intra_chroma_count= s->ac_stats[1][1][level][run][last];
 
-                    if(s->pict_type==FF_I_TYPE){
+                    if(s->pict_type==AV_PICTURE_TYPE_I){
                         size       += intra_luma_count  *rl_length[i  ][level][run][last];
                         chroma_size+= intra_chroma_count*rl_length[i+3][level][run][last];
                     }else{
@@ -333,7 +333,7 @@ static void find_best_tables(MpegEncContext * s)
 //    printf("type:%d, best:%d, qp:%d, var:%d, mcvar:%d, size:%d //\n",
 //           s->pict_type, best, s->qscale, s->mb_var_sum, s->mc_mb_var_sum, best_size);
 
-    if(s->pict_type==FF_P_TYPE) chroma_best= best;
+    if(s->pict_type==AV_PICTURE_TYPE_P) chroma_best= best;
 
     memset(s->ac_stats, 0, sizeof(int)*(MAX_LEVEL+1)*(MAX_RUN+1)*2*2*2);
 
@@ -342,7 +342,7 @@ static void find_best_tables(MpegEncContext * s)
 
     if(s->pict_type != s->last_non_b_pict_type){
         s->rl_table_index= 2;
-        if(s->pict_type==FF_I_TYPE)
+        if(s->pict_type==AV_PICTURE_TYPE_I)
             s->rl_chroma_table_index= 1;
         else
             s->rl_chroma_table_index= 2;
@@ -369,10 +369,10 @@ void msmpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     s->use_skip_mb_code = 1; /* only if P frame */
     s->per_mb_rl_table = 0;
     if(s->msmpeg4_version==4)
-        s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==FF_P_TYPE);
+        s->inter_intra_pred= (s->width*s->height < 320*240 && s->bit_rate<=II_BITRATE && s->pict_type==AV_PICTURE_TYPE_P);
 //printf("%d %d %d %d %d\n", s->pict_type, s->bit_rate, s->inter_intra_pred, s->width, s->height);
 
-    if (s->pict_type == FF_I_TYPE) {
+    if (s->pict_type == AV_PICTURE_TYPE_I) {
         s->slice_height= s->mb_height/1;
         put_bits(&s->pb, 5, 0x16 + s->mb_height/s->slice_height);
 
@@ -619,7 +619,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
         }
 
         if(s->msmpeg4_version<=2){
-            if (s->pict_type == FF_I_TYPE) {
+            if (s->pict_type == AV_PICTURE_TYPE_I) {
                 put_bits(&s->pb,
                          v2_intra_cbpc[cbp&3][1], v2_intra_cbpc[cbp&3][0]);
             } else {
@@ -634,7 +634,7 @@ void msmpeg4_encode_mb(MpegEncContext * s,
                      ff_h263_cbpy_tab[cbp>>2][1],
                      ff_h263_cbpy_tab[cbp>>2][0]);
         }else{
-            if (s->pict_type == FF_I_TYPE) {
+            if (s->pict_type == AV_PICTURE_TYPE_I) {
                 put_bits(&s->pb,
                          ff_msmp4_mb_i_table[coded_cbp][1], ff_msmp4_mb_i_table[coded_cbp][0]);
             } else {
@@ -1094,7 +1094,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int cbp, code, i;
 
-    if (s->pict_type == FF_P_TYPE) {
+    if (s->pict_type == AV_PICTURE_TYPE_P) {
         if (s->use_skip_mb_code) {
             if (get_bits1(&s->gb)) {
                 /* skip mb */
@@ -1161,7 +1161,7 @@ static int msmpeg4v12_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
         } else{
             s->ac_pred = 0;
             cbp|= get_vlc2(&s->gb, ff_h263_cbpy_vlc.table, CBPY_VLC_BITS, 1)<<2; //FIXME check errors
-            if(s->pict_type==FF_P_TYPE) cbp^=0x3C;
+            if(s->pict_type==AV_PICTURE_TYPE_P) cbp^=0x3C;
         }
     }
 
@@ -1182,7 +1182,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     uint8_t *coded_val;
     uint32_t * const mb_type_ptr= &s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride ];
 
-    if (s->pict_type == FF_P_TYPE) {
+    if (s->pict_type == AV_PICTURE_TYPE_P) {
         if (s->use_skip_mb_code) {
             if (get_bits1(&s->gb)) {
                 /* skip mb */
@@ -1390,15 +1390,15 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
     }
 
     s->pict_type = get_bits(&s->gb, 2) + 1;
-    if (s->pict_type != FF_I_TYPE &&
-        s->pict_type != FF_P_TYPE){
+    if (s->pict_type != AV_PICTURE_TYPE_I &&
+        s->pict_type != AV_PICTURE_TYPE_P){
         av_log(s->avctx, AV_LOG_ERROR, "invalid picture type\n");
         return -1;
     }
 #if 0
 {
     static int had_i=0;
-    if(s->pict_type == FF_I_TYPE) had_i=1;
+    if(s->pict_type == AV_PICTURE_TYPE_I) had_i=1;
     if(!had_i) return -1;
 }
 #endif
@@ -1408,7 +1408,7 @@ int msmpeg4_decode_picture_header(MpegEncContext * s)
         return -1;
     }
 
-    if (s->pict_type == FF_I_TYPE) {
+    if (s->pict_type == AV_PICTURE_TYPE_I) {
         code = get_bits(&s->gb, 5);
         if(s->msmpeg4_version==1){
             if(code==0 || code>s->mb_height){

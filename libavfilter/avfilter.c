@@ -25,6 +25,7 @@
 #include "libavutil/rational.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -69,14 +70,47 @@ AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
     return ret;
 }
 
+static void store_in_pool(AVFilterBufferRef *ref)
+{
+    int i;
+    AVFilterPool *pool= ref->buf->priv;
+
+    av_assert0(ref->buf->data[0]);
+
+    if(pool->count == POOL_SIZE){
+        AVFilterBufferRef *ref1= pool->pic[0];
+        av_freep(&ref1->video);
+        av_freep(&ref1->audio);
+        av_freep(&ref1->buf->data[0]);
+        av_freep(&ref1->buf);
+        av_free(ref1);
+        memmove(&pool->pic[0], &pool->pic[1], sizeof(void*)*(POOL_SIZE-1));
+        pool->count--;
+        pool->pic[POOL_SIZE-1] = NULL;
+    }
+
+    for(i=0; i<POOL_SIZE; i++){
+        if(!pool->pic[i]){
+            pool->pic[i]= ref;
+            pool->count++;
+            break;
+        }
+    }
+}
+
 void avfilter_unref_buffer(AVFilterBufferRef *ref)
 {
     if (!ref)
         return;
-    if (!(--ref->buf->refcount))
+    if (!(--ref->buf->refcount)){
+        if(!ref->buf->free){
+            store_in_pool(ref);
+            return;
+        }
         ref->buf->free(ref->buf);
-    av_free(ref->video);
-    av_free(ref->audio);
+    }
+    av_freep(&ref->video);
+    av_freep(&ref->audio);
     av_free(ref);
 }
 
@@ -238,7 +272,7 @@ static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
 
     if (ref->video) {
         av_dlog(ctx, " a:%d/%d s:%dx%d i:%c iskey:%d type:%c",
-                ref->video->pixel_aspect.num, ref->video->pixel_aspect.den,
+                ref->video->sample_aspect_ratio.num, ref->video->sample_aspect_ratio.den,
                 ref->video->w, ref->video->h,
                 !ref->video->interlaced     ? 'P' :         /* Progressive  */
                 ref->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */
@@ -585,28 +619,53 @@ int avfilter_open(AVFilterContext **filter_ctx, AVFilter *filter, const char *in
         return AVERROR(EINVAL);
 
     ret = av_mallocz(sizeof(AVFilterContext));
+    if (!ret)
+        return AVERROR(ENOMEM);
 
     ret->av_class = &avfilter_class;
     ret->filter   = filter;
     ret->name     = inst_name ? av_strdup(inst_name) : NULL;
-    ret->priv     = av_mallocz(filter->priv_size);
+    if (filter->priv_size) {
+        ret->priv     = av_mallocz(filter->priv_size);
+        if (!ret->priv)
+            goto err;
+    }
 
     ret->input_count  = pad_count(filter->inputs);
     if (ret->input_count) {
         ret->input_pads   = av_malloc(sizeof(AVFilterPad) * ret->input_count);
+        if (!ret->input_pads)
+            goto err;
         memcpy(ret->input_pads, filter->inputs, sizeof(AVFilterPad) * ret->input_count);
         ret->inputs       = av_mallocz(sizeof(AVFilterLink*) * ret->input_count);
+        if (!ret->inputs)
+            goto err;
     }
 
     ret->output_count = pad_count(filter->outputs);
     if (ret->output_count) {
         ret->output_pads  = av_malloc(sizeof(AVFilterPad) * ret->output_count);
+        if (!ret->output_pads)
+            goto err;
         memcpy(ret->output_pads, filter->outputs, sizeof(AVFilterPad) * ret->output_count);
         ret->outputs      = av_mallocz(sizeof(AVFilterLink*) * ret->output_count);
+        if (!ret->outputs)
+            goto err;
     }
 
     *filter_ctx = ret;
     return 0;
+
+err:
+    av_freep(&ret->inputs);
+    av_freep(&ret->input_pads);
+    ret->input_count = 0;
+    av_freep(&ret->outputs);
+    av_freep(&ret->output_pads);
+    ret->output_count = 0;
+    av_freep(&ret->priv);
+    av_free(ret);
+    return AVERROR(ENOMEM);
 }
 
 void avfilter_free(AVFilterContext *filter)

@@ -30,13 +30,9 @@
 
 #include "dsputil.h"
 
-typedef void (*vc1_idct_func)(uint8_t *dest, int line_size, DCTELEM *block);
-
 typedef struct VC1DSPContext {
     /* vc1 functions */
-    vc1_idct_func vc1_inv_trans_8x8_add;
-    vc1_idct_func vc1_inv_trans_8x8_put_signed[2];
-    vc1_idct_func vc1_inv_trans_8x8_put[2];
+    void (*vc1_inv_trans_8x8)(DCTELEM *b);
     void (*vc1_inv_trans_8x4)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x8)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x4)(uint8_t *dest, int line_size, DCTELEM *block);
@@ -44,8 +40,10 @@ typedef struct VC1DSPContext {
     void (*vc1_inv_trans_8x4_dc)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x8_dc)(uint8_t *dest, int line_size, DCTELEM *block);
     void (*vc1_inv_trans_4x4_dc)(uint8_t *dest, int line_size, DCTELEM *block);
-    void (*vc1_v_overlap)(uint8_t* src, int stride);
-    void (*vc1_h_overlap)(uint8_t* src, int stride);
+    void (*vc1_v_overlap)(uint8_t *src, int stride);
+    void (*vc1_h_overlap)(uint8_t *src, int stride);
+    void (*vc1_v_s_overlap)(DCTELEM *top,  DCTELEM *bottom);
+    void (*vc1_h_s_overlap)(DCTELEM *left, DCTELEM *right);
     void (*vc1_v_loop_filter4)(uint8_t *src, int stride, int pq);
     void (*vc1_h_loop_filter4)(uint8_t *src, int stride, int pq);
     void (*vc1_v_loop_filter8)(uint8_t *src, int stride, int pq);

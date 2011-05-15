@@ -170,7 +170,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    p->pict_type= FF_I_TYPE;
+    p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
     av_fast_malloc(&a->bitstream_buffer, &a->bitstream_buffer_size, buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -218,6 +218,7 @@ static av_cold void mdec_common_init(AVCodecContext *avctx){
     a->mb_width   = (avctx->coded_width  + 15) / 16;
     a->mb_height  = (avctx->coded_height + 15) / 16;
 
+    avcodec_get_frame_defaults(&a->picture);
     avctx->coded_frame= &a->picture;
     a->avctx= avctx;
 }

@@ -195,7 +195,7 @@ static inline void mmx_emms(void)
 
 static void dct_error(const char *name, int is_idct,
                void (*fdct_func)(DCTELEM *block),
-               void (*fdct_ref)(DCTELEM *block), int form, int test)
+               void (*fdct_ref)(DCTELEM *block), int form, int test, const int bits)
 {
     int it, i, scale;
     int err_inf, v;
@@ -204,6 +204,7 @@ static void dct_error(const char *name, int is_idct,
     int maxout=0;
     int blockSumErrMax=0, blockSumErr;
     AVLFG prng;
+    const int vals=1<<bits;
 
     av_lfg_init(&prng, 1);
 
@@ -216,7 +217,7 @@ static void dct_error(const char *name, int is_idct,
         switch(test){
         case 0:
             for(i=0;i<64;i++)
-                block1[i] = (av_lfg_get(&prng) % 512) -256;
+                block1[i] = (av_lfg_get(&prng) % (2*vals)) -vals;
             if (is_idct){
                 ff_ref_fdct(block1);
 
@@ -227,10 +228,10 @@ static void dct_error(const char *name, int is_idct,
         case 1:{
             int num = av_lfg_get(&prng) % 10 + 1;
             for(i=0;i<num;i++)
-                block1[av_lfg_get(&prng) % 64] = av_lfg_get(&prng) % 512 -256;
+                block1[av_lfg_get(&prng) % 64] = av_lfg_get(&prng) % (2*vals) -vals;
         }break;
         case 2:
-            block1[0] = av_lfg_get(&prng) % 4096 - 2048;
+            block1[0] = av_lfg_get(&prng) % (16*vals) - (8*vals);
             block1[63]= (block1[0]&1)^1;
         break;
         }
@@ -328,7 +329,7 @@ static void dct_error(const char *name, int is_idct,
     switch(test){
     case 0:
         for(i=0;i<64;i++)
-            block1[i] = av_lfg_get(&prng) % 512 -256;
+            block1[i] = av_lfg_get(&prng) % (2*vals) -vals;
         if (is_idct){
             ff_ref_fdct(block1);
 
@@ -338,10 +339,10 @@ static void dct_error(const char *name, int is_idct,
     break;
     case 1:{
     case 2:
-        block1[0] = av_lfg_get(&prng) % 512 -256;
-        block1[1] = av_lfg_get(&prng) % 512 -256;
-        block1[2] = av_lfg_get(&prng) % 512 -256;
-        block1[3] = av_lfg_get(&prng) % 512 -256;
+        block1[0] = av_lfg_get(&prng) % (2*vals) -vals;
+        block1[1] = av_lfg_get(&prng) % (2*vals) -vals;
+        block1[2] = av_lfg_get(&prng) % (2*vals) -vals;
+        block1[3] = av_lfg_get(&prng) % (2*vals) -vals;
     }break;
     }
 
@@ -552,6 +553,7 @@ int main(int argc, char **argv)
     int test_idct = 0, test_248_dct = 0;
     int c,i;
     int test=1;
+    int bits=8;
     cpu_flags = av_get_cpu_flags();
 
     ff_ref_dct_init();
@@ -582,6 +584,7 @@ int main(int argc, char **argv)
     }
 
     if(optind <argc) test= atoi(argv[optind]);
+    if(optind+1 < argc) bits= atoi(argv[optind+1]);
 
     printf("ffmpeg DCT/IDCT test\n");
 
@@ -590,7 +593,7 @@ int main(int argc, char **argv)
     } else {
       for (i=0;algos[i].name;i++)
         if (algos[i].is_idct == test_idct && !(~cpu_flags & algos[i].mm_support)) {
-          dct_error (algos[i].name, algos[i].is_idct, algos[i].func, algos[i].ref, algos[i].format, test);
+          dct_error (algos[i].name, algos[i].is_idct, algos[i].func, algos[i].ref, algos[i].format, test, bits);
         }
     }
     return 0;

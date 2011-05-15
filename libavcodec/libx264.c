@@ -35,13 +35,13 @@ typedef struct X264Context {
     uint8_t        *sei;
     int             sei_size;
     AVFrame         out_pic;
-    const char *preset;
-    const char *tune;
-    const char *profile;
-    const char *level;
+    char *preset;
+    char *tune;
+    char *profile;
+    char *level;
     int fastfirstpass;
-    const char *stats;
-    const char *weightp;
+    char *stats;
+    char *weightp;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -110,9 +110,9 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
 
         x4->pic.i_pts  = frame->pts;
         x4->pic.i_type =
-            frame->pict_type == FF_I_TYPE ? X264_TYPE_KEYFRAME :
-            frame->pict_type == FF_P_TYPE ? X264_TYPE_P :
-            frame->pict_type == FF_B_TYPE ? X264_TYPE_B :
+            frame->pict_type == AV_PICTURE_TYPE_I ? X264_TYPE_KEYFRAME :
+            frame->pict_type == AV_PICTURE_TYPE_P ? X264_TYPE_P :
+            frame->pict_type == AV_PICTURE_TYPE_B ? X264_TYPE_B :
                                             X264_TYPE_AUTO;
         if (x4->params.b_tff != frame->top_field_first) {
             x4->params.b_tff = frame->top_field_first;
@@ -135,14 +135,14 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     switch (pic_out.i_type) {
     case X264_TYPE_IDR:
     case X264_TYPE_I:
-        x4->out_pic.pict_type = FF_I_TYPE;
+        x4->out_pic.pict_type = AV_PICTURE_TYPE_I;
         break;
     case X264_TYPE_P:
-        x4->out_pic.pict_type = FF_P_TYPE;
+        x4->out_pic.pict_type = AV_PICTURE_TYPE_P;
         break;
     case X264_TYPE_B:
     case X264_TYPE_BREF:
-        x4->out_pic.pict_type = FF_B_TYPE;
+        x4->out_pic.pict_type = AV_PICTURE_TYPE_B;
         break;
     }
 
@@ -162,6 +162,13 @@ static av_cold int X264_close(AVCodecContext *avctx)
 
     if (x4->enc)
         x264_encoder_close(x4->enc);
+
+    av_free(x4->preset);
+    av_free(x4->tune);
+    av_free(x4->profile);
+    av_free(x4->level);
+    av_free(x4->stats);
+    av_free(x4->weightp);
 
     return 0;
 }
@@ -185,7 +192,7 @@ static void check_default_settings(AVCodecContext *avctx)
     score += x4->params.analyse.inter == 0 && x4->params.analyse.i_subpel_refine == 8;
     if (score >= 5) {
         av_log(avctx, AV_LOG_ERROR, "Default settings detected, using medium profile\n");
-        x4->preset = "medium";
+        x4->preset = av_strdup("medium");
         if (avctx->bit_rate == 200*100)
             avctx->crf = 23;
     }

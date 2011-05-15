@@ -41,6 +41,7 @@ static av_cold int bfi_decode_init(AVCodecContext * avctx)
 {
     BFIContext *bfi = avctx->priv_data;
     avctx->pix_fmt = PIX_FMT_PAL8;
+    avcodec_get_frame_defaults(&bfi->frame);
     bfi->dst = av_mallocz(avctx->width * avctx->height);
     return 0;
 }
@@ -69,7 +70,7 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
 
     /* Set frame parameters and palette, if necessary */
     if (!avctx->frame_number) {
-        bfi->frame.pict_type = FF_I_TYPE;
+        bfi->frame.pict_type = AV_PICTURE_TYPE_I;
         bfi->frame.key_frame = 1;
         /* Setting the palette */
         if(avctx->extradata_size>768) {
@@ -89,7 +90,7 @@ static int bfi_decode_frame(AVCodecContext * avctx, void *data,
         memcpy(bfi->pal, bfi->frame.data[1], sizeof(bfi->pal));
         bfi->frame.palette_has_changed = 1;
     } else {
-        bfi->frame.pict_type = FF_P_TYPE;
+        bfi->frame.pict_type = AV_PICTURE_TYPE_P;
         bfi->frame.key_frame = 0;
         bfi->frame.palette_has_changed = 0;
         memcpy(bfi->frame.data[1], bfi->pal, sizeof(bfi->pal));

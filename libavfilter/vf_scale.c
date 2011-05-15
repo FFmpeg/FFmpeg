@@ -214,14 +214,18 @@ static int config_props(AVFilterLink *outlink)
 
     scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL;
 
-    if(scale->sws)
+    if (scale->sws)
         sws_freeContext(scale->sws);
     scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
                                 outlink->w, outlink->h, outlink->format,
                                 scale->flags, NULL, NULL, NULL);
+    if (scale->isws[0])
+        sws_freeContext(scale->isws[0]);
     scale->isws[0] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
                                     outlink->w, outlink->h/2, outlink->format,
                                     scale->flags, NULL, NULL, NULL);
+    if (scale->isws[1])
+        sws_freeContext(scale->isws[1]);
     scale->isws[1] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
                                     outlink->w, outlink->h/2, outlink->format,
                                     scale->flags, NULL, NULL, NULL);
@@ -252,9 +256,9 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
 
     outlink->out_buf = outpicref;
 
-    av_reduce(&outpicref->video->pixel_aspect.num, &outpicref->video->pixel_aspect.den,
-              (int64_t)picref->video->pixel_aspect.num * outlink->h * link->w,
-              (int64_t)picref->video->pixel_aspect.den * outlink->w * link->h,
+    av_reduce(&outpicref->video->sample_aspect_ratio.num, &outpicref->video->sample_aspect_ratio.den,
+              (int64_t)picref->video->sample_aspect_ratio.num * outlink->h * link->w,
+              (int64_t)picref->video->sample_aspect_ratio.den * outlink->w * link->h,
               INT_MAX);
 
     scale->slice_y = 0;

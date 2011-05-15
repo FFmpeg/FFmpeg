@@ -38,7 +38,7 @@ AVFifoBuffer *av_fifo_alloc(unsigned int size)
 void av_fifo_free(AVFifoBuffer *f)
 {
     if(f){
-        av_free(f->buffer);
+        av_freep(&f->buffer);
         av_free(f);
     }
 }

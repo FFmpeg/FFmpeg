@@ -157,6 +157,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
         c->avctx = avctx;
 
+        avcodec_get_frame_defaults(&c->pic);
         c->pic.data[0] = NULL;
 
         switch (avctx->bits_per_coded_sample) {

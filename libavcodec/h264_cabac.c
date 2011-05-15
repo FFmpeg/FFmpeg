@@ -691,7 +691,7 @@ void ff_h264_init_cabac_states(H264Context *h) {
     const int8_t (*tab)[2];
     const int slice_qp = av_clip(s->qscale - 6*(h->sps.bit_depth_luma-8), 0, 51);
 
-    if( h->slice_type_nos == FF_I_TYPE ) tab = cabac_context_init_I;
+    if( h->slice_type_nos == AV_PICTURE_TYPE_I ) tab = cabac_context_init_I;
     else                                 tab = cabac_context_init_PB[h->cabac_init_idc];
 
     /* calculate pre-state */
@@ -779,7 +779,7 @@ static int decode_cabac_mb_skip( H264Context *h, int mb_x, int mb_y ) {
     if( h->slice_table[mbb_xy] == h->slice_num && !IS_SKIP( s->current_picture.mb_type[mbb_xy] ))
         ctx++;
 
-    if( h->slice_type_nos == FF_B_TYPE )
+    if( h->slice_type_nos == AV_PICTURE_TYPE_B )
         ctx += 13;
     return get_cabac_noinline( &h->cabac, &h->cabac_state[11+ctx] );
 }
@@ -888,7 +888,7 @@ static int decode_cabac_mb_ref( H264Context *h, int list, int n ) {
     int ref  = 0;
     int ctx  = 0;
 
-    if( h->slice_type_nos == FF_B_TYPE) {
+    if( h->slice_type_nos == AV_PICTURE_TYPE_B) {
         if( refa > 0 && !(h->direct_cache[scan8[n] - 1]&(MB_TYPE_DIRECT2>>1)) )
             ctx++;
         if( refb > 0 && !(h->direct_cache[scan8[n] - 8]&(MB_TYPE_DIRECT2>>1)) )
@@ -1103,10 +1103,11 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
 
 
 #define STORE_BLOCK(type) \
-    do {\
-        uint8_t *ctx = coeff_abs_level1_ctx[node_ctx] + abs_level_m1_ctx_base;\
-\
-        int j= scantable[index[--coeff_count]];\
+    do { \
+        uint8_t *ctx = coeff_abs_level1_ctx[node_ctx] + abs_level_m1_ctx_base; \
+ \
+        int j= scantable[index[--coeff_count]]; \
+ \
         if( get_cabac( CC, ctx ) == 0 ) { \
             node_ctx = coeff_abs_level_transition[0][node_ctx]; \
             if( is_dc ) { \
@@ -1141,8 +1142,8 @@ static av_always_inline void decode_cabac_residual_internal( H264Context *h, DCT
             }else{ \
                 ((type*)block)[j] = ((int)(get_cabac_bypass_sign( CC, -coeff_abs ) * qmul[j] + 32)) >> 6; \
             } \
-        }\
-    } while( coeff_count );
+        } \
+    } while ( coeff_count );
 
         if (h->pixel_shift) {
             STORE_BLOCK(int32_t)
@@ -1204,11 +1205,12 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
     int mb_xy;
     int mb_type, partition_count, cbp = 0;
     int dct8x8_allowed= h->pps.transform_8x8_mode;
+    const int pixel_shift = h->pixel_shift;
 
     mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
     tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
-    if( h->slice_type_nos != FF_I_TYPE ) {
+    if( h->slice_type_nos != AV_PICTURE_TYPE_I ) {
         int skip;
         /* a skipped mb needs the aff flag from the following mb */
         if( FRAME_MBAFF && (s->mb_y&1)==1 && h->prev_mb_skipped )
@@ -1244,9 +1246,9 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
 
     fill_decode_neighbors(h, -(MB_FIELD));
 
-    if( h->slice_type_nos == FF_B_TYPE ) {
+    if( h->slice_type_nos == AV_PICTURE_TYPE_B ) {
         int ctx = 0;
-        assert(h->slice_type_nos == FF_B_TYPE);
+        assert(h->slice_type_nos == AV_PICTURE_TYPE_B);
 
         if( !IS_DIRECT( h->left_type[0]-1 ) )
             ctx++;
@@ -1279,7 +1281,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
         }
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
-    } else if( h->slice_type_nos == FF_P_TYPE ) {
+    } else if( h->slice_type_nos == AV_PICTURE_TYPE_P ) {
         if( get_cabac_noinline( &h->cabac, &h->cabac_state[14] ) == 0 ) {
             /* P-type */
             if( get_cabac_noinline( &h->cabac, &h->cabac_state[15] ) == 0 ) {
@@ -1297,9 +1299,9 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
         }
     } else {
         mb_type= decode_cabac_intra_mb_type(h, 3, 1);
-        if(h->slice_type == FF_SI_TYPE && mb_type)
+        if(h->slice_type == AV_PICTURE_TYPE_SI && mb_type)
             mb_type--;
-        assert(h->slice_type_nos == FF_I_TYPE);
+        assert(h->slice_type_nos == AV_PICTURE_TYPE_I);
 decode_intra_mb:
         partition_count = 0;
         cbp= i_mb_type_info[mb_type].cbp;
@@ -1312,7 +1314,7 @@ decode_intra_mb:
     h->slice_table[ mb_xy ]= h->slice_num;
 
     if(IS_INTRA_PCM(mb_type)) {
-        const int mb_size = 384*h->sps.bit_depth_luma/8;
+        const int mb_size = (384*h->sps.bit_depth_luma) >> 3;
         const uint8_t *ptr;
 
         // We assume these blocks are very rare so we do not optimize it.
@@ -1388,7 +1390,7 @@ decode_intra_mb:
     } else if( partition_count == 4 ) {
         int i, j, sub_partition_count[4], list, ref[2][4];
 
-        if( h->slice_type_nos == FF_B_TYPE ) {
+        if( h->slice_type_nos == AV_PICTURE_TYPE_B ) {
             for( i = 0; i < 4; i++ ) {
                 h->sub_mb_type[i] = decode_cabac_b_mb_sub_type( h );
                 sub_partition_count[i]= b_sub_mb_type_info[ h->sub_mb_type[i] ].partition_count;
@@ -1670,7 +1672,7 @@ decode_intra_mb:
                 qmul = h->dequant4_coeff[0][s->qscale];
                 for( i = 0; i < 16; i++ ) {
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA16x16 AC:%d\n", i );
-                    decode_cabac_residual_nondc(h, h->mb + (16*i<<h->pixel_shift), 1, i, scan + 1, qmul, 15);
+                    decode_cabac_residual_nondc(h, h->mb + (16*i << pixel_shift), 1, i, scan + 1, qmul, 15);
                 }
             } else {
                 fill_rectangle(&h->non_zero_count_cache[scan8[0]], 4, 4, 8, 0, 1);
@@ -1680,7 +1682,7 @@ decode_intra_mb:
             for( i8x8 = 0; i8x8 < 4; i8x8++ ) {
                 if( cbp & (1<<i8x8) ) {
                     if( IS_8x8DCT(mb_type) ) {
-                        decode_cabac_residual_nondc(h, h->mb + (64*i8x8<<h->pixel_shift), 5, 4*i8x8,
+                        decode_cabac_residual_nondc(h, h->mb + (64*i8x8 << pixel_shift), 5, 4*i8x8,
                             scan8x8, h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 64);
                     } else {
                         qmul = h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale];
@@ -1688,7 +1690,7 @@ decode_intra_mb:
                             const int index = 4*i8x8 + i4x4;
                             //av_log( s->avctx, AV_LOG_ERROR, "Luma4x4: %d\n", index );
 //START_TIMER
-                            decode_cabac_residual_nondc(h, h->mb + (16*index<<h->pixel_shift), 2, index, scan, qmul, 16);
+                            decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), 2, index, scan, qmul, 16);
 //STOP_TIMER("decode_residual")
                         }
                     }
@@ -1703,7 +1705,7 @@ decode_intra_mb:
             int c;
             for( c = 0; c < 2; c++ ) {
                 //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-DC\n",c );
-                decode_cabac_residual_dc(h, h->mb + ((256 + 16*4*c)<<h->pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
+                decode_cabac_residual_dc(h, h->mb + ((256 + 16*4*c) << pixel_shift), 3, CHROMA_DC_BLOCK_INDEX+c, chroma_dc_scan, 4);
             }
         }
 
@@ -1714,7 +1716,7 @@ decode_intra_mb:
                 for( i = 0; i < 4; i++ ) {
                     const int index = 16 + 4 * c + i;
                     //av_log( s->avctx, AV_LOG_ERROR, "INTRA C%d-AC %d\n",c, index - 16 );
-                    decode_cabac_residual_nondc(h, h->mb + (16*index<<h->pixel_shift), 4, index, scan + 1, qmul, 15);
+                    decode_cabac_residual_nondc(h, h->mb + (16*index << pixel_shift), 4, index, scan + 1, qmul, 15);
                 }
             }
         } else {

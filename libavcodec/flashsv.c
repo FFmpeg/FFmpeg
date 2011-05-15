@@ -92,6 +92,7 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
         return 1;
     }
     avctx->pix_fmt = PIX_FMT_BGR24;
+    avcodec_get_frame_defaults(&s->frame);
     s->frame.data[0] = NULL;
 
     return 0;
@@ -148,7 +149,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     if ((avctx->width != s->image_width) || (avctx->height != s->image_height)) {
         av_log(avctx, AV_LOG_ERROR, "Frame width or height differs from first frames!\n");
         av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n", avctx->height,
-        avctx->width,s->image_height, s->image_width);
+        avctx->width, s->image_height, s->image_width);
         return -1;
     }
 
@@ -195,7 +196,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 s->zstream.next_in   = buf + (get_bits_count(&gb) / 8);
                 s->zstream.avail_in  = size;
                 s->zstream.next_out  = s->tmpblock;
-                s->zstream.avail_out = s->block_size*3;
+                s->zstream.avail_out = s->block_size * 3;
                 ret = inflate(&(s->zstream), Z_FINISH);
                 if (ret == Z_DATA_ERROR) {
                     av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");

@@ -27,6 +27,7 @@
 #include "internal.h"
 #include "isom.h"
 #include "riff.h"
+#include "avio_internal.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
 
@@ -81,8 +82,10 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_RAWVIDEO, MKTAG('A', 'B', 'G', 'R') },
     { CODEC_ID_RAWVIDEO, MKTAG('b', '1', '6', 'g') },
     { CODEC_ID_RAWVIDEO, MKTAG('b', '4', '8', 'r') },
+    { CODEC_ID_RAWVIDEO, MKTAG('D', 'V', 'O', 'O') }, /* Digital Voodoo SD 8 Bit */
 
     { CODEC_ID_R10K,   MKTAG('R', '1', '0', 'k') }, /* UNCOMPRESSED 10BIT RGB */
+    { CODEC_ID_R10K,   MKTAG('R', '1', '0', 'g') }, /* UNCOMPRESSED 10BIT RGB */
     { CODEC_ID_R210,   MKTAG('r', '2', '1', '0') }, /* UNCOMPRESSED 10BIT RGB */
     { CODEC_ID_V210,   MKTAG('v', '2', '1', '0') }, /* UNCOMPRESSED 10BIT 4:2:2 */
 
@@ -442,6 +445,7 @@ static const MovChannelLayout mov_channel_layout[] = {
     { AV_CH_LAYOUT_5POINT1,                      (121<<16) | 6}, //< kCAFChannelLayoutTag_MPEG_5_1_A
     { AV_CH_LAYOUT_7POINT1,                      (128<<16) | 8}, //< kCAFChannelLayoutTag_MPEG_7_1_C
     { AV_CH_LAYOUT_7POINT1_WIDE,                 (126<<16) | 8}, //< kCAFChannelLayoutTag_MPEG_7_1_A
+    { AV_CH_LAYOUT_5POINT1_BACK|AV_CH_LAYOUT_STEREO_DOWNMIX, (130<<16) | 8}, //< kCAFChannelLayoutTag_SMPTE_DTV
     { AV_CH_LAYOUT_STEREO|AV_CH_LOW_FREQUENCY,   (133<<16) | 3}, //< kCAFChannelLayoutTag_DVD_4
     { AV_CH_LAYOUT_2_1|AV_CH_LOW_FREQUENCY,      (134<<16) | 4}, //< kCAFChannelLayoutTag_DVD_5
     { AV_CH_LAYOUT_QUAD|AV_CH_LOW_FREQUENCY,     (135<<16) | 4}, //< kCAFChannelLayoutTag_DVD_6
@@ -478,5 +482,33 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     if (!codec->channel_layout)
         av_log(s, AV_LOG_WARNING, "Unknown container channel layout.\n");
     avio_skip(pb, 8);
+}
+
+void ff_mov_write_chan(AVFormatContext *s, int64_t channel_layout,
+                       const char *chunk_type)
+{
+    AVIOContext *pb = s->pb;
+    const MovChannelLayout *layouts;
+    uint32_t layout_tag = 0;
+
+    if (!channel_layout)
+        return;
+
+    for (layouts = mov_channel_layout; layouts->channel_layout; layouts++)
+        if (channel_layout == layouts->channel_layout) {
+            layout_tag = layouts->layout_tag;
+            break;
+        }
+
+    ffio_wfourcc(pb, chunk_type);
+    avio_wb64(pb, 12);             //< mChunkSize
+    if (layout_tag) {
+        avio_wb32(pb, layout_tag); //< mChannelLayoutTag
+        avio_wb32(pb, 0);          //< mChannelBitmap
+    } else {
+        avio_wb32(pb, 0x10000);    //< kCAFChannelLayoutTag_UseChannelBitmap
+        avio_wb32(pb, channel_layout);
+    }
+    avio_wb32(pb, 0);              //< mNumberChannelDescriptions
 }
 

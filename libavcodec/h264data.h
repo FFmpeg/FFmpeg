@@ -36,7 +36,7 @@
 
 
 static const uint8_t golomb_to_pict_type[5]=
-{FF_P_TYPE, FF_B_TYPE, FF_I_TYPE, FF_SP_TYPE, FF_SI_TYPE};
+{AV_PICTURE_TYPE_P, AV_PICTURE_TYPE_B, AV_PICTURE_TYPE_I, AV_PICTURE_TYPE_SP, AV_PICTURE_TYPE_SI};
 
 static const uint8_t golomb_to_intra4x4_cbp[48]={
  47, 31, 15,  0, 23, 27, 29, 30,  7, 11, 13, 14, 39, 43, 45, 46,

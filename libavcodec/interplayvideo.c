@@ -1033,6 +1033,9 @@ static av_cold int ipvideo_decode_init(AVCodecContext *avctx)
     /* decoding map contains 4 bits of information per 8x8 block */
     s->decoding_map_size = avctx->width * avctx->height / (8 * 8 * 2);
 
+    avcodec_get_frame_defaults(&s->second_last_frame);
+    avcodec_get_frame_defaults(&s->last_frame);
+    avcodec_get_frame_defaults(&s->current_frame);
     s->current_frame.data[0] = s->last_frame.data[0] =
     s->second_last_frame.data[0] = NULL;
 

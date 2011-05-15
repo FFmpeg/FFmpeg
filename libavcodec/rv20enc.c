@@ -47,7 +47,7 @@ void rv20_encode_picture_header(MpegEncContext *s, int picture_number){
     assert(s->modified_quant==1);
     assert(s->loop_filter==1);
 
-    s->h263_aic= s->pict_type == FF_I_TYPE;
+    s->h263_aic= s->pict_type == AV_PICTURE_TYPE_I;
     if(s->h263_aic){
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_aic_dc_scale_table;

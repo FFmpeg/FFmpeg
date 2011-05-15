@@ -74,7 +74,7 @@ static int bmp_encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_s
     uint8_t *ptr;
     unsigned char* buf0 = buf;
     *p = *pict;
-    p->pict_type= FF_I_TYPE;
+    p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
     switch (avctx->pix_fmt) {
     case PIX_FMT_RGB565:

@@ -358,9 +358,9 @@ static int storeframe(AVCodecContext *avctx, struct FrameListData *cx_frame,
         coded_frame->key_frame = !!(cx_frame->flags & VPX_FRAME_IS_KEY);
 
         if (coded_frame->key_frame)
-            coded_frame->pict_type = FF_I_TYPE;
+            coded_frame->pict_type = AV_PICTURE_TYPE_I;
         else
-            coded_frame->pict_type = FF_P_TYPE;
+            coded_frame->pict_type = AV_PICTURE_TYPE_P;
     } else {
         av_log(avctx, AV_LOG_ERROR,
                "Compressed frame larger than storage provided! (%zu/%d)\n",

@@ -136,6 +136,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 
     l->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_YUV422P;
+    avcodec_get_frame_defaults(&l->pic);
 
     code_vlc.table = code_table;
     code_vlc.table_allocated = 1 << CODE_VLC_BITS;

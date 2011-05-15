@@ -33,6 +33,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_H264,         MKTAG('X', '2', '6', '4') },
     { CODEC_ID_H264,         MKTAG('x', '2', '6', '4') },
     { CODEC_ID_H264,         MKTAG('a', 'v', 'c', '1') },
+    { CODEC_ID_H264,         MKTAG('D', 'A', 'V', 'C') },
     { CODEC_ID_H264,         MKTAG('V', 'S', 'S', 'H') },
     { CODEC_ID_H263,         MKTAG('H', '2', '6', '3') },
     { CODEC_ID_H263,         MKTAG('X', '2', '6', '3') },
@@ -442,7 +443,7 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     if(waveformatextensible) {                                    /* write WAVEFORMATEXTENSIBLE extensions */
         hdrsize += 22;
         avio_wl16(pb, riff_extradata - riff_extradata_start + 22); /* 22 is WAVEFORMATEXTENSIBLE size */
-        avio_wl16(pb, enc->bits_per_coded_sample);                 /* ValidBitsPerSample || SamplesPerBlock || Reserved */
+        avio_wl16(pb, bps);                                        /* ValidBitsPerSample || SamplesPerBlock || Reserved */
         avio_wl32(pb, enc->channel_layout);                        /* dwChannelMask */
         avio_wl32(pb, enc->codec_tag);                             /* GUID + next 3 */
         avio_wl32(pb, 0x00100000);
@@ -603,6 +604,7 @@ void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssiz
         *au_scale=stream->frame_size;
         *au_rate= stream->sample_rate;
     }else if(stream->codec_type == AVMEDIA_TYPE_VIDEO ||
+             stream->codec_type == AVMEDIA_TYPE_DATA ||
              stream->codec_type == AVMEDIA_TYPE_SUBTITLE){
         *au_scale= stream->time_base.num;
         *au_rate = stream->time_base.den;

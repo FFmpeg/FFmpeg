@@ -54,11 +54,14 @@ typedef struct {
 
 #define OFFSET(x) offsetof(HTTPContext, x)
 static const AVOption options[] = {
-{"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), FF_OPT_TYPE_INT64, 0, -1, 0 }, /* Default to 0, for chunked POSTs */
+{"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), FF_OPT_TYPE_INT64, {.dbl = 0}, -1, 0 }, /* Default to 0, for chunked POSTs */
 {NULL}
 };
 static const AVClass httpcontext_class = {
-    "HTTP", av_default_item_name, options, LIBAVUTIL_VERSION_INT
+    .class_name     = "HTTP",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
 };
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,

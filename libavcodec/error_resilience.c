@@ -381,6 +381,14 @@ static void guess_mv(MpegEncContext *s){
         fixed[mb_xy]= f;
         if(f==MV_FROZEN)
             num_avail++;
+        else if(s->last_picture.data[0] && s->last_picture.motion_val[0]){
+            const int mb_y= mb_xy / s->mb_stride;
+            const int mb_x= mb_xy % s->mb_stride;
+            const int mot_index= (mb_x + mb_y*mot_stride) * mot_step;
+            s->current_picture.motion_val[0][mot_index][0]= s->last_picture.motion_val[0][mot_index][0];
+            s->current_picture.motion_val[0][mot_index][1]= s->last_picture.motion_val[0][mot_index][1];
+            s->current_picture.ref_index[0][4*mb_xy]      = s->last_picture.ref_index[0][4*mb_xy];
+        }
     }
 
     if((!(s->avctx->error_concealment&FF_EC_GUESS_MVS)) || num_avail <= mb_width/2){
@@ -639,7 +647,7 @@ static int is_intra_more_likely(MpegEncContext *s){
     if(undamaged_count < 5) return 0; //almost all MBs damaged -> use temporal prediction
 
     //prevent dsp.sad() check, that requires access to the image
-    if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration && s->pict_type == FF_I_TYPE)
+    if(CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration && s->pict_type == AV_PICTURE_TYPE_I)
         return 1;
 
     skip_amount= FFMAX(undamaged_count/50, 1); //check only upto 50 MBs
@@ -658,11 +666,12 @@ static int is_intra_more_likely(MpegEncContext *s){
             j++;
             if((j%skip_amount) != 0) continue; //skip a few to speed things up
 
-            if(s->pict_type==FF_I_TYPE){
+            if(s->pict_type==AV_PICTURE_TYPE_I){
                 uint8_t *mb_ptr     = s->current_picture.data[0] + mb_x*16 + mb_y*16*s->linesize;
                 uint8_t *last_mb_ptr= s->last_picture.data   [0] + mb_x*16 + mb_y*16*s->linesize;
 
                 is_intra_likely += s->dsp.sad[0](NULL, last_mb_ptr, mb_ptr                    , s->linesize, 16);
+                // FIXME need await_progress() here
                 is_intra_likely -= s->dsp.sad[0](NULL, last_mb_ptr, last_mb_ptr+s->linesize*16, s->linesize, 16);
             }else{
                 if(IS_INTRA(s->current_picture.mb_type[mb_xy]))
@@ -977,7 +986,7 @@ void ff_er_frame_end(MpegEncContext *s){
     }
 
     /* guess MVs */
-    if(s->pict_type==FF_B_TYPE){
+    if(s->pict_type==AV_PICTURE_TYPE_B){
         for(mb_y=0; mb_y<s->mb_height; mb_y++){
             for(mb_x=0; mb_x<s->mb_width; mb_x++){
                 int xy= mb_x*2 + mb_y*2*s->b8_stride;
@@ -1000,6 +1009,7 @@ void ff_er_frame_end(MpegEncContext *s){
                     int time_pp= s->pp_time;
                     int time_pb= s->pb_time;
 
+                    // FIXME await_progress here
                     s->mv[0][0][0] = s->next_picture.motion_val[0][xy][0]*time_pb/time_pp;
                     s->mv[0][0][1] = s->next_picture.motion_val[0][xy][1]*time_pb/time_pp;
                     s->mv[1][0][0] = s->next_picture.motion_val[0][xy][0]*(time_pb - time_pp)/time_pp;
@@ -1114,7 +1124,7 @@ ec_clean:
         const int mb_xy= s->mb_index2xy[i];
         int error= s->error_status_table[mb_xy];
 
-        if(s->pict_type!=FF_B_TYPE && (error&(DC_ERROR|MV_ERROR|AC_ERROR))){
+        if(s->pict_type!=AV_PICTURE_TYPE_B && (error&(DC_ERROR|MV_ERROR|AC_ERROR))){
             s->mbskip_table[mb_xy]=0;
         }
         s->mbintra_table[mb_xy]=1;

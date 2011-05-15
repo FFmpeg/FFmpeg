@@ -6,7 +6,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 FFLIBS-$(CONFIG_MP_FILTER) += avcodec
 
-HEADERS = avfilter.h avfiltergraph.h
+HEADERS = avcodec.h avfilter.h avfiltergraph.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
@@ -15,6 +15,8 @@ OBJS = allfilters.o                                                     \
        drawutils.o                                                      \
        formats.o                                                        \
        graphparser.o                                                    \
+
+OBJS-$(CONFIG_AVCODEC)                       += avcodec.o
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 

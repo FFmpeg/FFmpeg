@@ -143,7 +143,7 @@ const char* av_default_item_name(void* ctx);
 #ifdef DEBUG
 #    define av_dlog(pctx, ...) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__)
 #else
-#    define av_dlog(pctx, ...)
+#    define av_dlog(pctx, ...) do { if (0) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__); } while (0)
 #endif
 
 /**

@@ -19,8 +19,8 @@ do_video_filter() {
     filters=$2
     shift 2
     printf '%-20s' $label >>$logfile
-    run_ffmpeg -f image2 -vcodec pgmyuv -i $raw_src    \
-        -vf "$filters" -vcodec rawvideo $* -f nut md5: >>$logfile
+    run_ffmpeg $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src    \
+        $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5: >>$logfile
 }
 
 do_lavfi() {
@@ -55,7 +55,7 @@ do_lavfi_pixfmts(){
     $ffmpeg -pix_fmts list 2>/dev/null | sed -ne '9,$p' | grep '^\..\.' | cut -d' ' -f2 | sort >$exclude_fmts
     $showfiltfmts scale | awk -F '[ \r]' '/^OUTPUT/{ print $3 }' | sort | comm -23 - $exclude_fmts >$out_fmts
 
-    pix_fmts=$($showfiltfmts $filter | awk -F '[ \r]' '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
+    pix_fmts=$($showfiltfmts $filter $filter_args | awk -F '[ \r]' '/^INPUT/{ print $3 }' | sort | comm -12 - $out_fmts)
     for pix_fmt in $pix_fmts; do
         do_video_filter $pix_fmt "slicify=random,format=$pix_fmt,$filter=$filter_args" -pix_fmt $pix_fmt
     done

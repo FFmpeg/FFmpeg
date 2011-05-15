@@ -47,6 +47,8 @@
 #define RSHIFT(a,b) ((a) > 0 ? ((a) + ((1<<(b))>>1))>>(b) : ((a) + ((1<<(b))>>1)-1)>>(b))
 /* assume b>0 */
 #define ROUNDED_DIV(a,b) (((a)>0 ? (a) + ((b)>>1) : (a) - ((b)>>1))/(b))
+#define FFUDIV(a,b) (((a)>0 ?(a):(a)-(b)+1) / (b))
+#define FFUMOD(a,b) ((a)-(b)*FFUDIV(a,b))
 #define FFABS(a) ((a) >= 0 ? (a) : (-(a)))
 #define FFSIGN(a) ((a) > 0 ? 1 : -1)
 
@@ -167,6 +169,18 @@ static av_always_inline av_const int32_t av_clipl_int32_c(int64_t a)
 {
     if ((a+0x80000000u) & ~UINT64_C(0xFFFFFFFF)) return (a>>63) ^ 0x7FFFFFFF;
     else                                         return a;
+}
+
+/**
+ * Clip a signed integer to an unsigned power of two range.
+ * @param  a value to clip
+ * @param  p bit position to clip at
+ * @return clipped value
+ */
+static av_always_inline av_const unsigned av_clip_uintp2_c(int a, int p)
+{
+    if (a & ~((1<<p) - 1)) return -a >> 31 & ((1<<p) - 1);
+    else                   return  a;
 }
 
 /**
@@ -361,6 +375,9 @@ static av_always_inline av_const int av_popcount_c(uint32_t x)
 #endif
 #ifndef av_clipl_int32
 #   define av_clipl_int32   av_clipl_int32_c
+#endif
+#ifndef av_clip_uintp2
+#   define av_clip_uintp2   av_clip_uintp2_c
 #endif
 #ifndef av_clipf
 #   define av_clipf         av_clipf_c

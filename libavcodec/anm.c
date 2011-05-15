@@ -44,6 +44,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size != 16*8 + 4*256)
         return -1;
 
+    avcodec_get_frame_defaults(&s->frame);
     s->frame.reference = 1;
 
     buf = avctx->extradata + 16*8;

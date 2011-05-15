@@ -108,7 +108,7 @@
  */
 #define DELAYED_PIC_REF 4
 
-#define QP_MAX_MAX (51 + 2*6)           // The maximum supported qp
+#define QP_MAX_NUM (51 + 2*6)           // The maximum supported qp
 
 /* NAL unit types */
 enum {
@@ -266,7 +266,7 @@ typedef struct MMCO{
 typedef struct H264Context{
     MpegEncContext s;
     H264DSPContext h264dsp;
-    int pixel_shift;
+    int pixel_shift;    ///< 0 for 8-bit H264, 1 for high-bit-depth H264
     int chroma_qp[2]; //QPc
 
     int qp_thresh;      ///< QP threshold to skip loopfilter
@@ -355,8 +355,8 @@ typedef struct H264Context{
      */
     PPS pps; //FIXME move to Picture perhaps? (->no) do we need that?
 
-    uint32_t dequant4_buffer[6][QP_MAX_MAX+1][16]; //FIXME should these be moved down?
-    uint32_t dequant8_buffer[2][QP_MAX_MAX+1][64];
+    uint32_t dequant4_buffer[6][QP_MAX_NUM+1][16]; //FIXME should these be moved down?
+    uint32_t dequant8_buffer[2][QP_MAX_NUM+1][64];
     uint32_t (*dequant4_coeff[6])[16];
     uint32_t (*dequant8_coeff[2])[64];
 
@@ -594,17 +594,10 @@ typedef struct H264Context{
     // Timestamp stuff
     int sei_buffering_period_present;  ///< Buffering period SEI flag
     int initial_cpb_removal_delay[32]; ///< Initial timestamps for CPBs
-
-    //SVQ3 specific fields
-    int halfpel_flag;
-    int thirdpel_flag;
-    int unknown_svq3_flag;
-    int next_slice_index;
-    uint32_t svq3_watermark_key;
 }H264Context;
 
 
-extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_MAX+1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).
+extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).
 
 /**
  * Decode SEI
@@ -1118,7 +1111,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 }
                 AV_ZERO16(h->mvd_cache [list][scan8[4 ]]);
                 AV_ZERO16(h->mvd_cache [list][scan8[12]]);
-                if(h->slice_type_nos == FF_B_TYPE){
+                if(h->slice_type_nos == AV_PICTURE_TYPE_B){
                     fill_rectangle(&h->direct_cache[scan8[0]], 4, 4, 8, MB_TYPE_16x16>>1, 1);
 
                     if(IS_DIRECT(top_type)){
@@ -1255,7 +1248,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
         }
     }
 
-    if(h->slice_type_nos == FF_B_TYPE && CABAC){
+    if(h->slice_type_nos == AV_PICTURE_TYPE_B && CABAC){
         if(IS_8X8(mb_type)){
             uint8_t *direct_table = &h->direct_table[4*h->mb_xy];
             direct_table[1] = h->sub_mb_type[1]>>1;
@@ -1286,7 +1279,7 @@ static void av_unused decode_mb_skip(H264Context *h){
     if(MB_FIELD)
         mb_type|= MB_TYPE_INTERLACED;
 
-    if( h->slice_type_nos == FF_B_TYPE )
+    if( h->slice_type_nos == AV_PICTURE_TYPE_B )
     {
         // just for fill_caches. pred_direct_motion will set the real mb_type
         mb_type|= MB_TYPE_L0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;

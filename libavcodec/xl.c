@@ -60,7 +60,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    p->pict_type= FF_I_TYPE;
+    p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
     Y = a->pic.data[0];
@@ -121,8 +121,9 @@ static int decode_frame(AVCodecContext *avctx,
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
-//    VideoXLContext * const a = avctx->priv_data;
+    VideoXLContext * const a = avctx->priv_data;
 
+    avcodec_get_frame_defaults(&a->pic);
     avctx->pix_fmt= PIX_FMT_YUV411P;
 
     return 0;

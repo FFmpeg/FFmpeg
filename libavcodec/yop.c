@@ -92,6 +92,7 @@ static av_cold int yop_decode_init(AVCodecContext *avctx)
 
     avctx->pix_fmt = PIX_FMT_PAL8;
 
+    avcodec_get_frame_defaults(&s->frame);
     s->num_pal_colors = avctx->extradata[0];
     s->first_color[0] = avctx->extradata[1];
     s->first_color[1] = avctx->extradata[2];

@@ -210,7 +210,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     uint32_t *strip_offsets = NULL;
     int bytes_per_row;
     uint32_t res[2] = { 72, 1 };        // image resolution (72/1)
-    static const uint16_t bpp_tab[] = { 8, 8, 8, 8 };
+    uint16_t bpp_tab[] = { 8, 8, 8, 8 };
     int ret = -1;
     int is_yuv = 0;
     uint8_t *yuv_line = NULL;
@@ -221,7 +221,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     s->buf_size = buf_size;
 
     *p = *pict;
-    p->pict_type = FF_I_TYPE;
+    p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
     avctx->coded_frame= &s->picture;
 
@@ -255,12 +255,10 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         s->photometric_interpretation = 3;
         break;
     case PIX_FMT_MONOBLACK:
-        s->bpp = 1;
-        s->photometric_interpretation = 1;
-        break;
     case PIX_FMT_MONOWHITE:
         s->bpp = 1;
-        s->photometric_interpretation = 0;
+        s->photometric_interpretation = avctx->pix_fmt == PIX_FMT_MONOBLACK;
+        bpp_tab[0] = 1;
         break;
     case PIX_FMT_YUV420P:
     case PIX_FMT_YUV422P:
@@ -282,7 +280,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
         return -1;
     }
     if (!is_yuv)
-        s->bpp_tab_size = (s->bpp >> 3);
+        s->bpp_tab_size = ((s->bpp + 7) >> 3);
 
     if (s->compr == TIFF_DEFLATE || s->compr == TIFF_ADOBE_DEFLATE || s->compr == TIFF_LZW)
         //best choose for DEFLATE

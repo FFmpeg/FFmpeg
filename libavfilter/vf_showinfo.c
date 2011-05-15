@@ -59,7 +59,7 @@ static void end_frame(AVFilterLink *inlink)
            showinfo->frame,
            picref->pts, picref ->pts * av_q2d(inlink->time_base), picref->pos,
            av_pix_fmt_descriptors[picref->format].name,
-           picref->video->pixel_aspect.num, picref->video->pixel_aspect.den,
+           picref->video->sample_aspect_ratio.num, picref->video->sample_aspect_ratio.den,
            picref->video->w, picref->video->h,
            !picref->video->interlaced     ? 'P' :         /* Progressive  */
            picref->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */

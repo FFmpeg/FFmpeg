@@ -298,6 +298,8 @@ static av_cold int decode_init(AVCodecContext *avctx){
         av_log(avctx, AV_LOG_FATAL, "Missing required palette via palctrl\n");
         return -1;
     }
+    avcodec_get_frame_defaults(&a->pic);
+    avcodec_get_frame_defaults(&a->ref);
     a->avctx = avctx;
     avctx->pix_fmt= PIX_FMT_PAL8;
 

@@ -88,13 +88,12 @@ Configuration options:
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
   --disable-swscale        disable libswscale build
-  --enable-postproc        enable GPLed postprocessing support [no]
+  --disable-postproc       disable libpostproc build
   --disable-avfilter       disable video filter support [no]
   --disable-pthreads       disable pthreads [auto]
   --enable-w32threads      use Win32 threads [no]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
-  --disable-mpegaudio-hp   faster (but less accurate) MPEG audio decoding [no]
   --enable-gray            enable full grayscale support (slower color)
   --disable-swscale-alpha  disable alpha channel support in swscale
   --disable-fastdiv        disable table-based division
@@ -761,7 +760,7 @@ check_pkg_config(){
     headers="$2"
     funcs="$3"
     shift 3
-    $pkg_config --exists $pkg || return
+    $pkg_config --exists $pkg 2>/dev/null || return
     pkg_cflags=$($pkg_config --cflags $pkg)
     pkg_libs=$($pkg_config --libs $pkg)
     check_func_headers "$headers" "$funcs" $pkg_cflags $pkg_libs "$@" &&
@@ -957,7 +956,6 @@ CONFIG_LIST="
     mdct
     memalign_hack
     mlib
-    mpegaudio_hp
     network
     nonfree
     pic
@@ -1252,14 +1250,14 @@ aac_encoder_select="mdct sinewin"
 aac_latm_decoder_select="aac_decoder aac_latm_parser"
 ac3_decoder_select="mdct ac3dsp ac3_parser"
 ac3_encoder_select="mdct ac3dsp"
-ac3_fixed_encoder_select="ac3dsp"
+ac3_fixed_encoder_select="mdct ac3dsp"
 alac_encoder_select="lpc"
 amrnb_decoder_select="lsp"
 amrwb_decoder_select="lsp"
 atrac1_decoder_select="mdct sinewin"
 atrac3_decoder_select="mdct"
-binkaudio_dct_decoder_select="mdct rdft dct"
-binkaudio_rdft_decoder_select="mdct rdft"
+binkaudio_dct_decoder_select="mdct rdft dct sinewin"
+binkaudio_rdft_decoder_select="mdct rdft sinewin"
 cavs_decoder_select="golomb"
 cook_decoder_select="mdct sinewin"
 cscd_decoder_suggest="zlib"
@@ -1291,7 +1289,7 @@ h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_select="vaapi"
 h264_vdpau_decoder_select="vdpau h264_decoder"
-imc_decoder_select="fft mdct"
+imc_decoder_select="fft mdct sinewin"
 jpegls_decoder_select="golomb"
 jpegls_encoder_select="golomb"
 ljpeg_encoder_select="aandct"
@@ -1459,7 +1457,7 @@ alsa_outdev_deps="alsa_asoundlib_h"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
 dv1394_indev_deps="dv1394 dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
-jack_indev_deps="jack_jack_h"
+jack_indev_deps="jack_jack_h sem_timedwait"
 libdc1394_indev_deps="libdc1394"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
@@ -1481,7 +1479,7 @@ mmst_protocol_deps="network"
 rtmp_protocol_select="tcp_protocol"
 rtp_protocol_select="udp_protocol"
 tcp_protocol_deps="network"
-udp_protocol_deps="network"
+udp_protocol_deps="network pthreads"
 
 # filters
 blackframe_filter_deps="gpl"
@@ -1490,7 +1488,8 @@ drawtext_filter_deps="libfreetype"
 frei0r_filter_deps="frei0r dlopen strtok_r"
 frei0r_src_filter_deps="frei0r dlopen strtok_r"
 hqdn3d_filter_deps="gpl"
-mp_filter_deps="gpl"
+movie_filter_deps="avcodec avformat"
+mp_filter_deps="gpl avcodec"
 ocv_filter_deps="libopencv"
 scale_filter_deps="swscale"
 yadif_filter_deps="gpl"
@@ -1498,6 +1497,7 @@ yadif_filter_deps="gpl"
 # libraries
 avdevice_deps="avcodec avformat"
 avformat_deps="avcodec"
+postproc_deps="gpl"
 
 # programs
 ffmpeg_deps="avcodec avformat swscale"
@@ -1666,9 +1666,9 @@ enable ffmpeg
 enable ffplay
 enable ffprobe
 enable ffserver
-enable mpegaudio_hp
 enable network
 enable optimizations
+enable postproc
 enable protocols
 enable static
 enable stripping
@@ -1691,7 +1691,7 @@ LIB_INSTALL_EXTRA_CMD='$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
 
 CC_O='-o $@'
 
-host_cflags='-D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112 -O3 -g -Wall'
+host_cflags='-D_ISOC99_SOURCE -O3 -g -Wall'
 host_libs='-lm'
 
 target_path='$(CURDIR)'
@@ -1855,6 +1855,11 @@ sysinclude_default="${sysroot}/usr/include"
 set_default cc nm pkg_config strip sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
+
+if ! $pkg_config --version >/dev/null 2>&1; then
+    warn "$pkg_config not found, library detection may fail."
+    pkg_config=false
+fi
 
 exesuf() {
     case $1 in
@@ -2339,7 +2344,7 @@ if test "$?" != 0; then
     die "C compiler test failed."
 fi
 
-add_cppflags -D_ISOC99_SOURCE -D_POSIX_C_SOURCE=200112
+add_cppflags -D_ISOC99_SOURCE
 check_cflags -std=c99
 check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
@@ -2387,7 +2392,6 @@ case $target_os in
         disable symver
         oss_indev_extralibs="-lossaudio"
         oss_outdev_extralibs="-lossaudio"
-        add_cppflags -D_XOPEN_SOURCE=600
         ;;
     openbsd)
         enable malloc_aligned
@@ -2481,6 +2485,7 @@ case $target_os in
         enable dos_paths
         ;;
     linux)
+        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         enable dv1394
         ;;
     irix*)
@@ -2556,7 +2561,6 @@ die_license_disabled() {
 die_license_disabled gpl libx264
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
-die_license_disabled gpl postproc
 die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libfaac
@@ -2899,7 +2903,7 @@ enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
     "dirac_decoder_init dirac_encoder_init"
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
-enabled libfreetype && add_cflags $(pkg-config --cflags freetype2) && require libfreetype ft2build.h FT_Init_FreeType -lfreetype
+enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
 enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
@@ -2935,10 +2939,20 @@ if enabled libdc1394; then
     die "ERROR: No version of libdc1394 found "
 fi
 
-if check_pkg_config sdl SDL_version.h SDL_Linked_Version; then
+SDL_CONFIG="${cross_prefix}sdl-config"
+if "${SDL_CONFIG}" --version > /dev/null 2>&1; then
+    sdl_cflags=$("${SDL_CONFIG}" --cflags)
+    sdl_libs=$("${SDL_CONFIG}" --libs)
+    check_func_headers SDL.h SDL_Init $sdl_cflags $sdl_libs &&
     check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
     enable sdl &&
     check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
+else
+    if check_pkg_config sdl SDL_version.h SDL_Linked_Version; then
+        check_cpp_condition SDL.h "(SDL_MAJOR_VERSION<<16 | SDL_MINOR_VERSION<<8 | SDL_PATCHLEVEL) >= 0x010201" $sdl_cflags &&
+        enable sdl &&
+        check_struct SDL.h SDL_VideoInfo current_w $sdl_cflags && enable sdl_video_size
+    fi
 fi
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
@@ -2975,7 +2989,7 @@ check_header soundcard.h
 
 enabled_any alsa_indev alsa_outdev && check_lib2 alsa/asoundlib.h snd_pcm_htimestamp -lasound
 
-enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack
+enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack && check_func sem_timedwait
 
 enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
 
@@ -3017,6 +3031,7 @@ check_cflags -Wwrite-strings
 check_cflags -Wtype-limits
 check_cflags -Wundef
 check_cflags -Wmissing-prototypes
+check_cflags -Wno-pointer-to-int-cast
 enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags

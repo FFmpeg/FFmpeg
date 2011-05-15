@@ -161,12 +161,12 @@ yuv2yuvX_altivec_real(const int16_t *lumFilter, const int16_t **lumSrc, int lumF
 
             perm = vec_lvsl(0, chrSrc[j]);
             l1 = vec_ld(0, chrSrc[j]);
-            l1_V = vec_ld(2048 << 1, chrSrc[j]);
+            l1_V = vec_ld(VOFW << 1, chrSrc[j]);
 
             for (i = 0; i < (chrDstW - 7); i+=8) {
                 int offset = i << 2;
                 vector signed short l2 = vec_ld((i << 1) + 16, chrSrc[j]);
-                vector signed short l2_V = vec_ld(((i + 2048) << 1) + 16, chrSrc[j]);
+                vector signed short l2_V = vec_ld(((i + VOFW) << 1) + 16, chrSrc[j]);
 
                 vector signed int v1 = vec_ld(offset, u);
                 vector signed int v2 = vec_ld(offset + 16, u);
@@ -174,7 +174,7 @@ yuv2yuvX_altivec_real(const int16_t *lumFilter, const int16_t **lumSrc, int lumF
                 vector signed int v2_V = vec_ld(offset + 16, v);
 
                 vector signed short ls = vec_perm(l1, l2, perm); // chrSrc[j][i] ... chrSrc[j][i+7]
-                vector signed short ls_V = vec_perm(l1_V, l2_V, perm); // chrSrc[j][i+2048] ... chrSrc[j][i+2055]
+                vector signed short ls_V = vec_perm(l1_V, l2_V, perm); // chrSrc[j][i+VOFW] ... chrSrc[j][i+2055]
 
                 vector signed int i1 = vec_mule(vChrFilter, ls);
                 vector signed int i2 = vec_mulo(vChrFilter, ls);
@@ -201,7 +201,7 @@ yuv2yuvX_altivec_real(const int16_t *lumFilter, const int16_t **lumSrc, int lumF
             }
             for ( ; i < chrDstW; i++) {
                 u[i] += chrSrc[j][i] * chrFilter[j];
-                v[i] += chrSrc[j][i + 2048] * chrFilter[j];
+                v[i] += chrSrc[j][i + VOFW] * chrFilter[j];
             }
         }
         altivec_packIntArrayToCharArray(u, uDest, chrDstW);

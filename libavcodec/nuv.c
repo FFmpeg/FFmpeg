@@ -208,7 +208,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         return -1;
     }
 
-    c->pic.pict_type = keyframe ? FF_I_TYPE : FF_P_TYPE;
+    c->pic.pict_type = keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
     c->pic.key_frame = keyframe;
     // decompress/copy/whatever data
     switch (comptype) {

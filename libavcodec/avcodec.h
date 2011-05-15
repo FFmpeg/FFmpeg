@@ -241,6 +241,7 @@ enum CodecID {
     CODEC_ID_PCM_F64LE,
     CODEC_ID_PCM_BLURAY,
     CODEC_ID_PCM_LXF,
+    CODEC_ID_S302M,
 
     /* various ADPCM codecs */
     CODEC_ID_ADPCM_IMA_QT= 0x11000,
@@ -537,10 +538,11 @@ enum AVChromaLocation{
     AVCHROMA_LOC_NB           , ///< Not part of ABI
 };
 
+#if FF_API_FLAC_GLOBAL_OPTS
 /**
  * LPC analysis type
  */
-enum AVLPCType {
+attribute_deprecated enum AVLPCType {
     AV_LPC_TYPE_DEFAULT     = -1, ///< use the codec default LPC type
     AV_LPC_TYPE_NONE        =  0, ///< do not use LPC prediction or use all zero coefficients
     AV_LPC_TYPE_FIXED       =  1, ///< fixed LPC coefficients
@@ -548,6 +550,7 @@ enum AVLPCType {
     AV_LPC_TYPE_CHOLESKY    =  3, ///< Cholesky factorization
     AV_LPC_TYPE_NB              , ///< Not part of ABI
 };
+#endif
 
 enum AVAudioServiceType {
     AV_AUDIO_SERVICE_TYPE_MAIN              = 0,
@@ -1025,6 +1028,36 @@ typedef struct AVPanScan{
      * - decoding: set by libavcodec, read by user.\
      */\
     int64_t best_effort_timestamp;\
+\
+    /**\
+     * reordered pos from the last AVPacket that has been input into the decoder\
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    int64_t pkt_pos;\
+\
+    /**\
+     * reordered sample aspect ratio for the video frame, 0/1 if unknown\unspecified
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    AVRational sample_aspect_ratio;\
+\
+    /**\
+     * width and height of the video frame\
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    int width, height;\
+\
+    /**\
+     * format of the frame, -1 if unknown or unset\
+     * It should be cast to the corresponding enum (enum PixelFormat\
+     * for video, enum AVSampleFormat for audio)\
+     * - encoding: unused\
+     * - decoding: Read by user.\
+     */\
+    int format;\
 
 
 #define FF_QSCALE_TYPE_MPEG1 0
@@ -2561,7 +2594,6 @@ typedef struct AVCodecContext {
      * @deprecated Deprecated in favor of lpc_type and lpc_passes.
      */
     int use_lpc;
-#endif
 
     /**
      * LPC coefficient precision - used by FLAC encoder
@@ -2569,6 +2601,7 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     int lpc_coeff_precision;
+#endif
 
     /**
      * - encoding: Set by user.
@@ -2582,24 +2615,35 @@ typedef struct AVCodecContext {
      */
     int max_prediction_order;
 
+#if FF_API_FLAC_GLOBAL_OPTS
+    /**
+     * @defgroup flac_opts FLAC options
+     * @deprecated Use FLAC encoder private options instead.
+     * @{
+     */
+
     /**
      * search method for selecting prediction order
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int prediction_order_method;
+    attribute_deprecated int prediction_order_method;
 
     /**
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int min_partition_order;
+    attribute_deprecated int min_partition_order;
 
     /**
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int max_partition_order;
+    attribute_deprecated int max_partition_order;
+    /**
+     * @}
+     */
+#endif
 
     /**
      * GOP timecode frame start number, in non drop frame format
@@ -2817,19 +2861,21 @@ typedef struct AVCodecContext {
 
     int log_level_offset;
 
+#if FF_API_FLAC_GLOBAL_OPTS
     /**
      * Determines which LPC analysis algorithm to use.
      * - encoding: Set by user
      * - decoding: unused
      */
-    enum AVLPCType lpc_type;
+    attribute_deprecated enum AVLPCType lpc_type;
 
     /**
      * Number of passes to use for Cholesky factorization during LPC analysis
      * - encoding: Set by user
      * - decoding: unused
      */
-    int lpc_passes;
+    attribute_deprecated int lpc_passes;
+#endif
 
     /**
      * Number of slices.
@@ -4059,7 +4105,7 @@ typedef struct AVCodecParserContext {
     /*!
      * Set by parser to 1 for key frames and 0 for non-key frames.
      * It is initialized to -1, so if the parser doesn't set this flag,
-     * old-style fallback using FF_I_TYPE picture type as key frames
+     * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames
      * will be used.
      */
     int key_frame;

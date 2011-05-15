@@ -94,6 +94,7 @@ static av_cold int cinvideo_decode_init(AVCodecContext *avctx)
     cin->avctx = avctx;
     avctx->pix_fmt = PIX_FMT_PAL8;
 
+    avcodec_get_frame_defaults(&cin->frame);
     cin->frame.data[0] = NULL;
 
     cin->bitmap_size = avctx->width * avctx->height;

@@ -266,6 +266,8 @@ static int qdm2_parse_packet(AVFormatContext *s, PayloadContext *qdm,
              * to the decoder that it is OK to initialize. */
             st->codec->codec_id = CODEC_ID_QDM2;
         }
+        if (st->codec->codec_id == CODEC_ID_NONE)
+            return AVERROR(EAGAIN);
 
         /* subpackets */
         while (end - p >= 4) {

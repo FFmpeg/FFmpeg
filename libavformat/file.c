@@ -51,6 +51,20 @@ static int file_get_handle(URLContext *h)
     return (intptr_t) h->priv_data;
 }
 
+static int file_check(URLContext *h, int mask)
+{
+    struct stat st;
+    int ret = stat(h->filename, &st);
+    if (ret < 0)
+        return AVERROR(errno);
+
+    ret |= st.st_mode&S_IRUSR ? mask&AVIO_RDONLY : 0;
+    ret |= st.st_mode&S_IWUSR ? mask&AVIO_WRONLY : 0;
+    ret |= st.st_mode&S_IWUSR && st.st_mode&S_IRUSR ? mask&AVIO_RDWR : 0;
+
+    return ret;
+}
+
 #if CONFIG_FILE_PROTOCOL
 
 static int file_open(URLContext *h, const char *filename, int flags)
@@ -93,20 +107,6 @@ static int file_close(URLContext *h)
 {
     int fd = (intptr_t) h->priv_data;
     return close(fd);
-}
-
-static int file_check(URLContext *h, int mask)
-{
-    struct stat st;
-    int ret = stat(h->filename, &st);
-    if (ret < 0)
-        return AVERROR(errno);
-
-    ret |= st.st_mode&S_IRUSR ? mask&AVIO_RDONLY : 0;
-    ret |= st.st_mode&S_IWUSR ? mask&AVIO_WRONLY : 0;
-    ret |= st.st_mode&S_IWUSR && st.st_mode&S_IRUSR ? mask&AVIO_RDWR : 0;
-
-    return ret;
 }
 
 URLProtocol ff_file_protocol = {

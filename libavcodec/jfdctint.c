@@ -181,9 +181,9 @@
 
 
 static av_always_inline void row_fdct(DCTELEM * data){
-  int_fast32_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
-  int_fast32_t tmp10, tmp11, tmp12, tmp13;
-  int_fast32_t z1, z2, z3, z4, z5;
+  int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+  int tmp10, tmp11, tmp12, tmp13;
+  int z1, z2, z3, z4, z5;
   DCTELEM *dataptr;
   int ctr;
 
@@ -259,9 +259,9 @@ static av_always_inline void row_fdct(DCTELEM * data){
 GLOBAL(void)
 ff_jpeg_fdct_islow (DCTELEM * data)
 {
-  int_fast32_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
-  int_fast32_t tmp10, tmp11, tmp12, tmp13;
-  int_fast32_t z1, z2, z3, z4, z5;
+  int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+  int tmp10, tmp11, tmp12, tmp13;
+  int z1, z2, z3, z4, z5;
   DCTELEM *dataptr;
   int ctr;
 
@@ -345,9 +345,9 @@ ff_jpeg_fdct_islow (DCTELEM * data)
 GLOBAL(void)
 ff_fdct248_islow (DCTELEM * data)
 {
-  int_fast32_t tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
-  int_fast32_t tmp10, tmp11, tmp12, tmp13;
-  int_fast32_t z1;
+  int tmp0, tmp1, tmp2, tmp3, tmp4, tmp5, tmp6, tmp7;
+  int tmp10, tmp11, tmp12, tmp13;
+  int z1;
   DCTELEM *dataptr;
   int ctr;
 

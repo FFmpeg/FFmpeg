@@ -38,52 +38,6 @@ typedef enum {
     MASK_LASSO
 } mask_type;
 
-/**
- * Gets the actual extra data after video preperties which contains
- * the raw CMAP palette data beyond the IFF extra context.
- *
- * @param avctx the AVCodecContext where to extract raw palette data from
- * @return pointer to raw CMAP palette data
- */
-static av_always_inline uint8_t *get_palette_data(const AVCodecContext *const avctx) {
-    return avctx->extradata + AV_RB16(avctx->extradata);
-}
-
-/**
- * Gets the size of CMAP palette data beyond the IFF extra context.
- * Please note that any value < 2 of IFF extra context or
- * raw extradata < 0 is considered as illegal extradata.
- *
- * @param avctx the AVCodecContext where to extract palette data size from
- * @return size of raw palette data in bytes
- */
-static av_always_inline int get_palette_size(const AVCodecContext *const avctx) {
-    return avctx->extradata_size - AV_RB16(avctx->extradata);
-}
-
-/**
- * Gets the actual raw image data after video properties which
- * contains the raw image data beyond the IFF extra context.
- *
- * @param avpkt the AVPacket where to extract raw image data from
- * @return pointer to raw image data
- */
-static av_always_inline uint8_t *get_image_data(const AVPacket *const avpkt) {
-    return avpkt->data + AV_RB16(avpkt->data);
-}
-
-/**
- * Gets the size of raw image data beyond the IFF extra context.
- * Please note that any value < 2 of either IFF extra context
- * or raw image data is considered as an illegal packet.
- *
- * @param avpkt the AVPacket where to extract image data size from
- * @return size of raw image data in bytes
- */
-static av_always_inline int get_image_size(const AVPacket *const avpkt) {
-    return avpkt->size - AV_RB16(avpkt->data);
-}
-
 typedef struct {
     AVFrame frame;
     int planesize;
@@ -184,7 +138,8 @@ static av_always_inline uint32_t gray2rgb(const uint32_t x) {
 static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
     int count, i;
-    const uint8_t *const extradata = get_palette_data(avctx);
+    const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
+    int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
 
     if (avctx->bits_per_coded_sample > 8) {
         av_log(avctx, AV_LOG_ERROR, "bit_per_coded_sample > 8 not supported\n");
@@ -193,10 +148,10 @@ static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 
     count = 1 << avctx->bits_per_coded_sample;
     // If extradata is smaller than actually needed, fill the remaining with black.
-    count = FFMIN(get_palette_size(avctx) / 3, count);
+    count = FFMIN(palette_size / 3, count);
     if (count) {
         for (i=0; i < count; i++) {
-            pal[i] = 0xFF000000 | AV_RB24(extradata + i*3);
+            pal[i] = 0xFF000000 | AV_RB24(palette + i*3);
         }
     } else { // Create gray-scale color palette for bps < 8
         count = 1 << avctx->bits_per_coded_sample;
@@ -221,15 +176,19 @@ static int extract_header(AVCodecContext *const avctx,
     const uint8_t *buf;
     unsigned buf_size;
     IffContext *s = avctx->priv_data;
+    int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
+
     if (avpkt) {
+        int image_size;
         if (avpkt->size < 2)
             return AVERROR_INVALIDDATA;
+        image_size = avpkt->size - AV_RB16(avpkt->data);
         buf = avpkt->data;
         buf_size = bytestream_get_be16(&buf);
-        if (buf_size <= 1 || get_image_size(avpkt) <= 1) {
+        if (buf_size <= 1 || image_size <= 1) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid image size received: %u -> image data offset: %d\n",
-                   buf_size, get_image_size(avpkt));
+                   buf_size, image_size);
             return AVERROR_INVALIDDATA;
         }
     } else {
@@ -237,10 +196,10 @@ static int extract_header(AVCodecContext *const avctx,
             return AVERROR_INVALIDDATA;
         buf = avctx->extradata;
         buf_size = bytestream_get_be16(&buf);
-        if (buf_size <= 1 || get_palette_size(avctx) < 0) {
+        if (buf_size <= 1 || palette_size < 0) {
             av_log(avctx, AV_LOG_ERROR,
                    "Invalid palette size received: %u -> palette data offset: %d\n",
-                   buf_size, get_palette_size(avctx));
+                   buf_size, palette_size);
             return AVERROR_INVALIDDATA;
         }
     }
@@ -271,8 +230,8 @@ static int extract_header(AVCodecContext *const avctx,
         av_freep(&s->ham_palbuf);
 
         if (s->ham) {
-            int i, count = FFMIN(get_palette_size(avctx) / 3, 1 << s->ham);
-            const uint8_t *const extradata = get_palette_data(avctx);
+            int i, count = FFMIN(palette_size / 3, 1 << s->ham);
+            const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
             s->ham_buf = av_malloc((s->planesize * 8) + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!s->ham_buf)
                 return AVERROR(ENOMEM);
@@ -287,7 +246,7 @@ static int extract_header(AVCodecContext *const avctx,
                 // prefill with black and palette and set HAM take direct value mask to zero
                 memset(s->ham_palbuf, 0, (1 << s->ham) * 2 * sizeof (uint32_t));
                 for (i=0; i < count; i++) {
-                    s->ham_palbuf[i*2+1] = AV_RL24(extradata + i*3);
+                    s->ham_palbuf[i*2+1] = AV_RL24(palette + i*3);
                 }
                 count = 1 << s->ham;
             } else { // HAM with grayscale color palette
@@ -322,9 +281,9 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int err;
 
     if (avctx->bits_per_coded_sample <= 8) {
+        int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
         avctx->pix_fmt = (avctx->bits_per_coded_sample < 8) ||
-                         (avctx->extradata_size >= 2 && get_palette_size(avctx)) ? PIX_FMT_PAL8
-                                                                                 : PIX_FMT_GRAY8;
+                         (avctx->extradata_size >= 2 && palette_size) ? PIX_FMT_PAL8 : PIX_FMT_GRAY8;
     } else if (avctx->bits_per_coded_sample <= 32) {
         avctx->pix_fmt = PIX_FMT_BGR32;
     } else {
@@ -339,6 +298,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
 
     s->bpp = avctx->bits_per_coded_sample;
+    avcodec_get_frame_defaults(&s->frame);
 
     if ((err = extract_header(avctx, NULL)) < 0)
         return err;
@@ -458,8 +418,8 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
                             AVPacket *avpkt)
 {
     IffContext *s = avctx->priv_data;
-    const uint8_t *buf = avpkt->size >= 2 ? get_image_data(avpkt) : NULL;
-    const int buf_size = avpkt->size >= 2 ? get_image_size(avpkt) : 0;
+    const uint8_t *buf = avpkt->size >= 2 ? avpkt->data + AV_RB16(avpkt->data) : NULL;
+    const int buf_size = avpkt->size >= 2 ? avpkt->size - AV_RB16(avpkt->data) : 0;
     const uint8_t *buf_end = buf+buf_size;
     int y, plane, res;
 
@@ -535,8 +495,8 @@ static int decode_frame_byterun1(AVCodecContext *avctx,
                             AVPacket *avpkt)
 {
     IffContext *s = avctx->priv_data;
-    const uint8_t *buf = avpkt->size >= 2 ? get_image_data(avpkt) : NULL;
-    const int buf_size = avpkt->size >= 2 ? get_image_size(avpkt) : 0;
+    const uint8_t *buf = avpkt->size >= 2 ? avpkt->data + AV_RB16(avpkt->data) : NULL;
+    const int buf_size = avpkt->size >= 2 ? avpkt->size - AV_RB16(avpkt->data) : 0;
     const uint8_t *buf_end = buf+buf_size;
     int y, plane, res;
 

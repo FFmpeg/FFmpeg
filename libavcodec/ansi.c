@@ -81,6 +81,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->fg          = DEFAULT_FG_COLOR;
     s->bg          = DEFAULT_BG_COLOR;
 
+    avcodec_get_frame_defaults(&s->frame);
     if (!avctx->width || !avctx->height)
         avcodec_set_dimensions(avctx, 80<<3, 25<<4);
 
@@ -226,7 +227,7 @@ static int execute_code(AVCodecContext * avctx, int c)
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return ret;
             }
-            s->frame.pict_type           = FF_I_TYPE;
+            s->frame.pict_type           = AV_PICTURE_TYPE_I;
             s->frame.palette_has_changed = 1;
             memcpy(s->frame.data[1], ff_cga_palette, 16 * 4);
             erase_screen(avctx);
@@ -323,7 +324,7 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    s->frame.pict_type           = FF_I_TYPE;
+    s->frame.pict_type           = AV_PICTURE_TYPE_I;
     s->frame.palette_has_changed = 1;
     memcpy(s->frame.data[1], ff_cga_palette, 16 * 4);
 

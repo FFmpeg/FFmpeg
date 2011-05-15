@@ -131,4 +131,13 @@ char *av_strdup(const char *s) av_malloc_attrib;
  */
 void av_freep(void *ptr);
 
+/**
+ * Add an element to a dynamic array.
+ *
+ * @param tab_ptr Pointer to the array.
+ * @param nb_ptr  Pointer to the number of elements in the array.
+ * @param elem    Element to be added.
+ */
+void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem);
+
 #endif /* AVUTIL_MEM_H */

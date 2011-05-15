@@ -143,7 +143,7 @@ OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_FFVHUFF_ENCODER)         += huffyuv.o
 OBJS-$(CONFIG_FLAC_DECODER)            += flacdec.o flacdata.o flac.o vorbis_data.o
-OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o flac.o
+OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o flac.o vorbis_data.o
 OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
 OBJS-$(CONFIG_FLASHSV_ENCODER)         += flashsvenc.o
 OBJS-$(CONFIG_FLASHSV2_ENCODER)        += flashsv2enc.o
@@ -276,8 +276,9 @@ OBJS-$(CONFIG_MSMPEG4V3_ENCODER)       += msmpeg4.o msmpeg4data.o h263dec.o \
                                           h263.o ituh263dec.o mpeg4videodec.o
 OBJS-$(CONFIG_MSRLE_DECODER)           += msrle.o msrledec.o
 OBJS-$(CONFIG_MSVIDEO1_DECODER)        += msvideo1.o
+OBJS-$(CONFIG_MSVIDEO1_ENCODER)        += msvideo1enc.o elbg.o
 OBJS-$(CONFIG_MSZH_DECODER)            += lcldec.o
-OBJS-$(CONFIG_MXPEG_DECODER)           += mxpegdec.o
+OBJS-$(CONFIG_MXPEG_DECODER)           += mxpegdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_NELLYMOSER_DECODER)      += nellymoserdec.o nellymoser.o
 OBJS-$(CONFIG_NELLYMOSER_ENCODER)      += nellymoserenc.o nellymoser.o
 OBJS-$(CONFIG_NUV_DECODER)             += nuv.o rtjpeg.o
@@ -329,6 +330,7 @@ OBJS-$(CONFIG_RV30_DECODER)            += rv30.o rv34.o rv30dsp.o        \
                                           mpegvideo.o error_resilience.o
 OBJS-$(CONFIG_RV40_DECODER)            += rv40.o rv34.o rv40dsp.o        \
                                           mpegvideo.o error_resilience.o
+OBJS-$(CONFIG_S302M_DECODER)           += s302m.o
 OBJS-$(CONFIG_SGI_DECODER)             += sgidec.o
 OBJS-$(CONFIG_SGI_ENCODER)             += sgienc.o rle.o
 OBJS-$(CONFIG_SHORTEN_DECODER)         += shorten.o
@@ -531,30 +533,32 @@ OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_DV_DEMUXER)              += dvdata.o
 OBJS-$(CONFIG_DV_MUXER)                += dvdata.o
-OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o
-OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o flac.o
+OBJS-$(CONFIG_FLAC_DEMUXER)            += flacdec.o flacdata.o flac.o vorbis_data.o
+OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o flac.o vorbis_data.o
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
 OBJS-$(CONFIG_IFF_DEMUXER)             += iff.o
-OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o \
+OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o vorbis_data.o \
                                           flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MATROSKA_MUXER)          += xiph.o mpeg4audio.o \
                                           flacdec.o flacdata.o flac.o \
-                                          mpegaudiodata.o
+                                          mpegaudiodata.o vorbis_data.o
 OBJS-$(CONFIG_MOV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MOV_MUXER)               += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_MPEGTS_MUXER)            += mpegvideo.o mpeg4audio.o
 OBJS-$(CONFIG_MPEGTS_DEMUXER)          += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_NUT_MUXER)               += mpegaudiodata.o
 OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o flac.o \
-                                          dirac.o mpeg12data.o
-OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o
+                                          dirac.o mpeg12data.o vorbis_data.o
+OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o \
+                                          vorbis_data.o
 OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o xiph.o
 OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
                                           flacdec.o flacdata.o flac.o \
-                                          mpegaudiodata.o
+                                          mpegaudiodata.o vorbis_data.o
+OBJS-$(CONFIG_WTV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 
 # external codec libraries
 OBJS-$(CONFIG_LIBCELT_DECODER)            += libcelt_dec.o
@@ -598,7 +602,8 @@ OBJS-$(CONFIG_DIRAC_PARSER)            += dirac_parser.o
 OBJS-$(CONFIG_DNXHD_PARSER)            += dnxhd_parser.o
 OBJS-$(CONFIG_DVBSUB_PARSER)           += dvbsub_parser.o
 OBJS-$(CONFIG_DVDSUB_PARSER)           += dvdsub_parser.o
-OBJS-$(CONFIG_FLAC_PARSER)             += flac_parser.o flacdata.o flac.o
+OBJS-$(CONFIG_FLAC_PARSER)             += flac_parser.o flacdata.o flac.o \
+                                          vorbis_data.o
 OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
 OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o h264_hl_motion.o \
@@ -690,14 +695,6 @@ $(SUBDIR)cos_fixed_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 
 $(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
 	$(M)./$< sin > $@
-
-ifdef CONFIG_MPEGAUDIO_HP
-$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=23
-$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=23
-else
-$(SUBDIR)mpegaudio_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DFRAC_BITS=15
-$(SUBDIR)mpegaudio_tablegen.ho: CPPFLAGS += -DFRAC_BITS=15
-endif
 
 ifdef CONFIG_SMALL
 $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=1

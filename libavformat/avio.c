@@ -19,9 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* needed for usleep() */
-#define _XOPEN_SOURCE 600
 #include <unistd.h>
+
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "os_support.h"
@@ -41,8 +40,12 @@ static const char *urlcontext_to_name(void *ptr)
     else        return "NULL";
 }
 static const AVOption options[] = {{NULL}};
-static const AVClass urlcontext_class =
-        { "URLContext", urlcontext_to_name, options, LIBAVUTIL_VERSION_INT };
+static const AVClass urlcontext_class = {
+    .class_name     = "URLContext",
+    .item_name      = urlcontext_to_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
 /*@}*/
 #endif
 

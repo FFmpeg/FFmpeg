@@ -497,9 +497,9 @@ static int h261_decode_picture_header(H261Context *h){
         skip_bits(&s->gb, 8);
     }
 
-    // h261 has no I-FRAMES, but if we pass FF_I_TYPE for the first frame, the codec crashes if it does
+    // h261 has no I-FRAMES, but if we pass AV_PICTURE_TYPE_I for the first frame, the codec crashes if it does
     // not contain all I-blocks (e.g. when a packet is lost)
-    s->pict_type = FF_P_TYPE;
+    s->pict_type = AV_PICTURE_TYPE_P;
 
     h->gob_number = 0;
     return 0;
@@ -597,14 +597,14 @@ retry:
 
     // for skipping the frame
     s->current_picture.pict_type= s->pict_type;
-    s->current_picture.key_frame= s->pict_type == FF_I_TYPE;
+    s->current_picture.key_frame= s->pict_type == AV_PICTURE_TYPE_I;
 
 #if FF_API_HURRY_UP
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5) return get_consumed_bytes(s, buf_size);
 #endif
-    if(  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==FF_B_TYPE)
-       ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=FF_I_TYPE)
+    if(  (avctx->skip_frame >= AVDISCARD_NONREF && s->pict_type==AV_PICTURE_TYPE_B)
+       ||(avctx->skip_frame >= AVDISCARD_NONKEY && s->pict_type!=AV_PICTURE_TYPE_I)
        || avctx->skip_frame >= AVDISCARD_ALL)
         return get_consumed_bytes(s, buf_size);
 

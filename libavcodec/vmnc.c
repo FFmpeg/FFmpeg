@@ -301,7 +301,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     }
 
     c->pic.key_frame = 0;
-    c->pic.pict_type = FF_P_TYPE;
+    c->pic.pict_type = AV_PICTURE_TYPE_P;
 
     //restore screen after cursor
     if(c->screendta) {
@@ -374,7 +374,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             break;
         case MAGIC_WMVi: // ServerInitialization struct
             c->pic.key_frame = 1;
-            c->pic.pict_type = FF_I_TYPE;
+            c->pic.pict_type = AV_PICTURE_TYPE_I;
             depth = *src++;
             if(depth != c->bpp) {
                 av_log(avctx, AV_LOG_INFO, "Depth mismatch. Container %i bpp, Frame data: %i bpp\n", c->bpp, depth);
@@ -470,6 +470,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     c->bpp = avctx->bits_per_coded_sample;
     c->bpp2 = c->bpp/8;
+    avcodec_get_frame_defaults(&c->pic);
 
     switch(c->bpp){
     case 8:

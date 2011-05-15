@@ -109,7 +109,7 @@ typedef struct MOVStreamContext {
     unsigned int keyframe_count;
     int *keyframes;
     int time_scale;
-    int time_offset;      ///< time offset of the first edit list entry
+    int64_t time_offset;  ///< time offset of the first edit list entry
     int current_sample;
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
@@ -155,5 +155,7 @@ enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries);
 void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec);
+void ff_mov_write_chan(AVFormatContext *s, int64_t channel_layout,
+                       const char *chunk_type);
 
 #endif /* AVFORMAT_ISOM_H */

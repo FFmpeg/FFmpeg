@@ -24,6 +24,8 @@
  * default memory allocator for libavutil
  */
 
+#define _XOPEN_SOURCE 600
+
 #include "config.h"
 
 #include <limits.h>
@@ -57,6 +59,8 @@ void  free(void *ptr);
 
 #endif /* MALLOC_PREFIX */
 
+#define ALIGN (HAVE_AVX ? 32 : 16)
+
 /* You can redefine av_malloc and av_free in your project to use your
    memory allocator. You do not need to suppress this file because the
    linker will do it automatically. */
@@ -71,21 +75,19 @@ void *av_malloc(FF_INTERNAL_MEM_TYPE size)
     /* let's disallow possible ambiguous cases */
     if(size > (INT_MAX-32) )
         return NULL;
-    else if(!size)
-        size= 1;
 
 #if CONFIG_MEMALIGN_HACK
-    ptr = malloc(size+32);
+    ptr = malloc(size+ALIGN);
     if(!ptr)
         return ptr;
-    diff= ((-(long)ptr - 1)&31) + 1;
+    diff= ((-(long)ptr - 1)&(ALIGN-1)) + 1;
     ptr = (char*)ptr + diff;
     ((char*)ptr)[-1]= diff;
 #elif HAVE_POSIX_MEMALIGN
-    if (posix_memalign(&ptr,32,size))
+    if (posix_memalign(&ptr,ALIGN,size))
         ptr = NULL;
 #elif HAVE_MEMALIGN
-    ptr = memalign(32,size);
+    ptr = memalign(ALIGN,size);
     /* Why 64?
        Indeed, we should align it:
          on 4 for 386
@@ -113,6 +115,8 @@ void *av_malloc(FF_INTERNAL_MEM_TYPE size)
 #else
     ptr = malloc(size);
 #endif
+    if(!ptr && !size)
+        ptr= av_malloc(1);
     return ptr;
 }
 
@@ -132,7 +136,7 @@ void *av_realloc(void *ptr, FF_INTERNAL_MEM_TYPE size)
     diff= ((char*)ptr)[-1];
     return (char*)realloc((char*)ptr - diff, size + diff) + diff;
 #else
-    return realloc(ptr, size);
+    return realloc(ptr, size + !size);
 #endif
 }
 
@@ -173,3 +177,23 @@ char *av_strdup(const char *s)
     return ptr;
 }
 
+/* add one element to a dynamic array */
+void av_dynarray_add(void *tab_ptr, int *nb_ptr, void *elem)
+{
+    /* see similar ffmpeg.c:grow_array() */
+    int nb, nb_alloc;
+    intptr_t *tab;
+
+    nb = *nb_ptr;
+    tab = *(intptr_t**)tab_ptr;
+    if ((nb & (nb - 1)) == 0) {
+        if (nb == 0)
+            nb_alloc = 1;
+        else
+            nb_alloc = nb * 2;
+        tab = av_realloc(tab, nb_alloc * sizeof(intptr_t));
+        *(intptr_t**)tab_ptr = tab;
+    }
+    tab[nb++] = (intptr_t)elem;
+    *nb_ptr = nb;
+}

@@ -542,13 +542,14 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
     int partition_count;
     unsigned int mb_type, cbp;
     int dct8x8_allowed= h->pps.transform_8x8_mode;
+    const int pixel_shift = h->pixel_shift;
 
     mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
 
     tprintf(s->avctx, "pic:%d mb:%d/%d\n", h->frame_num, s->mb_x, s->mb_y);
     cbp = 0; /* avoid warning. FIXME: find a solution without slowing
                 down the code */
-    if(h->slice_type_nos != FF_I_TYPE){
+    if(h->slice_type_nos != AV_PICTURE_TYPE_I){
         if(s->mb_skip_run==-1)
             s->mb_skip_run= get_ue_golomb(&s->gb);
 
@@ -569,7 +570,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
     h->prev_mb_skipped= 0;
 
     mb_type= get_ue_golomb(&s->gb);
-    if(h->slice_type_nos == FF_B_TYPE){
+    if(h->slice_type_nos == AV_PICTURE_TYPE_B){
         if(mb_type < 23){
             partition_count= b_mb_type_info[mb_type].partition_count;
             mb_type=         b_mb_type_info[mb_type].type;
@@ -577,7 +578,7 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             mb_type -= 23;
             goto decode_intra_mb;
         }
-    }else if(h->slice_type_nos == FF_P_TYPE){
+    }else if(h->slice_type_nos == AV_PICTURE_TYPE_P){
         if(mb_type < 5){
             partition_count= p_mb_type_info[mb_type].partition_count;
             mb_type=         p_mb_type_info[mb_type].type;
@@ -586,12 +587,12 @@ int ff_h264_decode_mb_cavlc(H264Context *h){
             goto decode_intra_mb;
         }
     }else{
-       assert(h->slice_type_nos == FF_I_TYPE);
-        if(h->slice_type == FF_SI_TYPE && mb_type)
+       assert(h->slice_type_nos == AV_PICTURE_TYPE_I);
+        if(h->slice_type == AV_PICTURE_TYPE_SI && mb_type)
             mb_type--;
 decode_intra_mb:
         if(mb_type > 25){
-            av_log(h->s.avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_pict_type_char(h->slice_type), s->mb_x, s->mb_y);
+            av_log(h->s.avctx, AV_LOG_ERROR, "mb_type %d in %c slice too large at %d %d\n", mb_type, av_get_picture_type_char(h->slice_type), s->mb_x, s->mb_y);
             return -1;
         }
         partition_count=0;
@@ -678,7 +679,7 @@ decode_intra_mb:
     }else if(partition_count==4){
         int i, j, sub_partition_count[4], list, ref[2][4];
 
-        if(h->slice_type_nos == FF_B_TYPE){
+        if(h->slice_type_nos == AV_PICTURE_TYPE_B){
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
                 if(h->sub_mb_type[i] >=13){
@@ -696,7 +697,7 @@ decode_intra_mb:
                 h->ref_cache[1][scan8[12]] = PART_NOT_AVAILABLE;
             }
         }else{
-            assert(h->slice_type_nos == FF_P_TYPE); //FIXME SP correct ?
+            assert(h->slice_type_nos == AV_PICTURE_TYPE_P); //FIXME SP correct ?
             for(i=0; i<4; i++){
                 h->sub_mb_type[i]= get_ue_golomb_31(&s->gb);
                 if(h->sub_mb_type[i] >=4){
@@ -961,7 +962,7 @@ decode_intra_mb:
                 for(i8x8=0; i8x8<4; i8x8++){
                     for(i4x4=0; i4x4<4; i4x4++){
                         const int index= i4x4 + 4*i8x8;
-                        if( decode_residual(h, h->intra_gb_ptr, h->mb + (16*index<<h->pixel_shift), index, scan + 1, h->dequant4_coeff[0][s->qscale], 15) < 0 ){
+                        if( decode_residual(h, h->intra_gb_ptr, h->mb + (16*index << pixel_shift), index, scan + 1, h->dequant4_coeff[0][s->qscale], 15) < 0 ){
                             return -1;
                         }
                     }
@@ -973,7 +974,7 @@ decode_intra_mb:
             for(i8x8=0; i8x8<4; i8x8++){
                 if(cbp & (1<<i8x8)){
                     if(IS_8x8DCT(mb_type)){
-                        DCTELEM *buf = &h->mb[64*i8x8<<h->pixel_shift];
+                        DCTELEM *buf = &h->mb[64*i8x8 << pixel_shift];
                         uint8_t *nnz;
                         for(i4x4=0; i4x4<4; i4x4++){
                             if( decode_residual(h, gb, buf, i4x4+4*i8x8, scan8x8+16*i4x4,
@@ -986,7 +987,7 @@ decode_intra_mb:
                         for(i4x4=0; i4x4<4; i4x4++){
                             const int index= i4x4 + 4*i8x8;
 
-                            if( decode_residual(h, gb, h->mb + (16*index<<h->pixel_shift), index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16) <0 ){
+                            if( decode_residual(h, gb, h->mb + (16*index << pixel_shift), index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16) <0 ){
                                 return -1;
                             }
                         }
@@ -1000,7 +1001,7 @@ decode_intra_mb:
 
         if(cbp&0x30){
             for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                if( decode_residual(h, gb, h->mb + ((256 + 16*4*chroma_idx)<<h->pixel_shift), CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
+                if( decode_residual(h, gb, h->mb + ((256 + 16*4*chroma_idx) << pixel_shift), CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
                     return -1;
                 }
         }
@@ -1010,7 +1011,7 @@ decode_intra_mb:
                 const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[chroma_idx]];
                 for(i4x4=0; i4x4<4; i4x4++){
                     const int index= 16 + 4*chroma_idx + i4x4;
-                    if( decode_residual(h, gb, h->mb + (16*index<<h->pixel_shift), index, scan + 1, qmul, 15) < 0){
+                    if( decode_residual(h, gb, h->mb + (16*index << pixel_shift), index, scan + 1, qmul, 15) < 0){
                         return -1;
                     }
                 }

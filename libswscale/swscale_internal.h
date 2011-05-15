@@ -35,11 +35,7 @@
 
 #define MAX_FILTER_SIZE 256
 
-#if ARCH_X86
 #define VOFW 21504
-#else
-#define VOFW 2048 // faster on PPC and not tested on others
-#endif
 
 #define VOF  (VOFW*2)
 
@@ -359,7 +355,10 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUV420P9BE  \
         || (x)==PIX_FMT_YUV420P10LE \
         || (x)==PIX_FMT_YUV420P10BE \
+        || (x)==PIX_FMT_YUV422P10LE \
+        || (x)==PIX_FMT_YUV422P10BE \
     )
+#define is9_OR_10BPS isNBPS //for ronald
 #define isBE(x) ((x)&1)
 #define isPlanar8YUV(x) (           \
            (x)==PIX_FMT_YUV410P     \
@@ -377,11 +376,13 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUV420P9LE  \
         || (x)==PIX_FMT_YUV420P10LE \
         || (x)==PIX_FMT_YUV420P16LE \
+        || (x)==PIX_FMT_YUV422P10LE \
         || (x)==PIX_FMT_YUV422P16LE \
         || (x)==PIX_FMT_YUV444P16LE \
         || (x)==PIX_FMT_YUV420P9BE  \
         || (x)==PIX_FMT_YUV420P10BE \
         || (x)==PIX_FMT_YUV420P16BE \
+        || (x)==PIX_FMT_YUV422P10BE \
         || (x)==PIX_FMT_YUV422P16BE \
         || (x)==PIX_FMT_YUV444P16BE \
     )

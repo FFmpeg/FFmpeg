@@ -433,6 +433,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     memset(s->vlc, 0, 3*sizeof(VLC));
 
     avctx->coded_frame= &s->picture;
+    avcodec_get_frame_defaults(&s->picture);
     s->interlaced= s->height > 288;
 
 s->bgr32=1;
@@ -1238,7 +1239,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     int i, j, size=0;
 
     *p = *pict;
-    p->pict_type= FF_I_TYPE;
+    p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
     if(s->context){

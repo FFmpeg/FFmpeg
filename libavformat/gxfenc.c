@@ -834,10 +834,10 @@ static int gxf_write_media_preamble(AVFormatContext *s, AVPacket *pkt, int size)
         avio_wb16(pb, size / 2);
     } else if (st->codec->codec_id == CODEC_ID_MPEG2VIDEO) {
         int frame_type = gxf_parse_mpeg_frame(sc, pkt->data, pkt->size);
-        if (frame_type == FF_I_TYPE) {
+        if (frame_type == AV_PICTURE_TYPE_I) {
             avio_w8(pb, 0x0d);
             sc->iframes++;
-        } else if (frame_type == FF_B_TYPE) {
+        } else if (frame_type == AV_PICTURE_TYPE_B) {
             avio_w8(pb, 0x0f);
             sc->bframes++;
         } else {

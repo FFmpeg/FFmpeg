@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#define _XOPEN_SOURCE 600
-
 #include "config.h"
 #include <inttypes.h>
 #include <math.h>
@@ -40,6 +38,7 @@
 #include "libavcodec/avfft.h"
 
 #if CONFIG_AVFILTER
+# include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
 #endif
@@ -692,10 +691,10 @@ static void video_image_display(VideoState *is)
     vp = &is->pictq[is->pictq_rindex];
     if (vp->bmp) {
 #if CONFIG_AVFILTER
-         if (vp->picref->video->pixel_aspect.num == 0)
+         if (vp->picref->video->sample_aspect_ratio.num == 0)
              aspect_ratio = 0;
          else
-             aspect_ratio = av_q2d(vp->picref->video->pixel_aspect);
+             aspect_ratio = av_q2d(vp->picref->video->sample_aspect_ratio);
 #else
 
         /* XXX: use variable in the frame */
@@ -1381,7 +1380,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
 #if defined(DEBUG_SYNC) && 0
     printf("frame_type=%c clock=%0.3f pts=%0.3f\n",
-           av_get_pict_type_char(src_frame->pict_type), pts, pts1);
+           av_get_picture_type_char(src_frame->pict_type), pts, pts1);
 #endif
 
     /* wait until we have space to put a new picture */
@@ -1644,7 +1643,7 @@ static int input_init(AVFilterContext *ctx, const char *args, void *opaque)
     codec->opaque = ctx;
     if((codec->codec->capabilities & CODEC_CAP_DR1)
     ) {
-        codec->flags |= CODEC_FLAG_EMU_EDGE;
+        av_assert0(codec->flags & CODEC_FLAG_EMU_EDGE);
         priv->use_dr1 = 1;
         codec->get_buffer     = input_get_buffer;
         codec->release_buffer = input_release_buffer;
@@ -1686,9 +1685,9 @@ static int input_request_frame(AVFilterLink *link)
     }
     av_free_packet(&pkt);
 
+    avfilter_copy_frame_props(picref, priv->frame);
     picref->pts = pts;
-    picref->pos = pkt.pos;
-    picref->video->pixel_aspect = priv->is->video_st->codec->sample_aspect_ratio;
+
     avfilter_start_frame(link, picref);
     avfilter_draw_slice(link, 0, link->h, 1);
     avfilter_end_frame(link);
@@ -1831,6 +1830,7 @@ static int video_thread(void *arg)
 #else
         ret = get_video_frame(is, frame, &pts_int, &pkt);
         pos = pkt.pos;
+        av_free_packet(&pkt);
 #endif
 
         if (ret < 0) goto the_end;
@@ -1841,9 +1841,7 @@ static int video_thread(void *arg)
         pts = pts_int*av_q2d(is->video_st->time_base);
 
         ret = queue_picture(is, frame, pts, pos);
-#if !CONFIG_AVFILTER
-        av_free_packet(&pkt);
-#endif
+
         if (ret < 0)
             goto the_end;
 
@@ -1937,9 +1935,7 @@ static int subtitle_thread(void *arg)
 /* copy samples for viewing in editor window */
 static void update_sample_display(VideoState *is, short *samples, int samples_size)
 {
-    int size, len, channels;
-
-    channels = is->audio_st->codec->channels;
+    int size, len;
 
     size = samples_size / sizeof(short);
     while (size > 0) {
@@ -2193,6 +2189,9 @@ static int stream_component_open(VideoState *is, int stream_index)
     }
 
     codec = avcodec_find_decoder(avctx->codec_id);
+    if (!codec)
+        return -1;
+
     avctx->debug_mv = debug_mv;
     avctx->debug = debug;
     avctx->workaround_bugs = workaround_bugs;
@@ -2209,8 +2208,10 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     set_context_opts(avctx, avcodec_opts[avctx->codec_type], 0, codec);
 
-    if (!codec ||
-        avcodec_open(avctx, codec) < 0)
+    if(codec->capabilities & CODEC_CAP_DR1)
+        avctx->flags |= CODEC_FLAG_EMU_EDGE;
+
+    if (avcodec_open(avctx, codec) < 0)
         return -1;
 
     /* prepare audio output */
@@ -2381,10 +2382,18 @@ static int read_thread(void *arg)
     ap->height= frame_height;
     ap->time_base= (AVRational){1, 25};
     ap->pix_fmt = frame_pix_fmt;
+    ic->flags |= AVFMT_FLAG_PRIV_OPT;
 
-    set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
 
     err = av_open_input_file(&ic, is->filename, is->iformat, 0, ap);
+    if (err >= 0) {
+        set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
+        err = av_demuxer_open(ic, ap);
+        if(err < 0){
+            avformat_free_context(ic);
+            ic= NULL;
+        }
+    }
     if (err < 0) {
         print_error(is->filename, err);
         ret = -1;

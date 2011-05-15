@@ -1,4 +1,4 @@
-3c06fd2f7831e3e8735b936e23ca220c *./tests/data/acodec/adpcm_qt.aiff
+057d27978b35888776512e4e9669a63b *./tests/data/acodec/adpcm_qt.aiff
 281252 ./tests/data/acodec/adpcm_qt.aiff
-9580492803ba1c1a3746367b24b751c8 *./tests/data/adpcm_ima_qt.acodec.out.wav
-stddev:  914.65 PSNR: 37.10 MAXDIFF:34026 bytes:  1058560/  1058400
+3890343c0c20934e014d7ac93f5d65bd *./tests/data/adpcm_ima_qt.acodec.out.wav
+stddev:  918.61 PSNR: 37.07 MAXDIFF:34029 bytes:  1058560/  1058400

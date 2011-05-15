@@ -1119,8 +1119,6 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 //    pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin;
     c->mc_mb_var_sum_temp += (vard+128)>>8;
 
-    av_dlog(s, "varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
-            varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
     if(mb_type){
         int p_score= FFMIN(vard, varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*100);
         int i_score= varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*20;
@@ -1893,7 +1891,7 @@ int ff_get_best_fcode(MpegEncContext * s, int16_t (*mv_table)[2], int type)
                             continue;
 
                     for(j=0; j<fcode && j<8; j++){
-                        if(s->pict_type==FF_B_TYPE || s->current_picture.mc_mb_var[xy] < s->current_picture.mb_var[xy])
+                        if(s->pict_type==AV_PICTURE_TYPE_B || s->current_picture.mc_mb_var[xy] < s->current_picture.mb_var[xy])
                             score[j]-= 170;
                     }
                 }
@@ -1925,7 +1923,7 @@ void ff_fix_long_p_mvs(MpegEncContext * s)
     MotionEstContext * const c= &s->me;
     const int f_code= s->f_code;
     int y, range;
-    assert(s->pict_type==FF_P_TYPE);
+    assert(s->pict_type==AV_PICTURE_TYPE_P);
 
     range = (((s->out_format == FMT_MPEG1 || s->msmpeg4_version) ? 8 : 16) << f_code);
 

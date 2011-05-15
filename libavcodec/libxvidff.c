@@ -25,9 +25,6 @@
  * @author Adam Thayer (krevnik@comcast.net)
  */
 
-/* needed for mkstemp() */
-#define _XOPEN_SOURCE 600
-
 #include <xvid.h>
 #include <unistd.h>
 #include "avcodec.h"
@@ -450,9 +447,9 @@ static int xvid_encode_frame(AVCodecContext *avctx,
     xvid_enc_frame.vol_flags = x->vol_flags;
     xvid_enc_frame.motion = x->me_flags;
     xvid_enc_frame.type =
-        picture->pict_type == FF_I_TYPE ? XVID_TYPE_IVOP :
-        picture->pict_type == FF_P_TYPE ? XVID_TYPE_PVOP :
-        picture->pict_type == FF_B_TYPE ? XVID_TYPE_BVOP :
+        picture->pict_type == AV_PICTURE_TYPE_I ? XVID_TYPE_IVOP :
+        picture->pict_type == AV_PICTURE_TYPE_P ? XVID_TYPE_PVOP :
+        picture->pict_type == AV_PICTURE_TYPE_B ? XVID_TYPE_BVOP :
                                           XVID_TYPE_AUTO;
 
     /* Pixel aspect ratio setting */
@@ -493,13 +490,13 @@ static int xvid_encode_frame(AVCodecContext *avctx,
     if( 0 <= xerr ) {
         p->quality = xvid_enc_stats.quant * FF_QP2LAMBDA;
         if( xvid_enc_stats.type == XVID_TYPE_PVOP )
-            p->pict_type = FF_P_TYPE;
+            p->pict_type = AV_PICTURE_TYPE_P;
         else if( xvid_enc_stats.type == XVID_TYPE_BVOP )
-            p->pict_type = FF_B_TYPE;
+            p->pict_type = AV_PICTURE_TYPE_B;
         else if( xvid_enc_stats.type == XVID_TYPE_SVOP )
-            p->pict_type = FF_S_TYPE;
+            p->pict_type = AV_PICTURE_TYPE_S;
         else
-            p->pict_type = FF_I_TYPE;
+            p->pict_type = AV_PICTURE_TYPE_I;
         if( xvid_enc_frame.out_flags & XVID_KEYFRAME ) {
             p->key_frame = 1;
             if( x->quicktime_format )

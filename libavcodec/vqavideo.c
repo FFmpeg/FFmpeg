@@ -187,6 +187,7 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
         (s->height / s->vector_height) * 2;
     s->decode_buffer = av_malloc(s->decode_buffer_size);
 
+    avcodec_get_frame_defaults(&s->frame);
     s->frame.data[0] = NULL;
 
     return 0;

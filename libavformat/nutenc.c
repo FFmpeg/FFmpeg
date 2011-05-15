@@ -589,6 +589,12 @@ static int write_header(AVFormatContext *s){
     nut->chapter  = av_mallocz(sizeof(ChapterContext)*s->nb_chapters);
     nut->time_base= av_mallocz(sizeof(AVRational   )*(s->nb_streams +
                                                       s->nb_chapters));
+    if (!nut->stream || !nut->chapter || !nut->time_base) {
+        av_freep(&nut->stream);
+        av_freep(&nut->chapter);
+        av_freep(&nut->time_base);
+        return AVERROR(ENOMEM);
+    }
 
     for(i=0; i<s->nb_streams; i++){
         AVStream *st= s->streams[i];

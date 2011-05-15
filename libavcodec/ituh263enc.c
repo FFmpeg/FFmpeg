@@ -145,7 +145,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     if (!s->h263_plus) {
         /* H.263v1 */
         put_bits(&s->pb, 3, format);
-        put_bits(&s->pb, 1, (s->pict_type == FF_P_TYPE));
+        put_bits(&s->pb, 1, (s->pict_type == AV_PICTURE_TYPE_P));
         /* By now UMV IS DISABLED ON H.263v1, since the restrictions
         of H.263v1 UMV implies to check the predicted MV after
         calculation of the current MB to see if we're on the limits */
@@ -181,7 +181,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
         put_bits(&s->pb,1,1); /* "1" to prevent start code emulation */
         put_bits(&s->pb,3,0); /* Reserved */
 
-        put_bits(&s->pb, 3, s->pict_type == FF_P_TYPE);
+        put_bits(&s->pb, 3, s->pict_type == AV_PICTURE_TYPE_P);
 
         put_bits(&s->pb,1,0); /* Reference Picture Resampling: off */
         put_bits(&s->pb,1,0); /* Reduced-Resolution Update: off */
@@ -260,12 +260,12 @@ void h263_encode_gob_header(MpegEncContext * s, int mb_line)
             put_bits(&s->pb, 1, 1);
         put_bits(&s->pb, 5, s->qscale); /* GQUANT */
         put_bits(&s->pb, 1, 1);
-        put_bits(&s->pb, 2, s->pict_type == FF_I_TYPE); /* GFID */
+        put_bits(&s->pb, 2, s->pict_type == AV_PICTURE_TYPE_I); /* GFID */
     }else{
         int gob_number= mb_line / s->gob_index;
 
         put_bits(&s->pb, 5, gob_number); /* GN */
-        put_bits(&s->pb, 2, s->pict_type == FF_I_TYPE); /* GFID */
+        put_bits(&s->pb, 2, s->pict_type == AV_PICTURE_TYPE_I); /* GFID */
         put_bits(&s->pb, 5, s->qscale); /* GQUANT */
     }
 }
@@ -607,7 +607,7 @@ void h263_encode_mb(MpegEncContext * s,
         }
 
         cbpc = cbp & 3;
-        if (s->pict_type == FF_I_TYPE) {
+        if (s->pict_type == AV_PICTURE_TYPE_I) {
             if(s->dquant) cbpc+=4;
             put_bits(&s->pb,
                 ff_h263_intra_MCBPC_bits[cbpc],

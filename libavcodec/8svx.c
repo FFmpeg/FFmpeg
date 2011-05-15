@@ -1,5 +1,4 @@
 /*
- * 8SVX audio decoder
  * Copyright (C) 2008 Jaikrishnan Menon
  *
  * This file is part of FFmpeg.
@@ -22,9 +21,17 @@
 /**
  * @file
  * 8svx audio decoder
- * @author Jaikrishnan Menon
  * supports: fibonacci delta encoding
  *         : exponential encoding
+ *
+ * For more information about the 8SVX format:
+ * http://netghost.narod.ru/gff/vendspec/iff/iff.txt
+ * http://sox.sourceforge.net/AudioFormats-11.html
+ * http://aminet.net/package/mus/misc/wavepak
+ * http://amigan.1emu.net/reg/8SVX.txt
+ *
+ * Samples can be found here:
+ * http://aminet.net/mods/smpl/
  */
 
 #include "avcodec.h"
@@ -40,7 +47,6 @@ static const int16_t fibonacci[16]   = { -34<<8, -21<<8, -13<<8,  -8<<8, -5<<8, 
 static const int16_t exponential[16] = { -128<<8, -64<<8, -32<<8, -16<<8, -8<<8, -4<<8, -2<<8, -1<<8,
                                           0, 1<<8, 2<<8, 4<<8, 8<<8, 16<<8, 32<<8, 64<<8 };
 
-/** decode a frame */
 static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                  AVPacket *avpkt)
 {
@@ -73,7 +79,6 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     return consumed;
 }
 
-/** initialize 8svx decoder */
 static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
 {
     EightSvxContext *esc = avctx->priv_data;

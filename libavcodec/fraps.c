@@ -60,6 +60,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 {
     FrapsContext * const s = avctx->priv_data;
 
+    avcodec_get_frame_defaults(&s->frame);
     avctx->coded_frame = (AVFrame*)&s->frame;
 
     s->avctx = avctx;
@@ -180,10 +181,10 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
         /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1U<<31))? FF_P_TYPE : FF_I_TYPE;
-        f->key_frame = f->pict_type == FF_I_TYPE;
+        f->pict_type = (header & (1U<<31))? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
+        f->key_frame = f->pict_type == AV_PICTURE_TYPE_I;
 
-        if (f->pict_type == FF_I_TYPE) {
+        if (f->pict_type == AV_PICTURE_TYPE_I) {
             buf32=(const uint32_t*)buf;
             for(y=0; y<avctx->height/2; y++){
                 luma1=(uint32_t*)&f->data[0][ y*2*f->linesize[0] ];
@@ -223,10 +224,10 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
         /* bit 31 means same as previous pic */
-        f->pict_type = (header & (1U<<31))? FF_P_TYPE : FF_I_TYPE;
-        f->key_frame = f->pict_type == FF_I_TYPE;
+        f->pict_type = (header & (1U<<31))? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
+        f->key_frame = f->pict_type == AV_PICTURE_TYPE_I;
 
-        if (f->pict_type == FF_I_TYPE) {
+        if (f->pict_type == AV_PICTURE_TYPE_I) {
             for(y=0; y<avctx->height; y++)
                 memcpy(&f->data[0][ (avctx->height-y)*f->linesize[0] ],
                        &buf[y*avctx->width*3],
@@ -252,11 +253,11 @@ static int decode_frame(AVCodecContext *avctx,
         }
         /* skip frame */
         if(buf_size == 8) {
-            f->pict_type = FF_P_TYPE;
+            f->pict_type = AV_PICTURE_TYPE_P;
             f->key_frame = 0;
             break;
         }
-        f->pict_type = FF_I_TYPE;
+        f->pict_type = AV_PICTURE_TYPE_I;
         f->key_frame = 1;
         if ((AV_RL32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
             av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");
@@ -297,11 +298,11 @@ static int decode_frame(AVCodecContext *avctx,
         }
         /* skip frame */
         if(buf_size == 8) {
-            f->pict_type = FF_P_TYPE;
+            f->pict_type = AV_PICTURE_TYPE_P;
             f->key_frame = 0;
             break;
         }
-        f->pict_type = FF_I_TYPE;
+        f->pict_type = AV_PICTURE_TYPE_I;
         f->key_frame = 1;
         if ((AV_RL32(buf) != FPS_TAG)||(buf_size < (planes*1024 + 24))) {
             av_log(avctx, AV_LOG_ERROR, "Fraps: error in data stream\n");

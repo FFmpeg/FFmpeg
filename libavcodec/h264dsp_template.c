@@ -25,7 +25,7 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
-#include "h264_high_depth.h"
+#include "high_bit_depth.h"
 
 #define op_scale1(x)  block[x] = av_clip_pixel( (block[x]*weight + offset) >> log2_denom )
 #define op_scale2(x)  dst[x] = av_clip_pixel( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
@@ -102,18 +102,21 @@ H264_WEIGHT(2,2)
 #undef op_scale2
 #undef H264_WEIGHT
 
-static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma)(uint8_t *p_pix, int xstride, int ystride, int inner_iters, int alpha, int beta, int8_t *tc0)
 {
     pixel *pix = (pixel*)p_pix;
     int i, d;
     xstride >>= sizeof(pixel)-1;
     ystride >>= sizeof(pixel)-1;
+    alpha <<= BIT_DEPTH - 8;
+    beta  <<= BIT_DEPTH - 8;
     for( i = 0; i < 4; i++ ) {
-        if( tc0[i] < 0 ) {
-            pix += 4*ystride;
+        const int tc_orig = tc0[i] << (BIT_DEPTH - 8);
+        if( tc_orig < 0 ) {
+            pix += inner_iters*ystride;
             continue;
         }
-        for( d = 0; d < 4; d++ ) {
+        for( d = 0; d < inner_iters; d++ ) {
             const int p0 = pix[-1*xstride];
             const int p1 = pix[-2*xstride];
             const int p2 = pix[-3*xstride];
@@ -125,17 +128,17 @@ static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma)(uint8_t *p_
                 FFABS( p1 - p0 ) < beta &&
                 FFABS( q1 - q0 ) < beta ) {
 
-                int tc = tc0[i];
+                int tc = tc_orig;
                 int i_delta;
 
                 if( FFABS( p2 - p0 ) < beta ) {
-                    if(tc0[i])
-                    pix[-2*xstride] = p1 + av_clip( (( p2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - p1, -tc0[i], tc0[i] );
+                    if(tc_orig)
+                    pix[-2*xstride] = p1 + av_clip( (( p2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - p1, -tc_orig, tc_orig );
                     tc++;
                 }
                 if( FFABS( q2 - q0 ) < beta ) {
-                    if(tc0[i])
-                    pix[   xstride] = q1 + av_clip( (( q2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - q1, -tc0[i], tc0[i] );
+                    if(tc_orig)
+                    pix[   xstride] = q1 + av_clip( (( q2 + ( ( p0 + q0 + 1 ) >> 1 ) ) >> 1) - q1, -tc_orig, tc_orig );
                     tc++;
                 }
 
@@ -149,20 +152,26 @@ static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma)(uint8_t *p_
 }
 static void FUNCC(h264_v_loop_filter_luma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    FUNCC(h264_loop_filter_luma)(pix, stride, sizeof(pixel), alpha, beta, tc0);
+    FUNCC(h264_loop_filter_luma)(pix, stride, sizeof(pixel), 4, alpha, beta, tc0);
 }
 static void FUNCC(h264_h_loop_filter_luma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    FUNCC(h264_loop_filter_luma)(pix, sizeof(pixel), stride, alpha, beta, tc0);
+    FUNCC(h264_loop_filter_luma)(pix, sizeof(pixel), stride, 4, alpha, beta, tc0);
+}
+static void FUNCC(h264_h_loop_filter_luma_mbaff)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+{
+    FUNCC(h264_loop_filter_luma)(pix, sizeof(pixel), stride, 2, alpha, beta, tc0);
 }
 
-static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma_intra)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma_intra)(uint8_t *p_pix, int xstride, int ystride, int inner_iters, int alpha, int beta)
 {
     pixel *pix = (pixel*)p_pix;
     int d;
     xstride >>= sizeof(pixel)-1;
     ystride >>= sizeof(pixel)-1;
-    for( d = 0; d < 16; d++ ) {
+    alpha <<= BIT_DEPTH - 8;
+    beta  <<= BIT_DEPTH - 8;
+    for( d = 0; d < 4 * inner_iters; d++ ) {
         const int p2 = pix[-3*xstride];
         const int p1 = pix[-2*xstride];
         const int p0 = pix[-1*xstride];
@@ -209,26 +218,32 @@ static av_always_inline av_flatten void FUNCC(h264_loop_filter_luma_intra)(uint8
 }
 static void FUNCC(h264_v_loop_filter_luma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    FUNCC(h264_loop_filter_luma_intra)(pix, stride, sizeof(pixel), alpha, beta);
+    FUNCC(h264_loop_filter_luma_intra)(pix, stride, sizeof(pixel), 4, alpha, beta);
 }
 static void FUNCC(h264_h_loop_filter_luma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    FUNCC(h264_loop_filter_luma_intra)(pix, sizeof(pixel), stride, alpha, beta);
+    FUNCC(h264_loop_filter_luma_intra)(pix, sizeof(pixel), stride, 4, alpha, beta);
+}
+static void FUNCC(h264_h_loop_filter_luma_mbaff_intra)(uint8_t *pix, int stride, int alpha, int beta)
+{
+    FUNCC(h264_loop_filter_luma_intra)(pix, sizeof(pixel), stride, 2, alpha, beta);
 }
 
-static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta, int8_t *tc0)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma)(uint8_t *p_pix, int xstride, int ystride, int inner_iters, int alpha, int beta, int8_t *tc0)
 {
     pixel *pix = (pixel*)p_pix;
     int i, d;
+    alpha <<= BIT_DEPTH - 8;
+    beta  <<= BIT_DEPTH - 8;
     xstride >>= sizeof(pixel)-1;
     ystride >>= sizeof(pixel)-1;
     for( i = 0; i < 4; i++ ) {
-        const int tc = tc0[i];
+        const int tc = ((tc0[i] - 1) << (BIT_DEPTH - 8)) + 1;
         if( tc <= 0 ) {
-            pix += 2*ystride;
+            pix += inner_iters*ystride;
             continue;
         }
-        for( d = 0; d < 2; d++ ) {
+        for( d = 0; d < inner_iters; d++ ) {
             const int p0 = pix[-1*xstride];
             const int p1 = pix[-2*xstride];
             const int q0 = pix[0];
@@ -249,20 +264,26 @@ static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma)(uint8_t *
 }
 static void FUNCC(h264_v_loop_filter_chroma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    FUNCC(h264_loop_filter_chroma)(pix, stride, sizeof(pixel), alpha, beta, tc0);
+    FUNCC(h264_loop_filter_chroma)(pix, stride, sizeof(pixel), 2, alpha, beta, tc0);
 }
 static void FUNCC(h264_h_loop_filter_chroma)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
-    FUNCC(h264_loop_filter_chroma)(pix, sizeof(pixel), stride, alpha, beta, tc0);
+    FUNCC(h264_loop_filter_chroma)(pix, sizeof(pixel), stride, 2, alpha, beta, tc0);
+}
+static void FUNCC(h264_h_loop_filter_chroma_mbaff)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+{
+    FUNCC(h264_loop_filter_chroma)(pix, sizeof(pixel), stride, 1, alpha, beta, tc0);
 }
 
-static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma_intra)(uint8_t *p_pix, int xstride, int ystride, int alpha, int beta)
+static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma_intra)(uint8_t *p_pix, int xstride, int ystride, int inner_iters, int alpha, int beta)
 {
     pixel *pix = (pixel*)p_pix;
     int d;
     xstride >>= sizeof(pixel)-1;
     ystride >>= sizeof(pixel)-1;
-    for( d = 0; d < 8; d++ ) {
+    alpha <<= BIT_DEPTH - 8;
+    beta  <<= BIT_DEPTH - 8;
+    for( d = 0; d < 4 * inner_iters; d++ ) {
         const int p0 = pix[-1*xstride];
         const int p1 = pix[-2*xstride];
         const int q0 = pix[0];
@@ -280,9 +301,13 @@ static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma_intra)(uin
 }
 static void FUNCC(h264_v_loop_filter_chroma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    FUNCC(h264_loop_filter_chroma_intra)(pix, stride, sizeof(pixel), alpha, beta);
+    FUNCC(h264_loop_filter_chroma_intra)(pix, stride, sizeof(pixel), 2, alpha, beta);
 }
 static void FUNCC(h264_h_loop_filter_chroma_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
-    FUNCC(h264_loop_filter_chroma_intra)(pix, sizeof(pixel), stride, alpha, beta);
+    FUNCC(h264_loop_filter_chroma_intra)(pix, sizeof(pixel), stride, 2, alpha, beta);
+}
+static void FUNCC(h264_h_loop_filter_chroma_mbaff_intra)(uint8_t *pix, int stride, int alpha, int beta)
+{
+    FUNCC(h264_loop_filter_chroma_intra)(pix, sizeof(pixel), stride, 1, alpha, beta);
 }

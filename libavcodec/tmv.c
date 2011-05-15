@@ -34,6 +34,14 @@ typedef struct TMVContext {
     AVFrame pic;
 } TMVContext;
 
+static av_cold int tmv_decode_init(AVCodecContext *avctx)
+{
+    TMVContext *tmv = avctx->priv_data;
+
+    avcodec_get_frame_defaults(&tmv->pic);
+    return 0;
+}
+
 static int tmv_decode_frame(AVCodecContext *avctx, void *data,
                             int *data_size, AVPacket *avpkt)
 {
@@ -59,7 +67,7 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    tmv->pic.pict_type = FF_I_TYPE;
+    tmv->pic.pict_type = AV_PICTURE_TYPE_I;
     tmv->pic.key_frame = 1;
     dst                = tmv->pic.data[0];
 
@@ -97,6 +105,7 @@ AVCodec ff_tmv_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_TMV,
     .priv_data_size = sizeof(TMVContext),
+    .init           = tmv_decode_init,
     .close          = tmv_decode_close,
     .decode         = tmv_decode_frame,
     .capabilities   = CODEC_CAP_DR1,

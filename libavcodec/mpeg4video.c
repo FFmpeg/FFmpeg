@@ -28,12 +28,12 @@ uint8_t ff_mpeg4_static_rl_table_store[3][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 int ff_mpeg4_get_video_packet_prefix_length(MpegEncContext *s){
     switch(s->pict_type){
-        case FF_I_TYPE:
+        case AV_PICTURE_TYPE_I:
             return 16;
-        case FF_P_TYPE:
-        case FF_S_TYPE:
+        case AV_PICTURE_TYPE_P:
+        case AV_PICTURE_TYPE_S:
             return s->f_code+15;
-        case FF_B_TYPE:
+        case AV_PICTURE_TYPE_B:
             return FFMAX3(s->f_code, s->b_code, 2) + 15;
         default:
             return -1;

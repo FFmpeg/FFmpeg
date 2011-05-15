@@ -94,6 +94,14 @@ static const uint8_t cga_mode45_index[6][4] = {
     [5] = { 0, 11, 12, 15 }, // mode5, high intensity
 };
 
+static av_cold int decode_init(AVCodecContext *avctx)
+{
+    PicContext *s = avctx->priv_data;
+
+    avcodec_get_frame_defaults(&s->frame);
+    return 0;
+}
+
 static int decode_frame(AVCodecContext *avctx,
                         void *data, int *data_size,
                         AVPacket *avpkt)
@@ -148,7 +156,7 @@ static int decode_frame(AVCodecContext *avctx,
         return -1;
     }
     memset(s->frame.data[0], 0, s->height * s->frame.linesize[0]);
-    s->frame.pict_type           = FF_I_TYPE;
+    s->frame.pict_type           = AV_PICTURE_TYPE_I;
     s->frame.palette_has_changed = 1;
 
     palette = (uint32_t*)s->frame.data[1];
@@ -242,7 +250,7 @@ AVCodec ff_pictor_decoder = {
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_PICTOR,
     sizeof(PicContext),
-    NULL,
+    decode_init,
     NULL,
     decode_end,
     decode_frame,

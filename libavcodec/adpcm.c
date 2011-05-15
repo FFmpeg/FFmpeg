@@ -271,6 +271,42 @@ static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, sho
     return nibble;
 }
 
+static inline unsigned char adpcm_ima_qt_compress_sample(ADPCMChannelStatus *c, short sample)
+{
+    int delta = sample - c->prev_sample;
+    int diff, step = step_table[c->step_index];
+    int nibble = 8*(delta < 0);
+
+    delta= abs(delta);
+    diff = delta + (step >> 3);
+
+    if (delta >= step) {
+        nibble |= 4;
+        delta -= step;
+    }
+    step >>= 1;
+    if (delta >= step) {
+        nibble |= 2;
+        delta -= step;
+    }
+    step >>= 1;
+    if (delta >= step) {
+        nibble |= 1;
+        delta -= step;
+    }
+    diff -= delta;
+
+    if (nibble & 8)
+        c->prev_sample -= diff;
+    else
+        c->prev_sample += diff;
+
+    c->prev_sample = av_clip_int16(c->prev_sample);
+    c->step_index = av_clip(c->step_index + index_table[nibble], 0, 88);
+
+    return nibble;
+}
+
 static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, short sample)
 {
     int predictor, nibble, bias;
@@ -604,16 +640,14 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                 adpcm_compress_trellis(avctx, samples+ch, buf, &c->status[ch], 64);
                 for(i=0; i<64; i++)
                     put_bits(&pb, 4, buf[i^1]);
-                c->status[ch].prev_sample = c->status[ch].predictor & ~0x7F;
             } else {
                 for (i=0; i<64; i+=2){
                     int t1, t2;
-                    t1 = adpcm_ima_compress_sample(&c->status[ch], samples[avctx->channels*(i+0)+ch]);
-                    t2 = adpcm_ima_compress_sample(&c->status[ch], samples[avctx->channels*(i+1)+ch]);
+                    t1 = adpcm_ima_qt_compress_sample(&c->status[ch], samples[avctx->channels*(i+0)+ch]);
+                    t2 = adpcm_ima_qt_compress_sample(&c->status[ch], samples[avctx->channels*(i+1)+ch]);
                     put_bits(&pb, 4, t2);
                     put_bits(&pb, 4, t1);
                 }
-                c->status[ch].prev_sample &= ~0x7F;
             }
         }
 
@@ -806,6 +840,32 @@ static inline short adpcm_ima_expand_nibble(ADPCMChannelStatus *c, char nibble, 
     c->step_index = step_index;
 
     return (short)c->predictor;
+}
+
+static inline int adpcm_ima_qt_expand_nibble(ADPCMChannelStatus *c, int nibble, int shift)
+{
+    int step_index;
+    int predictor;
+    int diff, step;
+
+    step = step_table[c->step_index];
+    step_index = c->step_index + index_table[nibble];
+    step_index = av_clip(step_index, 0, 88);
+
+    diff = step >> 3;
+    if (nibble & 4) diff += step;
+    if (nibble & 2) diff += step >> 1;
+    if (nibble & 1) diff += step >> 2;
+
+    if (nibble & 8)
+        predictor = c->predictor - diff;
+    else
+        predictor = c->predictor + diff;
+
+    c->predictor = av_clip_int16(predictor);
+    c->step_index = step_index;
+
+    return c->predictor;
 }
 
 static inline short adpcm_ms_expand_nibble(ADPCMChannelStatus *c, char nibble)
@@ -1010,35 +1070,41 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_ADPCM_IMA_QT:
         n = buf_size - 2*avctx->channels;
         for (channel = 0; channel < avctx->channels; channel++) {
+            int16_t predictor;
+            int step_index;
             cs = &(c->status[channel]);
             /* (pppppp) (piiiiiii) */
 
             /* Bits 15-7 are the _top_ 9 bits of the 16-bit initial predictor value */
-            cs->predictor = (*src++) << 8;
-            cs->predictor |= (*src & 0x80);
-            cs->predictor &= 0xFF80;
+            predictor = AV_RB16(src);
+            step_index = predictor & 0x7F;
+            predictor &= 0xFF80;
 
-            /* sign extension */
-            if(cs->predictor & 0x8000)
-                cs->predictor -= 0x10000;
+            src += 2;
 
-            cs->predictor = av_clip_int16(cs->predictor);
-
-            cs->step_index = (*src++) & 0x7F;
+            if (cs->step_index == step_index) {
+                int diff = (int)predictor - cs->predictor;
+                if (diff < 0)
+                    diff = - diff;
+                if (diff > 0x7f)
+                    goto update;
+            } else {
+            update:
+                cs->step_index = step_index;
+                cs->predictor = predictor;
+            }
 
             if (cs->step_index > 88){
                 av_log(avctx, AV_LOG_ERROR, "ERROR: step_index = %i\n", cs->step_index);
                 cs->step_index = 88;
             }
 
-            cs->step = step_table[cs->step_index];
-
             samples = (short*)data + channel;
 
             for(m=32; n>0 && m>0; n--, m--) { /* in QuickTime, IMA is encoded by chuncks of 34 bytes (=64 samples) */
-                *samples = adpcm_ima_expand_nibble(cs, src[0] & 0x0F, 3);
+                *samples = adpcm_ima_qt_expand_nibble(cs, src[0] & 0x0F, 3);
                 samples += avctx->channels;
-                *samples = adpcm_ima_expand_nibble(cs, src[0] >> 4  , 3);
+                *samples = adpcm_ima_qt_expand_nibble(cs, src[0] >> 4  , 3);
                 samples += avctx->channels;
                 src ++;
             }

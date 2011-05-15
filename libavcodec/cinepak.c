@@ -403,6 +403,7 @@ static av_cold int cinepak_decode_init(AVCodecContext *avctx)
         avctx->pix_fmt = PIX_FMT_PAL8;
     }
 
+    avcodec_get_frame_defaults(&s->frame);
     s->frame.data[0] = NULL;
 
     return 0;

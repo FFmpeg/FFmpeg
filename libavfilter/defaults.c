@@ -25,7 +25,6 @@
 #include "avfilter.h"
 #include "internal.h"
 
-/* TODO: buffer pool.  see comment for avfilter_default_get_video_buffer() */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *ptr)
 {
     av_free(ptr->data[0]);
@@ -39,10 +38,30 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
 {
     int linesize[4];
     uint8_t *data[4];
+    int i;
     AVFilterBufferRef *picref = NULL;
+    AVFilterPool *pool= link->pool;
+
+    if(pool) for(i=0; i<POOL_SIZE; i++){
+        picref= pool->pic[i];
+        if(picref && picref->buf->format == link->format && picref->buf->w == w && picref->buf->h == h){
+            AVFilterBuffer *pic= picref->buf;
+            pool->pic[i]= NULL;
+            pool->count--;
+            picref->video->w = w;
+            picref->video->h = h;
+            picref->perms = perms | AV_PERM_READ;
+            picref->format= link->format;
+            pic->refcount = 1;
+            memcpy(picref->data,     pic->data,     sizeof(picref->data));
+            memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
+            return picref;
+        }
+    }else
+        pool = link->pool = av_mallocz(sizeof(AVFilterPool));
 
     // +2 is needed for swscaler, +16 to be SIMD-friendly
-    if (av_image_alloc(data, linesize, w, h, link->format, 16) < 0)
+    if ((i=av_image_alloc(data, linesize, w, h, link->format, 16)) < 0)
         return NULL;
 
     picref = avfilter_get_video_buffer_ref_from_arrays(data, linesize,
@@ -51,6 +70,10 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
         av_free(data[0]);
         return NULL;
     }
+    memset(data[0], 128, i);
+
+    picref->buf->priv= pool;
+    picref->buf->free= NULL;
 
     return picref;
 }

@@ -25,7 +25,6 @@
  * http://tools.ietf.org/html/draft-pantos-http-live-streaming
  */
 
-#define _XOPEN_SOURCE 600
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include "internal.h"

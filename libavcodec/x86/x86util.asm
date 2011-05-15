@@ -20,20 +20,24 @@
 ;*
 ;* You should have received a copy of the GNU Lesser General Public
 ;* License along with FFmpeg; if not, write to the Free Software
-;* 51, Inc., Foundation Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
 %macro SBUTTERFLY 4
+%if avx_enabled == 0
     mova      m%4, m%2
     punpckl%1 m%2, m%3
     punpckh%1 m%4, m%3
+%else
+    punpckh%1 m%4, m%2, m%3
+    punpckl%1 m%2, m%3
+%endif
     SWAP %3, %4
 %endmacro
 
 %macro SBUTTERFLY2 4
-    mova      m%4, m%2
-    punpckh%1 m%2, m%3
-    punpckl%1 m%4, m%3
+    punpckl%1 m%4, m%2, m%3
+    punpckh%1 m%2, m%2, m%3
     SWAP %2, %4, %3
 %endmacro
 
@@ -443,4 +447,18 @@
 
 %macro PMINUB_MMXEXT 3 ; dst, src, ignored
     pminub   %1, %2
+%endmacro
+
+%macro SPLATW 2-3 0
+%if mmsize == 16
+    pshuflw    %1, %2, (%3)*0x55
+    punpcklqdq %1, %1
+%else
+    pshufw     %1, %2, (%3)*0x55
+%endif
+%endmacro
+
+%macro CLIPW 3 ;(dst, min, max)
+    pmaxsw %1, %2
+    pminsw %1, %3
 %endmacro

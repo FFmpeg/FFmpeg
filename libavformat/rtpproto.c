@@ -138,14 +138,12 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
 {
     RTPContext *s;
     int rtp_port, rtcp_port,
-        is_output, ttl, connect,
+        ttl, connect,
         local_rtp_port, local_rtcp_port, max_packet_size;
     char hostname[256];
     char buf[1024];
     char path[1024];
     const char *p;
-
-    is_output = (flags & AVIO_WRONLY);
 
     s = av_mallocz(sizeof(RTPContext));
     if (!s)

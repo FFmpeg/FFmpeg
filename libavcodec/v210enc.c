@@ -31,8 +31,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (avctx->pix_fmt != PIX_FMT_YUV422P16) {
-        av_log(avctx, AV_LOG_ERROR, "v210 needs YUV422P16\n");
+    if (avctx->pix_fmt != PIX_FMT_YUV422P10) {
+        av_log(avctx, AV_LOG_ERROR, "v210 needs YUV422P10\n");
         return -1;
     }
 
@@ -43,7 +43,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     avctx->coded_frame = avcodec_alloc_frame();
 
     avctx->coded_frame->key_frame = 1;
-    avctx->coded_frame->pict_type = FF_I_TYPE;
+    avctx->coded_frame->pict_type = AV_PICTURE_TYPE_I;
 
     return 0;
 }
@@ -66,11 +66,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         return -1;
     }
 
+#define CLIP(v) av_clip(v, 4, 1019)
+
 #define WRITE_PIXELS(a, b, c)           \
     do {                                \
-        val =  (*a++           >>  6) | \
-              ((*b++ & 0xFFC0) <<  4);  \
-        val|=  (*c++ & 0xFFC0) << 14;   \
+        val =   CLIP(*a++);             \
+        val |= (CLIP(*b++) << 10) |     \
+               (CLIP(*c++) << 20);      \
         bytestream_put_le32(&p, val);   \
     } while (0)
 
@@ -85,17 +87,15 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         if (w < avctx->width - 1) {
             WRITE_PIXELS(u, y, v);
 
-            val =   *y++           >>  6;
+            val = CLIP(*y++);
             if (w == avctx->width - 2)
                 bytestream_put_le32(&p, val);
         }
         if (w < avctx->width - 3) {
-            val |=((*u++ & 0xFFC0) <<  4) |
-                  ((*y++ & 0xFFC0) << 14);
+            val |= (CLIP(*u++) << 10) | (CLIP(*y++) << 20);
             bytestream_put_le32(&p, val);
 
-            val =  (*v++           >>  6) |
-                   (*y++ & 0xFFC0) <<  4;
+            val = CLIP(*v++) | (CLIP(*y++) << 10);
             bytestream_put_le32(&p, val);
         }
 
@@ -125,6 +125,6 @@ AVCodec ff_v210_encoder = {
     encode_init,
     encode_frame,
     encode_close,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P16, PIX_FMT_NONE},
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
 };

@@ -816,7 +816,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
         return 0;
     case RV34_MB_SKIP:
-        if(s->pict_type == FF_P_TYPE){
+        if(s->pict_type == AV_PICTURE_TYPE_P){
             ZERO8x2(s->current_picture_ptr->motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
             rv34_mc_1mv (r, block_type, 0, 0, 0, 2, 2, 0);
             break;
@@ -1055,9 +1055,9 @@ static int rv34_decode_mb_header(RV34DecContext *r, int8_t *intra_types)
         s->current_picture_ptr->mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
         r->mb_type[mb_pos] = r->block_type;
         if(r->block_type == RV34_MB_SKIP){
-            if(s->pict_type == FF_P_TYPE)
+            if(s->pict_type == AV_PICTURE_TYPE_P)
                 r->mb_type[mb_pos] = RV34_MB_P_16x16;
-            if(s->pict_type == FF_B_TYPE)
+            if(s->pict_type == AV_PICTURE_TYPE_B)
                 r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
         }
         r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->mb_type[mb_pos]);
@@ -1197,7 +1197,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
     cbp = cbp2 = rv34_decode_mb_header(r, intra_types);
     r->cbp_luma  [mb_pos] = cbp;
     r->cbp_chroma[mb_pos] = cbp >> 16;
-    if(s->pict_type == FF_I_TYPE)
+    if(s->pict_type == AV_PICTURE_TYPE_I)
         r->deblock_coefs[mb_pos] = 0xFFFF;
     else
         r->deblock_coefs[mb_pos] = rv34_set_deblock_coef(r) | r->cbp_luma[mb_pos];
@@ -1298,12 +1298,12 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             r->cbp_chroma = av_realloc(r->cbp_chroma, r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_chroma));
             r->deblock_coefs = av_realloc(r->deblock_coefs, r->s.mb_stride * r->s.mb_height * sizeof(*r->deblock_coefs));
         }
-        s->pict_type = r->si.type ? r->si.type : FF_I_TYPE;
+        s->pict_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
         if(MPV_frame_start(s, s->avctx) < 0)
             return -1;
         ff_er_frame_start(s);
         r->cur_pts = r->si.pts;
-        if(s->pict_type != FF_B_TYPE){
+        if(s->pict_type != AV_PICTURE_TYPE_B){
             r->last_pts = r->next_pts;
             r->next_pts = r->cur_pts;
         }
@@ -1452,14 +1452,14 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return -1;
     }
-    if((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) && si.type == FF_B_TYPE)
+    if((!s->last_picture_ptr || !s->last_picture_ptr->data[0]) && si.type == AV_PICTURE_TYPE_B)
         return -1;
 #if FF_API_HURRY_UP
     /* skip b frames if we are in a hurry */
     if(avctx->hurry_up && si.type==FF_B_TYPE) return buf_size;
 #endif
-    if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==FF_B_TYPE)
-       || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=FF_I_TYPE)
+    if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==AV_PICTURE_TYPE_B)
+       || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=AV_PICTURE_TYPE_I)
        ||  avctx->skip_frame >= AVDISCARD_ALL)
         return buf_size;
 #if FF_API_HURRY_UP
@@ -1503,7 +1503,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             r->loop_filter(r, s->mb_height - 1);
         ff_er_frame_end(s);
         MPV_frame_end(s);
-        if (s->pict_type == FF_B_TYPE || s->low_delay) {
+        if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
             *pict= *(AVFrame*)s->current_picture_ptr;
         } else if (s->last_picture_ptr != NULL) {
             *pict= *(AVFrame*)s->last_picture_ptr;

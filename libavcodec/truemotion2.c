@@ -807,9 +807,9 @@ static int decode_frame(AVCodecContext *avctx,
     }
     p->key_frame = tm2_decode_blocks(l, p);
     if(p->key_frame)
-        p->pict_type = FF_I_TYPE;
+        p->pict_type = AV_PICTURE_TYPE_I;
     else
-        p->pict_type = FF_P_TYPE;
+        p->pict_type = AV_PICTURE_TYPE_P;
 
     l->cur = !l->cur;
     *data_size = sizeof(AVFrame);
@@ -831,6 +831,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
     l->avctx = avctx;
     l->pic.data[0]=NULL;
     avctx->pix_fmt = PIX_FMT_BGR24;
+    avcodec_get_frame_defaults(&l->pic);
 
     dsputil_init(&l->dsp, avctx);
 

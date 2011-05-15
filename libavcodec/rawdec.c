@@ -59,6 +59,7 @@ static const PixelFormatTag pix_fmt_bps_mov[] = {
     { PIX_FMT_RGB555BE, 16 },
     { PIX_FMT_RGB24,    24 },
     { PIX_FMT_ARGB,     32 },
+    { PIX_FMT_MONOWHITE,33 },
     { PIX_FMT_NONE, 0 },
 };
 
@@ -92,7 +93,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
         if (!context->buffer)
             return -1;
     }
-    context->pic.pict_type = FF_I_TYPE;
+    context->pic.pict_type = AV_PICTURE_TYPE_I;
     context->pic.key_frame = 1;
 
     avctx->coded_frame= &context->pic;
@@ -124,6 +125,7 @@ static int raw_decode(AVCodecContext *avctx,
     frame->top_field_first = avctx->coded_frame->top_field_first;
     frame->reordered_opaque = avctx->reordered_opaque;
     frame->pkt_pts          = avctx->pkt->pts;
+    frame->pkt_pos          = avctx->pkt->pos;
 
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {

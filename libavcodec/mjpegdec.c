@@ -84,6 +84,7 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 
     if (!s->picture_ptr)
         s->picture_ptr = &s->picture;
+    avcodec_get_frame_defaults(&s->picture);
 
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
@@ -353,7 +354,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    s->picture_ptr->pict_type= FF_I_TYPE;
+    s->picture_ptr->pict_type= AV_PICTURE_TYPE_I;
     s->picture_ptr->key_frame= 1;
     s->got_picture = 1;
 
@@ -1281,9 +1282,7 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
     const uint8_t *buf_ptr;
     unsigned int v, v2;
     int val;
-#ifdef DEBUG
     int skipped=0;
-#endif
 
     buf_ptr = *pbuf_ptr;
     while (buf_ptr < buf_end) {
@@ -1293,9 +1292,7 @@ static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
             val = *buf_ptr++;
             goto found;
         }
-#ifdef DEBUG
         skipped++;
-#endif
     }
     val = -1;
 found:
