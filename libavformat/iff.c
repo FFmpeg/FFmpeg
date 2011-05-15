@@ -60,8 +60,6 @@
 #define RIGHT   4
 #define STEREO  6
 
-#define PACKET_SIZE 1024
-
 /**
  * This number of bytes if added at the beginning of each AVPacket
  * which contain additional information about video properties
@@ -96,19 +94,6 @@ typedef struct {
     unsigned  transparency; ///< transparency color index in palette
     unsigned  masking;      ///< masking method used
 } IffDemuxContext;
-
-
-static void interleave_stereo(const uint8_t *src, uint8_t *dest, int size)
-{
-    uint8_t *end = dest + size;
-    size = size>>1;
-
-    while(dest < end) {
-        *dest++ = *src;
-        *dest++ = *(src+size);
-        src++;
-    }
-}
 
 /* Metadata string read */
 static int get_metadata(AVFormatContext *s,
@@ -255,7 +240,7 @@ static int iff_read_header(AVFormatContext *s,
 
         switch (iff->svx8_compression) {
         case COMP_NONE:
-            st->codec->codec_id = CODEC_ID_PCM_S8;
+            st->codec->codec_id = CODEC_ID_8SVX_RAW;
             break;
         case COMP_FIB:
             st->codec->codec_id = CODEC_ID_8SVX_FIB;
@@ -330,15 +315,8 @@ static int iff_read_packet(AVFormatContext *s,
     if(iff->sent_bytes >= iff->body_size)
         return AVERROR(EIO);
 
-    if(st->codec->channels == 2) {
-        uint8_t sample_buffer[PACKET_SIZE];
-
-        ret = avio_read(pb, sample_buffer, PACKET_SIZE);
-        if(av_new_packet(pkt, PACKET_SIZE) < 0) {
-            av_log(s, AV_LOG_ERROR, "cannot allocate packet\n");
-            return AVERROR(ENOMEM);
-        }
-        interleave_stereo(sample_buffer, pkt->data, PACKET_SIZE);
+    if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+        ret = av_get_packet(pb, pkt, iff->body_size);
     } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
         uint8_t *buf;
 
@@ -349,23 +327,13 @@ static int iff_read_packet(AVFormatContext *s,
         buf = pkt->data;
         bytestream_put_be16(&buf, 2);
         ret = avio_read(pb, buf, iff->body_size);
-    } else {
-        ret = av_get_packet(pb, pkt, PACKET_SIZE);
     }
 
     if(iff->sent_bytes == 0)
         pkt->flags |= AV_PKT_FLAG_KEY;
+    iff->sent_bytes = iff->body_size;
 
-    if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        iff->sent_bytes += PACKET_SIZE;
-    } else {
-        iff->sent_bytes = iff->body_size;
-    }
     pkt->stream_index = 0;
-    if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        pkt->pts = iff->audio_frame_count;
-        iff->audio_frame_count += ret / st->codec->channels;
-    }
     return ret;
 }
 
