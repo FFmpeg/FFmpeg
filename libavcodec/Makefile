@@ -666,7 +666,7 @@ TESTPROGS = cabac dct eval fft fft-fixed h264 iirfilter rangecoder snow
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
-HOSTPROGS = aac_tablegen aacps_tablegen cbrt_tablegen costablegen       \
+HOSTPROGS = aac_tablegen aacps_tablegen cbrt_tablegen cos_tablegen      \
             dv_tablegen motionpixels_tablegen mpegaudio_tablegen        \
             pcm_tablegen qdm2_tablegen sinewin_tablegen
 
@@ -681,7 +681,7 @@ $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
 TRIG_TABLES  = cos cos_fixed sin
 TRIG_TABLES := $(TRIG_TABLES:%=$(SUBDIR)%_tables.c)
 
-$(TRIG_TABLES): $(SUBDIR)%_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+$(TRIG_TABLES): $(SUBDIR)%_tables.c: $(SUBDIR)cos_tablegen$(HOSTEXESUF)
 	$(M)./$< $* > $@
 
 ifdef CONFIG_SMALL
