@@ -79,5 +79,5 @@ function ff_ac3_bit_alloc_calc_bap_armv6, export=1
         ldr             r0,  [sp, #12]
         mov             r1,  #0
         mov             r2,  #256
-        b               memset
+        b               X(memset)
 endfunc

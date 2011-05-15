@@ -22,6 +22,10 @@ FATE_AAC += fate-aac-latm_000000001180bc60
 fate-aac-latm_000000001180bc60: CMD = pcm -i $(SAMPLES)/aac/latm_000000001180bc60.mpg
 fate-aac-latm_000000001180bc60: REF = $(SAMPLES)/aac/latm_000000001180bc60.s16
 
+FATE_AAC += fate-aac-ap05_48
+fate-aac-ap05_48: CMD = pcm -i $(SAMPLES)/aac/ap05_48.mp4
+fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
+
 FATE_TESTS += $(FATE_AAC)
 fate-aac: $(FATE_AAC)
 $(FATE_AAC): CMP = oneoff
