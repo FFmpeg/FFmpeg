@@ -736,6 +736,22 @@ static int64_t guess_correct_pts(AVCodecContext *ctx,
     return pts;
 }
 
+#if FF_API_VIDEO_OLD
+int attribute_align_arg avcodec_decode_video(AVCodecContext *avctx, AVFrame *picture,
+                         int *got_picture_ptr,
+                         const uint8_t *buf, int buf_size)
+{
+    AVPacket avpkt;
+    av_init_packet(&avpkt);
+    avpkt.data = buf;
+    avpkt.size = buf_size;
+    // HACK for CorePNG to decode as normal PNG by default
+    avpkt.flags = AV_PKT_FLAG_KEY;
+
+    return avcodec_decode_video2(avctx, picture, got_picture_ptr, &avpkt);
+}
+#endif
+
 int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *picture,
                          int *got_picture_ptr,
                          AVPacket *avpkt)
