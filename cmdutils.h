@@ -22,8 +22,10 @@
 #ifndef FFMPEG_CMDUTILS_H
 #define FFMPEG_CMDUTILS_H
 
-#include <inttypes.h>
+#include <stdint.h>
+
 #include "libavcodec/avcodec.h"
+#include "libavfilter/avfilter.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 
@@ -278,9 +280,6 @@ int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t pts, int64_t dts);
 FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path, const char *codec_name);
 
-#if CONFIG_AVFILTER
-#include "libavfilter/avfilter.h"
-
 typedef struct {
     enum PixelFormat pix_fmt;
 } FFSinkContext;
@@ -295,7 +294,5 @@ extern AVFilter ffsink;
  */
 int get_filtered_video_frame(AVFilterContext *sink, AVFrame *frame,
                              AVFilterBufferRef **picref, AVRational *pts_tb);
-
-#endif /* CONFIG_AVFILTER */
 
 #endif /* FFMPEG_CMDUTILS_H */
