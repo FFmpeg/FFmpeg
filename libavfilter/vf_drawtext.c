@@ -571,29 +571,29 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     Glyph dummy = { 0 };
 
 #if HAVE_LOCALTIME_R
-        time_t now = time(0);
-        struct tm ltime;
-        uint8_t *buf = dtext->expanded_text;
-        int buf_size = dtext->expanded_text_size;
+    time_t now = time(0);
+    struct tm ltime;
+    uint8_t *buf = dtext->expanded_text;
+    int buf_size = dtext->expanded_text_size;
 
-        if (!buf) {
-            buf_size = 2*strlen(dtext->text)+1;
-            buf = av_malloc(buf_size);
-        }
+    if (!buf) {
+        buf_size = 2*strlen(dtext->text)+1;
+        buf = av_malloc(buf_size);
+    }
 
-        localtime_r(&now, &ltime);
+    localtime_r(&now, &ltime);
 
-        do {
-            *buf = 1;
-            if (strftime(buf, buf_size, dtext->text, &ltime) != 0 || *buf == 0)
-                break;
-            buf_size *= 2;
-        } while ((buf = av_realloc(buf, buf_size)));
+    do {
+        *buf = 1;
+        if (strftime(buf, buf_size, dtext->text, &ltime) != 0 || *buf == 0)
+            break;
+        buf_size *= 2;
+    } while ((buf = av_realloc(buf, buf_size)));
 
-        if (!buf)
-            return AVERROR(ENOMEM);
-        text = dtext->expanded_text = buf;
-        dtext->expanded_text_size = buf_size;
+    if (!buf)
+        return AVERROR(ENOMEM);
+    text = dtext->expanded_text = buf;
+    dtext->expanded_text_size = buf_size;
 #endif
     if ((len = strlen(text)) > dtext->nb_positions) {
         if (!(dtext->positions =
