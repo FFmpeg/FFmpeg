@@ -39,6 +39,7 @@ typedef struct RawVideoContext {
 } RawVideoContext;
 
 static const PixelFormatTag pix_fmt_bps_avi[] = {
+    { PIX_FMT_PAL8,    2 },
     { PIX_FMT_PAL8,    4 },
     { PIX_FMT_PAL8,    8 },
     { PIX_FMT_RGB444, 12 },
