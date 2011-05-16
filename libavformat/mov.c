@@ -1689,13 +1689,13 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     }
 }
 
-static int mov_open_dref(AVIOContext **pb, char *src, MOVDref *ref)
+static int mov_open_dref(AVIOContext **pb, const char *src, MOVDref *ref)
 {
     /* try relative path, we do not try the absolute because it can leak information about our
        system to an attacker */
     if (ref->nlvl_to > 0 && ref->nlvl_from > 0) {
         char filename[1024];
-        char *src_path;
+        const char *src_path;
         int i, l;
 
         /* find a source dir */
