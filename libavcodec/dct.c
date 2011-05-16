@@ -180,9 +180,14 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
     int n = 1 << nbits;
     int i;
 
+    memset(s, 0, sizeof(*s));
+
     s->nbits    = nbits;
     s->inverse  = inverse;
 
+    if (inverse == DCT_II && nbits == 5) {
+        s->dct_calc = dct32_func;
+    } else {
     ff_init_ff_cos_tabs(nbits+2);
 
     s->costab = ff_cos_tabs[nbits+2];
@@ -203,9 +208,7 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
     case DCT_III: s->dct_calc = ff_dct_calc_III_c; break;
     case DST_I  : s->dct_calc = ff_dst_calc_I_c; break;
     }
-
-    if (inverse == DCT_II && nbits == 5)
-        s->dct_calc = dct32_func;
+    }
 
     s->dct32 = dct32;
     if (HAVE_MMX)     ff_dct_init_mmx(s);
