@@ -1825,9 +1825,9 @@ static void update_ltp(AACContext *ac, SingleChannelElement *sce)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * lwindow[511 - i];
     }
 
-    memcpy(sce->ltp_state, &sce->ltp_state[1024], 1024 * sizeof(int16_t));
-    ac->fmt_conv.float_to_int16(&(sce->ltp_state[1024]), sce->ret,  1024);
-    ac->fmt_conv.float_to_int16(&(sce->ltp_state[2048]), saved_ltp, 1024);
+    memcpy(sce->ltp_state,      sce->ltp_state+1024, 1024 * sizeof(*sce->ltp_state));
+    memcpy(sce->ltp_state+1024, sce->ret,            1024 * sizeof(*sce->ltp_state));
+    memcpy(sce->ltp_state+2048, saved_ltp,           1024 * sizeof(*sce->ltp_state));
 }
 
 /**
