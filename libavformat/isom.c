@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "isom.h"
 #include "riff.h"
-#include "avio_internal.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
 
@@ -484,15 +483,10 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     avio_skip(pb, 8);
 }
 
-void ff_mov_write_chan(AVFormatContext *s, int64_t channel_layout,
-                       const char *chunk_type)
+void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout)
 {
-    AVIOContext *pb = s->pb;
     const MovChannelLayout *layouts;
     uint32_t layout_tag = 0;
-
-    if (!channel_layout)
-        return;
 
     for (layouts = mov_channel_layout; layouts->channel_layout; layouts++)
         if (channel_layout == layouts->channel_layout) {
@@ -500,8 +494,6 @@ void ff_mov_write_chan(AVFormatContext *s, int64_t channel_layout,
             break;
         }
 
-    ffio_wfourcc(pb, chunk_type);
-    avio_wb64(pb, 12);             //< mChunkSize
     if (layout_tag) {
         avio_wb32(pb, layout_tag); //< mChannelLayoutTag
         avio_wb32(pb, 0);          //< mChannelBitmap
