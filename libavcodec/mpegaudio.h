@@ -70,8 +70,6 @@ typedef float OUT_INT;
 #define OUT_FMT AV_SAMPLE_FMT_FLT
 #else
 typedef int16_t OUT_INT;
-#define OUT_MAX INT16_MAX
-#define OUT_MIN INT16_MIN
 #define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
 #define OUT_FMT AV_SAMPLE_FMT_S16
 #endif
