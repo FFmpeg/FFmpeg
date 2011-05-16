@@ -21,9 +21,8 @@
 
 #include "libavutil/cpu.h"
 #include "libavutil/x86_cpu.h"
-
-#define CONFIG_FLOAT 1
-#include "libavcodec/mpegaudio.h"
+#include "libavcodec/dsputil.h"
+#include "libavcodec/mpegaudiodsp.h"
 
 #define MACS(rt, ra, rb) rt+=(ra)*(rb)
 #define MLSS(rt, ra, rb) rt-=(ra)*(rb)
@@ -148,11 +147,11 @@ static void apply_window_mp3(float *in, float *win, int *unused, float *out,
     *out = sum;
 }
 
-void ff_mpegaudiodec_init_mmx(MPADecodeContext *s)
+void ff_mpadsp_init_mmx(MPADSPContext *s)
 {
     int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_SSE2) {
-        s->apply_window_mp3 = apply_window_mp3;
+        s->apply_window_float = apply_window_mp3;
     }
 }

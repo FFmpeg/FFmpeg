@@ -33,7 +33,6 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
-#include "dct.h"
 
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152
@@ -69,7 +68,6 @@
 typedef float OUT_INT;
 #else
 typedef int16_t OUT_INT;
-#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
 #endif
 
 #if CONFIG_FLOAT
@@ -142,11 +140,7 @@ typedef struct MPADecodeContext {
     int dither_state;
     int error_recognition;
     AVCodecContext* avctx;
-#if CONFIG_FLOAT
-    DCTContext dct;
-#endif
-    void (*apply_window_mp3)(MPA_INT *synth_buf, MPA_INT *window,
-                             int *dither_state, OUT_INT *samples, int incr);
+    MPADSPContext mpadsp;
 } MPADecodeContext;
 
 /* layer 3 huffman tables */
@@ -158,22 +152,6 @@ typedef struct HuffTable {
 
 int ff_mpa_l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
 int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bitrate);
-extern MPA_INT ff_mpa_synth_window_fixed[];
-void ff_mpa_synth_init_fixed(MPA_INT *window);
-void ff_mpa_synth_filter_fixed(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
-                         MPA_INT *window, int *dither_state,
-                         OUT_INT *samples, int incr,
-                         INTFLOAT sb_samples[SBLIMIT]);
-
-void ff_mpa_synth_init_float(MPA_INT *window);
-void ff_mpa_synth_filter_float(MPADecodeContext *s,
-                         MPA_INT *synth_buf_ptr, int *synth_buf_offset,
-                         MPA_INT *window, int *dither_state,
-                         OUT_INT *samples, int incr,
-                         INTFLOAT sb_samples[SBLIMIT]);
-
-void ff_mpegaudiodec_init_mmx(MPADecodeContext *s);
-void ff_mpegaudiodec_init_altivec(MPADecodeContext *s);
 
 /* fast header check for resync */
 static inline int ff_mpa_check_header(uint32_t header){

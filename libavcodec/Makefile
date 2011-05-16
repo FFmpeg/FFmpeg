@@ -40,6 +40,9 @@ OBJS-$(CONFIG_HUFFMAN)                 += huffman.o
 OBJS-$(CONFIG_LPC)                     += lpc.o
 OBJS-$(CONFIG_LSP)                     += lsp.o
 OBJS-$(CONFIG_MDCT)                    += mdct_fixed.o mdct_float.o
+OBJS-$(CONFIG_MPEGAUDIODSP)            += mpegaudiodsp.o                \
+                                          mpegaudiodsp_fixed.o          \
+                                          mpegaudiodsp_float.o
 RDFT-OBJS-$(CONFIG_HARDCODED_TABLES)   += sin_tables.o
 OBJS-$(CONFIG_RDFT)                    += rdft.o $(RDFT-OBJS-yes)
 OBJS-$(CONFIG_SINEWIN)                 += sinewin.o

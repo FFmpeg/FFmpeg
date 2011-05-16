@@ -39,6 +39,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "rdft.h"
+#include "mpegaudiodsp.h"
 #include "mpegaudio.h"
 
 #include "qdm2data.h"
@@ -170,6 +171,7 @@ typedef struct {
     float output_buffer[1024];
 
     /// Synthesis filter
+    MPADSPContext mpadsp;
     DECLARE_ALIGNED(16, MPA_INT, synth_buf)[MPA_MAX_CHANNELS][512*2];
     int synth_buf_offset[MPA_MAX_CHANNELS];
     DECLARE_ALIGNED(16, int32_t, sb_samples)[MPA_MAX_CHANNELS][128][SBLIMIT];
@@ -1616,7 +1618,8 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
         OUT_INT *samples_ptr = samples + ch;
 
         for (i = 0; i < 8; i++) {
-            ff_mpa_synth_filter_fixed(q->synth_buf[ch], &(q->synth_buf_offset[ch]),
+            ff_mpa_synth_filter_fixed(&q->mpadsp,
+                q->synth_buf[ch], &(q->synth_buf_offset[ch]),
                 ff_mpa_synth_window_fixed, &dither_state,
                 samples_ptr, q->nb_channels,
                 q->sb_samples[ch][(8 * index) + i]);
@@ -1863,6 +1866,7 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     }
 
     ff_rdft_init(&s->rdft_ctx, s->fft_order, IDFT_C2R);
+    ff_mpadsp_init(&s->mpadsp);
 
     qdm2_init(s);
 
