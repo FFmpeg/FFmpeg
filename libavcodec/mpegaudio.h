@@ -63,20 +63,17 @@
 #define FIX(a)   ((int)((a) * FRAC_ONE))
 
 #if CONFIG_FLOAT
-typedef float OUT_INT;
-#else
-typedef int16_t OUT_INT;
-#endif
-
-#if CONFIG_FLOAT
 #   define INTFLOAT float
 typedef float MPA_INT;
+typedef float OUT_INT;
 #elif FRAC_BITS <= 15
 #   define INTFLOAT int
 typedef int16_t MPA_INT;
+typedef int16_t OUT_INT;
 #else
 #   define INTFLOAT int
 typedef int32_t MPA_INT;
+typedef int16_t OUT_INT;
 #endif
 
 #define MPA_DECODE_HEADER \
