@@ -252,6 +252,7 @@ LF_IFUNC(v,  chroma_intra, depth,  avx)
 LF_FUNCS( uint8_t,  8)
 LF_FUNCS(uint16_t, 10)
 
+#if ARCH_X86_32
 LF_FUNC (v8, luma,             8, mmxext)
 static void ff_deblock_v_luma_8_mmxext(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
 {
@@ -266,6 +267,7 @@ static void ff_deblock_v_luma_intra_8_mmxext(uint8_t *pix, int stride, int alpha
     ff_deblock_v8_luma_intra_8_mmxext(pix+0, stride, alpha, beta);
     ff_deblock_v8_luma_intra_8_mmxext(pix+8, stride, alpha, beta);
 }
+#endif /* ARCH_X86_32 */
 
 LF_FUNC (v,  luma,            10, mmxext)
 LF_IFUNC(v,  luma_intra,      10, mmxext)
