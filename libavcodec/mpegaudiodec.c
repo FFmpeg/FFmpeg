@@ -47,6 +47,7 @@
 #   define MULH3(x, y, s) ((s)*(y)*(x))
 #   define MULLx(x, y, s) ((y)*(x))
 #   define RENAME(a) a ## _float
+#   define OUT_FMT AV_SAMPLE_FMT_FLT
 #else
 #   define SHR(a,b)       ((a)>>(b))
 #   define compute_antialias compute_antialias_integer
@@ -57,6 +58,7 @@
 #   define MULH3(x, y, s) MULH((s)*(x), y)
 #   define MULLx(x, y, s) MULL(x,y,s)
 #   define RENAME(a)      a
+#   define OUT_FMT AV_SAMPLE_FMT_S16
 #endif
 
 /****************/
