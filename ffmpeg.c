@@ -3378,6 +3378,8 @@ static void opt_input_file(const char *filename)
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(audio_codec_name);
+            if(!input_codecs[nb_input_codecs-1])
+                input_codecs[nb_input_codecs-1] = avcodec_find_decoder(dec->codec_id);
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             channel_layout    = dec->channel_layout;
             audio_channels    = dec->channels;
@@ -3393,6 +3395,8 @@ static void opt_input_file(const char *filename)
             break;
         case AVMEDIA_TYPE_VIDEO:
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(video_codec_name);
+            if(!input_codecs[nb_input_codecs-1])
+                input_codecs[nb_input_codecs-1] = avcodec_find_decoder(dec->codec_id);
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             frame_height = dec->height;
             frame_width  = dec->width;
@@ -3430,6 +3434,8 @@ static void opt_input_file(const char *filename)
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(subtitle_codec_name);
+            if(!input_codecs[nb_input_codecs-1])
+                input_codecs[nb_input_codecs-1] = avcodec_find_decoder(dec->codec_id);
             if(subtitle_disable)
                 st->discard = AVDISCARD_ALL;
             break;
