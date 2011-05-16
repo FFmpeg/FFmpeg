@@ -718,7 +718,7 @@ static int mov_read_enda(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return 0;
     st = c->fc->streams[c->fc->nb_streams-1];
 
-    little_endian = avio_rb16(pb);
+    little_endian = avio_rb16(pb) & 0xFF;
     av_dlog(c->fc, "enda %d\n", little_endian);
     if (little_endian == 1) {
         switch (st->codec->codec_id) {
