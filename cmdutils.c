@@ -411,13 +411,24 @@ int opt_timelimit(const char *opt, const char *arg)
     return 0;
 }
 
+static void *alloc_priv_context(int size, AVClass *class){
+    void *p = av_mallocz(size);
+    if (p) {
+        *(AVClass**)p = class;
+        av_opt_set_defaults(p);
+    }
+    return p;
+}
+
 void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec)
 {
     int i;
     void *priv_ctx=NULL;
     if(!strcmp("AVCodecContext", (*(AVClass**)ctx)->class_name)){
         AVCodecContext *avctx= ctx;
-        if(codec && codec->priv_class && avctx->priv_data){
+        if(codec && codec->priv_class){
+            if(!avctx->priv_data && codec->priv_data_size)
+                avctx->priv_data= alloc_priv_context(codec->priv_data_size, codec->priv_class);
             priv_ctx= avctx->priv_data;
         }
     } else if (!strcmp("AVFormatContext", (*(AVClass**)ctx)->class_name)) {
