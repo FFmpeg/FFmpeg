@@ -59,12 +59,12 @@ SECTION .text
 %endmacro
 
 %macro HADAMARD8 0
-    SUMSUB_BADC       m0, m1, m2, m3
-    SUMSUB_BADC       m4, m5, m6, m7
-    SUMSUB_BADC       m0, m2, m1, m3
-    SUMSUB_BADC       m4, m6, m5, m7
-    SUMSUB_BADC       m0, m4, m1, m5
-    SUMSUB_BADC       m2, m6, m3, m7
+    SUMSUB_BADC       w, 0, 1, 2, 3
+    SUMSUB_BADC       w, 4, 5, 6, 7
+    SUMSUB_BADC       w, 0, 2, 1, 3
+    SUMSUB_BADC       w, 4, 6, 5, 7
+    SUMSUB_BADC       w, 0, 4, 1, 5
+    SUMSUB_BADC       w, 2, 6, 3, 7
 %endmacro
 
 %macro ABS1_SUM 3
