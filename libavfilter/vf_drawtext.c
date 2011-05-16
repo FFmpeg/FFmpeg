@@ -49,9 +49,11 @@ typedef struct {
     const AVClass *class;
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
-    uint8_t *text_priv;             ///< used to detect whether text changed
+    uint8_t *expanded_text;         ///< used to contain the strftime()-expanded text
+    size_t   expanded_text_size;    ///< size in bytes of the expanded_text buffer
     int ft_load_flags;              ///< flags used for loading fonts, see FT_LOAD_*
     FT_Vector *positions;           ///< positions for each element in the text
+    size_t nb_positions;            ///< number of elements of positions array
     char *textfile;                 ///< file with text to be drawn
     unsigned int x;                 ///< x position to start drawing text
     unsigned int y;                 ///< y position to start drawing text
@@ -349,6 +351,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&dtext->fontfile);
     av_freep(&dtext->text);
+    av_freep(&dtext->expanded_text);
     av_freep(&dtext->fontcolor_string);
     av_freep(&dtext->boxcolor_string);
     av_freep(&dtext->positions);
@@ -517,7 +520,7 @@ static inline int is_newline(uint32_t c)
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
-    char *text = dtext->text;
+    char *text = HAVE_LOCALTIME_R ? dtext->expanded_text : dtext->text;
     uint32_t code = 0;
     int i;
     uint8_t *p;
@@ -559,45 +562,51 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     uint32_t code = 0, prev_code = 0;
     int x = 0, y = 0, i = 0, ret;
     int text_height, baseline;
+    char *text = dtext->text;
     uint8_t *p;
-    int str_w = 0;
+    int str_w = 0, len;
     int y_min = 32000, y_max = -32000;
     FT_Vector delta;
     Glyph *glyph = NULL, *prev_glyph = NULL;
     Glyph dummy = { 0 };
 
-    if (dtext->text != dtext->text_priv) {
 #if HAVE_LOCALTIME_R
         time_t now = time(0);
         struct tm ltime;
-        uint8_t *buf = NULL;
-        int     buflen = 2*strlen(dtext->text) + 1, len;
+        uint8_t *buf = dtext->expanded_text;
+        int buf_size = dtext->expanded_text_size;
+
+        if (!buf) {
+            buf_size = 2*strlen(dtext->text)+1;
+            buf = av_malloc(buf_size);
+        }
 
         localtime_r(&now, &ltime);
 
-        while ((buf = av_realloc(buf, buflen))) {
+        do {
             *buf = 1;
-            if ((len = strftime(buf, buflen, dtext->text, &ltime)) != 0 || *buf == 0)
+            if (strftime(buf, buf_size, dtext->text, &ltime) != 0 || *buf == 0)
                 break;
-            buflen *= 2;
-        }
+            buf_size *= 2;
+        } while ((buf = av_realloc(buf, buf_size)));
+
         if (!buf)
             return AVERROR(ENOMEM);
-        av_freep(&dtext->text);
-        dtext->text = dtext->text_priv = buf;
-#else
-        dtext->text_priv = dtext->text;
+        text = dtext->expanded_text = buf;
+        dtext->expanded_text_size = buf_size;
 #endif
-        if (!(dtext->positions = av_realloc(dtext->positions,
-                                            strlen(dtext->text)*sizeof(*dtext->positions))))
+    if ((len = strlen(text)) > dtext->nb_positions) {
+        if (!(dtext->positions =
+              av_realloc(dtext->positions, len*sizeof(*dtext->positions))))
             return AVERROR(ENOMEM);
+        dtext->nb_positions = len;
     }
 
     x = dtext->x;
     y = dtext->y;
 
     /* load and cache glyphs */
-    for (i = 0, p = dtext->text; *p; i++) {
+    for (i = 0, p = text; *p; i++) {
         GET_UTF8(code, *p++, continue;);
 
         /* get glyph */
@@ -614,7 +623,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
     /* compute and save position for each glyph */
     glyph = NULL;
-    for (i = 0, p = dtext->text; *p; i++) {
+    for (i = 0, p = text; *p; i++) {
         GET_UTF8(code, *p++, continue;);
 
         /* skip the \n in the sequence \r\n */
