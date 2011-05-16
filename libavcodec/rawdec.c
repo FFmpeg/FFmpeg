@@ -29,14 +29,23 @@
 #include "raw.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 
 typedef struct RawVideoContext {
+    AVClass *av_class;
     uint32_t palette[AVPALETTE_COUNT];
     unsigned char * buffer;  /* block of memory for holding one frame */
     int             length;  /* number of bytes in buffer */
     int flip;
     AVFrame pic;             ///< AVCodecContext.coded_frame
+    int tff;
 } RawVideoContext;
+
+static const AVOption options[]={
+{"top", "top field first", offsetof(RawVideoContext, tff), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM|AV_OPT_FLAG_VIDEO_PARAM},
+{NULL}
+};
+static const AVClass class = { "rawdec", NULL, options, LIBAVUTIL_VERSION_INT };
 
 static const PixelFormatTag pix_fmt_bps_avi[] = {
     { PIX_FMT_MONOWHITE, 1 },
@@ -130,6 +139,11 @@ static int raw_decode(AVCodecContext *avctx,
     frame->pkt_pts          = avctx->pkt->pts;
     frame->pkt_pos          = avctx->pkt->pos;
 
+    if(context->tff>=0){
+        frame->interlaced_frame = 1;
+        frame->top_field_first  = context->tff;
+    }
+
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {
         int i;
@@ -214,4 +228,5 @@ AVCodec ff_rawvideo_decoder = {
     raw_close_decoder,
     raw_decode,
     .long_name = NULL_IF_CONFIG_SMALL("raw video"),
+    .priv_class= &class,
 };

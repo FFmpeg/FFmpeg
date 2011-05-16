@@ -2979,6 +2979,7 @@ static int opt_qscale(const char *opt, const char *arg)
 static int opt_top_field_first(const char *opt, const char *arg)
 {
     top_field_first = parse_number_or_die(opt, arg, OPT_INT, 0, 1);
+    opt_default(opt, arg);
     return 0;
 }
 
