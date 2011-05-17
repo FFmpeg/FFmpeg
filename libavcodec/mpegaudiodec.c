@@ -47,6 +47,7 @@
 #   define MULH3(x, y, s) ((s)*(y)*(x))
 #   define MULLx(x, y, s) ((y)*(x))
 #   define RENAME(a) a ## _float
+#   define OUT_FMT AV_SAMPLE_FMT_FLT
 #else
 #   define SHR(a,b)       ((a)>>(b))
 #   define compute_antialias compute_antialias_integer
@@ -57,6 +58,7 @@
 #   define MULH3(x, y, s) MULH((s)*(x), y)
 #   define MULLx(x, y, s) MULL(x,y,s)
 #   define RENAME(a)      a
+#   define OUT_FMT AV_SAMPLE_FMT_S16
 #endif
 
 /****************/
@@ -490,7 +492,7 @@ static inline int round_sample(int64_t *sum)
     int sum1;
     sum1 = (int)((*sum) >> OUT_SHIFT);
     *sum &= (1<<OUT_SHIFT)-1;
-    return av_clip(sum1, OUT_MIN, OUT_MAX);
+    return av_clip_int16(sum1);
 }
 
 #   define MULS(ra, rb) MUL64(ra, rb)

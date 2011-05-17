@@ -35,14 +35,14 @@ int main(int argc, char *argv[])
     fd_in = open(argv[1], O_RDONLY);
     if (fd_in < 0)
     {
-        perror("Error while opening: ");
+        perror("Error opening input file");
         exit(1);
     }
 
     fd_out = open(argv[2], O_WRONLY|O_CREAT, 00644);
     if (fd_out < 0)
     {
-        perror("Error while opening: ");
+        perror("Error opening output file");
         close(fd_in);
         exit(1);
     }
@@ -69,7 +69,10 @@ int main(int argc, char *argv[])
 
     // write out modified header
     buf_in[0] = 'F';
-    write(fd_out, &buf_in, 8);
+    if (write(fd_out, &buf_in, 8) < 8) {
+        perror("Error writing output file");
+        exit(1);
+    }
 
     zstream.zalloc = NULL;
     zstream.zfree = NULL;
@@ -101,7 +104,10 @@ int main(int argc, char *argv[])
             zstream.avail_in, zstream.total_in, zstream.avail_out, zstream.total_out,
             zstream.total_out-last_out);
 
-        write(fd_out, &buf_out, zstream.total_out-last_out);
+        if (write(fd_out, &buf_out, zstream.total_out - last_out) < zstream.total_out - last_out) {
+            perror("Error writing output file");
+            exit(1);
+        }
 
         i += len;
 
@@ -120,7 +126,10 @@ int main(int argc, char *argv[])
         buf_in[3] = ((zstream.total_out+8) >> 24) & 0xff;
 
         lseek(fd_out, 4, SEEK_SET);
-        write(fd_out, &buf_in, 4);
+        if (write(fd_out, &buf_in, 4) < 4) {
+            perror("Error writing output file");
+            exit(1);
+        }
     }
 
     inflateEnd(&zstream);

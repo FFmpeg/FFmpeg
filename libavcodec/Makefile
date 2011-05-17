@@ -669,7 +669,6 @@ SKIPHEADERS-$(CONFIG_LIBSCHROEDINGER)  += libschroedinger.h
 SKIPHEADERS-$(CONFIG_VAAPI)            += vaapi_internal.h
 SKIPHEADERS-$(CONFIG_VDPAU)            += vdpau.h
 SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
-SKIPHEADERS                            += mpegaudio3.h
 
 EXAMPLES = api
 

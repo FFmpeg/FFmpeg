@@ -171,8 +171,6 @@ static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
-#else
-static unsigned int sws_flags = SWS_BICUBIC;
 #endif
 
 static int intra_only = 0;
@@ -289,6 +287,7 @@ typedef struct AVOutputStream {
     int resample_pix_fmt;
 
     float frame_aspect_ratio;
+
     /* forced key frames */
     int64_t *forced_kf_pts;
     int forced_kf_count;
@@ -1642,7 +1641,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
         }
 
 #if CONFIG_AVFILTER
-        if(ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
+        if(ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             for(i=0;i<nb_ostreams;i++) {
                 ost = ost_table[i];
                 if (ost->input_video_filter && ost->source_index == ist_index) {
@@ -1786,7 +1785,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                     cont:
                     frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
                                        ost->output_video_filter && avfilter_poll_frame(ost->output_video_filter->inputs[0]);
-                    if(ost->picref)
+                    if (ost->picref)
                         avfilter_unref_buffer(ost->picref);
                 }
 #endif
@@ -3537,8 +3536,8 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
         ost->frame_aspect_ratio = frame_aspect_ratio;
         frame_aspect_ratio = 0;
 #if CONFIG_AVFILTER
-        ost->avfilter= vfilters;
-        vfilters= NULL;
+        ost->avfilter = vfilters;
+        vfilters = NULL;
 #endif
     }
 
