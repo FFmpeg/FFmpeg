@@ -35,8 +35,6 @@
 #include "dsputil.h"
 #include "dct.h"
 
-#define CONFIG_AUDIO_NONSHORT 0
-
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152
 
@@ -69,19 +67,9 @@
 
 #if CONFIG_FLOAT
 typedef float OUT_INT;
-#define OUT_FMT AV_SAMPLE_FMT_FLT
-#elif CONFIG_MPEGAUDIO_HP && CONFIG_AUDIO_NONSHORT
-typedef int32_t OUT_INT;
-#define OUT_MAX INT32_MAX
-#define OUT_MIN INT32_MIN
-#define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 31)
-#define OUT_FMT AV_SAMPLE_FMT_S32
 #else
 typedef int16_t OUT_INT;
-#define OUT_MAX INT16_MAX
-#define OUT_MIN INT16_MIN
 #define OUT_SHIFT (WFRAC_BITS + FRAC_BITS - 15)
-#define OUT_FMT AV_SAMPLE_FMT_S16
 #endif
 
 #if CONFIG_FLOAT
@@ -147,6 +135,9 @@ typedef struct MPADecodeContext {
     DECLARE_ALIGNED(16, INTFLOAT, sb_samples)[MPA_MAX_CHANNELS][36][SBLIMIT];
     INTFLOAT mdct_buf[MPA_MAX_CHANNELS][SBLIMIT * 18]; /* previous samples, for layer 3 MDCT */
     GranuleDef granules[2][2]; /* Used in Layer 3 */
+#ifdef DEBUG
+    int frame_count;
+#endif
     int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
     int dither_state;
     int error_recognition;
