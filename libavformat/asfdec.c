@@ -1299,4 +1299,5 @@ AVInputFormat ff_asf_demuxer = {
     asf_read_close,
     asf_read_seek,
     asf_read_pts,
+    .flags = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH,
 };
