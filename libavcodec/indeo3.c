@@ -1137,6 +1137,9 @@ static av_cold int indeo3_decode_end(AVCodecContext *avctx)
 
     iv_free_func(s);
 
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
+
     return 0;
 }
 
