@@ -75,7 +75,10 @@ double av_strtod(const char *numstr, char **tail)
 {
     double d;
     char *next;
-    d = strtod(numstr, &next);
+    if(numstr[0]=='0' && (numstr[1]|0x20)=='x') {
+        d = strtol(numstr, &next, 16);
+    } else
+        d = strtod(numstr, &next);
     /* if parsing succeeded, check for and interpret postfixes */
     if (next!=numstr) {
         if (*next >= 'E' && *next <= 'z') {
