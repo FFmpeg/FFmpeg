@@ -1183,6 +1183,7 @@ CMDLINE_SET="
     host_ldflags
     host_libs
     host_os
+    install
     ld
     logfile
     malloc_prefix
@@ -1633,6 +1634,7 @@ ar_default="ar"
 cc_default="gcc"
 cc_version=\"unknown\"
 host_cc_default="gcc"
+install="install"
 ln_s="ln -sf"
 nm_default="nm"
 objformat="elf"
@@ -3351,7 +3353,7 @@ SDL_LIBS=$sdl_libs
 SDL_CFLAGS=$sdl_cflags
 LIB_INSTALL_EXTRA_CMD=$LIB_INSTALL_EXTRA_CMD
 EXTRALIBS=$extralibs
-INSTALL=install
+INSTALL=$install
 LIBTARGET=${LIBTARGET}
 SLIBNAME=${SLIBNAME}
 SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}
