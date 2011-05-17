@@ -1,6 +1,8 @@
 OBJS-$(CONFIG_MLP_DECODER)             += x86/mlpdsp.o
 OBJS-$(CONFIG_TRUEHD_DECODER)          += x86/mlpdsp.o
 
+YASM-OBJS-$(CONFIG_DCT)                += x86/dct32_sse.o
+
 YASM-OBJS-FFT-$(HAVE_AMD3DNOW)         += x86/fft_3dn.o
 YASM-OBJS-FFT-$(HAVE_AMD3DNOWEXT)      += x86/fft_3dn2.o
 YASM-OBJS-FFT-$(HAVE_SSE)              += x86/fft_sse.o
@@ -54,4 +56,3 @@ OBJS-$(HAVE_MMX)                       += x86/dnxhd_mmx.o               \
                                           x86/mpegvideo_mmx.o           \
                                           x86/simple_idct_mmx.o         \
 
-MMX-OBJS-$(CONFIG_DCT)                 += x86/dct32_sse.o
