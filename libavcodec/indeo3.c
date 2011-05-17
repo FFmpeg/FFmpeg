@@ -25,10 +25,6 @@
  * http://wiki.multimedia.cx/index.php?title=Indeo_3
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "dsputil.h"
