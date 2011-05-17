@@ -182,6 +182,26 @@ typedef struct OptionDef {
 void show_help_options(const OptionDef *options, const char *msg, int req_flags,
                        int rej_flags, int alt_flags);
 
+#define CMDUTILS_COMMON_OPTIONS                                                                                         \
+    { "L",           OPT_EXIT,             { .func_arg = show_license },     "show license" },                          \
+    { "h",           OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
+    { "?",           OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
+    { "help",        OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
+    { "-help",       OPT_EXIT,             { .func_arg = show_help },        "show help", "topic" },                    \
+    { "version",     OPT_EXIT,             { .func_arg = show_version },     "show version" },                          \
+    { "formats",     OPT_EXIT,             { .func_arg = show_formats },     "show available formats" },                \
+    { "codecs",      OPT_EXIT,             { .func_arg = show_codecs },      "show available codecs" },                 \
+    { "decoders",    OPT_EXIT,             { .func_arg = show_decoders },    "show available decoders" },               \
+    { "encoders",    OPT_EXIT,             { .func_arg = show_encoders },    "show available encoders" },               \
+    { "bsfs",        OPT_EXIT,             { .func_arg = show_bsfs },        "show available bit stream filters" },     \
+    { "protocols",   OPT_EXIT,             { .func_arg = show_protocols },   "show available protocols" },              \
+    { "filters",     OPT_EXIT,             { .func_arg = show_filters },     "show available filters" },                \
+    { "pix_fmts",    OPT_EXIT,             { .func_arg = show_pix_fmts },    "show available pixel formats" },          \
+    { "sample_fmts", OPT_EXIT,             { .func_arg = show_sample_fmts }, "show available audio sample formats" },   \
+    { "loglevel",    HAS_ARG,              { .func_arg = opt_loglevel },     "set libav* logging level", "loglevel" },  \
+    { "v",           HAS_ARG,              { .func_arg = opt_loglevel },     "set libav* logging level", "loglevel" },  \
+    { "cpuflags",    HAS_ARG | OPT_EXPERT, { .func_arg = opt_cpuflags },     "set CPU flags mask", "mask" },            \
+
 /**
  * Show help for all options with given flags in class and all its
  * children.

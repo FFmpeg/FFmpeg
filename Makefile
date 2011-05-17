@@ -103,8 +103,7 @@ FFLIBS := avutil
 
 DATA_FILES := $(wildcard $(SRC_PATH)/presets/*.avpreset)
 
-SKIPHEADERS = cmdutils_common_opts.h                                    \
-              compat/w32pthreads.h
+SKIPHEADERS = compat/w32pthreads.h
 
 # first so "all" becomes default target
 all: all-yes

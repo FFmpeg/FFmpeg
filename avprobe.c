@@ -1094,7 +1094,7 @@ static int opt_pretty(void *optctx, const char *opt, const char *arg)
 }
 
 static const OptionDef real_options[] = {
-#include "cmdutils_common_opts.h"
+    CMDUTILS_COMMON_OPTIONS
     { "f", HAS_ARG, {.func_arg = opt_format}, "force format", "format" },
     { "of", HAS_ARG, {.func_arg = opt_output_format}, "output the document either as ini or json", "output_format" },
     { "unit", OPT_BOOL, {&show_value_unit},
