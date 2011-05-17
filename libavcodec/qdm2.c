@@ -38,7 +38,7 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
-#include "fft.h"
+#include "rdft.h"
 #include "mpegaudio.h"
 
 #include "qdm2data.h"
