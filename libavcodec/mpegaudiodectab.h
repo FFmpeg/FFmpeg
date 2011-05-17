@@ -33,6 +33,13 @@
 /*******************************************************/
 /* layer 3 tables */
 
+/* layer 3 huffman tables */
+typedef struct HuffTable {
+    int xsize;
+    const uint8_t *bits;
+    const uint16_t *codes;
+} HuffTable;
+
 /* layer3 scale factor size */
 static const uint8_t slen_table[2][16] = {
     { 0, 0, 0, 0, 3, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4 },
