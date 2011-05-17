@@ -184,6 +184,26 @@ static int wav_probe(AVProbeData *p)
     return 0;
 }
 
+static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
+{
+    AVIOContext *pb = s->pb;
+    int ret;
+
+    /* parse fmt header */
+    *st = av_new_stream(s, 0);
+    if (!*st)
+        return AVERROR(ENOMEM);
+
+    ff_get_wav_header(pb, (*st)->codec, size);
+    if (ret < 0)
+        return ret;
+    (*st)->need_parsing = AVSTREAM_PARSE_FULL;
+
+    av_set_pts_info(*st, 64, 1, (*st)->codec->sample_rate);
+
+    return 0;
+}
+
 /* wav input */
 static int wav_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
@@ -195,7 +215,8 @@ static int wav_read_header(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     AVStream *st;
     WAVContext *wav = s->priv_data;
-    int ret;
+    int ret, got_fmt = 0;
+    int64_t next_tag_ofs;
 
     /* check RIFF header */
     tag = avio_rl32(pb);
@@ -220,32 +241,32 @@ static int wav_read_header(AVFormatContext *s,
         avio_skip(pb, size - 16); /* skip rest of ds64 chunk */
     }
 
-    /* parse fmt header */
-    size = find_tag(pb, MKTAG('f', 'm', 't', ' '));
-    if (size < 0)
-        return -1;
-    st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
-
-    ret = ff_get_wav_header(pb, st->codec, size);
-    if (ret < 0)
-        return ret;
-    st->need_parsing = AVSTREAM_PARSE_FULL;
-
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     for (;;) {
         if (url_feof(pb))
             return -1;
         size = next_tag(pb, &tag);
-        if (tag == MKTAG('d', 'a', 't', 'a')){
+        next_tag_ofs = url_ftell(pb) + size;
+
+        if (tag == MKTAG('f', 'm', 't', ' ')) {
+            /* only parse the first 'fmt ' tag found */
+            if (!got_fmt && (ret = wav_parse_fmt_tag(s, size, &st) < 0)) {
+                return ret;
+            } else if (got_fmt)
+                av_log(s, AV_LOG_WARNING, "found more than one 'fmt ' tag\n");
+
+            got_fmt = 1;
+        } else if (tag == MKTAG('d', 'a', 't', 'a')) {
+            if (!got_fmt) {
+                av_log(s, AV_LOG_ERROR, "found no 'fmt ' tag before the 'data' tag\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             break;
         }else if (tag == MKTAG('f','a','c','t') && !sample_count){
             sample_count = avio_rl32(pb);
-            size -= 4;
         }
-        avio_skip(pb, size);
+        avio_seek(pb, next_tag_ofs, SEEK_SET);
     }
     if (rf64)
         size = data_size;
