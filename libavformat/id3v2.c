@@ -1,5 +1,4 @@
 /*
- * ID3v2 header parser
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -17,6 +16,14 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * @file
+ * ID3v2 header parser
+ *
+ * Specifications available at:
+ * http://id3.org/Developer_Information
  */
 
 #include "id3v2.h"
