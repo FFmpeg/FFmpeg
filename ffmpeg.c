@@ -3456,6 +3456,7 @@ static void opt_input_file(const char *filename)
     nb_input_files++;
 
     video_channel = 0;
+    top_field_first = -1;
 
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
