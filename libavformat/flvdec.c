@@ -387,7 +387,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     size = avio_rb24(s->pb);
     dts = avio_rb24(s->pb);
     dts |= avio_r8(s->pb) << 24;
-//    av_log(s, AV_LOG_DEBUG, "type:%d, size:%d, dts:%d\n", type, size, dts);
+    av_dlog(s, "type:%d, size:%d, dts:%"PRId64"\n", type, size, dts);
     if (s->pb->eof_reached)
         return AVERROR_EOF;
     avio_skip(s->pb, 3); /* stream id, always 0 */
@@ -433,7 +433,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         st= create_stream(s, is_audio);
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     }
-//    av_log(s, AV_LOG_DEBUG, "%d %X %d \n", is_audio, flags, st->discard);
+    av_dlog(s, "%d %X %d \n", is_audio, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||         is_audio))
        ||(st->discard >= AVDISCARD_BIDIR  &&  ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_DISP_INTER && !is_audio))
        || st->discard >= AVDISCARD_ALL
