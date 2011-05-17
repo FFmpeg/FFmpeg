@@ -255,6 +255,8 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         next = avio_tell(s->pb) + tlen;
 
         if (tflags & ID3v2_FLAG_DATALEN) {
+            if (tlen < 4)
+                break;
             avio_rb32(s->pb);
             tlen -= 4;
         }
