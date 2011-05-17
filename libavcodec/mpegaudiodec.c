@@ -58,7 +58,7 @@
 #   define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
 #   define MULH3(x, y, s) MULH((s)*(x), y)
 #   define MULLx(x, y, s) MULL(x,y,s)
-#   define RENAME(a)      a
+#   define RENAME(a)      a ## _fixed
 #   define OUT_FMT AV_SAMPLE_FMT_S16
 #endif
 
@@ -621,7 +621,7 @@ static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
    32 samples. */
 /* XXX: optimize by avoiding ring buffer usage */
 #if !CONFIG_FLOAT
-void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
+void ff_mpa_synth_filter_fixed(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          MPA_INT *window, int *dither_state,
                          OUT_INT *samples, int incr,
                          INTFLOAT sb_samples[SBLIMIT])

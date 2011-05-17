@@ -1616,8 +1616,8 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
         OUT_INT *samples_ptr = samples + ch;
 
         for (i = 0; i < 8; i++) {
-            ff_mpa_synth_filter(q->synth_buf[ch], &(q->synth_buf_offset[ch]),
-                ff_mpa_synth_window, &dither_state,
+            ff_mpa_synth_filter_fixed(q->synth_buf[ch], &(q->synth_buf_offset[ch]),
+                ff_mpa_synth_window_fixed, &dither_state,
                 samples_ptr, q->nb_channels,
                 q->sb_samples[ch][(8 * index) + i]);
             samples_ptr += 32 * q->nb_channels;
@@ -1646,7 +1646,7 @@ static av_cold void qdm2_init(QDM2Context *q) {
     initialized = 1;
 
     qdm2_init_vlc();
-    ff_mpa_synth_init(ff_mpa_synth_window);
+    ff_mpa_synth_init_fixed(ff_mpa_synth_window_fixed);
     softclip_table_init();
     rnd_table_init();
     init_noise_samples();
