@@ -29,6 +29,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "mathops.h"
+#include "dct32.h"
 
 /*
  * TODO:
@@ -67,12 +68,6 @@
 
 #include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"
-
-#if CONFIG_FLOAT
-#    include "fft.h"
-#else
-#    include "dct32.c"
-#endif
 
 static void compute_antialias(MPADecodeContext *s, GranuleDef *g);
 static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
@@ -637,7 +632,7 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     offset = *synth_buf_offset;
     synth_buf = synth_buf_ptr + offset;
 
-    dct32(synth_buf, sb_samples);
+    ff_dct32_fixed(synth_buf, sb_samples);
     apply_window_mp3_c(synth_buf, window, dither_state, samples, incr);
 
     offset = (offset - 32) & 511;

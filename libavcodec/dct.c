@@ -30,9 +30,7 @@
 #include <math.h>
 #include "libavutil/mathematics.h"
 #include "dct.h"
-
-#define DCT32_FLOAT
-#include "dct32.c"
+#include "dct32.h"
 
 /* sin((M_PI * x / (2*n)) */
 #define SIN(s,n,x) (s->costab[(n) - (x)])
@@ -210,7 +208,7 @@ av_cold int ff_dct_init(DCTContext *s, int nbits, enum DCTTransformType inverse)
         }
     }
 
-    s->dct32 = dct32;
+    s->dct32 = ff_dct32_float;
     if (HAVE_MMX)     ff_dct_init_mmx(s);
 
     return 0;
