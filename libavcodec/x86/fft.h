@@ -36,4 +36,4 @@ void ff_imdct_half_sse(FFTContext *s, FFTSample *output, const FFTSample *input)
 void ff_imdct_half_avx(FFTContext *s, FFTSample *output, const FFTSample *input);
 void ff_dct32_float_sse(FFTSample *out, const FFTSample *in);
 
-#endif
+#endif /* AVCODEC_X86_FFT_H */

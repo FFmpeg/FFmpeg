@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MSGSMDEC_H
-#define MSGSMDEC_H
+#ifndef AVCODEC_MSGSMDEC_H
+#define AVCODEC_MSGSMDEC_H
 
 #include "avcodec.h"
 
 int ff_msgsm_decode_block(AVCodecContext *avctx, int16_t *samples,
                           const uint8_t *buf);
 
-#endif
+#endif /* AVCODEC_MSGSMDEC_H */

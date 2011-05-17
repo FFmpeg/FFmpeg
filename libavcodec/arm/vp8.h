@@ -26,4 +26,4 @@ int ff_decode_block_coeffs_armv6(VP56RangeCoder *rc, DCTELEM block[16],
                                  int i, uint8_t *token_prob, int16_t qmul[2]);
 #endif
 
-#endif
+#endif /* AVCODEC_ARM_VP8_H */

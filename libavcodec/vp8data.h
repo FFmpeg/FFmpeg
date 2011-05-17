@@ -685,4 +685,4 @@ static const uint8_t vp8_mv_default_prob[2][19] = {
       128, 130, 130,  74, 148, 180, 203, 236, 254, 254 }
 };
 
-#endif
+#endif /* AVCODEC_VP8DATA_H */

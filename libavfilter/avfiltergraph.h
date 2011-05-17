@@ -120,4 +120,4 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut *inputs, AVFilterInOut *outputs,
                          AVClass *log_ctx);
 
-#endif  /* AVFILTER_AVFILTERGRAPH_H */
+#endif /* AVFILTER_AVFILTERGRAPH_H */

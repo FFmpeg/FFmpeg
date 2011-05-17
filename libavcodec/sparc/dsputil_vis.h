@@ -26,4 +26,4 @@ void ff_simple_idct_put_vis(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_simple_idct_add_vis(uint8_t *dest, int line_size, DCTELEM *data);
 void ff_simple_idct_vis(DCTELEM *data);
 
-#endif
+#endif /* AVCODEC_SPARC_DSPUTIL_VIS_H */

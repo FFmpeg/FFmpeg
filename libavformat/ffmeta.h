@@ -19,11 +19,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_META_H
-#define AVFORMAT_META_H
+#ifndef AVFORMAT_FFMETA_H
+#define AVFORMAT_FFMETA_H
 
 #define ID_STRING  ";FFMETADATA"
 #define ID_CHAPTER "[CHAPTER]"
 #define ID_STREAM  "[STREAM]"
 
-#endif /* AVFORMAT_META_H */
+#endif /* AVFORMAT_FFMETA_H */

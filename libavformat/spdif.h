@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVFORMAT_SPDIF_H
+#define AVFORMAT_SPDIF_H
+
 #include <stdint.h>
 
 #define SYNCWORD1 0xF872
@@ -55,3 +58,5 @@ static const uint16_t spdif_mpeg_pkt_offset[2][3] = {
 };
 
 void ff_spdif_bswap_buf16(uint16_t *dst, const uint16_t *src, int w);
+
+#endif /* AVFORMAT_SPDIF_H */

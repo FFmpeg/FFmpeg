@@ -36,4 +36,4 @@
 #define H263_AIC                 0xf0
 #define INTER_SCANTAB_RASTER_END 0x138
 
-#endif
+#endif /* AVCODEC_ARM_ASM_OFFSETS_H */

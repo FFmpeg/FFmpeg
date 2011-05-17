@@ -16,6 +16,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVCODEC_TARGA_H
+#define AVCODEC_TARGA_H
+
 /**
  * @file
  * targa file common definitions
@@ -34,3 +37,5 @@ enum TargaCompr {
     TGA_BW     = 3, // black & white or grayscale
     TGA_RLE    = 8, // flag pointing that data is RLE-coded
 };
+
+#endif /* AVCODEC_TARGA_H */

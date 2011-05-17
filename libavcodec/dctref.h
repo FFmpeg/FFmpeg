@@ -28,4 +28,4 @@ void ff_ref_fdct(DCTELEM *block);
 void ff_ref_idct(DCTELEM *block);
 void ff_ref_dct_init(void);
 
-#endif
+#endif /* AVCODEC_DCTREF_H */

@@ -60,4 +60,4 @@ void ff_mpadsp_apply_window_fixed(int32_t *synth_buf, int32_t *window,
                                   int *dither_state, int16_t *samples,
                                   int incr);
 
-#endif
+#endif /* AVCODEC_MPEGAUDIODSP_H */

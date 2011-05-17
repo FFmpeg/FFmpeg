@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MPEGAUDIO_TABLEGEN_H
-#define MPEGAUDIO_TABLEGEN_H
+#ifndef AVCODEC_MPEGAUDIO_TABLEGEN_H
+#define AVCODEC_MPEGAUDIO_TABLEGEN_H
 
 #include <stdint.h>
 #include <math.h>
@@ -68,4 +68,4 @@ static void mpegaudio_tableinit(void)
 }
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* MPEGAUDIO_TABLEGEN_H */
+#endif /* AVCODEC_MPEGAUDIO_TABLEGEN_H */

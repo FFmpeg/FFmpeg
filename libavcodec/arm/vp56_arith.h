@@ -89,4 +89,4 @@ static inline int vp56_rac_get_prob_branchy_armv6(VP56RangeCoder *c, int pr)
 
 #endif
 
-#endif
+#endif /* AVCODEC_ARM_VP56_ARITH_H */

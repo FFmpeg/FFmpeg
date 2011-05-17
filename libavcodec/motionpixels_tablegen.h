@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MOTIONPIXELS_TABLEGEN_H
-#define MOTIONPIXELS_TABLEGEN_H
+#ifndef AVCODEC_MOTIONPIXELS_TABLEGEN_H
+#define AVCODEC_MOTIONPIXELS_TABLEGEN_H
 
 #include <stdint.h>
 
@@ -88,4 +88,4 @@ static void motionpixels_tableinit(void)
 }
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* MOTIONPIXELS_TABLEGEN_H */
+#endif /* AVCODEC_MOTIONPIXELS_TABLEGEN_H */
