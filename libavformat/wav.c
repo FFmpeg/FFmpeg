@@ -318,6 +318,12 @@ static int wav_read_header(AVFormatContext *s,
         avio_rl64(pb); /* RIFF size */
         data_size = avio_rl64(pb);
         sample_count = avio_rl64(pb);
+        if (data_size < 0 || sample_count < 0) {
+            av_log(s, AV_LOG_ERROR, "negative data_size and/or sample_count in "
+                   "ds64: data_size = %"PRId64", sample_count = %"PRId64"\n",
+                   data_size, sample_count);
+            return AVERROR_INVALIDDATA;
+        }
         avio_skip(pb, size - 16); /* skip rest of ds64 chunk */
     }
 
