@@ -31,7 +31,4 @@
 
 int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilterBufferRef *picref);
 
-int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilterBufferRef *picref,
-                                         const char *sws_param);
-
 #endif /* AVFILTER_VSRC_BUFFER_H */

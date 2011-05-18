@@ -1536,9 +1536,10 @@ This source is mainly intended for a programmatic use, in particular
 through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 
 It accepts the following parameters:
-@var{width}:@var{height}:@var{pix_fmt_string}:@var{timebase_num}:@var{timebase_den}:@var{sample_aspect_ratio_num}:@var{sample_aspect_ratio.den}
+@var{width}:@var{height}:@var{pix_fmt_string}:@var{timebase_num}:@var{timebase_den}:@var{sample_aspect_ratio_num}:@var{sample_aspect_ratio.den}:@var{scale_params}
 
-All the parameters need to be explicitely defined.
+All the parameters but @var{scale_params} need to be explicitely
+defined.
 
 Follows the list of the accepted parameters.
 
@@ -1559,6 +1560,11 @@ timestamps of the buffered frames.
 @item sample_aspect_ratio.num, sample_aspect_ratio.den
 Specify numerator and denominator of the sample aspect ratio assumed
 by the video frames.
+
+@item scale_params
+Specify the optional parameters to be used for the scale filter which
+is automatically inserted when an input change is detected in the
+input size or format.
 @end table
 
 For example:

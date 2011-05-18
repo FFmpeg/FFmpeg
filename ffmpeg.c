@@ -1652,7 +1652,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                     picref =
                         avfilter_get_video_buffer_ref_from_frame(&picture, AV_PERM_WRITE);
-                    av_vsrc_buffer_add_video_buffer_ref(ost->input_video_filter, picref, ""); //TODO user setable params
+                    av_vsrc_buffer_add_video_buffer_ref(ost->input_video_filter, picref);
                     picref->buf->data[0] = NULL;
                     avfilter_unref_buffer(picref);
                 }

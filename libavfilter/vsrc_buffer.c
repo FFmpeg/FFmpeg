@@ -37,8 +37,7 @@ typedef struct {
     char              sws_param[256];
 } BufferSourceContext;
 
-int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilterBufferRef *picref,
-                                         const char *sws_param)
+int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilterBufferRef *picref)
 {
     BufferSourceContext *c = buffer_filter->priv;
     AVFilterLink *outlink = buffer_filter->outputs[0];
@@ -52,13 +51,10 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
         //return -1;
     }
 
-    if (!c->sws_param[0]) {
-        snprintf(c->sws_param, 255, "%d:%d:%s", c->w, c->h, sws_param);
-    }
-
     if (picref->video->w != c->w || picref->video->h != c->h || picref->format != c->pix_fmt) {
         AVFilterContext *scale = buffer_filter->outputs[0]->dst;
         AVFilterLink *link;
+        char scale_param[1024];
 
         av_log(buffer_filter, AV_LOG_INFO,
                "Buffer video input changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
@@ -72,7 +68,8 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
             if ((ret = avfilter_open(&scale, f, "Input equalizer")) < 0)
                 return ret;
 
-            if ((ret = avfilter_init_filter(scale, c->sws_param, NULL)) < 0) {
+            snprintf(scale_param, sizeof(scale_param)-1, "%d:%d:%s", c->w, c->h, c->sws_param);
+            if ((ret = avfilter_init_filter(scale, scale_param, NULL)) < 0) {
                 avfilter_free(scale);
                 return ret;
             }
@@ -85,8 +82,9 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
 
             scale->outputs[0]->format= c->pix_fmt;
         } else if (!strcmp(scale->filter->name, "scale")) {
-            snprintf(c->sws_param, 255, "%d:%d:%s", scale->outputs[0]->w, scale->outputs[0]->h, sws_param);
-            scale->filter->init(scale, c->sws_param, NULL);
+            snprintf(scale_param, sizeof(scale_param)-1, "%d:%d:%s",
+                     scale->outputs[0]->w, scale->outputs[0]->h, c->sws_param);
+            scale->filter->init(scale, scale_param, NULL);
         }
 
         c->pix_fmt = scale->inputs[0]->format = picref->format;
@@ -108,24 +106,21 @@ int av_vsrc_buffer_add_video_buffer_ref2(AVFilterContext *buffer_filter, AVFilte
     return 0;
 }
 
-int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilterBufferRef *picref)
-{
-    return av_vsrc_buffer_add_video_buffer_ref2(buffer_filter, picref, "");
-}
-
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSourceContext *c = ctx->priv;
     char pix_fmt_str[128];
     int n = 0;
+    *c->sws_param = 0;
 
     if (!args ||
-        (n = sscanf(args, "%d:%d:%127[^:]:%d:%d:%d:%d", &c->w, &c->h, pix_fmt_str,
+        (n = sscanf(args, "%d:%d:%127[^:]:%d:%d:%d:%d:%255c", &c->w, &c->h, pix_fmt_str,
                     &c->time_base.num, &c->time_base.den,
-                    &c->sample_aspect_ratio.num, &c->sample_aspect_ratio.den)) != 7) {
-        av_log(ctx, AV_LOG_ERROR, "Expected 7 arguments, but only %d found in '%s'\n", n, args);
+                    &c->sample_aspect_ratio.num, &c->sample_aspect_ratio.den, c->sws_param)) < 7) {
+        av_log(ctx, AV_LOG_ERROR, "Expected at least 7 arguments, but only %d found in '%s'\n", n, args);
         return AVERROR(EINVAL);
     }
+
     if ((c->pix_fmt = av_get_pix_fmt(pix_fmt_str)) == PIX_FMT_NONE) {
         char *tail;
         c->pix_fmt = strtol(pix_fmt_str, &tail, 10);
@@ -135,10 +130,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         }
     }
 
-    av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s tb:%d/%d sar:%d/%d\n",
+    av_log(ctx, AV_LOG_INFO, "w:%d h:%d pixfmt:%s tb:%d/%d sar:%d/%d sws_param:%s\n",
            c->w, c->h, av_pix_fmt_descriptors[c->pix_fmt].name,
            c->time_base.num, c->time_base.den,
-           c->sample_aspect_ratio.num, c->sample_aspect_ratio.den);
+           c->sample_aspect_ratio.num, c->sample_aspect_ratio.den, c->sws_param);
     return 0;
 }
 
