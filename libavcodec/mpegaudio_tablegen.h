@@ -33,8 +33,8 @@
 #else
 static int8_t   table_4_3_exp[TABLE_4_3_SIZE];
 static uint32_t table_4_3_value[TABLE_4_3_SIZE];
-static uint32_t exp_table[512];
-static uint32_t expval_table[512][16];
+static uint32_t exp_table_fixed[512];
+static uint32_t expval_table_fixed[512][16];
 static float exp_table_float[512];
 static float expval_table_float[512][16];
 
@@ -59,10 +59,10 @@ static void mpegaudio_tableinit(void)
     for (exponent = 0; exponent < 512; exponent++) {
         for (value = 0; value < 16; value++) {
             double f = (double)value * cbrtf(value) * pow(2, (exponent - 400) * 0.25 + FRAC_BITS + 5);
-            expval_table[exponent][value] = llrint(f);
+            expval_table_fixed[exponent][value] = llrint(f);
             expval_table_float[exponent][value] = f;
         }
-        exp_table[exponent] = expval_table[exponent][1];
+        exp_table_fixed[exponent] = expval_table_fixed[exponent][1];
         exp_table_float[exponent] = expval_table_float[exponent][1];
     }
 }

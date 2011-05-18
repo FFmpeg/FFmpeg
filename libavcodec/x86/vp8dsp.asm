@@ -1106,10 +1106,10 @@ cglobal vp8_idct_dc_add4uv_mmx, 3, 3
 ;           %5/%6 are temporary registers
 ;           we assume m6/m7 have constant words 20091/17734 loaded in them
 %macro VP8_IDCT_TRANSFORM4x4_1D 6
-    SUMSUB_BA           m%3, m%1, m%5     ;t0, t1
+    SUMSUB_BA         w, %3,  %1,  %5     ;t0, t1
     VP8_MULTIPLY_SUMSUB m%2, m%4, m%5,m%6 ;t2, t3
-    SUMSUB_BA           m%4, m%3, m%5     ;tmp0, tmp3
-    SUMSUB_BA           m%2, m%1, m%5     ;tmp1, tmp2
+    SUMSUB_BA         w, %4,  %3,  %5     ;tmp0, tmp3
+    SUMSUB_BA         w, %2,  %1,  %5     ;tmp1, tmp2
     SWAP                 %4,  %1
     SWAP                 %4,  %3
 %endmacro
@@ -1181,8 +1181,8 @@ VP8_IDCT_ADD sse
 %endmacro
 
 %macro HADAMARD4_1D 4
-    SUMSUB_BADC m%2, m%1, m%4, m%3
-    SUMSUB_BADC m%4, m%2, m%3, m%1
+    SUMSUB_BADC w, %2, %1, %4, %3
+    SUMSUB_BADC w, %4, %2, %3, %1
     SWAP %1, %4, %3
 %endmacro
 

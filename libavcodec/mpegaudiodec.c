@@ -29,6 +29,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "mathops.h"
+#include "dct32.h"
 
 /*
  * TODO:
@@ -57,7 +58,7 @@
 #   define FIXHR(a)       ((int)((a) * (1LL<<32) + 0.5))
 #   define MULH3(x, y, s) MULH((s)*(x), y)
 #   define MULLx(x, y, s) MULL(x,y,s)
-#   define RENAME(a)      a
+#   define RENAME(a)      a ## _fixed
 #   define OUT_FMT AV_SAMPLE_FMT_S16
 #endif
 
@@ -67,12 +68,6 @@
 
 #include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"
-
-#if CONFIG_FLOAT
-#    include "fft.h"
-#else
-#    include "dct32.c"
-#endif
 
 static void compute_antialias(MPADecodeContext *s, GranuleDef *g);
 static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
@@ -626,7 +621,7 @@ static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
    32 samples. */
 /* XXX: optimize by avoiding ring buffer usage */
 #if !CONFIG_FLOAT
-void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
+void ff_mpa_synth_filter_fixed(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
                          MPA_INT *window, int *dither_state,
                          OUT_INT *samples, int incr,
                          INTFLOAT sb_samples[SBLIMIT])
@@ -637,7 +632,7 @@ void ff_mpa_synth_filter(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
     offset = *synth_buf_offset;
     synth_buf = synth_buf_ptr + offset;
 
-    dct32(synth_buf, sb_samples);
+    ff_dct32_fixed(synth_buf, sb_samples);
     apply_window_mp3_c(synth_buf, window, dither_state, samples, incr);
 
     offset = (offset - 32) & 511;

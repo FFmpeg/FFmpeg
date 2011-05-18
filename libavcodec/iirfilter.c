@@ -324,7 +324,7 @@ int main(void)
     int i;
     FILE* fd;
 
-    fcoeffs = ff_iir_filter_init_coeffs(FF_FILTER_TYPE_BUTTERWORTH,
+    fcoeffs = ff_iir_filter_init_coeffs(NULL, FF_FILTER_TYPE_BUTTERWORTH,
                                         FF_FILTER_MODE_LOWPASS, FILT_ORDER,
                                         cutoff_coeff, 0.0, 0.0);
     fstate  = ff_iir_filter_init_state(FILT_ORDER);
