@@ -409,7 +409,10 @@ and the following constants are available:
 @end table
 
 @item -rc_override @var{override}
-rate control override for specific intervals
+Rate control override for specific intervals, formated as "int,int,int"
+list separated with slashes. Two first values are the beginning and
+end frame numbers, last one is quantizer to use if positive, or quality
+factor if negative.
 @item -me_method @var{method}
 Set motion estimation method to @var{method}.
 Available methods are (from lowest to best quality):
