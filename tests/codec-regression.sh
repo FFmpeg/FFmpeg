@@ -12,7 +12,6 @@ set -e
 eval do_$test=y
 
 rm -f "$logfile"
-rm -f "$benchfile"
 
 # generate reference for quality check
 if [ -n "$do_vref" ]; then

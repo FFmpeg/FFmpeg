@@ -44,7 +44,6 @@ do_audio_only()
 }
 
 rm -f "$logfile"
-rm -f "$benchfile"
 
 if [ -n "$do_avi" ] ; then
 do_lavf avi

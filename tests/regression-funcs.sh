@@ -23,9 +23,6 @@ errfile="$datadir/$this.err"
 # various files
 ffmpeg="$target_exec ${target_path}/ffmpeg"
 tiny_psnr="tests/tiny_psnr"
-benchfile="$datadir/$this.bench"
-bench="$datadir/$this.bench.tmp"
-bench2="$datadir/$this.bench2.tmp"
 raw_src="${target_path}/$raw_src_dir/%02d.pgm"
 raw_dst="$datadir/$this.out.yuv"
 raw_ref="$datadir/$test_ref.ref.yuv"
@@ -35,7 +32,7 @@ pcm_ref="$datadir/$test_ref.ref.wav"
 crcfile="$datadir/$this.crc"
 target_crcfile="$target_datadir/$this.crc"
 
-cleanfiles="$raw_dst $pcm_dst $crcfile $bench $bench2"
+cleanfiles="$raw_dst $pcm_dst $crcfile"
 trap 'rm -f -- $cleanfiles' EXIT
 
 mkdir -p "$datadir"
@@ -69,7 +66,7 @@ do_ffmpeg()
     f="$1"
     shift
     set -- $* ${target_path}/$f
-    run_ffmpeg -benchmark $* > $bench
+    run_ffmpeg $*
     do_md5sum $f >> $logfile
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
@@ -78,8 +75,6 @@ do_ffmpeg()
     else
         wc -c $f >> $logfile
     fi
-    expr "$(cat $bench)" : '.*utime=\(.*s\)' > $bench2
-    echo $(cat $bench2) $f >> $benchfile
 }
 
 do_ffmpeg_nomd5()
@@ -87,7 +82,7 @@ do_ffmpeg_nomd5()
     f="$1"
     shift
     set -- $* ${target_path}/$f
-    run_ffmpeg -benchmark $* > $bench
+    run_ffmpeg $*
     if [ $f = $raw_dst ] ; then
         $tiny_psnr $f $raw_ref >> $logfile
     elif [ $f = $pcm_dst ] ; then
@@ -95,8 +90,6 @@ do_ffmpeg_nomd5()
     else
         wc -c $f >> $logfile
     fi
-    expr "$(cat $bench)" : '.*utime=\(.*s\)' > $bench2
-    echo $(cat $bench2) $f >> $benchfile
 }
 
 do_ffmpeg_crc()
@@ -111,9 +104,7 @@ do_ffmpeg_nocheck()
 {
     f="$1"
     shift
-    run_ffmpeg -benchmark $* > $bench
-    expr "$(cat $bench)" : '.*utime=\(.*s\)' > $bench2
-    echo $(cat $bench2) $f >> $benchfile
+    run_ffmpeg $*
 }
 
 do_video_decoding()
