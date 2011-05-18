@@ -673,6 +673,7 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         return err;
     /* copy stream format */
     s->nb_streams = 0;
+    s->streams = av_mallocz(sizeof(AVStream *) * ic->nb_streams);
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st;
         AVCodec *codec;

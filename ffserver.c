@@ -2229,11 +2229,11 @@ static int http_prepare_data(HTTPContext *c)
         av_metadata_set2(&c->fmt_ctx.metadata, "copyright", c->stream->copyright, 0);
         av_metadata_set2(&c->fmt_ctx.metadata, "title"    , c->stream->title    , 0);
 
+        c->fmt_ctx.streams = av_mallocz(sizeof(AVStream *) * c->stream->nb_streams);
+
         for(i=0;i<c->stream->nb_streams;i++) {
-            AVStream *st;
             AVStream *src;
-            st = av_mallocz(sizeof(AVStream));
-            c->fmt_ctx.streams[i] = st;
+            c->fmt_ctx.streams[i] = av_mallocz(sizeof(AVStream));
             /* if file or feed, then just take streams from FFStream struct */
             if (!c->stream->feed ||
                 c->stream->feed == c->stream)
@@ -2241,9 +2241,9 @@ static int http_prepare_data(HTTPContext *c)
             else
                 src = c->stream->feed->streams[c->stream->feed_streams[i]];
 
-            *st = *src;
-            st->priv_data = 0;
-            st->codec->frame_number = 0; /* XXX: should be done in
+            *(c->fmt_ctx.streams[i]) = *src;
+            c->fmt_ctx.streams[i]->priv_data = 0;
+            c->fmt_ctx.streams[i]->codec->frame_number = 0; /* XXX: should be done in
                                            AVStream, not in codec */
         }
         /* set output format parameters */
@@ -3385,6 +3385,9 @@ static int rtp_new_av_stream(HTTPContext *c,
     if (!st)
         goto fail;
     ctx->nb_streams = 1;
+    ctx->streams = av_mallocz(sizeof(AVStream *) * ctx->nb_streams);
+    if (!ctx->streams)
+      goto fail;
     ctx->streams[0] = st;
 
     if (!c->stream->feed ||
@@ -3765,11 +3768,7 @@ static void build_feed_streams(void)
             }
             s->oformat = feed->fmt;
             s->nb_streams = feed->nb_streams;
-            for(i=0;i<s->nb_streams;i++) {
-                AVStream *st;
-                st = feed->streams[i];
-                s->streams[i] = st;
-            }
+            s->streams = feed->streams;
             av_set_parameters(s, NULL);
             if (av_write_header(s) < 0) {
                 http_log("Container doesn't supports the required parameters\n");
