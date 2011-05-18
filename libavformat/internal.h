@@ -124,10 +124,12 @@ int ff_url_join(char *str, int size, const char *proto,
  * @param dest_type the destination address type, may be NULL
  * @param port the destination port of the media stream, 0 if unknown
  * @param ttl the time to live of the stream, 0 if not multicast
+ * @param fmt the AVFormatContext, which might contain options modifying
+ *            the generated SDP
  */
 void ff_sdp_write_media(char *buff, int size, AVCodecContext *c,
                         const char *dest_addr, const char *dest_type,
-                        int port, int ttl);
+                        int port, int ttl, AVFormatContext *fmt);
 
 /**
  * Write a packet to another muxer than the one the user originally
