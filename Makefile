@@ -180,7 +180,6 @@ check: test checkheaders
 fulltest test: codectest lavftest lavfitest seektest
 
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
-SEEK_REFFILE     = $(SRC_PATH)/tests/seek.regression.ref
 
 codectest: fate-codec
 lavftest:  fate-lavf
