@@ -194,10 +194,6 @@ REFS = $(AREF) $(VREF)
 $(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 $(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
 
-fate-acodec-aref:  CMD = codectest acodec
-fate-vsynth1-vref: CMD = codectest vsynth1
-fate-vsynth2-vref: CMD = codectest vsynth2
-
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
 	@echo "Unfortunately ffserver is broken and therefore its regression"
@@ -250,8 +246,8 @@ FATE = $(FATE_ACODEC)                                                   \
        $(FATE_LAVFI)                                                    \
        $(FATE_SEEK)                                                     \
 
-$(FATE_ACODEC): $(AREF)
-$(FATE_VCODEC): $(VREF)
+$(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
+$(filter-out %-vref,$(FATE_VCODEC)): $(VREF)
 $(FATE_LAVF):   $(REFS)
 $(FATE_LAVFI):  $(REFS) tools/lavfi-showfiltfmts$(EXESUF)
 $(FATE_SEEK):   fate-codec fate-lavf tests/seek_test$(EXESUF)
@@ -285,7 +281,7 @@ FATE_UTILS = base64 tiny_psnr
 
 fate: $(FATE)
 
-$(FATE) $(REFS): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
+$(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)'
 
