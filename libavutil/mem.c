@@ -65,6 +65,8 @@ void  free(void *ptr);
    memory allocator. You do not need to suppress this file because the
    linker will do it automatically. */
 
+#define MAX_MALLOC_SIZE INT_MAX
+
 void *av_malloc(size_t size)
 {
     void *ptr = NULL;
@@ -73,7 +75,7 @@ void *av_malloc(size_t size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > (INT_MAX-32) )
+    if (size > (MAX_MALLOC_SIZE-32))
         return NULL;
 
 #if CONFIG_MEMALIGN_HACK
@@ -127,7 +129,7 @@ void *av_realloc(void *ptr, size_t size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > (INT_MAX-16) )
+    if (size > (MAX_MALLOC_SIZE-16))
         return NULL;
 
 #if CONFIG_MEMALIGN_HACK
