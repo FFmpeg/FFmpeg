@@ -1324,7 +1324,7 @@ static int mov_write_udta_sdp(AVIOContext *pb, AVCodecContext *ctx, int index)
     char buf[1000] = "";
     int len;
 
-    ff_sdp_write_media(buf, sizeof(buf), ctx, NULL, NULL, 0, 0);
+    ff_sdp_write_media(buf, sizeof(buf), ctx, NULL, NULL, 0, 0, 0);
     av_strlcatf(buf, sizeof(buf), "a=control:streamid=%d\r\n", index);
     len = strlen(buf);
 
