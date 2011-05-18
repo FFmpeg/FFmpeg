@@ -187,18 +187,16 @@ lavftest:  fate-lavf
 lavfitest: fate-lavfi
 seektest:  fate-seek
 
-AREF = tests/data/acodec.ref.wav
-VREF = tests/data/vsynth1.ref.yuv
+AREF = fate-acodec-aref
+VREF = fate-vsynth1-vref fate-vsynth2-vref
 REFS = $(AREF) $(VREF)
 
-$(REFS): TAG = GEN
-
 $(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
-	$(M)$(SRC_PATH)/tests/codec-regression.sh vref vsynth1 tests/vsynth1 "$(TARGET_EXEC)" "$(TARGET_PATH)"
-	$(Q)$(SRC_PATH)/tests/codec-regression.sh vref vsynth2 tests/vsynth2 "$(TARGET_EXEC)" "$(TARGET_PATH)"
-
 $(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
-	$(M)$(SRC_PATH)/tests/codec-regression.sh aref acodec tests/acodec "$(TARGET_EXEC)" "$(TARGET_PATH)"
+
+fate-acodec-aref:  CMD = codectest acodec
+fate-vsynth1-vref: CMD = codectest vsynth1
+fate-vsynth2-vref: CMD = codectest vsynth2
 
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
@@ -287,7 +285,7 @@ FATE_UTILS = base64 tiny_psnr
 
 fate: $(FATE)
 
-$(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
+$(FATE) $(REFS): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)'
 
