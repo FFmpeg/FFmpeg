@@ -48,6 +48,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
     rtpctx->max_delay = s->max_delay;
     /* Copy other stream parameters. */
     rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
+    rtpctx->flags |= s->flags & AVFMT_FLAG_MP4A_LATM;
 
     /* Set the synchronized start time. */
     rtpctx->start_time_realtime = s->start_time_realtime;
