@@ -412,24 +412,24 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                          payload_type, c->sample_rate, c->channels,
                                          payload_type, latm_context2profilelevel(c), config);
             } else {
-            if (c->extradata_size) {
-                config = extradata2config(c);
-            } else {
-                /* FIXME: maybe we can forge config information based on the
-                 *        codec parameters...
-                 */
-                av_log(c, AV_LOG_ERROR, "AAC with no global headers is currently not supported.\n");
-                return NULL;
-            }
-            if (config == NULL) {
-                return NULL;
-            }
-            av_strlcatf(buff, size, "a=rtpmap:%d MPEG4-GENERIC/%d/%d\r\n"
-                                    "a=fmtp:%d profile-level-id=1;"
-                                    "mode=AAC-hbr;sizelength=13;indexlength=3;"
-                                    "indexdeltalength=3%s\r\n",
-                                     payload_type, c->sample_rate, c->channels,
-                                     payload_type, config);
+                if (c->extradata_size) {
+                    config = extradata2config(c);
+                } else {
+                    /* FIXME: maybe we can forge config information based on the
+                     *        codec parameters...
+                     */
+                    av_log(c, AV_LOG_ERROR, "AAC with no global headers is currently not supported.\n");
+                    return NULL;
+                }
+                if (config == NULL) {
+                    return NULL;
+                }
+                av_strlcatf(buff, size, "a=rtpmap:%d MPEG4-GENERIC/%d/%d\r\n"
+                                        "a=fmtp:%d profile-level-id=1;"
+                                        "mode=AAC-hbr;sizelength=13;indexlength=3;"
+                                        "indexdeltalength=3%s\r\n",
+                                         payload_type, c->sample_rate, c->channels,
+                                         payload_type, config);
             }
             break;
         case CODEC_ID_PCM_S16BE:
