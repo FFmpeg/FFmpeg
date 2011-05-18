@@ -312,6 +312,13 @@ the input video.
 Use the option "-filters" to show all the available filters (including
 also sources and sinks).
 
+@item -x264opts @var{option}
+Allows you to set any x264 option, see x264 manual for a list.
+@example
+ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
+@end example
+
+
 @end table
 
 @section Advanced Video Options
