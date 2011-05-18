@@ -42,6 +42,7 @@ typedef struct X264Context {
     int fastfirstpass;
     char *stats;
     char *weightp;
+    char *x264opts;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -344,6 +345,17 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     OPT_STR("level", x4->level);
 
+    if(x4->x264opts){
+        const char *p= x4->x264opts;
+        while(p){
+            char param[256]={0}, val[256]={0};
+            sscanf(p, "%255[^:=]=%255[^:]", param, val);
+            OPT_STR(param, val);
+            p= strchr(p, ':');
+            p+=!!p;
+        }
+    }
+
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
 
@@ -416,6 +428,7 @@ static const AVOption options[] = {
     {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     {"wpredp", "Weighted prediction for P-frames", OFFSET(weightp), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
+    {"x264opts", "x264 options", OFFSET(x264opts), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
     { NULL },
 };
 
