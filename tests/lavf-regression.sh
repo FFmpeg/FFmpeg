@@ -226,8 +226,8 @@ conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
              monob yuv440p yuvj440p"
 for pix_fmt in $conversions ; do
     file=${outfile}${pix_fmt}.yuv
-    do_ffmpeg_nocheck $file $DEC_OPTS -r 1 -t 1 -f image2 -vcodec pgmyuv -i $raw_src \
-                            $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt $pix_fmt $target_path/$raw_dst
+    run_ffmpeg $DEC_OPTS -r 1 -t 1 -f image2 -vcodec pgmyuv -i $raw_src \
+               $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt $pix_fmt $target_path/$raw_dst
     do_ffmpeg $file $DEC_OPTS -f rawvideo -s 352x288 -pix_fmt $pix_fmt -i $target_path/$raw_dst \
                     $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt yuv444p
 done

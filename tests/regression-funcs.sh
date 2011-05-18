@@ -100,13 +100,6 @@ do_ffmpeg_crc()
     echo "$f $(cat $crcfile)" >> $logfile
 }
 
-do_ffmpeg_nocheck()
-{
-    f="$1"
-    shift
-    run_ffmpeg $*
-}
-
 do_video_decoding()
 {
     do_ffmpeg $raw_dst $DEC_OPTS $1 -i $target_path/$file -f rawvideo $ENC_OPTS $2
