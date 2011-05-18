@@ -4539,7 +4539,8 @@ int main(int argc, char **argv)
 
     init_opts();
 
-    show_banner();
+    if(verbose>=0)
+        show_banner();
 
     /* parse options */
     parse_options(argc, argv, options, opt_output_file);
