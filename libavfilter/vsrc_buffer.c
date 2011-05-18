@@ -106,6 +106,23 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilter
     return 0;
 }
 
+#if CONFIG_AVCODEC
+#include "avcodec.h"
+
+int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src, const AVFrame *frame)
+{
+    AVFilterBufferRef *picref =
+        avfilter_get_video_buffer_ref_from_frame(frame, AV_PERM_WRITE);
+    if (!picref)
+        return AVERROR(ENOMEM);
+    av_vsrc_buffer_add_video_buffer_ref(buffer_src, picref);
+    picref->buf->data[0] = NULL;
+    avfilter_unref_buffer(picref);
+
+    return 0;
+}
+#endif
+
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     BufferSourceContext *c = ctx->priv;
