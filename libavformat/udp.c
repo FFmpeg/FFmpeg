@@ -57,7 +57,6 @@ typedef struct {
     /* Circular Buffer variables for use in UDP receive code */
     int circular_buffer_size;
     AVFifoBuffer *fifo;
-    int circular_buffer_available_max;
     int circular_buffer_error;
     pthread_t circular_buffer_thread;
 } UDPContext;
@@ -529,7 +528,6 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
     UDPContext *s = h->priv_data;
     int ret;
     int avail;
-    int left;
     fd_set rfds;
     struct timeval tv;
 
@@ -594,7 +592,6 @@ static int udp_close(URLContext *h)
     if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
-    av_log( h, AV_LOG_INFO, "circular_buffer_info max:%d%%\r\n", (s->circular_buffer_available_max*100)/s->circular_buffer_size);
     av_fifo_free(s->fifo);
     av_free(s);
     return 0;
