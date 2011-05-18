@@ -252,7 +252,7 @@ static int wav_read_header(AVFormatContext *s,
         if (url_feof(pb))
             return -1;
         size = next_tag(pb, &tag);
-        next_tag_ofs = url_ftell(pb) + size;
+        next_tag_ofs = avio_tell(pb) + size;
 
         if (tag == MKTAG('f', 'm', 't', ' ')) {
             /* only parse the first 'fmt ' tag found */
