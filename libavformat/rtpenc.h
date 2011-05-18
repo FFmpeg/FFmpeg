@@ -25,6 +25,7 @@
 #include "rtp.h"
 
 struct RTPMuxContext {
+    const AVClass *av_class;
     AVFormatContext *ic;
     AVStream *st;
     int payload_type;
@@ -56,15 +57,20 @@ struct RTPMuxContext {
      * (1, 2 or 4)
      */
     int nal_length_size;
+
+    int flags;
 };
 
 typedef struct RTPMuxContext RTPMuxContext;
+
+#define FF_RTP_FLAG_MP4A_LATM 1
 
 void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m);
 
 void ff_rtp_send_h264(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_h263(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_aac(AVFormatContext *s1, const uint8_t *buff, int size);
+void ff_rtp_send_latm(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_amr(AVFormatContext *s1, const uint8_t *buff, int size);
 void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size);
 void ff_rtp_send_xiph(AVFormatContext *s1, const uint8_t *buff, int size);

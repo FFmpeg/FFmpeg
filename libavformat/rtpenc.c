@@ -23,10 +23,24 @@
 #include "mpegts.h"
 #include "internal.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/opt.h"
 
 #include "rtpenc.h"
 
 //#define DEBUG
+
+static const AVOption options[] = {
+    { "rtpflags", "RTP muxer flags", offsetof(RTPMuxContext, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" },
+    { "latm", "Use MP4A-LATM packetization instead of MPEG4-GENERIC for AAC", 0, FF_OPT_TYPE_CONST, {.dbl = FF_RTP_FLAG_MP4A_LATM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" },
+    { NULL },
+};
+
+static const AVClass rtp_muxer_class = {
+    .class_name = "RTP muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 #define RTCP_SR_SIZE 28
 
@@ -404,7 +418,10 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         ff_rtp_send_mpegvideo(s1, pkt->data, size);
         break;
     case CODEC_ID_AAC:
-        ff_rtp_send_aac(s1, pkt->data, size);
+        if (s->flags & FF_RTP_FLAG_MP4A_LATM)
+            ff_rtp_send_latm(s1, pkt->data, size);
+        else
+            ff_rtp_send_aac(s1, pkt->data, size);
         break;
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
@@ -455,4 +472,5 @@ AVOutputFormat ff_rtp_muxer = {
     rtp_write_header,
     rtp_write_packet,
     rtp_write_trailer,
+    .priv_class = &rtp_muxer_class,
 };

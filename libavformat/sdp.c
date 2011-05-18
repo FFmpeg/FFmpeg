@@ -23,7 +23,9 @@
 #include "libavutil/base64.h"
 #include "libavutil/dict.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/opt.h"
 #include "libavcodec/xiph.h"
+#include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
 #include "internal.h"
 #include "avc.h"
@@ -300,6 +302,71 @@ xiph_fail:
     return NULL;
 }
 
+static int latm_context2profilelevel(AVCodecContext *c)
+{
+    /* MP4A-LATM
+     * The RTP payload format specification is described in RFC 3016
+     * The encoding specifications are provided in ISO/IEC 14496-3 */
+
+    int profile_level = 0x2B;
+
+    /* TODO: AAC Profile only supports AAC LC Object Type.
+     * Different Object Types should implement different Profile Levels */
+
+    if (c->sample_rate <= 24000) {
+        if (c->channels <= 2)
+            profile_level = 0x28; // AAC Profile, Level 1
+    } else if (c->sample_rate <= 48000) {
+        if (c->channels <= 2) {
+            profile_level = 0x29; // AAC Profile, Level 2
+        } else if (c->channels <= 5) {
+            profile_level = 0x2A; // AAC Profile, Level 4
+        }
+    } else if (c->sample_rate <= 96000) {
+        if (c->channels <= 5) {
+            profile_level = 0x2B; // AAC Profile, Level 5
+        }
+    }
+
+    return profile_level;
+}
+
+static char *latm_context2config(AVCodecContext *c)
+{
+    /* MP4A-LATM
+     * The RTP payload format specification is described in RFC 3016
+     * The encoding specifications are provided in ISO/IEC 14496-3 */
+
+    uint8_t config_byte[6];
+    int rate_index;
+    char *config;
+
+    for (rate_index = 0; rate_index < 16; rate_index++)
+        if (ff_mpeg4audio_sample_rates[rate_index] == c->sample_rate)
+            break;
+    if (rate_index == 16) {
+        av_log(c, AV_LOG_ERROR, "Unsupported sample rate\n");
+        return NULL;
+    }
+
+    config_byte[0] = 0x40;
+    config_byte[1] = 0;
+    config_byte[2] = 0x20 | rate_index;
+    config_byte[3] = c->channels << 4;
+    config_byte[4] = 0x3f;
+    config_byte[5] = 0xc0;
+
+    config = av_malloc(6*2+1);
+    if (!config) {
+        av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the config info.\n");
+        return NULL;
+    }
+    ff_data_to_hex(config, config_byte, 6, 1);
+    config[12] = 0;
+
+    return config;
+}
+
 static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c, int payload_type, AVFormatContext *fmt)
 {
     char *config = NULL;
@@ -335,6 +402,16 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type, config ? config : "");
             break;
         case CODEC_ID_AAC:
+            if (fmt && fmt->oformat->priv_class &&
+                av_opt_flag_is_set(fmt->priv_data, "rtpflags", "latm")) {
+                config = latm_context2config(c);
+                if (!config)
+                    return NULL;
+                av_strlcatf(buff, size, "a=rtpmap:%d MP4A-LATM/%d/%d\r\n"
+                                        "a=fmtp:%d profile-level-id=%d;cpresent=0;config=%s\r\n",
+                                         payload_type, c->sample_rate, c->channels,
+                                         payload_type, latm_context2profilelevel(c), config);
+            } else {
             if (c->extradata_size) {
                 config = extradata2config(c);
             } else {
@@ -353,6 +430,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                     "indexdeltalength=3%s\r\n",
                                      payload_type, c->sample_rate, c->channels,
                                      payload_type, config);
+            }
             break;
         case CODEC_ID_PCM_S16BE:
             if (payload_type >= RTP_PT_PRIVATE)
