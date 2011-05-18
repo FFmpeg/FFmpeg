@@ -216,7 +216,7 @@ static int wav_read_header(AVFormatContext *s,
     AVStream *st;
     WAVContext *wav = s->priv_data;
     int ret, got_fmt = 0;
-    int64_t next_tag_ofs;
+    int64_t next_tag_ofs, data_ofs = -1;
 
     /* check RIFF header */
     tag = avio_rl32(pb);
@@ -247,12 +247,18 @@ static int wav_read_header(AVFormatContext *s,
         avio_skip(pb, size - 16); /* skip rest of ds64 chunk */
     }
 
-
     for (;;) {
-        if (url_feof(pb))
-            return -1;
         size = next_tag(pb, &tag);
         next_tag_ofs = avio_tell(pb) + size;
+
+        if (url_feof(pb)) {
+            if (data_ofs < 0) {
+                av_log(s, AV_LOG_ERROR, "no 'data' tag found\n");
+                return AVERROR_INVALIDDATA;
+            }
+
+            break;
+        }
 
         switch (tag) {
         case MKTAG('f', 'm', 't', ' '):
@@ -270,7 +276,21 @@ static int wav_read_header(AVFormatContext *s,
                 return AVERROR_INVALIDDATA;
             }
 
+            if (rf64) {
+                next_tag_ofs = wav->data_end = avio_tell(pb) + data_size;
+            } else {
+                data_size = size;
+                wav->data_end = size ? next_tag_ofs : INT64_MAX;
+            }
+
+            /* don't look for footer metadata if we can't seek or if we don't
+             * know where the data tag ends
+             */
+            if (!pb->seekable || (!rf64 && !size))
             goto break_loop;
+
+            data_ofs = avio_tell(pb);
+            break;
         case MKTAG('f','a','c','t'):
             if(!sample_count)
             sample_count = avio_rl32(pb);
@@ -279,17 +299,11 @@ static int wav_read_header(AVFormatContext *s,
         avio_seek(pb, next_tag_ofs, SEEK_SET);
     }
 break_loop:
-    if (rf64)
-        size = data_size;
-    if (size < 0)
-        return -1;
-    if (!size) {
-        wav->data_end = INT64_MAX;
-    } else
-        wav->data_end= avio_tell(pb) + size;
+    if (data_ofs >= 0)
+        avio_seek(pb, data_ofs, SEEK_SET);
 
     if (!sample_count && st->codec->channels && av_get_bits_per_sample(st->codec->codec_id))
-        sample_count = (size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
+        sample_count = (data_size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
     if (sample_count)
         st->duration = sample_count;
     return 0;
