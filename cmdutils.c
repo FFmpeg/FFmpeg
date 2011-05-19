@@ -908,6 +908,7 @@ int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
 {
     int ret;
     AVFilterBufferRef *picref;
+    *picref_ptr = NULL;
 
     if ((ret = avfilter_request_frame(ctx->inputs[0])) < 0)
         return ret;
