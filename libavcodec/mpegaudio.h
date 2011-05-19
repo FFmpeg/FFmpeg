@@ -30,7 +30,7 @@
 #   define CONFIG_FLOAT 0
 #endif
 
-#include "avcodec.h"
+#include <stdint.h>
 
 /* max frame size, in samples */
 #define MPA_FRAME_SIZE 1152
@@ -46,8 +46,6 @@
 #define MPA_JSTEREO 1
 #define MPA_DUAL    2
 #define MPA_MONO    3
-
-#define MP3_MASK 0xFFFE0CCF
 
 #ifndef FRAC_BITS
 #define FRAC_BITS   23   /* fractional bits for sb_samples and dct */
@@ -72,40 +70,6 @@ typedef int32_t MPA_INT;
 typedef int16_t OUT_INT;
 #endif
 
-#define MPA_DECODE_HEADER \
-    int frame_size; \
-    int error_protection; \
-    int layer; \
-    int sample_rate; \
-    int sample_rate_index; /* between 0 and 8 */ \
-    int bit_rate; \
-    int nb_channels; \
-    int mode; \
-    int mode_ext; \
-    int lsf;
-
-typedef struct MPADecodeHeader {
-  MPA_DECODE_HEADER
-} MPADecodeHeader;
-
 int ff_mpa_l2_select_table(int bitrate, int nb_channels, int freq, int lsf);
-int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bitrate);
-
-/* fast header check for resync */
-static inline int ff_mpa_check_header(uint32_t header){
-    /* header */
-    if ((header & 0xffe00000) != 0xffe00000)
-        return -1;
-    /* layer check */
-    if ((header & (3<<17)) == 0)
-        return -1;
-    /* bit rate */
-    if ((header & (0xf<<12)) == 0xf<<12)
-        return -1;
-    /* frequency */
-    if ((header & (3<<10)) == 3<<10)
-        return -1;
-    return 0;
-}
 
 #endif /* AVCODEC_MPEGAUDIO_H */
