@@ -180,9 +180,9 @@ static int request_frame(AVFilterLink *link)
     BufferSourceContext *c = link->src->priv;
 
     if (!c->picref) {
-        av_log(link->src, AV_LOG_ERROR,
+        av_log(link->src, AV_LOG_WARNING,
                "request_frame() called with no available frame!\n");
-        //return -1;
+        return AVERROR(EINVAL);
     }
 
     avfilter_start_frame(link, avfilter_ref_buffer(c->picref, ~0));
