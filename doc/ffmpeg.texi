@@ -1052,6 +1052,7 @@ file to which you want to add them.
 @c man end EXAMPLES
 
 @include eval.texi
+@include decoders.texi
 @include encoders.texi
 @include demuxers.texi
 @include muxers.texi

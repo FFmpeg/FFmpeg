@@ -111,6 +111,7 @@ with name "STREAM".
 @end table
 @c man end
 
+@include decoders.texi
 @include demuxers.texi
 @include protocols.texi
 @include indevs.texi
