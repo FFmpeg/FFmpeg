@@ -1034,7 +1034,7 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
                                   int linesize, int uvlinesize,
                                   int xchg, int simple, int pixel_shift){
     MpegEncContext * const s = &h->s;
-    int deblock_left;
+    int deblock_topleft;
     int deblock_top;
     int top_idx = 1;
     uint8_t *top_border_m1;
@@ -1050,11 +1050,11 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
     }
 
     if(h->deblocking_filter == 2) {
-        deblock_left = h->left_type[0];
-        deblock_top  = h->top_type;
+        deblock_topleft = h->slice_table[h->mb_xy - 1 - s->mb_stride] == h->slice_num;
+        deblock_top     = h->top_type;
     } else {
-        deblock_left = (s->mb_x > 0);
-        deblock_top =  (s->mb_y > !!MB_FIELD);
+        deblock_topleft = (s->mb_x > 0);
+        deblock_top     = (s->mb_y > !!MB_FIELD);
     }
 
     src_y  -=   linesize + 1 + pixel_shift;
@@ -1077,7 +1077,7 @@ if (xchg) AV_SWAP64(b,a);\
 else      AV_COPY64(b,a);
 
     if(deblock_top){
-        if(deblock_left){
+        if(deblock_topleft){
             XCHG(top_border_m1 + (8 << pixel_shift), src_y - (7 << pixel_shift), 1);
         }
         XCHG(top_border + (0 << pixel_shift), src_y + (1 << pixel_shift), xchg);
@@ -1088,7 +1088,7 @@ else      AV_COPY64(b,a);
     }
     if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         if(deblock_top){
-            if(deblock_left){
+            if(deblock_topleft){
                 XCHG(top_border_m1 + (16 << pixel_shift), src_cb - (7 << pixel_shift), 1);
                 XCHG(top_border_m1 + (24 << pixel_shift), src_cr - (7 << pixel_shift), 1);
             }
@@ -2611,7 +2611,7 @@ static void loop_filter(H264Context *h, int start_x, int end_x){
         }
     }
     h->slice_type= old_slice_type;
-    s->mb_x= 0;
+    s->mb_x= end_x;
     s->mb_y= end_mb_y - FRAME_MBAFF;
     h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
     h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
