@@ -1692,7 +1692,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 while (frame_available) {
                     AVRational ist_pts_tb;
                     if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ost->output_video_filter)
-                        get_filtered_video_frame(ost->output_video_filter, &picture, &ost->picref, &ist_pts_tb);
+                        if (get_filtered_video_frame(ost->output_video_filter, &picture, &ost->picref, &ist_pts_tb) < 0)
+                            goto cont;
                     if (ost->picref)
                         ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
 #endif
