@@ -29,6 +29,13 @@
 
 #include "avfilter.h"
 
-int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilterBufferRef *picref);
+/**
+ * Add video buffer data in picref to buffer_src.
+ *
+ * @param buffer_src pointer to a buffer source context
+ * @return >= 0 in case of success, a negative AVERROR code in case of
+ * failure
+ */
+int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_src, AVFilterBufferRef *picref);
 
 #endif /* AVFILTER_VSRC_BUFFER_H */
