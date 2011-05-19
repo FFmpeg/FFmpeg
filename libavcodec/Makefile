@@ -676,14 +676,11 @@ include $(SUBDIR)../subdir.mak
 
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
 
-$(SUBDIR)cos_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
-	$(M)./$< > $@
+TRIG_TABLES  = cos cos_fixed sin
+TRIG_TABLES := $(TRIG_TABLES:%=$(SUBDIR)%_tables.c)
 
-$(SUBDIR)cos_fixed_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
-	$(M)./$< cos fixed > $@
-
-$(SUBDIR)sin_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
-	$(M)./$< sin > $@
+$(TRIG_TABLES): $(SUBDIR)%_tables.c: $(SUBDIR)costablegen$(HOSTEXESUF)
+	$(M)./$< $* > $@
 
 ifdef CONFIG_SMALL
 $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=1

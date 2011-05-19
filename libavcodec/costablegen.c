@@ -51,7 +51,7 @@ int main(int argc, char *argv[])
 {
     int i, j;
     int do_sin = argc > 1 && !strcmp(argv[1], "sin");
-    int fixed  = argc > 2 && !strcmp(argv[2], "fixed");
+    int fixed  = argc > 1 &&  strstr(argv[1], "fixed");
     double (*func)(double) = do_sin ? sin : cos;
 
     printf("/* This file was automatically generated. */\n");
