@@ -27,7 +27,6 @@
 #include "libavutil/audioconvert.h"
 #include "avcodec.h"
 #include "get_bits.h"
-#include "dsputil.h"
 #include "mathops.h"
 #include "mpegaudiodsp.h"
 
