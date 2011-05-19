@@ -2754,14 +2754,14 @@ int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
 int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *oformat,
                                    const char *format, const char *filename)
 {
-    AVFormatContext *s= avformat_alloc_context();
+    AVFormatContext *s = avformat_alloc_context();
     int ret = 0;
 
     *avctx = NULL;
-    if(!s)
+    if (!s)
         goto nomem;
 
-    if(!oformat){
+    if (!oformat) {
         if (format) {
             oformat = av_guess_format(format, NULL, NULL);
             if (!oformat) {
@@ -2774,13 +2774,13 @@ int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *ofor
             if (!oformat) {
                 ret = AVERROR(EINVAL);
                 av_log(s, AV_LOG_ERROR, "Unable to find a suitable output format for '%s'\n",
-                        filename);
+                       filename);
                 goto error;
             }
         }
     }
 
-    s->oformat= oformat;
+    s->oformat = oformat;
     if (s->oformat->priv_data_size > 0) {
         s->priv_data = av_mallocz(s->oformat->priv_data_size);
         if (!s->priv_data)
@@ -2792,7 +2792,7 @@ int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *ofor
     } else
         s->priv_data = NULL;
 
-    if(filename)
+    if (filename)
         av_strlcpy(s->filename, filename, sizeof(s->filename));
     *avctx = s;
     return 0;
