@@ -564,14 +564,17 @@ static int aac_encode_frame(AVCodecContext *avctx,
         memset(chan_el_counter, 0, sizeof(chan_el_counter));
         for (i = 0; i < s->chan_map[0]; i++) {
             FFPsyWindowInfo* wi = windows + start_ch;
+            const float *coeffs[2];
             tag      = s->chan_map[i+1];
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
             put_bits(&s->pb, 3, tag);
             put_bits(&s->pb, 4, chan_el_counter[tag]++);
+            for (ch = 0; ch < chans; ch++)
+                coeffs[ch] = cpe->ch[ch].coeffs;
+            s->psy.model->analyze_group(&s->psy, start_ch, coeffs, wi);
             for (ch = 0; ch < chans; ch++) {
                 s->cur_channel = start_ch * 2 + ch;
-                s->psy.model->analyze(&s->psy, start_ch + ch, cpe->ch[ch].coeffs, &wi[ch]);
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
             }
             cpe->common_window = 0;

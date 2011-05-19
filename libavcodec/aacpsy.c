@@ -741,6 +741,16 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     memcpy(pch->prev_band, pch->band, sizeof(pch->band));
 }
 
+static void psy_3gpp_analyze_group(FFPsyContext *ctx, int channel,
+                                   const float **coeffs, const FFPsyWindowInfo *wi)
+{
+    int ch;
+    FFPsyChannelGroup *group = ff_psy_find_group(ctx, channel);
+
+    for (ch = 0; ch < group->num_ch; ch++)
+        psy_3gpp_analyze(ctx, channel + ch, coeffs[ch], &wi[ch]);
+}
+
 static av_cold void psy_3gpp_end(FFPsyContext *apc)
 {
     AacPsyContext *pctx = (AacPsyContext*) apc->model_priv_data;
@@ -921,6 +931,6 @@ const FFPsyModel ff_aac_psy_model =
     .init    = psy_3gpp_init,
     .window  = psy_lame_window,
     .analyze = psy_3gpp_analyze,
-    .analyze_group = NULL,
+    .analyze_group = psy_3gpp_analyze_group,
     .end     = psy_3gpp_end,
 };
