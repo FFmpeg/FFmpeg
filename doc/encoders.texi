@@ -370,3 +370,66 @@ is highly recommended that it be left as enabled except for testing purposes.
 @end table
 
 @c man end AUDIO ENCODERS
+
+@chapter Video Encoders
+@c man begin VIDEO ENCODERS
+
+A description of some of the currently available video encoders
+follows.
+
+@section libx264
+
+H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 format supported through
+libx264.
+
+Requires the presence of the libx64 headers and library during
+configuration. You need to explicitely configure the build with
+@code{--enable-libx264}.
+
+@subsection Options
+
+@table @option
+
+@item preset @var{preset_name}
+Set the encoding preset.
+
+@item tune @var{tune_name}
+Tune the encoding params.
+Deprecated in favor of @var{x264_opts}
+
+@item fastfirstpass @var{bool}
+Use fast settings when encoding first pass, default value is 1.
+Deprecated in favor of @var{x264_opts}.
+
+@item profile @var{profile_name}
+Set profile restrictions.
+Deprecated in favor of @var{x264_opts}.
+
+@item level @var{level}
+Specify level (as defined by Annex A).
+Deprecated in favor of @var{x264_opts}.
+
+@item passlogfile @var{filename}
+Specify filename for 2 pass stats.
+Deprecated in favor of @var{x264_opts}.
+
+@item wpredp @var{wpred_type}
+Specify Weighted prediction for P-frames.
+Deprecated in favor of @var{x264_opts}.
+
+@item x264opts @var{options}
+Allow to set any x264 option, see x264 manual for a list.
+
+@var{options} is a list of @var{key}=@var{value} couples separated by
+":".
+@end table
+
+For example to specify libx264 encoding options with @file{ffmpeg}:
+@example
+ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
+@end example
+
+For more information about libx264 and the supported options see:
+@url{http://www.videolan.org/developers/x264.html}
+
+@c man end VIDEO ENCODERS
