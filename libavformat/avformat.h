@@ -1054,12 +1054,34 @@ int av_demuxer_open(AVFormatContext *ic, AVFormatParameters *ap);
  */
 AVFormatContext *avformat_alloc_context(void);
 
+#if FF_API_ALLOC_OUTPUT_CONTEXT
 /**
- * Allocate an AVFormatContext.
- * avformat_free_context() can be used to free the context and everything
- * allocated by the framework within it.
+ * @deprecated deprecated in favor of avformat_alloc_output_context2()
  */
-AVFormatContext *avformat_alloc_output_context(const char *format, AVOutputFormat *oformat, const char *filename);
+attribute_deprecated
+AVFormatContext *avformat_alloc_output_context(const char *format,
+                                               AVOutputFormat *oformat,
+                                               const char *filename);
+#endif
+
+/**
+ * Allocate an AVFormatContext for an output format.
+ * avformat_free_context() can be used to free the context and
+ * everything allocated by the framework within it.
+ *
+ * @param *ctx is set to the created format context, or to NULL in
+ * case of failure
+ * @param oformat format to use for allocating the context, if NULL
+ * format_name and filename are used instead
+ * @param format_name the name of output format to use for allocating the
+ * context, if NULL filename is used instead
+ * @param filename the name of the filename to use for allocating the
+ * context, may be NULL
+ * @return >= 0 in case of success, a negative AVERROR code in case of
+ * failure
+ */
+int avformat_alloc_output_context2(AVFormatContext **ctx, AVOutputFormat *oformat,
+                                   const char *format_name, const char *filename);
 
 /**
  * Read packets of a media file to get stream information. This

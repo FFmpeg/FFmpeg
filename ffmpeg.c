@@ -3881,10 +3881,10 @@ static void opt_output_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    oc = avformat_alloc_output_context(last_asked_format, NULL, filename);
+    err = avformat_alloc_output_context2(&oc, NULL, last_asked_format, filename);
     last_asked_format = NULL;
     if (!oc) {
-        print_error(filename, AVERROR(ENOMEM));
+        print_error(filename, err);
         ffmpeg_exit(1);
     }
     file_oformat= oc->oformat;

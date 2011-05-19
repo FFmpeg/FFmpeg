@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-05-22 - xxxxxx - lavf 53.2.0 - avformat.h
+  Introduce avformat_alloc_output_context2() and deprecate
+  avformat_alloc_output_context().
+
 2011-05-22 - xxxxxx - lavfi 2.10.0 - vsrc_buffer.h
   Make libavfilter/vsrc_buffer.h public.
 

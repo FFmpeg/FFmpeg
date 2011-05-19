@@ -443,10 +443,10 @@ int main(int argc, char **argv)
     filename = argv[1];
 
     /* allocate the output media context */
-    oc = avformat_alloc_output_context(NULL, NULL, filename);
+    avformat_alloc_output_context2(&oc, NULL, NULL, filename);
     if (!oc) {
         printf("Could not deduce output format from file extension: using MPEG.\n");
-        oc = avformat_alloc_output_context("mpeg", NULL, filename);
+        avformat_alloc_output_context2(&oc, NULL, "mpeg", filename);
     }
     if (!oc) {
         exit(1);
