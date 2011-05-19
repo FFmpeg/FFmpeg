@@ -17,6 +17,34 @@ with the options @code{--enable-decoder=@var{DECODER}} /
 The option @code{-codecs} of the ff* tools will display the list of
 enabled decoders.
 
-A description of some of the currently available decoders follows.
-
 @c man end DECODERS
+
+@chapter Video Decoders
+@c man begin VIDEO DECODERS
+
+A description of some of the currently available video decoders
+follows.
+
+@section rawvideo
+
+Rawvideo decoder.
+
+This decoder allow to decoder rawvideo stream.
+
+@subsection Options
+
+@table @option
+@item top @var{top_field_first}
+Specify the assumed field type of the input video.
+@table @option
+@item -1
+the video is assumed to be progressive (default)
+@item 0
+bottom-field-first is assumed
+@item 1
+top-field-first is assumed
+@end table
+
+@end table
+
+@c man end VIDEO DECODERS
