@@ -47,10 +47,6 @@
 #define MPA_DUAL    2
 #define MPA_MONO    3
 
-/* header + layer + bitrate + freq + lsf/mpeg25 */
-#define SAME_HEADER_MASK \
-   (0xffe00000 | (3 << 17) | (0xf << 12) | (3 << 10) | (3 << 19))
-
 #define MP3_MASK 0xFFFE0CCF
 
 #ifndef FRAC_BITS
