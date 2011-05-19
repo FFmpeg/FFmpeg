@@ -127,14 +127,19 @@ av_cold void ff_aac_sbr_init(void)
     ff_ps_init();
 }
 
-av_cold void ff_aac_sbr_ctx_init(SpectralBandReplication *sbr)
+av_cold void ff_aac_sbr_ctx_init(AACContext *ac, SpectralBandReplication *sbr)
 {
+    float mdct_scale;
     sbr->kx[0] = sbr->kx[1] = 32; //Typo in spec, kx' inits to 32
     sbr->data[0].e_a[1] = sbr->data[1].e_a[1] = -1;
     sbr->data[0].synthesis_filterbank_samples_offset = SBR_SYNTHESIS_BUF_SIZE - (1280 - 128);
     sbr->data[1].synthesis_filterbank_samples_offset = SBR_SYNTHESIS_BUF_SIZE - (1280 - 128);
-    ff_mdct_init(&sbr->mdct, 7, 1, 1.0/64);
-    ff_mdct_init(&sbr->mdct_ana, 7, 1, -2.0);
+    /* SBR requires samples to be scaled to +/-32768.0 to work correctly.
+     * mdct scale factors are adjusted to scale up from +/-1.0 at analysis
+     * and scale back down at synthesis. */
+    mdct_scale = ac->avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? 32768.0f : 1.0f;
+    ff_mdct_init(&sbr->mdct,     7, 1, 1.0 / (64 * mdct_scale));
+    ff_mdct_init(&sbr->mdct_ana, 7, 1, -2.0 * mdct_scale);
     ff_ps_ctx_init(&sbr->ps);
 }
 

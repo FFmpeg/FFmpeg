@@ -1953,6 +1953,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 c->h264dsp = h->h264dsp;
                 c->sps = h->sps;
                 c->pps = h->pps;
+                c->pixel_shift = h->pixel_shift;
                 init_scan_tables(c);
                 clone_tables(c, h, i);
             }

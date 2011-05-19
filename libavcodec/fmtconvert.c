@@ -56,11 +56,31 @@ static void float_to_int16_interleave_c(int16_t *dst, const float **src,
     }
 }
 
+void ff_float_interleave_c(float *dst, const float **src, unsigned int len,
+                           int channels)
+{
+    int j, c;
+    unsigned int i;
+    if (channels == 2) {
+        for (i = 0; i < len; i++) {
+            dst[2*i]   = src[0][i];
+            dst[2*i+1] = src[1][i];
+        }
+    } else if (channels == 1 && len < INT_MAX / sizeof(float)) {
+        memcpy(dst, src[0], len * sizeof(float));
+    } else {
+        for (c = 0; c < channels; c++)
+            for (i = 0, j = c; i < len; i++, j += channels)
+                dst[j] = src[c][i];
+    }
+}
+
 av_cold void ff_fmt_convert_init(FmtConvertContext *c, AVCodecContext *avctx)
 {
     c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_c;
     c->float_to_int16             = float_to_int16_c;
     c->float_to_int16_interleave  = float_to_int16_interleave_c;
+    c->float_interleave           = ff_float_interleave_c;
 
     if (ARCH_ARM) ff_fmt_convert_init_arm(c, avctx);
     if (HAVE_ALTIVEC) ff_fmt_convert_init_altivec(c, avctx);

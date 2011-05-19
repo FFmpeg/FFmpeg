@@ -235,11 +235,40 @@ static void float_to_int16_interleave_3dn2(int16_t *dst, const float **src, long
         float_to_int16_interleave_3dnow(dst, src, len, channels);
 }
 
+void ff_float_interleave2_mmx(float *dst, const float **src, unsigned int len);
+void ff_float_interleave2_sse(float *dst, const float **src, unsigned int len);
+
+void ff_float_interleave6_mmx(float *dst, const float **src, unsigned int len);
+void ff_float_interleave6_sse(float *dst, const float **src, unsigned int len);
+
+static void float_interleave_mmx(float *dst, const float **src,
+                                 unsigned int len, int channels)
+{
+    if (channels == 2) {
+        ff_float_interleave2_mmx(dst, src, len);
+    } else if (channels == 6)
+        ff_float_interleave6_mmx(dst, src, len);
+    else
+        ff_float_interleave_c(dst, src, len, channels);
+}
+
+static void float_interleave_sse(float *dst, const float **src,
+                                 unsigned int len, int channels)
+{
+    if (channels == 2) {
+        ff_float_interleave2_sse(dst, src, len);
+    } else if (channels == 6)
+        ff_float_interleave6_sse(dst, src, len);
+    else
+        ff_float_interleave_c(dst, src, len, channels);
+}
+
 void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
+        c->float_interleave = float_interleave_mmx;
 
         if(mm_flags & AV_CPU_FLAG_3DNOW){
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
@@ -256,6 +285,7 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse;
             c->float_to_int16 = float_to_int16_sse;
             c->float_to_int16_interleave = float_to_int16_interleave_sse;
+            c->float_interleave = float_interleave_sse;
         }
         if(mm_flags & AV_CPU_FLAG_SSE2){
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse2;

@@ -41,7 +41,6 @@
 
 #if CONFIG_FLOAT
 #   define SHR(a,b)       ((a)*(1.0f/(1<<(b))))
-#   define compute_antialias compute_antialias_float
 #   define FIXR_OLD(a)    ((int)((a) * FRAC_ONE + 0.5))
 #   define FIXR(x)        ((float)(x))
 #   define FIXHR(x)       ((float)(x))
@@ -51,7 +50,6 @@
 #   define OUT_FMT AV_SAMPLE_FMT_FLT
 #else
 #   define SHR(a,b)       ((a)>>(b))
-#   define compute_antialias compute_antialias_integer
 /* WARNING: only correct for posititive numbers */
 #   define FIXR_OLD(a)    ((int)((a) * FRAC_ONE + 0.5))
 #   define FIXR(a)        ((int)((a) * FRAC_ONE + 0.5))
@@ -69,7 +67,7 @@
 #include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"
 
-static void compute_antialias(MPADecodeContext *s, GranuleDef *g);
+static void RENAME(compute_antialias)(MPADecodeContext *s, GranuleDef *g);
 static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
                                int *dither_state, OUT_INT *samples, int incr);
 
@@ -1480,8 +1478,7 @@ static void compute_stereo(MPADecodeContext *s,
 }
 
 #if !CONFIG_FLOAT
-static void compute_antialias_integer(MPADecodeContext *s,
-                              GranuleDef *g)
+static void compute_antialias_fixed(MPADecodeContext *s, GranuleDef *g)
 {
     int32_t *ptr, *csa;
     int n, i;
@@ -1848,7 +1845,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
             g = &s->granules[ch][gr];
 
             reorder_block(s, g);
-            compute_antialias(s, g);
+            RENAME(compute_antialias)(s, g);
             compute_imdct(s, g, &s->sb_samples[ch][18 * gr][0], s->mdct_buf[ch]);
         }
     } /* gr */
