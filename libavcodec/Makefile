@@ -666,7 +666,9 @@ TESTPROGS = cabac dct eval fft fft-fixed h264 iirfilter rangecoder snow
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
-HOSTPROGS = costablegen
+HOSTPROGS = aac_tablegen aacps_tablegen cbrt_tablegen costablegen       \
+            dv_tablegen motionpixels_tablegen mpegaudio_tablegen        \
+            pcm_tablegen qdm2_tablegen sinewin_tablegen
 
 DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
@@ -687,9 +689,6 @@ $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=1
 else
 $(SUBDIR)%_tablegen$(HOSTEXESUF): HOSTCFLAGS += -DCONFIG_SMALL=0
 endif
-
-$(SUBDIR)%_tablegen$(HOSTEXESUF): $(SUBDIR)%_tablegen.c $(SUBDIR)%_tablegen.h $(SUBDIR)tableprint.c
-	$(HOSTCC) $(HOSTCFLAGS) $(HOSTLDFLAGS) -o $@ $(filter %.c,$^) $(HOSTLIBS)
 
 GEN_HEADERS = cbrt_tables.h aacps_tables.h aac_tables.h dv_tables.h     \
               sinewin_tables.h mpegaudio_tables.h motionpixels_tables.h \
