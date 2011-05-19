@@ -112,7 +112,6 @@ with name "STREAM".
 @c man end
 
 @include demuxers.texi
-@include muxers.texi
 @include protocols.texi
 @include indevs.texi
 
