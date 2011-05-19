@@ -39,7 +39,7 @@ void ff_mpa_synth_filter_fixed(MPADSPContext *s,
                                int32_t *synth_buf_ptr, int *synth_buf_offset,
                                int32_t *window, int *dither_state,
                                int16_t *samples, int incr,
-                               int *sb_samples);
+                               int32_t *sb_samples);
 
 void ff_mpa_synth_filter_float(MPADSPContext *s,
                                float *synth_buf_ptr, int *synth_buf_offset,
