@@ -112,16 +112,6 @@ typedef struct FFPsyModel {
     FFPsyWindowInfo (*window)(FFPsyContext *ctx, const int16_t *audio, const int16_t *la, int channel, int prev_type);
 
     /**
-     * Perform psychoacoustic analysis and set band info (threshold, energy) for a single channel.
-     *
-     * @param ctx     model context
-     * @param channel audio channel number
-     * @param coeffs  pointer to the transformed coefficients
-     * @param wi      window information
-     */
-    void (*analyze)(FFPsyContext *ctx, int channel, const float *coeffs, const FFPsyWindowInfo *wi);
-
-    /**
      * Perform psychoacoustic analysis and set band info (threshold, energy) for a group of channels.
      *
      * @param ctx      model context
@@ -129,7 +119,7 @@ typedef struct FFPsyModel {
      * @param coeffs   array of pointers to the transformed coefficients
      * @param wi       window information for the channels in the group
      */
-    void (*analyze_group)(FFPsyContext *ctx, int channel, const float **coeffs, const FFPsyWindowInfo *wi);
+    void (*analyze)(FFPsyContext *ctx, int channel, const float **coeffs, const FFPsyWindowInfo *wi);
 
     void (*end)    (FFPsyContext *apc);
 } FFPsyModel;

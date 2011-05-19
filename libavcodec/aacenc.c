@@ -572,7 +572,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             put_bits(&s->pb, 4, chan_el_counter[tag]++);
             for (ch = 0; ch < chans; ch++)
                 coeffs[ch] = cpe->ch[ch].coeffs;
-            s->psy.model->analyze_group(&s->psy, start_ch, coeffs, wi);
+            s->psy.model->analyze(&s->psy, start_ch, coeffs, wi);
             for (ch = 0; ch < chans; ch++) {
                 s->cur_channel = start_ch * 2 + ch;
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
