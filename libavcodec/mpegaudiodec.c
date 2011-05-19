@@ -112,8 +112,6 @@ typedef struct MPADecodeContext {
 #include "mpegaudiodata.h"
 #include "mpegaudiodectab.h"
 
-static void RENAME(compute_antialias)(MPADecodeContext *s, GranuleDef *g);
-
 /* vlc structure for decoding layer 3 huffman tables */
 static VLC huff_vlc[16];
 static VLC_TYPE huff_vlc_tables[
@@ -135,8 +133,7 @@ static uint16_t band_index_long[9][23];
 /* intensity stereo coef table */
 static INTFLOAT is_table[2][16];
 static INTFLOAT is_table_lsf[2][2][16];
-static int32_t csa_table[8][4];
-static float csa_table_float[8][4];
+static INTFLOAT csa_table[8][4];
 static INTFLOAT mdct_win[8][36];
 
 static int16_t division_tab3[1<<6 ];
@@ -441,14 +438,17 @@ static av_cold int decode_init(AVCodecContext * avctx)
             ci = ci_table[i];
             cs = 1.0 / sqrt(1.0 + ci * ci);
             ca = cs * ci;
+#if !CONFIG_FLOAT
             csa_table[i][0] = FIXHR(cs/4);
             csa_table[i][1] = FIXHR(ca/4);
             csa_table[i][2] = FIXHR(ca/4) + FIXHR(cs/4);
             csa_table[i][3] = FIXHR(ca/4) - FIXHR(cs/4);
-            csa_table_float[i][0] = cs;
-            csa_table_float[i][1] = ca;
-            csa_table_float[i][2] = ca + cs;
-            csa_table_float[i][3] = ca - cs;
+#else
+            csa_table[i][0] = cs;
+            csa_table[i][1] = ca;
+            csa_table[i][2] = ca + cs;
+            csa_table[i][3] = ca - cs;
+#endif
         }
 
         /* compute mdct windows */
@@ -1335,10 +1335,26 @@ static void compute_stereo(MPADecodeContext *s,
     }
 }
 
-#if !CONFIG_FLOAT
-static void compute_antialias_fixed(MPADecodeContext *s, GranuleDef *g)
+#if CONFIG_FLOAT
+#define AA(j) do {                                                      \
+        float tmp0 = ptr[-1-j];                                         \
+        float tmp1 = ptr[   j];                                         \
+        ptr[-1-j] = tmp0 * csa_table[j][0] - tmp1 * csa_table[j][1];    \
+        ptr[   j] = tmp0 * csa_table[j][1] + tmp1 * csa_table[j][0];    \
+    } while (0)
+#else
+#define AA(j) do {                                              \
+        int tmp0 = ptr[-1-j];                                   \
+        int tmp1 = ptr[   j];                                   \
+        int tmp2 = MULH(tmp0 + tmp1, csa_table[j][0]);          \
+        ptr[-1-j] = 4*(tmp2 - MULH(tmp1, csa_table[j][2]));     \
+        ptr[   j] = 4*(tmp2 + MULH(tmp0, csa_table[j][3]));     \
+    } while (0)
+#endif
+
+static void compute_antialias(MPADecodeContext *s, GranuleDef *g)
 {
-    int32_t *ptr, *csa;
+    INTFLOAT *ptr;
     int n, i;
 
     /* we antialias only "long" bands */
@@ -1353,28 +1369,18 @@ static void compute_antialias_fixed(MPADecodeContext *s, GranuleDef *g)
 
     ptr = g->sb_hybrid + 18;
     for(i = n;i > 0;i--) {
-        int tmp0, tmp1, tmp2;
-        csa = &csa_table[0][0];
-#define INT_AA(j) \
-            tmp0 = ptr[-1-j];\
-            tmp1 = ptr[   j];\
-            tmp2= MULH(tmp0 + tmp1, csa[0+4*j]);\
-            ptr[-1-j] = 4*(tmp2 - MULH(tmp1, csa[2+4*j]));\
-            ptr[   j] = 4*(tmp2 + MULH(tmp0, csa[3+4*j]));
-
-        INT_AA(0)
-        INT_AA(1)
-        INT_AA(2)
-        INT_AA(3)
-        INT_AA(4)
-        INT_AA(5)
-        INT_AA(6)
-        INT_AA(7)
+        AA(0);
+        AA(1);
+        AA(2);
+        AA(3);
+        AA(4);
+        AA(5);
+        AA(6);
+        AA(7);
 
         ptr += 18;
     }
 }
-#endif
 
 static void compute_imdct(MPADecodeContext *s,
                           GranuleDef *g,
@@ -1703,7 +1709,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
             g = &s->granules[ch][gr];
 
             reorder_block(s, g);
-            RENAME(compute_antialias)(s, g);
+            compute_antialias(s, g);
             compute_imdct(s, g, &s->sb_samples[ch][18 * gr][0], s->mdct_buf[ch]);
         }
     } /* gr */
