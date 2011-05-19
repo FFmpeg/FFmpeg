@@ -301,7 +301,7 @@ int opt_default(const char *opt, const char *arg){
     AVInputFormat *iformat = NULL;
 
     while ((p = av_codec_next(p))) {
-        AVClass *c = p->priv_class;
+        const AVClass *c = p->priv_class;
         if (c && av_find_opt(&c, opt, NULL, 0, 0))
             break;
     }
@@ -411,10 +411,11 @@ int opt_timelimit(const char *opt, const char *arg)
     return 0;
 }
 
-static void *alloc_priv_context(int size, AVClass *class){
+static void *alloc_priv_context(int size, const AVClass *class)
+{
     void *p = av_mallocz(size);
     if (p) {
-        *(AVClass**)p = class;
+        *(const AVClass **)p = class;
         av_opt_set_defaults(p);
     }
     return p;
