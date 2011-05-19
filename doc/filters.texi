@@ -1579,7 +1579,7 @@ Since the pixel format with name "yuv410p" corresponds to the number 6
 (check the enum PixelFormat definition in @file{libavutil/pixfmt.h}),
 this example corresponds to:
 @example
-buffer=320:240:6:1:24
+buffer=320:240:6:1:24:1:1
 @end example
 
 @section color
