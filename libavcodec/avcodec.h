@@ -2544,13 +2544,16 @@ typedef struct AVCodecContext {
     int request_channels;
 #endif
 
+#if FF_API_DRC_SCALE
     /**
      * Percentage of dynamic range compression to be applied by the decoder.
      * The default value is 1.0, corresponding to full compression.
      * - encoding: unused
      * - decoding: Set by user.
+     * @deprecated use AC3 decoder private option instead.
      */
-    float drc_scale;
+    attribute_deprecated float drc_scale;
+#endif
 
     /**
      * opaque 64bit number (generally a PTS) that will be reordered and

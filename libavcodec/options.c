@@ -413,7 +413,9 @@ static const AVOption options[]={
 #if FF_API_REQUEST_CHANNELS
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
 #endif
+#if FF_API_DRC_SCALE
 {"drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0.0, 1.0, A|D},
+#endif
 {"reservoir", "use bit reservoir", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BIT_RESERVOIR }, INT_MIN, INT_MAX, A|E, "flags2"},
 {"mbtree", "use macroblock tree ratecontrol (x264 only)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_MBTREE }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"bits_per_raw_sample", NULL, OFFSET(bits_per_raw_sample), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},

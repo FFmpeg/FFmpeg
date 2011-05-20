@@ -63,6 +63,7 @@
 #define SPX_MAX_BANDS    17
 
 typedef struct {
+    AVClass        *class;                  ///< class for AVOptions
     AVCodecContext *avctx;                  ///< parent context
     GetBitContext gbc;                      ///< bitstream reader
     uint8_t *input_buffer;                  ///< temp buffer to prevent overread
@@ -141,6 +142,7 @@ typedef struct {
 
 ///@name Dynamic range
     float dynamic_range[2];                 ///< dynamic range
+    float drc_scale;                        ///< percentage of dynamic range compression to be applied
 ///@}
 
 ///@name Bandwidth
