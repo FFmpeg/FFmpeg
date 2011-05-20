@@ -63,8 +63,19 @@
     %elifidn __OUTPUT_FORMAT__,macho
         SECTION .text align=%1
         fakegot:
+    %elifidn __OUTPUT_FORMAT__,aout
+        section .text
     %else
         SECTION .rodata align=%1
+    %endif
+%endmacro
+
+; aout does not support align=
+%macro SECTION_TEXT 0-1 16
+    %ifidn __OUTPUT_FORMAT__,aout
+        SECTION .text
+    %else
+        SECTION .text align=%1
     %endif
 %endmacro
 
