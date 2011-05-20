@@ -75,7 +75,7 @@ clean(){
 
 report(){
     date=$(date -u +%Y%m%d%H%M%S)
-    echo "fate:0:${date}:${slot}:${version}:$1:$2" >report
+    echo "fate:0:${date}:${slot}:${version}:$1:$2:${comment}" >report
     cat ${build}/config.fate ${build}/tests/data/fate/*.rep >>report
     test -n "$fate_recv" && $tar report *.log | gzip | $fate_recv
 }
