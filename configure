@@ -956,6 +956,7 @@ CONFIG_LIST="
     mdct
     memalign_hack
     mlib
+    mpegaudiodsp
     network
     nonfree
     pic
@@ -1244,6 +1245,7 @@ symver_if_any="symver_asm_label symver_gnu_asm"
 dct_select="rdft"
 mdct_select="fft"
 rdft_select="fft"
+mpegaudiodsp_select="dct"
 
 # decoders / encoders / hardware accelerators
 aac_decoder_select="mdct sinewin"
@@ -1297,11 +1299,16 @@ ljpeg_encoder_select="aandct"
 loco_decoder_select="golomb"
 mjpeg_encoder_select="aandct"
 mlp_decoder_select="mlp_parser"
-mp1float_decoder_select="dct"
-mp2float_decoder_select="dct"
-mp3adufloat_decoder_select="dct"
-mp3float_decoder_select="dct"
-mp3on4float_decoder_select="dct"
+mp1_decoder_select="mpegaudiodsp"
+mp2_decoder_select="mpegaudiodsp"
+mp3adu_decoder_select="mpegaudiodsp"
+mp3_decoder_select="mpegaudiodsp"
+mp3on4_decoder_select="mpegaudiodsp"
+mp1float_decoder_select="mpegaudiodsp"
+mp2float_decoder_select="mpegaudiodsp"
+mp3adufloat_decoder_select="mpegaudiodsp"
+mp3float_decoder_select="mpegaudiodsp"
+mp3on4float_decoder_select="mpegaudiodsp"
 mpeg1video_encoder_select="aandct"
 mpeg2video_encoder_select="aandct"
 mpeg4_decoder_select="h263_decoder mpeg4video_parser"
@@ -1331,7 +1338,7 @@ nellymoser_encoder_select="mdct sinewin"
 png_decoder_select="zlib"
 png_encoder_select="zlib"
 qcelp_decoder_select="lsp"
-qdm2_decoder_select="mdct rdft"
+qdm2_decoder_select="mdct rdft mpegaudiodsp"
 ra_144_encoder_select="lpc"
 rv10_decoder_select="h263_decoder"
 rv10_encoder_select="h263_encoder"
@@ -2753,7 +2760,7 @@ EOF
 
         check_yasm "pextrd [eax], xmm0, 1" && enable yasm ||
             die "yasm not found, use --disable-yasm for a crippled build"
-        check_yasm "vpaddw xmm0, xmm0, xmm0" || disable avx
+        check_yasm "vextractf128 xmm0, ymm0, 0" || disable avx
     fi
 
     case "$cpu" in

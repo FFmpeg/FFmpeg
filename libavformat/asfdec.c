@@ -21,6 +21,7 @@
 
 //#define DEBUG
 
+#include "libavutil/bswap.h"
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/mpegaudio.h"

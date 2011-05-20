@@ -29,7 +29,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "mathops.h"
-#include "dct32.h"
+#include "mpegaudiodsp.h"
 
 /*
  * TODO:
@@ -38,6 +38,52 @@
 
 #include "mpegaudio.h"
 #include "mpegaudiodecheader.h"
+
+#define BACKSTEP_SIZE 512
+#define EXTRABYTES 24
+
+/* layer 3 "granule" */
+typedef struct GranuleDef {
+    uint8_t scfsi;
+    int part2_3_length;
+    int big_values;
+    int global_gain;
+    int scalefac_compress;
+    uint8_t block_type;
+    uint8_t switch_point;
+    int table_select[3];
+    int subblock_gain[3];
+    uint8_t scalefac_scale;
+    uint8_t count1table_select;
+    int region_size[3]; /* number of huffman codes in each region */
+    int preflag;
+    int short_start, long_end; /* long/short band indexes */
+    uint8_t scale_factors[40];
+    INTFLOAT sb_hybrid[SBLIMIT * 18]; /* 576 samples */
+} GranuleDef;
+
+typedef struct MPADecodeContext {
+    MPA_DECODE_HEADER
+    uint8_t last_buf[2*BACKSTEP_SIZE + EXTRABYTES];
+    int last_buf_size;
+    /* next header (used in free format parsing) */
+    uint32_t free_format_next_header;
+    GetBitContext gb;
+    GetBitContext in_gb;
+    DECLARE_ALIGNED(16, MPA_INT, synth_buf)[MPA_MAX_CHANNELS][512 * 2];
+    int synth_buf_offset[MPA_MAX_CHANNELS];
+    DECLARE_ALIGNED(16, INTFLOAT, sb_samples)[MPA_MAX_CHANNELS][36][SBLIMIT];
+    INTFLOAT mdct_buf[MPA_MAX_CHANNELS][SBLIMIT * 18]; /* previous samples, for layer 3 MDCT */
+    GranuleDef granules[2][2]; /* Used in Layer 3 */
+#ifdef DEBUG
+    int frame_count;
+#endif
+    int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
+    int dither_state;
+    int error_recognition;
+    AVCodecContext* avctx;
+    MPADSPContext mpadsp;
+} MPADecodeContext;
 
 #if CONFIG_FLOAT
 #   define SHR(a,b)       ((a)*(1.0f/(1<<(b))))
@@ -68,8 +114,6 @@
 #include "mpegaudiodectab.h"
 
 static void RENAME(compute_antialias)(MPADecodeContext *s, GranuleDef *g);
-static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
-                               int *dither_state, OUT_INT *samples, int incr);
 
 /* vlc structure for decoding layer 3 huffman tables */
 static VLC huff_vlc[16];
@@ -118,8 +162,6 @@ static const int32_t scale_factor_mult2[3][3] = {
     SCALE_GEN(4.0 / 5.0), /* 5 steps */
     SCALE_GEN(4.0 / 9.0), /* 9 steps */
 };
-
-DECLARE_ALIGNED(16, MPA_INT, RENAME(ff_mpa_synth_window))[512+256];
 
 /**
  * Convert region offsets to region sizes and truncate
@@ -259,14 +301,8 @@ static av_cold int decode_init(AVCodecContext * avctx)
     int i, j, k;
 
     s->avctx = avctx;
-    s->apply_window_mp3 = apply_window_mp3_c;
-#if HAVE_MMX && CONFIG_FLOAT
-    ff_mpegaudiodec_init_mmx(s);
-#endif
-#if CONFIG_FLOAT
-    ff_dct_init(&s->dct, 5, DCT_II);
-#endif
-    if (HAVE_ALTIVEC && CONFIG_FLOAT) ff_mpegaudiodec_init_altivec(s);
+
+    ff_mpadsp_init(&s->mpadsp);
 
     avctx->sample_fmt= OUT_FMT;
     s->error_recognition= avctx->error_recognition;
@@ -460,183 +496,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
         s->adu_mode = 1;
     return 0;
 }
-
-
-#if CONFIG_FLOAT
-static inline float round_sample(float *sum)
-{
-    float sum1=*sum;
-    *sum = 0;
-    return sum1;
-}
-
-/* signed 16x16 -> 32 multiply add accumulate */
-#define MACS(rt, ra, rb) rt+=(ra)*(rb)
-
-/* signed 16x16 -> 32 multiply */
-#define MULS(ra, rb) ((ra)*(rb))
-
-#define MLSS(rt, ra, rb) rt-=(ra)*(rb)
-
-#else
-
-static inline int round_sample(int64_t *sum)
-{
-    int sum1;
-    sum1 = (int)((*sum) >> OUT_SHIFT);
-    *sum &= (1<<OUT_SHIFT)-1;
-    return av_clip_int16(sum1);
-}
-
-#   define MULS(ra, rb) MUL64(ra, rb)
-#   define MACS(rt, ra, rb) MAC64(rt, ra, rb)
-#   define MLSS(rt, ra, rb) MLS64(rt, ra, rb)
-#endif
-
-#define SUM8(op, sum, w, p)               \
-{                                         \
-    op(sum, (w)[0 * 64], (p)[0 * 64]);    \
-    op(sum, (w)[1 * 64], (p)[1 * 64]);    \
-    op(sum, (w)[2 * 64], (p)[2 * 64]);    \
-    op(sum, (w)[3 * 64], (p)[3 * 64]);    \
-    op(sum, (w)[4 * 64], (p)[4 * 64]);    \
-    op(sum, (w)[5 * 64], (p)[5 * 64]);    \
-    op(sum, (w)[6 * 64], (p)[6 * 64]);    \
-    op(sum, (w)[7 * 64], (p)[7 * 64]);    \
-}
-
-#define SUM8P2(sum1, op1, sum2, op2, w1, w2, p) \
-{                                               \
-    INTFLOAT tmp;\
-    tmp = p[0 * 64];\
-    op1(sum1, (w1)[0 * 64], tmp);\
-    op2(sum2, (w2)[0 * 64], tmp);\
-    tmp = p[1 * 64];\
-    op1(sum1, (w1)[1 * 64], tmp);\
-    op2(sum2, (w2)[1 * 64], tmp);\
-    tmp = p[2 * 64];\
-    op1(sum1, (w1)[2 * 64], tmp);\
-    op2(sum2, (w2)[2 * 64], tmp);\
-    tmp = p[3 * 64];\
-    op1(sum1, (w1)[3 * 64], tmp);\
-    op2(sum2, (w2)[3 * 64], tmp);\
-    tmp = p[4 * 64];\
-    op1(sum1, (w1)[4 * 64], tmp);\
-    op2(sum2, (w2)[4 * 64], tmp);\
-    tmp = p[5 * 64];\
-    op1(sum1, (w1)[5 * 64], tmp);\
-    op2(sum2, (w2)[5 * 64], tmp);\
-    tmp = p[6 * 64];\
-    op1(sum1, (w1)[6 * 64], tmp);\
-    op2(sum2, (w2)[6 * 64], tmp);\
-    tmp = p[7 * 64];\
-    op1(sum1, (w1)[7 * 64], tmp);\
-    op2(sum2, (w2)[7 * 64], tmp);\
-}
-
-void av_cold RENAME(ff_mpa_synth_init)(MPA_INT *window)
-{
-    int i, j;
-
-    /* max = 18760, max sum over all 16 coefs : 44736 */
-    for(i=0;i<257;i++) {
-        INTFLOAT v;
-        v = ff_mpa_enwindow[i];
-#if CONFIG_FLOAT
-        v *= 1.0 / (1LL<<(16 + FRAC_BITS));
-#endif
-        window[i] = v;
-        if ((i & 63) != 0)
-            v = -v;
-        if (i != 0)
-            window[512 - i] = v;
-    }
-
-    // Needed for avoiding shuffles in ASM implementations
-    for(i=0; i < 8; i++)
-        for(j=0; j < 16; j++)
-            window[512+16*i+j] = window[64*i+32-j];
-
-    for(i=0; i < 8; i++)
-        for(j=0; j < 16; j++)
-            window[512+128+16*i+j] = window[64*i+48-j];
-}
-
-static void apply_window_mp3_c(MPA_INT *synth_buf, MPA_INT *window,
-                               int *dither_state, OUT_INT *samples, int incr)
-{
-    register const MPA_INT *w, *w2, *p;
-    int j;
-    OUT_INT *samples2;
-#if CONFIG_FLOAT
-    float sum, sum2;
-#else
-    int64_t sum, sum2;
-#endif
-
-    /* copy to avoid wrap */
-    memcpy(synth_buf + 512, synth_buf, 32 * sizeof(*synth_buf));
-
-    samples2 = samples + 31 * incr;
-    w = window;
-    w2 = window + 31;
-
-    sum = *dither_state;
-    p = synth_buf + 16;
-    SUM8(MACS, sum, w, p);
-    p = synth_buf + 48;
-    SUM8(MLSS, sum, w + 32, p);
-    *samples = round_sample(&sum);
-    samples += incr;
-    w++;
-
-    /* we calculate two samples at the same time to avoid one memory
-       access per two sample */
-    for(j=1;j<16;j++) {
-        sum2 = 0;
-        p = synth_buf + 16 + j;
-        SUM8P2(sum, MACS, sum2, MLSS, w, w2, p);
-        p = synth_buf + 48 - j;
-        SUM8P2(sum, MLSS, sum2, MLSS, w + 32, w2 + 32, p);
-
-        *samples = round_sample(&sum);
-        samples += incr;
-        sum += sum2;
-        *samples2 = round_sample(&sum);
-        samples2 -= incr;
-        w++;
-        w2--;
-    }
-
-    p = synth_buf + 32;
-    SUM8(MLSS, sum, w + 32, p);
-    *samples = round_sample(&sum);
-    *dither_state= sum;
-}
-
-
-/* 32 sub band synthesis filter. Input: 32 sub band samples, Output:
-   32 samples. */
-/* XXX: optimize by avoiding ring buffer usage */
-#if !CONFIG_FLOAT
-void ff_mpa_synth_filter_fixed(MPA_INT *synth_buf_ptr, int *synth_buf_offset,
-                         MPA_INT *window, int *dither_state,
-                         OUT_INT *samples, int incr,
-                         INTFLOAT sb_samples[SBLIMIT])
-{
-    register MPA_INT *synth_buf;
-    int offset;
-
-    offset = *synth_buf_offset;
-    synth_buf = synth_buf_ptr + offset;
-
-    ff_dct32_fixed(synth_buf, sb_samples);
-    apply_window_mp3_c(synth_buf, window, dither_state, samples, incr);
-
-    offset = (offset - 32) & 511;
-    *synth_buf_offset = offset;
-}
-#endif
 
 #define C3 FIXHR(0.86602540378443864676/2)
 
@@ -1914,9 +1773,7 @@ static int mp_decode_frame(MPADecodeContext *s,
         samples_ptr = samples + ch;
         for(i=0;i<nb_frames;i++) {
             RENAME(ff_mpa_synth_filter)(
-#if CONFIG_FLOAT
-                         s,
-#endif
+                         &s->mpadsp,
                          s->synth_buf[ch], &(s->synth_buf_offset[ch]),
                          RENAME(ff_mpa_synth_window), &s->dither_state,
                          samples_ptr, s->nb_channels,

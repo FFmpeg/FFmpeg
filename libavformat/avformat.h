@@ -23,8 +23,7 @@
 
 
 /**
- * I return the LIBAVFORMAT_VERSION_INT constant.  You got
- * a fucking problem with that, douchebag?
+ * Return the LIBAVFORMAT_VERSION_INT constant.
  */
 unsigned avformat_version(void);
 

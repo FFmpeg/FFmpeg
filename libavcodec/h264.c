@@ -1002,7 +1002,7 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
                                   int linesize, int uvlinesize,
                                   int xchg, int simple, int pixel_shift){
     MpegEncContext * const s = &h->s;
-    int deblock_left;
+    int deblock_topleft;
     int deblock_top;
     int top_idx = 1;
     uint8_t *top_border_m1;
@@ -1018,11 +1018,11 @@ static inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
     }
 
     if(h->deblocking_filter == 2) {
-        deblock_left = h->left_type[0];
-        deblock_top  = h->top_type;
+        deblock_topleft = h->slice_table[h->mb_xy - 1 - s->mb_stride] == h->slice_num;
+        deblock_top     = h->top_type;
     } else {
-        deblock_left = (s->mb_x > 0);
-        deblock_top =  (s->mb_y > !!MB_FIELD);
+        deblock_topleft = (s->mb_x > 0);
+        deblock_top     = (s->mb_y > !!MB_FIELD);
     }
 
     src_y  -=   linesize + 1 + pixel_shift;
@@ -1045,7 +1045,7 @@ if (xchg) AV_SWAP64(b,a);\
 else      AV_COPY64(b,a);
 
     if(deblock_top){
-        if(deblock_left){
+        if(deblock_topleft){
             XCHG(top_border_m1 + (8 << pixel_shift), src_y - (7 << pixel_shift), 1);
         }
         XCHG(top_border + (0 << pixel_shift), src_y + (1 << pixel_shift), xchg);
@@ -1056,7 +1056,7 @@ else      AV_COPY64(b,a);
     }
     if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         if(deblock_top){
-            if(deblock_left){
+            if(deblock_topleft){
                 XCHG(top_border_m1 + (16 << pixel_shift), src_cb - (7 << pixel_shift), 1);
                 XCHG(top_border_m1 + (24 << pixel_shift), src_cr - (7 << pixel_shift), 1);
             }
@@ -2561,18 +2561,16 @@ static int fill_filter_caches(H264Context *h, int mb_type){
     return 0;
 }
 
-static void loop_filter(H264Context *h){
+static void loop_filter(H264Context *h, int start_x, int end_x){
     MpegEncContext * const s = &h->s;
     uint8_t  *dest_y, *dest_cb, *dest_cr;
     int linesize, uvlinesize, mb_x, mb_y;
     const int end_mb_y= s->mb_y + FRAME_MBAFF;
     const int old_slice_type= h->slice_type;
-    const int end_mb_x  = s->mb_x;
     const int pixel_shift = h->pixel_shift;
 
     if(h->deblocking_filter) {
-        int start_x= s->resync_mb_y == s->mb_y ? s->resync_mb_x : 0;
-        for(mb_x= start_x; mb_x<end_mb_x; mb_x++){
+        for(mb_x= start_x; mb_x<end_x; mb_x++){
             for(mb_y=end_mb_y - FRAME_MBAFF; mb_y<= end_mb_y; mb_y++){
                 int mb_xy, mb_type;
                 mb_xy = h->mb_xy = mb_x + mb_y*s->mb_stride;
@@ -2617,7 +2615,7 @@ static void loop_filter(H264Context *h){
         }
     }
     h->slice_type= old_slice_type;
-    s->mb_x= end_mb_x;
+    s->mb_x= end_x;
     s->mb_y= end_mb_y - FRAME_MBAFF;
     h->chroma_qp[0] = get_chroma_qp(h, 0, s->qscale);
     h->chroma_qp[1] = get_chroma_qp(h, 1, s->qscale);
@@ -2672,6 +2670,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
     H264Context *h = *(void**)arg;
     MpegEncContext * const s = &h->s;
     const int part_mask= s->partitioned_frame ? (AC_END|AC_ERROR) : 0x7F;
+    int lf_x_start = s->mb_x;
 
     s->mb_skip_run= -1;
 
@@ -2710,6 +2709,7 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
 
             if((s->workaround_bugs & FF_BUG_TRUNCATED) && h->cabac.bytestream > h->cabac.bytestream_end + 2){
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                if (s->mb_x >= lf_x_start) loop_filter(h, lf_x_start, s->mb_x + 1);
                 return 0;
             }
             if( ret < 0 || h->cabac.bytestream > h->cabac.bytestream_end + 2) {
@@ -2719,8 +2719,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             }
 
             if( ++s->mb_x >= s->mb_width ) {
-                loop_filter(h);
-                s->mb_x = 0;
+                loop_filter(h, lf_x_start, s->mb_x);
+                s->mb_x = lf_x_start = 0;
                 decode_finish_row(h);
                 ++s->mb_y;
                 if(FIELD_OR_MBAFF_PICTURE) {
@@ -2731,10 +2731,9 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             }
 
             if( eos || s->mb_y >= s->mb_height ) {
-                if(s->mb_x)
-                    loop_filter(h);
                 tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                if (s->mb_x > lf_x_start) loop_filter(h, lf_x_start, s->mb_x);
                 return 0;
             }
         }
@@ -2756,13 +2755,12 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             if(ret<0){
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding MB %d %d\n", s->mb_x, s->mb_y);
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (AC_ERROR|DC_ERROR|MV_ERROR)&part_mask);
-
                 return -1;
             }
 
             if(++s->mb_x >= s->mb_width){
-                loop_filter(h);
-                s->mb_x=0;
+                loop_filter(h, lf_x_start, s->mb_x);
+                s->mb_x = lf_x_start = 0;
                 decode_finish_row(h);
                 ++s->mb_y;
                 if(FIELD_OR_MBAFF_PICTURE) {
@@ -2789,9 +2787,8 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
             if(get_bits_count(&s->gb) >= s->gb.size_in_bits && s->mb_skip_run<=0){
                 tprintf(s->avctx, "slice end %d %d\n", get_bits_count(&s->gb), s->gb.size_in_bits);
                 if(get_bits_count(&s->gb) == s->gb.size_in_bits ){
-                    if(s->mb_x)
-                        loop_filter(h);
                     ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, (AC_END|DC_END|MV_END)&part_mask);
+                    if (s->mb_x > lf_x_start) loop_filter(h, lf_x_start, s->mb_x);
 
                     return 0;
                 }else{
