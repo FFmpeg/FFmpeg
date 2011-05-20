@@ -26,7 +26,7 @@
 /* #define DEBUG */
 
 #include <opencv/cv.h>
-#include <opencv/cxtypes.h>
+#include <opencv/cxcore.h>
 #include "libavutil/avstring.h"
 #include "libavutil/file.h"
 #include "avfilter.h"
