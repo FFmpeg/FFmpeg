@@ -29,7 +29,7 @@ follows.
 
 Rawvideo decoder.
 
-This decoder allow to decoder rawvideo stream.
+This decoder decodes rawvideo streams.
 
 @subsection Options
 
