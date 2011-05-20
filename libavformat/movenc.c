@@ -38,6 +38,8 @@
 #include <assert.h>
 
 static const AVOption options[] = {
+    { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "rtphint", "Add RTP hint tracks", 0, FF_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { NULL },
 };
 
@@ -2124,7 +2126,15 @@ static int mov_write_header(AVFormatContext *s)
     if (mov->mode & (MODE_MOV|MODE_IPOD) && s->nb_chapters)
         mov->chapter_track = mov->nb_streams++;
 
+#if FF_API_FLAG_RTP_HINT
     if (s->flags & AVFMT_FLAG_RTP_HINT) {
+        av_log(s, AV_LOG_WARNING, "The RTP_HINT flag is deprecated, enable it "
+                                  "via the -movflags rtphint muxer option "
+                                  "instead.\n");
+        mov->flags |= FF_MOV_FLAG_RTP_HINT;
+    }
+#endif
+    if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
         /* Add hint tracks for each audio and video stream */
         hint_track = mov->nb_streams;
         for (i = 0; i < s->nb_streams; i++) {
@@ -2220,7 +2230,7 @@ static int mov_write_header(AVFormatContext *s)
     if (mov->chapter_track)
         mov_create_chapter_track(s, mov->chapter_track);
 
-    if (s->flags & AVFMT_FLAG_RTP_HINT) {
+    if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
         /* Initialize the hint tracks for each audio and video stream */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
