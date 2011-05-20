@@ -389,6 +389,11 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    if(avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "channels > 2 not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     // Set default compression level
     if(avctx->compression_level == FF_COMPRESSION_DEFAULT)
         s->compression_level = 2;
