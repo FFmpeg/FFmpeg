@@ -91,8 +91,8 @@ lock ${workdir}     || die "${workdir} locked"
 cd ${workdir}       || die "cd ${workdir} failed"
 
 src=${workdir}/src
-build=${workdir}/build
-inst=${workdir}/install
+: ${build:=${workdir}/build}
+: ${inst:=${workdir}/install}
 
 test -d "$src" && update || checkout || die "Error fetching source"
 
