@@ -713,6 +713,8 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         // FIXME: a more elegant solution is needed
         st = av_mallocz(sizeof(AVStream));
         memcpy(st, ic->streams[i], sizeof(AVStream));
+        st->info = av_malloc(sizeof(*st->info));
+        memcpy(st->info, ic->streams[i]->info, sizeof(*st->info));
         st->codec = avcodec_alloc_context();
         if (!st->codec) {
             print_error(filename, AVERROR(ENOMEM));

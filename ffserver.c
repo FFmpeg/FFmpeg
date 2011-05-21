@@ -3386,6 +3386,9 @@ static int rtp_new_av_stream(HTTPContext *c,
     if (!st)
         goto fail;
     ctx->nb_streams = 1;
+    ctx->streams = av_mallocz(sizeof(*ctx->streams) * ctx->nb_streams);
+    if (!ctx->streams)
+        goto fail;
     ctx->streams[0] = st;
 
     if (!c->stream->feed ||
@@ -3766,11 +3769,7 @@ static void build_feed_streams(void)
             }
             s->oformat = feed->fmt;
             s->nb_streams = feed->nb_streams;
-            for(i=0;i<s->nb_streams;i++) {
-                AVStream *st;
-                st = feed->streams[i];
-                s->streams[i] = st;
-            }
+            s->streams = feed->streams;
             av_set_parameters(s, NULL);
             if (av_write_header(s) < 0) {
                 http_log("Container doesn't supports the required parameters\n");
