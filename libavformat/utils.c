@@ -673,7 +673,8 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
         }
 
-        av_packet_merge_side_data(pkt);
+        if(!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
+            av_packet_merge_side_data(pkt);
         st= s->streams[pkt->stream_index];
 
         switch(st->codec->codec_type){
