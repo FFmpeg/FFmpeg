@@ -846,15 +846,15 @@ static void msmpeg4_encode_dc(MpegEncContext * s, int level, int n, int *dir_ptr
     int pred, extquant;
     int extrabits = 0;
 
-        int16_t *dc_val;
-        pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
+    int16_t *dc_val;
+    pred = msmpeg4_pred_dc(s, n, &dc_val, dir_ptr);
 
-        /* update predictor */
-        if (n < 4) {
-            *dc_val = level * s->y_dc_scale;
-        } else {
-            *dc_val = level * s->c_dc_scale;
-        }
+    /* update predictor */
+    if (n < 4) {
+        *dc_val = level * s->y_dc_scale;
+    } else {
+        *dc_val = level * s->c_dc_scale;
+    }
 
     /* do the prediction */
     level -= pred;
