@@ -44,6 +44,7 @@ easier to use. The changes are:
 - Windows Media Image decoder
 - LATM muxer
 - showinfo filter
+- split filter
 
 
 version 0.7:
