@@ -33,8 +33,20 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "url.h"
+#include "libavutil/opt.h"
 
 #define SDP_MAX_SIZE 16384
+
+static const AVOption options[] = {
+    { NULL },
+};
+
+static const AVClass rtsp_muxer_class = {
+    .class_name = "RTSP muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr)
 {
@@ -238,5 +250,6 @@ AVOutputFormat ff_rtsp_muxer = {
     rtsp_write_packet,
     rtsp_write_close,
     .flags = AVFMT_NOFILE | AVFMT_GLOBALHEADER,
+    .priv_class = &rtsp_muxer_class,
 };
 
