@@ -20,7 +20,7 @@
 ;******************************************************************************
 
 %include "x86inc.asm"
-%include "config.asm"
+%include "x86util.asm"
 
 SECTION_RODATA 32
 
@@ -37,8 +37,9 @@ ps_cos_vec: dd   0.500603,  0.505471,  0.515447,  0.531043
             dd   1.000000,  1.000000,  1.306563,  0.541196
             dd   1.000000,  0.707107,  1.000000, -0.707107
             dd   1.000000,  0.707107,  1.000000, -0.707107
+            dd   0.707107,  0.707107,  0.707107,  0.707107
 
-
+align 32
 ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
 
 %macro BUTTERFLY_SSE 4
@@ -75,6 +76,18 @@ ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
 
 %macro BUTTERFLY3 4
     BUTTERFLY0 %1, %2, %3, %4, 0xb1
+%endmacro
+
+%macro BUTTERFLY3V 5
+    movaps m%5, m%1
+    addps  m%1, m%2
+    subps  m%5, m%2
+    SWAP %2, %5
+    mulps  m%2, [ps_cos_vec+192]
+    movaps m%5, m%3
+    addps  m%3, m%4
+    subps  m%4, m%5
+    mulps  m%4, [ps_cos_vec+192]
 %endmacro
 
 %macro PASS6_AND_PERMUTE 0
@@ -269,9 +282,131 @@ INIT_XMM
 %define BUTTERFLY  BUTTERFLY_SSE
 %define BUTTERFLY0 BUTTERFLY0_SSE
 
+%ifdef ARCH_X86_64
+%define SPILL SWAP
+%define UNSPILL SWAP
+
+%macro PASS5 0
+    nop ; FIXME code alignment
+    SWAP 5, 8
+    SWAP 4, 12
+    SWAP 6, 14
+    SWAP 7, 13
+    SWAP 0, 15
+    PERMUTE 9,10, 10,12, 11,14, 12,9, 13,11, 14,13
+    TRANSPOSE4x4PS 8, 9, 10, 11, 0
+    BUTTERFLY3V    8, 9, 10, 11, 0
+    addps   m10, m11
+    TRANSPOSE4x4PS 12, 13, 14, 15, 0
+    BUTTERFLY3V    12, 13, 14, 15, 0
+    addps   m14, m15
+    addps   m12, m14
+    addps   m14, m13
+    addps   m13, m15
+%endmacro
+
+%macro PASS6 0
+    SWAP 9, 12
+    SWAP 11, 14
+    movss [outq+0x00], m8
+    pshuflw m0, m8, 0xe
+    movss [outq+0x10], m9
+    pshuflw m1, m9, 0xe
+    movss [outq+0x20], m10
+    pshuflw m2, m10, 0xe
+    movss [outq+0x30], m11
+    pshuflw m3, m11, 0xe
+    movss [outq+0x40], m12
+    pshuflw m4, m12, 0xe
+    movss [outq+0x50], m13
+    pshuflw m5, m13, 0xe
+    movss [outq+0x60], m14
+    pshuflw m6, m14, 0xe
+    movaps [outq+0x70], m15
+    pshuflw m7, m15, 0xe
+    addss   m0, m1
+    addss   m1, m2
+    movss [outq+0x08], m0
+    addss   m2, m3
+    movss [outq+0x18], m1
+    addss   m3, m4
+    movss [outq+0x28], m2
+    addss   m4, m5
+    movss [outq+0x38], m3
+    addss   m5, m6
+    movss [outq+0x48], m4
+    addss   m6, m7
+    movss [outq+0x58], m5
+    movss [outq+0x68], m6
+    movss [outq+0x78], m7
+
+    PERMUTE 1,8, 3,9, 5,10, 7,11, 9,12, 11,13, 13,14, 8,1, 10,3, 12,5, 14,7
+    movhlps m0, m1
+    pshufd  m1, m1, 3
+    SWAP 0, 2, 4, 6, 8, 10, 12, 14
+    SWAP 1, 3, 5, 7, 9, 11, 13, 15
+%rep 7
+    movhlps m0, m1
+    pshufd  m1, m1, 3
+    addss   m15, m1
+    SWAP 0, 2, 4, 6, 8, 10, 12, 14
+    SWAP 1, 3, 5, 7, 9, 11, 13, 15
+%endrep
+%assign i 4
+%rep 15
+    addss m0, m1
+    movss [outq+i], m0
+    SWAP 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15
+    %assign i i+8
+%endrep
+%endmacro
+
+%else ; ARCH_X86_32
+%macro SPILL 2 ; xmm#, mempos
+    movaps [outq+(%2-8)*16], m%1
+%endmacro
+%macro UNSPILL 2
+    movaps m%1, [outq+(%2-8)*16]
+%endmacro
+
+%define PASS6 PASS6_AND_PERMUTE
+%macro PASS5 0
+    movaps      m2, [ps_cos_vec+160]
+    shufps      m3, m3, 0xcc
+
+    BUTTERFLY3  m5, m3, m2, m1
+    SPILL 5, 8
+
+    UNSPILL 1, 9
+    BUTTERFLY3  m1, m3, m2, m5
+    SPILL 1, 14
+
+    BUTTERFLY3  m4, m3, m2, m5
+    SPILL 4, 12
+
+    BUTTERFLY3  m7, m3, m2, m5
+    SPILL 7, 13
+
+    UNSPILL 5, 10
+    BUTTERFLY3  m5, m3, m2, m7
+    SPILL 5, 10
+
+    UNSPILL 4, 11
+    BUTTERFLY3  m4, m3, m2, m7
+    SPILL 4, 11
+
+    BUTTERFLY3  m6, m3, m2, m7
+    SPILL 6, 9
+
+    BUTTERFLY3  m0, m3, m2, m7
+    SPILL 0, 15
+%endmacro
+%endif
+
+
 INIT_XMM
 ; void ff_dct32_float_sse(FFTSample *out, const FFTSample *in)
-cglobal dct32_float_sse, 2,3,8, out, in, tmp
+cglobal dct32_float_sse, 2,3,16, out, in, tmp
     ; pass 1
 
     movaps      m0, [inq+0]
@@ -287,8 +422,8 @@ cglobal dct32_float_sse, 2,3,8, out, in, tmp
     ; pass 2
     movaps      m2, [ps_cos_vec+64]
     BUTTERFLY   m1, m4, m2, m3
-    movaps      [outq+48], m1
-    movaps      [outq+ 0], m4
+    SPILL 1, 11
+    SPILL 4, 8
 
     ; pass 1
     movaps      m1, [inq+16]
@@ -313,17 +448,17 @@ cglobal dct32_float_sse, 2,3,8, out, in, tmp
     movaps      m2, [ps_cos_vec+96]
     shufps      m1, m1, 0x1b
     BUTTERFLY   m0, m1, m2, m3
-    movaps      [outq+112], m0
-    movaps      [outq+ 96], m1
+    SPILL 0, 15
+    SPILL 1, 14
 
-    movaps      m0, [outq+0]
+    UNSPILL 0, 8
     shufps      m5, m5, 0x1b
     BUTTERFLY   m0, m5, m2, m3
 
-    movaps      m1, [outq+48]
+    UNSPILL 1, 11
     shufps      m6, m6, 0x1b
     BUTTERFLY   m1, m6, m2, m3
-    movaps      [outq+48], m1
+    SPILL 1, 11
 
     shufps      m4, m4, 0x1b
     BUTTERFLY   m7, m4, m2, m3
@@ -335,57 +470,25 @@ cglobal dct32_float_sse, 2,3,8, out, in, tmp
     BUTTERFLY2  m5, m3, m2, m1
 
     BUTTERFLY2  m0, m3, m2, m1
-    movaps      [outq+16], m0
+    SPILL 0, 9
 
     BUTTERFLY2  m6, m3, m2, m1
-    movaps      [outq+32], m6
+    SPILL 6, 10
 
-    movaps      m0, [outq+48]
+    UNSPILL 0, 11
     BUTTERFLY2  m0, m3, m2, m1
-    movaps      [outq+48], m0
+    SPILL 0, 11
 
     BUTTERFLY2  m4, m3, m2, m1
 
     BUTTERFLY2  m7, m3, m2, m1
 
-    movaps      m6, [outq+96]
+    UNSPILL 6, 14
     BUTTERFLY2  m6, m3, m2, m1
 
-    movaps      m0, [outq+112]
+    UNSPILL 0, 15
     BUTTERFLY2  m0, m3, m2, m1
 
-    ; pass 5
-    movaps      m2, [ps_cos_vec+160]
-    shufps      m3, m3, 0xcc
-
-    BUTTERFLY3  m5, m3, m2, m1
-    movaps      [outq+0], m5
-
-    movaps      m1, [outq+16]
-    BUTTERFLY3  m1, m3, m2, m5
-    movaps      [outq+96], m1
-
-    BUTTERFLY3  m4, m3, m2, m5
-    movaps      [outq+64], m4
-
-    BUTTERFLY3  m7, m3, m2, m5
-    movaps      [outq+80], m7
-
-    movaps      m5, [outq+32]
-    BUTTERFLY3  m5, m3, m2, m7
-    movaps      [outq+32], m5
-
-    movaps      m4, [outq+48]
-    BUTTERFLY3  m4, m3, m2, m7
-    movaps      [outq+48], m4
-
-    BUTTERFLY3  m6, m3, m2, m7
-    movaps      [outq+16], m6
-
-    BUTTERFLY3  m0, m3, m2, m7
-    movaps      [outq+112], m0
-
-
-    ;    pass 6, no SIMD...
-    PASS6_AND_PERMUTE
+    PASS5
+    PASS6
     RET

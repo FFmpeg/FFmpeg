@@ -95,13 +95,6 @@ FLOAT_TO_INT16_INTERLEAVE6 3dn2
 ; void ff_float_interleave6(float *dst, const float **src, unsigned int len);
 ;-----------------------------------------------------------------------------
 
-%macro BUTTERFLYPS 3
-    movaps    m%3, m%1
-    unpcklps  m%1, m%2
-    unpckhps  m%3, m%2
-    SWAP %2, %3
-%endmacro
-
 %macro FLOAT_INTERLEAVE6 2
 cglobal float_interleave6_%1, 2,7,%2, dst, src, src1, src2, src3, src4, src5
 %ifdef ARCH_X86_64
@@ -130,9 +123,9 @@ cglobal float_interleave6_%1, 2,7,%2, dst, src, src1, src2, src3, src4, src5
     movaps    m4, [srcq+src4q]
     movaps    m5, [srcq+src5q]
 
-    BUTTERFLYPS 0, 1, 6
-    BUTTERFLYPS 2, 3, 6
-    BUTTERFLYPS 4, 5, 6
+    SBUTTERFLYPS 0, 1, 6
+    SBUTTERFLYPS 2, 3, 6
+    SBUTTERFLYPS 4, 5, 6
 
     movaps    m6, m4
     shufps    m4, m0, 0xe4

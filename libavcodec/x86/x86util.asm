@@ -41,6 +41,13 @@
     SWAP %2, %4, %3
 %endmacro
 
+%macro SBUTTERFLYPS 3
+    movaps   m%3, m%1
+    unpcklps m%1, m%2
+    unpckhps m%3, m%2
+    SWAP %2, %3
+%endmacro
+
 %macro TRANSPOSE4x4B 5
     SBUTTERFLY bw, %1, %2, %5
     SBUTTERFLY bw, %3, %4, %5
@@ -71,6 +78,19 @@
     SBUTTERFLY dq,  %3, %4, %5
     SBUTTERFLY qdq, %1, %3, %5
     SBUTTERFLY qdq, %2, %4, %5
+    SWAP %2, %3
+%endmacro
+
+; identical behavior to TRANSPOSE4x4D, but using SSE1 float ops
+%macro TRANSPOSE4x4PS 5
+    SBUTTERFLYPS %1, %2, %5
+    SBUTTERFLYPS %3, %4, %5
+    movaps  m%5, m%1
+    movlhps m%1, m%3
+    movhlps m%3, m%5
+    movaps  m%5, m%2
+    movlhps m%2, m%4
+    movhlps m%4, m%5
     SWAP %2, %3
 %endmacro
 
