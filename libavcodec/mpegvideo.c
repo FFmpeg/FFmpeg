@@ -316,7 +316,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     s->prev_pict_types[0]= s->dropable ? AV_PICTURE_TYPE_B : s->pict_type;
     if(pic->age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->age] == AV_PICTURE_TYPE_B)
         pic->age= INT_MAX; // Skipped MBs in B-frames are quite rare in MPEG-1/2 and it is a bit tricky to skip them anyway.
-    pic->owner2 = s;
+    pic->owner2 = NULL;
 
     return 0;
 fail: //for the FF_ALLOCZ_OR_GOTO macro
@@ -955,7 +955,7 @@ void ff_release_unused_pictures(MpegEncContext *s, int remove_current)
     /* release non reference frames */
     for(i=0; i<s->picture_count; i++){
         if(s->picture[i].data[0] && !s->picture[i].reference
-           && s->picture[i].owner2 == s
+           && (!s->picture[i].owner2 || s->picture[i].owner2 == s)
            && (remove_current || &s->picture[i] != s->current_picture_ptr)
            /*&& s->picture[i].type!=FF_BUFFER_TYPE_SHARED*/){
             free_frame_buffer(s, &s->picture[i]);

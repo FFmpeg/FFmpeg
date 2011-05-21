@@ -312,7 +312,6 @@ static void chroma_dc_dct_c(DCTELEM *block){
 }
 #endif
 
-
 static void free_tables(H264Context *h, int free_rbsp){
     int i;
     H264Context *hx;
@@ -612,11 +611,15 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     return 0;
 }
 
+#define IN_RANGE(a, b, size) (((a) >= (b)) && ((a) < ((b)+(size))))
 static void copy_picture_range(Picture **to, Picture **from, int count, MpegEncContext *new_base, MpegEncContext *old_base)
 {
     int i;
 
     for (i=0; i<count; i++){
+        assert((IN_RANGE(from[i], old_base, sizeof(*old_base)) ||
+                IN_RANGE(from[i], old_base->picture, sizeof(Picture) * old_base->picture_count) ||
+                !from[i]));
         to[i] = REBASE_PICTURE(from[i], new_base, old_base);
     }
 }
@@ -796,8 +799,10 @@ int ff_h264_frame_start(H264Context *h){
   * This includes finding the next displayed frame.
   *
   * @param h h264 master context
+  * @param setup_finished enough NALs have been read that we can call
+  * ff_thread_finish_setup()
   */
-static void decode_postinit(H264Context *h){
+static void decode_postinit(H264Context *h, int setup_finished){
     MpegEncContext * const s = &h->s;
     Picture *out = s->current_picture_ptr;
     Picture *cur = s->current_picture_ptr;
@@ -809,10 +814,11 @@ static void decode_postinit(H264Context *h){
     if (h->next_output_pic) return;
 
     if (cur->field_poc[0]==INT_MAX || cur->field_poc[1]==INT_MAX) {
-        //FIXME this allows the next thread to start once we encounter the first field of a PAFF packet
-        //This works if the next packet contains the second field. It does not work if both fields are
-        //in the same packet.
-        //ff_thread_finish_setup(s->avctx);
+        //FIXME: if we have two PAFF fields in one packet, we can't start the next thread here.
+        //If we have one field per packet, we can. The check in decode_nal_units() is not good enough
+        //to find this yet, so we assume the worst for now.
+        //if (setup_finished)
+        //    ff_thread_finish_setup(s->avctx);
         return;
     }
 
@@ -943,7 +949,8 @@ static void decode_postinit(H264Context *h){
         av_log(s->avctx, AV_LOG_DEBUG, "no picture\n");
     }
 
-    ff_thread_finish_setup(s->avctx);
+    if (setup_finished)
+        ff_thread_finish_setup(s->avctx);
 }
 
 static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int simple){
@@ -2310,7 +2317,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     //FIXME: fix draw_edges+PAFF+frame threads
-    h->emu_edge_width= (s->flags&CODEC_FLAG_EMU_EDGE || (!h->sps.frame_mbs_only_flag && s->avctx->active_thread_type&FF_THREAD_FRAME)) ? 0 : 16;
+    h->emu_edge_width= (s->flags&CODEC_FLAG_EMU_EDGE || (!h->sps.frame_mbs_only_flag && s->avctx->active_thread_type)) ? 0 : 16;
     h->emu_edge_height= (FRAME_MBAFF || FIELD_PICTURE) ? 0 : h->emu_edge_width;
 
     if(s->avctx->debug&FF_DEBUG_PICT_INFO){
@@ -2892,10 +2899,13 @@ static void execute_decode_slices(H264Context *h, int context_count){
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
     MpegEncContext * const s = &h->s;
     AVCodecContext * const avctx= s->avctx;
-    int buf_index=0;
     H264Context *hx; ///< thread context
-    int context_count = 0;
-    int next_avc= h->is_avc ? 0 : buf_size;
+    int buf_index;
+    int context_count;
+    int next_avc;
+    int pass = !(avctx->active_thread_type & FF_THREAD_FRAME);
+    int nals_needed=0; ///< number of NALs that need decoding before the next frame thread starts
+    int nal_index;
 
     h->max_contexts = (HAVE_THREADS && (s->avctx->active_thread_type&FF_THREAD_SLICE)) ? avctx->thread_count : 1;
 #if 0
@@ -2911,6 +2921,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         ff_h264_reset_sei(h);
     }
 
+    for(;pass <= 1;pass++){
+        buf_index = 0;
+        context_count = 0;
+        next_avc = h->is_avc ? 0 : buf_size;
+        nal_index = 0;
     for(;;){
         int consumed;
         int dst_length;
@@ -2969,6 +2984,19 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         }
 
         buf_index += consumed;
+        nal_index++;
+
+        if(pass == 0) {
+            // packets can sometimes contain multiple PPS/SPS
+            // e.g. two PAFF field pictures in one packet, or a demuxer which splits NALs strangely
+            // if so, when frame threading we can't start the next thread until we've read all of them
+            switch (hx->nal_unit_type) {
+                case NAL_SPS:
+                case NAL_PPS:
+                    nals_needed = nal_index;
+            }
+            continue;
+        }
 
         //FIXME do not discard SEI id
         if(avctx->skip_frame >= AVDISCARD_NONREF && h->nal_ref_idc  == 0)
@@ -2998,7 +3026,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
             if (h->current_slice == 1) {
                 if(!(s->flags2 & CODEC_FLAG2_CHUNKS)) {
-                    decode_postinit(h);
+                    decode_postinit(h, nal_index >= nals_needed);
                 }
 
                 if (s->avctx->hwaccel && s->avctx->hwaccel->start_frame(s->avctx, NULL, 0) < 0)
@@ -3115,6 +3143,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             goto again;
         }
     }
+    }
     if(context_count)
         execute_decode_slices(h, context_count);
     return buf_index;
@@ -3190,7 +3219,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS) || (s->mb_y >= s->mb_height && s->mb_height)){
 
-        if(s->flags2 & CODEC_FLAG2_CHUNKS) decode_postinit(h);
+        if(s->flags2 & CODEC_FLAG2_CHUNKS) decode_postinit(h, 1);
 
         field_end(h, 0);
 
