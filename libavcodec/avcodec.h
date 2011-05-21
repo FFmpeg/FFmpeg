@@ -2611,7 +2611,7 @@ typedef struct AVCodecContext {
     /**
      * Audio channel layout.
      * - encoding: set by user.
-     * - decoding: set by libavcodec.
+     * - decoding: set by user, may be overwritten by libavcodec.
      */
     int64_t channel_layout;
 
