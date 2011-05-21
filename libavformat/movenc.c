@@ -32,9 +32,21 @@
 #include "libavcodec/put_bits.h"
 #include "internal.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 #undef NDEBUG
 #include <assert.h>
+
+static const AVOption options[] = {
+    { NULL },
+};
+
+static const AVClass mov_muxer_class = {
+    .class_name = "MOV/3GP/MP4/3G2 muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 //FIXME support 64 bit variant with wide placeholders
 static int64_t updateSize(AVIOContext *pb, int64_t pos)
@@ -2285,6 +2297,7 @@ AVOutputFormat ff_mov_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_movvideo_tags, codec_movaudio_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_TGP_MUXER
@@ -2301,6 +2314,7 @@ AVOutputFormat ff_tgp_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_MP4_MUXER
@@ -2317,6 +2331,7 @@ AVOutputFormat ff_mp4_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_PSP_MUXER
@@ -2333,6 +2348,7 @@ AVOutputFormat ff_psp_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_TG2_MUXER
@@ -2349,6 +2365,7 @@ AVOutputFormat ff_tg2_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_IPOD_MUXER
@@ -2365,5 +2382,6 @@ AVOutputFormat ff_ipod_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_ipod_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif

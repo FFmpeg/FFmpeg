@@ -101,6 +101,7 @@ typedef struct MOVIndex {
 } MOVTrack;
 
 typedef struct MOVMuxContext {
+    const AVClass *av_class;
     int     mode;
     int64_t time;
     int     nb_streams;
