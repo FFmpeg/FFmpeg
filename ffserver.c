@@ -2229,6 +2229,7 @@ static int http_prepare_data(HTTPContext *c)
         av_metadata_set2(&c->fmt_ctx.metadata, "copyright", c->stream->copyright, 0);
         av_metadata_set2(&c->fmt_ctx.metadata, "title"    , c->stream->title    , 0);
 
+        c->fmt_ctx.streams = av_mallocz(sizeof(*c->fmt_ctx.streams) * c->stream->nb_streams);
         for(i=0;i<c->stream->nb_streams;i++) {
             AVStream *st;
             AVStream *src;
