@@ -49,6 +49,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 
 AVFilter avfilter_vf_split = {
     .name      = "split",
+    .description = NULL_IF_CONFIG_SMALL("Pass on the input to two outputs."),
 
     .inputs    = (AVFilterPad[]) {{ .name            = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
