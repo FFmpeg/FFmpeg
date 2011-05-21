@@ -27,7 +27,7 @@
 #ifndef AVCODEC_MPEGAUDIODATA_H
 #define AVCODEC_MPEGAUDIODATA_H
 
-#include "libavutil/common.h"
+#include <stdint.h>
 
 #define MODE_EXT_MS_STEREO 2
 #define MODE_EXT_I_STEREO  1

@@ -22,7 +22,7 @@
 %include "x86inc.asm"
 %include "x86util.asm"
 
-section .text align=16
+SECTION_TEXT
 
 %macro PSWAPD_SSE 2
     pshufw %1, %2, 0x4e
