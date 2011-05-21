@@ -464,7 +464,7 @@ dshow_add_device(AVFormatContext *avctx, AVFormatParameters *ap,
             goto error;
         }
 
-        codec->codec_type  = CODEC_TYPE_AUDIO;
+        codec->codec_type  = AVMEDIA_TYPE_AUDIO;
         codec->sample_fmt  = sample_fmt_bits_per_sample(fx->wBitsPerSample);
         codec->codec_id    = waveform_codec_id(codec->sample_fmt);
         codec->sample_rate = fx->nSamplesPerSec;
@@ -634,7 +634,7 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
-AVInputFormat dshow_demuxer = {
+AVInputFormat ff_dshow_demuxer = {
     "dshow",
     NULL_IF_CONFIG_SMALL("DirectShow capture"),
     sizeof(struct dshow_ctx),
