@@ -111,6 +111,7 @@ typedef struct MOVMuxContext {
     MOVTrack *tracks;
 
     int flags;
+    int rtp_flags;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1

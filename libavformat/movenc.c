@@ -34,6 +34,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
+#include "rtpenc.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -41,6 +42,7 @@
 static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "rtphint", "Add RTP hint tracks", 0, FF_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { NULL },
 };
 
