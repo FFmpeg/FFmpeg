@@ -13,6 +13,9 @@ OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \
 OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa-audio-common.o \
                                             alsa-audio-enc.o
 OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
+OBJS-$(CONFIG_DSHOW_INDEV)               += dshow.o dshow_enummediatypes.o \
+                                            dshow_enumpins.o dshow_filter.o \
+                                            dshow_pin.o dshow_common.o
 OBJS-$(CONFIG_DV1394_INDEV)              += dv1394.o
 OBJS-$(CONFIG_FBDEV_INDEV)               += fbdev.o
 OBJS-$(CONFIG_JACK_INDEV)                += jack_audio.o

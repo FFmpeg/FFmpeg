@@ -1463,6 +1463,8 @@ w64_demuxer_deps="wav_demuxer"
 alsa_indev_deps="alsa_asoundlib_h snd_pcm_htimestamp"
 alsa_outdev_deps="alsa_asoundlib_h"
 bktr_indev_deps_any="dev_bktr_ioctl_bt848_h machine_ioctl_bt848_h dev_video_bktr_ioctl_bt848_h dev_ic_bt8xx_h"
+dshow_indev_deps="IBaseFilter"
+dshow_indev_extralibs="-lpsapi -lole32 -lstrmiids -luuid"
 dv1394_indev_deps="dv1394 dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
 jack_indev_deps="jack_jack_h sem_timedwait"
@@ -2978,6 +2980,8 @@ check_func_headers "windows.h vfw.h" capCreateCaptureWindow "$vfwcap_indev_extra
 # check that WM_CAP_DRIVER_CONNECT is defined to the proper value
 # w32api 3.12 had it defined wrong
 check_cpp_condition vfw.h "WM_CAP_DRIVER_CONNECT > WM_USER" && enable vfwcap_defines
+
+check_type "dshow.h" IBaseFilter
 
 # check for ioctl_meteor.h, ioctl_bt848.h and alternatives
 { check_header dev/bktr/ioctl_meteor.h &&
