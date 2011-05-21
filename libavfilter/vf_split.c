@@ -33,18 +33,18 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *picref)
                          avfilter_ref_buffer(picref, ~AV_PERM_WRITE));
 }
 
+static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
+{
+    avfilter_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
+    avfilter_draw_slice(inlink->dst->outputs[1], y, h, slice_dir);
+}
+
 static void end_frame(AVFilterLink *inlink)
 {
     avfilter_end_frame(inlink->dst->outputs[0]);
     avfilter_end_frame(inlink->dst->outputs[1]);
 
     avfilter_unref_buffer(inlink->cur_buf);
-}
-
-static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
-{
-    avfilter_draw_slice(inlink->dst->outputs[0], y, h, slice_dir);
-    avfilter_draw_slice(inlink->dst->outputs[1], y, h, slice_dir);
 }
 
 AVFilter avfilter_vf_split = {
