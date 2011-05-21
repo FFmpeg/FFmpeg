@@ -58,9 +58,9 @@ AVFilter avfilter_vf_split = {
                                     .draw_slice      = draw_slice,
                                     .end_frame       = end_frame, },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .outputs   = (AVFilterPad[]) {{ .name            = "output1",
                                     .type            = AVMEDIA_TYPE_VIDEO, },
-                                  { .name            = "default2",
+                                  { .name            = "output2",
                                     .type            = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };
