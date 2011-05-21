@@ -1383,6 +1383,21 @@ not specified it will use the default value of 16.
 Adding this in the beginning of filter chains should make filtering
 faster due to better use of the memory cache.
 
+@section split
+
+Pass on the input video to two outputs. Both outputs are identical to
+the input video.
+
+For example:
+@example
+[in] split [splitout1][splitout2];
+[splitout1] crop=100:100:0:0    [cropout];
+[splitout2] pad=200:200:100:100 [padout];
+@end example
+
+will create two separate outputs from the same input, one cropped and
+one padded.
+
 @section transpose
 
 Transpose rows with columns in the input video and optionally flip it.
