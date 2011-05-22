@@ -2074,7 +2074,7 @@ static int has_decode_delay_been_guessed(AVStream *st)
         st->codec_info_nb_frames >= 6 + st->codec->has_b_frames;
 }
 
-static int try_decode_frame(AVStream *st, AVPacket *avpkt)
+static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
 {
     int16_t *samples;
     AVCodec *codec;
@@ -2085,7 +2085,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt)
         codec = avcodec_find_decoder(st->codec->codec_id);
         if (!codec)
             return -1;
-        ret = avcodec_open(st->codec, codec);
+        ret = avcodec_open2(st->codec, codec, options);
         if (ret < 0)
             return ret;
     }
@@ -2204,12 +2204,20 @@ static int tb_unreliable(AVCodecContext *c){
     return 0;
 }
 
+#if FF_API_FORMAT_PARAMETERS
 int av_find_stream_info(AVFormatContext *ic)
+{
+    return avformat_find_stream_info(ic, NULL);
+}
+#endif
+
+int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 {
     int i, count, ret, read_size, j;
     AVStream *st;
     AVPacket pkt1, *pkt;
     int64_t old_offset = avio_tell(ic->pb);
+    int orig_nb_streams = ic->nb_streams;        // new streams might appear, no options for those
 
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
@@ -2235,12 +2243,12 @@ int av_find_stream_info(AVFormatContext *ic)
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
             && codec && !st->codec->codec)
-            avcodec_open(st->codec, codec);
+            avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
 
         //try to just open decoders, in case this is enough to get parameters
         if(!has_codec_parameters(st->codec)){
             if (codec && !st->codec->codec)
-                avcodec_open(st->codec, codec);
+                avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
         }
     }
 
@@ -2383,7 +2391,7 @@ int av_find_stream_info(AVFormatContext *ic)
             !has_decode_delay_been_guessed(st) ||
             (st->codec->codec &&
              st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))
-            try_decode_frame(st, pkt);
+            try_decode_frame(st, pkt, (options && i <= orig_nb_streams )? &options[i] : NULL);
 
         st->codec_info_nb_frames++;
         count++;
