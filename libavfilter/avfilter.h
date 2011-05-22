@@ -861,4 +861,4 @@ static inline void avfilter_insert_outpad(AVFilterContext *f, unsigned index,
                         &f->output_pads, &f->outputs, p);
 }
 
-#endif  /* AVFILTER_AVFILTER_H */
+#endif /* AVFILTER_AVFILTER_H */

@@ -49,4 +49,4 @@ void ff_dct_end (DCTContext *s);
 
 void ff_dct_init_mmx(DCTContext *s);
 
-#endif
+#endif /* AVCODEC_DCT_H */

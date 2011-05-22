@@ -113,6 +113,8 @@ AVIOContext *avio_alloc_context(
                   int64_t (*seek)(void *opaque, int64_t offset, int whence))
 {
     AVIOContext *s = av_mallocz(sizeof(AVIOContext));
+    if (!s)
+        return NULL;
     ffio_init_context(s, buffer, buffer_size, write_flag, opaque,
                   read_packet, write_packet, seek);
     return s;

@@ -1887,4 +1887,4 @@ static const uint16_t cf_sizes_wb[] = {
     40 /// SID/comfort noise frame
 };
 
-#endif
+#endif /* AVCODEC_AMRWBDATA_H */

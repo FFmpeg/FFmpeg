@@ -370,6 +370,7 @@ void avio_set_interrupt_cb(int (*interrupt_cb)(void));
  * freed with av_free().
  *
  * @param buffer Memory block for input/output operations via AVIOContext.
+ *        The buffer must be allocated with av_malloc() and friends.
  * @param buffer_size The buffer size is very important for performance.
  *        For protocols with fixed blocksize it should be set to this blocksize.
  *        For others a typical size is a cache page, e.g. 4kb.

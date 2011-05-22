@@ -239,4 +239,4 @@ typedef struct {
     AVFrame frames[5];
 } VP8Context;
 
-#endif
+#endif /* AVCODEC_VP8_H */

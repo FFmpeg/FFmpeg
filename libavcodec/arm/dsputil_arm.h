@@ -30,4 +30,4 @@ void ff_dsputil_init_vfp(DSPContext* c, AVCodecContext *avctx);
 void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx);
 void ff_dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx);
 
-#endif
+#endif /* AVCODEC_ARM_DSPUTIL_H */

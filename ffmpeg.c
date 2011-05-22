@@ -218,7 +218,6 @@ static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
 static int copy_tb= 0;
 static int opt_shortest = 0;
-static int video_global_header = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
 static int opt_programid = 0;
@@ -3555,14 +3554,9 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     if(video_codec_tag)
         video_enc->codec_tag= video_codec_tag;
 
-    if(   (video_global_header&1)
-       || (video_global_header==0 && (oc->oformat->flags & AVFMT_GLOBALHEADER))){
+    if(oc->oformat->flags & AVFMT_GLOBALHEADER) {
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
         avcodec_opts[AVMEDIA_TYPE_VIDEO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
-    }
-    if(video_global_header&2){
-        video_enc->flags2 |= CODEC_FLAG2_LOCAL_HEADER;
-        avcodec_opts[AVMEDIA_TYPE_VIDEO]->flags2|= CODEC_FLAG2_LOCAL_HEADER;
     }
 
     if (video_stream_copy) {
@@ -4408,7 +4402,6 @@ static const OptionDef options[] = {
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
-    { "vglobal", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_global_header}, "video global header storage type", "" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
     { "copytb", OPT_BOOL | OPT_EXPERT, {(void*)&copy_tb}, "copy input stream time base when stream copying" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //

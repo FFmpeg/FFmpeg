@@ -819,20 +819,11 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = avctx->codec->pix_fmts[0];
 
     if (!s->context_initialized) {
-        s->width  = avctx->width;
-        s->height = avctx->height;
         h->chroma_qp[0] = h->chroma_qp[1] = 4;
 
         svq3->halfpel_flag = 1;
         svq3->thirdpel_flag = 1;
         svq3->unknown_flag = 0;
-
-        if (MPV_common_init(s) < 0)
-            return -1;
-
-        h->b_stride = 4*s->mb_width;
-
-        ff_h264_alloc_tables(h);
 
         /* prowl for the "SEQH" marker in the extradata */
         extradata = (unsigned char *)avctx->extradata;
@@ -920,6 +911,16 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 #endif
             }
         }
+
+        s->width  = avctx->width;
+        s->height = avctx->height;
+
+        if (MPV_common_init(s) < 0)
+            return -1;
+
+        h->b_stride = 4*s->mb_width;
+
+        ff_h264_alloc_tables(h);
     }
 
     return 0;

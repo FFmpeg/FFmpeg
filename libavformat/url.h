@@ -173,4 +173,4 @@ int ffurl_register_protocol(URLProtocol *protocol, int size);
 int ff_udp_set_remote_url(URLContext *h, const char *uri);
 int ff_udp_get_local_port(URLContext *h);
 
-#endif //AVFORMAT_URL_H
+#endif /* AVFORMAT_URL_H */

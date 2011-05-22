@@ -69,4 +69,4 @@
 #define FF_API_SDP_CREATE              (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
 
-#endif //AVFORMAT_VERSION_H
+#endif /* AVFORMAT_VERSION_H */

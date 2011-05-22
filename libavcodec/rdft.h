@@ -71,4 +71,4 @@ void ff_rdft_end(RDFTContext *s);
 void ff_rdft_init_arm(RDFTContext *s);
 
 
-#endif
+#endif /* AVCODEC_RDFT_H */

@@ -13,4 +13,4 @@
 #include "libavutil/opt.h"
 #endif
 
-#endif
+#endif /* AVCODEC_OPT_H */
