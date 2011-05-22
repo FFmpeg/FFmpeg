@@ -681,21 +681,17 @@ retry:
 frame_end:
     /* divx 5.01+ bistream reorder stuff */
     if(s->codec_id==CODEC_ID_MPEG4 && s->divx_packed){
-        int current_pos= get_bits_count(&s->gb)>>3;
+        int current_pos= s->gb.buffer == s->bitstream_buffer ? 0 : (get_bits_count(&s->gb)>>3);
         int startcode_found=0;
 
         if(buf_size - current_pos > 5){
             int i;
-            for(i=current_pos; i<buf_size-3; i++){
+            for(i=current_pos; i<buf_size-4; i++){
                 if(buf[i]==0 && buf[i+1]==0 && buf[i+2]==1 && buf[i+3]==0xB6){
-                    startcode_found=1;
+                    startcode_found=!(buf[i+4]&0x40);
                     break;
                 }
             }
-        }
-        if(s->gb.buffer == s->bitstream_buffer && buf_size>7 && s->xvid_build>=0){ //xvid style
-            startcode_found=1;
-            current_pos=0;
         }
 
         if(startcode_found){
