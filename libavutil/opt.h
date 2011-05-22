@@ -92,6 +92,7 @@ typedef struct AVOption {
     const char *unit;
 } AVOption;
 
+#if FF_API_FIND_OPT
 /**
  * Look for an option in obj. Look only for the options which
  * have the flags set as specified in mask and flags (that is,
@@ -103,8 +104,12 @@ typedef struct AVOption {
  * @param[in] unit the unit of the option to look for, or any if NULL
  * @return a pointer to the option found, or NULL if no option
  * has been found
+ *
+ * @deprecated use av_opt_find.
  */
+attribute_deprecated
 const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
+#endif
 
 /**
  * Set the field of obj with the given name to value.
@@ -207,5 +212,31 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
  * @see av_dict_copy()
  */
 int av_opt_set_dict(void *obj, struct AVDictionary **options);
+
+#define AV_OPT_SEARCH_CHILDREN   0x0001 /**< Search in possible children of the
+                                             given object first. */
+
+/**
+ * Look for an option in an object. Consider only options which
+ * have all the specified flags set.
+ *
+ * @param[in] obj A pointer to a struct whose first element is a
+ *                pointer to an AVClass.
+ * @param[in] name The name of the option to look for.
+ * @param[in] unit When searching for named constants, name of the unit
+ *                 it belongs to.
+ * @param opt_flags Find only options with all the specified flags set (AV_OPT_FLAG).
+ * @param search_flags A combination of AV_OPT_SEARCH_*.
+ *
+ * @return A pointer to the option found, or NULL if no option
+ *         was found.
+ *
+ * @note Options found with AV_OPT_SEARCH_CHILDREN flag may not be settable
+ * directly with av_set_string3(). Use special calls which take an options
+ * AVDictionary (e.g. avformat_open_input()) to set options found with this
+ * flag.
+ */
+const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
+                            int opt_flags, int search_flags);
 
 #endif /* AVUTIL_OPT_H */

@@ -299,7 +299,7 @@ int opt_default(const char *opt, const char *arg){
     int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
 
     for(type=0; *avcodec_opts && type<AVMEDIA_TYPE_NB && ret>= 0; type++){
-        const AVOption *o2 = av_find_opt(avcodec_opts[0], opt, NULL, opt_types[type], opt_types[type]);
+        const AVOption *o2 = av_opt_find(avcodec_opts[0], opt, NULL, opt_types[type], 0);
         if(o2)
             ret = av_set_string3(avcodec_opts[type], opt, arg, 1, &o);
     }
@@ -324,13 +324,13 @@ int opt_default(const char *opt, const char *arg){
         AVOutputFormat *oformat = NULL;
         while ((p=av_codec_next(p))){
             const AVClass *c = p->priv_class;
-            if(c && av_find_opt(&c, opt, NULL, 0, 0))
+            if(c && av_opt_find(&c, opt, NULL, 0, 0))
                 break;
         }
         if (!p) {
             while ((oformat = av_oformat_next(oformat))) {
                 const AVClass *c = oformat->priv_class;
-                if (c && av_find_opt(&c, opt, NULL, 0, 0))
+                if (c && av_opt_find(&c, opt, NULL, 0, 0))
                     break;
             }
         }

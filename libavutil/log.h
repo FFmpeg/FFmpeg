@@ -70,6 +70,13 @@ typedef struct {
      * can be NULL of course
      */
     int parent_log_context_offset;
+
+    /**
+     * A function for extended searching, e.g. in possible
+     * children objects.
+     */
+    const struct AVOption* (*opt_find)(void *obj, const char *name, const char *unit,
+                                       int opt_flags, int search_flags);
 } AVClass;
 
 /* av_log API */

@@ -31,6 +31,7 @@
 #include "eval.h"
 #include "dict.h"
 
+#if FF_API_FIND_OPT
 //FIXME order them and do a bin search
 const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags)
 {
@@ -43,6 +44,7 @@ const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mas
     }
     return NULL;
 }
+#endif
 
 const AVOption *av_next_option(void *obj, const AVOption *last)
 {
@@ -53,7 +55,7 @@ const AVOption *av_next_option(void *obj, const AVOption *last)
 
 static int av_set_number2(void *obj, const char *name, double num, int den, int64_t intnum, const AVOption **o_out)
 {
-    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
     void *dst;
     if (o_out)
         *o_out= o;
@@ -116,7 +118,7 @@ static int hexchar2int(char c) {
 int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out)
 {
     int ret;
-    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
     if (o_out)
         *o_out = o;
     if (!o)
@@ -163,7 +165,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
             buf[i]=0;
 
             {
-                const AVOption *o_named= av_find_opt(obj, buf, o->unit, 0, 0);
+                const AVOption *o_named = av_opt_find(obj, buf, o->unit, 0, 0);
                 if (o_named && o_named->type == FF_OPT_TYPE_CONST)
                     d= o_named->default_val.dbl;
                 else if (!strcmp(buf, "default")) d= o->default_val.dbl;
@@ -228,7 +230,7 @@ const AVOption *av_set_int(void *obj, const char *name, int64_t n)
  */
 const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len)
 {
-    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
     void *dst;
     uint8_t *bin;
     int len, i;
@@ -261,7 +263,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
 
 static int av_get_number(void *obj, const char *name, const AVOption **o_out, double *num, int *den, int64_t *intnum)
 {
-    const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
     void *dst;
     if (!o || o->offset<=0)
         goto error;
@@ -558,6 +560,24 @@ int av_opt_set_dict(void *obj, AVDictionary **options)
     av_dict_free(options);
     *options = tmp;
     return ret;
+}
+
+const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
+                            int opt_flags, int search_flags)
+{
+    AVClass *c = *(AVClass**)obj;
+    const AVOption *o = NULL;
+
+    if (c->opt_find && search_flags & AV_OPT_SEARCH_CHILDREN &&
+        (o = c->opt_find(obj, name, unit, opt_flags, search_flags)))
+        return o;
+
+    while (o = av_next_option(obj, o)) {
+        if (!strcmp(o->name, name) && (!unit || (o->unit && !strcmp(o->unit, unit))) &&
+            (o->flags & opt_flags) == opt_flags)
+            return o;
+    }
+    return NULL;
 }
 
 #ifdef TEST
