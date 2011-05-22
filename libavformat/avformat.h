@@ -40,6 +40,7 @@ const char *avformat_license(void);
 #include <time.h>
 #include <stdio.h>  /* FILE */
 #include "libavcodec/avcodec.h"
+#include "libavutil/dict.h"
 
 #include "avio.h"
 #include "libavformat/version.h"
@@ -106,21 +107,24 @@ struct AVFormatContext;
  * variant_bitrate -- the total bitrate of the bitrate variant that the current stream is part of
  */
 
-#define AV_METADATA_MATCH_CASE      1
-#define AV_METADATA_IGNORE_SUFFIX   2
-#define AV_METADATA_DONT_STRDUP_KEY 4
-#define AV_METADATA_DONT_STRDUP_VAL 8
-#define AV_METADATA_DONT_OVERWRITE 16   ///< Don't overwrite existing tags.
-
-typedef struct {
-    char *key;
-    char *value;
-}AVMetadataTag;
-
-typedef struct AVMetadata AVMetadata;
 #if FF_API_OLD_METADATA2
+/**
+ * @defgroup old_metadata Old metadata API
+ * The following functions are deprecated, use
+ * their equivalents from libavutil/dict.h instead.
+ * @{
+ */
+
+#define AV_METADATA_MATCH_CASE      AV_DICT_MATCH_CASE
+#define AV_METADATA_IGNORE_SUFFIX   AV_DICT_IGNORE_SUFFIX
+#define AV_METADATA_DONT_STRDUP_KEY AV_DICT_DONT_STRDUP_KEY
+#define AV_METADATA_DONT_STRDUP_VAL AV_DICT_DONT_STRDUP_VAL
+#define AV_METADATA_DONT_OVERWRITE  AV_DICT_DONT_OVERWRITE
+
+typedef attribute_deprecated AVDictionary AVMetadata;
+typedef attribute_deprecated AVDictionaryEntry  AVMetadataTag;
+
 typedef struct AVMetadataConv AVMetadataConv;
-#endif
 
 /**
  * Get a metadata element with matching key.
@@ -130,8 +134,8 @@ typedef struct AVMetadataConv AVMetadataConv;
  * @param flags Allows case as well as suffix-insensitive comparisons.
  * @return Found tag or NULL, changing key or value leads to undefined behavior.
  */
-AVMetadataTag *
-av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int flags);
+attribute_deprecated AVDictionaryEntry *
+av_metadata_get(AVDictionary *m, const char *key, const AVDictionaryEntry *prev, int flags);
 
 /**
  * Set the given tag in *pm, overwriting an existing tag.
@@ -143,30 +147,32 @@ av_metadata_get(AVMetadata *m, const char *key, const AVMetadataTag *prev, int f
  *        Passing a NULL value will cause an existing tag to be deleted.
  * @return >= 0 on success otherwise an error code <0
  */
-int av_metadata_set2(AVMetadata **pm, const char *key, const char *value, int flags);
+attribute_deprecated int av_metadata_set2(AVDictionary **pm, const char *key, const char *value, int flags);
 
-#if FF_API_OLD_METADATA2
 /**
  * This function is provided for compatibility reason and currently does nothing.
  */
 attribute_deprecated void av_metadata_conv(struct AVFormatContext *ctx, const AVMetadataConv *d_conv,
                                                                         const AVMetadataConv *s_conv);
-#endif
 
 /**
- * Copy metadata from one AVMetadata struct into another.
- * @param dst pointer to a pointer to a AVMetadata struct. If *dst is NULL,
+ * Copy metadata from one AVDictionary struct into another.
+ * @param dst pointer to a pointer to a AVDictionary struct. If *dst is NULL,
  *            this function will allocate a struct for you and put it in *dst
- * @param src pointer to source AVMetadata struct
+ * @param src pointer to source AVDictionary struct
  * @param flags flags to use when setting metadata in *dst
  * @note metadata is read using the AV_METADATA_IGNORE_SUFFIX flag
  */
-void av_metadata_copy(AVMetadata **dst, AVMetadata *src, int flags);
+attribute_deprecated void av_metadata_copy(AVDictionary **dst, AVDictionary *src, int flags);
 
 /**
- * Free all the memory allocated for an AVMetadata struct.
+ * Free all the memory allocated for an AVDictionary struct.
  */
-void av_metadata_free(AVMetadata **m);
+attribute_deprecated void av_metadata_free(AVDictionary **m);
+/**
+ * @}
+ */
+#endif
 
 
 /* packet functions */

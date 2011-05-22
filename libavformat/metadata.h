@@ -29,11 +29,7 @@
 
 
 #include "avformat.h"
-
-struct AVMetadata{
-    int count;
-    AVMetadataTag *elems;
-};
+#include "libavutil/dict.h"
 
 struct AVMetadataConv{
     const char *native;
