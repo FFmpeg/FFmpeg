@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-05-22 - xxxxxx - lavfi 2.10.0 - vsrc_buffer.h
+  Make libavfilter/vsrc_buffer.h public.
+
 2011-05-XX - XXXXXX - lavfi 2.8.0 - avcodec.h
   Add av_vsrc_buffer_add_frame() to libavfilter/avcodec.h.
 
