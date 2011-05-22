@@ -96,7 +96,7 @@ static int movie_init(AVFilterContext *ctx)
                "Failed to avformat_open_input '%s'\n", movie->file_name);
         return ret;
     }
-    if ((ret = av_find_stream_info(movie->format_ctx)) < 0)
+    if ((ret = avformat_find_stream_info(movie->format_ctx, NULL)) < 0)
         av_log(ctx, AV_LOG_WARNING, "Failed to find stream info\n");
 
     // if seeking requested, we execute it
