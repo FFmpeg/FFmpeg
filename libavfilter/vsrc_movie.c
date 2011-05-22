@@ -139,7 +139,7 @@ static int movie_init(AVFilterContext *ctx)
         return AVERROR(EINVAL);
     }
 
-    if ((ret = avcodec_open(movie->codec_ctx, codec)) < 0) {
+    if ((ret = avcodec_open2(movie->codec_ctx, codec, NULL)) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Failed to open codec\n");
         return ret;
     }

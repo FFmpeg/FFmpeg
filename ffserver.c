@@ -2117,7 +2117,7 @@ static void open_parser(AVFormatContext *s, int i)
         codec = avcodec_find_decoder(st->codec->codec_id);
         if (codec && (codec->capabilities & CODEC_CAP_PARSE_ONLY)) {
             st->codec->parse_only = 1;
-            if (avcodec_open(st->codec, codec) < 0)
+            if (avcodec_open2(st->codec, codec, NULL) < 0)
                 st->codec->parse_only = 0;
         }
     }
