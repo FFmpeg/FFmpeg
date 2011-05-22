@@ -1722,8 +1722,10 @@ static av_always_inline void mpeg_motion_lowres(MpegEncContext *s,
     if(!CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
         uvsx= (uvsx << 2) >> lowres;
         uvsy= (uvsy << 2) >> lowres;
-        pix_op[op_index](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
-        pix_op[op_index](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
+        if(h >> s->chroma_y_shift){
+            pix_op[op_index](dest_cb, ptr_cb, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
+            pix_op[op_index](dest_cr, ptr_cr, uvlinesize, h >> s->chroma_y_shift, uvsx, uvsy);
+        }
     }
     //FIXME h261 lowres loop filter
 }
