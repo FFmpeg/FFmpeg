@@ -307,7 +307,6 @@ static int nb_output_streams_for_file[MAX_FILES] = { 0 };
 
 typedef struct AVInputStream {
     int file_index;
-    int index;
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
@@ -802,7 +801,7 @@ need_realloc:
     if ((ost->audio_resample && !ost->resample) || resample_changed) {
         if (resample_changed) {
             av_log(NULL, AV_LOG_INFO, "Input stream #%d.%d frame changed from rate:%d fmt:%s ch:%d to rate:%d fmt:%s ch:%d\n",
-                   ist->file_index, ist->index,
+                   ist->file_index, ist->st->index,
                    ost->resample_sample_rate, av_get_sample_fmt_name(ost->resample_sample_fmt), ost->resample_channels,
                    dec->sample_rate, av_get_sample_fmt_name(dec->sample_fmt), dec->channels);
             ost->resample_sample_fmt  = dec->sample_fmt;
@@ -1165,7 +1164,7 @@ static void do_video_out(AVFormatContext *s,
     if (resample_changed) {
         av_log(NULL, AV_LOG_INFO,
                "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
-               ist->file_index, ist->index,
+               ist->file_index, ist->st->index,
                ost->resample_width, ost->resample_height, avcodec_get_pix_fmt_name(ost->resample_pix_fmt),
                dec->width         , dec->height         , avcodec_get_pix_fmt_name(dec->pix_fmt));
         if(!ost->video_resample)
@@ -1974,7 +1973,6 @@ static int transcode(AVFormatContext **output_files,
             ist = ist_table[j++];
             ist->st = is->streams[k];
             ist->file_index = i;
-            ist->index = k;
             ist->discard = 1; /* the stream is discarded by default
                                  (changed later) */
 
@@ -2345,7 +2343,7 @@ static int transcode(AVFormatContext **output_files,
                 codec = avcodec_find_decoder(ist->st->codec->codec_id);
             if (!codec) {
                 snprintf(error, sizeof(error), "Decoder (codec id %d) not found for input stream #%d.%d",
-                        ist->st->codec->codec_id, ist->file_index, ist->index);
+                        ist->st->codec->codec_id, ist->file_index, ist->st->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
@@ -2362,7 +2360,7 @@ static int transcode(AVFormatContext **output_files,
 
             if (avcodec_open(ist->st->codec, codec) < 0) {
                 snprintf(error, sizeof(error), "Error while opening decoder for input stream #%d.%d",
-                        ist->file_index, ist->index);
+                        ist->file_index, ist->st->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
@@ -2498,13 +2496,13 @@ static int transcode(AVFormatContext **output_files,
             ost = ost_table[i];
             fprintf(stderr, "  Stream #%d.%d -> #%d.%d",
                     ist_table[ost->source_index]->file_index,
-                    ist_table[ost->source_index]->index,
+                    ist_table[ost->source_index]->st->index,
                     ost->file_index,
                     ost->index);
             if (ost->sync_ist != ist_table[ost->source_index])
                 fprintf(stderr, " [sync #%d.%d]",
                         ost->sync_ist->file_index,
-                        ost->sync_ist->index);
+                        ost->sync_ist->st->index);
             fprintf(stderr, "\n");
         }
     }
@@ -2643,12 +2641,12 @@ static int transcode(AVFormatContext **output_files,
             goto discard_packet;
         }
 
-        //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->index, pkt.size);
+        //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
         if (output_packet(ist, ist_index, ost_table, nb_ostreams, &pkt) < 0) {
 
             if (verbose >= 0)
                 fprintf(stderr, "Error while decoding stream #%d.%d\n",
-                        ist->file_index, ist->index);
+                        ist->file_index, ist->st->index);
             if (exit_on_error)
                 ffmpeg_exit(1);
             av_free_packet(&pkt);
