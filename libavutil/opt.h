@@ -29,6 +29,7 @@
 
 #include "rational.h"
 #include "avutil.h"
+#include "dict.h"
 
 enum AVOptionType{
     FF_OPT_TYPE_FLAGS,
@@ -190,5 +191,21 @@ void av_opt_free(void *obj);
  *         isn't of the right type, or the flags field doesn't exist.
  */
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
+
+/*
+ * Set all the options from a given dictionary on an object.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass
+ * @param options options to process. This dictionary will be freed and replaced
+ *                by a new one containing all options not found in obj.
+ *                Of course this new dictionary needs to be freed by caller
+ *                with av_dict_free().
+ *
+ * @return 0 on success, a negative AVERROR if some option was found in obj,
+ *         but could not be set.
+ *
+ * @see av_dict_copy()
+ */
+int av_opt_set_dict(void *obj, struct AVDictionary **options);
 
 #endif /* AVUTIL_OPT_H */

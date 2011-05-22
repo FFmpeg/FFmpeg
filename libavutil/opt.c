@@ -29,6 +29,7 @@
 #include "avstring.h"
 #include "opt.h"
 #include "eval.h"
+#include "dict.h"
 
 //FIXME order them and do a bin search
 const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mask, int flags)
@@ -536,6 +537,27 @@ void av_opt_free(void *obj)
     while ((o = av_next_option(obj, o)))
         if (o->type == FF_OPT_TYPE_STRING || o->type == FF_OPT_TYPE_BINARY)
             av_freep((uint8_t *)obj + o->offset);
+}
+
+int av_opt_set_dict(void *obj, AVDictionary **options)
+{
+    AVDictionaryEntry *t = NULL;
+    AVDictionary    *tmp = NULL;
+    int ret = 0;
+
+    while ((t = av_dict_get(*options, "", t, AV_DICT_IGNORE_SUFFIX))) {
+        ret = av_set_string3(obj, t->key, t->value, 1, NULL);
+        if (ret == AVERROR_OPTION_NOT_FOUND)
+            av_dict_set(&tmp, t->key, t->value, 0);
+        else if (ret < 0) {
+            av_log(obj, AV_LOG_ERROR, "Error setting option %s to value %s.\n", t->key, t->value);
+            break;
+        }
+        ret = 0;
+    }
+    av_dict_free(options);
+    *options = tmp;
+    return ret;
 }
 
 #ifdef TEST
