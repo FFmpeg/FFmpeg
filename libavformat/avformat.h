@@ -1322,7 +1322,12 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
 /**
  * media file output
  */
-int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
+#if FF_API_FORMAT_PARAMETERS
+/**
+ * @deprecated pass the options to avformat_write_header directly.
+ */
+attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
+#endif
 
 /**
  * Split a URL string into components.
@@ -1351,6 +1356,24 @@ void av_url_split(char *proto,         int proto_size,
                   const char *url);
 
 /**
+ * Allocate the stream private data and write the stream header to
+ * an output media file.
+ *
+ * @param s Media file handle, must be allocated with avformat_alloc_context().
+ *          Its oformat field must be set to the desired output format;
+ *          Its pb field must be set to an already openened AVIOContext.
+ * @param options  An AVDictionary filled with AVFormatContext and muxer-private options.
+ *                 On return this parameter will be destroyed and replaced with a dict containing
+ *                 options that were not found. May be NULL.
+ *
+ * @return 0 on success, negative AVERROR on failure.
+ *
+ * @see av_opt_find, av_dict_set, avio_open, av_oformat_next.
+ */
+int avformat_write_header(AVFormatContext *s, AVDictionary **options);
+
+#if FF_API_FORMAT_PARAMETERS
+/**
  * Allocate the stream private data and write the stream header to an
  * output media file.
  * @note: this sets stream time-bases, if possible to stream->codec->time_base
@@ -1358,8 +1381,11 @@ void av_url_split(char *proto,         int proto_size,
  *
  * @param s media file handle
  * @return 0 if OK, AVERROR_xxx on error
+ *
+ * @deprecated use avformat_write_header.
  */
-int av_write_header(AVFormatContext *s);
+attribute_deprecated int av_write_header(AVFormatContext *s);
+#endif
 
 /**
  * Write a packet to an output media file.
