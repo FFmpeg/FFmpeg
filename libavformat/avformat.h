@@ -730,6 +730,7 @@ typedef struct AVFormatContext {
 #if FF_API_FLAG_RTP_HINT
 #define AVFMT_FLAG_RTP_HINT     0x0040 ///< Deprecated, use the -movflags rtphint muxer specific AVOption instead
 #endif
+#define AVFMT_FLAG_CUSTOM_IO    0x0080 ///< The caller has supplied a custom AVIOContext, don't avio_close() it.
 
     int loop_input;
 
@@ -1039,6 +1040,27 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap);
+
+/**
+ * Open an input stream and read the header. The codecs are not opened.
+ * The stream must be closed with av_close_input_file().
+ *
+ * @param ps Pointer to user-supplied AVFormatContext (allocated by avformat_alloc_context).
+ *           May be a pointer to NULL, in which case an AVFormatContext is allocated by this
+ *           function and written into ps.
+ *           Note that a user-supplied AVFormatContext will be freed on failure.
+ * @param filename Name of the stream to open.
+ * @param fmt If non-NULL, this parameter forces a specific input format.
+ *            Otherwise the format is autodetected.
+ * @param options  A dictionary filled with AVFormatContext and demuxer-private options.
+ *                 On return this parameter will be destroyed and replaced with a dict containing
+ *                 options that were not found. May be NULL.
+ *
+ * @return 0 on success, a negative AVERROR on failure.
+ *
+ * @note If you want to use custom IO, preallocate the format context and set its pb field.
+ */
+int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
 
 /**
  * Allocate an AVFormatContext.
