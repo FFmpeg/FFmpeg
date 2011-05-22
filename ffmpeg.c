@@ -426,11 +426,13 @@ static void term_exit(void)
 }
 
 static volatile int received_sigterm = 0;
+static volatile int received_nb_signals = 0;
 
 static void
 sigterm_handler(int sig)
 {
     received_sigterm = sig;
+    received_nb_signals++;
     term_exit();
 }
 
@@ -445,7 +447,7 @@ static void term_init(void)
 
 static int decode_interrupt_cb(void)
 {
-    return received_sigterm;
+    return received_nb_signals > 1;
 }
 
 static int ffmpeg_exit(int ret)
