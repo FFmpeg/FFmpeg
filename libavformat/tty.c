@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "libavutil/log.h"
+#include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "avformat.h"
@@ -60,7 +61,7 @@ static int efi_read(AVFormatContext *avctx, uint64_t start_pos)
         return -1; \
     if (avio_read(pb, buf, size) == size) { \
         buf[len] = 0; \
-        av_metadata_set2(&avctx->metadata, name, buf, 0); \
+        av_dict_set(&avctx->metadata, name, buf, 0); \
     }
 
     GET_EFI_META("filename", 12)

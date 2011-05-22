@@ -24,6 +24,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "libavcodec/mpegaudio.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -179,7 +180,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
         goto finish;
     }
     if (*value)
-        av_metadata_set2(&s->metadata, key, value, 0);
+        av_dict_set(&s->metadata, key, value, 0);
 finish:
     av_freep(&value);
     avio_seek(s->pb, off + len, SEEK_SET);
@@ -689,7 +690,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     const char primary_tag[3] = { rfc1766[0], rfc1766[1], '\0' }; // ignore country code if any
                     const char *iso6392 = av_convert_lang_to(primary_tag, AV_LANG_ISO639_2_BIBL);
                     if (iso6392)
-                        av_metadata_set2(&st->metadata, "language", iso6392, 0);
+                        av_dict_set(&st->metadata, "language", iso6392, 0);
                 }
             }
         }

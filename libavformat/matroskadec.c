@@ -42,6 +42,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "libavutil/lzo.h"
+#include "libavutil/dict.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
@@ -1043,7 +1044,7 @@ static void matroska_merge_packets(AVPacket *out, AVPacket *in)
 }
 
 static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
-                                 AVMetadata **metadata, char *prefix)
+                                 AVDictionary **metadata, char *prefix)
 {
     MatroskaTag *tags = list->elem;
     char key[1024];
@@ -1059,14 +1060,14 @@ static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
         if (prefix)  snprintf(key, sizeof(key), "%s/%s", prefix, tags[i].name);
         else         av_strlcpy(key, tags[i].name, sizeof(key));
         if (tags[i].def || !lang) {
-        av_metadata_set2(metadata, key, tags[i].string, 0);
+        av_dict_set(metadata, key, tags[i].string, 0);
         if (tags[i].sub.nb_elem)
             matroska_convert_tag(s, &tags[i].sub, metadata, key);
         }
         if (lang) {
             av_strlcat(key, "-", sizeof(key));
             av_strlcat(key, lang, sizeof(key));
-            av_metadata_set2(metadata, key, tags[i].string, 0);
+            av_dict_set(metadata, key, tags[i].string, 0);
             if (tags[i].sub.nb_elem)
                 matroska_convert_tag(s, &tags[i].sub, metadata, key);
         }
@@ -1234,7 +1235,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (matroska->duration)
         matroska->ctx->duration = matroska->duration * matroska->time_scale
                                   * 1000 / AV_TIME_BASE;
-    av_metadata_set2(&s->metadata, "title", matroska->title, 0);
+    av_dict_set(&s->metadata, "title", matroska->title, 0);
 
     tracks = matroska->tracks.elem;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
@@ -1432,8 +1433,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->codec->codec_id = codec_id;
         st->start_time = 0;
         if (strcmp(track->language, "und"))
-            av_metadata_set2(&st->metadata, "language", track->language, 0);
-        av_metadata_set2(&st->metadata, "title", track->name, 0);
+            av_dict_set(&st->metadata, "language", track->language, 0);
+        av_dict_set(&st->metadata, "title", track->name, 0);
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
@@ -1494,7 +1495,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             AVStream *st = av_new_stream(s, 0);
             if (st == NULL)
                 break;
-            av_metadata_set2(&st->metadata, "filename",attachements[j].filename, 0);
+            av_dict_set(&st->metadata, "filename",attachements[j].filename, 0);
             st->codec->codec_id = CODEC_ID_NONE;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
             st->codec->extradata  = av_malloc(attachements[j].bin.size);
@@ -1522,7 +1523,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
                            chapters[i].start, chapters[i].end,
                            chapters[i].title);
-            av_metadata_set2(&chapters[i].chapter->metadata,
+            av_dict_set(&chapters[i].chapter->metadata,
                              "title", chapters[i].title, 0);
             max_start = chapters[i].start;
         }

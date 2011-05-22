@@ -20,6 +20,7 @@
  */
 #include "avformat.h"
 #include "riff.h"
+#include "libavutil/dict.h"
 
 //#define DEBUG
 //#define DEBUG_DUMP_INDEX // XXX dumbdriving-271.nsv breaks with it commented!!
@@ -328,7 +329,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             *p++ = '\0';
             av_dlog(s, "NSV NSVf INFO: %s='%s'\n", token, value);
-            av_metadata_set2(&s->metadata, token, value, 0);
+            av_dict_set(&s->metadata, token, value, 0);
         }
         av_free(strings);
     }

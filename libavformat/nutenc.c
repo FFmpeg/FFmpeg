@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/tree.h"
+#include "libavutil/dict.h"
 #include "libavcodec/mpegaudiodata.h"
 #include "nut.h"
 #include "internal.h"
@@ -430,7 +431,7 @@ static int add_info(AVIOContext *bc, const char *type, const char *value){
 
 static int write_globalinfo(NUTContext *nut, AVIOContext *bc){
     AVFormatContext *s= nut->avf;
-    AVMetadataTag *t = NULL;
+    AVDictionaryEntry *t = NULL;
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf=NULL;
     int count=0, dyn_size;
@@ -438,7 +439,7 @@ static int write_globalinfo(NUTContext *nut, AVIOContext *bc){
     if(ret < 0)
         return ret;
 
-    while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
+    while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
         count += add_info(dyn_bc, t->key, t->value);
 
     ff_put_v(bc, 0); //stream_if_plus1
@@ -489,7 +490,7 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
 {
     AVIOContext *dyn_bc;
     uint8_t *dyn_buf = NULL;
-    AVMetadataTag *t = NULL;
+    AVDictionaryEntry *t = NULL;
     AVChapter *ch    = nut->avf->chapters[id];
     int ret, dyn_size, count = 0;
 
@@ -502,7 +503,7 @@ static int write_chapter(NUTContext *nut, AVIOContext *bc, int id)
     put_tt(nut, nut->chapter[id].time_base, bc, ch->start); // chapter_start
     ff_put_v(bc, ch->end - ch->start);                      // chapter_len
 
-    while ((t = av_metadata_get(ch->metadata, "", t, AV_METADATA_IGNORE_SUFFIX)))
+    while ((t = av_dict_get(ch->metadata, "", t, AV_DICT_IGNORE_SUFFIX)))
         count += add_info(dyn_bc, t->key, t->value);
 
     ff_put_v(bc, count);

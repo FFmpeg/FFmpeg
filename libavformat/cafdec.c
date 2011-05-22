@@ -29,6 +29,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "caf.h"
 
 typedef struct {
@@ -187,7 +188,7 @@ static void read_info_chunk(AVFormatContext *s, int64_t size)
         char value[1024];
         avio_get_str(pb, INT_MAX, key,   sizeof(key));
         avio_get_str(pb, INT_MAX, value, sizeof(value));
-        av_metadata_set2(&s->metadata, key, value, 0);
+        av_dict_set(&s->metadata, key, value, 0);
     }
 }
 

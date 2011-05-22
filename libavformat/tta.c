@@ -22,6 +22,7 @@
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "id3v1.h"
+#include "libavutil/dict.h"
 
 typedef struct {
     int totalframes, currentframe;
@@ -43,7 +44,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     int i, channels, bps, samplerate, datalen, framelen;
     uint64_t framepos, start_offset;
 
-    if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+    if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
     start_offset = avio_tell(s->pb);

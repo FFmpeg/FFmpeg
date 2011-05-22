@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intfloat_readwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "pcm.h"
 #include "aiff.h"
@@ -79,7 +80,7 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
         return;
 
     str[res] = 0;
-    av_metadata_set2(&s->metadata, key, str, AV_METADATA_DONT_STRDUP_VAL);
+    av_dict_set(&s->metadata, key, str, AV_DICT_DONT_STRDUP_VAL);
 }
 
 /* Returns the number of sound data frames or negative on error */

@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 
 #define FORM_TAG MKTAG('F', 'O', 'R', 'M')
@@ -130,8 +131,8 @@ static int wc3_read_header(AVFormatContext *s,
             if ((ret = avio_read(pb, buffer, size)) != size)
                 return AVERROR(EIO);
             buffer[size] = 0;
-            av_metadata_set2(&s->metadata, "title", buffer,
-                                   AV_METADATA_DONT_STRDUP_VAL);
+            av_dict_set(&s->metadata, "title", buffer,
+                                   AV_DICT_DONT_STRDUP_VAL);
             break;
 
         case SIZE_TAG:

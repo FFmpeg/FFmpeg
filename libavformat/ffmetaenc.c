@@ -23,6 +23,7 @@
 
 #include "avformat.h"
 #include "ffmeta.h"
+#include "libavutil/dict.h"
 
 
 static void write_escape_str(AVIOContext *s, const uint8_t *str)
@@ -37,10 +38,10 @@ static void write_escape_str(AVIOContext *s, const uint8_t *str)
     }
 }
 
-static void write_tags(AVIOContext *s, AVMetadata *m)
+static void write_tags(AVIOContext *s, AVDictionary *m)
 {
-    AVMetadataTag *t = NULL;
-    while ((t = av_metadata_get(m, "", t, AV_METADATA_IGNORE_SUFFIX))) {
+    AVDictionaryEntry *t = NULL;
+    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX))) {
         write_escape_str(s, t->key);
         avio_w8(s, '=');
         write_escape_str(s, t->value);

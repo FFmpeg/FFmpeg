@@ -161,7 +161,7 @@ attribute_deprecated void av_metadata_conv(struct AVFormatContext *ctx, const AV
  *            this function will allocate a struct for you and put it in *dst
  * @param src pointer to source AVDictionary struct
  * @param flags flags to use when setting metadata in *dst
- * @note metadata is read using the AV_METADATA_IGNORE_SUFFIX flag
+ * @note metadata is read using the AV_DICT_IGNORE_SUFFIX flag
  */
 attribute_deprecated void av_metadata_copy(AVDictionary **dst, AVDictionary *src, int flags);
 
@@ -565,7 +565,7 @@ typedef struct AVStream {
      */
     AVRational sample_aspect_ratio;
 
-    AVMetadata *metadata;
+    AVDictionary *metadata;
 
     /* Intended mostly for av_read_frame() support. Not supposed to be used by */
     /* external applications; try to use something else if at all possible.    */
@@ -633,7 +633,7 @@ typedef struct AVProgram {
     enum AVDiscard discard;        ///< selects which program to discard and which to feed to the caller
     unsigned int   *stream_index;
     unsigned int   nb_stream_indexes;
-    AVMetadata *metadata;
+    AVDictionary *metadata;
 } AVProgram;
 
 #define AVFMTCTX_NOHEADER      0x0001 /**< signal that no header is present
@@ -643,7 +643,7 @@ typedef struct AVChapter {
     int id;                 ///< unique ID to identify the chapter
     AVRational time_base;   ///< time base in which the start/end timestamps are specified
     int64_t start, end;     ///< chapter start/end time in time_base units
-    AVMetadata *metadata;
+    AVDictionary *metadata;
 } AVChapter;
 
 /**
@@ -806,7 +806,7 @@ typedef struct AVFormatContext {
 
     struct AVPacketList *packet_buffer_end;
 
-    AVMetadata *metadata;
+    AVDictionary *metadata;
 
     /**
      * Remaining size available for raw_packet_buffer, in bytes.

@@ -221,7 +221,7 @@ static int ogg_buffer_data(AVFormatContext *s, AVStream *st,
 }
 
 static uint8_t *ogg_write_vorbiscomment(int offset, int bitexact,
-                                        int *header_len, AVMetadata **m, int framing_bit)
+                                        int *header_len, AVDictionary **m, int framing_bit)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;
     int size;
@@ -247,7 +247,7 @@ static uint8_t *ogg_write_vorbiscomment(int offset, int bitexact,
 
 static int ogg_build_flac_headers(AVCodecContext *avctx,
                                   OGGStreamContext *oggstream, int bitexact,
-                                  AVMetadata **m)
+                                  AVDictionary **m)
 {
     enum FLACExtradataFormat format;
     uint8_t *streaminfo;
@@ -287,7 +287,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
 
 static int ogg_build_speex_headers(AVCodecContext *avctx,
                                    OGGStreamContext *oggstream, int bitexact,
-                                   AVMetadata **m)
+                                   AVDictionary **m)
 {
     uint8_t *p;
 

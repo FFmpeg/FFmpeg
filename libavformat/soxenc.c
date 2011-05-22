@@ -30,6 +30,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "sox.h"
@@ -43,10 +44,10 @@ static int sox_write_header(AVFormatContext *s)
     SoXContext *sox = s->priv_data;
     AVIOContext *pb = s->pb;
     AVCodecContext *enc = s->streams[0]->codec;
-    AVMetadataTag *comment;
+    AVDictionaryEntry *comment;
     size_t comment_len = 0, comment_size;
 
-    comment = av_metadata_get(s->metadata, "comment", NULL, 0);
+    comment = av_dict_get(s->metadata, "comment", NULL, 0);
     if (comment)
         comment_len = strlen(comment->value);
     comment_size = (comment_len + 7) & ~7;

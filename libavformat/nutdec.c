@@ -23,6 +23,7 @@
 #include <strings.h>
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
+#include "libavutil/dict.h"
 #include "libavutil/tree.h"
 #include "avio_internal.h"
 #include "nut.h"
@@ -401,7 +402,7 @@ static int decode_info_header(NUTContext *nut){
     const char *type;
     AVChapter *chapter= NULL;
     AVStream *st= NULL;
-    AVMetadata **metadata = NULL;
+    AVDictionary **metadata = NULL;
 
     end= get_packetheader(nut, bc, 1, INFO_STARTCODE);
     end += avio_tell(bc);
@@ -459,7 +460,7 @@ static int decode_info_header(NUTContext *nut){
             }
             if(metadata && strcasecmp(name,"Uses")
                && strcasecmp(name,"Depends") && strcasecmp(name,"Replaces"))
-                av_metadata_set2(metadata, name, str_value, 0);
+                av_dict_set(metadata, name, str_value, 0);
         }
     }
 
