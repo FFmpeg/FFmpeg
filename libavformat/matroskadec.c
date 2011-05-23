@@ -112,7 +112,7 @@ typedef struct {
     uint64_t pixel_width;
     uint64_t pixel_height;
     uint64_t fourcc;
-    uint64_t stereoMode;
+    uint64_t stereo_mode;
 } MatroskaTrackVideo;
 
 typedef struct {
@@ -139,7 +139,6 @@ typedef struct {
 
 typedef struct {
     EbmlList combine_planes;
-    /*EbmlList join_blocks;*/
 } MatroskaTrackOperation;
 
 typedef struct {
@@ -303,7 +302,7 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEOPIXELWIDTH,    EBML_UINT, 0, offsetof(MatroskaTrackVideo,pixel_width) },
     { MATROSKA_ID_VIDEOPIXELHEIGHT,   EBML_UINT, 0, offsetof(MatroskaTrackVideo,pixel_height) },
     { MATROSKA_ID_VIDEOCOLORSPACE,    EBML_UINT, 0, offsetof(MatroskaTrackVideo,fourcc) },
-    { MATROSKA_ID_VIDEOSTEREOMODE,    EBML_UINT, MATROSKA_VIDEO_STEREOMODE_MONO, offsetof(MatroskaTrackVideo,stereoMode) },
+    { MATROSKA_ID_VIDEOSTEREOMODE,    EBML_UINT, 0, offsetof(MatroskaTrackVideo,stereo_mode) },
     { MATROSKA_ID_VIDEOPIXELCROPB,    EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPT,    EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPL,    EBML_NONE },
@@ -1225,16 +1224,13 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     EbmlList *chapters_list = &matroska->chapters;
     MatroskaChapter *chapters;
     MatroskaTrack *tracks;
-    EbmlList *combined_list;
-    MatroskaTrackPlane *planes;
-    char stereo_str[256];
     EbmlList *index_list;
     MatroskaIndex *index;
     int index_scale = 1;
     uint64_t max_start = 0;
     Ebml ebml = { 0 };
     AVStream *st;
-    int i, j, res;
+    int i, j, k, res;
 
     matroska->ctx = s;
 
@@ -1499,6 +1495,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
+            MatroskaTrackPlane *planes = track->operation.combine_planes.elem;
+
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             st->codec->codec_tag  = track->video.fourcc;
             st->codec->width  = track->video.pixel_width;
@@ -1513,84 +1511,23 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (track->default_duration)
                 st->avg_frame_rate = av_d2q(1000000000.0/track->default_duration, INT_MAX);
 
-            /* restore stereo mode flag as metadata tag */
-            switch (track->video.stereoMode) {
-                case MATROSKA_VIDEO_STEREOMODE_LEFT_RIGHT:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "left_right", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_BOTTOM_TOP:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "bottom_top", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_TOP_BOTTOM:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "top_bottom", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_CHECKERBOARD_RL:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "checkerboard_rl", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_CHECKERBOARD_LR:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "checkerboard_lr", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_ROW_INTERLEAVED_RL:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "row_interleaved_rl", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_ROW_INTERLEAVED_LR:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "row_interleaved_lr", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_COL_INTERLEAVED_RL:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "col_interleaved_rl", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_COL_INTERLEAVED_LR:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "col_interleaved_lr", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_ANAGLYPH_CYAN_RED:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "anaglyph_cyan_red", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_RIGHT_LEFT:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "right_left", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_ANAGLYPH_GREEN_MAG:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "anaglyph_green_magenta", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_BOTH_EYES_BLOCK_LR:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "block_lr", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_BOTH_EYES_BLOCK_RL:
-                    av_metadata_set2(&st->metadata, "STEREO_MODE", "block_rl", 0);
-                    break;
-                case MATROSKA_VIDEO_STEREOMODE_MONO:
-                default:
-                    /**av_metadata_set2(&st->metadata, "STEREO_MODE", "mono", 0);*/
-                    break;
-            }
+            /* export stereo mode flag as metadata tag */
+            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREO_MODE_COUNT)
+                av_metadata_set2(&st->metadata, "stereo_mode", matroska_video_stereo_mode[track->video.stereo_mode], 0);
 
-            /* if we have virtual track - mark the real tracks */
-            combined_list = &track->operation.combine_planes;
-            planes = combined_list->elem;
-            for (int plane_id = 0; plane_id < combined_list->nb_elem; ++plane_id) {
-                switch (planes[plane_id].type) {
-                    case 0: {
-                        snprintf(stereo_str, sizeof(stereo_str), "left_%d", i);
+            /* if we have virtual track, mark the real tracks */
+            for (j=0; j < track->operation.combine_planes.nb_elem; j++) {
+                char buf[32];
+                if (planes[j].type < MATROSKA_VIDEO_STEREO_PLANE_COUNT)
+                    continue;
+                snprintf(buf, sizeof(buf), "%s_%d",
+                         matroska_video_stereo_plane[planes[j].type], i);
+                for (k=0; k < matroska->tracks.nb_elem; k++)
+                    if (planes[j].uid == tracks[k].uid) {
+                        av_metadata_set2(&s->streams[k]->metadata,
+                                         "stereo_mode", buf, 0);
                         break;
                     }
-                    case 1: {
-                        snprintf(stereo_str, sizeof(stereo_str), "right_%d", i);
-                        break;
-                    }
-                    case 2: {
-                        snprintf(stereo_str, sizeof(stereo_str), "background_%d", i);
-                        break;
-                    }
-                    default: {
-                        continue;
-                    }
-                }
-                for (int track_id = 0; track_id < matroska->tracks.nb_elem && track_id < i; ++track_id) {
-                    MatroskaTrack *check_track = &tracks[track_id];
-                    if (planes[plane_id].uid == check_track->uid) {
-                        av_metadata_set2(&s->streams[track_id]->metadata, "STEREO_MODE", stereo_str, 0);
-                        break;
-                    }
-                }
             }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;

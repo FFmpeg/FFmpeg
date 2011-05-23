@@ -223,24 +223,6 @@ typedef enum {
   MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP = 3,
 } MatroskaTrackEncodingCompAlgo;
 
-typedef enum {
-  MATROSKA_VIDEO_STEREOMODE_MONO               = 0,
-  MATROSKA_VIDEO_STEREOMODE_LEFT_RIGHT         = 1,
-  MATROSKA_VIDEO_STEREOMODE_BOTTOM_TOP         = 2,
-  MATROSKA_VIDEO_STEREOMODE_TOP_BOTTOM         = 3,
-  MATROSKA_VIDEO_STEREOMODE_CHECKERBOARD_RL    = 4,
-  MATROSKA_VIDEO_STEREOMODE_CHECKERBOARD_LR    = 5,
-  MATROSKA_VIDEO_STEREOMODE_ROW_INTERLEAVED_RL = 6,
-  MATROSKA_VIDEO_STEREOMODE_ROW_INTERLEAVED_LR = 7,
-  MATROSKA_VIDEO_STEREOMODE_COL_INTERLEAVED_RL = 8,
-  MATROSKA_VIDEO_STEREOMODE_COL_INTERLEAVED_LR = 9,
-  MATROSKA_VIDEO_STEREOMODE_ANAGLYPH_CYAN_RED  = 10,
-  MATROSKA_VIDEO_STEREOMODE_RIGHT_LEFT         = 11,
-  MATROSKA_VIDEO_STEREOMODE_ANAGLYPH_GREEN_MAG = 12,
-  MATROSKA_VIDEO_STEREOMODE_BOTH_EYES_BLOCK_LR = 13,
-  MATROSKA_VIDEO_STEREOMODE_BOTH_EYES_BLOCK_RL = 14,
-} MatroskaVideoStereoModeType;
-
 /*
  * Matroska Codec IDs, strings
  */
@@ -261,5 +243,10 @@ typedef struct CodecMime{
 extern const CodecTags ff_mkv_codec_tags[];
 extern const CodecMime ff_mkv_mime_tags[];
 extern const AVMetadataConv ff_mkv_metadata_conv[];
+extern const char const *matroska_video_stereo_mode[];
+extern const char const *matroska_video_stereo_plane[];
+
+#define MATROSKA_VIDEO_STEREO_MODE_COUNT  15
+#define MATROSKA_VIDEO_STEREO_PLANE_COUNT  3
 
 #endif /* AVFORMAT_MATROSKA_H */

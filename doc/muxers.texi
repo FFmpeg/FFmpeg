@@ -232,7 +232,7 @@ Specifies the language of the track in the Matroska languages form
 
 @table @option
 
-@item STEREO_MODE=@var{mode}
+@item stereo_mode=@var{mode}
 Stereo 3D video layout of two views in a single video track
 @table @option
 @item mono
@@ -270,7 +270,7 @@ Both eyes laced in one Block, Right-eye view is first
 
 For example a 3D WebM clip can be created using the following command line:
 @example
-ffmpeg -i sample_left_right_clip.mpg -an -vcodec libvpx -metadata STEREO_MODE=left_right -y stereo_clip.webm
+ffmpeg -i sample_left_right_clip.mpg -an -vcodec libvpx -metadata stereo_mode=left_right -y stereo_clip.webm
 @end example
 
 @c man end MUXERS

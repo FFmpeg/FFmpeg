@@ -587,58 +587,24 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
 
-                if ((tag = av_metadata_get(st->metadata, "STEREO_MODE", NULL, 0)) ||
-                    (tag = av_metadata_get( s->metadata, "STEREO_MODE", NULL, 0))) {
-                    // save stereomode flag
-                    uint64_t stereo_fmt = -1;
-                    int valid_fmt = 0;
+                if ((tag = av_metadata_get(st->metadata, "stereo_mode", NULL, 0)) ||
+                    (tag = av_metadata_get( s->metadata, "stereo_mode", NULL, 0))) {
+                    // save stereo mode flag
+                    uint64_t st_mode = MATROSKA_VIDEO_STEREO_MODE_COUNT;
 
-                    if (!strcmp(tag->value, "mono")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_MONO;
-                    } else if (!strcmp(tag->value, "left_right")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_LEFT_RIGHT;
-                    } else if (!strcmp(tag->value, "bottom_top")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_BOTTOM_TOP;
-                    } else if (!strcmp(tag->value, "top_bottom")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_TOP_BOTTOM;
-                    } else if (!strcmp(tag->value, "checkerboard_rl")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_CHECKERBOARD_RL;
-                    } else if (!strcmp(tag->value, "checkerboard_lr")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_CHECKERBOARD_LR;
-                    } else if (!strcmp(tag->value, "row_interleaved_rl")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_ROW_INTERLEAVED_RL;
-                    } else if (!strcmp(tag->value, "row_interleaved_lr")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_ROW_INTERLEAVED_LR;
-                    } else if (!strcmp(tag->value, "col_interleaved_rl")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_COL_INTERLEAVED_RL;
-                    } else if (!strcmp(tag->value, "col_interleaved_lr")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_COL_INTERLEAVED_LR;
-                    } else if (!strcmp(tag->value, "anaglyph_cyan_red")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_ANAGLYPH_CYAN_RED;
-                    } else if (!strcmp(tag->value, "right_left")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_RIGHT_LEFT;
-                    } else if (!strcmp(tag->value, "anaglyph_green_magenta")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_ANAGLYPH_GREEN_MAG;
-                    } else if (!strcmp(tag->value, "block_lr")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_BOTH_EYES_BLOCK_LR;
-                    } else if (!strcmp(tag->value, "block_rl")) {
-                        stereo_fmt = MATROSKA_VIDEO_STEREOMODE_BOTH_EYES_BLOCK_RL;
-                    }
-
-                    switch (mkv->mode) {
-                        case MODE_WEBM:
-                            if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_TOP_BOTTOM
-                             || stereo_fmt == MATROSKA_VIDEO_STEREOMODE_RIGHT_LEFT)
-                            valid_fmt = 1;
+                    for (j=0; j<MATROSKA_VIDEO_STEREO_MODE_COUNT; j++)
+                        if (!strcmp(tag->value, matroska_video_stereo_mode[j])){
+                            st_mode = j;
                             break;
-                        case MODE_MATROSKAv2:
-                            if (stereo_fmt <= MATROSKA_VIDEO_STEREOMODE_BOTH_EYES_BLOCK_RL)
-                                valid_fmt = 1;
-                            break;
-                    }
+                        }
 
-                    if (valid_fmt)
-                        put_ebml_uint (pb, MATROSKA_ID_VIDEOSTEREOMODE, stereo_fmt);
+                    if ((mkv->mode == MODE_WEBM && st_mode > 3 && st_mode != 11)
+                        || st_mode >= MATROSKA_VIDEO_STEREO_MODE_COUNT) {
+                        av_log(s, AV_LOG_ERROR,
+                               "The specified stereo mode is not valid.\n");
+                        return AVERROR(EINVAL);
+                    } else
+                        put_ebml_uint(pb, MATROSKA_ID_VIDEOSTEREOMODE, st_mode);
                 }
 
                 if (st->sample_aspect_ratio.num) {
@@ -786,7 +752,7 @@ static int mkv_write_tag(AVFormatContext *s, AVMetadata *m, unsigned int element
     end_ebml_master(s->pb, targets);
 
     while ((t = av_metadata_get(m, "", t, AV_METADATA_IGNORE_SUFFIX)))
-        if (strcasecmp(t->key, "title"))
+        if (strcasecmp(t->key, "title") && strcasecmp(t->key, "stereo_mode"))
             mkv_write_simpletag(s->pb, t);
 
     end_ebml_master(s->pb, tag);
