@@ -166,7 +166,7 @@ static int getsgnctxno(int flag, uint8_t *xorbit)
     return ctxlbltab[hcontrib][vcontrib];
 }
 
-void ff_j2k_init_tier1_luts()
+void ff_j2k_init_tier1_luts(void)
 {
     int i, j;
     for (i = 0; i < 256; i++)
