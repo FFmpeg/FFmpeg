@@ -100,10 +100,10 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
        else
            dv->format = DV1394_NTSC;
     }
-#endif
 
     if (ap->channel)
         dv->channel = ap->channel;
+#endif
 
     /* Open and initialize DV1394 device */
     dv->fd = open(context->filename, O_RDONLY);

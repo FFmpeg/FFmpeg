@@ -453,8 +453,10 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
+#if FF_API_FORMAT_PARAMETERS
     if (ap->channel > 0)
         s->channel = ap->channel;
+#endif
 
     /* set tv video input */
     memset (&input, 0, sizeof (input));

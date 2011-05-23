@@ -159,8 +159,10 @@ static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
     if (dc1394_read_common(c,ap,&fmt,&fps) != 0)
         return -1;
 
+#if FF_API_FORMAT_PARAMETERS
     if (ap->channel)
         dc1394->channel = ap->channel;
+#endif
 
     /* Now let us prep the hardware. */
     dc1394->handle = dc1394_create_handle(0); /* FIXME: gotta have ap->port */
