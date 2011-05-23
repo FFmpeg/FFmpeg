@@ -228,8 +228,10 @@ typedef struct AVProbeData {
 
 typedef struct AVFormatParameters {
     AVRational time_base;
-    int sample_rate;
-    int channels;
+#if FF_API_FORMAT_PARAMETERS
+    attribute_deprecated int sample_rate;
+    attribute_deprecated int channels;
+#endif
     int width;
     int height;
     enum PixelFormat pix_fmt;

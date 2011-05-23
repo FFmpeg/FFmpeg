@@ -47,11 +47,13 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case AVMEDIA_TYPE_AUDIO: {
             RawAudioDemuxerContext *s1 = s->priv_data;
 
+#if FF_API_FORMAT_PARAMETERS
             if (ap->sample_rate)
                 st->codec->sample_rate = ap->sample_rate;
             if (ap->channels)
                 st->codec->channels    = ap->channels;
             else st->codec->channels   = 1;
+#endif
 
             if (s1->sample_rate)
                 st->codec->sample_rate = s1->sample_rate;
