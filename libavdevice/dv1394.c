@@ -93,12 +93,14 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
     if (!dv->dv_demux)
         goto failed;
 
+#if FF_API_FORMAT_PARAMETERS
     if (ap->standard) {
        if (!strcasecmp(ap->standard, "pal"))
            dv->format = DV1394_PAL;
        else
            dv->format = DV1394_NTSC;
     }
+#endif
 
     if (ap->channel)
         dv->channel = ap->channel;

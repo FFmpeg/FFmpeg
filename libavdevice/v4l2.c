@@ -470,10 +470,12 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         }
     }
 
+#if FF_API_FORMAT_PARAMETERS
     if (ap->standard) {
         av_freep(&s->standard);
         s->standard = av_strdup(ap->standard);
     }
+#endif
 
     if (s->standard) {
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",

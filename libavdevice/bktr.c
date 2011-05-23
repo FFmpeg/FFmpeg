@@ -277,6 +277,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->time_base.den = frame_rate;
     st->codec->time_base.num = frame_rate_base;
 
+#if FF_API_FORMAT_PARAMETERS
     if (ap->standard) {
         if (!strcasecmp(ap->standard, "pal"))
             s->standard = PAL;
@@ -285,6 +286,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         else if (!strcasecmp(ap->standard, "ntsc"))
             s->standard = NTSC;
     }
+#endif
 
     if (bktr_init(s1->filename, width, height, s->standard,
             &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0)
