@@ -284,8 +284,7 @@ following image formats are supported:
     @tab Digital Picture Exchange
 @item JPEG         @tab X @tab X
     @tab Progressive JPEG is not supported.
-@item JPEG 2000    @tab   @tab E
-    @tab decoding supported through external library libopenjpeg
+@item JPEG 2000    @tab X @tab X
 @item JPEG-LS      @tab X @tab X
 @item LJPEG        @tab X @tab
     @tab Lossless JPEG
