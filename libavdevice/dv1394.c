@@ -104,8 +104,6 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 
     if (ap->channel)
         dv->channel = ap->channel;
-    else
-        dv->channel = DV1394_DEFAULT_CHANNEL;
 
     /* Open and initialize DV1394 device */
     dv->fd = open(context->filename, O_RDONLY);
@@ -238,6 +236,7 @@ static const AVOption options[] = {
     { "standard", "", offsetof(struct dv1394_data, format), FF_OPT_TYPE_INT, {.dbl = DV1394_NTSC}, DV1394_PAL, DV1394_NTSC, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "PAL",      "", 0, FF_OPT_TYPE_CONST, {.dbl = DV1394_PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "NTSC",     "", 0, FF_OPT_TYPE_CONST, {.dbl = DV1394_NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "channel",  "", offsetof(struct dv1394_data, channel), FF_OPT_TYPE_INT, {.dbl = DV1394_DEFAULT_CHANNEL}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
