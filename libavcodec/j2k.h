@@ -208,7 +208,7 @@ void ff_j2k_set_significant(J2kT1Context *t1, int x, int y, int negative);
 
 extern uint8_t ff_j2k_nbctxno_lut[256][4];
 
-static inline int ff_j2k_getnbctxno(int flag, int bandno)
+static inline int ff_j2k_getnbctxno(int flag, int bandno, int vert_causal_ctx_csty_symbol)
 {
     return ff_j2k_nbctxno_lut[flag&255][bandno];
 }

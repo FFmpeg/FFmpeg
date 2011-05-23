@@ -105,18 +105,20 @@ static void tag_tree_zero(J2kTgtNode *t, int w, int h)
 
 uint8_t ff_j2k_nbctxno_lut[256][4];
 
-static int getnbctxno(int flag, int bandno)
+static int getnbctxno(int flag, int bandno, int vert_causal_ctx_csty_symbol)
 {
     int h, v, d;
 
     h = ((flag & J2K_T1_SIG_E) ? 1:0)+
         ((flag & J2K_T1_SIG_W) ? 1:0);
-    v = ((flag & J2K_T1_SIG_N) ? 1:0)+
-        ((flag & J2K_T1_SIG_S) ? 1:0);
+    v = ((flag & J2K_T1_SIG_N) ? 1:0);
+    if (!vert_causal_ctx_csty_symbol)
+         v = v + ((flag & J2K_T1_SIG_S) ? 1:0);
     d = ((flag & J2K_T1_SIG_NE) ? 1:0)+
-        ((flag & J2K_T1_SIG_NW) ? 1:0)+
-        ((flag & J2K_T1_SIG_SE) ? 1:0)+
-        ((flag & J2K_T1_SIG_SW) ? 1:0);
+        ((flag & J2K_T1_SIG_NW) ? 1:0);
+    if (!vert_causal_ctx_csty_symbol)
+        d = d + ((flag & J2K_T1_SIG_SE) ? 1:0)+
+                ((flag & J2K_T1_SIG_SW) ? 1:0);
     if (bandno < 3){
             if (bandno == 1)
                 FFSWAP(int, h, v);
@@ -171,7 +173,7 @@ void ff_j2k_init_tier1_luts(void)
     int i, j;
     for (i = 0; i < 256; i++)
         for (j = 0; j < 4; j++)
-            ff_j2k_nbctxno_lut[i][j] = getnbctxno(i, j);
+            ff_j2k_nbctxno_lut[i][j] = getnbctxno(i, j, 0);
     for (i = 0; i < 16; i++)
         for (j = 0; j < 16; j++)
             ff_j2k_sgnctxno_lut[i][j] = getsgnctxno(i + (j << 8), &ff_j2k_xorbit_lut[i][j]);
