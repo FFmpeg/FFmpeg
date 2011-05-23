@@ -33,6 +33,7 @@
 #include <alsa/asoundlib.h>
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavutil/log.h"
 
 /* XXX: we make the assumption that the soundcard accepts this format */
 /* XXX: find better solution with "preinit" method, needed also in
@@ -40,9 +41,12 @@
 #define DEFAULT_CODEC_ID AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE)
 
 typedef struct {
+    AVClass *class;
     snd_pcm_t *h;
     int frame_size;  ///< preferred size for reads and writes
     int period_size; ///< bytes per sample * channels
+    int sample_rate; ///< sample rate set by user
+    int channels;    ///< number of channels set by user
 } AlsaData;
 
 /**
