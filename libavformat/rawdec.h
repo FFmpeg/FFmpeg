@@ -23,6 +23,15 @@
 #define AVFORMAT_RAWDEC_H
 
 #include "avformat.h"
+#include "libavutil/log.h"
+
+typedef struct RawAudioDemuxerContext {
+    AVClass *class;
+    int sample_rate;
+    int channels;
+} RawAudioDemuxerContext;
+
+extern const AVClass ff_rawaudio_demuxer_class;
 
 int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap);
 

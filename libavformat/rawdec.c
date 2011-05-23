@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "rawdec.h"
+#include "libavutil/opt.h"
 
 /* raw input */
 int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -43,15 +44,26 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->codec->codec_id = id;
 
         switch(st->codec->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            st->codec->sample_rate = ap->sample_rate;
-            if(ap->channels) st->codec->channels = ap->channels;
-            else             st->codec->channels = 1;
+        case AVMEDIA_TYPE_AUDIO: {
+            RawAudioDemuxerContext *s1 = s->priv_data;
+
+            if (ap->sample_rate)
+                st->codec->sample_rate = ap->sample_rate;
+            if (ap->channels)
+                st->codec->channels    = ap->channels;
+            else st->codec->channels   = 1;
+
+            if (s1->sample_rate)
+                st->codec->sample_rate = s1->sample_rate;
+            if (s1->channels)
+                st->codec->channels    = s1->channels;
+
             st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
             assert(st->codec->bits_per_coded_sample > 0);
             st->codec->block_align = st->codec->bits_per_coded_sample*st->codec->channels/8;
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
+            }
         case AVMEDIA_TYPE_VIDEO:
             if(ap->time_base.num)
                 av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
@@ -138,17 +150,31 @@ int ff_raw_video_read_header(AVFormatContext *s,
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
+static const AVOption audio_options[] = {
+    { "sample_rate", "", offsetof(RawAudioDemuxerContext, sample_rate), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(RawAudioDemuxerContext, channels),    FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+const AVClass ff_rawaudio_demuxer_class = {
+    .class_name     = "rawaudio demuxer",
+    .item_name      = av_default_item_name,
+    .option         = audio_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 #if CONFIG_G722_DEMUXER
 AVInputFormat ff_g722_demuxer = {
     "g722",
     NULL_IF_CONFIG_SMALL("raw G.722"),
-    0,
+    sizeof(RawAudioDemuxerContext),
     NULL,
     ff_raw_read_header,
     ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "g722,722",
     .value = CODEC_ID_ADPCM_G722,
+    .priv_class = &ff_rawaudio_demuxer_class,
 };
 #endif
 
