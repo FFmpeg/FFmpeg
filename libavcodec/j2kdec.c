@@ -1063,7 +1063,7 @@ AVCodec ff_jpeg2000_decoder = {
     NULL,
     decode_end,
     decode_frame,
-    0,
+    .capabilities = CODEC_CAP_EXPERIMENTAL,
     .pix_fmts =
         (enum PixelFormat[]) {PIX_FMT_GRAY8, PIX_FMT_RGB24, -1}
 };
