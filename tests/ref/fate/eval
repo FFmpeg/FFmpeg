@@ -139,5 +139,14 @@ Evaluating 'sqrt(1764)'
 Evaluating 'sqrt(-1)'
 'sqrt(-1)' -> -nan
 
+Evaluating 'not(1)'
+'not(1)' -> 0.000000
+
+Evaluating 'not(NAN)'
+'not(NAN)' -> 0.000000
+
+Evaluating 'not(0)'
+'not(0)' -> 1.000000
+
 12.700000 == 12.7
 0.931323 == 0.931322575
