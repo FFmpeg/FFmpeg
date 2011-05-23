@@ -235,8 +235,8 @@ typedef struct AVFormatParameters {
     enum PixelFormat pix_fmt;
     int channel; /**< Used to select DV channel. */
     const char *standard; /**< TV standard, NTSC, PAL, SECAM */
-    unsigned int mpeg2ts_raw:1;  /**< Force raw MPEG-2 transport stream output, if possible. */
 #if FF_API_FORMAT_PARAMETERS
+    attribute_deprecated unsigned int mpeg2ts_raw:1;  /**< deprecated, use mpegtsraw demuxer */
     /**< deprecated, use mpegtsraw demuxer-specific options instead */
     attribute_deprecated unsigned int mpeg2ts_compute_pcr:1;
 #endif

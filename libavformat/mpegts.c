@@ -1470,16 +1470,16 @@ static int mpegts_read_header(AVFormatContext *s,
     int len;
     int64_t pos;
 
-    if (ap) {
 #if FF_API_FORMAT_PARAMETERS
+    if (ap) {
         if (ap->mpeg2ts_compute_pcr)
             ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
-#endif
         if(ap->mpeg2ts_raw){
             av_log(s, AV_LOG_ERROR, "use mpegtsraw_demuxer!\n");
             return -1;
         }
     }
+#endif
 
     /* read the first 1024 bytes to get packet size */
     pos = avio_tell(pb);
