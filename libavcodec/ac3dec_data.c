@@ -54,12 +54,6 @@ const uint8_t ff_eac3_hebap_tab[64] = {
 };
 
 /**
- * Table E2.16 Default Coupling Banding Structure
- */
-const uint8_t ff_eac3_default_cpl_band_struct[18] =
-{ 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1 };
-
-/**
  * Table E2.15 Default Spectral Extension Banding Structure
  */
 const uint8_t ff_eac3_default_spx_band_struct[17] =

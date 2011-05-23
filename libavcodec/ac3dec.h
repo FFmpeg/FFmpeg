@@ -58,11 +58,6 @@
 #include "fft.h"
 #include "fmtconvert.h"
 
-/* override ac3.h to include coupling channel */
-#undef AC3_MAX_CHANNELS
-#define AC3_MAX_CHANNELS 7
-#define CPL_CH 0
-
 #define AC3_OUTPUT_LFEON  8
 
 #define SPX_MAX_BANDS    17

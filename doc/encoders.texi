@@ -365,4 +365,47 @@ is highly recommended that it be left as enabled except for testing purposes.
 
 @end table
 
+@subheading Floating-Point-Only AC-3 Encoding Options
+
+These options are only valid for the floating-point encoder and do not exist
+for the fixed-point encoder due to the corresponding features not being
+implemented in fixed-point.
+
+@table @option
+
+@item -channel_coupling @var{boolean}
+Enables/Disables use of channel coupling, which is an optional AC-3 feature
+that increases quality by combining high frequency information from multiple
+channels into a single channel. The per-channel high frequency information is
+sent with less accuracy in both the frequency and time domains. This allows
+more bits to be used for lower frequencies while preserving enough information
+to reconstruct the high frequencies. This option is enabled by default for the
+floating-point encoder and should generally be left as enabled except for
+testing purposes or to increase encoding speed.
+@table @option
+@item -1
+@itemx auto
+Selected by Encoder (default)
+@item 0
+@itemx off
+Disable Channel Coupling
+@item 1
+@itemx on
+Enable Channel Coupling
+@end table
+
+@item -cpl_start_band @var{number}
+Coupling Start Band. Sets the channel coupling start band, from 1 to 15. If a
+value higher than the bandwidth is used, it will be reduced to 1 less than the
+coupling end band. If @var{auto} is used, the start band will be determined by
+the encoder based on the bit rate, sample rate, and channel layout. This option
+has no effect if channel coupling is disabled.
+@table @option
+@item -1
+@itemx auto
+Selected by Encoder (default)
+@end table
+
+@end table
+
 @c man end ENCODERS

@@ -138,6 +138,13 @@ const uint16_t ff_ac3_bitrate_tab[19] = {
  */
 const uint8_t ff_ac3_rematrix_band_tab[5] = { 13, 25, 37, 61, 253 };
 
+/**
+ * Table E2.16 Default Coupling Banding Structure
+ */
+const uint8_t ff_eac3_default_cpl_band_struct[18] = {
+    0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 1, 1, 1, 1, 1
+};
+
 /* AC-3 MDCT window */
 
 /* MDCT window */

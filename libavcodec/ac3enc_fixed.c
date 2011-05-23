@@ -101,7 +101,7 @@ static void scale_coefficients(AC3EncodeContext *s)
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
-        for (ch = 0; ch < s->channels; ch++) {
+        for (ch = 1; ch <= s->channels; ch++) {
             s->ac3dsp.ac3_rshift_int32(block->mdct_coef[ch], AC3_MAX_COEFS,
                                        block->coeff_shift[ch]);
         }
