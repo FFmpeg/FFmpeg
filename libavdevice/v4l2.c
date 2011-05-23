@@ -68,6 +68,7 @@ struct video_data {
     void **buf_start;
     unsigned int *buf_len;
     char *standard;
+    int channel;
 };
 
 struct buff_data {
@@ -452,23 +453,24 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    if (ap->channel>=0) {
+    if (ap->channel > 0)
+        s->channel = ap->channel;
+
         /* set tv video input */
         memset (&input, 0, sizeof (input));
-        input.index = ap->channel;
+        input.index = s->channel;
         if (ioctl(s->fd, VIDIOC_ENUMINPUT, &input) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl enum input failed:\n");
             return AVERROR(EIO);
         }
 
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set input_id: %d, input: %s\n",
-               ap->channel, input.name);
+               s->channel, input.name);
         if (ioctl(s->fd, VIDIOC_S_INPUT, &input.index) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set input(%d) failed\n",
-                   ap->channel);
+                   s->channel);
             return AVERROR(EIO);
         }
-    }
 
 #if FF_API_FORMAT_PARAMETERS
     if (ap->standard) {
@@ -694,6 +696,7 @@ static int v4l2_read_close(AVFormatContext *s1)
 
 static const AVOption options[] = {
     { "standard", "", offsetof(struct video_data, standard), FF_OPT_TYPE_STRING, {.str = "NTSC" }, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { "channel",  "", offsetof(struct video_data, channel),  FF_OPT_TYPE_INT,    {.dbl = 0 }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 
