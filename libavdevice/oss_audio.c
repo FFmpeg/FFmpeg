@@ -37,12 +37,14 @@
 #include <sys/select.h>
 
 #include "libavutil/log.h"
+#include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 
 #define AUDIO_BLOCK_SIZE 4096
 
 typedef struct {
+    AVClass *class;
     int fd;
     int sample_rate;
     int channels;
@@ -216,15 +218,15 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVStream *st;
     int ret;
 
-    if (ap->sample_rate <= 0 || ap->channels <= 0)
-        return -1;
+    if (ap->sample_rate > 0)
+        s->sample_rate = ap->sample_rate;
+    if (ap->channels > 0)
+        s->channels = ap->channels;
 
     st = av_new_stream(s1, 0);
     if (!st) {
         return AVERROR(ENOMEM);
     }
-    s->sample_rate = ap->sample_rate;
-    s->channels = ap->channels;
 
     ret = audio_open(s1, 0, s1->filename);
     if (ret < 0) {
@@ -293,6 +295,19 @@ static int audio_read_close(AVFormatContext *s1)
 }
 
 #if CONFIG_OSS_INDEV
+static const AVOption options[] = {
+    { "sample_rate", "", offsetof(AudioData, sample_rate), FF_OPT_TYPE_INT, {.dbl = 48000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(AudioData, channels),    FF_OPT_TYPE_INT, {.dbl = 2},     1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass oss_demuxer_class = {
+    .class_name     = "OSS demuxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_oss_demuxer = {
     "oss",
     NULL_IF_CONFIG_SMALL("Open Sound System capture"),
@@ -302,6 +317,7 @@ AVInputFormat ff_oss_demuxer = {
     audio_read_packet,
     audio_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class = &oss_demuxer_class,
 };
 #endif
 
