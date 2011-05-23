@@ -44,6 +44,8 @@
 #include <time.h>
 #include <strings.h>
 #include "libavutil/imgutils.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 
 static const int desired_video_buffers = 256;
 
@@ -54,6 +56,7 @@ enum io_method {
 };
 
 struct video_data {
+    AVClass *class;
     int fd;
     int frame_format; /* V4L2_PIX_FMT_* */
     enum io_method io_method;
@@ -64,6 +67,7 @@ struct video_data {
     int buffers;
     void **buf_start;
     unsigned int *buf_len;
+    char *standard;
 };
 
 struct buff_data {
@@ -467,31 +471,37 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     }
 
     if (ap->standard) {
+        av_freep(&s->standard);
+        s->standard = av_strdup(ap->standard);
+    }
+
+    if (s->standard) {
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
-               ap->standard);
+               s->standard);
         /* set tv standard */
         memset (&standard, 0, sizeof (standard));
         for(i=0;;i++) {
             standard.index = i;
             if (ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
                 av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
-                       ap->standard);
+                       s->standard);
                 return AVERROR(EIO);
             }
 
-            if (!strcasecmp(standard.name, ap->standard)) {
+            if (!strcasecmp(standard.name, s->standard)) {
                 break;
             }
         }
 
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s, id: %"PRIu64"\n",
-               ap->standard, (uint64_t)standard.id);
+               s->standard, (uint64_t)standard.id);
         if (ioctl(s->fd, VIDIOC_S_STD, &standard.id) < 0) {
             av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
-                   ap->standard);
+                   s->standard);
             return AVERROR(EIO);
         }
     }
+    av_freep(&s->standard);
 
     if (ap->time_base.num && ap->time_base.den) {
         av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
@@ -680,6 +690,18 @@ static int v4l2_read_close(AVFormatContext *s1)
     return 0;
 }
 
+static const AVOption options[] = {
+    { "standard", "", offsetof(struct video_data, standard), FF_OPT_TYPE_STRING, {.str = "NTSC" }, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass v4l2_class = {
+    .class_name = "V4L2 indev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_v4l2_demuxer = {
     "video4linux2",
     NULL_IF_CONFIG_SMALL("Video4Linux2 device grab"),
@@ -689,4 +711,5 @@ AVInputFormat ff_v4l2_demuxer = {
     v4l2_read_packet,
     v4l2_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class = &v4l2_class,
 };
