@@ -22,6 +22,8 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 
 #if HAVE_LIBDC1394_2
 #include <dc1394/dc1394.h>
@@ -45,9 +47,11 @@
 #undef free
 
 typedef struct dc1394_data {
+    AVClass *class;
 #if HAVE_LIBDC1394_1
     raw1394handle_t handle;
     dc1394_cameracapture camera;
+    int channel;
 #elif HAVE_LIBDC1394_2
     dc1394_t *d;
     dc1394camera_t *camera;
@@ -155,6 +159,9 @@ static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
     if (dc1394_read_common(c,ap,&fmt,&fps) != 0)
         return -1;
 
+    if (ap->channel)
+        dc1394->channel = ap->channel;
+
     /* Now let us prep the hardware. */
     dc1394->handle = dc1394_create_handle(0); /* FIXME: gotta have ap->port */
     if (!dc1394->handle) {
@@ -162,11 +169,11 @@ static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
         goto out;
     }
     camera_nodes = dc1394_get_camera_nodes(dc1394->handle, &res, 1);
-    if (!camera_nodes || camera_nodes[ap->channel] == DC1394_NO_CAMERA) {
-        av_log(c, AV_LOG_ERROR, "There's no IIDC camera on the channel %d\n", ap->channel);
+    if (!camera_nodes || camera_nodes[dc1394->channel] == DC1394_NO_CAMERA) {
+        av_log(c, AV_LOG_ERROR, "There's no IIDC camera on the channel %d\n", dc1394->channel);
         goto out_handle;
     }
-    res = dc1394_dma_setup_capture(dc1394->handle, camera_nodes[ap->channel],
+    res = dc1394_dma_setup_capture(dc1394->handle, camera_nodes[dc1394->channel],
                                    0,
                                    FORMAT_VGA_NONCOMPRESSED,
                                    fmt->frame_size_id,
@@ -235,6 +242,20 @@ static int dc1394_v1_close(AVFormatContext * context)
 
     return 0;
 }
+
+static const AVOption options[] = {
+#if HAVE_LIBDC1394_1
+    { "channel", "", offsetof(dc1394_data, channel), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+#endif
+    { NULL },
+};
+
+static const AVClass libdc1394_class = {
+    .class_name = "libdc1394 indev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 #elif HAVE_LIBDC1394_2
 static int dc1394_v2_read_header(AVFormatContext *c, AVFormatParameters * ap)
@@ -356,6 +377,7 @@ AVInputFormat ff_libdc1394_demuxer = {
     .read_packet    = dc1394_v2_read_packet,
     .read_close     = dc1394_v2_close,
     .flags          = AVFMT_NOFILE
+    .priv_class     = &libdc1394_class,
 };
 
 #endif
@@ -367,6 +389,7 @@ AVInputFormat ff_libdc1394_demuxer = {
     .read_header    = dc1394_v1_read_header,
     .read_packet    = dc1394_v1_read_packet,
     .read_close     = dc1394_v1_close,
-    .flags          = AVFMT_NOFILE
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &libdc1394_class,
 };
 #endif
