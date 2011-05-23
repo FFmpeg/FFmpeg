@@ -41,6 +41,8 @@ typedef struct TiffContext {
 
     int width, height;
     unsigned int bpp, bppcount;
+    uint32_t palette[256];
+    int palette_is_set;
     int le;
     enum TiffCompr compr;
     int invert;
@@ -257,11 +259,15 @@ static int init_image(TiffContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
     }
-    if (s->bpp == 8 && s->picture.data[1]){
-        /* make default grayscale pal */
-        pal = (uint32_t *) s->picture.data[1];
-        for (i = 0; i < 256; i++)
-            pal[i] = i * 0x010101;
+    if (s->avctx->pix_fmt == PIX_FMT_PAL8) {
+        if (s->palette_is_set) {
+            memcpy(s->picture.data[1], s->palette, sizeof(s->palette));
+        } else {
+            /* make default grayscale pal */
+            pal = (uint32_t *) s->picture.data[1];
+            for (i = 0; i < 256; i++)
+                pal[i] = i * 0x010101;
+        }
     }
     return 0;
 }
@@ -444,11 +450,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         s->fill_order = value - 1;
         break;
     case TIFF_PAL:
-        if(s->avctx->pix_fmt != PIX_FMT_PAL8){
-            av_log(s->avctx, AV_LOG_ERROR, "Palette met but this is not palettized format\n");
-            return -1;
-        }
-        pal = (uint32_t *) s->picture.data[1];
+        pal = (uint32_t *) s->palette;
         off = type_sizes[type];
         rp = buf;
         gp = buf + count / 3 * off;
@@ -460,6 +462,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             j |= tget(&bp, type, s->le) >> off;
             pal[i] = j;
         }
+        s->palette_is_set = 1;
         break;
     case TIFF_PLANAR:
         if(value == 2){
