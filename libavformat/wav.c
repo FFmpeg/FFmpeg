@@ -235,7 +235,7 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
         return ret;
 
     time_reference = avio_rl64(s->pb);
-    snprintf(temp, sizeof(temp), "%lu", time_reference);
+    snprintf(temp, sizeof(temp), "%"PRIu64, time_reference);
     if ((ret = av_metadata_set2(&s->metadata, "time_reference", temp, 0)) < 0)
         return ret;
 
@@ -248,11 +248,12 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
             /* the string formatting below is per SMPTE 330M-2004 Annex C */
             if (umid_parts[4] == 0 && umid_parts[5] == 0 && umid_parts[6] == 0 && umid_parts[7] == 0) {
                 /* basic UMID */
-                snprintf(temp, sizeof(temp), "0x%016lX%016lX%016lX%016lX",
+                snprintf(temp, sizeof(temp), "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
                          umid_parts[0], umid_parts[1], umid_parts[2], umid_parts[3]);
             } else {
                 /* extended UMID */
-                snprintf(temp, sizeof(temp), "0x%016lX%016lX%016lX%016lX%016lX%016lX%016lX%016lX",
+                snprintf(temp, sizeof(temp), "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64
+                                             "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
                          umid_parts[0], umid_parts[1], umid_parts[2], umid_parts[3],
                          umid_parts[4], umid_parts[5], umid_parts[6], umid_parts[7]);
             }
@@ -320,7 +321,7 @@ static int wav_read_header(AVFormatContext *s,
         sample_count = avio_rl64(pb);
         if (data_size < 0 || sample_count < 0) {
             av_log(s, AV_LOG_ERROR, "negative data_size and/or sample_count in "
-                   "ds64: data_size = %li, sample_count = %li\n",
+                   "ds64: data_size = %"PRId64", sample_count = %"PRId64"\n",
                    data_size, sample_count);
             return AVERROR_INVALIDDATA;
         }
