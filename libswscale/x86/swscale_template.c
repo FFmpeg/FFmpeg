@@ -901,15 +901,13 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
 /**
  * vertical scale YV12 to RGB
  */
-static inline void RENAME(yuv2packedX_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+static inline void RENAME(yuv2rgb32_X_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                        const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                        const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
 
-            switch(c->dstFormat) {
-            case PIX_FMT_RGB32:
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
                     YSCALEYUV2PACKEDX_ACCURATE
                     YSCALEYUV2RGBX
@@ -932,8 +930,15 @@ static inline void RENAME(yuv2packedX_ar)(SwsContext *c, const int16_t *lumFilte
 
                     YSCALEYUV2PACKEDX_END
                 }
-                return;
-            case PIX_FMT_BGR24:
+}
+
+static inline void RENAME(yuv2bgr24_X_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                          const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                          const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
                 "pxor %%mm7, %%mm7 \n\t"
@@ -947,8 +952,16 @@ static inline void RENAME(yuv2packedX_ar)(SwsContext *c, const int16_t *lumFilte
                 "r" (dest), "m" (dstW_reg)
                 : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
                 );
-                return;
-            case PIX_FMT_RGB555:
+}
+
+
+static inline void RENAME(yuv2rgb555_X_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                          const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                          const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
                 "pxor %%mm7, %%mm7 \n\t"
@@ -961,8 +974,15 @@ static inline void RENAME(yuv2packedX_ar)(SwsContext *c, const int16_t *lumFilte
 
                 WRITERGB15(%4, %5, %%REGa)
                 YSCALEYUV2PACKEDX_END
-                return;
-            case PIX_FMT_RGB565:
+}
+
+static inline void RENAME(yuv2rgb565_X_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                          const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                          const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX_ACCURATE
                 YSCALEYUV2RGBX
                 "pxor %%mm7, %%mm7 \n\t"
@@ -975,8 +995,15 @@ static inline void RENAME(yuv2packedX_ar)(SwsContext *c, const int16_t *lumFilte
 
                 WRITERGB16(%4, %5, %%REGa)
                 YSCALEYUV2PACKEDX_END
-                return;
-            case PIX_FMT_YUYV422:
+}
+
+static inline void RENAME(yuv2yuyv422_X_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                          const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                          const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX_ACCURATE
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 
@@ -986,23 +1013,15 @@ static inline void RENAME(yuv2packedX_ar)(SwsContext *c, const int16_t *lumFilte
                 "psraw $3, %%mm7    \n\t"
                 WRITEYUY2(%4, %5, %%REGa)
                 YSCALEYUV2PACKEDX_END
-                return;
-            }
-
-    yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
-                   chrFilter, chrSrc, chrFilterSize,
-                   alpSrc, dest, dstW, dstY);
 }
 
-static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+static inline void RENAME(yuv2rgb32_X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                        const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                        const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
 
-        switch(c->dstFormat) {
-            case PIX_FMT_RGB32:
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
                     YSCALEYUV2PACKEDX
                     YSCALEYUV2RGBX
@@ -1019,8 +1038,15 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
                     WRITEBGR32(%4, %5, %%REGa, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                     YSCALEYUV2PACKEDX_END
                 }
-                return;
-            case PIX_FMT_BGR24:
+}
+
+static inline void RENAME(yuv2bgr24_X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                       const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
                 "pxor                    %%mm7, %%mm7       \n\t"
@@ -1033,8 +1059,15 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
                 "r" (dest),  "m" (dstW_reg)
                 : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S
                 );
-                return;
-            case PIX_FMT_RGB555:
+}
+
+static inline void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                       const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
                 "pxor %%mm7, %%mm7 \n\t"
@@ -1047,8 +1080,15 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 
                 WRITERGB15(%4, %5, %%REGa)
                 YSCALEYUV2PACKEDX_END
-                return;
-            case PIX_FMT_RGB565:
+}
+
+static inline void RENAME(yuv2rgb565_X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                       const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX
                 YSCALEYUV2RGBX
                 "pxor %%mm7, %%mm7 \n\t"
@@ -1061,8 +1101,15 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 
                 WRITERGB16(%4, %5, %%REGa)
                 YSCALEYUV2PACKEDX_END
-                return;
-            case PIX_FMT_YUYV422:
+}
+
+static inline void RENAME(yuv2yuyv422_X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                       const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
                 YSCALEYUV2PACKEDX
                 /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 
@@ -1072,23 +1119,14 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
                 "psraw $3, %%mm7    \n\t"
                 WRITEYUY2(%4, %5, %%REGa)
                 YSCALEYUV2PACKEDX_END
-                return;
-            }
-
-    yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
-                   chrFilter, chrSrc, chrFilterSize,
-                   alpSrc, dest, dstW, dstY);
 }
 
 /**
  * vertical bilinear scale YV12 to RGB
  */
-static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+static inline void RENAME(yuv2rgb32_2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
                           const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
 {
-        switch(c->dstFormat) {
-        //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
-        case PIX_FMT_RGB32:
             if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
 #if ARCH_X86_64
                 __asm__ volatile(
@@ -1145,8 +1183,12 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                     "a" (&c->redDither)
                 );
             }
-            return;
-        case PIX_FMT_BGR24:
+}
+
+static inline void RENAME(yuv2bgr24_2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
+{
+            //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
@@ -1159,8 +1201,12 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
             );
-            return;
-        case PIX_FMT_RGB555:
+}
+
+static inline void RENAME(yuv2rgb555_2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
+{
+            //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
@@ -1181,8 +1227,12 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
             );
-            return;
-        case PIX_FMT_RGB565:
+}
+
+static inline void RENAME(yuv2rgb565_2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
+{
+            //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
@@ -1202,8 +1252,12 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
             );
-            return;
-        case PIX_FMT_YUYV422:
+}
+
+static inline void RENAME(yuv2yuyv422_2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
+{
+            //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov %4, %%"REG_b"                        \n\t"
@@ -1215,24 +1269,17 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                 "a" (&c->redDither)
             );
-            return;
-        }
-
-    yuv2packed2_c(c, buf0, buf1, uvbuf0, uvbuf1, abuf0, abuf1,
-                  dest, dstW, yalpha, uvalpha, y);
 }
 
 /**
  * YV12 to RGB without scaling or interpolating
  */
-static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+static inline void RENAME(yuv2rgb32_1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
                           const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
 {
         const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
         if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
-            switch(dstFormat) {
-            case PIX_FMT_RGB32:
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
                     __asm__ volatile(
                         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
@@ -1262,8 +1309,45 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
                         "a" (&c->redDither)
                     );
                 }
-                return;
-            case PIX_FMT_BGR24:
+        } else {
+                if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
+                    __asm__ volatile(
+                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                        "mov        %4, %%"REG_b"               \n\t"
+                        "push %%"REG_BP"                        \n\t"
+                        YSCALEYUV2RGB1b(%%REGBP, %5)
+                        YSCALEYUV2RGB1_ALPHA(%%REGBP)
+                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                        "pop %%"REG_BP"                         \n\t"
+                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+
+                        :: "c" (buf0), "d" (abuf0), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                        "a" (&c->redDither)
+                    );
+                } else {
+                    __asm__ volatile(
+                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                        "mov        %4, %%"REG_b"               \n\t"
+                        "push %%"REG_BP"                        \n\t"
+                        YSCALEYUV2RGB1b(%%REGBP, %5)
+                        "pcmpeqd %%mm7, %%mm7                   \n\t"
+                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
+                        "pop %%"REG_BP"                         \n\t"
+                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+
+                        :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                        "a" (&c->redDither)
+                    );
+                }
+        }
+}
+
+static inline void RENAME(yuv2bgr24_1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
+{
+        const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
+
+        if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
                 __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
@@ -1277,8 +1361,29 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
                     :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                     "a" (&c->redDither)
                 );
-                return;
-            case PIX_FMT_RGB555:
+        } else {
+                __asm__ volatile(
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1b(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
+                );
+        }
+}
+
+static inline void RENAME(yuv2rgb555_1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
+{
+        const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
+
+        if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
                 __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
@@ -1298,8 +1403,35 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
                     :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                     "a" (&c->redDither)
                 );
-                return;
-            case PIX_FMT_RGB565:
+        } else {
+                __asm__ volatile(
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1b(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+#endif
+                    WRITERGB15(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
+                );
+        }
+}
+
+static inline void RENAME(yuv2rgb565_1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
+{
+        const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
+
+        if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
                 __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
@@ -1320,8 +1452,36 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
                     :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                     "a" (&c->redDither)
                 );
-                return;
-            case PIX_FMT_YUYV422:
+        } else {
+                __asm__ volatile(
+                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
+                    "mov        %4, %%"REG_b"               \n\t"
+                    "push %%"REG_BP"                        \n\t"
+                    YSCALEYUV2RGB1b(%%REGBP, %5)
+                    "pxor    %%mm7, %%mm7                   \n\t"
+                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
+#ifdef DITHER1XBPP
+                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
+                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
+                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
+#endif
+
+                    WRITERGB16(%%REGb, 8280(%5), %%REGBP)
+                    "pop %%"REG_BP"                         \n\t"
+                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
+
+                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+                    "a" (&c->redDither)
+                );
+        }
+}
+
+static inline void RENAME(yuv2yuyv422_1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                                       const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
+{
+        const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
+
+        if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
                 __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
@@ -1334,100 +1494,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
                     :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                     "a" (&c->redDither)
                 );
-                return;
-            }
         } else {
-            switch(dstFormat) {
-            case PIX_FMT_RGB32:
-                if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
-                    __asm__ volatile(
-                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                        "mov        %4, %%"REG_b"               \n\t"
-                        "push %%"REG_BP"                        \n\t"
-                        YSCALEYUV2RGB1b(%%REGBP, %5)
-                        YSCALEYUV2RGB1_ALPHA(%%REGBP)
-                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                        "pop %%"REG_BP"                         \n\t"
-                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
-
-                        :: "c" (buf0), "d" (abuf0), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                        "a" (&c->redDither)
-                    );
-                } else {
-                    __asm__ volatile(
-                        "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                        "mov        %4, %%"REG_b"               \n\t"
-                        "push %%"REG_BP"                        \n\t"
-                        YSCALEYUV2RGB1b(%%REGBP, %5)
-                        "pcmpeqd %%mm7, %%mm7                   \n\t"
-                        WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
-                        "pop %%"REG_BP"                         \n\t"
-                        "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
-
-                        :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                        "a" (&c->redDither)
-                    );
-                }
-                return;
-            case PIX_FMT_BGR24:
-                __asm__ volatile(
-                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                    "mov        %4, %%"REG_b"               \n\t"
-                    "push %%"REG_BP"                        \n\t"
-                    YSCALEYUV2RGB1b(%%REGBP, %5)
-                    "pxor    %%mm7, %%mm7                   \n\t"
-                    WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
-                    "pop %%"REG_BP"                         \n\t"
-                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
-
-                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                    "a" (&c->redDither)
-                );
-                return;
-            case PIX_FMT_RGB555:
-                __asm__ volatile(
-                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                    "mov        %4, %%"REG_b"               \n\t"
-                    "push %%"REG_BP"                        \n\t"
-                    YSCALEYUV2RGB1b(%%REGBP, %5)
-                    "pxor    %%mm7, %%mm7                   \n\t"
-                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
-                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
-                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
-#endif
-                    WRITERGB15(%%REGb, 8280(%5), %%REGBP)
-                    "pop %%"REG_BP"                         \n\t"
-                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
-
-                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                    "a" (&c->redDither)
-                );
-                return;
-            case PIX_FMT_RGB565:
-                __asm__ volatile(
-                    "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
-                    "mov        %4, %%"REG_b"               \n\t"
-                    "push %%"REG_BP"                        \n\t"
-                    YSCALEYUV2RGB1b(%%REGBP, %5)
-                    "pxor    %%mm7, %%mm7                   \n\t"
-                    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
-#ifdef DITHER1XBPP
-                    "paddusb "BLUE_DITHER"(%5), %%mm2      \n\t"
-                    "paddusb "GREEN_DITHER"(%5), %%mm4      \n\t"
-                    "paddusb "RED_DITHER"(%5), %%mm5      \n\t"
-#endif
-
-                    WRITERGB16(%%REGb, 8280(%5), %%REGBP)
-                    "pop %%"REG_BP"                         \n\t"
-                    "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
-
-                    :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
-                    "a" (&c->redDither)
-                );
-                return;
-            case PIX_FMT_YUYV422:
                 __asm__ volatile(
                     "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                     "mov        %4, %%"REG_b"               \n\t"
@@ -1440,12 +1507,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
                     :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
                     "a" (&c->redDither)
                 );
-                return;
-            }
         }
-
-    yuv2packed1_c(c, buf0, uvbuf0, uvbuf1, abuf0, dest,
-                  dstW, uvalpha, dstFormat, flags, y);
 }
 
 //FIXME yuy2* can read up to 7 samples too much
@@ -2148,14 +2210,50 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         if (c->flags & SWS_ACCURATE_RND) {
             c->yuv2yuv1     = RENAME(yuv2yuv1_ar    );
             c->yuv2yuvX     = RENAME(yuv2yuvX_ar    );
-            c->yuv2packedX  = RENAME(yuv2packedX_ar );
+            switch (c->dstFormat) {
+            case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
+            case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
+            case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X_ar);  break;
+            case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X_ar);  break;
+            case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X_ar); break;
+            default: break;
+            }
         } else {
             c->yuv2yuv1     = RENAME(yuv2yuv1    );
             c->yuv2yuvX     = RENAME(yuv2yuvX    );
-            c->yuv2packedX  = RENAME(yuv2packedX );
+            switch (c->dstFormat) {
+            case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
+            case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X);   break;
+            case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X);  break;
+            case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X);  break;
+            case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X); break;
+            default: break;
+            }
         }
-        c->yuv2packed1  = RENAME(yuv2packed1 );
-        c->yuv2packed2  = RENAME(yuv2packed2 );
+        switch (c->dstFormat) {
+        case PIX_FMT_RGB32:
+                c->yuv2packed1 = RENAME(yuv2rgb32_1);
+                c->yuv2packed2 = RENAME(yuv2rgb32_2);
+                break;
+        case PIX_FMT_BGR24:
+                c->yuv2packed1 = RENAME(yuv2bgr24_1);
+                c->yuv2packed2 = RENAME(yuv2bgr24_2);
+                break;
+        case PIX_FMT_RGB555:
+                c->yuv2packed1 = RENAME(yuv2rgb555_1);
+                c->yuv2packed2 = RENAME(yuv2rgb555_2);
+                break;
+        case PIX_FMT_RGB565:
+                c->yuv2packed1 = RENAME(yuv2rgb565_1);
+                c->yuv2packed2 = RENAME(yuv2rgb565_2);
+                break;
+        case PIX_FMT_YUYV422:
+                c->yuv2packed1 = RENAME(yuv2yuyv422_1);
+                c->yuv2packed2 = RENAME(yuv2yuyv422_2);
+                break;
+        default:
+                break;
+        }
     }
 
     c->hScale       = RENAME(hScale      );
