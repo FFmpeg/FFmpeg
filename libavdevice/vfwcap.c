@@ -45,6 +45,7 @@ struct vfw_ctx {
     unsigned int curbufsize;
     unsigned int frame_num;
     char *video_size;       /**< A string describing video size, set by a private option. */
+    char *framerate;        /**< Set by a private option. */
 };
 
 static enum PixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
@@ -236,6 +237,7 @@ static int vfw_read_close(AVFormatContext *s)
     }
 
     av_freep(&ctx->video_size);
+    av_freep(&ctx->framerate);
 
     return 0;
 }
@@ -252,6 +254,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     DWORD biCompression;
     WORD biBitCount;
     int ret;
+    AVRational fps;
 
     if (!strcmp(s->filename, "list")) {
         for (devnum = 0; devnum <= 9; devnum++) {
@@ -269,10 +272,10 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(EIO);
     }
 
-    if(!ap->time_base.den) {
-        av_log(s, AV_LOG_ERROR, "A time base must be specified.\n");
-        return AVERROR(EIO);
-    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->time_base.num)
+        fps = (AVRational){ap->time_base.den, ap->time_base.num};
+#endif
 
     ctx->hwnd = capCreateCaptureWindow(NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, 0);
     if(!ctx->hwnd) {
@@ -371,7 +374,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     cparms.fYield = 1; // Spawn a background thread
     cparms.dwRequestMicroSecPerFrame =
-                               (ap->time_base.num*1000000) / ap->time_base.den;
+                               (fps.den*1000000) / fps.num;
     cparms.fAbortLeftMouse = 0;
     cparms.fAbortRightMouse = 0;
     cparms.fCaptureAudio = 0;
@@ -383,7 +386,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         goto fail_io;
 
     codec = st->codec;
-    codec->time_base = ap->time_base;
+    codec->time_base = (AVRational){fps.den, fps.num};
     codec->codec_type = AVMEDIA_TYPE_VIDEO;
     codec->width  = bi->bmiHeader.biWidth;
     codec->height = bi->bmiHeader.biHeight;
@@ -471,6 +474,7 @@ static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { NULL },
 };
 
