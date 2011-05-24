@@ -130,6 +130,7 @@ FATE_H264 = aud_mw_e                                                    \
             frext-pph10i1_panasonic_a                                   \
             frext-pph10i2_panasonic_a                                   \
             frext-pph10i3_panasonic_a                                   \
+            frext-pph10i4_panasonic_a                                   \
             frext-pph10i5_panasonic_a                                   \
             frext-pph10i6_panasonic_a                                   \
             frext-pph10i7_panasonic_a                                   \
@@ -310,6 +311,7 @@ fate-h264-conformance-frext-hpcvnl_brcm_a: CMD = framecrc  -i $(SAMPLES)/h264-co
 fate-h264-conformance-frext-pph10i1_panasonic_a: CMD = framecrc  -i $(SAMPLES)/h264-conformance/FRext/PPH10I1_Panasonic_A.264 -pix_fmt yuv420p10le
 fate-h264-conformance-frext-pph10i2_panasonic_a: CMD = framecrc  -i $(SAMPLES)/h264-conformance/FRext/PPH10I2_Panasonic_A.264 -pix_fmt yuv420p10le
 fate-h264-conformance-frext-pph10i3_panasonic_a: CMD = framecrc  -i $(SAMPLES)/h264-conformance/FRext/PPH10I3_Panasonic_A.264 -pix_fmt yuv420p10le
+fate-h264-conformance-frext-pph10i4_panasonic_a: CMD = framecrc  -i $(SAMPLES)/h264-conformance/FRext/PPH10I4_Panasonic_A.264 -pix_fmt yuv420p10le
 fate-h264-conformance-frext-pph10i5_panasonic_a: CMD = framecrc  -i $(SAMPLES)/h264-conformance/FRext/PPH10I5_Panasonic_A.264 -pix_fmt yuv420p10le
 fate-h264-conformance-frext-pph10i6_panasonic_a: CMD = framecrc  -i $(SAMPLES)/h264-conformance/FRext/PPH10I6_Panasonic_A.264 -pix_fmt yuv420p10le
 fate-h264-conformance-frext-pph10i7_panasonic_a: CMD = framecrc  -i $(SAMPLES)/h264-conformance/FRext/PPH10I7_Panasonic_A.264 -pix_fmt yuv420p10le
