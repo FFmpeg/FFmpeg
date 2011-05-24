@@ -925,19 +925,9 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
                 alpSrc, dest, uDest, vDest, aDest, dstW, chrDstW);
 }
 
-static inline void RENAME(yuv2nv12X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                     const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
-                                     uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, enum PixelFormat dstFormat)
-{
-    yuv2nv12XinC(lumFilter, lumSrc, lumFilterSize,
-                 chrFilter, chrSrc, chrFilterSize,
-                 dest, uDest, dstW, chrDstW, dstFormat);
-}
-
 static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const int16_t *chrSrc, const int16_t *alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
-    int i;
     if(!(c->flags & SWS_BITEXACT)) {
         long p= 4;
         const uint8_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
@@ -969,38 +959,8 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
         }
         return;
     }
-    for (i=0; i<dstW; i++) {
-        int val= (lumSrc[i]+64)>>7;
-
-        if (val&256) {
-            if (val<0) val=0;
-            else       val=255;
-        }
-
-        dest[i]= val;
-    }
-
-    if (uDest)
-        for (i=0; i<chrDstW; i++) {
-            int u=(chrSrc[i       ]+64)>>7;
-            int v=(chrSrc[i + VOFW]+64)>>7;
-
-            if ((u|v)&256) {
-                if (u<0)        u=0;
-                else if (u>255) u=255;
-                if (v<0)        v=0;
-                else if (v>255) v=255;
-            }
-
-            uDest[i]= u;
-            vDest[i]= v;
-        }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest)
-        for (i=0; i<dstW; i++) {
-            int val= (alpSrc[i]+64)>>7;
-            aDest[i]= av_clip_uint8(val);
-        }
+    yuv2yuv1_c(c, lumSrc, chrSrc, alpSrc, dest, uDest, vDest, aDest,
+               dstW, chrDstW);
 }
 
 
@@ -1182,10 +1142,6 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
                           const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
 {
-    int  yalpha1=4095- yalpha;
-    int uvalpha1=4095-uvalpha;
-    int i;
-
     if(!(c->flags & SWS_BITEXACT)) {
         switch(c->dstFormat) {
         //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
@@ -1320,7 +1276,8 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
         default: break;
         }
     }
-    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C(void,0), YSCALE_YUV_2_GRAY16_2_C, YSCALE_YUV_2_MONO2_C)
+    yuv2packed2_c(c, buf0, buf1, uvbuf0, uvbuf1, abuf0, abuf1,
+                  dest, dstW, yalpha, uvalpha, y);
 }
 
 /**
@@ -1329,18 +1286,14 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
 static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
                           const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
 {
-    const int yalpha1=0;
-    int i;
-
-    const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
-    const int yalpha= 4096; //FIXME ...
-
-    if (flags&SWS_FULL_CHR_H_INT) {
-        c->yuv2packed2(c, buf0, buf0, uvbuf0, uvbuf1, abuf0, abuf0, dest, dstW, 0, uvalpha, y);
-        return;
-    }
-
     if(!(flags & SWS_BITEXACT)) {
+        const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
+
+        if (flags&SWS_FULL_CHR_H_INT) {
+            c->yuv2packed2(c, buf0, buf0, uvbuf0, uvbuf1, abuf0, abuf0, dest, dstW, 0, uvalpha, y);
+            return;
+        }
+
         if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
             switch(dstFormat) {
             case PIX_FMT_RGB32:
@@ -1555,11 +1508,8 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
             }
         }
     }
-    if (uvalpha < 2048) {
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C(void,0), YSCALE_YUV_2_GRAY16_1_C, YSCALE_YUV_2_MONO2_C)
-    } else {
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_PACKED1B_C(void,0), YSCALE_YUV_2_GRAY16_1_C, YSCALE_YUV_2_MONO2_C)
-    }
+    yuv2packed1_c(c, buf0, uvbuf0, uvbuf1, abuf0, dest,
+                  dstW, uvalpha, dstFormat, flags, y);
 }
 
 //FIXME yuy2* can read up to 7 samples too much
@@ -1866,20 +1816,6 @@ static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t
     assert(src1 == src2);
 }
 
-static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
-{
-    int i;
-    for (i=0; i<width; i++) {
-        int b= src1[6*i + 0] + src1[6*i + 3];
-        int g= src1[6*i + 1] + src1[6*i + 4];
-        int r= src1[6*i + 2] + src1[6*i + 5];
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
-    }
-    assert(src1 == src2);
-}
-
 static inline void RENAME(rgb24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
@@ -1889,20 +1825,6 @@ static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t
 {
     assert(src1==src2);
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
-}
-
-static inline void RENAME(rgb24ToUV_half)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
-{
-    int i;
-    assert(src1==src2);
-    for (i=0; i<width; i++) {
-        int r= src1[6*i + 0] + src1[6*i + 3];
-        int g= src1[6*i + 1] + src1[6*i + 4];
-        int b= src1[6*i + 2] + src1[6*i + 5];
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
-    }
 }
 
 
@@ -2061,37 +1983,6 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
     }
 }
 
-//FIXME all pal and rgb srcFormats could do this convertion as well
-//FIXME all scalers more complex than bilinear could do half of this transform
-static void RENAME(chrRangeToJpeg)(uint16_t *dst, int width)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        dst[i     ] = (FFMIN(dst[i     ],30775)*4663 - 9289992)>>12; //-264
-        dst[i+VOFW] = (FFMIN(dst[i+VOFW],30775)*4663 - 9289992)>>12; //-264
-    }
-}
-static void RENAME(chrRangeFromJpeg)(uint16_t *dst, int width)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        dst[i     ] = (dst[i     ]*1799 + 4081085)>>11; //1469
-        dst[i+VOFW] = (dst[i+VOFW]*1799 + 4081085)>>11; //1469
-    }
-}
-static void RENAME(lumRangeToJpeg)(uint16_t *dst, int width)
-{
-    int i;
-    for (i = 0; i < width; i++)
-        dst[i] = (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
-}
-static void RENAME(lumRangeFromJpeg)(uint16_t *dst, int width)
-{
-    int i;
-    for (i = 0; i < width; i++)
-        dst[i] = (dst[i]*14071 + 33561947)>>14;
-}
-
 #define FAST_BILINEAR_X86 \
     "subl    %%edi, %%esi    \n\t" /*  src[xx+1] - src[xx] */                   \
     "imull   %%ecx, %%esi    \n\t" /* (src[xx+1] - src[xx])*xalpha */           \
@@ -2212,33 +2103,6 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #endif
 }
 
-      // *** horizontal scale Y line to temp buffer
-static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src, int srcW, int xInc,
-                                   const int16_t *hLumFilter,
-                                   const int16_t *hLumFilterPos, int hLumFilterSize,
-                                   uint8_t *formatConvBuffer,
-                                   uint32_t *pal, int isAlpha)
-{
-    void (*toYV12)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
-    void (*convertRange)(uint16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
-
-    src += isAlpha ? c->alpSrcOffset : c->lumSrcOffset;
-
-    if (toYV12) {
-        toYV12(formatConvBuffer, src, srcW, pal);
-        src= formatConvBuffer;
-    }
-
-    if (!c->hyscale_fast) {
-        c->hScale(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
-    } else { // fast bilinear upscale / crap downscale
-        c->hyscale_fast(c, dst, dstWidth, src, srcW, xInc);
-    }
-
-    if (convertRange)
-        convertRange(dst, dstWidth);
-}
-
 static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
                                         long dstWidth, const uint8_t *src1,
                                         const uint8_t *src2, int srcW, int xInc)
@@ -2343,33 +2207,6 @@ which is needed to support GCC 4.0. */
 #if COMPILE_TEMPLATE_MMX2
     } //if MMX2 can't be used
 #endif
-}
-
-inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src1, const uint8_t *src2,
-                                   int srcW, int xInc, const int16_t *hChrFilter,
-                                   const int16_t *hChrFilterPos, int hChrFilterSize,
-                                   uint8_t *formatConvBuffer,
-                                   uint32_t *pal)
-{
-
-    src1 += c->chrSrcOffset;
-    src2 += c->chrSrcOffset;
-
-    if (c->chrToYV12) {
-        c->chrToYV12(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
-        src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
-    }
-
-    if (!c->hcscale_fast) {
-        c->hScale(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
-        c->hScale(dst+VOFW, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
-    } else { // fast bilinear upscale / crap downscale
-        c->hcscale_fast(c, dst, dstWidth, src1, src2, srcW, xInc);
-    }
-
-    if (c->chrConvertRange)
-        c->chrConvertRange(dst, dstWidth);
 }
 
 #define DEBUG_SWSCALE_BUFFERS 0
@@ -2509,12 +2346,12 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
             assert(lumBufIndex < 2*vLumBufSize);
             assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             assert(lastInLumBuf + 1 - srcSliceY >= 0);
-            RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
+            hyscale_c(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
                             hLumFilter, hLumFilterPos, hLumFilterSize,
                             formatConvBuffer,
                             pal, 0);
             if (CONFIG_SWSCALE_ALPHA && alpPixBuf)
-                RENAME(hyscale)(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW, lumXInc,
+                hyscale_c(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW, lumXInc,
                                 hLumFilter, hLumFilterPos, hLumFilterSize,
                                 formatConvBuffer,
                                 pal, 1);
@@ -2532,7 +2369,7 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
             //FIXME replace parameters through context struct (some at least)
 
             if (c->needs_hcscale)
-                RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
+                hcscale_c(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
                                 hChrFilter, hChrFilterPos, hChrFilterSize,
                                 formatConvBuffer,
                                 pal);
@@ -2740,7 +2577,6 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
 {
     enum PixelFormat srcFormat = c->srcFormat;
 
-    c->yuv2nv12X    = RENAME(yuv2nv12X   );
     c->yuv2yuv1     = RENAME(yuv2yuv1    );
     c->yuv2yuvX     = RENAME(yuv2yuvX    );
     c->yuv2packed1  = RENAME(yuv2packed1 );
@@ -2772,13 +2608,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_YUV444P16LE: c->chrToYV12 = RENAME(LEToUV); break;
         default: break;
     }
-    if (c->chrSrcHSubSample) {
-        switch(srcFormat) {
-        case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV_half); break;
-        case PIX_FMT_RGB24  : c->chrToYV12 = RENAME(rgb24ToUV_half); break;
-        default: break;
-        }
-    } else {
+    if (!c->chrSrcHSubSample) {
         switch(srcFormat) {
         case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV); break;
         case PIX_FMT_RGB24  : c->chrToYV12 = RENAME(rgb24ToUV); break;
@@ -2806,16 +2636,6 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         switch (srcFormat) {
         case PIX_FMT_Y400A  : c->alpToYV12 = RENAME(yuy2ToY); break;
         default: break;
-        }
-    }
-
-    if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
-        if (c->srcRange) {
-            c->lumConvertRange = RENAME(lumRangeFromJpeg);
-            c->chrConvertRange = RENAME(chrRangeFromJpeg);
-        } else {
-            c->lumConvertRange = RENAME(lumRangeToJpeg);
-            c->chrConvertRange = RENAME(chrRangeToJpeg);
         }
     }
 }
