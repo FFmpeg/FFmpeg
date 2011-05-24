@@ -54,11 +54,10 @@ typedef struct {
     int video_fd;
     int tuner_fd;
     int width, height;
-    int frame_rate;
-    int frame_rate_base;
     uint64_t per_frame;
     int standard;
     char *video_size; /**< String describing video size, set by a private option. */
+    char *framerate;  /**< Set by a private option. */
 } VideoData;
 
 
@@ -249,8 +248,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     VideoData *s = s1->priv_data;
     AVStream *st;
     int width, height;
-    int frame_rate;
-    int frame_rate_base;
+    AVRational fps;
     int ret = 0;
 
     if (ap->time_base.den <= 0) {
@@ -262,14 +260,18 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
         goto out;
     }
+    if ((ret = av_parse_video_rate(&fps, s->framerate)) < 0) {
+        av_log(s1, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        goto out;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->width > 0)
         width = ap->width;
     if (ap->height > 0)
         height = ap->height;
+    if (ap->time_base.num)
+        fps = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
-    frame_rate = ap->time_base.den;
-    frame_rate_base = ap->time_base.num;
 
     st = av_new_stream(s1, 0);
     if (!st) {
@@ -280,17 +282,15 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     s->width = width;
     s->height = height;
-    s->frame_rate = frame_rate;
-    s->frame_rate_base = frame_rate_base;
-    s->per_frame = ((uint64_t)1000000 * s->frame_rate_base) / s->frame_rate;
+    s->per_frame = ((uint64_t)1000000 * fps.den) / fps.num;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->pix_fmt = PIX_FMT_YUV420P;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->codec->width = width;
     st->codec->height = height;
-    st->codec->time_base.den = frame_rate;
-    st->codec->time_base.num = frame_rate_base;
+    st->codec->time_base.den = fps.num;
+    st->codec->time_base.num = fps.den;
 
 #if FF_API_FORMAT_PARAMETERS
     if (ap->standard) {
@@ -314,6 +314,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
 out:
     av_freep(&s->video_size);
+    av_freep(&s->framerate);
     return ret;
 }
 
@@ -346,6 +347,7 @@ static const AVOption options[] = {
     { "PALM",     "", 0, FF_OPT_TYPE_CONST, {.dbl = PALM},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "NTSCJ",    "", 0, FF_OPT_TYPE_CONST, {.dbl = NTSCJ}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { NULL },
 };
 
