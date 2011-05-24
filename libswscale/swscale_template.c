@@ -127,11 +127,6 @@ static inline void yuv2packed1_c(SwsContext *c, const uint16_t *buf0,
     const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
     const int yalpha= 4096; //FIXME ...
 
-    if (flags&SWS_FULL_CHR_H_INT) {
-        c->yuv2packed2(c, buf0, buf0, uvbuf0, uvbuf1, abuf0, abuf0, dest, dstW, 0, uvalpha, y);
-        return;
-    }
-
     if (uvalpha < 2048) {
         YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C(void,0), YSCALE_YUV_2_GRAY16_1_C, YSCALE_YUV_2_MONO2_C)
     } else {
