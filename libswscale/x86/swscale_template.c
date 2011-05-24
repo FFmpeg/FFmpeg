@@ -831,7 +831,6 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
                                     const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize, const int16_t **alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
-    if(!(c->flags & SWS_BITEXACT)) {
         if (c->flags & SWS_ACCURATE_RND) {
             if (uDest) {
                 YSCALEYUV2YV12X_ACCURATE(   "0", CHR_MMX_FILTER_OFFSET, uDest, chrDstW)
@@ -853,17 +852,11 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
 
             YSCALEYUV2YV12X("0", LUM_MMX_FILTER_OFFSET, dest, dstW)
         }
-        return;
-    }
-    yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
-                chrFilter, chrSrc, chrFilterSize,
-                alpSrc, dest, uDest, vDest, aDest, dstW, chrDstW);
 }
 
 static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const int16_t *chrSrc, const int16_t *alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
-    if(!(c->flags & SWS_BITEXACT)) {
         long p= 4;
         const uint8_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
         uint8_t *dst[4]= {aDest, dest, uDest, vDest};
@@ -892,10 +885,6 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
                 }
             }
         }
-        return;
-    }
-    yuv2yuv1_c(c, lumSrc, chrSrc, alpSrc, dest, uDest, vDest, aDest,
-               dstW, chrDstW);
 }
 
 
@@ -908,7 +897,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
-    if(!(c->flags & SWS_BITEXACT)) {
+
         if (c->flags & SWS_ACCURATE_RND) {
             switch(c->dstFormat) {
             case PIX_FMT_RGB32:
@@ -1065,7 +1054,7 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
                 return;
             }
         }
-    }
+
     yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
                    chrFilter, chrSrc, chrFilterSize,
                    alpSrc, dest, dstW, dstY);
@@ -1077,7 +1066,6 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
 static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
                           const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
 {
-    if(!(c->flags & SWS_BITEXACT)) {
         switch(c->dstFormat) {
         //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
         case PIX_FMT_RGB32:
@@ -1208,9 +1196,8 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
                 "a" (&c->redDither)
             );
             return;
-        default: break;
         }
-    }
+
     yuv2packed2_c(c, buf0, buf1, uvbuf0, uvbuf1, abuf0, abuf1,
                   dest, dstW, yalpha, uvalpha, y);
 }
@@ -1221,7 +1208,6 @@ static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, cons
 static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
                           const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
 {
-    if(!(flags & SWS_BITEXACT)) {
         const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
         if (flags&SWS_FULL_CHR_H_INT) {
@@ -1442,7 +1428,7 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
                 return;
             }
         }
-    }
+
     yuv2packed1_c(c, buf0, uvbuf0, uvbuf1, abuf0, dest,
                   dstW, uvalpha, dstFormat, flags, y);
 }
@@ -2144,11 +2130,13 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
 {
     enum PixelFormat srcFormat = c->srcFormat;
 
-    c->yuv2yuv1     = RENAME(yuv2yuv1    );
-    c->yuv2yuvX     = RENAME(yuv2yuvX    );
-    c->yuv2packed1  = RENAME(yuv2packed1 );
-    c->yuv2packed2  = RENAME(yuv2packed2 );
-    c->yuv2packedX  = RENAME(yuv2packedX );
+    if (!(c->flags & SWS_BITEXACT)) {
+        c->yuv2yuv1     = RENAME(yuv2yuv1    );
+        c->yuv2yuvX     = RENAME(yuv2yuvX    );
+        c->yuv2packed1  = RENAME(yuv2packed1 );
+        c->yuv2packed2  = RENAME(yuv2packed2 );
+        c->yuv2packedX  = RENAME(yuv2packedX );
+    }
 
     c->hScale       = RENAME(hScale      );
 
