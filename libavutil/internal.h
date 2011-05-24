@@ -223,4 +223,18 @@
 #   define ONLY_IF_THREADS_ENABLED(x) NULL
 #endif
 
+#if HAVE_MMX
+/**
+ * Empty mmx state.
+ * this must be called between any dsp function and float/double code.
+ * for example sin(); dsp->idct_put(); emms_c(); cos()
+ */
+static av_always_inline void emms_c(void)
+{
+    __asm__ volatile ("emms" ::: "memory");
+}
+#else /* HAVE_MMX */
+#define emms_c()
+#endif /* HAVE_MMX */
+
 #endif /* AVUTIL_INTERNAL_H */

@@ -630,13 +630,6 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
     }
 }
 
-/**
- * Empty mmx state.
- * this must be called between any dsp function and float/double code.
- * for example sin(); dsp->idct_put(); emms_c(); cos()
- */
-#define emms_c()
-
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
@@ -654,18 +647,7 @@ void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);
 
-#if HAVE_MMX
-
-#undef emms_c
-
-static inline void emms(void)
-{
-    __asm__ volatile ("emms;":::"memory");
-}
-
-#define emms_c() emms()
-
-#elif ARCH_ARM
+#if ARCH_ARM
 
 #if HAVE_NEON
 #   define STRIDE_ALIGN 16
