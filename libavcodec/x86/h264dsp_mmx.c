@@ -27,6 +27,43 @@ DECLARE_ALIGNED(8, static const uint64_t, ff_pb_3_1  ) = 0x0103010301030103ULL;
 
 /***********************************/
 /* IDCT */
+#define IDCT_ADD_FUNC(NUM, DEPTH, OPT) \
+void ff_h264_idct ## NUM ## _add_ ## DEPTH ## _ ## OPT (uint8_t *dst, int16_t *block, int stride);
+
+IDCT_ADD_FUNC(, 10, sse2)
+IDCT_ADD_FUNC(_dc, 10, mmx2)
+IDCT_ADD_FUNC(8_dc, 10, sse2)
+IDCT_ADD_FUNC(8, 10, sse2)
+#if HAVE_AVX
+IDCT_ADD_FUNC(, 10, avx)
+IDCT_ADD_FUNC(8_dc, 10, avx)
+IDCT_ADD_FUNC(8, 10, avx)
+#endif
+
+
+#define IDCT_ADD_REP_FUNC(NUM, REP, DEPTH, OPT) \
+void ff_h264_idct ## NUM ## _add ## REP ## _ ## DEPTH ## _ ## OPT \
+                              (uint8_t *dst, const int *block_offset, \
+                              DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+
+IDCT_ADD_REP_FUNC(8, 4, 10, sse2)
+IDCT_ADD_REP_FUNC(8, 4, 10, avx)
+IDCT_ADD_REP_FUNC(, 16, 10, sse2)
+IDCT_ADD_REP_FUNC(, 16intra, 10, sse2)
+#if HAVE_AVX
+IDCT_ADD_REP_FUNC(, 16, 10, avx)
+IDCT_ADD_REP_FUNC(, 16intra, 10, avx)
+#endif
+
+
+#define IDCT_ADD_REP_FUNC2(NUM, REP, DEPTH, OPT) \
+void ff_h264_idct ## NUM ## _add ## REP ## _ ## DEPTH ## _ ## OPT \
+                              (uint8_t **dst, const int *block_offset, \
+                              DCTELEM *block, int stride, const uint8_t nnzc[6*8]);
+IDCT_ADD_REP_FUNC2(, 8, 10, sse2)
+#if HAVE_AVX
+IDCT_ADD_REP_FUNC2(, 8, 10, avx)
+#endif
 
 void ff_h264_idct_add_mmx     (uint8_t *dst, int16_t *block, int stride);
 void ff_h264_idct8_add_mmx    (uint8_t *dst, int16_t *block, int stride);
@@ -418,7 +455,17 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
             c->h264_v_loop_filter_luma_intra = ff_deblock_v_luma_intra_10_mmxext;
             c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_mmxext;
 #endif
+            c->h264_idct_dc_add= ff_h264_idct_dc_add_10_mmx2;
             if (mm_flags&AV_CPU_FLAG_SSE2) {
+                c->h264_idct_add       = ff_h264_idct_add_10_sse2;
+                c->h264_idct8_dc_add   = ff_h264_idct8_dc_add_10_sse2;
+                c->h264_idct8_add      = ff_h264_idct8_add_10_sse2;
+
+                c->h264_idct_add16     = ff_h264_idct_add16_10_sse2;
+                c->h264_idct8_add4     = ff_h264_idct8_add4_10_sse2;
+                c->h264_idct_add8      = ff_h264_idct_add8_10_sse2;
+                c->h264_idct_add16intra= ff_h264_idct_add16intra_10_sse2;
+
                 c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_10_sse2;
                 c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_10_sse2;
 #if HAVE_ALIGNED_STACK
@@ -428,7 +475,18 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
                 c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_sse2;
 #endif
             }
+#if HAVE_AVX
             if (mm_flags&AV_CPU_FLAG_AVX) {
+                c->h264_idct_dc_add    =
+                c->h264_idct_add       = ff_h264_idct_add_10_avx;
+                c->h264_idct8_add      = ff_h264_idct8_add_10_avx;
+                c->h264_idct8_dc_add   = ff_h264_idct8_dc_add_10_avx;
+
+                c->h264_idct_add16     = ff_h264_idct_add16_10_avx;
+                c->h264_idct8_add4     = ff_h264_idct8_add4_10_avx;
+                c->h264_idct_add8      = ff_h264_idct_add8_10_avx;
+                c->h264_idct_add16intra= ff_h264_idct_add16intra_10_avx;
+
                 c->h264_v_loop_filter_chroma= ff_deblock_v_chroma_10_avx;
                 c->h264_v_loop_filter_chroma_intra= ff_deblock_v_chroma_intra_10_avx;
 #if HAVE_ALIGNED_STACK
@@ -438,6 +496,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
                 c->h264_h_loop_filter_luma_intra = ff_deblock_h_luma_intra_10_avx;
 #endif
             }
+#endif /* HAVE_AVX */
         }
     }
 #endif
