@@ -746,6 +746,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
             if(!avctx->has_b_frames){
             picture->pkt_pos= avpkt->pos;
+            }
+            //FIXME these should be under if(!avctx->has_b_frames)
             if (!picture->sample_aspect_ratio.num)
                 picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
             if (!picture->width)
@@ -754,7 +756,6 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                 picture->height = avctx->height;
             if (picture->format == PIX_FMT_NONE)
                 picture->format = avctx->pix_fmt;
-            }
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;
