@@ -241,9 +241,9 @@ typedef struct AVFormatParameters {
     attribute_deprecated unsigned int mpeg2ts_raw:1;  /**< deprecated, use mpegtsraw demuxer */
     /**< deprecated, use mpegtsraw demuxer-specific options instead */
     attribute_deprecated unsigned int mpeg2ts_compute_pcr:1;
+    attribute_deprecated unsigned int initial_pause:1;       /**< Do not begin to play the stream
+                                                                  immediately (RTSP only). */
 #endif
-    unsigned int initial_pause:1;       /**< Do not begin to play the stream
-                                            immediately (RTSP only). */
     unsigned int prealloced_context:1;
 } AVFormatParameters;
 
