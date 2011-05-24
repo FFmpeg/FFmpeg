@@ -62,6 +62,7 @@ untested special converters
 #include "rgb2rgb.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
@@ -70,10 +71,6 @@ untested special converters
 #undef MOVNTQ
 #undef PAVGB
 
-//#undef HAVE_MMX2
-//#define HAVE_AMD3DNOW
-//#undef HAVE_MMX
-//#undef ARCH_X86
 #define DITHER1XBPP
 
 #define isPacked(x)         (       \
@@ -1179,57 +1176,14 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 
 //Note: we have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
 //Plain C versions
-#if CONFIG_RUNTIME_CPUDETECT
-#  define COMPILE_C 1
-#  if   ARCH_X86
-#    define COMPILE_MMX     HAVE_MMX
-#    define COMPILE_MMX2    HAVE_MMX2
-#    define COMPILE_3DNOW   HAVE_AMD3DNOW
-#  elif ARCH_PPC
-#    define COMPILE_ALTIVEC HAVE_ALTIVEC
-#  endif
-#else /* CONFIG_RUNTIME_CPUDETECT */
-#  if   ARCH_X86
-#    if   HAVE_MMX2
-#      define COMPILE_MMX2  1
-#    elif HAVE_AMD3DNOW
-#      define COMPILE_3DNOW 1
-#    elif HAVE_MMX
-#      define COMPILE_MMX   1
-#    else
-#      define COMPILE_C     1
-#    endif
-#  elif ARCH_PPC && HAVE_ALTIVEC
-#    define COMPILE_ALTIVEC 1
-#  else
-#    define COMPILE_C       1
-#  endif
-#endif
 
-#ifndef COMPILE_C
-#  define COMPILE_C 0
-#endif
-#ifndef COMPILE_MMX
-#  define COMPILE_MMX 0
-#endif
-#ifndef COMPILE_MMX2
-#  define COMPILE_MMX2 0
-#endif
-#ifndef COMPILE_3DNOW
-#  define COMPILE_3DNOW 0
-#endif
-#ifndef COMPILE_ALTIVEC
-#  define COMPILE_ALTIVEC 0
-#endif
-
-#define COMPILE_TEMPLATE_MMX 0
 #define COMPILE_TEMPLATE_MMX2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_ALTIVEC 0
 
 #include "swscale_template.c"
 
-#if COMPILE_ALTIVEC
+#if HAVE_ALTIVEC
 #undef RENAME
 #undef COMPILE_TEMPLATE_ALTIVEC
 #define COMPILE_TEMPLATE_ALTIVEC 1
@@ -1237,15 +1191,11 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #include "ppc/swscale_template.c"
 #endif
 
-#if ARCH_X86
-
 //MMX versions
-#if COMPILE_MMX
+#if HAVE_MMX
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMX
 #undef COMPILE_TEMPLATE_MMX2
 #undef COMPILE_TEMPLATE_AMD3DNOW
-#define COMPILE_TEMPLATE_MMX 1
 #define COMPILE_TEMPLATE_MMX2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
@@ -1253,12 +1203,10 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 
 //MMX2 versions
-#if COMPILE_MMX2
+#if HAVE_MMX2
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMX
 #undef COMPILE_TEMPLATE_MMX2
 #undef COMPILE_TEMPLATE_AMD3DNOW
-#define COMPILE_TEMPLATE_MMX 1
 #define COMPILE_TEMPLATE_MMX2 1
 #define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX2
@@ -1266,61 +1214,47 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #endif
 
 //3DNOW versions
-#if COMPILE_3DNOW
+#if HAVE_AMD3DNOW
 #undef RENAME
-#undef COMPILE_TEMPLATE_MMX
 #undef COMPILE_TEMPLATE_MMX2
 #undef COMPILE_TEMPLATE_AMD3DNOW
-#define COMPILE_TEMPLATE_MMX 1
 #define COMPILE_TEMPLATE_MMX2 0
 #define COMPILE_TEMPLATE_AMD3DNOW 1
 #define RENAME(a) a ## _3DNow
 #include "x86/swscale_template.c"
 #endif
 
-#endif //ARCH_X86
-
 SwsFunc ff_getSwsFunc(SwsContext *c)
 {
+    int cpu_flags = av_get_cpu_flags();
+
     sws_init_swScale_c(c);
 
-#if CONFIG_RUNTIME_CPUDETECT
-#if ARCH_X86
+#if HAVE_MMX2
     // ordered per speed fastest first
-    if (c->flags & SWS_CPU_CAPS_MMX2) {
+    if (cpu_flags & AV_CPU_FLAG_MMX2) {
         sws_init_swScale_MMX2(c);
         return swScale_MMX2;
-    } else if (c->flags & SWS_CPU_CAPS_3DNOW) {
+    } else
+#endif
+#if HAVE_AMD3DNOW
+    if (cpu_flags & AV_CPU_FLAG_3DNOW) {
         sws_init_swScale_3DNow(c);
         return swScale_3DNow;
-    } else if (c->flags & SWS_CPU_CAPS_MMX) {
+    } else
+#endif
+#if HAVE_MMX
+    if (cpu_flags & AV_CPU_FLAG_MMX) {
         sws_init_swScale_MMX(c);
         return swScale_MMX;
-    }
-
-#else
-#if COMPILE_ALTIVEC
-    if (c->flags & SWS_CPU_CAPS_ALTIVEC) {
+    } else
+#endif
+#if HAVE_ALTIVEC
+    if (cpu_flags & AV_CPU_FLAG_ALTIVEC) {
         sws_init_swScale_altivec(c);
         return swScale_altivec;
-    }
+    } else
 #endif
-#endif /* ARCH_X86 */
-#else //CONFIG_RUNTIME_CPUDETECT
-#if   COMPILE_TEMPLATE_MMX2
-    sws_init_swScale_MMX2(c);
-    return swScale_MMX2;
-#elif COMPILE_TEMPLATE_AMD3DNOW
-    sws_init_swScale_3DNow(c);
-    return swScale_3DNow;
-#elif COMPILE_TEMPLATE_MMX
-    sws_init_swScale_MMX(c);
-    return swScale_MMX;
-#elif COMPILE_TEMPLATE_ALTIVEC
-    sws_init_swScale_altivec(c);
-    return swScale_altivec;
-#endif
-#endif //!CONFIG_RUNTIME_CPUDETECT
 
     return swScale_c;
 }
@@ -1864,23 +1798,6 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
     return srcSliceH;
 }
 
-int ff_hardcodedcpuflags(void)
-{
-    int flags = 0;
-#if   COMPILE_TEMPLATE_MMX2
-    flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_MMX2;
-#elif COMPILE_TEMPLATE_AMD3DNOW
-    flags |= SWS_CPU_CAPS_MMX|SWS_CPU_CAPS_3DNOW;
-#elif COMPILE_TEMPLATE_MMX
-    flags |= SWS_CPU_CAPS_MMX;
-#elif COMPILE_TEMPLATE_ALTIVEC
-    flags |= SWS_CPU_CAPS_ALTIVEC;
-#elif ARCH_BFIN
-    flags |= SWS_CPU_CAPS_BFIN;
-#endif
-    return flags;
-}
-
 void ff_get_unscaled_swscale(SwsContext *c)
 {
     const enum PixelFormat srcFormat = c->srcFormat;
@@ -1964,8 +1881,8 @@ void ff_get_unscaled_swscale(SwsContext *c)
     if(srcFormat == PIX_FMT_UYVY422 && dstFormat == PIX_FMT_YUV422P)
         c->swScale= uyvyToYuv422Wrapper;
 
-#if COMPILE_ALTIVEC
-    if ((c->flags & SWS_CPU_CAPS_ALTIVEC) &&
+#if HAVE_ALTIVEC
+    if ((av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC) &&
         !(c->flags & SWS_BITEXACT) &&
         srcFormat == PIX_FMT_YUV420P) {
         // unscaled YV12 -> packed YUV, we want speed
@@ -1995,8 +1912,7 @@ void ff_get_unscaled_swscale(SwsContext *c)
             c->swScale= planarCopyWrapper;
     }
 #if ARCH_BFIN
-    if (flags & SWS_CPU_CAPS_BFIN)
-        ff_bfin_get_unscaled_swscale (c);
+    ff_bfin_get_unscaled_swscale (c);
 #endif
 }
 

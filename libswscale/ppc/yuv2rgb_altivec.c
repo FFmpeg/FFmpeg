@@ -94,6 +94,7 @@ adjustment.
 #include "libswscale/rgb2rgb.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
+#include "libavutil/cpu.h"
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING
@@ -692,7 +693,7 @@ static int altivec_uyvy_rgb32 (SwsContext *c,
 */
 SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c)
 {
-    if (!(c->flags & SWS_CPU_CAPS_ALTIVEC))
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return NULL;
 
     /*

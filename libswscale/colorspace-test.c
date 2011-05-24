@@ -33,31 +33,6 @@
 
 #define FUNC(s,d,n) {s,d,#n,n}
 
-static int cpu_caps;
-
-static char *args_parse(int argc, char *argv[])
-{
-    int o;
-
-    while ((o = getopt(argc, argv, "m23")) != -1) {
-        switch (o) {
-        case 'm':
-            cpu_caps |= SWS_CPU_CAPS_MMX;
-            break;
-        case '2':
-            cpu_caps |= SWS_CPU_CAPS_MMX2;
-            break;
-        case '3':
-            cpu_caps |= SWS_CPU_CAPS_3DNOW;
-            break;
-        default:
-            av_log(NULL, AV_LOG_ERROR, "Unknown option %c\n", o);
-        }
-    }
-
-    return argv[optind];
-}
-
 int main(int argc, char **argv)
 {
     int i, funcNum;
@@ -70,9 +45,7 @@ int main(int argc, char **argv)
         return -1;
 
     av_log(NULL, AV_LOG_INFO, "memory corruption test ...\n");
-    args_parse(argc, argv);
-    av_log(NULL, AV_LOG_INFO, "CPU capabilities forced to %x\n", cpu_caps);
-    sws_rgb2rgb_init(cpu_caps);
+    sws_rgb2rgb_init();
 
     for(funcNum=0; ; funcNum++) {
         struct func_info_s {

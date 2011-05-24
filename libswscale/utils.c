@@ -39,6 +39,7 @@
 #include "rgb2rgb.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/bswap.h"
 #include "libavutil/opt.h"
@@ -180,7 +181,7 @@ static double getSplineCoeff(double a, double b, double c, double d, double dist
 }
 
 static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
-                      int srcW, int dstW, int filterAlign, int one, int flags,
+                      int srcW, int dstW, int filterAlign, int one, int flags, int cpu_flags,
                       SwsVector *srcFilter, SwsVector *dstFilter, double param[2])
 {
     int i;
@@ -191,10 +192,9 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
     int64_t *filter2=NULL;
     const int64_t fone= 1LL<<54;
     int ret= -1;
-#if ARCH_X86
-    if (flags & SWS_CPU_CAPS_MMX)
+
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
         __asm__ volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
-#endif
 
     // NOTE: the +1 is for the MMX scaler which reads over the end
     FF_ALLOC_OR_GOTO(NULL, *filterPos, (dstW+1)*sizeof(int16_t), fail);
@@ -411,7 +411,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
         if (min>minFilterSize) minFilterSize= min;
     }
 
-    if (flags & SWS_CPU_CAPS_ALTIVEC) {
+    if (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) {
         // we can handle the special case 4,
         // so we don't want to go to the full 8
         if (minFilterSize < 5)
@@ -426,7 +426,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
             filterAlign = 1;
     }
 
-    if (flags & SWS_CPU_CAPS_MMX) {
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
         // special case for unscaled vertical filtering
         if (minFilterSize == 1 && filterAlign == 2)
             filterAlign= 1;
@@ -516,7 +516,7 @@ fail:
     return ret;
 }
 
-#if ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT)
+#if HAVE_MMX2
 static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *filter, int32_t *filterPos, int numSplits)
 {
     uint8_t *fragmentA;
@@ -674,15 +674,13 @@ static int initMMX2HScaler(int dstW, int xInc, uint8_t *filterCode, int16_t *fil
 
     return fragmentPos + 1;
 }
-#endif /* ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) */
+#endif /* HAVE_MMX2 */
 
 static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
 {
     *h = av_pix_fmt_descriptors[format].log2_chroma_w;
     *v = av_pix_fmt_descriptors[format].log2_chroma_h;
 }
-
-static int update_flags_cpu(int flags);
 
 int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation)
 {
@@ -698,15 +696,12 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
 
     c->dstFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[c->dstFormat]);
     c->srcFormatBpp = av_get_bits_per_pixel(&av_pix_fmt_descriptors[c->srcFormat]);
-    c->flags = update_flags_cpu(c->flags);
 
     ff_yuv2rgb_c_init_tables(c, inv_table, srcRange, brightness, contrast, saturation);
     //FIXME factorize
 
-#if HAVE_ALTIVEC
-    if (c->flags & SWS_CPU_CAPS_ALTIVEC)
+    if (HAVE_ALTIVEC && av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)
         ff_yuv2rgb_init_tables_altivec(c, inv_table, brightness, contrast, saturation);
-#endif
     return 0;
 }
 
@@ -736,20 +731,6 @@ static int handle_jpeg(enum PixelFormat *format)
     }
 }
 
-static int update_flags_cpu(int flags)
-{
-#if !CONFIG_RUNTIME_CPUDETECT //ensure that the flags match the compiled variant if cpudetect is off
-    flags &= ~( SWS_CPU_CAPS_MMX
-               |SWS_CPU_CAPS_MMX2
-               |SWS_CPU_CAPS_3DNOW
-               |SWS_CPU_CAPS_SSE2
-               |SWS_CPU_CAPS_ALTIVEC
-               |SWS_CPU_CAPS_BFIN);
-    flags |= ff_hardcodedcpuflags();
-#endif /* CONFIG_RUNTIME_CPUDETECT */
-    return flags;
-}
-
 SwsContext *sws_alloc_context(void)
 {
     SwsContext *c= av_mallocz(sizeof(SwsContext));
@@ -770,16 +751,15 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     int srcH= c->srcH;
     int dstW= c->dstW;
     int dstH= c->dstH;
-    int flags;
+    int flags, cpu_flags;
     enum PixelFormat srcFormat= c->srcFormat;
     enum PixelFormat dstFormat= c->dstFormat;
 
-    flags= c->flags = update_flags_cpu(c->flags);
-#if ARCH_X86
-    if (flags & SWS_CPU_CAPS_MMX)
+    cpu_flags = av_get_cpu_flags();
+    flags     = c->flags;
+    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
         __asm__ volatile("emms\n\t"::: "memory");
-#endif
-    if (!rgb15to16) sws_rgb2rgb_init(flags);
+    if (!rgb15to16) sws_rgb2rgb_init();
 
     unscaled = (srcW == dstW && srcH == dstH);
 
@@ -872,7 +852,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
     }
 
-    if (flags & SWS_CPU_CAPS_MMX2) {
+    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2) {
         c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
         if (!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR)) {
             if (flags&SWS_PRINT_INFO)
@@ -898,7 +878,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             c->chrXInc+= 20;
         }
         //we don't use the x86 asm scaler if MMX is available
-        else if (flags & SWS_CPU_CAPS_MMX) {
+        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
             c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
             c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
         }
@@ -906,7 +886,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     /* precalculate horizontal scaler filter coefficients */
     {
-#if ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT)
+#if HAVE_MMX2
 // can't downscale !!!
         if (c->canMMX2BeUsed && (flags & SWS_FAST_BILINEAR)) {
             c->lumMmx2FilterCodeSize = initMMX2HScaler(      dstW, c->lumXInc, NULL, NULL, NULL, 8);
@@ -938,21 +918,21 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             mprotect(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize, PROT_EXEC | PROT_READ);
 #endif
         } else
-#endif /* ARCH_X86 && (HAVE_MMX2 || CONFIG_RUNTIME_CPUDETECT) */
+#endif /* HAVE_MMX2 */
         {
             const int filterAlign=
-                (flags & SWS_CPU_CAPS_MMX) ? 4 :
-                (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
+                (HAVE_MMX     && cpu_flags & AV_CPU_FLAG_MMX) ? 4 :
+                (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) ? 8 :
                 1;
 
             if (initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
                            srcW      ,       dstW, filterAlign, 1<<14,
-                           (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
+                           (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags, cpu_flags,
                            srcFilter->lumH, dstFilter->lumH, c->param) < 0)
                 goto fail;
             if (initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
                            c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
-                           (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+                           (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags, cpu_flags,
                            srcFilter->chrH, dstFilter->chrH, c->param) < 0)
                 goto fail;
         }
@@ -961,18 +941,18 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     /* precalculate vertical scaler filter coefficients */
     {
         const int filterAlign=
-            (flags & SWS_CPU_CAPS_MMX) && (flags & SWS_ACCURATE_RND) ? 2 :
-            (flags & SWS_CPU_CAPS_ALTIVEC) ? 8 :
+            (HAVE_MMX     && cpu_flags & AV_CPU_FLAG_MMX) && (flags & SWS_ACCURATE_RND) ? 2 :
+            (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) ? 8 :
             1;
 
         if (initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
                        srcH      ,        dstH, filterAlign, (1<<12),
-                       (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags,
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags, cpu_flags,
                        srcFilter->lumV, dstFilter->lumV, c->param) < 0)
             goto fail;
         if (initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
                        c->chrSrcH, c->chrDstH, filterAlign, (1<<12),
-                       (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags,
+                       (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags, cpu_flags,
                        srcFilter->chrV, dstFilter->chrV, c->param) < 0)
             goto fail;
 
@@ -1066,13 +1046,13 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 #endif
                sws_format_name(dstFormat));
 
-        if      (flags & SWS_CPU_CAPS_MMX2)    av_log(c, AV_LOG_INFO, "using MMX2\n");
-        else if (flags & SWS_CPU_CAPS_3DNOW)   av_log(c, AV_LOG_INFO, "using 3DNOW\n");
-        else if (flags & SWS_CPU_CAPS_MMX)     av_log(c, AV_LOG_INFO, "using MMX\n");
-        else if (flags & SWS_CPU_CAPS_ALTIVEC) av_log(c, AV_LOG_INFO, "using AltiVec\n");
+        if      (HAVE_MMX2     && cpu_flags & AV_CPU_FLAG_MMX2)    av_log(c, AV_LOG_INFO, "using MMX2\n");
+        else if (HAVE_AMD3DNOW && cpu_flags & AV_CPU_FLAG_3DNOW)   av_log(c, AV_LOG_INFO, "using 3DNOW\n");
+        else if (HAVE_MMX      && cpu_flags & AV_CPU_FLAG_MMX)     av_log(c, AV_LOG_INFO, "using MMX\n");
+        else if (HAVE_ALTIVEC  && cpu_flags & AV_CPU_FLAG_ALTIVEC) av_log(c, AV_LOG_INFO, "using AltiVec\n");
         else                                   av_log(c, AV_LOG_INFO, "using C\n");
 
-        if (flags & SWS_CPU_CAPS_MMX) {
+        if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
             if (c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
                 av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
             else {
@@ -1091,7 +1071,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
                     av_log(c, AV_LOG_VERBOSE, "using n-tap MMX scaler for horizontal chrominance scaling\n");
             }
         } else {
-#if ARCH_X86
+#if HAVE_MMX
             av_log(c, AV_LOG_VERBOSE, "using x86 asm scaler for horizontal scaling\n");
 #else
             if (flags & SWS_FAST_BILINEAR)
@@ -1102,31 +1082,41 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
         if (isPlanarYUV(dstFormat)) {
             if (c->vLumFilterSize==1)
-                av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n",
+                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
             else
-                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (YV12 like)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (YV12 like)\n",
+                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
         } else {
             if (c->vLumFilterSize==1 && c->vChrFilterSize==2)
                 av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
-                       "      2-tap scaler for vertical chrominance scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                       "      2-tap scaler for vertical chrominance scaling (BGR)\n",
+                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
             else if (c->vLumFilterSize==2 && c->vChrFilterSize==2)
-                av_log(c, AV_LOG_VERBOSE, "using 2-tap linear %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using 2-tap linear %s scaler for vertical scaling (BGR)\n",
+                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
             else
-                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (BGR)\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (BGR)\n",
+                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
         }
 
         if (dstFormat==PIX_FMT_BGR24)
             av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR24 converter\n",
-                   (flags & SWS_CPU_CAPS_MMX2) ? "MMX2" : ((flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C"));
+                   (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2) ? "MMX2" :
+                   ((HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C"));
         else if (dstFormat==PIX_FMT_RGB32)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR32 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR32 converter\n",
+                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
         else if (dstFormat==PIX_FMT_BGR565)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR16 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR16 converter\n",
+                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
         else if (dstFormat==PIX_FMT_BGR555)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR15 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR15 converter\n",
+                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
         else if (dstFormat == PIX_FMT_RGB444BE || dstFormat == PIX_FMT_RGB444LE ||
                  dstFormat == PIX_FMT_BGR444BE || dstFormat == PIX_FMT_BGR444LE)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR12 converter\n", (flags & SWS_CPU_CAPS_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR12 converter\n",
+                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
 
         av_log(c, AV_LOG_VERBOSE, "%dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
         av_log(c, AV_LOG_DEBUG, "lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
@@ -1504,7 +1494,7 @@ void sws_freeContext(SwsContext *c)
     av_freep(&c->hLumFilterPos);
     av_freep(&c->hChrFilterPos);
 
-#if ARCH_X86
+#if HAVE_MMX
 #ifdef MAP_ANONYMOUS
     if (c->lumMmx2FilterCode) munmap(c->lumMmx2FilterCode, c->lumMmx2FilterCodeSize);
     if (c->chrMmx2FilterCode) munmap(c->chrMmx2FilterCode, c->chrMmx2FilterCodeSize);
@@ -1517,7 +1507,7 @@ void sws_freeContext(SwsContext *c)
 #endif
     c->lumMmx2FilterCode=NULL;
     c->chrMmx2FilterCode=NULL;
-#endif /* ARCH_X86 */
+#endif /* HAVE_MMX */
 
     av_freep(&c->yuvTable);
 
@@ -1533,8 +1523,6 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
 
     if (!param)
         param = default_param;
-
-    flags = update_flags_cpu(flags);
 
     if (context &&
         (context->srcW      != srcW      ||

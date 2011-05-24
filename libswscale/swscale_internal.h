@@ -476,11 +476,6 @@ extern const AVClass sws_context_class;
 void ff_get_unscaled_swscale(SwsContext *c);
 
 /**
- * Returns the SWS_CPU_CAPS for the optimized code compiled into swscale.
- */
-int ff_hardcodedcpuflags(void);
-
-/**
  * Returns function pointer to fastest main scaler path function depending
  * on architecture and available optimizations.
  */

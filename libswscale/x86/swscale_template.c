@@ -2721,10 +2721,11 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
     if ((dstFormat == PIX_FMT_YUVA420P) && !alpPixBuf)
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
 
-    if (flags & SWS_CPU_CAPS_MMX2 )  __asm__ volatile("sfence":::"memory");
+    if (COMPILE_TEMPLATE_MMX2)      __asm__ volatile("sfence":::"memory");
     /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
-    if (flags & SWS_CPU_CAPS_3DNOW)  __asm__ volatile("femms" :::"memory");
-    else                             __asm__ volatile("emms"  :::"memory");
+    if (COMPILE_TEMPLATE_AMD3DNOW)  __asm__ volatile("femms" :::"memory");
+    else                            __asm__ volatile("emms"  :::"memory");
+
     /* store changed local vars back in the context */
     c->dstY= dstY;
     c->lumBufIndex= lumBufIndex;
