@@ -2242,6 +2242,34 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
 #endif /* COMPILE_MMX */
 }
 
+static inline void RENAME(hScale16)(int16_t *dst, int dstW, const uint16_t *src, int srcW, int xInc,
+                                    const int16_t *filter, const int16_t *filterPos, long filterSize, int shift)
+{
+    int i, j;
+    for (i=0; i<dstW; i++) {
+        int srcPos= filterPos[i];
+        int val=0;
+        for (j=0; j<filterSize; j++) {
+            val += ((int)src[srcPos + j])*filter[filterSize*i + j];
+        }
+        dst[i] = FFMIN(val>>shift, (1<<15)-1); // the cubic equation does overflow ...
+    }
+}
+
+static inline void RENAME(hScale16X)(int16_t *dst, int dstW, const uint16_t *src, int srcW, int xInc,
+                                    const int16_t *filter, const int16_t *filterPos, long filterSize, int shift)
+{
+    int i, j;
+    for (i=0; i<dstW; i++) {
+        int srcPos= filterPos[i];
+        int val=0;
+        for (j=0; j<filterSize; j++) {
+            val += ((int)av_bswap16(src[srcPos + j]))*filter[filterSize*i + j];
+        }
+        dst[i] = FFMIN(val>>shift, (1<<15)-1); // the cubic equation does overflow ...
+    }
+}
+
 //FIXME all pal and rgb srcFormats could do this convertion as well
 //FIXME all scalers more complex than bilinear could do half of this transform
 static void RENAME(chrRangeToJpeg)(int16_t *dst, int width)
@@ -2421,7 +2449,9 @@ static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src= formatConvBuffer;
     }
 
-    if (!c->hyscale_fast) {
+    if (c->hScale16) {
+        c->hScale16(dst, dstWidth, (uint16_t*)src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize, av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1);
+    } else if (!c->hyscale_fast) {
         c->hScale(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
     } else { // fast bilinear upscale / crap downscale
         c->hyscale_fast(c, dst, dstWidth, src, srcW, xInc);
@@ -2569,7 +2599,10 @@ inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, 
         src2= formatConvBuffer+VOFW;
     }
 
-    if (!c->hcscale_fast) {
+    if (c->hScale16) {
+        c->hScale16(dst     , dstWidth, (uint16_t*)src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1);
+        c->hScale16(dst+VOFW, dstWidth, (uint16_t*)src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1);
+    } else if (!c->hcscale_fast) {
         c->hScale(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
         c->hScale(dst+VOFW, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
     } else { // fast bilinear upscale / crap downscale
@@ -2984,18 +3017,20 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_PAL8     :
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->chrToYV12 = palToUV; break;
-        case PIX_FMT_YUV420P9BE: c->chrToYV12 = BE9ToUV_c; break;
-        case PIX_FMT_YUV420P9LE: c->chrToYV12 = LE9ToUV_c; break;
+        case PIX_FMT_GRAY16BE :
+        case PIX_FMT_YUV420P9BE:
         case PIX_FMT_YUV422P10BE:
-        case PIX_FMT_YUV420P10BE: c->chrToYV12 = BE10ToUV_c; break;
-        case PIX_FMT_YUV422P10LE:
-        case PIX_FMT_YUV420P10LE: c->chrToYV12 = LE10ToUV_c; break;
+        case PIX_FMT_YUV420P10BE:
         case PIX_FMT_YUV420P16BE:
         case PIX_FMT_YUV422P16BE:
-        case PIX_FMT_YUV444P16BE: c->chrToYV12 = RENAME(BEToUV); break;
+        case PIX_FMT_YUV444P16BE: c->hScale16= HAVE_BIGENDIAN ? RENAME(hScale16) : RENAME(hScale16X); break;
+        case PIX_FMT_GRAY16LE :
+        case PIX_FMT_YUV420P9LE:
+        case PIX_FMT_YUV422P10LE:
+        case PIX_FMT_YUV420P10LE:
         case PIX_FMT_YUV420P16LE:
         case PIX_FMT_YUV422P16LE:
-        case PIX_FMT_YUV444P16LE: c->chrToYV12 = RENAME(LEToUV); break;
+        case PIX_FMT_YUV444P16LE: c->hScale16= HAVE_BIGENDIAN ? RENAME(hScale16X) : RENAME(hScale16); break;
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
@@ -3036,23 +3071,11 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     c->lumToYV12 = NULL;
     c->alpToYV12 = NULL;
     switch (srcFormat) {
-    case PIX_FMT_YUV420P9BE: c->lumToYV12 = BE9ToY_c; break;
-    case PIX_FMT_YUV420P9LE: c->lumToYV12 = LE9ToY_c; break;
-    case PIX_FMT_YUV422P10BE:
-    case PIX_FMT_YUV420P10BE: c->lumToYV12 = BE10ToY_c; break;
-    case PIX_FMT_YUV422P10LE:
-    case PIX_FMT_YUV420P10LE: c->lumToYV12 = LE10ToY_c; break;
     case PIX_FMT_YUYV422  :
-    case PIX_FMT_YUV420P16BE:
-    case PIX_FMT_YUV422P16BE:
-    case PIX_FMT_YUV444P16BE:
     case PIX_FMT_GRAY8A   :
-    case PIX_FMT_GRAY16BE : c->lumToYV12 = RENAME(yuy2ToY); break;
+                            c->lumToYV12 = RENAME(yuy2ToY); break;
     case PIX_FMT_UYVY422  :
-    case PIX_FMT_YUV420P16LE:
-    case PIX_FMT_YUV422P16LE:
-    case PIX_FMT_YUV444P16LE:
-    case PIX_FMT_GRAY16LE : c->lumToYV12 = RENAME(uyvyToY); break;
+                            c->lumToYV12 = RENAME(uyvyToY); break;
     case PIX_FMT_BGR24    : c->lumToYV12 = RENAME(bgr24ToY); break;
     case PIX_FMT_BGR565   : c->lumToYV12 = bgr16ToY; break;
     case PIX_FMT_BGR555   : c->lumToYV12 = bgr15ToY; break;
