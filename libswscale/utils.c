@@ -193,8 +193,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
     const int64_t fone= 1LL<<54;
     int ret= -1;
 
-    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
-        __asm__ volatile("emms\n\t"::: "memory"); //FIXME this should not be required but it IS (even for non-MMX versions)
+    emms_c(); //FIXME this should not be required but it IS (even for non-MMX versions)
 
     // NOTE: the +1 is for the MMX scaler which reads over the end
     FF_ALLOC_OR_GOTO(NULL, *filterPos, (dstW+1)*sizeof(int16_t), fail);
@@ -757,8 +756,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     cpu_flags = av_get_cpu_flags();
     flags     = c->flags;
-    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
-        __asm__ volatile("emms\n\t"::: "memory");
+    emms_c();
     if (!rgb15to16) sws_rgb2rgb_init();
 
     unscaled = (srcW == dstW && srcH == dstH);

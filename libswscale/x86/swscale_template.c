@@ -2494,7 +2494,7 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
 
     if (COMPILE_TEMPLATE_MMX2)      __asm__ volatile("sfence":::"memory");
-    __asm__ volatile("emms"  :::"memory");
+    emms_c();
 
     /* store changed local vars back in the context */
     c->dstY= dstY;
