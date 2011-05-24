@@ -1230,11 +1230,6 @@ static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, cons
 {
         const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
-        if (flags&SWS_FULL_CHR_H_INT) {
-            c->yuv2packed2(c, buf0, buf0, uvbuf0, uvbuf1, abuf0, abuf0, dest, dstW, 0, uvalpha, y);
-            return;
-        }
-
         if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
             switch(dstFormat) {
             case PIX_FMT_RGB32:
