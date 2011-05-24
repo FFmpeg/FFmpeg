@@ -425,6 +425,8 @@ typedef struct AVInputFormat {
     const AVMetadataConv *metadata_conv;
 #endif
 
+    const AVClass *priv_class; ///< AVClass for the private context
+
     /* private fields */
     struct AVInputFormat *next;
 } AVInputFormat;
