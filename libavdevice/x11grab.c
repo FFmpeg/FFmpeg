@@ -37,6 +37,9 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include <time.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -52,10 +55,12 @@
  */
 struct x11_grab
 {
+    const AVClass *class;    /**< Class for private options. */
     int frame_size;          /**< Size in bytes of a grabbed frame */
     AVRational time_base;    /**< Time base */
     int64_t time_frame;      /**< Current time */
 
+    char *video_size;        /**< String describing video size, set by a private option. */
     int height;              /**< Height of the grab frame */
     int width;               /**< Width of the grab frame */
     int x_off;               /**< Horizontal top-left corner coordinate */
@@ -101,7 +106,18 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         *offset= 0;
     }
 
-    av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n", s1->filename, param, x_off, y_off, ap->width, ap->height);
+    if ((ret = av_parse_video_size(&x11grab->width, &x11grab->height, x11grab->video_size)) < 0) {
+        av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        goto out;
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->width > 0)
+        x11grab->width = ap->width;
+    if (ap->height > 0)
+        x11grab->height = ap->height;
+#endif
+    av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n",
+           s1->filename, param, x_off, y_off, x11grab->width, x11grab->height);
 
     dpy = XOpenDisplay(param);
     if(!dpy) {
@@ -110,7 +126,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto out;
     }
 
-    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
+    if (ap->time_base.den <= 0) {
         av_log(s1, AV_LOG_ERROR, "AVParameters don't have video size and/or rate. Use -s and -r.\n");
         ret = AVERROR(EINVAL);
         goto out;
@@ -134,7 +150,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                                 ZPixmap,
                                 NULL,
                                 &x11grab->shminfo,
-                                ap->width, ap->height);
+                                x11grab->width, x11grab->height);
         x11grab->shminfo.shmid = shmget(IPC_PRIVATE,
                                         image->bytes_per_line * image->height,
                                         IPC_CREAT|0777);
@@ -155,7 +171,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     } else {
         image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)),
                           x_off,y_off,
-                          ap->width,ap->height,
+                          x11grab->width, x11grab->height,
                           AllPlanes, ZPixmap);
     }
 
@@ -222,10 +238,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto out;
     }
 
-    x11grab->frame_size = ap->width * ap->height * image->bits_per_pixel/8;
+    x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel/8;
     x11grab->dpy = dpy;
-    x11grab->width = ap->width;
-    x11grab->height = ap->height;
     x11grab->time_base  = ap->time_base;
     x11grab->time_frame = av_gettime() / av_q2d(ap->time_base);
     x11grab->x_off = x_off;
@@ -235,13 +249,14 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
-    st->codec->width = ap->width;
-    st->codec->height = ap->height;
+    st->codec->width  = x11grab->width;
+    st->codec->height = x11grab->height;
     st->codec->pix_fmt = input_pixfmt;
     st->codec->time_base = ap->time_base;
     st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(ap->time_base) * 8;
 
 out:
+    av_freep(&x11grab->video_size);
     return ret;
 }
 
@@ -449,6 +464,20 @@ x11grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
+#define OFFSET(x) offsetof(struct x11_grab, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass x11_class = {
+    .class_name = "X11grab indev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 /** x11 grabber device demuxer declaration */
 AVInputFormat ff_x11_grab_device_demuxer =
 {
@@ -460,4 +489,5 @@ AVInputFormat ff_x11_grab_device_demuxer =
     x11grab_read_packet,
     x11grab_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class = &x11_class,
 };
