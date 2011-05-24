@@ -27,6 +27,7 @@
 #include "libavformat/avformat.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #if HAVE_DEV_BKTR_IOCTL_METEOR_H && HAVE_DEV_BKTR_IOCTL_BT848_H
 # include <dev/bktr/ioctl_meteor.h>
 # include <dev/bktr/ioctl_bt848.h>
@@ -57,6 +58,7 @@ typedef struct {
     int frame_rate_base;
     uint64_t per_frame;
     int standard;
+    char *video_size; /**< String describing video size, set by a private option. */
 } VideoData;
 
 
@@ -251,13 +253,21 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int frame_rate_base;
     int ret = 0;
 
-    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
+    if (ap->time_base.den <= 0) {
         ret = AVERROR(EINVAL);
         goto out;
     }
 
-    width = ap->width;
-    height = ap->height;
+    if ((ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
+        av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        goto out;
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->width > 0)
+        width = ap->width;
+    if (ap->height > 0)
+        height = ap->height;
+#endif
     frame_rate = ap->time_base.den;
     frame_rate_base = ap->time_base.num;
 
@@ -303,6 +313,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     last_frame_time = 0;
 
 out:
+    av_freep(&s->video_size);
     return ret;
 }
 
@@ -324,6 +335,8 @@ static int grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
+#define OFFSET(x) offsetof(VideoData, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "standard", "", offsetof(VideoData, standard), FF_OPT_TYPE_INT, {.dbl = VIDEO_FORMAT}, PAL, NTSCJ, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "PAL",      "", 0, FF_OPT_TYPE_CONST, {.dbl = PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
@@ -332,6 +345,7 @@ static const AVOption options[] = {
     { "PALN",     "", 0, FF_OPT_TYPE_CONST, {.dbl = PALN},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "PALM",     "", 0, FF_OPT_TYPE_CONST, {.dbl = PALM},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "NTSCJ",    "", 0, FF_OPT_TYPE_CONST, {.dbl = NTSCJ}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
     { NULL },
 };
 
