@@ -700,62 +700,6 @@
     " jb             1b             \n\t"
 #define WRITERGB15(dst, dstw, index)  REAL_WRITERGB15(dst, dstw, index)
 
-#define WRITEBGR24OLD(dst, dstw, index) \
-    /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
-    "movq      %%mm2, %%mm1             \n\t" /* B */\
-    "movq      %%mm5, %%mm6             \n\t" /* R */\
-    "punpcklbw %%mm4, %%mm2             \n\t" /* GBGBGBGB 0 */\
-    "punpcklbw %%mm7, %%mm5             \n\t" /* 0R0R0R0R 0 */\
-    "punpckhbw %%mm4, %%mm1             \n\t" /* GBGBGBGB 2 */\
-    "punpckhbw %%mm7, %%mm6             \n\t" /* 0R0R0R0R 2 */\
-    "movq      %%mm2, %%mm0             \n\t" /* GBGBGBGB 0 */\
-    "movq      %%mm1, %%mm3             \n\t" /* GBGBGBGB 2 */\
-    "punpcklwd %%mm5, %%mm0             \n\t" /* 0RGB0RGB 0 */\
-    "punpckhwd %%mm5, %%mm2             \n\t" /* 0RGB0RGB 1 */\
-    "punpcklwd %%mm6, %%mm1             \n\t" /* 0RGB0RGB 2 */\
-    "punpckhwd %%mm6, %%mm3             \n\t" /* 0RGB0RGB 3 */\
-\
-    "movq      %%mm0, %%mm4             \n\t" /* 0RGB0RGB 0 */\
-    "psrlq        $8, %%mm0             \n\t" /* 00RGB0RG 0 */\
-    "pand "MANGLE(bm00000111)", %%mm4   \n\t" /* 00000RGB 0 */\
-    "pand "MANGLE(bm11111000)", %%mm0   \n\t" /* 00RGB000 0.5 */\
-    "por       %%mm4, %%mm0             \n\t" /* 00RGBRGB 0 */\
-    "movq      %%mm2, %%mm4             \n\t" /* 0RGB0RGB 1 */\
-    "psllq       $48, %%mm2             \n\t" /* GB000000 1 */\
-    "por       %%mm2, %%mm0             \n\t" /* GBRGBRGB 0 */\
-\
-    "movq      %%mm4, %%mm2             \n\t" /* 0RGB0RGB 1 */\
-    "psrld       $16, %%mm4             \n\t" /* 000R000R 1 */\
-    "psrlq       $24, %%mm2             \n\t" /* 0000RGB0 1.5 */\
-    "por       %%mm4, %%mm2             \n\t" /* 000RRGBR 1 */\
-    "pand "MANGLE(bm00001111)", %%mm2   \n\t" /* 0000RGBR 1 */\
-    "movq      %%mm1, %%mm4             \n\t" /* 0RGB0RGB 2 */\
-    "psrlq        $8, %%mm1             \n\t" /* 00RGB0RG 2 */\
-    "pand "MANGLE(bm00000111)", %%mm4   \n\t" /* 00000RGB 2 */\
-    "pand "MANGLE(bm11111000)", %%mm1   \n\t" /* 00RGB000 2.5 */\
-    "por       %%mm4, %%mm1             \n\t" /* 00RGBRGB 2 */\
-    "movq      %%mm1, %%mm4             \n\t" /* 00RGBRGB 2 */\
-    "psllq       $32, %%mm1             \n\t" /* BRGB0000 2 */\
-    "por       %%mm1, %%mm2             \n\t" /* BRGBRGBR 1 */\
-\
-    "psrlq       $32, %%mm4             \n\t" /* 000000RG 2.5 */\
-    "movq      %%mm3, %%mm5             \n\t" /* 0RGB0RGB 3 */\
-    "psrlq        $8, %%mm3             \n\t" /* 00RGB0RG 3 */\
-    "pand "MANGLE(bm00000111)", %%mm5   \n\t" /* 00000RGB 3 */\
-    "pand "MANGLE(bm11111000)", %%mm3   \n\t" /* 00RGB000 3.5 */\
-    "por       %%mm5, %%mm3             \n\t" /* 00RGBRGB 3 */\
-    "psllq       $16, %%mm3             \n\t" /* RGBRGB00 3 */\
-    "por       %%mm4, %%mm3             \n\t" /* RGBRGBRG 2.5 */\
-\
-    MOVNTQ(%%mm0,   (dst))\
-    MOVNTQ(%%mm2,  8(dst))\
-    MOVNTQ(%%mm3, 16(dst))\
-    "add         $24, "#dst"            \n\t"\
-\
-    "add          $8, "#index"          \n\t"\
-    "cmp     "#dstw", "#index"          \n\t"\
-    " jb          1b                    \n\t"
-
 #define WRITEBGR24MMX(dst, dstw, index) \
     /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */\
     "movq      %%mm2, %%mm1     \n\t" /* B */\
