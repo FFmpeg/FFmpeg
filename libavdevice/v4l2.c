@@ -47,6 +47,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
 
 static const int desired_video_buffers = 256;
 
@@ -71,6 +72,7 @@ struct video_data {
     char *standard;
     int channel;
     char *video_size; /**< String describing video size, set by a private option. */
+    char *pixel_format; /**< Set by a private option. */
 };
 
 struct buff_data {
@@ -544,12 +546,12 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
 }
 
 static uint32_t device_try_init(AVFormatContext *s1,
-                                const AVFormatParameters *ap,
+                                enum PixelFormat pix_fmt,
                                 int *width,
                                 int *height,
                                 enum CodecID *codec_id)
 {
-    uint32_t desired_format = fmt_ff2v4l(ap->pix_fmt, s1->video_codec_id);
+    uint32_t desired_format = fmt_ff2v4l(pix_fmt, s1->video_codec_id);
 
     if (desired_format == 0 ||
         device_init(s1, width, height, desired_format) < 0) {
@@ -582,6 +584,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int res = 0;
     uint32_t desired_format, capabilities;
     enum CodecID codec_id;
+    enum PixelFormat pix_fmt = PIX_FMT_NONE;
 
     st = av_new_stream(s1, 0);
     if (!st) {
@@ -594,11 +597,18 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
         goto out;
     }
+    if (s->pixel_format && (pix_fmt = av_get_pix_fmt(s->pixel_format)) == PIX_FMT_NONE) {
+        av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n", s->pixel_format);
+        res = AVERROR(EINVAL);
+        goto out;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->width > 0)
         s->width  = ap->width;
     if (ap->height > 0)
         s->height = ap->height;
+    if (ap->pix_fmt)
+        pix_fmt = ap->pix_fmt;
 #endif
 
     capabilities = 0;
@@ -624,7 +634,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_VERBOSE, "Setting frame size to %dx%d\n", s->width, s->height);
     }
 
-    desired_format = device_try_init(s1, ap, &s->width, &s->height, &codec_id);
+    desired_format = device_try_init(s1, pix_fmt, &s->width, &s->height, &codec_id);
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
                "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, ap->pix_fmt);
@@ -670,6 +680,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
 out:
     av_freep(&s->video_size);
+    av_freep(&s->pixel_format);
     return res;
 }
 
@@ -719,6 +730,7 @@ static const AVOption options[] = {
     { "standard", "", offsetof(struct video_data, standard), FF_OPT_TYPE_STRING, {.str = "NTSC" }, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "channel",  "", offsetof(struct video_data, channel),  FF_OPT_TYPE_INT,    {.dbl = 0 }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
 
