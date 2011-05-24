@@ -24,6 +24,7 @@
 #include "libavformat/avformat.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 
 #if HAVE_LIBDC1394_2
 #include <dc1394/dc1394.h>
@@ -59,6 +60,7 @@ typedef struct dc1394_data {
 #endif
     int current_frame;
     int fps;
+    char *video_size;       /**< String describing video size, set by a private option. */
 
     AVPacket packet;
 } dc1394_data;
@@ -90,10 +92,13 @@ struct dc1394_frame_rate {
     { 0, 0 } /* gotta be the last one */
 };
 
+#define OFFSET(x) offsetof(dc1394_data, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
 #if HAVE_LIBDC1394_1
     { "channel", "", offsetof(dc1394_data, channel), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
 #endif
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "qvga"}, 0, 0, DEC },
     { NULL },
 };
 
@@ -113,10 +118,20 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     struct dc1394_frame_format *fmt;
     struct dc1394_frame_rate *fps;
     enum PixelFormat pix_fmt = ap->pix_fmt == PIX_FMT_NONE ? PIX_FMT_UYVY422 : ap->pix_fmt; /* defaults */
-    int width                = !ap->width ? 320 : ap->width;
-    int height               = !ap->height ? 240 : ap->height;
+    int width, height;
     int frame_rate           = !ap->time_base.num ? 30000 : av_rescale(1000, ap->time_base.den, ap->time_base.num);
     int ret = 0;
+
+    if ((ret = av_parse_video_size(&width, &height, dc1394->video_size)) < 0) {
+        av_log(c, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        goto out;
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->width > 0)
+        width = ap->width;
+    if (ap->height > 0)
+        height = ap->height;
+#endif
 
     for (fmt = dc1394_frame_formats; fmt->width; fmt++)
          if (fmt->pix_fmt == pix_fmt && fmt->width == width && fmt->height == height)
@@ -161,6 +176,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     *select_fps = fps;
     *select_fmt = fmt;
 out:
+    av_freep(&dc1394->video_size);
     return ret;
 }
 
