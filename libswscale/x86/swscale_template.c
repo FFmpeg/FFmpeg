@@ -1510,6 +1510,7 @@ static inline void RENAME(yuv2yuyv422_1)(SwsContext *c, const uint16_t *buf0, co
         }
 }
 
+#if !COMPILE_TEMPLATE_MMX2
 //FIXME yuy2* can read up to 7 samples too much
 
 static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
@@ -1691,6 +1692,7 @@ static inline void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
 {
     RENAME(nvXXtoUV)(dstV, dstU, src1, width);
 }
+#endif /* !COMPILE_TEMPLATE_MMX2 */
 
 static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, enum PixelFormat srcFormat)
 {
@@ -1825,7 +1827,7 @@ static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
 }
 
-
+#if !COMPILE_TEMPLATE_MMX2
 // bilinear / bicubic scaling
 static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, int srcW, int xInc,
                                   const int16_t *filter, const int16_t *filterPos, long filterSize)
@@ -1980,6 +1982,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
         );
     }
 }
+#endif /* !COMPILE_TEMPLATE_MMX2 */
 
 #if COMPILE_TEMPLATE_MMX2
 static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
@@ -2256,7 +2259,9 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 
+#if !COMPILE_TEMPLATE_MMX2
     c->hScale       = RENAME(hScale      );
+#endif /* !COMPILE_TEMPLATE_MMX2 */
 
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
 #if COMPILE_TEMPLATE_MMX2
@@ -2272,6 +2277,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     }
 #endif /* COMPILE_TEMPLATE_MMX2 */
 
+#if !COMPILE_TEMPLATE_MMX2
     switch(srcFormat) {
         case PIX_FMT_YUYV422  : c->chrToYV12 = RENAME(yuy2ToUV); break;
         case PIX_FMT_UYVY422  : c->chrToYV12 = RENAME(uyvyToUV); break;
@@ -2285,6 +2291,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_YUV444P16LE: c->chrToYV12 = RENAME(LEToUV); break;
         default: break;
     }
+#endif /* !COMPILE_TEMPLATE_MMX2 */
     if (!c->chrSrcHSubSample) {
         switch(srcFormat) {
         case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV); break;
@@ -2294,6 +2301,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     }
 
     switch (srcFormat) {
+#if !COMPILE_TEMPLATE_MMX2
     case PIX_FMT_YUYV422  :
     case PIX_FMT_YUV420P16BE:
     case PIX_FMT_YUV422P16BE:
@@ -2305,14 +2313,17 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     case PIX_FMT_YUV422P16LE:
     case PIX_FMT_YUV444P16LE:
     case PIX_FMT_GRAY16LE : c->lumToYV12 = RENAME(uyvyToY); break;
+#endif /* !COMPILE_TEMPLATE_MMX2 */
     case PIX_FMT_BGR24    : c->lumToYV12 = RENAME(bgr24ToY); break;
     case PIX_FMT_RGB24    : c->lumToYV12 = RENAME(rgb24ToY); break;
     default: break;
     }
+#if !COMPILE_TEMPLATE_MMX2
     if (c->alpPixBuf) {
         switch (srcFormat) {
         case PIX_FMT_Y400A  : c->alpToYV12 = RENAME(yuy2ToY); break;
         default: break;
         }
     }
+#endif /* !COMPILE_TEMPLATE_MMX2 */
 }
