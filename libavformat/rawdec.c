@@ -24,6 +24,7 @@
 #include "avio_internal.h"
 #include "rawdec.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 
 /* raw input */
 int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -66,17 +67,34 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             av_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
             }
-        case AVMEDIA_TYPE_VIDEO:
+        case AVMEDIA_TYPE_VIDEO: {
+            FFRawVideoDemuxerContext *s1 = s->priv_data;
+            int width = 0, height = 0, ret;
             if(ap->time_base.num)
                 av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
             else
                 av_set_pts_info(st, 64, 1, 25);
-            st->codec->width = ap->width;
-            st->codec->height = ap->height;
+            if (s1->video_size) {
+                ret = av_parse_video_size(&width, &height, s1->video_size);
+                av_freep(&s1->video_size);
+                if (ret < 0) {
+                    av_log(s, AV_LOG_ERROR, "Couldn't parse video size.\n");
+                    return ret;
+                }
+            }
+#if FF_API_FORMAT_PARAMETERS
+            if (ap->width > 0)
+                width = ap->width;
+            if (ap->height > 0)
+                height = ap->height;
+#endif
+            st->codec->width  = width;
+            st->codec->height = height;
             st->codec->pix_fmt = ap->pix_fmt;
             if(st->codec->pix_fmt == PIX_FMT_NONE)
                 st->codec->pix_fmt= PIX_FMT_YUV420P;
             break;
+            }
         default:
             return -1;
         }
@@ -162,6 +180,22 @@ const AVClass ff_rawaudio_demuxer_class = {
     .class_name     = "rawaudio demuxer",
     .item_name      = av_default_item_name,
     .option         = audio_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
+#define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption video_options[] = {
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { NULL },
+};
+#undef OFFSET
+#undef DEC
+
+const AVClass ff_rawvideo_demuxer_class = {
+    .class_name     = "rawvideo demuxer",
+    .item_name      = av_default_item_name,
+    .option         = video_options,
     .version        = LIBAVUTIL_VERSION_INT,
 };
 

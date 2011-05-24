@@ -31,7 +31,13 @@ typedef struct RawAudioDemuxerContext {
     int channels;
 } RawAudioDemuxerContext;
 
+typedef struct FFRawVideoDemuxerContext {
+    const AVClass *class;     /**< Class for private options. */
+    char *video_size;         /**< String describing video size, set by a private option. */
+} FFRawVideoDemuxerContext;
+
 extern const AVClass ff_rawaudio_demuxer_class;
+extern const AVClass ff_rawvideo_demuxer_class;
 
 int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap);
 
