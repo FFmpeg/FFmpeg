@@ -23,7 +23,10 @@
 static const AVOption ac3fixed_options[] = {
 #elif AC3ENC_TYPE == AC3ENC_TYPE_AC3
 static const AVOption ac3_options[] = {
+#else /* AC3ENC_TYPE_EAC3 */
+static const AVOption eac3_options[] = {
 #endif
+#if AC3ENC_TYPE != AC3ENC_TYPE_EAC3
 /* Metadata Options */
 {"per_frame_metadata", "Allow Changing Metadata Per-Frame", OFFSET(allow_per_frame_metadata), FF_OPT_TYPE_INT, {.dbl = 0 }, 0, 1, AC3ENC_PARAM},
 /* downmix levels */
@@ -37,7 +40,9 @@ static const AVOption ac3_options[] = {
     {"small",        "Small Room",              0, FF_OPT_TYPE_CONST, {.dbl = 2 }, INT_MIN, INT_MAX, AC3ENC_PARAM, "room_type"},
 /* other metadata options */
 {"copyright", "Copyright Bit", OFFSET(copyright), FF_OPT_TYPE_INT, {.dbl = 0 }, 0, 1, AC3ENC_PARAM},
+#endif
 {"dialnorm", "Dialogue Level (dB)", OFFSET(dialogue_level), FF_OPT_TYPE_INT, {.dbl = -31 }, -31, -1, AC3ENC_PARAM},
+#if AC3ENC_TYPE != AC3ENC_TYPE_EAC3
 {"dsur_mode", "Dolby Surround Mode", OFFSET(dolby_surround_mode), FF_OPT_TYPE_INT, {.dbl = 0 }, 0, 2, AC3ENC_PARAM, "dsur_mode"},
     {"notindicated", "Not Indicated (default)",    0, FF_OPT_TYPE_CONST, {.dbl = 0 }, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsur_mode"},
     {"on",           "Dolby Surround Encoded",     0, FF_OPT_TYPE_CONST, {.dbl = 1 }, INT_MIN, INT_MAX, AC3ENC_PARAM, "dsur_mode"},
@@ -63,6 +68,7 @@ static const AVOption ac3_options[] = {
 {"ad_conv_type", "A/D Converter Type", OFFSET(ad_converter_type), FF_OPT_TYPE_INT, {.dbl = -1 }, -1, 1, AC3ENC_PARAM, "ad_conv_type"},
     {"standard", "Standard (default)", 0, FF_OPT_TYPE_CONST, {.dbl = 0 }, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
     {"hdcd",     "HDCD",               0, FF_OPT_TYPE_CONST, {.dbl = 1 }, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
+#endif
 /* Other Encoding Options */
 {"stereo_rematrixing", "Stereo Rematrixing", OFFSET(stereo_rematrixing), FF_OPT_TYPE_INT, {.dbl = 1 }, 0, 1, AC3ENC_PARAM},
 #if AC3ENC_TYPE != AC3ENC_TYPE_AC3_FIXED

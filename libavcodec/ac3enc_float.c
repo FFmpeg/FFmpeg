@@ -100,6 +100,7 @@ static void scale_coefficients(AC3EncodeContext *s)
 }
 
 
+#if CONFIG_AC3_ENCODER
 AVCodec ff_ac3_encoder = {
     "ac3",
     AVMEDIA_TYPE_AUDIO,
@@ -114,3 +115,20 @@ AVCodec ff_ac3_encoder = {
     .priv_class = &ac3enc_class,
     .channel_layouts = ac3_channel_layouts,
 };
+#endif
+
+#if CONFIG_EAC3_ENCODER
+AVCodec ff_eac3_encoder = {
+    .name            = "eac3",
+    .type            = AVMEDIA_TYPE_AUDIO,
+    .id              = CODEC_ID_EAC3,
+    .priv_data_size  = sizeof(AC3EncodeContext),
+    .init            = ac3_encode_init,
+    .encode          = ac3_encode_frame,
+    .close           = ac3_encode_close,
+    .sample_fmts     = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
+    .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
+    .priv_class      = &eac3enc_class,
+    .channel_layouts = ac3_channel_layouts,
+};
+#endif

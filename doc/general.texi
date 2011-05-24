@@ -614,7 +614,7 @@ following image formats are supported:
     @tab Used in Origin's Wing Commander IV AVI files.
 @item DSP Group TrueSpeech   @tab     @tab  X
 @item DV audio               @tab     @tab  X
-@item Enhanced AC-3          @tab     @tab  X
+@item Enhanced AC-3          @tab  X  @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
 @item GSM                    @tab  E  @tab  X
     @tab encoding supported through external library libgsm
