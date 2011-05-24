@@ -485,6 +485,11 @@ inline static void hcscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
 #define DEBUG_SWSCALE_BUFFERS 0
 #define DEBUG_BUFFERS(...) if (DEBUG_SWSCALE_BUFFERS) av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
+#if HAVE_MMX
+static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
+                                  int lastInLumBuf, int lastInChrBuf);
+#endif
+
 static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
                      int srcSliceY, int srcSliceH, uint8_t* dst[], int dstStride[])
 {
@@ -656,6 +661,7 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
         if (!enough_lines)
             break; //we can't output a dstY line so let's try with the next slice
 
+        if (HAVE_MMX) updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex, lastInLumBuf, lastInChrBuf);
         if (dstY < dstH-2) {
             const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
             const int16_t **chrSrcPtr= (const int16_t **) chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
@@ -779,6 +785,10 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
 
     if ((dstFormat == PIX_FMT_YUVA420P) && !alpPixBuf)
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
+
+    if (HAVE_MMX2 && av_get_cpu_flags() & AV_CPU_FLAG_MMX2)
+        __asm__ volatile("sfence":::"memory");
+    emms_c();
 
     /* store changed local vars back in the context */
     c->dstY= dstY;

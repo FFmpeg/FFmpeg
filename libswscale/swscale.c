@@ -1214,18 +1214,13 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
 
     sws_init_swScale_c(c);
 
-#if HAVE_MMX2
-    // ordered per speed fastest first
-    if (cpu_flags & AV_CPU_FLAG_MMX2) {
-        sws_init_swScale_MMX2(c);
-        return swScale_MMX2;
-    } else
-#endif
 #if HAVE_MMX
-    if (cpu_flags & AV_CPU_FLAG_MMX) {
+    if (cpu_flags & AV_CPU_FLAG_MMX)
         sws_init_swScale_MMX(c);
-        return swScale_MMX;
-    } else
+#endif
+#if HAVE_MMX2
+    if (cpu_flags & AV_CPU_FLAG_MMX2)
+        sws_init_swScale_MMX2(c);
 #endif
 #if HAVE_ALTIVEC
     if (cpu_flags & AV_CPU_FLAG_ALTIVEC)
