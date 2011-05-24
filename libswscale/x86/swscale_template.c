@@ -1918,19 +1918,11 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
     }
 }
 
-#define FAST_BILINEAR_X86 \
-    "subl    %%edi, %%esi    \n\t" /*  src[xx+1] - src[xx] */                   \
-    "imull   %%ecx, %%esi    \n\t" /* (src[xx+1] - src[xx])*xalpha */           \
-    "shll      $16, %%edi    \n\t"                                              \
-    "addl    %%edi, %%esi    \n\t" /* src[xx+1]*xalpha + src[xx]*(1-xalpha) */  \
-    "mov        %1, %%"REG_D"\n\t"                                              \
-    "shrl       $9, %%esi    \n\t"                                              \
-
+#if COMPILE_TEMPLATE_MMX2
 static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                         long dstWidth, const uint8_t *src, int srcW,
                                         int xInc)
 {
-#if COMPILE_TEMPLATE_MMX2
     int32_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
     int     canMMX2BeUsed  = c->canMMX2BeUsed;
@@ -1939,7 +1931,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #if defined(PIC)
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
-    if (canMMX2BeUsed) {
+
         __asm__ volatile(
 #if defined(PIC)
             "mov               %%"REG_b", %5        \n\t"
@@ -1998,51 +1990,12 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #endif
         );
         for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
-    } else {
-#endif /* COMPILE_TEMPLATE_MMX2 */
-    x86_reg xInc_shr16 = xInc >> 16;
-    uint16_t xInc_mask = xInc & 0xffff;
-    x86_reg dstWidth_reg = dstWidth;
-    //NO MMX just normal asm ...
-    __asm__ volatile(
-        "xor %%"REG_a", %%"REG_a"            \n\t" // i
-        "xor %%"REG_d", %%"REG_d"            \n\t" // xx
-        "xorl    %%ecx, %%ecx                \n\t" // xalpha
-        ".p2align                4           \n\t"
-        "1:                                  \n\t"
-        "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
-        "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-        FAST_BILINEAR_X86
-        "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
-        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
-        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
-
-        "movzbl    (%0, %%"REG_d"), %%edi    \n\t" //src[xx]
-        "movzbl   1(%0, %%"REG_d"), %%esi    \n\t" //src[xx+1]
-        FAST_BILINEAR_X86
-        "movw     %%si, 2(%%"REG_D", %%"REG_a", 2)  \n\t"
-        "addw       %4, %%cx                 \n\t" //xalpha += xInc&0xFFFF
-        "adc        %3, %%"REG_d"            \n\t" //xx+= xInc>>16 + carry
-
-
-        "add        $2, %%"REG_a"            \n\t"
-        "cmp        %2, %%"REG_a"            \n\t"
-        " jb        1b                       \n\t"
-
-
-        :: "r" (src), "m" (dst), "m" (dstWidth_reg), "m" (xInc_shr16), "m" (xInc_mask)
-        : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
-    );
-#if COMPILE_TEMPLATE_MMX2
-    } //if MMX2 can't be used
-#endif
 }
 
 static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
                                         long dstWidth, const uint8_t *src1,
                                         const uint8_t *src2, int srcW, int xInc)
 {
-#if COMPILE_TEMPLATE_MMX2
     int32_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
     int     canMMX2BeUsed  = c->canMMX2BeUsed;
@@ -2051,7 +2004,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
 #if defined(PIC)
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
-    if (canMMX2BeUsed) {
+
         __asm__ volatile(
 #if defined(PIC)
             "mov          %%"REG_b", %6         \n\t"
@@ -2101,48 +2054,8 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
             dst[i] = src1[srcW-1]*128;
             dst[i+VOFW] = src2[srcW-1]*128;
         }
-    } else {
-#endif /* COMPILE_TEMPLATE_MMX2 */
-        x86_reg xInc_shr16 = (x86_reg) (xInc >> 16);
-        uint16_t xInc_mask = xInc & 0xffff;
-        x86_reg dstWidth_reg = dstWidth;
-        __asm__ volatile(
-            "xor %%"REG_a", %%"REG_a"               \n\t" // i
-            "xor %%"REG_d", %%"REG_d"               \n\t" // xx
-            "xorl    %%ecx, %%ecx                   \n\t" // xalpha
-            ".p2align    4                          \n\t"
-            "1:                                     \n\t"
-            "mov        %0, %%"REG_S"               \n\t"
-            "movzbl  (%%"REG_S", %%"REG_d"), %%edi  \n\t" //src[xx]
-            "movzbl 1(%%"REG_S", %%"REG_d"), %%esi  \n\t" //src[xx+1]
-            FAST_BILINEAR_X86
-            "movw     %%si, (%%"REG_D", %%"REG_a", 2)   \n\t"
-
-            "movzbl    (%5, %%"REG_d"), %%edi       \n\t" //src[xx]
-            "movzbl   1(%5, %%"REG_d"), %%esi       \n\t" //src[xx+1]
-            FAST_BILINEAR_X86
-            "movw     %%si, "AV_STRINGIFY(VOF)"(%%"REG_D", %%"REG_a", 2)   \n\t"
-
-            "addw       %4, %%cx                    \n\t" //xalpha += xInc&0xFFFF
-            "adc        %3, %%"REG_d"               \n\t" //xx+= xInc>>16 + carry
-            "add        $1, %%"REG_a"               \n\t"
-            "cmp        %2, %%"REG_a"               \n\t"
-            " jb        1b                          \n\t"
-
-/* GCC 3.3 makes MPlayer crash on IA-32 machines when using "g" operand here,
-which is needed to support GCC 4.0. */
-#if ARCH_X86_64 && AV_GCC_VERSION_AT_LEAST(3,4)
-            :: "m" (src1), "m" (dst), "g" (dstWidth_reg), "m" (xInc_shr16), "m" (xInc_mask),
-#else
-            :: "m" (src1), "m" (dst), "m" (dstWidth_reg), "m" (xInc_shr16), "m" (xInc_mask),
-#endif
-            "r" (src2)
-            : "%"REG_a, "%"REG_d, "%ecx", "%"REG_D, "%esi"
-        );
-#if COMPILE_TEMPLATE_MMX2
-    } //if MMX2 can't be used
-#endif
 }
+#endif /* COMPILE_TEMPLATE_MMX2 */
 
 #if !COMPILE_TEMPLATE_MMX2
 static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
@@ -2240,14 +2153,18 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     c->hScale       = RENAME(hScale      );
 
     // Use the new MMX scaler if the MMX2 one can't be used (it is faster than the x86 ASM one).
+#if COMPILE_TEMPLATE_MMX2
     if (c->flags & SWS_FAST_BILINEAR && c->canMMX2BeUsed)
     {
         c->hyscale_fast = RENAME(hyscale_fast);
         c->hcscale_fast = RENAME(hcscale_fast);
     } else {
+#endif /* COMPILE_TEMPLATE_MMX2 */
         c->hyscale_fast = NULL;
         c->hcscale_fast = NULL;
+#if COMPILE_TEMPLATE_MMX2
     }
+#endif /* COMPILE_TEMPLATE_MMX2 */
 
     switch(srcFormat) {
         case PIX_FMT_YUYV422  : c->chrToYV12 = RENAME(yuy2ToUV); break;
