@@ -661,7 +661,9 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
         if (!enough_lines)
             break; //we can't output a dstY line so let's try with the next slice
 
-        if (HAVE_MMX) updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex, lastInLumBuf, lastInChrBuf);
+#if HAVE_MMX
+        updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex, lastInLumBuf, lastInChrBuf);
+#endif
         if (dstY < dstH-2) {
             const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
             const int16_t **chrSrcPtr= (const int16_t **) chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
@@ -786,8 +788,10 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
     if ((dstFormat == PIX_FMT_YUVA420P) && !alpPixBuf)
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
 
-    if (HAVE_MMX2 && av_get_cpu_flags() & AV_CPU_FLAG_MMX2)
+#if HAVE_MMX2
+    if (av_get_cpu_flags() & AV_CPU_FLAG_MMX2)
         __asm__ volatile("sfence":::"memory");
+#endif
     emms_c();
 
     /* store changed local vars back in the context */
