@@ -30,14 +30,7 @@
 #undef MOVNTQ
 #undef EMMS
 #undef SFENCE
-#undef MMREG_SIZE
 #undef PAVGB
-
-#if COMPILE_TEMPLATE_SSE2
-#define MMREG_SIZE 16
-#else
-#define MMREG_SIZE 8
-#endif
 
 #if COMPILE_TEMPLATE_AMD3DNOW
 #define PREFETCH  "prefetch"
@@ -63,6 +56,10 @@
 #define MOVNTQ "movq"
 #define SFENCE " # nop"
 #endif
+
+#if !COMPILE_TEMPLATE_SSE2
+
+#if !COMPILE_TEMPLATE_AMD3DNOW
 
 static inline void RENAME(rgb24tobgr32)(const uint8_t *src, uint8_t *dst, long src_size)
 {
@@ -1513,7 +1510,9 @@ static inline void RENAME(yuy2toyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
                      SFENCE"     \n\t"
                      :::"memory");
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
+#if COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW
 static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWidth, long srcHeight, long srcStride, long dstStride)
 {
     long x,y;
@@ -1530,7 +1529,6 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
     dst+= dstStride;
 
     for (y=1; y<srcHeight; y++) {
-#if COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW
         const x86_reg mmxSize= srcWidth&~15;
         __asm__ volatile(
             "mov           %4, %%"REG_a"            \n\t"
@@ -1564,17 +1562,10 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
             "punpckhbw              %%mm3, %%mm7    \n\t"
             "punpcklbw              %%mm2, %%mm4    \n\t"
             "punpckhbw              %%mm2, %%mm6    \n\t"
-#if 1
             MOVNTQ"                 %%mm5,  (%2, %%"REG_a", 2)  \n\t"
             MOVNTQ"                 %%mm7, 8(%2, %%"REG_a", 2)  \n\t"
             MOVNTQ"                 %%mm4,  (%3, %%"REG_a", 2)  \n\t"
             MOVNTQ"                 %%mm6, 8(%3, %%"REG_a", 2)  \n\t"
-#else
-            "movq                   %%mm5,  (%2, %%"REG_a", 2)  \n\t"
-            "movq                   %%mm7, 8(%2, %%"REG_a", 2)  \n\t"
-            "movq                   %%mm4,  (%3, %%"REG_a", 2)  \n\t"
-            "movq                   %%mm6, 8(%3, %%"REG_a", 2)  \n\t"
-#endif
             "add                       $8, %%"REG_a"            \n\t"
             "movq       -1(%0, %%"REG_a"), %%mm4    \n\t"
             "movq       -1(%1, %%"REG_a"), %%mm5    \n\t"
@@ -1584,12 +1575,6 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
                "g" (-mmxSize)
             : "%"REG_a
         );
-#else
-        const x86_reg mmxSize=1;
-
-        dst[0        ]= (3*src[0] +   src[srcStride])>>2;
-        dst[dstStride]= (  src[0] + 3*src[srcStride])>>2;
-#endif
 
         for (x=mmxSize-1; x<srcWidth-1; x++) {
             dst[2*x          +1]= (3*src[x+0] +   src[x+srcStride+1])>>2;
@@ -1605,7 +1590,6 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
     }
 
     // last line
-#if 1
     dst[0]= src[0];
 
     for (x=0; x<srcWidth-1; x++) {
@@ -1613,18 +1597,14 @@ static inline void RENAME(planar2x)(const uint8_t *src, uint8_t *dst, long srcWi
         dst[2*x+2]= (  src[x] + 3*src[x+1])>>2;
     }
     dst[2*srcWidth-1]= src[srcWidth-1];
-#else
-    for (x=0; x<srcWidth; x++) {
-        dst[2*x+0]=
-        dst[2*x+1]= src[x];
-    }
-#endif
 
     __asm__ volatile(EMMS"       \n\t"
                      SFENCE"     \n\t"
                      :::"memory");
 }
+#endif /* COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW */
 
+#if !COMPILE_TEMPLATE_AMD3DNOW
 /**
  * Height should be a multiple of 2 and width should be a multiple of 16.
  * (If this is a problem for anyone then tell me, and I will fix it.)
@@ -1728,6 +1708,7 @@ static inline void RENAME(uyvytoyv12)(const uint8_t *src, uint8_t *ydst, uint8_t
                      SFENCE"     \n\t"
                      :::"memory");
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
 /**
  * Height should be a multiple of 2 and width should be a multiple of 2.
@@ -1978,7 +1959,9 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
 
      rgb24toyv12_c(src, ydst, udst, vdst, width, height-y, lumStride, chromStride, srcStride);
 }
+#endif /* !COMPILE_TEMPLATE_SSE2 */
 
+#if !COMPILE_TEMPLATE_AMD3DNOW
 static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, uint8_t *dest,
                                     long width, long height, long src1Stride,
                                     long src2Stride, long dstStride)
@@ -2048,7 +2031,10 @@ static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, ui
             ::: "memory"
             );
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
+#if !COMPILE_TEMPLATE_SSE2
+#if !COMPILE_TEMPLATE_AMD3DNOW
 static inline void RENAME(vu9_to_vu12)(const uint8_t *src1, const uint8_t *src2,
                                        uint8_t *dst1, uint8_t *dst2,
                                        long width, long height,
@@ -2228,6 +2214,7 @@ static inline void RENAME(yvu9_to_yuy2)(const uint8_t *src1, const uint8_t *src2
             ::: "memory"
         );
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
 static void RENAME(extract_even)(const uint8_t *src, uint8_t *dst, x86_reg count)
 {
@@ -2266,6 +2253,7 @@ static void RENAME(extract_even)(const uint8_t *src, uint8_t *dst, x86_reg count
     }
 }
 
+#if !COMPILE_TEMPLATE_AMD3DNOW
 static void RENAME(extract_even2)(const uint8_t *src, uint8_t *dst0, uint8_t *dst1, x86_reg count)
 {
     dst0+=   count;
@@ -2311,6 +2299,7 @@ static void RENAME(extract_even2)(const uint8_t *src, uint8_t *dst0, uint8_t *ds
         count++;
     }
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
 static void RENAME(extract_even2avg)(const uint8_t *src0, const uint8_t *src1, uint8_t *dst0, uint8_t *dst1, x86_reg count)
 {
@@ -2365,6 +2354,7 @@ static void RENAME(extract_even2avg)(const uint8_t *src0, const uint8_t *src1, u
     }
 }
 
+#if !COMPILE_TEMPLATE_AMD3DNOW
 static void RENAME(extract_odd2)(const uint8_t *src, uint8_t *dst0, uint8_t *dst1, x86_reg count)
 {
     dst0+=   count;
@@ -2411,6 +2401,7 @@ static void RENAME(extract_odd2)(const uint8_t *src, uint8_t *dst0, uint8_t *dst
         count++;
     }
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
 static void RENAME(extract_odd2avg)(const uint8_t *src0, const uint8_t *src1, uint8_t *dst0, uint8_t *dst1, x86_reg count)
 {
@@ -2492,6 +2483,7 @@ static void RENAME(yuyvtoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
         );
 }
 
+#if !COMPILE_TEMPLATE_AMD3DNOW
 static void RENAME(yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
                                  long width, long height,
                                  long lumStride, long chromStride, long srcStride)
@@ -2514,6 +2506,7 @@ static void RENAME(yuyvtoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
             ::: "memory"
         );
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 
 static void RENAME(uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
                                  long width, long height,
@@ -2540,6 +2533,7 @@ static void RENAME(uyvytoyuv420)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
         );
 }
 
+#if !COMPILE_TEMPLATE_AMD3DNOW
 static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, const uint8_t *src,
                                  long width, long height,
                                  long lumStride, long chromStride, long srcStride)
@@ -2562,9 +2556,13 @@ static void RENAME(uyvytoyuv422)(uint8_t *ydst, uint8_t *udst, uint8_t *vdst, co
             ::: "memory"
         );
 }
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
+#endif /* !COMPILE_TEMPLATE_SSE2 */
 
 static inline void RENAME(rgb2rgb_init)(void)
 {
+#if !COMPILE_TEMPLATE_SSE2
+#if !COMPILE_TEMPLATE_AMD3DNOW
     rgb15to16          = RENAME(rgb15to16);
     rgb15tobgr24       = RENAME(rgb15tobgr24);
     rgb15to32          = RENAME(rgb15to32);
@@ -2588,14 +2586,22 @@ static inline void RENAME(rgb2rgb_init)(void)
     yuv422ptoyuy2      = RENAME(yuv422ptoyuy2);
     yuv422ptouyvy      = RENAME(yuv422ptouyvy);
     yuy2toyv12         = RENAME(yuy2toyv12);
-    planar2x           = RENAME(planar2x);
-    rgb24toyv12        = RENAME(rgb24toyv12);
-    interleaveBytes    = RENAME(interleaveBytes);
     vu9_to_vu12        = RENAME(vu9_to_vu12);
     yvu9_to_yuy2       = RENAME(yvu9_to_yuy2);
-
-    uyvytoyuv420       = RENAME(uyvytoyuv420);
     uyvytoyuv422       = RENAME(uyvytoyuv422);
-    yuyvtoyuv420       = RENAME(yuyvtoyuv420);
     yuyvtoyuv422       = RENAME(yuyvtoyuv422);
+#endif /* !COMPILE_TEMPLATE_SSE2 */
+
+#if COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW
+    planar2x           = RENAME(planar2x);
+#endif /* COMPILE_TEMPLATE_MMX2 || COMPILE_TEMPLATE_AMD3DNOW */
+    rgb24toyv12        = RENAME(rgb24toyv12);
+
+    yuyvtoyuv420       = RENAME(yuyvtoyuv420);
+    uyvytoyuv420       = RENAME(uyvytoyuv420);
+#endif /* COMPILE_TEMPLATE_SSE2 */
+
+#if !COMPILE_TEMPLATE_AMD3DNOW
+    interleaveBytes    = RENAME(interleaveBytes);
+#endif /* !COMPILE_TEMPLATE_AMD3DNOW */
 }
