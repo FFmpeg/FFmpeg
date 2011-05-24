@@ -1518,7 +1518,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* if we have virtual track, mark the real tracks */
             for (j=0; j < track->operation.combine_planes.nb_elem; j++) {
                 char buf[32];
-                if (planes[j].type < MATROSKA_VIDEO_STEREO_PLANE_COUNT)
+                if (planes[j].type >= MATROSKA_VIDEO_STEREO_PLANE_COUNT)
                     continue;
                 snprintf(buf, sizeof(buf), "%s_%d",
                          matroska_video_stereo_plane[planes[j].type], i);
