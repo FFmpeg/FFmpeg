@@ -194,7 +194,7 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
     if (!*st)
         return AVERROR(ENOMEM);
 
-    ff_get_wav_header(pb, (*st)->codec, size);
+    ret = ff_get_wav_header(pb, (*st)->codec, size);
     if (ret < 0)
         return ret;
     (*st)->need_parsing = AVSTREAM_PARSE_FULL;
