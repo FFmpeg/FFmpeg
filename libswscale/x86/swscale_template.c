@@ -2014,64 +2014,64 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
 
-        __asm__ volatile(
+    __asm__ volatile(
 #if defined(PIC)
-            "mov               %%"REG_b", %5        \n\t"
+        "mov               %%"REG_b", %5        \n\t"
 #endif
-            "pxor                  %%mm7, %%mm7     \n\t"
-            "mov                      %0, %%"REG_c" \n\t"
-            "mov                      %1, %%"REG_D" \n\t"
-            "mov                      %2, %%"REG_d" \n\t"
-            "mov                      %3, %%"REG_b" \n\t"
-            "xor               %%"REG_a", %%"REG_a" \n\t" // i
-            PREFETCH"        (%%"REG_c")            \n\t"
-            PREFETCH"      32(%%"REG_c")            \n\t"
-            PREFETCH"      64(%%"REG_c")            \n\t"
+        "pxor                  %%mm7, %%mm7     \n\t"
+        "mov                      %0, %%"REG_c" \n\t"
+        "mov                      %1, %%"REG_D" \n\t"
+        "mov                      %2, %%"REG_d" \n\t"
+        "mov                      %3, %%"REG_b" \n\t"
+        "xor               %%"REG_a", %%"REG_a" \n\t" // i
+        PREFETCH"        (%%"REG_c")            \n\t"
+        PREFETCH"      32(%%"REG_c")            \n\t"
+        PREFETCH"      64(%%"REG_c")            \n\t"
 
 #if ARCH_X86_64
-
 #define CALL_MMX2_FILTER_CODE \
-            "movl            (%%"REG_b"), %%esi     \n\t"\
-            "call                    *%4            \n\t"\
-            "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
-            "add               %%"REG_S", %%"REG_c" \n\t"\
-            "add               %%"REG_a", %%"REG_D" \n\t"\
-            "xor               %%"REG_a", %%"REG_a" \n\t"\
+        "movl            (%%"REG_b"), %%esi     \n\t"\
+        "call                    *%4            \n\t"\
+        "movl (%%"REG_b", %%"REG_a"), %%esi     \n\t"\
+        "add               %%"REG_S", %%"REG_c" \n\t"\
+        "add               %%"REG_a", %%"REG_D" \n\t"\
+        "xor               %%"REG_a", %%"REG_a" \n\t"\
 
 #else
-
 #define CALL_MMX2_FILTER_CODE \
-            "movl (%%"REG_b"), %%esi        \n\t"\
-            "call         *%4                       \n\t"\
-            "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
-            "add               %%"REG_a", %%"REG_D" \n\t"\
-            "xor               %%"REG_a", %%"REG_a" \n\t"\
+        "movl (%%"REG_b"), %%esi        \n\t"\
+        "call         *%4                       \n\t"\
+        "addl (%%"REG_b", %%"REG_a"), %%"REG_c" \n\t"\
+        "add               %%"REG_a", %%"REG_D" \n\t"\
+        "xor               %%"REG_a", %%"REG_a" \n\t"\
 
 #endif /* ARCH_X86_64 */
 
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
 
 #if defined(PIC)
-            "mov                      %5, %%"REG_b" \n\t"
+        "mov                      %5, %%"REG_b" \n\t"
 #endif
-            :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
-            "m" (mmx2FilterCode)
+        :: "m" (src), "m" (dst), "m" (filter), "m" (filterPos),
+           "m" (mmx2FilterCode)
 #if defined(PIC)
-            ,"m" (ebxsave)
+          ,"m" (ebxsave)
 #endif
-            : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+        : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if !defined(PIC)
-            ,"%"REG_b
+         ,"%"REG_b
 #endif
-        );
-        for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) dst[i] = src[srcW-1]*128;
+    );
+
+    for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--)
+        dst[i] = src[srcW-1]*128;
 }
 
 static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
@@ -2087,54 +2087,55 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
 
-        __asm__ volatile(
+    __asm__ volatile(
 #if defined(PIC)
-            "mov          %%"REG_b", %6         \n\t"
+        "mov          %%"REG_b", %6         \n\t"
 #endif
-            "pxor             %%mm7, %%mm7      \n\t"
-            "mov                 %0, %%"REG_c"  \n\t"
-            "mov                 %1, %%"REG_D"  \n\t"
-            "mov                 %2, %%"REG_d"  \n\t"
-            "mov                 %3, %%"REG_b"  \n\t"
-            "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-            PREFETCH"   (%%"REG_c")             \n\t"
-            PREFETCH" 32(%%"REG_c")             \n\t"
-            PREFETCH" 64(%%"REG_c")             \n\t"
+        "pxor             %%mm7, %%mm7      \n\t"
+        "mov                 %0, %%"REG_c"  \n\t"
+        "mov                 %1, %%"REG_D"  \n\t"
+        "mov                 %2, %%"REG_d"  \n\t"
+        "mov                 %3, %%"REG_b"  \n\t"
+        "xor          %%"REG_a", %%"REG_a"  \n\t" // i
+        PREFETCH"   (%%"REG_c")             \n\t"
+        PREFETCH" 32(%%"REG_c")             \n\t"
+        PREFETCH" 64(%%"REG_c")             \n\t"
 
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            "xor          %%"REG_a", %%"REG_a"  \n\t" // i
-            "mov                 %5, %%"REG_c"  \n\t" // src
-            "mov                 %1, %%"REG_D"  \n\t" // buf1
-            "add              $"AV_STRINGIFY(VOF)", %%"REG_D"  \n\t"
-            PREFETCH"   (%%"REG_c")             \n\t"
-            PREFETCH" 32(%%"REG_c")             \n\t"
-            PREFETCH" 64(%%"REG_c")             \n\t"
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        "xor          %%"REG_a", %%"REG_a"  \n\t" // i
+        "mov                 %5, %%"REG_c"  \n\t" // src
+        "mov                 %1, %%"REG_D"  \n\t" // buf1
+        "add              $"AV_STRINGIFY(VOF)", %%"REG_D"  \n\t"
+        PREFETCH"   (%%"REG_c")             \n\t"
+        PREFETCH" 32(%%"REG_c")             \n\t"
+        PREFETCH" 64(%%"REG_c")             \n\t"
 
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
-            CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
+        CALL_MMX2_FILTER_CODE
 
 #if defined(PIC)
-            "mov %6, %%"REG_b"    \n\t"
+        "mov %6, %%"REG_b"    \n\t"
 #endif
-            :: "m" (src1), "m" (dst), "m" (filter), "m" (filterPos),
-            "m" (mmx2FilterCode), "m" (src2)
+        :: "m" (src1), "m" (dst), "m" (filter), "m" (filterPos),
+           "m" (mmx2FilterCode), "m" (src2)
 #if defined(PIC)
-            ,"m" (ebxsave)
+          ,"m" (ebxsave)
 #endif
-            : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
+        : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if !defined(PIC)
-            ,"%"REG_b
+         ,"%"REG_b
 #endif
-        );
-        for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) {
-            dst[i] = src1[srcW-1]*128;
-            dst[i+VOFW] = src2[srcW-1]*128;
-        }
+    );
+
+    for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) {
+        dst[i] = src1[srcW-1]*128;
+        dst[i+VOFW] = src2[srcW-1]*128;
+    }
 }
 #endif /* COMPILE_TEMPLATE_MMX2 */
 
@@ -2162,62 +2163,62 @@ static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int 
     const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
     const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
 
-        c->blueDither= ff_dither8[dstY&1];
-        if (c->dstFormat == PIX_FMT_RGB555 || c->dstFormat == PIX_FMT_BGR555)
-            c->greenDither= ff_dither8[dstY&1];
-        else
-            c->greenDither= ff_dither4[dstY&1];
-        c->redDither= ff_dither8[(dstY+1)&1];
-        if (dstY < dstH - 2) {
-            const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
-            const int16_t **chrSrcPtr= (const int16_t **) chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-            const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-            int i;
-            if (flags & SWS_ACCURATE_RND) {
-                int s= APCK_SIZE / 8;
-                for (i=0; i<vLumFilterSize; i+=2) {
-                    *(const void**)&lumMmxFilter[s*i              ]= lumSrcPtr[i  ];
-                    *(const void**)&lumMmxFilter[s*i+APCK_PTR2/4  ]= lumSrcPtr[i+(vLumFilterSize>1)];
-                              lumMmxFilter[s*i+APCK_COEF/4  ]=
-                              lumMmxFilter[s*i+APCK_COEF/4+1]= vLumFilter[dstY*vLumFilterSize + i    ]
-                        + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1]<<16 : 0);
-                    if (CONFIG_SWSCALE_ALPHA && alpPixBuf) {
-                        *(const void**)&alpMmxFilter[s*i              ]= alpSrcPtr[i  ];
-                        *(const void**)&alpMmxFilter[s*i+APCK_PTR2/4  ]= alpSrcPtr[i+(vLumFilterSize>1)];
-                                  alpMmxFilter[s*i+APCK_COEF/4  ]=
-                                  alpMmxFilter[s*i+APCK_COEF/4+1]= lumMmxFilter[s*i+APCK_COEF/4  ];
-                    }
-                }
-                for (i=0; i<vChrFilterSize; i+=2) {
-                    *(const void**)&chrMmxFilter[s*i              ]= chrSrcPtr[i  ];
-                    *(const void**)&chrMmxFilter[s*i+APCK_PTR2/4  ]= chrSrcPtr[i+(vChrFilterSize>1)];
-                              chrMmxFilter[s*i+APCK_COEF/4  ]=
-                              chrMmxFilter[s*i+APCK_COEF/4+1]= vChrFilter[chrDstY*vChrFilterSize + i    ]
-                        + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1]<<16 : 0);
-                }
-            } else {
-                for (i=0; i<vLumFilterSize; i++) {
-                    lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
-                    lumMmxFilter[4*i+1]= (uint64_t)lumSrcPtr[i] >> 32;
-                    lumMmxFilter[4*i+2]=
-                    lumMmxFilter[4*i+3]=
-                        ((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
-                    if (CONFIG_SWSCALE_ALPHA && alpPixBuf) {
-                        alpMmxFilter[4*i+0]= (int32_t)alpSrcPtr[i];
-                        alpMmxFilter[4*i+1]= (uint64_t)alpSrcPtr[i] >> 32;
-                        alpMmxFilter[4*i+2]=
-                        alpMmxFilter[4*i+3]= lumMmxFilter[4*i+2];
-                    }
-                }
-                for (i=0; i<vChrFilterSize; i++) {
-                    chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
-                    chrMmxFilter[4*i+1]= (uint64_t)chrSrcPtr[i] >> 32;
-                    chrMmxFilter[4*i+2]=
-                    chrMmxFilter[4*i+3]=
-                        ((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
+    c->blueDither= ff_dither8[dstY&1];
+    if (c->dstFormat == PIX_FMT_RGB555 || c->dstFormat == PIX_FMT_BGR555)
+        c->greenDither= ff_dither8[dstY&1];
+    else
+        c->greenDither= ff_dither4[dstY&1];
+    c->redDither= ff_dither8[(dstY+1)&1];
+    if (dstY < dstH - 2) {
+        const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
+        const int16_t **chrSrcPtr= (const int16_t **) chrPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
+        const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
+        int i;
+        if (flags & SWS_ACCURATE_RND) {
+            int s= APCK_SIZE / 8;
+            for (i=0; i<vLumFilterSize; i+=2) {
+                *(const void**)&lumMmxFilter[s*i              ]= lumSrcPtr[i  ];
+                *(const void**)&lumMmxFilter[s*i+APCK_PTR2/4  ]= lumSrcPtr[i+(vLumFilterSize>1)];
+                lumMmxFilter[s*i+APCK_COEF/4  ]=
+                lumMmxFilter[s*i+APCK_COEF/4+1]= vLumFilter[dstY*vLumFilterSize + i    ]
+                           + (vLumFilterSize>1 ? vLumFilter[dstY*vLumFilterSize + i + 1]<<16 : 0);
+                if (CONFIG_SWSCALE_ALPHA && alpPixBuf) {
+                    *(const void**)&alpMmxFilter[s*i              ]= alpSrcPtr[i  ];
+                    *(const void**)&alpMmxFilter[s*i+APCK_PTR2/4  ]= alpSrcPtr[i+(vLumFilterSize>1)];
+                    alpMmxFilter[s*i+APCK_COEF/4  ]=
+                    alpMmxFilter[s*i+APCK_COEF/4+1]= lumMmxFilter[s*i+APCK_COEF/4  ];
                 }
             }
+            for (i=0; i<vChrFilterSize; i+=2) {
+                *(const void**)&chrMmxFilter[s*i              ]= chrSrcPtr[i  ];
+                *(const void**)&chrMmxFilter[s*i+APCK_PTR2/4  ]= chrSrcPtr[i+(vChrFilterSize>1)];
+                chrMmxFilter[s*i+APCK_COEF/4  ]=
+                chrMmxFilter[s*i+APCK_COEF/4+1]= vChrFilter[chrDstY*vChrFilterSize + i    ]
+                           + (vChrFilterSize>1 ? vChrFilter[chrDstY*vChrFilterSize + i + 1]<<16 : 0);
+            }
+        } else {
+            for (i=0; i<vLumFilterSize; i++) {
+                lumMmxFilter[4*i+0]= (int32_t)lumSrcPtr[i];
+                lumMmxFilter[4*i+1]= (uint64_t)lumSrcPtr[i] >> 32;
+                lumMmxFilter[4*i+2]=
+                lumMmxFilter[4*i+3]=
+                    ((uint16_t)vLumFilter[dstY*vLumFilterSize + i])*0x10001;
+                if (CONFIG_SWSCALE_ALPHA && alpPixBuf) {
+                    alpMmxFilter[4*i+0]= (int32_t)alpSrcPtr[i];
+                    alpMmxFilter[4*i+1]= (uint64_t)alpSrcPtr[i] >> 32;
+                    alpMmxFilter[4*i+2]=
+                    alpMmxFilter[4*i+3]= lumMmxFilter[4*i+2];
+                }
+            }
+            for (i=0; i<vChrFilterSize; i++) {
+                chrMmxFilter[4*i+0]= (int32_t)chrSrcPtr[i];
+                chrMmxFilter[4*i+1]= (uint64_t)chrSrcPtr[i] >> 32;
+                chrMmxFilter[4*i+2]=
+                chrMmxFilter[4*i+3]=
+                    ((uint16_t)vChrFilter[chrDstY*vChrFilterSize + i])*0x10001;
+            }
         }
+    }
 }
 #endif /* !COMPILE_TEMPLATE_MMX2 */
 
