@@ -60,9 +60,10 @@ typedef struct dc1394_data {
     dc1394video_frame_t *frame;
 #endif
     int current_frame;
-    int fps;
+    int  frame_rate;        /**< frames per 1000 seconds (fps * 1000) */
     char *video_size;       /**< String describing video size, set by a private option. */
     char *pixel_format;     /**< Set by a private option. */
+    char *framerate;        /**< Set by a private option. */
 
     AVPacket packet;
 } dc1394_data;
@@ -102,6 +103,7 @@ static const AVOption options[] = {
 #endif
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "qvga"}, 0, 0, DEC },
     { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = "uyvy422"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { NULL },
 };
 
@@ -122,7 +124,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     struct dc1394_frame_rate *fps;
     enum PixelFormat pix_fmt;
     int width, height;
-    int frame_rate           = !ap->time_base.num ? 30000 : av_rescale(1000, ap->time_base.den, ap->time_base.num);
+    AVRational framerate;
     int ret = 0;
 
     if ((pix_fmt = av_get_pix_fmt(dc1394->pixel_format)) == PIX_FMT_NONE) {
@@ -135,6 +137,10 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
         av_log(c, AV_LOG_ERROR, "Couldn't parse video size.\n");
         goto out;
     }
+    if ((ret = av_parse_video_rate(&framerate, dc1394->framerate)) < 0) {
+        av_log(c, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        goto out;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->width > 0)
         width = ap->width;
@@ -142,19 +148,22 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
         height = ap->height;
     if (ap->pix_fmt)
         pix_fmt = ap->pix_fmt;
+    if (ap->time_base.num)
+        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
+    dc1394->frame_rate = av_rescale(1000, framerate.num, framerate.den);
 
     for (fmt = dc1394_frame_formats; fmt->width; fmt++)
          if (fmt->pix_fmt == pix_fmt && fmt->width == width && fmt->height == height)
              break;
 
     for (fps = dc1394_frame_rates; fps->frame_rate; fps++)
-         if (fps->frame_rate == frame_rate)
+         if (fps->frame_rate == dc1394->frame_rate)
              break;
 
     if (!fps->frame_rate || !fmt->width) {
         av_log(c, AV_LOG_ERROR, "Can't find matching camera format for %s, %dx%d@%d:1000fps\n", avcodec_get_pix_fmt_name(pix_fmt),
-                                                                                                width, height, frame_rate);
+                                                                                                width, height, dc1394->frame_rate);
         ret = AVERROR(EINVAL);
         goto out;
     }
@@ -168,8 +177,8 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     av_set_pts_info(vst, 64, 1, 1000);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_RAWVIDEO;
-    vst->codec->time_base.den = fps->frame_rate;
-    vst->codec->time_base.num = 1000;
+    vst->codec->time_base.den = framerate.num;
+    vst->codec->time_base.num = framerate.den;
     vst->codec->width = fmt->width;
     vst->codec->height = fmt->height;
     vst->codec->pix_fmt = fmt->pix_fmt;
@@ -181,7 +190,6 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     dc1394->packet.flags |= AV_PKT_FLAG_KEY;
 
     dc1394->current_frame = 0;
-    dc1394->fps = fps->frame_rate;
 
     vst->codec->bit_rate = av_rescale(dc1394->packet.size * 8, fps->frame_rate, 1000);
     *select_fps = fps;
@@ -189,6 +197,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
 out:
     av_freep(&dc1394->video_size);
     av_freep(&dc1394->pixel_format);
+    av_freep(&dc1394->framerate);
     return ret;
 }
 
@@ -267,7 +276,7 @@ static int dc1394_v1_read_packet(AVFormatContext *c, AVPacket *pkt)
 
     if (res == DC1394_SUCCESS) {
         dc1394->packet.data = (uint8_t *)(dc1394->camera.capture_buffer);
-        dc1394->packet.pts = (dc1394->current_frame * 1000000) / dc1394->fps;
+        dc1394->packet.pts = (dc1394->current_frame * 1000000) / dc1394->frame_rate;
         res = dc1394->packet.size;
     } else {
         av_log(c, AV_LOG_ERROR, "DMA capture failed\n");
@@ -379,7 +388,7 @@ static int dc1394_v2_read_packet(AVFormatContext *c, AVPacket *pkt)
     res = dc1394_capture_dequeue(dc1394->camera, DC1394_CAPTURE_POLICY_WAIT, &dc1394->frame);
     if (res == DC1394_SUCCESS) {
         dc1394->packet.data = (uint8_t *)(dc1394->frame->image);
-        dc1394->packet.pts = (dc1394->current_frame  * 1000000) / (dc1394->fps);
+        dc1394->packet.pts = (dc1394->current_frame  * 1000000) / (dc1394->frame_rate);
         res = dc1394->frame->image_bytes;
     } else {
         av_log(c, AV_LOG_ERROR, "DMA capture failed\n");
