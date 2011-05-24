@@ -46,6 +46,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 
 static const int desired_video_buffers = 256;
 
@@ -69,6 +70,7 @@ struct video_data {
     unsigned int *buf_len;
     char *standard;
     int channel;
+    char *video_size; /**< String describing video size, set by a private option. */
 };
 
 struct buff_data {
@@ -588,8 +590,16 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
-    s->width  = ap->width;
-    s->height = ap->height;
+    if (s->video_size && (res = av_parse_video_size(&s->width, &s->height, s->video_size)) < 0) {
+        av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        goto out;
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->width > 0)
+        s->width  = ap->width;
+    if (ap->height > 0)
+        s->height = ap->height;
+#endif
 
     capabilities = 0;
     s->fd = device_open(s1, &capabilities);
@@ -659,6 +669,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
 out:
+    av_freep(&s->video_size);
     return res;
 }
 
@@ -702,9 +713,12 @@ static int v4l2_read_close(AVFormatContext *s1)
     return 0;
 }
 
+#define OFFSET(x) offsetof(struct video_data, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "standard", "", offsetof(struct video_data, standard), FF_OPT_TYPE_STRING, {.str = "NTSC" }, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "channel",  "", offsetof(struct video_data, channel),  FF_OPT_TYPE_INT,    {.dbl = 0 }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
 
