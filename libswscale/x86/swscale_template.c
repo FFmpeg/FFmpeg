@@ -22,21 +22,12 @@
 
 #undef REAL_MOVNTQ
 #undef MOVNTQ
-#undef PAVGB
 #undef PREFETCH
 
-#if COMPILE_TEMPLATE_AMD3DNOW
-#define PREFETCH  "prefetch"
-#elif COMPILE_TEMPLATE_MMX2
+#if COMPILE_TEMPLATE_MMX2
 #define PREFETCH "prefetchnta"
 #else
 #define PREFETCH  " # nop"
-#endif
-
-#if COMPILE_TEMPLATE_MMX2
-#define PAVGB(a,b) "pavgb " #a ", " #b " \n\t"
-#elif COMPILE_TEMPLATE_AMD3DNOW
-#define PAVGB(a,b) "pavgusb " #a ", " #b " \n\t"
 #endif
 
 #if COMPILE_TEMPLATE_MMX2
@@ -2559,9 +2550,7 @@ static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[],
         fillPlane(dst[3], dstStride[3], dstW, dstY-lastDstY, lastDstY, 255);
 
     if (COMPILE_TEMPLATE_MMX2)      __asm__ volatile("sfence":::"memory");
-    /* On K6 femms is faster than emms. On K7 femms is directly mapped to emms. */
-    if (COMPILE_TEMPLATE_AMD3DNOW)  __asm__ volatile("femms" :::"memory");
-    else                            __asm__ volatile("emms"  :::"memory");
+    __asm__ volatile("emms"  :::"memory");
 
     /* store changed local vars back in the context */
     c->dstY= dstY;

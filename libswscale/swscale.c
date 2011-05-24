@@ -1178,7 +1178,6 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 //Plain C versions
 
 #define COMPILE_TEMPLATE_MMX2 0
-#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define COMPILE_TEMPLATE_ALTIVEC 0
 
 #include "swscale_template.c"
@@ -1195,9 +1194,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #if HAVE_MMX
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMX2
-#undef COMPILE_TEMPLATE_AMD3DNOW
 #define COMPILE_TEMPLATE_MMX2 0
-#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX
 #include "x86/swscale_template.c"
 #endif
@@ -1206,21 +1203,8 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uin
 #if HAVE_MMX2
 #undef RENAME
 #undef COMPILE_TEMPLATE_MMX2
-#undef COMPILE_TEMPLATE_AMD3DNOW
 #define COMPILE_TEMPLATE_MMX2 1
-#define COMPILE_TEMPLATE_AMD3DNOW 0
 #define RENAME(a) a ## _MMX2
-#include "x86/swscale_template.c"
-#endif
-
-//3DNOW versions
-#if HAVE_AMD3DNOW
-#undef RENAME
-#undef COMPILE_TEMPLATE_MMX2
-#undef COMPILE_TEMPLATE_AMD3DNOW
-#define COMPILE_TEMPLATE_MMX2 0
-#define COMPILE_TEMPLATE_AMD3DNOW 1
-#define RENAME(a) a ## _3DNow
 #include "x86/swscale_template.c"
 #endif
 
@@ -1235,12 +1219,6 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     if (cpu_flags & AV_CPU_FLAG_MMX2) {
         sws_init_swScale_MMX2(c);
         return swScale_MMX2;
-    } else
-#endif
-#if HAVE_AMD3DNOW
-    if (cpu_flags & AV_CPU_FLAG_3DNOW) {
-        sws_init_swScale_3DNow(c);
-        return swScale_3DNow;
     } else
 #endif
 #if HAVE_MMX
