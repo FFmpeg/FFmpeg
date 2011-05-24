@@ -203,7 +203,7 @@ ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
 %define BUTTERFLY0 BUTTERFLY0_AVX
 
 INIT_YMM
-section .text align=16
+SECTION_TEXT
 %ifdef HAVE_AVX
 ; void ff_dct32_float_avx(FFTSample *out, const FFTSample *in)
 cglobal dct32_float_avx, 2,3,8, out, in, tmp

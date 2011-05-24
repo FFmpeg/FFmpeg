@@ -383,7 +383,7 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
         } \
     }
     for (i = 0; i < dstW; i++) {
-        int val = 1 << 10;
+        int val = 1 << (26-output_bits);
         int j;
 
         for (j = 0; j < lumFilterSize; j++)
@@ -394,8 +394,8 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
 
     if (uDest) {
         for (i = 0; i < chrDstW; i++) {
-            int u = 1 << 10;
-            int v = 1 << 10;
+            int u = 1 << (26-output_bits);
+            int v = 1 << (26-output_bits);
             int j;
 
             for (j = 0; j < chrFilterSize; j++) {
@@ -410,7 +410,7 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
 
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         for (i = 0; i < dstW; i++) {
-            int val = 1 << 10;
+            int val = 1 << (26-output_bits);
             int j;
 
             for (j = 0; j < lumFilterSize; j++)
