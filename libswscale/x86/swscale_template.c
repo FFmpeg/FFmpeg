@@ -827,11 +827,10 @@
 #define WRITEYUY2(dst, dstw, index)  REAL_WRITEYUY2(dst, dstw, index)
 
 
-static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+static inline void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                     const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize, const int16_t **alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
-        if (c->flags & SWS_ACCURATE_RND) {
             if (uDest) {
                 YSCALEYUV2YV12X_ACCURATE(   "0", CHR_MMX_FILTER_OFFSET, uDest, chrDstW)
                 YSCALEYUV2YV12X_ACCURATE(AV_STRINGIFY(VOF), CHR_MMX_FILTER_OFFSET, vDest, chrDstW)
@@ -841,7 +840,12 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
             }
 
             YSCALEYUV2YV12X_ACCURATE("0", LUM_MMX_FILTER_OFFSET, dest, dstW)
-        } else {
+}
+
+static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize, const int16_t **alpSrc,
+                                       uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
+{
             if (uDest) {
                 YSCALEYUV2YV12X(   "0", CHR_MMX_FILTER_OFFSET, uDest, chrDstW)
                 YSCALEYUV2YV12X(AV_STRINGIFY(VOF), CHR_MMX_FILTER_OFFSET, vDest, chrDstW)
@@ -851,10 +855,9 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, con
             }
 
             YSCALEYUV2YV12X("0", LUM_MMX_FILTER_OFFSET, dest, dstW)
-        }
 }
 
-static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const int16_t *chrSrc, const int16_t *alpSrc,
+static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc, const int16_t *chrSrc, const int16_t *alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
         long p= 4;
@@ -862,7 +865,6 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
         uint8_t *dst[4]= {aDest, dest, uDest, vDest};
         x86_reg counter[4]= {dstW, dstW, chrDstW, chrDstW};
 
-        if (c->flags & SWS_ACCURATE_RND) {
             while(p--) {
                 if (dst[p]) {
                     __asm__ volatile(
@@ -873,7 +875,16 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
                     );
                 }
             }
-        } else {
+}
+
+static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const int16_t *chrSrc, const int16_t *alpSrc,
+                                    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
+{
+    long p= 4;
+    const uint8_t *src[4]= {alpSrc + dstW, lumSrc + dstW, chrSrc + chrDstW, chrSrc + VOFW + chrDstW};
+    uint8_t *dst[4]= {aDest, dest, uDest, vDest};
+    x86_reg counter[4]= {dstW, dstW, chrDstW, chrDstW};
+
             while(p--) {
                 if (dst[p]) {
                     __asm__ volatile(
@@ -884,21 +895,19 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const 
                     );
                 }
             }
-        }
 }
 
 
 /**
  * vertical scale YV12 to RGB
  */
-static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+static inline void RENAME(yuv2packedX_ar)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                        const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                        const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
 
-        if (c->flags & SWS_ACCURATE_RND) {
             switch(c->dstFormat) {
             case PIX_FMT_RGB32:
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
@@ -979,8 +988,20 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
                 YSCALEYUV2PACKEDX_END
                 return;
             }
-        } else {
-            switch(c->dstFormat) {
+
+    yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
+                   chrFilter, chrSrc, chrFilterSize,
+                   alpSrc, dest, dstW, dstY);
+}
+
+static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                       const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+{
+    x86_reg dummy=0;
+    x86_reg dstW_reg = dstW;
+
+        switch(c->dstFormat) {
             case PIX_FMT_RGB32:
                 if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
                     YSCALEYUV2PACKEDX
@@ -1053,7 +1074,6 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
                 YSCALEYUV2PACKEDX_END
                 return;
             }
-        }
 
     yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
                    chrFilter, chrSrc, chrFilterSize,
@@ -2284,11 +2304,17 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
     enum PixelFormat srcFormat = c->srcFormat;
 
     if (!(c->flags & SWS_BITEXACT)) {
-        c->yuv2yuv1     = RENAME(yuv2yuv1    );
-        c->yuv2yuvX     = RENAME(yuv2yuvX    );
+        if (c->flags & SWS_ACCURATE_RND) {
+            c->yuv2yuv1     = RENAME(yuv2yuv1_ar    );
+            c->yuv2yuvX     = RENAME(yuv2yuvX_ar    );
+            c->yuv2packedX  = RENAME(yuv2packedX_ar );
+        } else {
+            c->yuv2yuv1     = RENAME(yuv2yuv1    );
+            c->yuv2yuvX     = RENAME(yuv2yuvX    );
+            c->yuv2packedX  = RENAME(yuv2packedX );
+        }
         c->yuv2packed1  = RENAME(yuv2packed1 );
         c->yuv2packed2  = RENAME(yuv2packed2 );
-        c->yuv2packedX  = RENAME(yuv2packedX );
     }
 
     c->hScale       = RENAME(hScale      );
