@@ -421,50 +421,6 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
     }
 }
 
-static av_always_inline void yuv2yuvXNinC_template(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                                   const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
-                                                   const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest,
-                                                   int dstW, int chrDstW, int big_endian, int depth)
-{
-    //FIXME Optimize (just quickly written not optimized..)
-    int i;
-
-    for (i = 0; i < dstW; i++) {
-        int val = 1 << (26-depth);
-        int j;
-
-        for (j = 0; j < lumFilterSize; j++)
-            val += lumSrc[j][i] * lumFilter[j];
-
-        if (big_endian) {
-            AV_WB16(&dest[i], av_clip(val >> (27-depth), 0, (1<<depth)-1));
-        } else {
-            AV_WL16(&dest[i], av_clip(val >> (27-depth), 0, (1<<depth)-1));
-        }
-    }
-
-    if (uDest) {
-        for (i = 0; i < chrDstW; i++) {
-            int u = 1 << (26-depth);
-            int v = 1 << (26-depth);
-            int j;
-
-            for (j = 0; j < chrFilterSize; j++) {
-                u += chrSrc[j][i       ] * chrFilter[j];
-                v += chrSrc[j][i + VOFW] * chrFilter[j];
-            }
-
-            if (big_endian) {
-                AV_WB16(&uDest[i], av_clip(u >> (27-depth), 0, (1<<depth)-1));
-                AV_WB16(&vDest[i], av_clip(v >> (27-depth), 0, (1<<depth)-1));
-            } else {
-                AV_WL16(&uDest[i], av_clip(u >> (27-depth), 0, (1<<depth)-1));
-                AV_WL16(&vDest[i], av_clip(v >> (27-depth), 0, (1<<depth)-1));
-            }
-        }
-    }
-}
-
 static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                  const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
                                  const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest, int dstW, int chrDstW,
@@ -472,7 +428,7 @@ static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSr
 {
     if (isNBPS(dstFormat)) {
         const int depth = av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1+1;
-        yuv2yuvXNinC_template(lumFilter, lumSrc, lumFilterSize,
+        yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize,
                               chrFilter, chrSrc, chrFilterSize,
                               alpSrc,
                               dest, uDest, vDest, aDest,
