@@ -1,5 +1,4 @@
 /*
- * Memory buffer source filter
  * Copyright (c) 2008 Vitor Sessak
  *
  * This file is part of FFmpeg.
@@ -26,7 +25,6 @@
  * @file
  * memory buffer source API for video
  */
-
 
 #include "avfilter.h"
 
