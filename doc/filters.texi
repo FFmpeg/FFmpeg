@@ -761,7 +761,7 @@ The list of the currently supported filters follows:
 @item pullup
 @item qp
 @item rectangle
-@item remove_logo
+@item remove-logo
 @item rgbtest
 @item rotate
 @item sab
