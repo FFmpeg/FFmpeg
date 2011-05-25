@@ -171,7 +171,6 @@ const char *sws_format_name(enum PixelFormat format)
 
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
 {
-//    printf("%f %f %f %f %f\n", a,b,c,d,dist);
     if (dist<=1.0) return ((d*dist + c)*dist + b)*dist +a;
     else           return getSplineCoeff(        0.0,
                                           b+ 2.0*c + 3.0*d,
