@@ -95,6 +95,13 @@ const char *swscale_license(void);
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
 
+#define SWS_CPU_CAPS_MMX      0x80000000
+#define SWS_CPU_CAPS_MMX2     0x20000000
+#define SWS_CPU_CAPS_3DNOW    0x40000000
+#define SWS_CPU_CAPS_ALTIVEC  0x10000000
+#define SWS_CPU_CAPS_BFIN     0x01000000
+#define SWS_CPU_CAPS_SSE2     0x02000000
+
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
 #define SWS_CS_ITU709         1
