@@ -683,7 +683,7 @@ static int get_packet(URLContext *s, int for_header)
         return AVERROR_EOF;
 
     for (;;) {
-        RTMPPacket rpkt;
+        RTMPPacket rpkt = { 0 };
         if ((ret = ff_rtmp_packet_read(rt->stream, &rpkt,
                                        rt->chunk_size, rt->prev_pkt[0])) <= 0) {
             if (ret == 0) {
