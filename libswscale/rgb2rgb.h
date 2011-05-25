@@ -68,6 +68,10 @@ void shuffle_bytes_1230(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3012(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3210(const uint8_t *src, uint8_t *dst, long src_size);
 
+void rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
+                   uint8_t *vdst, long width, long height, long lumStride,
+                   long chromStride, long srcStride);
+
 /**
  * Height should be a multiple of 2 and width should be a multiple of 16.
  * (If this is a problem for anyone then tell me, and I will fix it.)

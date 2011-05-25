@@ -1976,52 +1976,7 @@ static inline void RENAME(rgb24toyv12)(const uint8_t *src, uint8_t *ydst, uint8_
                      SFENCE"     \n\t"
                      :::"memory");
 
-    for (; y<height; y+=2) {
-        long i;
-        for (i=0; i<chromWidth; i++) {
-            unsigned int b = src[6*i+0];
-            unsigned int g = src[6*i+1];
-            unsigned int r = src[6*i+2];
-
-            unsigned int Y  =  ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
-            unsigned int V  =  ((RV*r + GV*g + BV*b)>>RGB2YUV_SHIFT) + 128;
-            unsigned int U  =  ((RU*r + GU*g + BU*b)>>RGB2YUV_SHIFT) + 128;
-
-            udst[i]     = U;
-            vdst[i]     = V;
-            ydst[2*i]   = Y;
-
-            b = src[6*i+3];
-            g = src[6*i+4];
-            r = src[6*i+5];
-
-            Y  =  ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
-            ydst[2*i+1]     = Y;
-        }
-        ydst += lumStride;
-        src  += srcStride;
-
-        for (i=0; i<chromWidth; i++) {
-            unsigned int b = src[6*i+0];
-            unsigned int g = src[6*i+1];
-            unsigned int r = src[6*i+2];
-
-            unsigned int Y  =  ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
-
-            ydst[2*i]     = Y;
-
-            b = src[6*i+3];
-            g = src[6*i+4];
-            r = src[6*i+5];
-
-            Y  =  ((RY*r + GY*g + BY*b)>>RGB2YUV_SHIFT) + 16;
-            ydst[2*i+1]     = Y;
-        }
-        udst += chromStride;
-        vdst += chromStride;
-        ydst += lumStride;
-        src  += srcStride;
-    }
+     rgb24toyv12_c(src, ydst, udst, vdst, width, height-y, lumStride, chromStride, srcStride);
 }
 
 static void RENAME(interleaveBytes)(const uint8_t *src1, const uint8_t *src2, uint8_t *dest,
