@@ -352,7 +352,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(avctx->rc_max_rate && avctx->rc_max_rate < avctx->bit_rate){
-        av_log(avctx, AV_LOG_INFO, "bitrate above max bitrate\n");
+        av_log(avctx, AV_LOG_ERROR, "bitrate above max bitrate\n");
         return -1;
     }
 
@@ -582,7 +582,7 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     case CODEC_ID_H263:
         if (!CONFIG_H263_ENCODER)  return -1;
         if (ff_match_2uint16(h263_format, FF_ARRAY_ELEMS(h263_format), s->width, s->height) == 8) {
-            av_log(avctx, AV_LOG_INFO, "The specified picture size of %dx%d is not valid for the H.263 codec.\nValid sizes are 128x96, 176x144, 352x288, 704x576, and 1408x1152. Try H.263+.\n", s->width, s->height);
+            av_log(avctx, AV_LOG_ERROR, "The specified picture size of %dx%d is not valid for the H.263 codec.\nValid sizes are 128x96, 176x144, 352x288, 704x576, and 1408x1152. Try H.263+.\n", s->width, s->height);
             return -1;
         }
         s->out_format = FMT_H263;
