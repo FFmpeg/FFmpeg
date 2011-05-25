@@ -93,6 +93,7 @@ static av_always_inline av_const int32_t av_clipl_int32_arm(int64_t a)
     int x, y;
     __asm__ volatile ("adds   %1, %R2, %Q2, lsr #31  \n\t"
                       "mvnne  %1, #1<<31             \n\t"
+                      "moveq  %0, %Q2                \n\t"
                       "eorne  %0, %1,  %R2, asr #31  \n\t"
                       : "=r"(x), "=&r"(y) : "r"(a));
     return x;
