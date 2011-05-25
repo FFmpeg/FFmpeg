@@ -563,7 +563,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         }
     }
 
-    if (avctx->codec->max_lowres < avctx->lowres) {
+    if (avctx->codec->max_lowres < avctx->lowres || avctx->lowres < 0) {
         av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
                avctx->codec->max_lowres);
         ret = AVERROR(EINVAL);
