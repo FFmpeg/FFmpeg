@@ -75,14 +75,6 @@ void rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
 /**
  * Height should be a multiple of 2 and width should be a multiple of 16.
  * (If this is a problem for anyone then tell me, and I will fix it.)
- * Chrominance data is only taken from every second line, others are ignored.
- * FIXME: Write high quality version.
- */
-//void uyvytoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-
-/**
- * Height should be a multiple of 2 and width should be a multiple of 16.
- * (If this is a problem for anyone then tell me, and I will fix it.)
  */
 extern void (*yv12toyuy2)(const uint8_t *ysrc, const uint8_t *usrc, const uint8_t *vsrc, uint8_t *dst,
                           long width, long height,
