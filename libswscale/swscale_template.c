@@ -352,9 +352,7 @@ static inline void hScale_c(int16_t *dst, int dstW, const uint8_t *src,
         int j;
         int srcPos= filterPos[i];
         int val=0;
-        //printf("filterPos: %d\n", filterPos[i]);
         for (j=0; j<filterSize; j++) {
-            //printf("filter: %d, src: %d\n", filter[i], src[srcPos + j]);
             val += ((int)src[srcPos + j])*filter[filterSize*i + j];
         }
         //filter += hFilterSize;

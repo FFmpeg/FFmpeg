@@ -2190,7 +2190,6 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
 #endif
         );
         for (i=dstWidth-1; (i*xInc)>>16 >=srcW-1; i--) {
-            //printf("%d %d %d\n", dstWidth, i, srcW);
             dst[i] = src1[srcW-1]*128;
             dst[i+VOFW] = src2[srcW-1]*128;
         }
