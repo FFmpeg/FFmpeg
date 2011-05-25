@@ -62,14 +62,4 @@ static int h261_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat ff_h261_demuxer = {
-    "h261",
-    NULL_IF_CONFIG_SMALL("raw H.261"),
-    0,
-    h261_probe,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "h261",
-    .value = CODEC_ID_H261,
-};
+FF_DEF_RAWVIDEO_DEMUXER(h261, "raw H.261", h261_probe, "h261", CODEC_ID_H261)

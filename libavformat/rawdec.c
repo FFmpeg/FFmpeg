@@ -229,17 +229,7 @@ AVInputFormat ff_gsm_demuxer = {
 #endif
 
 #if CONFIG_MJPEG_DEMUXER
-AVInputFormat ff_mjpeg_demuxer = {
-    "mjpeg",
-    NULL_IF_CONFIG_SMALL("raw MJPEG video"),
-    0,
-    NULL,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "mjpg,mjpeg",
-    .value = CODEC_ID_MJPEG,
-};
+FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", NULL, "mjpg,mjpeg", CODEC_ID_MJPEG)
 #endif
 
 #if CONFIG_MLP_DEMUXER
@@ -285,14 +275,5 @@ AVInputFormat ff_shorten_demuxer = {
 #endif
 
 #if CONFIG_VC1_DEMUXER
-AVInputFormat ff_vc1_demuxer = {
-    "vc1",
-    NULL_IF_CONFIG_SMALL("raw VC-1"),
-    0,
-    NULL /* vc1_probe */,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .extensions = "vc1",
-    .value = CODEC_ID_VC1,
-};
+FF_DEF_RAWVIDEO_DEMUXER(vc1, "raw VC-1", NULL, "vc1", CODEC_ID_VC1)
 #endif

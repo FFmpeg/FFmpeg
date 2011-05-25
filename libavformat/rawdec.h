@@ -47,4 +47,16 @@ int ff_raw_audio_read_header(AVFormatContext *s, AVFormatParameters *ap);
 
 int ff_raw_video_read_header(AVFormatContext *s, AVFormatParameters *ap);
 
+#define FF_DEF_RAWVIDEO_DEMUXER(shortname, longname, probe, ext, id)\
+AVInputFormat ff_ ## shortname ## _demuxer = {\
+    .name           = #shortname,\
+    .long_name      = NULL_IF_CONFIG_SMALL(longname),\
+    .read_probe     = probe,\
+    .read_header    = ff_raw_video_read_header,\
+    .read_packet    = ff_raw_read_partial_packet,\
+    .extensions     = ext,\
+    .flags          = AVFMT_GENERIC_INDEX,\
+    .value          = id,\
+};
+
 #endif /* AVFORMAT_RAWDEC_H */

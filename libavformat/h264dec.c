@@ -67,14 +67,4 @@ static int h264_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat ff_h264_demuxer = {
-    "h264",
-    NULL_IF_CONFIG_SMALL("raw H.264 video format"),
-    0,
-    h264_probe,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "h26l,h264,264", //FIXME remove after writing mpeg4_probe
-    .value = CODEC_ID_H264,
-};
+FF_DEF_RAWVIDEO_DEMUXER(h264 , "raw H.264 video format", h264_probe, "h26l,h264,264", CODEC_ID_H264)

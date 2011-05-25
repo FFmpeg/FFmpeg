@@ -49,14 +49,4 @@ static int mpeg4video_probe(AVProbeData *probe_packet)
     return 0;
 }
 
-AVInputFormat ff_m4v_demuxer = {
-    "m4v",
-    NULL_IF_CONFIG_SMALL("raw MPEG-4 video format"),
-    0,
-    mpeg4video_probe, /** probing for MPEG-4 data */
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "m4v",
-    .value = CODEC_ID_MPEG4,
-};
+FF_DEF_RAWVIDEO_DEMUXER(m4v, "raw MPEG-4 video format", mpeg4video_probe, "m4v", CODEC_ID_MPEG4)
