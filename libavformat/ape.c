@@ -276,7 +276,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
     ape->frames[0].nblocks = ape->blocksperframe;
     ape->frames[0].skip    = 0;
     for (i = 1; i < ape->totalframes; i++) {
-        ape->frames[i].pos      = ape->seektable[i] + ape->junklength; //ape->frames[i-1].pos + ape->blocksperframe;
+        ape->frames[i].pos      = ape->seektable[i] + ape->junklength;
         ape->frames[i].nblocks  = ape->blocksperframe;
         ape->frames[i - 1].size = ape->frames[i].pos - ape->frames[i - 1].pos;
         ape->frames[i].skip     = (ape->frames[i].pos - ape->frames[0].pos) & 3;

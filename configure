@@ -2859,11 +2859,6 @@ check_header X11/extensions/XvMClib.h
 
 check_struct dxva2api.h DXVA_PictureParameters wDecodedPictureIndex
 
-if ! enabled_any memalign memalign_hack posix_memalign malloc_aligned &&
-     enabled_any $need_memalign ; then
-    die "Error, no aligned memory allocator but SSE enabled, disable it or use --enable-memalign-hack."
-fi
-
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
 
@@ -3155,6 +3150,9 @@ check_deps $CONFIG_LIST       \
            $SEEK_TESTS        \
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
+
+! enabled_any memalign posix_memalign malloc_aligned &&
+    enabled_any $need_memalign && enable memalign_hack
 
 echo "install prefix            $prefix"
 echo "source path               $source_path"

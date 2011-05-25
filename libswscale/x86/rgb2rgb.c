@@ -27,6 +27,7 @@
 
 #include "config.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/cpu.h"
 #include "libavutil/bswap.h"
 #include "libswscale/rgb2rgb.h"
 #include "libswscale/swscale.h"
@@ -122,16 +123,16 @@ DECLARE_ASM_CONST(8, uint64_t, blue_15mask)  = 0x0000001f0000001fULL;
  32-bit C version, and and&add trick by Michael Niedermayer
 */
 
-void rgb2rgb_init_x86(int flags)
+void rgb2rgb_init_x86(void)
 {
-#if HAVE_MMX2 || HAVE_AMD3DNOW || HAVE_MMX
-    if (flags & SWS_CPU_CAPS_SSE2)
-        rgb2rgb_init_SSE2();
-    else if (flags & SWS_CPU_CAPS_MMX2)
-        rgb2rgb_init_MMX2();
-    else if (flags & SWS_CPU_CAPS_3DNOW)
-        rgb2rgb_init_3DNOW();
-    else if (flags & SWS_CPU_CAPS_MMX)
+    int cpu_flags = av_get_cpu_flags();
+
+    if (HAVE_MMX      && cpu_flags & AV_CPU_FLAG_MMX)
         rgb2rgb_init_MMX();
-#endif /* HAVE_MMX2 || HAVE_AMD3DNOW || HAVE_MMX */
+    if (HAVE_AMD3DNOW && cpu_flags & AV_CPU_FLAG_3DNOW)
+        rgb2rgb_init_3DNOW();
+    if (HAVE_MMX2     && cpu_flags & AV_CPU_FLAG_MMX2)
+        rgb2rgb_init_MMX2();
+    if (HAVE_SSE      && cpu_flags & AV_CPU_FLAG_SSE2)
+        rgb2rgb_init_SSE2();
 }

@@ -278,25 +278,6 @@ static inline void rgb16tobgr24_c(const uint8_t *src, uint8_t *dst, long src_siz
     }
 }
 
-/*
- * mm0 = 00 B3 00 B2 00 B1 00 B0
- * mm1 = 00 G3 00 G2 00 G1 00 G0
- * mm2 = 00 R3 00 R2 00 R1 00 R0
- * mm6 = FF FF FF FF FF FF FF FF
- * mm7 = 00 00 00 00 00 00 00 00
- */
-#define PACK_RGB32 \
-    "packuswb   %%mm7, %%mm0    \n\t" /* 00 00 00 00 B3 B2 B1 B0 */ \
-    "packuswb   %%mm7, %%mm1    \n\t" /* 00 00 00 00 G3 G2 G1 G0 */ \
-    "packuswb   %%mm7, %%mm2    \n\t" /* 00 00 00 00 R3 R2 R1 R0 */ \
-    "punpcklbw  %%mm1, %%mm0    \n\t" /* G3 B3 G2 B2 G1 B1 G0 B0 */ \
-    "punpcklbw  %%mm6, %%mm2    \n\t" /* FF R3 FF R2 FF R1 FF R0 */ \
-    "movq       %%mm0, %%mm3    \n\t"                               \
-    "punpcklwd  %%mm2, %%mm0    \n\t" /* FF R1 G1 B1 FF R0 G0 B0 */ \
-    "punpckhwd  %%mm2, %%mm3    \n\t" /* FF R3 G3 B3 FF R2 G2 B2 */ \
-    MOVNTQ"     %%mm0,  %0      \n\t"                               \
-    MOVNTQ"     %%mm3, 8%0      \n\t"                               \
-
 static inline void rgb15to32_c(const uint8_t *src, uint8_t *dst, long src_size)
 {
     const uint16_t *end;
