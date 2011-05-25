@@ -18,33 +18,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-static inline void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
-                              const int16_t **lumSrc, int lumFilterSize,
-                              const int16_t *chrFilter, const int16_t **chrSrc,
-                              int chrFilterSize, const int16_t **alpSrc,
-                              uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                              uint8_t *aDest, long dstW, long chrDstW)
+
+#if COMPILE_TEMPLATE_ALTIVEC
+#include "swscale_altivec_template.c"
+#endif
+
+static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                    const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize, const int16_t **alpSrc,
+                                    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
+#if COMPILE_TEMPLATE_ALTIVEC
+    yuv2yuvX_altivec_real(lumFilter, lumSrc, lumFilterSize,
+                          chrFilter, chrSrc, chrFilterSize,
+                          dest, uDest, vDest, dstW, chrDstW);
+#else //COMPILE_TEMPLATE_ALTIVEC
     yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
                 chrFilter, chrSrc, chrFilterSize,
                 alpSrc, dest, uDest, vDest, aDest, dstW, chrDstW);
+#endif //!COMPILE_TEMPLATE_ALTIVEC
 }
 
-static inline void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
-                               const int16_t **lumSrc, int lumFilterSize,
-                               const int16_t *chrFilter, const int16_t **chrSrc,
-                               int chrFilterSize, uint8_t *dest, uint8_t *uDest,
-                               int dstW, int chrDstW, enum PixelFormat dstFormat)
+static inline void RENAME(yuv2nv12X)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                     const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                     uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, enum PixelFormat dstFormat)
 {
     yuv2nv12XinC(lumFilter, lumSrc, lumFilterSize,
                  chrFilter, chrSrc, chrFilterSize,
                  dest, uDest, dstW, chrDstW, dstFormat);
 }
 
-static inline void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
-                              const int16_t *chrSrc, const int16_t *alpSrc,
-                              uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                              uint8_t *aDest, long dstW, long chrDstW)
+static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc, const int16_t *chrSrc, const int16_t *alpSrc,
+                                    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
 {
     int i;
     for (i=0; i<dstW; i++) {
@@ -85,12 +89,22 @@ static inline void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
 /**
  * vertical scale YV12 to RGB
  */
-static inline void yuv2packedX_c(SwsContext *c, const int16_t *lumFilter,
-                                 const int16_t **lumSrc, int lumFilterSize,
-                                 const int16_t *chrFilter, const int16_t **chrSrc,
-                                 int chrFilterSize, const int16_t **alpSrc,
-                                 uint8_t *dest, long dstW, long dstY)
+static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                       const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
 {
+#if COMPILE_TEMPLATE_ALTIVEC
+    /* The following list of supported dstFormat values should
+       match what's found in the body of ff_yuv2packedX_altivec() */
+    if (!(c->flags & SWS_BITEXACT) && !c->alpPixBuf &&
+         (c->dstFormat==PIX_FMT_ABGR  || c->dstFormat==PIX_FMT_BGRA  ||
+          c->dstFormat==PIX_FMT_BGR24 || c->dstFormat==PIX_FMT_RGB24 ||
+          c->dstFormat==PIX_FMT_RGBA  || c->dstFormat==PIX_FMT_ARGB))
+            ff_yuv2packedX_altivec(c, lumFilter, lumSrc, lumFilterSize,
+                                   chrFilter, chrSrc, chrFilterSize,
+                                   dest, dstW, dstY);
+    else
+#endif
         yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
                        chrFilter, chrSrc, chrFilterSize,
                        alpSrc, dest, dstW, dstY);
@@ -99,11 +113,8 @@ static inline void yuv2packedX_c(SwsContext *c, const int16_t *lumFilter,
 /**
  * vertical bilinear scale YV12 to RGB
  */
-static inline void yuv2packed2_c(SwsContext *c, const uint16_t *buf0,
-                                 const uint16_t *buf1, const uint16_t *uvbuf0,
-                                 const uint16_t *uvbuf1, const uint16_t *abuf0,
-                                 const uint16_t *abuf1, uint8_t *dest, int dstW,
-                                 int yalpha, int uvalpha, int y)
+static inline void RENAME(yuv2packed2)(SwsContext *c, const uint16_t *buf0, const uint16_t *buf1, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                          const uint16_t *abuf0, const uint16_t *abuf1, uint8_t *dest, int dstW, int yalpha, int uvalpha, int y)
 {
     int  yalpha1=4095- yalpha;
     int uvalpha1=4095-uvalpha;
@@ -115,11 +126,8 @@ static inline void yuv2packed2_c(SwsContext *c, const uint16_t *buf0,
 /**
  * YV12 to RGB without scaling or interpolating
  */
-static inline void yuv2packed1_c(SwsContext *c, const uint16_t *buf0,
-                                 const uint16_t *uvbuf0, const uint16_t *uvbuf1,
-                                 const uint16_t *abuf0, uint8_t *dest, int dstW,
-                                 int uvalpha, enum PixelFormat dstFormat,
-                                 int flags, int y)
+static inline void RENAME(yuv2packed1)(SwsContext *c, const uint16_t *buf0, const uint16_t *uvbuf0, const uint16_t *uvbuf1,
+                          const uint16_t *abuf0, uint8_t *dest, int dstW, int uvalpha, enum PixelFormat dstFormat, int flags, int y)
 {
     const int yalpha1=0;
     int i;
@@ -141,16 +149,14 @@ static inline void yuv2packed1_c(SwsContext *c, const uint16_t *buf0,
 
 //FIXME yuy2* can read up to 7 samples too much
 
-static inline void yuy2ToY_c(uint8_t *dst, const uint8_t *src, long width,
-                             uint32_t *unused)
+static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++)
         dst[i]= src[2*i];
 }
 
-static inline void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                              const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -160,12 +166,9 @@ static inline void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
     assert(src1 == src2);
 }
 
-static inline void LEToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                            const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
-    // FIXME I don't think this code is right for YUV444/422, since then h is not subsampled so
-    // we need to skip each second pixel. Same for BEToUV.
     for (i=0; i<width; i++) {
         dstU[i]= src1[2*i + 1];
         dstV[i]= src2[2*i + 1];
@@ -174,16 +177,14 @@ static inline void LEToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
 
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
-static inline void uyvyToY_c(uint8_t *dst, const uint8_t *src, long width,
-                             uint32_t *unused)
+static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++)
         dst[i]= src[2*i+1];
 }
 
-static inline void uyvyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                              const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -193,8 +194,7 @@ static inline void uyvyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
     assert(src1 == src2);
 }
 
-static inline void BEToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                            const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -203,8 +203,8 @@ static inline void BEToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
     }
 }
 
-static inline void nvXXtoUV_c(uint8_t *dst1, uint8_t *dst2,
-                              const uint8_t *src, long width)
+static inline void RENAME(nvXXtoUV)(uint8_t *dst1, uint8_t *dst2,
+                                    const uint8_t *src, long width)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -213,49 +213,22 @@ static inline void nvXXtoUV_c(uint8_t *dst1, uint8_t *dst2,
     }
 }
 
-// FIXME Maybe dither instead.
-#ifndef YUV_NBPS
-#define YUV_NBPS(depth, endianness, rfunc) \
-static inline void endianness ## depth ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
-                                          const uint16_t *srcU, const uint16_t *srcV, \
-                                          long width, uint32_t *unused) \
-{ \
-    int i; \
-    for (i = 0; i < width; i++) { \
-        dstU[i] = rfunc(&srcU[i])>>(depth-8); \
-        dstV[i] = rfunc(&srcV[i])>>(depth-8); \
-    } \
-} \
-\
-static inline void endianness ## depth ## ToY_c(uint8_t *dstY, const uint16_t *srcY, long width, uint32_t *unused) \
-{ \
-    int i; \
-    for (i = 0; i < width; i++) \
-        dstY[i] = rfunc(&srcY[i])>>(depth-8); \
-} \
-
-YUV_NBPS( 9, LE, AV_RL16)
-YUV_NBPS( 9, BE, AV_RB16)
-YUV_NBPS(10, LE, AV_RL16)
-YUV_NBPS(10, BE, AV_RB16)
-#endif // YUV_NBPS
-
-static inline void nv12ToUV_c(uint8_t *dstU, uint8_t *dstV,
-                              const uint8_t *src1, const uint8_t *src2,
-                              long width, uint32_t *unused)
+static inline void RENAME(nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
+                                    const uint8_t *src1, const uint8_t *src2,
+                                    long width, uint32_t *unused)
 {
-    nvXXtoUV_c(dstU, dstV, src1, width);
+    RENAME(nvXXtoUV)(dstU, dstV, src1, width);
 }
 
-static inline void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
-                              const uint8_t *src1, const uint8_t *src2,
-                              long width, uint32_t *unused)
+static inline void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
+                                    const uint8_t *src1, const uint8_t *src2,
+                                    long width, uint32_t *unused)
 {
-    nvXXtoUV_c(dstV, dstU, src1, width);
+    RENAME(nvXXtoUV)(dstV, dstU, src1, width);
 }
 
-static inline void bgr24ToY_c(uint8_t *dst, const uint8_t *src,
-                              long width, uint32_t *unused)
+
+static inline void RENAME(bgr24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -267,8 +240,7 @@ static inline void bgr24ToY_c(uint8_t *dst, const uint8_t *src,
     }
 }
 
-static inline void bgr24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                               const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -282,8 +254,7 @@ static inline void bgr24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1
     assert(src1 == src2);
 }
 
-static inline void bgr24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                                    const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(bgr24ToUV_half)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -297,8 +268,7 @@ static inline void bgr24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t 
     assert(src1 == src2);
 }
 
-static inline void rgb24ToY_c(uint8_t *dst, const uint8_t *src, long width,
-                              uint32_t *unused)
+static inline void RENAME(rgb24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -310,8 +280,7 @@ static inline void rgb24ToY_c(uint8_t *dst, const uint8_t *src, long width,
     }
 }
 
-static inline void rgb24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                               const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     assert(src1==src2);
@@ -325,8 +294,7 @@ static inline void rgb24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1
     }
 }
 
-static inline void rgb24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
-                                    const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(rgb24ToUV_half)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
     assert(src1==src2);
@@ -342,11 +310,12 @@ static inline void rgb24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t 
 
 
 // bilinear / bicubic scaling
-static inline void hScale_c(int16_t *dst, int dstW, const uint8_t *src,
-                            int srcW, int xInc,
-                            const int16_t *filter, const int16_t *filterPos,
-                            long filterSize)
+static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, int srcW, int xInc,
+                                  const int16_t *filter, const int16_t *filterPos, long filterSize)
 {
+#if COMPILE_TEMPLATE_ALTIVEC
+    hScale_altivec_real(dst, dstW, src, srcW, xInc, filter, filterPos, filterSize);
+#else
     int i;
     for (i=0; i<dstW; i++) {
         int j;
@@ -361,182 +330,12 @@ static inline void hScale_c(int16_t *dst, int dstW, const uint8_t *src,
         dst[i] = FFMIN(val>>7, (1<<15)-1); // the cubic equation does overflow ...
         //dst[i] = val>>7;
     }
-}
-
-static inline void RENAME(hScale16)(int16_t *dst, int dstW, const uint16_t *src, int srcW, int xInc,
-                                    const int16_t *filter, const int16_t *filterPos, long filterSize, int shift)
-{
-    int i, j;
-#if COMPILE_TEMPLATE_MMX
-    assert(filterSize % 4 == 0 && filterSize>0);
-    if (filterSize==4 && shift<15) { // Always true for upscaling, sometimes for down, too.
-        x86_reg counter= -2*dstW;
-        filter-= counter*2;
-        filterPos-= counter/2;
-        dst-= counter/2;
-        __asm__ volatile(
-            "movd                   %5, %%mm7       \n\t"
-#if defined(PIC)
-            "push            %%"REG_b"              \n\t"
-#endif
-            "push           %%"REG_BP"              \n\t" // we use 7 regs here ...
-            "mov             %%"REG_a", %%"REG_BP"  \n\t"
-            ".p2align                4              \n\t"
-            "1:                                     \n\t"
-            "movzwl   (%2, %%"REG_BP"), %%eax       \n\t"
-            "movzwl  2(%2, %%"REG_BP"), %%ebx       \n\t"
-            "movq  (%1, %%"REG_BP", 4), %%mm1       \n\t"
-            "movq 8(%1, %%"REG_BP", 4), %%mm3       \n\t"
-            "movq      (%3, %%"REG_a", 2), %%mm0    \n\t"
-            "movq      (%3, %%"REG_b", 2), %%mm2    \n\t"
-            "pmaddwd             %%mm1, %%mm0       \n\t"
-            "pmaddwd             %%mm2, %%mm3       \n\t"
-            "movq                %%mm0, %%mm4       \n\t"
-            "punpckldq           %%mm3, %%mm0       \n\t"
-            "punpckhdq           %%mm3, %%mm4       \n\t"
-            "paddd               %%mm4, %%mm0       \n\t"
-            "psrad               %%mm7, %%mm0       \n\t"
-            "packssdw            %%mm0, %%mm0       \n\t"
-            "movd                %%mm0, (%4, %%"REG_BP")    \n\t"
-            "add                    $4, %%"REG_BP"  \n\t"
-            " jnc                   1b              \n\t"
-
-            "pop            %%"REG_BP"              \n\t"
-#if defined(PIC)
-            "pop             %%"REG_b"              \n\t"
-#endif
-            : "+a" (counter)
-            : "c" (filter), "d" (filterPos), "S" (src), "D" (dst), "m"(shift)
-#if !defined(PIC)
-            : "%"REG_b
-#endif
-        );
-    } else if (filterSize==8 && shift<15) {
-        x86_reg counter= -2*dstW;
-        filter-= counter*4;
-        filterPos-= counter/2;
-        dst-= counter/2;
-        __asm__ volatile(
-            "movd                   %5, %%mm7       \n\t"
-#if defined(PIC)
-            "push            %%"REG_b"              \n\t"
-#endif
-            "push            %%"REG_BP"             \n\t" // we use 7 regs here ...
-            "mov              %%"REG_a", %%"REG_BP" \n\t"
-            ".p2align                 4             \n\t"
-            "1:                                     \n\t"
-            "movzwl    (%2, %%"REG_BP"), %%eax      \n\t"
-            "movzwl   2(%2, %%"REG_BP"), %%ebx      \n\t"
-            "movq   (%1, %%"REG_BP", 8), %%mm1      \n\t"
-            "movq 16(%1, %%"REG_BP", 8), %%mm3      \n\t"
-            "movq       (%3, %%"REG_a", 2), %%mm0   \n\t"
-            "movq       (%3, %%"REG_b", 2), %%mm2   \n\t"
-            "pmaddwd              %%mm1, %%mm0      \n\t"
-            "pmaddwd              %%mm2, %%mm3      \n\t"
-
-            "movq  8(%1, %%"REG_BP", 8), %%mm1      \n\t"
-            "movq 24(%1, %%"REG_BP", 8), %%mm5      \n\t"
-            "movq      8(%3, %%"REG_a", 2), %%mm4   \n\t"
-            "movq      8(%3, %%"REG_b", 2), %%mm2   \n\t"
-            "pmaddwd              %%mm1, %%mm4      \n\t"
-            "pmaddwd              %%mm2, %%mm5      \n\t"
-            "paddd                %%mm4, %%mm0      \n\t"
-            "paddd                %%mm5, %%mm3      \n\t"
-            "movq                 %%mm0, %%mm4      \n\t"
-            "punpckldq            %%mm3, %%mm0      \n\t"
-            "punpckhdq            %%mm3, %%mm4      \n\t"
-            "paddd                %%mm4, %%mm0      \n\t"
-            "psrad                %%mm7, %%mm0      \n\t"
-            "packssdw             %%mm0, %%mm0      \n\t"
-            "movd                 %%mm0, (%4, %%"REG_BP")   \n\t"
-            "add                     $4, %%"REG_BP" \n\t"
-            " jnc                    1b             \n\t"
-
-            "pop             %%"REG_BP"             \n\t"
-#if defined(PIC)
-            "pop             %%"REG_b"              \n\t"
-#endif
-            : "+a" (counter)
-            : "c" (filter), "d" (filterPos), "S" (src), "D" (dst), "m"(shift)
-#if !defined(PIC)
-            : "%"REG_b
-#endif
-        );
-    } else if (shift<15){
-        const uint16_t *offset = src+filterSize;
-        x86_reg counter= -2*dstW;
-        //filter-= counter*filterSize/2;
-        filterPos-= counter/2;
-        dst-= counter/2;
-        __asm__ volatile(
-            "movd                   %7, %%mm7       \n\t"
-            ".p2align                  4            \n\t"
-            "1:                                     \n\t"
-            "mov                      %2, %%"REG_c" \n\t"
-            "movzwl      (%%"REG_c", %0), %%eax     \n\t"
-            "movzwl     2(%%"REG_c", %0), %%edx     \n\t"
-            "mov                      %5, %%"REG_c" \n\t"
-            "pxor                  %%mm4, %%mm4     \n\t"
-            "pxor                  %%mm5, %%mm5     \n\t"
-            "2:                                     \n\t"
-            "movq                   (%1), %%mm1     \n\t"
-            "movq               (%1, %6), %%mm3     \n\t"
-            "movq (%%"REG_c", %%"REG_a", 2), %%mm0     \n\t"
-            "movq (%%"REG_c", %%"REG_d", 2), %%mm2     \n\t"
-            "pmaddwd               %%mm1, %%mm0     \n\t"
-            "pmaddwd               %%mm2, %%mm3     \n\t"
-            "paddd                 %%mm3, %%mm5     \n\t"
-            "paddd                 %%mm0, %%mm4     \n\t"
-            "add                      $8, %1        \n\t"
-            "add                      $8, %%"REG_c" \n\t"
-            "cmp                      %4, %%"REG_c" \n\t"
-            " jb                      2b            \n\t"
-            "add                      %6, %1        \n\t"
-            "movq                  %%mm4, %%mm0     \n\t"
-            "punpckldq             %%mm5, %%mm4     \n\t"
-            "punpckhdq             %%mm5, %%mm0     \n\t"
-            "paddd                 %%mm0, %%mm4     \n\t"
-            "psrad                 %%mm7, %%mm4     \n\t"
-            "packssdw              %%mm4, %%mm4     \n\t"
-            "mov                      %3, %%"REG_a" \n\t"
-            "movd                  %%mm4, (%%"REG_a", %0)   \n\t"
-            "add                      $4, %0        \n\t"
-            " jnc                     1b            \n\t"
-
-            : "+r" (counter), "+r" (filter)
-            : "m" (filterPos), "m" (dst), "m"(offset),
-            "m" (src), "r" ((x86_reg)filterSize*2), "m"(shift)
-            : "%"REG_a, "%"REG_c, "%"REG_d
-        );
-    } else
-#endif
-    for (i=0; i<dstW; i++) {
-        int srcPos= filterPos[i];
-        int val=0;
-        for (j=0; j<filterSize; j++) {
-            val += ((int)src[srcPos + j])*filter[filterSize*i + j];
-        }
-        dst[i] = FFMIN(val>>shift, (1<<15)-1); // the cubic equation does overflow ...
-    }
-}
-
-static inline void RENAME(hScale16X)(int16_t *dst, int dstW, const uint16_t *src, int srcW, int xInc,
-                                    const int16_t *filter, const int16_t *filterPos, long filterSize, int shift)
-{
-    int i, j;
-    for (i=0; i<dstW; i++) {
-        int srcPos= filterPos[i];
-        int val=0;
-        for (j=0; j<filterSize; j++) {
-            val += ((int)av_bswap16(src[srcPos + j]))*filter[filterSize*i + j];
-        }
-        dst[i] = FFMIN(val>>shift, (1<<15)-1); // the cubic equation does overflow ...
-    }
+#endif /* COMPILE_TEMPLATE_ALTIVEC */
 }
 
 //FIXME all pal and rgb srcFormats could do this convertion as well
 //FIXME all scalers more complex than bilinear could do half of this transform
-static void chrRangeToJpeg_c(int16_t *dst, int width)
+static void RENAME(chrRangeToJpeg)(uint16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -544,7 +343,7 @@ static void chrRangeToJpeg_c(int16_t *dst, int width)
         dst[i+VOFW] = (FFMIN(dst[i+VOFW],30775)*4663 - 9289992)>>12; //-264
     }
 }
-static void chrRangeFromJpeg_c(int16_t *dst, int width)
+static void RENAME(chrRangeFromJpeg)(uint16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -552,21 +351,22 @@ static void chrRangeFromJpeg_c(int16_t *dst, int width)
         dst[i+VOFW] = (dst[i+VOFW]*1799 + 4081085)>>11; //1469
     }
 }
-static void lumRangeToJpeg_c(int16_t *dst, int width)
+static void RENAME(lumRangeToJpeg)(uint16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++)
         dst[i] = (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
 }
-static void lumRangeFromJpeg_c(int16_t *dst, int width)
+static void RENAME(lumRangeFromJpeg)(uint16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++)
         dst[i] = (dst[i]*14071 + 33561947)>>14;
 }
 
-static inline void hyscale_fast_c(SwsContext *c, int16_t *dst, long dstWidth,
-                                  const uint8_t *src, int srcW, int xInc)
+static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
+                                        long dstWidth, const uint8_t *src, int srcW,
+                                        int xInc)
 {
     int i;
     unsigned int xpos=0;
@@ -579,12 +379,11 @@ static inline void hyscale_fast_c(SwsContext *c, int16_t *dst, long dstWidth,
 }
 
       // *** horizontal scale Y line to temp buffer
-static inline void hyscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
-                             const uint8_t *src, int srcW, int xInc,
-                             const int16_t *hLumFilter,
-                             const int16_t *hLumFilterPos, int hLumFilterSize,
-                             uint8_t *formatConvBuffer,
-                             uint32_t *pal, int isAlpha)
+static inline void RENAME(hyscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src, int srcW, int xInc,
+                                   const int16_t *hLumFilter,
+                                   const int16_t *hLumFilterPos, int hLumFilterSize,
+                                   uint8_t *formatConvBuffer,
+                                   uint32_t *pal, int isAlpha)
 {
     void (*toYV12)(uint8_t *, const uint8_t *, long, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
     void (*convertRange)(int16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
@@ -608,9 +407,9 @@ static inline void hyscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
         convertRange(dst, dstWidth);
 }
 
-static inline void hcscale_fast_c(SwsContext *c, int16_t *dst,
-                                  long dstWidth, const uint8_t *src1,
-                                  const uint8_t *src2, int srcW, int xInc)
+static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst,
+                                        long dstWidth, const uint8_t *src1,
+                                        const uint8_t *src2, int srcW, int xInc)
 {
     int i;
     unsigned int xpos=0;
@@ -627,11 +426,11 @@ static inline void hcscale_fast_c(SwsContext *c, int16_t *dst,
     }
 }
 
-inline static void hcscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
-                             const uint8_t *src1, const uint8_t *src2,
-                             int srcW, int xInc, const int16_t *hChrFilter,
-                             const int16_t *hChrFilterPos, int hChrFilterSize,
-                             uint8_t *formatConvBuffer, uint32_t *pal)
+inline static void RENAME(hcscale)(SwsContext *c, uint16_t *dst, long dstWidth, const uint8_t *src1, const uint8_t *src2,
+                                   int srcW, int xInc, const int16_t *hChrFilter,
+                                   const int16_t *hChrFilterPos, int hChrFilterSize,
+                                   uint8_t *formatConvBuffer,
+                                   uint32_t *pal)
 {
 
     src1 += c->chrSrcOffset;
@@ -660,8 +459,8 @@ inline static void hcscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
 #define DEBUG_SWSCALE_BUFFERS 0
 #define DEBUG_BUFFERS(...) if (DEBUG_SWSCALE_BUFFERS) av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
-static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
-                     int srcSliceY, int srcSliceH, uint8_t* dst[], int dstStride[])
+static int RENAME(swScale)(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
+                           int srcSliceH, uint8_t* dst[], int dstStride[])
 {
     /* load a few things into local vars to make the code more readable? and faster */
     const int srcW= c->srcW;
@@ -794,15 +593,15 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
             assert(lumBufIndex < 2*vLumBufSize);
             assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             assert(lastInLumBuf + 1 - srcSliceY >= 0);
-            hyscale_c(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
-                      hLumFilter, hLumFilterPos, hLumFilterSize,
-                      formatConvBuffer,
-                      pal, 0);
+            RENAME(hyscale)(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
+                            hLumFilter, hLumFilterPos, hLumFilterSize,
+                            formatConvBuffer,
+                            pal, 0);
             if (CONFIG_SWSCALE_ALPHA && alpPixBuf)
-                hyscale_c(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW,
-                          lumXInc, hLumFilter, hLumFilterPos, hLumFilterSize,
-                          formatConvBuffer,
-                          pal, 1);
+                RENAME(hyscale)(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW, lumXInc,
+                                hLumFilter, hLumFilterPos, hLumFilterSize,
+                                formatConvBuffer,
+                                pal, 1);
             lastInLumBuf++;
             DEBUG_BUFFERS("\t\tlumBufIndex %d: lastInLumBuf: %d\n",
                                lumBufIndex,    lastInLumBuf);
@@ -817,7 +616,7 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
             //FIXME replace parameters through context struct (some at least)
 
             if (c->needs_hcscale)
-                hcscale_c(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
+                RENAME(hcscale)(c, chrPixBuf[ chrBufIndex ], chrDstW, src1, src2, chrSrcW, chrXInc,
                                 hChrFilter, hChrFilterPos, hChrFilterSize,
                                 formatConvBuffer,
                                 pal);
@@ -965,31 +764,31 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
     return dstY - lastDstY;
 }
 
-static void sws_init_swScale_c(SwsContext *c)
+static void RENAME(sws_init_swScale)(SwsContext *c)
 {
     enum PixelFormat srcFormat = c->srcFormat;
 
-    c->yuv2nv12X    = yuv2nv12X_c;
-    c->yuv2yuv1     = yuv2yuv1_c;
-    c->yuv2yuvX     = yuv2yuvX_c;
-    c->yuv2packed1  = yuv2packed1_c;
-    c->yuv2packed2  = yuv2packed2_c;
-    c->yuv2packedX  = yuv2packedX_c;
+    c->yuv2nv12X    = RENAME(yuv2nv12X   );
+    c->yuv2yuv1     = RENAME(yuv2yuv1    );
+    c->yuv2yuvX     = RENAME(yuv2yuvX    );
+    c->yuv2packed1  = RENAME(yuv2packed1 );
+    c->yuv2packed2  = RENAME(yuv2packed2 );
+    c->yuv2packedX  = RENAME(yuv2packedX );
 
-    c->hScale       = hScale_c;
+    c->hScale       = RENAME(hScale      );
 
     if (c->flags & SWS_FAST_BILINEAR)
     {
-        c->hyscale_fast = hyscale_fast_c;
-        c->hcscale_fast = hcscale_fast_c;
+        c->hyscale_fast = RENAME(hyscale_fast);
+        c->hcscale_fast = RENAME(hcscale_fast);
     }
 
     c->chrToYV12 = NULL;
     switch(srcFormat) {
-        case PIX_FMT_YUYV422  : c->chrToYV12 = yuy2ToUV_c; break;
-        case PIX_FMT_UYVY422  : c->chrToYV12 = uyvyToUV_c; break;
-        case PIX_FMT_NV12     : c->chrToYV12 = nv12ToUV_c; break;
-        case PIX_FMT_NV21     : c->chrToYV12 = nv21ToUV_c; break;
+        case PIX_FMT_YUYV422  : c->chrToYV12 = RENAME(yuy2ToUV); break;
+        case PIX_FMT_UYVY422  : c->chrToYV12 = RENAME(uyvyToUV); break;
+        case PIX_FMT_NV12     : c->chrToYV12 = RENAME(nv12ToUV); break;
+        case PIX_FMT_NV21     : c->chrToYV12 = RENAME(nv21ToUV); break;
         case PIX_FMT_RGB8     :
         case PIX_FMT_BGR8     :
         case PIX_FMT_PAL8     :
@@ -1018,12 +817,12 @@ static void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48ToUV_half; break;
         case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV_half;  break;
         case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV_half; break;
-        case PIX_FMT_BGR24  : c->chrToYV12 = bgr24ToUV_half_c; break;
+        case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV_half); break;
         case PIX_FMT_BGR565 : c->chrToYV12 = bgr16ToUV_half; break;
         case PIX_FMT_BGR555 : c->chrToYV12 = bgr15ToUV_half; break;
         case PIX_FMT_BGR32  : c->chrToYV12 = rgb32ToUV_half;  break;
         case PIX_FMT_BGR32_1: c->chrToYV12 = rgb321ToUV_half; break;
-        case PIX_FMT_RGB24  : c->chrToYV12 = rgb24ToUV_half_c; break;
+        case PIX_FMT_RGB24  : c->chrToYV12 = RENAME(rgb24ToUV_half); break;
         case PIX_FMT_RGB565 : c->chrToYV12 = rgb16ToUV_half; break;
         case PIX_FMT_RGB555 : c->chrToYV12 = rgb15ToUV_half; break;
         }
@@ -1035,12 +834,12 @@ static void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48ToUV; break;
         case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV;  break;
         case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV; break;
-        case PIX_FMT_BGR24  : c->chrToYV12 = bgr24ToUV_c; break;
+        case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV); break;
         case PIX_FMT_BGR565 : c->chrToYV12 = bgr16ToUV; break;
         case PIX_FMT_BGR555 : c->chrToYV12 = bgr15ToUV; break;
         case PIX_FMT_BGR32  : c->chrToYV12 = rgb32ToUV;  break;
         case PIX_FMT_BGR32_1: c->chrToYV12 = rgb321ToUV; break;
-        case PIX_FMT_RGB24  : c->chrToYV12 = rgb24ToUV_c; break;
+        case PIX_FMT_RGB24  : c->chrToYV12 = RENAME(rgb24ToUV); break;
         case PIX_FMT_RGB565 : c->chrToYV12 = rgb16ToUV; break;
         case PIX_FMT_RGB555 : c->chrToYV12 = rgb15ToUV; break;
         }
@@ -1051,13 +850,13 @@ static void sws_init_swScale_c(SwsContext *c)
     switch (srcFormat) {
     case PIX_FMT_YUYV422  :
     case PIX_FMT_GRAY8A   :
-                            c->lumToYV12 = yuy2ToY_c; break;
+                            c->lumToYV12 = RENAME(yuy2ToY); break;
     case PIX_FMT_UYVY422  :
-                            c->lumToYV12 = uyvyToY_c; break;
-    case PIX_FMT_BGR24    : c->lumToYV12 = bgr24ToY_c; break;
+                            c->lumToYV12 = RENAME(uyvyToY); break;
+    case PIX_FMT_BGR24    : c->lumToYV12 = RENAME(bgr24ToY); break;
     case PIX_FMT_BGR565   : c->lumToYV12 = bgr16ToY; break;
     case PIX_FMT_BGR555   : c->lumToYV12 = bgr15ToY; break;
-    case PIX_FMT_RGB24    : c->lumToYV12 = rgb24ToY_c; break;
+    case PIX_FMT_RGB24    : c->lumToYV12 = RENAME(rgb24ToY); break;
     case PIX_FMT_RGB565   : c->lumToYV12 = rgb16ToY; break;
     case PIX_FMT_RGB555   : c->lumToYV12 = rgb15ToY; break;
     case PIX_FMT_RGB8     :
@@ -1082,7 +881,7 @@ static void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_RGB32_1:
         case PIX_FMT_BGR32  :
         case PIX_FMT_BGR32_1: c->alpToYV12 = abgrToA; break;
-        case PIX_FMT_GRAY8A : c->alpToYV12 = yuy2ToY_c; break;
+        case PIX_FMT_GRAY8A : c->alpToYV12 = RENAME(yuy2ToY); break;
         case PIX_FMT_PAL8   : c->alpToYV12 = palToA; break;
         }
     }
@@ -1105,11 +904,11 @@ static void sws_init_swScale_c(SwsContext *c)
 
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         if (c->srcRange) {
-            c->lumConvertRange = lumRangeFromJpeg_c;
-            c->chrConvertRange = chrRangeFromJpeg_c;
+            c->lumConvertRange = RENAME(lumRangeFromJpeg);
+            c->chrConvertRange = RENAME(chrRangeFromJpeg);
         } else {
-            c->lumConvertRange = lumRangeToJpeg_c;
-            c->chrConvertRange = chrRangeToJpeg_c;
+            c->lumConvertRange = RENAME(lumRangeToJpeg);
+            c->chrConvertRange = RENAME(chrRangeToJpeg);
         }
     }
 
