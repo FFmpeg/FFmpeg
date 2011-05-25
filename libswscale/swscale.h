@@ -95,6 +95,7 @@ const char *swscale_license(void);
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
 
+//The following flags are only provided for API/ABI compatibility they have no effect anymore
 #define SWS_CPU_CAPS_MMX      0x80000000
 #define SWS_CPU_CAPS_MMX2     0x20000000
 #define SWS_CPU_CAPS_3DNOW    0x40000000
