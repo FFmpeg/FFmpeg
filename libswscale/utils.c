@@ -710,7 +710,7 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
 
 int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation)
 {
-    if (isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
+    if (!c || isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
 
     *inv_table = c->srcColorspaceTable;
     *table     = c->dstColorspaceTable;
