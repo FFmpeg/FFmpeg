@@ -38,6 +38,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/eval.h"
+#include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "cmdutils.h"
 #include "version.h"
@@ -54,6 +55,7 @@ static int opt_name_count;
 AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
+AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
 
 static const int this_year = 2011;
 
@@ -90,6 +92,10 @@ void uninit_opts(void)
     av_freep(&opt_names);
     av_freep(&opt_values);
     opt_name_count = 0;
+    av_dict_free(&format_opts);
+    av_dict_free(&video_opts);
+    av_dict_free(&audio_opts);
+    av_dict_free(&sub_opts);
 }
 
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
@@ -292,6 +298,43 @@ unknown_opt:
     }
 }
 
+#define FLAGS (o->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
+#define SET_PREFIXED_OPTS(ch, flag, output) \
+    if (opt[0] == ch && avcodec_opts[0] && (o = av_opt_find(avcodec_opts[0], opt+1, NULL, flag, 0)))\
+        av_dict_set(&output, opt+1, arg, FLAGS);
+static int opt_default2(const char *opt, const char *arg)
+{
+    const AVOption *o;
+    if ((o = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
+        if (o->flags & AV_OPT_FLAG_VIDEO_PARAM)
+            av_dict_set(&video_opts, opt, arg, FLAGS);
+        if (o->flags & AV_OPT_FLAG_AUDIO_PARAM)
+            av_dict_set(&audio_opts, opt, arg, FLAGS);
+        if (o->flags & AV_OPT_FLAG_SUBTITLE_PARAM)
+            av_dict_set(&sub_opts, opt, arg, FLAGS);
+    } else if ((o = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
+        av_dict_set(&format_opts, opt, arg, FLAGS);
+    else if ((o = av_opt_find(sws_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
+        // XXX we only support sws_flags, not arbitrary sws options
+        int ret = av_set_string3(sws_opts, opt, arg, 1, NULL);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
+            return ret;
+        }
+    }
+
+    if (!o) {
+        SET_PREFIXED_OPTS('v', AV_OPT_FLAG_VIDEO_PARAM,    video_opts)
+        SET_PREFIXED_OPTS('a', AV_OPT_FLAG_AUDIO_PARAM,    audio_opts)
+        SET_PREFIXED_OPTS('s', AV_OPT_FLAG_SUBTITLE_PARAM, sub_opts)
+    }
+
+    if (o)
+        return 0;
+    fprintf(stderr, "Unrecognized option '%s'\n", opt);
+    return AVERROR_OPTION_NOT_FOUND;
+}
+
 int opt_default(const char *opt, const char *arg){
     int type;
     int ret= 0;
@@ -334,11 +377,10 @@ int opt_default(const char *opt, const char *arg){
                     break;
             }
         }
-        if(!p && !oformat){
-            fprintf(stderr, "Unrecognized option '%s'\n", opt);
-            exit(1);
-        }
     }
+
+    if ((ret = opt_default2(opt, arg)) < 0)
+        return ret;
 
 //    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avcodec_opts, opt, NULL), (int)av_get_int(avcodec_opts, opt, NULL));
 
