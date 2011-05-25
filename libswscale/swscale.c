@@ -207,7 +207,8 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_220)[8][8]={
 #endif
 
 static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                                    const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                                    const int16_t *chrFilter, const int16_t **chrUSrc,
+                                                    const int16_t **chrVSrc, int chrFilterSize,
                                                     const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest,
                                                     int dstW, int chrDstW, int big_endian, int output_bits)
 {
@@ -246,8 +247,8 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
             int j;
 
             for (j = 0; j < chrFilterSize; j++) {
-                u += chrSrc[j][i       ] * chrFilter[j];
-                v += chrSrc[j][i + VOFW] * chrFilter[j];
+                u += chrUSrc[j][i] * chrFilter[j];
+                v += chrVSrc[j][i] * chrFilter[j];
             }
 
             output_pixel(&uDest[i], u);
@@ -271,13 +272,14 @@ static av_always_inline void yuv2yuvX16inC_template(const int16_t *lumFilter, co
 #define yuv2NBPS(bits, BE_LE, is_be) \
 static void yuv2yuvX ## bits ## BE_LE ## _c(const int16_t *lumFilter, \
                               const int16_t **lumSrc, int lumFilterSize, \
-                              const int16_t *chrFilter, const int16_t **chrSrc, \
+                              const int16_t *chrFilter, const int16_t **chrUSrc, \
+                              const int16_t **chrVSrc, \
                               int chrFilterSize, const int16_t **alpSrc, \
                               uint16_t *dest, uint16_t *uDest, uint16_t *vDest, \
                               uint16_t *aDest, int dstW, int chrDstW) \
 { \
     yuv2yuvX16inC_template(lumFilter, lumSrc, lumFilterSize, \
-                           chrFilter, chrSrc, chrFilterSize, \
+                           chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
                            alpSrc, \
                            dest, uDest, vDest, aDest, \
                            dstW, chrDstW, is_be, bits); \
@@ -290,20 +292,20 @@ yuv2NBPS(16, BE, 1);
 yuv2NBPS(16, LE, 0);
 
 static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                 const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                 const int16_t *chrFilter, const int16_t **chrUSrc, const int16_t **chrVSrc, int chrFilterSize,
                                  const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest, int dstW, int chrDstW,
                                  enum PixelFormat dstFormat)
 {
 #define conv16(bits) \
     if (isBE(dstFormat)) { \
         yuv2yuvX ## bits ## BE_c(lumFilter, lumSrc, lumFilterSize, \
-                               chrFilter, chrSrc, chrFilterSize, \
+                               chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
                                alpSrc, \
                                dest, uDest, vDest, aDest, \
                                dstW, chrDstW); \
     } else { \
         yuv2yuvX ## bits ## LE_c(lumFilter, lumSrc, lumFilterSize, \
-                               chrFilter, chrSrc, chrFilterSize, \
+                               chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
                                alpSrc, \
                                dest, uDest, vDest, aDest, \
                                dstW, chrDstW); \
@@ -319,7 +321,8 @@ static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSr
 }
 
 static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                               const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                               const int16_t *chrFilter, const int16_t **chrUSrc,
+                               const int16_t **chrVSrc, int chrFilterSize,
                                const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, int dstW, int chrDstW)
 {
     //FIXME Optimize (just quickly written not optimized..)
@@ -339,8 +342,8 @@ static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc,
             int v=1<<18;
             int j;
             for (j=0; j<chrFilterSize; j++) {
-                u += chrSrc[j][i] * chrFilter[j];
-                v += chrSrc[j][i + VOFW] * chrFilter[j];
+                u += chrUSrc[j][i] * chrFilter[j];
+                v += chrVSrc[j][i] * chrFilter[j];
             }
 
             uDest[i]= av_clip_uint8(u>>19);
@@ -360,7 +363,8 @@ static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc,
 }
 
 static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+                                const int16_t *chrFilter, const int16_t **chrUSrc,
+                                const int16_t **chrVSrc, int chrFilterSize,
                                 uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat)
 {
     //FIXME Optimize (just quickly written not optimized..)
@@ -383,8 +387,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             int v=1<<18;
             int j;
             for (j=0; j<chrFilterSize; j++) {
-                u += chrSrc[j][i] * chrFilter[j];
-                v += chrSrc[j][i + VOFW] * chrFilter[j];
+                u += chrUSrc[j][i] * chrFilter[j];
+                v += chrVSrc[j][i] * chrFilter[j];
             }
 
             uDest[2*i]= av_clip_uint8(u>>19);
@@ -396,8 +400,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             int v=1<<18;
             int j;
             for (j=0; j<chrFilterSize; j++) {
-                u += chrSrc[j][i] * chrFilter[j];
-                v += chrSrc[j][i + VOFW] * chrFilter[j];
+                u += chrUSrc[j][i] * chrFilter[j];
+                v += chrVSrc[j][i] * chrFilter[j];
             }
 
             uDest[2*i]= av_clip_uint8(v>>19);
@@ -421,8 +425,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             Y2 += lumSrc[j][i2+1] * lumFilter[j];\
         }\
         for (j=0; j<chrFilterSize; j++) {\
-            U += chrSrc[j][i] * chrFilter[j];\
-            V += chrSrc[j][i+VOFW] * chrFilter[j];\
+            U += chrUSrc[j][i] * chrFilter[j];\
+            V += chrVSrc[j][i] * chrFilter[j];\
         }\
         Y1>>=19;\
         Y2>>=19;\
@@ -469,8 +473,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
             Y += lumSrc[j][i     ] * lumFilter[j];\
         }\
         for (j=0; j<chrFilterSize; j++) {\
-            U += chrSrc[j][i     ] * chrFilter[j];\
-            V += chrSrc[j][i+VOFW] * chrFilter[j];\
+            U += chrUSrc[j][i] * chrFilter[j];\
+            V += chrVSrc[j][i] * chrFilter[j];\
         }\
         Y >>=10;\
         U >>=10;\
@@ -535,8 +539,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         const int i2= 2*i;       \
         int Y1= (buf0[i2  ]*yalpha1+buf1[i2  ]*yalpha)>>19;           \
         int Y2= (buf0[i2+1]*yalpha1+buf1[i2+1]*yalpha)>>19;           \
-        int U= (uvbuf0[i     ]*uvalpha1+uvbuf1[i     ]*uvalpha)>>19;  \
-        int V= (uvbuf0[i+VOFW]*uvalpha1+uvbuf1[i+VOFW]*uvalpha)>>19;  \
+        int U= (ubuf0[i]*uvalpha1+ubuf1[i]*uvalpha)>>19;              \
+        int V= (vbuf0[i]*uvalpha1+vbuf1[i]*uvalpha)>>19;              \
         type av_unused *r, *b, *g;                                    \
         int av_unused A1, A2;                                         \
         if (alpha) {\
@@ -561,8 +565,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         const int i2= 2*i;\
         int Y1= buf0[i2  ]>>7;\
         int Y2= buf0[i2+1]>>7;\
-        int U= (uvbuf1[i     ])>>7;\
-        int V= (uvbuf1[i+VOFW])>>7;\
+        int U= (ubuf1[i])>>7;\
+        int V= (vbuf1[i])>>7;\
         type av_unused *r, *b, *g;\
         int av_unused A1, A2;\
         if (alpha) {\
@@ -587,8 +591,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         const int i2= 2*i;\
         int Y1= buf0[i2  ]>>7;\
         int Y2= buf0[i2+1]>>7;\
-        int U= (uvbuf0[i     ] + uvbuf1[i     ])>>8;\
-        int V= (uvbuf0[i+VOFW] + uvbuf1[i+VOFW])>>8;\
+        int U= (ubuf0[i] + ubuf1[i])>>8;\
+        int V= (vbuf0[i] + vbuf1[i])>>8;\
         type av_unused *r, *b, *g;\
         int av_unused A1, A2;\
         if (alpha) {\
@@ -870,16 +874,20 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         break;\
     }
 
-static inline void yuv2packedXinC(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                  const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+static inline void yuv2packedXinC(SwsContext *c, const int16_t *lumFilter,
+                                  const int16_t **lumSrc, int lumFilterSize,
+                                  const int16_t *chrFilter, const int16_t **chrUSrc,
+                                  const int16_t **chrVSrc, int chrFilterSize,
                                   const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
 {
     int i;
     YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C, YSCALE_YUV_2_PACKEDX_C(void,0), YSCALE_YUV_2_GRAY16_C, YSCALE_YUV_2_MONOX_C)
 }
 
-static inline void yuv2rgbXinC_full(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                    const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
+static inline void yuv2rgbXinC_full(SwsContext *c, const int16_t *lumFilter,
+                                    const int16_t **lumSrc, int lumFilterSize,
+                                    const int16_t *chrFilter, const int16_t **chrUSrc,
+                                    const int16_t **chrVSrc, int chrFilterSize,
                                     const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
 {
     int i;

@@ -989,7 +989,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     // allocate pixbufs (we use dynamic allocation because otherwise we would need to
     // allocate several megabytes to handle all possible cases)
     FF_ALLOC_OR_GOTO(c, c->lumPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
-    FF_ALLOC_OR_GOTO(c, c->chrPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->chrUPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->chrVPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
     if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat))
         FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
     //Note we need at least one pixel more at the end because of the MMX code (just in case someone wanna replace the 4000/8000)
@@ -998,9 +999,11 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i+c->vLumBufSize], VOF+1, fail);
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
+    c->uv_off = VOFW;
     for (i=0; i<c->vChrBufSize; i++) {
-        FF_ALLOC_OR_GOTO(c, c->chrPixBuf[i+c->vChrBufSize], (VOF+1)*2, fail);
-        c->chrPixBuf[i] = c->chrPixBuf[i+c->vChrBufSize];
+        FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], VOF*2+1, fail);
+        c->chrUPixBuf[i] = c->chrUPixBuf[i+c->vChrBufSize];
+        c->chrVPixBuf[i] = c->chrVPixBuf[i+c->vChrBufSize] = c->chrUPixBuf[i] + VOFW;
     }
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
         for (i=0; i<c->vLumBufSize; i++) {
@@ -1009,7 +1012,8 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
 
     //try to avoid drawing green stuff between the right end and the stride end
-    for (i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, (VOF+1)*2);
+    for (i=0; i<c->vChrBufSize; i++)
+        memset(c->chrUPixBuf[i], 64, VOF*2+1);
 
     assert(2*VOFW == VOF);
 
@@ -1462,10 +1466,11 @@ void sws_freeContext(SwsContext *c)
         av_freep(&c->lumPixBuf);
     }
 
-    if (c->chrPixBuf) {
+    if (c->chrUPixBuf) {
         for (i=0; i<c->vChrBufSize; i++)
-            av_freep(&c->chrPixBuf[i]);
-        av_freep(&c->chrPixBuf);
+            av_freep(&c->chrUPixBuf[i]);
+        av_freep(&c->chrUPixBuf);
+        av_freep(&c->chrVPixBuf);
     }
 
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
