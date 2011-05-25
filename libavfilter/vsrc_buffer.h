@@ -1,5 +1,4 @@
 /*
- * Memory buffer source filter
  * Copyright (c) 2008 Vitor Sessak
  *
  * This file is part of Libav.
