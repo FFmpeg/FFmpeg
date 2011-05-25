@@ -68,6 +68,13 @@ void shuffle_bytes_1230(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3012(const uint8_t *src, uint8_t *dst, long src_size);
 void shuffle_bytes_3210(const uint8_t *src, uint8_t *dst, long src_size);
 
+void rgb24toyv12_c(const uint8_t *src, uint8_t *ydst,
+                   uint8_t *udst, uint8_t *vdst,
+                   long width, long height,
+                   long lumStride, long chromStride,
+                   long srcStride);
+
+
 #if LIBSWSCALE_VERSION_MAJOR < 1
 /* deprecated, use the public versions in swscale.h */
 attribute_deprecated void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
