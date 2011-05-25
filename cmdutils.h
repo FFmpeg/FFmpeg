@@ -39,7 +39,6 @@ extern const char program_name[];
  */
 extern const int program_birth_year;
 
-extern const char **opt_names;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
@@ -148,8 +147,6 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
  */
 void parse_options(int argc, char **argv, const OptionDef *options,
                    void (* parse_arg_function)(const char*));
-
-void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
 
 /**
  * Filter out options for given codec.
