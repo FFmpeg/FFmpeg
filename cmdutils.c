@@ -912,6 +912,23 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int e
     return ret;
 }
 
+AVDictionary **setup_find_stream_info_opts(AVFormatContext *s)
+{
+    int i;
+    AVDictionary **opts;
+
+    if (!s->nb_streams)
+        return NULL;
+    opts = av_mallocz(s->nb_streams * sizeof(*opts));
+    if (!opts) {
+        av_log(NULL, AV_LOG_ERROR, "Could not alloc memory for stream options.\n");
+        return NULL;
+    }
+    for (i = 0; i < s->nb_streams; i++)
+        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id, 0);
+    return opts;
+}
+
 #if CONFIG_AVFILTER
 
 static int ffsink_init(AVFilterContext *ctx, const char *args, void *opaque)

@@ -156,6 +156,11 @@ void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
  */
 AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder);
 
+/*
+ * Setup AVCodecContext options for avformat_find_stream_info.
+ */
+AVDictionary **setup_find_stream_info_opts(AVFormatContext *s);
+
 /**
  * Print an error message to stderr, indicating filename and a human
  * readable description of the error code err.
