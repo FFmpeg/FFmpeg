@@ -52,29 +52,15 @@ static inline void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
     int i;
     for (i=0; i<dstW; i++) {
         int val= (lumSrc[i]+64)>>7;
-
-        if (val&256) {
-            if (val<0) val=0;
-            else       val=255;
-        }
-
-        dest[i]= val;
+        dest[i]= av_clip_uint8(val);
     }
 
     if (uDest)
         for (i=0; i<chrDstW; i++) {
             int u=(chrUSrc[i]+64)>>7;
             int v=(chrVSrc[i]+64)>>7;
-
-            if ((u|v)&256) {
-                if (u<0)        u=0;
-                else if (u>255) u=255;
-                if (v<0)        v=0;
-                else if (v>255) v=255;
-            }
-
-            uDest[i]= u;
-            vDest[i]= v;
+            uDest[i]= av_clip_uint8(u);
+            vDest[i]= av_clip_uint8(v);
         }
 
     if (CONFIG_SWSCALE_ALPHA && aDest)
