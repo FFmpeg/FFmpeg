@@ -1491,22 +1491,12 @@ static void reset_block_bap(AC3EncodeContext *s)
 }
 
 
-/**
- * Run the bit allocation with a given SNR offset.
- * This calculates the bit allocation pointers that will be used to determine
- * the quantization of each mantissa.
- * @return the number of bits needed for mantissas if the given SNR offset is
- *         is used.
- */
-static int bit_alloc(AC3EncodeContext *s, int snr_offset)
+static int count_mantissa_bits(AC3EncodeContext *s)
 {
     int blk, ch;
     int mantissa_bits;
     int mant_cnt[5];
 
-    snr_offset = (snr_offset - 240) << 2;
-
-    reset_block_bap(s);
     mantissa_bits = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
@@ -1524,7 +1514,36 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                 ch      = CPL_CH;
                 got_cpl = 1;
             }
+            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt,
+                                                             s->ref_bap[ch][blk]+s->start_freq[ch],
+                                                             block->end_freq[ch]-s->start_freq[ch]);
+            if (ch == CPL_CH)
+                ch = ch0;
+        }
+        mantissa_bits += compute_mantissa_size_final(mant_cnt);
+    }
+    return mantissa_bits;
+}
 
+
+/**
+ * Run the bit allocation with a given SNR offset.
+ * This calculates the bit allocation pointers that will be used to determine
+ * the quantization of each mantissa.
+ * @return the number of bits needed for mantissas if the given SNR offset is
+ *         is used.
+ */
+static int bit_alloc(AC3EncodeContext *s, int snr_offset)
+{
+    int blk, ch;
+
+    snr_offset = (snr_offset - 240) << 2;
+
+    reset_block_bap(s);
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        AC3Block *block = &s->blocks[blk];
+
+        for (ch = !block->cpl_in_use; ch <= s->channels; ch++) {
             /* Currently the only bit allocation parameters which vary across
                blocks within a frame are the exponent values.  We can take
                advantage of that by reusing the bit allocation pointers
@@ -1535,15 +1554,9 @@ static int bit_alloc(AC3EncodeContext *s, int snr_offset)
                                              snr_offset, s->bit_alloc.floor,
                                              ff_ac3_bap_tab, s->ref_bap[ch][blk]);
             }
-            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt,
-                                                             s->ref_bap[ch][blk]+s->start_freq[ch],
-                                                             block->end_freq[ch]-s->start_freq[ch]);
-            if (ch == CPL_CH)
-                ch = ch0;
         }
-        mantissa_bits += compute_mantissa_size_final(mant_cnt);
     }
-    return mantissa_bits;
+    return count_mantissa_bits(s);
 }
 
 
