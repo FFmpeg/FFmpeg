@@ -754,12 +754,6 @@ performance on systems without hardware floating point support).
 
 Using a cross-compiler is preferred for various reasons.
 
-@subsection DJGPP
-
-Libav cannot be compiled because of broken system headers, add
-@code{--extra-cflags=-U__STRICT_ANSI__} to the configure options as a
-workaround.
-
 @section OS/2
 
 For information about compiling Libav on OS/2 see
