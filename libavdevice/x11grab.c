@@ -91,6 +91,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int y_off = 0;
     int use_shm;
     char *param, *offset;
+    int ret = 0;
 
     param = av_strdup(s1->filename);
     offset = strchr(param, '+');
@@ -105,17 +106,20 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     dpy = XOpenDisplay(param);
     if(!dpy) {
         av_log(s1, AV_LOG_ERROR, "Could not open X display.\n");
-        return AVERROR(EIO);
+        ret = AVERROR(EIO);
+        goto out;
     }
 
     if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
         av_log(s1, AV_LOG_ERROR, "AVParameters don't have video size and/or rate. Use -s and -r.\n");
-        return AVERROR(EIO);
+        ret = AVERROR(EINVAL);
+        goto out;
     }
 
     st = av_new_stream(s1, 0);
     if (!st) {
-        return AVERROR(ENOMEM);
+        ret = AVERROR(ENOMEM);
+        goto out;
     }
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
@@ -136,7 +140,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
                                         IPC_CREAT|0777);
         if (x11grab->shminfo.shmid == -1) {
             av_log(s1, AV_LOG_ERROR, "Fatal: Can't get shared memory!\n");
-            return AVERROR(ENOMEM);
+            ret = AVERROR(ENOMEM);
+            goto out;
         }
         x11grab->shminfo.shmaddr = image->data = shmat(x11grab->shminfo.shmid, 0, 0);
         x11grab->shminfo.readOnly = False;
@@ -144,7 +149,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         if (!XShmAttach(dpy, &x11grab->shminfo)) {
             av_log(s1, AV_LOG_ERROR, "Fatal: Failed to attach shared memory!\n");
             /* needs some better error subroutine :) */
-            return AVERROR(EIO);
+            ret = AVERROR(EIO);
+            goto out;
         }
     } else {
         image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)),
@@ -172,7 +178,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         } else {
             av_log(s1, AV_LOG_ERROR, "RGB ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
-            return AVERROR(EIO);
+            ret = AVERROR(EIO);
+            goto out;
         }
         break;
     case 24:
@@ -187,7 +194,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         } else {
             av_log(s1, AV_LOG_ERROR,"rgb ordering at image depth %i not supported ... aborting\n", image->bits_per_pixel);
             av_log(s1, AV_LOG_ERROR, "color masks: r 0x%.6lx g 0x%.6lx b 0x%.6lx\n", image->red_mask, image->green_mask, image->blue_mask);
-            return AVERROR(EIO);
+            ret = AVERROR(EIO);
+            goto out;
         }
         break;
     case 32:
@@ -210,7 +218,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         break;
     default:
         av_log(s1, AV_LOG_ERROR, "image depth %i not supported ... aborting\n", image->bits_per_pixel);
-        return -1;
+        ret = AVERROR(EINVAL);
+        goto out;
     }
 
     x11grab->frame_size = ap->width * ap->height * image->bits_per_pixel/8;
@@ -232,7 +241,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->time_base = ap->time_base;
     st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(ap->time_base) * 8;
 
-    return 0;
+out:
+    return ret;
 }
 
 /**
