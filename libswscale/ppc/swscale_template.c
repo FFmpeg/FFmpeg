@@ -24,21 +24,28 @@
 #endif
 
 #if COMPILE_TEMPLATE_ALTIVEC
-static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                    const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize, const int16_t **alpSrc,
-                                    uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, long dstW, long chrDstW)
+static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
+                                    const int16_t **lumSrc, int lumFilterSize,
+                                    const int16_t *chrFilter, const int16_t **chrUSrc,
+                                    const int16_t **chrVSrc, int chrFilterSize,
+                                    const int16_t **alpSrc,
+                                    uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
+                                    uint8_t *aDest, long dstW, long chrDstW)
 {
     yuv2yuvX_altivec_real(lumFilter, lumSrc, lumFilterSize,
-                          chrFilter, chrSrc, chrFilterSize,
+                          chrFilter, chrUSrc, chrVSrc, chrFilterSize,
                           dest, uDest, vDest, dstW, chrDstW);
 }
 
 /**
  * vertical scale YV12 to RGB
  */
-static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
-                                       const int16_t **alpSrc, uint8_t *dest, long dstW, long dstY)
+static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter,
+                                       const int16_t **lumSrc, int lumFilterSize,
+                                       const int16_t *chrFilter, const int16_t **chrUSrc,
+                                       const int16_t **chrVSrc, int chrFilterSize,
+                                       const int16_t **alpSrc, uint8_t *dest,
+                                       long dstW, long dstY)
 {
     /* The following list of supported dstFormat values should
        match what's found in the body of ff_yuv2packedX_altivec() */
@@ -47,11 +54,11 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter, 
           c->dstFormat==PIX_FMT_BGR24 || c->dstFormat==PIX_FMT_RGB24 ||
           c->dstFormat==PIX_FMT_RGBA  || c->dstFormat==PIX_FMT_ARGB))
             ff_yuv2packedX_altivec(c, lumFilter, lumSrc, lumFilterSize,
-                                   chrFilter, chrSrc, chrFilterSize,
+                                   chrFilter, chrUSrc, chrVSrc, chrFilterSize,
                                    dest, dstW, dstY);
     else
         yuv2packedXinC(c, lumFilter, lumSrc, lumFilterSize,
-                       chrFilter, chrSrc, chrFilterSize,
+                       chrFilter, chrUSrc, chrVSrc, chrFilterSize,
                        alpSrc, dest, dstW, dstY);
 }
 #endif
