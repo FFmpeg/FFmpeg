@@ -19,6 +19,7 @@ version <next>:
 - 9bit and 10bit FFV1 encoding / decoding
 - split filter added
 - select filter added
+- sdl output device added
 
 
 version 0.7_beta1:
