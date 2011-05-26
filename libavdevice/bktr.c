@@ -249,9 +249,12 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int width, height;
     int frame_rate;
     int frame_rate_base;
+    int ret = 0;
 
-    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
-        return -1;
+    if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0) {
+        ret = AVERROR(EINVAL);
+        goto out;
+    }
 
     width = ap->width;
     height = ap->height;
@@ -259,8 +262,10 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     frame_rate_base = ap->time_base.num;
 
     st = av_new_stream(s1, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
+        goto out;
+    }
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in use */
 
     s->width = width;
@@ -289,13 +294,16 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 #endif
 
     if (bktr_init(s1->filename, width, height, s->standard,
-            &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0)
-        return AVERROR(EIO);
+            &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0) {
+        ret = AVERROR(EIO);
+        goto out;
+    }
 
     nsignals = 0;
     last_frame_time = 0;
 
-    return 0;
+out:
+    return ret;
 }
 
 static int grab_read_close(AVFormatContext *s1)
