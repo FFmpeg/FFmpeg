@@ -231,9 +231,9 @@ typedef struct AVFormatParameters {
 #if FF_API_FORMAT_PARAMETERS
     attribute_deprecated int sample_rate;
     attribute_deprecated int channels;
+    attribute_deprecated int width;
+    attribute_deprecated int height;
 #endif
-    int width;
-    int height;
     enum PixelFormat pix_fmt;
 #if FF_API_FORMAT_PARAMETERS
     attribute_deprecated int channel; /**< Used to select DV channel. */
