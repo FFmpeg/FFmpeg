@@ -1424,22 +1424,6 @@ static void count_frame_bits(AC3EncodeContext *s)
 
 
 /**
- * Finalize the mantissa bit count by adding in the grouped mantissas.
- */
-static int compute_mantissa_size_final(int mant_cnt[5])
-{
-    // bap=1 : 3 mantissas in 5 bits
-    int bits = (mant_cnt[1] / 3) * 5;
-    // bap=2 : 3 mantissas in 7 bits
-    // bap=4 : 2 mantissas in 7 bits
-    bits += ((mant_cnt[2] / 3) + (mant_cnt[4] >> 1)) * 7;
-    // bap=3 : each mantissa is 3 bits
-    bits += mant_cnt[3] * 3;
-    return bits;
-}
-
-
-/**
  * Calculate masking curve based on the final exponents.
  * Also calculate the power spectral densities to use in future calculations.
  */
@@ -1491,38 +1475,60 @@ static void reset_block_bap(AC3EncodeContext *s)
 }
 
 
-static int count_mantissa_bits(AC3EncodeContext *s)
+/**
+ * Initialize mantissa counts.
+ * These are set so that they are padded to the next whole group size when bits
+ * are counted in compute_mantissa_size.
+ */
+static void count_mantissa_bits_init(uint16_t mant_cnt[AC3_MAX_BLOCKS][16])
 {
-    int blk, ch;
-    int mantissa_bits;
-    int mant_cnt[5];
+    int blk;
 
-    mantissa_bits = 0;
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        memset(mant_cnt[blk], 0, sizeof(mant_cnt[blk]));
+        mant_cnt[blk][1] = mant_cnt[blk][2] = 2;
+        mant_cnt[blk][4] = 1;
+    }
+}
+
+
+/**
+ * Update mantissa bit counts for all blocks in 1 channel in a given bandwidth
+ * range.
+ */
+static void count_mantissa_bits_update_ch(AC3EncodeContext *s, int ch,
+                                          uint16_t mant_cnt[AC3_MAX_BLOCKS][16],
+                                          int start, int end)
+{
+    int blk;
+
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
-        int av_uninit(ch0);
-        int got_cpl = !block->cpl_in_use;
-        // initialize grouped mantissa counts. these are set so that they are
-        // padded to the next whole group size when bits are counted in
-        // compute_mantissa_size_final
-        mant_cnt[0] = mant_cnt[3] = 0;
-        mant_cnt[1] = mant_cnt[2] = 2;
-        mant_cnt[4] = 1;
-        for (ch = 1; ch <= s->channels; ch++) {
-            if (!got_cpl && ch > 1 && block->channel_in_cpl[ch-1]) {
-                ch0     = ch - 1;
-                ch      = CPL_CH;
-                got_cpl = 1;
-            }
-            mantissa_bits += s->ac3dsp.compute_mantissa_size(mant_cnt,
-                                                             s->ref_bap[ch][blk]+s->start_freq[ch],
-                                                             block->end_freq[ch]-s->start_freq[ch]);
-            if (ch == CPL_CH)
-                ch = ch0;
-        }
-        mantissa_bits += compute_mantissa_size_final(mant_cnt);
+        if (ch == CPL_CH && !block->cpl_in_use)
+            continue;
+        s->ac3dsp.update_bap_counts(mant_cnt[blk],
+                                    s->ref_bap[ch][blk] + start,
+                                    FFMIN(end, block->end_freq[ch]) - start);
     }
-    return mantissa_bits;
+}
+
+
+/**
+ * Count the number of mantissa bits in the frame based on the bap values.
+ */
+static int count_mantissa_bits(AC3EncodeContext *s)
+{
+    int ch, max_end_freq;
+    LOCAL_ALIGNED_16(uint16_t, mant_cnt,[AC3_MAX_BLOCKS][16]);
+
+    count_mantissa_bits_init(mant_cnt);
+
+    max_end_freq = s->bandwidth_code * 3 + 73;
+    for (ch = !s->cpl_enabled; ch <= s->channels; ch++)
+        count_mantissa_bits_update_ch(s, ch, mant_cnt, s->start_freq[ch],
+                                      max_end_freq);
+
+    return s->ac3dsp.compute_mantissa_size(mant_cnt);
 }
 
 
