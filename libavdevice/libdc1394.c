@@ -116,6 +116,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     int width                = !ap->width ? 320 : ap->width;
     int height               = !ap->height ? 240 : ap->height;
     int frame_rate           = !ap->time_base.num ? 30000 : av_rescale(1000, ap->time_base.den, ap->time_base.num);
+    int ret = 0;
 
     for (fmt = dc1394_frame_formats; fmt->width; fmt++)
          if (fmt->pix_fmt == pix_fmt && fmt->width == width && fmt->height == height)
@@ -128,13 +129,16 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     if (!fps->frame_rate || !fmt->width) {
         av_log(c, AV_LOG_ERROR, "Can't find matching camera format for %s, %dx%d@%d:1000fps\n", avcodec_get_pix_fmt_name(pix_fmt),
                                                                                                 width, height, frame_rate);
+        ret = AVERROR(EINVAL);
         goto out;
     }
 
     /* create a video stream */
     vst = av_new_stream(c, 0);
-    if (!vst)
+    if (!vst) {
+        ret = AVERROR(ENOMEM);
         goto out;
+    }
     av_set_pts_info(vst, 64, 1, 1000);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_RAWVIDEO;
@@ -156,9 +160,8 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     vst->codec->bit_rate = av_rescale(dc1394->packet.size * 8, fps->frame_rate, 1000);
     *select_fps = fps;
     *select_fmt = fmt;
-    return 0;
 out:
-    return -1;
+    return ret;
 }
 
 #if HAVE_LIBDC1394_1
