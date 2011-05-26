@@ -176,6 +176,7 @@ static av_cold int X264_close(AVCodecContext *avctx)
     av_free(x4->level);
     av_free(x4->stats);
     av_free(x4->weightp);
+    av_free(x4->x264opts);
 
     return 0;
 }
