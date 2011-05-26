@@ -90,6 +90,21 @@ struct dc1394_frame_rate {
     { 0, 0 } /* gotta be the last one */
 };
 
+static const AVOption options[] = {
+#if HAVE_LIBDC1394_1
+    { "channel", "", offsetof(dc1394_data, channel), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+#endif
+    { NULL },
+};
+
+static const AVClass libdc1394_class = {
+    .class_name = "libdc1394 indev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+
 static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
                                      struct dc1394_frame_format **select_fmt, struct dc1394_frame_rate **select_fps)
 {
@@ -245,20 +260,6 @@ static int dc1394_v1_close(AVFormatContext * context)
     return 0;
 }
 
-static const AVOption options[] = {
-#if HAVE_LIBDC1394_1
-    { "channel", "", offsetof(dc1394_data, channel), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-#endif
-    { NULL },
-};
-
-static const AVClass libdc1394_class = {
-    .class_name = "libdc1394 indev",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
-};
-
 #elif HAVE_LIBDC1394_2
 static int dc1394_v2_read_header(AVFormatContext *c, AVFormatParameters * ap)
 {
@@ -378,7 +379,7 @@ AVInputFormat ff_libdc1394_demuxer = {
     .read_header    = dc1394_v2_read_header,
     .read_packet    = dc1394_v2_read_packet,
     .read_close     = dc1394_v2_close,
-    .flags          = AVFMT_NOFILE
+    .flags          = AVFMT_NOFILE,
     .priv_class     = &libdc1394_class,
 };
 

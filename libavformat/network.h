@@ -33,7 +33,8 @@
 #define ECONNREFUSED    WSAECONNREFUSED
 #define EINPROGRESS     WSAEINPROGRESS
 
-static inline int ff_neterrno() {
+static inline int ff_neterrno(void)
+{
     int err = WSAGetLastError();
     switch (err) {
     case WSAEWOULDBLOCK:
