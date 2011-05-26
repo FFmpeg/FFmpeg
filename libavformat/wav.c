@@ -26,6 +26,7 @@
 #include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
+#include "metadata.h"
 
 typedef struct {
     int64_t data;
@@ -285,6 +286,14 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
     return 0;
 }
 
+static const AVMetadataConv wav_metadata_conv[] = {
+    {"description",      "comment"      },
+    {"originator",       "encoded_by"   },
+    {"origination_date", "date"         },
+    {"origination_time", "creation_time"},
+    {0},
+};
+
 /* wav input */
 static int wav_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
@@ -391,6 +400,9 @@ break_loop:
         sample_count = (data_size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
     if (sample_count)
         st->duration = sample_count;
+
+    ff_metadata_conv_ctx(s, NULL, wav_metadata_conv);
+
     return 0;
 }
 
