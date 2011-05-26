@@ -21,7 +21,7 @@
 
 #define DSHOWDEBUG 0
 
-#include "libavformat/avformat.h"
+#include "avdevice.h"
 
 #define COBJMACROS
 #include <windows.h>

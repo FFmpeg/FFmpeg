@@ -29,7 +29,6 @@
 
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
 #include "config.h"
-#include "libavformat/avformat.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -46,6 +45,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "avdevice.h"
 
 static const int desired_video_buffers = 256;
 

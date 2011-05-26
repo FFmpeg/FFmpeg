@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavformat/avformat.h"
 #include <windows.h>
 #include <vfw.h>
+#include "avdevice.h"
 
 //#define DEBUG_VFW
 

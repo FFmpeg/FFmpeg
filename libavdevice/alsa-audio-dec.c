@@ -46,9 +46,9 @@
  */
 
 #include <alsa/asoundlib.h>
-#include "libavformat/avformat.h"
 #include "libavutil/opt.h"
 
+#include "avdevice.h"
 #include "alsa-audio.h"
 
 static av_cold int audio_read_header(AVFormatContext *s1,

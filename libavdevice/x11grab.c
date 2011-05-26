@@ -36,7 +36,6 @@
  */
 
 #include "config.h"
-#include "libavformat/avformat.h"
 #include <time.h>
 #include <X11/X.h>
 #include <X11/Xlib.h>
@@ -46,6 +45,7 @@
 #include <sys/shm.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
+#include "avdevice.h"
 
 /**
  * X11 Device Demuxer context

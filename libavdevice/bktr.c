@@ -24,7 +24,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavformat/avformat.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #if HAVE_DEV_BKTR_IOCTL_METEOR_H && HAVE_DEV_BKTR_IOCTL_BT848_H
@@ -47,6 +46,7 @@
 #include <signal.h>
 #include <stdint.h>
 #include <strings.h>
+#include "avdevice.h"
 
 typedef struct {
     AVClass *class;

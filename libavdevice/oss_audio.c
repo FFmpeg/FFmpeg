@@ -39,7 +39,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
-#include "libavformat/avformat.h"
+#include "avdevice.h"
 
 #define AUDIO_BLOCK_SIZE 4096
 

@@ -21,9 +21,9 @@
  */
 
 #include "config.h"
-#include "libavformat/avformat.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "avdevice.h"
 
 #if HAVE_LIBDC1394_2
 #include <dc1394/dc1394.h>

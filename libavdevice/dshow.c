@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavformat/avformat.h"
 #include "libavformat/timefilter.h"
 
+#include "avdevice.h"
 #include "dshow.h"
 
 struct dshow_ctx {

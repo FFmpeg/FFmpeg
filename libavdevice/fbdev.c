@@ -39,7 +39,7 @@
 
 #include "libavutil/mem.h"
 #include "libavutil/pixdesc.h"
-#include "libavformat/avformat.h"
+#include "avdevice.h"
 
 struct rgb_pixfmt_map_entry {
     int bits_per_pixel;

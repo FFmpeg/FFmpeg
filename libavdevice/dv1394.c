@@ -32,7 +32,7 @@
 
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
-#include "libavformat/avformat.h"
+#include "avdevice.h"
 
 #undef DV1394_DEBUG
 

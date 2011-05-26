@@ -29,7 +29,6 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
-#include "libavformat/avformat.h"
 #include "libavcodec/dsputil.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -40,6 +39,7 @@
 #include <linux/videodev.h>
 #include <time.h>
 #include <strings.h>
+#include "avdevice.h"
 
 typedef struct {
     AVClass *class;
