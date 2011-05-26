@@ -466,8 +466,8 @@ DEFUN_END(yuv2rgb24_line)
 #define ARG_srcStride   40
 
 DEFUN(uyvytoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                         long width, long height,
-                         long lumStride, long chromStride, long srcStride)):
+                         int width, int height,
+                         int lumStride, int chromStride, int srcStride)):
         link 0;
         [--sp] = (r7:4,p5:4);
 
@@ -539,8 +539,8 @@ DEFUN(uyvytoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8
 DEFUN_END(uyvytoyv12)
 
 DEFUN(yuyvtoyv12, mL3,  (const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                         long width, long height,
-                         long lumStride, long chromStride, long srcStride)):
+                         int width, int height,
+                         int lumStride, int chromStride, int srcStride)):
         link 0;
         [--sp] = (r7:4,p5:4);
 

@@ -793,7 +793,7 @@ ff_yuv2packedX_altivec(SwsContext *c, const int16_t *lumFilter,
 
     vector signed short   RND = vec_splat_s16(1<<3);
     vector unsigned short SCL = vec_splat_u16(4);
-    DECLARE_ALIGNED(16, unsigned long, scratch)[16];
+    DECLARE_ALIGNED(16, unsigned int, scratch)[16];
 
     vector signed short *YCoeffs, *CCoeffs;
 

@@ -78,7 +78,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
                                     const int16_t **chrVSrc,
                                     int chrFilterSize, const int16_t **alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                    uint8_t *aDest, long dstW, long chrDstW)
+                                    uint8_t *aDest, int dstW, int chrDstW)
 {
     if (uDest) {
         x86_reg uv_off = c->uv_off;
@@ -159,7 +159,7 @@ static inline void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
                                        const int16_t **chrVSrc,
                                        int chrFilterSize, const int16_t **alpSrc,
                                        uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                       uint8_t *aDest, long dstW, long chrDstW)
+                                       uint8_t *aDest, int dstW, int chrDstW)
 {
     if (uDest) {
         x86_reg uv_off = c->uv_off;
@@ -190,9 +190,9 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
                                     const int16_t *chrUSrc, const int16_t *chrVSrc,
                                     const int16_t *alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                    uint8_t *aDest, long dstW, long chrDstW)
+                                    uint8_t *aDest, int dstW, int chrDstW)
 {
-    long p= 4;
+    int p= 4;
     const uint8_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
     uint8_t *dst[4]= { aDest, dest, uDest, vDest };
     x86_reg counter[4]= { dstW, dstW, chrDstW, chrDstW };
@@ -231,9 +231,9 @@ static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
                                        const int16_t *chrUSrc, const int16_t *chrVSrc,
                                        const int16_t *alpSrc,
                                        uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                       uint8_t *aDest, long dstW, long chrDstW)
+                                       uint8_t *aDest, int dstW, int chrDstW)
 {
-    long p= 4;
+    int p= 4;
     const uint8_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
     uint8_t *dst[4]= { aDest, dest, uDest, vDest };
     x86_reg counter[4]= { dstW, dstW, chrDstW, chrDstW };
@@ -471,7 +471,7 @@ static inline void RENAME(yuv2rgb32_X_ar)(SwsContext *c, const int16_t *lumFilte
                                           const int16_t *chrFilter, const int16_t **chrUSrc,
                                           const int16_t **chrVSrc,
                                           int chrFilterSize, const int16_t **alpSrc,
-                                          uint8_t *dest, long dstW, long dstY)
+                                          uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -504,7 +504,7 @@ static inline void RENAME(yuv2rgb32_X)(SwsContext *c, const int16_t *lumFilter,
                                        const int16_t *chrFilter, const int16_t **chrUSrc,
                                        const int16_t **chrVSrc,
                                        int chrFilterSize, const int16_t **alpSrc,
-                                       uint8_t *dest, long dstW, long dstY)
+                                       uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -561,7 +561,7 @@ static inline void RENAME(yuv2rgb565_X_ar)(SwsContext *c, const int16_t *lumFilt
                                            const int16_t *chrFilter, const int16_t **chrUSrc,
                                            const int16_t **chrVSrc,
                                            int chrFilterSize, const int16_t **alpSrc,
-                                           uint8_t *dest, long dstW, long dstY)
+                                           uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -585,7 +585,7 @@ static inline void RENAME(yuv2rgb565_X)(SwsContext *c, const int16_t *lumFilter,
                                         const int16_t *chrFilter, const int16_t **chrUSrc,
                                         const int16_t **chrVSrc,
                                         int chrFilterSize, const int16_t **alpSrc,
-                                        uint8_t *dest, long dstW, long dstY)
+                                        uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -638,7 +638,7 @@ static inline void RENAME(yuv2rgb555_X_ar)(SwsContext *c, const int16_t *lumFilt
                                            const int16_t *chrFilter, const int16_t **chrUSrc,
                                            const int16_t **chrVSrc,
                                            int chrFilterSize, const int16_t **alpSrc,
-                                           uint8_t *dest, long dstW, long dstY)
+                                           uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -662,7 +662,7 @@ static inline void RENAME(yuv2rgb555_X)(SwsContext *c, const int16_t *lumFilter,
                                         const int16_t *chrFilter, const int16_t **chrUSrc,
                                         const int16_t **chrVSrc,
                                         int chrFilterSize, const int16_t **alpSrc,
-                                        uint8_t *dest, long dstW, long dstY)
+                                        uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -795,7 +795,7 @@ static inline void RENAME(yuv2bgr24_X_ar)(SwsContext *c, const int16_t *lumFilte
                                           const int16_t *chrFilter, const int16_t **chrUSrc,
                                           const int16_t **chrVSrc,
                                           int chrFilterSize, const int16_t **alpSrc,
-                                          uint8_t *dest, long dstW, long dstY)
+                                          uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -819,7 +819,7 @@ static inline void RENAME(yuv2bgr24_X)(SwsContext *c, const int16_t *lumFilter,
                                        const int16_t *chrFilter, const int16_t **chrUSrc,
                                        const int16_t **chrVSrc,
                                        int chrFilterSize, const int16_t **alpSrc,
-                                       uint8_t *dest, long dstW, long dstY)
+                                       uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -860,7 +860,7 @@ static inline void RENAME(yuv2yuyv422_X_ar)(SwsContext *c, const int16_t *lumFil
                                             const int16_t *chrFilter, const int16_t **chrUSrc,
                                             const int16_t **chrVSrc,
                                             int chrFilterSize, const int16_t **alpSrc,
-                                            uint8_t *dest, long dstW, long dstY)
+                                            uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -881,7 +881,7 @@ static inline void RENAME(yuv2yuyv422_X)(SwsContext *c, const int16_t *lumFilter
                                          const int16_t *chrFilter, const int16_t **chrUSrc,
                                          const int16_t **chrVSrc,
                                          int chrFilterSize, const int16_t **alpSrc,
-                                         uint8_t *dest, long dstW, long dstY)
+                                         uint8_t *dest, int dstW, int dstY)
 {
     x86_reg dummy=0;
     x86_reg dstW_reg = dstW;
@@ -1578,7 +1578,7 @@ static inline void RENAME(yuv2yuyv422_1)(SwsContext *c, const uint16_t *buf0,
 #if !COMPILE_TEMPLATE_MMX2
 //FIXME yuy2* can read up to 7 samples too much
 
-static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
     __asm__ volatile(
         "movq "MANGLE(bm01010101)", %%mm2           \n\t"
@@ -1597,7 +1597,7 @@ static inline void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, long width,
     );
 }
 
-static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, int width, uint32_t *unused)
 {
     __asm__ volatile(
         "movq "MANGLE(bm01010101)", %%mm4           \n\t"
@@ -1623,7 +1623,7 @@ static inline void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
     assert(src1 == src2);
 }
 
-static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, int width, uint32_t *unused)
 {
     __asm__ volatile(
         "mov                    %0, %%"REG_a"       \n\t"
@@ -1649,7 +1649,7 @@ static inline void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
 
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
-static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
     __asm__ volatile(
         "mov                  %0, %%"REG_a"         \n\t"
@@ -1667,7 +1667,7 @@ static inline void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, long width,
     );
 }
 
-static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, int width, uint32_t *unused)
 {
     __asm__ volatile(
         "movq "MANGLE(bm01010101)", %%mm4           \n\t"
@@ -1693,7 +1693,7 @@ static inline void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t 
     assert(src1 == src2);
 }
 
-static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, int width, uint32_t *unused)
 {
     __asm__ volatile(
         "movq "MANGLE(bm01010101)", %%mm4           \n\t"
@@ -1719,7 +1719,7 @@ static inline void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *s
 }
 
 static inline void RENAME(nvXXtoUV)(uint8_t *dst1, uint8_t *dst2,
-                                    const uint8_t *src, long width)
+                                    const uint8_t *src, int width)
 {
     __asm__ volatile(
         "movq "MANGLE(bm01010101)", %%mm4           \n\t"
@@ -1746,20 +1746,20 @@ static inline void RENAME(nvXXtoUV)(uint8_t *dst1, uint8_t *dst2,
 
 static inline void RENAME(nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
                                     const uint8_t *src1, const uint8_t *src2,
-                                    long width, uint32_t *unused)
+                                    int width, uint32_t *unused)
 {
     RENAME(nvXXtoUV)(dstU, dstV, src1, width);
 }
 
 static inline void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
                                     const uint8_t *src1, const uint8_t *src2,
-                                    long width, uint32_t *unused)
+                                    int width, uint32_t *unused)
 {
     RENAME(nvXXtoUV)(dstV, dstU, src1, width);
 }
 #endif /* !COMPILE_TEMPLATE_MMX2 */
 
-static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, enum PixelFormat srcFormat)
+static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, int width, enum PixelFormat srcFormat)
 {
 
     if(srcFormat == PIX_FMT_BGR24) {
@@ -1812,7 +1812,7 @@ static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long w
     );
 }
 
-static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, long width, enum PixelFormat srcFormat)
+static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, int width, enum PixelFormat srcFormat)
 {
     __asm__ volatile(
         "movq                    24(%4), %%mm6       \n\t"
@@ -1870,23 +1870,23 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uin
     );
 }
 
-static inline void RENAME(bgr24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void RENAME(bgr24ToY)(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
 }
 
-static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, int width, uint32_t *unused)
 {
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
     assert(src1 == src2);
 }
 
-static inline void RENAME(rgb24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void RENAME(rgb24ToY)(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
 }
 
-static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, int width, uint32_t *unused)
 {
     assert(src1==src2);
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
@@ -1895,7 +1895,7 @@ static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t
 #if !COMPILE_TEMPLATE_MMX2
 // bilinear / bicubic scaling
 static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, int srcW, int xInc,
-                                  const int16_t *filter, const int16_t *filterPos, long filterSize)
+                                  const int16_t *filter, const int16_t *filterPos, int filterSize)
 {
     assert(filterSize % 4 == 0 && filterSize>0);
     if (filterSize==4) { // Always true for upscaling, sometimes for down, too.
@@ -2051,7 +2051,7 @@ static inline void RENAME(hScale)(int16_t *dst, int dstW, const uint8_t *src, in
 
 #if COMPILE_TEMPLATE_MMX2
 static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
-                                        long dstWidth, const uint8_t *src, int srcW,
+                                        int dstWidth, const uint8_t *src, int srcW,
                                         int xInc)
 {
     int32_t *filterPos = c->hLumFilterPos;
@@ -2123,7 +2123,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 }
 
 static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
-                                        long dstWidth, const uint8_t *src1,
+                                        int dstWidth, const uint8_t *src1,
                                         const uint8_t *src2, int srcW, int xInc)
 {
     int32_t *filterPos = c->hChrFilterPos;
