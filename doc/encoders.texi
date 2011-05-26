@@ -477,5 +477,4 @@ Selected by Encoder (default)
 
 @end table
 
-@c man end ENCODERS
-
+@c man end AUDIO ENCODERS

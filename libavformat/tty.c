@@ -26,12 +26,13 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "sauce.h"
 
-#define LINE_RATE 6000 /* characters per second */
-
 typedef struct {
+    AVClass *class;
     int chars_per_frame;
     uint64_t fsize;  /**< file size less metadata buffer */
 } TtyDemuxContext;
@@ -86,7 +87,11 @@ static int read_header(AVFormatContext *avctx,
     }
 
     /* simulate tty display speed */
-    s->chars_per_frame = FFMAX(av_q2d(st->time_base) * (ap->sample_rate ? ap->sample_rate : LINE_RATE), 1);
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->sample_rate)
+        s->chars_per_frame = ap->sample_rate;
+#endif
+    s->chars_per_frame = FFMAX(av_q2d(st->time_base)*s->chars_per_frame, 1);
 
     if (avctx->pb->seekable) {
         s->fsize = avio_size(avctx->pb);
@@ -124,6 +129,18 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
     return 0;
 }
 
+static const AVOption options[] = {
+    { "chars_per_frame", "", offsetof(TtyDemuxContext, chars_per_frame), FF_OPT_TYPE_INT, {.dbl = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
+    { NULL },
+};
+
+static const AVClass tty_demuxer_class = {
+    .class_name     = "TTY demuxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_tty_demuxer = {
     .name           = "tty",
     .long_name      = NULL_IF_CONFIG_SMALL("Tele-typewriter"),
@@ -131,4 +148,5 @@ AVInputFormat ff_tty_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .extensions     = "ans,art,asc,diz,ice,nfo,txt,vt",
+    .priv_class     = &tty_demuxer_class,
 };

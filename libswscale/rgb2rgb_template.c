@@ -633,11 +633,9 @@ static inline void uyvytoyv12_c(const uint8_t *src, uint8_t *ydst,
  * others are ignored in the C version.
  * FIXME: Write HQ version.
  */
-void rgb24toyv12_c(const uint8_t *src, uint8_t *ydst,
-                                 uint8_t *udst, uint8_t *vdst,
-                                 long width, long height,
-                                 long lumStride, long chromStride,
-                                 long srcStride)
+void rgb24toyv12_c(const uint8_t *src, uint8_t *ydst, uint8_t *udst,
+                   uint8_t *vdst, long width, long height, long lumStride,
+                   long chromStride, long srcStride)
 {
     long y;
     const int chromWidth = width >> 1;

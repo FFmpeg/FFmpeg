@@ -25,6 +25,8 @@
  */
 
 #include "libavformat/avformat.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 #if HAVE_DEV_BKTR_IOCTL_METEOR_H && HAVE_DEV_BKTR_IOCTL_BT848_H
 # include <dev/bktr/ioctl_meteor.h>
 # include <dev/bktr/ioctl_bt848.h>
@@ -47,12 +49,14 @@
 #include <strings.h>
 
 typedef struct {
+    AVClass *class;
     int video_fd;
     int tuner_fd;
     int width, height;
     int frame_rate;
     int frame_rate_base;
     uint64_t per_frame;
+    int standard;
 } VideoData;
 
 
@@ -245,7 +249,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int width, height;
     int frame_rate;
     int frame_rate_base;
-    int format = -1;
 
     if (ap->width <= 0 || ap->height <= 0 || ap->time_base.den <= 0)
         return -1;
@@ -274,16 +277,18 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->time_base.den = frame_rate;
     st->codec->time_base.num = frame_rate_base;
 
+#if FF_API_FORMAT_PARAMETERS
     if (ap->standard) {
         if (!strcasecmp(ap->standard, "pal"))
-            format = PAL;
+            s->standard = PAL;
         else if (!strcasecmp(ap->standard, "secam"))
-            format = SECAM;
+            s->standard = SECAM;
         else if (!strcasecmp(ap->standard, "ntsc"))
-            format = NTSC;
+            s->standard = NTSC;
     }
+#endif
 
-    if (bktr_init(s1->filename, width, height, format,
+    if (bktr_init(s1->filename, width, height, s->standard,
             &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0)
         return AVERROR(EIO);
 
@@ -311,6 +316,24 @@ static int grab_read_close(AVFormatContext *s1)
     return 0;
 }
 
+static const AVOption options[] = {
+    { "standard", "", offsetof(VideoData, standard), FF_OPT_TYPE_INT, {.dbl = VIDEO_FORMAT}, PAL, NTSCJ, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "PAL",      "", 0, FF_OPT_TYPE_CONST, {.dbl = PAL},   0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "NTSC",     "", 0, FF_OPT_TYPE_CONST, {.dbl = NTSC},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "SECAM",    "", 0, FF_OPT_TYPE_CONST, {.dbl = SECAM}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "PALN",     "", 0, FF_OPT_TYPE_CONST, {.dbl = PALN},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "PALM",     "", 0, FF_OPT_TYPE_CONST, {.dbl = PALM},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { "NTSCJ",    "", 0, FF_OPT_TYPE_CONST, {.dbl = NTSCJ}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
+    { NULL },
+};
+
+static const AVClass bktr_class = {
+    .class_name = "BKTR grab interface",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_bktr_demuxer = {
     "bktr",
     NULL_IF_CONFIG_SMALL("video grab"),
@@ -320,4 +343,5 @@ AVInputFormat ff_bktr_demuxer = {
     grab_read_packet,
     grab_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class = &bktr_class,
 };

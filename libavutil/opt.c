@@ -290,7 +290,8 @@ double av_get_double(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+        return NAN;
     return num*intnum/den;
 }
 
@@ -300,7 +301,8 @@ AVRational av_get_q(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+        return (AVRational){0, 0};
     if (num == 1.0 && (int)intnum == intnum)
         return (AVRational){intnum, den};
     else

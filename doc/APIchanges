@@ -26,6 +26,9 @@ API changes, most recent first:
 2011-05-XX - XXXXXX - lavfi 2.6.0 - avcodec.h
   Add avfilter_get_video_buffer_ref_from_frame() to libavfilter/avcodec.h.
 
+2011-05-25 - 30315a8 - lavf 53.1.0 - avformat.h
+  Add fps_probe_size to AVFormatContext.
+
 2011-05-18 - 64150ff - lavc 53.4.0 - AVCodecContext.request_sample_fmt
   Add request_sample_fmt field to AVCodecContext.
 
