@@ -30,10 +30,12 @@ void ff_fft_dispatch_sse(FFTComplex *z, int nbits);
 void ff_fft_dispatch_interleave_sse(FFTComplex *z, int nbits);
 void ff_fft_dispatch_interleave_avx(FFTComplex *z, int nbits);
 
+#if HAVE_AVX
 void ff_fft_calc_avx(FFTContext *s, FFTComplex *z)
 {
     ff_fft_dispatch_interleave_avx(z, s->nbits);
 }
+#endif
 
 void ff_fft_calc_sse(FFTContext *s, FFTComplex *z)
 {
