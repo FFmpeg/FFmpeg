@@ -13,6 +13,10 @@ libavutil:     2011-04-18
 
 API changes, most recent first:
 
+2012-05-xx - xxxxxxx - lavf 54.3.0
+  Add AVFMT_TS_NONSTRICT format flag to indicate that a muxer supports
+  non-increasing monotone timestamps.
+
 2012-05-15 - lavfi 2.17.0
   Add support for audio filters
   ac71230/a2cd9be - add video/audio buffer sink in a new installed

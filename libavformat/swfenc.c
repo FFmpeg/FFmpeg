@@ -513,6 +513,7 @@ AVOutputFormat ff_swf_muxer = {
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
+    .flags             = AVFMT_TS_NONSTRICT,
 };
 #endif
 #if CONFIG_AVM2_MUXER
@@ -526,5 +527,6 @@ AVOutputFormat ff_avm2_muxer = {
     .write_header      = swf_write_header,
     .write_packet      = swf_write_packet,
     .write_trailer     = swf_write_trailer,
+    .flags             = AVFMT_TS_NONSTRICT,
 };
 #endif

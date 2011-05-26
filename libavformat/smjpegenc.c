@@ -144,6 +144,6 @@ AVOutputFormat ff_smjpeg_muxer = {
     .write_header   = smjpeg_write_header,
     .write_packet   = smjpeg_write_packet,
     .write_trailer  = smjpeg_write_trailer,
-    .flags          = AVFMT_GLOBALHEADER,
+    .flags          = AVFMT_GLOBALHEADER | AVFMT_TS_NONSTRICT,
     .codec_tag      = (const AVCodecTag *const []){ ff_codec_smjpeg_video_tags, ff_codec_smjpeg_audio_tags, 0 },
 };
