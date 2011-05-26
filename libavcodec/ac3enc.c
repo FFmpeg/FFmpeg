@@ -583,8 +583,8 @@ static inline float calc_cpl_coord(float energy_ch, float energy_cpl)
 static void apply_channel_coupling(AC3EncodeContext *s)
 {
 #if CONFIG_AC3ENC_FLOAT
-    DECLARE_ALIGNED(16, float,   cpl_coords)      [AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16];
-    DECLARE_ALIGNED(16, int32_t, fixed_cpl_coords)[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16];
+    DECLARE_ALIGNED(16, float,   cpl_coords)      [AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
+    DECLARE_ALIGNED(16, int32_t, fixed_cpl_coords)[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
     int blk, ch, bnd, i, j;
     CoefSumType energy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
     int num_cpl_coefs = s->num_cpl_subbands * 12;
@@ -2658,8 +2658,8 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
                      AC3_MAX_COEFS * sizeof(*s->bap_buffer),  alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->bap1_buffer, AC3_MAX_BLOCKS * channels *
                      AC3_MAX_COEFS * sizeof(*s->bap1_buffer), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->mdct_coef_buffer, AC3_MAX_BLOCKS * channels *
-                     AC3_MAX_COEFS * sizeof(*s->mdct_coef_buffer), alloc_fail);
+    FF_ALLOCZ_OR_GOTO(avctx, s->mdct_coef_buffer, AC3_MAX_BLOCKS * channels *
+                      AC3_MAX_COEFS * sizeof(*s->mdct_coef_buffer), alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->exp_buffer, AC3_MAX_BLOCKS * channels *
                      AC3_MAX_COEFS * sizeof(*s->exp_buffer), alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->grouped_exp_buffer, AC3_MAX_BLOCKS * channels *
@@ -2723,8 +2723,8 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
     }
 
     if (CONFIG_AC3ENC_FLOAT) {
-        FF_ALLOC_OR_GOTO(avctx, s->fixed_coef_buffer, AC3_MAX_BLOCKS * channels *
-                         AC3_MAX_COEFS * sizeof(*s->fixed_coef_buffer), alloc_fail);
+        FF_ALLOCZ_OR_GOTO(avctx, s->fixed_coef_buffer, AC3_MAX_BLOCKS * channels *
+                          AC3_MAX_COEFS * sizeof(*s->fixed_coef_buffer), alloc_fail);
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
             AC3Block *block = &s->blocks[blk];
             FF_ALLOCZ_OR_GOTO(avctx, block->fixed_coef, channels *
