@@ -424,6 +424,10 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
             err = AVERROR(ENOMEM);
             goto fail;
         }
+        if (fmt->priv_class) {
+            *(const AVClass**)ic->priv_data = fmt->priv_class;
+            av_opt_set_defaults(ic->priv_data);
+        }
     } else {
         ic->priv_data = NULL;
     }
