@@ -56,7 +56,7 @@ static const PixelFormatTag pix_fmt_bps_avi[] = {
     { PIX_FMT_RGB555, 15 },
     { PIX_FMT_RGB555, 16 },
     { PIX_FMT_BGR24,  24 },
-    { PIX_FMT_RGB32,  32 },
+    { PIX_FMT_BGRA,   32 },
     { PIX_FMT_NONE, 0 },
 };
 
