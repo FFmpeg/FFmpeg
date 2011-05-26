@@ -1019,7 +1019,7 @@ static inline void RENAME(yuv2rgb32_2)(SwsContext *c, const uint16_t *buf0,
             WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
-            :: "c" (buf0), "d" (buf1), "S" (uvbuf0), "D" (uvbuf1), "m" (dest),
+            :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
                "a" (&c->redDither), "m"(uv_off)
         );
 #endif
