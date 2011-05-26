@@ -237,7 +237,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             tag[3] = 0;
             tlen = avio_rb24(s->pb);
         }
-        if (tlen < 0 || tlen > len - taghdrlen) {
+        if (tlen <= 0 || tlen > len - taghdrlen) {
             av_log(s, AV_LOG_WARNING, "Invalid size in frame %s, skipping the rest of tag.\n", tag);
             break;
         }
@@ -256,6 +256,10 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             if (unsync || tunsync) {
                 int i, j;
                 av_fast_malloc(&buffer, &buffer_size, tlen);
+                if (!buffer) {
+                    av_log(s, AV_LOG_ERROR, "Failed to alloc %d bytes\n", tlen);
+                    goto seek;
+                }
                 for (i = 0, j = 0; i < tlen; i++, j++) {
                     buffer[j] = avio_r8(s->pb);
                     if (j > 0 && !buffer[j] && buffer[j - 1] == 0xff) {
@@ -276,6 +280,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             break;
         }
         /* Skip to end of tag */
+seek:
         avio_seek(s->pb, next, SEEK_SET);
     }
 
