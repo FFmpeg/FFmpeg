@@ -118,7 +118,7 @@ typedef struct SwsContext {
     int       chrBufIndex;        ///< Index in ring buffer of the last scaled horizontal chroma     line from source.
     //@}
 
-    uint8_t formatConvBuffer[VOF]; //FIXME dynamic allocation, but we have to change a lot of code for this to be useful
+    uint8_t *formatConvBuffer;
 
     /**
      * @name Horizontal and vertical filters.
