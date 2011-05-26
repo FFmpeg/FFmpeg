@@ -254,7 +254,7 @@ static inline void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
     nvXXtoUV_c(dstV, dstU, src1, width);
 }
 
-static inline void bgr24ToY_c(uint8_t *dst, const uint8_t *src,
+static inline void bgr24ToY_c(int16_t *dst, const uint8_t *src,
                               long width, uint32_t *unused)
 {
     int i;
@@ -263,11 +263,11 @@ static inline void bgr24ToY_c(uint8_t *dst, const uint8_t *src,
         int g= src[i*3+1];
         int r= src[i*3+2];
 
-        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
+        dst[i]= ((RY*r + GY*g + BY*b + (32<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6));
     }
 }
 
-static inline void bgr24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
+static inline void bgr24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
                                const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
@@ -276,13 +276,13 @@ static inline void bgr24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1
         int g= src1[3*i + 1];
         int r= src1[3*i + 2];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
+        dstU[i]= (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6);
+        dstV[i]= (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6);
     }
     assert(src1 == src2);
 }
 
-static inline void bgr24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
+static inline void bgr24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
                                     const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
@@ -291,13 +291,13 @@ static inline void bgr24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t 
         int g= src1[6*i + 1] + src1[6*i + 4];
         int r= src1[6*i + 2] + src1[6*i + 5];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
+        dstU[i]= (RU*r + GU*g + BU*b + (256<<RGB2YUV_SHIFT) + (1<<(RGB2YUV_SHIFT-6)))>>(RGB2YUV_SHIFT-5);
+        dstV[i]= (RV*r + GV*g + BV*b + (256<<RGB2YUV_SHIFT) + (1<<(RGB2YUV_SHIFT-6)))>>(RGB2YUV_SHIFT-5);
     }
     assert(src1 == src2);
 }
 
-static inline void rgb24ToY_c(uint8_t *dst, const uint8_t *src, long width,
+static inline void rgb24ToY_c(int16_t *dst, const uint8_t *src, long width,
                               uint32_t *unused)
 {
     int i;
@@ -306,11 +306,11 @@ static inline void rgb24ToY_c(uint8_t *dst, const uint8_t *src, long width,
         int g= src[i*3+1];
         int b= src[i*3+2];
 
-        dst[i]= ((RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT);
+        dst[i]= ((RY*r + GY*g + BY*b + (32<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6));
     }
 }
 
-static inline void rgb24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
+static inline void rgb24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
                                const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
@@ -320,12 +320,12 @@ static inline void rgb24ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1
         int g= src1[3*i + 1];
         int b= src1[3*i + 2];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1)))>>RGB2YUV_SHIFT;
+        dstU[i]= (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6);
+        dstV[i]= (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7)))>>(RGB2YUV_SHIFT-6);
     }
 }
 
-static inline void rgb24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
+static inline void rgb24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
                                     const uint8_t *src2, long width, uint32_t *unused)
 {
     int i;
@@ -335,8 +335,8 @@ static inline void rgb24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t 
         int g= src1[6*i + 1] + src1[6*i + 4];
         int b= src1[6*i + 2] + src1[6*i + 5];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT))>>(RGB2YUV_SHIFT+1);
+        dstU[i]= (RU*r + GU*g + BU*b + (256<<RGB2YUV_SHIFT) + (1<<(RGB2YUV_SHIFT-6)))>>(RGB2YUV_SHIFT-5);
+        dstV[i]= (RV*r + GV*g + BV*b + (256<<RGB2YUV_SHIFT) + (1<<(RGB2YUV_SHIFT-6)))>>(RGB2YUV_SHIFT-5);
     }
 }
 
@@ -455,7 +455,8 @@ static inline void hyscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
     }
 
     if (c->hScale16) {
-        c->hScale16(dst, dstWidth, (uint16_t*)src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize, av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1);
+        int shift= isAnyRGB(c->srcFormat) || c->srcFormat==PIX_FMT_PAL8 ? 13 : av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
+        c->hScale16(dst, dstWidth, (uint16_t*)src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize, shift);
     } else if (!c->hyscale_fast) {
         c->hScale(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
     } else { // fast bilinear upscale / crap downscale
@@ -502,8 +503,9 @@ inline static void hcscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
     }
 
     if (c->hScale16) {
-        c->hScale16(dst     , dstWidth, (uint16_t*)src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1);
-        c->hScale16(dst+VOFW, dstWidth, (uint16_t*)src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1);
+        int shift= isAnyRGB(c->srcFormat) || c->srcFormat==PIX_FMT_PAL8 ? 13 : av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
+        c->hScale16(dst     , dstWidth, (uint16_t*)src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, shift);
+        c->hScale16(dst+VOFW, dstWidth, (uint16_t*)src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, shift);
     } else if (!c->hcscale_fast) {
         c->hScale(dst     , dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
         c->hScale(dst+VOFW, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
@@ -958,6 +960,9 @@ static void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_PAL8   : c->alpToYV12 = palToA; break;
         }
     }
+
+    if(isAnyRGB(c->srcFormat) || c->srcFormat == PIX_FMT_PAL8)
+        c->hScale16= hScale16_c;
 
     switch (srcFormat) {
     case PIX_FMT_GRAY8A :

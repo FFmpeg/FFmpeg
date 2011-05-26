@@ -1615,7 +1615,7 @@ static inline void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
     RENAME(nvXXtoUV)(dstV, dstU, src1, width);
 }
 
-static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long width, enum PixelFormat srcFormat)
+static inline void RENAME(bgr24ToY_mmx)(int16_t *dst, const uint8_t *src, long width, enum PixelFormat srcFormat)
 {
 
     if(srcFormat == PIX_FMT_BGR24) {
@@ -1655,20 +1655,19 @@ static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, const uint8_t *src, long w
         "paddd                   %%mm3, %%mm2       \n\t"
         "paddd                   %%mm4, %%mm0       \n\t"
         "paddd                   %%mm4, %%mm2       \n\t"
-        "psrad                     $15, %%mm0       \n\t"
-        "psrad                     $15, %%mm2       \n\t"
+        "psrad                     $9, %%mm0       \n\t"
+        "psrad                     $9, %%mm2       \n\t"
         "packssdw                %%mm2, %%mm0       \n\t"
-        "packuswb                %%mm0, %%mm0       \n\t"
-        "movd                %%mm0, (%1, %%"REG_a") \n\t"
-        "add                        $4, %%"REG_a"   \n\t"
+        "movq                %%mm0, (%1, %%"REG_a") \n\t"
+        "add                        $8, %%"REG_a"   \n\t"
         " js                        1b              \n\t"
     : "+r" (src)
-    : "r" (dst+width), "g" ((x86_reg)-width)
+    : "r" (dst+width), "g" ((x86_reg)-2*width)
     : "%"REG_a
     );
 }
 
-static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, long width, enum PixelFormat srcFormat)
+static inline void RENAME(bgr24ToUV_mmx)(int16_t *dstU, int16_t *dstV, const uint8_t *src, long width, enum PixelFormat srcFormat)
 {
     __asm__ volatile(
         "movq                    24(%4), %%mm6       \n\t"
@@ -1708,41 +1707,39 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, const uin
         "paddd                   %%mm3, %%mm2       \n\t"
         "paddd                   %%mm3, %%mm1       \n\t"
         "paddd                   %%mm3, %%mm4       \n\t"
-        "psrad                     $15, %%mm0       \n\t"
-        "psrad                     $15, %%mm2       \n\t"
-        "psrad                     $15, %%mm1       \n\t"
-        "psrad                     $15, %%mm4       \n\t"
+        "psrad                     $9, %%mm0       \n\t"
+        "psrad                     $9, %%mm2       \n\t"
+        "psrad                     $9, %%mm1       \n\t"
+        "psrad                     $9, %%mm4       \n\t"
         "packssdw                %%mm1, %%mm0       \n\t"
         "packssdw                %%mm4, %%mm2       \n\t"
-        "packuswb                %%mm0, %%mm0       \n\t"
-        "packuswb                %%mm2, %%mm2       \n\t"
-        "movd                %%mm0, (%1, %%"REG_a") \n\t"
-        "movd                %%mm2, (%2, %%"REG_a") \n\t"
-        "add                        $4, %%"REG_a"   \n\t"
+        "movq                %%mm0, (%1, %%"REG_a") \n\t"
+        "movq                %%mm2, (%2, %%"REG_a") \n\t"
+        "add                        $8, %%"REG_a"   \n\t"
         " js                        1b              \n\t"
     : "+r" (src)
-    : "r" (dstU+width), "r" (dstV+width), "g" ((x86_reg)-width), "r"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24])
+    : "r" (dstU+width), "r" (dstV+width), "g" ((x86_reg)-2*width), "r"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24])
     : "%"REG_a
     );
 }
 
-static inline void RENAME(bgr24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void RENAME(bgr24ToY)(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
 }
 
-static inline void RENAME(bgr24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(bgr24ToUV)(int16_t *dstU, int16_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
     assert(src1 == src2);
 }
 
-static inline void RENAME(rgb24ToY)(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void RENAME(rgb24ToY)(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
 }
 
-static inline void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
+static inline void RENAME(rgb24ToUV)(int16_t *dstU, int16_t *dstV, const uint8_t *src1, const uint8_t *src2, long width, uint32_t *unused)
 {
     assert(src1==src2);
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
@@ -2323,7 +2320,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_YUV420P16LE:
         case PIX_FMT_YUV422P16LE:
         case PIX_FMT_YUV444P16LE: c->hScale16= RENAME(hScale16); break;
-    }   
+    }
     if (!c->chrSrcHSubSample) {
         switch(srcFormat) {
         case PIX_FMT_BGR24  : c->chrToYV12 = RENAME(bgr24ToUV); break;
@@ -2348,4 +2345,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         default: break;
         }
     }
+
+    if(isAnyRGB(c->srcFormat))
+        c->hScale16= RENAME(hScale16);
 }

@@ -860,7 +860,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             if (flags&SWS_PRINT_INFO)
                 av_log(c, AV_LOG_INFO, "output width is not a multiple of 32 -> no MMX2 scaler\n");
         }
-        if (usesHFilter || isNBPS(c->srcFormat) || is16BPS(c->srcFormat)) c->canMMX2BeUsed=0;
+        if (usesHFilter || isNBPS(c->srcFormat) || is16BPS(c->srcFormat) || isAnyRGB(c->srcFormat)) c->canMMX2BeUsed=0;
     }
     else
         c->canMMX2BeUsed=0;

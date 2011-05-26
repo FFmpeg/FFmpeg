@@ -1045,7 +1045,7 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
     }
 }
 
-static inline void rgb48ToY(uint8_t *dst, const uint8_t *src, long width,
+static inline void rgb48ToY(int16_t *dst, const uint8_t *src, long width,
                             uint32_t *unused)
 {
     int i;
@@ -1054,11 +1054,11 @@ static inline void rgb48ToY(uint8_t *dst, const uint8_t *src, long width,
         int g = src[i*6+2];
         int b = src[i*6+4];
 
-        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dst[i] = (RY*r + GY*g + BY*b + (32<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
     }
 }
 
-static inline void rgb48ToUV(uint8_t *dstU, uint8_t *dstV,
+static inline void rgb48ToUV(int16_t *dstU, int16_t *dstV,
                              const uint8_t *src1, const uint8_t *src2,
                              long width, uint32_t *unused)
 {
@@ -1069,12 +1069,12 @@ static inline void rgb48ToUV(uint8_t *dstU, uint8_t *dstV,
         int g = src1[6*i + 2];
         int b = src1[6*i + 4];
 
-        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dstU[i] = (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
+        dstV[i] = (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
     }
 }
 
-static inline void rgb48ToUV_half(uint8_t *dstU, uint8_t *dstV,
+static inline void rgb48ToUV_half(int16_t *dstU, int16_t *dstV,
                                   const uint8_t *src1, const uint8_t *src2,
                                   long width, uint32_t *unused)
 {
@@ -1085,12 +1085,12 @@ static inline void rgb48ToUV_half(uint8_t *dstU, uint8_t *dstV,
         int g= src1[12*i + 2] + src1[12*i + 8];
         int b= src1[12*i + 4] + src1[12*i + 10];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
+        dstU[i]= (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
+        dstV[i]= (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
     }
 }
 
-static inline void bgr48ToY(uint8_t *dst, const uint8_t *src, long width,
+static inline void bgr48ToY(int16_t *dst, const uint8_t *src, long width,
                             uint32_t *unused)
 {
     int i;
@@ -1099,11 +1099,11 @@ static inline void bgr48ToY(uint8_t *dst, const uint8_t *src, long width,
         int g = src[i*6+2];
         int r = src[i*6+4];
 
-        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dst[i] = (RY*r + GY*g + BY*b + (32<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
     }
 }
 
-static inline void bgr48ToUV(uint8_t *dstU, uint8_t *dstV,
+static inline void bgr48ToUV(int16_t *dstU, int16_t *dstV,
                              const uint8_t *src1, const uint8_t *src2,
                              long width, uint32_t *unused)
 {
@@ -1113,12 +1113,12 @@ static inline void bgr48ToUV(uint8_t *dstU, uint8_t *dstV,
         int g = src1[6*i + 2];
         int r = src1[6*i + 4];
 
-        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
+        dstU[i] = (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
+        dstV[i] = (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
     }
 }
 
-static inline void bgr48ToUV_half(uint8_t *dstU, uint8_t *dstV,
+static inline void bgr48ToUV_half(int16_t *dstU, int16_t *dstV,
                                   const uint8_t *src1, const uint8_t *src2,
                                   long width, uint32_t *unused)
 {
@@ -1128,13 +1128,13 @@ static inline void bgr48ToUV_half(uint8_t *dstU, uint8_t *dstV,
         int g= src1[12*i + 2] + src1[12*i + 8];
         int r= src1[12*i + 4] + src1[12*i + 10];
 
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
+        dstU[i]= (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
+        dstV[i]= (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
     }
 }
 
 #define BGR2Y(type, name, shr, shg, shb, maskr, maskg, maskb, RY, GY, BY, S)\
-static inline void name(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)\
+static inline void name(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++) {\
@@ -1142,7 +1142,7 @@ static inline void name(uint8_t *dst, const uint8_t *src, long width, uint32_t *
         int g= (((const type*)src)[i]>>shg)&maskg;\
         int r= (((const type*)src)[i]>>shr)&maskr;\
 \
-        dst[i]= (((RY)*r + (GY)*g + (BY)*b + (33<<((S)-1)))>>(S));\
+        dst[i]= (((RY)*r + (GY)*g + (BY)*b + (32<<((S)-1)) + (1<<(S-7)))>>((S)-6));\
     }\
 }
 
@@ -1155,16 +1155,16 @@ BGR2Y(uint16_t, bgr15ToY, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RY<<10, GY<<5, BY    
 BGR2Y(uint16_t, rgb16ToY, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RY    , GY<<5, BY<<11, RGB2YUV_SHIFT+8)
 BGR2Y(uint16_t, rgb15ToY, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RY    , GY<<5, BY<<10, RGB2YUV_SHIFT+7)
 
-static inline void abgrToA(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void abgrToA(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
-        dst[i]= src[4*i];
+        dst[i]= src[4*i]<<6;
     }
 }
 
 #define BGR2UV(type, name, shr, shg, shb, shp, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S) \
-static inline void name(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
+static inline void name(int16_t *dstU, int16_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++) {\
@@ -1172,11 +1172,11 @@ static inline void name(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, const 
         int g= ((((const type*)src)[i]>>shp)&maskg)>>shg;\
         int r= ((((const type*)src)[i]>>shp)&maskr)>>shr;\
 \
-        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<((S)-1)))>>(S);\
-        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<((S)-1)))>>(S);\
+        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (256<<((S)-1)) + (1<<(S-7)))>>((S)-6);\
+        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (256<<((S)-1)) + (1<<(S-7)))>>((S)-6);\
     }\
 }\
-static inline void name ## _half(uint8_t *dstU, uint8_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
+static inline void name ## _half(int16_t *dstU, int16_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++) {\
@@ -1189,8 +1189,8 @@ static inline void name ## _half(uint8_t *dstU, uint8_t *dstV, const uint8_t *sr
 \
         g>>=shg;\
 \
-        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (257<<(S)))>>((S)+1);\
-        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (257<<(S)))>>((S)+1);\
+        dstU[i]= ((RU)*r + (GU)*g + (BU)*b + (256U<<(S)) + (1<<(S-6)))>>((S)-6+1);\
+        dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (256U<<(S)) + (1<<(S-6)))>>((S)-6+1);\
     }\
 }
 
@@ -1203,27 +1203,27 @@ BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0, 0,   0x001F, 0x03E0,   0x7C00, RU<<10, GU<<
 BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0,   0xF800, 0x07E0,   0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
 BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0,   0x7C00, 0x03E0,   0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
-static inline void palToA(uint8_t *dst, const uint8_t *src, long width, uint32_t *pal)
+static inline void palToA(int16_t *dst, const uint8_t *src, long width, uint32_t *pal)
 {
     int i;
     for (i=0; i<width; i++) {
         int d= src[i];
 
-        dst[i]= pal[d] >> 24;
+        dst[i]= (pal[d] >> 24)<<6;
     }
 }
 
-static inline void palToY(uint8_t *dst, const uint8_t *src, long width, uint32_t *pal)
+static inline void palToY(int16_t *dst, const uint8_t *src, long width, uint32_t *pal)
 {
     int i;
     for (i=0; i<width; i++) {
         int d= src[i];
 
-        dst[i]= pal[d] & 0xFF;
+        dst[i]= (pal[d] & 0xFF)<<6;
     }
 }
 
-static inline void palToUV(uint8_t *dstU, uint8_t *dstV,
+static inline void palToUV(uint16_t *dstU, int16_t *dstV,
                            const uint8_t *src1, const uint8_t *src2,
                            long width, uint32_t *pal)
 {
@@ -1232,28 +1232,28 @@ static inline void palToUV(uint8_t *dstU, uint8_t *dstV,
     for (i=0; i<width; i++) {
         int p= pal[src1[i]];
 
-        dstU[i]= p>>8;
-        dstV[i]= p>>16;
+        dstU[i]= (uint8_t)(p>> 8)<<6;
+        dstV[i]= (uint8_t)(p>>16)<<6;
     }
 }
 
-static inline void monowhite2Y(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void monowhite2Y(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++) {
         int d= ~src[i];
         for(j=0; j<8; j++)
-            dst[8*i+j]= ((d>>(7-j))&1)*255;
+            dst[8*i+j]= ((d>>(7-j))&1)*16383;
     }
 }
 
-static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void monoblack2Y(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++) {
         int d= src[i];
         for(j=0; j<8; j++)
-            dst[8*i+j]= ((d>>(7-j))&1)*255;
+            dst[8*i+j]= ((d>>(7-j))&1)*16383;
     }
 }
 
