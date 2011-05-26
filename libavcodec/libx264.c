@@ -200,7 +200,7 @@ static void check_default_settings(AVCodecContext *avctx)
     if (score >= 5) {
         av_log(avctx, AV_LOG_ERROR, "Default settings detected, using medium profile\n");
         x4->preset = av_strdup("medium");
-        if (avctx->bit_rate == 200*100)
+        if (avctx->bit_rate == 200*1000)
             avctx->crf = 23;
     }
 }
