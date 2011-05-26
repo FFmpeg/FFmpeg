@@ -459,9 +459,10 @@ inline static void hcscale_c(SwsContext *c, uint16_t *dst, long dstWidth,
     src2 += c->chrSrcOffset;
 
     if (c->chrToYV12) {
-        c->chrToYV12(formatConvBuffer, formatConvBuffer+VOFW, src1, src2, srcW, pal);
+        uint8_t *buf2 = formatConvBuffer + FFALIGN(srcW, 16);
+        c->chrToYV12(formatConvBuffer, buf2, src1, src2, srcW, pal);
         src1= formatConvBuffer;
-        src2= formatConvBuffer+VOFW;
+        src2= buf2;
     }
 
     if (!c->hcscale_fast) {
