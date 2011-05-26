@@ -1220,7 +1220,7 @@ AVOutputFormat ff_webm_muxer = {
     mkv_write_header,
     mkv_write_packet,
     mkv_write_trailer,
-    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
+    .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS | AVFMT_TS_NONSTRICT,
 };
 #endif
 

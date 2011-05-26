@@ -262,6 +262,9 @@ typedef struct AVFormatParameters {
 #define AVFMT_NOSTREAMS     0x1000 /**< Format does not require any streams */
 #define AVFMT_NOBINSEARCH   0x2000 /**< Format does not allow to fallback to binary search via read_timestamp */
 #define AVFMT_NOGENSEARCH   0x4000 /**< Format does not allow to fallback to generic search */
+#define AVFMT_TS_NONSTRICT  0x8000 /**< Format does not require strictly
+                                          increasing timestamps, but they must
+                                          still be monotonic */
 
 typedef struct AVOutputFormat {
     const char *name;
