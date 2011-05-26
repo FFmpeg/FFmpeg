@@ -22,6 +22,7 @@
 #ifndef AVUTIL_PIXDESC_H
 #define AVUTIL_PIXDESC_H
 
+#include "pixfmt.h"
 #include <inttypes.h>
 
 typedef struct AVComponentDescriptor{
@@ -140,6 +141,14 @@ void av_write_image_line(const uint16_t *src, uint8_t *data[4], const int linesi
  * Finally if no pixel format has been found, returns PIX_FMT_NONE.
  */
 enum PixelFormat av_get_pix_fmt(const char *name);
+
+/**
+ * Return the short name for a pixel format, NULL in case pix_fmt is
+ * unknown.
+ *
+ * @see av_get_pix_fmt(), av_get_pix_fmt_string()
+ */
+const char *av_get_pix_fmt_name(enum PixelFormat pix_fmt);
 
 /**
  * Print in buf the string corresponding to the pixel format with
