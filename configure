@@ -2477,6 +2477,7 @@ case $target_os in
     os/2*)
         ln_s="cp -f"
         objformat="aout"
+        add_cppflags -D_GNU_SOURCE
         add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
         FFSERVERLDFLAGS=""
