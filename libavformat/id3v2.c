@@ -220,7 +220,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         avio_skip(s->pb, get_size(s->pb, 4));
 
     while (len >= taghdrlen) {
-        unsigned int tflags;
+        unsigned int tflags = 0;
         int tunsync = 0;
 
         if (isv34) {
