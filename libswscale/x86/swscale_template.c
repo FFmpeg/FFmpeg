@@ -59,7 +59,7 @@
         "psraw                               $3, %%mm3      \n\t"\
         "psraw                               $3, %%mm4      \n\t"\
         "packuswb                         %%mm4, %%mm3      \n\t"\
-        MOVNTQ(%%mm3, (%1, %%REGa))\
+        MOVNTQ(%%mm3, (%1, %3))\
         "add                                 $8, %3         \n\t"\
         "cmp                                 %2, %3         \n\t"\
         "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
@@ -81,8 +81,9 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
                                     uint8_t *aDest, long dstW, long chrDstW)
 {
     if (uDest) {
+        x86_reg uv_off = c->uv_off;
         YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
-        YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, vDest, chrDstW + c->uv_off, c->uv_off)
+        YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
@@ -137,7 +138,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
         "psraw                               $3, %%mm4      \n\t"\
         "psraw                               $3, %%mm6      \n\t"\
         "packuswb                         %%mm6, %%mm4      \n\t"\
-        MOVNTQ(%%mm4, (%1, %%REGa))\
+        MOVNTQ(%%mm4, (%1, %3))\
         "add                                 $8, %3         \n\t"\
         "cmp                                 %2, %3         \n\t"\
         "lea                     " offset "(%0), %%"REG_d"  \n\t"\
@@ -161,8 +162,9 @@ static inline void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
                                        uint8_t *aDest, long dstW, long chrDstW)
 {
     if (uDest) {
+        x86_reg uv_off = c->uv_off;
         YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
-        YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, vDest, chrDstW + c->uv_off, c->uv_off)
+        YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X_ACCURATE(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
