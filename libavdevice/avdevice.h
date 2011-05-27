@@ -20,6 +20,7 @@
 #define AVDEVICE_AVDEVICE_H
 
 #include "libavutil/avutil.h"
+#include "libavformat/avformat.h"
 
 #define LIBAVDEVICE_VERSION_MAJOR 53
 #define LIBAVDEVICE_VERSION_MINOR  0
