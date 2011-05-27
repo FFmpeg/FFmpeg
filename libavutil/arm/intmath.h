@@ -33,12 +33,12 @@
 #define FASTDIV FASTDIV
 static av_always_inline av_const int FASTDIV(int a, int b)
 {
-    int r, t;
-    __asm__ ("cmp     %3, #2               \n\t"
-             "ldr     %1, [%4, %3, lsl #2] \n\t"
-             "lsrle   %0, %2, #1           \n\t"
-             "smmulgt %0, %1, %2           \n\t"
-             : "=&r"(r), "=&r"(t) : "r"(a), "r"(b), "r"(ff_inverse));
+    int r;
+    __asm__ ("cmp     %2, #2               \n\t"
+             "ldr     %0, [%3, %2, lsl #2] \n\t"
+             "lsrle   %0, %1, #1           \n\t"
+             "smmulgt %0, %0, %1           \n\t"
+             : "=&r"(r) : "r"(a), "r"(b), "r"(ff_inverse) : "cc");
     return r;
 }
 
