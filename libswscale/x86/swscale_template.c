@@ -2071,7 +2071,6 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 {
     int32_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
-    int     canMMX2BeUsed  = c->canMMX2BeUsed;
     void    *mmx2FilterCode= c->lumMmx2FilterCode;
     int i;
 #if defined(PIC)
@@ -2144,7 +2143,6 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *d
 {
     int32_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
-    int     canMMX2BeUsed  = c->canMMX2BeUsed;
     void    *mmx2FilterCode= c->chrMmx2FilterCode;
     int i;
 #if defined(PIC)
@@ -2210,7 +2208,6 @@ static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int 
     const int flags= c->flags;
     int16_t **lumPixBuf= c->lumPixBuf;
     int16_t **chrUPixBuf= c->chrUPixBuf;
-    int16_t **chrVPixBuf= c->chrVPixBuf;
     int16_t **alpPixBuf= c->alpPixBuf;
     const int vLumBufSize= c->vLumBufSize;
     const int vChrBufSize= c->vChrBufSize;
@@ -2236,7 +2233,6 @@ static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int 
     if (dstY < dstH - 2) {
         const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
         const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-        const int16_t **chrVSrcPtr= (const int16_t **) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
         const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
         int i;
         if (flags & SWS_ACCURATE_RND) {
