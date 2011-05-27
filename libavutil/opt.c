@@ -45,7 +45,7 @@ const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mas
 const AVOption *av_next_option(void *obj, const AVOption *last)
 {
     if (last && last[1].name) return ++last;
-    else if (last)            return NULL;
+    else if (last || !(*(AVClass**)obj)->option->name) return NULL;
     else                      return (*(AVClass**)obj)->option;
 }
 
