@@ -26,6 +26,12 @@
 
 #define MAX_URL_SIZE 4096
 
+#ifdef DEBUG
+#    define hex_dump_debug(class, buf, size) av_hex_dump_log(class, AV_LOG_DEBUG, buf, size)
+#else
+#    define hex_dump_debug(class, buf, size)
+#endif
+
 typedef struct AVCodecTag {
     enum CodecID id;
     unsigned int tag;
