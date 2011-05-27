@@ -215,6 +215,7 @@ int avfilter_config_links(AVFilterContext *filter)
     return 0;
 }
 
+#ifdef DEBUG
 static char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
 {
     snprintf(buf, buf_size, "%s%s%s%s%s%s",
@@ -226,6 +227,7 @@ static char *ff_get_ref_perms_string(char *buf, size_t buf_size, int perms)
              perms & AV_PERM_NEG_LINESIZES ? "n" : "");
     return buf;
 }
+#endif
 
 static void ff_dlog_ref(void *ctx, AVFilterBufferRef *ref, int end)
 {
