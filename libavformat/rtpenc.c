@@ -30,8 +30,7 @@
 //#define DEBUG
 
 static const AVOption options[] = {
-    { "rtpflags", "RTP muxer flags", offsetof(RTPMuxContext, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" },
-    { "latm", "Use MP4A-LATM packetization instead of MPEG4-GENERIC for AAC", 0, FF_OPT_TYPE_CONST, {.dbl = FF_RTP_FLAG_MP4A_LATM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" },
+    FF_RTP_FLAG_OPTS(RTPMuxContext, flags),
     { NULL },
 };
 
