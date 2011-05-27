@@ -320,6 +320,16 @@ int64_t av_get_int(void *obj, const char *name, const AVOption **o_out)
     return num*intnum/den;
 }
 
+int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
+{
+    const AVOption *field = av_find_opt(obj, field_name, NULL, 0, 0);
+    const AVOption *flag  = av_find_opt(obj, flag_name,  NULL, 0, 0);
+
+    if (!field || !flag || flag->type != FF_OPT_TYPE_CONST)
+        return 0;
+    return av_get_int(obj, field_name, NULL) & (int) flag->default_val.dbl;
+}
+
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
                      int req_flags, int rej_flags)
 {
