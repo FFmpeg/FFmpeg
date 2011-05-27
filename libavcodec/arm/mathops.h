@@ -97,7 +97,7 @@ static inline av_const int MUL16(int ra, int rb)
 static inline av_const int mid_pred(int a, int b, int c)
 {
     int m;
-    __asm__ volatile (
+    __asm__ (
         "mov   %0, %2  \n\t"
         "cmp   %1, %2  \n\t"
         "movgt %0, %1  \n\t"
