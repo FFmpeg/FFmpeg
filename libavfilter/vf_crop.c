@@ -264,11 +264,9 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     crop->x &= ~((1 << crop->hsub) - 1);
     crop->y &= ~((1 << crop->vsub) - 1);
 
-#ifdef DEBUG
-    av_log(ctx, AV_LOG_DEBUG,
-           "n:%d t:%f x:%d y:%d x+w:%d y+h:%d\n",
-           (int)crop->var_values[VAR_N], crop->var_values[VAR_T], crop->x, crop->y, crop->x+crop->w, crop->y+crop->h);
-#endif
+    av_dlog(ctx, "n:%d t:%f x:%d y:%d x+w:%d y+h:%d\n",
+            (int)crop->var_values[VAR_N], crop->var_values[VAR_T], crop->x,
+            crop->y, crop->x+crop->w, crop->y+crop->h);
 
     ref2->data[0] += crop->y * ref2->linesize[0];
     ref2->data[0] += crop->x * crop->max_step[0];
