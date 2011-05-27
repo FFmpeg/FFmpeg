@@ -546,11 +546,14 @@ static inline float calc_cpl_coord(float energy_ch, float energy_cpl)
 static void apply_channel_coupling(AC3EncodeContext *s)
 {
 #if CONFIG_AC3ENC_FLOAT
-    DECLARE_ALIGNED(16, float,   cpl_coords)      [AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
-    DECLARE_ALIGNED(16, int32_t, fixed_cpl_coords)[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
+    LOCAL_ALIGNED_16(float,   cpl_coords,       [AC3_MAX_BLOCKS], [AC3_MAX_CHANNELS][16]);
+    LOCAL_ALIGNED_16(int32_t, fixed_cpl_coords, [AC3_MAX_BLOCKS], [AC3_MAX_CHANNELS][16]);
     int blk, ch, bnd, i, j;
     CoefSumType energy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
     int num_cpl_coefs = s->num_cpl_subbands * 12;
+
+    memset(cpl_coords,       0, AC3_MAX_BLOCKS * sizeof(*cpl_coords));
+    memset(fixed_cpl_coords, 0, AC3_MAX_BLOCKS * sizeof(*fixed_cpl_coords));
 
     /* calculate coupling channel from fbw channels */
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
