@@ -59,7 +59,7 @@
         "psraw                               $3, %%mm3      \n\t"\
         "psraw                               $3, %%mm4      \n\t"\
         "packuswb                         %%mm4, %%mm3      \n\t"\
-        MOVNTQ(%%mm3, (%1, %%REGa))\
+        MOVNTQ(%%mm3, (%1, %3))\
         "add                                 $8, %3         \n\t"\
         "cmp                                 %2, %3         \n\t"\
         "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
@@ -81,8 +81,9 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
                                     uint8_t *aDest, long dstW, long chrDstW)
 {
     if (uDest) {
+        x86_reg uv_off = c->uv_off;
         YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
-        YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, vDest, chrDstW + c->uv_off, c->uv_off)
+        YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
@@ -137,7 +138,7 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
         "psraw                               $3, %%mm4      \n\t"\
         "psraw                               $3, %%mm6      \n\t"\
         "packuswb                         %%mm6, %%mm4      \n\t"\
-        MOVNTQ(%%mm4, (%1, %%REGa))\
+        MOVNTQ(%%mm4, (%1, %3))\
         "add                                 $8, %3         \n\t"\
         "cmp                                 %2, %3         \n\t"\
         "lea                     " offset "(%0), %%"REG_d"  \n\t"\
@@ -161,8 +162,9 @@ static inline void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
                                        uint8_t *aDest, long dstW, long chrDstW)
 {
     if (uDest) {
+        x86_reg uv_off = c->uv_off;
         YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
-        YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, vDest, chrDstW + c->uv_off, c->uv_off)
+        YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X_ACCURATE(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
@@ -2223,7 +2225,6 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 {
     int32_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
-    int     canMMX2BeUsed  = c->canMMX2BeUsed;
     void    *mmx2FilterCode= c->lumMmx2FilterCode;
     int i;
 #if defined(PIC)
@@ -2296,7 +2297,6 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *d
 {
     int32_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
-    int     canMMX2BeUsed  = c->canMMX2BeUsed;
     void    *mmx2FilterCode= c->chrMmx2FilterCode;
     int i;
 #if defined(PIC)
@@ -2362,7 +2362,6 @@ static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int 
     const int flags= c->flags;
     int16_t **lumPixBuf= c->lumPixBuf;
     int16_t **chrUPixBuf= c->chrUPixBuf;
-    int16_t **chrVPixBuf= c->chrVPixBuf;
     int16_t **alpPixBuf= c->alpPixBuf;
     const int vLumBufSize= c->vLumBufSize;
     const int vChrBufSize= c->vChrBufSize;
@@ -2388,7 +2387,6 @@ static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int 
     if (dstY < dstH - 2) {
         const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
         const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-        const int16_t **chrVSrcPtr= (const int16_t **) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
         const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
         int i;
         if (flags & SWS_ACCURATE_RND) {

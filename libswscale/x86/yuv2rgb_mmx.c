@@ -82,15 +82,15 @@ SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
     if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
         switch (c->dstFormat) {
             case PIX_FMT_RGB32:
-                if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) {
-#if HAVE_7REGS
+                if (c->srcFormat == PIX_FMT_YUVA420P) {
+#if HAVE_7REGS && CONFIG_SWSCALE_ALPHA
                     return yuva420_rgb32_MMX;
 #endif
                     break;
                 } else return yuv420_rgb32_MMX;
             case PIX_FMT_BGR32:
-                if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) {
-#if HAVE_7REGS
+                if (c->srcFormat == PIX_FMT_YUVA420P) {
+#if HAVE_7REGS && CONFIG_SWSCALE_ALPHA
                     return yuva420_bgr32_MMX;
 #endif
                     break;

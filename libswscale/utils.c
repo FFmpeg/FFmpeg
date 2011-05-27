@@ -795,7 +795,6 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
                srcW, srcH, dstW, dstH);
         return AVERROR(EINVAL);
     }
-    FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
 
     if (!dstFilter) dstFilter= &dummyFilter;
     if (!srcFilter) srcFilter= &dummyFilter;
@@ -851,6 +850,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
     }
 
+    FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
     if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2) {
         c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
         if (!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR)) {
