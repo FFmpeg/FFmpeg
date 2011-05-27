@@ -886,10 +886,10 @@ static void sws_init_swScale_c(SwsContext *c)
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
-        case PIX_FMT_RGB48BE:
-        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48ToUV_half; break;
-        case PIX_FMT_BGR48BE:
-        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48ToUV_half; break;
+        case PIX_FMT_RGB48BE: c->chrToYV12 = rgb48BEToUV_half; break;
+        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48LEToUV_half; break;
+        case PIX_FMT_BGR48BE: c->chrToYV12 = bgr48BEToUV_half; break;
+        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48LEToUV_half; break;
         case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV_half;  break;
         case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV_half; break;
         case PIX_FMT_BGR24  : c->chrToYV12 = bgr24ToUV_half_c; break;
@@ -903,10 +903,10 @@ static void sws_init_swScale_c(SwsContext *c)
         }
     } else {
         switch(srcFormat) {
-        case PIX_FMT_RGB48BE:
-        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48ToUV; break;
-        case PIX_FMT_BGR48BE:
-        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48ToUV; break;
+        case PIX_FMT_RGB48BE: c->chrToYV12 = rgb48BEToUV; break;
+        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48LEToUV; break;
+        case PIX_FMT_BGR48BE: c->chrToYV12 = bgr48BEToUV; break;
+        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48LEToUV; break;
         case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV;  break;
         case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV; break;
         case PIX_FMT_BGR24  : c->chrToYV12 = bgr24ToUV_c; break;
@@ -945,10 +945,10 @@ static void sws_init_swScale_c(SwsContext *c)
     case PIX_FMT_RGB32_1: c->lumToYV12 = bgr321ToY; break;
     case PIX_FMT_BGR32  : c->lumToYV12 = rgb32ToY;  break;
     case PIX_FMT_BGR32_1: c->lumToYV12 = rgb321ToY; break;
-    case PIX_FMT_RGB48BE:
-    case PIX_FMT_RGB48LE: c->lumToYV12 = rgb48ToY; break;
-    case PIX_FMT_BGR48BE:
-    case PIX_FMT_BGR48LE: c->lumToYV12 = bgr48ToY; break;
+    case PIX_FMT_RGB48BE: c->lumToYV12 = rgb48BEToY; break;
+    case PIX_FMT_RGB48LE: c->lumToYV12 = rgb48LEToY; break;
+    case PIX_FMT_BGR48BE: c->lumToYV12 = bgr48BEToY; break;
+    case PIX_FMT_BGR48LE: c->lumToYV12 = bgr48LEToY; break;
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {
@@ -971,12 +971,6 @@ static void sws_init_swScale_c(SwsContext *c)
     case PIX_FMT_RGB32  :
     case PIX_FMT_BGR32  :
         c->alpSrcOffset = 3;
-        break;
-    case PIX_FMT_RGB48LE:
-    case PIX_FMT_BGR48LE:
-        c->lumSrcOffset = 1;
-        c->chrSrcOffset = 1;
-        c->alpSrcOffset = 1;
         break;
     }
 

@@ -1045,93 +1045,55 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
     }
 }
 
-static inline void rgb48ToY(int16_t *dst, const uint8_t *src, long width,
-                            uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int r = src[i*6+0];
-        int g = src[i*6+2];
-        int b = src[i*6+4];
-
-        dst[i] = (RY*r + GY*g + BY*b + (32<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
-    }
+#define RGB48(name, R, B, READ)\
+static inline void name ## ToY(int16_t *dst, const uint16_t *src, long width, uint32_t *unused)\
+{\
+    int i;\
+    for (i = 0; i < width; i++) {\
+        int r = READ(&src[i*3+R]);\
+        int g = READ(&src[i*3+1]);\
+        int b = READ(&src[i*3+B]);\
+\
+        dst[i] = (RY*r + GY*g + BY*b + (32<<(RGB2YUV_SHIFT-1+8)) + (1<<(RGB2YUV_SHIFT-7+8))) >> (RGB2YUV_SHIFT-6+8);\
+    }\
+}\
+\
+static inline void name ## ToUV(int16_t *dstU, int16_t *dstV,\
+                             const uint16_t *src1, const uint16_t *src2,\
+                             long width, uint32_t *unused)\
+{\
+    int i;\
+    assert(src1==src2);\
+    for (i = 0; i < width; i++) {\
+        int r = READ(&src1[3*i + R]);\
+        int g = READ(&src1[3*i + 1]);\
+        int b = READ(&src1[3*i + B]);\
+\
+        dstU[i] = (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1+8)) + (1<<(RGB2YUV_SHIFT-7+8))) >> (RGB2YUV_SHIFT-6+8);\
+        dstV[i] = (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1+8)) + (1<<(RGB2YUV_SHIFT-7+8))) >> (RGB2YUV_SHIFT-6+8);\
+    }\
+}\
+\
+static inline void name ## ToUV_half(int16_t *dstU, int16_t *dstV,\
+                                  const uint16_t *src1, const uint16_t *src2,\
+                                  long width, uint32_t *unused)\
+{\
+    int i;\
+    assert(src1==src2);\
+    for (i = 0; i < width; i++) {\
+        int r= READ(&src1[6*i + R]) + READ(&src1[6*i + 3+R]);\
+        int g= READ(&src1[6*i + 1]) + READ(&src1[6*i + 4]);\
+        int b= READ(&src1[6*i + B]) + READ(&src1[6*i + 3+B]);\
+\
+        dstU[i]= (RU*r + GU*g + BU*b + (256U<<(RGB2YUV_SHIFT+8)) + (1<<(RGB2YUV_SHIFT-6+8))) >> (RGB2YUV_SHIFT-5+8);\
+        dstV[i]= (RV*r + GV*g + BV*b + (256U<<(RGB2YUV_SHIFT+8)) + (1<<(RGB2YUV_SHIFT-6+8))) >> (RGB2YUV_SHIFT-5+8);\
+    }\
 }
 
-static inline void rgb48ToUV(int16_t *dstU, int16_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
-                             long width, uint32_t *unused)
-{
-    int i;
-    assert(src1==src2);
-    for (i = 0; i < width; i++) {
-        int r = src1[6*i + 0];
-        int g = src1[6*i + 2];
-        int b = src1[6*i + 4];
-
-        dstU[i] = (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
-        dstV[i] = (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
-    }
-}
-
-static inline void rgb48ToUV_half(int16_t *dstU, int16_t *dstV,
-                                  const uint8_t *src1, const uint8_t *src2,
-                                  long width, uint32_t *unused)
-{
-    int i;
-    assert(src1==src2);
-    for (i = 0; i < width; i++) {
-        int r= src1[12*i + 0] + src1[12*i + 6];
-        int g= src1[12*i + 2] + src1[12*i + 8];
-        int b= src1[12*i + 4] + src1[12*i + 10];
-
-        dstU[i]= (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
-        dstV[i]= (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
-    }
-}
-
-static inline void bgr48ToY(int16_t *dst, const uint8_t *src, long width,
-                            uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int b = src[i*6+0];
-        int g = src[i*6+2];
-        int r = src[i*6+4];
-
-        dst[i] = (RY*r + GY*g + BY*b + (32<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
-    }
-}
-
-static inline void bgr48ToUV(int16_t *dstU, int16_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
-                             long width, uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int b = src1[6*i + 0];
-        int g = src1[6*i + 2];
-        int r = src1[6*i + 4];
-
-        dstU[i] = (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
-        dstV[i] = (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT-1)) + (1<<(RGB2YUV_SHIFT-7))) >> (RGB2YUV_SHIFT-6);
-    }
-}
-
-static inline void bgr48ToUV_half(int16_t *dstU, int16_t *dstV,
-                                  const uint8_t *src1, const uint8_t *src2,
-                                  long width, uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int b= src1[12*i + 0] + src1[12*i + 6];
-        int g= src1[12*i + 2] + src1[12*i + 8];
-        int r= src1[12*i + 4] + src1[12*i + 10];
-
-        dstU[i]= (RU*r + GU*g + BU*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
-        dstV[i]= (RV*r + GV*g + BV*b + (256<<(RGB2YUV_SHIFT)) + (1<<(RGB2YUV_SHIFT-6))) >> (RGB2YUV_SHIFT-5);
-    }
-}
+RGB48(rgb48LE, 0, 2, AV_RL16)
+RGB48(rgb48BE, 0, 2, AV_RB16)
+RGB48(bgr48LE, 2, 0, AV_RL16)
+RGB48(bgr48BE, 2, 0, AV_RB16)
 
 #define BGR2Y(type, name, shr, shg, shb, maskr, maskg, maskb, RY, GY, BY, S)\
 static inline void name(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)\
