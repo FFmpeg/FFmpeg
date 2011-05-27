@@ -101,6 +101,7 @@ typedef struct MOVIndex {
 } MOVTrack;
 
 typedef struct MOVMuxContext {
+    const AVClass *av_class;
     int     mode;
     int64_t time;
     int     nb_streams;
@@ -108,7 +109,11 @@ typedef struct MOVMuxContext {
     int64_t mdat_pos;
     uint64_t mdat_size;
     MOVTrack *tracks;
+
+    int flags;
 } MOVMuxContext;
+
+#define FF_MOV_FLAG_RTP_HINT 1
 
 int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt);
 

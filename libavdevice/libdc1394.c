@@ -28,6 +28,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include "libavutil/parseutils.h"
 
 #include <dc1394/dc1394.h>
 
@@ -40,6 +41,7 @@ typedef struct dc1394_data {
     dc1394video_frame_t *frame;
     int current_frame;
     int fps;
+    char *video_size;       /**< String describing video size, set by a private option. */
 
     AVPacket packet;
 } dc1394_data;
@@ -76,7 +78,10 @@ struct dc1394_frame_rate {
     { 0, 0 } /* gotta be the last one */
 };
 
+#define OFFSET(x) offsetof(dc1394_data, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "qvga"}, 0, 0, DEC },
     { NULL },
 };
 
@@ -103,6 +108,7 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     int score, max_score;
     int final_width, final_height, final_pix_fmt, final_frame_rate;
     int res, i, j;
+    int ret=-1;
 
     /* Now let us prep the hardware. */
     dc1394->d = dc1394_new();
@@ -127,6 +133,14 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
         av_log(c, AV_LOG_ERROR, "Could not get video formats.\n");
         goto out_camera;
     }
+
+    if (dc1394->video_size) {
+        if ((ret = av_parse_video_size(&ap->width, &ap->height, dc1394->video_size)) < 0) {
+            av_log(c, AV_LOG_ERROR, "Couldn't parse video size.\n");
+            goto out;
+        }
+    }
+    
     /* Choose the best mode. */
     rate = (ap->time_base.num ? av_rescale(1000, ap->time_base.den, ap->time_base.num) : -1);
     max_score = -1;
@@ -290,7 +304,7 @@ out_camera:
     dc1394_camera_free (dc1394->camera);
 out:
     dc1394_free(dc1394->d);
-    return -1;
+    return ret;
 }
 
 static int dc1394_read_packet(AVFormatContext *c, AVPacket *pkt)

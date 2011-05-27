@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include <windows.h>
 #include <vfw.h>
 #include "avdevice.h"
@@ -32,12 +35,14 @@
 /* End of missing MinGW defines */
 
 struct vfw_ctx {
+    const AVClass *class;
     HWND hwnd;
     HANDLE mutex;
     HANDLE event;
     AVPacketList *pktl;
     unsigned int curbufsize;
     unsigned int frame_num;
+    char *video_size;       /**< A string describing video size, set by a private option. */
 };
 
 static enum PixelFormat vfw_pixfmt(DWORD biCompression, WORD biBitCount)
@@ -228,6 +233,8 @@ static int vfw_read_close(AVFormatContext *s)
         pktl = next;
     }
 
+    av_freep(&ctx->video_size);
+
     return 0;
 }
 
@@ -242,8 +249,6 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     CAPTUREPARMS cparms;
     DWORD biCompression;
     WORD biBitCount;
-    int width;
-    int height;
     int ret;
 
     if (!strcmp(s->filename, "list")) {
@@ -316,10 +321,20 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     dump_bih(s, &bi->bmiHeader);
 
-    width  = ap->width  ? ap->width  : bi->bmiHeader.biWidth ;
-    height = ap->height ? ap->height : bi->bmiHeader.biHeight;
-    bi->bmiHeader.biWidth  = width ;
-    bi->bmiHeader.biHeight = height;
+
+    if (ctx->video_size) {
+        ret = av_parse_video_size(&bi->bmiHeader.biWidth, &bi->bmiHeader.biHeight, ctx->video_size);
+        if (ret < 0) {
+            av_log(s, AV_LOG_ERROR, "Couldn't parse video size.\n");
+            goto fail_bi;
+        }
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->width > 0)
+        bi->bmiHeader.biWidth = ap->width;
+    if (ap->height > 0)
+        bi->bmiHeader.biHeight = ap->height;
+#endif
 
     if (0) {
         /* For testing yet unsupported compressions
@@ -368,8 +383,8 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     codec = st->codec;
     codec->time_base = ap->time_base;
     codec->codec_type = AVMEDIA_TYPE_VIDEO;
-    codec->width = width;
-    codec->height = height;
+    codec->width  = bi->bmiHeader.biWidth;
+    codec->height = bi->bmiHeader.biHeight;
     codec->pix_fmt = vfw_pixfmt(biCompression, biBitCount);
     if(codec->pix_fmt == PIX_FMT_NONE) {
         codec->codec_id = vfw_codecid(biCompression);
@@ -450,6 +465,20 @@ static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
+#define OFFSET(x) offsetof(struct vfw_ctx, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass vfw_class = {
+    .class_name = "VFW indev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_vfwcap_demuxer = {
     "vfwcap",
     NULL_IF_CONFIG_SMALL("VFW video capture"),
@@ -459,4 +488,5 @@ AVInputFormat ff_vfwcap_demuxer = {
     vfw_read_packet,
     vfw_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class = &vfw_class,
 };

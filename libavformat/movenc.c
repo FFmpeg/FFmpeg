@@ -32,9 +32,23 @@
 #include "libavcodec/put_bits.h"
 #include "internal.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 
 #undef NDEBUG
 #include <assert.h>
+
+static const AVOption options[] = {
+    { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "rtphint", "Add RTP hint tracks", 0, FF_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { NULL },
+};
+
+static const AVClass mov_muxer_class = {
+    .class_name = "MOV/3GP/MP4/3G2 muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 //FIXME support 64 bit variant with wide placeholders
 static int64_t updateSize(AVIOContext *pb, int64_t pos)
@@ -2125,7 +2139,15 @@ static int mov_write_header(AVFormatContext *s)
     if (mov->mode & (MODE_MOV|MODE_IPOD) && s->nb_chapters)
         mov->chapter_track = mov->nb_streams++;
 
+#if FF_API_FLAG_RTP_HINT
     if (s->flags & AVFMT_FLAG_RTP_HINT) {
+        av_log(s, AV_LOG_WARNING, "The RTP_HINT flag is deprecated, enable it "
+                                  "via the -movflags rtphint muxer option "
+                                  "instead.\n");
+        mov->flags |= FF_MOV_FLAG_RTP_HINT;
+    }
+#endif
+    if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
         /* Add hint tracks for each audio and video stream */
         hint_track = mov->nb_streams;
         for (i = 0; i < s->nb_streams; i++) {
@@ -2221,7 +2243,7 @@ static int mov_write_header(AVFormatContext *s)
     if (mov->chapter_track)
         mov_create_chapter_track(s, mov->chapter_track);
 
-    if (s->flags & AVFMT_FLAG_RTP_HINT) {
+    if (mov->flags & FF_MOV_FLAG_RTP_HINT) {
         /* Initialize the hint tracks for each audio and video stream */
         for (i = 0; i < s->nb_streams; i++) {
             AVStream *st = s->streams[i];
@@ -2298,6 +2320,7 @@ AVOutputFormat ff_mov_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_movvideo_tags, codec_movaudio_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_TGP_MUXER
@@ -2314,6 +2337,7 @@ AVOutputFormat ff_tgp_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_MP4_MUXER
@@ -2330,6 +2354,7 @@ AVOutputFormat ff_mp4_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_PSP_MUXER
@@ -2346,6 +2371,7 @@ AVOutputFormat ff_psp_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_TG2_MUXER
@@ -2362,6 +2388,7 @@ AVOutputFormat ff_tg2_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif
 #if CONFIG_IPOD_MUXER
@@ -2378,5 +2405,6 @@ AVOutputFormat ff_ipod_muxer = {
     mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_ipod_tags, 0},
+    .priv_class = &mov_muxer_class,
 };
 #endif

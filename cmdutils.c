@@ -76,7 +76,8 @@ void uninit_opts(void)
     av_freep(&avformat_opts->key);
     av_freep(&avformat_opts);
 #if CONFIG_SWSCALE
-    av_freep(&sws_opts);
+    sws_freeContext(sws_opts);
+    sws_opts = NULL;
 #endif
     for (i = 0; i < opt_name_count; i++) {
         av_freep(&opt_names[i]);
