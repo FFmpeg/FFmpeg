@@ -897,16 +897,16 @@ static inline void RENAME(yuv2yuyv422_X)(SwsContext *c, const int16_t *lumFilter
     YSCALEYUV2PACKEDX_END
 }
 
-#define REAL_YSCALEYUV2RGB_UV(index, c, uv_off) \
+#define REAL_YSCALEYUV2RGB_UV(index, c) \
     "xor            "#index", "#index"  \n\t"\
     ".p2align              4            \n\t"\
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "#uv_off", "#index"  \n\t" \
+    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "#uv_off", "#index"  \n\t" \
+    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "psubw             %%mm3, %%mm2     \n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
     "psubw             %%mm4, %%mm5     \n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
     "movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0    \n\t"\
@@ -969,8 +969,8 @@ static inline void RENAME(yuv2yuyv422_X)(SwsContext *c, const int16_t *lumFilter
 
 #define YSCALEYUV2RGB_YA(index, c, b1, b2) REAL_YSCALEYUV2RGB_YA(index, c, b1, b2)
 
-#define YSCALEYUV2RGB(index, c, uv_off) \
-    REAL_YSCALEYUV2RGB_UV(index, c, uv_off) \
+#define YSCALEYUV2RGB(index, c) \
+    REAL_YSCALEYUV2RGB_UV(index, c) \
     REAL_YSCALEYUV2RGB_YA(index, c, %0, %1) \
     REAL_YSCALEYUV2RGB_COEFF(c)
 
@@ -984,12 +984,10 @@ static inline void RENAME(yuv2rgb32_2)(SwsContext *c, const uint16_t *buf0,
                                        const uint16_t *abuf1, uint8_t *dest,
                                        int dstW, int yalpha, int uvalpha, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
-
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
 #if ARCH_X86_64
         __asm__ volatile(
-            YSCALEYUV2RGB(%%r8, %5, %8)
+            YSCALEYUV2RGB(%%r8, %5)
             YSCALEYUV2RGB_YA(%%r8, %5, %6, %7)
             "psraw                  $3, %%mm1       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
             "psraw                  $3, %%mm7       \n\t" /* abuf0[eax] - abuf1[eax] >>7*/
@@ -997,7 +995,7 @@ static inline void RENAME(yuv2rgb32_2)(SwsContext *c, const uint16_t *buf0,
             WRITEBGR32(%4, 8280(%5), %%r8, %%mm2, %%mm4, %%mm5, %%mm1, %%mm0, %%mm7, %%mm3, %%mm6)
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "r" (dest),
                "a" (&c->redDither),
-               "r" (abuf0), "r" (abuf1), "m"(uv_off)
+               "r" (abuf0), "r" (abuf1)
             : "%r8"
         );
 #else
@@ -1007,7 +1005,7 @@ static inline void RENAME(yuv2rgb32_2)(SwsContext *c, const uint16_t *buf0,
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB(%%REGBP, %5, %6)
+            YSCALEYUV2RGB(%%REGBP, %5)
             "push                   %0              \n\t"
             "push                   %1              \n\t"
             "mov          "U_TEMP"(%5), %0          \n\t"
@@ -1022,7 +1020,7 @@ static inline void RENAME(yuv2rgb32_2)(SwsContext *c, const uint16_t *buf0,
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
 #endif
     } else {
@@ -1030,13 +1028,13 @@ static inline void RENAME(yuv2rgb32_2)(SwsContext *c, const uint16_t *buf0,
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB(%%REGBP, %5, %6)
+            YSCALEYUV2RGB(%%REGBP, %5)
             "pcmpeqd %%mm7, %%mm7                   \n\t"
             WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     }
 }
@@ -1048,20 +1046,18 @@ static inline void RENAME(yuv2bgr24_2)(SwsContext *c, const uint16_t *buf0,
                                        const uint16_t *abuf1, uint8_t *dest,
                                        int dstW, int yalpha, int uvalpha, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
-
     //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
         "mov        %4, %%"REG_b"               \n\t"
         "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2RGB(%%REGBP, %5, %6)
+        YSCALEYUV2RGB(%%REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
         WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
         "pop %%"REG_BP"                         \n\t"
         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-           "a" (&c->redDither), "m"(uv_off)
+           "a" (&c->redDither)
     );
 }
 
@@ -1072,14 +1068,12 @@ static inline void RENAME(yuv2rgb555_2)(SwsContext *c, const uint16_t *buf0,
                                         const uint16_t *abuf1, uint8_t *dest,
                                         int dstW, int yalpha, int uvalpha, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
-
     //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
         "mov        %4, %%"REG_b"               \n\t"
         "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2RGB(%%REGBP, %5, %6)
+        YSCALEYUV2RGB(%%REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
@@ -1091,7 +1085,7 @@ static inline void RENAME(yuv2rgb555_2)(SwsContext *c, const uint16_t *buf0,
         "pop %%"REG_BP"                         \n\t"
         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-           "a" (&c->redDither), "m"(uv_off)
+           "a" (&c->redDither)
     );
 }
 
@@ -1102,14 +1096,12 @@ static inline void RENAME(yuv2rgb565_2)(SwsContext *c, const uint16_t *buf0,
                                         const uint16_t *abuf1, uint8_t *dest,
                                         int dstW, int yalpha, int uvalpha, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
-
     //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
         "mov        %4, %%"REG_b"               \n\t"
         "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2RGB(%%REGBP, %5, %6)
+        YSCALEYUV2RGB(%%REGBP, %5)
         "pxor    %%mm7, %%mm7                   \n\t"
         /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
@@ -1121,11 +1113,11 @@ static inline void RENAME(yuv2rgb565_2)(SwsContext *c, const uint16_t *buf0,
         "pop %%"REG_BP"                         \n\t"
         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-           "a" (&c->redDither), "m"(uv_off)
+           "a" (&c->redDither)
     );
 }
 
-#define REAL_YSCALEYUV2PACKED(index, c, uv_off) \
+#define REAL_YSCALEYUV2PACKED(index, c) \
     "movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0              \n\t"\
     "movq "LUM_MMX_FILTER_OFFSET"+8("#c"), %%mm1              \n\t"\
     "psraw                $3, %%mm0                           \n\t"\
@@ -1137,10 +1129,10 @@ static inline void RENAME(yuv2rgb565_2)(SwsContext *c, const uint16_t *buf0,
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "#uv_off", "#index"  \n\t" \
+    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "#uv_off", "#index"  \n\t" \
+    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "psubw             %%mm3, %%mm2     \n\t" /* uvbuf0[eax] - uvbuf1[eax]*/\
     "psubw             %%mm4, %%mm5     \n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048]*/\
     "movq "CHR_MMX_FILTER_OFFSET"+8("#c"), %%mm0    \n\t"\
@@ -1163,7 +1155,7 @@ static inline void RENAME(yuv2rgb565_2)(SwsContext *c, const uint16_t *buf0,
     "paddw             %%mm0, %%mm1     \n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
     "paddw             %%mm6, %%mm7     \n\t" /* buf0[eax]yalpha1 + buf1[eax](1-yalpha1) >>16*/\
 
-#define YSCALEYUV2PACKED(index, c, uv_off)  REAL_YSCALEYUV2PACKED(index, c, uv_off)
+#define YSCALEYUV2PACKED(index, c)  REAL_YSCALEYUV2PACKED(index, c)
 
 static inline void RENAME(yuv2yuyv422_2)(SwsContext *c, const uint16_t *buf0,
                                          const uint16_t *buf1, const uint16_t *ubuf0,
@@ -1172,30 +1164,28 @@ static inline void RENAME(yuv2yuyv422_2)(SwsContext *c, const uint16_t *buf0,
                                          const uint16_t *abuf1, uint8_t *dest,
                                          int dstW, int yalpha, int uvalpha, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
-
     //Note 8280 == DSTW_OFFSET but the preprocessor can't handle that there :(
     __asm__ volatile(
         "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
         "mov %4, %%"REG_b"                        \n\t"
         "push %%"REG_BP"                        \n\t"
-        YSCALEYUV2PACKED(%%REGBP, %5, %6)
+        YSCALEYUV2PACKED(%%REGBP, %5)
         WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
         "pop %%"REG_BP"                         \n\t"
         "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
         :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-           "a" (&c->redDither), "m"(uv_off)
+           "a" (&c->redDither)
     );
 }
 
-#define REAL_YSCALEYUV2RGB1(index, c, uv_off) \
+#define REAL_YSCALEYUV2RGB1(index, c) \
     "xor            "#index", "#index"  \n\t"\
     ".p2align              4            \n\t"\
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm3     \n\t" /* uvbuf0[eax]*/\
-    "add           "#uv_off", "#index"  \n\t" \
+    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm4     \n\t" /* uvbuf0[eax+2048]*/\
-    "sub           "#uv_off", "#index"  \n\t" \
+    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "psraw                $4, %%mm3     \n\t" /* uvbuf0[eax] - uvbuf1[eax] >>4*/\
     "psraw                $4, %%mm4     \n\t" /* uvbuf0[eax+2048] - uvbuf1[eax+2048] >>4*/\
     "psubw  "U_OFFSET"("#c"), %%mm3     \n\t" /* (U-128)8*/\
@@ -1237,19 +1227,19 @@ static inline void RENAME(yuv2yuyv422_2)(SwsContext *c, const uint16_t *buf0,
     "packuswb          %%mm6, %%mm5     \n\t"\
     "packuswb          %%mm3, %%mm4     \n\t"\
 
-#define YSCALEYUV2RGB1(index, c, uv_off)  REAL_YSCALEYUV2RGB1(index, c, uv_off)
+#define YSCALEYUV2RGB1(index, c)  REAL_YSCALEYUV2RGB1(index, c)
 
 // do vertical chrominance interpolation
-#define REAL_YSCALEYUV2RGB1b(index, c, uv_off) \
+#define REAL_YSCALEYUV2RGB1b(index, c) \
     "xor            "#index", "#index"  \n\t"\
     ".p2align              4            \n\t"\
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "#uv_off", "#index"  \n\t" \
+    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "#uv_off", "#index"  \n\t" \
+    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "paddw             %%mm2, %%mm3     \n\t" /* uvbuf0[eax] + uvbuf1[eax]*/\
     "paddw             %%mm5, %%mm4     \n\t" /* uvbuf0[eax+2048] + uvbuf1[eax+2048]*/\
     "psrlw                $5, %%mm3     \n\t" /*FIXME might overflow*/\
@@ -1293,7 +1283,7 @@ static inline void RENAME(yuv2yuyv422_2)(SwsContext *c, const uint16_t *buf0,
     "packuswb          %%mm6, %%mm5     \n\t"\
     "packuswb          %%mm3, %%mm4     \n\t"\
 
-#define YSCALEYUV2RGB1b(index, c, uv_off)  REAL_YSCALEYUV2RGB1b(index, c, uv_off)
+#define YSCALEYUV2RGB1b(index, c)  REAL_YSCALEYUV2RGB1b(index, c)
 
 #define REAL_YSCALEYUV2RGB1_ALPHA(index) \
     "movq  (%1, "#index", 2), %%mm7     \n\t" /* abuf0[index  ]     */\
@@ -1313,7 +1303,6 @@ static inline void RENAME(yuv2rgb32_1)(SwsContext *c, const uint16_t *buf0,
                                        int dstW, int uvalpha, enum PixelFormat dstFormat,
                                        int flags, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
     const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
@@ -1322,26 +1311,26 @@ static inline void RENAME(yuv2rgb32_1)(SwsContext *c, const uint16_t *buf0,
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1(%%REGBP, %5, %6)
+                YSCALEYUV2RGB1(%%REGBP, %5)
                 YSCALEYUV2RGB1_ALPHA(%%REGBP)
                 WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (abuf0), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-                   "a" (&c->redDither), "m"(uv_off)
+                   "a" (&c->redDither)
             );
         } else {
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1(%%REGBP, %5, %6)
+                YSCALEYUV2RGB1(%%REGBP, %5)
                 "pcmpeqd %%mm7, %%mm7                   \n\t"
                 WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-                   "a" (&c->redDither), "m"(uv_off)
+                   "a" (&c->redDither)
             );
         }
     } else {
@@ -1350,26 +1339,26 @@ static inline void RENAME(yuv2rgb32_1)(SwsContext *c, const uint16_t *buf0,
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1b(%%REGBP, %5, %6)
+                YSCALEYUV2RGB1b(%%REGBP, %5)
                 YSCALEYUV2RGB1_ALPHA(%%REGBP)
                 WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (abuf0), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-                   "a" (&c->redDither), "m"(uv_off)
+                   "a" (&c->redDither)
             );
         } else {
             __asm__ volatile(
                 "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
                 "mov        %4, %%"REG_b"               \n\t"
                 "push %%"REG_BP"                        \n\t"
-                YSCALEYUV2RGB1b(%%REGBP, %5, %6)
+                YSCALEYUV2RGB1b(%%REGBP, %5)
                 "pcmpeqd %%mm7, %%mm7                   \n\t"
                 WRITEBGR32(%%REGb, 8280(%5), %%REGBP, %%mm2, %%mm4, %%mm5, %%mm7, %%mm0, %%mm1, %%mm3, %%mm6)
                 "pop %%"REG_BP"                         \n\t"
                 "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
                 :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-                   "a" (&c->redDither), "m"(uv_off)
+                   "a" (&c->redDither)
             );
         }
     }
@@ -1382,7 +1371,6 @@ static inline void RENAME(yuv2bgr24_1)(SwsContext *c, const uint16_t *buf0,
                                        int dstW, int uvalpha, enum PixelFormat dstFormat,
                                        int flags, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
     const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
@@ -1390,26 +1378,26 @@ static inline void RENAME(yuv2bgr24_1)(SwsContext *c, const uint16_t *buf0,
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1(%%REGBP, %5, %6)
+            YSCALEYUV2RGB1(%%REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     } else {
         __asm__ volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1b(%%REGBP, %5, %6)
+            YSCALEYUV2RGB1b(%%REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             WRITEBGR24(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     }
 }
@@ -1421,7 +1409,6 @@ static inline void RENAME(yuv2rgb555_1)(SwsContext *c, const uint16_t *buf0,
                                         int dstW, int uvalpha, enum PixelFormat dstFormat,
                                         int flags, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
     const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
@@ -1429,7 +1416,7 @@ static inline void RENAME(yuv2rgb555_1)(SwsContext *c, const uint16_t *buf0,
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1(%%REGBP, %5, %6)
+            YSCALEYUV2RGB1(%%REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
@@ -1441,14 +1428,14 @@ static inline void RENAME(yuv2rgb555_1)(SwsContext *c, const uint16_t *buf0,
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     } else {
         __asm__ volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1b(%%REGBP, %5, %6)
+            YSCALEYUV2RGB1b(%%REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
@@ -1460,7 +1447,7 @@ static inline void RENAME(yuv2rgb555_1)(SwsContext *c, const uint16_t *buf0,
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     }
 }
@@ -1472,7 +1459,6 @@ static inline void RENAME(yuv2rgb565_1)(SwsContext *c, const uint16_t *buf0,
                                         int dstW, int uvalpha, enum PixelFormat dstFormat,
                                         int flags, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
     const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
@@ -1480,7 +1466,7 @@ static inline void RENAME(yuv2rgb565_1)(SwsContext *c, const uint16_t *buf0,
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1(%%REGBP, %5, %6)
+            YSCALEYUV2RGB1(%%REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
@@ -1492,14 +1478,14 @@ static inline void RENAME(yuv2rgb565_1)(SwsContext *c, const uint16_t *buf0,
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     } else {
         __asm__ volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2RGB1b(%%REGBP, %5, %6)
+            YSCALEYUV2RGB1b(%%REGBP, %5)
             "pxor    %%mm7, %%mm7                   \n\t"
             /* mm2=B, %%mm4=G, %%mm5=R, %%mm7=0 */
 #ifdef DITHER1XBPP
@@ -1511,19 +1497,19 @@ static inline void RENAME(yuv2rgb565_1)(SwsContext *c, const uint16_t *buf0,
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     }
 }
 
-#define REAL_YSCALEYUV2PACKED1(index, c, uv_off) \
+#define REAL_YSCALEYUV2PACKED1(index, c) \
     "xor            "#index", "#index"  \n\t"\
     ".p2align              4            \n\t"\
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm3     \n\t" /* uvbuf0[eax]*/\
-    "add           "#uv_off", "#index"  \n\t" \
+    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm4     \n\t" /* uvbuf0[eax+2048]*/\
-    "sub           "#uv_off", "#index"  \n\t" \
+    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "psraw                $7, %%mm3     \n\t" \
     "psraw                $7, %%mm4     \n\t" \
     "movq  (%0, "#index", 2), %%mm1     \n\t" /*buf0[eax]*/\
@@ -1531,18 +1517,18 @@ static inline void RENAME(yuv2rgb565_1)(SwsContext *c, const uint16_t *buf0,
     "psraw                $7, %%mm1     \n\t" \
     "psraw                $7, %%mm7     \n\t" \
 
-#define YSCALEYUV2PACKED1(index, c, uv_off)  REAL_YSCALEYUV2PACKED1(index, c, uv_off)
+#define YSCALEYUV2PACKED1(index, c)  REAL_YSCALEYUV2PACKED1(index, c)
 
-#define REAL_YSCALEYUV2PACKED1b(index, c, uv_off) \
+#define REAL_YSCALEYUV2PACKED1b(index, c) \
     "xor "#index", "#index"             \n\t"\
     ".p2align              4            \n\t"\
     "1:                                 \n\t"\
     "movq     (%2, "#index"), %%mm2     \n\t" /* uvbuf0[eax]*/\
     "movq     (%3, "#index"), %%mm3     \n\t" /* uvbuf1[eax]*/\
-    "add           "#uv_off", "#index"  \n\t" \
+    "add           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "movq     (%2, "#index"), %%mm5     \n\t" /* uvbuf0[eax+2048]*/\
     "movq     (%3, "#index"), %%mm4     \n\t" /* uvbuf1[eax+2048]*/\
-    "sub           "#uv_off", "#index"  \n\t" \
+    "sub           "UV_OFFx2"("#c"), "#index"  \n\t" \
     "paddw             %%mm2, %%mm3     \n\t" /* uvbuf0[eax] + uvbuf1[eax]*/\
     "paddw             %%mm5, %%mm4     \n\t" /* uvbuf0[eax+2048] + uvbuf1[eax+2048]*/\
     "psrlw                $8, %%mm3     \n\t" \
@@ -1551,7 +1537,7 @@ static inline void RENAME(yuv2rgb565_1)(SwsContext *c, const uint16_t *buf0,
     "movq 8(%0, "#index", 2), %%mm7     \n\t" /*buf0[eax]*/\
     "psraw                $7, %%mm1     \n\t" \
     "psraw                $7, %%mm7     \n\t"
-#define YSCALEYUV2PACKED1b(index, c, uv_off)  REAL_YSCALEYUV2PACKED1b(index, c, uv_off)
+#define YSCALEYUV2PACKED1b(index, c)  REAL_YSCALEYUV2PACKED1b(index, c)
 
 static inline void RENAME(yuv2yuyv422_1)(SwsContext *c, const uint16_t *buf0,
                                          const uint16_t *ubuf0, const uint16_t *ubuf1,
@@ -1560,7 +1546,6 @@ static inline void RENAME(yuv2yuyv422_1)(SwsContext *c, const uint16_t *buf0,
                                          int dstW, int uvalpha, enum PixelFormat dstFormat,
                                          int flags, int y)
 {
-    x86_reg uv_off = c->uv_off << 1;
     const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
 
     if (uvalpha < 2048) { // note this is not correct (shifts chrominance by 0.5 pixels) but it is a bit faster
@@ -1568,24 +1553,24 @@ static inline void RENAME(yuv2yuyv422_1)(SwsContext *c, const uint16_t *buf0,
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2PACKED1(%%REGBP, %5, %6)
+            YSCALEYUV2PACKED1(%%REGBP, %5)
             WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     } else {
         __asm__ volatile(
             "mov %%"REG_b", "ESP_OFFSET"(%5)        \n\t"
             "mov        %4, %%"REG_b"               \n\t"
             "push %%"REG_BP"                        \n\t"
-            YSCALEYUV2PACKED1b(%%REGBP, %5, %6)
+            YSCALEYUV2PACKED1b(%%REGBP, %5)
             WRITEYUY2(%%REGb, 8280(%5), %%REGBP)
             "pop %%"REG_BP"                         \n\t"
             "mov "ESP_OFFSET"(%5), %%"REG_b"        \n\t"
             :: "c" (buf0), "d" (buf1), "S" (ubuf0), "D" (ubuf1), "m" (dest),
-               "a" (&c->redDither), "m"(uv_off)
+               "a" (&c->redDither)
         );
     }
 }

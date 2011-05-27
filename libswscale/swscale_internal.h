@@ -194,6 +194,7 @@ typedef struct SwsContext {
 #define Y_TEMP                "11*8+4*4*256*2+40"
 #define ALP_MMX_FILTER_OFFSET "11*8+4*4*256*2+48"
 #define UV_OFF                "11*8+4*4*256*3+48"
+#define UV_OFFx2              "11*8+4*4*256*3+56"
 
     DECLARE_ALIGNED(8, uint64_t, redDither);
     DECLARE_ALIGNED(8, uint64_t, greenDither);
@@ -217,6 +218,7 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, uint64_t, y_temp);
     int32_t  alpMmxFilter[4*MAX_FILTER_SIZE];
     DECLARE_ALIGNED(8, ptrdiff_t, uv_off); ///< offset (in pixels) between u and v planes
+    DECLARE_ALIGNED(8, ptrdiff_t, uv_offx2); ///< offset (in bytes) between u and v planes
 
 #if HAVE_ALTIVEC
     vector signed short   CY;
