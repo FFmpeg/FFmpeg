@@ -341,14 +341,8 @@ static int wav_read_header(AVFormatContext *s,
         size = next_tag(pb, &tag);
         next_tag_ofs = avio_tell(pb) + size;
 
-        if (url_feof(pb)) {
-            if (data_ofs < 0) {
-                av_log(s, AV_LOG_ERROR, "no 'data' tag found\n");
-                return AVERROR_INVALIDDATA;
-            }
-
+        if (url_feof(pb))
             break;
-        }
 
         switch (tag) {
         case MKTAG('f', 'm', 't', ' '):
@@ -370,16 +364,16 @@ static int wav_read_header(AVFormatContext *s,
                 next_tag_ofs = wav->data_end = avio_tell(pb) + data_size;
             } else {
                 data_size = size;
-                wav->data_end = size ? next_tag_ofs : INT64_MAX;
+                next_tag_ofs = wav->data_end = size ? next_tag_ofs : INT64_MAX;
             }
+
+            data_ofs = avio_tell(pb);
 
             /* don't look for footer metadata if we can't seek or if we don't
              * know where the data tag ends
              */
             if (!pb->seekable || (!rf64 && !size))
                 goto break_loop;
-
-            data_ofs = avio_tell(pb);
             break;
         case MKTAG('f','a','c','t'):
             if(!sample_count)
@@ -390,11 +384,20 @@ static int wav_read_header(AVFormatContext *s,
                 return ret;
             break;
         }
-        avio_seek(pb, next_tag_ofs, SEEK_SET);
+
+        /* seek to next tag unless we know that we'll run into EOF */
+        if ((avio_size(pb) > 0 && next_tag_ofs >= avio_size(pb)) ||
+            avio_seek(pb, next_tag_ofs, SEEK_SET) < 0) {
+            break;
+        }
     }
 break_loop:
-    if (data_ofs >= 0)
-        avio_seek(pb, data_ofs, SEEK_SET);
+    if (data_ofs < 0) {
+        av_log(s, AV_LOG_ERROR, "no 'data' tag found\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    avio_seek(pb, data_ofs, SEEK_SET);
 
     if (!sample_count && st->codec->channels && av_get_bits_per_sample(st->codec->codec_id))
         sample_count = (data_size<<3) / (st->codec->channels * (uint64_t)av_get_bits_per_sample(st->codec->codec_id));
