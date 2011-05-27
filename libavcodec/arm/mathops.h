@@ -107,7 +107,8 @@ static inline av_const int mid_pred(int a, int b, int c)
         "cmp   %0, %1  \n\t"
         "movgt %0, %1  \n\t"
         : "=&r"(m), "+r"(a)
-        : "r"(b), "r"(c));
+        : "r"(b), "r"(c)
+        : "cc");
     return m;
 }
 

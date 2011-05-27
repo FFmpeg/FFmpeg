@@ -128,7 +128,7 @@ static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
                       : "=&r"(v0), "=&r"(v1), "=&r"(v2), "=&r"(v3), "+r"(dst),
                         "+r"(sign), "=r"(nz)
                       : "r"(v), "r"(idx), "r"(scale)
-                      : "d0", "d1", "d2", "d3", "d4", "d5");
+                      : "cc", "d0", "d1", "d2", "d3", "d4", "d5");
     return dst;
 }
 

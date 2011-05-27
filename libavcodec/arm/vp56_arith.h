@@ -48,7 +48,8 @@ static inline int vp56_rac_get_prob_armv6(VP56RangeCoder *c, int pr)
                       : "=&r"(c->high), "=&r"(c->code_word), "=&r"(bit),
                         "+&r"(c->bits), "+&r"(c->buffer)
                       : "r"(high), "r"(pr), "r"(c->end - 1),
-                        "0"(shift), "1"(code_word));
+                        "0"(shift), "1"(code_word)
+                      : "cc");
 
     return bit;
 }
@@ -74,7 +75,8 @@ static inline int vp56_rac_get_prob_branchy_armv6(VP56RangeCoder *c, int pr)
                       "lsl     %2,  %0,  #16          \n"
                       : "=&r"(low), "+&r"(code_word), "=&r"(tmp),
                         "+&r"(c->bits), "+&r"(c->buffer)
-                      : "r"(high), "r"(pr), "r"(c->end - 1), "0"(shift));
+                      : "r"(high), "r"(pr), "r"(c->end - 1), "0"(shift)
+                      : "cc");
 
     if (code_word >= tmp) {
         c->high      = high - low;
