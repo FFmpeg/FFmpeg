@@ -778,10 +778,11 @@ void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4], int b
 
 
 void
-ff_yuv2packedX_altivec(SwsContext *c,
-                       const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
-                     uint8_t *dest, int dstW, int dstY)
+ff_yuv2packedX_altivec(SwsContext *c, const int16_t *lumFilter,
+                       const int16_t **lumSrc, int lumFilterSize,
+                       const int16_t *chrFilter, const int16_t **chrUSrc,
+                       const int16_t **chrVSrc, int chrFilterSize,
+                       uint8_t *dest, int dstW, int dstY)
 {
     int i,j;
     vector signed short X,X0,X1,Y0,U0,V0,Y1,U1,V1,U,V;
@@ -816,9 +817,9 @@ ff_yuv2packedX_altivec(SwsContext *c,
         V = RND;
         /* extract 8 coeffs from U,V */
         for (j=0; j<chrFilterSize; j++) {
-            X  = vec_ld (0, &chrSrc[j][i/2]);
+            X  = vec_ld (0, &chrUSrc[j][i/2]);
             U  = vec_mradds (X, CCoeffs[j], U);
-            X  = vec_ld (0, &chrSrc[j][i/2+VOFW]);
+            X  = vec_ld (0, &chrVSrc[j][i/2]);
             V  = vec_mradds (X, CCoeffs[j], V);
         }
 
@@ -894,9 +895,9 @@ ff_yuv2packedX_altivec(SwsContext *c,
         V = RND;
         /* extract 8 coeffs from U,V */
         for (j=0; j<chrFilterSize; j++) {
-            X  = vec_ld (0, &chrSrc[j][i/2]);
+            X  = vec_ld (0, &chrUSrc[j][i/2]);
             U  = vec_mradds (X, CCoeffs[j], U);
-            X  = vec_ld (0, &chrSrc[j][i/2+VOFW]);
+            X  = vec_ld (0, &chrVSrc[j][i/2]);
             V  = vec_mradds (X, CCoeffs[j], V);
         }
 

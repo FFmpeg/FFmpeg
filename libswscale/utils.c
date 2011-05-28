@@ -753,6 +753,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     int srcH= c->srcH;
     int dstW= c->dstW;
     int dstH= c->dstH;
+    int dst_stride = FFALIGN(dstW * sizeof(int16_t)+66, 16), dst_stride_px = dst_stride >> 1;
     int flags, cpu_flags;
     enum PixelFormat srcFormat= c->srcFormat;
     enum PixelFormat dstFormat= c->dstFormat;
@@ -792,10 +793,6 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     if (srcW<4 || srcH<1 || dstW<8 || dstH<1) { //FIXME check if these are enough and try to lowwer them after fixing the relevant parts of the code
         av_log(NULL, AV_LOG_ERROR, "swScaler: %dx%d -> %dx%d is invalid scaling dimension\n",
                srcW, srcH, dstW, dstH);
-        return AVERROR(EINVAL);
-    }
-    if(srcW > VOFW || dstW > VOFW) {
-        av_log(NULL, AV_LOG_ERROR, "swScaler: Compile-time maximum width is "AV_STRINGIFY(VOFW)" change VOF/VOFW and recompile\n");
         return AVERROR(EINVAL);
     }
     FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
@@ -1001,29 +998,31 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     // allocate pixbufs (we use dynamic allocation because otherwise we would need to
     // allocate several megabytes to handle all possible cases)
     FF_ALLOC_OR_GOTO(c, c->lumPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
-    FF_ALLOC_OR_GOTO(c, c->chrPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->chrUPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->chrVPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
     if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat))
         FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
     //Note we need at least one pixel more at the end because of the MMX code (just in case someone wanna replace the 4000/8000)
     /* align at 16 bytes for AltiVec */
     for (i=0; i<c->vLumBufSize; i++) {
-        FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i+c->vLumBufSize], VOF+1, fail);
+        FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i+c->vLumBufSize], dst_stride+1, fail);
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
+    c->uv_off = dst_stride_px;
     for (i=0; i<c->vChrBufSize; i++) {
-        FF_ALLOC_OR_GOTO(c, c->chrPixBuf[i+c->vChrBufSize], (VOF+1)*2, fail);
-        c->chrPixBuf[i] = c->chrPixBuf[i+c->vChrBufSize];
+        FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], dst_stride*2+1, fail);
+        c->chrUPixBuf[i] = c->chrUPixBuf[i+c->vChrBufSize];
+        c->chrVPixBuf[i] = c->chrVPixBuf[i+c->vChrBufSize] = c->chrUPixBuf[i] + dst_stride_px;
     }
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
         for (i=0; i<c->vLumBufSize; i++) {
-            FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf[i+c->vLumBufSize], VOF+1, fail);
+            FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf[i+c->vLumBufSize], dst_stride+1, fail);
             c->alpPixBuf[i] = c->alpPixBuf[i+c->vLumBufSize];
         }
 
     //try to avoid drawing green stuff between the right end and the stride end
-    for (i=0; i<c->vChrBufSize; i++) memset(c->chrPixBuf[i], 64, (VOF+1)*2);
-
-    assert(2*VOFW == VOF);
+    for (i=0; i<c->vChrBufSize; i++)
+        memset(c->chrUPixBuf[i], 64, dst_stride*2+1);
 
     assert(c->chrDstH <= dstH);
 
@@ -1481,10 +1480,11 @@ void sws_freeContext(SwsContext *c)
         av_freep(&c->lumPixBuf);
     }
 
-    if (c->chrPixBuf) {
+    if (c->chrUPixBuf) {
         for (i=0; i<c->vChrBufSize; i++)
-            av_freep(&c->chrPixBuf[i]);
-        av_freep(&c->chrPixBuf);
+            av_freep(&c->chrUPixBuf[i]);
+        av_freep(&c->chrUPixBuf);
+        av_freep(&c->chrVPixBuf);
     }
 
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
