@@ -12,12 +12,6 @@ vpath %.S   $(SRC_DIR)
 vpath %.asm $(SRC_DIR)
 vpath %.v   $(SRC_DIR)
 
-ifeq ($(SRC_DIR),$(SRC_PATH_BARE))
-BUILD_ROOT_REL = .
-else
-BUILD_ROOT_REL = ..
-endif
-
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
@@ -33,7 +27,7 @@ endif
 
 ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
-IFLAGS   := -I$(BUILD_ROOT_REL) -I$(SRC_PATH)
+IFLAGS   := -I. -I$(SRC_PATH)
 CPPFLAGS := $(IFLAGS) $(CPPFLAGS)
 CFLAGS   += $(ECFLAGS)
 YASMFLAGS += $(IFLAGS) -Pconfig.asm
@@ -85,7 +79,7 @@ FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
 
 FFEXTRALIBS := $(addprefix -l,$(addsuffix $(BUILDSUF),$(FFLIBS))) $(EXTRALIBS)
-FFLDFLAGS   := $(addprefix -L$(BUILD_ROOT)/lib,$(ALLFFLIBS)) $(LDFLAGS)
+FFLDFLAGS   := $(addprefix -Llib,$(ALLFFLIBS)) $(LDFLAGS)
 
 EXAMPLES  := $(addprefix $(SUBDIR),$(addsuffix -example$(EXESUF),$(EXAMPLES)))
 OBJS      := $(addprefix $(SUBDIR),$(sort $(OBJS)))
@@ -94,7 +88,7 @@ TESTPROGS := $(addprefix $(SUBDIR),$(addsuffix -test$(EXESUF),$(TESTPROGS)))
 HOSTOBJS  := $(addprefix $(SUBDIR),$(addsuffix .o,$(HOSTPROGS)))
 HOSTPROGS := $(addprefix $(SUBDIR),$(addsuffix $(HOSTEXESUF),$(HOSTPROGS)))
 
-DEP_LIBS := $(foreach NAME,$(FFLIBS),$(BUILD_ROOT_REL)/lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME))
+DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME))
 
 ALLHEADERS := $(subst $(SRC_DIR)/,$(SUBDIR),$(wildcard $(SRC_DIR)/*.h $(SRC_DIR)/$(ARCH)/*.h))
 SKIPHEADERS += $(addprefix $(ARCH)/,$(ARCH_HEADERS))
