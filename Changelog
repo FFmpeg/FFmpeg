@@ -50,6 +50,7 @@ easier to use. The changes are:
 - Apple ProRes decoder
 - CELT in Ogg demuxing
 - VC-1 interlaced decoding
+- lut, lutrgb, and lutyuv filters
 
 
 version 0.7:

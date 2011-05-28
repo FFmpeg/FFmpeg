@@ -52,4 +52,7 @@ int ff_avfilter_graph_config_formats(AVFilterGraph *graphctx, AVClass *log_ctx);
 /** default handler for freeing audio/video buffer when there are no references left */
 void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);
 
+/** Tell is a format is contained in the provided list terminated by -1. */
+int ff_fmt_is_in(int fmt, const int *fmts);
+
 #endif /* AVFILTER_INTERNAL_H */

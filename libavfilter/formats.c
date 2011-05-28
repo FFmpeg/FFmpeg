@@ -21,6 +21,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 
 /**
  * Add all refs from a to ret and destroy a.
@@ -68,6 +69,17 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     merge_ref(ret, b);
 
     return ret;
+}
+
+int ff_fmt_is_in(int fmt, const int *fmts)
+{
+    const int *p;
+
+    for (p = fmts; *p != PIX_FMT_NONE; p++) {
+        if (fmt == *p)
+            return 1;
+    }
+    return 0;
 }
 
 AVFilterFormats *avfilter_make_format_list(const int *fmts)
