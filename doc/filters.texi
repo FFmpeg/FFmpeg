@@ -813,7 +813,12 @@ format=rgba,lutrgb=a="maxval-minval/2"
 lutyuv=y=gammaval(0.5)
 @end example
 
-@section noformat
+@section negate
+
+Negate input video.
+
+This filter accepts an integer in input, if non-zero it negates the
+alpha component (if available). The default value in input is 0.
 
 Force libavfilter not to use any of the specified pixel formats for the
 input to the next filter.

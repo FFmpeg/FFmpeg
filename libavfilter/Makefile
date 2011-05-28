@@ -36,6 +36,7 @@ OBJS-$(CONFIG_HQDN3D_FILTER)                 += vf_hqdn3d.o
 OBJS-$(CONFIG_LUT_FILTER)                    += vf_lut.o
 OBJS-$(CONFIG_LUTRGB_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_LUTYUV_FILTER)                 += vf_lut.o
+OBJS-$(CONFIG_NEGATE_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
