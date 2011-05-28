@@ -437,7 +437,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     struct v4l2_standard standard = {0};
     struct v4l2_streamparm streamparm = {0};
     struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
-    int i;
+    int i, ret;
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
@@ -474,15 +474,13 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         /* set tv standard */
         for (i = 0;; i++) {
             standard.index = i;
-            if (ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
-                av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
-                       s->standard);
-                return AVERROR(EIO);
-            }
-
-            if (!strcasecmp(standard.name, s->standard)) {
+            ret = ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
+            if (ret < 0 || !strcasecmp(standard.name, s->standard))
                 break;
-            }
+        }
+        if (ret < 0) {
+            av_log(s1, AV_LOG_ERROR, "Unknown standard '%s'\n", s->standard);
+            return ret;
         }
 
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s, id: %"PRIu64"\n",
