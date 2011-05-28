@@ -13,7 +13,7 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-05-XX - xxxxxx - lavu 51.X.0 - pixdesc.h
+2011-05-28 - 0420bd7 - lavu 51.2.0 - pixdesc.h
   Add av_get_pix_fmt_name() in libavutil/pixdesc.h, and deprecate
   avcodec_get_pix_fmt_name() in libavcodec/avcodec.h in its favor.
 
