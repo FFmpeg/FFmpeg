@@ -204,4 +204,67 @@ Alternatively you can write the command as:
 ffmpeg -benchmark -i INPUT -f null -
 @end example
 
+@section matroska
+
+Matroska container muxer.
+
+This muxer implements the matroska and webm container specs.
+
+The recognized metadata settings in this muxer are:
+
+@table @option
+
+@item title=@var{title name}
+Name provided to a single track
+@end table
+
+@table @option
+
+@item language=@var{language name}
+Specifies the language of the track in the Matroska languages form
+@end table
+
+@table @option
+
+@item STEREO_MODE=@var{mode}
+Stereo 3D video layout of two views in a single video track
+@table @option
+@item mono
+video is not stereo
+@item left_right
+Both views are arranged side by side, Left-eye view is on the left
+@item bottom_top
+Both views are arranged in top-bottom orientation, Left-eye view is at bottom
+@item top_bottom
+Both views are arranged in top-bottom orientation, Left-eye view is on top
+@item checkerboard_rl
+Each view is arranged in a checkerboard interleaved pattern, Left-eye view being first
+@item checkerboard_lr
+Each view is arranged in a checkerboard interleaved pattern, Right-eye view being first
+@item row_interleaved_rl
+Each view is constituted by a row based interleaving, Right-eye view is first row
+@item row_interleaved_lr
+Each view is constituted by a row based interleaving, Left-eye view is first row
+@item col_interleaved_rl
+Both views are arranged in a column based interleaving manner, Right-eye view is first column
+@item col_interleaved_lr
+Both views are arranged in a column based interleaving manner, Left-eye view is first column
+@item anaglyph_cyan_red
+All frames are in anaglyph format viewable through red-cyan filters
+@item right_left
+Both views are arranged side by side, Right-eye view is on the left
+@item anaglyph_green_magenta
+All frames are in anaglyph format viewable through green-magenta filters
+@item block_lr
+Both eyes laced in one Block, Left-eye view is first
+@item block_rl
+Both eyes laced in one Block, Right-eye view is first
+@end table
+@end table
+
+For example a 3D WebM clip can be created using the following command line:
+@example
+ffmpeg -i sample_left_right_clip.mpg -an -vcodec libvpx -metadata STEREO_MODE=left_right -y stereo_clip.webm
+@end example
+
 @c man end MUXERS
