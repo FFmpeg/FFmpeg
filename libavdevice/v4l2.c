@@ -350,7 +350,7 @@ static int mmap_read_frame(AVFormatContext *ctx, AVPacket *pkt)
 
         return AVERROR(errno);
     }
-    assert (buf.index < s->buffers);
+    assert(buf.index < s->buffers);
     if (s->frame_size > 0 && buf.bytesused != s->frame_size) {
         av_log(ctx, AV_LOG_ERROR, "The v4l2 frame is %d bytes, but %d bytes are expected\n", buf.bytesused, s->frame_size);
         return AVERROR_INVALIDDATA;
@@ -435,7 +435,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     struct video_data *s = s1->priv_data;
     struct v4l2_input input = {0};
     struct v4l2_standard standard = {0};
-    struct v4l2_streamparm streamparm = { 0 };
+    struct v4l2_streamparm streamparm = {0};
     struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
     int i;
 
@@ -472,7 +472,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
                s->standard);
         /* set tv standard */
-        for(i=0;;i++) {
+        for (i = 0;; i++) {
             standard.index = i;
             if (ioctl(s->fd, VIDIOC_ENUMSTD, &standard) < 0) {
                 av_log(s1, AV_LOG_ERROR, "The V4L2 driver ioctl set standard(%s) failed\n",
