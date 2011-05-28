@@ -58,6 +58,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (LUTRGB,      lutrgb,      vf);
     REGISTER_FILTER (LUTYUV,      lutyuv,      vf);
     REGISTER_FILTER (MP,          mp,          vf);
+    REGISTER_FILTER (NEGATE,      negate,      vf);
     REGISTER_FILTER (NOFORMAT,    noformat,    vf);
     REGISTER_FILTER (NULL,        null,        vf);
     REGISTER_FILTER (OCV,         ocv,         vf);

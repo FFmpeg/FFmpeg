@@ -42,6 +42,7 @@ OBJS-$(CONFIG_LUT_FILTER)                    += vf_lut.o
 OBJS-$(CONFIG_LUTRGB_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_LUTYUV_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_MP_FILTER)                     += vf_mp.o
+OBJS-$(CONFIG_NEGATE_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o

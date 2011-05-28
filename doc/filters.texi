@@ -911,6 +911,13 @@ mp=hue=100:-10
 
 See also mplayer(1), @url{http://www.mplayerhq.hu/}.
 
+@section negate
+
+Negate input video.
+
+This filter accepts an integer in input, if non-zero it negates the
+alpha component (if available). The default value in input is 0.
+
 @section noformat
 
 Force libavfilter not to use any of the specified pixel formats for the

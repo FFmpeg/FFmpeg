@@ -67,6 +67,7 @@ typedef struct {
     int is_rgb, is_yuv;
     int rgba_map[4];
     int step;
+    int negate_alpha; /* only used by negate */
 } LutContext;
 
 #define Y 0
@@ -366,3 +367,25 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 DEFINE_LUT_FILTER(lut,    "Compute and apply a lookup table to the RGB/YUV input video.", init);
 DEFINE_LUT_FILTER(lutyuv, "Compute and apply a lookup table to the YUV input video.",     init);
 DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input video.",     init);
+
+#if CONFIG_NEGATE_FILTER
+
+static int negate_init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    LutContext *lut = ctx->priv;
+    char lut_params[1024];
+
+    if (args)
+        sscanf(args, "%d", &lut->negate_alpha);
+
+    av_log(ctx, AV_LOG_INFO, "negate_alpha:%d\n", lut->negate_alpha);
+
+    snprintf(lut_params, sizeof(lut_params), "c0=negval:c1=negval:c2=negval:a=%s",
+             lut->negate_alpha ? "negval" : "val");
+
+    return init(ctx, lut_params, opaque);
+}
+
+DEFINE_LUT_FILTER(negate, "Negate input video.", negate_init);
+
+#endif
