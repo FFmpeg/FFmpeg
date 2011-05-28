@@ -906,6 +906,12 @@ static enum PixelFormat get_pix_fmt_internal(const char *name)
     return PIX_FMT_NONE;
 }
 
+const char *av_get_pix_fmt_name(enum PixelFormat pix_fmt)
+{
+    return (unsigned)pix_fmt < PIX_FMT_NB ?
+        av_pix_fmt_descriptors[pix_fmt].name : NULL;
+}
+
 #if HAVE_BIGENDIAN
 #   define X_NE(be, le) be
 #else

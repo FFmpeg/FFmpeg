@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-05-XX - xxxxxx - lavu 51.X.0 - pixdesc.h
+  Add av_get_pix_fmt_name() in libavutil/pixdesc.h, and deprecate
+  avcodec_get_pix_fmt_name() in libavcodec/avcodec.h in its favor.
+
 2011-05-25 - 30315a8 - lavf 53.1.0 - avformat.h
   Add fps_probe_size to AVFormatContext.
 

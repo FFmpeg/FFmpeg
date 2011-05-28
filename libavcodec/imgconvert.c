@@ -417,13 +417,12 @@ void avcodec_get_chroma_sub_sample(enum PixelFormat pix_fmt, int *h_shift, int *
     *v_shift = av_pix_fmt_descriptors[pix_fmt].log2_chroma_h;
 }
 
+#if FF_API_GET_PIX_FMT_NAME
 const char *avcodec_get_pix_fmt_name(enum PixelFormat pix_fmt)
 {
-    if ((unsigned)pix_fmt >= PIX_FMT_NB)
-        return NULL;
-    else
-        return av_pix_fmt_descriptors[pix_fmt].name;
+    return av_get_pix_fmt_name(pix_fmt);
 }
+#endif
 
 int ff_is_hwaccel_pix_fmt(enum PixelFormat pix_fmt)
 {
