@@ -324,8 +324,8 @@ cglobal ac3_compute_mantissa_size_sse2, 1,2,4, mant_cnt, sum
     paddw       m1, [mant_cntq+ 9*16]
     paddw       m0, [mant_cntq+10*16]
     paddw       m1, [mant_cntq+11*16]
-    pmaddwd     m0, [ff_ac3_bap_bits   ]
-    pmaddwd     m1, [ff_ac3_bap_bits+16]
+    pmaddwd     m0, [ac3_bap_bits   ]
+    pmaddwd     m1, [ac3_bap_bits+16]
     paddd       m0, m1
     PHADDD4     m0, m1
     movd      sumd, m0
