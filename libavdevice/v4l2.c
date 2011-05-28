@@ -1,14 +1,6 @@
 /*
- * Video4Linux2 grab interface
  * Copyright (c) 2000,2001 Fabrice Bellard
  * Copyright (c) 2006 Luca Abeni
- *
- * Part of this file is based on the V4L2 video capture example
- * (http://v4l2spec.bytesex.org/v4l2spec/capture.c)
- *
- * Thanks to Michael Niedermayer for providing the mapping between
- * V4L2_PIX_FMT_* and PIX_FMT_*
- *
  *
  * This file is part of FFmpeg.
  *
@@ -25,6 +17,17 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * @file
+ * Video4Linux2 grab interface
+ *
+ * Part of this file is based on the V4L2 video capture example
+ * (http://v4l2spec.bytesex.org/v4l2spec/capture.c)
+ *
+ * Thanks to Michael Niedermayer for providing the mapping between
+ * V4L2_PIX_FMT_* and PIX_FMT_*
  */
 
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
