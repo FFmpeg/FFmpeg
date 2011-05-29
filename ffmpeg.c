@@ -1978,7 +1978,7 @@ static int transcode(AVFormatContext **output_files,
                      int nb_input_files,
                      AVStreamMap *stream_maps, int nb_stream_maps)
 {
-    int ret = 0, i, j, k, n, nb_istreams = 0, nb_ostreams = 0,step;
+    int ret = 0, i, j, k, n, nb_ostreams = 0, step;
 
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
