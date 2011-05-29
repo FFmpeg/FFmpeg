@@ -66,8 +66,6 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter,
 
 static void RENAME(sws_init_swScale)(SwsContext *c)
 {
-    enum PixelFormat srcFormat = c->srcFormat;
-
     c->yuv2yuvX     = RENAME(yuv2yuvX    );
     c->yuv2packedX  = RENAME(yuv2packedX );
 }
