@@ -97,6 +97,11 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     else if (avctx->pix_fmt == PIX_FMT_NONE && avctx->bits_per_coded_sample)
         avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
 
+    if (avctx->pix_fmt == PIX_FMT_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Pixel format was not specified and cannot be detected\n");
+        return AVERROR(EINVAL);
+    }
+
     ff_set_systematic_pal2(context->palette, avctx->pix_fmt);
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     if((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
