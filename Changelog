@@ -9,6 +9,7 @@ version <next>:
 - mpeg2 aspect ratio dection fixed
 - libxvid aspect pickiness fixed
 - Frame multithreaded decoding
+- E-AC-3 audio encoder
 - Lots of deprecated API cruft removed
 - fft and imdct optimizations for AVX (Sandy Bridge) processors
 - showinfo filter added

@@ -24,6 +24,7 @@
 
 #include "pixfmt.h"
 #include <inttypes.h>
+#include "pixfmt.h"
 
 typedef struct AVComponentDescriptor{
     uint16_t plane        :2;            ///< which of the 4 planes contains the component

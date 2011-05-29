@@ -194,6 +194,7 @@ typedef struct SwsContext {
 #define Y_TEMP                "11*8+4*4*256*2+40"
 #define ALP_MMX_FILTER_OFFSET "11*8+4*4*256*2+48"
 #define UV_OFF                "11*8+4*4*256*3+48"
+#define UV_OFFx2              "11*8+4*4*256*3+56"
 
     DECLARE_ALIGNED(8, uint64_t, redDither);
     DECLARE_ALIGNED(8, uint64_t, greenDither);
@@ -217,6 +218,7 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, uint64_t, y_temp);
     int32_t  alpMmxFilter[4*MAX_FILTER_SIZE];
     DECLARE_ALIGNED(8, ptrdiff_t, uv_off); ///< offset (in pixels) between u and v planes
+    DECLARE_ALIGNED(8, ptrdiff_t, uv_offx2); ///< offset (in bytes) between u and v planes
 
 #if HAVE_ALTIVEC
     vector signed short   CY;
@@ -259,7 +261,7 @@ typedef struct SwsContext {
                         const int16_t *chrVSrc, const int16_t *alpSrc,
                         uint8_t *dest,
                         uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
-                        long dstW, long chrDstW);
+                        int dstW, int chrDstW);
     void (*yuv2yuvX   )(struct SwsContext *c,
                         const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                         const int16_t *chrFilter, const int16_t **chrUSrc,
@@ -267,7 +269,7 @@ typedef struct SwsContext {
                         const int16_t **alpSrc,
                         uint8_t *dest,
                         uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
-                        long dstW, long chrDstW);
+                        int dstW, int chrDstW);
     void (*yuv2packed1)(struct SwsContext *c,
                         const uint16_t *buf0,
                         const uint16_t *ubuf0, const uint16_t *ubuf1,
@@ -287,26 +289,26 @@ typedef struct SwsContext {
                         const int16_t *chrFilter, const int16_t **chrUSrc,
                         const int16_t **chrVSrc, int chrFilterSize,
                         const int16_t **alpSrc, uint8_t *dest,
-                        long dstW, long dstY);
+                        int dstW, int dstY);
 
     void (*lumToYV12)(uint8_t *dst, const uint8_t *src,
-                      long width, uint32_t *pal); ///< Unscaled conversion of luma plane to YV12 for horizontal scaler.
+                      int width, uint32_t *pal); ///< Unscaled conversion of luma plane to YV12 for horizontal scaler.
     void (*alpToYV12)(uint8_t *dst, const uint8_t *src,
-                      long width, uint32_t *pal); ///< Unscaled conversion of alpha plane to YV12 for horizontal scaler.
+                      int width, uint32_t *pal); ///< Unscaled conversion of alpha plane to YV12 for horizontal scaler.
     void (*chrToYV12)(uint8_t *dstU, uint8_t *dstV,
                       const uint8_t *src1, const uint8_t *src2,
-                      long width, uint32_t *pal); ///< Unscaled conversion of chroma planes to YV12 for horizontal scaler.
+                      int width, uint32_t *pal); ///< Unscaled conversion of chroma planes to YV12 for horizontal scaler.
     void (*hyscale_fast)(struct SwsContext *c,
-                         int16_t *dst, long dstWidth,
+                         int16_t *dst, int dstWidth,
                          const uint8_t *src, int srcW, int xInc);
     void (*hcscale_fast)(struct SwsContext *c,
-                         int16_t *dst1, int16_t *dst2, long dstWidth,
+                         int16_t *dst1, int16_t *dst2, int dstWidth,
                          const uint8_t *src1, const uint8_t *src2,
                          int srcW, int xInc);
 
     void (*hScale)(int16_t *dst, int dstW, const uint8_t *src, int srcW,
                    int xInc, const int16_t *filter, const int16_t *filterPos,
-                   long filterSize);
+                   int filterSize);
 
     void (*hScale16)(int16_t *dst, int dstW, const uint16_t *src, int srcW,
                    int xInc, const int16_t *filter, const int16_t *filterPos,

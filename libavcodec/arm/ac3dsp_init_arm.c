@@ -39,8 +39,6 @@ int ff_ac3_compute_mantissa_size_arm(int cnt[5], uint8_t *bap, int nb_coefs);
 
 av_cold void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact)
 {
-    c->compute_mantissa_size     = ff_ac3_compute_mantissa_size_arm;
-
     if (HAVE_ARMV6) {
         c->bit_alloc_calc_bap    = ff_ac3_bit_alloc_calc_bap_armv6;
     }

@@ -25,6 +25,7 @@
 #include "rawdec.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
 
 /* raw input */
 int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
@@ -70,30 +71,37 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case AVMEDIA_TYPE_VIDEO: {
             FFRawVideoDemuxerContext *s1 = s->priv_data;
             int width = 0, height = 0, ret;
+            enum PixelFormat pix_fmt;
+
             if(ap->time_base.num)
                 av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
             else
                 av_set_pts_info(st, 64, 1, 25);
-            if (s1->video_size) {
-                ret = av_parse_video_size(&width, &height, s1->video_size);
-                av_freep(&s1->video_size);
-                if (ret < 0) {
-                    av_log(s, AV_LOG_ERROR, "Couldn't parse video size.\n");
-                    return ret;
-                }
+            if (s1->video_size && (ret = av_parse_video_size(&width, &height, s1->video_size)) < 0) {
+                av_log(s, AV_LOG_ERROR, "Couldn't parse video size.\n");
+                goto fail;
+            }
+            if ((pix_fmt = av_get_pix_fmt(s1->pixel_format)) == PIX_FMT_NONE) {
+                av_log(s, AV_LOG_ERROR, "No such pixel format: %s.\n", s1->pixel_format);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
 #if FF_API_FORMAT_PARAMETERS
             if (ap->width > 0)
                 width = ap->width;
             if (ap->height > 0)
                 height = ap->height;
+            if (ap->pix_fmt)
+                pix_fmt = ap->pix_fmt;
 #endif
             st->codec->width  = width;
             st->codec->height = height;
-            st->codec->pix_fmt = ap->pix_fmt;
-            if(st->codec->pix_fmt == PIX_FMT_NONE)
-                st->codec->pix_fmt= PIX_FMT_YUV420P;
+            st->codec->pix_fmt = pix_fmt;
             break;
+fail:
+            av_freep(&s1->video_size);
+            av_freep(&s1->pixel_format);
+            return ret;
             }
         default:
             return -1;
@@ -188,6 +196,7 @@ const AVClass ff_rawaudio_demuxer_class = {
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption video_options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
     { NULL },
 };
 #undef OFFSET

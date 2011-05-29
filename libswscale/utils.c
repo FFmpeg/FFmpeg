@@ -1009,6 +1009,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
     c->uv_off = dst_stride_px;
+    c->uv_offx2 = dst_stride;
     for (i=0; i<c->vChrBufSize; i++) {
         FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], dst_stride*2+1, fail);
         c->chrUPixBuf[i] = c->chrUPixBuf[i+c->vChrBufSize];

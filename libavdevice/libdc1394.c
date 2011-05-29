@@ -29,6 +29,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "libavutil/parseutils.h"
+#include "libavutil/pixdesc.h"
 
 #include <dc1394/dc1394.h>
 
@@ -42,6 +43,7 @@ typedef struct dc1394_data {
     int current_frame;
     int fps;
     char *video_size;       /**< String describing video size, set by a private option. */
+    char *pixel_format;     /**< Set by a private option. */
 
     AVPacket packet;
 } dc1394_data;
@@ -82,6 +84,7 @@ struct dc1394_frame_rate {
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "qvga"}, 0, 0, DEC },
+    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = "uyvy422"}, 0, 0, DEC },
     { NULL },
 };
 
@@ -132,6 +135,14 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     if (res != DC1394_SUCCESS) {
         av_log(c, AV_LOG_ERROR, "Could not get video formats.\n");
         goto out_camera;
+    }
+
+    if (dc1394->pixel_format) {
+        if ((ap->pix_fmt = av_get_pix_fmt(dc1394->pixel_format)) == PIX_FMT_NONE) {
+            av_log(c, AV_LOG_ERROR, "No such pixel format: %s.\n", dc1394->pixel_format);
+            ret = AVERROR(EINVAL);
+            goto out;
+        }
     }
 
     if (dc1394->video_size) {
@@ -303,6 +314,8 @@ out_camera:
     dc1394_video_set_transmission(dc1394->camera, DC1394_OFF);
     dc1394_camera_free (dc1394->camera);
 out:
+    av_freep(&dc1394->video_size);
+    av_freep(&dc1394->pixel_format);
     dc1394_free(dc1394->d);
     return ret;
 }

@@ -27,6 +27,11 @@ SECTION_RODATA
 ; 16777216.0f - used in ff_float_to_fixed24()
 pf_1_24: times 4 dd 0x4B800000
 
+; used in ff_ac3_compute_mantissa_size()
+cextern ac3_bap_bits
+pw_bap_mul1: dw 21846, 21846, 0, 32768, 21846, 21846, 0, 32768
+pw_bap_mul2: dw 5, 7, 0, 7, 5, 7, 0, 7
+
 SECTION .text
 
 ;-----------------------------------------------------------------------------
@@ -293,3 +298,51 @@ cglobal float_to_fixed24_sse2, 3,3,9, dst, src, len
 %endif
     ja .loop
     REP_RET
+
+;------------------------------------------------------------------------------
+; int ff_ac3_compute_mantissa_size(uint16_t mant_cnt[6][16])
+;------------------------------------------------------------------------------
+
+%macro PHADDD4 2 ; xmm src, xmm tmp
+    movhlps  %2, %1
+    paddd    %1, %2
+    pshufd   %2, %1, 0x1
+    paddd    %1, %2
+%endmacro
+
+INIT_XMM
+cglobal ac3_compute_mantissa_size_sse2, 1,2,4, mant_cnt, sum
+    movdqa      m0, [mant_cntq      ]
+    movdqa      m1, [mant_cntq+ 1*16]
+    paddw       m0, [mant_cntq+ 2*16]
+    paddw       m1, [mant_cntq+ 3*16]
+    paddw       m0, [mant_cntq+ 4*16]
+    paddw       m1, [mant_cntq+ 5*16]
+    paddw       m0, [mant_cntq+ 6*16]
+    paddw       m1, [mant_cntq+ 7*16]
+    paddw       m0, [mant_cntq+ 8*16]
+    paddw       m1, [mant_cntq+ 9*16]
+    paddw       m0, [mant_cntq+10*16]
+    paddw       m1, [mant_cntq+11*16]
+    pmaddwd     m0, [ac3_bap_bits   ]
+    pmaddwd     m1, [ac3_bap_bits+16]
+    paddd       m0, m1
+    PHADDD4     m0, m1
+    movd      sumd, m0
+    movdqa      m3, [pw_bap_mul1]
+    movhpd      m0, [mant_cntq     +2]
+    movlpd      m0, [mant_cntq+1*32+2]
+    movhpd      m1, [mant_cntq+2*32+2]
+    movlpd      m1, [mant_cntq+3*32+2]
+    movhpd      m2, [mant_cntq+4*32+2]
+    movlpd      m2, [mant_cntq+5*32+2]
+    pmulhuw     m0, m3
+    pmulhuw     m1, m3
+    pmulhuw     m2, m3
+    paddusw     m0, m1
+    paddusw     m0, m2
+    pmaddwd     m0, [pw_bap_mul2]
+    PHADDD4     m0, m1
+    movd       eax, m0
+    add        eax, sumd
+    RET

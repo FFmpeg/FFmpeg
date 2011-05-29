@@ -1075,7 +1075,7 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
 }
 
 #define RGB48(name, R, B, READ)\
-static inline void name ## ToY(int16_t *dst, const uint16_t *src, long width, uint32_t *unused)\
+static inline void name ## ToY(int16_t *dst, const uint16_t *src, int width, uint32_t *unused)\
 {\
     int i;\
     for (i = 0; i < width; i++) {\
@@ -1089,7 +1089,7 @@ static inline void name ## ToY(int16_t *dst, const uint16_t *src, long width, ui
 \
 static inline void name ## ToUV(int16_t *dstU, int16_t *dstV,\
                              const uint16_t *src1, const uint16_t *src2,\
-                             long width, uint32_t *unused)\
+                             int width, uint32_t *unused)\
 {\
     int i;\
     assert(src1==src2);\
@@ -1105,7 +1105,7 @@ static inline void name ## ToUV(int16_t *dstU, int16_t *dstV,\
 \
 static inline void name ## ToUV_half(int16_t *dstU, int16_t *dstV,\
                                   const uint16_t *src1, const uint16_t *src2,\
-                                  long width, uint32_t *unused)\
+                                  int width, uint32_t *unused)\
 {\
     int i;\
     assert(src1==src2);\
@@ -1125,7 +1125,7 @@ RGB48(bgr48LE, 2, 0, AV_RL16)
 RGB48(bgr48BE, 2, 0, AV_RB16)
 
 #define BGR2Y(type, name, shr, shg, shb, maskr, maskg, maskb, RY, GY, BY, S)\
-static inline void name(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)\
+static inline void name(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++) {\
@@ -1146,7 +1146,7 @@ BGR2Y(uint16_t, bgr15ToY, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RY<<10, GY<<5, BY    
 BGR2Y(uint16_t, rgb16ToY, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RY    , GY<<5, BY<<11, RGB2YUV_SHIFT+8)
 BGR2Y(uint16_t, rgb15ToY, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RY    , GY<<5, BY<<10, RGB2YUV_SHIFT+7)
 
-static inline void abgrToA(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void abgrToA(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -1155,7 +1155,7 @@ static inline void abgrToA(int16_t *dst, const uint8_t *src, long width, uint32_
 }
 
 #define BGR2UV(type, name, shr, shg, shb, shp, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S) \
-static inline void name(int16_t *dstU, int16_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
+static inline void name(int16_t *dstU, int16_t *dstV, const uint8_t *src, const uint8_t *dummy, int width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++) {\
@@ -1167,7 +1167,7 @@ static inline void name(int16_t *dstU, int16_t *dstV, const uint8_t *src, const 
         dstV[i]= ((RV)*r + (GV)*g + (BV)*b + (256<<((S)-1)) + (1<<(S-7)))>>((S)-6);\
     }\
 }\
-static inline void name ## _half(int16_t *dstU, int16_t *dstV, const uint8_t *src, const uint8_t *dummy, long width, uint32_t *unused)\
+static inline void name ## _half(int16_t *dstU, int16_t *dstV, const uint8_t *src, const uint8_t *dummy, int width, uint32_t *unused)\
 {\
     int i;\
     for (i=0; i<width; i++) {\
@@ -1194,7 +1194,7 @@ BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0, 0,   0x001F, 0x03E0,   0x7C00, RU<<10, GU<<
 BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0,   0xF800, 0x07E0,   0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
 BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0,   0x7C00, 0x03E0,   0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
-static inline void palToA(int16_t *dst, const uint8_t *src, long width, uint32_t *pal)
+static inline void palToA(int16_t *dst, const uint8_t *src, int width, uint32_t *pal)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -1216,7 +1216,7 @@ static inline void palToY(int16_t *dst, const uint8_t *src, long width, uint32_t
 
 static inline void palToUV(uint16_t *dstU, int16_t *dstV,
                            const uint8_t *src1, const uint8_t *src2,
-                           long width, uint32_t *pal)
+                           int width, uint32_t *pal)
 {
     int i;
     assert(src1 == src2);
@@ -1228,7 +1228,7 @@ static inline void palToUV(uint16_t *dstU, int16_t *dstV,
     }
 }
 
-static inline void monowhite2Y(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void monowhite2Y(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++) {
@@ -1238,7 +1238,7 @@ static inline void monowhite2Y(int16_t *dst, const uint8_t *src, long width, uin
     }
 }
 
-static inline void monoblack2Y(int16_t *dst, const uint8_t *src, long width, uint32_t *unused)
+static inline void monoblack2Y(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++) {
@@ -1431,24 +1431,24 @@ static int uyvyToYuv422Wrapper(SwsContext *c, const uint8_t* src[], int srcStrid
     return srcSliceH;
 }
 
-static void gray8aToPacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+static void gray8aToPacked32(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
 {
-    long i;
+    int i;
     for (i=0; i<num_pixels; i++)
         ((uint32_t *) dst)[i] = ((const uint32_t *)palette)[src[i<<1]] | (src[(i<<1)+1] << 24);
 }
 
-static void gray8aToPacked32_1(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+static void gray8aToPacked32_1(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
 {
-    long i;
+    int i;
 
     for (i=0; i<num_pixels; i++)
         ((uint32_t *) dst)[i] = ((const uint32_t *)palette)[src[i<<1]] | src[(i<<1)+1];
 }
 
-static void gray8aToPacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+static void gray8aToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
 {
-    long i;
+    int i;
 
     for (i=0; i<num_pixels; i++) {
         //FIXME slow?
@@ -1464,7 +1464,7 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
 {
     const enum PixelFormat srcFormat= c->srcFormat;
     const enum PixelFormat dstFormat= c->dstFormat;
-    void (*conv)(const uint8_t *src, uint8_t *dst, long num_pixels,
+    void (*conv)(const uint8_t *src, uint8_t *dst, int num_pixels,
                  const uint8_t *palette)=NULL;
     int i;
     uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
@@ -1521,7 +1521,7 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
     const int dstBpp= (c->dstFormatBpp + 7) >> 3;
     const int srcId= c->srcFormatBpp >> 2; /* 1:0, 4:1, 8:2, 15:3, 16:4, 24:6, 32:8 */
     const int dstId= c->dstFormatBpp >> 2;
-    void (*conv)(const uint8_t *src, uint8_t *dst, long src_size)=NULL;
+    void (*conv)(const uint8_t *src, uint8_t *dst, int src_size)=NULL;
 
 #define CONV_IS(src, dst) (srcFormat == PIX_FMT_##src && dstFormat == PIX_FMT_##dst)
 
@@ -2085,18 +2085,18 @@ int sws_scale_ordered(SwsContext *c, const uint8_t* const src[], int srcStride[]
 #endif
 
 /* Convert the palette to the same packed 32-bit format as the palette */
-void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
 {
-    long i;
+    int i;
 
     for (i=0; i<num_pixels; i++)
         ((uint32_t *) dst)[i] = ((const uint32_t *) palette)[src[i]];
 }
 
 /* Palette format: ABCD -> dst format: ABC */
-void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
+void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
 {
-    long i;
+    int i;
 
     for (i=0; i<num_pixels; i++) {
         //FIXME slow?

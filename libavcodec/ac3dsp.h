@@ -24,6 +24,12 @@
 
 #include <stdint.h>
 
+/**
+ * Number of mantissa bits written for each bap value.
+ * bap values with fractional bits are set to 0 and are calculated separately.
+ */
+extern const uint16_t ff_ac3_bap_bits[16];
+
 typedef struct AC3DSPContext {
     /**
      * Set each encoded exponent in a block to the minimum of itself and the
@@ -102,9 +108,21 @@ typedef struct AC3DSPContext {
                                const uint8_t *bap_tab, uint8_t *bap);
 
     /**
-     * Calculate the number of bits needed to encode a set of mantissas.
+     * Update bap counts using the supplied array of bap.
+     *
+     * @param[out] mant_cnt   bap counts for 1 block
+     * @param[in]  bap        array of bap, pointing to start coef bin
+     * @param[in]  len        number of elements to process
      */
-    int (*compute_mantissa_size)(int mant_cnt[5], uint8_t *bap, int nb_coefs);
+    void (*update_bap_counts)(uint16_t mant_cnt[16], uint8_t *bap, int len);
+
+    /**
+     * Calculate the number of bits needed to encode a set of mantissas.
+     *
+     * @param[in] mant_cnt    bap counts for all blocks
+     * @return                mantissa bit count
+     */
+    int (*compute_mantissa_size)(uint16_t mant_cnt[6][16]);
 
     void (*extract_exponents)(uint8_t *exp, int32_t *coef, int nb_coefs);
 } AC3DSPContext;

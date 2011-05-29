@@ -42,6 +42,8 @@ extern void ff_float_to_fixed24_3dnow(int32_t *dst, const float *src, unsigned i
 extern void ff_float_to_fixed24_sse  (int32_t *dst, const float *src, unsigned int len);
 extern void ff_float_to_fixed24_sse2 (int32_t *dst, const float *src, unsigned int len);
 
+extern int ff_ac3_compute_mantissa_size_sse2(uint16_t mant_cnt[6][16]);
+
 av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
 {
     int mm_flags = av_get_cpu_flags();
@@ -69,6 +71,7 @@ av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
         c->ac3_exponent_min = ff_ac3_exponent_min_sse2;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_sse2;
         c->float_to_fixed24 = ff_float_to_fixed24_sse2;
+        c->compute_mantissa_size = ff_ac3_compute_mantissa_size_sse2;
         if (!(mm_flags & AV_CPU_FLAG_SSE2SLOW)) {
             c->ac3_lshift_int16 = ff_ac3_lshift_int16_sse2;
             c->ac3_rshift_int32 = ff_ac3_rshift_int32_sse2;
