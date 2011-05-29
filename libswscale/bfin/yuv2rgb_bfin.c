@@ -197,7 +197,7 @@ SwsFunc ff_yuv2rgb_get_func_ptr_bfin(SwsContext *c)
     }
 
     av_log(c, AV_LOG_INFO, "BlackFin accelerated color space converter %s\n",
-           sws_format_name (c->dstFormat));
+           av_get_pix_fmt_name(c->dstFormat));
 
     return f;
 }

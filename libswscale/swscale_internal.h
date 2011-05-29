@@ -345,8 +345,6 @@ void ff_yuv2packedX_altivec(SwsContext *c, const int16_t *lumFilter,
                             const int16_t **chrVSrc, int chrFilterSize,
                             uint8_t *dest, int dstW, int dstY);
 
-const char *sws_format_name(enum PixelFormat format);
-
 //FIXME replace this with something faster
 #define is16BPS(x)      (           \
            (x)==PIX_FMT_GRAY16BE    \

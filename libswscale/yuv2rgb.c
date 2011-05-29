@@ -34,6 +34,7 @@
 #include "swscale_internal.h"
 #include "libavutil/cpu.h"
 #include "libavutil/bswap.h"
+#include "libavutil/pixdesc.h"
 
 extern const uint8_t dither_4x4_16[4][8];
 extern const uint8_t dither_8x8_32[8][8];
@@ -521,7 +522,8 @@ SwsFunc ff_yuv2rgb_get_func_ptr(SwsContext *c)
     if (t)
         return t;
 
-    av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found from %s to %s.\n", sws_format_name(c->srcFormat), sws_format_name(c->dstFormat));
+    av_log(c, AV_LOG_WARNING, "No accelerated colorspace conversion found from %s to %s.\n",
+           av_get_pix_fmt_name(c->srcFormat), av_get_pix_fmt_name(c->dstFormat));
 
     switch (c->dstFormat) {
     case PIX_FMT_BGR48BE:

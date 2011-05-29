@@ -165,14 +165,6 @@ int sws_isSupportedOutput(enum PixelFormat pix_fmt)
 
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
 
-const char *sws_format_name(enum PixelFormat format)
-{
-    if ((unsigned)format < PIX_FMT_NB && av_pix_fmt_descriptors[format].name)
-        return av_pix_fmt_descriptors[format].name;
-    else
-        return "Unknown format";
-}
-
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
 {
     if (dist<=1.0) return ((d*dist + c)*dist + b)*dist +a;
@@ -766,11 +758,11 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     unscaled = (srcW == dstW && srcH == dstH);
 
     if (!isSupportedIn(srcFormat)) {
-        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as input pixel format\n", sws_format_name(srcFormat));
+        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as input pixel format\n", av_get_pix_fmt_name(srcFormat));
         return AVERROR(EINVAL);
     }
     if (!isSupportedOut(dstFormat)) {
-        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as output pixel format\n", sws_format_name(dstFormat));
+        av_log(NULL, AV_LOG_ERROR, "swScaler: %s is not supported as output pixel format\n", av_get_pix_fmt_name(dstFormat));
         return AVERROR(EINVAL);
     }
 
@@ -845,7 +837,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         if (c->swScale) {
             if (flags&SWS_PRINT_INFO)
                 av_log(c, AV_LOG_INFO, "using unscaled %s -> %s special converter\n",
-                       sws_format_name(srcFormat), sws_format_name(dstFormat));
+                       av_get_pix_fmt_name(srcFormat), av_get_pix_fmt_name(dstFormat));
             return 0;
         }
     }
@@ -1042,7 +1034,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         else                              av_log(c, AV_LOG_INFO, "ehh flags invalid?! ");
 
         av_log(c, AV_LOG_INFO, "from %s to %s%s ",
-               sws_format_name(srcFormat),
+               av_get_pix_fmt_name(srcFormat),
 #ifdef DITHER1XBPP
                dstFormat == PIX_FMT_BGR555 || dstFormat == PIX_FMT_BGR565 ||
                dstFormat == PIX_FMT_RGB444BE || dstFormat == PIX_FMT_RGB444LE ||
@@ -1050,7 +1042,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 #else
                "",
 #endif
-               sws_format_name(dstFormat));
+               av_get_pix_fmt_name(dstFormat));
 
         if      (HAVE_MMX2     && cpu_flags & AV_CPU_FLAG_MMX2)    av_log(c, AV_LOG_INFO, "using MMX2\n");
         else if (HAVE_AMD3DNOW && cpu_flags & AV_CPU_FLAG_3DNOW)   av_log(c, AV_LOG_INFO, "using 3DNOW\n");

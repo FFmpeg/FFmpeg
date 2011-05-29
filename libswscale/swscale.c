@@ -1492,7 +1492,7 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
 
     if (!conv)
         av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
-               sws_format_name(srcFormat), sws_format_name(dstFormat));
+               av_get_pix_fmt_name(srcFormat), av_get_pix_fmt_name(dstFormat));
     else {
         for (i=0; i<srcSliceH; i++) {
             conv(srcPtr, dstPtr, c->srcW, (uint8_t *) c->pal_rgb);
@@ -1579,7 +1579,7 @@ static int rgbToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
 
     if (!conv) {
         av_log(c, AV_LOG_ERROR, "internal error %s -> %s converter\n",
-               sws_format_name(srcFormat), sws_format_name(dstFormat));
+               av_get_pix_fmt_name(srcFormat), av_get_pix_fmt_name(dstFormat));
     } else {
         const uint8_t *srcPtr= src[0];
               uint8_t *dstPtr= dst[0];
