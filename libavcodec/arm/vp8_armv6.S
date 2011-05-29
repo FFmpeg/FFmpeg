@@ -20,8 +20,6 @@
 
 #include "asm.S"
 
-        .syntax         unified
-
 .macro rac_get_prob     h, bs, buf, cw, pr, t0, t1
         adds            \bs, \bs, \t0
         lsl             \cw, \cw, \t0

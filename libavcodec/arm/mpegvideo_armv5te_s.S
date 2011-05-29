@@ -95,7 +95,7 @@ function ff_dct_unquantize_h263_armv5te, export=1
         strh            lr, [r0], #2
 
         subs            r3, r3, #8
-        ldrgtd          r4, [r0, #0] /* load data early to avoid load/use pipeline stall */
+        ldrdgt          r4, [r0, #0] /* load data early to avoid load/use pipeline stall */
         bgt             1b
 
         adds            r3, r3, #2

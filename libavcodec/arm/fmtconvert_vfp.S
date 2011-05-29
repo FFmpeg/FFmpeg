@@ -21,8 +21,6 @@
 #include "config.h"
 #include "asm.S"
 
-        .syntax unified
-
 /**
  * ARM VFP optimized float to int16 conversion.
  * Assume that len is a positive number and is multiple of 8, destination
