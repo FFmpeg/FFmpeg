@@ -1612,7 +1612,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         s->mv_min.x = -MARGIN;
         s->mv_max.x = ((s->mb_width  - 1) << 6) + MARGIN;
-        if (prev_frame && s->segmentation.enabled && s->segmentation.update_map)
+        if (prev_frame && s->segmentation.enabled && !s->segmentation.update_map)
             ff_thread_await_progress(prev_frame, mb_y, 0);
 
         for (mb_x = 0; mb_x < s->mb_width; mb_x++, mb_xy++, mb++) {
