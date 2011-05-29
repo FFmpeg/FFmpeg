@@ -366,28 +366,6 @@ YUV2RGBFUNC(yuv2rgb_c_16, uint16_t, 0)
     PUTRGB(dst_1,py_1,3);
 CLOSEYUV2RGBFUNC(8)
 
-#if 0 // Currently unused
-// This is exactly the same code as yuv2rgb_c_32 except for the types of
-// r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_8, uint8_t, 0)
-    LOADCHROMA(0);
-    PUTRGB(dst_1,py_1,0);
-    PUTRGB(dst_2,py_2,0);
-
-    LOADCHROMA(1);
-    PUTRGB(dst_2,py_2,1);
-    PUTRGB(dst_1,py_1,1);
-
-    LOADCHROMA(2);
-    PUTRGB(dst_1,py_1,2);
-    PUTRGB(dst_2,py_2,2);
-
-    LOADCHROMA(3);
-    PUTRGB(dst_2,py_2,3);
-    PUTRGB(dst_1,py_1,3);
-CLOSEYUV2RGBFUNC(8)
-#endif
-
 // r, g, b, dst_1, dst_2
 YUV2RGBFUNC(yuv2rgb_c_12_ordered_dither, uint16_t, 0)
     const uint8_t *d16 = dither_4x4_16[y&3];
@@ -441,36 +419,6 @@ YUV2RGBFUNC(yuv2rgb_c_8_ordered_dither, uint8_t, 0)
     PUTRGB8(dst_1,py_1,3,6);
 CLOSEYUV2RGBFUNC(8)
 
-#if 0 // Currently unused
-// This is exactly the same code as yuv2rgb_c_32 except for the types of
-// r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_4, uint8_t, 0)
-    int acc;
-#define PUTRGB4(dst,src,i)          \
-    Y = src[2*i];                   \
-    acc = r[Y] + g[Y] + b[Y];       \
-    Y = src[2*i+1];                 \
-    acc |= (r[Y] + g[Y] + b[Y])<<4; \
-    dst[i] = acc;
-
-    LOADCHROMA(0);
-    PUTRGB4(dst_1,py_1,0);
-    PUTRGB4(dst_2,py_2,0);
-
-    LOADCHROMA(1);
-    PUTRGB4(dst_2,py_2,1);
-    PUTRGB4(dst_1,py_1,1);
-
-    LOADCHROMA(2);
-    PUTRGB4(dst_1,py_1,2);
-    PUTRGB4(dst_2,py_2,2);
-
-    LOADCHROMA(3);
-    PUTRGB4(dst_2,py_2,3);
-    PUTRGB4(dst_1,py_1,3);
-CLOSEYUV2RGBFUNC(4)
-#endif
-
 YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     const uint8_t *d64 =  dither_8x8_73[y&7];
     const uint8_t *d128 = dither_8x8_220[y&7];
@@ -499,28 +447,6 @@ YUV2RGBFUNC(yuv2rgb_c_4_ordered_dither, uint8_t, 0)
     PUTRGB4D(dst_2,py_2,3,6+8);
     PUTRGB4D(dst_1,py_1,3,6);
 CLOSEYUV2RGBFUNC(4)
-
-#if 0 // Currently unused
-// This is exactly the same code as yuv2rgb_c_32 except for the types of
-// r, g, b, dst_1, dst_2
-YUV2RGBFUNC(yuv2rgb_c_4b, uint8_t, 0)
-    LOADCHROMA(0);
-    PUTRGB(dst_1,py_1,0);
-    PUTRGB(dst_2,py_2,0);
-
-    LOADCHROMA(1);
-    PUTRGB(dst_2,py_2,1);
-    PUTRGB(dst_1,py_1,1);
-
-    LOADCHROMA(2);
-    PUTRGB(dst_1,py_1,2);
-    PUTRGB(dst_2,py_2,2);
-
-    LOADCHROMA(3);
-    PUTRGB(dst_2,py_2,3);
-    PUTRGB(dst_1,py_1,3);
-CLOSEYUV2RGBFUNC(8)
-#endif
 
 YUV2RGBFUNC(yuv2rgb_c_4b_ordered_dither, uint8_t, 0)
     const uint8_t *d64 =  dither_8x8_73[y&7];

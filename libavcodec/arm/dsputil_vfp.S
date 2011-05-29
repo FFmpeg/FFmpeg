@@ -21,7 +21,6 @@
 #include "config.h"
 #include "asm.S"
 
-        .syntax unified
 /*
  * VFP is a floating point coprocessor used in some ARM cores. VFP11 has 1 cycle
  * throughput for almost all the instructions (except for double precision

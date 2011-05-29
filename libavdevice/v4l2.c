@@ -501,7 +501,6 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
             return AVERROR(EIO);
         }
     }
-    av_freep(&s->standard);
 
     if (ap->time_base.num && ap->time_base.den) {
         av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
@@ -670,6 +669,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 out:
     av_freep(&s->video_size);
     av_freep(&s->pixel_format);
+    av_freep(&s->standard);
     return res;
 }
 

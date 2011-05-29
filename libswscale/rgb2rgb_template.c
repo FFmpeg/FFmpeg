@@ -574,7 +574,6 @@ static inline void planar2x_c(const uint8_t *src, uint8_t *dst, int srcWidth,
     }
 
     // last line
-#if 1
     dst[0]= src[0];
 
     for (x=0; x<srcWidth-1; x++) {
@@ -582,12 +581,6 @@ static inline void planar2x_c(const uint8_t *src, uint8_t *dst, int srcWidth,
         dst[2*x+2]= (  src[x] + 3*src[x+1])>>2;
     }
     dst[2*srcWidth-1]= src[srcWidth-1];
-#else
-    for (x=0; x<srcWidth; x++) {
-        dst[2*x+0]=
-        dst[2*x+1]= src[x];
-    }
-#endif
 }
 
 /**
