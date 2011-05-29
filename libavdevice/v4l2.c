@@ -642,7 +642,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     desired_format = device_try_init(s1, pix_fmt, &s->width, &s->height, &codec_id);
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
-               "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, ap->pix_fmt);
+               "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, pix_fmt);
         close(s->fd);
 
         res = AVERROR(EIO);
