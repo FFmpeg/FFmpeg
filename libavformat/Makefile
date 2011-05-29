@@ -340,7 +340,6 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 # libavdevice dependencies
 OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o
 
-EXAMPLES  = output
 TESTPROGS = timefilter
 
 include $(SUBDIR)../subdir.mak
