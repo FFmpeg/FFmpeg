@@ -39,7 +39,7 @@ ogm_header(AVFormatContext *s, int idx)
     const uint8_t *p = os->buf + os->pstart;
     uint64_t time_unit;
     uint64_t spu;
-    uint32_t default_len;
+    uint32_t default_len av_unused;
 
     if(!(*p & 1))
         return 0;

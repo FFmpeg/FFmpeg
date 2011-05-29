@@ -41,8 +41,8 @@ static int celt_header(AVFormatContext *s, int idx)
 
         /* Main header */
 
-        uint32_t version, header_size, sample_rate, nb_channels, frame_size;
-        uint32_t overlap, bytes_per_packet, extra_headers;
+        uint32_t version, header_size av_unused, sample_rate, nb_channels, frame_size;
+        uint32_t overlap, bytes_per_packet av_unused, extra_headers;
         uint8_t *extradata;
 
         extradata = av_malloc(2 * sizeof(uint32_t) +

@@ -246,7 +246,7 @@ static int fourxm_read_packet(AVFormatContext *s,
     FourxmDemuxContext *fourxm = s->priv_data;
     AVIOContext *pb = s->pb;
     unsigned int fourcc_tag;
-    unsigned int size, out_size;
+    unsigned int size, out_size av_unused;
     int ret = 0;
     unsigned int track_number;
     int packet_read = 0;

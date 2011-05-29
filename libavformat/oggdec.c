@@ -197,8 +197,8 @@ static int ogg_read_page(AVFormatContext *s, int *str)
     int flags, nsegs;
     uint64_t gp;
     uint32_t serial;
-    uint32_t seq;
-    uint32_t crc;
+    uint32_t seq av_unused;
+    uint32_t crc av_unused;
     int size, idx;
     uint8_t sync[4];
     int sp = 0;

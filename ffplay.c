@@ -1438,7 +1438,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
 static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
 {
-    int len1, got_picture, i;
+    int len1 av_unused, got_picture, i;
 
     if (packet_queue_get(&is->videoq, pkt, 1) < 0)
         return -1;
@@ -1813,7 +1813,7 @@ static int subtitle_thread(void *arg)
     VideoState *is = arg;
     SubPicture *sp;
     AVPacket pkt1, *pkt = &pkt1;
-    int len1, got_subtitle;
+    int len1 av_unused, got_subtitle;
     double pts;
     int i, j;
     int r, g, b, y, u, v, a;

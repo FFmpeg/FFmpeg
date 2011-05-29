@@ -32,7 +32,7 @@ int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int g
 {
     AVIOContext *pb = avctx->pb;
     char buf[36];
-    int datatype, filetype, t1, t2, nb_comments, flags;
+    int datatype, filetype, t1, t2, nb_comments, flags av_unused;
     uint64_t start_pos = avio_size(pb) - 128;
 
     avio_seek(pb, start_pos, SEEK_SET);

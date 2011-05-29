@@ -80,8 +80,8 @@ static av_cold int rl2_read_header(AVFormatContext *s,
     unsigned int audio_frame_counter = 0;
     unsigned int video_frame_counter = 0;
     unsigned int back_size;
-    int data_size;
-    unsigned short encoding_method;
+    int data_size av_unused;
+    unsigned short encoding_method av_unused;
     unsigned short sound_rate;
     unsigned short rate;
     unsigned short channels;

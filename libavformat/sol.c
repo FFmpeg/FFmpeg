@@ -85,7 +85,7 @@ static int sol_channels(int magic, int type)
 static int sol_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    int size;
+    int size av_unused;
     unsigned int magic,tag;
     AVIOContext *pb = s->pb;
     unsigned int id, channels, rate, type;

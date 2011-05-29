@@ -469,21 +469,21 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
-    int tag, len;
+    int tag;
 
     if (fc->nb_streams < 1)
         return 0;
     st = fc->streams[fc->nb_streams-1];
 
     avio_rb32(pb); /* version + flags */
-    len = ff_mp4_read_descr(fc, pb, &tag);
+    ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4ESDescrTag) {
         avio_rb16(pb); /* ID */
         avio_r8(pb); /* priority */
     } else
         avio_rb16(pb); /* ID */
 
-    len = ff_mp4_read_descr(fc, pb, &tag);
+    ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4DecConfigDescrTag)
         ff_mp4_read_dec_config_descr(fc, st, pb);
     return 0;

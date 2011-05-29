@@ -196,7 +196,7 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
 {
     GetBitContext hb;
     int len;
-    int chunk_size;
+    int chunk_size av_unused;
     short wave_format;
 
     init_get_bits(&hb, header, header_size*8);

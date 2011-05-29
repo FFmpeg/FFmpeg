@@ -1535,8 +1535,8 @@ static void dca_exss_parse_header(DCAContext *s)
 {
     int ss_index;
     int blownup;
-    int header_size;
-    int hd_size;
+    int header_size av_unused;
+    int hd_size av_unused;
     int num_audiop = 1;
     int num_assets = 1;
     int active_ss_mask[8];
@@ -1622,7 +1622,6 @@ static int dca_decode_frame(AVCodecContext * avctx,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    int data_size_tmp;
 
     int lfe_samples;
     int num_core_channels = 0;

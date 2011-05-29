@@ -29,7 +29,7 @@ static int s302m_parse_frame_header(AVCodecContext *avctx, const uint8_t *buf,
                                     int buf_size)
 {
     uint32_t h;
-    int frame_size, channels, id, bits;
+    int frame_size, channels, id av_unused, bits;
 
     if (buf_size <= AES3_HEADER_LEN) {
         av_log(avctx, AV_LOG_ERROR, "frame is too short\n");

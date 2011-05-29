@@ -245,7 +245,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
 int ff_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
                                    dirac_source_params *source)
 {
-    unsigned version_major, version_minor;
+    unsigned version_major, version_minor av_unused;
     unsigned video_format, picture_coding_mode;
 
     version_major  = svq3_get_ue_golomb(gb);

@@ -209,7 +209,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
     ff_asf_guid g;
     enum AVMediaType type;
     int type_specific_size, sizeX;
-    uint64_t total_size;
+    uint64_t total_size av_unused;
     unsigned int tag1;
     int64_t pos1, pos2, start_time;
     int test_for_ext_stream_audio, is_dvr_ms_audio=0;
@@ -393,7 +393,7 @@ static int asf_read_ext_stream_properties(AVFormatContext *s, int64_t size)
     AVIOContext *pb = s->pb;
     ff_asf_guid g;
     int ext_len, payload_ext_ct, stream_ct, i;
-    uint32_t ext_d, leak_rate, stream_num;
+    uint32_t ext_d av_unused, leak_rate, stream_num;
     unsigned int stream_languageid_index;
 
     avio_rl64(pb); // starttime
@@ -511,7 +511,7 @@ static int asf_read_metadata(AVFormatContext *s, int64_t size)
 {
     AVIOContext *pb = s->pb;
     ASFContext *asf = s->priv_data;
-    int n, stream_num, name_len, value_len, value_type, value_num;
+    int n, stream_num, name_len, value_len, value_type av_unused, value_num;
     int ret, i;
     n = avio_rl16(pb);
 
@@ -626,7 +626,7 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             // if so the next iteration will pick it up
             continue;
         } else if (!ff_guidcmp(&g, &ff_asf_head1_guid)) {
-            int v1, v2;
+            av_unused int v1, v2;
             ff_get_guid(pb, &g);
             v1 = avio_rl32(pb);
             v2 = avio_rl16(pb);
@@ -799,7 +799,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     ASFContext *asf = s->priv_data;
     int rsize = 1;
     int num = avio_r8(pb);
-    int64_t ts0, ts1;
+    int64_t ts0, ts1 av_unused;
 
     asf->packet_segments--;
     asf->packet_key_frame = num >> 7;

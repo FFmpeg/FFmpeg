@@ -199,7 +199,6 @@ static void vmd_decode(VmdVideoContext *s)
 
     int frame_x, frame_y;
     int frame_width, frame_height;
-    int dp_size;
 
     frame_x = AV_RL16(&s->buf[6]);
     frame_y = AV_RL16(&s->buf[8]);
@@ -247,7 +246,6 @@ static void vmd_decode(VmdVideoContext *s)
         }
 
         dp = &s->frame.data[0][frame_y * s->frame.linesize[0] + frame_x];
-        dp_size = s->frame.linesize[0] * s->avctx->height;
         pp = &s->prev_frame.data[0][frame_y * s->prev_frame.linesize[0] + frame_x];
         switch (meth) {
         case 1:

@@ -35,7 +35,7 @@ static int ape_tag_read_field(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     uint8_t key[1024], *value;
-    uint32_t size, flags;
+    uint32_t size, flags av_unused;
     int i, c;
 
     size = avio_rl32(pb);  /* field size */

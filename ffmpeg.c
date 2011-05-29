@@ -3720,7 +3720,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 static void new_data_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
-    AVOutputStream *ost;
+    AVOutputStream *ost av_unused;
     AVCodec *codec=NULL;
     AVCodecContext *data_enc;
 

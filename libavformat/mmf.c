@@ -186,7 +186,7 @@ static int mmf_read_header(AVFormatContext *s,
     unsigned int tag;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int64_t file_size, size;
+    int64_t file_size av_unused, size;
     int rate, params;
 
     tag = avio_rl32(pb);
@@ -263,12 +263,10 @@ static int mmf_read_packet(AVFormatContext *s,
                            AVPacket *pkt)
 {
     MMFContext *mmf = s->priv_data;
-    AVStream *st;
     int ret, size;
 
     if (url_feof(s->pb))
         return AVERROR(EIO);
-    st = s->streams[0];
 
     size = MAX_SIZE;
     if(size > mmf->data_size)
