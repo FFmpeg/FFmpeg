@@ -1740,7 +1740,7 @@ static int video_thread(void *arg)
 {
     VideoState *is = arg;
     AVFrame *frame= avcodec_alloc_frame();
-    int64_t pts_int, pos;
+    int64_t pts_int = AV_NOPTS_VALUE, pos = -1;
     double pts;
     int ret;
 

@@ -326,6 +326,8 @@ static int iff_read_packet(AVFormatContext *s,
         buf = pkt->data;
         bytestream_put_be16(&buf, 2);
         ret = avio_read(pb, buf, iff->body_size);
+    } else {
+        av_abort();
     }
 
     if(iff->sent_bytes == 0)
