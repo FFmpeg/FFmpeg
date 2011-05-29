@@ -309,7 +309,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read packet", klv.key);
-        av_dlog(s, "size %lld offset %#llx\n", klv.length, klv.offset);
+        av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
             int res = mxf_decrypt_triplet(s, pkt, &klv);
             if (res < 0) {
@@ -522,8 +522,8 @@ static int mxf_read_index_table_segment(void *arg, AVIOContext *pb, int tag, int
     case 0x3F06: av_dlog(NULL, "IndexSID %d\n", avio_rb32(pb)); break;
     case 0x3F07: av_dlog(NULL, "BodySID %d\n", avio_rb32(pb)); break;
     case 0x3F0B: av_dlog(NULL, "IndexEditRate %d/%d\n", avio_rb32(pb), avio_rb32(pb)); break;
-    case 0x3F0C: av_dlog(NULL, "IndexStartPosition %lld\n", avio_rb64(pb)); break;
-    case 0x3F0D: av_dlog(NULL, "IndexDuration %lld\n", avio_rb64(pb)); break;
+    case 0x3F0C: av_dlog(NULL, "IndexStartPosition %"PRId64"\n", avio_rb64(pb)); break;
+    case 0x3F0D: av_dlog(NULL, "IndexDuration %"PRId64"\n", avio_rb64(pb)); break;
     }
     return 0;
 }
@@ -920,7 +920,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (klv_read_packet(&klv, s->pb) < 0)
             return -1;
         PRINT_KEY(s, "read header", klv.key);
-        av_dlog(s, "size %lld offset %#llx\n", klv.length, klv.offset);
+        av_dlog(s, "size %"PRId64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
             /* FIXME avoid seek */
