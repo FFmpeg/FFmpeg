@@ -1,7 +1,4 @@
 /*
- * Libavformat API example: Output a media file in any supported
- * libavformat format. The default codecs are used.
- *
  * Copyright (c) 2003 Fabrice Bellard
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,6 +19,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
+
+/**
+ * @file
+ * Libavformat API example: Output a media file in any supported
+ * libavformat format. The default codecs are used.
+ */
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
