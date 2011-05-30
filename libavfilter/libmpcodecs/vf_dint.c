@@ -32,7 +32,7 @@ struct vf_priv_s {
   float sense; // first parameter
   float level; // second parameter
   unsigned int imgfmt;
-  char diff;
+  int diff;
   uint32_t max;
 //  int dfr;
 //  int rdfr;
@@ -73,7 +73,7 @@ static int config (struct vf_instance *vf,
       vf->priv->diff = 31;
     mp_msg (MSGT_VFILTER, MSGL_INFO, "Drop-interlaced: %dx%d diff %d / level %u\n",
            vf->priv->pmpi->width, vf->priv->pmpi->height,
-           (int)vf->priv->diff, (unsigned int)vf->priv->max);
+           vf->priv->diff, (unsigned int)vf->priv->max);
 //    vf->priv->rdfr = vf->priv->dfr = 0;
     vf->priv->was_dint = 0;
     return vf_next_config(vf,width,height,d_width,d_height,flags,outfmt);
@@ -81,10 +81,10 @@ static int config (struct vf_instance *vf,
 
 static int put_image (struct vf_instance *vf, mp_image_t *mpi, double pts)
 {
-    char rrow0[MAXROWSIZE];
-    char rrow1[MAXROWSIZE];
-    char rrow2[MAXROWSIZE];
-    char *row0 = rrow0, *row1 = rrow1, *row2 = rrow2/*, *row3 = rrow3*/;
+    int8_t rrow0[MAXROWSIZE];
+    int8_t rrow1[MAXROWSIZE];
+    int8_t rrow2[MAXROWSIZE];
+    int8_t *row0 = rrow0, *row1 = rrow1, *row2 = rrow2/*, *row3 = rrow3*/;
     int rowsize = mpi->width;
     uint32_t nok = 0, max = vf->priv->max;
     int diff = vf->priv->diff;

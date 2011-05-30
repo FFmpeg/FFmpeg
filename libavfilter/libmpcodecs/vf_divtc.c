@@ -42,7 +42,7 @@ struct vf_priv_s
       ocount, sum[5];
    double threshold;
    FILE *file;
-   char *bdata;
+   int8_t *bdata;
    unsigned int *csdata;
    int *history;
    };
@@ -384,8 +384,8 @@ static int analyze(struct vf_priv_s *p)
    {
    int *buf=0, *bp, bufsize=0, n, b, f, i, j, m, s;
    unsigned int *cbuf=0, *cp;
-   char *pbuf;
-   char lbuf[256];
+   int8_t *pbuf;
+   int8_t lbuf[256];
    int sum[5];
    double d;
 
