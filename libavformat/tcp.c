@@ -45,7 +45,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
     char buf[256];
     int ret;
     socklen_t optlen;
-    int timeout = 100;
+    int timeout = 50;
     char hostname[1024],proto[1024],path[1024];
     char portstr[10];
 
