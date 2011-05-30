@@ -117,7 +117,7 @@ TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi $(SRC_PATH_BARE)/doc/t2h.init
 	$(Q)$(TEXIDEP)
-	$(M)cd doc && texi2html -monolithic --init-file $(SRC_PATH_BARE)/doc/t2h.init $(<:doc/%=%)
+	$(M)texi2html -monolithic --init-file $(SRC_PATH_BARE)/doc/t2h.init --output $@ $<
 
 doc/%.pod: TAG = POD
 doc/%.pod: doc/%.texi
