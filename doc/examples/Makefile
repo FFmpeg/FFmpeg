@@ -3,7 +3,7 @@ FFMPEG_LIBS=libavdevice libavformat libavfilter libavcodec libswscale libavutil
 CFLAGS+=$(shell pkg-config  --cflags $(FFMPEG_LIBS))
 LDFLAGS+=$(shell pkg-config --libs $(FFMPEG_LIBS))
 
-EXAMPLES=api-example output-example
+EXAMPLES=encoding-example muxing-example
 
 OBJS=$(addsuffix .o,$(EXAMPLES))
 
