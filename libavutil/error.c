@@ -16,6 +16,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#undef _GNU_SOURCE
 #include "avutil.h"
 #include "avstring.h"
 
