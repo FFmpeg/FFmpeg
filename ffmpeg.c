@@ -1731,6 +1731,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
                         }
                     } else {
                         AVFrame avframe; //FIXME/XXX remove this
+                        AVPicture pict;
                         AVPacket opkt;
                         int64_t ost_tb_start_time= av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
 
@@ -1784,6 +1785,13 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             opkt.size = data_size;
                         }
 
+                        if (os->oformat->flags & AVFMT_RAWPICTURE) {
+                            /* store AVPicture in AVPacket, as expected by the output format */
+                            avpicture_fill(&pict, opkt.data, ost->st->codec->pix_fmt, ost->st->codec->width, ost->st->codec->height);
+                            opkt.data = (uint8_t *)&pict;
+                            opkt.size = sizeof(AVPicture);
+                            opkt.flags |= AV_PKT_FLAG_KEY;
+                        }
                         write_frame(os, &opkt, ost->st->codec, ost->bitstream_filters);
                         ost->st->codec->frame_number++;
                         ost->frame_number++;
