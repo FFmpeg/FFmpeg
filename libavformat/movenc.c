@@ -1288,20 +1288,49 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
 // This box seems important for the psp playback ... without it the movie seems to hang
 static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
 {
-    avio_wb32(pb, 0x24); /* size  */
+    int64_t duration = av_rescale_rnd(track->trackDuration, MOV_TIMESCALE,
+                                      track->timescale, AV_ROUND_UP);
+    int version = duration < INT32_MAX ? 0 : 1;
+    int entry_size, entry_count, size;
+    int64_t delay, start_ct = track->cluster[0].cts;
+    delay = av_rescale_rnd(track->cluster[0].dts + start_ct, MOV_TIMESCALE,
+                           track->timescale, AV_ROUND_DOWN);
+    version |= delay < INT32_MAX ? 0 : 1;
+
+    entry_size = (version == 1) ? 20 : 12;
+    entry_count = 1 + (delay > 0);
+    size = 24 + entry_count * entry_size;
+
+    /* write the atom data */
+    avio_wb32(pb, size);
     ffio_wfourcc(pb, "edts");
-    avio_wb32(pb, 0x1c); /* size  */
+    avio_wb32(pb, size - 8);
     ffio_wfourcc(pb, "elst");
-    avio_wb32(pb, 0x0);
-    avio_wb32(pb, 0x1);
+    avio_w8(pb, version);
+    avio_wb24(pb, 0); /* flags */
 
-    /* duration   ... doesn't seem to effect psp */
-    avio_wb32(pb, av_rescale_rnd(track->trackDuration, MOV_TIMESCALE,
-                                track->timescale, AV_ROUND_UP));
+    avio_wb32(pb, entry_count);
+    if (delay > 0) { /* add an empty edit to delay presentation */
+        if (version == 1) {
+            avio_wb64(pb, delay);
+            avio_wb64(pb, -1);
+        } else {
+            avio_wb32(pb, delay);
+            avio_wb32(pb, -1);
+        }
+        avio_wb32(pb, 0x00010000);
+    }
 
-    avio_wb32(pb, track->cluster[0].cts); /* first pts is cts since dts is 0 */
+    /* duration */
+    if (version == 1) {
+        avio_wb64(pb, duration);
+        avio_wb64(pb, start_ct);
+    } else {
+        avio_wb32(pb, duration);
+        avio_wb32(pb, start_ct);
+    }
     avio_wb32(pb, 0x00010000);
-    return 0x24;
+    return size;
 }
 
 static int mov_write_tref_tag(AVIOContext *pb, MOVTrack *track)
@@ -1358,7 +1387,7 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
-    if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS)
+    if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS || track->cluster[0].dts)
         mov_write_edts_tag(pb, track);  // PSP Movies require edts box
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
