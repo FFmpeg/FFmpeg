@@ -152,7 +152,7 @@ static int movie_init(AVFilterContext *ctx)
     movie->w = movie->codec_ctx->width;
     movie->h = movie->codec_ctx->height;
 
-    av_log(ctx, AV_LOG_INFO, "seek_point:%lld format_name:%s file_name:%s stream_index:%d\n",
+    av_log(ctx, AV_LOG_INFO, "seek_point:%"PRIi64" format_name:%s file_name:%s stream_index:%d\n",
            movie->seek_point, movie->format_name, movie->file_name,
            movie->stream_index);
 
