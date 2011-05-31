@@ -269,27 +269,6 @@ static inline int l3_unscale(int value, int exponent)
     return m;
 }
 
-/* all integer n^(4/3) computation code */
-#define DEV_ORDER 13
-
-#define POW_FRAC_BITS 24
-#define POW_FRAC_ONE    (1 << POW_FRAC_BITS)
-#define POW_FIX(a)   ((int)((a) * POW_FRAC_ONE))
-#define POW_MULL(a,b) (((int64_t)(a) * (int64_t)(b)) >> POW_FRAC_BITS)
-
-static int dev_4_3_coefs[DEV_ORDER];
-
-static av_cold void int_pow_init(void)
-{
-    int i, a;
-
-    a = POW_FIX(1.0);
-    for(i=0;i<DEV_ORDER;i++) {
-        a = POW_MULL(a, POW_FIX(4.0 / 3.0) - i * POW_FIX(1.0)) / (i + 1);
-        dev_4_3_coefs[i] = a;
-    }
-}
-
 static av_cold int decode_init(AVCodecContext * avctx)
 {
     MPADecodeContext *s = avctx->priv_data;
@@ -385,7 +364,6 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
         /* compute n ^ (4/3) and store it in mantissa/exp format */
 
-        int_pow_init();
         mpegaudio_tableinit();
 
         for (i = 0; i < 4; i++)
@@ -1476,7 +1454,7 @@ static void compute_imdct(MPADecodeContext *s,
 /* main layer3 decoding function */
 static int mp_decode_layer3(MPADecodeContext *s)
 {
-    int nb_granules, main_data_begin, private_bits;
+    int nb_granules, main_data_begin;
     int gr, ch, blocksplit_flag, i, j, k, n, bits_pos;
     GranuleDef *g;
     int16_t exponents[576]; //FIXME try INTFLOAT
@@ -1484,14 +1462,14 @@ static int mp_decode_layer3(MPADecodeContext *s)
     /* read side info */
     if (s->lsf) {
         main_data_begin = get_bits(&s->gb, 8);
-        private_bits = get_bits(&s->gb, s->nb_channels);
+        skip_bits(&s->gb, s->nb_channels);
         nb_granules = 1;
     } else {
         main_data_begin = get_bits(&s->gb, 9);
         if (s->nb_channels == 2)
-            private_bits = get_bits(&s->gb, 3);
+            skip_bits(&s->gb, 3);
         else
-            private_bits = get_bits(&s->gb, 5);
+            skip_bits(&s->gb, 5);
         nb_granules = 2;
         for(ch=0;ch<s->nb_channels;ch++) {
             s->granules[ch][0].scfsi = 0;/* all scale factors are transmitted */
