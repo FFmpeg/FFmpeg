@@ -420,6 +420,119 @@ Selected by Encoder (default)
 A description of some of the currently available video encoders
 follows.
 
+@section libvpx
+
+VP8 format supported through libvpx.
+
+Requires the presence of the libvpx headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libvpx}.
+
+@subsection Options
+
+Mapping from FFmpeg to libvpx options with conversion notes in parentheses.
+
+@table @option
+
+@item threads
+g_threads
+
+@item profile
+g_profile
+
+@item vb
+rc_target_bitrate
+
+@item g
+kf_max_dist
+
+@item keyint_min
+kf_min_dist
+
+@item qmin
+rc_min_quantizer
+
+@item qmax
+rc_max_quantizer
+
+@item bufsize, vb
+rc_buf_sz
+@code{(bufsize * 1000 / vb)}
+
+rc_buf_optimal_sz
+@code{(bufsize * 1000 / vb * 5 / 6)}
+
+@item rc_init_occupancy, vb
+rc_buf_initial_sz
+@code{(rc_init_occupancy * 1000 / vb)}
+
+@item rc_buffer_aggressivity
+rc_undershoot_pct
+
+@item skip_threshold
+rc_dropframe_thresh
+
+@item qcomp
+rc_2pass_vbr_bias_pct
+
+@item maxrate, vb
+rc_2pass_vbr_maxsection_pct
+@code{(maxrate * 100 / vb)}
+
+@item minrate, vb
+rc_2pass_vbr_minsection_pct
+@code{(minrate * 100 / vb)}
+
+@item minrate, maxrate, vb
+@code{VPX_CBR}
+@code{(minrate == maxrate == vb)}
+
+@item crf
+@code{VPX_CQ}, @code{VP8E_SET_CQ_LEVEL}
+
+@item quality
+@table @option
+@item @var{best}
+@code{VPX_DL_BEST_QUALITY}
+@item @var{good}
+@code{VPX_DL_GOOD_QUALITY}
+@item @var{realtime}
+@code{VPX_DL_REALTIME}
+@end table
+
+@item speed
+@code{VP8E_SET_CPUUSED}
+
+@item nr
+@code{VP8E_SET_NOISE_SENSITIVITY}
+
+@item mb_threshold
+@code{VP8E_SET_STATIC_THRESHOLD}
+
+@item slices
+@code{VP8E_SET_TOKEN_PARTITIONS}
+
+@item Alternate reference frame related
+@table @option
+@item vp8flags altref
+@code{VP8E_SET_ENABLEAUTOALTREF}
+@item @var{arnr_max_frames}
+@code{VP8E_SET_ARNR_MAXFRAMES}
+@item @var{arnr_type}
+@code{VP8E_SET_ARNR_TYPE}
+@item @var{arnr_strength}
+@code{VP8E_SET_ARNR_STRENGTH}
+@item @var{rc_lookahead}
+g_lag_in_frames
+@end table
+
+@item vp8flags error_resilient
+g_error_resilient
+
+@end table
+
+For more information about libvpx see:
+@url{http://www.webmproject.org/}
+
 @section libx264
 
 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 format supported through
