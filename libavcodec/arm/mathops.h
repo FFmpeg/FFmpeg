@@ -41,12 +41,21 @@ static inline av_const int MULL(int a, int b, unsigned shift)
 }
 
 #define MULH MULH
+#define MUL64 MUL64
+
 #if HAVE_ARMV6
 static inline av_const int MULH(int a, int b)
 {
     int r;
     __asm__ ("smmul %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
     return r;
+}
+
+static inline av_const int64_t MUL64(int a, int b)
+{
+    int64_t x;
+    __asm__ ("smull %Q0, %R0, %1, %2" : "=r"(x) : "r"(a), "r"(b));
+    return x;
 }
 #else
 static inline av_const int MULH(int a, int b)
@@ -55,15 +64,14 @@ static inline av_const int MULH(int a, int b)
     __asm__ ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a));
     return hi;
 }
-#endif
 
 static inline av_const int64_t MUL64(int a, int b)
 {
     int64_t x;
-    __asm__ ("smull %Q0, %R0, %1, %2" : "=r"(x) : "r"(a), "r"(b));
+    __asm__ ("smull %Q0, %R0, %1, %2" : "=&r"(x) : "r"(a), "r"(b));
     return x;
 }
-#define MUL64 MUL64
+#endif
 
 static inline av_const int64_t MAC64(int64_t d, int a, int b)
 {
