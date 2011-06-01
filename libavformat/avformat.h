@@ -1459,6 +1459,9 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
 int av_write_trailer(AVFormatContext *s);
 
 #if FF_API_DUMP_FORMAT
+/**
+ * @deprecated Deprecated in favor of av_dump_format().
+ */
 attribute_deprecated void dump_format(AVFormatContext *ic,
                                       int index,
                                       const char *url,
