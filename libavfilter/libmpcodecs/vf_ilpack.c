@@ -28,6 +28,7 @@
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"
+#include "libavutil/attributes.h"
 
 typedef void (pack_func_t)(unsigned char *dst, unsigned char *y,
     unsigned char *u, unsigned char *v, int w, int us, int vs);
@@ -38,7 +39,8 @@ struct vf_priv_s {
 };
 
 static void pack_nn_C(unsigned char *dst, unsigned char *y,
-    unsigned char *u, unsigned char *v, int w)
+    unsigned char *u, unsigned char *v, int w,
+    int av_unused us, int av_unused vs)
 {
     int j;
     for (j = w/2; j; j--) {
@@ -77,7 +79,8 @@ static void pack_li_1_C(unsigned char *dst, unsigned char *y,
 
 #if HAVE_MMX
 static void pack_nn_MMX(unsigned char *dst, unsigned char *y,
-    unsigned char *u, unsigned char *v, int w)
+    unsigned char *u, unsigned char *v, int w,
+    int av_unused us, int av_unused vs)
 {
     __asm__ volatile (""
         ASMALIGN(4)
@@ -103,7 +106,7 @@ static void pack_nn_MMX(unsigned char *dst, unsigned char *y,
         : "r" (y), "r" (u), "r" (v), "r" (dst), "r" (w/8)
         : "memory"
         );
-    pack_nn_C(dst, y, u, v, (w&7));
+    pack_nn_C(dst, y, u, v, (w&7), 0, 0);
 }
 
 #if HAVE_EBX_AVAILABLE
@@ -413,12 +416,12 @@ static int vf_open(vf_instance_t *vf, char *args)
     vf->priv->mode = 1;
     if (args) sscanf(args, "%d", &vf->priv->mode);
 
-    pack_nn = (pack_func_t *)pack_nn_C;
+    pack_nn = pack_nn_C;
     pack_li_0 = pack_li_0_C;
     pack_li_1 = pack_li_1_C;
 #if HAVE_MMX
     if(gCpuCaps.hasMMX) {
-        pack_nn = (pack_func_t *)pack_nn_MMX;
+        pack_nn = pack_nn_MMX;
 #if HAVE_EBX_AVAILABLE
         pack_li_0 = pack_li_0_MMX;
         pack_li_1 = pack_li_1_MMX;

@@ -598,7 +598,8 @@ static void uninit(struct vf_instance *vf)
 static int vf_open(vf_instance_t *vf, char *args)
    {
    struct vf_priv_s *p;
-   char *filename="framediff.log", *ap, *q, *a;
+   const char *filename="framediff.log";
+   char *ap, *q, *a;
 
    if(args && !(args=av_strdup(args)))
       {
