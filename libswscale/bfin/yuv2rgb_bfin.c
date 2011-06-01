@@ -28,6 +28,7 @@
 #include <assert.h>
 #include "config.h"
 #include <unistd.h>
+#include "libavutil/pixdesc.h"
 #include "libswscale/rgb2rgb.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
