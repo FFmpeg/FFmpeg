@@ -819,8 +819,7 @@ pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality)
                 int plen;
                 int spaceLeft;
 
-                if(p==NULL) p= temp, *p=0;      //last filter
-                else p--, *p=',';               //not last filter
+                p--, *p=',';
 
                 plen= strlen(p);
                 spaceLeft= p - temp + plen;
