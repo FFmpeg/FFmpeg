@@ -299,9 +299,9 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
         stream->codec->codec_tag == 124) {
         // We have to split Escape 124 frames because there are
         // multiple frames per chunk in Escape 124 samples.
-        uint32_t frame_size, frame_flags;
+        uint32_t frame_size;
 
-        frame_flags = avio_rl32(pb);
+        avio_skip(pb, 4); /* flags */
         frame_size = avio_rl32(pb);
         if (avio_seek(pb, -8, SEEK_CUR) < 0)
             return AVERROR(EIO);

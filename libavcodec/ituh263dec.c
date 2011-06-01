@@ -152,7 +152,7 @@ int ff_h263_decode_mba(MpegEncContext *s)
  */
 static int h263_decode_gob_header(MpegEncContext *s)
 {
-    unsigned int val, gfid, gob_number;
+    unsigned int val, gob_number;
     int left;
 
     /* Check for GOB Start Code */
@@ -183,12 +183,12 @@ static int h263_decode_gob_header(MpegEncContext *s)
         s->qscale = get_bits(&s->gb, 5); /* SQUANT */
         if(get_bits1(&s->gb)==0)
             return -1;
-        gfid = get_bits(&s->gb, 2); /* GFID */
+        skip_bits(&s->gb, 2); /* GFID */
     }else{
         gob_number = get_bits(&s->gb, 5); /* GN */
         s->mb_x= 0;
         s->mb_y= s->gob_index* gob_number;
-        gfid = get_bits(&s->gb, 2); /* GFID */
+        skip_bits(&s->gb, 2); /* GFID */
         s->qscale = get_bits(&s->gb, 5); /* GQUANT */
     }
 

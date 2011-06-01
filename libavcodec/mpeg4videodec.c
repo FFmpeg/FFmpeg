@@ -397,14 +397,13 @@ int mpeg4_decode_video_packet_header(MpegEncContext *s)
         header_extension= get_bits1(&s->gb);
     }
     if(header_extension){
-        int time_increment;
         int time_incr=0;
 
         while (get_bits1(&s->gb) != 0)
             time_incr++;
 
         check_marker(&s->gb, "before time_increment in video packed header");
-        time_increment= get_bits(&s->gb, s->time_increment_bits);
+        skip_bits(&s->gb, s->time_increment_bits); /* time_increment */
         check_marker(&s->gb, "before vop_coding_type in video packed header");
 
         skip_bits(&s->gb, 2); /* vop coding type */
@@ -1801,16 +1800,14 @@ no_cplx_est:
 
         if (s->scalability) {
             GetBitContext bak= *gb;
-            int ref_layer_id;
-            int ref_layer_sampling_dir;
             int h_sampling_factor_n;
             int h_sampling_factor_m;
             int v_sampling_factor_n;
             int v_sampling_factor_m;
 
             s->hierachy_type= get_bits1(gb);
-            ref_layer_id= get_bits(gb, 4);
-            ref_layer_sampling_dir= get_bits1(gb);
+            skip_bits(gb, 4);  /* ref_layer_id */
+            skip_bits1(gb);    /* ref_layer_sampling_dir */
             h_sampling_factor_n= get_bits(gb, 5);
             h_sampling_factor_m= get_bits(gb, 5);
             v_sampling_factor_n= get_bits(gb, 5);
@@ -1989,15 +1986,13 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 
      if (s->shape != RECT_SHAPE) {
          if (s->vol_sprite_usage != 1 || s->pict_type != AV_PICTURE_TYPE_I) {
-             int width, height, hor_spat_ref, ver_spat_ref;
-
-             width = get_bits(gb, 13);
+             skip_bits(gb, 13); /* width */
              skip_bits1(gb);   /* marker */
-             height = get_bits(gb, 13);
+             skip_bits(gb, 13); /* height */
              skip_bits1(gb);   /* marker */
-             hor_spat_ref = get_bits(gb, 13); /* hor_spat_ref */
+             skip_bits(gb, 13); /* hor_spat_ref */
              skip_bits1(gb);   /* marker */
-             ver_spat_ref = get_bits(gb, 13); /* ver_spat_ref */
+             skip_bits(gb, 13); /* ver_spat_ref */
          }
          skip_bits1(gb); /* change_CR_disable */
 

@@ -761,10 +761,9 @@ void ff_mpeg1_encode_init(MpegEncContext *s)
 
                 if(mv==0) len= ff_mpeg12_mbMotionVectorTable[0][1];
                 else{
-                    int val, bit_size, range, code;
+                    int val, bit_size, code;
 
                     bit_size = f_code - 1;
-                    range = 1 << bit_size;
 
                     val=mv;
                     if (val < 0)

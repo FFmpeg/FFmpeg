@@ -554,9 +554,8 @@ static void svq1_parse_string (GetBitContext *bitbuf, uint8_t *out) {
 
 static int svq1_decode_frame_header (GetBitContext *bitbuf,MpegEncContext *s) {
   int frame_size_code;
-  int temporal_reference;
 
-  temporal_reference = get_bits (bitbuf, 8);
+  skip_bits(bitbuf, 8); /* temporal_reference */
 
   /* frame type */
   s->pict_type= get_bits (bitbuf, 2)+1;

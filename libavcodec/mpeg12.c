@@ -2128,14 +2128,13 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
-    int drop_frame_flag;
     int time_code_hours, time_code_minutes;
     int time_code_seconds, time_code_pictures;
     int broken_link;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    drop_frame_flag = get_bits1(&s->gb);
+    skip_bits1(&s->gb); /* drop_frame_flag */
 
     time_code_hours=get_bits(&s->gb,5);
     time_code_minutes = get_bits(&s->gb,6);

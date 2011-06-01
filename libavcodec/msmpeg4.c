@@ -1528,9 +1528,7 @@ int msmpeg4_decode_ext_header(MpegEncContext * s, int buf_size)
     /* the alt_bitstream reader could read over the end so we need to check it */
     if(left>=length && left<length+8)
     {
-        int fps;
-
-        fps= get_bits(&s->gb, 5);
+        skip_bits(&s->gb, 5); /* fps */
         s->bit_rate= get_bits(&s->gb, 11)*1024;
         if(s->msmpeg4_version>=3)
             s->flipflop_rounding= get_bits1(&s->gb);

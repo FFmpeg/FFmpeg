@@ -397,7 +397,7 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *p;
     uint8_t *crow_buf_base = NULL;
     uint32_t tag, length;
-    int ret, crc;
+    int ret;
 
     FFSWAP(AVFrame *, s->current_picture, s->last_picture);
     avctx->coded_frame= s->current_picture;
@@ -451,7 +451,7 @@ static int decode_frame(AVCodecContext *avctx,
             s->compression_type = *s->bytestream++;
             s->filter_type = *s->bytestream++;
             s->interlace_type = *s->bytestream++;
-            crc = bytestream_get_be32(&s->bytestream);
+            s->bytestream += 4; /* crc */
             s->state |= PNG_IHDR;
             av_dlog(avctx, "width=%d height=%d depth=%d color_type=%d compression_type=%d filter_type=%d interlace_type=%d\n",
                     s->width, s->height, s->bit_depth, s->color_type,
@@ -547,8 +547,7 @@ static int decode_frame(AVCodecContext *avctx,
             s->state |= PNG_IDAT;
             if (png_decode_idat(s, length) < 0)
                 goto fail;
-            /* skip crc */
-            crc = bytestream_get_be32(&s->bytestream);
+            s->bytestream += 4; /* crc */
             break;
         case MKTAG('P', 'L', 'T', 'E'):
             {
@@ -568,7 +567,7 @@ static int decode_frame(AVCodecContext *avctx,
                     s->palette[i] = (0xff << 24);
                 }
                 s->state |= PNG_PLTE;
-                crc = bytestream_get_be32(&s->bytestream);
+                s->bytestream += 4; /* crc */
             }
             break;
         case MKTAG('t', 'R', 'N', 'S'):
@@ -584,13 +583,13 @@ static int decode_frame(AVCodecContext *avctx,
                     v = *s->bytestream++;
                     s->palette[i] = (s->palette[i] & 0x00ffffff) | (v << 24);
                 }
-                crc = bytestream_get_be32(&s->bytestream);
+                s->bytestream += 4; /* crc */
             }
             break;
         case MKTAG('I', 'E', 'N', 'D'):
             if (!(s->state & PNG_ALLIMAGE))
                 goto fail;
-            crc = bytestream_get_be32(&s->bytestream);
+            s->bytestream += 4; /* crc */
             goto exit_loop;
         default:
             /* skip tag */

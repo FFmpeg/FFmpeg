@@ -35,11 +35,11 @@ static int ape_tag_read_field(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     uint8_t key[1024], *value;
-    uint32_t size, flags;
+    uint32_t size;
     int i, c;
 
     size = avio_rl32(pb);  /* field size */
-    flags = avio_rl32(pb); /* field flags */
+    avio_skip(pb, 4);      /* field flags */
     for (i = 0; i < sizeof(key) - 1; i++) {
         c = avio_r8(pb);
         if (c < 0x20 || c > 0x7E)

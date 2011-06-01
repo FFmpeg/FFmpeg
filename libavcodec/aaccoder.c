@@ -311,7 +311,7 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
                                      int win, int group_len, const float lambda)
 {
     BandCodingPath path[120][12];
-    int w, swb, cb, start, start2, size;
+    int w, swb, cb, start, size;
     int i, j;
     const int max_sfb  = sce->ics.max_sfb;
     const int run_bits = sce->ics.num_windows == 1 ? 5 : 3;
@@ -329,7 +329,6 @@ static void encode_window_bands_info(AACEncContext *s, SingleChannelElement *sce
         path[0][cb].run      = 0;
     }
     for (swb = 0; swb < max_sfb; swb++) {
-        start2 = start;
         size = sce->ics.swb_sizes[swb];
         if (sce->zeroes[win*16 + swb]) {
             for (cb = 0; cb < 12; cb++) {
@@ -413,7 +412,7 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
                                   int win, int group_len, const float lambda)
 {
     BandCodingPath path[120][12];
-    int w, swb, cb, start, start2, size;
+    int w, swb, cb, start, size;
     int i, j;
     const int max_sfb  = sce->ics.max_sfb;
     const int run_bits = sce->ics.num_windows == 1 ? 5 : 3;
@@ -431,7 +430,6 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
         path[0][cb].run      = 0;
     }
     for (swb = 0; swb < max_sfb; swb++) {
-        start2 = start;
         size = sce->ics.swb_sizes[swb];
         if (sce->zeroes[win*16 + swb]) {
             for (cb = 0; cb < 12; cb++) {
@@ -1006,12 +1004,11 @@ static void search_for_quantizers_fast(AVCodecContext *avctx, AACEncContext *s,
                                        SingleChannelElement *sce,
                                        const float lambda)
 {
-    int start = 0, i, w, w2, g;
+    int i, w, w2, g;
     int minq = 255;
 
     memset(sce->sf_idx, 0, sizeof(sce->sf_idx));
     for (w = 0; w < sce->ics.num_windows; w += sce->ics.group_len[w]) {
-        start = w*128;
         for (g = 0; g < sce->ics.num_swb; g++) {
             for (w2 = 0; w2 < sce->ics.group_len[w]; w2++) {
                 FFPsyBand *band = &s->psy.psy_bands[s->cur_channel*PSY_MAX_BANDS+(w+w2)*16+g];

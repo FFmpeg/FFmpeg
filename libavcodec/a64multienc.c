@@ -252,7 +252,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     int b_width;
 
     int req_size;
-    int num_frames   = c->mc_lifetime;
 
     int *charmap     = c->mc_charmap;
     uint8_t *colram  = c->mc_colram;
@@ -280,7 +279,6 @@ static int a64multi_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         if (!c->mc_lifetime) return 0;
         /* no more frames in queue, prepare to flush remaining frames */
         if (!c->mc_frame_counter) {
-            num_frames = c->mc_lifetime;
             c->mc_lifetime = 0;
         }
         /* still frames in queue so limit lifetime to remaining frames */

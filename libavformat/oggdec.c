@@ -196,8 +196,6 @@ static int ogg_read_page(AVFormatContext *s, int *str)
     int flags, nsegs;
     uint64_t gp;
     uint32_t serial;
-    uint32_t seq;
-    uint32_t crc;
     int size, idx;
     uint8_t sync[4];
     int sp = 0;
@@ -230,8 +228,7 @@ static int ogg_read_page(AVFormatContext *s, int *str)
     flags = avio_r8(bc);
     gp = avio_rl64 (bc);
     serial = avio_rl32 (bc);
-    seq = avio_rl32 (bc);
-    crc = avio_rl32 (bc);
+    avio_skip(bc, 8); /* seq, crc */
     nsegs = avio_r8(bc);
 
     idx = ogg_find_stream (ogg, serial);

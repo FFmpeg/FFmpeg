@@ -280,7 +280,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         if (rm_read_audio_stream_info(s, pb, st, rst, 0))
             return -1;
     } else {
-        int fps, fps2;
+        int fps;
         if (avio_rl32(pb) != MKTAG('V', 'I', 'D', 'O')) {
         fail1:
             av_log(st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
@@ -298,7 +298,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         fps= avio_rb16(pb);
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         avio_rb32(pb);
-        fps2= avio_rb16(pb);
+        avio_skip(pb, 2);
         avio_rb16(pb);
 
         if ((ret = rm_read_extradata(pb, st->codec, codec_data_size - (avio_tell(pb) - codec_pos))) < 0)

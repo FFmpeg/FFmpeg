@@ -245,11 +245,11 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
 int ff_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
                                    dirac_source_params *source)
 {
-    unsigned version_major, version_minor;
+    unsigned version_major;
     unsigned video_format, picture_coding_mode;
 
     version_major  = svq3_get_ue_golomb(gb);
-    version_minor  = svq3_get_ue_golomb(gb);
+    svq3_get_ue_golomb(gb); /* version_minor */
     avctx->profile = svq3_get_ue_golomb(gb);
     avctx->level   = svq3_get_ue_golomb(gb);
     video_format   = svq3_get_ue_golomb(gb);

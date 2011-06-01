@@ -94,7 +94,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVPicture *picture;
     int* first_pkt = s->priv_data;
     int width, height, h_chroma_shift, v_chroma_shift;
-    int i, m;
+    int i;
     char buf2[Y4M_LINE_MAX+1];
     char buf1[20];
     uint8_t *ptr, *ptr1, *ptr2;
@@ -114,7 +114,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* construct frame header */
 
-    m = snprintf(buf1, sizeof(buf1), "%s\n", Y4M_FRAME_MAGIC);
+    snprintf(buf1, sizeof(buf1), "%s\n", Y4M_FRAME_MAGIC);
     avio_write(pb, buf1, strlen(buf1));
 
     width = st->codec->width;

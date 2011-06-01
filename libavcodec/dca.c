@@ -1535,8 +1535,6 @@ static void dca_exss_parse_header(DCAContext *s)
 {
     int ss_index;
     int blownup;
-    int header_size;
-    int hd_size;
     int num_audiop = 1;
     int num_assets = 1;
     int active_ss_mask[8];
@@ -1549,8 +1547,8 @@ static void dca_exss_parse_header(DCAContext *s)
     ss_index = get_bits(&s->gb, 2);
 
     blownup = get_bits1(&s->gb);
-    header_size = get_bits(&s->gb, 8 + 4 * blownup) + 1;
-    hd_size = get_bits_long(&s->gb, 16 + 4 * blownup) + 1;
+    skip_bits(&s->gb, 8 + 4 * blownup); // header_size
+    skip_bits(&s->gb, 16 + 4 * blownup); // hd_size
 
     s->static_fields = get_bits1(&s->gb);
     if (s->static_fields) {

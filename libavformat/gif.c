@@ -295,9 +295,7 @@ static int gif_write_video(AVFormatContext *s,
                            AVCodecContext *enc, const uint8_t *buf, int size)
 {
     AVIOContext *pb = s->pb;
-    GIFContext *gif = s->priv_data;
     int jiffies;
-    int64_t delay;
 
     /* graphic control extension block */
     avio_w8(pb, 0x21);
@@ -307,8 +305,6 @@ static int gif_write_video(AVFormatContext *s,
 
     /* 1 jiffy is 1/70 s */
     /* the delay_time field indicates the number of jiffies - 1 */
-    delay = gif->file_time - gif->time;
-
     /* XXX: should use delay, in order to be more accurate */
     /* instead of using the same rounded value each time */
     /* XXX: don't even remember if I really use it for now */

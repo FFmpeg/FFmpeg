@@ -39,7 +39,6 @@ ogm_header(AVFormatContext *s, int idx)
     const uint8_t *p = os->buf + os->pstart;
     uint64_t time_unit;
     uint64_t spu;
-    uint32_t default_len;
 
     if(!(*p & 1))
         return 0;
@@ -74,8 +73,7 @@ ogm_header(AVFormatContext *s, int idx)
 
         time_unit   = bytestream_get_le64(&p);
         spu         = bytestream_get_le64(&p);
-        default_len = bytestream_get_le32(&p);
-
+        p += 4;                     /* default_len */
         p += 8;                     /* buffersize + bits_per_sample */
 
         if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
