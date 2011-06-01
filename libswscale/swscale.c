@@ -557,9 +557,9 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
 #define YSCALE_YUV_2_PACKEDX_FULL_C(rnd,alpha) \
     for (i=0; i<dstW; i++) {\
         int j;\
-        int Y = 0;\
-        int U = -128<<19;\
-        int V = -128<<19;\
+        int Y = 1<<9;\
+        int U = (1<<9)-(128<<19);\
+        int V = (1<<9)-(128<<19);\
         int av_unused A;\
         int R,G,B;\
         \
