@@ -900,15 +900,11 @@ static av_cold void exponent_init(AC3EncodeContext *s)
  */
 static void extract_exponents(AC3EncodeContext *s)
 {
-    int blk, ch;
+    int ch        = !s->cpl_on;
+    int chan_size = AC3_MAX_COEFS * AC3_MAX_BLOCKS * (s->channels - ch + 1);
+    AC3Block *block = &s->blocks[0];
 
-    for (ch = !s->cpl_on; ch <= s->channels; ch++) {
-        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
-            AC3Block *block = &s->blocks[blk];
-            s->ac3dsp.extract_exponents(block->exp[ch], block->fixed_coef[ch],
-                                        AC3_MAX_COEFS);
-        }
-    }
+    s->ac3dsp.extract_exponents(block->exp[ch], block->fixed_coef[ch], chan_size);
 }
 
 
