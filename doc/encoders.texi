@@ -538,8 +538,8 @@ For more information about libvpx see:
 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 format supported through
 libx264.
 
-Requires the presence of the libx64 headers and library during
-configuration. You need to explicitely configure the build with
+Requires the presence of the libx264 headers and library during
+configuration. You need to explicitly configure the build with
 @code{--enable-libx264}.
 
 @subsection Options
