@@ -674,7 +674,7 @@ AVFilterBufferRef *avfilter_get_video_buffer(AVFilterLink *link, int perms,
  * @param format the pixel format of the image specified by the data and linesize arrays
  */
 AVFilterBufferRef *
-avfilter_get_video_buffer_ref_from_arrays(uint8_t *data[4], int linesize[4], int perms,
+avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int linesize[4], int perms,
                                           int w, int h, enum PixelFormat format);
 
 /**
