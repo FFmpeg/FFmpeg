@@ -287,10 +287,6 @@ zrmjpeg
 CpuCaps gCpuCaps; //FIXME initialize this so optims work
 
 
-int get_sws_cpuflags(void){
-    return 0;
-}
-
 static void sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
 {
         static int firstTime=1;
