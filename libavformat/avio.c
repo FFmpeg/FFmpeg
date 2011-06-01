@@ -60,11 +60,11 @@ URLProtocol *av_protocol_next(URLProtocol *p)
 
 const char *avio_enum_protocols(void **opaque, int output)
 {
-    URLProtocol **p = opaque;
-    *p = *p ? (*p)->next : first_protocol;
-    if (!*p) return NULL;
-    if ((output && (*p)->url_write) || (!output && (*p)->url_read))
-        return (*p)->name;
+    URLProtocol *p = *opaque;
+    p = p ? p->next : first_protocol;
+    if (!p) return NULL;
+    if ((output && p->url_write) || (!output && p->url_read))
+        return p->name;
     return avio_enum_protocols(opaque, output);
 }
 
