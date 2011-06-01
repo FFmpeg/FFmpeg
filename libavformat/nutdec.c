@@ -190,7 +190,6 @@ static int decode_main_header(NUTContext *nut){
     uint64_t tmp, end;
     unsigned int stream_count;
     int i, j, tmp_stream, tmp_mul, tmp_pts, tmp_size, count, tmp_res, tmp_head_idx;
-    int64_t tmp_match;
 
     end= get_packetheader(nut, bc, 1, MAIN_STARTCODE);
     end += avio_tell(bc);
@@ -218,7 +217,6 @@ static int decode_main_header(NUTContext *nut){
     tmp_pts=0;
     tmp_mul=1;
     tmp_stream=0;
-    tmp_match= 1-(1LL<<62);
     tmp_head_idx= 0;
     for(i=0; i<256;){
         int tmp_flags = ffio_read_varlen(bc);
@@ -232,7 +230,7 @@ static int decode_main_header(NUTContext *nut){
         else             tmp_res   = 0;
         if(tmp_fields>5) count     = ffio_read_varlen(bc);
         else             count     = tmp_mul - tmp_size;
-        if(tmp_fields>6) tmp_match = get_s(bc);
+        if(tmp_fields>6) get_s(bc);
         if(tmp_fields>7) tmp_head_idx= ffio_read_varlen(bc);
 
         while(tmp_fields-- > 8)
