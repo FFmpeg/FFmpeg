@@ -90,14 +90,6 @@
 #define CPLZ_TAG MKBETAG('C', 'P', 'L', 'Z')
 #define VPTZ_TAG MKBETAG('V', 'P', 'T', 'Z')
 
-#define VQA_DEBUG 0
-
-#if VQA_DEBUG
-#define vqa_debug printf
-#else
-static inline void vqa_debug(const char *format, ...) { }
-#endif
-
 typedef struct VqaContext {
 
     AVCodecContext *avctx;
@@ -212,7 +204,7 @@ static void decode_format80(const unsigned char *src, int src_size,
 
     while (src_index < src_size) {
 
-        vqa_debug("      opcode %02X: ", src[src_index]);
+        av_dlog(NULL, "      opcode %02X: ", src[src_index]);
 
         /* 0x80 means that frame is finished */
         if (src[src_index] == 0x80)
@@ -231,7 +223,7 @@ static void decode_format80(const unsigned char *src, int src_size,
             src_index += 2;
             src_pos = AV_RL16(&src[src_index]);
             src_index += 2;
-            vqa_debug("(1) copy %X bytes from absolute pos %X\n", count, src_pos);
+            av_dlog(NULL, "(1) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
             for (i = 0; i < count; i++)
                 dest[dest_index + i] = dest[src_pos + i];
@@ -243,7 +235,7 @@ static void decode_format80(const unsigned char *src, int src_size,
             count = AV_RL16(&src[src_index]);
             src_index += 2;
             color = src[src_index++];
-            vqa_debug("(2) set %X bytes to %02X\n", count, color);
+            av_dlog(NULL, "(2) set %X bytes to %02X\n", count, color);
             CHECK_COUNT();
             memset(&dest[dest_index], color, count);
             dest_index += count;
@@ -253,7 +245,7 @@ static void decode_format80(const unsigned char *src, int src_size,
             count = (src[src_index++] & 0x3F) + 3;
             src_pos = AV_RL16(&src[src_index]);
             src_index += 2;
-            vqa_debug("(3) copy %X bytes from absolute pos %X\n", count, src_pos);
+            av_dlog(NULL, "(3) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
             for (i = 0; i < count; i++)
                 dest[dest_index + i] = dest[src_pos + i];
@@ -262,7 +254,7 @@ static void decode_format80(const unsigned char *src, int src_size,
         } else if (src[src_index] > 0x80) {
 
             count = src[src_index++] & 0x3F;
-            vqa_debug("(4) copy %X bytes from source to dest\n", count);
+            av_dlog(NULL, "(4) copy %X bytes from source to dest\n", count);
             CHECK_COUNT();
             memcpy(&dest[dest_index], &src[src_index], count);
             src_index += count;
@@ -273,7 +265,7 @@ static void decode_format80(const unsigned char *src, int src_size,
             count = ((src[src_index] & 0x70) >> 4) + 3;
             src_pos = AV_RB16(&src[src_index]) & 0x0FFF;
             src_index += 2;
-            vqa_debug("(5) copy %X bytes from relpos %X\n", count, src_pos);
+            av_dlog(NULL, "(5) copy %X bytes from relpos %X\n", count, src_pos);
             CHECK_COUNT();
             for (i = 0; i < count; i++)
                 dest[dest_index + i] = dest[dest_index - src_pos + i];
