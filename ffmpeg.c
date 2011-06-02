@@ -1379,7 +1379,8 @@ static void print_report(AVFormatContext **output_files,
     int64_t total_size;
     AVCodecContext *enc;
     int frame_number, vid, i;
-    double bitrate, ti1, pts;
+    double bitrate;
+    int64_t pts = INT64_MAX;
     static int64_t last_time = -1;
     static int qp_histogram[52];
 
@@ -1404,7 +1405,6 @@ static void print_report(AVFormatContext **output_files,
         total_size= avio_tell(oc->pb);
 
     buf[0] = '\0';
-    ti1 = 1e10;
     vid = 0;
     for(i=0;i<nb_ostreams;i++) {
         float q = -1;
@@ -1455,19 +1455,16 @@ static void print_report(AVFormatContext **output_files,
             vid = 1;
         }
         /* compute min output value */
-        pts = (double)ost->st->pts.val * av_q2d(ost->st->time_base);
-        if ((pts < ti1) && (pts > 0))
-            ti1 = pts;
+        pts = FFMIN(pts, av_rescale_q(ost->st->pts.val,
+                                      ost->st->time_base, AV_TIME_BASE_Q));
     }
-    if (ti1 < 0.01)
-        ti1 = 0.01;
 
     if (verbose > 0 || is_last_report) {
-        bitrate = (double)(total_size * 8) / ti1 / 1000.0;
+        bitrate = pts ? total_size * 8 / (pts / 1000.0) : 0;
 
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
             "size=%8.0fkB time=%0.2f bitrate=%6.1fkbits/s",
-            (double)total_size / 1024, ti1, bitrate);
+            (double)total_size / 1024, pts/(double)AV_TIME_BASE, bitrate);
 
         if (nb_frames_dup || nb_frames_drop)
           snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
