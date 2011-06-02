@@ -44,20 +44,20 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
 
     if (pool) {
         for (i = 0; i < POOL_SIZE; i++) {
-        picref = pool->pic[i];
-        if (picref && picref->buf->format == link->format && picref->buf->w == w && picref->buf->h == h) {
-            AVFilterBuffer *pic = picref->buf;
-            pool->pic[i] = NULL;
-            pool->count--;
-            picref->video->w = w;
-            picref->video->h = h;
-            picref->perms = perms | AV_PERM_READ;
-            picref->format = link->format;
-            pic->refcount = 1;
-            memcpy(picref->data,     pic->data,     sizeof(picref->data));
-            memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
-            return picref;
-        }
+            picref = pool->pic[i];
+            if (picref && picref->buf->format == link->format && picref->buf->w == w && picref->buf->h == h) {
+                AVFilterBuffer *pic = picref->buf;
+                pool->pic[i] = NULL;
+                pool->count--;
+                picref->video->w = w;
+                picref->video->h = h;
+                picref->perms = perms | AV_PERM_READ;
+                picref->format = link->format;
+                pic->refcount = 1;
+                memcpy(picref->data,     pic->data,     sizeof(picref->data));
+                memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
+                return picref;
+            }
         }
     } else
         pool = link->pool = av_mallocz(sizeof(AVFilterPool));
