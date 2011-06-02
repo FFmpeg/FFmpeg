@@ -31,7 +31,7 @@
 typedef struct AVFilterPool {
     AVFilterBufferRef *pic[POOL_SIZE];
     int count;
-}AVFilterPool;
+} AVFilterPool;
 
 /**
  * Check for the validity of graph.

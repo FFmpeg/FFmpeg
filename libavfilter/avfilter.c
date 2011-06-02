@@ -77,8 +77,8 @@ static void store_in_pool(AVFilterBufferRef *ref)
 
     av_assert0(ref->buf->data[0]);
 
-    if(pool->count == POOL_SIZE){
-        AVFilterBufferRef *ref1= pool->pic[0];
+    if (pool->count == POOL_SIZE) {
+        AVFilterBufferRef *ref1 = pool->pic[0];
         av_freep(&ref1->video);
         av_freep(&ref1->audio);
         av_freep(&ref1->buf->data[0]);
@@ -89,9 +89,9 @@ static void store_in_pool(AVFilterBufferRef *ref)
         pool->pic[POOL_SIZE-1] = NULL;
     }
 
-    for(i=0; i<POOL_SIZE; i++){
-        if(!pool->pic[i]){
-            pool->pic[i]= ref;
+    for (i = 0; i < POOL_SIZE; i++) {
+        if (!pool->pic[i]) {
+            pool->pic[i] = ref;
             pool->count++;
             break;
         }
@@ -102,8 +102,8 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref)
 {
     if (!ref)
         return;
-    if (!(--ref->buf->refcount)){
-        if(!ref->buf->free){
+    if (!(--ref->buf->refcount)) {
+        if (!ref->buf->free) {
             store_in_pool(ref);
             return;
         }
