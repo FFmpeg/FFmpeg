@@ -23,9 +23,6 @@ field pictures in the same packet are not optimal. Modify the
 nals_needed check so that the second field's first slice is
 considered as needed, then uncomment the FIXME code in decode_postinit.
 Ex: http://astrange.ithinksw.net/ffmpeg/mt-samples/PAFF-Chalet-Tire.mp4
-- The code added to shorten frame gaps (to avoid allocating more than 16 new frames)
-appears to be wrong by inspection. It does not handle prev_frame_num > frame_num,
-and "h->frame_num - h->sps.ref_frame_count - 1" should be "h->frame_num - h->sps.ref_frame_count".
 
 mpeg4:
 - Packed B-frames need to be explicitly split up
