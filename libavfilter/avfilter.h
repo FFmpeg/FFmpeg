@@ -26,7 +26,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 11
+#define LIBAVFILTER_VERSION_MINOR 12
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -634,6 +634,11 @@ struct AVFilterLink {
  */
 int avfilter_link(AVFilterContext *src, unsigned srcpad,
                   AVFilterContext *dst, unsigned dstpad);
+
+/**
+ * Free the link in *link, and set its pointer to NULL.
+ */
+void avfilter_link_free(AVFilterLink **link);
 
 /**
  * Negotiate the media format, dimensions, etc of all inputs to a filter.
