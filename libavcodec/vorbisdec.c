@@ -605,7 +605,6 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
             if (!floor_setup->data.t0.lsp)
                 return -1;
 
-#ifdef V_DEBUG /* debug output parsed headers */
             /* debug output parsed headers */
             av_dlog(NULL, "floor0 order: %u\n", floor_setup->data.t0.order);
             av_dlog(NULL, "floor0 rate: %u\n", floor_setup->data.t0.rate);
@@ -626,7 +625,6 @@ static int vorbis_parse_setup_hdr_floors(vorbis_context *vc)
                             floor_setup->data.t0.book_list[idx]);
                 }
             }
-#endif
         } else {
             av_log(vc->avccontext, AV_LOG_ERROR, "Invalid floor type!\n");
             return -1;
@@ -811,11 +809,9 @@ static void create_map(vorbis_context *vc, unsigned floor_number)
         vf->map_size[blockflag] = n;
     }
 
-#ifdef V_DEBUG
     for (idx = 0; idx <= n; ++idx) {
         av_dlog(NULL, "floor0 map: map at pos %d is %d\n", idx, map[idx]);
     }
-#endif
 }
 
 static int vorbis_parse_setup_hdr_modes(vorbis_context *vc)
@@ -1077,14 +1073,12 @@ static int vorbis_floor0_decode(vorbis_context *vc,
 
             lsp_len += codebook.dimensions;
         }
-#ifdef V_DEBUG
         /* DEBUG: output lsp coeffs */
         {
             int idx;
             for (idx = 0; idx < lsp_len; ++idx)
                 av_dlog(NULL, "floor0 dec: coeff at %d is %f\n", idx, lsp[idx]);
         }
-#endif
 
         /* synthesize floor output vector */
         {
