@@ -165,6 +165,13 @@ int sws_isSupportedOutput(enum PixelFormat pix_fmt)
 
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
 
+#if FF_API_SWS_FORMAT_NAME
+const char *sws_format_name(enum PixelFormat format)
+{
+    return av_get_pix_fmt_name(format);
+}
+#endif
+
 static double getSplineCoeff(double a, double b, double c, double d, double dist)
 {
     if (dist<=1.0) return ((d*dist + c)*dist + b)*dist +a;

@@ -349,6 +349,14 @@ void ff_yuv2packedX_altivec(SwsContext *c, const int16_t *lumFilter,
                             const int16_t **chrVSrc, int chrFilterSize,
                             uint8_t *dest, int dstW, int dstY);
 
+#if FF_API_SWS_FORMAT_NAME
+/**
+ * @deprecated Use av_get_pix_fmt_name() instead.
+ */
+attribute_deprecated
+const char *sws_format_name(enum PixelFormat format);
+#endif
+
 //FIXME replace this with something faster
 #define is16BPS(x)      (           \
            (x)==PIX_FMT_GRAY16BE    \
