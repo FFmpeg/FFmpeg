@@ -1089,9 +1089,6 @@ static int vorbis_floor0_decode(vorbis_context *vc,
             for (i = 0; i < order; i++)
                 lsp[i] = 2.0f * cos(lsp[i]);
 
-            AV_DEBUG("floor0 synth: map_size = %d; m = %d; wstep = %f\n",
-                     vf->map_size, order, wstep);
-
             i = 0;
             while (i < vf->map_size[blockflag]) {
                 int j, iter_cond = vf->map[blockflag][i];
