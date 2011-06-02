@@ -1023,7 +1023,6 @@ static void dump_cook_context(COOKContext *q)
     PRINT("samples_per_channel",q->subpacket[0].samples_per_channel);
     PRINT("samples_per_frame",q->subpacket[0].samples_per_frame);
     PRINT("subbands",q->subpacket[0].subbands);
-    PRINT("random_state",q->random_state);
     PRINT("js_subband_start",q->subpacket[0].js_subband_start);
     PRINT("log2_numvector_size",q->subpacket[0].log2_numvector_size);
     PRINT("numvector_size",q->subpacket[0].numvector_size);
