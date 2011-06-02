@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-06-06 - xxxxxx - lavu 51.6.0 - av_samples_alloc()
+  Switch nb_channels and nb_samples parameters order in
+  av_samples_alloc().
+
 2011-06-06 - xxxxxx - lavu 51.5.0 - av_samples_*
   Change the data layout created by av_samples_fill_arrays() and
   av_samples_alloc().

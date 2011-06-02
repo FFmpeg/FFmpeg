@@ -103,7 +103,7 @@ int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
 }
 
 int av_samples_alloc(uint8_t *pointers[8], int linesizes[8],
-                     int nb_samples, int nb_channels,
+                     int nb_channels, int nb_samples,
                      enum AVSampleFormat sample_fmt, int planar,
                      int align)
 {
