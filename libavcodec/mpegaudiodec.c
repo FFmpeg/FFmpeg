@@ -406,8 +406,9 @@ static av_cold int decode_init(AVCodecContext * avctx)
                 k = i & 1;
                 is_table_lsf[j][k ^ 1][i] = FIXR(f);
                 is_table_lsf[j][k][i] = FIXR(1.0);
-                av_dlog(avctx, "is_table_lsf %d %d: %x %x\n",
-                        i, j, is_table_lsf[j][0][i], is_table_lsf[j][1][i]);
+                av_dlog(avctx, "is_table_lsf %d %d: %f %f\n",
+                        i, j, (float) is_table_lsf[j][0][i],
+                        (float) is_table_lsf[j][1][i]);
             }
         }
 

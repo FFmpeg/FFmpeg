@@ -43,7 +43,7 @@ static int read_atom(AVFormatContext *s, Atom *atom)
     if (atom->size < 8)
         return -1;
     atom->tag = avio_rl32(s->pb);
-    av_dlog(s, "atom %d %.4s offset %#"PRIx64"\n",
+    av_dlog(s, "atom %u %.4s offset %#"PRIx64"\n",
             atom->size, (char*)&atom->tag, atom->offset);
     return atom->size;
 }
@@ -356,7 +356,8 @@ static int r3d_seek(AVFormatContext *s, int stream_index, int64_t sample_time, i
 
     frame_num = sample_time*st->codec->time_base.den/
         ((int64_t)st->codec->time_base.num*st->time_base.den);
-    av_dlog(s, "seek frame num %d timestamp %"PRId64"\n", frame_num, sample_time);
+    av_dlog(s, "seek frame num %d timestamp %"PRId64"\n",
+            frame_num, sample_time);
 
     if (frame_num < r3d->video_offsets_count) {
         avio_seek(s->pb, r3d->video_offsets_count, SEEK_SET);

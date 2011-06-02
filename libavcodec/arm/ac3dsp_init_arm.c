@@ -35,10 +35,12 @@ void ff_ac3_bit_alloc_calc_bap_armv6(int16_t *mask, int16_t *psd,
                                      int snr_offset, int floor,
                                      const uint8_t *bap_tab, uint8_t *bap);
 
-int ff_ac3_compute_mantissa_size_arm(int cnt[5], uint8_t *bap, int nb_coefs);
+void ff_ac3_update_bap_counts_arm(uint16_t mant_cnt[16], uint8_t *bap, int len);
 
 av_cold void ff_ac3dsp_init_arm(AC3DSPContext *c, int bit_exact)
 {
+    c->update_bap_counts         = ff_ac3_update_bap_counts_arm;
+
     if (HAVE_ARMV6) {
         c->bit_alloc_calc_bap    = ff_ac3_bit_alloc_calc_bap_armv6;
     }

@@ -1,4 +1,5 @@
 OBJS-$(CONFIG_AC3DSP)                  += arm/ac3dsp_init_arm.o         \
+                                          arm/ac3dsp_arm.o
 
 OBJS-$(CONFIG_DCA_DECODER)             += arm/dcadsp_init_arm.o         \
 

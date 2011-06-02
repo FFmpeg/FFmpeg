@@ -548,13 +548,11 @@ static void compute_bit_allocation(MpegAudioContext *s,
                 }
             }
         }
-#if 0
-        printf("current=%d max=%d max_sb=%d alloc=%d\n",
-               current_frame_size, max_frame_size, max_sb,
-               bit_alloc[max_sb]);
-#endif
         if (max_sb < 0)
             break;
+        av_dlog(NULL, "current=%d max=%d max_sb=%d max_ch=%d alloc=%d\n",
+                current_frame_size, max_frame_size, max_sb, max_ch,
+                bit_alloc[max_ch][max_sb]);
 
         /* find alloc table entry (XXX: not optimal, should use
            pointer table) */
