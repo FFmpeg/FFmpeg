@@ -418,8 +418,8 @@ int ff_ivi_decode_blocks(GetBitContext *gb, IVIBandDesc *band, IVITile *tile)
                         break;
                     pos = band->scan[scan_pos];
 
-                    if (IVI_DEBUG && !val)
-                        av_log(NULL, AV_LOG_ERROR, "Val = 0 encountered!\n");
+                    if (!val)
+                        av_dlog(NULL, "Val = 0 encountered!\n");
 
                     q = (base_tab[pos] * quant) >> 9;
                     if (q > 1)

@@ -238,9 +238,9 @@ static int svq1_decode_block_intra (GetBitContext *bitbuf, uint8_t *pixels, int 
     }
 
     if ((stages > 0) && (level >= 4)) {
-#ifdef DEBUG_SVQ1
-    av_log(s->avctx, AV_LOG_INFO, "Error (svq1_decode_block_intra): invalid vector: stages=%i level=%i\n",stages,level);
-#endif
+      av_dlog(s->avctx,
+              "Error (svq1_decode_block_intra): invalid vector: stages=%i level=%i\n",
+              stages, level);
       return -1;        /* invalid vector */
     }
 
@@ -288,9 +288,9 @@ static int svq1_decode_block_non_intra (GetBitContext *bitbuf, uint8_t *pixels, 
     if (stages == -1) continue; /* skip vector */
 
     if ((stages > 0) && (level >= 4)) {
-#ifdef DEBUG_SVQ1
-    av_log(s->avctx, AV_LOG_INFO, "Error (svq1_decode_block_non_intra): invalid vector: stages=%i level=%i\n",stages,level);
-#endif
+      av_dlog(s->avctx,
+              "Error (svq1_decode_block_non_intra): invalid vector: stages=%i level=%i\n",
+              stages, level);
       return -1;        /* invalid vector */
     }
 
@@ -499,9 +499,7 @@ static int svq1_decode_delta_block (MpegEncContext *s, GetBitContext *bitbuf,
 
     if (result != 0)
     {
-#ifdef DEBUG_SVQ1
-    av_log(s->avctx, AV_LOG_INFO, "Error in svq1_motion_inter_block %i\n",result);
-#endif
+      av_dlog(s->avctx, "Error in svq1_motion_inter_block %i\n", result);
       break;
     }
     result = svq1_decode_block_non_intra (bitbuf, current, pitch);
@@ -512,9 +510,7 @@ static int svq1_decode_delta_block (MpegEncContext *s, GetBitContext *bitbuf,
 
     if (result != 0)
     {
-#ifdef DEBUG_SVQ1
-    av_log(s->avctx, AV_LOG_INFO, "Error in svq1_motion_inter_4v_block %i\n",result);
-#endif
+      av_dlog(s->avctx, "Error in svq1_motion_inter_4v_block %i\n", result);
       break;
     }
     result = svq1_decode_block_non_intra (bitbuf, current, pitch);
@@ -660,9 +656,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
 
   if (result != 0)
   {
-#ifdef DEBUG_SVQ1
-    av_log(s->avctx, AV_LOG_INFO, "Error in svq1_decode_frame_header %i\n",result);
-#endif
+    av_dlog(s->avctx, "Error in svq1_decode_frame_header %i\n",result);
     return result;
   }
 
@@ -729,9 +723,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
                                             linesize, pmv, x, y);
           if (result != 0)
           {
-#ifdef DEBUG_SVQ1
-    av_log(s->avctx, AV_LOG_INFO, "Error in svq1_decode_delta_block %i\n",result);
-#endif
+            av_dlog(s->avctx, "Error in svq1_decode_delta_block %i\n",result);
             goto err;
           }
         }

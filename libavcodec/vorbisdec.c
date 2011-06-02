@@ -370,9 +370,7 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
                     float last = 0.0;
                     unsigned lookup_offset = i;
 
-#ifdef V_DEBUG
-                    av_log(vc->avccontext, AV_LOG_INFO, "Lookup offset %u ,", i);
-#endif
+                    av_dlog(vc->avccontext, "Lookup offset %u ,", i);
 
                     for (k = 0; k < dim; ++k) {
                         unsigned multiplicand_offset = lookup_offset % codebook_lookup_values;
@@ -383,12 +381,11 @@ static int vorbis_parse_setup_hdr_codebooks(vorbis_context *vc)
                     }
                     tmp_vlc_bits[j] = tmp_vlc_bits[i];
 
-#ifdef V_DEBUG
-                    av_log(vc->avccontext, AV_LOG_INFO, "real lookup offset %u, vector: ", j);
+                    av_dlog(vc->avccontext, "real lookup offset %u, vector: ", j);
                     for (k = 0; k < dim; ++k)
-                        av_log(vc->avccontext, AV_LOG_INFO, " %f ", codebook_setup->codevectors[j * dim + k]);
-                    av_log(vc->avccontext, AV_LOG_INFO, "\n");
-#endif
+                        av_dlog(vc->avccontext, " %f ",
+                                codebook_setup->codevectors[j * dim + k]);
+                    av_dlog(vc->avccontext, "\n");
 
                     ++j;
                 }
