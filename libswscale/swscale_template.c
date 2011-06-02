@@ -24,11 +24,11 @@ static inline void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
                               const int16_t **chrVSrc,
                               int chrFilterSize, const int16_t **alpSrc,
                               uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                              uint8_t *aDest, int dstW, int chrDstW)
+                              uint8_t *aDest, int dstW, int chrDstW, const uint8_t *lumDither, const uint8_t *chrDither)
 {
     yuv2yuvXinC(lumFilter, lumSrc, lumFilterSize,
                 chrFilter, chrUSrc, chrVSrc, chrFilterSize,
-                alpSrc, dest, uDest, vDest, aDest, dstW, chrDstW);
+                alpSrc, dest, uDest, vDest, aDest, dstW, chrDstW, lumDither, chrDither);
 }
 
 static inline void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
@@ -36,36 +36,37 @@ static inline void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
                                const int16_t *chrFilter, const int16_t **chrUSrc,
                                const int16_t **chrVSrc,
                                int chrFilterSize, uint8_t *dest, uint8_t *uDest,
-                               int dstW, int chrDstW, enum PixelFormat dstFormat)
+                               int dstW, int chrDstW, enum PixelFormat dstFormat, const uint8_t *dither, const uint8_t *chrDither)
 {
     yuv2nv12XinC(lumFilter, lumSrc, lumFilterSize,
                  chrFilter, chrUSrc, chrVSrc, chrFilterSize,
-                 dest, uDest, dstW, chrDstW, dstFormat);
+                 dest, uDest, dstW, chrDstW, dstFormat, dither, chrDither);
 }
 
 static inline void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
                               const int16_t *chrUSrc, const int16_t *chrVSrc,
                               const int16_t *alpSrc,
                               uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                              uint8_t *aDest, int dstW, int chrDstW)
+                              uint8_t *aDest, int dstW, int chrDstW, const uint8_t *lumDither, const uint8_t *chrDither)
 {
     int i;
+
     for (i=0; i<dstW; i++) {
-        int val= (lumSrc[i]+64)>>7;
+        int val= (lumSrc[i]+lumDither[i&7])>>7;
         dest[i]= av_clip_uint8(val);
     }
 
     if (uDest)
         for (i=0; i<chrDstW; i++) {
-            int u=(chrUSrc[i]+64)>>7;
-            int v=(chrVSrc[i]+64)>>7;
+            int u=(chrUSrc[i]+chrDither[i&7])>>7;
+            int v=(chrVSrc[i]+chrDither[(i+3)&7])>>7;
             uDest[i]= av_clip_uint8(u);
             vDest[i]= av_clip_uint8(v);
         }
 
     if (CONFIG_SWSCALE_ALPHA && aDest)
         for (i=0; i<dstW; i++) {
-            int val= (alpSrc[i]+64)>>7;
+            int val= (alpSrc[i]+lumDither[i&7])>>7;
             aDest[i]= av_clip_uint8(val);
         }
 }
@@ -609,6 +610,8 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
         unsigned char *uDest=dst[1]+dstStride[1]*chrDstY;
         unsigned char *vDest=dst[2]+dstStride[2]*chrDstY;
         unsigned char *aDest=(CONFIG_SWSCALE_ALPHA && alpPixBuf) ? dst[3]+dstStride[3]*dstY : NULL;
+        const uint8_t *lumDither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat) ? dithers[7][dstY   &7] : flat64;
+        const uint8_t *chrDither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat) ? dithers[7][chrDstY&7] : flat64;
 
         const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
         const int firstLumSrcY2= vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)];
@@ -699,7 +702,7 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
                 c->yuv2nv12X(c,
                              vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                              vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                             dest, uDest, dstW, chrDstW, dstFormat);
+                             dest, uDest, dstW, chrDstW, dstFormat, lumDither, chrDither);
             } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
@@ -716,13 +719,13 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
                     const int16_t *chrVBuf= chrVSrcPtr[0];
                     const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
                     c->yuv2yuv1(c, lumBuf, chrUBuf, chrVBuf, alpBuf, dest,
-                                uDest, vDest, aDest, dstW, chrDstW);
+                                uDest, vDest, aDest, dstW, chrDstW, lumDither, chrDither);
                 } else { //General YV12
                     c->yuv2yuvX(c,
                                 vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                 vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr,
                                 chrVSrcPtr, vChrFilterSize,
-                                alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW);
+                                alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW, lumDither, chrDither);
                 }
             } else {
                 assert(lumSrcPtr  + vLumFilterSize - 1 < lumPixBuf  + vLumBufSize*2);
@@ -784,7 +787,7 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
                 yuv2nv12XinC(
                              vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                              vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                             dest, uDest, dstW, chrDstW, dstFormat);
+                             dest, uDest, dstW, chrDstW, dstFormat, lumDither, chrDither);
             } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
@@ -798,7 +801,7 @@ static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
                     yuv2yuvXinC(
                                 vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                 vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW);
+                                alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW, lumDither, chrDither);
                 }
             } else {
                 assert(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);

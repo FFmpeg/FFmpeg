@@ -282,6 +282,8 @@ DECLARE_ALIGNED(8, const uint8_t, dithers)[8][8][8]={
   { 112, 16,104,  8,118, 22,110, 14,},
 }};
 
+static const uint8_t flat64[8]={64,64,64,64,64,64,64,64};
+
 uint16_t dither_scale[15][16]={
 {    2,    3,    3,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,    5,},
 {    2,    3,    7,    7,   13,   13,   25,   25,   25,   25,   25,   25,   25,   25,   25,   25,},
@@ -417,12 +419,13 @@ static inline void yuv2yuvX16inC(const int16_t *lumFilter, const int16_t **lumSr
 static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                const int16_t *chrFilter, const int16_t **chrUSrc,
                                const int16_t **chrVSrc, int chrFilterSize,
-                               const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, int dstW, int chrDstW)
+                               const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, int dstW, int chrDstW,
+                               const uint8_t *lumDither, const uint8_t *chrDither)
 {
     //FIXME Optimize (just quickly written not optimized..)
     int i;
     for (i=0; i<dstW; i++) {
-        int val=1<<18;
+        int val = lumDither[i&7] << 12;
         int j;
         for (j=0; j<lumFilterSize; j++)
             val += lumSrc[j][i] * lumFilter[j];
@@ -432,8 +435,8 @@ static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc,
 
     if (uDest)
         for (i=0; i<chrDstW; i++) {
-            int u=1<<18;
-            int v=1<<18;
+            int u = chrDither[i&7] << 12;
+            int v = chrDither[(i+3)&7] << 12;
             int j;
             for (j=0; j<chrFilterSize; j++) {
                 u += chrUSrc[j][i] * chrFilter[j];
@@ -446,7 +449,7 @@ static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc,
 
     if (CONFIG_SWSCALE_ALPHA && aDest)
         for (i=0; i<dstW; i++) {
-            int val=1<<18;
+            int val = lumDither[i&7] << 12;
             int j;
             for (j=0; j<lumFilterSize; j++)
                 val += alpSrc[j][i] * lumFilter[j];
@@ -459,12 +462,13 @@ static inline void yuv2yuvXinC(const int16_t *lumFilter, const int16_t **lumSrc,
 static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
                                 const int16_t **chrVSrc, int chrFilterSize,
-                                uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat)
+                                uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat,
+                                const uint8_t *lumDither, const uint8_t *chrDither)
 {
     //FIXME Optimize (just quickly written not optimized..)
     int i;
     for (i=0; i<dstW; i++) {
-        int val=1<<18;
+        int val = lumDither[i&7]<<12;
         int j;
         for (j=0; j<lumFilterSize; j++)
             val += lumSrc[j][i] * lumFilter[j];
@@ -477,8 +481,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
 
     if (dstFormat == PIX_FMT_NV12)
         for (i=0; i<chrDstW; i++) {
-            int u=1<<18;
-            int v=1<<18;
+            int u = chrDither[i&7]<<12;
+            int v = chrDither[(i+3)&7]<<12;
             int j;
             for (j=0; j<chrFilterSize; j++) {
                 u += chrUSrc[j][i] * chrFilter[j];
@@ -490,8 +494,8 @@ static inline void yuv2nv12XinC(const int16_t *lumFilter, const int16_t **lumSrc
         }
     else
         for (i=0; i<chrDstW; i++) {
-            int u=1<<18;
-            int v=1<<18;
+            int u = chrDither[i&7]<<12;
+            int v = chrDither[(i+3)&7]<<12;
             int j;
             for (j=0; j<chrFilterSize; j++) {
                 u += chrUSrc[j][i] * chrFilter[j];

@@ -39,8 +39,8 @@
 
 #define YSCALEYUV2YV12X(offset, dest, end, pos) \
     __asm__ volatile(\
-        "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
-        "movq                             %%mm3, %%mm4      \n\t"\
+        "movq                  "DITHER16"+0(%0), %%mm3      \n\t"\
+        "movq                  "DITHER16"+8(%0), %%mm4      \n\t"\
         "lea                     " offset "(%0), %%"REG_d"  \n\t"\
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         ".p2align                             4             \n\t" /* FIXME Unroll? */\
@@ -62,8 +62,8 @@
         MOVNTQ(%%mm3, (%1, %3))\
         "add                                 $8, %3         \n\t"\
         "cmp                                 %2, %3         \n\t"\
-        "movq             "VROUNDER_OFFSET"(%0), %%mm3      \n\t"\
-        "movq                             %%mm3, %%mm4      \n\t"\
+        "movq                  "DITHER16"+0(%0), %%mm3      \n\t"\
+        "movq                  "DITHER16"+8(%0), %%mm4      \n\t"\
         "lea                     " offset "(%0), %%"REG_d"  \n\t"\
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         "jb                                  1b             \n\t"\
@@ -78,13 +78,18 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
                                     const int16_t **chrVSrc,
                                     int chrFilterSize, const int16_t **alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                    uint8_t *aDest, int dstW, int chrDstW)
+                                    uint8_t *aDest, int dstW, int chrDstW,
+                                    const uint8_t *lumDither, const uint8_t *chrDither)
 {
+    int i;
     if (uDest) {
         x86_reg uv_off = c->uv_off;
+        for(i=0; i<8; i++) c->dither16[i] = chrDither[i]>>4;
         YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
+        for(i=0; i<8; i++) c->dither16[i] = chrDither[(i+3)&7]>>4;
         YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
+    for(i=0; i<8; i++) c->dither16[i] = lumDither[i]>>4;
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
     }
@@ -95,6 +100,10 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
 #define YSCALEYUV2YV12X_ACCURATE(offset, dest, end, pos) \
     __asm__ volatile(\
         "lea                     " offset "(%0), %%"REG_d"  \n\t"\
+        "movq                  "DITHER32"+0(%0), %%mm4      \n\t"\
+        "movq                  "DITHER32"+8(%0), %%mm5      \n\t"\
+        "movq                 "DITHER32"+16(%0), %%mm6      \n\t"\
+        "movq                 "DITHER32"+24(%0), %%mm7      \n\t"\
         "pxor                             %%mm4, %%mm4      \n\t"\
         "pxor                             %%mm5, %%mm5      \n\t"\
         "pxor                             %%mm6, %%mm6      \n\t"\
@@ -126,26 +135,21 @@ static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
         "paddd                            %%mm2, %%mm6      \n\t"\
         "paddd                            %%mm0, %%mm7      \n\t"\
         " jnz                                1b             \n\t"\
-        "psrad                              $16, %%mm4      \n\t"\
-        "psrad                              $16, %%mm5      \n\t"\
-        "psrad                              $16, %%mm6      \n\t"\
-        "psrad                              $16, %%mm7      \n\t"\
-        "movq             "VROUNDER_OFFSET"(%0), %%mm0      \n\t"\
+        "psrad                              $19, %%mm4      \n\t"\
+        "psrad                              $19, %%mm5      \n\t"\
+        "psrad                              $19, %%mm6      \n\t"\
+        "psrad                              $19, %%mm7      \n\t"\
         "packssdw                         %%mm5, %%mm4      \n\t"\
         "packssdw                         %%mm7, %%mm6      \n\t"\
-        "paddw                            %%mm0, %%mm4      \n\t"\
-        "paddw                            %%mm0, %%mm6      \n\t"\
-        "psraw                               $3, %%mm4      \n\t"\
-        "psraw                               $3, %%mm6      \n\t"\
         "packuswb                         %%mm6, %%mm4      \n\t"\
         MOVNTQ(%%mm4, (%1, %3))\
         "add                                 $8, %3         \n\t"\
         "cmp                                 %2, %3         \n\t"\
         "lea                     " offset "(%0), %%"REG_d"  \n\t"\
-        "pxor                             %%mm4, %%mm4      \n\t"\
-        "pxor                             %%mm5, %%mm5      \n\t"\
-        "pxor                             %%mm6, %%mm6      \n\t"\
-        "pxor                             %%mm7, %%mm7      \n\t"\
+        "movq                  "DITHER32"+0(%0), %%mm4      \n\t"\
+        "movq                  "DITHER32"+8(%0), %%mm5      \n\t"\
+        "movq                 "DITHER32"+16(%0), %%mm6      \n\t"\
+        "movq                 "DITHER32"+24(%0), %%mm7      \n\t"\
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         "jb                                  1b             \n\t"\
         :: "r" (&c->redDither),\
@@ -159,13 +163,18 @@ static inline void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
                                        const int16_t **chrVSrc,
                                        int chrFilterSize, const int16_t **alpSrc,
                                        uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                       uint8_t *aDest, int dstW, int chrDstW)
+                                       uint8_t *aDest, int dstW, int chrDstW,
+                                       const uint8_t *lumDither, const uint8_t *chrDither)
 {
+    int i;
     if (uDest) {
         x86_reg uv_off = c->uv_off;
+        for(i=0; i<8; i++) c->dither32[i] = chrDither[i]<<12;
         YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
+        for(i=0; i<8; i++) c->dither32[i] = chrDither[(i+3)&7]<<12;
         YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
+    for(i=0; i<8; i++) c->dither32[i] = lumDither[i]<<12;
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X_ACCURATE(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
     }
@@ -190,7 +199,8 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
                                     const int16_t *chrUSrc, const int16_t *chrVSrc,
                                     const int16_t *alpSrc,
                                     uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                    uint8_t *aDest, int dstW, int chrDstW)
+                                    uint8_t *aDest, int dstW, int chrDstW,
+                                    const uint8_t *lumDither, const uint8_t *chrDither)
 {
     int p= 4;
     const int16_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
@@ -211,14 +221,13 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
 
 #define YSCALEYUV2YV121_ACCURATE \
     "mov %2, %%"REG_a"                    \n\t"\
-    "pcmpeqw %%mm7, %%mm7                 \n\t"\
-    "psrlw                 $15, %%mm7     \n\t"\
-    "psllw                  $6, %%mm7     \n\t"\
+    "movq               0(%3), %%mm6      \n\t"\
+    "movq               8(%3), %%mm7      \n\t"\
     ".p2align                4            \n\t" /* FIXME Unroll? */\
     "1:                                   \n\t"\
     "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"\
     "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"\
-    "paddsw             %%mm7, %%mm0      \n\t"\
+    "paddsw             %%mm6, %%mm0      \n\t"\
     "paddsw             %%mm7, %%mm1      \n\t"\
     "psraw                 $7, %%mm0      \n\t"\
     "psraw                 $7, %%mm1      \n\t"\
@@ -231,7 +240,8 @@ static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
                                        const int16_t *chrUSrc, const int16_t *chrVSrc,
                                        const int16_t *alpSrc,
                                        uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                                       uint8_t *aDest, int dstW, int chrDstW)
+                                       uint8_t *aDest, int dstW, int chrDstW,
+                                       const uint8_t *lumDither, const uint8_t *chrDither)
 {
     int p= 4;
     const int16_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
@@ -240,10 +250,12 @@ static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
 
     while (p--) {
         if (dst[p]) {
+            int i;
+            for(i=0; i<8; i++) c->dither16[i] = i<2 ? lumDither[i] : chrDither[i];
             __asm__ volatile(
                 YSCALEYUV2YV121_ACCURATE
                 :: "r" (src[p]), "r" (dst[p] + counter[p]),
-                   "g" (-counter[p])
+                   "g" (-counter[p]), "r"(c->dither16)
                 : "%"REG_a
             );
         }
