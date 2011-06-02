@@ -1460,11 +1460,23 @@ static void print_report(AVFormatContext **output_files,
     }
 
     if (verbose > 0 || is_last_report) {
+        int hours, mins, secs, us;
+        secs = pts / AV_TIME_BASE;
+        us = pts % AV_TIME_BASE;
+        mins = secs / 60;
+        secs %= 60;
+        hours = mins / 60;
+        mins %= 60;
+
         bitrate = pts ? total_size * 8 / (pts / 1000.0) : 0;
 
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
-            "size=%8.0fkB time=%0.2f bitrate=%6.1fkbits/s",
-            (double)total_size / 1024, pts/(double)AV_TIME_BASE, bitrate);
+                 "size=%8.0fkB time=", total_size / 1024.0);
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                 "%02d:%02d:%02d.%02d ", hours, mins, secs,
+                 (100 * us) / AV_TIME_BASE);
+        snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf),
+                 "bitrate=%6.1fkbits/s", bitrate);
 
         if (nb_frames_dup || nb_frames_drop)
           snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
