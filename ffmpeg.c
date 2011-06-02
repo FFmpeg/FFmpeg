@@ -1691,7 +1691,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                          picture.sample_aspect_ratio = ist->st->sample_aspect_ratio;
                     picture.pts = ist->pts;
 
-                    av_vsrc_buffer_add_frame(ost->input_video_filter, &picture);
+                    av_vsrc_buffer_add_frame(ost->input_video_filter,
+                                             &picture, AV_VSRC_BUF_FLAG_OVERWRITE);
                 }
                 frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
                     !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);

@@ -37,18 +37,23 @@ typedef struct {
     char              sws_param[256];
 } BufferSourceContext;
 
-int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilterBufferRef *picref)
+int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
+                                        AVFilterBufferRef *picref, int flags)
 {
     BufferSourceContext *c = buffer_filter->priv;
     AVFilterLink *outlink = buffer_filter->outputs[0];
     int ret;
 
     if (c->picref) {
-        av_log(buffer_filter, AV_LOG_ERROR,
-               "Buffering several frames is not supported. "
-               "Please consume all available frames before adding a new one.\n"
-            );
-        //return -1;
+        if (flags & AV_VSRC_BUF_FLAG_OVERWRITE) {
+            avfilter_unref_buffer(c->picref);
+            c->picref = NULL;
+        } else {
+            av_log(buffer_filter, AV_LOG_ERROR,
+                   "Buffering several frames is not supported. "
+                   "Please consume all available frames before adding a new one.\n");
+            return AVERROR(EINVAL);
+        }
     }
 
     if (picref->video->w != c->w || picref->video->h != c->h || picref->format != c->pix_fmt) {
@@ -109,14 +114,15 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter, AVFilter
 #if CONFIG_AVCODEC
 #include "avcodec.h"
 
-int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src, const AVFrame *frame)
+int av_vsrc_buffer_add_frame(AVFilterContext *buffer_src,
+                             const AVFrame *frame, int flags)
 {
     int ret;
     AVFilterBufferRef *picref =
         avfilter_get_video_buffer_ref_from_frame(frame, AV_PERM_WRITE);
     if (!picref)
         return AVERROR(ENOMEM);
-    ret = av_vsrc_buffer_add_video_buffer_ref(buffer_src, picref);
+    ret = av_vsrc_buffer_add_video_buffer_ref(buffer_src, picref, flags);
     picref->buf->data[0] = NULL;
     avfilter_unref_buffer(picref);
 
