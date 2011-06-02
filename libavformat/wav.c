@@ -334,7 +334,7 @@ static int wav_read_header(AVFormatContext *s,
                    data_size, sample_count);
             return AVERROR_INVALIDDATA;
         }
-        avio_skip(pb, size - 16); /* skip rest of ds64 chunk */
+        avio_skip(pb, size - 24); /* skip rest of ds64 chunk */
     }
 
     for (;;) {
