@@ -19,10 +19,15 @@
 #include "cpu.h"
 #include "config.h"
 
+static int flags, checked;
+
+void av_force_cpu_flags(int arg){
+    flags   = arg;
+    checked = 1;
+}
+
 int av_get_cpu_flags(void)
 {
-    static int flags, checked;
-
     if (checked)
         return flags;
 
