@@ -310,7 +310,7 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
     int complete = 0;
     int segp = 0, psize = 0;
 
-    av_dlog(s, AV_LOG_DEBUG, "ogg_packet: curidx=%i\n", ogg->curidx);
+    av_dlog(s, "ogg_packet: curidx=%i\n", ogg->curidx);
 
     do{
         idx = ogg->curidx;
@@ -322,8 +322,7 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
 
         os = ogg->streams + idx;
 
-        av_dlog(s, AV_LOG_DEBUG,
-                "ogg_packet: idx=%d pstart=%d psize=%d segp=%d nsegs=%d\n",
+        av_dlog(s, "ogg_packet: idx=%d pstart=%d psize=%d segp=%d nsegs=%d\n",
                 idx, os->pstart, os->psize, os->segp, os->nsegs);
 
         if (!os->codec){
@@ -356,8 +355,7 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
         }
     }while (!complete);
 
-    av_dlog(s, AV_LOG_DEBUG,
-            "ogg_packet: idx %i, frame size %i, start %i\n",
+    av_dlog(s, "ogg_packet: idx %i, frame size %i, start %i\n",
             idx, os->psize, os->pstart);
 
     if (os->granule == -1)
@@ -438,7 +436,7 @@ static int ogg_get_headers(AVFormatContext *s)
             return -1;
     }while (!ogg->headers);
 
-    av_dlog(s, AV_LOG_DEBUG, "found headers\n");
+    av_dlog(s, "found headers\n");
 
     return 0;
 }

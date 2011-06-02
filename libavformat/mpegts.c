@@ -1555,7 +1555,7 @@ static int mpegts_read_header(AVFormatContext *s,
         s->bit_rate = (TS_PACKET_SIZE * 8) * 27e6 / ts->pcr_incr;
         st->codec->bit_rate = s->bit_rate;
         st->start_time = ts->cur_pcr;
-        av_dlog(ts->stream, AV_LOG_DEBUG, "start=%0.3f pcr=%0.3f incr=%d\n",
+        av_dlog(ts->stream, "start=%0.3f pcr=%0.3f incr=%d\n",
                 st->start_time / 1000000.0, pcrs[0] / 27e6, ts->pcr_incr);
     }
 
