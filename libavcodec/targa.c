@@ -210,6 +210,7 @@ static int decode_frame(AVCodecContext *avctx,
             CHECK_BUFFER_SIZE(buf, buf_end, img_size, "image data");
             for(y = 0; y < s->height; y++){
 #if HAVE_BIGENDIAN
+                int x;
                 if((s->bpp + 1) >> 3 == 2){
                     uint16_t *dst16 = (uint16_t*)dst;
                     for(x = 0; x < s->width; x++)
