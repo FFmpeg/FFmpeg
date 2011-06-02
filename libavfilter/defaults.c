@@ -60,7 +60,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
     } else
         pool = link->pool = av_mallocz(sizeof(AVFilterPool));
 
-    // +2 is needed for swscaler, +16 to be SIMD-friendly
+    // align: +2 is needed for swscaler, +16 to be SIMD-friendly
     if ((i = av_image_alloc(data, linesize, w, h, link->format, 16)) < 0)
         return NULL;
 
