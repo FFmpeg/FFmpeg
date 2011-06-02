@@ -24,8 +24,6 @@
 #include "avformat.h"
 #include "apetag.h"
 
-#define ENABLE_DEBUG 0
-
 #define APE_TAG_VERSION               2000
 #define APE_TAG_FOOTER_BYTES          32
 #define APE_TAG_FLAG_CONTAINS_HEADER  (1 << 31)

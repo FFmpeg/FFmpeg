@@ -33,9 +33,6 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavformat/avformat.h"
-
-#undef DV1394_DEBUG
-
 #include "libavformat/dv.h"
 #include "dv1394.h"
 

@@ -26,8 +26,6 @@
 #include "avformat.h"
 #include "apetag.h"
 
-#define ENABLE_DEBUG 0
-
 /* The earliest and latest file formats supported by this library */
 #define APE_MIN_VERSION 3950
 #define APE_MAX_VERSION 3990
@@ -96,7 +94,7 @@ static int ape_probe(AVProbeData * p)
 
 static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
 {
-#if ENABLE_DEBUG
+#ifdef DEBUG
     int i;
 
     av_log(s, AV_LOG_DEBUG, "Descriptor Block:\n\n");

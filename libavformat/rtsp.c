@@ -45,7 +45,6 @@
 #include "url.h"
 
 //#define DEBUG
-//#define DEBUG_RTP_TCP
 
 /* Timeout values for socket poll, in ms,
  * and read_packet(), in seconds  */
@@ -860,9 +859,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
         q = buf;
         for (;;) {
             ret = ffurl_read_complete(rt->rtsp_hd, &ch, 1);
-#ifdef DEBUG_RTP_TCP
             av_dlog(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
-#endif
             if (ret != 1)
                 return AVERROR_EOF;
             if (ch == '\n')

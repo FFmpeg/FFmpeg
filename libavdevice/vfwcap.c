@@ -26,8 +26,6 @@
 #include <windows.h>
 #include <vfw.h>
 
-//#define DEBUG_VFW
-
 /* Defines for VFW missing from MinGW.
  * Remove this when MinGW incorporates them. */
 #define HWND_MESSAGE                ((HWND)-3)
@@ -122,7 +120,7 @@ static void dump_captureparms(AVFormatContext *s, CAPTUREPARMS *cparms)
 
 static void dump_videohdr(AVFormatContext *s, VIDEOHDR *vhdr)
 {
-#ifdef DEBUG_VFW
+#ifdef DEBUG
     av_log(s, AV_LOG_DEBUG, "VIDEOHDR\n");
     dstruct(s, vhdr, lpData, "p");
     dstruct(s, vhdr, dwBufferLength, "lu");

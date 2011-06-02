@@ -33,7 +33,6 @@
  */
 
 
-//#define DEBUG_SVQ1
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -705,9 +704,7 @@ static int svq1_decode_frame(AVCodecContext *avctx,
           result = svq1_decode_block_intra (&s->gb, &current[x], linesize);
           if (result != 0)
           {
-//#ifdef DEBUG_SVQ1
             av_log(s->avctx, AV_LOG_INFO, "Error in svq1_decode_block %i (keyframe)\n",result);
-//#endif
             goto err;
           }
         }

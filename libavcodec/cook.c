@@ -66,7 +66,6 @@
 
 #define SUBBAND_SIZE    20
 #define MAX_SUBPACKETS   5
-//#define COOKDEBUG
 
 typedef struct {
     int *now;
@@ -1005,7 +1004,7 @@ static int cook_decode_frame(AVCodecContext *avctx,
     return avctx->block_align;
 }
 
-#ifdef COOKDEBUG
+#ifdef DEBUG
 static void dump_cook_context(COOKContext *q)
 {
     //int i=0;
@@ -1247,7 +1246,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     else
         avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
-#ifdef COOKDEBUG
+#ifdef DEBUG
     dump_cook_context(q);
 #endif
     return 0;

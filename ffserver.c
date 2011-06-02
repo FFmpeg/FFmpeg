@@ -1760,7 +1760,7 @@ static int http_parse_request(HTTPContext *c)
                 }
             }
 
-#ifdef DEBUG_WMP
+#ifdef DEBUG
             http_log("\nGot request:\n%s\n", c->buffer);
 #endif
 
@@ -1790,7 +1790,7 @@ static int http_parse_request(HTTPContext *c)
         return 0;
     }
 
-#ifdef DEBUG_WMP
+#ifdef DEBUG
     if (strcmp(stream->filename + strlen(stream->filename) - 4, ".asf") == 0)
         http_log("\nGot request:\n%s\n", c->buffer);
 #endif

@@ -33,8 +33,6 @@
 #include "get_bits.h"
 #include <stdint.h>
 
-#define IVI_DEBUG 0
-
 #define IVI_VLC_BITS 13 ///< max number of bits of the ivi's huffman codes
 
 /**
