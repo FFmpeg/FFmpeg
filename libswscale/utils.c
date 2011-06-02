@@ -749,7 +749,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     int srcH= c->srcH;
     int dstW= c->dstW;
     int dstH= c->dstH;
-    int dst_stride = FFALIGN(dstW * sizeof(int16_t), 16), dst_stride_px = dst_stride >> 1;
+    int dst_stride = FFALIGN(dstW * sizeof(int16_t) + 16, 16), dst_stride_px = dst_stride >> 1;
     int flags, cpu_flags;
     enum PixelFormat srcFormat= c->srcFormat;
     enum PixelFormat dstFormat= c->dstFormat;
