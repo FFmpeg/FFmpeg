@@ -166,38 +166,6 @@ typedef struct cook {
 static float     pow2tab[127];
 static float rootpow2tab[127];
 
-/* debug functions */
-
-#ifdef COOKDEBUG
-static void dump_float_table(float* table, int size, int delimiter) {
-    int i=0;
-    av_log(NULL,AV_LOG_ERROR,"\n[%d]: ",i);
-    for (i=0 ; i<size ; i++) {
-        av_log(NULL, AV_LOG_ERROR, "%5.1f, ", table[i]);
-        if ((i+1)%delimiter == 0) av_log(NULL,AV_LOG_ERROR,"\n[%d]: ",i+1);
-    }
-}
-
-static void dump_int_table(int* table, int size, int delimiter) {
-    int i=0;
-    av_log(NULL,AV_LOG_ERROR,"\n[%d]: ",i);
-    for (i=0 ; i<size ; i++) {
-        av_log(NULL, AV_LOG_ERROR, "%d, ", table[i]);
-        if ((i+1)%delimiter == 0) av_log(NULL,AV_LOG_ERROR,"\n[%d]: ",i+1);
-    }
-}
-
-static void dump_short_table(short* table, int size, int delimiter) {
-    int i=0;
-    av_log(NULL,AV_LOG_ERROR,"\n[%d]: ",i);
-    for (i=0 ; i<size ; i++) {
-        av_log(NULL, AV_LOG_ERROR, "%d, ", table[i]);
-        if ((i+1)%delimiter == 0) av_log(NULL,AV_LOG_ERROR,"\n[%d]: ",i+1);
-    }
-}
-
-#endif
-
 /*************** init functions ***************/
 
 /* table generator */
