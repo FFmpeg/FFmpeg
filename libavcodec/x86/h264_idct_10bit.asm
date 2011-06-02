@@ -249,16 +249,17 @@ IDCT8_DC_ADD avx
     jmp .skipadd%2
 %endmacro
 
+%assign last_block 16
 %macro ADD16_OP_INTRA 3
     cmp         word [r4+%3], 0
     jnz .ac%2
-    mov         r6d, dword [r2+ 0]
-    or          r6d, dword [r2+64]
+    mov         r5d, dword [r2+ 0]
+    or          r5d, dword [r2+64]
     jz .skipblock%2
-    mov  r5d, dword [r1+(%2+0)*4]
+    mov         r5d, dword [r1+(%2+0)*4]
     call idct_dc_add_%1
 .skipblock%2:
-%if %2<15
+%if %2<last_block-2
     add          r2, 128
 %endif
 .skipadd%2:
@@ -302,47 +303,33 @@ INIT_AVX
 IDCT_ADD16INTRA_10 avx
 %endif
 
+%assign last_block 24
 ;-----------------------------------------------------------------------------
 ; h264_idct_add8(pixel **dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
 %macro IDCT_ADD8 1
 cglobal h264_idct_add8_10_%1,5,7
-    mov          r5, 16
-    add          r2, 1024
-%ifdef PIC
-    lea         r11, [scan8_mem]
-%endif
 %ifdef ARCH_X86_64
-    mov         r10, r0
+    mov r10, r0
 %endif
-.nextblock:
-    movzx        r6, byte [scan8+r5]
-    movzx        r6, byte [r4+r6]
-    or          r6d, dword [r2]
-    test         r6, r6
-    jz .skipblock
+    add r2, 1024
+    mov r0, [r0]
+    ADD16_OP_INTRA %1, 16, 1+1*8
+    ADD16_OP_INTRA %1, 18, 1+2*8
 %ifdef ARCH_X86_64
-    mov         r0d, dword [r1+r5*4]
-    add          r0, [r10]
+    mov r0, [r10+gprsize]
 %else
-    mov          r0, r0m
-    mov          r0, [r0]
-    add          r0, dword [r1+r5*4]
+    mov r0, r0m
+    mov r0, [r0+gprsize]
 %endif
-    IDCT4_ADD_10 r0, r2, r3
-.skipblock:
-    inc          r5
-    add          r2, 64
-    test         r5, 3
-    jnz .nextblock
-%ifdef ARCH_X86_64
-    add         r10, gprsize
-%else
-    add        r0mp, gprsize
-%endif
-    test         r5, 4
-    jnz .nextblock
+    ADD16_OP_INTRA %1, 20, 1+4*8
+    ADD16_OP_INTRA %1, 22, 1+5*8
     REP_RET
+    AC %1, 16
+    AC %1, 18
+    AC %1, 20
+    AC %1, 22
+
 %endmacro ; IDCT_ADD8
 
 INIT_XMM
