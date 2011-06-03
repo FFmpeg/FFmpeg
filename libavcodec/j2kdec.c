@@ -285,8 +285,7 @@ static int get_cox(J2kDecoderContext *s, J2kCodingStyle *c)
 
     c->cblk_style = bytestream_get_byte(&s->buf);
     if (c->cblk_style != 0){ // cblk style
-        av_log(s->avctx, AV_LOG_ERROR, "no extra cblk styles supported\n");
-        return -1;
+        av_log(s->avctx, AV_LOG_WARNING, "extra cblk styles %X\n", c->cblk_style);
     }
     c->transform = bytestream_get_byte(&s->buf); // transformation
     if (c->csty & J2K_CSTY_PREC) {
