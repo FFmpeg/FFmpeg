@@ -72,11 +72,8 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             FFRawVideoDemuxerContext *s1 = s->priv_data;
             int width = 0, height = 0, ret = 0;
             enum PixelFormat pix_fmt;
+            AVRational framerate;
 
-            if(ap->time_base.num)
-                av_set_pts_info(st, 64, ap->time_base.num, ap->time_base.den);
-            else
-                av_set_pts_info(st, 64, 1, 25);
             if (s1->video_size && (ret = av_parse_video_size(&width, &height, s1->video_size)) < 0) {
                 av_log(s, AV_LOG_ERROR, "Couldn't parse video size.\n");
                 goto fail;
@@ -86,6 +83,10 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
+            if ((ret = av_parse_video_rate(&framerate, s1->framerate)) < 0) {
+                av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s1->framerate);
+                goto fail;
+            }
 #if FF_API_FORMAT_PARAMETERS
             if (ap->width > 0)
                 width = ap->width;
@@ -93,13 +94,17 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 height = ap->height;
             if (ap->pix_fmt)
                 pix_fmt = ap->pix_fmt;
+            if (ap->time_base.num)
+                framerate = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
+            av_set_pts_info(st, 64, framerate.den, framerate.num);
             st->codec->width  = width;
             st->codec->height = height;
             st->codec->pix_fmt = pix_fmt;
 fail:
             av_freep(&s1->video_size);
             av_freep(&s1->pixel_format);
+            av_freep(&s1->framerate);
             return ret;
             }
         default:
@@ -149,30 +154,36 @@ int ff_raw_video_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
 {
     AVStream *st;
+    FFRawVideoDemuxerContext *s1 = s->priv_data;
+    AVRational framerate;
+    int ret = 0;
+
 
     st = av_new_stream(s, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
+    if (!st) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = s->iformat->value;
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
-    /* for MJPEG, specify frame rate */
-    /* for MPEG-4 specify it, too (most MPEG-4 streams do not have the fixed_vop_rate set ...)*/
-    if (ap->time_base.num) {
-        st->codec->time_base= ap->time_base;
-    } else if ( st->codec->codec_id == CODEC_ID_MJPEG ||
-                st->codec->codec_id == CODEC_ID_MPEG4 ||
-                st->codec->codec_id == CODEC_ID_DIRAC ||
-                st->codec->codec_id == CODEC_ID_DNXHD ||
-                st->codec->codec_id == CODEC_ID_VC1   ||
-                st->codec->codec_id == CODEC_ID_H264) {
-        st->codec->time_base= (AVRational){1,25};
+    if ((ret = av_parse_video_rate(&framerate, s1->framerate)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s1->framerate);
+        goto fail;
     }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->time_base.num)
+        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
+#endif
+
+    st->codec->time_base = (AVRational){framerate.den, framerate.num};
     av_set_pts_info(st, 64, 1, 1200000);
 
-    return 0;
+fail:
+    av_freep(&s1->framerate);
+    return ret;
 }
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
@@ -195,6 +206,7 @@ const AVClass ff_rawaudio_demuxer_class = {
 static const AVOption video_options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 #undef OFFSET
