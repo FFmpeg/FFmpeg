@@ -1192,7 +1192,7 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, int width, uint
 #if HAVE_ALTIVEC
 #undef RENAME
 #define RENAME(a) a ## _altivec
-#include "ppc/swscale_template.c"
+#include "ppc/swscale_altivec_template.c"
 #endif
 
 //MMX versions

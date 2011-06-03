@@ -85,12 +85,15 @@ altivec_packIntArrayToCharArray(int *val, uint8_t* dest, int dstW)
     }
 }
 
-static inline void
-yuv2yuvX_altivec_real(const int16_t *lumFilter, const int16_t **lumSrc,
+static void
+yuv2yuvX_altivec_real(SwsContext *c,
+                      const int16_t *lumFilter, const int16_t **lumSrc,
                       int lumFilterSize, const int16_t *chrFilter,
                       const int16_t **chrUSrc, const int16_t **chrVSrc,
-                      int chrFilterSize, uint8_t *dest, uint8_t *uDest,
-                      uint8_t *vDest, int dstW, int chrDstW)
+                      int chrFilterSize, const int16_t **alpSrc,
+                      uint8_t *dest, uint8_t *uDest,
+                      uint8_t *vDest, uint8_t *aDest,
+                      int dstW, int chrDstW)
 {
     const vector signed int vini = {(1 << 18), (1 << 18), (1 << 18), (1 << 18)};
     register int i, j;
@@ -389,4 +392,18 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW,
 
     }
     }
+}
+
+static void RENAME(sws_init_swScale)(SwsContext *c)
+{
+    c->yuv2yuvX     = yuv2yuvX_altivec_real;
+
+    /* The following list of supported dstFormat values should
+     * match what's found in the body of ff_yuv2packedX_altivec() */
+    if (!(c->flags & SWS_BITEXACT) && !c->alpPixBuf &&
+        (c->dstFormat==PIX_FMT_ABGR  || c->dstFormat==PIX_FMT_BGRA  ||
+         c->dstFormat==PIX_FMT_BGR24 || c->dstFormat==PIX_FMT_RGB24 ||
+         c->dstFormat==PIX_FMT_RGBA  || c->dstFormat==PIX_FMT_ARGB)) {
+            c->yuv2packedX  = ff_yuv2packedX_altivec;
+        }
 }
