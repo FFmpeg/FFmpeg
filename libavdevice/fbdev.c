@@ -104,7 +104,7 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
 
     ret = av_parse_video_rate(&fbdev->framerate_q, fbdev->framerate);
     if (ret < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        av_log(avctx, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", fbdev->framerate);
         return ret;
     }
 #if FF_API_FORMAT_PARAMETERS

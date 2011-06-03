@@ -134,11 +134,11 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     }
 
     if ((ret = av_parse_video_size(&width, &height, dc1394->video_size)) < 0) {
-        av_log(c, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        av_log(c, AV_LOG_ERROR, "Could not parse video size '%s'.\n", dc1394->video_size);
         goto out;
     }
     if ((ret = av_parse_video_rate(&framerate, dc1394->framerate)) < 0) {
-        av_log(c, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        av_log(c, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", dc1394->framerate);
         goto out;
     }
 #if FF_API_FORMAT_PARAMETERS

@@ -460,7 +460,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
     if (s->framerate && (ret = av_parse_video_rate(&framerate_q, s->framerate)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        av_log(s1, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", s->framerate);
         return ret;
     }
 #if FF_API_FORMAT_PARAMETERS
@@ -601,7 +601,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     if (s->video_size && (res = av_parse_video_size(&s->width, &s->height, s->video_size)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        av_log(s1, AV_LOG_ERROR, "Could not parse video size '%s'.\n", s->video_size);
         goto out;
     }
     if (s->pixel_format && (pix_fmt = av_get_pix_fmt(s->pixel_format)) == PIX_FMT_NONE) {

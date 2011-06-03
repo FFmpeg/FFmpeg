@@ -263,7 +263,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 #endif
 
     if ((ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        av_log(s1, AV_LOG_ERROR, "Could not parse video size '%s'.\n", s->video_size);
         goto out;
     }
 
@@ -278,7 +278,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             goto out;
         }
     if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        av_log(s1, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", s->framerate);
         goto out;
     }
 #if FF_API_FORMAT_PARAMETERS
