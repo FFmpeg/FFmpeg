@@ -29,6 +29,10 @@
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 
+#ifdef __MINGW32__
+#undef main /* We don't want SDL to override our main() */
+#endif
+
 /**
  * program name, defined by the program for show_version().
  */

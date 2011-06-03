@@ -43,14 +43,10 @@
 # include "libavfilter/avfiltergraph.h"
 #endif
 
-#include "cmdutils.h"
-
 #include <SDL.h>
 #include <SDL_thread.h>
 
-#ifdef __MINGW32__
-#undef main /* We don't want SDL to override our main() */
-#endif
+#include "cmdutils.h"
 
 #include <unistd.h>
 #include <assert.h>
