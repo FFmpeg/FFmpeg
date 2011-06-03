@@ -464,6 +464,13 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_Y400A       \
         || (x)==PIX_FMT_YUVA420P    \
     )
+#define isPacked(x)         (       \
+           (x)==PIX_FMT_PAL8        \
+        || (x)==PIX_FMT_YUYV422     \
+        || (x)==PIX_FMT_UYVY422     \
+        || (x)==PIX_FMT_Y400A       \
+        || isAnyRGB(x)              \
+    )
 #define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) || (x) == PIX_FMT_Y400A)
 
 extern const uint64_t ff_dither4[2];
