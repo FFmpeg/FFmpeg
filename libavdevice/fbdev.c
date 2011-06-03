@@ -169,7 +169,7 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
     st->codec->width      = fbdev->width;
     st->codec->height     = fbdev->heigth;
     st->codec->pix_fmt    = pix_fmt;
-    st->codec->time_base  = ap->time_base;
+    st->codec->time_base  = (AVRational){fbdev->fps.den, fbdev->fps.num};
     st->codec->bit_rate   =
         fbdev->width * fbdev->heigth * fbdev->bytes_per_pixel * av_q2d(fbdev->fps) * 8;
 
