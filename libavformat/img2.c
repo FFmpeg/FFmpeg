@@ -25,6 +25,7 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
@@ -39,6 +40,7 @@ typedef struct {
     int is_pipe;
     char path[1024];
     char *pixel_format;     /**< Set by a private option. */
+    char *video_size;       /**< Set by a private option. */
 } VideoData;
 
 typedef struct {
@@ -203,7 +205,8 @@ enum CodecID av_guess_image2_codec(const char *filename){
 static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
-    int first_index, last_index;
+    int first_index, last_index, ret = 0;
+    int width = 0, height = 0;
     AVStream *st;
     enum PixelFormat pix_fmt = PIX_FMT_NONE;
 
@@ -218,9 +221,17 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n", s->pixel_format);
         return AVERROR(EINVAL);
     }
+    if (s->video_size && (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not parse video size: %s.\n", s->video_size);
+        return ret;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->pix_fmt != PIX_FMT_NONE)
         pix_fmt = ap->pix_fmt;
+    if (ap->width > 0)
+        width = ap->width;
+    if (ap->height > 0)
+        height = ap->height;
 #endif
 
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
@@ -241,9 +252,9 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
     }
 
-    if(ap->width && ap->height){
-        st->codec->width = ap->width;
-        st->codec->height= ap->height;
+    if (width && height) {
+        st->codec->width  = width;
+        st->codec->height = height;
     }
 
     if (!s->is_pipe) {
@@ -440,6 +451,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_size",   "", OFFSET(video_size),   FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
 
