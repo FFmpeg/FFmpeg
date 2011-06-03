@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "rle.h"
 #include "targa.h"
@@ -119,7 +120,7 @@ static int targa_encode_frame(AVCodecContext *avctx,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Pixel format '%s' not supported.\n",
-               avcodec_get_pix_fmt_name(avctx->pix_fmt));
+               av_get_pix_fmt_name(avctx->pix_fmt));
         return AVERROR(EINVAL);
     }
     bpp = outbuf[16] >> 3;
