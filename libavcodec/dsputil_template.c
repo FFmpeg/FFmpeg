@@ -79,7 +79,7 @@ static inline void FUNC(copy_block16)(uint8_t *dst, const uint8_t *src, int dstS
 
 /* draw the edges of width 'w' of an image of size width, height */
 //FIXME check that this is ok for mpeg4 interlaced
-static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height, int w, int sides)
+static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height, int w, int h, int sides)
 {
     pixel *buf = (pixel*)_buf;
     int wrap = _wrap / sizeof(pixel);
@@ -106,10 +106,10 @@ static void FUNCC(draw_edges)(uint8_t *_buf, int _wrap, int width, int height, i
     buf -= w;
     last_line = buf + (height - 1) * wrap;
     if (sides & EDGE_TOP)
-        for(i = 0; i < w; i++)
+        for(i = 0; i < h; i++)
             memcpy(buf - (i + 1) * wrap, buf, (width + w + w) * sizeof(pixel)); // top
     if (sides & EDGE_BOTTOM)
-        for (i = 0; i < w; i++)
+        for (i = 0; i < h; i++)
             memcpy(last_line + (i + 1) * wrap, last_line, (width + w + w) * sizeof(pixel)); // bottom
 }
 

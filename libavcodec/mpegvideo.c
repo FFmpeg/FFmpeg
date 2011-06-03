@@ -1185,15 +1185,17 @@ void MPV_frame_end(MpegEncContext *s)
        && s->current_picture.reference
        && !s->intra_only
        && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
+            int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
+            int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
             s->dsp.draw_edges(s->current_picture.data[0], s->linesize  ,
-                              s->h_edge_pos   , s->v_edge_pos   ,
-                              EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
+                              s->h_edge_pos             , s->v_edge_pos,
+                              EDGE_WIDTH        , EDGE_WIDTH        , EDGE_TOP | EDGE_BOTTOM);
             s->dsp.draw_edges(s->current_picture.data[1], s->uvlinesize,
-                              s->h_edge_pos>>1, s->v_edge_pos>>1,
-                              EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
+                              s->h_edge_pos>>hshift, s->v_edge_pos>>vshift,
+                              EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, EDGE_TOP | EDGE_BOTTOM);
             s->dsp.draw_edges(s->current_picture.data[2], s->uvlinesize,
-                              s->h_edge_pos>>1, s->v_edge_pos>>1,
-                              EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
+                              s->h_edge_pos>>hshift, s->v_edge_pos>>vshift,
+                              EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, EDGE_TOP | EDGE_BOTTOM);
     }
 
     emms_c();
@@ -2284,14 +2286,19 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
        && !s->intra_only
        && !(s->flags&CODEC_FLAG_EMU_EDGE)) {
         int sides = 0, edge_h;
+        int hshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_w;
+        int vshift = av_pix_fmt_descriptors[s->avctx->pix_fmt].log2_chroma_h;
         if (y==0) sides |= EDGE_TOP;
         if (y + h >= s->v_edge_pos) sides |= EDGE_BOTTOM;
 
         edge_h= FFMIN(h, s->v_edge_pos - y);
 
-        s->dsp.draw_edges(s->current_picture_ptr->data[0] +  y    *s->linesize  , s->linesize  , s->h_edge_pos   , edge_h   , EDGE_WIDTH  , sides);
-        s->dsp.draw_edges(s->current_picture_ptr->data[1] + (y>>1)*s->uvlinesize, s->uvlinesize, s->h_edge_pos>>1, edge_h>>1, EDGE_WIDTH/2, sides);
-        s->dsp.draw_edges(s->current_picture_ptr->data[2] + (y>>1)*s->uvlinesize, s->uvlinesize, s->h_edge_pos>>1, edge_h>>1, EDGE_WIDTH/2, sides);
+        s->dsp.draw_edges(s->current_picture_ptr->data[0] +  y         *s->linesize  , s->linesize,
+                          s->h_edge_pos        , edge_h        , EDGE_WIDTH        , EDGE_WIDTH        , sides);
+        s->dsp.draw_edges(s->current_picture_ptr->data[1] + (y>>vshift)*s->uvlinesize, s->uvlinesize,
+                          s->h_edge_pos>>hshift, edge_h>>hshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
+        s->dsp.draw_edges(s->current_picture_ptr->data[2] + (y>>vshift)*s->uvlinesize, s->uvlinesize,
+                          s->h_edge_pos>>hshift, edge_h>>hshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
     }
 
     h= FFMIN(h, s->avctx->height - y);

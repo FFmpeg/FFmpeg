@@ -371,12 +371,12 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
 
     //FIXME put trailing_onex into the context
 
-    if(n >= CHROMA_DC_BLOCK_INDEX){
+    if(max_coeff <= 8){
         coeff_token= get_vlc2(gb, chroma_dc_coeff_token_vlc.table, CHROMA_DC_COEFF_TOKEN_VLC_BITS, 1);
         total_coeff= coeff_token>>2;
     }else{
-        if(n == LUMA_DC_BLOCK_INDEX){
-            total_coeff= pred_non_zero_count(h, 0);
+        if(n >= LUMA_DC_BLOCK_INDEX){
+            total_coeff= pred_non_zero_count(h, (n - LUMA_DC_BLOCK_INDEX)*16);
             coeff_token= get_vlc2(gb, coeff_token_vlc[ coeff_token_table_index[total_coeff] ].table, COEFF_TOKEN_VLC_BITS, 2);
             total_coeff= coeff_token>>2;
         }else{
@@ -482,7 +482,8 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
     if(total_coeff == max_coeff)
         zeros_left=0;
     else{
-        if(n >= CHROMA_DC_BLOCK_INDEX)
+        /* FIXME: we don't actually support 4:2:2 yet. */
+        if(max_coeff <= 8)
             zeros_left= get_vlc2(gb, (chroma_dc_total_zeros_vlc-1)[ total_coeff ].table, CHROMA_DC_TOTAL_ZEROS_VLC_BITS, 1);
         else
             zeros_left= get_vlc2(gb, (total_zeros_vlc-1)[ total_coeff ].table, TOTAL_ZEROS_VLC_BITS, 1);
@@ -536,12 +537,80 @@ static int decode_residual(H264Context *h, GetBitContext *gb, DCTELEM *block, in
     return 0;
 }
 
+static av_always_inline int decode_luma_residual(H264Context *h, GetBitContext *gb, const uint8_t *scan, const uint8_t *scan8x8, int pixel_shift, int mb_type, int cbp, int p){
+    int i4x4, i8x8;
+    MpegEncContext * const s = &h->s;
+    int qscale = p == 0 ? s->qscale : h->chroma_qp[p-1];
+    if(IS_INTRA16x16(mb_type)){
+        AV_ZERO128(h->mb_luma_dc[p]+0);
+        AV_ZERO128(h->mb_luma_dc[p]+8);
+        AV_ZERO128(h->mb_luma_dc[p]+16);
+        AV_ZERO128(h->mb_luma_dc[p]+24);
+        if( decode_residual(h, h->intra_gb_ptr, h->mb_luma_dc[p], LUMA_DC_BLOCK_INDEX+p, scan, NULL, 16) < 0){
+            return -1; //FIXME continue if partitioned and other return -1 too
+        }
+
+        assert((cbp&15) == 0 || (cbp&15) == 15);
+
+        if(cbp&15){
+            for(i8x8=0; i8x8<4; i8x8++){
+                for(i4x4=0; i4x4<4; i4x4++){
+                    const int index= i4x4 + 4*i8x8 + p*16;
+                    if( decode_residual(h, h->intra_gb_ptr, h->mb + (16*index << pixel_shift),
+                        index, scan + 1, h->dequant4_coeff[p][qscale], 15) < 0 ){
+                        return -1;
+                    }
+                }
+            }
+            return 0xf;
+        }else{
+            fill_rectangle(&h->non_zero_count_cache[scan8[p*16]], 4, 4, 8, 0, 1);
+            return 0;
+        }
+    }else{
+        int cqm = (IS_INTRA( mb_type ) ? 0:3)+p;
+        /* For CAVLC 4:4:4, we need to keep track of the luma 8x8 CBP for deblocking nnz purposes. */
+        int new_cbp = 0;
+        for(i8x8=0; i8x8<4; i8x8++){
+            if(cbp & (1<<i8x8)){
+                if(IS_8x8DCT(mb_type)){
+                    DCTELEM *buf = &h->mb[64*i8x8+256*p << pixel_shift];
+                    uint8_t *nnz;
+                    for(i4x4=0; i4x4<4; i4x4++){
+                        const int index= i4x4 + 4*i8x8 + p*16;
+                        if( decode_residual(h, gb, buf, index, scan8x8+16*i4x4,
+                                            h->dequant8_coeff[cqm][qscale], 16) < 0 )
+                            return -1;
+                    }
+                    nnz= &h->non_zero_count_cache[ scan8[4*i8x8+p*16] ];
+                    nnz[0] += nnz[1] + nnz[8] + nnz[9];
+                    new_cbp |= !!nnz[0] << i8x8;
+                }else{
+                    for(i4x4=0; i4x4<4; i4x4++){
+                        const int index= i4x4 + 4*i8x8 + p*16;
+                        if( decode_residual(h, gb, h->mb + (16*index << pixel_shift), index,
+                                            scan, h->dequant4_coeff[cqm][qscale], 16) < 0 ){
+                            return -1;
+                        }
+                        new_cbp |= h->non_zero_count_cache[ scan8[index] ] << i8x8;
+                    }
+                }
+            }else{
+                uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8+p*16] ];
+                nnz[0] = nnz[1] = nnz[8] = nnz[9] = 0;
+            }
+        }
+        return new_cbp;
+    }
+}
+
 int ff_h264_decode_mb_cavlc(H264Context *h){
     MpegEncContext * const s = &h->s;
     int mb_xy;
     int partition_count;
     unsigned int mb_type, cbp;
     int dct8x8_allowed= h->pps.transform_8x8_mode;
+    int decode_chroma = h->sps.chroma_format_idc == 1 || h->sps.chroma_format_idc == 2;
     const int pixel_shift = h->pixel_shift;
 
     mb_xy = h->mb_xy = s->mb_x + s->mb_y*s->mb_stride;
@@ -608,19 +677,21 @@ decode_intra_mb:
 
     if(IS_INTRA_PCM(mb_type)){
         unsigned int x;
+        static const uint16_t mb_sizes[4] = {256,384,512,768};
+        const int mb_size = mb_sizes[h->sps.chroma_format_idc]*h->sps.bit_depth_luma >> 3;
 
         // We assume these blocks are very rare so we do not optimize it.
         align_get_bits(&s->gb);
 
         // The pixels are stored in the same order as levels in h->mb array.
-        for(x=0; x < (CHROMA ? 384 : 256)*h->sps.bit_depth_luma/8; x++){
+        for(x=0; x < mb_size; x++){
             ((uint8_t*)h->mb)[x]= get_bits(&s->gb, 8);
         }
 
         // In deblocking, the quantizer is 0
         s->current_picture.qscale_table[mb_xy]= 0;
         // All coeffs are present
-        memset(h->non_zero_count[mb_xy], 16, 32);
+        memset(h->non_zero_count[mb_xy], 16, 48);
 
         s->current_picture.mb_type[mb_xy]= mb_type;
         return 0;
@@ -668,7 +739,7 @@ decode_intra_mb:
             if(h->intra16x16_pred_mode < 0)
                 return -1;
         }
-        if(CHROMA){
+        if(decode_chroma){
             pred_mode= ff_h264_check_intra_pred_mode(h, get_ue_golomb_31(&s->gb));
             if(pred_mode < 0)
                 return -1;
@@ -896,15 +967,19 @@ decode_intra_mb:
 
     if(!IS_INTRA16x16(mb_type)){
         cbp= get_ue_golomb(&s->gb);
-        if(cbp > 47){
-            av_log(h->s.avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, s->mb_x, s->mb_y);
-            return -1;
-        }
 
-        if(CHROMA){
+        if(decode_chroma){
+            if(cbp > 47){
+                av_log(h->s.avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, s->mb_x, s->mb_y);
+                return -1;
+            }
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp[cbp];
             else                     cbp= golomb_to_inter_cbp   [cbp];
         }else{
+            if(cbp > 15){
+                av_log(h->s.avctx, AV_LOG_ERROR, "cbp too large (%u) at %d %d\n", cbp, s->mb_x, s->mb_y);
+                return -1;
+            }
             if(IS_INTRA4x4(mb_type)) cbp= golomb_to_intra4x4_cbp_gray[cbp];
             else                     cbp= golomb_to_inter_cbp_gray[cbp];
         }
@@ -918,8 +993,9 @@ decode_intra_mb:
     s->current_picture.mb_type[mb_xy]= mb_type;
 
     if(cbp || IS_INTRA16x16(mb_type)){
-        int i8x8, i4x4, chroma_idx;
+        int i4x4, chroma_idx;
         int dquant;
+        int ret;
         GetBitContext *gb= IS_INTRA(mb_type) ? h->intra_gb_ptr : h->inter_gb_ptr;
         const uint8_t *scan, *scan8x8;
         const int max_qp = 51 + 6*(h->sps.bit_depth_luma-8);
@@ -947,85 +1023,45 @@ decode_intra_mb:
 
         h->chroma_qp[0]= get_chroma_qp(h, 0, s->qscale);
         h->chroma_qp[1]= get_chroma_qp(h, 1, s->qscale);
-        if(IS_INTRA16x16(mb_type)){
-            AV_ZERO128(h->mb_luma_dc+0);
-            AV_ZERO128(h->mb_luma_dc+8);
-            AV_ZERO128(h->mb_luma_dc+16);
-            AV_ZERO128(h->mb_luma_dc+24);
-            if( decode_residual(h, h->intra_gb_ptr, h->mb_luma_dc, LUMA_DC_BLOCK_INDEX, scan, h->dequant4_coeff[0][s->qscale], 16) < 0){
-                return -1; //FIXME continue if partitioned and other return -1 too
+
+        if( (ret = decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 0)) < 0 ){
+            return -1;
+        }
+        h->cbp_table[mb_xy] |= ret << 12;
+        if(CHROMA444){
+            if( decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 1) < 0 ){
+                return -1;
+            }
+            if( decode_luma_residual(h, gb, scan, scan8x8, pixel_shift, mb_type, cbp, 2) < 0 ){
+                return -1;
+            }
+        } else {
+            if(cbp&0x30){
+                for(chroma_idx=0; chroma_idx<2; chroma_idx++)
+                    if( decode_residual(h, gb, h->mb + ((256 + 16*16*chroma_idx) << pixel_shift), CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
+                        return -1;
+                    }
             }
 
-            assert((cbp&15) == 0 || (cbp&15) == 15);
-
-            if(cbp&15){
-                for(i8x8=0; i8x8<4; i8x8++){
+            if(cbp&0x20){
+                for(chroma_idx=0; chroma_idx<2; chroma_idx++){
+                    const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[chroma_idx]];
                     for(i4x4=0; i4x4<4; i4x4++){
-                        const int index= i4x4 + 4*i8x8;
-                        if( decode_residual(h, h->intra_gb_ptr, h->mb + (16*index << pixel_shift), index, scan + 1, h->dequant4_coeff[0][s->qscale], 15) < 0 ){
+                        const int index= 16 + 16*chroma_idx + i4x4;
+                        if( decode_residual(h, gb, h->mb + (16*index << pixel_shift), index, scan + 1, qmul, 15) < 0){
                             return -1;
                         }
                     }
                 }
             }else{
-                fill_rectangle(&h->non_zero_count_cache[scan8[0]], 4, 4, 8, 0, 1);
+                fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+                fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
             }
-        }else{
-            for(i8x8=0; i8x8<4; i8x8++){
-                if(cbp & (1<<i8x8)){
-                    if(IS_8x8DCT(mb_type)){
-                        DCTELEM *buf = &h->mb[64*i8x8 << pixel_shift];
-                        uint8_t *nnz;
-                        for(i4x4=0; i4x4<4; i4x4++){
-                            if( decode_residual(h, gb, buf, i4x4+4*i8x8, scan8x8+16*i4x4,
-                                                h->dequant8_coeff[IS_INTRA( mb_type ) ? 0:1][s->qscale], 16) <0 )
-                                return -1;
-                        }
-                        nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
-                        nnz[0] += nnz[1] + nnz[8] + nnz[9];
-                    }else{
-                        for(i4x4=0; i4x4<4; i4x4++){
-                            const int index= i4x4 + 4*i8x8;
-
-                            if( decode_residual(h, gb, h->mb + (16*index << pixel_shift), index, scan, h->dequant4_coeff[IS_INTRA( mb_type ) ? 0:3][s->qscale], 16) <0 ){
-                                return -1;
-                            }
-                        }
-                    }
-                }else{
-                    uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8] ];
-                    nnz[0] = nnz[1] = nnz[8] = nnz[9] = 0;
-                }
-            }
-        }
-
-        if(cbp&0x30){
-            for(chroma_idx=0; chroma_idx<2; chroma_idx++)
-                if( decode_residual(h, gb, h->mb + ((256 + 16*4*chroma_idx) << pixel_shift), CHROMA_DC_BLOCK_INDEX+chroma_idx, chroma_dc_scan, NULL, 4) < 0){
-                    return -1;
-                }
-        }
-
-        if(cbp&0x20){
-            for(chroma_idx=0; chroma_idx<2; chroma_idx++){
-                const uint32_t *qmul = h->dequant4_coeff[chroma_idx+1+(IS_INTRA( mb_type ) ? 0:3)][h->chroma_qp[chroma_idx]];
-                for(i4x4=0; i4x4<4; i4x4++){
-                    const int index= 16 + 4*chroma_idx + i4x4;
-                    if( decode_residual(h, gb, h->mb + (16*index << pixel_shift), index, scan + 1, qmul, 15) < 0){
-                        return -1;
-                    }
-                }
-            }
-        }else{
-            uint8_t * const nnz= &h->non_zero_count_cache[0];
-            nnz[ scan8[16]+0 ] = nnz[ scan8[16]+1 ] =nnz[ scan8[16]+8 ] =nnz[ scan8[16]+9 ] =
-            nnz[ scan8[20]+0 ] = nnz[ scan8[20]+1 ] =nnz[ scan8[20]+8 ] =nnz[ scan8[20]+9 ] = 0;
         }
     }else{
-        uint8_t * const nnz= &h->non_zero_count_cache[0];
-        fill_rectangle(&nnz[scan8[0]], 4, 4, 8, 0, 1);
-        nnz[ scan8[16]+0 ] = nnz[ scan8[16]+1 ] =nnz[ scan8[16]+8 ] =nnz[ scan8[16]+9 ] =
-        nnz[ scan8[20]+0 ] = nnz[ scan8[20]+1 ] =nnz[ scan8[20]+8 ] =nnz[ scan8[20]+9 ] = 0;
+        fill_rectangle(&h->non_zero_count_cache[scan8[ 0]], 4, 4, 8, 0, 1);
+        fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
+        fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
     }
     s->current_picture.qscale_table[mb_xy]= s->qscale;
     write_back_non_zero_count(h);
