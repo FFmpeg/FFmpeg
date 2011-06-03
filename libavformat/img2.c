@@ -41,6 +41,7 @@ typedef struct {
     char path[1024];
     char *pixel_format;     /**< Set by a private option. */
     char *video_size;       /**< Set by a private option. */
+    char *framerate;        /**< Set by a private option. */
 } VideoData;
 
 typedef struct {
@@ -209,6 +210,7 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int width = 0, height = 0;
     AVStream *st;
     enum PixelFormat pix_fmt = PIX_FMT_NONE;
+    AVRational framerate;
 
     s1->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -225,6 +227,10 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "Could not parse video size: %s.\n", s->video_size);
         return ret;
     }
+    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
+        return ret;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->pix_fmt != PIX_FMT_NONE)
         pix_fmt = ap->pix_fmt;
@@ -232,6 +238,8 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         width = ap->width;
     if (ap->height > 0)
         height = ap->height;
+    if (ap->time_base.num)
+        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
 
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
@@ -246,11 +254,7 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
-    if (!ap->time_base.num) {
-        av_set_pts_info(st, 60, 1, 25);
-    } else {
-        av_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
-    }
+    av_set_pts_info(st, 60, framerate.den, framerate.num);
 
     if (width && height) {
         st->codec->width  = width;
@@ -452,6 +456,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 static const AVOption options[] = {
     { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "video_size",   "", OFFSET(video_size),   FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate",    "", OFFSET(framerate),    FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 
