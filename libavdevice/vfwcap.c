@@ -249,7 +249,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
     DWORD biCompression;
     WORD biBitCount;
     int ret;
-    AVRational fps;
+    AVRational framerate_q;
 
     if (!strcmp(s->filename, "list")) {
         for (devnum = 0; devnum <= 9; devnum++) {
@@ -269,7 +269,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 #if FF_API_FORMAT_PARAMETERS
     if (ap->time_base.num)
-        fps = (AVRational){ap->time_base.den, ap->time_base.num};
+        framerate_q = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
 
     ctx->hwnd = capCreateCaptureWindow(NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, 0);
@@ -369,7 +369,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     cparms.fYield = 1; // Spawn a background thread
     cparms.dwRequestMicroSecPerFrame =
-                               (fps.den*1000000) / fps.num;
+                               (framerate_q.den*1000000) / framerate_q.num;
     cparms.fAbortLeftMouse = 0;
     cparms.fAbortRightMouse = 0;
     cparms.fCaptureAudio = 0;
@@ -381,7 +381,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         goto fail_io;
 
     codec = st->codec;
-    codec->time_base = (AVRational){fps.den, fps.num};
+    codec->time_base = (AVRational){framerate_q.den, framerate_q.num};
     codec->codec_type = AVMEDIA_TYPE_VIDEO;
     codec->width  = bi->bmiHeader.biWidth;
     codec->height = bi->bmiHeader.biHeight;
