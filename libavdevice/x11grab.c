@@ -71,6 +71,7 @@ struct x11_grab
     int use_shm;             /**< !0 when using XShm extension */
     XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
     int nomouse;
+    char *framerate;         /**< Set by a private option. */
 };
 
 /**
@@ -97,6 +98,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     int use_shm;
     char *param, *offset;
     int ret = 0;
+    AVRational framerate;
 
     param = av_strdup(s1->filename);
     offset = strchr(param, '+');
@@ -110,11 +112,17 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
         goto out;
     }
+    if ((ret = av_parse_video_rate(&framerate, x11grab->framerate)) < 0) {
+        av_log(s1, AV_LOG_ERROR, "Could not parse framerate: %s.\n", x11grab->framerate);
+        goto out;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->width > 0)
         x11grab->width = ap->width;
     if (ap->height > 0)
         x11grab->height = ap->height;
+    if (ap->time_base.num)
+        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
     av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n",
            s1->filename, param, x_off, y_off, x11grab->width, x11grab->height);
@@ -123,12 +131,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if(!dpy) {
         av_log(s1, AV_LOG_ERROR, "Could not open X display.\n");
         ret = AVERROR(EIO);
-        goto out;
-    }
-
-    if (ap->time_base.den <= 0) {
-        av_log(s1, AV_LOG_ERROR, "AVParameters don't have video size and/or rate. Use -s and -r.\n");
-        ret = AVERROR(EINVAL);
         goto out;
     }
 
@@ -240,8 +242,8 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     x11grab->frame_size = x11grab->width * x11grab->height * image->bits_per_pixel/8;
     x11grab->dpy = dpy;
-    x11grab->time_base  = ap->time_base;
-    x11grab->time_frame = av_gettime() / av_q2d(ap->time_base);
+    x11grab->time_base  = (AVRational){framerate.den, framerate.num};
+    x11grab->time_frame = av_gettime() / av_q2d(x11grab->time_base);
     x11grab->x_off = x_off;
     x11grab->y_off = y_off;
     x11grab->image = image;
@@ -252,11 +254,12 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->width  = x11grab->width;
     st->codec->height = x11grab->height;
     st->codec->pix_fmt = input_pixfmt;
-    st->codec->time_base = ap->time_base;
-    st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(ap->time_base) * 8;
+    st->codec->time_base = x11grab->time_base;
+    st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(x11grab->time_base) * 8;
 
 out:
     av_freep(&x11grab->video_size);
+    av_freep(&x11grab->framerate);
     return ret;
 }
 
@@ -468,6 +471,7 @@ x11grab_read_close(AVFormatContext *s1)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { NULL },
 };
 
