@@ -518,7 +518,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
  fail:
     if (udp_fd >= 0)
         closesocket(udp_fd);
-        av_fifo_free(s->fifo);
+    av_fifo_free(s->fifo);
     av_free(s);
     return AVERROR(EIO);
 }
