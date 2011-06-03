@@ -61,15 +61,11 @@ untested special converters
 #include "swscale_internal.h"
 #include "rgb2rgb.h"
 #include "libavutil/intreadwrite.h"
-#include "libavutil/x86_cpu.h"
 #include "libavutil/cpu.h"
 #include "libavutil/avutil.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
-
-#undef MOVNTQ
-#undef PAVGB
 
 #define DITHER1XBPP
 
@@ -1182,45 +1178,14 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, int width, uint
     }
 }
 
-//Note: we have C, MMX, MMX2, 3DNOW versions, there is no 3DNOW+MMX2 one
-//Plain C versions
-
-#define COMPILE_TEMPLATE_MMX2 0
-
 #include "swscale_template.c"
-
-//MMX versions
-#if HAVE_MMX
-#undef RENAME
-#undef COMPILE_TEMPLATE_MMX2
-#define COMPILE_TEMPLATE_MMX2 0
-#define RENAME(a) a ## _MMX
-#include "x86/swscale_template.c"
-#endif
-
-//MMX2 versions
-#if HAVE_MMX2
-#undef RENAME
-#undef COMPILE_TEMPLATE_MMX2
-#define COMPILE_TEMPLATE_MMX2 1
-#define RENAME(a) a ## _MMX2
-#include "x86/swscale_template.c"
-#endif
 
 SwsFunc ff_getSwsFunc(SwsContext *c)
 {
-    int cpu_flags = av_get_cpu_flags();
-
     sws_init_swScale_c(c);
 
-#if HAVE_MMX
-    if (cpu_flags & AV_CPU_FLAG_MMX)
-        sws_init_swScale_MMX(c);
-#endif
-#if HAVE_MMX2
-    if (cpu_flags & AV_CPU_FLAG_MMX2)
-        sws_init_swScale_MMX2(c);
-#endif
+    if (HAVE_MMX)
+        ff_sws_init_swScale_mmx(c);
     if (HAVE_ALTIVEC)
         ff_sws_init_swScale_altivec(c);
 

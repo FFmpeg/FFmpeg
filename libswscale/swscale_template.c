@@ -467,11 +467,6 @@ inline static void hcscale_c(SwsContext *c, uint16_t *dst1, uint16_t *dst2, int 
 #define DEBUG_SWSCALE_BUFFERS 0
 #define DEBUG_BUFFERS(...) if (DEBUG_SWSCALE_BUFFERS) av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
-#if HAVE_MMX
-static void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
-                                  int lastInLumBuf, int lastInChrBuf);
-#endif
-
 static int swScale_c(SwsContext *c, const uint8_t* src[], int srcStride[],
                      int srcSliceY, int srcSliceH, uint8_t* dst[], int dstStride[])
 {

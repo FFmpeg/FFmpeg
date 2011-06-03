@@ -329,6 +329,9 @@ int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4],
 
 void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4],
                                     int brightness, int contrast, int saturation);
+void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufIndex,
+                           int lastInLumBuf, int lastInChrBuf);
+
 SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_vis(SwsContext *c);
 SwsFunc ff_yuv2rgb_init_mlib(SwsContext *c);
@@ -483,5 +486,6 @@ void ff_swscale_get_unscaled_altivec(SwsContext *c);
 SwsFunc ff_getSwsFunc(SwsContext *c);
 
 void ff_sws_init_swScale_altivec(SwsContext *c);
+void ff_sws_init_swScale_mmx(SwsContext *c);
 
 #endif /* SWSCALE_SWSCALE_INTERNAL_H */

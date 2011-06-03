@@ -15,6 +15,7 @@ OBJS-$(HAVE_ALTIVEC)       +=  ppc/swscale_altivec.o    \
                                ppc/yuv2rgb_altivec.o    \
                                ppc/yuv2yuv_altivec.o
 OBJS-$(HAVE_MMX)           +=  x86/rgb2rgb.o            \
+                               x86/swscale_mmx.o        \
                                x86/yuv2rgb_mmx.o
 OBJS-$(HAVE_VIS)           +=  sparc/yuv2rgb_vis.o
 
