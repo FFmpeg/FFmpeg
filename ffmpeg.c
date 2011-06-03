@@ -3863,6 +3863,11 @@ static void opt_output_file(const char *filename)
     AVFormatParameters params, *ap = &params;
     AVOutputFormat *file_oformat;
 
+    if(nb_output_files >= FF_ARRAY_ELEMS(output_files)){
+        fprintf(stderr, "Too many output files\n");
+        ffmpeg_exit(1);
+    }
+
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
