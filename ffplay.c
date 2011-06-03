@@ -2158,6 +2158,10 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if(avctx->sample_rate <= 0 || avctx->channels <= 0){
+            fprintf(stderr, "Invalid sample rate or channel count\n");
+            return -1;
+        }
         wanted_spec.freq = avctx->sample_rate;
         wanted_spec.format = AUDIO_S16SYS;
         wanted_spec.channels = avctx->channels;
