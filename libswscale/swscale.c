@@ -1189,12 +1189,6 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, int width, uint
 
 #include "swscale_template.c"
 
-#if HAVE_ALTIVEC
-#undef RENAME
-#define RENAME(a) a ## _altivec
-#include "ppc/swscale_altivec_template.c"
-#endif
-
 //MMX versions
 #if HAVE_MMX
 #undef RENAME
@@ -1227,10 +1221,8 @@ SwsFunc ff_getSwsFunc(SwsContext *c)
     if (cpu_flags & AV_CPU_FLAG_MMX2)
         sws_init_swScale_MMX2(c);
 #endif
-#if HAVE_ALTIVEC
-    if (cpu_flags & AV_CPU_FLAG_ALTIVEC)
-        sws_init_swScale_altivec(c);
-#endif
+    if (HAVE_ALTIVEC)
+        ff_sws_init_swScale_altivec(c);
 
     return swScale_c;
 }

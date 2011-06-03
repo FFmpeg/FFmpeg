@@ -95,6 +95,7 @@ adjustment.
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 #include "libavutil/cpu.h"
+#include "yuv2rgb_altivec.h"
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING

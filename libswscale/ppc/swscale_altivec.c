@@ -21,6 +21,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
+#include "config.h"
+#include "libswscale/swscale.h"
+#include "libswscale/swscale_internal.h"
+#include "libavutil/cpu.h"
+#include "yuv2rgb_altivec.h"
+
 #define vzero vec_splat_s32(0)
 
 static inline void
@@ -214,10 +221,10 @@ yuv2yuvX_altivec_real(SwsContext *c,
     }
 }
 
-static inline void hScale_altivec_real(int16_t *dst, int dstW,
-                                       const uint8_t *src, int srcW,
-                                       int xInc, const int16_t *filter,
-                                       const int16_t *filterPos, int filterSize)
+static void hScale_altivec_real(int16_t *dst, int dstW,
+                                const uint8_t *src, int srcW,
+                                int xInc, const int16_t *filter,
+                                const int16_t *filterPos, int filterSize)
 {
     register int i;
     DECLARE_ALIGNED(16, int, tempo)[4];
@@ -394,8 +401,11 @@ static inline void hScale_altivec_real(int16_t *dst, int dstW,
     }
 }
 
-static void RENAME(sws_init_swScale)(SwsContext *c)
+void ff_sws_init_swScale_altivec(SwsContext *c)
 {
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
+        return;
+
     c->yuv2yuvX     = yuv2yuvX_altivec_real;
 
     /* The following list of supported dstFormat values should
