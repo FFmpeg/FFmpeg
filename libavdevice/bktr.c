@@ -251,11 +251,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVRational fps;
     int ret = 0;
 
-    if (ap->time_base.den <= 0) {
-        ret = AVERROR(EINVAL);
-        goto out;
-    }
-
 #if FF_API_FORMAT_PARAMETERS
     if (ap->standard) {
         if (!strcasecmp(ap->standard, "pal"))
