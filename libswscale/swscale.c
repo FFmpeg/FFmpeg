@@ -1186,14 +1186,11 @@ static inline void monoblack2Y(uint8_t *dst, const uint8_t *src, int width, uint
 //Plain C versions
 
 #define COMPILE_TEMPLATE_MMX2 0
-#define COMPILE_TEMPLATE_ALTIVEC 0
 
 #include "swscale_template.c"
 
 #if HAVE_ALTIVEC
 #undef RENAME
-#undef COMPILE_TEMPLATE_ALTIVEC
-#define COMPILE_TEMPLATE_ALTIVEC 1
 #define RENAME(a) a ## _altivec
 #include "ppc/swscale_template.c"
 #endif

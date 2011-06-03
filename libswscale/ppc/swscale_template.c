@@ -19,11 +19,8 @@
  */
 
 
-#if COMPILE_TEMPLATE_ALTIVEC
 #include "swscale_altivec_template.c"
-#endif
 
-#if COMPILE_TEMPLATE_ALTIVEC
 static inline void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
                                     const int16_t **lumSrc, int lumFilterSize,
                                     const int16_t *chrFilter, const int16_t **chrUSrc,
@@ -61,7 +58,6 @@ static inline void RENAME(yuv2packedX)(SwsContext *c, const int16_t *lumFilter,
                        chrFilter, chrUSrc, chrVSrc, chrFilterSize,
                        alpSrc, dest, dstW, dstY);
 }
-#endif
 
 static void RENAME(sws_init_swScale)(SwsContext *c)
 {
