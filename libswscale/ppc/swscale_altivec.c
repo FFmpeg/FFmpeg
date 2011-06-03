@@ -406,6 +406,7 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
+    c->hScale       = hScale_altivec_real;
     c->yuv2yuvX     = yuv2yuvX_altivec_real;
 
     /* The following list of supported dstFormat values should
