@@ -97,7 +97,6 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->width  = width;
             st->codec->height = height;
             st->codec->pix_fmt = pix_fmt;
-            break;
 fail:
             av_freep(&s1->video_size);
             av_freep(&s1->pixel_format);
