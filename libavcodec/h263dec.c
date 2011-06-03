@@ -656,8 +656,11 @@ retry:
             if(s->slice_height==0 || s->mb_x!=0 || (s->mb_y%s->slice_height)!=0 || get_bits_count(&s->gb) > s->gb.size_in_bits)
                 break;
         }else{
+            int prev_x=s->mb_x, prev_y=s->mb_y;
             if(ff_h263_resync(s)<0)
                 break;
+            if (prev_y * s->mb_width + prev_x < s->mb_y * s->mb_width + s->mb_x)
+                s->error_occurred = 1;
         }
 
         if(s->msmpeg4_version<4 && s->h263_pred)

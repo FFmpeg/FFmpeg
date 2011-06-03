@@ -108,18 +108,18 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p= (AVFrame*)&s->picture;
     uint8_t *dst;
     int stride;
-    int idlen, pal, compr, x, y, w, h, bpp, flags;
+    int idlen, compr, y, w, h, bpp, flags;
     int first_clr, colors, csize;
 
     /* parse image header */
     CHECK_BUFFER_SIZE(buf, buf_end, 18, "header");
     idlen = *buf++;
-    pal = *buf++;
+    buf++; /* pal */
     compr = *buf++;
     first_clr = AV_RL16(buf); buf += 2;
     colors = AV_RL16(buf); buf += 2;
     csize = *buf++;
-    x = AV_RL16(buf); buf += 2;
+    buf += 2; /* x */
     y = AV_RL16(buf); buf += 2;
     w = AV_RL16(buf); buf += 2;
     h = AV_RL16(buf); buf += 2;
@@ -210,6 +210,7 @@ static int decode_frame(AVCodecContext *avctx,
             CHECK_BUFFER_SIZE(buf, buf_end, img_size, "image data");
             for(y = 0; y < s->height; y++){
 #if HAVE_BIGENDIAN
+                int x;
                 if((s->bpp + 1) >> 3 == 2){
                     uint16_t *dst16 = (uint16_t*)dst;
                     for(x = 0; x < s->width; x++)

@@ -133,7 +133,7 @@ ADD4x4IDCT avx
 %macro ADD16_OP 3
     cmp          byte [r4+%3], 0
     jz .skipblock%2
-    mov         r5d, dword [r1+%2*4]
+    mov         r5d, [r1+%2*4]
     call add4x4_idct_%1
 .skipblock%2:
 %if %2<15
@@ -159,7 +159,7 @@ cglobal h264_idct_add16_10_%1, 5,6
     ADD16_OP %1, 13, 7+3*8
     ADD16_OP %1, 14, 6+4*8
     ADD16_OP %1, 15, 7+4*8
-    RET
+    REP_RET
 %endmacro
 
 INIT_XMM
@@ -201,7 +201,7 @@ IDCT_ADD16_10 avx
 
 INIT_MMX
 cglobal h264_idct_dc_add_10_mmx2,3,3
-    movd      m0, dword [r1]
+    movd      m0, [r1]
     paddd     m0, [pd_32]
     psrad     m0, 6
     lea       r1, [r2*3]
@@ -215,7 +215,7 @@ cglobal h264_idct_dc_add_10_mmx2,3,3
 ;-----------------------------------------------------------------------------
 %macro IDCT8_DC_ADD 1
 cglobal h264_idct8_dc_add_10_%1,3,3,7
-    mov      r1d, dword [r1]
+    mov      r1d, [r1]
     add       r1, 32
     sar       r1, 6
     movd      m0, r1d
@@ -240,26 +240,27 @@ IDCT8_DC_ADD avx
 ;-----------------------------------------------------------------------------
 %macro AC 2
 .ac%2
-    mov  r5d, dword [r1+(%2+0)*4]
+    mov  r5d, [r1+(%2+0)*4]
     call add4x4_idct_%1
-    mov  r5d, dword [r1+(%2+1)*4]
+    mov  r5d, [r1+(%2+1)*4]
     add  r2, 64
     call add4x4_idct_%1
     add  r2, 64
     jmp .skipadd%2
 %endmacro
 
+%assign last_block 16
 %macro ADD16_OP_INTRA 3
-    cmp         word [r4+%3], 0
+    cmp      word [r4+%3], 0
     jnz .ac%2
-    mov         r6d, dword [r2+ 0]
-    or          r6d, dword [r2+64]
+    mov      r5d, [r2+ 0]
+    or       r5d, [r2+64]
     jz .skipblock%2
-    mov  r5d, dword [r1+(%2+0)*4]
+    mov      r5d, [r1+(%2+0)*4]
     call idct_dc_add_%1
 .skipblock%2:
-%if %2<15
-    add          r2, 128
+%if %2<last_block-2
+    add       r2, 128
 %endif
 .skipadd%2:
 %endmacro
@@ -287,12 +288,15 @@ cglobal h264_idct_add16intra_10_%1,5,7,8
     ADD16_OP_INTRA %1, 10, 4+4*8
     ADD16_OP_INTRA %1, 12, 6+3*8
     ADD16_OP_INTRA %1, 14, 6+4*8
-    RET
-%assign i 14
-%rep 8
-    AC %1, i
-%assign i i-2
-%endrep
+    REP_RET
+    AC %1, 8
+    AC %1, 10
+    AC %1, 12
+    AC %1, 14
+    AC %1, 0
+    AC %1, 2
+    AC %1, 4
+    AC %1, 6
 %endmacro
 
 INIT_XMM
@@ -302,47 +306,33 @@ INIT_AVX
 IDCT_ADD16INTRA_10 avx
 %endif
 
+%assign last_block 24
 ;-----------------------------------------------------------------------------
 ; h264_idct_add8(pixel **dst, const int *block_offset, dctcoef *block, int stride, const uint8_t nnzc[6*8])
 ;-----------------------------------------------------------------------------
 %macro IDCT_ADD8 1
 cglobal h264_idct_add8_10_%1,5,7
-    mov          r5, 16
-    add          r2, 1024
-%ifdef PIC
-    lea         r11, [scan8_mem]
-%endif
 %ifdef ARCH_X86_64
-    mov         r10, r0
+    mov r10, r0
 %endif
-.nextblock:
-    movzx        r6, byte [scan8+r5]
-    movzx        r6, byte [r4+r6]
-    or          r6d, dword [r2]
-    test         r6, r6
-    jz .skipblock
+    add      r2, 1024
+    mov      r0, [r0]
+    ADD16_OP_INTRA %1, 16, 1+1*8
+    ADD16_OP_INTRA %1, 18, 1+2*8
 %ifdef ARCH_X86_64
-    mov         r0d, dword [r1+r5*4]
-    add          r0, [r10]
+    mov      r0, [r10+gprsize]
 %else
-    mov          r0, r0m
-    mov          r0, [r0]
-    add          r0, dword [r1+r5*4]
+    mov      r0, r0m
+    mov      r0, [r0+gprsize]
 %endif
-    IDCT4_ADD_10 r0, r2, r3
-.skipblock:
-    inc          r5
-    add          r2, 64
-    test         r5, 3
-    jnz .nextblock
-%ifdef ARCH_X86_64
-    add         r10, gprsize
-%else
-    add        r0mp, gprsize
-%endif
-    test         r5, 4
-    jnz .nextblock
+    ADD16_OP_INTRA %1, 20, 1+4*8
+    ADD16_OP_INTRA %1, 22, 1+5*8
     REP_RET
+    AC %1, 16
+    AC %1, 18
+    AC %1, 20
+    AC %1, 22
+
 %endmacro ; IDCT_ADD8
 
 INIT_XMM
@@ -356,51 +346,51 @@ IDCT_ADD8 avx
 ; void h264_idct8_add(pixel *dst, dctcoef *block, int stride)
 ;-----------------------------------------------------------------------------
 %macro IDCT8_1D 2
-    SWAP         0, 1
-    psrad        m4, m5, 1
-    psrad        m1, m0, 1
-    paddd        m4, m5
-    paddd        m1, m0
-    paddd        m4, m7
-    paddd        m1, m5
-    psubd        m4, m0
-    paddd        m1, m3
+    SWAP      0, 1
+    psrad     m4, m5, 1
+    psrad     m1, m0, 1
+    paddd     m4, m5
+    paddd     m1, m0
+    paddd     m4, m7
+    paddd     m1, m5
+    psubd     m4, m0
+    paddd     m1, m3
 
-    psubd        m0, m3
-    psubd        m5, m3
-    paddd        m0, m7
-    psubd        m5, m7
-    psrad        m3, 1
-    psrad        m7, 1
-    psubd        m0, m3
-    psubd        m5, m7
+    psubd     m0, m3
+    psubd     m5, m3
+    paddd     m0, m7
+    psubd     m5, m7
+    psrad     m3, 1
+    psrad     m7, 1
+    psubd     m0, m3
+    psubd     m5, m7
 
-    SWAP         1, 7
-    psrad        m1, m7, 2
-    psrad        m3, m4, 2
-    paddd        m3, m0
-    psrad        m0, 2
-    paddd        m1, m5
-    psrad        m5, 2
-    psubd        m0, m4
-    psubd        m7, m5
+    SWAP      1, 7
+    psrad     m1, m7, 2
+    psrad     m3, m4, 2
+    paddd     m3, m0
+    psrad     m0, 2
+    paddd     m1, m5
+    psrad     m5, 2
+    psubd     m0, m4
+    psubd     m7, m5
 
-    SWAP         5, 6
-    psrad        m4, m2, 1
-    psrad        m6, m5, 1
-    psubd        m4, m5
-    paddd        m6, m2
+    SWAP      5, 6
+    psrad     m4, m2, 1
+    psrad     m6, m5, 1
+    psubd     m4, m5
+    paddd     m6, m2
 
-    mova         m2, %1
-    mova         m5, %2
-    SUMSUB_BA    d, 5, 2
-    SUMSUB_BA    d, 6, 5
-    SUMSUB_BA    d, 4, 2
-    SUMSUB_BA    d, 7, 6
-    SUMSUB_BA    d, 0, 4
-    SUMSUB_BA    d, 3, 2
-    SUMSUB_BA    d, 1, 5
-    SWAP         7, 6, 4, 5, 2, 3, 1, 0 ; 70315246 -> 01234567
+    mova      m2, %1
+    mova      m5, %2
+    SUMSUB_BA d, 5, 2
+    SUMSUB_BA d, 6, 5
+    SUMSUB_BA d, 4, 2
+    SUMSUB_BA d, 7, 6
+    SUMSUB_BA d, 0, 4
+    SUMSUB_BA d, 3, 2
+    SUMSUB_BA d, 1, 5
+    SWAP      7, 6, 4, 5, 2, 3, 1, 0 ; 70315246 -> 01234567
 %endmacro
 
 %macro IDCT8_1D_FULL 1
@@ -536,7 +526,7 @@ IDCT8_ADD avx
 %macro IDCT8_ADD4_OP 3
     cmp       byte [r4+%3], 0
     jz .skipblock%2
-    mov      r0d, dword [r6+%2*4]
+    mov      r0d, [r6+%2*4]
     add       r0, r5
     call h264_idct8_add1_10_%1
 .skipblock%2:

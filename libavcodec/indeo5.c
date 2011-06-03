@@ -629,7 +629,7 @@ static int decode_band(IVI5DecContext *ctx, int plane_num,
         FFSWAP(int16_t, band->rv_map->valtab[idx1], band->rv_map->valtab[idx2]);
     }
 
-#if IVI_DEBUG
+#ifdef DEBUG
     if (band->checksum_present) {
         uint16_t chksum = ivi_calc_band_checksum(band);
         if (chksum != band->checksum) {

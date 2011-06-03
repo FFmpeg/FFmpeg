@@ -115,7 +115,7 @@ typedef struct InternalBuffer{
     enum PixelFormat pix_fmt;
 }InternalBuffer;
 
-#define INTERNAL_BUFFER_SIZE 33
+#define INTERNAL_BUFFER_SIZE (32+1)
 
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int linesize_align[4]){
     int w_align= 1;

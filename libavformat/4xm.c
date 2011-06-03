@@ -246,7 +246,7 @@ static int fourxm_read_packet(AVFormatContext *s,
     FourxmDemuxContext *fourxm = s->priv_data;
     AVIOContext *pb = s->pb;
     unsigned int fourcc_tag;
-    unsigned int size, out_size av_unused;
+    unsigned int size;
     int ret = 0;
     unsigned int track_number;
     int packet_read = 0;
@@ -295,7 +295,7 @@ static int fourxm_read_packet(AVFormatContext *s,
 
         case snd__TAG:
             track_number = avio_rl32(pb);
-            out_size= avio_rl32(pb);
+            avio_skip(pb, 4);
             size-=8;
 
             if (track_number < fourxm->track_count && fourxm->tracks[track_number].channels>0) {

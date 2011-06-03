@@ -211,19 +211,6 @@ static inline int tm2_read_header(TM2Context *ctx, const uint8_t *buf)
 /*      av_log (ctx->avctx, AV_LOG_ERROR, "TM2 old header: not implemented (yet)\n"); */
         return 40;
     } else if(magic == 0x00000101) { /* new header */
-        av_unused int w, h, size, flags, xr, yr, length;
-
-        length = AV_RL32(buf);
-        buf += 4;
-
-        init_get_bits(&ctx->gb, buf, 32 * 8);
-        size = get_bits_long(&ctx->gb, 31);
-        h = get_bits(&ctx->gb, 15);
-        w = get_bits(&ctx->gb, 15);
-        flags = get_bits_long(&ctx->gb, 31);
-        yr = get_bits(&ctx->gb, 9);
-        xr = get_bits(&ctx->gb, 9);
-
         return 40;
     } else {
         av_log (ctx->avctx, AV_LOG_ERROR, "Not a TM2 header: 0x%08X\n", magic);

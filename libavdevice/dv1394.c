@@ -33,9 +33,6 @@
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avdevice.h"
-
-#undef DV1394_DEBUG
-
 #include "libavformat/dv.h"
 #include "dv1394.h"
 
@@ -177,15 +174,13 @@ restart_poll:
             av_log(context, AV_LOG_ERROR, "Failed to get status: %s\n", strerror(errno));
             return AVERROR(EIO);
         }
-#ifdef DV1394_DEBUG
-        av_log(context, AV_LOG_DEBUG, "DV1394: status\n"
+        av_dlog(context, "DV1394: status\n"
                 "\tactive_frame\t%d\n"
                 "\tfirst_clear_frame\t%d\n"
                 "\tn_clear_frames\t%d\n"
                 "\tdropped_frames\t%d\n",
                 s.active_frame, s.first_clear_frame,
                 s.n_clear_frames, s.dropped_frames);
-#endif
 
         dv->avail = s.n_clear_frames;
         dv->index = s.first_clear_frame;
@@ -200,10 +195,8 @@ restart_poll:
         }
     }
 
-#ifdef DV1394_DEBUG
-    av_log(context, AV_LOG_DEBUG, "index %d, avail %d, done %d\n", dv->index, dv->avail,
+    av_dlog(context, "index %d, avail %d, done %d\n", dv->index, dv->avail,
             dv->done);
-#endif
 
     size = dv_produce_packet(dv->dv_demux, pkt,
                              dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE),

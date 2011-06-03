@@ -1670,7 +1670,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         *s->current_picture_ptr->pan_scan= s1->pan_scan;
 
-        if (HAVE_PTHREADS && avctx->active_thread_type&FF_THREAD_FRAME)
+        if (HAVE_PTHREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     }else{ //second field
             int i;
@@ -2004,7 +2004,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
             *pict= *(AVFrame*)s->current_picture_ptr;
             ff_print_debug_info(s, pict);
         } else {
-            if (avctx->active_thread_type&FF_THREAD_FRAME)
+            if (avctx->active_thread_type & FF_THREAD_FRAME)
                 s->picture_number++;
             /* latency of 1 frame for I- and P-frames */
             /* XXX: use another variable than picture_number */
@@ -2179,14 +2179,13 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
-    int drop_frame_flag;
     int time_code_hours, time_code_minutes;
     int time_code_seconds, time_code_pictures;
     int broken_link;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    drop_frame_flag = get_bits1(&s->gb);
+    skip_bits1(&s->gb); /* drop_frame_flag */
 
     time_code_hours=get_bits(&s->gb,5);
     time_code_minutes = get_bits(&s->gb,6);
@@ -2340,7 +2339,7 @@ static int decode_chunks(AVCodecContext *avctx,
         buf_ptr = ff_find_start_code(buf_ptr,buf_end, &start_code);
         if (start_code > 0x1ff){
             if(s2->pict_type != AV_PICTURE_TYPE_B || avctx->skip_frame <= AVDISCARD_DEFAULT){
-                if(HAVE_THREADS && avctx->active_thread_type&FF_THREAD_SLICE){
+                if(HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)){
                     int i;
                     assert(avctx->thread_count > 1);
 
@@ -2509,7 +2508,7 @@ static int decode_chunks(AVCodecContext *avctx,
                     break;
                 }
 
-                if(HAVE_THREADS && avctx->active_thread_type&FF_THREAD_SLICE){
+                if(HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)){
                     int threshold= (s2->mb_height*s->slice_count + avctx->thread_count/2) / avctx->thread_count;
                     assert(avctx->thread_count > 1);
                     if(threshold <= mb_y){

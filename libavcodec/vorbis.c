@@ -20,9 +20,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#undef V_DEBUG
-//#define V_DEBUG
-
 #define ALT_BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
@@ -57,7 +54,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
 
     unsigned i, j, p, code;
 
-#ifdef V_DEBUG
+#ifdef DEBUG
     GetBitContext gb;
 #endif
 
@@ -74,7 +71,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
     for (i = 0; i < bits[p]; ++i)
         exit_at_level[i+1] = 1 << i;
 
-#ifdef V_DEBUG
+#ifdef DEBUG
     av_log(NULL, AV_LOG_INFO, " %u. of %u code len %d code %d - ", p, num, bits[p], codes[p]);
     init_get_bits(&gb, (uint8_t *)&codes[p], bits[p]);
     for (i = 0; i < bits[p]; ++i)
@@ -102,7 +99,7 @@ int ff_vorbis_len2vlc(uint8_t *bits, uint32_t *codes, unsigned num)
             exit_at_level[j] = code + (1 << (j - 1));
         codes[p] = code;
 
-#ifdef V_DEBUG
+#ifdef DEBUG
         av_log(NULL, AV_LOG_INFO, " %d. code len %d code %d - ", p, bits[p], codes[p]);
         init_get_bits(&gb, (uint8_t *)&codes[p], bits[p]);
         for (i = 0; i < bits[p]; ++i)

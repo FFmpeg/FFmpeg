@@ -1077,6 +1077,8 @@ HAVE_LIST="
     isatty
     kbhit
     ldbrx
+    libdc1394_1
+    libdc1394_2
     llrint
     llrintf
     local_aligned_16
@@ -2914,7 +2916,6 @@ check_mathfunc truncf
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
-enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
     "dirac_decoder_init dirac_encoder_init"
@@ -2945,6 +2946,15 @@ enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
 enabled libxavs    && require  libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
+
+# libdc1394 check
+if enabled libdc1394; then
+    { check_lib dc1394/dc1394.h dc1394_new -ldc1394 -lraw1394 &&
+        enable libdc1394_2; } ||
+    { check_lib libdc1394/dc1394_control.h dc1394_create_handle -ldc1394_control -lraw1394 &&
+        enable libdc1394_1; } ||
+    die "ERROR: No version of libdc1394 found "
+fi
 
 SDL_CONFIG="${cross_prefix}sdl-config"
 if check_pkg_config sdl SDL_version.h SDL_Linked_Version; then

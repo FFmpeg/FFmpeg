@@ -30,6 +30,7 @@
  * add temporal noise shaping
  ***********************************/
 
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "dsputil.h"
@@ -489,7 +490,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
     AACEncContext *s = avctx->priv_data;
     int16_t *samples = s->samples, *samples2, *la;
     ChannelElement *cpe;
-    int i, ch, w, chans, tag, start_ch;
+    int i, ch, w, g, chans, tag, start_ch;
     const uint8_t *chan_map = aac_chan_configs[avctx->channels-1];
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
@@ -587,8 +588,16 @@ static int aac_encode_frame(AVCodecContext *avctx,
                 }
             }
             s->cur_channel = start_ch;
-            if (cpe->common_window && s->coder->search_for_ms)
-                s->coder->search_for_ms(s, cpe, s->lambda);
+            if (s->options.stereo_mode && cpe->common_window) {
+                if (s->options.stereo_mode > 0) {
+                    IndividualChannelStream *ics = &cpe->ch[0].ics;
+                    for (w = 0; w < ics->num_windows; w += ics->group_len[w])
+                        for (g = 0;  g < ics->num_swb; g++)
+                            cpe->ms_mask[w*16+g] = 1;
+                } else if (s->coder->search_for_ms) {
+                    s->coder->search_for_ms(s, cpe, s->lambda);
+                }
+            }
             adjust_frame_information(s, cpe, chans);
             if (chans == 2) {
                 put_bits(&s->pb, 1, cpe->common_window);
@@ -645,6 +654,22 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define AACENC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM
+static const AVOption aacenc_options[] = {
+    {"stereo_mode", "Stereo coding method", offsetof(AACEncContext, options.stereo_mode), FF_OPT_TYPE_INT, {.dbl = 0}, -1, 1, AACENC_FLAGS, "stereo_mode"},
+        {"auto",     "Selected by the Encoder", 0, FF_OPT_TYPE_CONST, {.dbl = -1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
+        {"ms_off",   "Disable Mid/Side coding", 0, FF_OPT_TYPE_CONST, {.dbl =  0 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
+        {"ms_force", "Force Mid/Side for the whole frame if possible", 0, FF_OPT_TYPE_CONST, {.dbl =  1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
+    {NULL}
+};
+
+static const AVClass aacenc_class = {
+    "AAC encoder",
+    av_default_item_name,
+    aacenc_options,
+    LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_aac_encoder = {
     "aac",
     AVMEDIA_TYPE_AUDIO,
@@ -656,4 +681,5 @@ AVCodec ff_aac_encoder = {
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
+    .priv_class = &aacenc_class,
 };

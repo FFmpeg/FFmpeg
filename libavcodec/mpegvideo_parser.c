@@ -32,7 +32,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
     uint32_t start_code;
     int frame_rate_index, ext_type, bytes_left;
     int frame_rate_ext_n, frame_rate_ext_d;
-    int picture_structure, top_field_first, repeat_first_field, progressive_frame;
+    int top_field_first, repeat_first_field, progressive_frame;
     int horiz_size_ext, vert_size_ext, bit_rate_ext;
     int did_set_size=0;
 //FIXME replace the crap with get_bits()
@@ -91,7 +91,6 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     break;
                 case 0x8: /* picture coding extension */
                     if (bytes_left >= 5) {
-                        picture_structure = buf[2]&3;
                         top_field_first = buf[3] & (1 << 7);
                         repeat_first_field = buf[3] & (1 << 1);
                         progressive_frame = buf[4] & (1 << 7);

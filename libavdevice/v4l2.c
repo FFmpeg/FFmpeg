@@ -76,6 +76,7 @@ struct video_data {
     int channel;
     char *video_size; /**< String describing video size, set by a private option. */
     char *pixel_format; /**< Set by a private option. */
+    char *framerate;    /**< Set by a private option. */
 };
 
 struct buff_data {
@@ -438,12 +439,19 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     struct v4l2_streamparm streamparm = {0};
     struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
     int i, ret;
+    AVRational fps;
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
+    if (s->framerate && (ret = av_parse_video_rate(&fps, s->framerate)) < 0) {
+        av_log(s1, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        return ret;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->channel > 0)
         s->channel = ap->channel;
+    if (ap->time_base.num)
+        fps = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
 
     /* set tv video input */
@@ -492,34 +500,32 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         }
     }
 
-    if (ap->time_base.num && ap->time_base.den) {
+    if (fps.num && fps.den) {
         av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
-               ap->time_base.num, ap->time_base.den);
-        tpf->numerator = ap->time_base.num;
-        tpf->denominator = ap->time_base.den;
+               fps.den, fps.num);
+        tpf->numerator   = fps.den;
+        tpf->denominator = fps.num;
         if (ioctl(s->fd, VIDIOC_S_PARM, &streamparm) != 0) {
             av_log(s1, AV_LOG_ERROR,
                    "ioctl set time per frame(%d/%d) failed\n",
-                   ap->time_base.num, ap->time_base.den);
+                   fps.den, fps.num);
             return AVERROR(EIO);
         }
 
-        if (ap->time_base.den != tpf->denominator ||
-            ap->time_base.num != tpf->numerator) {
+        if (fps.num != tpf->denominator ||
+            fps.den != tpf->numerator) {
             av_log(s1, AV_LOG_INFO,
                    "The driver changed the time per frame from %d/%d to %d/%d\n",
-                   ap->time_base.num, ap->time_base.den,
+                   fps.den, fps.num,
                    tpf->numerator, tpf->denominator);
         }
     } else {
-        /* if timebase value is not set in ap, read the timebase value from the driver */
+        /* if timebase value is not set, read the timebase value from the driver */
         if (ioctl(s->fd, VIDIOC_G_PARM, &streamparm) != 0) {
             av_log(s1, AV_LOG_ERROR, "ioctl(VIDIOC_G_PARM): %s\n", strerror(errno));
             return AVERROR(errno);
         }
     }
-    ap->time_base.num = tpf->numerator;
-    ap->time_base.den = tpf->denominator;
 
     return 0;
 }
@@ -616,7 +622,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     desired_format = device_try_init(s1, pix_fmt, &s->width, &s->height, &codec_id);
     if (desired_format == 0) {
         av_log(s1, AV_LOG_ERROR, "Cannot find a proper format for "
-               "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, ap->pix_fmt);
+               "codec_id %d, pix_fmt %d.\n", s1->video_codec_id, pix_fmt);
         close(s->fd);
 
         res = AVERROR(EIO);
@@ -660,6 +666,7 @@ out:
     av_freep(&s->video_size);
     av_freep(&s->pixel_format);
     av_freep(&s->standard);
+    av_freep(&s->framerate);
     return res;
 }
 
@@ -711,6 +718,7 @@ static const AVOption options[] = {
     { "channel",  "", OFFSET(channel),  FF_OPT_TYPE_INT,    {.dbl = 0 }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
 

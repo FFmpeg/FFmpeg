@@ -2759,7 +2759,7 @@ static int encode_picture(MpegEncContext *s, int picture_number)
 {
     int i;
     int bits;
-    int context_count = s->avctx->active_thread_type&FF_THREAD_SLICE ? s->avctx->thread_count : 1;
+    int context_count = (s->avctx->active_thread_type & FF_THREAD_SLICE) ? s->avctx->thread_count : 1;
 
     s->picture_number = picture_number;
 

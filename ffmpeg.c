@@ -1242,7 +1242,7 @@ static void do_video_out(AVFormatContext *s,
             }
         }
         sws_scale(ost->img_resample_ctx, formatted_picture->data, formatted_picture->linesize,
-                  0, ost->resample_height, ost->resample_frame.data, ost->resample_frame.linesize);
+              0, ost->resample_height, final_picture->data, final_picture->linesize);
     }
 #endif
 
@@ -3723,7 +3723,6 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 static void new_data_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
-    AVOutputStream *ost av_unused;
     AVCodec *codec=NULL;
     AVCodecContext *data_enc;
 
@@ -3732,7 +3731,7 @@ static void new_data_stream(AVFormatContext *oc, int file_idx)
         fprintf(stderr, "Could not alloc stream\n");
         ffmpeg_exit(1);
     }
-    ost = new_output_stream(oc, file_idx);
+    new_output_stream(oc, file_idx);
     data_enc = st->codec;
     output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if (!data_stream_copy) {

@@ -186,13 +186,13 @@ static int mmf_read_header(AVFormatContext *s,
     unsigned int tag;
     AVIOContext *pb = s->pb;
     AVStream *st;
-    int64_t file_size av_unused, size;
+    int64_t size;
     int rate, params;
 
     tag = avio_rl32(pb);
     if (tag != MKTAG('M', 'M', 'M', 'D'))
         return -1;
-    file_size = avio_rb32(pb);
+    avio_skip(pb, 4); /* file_size */
 
     /* Skip some unused chunks that may or may not be present */
     for(;; avio_skip(pb, size)) {
