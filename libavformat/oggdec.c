@@ -410,6 +410,8 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
             *fpos = os->sync_pos;
         os->pstart += os->psize;
         os->psize = 0;
+        if(os->pstart == os->bufpos)
+            os->bufpos = os->pstart = 0;
         os->sync_pos = os->page_pos;
     }
 
