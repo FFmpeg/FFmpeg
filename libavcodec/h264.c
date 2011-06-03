@@ -2426,11 +2426,10 @@ static int fill_filter_caches(H264Context *h, int mb_type){
     if(IS_INTRA(mb_type))
         return 0;
 
-    AV_COPY64(&h->non_zero_count_cache[0+8*1], &h->non_zero_count[mb_xy][ 0]);
-    AV_COPY64(&h->non_zero_count_cache[0+8*2], &h->non_zero_count[mb_xy][ 8]);
-    AV_COPY32(&h->non_zero_count_cache[0+8*5], &h->non_zero_count[mb_xy][16]);
+    AV_COPY32(&h->non_zero_count_cache[4+8*1], &h->non_zero_count[mb_xy][ 4]);
+    AV_COPY32(&h->non_zero_count_cache[4+8*2], &h->non_zero_count[mb_xy][12]);
     AV_COPY32(&h->non_zero_count_cache[4+8*3], &h->non_zero_count[mb_xy][20]);
-    AV_COPY64(&h->non_zero_count_cache[0+8*4], &h->non_zero_count[mb_xy][24]);
+    AV_COPY32(&h->non_zero_count_cache[4+8*4], &h->non_zero_count[mb_xy][28]);
 
     h->cbp= h->cbp_table[mb_xy];
 
