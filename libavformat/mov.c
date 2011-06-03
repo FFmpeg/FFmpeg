@@ -428,7 +428,7 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     AVStream *st;
     uint32_t type;
-    uint32_t ctype;
+    uint32_t av_unused ctype;
 
     if (c->fc->nb_streams < 1) // meta before first trak
         return 0;
