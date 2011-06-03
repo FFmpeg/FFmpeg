@@ -455,11 +455,11 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     struct v4l2_streamparm streamparm = { 0 };
     struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
     int i, ret;
-    AVRational fps;
+    AVRational framerate_q;
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 
-    if (s->framerate && (ret = av_parse_video_rate(&fps, s->framerate)) < 0) {
+    if (s->framerate && (ret = av_parse_video_rate(&framerate_q, s->framerate)) < 0) {
         av_log(s1, AV_LOG_ERROR, "Couldn't parse framerate.\n");
         return ret;
     }
@@ -467,7 +467,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     if (ap->channel > 0)
         s->channel = ap->channel;
     if (ap->time_base.num)
-        fps = (AVRational){ap->time_base.den, ap->time_base.num};
+        framerate_q = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
 
     /* set tv video input */
@@ -520,23 +520,23 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         }
     }
 
-    if (fps.num && fps.den) {
+    if (framerate_q.num && framerate_q.den) {
         av_log(s1, AV_LOG_DEBUG, "Setting time per frame to %d/%d\n",
-               fps.den, fps.num);
-        tpf->numerator   = fps.den;
-        tpf->denominator = fps.num;
+               framerate_q.den, framerate_q.num);
+        tpf->numerator   = framerate_q.den;
+        tpf->denominator = framerate_q.num;
         if (ioctl(s->fd, VIDIOC_S_PARM, &streamparm) != 0) {
             av_log(s1, AV_LOG_ERROR,
                    "ioctl set time per frame(%d/%d) failed\n",
-                   fps.den, fps.num);
+                   framerate_q.den, framerate_q.num);
             return AVERROR(EIO);
         }
 
-        if (fps.num != tpf->denominator ||
-            fps.den != tpf->numerator) {
+        if (framerate_q.num != tpf->denominator ||
+            framerate_q.den != tpf->numerator) {
             av_log(s1, AV_LOG_INFO,
                    "The driver changed the time per frame from %d/%d to %d/%d\n",
-                   fps.den, fps.num,
+                   framerate_q.den, framerate_q.num,
                    tpf->numerator, tpf->denominator);
         }
     } else {
