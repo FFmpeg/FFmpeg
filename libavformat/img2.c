@@ -22,18 +22,23 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
 #include <strings.h>
 
 typedef struct {
+    const AVClass *class;  /**< Class for private options. */
     int img_first;
     int img_last;
     int img_number;
     int img_count;
     int is_pipe;
     char path[1024];
+    char *pixel_format;     /**< Set by a private option. */
 } VideoData;
 
 typedef struct {
@@ -200,6 +205,7 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
     VideoData *s = s1->priv_data;
     int first_index, last_index;
     AVStream *st;
+    enum PixelFormat pix_fmt = PIX_FMT_NONE;
 
     s1->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -207,6 +213,15 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!st) {
         return AVERROR(ENOMEM);
     }
+
+    if (s->pixel_format && (pix_fmt = av_get_pix_fmt(s->pixel_format)) == PIX_FMT_NONE) {
+        av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n", s->pixel_format);
+        return AVERROR(EINVAL);
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->pix_fmt != PIX_FMT_NONE)
+        pix_fmt = ap->pix_fmt;
+#endif
 
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;
@@ -252,8 +267,8 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = av_str2id(img_tags, s->path);
     }
-    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ap->pix_fmt != PIX_FMT_NONE)
-        st->codec->pix_fmt = ap->pix_fmt;
+    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO && pix_fmt != PIX_FMT_NONE)
+        st->codec->pix_fmt = pix_fmt;
 
     return 0;
 }
@@ -421,6 +436,20 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 #endif /* CONFIG_IMAGE2_MUXER || CONFIG_IMAGE2PIPE_MUXER */
 
+#define OFFSET(x) offsetof(VideoData, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass img2_class = {
+    .class_name = "image2 demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 /* input */
 #if CONFIG_IMAGE2_DEMUXER
 AVInputFormat ff_image2_demuxer = {
@@ -431,6 +460,7 @@ AVInputFormat ff_image2_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .flags          = AVFMT_NOFILE,
+    .priv_class     = &img2_class,
 };
 #endif
 #if CONFIG_IMAGE2PIPE_DEMUXER
@@ -440,6 +470,7 @@ AVInputFormat ff_image2pipe_demuxer = {
     .priv_data_size = sizeof(VideoData),
     .read_header    = read_header,
     .read_packet    = read_packet,
+    .priv_class     = &img2_class,
 };
 #endif
 
