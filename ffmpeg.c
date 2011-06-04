@@ -4180,7 +4180,7 @@ static int opt_target(const char *opt, const char *arg)
 
     if(!strcmp(arg, "vcd")) {
         opt_codec("vcodec", "mpeg1video");
-        opt_codec("vcodec", "mp2");
+        opt_codec("acodec", "mp2");
         opt_format("f", "vcd");
 
         opt_frame_size("s", norm == PAL ? "352x288" : "352x240");
@@ -4230,7 +4230,7 @@ static int opt_target(const char *opt, const char *arg)
     } else if(!strcmp(arg, "dvd")) {
 
         opt_codec("vcodec", "mpeg2video");
-        opt_codec("vcodec", "ac3");
+        opt_codec("acodec", "ac3");
         opt_format("f", "dvd");
 
         opt_frame_size("vcodec", norm == PAL ? "720x576" : "720x480");
