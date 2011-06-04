@@ -19,7 +19,7 @@
 #ifndef AVUTIL_PARSEUTILS_H
 #define AVUTIL_PARSEUTILS_H
 
-#include "libavutil/rational.h"
+#include "rational.h"
 
 /**
  * @file

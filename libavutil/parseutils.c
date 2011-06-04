@@ -24,11 +24,12 @@
 #include <strings.h>
 #include <sys/time.h>
 #include <time.h>
+
+#include "avstring.h"
+#include "avutil.h"
+#include "eval.h"
+#include "random_seed.h"
 #include "parseutils.h"
-#include "libavutil/avutil.h"
-#include "libavutil/eval.h"
-#include "libavutil/avstring.h"
-#include "libavutil/random_seed.h"
 
 typedef struct {
     const char *abbr;

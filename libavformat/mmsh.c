@@ -28,7 +28,7 @@
 #include <string.h>
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
-#include "libavformat/internal.h"
+#include "internal.h"
 #include "mms.h"
 #include "asf.h"
 #include "http.h"

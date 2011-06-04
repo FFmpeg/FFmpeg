@@ -26,7 +26,7 @@
  * see http://joe.hotchkiss.com/programming/eval/eval.html
  */
 
-#include "libavutil/avutil.h"
+#include "avutil.h"
 #include "eval.h"
 
 typedef struct Parser {

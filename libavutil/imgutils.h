@@ -24,8 +24,8 @@
  * misc image utilities
  */
 
-#include "libavutil/pixdesc.h"
 #include "avutil.h"
+#include "pixdesc.h"
 
 /**
  * Compute the max pixel step for each plane of an image with a
