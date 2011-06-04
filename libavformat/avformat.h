@@ -247,8 +247,8 @@ typedef struct AVFormatParameters {
     attribute_deprecated unsigned int mpeg2ts_compute_pcr:1;
     attribute_deprecated unsigned int initial_pause:1;       /**< Do not begin to play the stream
                                                                   immediately (RTSP only). */
+    attribute_deprecated unsigned int prealloced_context:1;
 #endif
-    unsigned int prealloced_context:1;
 } AVFormatParameters;
 
 //! Demuxer will use avio_open, no opened file should be provided by the caller.
@@ -1016,11 +1016,13 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size);
 
+#if FF_API_FORMAT_PARAMETERS
 /**
  * Allocate all the structures needed to read an input stream.
  *        This does not open the needed codecs for decoding the stream[s].
+ * @deprecated use avformat_open_input instead.
  */
-int av_open_input_stream(AVFormatContext **ic_ptr,
+attribute_deprecated int av_open_input_stream(AVFormatContext **ic_ptr,
                          AVIOContext *pb, const char *filename,
                          AVInputFormat *fmt, AVFormatParameters *ap);
 
@@ -1035,11 +1037,14 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
  * @param ap Additional parameters needed when opening the file
  *           (NULL if default).
  * @return 0 if OK, AVERROR_xxx otherwise
+ *
+ * @deprecated use avformat_open_input instead.
  */
-int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
+attribute_deprecated int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap);
+#endif
 
 /**
  * Open an input stream and read the header. The codecs are not opened.
