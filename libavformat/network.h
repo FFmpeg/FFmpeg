@@ -21,7 +21,10 @@
 #ifndef AVFORMAT_NETWORK_H
 #define AVFORMAT_NETWORK_H
 
+#include <errno.h>
+
 #include "config.h"
+#include "libavutil/error.h"
 #include "os_support.h"
 
 #if HAVE_WINSOCK2_H

@@ -23,6 +23,7 @@
 #define AVCODEC_MATHOPS_H
 
 #include "libavutil/common.h"
+#include "config.h"
 
 #if   ARCH_ARM
 #   include "arm/mathops.h"
