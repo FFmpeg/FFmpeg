@@ -13,7 +13,7 @@
 
 @example
 @c man begin SYNOPSIS
-ffplay [options] @file{input_file}
+ffplay [options] [@file{input_file}]
 @c man end
 @end example
 
@@ -82,6 +82,8 @@ the input video.
 Use the option "-filters" to show all the available filters (including
 also sources and sinks).
 
+@item -i @var{input_file}
+Read @var{input_file}.
 @end table
 
 @section Advanced options
