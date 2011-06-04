@@ -21,7 +21,7 @@
  */
 
 /**
- * @file libavcodec/lagarithrac.h
+ * @file
  * Lagarith range decoder
  * @author Nathan Caldwell
  * @author David Conrad
