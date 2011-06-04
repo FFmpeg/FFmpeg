@@ -162,7 +162,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
              break;
 
     if (!fps->frame_rate || !fmt->width) {
-        av_log(c, AV_LOG_ERROR, "Can't find matching camera format for %s, %dx%d@%d:1000fps\n", avcodec_get_pix_fmt_name(pix_fmt),
+        av_log(c, AV_LOG_ERROR, "Can't find matching camera format for %s, %dx%d@%d:1000fps\n", av_get_pix_fmt_name(pix_fmt),
                                                                                                 width, height, dc1394->frame_rate);
         ret = AVERROR(EINVAL);
         goto out;

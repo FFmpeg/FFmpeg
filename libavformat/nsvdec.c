@@ -267,7 +267,8 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NSVContext *nsv = s->priv_data;
     AVIOContext *pb = s->pb;
-    unsigned int file_size, size;
+    unsigned int av_unused file_size;
+    unsigned int size;
     int64_t duration;
     int strings_size;
     int table_entries;
@@ -546,7 +547,7 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     uint32_t vsize;
     uint16_t asize;
     uint16_t auxsize;
-    uint32_t auxtag;
+    uint32_t av_unused auxtag;
 
     av_dlog(s, "%s(%d)\n", __FUNCTION__, fill_header);
 

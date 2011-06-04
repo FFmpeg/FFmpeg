@@ -38,6 +38,7 @@
  * DV codec.
  */
 #define ALT_BITSTREAM_READER
+#include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
@@ -350,7 +351,7 @@ static av_cold int dvvideo_init_encoder(AVCodecContext *avctx)
 {
     if (!ff_dv_codec_profile(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video\n",
-               avctx->width, avctx->height, avcodec_get_pix_fmt_name(avctx->pix_fmt));
+               avctx->width, avctx->height, av_get_pix_fmt_name(avctx->pix_fmt));
         return -1;
     }
 

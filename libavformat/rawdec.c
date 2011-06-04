@@ -70,7 +70,7 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
         case AVMEDIA_TYPE_VIDEO: {
             FFRawVideoDemuxerContext *s1 = s->priv_data;
-            int width = 0, height = 0, ret;
+            int width = 0, height = 0, ret = 0;
             enum PixelFormat pix_fmt;
 
             if(ap->time_base.num)
@@ -97,7 +97,6 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->width  = width;
             st->codec->height = height;
             st->codec->pix_fmt = pix_fmt;
-            break;
 fail:
             av_freep(&s1->video_size);
             av_freep(&s1->pixel_format);

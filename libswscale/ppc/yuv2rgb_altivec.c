@@ -96,6 +96,7 @@ adjustment.
 #include "libswscale/swscale_internal.h"
 #include "libavutil/cpu.h"
 #include "libavutil/pixdesc.h"
+#include "yuv2rgb_altivec.h"
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING
@@ -631,7 +632,8 @@ ff_yuv2packedX_altivec(SwsContext *c, const int16_t *lumFilter,
                        const int16_t **lumSrc, int lumFilterSize,
                        const int16_t *chrFilter, const int16_t **chrUSrc,
                        const int16_t **chrVSrc, int chrFilterSize,
-                       uint8_t *dest, int dstW, int dstY)
+                       const int16_t **alpSrc, uint8_t *dest,
+                       int dstW, int dstY)
 {
     int i,j;
     vector signed short X,X0,X1,Y0,U0,V0,Y1,U1,V1,U,V;

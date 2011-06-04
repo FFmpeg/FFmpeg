@@ -586,8 +586,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
         return -1;
     }
 
-
-    if((s->avctx->active_thread_type & FF_THREAD_SLICE) &&
+    if((s->encoding || (s->avctx->active_thread_type & FF_THREAD_SLICE)) &&
        (s->avctx->thread_count > MAX_THREADS || (s->avctx->thread_count > s->mb_height && s->mb_height))){
         av_log(s->avctx, AV_LOG_ERROR, "too many threads\n");
         return -1;
@@ -746,7 +745,7 @@ av_cold int MPV_common_init(MpegEncContext *s)
     s->context_initialized = 1;
     s->thread_context[0]= s;
 
-    if (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_SLICE) {
+    if (s->encoding || (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_SLICE)) {
         threads = s->avctx->thread_count;
 
         for(i=1; i<threads; i++){
@@ -778,7 +777,7 @@ void MPV_common_end(MpegEncContext *s)
 {
     int i, j, k;
 
-    if (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_SLICE) {
+    if (s->encoding || (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_SLICE)) {
         for(i=0; i<s->avctx->thread_count; i++){
             free_duplicate_context(s->thread_context[i]);
         }

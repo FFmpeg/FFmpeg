@@ -1002,7 +1002,7 @@ static int encode_residual_ch(FlacEncodeContext *s, int ch)
 
 static int count_frame_header(FlacEncodeContext *s)
 {
-    uint8_t tmp;
+    uint8_t av_unused tmp;
     int count;
 
     /*

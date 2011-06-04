@@ -821,9 +821,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
     if (!s->context_initialized) {
         h->chroma_qp[0] = h->chroma_qp[1] = 4;
 
-        svq3->halfpel_flag = 1;
+        svq3->halfpel_flag  = 1;
         svq3->thirdpel_flag = 1;
-        svq3->unknown_flag = 0;
+        svq3->unknown_flag  = 0;
+
 
         /* prowl for the "SEQH" marker in the extradata */
         extradata = (unsigned char *)avctx->extradata;

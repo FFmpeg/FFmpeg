@@ -2019,7 +2019,7 @@ static void av_estimate_timings(AVFormatContext *ic, int64_t old_offset)
 #if 0
     {
         int i;
-        AVStream *st;
+        AVStream av_unused *st;
         for(i = 0;i < ic->nb_streams; i++) {
             st = ic->streams[i];
         printf("%d: start_time: %0.3f duration: %0.3f\n",

@@ -256,10 +256,32 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto out;
     }
 
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->standard) {
+        if (!strcasecmp(ap->standard, "pal"))
+            s->standard = PAL;
+        else if (!strcasecmp(ap->standard, "secam"))
+            s->standard = SECAM;
+        else if (!strcasecmp(ap->standard, "ntsc"))
+            s->standard = NTSC;
+    }
+#endif
+
     if ((ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
         av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
         goto out;
     }
+
+    if (!s->framerate)
+        switch (s->standard) {
+        case PAL:   s->framerate = av_strdup("pal");  break;
+        case NTSC:  s->framerate = av_strdup("ntsc"); break;
+        case SECAM: s->framerate = av_strdup("25");   break;
+        default:
+            av_log(s1, AV_LOG_ERROR, "Unknown standard.\n");
+            ret = AVERROR(EINVAL);
+            goto out;
+        }
     if ((ret = av_parse_video_rate(&fps, s->framerate)) < 0) {
         av_log(s1, AV_LOG_ERROR, "Couldn't parse framerate.\n");
         goto out;
@@ -292,16 +314,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->time_base.den = fps.num;
     st->codec->time_base.num = fps.den;
 
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->standard) {
-        if (!strcasecmp(ap->standard, "pal"))
-            s->standard = PAL;
-        else if (!strcasecmp(ap->standard, "secam"))
-            s->standard = SECAM;
-        else if (!strcasecmp(ap->standard, "ntsc"))
-            s->standard = NTSC;
-    }
-#endif
 
     if (bktr_init(s1->filename, width, height, s->standard,
             &(s->video_fd), &(s->tuner_fd), -1, 0.0) < 0) {
@@ -347,7 +359,7 @@ static const AVOption options[] = {
     { "PALM",     "", 0, FF_OPT_TYPE_CONST, {.dbl = PALM},  0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "NTSCJ",    "", 0, FF_OPT_TYPE_CONST, {.dbl = NTSCJ}, 0, 0, AV_OPT_FLAG_DECODING_PARAM, "standard" },
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
-    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { NULL },
 };
 
