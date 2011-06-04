@@ -35,8 +35,6 @@
 #include "dsputil.h"
 #include "mpegaudio.h"
 
-#include "mpcdata.h"
-
 #define BANDS            32
 #define SAMPLES_PER_BAND 36
 #define MPC_FRAME_SIZE   (BANDS * SAMPLES_PER_BAND)
