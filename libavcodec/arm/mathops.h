@@ -28,18 +28,6 @@
 
 #if HAVE_INLINE_ASM
 
-#   define MULL MULL
-static inline av_const int MULL(int a, int b, unsigned shift)
-{
-    int lo, hi;
-    __asm__("smull %0, %1, %2, %3     \n\t"
-            "mov   %0, %0,     lsr %4 \n\t"
-            "add   %1, %0, %1, lsl %5 \n\t"
-            : "=&r"(lo), "=&r"(hi)
-            : "r"(b), "r"(a), "ir"(shift), "ir"(32-shift));
-    return hi;
-}
-
 #define MULH MULH
 #define MUL64 MUL64
 
