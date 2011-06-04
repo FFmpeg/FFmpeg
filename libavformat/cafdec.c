@@ -29,6 +29,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "libavutil/dict.h"
 #include "caf.h"
 

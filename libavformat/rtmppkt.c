@@ -21,6 +21,7 @@
 
 #include "libavcodec/bytestream.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 
 #include "rtmppkt.h"

@@ -26,6 +26,7 @@
 //#define MOV_EXPORT_ALL_METADATA
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
