@@ -28,6 +28,7 @@
 
 #include "avutil.h"
 #include "eval.h"
+#include "log.h"
 
 typedef struct Parser {
     const AVClass *class;

@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/avutil.h"
+#include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
 
 #define LIBSWSCALE_VERSION_MAJOR 2

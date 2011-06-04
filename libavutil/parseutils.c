@@ -28,6 +28,7 @@
 #include "avstring.h"
 #include "avutil.h"
 #include "eval.h"
+#include "log.h"
 #include "random_seed.h"
 #include "parseutils.h"
 

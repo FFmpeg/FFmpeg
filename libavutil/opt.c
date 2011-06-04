@@ -30,6 +30,7 @@
 #include "opt.h"
 #include "eval.h"
 #include "dict.h"
+#include "log.h"
 
 #if FF_API_FIND_OPT
 //FIXME order them and do a bin search
