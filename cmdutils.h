@@ -151,7 +151,7 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
  * not have to be processed.
  */
 void parse_options(int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(const char*));
+                   int (* parse_arg_function)(const char *opt, const char *arg));
 
 void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
 

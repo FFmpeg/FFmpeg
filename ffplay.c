@@ -3006,7 +3006,7 @@ static void show_help(void)
            );
 }
 
-static void opt_input_file(const char *filename)
+static int opt_input_file(const char *opt, const char *filename)
 {
     if (input_filename) {
         fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
@@ -3016,6 +3016,7 @@ static void opt_input_file(const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
     input_filename = filename;
+    return 0;
 }
 
 /* Called from the main */

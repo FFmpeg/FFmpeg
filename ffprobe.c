@@ -339,7 +339,7 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_input_file(const char *arg)
+static int opt_input_file(const char *opt, const char *arg)
 {
     if (input_filename) {
         fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
@@ -349,6 +349,7 @@ static void opt_input_file(const char *arg)
     if (!strcmp(arg, "-"))
         arg = "pipe:";
     input_filename = arg;
+    return 0;
 }
 
 static void show_help(void)

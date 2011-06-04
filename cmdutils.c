@@ -217,7 +217,7 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 #endif /* WIN32 && !__MINGW32CE__ */
 
 void parse_options(int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(const char*))
+                   int (* parse_arg_function)(const char *opt, const char *arg))
 {
     const char *opt, *arg;
     int optindex, handleoptions=1;
@@ -284,8 +284,10 @@ unknown_opt:
             if(po->flags & OPT_EXIT)
                 exit(0);
         } else {
-            if (parse_arg_function)
-                parse_arg_function(opt);
+            if (parse_arg_function) {
+                if (parse_arg_function(NULL, opt) < 0)
+                    exit(1);
+            }
         }
     }
 }

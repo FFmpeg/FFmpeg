@@ -3855,7 +3855,7 @@ static int opt_streamid(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_output_file(const char *filename)
+static int opt_output_file(const char *opt, const char *filename)
 {
     AVFormatContext *oc;
     int err, use_video, use_audio, use_subtitle, use_data;
@@ -3984,6 +3984,7 @@ static void opt_output_file(const char *filename)
     av_freep(&forced_key_frames);
     uninit_opts();
     init_opts();
+    return 0;
 }
 
 /* same option as mencoder */
