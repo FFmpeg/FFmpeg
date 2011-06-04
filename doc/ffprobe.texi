@@ -108,6 +108,9 @@ multimedia stream.
 Each media stream information is printed within a dedicated section
 with name "STREAM".
 
+@item -i @var{input_file}
+Read @var{input_file}.
+
 @end table
 @c man end
 
