@@ -2916,6 +2916,19 @@ static int opt_show_mode(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_input_file(const char *opt, const char *filename)
+{
+    if (input_filename) {
+        fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
+                filename, input_filename);
+        exit(1);
+    }
+    if (!strcmp(filename, "-"))
+        filename = "pipe:";
+    input_filename = filename;
+    return 0;
+}
+
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
     { "x", HAS_ARG, {(void*)opt_width}, "force displayed width", "width" },
@@ -2961,7 +2974,7 @@ static const OptionDef options[] = {
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, {(void*)&rdftspeed}, "rdft speed", "msecs" },
     { "showmode", HAS_ARG, {(void*)opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
-    { "i", OPT_DUMMY, {NULL}, "ffmpeg compatibility dummy option", ""},
+    { "i", HAS_ARG, {(void *)opt_input_file}, "read specified file", "input_file"},
     { NULL, },
 };
 
@@ -3004,19 +3017,6 @@ static void show_help(void)
            "down/up             seek backward/forward 1 minute\n"
            "mouse click         seek to percentage in file corresponding to fraction of width\n"
            );
-}
-
-static int opt_input_file(const char *opt, const char *filename)
-{
-    if (input_filename) {
-        fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
-                filename, input_filename);
-        exit(1);
-    }
-    if (!strcmp(filename, "-"))
-        filename = "pipe:";
-    input_filename = filename;
-    return 0;
 }
 
 /* Called from the main */

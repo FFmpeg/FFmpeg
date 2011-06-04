@@ -128,7 +128,6 @@ typedef struct {
 #define OPT_INT64  0x0400
 #define OPT_EXIT   0x0800
 #define OPT_DATA   0x1000
-#define OPT_DUMMY  0x2000
      union {
         int *int_arg;
         char **str_arg;
