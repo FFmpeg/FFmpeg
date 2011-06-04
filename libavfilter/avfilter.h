@@ -24,6 +24,7 @@
 
 #include "libavutil/avutil.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/pixfmt.h"
 #include "libavutil/rational.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
