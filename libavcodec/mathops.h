@@ -41,13 +41,17 @@
 
 /* generic implementation */
 
+#ifndef MUL64
+#   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
+#endif
+
 #ifndef MULL
-#   define MULL(a,b,s) (((int64_t)(a) * (int64_t)(b)) >> (s))
+#   define MULL(a,b,s) (MUL64(a, b) >> (s))
 #endif
 
 #ifndef MULH
 static av_always_inline int MULH(int a, int b){
-    return ((int64_t)(a) * (int64_t)(b))>>32;
+    return MUL64(a, b) >> 32;
 }
 #endif
 
@@ -55,10 +59,6 @@ static av_always_inline int MULH(int a, int b){
 static av_always_inline unsigned UMULH(unsigned a, unsigned b){
     return ((uint64_t)(a) * (uint64_t)(b))>>32;
 }
-#endif
-
-#ifndef MUL64
-#   define MUL64(a,b) ((int64_t)(a) * (int64_t)(b))
 #endif
 
 #ifndef MAC64
