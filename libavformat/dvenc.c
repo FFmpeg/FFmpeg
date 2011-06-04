@@ -35,6 +35,7 @@
 #include "libavcodec/dvdata.h"
 #include "dv.h"
 #include "libavutil/fifo.h"
+#include "libavutil/mathematics.h"
 
 struct DVMuxContext {
     const DVprofile*  sys;           /* current DV profile, e.g.: 525/60, 625/50 */

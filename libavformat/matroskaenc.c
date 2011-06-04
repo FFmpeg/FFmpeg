@@ -29,6 +29,7 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat_readwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/lfg.h"
 #include "libavutil/dict.h"

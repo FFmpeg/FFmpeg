@@ -3697,6 +3697,7 @@ AVCodec ff_snow_encoder = {
 #undef printf
 
 #include "libavutil/lfg.h"
+#include "libavutil/mathematics.h"
 
 int main(void){
     int width=256;

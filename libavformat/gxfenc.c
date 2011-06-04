@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intfloat_readwrite.h"
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "gxf.h"
 #include "riff.h"

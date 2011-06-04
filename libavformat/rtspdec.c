@@ -21,6 +21,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 

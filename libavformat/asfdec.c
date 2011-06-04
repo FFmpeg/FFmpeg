@@ -25,6 +25,7 @@
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "libavcodec/mpegaudio.h"
 #include "avformat.h"
 #include "avio_internal.h"

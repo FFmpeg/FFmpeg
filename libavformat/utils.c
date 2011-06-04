@@ -31,6 +31,7 @@
 #include "metadata.h"
 #include "id3v2.h"
 #include "libavutil/avstring.h"
+#include "libavutil/mathematics.h"
 #include "riff.h"
 #include "audiointerleave.h"
 #include "url.h"

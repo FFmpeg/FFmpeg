@@ -30,6 +30,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mathematics.h"
 
 static const char *var_names[] = {
     "E",

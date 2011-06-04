@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 
 typedef struct VqfContext {
     int frame_bit_len;

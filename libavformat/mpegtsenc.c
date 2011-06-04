@@ -22,6 +22,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/crc.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavcodec/mpegvideo.h"
 #include "avformat.h"

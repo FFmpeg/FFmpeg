@@ -24,6 +24,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/bswap.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/tree.h"
 #include "avio_internal.h"
 #include "nut.h"

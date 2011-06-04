@@ -21,6 +21,7 @@
 
 #include <strings.h>
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
 #include "libavutil/dict.h"
 #include "avformat.h"

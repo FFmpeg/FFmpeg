@@ -23,6 +23,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 

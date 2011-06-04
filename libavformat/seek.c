@@ -21,6 +21,7 @@
  */
 
 #include "seek.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/mem.h"
 #include "internal.h"
 

@@ -22,6 +22,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "id3v2.h"
 #include "id3v1.h"

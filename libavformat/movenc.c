@@ -33,6 +33,7 @@
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intfloat_readwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "rtpenc.h"
