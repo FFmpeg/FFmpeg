@@ -35,7 +35,11 @@
 #include "network.h"
 #include "os_support.h"
 #include "url.h"
+
+#if HAVE_PTHREADS
 #include <pthread.h>
+#endif
+
 #include <sys/time.h>
 
 #ifndef IPV6_ADD_MEMBERSHIP
@@ -58,7 +62,9 @@ typedef struct {
     int circular_buffer_size;
     AVFifoBuffer *fifo;
     int circular_buffer_error;
+#if HAVE_PTHREADS
     pthread_t circular_buffer_thread;
+#endif
 } UDPContext;
 
 #define UDP_TX_BUF_SIZE 32768
@@ -505,6 +511,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     s->udp_fd = udp_fd;
 
+#if HAVE_PTHREADS
     if (!is_output && s->circular_buffer_size) {
         /* start the task going */
         s->fifo = av_fifo_alloc(s->circular_buffer_size);
@@ -513,6 +520,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
         }
     }
+#endif
 
     return 0;
  fail:
