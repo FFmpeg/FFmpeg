@@ -651,8 +651,11 @@ OBJS-$(!CONFIG_SMALL)                  += inverse.o
 
 -include $(SUBDIR)$(ARCH)/Makefile
 
-SKIPHEADERS                            += %_tablegen.h %_tables.h \
-                                          aac_tablegen_decl.h fft-internal.h \
+SKIPHEADERS                            += %_tablegen.h                  \
+                                          %_tables.h                    \
+                                          aac_tablegen_decl.h           \
+                                          fft-internal.h                \
+                                          tableprint.h                  \
                                           $(ARCH)/vp56_arith.h
 SKIPHEADERS-$(CONFIG_DXVA2)            += dxva2.h dxva2_internal.h
 SKIPHEADERS-$(CONFIG_LIBDIRAC)         += libdirac.h
