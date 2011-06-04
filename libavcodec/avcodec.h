@@ -30,6 +30,7 @@
 #include "libavutil/samplefmt.h"
 #include "libavutil/avutil.h"
 #include "libavutil/cpu.h"
+#include "libavutil/rational.h"
 
 #include "libavcodec/version.h"
 
