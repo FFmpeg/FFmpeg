@@ -323,7 +323,7 @@ int opt_default(const char *opt, const char *arg){
         AVCodec *p = NULL;
         AVOutputFormat *oformat = NULL;
         while ((p=av_codec_next(p))){
-            AVClass *c= p->priv_class;
+            const AVClass *c = p->priv_class;
             if(c && av_find_opt(&c, opt, NULL, 0, 0))
                 break;
         }
