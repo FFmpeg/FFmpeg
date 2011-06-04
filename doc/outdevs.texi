@@ -45,8 +45,8 @@ For more information about SDL, check:
 @table @option
 
 @item window_title
-Set the SDL window title, if not specified default to "SDL video
-outdev".
+Set the SDL window title, if not specified default to the filename
+specified for the output device.
 
 @item icon_title
 Set the name of the iconified SDL window, if not specified it is set
@@ -63,11 +63,8 @@ If not specified it defaults to the size of the input video.
 The following command shows the @file{ffmpeg} output is an
 SDL window, forcing its size to the qcif format:
 @example
-ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl none
+ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
 @end example
-
-Note that the name specified for the output device is ignored, so it
-can be set to an arbitrary value ("none" in the above example).
 
 @section sndio
 

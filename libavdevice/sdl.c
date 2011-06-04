@@ -78,6 +78,8 @@ static int sdl_write_header(AVFormatContext *s)
     float sar, dar; /* sample and display aspect ratios */
     int i, ret;
 
+    if (!sdl->window_title)
+        sdl->window_title = av_strdup(s->filename);
     if (!sdl->icon_title)
         sdl->icon_title = av_strdup(sdl->window_title);
 
@@ -201,7 +203,7 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(SDLContext,x)
 
 static const AVOption options[] = {
-    { "window_title", "SDL window title",           OFFSET(window_title),  FF_OPT_TYPE_STRING, {.str = "SDL video outdev" }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_title", "SDL window title",           OFFSET(window_title),  FF_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
     { "icon_title",   "SDL iconified window title", OFFSET(icon_title)  ,  FF_OPT_TYPE_STRING, {.str = NULL },               0,  0, AV_OPT_FLAG_ENCODING_PARAM },
     { "window_size",  "SDL window forced size",     OFFSET(window_size) ,  FF_OPT_TYPE_STRING, {.str = NULL },               0,  0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
