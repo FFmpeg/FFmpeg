@@ -2193,7 +2193,7 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             time     = avio_rb64(pb);
         } else {
             duration = avio_rb32(pb); /* segment duration */
-            time     = avio_rb32(pb); /* media time */
+            time     = (int32_t)avio_rb32(pb); /* media time */
         }
         avio_rb32(pb); /* Media rate */
         if (i == 0 && time >= -1) {
