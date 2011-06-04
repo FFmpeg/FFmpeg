@@ -75,7 +75,7 @@ int av_file_map(const char *filename, uint8_t **bufptr, size_t *size,
 
 #if HAVE_MMAP
     ptr = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
-    if ((int)(ptr) == -1) {
+    if (ptr == MAP_FAILED) {
         err = AVERROR(errno);
         av_strerror(err, errbuf, sizeof(errbuf));
         av_log(&file_log_ctx, AV_LOG_ERROR, "Error occurred in mmap(): %s\n", errbuf);
