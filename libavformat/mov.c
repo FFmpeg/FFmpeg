@@ -1651,9 +1651,10 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
     uint64_t stream_size = 0;
 
     /* adjust first dts according to edit list */
-    if (sc->time_offset && mov->time_scale > 0) {
-        if (sc->time_offset < 0)
-            sc->time_offset = av_rescale(sc->time_offset, sc->time_scale, mov->time_scale);
+    if ((sc->empty_duration || sc->start_time) && mov->time_scale > 0) {
+        if (sc->empty_duration)
+            sc->empty_duration = av_rescale(sc->empty_duration, sc->time_scale, mov->time_scale);
+        sc->time_offset = sc->start_time - sc->empty_duration;
         current_dts = -sc->time_offset;
         if (sc->ctts_data && sc->stts_data &&
             sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
@@ -2297,7 +2298,7 @@ free_and_return:
 static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     MOVStreamContext *sc;
-    int i, edit_count, version;
+    int i, edit_count, version, edit_start_index = 0;
 
     if (c->fc->nb_streams < 1)
         return 0;
@@ -2321,9 +2322,11 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             time     = (int32_t)avio_rb32(pb); /* media time */
         }
         avio_rb32(pb); /* Media rate */
-        if (i == 0 && time >= -1) {
-            sc->time_offset = time != -1 ? time : -duration;
-        }
+        if (i == 0 && time == -1) {
+            sc->empty_duration = duration;
+            edit_start_index = 1;
+        } else if (i == edit_start_index && time >= 0)
+            sc->start_time = time;
     }
 
     if (edit_count > 1)

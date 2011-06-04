@@ -109,7 +109,9 @@ typedef struct MOVStreamContext {
     unsigned int keyframe_count;
     int *keyframes;
     int time_scale;
-    int64_t time_offset;  ///< time offset of the first edit list entry
+    int64_t empty_duration; ///< empty duration of the first edit list entry
+    int64_t start_time;   ///< start time of the media
+    int64_t time_offset;  ///< time offset of the edit list entries
     int current_sample;
     unsigned int bytes_per_frame;
     unsigned int samples_per_frame;
