@@ -1,9 +1,0 @@
-#!/bin/sh
-sed 's/unsigned//g' |\
- sed 's/enum//g' |\
- egrep '^ *(int|float|double|AVRational|char *\*) *[a-zA-Z_0-9]* *;' |\
- sed 's/^ *\([^ ]*\)[ *]*\([^;]*\);.*$/{"\2", NULL, OFFSET(\2), FF_OPT_TYPE_\U\1, DEFAULT, \1_MIN, \1_MAX},/' |\
- sed 's/AVRATIONAL_M/INT_M/g'|\
- sed 's/TYPE_AVRATIONAL/TYPE_RATIONAL/g'|\
- sed 's/FLOAT_M/FLT_M/g'|\
- sed 's/FF_OPT_TYPE_CHAR/FF_OPT_TYPE_STRING/g'
