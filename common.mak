@@ -54,11 +54,6 @@ HOSTCFLAGS += $(IFLAGS)
 %.h:
 	@:
 
-install: install-libs install-headers
-install-libs: install-libs-yes
-
-uninstall: uninstall-libs uninstall-headers
-
 .PHONY: all depend dep *clean install* uninstall* examples testprogs
 
 # Disable suffix rules.  Most of the builtin rules are suffix rules,

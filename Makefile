@@ -128,7 +128,9 @@ doc/%.1: TAG = MAN
 doc/%.1: doc/%.pod
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
-install: $(INSTALL_TARGETS-yes)
+install: install-libs install-headers $(INSTALL_TARGETS-yes)
+
+install-libs: install-libs-yes
 
 install-progs: $(PROGS) $(INSTALL_PROGS_TARGETS-yes)
 	$(Q)mkdir -p "$(BINDIR)"
@@ -142,7 +144,7 @@ install-man: $(MANPAGES)
 	$(Q)mkdir -p "$(MANDIR)/man1"
 	$(INSTALL) -m 644 $(MANPAGES) "$(MANDIR)/man1"
 
-uninstall: uninstall-progs uninstall-data uninstall-man
+uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data uninstall-man
 
 uninstall-progs:
 	$(RM) $(addprefix "$(BINDIR)/", $(ALLPROGS))
