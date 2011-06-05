@@ -237,7 +237,7 @@ static int svq1_decode_block_intra (GetBitContext *bitbuf, uint8_t *pixels, int 
     }
 
     if ((stages > 0) && (level >= 4)) {
-      av_dlog(s->avctx,
+      av_dlog(NULL,
               "Error (svq1_decode_block_intra): invalid vector: stages=%i level=%i\n",
               stages, level);
       return -1;        /* invalid vector */
@@ -287,7 +287,7 @@ static int svq1_decode_block_non_intra (GetBitContext *bitbuf, uint8_t *pixels, 
     if (stages == -1) continue; /* skip vector */
 
     if ((stages > 0) && (level >= 4)) {
-      av_dlog(s->avctx,
+      av_dlog(NULL,
               "Error (svq1_decode_block_non_intra): invalid vector: stages=%i level=%i\n",
               stages, level);
       return -1;        /* invalid vector */
