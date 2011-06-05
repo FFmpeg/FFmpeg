@@ -320,8 +320,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     last_frame_time = 0;
 
 out:
-    av_freep(&s->video_size);
-    av_freep(&s->framerate);
     return ret;
 }
 

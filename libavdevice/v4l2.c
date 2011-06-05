@@ -684,10 +684,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
 out:
-    av_freep(&s->video_size);
-    av_freep(&s->pixel_format);
-    av_freep(&s->standard);
-    av_freep(&s->framerate);
     return res;
 }
 

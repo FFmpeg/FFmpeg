@@ -195,9 +195,6 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
     *select_fps = fps;
     *select_fmt = fmt;
 out:
-    av_freep(&dc1394->video_size);
-    av_freep(&dc1394->pixel_format);
-    av_freep(&dc1394->framerate);
     return ret;
 }
 

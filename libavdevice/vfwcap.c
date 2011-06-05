@@ -234,9 +234,6 @@ static int vfw_read_close(AVFormatContext *s)
         pktl = next;
     }
 
-    av_freep(&ctx->video_size);
-    av_freep(&ctx->framerate);
-
     return 0;
 }
 

@@ -258,8 +258,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->bit_rate = x11grab->frame_size * 1/av_q2d(x11grab->time_base) * 8;
 
 out:
-    av_freep(&x11grab->video_size);
-    av_freep(&x11grab->framerate);
     return ret;
 }
 

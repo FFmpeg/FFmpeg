@@ -103,7 +103,6 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
     int ret, flags = O_RDONLY;
 
     ret = av_parse_video_rate(&fbdev->fps, fbdev->framerate);
-    av_freep(&fbdev->framerate);
     if (ret < 0) {
         av_log(avctx, AV_LOG_ERROR, "Couldn't parse framerate.\n");
         return ret;
