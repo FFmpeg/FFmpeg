@@ -583,9 +583,6 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
     int64_t pos, pts, dts;
 
     pos = *ppos;
-#ifdef DEBUG_SEEK
-    printf("read_dts: pos=0x%"PRIx64" next=%d -> ", pos, find_next);
-#endif
     if (avio_seek(s->pb, pos, SEEK_SET) < 0)
         return AV_NOPTS_VALUE;
 

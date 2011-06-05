@@ -1119,8 +1119,6 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 //    pic->mb_cmp_score[s->mb_stride * mb_y + mb_x] = dmin;
     c->mc_mb_var_sum_temp += (vard+128)>>8;
 
-    av_dlog(s, "varc=%4d avg_var=%4d (sum=%4d) vard=%4d mx=%2d my=%2d\n",
-            varc, s->avg_mb_var, sum, vard, mx - xx, my - yy);
     if(mb_type){
         int p_score= FFMIN(vard, varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*100);
         int i_score= varc-500+(s->lambda2>>FF_LAMBDA_SHIFT)*20;
