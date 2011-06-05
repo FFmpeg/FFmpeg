@@ -358,9 +358,6 @@ static av_cold int dvvideo_init_encoder(AVCodecContext *avctx)
     return dvvideo_init(avctx);
 }
 
-// #define VLC_DEBUG
-// #define printf(...) av_log(NULL, AV_LOG_ERROR, __VA_ARGS__)
-
 typedef struct BlockInfo {
     const uint32_t *factor_table;
     const uint8_t *scan_table;
@@ -404,9 +401,8 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 
     /* get the AC coefficients until last_index is reached */
     for (;;) {
-#ifdef VLC_DEBUG
-        printf("%2d: bits=%04x index=%d\n", pos, SHOW_UBITS(re, gb, 16), re_index);
-#endif
+        av_dlog(NULL, "%2d: bits=%04x index=%d\n", pos, SHOW_UBITS(re, gb, 16),
+                re_index);
         /* our own optimized GET_RL_VLC */
         index   = NEG_USR32(re_cache, TEX_VLC_BITS);
         vlc_len = dv_rl_vlc[index].len;
@@ -427,9 +423,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
         }
         re_index += vlc_len;
 
-#ifdef VLC_DEBUG
-        printf("run=%d level=%d\n", run, level);
-#endif
+        av_dlog(NULL, "run=%d level=%d\n", run, level);
         pos += run;
         if (pos >= 64)
             break;
@@ -533,9 +527,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             mb->pos               = 0;
             mb->partial_bit_count = 0;
 
-#ifdef VLC_DEBUG
-            printf("MB block: %d, %d ", mb_index, j);
-#endif
+            av_dlog(avctx, "MB block: %d, %d ", mb_index, j);
             dv_decode_ac(&gb, mb, block);
 
             /* write the remaining bits  in a new buffer only if the
@@ -548,9 +540,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
         }
 
         /* pass 2 : we can do it just after */
-#ifdef VLC_DEBUG
-        printf("***pass 2 size=%d MB#=%d\n", put_bits_count(&pb), mb_index);
-#endif
+        av_dlog(avctx, "***pass 2 size=%d MB#=%d\n", put_bits_count(&pb), mb_index);
         block = block1;
         mb    = mb1;
         init_get_bits(&gb, mb_bit_buffer, put_bits_count(&pb));
@@ -570,9 +560,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     }
 
     /* we need a pass other the whole video segment */
-#ifdef VLC_DEBUG
-    printf("***pass 3 size=%d\n", put_bits_count(&vs_pb));
-#endif
+    av_dlog(avctx, "***pass 3 size=%d\n", put_bits_count(&vs_pb));
     block = &sblock[0][0];
     mb    = mb_data;
     init_get_bits(&gb, vs_bit_buffer, put_bits_count(&vs_pb));
@@ -580,9 +568,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     for (mb_index = 0; mb_index < 5; mb_index++) {
         for (j = 0; j < s->sys->bpm; j++) {
             if (mb->pos < 64) {
-#ifdef VLC_DEBUG
-                printf("start %d:%d\n", mb_index, j);
-#endif
+                av_dlog(avctx, "start %d:%d\n", mb_index, j);
                 dv_decode_ac(&gb, mb, block);
             }
             if (mb->pos >= 64 && mb->pos < 127)

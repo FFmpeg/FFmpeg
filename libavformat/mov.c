@@ -23,7 +23,6 @@
 #include <limits.h>
 
 //#define DEBUG
-//#define DEBUG_METADATA
 //#define MOV_EXPORT_ALL_METADATA
 
 #include "libavutil/intreadwrite.h"
@@ -210,11 +209,9 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             av_metadata_set2(&c->fc->metadata, key2, str, 0);
         }
     }
-#ifdef DEBUG_METADATA
-    av_log(c->fc, AV_LOG_DEBUG, "lang \"%3s\" ", language);
-    av_log(c->fc, AV_LOG_DEBUG, "tag \"%s\" value \"%s\" atom \"%.4s\" %d %lld\n",
-           key, str, (char*)&atom.type, str_size, atom.size);
-#endif
+    av_dlog(c->fc, "lang \"%3s\" ", language);
+    av_dlog(c->fc, "tag \"%s\" value \"%s\" atom \"%.4s\" %d %"PRId64"\n",
+            key, str, (char*)&atom.type, str_size, atom.size);
 
     return 0;
 }

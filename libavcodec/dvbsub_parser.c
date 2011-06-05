@@ -22,9 +22,6 @@
 #include "dsputil.h"
 #include "get_bits.h"
 
-//#define DEBUG
-//#define DEBUG_PACKET_CONTENTS
-
 /* Parser (mostly) copied from dvdsub.c */
 
 #define PARSE_BUF_SIZE  (65536)
@@ -53,25 +50,20 @@ static int dvbsub_parse(AVCodecParserContext *s,
 {
     DVBSubParseContext *pc = s->priv_data;
     uint8_t *p, *p_end;
-    int len, buf_pos = 0;
+    int i, len, buf_pos = 0;
 
     av_dlog(avctx, "DVB parse packet pts=%"PRIx64", lpts=%"PRIx64", cpts=%"PRIx64":\n",
             s->pts, s->last_pts, s->cur_frame_pts[s->cur_frame_start_index]);
 
-#ifdef DEBUG_PACKET_CONTENTS
-    int i;
-
     for (i=0; i < buf_size; i++)
     {
-        av_log(avctx, AV_LOG_INFO, "%02x ", buf[i]);
+        av_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_log(avctx, AV_LOG_INFO, "\n");
+            av_dlog(avctx, "\n");
     }
 
     if (i % 16 != 0)
-        av_log(avctx, AV_LOG_INFO, "\n");
-
-#endif
+        av_dlog(avctx, "\n");
 
     *poutbuf = NULL;
     *poutbuf_size = 0;

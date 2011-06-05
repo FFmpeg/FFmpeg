@@ -81,8 +81,6 @@ void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
 
 /* VLC decoding */
 
-//#define DEBUG_VLC
-
 #define GET_DATA(v, table, i, wrap, size) \
 {\
     const uint8_t *ptr = (const uint8_t *)table + i * wrap;\
@@ -162,10 +160,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
 
     table_size = 1 << table_nb_bits;
     table_index = alloc_table(vlc, table_size, flags & INIT_VLC_USE_NEW_STATIC);
-#ifdef DEBUG_VLC
-    av_log(NULL,AV_LOG_DEBUG,"new table index=%d size=%d\n",
-           table_index, table_size);
-#endif
+    av_dlog(NULL, "new table index=%d size=%d\n", table_index, table_size);
     if (table_index < 0)
         return -1;
     table = &vlc->table[table_index];
@@ -180,9 +175,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
         n = codes[i].bits;
         code = codes[i].code;
         symbol = codes[i].symbol;
-#if defined(DEBUG_VLC) && 0
-        av_log(NULL,AV_LOG_DEBUG,"i=%d n=%d code=0x%x\n", i, n, code);
-#endif
+        av_dlog(NULL, "i=%d n=%d code=0x%x\n", i, n, code);
         if (n <= table_nb_bits) {
             /* no need to add another table */
             j = code >> (32 - table_nb_bits);
@@ -193,10 +186,7 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
                 inc = 1 << n;
             }
             for (k = 0; k < nb; k++) {
-#ifdef DEBUG_VLC
-                av_log(NULL, AV_LOG_DEBUG, "%4x: code=%d n=%d\n",
-                       j, i, n);
-#endif
+                av_dlog(NULL, "%4x: code=%d n=%d\n", j, i, n);
                 if (table[j][1] /*bits*/ != 0) {
                     av_log(NULL, AV_LOG_ERROR, "incorrect codes\n");
                     return -1;
@@ -226,10 +216,8 @@ static int build_table(VLC *vlc, int table_nb_bits, int nb_codes,
             subtable_bits = FFMIN(subtable_bits, table_nb_bits);
             j = (flags & INIT_VLC_LE) ? bitswap_32(code_prefix) >> (32 - table_nb_bits) : code_prefix;
             table[j][1] = -subtable_bits;
-#ifdef DEBUG_VLC
-            av_log(NULL,AV_LOG_DEBUG,"%4x: n=%d (subtable)\n",
-                   j, codes[i].bits + table_nb_bits);
-#endif
+            av_dlog(NULL, "%4x: n=%d (subtable)\n",
+                    j, codes[i].bits + table_nb_bits);
             index = build_table(vlc, subtable_bits, k-i, codes+i, flags);
             if (index < 0)
                 return -1;
@@ -291,9 +279,7 @@ int init_vlc_sparse(VLC *vlc, int nb_bits, int nb_codes,
         vlc->table_size = 0;
     }
 
-#ifdef DEBUG_VLC
-    av_log(NULL,AV_LOG_DEBUG,"build table nb_codes=%d\n", nb_codes);
-#endif
+    av_dlog(NULL, "build table nb_codes=%d\n", nb_codes);
 
     buf = av_malloc((nb_codes+1)*sizeof(VLCcode));
 
