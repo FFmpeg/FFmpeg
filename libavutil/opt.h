@@ -176,4 +176,9 @@ void av_opt_set_defaults2(void *s, int mask, int flags);
 int av_set_options_string(void *ctx, const char *opts,
                           const char *key_val_sep, const char *pairs_sep);
 
+/**
+ * Free all string and binary options in obj.
+ */
+void av_opt_free(void *obj);
+
 #endif /* AVUTIL_OPT_H */
