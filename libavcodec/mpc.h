@@ -34,8 +34,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "mpegaudio.h"
-
-#include "mpcdata.h"
+#include "mpegaudiodsp.h"
 
 #define BANDS            32
 #define SAMPLES_PER_BAND 36

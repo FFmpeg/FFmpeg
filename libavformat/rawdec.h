@@ -35,6 +35,7 @@ typedef struct FFRawVideoDemuxerContext {
     const AVClass *class;     /**< Class for private options. */
     char *video_size;         /**< String describing video size, set by a private option. */
     char *pixel_format;       /**< Set by a private option. */
+    char *framerate;          /**< String describing framerate, set by a private option. */
 } FFRawVideoDemuxerContext;
 
 extern const AVClass ff_rawaudio_demuxer_class;
@@ -58,6 +59,8 @@ AVInputFormat ff_ ## shortname ## _demuxer = {\
     .extensions     = ext,\
     .flags          = AVFMT_GENERIC_INDEX,\
     .value          = id,\
+    .priv_data_size = sizeof(FFRawVideoDemuxerContext),\
+    .priv_class     = &ff_rawvideo_demuxer_class,\
 };
 
 #endif /* AVFORMAT_RAWDEC_H */

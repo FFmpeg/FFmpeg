@@ -33,7 +33,6 @@
 #include "libavutil/audioconvert.h"
 
 #include "mpc.h"
-#include "mpcdata.h"
 #include "mpc8data.h"
 #include "mpc8huff.h"
 

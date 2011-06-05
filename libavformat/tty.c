@@ -73,21 +73,20 @@ static int read_header(AVFormatContext *avctx,
                        AVFormatParameters *ap)
 {
     TtyDemuxContext *s = avctx->priv_data;
-    int width = 0, height = 0, ret;
+    int width = 0, height = 0, ret = 0;
     AVStream *st = av_new_stream(avctx, 0);
-    if (!st)
-        return AVERROR(ENOMEM);
+
+    if (!st) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
+    }
     st->codec->codec_tag   = 0;
     st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id    = CODEC_ID_ANSI;
 
-    if (s->video_size) {
-        ret = av_parse_video_size(&width, &height, s->video_size);
-        av_freep(&s->video_size);
-        if (ret < 0) {
-            av_log (avctx, AV_LOG_ERROR, "Couldn't parse video size.\n");
-            return ret;
-        }
+    if (s->video_size && (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
+        av_log (avctx, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        goto fail;
     }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->width > 0)
@@ -121,7 +120,9 @@ static int read_header(AVFormatContext *avctx,
         avio_seek(avctx->pb, 0, SEEK_SET);
     }
 
-    return 0;
+fail:
+    av_freep(&s->video_size);
+    return ret;
 }
 
 static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
