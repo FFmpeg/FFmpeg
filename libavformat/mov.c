@@ -2143,9 +2143,6 @@ static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         goto free_and_return;
     atom.type = MKTAG('m','o','o','v');
     atom.size = moov_len;
-#ifdef DEBUG
-//    { int fd = open("/tmp/uncompheader.mov", O_WRONLY | O_CREAT); write(fd, moov_data, moov_len); close(fd); }
-#endif
     ret = mov_read_default(c, &ctx, atom);
 free_and_return:
     av_free(moov_data);
