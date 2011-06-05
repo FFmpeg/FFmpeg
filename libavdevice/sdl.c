@@ -204,8 +204,8 @@ static int sdl_write_packet(AVFormatContext *s, AVPacket *pkt)
 
 static const AVOption options[] = {
     { "window_title", "SDL window title",           OFFSET(window_title),  FF_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "icon_title",   "SDL iconified window title", OFFSET(icon_title)  ,  FF_OPT_TYPE_STRING, {.str = NULL },               0,  0, AV_OPT_FLAG_ENCODING_PARAM },
-    { "window_size",  "SDL window forced size",     OFFSET(window_size) ,  FF_OPT_TYPE_STRING, {.str = NULL },               0,  0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "icon_title",   "SDL iconified window title", OFFSET(icon_title)  ,  FF_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
+    { "window_size",  "SDL window forced size",     OFFSET(window_size) ,  FF_OPT_TYPE_STRING, {.str = NULL }, 0,  0, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
