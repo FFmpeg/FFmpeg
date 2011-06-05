@@ -6,11 +6,6 @@
 all: all-yes
 
 ifndef SUBDIR
-vpath %.c   $(SRC_DIR)
-vpath %.h   $(SRC_DIR)
-vpath %.S   $(SRC_DIR)
-vpath %.asm $(SRC_DIR)
-vpath %.v   $(SRC_DIR)
 
 ifndef V
 Q      = @
