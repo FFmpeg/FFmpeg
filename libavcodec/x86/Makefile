@@ -16,7 +16,8 @@ YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
                                           x86/h264_idct_10bit.o         \
                                           x86/h264_weight.o             \
 
-YASM-OBJS-$(CONFIG_H264PRED)           += x86/h264_intrapred.o
+YASM-OBJS-$(CONFIG_H264PRED)           += x86/h264_intrapred.o          \
+                                          x86/h264_intrapred_10bit.o
 MMX-OBJS-$(CONFIG_H264PRED)            += x86/h264_intrapred_init.o
 
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
