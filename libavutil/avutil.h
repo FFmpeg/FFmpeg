@@ -40,7 +40,7 @@
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 
 #define LIBAVUTIL_VERSION_MAJOR 51
-#define LIBAVUTIL_VERSION_MINOR  3
+#define LIBAVUTIL_VERSION_MINOR  4
 #define LIBAVUTIL_VERSION_MICRO  0
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
@@ -57,6 +57,9 @@
  * Those FF_API_* defines are not part of public API.
  * They may change, break or disappear at any time.
  */
+#ifndef FF_API_GET_BITS_PER_SAMPLE_FMT
+#define FF_API_GET_BITS_PER_SAMPLE_FMT (LIBAVUTIL_VERSION_MAJOR < 52)
+#endif
 
 /**
  * Return the LIBAVUTIL_VERSION_INT constant.
