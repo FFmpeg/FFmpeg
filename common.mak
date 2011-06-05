@@ -54,8 +54,6 @@ HOSTCFLAGS += $(IFLAGS)
 %.h:
 	@:
 
-.PHONY: all depend dep *clean install* uninstall* examples testprogs
-
 # Disable suffix rules.  Most of the builtin rules are suffix rules,
 # so this saves some time on slow systems.
 .SUFFIXES:

@@ -289,4 +289,5 @@ $(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 fate-list:
 	@printf '%s\n' $(sort $(FATE))
 
-.PHONY: documentation *test regtest-* alltools check config
+.PHONY: all alltools *clean check config documentation examples install*
+.PHONY: *test testprogs uninstall*
