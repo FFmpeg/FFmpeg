@@ -26,7 +26,6 @@
 
 //#define DEBUG
 //#define DEBUG_PACKET_CONTENTS
-//#define DEBUG_SAVE_IMAGES
 
 #define DVBSUB_PAGE_SEGMENT     0x10
 #define DVBSUB_REGION_SEGMENT   0x11
@@ -37,7 +36,7 @@
 
 #define cm (ff_cropTbl + MAX_NEG_CROP)
 
-#ifdef DEBUG_SAVE_IMAGES
+#ifdef DEBUG
 #undef fprintf
 #if 0
 static void png_save(const char *filename, uint8_t *bitmap, int w, int h,
@@ -1174,7 +1173,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
 }
 
 
-#ifdef DEBUG_SAVE_IMAGES
+#ifdef DEBUG
 static void save_display_set(DVBSubContext *ctx)
 {
     DVBSubRegion *region;
@@ -1387,7 +1386,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
 
     sub->num_rects = i;
 
-#ifdef DEBUG_SAVE_IMAGES
+#ifdef DEBUG
     save_display_set(ctx);
 #endif
 
