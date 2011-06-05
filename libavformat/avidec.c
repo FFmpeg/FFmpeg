@@ -1206,7 +1206,7 @@ static int avi_load_index(AVFormatContext *s)
     if (avio_seek(pb, avi->movi_end, SEEK_SET) < 0)
         goto the_end; // maybe truncated file
 #ifdef DEBUG_SEEK
-    printf("movi_end=0x%"PRIx64"\n", avi->movi_end);
+    av_log(s, AV_LOG_DEBUG, "movi_end=0x%"PRIx64"\n", avi->movi_end);
 #endif
     for(;;) {
         if (pb->eof_reached)
@@ -1214,7 +1214,7 @@ static int avi_load_index(AVFormatContext *s)
         tag = avio_rl32(pb);
         size = avio_rl32(pb);
 #ifdef DEBUG_SEEK
-        printf("tag=%c%c%c%c size=0x%x\n",
+        av_log(s, AV_LOG_DEBUG, "tag=%c%c%c%c size=0x%x\n",
                tag & 0xff,
                (tag >> 8) & 0xff,
                (tag >> 16) & 0xff,
