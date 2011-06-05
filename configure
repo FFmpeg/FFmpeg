@@ -106,7 +106,7 @@ Configuration options:
   --disable-lpc            disable LPC code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
-  --disable-vaapi          disable VAAPI code
+  --enable-vaapi           enable VAAPI code
   --disable-vdpau          disable VDPAU code
   --disable-dxva2          disable DXVA2 code
   --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
