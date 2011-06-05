@@ -1730,6 +1730,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     const int chrSrcSliceH= -((-srcSliceH) >> c->chrSrcVSubSample);
     int lastDstY;
     uint32_t *pal=c->pal_yuv;
+    int should_dither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat);
 
     /* vars which will change and which we need to store back in the context */
     int dstY= c->dstY;
@@ -1787,8 +1788,8 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         unsigned char *uDest=dst[1]+dstStride[1]*chrDstY;
         unsigned char *vDest=dst[2]+dstStride[2]*chrDstY;
         unsigned char *aDest=(CONFIG_SWSCALE_ALPHA && alpPixBuf) ? dst[3]+dstStride[3]*dstY : NULL;
-        const uint8_t *lumDither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat) ? dithers[7][dstY   &7] : flat64;
-        const uint8_t *chrDither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat) ? dithers[7][chrDstY&7] : flat64;
+        const uint8_t *lumDither= should_dither ? dithers[7][dstY   &7] : flat64;
+        const uint8_t *chrDither= should_dither ? dithers[7][chrDstY&7] : flat64;
 
         const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
         const int firstLumSrcY2= vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)];
