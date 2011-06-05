@@ -2366,7 +2366,8 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
             default: break;
             }
         } else {
-            c->yuv2yuv1     = RENAME(yuv2yuv1    );
+            int should_dither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat);
+            c->yuv2yuv1     = should_dither ? RENAME(yuv2yuv1_ar    ) : RENAME(yuv2yuv1    );
             c->yuv2yuvX     = RENAME(yuv2yuvX    );
             switch (c->dstFormat) {
             case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
