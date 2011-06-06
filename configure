@@ -3231,6 +3231,7 @@ if enabled source_path_used; then
         libavutil/Makefile
         libpostproc/Makefile
         libswscale/Makefile
+        tests/Makefile
     "
     map 'mkdir -p $v' $DIRS;
     map 'test -f "$source_path/$v" && $ln_s "$source_path/$v" $v' $FILES

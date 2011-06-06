@@ -91,7 +91,6 @@ tools/%.o: tools/%.c
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
 
 -include $(wildcard tools/*.d)
--include $(wildcard tests/*.d)
 
 VERSION_SH  = $(SRC_PATH_BARE)/version.sh
 GIT_LOG     = $(SRC_PATH_BARE)/.git/logs/HEAD
@@ -163,13 +162,7 @@ uninstall-data:
 uninstall-man:
 	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
-testclean:
-	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
-	$(RM) $(addprefix tests/,$(CLEANSUFFIXES))
-	$(RM) tests/seek_test$(EXESUF) tests/seek_test.o
-	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
-
-clean:: testclean
+clean::
 	$(RM) $(ALLPROGS)
 	$(RM) $(CLEANSUFFIXES)
 	$(RM) doc/*.html doc/*.pod doc/*.1
@@ -183,119 +176,9 @@ distclean::
 config:
 	$(SRC_PATH)/configure $(value LIBAV_CONFIGURATION)
 
-# regression tests
-
 check: test checkheaders
 
-fulltest test: codectest lavftest lavfitest seektest
-
-FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
-
-codectest: fate-codec
-lavftest:  fate-lavf
-lavfitest: fate-lavfi
-seektest:  fate-seek
-
-AREF = fate-acodec-aref
-VREF = fate-vsynth1-vref fate-vsynth2-vref
-REFS = $(AREF) $(VREF)
-
-$(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
-$(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
-
-ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
-	@echo
-	@echo "Unfortunately ffserver is broken and therefore its regression"
-	@echo "test fails randomly. Treat the results accordingly."
-	@echo
-	$(SRC_PATH)/tests/ffserver-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
-
-tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF)
-	@mkdir -p tests/vsynth1
-	$(M)./$< 'tests/vsynth1/'
-
-tests/vsynth2/00.pgm: tests/rotozoom$(HOSTEXESUF)
-	@mkdir -p tests/vsynth2
-	$(M)./$< 'tests/vsynth2/' $(SRC_PATH)/tests/lena.pnm
-
-tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
-	@mkdir -p tests/data
-	$(M)./$< $@
-
-tests/data/asynth1.sw tests/vsynth%/00.pgm: TAG = GEN
-
-tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
-	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
-
-tools/lavfi-showfiltfmts$(EXESUF): tools/lavfi-showfiltfmts.o $(FF_DEP_LIBS)
-	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
-
-include $(SRC_PATH_BARE)/tests/fate.mak
-include $(SRC_PATH_BARE)/tests/fate2.mak
-
-include $(SRC_PATH_BARE)/tests/fate/aac.mak
-include $(SRC_PATH_BARE)/tests/fate/als.mak
-include $(SRC_PATH_BARE)/tests/fate/fft.mak
-include $(SRC_PATH_BARE)/tests/fate/h264.mak
-include $(SRC_PATH_BARE)/tests/fate/mp3.mak
-include $(SRC_PATH_BARE)/tests/fate/vorbis.mak
-include $(SRC_PATH_BARE)/tests/fate/vp8.mak
-
-FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
-FATE_VSYNTH1 = $(VCODEC_TESTS:%=fate-vsynth1-%)
-FATE_VSYNTH2 = $(VCODEC_TESTS:%=fate-vsynth2-%)
-FATE_VCODEC  = $(FATE_VSYNTH1) $(FATE_VSYNTH2)
-FATE_LAVF    = $(LAVF_TESTS:%=fate-lavf-%)
-FATE_LAVFI   = $(LAVFI_TESTS:%=fate-lavfi-%)
-FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
-
-FATE = $(FATE_ACODEC)                                                   \
-       $(FATE_VCODEC)                                                   \
-       $(FATE_LAVF)                                                     \
-       $(FATE_LAVFI)                                                    \
-       $(FATE_SEEK)                                                     \
-
-$(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
-$(filter-out %-vref,$(FATE_VCODEC)): $(VREF)
-$(FATE_LAVF):   $(REFS)
-$(FATE_LAVFI):  $(REFS) tools/lavfi-showfiltfmts$(EXESUF)
-$(FATE_SEEK):   fate-codec fate-lavf tests/seek_test$(EXESUF)
-
-$(FATE_ACODEC):  CMD = codectest acodec
-$(FATE_VSYNTH1): CMD = codectest vsynth1
-$(FATE_VSYNTH2): CMD = codectest vsynth2
-$(FATE_LAVF):    CMD = lavftest
-$(FATE_LAVFI):   CMD = lavfitest
-$(FATE_SEEK):    CMD = seektest
-
-fate-codec:  fate-acodec fate-vcodec
-fate-acodec: $(FATE_ACODEC)
-fate-vcodec: $(FATE_VCODEC)
-fate-lavf:   $(FATE_LAVF)
-fate-lavfi:  $(FATE_LAVFI)
-fate-seek:   $(FATE_SEEK)
-
-ifdef SAMPLES
-FATE += $(FATE_TESTS)
-fate-rsync:
-	rsync -vaLW rsync://fate-suite.libav.org/fate-suite/ $(SAMPLES)
-else
-fate-rsync:
-	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
-$(FATE_TESTS):
-	@echo "SAMPLES not specified, cannot run FATE"
-endif
-
-FATE_UTILS = base64 tiny_psnr
-
-fate: $(FATE)
-
-$(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
-	@echo "TEST    $(@:fate-%=%)"
-	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)'
-
-fate-list:
-	@printf '%s\n' $(sort $(FATE))
+include tests/Makefile
 
 .PHONY: all alltools *clean check config documentation examples install*
-.PHONY: *test testprogs uninstall*
+.PHONY: testprogs uninstall*
