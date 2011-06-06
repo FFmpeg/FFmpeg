@@ -151,8 +151,6 @@ static int biquad_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
     // during filtering, the delay state will include the gain multiplication
     c->cx[0] = lrintf(x0 / c->gain);
     c->cx[1] = lrintf(x1 / c->gain);
-    c->cy[0] /= c->gain;
-    c->cy[1] /= c->gain;
 
     return 0;
 }
