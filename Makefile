@@ -78,7 +78,7 @@ ffplay.o: CFLAGS += $(SDL_CFLAGS)
 ffplay$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
 ffserver$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
-%$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
+$(PROGS): %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 alltools: $(TOOLS)
