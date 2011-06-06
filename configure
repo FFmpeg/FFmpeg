@@ -191,7 +191,6 @@ External library support:
   --enable-zlib            enable zlib [autodetect]
 
 Advanced options (experts only):
-  --source-path=PATH       path to source code [$source_path]
   --cross-prefix=PREFIX    use PREFIX for compilation tools [$cross_prefix]
   --enable-cross-compile   assume a cross-compiler is used
   --sysroot=PATH           root of cross-build tree
@@ -1184,7 +1183,6 @@ CMDLINE_SET="
     nm
     pkg_config
     samples
-    source_path
     sysinclude
     sysroot
     target_exec
