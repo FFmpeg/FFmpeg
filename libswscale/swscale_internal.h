@@ -57,6 +57,41 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t* src[],
                        int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t* dst[], int dstStride[]);
 
+typedef void (*yuv2planar1_fn) (struct SwsContext *c,
+                                const int16_t *lumSrc, const int16_t *chrUSrc,
+                                const int16_t *chrVSrc, const int16_t *alpSrc,
+                                uint8_t *dest,
+                                uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
+                                int dstW, int chrDstW);
+typedef void (*yuv2planarX_fn) (struct SwsContext *c,
+                                const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                const int16_t *chrFilter, const int16_t **chrUSrc,
+                                const int16_t **chrVSrc, int chrFilterSize,
+                                const int16_t **alpSrc,
+                                uint8_t *dest,
+                                uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
+                                int dstW, int chrDstW);
+typedef void (*yuv2packed1_fn) (struct SwsContext *c,
+                                const uint16_t *buf0,
+                                const uint16_t *ubuf0, const uint16_t *ubuf1,
+                                const uint16_t *vbuf0, const uint16_t *vbuf1,
+                                const uint16_t *abuf0,
+                                uint8_t *dest,
+                                int dstW, int uvalpha, int dstFormat, int flags, int y);
+typedef void (*yuv2packed2_fn) (struct SwsContext *c,
+                                const uint16_t *buf0, const uint16_t *buf1,
+                                const uint16_t *ubuf0, const uint16_t *ubuf1,
+                                const uint16_t *vbuf0, const uint16_t *vbuf1,
+                                const uint16_t *abuf0, const uint16_t *abuf1,
+                                uint8_t *dest,
+                                int dstW, int yalpha, int uvalpha, int y);
+typedef void (*yuv2packedX_fn) (struct SwsContext *c,
+                                const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                const int16_t *chrFilter, const int16_t **chrUSrc,
+                                const int16_t **chrVSrc, int chrFilterSize,
+                                const int16_t **alpSrc, uint8_t *dest,
+                                int dstW, int dstY);
+
 /* This struct should be aligned on at least a 32-byte boundary. */
 typedef struct SwsContext {
     /**
@@ -250,40 +285,11 @@ typedef struct SwsContext {
 #endif
 
     /* function pointers for swScale() */
-    void (*yuv2yuv1   )(struct SwsContext *c,
-                        const int16_t *lumSrc, const int16_t *chrUSrc,
-                        const int16_t *chrVSrc, const int16_t *alpSrc,
-                        uint8_t *dest,
-                        uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
-                        int dstW, int chrDstW);
-    void (*yuv2yuvX   )(struct SwsContext *c,
-                        const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                        const int16_t *chrFilter, const int16_t **chrUSrc,
-                        const int16_t **chrVSrc, int chrFilterSize,
-                        const int16_t **alpSrc,
-                        uint8_t *dest,
-                        uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
-                        int dstW, int chrDstW);
-    void (*yuv2packed1)(struct SwsContext *c,
-                        const uint16_t *buf0,
-                        const uint16_t *ubuf0, const uint16_t *ubuf1,
-                        const uint16_t *vbuf0, const uint16_t *vbuf1,
-                        const uint16_t *abuf0,
-                        uint8_t *dest,
-                        int dstW, int uvalpha, int dstFormat, int flags, int y);
-    void (*yuv2packed2)(struct SwsContext *c,
-                        const uint16_t *buf0, const uint16_t *buf1,
-                        const uint16_t *ubuf0, const uint16_t *ubuf1,
-                        const uint16_t *vbuf0, const uint16_t *vbuf1,
-                        const uint16_t *abuf0, const uint16_t *abuf1,
-                        uint8_t *dest,
-                        int dstW, int yalpha, int uvalpha, int y);
-    void (*yuv2packedX)(struct SwsContext *c,
-                        const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                        const int16_t *chrFilter, const int16_t **chrUSrc,
-                        const int16_t **chrVSrc, int chrFilterSize,
-                        const int16_t **alpSrc, uint8_t *dest,
-                        int dstW, int dstY);
+    yuv2planar1_fn yuv2yuv1;
+    yuv2planarX_fn yuv2yuvX;
+    yuv2packed1_fn yuv2packed1;
+    yuv2packed2_fn yuv2packed2;
+    yuv2packedX_fn yuv2packedX;
 
     void (*lumToYV12)(uint8_t *dst, const uint8_t *src,
                       int width, uint32_t *pal); ///< Unscaled conversion of luma plane to YV12 for horizontal scaler.
