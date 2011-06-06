@@ -335,8 +335,7 @@ static int resolve_host(struct in_addr *sin_addr, const char *hostname)
     if (!ff_inet_aton(hostname, sin_addr)) {
 #if HAVE_GETADDRINFO
         struct addrinfo *ai, *cur;
-        struct addrinfo hints;
-        memset(&hints, 0, sizeof(hints));
+        struct addrinfo hints = { 0 };
         hints.ai_family = AF_INET;
         if (getaddrinfo(hostname, NULL, &hints, &ai))
             return -1;
@@ -2822,7 +2821,7 @@ static int rtsp_parse_request(HTTPContext *c)
     char protocol[32];
     char line[1024];
     int len;
-    RTSPMessageHeader header1, *header = &header1;
+    RTSPMessageHeader header1 = { 0 }, *header = &header1;
 
     c->buffer_ptr[0] = '\0';
     p = c->buffer;
@@ -2848,7 +2847,6 @@ static int rtsp_parse_request(HTTPContext *c)
     }
 
     /* parse each header line */
-    memset(header, 0, sizeof(*header));
     /* skip to next line */
     while (*p != '\n' && *p != '\0')
         p++;
@@ -4647,7 +4645,7 @@ static const OptionDef options[] = {
 
 int main(int argc, char **argv)
 {
-    struct sigaction sigact;
+    struct sigaction sigact = { { 0 } };
 
     parse_loglevel(argc, argv, options);
     av_register_all();
@@ -4665,7 +4663,6 @@ int main(int argc, char **argv)
 
     av_lfg_init(&random_state, av_get_random_seed());
 
-    memset(&sigact, 0, sizeof(sigact));
     sigact.sa_handler = handle_child_exit;
     sigact.sa_flags = SA_NOCLDSTOP | SA_RESTART;
     sigaction(SIGCHLD, &sigact, 0);

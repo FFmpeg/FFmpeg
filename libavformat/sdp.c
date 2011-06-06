@@ -88,7 +88,7 @@ static void sdp_write_header(char *buff, int size, struct sdp_session_level *s)
 static int resolve_destination(char *dest_addr, int size, char *type,
                                int type_size)
 {
-    struct addrinfo hints, *ai;
+    struct addrinfo hints = { 0 }, *ai;
     int is_multicast;
 
     av_strlcpy(type, "IP4", type_size);
@@ -98,7 +98,6 @@ static int resolve_destination(char *dest_addr, int size, char *type,
     /* Resolve the destination, since it must be written
      * as a numeric IP address in the SDP. */
 
-    memset(&hints, 0, sizeof(hints));
     if (getaddrinfo(dest_addr, NULL, &hints, &ai))
         return 0;
     getnameinfo(ai->ai_addr, ai->ai_addrlen, dest_addr, size,
@@ -581,12 +580,11 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
 int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
 {
     AVDictionaryEntry *title = av_dict_get(ac[0]->metadata, "title", NULL, 0);
-    struct sdp_session_level s;
+    struct sdp_session_level s = { 0 };
     int i, j, port, ttl, is_multicast;
     char dst[32], dst_type[5];
 
     memset(buf, 0, size);
-    memset(&s, 0, sizeof(struct sdp_session_level));
     s.user = "-";
     s.src_addr = "127.0.0.1";    /* FIXME: Properly set this */
     s.src_type = "IP4";

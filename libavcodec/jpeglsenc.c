@@ -210,8 +210,7 @@ static inline void ls_encode_line(JLSState *state, PutBitContext *pb, void *last
 
 static void ls_store_lse(JLSState *state, PutBitContext *pb){
     /* Test if we have default params and don't need to store LSE */
-    JLSState state2;
-    memset(&state2, 0, sizeof(JLSState));
+    JLSState state2 = { 0 };
     state2.bpp = state->bpp;
     state2.near = state->near;
     ff_jpegls_reset_coding_parameters(&state2, 1);

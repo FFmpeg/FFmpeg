@@ -131,11 +131,11 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     uint16_t *intra, *inter;
     int fd;
 
-    xvid_plugin_single_t single;
-    struct xvid_ff_pass1 rc2pass1;
-    xvid_plugin_2pass2_t rc2pass2;
-    xvid_gbl_init_t xvid_gbl_init;
-    xvid_enc_create_t xvid_enc_create;
+    xvid_plugin_single_t single       = { 0 };
+    struct xvid_ff_pass1 rc2pass1     = { 0 };
+    xvid_plugin_2pass2_t rc2pass2     = { 0 };
+    xvid_gbl_init_t xvid_gbl_init     = { 0 };
+    xvid_enc_create_t xvid_enc_create = { 0 };
     xvid_enc_plugin_t plugins[7];
 
     /* Bring in VOP flags from avconv command-line */
@@ -205,7 +205,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
             x->me_flags |= XVID_ME_QUARTERPELREFINE8;
     }
 
-    memset(&xvid_gbl_init, 0, sizeof(xvid_gbl_init));
     xvid_gbl_init.version = XVID_VERSION;
     xvid_gbl_init.debug = 0;
 
@@ -226,7 +225,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_global(NULL, XVID_GBL_INIT, &xvid_gbl_init, NULL);
 
     /* Create the encoder reference */
-    memset(&xvid_enc_create, 0, sizeof(xvid_enc_create));
     xvid_enc_create.version = XVID_VERSION;
 
     /* Store the desired frame size */
@@ -251,7 +249,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     x->twopassfile = NULL;
 
     if( xvid_flags & CODEC_FLAG_PASS1 ) {
-        memset(&rc2pass1, 0, sizeof(struct xvid_ff_pass1));
         rc2pass1.version = XVID_VERSION;
         rc2pass1.context = x;
         x->twopassbuffer = av_malloc(BUFFER_SIZE);
@@ -267,7 +264,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         plugins[xvid_enc_create.num_plugins].param = &rc2pass1;
         xvid_enc_create.num_plugins++;
     } else if( xvid_flags & CODEC_FLAG_PASS2 ) {
-        memset(&rc2pass2, 0, sizeof(xvid_plugin_2pass2_t));
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
@@ -299,7 +295,6 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         xvid_enc_create.num_plugins++;
     } else if( !(xvid_flags & CODEC_FLAG_QSCALE) ) {
         /* Single Pass Bitrate Control! */
-        memset(&single, 0, sizeof(xvid_plugin_single_t));
         single.version = XVID_VERSION;
         single.bitrate = avctx->bit_rate;
 
@@ -419,8 +414,8 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     int mb_width   = (avctx->width  + 15) / 16;
     int mb_height  = (avctx->height + 15) / 16;
 
-    xvid_enc_frame_t xvid_enc_frame;
-    xvid_enc_stats_t xvid_enc_stats;
+    xvid_enc_frame_t xvid_enc_frame = { 0 };
+    xvid_enc_stats_t xvid_enc_stats = { 0 };
 
     if (!user_packet &&
         (ret = av_new_packet(pkt, mb_width*mb_height*MAX_MB_BYTES + FF_MIN_BUFFER_SIZE)) < 0) {
@@ -429,9 +424,7 @@ static int xvid_encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     }
 
     /* Start setting up the frame */
-    memset(&xvid_enc_frame, 0, sizeof(xvid_enc_frame));
     xvid_enc_frame.version = XVID_VERSION;
-    memset(&xvid_enc_stats, 0, sizeof(xvid_enc_stats));
     xvid_enc_stats.version = XVID_VERSION;
     *p = *picture;
 

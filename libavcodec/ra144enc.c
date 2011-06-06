@@ -342,7 +342,7 @@ static void ra144_encode_subblock(RA144Context *ractx,
                                   const int16_t *lpc_coefs, unsigned int rms,
                                   PutBitContext *pb)
 {
-    float data[BLOCKSIZE], work[LPC_ORDER + BLOCKSIZE];
+    float data[BLOCKSIZE] = { 0 }, work[LPC_ORDER + BLOCKSIZE];
     float coefs[LPC_ORDER];
     float zero[BLOCKSIZE], cba[BLOCKSIZE], cb1[BLOCKSIZE], cb2[BLOCKSIZE];
     int16_t cba_vect[BLOCKSIZE];
@@ -360,7 +360,6 @@ static void ra144_encode_subblock(RA144Context *ractx,
      * Calculate the zero-input response of the LPC filter and subtract it from
      * input data.
      */
-    memset(data, 0, sizeof(data));
     ff_celp_lp_synthesis_filterf(work + LPC_ORDER, coefs, data, BLOCKSIZE,
                                  LPC_ORDER);
     for (i = 0; i < BLOCKSIZE; i++) {

@@ -152,10 +152,8 @@ static void spatial_compensation_0(uint8_t *src , uint8_t *dst, int linesize){
     int x,y;
     unsigned int p;//power divided by 2
     int a;
-    uint16_t left_sum[2][8];
-    uint16_t  top_sum[2][8];
-    memset(left_sum,0,2*8*sizeof(uint16_t));
-    memset( top_sum,0,2*8*sizeof(uint16_t));
+    uint16_t left_sum[2][8] = { { 0 } };
+    uint16_t  top_sum[2][8] = { { 0 } };
 
     for(i=0;i<8;i++){
         a=src[area2+7-i]<<4;

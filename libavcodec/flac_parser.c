@@ -573,8 +573,7 @@ static int flac_parse(AVCodecParserContext *s, AVCodecContext *avctx,
             av_fifo_generic_write(fpc->fifo_buf, (void*) read_start,
                                   read_end - read_start, NULL);
         } else {
-            int8_t pad[MAX_FRAME_HEADER_SIZE];
-            memset(pad, 0, sizeof(pad));
+            int8_t pad[MAX_FRAME_HEADER_SIZE] = { 0 };
             av_fifo_generic_write(fpc->fifo_buf, (void*) pad, sizeof(pad), NULL);
         }
 

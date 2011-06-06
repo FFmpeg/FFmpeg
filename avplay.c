@@ -1371,7 +1371,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
 
     /* if the frame is not skipped, then display it */
     if (vp->bmp) {
-        AVPicture pict;
+        AVPicture pict = { { 0 } };
 #if CONFIG_AVFILTER
         if (vp->picref)
             avfilter_unref_buffer(vp->picref);
@@ -1381,7 +1381,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         /* get a pointer on the bitmap */
         SDL_LockYUVOverlay (vp->bmp);
 
-        memset(&pict, 0, sizeof(AVPicture));
         pict.data[0] = vp->bmp->pixels[0];
         pict.data[1] = vp->bmp->pixels[2];
         pict.data[2] = vp->bmp->pixels[1];

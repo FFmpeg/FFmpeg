@@ -1424,9 +1424,8 @@ static inline int bidir_refine(MpegEncContext * s, int mb_x, int mb_y)
 #define HASH(fx,fy,bx,by) ((fx)+17*(fy)+63*(bx)+117*(by))
 #define HASH8(fx,fy,bx,by) ((uint8_t)HASH(fx,fy,bx,by))
     int hashidx= HASH(motion_fx,motion_fy, motion_bx, motion_by);
-    uint8_t map[256];
+    uint8_t map[256] = { 0 };
 
-    memset(map,0,sizeof(map));
     map[hashidx&255] = 1;
 
     fbmin= check_bidir_mv(s, motion_fx, motion_fy,
