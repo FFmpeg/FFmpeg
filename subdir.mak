@@ -1,4 +1,4 @@
-SRC_DIR := $(SRC_PATH_BARE)/lib$(NAME)
+SRC_DIR := $(SRC_PATH)/lib$(NAME)
 
 include $(SUBDIR)../common.mak
 

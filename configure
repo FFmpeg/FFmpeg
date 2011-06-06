@@ -1688,7 +1688,7 @@ DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -MM'
 
 # find source path
 if test -f configure; then
-    source_path="$(pwd)"
+    source_path=.
     disable source_path_used
 else
     source_path=$(cd $(dirname "$0"); pwd)
@@ -3257,8 +3257,7 @@ INCDIR=\$(DESTDIR)$incdir
 BINDIR=\$(DESTDIR)$bindir
 DATADIR=\$(DESTDIR)$datadir
 MANDIR=\$(DESTDIR)$mandir
-SRC_PATH="$source_path"
-SRC_PATH_BARE=$source_path
+SRC_PATH=$source_path
 CC_IDENT=$cc_ident
 ARCH=$arch
 CC=$cc

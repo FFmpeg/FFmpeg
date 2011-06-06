@@ -1,13 +1,11 @@
 include config.mak
 
-SRC_DIR = $(SRC_PATH_BARE)
-
-vpath %.c   $(SRC_DIR)
-vpath %.h   $(SRC_DIR)
-vpath %.S   $(SRC_DIR)
-vpath %.asm $(SRC_DIR)
-vpath %.v   $(SRC_DIR)
-vpath %.texi $(SRC_PATH_BARE)
+vpath %.c    $(SRC_PATH)
+vpath %.h    $(SRC_PATH)
+vpath %.S    $(SRC_PATH)
+vpath %.asm  $(SRC_PATH)
+vpath %.v    $(SRC_PATH)
+vpath %.texi $(SRC_PATH)
 
 ifndef V
 Q      = @
@@ -19,7 +17,7 @@ M      = @$(call ECHO,$(TAG),$@);
 $(foreach VAR,$(BRIEF), \
     $(eval override $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
 $(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
-$(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_DIR)/%=%)); $(INSTALL))
+$(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_PATH)/%=%)); $(INSTALL))
 endif
 
 IFLAGS     := -I. -I$(SRC_PATH)
@@ -70,7 +68,7 @@ FFLIBS-$(CONFIG_SWSCALE)  += swscale
 
 FFLIBS := avutil
 
-DATA_FILES := $(wildcard $(SRC_DIR)/ffpresets/*.ffpreset)
+DATA_FILES := $(wildcard $(SRC_PATH)/ffpresets/*.ffpreset)
 
 SKIPHEADERS = cmdutils_common_opts.h
 
@@ -83,7 +81,7 @@ FF_DEP_LIBS  := $(DEP_LIBS)
 all: $(FF_DEP_LIBS) $(PROGS)
 
 config.h: .config
-.config: $(wildcard $(FFLIBS:%=$(SRC_DIR)/lib%/all*.c))
+.config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
 	@-tput bold 2>/dev/null
 	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
@@ -122,8 +120,8 @@ tools/%.o: tools/%.c
 
 -include $(wildcard tools/*.d)
 
-VERSION_SH  = $(SRC_PATH_BARE)/version.sh
-GIT_LOG     = $(SRC_PATH_BARE)/.git/logs/HEAD
+VERSION_SH  = $(SRC_PATH)/version.sh
+GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
 .version: M=@

@@ -41,16 +41,16 @@ tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 tools/lavfi-showfiltfmts$(EXESUF): tools/lavfi-showfiltfmts.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-include $(SRC_PATH_BARE)/tests/fate.mak
-include $(SRC_PATH_BARE)/tests/fate2.mak
+include $(SRC_PATH)/tests/fate.mak
+include $(SRC_PATH)/tests/fate2.mak
 
-include $(SRC_PATH_BARE)/tests/fate/aac.mak
-include $(SRC_PATH_BARE)/tests/fate/als.mak
-include $(SRC_PATH_BARE)/tests/fate/fft.mak
-include $(SRC_PATH_BARE)/tests/fate/h264.mak
-include $(SRC_PATH_BARE)/tests/fate/mp3.mak
-include $(SRC_PATH_BARE)/tests/fate/vorbis.mak
-include $(SRC_PATH_BARE)/tests/fate/vp8.mak
+include $(SRC_PATH)/tests/fate/aac.mak
+include $(SRC_PATH)/tests/fate/als.mak
+include $(SRC_PATH)/tests/fate/fft.mak
+include $(SRC_PATH)/tests/fate/h264.mak
+include $(SRC_PATH)/tests/fate/mp3.mak
+include $(SRC_PATH)/tests/fate/vorbis.mak
+include $(SRC_PATH)/tests/fate/vp8.mak
 
 FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
 FATE_VSYNTH1 = $(VCODEC_TESTS:%=fate-vsynth1-%)
