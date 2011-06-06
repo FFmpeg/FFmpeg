@@ -22,7 +22,6 @@
 #ifndef AVUTIL_PIXDESC_H
 #define AVUTIL_PIXDESC_H
 
-#include "pixfmt.h"
 #include <inttypes.h>
 #include "pixfmt.h"
 
