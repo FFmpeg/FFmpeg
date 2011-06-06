@@ -979,93 +979,58 @@ static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, 
     }
 }
 
-static void rgb48ToY_c(uint8_t *dst, const uint8_t *src, int width,
-                       uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int r = src[i*6+0];
-        int g = src[i*6+2];
-        int b = src[i*6+4];
-
-        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-    }
+#define rgb48funcs(LE_BE, rfunc, compA, compB, compC) \
+static void compA ## compB ## compC ## 48 ## LE_BE ## ToY_c( \
+                       uint8_t *dst, const uint8_t *src, int width, \
+                       uint32_t *unused) \
+{ \
+    int i; \
+    for (i = 0; i < width; i++) { \
+        int compA = rfunc(&src[i*6+0]) >> 8; \
+        int compB = rfunc(&src[i*6+2]) >> 8; \
+        int compC = rfunc(&src[i*6+4]) >> 8; \
+ \
+        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT; \
+    } \
+} \
+ \
+static void compA ## compB ## compC ## 48 ## LE_BE ## ToUV_c( \
+                        uint8_t *dstU, uint8_t *dstV, \
+                        const uint8_t *src1, const uint8_t *src2, \
+                        int width, uint32_t *unused) \
+{ \
+    int i; \
+    assert(src1==src2); \
+    for (i = 0; i < width; i++) { \
+        int compA = rfunc(&src1[6*i + 0]) >> 8; \
+        int compB = rfunc(&src1[6*i + 2]) >> 8; \
+        int compC = rfunc(&src1[6*i + 4]) >> 8; \
+ \
+        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT; \
+        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT; \
+    } \
+} \
+ \
+static void compA ## compB ## compC ## 48 ## LE_BE ## ToUV_half_c( \
+                            uint8_t *dstU, uint8_t *dstV, \
+                            const uint8_t *src1, const uint8_t *src2, \
+                            int width, uint32_t *unused) \
+{ \
+    int i; \
+    assert(src1==src2); \
+    for (i = 0; i < width; i++) { \
+        int compA = (rfunc(&src1[12*i + 0]) >> 8) + (rfunc(&src1[12*i + 6]) >> 8); \
+        int compB = (rfunc(&src1[12*i + 2]) >> 8) + (rfunc(&src1[12*i + 8]) >> 8); \
+        int compC = (rfunc(&src1[12*i + 4]) >> 8) + (rfunc(&src1[12*i + 10]) >> 8); \
+ \
+        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1); \
+        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1); \
+    } \
 }
-
-static void rgb48ToUV_c(uint8_t *dstU, uint8_t *dstV,
-                        const uint8_t *src1, const uint8_t *src2,
-                        int width, uint32_t *unused)
-{
-    int i;
-    assert(src1==src2);
-    for (i = 0; i < width; i++) {
-        int r = src1[6*i + 0];
-        int g = src1[6*i + 2];
-        int b = src1[6*i + 4];
-
-        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-    }
-}
-
-static void rgb48ToUV_half_c(uint8_t *dstU, uint8_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
-                             int width, uint32_t *unused)
-{
-    int i;
-    assert(src1==src2);
-    for (i = 0; i < width; i++) {
-        int r= src1[12*i + 0] + src1[12*i + 6];
-        int g= src1[12*i + 2] + src1[12*i + 8];
-        int b= src1[12*i + 4] + src1[12*i + 10];
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
-    }
-}
-
-static void bgr48ToY_c(uint8_t *dst, const uint8_t *src, int width,
-                       uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int b = src[i*6+0];
-        int g = src[i*6+2];
-        int r = src[i*6+4];
-
-        dst[i] = (RY*r + GY*g + BY*b + (33<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-    }
-}
-
-static void bgr48ToUV_c(uint8_t *dstU, uint8_t *dstV,
-                        const uint8_t *src1, const uint8_t *src2,
-                        int width, uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int b = src1[6*i + 0];
-        int g = src1[6*i + 2];
-        int r = src1[6*i + 4];
-
-        dstU[i] = (RU*r + GU*g + BU*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-        dstV[i] = (RV*r + GV*g + BV*b + (257<<(RGB2YUV_SHIFT-1))) >> RGB2YUV_SHIFT;
-    }
-}
-
-static void bgr48ToUV_half_c(uint8_t *dstU, uint8_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
-                             int width, uint32_t *unused)
-{
-    int i;
-    for (i = 0; i < width; i++) {
-        int b= src1[12*i + 0] + src1[12*i + 6];
-        int g= src1[12*i + 2] + src1[12*i + 8];
-        int r= src1[12*i + 4] + src1[12*i + 10];
-
-        dstU[i]= (RU*r + GU*g + BU*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
-        dstV[i]= (RV*r + GV*g + BV*b + (257<<RGB2YUV_SHIFT)) >> (RGB2YUV_SHIFT+1);
-    }
-}
+rgb48funcs(LE, AV_RL16, r, g, b);
+rgb48funcs(BE, AV_RB16, r, g, b);
+rgb48funcs(LE, AV_RL16, b, g, r);
+rgb48funcs(BE, AV_RB16, b, g, r);
 
 #define BGR2Y(type, name, shr, shg, shb, maskr, maskg, maskb, RY, GY, BY, S)\
 static void name ## _c(uint8_t *dst, const uint8_t *src, \
@@ -1095,6 +1060,14 @@ static void abgrToA_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *unu
     int i;
     for (i=0; i<width; i++) {
         dst[i]= src[4*i];
+    }
+}
+
+static void rgbaToA_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
+{
+    int i;
+    for (i=0; i<width; i++) {
+        dst[i]= src[4*i+3];
     }
 }
 
@@ -1532,8 +1505,6 @@ static inline void hyscale(SwsContext *c, uint16_t *dst, int dstWidth,
     void (*toYV12)(uint8_t *, const uint8_t *, int, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
     void (*convertRange)(uint16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
 
-    src += isAlpha ? c->alpSrcOffset : c->lumSrcOffset;
-
     if (toYV12) {
         toYV12(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
@@ -1570,10 +1541,6 @@ static inline void hcscale(SwsContext *c, uint16_t *dst1, uint16_t *dst2, int ds
                            const int16_t *hChrFilterPos, int hChrFilterSize,
                            uint8_t *formatConvBuffer, uint32_t *pal)
 {
-
-    src1 += c->chrSrcOffset;
-    src2 += c->chrSrcOffset;
-
     if (c->chrToYV12) {
         uint8_t *buf2 = formatConvBuffer + FFALIGN(srcW, 16);
         c->chrToYV12(formatConvBuffer, buf2, src1, src2, srcW, pal);
@@ -1969,10 +1936,10 @@ static void sws_init_swScale_c(SwsContext *c)
     }
     if (c->chrSrcHSubSample) {
         switch(srcFormat) {
-        case PIX_FMT_RGB48BE:
-        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48ToUV_half_c; break;
-        case PIX_FMT_BGR48BE:
-        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48ToUV_half_c; break;
+        case PIX_FMT_RGB48BE: c->chrToYV12 = rgb48BEToUV_half_c; break;
+        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48LEToUV_half_c; break;
+        case PIX_FMT_BGR48BE: c->chrToYV12 = bgr48BEToUV_half_c; break;
+        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48LEToUV_half_c; break;
         case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV_half_c;  break;
         case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV_half_c; break;
         case PIX_FMT_BGR24  : c->chrToYV12 = bgr24ToUV_half_c; break;
@@ -1986,10 +1953,10 @@ static void sws_init_swScale_c(SwsContext *c)
         }
     } else {
         switch(srcFormat) {
-        case PIX_FMT_RGB48BE:
-        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48ToUV_c; break;
-        case PIX_FMT_BGR48BE:
-        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48ToUV_c; break;
+        case PIX_FMT_RGB48BE: c->chrToYV12 = rgb48BEToUV_c; break;
+        case PIX_FMT_RGB48LE: c->chrToYV12 = rgb48LEToUV_c; break;
+        case PIX_FMT_BGR48BE: c->chrToYV12 = bgr48BEToUV_c; break;
+        case PIX_FMT_BGR48LE: c->chrToYV12 = bgr48LEToUV_c; break;
         case PIX_FMT_RGB32  : c->chrToYV12 = bgr32ToUV_c;  break;
         case PIX_FMT_RGB32_1: c->chrToYV12 = bgr321ToUV_c; break;
         case PIX_FMT_BGR24  : c->chrToYV12 = bgr24ToUV_c; break;
@@ -2038,35 +2005,19 @@ static void sws_init_swScale_c(SwsContext *c)
     case PIX_FMT_RGB32_1: c->lumToYV12 = bgr321ToY_c; break;
     case PIX_FMT_BGR32  : c->lumToYV12 = rgb32ToY_c;  break;
     case PIX_FMT_BGR32_1: c->lumToYV12 = rgb321ToY_c; break;
-    case PIX_FMT_RGB48BE:
-    case PIX_FMT_RGB48LE: c->lumToYV12 = rgb48ToY_c; break;
-    case PIX_FMT_BGR48BE:
-    case PIX_FMT_BGR48LE: c->lumToYV12 = bgr48ToY_c; break;
+    case PIX_FMT_RGB48BE: c->lumToYV12 = rgb48BEToY_c; break;
+    case PIX_FMT_RGB48LE: c->lumToYV12 = rgb48LEToY_c; break;
+    case PIX_FMT_BGR48BE: c->lumToYV12 = bgr48BEToY_c; break;
+    case PIX_FMT_BGR48LE: c->lumToYV12 = bgr48LEToY_c; break;
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {
-        case PIX_FMT_RGB32  :
-        case PIX_FMT_RGB32_1:
-        case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->alpToYV12 = abgrToA_c; break;
-        case PIX_FMT_Y400A  : c->alpToYV12 = yuy2ToY_c; break;
+        case PIX_FMT_BGRA:
+        case PIX_FMT_RGBA:  c->alpToYV12 = rgbaToA_c; break;
+        case PIX_FMT_ABGR:
+        case PIX_FMT_ARGB:  c->alpToYV12 = abgrToA_c; break;
+        case PIX_FMT_Y400A: c->alpToYV12 = uyvyToY_c; break;
         }
-    }
-
-    switch (srcFormat) {
-    case PIX_FMT_Y400A  :
-        c->alpSrcOffset = 1;
-        break;
-    case PIX_FMT_RGB32  :
-    case PIX_FMT_BGR32  :
-        c->alpSrcOffset = 3;
-        break;
-    case PIX_FMT_RGB48LE:
-    case PIX_FMT_BGR48LE:
-        c->lumSrcOffset = 1;
-        c->chrSrcOffset = 1;
-        c->alpSrcOffset = 1;
-        break;
     }
 
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
