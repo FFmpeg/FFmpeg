@@ -1562,6 +1562,37 @@ static inline void hcscale(SwsContext *c, uint16_t *dst1, uint16_t *dst2, int ds
         c->chrConvertRange(dst1, dst2, dstWidth);
 }
 
+static av_always_inline void
+find_c_packed_planar_out_funcs(SwsContext *c,
+                               yuv2planar1_fn *yuv2yuv1,    yuv2planarX_fn *yuv2yuvX,
+                               yuv2packed1_fn *yuv2packed1, yuv2packed2_fn *yuv2packed2,
+                               yuv2packedX_fn *yuv2packedX)
+{
+    enum PixelFormat dstFormat = c->dstFormat;
+
+    if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
+        *yuv2yuvX     = yuv2nv12X_c;
+    } else if (is16BPS(dstFormat)) {
+        *yuv2yuvX     = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
+    } else if (is9_OR_10BPS(dstFormat)) {
+        if (dstFormat == PIX_FMT_YUV420P9BE || dstFormat == PIX_FMT_YUV420P9LE) {
+            *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX9BE_c :  yuv2yuvX9LE_c;
+        } else {
+            *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX10BE_c : yuv2yuvX10LE_c;
+        }
+    } else {
+        *yuv2yuv1     = yuv2yuv1_c;
+        *yuv2yuvX     = yuv2yuvX_c;
+    }
+    if(c->flags & SWS_FULL_CHR_H_INT) {
+        *yuv2packedX = yuv2rgbX_c_full;
+    } else {
+        *yuv2packed1  = yuv2packed1_c;
+        *yuv2packed2  = yuv2packed2_c;
+        *yuv2packedX  = yuv2packedX_c;
+    }
+}
+
 #define DEBUG_SWSCALE_BUFFERS 0
 #define DEBUG_BUFFERS(...) if (DEBUG_SWSCALE_BUFFERS) av_log(c, AV_LOG_DEBUG, __VA_ARGS__)
 
@@ -1605,6 +1636,11 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     const int chrSrcSliceH= -((-srcSliceH) >> c->chrSrcVSubSample);
     int lastDstY;
     uint32_t *pal=c->pal_yuv;
+    yuv2planar1_fn yuv2yuv1 = c->yuv2yuv1;
+    yuv2planarX_fn yuv2yuvX = c->yuv2yuvX;
+    yuv2packed1_fn yuv2packed1 = c->yuv2packed1;
+    yuv2packed2_fn yuv2packed2 = c->yuv2packed2;
+    yuv2packedX_fn yuv2packedX = c->yuv2packedX;
 
     /* vars which will change and which we need to store back in the context */
     int dstY= c->dstY;
@@ -1741,7 +1777,14 @@ static int swScale(SwsContext *c, const uint8_t* src[],
 #if HAVE_MMX
         updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex, lastInLumBuf, lastInChrBuf);
 #endif
-        if (dstY < dstH-2) {
+        if (dstY >= dstH-2) {
+            // hmm looks like we can't use MMX here without overwriting this array's tail
+            find_c_packed_planar_out_funcs(c, &yuv2yuv1, &yuv2yuvX,
+                                           &yuv2packed1, &yuv2packed2,
+                                           &yuv2packedX);
+        }
+
+        {
             const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
             const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **chrVSrcPtr= (const int16_t **) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
@@ -1754,10 +1797,10 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                     const int16_t *chrUBuf= chrUSrcPtr[0];
                     const int16_t *chrVBuf= chrVSrcPtr[0];
                     const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
-                    c->yuv2yuv1(c, lumBuf, chrUBuf, chrVBuf, alpBuf, dest,
+                    yuv2yuv1(c, lumBuf, chrUBuf, chrVBuf, alpBuf, dest,
                                 uDest, vDest, aDest, dstW, chrDstW);
                 } else { //General YV12
-                    c->yuv2yuvX(c,
+                    yuv2yuvX(c,
                                 vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                 vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr,
                                 chrVSrcPtr, vChrFilterSize,
@@ -1768,7 +1811,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                 assert(chrUSrcPtr + vChrFilterSize - 1 < chrUPixBuf + vChrBufSize*2);
                 if (c->yuv2packed1 && vLumFilterSize == 1 && vChrFilterSize == 2) { //unscaled RGB
                     int chrAlpha= vChrFilter[2*dstY+1];
-                    c->yuv2packed1(c, *lumSrcPtr, *chrUSrcPtr, *(chrUSrcPtr+1),
+                    yuv2packed1(c, *lumSrcPtr, *chrUSrcPtr, *(chrUSrcPtr+1),
                                    *chrVSrcPtr, *(chrVSrcPtr+1),
                                    alpPixBuf ? *alpSrcPtr : NULL,
                                    dest, dstW, chrAlpha, dstFormat, flags, dstY);
@@ -1779,59 +1822,15 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                     lumMmxFilter[3]= vLumFilter[2*dstY   ]*0x10001;
                     chrMmxFilter[2]=
                     chrMmxFilter[3]= vChrFilter[2*chrDstY]*0x10001;
-                    c->yuv2packed2(c, *lumSrcPtr, *(lumSrcPtr+1), *chrUSrcPtr, *(chrUSrcPtr+1),
+                    yuv2packed2(c, *lumSrcPtr, *(lumSrcPtr+1), *chrUSrcPtr, *(chrUSrcPtr+1),
                                    *chrVSrcPtr, *(chrVSrcPtr+1),
                                    alpPixBuf ? *alpSrcPtr : NULL, alpPixBuf ? *(alpSrcPtr+1) : NULL,
                                    dest, dstW, lumAlpha, chrAlpha, dstY);
                 } else { //general RGB
-                    c->yuv2packedX(c,
+                    yuv2packedX(c,
                                    vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
                                    vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
                                    alpSrcPtr, dest, dstW, dstY);
-                }
-            }
-        } else { // hmm looks like we can't use MMX here without overwriting this array's tail
-            const int16_t **lumSrcPtr= (const int16_t **)lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
-            const int16_t **chrUSrcPtr= (const int16_t **)chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-            const int16_t **chrVSrcPtr= (const int16_t **)chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-            const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **)alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-            if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-                const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if (dstY&chrSkipMask) uDest= NULL; //FIXME split functions in lumi / chromi
-                yuv2nv12X_c(c, vLumFilter+dstY*vLumFilterSize,
-                            lumSrcPtr, vLumFilterSize,
-                            vChrFilter+chrDstY*vChrFilterSize,
-                            chrUSrcPtr, chrVSrcPtr, vChrFilterSize, NULL,
-                            dest, uDest, NULL, NULL, dstW, chrDstW);
-            } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12
-                const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-                if (is16BPS(dstFormat) || is9_OR_10BPS(dstFormat)) {
-                    yuv2yuvX16_c(c, vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
-                                 vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                 alpSrcPtr, dest, uDest, vDest, aDest, dstW, chrDstW,
-                                 dstFormat);
-                } else {
-                    yuv2yuvX_c(c, vLumFilter+dstY*vLumFilterSize,
-                               lumSrcPtr, vLumFilterSize,
-                               vChrFilter+chrDstY*vChrFilterSize,
-                               chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                               alpSrcPtr, dest, uDest, vDest, aDest,
-                               dstW, chrDstW);
-                }
-            } else {
-                assert(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
-                assert(chrUSrcPtr + vChrFilterSize - 1 < chrUPixBuf + vChrBufSize*2);
-                if(flags & SWS_FULL_CHR_H_INT) {
-                    yuv2rgbX_c_full(c,
-                                    vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                    vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                    alpSrcPtr, dest, dstW, dstY);
-                } else {
-                    yuv2packedX_c(c,
-                                  vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                  vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                  alpSrcPtr, dest, dstW, dstY);
                 }
             }
         }
@@ -1858,30 +1857,11 @@ static int swScale(SwsContext *c, const uint8_t* src[],
 
 static void sws_init_swScale_c(SwsContext *c)
 {
-    enum PixelFormat srcFormat = c->srcFormat,
-                     dstFormat = c->dstFormat;
+    enum PixelFormat srcFormat = c->srcFormat;
 
-    if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-        c->yuv2yuvX     = yuv2nv12X_c;
-    } else if (is16BPS(dstFormat)) {
-        c->yuv2yuvX     = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
-    } else if (is9_OR_10BPS(dstFormat)) {
-        if (dstFormat == PIX_FMT_YUV420P9BE || dstFormat == PIX_FMT_YUV420P9LE) {
-            c->yuv2yuvX = isBE(dstFormat) ? yuv2yuvX9BE_c :  yuv2yuvX9LE_c;
-        } else {
-            c->yuv2yuvX = isBE(dstFormat) ? yuv2yuvX10BE_c : yuv2yuvX10LE_c;
-        }
-    } else {
-        c->yuv2yuv1     = yuv2yuv1_c;
-        c->yuv2yuvX     = yuv2yuvX_c;
-    }
-    if(c->flags & SWS_FULL_CHR_H_INT) {
-        c->yuv2packedX = yuv2rgbX_c_full;
-    } else {
-        c->yuv2packed1  = yuv2packed1_c;
-        c->yuv2packed2  = yuv2packed2_c;
-        c->yuv2packedX  = yuv2packedX_c;
-    }
+    find_c_packed_planar_out_funcs(c, &c->yuv2yuv1, &c->yuv2yuvX,
+                                   &c->yuv2packed1, &c->yuv2packed2,
+                                   &c->yuv2packedX);
 
     c->hScale       = hScale_c;
 
