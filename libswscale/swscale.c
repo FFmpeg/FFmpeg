@@ -1906,8 +1906,7 @@ static void sws_init_swScale_c(SwsContext *c)
 
     c->hScale       = hScale_c;
 
-    if (c->flags & SWS_FAST_BILINEAR)
-    {
+    if (c->flags & SWS_FAST_BILINEAR) {
         c->hyscale_fast = hyscale_fast_c;
         c->hcscale_fast = hcscale_fast_c;
     }
