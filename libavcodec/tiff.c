@@ -477,7 +477,6 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
         if(s->compr == TIFF_G4)
             s->fax_opts = value;
         break;
-
     default:
         av_log(s->avctx, AV_LOG_DEBUG, "Unknown or unsupported tag %d/0X%0X\n", tag, tag);
     }

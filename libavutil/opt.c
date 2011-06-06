@@ -520,6 +520,14 @@ int av_set_options_string(void *ctx, const char *opts,
     return count;
 }
 
+void av_opt_free(void *obj)
+{
+    const AVOption *o = NULL;
+    while ((o = av_next_option(obj, o)))
+        if (o->type == FF_OPT_TYPE_STRING || o->type == FF_OPT_TYPE_BINARY)
+            av_freep((uint8_t *)obj + o->offset);
+}
+
 #ifdef TEST
 
 #undef printf

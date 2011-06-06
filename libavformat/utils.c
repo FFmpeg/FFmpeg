@@ -2592,6 +2592,10 @@ void avformat_free_context(AVFormatContext *s)
     int i;
     AVStream *st;
 
+    av_opt_free(s);
+    if (s->iformat && s->iformat->priv_class)
+        av_opt_free(s->priv_data);
+
     for(i=0;i<s->nb_streams;i++) {
         /* free all data in a stream component */
         st = s->streams[i];
@@ -2621,7 +2625,6 @@ void avformat_free_context(AVFormatContext *s)
     }
     av_freep(&s->chapters);
     av_metadata_free(&s->metadata);
-    av_freep(&s->key);
     av_freep(&s->streams);
     av_free(s);
 }
@@ -3201,6 +3204,8 @@ fail:
         av_freep(&s->streams[i]->priv_data);
         av_freep(&s->streams[i]->index_entries);
     }
+    if (s->iformat && s->iformat->priv_class)
+        av_opt_free(s->priv_data);
     av_freep(&s->priv_data);
     return ret;
 }

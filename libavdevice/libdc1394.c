@@ -316,8 +316,6 @@ out_camera:
     dc1394_video_set_transmission(dc1394->camera, DC1394_OFF);
     dc1394_camera_free (dc1394->camera);
 out:
-    av_freep(&dc1394->video_size);
-    av_freep(&dc1394->pixel_format);
     dc1394_free(dc1394->d);
     return ret;
 }

@@ -121,7 +121,6 @@ static int read_header(AVFormatContext *avctx,
     }
 
 fail:
-    av_freep(&s->video_size);
     return ret;
 }
 

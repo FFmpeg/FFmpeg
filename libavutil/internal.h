@@ -142,7 +142,6 @@
 #define strncpy strncpy_is_forbidden_due_to_security_issues_use_av_strlcpy
 #undef  exit
 #define exit exit_is_forbidden
-#ifndef LIBAVFORMAT_BUILD
 #undef  printf
 #define printf please_use_av_log_instead_of_printf
 #undef  fprintf
@@ -151,7 +150,6 @@
 #define puts please_use_av_log_instead_of_puts
 #undef  perror
 #define perror please_use_av_log_instead_of_perror
-#endif
 
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\

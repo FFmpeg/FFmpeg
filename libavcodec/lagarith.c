@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/lagarith.c
+ * @file
  * Lagarith lossless decoder
  * @author Nathan Caldwell
  */

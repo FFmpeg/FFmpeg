@@ -102,9 +102,6 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->codec->height = height;
             st->codec->pix_fmt = pix_fmt;
 fail:
-            av_freep(&s1->video_size);
-            av_freep(&s1->pixel_format);
-            av_freep(&s1->framerate);
             return ret;
             }
         default:
@@ -183,7 +180,6 @@ int ff_raw_video_read_header(AVFormatContext *s,
     av_set_pts_info(st, 64, 1, 1200000);
 
 fail:
-    av_freep(&s1->framerate);
     return ret;
 }
 

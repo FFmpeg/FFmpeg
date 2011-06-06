@@ -663,10 +663,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->bit_rate = s->frame_size * 1/av_q2d(st->codec->time_base) * 8;
 
 out:
-    av_freep(&s->video_size);
-    av_freep(&s->pixel_format);
-    av_freep(&s->standard);
-    av_freep(&s->framerate);
     return res;
 }
 
@@ -714,7 +710,7 @@ static int v4l2_read_close(AVFormatContext *s1)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "standard", "", OFFSET(standard), FF_OPT_TYPE_STRING, {.str = NULL }, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
+    { "standard", "", OFFSET(standard), FF_OPT_TYPE_STRING, {.str = "NTSC" }, 0, 0, AV_OPT_FLAG_DECODING_PARAM },
     { "channel",  "", OFFSET(channel),  FF_OPT_TYPE_INT,    {.dbl = 0 }, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
