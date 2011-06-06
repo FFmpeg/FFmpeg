@@ -16,9 +16,6 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
-MANPAGES    = $(PROGS-yes:%=doc/%.1)
-PODPAGES    = $(PROGS-yes:%=doc/%.pod)
-HTMLPAGES   = $(PROGS-yes:%=doc/%.html)
 TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws graph2dot lavfi-showfiltfmts pktdumper probetest qt-faststart trasher))
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
@@ -47,8 +44,6 @@ include common.mak
 FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
-
-all-$(CONFIG_DOC): documentation
 
 all: $(FF_DEP_LIBS) $(PROGS)
 
@@ -105,28 +100,6 @@ version.h .version:
 # force version.sh to run whenever version might have changed
 -include .version
 
-DOCS = $(addprefix doc/, developer.html faq.html general.html libavfilter.html) $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
-
-documentation: $(DOCS)
-
--include $(wildcard $(DOCS:%=%.d))
-
-TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
-
-doc/%.html: TAG = HTML
-doc/%.html: doc/%.texi $(SRC_PATH_BARE)/doc/t2h.init
-	$(Q)$(TEXIDEP)
-	$(M)texi2html -monolithic --init-file $(SRC_PATH_BARE)/doc/t2h.init --output $@ $<
-
-doc/%.pod: TAG = POD
-doc/%.pod: doc/%.texi
-	$(Q)$(TEXIDEP)
-	$(M)doc/texi2pod.pl $< $@
-
-doc/%.1: TAG = MAN
-doc/%.1: doc/%.pod
-	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
-
 ifdef PROGS
 install: install-progs install-data
 endif
@@ -136,7 +109,6 @@ install: install-libs install-headers
 install-libs: install-libs-yes
 
 install-progs-yes:
-install-progs-$(CONFIG_DOC): install-man
 install-progs-$(CONFIG_SHARED): install-libs
 
 install-progs: install-progs-yes $(PROGS)
@@ -147,11 +119,7 @@ install-data: $(DATA_FILES)
 	$(Q)mkdir -p "$(DATADIR)"
 	$(INSTALL) -m 644 $(DATA_FILES) "$(DATADIR)"
 
-install-man: $(MANPAGES)
-	$(Q)mkdir -p "$(MANDIR)/man1"
-	$(INSTALL) -m 644 $(MANPAGES) "$(MANDIR)/man1"
-
-uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data uninstall-man
+uninstall: uninstall-libs uninstall-headers uninstall-progs uninstall-data
 
 uninstall-progs:
 	$(RM) $(addprefix "$(BINDIR)/", $(ALLPROGS))
@@ -159,13 +127,9 @@ uninstall-progs:
 uninstall-data:
 	$(RM) -r "$(DATADIR)"
 
-uninstall-man:
-	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
-
 clean::
 	$(RM) $(ALLPROGS)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) doc/*.html doc/*.pod doc/*.1
 	$(RM) $(TOOLS)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
 
@@ -178,7 +142,8 @@ config:
 
 check: test checkheaders
 
+include doc/Makefile
 include tests/Makefile
 
-.PHONY: all alltools *clean check config documentation examples install*
+.PHONY: all alltools *clean check config examples install*
 .PHONY: testprogs uninstall*

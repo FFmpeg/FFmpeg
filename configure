@@ -3221,6 +3221,7 @@ if enabled source_path_used; then
         Makefile
         common.mak
         subdir.mak
+        doc/Makefile
         doc/texi2pod.pl
         libavcodec/Makefile
         libavcodec/${arch}/Makefile
