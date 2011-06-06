@@ -2193,6 +2193,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         if (c->flags & SWS_ACCURATE_RND) {
             c->yuv2yuv1     = RENAME(yuv2yuv1_ar    );
             c->yuv2yuvX     = RENAME(yuv2yuvX_ar    );
+            if (!(c->flags & SWS_FULL_CHR_H_INT)) {
             switch (c->dstFormat) {
             case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
             case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
@@ -2201,9 +2202,11 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
             case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X_ar); break;
             default: break;
             }
+            }
         } else {
             c->yuv2yuv1     = RENAME(yuv2yuv1    );
             c->yuv2yuvX     = RENAME(yuv2yuvX    );
+            if (!(c->flags & SWS_FULL_CHR_H_INT)) {
             switch (c->dstFormat) {
             case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
             case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X);   break;
@@ -2212,7 +2215,10 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
             case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X); break;
             default: break;
             }
+            }
         }
+        }
+        if (!(c->flags & SWS_FULL_CHR_H_INT)) {
         switch (c->dstFormat) {
         case PIX_FMT_RGB32:
                 c->yuv2packed1 = RENAME(yuv2rgb32_1);
