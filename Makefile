@@ -74,11 +74,14 @@ endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
+ffplay.o: CFLAGS += $(SDL_CFLAGS)
 ffplay$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
 ffserver$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
 %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
+
+alltools: $(TOOLS)
 
 tools/%$(EXESUF): tools/%.o
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
@@ -88,8 +91,6 @@ tools/%.o: tools/%.c
 
 -include $(wildcard tools/*.d)
 -include $(wildcard tests/*.d)
-
-ffplay.o: CFLAGS += $(SDL_CFLAGS)
 
 VERSION_SH  = $(SRC_PATH_BARE)/version.sh
 GIT_LOG     = $(SRC_PATH_BARE)/.git/logs/HEAD
@@ -103,8 +104,6 @@ version.h .version:
 
 # force version.sh to run whenever version might have changed
 -include .version
-
-alltools: $(TOOLS)
 
 DOCS = $(addprefix doc/, developer.html faq.html general.html libavfilter.html) $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
 
