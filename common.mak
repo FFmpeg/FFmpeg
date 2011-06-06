@@ -45,8 +45,6 @@ HOSTCFLAGS += $(IFLAGS)
 %.ho: %.h
 	$(CC) $(CPPFLAGS) $(CFLAGS) -Wno-unused -c -o $@ -x c $<
 
-%$(EXESUF): %.c
-
 %.ver: %.v
 	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
 
