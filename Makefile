@@ -145,5 +145,13 @@ check: test checkheaders
 include doc/Makefile
 include tests/Makefile
 
+# Dummy rule to stop make trying to rebuild removed or renamed headers
+%.h:
+	@:
+
+# Disable suffix rules.  Most of the builtin rules are suffix rules,
+# so this saves some time on slow systems.
+.SUFFIXES:
+
 .PHONY: all alltools *clean check config examples install*
 .PHONY: testprogs uninstall*
