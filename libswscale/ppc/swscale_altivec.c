@@ -403,11 +403,15 @@ static void hScale_altivec_real(int16_t *dst, int dstW,
 
 void ff_sws_init_swScale_altivec(SwsContext *c)
 {
+    enum PixelFormat dstFormat = c->dstFormat;
+
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
     c->hScale       = hScale_altivec_real;
-    c->yuv2yuvX     = yuv2yuvX_altivec_real;
+    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat)) {
+        c->yuv2yuvX     = yuv2yuvX_altivec_real;
+    }
 
     /* The following list of supported dstFormat values should
      * match what's found in the body of ff_yuv2packedX_altivec() */

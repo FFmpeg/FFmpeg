@@ -2185,8 +2185,10 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *d
 
 static void RENAME(sws_init_swScale)(SwsContext *c)
 {
-    enum PixelFormat srcFormat = c->srcFormat;
+    enum PixelFormat srcFormat = c->srcFormat,
+                     dstFormat = c->dstFormat;
 
+    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat)) {
     if (!(c->flags & SWS_BITEXACT)) {
         if (c->flags & SWS_ACCURATE_RND) {
             c->yuv2yuv1     = RENAME(yuv2yuv1_ar    );
@@ -2235,6 +2237,7 @@ static void RENAME(sws_init_swScale)(SwsContext *c)
         default:
                 break;
         }
+    }
     }
 
 #if !COMPILE_TEMPLATE_MMX2
