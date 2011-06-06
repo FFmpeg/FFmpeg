@@ -79,6 +79,10 @@ Compute the square root of @var{expr}. This is equivalent to
 
 @item not(expr)
 Return 1.0 if @var{expr} is zero, 0.0 otherwise.
+
+@item pow(x, y)
+Compute the power of @var{x} elevated @var{y}, it is equivalent to
+"(@var{x})^(@var{y})".
 @end table
 
 Note that:

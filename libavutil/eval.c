@@ -290,6 +290,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "trunc" )) d->type = e_trunc;
     else if (strmatch(next, "sqrt"  )) d->type = e_sqrt;
     else if (strmatch(next, "not"   )) d->type = e_not;
+    else if (strmatch(next, "pow"   )) d->type = e_pow;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
@@ -643,6 +644,10 @@ int main(void)
         "not(1)",
         "not(NAN)",
         "not(0)",
+        "pow(0,1.23)",
+        "pow(PI,1.23)",
+        "PI^1.23",
+        "pow(-1,1.23)",
         NULL
     };
 
