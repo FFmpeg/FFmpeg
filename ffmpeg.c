@@ -1656,6 +1656,22 @@ static int output_packet(AVInputStream *ist, int ist_index,
             avpkt.size = 0;
         }
 
+#if CONFIG_AVFILTER
+        if(ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+        if (start_time == 0 || ist->pts >= start_time) {
+            for(i=0;i<nb_ostreams;i++) {
+                ost = ost_table[i];
+                if (ost->input_video_filter && ost->source_index == ist_index) {
+                    if (!picture.sample_aspect_ratio.num)
+                        picture.sample_aspect_ratio = ist->st->sample_aspect_ratio;
+                    picture.pts = ist->pts;
+
+                    av_vsrc_buffer_add_frame(ost->input_video_filter, &picture, AV_VSRC_BUF_FLAG_OVERWRITE);
+                }
+            }
+        }
+#endif
+
         // preprocess audio (volume)
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (audio_volume != 256) {
@@ -1686,14 +1702,6 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 ost = ost_table[i];
                 if (ost->source_index == ist_index) {
 #if CONFIG_AVFILTER
-                if (ost->input_video_filter) {
-                    if (!picture.sample_aspect_ratio.num)
-                         picture.sample_aspect_ratio = ist->st->sample_aspect_ratio;
-                    picture.pts = ist->pts;
-
-                    av_vsrc_buffer_add_frame(ost->input_video_filter,
-                                             &picture, AV_VSRC_BUF_FLAG_OVERWRITE);
-                }
                 frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
                     !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);
                 while (frame_available) {
