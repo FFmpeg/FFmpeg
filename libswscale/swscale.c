@@ -362,10 +362,13 @@ static inline void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
 static inline void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
                                const int16_t **lumSrc, int lumFilterSize,
                                const int16_t *chrFilter, const int16_t **chrUSrc,
-                               const int16_t **chrVSrc,
-                               int chrFilterSize, uint8_t *dest, uint8_t *uDest,
-                               int dstW, int chrDstW, enum PixelFormat dstFormat)
+                               const int16_t **chrVSrc, int chrFilterSize,
+                               const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest,
+                               uint8_t *vDest, uint8_t *aDest,
+                               int dstW, int chrDstW)
 {
+    enum PixelFormat dstFormat = c->dstFormat;
+
     //FIXME Optimize (just quickly written not optimized..)
     int i;
     for (i=0; i<dstW; i++) {
@@ -1743,14 +1746,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **chrVSrcPtr= (const int16_t **) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-            if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-                const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if (dstY&chrSkipMask) uDest= NULL; //FIXME split functions in lumi / chromi
-                c->yuv2nv12X(c,
-                             vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
-                             vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                             dest, uDest, dstW, chrDstW, dstFormat);
-            } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
+            if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
                 if (c->yuv2yuv1 && vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
@@ -1805,8 +1801,8 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                 yuv2nv12X_c(c, vLumFilter+dstY*vLumFilterSize,
                             lumSrcPtr, vLumFilterSize,
                             vChrFilter+chrDstY*vChrFilterSize,
-                            chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                            dest, uDest, dstW, chrDstW, dstFormat);
+                            chrUSrcPtr, chrVSrcPtr, vChrFilterSize, NULL,
+                            dest, uDest, NULL, NULL, dstW, chrDstW);
             } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
@@ -1865,8 +1861,9 @@ static void sws_init_swScale_c(SwsContext *c)
     enum PixelFormat srcFormat = c->srcFormat,
                      dstFormat = c->dstFormat;
 
-    c->yuv2nv12X    = yuv2nv12X_c;
-    if (is16BPS(dstFormat)) {
+    if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
+        c->yuv2yuvX     = yuv2nv12X_c;
+    } else if (is16BPS(dstFormat)) {
         c->yuv2yuvX     = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
     } else if (is9_OR_10BPS(dstFormat)) {
         if (dstFormat == PIX_FMT_YUV420P9BE || dstFormat == PIX_FMT_YUV420P9LE) {

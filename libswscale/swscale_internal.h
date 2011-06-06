@@ -250,12 +250,6 @@ typedef struct SwsContext {
 #endif
 
     /* function pointers for swScale() */
-    void (*yuv2nv12X  )(struct SwsContext *c,
-                        const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                        const int16_t *chrFilter, const int16_t **chrUSrc,
-                        const int16_t **chrVSrc, int chrFilterSize,
-                        uint8_t *dest, uint8_t *uDest,
-                        int dstW, int chrDstW, int dstFormat);
     void (*yuv2yuv1   )(struct SwsContext *c,
                         const int16_t *lumSrc, const int16_t *chrUSrc,
                         const int16_t *chrVSrc, const int16_t *alpSrc,
