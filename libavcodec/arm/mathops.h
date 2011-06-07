@@ -28,45 +28,16 @@
 
 #if HAVE_INLINE_ASM
 
-#define MULH MULH
-#define MUL64 MUL64
-
 #if HAVE_ARMV6
+#define MULH MULH
 static inline av_const int MULH(int a, int b)
 {
     int r;
     __asm__ ("smmul %0, %1, %2" : "=r"(r) : "r"(a), "r"(b));
     return r;
 }
-
-static inline av_const int64_t MUL64(int a, int b)
-{
-    int64_t x;
-    __asm__ ("smull %Q0, %R0, %1, %2" : "=r"(x) : "r"(a), "r"(b));
-    return x;
-}
-#else
-static inline av_const int MULH(int a, int b)
-{
-    int lo, hi;
-    __asm__ ("smull %0, %1, %2, %3" : "=&r"(lo), "=&r"(hi) : "r"(b), "r"(a));
-    return hi;
-}
-
-static inline av_const int64_t MUL64(int a, int b)
-{
-    int64_t x;
-    __asm__ ("smull %Q0, %R0, %1, %2" : "=&r"(x) : "r"(a), "r"(b));
-    return x;
-}
 #endif
 
-static inline av_const int64_t MAC64(int64_t d, int a, int b)
-{
-    __asm__ ("smlal %Q0, %R0, %1, %2" : "+r"(d) : "r"(a), "r"(b));
-    return d;
-}
-#define MAC64(d, a, b) ((d) = MAC64(d, a, b))
 #define MLS64(d, a, b) MAC64(d, -(a), b)
 
 #if HAVE_ARMV5TE

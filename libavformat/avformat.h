@@ -227,8 +227,8 @@ typedef struct AVProbeData {
 #define AVPROBE_PADDING_SIZE 32             ///< extra allocated bytes at the end of the probe buffer
 
 typedef struct AVFormatParameters {
-    AVRational time_base;
 #if FF_API_FORMAT_PARAMETERS
+    attribute_deprecated AVRational time_base;
     attribute_deprecated int sample_rate;
     attribute_deprecated int channels;
     attribute_deprecated int width;

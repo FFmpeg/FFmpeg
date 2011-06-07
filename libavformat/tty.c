@@ -37,6 +37,7 @@ typedef struct {
     int chars_per_frame;
     uint64_t fsize;  /**< file size less metadata buffer */
     char *video_size;/**< A string describing video size, set by a private option. */
+    char *framerate; /**< Set by a private option. */
 } TtyDemuxContext;
 
 /**
@@ -75,6 +76,7 @@ static int read_header(AVFormatContext *avctx,
     TtyDemuxContext *s = avctx->priv_data;
     int width = 0, height = 0, ret = 0;
     AVStream *st = av_new_stream(avctx, 0);
+    AVRational framerate;
 
     if (!st) {
         ret = AVERROR(ENOMEM);
@@ -88,20 +90,21 @@ static int read_header(AVFormatContext *avctx,
         av_log (avctx, AV_LOG_ERROR, "Couldn't parse video size.\n");
         goto fail;
     }
+    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
+        goto fail;
+    }
 #if FF_API_FORMAT_PARAMETERS
     if (ap->width > 0)
         width = ap->width;
     if (ap->height > 0)
         height = ap->height;
+    if (ap->time_base.num)
+        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
     st->codec->width  = width;
     st->codec->height = height;
-
-    if (!ap->time_base.num) {
-        av_set_pts_info(st, 60, 1, 25);
-    } else {
-        av_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
-    }
+    av_set_pts_info(st, 60, framerate.den, framerate.num);
 
     /* simulate tty display speed */
 #if FF_API_FORMAT_PARAMETERS
@@ -152,6 +155,7 @@ static int read_packet(AVFormatContext *avctx, AVPacket *pkt)
 static const AVOption options[] = {
     { "chars_per_frame", "", offsetof(TtyDemuxContext, chars_per_frame), FF_OPT_TYPE_INT, {.dbl = 6000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM},
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 

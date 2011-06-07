@@ -22,12 +22,17 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
+#include "libavutil/pixdesc.h"
+#include "libavutil/parseutils.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
 #include <strings.h>
 
 typedef struct {
+    const AVClass *class;  /**< Class for private options. */
     int img_first;
     int img_last;
     int img_number;
@@ -35,6 +40,9 @@ typedef struct {
     int is_pipe;
     int split_planes;  /**< use independent file for each Y, U, V plane */
     char path[1024];
+    char *pixel_format;     /**< Set by a private option. */
+    char *video_size;       /**< Set by a private option. */
+    char *framerate;        /**< Set by a private option. */
 } VideoData;
 
 typedef struct {
@@ -202,8 +210,11 @@ enum CodecID av_guess_image2_codec(const char *filename){
 static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
 {
     VideoData *s = s1->priv_data;
-    int first_index, last_index;
+    int first_index, last_index, ret = 0;
+    int width = 0, height = 0;
     AVStream *st;
+    enum PixelFormat pix_fmt = PIX_FMT_NONE;
+    AVRational framerate;
 
     s1->ctx_flags |= AVFMTCTX_NOHEADER;
 
@@ -211,6 +222,29 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (!st) {
         return AVERROR(ENOMEM);
     }
+
+    if (s->pixel_format && (pix_fmt = av_get_pix_fmt(s->pixel_format)) == PIX_FMT_NONE) {
+        av_log(s1, AV_LOG_ERROR, "No such pixel format: %s.\n", s->pixel_format);
+        return AVERROR(EINVAL);
+    }
+    if (s->video_size && (ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not parse video size: %s.\n", s->video_size);
+        return ret;
+    }
+    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
+        return ret;
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->pix_fmt != PIX_FMT_NONE)
+        pix_fmt = ap->pix_fmt;
+    if (ap->width > 0)
+        width = ap->width;
+    if (ap->height > 0)
+        height = ap->height;
+    if (ap->time_base.num)
+        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
+#endif
 
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;
@@ -224,15 +258,11 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
-    if (!ap->time_base.num) {
-        av_set_pts_info(st, 60, 1, 25);
-    } else {
-        av_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
-    }
+    av_set_pts_info(st, 60, framerate.den, framerate.num);
 
-    if(ap->width && ap->height){
-        st->codec->width = ap->width;
-        st->codec->height= ap->height;
+    if (width && height) {
+        st->codec->width  = width;
+        st->codec->height = height;
     }
 
     if (!s->is_pipe) {
@@ -258,8 +288,8 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = av_str2id(img_tags, s->path);
     }
-    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ap->pix_fmt != PIX_FMT_NONE)
-        st->codec->pix_fmt = ap->pix_fmt;
+    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO && pix_fmt != PIX_FMT_NONE)
+        st->codec->pix_fmt = pix_fmt;
 
     return 0;
 }
@@ -430,6 +460,22 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 #endif /* CONFIG_IMAGE2_MUXER || CONFIG_IMAGE2PIPE_MUXER */
 
+#define OFFSET(x) offsetof(VideoData, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "video_size",   "", OFFSET(video_size),   FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate",    "", OFFSET(framerate),    FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass img2_class = {
+    .class_name = "image2 demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 /* input */
 #if CONFIG_IMAGE2_DEMUXER
 AVInputFormat ff_image2_demuxer = {
@@ -440,6 +486,7 @@ AVInputFormat ff_image2_demuxer = {
     .read_header    = read_header,
     .read_packet    = read_packet,
     .flags          = AVFMT_NOFILE,
+    .priv_class     = &img2_class,
 };
 #endif
 #if CONFIG_IMAGE2PIPE_DEMUXER
@@ -449,6 +496,7 @@ AVInputFormat ff_image2pipe_demuxer = {
     .priv_data_size = sizeof(VideoData),
     .read_header    = read_header,
     .read_packet    = read_packet,
+    .priv_class     = &img2_class,
 };
 #endif
 

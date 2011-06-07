@@ -107,7 +107,7 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
             *o++ = (av_reverse[buf[6] & 0xf0] << 28) |
                    (av_reverse[buf[5]]        << 20) |
                    (av_reverse[buf[4]]        << 12) |
-                   (av_reverse[buf[3] & 0x0f] <<  8);
+                   (av_reverse[buf[3] & 0x0f] <<  4);
             buf += 7;
         }
         *data_size = (uint8_t*) o - (uint8_t*) data;
@@ -130,7 +130,7 @@ static int s302m_decode_frame(AVCodecContext *avctx, void *data,
                     av_reverse[buf[0]];
             *o++ = (av_reverse[buf[4] & 0xf0] << 12) |
                    (av_reverse[buf[3]]        <<  4) |
-                    av_reverse[buf[2] & 0x0f];
+                   (av_reverse[buf[2]]        >>  4);
             buf += 5;
         }
         *data_size = (uint8_t*) o - (uint8_t*) data;
