@@ -1622,7 +1622,7 @@ static int input_request_frame(AVFilterLink *link)
     if (ret < 0)
         return -1;
 
-    if(priv->use_dr1) {
+    if(priv->use_dr1 && priv->frame->opaque) {
         picref = avfilter_ref_buffer(priv->frame->opaque, ~0);
     } else {
         picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, link->w, link->h);

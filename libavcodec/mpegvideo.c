@@ -1410,6 +1410,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
             pict->data[i]= s->visualization_buffer[i];
         }
         pict->type= FF_BUFFER_TYPE_COPY;
+        pict->opaque= NULL;
         ptr= pict->data[0];
         block_height = 16>>v_chroma_shift;
 
