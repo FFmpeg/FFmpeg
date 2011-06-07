@@ -1062,10 +1062,9 @@ static double compute_target_time(double frame_current_pts, VideoState *is)
         }
     }
     is->frame_timer += delay;
-#if defined(DEBUG_SYNC)
-    printf("video: delay=%0.3f actual_delay=%0.3f pts=%0.3f A-V=%f\n",
-            delay, actual_delay, frame_current_pts, -diff);
-#endif
+
+    av_dlog(NULL, "video: delay=%0.3f pts=%0.3f A-V=%f\n",
+            delay, frame_current_pts, -diff);
 
     return is->frame_timer;
 }
