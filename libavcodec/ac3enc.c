@@ -50,9 +50,6 @@
 #endif
 
 
-/** Maximum number of exponent groups. +1 for separate DC exponent. */
-#define AC3_MAX_EXP_GROUPS 85
-
 #if CONFIG_AC3ENC_FLOAT
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
 typedef float SampleType;
