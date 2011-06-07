@@ -566,7 +566,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         }
     }
 
-    if (s->eac3)
+    if (CONFIG_EAC3_ENCODER && s->eac3)
         ff_eac3_set_cpl_states(s);
 #endif /* CONFIG_AC3ENC_FLOAT */
 }
@@ -1987,7 +1987,7 @@ static void output_frame(AC3EncodeContext *s, unsigned char *frame)
 
     init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
 
-    if (s->eac3)
+    if (CONFIG_EAC3_ENCODER && s->eac3)
         ff_eac3_output_frame_header(s);
     else
         ac3_output_frame_header(s);
