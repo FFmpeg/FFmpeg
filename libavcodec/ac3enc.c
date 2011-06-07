@@ -26,7 +26,6 @@
  * The simplest AC-3 encoder.
  */
 
-//#define DEBUG
 //#define ASSERT_LEVEL 2
 
 #include <stdint.h>
