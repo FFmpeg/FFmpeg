@@ -381,7 +381,7 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
         }
 }
 
-#define YSCALE_YUV_2_PACKEDX_NOCLIP_C(type,alpha) \
+#define YSCALE_YUV_2_PACKEDX_C(type,alpha) \
     for (i=0; i<(dstW>>1); i++) {\
         int j;\
         int Y1 = 1<<18;\
@@ -413,10 +413,7 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
             }\
             A1>>=19;\
             A2>>=19;\
-        }
-
-#define YSCALE_YUV_2_PACKEDX_C(type,alpha) \
-        YSCALE_YUV_2_PACKEDX_NOCLIP_C(type,alpha)\
+        }\
         if ((Y1|Y2|U|V)&256) {\
             if (Y1>255)   Y1=255; \
             else if (Y1<0)Y1=0;   \
@@ -432,7 +429,7 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
             A2=av_clip_uint8(A2);\
         }
 
-#define YSCALE_YUV_2_PACKEDX_FULL_C(rnd,alpha) \
+#define YSCALE_YUV_2_RGBX_FULL_C(rnd,alpha) \
     for (i=0; i<dstW; i++) {\
         int j;\
         int Y = 0;\
@@ -458,10 +455,7 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
             A >>=19;\
             if (A&256)\
                 A = av_clip_uint8(A);\
-        }
-
-#define YSCALE_YUV_2_RGBX_FULL_C(rnd,alpha) \
-    YSCALE_YUV_2_PACKEDX_FULL_C(rnd>>3,alpha)\
+        }\
         Y-= c->yuv2rgb_y_offset;\
         Y*= c->yuv2rgb_y_coeff;\
         Y+= rnd;\
