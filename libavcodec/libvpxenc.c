@@ -48,6 +48,7 @@ struct FrameListData {
 };
 
 typedef struct VP8EncoderContext {
+    AVClass *av_class;
     struct vpx_codec_ctx encoder;
     struct vpx_image rawimg;
     struct vpx_fixed_buf twopass_stats;
