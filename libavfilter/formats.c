@@ -72,28 +72,44 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     return ret;
 }
 
+#define MAKE_FORMAT_LIST()                                              \
+    AVFilterFormats *formats;                                           \
+    int count = 0;                                                      \
+    if (fmts)                                                           \
+        for (count = 0; fmts[count] != -1; count++)                     \
+            ;                                                           \
+    formats = av_mallocz(sizeof(AVFilterFormats));                      \
+    if (!formats) return NULL;                                          \
+    formats->format_count = count;                                      \
+    if (count) {                                                        \
+        formats->formats  = av_malloc(sizeof(*formats->formats)*count); \
+        if (!formats->formats) {                                        \
+            av_free(formats);                                           \
+            return NULL;                                                \
+        }                                                               \
+    }
+
 AVFilterFormats *avfilter_make_format_list(const int *fmts)
 {
-    AVFilterFormats *formats;
-    int count = 0;
-
-    if (fmts)
-        for (count = 0; fmts[count] != -1; count++)
-            ;
-
-    formats               = av_mallocz(sizeof(AVFilterFormats));
-    formats->format_count = count;
-    if (count) {
-        formats->formats  = av_malloc(sizeof(*formats->formats) * count);
-        memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
-    }
+    MAKE_FORMAT_LIST();
+    while (count--)
+        formats->formats[count] = fmts[count];
 
     return formats;
 }
 
-int avfilter_add_format(AVFilterFormats **avff, int fmt)
+AVFilterFormats *avfilter_make_format64_list(const int64_t *fmts)
 {
-    int *fmts;
+    MAKE_FORMAT_LIST();
+    if (count)
+        memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
+
+    return formats;
+}
+
+int avfilter_add_format(AVFilterFormats **avff, int64_t fmt)
+{
+    int64_t *fmts;
 
     if (!(*avff) && !(*avff = av_mallocz(sizeof(AVFilterFormats))))
         return AVERROR(ENOMEM);

@@ -26,7 +26,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 21
+#define LIBAVFILTER_VERSION_MINOR 22
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -223,7 +223,7 @@ void avfilter_unref_buffer(AVFilterBufferRef *ref);
  */
 typedef struct AVFilterFormats {
     unsigned format_count;      ///< number of formats
-    int *formats;               ///< list of media formats
+    int64_t *formats;           ///< list of media formats
 
     unsigned refcount;          ///< number of references to this list
     struct AVFilterFormats ***refs; ///< references to this list
@@ -238,6 +238,7 @@ typedef struct AVFilterFormats {
  * @return the format list, with no existing references
  */
 AVFilterFormats *avfilter_make_format_list(const int *fmts);
+AVFilterFormats *avfilter_make_format64_list(const int64_t *fmts);
 
 /**
  * Add fmt to the list of media formats contained in *avff.
@@ -247,7 +248,7 @@ AVFilterFormats *avfilter_make_format_list(const int *fmts);
  * @return a non negative value in case of success, or a negative
  * value corresponding to an AVERROR code in case of error
  */
-int avfilter_add_format(AVFilterFormats **avff, int fmt);
+int avfilter_add_format(AVFilterFormats **avff, int64_t fmt);
 
 /**
  * Return a list of all formats supported by FFmpeg for the given media type.

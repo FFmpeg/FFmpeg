@@ -13,6 +13,14 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-06-19 - xxxxxxx - lavfi 2.22.0 - AVFilterFormats
+  Change type of AVFilterFormats.formats from int * to int64_t *,
+  and update formats handling API accordingly.
+
+  avfilter_make_format_list() still takes a int32_t array and converts
+  it to int64_t. A new function, avfilter_make_format64_list(), that
+  takes int64_t arrays has been added.
+
 2011-06-19 - xxxxxxx - lavfi 2.21.0 - vsink_buffer.h
   Add video sink buffer and vsink_buffer.h public header.
 
