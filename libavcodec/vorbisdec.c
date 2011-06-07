@@ -20,6 +20,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <inttypes.h>
 #include <math.h>
 
 #define ALT_BITSTREAM_READER_LE
@@ -1088,6 +1089,9 @@ static int vorbis_floor0_decode(vorbis_context *vc,
 
             for (i = 0; i < order; i++)
                 lsp[i] = 2.0f * cos(lsp[i]);
+
+            av_dlog(NULL, "floor0 synth: map_size = %"PRIu32"; m = %d; wstep = %f\n",
+                    vf->map_size[blockflag], order, wstep);
 
             i = 0;
             while (i < vf->map_size[blockflag]) {
