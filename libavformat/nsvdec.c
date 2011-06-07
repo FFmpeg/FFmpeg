@@ -22,9 +22,7 @@
 #include "riff.h"
 #include "libavutil/dict.h"
 
-//#define DEBUG
 //#define DEBUG_DUMP_INDEX // XXX dumbdriving-271.nsv breaks with it commented!!
-//#define DEBUG_SEEK
 #define CHECK_SUBSEQUENT_NSVS
 //#define DISABLE_AUDIO
 

@@ -19,9 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-//#define DEBUG
-//#define DEBUG_SEEK
-
 #include <strings.h>
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
@@ -141,10 +138,8 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
     int64_t last_pos= -1;
     int64_t filesize= avio_size(s->pb);
 
-#ifdef DEBUG_SEEK
-    av_log(s, AV_LOG_ERROR, "longs_pre_entry:%d index_type:%d entries_in_use:%d chunk_id:%X base:%16"PRIX64"\n",
-        longs_pre_entry,index_type, entries_in_use, chunk_id, base);
-#endif
+    av_dlog(s, "longs_pre_entry:%d index_type:%d entries_in_use:%d chunk_id:%X base:%16"PRIX64"\n",
+            longs_pre_entry,index_type, entries_in_use, chunk_id, base);
 
     if(stream_id >= s->nb_streams || stream_id < 0)
         return -1;
@@ -176,9 +171,8 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
             int key= len >= 0;
             len &= 0x7FFFFFFF;
 
-#ifdef DEBUG_SEEK
-            av_log(s, AV_LOG_ERROR, "pos:%"PRId64", len:%X\n", pos, len);
-#endif
+            av_dlog(s, "pos:%"PRId64", len:%X\n", pos, len);
+
             if(pb->eof_reached)
                 return -1;
 
@@ -1134,10 +1128,8 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         flags = avio_rl32(pb);
         pos = avio_rl32(pb);
         len = avio_rl32(pb);
-#if defined(DEBUG_SEEK)
-        av_log(s, AV_LOG_DEBUG, "%d: tag=0x%x flags=0x%x pos=0x%x len=%d/",
-               i, tag, flags, pos, len);
-#endif
+        av_dlog(s, "%d: tag=0x%x flags=0x%x pos=0x%x len=%d/",
+                i, tag, flags, pos, len);
         if(i==0 && pos > avi->movi_list)
             avi->movi_list= 0; //FIXME better check
         pos += avi->movi_list;
@@ -1149,9 +1141,8 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         st = s->streams[index];
         ast = st->priv_data;
 
-#if defined(DEBUG_SEEK)
-        av_log(s, AV_LOG_DEBUG, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
-#endif
+        av_dlog(s, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
+
         if(pb->eof_reached)
             return -1;
 
@@ -1206,22 +1197,18 @@ static int avi_load_index(AVFormatContext *s)
 
     if (avio_seek(pb, avi->movi_end, SEEK_SET) < 0)
         goto the_end; // maybe truncated file
-#ifdef DEBUG_SEEK
-    av_log(s, AV_LOG_DEBUG, "movi_end=0x%"PRIx64"\n", avi->movi_end);
-#endif
+    av_dlog(s, "movi_end=0x%"PRIx64"\n", avi->movi_end);
     for(;;) {
         if (pb->eof_reached)
             break;
         tag = avio_rl32(pb);
         size = avio_rl32(pb);
-#ifdef DEBUG_SEEK
-        av_log(s, AV_LOG_DEBUG, "tag=%c%c%c%c size=0x%x\n",
-               tag & 0xff,
-               (tag >> 8) & 0xff,
-               (tag >> 16) & 0xff,
-               (tag >> 24) & 0xff,
-               size);
-#endif
+        av_dlog(s, "tag=%c%c%c%c size=0x%x\n",
+                 tag        & 0xff,
+                (tag >>  8) & 0xff,
+                (tag >> 16) & 0xff,
+                (tag >> 24) & 0xff,
+                size);
         switch(tag) {
         case MKTAG('i', 'd', 'x', '1'):
             if (avi_read_idx1(s, size) < 0)
