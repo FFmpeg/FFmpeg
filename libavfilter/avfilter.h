@@ -27,7 +27,7 @@
 
 #define LIBAVFILTER_VERSION_MAJOR  2
 #define LIBAVFILTER_VERSION_MINOR 14
-#define LIBAVFILTER_VERSION_MICRO  0
+#define LIBAVFILTER_VERSION_MICRO  1
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
                                                LIBAVFILTER_VERSION_MINOR, \
@@ -233,7 +233,8 @@ typedef struct AVFilterFormats {
  * Create a list of supported formats. This is intended for use in
  * AVFilter->query_formats().
  *
- * @param fmts list of media formats, terminated by -1
+ * @param fmts list of media formats, terminated by -1. If NULL an
+ *        empty list is created.
  * @return the format list, with no existing references
  */
 AVFilterFormats *avfilter_make_format_list(const int *fmts);

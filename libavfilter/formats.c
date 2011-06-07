@@ -73,15 +73,18 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
 AVFilterFormats *avfilter_make_format_list(const int *fmts)
 {
     AVFilterFormats *formats;
-    int count;
+    int count = 0;
 
-    for (count = 0; fmts[count] != -1; count++)
-        ;
+    if (fmts)
+        for (count = 0; fmts[count] != -1; count++)
+            ;
 
     formats               = av_mallocz(sizeof(AVFilterFormats));
-    formats->formats      = av_malloc(sizeof(*formats->formats) * count);
     formats->format_count = count;
-    memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
+    if (count) {
+        formats->formats  = av_malloc(sizeof(*formats->formats) * count);
+        memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
+    }
 
     return formats;
 }
