@@ -26,7 +26,6 @@
  *
  */
 
-#define DEBUG
 #include <limits.h>
 #include "avcodec.h"
 #include "get_bits.h"
@@ -304,7 +303,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         s->bitstream_size= buf_size;
 
         if(buf_size < s->max_framesize){
-            //av_dlog(avctx, "wanna more data ... %d\n", buf_size);
             *data_size = 0;
             return input_buf_size;
         }
