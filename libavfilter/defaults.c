@@ -84,7 +84,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
     samples->refcount   = 1;
     samples->free       = ff_avfilter_default_free_buffer;
 
-    sample_size = av_get_bits_per_sample_fmt(sample_fmt) >>3;
+    sample_size = av_get_bytes_per_sample(sample_fmt);
     chans_nb = av_get_channel_layout_nb_channels(channel_layout);
 
     per_channel_size = size/chans_nb;

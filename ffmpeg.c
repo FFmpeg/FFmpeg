@@ -778,8 +778,8 @@ static void do_audio_out(AVFormatContext *s,
     int size_out, frame_bytes, ret, resample_changed;
     AVCodecContext *enc= ost->st->codec;
     AVCodecContext *dec= ist->st->codec;
-    int osize= av_get_bits_per_sample_fmt(enc->sample_fmt)/8;
-    int isize= av_get_bits_per_sample_fmt(dec->sample_fmt)/8;
+    int osize = av_get_bytes_per_sample(enc->sample_fmt);
+    int isize = av_get_bytes_per_sample(dec->sample_fmt);
     const int coded_bps = av_get_bits_per_sample(enc->codec->id);
 
 need_realloc:
@@ -1481,7 +1481,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 #endif
 
     AVPacket avpkt;
-    int bps = av_get_bits_per_sample_fmt(ist->st->codec->sample_fmt)>>3;
+    int bps = av_get_bytes_per_sample(ist->st->codec->sample_fmt);
 
     if(ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts= ist->pts;

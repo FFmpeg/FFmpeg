@@ -2177,7 +2177,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     }
 
     data_size_tmp = samples * avctx->channels *
-                    (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
+                    av_get_bytes_per_sample(avctx->sample_fmt);
     if (*data_size < data_size_tmp) {
         av_log(avctx, AV_LOG_ERROR,
                "Output buffer too small (%d) or trying to output too many samples (%d) for this frame.\n",

@@ -2032,7 +2032,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             if (is->reformat_ctx) {
                 const void *ibuf[6]= {is->audio_buf1};
                 void *obuf[6]= {is->audio_buf2};
-                int istride[6]= {av_get_bits_per_sample_fmt(dec->sample_fmt)/8};
+                int istride[6]= {av_get_bytes_per_sample(dec->sample_fmt)};
                 int ostride[6]= {2};
                 int len= data_size/istride[0];
                 if (av_audio_convert(is->reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {

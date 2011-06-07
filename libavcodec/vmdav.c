@@ -447,7 +447,7 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_U8;
-    s->out_bps = av_get_bits_per_sample_fmt(avctx->sample_fmt) >> 3;
+    s->out_bps = av_get_bytes_per_sample(avctx->sample_fmt);
 
     av_log(avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, "
            "block align = %d, sample rate = %d\n",
