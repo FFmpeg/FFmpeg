@@ -404,6 +404,12 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
         Y2>>=19;\
         U >>=19;\
         V >>=19;\
+        if ((Y1|Y2|U|V)&0x100) {\
+            Y1 = av_clip_uint8(Y1); \
+            Y2 = av_clip_uint8(Y2); \
+            U  = av_clip_uint8(U); \
+            V  = av_clip_uint8(V); \
+        }\
         if (alpha) {\
             A1 = 1<<18;\
             A2 = 1<<18;\
@@ -413,20 +419,10 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
             }\
             A1>>=19;\
             A2>>=19;\
-        }\
-        if ((Y1|Y2|U|V)&256) {\
-            if (Y1>255)   Y1=255; \
-            else if (Y1<0)Y1=0;   \
-            if (Y2>255)   Y2=255; \
-            else if (Y2<0)Y2=0;   \
-            if (U>255)    U=255;  \
-            else if (U<0) U=0;    \
-            if (V>255)    V=255;  \
-            else if (V<0) V=0;    \
-        }\
-        if (alpha && ((A1|A2)&256)) {\
-            A1=av_clip_uint8(A1);\
-            A2=av_clip_uint8(A2);\
+            if ((A1|A2)&0x100) {\
+                A1 = av_clip_uint8(A1); \
+                A2 = av_clip_uint8(A2); \
+            }\
         }
 
 #define YSCALE_YUV_2_RGBX_FULL_C(rnd,alpha) \
@@ -453,7 +449,7 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
             for (j=0; j<lumFilterSize; j++)\
                 A += alpSrc[j][i     ] * lumFilter[j];\
             A >>=19;\
-            if (A&256)\
+            if (A&0x100)\
                 A = av_clip_uint8(A);\
         }\
         Y-= c->yuv2rgb_y_offset;\
@@ -463,12 +459,9 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
         G= Y + V*c->yuv2rgb_v2g_coeff + U*c->yuv2rgb_u2g_coeff;\
         B= Y +                          U*c->yuv2rgb_u2b_coeff;\
         if ((R|G|B)&(0xC0000000)) {\
-            if (R>=(256<<22))   R=(256<<22)-1; \
-            else if (R<0)R=0;   \
-            if (G>=(256<<22))   G=(256<<22)-1; \
-            else if (G<0)G=0;   \
-            if (B>=(256<<22))   B=(256<<22)-1; \
-            else if (B<0)B=0;   \
+            R = av_clip_uintp2(R, 30); \
+            G = av_clip_uintp2(G, 30); \
+            B = av_clip_uintp2(B, 30); \
         }
 
 #define YSCALE_YUV_2_GRAY16_C \
@@ -476,8 +469,6 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
         int j;\
         int Y1 = 1<<18;\
         int Y2 = 1<<18;\
-        int U  = 1<<18;\
-        int V  = 1<<18;\
         \
         const int i2= 2*i;\
         \
@@ -487,11 +478,9 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
         }\
         Y1>>=11;\
         Y2>>=11;\
-        if ((Y1|Y2|U|V)&65536) {\
-            if (Y1>65535)   Y1=65535; \
-            else if (Y1<0)Y1=0;   \
-            if (Y2>65535)   Y2=65535; \
-            else if (Y2<0)Y2=0;   \
+        if ((Y1|Y2)&0x1000) {\
+            Y1 = av_clip_uint16(Y1); \
+            Y2 = av_clip_uint16(Y2); \
         }
 
 #define YSCALE_YUV_2_RGBX_C(type,alpha) \
@@ -604,11 +593,9 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
         }\
         Y1>>=19;\
         Y2>>=19;\
-        if ((Y1|Y2)&256) {\
-            if (Y1>255)   Y1=255;\
-            else if (Y1<0)Y1=0;\
-            if (Y2>255)   Y2=255;\
-            else if (Y2<0)Y2=0;\
+        if ((Y1|Y2)&0x100) {\
+            Y1 = av_clip_uint8(Y1); \
+            Y2 = av_clip_uint8(Y2); \
         }\
         acc+= acc + g[Y1+d128[(i+0)&7]];\
         acc+= acc + g[Y2+d128[(i+1)&7]];\
