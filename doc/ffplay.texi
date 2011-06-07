@@ -97,8 +97,6 @@ the stream and the audio/video synchronisation drift.
 Print specific debug info.
 @item -bug
 Work around bugs.
-@item -vismv
-Visualize motion vectors.
 @item -fast
 Non-spec-compliant optimizations.
 @item -genpts

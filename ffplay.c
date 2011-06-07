@@ -240,7 +240,6 @@ static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
 static int64_t duration = AV_NOPTS_VALUE;
 static int debug = 0;
-static int debug_mv = 0;
 static int step = 0;
 static int thread_count = 1;
 static int workaround_bugs = 1;
@@ -2134,7 +2133,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     if (!codec)
         return -1;
 
-    avctx->debug_mv = debug_mv;
     avctx->debug = debug;
     avctx->workaround_bugs = workaround_bugs;
     avctx->lowres = lowres;
@@ -2892,12 +2890,6 @@ static int opt_debug(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_vismv(const char *opt, const char *arg)
-{
-    debug_mv = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
-    return 0;
-}
-
 static int opt_thread_count(const char *opt, const char *arg)
 {
     thread_count= parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
@@ -2949,7 +2941,6 @@ static const OptionDef options[] = {
     { "stats", OPT_BOOL | OPT_EXPERT, {(void*)&show_status}, "show status", "" },
     { "debug", HAS_ARG | OPT_EXPERT, {(void*)opt_debug}, "print specific debug info", "" },
     { "bug", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&workaround_bugs}, "workaround bugs", "" },
-    { "vismv", HAS_ARG | OPT_EXPERT, {(void*)opt_vismv}, "visualize motion vectors", "" },
     { "fast", OPT_BOOL | OPT_EXPERT, {(void*)&fast}, "non spec compliant optimizations", "" },
     { "genpts", OPT_BOOL | OPT_EXPERT, {(void*)&genpts}, "generate pts", "" },
     { "drp", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&decoder_reorder_pts}, "let decoder reorder pts 0=off 1=on -1=auto", ""},
