@@ -498,7 +498,7 @@ const char *sws_format_name(enum PixelFormat format);
 extern const uint64_t ff_dither4[2];
 extern const uint64_t ff_dither8[2];
 extern const uint8_t dithers[8][8][8];
-extern uint16_t dither_scale[15][16];
+extern const uint16_t dither_scale[15][16];
 
 
 extern const AVClass sws_context_class;
