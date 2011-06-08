@@ -44,7 +44,7 @@ static int adts_aac_probe(AVProbeData *p)
             uint32_t header = AV_RB16(buf2);
             if((header&0xFFF6) != 0xFFF0)
                 break;
-            fsize = (AV_RB32(buf2+3)>>13) & 0x8FFF;
+            fsize = (AV_RB32(buf2 + 3) >> 13) & 0x1FFF;
             if(fsize < 7)
                 break;
             buf2 += fsize;
