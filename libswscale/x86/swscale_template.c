@@ -171,19 +171,6 @@ static inline void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
     YSCALEYUV2YV12X_ACCURATE(LUM_MMX_FILTER_OFFSET, dest, dstW, 0)
 }
 
-#define YSCALEYUV2YV121 \
-    "mov %2, %%"REG_a"                    \n\t"\
-    ".p2align               4             \n\t" /* FIXME Unroll? */\
-    "1:                                   \n\t"\
-    "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"\
-    "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"\
-    "psraw                 $7, %%mm0      \n\t"\
-    "psraw                 $7, %%mm1      \n\t"\
-    "packuswb           %%mm1, %%mm0      \n\t"\
-    MOVNTQ(%%mm0, (%1, %%REGa))\
-    "add                   $8, %%"REG_a"  \n\t"\
-    "jnc                   1b             \n\t"
-
 static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
                                     const int16_t *chrUSrc, const int16_t *chrVSrc,
                                     const int16_t *alpSrc,
@@ -198,32 +185,24 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
     while (p--) {
         if (dst[p]) {
             __asm__ volatile(
-               YSCALEYUV2YV121
-               :: "r" (src[p]), "r" (dst[p] + counter[p]),
-                  "g" (-counter[p])
-               : "%"REG_a
+                "mov %2, %%"REG_a"                    \n\t"
+                ".p2align               4             \n\t" /* FIXME Unroll? */
+                "1:                                   \n\t"
+                "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"
+                "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"
+                "psraw                 $7, %%mm0      \n\t"
+                "psraw                 $7, %%mm1      \n\t"
+                "packuswb           %%mm1, %%mm0      \n\t"
+                MOVNTQ(%%mm0, (%1, %%REGa))
+                "add                   $8, %%"REG_a"  \n\t"
+                "jnc                   1b             \n\t"
+                :: "r" (src[p]), "r" (dst[p] + counter[p]),
+                   "g" (-counter[p])
+                : "%"REG_a
             );
         }
     }
 }
-
-#define YSCALEYUV2YV121_ACCURATE \
-    "mov %2, %%"REG_a"                    \n\t"\
-    "pcmpeqw %%mm7, %%mm7                 \n\t"\
-    "psrlw                 $15, %%mm7     \n\t"\
-    "psllw                  $6, %%mm7     \n\t"\
-    ".p2align                4            \n\t" /* FIXME Unroll? */\
-    "1:                                   \n\t"\
-    "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"\
-    "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"\
-    "paddsw             %%mm7, %%mm0      \n\t"\
-    "paddsw             %%mm7, %%mm1      \n\t"\
-    "psraw                 $7, %%mm0      \n\t"\
-    "psraw                 $7, %%mm1      \n\t"\
-    "packuswb           %%mm1, %%mm0      \n\t"\
-    MOVNTQ(%%mm0, (%1, %%REGa))\
-    "add                   $8, %%"REG_a"  \n\t"\
-    "jnc                   1b             \n\t"
 
 static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
                                        const int16_t *chrUSrc, const int16_t *chrVSrc,
@@ -239,7 +218,22 @@ static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
     while (p--) {
         if (dst[p]) {
             __asm__ volatile(
-                YSCALEYUV2YV121_ACCURATE
+                "mov %2, %%"REG_a"                    \n\t"
+                "pcmpeqw %%mm7, %%mm7                 \n\t"
+                "psrlw                 $15, %%mm7     \n\t"
+                "psllw                  $6, %%mm7     \n\t"
+                ".p2align                4            \n\t" /* FIXME Unroll? */
+                "1:                                   \n\t"
+                "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"
+                "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"
+                "paddsw             %%mm7, %%mm0      \n\t"
+                "paddsw             %%mm7, %%mm1      \n\t"
+                "psraw                 $7, %%mm0      \n\t"
+                "psraw                 $7, %%mm1      \n\t"
+                "packuswb           %%mm1, %%mm0      \n\t"
+                MOVNTQ(%%mm0, (%1, %%REGa))
+                "add                   $8, %%"REG_a"  \n\t"
+                "jnc                   1b             \n\t"
                 :: "r" (src[p]), "r" (dst[p] + counter[p]),
                    "g" (-counter[p])
                 : "%"REG_a
