@@ -178,7 +178,7 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
                                     uint8_t *aDest, int dstW, int chrDstW)
 {
     int p= 4;
-    const uint8_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
+    const int16_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
     uint8_t *dst[4]= { aDest, dest, uDest, vDest };
     x86_reg counter[4]= { dstW, dstW, chrDstW, chrDstW };
 
@@ -211,7 +211,7 @@ static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
                                        uint8_t *aDest, int dstW, int chrDstW)
 {
     int p= 4;
-    const uint8_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
+    const int16_t *src[4]= { alpSrc + dstW, lumSrc + dstW, chrUSrc + chrDstW, chrVSrc + chrDstW };
     uint8_t *dst[4]= { aDest, dest, uDest, vDest };
     x86_reg counter[4]= { dstW, dstW, chrDstW, chrDstW };
 
@@ -2046,7 +2046,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                         int dstWidth, const uint8_t *src, int srcW,
                                         int xInc)
 {
-    int32_t *filterPos = c->hLumFilterPos;
+    int16_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
     void    *mmx2FilterCode= c->lumMmx2FilterCode;
     int i;
@@ -2118,7 +2118,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *d
                                         int dstWidth, const uint8_t *src1,
                                         const uint8_t *src2, int srcW, int xInc)
 {
-    int32_t *filterPos = c->hChrFilterPos;
+    int16_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
     void    *mmx2FilterCode= c->chrMmx2FilterCode;
     int i;
