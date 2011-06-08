@@ -180,6 +180,21 @@ static void ac3_5p1_mux(short *output, short *input1, short *input2, int n)
     }
 }
 
+#define SUPPORT_RESAMPLE(ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8) \
+    ch8<<7 | ch7<<6 | ch6<<5 | ch5<<4 | ch4<<3 | ch3<<2 | ch2<<1 | ch1<<0
+
+static const uint8_t supported_resampling[MAX_CHANNELS] = {
+    //ouput channels:1  2  3  4  5  6  7  8
+    SUPPORT_RESAMPLE(1, 1, 0, 0, 0, 0, 0, 0), // 1 input channel
+    SUPPORT_RESAMPLE(1, 1, 0, 0, 0, 1, 0, 0), // 2 input channels
+    SUPPORT_RESAMPLE(0, 0, 1, 0, 0, 0, 0, 0), // 3 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 1, 0, 0, 0, 0), // 4 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 0, 1, 0, 0, 0), // 5 input channels
+    SUPPORT_RESAMPLE(0, 1, 0, 0, 0, 1, 0, 0), // 6 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 0, 0, 0, 1, 0), // 7 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 0, 0, 0, 0, 1), // 8 input channels
+};
+
 ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int output_rate, int input_rate,
                                         enum AVSampleFormat sample_fmt_out,
@@ -195,11 +210,15 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                MAX_CHANNELS);
         return NULL;
     }
-    if (output_channels > 2 &&
-        !(output_channels == 6 && input_channels == 2) &&
-        output_channels != input_channels) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Resampling output channel count must be 1 or 2 for mono input; 1, 2 or 6 for stereo input; or N for N channel input.\n");
+    if (!(supported_resampling[input_channels-1] & (1<<(output_channels-1)))) {
+        int i;
+        av_log(NULL, AV_LOG_ERROR, "Unsupported audio resampling. Allowed "
+               "output channels for %d input channel%s", input_channels,
+               input_channels > 1 ? "s:" : ":");
+        for (i = 0; i < MAX_CHANNELS; i++)
+            if (supported_resampling[input_channels-1] & (1<<i))
+                av_log(NULL, AV_LOG_ERROR, " %d", i + 1);
+        av_log(NULL, AV_LOG_ERROR, "\n");
         return NULL;
     }
 
