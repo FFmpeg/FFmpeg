@@ -692,6 +692,8 @@ static int decode_cblk(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kT1Contex
                        int width, int height, int bandpos)
 {
     int passno = cblk->npasses, pass_t = 2, bpno = cblk->nonzerobits - 1, y, clnpass_cnt = 0;
+    int bpass_csty_symbol = J2K_CBLK_BYPASS & codsty->cblk_style;
+    int vert_causal_ctx_csty_symbol = J2K_CBLK_VSC & codsty->cblk_style;
 
     for (y = 0; y < height+2; y++)
         memset(t1->flags[y], 0, (width+2)*sizeof(int));
@@ -702,9 +704,6 @@ static int decode_cblk(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kT1Contex
     ff_mqc_initdec(&t1->mqc, cblk->data);
     cblk->data[cblk->length] = 0xff;
     cblk->data[cblk->length+1] = 0xff;
-
-    int bpass_csty_symbol = J2K_CBLK_BYPASS & codsty->cblk_style;
-    int vert_causal_ctx_csty_symbol = J2K_CBLK_VSC & codsty->cblk_style;
 
     while(passno--){
         switch(pass_t){
