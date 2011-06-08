@@ -45,6 +45,9 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     AVFilterFormats *ret;
     unsigned i, j, k = 0, m_count;
 
+    if (a == b)
+        return a;
+
     ret = av_mallocz(sizeof(*ret));
 
     /* merge list of formats */
