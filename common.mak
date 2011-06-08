@@ -58,6 +58,8 @@ HOSTCFLAGS += $(IFLAGS)
 # so this saves some time on slow systems.
 .SUFFIXES:
 
+# Do not delete intermediate files from chains of implicit rules
+$(OBJS):
 endif
 
 OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)
