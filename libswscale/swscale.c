@@ -285,35 +285,6 @@ yuv2NBPS(10, LE, 0);
 yuv2NBPS(16, BE, 1);
 yuv2NBPS(16, LE, 0);
 
-static inline void yuv2yuvX16_c(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                const int16_t *chrFilter, const int16_t **chrUSrc, const int16_t **chrVSrc, int chrFilterSize,
-                                const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, int dstW, int chrDstW,
-                                enum PixelFormat dstFormat)
-{
-#define conv16(bits) \
-    if (isBE(dstFormat)) { \
-        yuv2yuvX ## bits ## BE_c(c, lumFilter, lumSrc, lumFilterSize, \
-                                 chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
-                                 alpSrc, \
-                                 dest, uDest, vDest, aDest, \
-                                 dstW, chrDstW); \
-    } else { \
-        yuv2yuvX ## bits ## LE_c(c, lumFilter, lumSrc, lumFilterSize, \
-                                 chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
-                                 alpSrc, \
-                                 dest, uDest, vDest, aDest, \
-                                 dstW, chrDstW); \
-    }
-    if (is16BPS(dstFormat)) {
-        conv16(16);
-    } else if (av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1 == 8) {
-        conv16(9);
-    } else {
-        conv16(10);
-    }
-#undef conv16
-}
-
 static inline void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
                               const int16_t **lumSrc, int lumFilterSize,
                               const int16_t *chrFilter, const int16_t **chrUSrc,
