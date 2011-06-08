@@ -177,7 +177,7 @@ static int flv_write_header(AVFormatContext *s)
     AVCodecContext *audio_enc = NULL, *video_enc = NULL;
     int i;
     double framerate = 0.0;
-    int metadata_size_pos, data_size;
+    int64_t metadata_size_pos, data_size;
     AVDictionaryEntry *tag = NULL;
 
     for(i=0; i<s->nb_streams; i++){
