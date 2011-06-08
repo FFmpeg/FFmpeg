@@ -285,13 +285,13 @@ yuv2NBPS(10, LE, 0);
 yuv2NBPS(16, BE, 1);
 yuv2NBPS(16, LE, 0);
 
-static inline void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
-                              const int16_t **lumSrc, int lumFilterSize,
-                              const int16_t *chrFilter, const int16_t **chrUSrc,
-                              const int16_t **chrVSrc,
-                              int chrFilterSize, const int16_t **alpSrc,
-                              uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                              uint8_t *aDest, int dstW, int chrDstW)
+static void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
+                       const int16_t **lumSrc, int lumFilterSize,
+                       const int16_t *chrFilter, const int16_t **chrUSrc,
+                       const int16_t **chrVSrc,
+                       int chrFilterSize, const int16_t **alpSrc,
+                       uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
+                       uint8_t *aDest, int dstW, int chrDstW)
 {
     //FIXME Optimize (just quickly written not optimized..)
     int i;
@@ -327,16 +327,15 @@ static inline void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
 
             aDest[i]= av_clip_uint8(val>>19);
         }
-
 }
 
-static inline void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
-                               const int16_t **lumSrc, int lumFilterSize,
-                               const int16_t *chrFilter, const int16_t **chrUSrc,
-                               const int16_t **chrVSrc, int chrFilterSize,
-                               const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest,
-                               uint8_t *vDest, uint8_t *aDest,
-                               int dstW, int chrDstW)
+static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
+                        const int16_t **lumSrc, int lumFilterSize,
+                        const int16_t *chrFilter, const int16_t **chrUSrc,
+                        const int16_t **chrVSrc, int chrFilterSize,
+                        const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest,
+                        uint8_t *vDest, uint8_t *aDest,
+                        int dstW, int chrDstW)
 {
     enum PixelFormat dstFormat = c->dstFormat;
 
@@ -857,11 +856,11 @@ static void yuv2packedX_c(SwsContext *c, const int16_t *lumFilter,
     YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C, YSCALE_YUV_2_PACKEDX_C(void,0), YSCALE_YUV_2_GRAY16_C, YSCALE_YUV_2_MONOX_C)
 }
 
-static inline void yuv2rgbX_c_full(SwsContext *c, const int16_t *lumFilter,
-                                   const int16_t **lumSrc, int lumFilterSize,
-                                   const int16_t *chrFilter, const int16_t **chrUSrc,
-                                   const int16_t **chrVSrc, int chrFilterSize,
-                                   const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+static void yuv2rgbX_c_full(SwsContext *c, const int16_t *lumFilter,
+                            const int16_t **lumSrc, int lumFilterSize,
+                            const int16_t *chrFilter, const int16_t **chrUSrc,
+                            const int16_t **chrVSrc, int chrFilterSize,
+                            const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
 {
     int i;
     int step= c->dstFormatBpp/8;
@@ -943,7 +942,9 @@ static inline void yuv2rgbX_c_full(SwsContext *c, const int16_t *lumFilter,
     }
 }
 
-static void fillPlane(uint8_t* plane, int stride, int width, int height, int y, uint8_t val)
+static av_always_inline void fillPlane(uint8_t* plane, int stride,
+                                       int width, int height,
+                                       int y, uint8_t val)
 {
     int i;
     uint8_t *ptr = plane + stride*y;
@@ -1469,12 +1470,12 @@ static void hyscale_fast_c(SwsContext *c, int16_t *dst, int dstWidth,
 }
 
 // *** horizontal scale Y line to temp buffer
-static inline void hyscale(SwsContext *c, uint16_t *dst, int dstWidth,
-                           const uint8_t *src, int srcW, int xInc,
-                           const int16_t *hLumFilter,
-                           const int16_t *hLumFilterPos, int hLumFilterSize,
-                           uint8_t *formatConvBuffer,
-                           uint32_t *pal, int isAlpha)
+static av_always_inline void hyscale(SwsContext *c, uint16_t *dst, int dstWidth,
+                                     const uint8_t *src, int srcW, int xInc,
+                                     const int16_t *hLumFilter,
+                                     const int16_t *hLumFilterPos, int hLumFilterSize,
+                                     uint8_t *formatConvBuffer,
+                                     uint32_t *pal, int isAlpha)
 {
     void (*toYV12)(uint8_t *, const uint8_t *, int, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
     void (*convertRange)(uint16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
@@ -1509,11 +1510,11 @@ static void hcscale_fast_c(SwsContext *c, int16_t *dst1, int16_t *dst2,
     }
 }
 
-static inline void hcscale(SwsContext *c, uint16_t *dst1, uint16_t *dst2, int dstWidth,
-                           const uint8_t *src1, const uint8_t *src2,
-                           int srcW, int xInc, const int16_t *hChrFilter,
-                           const int16_t *hChrFilterPos, int hChrFilterSize,
-                           uint8_t *formatConvBuffer, uint32_t *pal)
+static av_always_inline void hcscale(SwsContext *c, uint16_t *dst1, uint16_t *dst2, int dstWidth,
+                                     const uint8_t *src1, const uint8_t *src2,
+                                     int srcW, int xInc, const int16_t *hChrFilter,
+                                     const int16_t *hChrFilterPos, int hChrFilterSize,
+                                     uint8_t *formatConvBuffer, uint32_t *pal)
 {
     if (c->chrToYV12) {
         uint8_t *buf2 = formatConvBuffer + FFALIGN(srcW, 16);
@@ -1826,7 +1827,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     return dstY - lastDstY;
 }
 
-static void sws_init_swScale_c(SwsContext *c)
+static av_cold void sws_init_swScale_c(SwsContext *c)
 {
     enum PixelFormat srcFormat = c->srcFormat;
 
