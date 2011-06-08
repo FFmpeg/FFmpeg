@@ -2351,56 +2351,64 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *d
 
 static void RENAME(sws_init_swScale)(SwsContext *c)
 {
-    enum PixelFormat srcFormat = c->srcFormat;
+    enum PixelFormat srcFormat = c->srcFormat,
+                     dstFormat = c->dstFormat;
 
-    if (!(c->flags & SWS_BITEXACT)) {
-        if (c->flags & SWS_ACCURATE_RND) {
-            c->yuv2yuv1     = RENAME(yuv2yuv1_ar    );
-            c->yuv2yuvX     = RENAME(yuv2yuvX_ar    );
-            switch (c->dstFormat) {
-            case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
-            case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
-            case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X_ar);  break;
-            case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X_ar);  break;
-            case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X_ar); break;
-            default: break;
+    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) && dstFormat != PIX_FMT_NV12
+        && dstFormat != PIX_FMT_NV21 && !(c->flags & SWS_BITEXACT)) {
+            if (c->flags & SWS_ACCURATE_RND) {
+                c->yuv2yuv1 = RENAME(yuv2yuv1_ar    );
+                c->yuv2yuvX = RENAME(yuv2yuvX_ar    );
+                if (!(c->flags & SWS_FULL_CHR_H_INT)) {
+                    switch (c->dstFormat) {
+                    case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
+                    case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X_ar);   break;
+                    case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X_ar);  break;
+                    case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X_ar);  break;
+                    case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X_ar); break;
+                    default: break;
+                    }
+                }
+            } else {
+                int should_dither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat);
+                c->yuv2yuv1 = should_dither ? RENAME(yuv2yuv1_ar    ) : RENAME(yuv2yuv1    );
+                c->yuv2yuvX = RENAME(yuv2yuvX    );
+                if (!(c->flags & SWS_FULL_CHR_H_INT)) {
+                    switch (c->dstFormat) {
+                    case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
+                    case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X);   break;
+                    case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X);  break;
+                    case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X);  break;
+                    case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X); break;
+                    default: break;
+                    }
+                }
             }
-        } else {
-            int should_dither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat);
-            c->yuv2yuv1     = should_dither ? RENAME(yuv2yuv1_ar    ) : RENAME(yuv2yuv1    );
-            c->yuv2yuvX     = RENAME(yuv2yuvX    );
+        if (!(c->flags & SWS_FULL_CHR_H_INT)) {
             switch (c->dstFormat) {
-            case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;
-            case PIX_FMT_BGR24:   c->yuv2packedX = RENAME(yuv2bgr24_X);   break;
-            case PIX_FMT_RGB555:  c->yuv2packedX = RENAME(yuv2rgb555_X);  break;
-            case PIX_FMT_RGB565:  c->yuv2packedX = RENAME(yuv2rgb565_X);  break;
-            case PIX_FMT_YUYV422: c->yuv2packedX = RENAME(yuv2yuyv422_X); break;
-            default: break;
-            }
-        }
-        switch (c->dstFormat) {
-        case PIX_FMT_RGB32:
+            case PIX_FMT_RGB32:
                 c->yuv2packed1 = RENAME(yuv2rgb32_1);
                 c->yuv2packed2 = RENAME(yuv2rgb32_2);
                 break;
-        case PIX_FMT_BGR24:
+            case PIX_FMT_BGR24:
                 c->yuv2packed1 = RENAME(yuv2bgr24_1);
                 c->yuv2packed2 = RENAME(yuv2bgr24_2);
                 break;
-        case PIX_FMT_RGB555:
+            case PIX_FMT_RGB555:
                 c->yuv2packed1 = RENAME(yuv2rgb555_1);
                 c->yuv2packed2 = RENAME(yuv2rgb555_2);
                 break;
-        case PIX_FMT_RGB565:
+            case PIX_FMT_RGB565:
                 c->yuv2packed1 = RENAME(yuv2rgb565_1);
                 c->yuv2packed2 = RENAME(yuv2rgb565_2);
                 break;
-        case PIX_FMT_YUYV422:
+            case PIX_FMT_YUYV422:
                 c->yuv2packed1 = RENAME(yuv2yuyv422_1);
                 c->yuv2packed2 = RENAME(yuv2yuyv422_2);
                 break;
-        default:
+            default:
                 break;
+            }
         }
     }
 

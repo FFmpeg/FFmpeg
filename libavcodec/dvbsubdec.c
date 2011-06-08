@@ -24,10 +24,6 @@
 #include "bytestream.h"
 #include "libavutil/colorspace.h"
 
-//#define DEBUG
-//#define DEBUG_PACKET_CONTENTS
-//#define DEBUG_SAVE_IMAGES
-
 #define DVBSUB_PAGE_SEGMENT     0x10
 #define DVBSUB_REGION_SEGMENT   0x11
 #define DVBSUB_CLUT_SEGMENT     0x12
@@ -37,7 +33,7 @@
 
 #define cm (ff_cropTbl + MAX_NEG_CROP)
 
-#ifdef DEBUG_SAVE_IMAGES
+#ifdef DEBUG
 #undef fprintf
 #if 0
 static void png_save(const char *filename, uint8_t *bitmap, int w, int h,
@@ -768,20 +764,17 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
     av_dlog(avctx, "DVB pixel block size %d, %s field:\n", buf_size,
             top_bottom ? "bottom" : "top");
 
-#ifdef DEBUG_PACKET_CONTENTS
     for (i = 0; i < buf_size; i++) {
         if (i % 16 == 0)
-            av_log(avctx, AV_LOG_INFO, "0x%08p: ", buf+i);
+            av_dlog(avctx, "0x%8p: ", buf+i);
 
-        av_log(avctx, AV_LOG_INFO, "%02x ", buf[i]);
+        av_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_log(avctx, AV_LOG_INFO, "\n");
+            av_dlog(avctx, "\n");
     }
 
     if (i % 16)
-        av_log(avctx, AV_LOG_INFO, "\n");
-
-#endif
+        av_dlog(avctx, "\n");
 
     if (region == 0)
         return;
@@ -930,27 +923,22 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
     DVBSubContext *ctx = avctx->priv_data;
 
     const uint8_t *buf_end = buf + buf_size;
-    int clut_id;
+    int i, clut_id;
     DVBSubCLUT *clut;
     int entry_id, depth , full_range;
     int y, cr, cb, alpha;
     int r, g, b, r_add, g_add, b_add;
 
-#ifdef DEBUG_PACKET_CONTENTS
-    int i;
-
-    av_log(avctx, AV_LOG_INFO, "DVB clut packet:\n");
+    av_dlog(avctx, "DVB clut packet:\n");
 
     for (i=0; i < buf_size; i++) {
-        av_log(avctx, AV_LOG_INFO, "%02x ", buf[i]);
+        av_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_log(avctx, AV_LOG_INFO, "\n");
+            av_dlog(avctx, "\n");
     }
 
     if (i % 16)
-        av_log(avctx, AV_LOG_INFO, "\n");
-
-#endif
+        av_dlog(avctx, "\n");
 
     clut_id = *buf++;
     buf += 1;
@@ -1194,7 +1182,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
 }
 
 
-#ifdef DEBUG_SAVE_IMAGES
+#ifdef DEBUG
 static void save_display_set(DVBSubContext *ctx)
 {
     DVBSubRegion *region;
@@ -1404,7 +1392,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
 
     sub->num_rects = i;
 
-#ifdef DEBUG_SAVE_IMAGES
+#ifdef DEBUG
     save_display_set(ctx);
 #endif
 
@@ -1423,22 +1411,18 @@ static int dvbsub_decode(AVCodecContext *avctx,
     int segment_type;
     int page_id;
     int segment_length;
-
-#ifdef DEBUG_PACKET_CONTENTS
     int i;
 
-    av_log(avctx, AV_LOG_INFO, "DVB sub packet:\n");
+    av_dlog(avctx, "DVB sub packet:\n");
 
     for (i=0; i < buf_size; i++) {
-        av_log(avctx, AV_LOG_INFO, "%02x ", buf[i]);
+        av_dlog(avctx, "%02x ", buf[i]);
         if (i % 16 == 15)
-            av_log(avctx, AV_LOG_INFO, "\n");
+            av_dlog(avctx, "\n");
     }
 
     if (i % 16)
-        av_log(avctx, AV_LOG_INFO, "\n");
-
-#endif
+        av_dlog(avctx, "\n");
 
     if (buf_size <= 6 || *buf != 0x0f) {
         av_dlog(avctx, "incomplete or broken packet");

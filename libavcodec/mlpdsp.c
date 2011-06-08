@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavcodec/mlp.h"
 #include "dsputil.h"
+#include "mlp.h"
 
 static void ff_mlp_filter_channel(int32_t *state, const int32_t *coeff,
                                   int firorder, int iirorder,

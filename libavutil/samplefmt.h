@@ -60,14 +60,22 @@ enum AVSampleFormat av_get_sample_fmt(const char *name);
  */
 char *av_get_sample_fmt_string(char *buf, int buf_size, enum AVSampleFormat sample_fmt);
 
+#if FF_API_GET_BITS_PER_SAMPLE_FMT
 /**
- * Return sample format bits per sample.
+ * @deprecated Use av_get_bytes_per_sample() instead.
+ */
+attribute_deprecated
+int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
+#endif
+
+/**
+ * Return number of bytes per sample.
  *
  * @param sample_fmt the sample format
- * @return number of bits per sample or zero if unknown for the given
+ * @return number of bytes per sample or zero if unknown for the given
  * sample format
  */
-int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
+int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt);
 
 /**
  * Fill channel data pointers and linesizes for samples with sample

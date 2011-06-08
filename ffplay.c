@@ -54,9 +54,6 @@
 const char program_name[] = "ffplay";
 const int program_birth_year = 2003;
 
-//#define DEBUG
-//#define DEBUG_SYNC
-
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
 #define MIN_AUDIOQ_SIZE (20 * 16 * 1024)
 #define MIN_FRAMES 5
@@ -1052,10 +1049,9 @@ static double compute_target_time(double frame_current_pts, VideoState *is)
         }
     }
     is->frame_timer += delay;
-#if defined(DEBUG_SYNC)
-    printf("video: delay=%0.3f actual_delay=%0.3f pts=%0.3f A-V=%f\n",
-            delay, actual_delay, frame_current_pts, -diff);
-#endif
+
+    av_dlog(NULL, "video: delay=%0.3f pts=%0.3f A-V=%f\n",
+            delay, frame_current_pts, -diff);
 
     return is->frame_timer;
 }
@@ -2033,7 +2029,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             n = 2 * dec->channels;
             is->audio_clock += (double)data_size /
                 (double)(n * dec->sample_rate);
-#if defined(DEBUG_SYNC)
+#ifdef DEBUG
             {
                 static double last_clock;
                 printf("audio: delay=%0.3f clock=%0.3f pts=%0.3f\n",

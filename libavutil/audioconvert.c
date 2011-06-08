@@ -23,8 +23,8 @@
  * audio conversion routines
  */
 
-#include "libavutil/avutil.h"
-#include "libavutil/avstring.h"
+#include "avstring.h"
+#include "avutil.h"
 #include "audioconvert.h"
 
 static const char * const channel_names[] = {

@@ -31,9 +31,6 @@
 #include "rdt.h"
 #include "url.h"
 
-//#define DEBUG
-//#define DEBUG_RTP_TCP
-
 static int rtsp_read_play(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
@@ -191,9 +188,7 @@ int ff_rtsp_tcp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     int id, len, i, ret;
     RTSPStream *rtsp_st;
 
-#ifdef DEBUG_RTP_TCP
     av_dlog(s, "tcp_read_packet:\n");
-#endif
 redo:
     for (;;) {
         RTSPMessageHeader reply;
@@ -212,9 +207,7 @@ redo:
         return -1;
     id  = buf[0];
     len = AV_RB16(buf + 1);
-#ifdef DEBUG_RTP_TCP
     av_dlog(s, "id=%d len=%d\n", id, len);
-#endif
     if (len > buf_size || len < 12)
         goto redo;
     /* get the data */

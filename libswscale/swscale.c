@@ -353,17 +353,20 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int16_t **lumSrc,
             output_pixel(&aDest[i], val);
         }
     }
+#undef output_pixel
 }
 
 #define yuv2NBPS(bits, BE_LE, is_be) \
-static void yuv2yuvX ## bits ## BE_LE ## _c(const int16_t *lumFilter, \
+static void yuv2yuvX ## bits ## BE_LE ## _c(SwsContext *c, const int16_t *lumFilter, \
                               const int16_t **lumSrc, int lumFilterSize, \
                               const int16_t *chrFilter, const int16_t **chrUSrc, \
                               const int16_t **chrVSrc, \
                               int chrFilterSize, const int16_t **alpSrc, \
-                              uint16_t *dest, uint16_t *uDest, uint16_t *vDest, \
-                              uint16_t *aDest, int dstW, int chrDstW) \
+                              uint8_t *_dest, uint8_t *_uDest, uint8_t *_vDest, \
+                              uint8_t *_aDest, int dstW, int chrDstW) \
 { \
+    uint16_t *dest  = (uint16_t *) _dest,  *uDest = (uint16_t *) _uDest, \
+             *vDest = (uint16_t *) _vDest, *aDest = (uint16_t *) _aDest; \
     yuv2yuvX16_c_template(lumFilter, lumSrc, lumFilterSize, \
                           chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
                           alpSrc, \
@@ -377,7 +380,7 @@ yuv2NBPS(10, LE, 0);
 yuv2NBPS(16, BE, 1);
 yuv2NBPS(16, LE, 0);
 
-static inline void yuv2yuvX16_c(const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+static inline void yuv2yuvX16_c(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                 const int16_t *chrFilter, const int16_t **chrUSrc, const int16_t **chrVSrc, int chrFilterSize,
                                 const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest, int dstW, int chrDstW,
                                 enum PixelFormat dstFormat)
@@ -452,9 +455,13 @@ static void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter, const int16_t **
 static inline void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
                                const int16_t *chrFilter, const int16_t **chrUSrc,
                                const int16_t **chrVSrc, int chrFilterSize,
-                               uint8_t *dest, uint8_t *uDest, int dstW, int chrDstW, int dstFormat,
+                               const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest,
+                               uint8_t *vDest, uint8_t *aDest,
+                               int dstW, int chrDstW,
                                const uint8_t *lumDither, const uint8_t *chrDither)
 {
+    enum PixelFormat dstFormat = c->dstFormat;
+
     //FIXME Optimize (just quickly written not optimized..)
     int i;
     for (i=0; i<dstW; i++) {
@@ -1148,6 +1155,14 @@ static void abgrToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unu
     }
 }
 
+static void rgbaToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
+{
+    int i;
+    for (i=0; i<width; i++) {
+        dst[i]= src[4*i+3]<<6;
+    }
+}
+
 #define BGR2UV(type, name, shr, shg, shb, shp, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S) \
 static  void name ## _c(int16_t *dstU, int16_t *dstV, const uint8_t *src, const uint8_t *dummy, int width, uint32_t *unused)\
 {\
@@ -1616,8 +1631,6 @@ static inline void hyscale(SwsContext *c, uint16_t *dst, int dstWidth,
     void (*toYV12)(uint8_t *, const uint8_t *, int, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
     void (*convertRange)(int16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
 
-    src += isAlpha ? c->alpSrcOffset : c->lumSrcOffset;
-
     if (toYV12) {
         toYV12(formatConvBuffer, src, srcW, pal);
         src= formatConvBuffer;
@@ -1661,10 +1674,6 @@ static inline void hcscale(SwsContext *c, uint16_t *dst1, uint16_t *dst2, int ds
                            const int16_t *hChrFilterPos, int hChrFilterSize,
                            uint8_t *formatConvBuffer, uint32_t *pal)
 {
-
-    src1 += c->chrSrcOffset;
-    src2 += c->chrSrcOffset;
-
     if (c->chrToYV12) {
         uint8_t *buf2 = formatConvBuffer + FFALIGN(srcW*2+78, 16);
         c->chrToYV12(formatConvBuffer, buf2, src1, src2, srcW, pal);
@@ -1685,6 +1694,37 @@ static inline void hcscale(SwsContext *c, uint16_t *dst1, uint16_t *dst2, int ds
 
     if (c->chrConvertRange)
         c->chrConvertRange(dst1, dst2, dstWidth);
+}
+
+static av_always_inline void
+find_c_packed_planar_out_funcs(SwsContext *c,
+                               yuv2planar1_fn *yuv2yuv1,    yuv2planarX_fn *yuv2yuvX,
+                               yuv2packed1_fn *yuv2packed1, yuv2packed2_fn *yuv2packed2,
+                               yuv2packedX_fn *yuv2packedX)
+{
+    enum PixelFormat dstFormat = c->dstFormat;
+
+    if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
+        *yuv2yuvX     = yuv2nv12X_c;
+    } else if (is16BPS(dstFormat)) {
+        *yuv2yuvX     = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
+    } else if (is9_OR_10BPS(dstFormat)) {
+        if (dstFormat == PIX_FMT_YUV420P9BE || dstFormat == PIX_FMT_YUV420P9LE) {
+            *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX9BE_c :  yuv2yuvX9LE_c;
+        } else {
+            *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX10BE_c : yuv2yuvX10LE_c;
+        }
+    } else {
+        *yuv2yuv1     = yuv2yuv1_c;
+        *yuv2yuvX     = yuv2yuvX_c;
+    }
+    if(c->flags & SWS_FULL_CHR_H_INT) {
+        *yuv2packedX = yuv2rgbX_c_full;
+    } else {
+        *yuv2packed1  = yuv2packed1_c;
+        *yuv2packed2  = yuv2packed2_c;
+        *yuv2packedX  = yuv2packedX_c;
+    }
 }
 
 #define DEBUG_SWSCALE_BUFFERS 0
@@ -1731,6 +1771,11 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     int lastDstY;
     uint32_t *pal=c->pal_yuv;
     int should_dither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat);
+    yuv2planar1_fn yuv2yuv1 = c->yuv2yuv1;
+    yuv2planarX_fn yuv2yuvX = c->yuv2yuvX;
+    yuv2packed1_fn yuv2packed1 = c->yuv2packed1;
+    yuv2packed2_fn yuv2packed2 = c->yuv2packed2;
+    yuv2packedX_fn yuv2packedX = c->yuv2packedX;
 
     /* vars which will change and which we need to store back in the context */
     int dstY= c->dstY;
@@ -1869,37 +1914,31 @@ static int swScale(SwsContext *c, const uint8_t* src[],
 #if HAVE_MMX
         updateMMXDitherTables(c, dstY, lumBufIndex, chrBufIndex, lastInLumBuf, lastInChrBuf);
 #endif
-        if (dstY < dstH-2) {
+        if (dstY >= dstH-2) {
+            // hmm looks like we can't use MMX here without overwriting this array's tail
+            find_c_packed_planar_out_funcs(c, &yuv2yuv1, &yuv2yuvX,
+                                           &yuv2packed1, &yuv2packed2,
+                                           &yuv2packedX);
+        }
+
+        {
             const int16_t **lumSrcPtr= (const int16_t **) lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
             const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **chrVSrcPtr= (const int16_t **) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-            if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-                const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if (dstY&chrSkipMask) uDest= NULL; //FIXME split functions in lumi / chromi
-                c->yuv2nv12X(c,
-                             vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
-                             vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                             dest, uDest, dstW, chrDstW, dstFormat, lumDither, chrDither);
-            } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
+
+            if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-                if (is16BPS(dstFormat) || isNBPS(dstFormat)) {
-                    yuv2yuvX16_c(vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
-                                 vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr,
-                                 chrVSrcPtr, vChrFilterSize,
-                                 alpSrcPtr, (uint16_t *) dest, (uint16_t *) uDest,
-                                 (uint16_t *) vDest, (uint16_t *) aDest, dstW, chrDstW,
-                                 dstFormat);
-                } else if (vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
+                if (c->yuv2yuv1 && vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
                     const int16_t *lumBuf = lumSrcPtr[0];
                     const int16_t *chrUBuf= chrUSrcPtr[0];
                     const int16_t *chrVBuf= chrVSrcPtr[0];
                     const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
-                    c->yuv2yuv1(c, lumBuf, chrUBuf, chrVBuf, alpBuf, dest,
+                    yuv2yuv1(c, lumBuf, chrUBuf, chrVBuf, alpBuf, dest,
                                 uDest, vDest, aDest, dstW, chrDstW, lumDither, chrDither);
                 } else { //General YV12
-                    c->yuv2yuvX(c,
+                    yuv2yuvX(c,
                                 vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
                                 vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr,
                                 chrVSrcPtr, vChrFilterSize,
@@ -1908,94 +1947,28 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             } else {
                 assert(lumSrcPtr  + vLumFilterSize - 1 < lumPixBuf  + vLumBufSize*2);
                 assert(chrUSrcPtr + vChrFilterSize - 1 < chrUPixBuf + vChrBufSize*2);
-                if (vLumFilterSize == 1 && vChrFilterSize == 2) { //unscaled RGB
+                if (c->yuv2packed1 && vLumFilterSize == 1 && vChrFilterSize == 2) { //unscaled RGB
                     int chrAlpha= vChrFilter[2*dstY+1];
-                    if(flags & SWS_FULL_CHR_H_INT) {
-                        yuv2rgbX_c_full(c, //FIXME write a packed1_full function
-                                        vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                        vChrFilter+dstY*vChrFilterSize, chrUSrcPtr,
-                                        chrVSrcPtr, vChrFilterSize,
-                                        alpSrcPtr, dest, dstW, dstY);
-                    } else {
-                        c->yuv2packed1(c, *lumSrcPtr, *chrUSrcPtr, *(chrUSrcPtr+1),
-                                       *chrVSrcPtr, *(chrVSrcPtr+1),
-                                       alpPixBuf ? *alpSrcPtr : NULL,
-                                       dest, dstW, chrAlpha, dstFormat, flags, dstY);
-                    }
-                } else if (vLumFilterSize == 2 && vChrFilterSize == 2) { //bilinear upscale RGB
+                    yuv2packed1(c, *lumSrcPtr, *chrUSrcPtr, *(chrUSrcPtr+1),
+                                   *chrVSrcPtr, *(chrVSrcPtr+1),
+                                   alpPixBuf ? *alpSrcPtr : NULL,
+                                   dest, dstW, chrAlpha, dstFormat, flags, dstY);
+                } else if (c->yuv2packed2 && vLumFilterSize == 2 && vChrFilterSize == 2) { //bilinear upscale RGB
                     int lumAlpha= vLumFilter[2*dstY+1];
                     int chrAlpha= vChrFilter[2*dstY+1];
                     lumMmxFilter[2]=
                     lumMmxFilter[3]= vLumFilter[2*dstY   ]*0x10001;
                     chrMmxFilter[2]=
                     chrMmxFilter[3]= vChrFilter[2*chrDstY]*0x10001;
-                    if(flags & SWS_FULL_CHR_H_INT) {
-                        yuv2rgbX_c_full(c, //FIXME write a packed2_full function
-                                        vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                        vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                        alpSrcPtr, dest, dstW, dstY);
-                    } else {
-                        c->yuv2packed2(c, *lumSrcPtr, *(lumSrcPtr+1), *chrUSrcPtr, *(chrUSrcPtr+1),
-                                       *chrVSrcPtr, *(chrVSrcPtr+1),
-                                       alpPixBuf ? *alpSrcPtr : NULL, alpPixBuf ? *(alpSrcPtr+1) : NULL,
-                                       dest, dstW, lumAlpha, chrAlpha, dstY);
-                    }
+                    yuv2packed2(c, *lumSrcPtr, *(lumSrcPtr+1), *chrUSrcPtr, *(chrUSrcPtr+1),
+                                   *chrVSrcPtr, *(chrVSrcPtr+1),
+                                   alpPixBuf ? *alpSrcPtr : NULL, alpPixBuf ? *(alpSrcPtr+1) : NULL,
+                                   dest, dstW, lumAlpha, chrAlpha, dstY);
                 } else { //general RGB
-                    if(flags & SWS_FULL_CHR_H_INT) {
-                        yuv2rgbX_c_full(c,
-                                        vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                        vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                        alpSrcPtr, dest, dstW, dstY);
-                    } else {
-                        c->yuv2packedX(c,
-                                       vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                       vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                       alpSrcPtr, dest, dstW, dstY);
-                    }
-                }
-            }
-        } else { // hmm looks like we can't use MMX here without overwriting this array's tail
-            const int16_t **lumSrcPtr= (const int16_t **)lumPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize;
-            const int16_t **chrUSrcPtr= (const int16_t **)chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-            const int16_t **chrVSrcPtr= (const int16_t **)chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
-            const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **)alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
-            if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-                const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if (dstY&chrSkipMask) uDest= NULL; //FIXME split functions in lumi / chromi
-                yuv2nv12X_c(c, vLumFilter+dstY*vLumFilterSize,
-                            lumSrcPtr, vLumFilterSize,
-                            vChrFilter+chrDstY*vChrFilterSize,
-                            chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                            dest, uDest, dstW, chrDstW, dstFormat, lumDither, chrDither);
-            } else if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12
-                const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if ((dstY&chrSkipMask) || isGray(dstFormat)) uDest=vDest= NULL; //FIXME split functions in lumi / chromi
-                if (is16BPS(dstFormat) || is9_OR_10BPS(dstFormat)) {
-                    yuv2yuvX16_c(vLumFilter+dstY*vLumFilterSize   , lumSrcPtr, vLumFilterSize,
-                                 vChrFilter+chrDstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                 alpSrcPtr, (uint16_t *) dest, (uint16_t *) uDest, (uint16_t *) vDest, (uint16_t *) aDest, dstW, chrDstW,
-                                 dstFormat);
-                } else {
-                    yuv2yuvX_c(c, vLumFilter+dstY*vLumFilterSize,
-                               lumSrcPtr, vLumFilterSize,
-                               vChrFilter+chrDstY*vChrFilterSize,
-                               chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                               alpSrcPtr, dest, uDest, vDest, aDest,
-                               dstW, chrDstW, lumDither, chrDither);
-                }
-            } else {
-                assert(lumSrcPtr + vLumFilterSize - 1 < lumPixBuf + vLumBufSize*2);
-                assert(chrUSrcPtr + vChrFilterSize - 1 < chrUPixBuf + vChrBufSize*2);
-                if(flags & SWS_FULL_CHR_H_INT) {
-                    yuv2rgbX_c_full(c,
-                                    vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                    vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                    alpSrcPtr, dest, dstW, dstY);
-                } else {
-                    yuv2packedX_c(c,
-                                  vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
-                                  vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                                  alpSrcPtr, dest, dstW, dstY);
+                    yuv2packedX(c,
+                                   vLumFilter+dstY*vLumFilterSize, lumSrcPtr, vLumFilterSize,
+                                   vChrFilter+dstY*vChrFilterSize, chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
+                                   alpSrcPtr, dest, dstW, dstY);
                 }
             }
         }
@@ -2024,17 +1997,13 @@ static void sws_init_swScale_c(SwsContext *c)
 {
     enum PixelFormat srcFormat = c->srcFormat;
 
-    c->yuv2nv12X    = yuv2nv12X_c;
-    c->yuv2yuv1     = yuv2yuv1_c;
-    c->yuv2yuvX     = yuv2yuvX_c;
-    c->yuv2packed1  = yuv2packed1_c;
-    c->yuv2packed2  = yuv2packed2_c;
-    c->yuv2packedX  = yuv2packedX_c;
+    find_c_packed_planar_out_funcs(c, &c->yuv2yuv1, &c->yuv2yuvX,
+                                   &c->yuv2packed1, &c->yuv2packed2,
+                                   &c->yuv2packedX);
 
     c->hScale       = hScale_c;
 
-    if (c->flags & SWS_FAST_BILINEAR)
-    {
+    if (c->flags & SWS_FAST_BILINEAR) {
         c->hyscale_fast = hyscale_fast_c;
         c->hcscale_fast = hcscale_fast_c;
     }
@@ -2133,27 +2102,17 @@ static void sws_init_swScale_c(SwsContext *c)
     }
     if (c->alpPixBuf) {
         switch (srcFormat) {
-        case PIX_FMT_RGB32  :
-        case PIX_FMT_RGB32_1:
-        case PIX_FMT_BGR32  :
-        case PIX_FMT_BGR32_1: c->alpToYV12 = abgrToA_c; break;
-        case PIX_FMT_GRAY8A : c->alpToYV12 = yuy2ToY_c; break;
-        case PIX_FMT_PAL8   : c->alpToYV12 = palToA_c; break;
+        case PIX_FMT_BGRA:
+        case PIX_FMT_RGBA:  c->alpToYV12 = rgbaToA_c; break;
+        case PIX_FMT_ABGR:
+        case PIX_FMT_ARGB:  c->alpToYV12 = abgrToA_c; break;
+        case PIX_FMT_Y400A: c->alpToYV12 = uyvyToY_c; break;
+        case PIX_FMT_PAL8 : c->alpToYV12 = palToA_c; break;
         }
     }
 
     if(isAnyRGB(c->srcFormat) || c->srcFormat == PIX_FMT_PAL8)
         c->hScale16= hScale16_c;
-
-    switch (srcFormat) {
-    case PIX_FMT_GRAY8A :
-        c->alpSrcOffset = 1;
-        break;
-    case PIX_FMT_RGB32  :
-    case PIX_FMT_BGR32  :
-        c->alpSrcOffset = 3;
-        break;
-    }
 
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
         if (c->srcRange) {

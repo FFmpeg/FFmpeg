@@ -66,11 +66,19 @@ char *av_get_sample_fmt_string (char *buf, int buf_size, enum AVSampleFormat sam
     return buf;
 }
 
+int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt)
+{
+     return sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB ?
+        0 : sample_fmt_info[sample_fmt].bits >> 3;
+}
+
+#if FF_API_GET_BITS_PER_SAMPLE_FMT
 int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt)
 {
     return sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB ?
         0 : sample_fmt_info[sample_fmt].bits;
 }
+#endif
 
 int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
                            uint8_t *buf, int nb_channels, int nb_samples,

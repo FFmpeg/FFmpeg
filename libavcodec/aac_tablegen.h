@@ -29,7 +29,7 @@
 #include "libavcodec/aac_tables.h"
 #else
 #include "libavutil/mathematics.h"
-#include "libavcodec/aac.h"
+#include "aac.h"
 float ff_aac_pow2sf_tab[428];
 
 void ff_aac_tableinit(void)

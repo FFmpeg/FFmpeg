@@ -164,7 +164,6 @@ typedef struct AC3EncOptions {
     int cpl_start;    
 } AC3EncOptions;
 
-
 void ff_ac3_common_init(void);
 
 extern const int64_t ff_ac3_channel_layouts[];

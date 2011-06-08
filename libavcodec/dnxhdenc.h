@@ -25,8 +25,9 @@
 #define AVCODEC_DNXHDENC_H
 
 #include <stdint.h>
-#include "libavcodec/mpegvideo.h"
-#include "libavcodec/dnxhddata.h"
+
+#include "mpegvideo.h"
+#include "dnxhddata.h"
 
 typedef struct {
     uint16_t mb;

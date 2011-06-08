@@ -22,7 +22,7 @@
  */
 
 #include "avcodec.h"
-#include "libavcodec/bytestream.h"
+#include "bytestream.h"
 
 static av_cold int encode_init(AVCodecContext *avctx)
 {
