@@ -1344,33 +1344,51 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
 }
 
 // FIXME Maybe dither instead.
-#define YUV_NBPS(depth, endianness, rfunc) \
-static void endianness ## depth ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
-                                          const uint8_t *_srcU, const uint8_t *_srcV, \
-                                          int width, uint32_t *unused) \
-{ \
-    int i; \
-    const uint16_t *srcU = (const uint16_t*)_srcU; \
-    const uint16_t *srcV = (const uint16_t*)_srcV; \
-    for (i = 0; i < width; i++) { \
-        dstU[i] = rfunc(&srcU[i])>>(depth-8); \
-        dstV[i] = rfunc(&srcV[i])>>(depth-8); \
-    } \
-} \
-\
-static void endianness ## depth ## ToY_c(uint8_t *dstY, const uint8_t *_srcY, \
-                                         int width, uint32_t *unused) \
-{ \
-    int i; \
-    const uint16_t *srcY = (const uint16_t*)_srcY; \
-    for (i = 0; i < width; i++) \
-        dstY[i] = rfunc(&srcY[i])>>(depth-8); \
-} \
+static av_always_inline void
+yuv9_OR_10ToUV_c_template(uint8_t *dstU, uint8_t *dstV,
+                          const uint8_t *_srcU, const uint8_t *_srcV,
+                          int width, enum PixelFormat origin, int depth)
+{
+    int i;
+    const uint16_t *srcU = (const uint16_t *) _srcU;
+    const uint16_t *srcV = (const uint16_t *) _srcV;
 
-YUV_NBPS( 9, LE, AV_RL16)
-YUV_NBPS( 9, BE, AV_RB16)
-YUV_NBPS(10, LE, AV_RL16)
-YUV_NBPS(10, BE, AV_RB16)
+#define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
+    for (i = 0; i < width; i++) {
+        dstU[i] = input_pixel(&srcU[i]) >> (depth - 8);
+        dstV[i] = input_pixel(&srcV[i]) >> (depth - 8);
+    }
+}
+
+static av_always_inline void
+yuv9_or_10ToY_c_template(uint8_t *dstY, const uint8_t *_srcY,
+                         int width, enum PixelFormat origin, int depth)
+{
+    int i;
+    const uint16_t *srcY = (const uint16_t*)_srcY;
+
+    for (i = 0; i < width; i++)
+        dstY[i] = input_pixel(&srcY[i]) >> (depth - 8);
+#undef input_pixel
+}
+
+#define YUV_NBPS(depth, BE_LE, origin) \
+static void BE_LE ## depth ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
+                                     const uint8_t *srcU, const uint8_t *srcV, \
+                                     int width, uint32_t *unused) \
+{ \
+    yuv9_OR_10ToUV_c_template(dstU, dstV, srcU, srcV, width, origin, depth); \
+} \
+static void BE_LE ## depth ## ToY_c(uint8_t *dstY, const uint8_t *srcY, \
+                                    int width, uint32_t *unused) \
+{ \
+    yuv9_or_10ToY_c_template(dstY, srcY, width, origin, depth); \
+}
+
+YUV_NBPS( 9, LE, PIX_FMT_YUV420P9LE);
+YUV_NBPS( 9, BE, PIX_FMT_YUV420P9BE);
+YUV_NBPS(10, LE, PIX_FMT_YUV420P10LE);
+YUV_NBPS(10, BE, PIX_FMT_YUV420P10BE);
 
 static void bgr24ToY_c(uint8_t *dst, const uint8_t *src,
                        int width, uint32_t *unused)
