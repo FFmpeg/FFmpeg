@@ -27,6 +27,11 @@
 #include <stdint.h>
 #include "avcodec.h"
 
+struct AVCodecDefault {
+    const uint8_t *key;
+    const uint8_t *value;
+};
+
 /**
  * Determine whether pix_fmt is a hardware accelerated format.
  */

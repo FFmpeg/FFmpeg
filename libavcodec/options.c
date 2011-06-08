@@ -25,6 +25,8 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
+#include "libavutil/avassert.h"
 #include "libavutil/opt.h"
 #include <float.h>              /* FLT_MIN, FLT_MAX */
 
@@ -522,6 +524,15 @@ int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
         if(codec->priv_class){
             *(AVClass**)s->priv_data= codec->priv_class;
             av_opt_set_defaults(s->priv_data);
+        }
+    }
+    if (codec && codec->defaults) {
+        int ret;
+        AVCodecDefault *d = codec->defaults;
+        while (d->key) {
+            ret = av_set_string3(s, d->key, d->value, 0, NULL);
+            av_assert0(ret >= 0);
+            d++;
         }
     }
     return 0;

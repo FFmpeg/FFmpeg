@@ -2860,6 +2860,8 @@ typedef struct AVProfile {
     const char *name; ///< short name for the profile
 } AVProfile;
 
+typedef struct AVCodecDefault AVCodecDefault;
+
 /**
  * AVCodec.
  */
@@ -2922,6 +2924,11 @@ typedef struct AVCodec {
      */
     int (*update_thread_context)(AVCodecContext *dst, const AVCodecContext *src);
     /** @} */
+
+    /**
+     * Private codec-specific defaults.
+     */
+    const AVCodecDefault *defaults;
 } AVCodec;
 
 /**
