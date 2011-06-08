@@ -97,8 +97,8 @@ static int crypto_open(URLContext *h, const char *uri, int flags)
 
     return 0;
 err:
-    av_freep(c->key);
-    av_freep(c->iv);
+    av_free(c->key);
+    av_free(c->iv);
     return ret;
 }
 
@@ -157,6 +157,8 @@ static int crypto_close(URLContext *h)
     if (c->hd)
         ffurl_close(c->hd);
     av_freep(&c->aes);
+    av_freep(&c->key);
+    av_freep(&c->iv);
     return 0;
 }
 
