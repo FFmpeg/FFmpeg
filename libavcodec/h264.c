@@ -484,6 +484,8 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
         qpix_op[luma_xy](dest_y + delta, src_y + delta, h->mb_linesize);
     }
 
+    if(CONFIG_GRAY && s->flags&CODEC_FLAG_GRAY) return;
+
     if(chroma444){
         src_cb = pic->data[1] + offset;
         if(emu){
@@ -508,8 +510,6 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
         }
         return;
     }
-
-    if(CONFIG_GRAY && s->flags&CODEC_FLAG_GRAY) return;
 
     if(MB_FIELD){
         // chroma offset when predicting from a field of opposite parity
@@ -1847,24 +1847,28 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                 for (j = 0; j < 16; j++)
                     tmp_y[j] = get_bits(&gb, bit_depth);
             }
-            for (i = 0; i < 8; i++) {
-                uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
-                for (j = 0; j < 8; j++)
-                    tmp_cb[j] = get_bits(&gb, bit_depth);
-            }
-            for (i = 0; i < 8; i++) {
-                uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
-                for (j = 0; j < 8; j++)
-                    tmp_cr[j] = get_bits(&gb, bit_depth);
+            if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                for (i = 0; i < 8; i++) {
+                    uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
+                    for (j = 0; j < 8; j++)
+                        tmp_cb[j] = get_bits(&gb, bit_depth);
+                }
+                for (i = 0; i < 8; i++) {
+                    uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
+                    for (j = 0; j < 8; j++)
+                        tmp_cr[j] = get_bits(&gb, bit_depth);
+                }
             }
         } else {
-        for (i=0; i<16; i++) {
-            memcpy(dest_y + i*  linesize, h->mb       + i*8, 16);
-        }
-        for (i=0; i<8; i++) {
-            memcpy(dest_cb+ i*uvlinesize, h->mb + 128 + i*4,  8);
-            memcpy(dest_cr+ i*uvlinesize, h->mb + 160 + i*4,  8);
-        }
+            for (i=0; i<16; i++) {
+                memcpy(dest_y + i*  linesize, h->mb       + i*8, 16);
+            }
+            if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
+                for (i=0; i<8; i++) {
+                    memcpy(dest_cb+ i*uvlinesize, h->mb + 128 + i*4,  8);
+                    memcpy(dest_cr+ i*uvlinesize, h->mb + 160 + i*4,  8);
+                }
+            }
         }
     } else {
         if(IS_INTRA(mb_type)){
@@ -1954,8 +1958,9 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
     int i, j, p;
     int *block_offset = &h->block_offset[0];
     const int transform_bypass = !simple && (s->qscale == 0 && h->sps.transform_bypass);
+    const int plane_count = (simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)) ? 3 : 1;
 
-    for (p = 0; p < 3; p++)
+    for (p = 0; p < plane_count; p++)
     {
         dest[p] = s->current_picture.data[p] + ((mb_x << pixel_shift) + mb_y * s->linesize) * 16;
         s->dsp.prefetch(dest[p] + (s->mb_x&3)*4*s->linesize + (64 << pixel_shift), s->linesize, 4);
@@ -1996,7 +2001,7 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
             GetBitContext gb;
             init_get_bits(&gb, (uint8_t*)h->mb, 768*bit_depth);
 
-            for (p = 0; p < 3; p++) {
+            for (p = 0; p < plane_count; p++) {
                 for (i = 0; i < 16; i++) {
                     uint16_t *tmp = (uint16_t*)(dest[p] + i*linesize);
                     for (j = 0; j < 16; j++)
@@ -2004,7 +2009,7 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
                 }
             }
         } else {
-            for (p = 0; p < 3; p++) {
+            for (p = 0; p < plane_count; p++) {
                 for (i = 0; i < 16; i++) {
                     memcpy(dest[p] + i*linesize, h->mb + p*128 + i*8, 16);
                 }
@@ -2015,7 +2020,7 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest[0], dest[1], dest[2], linesize, linesize, 1, 1, simple, pixel_shift);
 
-            for (p = 0; p < 3; p++)
+            for (p = 0; p < plane_count; p++)
                 hl_decode_mb_predict_luma(h, mb_type, 1, simple, transform_bypass, pixel_shift, block_offset, linesize, dest[p], p);
 
             if(h->deblocking_filter)
@@ -2035,7 +2040,7 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
                             h->h264dsp.biweight_h264_pixels_tab, 1);
         }
 
-        for (p = 0; p < 3; p++)
+        for (p = 0; p < plane_count; p++)
             hl_decode_mb_idct_luma(h, mb_type, 1, simple, transform_bypass, pixel_shift, block_offset, linesize, dest[p], p);
     }
     if(h->cbp || IS_INTRA(mb_type))
