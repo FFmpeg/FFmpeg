@@ -329,6 +329,33 @@ static void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
         }
 }
 
+static void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
+                       const int16_t *chrUSrc, const int16_t *chrVSrc,
+                       const int16_t *alpSrc,
+                       uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
+                       uint8_t *aDest, int dstW, int chrDstW)
+{
+    int i;
+    for (i=0; i<dstW; i++) {
+        int val= (lumSrc[i]+64)>>7;
+        dest[i]= av_clip_uint8(val);
+    }
+
+    if (uDest)
+        for (i=0; i<chrDstW; i++) {
+            int u=(chrUSrc[i]+64)>>7;
+            int v=(chrVSrc[i]+64)>>7;
+            uDest[i]= av_clip_uint8(u);
+            vDest[i]= av_clip_uint8(v);
+        }
+
+    if (CONFIG_SWSCALE_ALPHA && aDest)
+        for (i=0; i<dstW; i++) {
+            int val= (alpSrc[i]+64)>>7;
+            aDest[i]= av_clip_uint8(val);
+        }
+}
+
 static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
                         const int16_t **lumSrc, int lumFilterSize,
                         const int16_t *chrFilter, const int16_t **chrUSrc,
@@ -996,6 +1023,46 @@ static void yuv2rgbX_c_full(SwsContext *c, const int16_t *lumFilter,
     }
 }
 
+/**
+ * vertical bilinear scale YV12 to RGB
+ */
+static void yuv2packed2_c(SwsContext *c, const uint16_t *buf0,
+                          const uint16_t *buf1, const uint16_t *ubuf0,
+                          const uint16_t *ubuf1, const uint16_t *vbuf0,
+                          const uint16_t *vbuf1, const uint16_t *abuf0,
+                          const uint16_t *abuf1, uint8_t *dest, int dstW,
+                          int yalpha, int uvalpha, int y)
+{
+    int  yalpha1=4095- yalpha;
+    int uvalpha1=4095-uvalpha;
+    int i;
+
+    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C(void,0), YSCALE_YUV_2_MONO2_C)
+}
+
+/**
+ * YV12 to RGB without scaling or interpolating
+ */
+static void yuv2packed1_c(SwsContext *c, const uint16_t *buf0,
+                          const uint16_t *ubuf0, const uint16_t *ubuf1,
+                          const uint16_t *vbuf0, const uint16_t *vbuf1,
+                          const uint16_t *abuf0, uint8_t *dest, int dstW,
+                          int uvalpha, enum PixelFormat dstFormat,
+                          int flags, int y)
+{
+    const int yalpha1=0;
+    int i;
+
+    const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
+    const int yalpha= 4096; //FIXME ...
+
+    if (uvalpha < 2048) {
+        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C(void,0), YSCALE_YUV_2_MONO2_C)
+    } else {
+        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_PACKED1B_C(void,0), YSCALE_YUV_2_MONO2_C)
+    }
+}
+
 static av_always_inline void fillPlane(uint8_t* plane, int stride,
                                        int width, int height,
                                        int y, uint8_t val)
@@ -1111,22 +1178,6 @@ BGR2Y(uint16_t, bgr15ToY, 0, 0, 0, 0x001F, 0x03E0, 0x7C00, RY<<10, GY<<5, BY    
 BGR2Y(uint16_t, rgb16ToY, 0, 0, 0, 0xF800, 0x07E0, 0x001F, RY    , GY<<5, BY<<11, RGB2YUV_SHIFT+8)
 BGR2Y(uint16_t, rgb15ToY, 0, 0, 0, 0x7C00, 0x03E0, 0x001F, RY    , GY<<5, BY<<10, RGB2YUV_SHIFT+7)
 
-static void abgrToA_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
-{
-    int i;
-    for (i=0; i<width; i++) {
-        dst[i]= src[4*i];
-    }
-}
-
-static void rgbaToA_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
-{
-    int i;
-    for (i=0; i<width; i++) {
-        dst[i]= src[4*i+3];
-    }
-}
-
 #define BGR2UV(type, name, shr, shg, shb, shp, maskr, maskg, maskb, RU, GU, BU, RV, GV, BV, S) \
 static void name ## _c(uint8_t *dstU, uint8_t *dstV, \
                        const uint8_t *src, const uint8_t *dummy, \
@@ -1171,6 +1222,22 @@ BGR2UV(uint16_t, bgr15ToUV, 0, 0, 0, 0,   0x001F, 0x03E0,   0x7C00, RU<<10, GU<<
 BGR2UV(uint16_t, rgb16ToUV, 0, 0, 0, 0,   0xF800, 0x07E0,   0x001F, RU    , GU<<5, BU<<11, RV    , GV<<5, BV<<11, RGB2YUV_SHIFT+8)
 BGR2UV(uint16_t, rgb15ToUV, 0, 0, 0, 0,   0x7C00, 0x03E0,   0x001F, RU    , GU<<5, BU<<10, RV    , GV<<5, BV<<10, RGB2YUV_SHIFT+7)
 
+static void abgrToA_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
+{
+    int i;
+    for (i=0; i<width; i++) {
+        dst[i]= src[4*i];
+    }
+}
+
+static void rgbaToA_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
+{
+    int i;
+    for (i=0; i<width; i++) {
+        dst[i]= src[4*i+3];
+    }
+}
+
 static void palToY_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *pal)
 {
     int i;
@@ -1214,73 +1281,6 @@ static void monoblack2Y_c(uint8_t *dst, const uint8_t *src,
         int d= src[i];
         for(j=0; j<8; j++)
             dst[8*i+j]= ((d>>(7-j))&1)*255;
-    }
-}
-
-static void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
-                       const int16_t *chrUSrc, const int16_t *chrVSrc,
-                       const int16_t *alpSrc,
-                       uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
-                       uint8_t *aDest, int dstW, int chrDstW)
-{
-    int i;
-    for (i=0; i<dstW; i++) {
-        int val= (lumSrc[i]+64)>>7;
-        dest[i]= av_clip_uint8(val);
-    }
-
-    if (uDest)
-        for (i=0; i<chrDstW; i++) {
-            int u=(chrUSrc[i]+64)>>7;
-            int v=(chrVSrc[i]+64)>>7;
-            uDest[i]= av_clip_uint8(u);
-            vDest[i]= av_clip_uint8(v);
-        }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest)
-        for (i=0; i<dstW; i++) {
-            int val= (alpSrc[i]+64)>>7;
-            aDest[i]= av_clip_uint8(val);
-        }
-}
-
-/**
- * vertical bilinear scale YV12 to RGB
- */
-static void yuv2packed2_c(SwsContext *c, const uint16_t *buf0,
-                          const uint16_t *buf1, const uint16_t *ubuf0,
-                          const uint16_t *ubuf1, const uint16_t *vbuf0,
-                          const uint16_t *vbuf1, const uint16_t *abuf0,
-                          const uint16_t *abuf1, uint8_t *dest, int dstW,
-                          int yalpha, int uvalpha, int y)
-{
-    int  yalpha1=4095- yalpha;
-    int uvalpha1=4095-uvalpha;
-    int i;
-
-    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C(void,0), YSCALE_YUV_2_MONO2_C)
-}
-
-/**
- * YV12 to RGB without scaling or interpolating
- */
-static void yuv2packed1_c(SwsContext *c, const uint16_t *buf0,
-                          const uint16_t *ubuf0, const uint16_t *ubuf1,
-                          const uint16_t *vbuf0, const uint16_t *vbuf1,
-                          const uint16_t *abuf0, uint8_t *dest, int dstW,
-                          int uvalpha, enum PixelFormat dstFormat,
-                          int flags, int y)
-{
-    const int yalpha1=0;
-    int i;
-
-    const uint16_t *buf1= buf0; //FIXME needed for RGB1/BGR1
-    const int yalpha= 4096; //FIXME ...
-
-    if (uvalpha < 2048) {
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C(void,0), YSCALE_YUV_2_MONO2_C)
-    } else {
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_PACKED1B_C(void,0), YSCALE_YUV_2_MONO2_C)
     }
 }
 
