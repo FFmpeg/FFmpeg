@@ -573,7 +573,7 @@ static void update_sample_fmt(AVCodecContext *dec, AVCodec *dec_codec,
     if (dec_codec && dec_codec->sample_fmts &&
         dec_codec->sample_fmts[0] != AV_SAMPLE_FMT_NONE &&
         dec_codec->sample_fmts[1] != AV_SAMPLE_FMT_NONE) {
-        enum AVSampleFormat *p;
+        const enum AVSampleFormat *p;
         int min_dec = -1, min_inc = -1;
 
         /* find a matching sample format in the encoder */
