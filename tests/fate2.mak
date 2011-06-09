@@ -165,7 +165,7 @@ fate-wmapro-2ch: CMP = oneoff
 fate-wmapro-2ch: REF = $(SAMPLES)/wmapro/Beethovens_9th-1_small.pcm
 
 FATE_TESTS += fate-ansi
-fate-ansi: CMD = framecrc -ar 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
+fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
 
 FATE_TESTS += fate-wmv8-drm
 # discard last packet to avoid fails due to overread of VC-1 decoder
