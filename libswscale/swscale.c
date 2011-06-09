@@ -1821,7 +1821,7 @@ find_c_packed_planar_out_funcs(SwsContext *c,
     } else if (is16BPS(dstFormat)) {
         *yuv2yuvX     = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
     } else if (is9_OR_10BPS(dstFormat)) {
-        if (dstFormat == PIX_FMT_YUV420P9BE || dstFormat == PIX_FMT_YUV420P9LE) {
+        if (av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1 == 8) {
             *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX9BE_c :  yuv2yuvX9LE_c;
         } else {
             *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX10BE_c : yuv2yuvX10LE_c;
@@ -2161,9 +2161,15 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_PAL8     :
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->chrToYV12 = palToUV_c; break;
+        case PIX_FMT_YUV444P9BE:
         case PIX_FMT_YUV420P9BE: c->chrToYV12 = BE9ToUV_c; break;
+        case PIX_FMT_YUV444P9LE:
         case PIX_FMT_YUV420P9LE: c->chrToYV12 = LE9ToUV_c; break;
+        case PIX_FMT_YUV444P10BE:
+        case PIX_FMT_YUV422P10BE:
         case PIX_FMT_YUV420P10BE: c->chrToYV12 = BE10ToUV_c; break;
+        case PIX_FMT_YUV422P10LE:
+        case PIX_FMT_YUV444P10LE:
         case PIX_FMT_YUV420P10LE: c->chrToYV12 = LE10ToUV_c; break;
         case PIX_FMT_YUV420P16BE:
         case PIX_FMT_YUV422P16BE:
@@ -2219,9 +2225,15 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
     c->lumToYV12 = NULL;
     c->alpToYV12 = NULL;
     switch (srcFormat) {
+    case PIX_FMT_YUV444P9BE:
     case PIX_FMT_YUV420P9BE: c->lumToYV12 = BE9ToY_c; break;
+    case PIX_FMT_YUV444P9LE:
     case PIX_FMT_YUV420P9LE: c->lumToYV12 = LE9ToY_c; break;
+    case PIX_FMT_YUV444P10BE:
+    case PIX_FMT_YUV422P10BE:
     case PIX_FMT_YUV420P10BE: c->lumToYV12 = BE10ToY_c; break;
+    case PIX_FMT_YUV444P10LE:
+    case PIX_FMT_YUV422P10LE:
     case PIX_FMT_YUV420P10LE: c->lumToYV12 = LE10ToY_c; break;
     case PIX_FMT_YUYV422  :
     case PIX_FMT_YUV420P16BE:

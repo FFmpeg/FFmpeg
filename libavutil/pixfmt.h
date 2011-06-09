@@ -141,6 +141,10 @@ enum PixelFormat {
     PIX_FMT_YUV420P10LE,///< planar YUV 4:2:0, 15bpp, (1 Cr & Cb sample per 2x2 Y samples), little-endian
     PIX_FMT_YUV422P10BE,///< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
     PIX_FMT_YUV422P10LE,///< planar YUV 4:2:2, 20bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
+    PIX_FMT_YUV444P9BE, ///< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    PIX_FMT_YUV444P9LE, ///< planar YUV 4:4:4, 27bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
+    PIX_FMT_YUV444P10BE,///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), little-endian
+    PIX_FMT_YUV444P10LE,///< planar YUV 4:4:4, 30bpp, (1 Cr & Cb sample per 1x1 Y samples), big-endian
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -166,8 +170,10 @@ enum PixelFormat {
 #define PIX_FMT_BGR444 PIX_FMT_NE(BGR444BE, BGR444LE)
 
 #define PIX_FMT_YUV420P9  PIX_FMT_NE(YUV420P9BE , YUV420P9LE)
+#define PIX_FMT_YUV444P9  PIX_FMT_NE(YUV444P9BE , YUV444P9LE)
 #define PIX_FMT_YUV420P10 PIX_FMT_NE(YUV420P10BE, YUV420P10LE)
 #define PIX_FMT_YUV422P10 PIX_FMT_NE(YUV422P10BE, YUV422P10LE)
+#define PIX_FMT_YUV444P10 PIX_FMT_NE(YUV444P10BE, YUV444P10LE)
 #define PIX_FMT_YUV420P16 PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
 #define PIX_FMT_YUV422P16 PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
 #define PIX_FMT_YUV444P16 PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
