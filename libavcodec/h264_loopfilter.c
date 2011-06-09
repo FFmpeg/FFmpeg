@@ -217,6 +217,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
     int mb_xy;
     int mb_type, left_type;
     int qp, qp0, qp1, qpc, qpc0, qpc1, qp_thresh;
+    int chroma = !(CONFIG_GRAY && (s->flags&CODEC_FLAG_GRAY));
 
     mb_xy = h->mb_xy;
 
@@ -262,16 +263,18 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
             filter_mb_edgeh( &img_y[4*2*linesize], linesize, bS3, qp, h);
             filter_mb_edgeh( &img_y[4*3*linesize], linesize, bS3, qp, h);
         }
-        if(left_type){
-            filter_mb_edgecv( &img_cb[2*0], uvlinesize, bS4, qpc0, h);
-            filter_mb_edgecv( &img_cr[2*0], uvlinesize, bS4, qpc0, h);
+        if(chroma){
+            if(left_type){
+                filter_mb_edgecv( &img_cb[2*0], uvlinesize, bS4, qpc0, h);
+                filter_mb_edgecv( &img_cr[2*0], uvlinesize, bS4, qpc0, h);
+            }
+            filter_mb_edgecv( &img_cb[2*2], uvlinesize, bS3, qpc, h);
+            filter_mb_edgecv( &img_cr[2*2], uvlinesize, bS3, qpc, h);
+            filter_mb_edgech( &img_cb[2*0*uvlinesize], uvlinesize, bSH, qpc1, h);
+            filter_mb_edgech( &img_cb[2*2*uvlinesize], uvlinesize, bS3, qpc, h);
+            filter_mb_edgech( &img_cr[2*0*uvlinesize], uvlinesize, bSH, qpc1, h);
+            filter_mb_edgech( &img_cr[2*2*uvlinesize], uvlinesize, bS3, qpc, h);
         }
-        filter_mb_edgecv( &img_cb[2*2], uvlinesize, bS3, qpc, h);
-        filter_mb_edgecv( &img_cr[2*2], uvlinesize, bS3, qpc, h);
-        filter_mb_edgech( &img_cb[2*0*uvlinesize], uvlinesize, bSH, qpc1, h);
-        filter_mb_edgech( &img_cb[2*2*uvlinesize], uvlinesize, bS3, qpc, h);
-        filter_mb_edgech( &img_cr[2*0*uvlinesize], uvlinesize, bSH, qpc1, h);
-        filter_mb_edgech( &img_cr[2*2*uvlinesize], uvlinesize, bS3, qpc, h);
         return;
     } else {
         LOCAL_ALIGNED_8(int16_t, bS, [2], [4][4]);
@@ -298,7 +301,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
 #define FILTER(hv,dir,edge)\
         if(AV_RN64A(bS[dir][edge])) {                                   \
             filter_mb_edge##hv( &img_y[4*edge*(dir?linesize:1)], linesize, bS[dir][edge], edge ? qp : qp##dir, h );\
-            if(!(edge&1)) {\
+            if(chroma && !(edge&1)) {\
                 filter_mb_edgec##hv( &img_cb[2*edge*(dir?uvlinesize:1)], uvlinesize, bS[dir][edge], edge ? qpc : qpc##dir, h );\
                 filter_mb_edgec##hv( &img_cr[2*edge*(dir?uvlinesize:1)], uvlinesize, bS[dir][edge], edge ? qpc : qpc##dir, h );\
             }\
@@ -353,7 +356,7 @@ static int check_mv(H264Context *h, long b_idx, long bn_idx, int mvy_limit){
     return v;
 }
 
-static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize, int mb_xy, int mb_type, int mvy_limit, int first_vertical_edge_done, int chroma444, int dir) {
+static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint8_t *img_cb, uint8_t *img_cr, unsigned int linesize, unsigned int uvlinesize, int mb_xy, int mb_type, int mvy_limit, int first_vertical_edge_done, int chroma, int chroma444, int dir) {
     MpegEncContext * const s = &h->s;
     int edge;
     int chroma_qp_avg[2];
@@ -410,12 +413,14 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 filter_mb_edgeh( &img_y[j*linesize], tmp_linesize, bS, qp, h );
                 chroma_qp_avg[0] = (h->chroma_qp[0] + get_chroma_qp( h, 0, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
                 chroma_qp_avg[1] = (h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbn_xy] ) + 1 ) >> 1;
-                if (chroma444) {
-                    filter_mb_edgeh (&img_cb[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[0], h);
-                    filter_mb_edgeh (&img_cr[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[1], h);
-                } else {
-                    filter_mb_edgech(&img_cb[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[0], h);
-                    filter_mb_edgech(&img_cr[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[1], h);
+                if (chroma) {
+                    if (chroma444) {
+                        filter_mb_edgeh (&img_cb[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[0], h);
+                        filter_mb_edgeh (&img_cr[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[1], h);
+                    } else {
+                        filter_mb_edgech(&img_cb[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[0], h);
+                        filter_mb_edgech(&img_cr[j*uvlinesize], tmp_uvlinesize, bS, chroma_qp_avg[1], h);
+                    }
                 }
             }
         }else{
@@ -475,7 +480,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                 chroma_qp_avg[1] = (h->chroma_qp[1] + get_chroma_qp( h, 1, s->current_picture.qscale_table[mbm_xy] ) + 1 ) >> 1;
                 if( dir == 0 ) {
                     filter_mb_edgev( &img_y[0], linesize, bS, qp, h );
-                    {
+                    if (chroma) {
                         if (chroma444) {
                             filter_mb_edgev ( &img_cb[0], uvlinesize, bS, chroma_qp_avg[0], h);
                             filter_mb_edgev ( &img_cr[0], uvlinesize, bS, chroma_qp_avg[1], h);
@@ -486,7 +491,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                     }
                 } else {
                     filter_mb_edgeh( &img_y[0], linesize, bS, qp, h );
-                    {
+                    if (chroma) {
                         if (chroma444) {
                             filter_mb_edgeh ( &img_cb[0], uvlinesize, bS, chroma_qp_avg[0], h);
                             filter_mb_edgeh ( &img_cr[0], uvlinesize, bS, chroma_qp_avg[1], h);
@@ -557,21 +562,25 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
         //{ int i; for (i = 0; i < 4; i++) tprintf(s->avctx, " bS[%d]:%d", i, bS[i]); tprintf(s->avctx, "\n"); }
         if( dir == 0 ) {
             filter_mb_edgev( &img_y[4*edge << h->pixel_shift], linesize, bS, qp, h );
-            if (chroma444) {
-                filter_mb_edgev ( &img_cb[4*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[0], h);
-                filter_mb_edgev ( &img_cr[4*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[1], h);
-            } else if( (edge&1) == 0 ) {
-                filter_mb_edgecv( &img_cb[2*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[0], h);
-                filter_mb_edgecv( &img_cr[2*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[1], h);
+            if (chroma) {
+                if (chroma444) {
+                    filter_mb_edgev ( &img_cb[4*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[0], h);
+                    filter_mb_edgev ( &img_cr[4*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[1], h);
+                } else if( (edge&1) == 0 ) {
+                    filter_mb_edgecv( &img_cb[2*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[0], h);
+                    filter_mb_edgecv( &img_cr[2*edge << h->pixel_shift], uvlinesize, bS, h->chroma_qp[1], h);
+                }
             }
         } else {
             filter_mb_edgeh( &img_y[4*edge*linesize], linesize, bS, qp, h );
-            if (chroma444) {
-                filter_mb_edgeh ( &img_cb[4*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[0], h);
-                filter_mb_edgeh ( &img_cr[4*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[1], h);
-            } else if( (edge&1) == 0 ) {
-                filter_mb_edgech( &img_cb[2*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[0], h);
-                filter_mb_edgech( &img_cr[2*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[1], h);
+            if (chroma) {
+                if (chroma444) {
+                    filter_mb_edgeh ( &img_cb[4*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[0], h);
+                    filter_mb_edgeh ( &img_cr[4*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[1], h);
+                } else if( (edge&1) == 0 ) {
+                    filter_mb_edgech( &img_cb[2*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[0], h);
+                    filter_mb_edgech( &img_cr[2*edge*uvlinesize], uvlinesize, bS, h->chroma_qp[1], h);
+                }
             }
         }
     }
@@ -584,6 +593,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
     const int mvy_limit = IS_INTERLACED(mb_type) ? 2 : 4;
     int first_vertical_edge_done = 0;
     av_unused int dir;
+    int chroma = !(CONFIG_GRAY && (s->flags&CODEC_FLAG_GRAY));
 
     if (FRAME_MBAFF
             // and current and left pair do not have the same interlaced type
@@ -652,25 +662,29 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
         if(MB_FIELD){
             filter_mb_mbaff_edgev ( h, img_y                ,   linesize, bS  , 1, qp [0] );
             filter_mb_mbaff_edgev ( h, img_y  + 8*  linesize,   linesize, bS+4, 1, qp [1] );
-            filter_mb_mbaff_edgecv( h, img_cb,                uvlinesize, bS  , 1, bqp[0] );
-            filter_mb_mbaff_edgecv( h, img_cb + 4*uvlinesize, uvlinesize, bS+4, 1, bqp[1] );
-            filter_mb_mbaff_edgecv( h, img_cr,                uvlinesize, bS  , 1, rqp[0] );
-            filter_mb_mbaff_edgecv( h, img_cr + 4*uvlinesize, uvlinesize, bS+4, 1, rqp[1] );
+            if (chroma){
+                filter_mb_mbaff_edgecv( h, img_cb,                uvlinesize, bS  , 1, bqp[0] );
+                filter_mb_mbaff_edgecv( h, img_cb + 4*uvlinesize, uvlinesize, bS+4, 1, bqp[1] );
+                filter_mb_mbaff_edgecv( h, img_cr,                uvlinesize, bS  , 1, rqp[0] );
+                filter_mb_mbaff_edgecv( h, img_cr + 4*uvlinesize, uvlinesize, bS+4, 1, rqp[1] );
+            }
         }else{
             filter_mb_mbaff_edgev ( h, img_y              , 2*  linesize, bS  , 2, qp [0] );
             filter_mb_mbaff_edgev ( h, img_y  +   linesize, 2*  linesize, bS+1, 2, qp [1] );
-            filter_mb_mbaff_edgecv( h, img_cb,              2*uvlinesize, bS  , 2, bqp[0] );
-            filter_mb_mbaff_edgecv( h, img_cb + uvlinesize, 2*uvlinesize, bS+1, 2, bqp[1] );
-            filter_mb_mbaff_edgecv( h, img_cr,              2*uvlinesize, bS  , 2, rqp[0] );
-            filter_mb_mbaff_edgecv( h, img_cr + uvlinesize, 2*uvlinesize, bS+1, 2, rqp[1] );
+            if (chroma){
+                filter_mb_mbaff_edgecv( h, img_cb,              2*uvlinesize, bS  , 2, bqp[0] );
+                filter_mb_mbaff_edgecv( h, img_cb + uvlinesize, 2*uvlinesize, bS+1, 2, bqp[1] );
+                filter_mb_mbaff_edgecv( h, img_cr,              2*uvlinesize, bS  , 2, rqp[0] );
+                filter_mb_mbaff_edgecv( h, img_cr + uvlinesize, 2*uvlinesize, bS+1, 2, rqp[1] );
+            }
         }
     }
 
 #if CONFIG_SMALL
     for( dir = 0; dir < 2; dir++ )
-        filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, dir ? 0 : first_vertical_edge_done, CHROMA444, dir);
+        filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, dir ? 0 : first_vertical_edge_done, chroma, CHROMA444, dir);
 #else
-    filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, first_vertical_edge_done, CHROMA444, 0);
-    filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, 0, CHROMA444, 1);
+    filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, first_vertical_edge_done, chroma, CHROMA444, 0);
+    filter_mb_dir(h, mb_x, mb_y, img_y, img_cb, img_cr, linesize, uvlinesize, mb_xy, mb_type, mvy_limit, 0, chroma, CHROMA444, 1);
 #endif
 }
