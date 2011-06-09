@@ -113,6 +113,7 @@ static int nb_input_codecs = 0;
 static int nb_input_files_ts_scale[MAX_FILES] = {0};
 
 static AVFormatContext *output_files[MAX_FILES];
+static AVDictionary *output_opts[MAX_FILES];
 static int nb_output_files = 0;
 
 static AVStreamMap *stream_maps = NULL;
@@ -465,6 +466,7 @@ static int ffmpeg_exit(int ret)
             avio_close(s->pb);
         avformat_free_context(s);
         av_free(output_streams_for_file[i]);
+        av_dict_free(&output_opts[i]);
     }
     for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i].ctx);
@@ -512,6 +514,15 @@ static int ffmpeg_exit(int ret)
 
     exit(ret); /* not all OS-es handle main() return value */
     return ret;
+}
+
+static void assert_avoptions(AVDictionary *m)
+{
+    AVDictionaryEntry *t;
+    if ((t = av_dict_get(m, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+        av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+        ffmpeg_exit(1);
+    }
 }
 
 /* similar to ff_dynarray_add() and av_fast_realloc() */
@@ -666,10 +677,10 @@ static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
 static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
-    AVFormatContext *ic;
+    AVFormatContext *ic = NULL;
     int nopts = 0;
 
-    err = av_open_input_file(&ic, filename, NULL, FFM_PACKET_SIZE, NULL);
+    err = avformat_open_input(&ic, filename, NULL, NULL);
     if (err < 0)
         return err;
     /* copy stream format */
@@ -2470,11 +2481,12 @@ static int transcode(AVFormatContext **output_files,
     /* open files and write file headers */
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
-        if (av_write_header(os) < 0) {
+        if (avformat_write_header(os, &output_opts[i]) < 0) {
             snprintf(error, sizeof(error), "Could not write header for output file #%d (incorrect codec parameters ?)", i);
             ret = AVERROR(EINVAL);
             goto dump_format;
         }
+        assert_avoptions(output_opts[i]);
         if (strcmp(output_files[i]->oformat->name, "rtp")) {
             want_sdp = 0;
         }
@@ -3148,10 +3160,10 @@ static enum CodecID find_codec_or_die(const char *name, int type, int encoder, i
 static int opt_input_file(const char *opt, const char *filename)
 {
     AVFormatContext *ic;
-    AVFormatParameters params, *ap = &params;
     AVInputFormat *file_iformat = NULL;
     int err, i, ret, rfps, rfps_base;
     int64_t timestamp;
+    uint8_t buf[128];
 
     if (last_asked_format) {
         if (!(file_iformat = av_find_input_format(last_asked_format))) {
@@ -3173,21 +3185,24 @@ static int opt_input_file(const char *opt, const char *filename)
         print_error(filename, AVERROR(ENOMEM));
         ffmpeg_exit(1);
     }
-
-    memset(ap, 0, sizeof(*ap));
-    ap->prealloced_context = 1;
-    ap->sample_rate = audio_sample_rate;
-    ap->channels = audio_channels;
-    ap->time_base.den = frame_rate.num;
-    ap->time_base.num = frame_rate.den;
-    ap->width = frame_width;
-    ap->height = frame_height;
-    ap->pix_fmt = frame_pix_fmt;
-   // ap->sample_fmt = audio_sample_fmt; //FIXME:not implemented in libavformat
-    ap->channel = video_channel;
-    ap->standard = video_standard;
-
-    set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
+    if (audio_sample_rate) {
+        snprintf(buf, sizeof(buf), "%d", audio_sample_rate);
+        av_dict_set(&format_opts, "sample_rate", buf, 0);
+    }
+    if (audio_channels) {
+        snprintf(buf, sizeof(buf), "%d", audio_channels);
+        av_dict_set(&format_opts, "channels", buf, 0);
+    }
+    if (frame_rate.num) {
+        snprintf(buf, sizeof(buf), "%d/%d", frame_rate.num, frame_rate.den);
+        av_dict_set(&format_opts, "framerate", buf, 0);
+    }
+    if (frame_width && frame_height) {
+        snprintf(buf, sizeof(buf), "%dx%d", frame_width, frame_height);
+        av_dict_set(&format_opts, "video_size", buf, 0);
+    }
+    if (frame_pix_fmt != PIX_FMT_NONE)
+        av_dict_set(&format_opts, "pixel_format", av_get_pix_fmt_name(frame_pix_fmt), 0);
 
     ic->video_codec_id   =
         find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0,
@@ -3201,11 +3216,13 @@ static int opt_input_file(const char *opt, const char *filename)
     ic->flags |= AVFMT_FLAG_NONBLOCK;
 
     /* open the input file with generic libav function */
-    err = av_open_input_file(&ic, filename, file_iformat, 0, ap);
+    err = avformat_open_input(&ic, filename, file_iformat, &format_opts);
     if (err < 0) {
         print_error(filename, err);
         ffmpeg_exit(1);
     }
+    assert_avoptions(format_opts);
+
     if(opt_programid) {
         int i, j;
         int found=0;
@@ -3760,7 +3777,6 @@ static void opt_output_file(const char *filename)
     AVFormatContext *oc;
     int err, use_video, use_audio, use_subtitle, use_data;
     int input_has_video, input_has_audio, input_has_subtitle, input_has_data;
-    AVFormatParameters params, *ap = &params;
     AVOutputFormat *file_oformat;
 
     if (!strcmp(filename, "-"))
@@ -3841,6 +3857,7 @@ static void opt_output_file(const char *filename)
         av_dict_free(&metadata);
     }
 
+    av_dict_copy(&output_opts[nb_output_files], format_opts, 0);
     output_files[nb_output_files++] = oc;
 
     /* check filename in case of an image number is expected */
@@ -3880,19 +3897,10 @@ static void opt_output_file(const char *filename)
         }
     }
 
-    memset(ap, 0, sizeof(*ap));
-    if (av_set_parameters(oc, ap) < 0) {
-        fprintf(stderr, "%s: Invalid encoding parameters\n",
-                oc->filename);
-        ffmpeg_exit(1);
-    }
-
     oc->preload= (int)(mux_preload*AV_TIME_BASE);
     oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
     oc->loop_output = loop_output;
     oc->flags |= AVFMT_FLAG_NONBLOCK;
-
-    set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
     frame_rate    = (AVRational){0, 0};
     frame_width   = 0;
@@ -3988,6 +3996,7 @@ static void show_help(void)
 {
     AVCodec *c;
     AVOutputFormat *oformat = NULL;
+    AVInputFormat  *iformat = NULL;
 
     av_log_set_callback(log_callback_help);
     show_usage();
@@ -4034,6 +4043,14 @@ static void show_help(void)
     while ((oformat = av_oformat_next(oformat))) {
         if (oformat->priv_class) {
             av_opt_show2(&oformat->priv_class, NULL, AV_OPT_FLAG_ENCODING_PARAM, 0);
+            printf("\n");
+        }
+    }
+
+    /* individual demuxer options */
+    while ((iformat = av_iformat_next(iformat))) {
+        if (iformat->priv_class) {
+            av_opt_show2(&iformat->priv_class, NULL, AV_OPT_FLAG_DECODING_PARAM, 0);
             printf("\n");
         }
     }
