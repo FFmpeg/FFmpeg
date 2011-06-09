@@ -27,6 +27,7 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/dict.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavformat/avformat.h"
@@ -2309,15 +2310,13 @@ static int decode_interrupt_cb(void)
 static int decode_thread(void *arg)
 {
     VideoState *is = arg;
-    AVFormatContext *ic;
+    AVFormatContext *ic = NULL;
     int err, i, ret;
     int st_index[AVMEDIA_TYPE_NB];
     AVPacket pkt1, *pkt = &pkt1;
-    AVFormatParameters params, *ap = &params;
     int eof=0;
     int pkt_in_play_range = 0;
-
-    ic = avformat_alloc_context();
+    AVDictionaryEntry *t;
 
     memset(st_index, -1, sizeof(st_index));
     is->video_stream = -1;
@@ -2327,20 +2326,15 @@ static int decode_thread(void *arg)
     global_video_state = is;
     avio_set_interrupt_cb(decode_interrupt_cb);
 
-    memset(ap, 0, sizeof(*ap));
-
-    ap->prealloced_context = 1;
-    ap->width = frame_width;
-    ap->height= frame_height;
-    ap->time_base= (AVRational){1, 25};
-    ap->pix_fmt = frame_pix_fmt;
-
-    set_context_opts(ic, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
-
-    err = av_open_input_file(&ic, is->filename, is->iformat, 0, ap);
+    err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
     if (err < 0) {
         print_error(is->filename, err);
         ret = -1;
+        goto fail;
+    }
+    if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+        av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+        ret = AVERROR_OPTION_NOT_FOUND;
         goto fail;
     }
     is->ic = ic;
