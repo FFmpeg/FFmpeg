@@ -67,6 +67,8 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     if (format < 6) {
         s->width = h263_format[format][0];
         s->height = h263_format[format][1];
+        s->avctx->sample_aspect_ratio.num = 12;
+        s->avctx->sample_aspect_ratio.den = 11;
     } else {
         format = get_bits(&s->gb, 3);
         if(format == 0 || format == 7){
@@ -91,9 +93,13 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
         skip_bits1(&s->gb);
         skip_bits(&s->gb, 9); // display height
         if(ar == 15){
-            skip_bits(&s->gb, 8); // aspect ratio - width
-            skip_bits(&s->gb, 8); // aspect ratio - height
+            s->avctx->sample_aspect_ratio.num = get_bits(&s->gb, 8); // aspect ratio - width
+            s->avctx->sample_aspect_ratio.den = get_bits(&s->gb, 8); // aspect ratio - height
+        } else {
+            s->avctx->sample_aspect_ratio = ff_h263_pixel_aspect[ar];
         }
+        if (s->avctx->sample_aspect_ratio.num == 0)
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid aspect ratio.\n");
     }
 
     s->chroma_qscale= s->qscale = get_bits(&s->gb, 5);
