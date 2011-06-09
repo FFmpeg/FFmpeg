@@ -46,7 +46,7 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     skip_bits1(&s->gb);         /* freeze picture release off */
 
     format = get_bits(&s->gb, 3);
-    if (format != 7) {
+    if (format == 0 || format == 6) {
         av_log(s->avctx, AV_LOG_ERROR, "Intel H263 free format not supported\n");
         return -1;
     }
@@ -64,7 +64,10 @@ int ff_intel_h263_decode_picture_header(MpegEncContext *s)
     s->obmc= get_bits1(&s->gb);
     s->pb_frame = get_bits1(&s->gb);
 
-    if(format == 7){
+    if (format < 6) {
+        s->width = h263_format[format][0];
+        s->height = h263_format[format][1];
+    } else {
         format = get_bits(&s->gb, 3);
         if(format == 0 || format == 7){
             av_log(s->avctx, AV_LOG_ERROR, "Wrong Intel H263 format\n");
