@@ -879,9 +879,12 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
                 }
             }
 
-            if (s->restart_interval && !--s->restart_count) {
+            if (s->restart_interval && show_bits(&s->gb, 8) == 0xFF){ /* skip RSTn */
+                --s->restart_count;
                 align_get_bits(&s->gb);
-                skip_bits(&s->gb, 16); /* skip RSTn */
+                while(show_bits(&s->gb, 8) == 0xFF)
+                    skip_bits(&s->gb, 8);
+                skip_bits(&s->gb, 8);
                 for (i=0; i<nb_components; i++) /* reset dc */
                     s->last_dc[i] = 1024;
             }
