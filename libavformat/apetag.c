@@ -21,6 +21,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "apetag.h"
 
@@ -57,7 +58,7 @@ static int ape_tag_read_field(AVFormatContext *s)
         return AVERROR(ENOMEM);
     avio_read(pb, value, size);
     value[size] = 0;
-    av_metadata_set2(&s->metadata, key, value, AV_METADATA_DONT_STRDUP_VAL);
+    av_dict_set(&s->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 

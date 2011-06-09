@@ -180,19 +180,6 @@ static inline void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
     YSCALEYUV2YV12X_ACCURATE(LUM_MMX_FILTER_OFFSET, dest, dstW, 0)
 }
 
-#define YSCALEYUV2YV121 \
-    "mov %2, %%"REG_a"                    \n\t"\
-    ".p2align               4             \n\t" /* FIXME Unroll? */\
-    "1:                                   \n\t"\
-    "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"\
-    "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"\
-    "psraw                 $7, %%mm0      \n\t"\
-    "psraw                 $7, %%mm1      \n\t"\
-    "packuswb           %%mm1, %%mm0      \n\t"\
-    MOVNTQ(%%mm0, (%1, %%REGa))\
-    "add                   $8, %%"REG_a"  \n\t"\
-    "jnc                   1b             \n\t"
-
 static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
                                     const int16_t *chrUSrc, const int16_t *chrVSrc,
                                     const int16_t *alpSrc,
@@ -208,31 +195,24 @@ static inline void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
     while (p--) {
         if (dst[p]) {
             __asm__ volatile(
-               YSCALEYUV2YV121
-               :: "r" (src[p]), "r" (dst[p] + counter[p]),
-                  "g" (-counter[p])
-               : "%"REG_a
+                "mov %2, %%"REG_a"                    \n\t"
+                ".p2align               4             \n\t" /* FIXME Unroll? */
+                "1:                                   \n\t"
+                "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"
+                "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"
+                "psraw                 $7, %%mm0      \n\t"
+                "psraw                 $7, %%mm1      \n\t"
+                "packuswb           %%mm1, %%mm0      \n\t"
+                MOVNTQ(%%mm0, (%1, %%REGa))
+                "add                   $8, %%"REG_a"  \n\t"
+                "jnc                   1b             \n\t"
+                :: "r" (src[p]), "r" (dst[p] + counter[p]),
+                   "g" (-counter[p])
+                : "%"REG_a
             );
         }
     }
 }
-
-#define YSCALEYUV2YV121_ACCURATE \
-    "mov %2, %%"REG_a"                    \n\t"\
-    "movq               0(%3), %%mm6      \n\t"\
-    "movq               8(%3), %%mm7      \n\t"\
-    ".p2align                4            \n\t" /* FIXME Unroll? */\
-    "1:                                   \n\t"\
-    "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"\
-    "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"\
-    "paddsw             %%mm6, %%mm0      \n\t"\
-    "paddsw             %%mm7, %%mm1      \n\t"\
-    "psraw                 $7, %%mm0      \n\t"\
-    "psraw                 $7, %%mm1      \n\t"\
-    "packuswb           %%mm1, %%mm0      \n\t"\
-    MOVNTQ(%%mm0, (%1, %%REGa))\
-    "add                   $8, %%"REG_a"  \n\t"\
-    "jnc                   1b             \n\t"
 
 static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
                                        const int16_t *chrUSrc, const int16_t *chrVSrc,
@@ -251,7 +231,21 @@ static inline void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
             int i;
             for(i=0; i<8; i++) c->dither16[i] = i<2 ? lumDither[i] : chrDither[i];
             __asm__ volatile(
-                YSCALEYUV2YV121_ACCURATE
+                "mov %2, %%"REG_a"                    \n\t"
+                "movq               0(%3), %%mm6      \n\t"
+                "movq               8(%3), %%mm7      \n\t"
+                ".p2align                4            \n\t" /* FIXME Unroll? */
+                "1:                                   \n\t"
+                "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"
+                "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"
+                "paddsw             %%mm6, %%mm0      \n\t"
+                "paddsw             %%mm7, %%mm1      \n\t"
+                "psraw                 $7, %%mm0      \n\t"
+                "psraw                 $7, %%mm1      \n\t"
+                "packuswb           %%mm1, %%mm0      \n\t"
+                MOVNTQ(%%mm0, (%1, %%REGa))
+                "add                   $8, %%"REG_a"  \n\t"
+                "jnc                   1b             \n\t"
                 :: "r" (src[p]), "r" (dst[p] + counter[p]),
                    "g" (-counter[p]), "r"(c->dither16)
                 : "%"REG_a
@@ -2218,7 +2212,7 @@ static inline void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                         int dstWidth, const uint8_t *src, int srcW,
                                         int xInc)
 {
-    int32_t *filterPos = c->hLumFilterPos;
+    int16_t *filterPos = c->hLumFilterPos;
     int16_t *filter    = c->hLumFilter;
     void    *mmx2FilterCode= c->lumMmx2FilterCode;
     int i;
@@ -2290,7 +2284,7 @@ static inline void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *d
                                         int dstWidth, const uint8_t *src1,
                                         const uint8_t *src2, int srcW, int xInc)
 {
-    int32_t *filterPos = c->hChrFilterPos;
+    int16_t *filterPos = c->hChrFilterPos;
     int16_t *filter    = c->hChrFilter;
     void    *mmx2FilterCode= c->chrMmx2FilterCode;
     int i;

@@ -25,6 +25,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/dict.h"
 #include "libavdevice/avdevice.h"
 #include "cmdutils.h"
 
@@ -160,7 +161,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     AVCodecContext *dec_ctx;
     AVCodec *dec;
     char val_str[128];
-    AVMetadataTag *tag = NULL;
+    AVDictionaryEntry *tag = NULL;
     AVRational display_aspect_ratio;
 
     printf("[STREAM]\n");
@@ -226,7 +227,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     if (stream->nb_frames)
         printf("nb_frames=%"PRId64"\n",    stream->nb_frames);
 
-    while ((tag = av_metadata_get(stream->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
+    while ((tag = av_dict_get(stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/STREAM]\n");
@@ -234,7 +235,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 
 static void show_format(AVFormatContext *fmt_ctx)
 {
-    AVMetadataTag *tag = NULL;
+    AVDictionaryEntry *tag = NULL;
     char val_str[128];
 
     printf("[FORMAT]\n");
@@ -252,7 +253,7 @@ static void show_format(AVFormatContext *fmt_ctx)
     printf("bit_rate=%s\n",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,
                                                  unit_bit_per_second_str));
 
-    while ((tag = av_metadata_get(fmt_ctx->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
+    while ((tag = av_dict_get(fmt_ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/FORMAT]\n");

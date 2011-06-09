@@ -31,19 +31,20 @@
 #include "libavcodec/mpegaudiodata.h"
 #include "libavcodec/mpegaudiodecheader.h"
 #include "libavformat/avio_internal.h"
+#include "libavutil/dict.h"
 
 static int id3v1_set_string(AVFormatContext *s, const char *key,
                             uint8_t *buf, int buf_size)
 {
-    AVMetadataTag *tag;
-    if ((tag = av_metadata_get(s->metadata, key, NULL, 0)))
+    AVDictionaryEntry *tag;
+    if ((tag = av_dict_get(s->metadata, key, NULL, 0)))
         av_strlcpy(buf, tag->value, buf_size);
     return !!tag;
 }
 
 static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
 {
-    AVMetadataTag *tag;
+    AVDictionaryEntry *tag;
     int i, count = 0;
 
     memset(buf, 0, ID3v1_TAG_SIZE); /* fail safe */
@@ -55,13 +56,13 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
     count += id3v1_set_string(s, "TALB",    buf + 63, 30);       //album
     count += id3v1_set_string(s, "TDRL",    buf + 93,  4);       //date
     count += id3v1_set_string(s, "comment", buf + 97, 30);
-    if ((tag = av_metadata_get(s->metadata, "TRCK", NULL, 0))) { //track
+    if ((tag = av_dict_get(s->metadata, "TRCK", NULL, 0))) { //track
         buf[125] = 0;
         buf[126] = atoi(tag->value);
         count++;
     }
     buf[127] = 0xFF; /* default to unknown genre */
-    if ((tag = av_metadata_get(s->metadata, "TCON", NULL, 0))) { //genre
+    if ((tag = av_dict_get(s->metadata, "TCON", NULL, 0))) { //genre
         for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
             if (!strcasecmp(tag->value, ff_id3v1_genre_str[i])) {
                 buf[127] = i;
@@ -186,7 +187,7 @@ static const AVClass mp3_muxer_class = {
     .version        = LIBAVUTIL_VERSION_INT,
 };
 
-static int id3v2_check_write_tag(AVFormatContext *s, AVMetadataTag *t, const char table[][4],
+static int id3v2_check_write_tag(AVFormatContext *s, AVDictionaryEntry *t, const char table[][4],
                                  enum ID3v2Encoding enc)
 {
     uint32_t tag;
@@ -345,7 +346,7 @@ static void mp3_fix_xing(AVFormatContext *s)
 static int mp3_write_header(struct AVFormatContext *s)
 {
     MP3Context  *mp3 = s->priv_data;
-    AVMetadataTag *t = NULL;
+    AVDictionaryEntry *t = NULL;
     int totlen = 0, enc = mp3->id3v2_version == 3 ? ID3v2_ENCODING_UTF16BOM :
                                                     ID3v2_ENCODING_UTF8;
     int64_t size_pos, cur_pos;
@@ -362,7 +363,7 @@ static int mp3_write_header(struct AVFormatContext *s)
     if (mp3->id3v2_version == 4)
         ff_metadata_conv(&s->metadata, ff_id3v2_4_metadata_conv, NULL);
 
-    while ((t = av_metadata_get(s->metadata, "", t, AV_METADATA_IGNORE_SUFFIX))) {
+    while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
         int ret;
 
         if ((ret = id3v2_check_write_tag(s, t, ff_id3v2_tags, enc)) > 0) {

@@ -38,6 +38,12 @@
 #include "attributes.h"
 #include "timer.h"
 #include "cpu.h"
+#include "dict.h"
+
+struct AVDictionary {
+    int count;
+    AVDictionaryEntry *elems;
+};
 
 #ifndef attribute_align_arg
 #if ARCH_X86_32 && AV_GCC_VERSION_AT_LEAST(4,2)

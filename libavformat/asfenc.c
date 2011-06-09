@@ -19,10 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
-#include "metadata.h"
 #include "riff.h"
 #include "asf.h"
 #include "avio_internal.h"
+#include "libavutil/dict.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -296,7 +296,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 {
     ASFContext *asf = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVMetadataTag *tags[5];
+    AVDictionaryEntry *tags[5];
     int header_size, n, extra_size, extra_size2, wav_extra_size, file_time;
     int has_title;
     int metadata_count;
@@ -307,11 +307,11 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
 
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
 
-    tags[0] = av_metadata_get(s->metadata, "title"    , NULL, 0);
-    tags[1] = av_metadata_get(s->metadata, "author"   , NULL, 0);
-    tags[2] = av_metadata_get(s->metadata, "copyright", NULL, 0);
-    tags[3] = av_metadata_get(s->metadata, "comment"  , NULL, 0);
-    tags[4] = av_metadata_get(s->metadata, "rating"   , NULL, 0);
+    tags[0] = av_dict_get(s->metadata, "title"    , NULL, 0);
+    tags[1] = av_dict_get(s->metadata, "author"   , NULL, 0);
+    tags[2] = av_dict_get(s->metadata, "copyright", NULL, 0);
+    tags[3] = av_dict_get(s->metadata, "comment"  , NULL, 0);
+    tags[4] = av_dict_get(s->metadata, "rating"   , NULL, 0);
 
     duration = asf->duration + PREROLL_TIME * 10000;
     has_title = tags[0] || tags[1] || tags[2] || tags[3] || tags[4];
@@ -381,10 +381,10 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
         end_header(pb, hpos);
     }
     if (metadata_count) {
-        AVMetadataTag *tag = NULL;
+        AVDictionaryEntry *tag = NULL;
         hpos = put_header(pb, &ff_asf_extended_content_header);
         avio_wl16(pb, metadata_count);
-        while ((tag = av_metadata_get(s->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX))) {
+        while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
             put_str16(pb, tag->key);
             avio_wl16(pb, 0);
             put_str16(pb, tag->value);

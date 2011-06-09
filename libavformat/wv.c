@@ -21,6 +21,7 @@
 
 #include "libavutil/audioconvert.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "apetag.h"
 #include "id3v1.h"
@@ -226,7 +227,7 @@ static int wv_read_header(AVFormatContext *s,
     if(s->pb->seekable) {
         int64_t cur = avio_tell(s->pb);
         ff_ape_parse_tag(s);
-        if(!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+        if(!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
             ff_id3v1_read(s);
         avio_seek(s->pb, cur, SEEK_SET);
     }

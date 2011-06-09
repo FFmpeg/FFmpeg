@@ -33,6 +33,7 @@
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavutil/opt.h"
+#include "libavutil/dict.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -1534,15 +1535,15 @@ static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
                                      int long_style)
 {
     int l, lang = 0, len, len2;
-    AVMetadataTag *t, *t2 = NULL;
+    AVDictionaryEntry *t, *t2 = NULL;
     char tag2[16];
 
-    if (!(t = av_metadata_get(s->metadata, tag, NULL, 0)))
+    if (!(t = av_dict_get(s->metadata, tag, NULL, 0)))
         return 0;
 
     len = strlen(t->key);
     snprintf(tag2, sizeof(tag2), "%s-", tag);
-    while ((t2 = av_metadata_get(s->metadata, tag2, t2, AV_METADATA_IGNORE_SUFFIX))) {
+    while ((t2 = av_dict_get(s->metadata, tag2, t2, AV_DICT_IGNORE_SUFFIX))) {
         len2 = strlen(t2->key);
         if (len2 == len+4 && !strcmp(t->value, t2->value)
             && (l=ff_mov_iso639_to_lang(&t2->key[len2-3], 1)) >= 0) {
@@ -1557,7 +1558,7 @@ static int mov_write_string_metadata(AVFormatContext *s, AVIOContext *pb,
 static int mov_write_trkn_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
-    AVMetadataTag *t = av_metadata_get(s->metadata, "track", NULL, 0);
+    AVDictionaryEntry *t = av_dict_get(s->metadata, "track", NULL, 0);
     int size = 0, track = t ? atoi(t->value) : 0;
     if (track) {
         avio_wb32(pb, 32); /* size */
@@ -1649,7 +1650,7 @@ static int mov_write_3gp_udta_tag(AVIOContext *pb, AVFormatContext *s,
                                   const char *tag, const char *str)
 {
     int64_t pos = avio_tell(pb);
-    AVMetadataTag *t = av_metadata_get(s->metadata, str, NULL, 0);
+    AVDictionaryEntry *t = av_dict_get(s->metadata, str, NULL, 0);
     if (!t || !utf8len(t->value))
         return 0;
     avio_wb32(pb, 0);   /* size */
@@ -1661,7 +1662,7 @@ static int mov_write_3gp_udta_tag(AVIOContext *pb, AVFormatContext *s,
         avio_wb16(pb, language_code("eng")); /* language */
         avio_write(pb, t->value, strlen(t->value)+1); /* UTF8 string value */
         if (!strcmp(tag, "albm") &&
-            (t = av_metadata_get(s->metadata, "track", NULL, 0)))
+            (t = av_dict_get(s->metadata, "track", NULL, 0)))
             avio_w8(pb, atoi(t->value));
     }
     return updateSize(pb, pos);
@@ -1680,10 +1681,10 @@ static int mov_write_chpl_tag(AVIOContext *pb, AVFormatContext *s)
 
     for (i = 0; i < nb_chapters; i++) {
         AVChapter *c = s->chapters[i];
-        AVMetadataTag *t;
+        AVDictionaryEntry *t;
         avio_wb64(pb, av_rescale_q(c->start, c->time_base, (AVRational){1,10000000}));
 
-        if ((t = av_metadata_get(c->metadata, "title", NULL, 0))) {
+        if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
             int len = FFMIN(strlen(t->value), 255);
             avio_w8(pb, len);
             avio_write(pb, t->value, len);
@@ -1761,7 +1762,7 @@ static void mov_write_psp_udta_tag(AVIOContext *pb,
 
 static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
 {
-    AVMetadataTag *title = av_metadata_get(s->metadata, "title", NULL, 0);
+    AVDictionaryEntry *title = av_dict_get(s->metadata, "title", NULL, 0);
     int64_t pos, pos2;
 
     if (title) {
@@ -2115,13 +2116,13 @@ static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
 
     for (i = 0; i < s->nb_chapters; i++) {
         AVChapter *c = s->chapters[i];
-        AVMetadataTag *t;
+        AVDictionaryEntry *t;
 
         int64_t end = av_rescale_q(c->end, c->time_base, (AVRational){1,MOV_TIMESCALE});
         pkt.pts = pkt.dts = av_rescale_q(c->start, c->time_base, (AVRational){1,MOV_TIMESCALE});
         pkt.duration = end - pkt.dts;
 
-        if ((t = av_metadata_get(c->metadata, "title", NULL, 0))) {
+        if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
             len = strlen(t->value);
             pkt.size = len+2;
             pkt.data = av_malloc(pkt.size);
@@ -2195,7 +2196,7 @@ static int mov_write_header(AVFormatContext *s)
     for(i=0; i<s->nb_streams; i++){
         AVStream *st= s->streams[i];
         MOVTrack *track= &mov->tracks[i];
-        AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL,0);
+        AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
 
         track->enc = st->codec;
         track->language = ff_mov_iso639_to_lang(lang?lang->value:"und", mov->mode!=MODE_MOV);

@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/lfg.h"
+#include "libavutil/dict.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 #include <strings.h>
@@ -523,7 +524,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         int bit_depth = av_get_bits_per_sample(codec->codec_id);
         int sample_rate = codec->sample_rate;
         int output_sample_rate = 0;
-        AVMetadataTag *tag;
+        AVDictionaryEntry *tag;
 
         if (!bit_depth)
             bit_depth = av_get_bits_per_sample_fmt(codec->sample_fmt);
@@ -536,9 +537,9 @@ static int mkv_write_tracks(AVFormatContext *s)
         put_ebml_uint (pb, MATROSKA_ID_TRACKUID        , i + 1);
         put_ebml_uint (pb, MATROSKA_ID_TRACKFLAGLACING , 0);    // no lacing (yet)
 
-        if ((tag = av_metadata_get(st->metadata, "title", NULL, 0)))
+        if ((tag = av_dict_get(st->metadata, "title", NULL, 0)))
             put_ebml_string(pb, MATROSKA_ID_TRACKNAME, tag->value);
-        tag = av_metadata_get(st->metadata, "language", NULL, 0);
+        tag = av_dict_get(st->metadata, "language", NULL, 0);
         put_ebml_string(pb, MATROSKA_ID_TRACKLANGUAGE, tag ? tag->value:"und");
 
         if (st->disposition)
@@ -587,8 +588,8 @@ static int mkv_write_tracks(AVFormatContext *s)
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELWIDTH , codec->width);
                 put_ebml_uint (pb, MATROSKA_ID_VIDEOPIXELHEIGHT, codec->height);
 
-                if ((tag = av_metadata_get(st->metadata, "stereo_mode", NULL, 0)) ||
-                    (tag = av_metadata_get( s->metadata, "stereo_mode", NULL, 0))) {
+                if ((tag = av_dict_get(st->metadata, "stereo_mode", NULL, 0)) ||
+                    (tag = av_dict_get( s->metadata, "stereo_mode", NULL, 0))) {
                     // save stereo mode flag
                     uint64_t st_mode = MATROSKA_VIDEO_STEREO_MODE_COUNT;
 
@@ -677,7 +678,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     for (i = 0; i < s->nb_chapters; i++) {
         ebml_master chapteratom, chapterdisplay;
         AVChapter *c     = s->chapters[i];
-        AVMetadataTag *t = NULL;
+        AVDictionaryEntry *t = NULL;
 
         chapteratom = start_ebml_master(pb, MATROSKA_ID_CHAPTERATOM, 0);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERUID, c->id);
@@ -687,7 +688,7 @@ static int mkv_write_chapters(AVFormatContext *s)
                       av_rescale_q(c->end,   c->time_base, scale));
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERFLAGHIDDEN , 0);
         put_ebml_uint(pb, MATROSKA_ID_CHAPTERFLAGENABLED, 1);
-        if ((t = av_metadata_get(c->metadata, "title", NULL, 0))) {
+        if ((t = av_dict_get(c->metadata, "title", NULL, 0))) {
             chapterdisplay = start_ebml_master(pb, MATROSKA_ID_CHAPTERDISPLAY, 0);
             put_ebml_string(pb, MATROSKA_ID_CHAPSTRING, t->value);
             put_ebml_string(pb, MATROSKA_ID_CHAPLANG  , "und");
@@ -700,7 +701,7 @@ static int mkv_write_chapters(AVFormatContext *s)
     return 0;
 }
 
-static void mkv_write_simpletag(AVIOContext *pb, AVMetadataTag *t)
+static void mkv_write_simpletag(AVIOContext *pb, AVDictionaryEntry *t)
 {
     uint8_t *key = av_strdup(t->key);
     uint8_t *p   = key;
@@ -730,12 +731,12 @@ static void mkv_write_simpletag(AVIOContext *pb, AVMetadataTag *t)
     av_freep(&key);
 }
 
-static int mkv_write_tag(AVFormatContext *s, AVMetadata *m, unsigned int elementid,
+static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int elementid,
                          unsigned int uid, ebml_master *tags)
 {
     MatroskaMuxContext *mkv = s->priv_data;
     ebml_master tag, targets;
-    AVMetadataTag *t = NULL;
+    AVDictionaryEntry *t = NULL;
     int ret;
 
     if (!tags->pos) {
@@ -751,7 +752,7 @@ static int mkv_write_tag(AVFormatContext *s, AVMetadata *m, unsigned int element
         put_ebml_uint(s->pb, elementid, uid);
     end_ebml_master(s->pb, targets);
 
-    while ((t = av_metadata_get(m, "", t, AV_METADATA_IGNORE_SUFFIX)))
+    while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX)))
         if (strcasecmp(t->key, "title") && strcasecmp(t->key, "stereo_mode"))
             mkv_write_simpletag(s->pb, t);
 
@@ -766,7 +767,7 @@ static int mkv_write_tags(AVFormatContext *s)
 
     ff_metadata_conv_ctx(s, ff_mkv_metadata_conv, NULL);
 
-    if (av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX)) {
+    if (av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX)) {
         ret = mkv_write_tag(s, s->metadata, 0, 0, &tags);
         if (ret < 0) return ret;
     }
@@ -774,7 +775,7 @@ static int mkv_write_tags(AVFormatContext *s)
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
 
-        if (!av_metadata_get(st->metadata, "", 0, AV_METADATA_IGNORE_SUFFIX))
+        if (!av_dict_get(st->metadata, "", 0, AV_DICT_IGNORE_SUFFIX))
             continue;
 
         ret = mkv_write_tag(s, st->metadata, MATROSKA_ID_TAGTARGETS_TRACKUID, i + 1, &tags);
@@ -784,7 +785,7 @@ static int mkv_write_tags(AVFormatContext *s)
     for (i = 0; i < s->nb_chapters; i++) {
         AVChapter *ch = s->chapters[i];
 
-        if (!av_metadata_get(ch->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+        if (!av_dict_get(ch->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
             continue;
 
         ret = mkv_write_tag(s, ch->metadata, MATROSKA_ID_TAGTARGETS_CHAPTERUID, ch->id, &tags);
@@ -801,7 +802,7 @@ static int mkv_write_header(AVFormatContext *s)
     MatroskaMuxContext *mkv = s->priv_data;
     AVIOContext *pb = s->pb;
     ebml_master ebml_header, segment_info;
-    AVMetadataTag *tag;
+    AVDictionaryEntry *tag;
     int ret, i;
 
     if (!strcmp(s->oformat->name, "webm")) mkv->mode = MODE_WEBM;
@@ -838,7 +839,7 @@ static int mkv_write_header(AVFormatContext *s)
 
     segment_info = start_ebml_master(pb, MATROSKA_ID_INFO, 0);
     put_ebml_uint(pb, MATROSKA_ID_TIMECODESCALE, 1000000);
-    if ((tag = av_metadata_get(s->metadata, "title", NULL, 0)))
+    if ((tag = av_dict_get(s->metadata, "title", NULL, 0)))
         put_ebml_string(pb, MATROSKA_ID_TITLE, tag->value);
     if (!(s->streams[0]->codec->flags & CODEC_FLAG_BITEXACT)) {
         uint32_t segment_uid[4];

@@ -380,40 +380,14 @@ yuv2NBPS(10, LE, 0);
 yuv2NBPS(16, BE, 1);
 yuv2NBPS(16, LE, 0);
 
-static inline void yuv2yuvX16_c(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                                const int16_t *chrFilter, const int16_t **chrUSrc, const int16_t **chrVSrc, int chrFilterSize,
-                                const int16_t **alpSrc, uint16_t *dest, uint16_t *uDest, uint16_t *vDest, uint16_t *aDest, int dstW, int chrDstW,
-                                enum PixelFormat dstFormat)
-{
-    if (isNBPS(dstFormat)) {
-        const int depth = av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1+1;
-        yuv2yuvX16_c_template(lumFilter, lumSrc, lumFilterSize,
-                              chrFilter, chrUSrc, chrVSrc, chrFilterSize,
-                              alpSrc,
-                              dest, uDest, vDest, aDest,
-                              dstW, chrDstW, isBE(dstFormat), depth);
-    } else {
-        if (isBE(dstFormat)) {
-            yuv2yuvX16_c_template(lumFilter, lumSrc, lumFilterSize,
-                                   chrFilter, chrUSrc, chrVSrc, chrFilterSize,
-                                   alpSrc,
-                                   dest, uDest, vDest, aDest,
-                                   dstW, chrDstW, 1, 16);
-        } else {
-            yuv2yuvX16_c_template(lumFilter, lumSrc, lumFilterSize,
-                                   chrFilter, chrUSrc, chrVSrc, chrFilterSize,
-                                   alpSrc,
-                                   dest, uDest, vDest, aDest,
-                                   dstW, chrDstW, 0, 16);
-        }
-    }
-}
-
-static void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                               const int16_t *chrFilter, const int16_t **chrUSrc,
-                               const int16_t **chrVSrc, int chrFilterSize,
-                               const int16_t **alpSrc, uint8_t *dest, uint8_t *uDest, uint8_t *vDest, uint8_t *aDest, int dstW, int chrDstW,
-                               const uint8_t *lumDither, const uint8_t *chrDither)
+static inline void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
+                              const int16_t **lumSrc, int lumFilterSize,
+                              const int16_t *chrFilter, const int16_t **chrUSrc,
+                              const int16_t **chrVSrc,
+                              int chrFilterSize, const int16_t **alpSrc,
+                              uint8_t *dest, uint8_t *uDest, uint8_t *vDest,
+                              uint8_t *aDest, int dstW, int chrDstW,
+                              const uint8_t *lumDither, const uint8_t *chrDither)
 {
     //FIXME Optimize (just quickly written not optimized..)
     int i;

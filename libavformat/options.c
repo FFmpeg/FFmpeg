@@ -62,7 +62,7 @@ static const AVOption options[]={
 {"fdebug", "print specific debug info", OFFSET(debug), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, INT_MAX, E|D, "fdebug"},
 {"ts", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_FDEBUG_TS }, INT_MIN, INT_MAX, E|D, "fdebug"},
 {"max_delay", "maximum muxing or demuxing delay in microseconds", OFFSET(max_delay), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E|D},
-{"fpsprobesize", "number of frames used to probe fps", OFFSET(fps_probe_size), FF_OPT_TYPE_INT, -1, -1, INT_MAX-1, D},
+{"fpsprobesize", "number of frames used to probe fps", OFFSET(fps_probe_size), FF_OPT_TYPE_INT, {.dbl = -1}, -1, INT_MAX-1, D},
 {NULL},
 };
 

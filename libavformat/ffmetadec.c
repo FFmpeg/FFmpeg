@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "ffmeta.h"
 #include "internal.h"
+#include "libavutil/dict.h"
 
 static int probe(AVProbeData *p)
 {
@@ -93,7 +94,7 @@ static uint8_t *unescape(uint8_t *buf, int size)
     return ret;
 }
 
-static int read_tag(uint8_t *line, AVMetadata **m)
+static int read_tag(uint8_t *line, AVDictionary **m)
 {
     uint8_t *key, *value, *p = line;
 
@@ -117,13 +118,13 @@ static int read_tag(uint8_t *line, AVMetadata **m)
         return AVERROR(ENOMEM);
     }
 
-    av_metadata_set2(m, key, value, AV_METADATA_DONT_STRDUP_KEY | AV_METADATA_DONT_STRDUP_VAL);
+    av_dict_set(m, key, value, AV_DICT_DONT_STRDUP_KEY | AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 
 static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
-    AVMetadata **m = &s->metadata;
+    AVDictionary **m = &s->metadata;
     uint8_t line[1024];
 
     while(!url_feof(s->pb)) {

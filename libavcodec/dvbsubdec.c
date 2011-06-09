@@ -35,6 +35,7 @@
 
 #ifdef DEBUG
 #undef fprintf
+#undef perror
 #if 0
 static void png_save(const char *filename, uint8_t *bitmap, int w, int h,
                      uint32_t *rgba_palette)
@@ -49,7 +50,7 @@ static void png_save(const char *filename, uint8_t *bitmap, int w, int h,
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
-        exit(1);
+        return;
     }
     fprintf(f, "P6\n"
             "%d %d\n"
@@ -71,7 +72,7 @@ static void png_save(const char *filename, uint8_t *bitmap, int w, int h,
     f = fopen(fname2, "w");
     if (!f) {
         perror(fname2);
-        exit(1);
+        return;
     }
     fprintf(f, "P5\n"
             "%d %d\n"
@@ -105,7 +106,7 @@ static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
     f = fopen(fname, "w");
     if (!f) {
         perror(fname);
-        exit(1);
+        return;
     }
     fprintf(f, "P6\n"
             "%d %d\n"
@@ -127,7 +128,7 @@ static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
     f = fopen(fname2, "w");
     if (!f) {
         perror(fname2);
-        exit(1);
+        return;
     }
     fprintf(f, "P5\n"
             "%d %d\n"

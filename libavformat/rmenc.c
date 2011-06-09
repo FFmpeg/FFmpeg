@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "rm.h"
+#include "libavutil/dict.h"
 
 typedef struct {
     int nb_packets;
@@ -71,7 +72,7 @@ static int rv10_write_header(AVFormatContext *ctx,
     const char *desc, *mimetype;
     int nb_packets, packet_total_size, packet_max_size, size, packet_avg_size, i;
     int bit_rate, v, duration, flags, data_pos;
-    AVMetadataTag *tag;
+    AVDictionaryEntry *tag;
 
     start_ptr = s->buf_ptr;
 
@@ -127,13 +128,13 @@ static int rv10_write_header(AVFormatContext *ctx,
     ffio_wfourcc(s,"CONT");
     size =  4 * 2 + 10;
     for(i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
-        tag = av_metadata_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
+        tag = av_dict_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
         if(tag) size += strlen(tag->value);
     }
     avio_wb32(s,size);
     avio_wb16(s,0);
     for(i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
-        tag = av_metadata_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
+        tag = av_dict_get(ctx->metadata, ff_rm_metadata[i], NULL, 0);
         put_str(s, tag ? tag->value : "");
     }
 

@@ -113,7 +113,7 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
         ret = av_open_input_stream(&rt->asf_ctx, &pb, "", &ff_asf_demuxer, NULL);
         if (ret < 0)
             return ret;
-        av_metadata_copy(&s->metadata, rt->asf_ctx->metadata, 0);
+        av_dict_copy(&s->metadata, rt->asf_ctx->metadata, 0);
         rt->asf_pb_pos = avio_tell(&pb);
         av_free(buf);
         rt->asf_ctx->pb = NULL;

@@ -21,6 +21,7 @@
 
 #include "avformat.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 
 typedef struct VqfContext {
     int frame_bit_len;
@@ -56,7 +57,7 @@ static void add_metadata(AVFormatContext *s, const char *tag,
         return;
     avio_read(s->pb, buf, len);
     buf[len] = 0;
-    av_metadata_set2(&s->metadata, tag, buf, AV_METADATA_DONT_STRDUP_VAL);
+    av_dict_set(&s->metadata, tag, buf, AV_DICT_DONT_STRDUP_VAL);
 }
 
 static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)

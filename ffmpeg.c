@@ -39,6 +39,7 @@
 #include "libavutil/colorspace.h"
 #include "libavutil/fifo.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
@@ -199,7 +200,7 @@ static int64_t start_time = 0;
 static int64_t recording_timestamp = 0;
 static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
-static AVMetadata *metadata;
+static AVDictionary *metadata;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
@@ -1953,7 +1954,7 @@ static int copy_chapters(int infile, int outfile)
         out_ch->end       = FFMIN(rt, in_ch->end   - ts_off);
 
         if (metadata_chapters_autocopy)
-            av_metadata_copy(&out_ch->metadata, in_ch->metadata, 0);
+            av_dict_copy(&out_ch->metadata, in_ch->metadata, 0);
 
         os->nb_chapters++;
         os->chapters = av_realloc(os->chapters, sizeof(AVChapter)*os->nb_chapters);
@@ -2181,8 +2182,8 @@ static int transcode(AVFormatContext **output_files,
         icodec = ist->st->codec;
 
         if (metadata_streams_autocopy)
-            av_metadata_copy(&ost->st->metadata, ist->st->metadata,
-                             AV_METADATA_DONT_OVERWRITE);
+            av_dict_copy(&ost->st->metadata, ist->st->metadata,
+                         AV_DICT_DONT_OVERWRITE);
 
         ost->st->disposition = ist->st->disposition;
         codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
@@ -2419,7 +2420,7 @@ static int transcode(AVFormatContext **output_files,
     /* set meta data information from input file if required */
     for (i=0;i<nb_meta_data_maps;i++) {
         AVFormatContext *files[2];
-        AVMetadata      **meta[2];
+        AVDictionary    **meta[2];
         int j;
 
 #define METADATA_CHECK_INDEX(index, nb_elems, desc)\
@@ -2462,15 +2463,15 @@ static int transcode(AVFormatContext **output_files,
             }
         }
 
-        av_metadata_copy(meta[0], *meta[1], AV_METADATA_DONT_OVERWRITE);
+        av_dict_copy(meta[0], *meta[1], AV_DICT_DONT_OVERWRITE);
     }
 
     /* copy global metadata by default */
     if (metadata_global_autocopy) {
 
         for (i = 0; i < nb_output_files; i++)
-            av_metadata_copy(&output_files[i]->metadata, input_files[0].ctx->metadata,
-                             AV_METADATA_DONT_OVERWRITE);
+            av_dict_copy(&output_files[i]->metadata, input_files[0].ctx->metadata,
+                         AV_DICT_DONT_OVERWRITE);
     }
 
     /* copy chapters according to chapter maps */
@@ -2943,7 +2944,7 @@ static int opt_metadata(const char *opt, const char *arg)
     }
     *mid++= 0;
 
-    av_metadata_set2(&metadata, arg, mid, 0);
+    av_dict_set(&metadata, arg, mid, 0);
 
     return 0;
 }
@@ -3631,7 +3632,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
             parse_forced_key_frames(forced_key_frames, ost, video_enc);
     }
     if (video_language) {
-        av_metadata_set2(&st->metadata, "language", video_language, 0);
+        av_dict_set(&st->metadata, "language", video_language, 0);
         av_freep(&video_language);
     }
 
@@ -3711,7 +3712,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     }
     audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
-        av_metadata_set2(&st->metadata, "language", audio_language, 0);
+        av_dict_set(&st->metadata, "language", audio_language, 0);
         av_freep(&audio_language);
     }
 
@@ -3807,7 +3808,7 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
     }
 
     if (subtitle_language) {
-        av_metadata_set2(&st->metadata, "language", subtitle_language, 0);
+        av_dict_set(&st->metadata, "language", subtitle_language, 0);
         av_freep(&subtitle_language);
     }
 
@@ -3926,8 +3927,8 @@ static int opt_output_file(const char *opt, const char *filename)
 
         oc->timestamp = recording_timestamp;
 
-        av_metadata_copy(&oc->metadata, metadata, 0);
-        av_metadata_free(&metadata);
+        av_dict_copy(&oc->metadata, metadata, 0);
+        av_dict_free(&metadata);
     }
 
     output_files[nb_output_files++] = oc;

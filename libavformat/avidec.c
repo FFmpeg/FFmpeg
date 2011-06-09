@@ -26,6 +26,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/bswap.h"
 #include "libavutil/opt.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "avi.h"
 #include "dv.h"
@@ -280,8 +281,8 @@ static int avi_read_tag(AVFormatContext *s, AVStream *st, uint32_t tag, uint32_t
 
     AV_WL32(key, tag);
 
-    return av_metadata_set2(st ? &st->metadata : &s->metadata, key, value,
-                            AV_METADATA_DONT_STRDUP_VAL);
+    return av_dict_set(st ? &st->metadata : &s->metadata, key, value,
+                            AV_DICT_DONT_STRDUP_VAL);
 }
 
 static void avi_read_info(AVFormatContext *s, uint64_t end)
@@ -296,7 +297,7 @@ static void avi_read_info(AVFormatContext *s, uint64_t end)
 static const char months[12][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
-static void avi_metadata_creation_time(AVMetadata **metadata, char *date)
+static void avi_metadata_creation_time(AVDictionary **metadata, char *date)
 {
     char month[4], time[9], buffer[64];
     int i, day, year;
@@ -307,11 +308,11 @@ static void avi_metadata_creation_time(AVMetadata **metadata, char *date)
             if (!strcasecmp(month, months[i])) {
                 snprintf(buffer, sizeof(buffer), "%.4d-%.2d-%.2d %s",
                          year, i+1, day, time);
-                av_metadata_set2(metadata, "creation_time", buffer, 0);
+                av_dict_set(metadata, "creation_time", buffer, 0);
             }
     } else if (date[4] == '/' && date[7] == '/') {
         date[4] = date[7] = '-';
-        av_metadata_set2(metadata, "creation_time", date, 0);
+        av_dict_set(metadata, "creation_time", date, 0);
     }
 }
 
@@ -339,7 +340,7 @@ static void avi_read_nikon(AVFormatContext *s, uint64_t end)
                     break;
                 }
                 if (name)
-                    av_metadata_set2(&s->metadata, name, buffer, 0);
+                    av_dict_set(&s->metadata, name, buffer, 0);
                 avio_skip(s->pb, size);
             }
             break;
@@ -795,7 +796,7 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
         ret = avio_get_str16le(pb, desc_len, desc, sizeof(desc));
         avio_skip(pb, desc_len - ret);
         if (*desc)
-            av_metadata_set2(&st->metadata, "title", desc, 0);
+            av_dict_set(&st->metadata, "title", desc, 0);
 
         avio_rl16(pb);   /* flags? */
         avio_rl32(pb);   /* data size */

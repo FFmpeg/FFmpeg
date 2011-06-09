@@ -21,6 +21,7 @@
 #include <string.h>
 #include "libavutil/avstring.h"
 #include "libavutil/base64.h"
+#include "libavutil/dict.h"
 #include "libavutil/parseutils.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
@@ -550,7 +551,7 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
 
 int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
 {
-    AVMetadataTag *title = av_metadata_get(ac[0]->metadata, "title", NULL, 0);
+    AVDictionaryEntry *title = av_dict_get(ac[0]->metadata, "title", NULL, 0);
     struct sdp_session_level s;
     int i, j, port, ttl, is_multicast;
     char dst[32], dst_type[5];

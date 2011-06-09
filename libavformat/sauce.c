@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "sauce.h"
 
@@ -44,7 +45,7 @@ int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int g
 #define GET_SAUCE_META(name,size) \
     if (avio_read(pb, buf, size) == size && buf[0]) { \
         buf[size] = 0; \
-        av_metadata_set2(&avctx->metadata, name, buf, 0); \
+        av_dict_set(&avctx->metadata, name, buf, 0); \
     }
 
     GET_SAUCE_META("title",     35)
@@ -95,7 +96,7 @@ int ff_sauce_read(AVFormatContext *avctx, uint64_t *fsize, int *got_width, int g
                 str[65*i + 64] = '\n';
             }
             str[65*i] = 0;
-            av_metadata_set2(&avctx->metadata, "comment", str, AV_METADATA_DONT_STRDUP_VAL);
+            av_dict_set(&avctx->metadata, "comment", str, AV_DICT_DONT_STRDUP_VAL);
         }
     }
 

@@ -27,6 +27,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "riff.h"
@@ -84,7 +85,7 @@ static int mov_metadata_track_or_disc_number(MOVContext *c, AVIOContext *pb, uns
 
     avio_rb16(pb); // unknown
     snprintf(buf, sizeof(buf), "%d", avio_rb16(pb));
-    av_metadata_set2(&c->fc->metadata, type, buf, 0);
+    av_dict_set(&c->fc->metadata, type, buf, 0);
 
     avio_rb16(pb); // total tracks/discs
 
@@ -208,10 +209,10 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             avio_read(pb, str, str_size);
             str[str_size] = 0;
         }
-        av_metadata_set2(&c->fc->metadata, key, str, 0);
+        av_dict_set(&c->fc->metadata, key, str, 0);
         if (*language && strcmp(language, "und")) {
             snprintf(key2, sizeof(key2), "%s-%s", key, language);
-            av_metadata_set2(&c->fc->metadata, key2, str, 0);
+            av_dict_set(&c->fc->metadata, key2, str, 0);
         }
     }
     av_dlog(c->fc, "lang \"%3s\" ", language);
@@ -557,10 +558,10 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (strcmp(type, "qt  "))
         c->isom = 1;
     av_log(c->fc, AV_LOG_DEBUG, "ISO: File Type Major Brand: %.4s\n",(char *)&type);
-    av_metadata_set2(&c->fc->metadata, "major_brand", type, 0);
+    av_dict_set(&c->fc->metadata, "major_brand", type, 0);
     minor_ver = avio_rb32(pb); /* minor version */
     snprintf(minor_ver_str, sizeof(minor_ver_str), "%d", minor_ver);
-    av_metadata_set2(&c->fc->metadata, "minor_version", minor_ver_str, 0);
+    av_dict_set(&c->fc->metadata, "minor_version", minor_ver_str, 0);
 
     comp_brand_size = atom.size - 8;
     if (comp_brand_size < 0)
@@ -570,7 +571,7 @@ static int mov_read_ftyp(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return AVERROR(ENOMEM);
     avio_read(pb, comp_brands_str, comp_brand_size);
     comp_brands_str[comp_brand_size] = 0;
-    av_metadata_set2(&c->fc->metadata, "compatible_brands", comp_brands_str, 0);
+    av_dict_set(&c->fc->metadata, "compatible_brands", comp_brands_str, 0);
     av_freep(&comp_brands_str);
 
     return 0;
@@ -594,7 +595,7 @@ static int mov_read_moof(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return mov_read_default(c, pb, atom);
 }
 
-static void mov_metadata_creation_time(AVMetadata **metadata, time_t time)
+static void mov_metadata_creation_time(AVDictionary **metadata, time_t time)
 {
     char buffer[32];
     if (time) {
@@ -603,7 +604,7 @@ static void mov_metadata_creation_time(AVMetadata **metadata, time_t time)
         ptm = gmtime(&time);
         if (!ptm) return;
         strftime(buffer, sizeof(buffer), "%Y-%m-%d %H:%M:%S", ptm);
-        av_metadata_set2(metadata, "creation_time", buffer, 0);
+        av_dict_set(metadata, "creation_time", buffer, 0);
     }
 }
 
@@ -640,7 +641,7 @@ static int mov_read_mdhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     lang = avio_rb16(pb); /* language */
     if (ff_mov_lang_to_iso639(lang, language))
-        av_metadata_set2(&st->metadata, "language", language, 0);
+        av_dict_set(&st->metadata, "language", language, 0);
     avio_rb16(pb); /* quality */
 
     return 0;
@@ -2147,9 +2148,6 @@ static int mov_read_cmov(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         goto free_and_return;
     atom.type = MKTAG('m','o','o','v');
     atom.size = moov_len;
-#ifdef DEBUG
-//    { int fd = open("/tmp/uncompheader.mov", O_WRONLY | O_CREAT); write(fd, moov_data, moov_len); close(fd); }
-#endif
     ret = mov_read_default(c, &ctx, atom);
 free_and_return:
     av_free(moov_data);
