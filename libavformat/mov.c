@@ -1926,6 +1926,10 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->width = width >> 16;
     sc->height = height >> 16;
 
+    if (display_matrix[0][0] == -65536 && display_matrix[1][1] == -65536) {
+         av_metadata_set2(&st->metadata, "rotate", "180", 0);
+    }
+
     // transform the display width/height according to the matrix
     // skip this if the display matrix is the default identity matrix
     // or if it is rotating the picture, ex iPhone 3GS
