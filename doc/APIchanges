@@ -13,7 +13,7 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-06-10 - xxxxxxx - lavfi 2.15.0 - avfilter_get_audio_buffer_ref_from_arrays
+2011-06-10 - c381960 - lavfi 2.15.0 - avfilter_get_audio_buffer_ref_from_arrays
   Add avfilter_get_audio_buffer_ref_from_arrays() to avfilter.h.
 
 2011-06-09 - d9f80ea - lavu 51.8.0 - AVMetadata
