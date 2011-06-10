@@ -1,6 +1,6 @@
 /*
  * AC-3 encoder options
- * Copyright (c) 2010 Justin Ruggles <justin.ruggles@gmail.com>
+ * Copyright (c) 2011 Justin Ruggles <justin.ruggles@gmail.com>
  *
  * This file is part of Libav.
  *
