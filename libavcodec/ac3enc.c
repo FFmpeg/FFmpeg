@@ -273,12 +273,12 @@ static void apply_mdct(AC3EncodeContext *s)
             AC3Block *block = &s->blocks[blk];
             const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
-            apply_window(&s->dsp, s->windowed_samples, input_samples, s->mdct.window, AC3_WINDOW_SIZE);
+            apply_window(&s->dsp, s->windowed_samples, input_samples, s->mdct->window, AC3_WINDOW_SIZE);
 
             block->coeff_shift[ch+1] = normalize_samples(s);
 
-            s->mdct.fft.mdct_calcw(&s->mdct.fft, block->mdct_coef[ch+1],
-                                   s->windowed_samples);
+            s->mdct->fft.mdct_calcw(&s->mdct->fft, block->mdct_coef[ch+1],
+                                    s->windowed_samples);
         }
     }
 }
@@ -2318,6 +2318,7 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
     int blk, ch;
     AC3EncodeContext *s = avctx->priv_data;
 
+    av_freep(&s->windowed_samples);
     for (ch = 0; ch < s->channels; ch++)
         av_freep(&s->planar_samples[ch]);
     av_freep(&s->planar_samples);
@@ -2343,7 +2344,8 @@ static av_cold int ac3_encode_close(AVCodecContext *avctx)
         av_freep(&block->qmant);
     }
 
-    mdct_end(&s->mdct);
+    mdct_end(s->mdct);
+    av_freep(&s->mdct);
 
     av_freep(&avctx->coded_frame);
     return 0;
@@ -2598,6 +2600,8 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
     AC3EncodeContext *s = avctx->priv_data;
     int channels = s->channels + 1; /* includes coupling channel */
 
+    FF_ALLOC_OR_GOTO(avctx, s->windowed_samples, AC3_WINDOW_SIZE *
+                     sizeof(*s->windowed_samples), alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->planar_samples, s->channels * sizeof(*s->planar_samples),
                      alloc_fail);
     for (ch = 0; ch < s->channels; ch++) {
@@ -2741,7 +2745,8 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
 
     bit_alloc_init(s);
 
-    ret = mdct_init(avctx, &s->mdct, 9);
+    FF_ALLOCZ_OR_GOTO(avctx, s->mdct, sizeof(AC3MDCTContext), init_fail);
+    ret = mdct_init(avctx, s->mdct, 9);
     if (ret)
         goto init_fail;
 

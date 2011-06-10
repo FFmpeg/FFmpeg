@@ -128,7 +128,7 @@ typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
-    AC3MDCTContext mdct;                    ///< MDCT context
+    AC3MDCTContext *mdct;                   ///< MDCT context
 
     AC3Block blocks[AC3_MAX_BLOCKS];        ///< per-block info
 
@@ -189,6 +189,7 @@ typedef struct AC3EncodeContext {
     int frame_bits;                         ///< all frame bits except exponents and mantissas
     int exponent_bits;                      ///< number of bits used for exponents
 
+    SampleType *windowed_samples;
     SampleType **planar_samples;
     uint8_t *bap_buffer;
     uint8_t *bap1_buffer;
@@ -207,8 +208,6 @@ typedef struct AC3EncodeContext {
     uint8_t exp_ref_block[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< reference blocks for EXP_REUSE
     uint8_t *ref_bap     [AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< bit allocation pointers (bap)
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
-
-    DECLARE_ALIGNED(32, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
 
     void (*output_frame_header)(struct AC3EncodeContext *s);
 } AC3EncodeContext;
