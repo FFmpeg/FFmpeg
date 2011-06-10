@@ -63,6 +63,7 @@ static void FUNCC(biweight_h264_pixels ## W ## x ## H)(uint8_t *_dst, uint8_t *_
     pixel *dst = (pixel*)_dst; \
     pixel *src = (pixel*)_src; \
     stride /= sizeof(pixel); \
+    offset <<= (BIT_DEPTH-8); \
     offset = ((offset + 1) | 1) << log2_denom; \
     for(y=0; y<H; y++, dst += stride, src += stride){ \
         op_scale2(0); \
