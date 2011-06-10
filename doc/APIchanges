@@ -13,42 +13,42 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-06-xx - xxxxxxx - lavu 51.5.0 - AVMetadata
+2011-06-09 - d9f80ea - lavu 51.8.0 - AVMetadata
   Move AVMetadata from lavf to lavu and rename it to
   AVDictionary -- new installed header dict.h.
   All av_metadata_* functions renamed to av_dict_*.
 
-2011-06-07 - a6703fa - lavu 51.4.0 - av_get_bytes_per_sample()
+2011-06-07 - a6703fa - lavu 51.8.0 - av_get_bytes_per_sample()
   Add av_get_bytes_per_sample() in libavutil/samplefmt.h.
   Deprecate av_get_bits_per_sample_fmt().
 
-2011-06-xx - xxxxxxx - lavu 51.3.0 - opt.h
+2011-06-xx - b39b062 - lavu 51.8.0 - opt.h
   Add av_opt_free convenience function.
 
-2011-06-06 - xxxxxx - lavfi 2.14.0 - AVFilterBufferRefAudioProps
+2011-06-06 - 95a0242 - lavfi 2.14.0 - AVFilterBufferRefAudioProps
   Remove AVFilterBufferRefAudioProps.size, and use nb_samples in
   avfilter_get_audio_buffer() and avfilter_default_get_audio_buffer() in
   place of size.
 
-2011-06-06 - xxxxxx - lavu 51.6.0 - av_samples_alloc()
+2011-06-06 - 0bc2cca - lavu 51.6.0 - av_samples_alloc()
   Switch nb_channels and nb_samples parameters order in
   av_samples_alloc().
 
-2011-06-06 - xxxxxx - lavu 51.5.0 - av_samples_*
+2011-06-06 - e1c7414 - lavu 51.5.0 - av_samples_*
   Change the data layout created by av_samples_fill_arrays() and
   av_samples_alloc().
 
-2011-06-06 - xxxxxx - lavfi 2.13.0 - vsrc_buffer.h
+2011-06-06 - 27bcf55 - lavfi 2.13.0 - vsrc_buffer.h
   Make av_vsrc_buffer_add_video_buffer_ref() accepts an additional
   flags parameter in input.
 
-2011-06-03 - xxxxxx - lavfi 2.12.0 - avfilter_link_free()
+2011-06-03 - e977ca2 - lavfi 2.12.0 - avfilter_link_free()
   Add avfilter_link_free() function.
 
-2011-06-02 - 5ad38d - lavu 51.4.0 - av_force_cpu_flags()
+2011-06-02 - 5ad38d9 - lavu 51.4.0 - av_force_cpu_flags()
   Add av_cpu_flags() in libavutil/cpu.h.
 
-2011-05-28 - xxxxxx - lavu 51.3.0 - pixdesc.h
+2011-05-28 - e71f260 - lavu 51.3.0 - pixdesc.h
   Add av_get_pix_fmt_name() in libavutil/pixdesc.h, and deprecate
   avcodec_get_pix_fmt_name() in libavcodec/avcodec.h in its favor.
 
@@ -56,52 +56,52 @@ API changes, most recent first:
   Add av_get_pix_fmt_name() in libavutil/pixdesc.h, and deprecate
   avcodec_get_pix_fmt_name() in libavcodec/avcodec.h in its favor.
 
-2011-05-25 - 30315a8 - lavf 53.1.0 - avformat.h
+2011-05-25 - 30315a8 - lavf 53.3.0 - avformat.h
   Add fps_probe_size to AVFormatContext.
 
-2011-05-22 - xxxxxx - lavf 53.2.0 - avformat.h
+2011-05-22 - 5ecdfd0 - lavf 53.2.0 - avformat.h
   Introduce avformat_alloc_output_context2() and deprecate
   avformat_alloc_output_context().
 
-2011-05-22 - xxxxxx - lavfi 2.10.0 - vsrc_buffer.h
+2011-05-22 - 83db719 - lavfi 2.10.0 - vsrc_buffer.h
   Make libavfilter/vsrc_buffer.h public.
 
-2011-05-XX - XXXXXX - lavfi 2.8.0 - avcodec.h
+2011-05-19 - c000a9f - lavfi 2.8.0 - avcodec.h
   Add av_vsrc_buffer_add_frame() to libavfilter/avcodec.h.
 
-2011-05-XX - XXXXXX - lavfi 2.6.0 - avcodec.h
+2011-05-14 - 9fdf772 - lavfi 2.6.0 - avcodec.h
   Add avfilter_get_video_buffer_ref_from_frame() to libavfilter/avcodec.h.
 
-2011-05-18 - 64150ff - lavc 53.4.0 - AVCodecContext.request_sample_fmt
+2011-05-18 - 64150ff - lavc 53.7.0 - AVCodecContext.request_sample_fmt
   Add request_sample_fmt field to AVCodecContext.
 
-2011-05-10 - 188dea1 - lavc 53.3.0 - avcodec.h
+2011-05-10 - 188dea1 - lavc 53.6.0 - avcodec.h
   Deprecate AVLPCType and the following fields in
   AVCodecContext: lpc_coeff_precision, prediction_order_method,
   min_partition_order, max_partition_order, lpc_type, lpc_passes.
   Corresponding FLAC encoder options should be used instead.
 
-2011-05-07 - xxxxxxx - lavfi 2.5.0 - avcodec.h
+2011-05-07 - 9fdf772 - lavfi 2.5.0 - avcodec.h
   Add libavfilter/avcodec.h header and avfilter_copy_frame_props()
   function.
 
-2011-05-07 - xxxxxxx - lavc 53.5.0 - AVFrame
+2011-05-07 - 18ded93 - lavc 53.5.0 - AVFrame
   Add format field to AVFrame.
 
-2011-05-07 - xxxxxxx - lavc 53.4.0 - AVFrame
+2011-05-07 - 22333a6 - lavc 53.4.0 - AVFrame
   Add width and height fields to AVFrame.
 
-2011-05-01 - xxxxxxx - lavfi 2.4.0 - avfilter.h
+2011-05-01 - 35fe66a - lavfi 2.4.0 - avfilter.h
   Rename AVFilterBufferRefVideoProps.pixel_aspect to
   sample_aspect_ratio.
 
-2011-05-01 - xxxxxxx - lavc 53.3.0 - AVFrame
+2011-05-01 - 77e9dee - lavc 53.3.0 - AVFrame
   Add a sample_aspect_ratio field to AVFrame.
 
-2011-05-01 - xxxxxxx - lavc 53.2.0 - AVFrame
+2011-05-01 - 1ba5727 - lavc 53.2.0 - AVFrame
   Add a pkt_pos field to AVFrame.
 
-2011-04-xx - xxxxxxx - lavu 51.2.0 - mem.h
+2011-04-29 - 35ceaa7 - lavu 51.2.0 - mem.h
   Add av_dynarray_add function for adding
   an element to a dynamic array.
 
@@ -204,7 +204,7 @@ API changes, most recent first:
 2011-03-25 - 34b47d7 - lavc 52.115.0 - AVCodecContext.audio_service_type
   Add audio_service_type field to AVCodecContext.
 
-2011-XX-XX - XXXXXXX - lavu  XX.XXX.X - pixfmt.h
+2011-03-17 - e309fdc - lavu 50.40.0 - pixfmt.h
   Add PIX_FMT_BGR48LE and PIX_FMT_BGR48BE pixel formats
 
 2011-03-02 - 863c471 - lavf  52.103.0 - av_pkt_dump2, av_pkt_dump_log2
@@ -273,10 +273,10 @@ API changes, most recent first:
 2011-02-02 - dfd2a00 - lavu 50.37.0 - log.h
   Make av_dlog public.
 
-2011-01-31 - X - lavfi 1.76.0 - vsrc_buffer
+2011-01-31 - 7b3ea55 - lavfi 1.76.0 - vsrc_buffer
   Add sample_aspect_ratio fields to vsrc_buffer arguments
 
-2011-01-31 - X - lavfi 1.75.0 - AVFilterLink sample_aspect_ratio
+2011-01-31 - 910b5b8 - lavfi 1.75.0 - AVFilterLink sample_aspect_ratio
   Add sample_aspect_ratio field to AVFilterLink.
 
 2011-01-15 - r26374 - lavfi 1.74.0 - AVFilterBufferRefAudioProps
