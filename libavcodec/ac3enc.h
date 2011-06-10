@@ -209,6 +209,8 @@ typedef struct AC3EncodeContext {
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
 
     DECLARE_ALIGNED(32, SampleType, windowed_samples)[AC3_WINDOW_SIZE];
+
+    void (*output_frame_header)(struct AC3EncodeContext *s);
 } AC3EncodeContext;
 
 #endif /* AVCODEC_AC3ENC_H */

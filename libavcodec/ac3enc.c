@@ -1987,10 +1987,7 @@ static void output_frame(AC3EncodeContext *s, unsigned char *frame)
 
     init_put_bits(&s->pb, frame, AC3_MAX_CODED_FRAME_SIZE);
 
-    if (CONFIG_EAC3_ENCODER && s->eac3)
-        ff_eac3_output_frame_header(s);
-    else
-        ac3_output_frame_header(s);
+    s->output_frame_header(s);
 
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
         output_audio_block(s, blk);
@@ -2731,6 +2728,12 @@ static av_cold int ac3_encode_init(AVCodecContext *avctx)
         frame_size_58 = (((s->frame_size+2) >> 2) + ((s->frame_size+2) >> 4)) << 1;
         s->crc_inv[1] = pow_poly((CRC16_POLY >> 1), (8 * frame_size_58) - 16, CRC16_POLY);
     }
+
+    /* set function pointers */
+    if (CONFIG_EAC3_ENCODER && s->eac3)
+        s->output_frame_header = ff_eac3_output_frame_header;
+    else
+        s->output_frame_header = ac3_output_frame_header;
 
     set_bandwidth(s);
 
