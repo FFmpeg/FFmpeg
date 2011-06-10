@@ -60,8 +60,9 @@ OBJS-$(CONFIG_AAC_ENCODER)             += aacenc.o aaccoder.o    \
                                           mpeg4audio.o kbdwin.o
 OBJS-$(CONFIG_AASC_DECODER)            += aasc.o msrledec.o
 OBJS-$(CONFIG_AC3_DECODER)             += ac3dec.o ac3dec_data.o ac3.o kbdwin.o
-OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3tab.o ac3.o kbdwin.o
-OBJS-$(CONFIG_AC3_FIXED_ENCODER)       += ac3enc_fixed.o ac3tab.o ac3.o
+OBJS-$(CONFIG_AC3_ENCODER)             += ac3enc_float.o ac3enc.o ac3tab.o \
+                                          ac3.o kbdwin.o
+OBJS-$(CONFIG_AC3_FIXED_ENCODER)       += ac3enc_fixed.o ac3enc.o ac3tab.o ac3.o
 OBJS-$(CONFIG_ALAC_DECODER)            += alac.o
 OBJS-$(CONFIG_ALAC_ENCODER)            += alacenc.o
 OBJS-$(CONFIG_ALS_DECODER)             += alsdec.o bgmc.o mpeg4audio.o
@@ -124,8 +125,8 @@ OBJS-$(CONFIG_DVVIDEO_DECODER)         += dv.o dvdata.o
 OBJS-$(CONFIG_DVVIDEO_ENCODER)         += dv.o dvdata.o
 OBJS-$(CONFIG_DXA_DECODER)             += dxa.o
 OBJS-$(CONFIG_EAC3_DECODER)            += eac3dec.o eac3dec_data.o
-OBJS-$(CONFIG_EAC3_ENCODER)            += eac3enc.o ac3enc_float.o ac3tab.o \
-                                          ac3.o kbdwin.o
+OBJS-$(CONFIG_EAC3_ENCODER)            += eac3enc.o ac3enc.o ac3enc_float.o \
+                                          ac3tab.o ac3.o kbdwin.o
 OBJS-$(CONFIG_EACMV_DECODER)           += eacmv.o
 OBJS-$(CONFIG_EAMAD_DECODER)           += eamad.o eaidct.o mpeg12.o \
                                           mpeg12data.o mpegvideo.o  \

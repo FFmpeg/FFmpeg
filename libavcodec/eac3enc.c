@@ -28,6 +28,13 @@
 #include "ac3enc.h"
 #include "eac3enc.h"
 
+
+#define AC3ENC_TYPE AC3ENC_TYPE_EAC3
+#include "ac3enc_opts_template.c"
+static AVClass eac3enc_class = { "E-AC-3 Encoder", av_default_item_name,
+                                 eac3_options, LIBAVUTIL_VERSION_INT };
+
+
 void ff_eac3_set_cpl_states(AC3EncodeContext *s)
 {
     int ch, blk;
@@ -129,3 +136,20 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
     /* block start info */
     put_bits(&s->pb, 1, 0);
 }
+
+
+#if CONFIG_EAC3_ENCODER
+AVCodec ff_eac3_encoder = {
+    .name            = "eac3",
+    .type            = AVMEDIA_TYPE_AUDIO,
+    .id              = CODEC_ID_EAC3,
+    .priv_data_size  = sizeof(AC3EncodeContext),
+    .init            = ff_ac3_encode_init,
+    .encode          = ff_ac3_encode_frame,
+    .close           = ff_ac3_encode_close,
+    .sample_fmts     = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
+    .long_name       = NULL_IF_CONFIG_SMALL("ATSC A/52 E-AC-3"),
+    .priv_class      = &eac3enc_class,
+    .channel_layouts = ff_ac3_channel_layouts,
+};
+#endif
