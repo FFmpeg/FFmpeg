@@ -269,7 +269,6 @@ void ff_ac3_float_apply_window(DSPContext *dsp, SampleType *output,
                                const SampleType *window, unsigned int len);
 
 int ff_ac3_fixed_normalize_samples(AC3EncodeContext *s);
-int ff_ac3_float_normalize_samples(AC3EncodeContext *s);
 
 void ff_ac3_fixed_scale_coefficients(AC3EncodeContext *s);
 void ff_ac3_float_scale_coefficients(AC3EncodeContext *s);

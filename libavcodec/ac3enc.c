@@ -2363,7 +2363,6 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         s->mdct_end                     = ff_ac3_float_mdct_end;
         s->mdct_init                    = ff_ac3_float_mdct_init;
         s->apply_window                 = ff_ac3_float_apply_window;
-        s->normalize_samples            = ff_ac3_float_normalize_samples;
         s->scale_coefficients           = ff_ac3_float_scale_coefficients;
         s->deinterleave_input_samples   = ff_ac3_float_deinterleave_input_samples;
         s->apply_mdct                   = ff_ac3_float_apply_mdct;

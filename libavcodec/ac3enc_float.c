@@ -91,16 +91,6 @@ void ff_ac3_float_apply_window(DSPContext *dsp, float *output,
 
 
 /**
- * Normalize the input samples to use the maximum available precision.
- */
-int ff_ac3_float_normalize_samples(AC3EncodeContext *s)
-{
-    /* Normalization is not needed for floating-point samples, so just return 0 */
-    return 0;
-}
-
-
-/**
  * Scale MDCT coefficients from float to 24-bit fixed-point.
  */
 void ff_ac3_float_scale_coefficients(AC3EncodeContext *s)
