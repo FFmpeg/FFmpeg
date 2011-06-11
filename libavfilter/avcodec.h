@@ -47,6 +47,17 @@ void avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src);
 AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame, int perms);
 
 /**
+ * Fill an AVFrame with the information stored in picref.
+ *
+ * @param frame an already allocated AVFrame
+ * @param picref a video buffer reference
+ * @return 0 in case of success, a negative AVERROR code in case of
+ * failure
+ */
+int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
+                                              const AVFilterBufferRef *picref);
+
+/**
  * Add frame data to buffer_src.
  *
  * @param buffer_src pointer to a buffer source context
