@@ -2,6 +2,7 @@ include $(SUBDIR)../config.mak
 
 NAME    = avdevice
 FFLIBS  = avformat avcodec avutil
+FFLIBS-$(CONFIG_LAVFI_INDEV) += avfilter
 
 HEADERS = avdevice.h
 
@@ -19,6 +20,7 @@ OBJS-$(CONFIG_DSHOW_INDEV)               += dshow.o dshow_enummediatypes.o \
 OBJS-$(CONFIG_DV1394_INDEV)              += dv1394.o
 OBJS-$(CONFIG_FBDEV_INDEV)               += fbdev.o
 OBJS-$(CONFIG_JACK_INDEV)                += jack_audio.o
+OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
 OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
 OBJS-$(CONFIG_OSS_INDEV)                 += oss_audio.o
 OBJS-$(CONFIG_OSS_OUTDEV)                += oss_audio.o
