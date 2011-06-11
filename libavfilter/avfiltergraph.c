@@ -229,7 +229,7 @@ int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx)
+int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
 {
     int ret;
 

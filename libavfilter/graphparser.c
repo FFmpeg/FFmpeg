@@ -329,7 +329,7 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
 
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut *open_inputs,
-                         AVFilterInOut *open_outputs, AVClass *log_ctx)
+                         AVFilterInOut *open_outputs, void *log_ctx)
 {
     int index = 0, ret;
     char chr = 0;
