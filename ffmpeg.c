@@ -418,7 +418,7 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
-        if ((ret = avfilter_graph_parse(ost->graph, ost->avfilter, inputs, outputs, NULL)) < 0)
+        if ((ret = avfilter_graph_parse(ost->graph, ost->avfilter, &inputs, &outputs, NULL)) < 0)
             return ret;
         av_freep(&ost->avfilter);
     } else {

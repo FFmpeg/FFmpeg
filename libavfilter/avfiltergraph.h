@@ -112,12 +112,14 @@ typedef struct AVFilterInOut {
  *
  * @param graph   the filter graph where to link the parsed graph context
  * @param filters string to be parsed
- * @param inputs  linked list to the inputs of the graph
- * @param outputs linked list to the outputs of the graph
+ * @param inputs  linked list to the inputs of the graph, may be NULL.
+ *                It is updated to contain the list of open inputs after the parsing.
+ * @param outputs linked list to the outputs of the graph, may be NULL.
+ *                It is updated to contain the list of open outputs after the parsing.
  * @return zero on success, a negative AVERROR code on error
  */
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut *inputs, AVFilterInOut *outputs,
+                         AVFilterInOut **inputs, AVFilterInOut **outputs,
                          void *log_ctx);
 
 #endif /* AVFILTER_AVFILTERGRAPH_H */

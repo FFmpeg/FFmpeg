@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-06-12 - xxxxxxx - lavfi 2.16.0 - avfilter_graph_parse()
+  Change avfilter_graph_parse() signature.
+
 2011-06-xx - xxxxxxx - lavu 51.6.0 - opt.h
   Add av_opt_flag_is_set().
 

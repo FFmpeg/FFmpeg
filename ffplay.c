@@ -1708,7 +1708,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         inputs->pad_idx = 0;
         inputs->next    = NULL;
 
-        if ((ret = avfilter_graph_parse(graph, vfilters, inputs, outputs, NULL)) < 0)
+        if ((ret = avfilter_graph_parse(graph, vfilters, &inputs, &outputs, NULL)) < 0)
             goto the_end;
         av_freep(&vfilters);
     } else {

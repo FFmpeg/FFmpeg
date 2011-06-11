@@ -328,8 +328,8 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
 }
 
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut *open_inputs,
-                         AVFilterInOut *open_outputs, void *log_ctx)
+                         AVFilterInOut **open_inputs, AVFilterInOut **open_outputs,
+                         void *log_ctx)
 {
     int index = 0, ret;
     char chr = 0;
@@ -341,7 +341,7 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         const char *filterchain = filters;
         filters += strspn(filters, WHITESPACES);
 
-        if ((ret = parse_inputs(&filters, &curr_inputs, &open_outputs, log_ctx)) < 0)
+        if ((ret = parse_inputs(&filters, &curr_inputs, open_outputs, log_ctx)) < 0)
             goto fail;
 
         if ((ret = parse_filter(&filter, &filters, graph, index, log_ctx)) < 0)
@@ -350,14 +350,14 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         if (filter->input_count == 1 && !curr_inputs && !index) {
             /* First input can be omitted if it is "[in]" */
             const char *tmp = "[in]";
-            if ((ret = parse_inputs(&tmp, &curr_inputs, &open_outputs, log_ctx)) < 0)
+            if ((ret = parse_inputs(&tmp, &curr_inputs, open_outputs, log_ctx)) < 0)
                 goto fail;
         }
 
-        if ((ret = link_filter_inouts(filter, &curr_inputs, &open_inputs, log_ctx)) < 0)
+        if ((ret = link_filter_inouts(filter, &curr_inputs, open_inputs, log_ctx)) < 0)
             goto fail;
 
-        if ((ret = parse_outputs(&filters, &curr_inputs, &open_inputs, &open_outputs,
+        if ((ret = parse_outputs(&filters, &curr_inputs, open_inputs, open_outputs,
                                  log_ctx)) < 0)
             goto fail;
 
@@ -382,10 +382,10 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         goto fail;
     }
 
-    if (open_inputs && !strcmp(open_inputs->name, "out") && curr_inputs) {
+    if (*open_inputs && !strcmp((*open_inputs)->name, "out") && curr_inputs) {
         /* Last output can be omitted if it is "[out]" */
         const char *tmp = "[out]";
-        if ((ret = parse_outputs(&tmp, &curr_inputs, &open_inputs, &open_outputs,
+        if ((ret = parse_outputs(&tmp, &curr_inputs, open_inputs, open_outputs,
                                  log_ctx)) < 0)
             goto fail;
     }
@@ -396,8 +396,8 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
     for (; graph->filter_count > 0; graph->filter_count--)
         avfilter_free(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->filters);
-    free_inout(open_inputs);
-    free_inout(open_outputs);
+    free_inout(*open_inputs);
+    free_inout(*open_outputs);
     free_inout(curr_inputs);
     return ret;
 }
