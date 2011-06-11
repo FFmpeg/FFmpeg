@@ -36,7 +36,7 @@
  */
 static int link_filter(AVFilterContext *src, int srcpad,
                        AVFilterContext *dst, int dstpad,
-                       AVClass *log_ctx)
+                       void *log_ctx)
 {
     int ret;
     if ((ret = avfilter_link(src, srcpad, dst, dstpad))) {
@@ -55,7 +55,7 @@ static int link_filter(AVFilterContext *src, int srcpad,
  * @return a pointer (that need to be freed after use) to the name
  * between parenthesis
  */
-static char *parse_link_name(const char **buf, AVClass *log_ctx)
+static char *parse_link_name(const char **buf, void *log_ctx)
 {
     const char *start = *buf;
     char *name;
@@ -92,7 +92,7 @@ static char *parse_link_name(const char **buf, AVClass *log_ctx)
  * @return 0 in case of success, a negative AVERROR code otherwise
  */
 static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int index,
-                         const char *filt_name, const char *args, AVClass *log_ctx)
+                         const char *filt_name, const char *args, void *log_ctx)
 {
     AVFilter *filt;
     char inst_name[30];
@@ -153,7 +153,7 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
  * @return 0 in case of success, a negative AVERROR code otherwise
  */
 static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGraph *graph,
-                        int index, AVClass *log_ctx)
+                        int index, void *log_ctx)
 {
     char *opts = NULL;
     char *name = av_get_token(buf, "=,;[\n");
@@ -203,7 +203,7 @@ static void insert_inout(AVFilterInOut **inouts, AVFilterInOut *element)
 
 static int link_filter_inouts(AVFilterContext *filt_ctx,
                               AVFilterInOut **curr_inputs,
-                              AVFilterInOut **open_inputs, AVClass *log_ctx)
+                              AVFilterInOut **open_inputs, void *log_ctx)
 {
     int pad = filt_ctx->input_count, ret;
 
@@ -251,7 +251,7 @@ static int link_filter_inouts(AVFilterContext *filt_ctx,
 }
 
 static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
-                        AVFilterInOut **open_outputs, AVClass *log_ctx)
+                        AVFilterInOut **open_outputs, void *log_ctx)
 {
     int pad = 0;
 
@@ -286,7 +286,7 @@ static int parse_inputs(const char **buf, AVFilterInOut **curr_inputs,
 
 static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
                          AVFilterInOut **open_inputs,
-                         AVFilterInOut **open_outputs, AVClass *log_ctx)
+                         AVFilterInOut **open_outputs, void *log_ctx)
 {
     int ret, pad = 0;
 
