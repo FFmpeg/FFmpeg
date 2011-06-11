@@ -76,7 +76,7 @@ int avfilter_graph_create_filter(AVFilterContext **filt_ctx, AVFilter *filt,
  * @param log_ctx context used for logging
  * @return 0 in case of success, a negative AVERROR code otherwise
  */
-int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx);
+int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx);
 
 /**
  * Free a graph, destroy its links, and set *graph to NULL.
@@ -118,6 +118,6 @@ typedef struct AVFilterInOut {
  */
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut *inputs, AVFilterInOut *outputs,
-                         AVClass *log_ctx);
+                         void *log_ctx);
 
 #endif /* AVFILTER_AVFILTERGRAPH_H */
