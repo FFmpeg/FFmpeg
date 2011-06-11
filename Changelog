@@ -17,6 +17,7 @@ version 0.7:
 - 4:4:4 H.264 decoding support
 - 10-bit H.264 optimizations for x86
 - lut, lutrgb, and lutyuv filters added
+- buffersink libavfilter sink added
 
 
 version 0.7_beta2:

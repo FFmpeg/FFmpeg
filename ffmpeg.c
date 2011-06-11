@@ -51,6 +51,7 @@
 # include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
+# include "libavfilter/vsink_buffer.h"
 # include "libavfilter/vsrc_buffer.h"
 #endif
 
@@ -363,7 +364,7 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
     /** filter graph containing all filters including input & output */
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
-    FFSinkContext ffsink_ctx = { .pix_fmt = codec->pix_fmt };
+    enum PixelFormat pix_fmts[] = { codec->pix_fmt, PIX_FMT_NONE };
     AVRational sample_aspect_ratio;
     char args[255];
     int ret;
@@ -383,8 +384,8 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
                                        "src", args, NULL, ost->graph);
     if (ret < 0)
         return ret;
-    ret = avfilter_graph_create_filter(&ost->output_video_filter, &ffsink,
-                                       "out", NULL, &ffsink_ctx, ost->graph);
+    ret = avfilter_graph_create_filter(&ost->output_video_filter, avfilter_get_by_name("buffersink"),
+                                       "out", NULL, pix_fmts, ost->graph);
     if (ret < 0)
         return ret;
     last_filter = ost->input_video_filter;
@@ -1708,12 +1709,15 @@ static int output_packet(AVInputStream *ist, int ist_index,
                 frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
                     !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);
                 while (frame_available) {
-                    AVRational ist_pts_tb;
-                    if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ost->output_video_filter)
-                        if (get_filtered_video_frame(ost->output_video_filter, &picture, &ost->picref, &ist_pts_tb) < 0)
+                    if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ost->output_video_filter) {
+                        AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
+                        if (av_vsink_buffer_get_video_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0)
                             goto cont;
-                    if (ost->picref)
-                        ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+                        if (ost->picref) {
+                            avfilter_fill_frame_from_video_buffer_ref(&picture, ost->picref);
+                            ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+                        }
+                    }
 #endif
                     os = output_files[ost->file_index];
 

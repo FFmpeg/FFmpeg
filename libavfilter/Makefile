@@ -6,7 +6,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 FFLIBS-$(CONFIG_MP_FILTER) += avcodec
 
-HEADERS = avcodec.h avfilter.h avfiltergraph.h vsrc_buffer.h
+HEADERS = avcodec.h avfilter.h avfiltergraph.h vsink_buffer.hvsrc_buffer.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
@@ -69,6 +69,7 @@ OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += vsrc_movie.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 
+OBJS-$(CONFIG_BUFFERSINK_FILTER)             += vsink_buffer.o
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
 

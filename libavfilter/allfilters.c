@@ -85,5 +85,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER (MOVIE,       movie,       vsrc);
     REGISTER_FILTER (NULLSRC,     nullsrc,     vsrc);
 
+    REGISTER_FILTER (BUFFER,      buffersink,  vsink);
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
 }

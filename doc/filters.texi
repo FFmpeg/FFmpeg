@@ -1977,6 +1977,19 @@ frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
 
 Below is a description of the currently available video sinks.
 
+@section buffersink
+
+Buffer video frames, and make them available to the end of the filter
+graph.
+
+This sink is mainly intended for a programmatic use, in particular
+through the interface defined in @file{libavfilter/vsink_buffer.h}.
+
+It does not require a string parameter in input, but you need to
+specify a pointer to a list of supported pixel formats terminated by
+-1 in the opaque parameter provided to @code{avfilter_init_filter}
+when initializing this sink.
+
 @section nullsink
 
 Null video sink, do absolutely nothing with the input video. It is

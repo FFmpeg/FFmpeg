@@ -41,6 +41,7 @@
 # include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
+# include "libavfilter/vsink_buffer.h"
 #endif
 
 #include <SDL.h>
@@ -1682,7 +1683,7 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 {
     char sws_flags_str[128];
     int ret;
-    FFSinkContext ffsink_ctx = { .pix_fmt = PIX_FMT_YUV420P };
+    enum PixelFormat pix_fmts[] = { PIX_FMT_YUV420P, PIX_FMT_NONE };
     AVFilterContext *filt_src = NULL, *filt_out = NULL;
     snprintf(sws_flags_str, sizeof(sws_flags_str), "flags=%d", sws_flags);
     graph->scale_sws_opts = av_strdup(sws_flags_str);
@@ -1690,8 +1691,8 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
     if ((ret = avfilter_graph_create_filter(&filt_src, &input_filter, "src",
                                             NULL, is, graph)) < 0)
         goto the_end;
-    if ((ret = avfilter_graph_create_filter(&filt_out, &ffsink, "out",
-                                            NULL, &ffsink_ctx, graph)) < 0)
+    if ((ret = avfilter_graph_create_filter(&filt_out, avfilter_get_by_name("buffersink"), "out",
+                                            NULL, pix_fmts, graph)) < 0)
         goto the_end;
 
     if(vfilters) {
@@ -1748,13 +1749,14 @@ static int video_thread(void *arg)
         AVPacket pkt;
 #else
         AVFilterBufferRef *picref;
-        AVRational tb;
+        AVRational tb = filt_out->inputs[0]->time_base;
 #endif
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 #if CONFIG_AVFILTER
-        ret = get_filtered_video_frame(filt_out, frame, &picref, &tb);
+        ret = av_vsink_buffer_get_video_buffer_ref(filt_out, &picref, 0);
         if (picref) {
+            avfilter_fill_frame_from_video_buffer_ref(frame, picref);
             pts_int = picref->pts;
             pos     = picref->pos;
             frame->opaque = picref;
@@ -1776,7 +1778,7 @@ static int video_thread(void *arg)
 
         if (ret < 0) goto the_end;
 
-        if (!ret)
+        if (!picref)
             continue;
 
         pts = pts_int*av_q2d(is->video_st->time_base);
