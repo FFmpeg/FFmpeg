@@ -129,6 +129,7 @@ install: install-libs install-headers
 
 install-libs: install-libs-yes
 
+install-progs-yes:
 install-progs-$(CONFIG_DOC): install-man
 install-progs-$(CONFIG_SHARED): install-libs
 
