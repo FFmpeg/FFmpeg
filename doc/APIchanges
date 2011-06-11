@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-06-xx - xxxxxxx - lavu 51.6.0 - opt.h
+  Add av_opt_flag_is_set().
+
 2011-06-10 - c381960 - lavfi 2.15.0 - avfilter_get_audio_buffer_ref_from_arrays
   Add avfilter_get_audio_buffer_ref_from_arrays() to avfilter.h.
 

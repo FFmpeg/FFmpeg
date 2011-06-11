@@ -23,6 +23,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/dict.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/opt.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
@@ -301,7 +302,8 @@ xiph_fail:
     return NULL;
 }
 
-static int latm_context2profilelevel(AVCodecContext *c) {
+static int latm_context2profilelevel(AVCodecContext *c)
+{
     /* MP4A-LATM
      * The RTP payload format specification is described in RFC 3016
      * The encoding specifications are provided in ISO/IEC 14496-3 */
@@ -329,7 +331,8 @@ static int latm_context2profilelevel(AVCodecContext *c) {
     return profile_level;
 }
 
-static char *latm_context2config(AVCodecContext *c) {
+static char *latm_context2config(AVCodecContext *c)
+{
     /* MP4A-LATM
      * The RTP payload format specification is described in RFC 3016
      * The encoding specifications are provided in ISO/IEC 14496-3 */
@@ -364,7 +367,7 @@ static char *latm_context2config(AVCodecContext *c) {
     return config;
 }
 
-static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c, int payload_type, int flags)
+static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c, int payload_type, AVFormatContext *fmt)
 {
     char *config = NULL;
 
@@ -399,7 +402,8 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type, config ? config : "");
             break;
         case CODEC_ID_AAC:
-            if (flags & AVFMT_FLAG_MP4A_LATM) {
+            if (fmt && fmt->oformat->priv_class &&
+                av_opt_flag_is_set(fmt->priv_data, "rtpflags", "latm")) {
                 config = latm_context2config(c);
                 if (!config)
                     return NULL;
@@ -523,7 +527,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
     return buff;
 }
 
-void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl, int flags)
+void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl, AVFormatContext *fmt)
 {
     const char *type;
     int payload_type;
@@ -546,7 +550,7 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
         av_strlcatf(buff, size, "b=AS:%d\r\n", c->bit_rate / 1000);
     }
 
-    sdp_write_media_attributes(buff, size, c, payload_type, flags);
+    sdp_write_media_attributes(buff, size, c, payload_type, fmt);
 }
 
 int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
@@ -596,7 +600,7 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
             ff_sdp_write_media(buf, size,
                                   ac[i]->streams[j]->codec, dst[0] ? dst : NULL,
                                   dst_type, (port > 0) ? port + j * 2 : 0, ttl,
-                                  ac[i]->flags);
+                                  ac[i]);
             if (port <= 0) {
                 av_strlcatf(buf, size,
                                    "a=control:streamid=%d\r\n", i + j);
@@ -612,7 +616,7 @@ int av_sdp_create(AVFormatContext *ac[], int n_files, char *buf, int size)
     return AVERROR(ENOSYS);
 }
 
-void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl, int flags)
+void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *dest_addr, const char *dest_type, int port, int ttl, AVFormatContext *fmt)
 {
 }
 #endif

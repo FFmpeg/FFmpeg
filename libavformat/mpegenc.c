@@ -25,7 +25,6 @@
 #include "mpeg.h"
 
 #define MAX_PAYLOAD_SIZE 4096
-//#define DEBUG_SEEK
 
 #undef NDEBUG
 #include <assert.h>

@@ -558,7 +558,7 @@ OBJS-$(CONFIG_OGG_DEMUXER)             += flacdec.o flacdata.o flac.o \
                                           dirac.o mpeg12data.o vorbis_data.o
 OBJS-$(CONFIG_OGG_MUXER)               += xiph.o flacdec.o flacdata.o flac.o \
                                           vorbis_data.o
-OBJS-$(CONFIG_RTP_MUXER)               += mpegvideo.o xiph.o
+OBJS-$(CONFIG_RTP_MUXER)               += mpeg4audio.o mpegvideo.o xiph.o
 OBJS-$(CONFIG_SPDIF_DEMUXER)           += aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
                                           flacdec.o flacdata.o flac.o \

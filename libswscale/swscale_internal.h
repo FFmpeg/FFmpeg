@@ -371,6 +371,12 @@ const char *sws_format_name(enum PixelFormat format);
 #define isNBPS(x)       (           \
            (x)==PIX_FMT_YUV420P9LE  \
         || (x)==PIX_FMT_YUV420P9BE  \
+        || (x)==PIX_FMT_YUV444P9BE  \
+        || (x)==PIX_FMT_YUV444P9LE  \
+        || (x)==PIX_FMT_YUV422P10BE \
+        || (x)==PIX_FMT_YUV422P10LE \
+        || (x)==PIX_FMT_YUV444P10BE \
+        || (x)==PIX_FMT_YUV444P10LE \
         || (x)==PIX_FMT_YUV420P10LE \
         || (x)==PIX_FMT_YUV420P10BE \
         || (x)==PIX_FMT_YUV422P10LE \
@@ -392,13 +398,19 @@ const char *sws_format_name(enum PixelFormat format);
 #define isPlanarYUV(x)  (           \
         isPlanar8YUV(x)             \
         || (x)==PIX_FMT_YUV420P9LE  \
+        || (x)==PIX_FMT_YUV444P9LE  \
         || (x)==PIX_FMT_YUV420P10LE \
+        || (x)==PIX_FMT_YUV422P10LE \
+        || (x)==PIX_FMT_YUV444P10LE \
         || (x)==PIX_FMT_YUV420P16LE \
         || (x)==PIX_FMT_YUV422P10LE \
         || (x)==PIX_FMT_YUV422P16LE \
         || (x)==PIX_FMT_YUV444P16LE \
         || (x)==PIX_FMT_YUV420P9BE  \
+        || (x)==PIX_FMT_YUV444P9BE  \
         || (x)==PIX_FMT_YUV420P10BE \
+        || (x)==PIX_FMT_YUV422P10BE \
+        || (x)==PIX_FMT_YUV444P10BE \
         || (x)==PIX_FMT_YUV420P16BE \
         || (x)==PIX_FMT_YUV422P10BE \
         || (x)==PIX_FMT_YUV422P16BE \

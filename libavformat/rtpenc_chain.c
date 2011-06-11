@@ -23,6 +23,7 @@
 #include "avio_internal.h"
 #include "rtpenc_chain.h"
 #include "avio_internal.h"
+#include "libavutil/opt.h"
 
 AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
                                        URLContext *handle, int packet_size)
@@ -49,6 +50,13 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
     /* Copy other stream parameters. */
     rtpctx->streams[0]->sample_aspect_ratio = st->sample_aspect_ratio;
     rtpctx->flags |= s->flags & AVFMT_FLAG_MP4A_LATM;
+
+    av_set_parameters(rtpctx, NULL);
+    /* Copy the rtpflags values straight through */
+    if (s->oformat->priv_class &&
+        av_find_opt(s->priv_data, "rtpflags", NULL, 0, 0))
+        av_set_int(rtpctx->priv_data, "rtpflags",
+                   av_get_int(s->priv_data, "rtpflags", NULL));
 
     /* Set the synchronized start time. */
     rtpctx->start_time_realtime = s->start_time_realtime;

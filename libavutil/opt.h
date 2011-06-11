@@ -181,4 +181,14 @@ int av_set_options_string(void *ctx, const char *opts,
  */
 void av_opt_free(void *obj);
 
+/**
+ * Check whether a particular flag is set in a flags field.
+ *
+ * @param field_name the name of the flag field option
+ * @param flag_name the name of the flag to check
+ * @return non-zero if the flag is set, zero if the flag isn't set,
+ *         isn't of the right type, or the flags field doesn't exist.
+ */
+int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
+
 #endif /* AVUTIL_OPT_H */

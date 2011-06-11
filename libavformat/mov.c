@@ -1537,8 +1537,9 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
     /* adjust first dts according to edit list */
     if (sc->time_offset && mov->time_scale > 0) {
-        int rescaled = sc->time_offset < 0 ? av_rescale(sc->time_offset, sc->time_scale, mov->time_scale) : sc->time_offset;
-        current_dts = -rescaled;
+        if (sc->time_offset < 0)
+            sc->time_offset = av_rescale(sc->time_offset, sc->time_scale, mov->time_scale);
+        current_dts = -sc->time_offset;
         if (sc->ctts_data && sc->stts_data &&
             sc->ctts_data[0].duration / FFMAX(sc->stts_data[0].duration, 1) > 16) {
             /* more than 16 frames delay, dts are likely wrong
@@ -2072,7 +2073,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     if (flags & 0x001) data_offset        = avio_rb32(pb);
     if (flags & 0x004) first_sample_flags = avio_rb32(pb);
-    dts = st->duration;
+    dts = st->duration - sc->time_offset;
     offset = frag->base_data_offset + data_offset;
     distance = 0;
     av_dlog(c->fc, "first sample flags 0x%x\n", first_sample_flags);
@@ -2101,7 +2102,7 @@ static int mov_read_trun(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         offset += sample_size;
     }
     frag->moof_offset = offset;
-    st->duration = dts;
+    st->duration = dts + sc->time_offset;
     return 0;
 }
 

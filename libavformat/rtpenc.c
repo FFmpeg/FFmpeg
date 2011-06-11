@@ -23,10 +23,23 @@
 #include "mpegts.h"
 #include "internal.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/opt.h"
 
 #include "rtpenc.h"
 
 //#define DEBUG
+
+static const AVOption options[] = {
+    FF_RTP_FLAG_OPTS(RTPMuxContext, flags),
+    { NULL },
+};
+
+static const AVClass rtp_muxer_class = {
+    .class_name = "RTP muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 #define RTCP_SR_SIZE 28
 
@@ -404,7 +417,7 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
         ff_rtp_send_mpegvideo(s1, pkt->data, size);
         break;
     case CODEC_ID_AAC:
-        if (s1->flags & AVFMT_FLAG_MP4A_LATM)
+        if (s->flags & FF_RTP_FLAG_MP4A_LATM)
             ff_rtp_send_latm(s1, pkt->data, size);
         else
             ff_rtp_send_aac(s1, pkt->data, size);
@@ -458,4 +471,5 @@ AVOutputFormat ff_rtp_muxer = {
     rtp_write_header,
     rtp_write_packet,
     rtp_write_trailer,
+    .priv_class = &rtp_muxer_class,
 };

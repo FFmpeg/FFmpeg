@@ -163,8 +163,6 @@ static int ffm_read_data(AVFormatContext *s,
     return size1 - size;
 }
 
-//#define DEBUG_SEEK
-
 /* ensure that acutal seeking happens between FFM_PACKET_SIZE
    and file_size - FFM_PACKET_SIZE */
 static void ffm_seek1(AVFormatContext *s, int64_t pos1)
@@ -175,9 +173,7 @@ static void ffm_seek1(AVFormatContext *s, int64_t pos1)
 
     pos = FFMIN(pos1, ffm->file_size - FFM_PACKET_SIZE);
     pos = FFMAX(pos, FFM_PACKET_SIZE);
-#ifdef DEBUG_SEEK
-    av_log(s, AV_LOG_DEBUG, "seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
-#endif
+    av_dlog(s, "seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
     avio_seek(pb, pos, SEEK_SET);
 }
 
@@ -189,9 +185,7 @@ static int64_t get_dts(AVFormatContext *s, int64_t pos)
     ffm_seek1(s, pos);
     avio_skip(pb, 4);
     dts = avio_rb64(pb);
-#ifdef DEBUG_SEEK
-    av_log(s, AV_LOG_DEBUG, "dts=%0.6f\n", dts / 1000000.0);
-#endif
+    av_dlog(s, "dts=%0.6f\n", dts / 1000000.0);
     return dts;
 }
 
@@ -464,9 +458,7 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     int64_t pts_min, pts_max, pts;
     double pos1;
 
-#ifdef DEBUG_SEEK
-    av_log(s, AV_LOG_DEBUG, "wanted_pts=%0.6f\n", wanted_pts / 1000000.0);
-#endif
+    av_dlog(s, "wanted_pts=%0.6f\n", wanted_pts / 1000000.0);
     /* find the position using linear interpolation (better than
        dichotomy in typical cases) */
     pos_min = FFM_PACKET_SIZE;

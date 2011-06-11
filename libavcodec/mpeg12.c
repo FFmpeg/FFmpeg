@@ -1331,19 +1331,17 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             avctx->ticks_per_frame=2;
         //MPEG-2 aspect
             if(s->aspect_ratio_info > 1){
-                AVRational dar=
+                AVRational dar =
                     av_mul_q(
-                        av_div_q(
-                            ff_mpeg2_aspect[s->aspect_ratio_info],
-                            (AVRational){s1->pan_scan.width, s1->pan_scan.height}
-                        ),
+                        av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                                 (AVRational){s1->pan_scan.width, s1->pan_scan.height}),
                         (AVRational){s->width, s->height});
 
-                //we ignore the spec here and guess a bit as reality does not match the spec, see for example
+                // we ignore the spec here and guess a bit as reality does not match the spec, see for example
                 // res_change_ffmpeg_aspect.ts and sequence-display-aspect.mpg
-                //issue1613, 621, 562
-                if( (s1->pan_scan.width == 0 )||(s1->pan_scan.height == 0)
-                   || (av_cmp_q(dar,(AVRational){4,3})&&av_cmp_q(dar,(AVRational){16,9}))){
+                // issue1613, 621, 562
+                if((s1->pan_scan.width == 0 ) || (s1->pan_scan.height == 0) ||
+                   (av_cmp_q(dar,(AVRational){4,3}) && av_cmp_q(dar,(AVRational){16,9}))) {
                     s->avctx->sample_aspect_ratio=
                         av_div_q(
                          ff_mpeg2_aspect[s->aspect_ratio_info],

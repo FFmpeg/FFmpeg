@@ -724,7 +724,117 @@ yuv2mono_1_c_template(SwsContext *c, const uint16_t *buf0,
 YUV2PACKEDWRAPPER(yuv2mono, white, PIX_FMT_MONOWHITE);
 YUV2PACKEDWRAPPER(yuv2mono, black, PIX_FMT_MONOBLACK);
 
-#define YSCALE_YUV_2_PACKEDX_C(type,alpha) \
+static av_always_inline void
+yuv2422_X_c_template(SwsContext *c, const int16_t *lumFilter,
+                     const int16_t **lumSrc, int lumFilterSize,
+                     const int16_t *chrFilter, const int16_t **chrUSrc,
+                     const int16_t **chrVSrc, int chrFilterSize,
+                     const int16_t **alpSrc, uint8_t *dest, int dstW,
+                     int y, enum PixelFormat target)
+{
+    int i;
+
+#define output_pixels(pos, Y1, U, Y2, V) \
+    if (target == PIX_FMT_YUYV422) { \
+        dest[pos + 0] = Y1; \
+        dest[pos + 1] = U;  \
+        dest[pos + 2] = Y2; \
+        dest[pos + 3] = V;  \
+    } else { \
+        dest[pos + 0] = U;  \
+        dest[pos + 1] = Y1; \
+        dest[pos + 2] = V;  \
+        dest[pos + 3] = Y2; \
+    }
+
+    for (i = 0; i < (dstW >> 1); i++) {
+        int j;
+        int Y1 = 1 << 18;
+        int Y2 = 1 << 18;
+        int U  = 1 << 18;
+        int V  = 1 << 18;
+
+        for (j = 0; j < lumFilterSize; j++) {
+            Y1 += lumSrc[j][i * 2]     * lumFilter[j];
+            Y2 += lumSrc[j][i * 2 + 1] * lumFilter[j];
+        }
+        for (j = 0; j < chrFilterSize; j++) {
+            U += chrUSrc[j][i] * chrFilter[j];
+            V += chrVSrc[j][i] * chrFilter[j];
+        }
+        Y1 >>= 19;
+        Y2 >>= 19;
+        U  >>= 19;
+        V  >>= 19;
+        if ((Y1 | Y2 | U | V) & 0x100) {
+            Y1 = av_clip_uint8(Y1);
+            Y2 = av_clip_uint8(Y2);
+            U  = av_clip_uint8(U);
+            V  = av_clip_uint8(V);
+        }
+        output_pixels(4*i, Y1, U, Y2, V);
+    }
+}
+
+static av_always_inline void
+yuv2422_2_c_template(SwsContext *c, const uint16_t *buf0,
+                     const uint16_t *buf1, const uint16_t *ubuf0,
+                     const uint16_t *ubuf1, const uint16_t *vbuf0,
+                     const uint16_t *vbuf1, const uint16_t *abuf0,
+                     const uint16_t *abuf1, uint8_t *dest, int dstW,
+                     int yalpha, int uvalpha, int y,
+                     enum PixelFormat target)
+{
+    int  yalpha1 = 4095 - yalpha;
+    int uvalpha1 = 4095 - uvalpha;
+    int i;
+
+    for (i = 0; i < (dstW >> 1); i++) {
+        int Y1 = (buf0[i * 2]     * yalpha1  + buf1[i * 2]     * yalpha)  >> 19;
+        int Y2 = (buf0[i * 2 + 1] * yalpha1  + buf1[i * 2 + 1] * yalpha)  >> 19;
+        int U  = (ubuf0[i]        * uvalpha1 + ubuf1[i]        * uvalpha) >> 19;
+        int V  = (vbuf0[i]        * uvalpha1 + vbuf1[i]        * uvalpha) >> 19;
+
+        output_pixels(i * 4, Y1, U, Y2, V);
+    }
+}
+
+static av_always_inline void
+yuv2422_1_c_template(SwsContext *c, const uint16_t *buf0,
+                     const uint16_t *ubuf0, const uint16_t *ubuf1,
+                     const uint16_t *vbuf0, const uint16_t *vbuf1,
+                     const uint16_t *abuf0, uint8_t *dest, int dstW,
+                     int uvalpha, enum PixelFormat dstFormat,
+                     int flags, int y, enum PixelFormat target)
+{
+    int i;
+
+    if (uvalpha < 2048) {
+        for (i = 0; i < (dstW >> 1); i++) {
+            int Y1 = buf0[i * 2]     >> 7;
+            int Y2 = buf0[i * 2 + 1] >> 7;
+            int U  = ubuf1[i]        >> 7;
+            int V  = vbuf1[i]        >> 7;
+
+            output_pixels(i * 4, Y1, U, Y2, V);
+        }
+    } else {
+        for (i = 0; i < (dstW >> 1); i++) {
+            int Y1 =  buf0[i * 2]          >> 7;
+            int Y2 =  buf0[i * 2 + 1]      >> 7;
+            int U  = (ubuf0[i] + ubuf1[i]) >> 8;
+            int V  = (vbuf0[i] + vbuf1[i]) >> 8;
+
+            output_pixels(i * 4, Y1, U, Y2, V);
+        }
+    }
+#undef output_pixels
+}
+
+YUV2PACKEDWRAPPER(yuv2422, yuyv, PIX_FMT_YUYV422);
+YUV2PACKEDWRAPPER(yuv2422, uyvy, PIX_FMT_UYVY422);
+
+#define YSCALE_YUV_2_RGBX_C(type,alpha) \
     for (i=0; i<(dstW>>1); i++) {\
         int j;\
         int Y1 = 1<<18;\
@@ -766,7 +876,11 @@ YUV2PACKEDWRAPPER(yuv2mono, black, PIX_FMT_MONOBLACK);
                 A1 = av_clip_uint8(A1); \
                 A2 = av_clip_uint8(A2); \
             }\
-        }
+        }\
+        /* FIXME fix tables so that clipping is not needed and then use _NOCLIP*/\
+    r = (type *)c->table_rV[V];   \
+    g = (type *)(c->table_gU[U] + c->table_gV[V]); \
+    b = (type *)c->table_bU[U];
 
 #define YSCALE_YUV_2_RGBX_FULL_C(rnd,alpha) \
     for (i=0; i<dstW; i++) {\
@@ -807,13 +921,7 @@ YUV2PACKEDWRAPPER(yuv2mono, black, PIX_FMT_MONOBLACK);
             B = av_clip_uintp2(B, 30); \
         }
 
-#define YSCALE_YUV_2_RGBX_C(type,alpha) \
-    YSCALE_YUV_2_PACKEDX_C(type,alpha)  /* FIXME fix tables so that clipping is not needed and then use _NOCLIP*/\
-    r = (type *)c->table_rV[V];   \
-    g = (type *)(c->table_gU[U] + c->table_gV[V]); \
-    b = (type *)c->table_bU[U];
-
-#define YSCALE_YUV_2_PACKED2_C(type,alpha)   \
+#define YSCALE_YUV_2_RGB2_C(type,alpha) \
     for (i=0; i<(dstW>>1); i++) { \
         const int i2= 2*i;       \
         int Y1= (buf0[i2  ]*yalpha1+buf1[i2  ]*yalpha)>>19;           \
@@ -825,15 +933,12 @@ YUV2PACKEDWRAPPER(yuv2mono, black, PIX_FMT_MONOBLACK);
         if (alpha) {\
             A1= (abuf0[i2  ]*yalpha1+abuf1[i2  ]*yalpha)>>19;         \
             A2= (abuf0[i2+1]*yalpha1+abuf1[i2+1]*yalpha)>>19;         \
-        }
-
-#define YSCALE_YUV_2_RGB2_C(type,alpha) \
-    YSCALE_YUV_2_PACKED2_C(type,alpha)\
+        }\
     r = (type *)c->table_rV[V];\
     g = (type *)(c->table_gU[U] + c->table_gV[V]);\
     b = (type *)c->table_bU[U];
 
-#define YSCALE_YUV_2_PACKED1_C(type,alpha) \
+#define YSCALE_YUV_2_RGB1_C(type,alpha) \
     for (i=0; i<(dstW>>1); i++) {\
         const int i2= 2*i;\
         int Y1= buf0[i2  ]>>7;\
@@ -845,15 +950,12 @@ YUV2PACKEDWRAPPER(yuv2mono, black, PIX_FMT_MONOBLACK);
         if (alpha) {\
             A1= abuf0[i2  ]>>7;\
             A2= abuf0[i2+1]>>7;\
-        }
-
-#define YSCALE_YUV_2_RGB1_C(type,alpha) \
-    YSCALE_YUV_2_PACKED1_C(type,alpha)\
+        }\
     r = (type *)c->table_rV[V];\
     g = (type *)(c->table_gU[U] + c->table_gV[V]);\
     b = (type *)c->table_bU[U];
 
-#define YSCALE_YUV_2_PACKED1B_C(type,alpha) \
+#define YSCALE_YUV_2_RGB1B_C(type,alpha) \
     for (i=0; i<(dstW>>1); i++) {\
         const int i2= 2*i;\
         int Y1= buf0[i2  ]>>7;\
@@ -865,15 +967,12 @@ YUV2PACKEDWRAPPER(yuv2mono, black, PIX_FMT_MONOBLACK);
         if (alpha) {\
             A1= abuf0[i2  ]>>7;\
             A2= abuf0[i2+1]>>7;\
-        }
-
-#define YSCALE_YUV_2_RGB1B_C(type,alpha) \
-    YSCALE_YUV_2_PACKED1B_C(type,alpha)\
+        }\
     r = (type *)c->table_rV[V];\
     g = (type *)(c->table_gU[U] + c->table_gV[V]);\
     b = (type *)c->table_bU[U];
 
-#define YSCALE_YUV_2_ANYRGB_C(func, func2)\
+#define YSCALE_YUV_2_ANYRGB_C(func)\
     switch(c->dstFormat) {\
     case PIX_FMT_RGB48BE:\
     case PIX_FMT_RGB48LE:\
@@ -1049,22 +1148,6 @@ YUV2PACKEDWRAPPER(yuv2mono, black, PIX_FMT_MONOBLACK);
             }\
         }\
         break;\
-    case PIX_FMT_YUYV422:\
-        func2\
-            ((uint8_t*)dest)[2*i2+0]= Y1;\
-            ((uint8_t*)dest)[2*i2+1]= U;\
-            ((uint8_t*)dest)[2*i2+2]= Y2;\
-            ((uint8_t*)dest)[2*i2+3]= V;\
-        }                \
-        break;\
-    case PIX_FMT_UYVY422:\
-        func2\
-            ((uint8_t*)dest)[2*i2+0]= U;\
-            ((uint8_t*)dest)[2*i2+1]= Y1;\
-            ((uint8_t*)dest)[2*i2+2]= V;\
-            ((uint8_t*)dest)[2*i2+3]= Y2;\
-        }                \
-        break;\
     }
 
 static void yuv2packedX_c(SwsContext *c, const int16_t *lumFilter,
@@ -1074,7 +1157,7 @@ static void yuv2packedX_c(SwsContext *c, const int16_t *lumFilter,
                           const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
 {
     int i;
-    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C, YSCALE_YUV_2_PACKEDX_C(void,0))
+    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGBX_C)
 }
 
 static void yuv2rgbX_c_full(SwsContext *c, const int16_t *lumFilter,
@@ -1177,7 +1260,7 @@ static void yuv2packed2_c(SwsContext *c, const uint16_t *buf0,
     int uvalpha1=4095-uvalpha;
     int i;
 
-    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C, YSCALE_YUV_2_PACKED2_C(void,0))
+    YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB2_C)
 }
 
 /**
@@ -1193,9 +1276,9 @@ static void yuv2packed1_c(SwsContext *c, const uint16_t *buf0,
     int i;
 
     if (uvalpha < 2048) {
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C, YSCALE_YUV_2_PACKED1_C(void,0))
+        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1_C)
     } else {
-        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C, YSCALE_YUV_2_PACKED1B_C(void,0))
+        YSCALE_YUV_2_ANYRGB_C(YSCALE_YUV_2_RGB1B_C)
     }
 }
 
@@ -1886,7 +1969,7 @@ find_c_packed_planar_out_funcs(SwsContext *c,
     } else if (is16BPS(dstFormat)) {
         *yuv2yuvX     = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
     } else if (is9_OR_10BPS(dstFormat)) {
-        if (dstFormat == PIX_FMT_YUV420P9BE || dstFormat == PIX_FMT_YUV420P9LE) {
+        if (av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1 == 8) {
             *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX9BE_c :  yuv2yuvX9LE_c;
         } else {
             *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX10BE_c : yuv2yuvX10LE_c;
@@ -1918,6 +2001,16 @@ find_c_packed_planar_out_funcs(SwsContext *c,
             *yuv2packed1 = yuv2monoblack_1_c;
             *yuv2packed2 = yuv2monoblack_2_c;
             *yuv2packedX = yuv2monoblack_X_c;
+            break;
+        case PIX_FMT_YUYV422:
+            *yuv2packed1 = yuv2422yuyv_1_c;
+            *yuv2packed2 = yuv2422yuyv_2_c;
+            *yuv2packedX = yuv2422yuyv_X_c;
+            break;
+        case PIX_FMT_UYVY422:
+            *yuv2packed1 = yuv2422uyvy_1_c;
+            *yuv2packed2 = yuv2422uyvy_2_c;
+            *yuv2packedX = yuv2422uyvy_X_c;
             break;
         default:
             *yuv2packed1 = yuv2packed1_c;
@@ -2221,16 +2314,20 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->chrToYV12 = palToUV_c; break;
         case PIX_FMT_GRAY16BE :
+        case PIX_FMT_YUV444P9BE:
         case PIX_FMT_YUV420P9BE:
+        case PIX_FMT_YUV444P10BE:
         case PIX_FMT_YUV422P10BE:
         case PIX_FMT_YUV420P10BE:
         case PIX_FMT_YUV420P16BE:
         case PIX_FMT_YUV422P16BE:
         case PIX_FMT_YUV444P16BE: c->hScale16= HAVE_BIGENDIAN ? hScale16_c : hScale16X_c; break;
         case PIX_FMT_GRAY16LE :
+        case PIX_FMT_YUV444P9LE:
         case PIX_FMT_YUV420P9LE:
         case PIX_FMT_YUV422P10LE:
         case PIX_FMT_YUV420P10LE:
+        case PIX_FMT_YUV444P10LE:
         case PIX_FMT_YUV420P16LE:
         case PIX_FMT_YUV422P16LE:
         case PIX_FMT_YUV444P16LE: c->hScale16= HAVE_BIGENDIAN ? hScale16X_c : hScale16_c; break;

@@ -22,7 +22,8 @@
 #include "avformat.h"
 #include "rtpenc.h"
 
-void ff_rtp_send_latm(AVFormatContext *s1, const uint8_t *buff, int size) {
+void ff_rtp_send_latm(AVFormatContext *s1, const uint8_t *buff, int size)
+{
     /* MP4A-LATM
      * The RTP payload format specification is described in RFC 3016
      * The encoding specifications are provided in ISO/IEC 14496-3 */

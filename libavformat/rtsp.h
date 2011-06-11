@@ -344,6 +344,11 @@ typedef struct RTSPState {
      * Do not begin to play the stream immediately.
      */
     int initial_pause;
+
+    /**
+     * Option flags for the chained RTP muxer.
+     */
+    int rtp_muxer_flags;
 } RTSPState;
 
 /**
