@@ -405,8 +405,8 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
     ost->graph->scale_sws_opts = av_strdup(args);
 
     if (ost->avfilter) {
-        AVFilterInOut *outputs = av_malloc(sizeof(AVFilterInOut));
-        AVFilterInOut *inputs  = av_malloc(sizeof(AVFilterInOut));
+        AVFilterInOut *outputs = avfilter_inout_alloc();
+        AVFilterInOut *inputs  = avfilter_inout_alloc();
 
         outputs->name    = av_strdup("in");
         outputs->filter_ctx = last_filter;

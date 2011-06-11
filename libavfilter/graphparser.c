@@ -168,13 +168,18 @@ static int parse_filter(AVFilterContext **filt_ctx, const char **buf, AVFilterGr
     return ret;
 }
 
-static void free_inout(AVFilterInOut *head)
+AVFilterInOut *avfilter_inout_alloc(void)
 {
-    while (head) {
-        AVFilterInOut *next = head->next;
-        av_free(head->name);
-        av_free(head);
-        head = next;
+    return av_mallocz(sizeof(AVFilterInOut));
+}
+
+void avfilter_inout_free(AVFilterInOut **inout)
+{
+    while (*inout) {
+        AVFilterInOut *next = (*inout)->next;
+        av_freep(&(*inout)->name);
+        av_freep(inout);
+        *inout = next;
     }
 }
 
@@ -396,8 +401,8 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
     for (; graph->filter_count > 0; graph->filter_count--)
         avfilter_free(graph->filters[graph->filter_count - 1]);
     av_freep(&graph->filters);
-    free_inout(*open_inputs);
-    free_inout(*open_outputs);
-    free_inout(curr_inputs);
+    avfilter_inout_free(open_inputs);
+    avfilter_inout_free(open_outputs);
+    avfilter_inout_free(&curr_inputs);
     return ret;
 }

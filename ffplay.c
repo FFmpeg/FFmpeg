@@ -1695,8 +1695,8 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         goto the_end;
 
     if(vfilters) {
-        AVFilterInOut *outputs = av_malloc(sizeof(AVFilterInOut));
-        AVFilterInOut *inputs  = av_malloc(sizeof(AVFilterInOut));
+        AVFilterInOut *outputs = avfilter_inout_alloc();
+        AVFilterInOut *inputs  = avfilter_inout_alloc();
 
         outputs->name    = av_strdup("in");
         outputs->filter_ctx = filt_src;
