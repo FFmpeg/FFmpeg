@@ -12,6 +12,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2012-xx-xx - xxxxxxx - lavfi 2.16.0 - avfiltergraph.h
+  Add avfilter_graph_parse2(), avfilter_inout_alloc() and
+  avfilter_inout_free() functions.
+
 2012-xx-xx - xxxxxxx - lavu 51.27.0 - samplefmt.h
   Add av_get_packed_sample_fmt() and av_get_planar_sample_fmt()
 

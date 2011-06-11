@@ -112,6 +112,19 @@ typedef struct AVFilterInOut {
 } AVFilterInOut;
 
 /**
+ * Allocate a single AVFilterInOut entry.
+ * Must be freed with avfilter_inout_free().
+ * @return allocated AVFilterInOut on success, NULL on failure.
+ */
+AVFilterInOut *avfilter_inout_alloc(void);
+
+/**
+ * Free the supplied list of AVFilterInOut and set *inout to NULL.
+ * If *inout is NULL, do nothing.
+ */
+void avfilter_inout_free(AVFilterInOut **inout);
+
+/**
  * Add a graph described by a string to a graph.
  *
  * @param graph   the filter graph where to link the parsed graph context
