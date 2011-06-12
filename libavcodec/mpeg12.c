@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "libavutil/avassert.h"
 
 #include "mpeg12.h"
 #include "mpeg12data.h"
@@ -2339,7 +2340,7 @@ static int decode_chunks(AVCodecContext *avctx,
             if(s2->pict_type != AV_PICTURE_TYPE_B || avctx->skip_frame <= AVDISCARD_DEFAULT){
                 if(HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)){
                     int i;
-                    assert(avctx->thread_count > 1);
+                    av_assert0(avctx->thread_count > 1);
 
                     avctx->execute(avctx, slice_decode_thread,  &s2->thread_context[0], NULL, s->slice_count, sizeof(void*));
                     for(i=0; i<s->slice_count; i++)
@@ -2508,7 +2509,7 @@ static int decode_chunks(AVCodecContext *avctx,
 
                 if(HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)){
                     int threshold= (s2->mb_height*s->slice_count + avctx->thread_count/2) / avctx->thread_count;
-                    assert(avctx->thread_count > 1);
+                    av_assert0(avctx->thread_count > 1);
                     if(threshold <= mb_y){
                         MpegEncContext *thread_context= s2->thread_context[s->slice_count];
 
