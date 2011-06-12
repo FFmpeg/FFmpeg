@@ -2681,9 +2681,20 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->mb_field_decoding_flag= s->picture_structure != PICT_FRAME;
 
     if(h0->current_slice == 0){
-        if(h->frame_num != h->prev_frame_num &&
-          (h->prev_frame_num+1)%(1<<h->sps.log2_max_frame_num) < (h->frame_num - h->sps.ref_frame_count))
-            h->prev_frame_num = h->frame_num - h->sps.ref_frame_count - 1;
+        // Shorten frame num gaps so we don't have to allocate reference frames just to throw them away
+        if(h->frame_num != h->prev_frame_num) {
+            int unwrap_prev_frame_num = h->prev_frame_num, max_frame_num = 1<<h->sps.log2_max_frame_num;
+
+            if (unwrap_prev_frame_num > h->frame_num) unwrap_prev_frame_num -= max_frame_num;
+
+            if ((h->frame_num - unwrap_prev_frame_num) > h->sps.ref_frame_count) {
+                unwrap_prev_frame_num = (h->frame_num - h->sps.ref_frame_count) - 1;
+                if (unwrap_prev_frame_num < 0)
+                    unwrap_prev_frame_num += max_frame_num;
+
+                h->prev_frame_num = unwrap_prev_frame_num;
+            }
+        }
 
         while(h->frame_num !=  h->prev_frame_num &&
               h->frame_num != (h->prev_frame_num+1)%(1<<h->sps.log2_max_frame_num)){
