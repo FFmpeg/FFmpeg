@@ -43,15 +43,9 @@ FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 
-ALL_TARGETS-$(CONFIG_DOC)       += documentation
+all-$(CONFIG_DOC): documentation
 
-ifdef PROGS
-INSTALL_TARGETS-yes             += install-progs install-data
-INSTALL_TARGETS-$(CONFIG_DOC)   += install-man
-endif
-INSTALL_PROGS_TARGETS-$(CONFIG_SHARED) = install-libs
-
-all: $(FF_DEP_LIBS) $(PROGS) $(ALL_TARGETS-yes)
+all: $(FF_DEP_LIBS) $(PROGS)
 
 $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(CP) $< $@
@@ -133,11 +127,19 @@ doc/%.1: TAG = MAN
 doc/%.1: doc/%.pod
 	$(M)pod2man --section=1 --center=" " --release=" " $< > $@
 
-install: install-libs install-headers $(INSTALL_TARGETS-yes)
+ifdef PROGS
+install: install-progs install-data
+endif
+
+install: install-libs install-headers
 
 install-libs: install-libs-yes
 
-install-progs: $(PROGS) $(INSTALL_PROGS_TARGETS-yes)
+install-progs-yes:
+install-progs-$(CONFIG_DOC): install-man
+install-progs-$(CONFIG_SHARED): install-libs
+
+install-progs: install-progs-yes $(PROGS)
 	$(Q)mkdir -p "$(BINDIR)"
 	$(INSTALL) -c -m 755 $(PROGS) "$(BINDIR)"
 
