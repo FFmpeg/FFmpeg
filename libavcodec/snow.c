@@ -1978,13 +1978,13 @@ static int frame_start(SnowContext *s){
     if(s->current_picture.data[0]){
         s->dsp.draw_edges(s->current_picture.data[0],
                           s->current_picture.linesize[0], w   , h   ,
-                          EDGE_WIDTH  , EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
+                          EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
         s->dsp.draw_edges(s->current_picture.data[1],
                           s->current_picture.linesize[1], w>>1, h>>1,
-                          EDGE_WIDTH/2, EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
+                          EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
         s->dsp.draw_edges(s->current_picture.data[2],
                           s->current_picture.linesize[2], w>>1, h>>1,
-                          EDGE_WIDTH/2, EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
+                          EDGE_WIDTH/2, EDGE_TOP | EDGE_BOTTOM);
     }
 
     release_buffer(s->avctx);

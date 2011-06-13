@@ -633,9 +633,8 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
         memset(h->intra4x4_pred_mode+h->mb2br_xy[mb_xy], DC_PRED, 8);
     }
     if (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B) {
-        memset(h->non_zero_count_cache + 8, 0, 14*8*sizeof(uint8_t));
-        s->dsp.clear_blocks(h->mb+  0);
-        s->dsp.clear_blocks(h->mb+384);
+        memset(h->non_zero_count_cache + 8, 0, 4*9*sizeof(uint8_t));
+        s->dsp.clear_blocks(h->mb);
     }
 
     if (!IS_INTRA16x16(mb_type) && (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B)) {
@@ -655,8 +654,8 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
         }
     }
     if (IS_INTRA16x16(mb_type)) {
-        AV_ZERO128(h->mb_luma_dc[0]+0);
-        AV_ZERO128(h->mb_luma_dc[0]+8);
+        AV_ZERO128(h->mb_luma_dc+0);
+        AV_ZERO128(h->mb_luma_dc+8);
         if (svq3_decode_block(&s->gb, h->mb_luma_dc, 0, 1)){
             av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding intra luma dc\n");
             return -1;
@@ -682,23 +681,20 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
         }
 
         if ((cbp & 0x30)) {
-            for (i = 1; i < 3; ++i) {
-              if (svq3_decode_block(&s->gb, &h->mb[16*16*i], 0, 3)){
+            for (i = 0; i < 2; ++i) {
+              if (svq3_decode_block(&s->gb, &h->mb[16*(16 + 4*i)], 0, 3)){
                 av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding chroma dc block\n");
                 return -1;
               }
             }
 
             if ((cbp & 0x20)) {
-                for (i = 1; i < 3; i++) {
-                    for (j = 0; j < 4; j++) {
-                        k = 16*i + j;
-                        h->non_zero_count_cache[ scan8[k] ] = 1;
+                for (i = 0; i < 8; i++) {
+                    h->non_zero_count_cache[ scan8[16+i] ] = 1;
 
-                        if (svq3_decode_block(&s->gb, &h->mb[16*k], 1, 1)){
-                            av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding chroma ac block\n");
-                            return -1;
-                        }
+                    if (svq3_decode_block(&s->gb, &h->mb[16*(16 + i)], 1, 1)){
+                        av_log(h->s.avctx, AV_LOG_ERROR, "error while decoding chroma ac block\n");
+                        return -1;
                     }
                 }
             }
