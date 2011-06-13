@@ -177,7 +177,7 @@ OBJS-$(CONFIG_H263_ENCODER)            += mpegvideo_enc.o mpeg4video.o      \
                                           ratecontrol.o h263.o ituh263enc.o \
                                           flvenc.o mpeg12data.o             \
                                           mpegvideo.o error_resilience.o
-OBJS-$(CONFIG_H264_DECODER)            += h264.o h264_hl_motion.o              \
+OBJS-$(CONFIG_H264_DECODER)            += h264.o                               \
                                           h264_loopfilter.o h264_direct.o      \
                                           cabac.o h264_sei.o h264_ps.o         \
                                           h264_refs.o h264_cavlc.o h264_cabac.o\
@@ -368,7 +368,7 @@ OBJS-$(CONFIG_SVQ1_ENCODER)            += svq1enc.o svq1.o    \
                                           mpegvideo.o error_resilience.o \
                                           ituh263enc.o mpegvideo_enc.o   \
                                           ratecontrol.o mpeg12data.o
-OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o svq3.o h264_hl_motion.o      \
+OBJS-$(CONFIG_SVQ3_DECODER)            += h264.o svq3.o                       \
                                           h264_loopfilter.o h264_direct.o     \
                                           h264_sei.o h264_ps.o h264_refs.o    \
                                           h264_cavlc.o h264_cabac.o cabac.o   \
@@ -612,7 +612,7 @@ OBJS-$(CONFIG_FLAC_PARSER)             += flac_parser.o flacdata.o flac.o \
                                           vorbis_data.o
 OBJS-$(CONFIG_H261_PARSER)             += h261_parser.o
 OBJS-$(CONFIG_H263_PARSER)             += h263_parser.o
-OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o h264_hl_motion.o \
+OBJS-$(CONFIG_H264_PARSER)             += h264_parser.o h264.o            \
                                           cabac.o                         \
                                           h264_refs.o h264_sei.o h264_direct.o \
                                           h264_loopfilter.o h264_cabac.o \
