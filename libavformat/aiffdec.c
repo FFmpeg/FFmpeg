@@ -78,7 +78,7 @@ static void get_meta(AVFormatContext *s, const char *key, int size)
         }
         size += (size&1)-res;
         str[res] = 0;
-        av_metadata_set2(&s->metadata, key, str, AV_METADATA_DONT_STRDUP_VAL);
+        av_dict_set(&s->metadata, key, str, AV_METADATA_DONT_STRDUP_VAL);
     }else
         size+= size&1;
 

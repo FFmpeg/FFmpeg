@@ -1928,7 +1928,7 @@ static int mov_read_tkhd(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     sc->height = height >> 16;
 
     if (display_matrix[0][0] == -65536 && display_matrix[1][1] == -65536) {
-         av_metadata_set2(&st->metadata, "rotate", "180", 0);
+         av_dict_set(&st->metadata, "rotate", "180", 0);
     }
 
     // transform the display width/height according to the matrix

@@ -216,7 +216,7 @@ static inline int wav_parse_bext_string(AVFormatContext *s, const char *key, int
     temp[length] = 0;
 
     if (strlen(temp))
-        return av_metadata_set2(&s->metadata, key, temp, 0);
+        return av_dict_set(&s->metadata, key, temp, 0);
 
     return 0;
 }
@@ -237,7 +237,7 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
 
     time_reference = avio_rl64(s->pb);
     snprintf(temp, sizeof(temp), "%"PRIu64, time_reference);
-    if ((ret = av_metadata_set2(&s->metadata, "time_reference", temp, 0)) < 0)
+    if ((ret = av_dict_set(&s->metadata, "time_reference", temp, 0)) < 0)
         return ret;
 
     /* check if version is >= 1, in which case an UMID may be present */
@@ -259,7 +259,7 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
                          umid_parts[4], umid_parts[5], umid_parts[6], umid_parts[7]);
             }
 
-            if ((ret = av_metadata_set2(&s->metadata, "umid", temp, 0)) < 0)
+            if ((ret = av_dict_set(&s->metadata, "umid", temp, 0)) < 0)
                 return ret;
         }
 
@@ -278,8 +278,8 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
             return ret;
 
         coding_history[size] = 0;
-        if ((ret = av_metadata_set2(&s->metadata, "coding_history", coding_history,
-                                    AV_METADATA_DONT_STRDUP_VAL)) < 0)
+        if ((ret = av_dict_set(&s->metadata, "coding_history", coding_history,
+                               AV_METADATA_DONT_STRDUP_VAL)) < 0)
             return ret;
     }
 

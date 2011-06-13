@@ -1515,7 +1515,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             /* export stereo mode flag as metadata tag */
             if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREO_MODE_COUNT)
-                av_metadata_set2(&st->metadata, "stereo_mode", matroska_video_stereo_mode[track->video.stereo_mode], 0);
+                av_dict_set(&st->metadata, "stereo_mode", matroska_video_stereo_mode[track->video.stereo_mode], 0);
 
             /* if we have virtual track, mark the real tracks */
             for (j=0; j < track->operation.combine_planes.nb_elem; j++) {
@@ -1526,8 +1526,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                          matroska_video_stereo_plane[planes[j].type], i);
                 for (k=0; k < matroska->tracks.nb_elem; k++)
                     if (planes[j].uid == tracks[k].uid) {
-                        av_metadata_set2(&s->streams[k]->metadata,
-                                         "stereo_mode", buf, 0);
+                        av_dict_set(&s->streams[k]->metadata,
+                                    "stereo_mode", buf, 0);
                         break;
                     }
             }
