@@ -54,18 +54,15 @@
 #define FIX_M_1_961570560_ID   40
 #define FIX_M_2_562915447_ID   44
 #define FIX_0xFFFF_ID          48
-        .text
-        .align
 
 function ff_j_rev_dct_arm, export=1
         stmdb   sp!, { r4 - r12, lr }   @ all callee saved regs
-
         sub sp, sp, #4                  @ reserve some space on the stack
         str r0, [ sp ]                  @ save the DCT pointer to the stack
 
         mov lr, r0                      @ lr = pointer to the current row
         mov r12, #8                     @ r12 = row-counter
-        adr r11, const_array            @ r11 = base pointer to the constants array
+        movrel r11, const_array         @ r11 = base pointer to the constants array
 row_loop:
         ldrsh r0, [lr, # 0]             @ r0 = 'd0'
         ldrsh r2, [lr, # 2]             @ r2 = 'd2'
@@ -370,9 +367,9 @@ the_end:
         @ The end....
         add sp, sp, #4
         ldmia   sp!, { r4 - r12, pc }   @ restore callee saved regs and return
+endfunc
 
-const_array:
-        .align
+const const_array
         .word FIX_0_298631336
         .word FIX_0_541196100
         .word FIX_0_765366865
@@ -386,3 +383,4 @@ const_array:
         .word FIX_M_1_961570560
         .word FIX_M_2_562915447
         .word FIX_0xFFFF
+endconst
