@@ -1701,7 +1701,7 @@ static void hScale_c(int16_t *dst, int dstW, const uint8_t *src,
 
 //FIXME all pal and rgb srcFormats could do this convertion as well
 //FIXME all scalers more complex than bilinear could do half of this transform
-static void chrRangeToJpeg_c(uint16_t *dstU, uint16_t *dstV, int width)
+static void chrRangeToJpeg_c(int16_t *dstU, int16_t *dstV, int width)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -1709,7 +1709,7 @@ static void chrRangeToJpeg_c(uint16_t *dstU, uint16_t *dstV, int width)
         dstV[i] = (FFMIN(dstV[i],30775)*4663 - 9289992)>>12; //-264
     }
 }
-static void chrRangeFromJpeg_c(uint16_t *dstU, uint16_t *dstV, int width)
+static void chrRangeFromJpeg_c(int16_t *dstU, int16_t *dstV, int width)
 {
     int i;
     for (i = 0; i < width; i++) {
@@ -1717,13 +1717,13 @@ static void chrRangeFromJpeg_c(uint16_t *dstU, uint16_t *dstV, int width)
         dstV[i] = (dstV[i]*1799 + 4081085)>>11; //1469
     }
 }
-static void lumRangeToJpeg_c(uint16_t *dst, int width)
+static void lumRangeToJpeg_c(int16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++)
         dst[i] = (FFMIN(dst[i],30189)*19077 - 39057361)>>14;
 }
-static void lumRangeFromJpeg_c(uint16_t *dst, int width)
+static void lumRangeFromJpeg_c(int16_t *dst, int width)
 {
     int i;
     for (i = 0; i < width; i++)
@@ -1752,7 +1752,7 @@ static av_always_inline void hyscale(SwsContext *c, uint16_t *dst, int dstWidth,
                                      uint32_t *pal, int isAlpha)
 {
     void (*toYV12)(uint8_t *, const uint8_t *, int, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
-    void (*convertRange)(uint16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
+    void (*convertRange)(int16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
 
     if (toYV12) {
         toYV12(formatConvBuffer, src, srcW, pal);

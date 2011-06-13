@@ -310,8 +310,8 @@ typedef struct SwsContext {
                    int xInc, const int16_t *filter, const int16_t *filterPos,
                    int filterSize);
 
-    void (*lumConvertRange)(uint16_t *dst, int width); ///< Color range conversion function for luma plane if needed.
-    void (*chrConvertRange)(uint16_t *dst1, uint16_t *dst2, int width); ///< Color range conversion function for chroma planes if needed.
+    void (*lumConvertRange)(int16_t *dst, int width); ///< Color range conversion function for luma plane if needed.
+    void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width); ///< Color range conversion function for chroma planes if needed.
 
     int needs_hcscale; ///< Set if there are chroma planes to be converted.
 
