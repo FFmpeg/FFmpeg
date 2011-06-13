@@ -402,34 +402,19 @@ static av_cold int init(AVCodecContext *avctx)
             uint8_t *dummy_p;
             int dummy_int;
 
-            uint32_t orig_data_size = avctx->extradata_size;
-            uint8_t *orig_data = av_malloc(orig_data_size);
-            if (!orig_data) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Failed to allocate copy of extradata\n");
-                return AVERROR(ENOMEM);
-            }
-            memcpy(orig_data, avctx->extradata, orig_data_size);
-
+            format.startCodeSz = (avctx->extradata[4] & 0x03) + 1;
 
             priv->bsfc = av_bitstream_filter_init("h264_mp4toannexb");
             if (!priv->bsfc) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Cannot open the h264_mp4toannexb BSF!\n");
-                av_free(orig_data);
                 return AVERROR_BSF_NOT_FOUND;
             }
             av_bitstream_filter_filter(priv->bsfc, avctx, NULL, &dummy_p,
                                        &dummy_int, NULL, 0, 0);
 
-            priv->sps_pps_buf     = avctx->extradata;
-            priv->sps_pps_size    = avctx->extradata_size;
-            avctx->extradata      = orig_data;
-            avctx->extradata_size = orig_data_size;
-
-            format.pMetaData   = priv->sps_pps_buf;
-            format.metaDataSz  = priv->sps_pps_size;
-            format.startCodeSz = (avctx->extradata[4] & 0x03) + 1;
+            format.pMetaData  = avctx->extradata;
+            format.metaDataSz = avctx->extradata_size;
         }
         break;
     case BC_MSUBTYPE_H264:
