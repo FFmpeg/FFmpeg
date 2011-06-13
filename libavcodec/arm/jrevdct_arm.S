@@ -56,9 +56,7 @@
 #define FIX_0xFFFF_ID          48
 
 function ff_j_rev_dct_arm, export=1
-        push {r4 - r12, lr}
-        sub sp, sp, #4                  @ reserve some space on the stack
-        str r0, [ sp ]                  @ save the DCT pointer to the stack
+        push {r0, r4 - r11, lr}
 
         mov lr, r0                      @ lr = pointer to the current row
         mov r12, #8                     @ r12 = row-counter
@@ -208,7 +206,7 @@ end_of_row_loop:
 
 start_column_loop:
         @ Start of column loop
-        ldr lr, [ sp ]
+        pop {lr}
         mov r12, #8
 column_loop:
         ldrsh r0, [lr, #( 0*8)]             @ r0 = 'd0'
@@ -365,8 +363,7 @@ empty_odd_column:
 
 the_end:
         @ The end....
-        add sp, sp, #4
-        pop {r4 - r12, pc}
+        pop {r4 - r11, pc}
 endfunc
 
 const const_array
