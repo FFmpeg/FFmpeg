@@ -21,6 +21,7 @@
 #include "avformat.h"
 #include "riff.h"
 #include "libavutil/dict.h"
+#include "libavutil/intreadwrite.h"
 
 //#define DEBUG_DUMP_INDEX // XXX dumbdriving-271.nsv breaks with it commented!!
 #define CHECK_SUBSEQUENT_NSVS
@@ -736,10 +737,8 @@ static int nsv_read_close(AVFormatContext *s)
 
 static int nsv_probe(AVProbeData *p)
 {
-    int i;
-    int score;
-    int vsize, asize, auxcount;
-    score = 0;
+    int i, score = 0;
+
     av_dlog(NULL, "nsv_probe(), buf_size %d\n", p->buf_size);
     /* check file header */
     /* streamed files might not have any header */
@@ -751,19 +750,14 @@ static int nsv_probe(AVProbeData *p)
     /* seems the servers don't bother starting clean chunks... */
     /* sometimes even the first header is at 9KB or something :^) */
     for (i = 1; i < p->buf_size - 3; i++) {
-        if (p->buf[i+0] == 'N' && p->buf[i+1] == 'S' &&
-            p->buf[i+2] == 'V' && p->buf[i+3] == 's') {
-            score = AVPROBE_SCORE_MAX/5;
+        if (AV_RL32(p->buf + i) == AV_RL32("NSVs")) {
             /* Get the chunk size and check if at the end we are getting 0xBEEF */
-            auxcount = p->buf[i+19];
-            vsize = p->buf[i+20]  | p->buf[i+21] << 8;
-            asize = p->buf[i+22]  | p->buf[i+23] << 8;
-            vsize = (vsize << 4) | (auxcount >> 4);
-            if ((asize + vsize + i + 23) <  p->buf_size - 2) {
-                if (p->buf[i+23+asize+vsize+1] == 0xEF &&
-                    p->buf[i+23+asize+vsize+2] == 0xBE)
-                    return AVPROBE_SCORE_MAX-20;
-            }
+            int vsize = AV_RL24(p->buf+i+19) >> 4;
+            int asize = AV_RL16(p->buf+i+22);
+            int offset = i + 23 + asize + vsize + 1;
+            if (offset <= p->buf_size - 2 && AV_RL16(p->buf + offset) == 0xBEEF)
+                return 4*AVPROBE_SCORE_MAX/5;
+            score = AVPROBE_SCORE_MAX/5;
         }
     }
     /* so we'll have more luck on extension... */
