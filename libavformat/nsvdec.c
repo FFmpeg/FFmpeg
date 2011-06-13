@@ -531,7 +531,7 @@ static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     err = nsv_read_chunk(s, 1);
 
     av_dlog(s, "parsed header\n");
-    return 0;
+    return err;
 }
 
 static int nsv_read_chunk(AVFormatContext *s, int fill_header)
