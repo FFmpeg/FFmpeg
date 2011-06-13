@@ -514,6 +514,7 @@ static av_cold int init(AVCodecContext *avctx)
             av_log(avctx, AV_LOG_WARNING,
                    "Cannot open the h.264 parser! Interlaced h.264 content "
                    "will not be detected reliably.\n");
+        priv->parser->flags = PARSER_FLAG_COMPLETE_FRAMES;
     }
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: Init complete.\n");
 
@@ -833,24 +834,49 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
         int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
 
         if (priv->parser) {
-            uint8_t *pout;
-            int psize;
-            const uint8_t *in_data = avpkt->data;
+            uint8_t *in_data = avpkt->data;
             int in_len = len;
-            H264Context *h = priv->parser->priv_data;
+            int ret = 0;
 
-            while (in_len) {
+            if (priv->bsfc) {
+                ret = av_bitstream_filter_filter(priv->bsfc, avctx, NULL,
+                                                 &in_data, &in_len,
+                                                 avpkt->data, len, 0);
+            }
+
+            if (ret >= 0) {
+                uint8_t *pout;
+                int psize;
                 int index;
+                H264Context *h = priv->parser->priv_data;
+
                 index = av_parser_parse2(priv->parser, avctx, &pout, &psize,
                                          in_data, in_len, avctx->pkt->pts,
                                          avctx->pkt->dts, 0);
-                in_data += index;
-                in_len -= index;
+                if (index < 0) {
+                    av_log(avctx, AV_LOG_WARNING,
+                           "CrystalHD: Failed to parse h.264 packet to "
+                           "detect interlacing.\n");
+                } else if (index != in_len) {
+                    av_log(avctx, AV_LOG_WARNING,
+                           "CrystalHD: Failed to parse h.264 packet "
+                           "completely. Interlaced frames may be "
+                           "incorrectly detected\n.");
+                } else {
+                    av_log(avctx, AV_LOG_VERBOSE,
+                           "CrystalHD: parser picture type %d\n",
+                           h->s.picture_structure);
+                    pic_type = h->s.picture_structure;
+                }
+            } else {
+                av_log(avctx, AV_LOG_WARNING,
+                       "CrystalHD: mp4toannexb filter failed to filter "
+                       "packet. Interlaced frames may be incorrectly "
+                       "detected.\n");
             }
-            av_log(avctx, AV_LOG_VERBOSE,
-                   "CrystalHD: parser picture type %d\n",
-                   h->s.picture_structure);
-            pic_type = h->s.picture_structure;
+            if (ret > 0) {
+                av_freep(&in_data);
+            }
         }
 
         if (len < tx_free - 1024) {
