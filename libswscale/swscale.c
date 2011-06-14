@@ -862,7 +862,6 @@ yuv2rgb48_1_c_template(SwsContext *c, const uint16_t *buf0,
             int Y2 =  buf0[i * 2 + 1]      >> 7;
             int U  = (ubuf0[i] + ubuf1[i]) >> 8;
             int V  = (vbuf0[i] + vbuf1[i]) >> 8;
-            /* FIXME fix tables so that clipping is not needed and then use _NOCLIP*/
             const uint8_t *r = (const uint8_t *) c->table_rV[V],
                           *g = (const uint8_t *)(c->table_gU[U] + c->table_gV[V]),
                           *b = (const uint8_t *) c->table_bU[U];
