@@ -1313,9 +1313,10 @@ static void alloc_picture(void *opaque)
 static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t pos)
 {
     VideoPicture *vp;
-    int dst_pix_fmt;
 #if CONFIG_AVFILTER
     AVPicture pict_src;
+#else
+    int dst_pix_fmt = PIX_FMT_YUV420P;
 #endif
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
@@ -1376,7 +1377,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts, int64_t
         /* get a pointer on the bitmap */
         SDL_LockYUVOverlay (vp->bmp);
 
-        dst_pix_fmt = PIX_FMT_YUV420P;
         memset(&pict,0,sizeof(AVPicture));
         pict.data[0] = vp->bmp->pixels[0];
         pict.data[1] = vp->bmp->pixels[2];

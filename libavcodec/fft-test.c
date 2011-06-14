@@ -252,8 +252,9 @@ int main(int argc, char **argv)
 #if CONFIG_FFT_FLOAT
     RDFTContext r1, *r = &r1;
     DCTContext d1, *d = &d1;
+    int fft_size_2;
 #endif
-    int fft_nbits, fft_size, fft_size_2;
+    int fft_nbits, fft_size;
     double scale = 1.0;
     AVLFG prng;
     av_lfg_init(&prng, 1);
@@ -292,7 +293,6 @@ int main(int argc, char **argv)
     }
 
     fft_size = 1 << fft_nbits;
-    fft_size_2 = fft_size >> 1;
     tab = av_malloc(fft_size * sizeof(FFTComplex));
     tab1 = av_malloc(fft_size * sizeof(FFTComplex));
     tab_ref = av_malloc(fft_size * sizeof(FFTComplex));
@@ -372,6 +372,7 @@ int main(int argc, char **argv)
         break;
 #if CONFIG_FFT_FLOAT
     case TRANSFORM_RDFT:
+        fft_size_2 = fft_size >> 1;
         if (do_inverse) {
             tab1[         0].im = 0;
             tab1[fft_size_2].im = 0;
