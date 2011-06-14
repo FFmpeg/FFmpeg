@@ -100,9 +100,11 @@ NOVFP   vldr            s0,  [sp, #12*4]        @ scale
         vst1.32         {q9},     [r2,:128]
 
         subs            r1,  r1,  #1
+        it              eq
         popeq           {r4-r11,pc}
 
         cmp             r4,  #0
+        itt             eq
         subeq           r8,  r8,  #512*4
         subeq           r9,  r9,  #512*4
         sub             r5,  r5,  #512*4

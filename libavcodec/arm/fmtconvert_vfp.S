@@ -46,6 +46,7 @@ function ff_float_to_int16_vfp, export=1
         vmov            r5,  r6,  s2, s3
         vmov            r7,  r8,  s4, s5
         vmov            ip,  lr,  s6, s7
+        it              gt
         vldmiagt        r1!, {s16-s23}
         ssat            r4,  #16, r4
         ssat            r3,  #16, r3
@@ -53,10 +54,12 @@ function ff_float_to_int16_vfp, export=1
         ssat            r5,  #16, r5
         pkhbt           r3,  r3,  r4, lsl #16
         pkhbt           r4,  r5,  r6, lsl #16
+        itttt           gt
         vcvtgt.s32.f32  s0,  s16
         vcvtgt.s32.f32  s1,  s17
         vcvtgt.s32.f32  s2,  s18
         vcvtgt.s32.f32  s3,  s19
+        itttt           gt
         vcvtgt.s32.f32  s4,  s20
         vcvtgt.s32.f32  s5,  s21
         vcvtgt.s32.f32  s6,  s22

@@ -967,6 +967,7 @@ CONFIG_LIST="
     static
     swscale
     swscale_alpha
+    thumb
     vaapi
     vdpau
     version3
@@ -2607,7 +2608,7 @@ if enabled alpha; then
 
 elif enabled arm; then
 
-    check_cflags -marm
+    enabled thumb && check_cflags -mthumb || check_cflags -marm
     nogas=die
 
     if     check_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then

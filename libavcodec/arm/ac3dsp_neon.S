@@ -41,6 +41,7 @@ endfunc
 
 function ff_ac3_exponent_min_neon, export=1
         cmp             r1,  #0
+        it              eq
         bxeq            lr
         push            {lr}
         mov             r12, #256

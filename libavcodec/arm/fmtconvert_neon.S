@@ -71,6 +71,7 @@ endfunc
 
 function ff_float_to_int16_interleave_neon, export=1
         cmp             r3, #2
+        itt             lt
         ldrlt           r1, [r1]
         blt             ff_float_to_int16_neon
         bne             4f
@@ -196,6 +197,7 @@ function ff_float_to_int16_interleave_neon, export=1
         vst1.64         {d3},     [r8], ip
         vst1.64         {d7},     [r8], ip
         subs            r3,  r3,  #4
+        it              eq
         popeq           {r4-r8,pc}
         cmp             r3,  #4
         add             r0,  r0,  #8
@@ -305,6 +307,7 @@ function ff_float_to_int16_interleave_neon, export=1
         vst1.32         {d23[1]}, [r8], ip
 8:      subs            r3,  r3,  #2
         add             r0,  r0,  #4
+        it              eq
         popeq           {r4-r8,pc}
 
         @ 1 channel
@@ -354,6 +357,7 @@ function ff_float_to_int16_interleave_neon, export=1
         vst1.16         {d2[3]},  [r5,:16], ip
         vst1.16         {d3[1]},  [r5,:16], ip
         vst1.16         {d3[3]},  [r5,:16], ip
+        it              eq
         popeq           {r4-r8,pc}
         vld1.64         {d0-d1},  [r4,:128]!
         vcvt.s32.f32    q0,  q0,  #16

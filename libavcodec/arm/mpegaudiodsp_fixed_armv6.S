@@ -75,7 +75,7 @@ function ff_mpadsp_apply_window_fixed_armv6, export=1
         sum8            r8,  r9,  r1,  r0,  r10, r11, r12, lr
         sum8            r8,  r9,  r1,  r2,  r10, r11, r12, lr, rsb, 32
         round           r10, r8,  r9
-        strh            r10, [r3], r4
+        strh_post       r10, r3,  r4
 
         mov             lr,  #15
 1:
@@ -127,10 +127,10 @@ function ff_mpadsp_apply_window_fixed_armv6, export=1
         round           r10, r8,  r9
         adds            r8,  r8,  r4
         adc             r9,  r9,  r7
-        strh            r10, [r3], r12
+        strh_post       r10, r3,  r12
         round           r11, r8,  r9
         subs            lr,  lr,  #1
-        strh            r11, [r5], -r12
+        strh_dpost      r11, r5, r12
         bgt             1b
 
         sum8            r8,  r9,  r1,  r0,  r10, r11, r12, lr, rsb, 33

@@ -746,14 +746,14 @@ function ff_put_vp8_pixels4_neon, export=1
         push            {r4-r6,lr}
 1:
         subs            r12, r12, #4
-        ldr             r4,       [r2], r3
-        ldr             r5,       [r2], r3
-        ldr             r6,       [r2], r3
-        ldr             lr,       [r2], r3
-        str             r4,       [r0], r1
-        str             r5,       [r0], r1
-        str             r6,       [r0], r1
-        str             lr,       [r0], r1
+        ldr_post        r4,  r2,  r3
+        ldr_post        r5,  r2,  r3
+        ldr_post        r6,  r2,  r3
+        ldr_post        lr,  r2,  r3
+        str_post        r4,  r0,  r1
+        str_post        r5,  r0,  r1
+        str_post        r6,  r0,  r1
+        str_post        lr,  r0,  r1
         bgt             1b
         pop             {r4-r6,pc}
 endfunc

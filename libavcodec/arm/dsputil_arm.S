@@ -554,10 +554,12 @@ endfunc
         and             r9,  r5,  r14
         and             r10, r6,  r14
         and             r11, r7,  r14
+        it              eq
         andeq           r14, r14, r14, \rnd #1
         add             r8,  r8,  r10
         add             r9,  r9,  r11
         ldr             r12, =0xfcfcfcfc >> 2
+        itt             eq
         addeq           r8,  r8,  r14
         addeq           r9,  r9,  r14
         and             r4,  r12, r4,  lsr #2
@@ -638,8 +640,10 @@ function ff_add_pixels_clamped_arm, export=1
         mvn             r5,  r5
         mvn             r7,  r7
         tst             r6,  #0x100
+        it              ne
         movne           r6,  r5,  lsr #24
         tst             r8,  #0x100
+        it              ne
         movne           r8,  r7,  lsr #24
         mov             r9,  r6
         ldrsh           r5,  [r0, #4]           /* moved form [A] */
@@ -654,8 +658,10 @@ function ff_add_pixels_clamped_arm, export=1
         mvn             r5,  r5
         mvn             r7,  r7
         tst             r6,  #0x100
+        it              ne
         movne           r6,  r5,  lsr #24
         tst             r8,  #0x100
+        it              ne
         movne           r8,  r7,  lsr #24
         orr             r9,  r9,  r6,  lsl #16
         ldr             r4,  [r1, #4]           /* moved form [B] */
@@ -676,8 +682,10 @@ function ff_add_pixels_clamped_arm, export=1
         mvn             r5,  r5
         mvn             r7,  r7
         tst             r6,  #0x100
+        it              ne
         movne           r6,  r5,  lsr #24
         tst             r8,  #0x100
+        it              ne
         movne           r8,  r7,  lsr #24
         mov             r9,  r6
         ldrsh           r5,  [r0, #12]          /* moved from [D] */
@@ -692,8 +700,10 @@ function ff_add_pixels_clamped_arm, export=1
         mvn             r5,  r5
         mvn             r7,  r7
         tst             r6,  #0x100
+        it              ne
         movne           r6,  r5,  lsr #24
         tst             r8,  #0x100
+        it              ne
         movne           r8,  r7,  lsr #24
         orr             r9,  r9,  r6,  lsl #16
         add             r0,  r0,  #16           /* moved from [E] */
