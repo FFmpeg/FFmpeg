@@ -72,12 +72,14 @@ SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
         c->srcFormat != PIX_FMT_YUVA420P)
         return NULL;
 
-    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2) {
+#if HAVE_MMX2
+    if (cpu_flags & AV_CPU_FLAG_MMX2) {
         switch (c->dstFormat) {
         case PIX_FMT_RGB24:  return yuv420_rgb24_MMX2;
         case PIX_FMT_BGR24:  return yuv420_bgr24_MMX2;
         }
     }
+#endif
 
     if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
         switch (c->dstFormat) {
