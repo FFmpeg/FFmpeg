@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
+#include "ac3.h"
+
 #if AC3ENC_TYPE == AC3ENC_TYPE_AC3_FIXED
 static const AVOption ac3fixed_options[] = {
 #elif AC3ENC_TYPE == AC3ENC_TYPE_AC3

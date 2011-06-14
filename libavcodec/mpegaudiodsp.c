@@ -35,6 +35,7 @@ void ff_mpadsp_init(MPADSPContext *s)
     s->dct32_float = dct.dct32;
     s->dct32_fixed = ff_dct32_fixed;
 
+    if (ARCH_ARM)     ff_mpadsp_init_arm(s);
     if (HAVE_MMX)     ff_mpadsp_init_mmx(s);
     if (HAVE_ALTIVEC) ff_mpadsp_init_altivec(s);
 }
