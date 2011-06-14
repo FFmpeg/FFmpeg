@@ -882,7 +882,7 @@ static void end_frame(AVFilterLink *inlink)
     }
     free_mp_image(mpi);
 
-//    avfilter_unref_buffer(inpic);
+    avfilter_unref_buffer(inpic);
 }
 
 AVFilter avfilter_vf_mp = {
