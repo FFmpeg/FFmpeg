@@ -127,7 +127,7 @@ void rgb2rgb_init_x86(void)
 {
     int cpu_flags = av_get_cpu_flags();
 
-    if (HAVE_MMX      && cpu_flags & AV_CPU_FLAG_MMX)
+    if (cpu_flags & AV_CPU_FLAG_MMX)
         rgb2rgb_init_MMX();
     if (HAVE_AMD3DNOW && cpu_flags & AV_CPU_FLAG_3DNOW)
         rgb2rgb_init_3DNOW();

@@ -81,7 +81,7 @@ SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
     }
 #endif
 
-    if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
+    if (cpu_flags & AV_CPU_FLAG_MMX) {
         switch (c->dstFormat) {
             case PIX_FMT_RGB32:
                 if (c->srcFormat == PIX_FMT_YUVA420P) {
