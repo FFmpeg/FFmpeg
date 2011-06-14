@@ -134,36 +134,38 @@ void AC3_NAME(apply_channel_coupling)(AC3EncodeContext *s)
     LOCAL_ALIGNED_16(int32_t, fixed_cpl_coords, [AC3_MAX_BLOCKS], [AC3_MAX_CHANNELS][16]);
     int blk, ch, bnd, i, j;
     CoefSumType energy[AC3_MAX_BLOCKS][AC3_MAX_CHANNELS][16] = {{{0}}};
-    int num_cpl_coefs = s->num_cpl_subbands * 12;
+    int cpl_start, num_cpl_coefs;
 
     memset(cpl_coords,       0, AC3_MAX_BLOCKS * sizeof(*cpl_coords));
     memset(fixed_cpl_coords, 0, AC3_MAX_BLOCKS * sizeof(*fixed_cpl_coords));
 
+    /* align start to 16-byte boundary. align length to multiple of 32.
+        note: coupling start bin % 4 will always be 1 */
+    cpl_start     = s->start_freq[CPL_CH] - 1;
+    num_cpl_coefs = FFALIGN(s->num_cpl_subbands * 12 + 1, 32);
+    cpl_start     = FFMIN(256, cpl_start + num_cpl_coefs) - num_cpl_coefs;
+
     /* calculate coupling channel from fbw channels */
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
-        CoefType *cpl_coef = &block->mdct_coef[CPL_CH][s->start_freq[CPL_CH]];
+        CoefType *cpl_coef = &block->mdct_coef[CPL_CH][cpl_start];
         if (!block->cpl_in_use)
             continue;
-        memset(cpl_coef-1, 0, (num_cpl_coefs+4) * sizeof(*cpl_coef));
+        memset(cpl_coef, 0, num_cpl_coefs * sizeof(*cpl_coef));
         for (ch = 1; ch <= s->fbw_channels; ch++) {
-            CoefType *ch_coef = &block->mdct_coef[ch][s->start_freq[CPL_CH]];
+            CoefType *ch_coef = &block->mdct_coef[ch][cpl_start];
             if (!block->channel_in_cpl[ch])
                 continue;
             for (i = 0; i < num_cpl_coefs; i++)
                 cpl_coef[i] += ch_coef[i];
         }
-        /* note: coupling start bin % 4 will always be 1 and num_cpl_coefs
-                 will always be a multiple of 12, so we need to subtract 1 from
-                 the start and add 4 to the length when using optimized
-                 functions which require 16-byte alignment. */
 
         /* coefficients must be clipped to +/- 1.0 in order to be encoded */
-        s->dsp.vector_clipf(cpl_coef-1, cpl_coef-1, -1.0f, 1.0f, num_cpl_coefs+4);
+        s->dsp.vector_clipf(cpl_coef, cpl_coef, -1.0f, 1.0f, num_cpl_coefs);
 
         /* scale coupling coefficients from float to 24-bit fixed-point */
-        s->ac3dsp.float_to_fixed24(&block->fixed_coef[CPL_CH][s->start_freq[CPL_CH]-1],
-                                   cpl_coef-1, num_cpl_coefs+4);
+        s->ac3dsp.float_to_fixed24(&block->fixed_coef[CPL_CH][cpl_start],
+                                   cpl_coef, num_cpl_coefs);
     }
 
     /* calculate energy in each band in coupling channel and each fbw channel */
