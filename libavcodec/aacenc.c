@@ -135,6 +135,15 @@ static const uint8_t aac_chan_configs[6][5] = {
  {4, TYPE_SCE, TYPE_CPE, TYPE_CPE, TYPE_LFE}, // 6 channels - front center + stereo + back stereo + LFE
 };
 
+static const uint8_t channel_maps[][AAC_MAX_CHANNELS] = {
+    { 0 },
+    { 0, 1 },
+    { 2, 0, 1 },
+    { 2, 0, 1, 3 },
+    { 2, 0, 1, 3, 4 },
+    { 2, 0, 1, 4, 5, 3 },
+};
+
 /**
  * Make AAC audio config object.
  * @see 1.6.2.1 "Syntax - AudioSpecificConfig"
@@ -499,15 +508,24 @@ static int aac_encode_frame(AVCodecContext *avctx,
         return 0;
     if (data) {
         if (!s->psypp) {
+            if (avctx->channels <= 2) {
             memcpy(s->samples + 1024 * avctx->channels, data,
                    1024 * avctx->channels * sizeof(s->samples[0]));
+            } else {
+                for (i = 0; i < 1024; i++)
+                    for (ch = 0; ch < avctx->channels; ch++)
+                        s->samples[(i + 1024) * avctx->channels + ch] =
+                            ((int16_t*)data)[i * avctx->channels +
+                                             channel_maps[avctx->channels-1][ch]];
+            }
         } else {
             start_ch = 0;
             samples2 = s->samples + 1024 * avctx->channels;
             for (i = 0; i < chan_map[0]; i++) {
                 tag = chan_map[i+1];
                 chans = tag == TYPE_CPE ? 2 : 1;
-                ff_psy_preprocess(s->psypp, (uint16_t*)data + start_ch,
+                ff_psy_preprocess(s->psypp,
+                                  (uint16_t*)data + channel_maps[avctx->channels-1][start_ch],
                                   samples2 + start_ch, start_ch, chans);
                 start_ch += chans;
             }

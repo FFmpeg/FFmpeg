@@ -31,6 +31,13 @@ typedef struct FaacAudioContext {
     faacEncHandle faac_handle;
 } FaacAudioContext;
 
+static const int channel_maps[][6] = {
+    { 2, 0, 1 },          //< C L R
+    { 2, 0, 1, 3 },       //< C L R Cs
+    { 2, 0, 1, 3, 4 },    //< C L R Ls Rs
+    { 2, 0, 1, 4, 5, 3 }, //< C L R Ls Rs LFE
+};
+
 static av_cold int Faac_encode_init(AVCodecContext *avctx)
 {
     FaacAudioContext *s = avctx->priv_data;
@@ -86,6 +93,9 @@ static av_cold int Faac_encode_init(AVCodecContext *avctx)
     }
     faac_cfg->outputFormat = 1;
     faac_cfg->inputFormat = FAAC_INPUT_16BIT;
+    if (avctx->channels > 2)
+        memcpy(faac_cfg->channel_map, channel_maps[avctx->channels-3],
+               avctx->channels * sizeof(int));
 
     avctx->frame_size = samples_input / avctx->channels;
 
