@@ -163,7 +163,7 @@ static char *vfilters = NULL;
 #endif
 
 static int intra_only = 0;
-static int audio_sample_rate = 44100;
+static int audio_sample_rate = 0;
 static int64_t channel_layout = 0;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
@@ -2170,6 +2170,13 @@ static int transcode(AVFormatContext **output_files,
                 if(!ost->fifo)
                     goto fail;
                 ost->reformat_pair = MAKE_SFMT_PAIR(AV_SAMPLE_FMT_NONE,AV_SAMPLE_FMT_NONE);
+                if (!codec->sample_rate) {
+                    codec->sample_rate = icodec->sample_rate;
+                    if (icodec->lowres)
+                        codec->sample_rate >>= icodec->lowres;
+                }
+                choose_sample_rate(ost->st, codec->codec);
+                codec->time_base = (AVRational){1, codec->sample_rate};
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
                 icodec->request_channels = codec->channels;
                 ist->decoding_needed = 1;
@@ -3268,15 +3275,9 @@ static int opt_input_file(const char *opt, const char *filename)
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             channel_layout    = dec->channel_layout;
             audio_channels    = dec->channels;
-            audio_sample_rate = dec->sample_rate;
             audio_sample_fmt  = dec->sample_fmt;
             if(audio_disable)
                 st->discard= AVDISCARD_ALL;
-            /* Note that av_find_stream_info can add more streams, and we
-             * currently have no chance of setting up lowres decoding
-             * early enough for them. */
-            if (dec->lowres)
-                audio_sample_rate >>= dec->lowres;
             break;
         case AVMEDIA_TYPE_VIDEO:
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(video_codec_name);
@@ -3338,6 +3339,7 @@ static int opt_input_file(const char *opt, const char *filename)
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
 
     video_channel = 0;
+    audio_sample_rate = 0;
 
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
@@ -3585,7 +3587,6 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     if (audio_stream_copy) {
         st->stream_copy = 1;
         audio_enc->channels = audio_channels;
-        audio_enc->sample_rate = audio_sample_rate;
     } else {
         audio_enc->codec_id = codec_id;
         set_context_opts(audio_enc, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM, codec);
@@ -3596,14 +3597,13 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
         }
         audio_enc->channels = audio_channels;
         audio_enc->sample_fmt = audio_sample_fmt;
-        audio_enc->sample_rate = audio_sample_rate;
+        if (audio_sample_rate)
+            audio_enc->sample_rate = audio_sample_rate;
         audio_enc->channel_layout = channel_layout;
         if (av_get_channel_layout_nb_channels(channel_layout) != audio_channels)
             audio_enc->channel_layout = 0;
         choose_sample_fmt(st, codec);
-        choose_sample_rate(st, codec);
     }
-    audio_enc->time_base= (AVRational){1, audio_sample_rate};
     if (audio_language) {
         av_dict_set(&st->metadata, "language", audio_language, 0);
         av_freep(&audio_language);
@@ -3888,6 +3888,8 @@ static void opt_output_file(const char *filename)
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
+
+    audio_sample_rate = 0;
 
     av_freep(&forced_key_frames);
     uninit_opts();

@@ -114,7 +114,7 @@ do_video_encoding()
 do_audio_encoding()
 {
     file=${outfile}$1
-    do_ffmpeg $file $DEC_OPTS -ac 2 -f s16le -i $pcm_src -ab 128k $ENC_OPTS $2
+    do_ffmpeg $file $DEC_OPTS -ac 2 -ar 44100 -f s16le -i $pcm_src -ab 128k $ENC_OPTS $2
 }
 
 do_audio_decoding()
