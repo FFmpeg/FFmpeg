@@ -25,16 +25,31 @@
 
 extern const FFPsyModel ff_aac_psy_model;
 
-av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx,
-                        int num_lens,
-                        const uint8_t **bands, const int* num_bands)
+av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx, int num_lens,
+                        const uint8_t **bands, const int* num_bands,
+                        int num_groups, const uint8_t *group_map)
 {
+    int i, j, k = 0;
+
     ctx->avctx = avctx;
-    ctx->psy_bands = av_mallocz(sizeof(FFPsyBand) * PSY_MAX_BANDS * avctx->channels);
+    ctx->ch        = av_mallocz(sizeof(ctx->ch[0]) * avctx->channels * 2);
+    ctx->group     = av_mallocz(sizeof(ctx->group[0]) * num_groups);
     ctx->bands     = av_malloc (sizeof(ctx->bands[0])     * num_lens);
     ctx->num_bands = av_malloc (sizeof(ctx->num_bands[0]) * num_lens);
     memcpy(ctx->bands,     bands,     sizeof(ctx->bands[0])     *  num_lens);
     memcpy(ctx->num_bands, num_bands, sizeof(ctx->num_bands[0]) *  num_lens);
+
+    /* assign channels to groups (with virtual channels for coupling) */
+    for (i = 0; i < num_groups; i++) {
+        /* NOTE: Add 1 to handle the AAC chan_config without modification.
+         *       This has the side effect of allowing an array of 0s to map
+         *       to one channel per group.
+         */
+        ctx->group[i].num_ch = group_map[i] + 1;
+        for (j = 0; j < ctx->group[i].num_ch * 2; j++)
+            ctx->group[i].ch[j]  = &ctx->ch[k++];
+    }
+
     switch (ctx->avctx->codec_id) {
     case CODEC_ID_AAC:
         ctx->model = &ff_aac_psy_model;
@@ -45,13 +60,24 @@ av_cold int ff_psy_init(FFPsyContext *ctx, AVCodecContext *avctx,
     return 0;
 }
 
+FFPsyChannelGroup *ff_psy_find_group(FFPsyContext *ctx, int channel)
+{
+    int i = 0, ch = 0;
+
+    while (ch <= channel)
+        ch += ctx->group[i++].num_ch;
+
+    return &ctx->group[i-1];
+}
+
 av_cold void ff_psy_end(FFPsyContext *ctx)
 {
     if (ctx->model->end)
         ctx->model->end(ctx);
     av_freep(&ctx->bands);
     av_freep(&ctx->num_bands);
-    av_freep(&ctx->psy_bands);
+    av_freep(&ctx->group);
+    av_freep(&ctx->ch);
 }
 
 typedef struct FFPsyPreprocessContext{
