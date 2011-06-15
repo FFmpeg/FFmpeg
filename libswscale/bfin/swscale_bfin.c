@@ -78,8 +78,6 @@ static int yuyvtoyv12_unscaled(SwsContext *c, uint8_t* src[], int srcStride[], i
 
 void ff_bfin_get_unscaled_swscale(SwsContext *c)
 {
-    SwsFunc swScale = c->swScale;
-
     if (c->dstFormat == PIX_FMT_YUV420P && c->srcFormat == PIX_FMT_UYVY422) {
         av_log (NULL, AV_LOG_VERBOSE, "selecting Blackfin optimized uyvytoyv12_unscaled\n");
         c->swScale = uyvytoyv12_unscaled;
