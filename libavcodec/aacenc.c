@@ -509,8 +509,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
     if (data) {
         if (!s->psypp) {
             if (avctx->channels <= 2) {
-            memcpy(s->samples + 1024 * avctx->channels, data,
-                   1024 * avctx->channels * sizeof(s->samples[0]));
+                memcpy(s->samples + 1024 * avctx->channels, data,
+                       1024 * avctx->channels * sizeof(s->samples[0]));
             } else {
                 for (i = 0; i < 1024; i++)
                     for (ch = 0; ch < avctx->channels; ch++)
