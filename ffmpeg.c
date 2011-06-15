@@ -219,9 +219,6 @@ static int copy_initial_nonkeyframes = 0;
 
 static int rate_emu = 0;
 
-static int  video_channel = 0;
-static char *video_standard;
-
 static int audio_volume = 256;
 
 static int exit_on_error = 0;
@@ -558,8 +555,6 @@ static int ffmpeg_exit(int ret)
     av_free(audio_codec_name);
     av_free(subtitle_codec_name);
     av_free(data_codec_name);
-
-    av_free(video_standard);
 
     uninit_opts();
     av_free(audio_buf);
@@ -3051,13 +3046,15 @@ static int opt_audio_channels(const char *opt, const char *arg)
 
 static int opt_video_channel(const char *opt, const char *arg)
 {
-    video_channel = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
+    av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -channel.\n");
+    opt_default("channel", arg);
     return 0;
 }
 
 static int opt_video_standard(const char *opt, const char *arg)
 {
-    video_standard = av_strdup(arg);
+    av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -standard.\n");
+    opt_default("standard", arg);
     return 0;
 }
 
@@ -3478,7 +3475,6 @@ static int opt_input_file(const char *opt, const char *filename)
     input_files[nb_input_files - 1].ts_offset  = input_ts_offset - (copy_ts ? 0 : timestamp);
 
     top_field_first = -1;
-    video_channel = 0;
     frame_rate    = (AVRational){0, 0};
     frame_pix_fmt = PIX_FMT_NONE;
     frame_height = 0;
@@ -4490,8 +4486,8 @@ static const OptionDef options[] = {
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_codec_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
     /* grab options */
-    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "set video grab channel (DV1394 only)", "channel" },
-    { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "set television standard (NTSC, PAL (SECAM))", "standard" },
+    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "deprecated, use -channel", "channel" },
+    { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "deprecated, use -standard", "standard" },
     { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, {(void*)&input_sync}, "sync read on input", "" },
 
     /* muxer options */
