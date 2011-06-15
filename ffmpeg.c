@@ -2180,6 +2180,9 @@ static int transcode(AVFormatContext **output_files,
                 }
                 choose_sample_rate(ost->st, ost->enc);
                 codec->time_base = (AVRational){1, codec->sample_rate};
+                if (codec->sample_fmt == AV_SAMPLE_FMT_NONE)
+                    codec->sample_fmt = icodec->sample_fmt;
+                choose_sample_fmt(ost->st, ost->enc);
                 if (!codec->channels)
                     codec->channels = icodec->channels;
                 codec->channel_layout = icodec->channel_layout;
@@ -3306,7 +3309,6 @@ static int opt_input_file(const char *opt, const char *filename)
         case AVMEDIA_TYPE_AUDIO:
             ist->dec = avcodec_find_decoder_by_name(audio_codec_name);
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, ist->dec);
-            audio_sample_fmt  = dec->sample_fmt;
             if(audio_disable)
                 st->discard= AVDISCARD_ALL;
             break;
@@ -3367,6 +3369,7 @@ static int opt_input_file(const char *opt, const char *filename)
     frame_width  = 0;
     audio_sample_rate = 0;
     audio_channels    = 0;
+    audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
 
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
@@ -3601,10 +3604,10 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
         }
         if (audio_channels)
             audio_enc->channels = audio_channels;
-        audio_enc->sample_fmt = audio_sample_fmt;
+        if (audio_sample_fmt != AV_SAMPLE_FMT_NONE)
+            audio_enc->sample_fmt = audio_sample_fmt;
         if (audio_sample_rate)
             audio_enc->sample_rate = audio_sample_rate;
-        choose_sample_fmt(st, codec);
     }
     if (audio_language) {
         av_dict_set(&st->metadata, "language", audio_language, 0);
@@ -3875,6 +3878,7 @@ static void opt_output_file(const char *filename)
     frame_height  = 0;
     audio_sample_rate = 0;
     audio_channels    = 0;
+    audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
 
     av_freep(&forced_key_frames);
     uninit_opts();
