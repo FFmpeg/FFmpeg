@@ -2226,6 +2226,10 @@ static int transcode(AVFormatContext **output_files,
 #endif
                     codec->bits_per_raw_sample= 0;
                 }
+                if (!codec->width || !codec->height) {
+                    codec->width  = icodec->width;
+                    codec->height = icodec->height;
+                }
                 ost->resample_height = icodec->height;
                 ost->resample_width  = icodec->width;
                 ost->resample_pix_fmt= icodec->pix_fmt;
@@ -3297,16 +3301,12 @@ static int opt_input_file(const char *opt, const char *filename)
         case AVMEDIA_TYPE_VIDEO:
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(video_codec_name);
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
-            frame_height = dec->height;
-            frame_width  = dec->width;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
             if (dec->lowres) {
                 dec->flags |= CODEC_FLAG_EMU_EDGE;
-                frame_height >>= dec->lowres;
-                frame_width  >>= dec->lowres;
-                dec->height = frame_height;
-                dec->width  = frame_width;
+                dec->height >>= dec->lowres;
+                dec->width  >>= dec->lowres;
             }
             if(me_threshold)
                 dec->debug |= FF_DEBUG_MV;
@@ -3352,6 +3352,8 @@ static int opt_input_file(const char *opt, const char *filename)
     video_channel = 0;
     frame_rate    = (AVRational){0, 0};
     frame_pix_fmt = PIX_FMT_NONE;
+    frame_height = 0;
+    frame_width  = 0;
     audio_sample_rate = 0;
     audio_channels    = 0;
 
@@ -3893,6 +3895,8 @@ static void opt_output_file(const char *filename)
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
     frame_rate    = (AVRational){0, 0};
+    frame_width   = 0;
+    frame_height  = 0;
     audio_sample_rate = 0;
     audio_channels    = 0;
 
