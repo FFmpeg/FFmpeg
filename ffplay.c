@@ -904,7 +904,7 @@ static void do_exit(void)
     if (show_status)
         printf("\n");
     SDL_Quit();
-    av_log(NULL, AV_LOG_QUIET, "");
+    av_log(NULL, AV_LOG_QUIET, "%s", "");
     exit(0);
 }
 

@@ -159,7 +159,7 @@ const char* av_default_item_name(void* ctx);
  * "Last message repeated x times" messages below (f)printf messages with some
  * bad luck.
  * Also to receive the last, "last repeated" line if any, the user app must
- * call av_log(NULL, AV_LOG_QUIET, ""); at the end
+ * call av_log(NULL, AV_LOG_QUIET, "%s", ""); at the end
  */
 #define AV_LOG_SKIP_REPEATED 1
 void av_log_set_flags(int arg);

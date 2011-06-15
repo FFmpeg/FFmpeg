@@ -444,7 +444,7 @@ static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
 
 static void term_exit(void)
 {
-    av_log(NULL, AV_LOG_QUIET, "");
+    av_log(NULL, AV_LOG_QUIET, "%s", "");
 #if HAVE_TERMIOS_H
     if(!run_as_daemon)
         tcsetattr (0, TCSANOW, &oldtty);
