@@ -459,16 +459,18 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     uint32_t layout_tag;
     AVIOContext *pb = s->pb;
     const MovChannelLayout *layouts = mov_channel_layout;
-    if (size != 12) {
+    layout_tag = avio_rb32(pb);
+    size -= 4;
+    if (layout_tag == 0) { //< kCAFChannelLayoutTag_UseChannelDescriptions
         // Channel descriptions not implemented
         av_log_ask_for_sample(s, "Unimplemented container channel layout.\n");
         avio_skip(pb, size);
         return;
     }
-    layout_tag = avio_rb32(pb);
     if (layout_tag == 0x10000) { //< kCAFChannelLayoutTag_UseChannelBitmap
         codec->channel_layout = avio_rb32(pb);
-        avio_skip(pb, 4);
+        size -= 4;
+        avio_skip(pb, size);
         return;
     }
     while (layouts->channel_layout) {
@@ -480,7 +482,7 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     }
     if (!codec->channel_layout)
         av_log(s, AV_LOG_WARNING, "Unknown container channel layout.\n");
-    avio_skip(pb, 8);
+    avio_skip(pb, size);
 }
 
 void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout)
