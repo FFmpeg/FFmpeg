@@ -6,11 +6,6 @@
 all: all-yes
 
 ifndef SUBDIR
-vpath %.c   $(SRC_DIR)
-vpath %.h   $(SRC_DIR)
-vpath %.S   $(SRC_DIR)
-vpath %.asm $(SRC_DIR)
-vpath %.v   $(SRC_DIR)
 
 ifndef V
 Q      = @
@@ -24,8 +19,6 @@ $(foreach VAR,$(BRIEF), \
 $(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
 $(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_DIR)/%=%)); $(INSTALL))
 endif
-
-ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
 IFLAGS   := -I. -I$(SRC_PATH)
 CPPFLAGS := $(IFLAGS) $(CPPFLAGS)

@@ -2,6 +2,11 @@ include config.mak
 
 SRC_DIR = $(SRC_PATH_BARE)
 
+vpath %.c   $(SRC_DIR)
+vpath %.h   $(SRC_DIR)
+vpath %.S   $(SRC_DIR)
+vpath %.asm $(SRC_DIR)
+vpath %.v   $(SRC_DIR)
 vpath %.texi $(SRC_PATH_BARE)
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
@@ -23,6 +28,8 @@ BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLPROGS_G  = $(BASENAMES:%=%_g$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
+
+ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
 FFLIBS-$(CONFIG_AVDEVICE) += avdevice
 FFLIBS-$(CONFIG_AVFILTER) += avfilter

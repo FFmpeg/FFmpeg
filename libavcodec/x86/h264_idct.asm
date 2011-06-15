@@ -32,14 +32,18 @@
 SECTION_RODATA
 
 ; FIXME this table is a duplicate from h264data.h, and will be removed once the tables from, h264 have been split
-scan8_mem: db 4+1*8, 5+1*8, 4+2*8, 5+2*8
-           db 6+1*8, 7+1*8, 6+2*8, 7+2*8
-           db 4+3*8, 5+3*8, 4+4*8, 5+4*8
-           db 6+3*8, 7+3*8, 6+4*8, 7+4*8
-           db 1+1*8, 2+1*8
-           db 1+2*8, 2+2*8
-           db 1+4*8, 2+4*8
-           db 1+5*8, 2+5*8
+scan8_mem: db  4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8
+           db  6+ 1*8, 7+ 1*8, 6+ 2*8, 7+ 2*8
+           db  4+ 3*8, 5+ 3*8, 4+ 4*8, 5+ 4*8
+           db  6+ 3*8, 7+ 3*8, 6+ 4*8, 7+ 4*8
+           db  4+ 6*8, 5+ 6*8, 4+ 7*8, 5+ 7*8
+           db  6+ 6*8, 7+ 6*8, 6+ 7*8, 7+ 7*8
+           db  4+ 8*8, 5+ 8*8, 4+ 9*8, 5+ 9*8
+           db  6+ 8*8, 7+ 8*8, 6+ 9*8, 7+ 9*8
+           db  4+11*8, 5+11*8, 4+12*8, 5+12*8
+           db  6+11*8, 7+11*8, 6+12*8, 7+12*8
+           db  4+13*8, 5+13*8, 4+14*8, 5+14*8
+           db  6+13*8, 7+13*8, 6+14*8, 7+14*8
 %ifdef PIC
 %define scan8 r11
 %else
@@ -617,6 +621,8 @@ cglobal h264_idct_add8_8_mmx, 5, 7, 0
     mov         r10, r0
 %endif
     call         h264_idct_add8_mmx_plane
+    mov          r5, 32
+    add          r2, 384
 %ifdef ARCH_X86_64
     add         r10, gprsize
 %else
@@ -678,6 +684,8 @@ cglobal h264_idct_add8_8_mmx2, 5, 7, 0
     lea         r11, [scan8_mem]
 %endif
     call h264_idct_add8_mmx2_plane
+    mov          r5, 32
+    add          r2, 384
 %ifdef ARCH_X86_64
     add         r10, gprsize
 %else
@@ -810,12 +818,12 @@ cglobal h264_idct_add16intra_8_sse2, 5, 7, 8
     test        r0, r0
     jz .try%1dc
 %ifdef ARCH_X86_64
-    mov        r0d, dword [r1+%1*8+64]
+    mov        r0d, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
     add         r0, [r10]
 %else
     mov         r0, r0m
     mov         r0, [r0]
-    add         r0, dword [r1+%1*8+64]
+    add         r0, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
 %endif
     call        x264_add8x4_idct_sse2
     jmp .cycle%1end
@@ -824,16 +832,18 @@ cglobal h264_idct_add16intra_8_sse2, 5, 7, 8
     or         r0w, word [r2+32]
     jz .cycle%1end
 %ifdef ARCH_X86_64
-    mov        r0d, dword [r1+%1*8+64]
+    mov        r0d, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
     add         r0, [r10]
 %else
     mov         r0, r0m
     mov         r0, [r0]
-    add         r0, dword [r1+%1*8+64]
+    add         r0, dword [r1+(%1&1)*8+64*(1+(%1>>1))]
 %endif
     call        h264_idct_dc_add8_mmx2
 .cycle%1end
-%if %1 < 3
+%if %1 == 1
+    add         r2, 384+64
+%elif %1 < 3
     add         r2, 64
 %endif
 %endmacro
@@ -845,15 +855,15 @@ cglobal h264_idct_add8_8_sse2, 5, 7, 8
 %ifdef ARCH_X86_64
     mov         r10, r0
 %endif
-    add8_sse2_cycle 0, 0x09
-    add8_sse2_cycle 1, 0x11
+    add8_sse2_cycle 0, 0x34
+    add8_sse2_cycle 1, 0x3c
 %ifdef ARCH_X86_64
     add         r10, gprsize
 %else
     add        r0mp, gprsize
 %endif
-    add8_sse2_cycle 2, 0x21
-    add8_sse2_cycle 3, 0x29
+    add8_sse2_cycle 2, 0x5c
+    add8_sse2_cycle 3, 0x64
     RET
 
 ;void ff_h264_luma_dc_dequant_idct_mmx(DCTELEM *output, DCTELEM *input, int qmul)

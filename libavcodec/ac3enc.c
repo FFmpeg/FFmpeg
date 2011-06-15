@@ -2215,15 +2215,9 @@ static av_cold int allocate_buffers(AVCodecContext *avctx)
     AC3EncodeContext *s = avctx->priv_data;
     int channels = s->channels + 1; /* includes coupling channel */
 
-    FF_ALLOC_OR_GOTO(avctx, s->windowed_samples, AC3_WINDOW_SIZE *
-                     sizeof(*s->windowed_samples), alloc_fail);
-    FF_ALLOC_OR_GOTO(avctx, s->planar_samples, s->channels * sizeof(*s->planar_samples),
-                     alloc_fail);
-    for (ch = 0; ch < s->channels; ch++) {
-        FF_ALLOCZ_OR_GOTO(avctx, s->planar_samples[ch],
-                          (AC3_FRAME_SIZE+AC3_BLOCK_SIZE) * sizeof(**s->planar_samples),
-                          alloc_fail);
-    }
+    if (s->allocate_sample_buffers(s))
+        goto alloc_fail;
+
     FF_ALLOC_OR_GOTO(avctx, s->bap_buffer,  AC3_MAX_BLOCKS * channels *
                      AC3_MAX_COEFS * sizeof(*s->bap_buffer),  alloc_fail);
     FF_ALLOC_OR_GOTO(avctx, s->bap1_buffer, AC3_MAX_BLOCKS * channels *
@@ -2323,6 +2317,8 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
     AC3EncodeContext *s = avctx->priv_data;
     int ret, frame_size_58;
 
+    s->avctx = avctx;
+
     s->eac3 = avctx->codec_id == CODEC_ID_EAC3;
 
     avctx->frame_size = AC3_FRAME_SIZE;
@@ -2355,6 +2351,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         s->apply_window                 = ff_ac3_fixed_apply_window;
         s->normalize_samples            = ff_ac3_fixed_normalize_samples;
         s->scale_coefficients           = ff_ac3_fixed_scale_coefficients;
+        s->allocate_sample_buffers      = ff_ac3_fixed_allocate_sample_buffers;
         s->deinterleave_input_samples   = ff_ac3_fixed_deinterleave_input_samples;
         s->apply_mdct                   = ff_ac3_fixed_apply_mdct;
         s->apply_channel_coupling       = ff_ac3_fixed_apply_channel_coupling;
@@ -2364,6 +2361,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
         s->mdct_init                    = ff_ac3_float_mdct_init;
         s->apply_window                 = ff_ac3_float_apply_window;
         s->scale_coefficients           = ff_ac3_float_scale_coefficients;
+        s->allocate_sample_buffers      = ff_ac3_float_allocate_sample_buffers;
         s->deinterleave_input_samples   = ff_ac3_float_deinterleave_input_samples;
         s->apply_mdct                   = ff_ac3_float_apply_mdct;
         s->apply_channel_coupling       = ff_ac3_float_apply_channel_coupling;

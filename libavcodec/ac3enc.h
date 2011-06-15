@@ -135,6 +135,7 @@ typedef struct AC3Block {
 typedef struct AC3EncodeContext {
     AVClass *av_class;                      ///< AVClass used for AVOption
     AC3EncOptions options;                  ///< encoding options
+    AVCodecContext *avctx;                  ///< parent AVCodecContext
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
@@ -230,6 +231,7 @@ typedef struct AC3EncodeContext {
     void (*scale_coefficients)(struct AC3EncodeContext *s);
 
     /* fixed vs. float templated function pointers */
+    int  (*allocate_sample_buffers)(struct AC3EncodeContext *s);
     void (*deinterleave_input_samples)(struct AC3EncodeContext *s,
                                        const SampleType *samples);
     void (*apply_mdct)(struct AC3EncodeContext *s);
@@ -275,6 +277,9 @@ void ff_ac3_float_scale_coefficients(AC3EncodeContext *s);
 
 
 /* prototypes for functions in ac3enc_template.c */
+
+int ff_ac3_fixed_allocate_sample_buffers(AC3EncodeContext *s);
+int ff_ac3_float_allocate_sample_buffers(AC3EncodeContext *s);
 
 void ff_ac3_fixed_deinterleave_input_samples(AC3EncodeContext *s,
                                              const SampleType *samples);
