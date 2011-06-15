@@ -271,6 +271,7 @@ typedef struct AVOutputStream {
     int resample_height;
     int resample_width;
     int resample_pix_fmt;
+    AVRational frame_rate;
 
     float frame_aspect_ratio;
 
@@ -2226,6 +2227,14 @@ static int transcode(AVFormatContext **output_files,
                 ost->encoding_needed = 1;
                 ist->decoding_needed = 1;
 
+                if (!ost->frame_rate.num)
+                    ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25,1};
+                if (codec->codec && codec->codec->supported_framerates && !force_fps) {
+                    int idx = av_find_nearest_q_idx(ost->frame_rate, codec->codec->supported_framerates);
+                    ost->frame_rate = codec->codec->supported_framerates[idx];
+                }
+                codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+
 #if CONFIG_AVFILTER
                 if (configure_video_filters(ist, ost)) {
                     fprintf(stderr, "Error opening filters!\n");
@@ -3308,9 +3317,6 @@ static int opt_input_file(const char *opt, const char *filename)
 
                     (float)rfps / rfps_base, rfps, rfps_base);
             }
-            /* update the current frame rate to match the stream frame rate */
-            frame_rate.num = rfps;
-            frame_rate.den = rfps_base;
 
             if(video_disable)
                 st->discard= AVDISCARD_ALL;
@@ -3342,6 +3348,7 @@ static int opt_input_file(const char *opt, const char *filename)
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
 
     video_channel = 0;
+    frame_rate    = (AVRational){0, 0};
     audio_sample_rate = 0;
     audio_channels    = 0;
 
@@ -3455,15 +3462,11 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     } else {
         const char *p;
         int i;
-        AVRational fps= frame_rate.num ? frame_rate : (AVRational){25,1};
 
+        if (frame_rate.num)
+            ost->frame_rate = frame_rate;
         video_enc->codec_id = codec_id;
         set_context_opts(video_enc, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM, codec);
-
-        if (codec && codec->supported_framerates && !force_fps)
-            fps = codec->supported_framerates[av_find_nearest_q_idx(fps, codec->supported_framerates)];
-        video_enc->time_base.den = fps.num;
-        video_enc->time_base.num = fps.den;
 
         video_enc->width = frame_width;
         video_enc->height = frame_height;
@@ -3891,6 +3894,7 @@ static void opt_output_file(const char *filename)
 
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
+    frame_rate    = (AVRational){0, 0};
     audio_sample_rate = 0;
     audio_channels    = 0;
 
