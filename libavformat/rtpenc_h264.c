@@ -29,14 +29,14 @@
 #include "avc.h"
 #include "rtpenc.h"
 
-static const uint8_t *avc_mp4_find_startcode(const uint8_t *start, const uint8_t *end, int nal_lenght_size)
+static const uint8_t *avc_mp4_find_startcode(const uint8_t *start, const uint8_t *end, int nal_length_size)
 {
     int res = 0;
 
-    if (end - start < nal_lenght_size) {
+    if (end - start < nal_length_size) {
         return NULL;
     }
-    while (nal_lenght_size--) {
+    while (nal_length_size--) {
         res = (res << 8) | *start++;
     }
 
