@@ -40,7 +40,7 @@ static const uint8_t *avc_mp4_find_startcode(const uint8_t *start, const uint8_t
         res = (res << 8) | *start++;
     }
 
-    if (res + start > end) {
+    if (end - start < res) {
         return NULL;
     }
 
