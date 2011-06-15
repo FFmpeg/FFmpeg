@@ -2192,6 +2192,10 @@ static int transcode(AVFormatContext **output_files,
                 ost->resample_channels    = icodec->channels;
                 break;
             case AVMEDIA_TYPE_VIDEO:
+                if (codec->pix_fmt == PIX_FMT_NONE)
+                    codec->pix_fmt = icodec->pix_fmt;
+                choose_pixel_fmt(ost->st, ost->enc);
+
                 if (ost->st->codec->pix_fmt == PIX_FMT_NONE) {
                     fprintf(stderr, "Video pixel format is unknown, stream cannot be encoded\n");
                     ffmpeg_exit(1);
@@ -3295,7 +3299,6 @@ static int opt_input_file(const char *opt, const char *filename)
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             frame_height = dec->height;
             frame_width  = dec->width;
-            frame_pix_fmt = dec->pix_fmt;
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
             if (dec->lowres) {
@@ -3348,6 +3351,7 @@ static int opt_input_file(const char *opt, const char *filename)
 
     video_channel = 0;
     frame_rate    = (AVRational){0, 0};
+    frame_pix_fmt = PIX_FMT_NONE;
     audio_sample_rate = 0;
     audio_channels    = 0;
 
@@ -3470,8 +3474,6 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
         video_enc->height = frame_height;
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
-
-        choose_pixel_fmt(st, codec);
 
         if (intra_only)
             video_enc->gop_size = 0;
