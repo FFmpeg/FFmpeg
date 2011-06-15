@@ -168,7 +168,7 @@ static int64_t channel_layout = 0;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
-static int audio_channels = 1;
+static int audio_channels = 0;
 static char  *audio_codec_name = NULL;
 static unsigned int audio_codec_tag = 0;
 static char *audio_language = NULL;
@@ -2177,6 +2177,10 @@ static int transcode(AVFormatContext **output_files,
                 }
                 choose_sample_rate(ost->st, codec->codec);
                 codec->time_base = (AVRational){1, codec->sample_rate};
+                if (!codec->channels)
+                    codec->channels = icodec->channels;
+                if (av_get_channel_layout_nb_channels(codec->channel_layout) != codec->channels)
+                    codec->channel_layout = 0;
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
                 icodec->request_channels = codec->channels;
                 ist->decoding_needed = 1;
@@ -3274,7 +3278,6 @@ static int opt_input_file(const char *opt, const char *filename)
             input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(audio_codec_name);
             set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
             channel_layout    = dec->channel_layout;
-            audio_channels    = dec->channels;
             audio_sample_fmt  = dec->sample_fmt;
             if(audio_disable)
                 st->discard= AVDISCARD_ALL;
@@ -3340,6 +3343,7 @@ static int opt_input_file(const char *opt, const char *filename)
 
     video_channel = 0;
     audio_sample_rate = 0;
+    audio_channels    = 0;
 
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
@@ -3586,7 +3590,6 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     }
     if (audio_stream_copy) {
         st->stream_copy = 1;
-        audio_enc->channels = audio_channels;
     } else {
         audio_enc->codec_id = codec_id;
         set_context_opts(audio_enc, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM, codec);
@@ -3595,13 +3598,12 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
             audio_enc->flags |= CODEC_FLAG_QSCALE;
             audio_enc->global_quality = st->quality = FF_QP2LAMBDA * audio_qscale;
         }
-        audio_enc->channels = audio_channels;
+        if (audio_channels)
+            audio_enc->channels = audio_channels;
         audio_enc->sample_fmt = audio_sample_fmt;
         if (audio_sample_rate)
             audio_enc->sample_rate = audio_sample_rate;
         audio_enc->channel_layout = channel_layout;
-        if (av_get_channel_layout_nb_channels(channel_layout) != audio_channels)
-            audio_enc->channel_layout = 0;
         choose_sample_fmt(st, codec);
     }
     if (audio_language) {
@@ -3890,6 +3892,7 @@ static void opt_output_file(const char *filename)
     set_context_opts(oc, avformat_opts, AV_OPT_FLAG_ENCODING_PARAM, NULL);
 
     audio_sample_rate = 0;
+    audio_channels    = 0;
 
     av_freep(&forced_key_frames);
     uninit_opts();
