@@ -231,7 +231,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         host, sizeof(host), &port, path, sizeof(path), location);
     if (port<0)
         port = 80; // default mmsh protocol port
-    ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, path);
+    ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, "%s", path);
 
     if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ) < 0) {
         return AVERROR(EIO);
