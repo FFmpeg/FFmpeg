@@ -148,24 +148,27 @@ function ff_h264_idct_add8_neon, export=1
         add             r5,  r1,  #16*4
         add             r1,  r2,  #16*32
         mov             r2,  r3
+        mov             r3,  r1
         ldr             r6,  [sp, #32]
         movrel          r7,  scan8+16
-        mov             ip,  #7
-1:      ldrb            r8,  [r7], #1
-        ldr             r0,  [r5], #4
+        mov             r12, #0
+1:      ldrb            r8,  [r7, r12]
+        ldr             r0,  [r5, r12, lsl #2]
         ldrb            r8,  [r6, r8]
-        tst             ip,  #4
-        addne           r0,  r0,  r4
-        addeq           r0,  r0,  r9
+        add             r0,  r0,  r4
+        add             r1,  r3,  r12, lsl #5
         cmp             r8,  #0
         ldrsh           r8,  [r1]
         adrne           lr,  ff_h264_idct_add_neon
         adreq           lr,  ff_h264_idct_dc_add_neon
         cmpeq           r8,  #0
         blxne           lr
-        subs            ip,  ip,  #1
-        add             r1,  r1,  #32
-        bge             1b
+        add             r12, r12, #1
+        cmp             r12, #4
+        moveq           r12, #16
+        moveq           r4,  r9
+        cmp             r12, #20
+        blt             1b
         pop             {r4-r10,pc}
 endfunc
 
@@ -374,11 +377,15 @@ function ff_h264_idct8_add4_neon, export=1
 endfunc
 
         .section .rodata
-scan8:  .byte           4+1*8, 5+1*8, 4+2*8, 5+2*8
-        .byte           6+1*8, 7+1*8, 6+2*8, 7+2*8
-        .byte           4+3*8, 5+3*8, 4+4*8, 5+4*8
-        .byte           6+3*8, 7+3*8, 6+4*8, 7+4*8
-        .byte           1+1*8, 2+1*8
-        .byte           1+2*8, 2+2*8
-        .byte           1+4*8, 2+4*8
-        .byte           1+5*8, 2+5*8
+scan8:  .byte           4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8
+        .byte           6+ 1*8, 7+ 1*8, 6+ 2*8, 7+ 2*8
+        .byte           4+ 3*8, 5+ 3*8, 4+ 4*8, 5+ 4*8
+        .byte           6+ 3*8, 7+ 3*8, 6+ 4*8, 7+ 4*8
+        .byte           4+ 6*8, 5+ 6*8, 4+ 7*8, 5+ 7*8
+        .byte           6+ 6*8, 7+ 6*8, 6+ 7*8, 7+ 7*8
+        .byte           4+ 8*8, 5+ 8*8, 4+ 9*8, 5+ 9*8
+        .byte           6+ 8*8, 7+ 8*8, 6+ 9*8, 7+ 9*8
+        .byte           4+11*8, 5+11*8, 4+12*8, 5+12*8
+        .byte           6+11*8, 7+11*8, 6+12*8, 7+12*8
+        .byte           4+13*8, 5+13*8, 4+14*8, 5+14*8
+        .byte           6+13*8, 7+13*8, 6+14*8, 7+14*8
