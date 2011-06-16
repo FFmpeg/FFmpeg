@@ -945,7 +945,7 @@ static int video_open(VideoState *is){
 #endif
     if (!screen) {
         fprintf(stderr, "SDL: could not set video mode - exiting\n");
-        return -1;
+        do_exit();
     }
     if (!window_title)
         window_title = input_filename;
