@@ -2164,6 +2164,8 @@ static int transcode(AVFormatContext **output_files,
                 abort();
             }
         } else {
+            if (!ost->enc)
+                ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
             switch(codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 ost->fifo= av_fifo_alloc(1024);
@@ -2175,7 +2177,7 @@ static int transcode(AVFormatContext **output_files,
                     if (icodec->lowres)
                         codec->sample_rate >>= icodec->lowres;
                 }
-                choose_sample_rate(ost->st, codec->codec);
+                choose_sample_rate(ost->st, ost->enc);
                 codec->time_base = (AVRational){1, codec->sample_rate};
                 if (!codec->channels)
                     codec->channels = icodec->channels;
@@ -2228,9 +2230,9 @@ static int transcode(AVFormatContext **output_files,
 
                 if (!ost->frame_rate.num)
                     ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25,1};
-                if (codec->codec && codec->codec->supported_framerates && !force_fps) {
-                    int idx = av_find_nearest_q_idx(ost->frame_rate, codec->codec->supported_framerates);
-                    ost->frame_rate = codec->codec->supported_framerates[idx];
+                if (ost->enc && ost->enc->supported_framerates && !force_fps) {
+                    int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
+                    ost->frame_rate = ost->enc->supported_framerates[idx];
                 }
                 codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
 
@@ -2297,8 +2299,6 @@ static int transcode(AVFormatContext **output_files,
         if (ost->encoding_needed) {
             AVCodec *codec = ost->enc;
             AVCodecContext *dec = input_streams[ost->source_index].st->codec;
-            if (!codec)
-                codec = avcodec_find_encoder(ost->st->codec->codec_id);
             if (!codec) {
                 snprintf(error, sizeof(error), "Encoder (codec id %d) not found for output stream #%d.%d",
                          ost->st->codec->codec_id, ost->file_index, ost->index);
