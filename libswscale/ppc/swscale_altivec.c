@@ -98,10 +98,9 @@ yuv2yuvX_altivec_real(SwsContext *c,
                       int lumFilterSize, const int16_t *chrFilter,
                       const int16_t **chrUSrc, const int16_t **chrVSrc,
                       int chrFilterSize, const int16_t **alpSrc,
-                      uint8_t *dest, uint8_t *uDest,
-                      uint8_t *vDest, uint8_t *aDest,
-                      int dstW, int chrDstW)
+                      uint8_t *dest[4], int dstW, int chrDstW)
 {
+    uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2];
     const vector signed int vini = {(1 << 18), (1 << 18), (1 << 18), (1 << 18)};
     register int i, j;
     {
@@ -150,7 +149,7 @@ yuv2yuvX_altivec_real(SwsContext *c,
                 val[i] += lumSrc[j][i] * lumFilter[j];
             }
         }
-        altivec_packIntArrayToCharArray(val, dest, dstW);
+        altivec_packIntArrayToCharArray(val, yDest, dstW);
     }
     if (uDest != 0) {
         DECLARE_ALIGNED(16, int, u)[chrDstW];

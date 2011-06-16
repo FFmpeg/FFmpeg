@@ -60,37 +60,27 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t* src[],
 typedef void (*yuv2planar1_fn) (struct SwsContext *c,
                                 const int16_t *lumSrc, const int16_t *chrUSrc,
                                 const int16_t *chrVSrc, const int16_t *alpSrc,
-                                uint8_t *dest,
-                                uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
-                                int dstW, int chrDstW);
-typedef void (*yuv2planarX_fn) (struct SwsContext *c,
-                                const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+                                uint8_t *dest[4], int dstW, int chrDstW);
+typedef void (*yuv2planarX_fn) (struct SwsContext *c, const int16_t *lumFilter,
+                                const int16_t **lumSrc, int lumFilterSize,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
-                                const int16_t **chrVSrc, int chrFilterSize,
-                                const int16_t **alpSrc,
-                                uint8_t *dest,
-                                uint8_t *uDest, uint8_t *vDest, uint8_t *aDest,
+                                const int16_t **chrVSrc,  int chrFilterSize,
+                                const int16_t **alpSrc, uint8_t *dest[4],
                                 int dstW, int chrDstW);
-typedef void (*yuv2packed1_fn) (struct SwsContext *c,
-                                const uint16_t *buf0,
-                                const uint16_t *ubuf0, const uint16_t *ubuf1,
-                                const uint16_t *vbuf0, const uint16_t *vbuf1,
-                                const uint16_t *abuf0,
-                                uint8_t *dest,
-                                int dstW, int uvalpha, int dstFormat, int flags, int y);
-typedef void (*yuv2packed2_fn) (struct SwsContext *c,
-                                const uint16_t *buf0, const uint16_t *buf1,
-                                const uint16_t *ubuf0, const uint16_t *ubuf1,
-                                const uint16_t *vbuf0, const uint16_t *vbuf1,
-                                const uint16_t *abuf0, const uint16_t *abuf1,
-                                uint8_t *dest,
+typedef void (*yuv2packed1_fn) (struct SwsContext *c,  const int16_t *lumSrc,
+                                const int16_t *chrUSrc[2], const int16_t *chrVSrc[2],
+                                const int16_t *alpSrc,  uint8_t *dest,
+                                int dstW, int uvalpha, int y);
+typedef void (*yuv2packed2_fn) (struct SwsContext *c,  const int16_t *lumSrc[2],
+                                const int16_t *chrUSrc[2], const int16_t *chrVSrc[2],
+                                const int16_t *alpSrc[2], uint8_t *dest,
                                 int dstW, int yalpha, int uvalpha, int y);
-typedef void (*yuv2packedX_fn) (struct SwsContext *c,
-                                const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
+typedef void (*yuv2packedX_fn) (struct SwsContext *c, const int16_t *lumFilter,
+                                const int16_t **lumSrc, int lumFilterSize,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
                                 const int16_t **chrVSrc, int chrFilterSize,
                                 const int16_t **alpSrc, uint8_t *dest,
-                                int dstW, int dstY);
+                                int dstW, int y);
 
 /* This struct should be aligned on at least a 32-byte boundary. */
 typedef struct SwsContext {
