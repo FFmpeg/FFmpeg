@@ -414,10 +414,14 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
 
     /* The following list of supported dstFormat values should
      * match what's found in the body of ff_yuv2packedX_altivec() */
-    if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->alpPixBuf &&
-        (c->dstFormat==PIX_FMT_ABGR  || c->dstFormat==PIX_FMT_BGRA  ||
-         c->dstFormat==PIX_FMT_BGR24 || c->dstFormat==PIX_FMT_RGB24 ||
-         c->dstFormat==PIX_FMT_RGBA  || c->dstFormat==PIX_FMT_ARGB)) {
-            c->yuv2packedX  = ff_yuv2packedX_altivec;
+    if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->alpPixBuf) {
+        switch (c->dstFormat) {
+        case PIX_FMT_ABGR:  c->yuv2packedX = ff_yuv2abgr_X_altivec;  break;
+        case PIX_FMT_BGRA:  c->yuv2packedX = ff_yuv2bgra_X_altivec;  break;
+        case PIX_FMT_ARGB:  c->yuv2packedX = ff_yuv2argb_X_altivec;  break;
+        case PIX_FMT_RGBA:  c->yuv2packedX = ff_yuv2rgba_X_altivec;  break;
+        case PIX_FMT_BGR24: c->yuv2packedX = ff_yuv2bgr24_X_altivec; break;
+        case PIX_FMT_RGB24: c->yuv2packedX = ff_yuv2rgb24_X_altivec; break;
         }
+    }
 }
