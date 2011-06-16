@@ -1144,7 +1144,7 @@ yuv2rgb_1_c_template(SwsContext *c, const uint16_t *buf0,
     }
 }
 
-#define YUV2RGBWRAPPER(name, base, ext, fmt, hasAlpha) \
+#define YUV2RGBWRAPPERX(name, base, ext, fmt, hasAlpha) \
 static void name ## ext ## _X_c(SwsContext *c, const int16_t *lumFilter, \
                                 const int16_t **lumSrc, int lumFilterSize, \
                                 const int16_t *chrFilter, const int16_t **chrUSrc, \
@@ -1155,8 +1155,9 @@ static void name ## ext ## _X_c(SwsContext *c, const int16_t *lumFilter, \
     name ## base ## _X_c_template(c, lumFilter, lumSrc, lumFilterSize, \
                                   chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
                                   alpSrc, dest, dstW, y, fmt, hasAlpha); \
-} \
- \
+}
+#define YUV2RGBWRAPPER(name, base, ext, fmt, hasAlpha) \
+YUV2RGBWRAPPERX(name, base, ext, fmt, hasAlpha) \
 static void name ## ext ## _2_c(SwsContext *c, const uint16_t *buf0, \
                                 const uint16_t *buf1, const uint16_t *ubuf0, \
                                 const uint16_t *ubuf1, const uint16_t *vbuf0, \
@@ -1201,130 +1202,116 @@ YUV2RGBWRAPPER(yuv2rgb,,   8,    PIX_FMT_RGB8,      0);
 YUV2RGBWRAPPER(yuv2rgb,,   4,    PIX_FMT_RGB4,      0);
 YUV2RGBWRAPPER(yuv2rgb,,   4b,   PIX_FMT_RGB4_BYTE, 0);
 
-#define YSCALE_YUV_2_RGBX_FULL_C(rnd,alpha) \
-    for (i=0; i<dstW; i++) {\
-        int j;\
-        int Y = 0;\
-        int U = -128<<19;\
-        int V = -128<<19;\
-        int av_unused A;\
-        int R,G,B;\
-        \
-        for (j=0; j<lumFilterSize; j++) {\
-            Y += lumSrc[j][i     ] * lumFilter[j];\
-        }\
-        for (j=0; j<chrFilterSize; j++) {\
-            U += chrUSrc[j][i] * chrFilter[j];\
-            V += chrVSrc[j][i] * chrFilter[j];\
-        }\
-        Y >>=10;\
-        U >>=10;\
-        V >>=10;\
-        if (alpha) {\
-            A = rnd;\
-            for (j=0; j<lumFilterSize; j++)\
-                A += alpSrc[j][i     ] * lumFilter[j];\
-            A >>=19;\
-            if (A&0x100)\
-                A = av_clip_uint8(A);\
-        }\
-        Y-= c->yuv2rgb_y_offset;\
-        Y*= c->yuv2rgb_y_coeff;\
-        Y+= rnd;\
-        R= Y + V*c->yuv2rgb_v2r_coeff;\
-        G= Y + V*c->yuv2rgb_v2g_coeff + U*c->yuv2rgb_u2g_coeff;\
-        B= Y +                          U*c->yuv2rgb_u2b_coeff;\
-        if ((R|G|B)&(0xC0000000)) {\
-            R = av_clip_uintp2(R, 30); \
-            G = av_clip_uintp2(G, 30); \
-            B = av_clip_uintp2(B, 30); \
-        }
-
-static void yuv2rgbX_c_full(SwsContext *c, const int16_t *lumFilter,
-                            const int16_t **lumSrc, int lumFilterSize,
-                            const int16_t *chrFilter, const int16_t **chrUSrc,
-                            const int16_t **chrVSrc, int chrFilterSize,
-                            const int16_t **alpSrc, uint8_t *dest, int dstW, int y)
+static av_always_inline void
+yuv2rgb_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
+                          const int16_t **lumSrc, int lumFilterSize,
+                          const int16_t *chrFilter, const int16_t **chrUSrc,
+                          const int16_t **chrVSrc, int chrFilterSize,
+                          const int16_t **alpSrc, uint8_t *dest,
+                          int dstW, int y, enum PixelFormat target, int hasAlpha)
 {
     int i;
-    int step= c->dstFormatBpp/8;
-    int aidx= 3;
+    int step = (target == PIX_FMT_RGB24 || target == PIX_FMT_BGR24) ? 3 : 4;
 
-    switch(c->dstFormat) {
-    case PIX_FMT_ARGB:
-        dest++;
-        aidx= 0;
-    case PIX_FMT_RGB24:
-        aidx--;
-    case PIX_FMT_RGBA:
-        if (CONFIG_SMALL) {
-            int needAlpha = CONFIG_SWSCALE_ALPHA && c->alpPixBuf;
-            YSCALE_YUV_2_RGBX_FULL_C(1<<21, needAlpha)
-                dest[aidx]= needAlpha ? A : 255;
-                dest[0]= R>>22;
-                dest[1]= G>>22;
-                dest[2]= B>>22;
-                dest+= step;
-            }
-        } else {
-            if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
-                YSCALE_YUV_2_RGBX_FULL_C(1<<21, 1)
-                    dest[aidx]= A;
-                    dest[0]= R>>22;
-                    dest[1]= G>>22;
-                    dest[2]= B>>22;
-                    dest+= step;
-                }
-            } else {
-                YSCALE_YUV_2_RGBX_FULL_C(1<<21, 0)
-                    dest[aidx]= 255;
-                    dest[0]= R>>22;
-                    dest[1]= G>>22;
-                    dest[2]= B>>22;
-                    dest+= step;
-                }
-            }
+    for (i = 0; i < dstW; i++) {
+        int j;
+        int Y = 0;
+        int U = -128 << 19;
+        int V = -128 << 19;
+        int av_unused A;
+        int R, G, B;
+
+        for (j = 0; j < lumFilterSize; j++) {
+            Y += lumSrc[j][i] * lumFilter[j];
         }
-        break;
-    case PIX_FMT_ABGR:
-        dest++;
-        aidx= 0;
-    case PIX_FMT_BGR24:
-        aidx--;
-    case PIX_FMT_BGRA:
-        if (CONFIG_SMALL) {
-            int needAlpha = CONFIG_SWSCALE_ALPHA && c->alpPixBuf;
-            YSCALE_YUV_2_RGBX_FULL_C(1<<21, needAlpha)
-                dest[aidx]= needAlpha ? A : 255;
-                dest[0]= B>>22;
-                dest[1]= G>>22;
-                dest[2]= R>>22;
-                dest+= step;
-            }
-        } else {
-            if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf) {
-                YSCALE_YUV_2_RGBX_FULL_C(1<<21, 1)
-                    dest[aidx]= A;
-                    dest[0]= B>>22;
-                    dest[1]= G>>22;
-                    dest[2]= R>>22;
-                    dest+= step;
-                }
-            } else {
-                YSCALE_YUV_2_RGBX_FULL_C(1<<21, 0)
-                    dest[aidx]= 255;
-                    dest[0]= B>>22;
-                    dest[1]= G>>22;
-                    dest[2]= R>>22;
-                    dest+= step;
-                }
-            }
+        for (j = 0; j < chrFilterSize; j++) {
+            U += chrUSrc[j][i] * chrFilter[j];
+            V += chrVSrc[j][i] * chrFilter[j];
         }
-        break;
-    default:
-        assert(0);
+        Y >>= 10;
+        U >>= 10;
+        V >>= 10;
+        if (hasAlpha) {
+            A = 1 << 21;
+            for (j = 0; j < lumFilterSize; j++) {
+                A += alpSrc[j][i] * lumFilter[j];
+            }
+            A >>= 19;
+            if (A & 0x100)
+                A = av_clip_uint8(A);
+        }
+        Y -= c->yuv2rgb_y_offset;
+        Y *= c->yuv2rgb_y_coeff;
+        Y += 1 << 21;
+        R = Y + V*c->yuv2rgb_v2r_coeff;
+        G = Y + V*c->yuv2rgb_v2g_coeff + U*c->yuv2rgb_u2g_coeff;
+        B = Y +                          U*c->yuv2rgb_u2b_coeff;
+        if ((R | G | B) & 0xC0000000) {
+            R = av_clip_uintp2(R, 30);
+            G = av_clip_uintp2(G, 30);
+            B = av_clip_uintp2(B, 30);
+        }
+
+        switch(target) {
+        case PIX_FMT_ARGB:
+            dest[0] = hasAlpha ? A : 255;
+            dest[1] = R >> 22;
+            dest[2] = G >> 22;
+            dest[3] = B >> 22;
+            break;
+        case PIX_FMT_RGB24:
+            dest[0] = R >> 22;
+            dest[1] = G >> 22;
+            dest[2] = B >> 22;
+            break;
+        case PIX_FMT_RGBA:
+            dest[0] = R >> 22;
+            dest[1] = G >> 22;
+            dest[2] = B >> 22;
+            dest[3] = hasAlpha ? A : 255;
+            break;
+        case PIX_FMT_ABGR:
+            dest[0] = hasAlpha ? A : 255;
+            dest[1] = B >> 22;
+            dest[2] = G >> 22;
+            dest[3] = R >> 22;
+            dest += 4;
+            break;
+        case PIX_FMT_BGR24:
+            dest[0] = B >> 22;
+            dest[1] = G >> 22;
+            dest[2] = R >> 22;
+            break;
+        case PIX_FMT_BGRA:
+            dest[0] = B >> 22;
+            dest[1] = G >> 22;
+            dest[2] = R >> 22;
+            dest[3] = hasAlpha ? A : 255;
+            break;
+        }
+        dest += step;
     }
 }
+
+#if CONFIG_SMALL
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgra32_full, PIX_FMT_BGRA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
+YUV2RGBWRAPPERX(yuv2, rgb_full, abgr32_full, PIX_FMT_ABGR,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgba32_full, PIX_FMT_RGBA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
+YUV2RGBWRAPPERX(yuv2, rgb_full, argb32_full, PIX_FMT_ARGB,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
+#else
+#if CONFIG_SWSCALE_ALPHA
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgra32_full, PIX_FMT_BGRA,  1);
+YUV2RGBWRAPPERX(yuv2, rgb_full, abgr32_full, PIX_FMT_ABGR,  1);
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgba32_full, PIX_FMT_RGBA,  1);
+YUV2RGBWRAPPERX(yuv2, rgb_full, argb32_full, PIX_FMT_ARGB,  1);
+#endif
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgrx32_full, PIX_FMT_BGRA,  0);
+YUV2RGBWRAPPERX(yuv2, rgb_full, xbgr32_full, PIX_FMT_ABGR,  0);
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgbx32_full, PIX_FMT_RGBA,  0);
+YUV2RGBWRAPPERX(yuv2, rgb_full, xrgb32_full, PIX_FMT_ARGB,  0);
+#endif
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgr24_full,  PIX_FMT_BGR24, 0);
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgb24_full,  PIX_FMT_RGB24, 0);
 
 static av_always_inline void fillPlane(uint8_t* plane, int stride,
                                        int width, int height,
@@ -1978,7 +1965,70 @@ find_c_packed_planar_out_funcs(SwsContext *c,
         *yuv2yuvX     = yuv2yuvX_c;
     }
     if(c->flags & SWS_FULL_CHR_H_INT) {
-        *yuv2packedX = yuv2rgbX_c_full;
+        switch (dstFormat) {
+            case PIX_FMT_RGBA:
+#if CONFIG_SMALL
+                *yuv2packedX = yuv2rgba32_full_X_c;
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->alpPixBuf) {
+                    *yuv2packedX = yuv2rgba32_full_X_c;
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    *yuv2packedX = yuv2rgbx32_full_X_c;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case PIX_FMT_ARGB:
+#if CONFIG_SMALL
+                *yuv2packedX = yuv2argb32_full_X_c;
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->alpPixBuf) {
+                    *yuv2packedX = yuv2argb32_full_X_c;
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    *yuv2packedX = yuv2xrgb32_full_X_c;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case PIX_FMT_BGRA:
+#if CONFIG_SMALL
+                *yuv2packedX = yuv2bgra32_full_X_c;
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->alpPixBuf) {
+                    *yuv2packedX = yuv2bgra32_full_X_c;
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    *yuv2packedX = yuv2bgrx32_full_X_c;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case PIX_FMT_ABGR:
+#if CONFIG_SMALL
+                *yuv2packedX = yuv2abgr32_full_X_c;
+#else
+#if CONFIG_SWSCALE_ALPHA
+                if (c->alpPixBuf) {
+                    *yuv2packedX = yuv2abgr32_full_X_c;
+                } else
+#endif /* CONFIG_SWSCALE_ALPHA */
+                {
+                    *yuv2packedX = yuv2xbgr32_full_X_c;
+                }
+#endif /* !CONFIG_SMALL */
+                break;
+            case PIX_FMT_RGB24:
+            *yuv2packedX = yuv2rgb24_full_X_c;
+            break;
+        case PIX_FMT_BGR24:
+            *yuv2packedX = yuv2bgr24_full_X_c;
+            break;
+        }
     } else {
         switch (dstFormat) {
         case PIX_FMT_GRAY16BE:
