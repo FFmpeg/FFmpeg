@@ -134,13 +134,15 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!ast)
                 return AVERROR(ENOMEM);
             ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
-            ast->codec->codec_tag   = vst->codec->codec_tag;
             ast->codec->sample_rate = avio_rl16(pb);
             av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             flags = avio_rl16(pb);
             ast->codec->codec_id = flags & BINK_AUD_USEDCT ?
                                    CODEC_ID_BINKAUDIO_DCT : CODEC_ID_BINKAUDIO_RDFT;
             ast->codec->channels = flags & BINK_AUD_STEREO ? 2 : 1;
+            ast->codec->extradata  = av_mallocz(1 + FF_INPUT_BUFFER_PADDING_SIZE);
+            ast->codec->extradata_size = 1;
+            ast->codec->extradata[0] = vst->codec->codec_tag == MKTAG('B','I','K','b');
         }
 
         for (i = 0; i < bink->num_audio_tracks; i++)
