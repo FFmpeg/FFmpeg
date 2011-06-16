@@ -557,10 +557,8 @@ The timestamps must be specified in ascending order.
 @item -aframes @var{number}
 Set the number of audio frames to record.
 @item -ar @var{freq}
-Set the audio sampling frequency. For input streams it is set by
-default to 44100 Hz, for output streams it is set by default to the
-frequency of the input stream. If the input file has audio streams
-with different frequencies, the behaviour is undefined.
+Set the audio sampling frequency. there is no default for input streams,
+for output streams it is set by default to the frequency of the input stream.
 @item -ab @var{bitrate}
 Set the audio bitrate in bit/s (default = 64k).
 @item -aq @var{q}
@@ -568,8 +566,7 @@ Set the audio quality (codec-specific, VBR).
 @item -ac @var{channels}
 Set the number of audio channels. For input streams it is set by
 default to 1, for output streams it is set by default to the same
-number of audio channels in input. If the input file has audio streams
-with different channel count, the behaviour is undefined.
+number of audio channels in input.
 @item -an
 Disable audio recording.
 @item -acodec @var{codec}
