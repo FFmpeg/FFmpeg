@@ -24,4 +24,4 @@
 void MPV_common_init_iwmmxt(MpegEncContext *s);
 void MPV_common_init_armv5te(MpegEncContext *s);
 
-#endif
+#endif /* AVCODEC_ARM_MPEGVIDEO_H */

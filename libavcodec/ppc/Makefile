@@ -7,11 +7,7 @@ ALTIVEC-OBJS-$(CONFIG_VP5_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP6_DECODER)     += ppc/vp3dsp_altivec.o
 ALTIVEC-OBJS-$(CONFIG_VP8_DECODER)     += ppc/vp8dsp_altivec.o
 
-ALTIVEC-OBJS-$(CONFIG_MP1FLOAT_DECODER)    += ppc/mpegaudiodec_altivec.o
-ALTIVEC-OBJS-$(CONFIG_MP2FLOAT_DECODER)    += ppc/mpegaudiodec_altivec.o
-ALTIVEC-OBJS-$(CONFIG_MP3FLOAT_DECODER)    += ppc/mpegaudiodec_altivec.o
-ALTIVEC-OBJS-$(CONFIG_MP3ON4FLOAT_DECODER) += ppc/mpegaudiodec_altivec.o
-ALTIVEC-OBJS-$(CONFIG_MP3ADUFLOAT_DECODER) += ppc/mpegaudiodec_altivec.o
+ALTIVEC-OBJS-$(CONFIG_MPEGAUDIODSP)    += ppc/mpegaudiodec_altivec.o
 
 FFT-OBJS-$(HAVE_GNU_AS)                += ppc/fft_altivec_s.o           \
 

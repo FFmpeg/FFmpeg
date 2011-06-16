@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intmath.h"
+#include <stdint.h>
 
 /* a*inverse[b]>>32 == a/b for all 0<=a<=16909558 && 2<=b<=256
  * for a>16909558, is an overestimate by less than 1 part in 1<<24 */

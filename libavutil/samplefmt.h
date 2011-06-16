@@ -60,22 +60,35 @@ enum AVSampleFormat av_get_sample_fmt(const char *name);
  */
 char *av_get_sample_fmt_string(char *buf, int buf_size, enum AVSampleFormat sample_fmt);
 
+#if FF_API_GET_BITS_PER_SAMPLE_FMT
 /**
- * Return sample format bits per sample.
+ * @deprecated Use av_get_bytes_per_sample() instead.
+ */
+attribute_deprecated
+int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
+#endif
+
+/**
+ * Return number of bytes per sample.
  *
  * @param sample_fmt the sample format
- * @return number of bits per sample or zero if unknown for the given
+ * @return number of bytes per sample or zero if unknown for the given
  * sample format
  */
-int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
+int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt);
 
 /**
  * Fill channel data pointers and linesizes for samples with sample
  * format sample_fmt.
  *
  * The pointers array is filled with the pointers to the samples data:
- * data[c] points to the first sample of channel c.
- * data[c] + linesize[0] points to the second sample of channel c
+ * for planar, set the start point of each plane's data within the buffer,
+ * for packed, set the start point of the entire buffer only.
+ *
+ * The linesize array is filled with the aligned size of each samples
+ * plane, that is linesize[i] will contain the linesize of the plane i,
+ * and will be zero for all the unused planes. All linesize values are
+ * equal.
  *
  * @param pointers array to be filled with the pointer for each plane, may be NULL
  * @param linesizes array to be filled with the linesize, may be NULL
@@ -96,6 +109,7 @@ int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
  * The allocated samples buffer has to be freed by using
  * av_freep(&pointers[0]).
  *
+ * @param nb_channels number of audio channels
  * @param nb_samples number of samples per channel
  * @param planar 1 if the samples layout is planar, 0 if packed,
  * @param align the value to use for buffer size alignment
@@ -104,7 +118,7 @@ int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
  * @see av_samples_fill_arrays()
  */
 int av_samples_alloc(uint8_t *pointers[8], int linesizes[8],
-                     int nb_samples, int nb_channels,
+                     int nb_channels, int nb_samples,
                      enum AVSampleFormat sample_fmt, int planar,
                      int align);
 

@@ -24,6 +24,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"
 
@@ -45,7 +46,6 @@
 #include "url.h"
 
 //#define DEBUG
-//#define DEBUG_RTP_TCP
 
 /* Timeout values for socket poll, in ms,
  * and read_packet(), in seconds  */
@@ -282,11 +282,11 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         }
         break;
     case 's':
-        av_metadata_set2(&s->metadata, "title", p, 0);
+        av_dict_set(&s->metadata, "title", p, 0);
         break;
     case 'i':
         if (s->nb_streams == 0) {
-            av_metadata_set2(&s->metadata, "comment", p, 0);
+            av_dict_set(&s->metadata, "comment", p, 0);
             break;
         }
         break;
@@ -860,9 +860,7 @@ int ff_rtsp_read_reply(AVFormatContext *s, RTSPMessageHeader *reply,
         q = buf;
         for (;;) {
             ret = ffurl_read_complete(rt->rtsp_hd, &ch, 1);
-#ifdef DEBUG_RTP_TCP
             av_dlog(s, "ret=%d c=%02x [%c]\n", ret, ch, ch);
-#endif
             if (ret != 1)
                 return AVERROR_EOF;
             if (ch == '\n')

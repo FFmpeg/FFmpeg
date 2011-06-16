@@ -104,6 +104,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (EIGHTBPS, eightbps);
     REGISTER_DECODER (EIGHTSVX_EXP, eightsvx_exp);
     REGISTER_DECODER (EIGHTSVX_FIB, eightsvx_fib);
+    REGISTER_DECODER (EIGHTSVX_RAW, eightsvx_raw);
     REGISTER_DECODER (ESCAPE124, escape124);
     REGISTER_ENCDEC  (FFV1, ffv1);
     REGISTER_ENCDEC  (FFVHUFF, ffvhuff);
@@ -130,6 +131,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (INDEO3, indeo3);
     REGISTER_DECODER (INDEO5, indeo5);
     REGISTER_DECODER (INTERPLAY_VIDEO, interplay_video);
+    REGISTER_DECODER (JPEG2000, jpeg2000);
     REGISTER_ENCDEC  (JPEGLS, jpegls);
     REGISTER_DECODER (JV, jv);
     REGISTER_DECODER (KGV1, kgv1);
@@ -154,7 +156,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (MPEG1_VDPAU, mpeg1_vdpau);
     REGISTER_DECODER (MPEG2_CRYSTALHD, mpeg2_crystalhd);
     REGISTER_DECODER (MSMPEG4_CRYSTALHD, msmpeg4_crystalhd);
-    REGISTER_ENCDEC  (MSMPEG4V1, msmpeg4v1);
+    REGISTER_DECODER (MSMPEG4V1, msmpeg4v1);
     REGISTER_ENCDEC  (MSMPEG4V2, msmpeg4v2);
     REGISTER_ENCDEC  (MSMPEG4V3, msmpeg4v3);
     REGISTER_DECODER (MSRLE, msrle);
@@ -251,7 +253,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (COOK, cook);
     REGISTER_ENCDEC  (DCA, dca);
     REGISTER_DECODER (DSICINAUDIO, dsicinaudio);
-    REGISTER_DECODER (EAC3, eac3);
+    REGISTER_ENCDEC  (EAC3, eac3);
     REGISTER_ENCDEC  (FLAC, flac);
     REGISTER_DECODER (GSM, gsm);
     REGISTER_DECODER (GSM_MS, gsm_ms);

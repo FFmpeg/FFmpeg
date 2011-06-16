@@ -40,3 +40,34 @@ void avfilter_copy_frame_props(AVFilterBufferRef *dst, const AVFrame *src)
         dst->video->pict_type           = src->pict_type;
     }
 }
+
+AVFilterBufferRef *avfilter_get_video_buffer_ref_from_frame(const AVFrame *frame,
+                                                            int perms)
+{
+    AVFilterBufferRef *picref =
+        avfilter_get_video_buffer_ref_from_arrays(frame->data, frame->linesize, perms,
+                                                  frame->width, frame->height,
+                                                  frame->format);
+    if (!picref)
+        return NULL;
+    avfilter_copy_frame_props(picref, frame);
+    return picref;
+}
+
+int avfilter_fill_frame_from_video_buffer_ref(AVFrame *frame,
+                                              const AVFilterBufferRef *picref)
+{
+    if (!picref || !picref->video || !frame)
+        return AVERROR(EINVAL);
+
+    memcpy(frame->data,     picref->data,     sizeof(frame->data));
+    memcpy(frame->linesize, picref->linesize, sizeof(frame->linesize));
+    frame->pkt_pos          = picref->pos;
+    frame->interlaced_frame = picref->video->interlaced;
+    frame->top_field_first  = picref->video->top_field_first;
+    frame->key_frame        = picref->video->key_frame;
+    frame->pict_type        = picref->video->pict_type;
+    frame->sample_aspect_ratio = picref->video->sample_aspect_ratio;
+
+    return 0;
+}

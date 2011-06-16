@@ -38,4 +38,4 @@ typedef struct CAVSDSPContext {
 void ff_cavsdsp_init(CAVSDSPContext* c, AVCodecContext *avctx);
 void ff_cavsdsp_init_mmx(CAVSDSPContext* c, AVCodecContext *avctx);
 
-#endif
+#endif /* AVCODEC_CAVSDSP_H */

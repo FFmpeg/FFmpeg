@@ -22,10 +22,16 @@
 #ifndef FFMPEG_CMDUTILS_H
 #define FFMPEG_CMDUTILS_H
 
-#include <inttypes.h>
+#include <stdint.h>
+
 #include "libavcodec/avcodec.h"
+#include "libavfilter/avfilter.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
+
+#ifdef __MINGW32__
+#undef main /* We don't want SDL to override our main() */
+#endif
 
 /**
  * program name, defined by the program for show_version().
@@ -119,17 +125,14 @@ typedef struct {
 #define OPT_INT    0x0080
 #define OPT_FLOAT  0x0100
 #define OPT_SUBTITLE 0x0200
-#define OPT_FUNC2  0x0400
-#define OPT_INT64  0x0800
-#define OPT_EXIT   0x1000
-#define OPT_DATA   0x2000
-#define OPT_DUMMY  0x4000
+#define OPT_INT64  0x0400
+#define OPT_EXIT   0x0800
+#define OPT_DATA   0x1000
      union {
-        void (*func_arg)(const char *); //FIXME passing error code as int return would be nicer then exit() in the func
         int *int_arg;
         char **str_arg;
         float *float_arg;
-        int (*func2_arg)(const char *, const char *);
+        int (*func_arg)(const char *, const char *);
         int64_t *int64_arg;
     } u;
     const char *help;
@@ -147,7 +150,7 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
  * not have to be processed.
  */
 void parse_options(int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(const char*));
+                   int (* parse_arg_function)(const char *opt, const char *arg));
 
 void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
 
@@ -241,7 +244,8 @@ int read_file(const char *filename, char **bufptr, size_t *size);
  * If is_path is non-zero, look for the file in the path preset_name.
  * Otherwise search for a file named arg.ffpreset in the directories
  * $FFMPEG_DATADIR (if set), $HOME/.ffmpeg, and in the datadir defined
- * at configuration time, in that order. If no such file is found and
+ * at configuration time or in a "ffpresets" folder along the executable
+ * on win32, in that order. If no such file is found and
  * codec_name is defined, then search for a file named
  * codec_name-preset_name.ffpreset in the above-mentioned directories.
  *
@@ -254,9 +258,6 @@ int read_file(const char *filename, char **bufptr, size_t *size);
  */
 FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path, const char *codec_name);
-
-#if CONFIG_AVFILTER
-#include "libavfilter/avfilter.h"
 
 typedef struct {
     enum PixelFormat pix_fmt;
@@ -272,7 +273,5 @@ extern AVFilter ffsink;
  */
 int get_filtered_video_frame(AVFilterContext *sink, AVFrame *frame,
                              AVFilterBufferRef **picref, AVRational *pts_tb);
-
-#endif /* CONFIG_AVFILTER */
 
 #endif /* FFMPEG_CMDUTILS_H */

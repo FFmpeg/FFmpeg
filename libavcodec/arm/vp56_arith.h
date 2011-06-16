@@ -31,24 +31,25 @@ static inline int vp56_rac_get_prob_armv6(VP56RangeCoder *c, int pr)
     unsigned high      = c->high << shift;
     unsigned bit;
 
-    __asm__ volatile ("adds    %3,  %3,  %0           \n"
-                      "cmpcs   %7,  %4                \n"
-                      "ldrcsh  %2,  [%4], #2          \n"
-                      "rsb     %0,  %6,  #256         \n"
-                      "smlabb  %0,  %5,  %6,  %0      \n"
-                      "rev16cs %2,  %2                \n"
-                      "orrcs   %1,  %1,  %2,  lsl %3  \n"
-                      "subcs   %3,  %3,  #16          \n"
-                      "lsr     %0,  %0,  #8           \n"
-                      "cmp     %1,  %0,  lsl #16      \n"
-                      "subge   %1,  %1,  %0,  lsl #16 \n"
-                      "subge   %0,  %5,  %0           \n"
-                      "movge   %2,  #1                \n"
-                      "movlt   %2,  #0                \n"
-                      : "=&r"(c->high), "=&r"(c->code_word), "=&r"(bit),
-                        "+&r"(c->bits), "+&r"(c->buffer)
-                      : "r"(high), "r"(pr), "r"(c->end - 1),
-                        "0"(shift), "1"(code_word));
+    __asm__ ("adds    %3,  %3,  %0           \n"
+             "cmpcs   %7,  %4                \n"
+             "ldrcsh  %2,  [%4], #2          \n"
+             "rsb     %0,  %6,  #256         \n"
+             "smlabb  %0,  %5,  %6,  %0      \n"
+             "rev16cs %2,  %2                \n"
+             "orrcs   %1,  %1,  %2,  lsl %3  \n"
+             "subcs   %3,  %3,  #16          \n"
+             "lsr     %0,  %0,  #8           \n"
+             "cmp     %1,  %0,  lsl #16      \n"
+             "subge   %1,  %1,  %0,  lsl #16 \n"
+             "subge   %0,  %5,  %0           \n"
+             "movge   %2,  #1                \n"
+             "movlt   %2,  #0                \n"
+             : "=&r"(c->high), "=&r"(c->code_word), "=&r"(bit),
+               "+&r"(c->bits), "+&r"(c->buffer)
+             : "r"(high), "r"(pr), "r"(c->end - 1),
+               "0"(shift), "1"(code_word)
+             : "cc");
 
     return bit;
 }
@@ -62,19 +63,20 @@ static inline int vp56_rac_get_prob_branchy_armv6(VP56RangeCoder *c, int pr)
     unsigned low;
     unsigned tmp;
 
-    __asm__ volatile ("adds    %3,  %3,  %0           \n"
-                      "cmpcs   %7,  %4                \n"
-                      "ldrcsh  %2,  [%4], #2          \n"
-                      "rsb     %0,  %6,  #256         \n"
-                      "smlabb  %0,  %5,  %6,  %0      \n"
-                      "rev16cs %2,  %2                \n"
-                      "orrcs   %1,  %1,  %2,  lsl %3  \n"
-                      "subcs   %3,  %3,  #16          \n"
-                      "lsr     %0,  %0,  #8           \n"
-                      "lsl     %2,  %0,  #16          \n"
-                      : "=&r"(low), "+&r"(code_word), "=&r"(tmp),
-                        "+&r"(c->bits), "+&r"(c->buffer)
-                      : "r"(high), "r"(pr), "r"(c->end - 1), "0"(shift));
+    __asm__ ("adds    %3,  %3,  %0           \n"
+             "cmpcs   %7,  %4                \n"
+             "ldrcsh  %2,  [%4], #2          \n"
+             "rsb     %0,  %6,  #256         \n"
+             "smlabb  %0,  %5,  %6,  %0      \n"
+             "rev16cs %2,  %2                \n"
+             "orrcs   %1,  %1,  %2,  lsl %3  \n"
+             "subcs   %3,  %3,  #16          \n"
+             "lsr     %0,  %0,  #8           \n"
+             "lsl     %2,  %0,  #16          \n"
+             : "=&r"(low), "+&r"(code_word), "=&r"(tmp),
+               "+&r"(c->bits), "+&r"(c->buffer)
+             : "r"(high), "r"(pr), "r"(c->end - 1), "0"(shift)
+             : "cc");
 
     if (code_word >= tmp) {
         c->high      = high - low;
@@ -89,4 +91,4 @@ static inline int vp56_rac_get_prob_branchy_armv6(VP56RangeCoder *c, int pr)
 
 #endif
 
-#endif
+#endif /* AVCODEC_ARM_VP56_ARITH_H */

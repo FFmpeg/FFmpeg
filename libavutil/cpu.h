@@ -46,9 +46,16 @@
  */
 int av_get_cpu_flags(void);
 
+
+/**
+ * Disables cpu detection and forces the specified flags.
+ */
+void av_force_cpu_flags(int flags);
+
+
 /* The following CPU-specific functions shall not be called directly. */
 int ff_get_cpu_flags_arm(void);
 int ff_get_cpu_flags_ppc(void);
 int ff_get_cpu_flags_x86(void);
 
-#endif  /* AVUTIL_CPU_H */
+#endif /* AVUTIL_CPU_H */

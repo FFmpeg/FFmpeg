@@ -42,6 +42,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "libavutil/lzo.h"
+#include "libavutil/dict.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
@@ -111,7 +112,8 @@ typedef struct {
     uint64_t display_height;
     uint64_t pixel_width;
     uint64_t pixel_height;
-    uint64_t fourcc;
+    EbmlBin color_space;
+    uint64_t stereo_mode;
 } MatroskaTrackVideo;
 
 typedef struct {
@@ -132,6 +134,15 @@ typedef struct {
 } MatroskaTrackAudio;
 
 typedef struct {
+    uint64_t uid;
+    uint64_t type;
+} MatroskaTrackPlane;
+
+typedef struct {
+    EbmlList combine_planes;
+} MatroskaTrackOperation;
+
+typedef struct {
     uint64_t num;
     uint64_t uid;
     uint64_t type;
@@ -145,6 +156,7 @@ typedef struct {
     uint64_t flag_forced;
     MatroskaTrackVideo video;
     MatroskaTrackAudio audio;
+    MatroskaTrackOperation operation;
     EbmlList encodings;
 
     AVStream *stream;
@@ -290,14 +302,14 @@ static EbmlSyntax matroska_track_video[] = {
     { MATROSKA_ID_VIDEODISPLAYHEIGHT, EBML_UINT, 0, offsetof(MatroskaTrackVideo,display_height) },
     { MATROSKA_ID_VIDEOPIXELWIDTH,    EBML_UINT, 0, offsetof(MatroskaTrackVideo,pixel_width) },
     { MATROSKA_ID_VIDEOPIXELHEIGHT,   EBML_UINT, 0, offsetof(MatroskaTrackVideo,pixel_height) },
-    { MATROSKA_ID_VIDEOCOLORSPACE,    EBML_UINT, 0, offsetof(MatroskaTrackVideo,fourcc) },
+    { MATROSKA_ID_VIDEOCOLORSPACE,    EBML_BIN,  0, offsetof(MatroskaTrackVideo,color_space) },
+    { MATROSKA_ID_VIDEOSTEREOMODE,    EBML_UINT, 0, offsetof(MatroskaTrackVideo,stereo_mode) },
     { MATROSKA_ID_VIDEOPIXELCROPB,    EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPT,    EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPL,    EBML_NONE },
     { MATROSKA_ID_VIDEOPIXELCROPR,    EBML_NONE },
     { MATROSKA_ID_VIDEODISPLAYUNIT,   EBML_NONE },
     { MATROSKA_ID_VIDEOFLAGINTERLACED,EBML_NONE },
-    { MATROSKA_ID_VIDEOSTEREOMODE,    EBML_NONE },
     { MATROSKA_ID_VIDEOASPECTRATIO,   EBML_NONE },
     { 0 }
 };
@@ -329,6 +341,22 @@ static EbmlSyntax matroska_track_encodings[] = {
     { 0 }
 };
 
+static EbmlSyntax matroska_track_plane[] = {
+    { MATROSKA_ID_TRACKPLANEUID,  EBML_UINT, 0, offsetof(MatroskaTrackPlane,uid) },
+    { MATROSKA_ID_TRACKPLANETYPE, EBML_UINT, 0, offsetof(MatroskaTrackPlane,type) },
+    { 0 }
+};
+
+static EbmlSyntax matroska_track_combine_planes[] = {
+    { MATROSKA_ID_TRACKPLANE, EBML_NEST, sizeof(MatroskaTrackPlane), offsetof(MatroskaTrackOperation,combine_planes), {.n=matroska_track_plane} },
+    { 0 }
+};
+
+static EbmlSyntax matroska_track_operation[] = {
+    { MATROSKA_ID_TRACKCOMBINEPLANES, EBML_NEST, 0, 0, {.n=matroska_track_combine_planes} },
+    { 0 }
+};
+
 static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKNUMBER,          EBML_UINT, 0, offsetof(MatroskaTrack,num) },
     { MATROSKA_ID_TRACKNAME,            EBML_UTF8, 0, offsetof(MatroskaTrack,name) },
@@ -343,6 +371,7 @@ static EbmlSyntax matroska_track[] = {
     { MATROSKA_ID_TRACKFLAGFORCED,      EBML_UINT, 0, offsetof(MatroskaTrack,flag_forced), {.u=0} },
     { MATROSKA_ID_TRACKVIDEO,           EBML_NEST, 0, offsetof(MatroskaTrack,video), {.n=matroska_track_video} },
     { MATROSKA_ID_TRACKAUDIO,           EBML_NEST, 0, offsetof(MatroskaTrack,audio), {.n=matroska_track_audio} },
+    { MATROSKA_ID_TRACKOPERATION,       EBML_NEST, 0, offsetof(MatroskaTrack,operation), {.n=matroska_track_operation} },
     { MATROSKA_ID_TRACKCONTENTENCODINGS,EBML_NEST, 0, 0, {.n=matroska_track_encodings} },
     { MATROSKA_ID_TRACKFLAGENABLED,     EBML_NONE },
     { MATROSKA_ID_TRACKFLAGLACING,      EBML_NONE },
@@ -1009,7 +1038,8 @@ static void matroska_fix_ass_packet(MatroskaDemuxContext *matroska,
     char *line, *layer, *ptr = pkt->data, *end = ptr+pkt->size;
     for (; *ptr!=',' && ptr<end-1; ptr++);
     if (*ptr == ',')
-        layer = ++ptr;
+        ptr++;
+    layer = ptr;
     for (; *ptr!=',' && ptr<end-1; ptr++);
     if (*ptr == ',') {
         int64_t end_pts = pkt->pts + display_duration;
@@ -1044,7 +1074,7 @@ static void matroska_merge_packets(AVPacket *out, AVPacket *in)
 }
 
 static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
-                                 AVMetadata **metadata, char *prefix)
+                                 AVDictionary **metadata, char *prefix)
 {
     MatroskaTag *tags = list->elem;
     char key[1024];
@@ -1060,14 +1090,14 @@ static void matroska_convert_tag(AVFormatContext *s, EbmlList *list,
         if (prefix)  snprintf(key, sizeof(key), "%s/%s", prefix, tags[i].name);
         else         av_strlcpy(key, tags[i].name, sizeof(key));
         if (tags[i].def || !lang) {
-        av_metadata_set2(metadata, key, tags[i].string, 0);
+        av_dict_set(metadata, key, tags[i].string, 0);
         if (tags[i].sub.nb_elem)
             matroska_convert_tag(s, &tags[i].sub, metadata, key);
         }
         if (lang) {
             av_strlcat(key, "-", sizeof(key));
             av_strlcat(key, lang, sizeof(key));
-            av_metadata_set2(metadata, key, tags[i].string, 0);
+            av_dict_set(metadata, key, tags[i].string, 0);
             if (tags[i].sub.nb_elem)
                 matroska_convert_tag(s, &tags[i].sub, metadata, key);
         }
@@ -1202,20 +1232,25 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     uint64_t max_start = 0;
     Ebml ebml = { 0 };
     AVStream *st;
-    int i, j, res;
+    int i, j, k, res;
 
     matroska->ctx = s;
 
     /* First read the EBML header. */
     if (ebml_parse(matroska, ebml_syntax, &ebml)
         || ebml.version > EBML_VERSION       || ebml.max_size > sizeof(uint64_t)
-        || ebml.id_length > sizeof(uint32_t) || ebml.doctype_version > 2) {
+        || ebml.id_length > sizeof(uint32_t) || ebml.doctype_version > 3) {
         av_log(matroska->ctx, AV_LOG_ERROR,
                "EBML header using unsupported features\n"
                "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
                ebml.version, ebml.doctype, ebml.doctype_version);
         ebml_free(ebml_syntax, &ebml);
         return AVERROR_PATCHWELCOME;
+    } else if (ebml.doctype_version == 3) {
+        av_log(matroska->ctx, AV_LOG_WARNING,
+               "EBML header using unsupported features\n"
+               "(EBML version %"PRIu64", doctype %s, doc version %"PRIu64")\n",
+               ebml.version, ebml.doctype, ebml.doctype_version);
     }
     for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++)
         if (!strcmp(ebml.doctype, matroska_doctypes[i]))
@@ -1235,7 +1270,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (matroska->duration)
         matroska->ctx->duration = matroska->duration * matroska->time_scale
                                   * 1000 / AV_TIME_BASE;
-    av_metadata_set2(&s->metadata, "title", matroska->title, 0);
+    av_dict_set(&s->metadata, "title", matroska->title, 0);
 
     tracks = matroska->tracks.elem;
     for (i=0; i < matroska->tracks.nb_elem; i++) {
@@ -1246,6 +1281,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         uint8_t *extradata = NULL;
         int extradata_size = 0;
         int extradata_offset = 0;
+        uint32_t fourcc = 0;
         AVIOContext b;
 
         /* Apply some sanity checks. */
@@ -1267,6 +1303,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 track->video.display_width = track->video.pixel_width;
             if (!track->video.display_height)
                 track->video.display_height = track->video.pixel_height;
+            if (track->video.color_space.size == 4)
+                fourcc = AV_RL32(track->video.color_space.data);
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             if (!track->audio.out_samplerate)
                 track->audio.out_samplerate = track->audio.samplerate;
@@ -1326,8 +1364,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             && track->codec_priv.size >= 40
             && track->codec_priv.data != NULL) {
             track->ms_compat = 1;
-            track->video.fourcc = AV_RL32(track->codec_priv.data + 16);
-            codec_id = ff_codec_get_id(ff_codec_bmp_tags, track->video.fourcc);
+            fourcc = AV_RL32(track->codec_priv.data + 16);
+            codec_id = ff_codec_get_id(ff_codec_bmp_tags, fourcc);
             extradata_offset = 40;
         } else if (!strcmp(track->codec_id, "A_MS/ACM")
                    && track->codec_priv.size >= 14
@@ -1343,8 +1381,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else if (!strcmp(track->codec_id, "V_QUICKTIME")
                    && (track->codec_priv.size >= 86)
                    && (track->codec_priv.data != NULL)) {
-            track->video.fourcc = AV_RL32(track->codec_priv.data);
-            codec_id=ff_codec_get_id(codec_movvideo_tags, track->video.fourcc);
+            fourcc = AV_RL32(track->codec_priv.data);
+            codec_id = ff_codec_get_id(codec_movvideo_tags, fourcc);
         } else if (codec_id == CODEC_ID_PCM_S16BE) {
             switch (track->audio.bitdepth) {
             case  8:  codec_id = CODEC_ID_PCM_U8;     break;
@@ -1433,8 +1471,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         st->codec->codec_id = codec_id;
         st->start_time = 0;
         if (strcmp(track->language, "und"))
-            av_metadata_set2(&st->metadata, "language", track->language, 0);
-        av_metadata_set2(&st->metadata, "title", track->name, 0);
+            av_dict_set(&st->metadata, "language", track->language, 0);
+        av_dict_set(&st->metadata, "title", track->name, 0);
 
         if (track->flag_default)
             st->disposition |= AV_DISPOSITION_DEFAULT;
@@ -1462,8 +1500,10 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
 
         if (track->type == MATROSKA_TRACK_TYPE_VIDEO) {
+            MatroskaTrackPlane *planes = track->operation.combine_planes.elem;
+
             st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
-            st->codec->codec_tag  = track->video.fourcc;
+            st->codec->codec_tag  = fourcc;
             st->codec->width  = track->video.pixel_width;
             st->codec->height = track->video.pixel_height;
             av_reduce(&st->sample_aspect_ratio.num,
@@ -1475,6 +1515,25 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
             if (track->default_duration)
                 st->avg_frame_rate = av_d2q(1000000000.0/track->default_duration, INT_MAX);
+
+            /* export stereo mode flag as metadata tag */
+            if (track->video.stereo_mode && track->video.stereo_mode < MATROSKA_VIDEO_STEREO_MODE_COUNT)
+                av_dict_set(&st->metadata, "stereo_mode", matroska_video_stereo_mode[track->video.stereo_mode], 0);
+
+            /* if we have virtual track, mark the real tracks */
+            for (j=0; j < track->operation.combine_planes.nb_elem; j++) {
+                char buf[32];
+                if (planes[j].type >= MATROSKA_VIDEO_STEREO_PLANE_COUNT)
+                    continue;
+                snprintf(buf, sizeof(buf), "%s_%d",
+                         matroska_video_stereo_plane[planes[j].type], i);
+                for (k=0; k < matroska->tracks.nb_elem; k++)
+                    if (planes[j].uid == tracks[k].uid) {
+                        av_dict_set(&s->streams[k]->metadata,
+                                    "stereo_mode", buf, 0);
+                        break;
+                    }
+            }
         } else if (track->type == MATROSKA_TRACK_TYPE_AUDIO) {
             st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             st->codec->sample_rate = track->audio.out_samplerate;
@@ -1495,7 +1554,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             AVStream *st = av_new_stream(s, 0);
             if (st == NULL)
                 break;
-            av_metadata_set2(&st->metadata, "filename",attachements[j].filename, 0);
+            av_dict_set(&st->metadata, "filename",attachements[j].filename, 0);
             st->codec->codec_id = CODEC_ID_NONE;
             st->codec->codec_type = AVMEDIA_TYPE_ATTACHMENT;
             st->codec->extradata  = av_malloc(attachements[j].bin.size);
@@ -1523,7 +1582,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
             ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
                            chapters[i].start, chapters[i].end,
                            chapters[i].title);
-            av_metadata_set2(&chapters[i].chapter->metadata,
+            av_dict_set(&chapters[i].chapter->metadata,
                              "title", chapters[i].title, 0);
             max_start = chapters[i].start;
         }

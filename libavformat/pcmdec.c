@@ -50,7 +50,7 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
 AVInputFormat ff_pcm_ ## name ## _demuxer = {\
     #name,\
     NULL_IF_CONFIG_SMALL(long_name),\
-    0,\
+    sizeof(RawAudioDemuxerContext),\
     NULL,\
     ff_raw_read_header,\
     raw_read_packet,\
@@ -59,6 +59,7 @@ AVInputFormat ff_pcm_ ## name ## _demuxer = {\
     .flags= AVFMT_GENERIC_INDEX,\
     .extensions = ext,\
     .value = codec,\
+    .priv_class = &ff_rawaudio_demuxer_class,\
 };
 
 PCMDEF(f64be, "PCM 64 bit floating-point big-endian format",

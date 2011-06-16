@@ -231,10 +231,11 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
         else if (rlecode > 0) {
             /* bulk copy */
             if (s->avctx->pix_fmt == PIX_FMT_GRAY8) {
+                int j;
                 // QT grayscale colorspace has 0=white and 255=black, we will
                 // ignore the palette that is included in the AVFrame because
                 // PIX_FMT_GRAY8 has defined color mapping
-                for (int j = 0; j < rlecode*s->pixel_size; ++j)
+                for (j = 0; j < rlecode*s->pixel_size; ++j)
                     bytestream_put_byte(buf, *(this_line + i*s->pixel_size + j) ^ 0xff);
             } else {
                 bytestream_put_buffer(buf, this_line + i*s->pixel_size, rlecode*s->pixel_size);
@@ -244,8 +245,9 @@ static void qtrle_encode_line(QtrleEncContext *s, AVFrame *p, int line, uint8_t 
         else {
             /* repeat the bits */
             if (s->avctx->pix_fmt == PIX_FMT_GRAY8) {
+                int j;
                 // QT grayscale colorspace has 0=white and 255=black, ...
-                for (int j = 0; j < s->pixel_size; ++j)
+                for (j = 0; j < s->pixel_size; ++j)
                     bytestream_put_byte(buf, *(this_line + i*s->pixel_size + j) ^ 0xff);
             } else {
                 bytestream_put_buffer(buf, this_line + i*s->pixel_size, s->pixel_size);

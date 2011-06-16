@@ -21,6 +21,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "id3v2.h"
 #include "id3v1.h"
@@ -149,7 +150,7 @@ static int mp3_read_header(AVFormatContext *s,
 
     off = avio_tell(s->pb);
 
-    if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+    if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
         ff_id3v1_read(s);
 
     if (mp3_parse_vbr_tags(s, st, off) < 0)

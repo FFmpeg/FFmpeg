@@ -29,23 +29,34 @@
 #include "raw.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 
 typedef struct RawVideoContext {
+    AVClass *av_class;
     uint32_t palette[AVPALETTE_COUNT];
     unsigned char * buffer;  /* block of memory for holding one frame */
     int             length;  /* number of bytes in buffer */
     int flip;
     AVFrame pic;             ///< AVCodecContext.coded_frame
+    int tff;
 } RawVideoContext;
 
+static const AVOption options[]={
+{"top", "top field first", offsetof(RawVideoContext, tff), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 1, AV_OPT_FLAG_DECODING_PARAM|AV_OPT_FLAG_VIDEO_PARAM},
+{NULL}
+};
+static const AVClass class = { "rawdec", NULL, options, LIBAVUTIL_VERSION_INT };
+
 static const PixelFormatTag pix_fmt_bps_avi[] = {
+    { PIX_FMT_MONOWHITE, 1 },
+    { PIX_FMT_PAL8,    2 },
     { PIX_FMT_PAL8,    4 },
     { PIX_FMT_PAL8,    8 },
     { PIX_FMT_RGB444, 12 },
     { PIX_FMT_RGB555, 15 },
     { PIX_FMT_RGB555, 16 },
     { PIX_FMT_BGR24,  24 },
-    { PIX_FMT_RGB32,  32 },
+    { PIX_FMT_BGRA,   32 },
     { PIX_FMT_NONE, 0 },
 };
 
@@ -79,10 +90,17 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
 
     if (avctx->codec_tag == MKTAG('r','a','w',' '))
         avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_mov, avctx->bits_per_coded_sample);
+    else if (avctx->codec_tag == MKTAG('W','R','A','W'))
+        avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
     else if (avctx->codec_tag)
         avctx->pix_fmt = ff_find_pix_fmt(ff_raw_pix_fmt_tags, avctx->codec_tag);
     else if (avctx->pix_fmt == PIX_FMT_NONE && avctx->bits_per_coded_sample)
         avctx->pix_fmt = ff_find_pix_fmt(pix_fmt_bps_avi, avctx->bits_per_coded_sample);
+
+    if (avctx->pix_fmt == PIX_FMT_NONE) {
+        av_log(avctx, AV_LOG_ERROR, "Pixel format was not specified and cannot be detected\n");
+        return AVERROR(EINVAL);
+    }
 
     ff_set_systematic_pal2(context->palette, avctx->pix_fmt);
     context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
@@ -99,7 +117,7 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     avctx->coded_frame= &context->pic;
 
     if((avctx->extradata_size >= 9 && !memcmp(avctx->extradata + avctx->extradata_size - 9, "BottomUp", 9)) ||
-       avctx->codec_tag == MKTAG( 3 ,  0 ,  0 ,  0 ))
+        avctx->codec_tag == MKTAG(3, 0, 0, 0) || avctx->codec_tag == MKTAG('W','R','A','W'))
         context->flip=1;
 
     return 0;
@@ -121,11 +139,17 @@ static int raw_decode(AVCodecContext *avctx,
     AVFrame * frame = (AVFrame *) data;
     AVPicture * picture = (AVPicture *) data;
 
+    frame->pict_type        = avctx->coded_frame->pict_type;
     frame->interlaced_frame = avctx->coded_frame->interlaced_frame;
     frame->top_field_first = avctx->coded_frame->top_field_first;
     frame->reordered_opaque = avctx->reordered_opaque;
     frame->pkt_pts          = avctx->pkt->pts;
     frame->pkt_pos          = avctx->pkt->pos;
+
+    if(context->tff>=0){
+        frame->interlaced_frame = 1;
+        frame->top_field_first  = context->tff;
+    }
 
     //2bpp and 4bpp raw in avi and mov (yes this is ugly ...)
     if (context->buffer) {
@@ -207,4 +231,5 @@ AVCodec ff_rawvideo_decoder = {
     raw_close_decoder,
     raw_decode,
     .long_name = NULL_IF_CONFIG_SMALL("raw video"),
+    .priv_class= &class,
 };

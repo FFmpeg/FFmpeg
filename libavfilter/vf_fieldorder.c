@@ -153,7 +153,7 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterBufferRef *inpicref   = inlink->cur_buf;
     AVFilterBufferRef *outpicref  = outlink->out_buf;
 
-    int               h, w, plane, line_step, line_size, line;
+    int               h, plane, line_step, line_size, line;
     uint8_t           *cpy_src, *cpy_dst;
 
     if (    inpicref->video->interlaced
@@ -162,7 +162,6 @@ static void end_frame(AVFilterLink *inlink)
                 "picture will move %s one line\n",
                 fieldorder->dst_tff ? "up" : "down");
         h = inpicref->video->h;
-        w = inpicref->video->w;
         for (plane = 0; plane < 4 && inpicref->data[plane]; plane++) {
             line_step = inpicref->linesize[plane];
             line_size = fieldorder->line_size[plane];

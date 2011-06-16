@@ -340,6 +340,7 @@ static int read_major_sync(MLPDecodeContext *m, GetBitContext *gb)
             m->avctx->channel_layout = ff_truehd_layout(mh.channels_thd_stream1);
         }
         if (m->avctx->channels &&
+            !m->avctx->request_channels && !m->avctx->request_channel_layout &&
             av_get_channel_layout_nb_channels(m->avctx->channel_layout) != m->avctx->channels) {
             m->avctx->channel_layout = 0;
             av_log_ask_for_sample(m->avctx, "Unknown channel layout.");

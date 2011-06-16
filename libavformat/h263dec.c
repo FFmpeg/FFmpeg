@@ -64,14 +64,4 @@ static int h263_probe(AVProbeData *p)
     return 0;
 }
 
-AVInputFormat ff_h263_demuxer = {
-    "h263",
-    NULL_IF_CONFIG_SMALL("raw H.263"),
-    0,
-    h263_probe,
-    ff_raw_video_read_header,
-    ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-//    .extensions = "h263", //FIXME remove after writing mpeg4_probe
-    .value = CODEC_ID_H263,
-};
+FF_DEF_RAWVIDEO_DEMUXER(h263, "raw H.263", h263_probe, NULL, CODEC_ID_H263)

@@ -392,6 +392,8 @@ send a reminder by email. Your patch should eventually be dealt with.
     improves readability.
 @item
     Consider to add a regression test for your code.
+@item
+    If you added YASM code please check that things still work with --disable-yasm
 @end enumerate
 
 @section Patch review process

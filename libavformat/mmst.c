@@ -152,7 +152,7 @@ static int send_command_packet(MMSTContext *mmst)
     return 0;
 }
 
-static void mms_put_utf16(MMSContext *mms, uint8_t *src)
+static void mms_put_utf16(MMSContext *mms, const uint8_t *src)
 {
     AVIOContext bic;
     int size = mms->write_out_ptr - mms->out_buffer;

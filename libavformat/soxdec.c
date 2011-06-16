@@ -30,6 +30,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "pcm.h"
 #include "sox.h"
@@ -101,8 +102,8 @@ static int sox_read_header(AVFormatContext *s,
         }
         comment[comment_size] = 0;
 
-        av_metadata_set2(&s->metadata, "comment", comment,
-                               AV_METADATA_DONT_STRDUP_VAL);
+        av_dict_set(&s->metadata, "comment", comment,
+                               AV_DICT_DONT_STRDUP_VAL);
     }
 
     avio_skip(pb, header_size - SOX_FIXED_HDR - comment_size);

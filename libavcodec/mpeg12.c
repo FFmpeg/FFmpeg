@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
+#include "libavutil/avassert.h"
 
 #include "mpeg12.h"
 #include "mpeg12data.h"
@@ -1331,19 +1332,17 @@ static int mpeg_decode_postinit(AVCodecContext *avctx){
             avctx->ticks_per_frame=2;
         //MPEG-2 aspect
             if(s->aspect_ratio_info > 1){
-                AVRational dar=
+                AVRational dar =
                     av_mul_q(
-                        av_div_q(
-                            ff_mpeg2_aspect[s->aspect_ratio_info],
-                            (AVRational){s1->pan_scan.width, s1->pan_scan.height}
-                        ),
+                        av_div_q(ff_mpeg2_aspect[s->aspect_ratio_info],
+                                 (AVRational){s1->pan_scan.width, s1->pan_scan.height}),
                         (AVRational){s->width, s->height});
 
-                //we ignore the spec here and guess a bit as reality does not match the spec, see for example
+                // we ignore the spec here and guess a bit as reality does not match the spec, see for example
                 // res_change_ffmpeg_aspect.ts and sequence-display-aspect.mpg
-                //issue1613, 621, 562
-                if( (s1->pan_scan.width == 0 )||(s1->pan_scan.height == 0)
-                   || (av_cmp_q(dar,(AVRational){4,3})&&av_cmp_q(dar,(AVRational){16,9}))){
+                // issue1613, 621, 562
+                if((s1->pan_scan.width == 0 ) || (s1->pan_scan.height == 0) ||
+                   (av_cmp_q(dar,(AVRational){4,3}) && av_cmp_q(dar,(AVRational){16,9}))) {
                     s->avctx->sample_aspect_ratio=
                         av_div_q(
                          ff_mpeg2_aspect[s->aspect_ratio_info],
@@ -1670,7 +1669,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         *s->current_picture_ptr->pan_scan= s1->pan_scan;
 
-        if (HAVE_PTHREADS && avctx->active_thread_type&FF_THREAD_FRAME)
+        if (HAVE_PTHREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     }else{ //second field
             int i;
@@ -2004,7 +2003,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
             *pict= *(AVFrame*)s->current_picture_ptr;
             ff_print_debug_info(s, pict);
         } else {
-            if (avctx->active_thread_type&FF_THREAD_FRAME)
+            if (avctx->active_thread_type & FF_THREAD_FRAME)
                 s->picture_number++;
             /* latency of 1 frame for I- and P-frames */
             /* XXX: use another variable than picture_number */
@@ -2179,14 +2178,13 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     Mpeg1Context *s1 = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
-    int drop_frame_flag;
     int time_code_hours, time_code_minutes;
     int time_code_seconds, time_code_pictures;
     int broken_link;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    drop_frame_flag = get_bits1(&s->gb);
+    skip_bits1(&s->gb); /* drop_frame_flag */
 
     time_code_hours=get_bits(&s->gb,5);
     time_code_minutes = get_bits(&s->gb,6);
@@ -2340,8 +2338,9 @@ static int decode_chunks(AVCodecContext *avctx,
         buf_ptr = ff_find_start_code(buf_ptr,buf_end, &start_code);
         if (start_code > 0x1ff){
             if(s2->pict_type != AV_PICTURE_TYPE_B || avctx->skip_frame <= AVDISCARD_DEFAULT){
-                if(HAVE_THREADS && avctx->active_thread_type&FF_THREAD_SLICE){
+                if(HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)){
                     int i;
+                    av_assert0(avctx->thread_count > 1);
 
                     avctx->execute(avctx, slice_decode_thread,  &s2->thread_context[0], NULL, s->slice_count, sizeof(void*));
                     for(i=0; i<s->slice_count; i++)
@@ -2516,8 +2515,9 @@ static int decode_chunks(AVCodecContext *avctx,
                     break;
                 }
 
-                if(HAVE_THREADS && avctx->active_thread_type&FF_THREAD_SLICE){
+                if(HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)){
                     int threshold= (s2->mb_height*s->slice_count + avctx->thread_count/2) / avctx->thread_count;
+                    av_assert0(avctx->thread_count > 1);
                     if(threshold <= mb_y){
                         MpegEncContext *thread_context= s2->thread_context[s->slice_count];
 

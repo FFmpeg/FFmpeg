@@ -55,22 +55,21 @@ static av_always_inline void AV_WN32(void *p, uint32_t v)
 #define AV_RN64 AV_RN64
 static av_always_inline uint64_t AV_RN64(const void *p)
 {
-    union { uint64_t v; uint32_t hl[2]; } v;
-    __asm__ ("ldr   %0, %2  \n\t"
-             "ldr   %1, %3  \n\t"
-             : "=&r"(v.hl[0]), "=r"(v.hl[1])
+    uint64_t v;
+    __asm__ ("ldr   %Q0, %1  \n\t"
+             "ldr   %R0, %2  \n\t"
+             : "=&r"(v)
              : "m"(*(const uint32_t*)p), "m"(*((const uint32_t*)p+1)));
-    return v.v;
+    return v;
 }
 
 #define AV_WN64 AV_WN64
 static av_always_inline void AV_WN64(void *p, uint64_t v)
 {
-    union { uint64_t v; uint32_t hl[2]; } vv = { v };
-    __asm__ ("str  %2, %0  \n\t"
-             "str  %3, %1  \n\t"
+    __asm__ ("str  %Q2, %0  \n\t"
+             "str  %R2, %1  \n\t"
              : "=m"(*(uint32_t*)p), "=m"(*((uint32_t*)p+1))
-             : "r"(vv.hl[0]), "r"(vv.hl[1]));
+             : "r"(v));
 }
 
 #endif /* HAVE_INLINE_ASM */

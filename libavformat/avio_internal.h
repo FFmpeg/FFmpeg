@@ -98,4 +98,4 @@ int ffio_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
  */
 int ffio_fdopen(AVIOContext **s, URLContext *h);
 
-#endif // AVFORMAT_AVIO_INTERNAL_H
+#endif /* AVFORMAT_AVIO_INTERNAL_H */

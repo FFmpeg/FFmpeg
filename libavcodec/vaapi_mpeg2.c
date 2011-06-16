@@ -109,7 +109,7 @@ static int vaapi_mpeg2_decode_slice(AVCodecContext *avctx, const uint8_t *buffer
     MpegEncContext * const s = avctx->priv_data;
     VASliceParameterBufferMPEG2 *slice_param;
     GetBitContext gb;
-    uint32_t start_code, quantiser_scale_code, intra_slice_flag, macroblock_offset;
+    uint32_t start_code av_unused, quantiser_scale_code, intra_slice_flag, macroblock_offset;
 
     av_dlog(avctx, "vaapi_mpeg2_decode_slice(): buffer %p, size %d\n", buffer, size);
 

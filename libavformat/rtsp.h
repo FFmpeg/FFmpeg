@@ -28,6 +28,8 @@
 #include "network.h"
 #include "httpauth.h"
 
+#include "libavutil/log.h"
+
 /**
  * Network layer over which RTP/etc packet data will be transported.
  */
@@ -196,6 +198,7 @@ enum RTSPServerType {
  * @todo Use AVIOContext instead of URLContext
  */
 typedef struct RTSPState {
+    const AVClass *class;             /**< Class for private options. */
     URLContext *rtsp_hd; /* RTSP TCP connection handle */
 
     /** number of items in the 'rtsp_streams' variable */
@@ -336,6 +339,16 @@ typedef struct RTSPState {
      * Whether the server supports the GET_PARAMETER method.
      */
     int get_parameter_supported;
+
+    /**
+     * Do not begin to play the stream immediately.
+     */
+    int initial_pause;
+
+    /**
+     * Option flags for the chained RTP muxer.
+     */
+    int rtp_muxer_flags;
 } RTSPState;
 
 /**

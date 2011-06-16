@@ -108,6 +108,39 @@ static void mono_to_stereo(short *output, short *input, int n1)
     }
 }
 
+/*
+5.1 to stereo input: [fl, fr, c, lfe, rl, rr]
+- Left = front_left + rear_gain * rear_left + center_gain * center
+- Right = front_right + rear_gain * rear_right + center_gain * center
+Where rear_gain is usually around 0.5-1.0 and
+      center_gain is almost always 0.7 (-3 dB)
+*/
+static void surround_to_stereo(short **output, short *input, int channels, int samples)
+{
+    int i;
+    short l, r;
+
+    for (i = 0; i < samples; i++) {
+        int fl,fr,c,rl,rr,lfe;
+        fl = input[0];
+        fr = input[1];
+        c = input[2];
+        lfe = input[3];
+        rl = input[4];
+        rr = input[5];
+
+        l = av_clip_int16(fl + (0.5 * rl) + (0.7 * c));
+        r = av_clip_int16(fr + (0.5 * rr) + (0.7 * c));
+
+        /* output l & r. */
+        *output[0]++ = l;
+        *output[1]++ = r;
+
+        /* increment input. */
+        input += channels;
+    }
+}
+
 static void deinterleave(short **output, short *input, int channels, int samples)
 {
     int i, j;
@@ -147,6 +180,21 @@ static void ac3_5p1_mux(short *output, short *input1, short *input2, int n)
     }
 }
 
+#define SUPPORT_RESAMPLE(ch1, ch2, ch3, ch4, ch5, ch6, ch7, ch8) \
+    ch8<<7 | ch7<<6 | ch6<<5 | ch5<<4 | ch4<<3 | ch3<<2 | ch2<<1 | ch1<<0
+
+static const uint8_t supported_resampling[MAX_CHANNELS] = {
+    //ouput channels:1  2  3  4  5  6  7  8
+    SUPPORT_RESAMPLE(1, 1, 0, 0, 0, 0, 0, 0), // 1 input channel
+    SUPPORT_RESAMPLE(1, 1, 0, 0, 0, 1, 0, 0), // 2 input channels
+    SUPPORT_RESAMPLE(0, 0, 1, 0, 0, 0, 0, 0), // 3 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 1, 0, 0, 0, 0), // 4 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 0, 1, 0, 0, 0), // 5 input channels
+    SUPPORT_RESAMPLE(0, 1, 0, 0, 0, 1, 0, 0), // 6 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 0, 0, 0, 1, 0), // 7 input channels
+    SUPPORT_RESAMPLE(0, 0, 0, 0, 0, 0, 0, 1), // 8 input channels
+};
+
 ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                                         int output_rate, int input_rate,
                                         enum AVSampleFormat sample_fmt_out,
@@ -162,11 +210,15 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
                MAX_CHANNELS);
         return NULL;
     }
-    if (output_channels > 2 &&
-        !(output_channels == 6 && input_channels == 2) &&
-        output_channels != input_channels) {
-        av_log(NULL, AV_LOG_ERROR,
-               "Resampling output channel count must be 1 or 2 for mono input; 1, 2 or 6 for stereo input; or N for N channel input.\n");
+    if (!(supported_resampling[input_channels-1] & (1<<(output_channels-1)))) {
+        int i;
+        av_log(NULL, AV_LOG_ERROR, "Unsupported audio resampling. Allowed "
+               "output channels for %d input channel%s", input_channels,
+               input_channels > 1 ? "s:" : ":");
+        for (i = 0; i < MAX_CHANNELS; i++)
+            if (supported_resampling[input_channels-1] & (1<<i))
+                av_log(NULL, AV_LOG_ERROR, " %d", i + 1);
+        av_log(NULL, AV_LOG_ERROR, "\n");
         return NULL;
     }
 
@@ -312,6 +364,10 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
     } else if (s->output_channels >= 2 && s->input_channels == 1) {
         buftmp3[0] = bufout[0];
         memcpy(buftmp2[0], input, nb_samples * sizeof(short));
+    } else if (s->input_channels == 6 && s->output_channels ==2) {
+        buftmp3[0] = bufout[0];
+        buftmp3[1] = bufout[1];
+        surround_to_stereo(buftmp2, input, s->input_channels, nb_samples);
     } else if (s->output_channels >= s->input_channels && s->input_channels >= 2) {
         for (i = 0; i < s->input_channels; i++) {
             buftmp3[i] = bufout[i];
@@ -341,7 +397,8 @@ int audio_resample(ReSampleContext *s, short *output, short *input, int nb_sampl
         mono_to_stereo(output, buftmp3[0], nb_samples1);
     } else if (s->output_channels == 6 && s->input_channels == 2) {
         ac3_5p1_mux(output, buftmp3[0], buftmp3[1], nb_samples1);
-    } else if (s->output_channels == s->input_channels && s->input_channels >= 2) {
+    } else if ((s->output_channels == s->input_channels && s->input_channels >= 2) ||
+               (s->output_channels == 2 && s->input_channels == 6)) {
         interleave(output, buftmp3, s->output_channels, nb_samples1);
     }
 

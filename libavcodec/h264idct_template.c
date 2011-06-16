@@ -30,15 +30,19 @@
 #ifndef AVCODEC_H264IDCT_INTERNAL_H
 #define AVCODEC_H264IDCT_INTERNAL_H
 //FIXME this table is a duplicate from h264data.h, and will be removed once the tables from, h264 have been split
-static const uint8_t scan8[16 + 2*4]={
- 4+1*8, 5+1*8, 4+2*8, 5+2*8,
- 6+1*8, 7+1*8, 6+2*8, 7+2*8,
- 4+3*8, 5+3*8, 4+4*8, 5+4*8,
- 6+3*8, 7+3*8, 6+4*8, 7+4*8,
- 1+1*8, 2+1*8,
- 1+2*8, 2+2*8,
- 1+4*8, 2+4*8,
- 1+5*8, 2+5*8,
+static const uint8_t scan8[16*3]={
+ 4+ 1*8, 5+ 1*8, 4+ 2*8, 5+ 2*8,
+ 6+ 1*8, 7+ 1*8, 6+ 2*8, 7+ 2*8,
+ 4+ 3*8, 5+ 3*8, 4+ 4*8, 5+ 4*8,
+ 6+ 3*8, 7+ 3*8, 6+ 4*8, 7+ 4*8,
+ 4+ 6*8, 5+ 6*8, 4+ 7*8, 5+ 7*8,
+ 6+ 6*8, 7+ 6*8, 6+ 7*8, 7+ 7*8,
+ 4+ 8*8, 5+ 8*8, 4+ 9*8, 5+ 9*8,
+ 6+ 8*8, 7+ 8*8, 6+ 9*8, 7+ 9*8,
+ 4+11*8, 5+11*8, 4+12*8, 5+12*8,
+ 6+11*8, 7+11*8, 6+12*8, 7+12*8,
+ 4+13*8, 5+13*8, 4+14*8, 5+14*8,
+ 6+13*8, 7+13*8, 6+14*8, 7+14*8
 };
 #endif
 
@@ -190,7 +194,7 @@ void FUNCC(ff_h264_idct8_dc_add)(uint8_t *p_dst, DCTELEM *block, int stride){
     }
 }
 
-void FUNCC(ff_h264_idct_add16)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+void FUNCC(ff_h264_idct_add16)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i++){
         int nnz = nnzc[ scan8[i] ];
@@ -201,7 +205,7 @@ void FUNCC(ff_h264_idct_add16)(uint8_t *dst, const int *block_offset, DCTELEM *b
     }
 }
 
-void FUNCC(ff_h264_idct_add16intra)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+void FUNCC(ff_h264_idct_add16intra)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i++){
         if(nnzc[ scan8[i] ])             FUNCC(idct_internal      )(dst + block_offset[i], block + i*16*sizeof(pixel), stride, 4, 6, 1);
@@ -209,7 +213,7 @@ void FUNCC(ff_h264_idct_add16intra)(uint8_t *dst, const int *block_offset, DCTEL
     }
 }
 
-void FUNCC(ff_h264_idct8_add4)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
+void FUNCC(ff_h264_idct8_add4)(uint8_t *dst, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
     int i;
     for(i=0; i<16; i+=4){
         int nnz = nnzc[ scan8[i] ];
@@ -220,13 +224,15 @@ void FUNCC(ff_h264_idct8_add4)(uint8_t *dst, const int *block_offset, DCTELEM *b
     }
 }
 
-void FUNCC(ff_h264_idct_add8)(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]){
-    int i;
-    for(i=16; i<16+8; i++){
-        if(nnzc[ scan8[i] ])
-            FUNCC(ff_h264_idct_add   )(dest[(i&4)>>2] + block_offset[i], block + i*16*sizeof(pixel), stride);
-        else if(((dctcoef*)block)[i*16])
-            FUNCC(ff_h264_idct_dc_add)(dest[(i&4)>>2] + block_offset[i], block + i*16*sizeof(pixel), stride);
+void FUNCC(ff_h264_idct_add8)(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+    int i, j;
+    for(j=1; j<3; j++){
+        for(i=j*16; i<j*16+4; i++){
+            if(nnzc[ scan8[i] ])
+                FUNCC(ff_h264_idct_add   )(dest[j-1] + block_offset[i], block + i*16*sizeof(pixel), stride);
+            else if(((dctcoef*)block)[i*16])
+                FUNCC(ff_h264_idct_dc_add)(dest[j-1] + block_offset[i], block + i*16*sizeof(pixel), stride);
+        }
     }
 }
 /**

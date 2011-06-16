@@ -34,6 +34,7 @@
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
 #include "libavutil/x86_cpu.h"
+#include "libavutil/cpu.h"
 
 #define DITHER1XBPP // only for MMX
 
@@ -46,57 +47,60 @@ DECLARE_ASM_CONST(8, uint64_t, pb_03) = 0x0303030303030303ULL;
 DECLARE_ASM_CONST(8, uint64_t, pb_07) = 0x0707070707070707ULL;
 
 //MMX versions
+#if HAVE_MMX
 #undef RENAME
-#undef HAVE_MMX2
-#undef HAVE_AMD3DNOW
-#define HAVE_MMX2 0
-#define HAVE_AMD3DNOW 0
+#undef COMPILE_TEMPLATE_MMX2
+#define COMPILE_TEMPLATE_MMX2 0
 #define RENAME(a) a ## _MMX
 #include "yuv2rgb_template.c"
+#endif /* HAVE_MMX */
 
 //MMX2 versions
+#if HAVE_MMX2
 #undef RENAME
-#undef HAVE_MMX2
-#define HAVE_MMX2 1
+#undef COMPILE_TEMPLATE_MMX2
+#define COMPILE_TEMPLATE_MMX2 1
 #define RENAME(a) a ## _MMX2
 #include "yuv2rgb_template.c"
+#endif /* HAVE_MMX2 */
 
 SwsFunc ff_yuv2rgb_init_mmx(SwsContext *c)
 {
-    if (c->flags & SWS_CPU_CAPS_MMX2) {
+    int cpu_flags = av_get_cpu_flags();
+
+    if (c->srcFormat != PIX_FMT_YUV420P &&
+        c->srcFormat != PIX_FMT_YUVA420P)
+        return NULL;
+
+#if HAVE_MMX2
+    if (cpu_flags & AV_CPU_FLAG_MMX2) {
         switch (c->dstFormat) {
-        case PIX_FMT_RGB32:
-            if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) {
-                if (HAVE_7REGS) return yuva420_rgb32_MMX2;
-                break;
-            } else return yuv420_rgb32_MMX2;
-        case PIX_FMT_BGR32:
-            if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) {
-                if (HAVE_7REGS) return yuva420_bgr32_MMX2;
-                break;
-            } else return yuv420_bgr32_MMX2;
         case PIX_FMT_RGB24:  return yuv420_rgb24_MMX2;
         case PIX_FMT_BGR24:  return yuv420_bgr24_MMX2;
-        case PIX_FMT_RGB565: return yuv420_rgb16_MMX2;
-        case PIX_FMT_RGB555: return yuv420_rgb15_MMX2;
         }
     }
-    if (c->flags & SWS_CPU_CAPS_MMX) {
+#endif
+
+    if (cpu_flags & AV_CPU_FLAG_MMX) {
         switch (c->dstFormat) {
-        case PIX_FMT_RGB32:
-            if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) {
-                if (HAVE_7REGS) return yuva420_rgb32_MMX;
-                break;
-            } else return yuv420_rgb32_MMX;
-        case PIX_FMT_BGR32:
-            if (CONFIG_SWSCALE_ALPHA && c->srcFormat == PIX_FMT_YUVA420P) {
-                if (HAVE_7REGS) return yuva420_bgr32_MMX;
-                break;
-            } else return yuv420_bgr32_MMX;
-        case PIX_FMT_RGB24:  return yuv420_rgb24_MMX;
-        case PIX_FMT_BGR24:  return yuv420_bgr24_MMX;
-        case PIX_FMT_RGB565: return yuv420_rgb16_MMX;
-        case PIX_FMT_RGB555: return yuv420_rgb15_MMX;
+            case PIX_FMT_RGB32:
+                if (c->srcFormat == PIX_FMT_YUVA420P) {
+#if HAVE_7REGS && CONFIG_SWSCALE_ALPHA
+                    return yuva420_rgb32_MMX;
+#endif
+                    break;
+                } else return yuv420_rgb32_MMX;
+            case PIX_FMT_BGR32:
+                if (c->srcFormat == PIX_FMT_YUVA420P) {
+#if HAVE_7REGS && CONFIG_SWSCALE_ALPHA
+                    return yuva420_bgr32_MMX;
+#endif
+                    break;
+                } else return yuv420_bgr32_MMX;
+            case PIX_FMT_RGB24:  return yuv420_rgb24_MMX;
+            case PIX_FMT_BGR24:  return yuv420_bgr24_MMX;
+            case PIX_FMT_RGB565: return yuv420_rgb16_MMX;
+            case PIX_FMT_RGB555: return yuv420_rgb15_MMX;
         }
     }
 

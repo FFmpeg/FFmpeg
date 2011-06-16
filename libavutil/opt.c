@@ -45,7 +45,7 @@ const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mas
 const AVOption *av_next_option(void *obj, const AVOption *last)
 {
     if (last && last[1].name) return ++last;
-    else if (last)            return NULL;
+    else if (last || !(*(AVClass**)obj)->option->name) return NULL;
     else                      return (*(AVClass**)obj)->option;
 }
 
@@ -261,7 +261,7 @@ static int av_get_number(void *obj, const char *name, const AVOption **o_out, do
 {
     const AVOption *o= av_find_opt(obj, name, NULL, 0, 0);
     void *dst;
-    if (!o || o->offset<=0)
+    if (!o || (o->offset<=0 && o->type != FF_OPT_TYPE_CONST))
         goto error;
 
     dst= ((uint8_t*)obj) + o->offset;
@@ -277,6 +277,7 @@ static int av_get_number(void *obj, const char *name, const AVOption **o_out, do
     case FF_OPT_TYPE_RATIONAL:  *intnum= ((AVRational*)dst)->num;
                                 *den   = ((AVRational*)dst)->den;
                                                         return 0;
+    case FF_OPT_TYPE_CONST:     *intnum= o->default_val.dbl;return 0;
     }
 error:
     *den=*intnum=0;
@@ -289,7 +290,8 @@ double av_get_double(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+        return NAN;
     return num*intnum/den;
 }
 
@@ -299,7 +301,8 @@ AVRational av_get_q(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+        return (AVRational){0, 0};
     if (num == 1.0 && (int)intnum == intnum)
         return (AVRational){intnum, den};
     else
@@ -312,8 +315,19 @@ int64_t av_get_int(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    av_get_number(obj, name, o_out, &num, &den, &intnum);
+    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+        return -1;
     return num*intnum/den;
+}
+
+int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
+{
+    const AVOption *field = av_find_opt(obj, field_name, NULL, 0, 0);
+    const AVOption *flag  = av_find_opt(obj, flag_name,  NULL, 0, 0);
+
+    if (!field || !flag || flag->type != FF_OPT_TYPE_CONST)
+        return 0;
+    return av_get_int(obj, field_name, NULL) & (int) flag->default_val.dbl;
 }
 
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
@@ -439,8 +453,10 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             }
             break;
             case FF_OPT_TYPE_STRING:
+                av_set_string3(s, opt->name, opt->default_val.str, 1, NULL);
+                break;
             case FF_OPT_TYPE_BINARY:
-                /* Cannot set default for string as default_val is of type * double */
+                /* Cannot set default for binary */
             break;
             default:
                 av_log(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt->type, opt->name);
@@ -512,6 +528,14 @@ int av_set_options_string(void *ctx, const char *opts,
     }
 
     return count;
+}
+
+void av_opt_free(void *obj)
+{
+    const AVOption *o = NULL;
+    while ((o = av_next_option(obj, o)))
+        if (o->type == FF_OPT_TYPE_STRING || o->type == FF_OPT_TYPE_BINARY)
+            av_freep((uint8_t *)obj + o->offset);
 }
 
 #ifdef TEST

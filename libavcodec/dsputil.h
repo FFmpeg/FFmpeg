@@ -513,7 +513,7 @@ typedef struct DSPContext {
 #define BASIS_SHIFT 16
 #define RECON_SHIFT 6
 
-    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w, int sides);
+    void (*draw_edges)(uint8_t *buf, int wrap, int width, int height, int w, int h, int sides);
 #define EDGE_WIDTH 16
 #define EDGE_TOP    1
 #define EDGE_BOTTOM 2
@@ -636,13 +636,6 @@ static inline int get_penalty_factor(int lambda, int lambda2, int type){
     }
 }
 
-/**
- * Empty mmx state.
- * this must be called between any dsp function and float/double code.
- * for example sin(); dsp->idct_put(); emms_c(); cos()
- */
-#define emms_c()
-
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_bfin(DSPContext* c, AVCodecContext *avctx);
@@ -660,22 +653,9 @@ void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);
 
-#if HAVE_MMX
 
-#undef emms_c
+#if ARCH_ARM
 
-static inline void emms(void)
-{
-    __asm__ volatile ("emms;":::"memory");
-}
-
-#define emms_c() \
-{\
-    if(av_get_cpu_flags() & AV_CPU_FLAG_MMX)\
-        emms();\
-}
-
-#elif ARCH_ARM
 
 #if HAVE_NEON
 #   define STRIDE_ALIGN 16
@@ -714,11 +694,6 @@ static inline void emms(void)
 #else
 #   define LOCAL_ALIGNED_16(t, v, ...) LOCAL_ALIGNED(16, t, v, __VA_ARGS__)
 #endif
-
-/* PSNR */
-void get_psnr(uint8_t *orig_image[3], uint8_t *coded_image[3],
-              int orig_linesize[3], int coded_linesize,
-              AVCodecContext *avctx);
 
 #define WRAPPER8_16(name8, name16)\
 static int name16(void /*MpegEncContext*/ *s, uint8_t *dst, uint8_t *src, int stride, int h){\

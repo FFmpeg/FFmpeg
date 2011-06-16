@@ -186,7 +186,7 @@ static av_cold int che_configure(AACContext *ac,
     if (che_pos[type][id]) {
         if (!ac->che[type][id] && !(ac->che[type][id] = av_mallocz(sizeof(ChannelElement))))
             return AVERROR(ENOMEM);
-        ff_aac_sbr_ctx_init(&ac->che[type][id]->sbr);
+        ff_aac_sbr_ctx_init(ac, &ac->che[type][id]->sbr);
         if (type != TYPE_CCE) {
             ac->output_data[(*channels)++] = ac->che[type][id]->ch[0].ret;
             if (type == TYPE_CPE ||
@@ -251,8 +251,6 @@ static av_cold int output_configure(AACContext *ac,
         }
 
         memcpy(ac->tag_che_map, ac->che, 4 * MAX_ELEM_ID * sizeof(ac->che[0][0]));
-
-        avctx->channel_layout = 0;
     }
 
     avctx->channels = channels;
@@ -550,6 +548,7 @@ static void reset_predictor_group(PredictorState *ps, int group_num)
 static av_cold int aac_decode_init(AVCodecContext *avctx)
 {
     AACContext *ac = avctx->priv_data;
+    float output_scale_factor;
 
     ac->avctx = avctx;
     ac->m4ac.sample_rate = avctx->sample_rate;
@@ -561,8 +560,13 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
             return -1;
     }
 
-    avctx->sample_fmt = avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT ?
-                        AV_SAMPLE_FMT_FLT : AV_SAMPLE_FMT_S16;
+    if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT) {
+        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+        output_scale_factor = 1.0 / 32768.0;
+    } else {
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        output_scale_factor = 1.0;
+    }
 
     AAC_INIT_VLC_STATIC( 0, 304);
     AAC_INIT_VLC_STATIC( 1, 270);
@@ -590,9 +594,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
                     ff_aac_scalefactor_code, sizeof(ff_aac_scalefactor_code[0]), sizeof(ff_aac_scalefactor_code[0]),
                     352);
 
-    ff_mdct_init(&ac->mdct,       11, 1, 1.0/1024.0);
-    ff_mdct_init(&ac->mdct_small,  8, 1, 1.0/128.0);
-    ff_mdct_init(&ac->mdct_ltp,   11, 0, -2.0);
+    ff_mdct_init(&ac->mdct,       11, 1, output_scale_factor/1024.0);
+    ff_mdct_init(&ac->mdct_small,  8, 1, output_scale_factor/128.0);
+    ff_mdct_init(&ac->mdct_ltp,   11, 0, -2.0/output_scale_factor);
     // window initialization
     ff_kbd_window_init(ff_aac_kbd_long_1024, 4.0, 1024);
     ff_kbd_window_init(ff_aac_kbd_short_128, 6.0, 128);
@@ -818,7 +822,7 @@ static int decode_scalefactors(AACContext *ac, float sf[120], GetBitContext *gb,
                     else
                         offset[1] += get_vlc2(gb, vlc_scalefactors.table, 7, 3) - 60;
                     clipped_offset = av_clip(offset[1], -100, 155);
-                    if (offset[2] != clipped_offset) {
+                    if (offset[1] != clipped_offset) {
                         av_log_ask_for_sample(ac->avctx, "Noise gain clipped "
                                 "(%d -> %d).\nIf you heard an audible "
                                 "artifact, there may be a bug in the decoder. ",
@@ -1825,9 +1829,9 @@ static void update_ltp(AACContext *ac, SingleChannelElement *sce)
             saved_ltp[i + 512] = ac->buf_mdct[1023 - i] * lwindow[511 - i];
     }
 
-    memcpy(sce->ltp_state, &sce->ltp_state[1024], 1024 * sizeof(int16_t));
-    ac->fmt_conv.float_to_int16(&(sce->ltp_state[1024]), sce->ret,  1024);
-    ac->fmt_conv.float_to_int16(&(sce->ltp_state[2048]), saved_ltp, 1024);
+    memcpy(sce->ltp_state,      sce->ltp_state+1024, 1024 * sizeof(*sce->ltp_state));
+    memcpy(sce->ltp_state+1024, sce->ret,            1024 * sizeof(*sce->ltp_state));
+    memcpy(sce->ltp_state+2048, saved_ltp,           1024 * sizeof(*sce->ltp_state));
 }
 
 /**
@@ -2174,8 +2178,8 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         avctx->frame_size = samples;
     }
 
-    data_size_tmp = samples * avctx->channels;
-    data_size_tmp *= avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? sizeof(float) : sizeof(int16_t);
+    data_size_tmp = samples * avctx->channels *
+                    (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
     if (*data_size < data_size_tmp) {
         av_log(avctx, AV_LOG_ERROR,
                "Output buffer too small (%d) or trying to output too many samples (%d) for this frame.\n",
@@ -2185,10 +2189,12 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
     *data_size = data_size_tmp;
 
     if (samples) {
-        if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
-            float_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
-        } else
-            ac->fmt_conv.float_to_int16_interleave(data, (const float **)ac->output_data, samples, avctx->channels);
+        if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT)
+            ac->fmt_conv.float_interleave(data, (const float **)ac->output_data,
+                                          samples, avctx->channels);
+        else
+            ac->fmt_conv.float_to_int16_interleave(data, (const float **)ac->output_data,
+                                                   samples, avctx->channels);
     }
 
     if (ac->output_configured)
@@ -2460,6 +2466,7 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out, int *out_size,
             *out_size = 0;
             return avpkt->size;
         } else {
+            aac_decode_close(avctx);
             if ((err = aac_decode_init(avctx)) < 0)
                 return err;
             latmctx->initialized = 1;
@@ -2507,7 +2514,7 @@ AVCodec ff_aac_decoder = {
     aac_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
     .sample_fmts = (const enum AVSampleFormat[]) {
-        AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE
+        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
     .channel_layouts = aac_channel_layout,
 };
@@ -2527,7 +2534,7 @@ AVCodec ff_aac_latm_decoder = {
     .decode = latm_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("AAC LATM (Advanced Audio Codec LATM syntax)"),
     .sample_fmts = (const enum AVSampleFormat[]) {
-        AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE
+        AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
     .channel_layouts = aac_channel_layout,
 };

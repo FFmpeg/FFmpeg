@@ -54,4 +54,4 @@ extern const int16_t  ff_nelly_delta_table[32];
 
 void ff_nelly_get_sample_bits(const float *buf, int *bits);
 
-#endif
+#endif /* AVCODEC_NELLYMOSER_H */

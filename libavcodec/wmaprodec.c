@@ -1320,7 +1320,7 @@ static int decode_frame(WMAProDecodeCtx *s)
     /** no idea what these are for, might be the number of samples
         that need to be skipped at the beginning or end of a stream */
     if (get_bits1(gb)) {
-        int skip;
+        int av_unused skip;
 
         /** usually true for the first frame */
         if (get_bits1(gb)) {

@@ -13,7 +13,7 @@
 
 @example
 @c man begin SYNOPSIS
-ffplay [options] @file{input_file}
+ffplay [options] [@file{input_file}]
 @c man end
 @end example
 
@@ -82,6 +82,8 @@ the input video.
 Use the option "-filters" to show all the available filters (including
 also sources and sinks).
 
+@item -i @var{input_file}
+Read @var{input_file}.
 @end table
 
 @section Advanced options
@@ -91,12 +93,8 @@ Set pixel format.
 @item -stats
 Show the stream duration, the codec parameters, the current position in
 the stream and the audio/video synchronisation drift.
-@item -debug
-Print specific debug info.
 @item -bug
 Work around bugs.
-@item -vismv
-Visualize motion vectors.
 @item -fast
 Non-spec-compliant optimizations.
 @item -genpts
@@ -174,6 +172,7 @@ Seek to percentage in file corresponding to fraction of width.
 @c man end
 
 @include eval.texi
+@include decoders.texi
 @include demuxers.texi
 @include muxers.texi
 @include indevs.texi

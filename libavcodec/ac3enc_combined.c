@@ -11,8 +11,18 @@ typedef struct CombineContext{
     AVCodec *codec;
 }CombineContext;
 
+#define OFFSET(param) offsetof(CombineContext, options.param)
+#define AC3ENC_PARAM (AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM)
+
+#define AC3ENC_TYPE_AC3_FIXED   0
+#define AC3ENC_TYPE_AC3         1
+#define AC3ENC_TYPE_EAC3        2
+
+#define AC3ENC_TYPE 12354
+#include "ac3enc_opts_template.c"
+
 static AVClass ac3enc_class = { "AC-3 Encoder", av_default_item_name,
-                                ff_ac3_options, LIBAVUTIL_VERSION_INT };
+                                eac3_options, LIBAVUTIL_VERSION_INT };
 
 static av_cold AVCodec *get_codec(enum AVSampleFormat s){
 #if CONFIG_AC3_FIXED_ENCODER

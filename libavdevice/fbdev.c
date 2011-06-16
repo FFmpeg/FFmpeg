@@ -37,9 +37,12 @@
 #include <time.h>
 #include <linux/fb.h>
 
+#include "libavutil/log.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
-#include "libavformat/avformat.h"
+#include "avdevice.h"
 
 struct rgb_pixfmt_map_entry {
     int bits_per_pixel;
@@ -74,8 +77,10 @@ static enum PixelFormat get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *var
 }
 
 typedef struct {
+    AVClass *class;          ///< class for private options
     int frame_size;          ///< size in bytes of a grabbed frame
-    AVRational time_base;    ///< time base
+    AVRational fps;          ///< framerate
+    char *framerate;         ///< framerate string set by a private option
     int64_t time_frame;      ///< time for the next frame to output (in 1/1000000 units)
 
     int fd;                  ///< framebuffer device file descriptor
@@ -97,15 +102,19 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
     enum PixelFormat pix_fmt;
     int ret, flags = O_RDONLY;
 
+    ret = av_parse_video_rate(&fbdev->fps, fbdev->framerate);
+    if (ret < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+        return ret;
+    }
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->time_base.num)
+        fbdev->fps = (AVRational){ap->time_base.den, ap->time_base.num};
+#endif
+
     if (!(st = av_new_stream(avctx, 0)))
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in microseconds */
-
-    if (ap->time_base.den <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid time base %d/%d\n",
-               ap->time_base.num, ap->time_base.den);
-        return AVERROR(EINVAL);
-    }
 
     /* NONBLOCK is ignored by the fbdev driver, only set for consistency */
     if (avctx->flags & AVFMT_FLAG_NONBLOCK)
@@ -146,7 +155,6 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
     fbdev->bytes_per_pixel = (fbdev->varinfo.bits_per_pixel + 7) >> 3;
     fbdev->frame_linesize  = fbdev->width * fbdev->bytes_per_pixel;
     fbdev->frame_size      = fbdev->frame_linesize * fbdev->heigth;
-    fbdev->time_base       = ap->time_base;
     fbdev->time_frame      = AV_NOPTS_VALUE;
     fbdev->data = mmap(NULL, fbdev->fixinfo.smem_len, PROT_READ, MAP_SHARED, fbdev->fd, 0);
     if (fbdev->data == MAP_FAILED) {
@@ -160,15 +168,15 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
     st->codec->width      = fbdev->width;
     st->codec->height     = fbdev->heigth;
     st->codec->pix_fmt    = pix_fmt;
-    st->codec->time_base  = ap->time_base;
+    st->codec->time_base  = (AVRational){fbdev->fps.den, fbdev->fps.num};
     st->codec->bit_rate   =
-        fbdev->width * fbdev->heigth * fbdev->bytes_per_pixel / av_q2d(ap->time_base) * 8;
+        fbdev->width * fbdev->heigth * fbdev->bytes_per_pixel * av_q2d(fbdev->fps) * 8;
 
     av_log(avctx, AV_LOG_INFO,
-           "w:%d h:%d bpp:%d pixfmt:%s tb:%d/%d bit_rate:%d\n",
+           "w:%d h:%d bpp:%d pixfmt:%s fps:%d/%d bit_rate:%d\n",
            fbdev->width, fbdev->heigth, fbdev->varinfo.bits_per_pixel,
            av_pix_fmt_descriptors[pix_fmt].name,
-           ap->time_base.num, ap->time_base.den,
+           fbdev->fps.num, fbdev->fps.den,
            st->codec->bit_rate);
     return 0;
 
@@ -196,7 +204,7 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
                 "time_frame:%"PRId64" curtime:%"PRId64" delay:%"PRId64"\n",
                 fbdev->time_frame, curtime, delay);
         if (delay <= 0) {
-            fbdev->time_frame += INT64_C(1000000) * av_q2d(fbdev->time_base);
+            fbdev->time_frame += INT64_C(1000000) / av_q2d(fbdev->fps);
             break;
         }
         if (avctx->flags & AVFMT_FLAG_NONBLOCK)
@@ -240,6 +248,20 @@ av_cold static int fbdev_read_close(AVFormatContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(FBDevContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "framerate","", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass fbdev_class = {
+    .class_name = "fbdev indev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_fbdev_demuxer = {
     .name           = "fbdev",
     .long_name      = NULL_IF_CONFIG_SMALL("Linux framebuffer"),
@@ -248,4 +270,5 @@ AVInputFormat ff_fbdev_demuxer = {
     .read_packet    = fbdev_read_packet,
     .read_close     = fbdev_read_close,
     .flags          = AVFMT_NOFILE,
+    .priv_class     = &fbdev_class,
 };

@@ -248,4 +248,5 @@ static inline void memsetw(short *tab, int val, int n)
     for(i=0;i<n;i++)
         tab[i] = val;
 }
-#endif
+
+#endif /* AVCODEC_H263_H */

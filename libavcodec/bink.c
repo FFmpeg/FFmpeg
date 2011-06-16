@@ -1208,7 +1208,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 /**
  * Caclulate quantization tables for version b
  */
-static av_cold void binkb_calc_quant()
+static av_cold void binkb_calc_quant(void)
 {
     uint8_t inv_bink_scan[64];
     double s[64];

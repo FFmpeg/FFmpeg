@@ -41,6 +41,13 @@
     SWAP %2, %4, %3
 %endmacro
 
+%macro SBUTTERFLYPS 3
+    movaps   m%3, m%1
+    unpcklps m%1, m%2
+    unpckhps m%3, m%2
+    SWAP %2, %3
+%endmacro
+
 %macro TRANSPOSE4x4B 5
     SBUTTERFLY bw, %1, %2, %5
     SBUTTERFLY bw, %3, %4, %5
@@ -71,6 +78,19 @@
     SBUTTERFLY dq,  %3, %4, %5
     SBUTTERFLY qdq, %1, %3, %5
     SBUTTERFLY qdq, %2, %4, %5
+    SWAP %2, %3
+%endmacro
+
+; identical behavior to TRANSPOSE4x4D, but using SSE1 float ops
+%macro TRANSPOSE4x4PS 5
+    SBUTTERFLYPS %1, %2, %5
+    SBUTTERFLYPS %3, %4, %5
+    movaps  m%5, m%1
+    movlhps m%1, m%3
+    movhlps m%3, m%5
+    movaps  m%5, m%2
+    movlhps m%2, m%4
+    movhlps m%4, m%5
     SWAP %2, %3
 %endmacro
 
@@ -208,6 +228,17 @@
     pminub  %2, %4
 %endmacro
 
+%macro ABSD2_MMX 4
+    pxor    %3, %3
+    pxor    %4, %4
+    pcmpgtd %3, %1
+    pcmpgtd %4, %2
+    pxor    %1, %3
+    pxor    %2, %4
+    psubd   %1, %3
+    psubd   %2, %4
+%endmacro
+
 %macro ABSB_SSSE3 2
     pabsb   %1, %1
 %endmacro
@@ -230,12 +261,7 @@
 %macro SPLATB_MMX 3
     movd      %1, [%2-3] ;to avoid crossing a cacheline
     punpcklbw %1, %1
-%if mmsize==16
-    pshuflw   %1, %1, 0xff
-    punpcklqdq %1, %1
-%else
-    pshufw    %1, %1, 0xff
-%endif
+    SPLATW    %1, %1, 3
 %endmacro
 
 %macro SPLATB_SSSE3 3
@@ -243,125 +269,169 @@
     pshufb    %1, %3
 %endmacro
 
-%macro PALIGNR_MMX 4
-    %ifnidn %4, %2
+%macro PALIGNR_MMX 4-5 ; [dst,] src1, src2, imm, tmp
+    %define %%dst %1
+%if %0==5
+%ifnidn %1, %2
+    mova    %%dst, %2
+%endif
+    %rotate 1
+%endif
+%ifnidn %4, %2
     mova    %4, %2
-    %endif
-    %if mmsize == 8
-    psllq   %1, (8-%3)*8
+%endif
+%if mmsize==8
+    psllq   %%dst, (8-%3)*8
     psrlq   %4, %3*8
-    %else
-    pslldq  %1, 16-%3
+%else
+    pslldq  %%dst, 16-%3
     psrldq  %4, %3
-    %endif
-    por     %1, %4
+%endif
+    por     %%dst, %4
 %endmacro
 
-%macro PALIGNR_SSSE3 4
+%macro PALIGNR_SSSE3 4-5
+%if %0==5
+    palignr %1, %2, %3, %4
+%else
     palignr %1, %2, %3
+%endif
 %endmacro
 
 %macro DEINTB 5 ; mask, reg1, mask, reg2, optional src to fill masks from
 %ifnum %5
-    mova   m%1, m%5
-    mova   m%3, m%5
+    pand   m%3, m%5, m%4 ; src .. y6 .. y4
+    pand   m%1, m%5, m%2 ; dst .. y6 .. y4
 %else
     mova   m%1, %5
-    mova   m%3, m%1
+    pand   m%3, m%1, m%4 ; src .. y6 .. y4
+    pand   m%1, m%1, m%2 ; dst .. y6 .. y4
 %endif
-    pand   m%1, m%2 ; dst .. y6 .. y4
-    pand   m%3, m%4 ; src .. y6 .. y4
-    psrlw  m%2, 8   ; dst .. y7 .. y5
-    psrlw  m%4, 8   ; src .. y7 .. y5
+    psrlw  m%2, 8        ; dst .. y7 .. y5
+    psrlw  m%4, 8        ; src .. y7 .. y5
 %endmacro
 
-%macro SUMSUB_BA 2-3
-%if %0==2
-    paddw   %1, %2
-    paddw   %2, %2
-    psubw   %2, %1
+%macro SUMSUB_BA 3-4
+%if %0==3
+    padd%1  m%2, m%3
+    padd%1  m%3, m%3
+    psub%1  m%3, m%2
 %else
-    mova    %3, %1
-    paddw   %1, %2
-    psubw   %2, %3
-%endif
-%endmacro
-
-%macro SUMSUB_BADC 4-5
-%if %0==5
-    SUMSUB_BA %1, %2, %5
-    SUMSUB_BA %3, %4, %5
+%if avx_enabled == 0
+    mova    m%4, m%2
+    padd%1  m%2, m%3
+    psub%1  m%3, m%4
 %else
-    paddw   %1, %2
-    paddw   %3, %4
-    paddw   %2, %2
-    paddw   %4, %4
-    psubw   %2, %1
-    psubw   %4, %3
+    padd%1  m%4, m%2, m%3
+    psub%1  m%3, m%2
+    SWAP    %2, %4
+%endif
 %endif
 %endmacro
 
-%macro SUMSUB2_AB 3
-    mova    %3, %1
-    paddw   %1, %1
-    paddw   %1, %2
-    psubw   %3, %2
-    psubw   %3, %2
+%macro SUMSUB_BADC 5-6
+%if %0==6
+    SUMSUB_BA %1, %2, %3, %6
+    SUMSUB_BA %1, %4, %5, %6
+%else
+    padd%1  m%2, m%3
+    padd%1  m%4, m%5
+    padd%1  m%3, m%3
+    padd%1  m%5, m%5
+    psub%1  m%3, m%2
+    psub%1  m%5, m%4
+%endif
 %endmacro
 
-%macro SUMSUB2_BA 3
-    mova    m%3, m%1
-    paddw   m%1, m%2
-    paddw   m%1, m%2
-    psubw   m%2, m%3
-    psubw   m%2, m%3
+%macro SUMSUB2_AB 4
+%ifnum %3
+    psub%1  m%4, m%2, m%3
+    psub%1  m%4, m%3
+    padd%1  m%2, m%2
+    padd%1  m%2, m%3
+%else
+    mova    m%4, m%2
+    padd%1  m%2, m%2
+    padd%1  m%2, %3
+    psub%1  m%4, %3
+    psub%1  m%4, %3
+%endif
 %endmacro
 
-%macro SUMSUBD2_AB 4
-    mova    %4, %1
-    mova    %3, %2
-    psraw   %2, 1  ; %2: %2>>1
-    psraw   %1, 1  ; %1: %1>>1
-    paddw   %2, %4 ; %2: %2>>1+%1
-    psubw   %1, %3 ; %1: %1>>1-%2
+%macro SUMSUB2_BA 4
+%if avx_enabled == 0
+    mova    m%4, m%2
+    padd%1  m%2, m%3
+    padd%1  m%2, m%3
+    psub%1  m%3, m%4
+    psub%1  m%3, m%4
+%else
+    padd%1  m%4, m%2, m%3
+    padd%1  m%4, m%3
+    psub%1  m%3, m%2
+    psub%1  m%3, m%2
+    SWAP     %2,  %4
+%endif
+%endmacro
+
+%macro SUMSUBD2_AB 5
+%ifnum %4
+    psra%1  m%5, m%2, 1  ; %3: %3>>1
+    psra%1  m%4, m%3, 1  ; %2: %2>>1
+    padd%1  m%4, m%2     ; %3: %3>>1+%2
+    psub%1  m%5, m%3     ; %2: %2>>1-%3
+    SWAP     %2, %5
+    SWAP     %3, %4
+%else
+    mova    %5, m%2
+    mova    %4, m%3
+    psra%1  m%3, 1  ; %3: %3>>1
+    psra%1  m%2, 1  ; %2: %2>>1
+    padd%1  m%3, %5 ; %3: %3>>1+%2
+    psub%1  m%2, %4 ; %2: %2>>1-%3
+%endif
 %endmacro
 
 %macro DCT4_1D 5
 %ifnum %5
-    SUMSUB_BADC m%4, m%1, m%3, m%2; m%5
-    SUMSUB_BA   m%3, m%4, m%5
-    SUMSUB2_AB  m%1, m%2, m%5
+    SUMSUB_BADC w, %4, %1, %3, %2, %5
+    SUMSUB_BA   w, %3, %4, %5
+    SUMSUB2_AB  w, %1, %2, %5
     SWAP %1, %3, %4, %5, %2
 %else
-    SUMSUB_BADC m%4, m%1, m%3, m%2
-    SUMSUB_BA   m%3, m%4
-    mova       [%5], m%2
-    SUMSUB2_AB m%1, [%5], m%2
+    SUMSUB_BADC w, %4, %1, %3, %2
+    SUMSUB_BA   w, %3, %4
+    mova     [%5], m%2
+    SUMSUB2_AB  w, %1, [%5], %2
     SWAP %1, %3, %4, %2
 %endif
 %endmacro
 
-%macro IDCT4_1D 5-6
-%ifnum %5
-    SUMSUBD2_AB m%2, m%4, m%6, m%5
-    ; %2: %2>>1-%4 %4: %2+%4>>1
-    SUMSUB_BA   m%3, m%1, m%6
-    ; %3: %1+%3 %1: %1-%3
-    SUMSUB_BADC m%4, m%3, m%2, m%1, m%6
-    ; %4: %1+%3 + (%2+%4>>1)
-    ; %3: %1+%3 - (%2+%4>>1)
-    ; %2: %1-%3 + (%2>>1-%4)
-    ; %1: %1-%3 - (%2>>1-%4)
+%macro IDCT4_1D 6-7
+%ifnum %6
+    SUMSUBD2_AB %1, %3, %5, %7, %6
+    ; %3: %3>>1-%5 %5: %3+%5>>1
+    SUMSUB_BA   %1, %4, %2, %7
+    ; %4: %2+%4 %2: %2-%4
+    SUMSUB_BADC %1, %5, %4, %3, %2, %7
+    ; %5: %2+%4 + (%3+%5>>1)
+    ; %4: %2+%4 - (%3+%5>>1)
+    ; %3: %2-%4 + (%3>>1-%5)
+    ; %2: %2-%4 - (%3>>1-%5)
 %else
-    SUMSUBD2_AB m%2, m%4, [%5], [%5+16]
-    SUMSUB_BA   m%3, m%1
-    SUMSUB_BADC m%4, m%3, m%2, m%1
+%ifidn %1, w
+    SUMSUBD2_AB %1, %3, %5, [%6], [%6+16]
+%else
+    SUMSUBD2_AB %1, %3, %5, [%6], [%6+32]
 %endif
-    SWAP %1, %4, %3
-    ; %1: %1+%3 + (%2+%4>>1) row0
-    ; %2: %1-%3 + (%2>>1-%4) row1
-    ; %3: %1-%3 - (%2>>1-%4) row2
-    ; %4: %1+%3 - (%2+%4>>1) row3
+    SUMSUB_BA   %1, %4, %2
+    SUMSUB_BADC %1, %5, %4, %3, %2
+%endif
+    SWAP %2, %5, %4
+    ; %2: %2+%4 + (%3+%5>>1) row0
+    ; %3: %2-%4 + (%3>>1-%5) row1
+    ; %4: %2-%4 - (%3>>1-%5) row2
+    ; %5: %2+%4 - (%3+%5>>1) row3
 %endmacro
 
 

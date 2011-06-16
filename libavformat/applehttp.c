@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "internal.h"
 #include <unistd.h>
@@ -507,7 +508,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
             }
             avcodec_copy_context(st->codec, v->ctx->streams[j]->codec);
             if (v->bandwidth)
-                av_metadata_set2(&st->metadata, "variant_bitrate", bitrate_str,
+                av_dict_set(&st->metadata, "variant_bitrate", bitrate_str,
                                  0);
         }
         stream_offset += v->ctx->nb_streams;

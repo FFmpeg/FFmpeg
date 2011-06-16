@@ -32,6 +32,7 @@
 #include "mpegvideo.h"
 #include "h264.h"
 #include "rectangle.h"
+#include "thread.h"
 
 /*
  * H264 redefines mb_intra so it is not mistakely used (its uninitialized in h264)
@@ -436,8 +437,7 @@ int score_sum=0;
                     int best_score=256*256*256*64;
                     int best_pred=0;
                     const int mot_index= (mb_x + mb_y*mot_stride) * mot_step;
-                    int prev_x= s->current_picture.motion_val[0][mot_index][0];
-                    int prev_y= s->current_picture.motion_val[0][mot_index][1];
+                    int prev_x, prev_y, prev_ref;
 
                     if((mb_x^mb_y^pass)&1) continue;
 
@@ -535,10 +535,26 @@ skip_mean_and_median:
                     /* zero MV */
                     pred_count++;
 
+                    if (!fixed[mb_xy] && 0) {
+                        if (s->avctx->codec_id == CODEC_ID_H264) {
+                            // FIXME
+                        } else {
+                            ff_thread_await_progress((AVFrame *) s->last_picture_ptr,
+                                                     mb_y, 0);
+                        }
+                        prev_x = s->last_picture.motion_val[0][mot_index][0];
+                        prev_y = s->last_picture.motion_val[0][mot_index][1];
+                        prev_ref = s->last_picture.ref_index[0][4*mb_xy];
+                    } else {
+                        prev_x = s->current_picture.motion_val[0][mot_index][0];
+                        prev_y = s->current_picture.motion_val[0][mot_index][1];
+                        prev_ref = s->current_picture.ref_index[0][4*mb_xy];
+                    }
+
                     /* last MV */
-                    mv_predictor[pred_count][0]= s->current_picture.motion_val[0][mot_index][0];
-                    mv_predictor[pred_count][1]= s->current_picture.motion_val[0][mot_index][1];
-                    ref         [pred_count]   = s->current_picture.ref_index[0][4*mb_xy];
+                    mv_predictor[pred_count][0]= prev_x;
+                    mv_predictor[pred_count][1]= prev_y;
+                    ref         [pred_count]   = prev_ref;
                     pred_count++;
 
                     s->mv_dir = MV_DIR_FORWARD;
@@ -670,6 +686,12 @@ static int is_intra_more_likely(MpegEncContext *s){
                 uint8_t *mb_ptr     = s->current_picture.data[0] + mb_x*16 + mb_y*16*s->linesize;
                 uint8_t *last_mb_ptr= s->last_picture.data   [0] + mb_x*16 + mb_y*16*s->linesize;
 
+                if (s->avctx->codec_id == CODEC_ID_H264) {
+                    // FIXME
+                } else {
+                    ff_thread_await_progress((AVFrame *) s->last_picture_ptr,
+                                             mb_y, 0);
+                }
                 is_intra_likely += s->dsp.sad[0](NULL, last_mb_ptr, mb_ptr                    , s->linesize, 16);
                 // FIXME need await_progress() here
                 is_intra_likely -= s->dsp.sad[0](NULL, last_mb_ptr, last_mb_ptr+s->linesize*16, s->linesize, 16);
@@ -690,6 +712,7 @@ void ff_er_frame_start(MpegEncContext *s){
 
     memset(s->error_status_table, MV_ERROR|AC_ERROR|DC_ERROR|VP_START|AC_END|DC_END|MV_END, s->mb_stride*s->mb_height*sizeof(uint8_t));
     s->error_count= 3*s->mb_num;
+    s->error_occurred = 0;
 }
 
 /**
@@ -729,7 +752,10 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
         s->error_count -= end_i - start_i + 1;
     }
 
-    if(status & (AC_ERROR|DC_ERROR|MV_ERROR)) s->error_count= INT_MAX;
+    if(status & (AC_ERROR|DC_ERROR|MV_ERROR)) {
+        s->error_occurred = 1;
+        s->error_count= INT_MAX;
+    }
 
     if(mask == ~0x7F){
         memset(&s->error_status_table[start_xy], 0, (end_xy - start_xy) * sizeof(uint8_t));
@@ -1009,7 +1035,12 @@ void ff_er_frame_end(MpegEncContext *s){
                     int time_pp= s->pp_time;
                     int time_pb= s->pb_time;
 
-                    // FIXME await_progress here
+                    if (s->avctx->codec_id == CODEC_ID_H264) {
+                        //FIXME
+                    } else {
+                        ff_thread_await_progress((AVFrame *) s->next_picture_ptr,
+                                                 mb_y, 0);
+                    }
                     s->mv[0][0][0] = s->next_picture.motion_val[0][xy][0]*time_pb/time_pp;
                     s->mv[0][0][1] = s->next_picture.motion_val[0][xy][1]*time_pb/time_pp;
                     s->mv[1][0][0] = s->next_picture.motion_val[0][xy][0]*(time_pb - time_pp)/time_pp;

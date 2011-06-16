@@ -62,12 +62,14 @@ void avfilter_register_all(void)
     REGISTER_FILTER (PAD,         pad,         vf);
     REGISTER_FILTER (PIXDESCTEST, pixdesctest, vf);
     REGISTER_FILTER (SCALE,       scale,       vf);
+    REGISTER_FILTER (SELECT,      select,      vf);
     REGISTER_FILTER (SETDAR,      setdar,      vf);
     REGISTER_FILTER (SETPTS,      setpts,      vf);
     REGISTER_FILTER (SETSAR,      setsar,      vf);
     REGISTER_FILTER (SETTB,       settb,       vf);
     REGISTER_FILTER (SHOWINFO,    showinfo,    vf);
     REGISTER_FILTER (SLICIFY,     slicify,     vf);
+    REGISTER_FILTER (SPLIT,       split,       vf);
     REGISTER_FILTER (TRANSPOSE,   transpose,   vf);
     REGISTER_FILTER (UNSHARP,     unsharp,     vf);
     REGISTER_FILTER (VFLIP,       vflip,       vf);

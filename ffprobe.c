@@ -25,6 +25,7 @@
 #include "libavcodec/avcodec.h"
 #include "libavcodec/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/dict.h"
 #include "libavdevice/avdevice.h"
 #include "cmdutils.h"
 
@@ -160,7 +161,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     AVCodecContext *dec_ctx;
     AVCodec *dec;
     char val_str[128];
-    AVMetadataTag *tag = NULL;
+    AVDictionaryEntry *tag = NULL;
     AVRational display_aspect_ratio;
 
     printf("[STREAM]\n");
@@ -226,7 +227,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
     if (stream->nb_frames)
         printf("nb_frames=%"PRId64"\n",    stream->nb_frames);
 
-    while ((tag = av_metadata_get(stream->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
+    while ((tag = av_dict_get(stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/STREAM]\n");
@@ -234,7 +235,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
 
 static void show_format(AVFormatContext *fmt_ctx)
 {
-    AVMetadataTag *tag = NULL;
+    AVDictionaryEntry *tag = NULL;
     char val_str[128];
 
     printf("[FORMAT]\n");
@@ -252,7 +253,7 @@ static void show_format(AVFormatContext *fmt_ctx)
     printf("bit_rate=%s\n",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,
                                                  unit_bit_per_second_str));
 
-    while ((tag = av_metadata_get(fmt_ctx->metadata, "", tag, AV_METADATA_IGNORE_SUFFIX)))
+    while ((tag = av_dict_get(fmt_ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/FORMAT]\n");
@@ -329,16 +330,17 @@ static void show_usage(void)
     printf("\n");
 }
 
-static void opt_format(const char *arg)
+static int opt_format(const char *opt, const char *arg)
 {
     iformat = av_find_input_format(arg);
     if (!iformat) {
         fprintf(stderr, "Unknown input format: %s\n", arg);
-        exit(1);
+        return AVERROR(EINVAL);
     }
+    return 0;
 }
 
-static void opt_input_file(const char *arg)
+static int opt_input_file(const char *opt, const char *arg)
 {
     if (input_filename) {
         fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
@@ -348,6 +350,7 @@ static void opt_input_file(const char *arg)
     if (!strcmp(arg, "-"))
         arg = "pipe:";
     input_filename = arg;
+    return 0;
 }
 
 static void show_help(void)
@@ -382,7 +385,8 @@ static const OptionDef options[] = {
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
-    { "default", OPT_FUNC2 | HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
+    { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
+    { "i", HAS_ARG, {(void *)opt_input_file}, "read specified file", "input_file"},
     { NULL, },
 };
 

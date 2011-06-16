@@ -21,7 +21,7 @@
 
 #include "avcodec.h"
 #include "libavutil/avassert.h"
-
+#include "bytestream.h"
 
 void av_destruct_packet_nofree(AVPacket *pkt)
 {
@@ -115,3 +115,4 @@ void av_free_packet(AVPacket *pkt)
         pkt->data = NULL; pkt->size = 0;
     }
 }
+

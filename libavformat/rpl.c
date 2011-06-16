@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include <stdlib.h>
 
@@ -131,11 +132,11 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     // for the text in a few cases; samples needed.)
     error |= read_line(pb, line, sizeof(line));      // ARMovie
     error |= read_line(pb, line, sizeof(line));      // movie name
-    av_metadata_set2(&s->metadata, "title"    , line, 0);
+    av_dict_set(&s->metadata, "title"    , line, 0);
     error |= read_line(pb, line, sizeof(line));      // date/copyright
-    av_metadata_set2(&s->metadata, "copyright", line, 0);
+    av_dict_set(&s->metadata, "copyright", line, 0);
     error |= read_line(pb, line, sizeof(line));      // author and other
-    av_metadata_set2(&s->metadata, "author"   , line, 0);
+    av_dict_set(&s->metadata, "author"   , line, 0);
 
     // video headers
     vst = av_new_stream(s, 0);
@@ -299,9 +300,9 @@ static int rpl_read_packet(AVFormatContext *s, AVPacket *pkt)
         stream->codec->codec_tag == 124) {
         // We have to split Escape 124 frames because there are
         // multiple frames per chunk in Escape 124 samples.
-        uint32_t frame_size, frame_flags;
+        uint32_t frame_size;
 
-        frame_flags = avio_rl32(pb);
+        avio_skip(pb, 4); /* flags */
         frame_size = avio_rl32(pb);
         if (avio_seek(pb, -8, SEEK_CUR) < 0)
             return AVERROR(EIO);

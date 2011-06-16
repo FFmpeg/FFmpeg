@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef QDM2_TABLEGEN_H
-#define QDM2_TABLEGEN_H
+#ifndef AVCODEC_QDM2_TABLEGEN_H
+#define AVCODEC_QDM2_TABLEGEN_H
 
 #include <stdint.h>
 #include <math.h>
@@ -99,4 +99,4 @@ static av_cold void init_noise_samples(void) {
 }
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* QDM2_TABLEGEN_H */
+#endif /* AVCODEC_QDM2_TABLEGEN_H */

@@ -155,7 +155,6 @@ enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);
 
 int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries);
 void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec);
-void ff_mov_write_chan(AVFormatContext *s, int64_t channel_layout,
-                       const char *chunk_type);
+void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout);
 
 #endif /* AVFORMAT_ISOM_H */

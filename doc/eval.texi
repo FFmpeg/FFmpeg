@@ -76,6 +76,13 @@ integer. For example, "trunc(-1.5)" is "-1.0".
 @item sqrt(expr)
 Compute the square root of @var{expr}. This is equivalent to
 "(@var{expr})^.5".
+
+@item not(expr)
+Return 1.0 if @var{expr} is zero, 0.0 otherwise.
+
+@item pow(x, y)
+Compute the power of @var{x} elevated @var{y}, it is equivalent to
+"(@var{x})^(@var{y})".
 @end table
 
 Note that:
@@ -91,11 +98,6 @@ if A then B else C
 is equivalent to
 @example
 A*B + not(A)*C
-@end example
-
-When A evaluates to either 1 or 0, that is the same as
-@example
-A*B + eq(A,0)*C
 @end example
 
 In your C code, you can extend the list of unary and binary functions,

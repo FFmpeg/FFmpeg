@@ -97,8 +97,8 @@ static int crypto_open(URLContext *h, const char *uri, int flags)
 
     return 0;
 err:
-    av_free(c->key);
-    av_free(c->iv);
+    av_freep(&c->key);
+    av_freep(&c->iv);
     return ret;
 }
 

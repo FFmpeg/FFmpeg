@@ -17,11 +17,15 @@ with the options @code{--enable-encoder=@var{ENCODER}} /
 The option @code{-codecs} of the ff* tools will display the list of
 enabled encoders.
 
-A description of some of the currently available encoders follows.
+@c man end ENCODERS
 
-@section Audio Encoders
+@chapter Audio Encoders
+@c man begin AUDIO ENCODERS
 
-@subsection ac3 and ac3_fixed
+A description of some of the currently available audio encoders
+follows.
+
+@section ac3 and ac3_fixed
 
 AC-3 audio encoders.
 
@@ -36,7 +40,7 @@ quality audio for a given bitrate. The @var{ac3_fixed} encoder is not the
 default codec for any of the output formats, so it must be specified explicitly
 using the option @code{-acodec ac3_fixed} in order to use it.
 
-@subheading AC-3 Metadata
+@subsection AC-3 Metadata
 
 The AC-3 metadata options are used to set parameters that describe the audio,
 but in most cases do not affect the audio encoding itself. Some of the options
@@ -55,7 +59,7 @@ documents.
 @item @uref{http://www.dolby.com/uploadedFiles/zz-_Shared_Assets/English_PDFs/Professional/46_DDEncodingGuidelines.pdf,Dolby Digital Professional Encoding Guidelines}
 @end itemize
 
-@subsubheading Metadata Control Options
+@subsubsection Metadata Control Options
 
 @table @option
 
@@ -72,7 +76,7 @@ Metadata values can be changed before encoding each frame.
 
 @end table
 
-@subsubheading Downmix Levels
+@subsubsection Downmix Levels
 
 @table @option
 
@@ -106,7 +110,7 @@ Silence Surround Channel(s)
 
 @end table
 
-@subsubheading Audio Production Information
+@subsubsection Audio Production Information
 Audio Production Information is optional information describing the mixing
 environment.  Either none or both of the fields are written to the bitstream.
 
@@ -140,7 +144,7 @@ Small Room
 
 @end table
 
-@subsubheading Other Metadata Options
+@subsubsection Other Metadata Options
 
 @table @option
 
@@ -195,7 +199,7 @@ Original Source (default)
 
 @end table
 
-@subsubheading Extended Bitstream Information
+@subsection Extended Bitstream Information
 The extended bitstream options are part of the Alternate Bit Stream Syntax as
 specified in Annex D of the A/52:2010 standard. It is grouped into 2 parts.
 If any one parameter in a group is specified, all values in that group will be
@@ -205,7 +209,7 @@ will use these values instead of the ones specified in the @code{center_mixlev}
 and @code{surround_mixlev} options if it supports the Alternate Bit Stream
 Syntax.
 
-@subsubheading Extended Bitstream Information - Part 1
+@subsubsection Extended Bitstream Information - Part 1
 
 @table @option
 
@@ -302,7 +306,7 @@ Silence Surround Channel(s)
 
 @end table
 
-@subsubheading Extended Bitstream Information - Part 2
+@subsubsection Extended Bitstream Information - Part 2
 
 @table @option
 
@@ -353,7 +357,7 @@ HDCD A/D Converter
 
 @end table
 
-@subheading Other AC-3 Encoding Options
+@subsection Other AC-3 Encoding Options
 
 @table @option
 
@@ -365,4 +369,223 @@ is highly recommended that it be left as enabled except for testing purposes.
 
 @end table
 
-@c man end ENCODERS
+@subsection Floating-Point-Only AC-3 Encoding Options
+
+These options are only valid for the floating-point encoder and do not exist
+for the fixed-point encoder due to the corresponding features not being
+implemented in fixed-point.
+
+@table @option
+
+@item -channel_coupling @var{boolean}
+Enables/Disables use of channel coupling, which is an optional AC-3 feature
+that increases quality by combining high frequency information from multiple
+channels into a single channel. The per-channel high frequency information is
+sent with less accuracy in both the frequency and time domains. This allows
+more bits to be used for lower frequencies while preserving enough information
+to reconstruct the high frequencies. This option is enabled by default for the
+floating-point encoder and should generally be left as enabled except for
+testing purposes or to increase encoding speed.
+@table @option
+@item -1
+@itemx auto
+Selected by Encoder (default)
+@item 0
+@itemx off
+Disable Channel Coupling
+@item 1
+@itemx on
+Enable Channel Coupling
+@end table
+
+@item -cpl_start_band @var{number}
+Coupling Start Band. Sets the channel coupling start band, from 1 to 15. If a
+value higher than the bandwidth is used, it will be reduced to 1 less than the
+coupling end band. If @var{auto} is used, the start band will be determined by
+the encoder based on the bit rate, sample rate, and channel layout. This option
+has no effect if channel coupling is disabled.
+@table @option
+@item -1
+@itemx auto
+Selected by Encoder (default)
+@end table
+
+@end table
+
+@c man end AUDIO ENCODERS
+
+@chapter Video Encoders
+@c man begin VIDEO ENCODERS
+
+A description of some of the currently available video encoders
+follows.
+
+@section libvpx
+
+VP8 format supported through libvpx.
+
+Requires the presence of the libvpx headers and library during configuration.
+You need to explicitly configure the build with @code{--enable-libvpx}.
+
+@subsection Options
+
+Mapping from FFmpeg to libvpx options with conversion notes in parentheses.
+
+@table @option
+
+@item threads
+g_threads
+
+@item profile
+g_profile
+
+@item vb
+rc_target_bitrate
+
+@item g
+kf_max_dist
+
+@item keyint_min
+kf_min_dist
+
+@item qmin
+rc_min_quantizer
+
+@item qmax
+rc_max_quantizer
+
+@item bufsize, vb
+rc_buf_sz
+@code{(bufsize * 1000 / vb)}
+
+rc_buf_optimal_sz
+@code{(bufsize * 1000 / vb * 5 / 6)}
+
+@item rc_init_occupancy, vb
+rc_buf_initial_sz
+@code{(rc_init_occupancy * 1000 / vb)}
+
+@item rc_buffer_aggressivity
+rc_undershoot_pct
+
+@item skip_threshold
+rc_dropframe_thresh
+
+@item qcomp
+rc_2pass_vbr_bias_pct
+
+@item maxrate, vb
+rc_2pass_vbr_maxsection_pct
+@code{(maxrate * 100 / vb)}
+
+@item minrate, vb
+rc_2pass_vbr_minsection_pct
+@code{(minrate * 100 / vb)}
+
+@item minrate, maxrate, vb
+@code{VPX_CBR}
+@code{(minrate == maxrate == vb)}
+
+@item crf
+@code{VPX_CQ}, @code{VP8E_SET_CQ_LEVEL}
+
+@item quality
+@table @option
+@item @var{best}
+@code{VPX_DL_BEST_QUALITY}
+@item @var{good}
+@code{VPX_DL_GOOD_QUALITY}
+@item @var{realtime}
+@code{VPX_DL_REALTIME}
+@end table
+
+@item speed
+@code{VP8E_SET_CPUUSED}
+
+@item nr
+@code{VP8E_SET_NOISE_SENSITIVITY}
+
+@item mb_threshold
+@code{VP8E_SET_STATIC_THRESHOLD}
+
+@item slices
+@code{VP8E_SET_TOKEN_PARTITIONS}
+
+@item Alternate reference frame related
+@table @option
+@item vp8flags altref
+@code{VP8E_SET_ENABLEAUTOALTREF}
+@item @var{arnr_max_frames}
+@code{VP8E_SET_ARNR_MAXFRAMES}
+@item @var{arnr_type}
+@code{VP8E_SET_ARNR_TYPE}
+@item @var{arnr_strength}
+@code{VP8E_SET_ARNR_STRENGTH}
+@item @var{rc_lookahead}
+g_lag_in_frames
+@end table
+
+@item vp8flags error_resilient
+g_error_resilient
+
+@end table
+
+For more information about libvpx see:
+@url{http://www.webmproject.org/}
+
+@section libx264
+
+H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 format supported through
+libx264.
+
+Requires the presence of the libx264 headers and library during
+configuration. You need to explicitly configure the build with
+@code{--enable-libx264}.
+
+@subsection Options
+
+@table @option
+
+@item preset @var{preset_name}
+Set the encoding preset.
+
+@item tune @var{tune_name}
+Tune the encoding params.
+Deprecated in favor of @var{x264_opts}
+
+@item fastfirstpass @var{bool}
+Use fast settings when encoding first pass, default value is 1.
+Deprecated in favor of @var{x264_opts}.
+
+@item profile @var{profile_name}
+Set profile restrictions.
+Deprecated in favor of @var{x264_opts}.
+
+@item level @var{level}
+Specify level (as defined by Annex A).
+Deprecated in favor of @var{x264_opts}.
+
+@item passlogfile @var{filename}
+Specify filename for 2 pass stats.
+Deprecated in favor of @var{x264_opts}.
+
+@item wpredp @var{wpred_type}
+Specify Weighted prediction for P-frames.
+Deprecated in favor of @var{x264_opts}.
+
+@item x264opts @var{options}
+Allow to set any x264 option, see x264 manual for a list.
+
+@var{options} is a list of @var{key}=@var{value} couples separated by
+":".
+@end table
+
+For example to specify libx264 encoding options with @file{ffmpeg}:
+@example
+ffmpeg -i foo.mpg -vcodec libx264 -x264opts keyint=123:min-keyint=20 -an out.mkv
+@end example
+
+For more information about libx264 and the supported options see:
+@url{http://www.videolan.org/developers/x264.html}
+
+@c man end VIDEO ENCODERS

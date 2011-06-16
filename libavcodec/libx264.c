@@ -42,6 +42,7 @@ typedef struct X264Context {
     int fastfirstpass;
     char *stats;
     char *weightp;
+    char *x264opts;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -118,6 +119,12 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
             x4->params.b_tff = frame->top_field_first;
             x264_encoder_reconfig(x4->enc, &x4->params);
         }
+        if (x4->params.vui.i_sar_height != ctx->sample_aspect_ratio.den
+         || x4->params.vui.i_sar_width != ctx->sample_aspect_ratio.num) {
+            x4->params.vui.i_sar_height = ctx->sample_aspect_ratio.den;
+            x4->params.vui.i_sar_width = ctx->sample_aspect_ratio.num;
+            x264_encoder_reconfig(x4->enc, &x4->params);
+        }
     }
 
     do {
@@ -163,13 +170,6 @@ static av_cold int X264_close(AVCodecContext *avctx)
     if (x4->enc)
         x264_encoder_close(x4->enc);
 
-    av_free(x4->preset);
-    av_free(x4->tune);
-    av_free(x4->profile);
-    av_free(x4->level);
-    av_free(x4->stats);
-    av_free(x4->weightp);
-
     return 0;
 }
 
@@ -193,7 +193,7 @@ static void check_default_settings(AVCodecContext *avctx)
     if (score >= 5) {
         av_log(avctx, AV_LOG_ERROR, "Default settings detected, using medium profile\n");
         x4->preset = av_strdup("medium");
-        if (avctx->bit_rate == 200*100)
+        if (avctx->bit_rate == 200*1000)
             avctx->crf = 23;
     }
 }
@@ -221,7 +221,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
     x4->params.i_bframe_bias     = avctx->bframebias;
     x4->params.i_bframe_pyramid  = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
-    avctx->has_b_frames          = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? 2 : !!avctx->max_b_frames;
 
     x4->params.i_keyint_min = avctx->keyint_min;
     if (x4->params.i_keyint_min > x4->params.i_keyint_max)
@@ -344,6 +343,17 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     OPT_STR("level", x4->level);
 
+    if(x4->x264opts){
+        const char *p= x4->x264opts;
+        while(p){
+            char param[256]={0}, val[256]={0};
+            sscanf(p, "%255[^:=]=%255[^:]", param, val);
+            OPT_STR(param, val);
+            p= strchr(p, ':');
+            p+=!!p;
+        }
+    }
+
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
 
@@ -366,6 +376,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_threads      = avctx->thread_count;
 
     x4->params.b_interlaced   = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
+
+    x4->params.b_open_gop     = !(avctx->flags & CODEC_FLAG_CLOSED_GOP);
 
     x4->params.i_slice_count  = avctx->slices;
 
@@ -407,13 +419,14 @@ static av_cold int X264_init(AVCodecContext *avctx)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
-    {"preset", "Set the encoding preset", OFFSET(preset), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
-    {"tune", "Tune the encoding params", OFFSET(tune), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
-    {"fastfirstpass", "Use fast settings when encoding first pass", OFFSET(fastfirstpass), FF_OPT_TYPE_INT, 1, 0, 1, VE},
-    {"profile", "Set profile restrictions", OFFSET(profile), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
-    {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
-    {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
-    {"wpredp", "Weighted prediction for P-frames", OFFSET(weightp), FF_OPT_TYPE_STRING, 0, 0, 0, VE},
+    {"preset", "Set the encoding preset", OFFSET(preset), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"tune", "Tune the encoding params", OFFSET(tune), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"fastfirstpass", "Use fast settings when encoding first pass", OFFSET(fastfirstpass), FF_OPT_TYPE_INT, {.dbl=1}, 0, 1, VE},
+    {"profile", "Set profile restrictions", OFFSET(profile), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"wpredp", "Weighted prediction for P-frames", OFFSET(weightp), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"x264opts", "x264 options", OFFSET(x264opts), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     { NULL },
 };
 

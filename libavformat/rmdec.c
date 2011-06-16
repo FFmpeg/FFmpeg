@@ -21,6 +21,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "riff.h"
 #include "rm.h"
@@ -104,7 +105,7 @@ static void rm_read_metadata(AVFormatContext *s, int wide)
     for (i=0; i<FF_ARRAY_ELEMS(ff_rm_metadata); i++) {
         int len = wide ? avio_rb16(s->pb) : avio_r8(s->pb);
         get_strl(s->pb, buf, sizeof(buf), len);
-        av_metadata_set2(&s->metadata, ff_rm_metadata[i], buf, 0);
+        av_dict_set(&s->metadata, ff_rm_metadata[i], buf, 0);
     }
 }
 
@@ -280,7 +281,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         if (rm_read_audio_stream_info(s, pb, st, rst, 0))
             return -1;
     } else {
-        int fps, fps2;
+        int fps;
         if (avio_rl32(pb) != MKTAG('V', 'I', 'D', 'O')) {
         fail1:
             av_log(st->codec, AV_LOG_ERROR, "Unsupported video codec\n");
@@ -298,7 +299,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         fps= avio_rb16(pb);
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         avio_rb32(pb);
-        fps2= avio_rb16(pb);
+        avio_skip(pb, 2);
         avio_rb16(pb);
 
         if ((ret = rm_read_extradata(pb, st->codec, codec_data_size - (avio_tell(pb) - codec_pos))) < 0)

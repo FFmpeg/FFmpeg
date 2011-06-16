@@ -66,42 +66,52 @@ char *av_get_sample_fmt_string (char *buf, int buf_size, enum AVSampleFormat sam
     return buf;
 }
 
+int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt)
+{
+     return sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB ?
+        0 : sample_fmt_info[sample_fmt].bits >> 3;
+}
+
+#if FF_API_GET_BITS_PER_SAMPLE_FMT
 int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt)
 {
     return sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB ?
         0 : sample_fmt_info[sample_fmt].bits;
 }
+#endif
 
 int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
                            uint8_t *buf, int nb_channels, int nb_samples,
                            enum AVSampleFormat sample_fmt, int planar, int align)
 {
-    int i, step_size = 0;
+    int i, linesize;
     int sample_size = av_get_bits_per_sample_fmt(sample_fmt) >> 3;
-    int channel_step = planar ? FFALIGN(nb_samples*sample_size, align) : sample_size;
 
-    if(nb_channels * (uint64_t)nb_samples * sample_size >= INT_MAX - align*(uint64_t)nb_channels)
+    if (nb_channels * (uint64_t)nb_samples * sample_size >= INT_MAX - align*(uint64_t)nb_channels)
         return AVERROR(EINVAL);
+    linesize = planar ? FFALIGN(nb_samples*sample_size,             align) :
+                        FFALIGN(nb_samples*sample_size*nb_channels, align);
 
     if (pointers) {
         pointers[0] = buf;
-        for (i = 0; i < nb_channels; i++) {
-            pointers[i] = buf + step_size;
-            step_size += channel_step;
+        for (i = 1; planar && i < nb_channels; i++) {
+            pointers[i] = pointers[i-1] + linesize;
         }
-        memset(&pointers[nb_channels], 0, (8-nb_channels) * sizeof(pointers[0]));
+        memset(&pointers[i], 0, (8-i) * sizeof(pointers[0]));
     }
 
     if (linesizes) {
-        linesizes[0] = planar ?  sample_size : nb_channels*sample_size;
-        memset(&linesizes[1], 0, (8-1) * sizeof(linesizes[0]));
+        linesizes[0] = linesize;
+        for (i = 1; planar && i < nb_channels; i++)
+            linesizes[i] = linesizes[0];
+        memset(&linesizes[i], 0, (8-i) * sizeof(linesizes[0]));
     }
 
-    return planar ? channel_step * nb_channels : FFALIGN(nb_channels*sample_size*nb_samples, align);
+    return planar ? linesize * nb_channels : linesize;
 }
 
 int av_samples_alloc(uint8_t *pointers[8], int linesizes[8],
-                     int nb_samples, int nb_channels,
+                     int nb_channels, int nb_samples,
                      enum AVSampleFormat sample_fmt, int planar,
                      int align)
 {

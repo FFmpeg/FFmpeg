@@ -1,5 +1,4 @@
 /*
- * ID3v2 header parser
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
@@ -19,11 +18,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * ID3v2 header parser
+ *
+ * Specifications available at:
+ * http://id3.org/Developer_Information
+ */
+
 #include "id3v2.h"
 #include "id3v1.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
-#include "metadata.h"
+#include "libavutil/dict.h"
 #include "avio_internal.h"
 
 int ff_id3v2_match(const uint8_t *buf, const char * magic)
@@ -133,7 +140,7 @@ static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const cha
         val = dst;
 
     if (val)
-        av_metadata_set2(&s->metadata, key, val, AV_METADATA_DONT_OVERWRITE);
+        av_dict_set(&s->metadata, key, val, AV_DICT_DONT_OVERWRITE);
 }
 
 static int is_number(const char *str)
@@ -142,44 +149,44 @@ static int is_number(const char *str)
     return !*str;
 }
 
-static AVMetadataTag* get_date_tag(AVMetadata *m, const char *tag)
+static AVDictionaryEntry* get_date_tag(AVDictionary *m, const char *tag)
 {
-    AVMetadataTag *t;
-    if ((t = av_metadata_get(m, tag, NULL, AV_METADATA_MATCH_CASE)) &&
+    AVDictionaryEntry *t;
+    if ((t = av_dict_get(m, tag, NULL, AV_DICT_MATCH_CASE)) &&
         strlen(t->value) == 4 && is_number(t->value))
         return t;
     return NULL;
 }
 
-static void merge_date(AVMetadata **m)
+static void merge_date(AVDictionary **m)
 {
-    AVMetadataTag *t;
+    AVDictionaryEntry *t;
     char date[17] = {0};      // YYYY-MM-DD hh:mm
 
     if (!(t = get_date_tag(*m, "TYER")) &&
         !(t = get_date_tag(*m, "TYE")))
         return;
     av_strlcpy(date, t->value, 5);
-    av_metadata_set2(m, "TYER", NULL, 0);
-    av_metadata_set2(m, "TYE",  NULL, 0);
+    av_dict_set(m, "TYER", NULL, 0);
+    av_dict_set(m, "TYE",  NULL, 0);
 
     if (!(t = get_date_tag(*m, "TDAT")) &&
         !(t = get_date_tag(*m, "TDA")))
         goto finish;
     snprintf(date + 4, sizeof(date) - 4, "-%.2s-%.2s", t->value + 2, t->value);
-    av_metadata_set2(m, "TDAT", NULL, 0);
-    av_metadata_set2(m, "TDA",  NULL, 0);
+    av_dict_set(m, "TDAT", NULL, 0);
+    av_dict_set(m, "TDA",  NULL, 0);
 
     if (!(t = get_date_tag(*m, "TIME")) &&
         !(t = get_date_tag(*m, "TIM")))
         goto finish;
     snprintf(date + 10, sizeof(date) - 10, " %.2s:%.2s", t->value, t->value + 2);
-    av_metadata_set2(m, "TIME", NULL, 0);
-    av_metadata_set2(m, "TIM",  NULL, 0);
+    av_dict_set(m, "TIME", NULL, 0);
+    av_dict_set(m, "TIM",  NULL, 0);
 
 finish:
     if (date[0])
-        av_metadata_set2(m, "date", date, 0);
+        av_dict_set(m, "date", date, 0);
 }
 
 static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags)
@@ -221,7 +228,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         avio_skip(s->pb, get_size(s->pb, 4));
 
     while (len >= taghdrlen) {
-        unsigned int tflags;
+        unsigned int tflags = 0;
         int tunsync = 0;
 
         if (isv34) {
@@ -238,7 +245,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             tag[3] = 0;
             tlen = avio_rb24(s->pb);
         }
-        if (tlen > (1<<28))
+        if (tlen > (1<<28) || !tlen)
             break;
         len -= taghdrlen + tlen;
 
@@ -248,6 +255,8 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         next = avio_tell(s->pb) + tlen;
 
         if (tflags & ID3v2_FLAG_DATALEN) {
+            if (tlen < 4)
+                break;
             avio_rb32(s->pb);
             tlen -= 4;
         }
@@ -259,6 +268,10 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             if (unsync || tunsync) {
                 int i, j;
                 av_fast_malloc(&buffer, &buffer_size, tlen);
+                if (!buffer) {
+                    av_log(s, AV_LOG_ERROR, "Failed to alloc %d bytes\n", tlen);
+                    goto seek;
+                }
                 for (i = 0, j = 0; i < tlen; i++, j++) {
                     buffer[j] = avio_r8(s->pb);
                     if (j > 0 && !buffer[j] && buffer[j - 1] == 0xff) {
@@ -279,6 +292,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             break;
         }
         /* Skip to end of tag */
+seek:
         avio_seek(s->pb, next, SEEK_SET);
     }
 

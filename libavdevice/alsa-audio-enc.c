@@ -38,8 +38,8 @@
  */
 
 #include <alsa/asoundlib.h>
-#include "libavformat/avformat.h"
 
+#include "avdevice.h"
 #include "alsa-audio.h"
 
 static av_cold int audio_write_header(AVFormatContext *s1)

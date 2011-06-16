@@ -21,10 +21,9 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 #include "avformat.h"
 #include "apetag.h"
-
-#define ENABLE_DEBUG 0
 
 #define APE_TAG_VERSION               2000
 #define APE_TAG_FOOTER_BYTES          32
@@ -35,11 +34,11 @@ static int ape_tag_read_field(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     uint8_t key[1024], *value;
-    uint32_t size, flags;
+    uint32_t size;
     int i, c;
 
     size = avio_rl32(pb);  /* field size */
-    flags = avio_rl32(pb); /* field flags */
+    avio_skip(pb, 4);      /* field flags */
     for (i = 0; i < sizeof(key) - 1; i++) {
         c = avio_r8(pb);
         if (c < 0x20 || c > 0x7E)
@@ -59,7 +58,7 @@ static int ape_tag_read_field(AVFormatContext *s)
         return AVERROR(ENOMEM);
     avio_read(pb, value, size);
     value[size] = 0;
-    av_metadata_set2(&s->metadata, key, value, AV_METADATA_DONT_STRDUP_VAL);
+    av_dict_set(&s->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
     return 0;
 }
 

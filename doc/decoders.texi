@@ -1,0 +1,50 @@
+@chapter Decoders
+@c man begin DECODERS
+
+Decoders are configured elements in FFmpeg which allow the decoding of
+multimedia streams.
+
+When you configure your FFmpeg build, all the supported native decoders
+are enabled by default. Decoders requiring an external library must be enabled
+manually via the corresponding @code{--enable-lib} option. You can list all
+available decoders using the configure option @code{--list-decoders}.
+
+You can disable all the decoders with the configure option
+@code{--disable-decoders} and selectively enable / disable single decoders
+with the options @code{--enable-decoder=@var{DECODER}} /
+@code{--disable-decoder=@var{DECODER}}.
+
+The option @code{-codecs} of the ff* tools will display the list of
+enabled decoders.
+
+@c man end DECODERS
+
+@chapter Video Decoders
+@c man begin VIDEO DECODERS
+
+A description of some of the currently available video decoders
+follows.
+
+@section rawvideo
+
+Rawvideo decoder.
+
+This decoder decodes rawvideo streams.
+
+@subsection Options
+
+@table @option
+@item top @var{top_field_first}
+Specify the assumed field type of the input video.
+@table @option
+@item -1
+the video is assumed to be progressive (default)
+@item 0
+bottom-field-first is assumed
+@item 1
+top-field-first is assumed
+@end table
+
+@end table
+
+@c man end VIDEO DECODERS

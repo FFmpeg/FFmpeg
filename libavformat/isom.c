@@ -27,7 +27,6 @@
 #include "internal.h"
 #include "isom.h"
 #include "riff.h"
-#include "avio_internal.h"
 #include "libavcodec/mpeg4audio.h"
 #include "libavcodec/mpegaudiodata.h"
 
@@ -460,16 +459,18 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     uint32_t layout_tag;
     AVIOContext *pb = s->pb;
     const MovChannelLayout *layouts = mov_channel_layout;
-    if (size != 12) {
+    layout_tag = avio_rb32(pb);
+    size -= 4;
+    if (layout_tag == 0) { //< kCAFChannelLayoutTag_UseChannelDescriptions
         // Channel descriptions not implemented
         av_log_ask_for_sample(s, "Unimplemented container channel layout.\n");
         avio_skip(pb, size);
         return;
     }
-    layout_tag = avio_rb32(pb);
     if (layout_tag == 0x10000) { //< kCAFChannelLayoutTag_UseChannelBitmap
         codec->channel_layout = avio_rb32(pb);
-        avio_skip(pb, 4);
+        size -= 4;
+        avio_skip(pb, size);
         return;
     }
     while (layouts->channel_layout) {
@@ -481,18 +482,13 @@ void ff_mov_read_chan(AVFormatContext *s, int64_t size, AVCodecContext *codec)
     }
     if (!codec->channel_layout)
         av_log(s, AV_LOG_WARNING, "Unknown container channel layout.\n");
-    avio_skip(pb, 8);
+    avio_skip(pb, size);
 }
 
-void ff_mov_write_chan(AVFormatContext *s, int64_t channel_layout,
-                       const char *chunk_type)
+void ff_mov_write_chan(AVIOContext *pb, int64_t channel_layout)
 {
-    AVIOContext *pb = s->pb;
     const MovChannelLayout *layouts;
     uint32_t layout_tag = 0;
-
-    if (!channel_layout)
-        return;
 
     for (layouts = mov_channel_layout; layouts->channel_layout; layouts++)
         if (channel_layout == layouts->channel_layout) {
@@ -500,8 +496,6 @@ void ff_mov_write_chan(AVFormatContext *s, int64_t channel_layout,
             break;
         }
 
-    ffio_wfourcc(pb, chunk_type);
-    avio_wb64(pb, 12);             //< mChunkSize
     if (layout_tag) {
         avio_wb32(pb, layout_tag); //< mChannelLayoutTag
         avio_wb32(pb, 0);          //< mChannelBitmap

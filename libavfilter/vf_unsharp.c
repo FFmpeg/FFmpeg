@@ -63,7 +63,7 @@ typedef struct {
     FilterParam chroma; ///< chroma parameters (width, height, amount)
 } UnsharpContext;
 
-static void unsharpen(uint8_t *dst, uint8_t *src, int dst_stride, int src_stride, int width, int height, FilterParam *fp)
+static void unsharpen(uint8_t *dst, const uint8_t *src, int dst_stride, int src_stride, int width, int height, FilterParam *fp)
 {
     uint32_t **sc = fp->sc;
     uint32_t sr[(MAX_SIZE * MAX_SIZE) - 1], tmp1, tmp2;
@@ -96,7 +96,7 @@ static void unsharpen(uint8_t *dst, uint8_t *src, int dst_stride, int src_stride
                 tmp1 = sc[z + 1][x + fp->steps_x] + tmp2; sc[z + 1][x + fp->steps_x] = tmp2;
             }
             if (x >= fp->steps_x && y >= fp->steps_y) {
-                uint8_t* srx = src - fp->steps_y * src_stride + x - fp->steps_x;
+                const uint8_t* srx = src - fp->steps_y * src_stride + x - fp->steps_x;
                 uint8_t* dsx = dst - fp->steps_y * dst_stride + x - fp->steps_x;
 
                 res = (int32_t)*srx + ((((int32_t) * srx - (int32_t)((tmp1 + fp->halfscale) >> fp->scalebits)) * fp->amount) >> 16);

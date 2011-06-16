@@ -37,6 +37,13 @@
 #include "config.h"
 #include "attributes.h"
 #include "timer.h"
+#include "cpu.h"
+#include "dict.h"
+
+struct AVDictionary {
+    int count;
+    AVDictionaryEntry *elems;
+};
 
 #ifndef attribute_align_arg
 #if ARCH_X86_32 && AV_GCC_VERSION_AT_LEAST(4,2)
@@ -141,7 +148,6 @@
 #define strncpy strncpy_is_forbidden_due_to_security_issues_use_av_strlcpy
 #undef  exit
 #define exit exit_is_forbidden
-#ifndef LIBAVFORMAT_BUILD
 #undef  printf
 #define printf please_use_av_log_instead_of_printf
 #undef  fprintf
@@ -150,7 +156,6 @@
 #define puts please_use_av_log_instead_of_puts
 #undef  perror
 #define perror please_use_av_log_instead_of_perror
-#endif
 
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\
@@ -221,5 +226,20 @@
 #else
 #   define ONLY_IF_THREADS_ENABLED(x) NULL
 #endif
+
+#if HAVE_MMX
+/**
+ * Empty mmx state.
+ * this must be called between any dsp function and float/double code.
+ * for example sin(); dsp->idct_put(); emms_c(); cos()
+ */
+static av_always_inline void emms_c(void)
+{
+    if(av_get_cpu_flags() & AV_CPU_FLAG_MMX)
+        __asm__ volatile ("emms" ::: "memory");
+}
+#else /* HAVE_MMX */
+#define emms_c()
+#endif /* HAVE_MMX */
 
 #endif /* AVUTIL_INTERNAL_H */

@@ -31,7 +31,7 @@
 
 #define LIBSWSCALE_VERSION_MAJOR 0
 #define LIBSWSCALE_VERSION_MINOR 14
-#define LIBSWSCALE_VERSION_MICRO 0
+#define LIBSWSCALE_VERSION_MICRO 1
 
 #define LIBSWSCALE_VERSION_INT  AV_VERSION_INT(LIBSWSCALE_VERSION_MAJOR, \
                                                LIBSWSCALE_VERSION_MINOR, \
@@ -49,6 +49,12 @@
  */
 #ifndef FF_API_SWS_GETCONTEXT
 #define FF_API_SWS_GETCONTEXT  (LIBSWSCALE_VERSION_MAJOR < 2)
+#endif
+#ifndef FF_API_SWS_CPU_CAPS
+#define FF_API_SWS_CPU_CAPS    (LIBSWSCALE_VERSION_MAJOR < 2)
+#endif
+#ifndef FF_API_SWS_FORMAT_NAME
+#define FF_API_SWS_FORMAT_NAME  (LIBSWSCALE_VERSION_MAJOR < 2)
 #endif
 
 /**
@@ -95,12 +101,18 @@ const char *swscale_license(void);
 #define SWS_ACCURATE_RND      0x40000
 #define SWS_BITEXACT          0x80000
 
+#if FF_API_SWS_CPU_CAPS
+/**
+ * CPU caps are autodetected now, those flags
+ * are only provided for API compatibility.
+ */
 #define SWS_CPU_CAPS_MMX      0x80000000
 #define SWS_CPU_CAPS_MMX2     0x20000000
 #define SWS_CPU_CAPS_3DNOW    0x40000000
 #define SWS_CPU_CAPS_ALTIVEC  0x10000000
 #define SWS_CPU_CAPS_BFIN     0x01000000
 #define SWS_CPU_CAPS_SSE2     0x02000000
+#endif
 
 #define SWS_MAX_REDUCE_CUTOFF 0.002
 
@@ -187,6 +199,7 @@ void sws_freeContext(struct SwsContext *swsContext);
  * @return a pointer to an allocated context, or NULL in case of error
  * @note this function is to be removed after a saner alternative is
  *       written
+ * @deprecated Use sws_getCachedContext() instead.
  */
 struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat,
                                   int dstW, int dstH, enum PixelFormat dstFormat,
@@ -341,7 +354,7 @@ struct SwsContext *sws_getCachedContext(struct SwsContext *context,
  * @param num_pixels number of pixels to convert
  * @param palette    array with [256] entries, which must match color arrangement (RGB or BGR) of src
  */
-void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette);
 
 /**
  * Converts an 8bit paletted frame into a frame with a color depth of 24 bits.
@@ -353,7 +366,7 @@ void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, long num_pi
  * @param num_pixels number of pixels to convert
  * @param palette    array with [256] entries, which must match color arrangement (RGB or BGR) of src
  */
-void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette);
+void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette);
 
 
 #endif /* SWSCALE_SWSCALE_H */

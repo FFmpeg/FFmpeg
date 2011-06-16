@@ -20,10 +20,10 @@
  */
 #include "avformat.h"
 #include "riff.h"
+#include "libavutil/dict.h"
+#include "libavutil/intreadwrite.h"
 
-//#define DEBUG
 //#define DEBUG_DUMP_INDEX // XXX dumbdriving-271.nsv breaks with it commented!!
-//#define DEBUG_SEEK
 #define CHECK_SUBSEQUENT_NSVS
 //#define DISABLE_AUDIO
 
@@ -267,7 +267,8 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     NSVContext *nsv = s->priv_data;
     AVIOContext *pb = s->pb;
-    unsigned int file_size, size;
+    unsigned int av_unused file_size;
+    unsigned int size;
     int64_t duration;
     int strings_size;
     int table_entries;
@@ -327,7 +328,7 @@ static int nsv_parse_NSVf_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             *p++ = '\0';
             av_dlog(s, "NSV NSVf INFO: %s='%s'\n", token, value);
-            av_metadata_set2(&s->metadata, token, value, 0);
+            av_dict_set(&s->metadata, token, value, 0);
         }
         av_free(strings);
     }
@@ -531,7 +532,7 @@ static int nsv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     err = nsv_read_chunk(s, 1);
 
     av_dlog(s, "parsed header\n");
-    return 0;
+    return err;
 }
 
 static int nsv_read_chunk(AVFormatContext *s, int fill_header)
@@ -546,7 +547,7 @@ static int nsv_read_chunk(AVFormatContext *s, int fill_header)
     uint32_t vsize;
     uint16_t asize;
     uint16_t auxsize;
-    uint32_t auxtag;
+    uint32_t av_unused auxtag;
 
     av_dlog(s, "%s(%d)\n", __FUNCTION__, fill_header);
 
@@ -736,10 +737,8 @@ static int nsv_read_close(AVFormatContext *s)
 
 static int nsv_probe(AVProbeData *p)
 {
-    int i;
-    int score;
-    int vsize, asize, auxcount;
-    score = 0;
+    int i, score = 0;
+
     av_dlog(NULL, "nsv_probe(), buf_size %d\n", p->buf_size);
     /* check file header */
     /* streamed files might not have any header */
@@ -751,19 +750,14 @@ static int nsv_probe(AVProbeData *p)
     /* seems the servers don't bother starting clean chunks... */
     /* sometimes even the first header is at 9KB or something :^) */
     for (i = 1; i < p->buf_size - 3; i++) {
-        if (p->buf[i+0] == 'N' && p->buf[i+1] == 'S' &&
-            p->buf[i+2] == 'V' && p->buf[i+3] == 's') {
-            score = AVPROBE_SCORE_MAX/5;
+        if (AV_RL32(p->buf + i) == AV_RL32("NSVs")) {
             /* Get the chunk size and check if at the end we are getting 0xBEEF */
-            auxcount = p->buf[i+19];
-            vsize = p->buf[i+20]  | p->buf[i+21] << 8;
-            asize = p->buf[i+22]  | p->buf[i+23] << 8;
-            vsize = (vsize << 4) | (auxcount >> 4);
-            if ((asize + vsize + i + 23) <  p->buf_size - 2) {
-                if (p->buf[i+23+asize+vsize+1] == 0xEF &&
-                    p->buf[i+23+asize+vsize+2] == 0xBE)
-                    return AVPROBE_SCORE_MAX-20;
-            }
+            int vsize = AV_RL24(p->buf+i+19) >> 4;
+            int asize = AV_RL16(p->buf+i+22);
+            int offset = i + 23 + asize + vsize + 1;
+            if (offset <= p->buf_size - 2 && AV_RL16(p->buf + offset) == 0xBEEF)
+                return 4*AVPROBE_SCORE_MAX/5;
+            score = AVPROBE_SCORE_MAX/5;
         }
     }
     /* so we'll have more luck on extension... */

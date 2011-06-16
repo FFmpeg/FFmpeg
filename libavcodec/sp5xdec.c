@@ -38,14 +38,11 @@ static int sp5x_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     AVPacket avpkt_recoded;
     const int qscale = 5;
-    const uint8_t *buf_ptr;
     uint8_t *recoded;
     int i = 0, j = 0;
 
     if (!avctx->width || !avctx->height)
         return -1;
-
-    buf_ptr = buf;
 
     recoded = av_mallocz(buf_size + 1024);
     if (!recoded)

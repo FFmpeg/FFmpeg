@@ -21,6 +21,7 @@
 
 #include "libavutil/bswap.h"
 #include "libavutil/crc.h"
+#include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "libavcodec/mpegvideo.h"
 #include "avformat.h"
@@ -53,6 +54,7 @@ typedef struct MpegTSService {
 } MpegTSService;
 
 typedef struct MpegTSWrite {
+    const AVClass *av_class;
     MpegTSSection pat; /* MPEG2 pat table */
     MpegTSSection sdt; /* MPEG2 sdt table context */
     MpegTSService **services;
@@ -243,7 +245,7 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
     for(i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];
         MpegTSWriteStream *ts_st = st->priv_data;
-        AVMetadataTag *lang = av_metadata_get(st->metadata, "language", NULL,0);
+        AVDictionaryEntry *lang = av_dict_get(st->metadata, "language", NULL,0);
         switch(st->codec->codec_id) {
         case CODEC_ID_MPEG1VIDEO:
         case CODEC_ID_MPEG2VIDEO:
@@ -442,7 +444,7 @@ static int mpegts_write_header(AVFormatContext *s)
     MpegTSWriteStream *ts_st;
     MpegTSService *service;
     AVStream *st, *pcr_st = NULL;
-    AVMetadataTag *title, *provider;
+    AVDictionaryEntry *title, *provider;
     int i, j;
     const char *service_name;
     const char *provider_name;
@@ -451,11 +453,11 @@ static int mpegts_write_header(AVFormatContext *s)
     ts->tsid = ts->transport_stream_id;
     ts->onid = ts->original_network_id;
     /* allocate a single DVB service */
-    title = av_metadata_get(s->metadata, "service_name", NULL, 0);
+    title = av_dict_get(s->metadata, "service_name", NULL, 0);
     if (!title)
-        title = av_metadata_get(s->metadata, "title", NULL, 0);
+        title = av_dict_get(s->metadata, "title", NULL, 0);
     service_name = title ? title->value : DEFAULT_SERVICE_NAME;
-    provider = av_metadata_get(s->metadata, "service_provider", NULL, 0);
+    provider = av_dict_get(s->metadata, "service_provider", NULL, 0);
     provider_name = provider ? provider->value : DEFAULT_PROVIDER_NAME;
     service = mpegts_add_service(ts, ts->service_id, provider_name, service_name);
     service->pmt.write_packet = section_write_packet;

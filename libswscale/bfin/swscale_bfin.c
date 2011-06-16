@@ -38,12 +38,12 @@
 #endif
 
 int ff_bfin_uyvytoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                       long width, long height,
-                       long lumStride, long chromStride, long srcStride) L1CODE;
+                       int width, int height,
+                       int lumStride, int chromStride, int srcStride) L1CODE;
 
 int ff_bfin_yuyvtoyv12(const uint8_t *src, uint8_t *ydst, uint8_t *udst, uint8_t *vdst,
-                       long width, long height,
-                       long lumStride, long chromStride, long srcStride) L1CODE;
+                       int width, int height,
+                       int lumStride, int chromStride, int srcStride) L1CODE;
 
 static int uyvytoyv12_unscaled(SwsContext *c, uint8_t* src[], int srcStride[], int srcSliceY,
                                int srcSliceH, uint8_t* dst[], int dstStride[])
@@ -79,15 +79,13 @@ static int yuyvtoyv12_unscaled(SwsContext *c, uint8_t* src[], int srcStride[], i
 void ff_bfin_get_unscaled_swscale(SwsContext *c)
 {
     SwsFunc swScale = c->swScale;
-    if (c->flags & SWS_CPU_CAPS_BFIN)
-        if (c->dstFormat == PIX_FMT_YUV420P)
-            if (c->srcFormat == PIX_FMT_UYVY422) {
-                av_log (NULL, AV_LOG_VERBOSE, "selecting Blackfin optimized uyvytoyv12_unscaled\n");
-                c->swScale = uyvytoyv12_unscaled;
-            }
-        if (c->dstFormat == PIX_FMT_YUV420P)
-            if (c->srcFormat == PIX_FMT_YUYV422) {
-                av_log (NULL, AV_LOG_VERBOSE, "selecting Blackfin optimized yuyvtoyv12_unscaled\n");
-                c->swScale = yuyvtoyv12_unscaled;
-            }
+
+    if (c->dstFormat == PIX_FMT_YUV420P && c->srcFormat == PIX_FMT_UYVY422) {
+        av_log (NULL, AV_LOG_VERBOSE, "selecting Blackfin optimized uyvytoyv12_unscaled\n");
+        c->swScale = uyvytoyv12_unscaled;
+    }
+    if (c->dstFormat == PIX_FMT_YUV420P && c->srcFormat == PIX_FMT_YUYV422) {
+        av_log (NULL, AV_LOG_VERBOSE, "selecting Blackfin optimized yuyvtoyv12_unscaled\n");
+        c->swScale = yuyvtoyv12_unscaled;
+    }
 }

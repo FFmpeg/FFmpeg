@@ -23,6 +23,7 @@
 #include "avformat.h"
 #include "apetag.h"
 #include "id3v1.h"
+#include "libavutil/dict.h"
 
 #define MPC_FRAMESIZE  1152
 #define DELAY_FRAMES   32
@@ -96,7 +97,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (s->pb->seekable) {
         int64_t pos = avio_tell(s->pb);
         ff_ape_parse_tag(s);
-        if (!av_metadata_get(s->metadata, "", NULL, AV_METADATA_IGNORE_SUFFIX))
+        if (!av_dict_get(s->metadata, "", NULL, AV_DICT_IGNORE_SUFFIX))
             ff_id3v1_read(s);
         avio_seek(s->pb, pos, SEEK_SET);
     }

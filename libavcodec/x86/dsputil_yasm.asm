@@ -30,7 +30,7 @@ pb_zz11zz55zz99zzdd: db -1,-1,1,1,-1,-1,5,5,-1,-1,9,9,-1,-1,13,13
 pb_revwords: db 14, 15, 12, 13, 10, 11, 8, 9, 6, 7, 4, 5, 2, 3, 0, 1
 pd_16384: times 4 dd 16384
 
-section .text align=16
+SECTION_TEXT
 
 %macro SCALARPRODUCT 1
 ; int scalarproduct_int16(int16_t *v1, int16_t *v2, int order, int shift)

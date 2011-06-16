@@ -49,9 +49,11 @@ typedef struct {
     const AVClass *class;
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
-    uint8_t *text_priv;             ///< used to detect whether text changed
+    uint8_t *expanded_text;         ///< used to contain the strftime()-expanded text
+    size_t   expanded_text_size;    ///< size in bytes of the expanded_text buffer
     int ft_load_flags;              ///< flags used for loading fonts, see FT_LOAD_*
     FT_Vector *positions;           ///< positions for each element in the text
+    size_t nb_positions;            ///< number of elements of positions array
     char *textfile;                 ///< file with text to be drawn
     unsigned int x;                 ///< x position to start drawing text
     unsigned int y;                 ///< y position to start drawing text
@@ -84,37 +86,37 @@ typedef struct {
 #define OFFSET(x) offsetof(DrawTextContext, x)
 
 static const AVOption drawtext_options[]= {
-{"fontfile", "set font file",        OFFSET(fontfile),         FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
-{"text",     "set text",             OFFSET(text),             FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
-{"textfile", "set text file",        OFFSET(textfile),         FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
-{"fontcolor","set foreground color", OFFSET(fontcolor_string), FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
-{"boxcolor", "set box color",        OFFSET(boxcolor_string),  FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
-{"shadowcolor", "set shadow color",  OFFSET(shadowcolor_string),  FF_OPT_TYPE_STRING, 0,  CHAR_MIN, CHAR_MAX },
-{"box",      "set box",              OFFSET(draw_box),         FF_OPT_TYPE_INT,    0,         0,        1 },
-{"fontsize", "set font size",        OFFSET(fontsize),         FF_OPT_TYPE_INT,   16,         1,       72 },
-{"x",        "set x",                OFFSET(x),                FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
-{"y",        "set y",                OFFSET(y),                FF_OPT_TYPE_INT,    0,         0,  INT_MAX },
-{"shadowx",  "set x",                OFFSET(shadowx),          FF_OPT_TYPE_INT,    0,   INT_MIN,  INT_MAX },
-{"shadowy",  "set y",                OFFSET(shadowy),          FF_OPT_TYPE_INT,    0,   INT_MIN,  INT_MAX },
-{"tabsize",  "set tab size",         OFFSET(tabsize),          FF_OPT_TYPE_INT,    4,         0,  INT_MAX },
+{"fontfile", "set font file",        OFFSET(fontfile),           FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"text",     "set text",             OFFSET(text),               FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"textfile", "set text file",        OFFSET(textfile),           FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"fontcolor","set foreground color", OFFSET(fontcolor_string),   FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"boxcolor", "set box color",        OFFSET(boxcolor_string),    FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"shadowcolor", "set shadow color",  OFFSET(shadowcolor_string), FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"box",      "set box",              OFFSET(draw_box),           FF_OPT_TYPE_INT,    {.dbl=0},     0,        1        },
+{"fontsize", "set font size",        OFFSET(fontsize),           FF_OPT_TYPE_INT,    {.dbl=16},    1,        72       },
+{"x",        "set x",                OFFSET(x),                  FF_OPT_TYPE_INT,    {.dbl=0},     0,        INT_MAX  },
+{"y",        "set y",                OFFSET(y),                  FF_OPT_TYPE_INT,    {.dbl=0},     0,        INT_MAX  },
+{"shadowx",  "set x",                OFFSET(shadowx),            FF_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
+{"shadowy",  "set y",                OFFSET(shadowy),            FF_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
+{"tabsize",  "set tab size",         OFFSET(tabsize),            FF_OPT_TYPE_INT,    {.dbl=4},     0,        INT_MAX  },
 
 /* FT_LOAD_* flags */
-{"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  FF_OPT_TYPE_FLAGS,  FT_LOAD_DEFAULT|FT_LOAD_RENDER, 0, INT_MAX, 0, "ft_load_flags" },
-{"default",                     "set default",                     0, FF_OPT_TYPE_CONST, FT_LOAD_DEFAULT,                     INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"no_scale",                    "set no_scale",                    0, FF_OPT_TYPE_CONST, FT_LOAD_NO_SCALE,                    INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"no_hinting",                  "set no_hinting",                  0, FF_OPT_TYPE_CONST, FT_LOAD_NO_HINTING,                  INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"render",                      "set render",                      0, FF_OPT_TYPE_CONST, FT_LOAD_RENDER,                      INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"no_bitmap",                   "set no_bitmap",                   0, FF_OPT_TYPE_CONST, FT_LOAD_NO_BITMAP,                   INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"vertical_layout",             "set vertical_layout",             0, FF_OPT_TYPE_CONST, FT_LOAD_VERTICAL_LAYOUT,             INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"force_autohint",              "set force_autohint",              0, FF_OPT_TYPE_CONST, FT_LOAD_FORCE_AUTOHINT,              INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"crop_bitmap",                 "set crop_bitmap",                 0, FF_OPT_TYPE_CONST, FT_LOAD_CROP_BITMAP,                 INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"pedantic",                    "set pedantic",                    0, FF_OPT_TYPE_CONST, FT_LOAD_PEDANTIC,                    INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"ignore_global_advance_width", "set ignore_global_advance_width", 0, FF_OPT_TYPE_CONST, FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH, INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"no_recurse",                  "set no_recurse",                  0, FF_OPT_TYPE_CONST, FT_LOAD_NO_RECURSE,                  INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"ignore_transform",            "set ignore_transform",            0, FF_OPT_TYPE_CONST, FT_LOAD_IGNORE_TRANSFORM,            INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"monochrome",                  "set monochrome",                  0, FF_OPT_TYPE_CONST, FT_LOAD_MONOCHROME,                  INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"linear_design",               "set linear_design",               0, FF_OPT_TYPE_CONST, FT_LOAD_LINEAR_DESIGN,               INT_MIN, INT_MAX, 0, "ft_load_flags" },
-{"no_autohint",                 "set no_autohint",                 0, FF_OPT_TYPE_CONST, FT_LOAD_NO_AUTOHINT,                 INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  FF_OPT_TYPE_FLAGS,  {.dbl=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
+{"default",                     "set default",                     0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_DEFAULT},                     INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"no_scale",                    "set no_scale",                    0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_NO_SCALE},                    INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"no_hinting",                  "set no_hinting",                  0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_NO_HINTING},                  INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"render",                      "set render",                      0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_RENDER},                      INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"no_bitmap",                   "set no_bitmap",                   0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_NO_BITMAP},                   INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"vertical_layout",             "set vertical_layout",             0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_VERTICAL_LAYOUT},             INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"force_autohint",              "set force_autohint",              0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_FORCE_AUTOHINT},              INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"crop_bitmap",                 "set crop_bitmap",                 0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_CROP_BITMAP},                 INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"pedantic",                    "set pedantic",                    0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_PEDANTIC},                    INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"ignore_global_advance_width", "set ignore_global_advance_width", 0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_IGNORE_GLOBAL_ADVANCE_WIDTH}, INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"no_recurse",                  "set no_recurse",                  0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_NO_RECURSE},                  INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"ignore_transform",            "set ignore_transform",            0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_IGNORE_TRANSFORM},            INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"monochrome",                  "set monochrome",                  0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_MONOCHROME},                  INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"linear_design",               "set linear_design",               0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_LINEAR_DESIGN},               INT_MIN, INT_MAX, 0, "ft_load_flags" },
+{"no_autohint",                 "set no_autohint",                 0, FF_OPT_TYPE_CONST, {.dbl=FT_LOAD_NO_AUTOHINT},                 INT_MIN, INT_MAX, 0, "ft_load_flags" },
 {NULL},
 };
 
@@ -349,6 +351,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&dtext->fontfile);
     av_freep(&dtext->text);
+    av_freep(&dtext->expanded_text);
     av_freep(&dtext->fontcolor_string);
     av_freep(&dtext->boxcolor_string);
     av_freep(&dtext->positions);
@@ -517,7 +520,7 @@ static inline int is_newline(uint32_t c)
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
-    char *text = dtext->text;
+    char *text = HAVE_LOCALTIME_R ? dtext->expanded_text : dtext->text;
     uint32_t code = 0;
     int i;
     uint8_t *p;
@@ -559,45 +562,51 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     uint32_t code = 0, prev_code = 0;
     int x = 0, y = 0, i = 0, ret;
     int text_height, baseline;
+    char *text = dtext->text;
     uint8_t *p;
-    int str_w = 0;
+    int str_w = 0, len;
     int y_min = 32000, y_max = -32000;
     FT_Vector delta;
     Glyph *glyph = NULL, *prev_glyph = NULL;
     Glyph dummy = { 0 };
 
-    if (dtext->text != dtext->text_priv) {
 #if HAVE_LOCALTIME_R
-        time_t now = time(0);
-        struct tm ltime;
-        uint8_t *buf = NULL;
-        int     buflen = 2*strlen(dtext->text) + 1, len;
+    time_t now = time(0);
+    struct tm ltime;
+    uint8_t *buf = dtext->expanded_text;
+    int buf_size = dtext->expanded_text_size;
 
-        localtime_r(&now, &ltime);
+    if (!buf) {
+        buf_size = 2*strlen(dtext->text)+1;
+        buf = av_malloc(buf_size);
+    }
 
-        while ((buf = av_realloc(buf, buflen))) {
-            *buf = 1;
-            if ((len = strftime(buf, buflen, dtext->text, &ltime)) != 0 || *buf == 0)
-                break;
-            buflen *= 2;
-        }
-        if (!buf)
-            return AVERROR(ENOMEM);
-        av_freep(&dtext->text);
-        dtext->text = dtext->text_priv = buf;
-#else
-        dtext->text_priv = dtext->text;
+    localtime_r(&now, &ltime);
+
+    do {
+        *buf = 1;
+        if (strftime(buf, buf_size, dtext->text, &ltime) != 0 || *buf == 0)
+            break;
+        buf_size *= 2;
+    } while ((buf = av_realloc(buf, buf_size)));
+
+    if (!buf)
+        return AVERROR(ENOMEM);
+    text = dtext->expanded_text = buf;
+    dtext->expanded_text_size = buf_size;
 #endif
-        if (!(dtext->positions = av_realloc(dtext->positions,
-                                            strlen(dtext->text)*sizeof(*dtext->positions))))
+    if ((len = strlen(text)) > dtext->nb_positions) {
+        if (!(dtext->positions =
+              av_realloc(dtext->positions, len*sizeof(*dtext->positions))))
             return AVERROR(ENOMEM);
+        dtext->nb_positions = len;
     }
 
     x = dtext->x;
     y = dtext->y;
 
     /* load and cache glyphs */
-    for (i = 0, p = dtext->text; *p; i++) {
+    for (i = 0, p = text; *p; i++) {
         GET_UTF8(code, *p++, continue;);
 
         /* get glyph */
@@ -614,7 +623,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
     /* compute and save position for each glyph */
     glyph = NULL;
-    for (i = 0, p = dtext->text; *p; i++) {
+    for (i = 0, p = text; *p; i++) {
         GET_UTF8(code, *p++, continue;);
 
         /* skip the \n in the sequence \r\n */

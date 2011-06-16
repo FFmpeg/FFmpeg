@@ -122,7 +122,7 @@ typedef struct InternalBuffer{
     enum PixelFormat pix_fmt;
 }InternalBuffer;
 
-#define INTERNAL_BUFFER_SIZE 32
+#define INTERNAL_BUFFER_SIZE (32+1)
 
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int linesize_align[4]){
     int w_align= 1;
@@ -576,7 +576,7 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
         }
     }
 
-    if (avctx->codec->max_lowres < avctx->lowres) {
+    if (avctx->codec->max_lowres < avctx->lowres || avctx->lowres < 0) {
         av_log(avctx, AV_LOG_ERROR, "The maximum value for lowres supported by the decoder is %d\n",
                avctx->codec->max_lowres);
         ret = AVERROR(EINVAL);
@@ -762,9 +762,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
     if((avctx->coded_width||avctx->coded_height) && av_image_check_size(avctx->coded_width, avctx->coded_height, 0, avctx))
         return -1;
 
-    avctx->pkt = avpkt;
-
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size || (avctx->active_thread_type&FF_THREAD_FRAME)){
+        avctx->pkt = avpkt;
         if (HAVE_PTHREADS && avctx->active_thread_type&FF_THREAD_FRAME)
              ret = ff_thread_decode_frame(avctx, picture, got_picture_ptr,
                                           avpkt);
@@ -775,6 +774,8 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
 
             if(!avctx->has_b_frames){
             picture->pkt_pos= avpkt->pos;
+            }
+            //FIXME these should be under if(!avctx->has_b_frames)
             if (!picture->sample_aspect_ratio.num)
                 picture->sample_aspect_ratio = avctx->sample_aspect_ratio;
             if (!picture->width)
@@ -783,7 +784,6 @@ int attribute_align_arg avcodec_decode_video2(AVCodecContext *avctx, AVFrame *pi
                 picture->height = avctx->height;
             if (picture->format == PIX_FMT_NONE)
                 picture->format = avctx->pix_fmt;
-            }
         }
 
         emms_c(); //needed to avoid an emms_c() call before every return;
@@ -914,6 +914,9 @@ av_cold int avcodec_close(AVCodecContext *avctx)
         avctx->codec->close(avctx);
     avcodec_default_free_buffers(avctx);
     avctx->coded_frame = NULL;
+    if (avctx->codec && avctx->codec->priv_class)
+        av_opt_free(avctx->priv_data);
+    av_opt_free(avctx);
     av_freep(&avctx->priv_data);
     if(avctx->codec && avctx->codec->encode)
         av_freep(&avctx->extradata);
@@ -960,14 +963,18 @@ AVCodec *avcodec_find_encoder_by_name(const char *name)
 
 AVCodec *avcodec_find_decoder(enum CodecID id)
 {
-    AVCodec *p;
+    AVCodec *p, *experimental=NULL;
     p = first_avcodec;
     while (p) {
-        if (p->decode != NULL && p->id == id)
-            return p;
+        if (p->decode != NULL && p->id == id) {
+            if (p->capabilities & CODEC_CAP_EXPERIMENTAL && !experimental) {
+                experimental = p;
+            } else
+                return p;
+        }
         p = p->next;
     }
-    return NULL;
+    return experimental;
 }
 
 AVCodec *avcodec_find_decoder_by_name(const char *name)
@@ -1064,7 +1071,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
         if (enc->pix_fmt != PIX_FMT_NONE) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),
                      ", %s",
-                     avcodec_get_pix_fmt_name(enc->pix_fmt));
+                     av_get_pix_fmt_name(enc->pix_fmt));
         }
         if (enc->width) {
             snprintf(buf + strlen(buf), buf_size - strlen(buf),

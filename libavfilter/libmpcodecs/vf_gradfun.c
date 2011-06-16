@@ -188,7 +188,7 @@ static void filter_line_ssse3(uint8_t *dst, uint8_t *src, uint16_t *dc,
 }
 #endif // HAVE_SSSE3
 
-#if HAVE_SSE2 && HAVE_6REGS
+#if HAVE_SSE && HAVE_6REGS
 #define BLURV(load)\
     intptr_t x = -2*width;\
     __asm__ volatile(\
@@ -231,7 +231,7 @@ static void blur_line_sse2(uint16_t *dc, uint16_t *buf, uint16_t *buf1,
         BLURV("movdqa");
     }
 }
-#endif // HAVE_6REGS && HAVE_SSE2
+#endif // HAVE_6REGS && HAVE_SSE
 
 static void filter(struct vf_priv_s *ctx, uint8_t *dst, uint8_t *src,
                    int width, int height, int dstride, int sstride, int r)
@@ -385,7 +385,7 @@ static int vf_open(vf_instance_t *vf, char *args)
 
     vf->priv->blur_line = blur_line_c;
     vf->priv->filter_line = filter_line_c;
-#if HAVE_SSE2 && HAVE_6REGS
+#if HAVE_SSE && HAVE_6REGS
     if (gCpuCaps.hasSSE2)
         vf->priv->blur_line = blur_line_sse2;
 #endif

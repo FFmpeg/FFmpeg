@@ -128,24 +128,33 @@ static void ac3_bit_alloc_calc_bap_c(int16_t *mask, int16_t *psd,
     } while (end > ff_ac3_band_start_tab[band++]);
 }
 
-static int ac3_compute_mantissa_size_c(int mant_cnt[5], uint8_t *bap,
-                                       int nb_coefs)
+static void ac3_update_bap_counts_c(uint16_t mant_cnt[16], uint8_t *bap,
+                                    int len)
 {
-    int bits, b, i;
+    while (len-- > 0)
+        mant_cnt[bap[len]]++;
+}
 
-    bits = 0;
-    for (i = 0; i < nb_coefs; i++) {
-        b = bap[i];
-        if (b <= 4) {
-            // bap=1 to bap=4 will be counted in compute_mantissa_size_final
-            mant_cnt[b]++;
-        } else if (b <= 13) {
-            // bap=5 to bap=13 use (bap-1) bits
-            bits += b - 1;
-        } else {
-            // bap=14 uses 14 bits and bap=15 uses 16 bits
-            bits += (b == 14) ? 14 : 16;
-        }
+DECLARE_ALIGNED(16, const uint16_t, ff_ac3_bap_bits)[16] = {
+    0,  0,  0,  3,  0,  4,  5,  6,  7,  8,  9, 10, 11, 12, 14, 16
+};
+
+static int ac3_compute_mantissa_size_c(uint16_t mant_cnt[6][16])
+{
+    int blk, bap;
+    int bits = 0;
+
+    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
+        // bap=1 : 3 mantissas in 5 bits
+        bits += (mant_cnt[blk][1] / 3) * 5;
+        // bap=2 : 3 mantissas in 7 bits
+        // bap=4 : 2 mantissas in 7 bits
+        bits += ((mant_cnt[blk][2] / 3) + (mant_cnt[blk][4] >> 1)) * 7;
+        // bap=3 : 1 mantissa in 3 bits
+        bits += mant_cnt[blk][3] * 3;
+        // bap=5 to 15 : get bits per mantissa from table
+        for (bap = 5; bap < 16; bap++)
+            bits += mant_cnt[blk][bap] * ff_ac3_bap_bits[bap];
     }
     return bits;
 }
@@ -181,6 +190,7 @@ av_cold void ff_ac3dsp_init(AC3DSPContext *c, int bit_exact)
     c->ac3_rshift_int32 = ac3_rshift_int32_c;
     c->float_to_fixed24 = float_to_fixed24_c;
     c->bit_alloc_calc_bap = ac3_bit_alloc_calc_bap_c;
+    c->update_bap_counts = ac3_update_bap_counts_c;
     c->compute_mantissa_size = ac3_compute_mantissa_size_c;
     c->extract_exponents = ac3_extract_exponents_c;
 

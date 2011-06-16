@@ -181,7 +181,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
         int x, y, bh2, bw2, xored;
         uint8_t *tsrc, *tprev;
         uint8_t *mv;
-        int mx, my, bv;
+        int mx, my;
 
         bw = (avctx->width + ZMBV_BLOCK - 1) / ZMBV_BLOCK;
         bh = (avctx->height + ZMBV_BLOCK - 1) / ZMBV_BLOCK;
@@ -197,7 +197,7 @@ static int encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf_size, void 
                 tsrc = src + x;
                 tprev = prev + x;
 
-                bv = zmbv_me(c, tsrc, p->linesize[0], tprev, c->pstride, x, y, &mx, &my, &xored);
+                zmbv_me(c, tsrc, p->linesize[0], tprev, c->pstride, x, y, &mx, &my, &xored);
                 mv[0] = (mx << 1) | !!xored;
                 mv[1] = my << 1;
                 tprev += mx + my * c->pstride;

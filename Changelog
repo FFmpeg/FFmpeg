@@ -9,12 +9,26 @@ version <next>:
 - mpeg2 aspect ratio dection fixed
 - libxvid aspect pickiness fixed
 - Frame multithreaded decoding
+- E-AC-3 audio encoder
+- ac3enc: add channel coupling support
+- floating-point sample format support to the ac3, eac3, dca, aac, and vorbis decoders.
+- H264/MPEG frame-level multi-threading
+- All av_metadata_* functions renamed to av_dict_* and moved to libavutil
+
+
+version 0.7_beta2:
+
 - Lots of deprecated API cruft removed
 - fft and imdct optimizations for AVX (Sandy Bridge) processors
 - showinfo filter added
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
 - Apple Core Audio Format muxer
+- 9bit and 10bit H.264 decoding
+- 9bit and 10bit FFV1 encoding / decoding
+- split filter added
+- select filter added
+- sdl output device added
 
 
 version 0.7_beta1:

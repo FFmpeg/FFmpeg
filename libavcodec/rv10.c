@@ -235,7 +235,7 @@ int rv_decode_dc(MpegEncContext *s, int n)
 /* read RV 1.0 compatible frame header */
 static int rv10_decode_picture_header(MpegEncContext *s)
 {
-    int mb_count, pb_frame, marker, unk, mb_xy;
+    int mb_count, pb_frame, marker, mb_xy;
 
     marker = get_bits1(&s->gb);
 
@@ -282,7 +282,7 @@ static int rv10_decode_picture_header(MpegEncContext *s)
         s->mb_y = 0;
         mb_count = s->mb_width * s->mb_height;
     }
-    unk= get_bits(&s->gb, 3);   /* ignored */
+    skip_bits(&s->gb, 3);   /* ignored */
     s->f_code = 1;
     s->unrestricted_mv = 1;
 

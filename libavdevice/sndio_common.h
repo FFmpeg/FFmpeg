@@ -25,9 +25,11 @@
 #include <stdint.h>
 #include <sndio.h>
 
-#include "libavformat/avformat.h"
+#include "libavutil/log.h"
+#include "avdevice.h"
 
 typedef struct {
+    AVClass *class;
     struct sio_hdl *hdl;
     enum CodecID codec_id;
     int64_t hwpos;

@@ -23,7 +23,7 @@
 DECLARE_ALIGNED(16, static const uint16_t, pw_7f)[8] = {0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F,0x7F};
 DECLARE_ALIGNED(16, static const uint16_t, pw_ff)[8] = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 
-void ff_gradfun_filter_line_mmx2(uint8_t *dst, uint8_t *src, uint16_t *dc, int width, int thresh, const uint16_t *dithers)
+void ff_gradfun_filter_line_mmx2(uint8_t *dst, const uint8_t *src, const uint16_t *dc, int width, int thresh, const uint16_t *dithers)
 {
 #if HAVE_MMX
     intptr_t x;
@@ -71,7 +71,7 @@ void ff_gradfun_filter_line_mmx2(uint8_t *dst, uint8_t *src, uint16_t *dc, int w
 #endif
 }
 
-void ff_gradfun_filter_line_ssse3(uint8_t *dst, uint8_t *src, uint16_t *dc, int width, int thresh, const uint16_t *dithers)
+void ff_gradfun_filter_line_ssse3(uint8_t *dst, const uint8_t *src, const uint16_t *dc, int width, int thresh, const uint16_t *dithers)
 {
 #if HAVE_SSSE3
     intptr_t x;
@@ -118,7 +118,7 @@ void ff_gradfun_filter_line_ssse3(uint8_t *dst, uint8_t *src, uint16_t *dc, int 
 #endif // HAVE_SSSE3
 }
 
-void ff_gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, uint16_t *buf1, uint8_t *src, int src_linesize, int width)
+void ff_gradfun_blur_line_sse2(uint16_t *dc, uint16_t *buf, const uint16_t *buf1, const uint8_t *src, int src_linesize, int width)
 {
 #if HAVE_SSE
 #define BLURV(load)\

@@ -23,6 +23,7 @@
 #include <sndio.h>
 
 #include "libavformat/avformat.h"
+#include "libavutil/opt.h"
 
 #include "sndio_common.h"
 
@@ -33,15 +34,16 @@ static av_cold int audio_read_header(AVFormatContext *s1,
     AVStream *st;
     int ret;
 
-    if (ap->sample_rate <= 0 || ap->channels <= 0)
-        return AVERROR(EINVAL);
+#if FF_API_FORMAT_PARAMETERS
+    if (ap->sample_rate > 0)
+        s->sample_rate = ap->sample_rate;
+    if (ap->channels > 0)
+        s->channels = ap->channels;
+#endif
 
     st = av_new_stream(s1, 0);
     if (!st)
         return AVERROR(ENOMEM);
-
-    s->sample_rate = ap->sample_rate;
-    s->channels    = ap->channels;
 
     ret = ff_sndio_open(s1, 0, s1->filename);
     if (ret < 0)
@@ -97,6 +99,19 @@ static av_cold int audio_read_close(AVFormatContext *s1)
     return 0;
 }
 
+static const AVOption options[] = {
+    { "sample_rate", "", offsetof(SndioData, sample_rate), FF_OPT_TYPE_INT, {.dbl = 48000}, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(SndioData, channels),    FF_OPT_TYPE_INT, {.dbl = 2},     1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass sndio_demuxer_class = {
+    .class_name     = "sndio indev",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_sndio_demuxer = {
     .name           = "sndio",
     .long_name      = NULL_IF_CONFIG_SMALL("sndio audio capture"),
@@ -105,4 +120,5 @@ AVInputFormat ff_sndio_demuxer = {
     .read_packet    = audio_read_packet,
     .read_close     = audio_read_close,
     .flags          = AVFMT_NOFILE,
+    .priv_class     = &sndio_demuxer_class,
 };

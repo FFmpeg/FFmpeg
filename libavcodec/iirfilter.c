@@ -151,8 +151,6 @@ static int biquad_init_coeffs(void *avc, struct FFIIRFilterCoeffs *c,
     // during filtering, the delay state will include the gain multiplication
     c->cx[0] = lrintf(x0 / c->gain);
     c->cx[1] = lrintf(x1 / c->gain);
-    c->cy[0] /= c->gain;
-    c->cy[1] /= c->gain;
 
     return 0;
 }
@@ -324,7 +322,7 @@ int main(void)
     int i;
     FILE* fd;
 
-    fcoeffs = ff_iir_filter_init_coeffs(FF_FILTER_TYPE_BUTTERWORTH,
+    fcoeffs = ff_iir_filter_init_coeffs(NULL, FF_FILTER_TYPE_BUTTERWORTH,
                                         FF_FILTER_MODE_LOWPASS, FILT_ORDER,
                                         cutoff_coeff, 0.0, 0.0);
     fstate  = ff_iir_filter_init_state(FILT_ORDER);

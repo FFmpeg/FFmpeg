@@ -65,6 +65,8 @@ void  free(void *ptr);
    memory allocator. You do not need to suppress this file because the
    linker will do it automatically. */
 
+#define MAX_MALLOC_SIZE INT_MAX
+
 void *av_malloc(FF_INTERNAL_MEM_TYPE size)
 {
     void *ptr = NULL;
@@ -73,7 +75,7 @@ void *av_malloc(FF_INTERNAL_MEM_TYPE size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > (INT_MAX-32) )
+    if (size > (MAX_MALLOC_SIZE-32))
         return NULL;
 
 #if CONFIG_MEMALIGN_HACK
@@ -84,6 +86,7 @@ void *av_malloc(FF_INTERNAL_MEM_TYPE size)
     ptr = (char*)ptr + diff;
     ((char*)ptr)[-1]= diff;
 #elif HAVE_POSIX_MEMALIGN
+    if (size) //OSX on SDK 10.6 has a broken posix_memalign implementation
     if (posix_memalign(&ptr,ALIGN,size))
         ptr = NULL;
 #elif HAVE_MEMALIGN
@@ -127,7 +130,7 @@ void *av_realloc(void *ptr, FF_INTERNAL_MEM_TYPE size)
 #endif
 
     /* let's disallow possible ambiguous cases */
-    if(size > (INT_MAX-16) )
+    if (size > (MAX_MALLOC_SIZE-16))
         return NULL;
 
 #if CONFIG_MEMALIGN_HACK

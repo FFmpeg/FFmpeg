@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AAC_TABLEGEN_H
-#define AAC_TABLEGEN_H
+#ifndef AVCODEC_AAC_TABLEGEN_H
+#define AVCODEC_AAC_TABLEGEN_H
 
 #include "aac_tablegen_decl.h"
 
@@ -29,7 +29,7 @@
 #include "libavcodec/aac_tables.h"
 #else
 #include "libavutil/mathematics.h"
-#include "libavcodec/aac.h"
+#include "aac.h"
 float ff_aac_pow2sf_tab[428];
 
 void ff_aac_tableinit(void)
@@ -40,4 +40,4 @@ void ff_aac_tableinit(void)
 }
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* AAC_TABLEGEN_H */
+#endif /* AVCODEC_AAC_TABLEGEN_H */

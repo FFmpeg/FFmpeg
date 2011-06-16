@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef PCM_TABLEGEN_H
-#define PCM_TABLEGEN_H
+#ifndef AVCODEC_PCM_TABLEGEN_H
+#define AVCODEC_PCM_TABLEGEN_H
 
 #include <stdint.h>
 #include "libavutil/attributes.h"
@@ -116,4 +116,4 @@ static void pcm_ulaw_tableinit(void)
 }
 #endif /* CONFIG_HARDCODED_TABLES */
 
-#endif /* PCM_TABLEGEN_H */
+#endif /* AVCODEC_PCM_TABLEGEN_H */

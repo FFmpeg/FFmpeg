@@ -30,7 +30,6 @@
 #include "libavutil/avutil.h"
 #include "get_bits.h"
 
-#include "g729.h"
 #include "lsp.h"
 #include "celp_math.h"
 #include "acelp_filters.h"
@@ -70,6 +69,12 @@
  * 13017 (equals to 0.7945) instead of it.
  */
 #define SHARP_MAX                  13017
+
+/**
+ * subframe size
+ */
+#define SUBFRAME_SIZE              40
+
 
 typedef struct {
     uint8_t ac_index_bits[2];   ///< adaptive codebook index for second subframe (size in bits)

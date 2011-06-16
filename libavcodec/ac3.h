@@ -28,7 +28,8 @@
 #define AVCODEC_AC3_H
 
 #define AC3_MAX_CODED_FRAME_SIZE 3840 /* in bytes */
-#define AC3_MAX_CHANNELS 6 /* including LFE channel */
+#define AC3_MAX_CHANNELS 7            /**< maximum number of channels, including coupling channel */
+#define CPL_CH 0                      /**< coupling channel index */
 
 #define AC3_MAX_COEFS   256
 #define AC3_BLOCK_SIZE  256
@@ -158,9 +159,10 @@ typedef struct AC3EncOptions {
 
     /* other encoding options */
     int allow_per_frame_metadata;
-    int stereo_rematrixing;    
+    int stereo_rematrixing;
+    int channel_coupling;
+    int cpl_start;    
 } AC3EncOptions;
-
 
 void ff_ac3_common_init(void);
 

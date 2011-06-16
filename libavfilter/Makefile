@@ -6,7 +6,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 FFLIBS-$(CONFIG_MP_FILTER) += avcodec
 
-HEADERS = avcodec.h avfilter.h avfiltergraph.h
+HEADERS = avcodec.h avfilter.h avfiltergraph.h vsrc_buffer.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
@@ -46,12 +46,14 @@ OBJS-$(CONFIG_OVERLAY_FILTER)                += vf_overlay.o
 OBJS-$(CONFIG_PAD_FILTER)                    += vf_pad.o
 OBJS-$(CONFIG_PIXDESCTEST_FILTER)            += vf_pixdesctest.o
 OBJS-$(CONFIG_SCALE_FILTER)                  += vf_scale.o
+OBJS-$(CONFIG_SELECT_FILTER)                 += vf_select.o
 OBJS-$(CONFIG_SETDAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETPTS_FILTER)                 += vf_setpts.o
 OBJS-$(CONFIG_SETSAR_FILTER)                 += vf_aspect.o
 OBJS-$(CONFIG_SETTB_FILTER)                  += vf_settb.o
 OBJS-$(CONFIG_SHOWINFO_FILTER)               += vf_showinfo.o
 OBJS-$(CONFIG_SLICIFY_FILTER)                += vf_slicify.o
+OBJS-$(CONFIG_SPLIT_FILTER)                  += vf_split.o
 OBJS-$(CONFIG_TRANSPOSE_FILTER)              += vf_transpose.o
 OBJS-$(CONFIG_UNSHARP_FILTER)                += vf_unsharp.o
 OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o

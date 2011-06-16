@@ -287,15 +287,6 @@ zrmjpeg
 CpuCaps gCpuCaps; //FIXME initialize this so optims work
 
 
-//exact copy from vf_scale.c
-int get_sws_cpuflags(void){
-    return
-          (gCpuCaps.hasMMX   ? SWS_CPU_CAPS_MMX   : 0)
-        | (gCpuCaps.hasMMX2  ? SWS_CPU_CAPS_MMX2  : 0)
-        | (gCpuCaps.has3DNow ? SWS_CPU_CAPS_3DNOW : 0)
-        | (gCpuCaps.hasAltiVec ? SWS_CPU_CAPS_ALTIVEC : 0);
-}
-
 static void sws_getFlagsAndFilterFromCmdLine(int *flags, SwsFilter **srcFilterParam, SwsFilter **dstFilterParam)
 {
         static int firstTime=1;
@@ -348,7 +339,7 @@ struct SwsContext *sws_getContextFromCmdLine(int srcW, int srcH, int srcFormat, 
         if (srcFormat == IMGFMT_RGB8 || srcFormat == IMGFMT_BGR8) sfmt = PIX_FMT_PAL8;
         sws_getFlagsAndFilterFromCmdLine(&flags, &srcFilterParam, &dstFilterParam);
 
-        return sws_getContext(srcW, srcH, sfmt, dstW, dstH, dfmt, flags | get_sws_cpuflags(), srcFilterParam, dstFilterParam, NULL);
+        return sws_getContext(srcW, srcH, sfmt, dstW, dstH, dfmt, flags , srcFilterParam, dstFilterParam, NULL);
 }
 
 typedef struct {
@@ -891,7 +882,7 @@ static void end_frame(AVFilterLink *inlink)
     }
     free_mp_image(mpi);
 
-//    avfilter_unref_buffer(inpic);
+    avfilter_unref_buffer(inpic);
 }
 
 AVFilter avfilter_vf_mp = {

@@ -22,7 +22,6 @@
 #include "libavcodec/flac.h"
 #include "avformat.h"
 #include "flacenc.h"
-#include "metadata.h"
 #include "vorbiscomment.h"
 #include "libavcodec/bytestream.h"
 
@@ -39,7 +38,7 @@ static int flac_write_block_padding(AVIOContext *pb, unsigned int n_padding_byte
     return 0;
 }
 
-static int flac_write_block_comment(AVIOContext *pb, AVMetadata **m,
+static int flac_write_block_comment(AVIOContext *pb, AVDictionary **m,
                                     int last_block, int bitexact)
 {
     const char *vendor = bitexact ? "ffmpeg" : LIBAVFORMAT_IDENT;

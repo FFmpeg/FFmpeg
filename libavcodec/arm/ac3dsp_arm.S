@@ -20,33 +20,16 @@
 
 #include "asm.S"
 
-function ff_ac3_compute_mantissa_size_arm, export=1
-        push            {r4-r8,lr}
-        ldm             r0,  {r4-r8}
-        mov             r3,  r0
-        mov             r0,  #0
-1:
+function ff_ac3_update_bap_counts_arm, export=1
+        push            {lr}
         ldrb            lr,  [r1], #1
+1:
+        lsl             r3,  lr,  #1
+        ldrh            r12, [r0, r3]
         subs            r2,  r2,  #1
-        blt             2f
-        cmp             lr,  #4
-        bgt             3f
-        subs            lr,  lr,  #1
-        addlt           r4,  r4,  #1
-        addeq           r5,  r5,  #1
-        ble             1b
-        subs            lr,  lr,  #2
-        addlt           r6,  r6,  #1
-        addeq           r7,  r7,  #1
-        addgt           r8,  r8,  #1
-        b               1b
-3:
-        cmp             lr,  #14
-        sublt           lr,  lr,  #1
-        addgt           r0,  r0,  #16
-        addle           r0,  r0,  lr
-        b               1b
-2:
-        stm             r3,  {r4-r8}
-        pop             {r4-r8,pc}
+        ldrbgt          lr,  [r1], #1
+        add             r12, r12, #1
+        strh            r12, [r0, r3]
+        bgt             1b
+        pop             {pc}
 endfunc

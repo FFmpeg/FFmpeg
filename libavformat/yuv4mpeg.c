@@ -94,7 +94,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVPicture *picture;
     int* first_pkt = s->priv_data;
     int width, height, h_chroma_shift, v_chroma_shift;
-    int i, m;
+    int i;
     char buf2[Y4M_LINE_MAX+1];
     char buf1[20];
     uint8_t *ptr, *ptr1, *ptr2;
@@ -114,7 +114,7 @@ static int yuv4_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* construct frame header */
 
-    m = snprintf(buf1, sizeof(buf1), "%s\n", Y4M_FRAME_MAGIC);
+    snprintf(buf1, sizeof(buf1), "%s\n", Y4M_FRAME_MAGIC);
     avio_write(pb, buf1, strlen(buf1));
 
     width = st->codec->width;
@@ -153,6 +153,12 @@ static int yuv4_write_header(AVFormatContext *s)
 
     if (s->nb_streams != 1)
         return AVERROR(EIO);
+
+    if (s->streams[0]->codec->codec_id != CODEC_ID_RAWVIDEO) {
+        av_log(s, AV_LOG_ERROR,
+               "A non-rawvideo stream was selected, but yuv4mpeg only handles rawvideo streams\n");
+        return AVERROR(EINVAL);
+    }
 
     if (s->streams[0]->codec->pix_fmt == PIX_FMT_YUV411P) {
         av_log(s, AV_LOG_ERROR, "Warning: generating rarely used 4:1:1 YUV stream, some mjpegtools might not work.\n");

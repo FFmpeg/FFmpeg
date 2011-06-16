@@ -1,7 +1,7 @@
 Todo
 
 -- For other people
-- Multithread vp8 or vc1.
+- Multithread vc1.
 - Multithread an intra codec like mjpeg (trivial).
 - Fix mpeg1 (see below).
 - Try the first three items under Optimization.
@@ -18,11 +18,11 @@ work.) In general testing error paths should be done more.
 bugs in vsync in ffmpeg.c, which are currently obscuring real failures.
 
 h264:
-- Files split at the wrong NAL unit don't (and can't)
-be decoded with threads (e.g. TS split so PPS is after
-the frame, PAFF with two fields in a packet). Scan the
-packet at the start of decode and don't finish setup
-until all PPS/SPS have been encountered.
+- Files that aren't parsed (e.g. mp4) and contain PAFF with two
+field pictures in the same packet are not optimal. Modify the
+nals_needed check so that the second field's first slice is
+considered as needed, then uncomment the FIXME code in decode_postinit.
+Ex: http://astrange.ithinksw.net/ffmpeg/mt-samples/PAFF-Chalet-Tire.mp4
 
 mpeg4:
 - Packed B-frames need to be explicitly split up

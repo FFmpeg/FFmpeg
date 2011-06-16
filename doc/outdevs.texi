@@ -26,6 +26,46 @@ ALSA (Advanced Linux Sound Architecture) output device.
 
 OSS (Open Sound System) output device.
 
+@section sdl
+
+SDL (Simple Directmedia Layer) output device.
+
+This output devices allows to show a video stream in an SDL
+window. Only one SDL window is allowed per application, so you can
+have only one instance of this output device in an application.
+
+To enable this output device you need libsdl installed on your system
+when configuring your build.
+
+For more information about SDL, check:
+@url{http://www.libsdl.org/}
+
+@subsection Options
+
+@table @option
+
+@item window_title
+Set the SDL window title, if not specified default to the filename
+specified for the output device.
+
+@item icon_title
+Set the name of the iconified SDL window, if not specified it is set
+to the same value of @var{window_title}.
+
+@item window_size
+Set the SDL window size, can be a string of the form
+@var{width}x@var{height} or a video size abbreviation.
+If not specified it defaults to the size of the input video.
+@end table
+
+@subsection Examples
+
+The following command shows the @file{ffmpeg} output is an
+SDL window, forcing its size to the qcif format:
+@example
+ffmpeg -i INPUT -vcodec rawvideo -pix_fmt yuv420p -window_size qcif -f sdl "SDL output"
+@end example
+
 @section sndio
 
 sndio audio output device.

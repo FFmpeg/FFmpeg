@@ -1,7 +1,4 @@
 /*
- * Intel Indeo 3 (IV31, IV32, etc.) video decoder for ffmpeg
- * written, produced, and directed by Alan Smithee
- *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -19,9 +16,14 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
+/**
+ * @file
+ * Intel Indeo 3 (IV31, IV32, etc.) video decoder for FFmpeg
+ * written, produced, and directed by Alan Smithee
+ *
+ * For some documentation see:
+ * http://wiki.multimedia.cx/index.php?title=Indeo_3
+ */
 
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
@@ -211,6 +213,7 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
     int *width_tbl, width_tbl_arr[10];
     const signed char *ref_vectors;
     uint8_t *cur_frm_pos, *ref_frm_pos, *cp, *cp2;
+    uint8_t *cur_end = cur + width*height + width;
     uint32_t *cur_lp, *ref_lp;
     const uint32_t *correction_lp[2], *correctionloworder_lp[2], *correctionhighorder_lp[2];
     uint8_t *correction_type_sp[2];
@@ -357,6 +360,8 @@ static void iv_Decode_Chunk(Indeo3DecodeContext *s,
                             k = *buf1++;
                             cur_lp = ((uint32_t *)cur_frm_pos) + width_tbl[lp2];
                             ref_lp = ((uint32_t *)ref_frm_pos) + width_tbl[lp2];
+                            if ((uint8_t *)cur_lp >= cur_end-3)
+                                break;
 
                             switch(correction_type_sp[0][k]) {
                             case 0:
@@ -1134,6 +1139,9 @@ static av_cold int indeo3_decode_end(AVCodecContext *avctx)
     Indeo3DecodeContext *s = avctx->priv_data;
 
     iv_free_func(s);
+
+    if (s->frame.data[0])
+        avctx->release_buffer(avctx, &s->frame);
 
     return 0;
 }

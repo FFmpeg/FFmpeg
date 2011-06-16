@@ -85,7 +85,7 @@ cextern cos_ %+ i
     %1
 %endmacro
 
-section .text align=16
+SECTION_TEXT
 
 %macro T2_3DN 4 ; z0, z1, mem0, mem1
     mova     %1, %3
@@ -299,6 +299,7 @@ IF%1 mova  Z(1), m5
 
 INIT_YMM
 
+%ifdef HAVE_AVX
 align 16
 fft8_avx:
     mova      m0, Z(0)
@@ -387,6 +388,8 @@ fft32_interleave_avx:
     sub r2d, mmsize/4
     jg .deint_loop
     ret
+
+%endif
 
 INIT_XMM
 %define movdqa  movaps
@@ -532,6 +535,7 @@ DEFINE_ARGS z, w, n, o1, o3
 
 INIT_YMM
 
+%ifdef HAVE_AVX
 %macro INTERL_AVX 5
     vunpckhps      %3, %2, %1
     vunpcklps      %2, %2, %1
@@ -545,6 +549,7 @@ INIT_YMM
 
 DECL_PASS pass_avx, PASS_BIG 1
 DECL_PASS pass_interleave_avx, PASS_BIG 0
+%endif
 
 INIT_XMM
 
@@ -634,8 +639,10 @@ cglobal fft_dispatch%3%2, 2,5,8, z, nbits
     RET
 %endmacro ; DECL_FFT
 
+%ifdef HAVE_AVX
 DECL_FFT 6, _avx
 DECL_FFT 6, _avx, _interleave
+%endif
 DECL_FFT 5, _sse
 DECL_FFT 5, _sse, _interleave
 DECL_FFT 4, _3dn
@@ -847,4 +854,6 @@ DECL_IMDCT _sse, POSROTATESHUF
 
 INIT_YMM
 
+%ifdef HAVE_AVX
 DECL_IMDCT _avx, POSROTATESHUF_AVX
+%endif

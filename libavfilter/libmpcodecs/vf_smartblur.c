@@ -87,7 +87,7 @@ static int allocStuff(FilterParam *f, int width, int height){
     swsF.lumH= swsF.lumV= vec;
     swsF.chrH= swsF.chrV= NULL;
     f->filterContext= sws_getContext(
-        width, height, PIX_FMT_GRAY8, width, height, PIX_FMT_GRAY8, SWS_BICUBIC | get_sws_cpuflags(), &swsF, NULL, NULL);
+        width, height, PIX_FMT_GRAY8, width, height, PIX_FMT_GRAY8, SWS_BICUBIC, &swsF, NULL, NULL);
 
     sws_freeVec(vec);
 
@@ -183,11 +183,11 @@ static inline void blur(uint8_t *dst, uint8_t *src, int w, int h, int dstStride,
 static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
     int cw= mpi->w >> mpi->chroma_x_shift;
     int ch= mpi->h >> mpi->chroma_y_shift;
-    FilterParam *f= &vf->priv;
+    int threshold = vf->priv->luma.threshold || vf->priv->chroma.threshold;
 
     mp_image_t *dmpi=vf_get_image(vf->next,mpi->imgfmt,
         MP_IMGTYPE_TEMP, MP_IMGFLAG_ACCEPT_STRIDE|
-        (f->threshold) ? MP_IMGFLAG_READABLE : 0,
+        (threshold ? MP_IMGFLAG_READABLE : 0),
         mpi->w,mpi->h);
 
     assert(mpi->flags&MP_IMGFLAG_PLANAR);

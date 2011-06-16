@@ -70,33 +70,27 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
     case CODEC_ID_MPEG4:
         break;
     case CODEC_ID_MSMPEG4V1:
-        s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->msmpeg4_version=1;
         break;
     case CODEC_ID_MSMPEG4V2:
-        s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->msmpeg4_version=2;
         break;
     case CODEC_ID_MSMPEG4V3:
-        s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->msmpeg4_version=3;
         break;
     case CODEC_ID_WMV1:
-        s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->msmpeg4_version=4;
         break;
     case CODEC_ID_WMV2:
-        s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->msmpeg4_version=5;
         break;
     case CODEC_ID_VC1:
     case CODEC_ID_WMV3:
-        s->h263_msmpeg4 = 1;
         s->h263_pred = 1;
         s->msmpeg4_version=6;
         avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;
@@ -670,8 +664,11 @@ retry:
             if(s->slice_height==0 || s->mb_x!=0 || (s->mb_y%s->slice_height)!=0 || get_bits_count(&s->gb) > s->gb.size_in_bits)
                 break;
         }else{
+            int prev_x=s->mb_x, prev_y=s->mb_y;
             if(ff_h263_resync(s)<0)
                 break;
+            if (prev_y * s->mb_width + prev_x < s->mb_y * s->mb_width + s->mb_x)
+                s->error_occurred = 1;
         }
 
         if(s->msmpeg4_version<4 && s->h263_pred)
@@ -680,7 +677,7 @@ retry:
         decode_slice(s);
     }
 
-    if (s->h263_msmpeg4 && s->msmpeg4_version<4 && s->pict_type==AV_PICTURE_TYPE_I)
+    if (s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type==AV_PICTURE_TYPE_I)
         if(!CONFIG_MSMPEG4_DECODER || msmpeg4_decode_ext_header(s, buf_size) < 0){
             s->error_status_table[s->mb_num-1]= AC_ERROR|DC_ERROR|MV_ERROR;
         }
@@ -689,21 +686,17 @@ retry:
 frame_end:
     /* divx 5.01+ bistream reorder stuff */
     if(s->codec_id==CODEC_ID_MPEG4 && s->divx_packed){
-        int current_pos= get_bits_count(&s->gb)>>3;
+        int current_pos= s->gb.buffer == s->bitstream_buffer ? 0 : (get_bits_count(&s->gb)>>3);
         int startcode_found=0;
 
         if(buf_size - current_pos > 5){
             int i;
-            for(i=current_pos; i<buf_size-3; i++){
+            for(i=current_pos; i<buf_size-4; i++){
                 if(buf[i]==0 && buf[i+1]==0 && buf[i+2]==1 && buf[i+3]==0xB6){
-                    startcode_found=1;
+                    startcode_found=!(buf[i+4]&0x40);
                     break;
                 }
             }
-        }
-        if(s->gb.buffer == s->bitstream_buffer && buf_size>7 && s->xvid_build>=0){ //xvid style
-            startcode_found=1;
-            current_pos=0;
         }
 
         if(startcode_found){

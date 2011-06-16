@@ -94,6 +94,9 @@ adjustment.
 #include "libswscale/rgb2rgb.h"
 #include "libswscale/swscale.h"
 #include "libswscale/swscale_internal.h"
+#include "libavutil/cpu.h"
+#include "libavutil/pixdesc.h"
+#include "yuv2rgb_altivec.h"
 
 #undef PROFILE_THE_BEAST
 #undef INC_SCALING
@@ -296,7 +299,7 @@ static int altivec_##name (SwsContext *c,                               \
     vector signed short R1,G1,B1;                                       \
     vector unsigned char R,G,B;                                         \
                                                                         \
-    vector unsigned char *y1ivP, *y2ivP, *uivP, *vivP;                  \
+    const vector unsigned char *y1ivP, *y2ivP, *uivP, *vivP;            \
     vector unsigned char align_perm;                                    \
                                                                         \
     vector signed short                                                 \
@@ -333,10 +336,10 @@ static int altivec_##name (SwsContext *c,                               \
                                                                         \
         for (j=0;j<w/16;j++) {                                          \
                                                                         \
-            y1ivP = (vector unsigned char *)y1i;                        \
-            y2ivP = (vector unsigned char *)y2i;                        \
-            uivP  = (vector unsigned char *)ui;                         \
-            vivP  = (vector unsigned char *)vi;                         \
+            y1ivP = (const vector unsigned char *)y1i;                  \
+            y2ivP = (const vector unsigned char *)y2i;                  \
+            uivP  = (const vector unsigned char *)ui;                   \
+            vivP  = (const vector unsigned char *)vi;                   \
                                                                         \
             align_perm = vec_lvsl (0, y1i);                             \
             y0 = (vector unsigned char)                                 \
@@ -446,159 +449,7 @@ static int altivec_##name (SwsContext *c,                               \
 #define out_bgr24(a,b,c,ptr) vec_mstbgr24(a,b,c,ptr)
 
 DEFCSP420_CVT (yuv2_abgr, out_abgr)
-#if 1
 DEFCSP420_CVT (yuv2_bgra, out_bgra)
-#else
-static int altivec_yuv2_bgra32 (SwsContext *c,
-                                unsigned char **in, int *instrides,
-                                int srcSliceY,        int srcSliceH,
-                                unsigned char **oplanes, int *outstrides)
-{
-    int w = c->srcW;
-    int h = srcSliceH;
-    int i,j;
-    int instrides_scl[3];
-    vector unsigned char y0,y1;
-
-    vector signed char  u,v;
-
-    vector signed short Y0,Y1,Y2,Y3;
-    vector signed short U,V;
-    vector signed short vx,ux,uvx;
-    vector signed short vx0,ux0,uvx0;
-    vector signed short vx1,ux1,uvx1;
-    vector signed short R0,G0,B0;
-    vector signed short R1,G1,B1;
-    vector unsigned char R,G,B;
-
-    vector unsigned char *uivP, *vivP;
-    vector unsigned char align_perm;
-
-    vector signed short
-        lCY  = c->CY,
-        lOY  = c->OY,
-        lCRV = c->CRV,
-        lCBU = c->CBU,
-        lCGU = c->CGU,
-        lCGV = c->CGV;
-
-    vector unsigned short lCSHIFT = c->CSHIFT;
-
-    ubyte *y1i   = in[0];
-    ubyte *y2i   = in[0]+w;
-    ubyte *ui    = in[1];
-    ubyte *vi    = in[2];
-
-    vector unsigned char *oute
-        = (vector unsigned char *)
-          (oplanes[0]+srcSliceY*outstrides[0]);
-    vector unsigned char *outo
-        = (vector unsigned char *)
-          (oplanes[0]+srcSliceY*outstrides[0]+outstrides[0]);
-
-
-    instrides_scl[0] = instrides[0];
-    instrides_scl[1] = instrides[1]-w/2;  /* the loop moves ui by w/2 */
-    instrides_scl[2] = instrides[2]-w/2;  /* the loop moves vi by w/2 */
-
-
-    for (i=0;i<h/2;i++) {
-        vec_dstst (outo, (0x02000002|(((w*3+32)/32)<<16)), 0);
-        vec_dstst (oute, (0x02000002|(((w*3+32)/32)<<16)), 1);
-
-        for (j=0;j<w/16;j++) {
-
-            y0 = vec_ldl (0,y1i);
-            y1 = vec_ldl (0,y2i);
-            uivP = (vector unsigned char *)ui;
-            vivP = (vector unsigned char *)vi;
-
-            align_perm = vec_lvsl (0, ui);
-            u  = (vector signed char)vec_perm (uivP[0], uivP[1], align_perm);
-
-            align_perm = vec_lvsl (0, vi);
-            v  = (vector signed char)vec_perm (vivP[0], vivP[1], align_perm);
-            u  = (vector signed char)
-                 vec_sub (u,(vector signed char)
-                          vec_splat((vector signed char){128},0));
-
-            v  = (vector signed char)
-                 vec_sub (v, (vector signed char)
-                          vec_splat((vector signed char){128},0));
-
-            U  = vec_unpackh (u);
-            V  = vec_unpackh (v);
-
-
-            Y0 = vec_unh (y0);
-            Y1 = vec_unl (y0);
-            Y2 = vec_unh (y1);
-            Y3 = vec_unl (y1);
-
-            Y0 = vec_mradds (Y0, lCY, lOY);
-            Y1 = vec_mradds (Y1, lCY, lOY);
-            Y2 = vec_mradds (Y2, lCY, lOY);
-            Y3 = vec_mradds (Y3, lCY, lOY);
-
-            /*   ux  = (CBU*(u<<CSHIFT)+0x4000)>>15 */
-            ux = vec_sl (U, lCSHIFT);
-            ux = vec_mradds (ux, lCBU, (vector signed short){0});
-            ux0  = vec_mergeh (ux,ux);
-            ux1  = vec_mergel (ux,ux);
-
-            /* vx  = (CRV*(v<<CSHIFT)+0x4000)>>15;        */
-            vx = vec_sl (V, lCSHIFT);
-            vx = vec_mradds (vx, lCRV, (vector signed short){0});
-            vx0  = vec_mergeh (vx,vx);
-            vx1  = vec_mergel (vx,vx);
-            /* uvx = ((CGU*u) + (CGV*v))>>15 */
-            uvx = vec_mradds (U, lCGU, (vector signed short){0});
-            uvx = vec_mradds (V, lCGV, uvx);
-            uvx0 = vec_mergeh (uvx,uvx);
-            uvx1 = vec_mergel (uvx,uvx);
-            R0 = vec_add (Y0,vx0);
-            G0 = vec_add (Y0,uvx0);
-            B0 = vec_add (Y0,ux0);
-            R1 = vec_add (Y1,vx1);
-            G1 = vec_add (Y1,uvx1);
-            B1 = vec_add (Y1,ux1);
-            R  = vec_packclp (R0,R1);
-            G  = vec_packclp (G0,G1);
-            B  = vec_packclp (B0,B1);
-
-            out_argb(R,G,B,oute);
-            R0 = vec_add (Y2,vx0);
-            G0 = vec_add (Y2,uvx0);
-            B0 = vec_add (Y2,ux0);
-            R1 = vec_add (Y3,vx1);
-            G1 = vec_add (Y3,uvx1);
-            B1 = vec_add (Y3,ux1);
-            R  = vec_packclp (R0,R1);
-            G  = vec_packclp (G0,G1);
-            B  = vec_packclp (B0,B1);
-
-            out_argb(R,G,B,outo);
-            y1i  += 16;
-            y2i  += 16;
-            ui   += 8;
-            vi   += 8;
-
-        }
-
-        outo  += (outstrides[0])>>4;
-        oute  += (outstrides[0])>>4;
-
-        ui    += instrides_scl[1];
-        vi    += instrides_scl[2];
-        y1i   += instrides_scl[0];
-        y2i   += instrides_scl[0];
-    }
-    return srcSliceH;
-}
-
-#endif
-
-
 DEFCSP420_CVT (yuv2_rgba, out_rgba)
 DEFCSP420_CVT (yuv2_argb, out_argb)
 DEFCSP420_CVT (yuv2_rgb24,  out_rgb24)
@@ -692,7 +543,7 @@ static int altivec_uyvy_rgb32 (SwsContext *c,
 */
 SwsFunc ff_yuv2rgb_init_altivec(SwsContext *c)
 {
-    if (!(c->flags & SWS_CPU_CAPS_ALTIVEC))
+    if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return NULL;
 
     /*
@@ -777,10 +628,12 @@ void ff_yuv2rgb_init_tables_altivec(SwsContext *c, const int inv_table[4], int b
 
 
 void
-ff_yuv2packedX_altivec(SwsContext *c,
-                       const int16_t *lumFilter, const int16_t **lumSrc, int lumFilterSize,
-                       const int16_t *chrFilter, const int16_t **chrSrc, int chrFilterSize,
-                     uint8_t *dest, int dstW, int dstY)
+ff_yuv2packedX_altivec(SwsContext *c, const int16_t *lumFilter,
+                       const int16_t **lumSrc, int lumFilterSize,
+                       const int16_t *chrFilter, const int16_t **chrUSrc,
+                       const int16_t **chrVSrc, int chrFilterSize,
+                       const int16_t **alpSrc, uint8_t *dest,
+                       int dstW, int dstY)
 {
     int i,j;
     vector signed short X,X0,X1,Y0,U0,V0,Y1,U1,V1,U,V;
@@ -791,7 +644,7 @@ ff_yuv2packedX_altivec(SwsContext *c,
 
     vector signed short   RND = vec_splat_s16(1<<3);
     vector unsigned short SCL = vec_splat_u16(4);
-    DECLARE_ALIGNED(16, unsigned long, scratch)[16];
+    DECLARE_ALIGNED(16, unsigned int, scratch)[16];
 
     vector signed short *YCoeffs, *CCoeffs;
 
@@ -815,9 +668,9 @@ ff_yuv2packedX_altivec(SwsContext *c,
         V = RND;
         /* extract 8 coeffs from U,V */
         for (j=0; j<chrFilterSize; j++) {
-            X  = vec_ld (0, &chrSrc[j][i/2]);
+            X  = vec_ld (0, &chrUSrc[j][i/2]);
             U  = vec_mradds (X, CCoeffs[j], U);
-            X  = vec_ld (0, &chrSrc[j][i/2+VOFW]);
+            X  = vec_ld (0, &chrVSrc[j][i/2]);
             V  = vec_mradds (X, CCoeffs[j], V);
         }
 
@@ -868,7 +721,7 @@ ff_yuv2packedX_altivec(SwsContext *c,
                 static int printed_error_message;
                 if (!printed_error_message) {
                     av_log(c, AV_LOG_ERROR, "altivec_yuv2packedX doesn't support %s output\n",
-                           sws_format_name(c->dstFormat));
+                           av_get_pix_fmt_name(c->dstFormat));
                     printed_error_message=1;
                 }
                 return;
@@ -893,9 +746,9 @@ ff_yuv2packedX_altivec(SwsContext *c,
         V = RND;
         /* extract 8 coeffs from U,V */
         for (j=0; j<chrFilterSize; j++) {
-            X  = vec_ld (0, &chrSrc[j][i/2]);
+            X  = vec_ld (0, &chrUSrc[j][i/2]);
             U  = vec_mradds (X, CCoeffs[j], U);
-            X  = vec_ld (0, &chrSrc[j][i/2+VOFW]);
+            X  = vec_ld (0, &chrVSrc[j][i/2]);
             V  = vec_mradds (X, CCoeffs[j], V);
         }
 
@@ -943,7 +796,7 @@ ff_yuv2packedX_altivec(SwsContext *c,
         default:
             /* Unreachable, I think. */
             av_log(c, AV_LOG_ERROR, "altivec_yuv2packedX doesn't support %s output\n",
-                   sws_format_name(c->dstFormat));
+                   av_get_pix_fmt_name(c->dstFormat));
             return;
         }
 

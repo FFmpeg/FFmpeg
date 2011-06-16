@@ -878,6 +878,52 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE,
     },
+    [PIX_FMT_YUV444P10LE] = {
+        .name = "yuv444p10le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,9},        /* Y */
+            {1,1,1,0,9},        /* U */
+            {2,1,1,0,9},        /* V */
+        },
+    },
+    [PIX_FMT_YUV444P10BE] = {
+        .name = "yuv444p10be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,9},        /* Y */
+            {1,1,1,0,9},        /* U */
+            {2,1,1,0,9},        /* V */
+        },
+        .flags = PIX_FMT_BE,
+    },
+    [PIX_FMT_YUV444P9LE] = {
+        .name = "yuv444p9le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,8},        /* Y */
+            {1,1,1,0,8},        /* U */
+            {2,1,1,0,8},        /* V */
+        },
+    },
+    [PIX_FMT_YUV444P9BE] = {
+        .name = "yuv444p9be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,9},        /* Y */
+            {1,1,1,0,9},        /* U */
+            {2,1,1,0,9},        /* V */
+        },
+        .flags = PIX_FMT_BE,
+    },
     [PIX_FMT_DXVA2_VLD] = {
         .name = "dxva2_vld",
         .log2_chroma_w = 1,
@@ -904,6 +950,12 @@ static enum PixelFormat get_pix_fmt_internal(const char *name)
             return pix_fmt;
 
     return PIX_FMT_NONE;
+}
+
+const char *av_get_pix_fmt_name(enum PixelFormat pix_fmt)
+{
+    return (unsigned)pix_fmt < PIX_FMT_NB ?
+        av_pix_fmt_descriptors[pix_fmt].name : NULL;
 }
 
 #if HAVE_BIGENDIAN

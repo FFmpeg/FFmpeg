@@ -54,18 +54,13 @@
 #define FIX_M_1_961570560_ID   40
 #define FIX_M_2_562915447_ID   44
 #define FIX_0xFFFF_ID          48
-        .text
-        .align
 
 function ff_j_rev_dct_arm, export=1
-        stmdb   sp!, { r4 - r12, lr }   @ all callee saved regs
-
-        sub sp, sp, #4                  @ reserve some space on the stack
-        str r0, [ sp ]                  @ save the DCT pointer to the stack
+        push {r0, r4 - r11, lr}
 
         mov lr, r0                      @ lr = pointer to the current row
         mov r12, #8                     @ r12 = row-counter
-        adr r11, const_array            @ r11 = base pointer to the constants array
+        movrel r11, const_array         @ r11 = base pointer to the constants array
 row_loop:
         ldrsh r0, [lr, # 0]             @ r0 = 'd0'
         ldrsh r2, [lr, # 2]             @ r2 = 'd2'
@@ -102,7 +97,7 @@ row_loop:
         add r4, r6, r3, lsl #13             @ r4 = tmp11
         rsb r3, r6, r3, lsl #13             @ r3 = tmp12
 
-        stmdb   sp!, { r0, r2, r3, r4 } @ save on the stack tmp10, tmp13, tmp12, tmp11
+        push {r0, r2, r3, r4} @ save on the stack tmp10, tmp13, tmp12, tmp11
 
         ldrsh r3, [lr, #10]             @ r3 = 'd3'
         ldrsh r5, [lr, #12]             @ r5 = 'd5'
@@ -136,8 +131,8 @@ row_loop:
         add r3, r3, r4                  @ r3 = tmp2
         add r1, r1, r6                  @ r1 = tmp3
 
-        ldmia sp!, { r0, r2, r4, r6 } @ r0 = tmp10 / r2 = tmp13 / r4 = tmp12 / r6 = tmp11
-                                      @ r1 = tmp3  / r3 = tmp2  / r5 = tmp1  / r7 = tmp0
+        pop {r0, r2, r4, r6} @ r0 = tmp10 / r2 = tmp13 / r4 = tmp12 / r6 = tmp11
+                             @ r1 = tmp3  / r3 = tmp2  / r5 = tmp1  / r7 = tmp0
 
         @ Compute DESCALE(tmp10 + tmp3, CONST_BITS-PASS1_BITS)
         add r8, r0, r1
@@ -211,7 +206,7 @@ end_of_row_loop:
 
 start_column_loop:
         @ Start of column loop
-        ldr lr, [ sp ]
+        pop {lr}
         mov r12, #8
 column_loop:
         ldrsh r0, [lr, #( 0*8)]             @ r0 = 'd0'
@@ -245,7 +240,7 @@ column_loop:
         orrs r10, r9, r10
         beq empty_odd_column
 
-        stmdb   sp!, { r0, r2, r4, r6 } @ save on the stack tmp10, tmp13, tmp12, tmp11
+        push {r0, r2, r4, r6} @ save on the stack tmp10, tmp13, tmp12, tmp11
 
         add r0, r3, r5                  @ r0 = 'z2'
         add r2, r1, r7                  @ r2 = 'z1'
@@ -275,8 +270,8 @@ column_loop:
         add r3, r3, r4                  @ r3 = tmp2
         add r1, r1, r6                  @ r1 = tmp3
 
-        ldmia sp!, { r0, r2, r4, r6 } @ r0 = tmp10 / r2 = tmp13 / r4 = tmp11 / r6 = tmp12
-                                      @ r1 = tmp3  / r3 = tmp2  / r5 = tmp1  / r7 = tmp0
+        pop {r0, r2, r4, r6} @ r0 = tmp10 / r2 = tmp13 / r4 = tmp11 / r6 = tmp12
+                             @ r1 = tmp3  / r3 = tmp2  / r5 = tmp1  / r7 = tmp0
 
         @ Compute DESCALE(tmp10 + tmp3, CONST_BITS+PASS1_BITS+3)
         add r8, r0, r1
@@ -368,11 +363,10 @@ empty_odd_column:
 
 the_end:
         @ The end....
-        add sp, sp, #4
-        ldmia   sp!, { r4 - r12, pc }   @ restore callee saved regs and return
+        pop {r4 - r11, pc}
+endfunc
 
-const_array:
-        .align
+const const_array
         .word FIX_0_298631336
         .word FIX_0_541196100
         .word FIX_0_765366865
@@ -386,3 +380,4 @@ const_array:
         .word FIX_M_1_961570560
         .word FIX_M_2_562915447
         .word FIX_0xFFFF
+endconst

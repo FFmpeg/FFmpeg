@@ -165,7 +165,7 @@ cglobal deblock_v_luma_10_%1, 5,5,8*(mmsize/16)
     SUB        rsp, pad
     shl        r2d, 2
     shl        r3d, 2
-    LOAD_AB     m4, m5, r2, r3
+    LOAD_AB     m4, m5, r2d, r3d
     mov         r3, 32/mmsize
     mov         r2, r0
     sub         r0, r1
@@ -222,7 +222,7 @@ cglobal deblock_h_luma_10_%1, 5,6,8*(mmsize/16)
     SUB        rsp, pad
     shl        r2d, 2
     shl        r3d, 2
-    LOAD_AB     m4, m5, r2, r3
+    LOAD_AB     m4, m5, r2d, r3d
     mov         r3, r1
     mova        am, m4
     add         r3, r1
@@ -352,7 +352,7 @@ cglobal deblock_v_luma_10_%1, 5,5,15
     %define mask2 m11
     shl        r2d, 2
     shl        r3d, 2
-    LOAD_AB    m12, m13, r2, r3
+    LOAD_AB    m12, m13, r2d, r3d
     mov         r2, r0
     sub         r0, r1
     sub         r0, r1
@@ -380,7 +380,7 @@ cglobal deblock_v_luma_10_%1, 5,5,15
 cglobal deblock_h_luma_10_%1, 5,7,15
     shl        r2d, 2
     shl        r3d, 2
-    LOAD_AB    m12, m13, r2, r3
+    LOAD_AB    m12, m13, r2d, r3d
     mov         r2, r1
     add         r2, r1
     add         r2, r1
@@ -836,6 +836,13 @@ DEBLOCK_LUMA_INTRA avx
     mova [r0+2*r1], m2
 %endmacro
 
+%macro CHROMA_V_LOAD_TC 2
+    movd        %1, [%2]
+    punpcklbw   %1, %1
+    punpcklwd   %1, %1
+    psraw       %1, 6
+%endmacro
+
 %macro DEBLOCK_CHROMA 1
 ;-----------------------------------------------------------------------------
 ; void deblock_v_chroma( uint16_t *pix, int stride, int alpha, int beta, int8_t *tc0 )
@@ -851,10 +858,10 @@ cglobal deblock_v_chroma_10_%1, 5,7-(mmsize/16),8*(mmsize/16)
 .loop:
 %endif
     CHROMA_V_LOAD r5
-    LOAD_AB     m4, m5, r2, r3
+    LOAD_AB     m4, m5, r2d, r3d
     LOAD_MASK   m0, m1, m2, m3, m4, m5, m7, m6, m4
     pxor        m4, m4
-    LOAD_TC     m6, r4
+    CHROMA_V_LOAD_TC m6, r4
     psubw       m6, [pw_3]
     pmaxsw      m6, m4
     pand        m7, m6
@@ -885,7 +892,7 @@ cglobal deblock_v_chroma_intra_10_%1, 4,6-(mmsize/16),8*(mmsize/16)
 .loop:
 %endif
     CHROMA_V_LOAD r4
-    LOAD_AB     m4, m5, r2, r3
+    LOAD_AB     m4, m5, r2d, r3d
     LOAD_MASK   m0, m1, m2, m3, m4, m5, m7, m6, m4
     CHROMA_DEBLOCK_P0_Q0_INTRA m1, m2, m0, m3, m7, m5, m6
     CHROMA_V_STORE

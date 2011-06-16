@@ -23,6 +23,7 @@
 #include "avio_internal.h"
 #include "riff.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/dict.h"
 
 /*
  * TODO:
@@ -157,7 +158,7 @@ static int avi_write_header(AVFormatContext *s)
     int bitrate, n, i, nb_frames, au_byterate, au_ssize, au_scale;
     AVCodecContext *stream, *video_enc;
     int64_t list1, list2, strh, strf;
-    AVMetadataTag *t = NULL;
+    AVDictionaryEntry *t = NULL;
 
     if (s->nb_streams > AVI_MAX_STREAM_COUNT) {
         av_log(s, AV_LOG_ERROR, "AVI does not support >%d streams\n",
@@ -297,7 +298,7 @@ static int avi_write_header(AVFormatContext *s)
             return -1;
         }
         ff_end_tag(pb, strf);
-        if ((t = av_metadata_get(s->streams[i]->metadata, "title", NULL, 0))) {
+        if ((t = av_dict_get(s->streams[i]->metadata, "title", NULL, 0))) {
             avi_write_info_tag(s->pb, "strn", t->value);
             t = NULL;
         }
@@ -379,7 +380,7 @@ static int avi_write_header(AVFormatContext *s)
     ffio_wfourcc(pb, "INFO");
     ff_metadata_conv(&s->metadata, ff_avi_metadata_conv, NULL);
     for (i = 0; *ff_avi_tags[i]; i++) {
-        if ((t = av_metadata_get(s->metadata, ff_avi_tags[i], NULL, AV_METADATA_MATCH_CASE)))
+        if ((t = av_dict_get(s->metadata, ff_avi_tags[i], NULL, AV_DICT_MATCH_CASE)))
             avi_write_info_tag(s->pb, t->key, t->value);
     }
     ff_end_tag(pb, list2);

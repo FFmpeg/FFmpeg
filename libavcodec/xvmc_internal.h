@@ -18,8 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_INTERNAL_XVMC_H
-#define AVCODEC_INTERNAL_XVMC_H
+#ifndef AVCODEC_XVMC_INTERNAL_H
+#define AVCODEC_XVMC_INTERNAL_H
 
 #include "avcodec.h"
 #include "mpegvideo.h"
@@ -30,4 +30,4 @@ int  ff_xvmc_field_start(MpegEncContext*s, AVCodecContext *avctx);
 void ff_xvmc_field_end(MpegEncContext *s);
 void ff_xvmc_decode_mb(MpegEncContext *s);
 
-#endif /* AVCODEC_INTERNAL_XVMC_H */
+#endif /* AVCODEC_XVMC_INTERNAL_H */

@@ -32,4 +32,4 @@
  */
 void ff_kbd_window_init(float *window, float alpha, int n);
 
-#endif
+#endif /* AVCODEC_KBDWIN_H */

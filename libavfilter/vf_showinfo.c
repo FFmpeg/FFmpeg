@@ -43,19 +43,25 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterContext *ctx = inlink->dst;
     ShowInfoContext *showinfo = ctx->priv;
     AVFilterBufferRef *picref = inlink->cur_buf;
-    uint32_t plane_crc[4], crc = 0;
-    int plane;
+    uint32_t plane_checksum[4] = {0}, checksum = 0;
+    int i, plane, vsub = av_pix_fmt_descriptors[inlink->format].log2_chroma_h;
 
-    for (plane = 0; plane < 4; plane++) {
+    for (plane = 0; picref->data[plane] && plane < 4; plane++) {
         size_t linesize = av_image_get_linesize(picref->format, picref->video->w, plane);
-        plane_crc[plane] = av_adler32_update(0  , picref->data[plane], linesize);
-        crc              = av_adler32_update(crc, picref->data[plane], linesize);
+        uint8_t *data = picref->data[plane];
+        int h = plane == 1 || plane == 2 ? inlink->h >> vsub : inlink->h;
+
+        for (i = 0; i < h; i++) {
+            plane_checksum[plane] = av_adler32_update(plane_checksum[plane], data, linesize);
+            checksum = av_adler32_update(checksum, data, linesize);
+            data += picref->linesize[plane];
+        }
     }
 
     av_log(ctx, AV_LOG_INFO,
            "n:%d pts:%"PRId64" pts_time:%f pos:%"PRId64" "
            "fmt:%s sar:%d/%d s:%dx%d i:%c iskey:%d type:%c "
-           "crc:%u plane_crc:[%u %u %u %u]\n",
+           "checksum:%u plane_checksum:[%u %u %u %u]\n",
            showinfo->frame,
            picref->pts, picref ->pts * av_q2d(inlink->time_base), picref->pos,
            av_pix_fmt_descriptors[picref->format].name,
@@ -65,7 +71,7 @@ static void end_frame(AVFilterLink *inlink)
            picref->video->top_field_first ? 'T' : 'B',    /* Top / Bottom */
            picref->video->key_frame,
            av_get_picture_type_char(picref->video->pict_type),
-           crc, plane_crc[0], plane_crc[1], plane_crc[2], plane_crc[3]);
+           checksum, plane_checksum[0], plane_checksum[1], plane_checksum[2], plane_checksum[3]);
 
     showinfo->frame++;
     avfilter_end_frame(inlink->dst->outputs[0]);
@@ -83,7 +89,7 @@ AVFilter avfilter_vf_showinfo = {
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = avfilter_null_start_frame,
                                     .end_frame        = end_frame,
-                                    .min_perms       = AV_PERM_READ, },
+                                    .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},
 
     .outputs   = (AVFilterPad[]) {{ .name             = "default",

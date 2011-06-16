@@ -26,7 +26,6 @@
  *
  */
 
-#define DEBUG
 #include <limits.h>
 #include "avcodec.h"
 #include "get_bits.h"
@@ -196,7 +195,6 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
 {
     GetBitContext hb;
     int len;
-    int chunk_size;
     short wave_format;
 
     init_get_bits(&hb, header, header_size*8);
@@ -205,7 +203,7 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
         return -1;
     }
 
-    chunk_size = get_le32(&hb);
+    skip_bits_long(&hb, 32);    /* chunk_size */
 
     if (get_le32(&hb) != MKTAG('W','A','V','E')) {
         av_log(avctx, AV_LOG_ERROR, "missing WAVE tag\n");
@@ -305,7 +303,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         s->bitstream_size= buf_size;
 
         if(buf_size < s->max_framesize){
-            //av_dlog(avctx, "wanna more data ... %d\n", buf_size);
             *data_size = 0;
             return input_buf_size;
         }

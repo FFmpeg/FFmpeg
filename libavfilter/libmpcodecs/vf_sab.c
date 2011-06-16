@@ -102,7 +102,7 @@ static int allocStuff(FilterParam *f, int width, int height){
     swsF.lumH= swsF.lumV= vec;
     swsF.chrH= swsF.chrV= NULL;
     f->preFilterContext= sws_getContext(
-        width, height, PIX_FMT_GRAY8, width, height, PIX_FMT_GRAY8, get_sws_cpuflags()|SWS_POINT, &swsF, NULL, NULL);
+        width, height, PIX_FMT_GRAY8, width, height, PIX_FMT_GRAY8, SWS_POINT, &swsF, NULL, NULL);
 
     sws_freeVec(vec);
     vec = sws_getGaussianVec(f->strength, 5.0);

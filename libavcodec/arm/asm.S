@@ -26,6 +26,8 @@
 #   define ELF @
 #endif
 
+        .syntax unified
+
 .macro  require8 val=1
 ELF     .eabi_attribute 24, \val
 .endm

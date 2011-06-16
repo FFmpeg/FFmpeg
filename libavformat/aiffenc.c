@@ -22,6 +22,7 @@
 #include "avformat.h"
 #include "aiff.h"
 #include "avio_internal.h"
+#include "isom.h"
 
 typedef struct {
     int64_t form;
@@ -59,6 +60,12 @@ static int aiff_write_header(AVFormatContext *s)
         ffio_wfourcc(pb, "FVER");
         avio_wb32(pb, 4);
         avio_wb32(pb, 0xA2805140);
+    }
+
+    if (enc->channels > 2 && enc->channel_layout) {
+        ffio_wfourcc(pb, "CHAN");
+        avio_wb32(pb, 12);
+        ff_mov_write_chan(pb, enc->channel_layout);
     }
 
     /* Common chunk */

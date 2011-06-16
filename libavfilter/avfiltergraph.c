@@ -90,7 +90,7 @@ int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Input pad \"%s\" for the filter \"%s\" of type \"%s\" not connected to any source\n",
                        filt->input_pads[j].name, filt->name, filt->filter->name);
-                return -1;
+                return AVERROR(EINVAL);
             }
         }
 
@@ -99,7 +99,7 @@ int ff_avfilter_graph_check_validity(AVFilterGraph *graph, AVClass *log_ctx)
                 av_log(log_ctx, AV_LOG_ERROR,
                        "Output pad \"%s\" for the filter \"%s\" of type \"%s\" not connected to any destination\n",
                        filt->output_pads[j].name, filt->name, filt->filter->name);
-                return -1;
+                return AVERROR(EINVAL);
             }
         }
     }
@@ -178,7 +178,7 @@ static int query_formats(AVFilterGraph *graph, AVClass *log_ctx)
                         av_log(log_ctx, AV_LOG_ERROR,
                                "Impossible to convert between the formats supported by the filter "
                                "'%s' and the filter '%s'\n", link->src->name, link->dst->name);
-                        return -1;
+                        return AVERROR(EINVAL);
                     }
                 }
             }
@@ -216,9 +216,11 @@ static void pick_formats(AVFilterGraph *graph)
 
 int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
 {
+    int ret;
+
     /* find supported formats from sub-filters, and merge along links */
-    if (query_formats(graph, log_ctx))
-        return -1;
+    if ((ret = query_formats(graph, log_ctx)) < 0)
+        return ret;
 
     /* Once everything is merged, it's possible that we'll still have
      * multiple valid media format choices. We pick the first one. */
@@ -227,7 +229,7 @@ int ff_avfilter_graph_config_formats(AVFilterGraph *graph, AVClass *log_ctx)
     return 0;
 }
 
-int avfilter_graph_config(AVFilterGraph *graphctx, AVClass *log_ctx)
+int avfilter_graph_config(AVFilterGraph *graphctx, void *log_ctx)
 {
     int ret;
 

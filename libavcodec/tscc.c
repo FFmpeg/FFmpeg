@@ -73,7 +73,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     int buf_size = avpkt->size;
     CamtasiaContext * const c = avctx->priv_data;
     const unsigned char *encoded = buf;
-    unsigned char *outptr;
     int zret; // Zlib return code
     int len = buf_size;
 
@@ -86,8 +85,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-
-    outptr = c->pic.data[0]; // Output image pointer
 
     zret = inflateReset(&(c->zstream));
     if (zret != Z_OK) {
