@@ -113,9 +113,7 @@ static int nb_input_codecs = 0;
 static int nb_input_files_ts_scale[MAX_FILES] = {0};
 
 static AVFormatContext *output_files[MAX_FILES];
-static AVCodec **output_codecs = NULL;
 static int nb_output_files = 0;
-static int nb_output_codecs = 0;
 
 static AVStreamMap *stream_maps = NULL;
 static int nb_stream_maps;
@@ -264,6 +262,8 @@ typedef struct AVOutputStream {
     struct AVInputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ //FIXME look at frame_number
     AVBitStreamFilterContext *bitstream_filters;
+    AVCodec *enc;
+
     /* video only */
     int video_resample;
     AVFrame pict_tmp;      /* temporary image for resampling */
@@ -480,7 +480,6 @@ static int ffmpeg_exit(int ret)
 
     av_free(streamid_map);
     av_free(input_codecs);
-    av_free(output_codecs);
     av_free(stream_maps);
     av_free(meta_data_maps);
 
@@ -2296,7 +2295,7 @@ static int transcode(AVFormatContext **output_files,
     for(i=0;i<nb_ostreams;i++) {
         ost = ost_table[i];
         if (ost->encoding_needed) {
-            AVCodec *codec = i < nb_output_codecs ? output_codecs[i] : NULL;
+            AVCodec *codec = ost->enc;
             AVCodecContext *dec = input_streams[ost->source_index].st->codec;
             if (!codec)
                 codec = avcodec_find_encoder(ost->st->codec->codec_id);
@@ -3418,13 +3417,12 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     }
     ost = new_output_stream(oc, file_idx);
 
-    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!video_stream_copy){
         if (video_codec_name) {
             codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1,
                                          avcodec_opts[AVMEDIA_TYPE_VIDEO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(video_codec_name);
-            output_codecs[nb_output_codecs-1] = codec;
+            ost->enc = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
             codec = avcodec_find_encoder(codec_id);
@@ -3561,13 +3559,12 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     }
     ost = new_output_stream(oc, file_idx);
 
-    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!audio_stream_copy){
         if (audio_codec_name) {
             codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1,
                                          avcodec_opts[AVMEDIA_TYPE_AUDIO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(audio_codec_name);
-            output_codecs[nb_output_codecs-1] = codec;
+            ost->enc = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_AUDIO);
             codec = avcodec_find_encoder(codec_id);
@@ -3633,7 +3630,6 @@ static void new_data_stream(AVFormatContext *oc, int file_idx)
     }
     new_output_stream(oc, file_idx);
     data_enc = st->codec;
-    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if (!data_stream_copy) {
         fprintf(stderr, "Data stream encoding not supported yet (only streamcopy)\n");
         ffmpeg_exit(1);
@@ -3673,12 +3669,12 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
     }
     ost = new_output_stream(oc, file_idx);
     subtitle_enc = st->codec;
-    output_codecs = grow_array(output_codecs, sizeof(*output_codecs), &nb_output_codecs, nb_output_codecs + 1);
     if(!subtitle_stream_copy){
         if (subtitle_codec_name) {
             codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1,
                                          avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
-            codec= output_codecs[nb_output_codecs-1] = avcodec_find_encoder_by_name(subtitle_codec_name);
+            codec = avcodec_find_encoder_by_name(subtitle_codec_name);
+            ost->enc = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_SUBTITLE);
             codec = avcodec_find_encoder(codec_id);
