@@ -122,8 +122,7 @@ static void ff_h264dsp_init_neon(H264DSPContext *c, const int bit_depth)
     c->h264_idct_dc_add     = ff_h264_idct_dc_add_neon;
     c->h264_idct_add16      = ff_h264_idct_add16_neon;
     c->h264_idct_add16intra = ff_h264_idct_add16intra_neon;
-    //FIXME: reenable when asm is updated.
-    //c->h264_idct_add8       = ff_h264_idct_add8_neon;
+    c->h264_idct_add8       = ff_h264_idct_add8_neon;
     c->h264_idct8_add       = ff_h264_idct8_add_neon;
     c->h264_idct8_dc_add    = ff_h264_idct8_dc_add_neon;
     c->h264_idct8_add4      = ff_h264_idct8_add4_neon;

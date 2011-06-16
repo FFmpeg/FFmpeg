@@ -14,7 +14,7 @@ eval do_$test=y
 do_lavf()
 {
     file=${outfile}lavf.$1
-    do_ffmpeg $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $DEC_OPTS -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $2
+    do_ffmpeg $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $DEC_OPTS -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $2
     do_ffmpeg_crc $file $DEC_OPTS -i $target_path/$file $3
 }
 
@@ -39,8 +39,8 @@ do_image_formats()
 do_audio_only()
 {
     file=${outfile}lavf.$1
-    do_ffmpeg $file $DEC_OPTS $2 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $3
-    do_ffmpeg_crc $file $DEC_OPTS -i $target_path/$file
+    do_ffmpeg $file $DEC_OPTS $2 -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $3
+    do_ffmpeg_crc $file $DEC_OPTS $4 -i $target_path/$file
 }
 
 rm -f "$logfile"
@@ -55,7 +55,7 @@ fi
 
 if [ -n "$do_rm" ] ; then
 file=${outfile}lavf.rm
-do_ffmpeg $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $DEC_OPTS -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 -acodec ac3_fixed
+do_ffmpeg $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $DEC_OPTS -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 -acodec ac3_fixed
 # broken
 #do_ffmpeg_crc $file -i $target_path/$file
 fi
@@ -181,11 +181,11 @@ do_audio_only wav
 fi
 
 if [ -n "$do_alaw" ] ; then
-do_audio_only al
+do_audio_only al "" "" "-ar 44100"
 fi
 
 if [ -n "$do_mulaw" ] ; then
-do_audio_only ul
+do_audio_only ul "" "" "-ar 44100"
 fi
 
 if [ -n "$do_au" ] ; then

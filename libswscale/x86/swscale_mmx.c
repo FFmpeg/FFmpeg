@@ -182,6 +182,8 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
 
     if (cpu_flags & AV_CPU_FLAG_MMX)
         sws_init_swScale_MMX(c);
+#if HAVE_MMX2
     if (cpu_flags & AV_CPU_FLAG_MMX2)
         sws_init_swScale_MMX2(c);
+#endif
 }
