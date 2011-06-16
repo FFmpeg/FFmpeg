@@ -418,7 +418,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
                 c->biweight_h264_pixels_tab[3]= ff_h264_biweight_8x8_ssse3;
                 c->biweight_h264_pixels_tab[4]= ff_h264_biweight_8x4_ssse3;
             }
-            if (mm_flags&AV_CPU_FLAG_AVX) {
+            if (HAVE_AVX && mm_flags&AV_CPU_FLAG_AVX) {
 #if HAVE_ALIGNED_STACK
                 c->h264_v_loop_filter_luma = ff_deblock_v_luma_8_avx;
                 c->h264_h_loop_filter_luma = ff_deblock_h_luma_8_avx;
