@@ -4225,6 +4225,7 @@ static int opt_target(const char *opt, const char *arg)
 
         opt_frame_size("s", norm == PAL ? "480x576" : "480x480");
         opt_frame_rate("r", frame_rates[norm]);
+        opt_frame_pix_fmt("pix_fmt", "yuv420p");
         opt_default("g", norm == PAL ? "15" : "18");
 
         opt_default("b", "2040000");
@@ -4247,6 +4248,7 @@ static int opt_target(const char *opt, const char *arg)
 
         opt_frame_size("vcodec", norm == PAL ? "720x576" : "720x480");
         opt_frame_rate("r", frame_rates[norm]);
+        opt_frame_pix_fmt("pix_fmt", "yuv420p");
         opt_default("g", norm == PAL ? "15" : "18");
 
         opt_default("b", "6000000");
