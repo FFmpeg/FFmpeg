@@ -21,7 +21,7 @@
 
 /**
  * @file
- * video padding filter and color source
+ * video padding filter
  */
 
 #include "avfilter.h"
