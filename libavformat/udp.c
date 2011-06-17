@@ -328,7 +328,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "reuse", p)) {
-            const char *endptr=NULL;
+            char *endptr = NULL;
             s->reuse_socket = strtol(buf, &endptr, 10);
             /* assume if no digits were found it is a request to enable it */
             if (buf == endptr)
