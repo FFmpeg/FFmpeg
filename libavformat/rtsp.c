@@ -1234,10 +1234,10 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             if (reply->transports[0].source[0]) {
                 ff_url_join(url, sizeof(url), "rtp", NULL,
                             reply->transports[0].source,
-                            reply->transports[0].server_port_min, options);
+                            reply->transports[0].server_port_min, "%s", options);
             } else {
                 ff_url_join(url, sizeof(url), "rtp", NULL, host,
-                            reply->transports[0].server_port_min, options);
+                            reply->transports[0].server_port_min, "%s", options);
             }
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
                 rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
