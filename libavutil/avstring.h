@@ -22,6 +22,7 @@
 #define AVUTIL_AVSTRING_H
 
 #include <stddef.h>
+#include "attributes.h"
 
 /**
  * Return non-zero if pfx is a prefix of str. If it is, *ptr is set to
@@ -107,7 +108,7 @@ size_t av_strlcat(char *dst, const char *src, size_t size);
  * @return the length of the string that would have been generated
  *  if enough space had been available
  */
-size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...);
+size_t av_strlcatf(char *dst, size_t size, const char *fmt, ...) av_printf_format(3, 4);
 
 /**
  * Convert a number to a av_malloced string.

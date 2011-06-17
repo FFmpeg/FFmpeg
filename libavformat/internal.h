@@ -108,7 +108,7 @@ uint64_t ff_ntp_time(void);
  */
 int ff_url_join(char *str, int size, const char *proto,
                 const char *authorization, const char *hostname,
-                int port, const char *fmt, ...);
+                int port, const char *fmt, ...) av_printf_format(7, 8);
 
 /**
  * Append the media-specific SDP fragment for the media stream c
