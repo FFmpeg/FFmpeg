@@ -139,7 +139,7 @@ static int color_request_frame(AVFilterLink *link)
     AVFilterBufferRef *picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
     picref->video->sample_aspect_ratio = (AVRational) {1, 1};
     picref->pts                 = av_rescale_q(color->pts++, color->time_base, AV_TIME_BASE_Q);
-    picref->pos                 = 0;
+    picref->pos = -1;
 
     avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
     ff_draw_rectangle(picref->data, picref->linesize,
