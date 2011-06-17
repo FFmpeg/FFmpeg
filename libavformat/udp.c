@@ -365,7 +365,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 
-    if (s->is_multicast && (h->flags & AVIO_FLAG_READ))
+    if ((s->is_multicast || !s->local_port) && (h->flags & AVIO_FLAG_READ))
         s->local_port = port;
     udp_fd = udp_socket_create(s, &my_addr, &len);
     if (udp_fd < 0)
