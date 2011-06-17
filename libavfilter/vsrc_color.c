@@ -129,6 +129,7 @@ static int color_config_props(AVFilterLink *inlink)
            is_packed_rgba ? "rgba" : "yuva");
     inlink->w = color->w;
     inlink->h = color->h;
+    inlink->time_base = color->time_base;
 
     return 0;
 }
@@ -138,7 +139,7 @@ static int color_request_frame(AVFilterLink *link)
     ColorContext *color = link->src->priv;
     AVFilterBufferRef *picref = avfilter_get_video_buffer(link, AV_PERM_WRITE, color->w, color->h);
     picref->video->sample_aspect_ratio = (AVRational) {1, 1};
-    picref->pts                 = av_rescale_q(color->pts++, color->time_base, AV_TIME_BASE_Q);
+    picref->pts = color->pts++;
     picref->pos = -1;
 
     avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
