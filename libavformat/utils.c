@@ -395,6 +395,9 @@ static AVDictionary *convert_format_parameters(AVFormatParameters *ap)
     char buf[1024];
     AVDictionary *opts = NULL;
 
+    if (!ap)
+        return NULL;
+
     if (ap->time_base.num) {
         snprintf(buf, sizeof(buf), "%d/%d", ap->time_base.den, ap->time_base.num);
         av_dict_set(&opts, "framerate", buf, 0);
