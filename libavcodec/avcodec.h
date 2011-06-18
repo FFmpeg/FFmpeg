@@ -688,6 +688,10 @@ typedef struct RcOverride{
  * Codec supports slice-based (or partition-based) multithreading.
  */
 #define CODEC_CAP_SLICE_THREADS    0x2000
+/**
+ * Codec is lossless.
+ */
+#define CODEC_CAP_LOSSLESS         0x80000000
 
 //The following defines may change, don't expect compatibility if you use them.
 #define MB_TYPE_INTRA4x4   0x0001
