@@ -2668,7 +2668,7 @@ AVStream *av_new_stream(AVFormatContext *s, int id)
         return NULL;
     }
 
-    st->codec= avcodec_alloc_context();
+    st->codec = avcodec_alloc_context3(NULL);
     if (s->iformat) {
         /* no default bitrate if decoding */
         st->codec->bit_rate = 0;

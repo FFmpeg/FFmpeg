@@ -540,6 +540,7 @@ AVCodecContext *avcodec_alloc_context3(AVCodec *codec){
     return avctx;
 }
 
+#if FF_API_ALLOC_CONTEXT
 AVCodecContext *avcodec_alloc_context2(enum AVMediaType codec_type){
     AVCodecContext *avctx= av_malloc(sizeof(AVCodecContext));
 
@@ -549,14 +550,17 @@ AVCodecContext *avcodec_alloc_context2(enum AVMediaType codec_type){
 
     return avctx;
 }
+#endif
 
 void avcodec_get_context_defaults(AVCodecContext *s){
     avcodec_get_context_defaults2(s, AVMEDIA_TYPE_UNKNOWN);
 }
 
+#if FF_API_ALLOC_CONTEXT
 AVCodecContext *avcodec_alloc_context(void){
     return avcodec_alloc_context2(AVMEDIA_TYPE_UNKNOWN);
 }
+#endif
 
 int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
 {

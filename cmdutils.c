@@ -63,7 +63,7 @@ void init_opts(void)
 {
     int i;
     for (i = 0; i < AVMEDIA_TYPE_NB; i++)
-        avcodec_opts[i] = avcodec_alloc_context2(i);
+        avcodec_opts[i] = avcodec_alloc_context3(NULL);
     avformat_opts = avformat_alloc_context();
 #if CONFIG_SWSCALE
     sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC, NULL, NULL, NULL);
