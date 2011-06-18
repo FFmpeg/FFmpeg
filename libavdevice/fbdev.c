@@ -108,7 +108,7 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
         return ret;
     }
 
-    if (!(st = av_new_stream(avctx, 0)))
+    if (!(st = avformat_new_stream(avctx, NULL)))
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in microseconds */
 

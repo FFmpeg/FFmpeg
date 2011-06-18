@@ -150,7 +150,7 @@ static int xmv_read_header(AVFormatContext *s,
 
     /* Video track */
 
-    vst = av_new_stream(s, 0);
+    vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
 

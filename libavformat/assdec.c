@@ -83,7 +83,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     uint8_t *p, **dst[2]={0};
     int pos[2]={0};
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
     av_set_pts_info(st, 64, 1, 100);

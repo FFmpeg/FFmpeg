@@ -40,7 +40,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     avio_rl16(s->pb); // version
     avio_rl16(s->pb); // header size
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

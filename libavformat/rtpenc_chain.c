@@ -43,7 +43,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
         return NULL;
 
     rtpctx->oformat = rtp_format;
-    if (!av_new_stream(rtpctx, 0)) {
+    if (!avformat_new_stream(rtpctx, NULL)) {
         av_free(rtpctx);
         return NULL;
     }

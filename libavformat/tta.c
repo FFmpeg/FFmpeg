@@ -77,7 +77,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

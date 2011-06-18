@@ -141,7 +141,7 @@ static int fourxm_read_header(AVFormatContext *s,
             fourxm->height = AV_RL32(&header[i + 40]);
 
             /* allocate a new AVStream */
-            st = av_new_stream(s, 0);
+            st = avformat_new_stream(s, NULL);
             if (!st){
                 ret= AVERROR(ENOMEM);
                 goto fail;

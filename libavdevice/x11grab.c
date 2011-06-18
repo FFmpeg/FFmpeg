@@ -193,7 +193,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         goto out;
     }
 
-    st = av_new_stream(s1, 0);
+    st = avformat_new_stream(s1, NULL);
     if (!st) {
         ret = AVERROR(ENOMEM);
         goto out;

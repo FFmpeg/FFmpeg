@@ -79,7 +79,7 @@ static int read_header(AVFormatContext *s,
     /* Audio streams are added if audio packets are found */
     s->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    video = av_new_stream(s, 0);
+    video = avformat_new_stream(s, NULL);
     if (!video)
         return AVERROR(ENOMEM);
 

@@ -295,7 +295,7 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     SetWindowLongPtr(ctx->hwnd, GWLP_USERDATA, (LONG_PTR) s);
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if(!st) {
         vfw_read_close(s);
         return AVERROR(ENOMEM);

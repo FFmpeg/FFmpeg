@@ -57,7 +57,7 @@ static int aea_read_probe(AVProbeData *p)
 static int aea_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    AVStream *st = av_new_stream(s, 0);
+    AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

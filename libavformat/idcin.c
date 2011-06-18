@@ -153,7 +153,7 @@ static int idcin_read_header(AVFormatContext *s,
     bytes_per_sample = avio_rl32(pb);
     channels = avio_rl32(pb);
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, IDCIN_FPS);
@@ -174,7 +174,7 @@ static int idcin_read_header(AVFormatContext *s,
     /* if sample rate is 0, assume no audio */
     if (sample_rate) {
         idcin->audio_present = 1;
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, IDCIN_FPS);

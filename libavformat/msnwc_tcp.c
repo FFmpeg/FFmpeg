@@ -75,7 +75,7 @@ static int msnwc_tcp_read_header(AVFormatContext *ctx, AVFormatParameters *ap)
     AVCodecContext *codec;
     AVStream *st;
 
-    st = av_new_stream(ctx, 0);
+    st = avformat_new_stream(ctx, NULL);
     if(!st)
         return AVERROR(ENOMEM);
 

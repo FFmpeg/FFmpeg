@@ -21,7 +21,7 @@
 #include "avformat.h"
 
 static int daud_header(AVFormatContext *s, AVFormatParameters *ap) {
-    AVStream *st = av_new_stream(s, 0);
+    AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;

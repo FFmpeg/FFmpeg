@@ -217,7 +217,7 @@ static int lxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if ((ret = avio_read(pb, header_data, LXF_HEADER_DATA_SIZE)) != LXF_HEADER_DATA_SIZE)
         return ret < 0 ? ret : AVERROR_EOF;
 
-    if (!(st = av_new_stream(s, 0)))
+    if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
 
     st->duration          = AV_RL32(&header_data[32]);

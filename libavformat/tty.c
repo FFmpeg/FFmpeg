@@ -76,7 +76,7 @@ static int read_header(AVFormatContext *avctx,
 {
     TtyDemuxContext *s = avctx->priv_data;
     int width = 0, height = 0, ret = 0;
-    AVStream *st = av_new_stream(avctx, 0);
+    AVStream *st = avformat_new_stream(avctx, NULL);
     AVRational framerate;
 
     if (!st) {

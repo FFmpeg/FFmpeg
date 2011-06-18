@@ -162,7 +162,7 @@ static int str_read_packet(AVFormatContext *s,
 
                 if(str->channels[channel].video_stream_index < 0){
                     /* allocate a new AVStream */
-                    st = av_new_stream(s, 0);
+                    st = avformat_new_stream(s, NULL);
                     if (!st)
                         return AVERROR(ENOMEM);
                     av_set_pts_info(st, 64, 1, 15);
@@ -210,7 +210,7 @@ static int str_read_packet(AVFormatContext *s,
             if(str->channels[channel].audio_stream_index < 0){
                 int fmt = sector[0x13];
                 /* allocate a new AVStream */
-                st = av_new_stream(s, 0);
+                st = avformat_new_stream(s, NULL);
                 if (!st)
                     return AVERROR(ENOMEM);
 

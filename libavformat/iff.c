@@ -115,7 +115,7 @@ static int iff_read_header(AVFormatContext *s,
     uint32_t chunk_id, data_size;
     int compression = -1;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

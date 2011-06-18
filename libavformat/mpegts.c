@@ -1550,7 +1550,7 @@ static int mpegts_read_header(AVFormatContext *s,
 
         /* only read packets */
 
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             goto fail;
         av_set_pts_info(st, 60, 1, 27000000);

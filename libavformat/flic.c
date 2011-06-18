@@ -105,7 +105,7 @@ static int flic_read_header(AVFormatContext *s,
         speed = FLIC_DEFAULT_SPEED;
 
     /* initialize the decoder streams */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     flic->video_stream_index = st->index;

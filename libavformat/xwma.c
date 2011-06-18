@@ -69,7 +69,7 @@ static int xwma_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (tag != MKTAG('f', 'm', 't', ' '))
         return -1;
     size = avio_rl32(pb);
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

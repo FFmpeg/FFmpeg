@@ -60,7 +60,7 @@ static av_cold int audio_read_header(AVFormatContext *s1,
     enum CodecID codec_id;
     snd_pcm_sw_params_t *sw_params;
 
-    st = av_new_stream(s1, 0);
+    st = avformat_new_stream(s1, NULL);
     if (!st) {
         av_log(s1, AV_LOG_ERROR, "Cannot add stream\n");
 

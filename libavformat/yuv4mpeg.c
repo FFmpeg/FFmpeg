@@ -327,7 +327,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
         aspectd = 1;
     }
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if(!st)
         return AVERROR(ENOMEM);
     st->codec->width = width;

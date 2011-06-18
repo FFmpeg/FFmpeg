@@ -56,7 +56,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     int frame_rate, ret;
 
-    audio_stream = av_new_stream(s, 0);
+    audio_stream = avformat_new_stream(s, NULL);
     video_stream = av_new_stream(s, 1);
 
     // Extra data that will be passed to the decoder

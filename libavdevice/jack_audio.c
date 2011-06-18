@@ -229,7 +229,7 @@ static int audio_read_header(AVFormatContext *context, AVFormatParameters *param
     if ((test = start_jack(context)))
         return test;
 
-    stream = av_new_stream(context, 0);
+    stream = avformat_new_stream(context, NULL);
     if (!stream) {
         stop_jack(self);
         return AVERROR(ENOMEM);

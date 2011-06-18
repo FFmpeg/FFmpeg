@@ -134,7 +134,7 @@ static int film_read_header(AVFormatContext *s,
 
     /* initialize the decoder streams */
     if (film->video_type) {
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         film->video_stream_index = st->index;
@@ -146,7 +146,7 @@ static int film_read_header(AVFormatContext *s,
     }
 
     if (film->audio_type) {
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         film->audio_stream_index = st->index;

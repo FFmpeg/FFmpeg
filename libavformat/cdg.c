@@ -28,7 +28,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *vst;
     int ret;
 
-    vst = av_new_stream(s, 0);
+    vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
 

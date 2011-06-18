@@ -290,7 +290,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for(i=0;i<nb_streams;i++) {
         char rc_eq_buf[128];
 
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             goto fail;
 

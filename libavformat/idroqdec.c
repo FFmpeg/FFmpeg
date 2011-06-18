@@ -84,7 +84,7 @@ static int roq_read_header(AVFormatContext *s,
     roq->audio_frame_count = 0;
     roq->audio_stream_index = -1;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 63, 1, framerate);

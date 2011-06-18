@@ -481,7 +481,7 @@ static void get_attachment(AVFormatContext *s, AVIOContext *pb, int length)
     if (!filesize)
         goto done;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         goto done;
     av_dict_set(&st->metadata, "title", description, 0);

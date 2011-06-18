@@ -307,7 +307,7 @@ static int oma_read_header(AVFormatContext *s,
 
     codec_params = AV_RB24(&buf[33]);
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
