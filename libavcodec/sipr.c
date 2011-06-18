@@ -496,8 +496,6 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
-    dsputil_init(&ctx->dsp, avctx);
-
     return 0;
 }
 
