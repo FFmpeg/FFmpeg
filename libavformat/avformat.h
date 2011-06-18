@@ -742,7 +742,12 @@ typedef struct AVFormatContext {
 #endif
 #define AVFMT_FLAG_CUSTOM_IO    0x0080 ///< The caller has supplied a custom AVIOContext, don't avio_close() it.
 
-    int loop_input;
+#if FF_API_LOOP_INPUT
+    /**
+     * @deprecated, use the 'loop' img2 demuxer private option.
+     */
+    attribute_deprecated int loop_input;
+#endif
 
     /**
      * decoding: size of data to probe; encoding: unused.
