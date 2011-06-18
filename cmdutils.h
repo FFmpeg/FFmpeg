@@ -47,6 +47,7 @@ extern const char **opt_names;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
+extern AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
 
 /**
  * Initialize the cmdutils option system, in particular

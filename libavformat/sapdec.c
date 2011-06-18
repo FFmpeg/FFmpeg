@@ -52,7 +52,7 @@ static int sap_read_close(AVFormatContext *s)
 {
     struct SAPState *sap = s->priv_data;
     if (sap->sdp_ctx)
-        av_close_input_stream(sap->sdp_ctx);
+        av_close_input_file(sap->sdp_ctx);
     if (sap->ann_fd)
         ffurl_close(sap->ann_fd);
     av_freep(&sap->sdp);
@@ -156,9 +156,8 @@ static int sap_read_header(AVFormatContext *s,
         goto fail;
     }
     sap->sdp_ctx->max_delay = s->max_delay;
-    ap->prealloced_context = 1;
-    ret = av_open_input_stream(&sap->sdp_ctx, &sap->sdp_pb, "temp.sdp",
-                               infmt, ap);
+    sap->sdp_ctx->pb        = &sap->sdp_pb;
+    ret = avformat_open_input(&sap->sdp_ctx, "temp.sdp", infmt, NULL);
     if (ret < 0)
         goto fail;
     if (sap->sdp_ctx->ctx_flags & AVFMTCTX_NOHEADER)

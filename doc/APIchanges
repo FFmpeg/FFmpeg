@@ -23,6 +23,16 @@ API changes, most recent first:
 2011-06-12 - xxxxxxx - lavfi 2.16.0 - avfilter_graph_parse()
   Change avfilter_graph_parse() signature.
 
+2011-06-xx - xxxxxxx - lavf 53.2.0 - avformat.h
+  Add avformat_open_input and avformat_write_header().
+  Deprecate av_open_input_stream, av_open_input_file,
+  AVFormatParameters and av_write_header.
+
+2011-06-xx - xxxxxxx - lavu 51.7.0 - opt.h
+  Add av_opt_set_dict() and av_opt_find().
+  Deprecate av_find_opt().
+  Add AV_DICT_APPEND flag.
+
 2011-06-xx - xxxxxxx - lavu 51.6.0 - opt.h
   Add av_opt_flag_is_set().
 

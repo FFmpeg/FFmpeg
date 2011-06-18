@@ -29,6 +29,8 @@
 #define AV_DICT_DONT_STRDUP_KEY 4
 #define AV_DICT_DONT_STRDUP_VAL 8
 #define AV_DICT_DONT_OVERWRITE 16   ///< Don't overwrite existing entries.
+#define AV_DICT_APPEND         32   /**< If the entry already exists, append to it.  Note that no
+                                      delimiter is added, the strings are simply concatenated. */
 
 typedef struct {
     char *key;

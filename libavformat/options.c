@@ -33,6 +33,33 @@ static const char* format_to_name(void* ptr)
     else return "NULL";
 }
 
+static const AVOption *opt_find(void *obj, const char *name, const char *unit, int opt_flags, int search_flags)
+{
+    AVFormatContext   *s = obj;
+    AVInputFormat  *ifmt = NULL;
+    AVOutputFormat *ofmt = NULL;
+    if (s->priv_data) {
+        if ((s->iformat && !s->iformat->priv_class) ||
+            (s->oformat && !s->oformat->priv_class))
+            return NULL;
+        return av_opt_find(s->priv_data, name, unit, opt_flags, search_flags);
+    }
+
+    while ((ifmt = av_iformat_next(ifmt))) {
+        const AVOption *o;
+
+        if (ifmt->priv_class && (o = av_opt_find(&ifmt->priv_class, name, unit, opt_flags, search_flags)))
+            return o;
+    }
+    while ((ofmt = av_oformat_next(ofmt))) {
+        const AVOption *o;
+
+        if (ofmt->priv_class && (o = av_opt_find(&ofmt->priv_class, name, unit, opt_flags, search_flags)))
+            return o;
+    }
+    return NULL;
+}
+
 #define OFFSET(x) offsetof(AVFormatContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
@@ -75,6 +102,7 @@ static const AVClass av_format_context_class = {
     .item_name      = format_to_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
+    .opt_find       = opt_find,
 };
 
 static void avformat_get_context_defaults(AVFormatContext *s)

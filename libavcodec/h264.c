@@ -3784,8 +3784,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             init_get_bits(&s->gb, ptr, bit_length);
             ff_h264_decode_seq_parameter_set(h);
 
-            if(s->flags& CODEC_FLAG_LOW_DELAY ||
-              (h->sps.bitstream_restriction_flag && !h->sps.num_reorder_frames))
+            if (s->flags& CODEC_FLAG_LOW_DELAY ||
+                (h->sps.bitstream_restriction_flag && !h->sps.num_reorder_frames))
                 s->low_delay=1;
 
             if(avctx->has_b_frames < 2)
