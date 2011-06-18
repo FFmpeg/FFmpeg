@@ -3247,7 +3247,10 @@ static int opt_input_file(const char *opt, const char *filename)
         opt_programid=0;
     }
 
-    ic->loop_input = loop_input;
+    if (loop_input) {
+        av_log(NULL, AV_LOG_WARNING, "-loop_input is deprecated, use -loop 1\n");
+        ic->loop_input = loop_input;
+    }
 
     /* Set AVCodecContext options so they will be seen by av_find_stream_info() */
     for (i = 0; i < ic->nb_streams; i++) {
@@ -3897,7 +3900,10 @@ static void opt_output_file(const char *filename)
 
     oc->preload= (int)(mux_preload*AV_TIME_BASE);
     oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
-    oc->loop_output = loop_output;
+    if (loop_output >= 0) {
+        av_log(NULL, AV_LOG_WARNING, "-loop_output is deprecated, use -loop\n");
+        oc->loop_output = loop_output;
+    }
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     frame_rate    = (AVRational){0, 0};
@@ -4309,8 +4315,8 @@ static const OptionDef options[] = {
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump},
       "when dumping packets, also dump the payload" },
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
-    { "loop_input", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "loop (current only works with images)" },
-    { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "number of times to loop output in formats that support looping (0 loops forever)", "" },
+    { "loop_input", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "deprecated, use -loop" },
+    { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "deprecated, use -loop", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "set ffmpeg verbosity level", "number" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "threads",  HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
