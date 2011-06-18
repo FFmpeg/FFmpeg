@@ -1970,6 +1970,49 @@ Some examples follow:
 frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
 @end example
 
+@section testsrc
+
+Generate a test video pattern, showing a color pattern, a scrolling
+gradient and a timestamp. This is mainly intended for testing
+purposes.
+
+It accepts an optional sequence of @var{key}=@var{value} pairs,
+separated by ":". The description of the accepted options follows.
+
+@table @option
+
+@item size, s
+Specify the size of the sourced video, it may be a string of the form
+@var{width}x@var{heigth}, or the name of a size abbreviation. The
+default value is "320x240".
+
+@item rate, r
+Specify the frame rate of the sourced video, as the number of frames
+generated per second. It has to be a string in the format
+@var{frame_rate_num}/@var{frame_rate_den}, an integer number, a float
+number or a valid video frame rate abbreviation. The default value is
+"25".
+
+@item duration
+Set the video duration of the sourced video. The accepted syntax is:
+@example
+[-]HH[:MM[:SS[.m...]]]
+[-]S+[.m...]
+@end example
+See also the function @code{av_parse_time()}.
+
+If not specified, or the expressed duration is negative, the video is
+supposed to be generated forever.
+@end table
+
+For example the following:
+@example
+testsrc=duration=5.3:size=qcif:rate=10
+@end example
+
+will generate a video with a duration of 5.3 seconds, with size
+176x144 and a framerate of 10 frames per second.
+
 @c man end VIDEO SOURCES
 
 @chapter Video Sinks
