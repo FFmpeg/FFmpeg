@@ -1311,6 +1311,7 @@ void av_close_input_file(AVFormatContext *s);
  */
 void avformat_free_context(AVFormatContext *s);
 
+#if FF_API_NEW_STREAM
 /**
  * Add a new stream to a media file.
  *
@@ -1321,7 +1322,27 @@ void avformat_free_context(AVFormatContext *s);
  * @param s media file handle
  * @param id file-format-dependent stream ID
  */
+attribute_deprecated
 AVStream *av_new_stream(AVFormatContext *s, int id);
+#endif
+
+/**
+ * Add a new stream to a media file.
+ *
+ * When demuxing, it is called by the demuxer in read_header(). If the
+ * flag AVFMTCTX_NOHEADER is set in s.ctx_flags, then it may also
+ * be called in read_packet().
+ *
+ * When muxing, should be called by the user before avformat_write_header().
+ *
+ * @param c If non-NULL, the AVCodecContext corresponding to the new stream
+ * will be initialized to use this codec. This is needed for e.g. codec-specific
+ * defaults to be set, so codec should be provided if it is known.
+ *
+ * @return newly created stream or NULL on error.
+ */
+AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c);
+
 AVProgram *av_new_program(AVFormatContext *s, int id);
 
 /**
