@@ -549,7 +549,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     int err;
     AVDictionary *opts = convert_format_parameters(ap);
 
-    if (!ap->prealloced_context)
+    if (!ap || !ap->prealloced_context)
         *ic_ptr = NULL;
 
     err = avformat_open_input(ic_ptr, filename, fmt, &opts);
