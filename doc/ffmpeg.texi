@@ -169,7 +169,6 @@ Set frame rate (Hz value, fraction or abbreviation), (default = 25).
 Set frame size. The format is @samp{wxh} (ffserver default = 160x128).
 There is no default for input streams,
 for output streams it is set by default to the size of the source stream.
-If the input file has video streams with different resolutions, the behaviour is undefined.
 The following abbreviations are recognized:
 @table @samp
 @item sqcif
