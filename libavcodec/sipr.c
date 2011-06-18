@@ -23,6 +23,7 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
