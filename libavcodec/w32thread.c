@@ -135,10 +135,10 @@ int ff_thread_init(AVCodecContext *s){
         return 0;
     }
 
-    s->active_thread_type= FF_THREAD_SLICE;
-
     if (s->thread_count <= 1)
         return 0;
+
+    s->active_thread_type= FF_THREAD_SLICE;
 
     assert(!s->thread_opaque);
     c= av_mallocz(sizeof(ThreadContext)*s->thread_count);
