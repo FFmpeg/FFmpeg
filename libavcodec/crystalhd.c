@@ -402,8 +402,6 @@ static av_cold int init(AVCodecContext *avctx)
             uint8_t *dummy_p;
             int dummy_int;
 
-            format.startCodeSz = (avctx->extradata[4] & 0x03) + 1;
-
             priv->bsfc = av_bitstream_filter_init("h264_mp4toannexb");
             if (!priv->bsfc) {
                 av_log(avctx, AV_LOG_ERROR,
@@ -412,11 +410,9 @@ static av_cold int init(AVCodecContext *avctx)
             }
             av_bitstream_filter_filter(priv->bsfc, avctx, NULL, &dummy_p,
                                        &dummy_int, NULL, 0, 0);
-
-            format.pMetaData  = avctx->extradata;
-            format.metaDataSz = avctx->extradata_size;
         }
-        break;
+        subtype = BC_MSUBTYPE_H264;
+        // Fall-through
     case BC_MSUBTYPE_H264:
         format.startCodeSz = 4;
         // Fall-through
