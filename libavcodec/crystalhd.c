@@ -512,7 +512,7 @@ static inline CopyRet copy_frame(AVCodecContext *avctx,
                                  void *data, int *data_size)
 {
     BC_STATUS ret;
-    BC_DTS_STATUS decoder_status;
+    BC_DTS_STATUS decoder_status = { 0, };
     uint8_t trust_interlaced;
     uint8_t interlaced;
 
@@ -786,7 +786,7 @@ static inline CopyRet receive_frame(AVCodecContext *avctx,
 static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
 {
     BC_STATUS ret;
-    BC_DTS_STATUS decoder_status;
+    BC_DTS_STATUS decoder_status = { 0, };
     CopyRet rec_ret;
     CHDContext *priv   = avctx->priv_data;
     HANDLE dev         = priv->dev;
