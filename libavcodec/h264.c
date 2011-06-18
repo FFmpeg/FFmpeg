@@ -2984,7 +2984,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h0->last_slice_type = slice_type;
     h->slice_num = ++h0->current_slice;
     if(h->slice_num >= MAX_SLICES){
-        av_log(s->avctx, AV_LOG_ERROR, "Too many slices, increase MAX_SLICES and recompile\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Too many slices (%d >= %d), increase MAX_SLICES and recompile\n", h->slice_num, MAX_SLICES);
     }
 
     for(j=0; j<2; j++){
