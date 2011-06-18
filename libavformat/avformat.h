@@ -723,12 +723,16 @@ typedef struct AVFormatContext {
     int preload;
     int max_delay;
 
+#if FF_API_LOOP_OUTPUT
 #define AVFMT_NOOUTPUTLOOP -1
 #define AVFMT_INFINITEOUTPUTLOOP 0
     /**
      * number of times to loop output in formats that support it
+     *
+     * @deprecated use the 'loop' private option in the gif muxer.
      */
-    int loop_output;
+    attribute_deprecated int loop_output;
+#endif
 
     int flags;
 #define AVFMT_FLAG_GENPTS       0x0001 ///< Generate missing pts even if it requires parsing future frames.
