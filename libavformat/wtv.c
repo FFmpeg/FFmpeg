@@ -626,9 +626,10 @@ static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int code
         WtvStream *wst = av_mallocz(sizeof(WtvStream));
         if (!wst)
             return NULL;
-        st = av_new_stream(s, sid);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return NULL;
+        st->id = sid;
         st->priv_data = wst;
     }
     st->codec->codec_type = codec_type;

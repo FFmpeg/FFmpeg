@@ -89,7 +89,7 @@ static int r3d_read_red1(AVFormatContext *s)
     tmp = avio_r8(s->pb); // audio channels
     av_dlog(s, "audio channels %d\n", tmp);
     if (tmp > 0) {
-        AVStream *ast = av_new_stream(s, 1);
+        AVStream *ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;

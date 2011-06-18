@@ -145,7 +145,7 @@ static int flic_read_header(AVFormatContext *s,
      */
     if (AV_RL16(&preamble[4]) == FLIC_TFTD_CHUNK_AUDIO) {
         /* TFTD videos have an extra 22050 Hz 8-bit mono audio stream */
-        ast = av_new_stream(s, 1);
+        ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
 

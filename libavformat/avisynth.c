@@ -84,7 +84,8 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                   if (AVIStreamReadFormat(stream->handle, 0, &wvfmt, &struct_size) != S_OK)
                     continue;
 
-                  st = av_new_stream(s, id);
+                  st = avformat_new_stream(s, NULL);
+                  st->id = id;
                   st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
 
                   st->codec->block_align = wvfmt.nBlockAlign;
@@ -110,7 +111,8 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                   if (AVIStreamReadFormat(stream->handle, 0, &imgfmt, &struct_size) != S_OK)
                     continue;
 
-                  st = av_new_stream(s, id);
+                  st = avformat_new_stream(s, NULL);
+                  st->id = id;
                   st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                   st->r_frame_rate.num = stream->info.dwRate;
                   st->r_frame_rate.den = stream->info.dwScale;

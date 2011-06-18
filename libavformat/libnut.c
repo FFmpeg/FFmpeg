@@ -213,7 +213,7 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
     priv->s = s;
 
     for (i = 0; s[i].type != -1 && i < 2; i++) {
-        AVStream * st = av_new_stream(avf, i);
+        AVStream * st = avformat_new_stream(avf, NULL);
         int j;
 
         for (j = 0; j < s[i].fourcc_len && j < 8; j++) st->codec->codec_tag |= s[i].fourcc[j]<<(j*8);

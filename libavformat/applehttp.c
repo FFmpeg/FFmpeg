@@ -505,11 +505,12 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
         snprintf(bitrate_str, sizeof(bitrate_str), "%d", v->bandwidth);
         /* Create new AVStreams for each stream in this variant */
         for (j = 0; j < v->ctx->nb_streams; j++) {
-            AVStream *st = av_new_stream(s, i);
+            AVStream *st = avformat_new_stream(s, NULL);
             if (!st) {
                 ret = AVERROR(ENOMEM);
                 goto fail;
             }
+            st->id = i;
             avcodec_copy_context(st->codec, v->ctx->streams[j]->codec);
             if (v->bandwidth)
                 av_dict_set(&st->metadata, "variant_bitrate", bitrate_str,

@@ -198,12 +198,13 @@ static int fourxm_read_header(AVFormatContext *s,
             i += 8 + size;
 
             /* allocate a new AVStream */
-            st = av_new_stream(s, current_track);
+            st = avformat_new_stream(s, NULL);
             if (!st){
                 ret= AVERROR(ENOMEM);
                 goto fail;
             }
 
+            st->id = current_track;
             av_set_pts_info(st, 60, 1, fourxm->tracks[current_track].sample_rate);
 
             fourxm->tracks[current_track].stream_index = st->index;

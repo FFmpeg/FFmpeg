@@ -598,12 +598,13 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
                 return AVERROR(ENOMEM);
             memcpy(sub_pes, pes, sizeof(*sub_pes));
 
-            sub_st = av_new_stream(pes->stream, pes->pid);
+            sub_st = avformat_new_stream(pes->stream, NULL);
             if (!sub_st) {
                 av_free(sub_pes);
                 return AVERROR(ENOMEM);
             }
 
+            sub_st->id = pes->pid;
             av_set_pts_info(sub_st, 33, 1, 90000);
             sub_st->priv_data = sub_pes;
             sub_st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -700,9 +701,10 @@ static int mpegts_push_data(MpegTSFilter *filter,
 
                     /* stream not present in PMT */
                     if (!pes->st) {
-                        pes->st = av_new_stream(ts->stream, pes->pid);
+                        pes->st = avformat_new_stream(ts->stream, NULL);
                         if (!pes->st)
                             return AVERROR(ENOMEM);
+                        pes->st->id = pes->pid;
                         mpegts_set_stream_info(pes->st, pes, 0, 0);
                     }
 
@@ -1090,14 +1092,18 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
         /* now create ffmpeg stream */
         if (ts->pids[pid] && ts->pids[pid]->type == MPEGTS_PES) {
             pes = ts->pids[pid]->u.pes_filter.opaque;
-            if (!pes->st)
-                pes->st = av_new_stream(pes->stream, pes->pid);
+            if (!pes->st) {
+                pes->st = avformat_new_stream(pes->stream, NULL);
+                st->id = pes->pid;
+            }
             st = pes->st;
         } else {
             if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid);
-            if (pes)
-                st = av_new_stream(pes->stream, pes->pid);
+            if (pes) {
+                st = avformat_new_stream(pes->stream, NULL);
+                st->id = pes->pid;
+            }
         }
 
         if (!st)

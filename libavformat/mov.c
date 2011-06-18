@@ -1793,8 +1793,9 @@ static int mov_read_trak(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     MOVStreamContext *sc;
     int ret;
 
-    st = av_new_stream(c->fc, c->fc->nb_streams);
+    st = avformat_new_stream(c->fc, NULL);
     if (!st) return AVERROR(ENOMEM);
+    st->id = c->fc->nb_streams;
     sc = av_mallocz(sizeof(MOVStreamContext));
     if (!sc) return AVERROR(ENOMEM);
 

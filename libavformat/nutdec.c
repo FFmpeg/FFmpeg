@@ -288,7 +288,7 @@ static int decode_main_header(NUTContext *nut){
 
     nut->stream = av_mallocz(sizeof(StreamContext)*stream_count);
     for(i=0; i<stream_count; i++){
-        av_new_stream(s, i);
+        avformat_new_stream(s, NULL);
     }
 
     return 0;

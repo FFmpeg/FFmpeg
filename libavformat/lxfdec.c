@@ -243,7 +243,7 @@ static int lxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_WARNING, "VBI data not yet supported\n");
 
     if ((lxf->channels = (disk_params >> 2) & 0xF)) {
-        if (!(st = av_new_stream(s, 1)))
+        if (!(st = avformat_new_stream(s, NULL)))
             return AVERROR(ENOMEM);
 
         st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;

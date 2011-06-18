@@ -153,7 +153,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
 
     if (v_packs) {
         ctx->v_id = stream_nr++;
-        vst = av_new_stream(s, ctx->v_id);
+        vst = avformat_new_stream(s, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
         vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -169,7 +169,7 @@ static int nuv_header(AVFormatContext *s, AVFormatParameters *ap) {
 
     if (a_packs) {
         ctx->a_id = stream_nr++;
-        ast = av_new_stream(s, ctx->a_id);
+        ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;

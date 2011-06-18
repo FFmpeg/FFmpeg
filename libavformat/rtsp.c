@@ -357,9 +357,10 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         if (!strcmp(ff_rtp_enc_name(rtsp_st->sdp_payload_type), "MP2T")) {
             /* no corresponding stream */
         } else {
-            st = av_new_stream(s, rt->nb_rtsp_streams - 1);
+            st = avformat_new_stream(s, NULL);
             if (!st)
                 return;
+            st->id = rt->nb_rtsp_streams - 1;
             rtsp_st->stream_index = st->index;
             st->codec->codec_type = codec_type;
             if (rtsp_st->sdp_payload_type < RTP_PT_PRIVATE) {

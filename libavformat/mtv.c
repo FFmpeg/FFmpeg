@@ -32,8 +32,6 @@
 #define MTV_HEADER_SIZE 512
 #define MTV_AUDIO_PADDING_SIZE 12
 #define AUDIO_SAMPLING_RATE 44100
-#define VIDEO_SID 0
-#define AUDIO_SID 1
 
 typedef struct MTVDemuxContext {
 
@@ -118,7 +116,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     // video - raw rgb565
 
-    st = av_new_stream(s, VIDEO_SID);
+    st = avformat_new_stream(s, NULL);
     if(!st)
         return AVERROR(ENOMEM);
 
@@ -134,7 +132,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     // audio - mp3
 
-    st = av_new_stream(s, AUDIO_SID);
+    st = avformat_new_stream(s, NULL);
     if(!st)
         return AVERROR(ENOMEM);
 
@@ -171,7 +169,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret;
 
         pkt->pos -= MTV_AUDIO_PADDING_SIZE;
-        pkt->stream_index = AUDIO_SID;
+        pkt->stream_index = 1;
 
     }else
     {
@@ -190,7 +188,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
         for(i=0;i<mtv->img_segment_size/2;i++)
             *((uint16_t *)pkt->data+i) = av_bswap16(*((uint16_t *)pkt->data+i));
 #endif
-        pkt->stream_index = VIDEO_SID;
+        pkt->stream_index = 0;
     }
 
     return ret;

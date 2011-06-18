@@ -354,9 +354,10 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
 }
 
 static AVStream *create_stream(AVFormatContext *s, int is_audio){
-    AVStream *st = av_new_stream(s, is_audio);
+    AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return NULL;
+    st->id = is_audio;
     st->codec->codec_type = is_audio ? AVMEDIA_TYPE_AUDIO : AVMEDIA_TYPE_VIDEO;
     av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;

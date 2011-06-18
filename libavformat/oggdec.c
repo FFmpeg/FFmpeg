@@ -172,10 +172,11 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
     os->header = -1;
 
     if (new_avstream) {
-        st = av_new_stream(s, idx);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
 
+        st->id = idx;
         av_set_pts_info(st, 64, 1, 1000000);
     }
 

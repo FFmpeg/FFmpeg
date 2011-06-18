@@ -459,8 +459,9 @@ add_dstream(AVFormatContext *s, AVStream *orig_st)
 {
     AVStream *st;
 
-    if (!(st = av_new_stream(s, orig_st->id)))
+    if (!(st = avformat_new_stream(s, NULL)))
         return NULL;
+    st->id = orig_st->id;
     st->codec->codec_type = orig_st->codec->codec_type;
     st->first_dts         = orig_st->first_dts;
 
