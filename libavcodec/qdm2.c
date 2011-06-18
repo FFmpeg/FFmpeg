@@ -175,6 +175,7 @@ typedef struct {
     DECLARE_ALIGNED(32, float, synth_buf)[MPA_MAX_CHANNELS][512*2];
     int synth_buf_offset[MPA_MAX_CHANNELS];
     DECLARE_ALIGNED(32, float, sb_samples)[MPA_MAX_CHANNELS][128][SBLIMIT];
+    DECLARE_ALIGNED(32, float, samples)[MPA_MAX_CHANNELS * MPA_FRAME_SIZE];
 
     /// Mixed temporary data used in decoding
     float tone_level[MPA_MAX_CHANNELS][30][64];
@@ -1598,7 +1599,6 @@ static void qdm2_calculate_fft (QDM2Context *q, int channel, int sub_packet)
  */
 static void qdm2_synthesis_filter (QDM2Context *q, int index)
 {
-    float samples[MPA_MAX_CHANNELS * MPA_FRAME_SIZE];
     int i, k, ch, sb_used, sub_sampling, dither_state = 0;
 
     /* copy sb_samples */
@@ -1610,7 +1610,7 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
                 q->sb_samples[ch][(8 * index) + i][k] = 0;
 
     for (ch = 0; ch < q->nb_channels; ch++) {
-        float *samples_ptr = samples + ch;
+        float *samples_ptr = q->samples + ch;
 
         for (i = 0; i < 8; i++) {
             ff_mpa_synth_filter_float(&q->mpadsp,
@@ -1627,7 +1627,7 @@ static void qdm2_synthesis_filter (QDM2Context *q, int index)
 
     for (ch = 0; ch < q->channels; ch++)
         for (i = 0; i < q->frame_size; i++)
-            q->output_buffer[q->channels * i + ch] += (1 << 23) * samples[q->nb_channels * sub_sampling * i + ch];
+            q->output_buffer[q->channels * i + ch] += (1 << 23) * q->samples[q->nb_channels * sub_sampling * i + ch];
 }
 
 
