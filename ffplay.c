@@ -254,7 +254,7 @@ static int autoexit;
 static int exit_on_keydown;
 static int exit_on_mousedown;
 static int loop=1;
-static int framedrop=1;
+static int framedrop=-1;
 static enum ShowMode show_mode = SHOW_MODE_NONE;
 
 static int rdftspeed=20;
@@ -1139,7 +1139,7 @@ retry:
             }else{
                 next_target= vp->target_clock + is->video_clock - vp->pts; //FIXME pass durations cleanly
             }
-            if(framedrop && time > next_target){
+            if((framedrop>0 || (framedrop && is->audio_st)) && time > next_target){
                 is->skip_frames *= 1.0 + FRAME_SKIP_FACTOR;
                 if(is->pictq_size > 1 || time > next_target + 0.5){
                     /* update queue size and signal for next picture */
