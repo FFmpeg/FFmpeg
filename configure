@@ -3006,7 +3006,6 @@ fi
 
 if enabled small; then
     add_cflags $size_cflags
-    optimizations="small"
 elif enabled optimizations; then
     add_cflags $speed_cflags
 else
@@ -3140,6 +3139,7 @@ if enabled sparc; then
     echo "VIS enabled               ${vis-no}"
 fi
 echo "debug symbols             ${debug-no}"
+echo "optimize for size         ${small-no}"
 echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
