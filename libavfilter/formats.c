@@ -94,7 +94,7 @@ int avfilter_add_format(AVFilterFormats **avff, int fmt)
         return AVERROR(ENOMEM);
 
     fmts = av_realloc((*avff)->formats,
-                      sizeof((*avff)->formats) * ((*avff)->format_count+1));
+                      sizeof(*(*avff)->formats) * ((*avff)->format_count+1));
     if (!fmts)
         return AVERROR(ENOMEM);
 
