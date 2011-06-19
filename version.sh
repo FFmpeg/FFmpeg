@@ -5,7 +5,7 @@ revision=$(cd "$1" && git describe --always 2> /dev/null)
 test "$revision" && revision=git-$revision
 
 # no revision number found
-test "$revision" || revision=UNKNOWN
+test "$revision" || revision=$(cd "$1" && cat RELEASE 2> /dev/null)
 
 # releases extract the version number from the VERSION file
 version=$(cd "$1" && cat VERSION 2> /dev/null)
