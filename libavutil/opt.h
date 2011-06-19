@@ -169,6 +169,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags);
  * key. ctx must be an AVClass context, storing is done using
  * AVOptions.
  *
+ * @param opts options string to parse, may be NULL
  * @param key_val_sep a 0-terminated list of characters used to
  * separate key from value
  * @param pairs_sep a 0-terminated list of characters used to separate
