@@ -1,0 +1,52 @@
+Release Notes
+=============
+
+* 0.7 "The Big Bump" June, 2011
+
+General notes
+-------------
+
+This release enables frame-based multithreaded decoding for a number of codecs,
+including VP8, H.263 and H.264. Additionally, there has been a major cleanup of
+both internal and external APIs. For this reason, the major versions of all
+libraries have been bumped. On the one hand, this means that 0.7 can be installed
+side-by-side with previous releases, on the other hand, in order to benefit
+from the new features, applications need to be recompiled.
+
+Other important changes are additions of decoders including, but not limited to,
+AMR-WB, single stream LATM/LOAS, G.722 ADPCM, a native VP8 decoder
+and HE-AACv2. Additionally, many new de/muxers such as WebM in Matroska, Apple
+HTTP Live Streaming, SAP, IEC 61937 (S/PDIF) have been added.
+
+See the Changelog file for a list of significant changes.
+
+Please note that our policy on bug reports has not changed. We still only accept
+bug reports against HEAD of the Libav trunk repository. If you are experiencing
+issues with any formally released version of Libav, please try a current version
+of the development code to check if the issue still exists. If it does, make your
+report against the development code following the usual bug reporting guidelines.
+
+
+API changes
+-----------
+
+Please see the file doc/APIchanges for programmer-centric information. Note that a
+lot of long-time deprecated APIs have been removed. Also, a number of additional
+APIs have been deprecated and are scheduled for removal in the next release.
+
+
+Other notable changes
+---------------------
+
+- many ARM NEON optimizations
+- libswscale cleanup started, optimizations should become easier in the future
+- nonfree libfaad support for AAC decoding removed
+- 4:4:4 H.264 decoding
+- 9/10bit H.264 decoding
+- Win64 Assembler support
+- native MMSH/MMST support
+- Windows TV demuxing
+- native AMR-WB decoding
+- native GSM-MS decoding
+- SMPTE 302M decoding
+- AVS encoding
