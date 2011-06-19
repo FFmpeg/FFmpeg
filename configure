@@ -2069,6 +2069,7 @@ elif $cc -v 2>&1 | grep -q 'PathScale\|Path64'; then
     AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     speed_cflags='-O2'
     size_cflags='-Os'
+    filter_cflags='filter_out -Wdisabled-optimization'
 elif $cc -v 2>&1 | grep -q Open64; then
     cc_type=open64
     cc_version=__OPEN64__
@@ -2077,6 +2078,7 @@ elif $cc -v 2>&1 | grep -q Open64; then
     AS_DEPFLAGS='-MMD -MF $(@:.o=.d) -MT $@'
     speed_cflags='-O2'
     size_cflags='-Os'
+    filter_cflags='filter_out -Wdisabled-optimization|-Wtype-limits|-fno-signed-zeros'
 fi
 
 test -n "$cc_type" && enable $cc_type ||
