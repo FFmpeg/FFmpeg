@@ -1355,7 +1355,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         index = av_index_search_timestamp(
                 st2,
                 av_rescale_q(timestamp, st->time_base, st2->time_base) * FFMAX(ast2->sample_size, 1),
-                flags | AVSEEK_FLAG_BACKWARD);
+                flags | AVSEEK_FLAG_BACKWARD | (st2->codec->codec_type != AVMEDIA_TYPE_VIDEO ? AVSEEK_FLAG_ANY : 0));
         if(index<0)
             index=0;
         ast2->seek_pos= st2->index_entries[index].pos;
@@ -1371,7 +1371,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         index = av_index_search_timestamp(
                 st2,
                 av_rescale_q(timestamp, st->time_base, st2->time_base) * FFMAX(ast2->sample_size, 1),
-                flags | AVSEEK_FLAG_BACKWARD);
+                flags | AVSEEK_FLAG_BACKWARD | (st2->codec->codec_type != AVMEDIA_TYPE_VIDEO ? AVSEEK_FLAG_ANY : 0));
         if(index<0)
             index=0;
         while(index>0 && st2->index_entries[index-1].pos >= pos_min)
