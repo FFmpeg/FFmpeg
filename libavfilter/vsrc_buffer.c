@@ -166,7 +166,7 @@ static int query_formats(AVFilterContext *ctx)
     BufferSourceContext *c = ctx->priv;
     enum PixelFormat pix_fmts[] = { c->pix_fmt, PIX_FMT_NONE };
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
     return 0;
 }
 

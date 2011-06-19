@@ -161,7 +161,7 @@ static int query_formats(AVFilterContext *ctx)
     enum PixelFormat *pix_fmts = lut->is_rgb ? rgb_pix_fmts :
                                  lut->is_yuv ? yuv_pix_fmts : all_pix_fmts;
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
     return 0;
 }
 

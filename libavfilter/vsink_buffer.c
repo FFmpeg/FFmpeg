@@ -66,7 +66,7 @@ static int query_formats(AVFilterContext *ctx)
 {
     BufferSinkContext *buf = ctx->priv;
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(buf->pix_fmts));
+    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(buf->pix_fmts));
     return 0;
 }
 

@@ -26,7 +26,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 22
+#define LIBAVFILTER_VERSION_MINOR 23
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -256,6 +256,11 @@ int avfilter_add_format(AVFilterFormats **avff, int64_t fmt);
 AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
 
 /**
+ * Return a list of all channel layouts supported by FFmpeg.
+ */
+AVFilterFormats *avfilter_all_channel_layouts(void);
+
+/**
  * Return a format list which contains the intersection of the formats of
  * a and b. Also, all the references of a, all the references of b, and
  * a and b themselves will be deallocated.
@@ -466,11 +471,13 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
                                                      int64_t channel_layout, int planar);
 
 /**
- * A helper for query_formats() which sets all links to the same list of
- * formats. If there are no links hooked to this filter, the list of formats is
- * freed.
+ * Helpers for query_formats() which set all links to the same list of
+ * formats/layouts. If there are no links hooked to this filter, the list
+ * of formats is freed.
  */
-void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+void avfilter_set_common_pixel_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+void avfilter_set_common_sample_formats(AVFilterContext *ctx, AVFilterFormats *formats);
+void avfilter_set_common_channel_layouts(AVFilterContext *ctx, AVFilterFormats *formats);
 
 /** Default handler for query_formats() */
 int avfilter_default_query_formats(AVFilterContext *ctx);
@@ -521,9 +528,9 @@ typedef struct AVFilter {
     void (*uninit)(AVFilterContext *ctx);
 
     /**
-     * Queries formats supported by the filter and its pads, and sets the
-     * in_formats for links connected to its output pads, and out_formats
-     * for links connected to its input pads.
+     * Queries formats/layouts supported by the filter and its pads, and sets
+     * the in_formats/in_chlayouts for links connected to its output pads,
+     * and out_formats/out_chlayouts for links connected to its input pads.
      *
      * @return zero on success, a negative value corresponding to an
      * AVERROR code otherwise
@@ -593,12 +600,17 @@ struct AVFilterLink {
     int format;                 ///< agreed upon media format
 
     /**
-     * Lists of formats supported by the input and output filters respectively.
-     * These lists are used for negotiating the format to actually be used,
-     * which will be loaded into the format member, above, when chosen.
+     * Lists of formats and channel layouts supported by the input and output
+     * filters respectively. These lists are used for negotiating the format
+     * to actually be used, which will be loaded into the format and
+     * channel_layout members, above, when chosen.
+     *
      */
     AVFilterFormats *in_formats;
     AVFilterFormats *out_formats;
+
+    AVFilterFormats *in_chlayouts;
+    AVFilterFormats *out_chlayouts;
 
     /**
      * The buffer reference currently being sent across the link by the source

@@ -195,9 +195,16 @@ static void pick_format(AVFilterLink *link)
 
     link->in_formats->format_count = 1;
     link->format = link->in_formats->formats[0];
-
     avfilter_formats_unref(&link->in_formats);
     avfilter_formats_unref(&link->out_formats);
+
+    if (link->type == AVMEDIA_TYPE_AUDIO) {
+        link->in_chlayouts->format_count = 1;
+        link->channel_layout = link->in_chlayouts->formats[0];
+        avfilter_formats_unref(&link->in_chlayouts);
+        avfilter_formats_unref(&link->out_chlayouts);
+    }
+
 }
 
 static void pick_formats(AVFilterGraph *graph)

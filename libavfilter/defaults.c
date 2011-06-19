@@ -197,45 +197,54 @@ int avfilter_default_config_output_link(AVFilterLink *link)
     return 0;
 }
 
-/**
- * A helper for query_formats() which sets all links to the same list of
- * formats. If there are no links hooked to this filter, the list of formats is
- * freed.
- *
- * FIXME: this will need changed for filters with a mix of pad types
- * (video + audio, etc)
- */
-void avfilter_set_common_formats(AVFilterContext *ctx, AVFilterFormats *formats)
+static void set_common_formats(AVFilterContext *ctx, AVFilterFormats *fmts,
+                               enum AVMediaType type, int offin, int offout)
 {
-    int count = 0, i;
+    int i;
+    for (i = 0; i < ctx->input_count; i++)
+        if (ctx->inputs[i] && ctx->inputs[i]->type == type)
+            avfilter_formats_ref(fmts,
+                                 (AVFilterFormats**)((void*)ctx->inputs[i]+offout));
 
-    for (i = 0; i < ctx->input_count; i++) {
-        if (ctx->inputs[i]) {
-            avfilter_formats_ref(formats, &ctx->inputs[i]->out_formats);
-            count++;
-        }
-    }
-    for (i = 0; i < ctx->output_count; i++) {
-        if (ctx->outputs[i]) {
-            avfilter_formats_ref(formats, &ctx->outputs[i]->in_formats);
-            count++;
-        }
-    }
+    for (i = 0; i < ctx->output_count; i++)
+        if (ctx->outputs[i] && ctx->outputs[i]->type == type)
+            avfilter_formats_ref(fmts,
+                                 (AVFilterFormats**)((void*)ctx->outputs[i]+offin));
 
-    if (!count) {
-        av_free(formats->formats);
-        av_free(formats->refs);
-        av_free(formats);
+    if (!fmts->refcount) {
+        av_free(fmts->formats);
+        av_free(fmts->refs);
+        av_free(fmts);
     }
+}
+
+void avfilter_set_common_pixel_formats(AVFilterContext *ctx, AVFilterFormats *formats)
+{
+    set_common_formats(ctx, formats, AVMEDIA_TYPE_VIDEO,
+                       offsetof(AVFilterLink, in_formats),
+                       offsetof(AVFilterLink, out_formats));
+}
+
+void avfilter_set_common_sample_formats(AVFilterContext *ctx, AVFilterFormats *formats)
+{
+    set_common_formats(ctx, formats, AVMEDIA_TYPE_AUDIO,
+                       offsetof(AVFilterLink, in_formats),
+                       offsetof(AVFilterLink, out_formats));
+}
+
+void avfilter_set_common_channel_layouts(AVFilterContext *ctx, AVFilterFormats *formats)
+{
+    set_common_formats(ctx, formats, AVMEDIA_TYPE_AUDIO,
+                       offsetof(AVFilterLink, in_chlayouts),
+                       offsetof(AVFilterLink, out_chlayouts));
 }
 
 int avfilter_default_query_formats(AVFilterContext *ctx)
 {
-    enum AVMediaType type = ctx->inputs  && ctx->inputs [0] ? ctx->inputs [0]->type :
-                            ctx->outputs && ctx->outputs[0] ? ctx->outputs[0]->type :
-                            AVMEDIA_TYPE_VIDEO;
+    avfilter_set_common_pixel_formats(ctx, avfilter_all_formats(AVMEDIA_TYPE_VIDEO));
+    avfilter_set_common_sample_formats(ctx, avfilter_all_formats(AVMEDIA_TYPE_AUDIO));
+    avfilter_set_common_channel_layouts(ctx, avfilter_all_channel_layouts());
 
-    avfilter_set_common_formats(ctx, avfilter_all_formats(type));
     return 0;
 }
 

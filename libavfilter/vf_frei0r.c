@@ -332,7 +332,7 @@ static int query_formats(AVFilterContext *ctx)
     if (!formats)
         return AVERROR(ENOMEM);
 
-    avfilter_set_common_formats(ctx, formats);
+    avfilter_set_common_pixel_formats(ctx, formats);
     return 0;
 }
 

@@ -13,6 +13,15 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-06-19 - xxxxxxx - lavfi 2.23.0 - avfilter.h
+  Add layout negotiation fields and helper functions.
+
+  In particular, add in_chlayouts and out_chlayouts to AVFilterLink,
+  and the functions:
+  avfilter_set_common_sample_formats()
+  avfilter_set_common_channel_layouts()
+  avfilter_all_channel_layouts()
+
 2011-06-19 - xxxxxxx - lavfi 2.22.0 - AVFilterFormats
   Change type of AVFilterFormats.formats from int * to int64_t *,
   and update formats handling API accordingly.

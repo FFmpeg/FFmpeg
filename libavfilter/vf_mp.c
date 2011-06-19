@@ -796,7 +796,7 @@ static int query_formats(AVFilterContext *ctx)
     }
 
     //We assume all allowed input formats are also allowed output formats
-    avfilter_set_common_formats(ctx, avfmts);
+    avfilter_set_common_pixel_formats(ctx, avfmts);
     return 0;
 }
 
