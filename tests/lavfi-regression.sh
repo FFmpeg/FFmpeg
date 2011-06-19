@@ -11,15 +11,13 @@ set -e
 
 eval do_$test=y
 
-rm -f "$logfile"
-
 do_video_filter() {
     label=$1
     filters=$2
     shift 2
-    printf '%-20s' $label >>$logfile
+    printf '%-20s' $label
     run_ffmpeg $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src    \
-        $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5: >>$logfile
+        $ENC_OPTS -vf "$filters" -vcodec rawvideo $* -f nut md5:
 }
 
 do_lavfi() {

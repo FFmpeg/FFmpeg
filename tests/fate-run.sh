@@ -76,9 +76,6 @@ pcm(){
 regtest(){
     t="${test#$2-}"
     ref=${base}/ref/$2/$t
-    cleanfiles="$cleanfiles $outfile $errfile"
-    outfile=tests/data/regression/$2/$t
-    errfile=tests/data/$t.$2.err
     ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads" "$thread_type"
 }
 
