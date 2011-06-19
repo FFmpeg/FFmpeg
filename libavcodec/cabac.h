@@ -36,7 +36,6 @@
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
 #define BRANCHLESS_CABAC_DECODER 1
-//#define ARCH_X86_DISABLED 1
 
 typedef struct CABACContext{
     int low;
@@ -300,70 +299,9 @@ static inline void renorm_cabac_decoder(CABACContext *c){
 }
 
 static inline void renorm_cabac_decoder_once(CABACContext *c){
-#ifdef ARCH_X86_DISABLED
-    int temp;
-#if 0
-    //P3:683    athlon:475
-    __asm__(
-        "lea -0x100(%0), %2         \n\t"
-        "shr $31, %2                \n\t"  //FIXME 31->63 for x86-64
-        "shl %%cl, %0               \n\t"
-        "shl %%cl, %1               \n\t"
-        : "+r"(c->range), "+r"(c->low), "+c"(temp)
-    );
-#elif 0
-    //P3:680    athlon:474
-    __asm__(
-        "cmp $0x100, %0             \n\t"
-        "setb %%cl                  \n\t"  //FIXME 31->63 for x86-64
-        "shl %%cl, %0               \n\t"
-        "shl %%cl, %1               \n\t"
-        : "+r"(c->range), "+r"(c->low), "+c"(temp)
-    );
-#elif 1
-    int temp2;
-    //P3:665    athlon:517
-    __asm__(
-        "lea -0x100(%0), %%eax      \n\t"
-        "cltd                       \n\t"
-        "mov %0, %%eax              \n\t"
-        "and %%edx, %0              \n\t"
-        "and %1, %%edx              \n\t"
-        "add %%eax, %0              \n\t"
-        "add %%edx, %1              \n\t"
-        : "+r"(c->range), "+r"(c->low), "+a"(temp), "+d"(temp2)
-    );
-#elif 0
-    int temp2;
-    //P3:673    athlon:509
-    __asm__(
-        "cmp $0x100, %0             \n\t"
-        "sbb %%edx, %%edx           \n\t"
-        "mov %0, %%eax              \n\t"
-        "and %%edx, %0              \n\t"
-        "and %1, %%edx              \n\t"
-        "add %%eax, %0              \n\t"
-        "add %%edx, %1              \n\t"
-        : "+r"(c->range), "+r"(c->low), "+a"(temp), "+d"(temp2)
-    );
-#else
-    int temp2;
-    //P3:677    athlon:511
-    __asm__(
-        "cmp $0x100, %0             \n\t"
-        "lea (%0, %0), %%eax        \n\t"
-        "lea (%1, %1), %%edx        \n\t"
-        "cmovb %%eax, %0            \n\t"
-        "cmovb %%edx, %1            \n\t"
-        : "+r"(c->range), "+r"(c->low), "+a"(temp), "+d"(temp2)
-    );
-#endif
-#else
-    //P3:675    athlon:476
     int shift= (uint32_t)(c->range - 0x100)>>31;
     c->range<<= shift;
     c->low  <<= shift;
-#endif
     if(!(c->low & CABAC_MASK))
         refill(c);
 }
