@@ -237,6 +237,7 @@ Advanced options (experts only):
   --malloc-prefix=PFX      prefix malloc and related names with PFX
   --enable-sram            allow use of on-chip SRAM
   --disable-symver         disable symbol versioning
+  --optflags               override optimization-related compiler flags
 
 Developer options (useful when working on Libav itself):
   --disable-debug          disable debugging symbols
@@ -1181,6 +1182,7 @@ CMDLINE_SET="
     logfile
     malloc_prefix
     nm
+    optflags
     pkg_config
     samples
     sysinclude
@@ -3004,7 +3006,9 @@ void ff_foo(void) {}
 EOF
 fi
 
-if enabled small; then
+if [ -n "$optflags" ]; then
+    add_cflags $optflags
+elif enabled small; then
     add_cflags $size_cflags
 elif enabled optimizations; then
     add_cflags $speed_cflags
