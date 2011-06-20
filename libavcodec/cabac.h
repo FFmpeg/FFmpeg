@@ -423,36 +423,6 @@ static int av_unused get_cabac(CABACContext *c, uint8_t * const state){
 }
 
 static int av_unused get_cabac_bypass(CABACContext *c){
-#if 0 //not faster
-    int bit;
-    __asm__ volatile(
-        "movl "RANGE    "(%1), %%ebx            \n\t"
-        "movl "LOW      "(%1), %%eax            \n\t"
-        "shl $17, %%ebx                         \n\t"
-        "add %%eax, %%eax                       \n\t"
-        "sub %%ebx, %%eax                       \n\t"
-        "cltd                                   \n\t"
-        "and %%edx, %%ebx                       \n\t"
-        "add %%ebx, %%eax                       \n\t"
-        "test %%ax, %%ax                        \n\t"
-        " jnz 1f                                \n\t"
-        "movl "BYTE     "(%1), %%"REG_b"        \n\t"
-        "subl $0xFFFF, %%eax                    \n\t"
-        "movzwl (%%"REG_b"), %%ecx              \n\t"
-        "bswap %%ecx                            \n\t"
-        "shrl $15, %%ecx                        \n\t"
-        "addl $2, %%"REG_b"                     \n\t"
-        "addl %%ecx, %%eax                      \n\t"
-        "movl %%"REG_b", "BYTE     "(%1)        \n\t"
-        "1:                                     \n\t"
-        "movl %%eax, "LOW      "(%1)            \n\t"
-
-        :"=&d"(bit)
-        :"r"(c)
-        : "%eax", "%"REG_b, "%ecx", "memory"
-    );
-    return bit+1;
-#else
     int range;
     c->low += c->low;
 
@@ -466,7 +436,6 @@ static int av_unused get_cabac_bypass(CABACContext *c){
         c->low -= range;
         return 1;
     }
-#endif
 }
 
 
