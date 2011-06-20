@@ -199,8 +199,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     ff_init_ff_sine_windows(10);
     ff_init_ff_sine_windows(7);
 
+    s->chan_map           = aac_chan_configs[avctx->channels-1];
     s->samples            = av_malloc(2 * 1024 * avctx->channels * sizeof(s->samples[0]));
-    s->cpe                = av_mallocz(sizeof(ChannelElement) * aac_chan_configs[avctx->channels-1][0]);
+    s->cpe                = av_mallocz(sizeof(ChannelElement) * s->chan_map[0]);
     avctx->extradata      = av_mallocz(5 + FF_INPUT_BUFFER_PADDING_SIZE);
     avctx->extradata_size = 5;
     put_audio_specific_config(avctx);
@@ -491,7 +492,6 @@ static int aac_encode_frame(AVCodecContext *avctx,
     int16_t *samples = s->samples, *samples2, *la;
     ChannelElement *cpe;
     int i, ch, w, g, chans, tag, start_ch;
-    const uint8_t *chan_map = aac_chan_configs[avctx->channels-1];
     int chan_el_counter[4];
     FFPsyWindowInfo windows[AAC_MAX_CHANNELS];
 
@@ -504,8 +504,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
         } else {
             start_ch = 0;
             samples2 = s->samples + 1024 * avctx->channels;
-            for (i = 0; i < chan_map[0]; i++) {
-                tag = chan_map[i+1];
+            for (i = 0; i < s->chan_map[0]; i++) {
+                tag = s->chan_map[i+1];
                 chans = tag == TYPE_CPE ? 2 : 1;
                 ff_psy_preprocess(s->psypp, (uint16_t*)data + start_ch,
                                   samples2 + start_ch, start_ch, chans);
@@ -520,9 +520,9 @@ static int aac_encode_frame(AVCodecContext *avctx,
     }
 
     start_ch = 0;
-    for (i = 0; i < chan_map[0]; i++) {
+    for (i = 0; i < s->chan_map[0]; i++) {
         FFPsyWindowInfo* wi = windows + start_ch;
-        tag      = chan_map[i+1];
+        tag      = s->chan_map[i+1];
         chans    = tag == TYPE_CPE ? 2 : 1;
         cpe      = &s->cpe[i];
         for (ch = 0; ch < chans; ch++) {
@@ -562,9 +562,9 @@ static int aac_encode_frame(AVCodecContext *avctx,
             put_bitstream_info(avctx, s, LIBAVCODEC_IDENT);
         start_ch = 0;
         memset(chan_el_counter, 0, sizeof(chan_el_counter));
-        for (i = 0; i < chan_map[0]; i++) {
+        for (i = 0; i < s->chan_map[0]; i++) {
             FFPsyWindowInfo* wi = windows + start_ch;
-            tag      = chan_map[i+1];
+            tag      = s->chan_map[i+1];
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
             put_bits(&s->pb, 3, tag);
