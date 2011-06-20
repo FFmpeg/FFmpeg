@@ -270,7 +270,7 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-#if ! ( ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) )
+#if ! ( ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) )
 static void refill2(CABACContext *c){
     int i, x;
 
@@ -309,8 +309,8 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 
 static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
-#if ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS)
-    int bit;
+#if ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
+    int bit, low;
 
 #if HAVE_FAST_CMOV
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
@@ -370,20 +370,20 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "1:                                                             \n\t"
 
     __asm__ volatile(
-        "movl %a3(%2), %%esi            \n\t"
-        "movl %a4(%2), %%ebx            \n\t"
-        BRANCHLESS_GET_CABAC("%0", "%2", "(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl", "%a5")
-        "movl %%esi, %a3(%2)            \n\t"
-        "movl %%ebx, %a4(%2)            \n\t"
+        "movl %a4(%3), %%esi            \n\t"
+        "movl %a5(%3), %1               \n\t"
+        BRANCHLESS_GET_CABAC("%0", "%3", "(%2)", "%1", "%w1", "%%esi", "%%edx", "%%dl", "%a6")
+        "movl %%esi, %a4(%3)            \n\t"
+        "movl %1, %a5(%3)               \n\t"
 
-        :"=&a"(bit)
+        :"=&a"(bit), "=&r"(low)
         :"r"(state), "r"(c),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
-        : "%"REG_c, "%ebx", "%edx", "%esi", "memory"
+        : "%"REG_c, "%edx", "%esi", "memory"
     );
     bit&=1;
-#else /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
+#else /* ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
     int bit, lps_mask;
@@ -403,7 +403,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
-#endif /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
+#endif /* ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
     return bit;
 }
 
@@ -433,36 +433,37 @@ static int av_unused get_cabac_bypass(CABACContext *c){
 
 
 static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
-#if ARCH_X86 && HAVE_EBX_AVAILABLE
+#if ARCH_X86
+    x86_reg tmp;
     __asm__ volatile(
-        "movl %a2(%1), %%ebx                    \n\t"
-        "movl %a3(%1), %%eax                    \n\t"
-        "shl $17, %%ebx                         \n\t"
+        "movl %a3(%2), %k1                      \n\t"
+        "movl %a4(%2), %%eax                    \n\t"
+        "shl $17, %k1                           \n\t"
         "add %%eax, %%eax                       \n\t"
-        "sub %%ebx, %%eax                       \n\t"
+        "sub %k1, %%eax                         \n\t"
         "cltd                                   \n\t"
-        "and %%edx, %%ebx                       \n\t"
-        "add %%ebx, %%eax                       \n\t"
+        "and %%edx, %k1                         \n\t"
+        "add %k1, %%eax                         \n\t"
         "xor %%edx, %%ecx                       \n\t"
         "sub %%edx, %%ecx                       \n\t"
         "test %%ax, %%ax                        \n\t"
         " jnz 1f                                \n\t"
-        "mov  %a4(%1), %%"REG_b"                \n\t"
+        "mov  %a5(%2), %1                       \n\t"
         "subl $0xFFFF, %%eax                    \n\t"
-        "movzwl (%%"REG_b"), %%edx              \n\t"
+        "movzwl (%1), %%edx                     \n\t"
         "bswap %%edx                            \n\t"
         "shrl $15, %%edx                        \n\t"
-        "add  $2, %%"REG_b"                     \n\t"
+        "add  $2, %1                            \n\t"
         "addl %%edx, %%eax                      \n\t"
-        "mov  %%"REG_b", %a4(%1)                \n\t"
+        "mov  %1, %a5(%2)                       \n\t"
         "1:                                     \n\t"
-        "movl %%eax, %a3(%1)                    \n\t"
+        "movl %%eax, %a4(%2)                    \n\t"
 
-        :"+c"(val)
+        :"+c"(val), "=&r"(tmp)
         :"r"(c),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
-        : "%eax", "%"REG_b, "%edx", "memory"
+        : "%eax", "%edx", "memory"
     );
     return val;
 #else
