@@ -313,7 +313,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     int bit, low;
 
 #if HAVE_FAST_CMOV
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
         "mov    "tmp"       , %%ecx                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
         "cmp    "low"       , "tmp"                                     \n\t"\
@@ -323,7 +323,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "sub    "tmp"       , "low"                                     \n\t"\
         "xor    %%ecx       , "ret"                                     \n\t"
 #else /* HAVE_FAST_CMOV */
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
         "mov    "tmp"       , %%ecx                                     \n\t"\
         "shl    $17         , "tmp"                                     \n\t"\
         "sub    "low"       , "tmp"                                     \n\t"\
@@ -344,7 +344,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "and    $0xC0       , "range"                                   \n\t"\
         "movzbl "MANGLE(ff_h264_lps_range)"("ret", "range", 2), "range" \n\t"\
         "sub    "range"     , "tmp"                                     \n\t"\
-        BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+        BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
         "movzbl " MANGLE(ff_h264_norm_shift) "("range"), %%ecx          \n\t"\
         "shl    %%cl        , "range"                                   \n\t"\
         "movzbl "MANGLE(ff_h264_mlps_state)"+128("ret"), "tmp"          \n\t"\
