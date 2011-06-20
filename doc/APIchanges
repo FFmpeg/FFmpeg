@@ -7,7 +7,7 @@ libavdevice: 2011-04-18
 libavfilter: 2011-04-18
 libavformat: 2011-04-18
 libpostproc: 2011-04-18
-libswscale:  2011-04-18
+libswscale:  2011-06-20
 libavutil:   2011-04-18
 
 

@@ -11,6 +11,7 @@ version 0.7:
 - All av_metadata_* functions renamed to av_dict_* and moved to libavutil
 - 4:4:4 H.264 decoding support
 - 10-bit H.264 optimizations for x86
+- Bump libswscale for recently reported ABI break
 
 
 version 0.7_beta2:
