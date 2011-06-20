@@ -89,7 +89,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
 
         "movl %5, %a11(%6)                      \n\t"
         "movl %3, %a12(%6)                      \n\t"
-        :"=&r"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index),
+        :"=&q"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index),
          "=&r"(low), "=&r"(bit), "=&r"(range)
         :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
@@ -157,7 +157,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
 
         "movl %5, %a12(%7)                      \n\t"
         "movl %3, %a13(%7)                      \n\t"
-        :"=&r"(coeff_count),"+m"(last), "+m"(index), "=&r"(low), "=&r"(bit),
+        :"=&q"(coeff_count),"+m"(last), "+m"(index), "=&r"(low), "=&r"(bit),
          "=&r"(range), "=&r"(state)
         :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_off),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
