@@ -107,34 +107,35 @@ static int decode_significance_8x8_x86(CABACContext *c,
     int low;
     int range;
     x86_reg last=0;
+    x86_reg state;
     __asm__ volatile(
-        "movl %a11(%6), %5                      \n\t"
-        "movl %a12(%6), %3                      \n\t"
+        "movl %a12(%7), %5                      \n\t"
+        "movl %a13(%7), %3                      \n\t"
 
-        "mov %1, %%"REG_D"                      \n\t"
+        "mov %1, %6                             \n\t"
         "2:                                     \n\t"
 
-        "mov %9, %0                             \n\t"
-        "movzbl (%0, %%"REG_D"), %%edi          \n\t"
-        "add %8, %%"REG_D"                      \n\t"
+        "mov %10, %0                            \n\t"
+        "movzbl (%0, %6), %k6                   \n\t"
+        "add %9, %6                             \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%6", "(%%"REG_D")", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a13")
+        BRANCHLESS_GET_CABAC("%4", "%7", "(%6)", "%3",
+                             "%w3", "%5", "%k0", "%b0", "%a14")
 
-        "mov %1, %%edi                          \n\t"
+        "mov %1, %k6                            \n\t"
         "test $1, %4                            \n\t"
         " jz 3f                                 \n\t"
 
-        "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%%edi), %%edi\n\t"
-        "add %8, %%"REG_D"                      \n\t"
-        "add %10, %%"REG_D"                     \n\t"
+        "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%k6), %k6\n\t"
+        "add %9, %6                             \n\t"
+        "add %11, %6                            \n\t"
 
-        BRANCHLESS_GET_CABAC("%4", "%6", "(%%"REG_D")", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a13")
+        BRANCHLESS_GET_CABAC("%4", "%7", "(%6)", "%3",
+                             "%w3", "%5", "%k0", "%b0", "%a14")
 
         "mov %2, %0                             \n\t"
-        "mov %1, %%edi                          \n\t"
-        "movl %%edi, (%0)                       \n\t"
+        "mov %1, %k6                            \n\t"
+        "movl %k6, (%0)                         \n\t"
 
         "test $1, %4                            \n\t"
         " jnz 4f                                \n\t"
@@ -143,24 +144,24 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "mov %0, %2                             \n\t"
 
         "3:                                     \n\t"
-        "addl $1, %%edi                         \n\t"
-        "mov %%edi, %1                          \n\t"
-        "cmpl $63, %%edi                        \n\t"
+        "addl $1, %k6                           \n\t"
+        "mov %k6, %1                            \n\t"
+        "cmpl $63, %k6                          \n\t"
         " jb 2b                                 \n\t"
         "mov %2, %0                             \n\t"
-        "movl %%edi, (%0)                       \n\t"
+        "movl %k6, (%0)                         \n\t"
         "4:                                     \n\t"
-        "addl %7, %k0                           \n\t"
+        "addl %8, %k0                           \n\t"
         "shr $2, %k0                            \n\t"
 
-        "movl %5, %a11(%6)                      \n\t"
-        "movl %3, %a12(%6)                      \n\t"
+        "movl %5, %a12(%7)                      \n\t"
+        "movl %3, %a13(%7)                      \n\t"
         :"=&r"(coeff_count),"+m"(last), "+m"(index), "=&r"(low), "=&r"(bit),
-         "=&r"(range)
+         "=&r"(range), "=&r"(state)
         :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_off),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
-        : "%"REG_c, "%"REG_D, "memory"
+        : "%"REG_c, "memory"
     );
     return coeff_count;
 }
