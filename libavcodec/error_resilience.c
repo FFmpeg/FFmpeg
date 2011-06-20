@@ -547,6 +547,7 @@ skip_mean_and_median:
                     mv_predictor[pred_count][0]= prev_x;
                     mv_predictor[pred_count][1]= prev_y;
                     ref         [pred_count]   = prev_ref;
+                    pred_count++;
 
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mb_intra=0;

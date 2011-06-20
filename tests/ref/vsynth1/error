@@ -1,4 +1,4 @@
 7416dfd319f04044d4575dc9d1b406e1 *./tests/data/vsynth1/error-mpeg4-adv.avi
   756836 ./tests/data/vsynth1/error-mpeg4-adv.avi
-54342963593ba08bcde95244a011efe5 *./tests/data/error.vsynth1.out.yuv
-stddev:   17.59 PSNR: 23.22 MAXDIFF:  240 bytes:  7603200/  7603200
+79e94ba32b37759397362cbcb479d4d3 *./tests/data/error.vsynth1.out.yuv
+stddev:   18.36 PSNR: 22.85 MAXDIFF:  243 bytes:  7603200/  7603200
