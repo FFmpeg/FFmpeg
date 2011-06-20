@@ -1014,7 +1014,7 @@ int ff_h264_decode_extradata(H264Context *h)
 {
     AVCodecContext *avctx = h->s.avctx;
 
-    if(*(char *)avctx->extradata == 1){
+    if(avctx->extradata[0] == 1){
         int i, cnt, nalsize;
         unsigned char *p = avctx->extradata;
 
@@ -1049,7 +1049,7 @@ int ff_h264_decode_extradata(H264Context *h)
             p += nalsize;
         }
         // Now store right nal length size, that will be use to parse all other nals
-        h->nal_length_size = ((*(((char*)(avctx->extradata))+4))&0x03)+1;
+        h->nal_length_size = (avctx->extradata[4] & 0x03) + 1;
     } else {
         h->is_avc = 0;
         if(decode_nal_units(h, avctx->extradata, avctx->extradata_size) < 0)

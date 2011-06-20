@@ -23,6 +23,7 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "libavutil/mathematics.h"
 #include "avcodec.h"
@@ -461,7 +462,7 @@ static void decode_frame(SiprContext *ctx, SiprParameters *params,
         memcpy(ctx->postfilter_syn5k0, ctx->postfilter_syn5k0 + frame_size,
                LP_FILTER_ORDER*sizeof(float));
     }
-    memcpy(ctx->excitation, excitation - PITCH_DELAY_MAX - L_INTERPOL,
+    memmove(ctx->excitation, excitation - PITCH_DELAY_MAX - L_INTERPOL,
            (PITCH_DELAY_MAX + L_INTERPOL) * sizeof(float));
 
     ff_acelp_apply_order_2_transfer_function(out_data, synth,
@@ -494,8 +495,6 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
         ctx->energy_history[i] = -14;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-
-    dsputil_init(&ctx->dsp, avctx);
 
     return 0;
 }
