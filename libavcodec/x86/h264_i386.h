@@ -40,8 +40,8 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
                                    uint8_t *significant_coeff_ctx_base,
                                    int *index, x86_reg last_off){
     void *end= significant_coeff_ctx_base + max_coeff - 1;
-    int minusstart= -(int)significant_coeff_ctx_base;
-    int minusindex= 4-(int)index;
+    int minusstart= -(intptr_t)significant_coeff_ctx_base;
+    int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
     int low;
@@ -101,7 +101,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
 static int decode_significance_8x8_x86(CABACContext *c,
                                        uint8_t *significant_coeff_ctx_base,
                                        int *index, x86_reg last_off, const uint8_t *sig_off){
-    int minusindex= 4-(int)index;
+    int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
     int low;
