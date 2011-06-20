@@ -2326,6 +2326,11 @@ static int transcode(AVFormatContext **output_files,
                     ost->frame_rate = ost->enc->supported_framerates[idx];
                 }
                 codec->time_base = (AVRational){ost->frame_rate.den, ost->frame_rate.num};
+                if(   av_q2d(codec->time_base) < 0.001 && video_sync_method
+                   && (video_sync_method==1 || (video_sync_method<0 && !(os->oformat->flags & AVFMT_VARIABLE_FPS)))){
+                    av_log(os, AV_LOG_WARNING, "Frame rate very high for a muxer not effciciently supporting it.\n"
+                                               "Please consider specifiying a lower framerate, a different muxer or -vsync 2\n");
+                }
 
 #if CONFIG_AVFILTER
                 if (configure_video_filters(ist, ost)) {
