@@ -376,7 +376,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "movl %2, %a6(%5)               \n\t"
         "movl %1, %a7(%5)               \n\t"
 
-        :"=&a"(bit), "=&r"(low), "=&r"(range), "=&r"(tmp)
+        :"=&r"(bit), "=&r"(low), "=&r"(range), "=&r"(tmp)
         :"r"(state), "r"(c),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
