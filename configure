@@ -3207,6 +3207,7 @@ if enabled source_path_used; then
         doc
         libavcodec
         libavcodec/$arch
+        libavcodec/mlib
         libavdevice
         libavfilter
         libavfilter/$arch
@@ -3216,6 +3217,7 @@ if enabled source_path_used; then
         libpostproc
         libswscale
         libswscale/$arch
+        libswscale/mlib
         tests
         tools
     "
