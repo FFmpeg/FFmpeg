@@ -33,7 +33,6 @@
 
 //#undef NDEBUG
 #include <assert.h>
-#include "libavutil/x86_cpu.h"
 
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
@@ -57,6 +56,9 @@ extern uint8_t ff_h264_mps_state[2*64];     ///< transIdxMPS
 extern uint8_t ff_h264_lps_state[2*64];     ///< transIdxLPS
 extern const uint8_t ff_h264_norm_shift[512];
 
+#if ARCH_X86
+#   include "x86/cabac.h"
+#endif
 
 void ff_init_cabac_encoder(CABACContext *c, uint8_t *buf, int buf_size);
 void ff_init_cabac_decoder(CABACContext *c, const uint8_t *buf, int buf_size);
@@ -270,26 +272,6 @@ static void refill(CABACContext *c){
     c->bytestream+= CABAC_BITS/8;
 }
 
-#if ! ( ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) )
-static void refill2(CABACContext *c){
-    int i, x;
-
-    x= c->low ^ (c->low-1);
-    i= 7 - ff_h264_norm_shift[x>>(CABAC_BITS-1)];
-
-    x= -CABAC_MASK;
-
-#if CABAC_BITS == 16
-        x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
-#else
-        x+= c->bytestream[0]<<1;
-#endif
-
-    c->low += x<<i;
-    c->bytestream+= CABAC_BITS/8;
-}
-#endif
-
 static inline void renorm_cabac_decoder(CABACContext *c){
     while(c->range < 0x100){
         c->range+= c->range;
@@ -307,83 +289,26 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
         refill(c);
 }
 
+#ifndef get_cabac_inline
+static void refill2(CABACContext *c){
+    int i, x;
+
+    x= c->low ^ (c->low-1);
+    i= 7 - ff_h264_norm_shift[x>>(CABAC_BITS-1)];
+
+    x= -CABAC_MASK;
+
+#if CABAC_BITS == 16
+        x+= (c->bytestream[0]<<9) + (c->bytestream[1]<<1);
+#else
+        x+= c->bytestream[0]<<1;
+#endif
+
+    c->low += x<<i;
+    c->bytestream+= CABAC_BITS/8;
+}
+
 static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const state){
-    //FIXME gcc generates duplicate load/stores for c->low and c->range
-#if ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
-    int bit, low, range, tmp;
-
-#if HAVE_FAST_CMOV
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
-        "mov    "tmp"       , %%ecx                                     \n\t"\
-        "shl    $17         , "tmp"                                     \n\t"\
-        "cmp    "low"       , "tmp"                                     \n\t"\
-        "cmova  %%ecx       , "range"                                   \n\t"\
-        "sbb    %%ecx       , %%ecx                                     \n\t"\
-        "and    %%ecx       , "tmp"                                     \n\t"\
-        "sub    "tmp"       , "low"                                     \n\t"\
-        "xor    %%ecx       , "ret"                                     \n\t"
-#else /* HAVE_FAST_CMOV */
-#define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
-        "mov    "tmp"       , %%ecx                                     \n\t"\
-        "shl    $17         , "tmp"                                     \n\t"\
-        "sub    "low"       , "tmp"                                     \n\t"\
-        "sar    $31         , "tmp"                                     \n\t" /*lps_mask*/\
-        "sub    %%ecx       , "range"                                   \n\t" /*RangeLPS - range*/\
-        "and    "tmp"       , "range"                                   \n\t" /*(RangeLPS - range)&lps_mask*/\
-        "add    %%ecx       , "range"                                   \n\t" /*new range*/\
-        "shl    $17         , %%ecx                                     \n\t"\
-        "and    "tmp"       , %%ecx                                     \n\t"\
-        "sub    %%ecx       , "low"                                     \n\t"\
-        "xor    "tmp"       , "ret"                                     \n\t"
-#endif /* HAVE_FAST_CMOV */
-
-
-#define BRANCHLESS_GET_CABAC(ret, cabac, statep, low, lowword, range, tmp, tmpbyte, byte) \
-        "movzbl "statep"    , "ret"                                     \n\t"\
-        "mov    "range"     , "tmp"                                     \n\t"\
-        "and    $0xC0       , "range"                                   \n\t"\
-        "movzbl "MANGLE(ff_h264_lps_range)"("ret", "range", 2), "range" \n\t"\
-        "sub    "range"     , "tmp"                                     \n\t"\
-        BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
-        "movzbl " MANGLE(ff_h264_norm_shift) "("range"), %%ecx          \n\t"\
-        "shl    %%cl        , "range"                                   \n\t"\
-        "movzbl "MANGLE(ff_h264_mlps_state)"+128("ret"), "tmp"          \n\t"\
-        "mov    "tmpbyte"   , "statep"                                  \n\t"\
-        "shl    %%cl        , "low"                                     \n\t"\
-        "test   "lowword"   , "lowword"                                 \n\t"\
-        " jnz   1f                                                      \n\t"\
-        "mov "byte"("cabac"), %%"REG_c"                                 \n\t"\
-        "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
-        "bswap  "tmp"                                                   \n\t"\
-        "shr    $15         , "tmp"                                     \n\t"\
-        "sub    $0xFFFF     , "tmp"                                     \n\t"\
-        "add    $2          , %%"REG_c"                                 \n\t"\
-        "mov    %%"REG_c"   , "byte    "("cabac")                       \n\t"\
-        "lea    -1("low")   , %%ecx                                     \n\t"\
-        "xor    "low"       , %%ecx                                     \n\t"\
-        "shr    $15         , %%ecx                                     \n\t"\
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx            \n\t"\
-        "neg    %%ecx                                                   \n\t"\
-        "add    $7          , %%ecx                                     \n\t"\
-        "shl    %%cl        , "tmp"                                     \n\t"\
-        "add    "tmp"       , "low"                                     \n\t"\
-        "1:                                                             \n\t"
-
-    __asm__ volatile(
-        "movl %a6(%5), %2               \n\t"
-        "movl %a7(%5), %1               \n\t"
-        BRANCHLESS_GET_CABAC("%0", "%5", "(%4)", "%1", "%w1", "%2", "%3", "%b3", "%a8")
-        "movl %2, %a6(%5)               \n\t"
-        "movl %1, %a7(%5)               \n\t"
-
-        :"=&r"(bit), "=&r"(low), "=&r"(range), "=&r"(tmp)
-        :"r"(state), "r"(c),
-         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
-         "i"(offsetof(CABACContext, bytestream))
-        : "%"REG_c, "memory"
-    );
-    bit&=1;
-#else /* ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
     int bit, lps_mask;
@@ -403,9 +328,9 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
-#endif /* ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
     return bit;
 }
+#endif
 
 static int av_noinline av_unused get_cabac_noinline(CABACContext *c, uint8_t * const state){
     return get_cabac_inline(c,state);
@@ -432,41 +357,8 @@ static int av_unused get_cabac_bypass(CABACContext *c){
 }
 
 
+#ifndef get_cabac_bypass_sign
 static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
-#if ARCH_X86
-    x86_reg tmp;
-    __asm__ volatile(
-        "movl %a3(%2), %k1                      \n\t"
-        "movl %a4(%2), %%eax                    \n\t"
-        "shl $17, %k1                           \n\t"
-        "add %%eax, %%eax                       \n\t"
-        "sub %k1, %%eax                         \n\t"
-        "cltd                                   \n\t"
-        "and %%edx, %k1                         \n\t"
-        "add %k1, %%eax                         \n\t"
-        "xor %%edx, %%ecx                       \n\t"
-        "sub %%edx, %%ecx                       \n\t"
-        "test %%ax, %%ax                        \n\t"
-        " jnz 1f                                \n\t"
-        "mov  %a5(%2), %1                       \n\t"
-        "subl $0xFFFF, %%eax                    \n\t"
-        "movzwl (%1), %%edx                     \n\t"
-        "bswap %%edx                            \n\t"
-        "shrl $15, %%edx                        \n\t"
-        "add  $2, %1                            \n\t"
-        "addl %%edx, %%eax                      \n\t"
-        "mov  %1, %a5(%2)                       \n\t"
-        "1:                                     \n\t"
-        "movl %%eax, %a4(%2)                    \n\t"
-
-        :"+c"(val), "=&r"(tmp)
-        :"r"(c),
-         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
-         "i"(offsetof(CABACContext, bytestream))
-        : "%eax", "%edx", "memory"
-    );
-    return val;
-#else
     int range, mask;
     c->low += c->low;
 
@@ -479,8 +371,8 @@ static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
     range &= mask;
     c->low += range;
     return (val^mask)-mask;
-#endif
 }
+#endif
 
 /**
  *

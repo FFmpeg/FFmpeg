@@ -32,6 +32,7 @@
 #include <stddef.h>
 
 #include "libavcodec/cabac.h"
+#include "cabac.h"
 
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
