@@ -70,7 +70,7 @@ struct x11_grab
     XImage *image;           /**< X11 image holding the grab */
     int use_shm;             /**< !0 when using XShm extension */
     XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
-    int nomouse;
+    int  draw_mouse;         /**< Set by a private option. */
     char *framerate;         /**< Set by a private option. */
 };
 
@@ -104,7 +104,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     offset = strchr(param, '+');
     if (offset) {
         sscanf(offset, "%d,%d", &x_off, &y_off);
-        x11grab->nomouse= strstr(offset, "nomouse");
+        x11grab->draw_mouse = !strstr(offset, "nomouse");
         *offset= 0;
     }
 
@@ -410,7 +410,7 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
         }
     }
 
-    if(!s->nomouse){
+    if (s->draw_mouse) {
         paint_mouse_pointer(image, s);
     }
 
@@ -451,6 +451,7 @@ x11grab_read_close(AVFormatContext *s1)
 static const AVOption options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
+    { "draw_mouse", "Draw the mouse pointer.", OFFSET(draw_mouse), FF_OPT_TYPE_INT, { 1 }, 0, 1, DEC },
     { NULL },
 };
 
