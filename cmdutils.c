@@ -388,44 +388,8 @@ int opt_default(const char *opt, const char *arg){
         exit(1);
     }
     if (!o) {
-//<<<<<<< HEAD
         fprintf(stderr, "Unrecognized option '%s'\n", opt);
         exit(1);
-/*||||||| merged common ancestors
-        AVCodec *p = NULL;
-        AVOutputFormat *oformat = NULL;
-        while ((p=av_codec_next(p))){
-            const AVClass *c = p->priv_class;
-            if(c && av_find_opt(&c, opt, NULL, 0, 0))
-                break;
-        }
-        if (!p) {
-            while ((oformat = av_oformat_next(oformat))) {
-                const AVClass *c = oformat->priv_class;
-                if (c && av_find_opt(&c, opt, NULL, 0, 0))
-                    break;
-            }
-        }
-        if(!p && !oformat){
-            fprintf(stderr, "Unrecognized option '%s'\n", opt);
-            exit(1);
-        }
-=======
-        AVCodec *p = NULL;
-        AVOutputFormat *oformat = NULL;
-        while ((p=av_codec_next(p))){
-            const AVClass *c = p->priv_class;
-            if(c && av_opt_find(&c, opt, NULL, 0, 0))
-                break;
-        }
-        if (!p) {
-            while ((oformat = av_oformat_next(oformat))) {
-                const AVClass *c = oformat->priv_class;
-                if (c && av_opt_find(&c, opt, NULL, 0, 0))
-                    break;
-            }
-        }
->>>>>>> qatar/master*/
     }
 
  out:
