@@ -310,7 +310,7 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
 #if ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
-    int bit, low;
+    int bit, low, tmp;
 
 #if HAVE_FAST_CMOV
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
@@ -370,17 +370,17 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "1:                                                             \n\t"
 
     __asm__ volatile(
-        "movl %a4(%3), %%esi            \n\t"
-        "movl %a5(%3), %1               \n\t"
-        BRANCHLESS_GET_CABAC("%0", "%3", "(%2)", "%1", "%w1", "%%esi", "%%edx", "%%dl", "%a6")
-        "movl %%esi, %a4(%3)            \n\t"
-        "movl %1, %a5(%3)               \n\t"
+        "movl %a5(%4), %%esi            \n\t"
+        "movl %a6(%4), %1               \n\t"
+        BRANCHLESS_GET_CABAC("%0", "%4", "(%3)", "%1", "%w1", "%%esi", "%2", "%b2", "%a7")
+        "movl %%esi, %a5(%4)            \n\t"
+        "movl %1, %a6(%4)               \n\t"
 
-        :"=&a"(bit), "=&r"(low)
+        :"=&a"(bit), "=&r"(low), "=&r"(tmp)
         :"r"(state), "r"(c),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
-        : "%"REG_c, "%edx", "%esi", "memory"
+        : "%"REG_c, "%esi", "memory"
     );
     bit&=1;
 #else /* ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
