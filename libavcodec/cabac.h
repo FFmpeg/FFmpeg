@@ -35,7 +35,6 @@
 
 #define CABAC_BITS 16
 #define CABAC_MASK ((1<<CABAC_BITS)-1)
-#define BRANCHLESS_CABAC_DECODER 1
 
 typedef struct CABACContext{
     int low;
@@ -322,89 +321,6 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 #if ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS)
     int bit;
 
-#ifndef BRANCHLESS_CABAC_DECODER
-    __asm__ volatile(
-        "movzbl (%1), %0                        \n\t"
-        "movl "RANGE    "(%2), %%ebx            \n\t"
-        "movl "RANGE    "(%2), %%edx            \n\t"
-        "andl $0xC0, %%ebx                      \n\t"
-        "movzbl "MANGLE(ff_h264_lps_range)"(%0, %%ebx, 2), %%esi\n\t"
-        "movl "LOW      "(%2), %%ebx            \n\t"
-//eax:state ebx:low, edx:range, esi:RangeLPS
-        "subl %%esi, %%edx                      \n\t"
-        "movl %%edx, %%ecx                      \n\t"
-        "shll $17, %%ecx                        \n\t"
-        "cmpl %%ecx, %%ebx                      \n\t"
-        " ja 1f                                 \n\t"
-
-#if 1
-        //athlon:4067 P3:4110
-        "lea -0x100(%%edx), %%ecx               \n\t"
-        "shr $31, %%ecx                         \n\t"
-        "shl %%cl, %%edx                        \n\t"
-        "shl %%cl, %%ebx                        \n\t"
-#else
-        //athlon:4057 P3:4130
-        "cmp $0x100, %%edx                      \n\t" //FIXME avoidable
-        "setb %%cl                              \n\t"
-        "shl %%cl, %%edx                        \n\t"
-        "shl %%cl, %%ebx                        \n\t"
-#endif
-        "movzbl "MANGLE(ff_h264_mps_state)"(%0), %%ecx   \n\t"
-        "movb %%cl, (%1)                        \n\t"
-//eax:state ebx:low, edx:range, esi:RangeLPS
-        "test %%bx, %%bx                        \n\t"
-        " jnz 2f                                \n\t"
-        "mov  "BYTE     "(%2), %%"REG_S"        \n\t"
-        "subl $0xFFFF, %%ebx                    \n\t"
-        "movzwl (%%"REG_S"), %%ecx              \n\t"
-        "bswap %%ecx                            \n\t"
-        "shrl $15, %%ecx                        \n\t"
-        "add  $2, %%"REG_S"                     \n\t"
-        "addl %%ecx, %%ebx                      \n\t"
-        "mov  %%"REG_S", "BYTE    "(%2)         \n\t"
-        "jmp 2f                                 \n\t"
-        "1:                                     \n\t"
-//eax:state ebx:low, edx:range, esi:RangeLPS
-        "subl %%ecx, %%ebx                      \n\t"
-        "movl %%esi, %%edx                      \n\t"
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%esi), %%ecx   \n\t"
-        "shll %%cl, %%ebx                       \n\t"
-        "shll %%cl, %%edx                       \n\t"
-        "movzbl "MANGLE(ff_h264_lps_state)"(%0), %%ecx   \n\t"
-        "movb %%cl, (%1)                        \n\t"
-        "add  $1, %0                            \n\t"
-        "test %%bx, %%bx                        \n\t"
-        " jnz 2f                                \n\t"
-
-        "mov  "BYTE     "(%2), %%"REG_c"        \n\t"
-        "movzwl (%%"REG_c"), %%esi              \n\t"
-        "bswap %%esi                            \n\t"
-        "shrl $15, %%esi                        \n\t"
-        "subl $0xFFFF, %%esi                    \n\t"
-        "add  $2, %%"REG_c"                     \n\t"
-        "mov  %%"REG_c", "BYTE    "(%2)         \n\t"
-
-        "leal -1(%%ebx), %%ecx                  \n\t"
-        "xorl %%ebx, %%ecx                      \n\t"
-        "shrl $15, %%ecx                        \n\t"
-        "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx   \n\t"
-        "neg %%ecx                              \n\t"
-        "add $7, %%ecx                          \n\t"
-
-        "shll %%cl , %%esi                      \n\t"
-        "addl %%esi, %%ebx                      \n\t"
-        "2:                                     \n\t"
-        "movl %%edx, "RANGE    "(%2)            \n\t"
-        "movl %%ebx, "LOW      "(%2)            \n\t"
-        :"=&a"(bit) //FIXME this is fragile gcc either runs out of registers or miscompiles it (for example if "+a"(bit) or "+m"(*state) is used
-        :"r"(state), "r"(c)
-        : "%"REG_c, "%ebx", "%edx", "%"REG_S, "memory"
-    );
-    bit&=1;
-#else /* BRANCHLESS_CABAC_DECODER */
-
-
 #if HAVE_FAST_CMOV
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
         "mov    "tmp"       , %%ecx                                     \n\t"\
@@ -474,31 +390,12 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         : "%"REG_c, "%ebx", "%edx", "%esi", "memory"
     );
     bit&=1;
-#endif /* BRANCHLESS_CABAC_DECODER */
 #else /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
     int s = *state;
     int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + s];
-    int bit, lps_mask av_unused;
+    int bit, lps_mask;
 
     c->range -= RangeLPS;
-#ifndef BRANCHLESS_CABAC_DECODER
-    if(c->low < (c->range<<(CABAC_BITS+1))){
-        bit= s&1;
-        *state= ff_h264_mps_state[s];
-        renorm_cabac_decoder_once(c);
-    }else{
-        bit= ff_h264_norm_shift[RangeLPS];
-        c->low -= (c->range<<(CABAC_BITS+1));
-        *state= ff_h264_lps_state[s];
-        c->range = RangeLPS<<bit;
-        c->low <<= bit;
-        bit= (s&1)^1;
-
-        if(!(c->low & CABAC_MASK)){
-            refill2(c);
-        }
-    }
-#else /* BRANCHLESS_CABAC_DECODER */
     lps_mask= ((c->range<<(CABAC_BITS+1)) - c->low)>>31;
 
     c->low -= (c->range<<(CABAC_BITS+1)) & lps_mask;
@@ -513,7 +410,6 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
     c->low  <<= lps_mask;
     if(!(c->low & CABAC_MASK))
         refill2(c);
-#endif /* BRANCHLESS_CABAC_DECODER */
 #endif /* ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS) */
     return bit;
 }
