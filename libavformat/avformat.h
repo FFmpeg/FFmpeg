@@ -523,12 +523,14 @@ typedef struct AVStream {
     int stream_copy; /**< If set, just copy stream. */
     enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
 
+#if FF_API_AVSTREAM_QUALITY
     //FIXME move stuff to a flags field?
     /**
      * Quality, as it has been removed from AVCodecContext and put in AVVideoFrame.
      * MN: dunno if that is the right place for it
      */
-    float quality;
+    attribute_deprecated float quality;
+#endif
 
     /**
      * Decoding: pts of the first frame of the stream, in stream time base.

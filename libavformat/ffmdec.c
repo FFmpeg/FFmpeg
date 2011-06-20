@@ -301,7 +301,6 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         codec->codec_id = avio_rb32(pb);
         codec->codec_type = avio_r8(pb); /* codec_type */
         codec->bit_rate = avio_rb32(pb);
-        st->quality = avio_rb32(pb);
         codec->flags = avio_rb32(pb);
         codec->flags2 = avio_rb32(pb);
         codec->debug = avio_rb32(pb);
