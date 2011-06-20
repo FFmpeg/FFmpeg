@@ -27,6 +27,8 @@
 #ifndef AVCODEC_CABAC_H
 #define AVCODEC_CABAC_H
 
+#include <stddef.h>
+
 #include "put_bits.h"
 
 //#undef NDEBUG
@@ -307,17 +309,6 @@ static inline void renorm_cabac_decoder_once(CABACContext *c){
 
 static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const state){
     //FIXME gcc generates duplicate load/stores for c->low and c->range
-#define LOW          "0"
-#define RANGE        "4"
-#if ARCH_X86_64
-#define BYTESTART   "16"
-#define BYTE        "24"
-#define BYTEEND     "32"
-#else
-#define BYTESTART   "12"
-#define BYTE        "16"
-#define BYTEEND     "20"
-#endif
 #if ARCH_X86 && HAVE_7REGS && HAVE_EBX_AVAILABLE && !defined(BROKEN_RELOCATIONS)
     int bit;
 
@@ -347,7 +338,7 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
 #endif /* HAVE_FAST_CMOV */
 
 
-#define BRANCHLESS_GET_CABAC(ret, cabac, statep, low, lowword, range, tmp, tmpbyte)\
+#define BRANCHLESS_GET_CABAC(ret, cabac, statep, low, lowword, range, tmp, tmpbyte, byte) \
         "movzbl "statep"    , "ret"                                     \n\t"\
         "mov    "range"     , "tmp"                                     \n\t"\
         "and    $0xC0       , "range"                                   \n\t"\
@@ -361,13 +352,13 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "shl    %%cl        , "low"                                     \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         " jnz   1f                                                      \n\t"\
-        "mov "BYTE"("cabac"), %%"REG_c"                                 \n\t"\
+        "mov "byte"("cabac"), %%"REG_c"                                 \n\t"\
         "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
         "bswap  "tmp"                                                   \n\t"\
         "shr    $15         , "tmp"                                     \n\t"\
         "sub    $0xFFFF     , "tmp"                                     \n\t"\
         "add    $2          , %%"REG_c"                                 \n\t"\
-        "mov    %%"REG_c"   , "BYTE    "("cabac")                       \n\t"\
+        "mov    %%"REG_c"   , "byte    "("cabac")                       \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
@@ -379,14 +370,16 @@ static av_always_inline int get_cabac_inline(CABACContext *c, uint8_t * const st
         "1:                                                             \n\t"
 
     __asm__ volatile(
-        "movl "RANGE    "(%2), %%esi            \n\t"
-        "movl "LOW      "(%2), %%ebx            \n\t"
-        BRANCHLESS_GET_CABAC("%0", "%2", "(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl")
-        "movl %%esi, "RANGE    "(%2)            \n\t"
-        "movl %%ebx, "LOW      "(%2)            \n\t"
+        "movl %a3(%2), %%esi            \n\t"
+        "movl %a4(%2), %%ebx            \n\t"
+        BRANCHLESS_GET_CABAC("%0", "%2", "(%1)", "%%ebx", "%%bx", "%%esi", "%%edx", "%%dl", "%a5")
+        "movl %%esi, %a3(%2)            \n\t"
+        "movl %%ebx, %a4(%2)            \n\t"
 
         :"=&a"(bit)
-        :"r"(state), "r"(c)
+        :"r"(state), "r"(c),
+         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
+         "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "%ebx", "%edx", "%esi", "memory"
     );
     bit&=1;
@@ -442,8 +435,8 @@ static int av_unused get_cabac_bypass(CABACContext *c){
 static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
 #if ARCH_X86 && HAVE_EBX_AVAILABLE
     __asm__ volatile(
-        "movl "RANGE    "(%1), %%ebx            \n\t"
-        "movl "LOW      "(%1), %%eax            \n\t"
+        "movl %a2(%1), %%ebx                    \n\t"
+        "movl %a3(%1), %%eax                    \n\t"
         "shl $17, %%ebx                         \n\t"
         "add %%eax, %%eax                       \n\t"
         "sub %%ebx, %%eax                       \n\t"
@@ -454,19 +447,21 @@ static av_always_inline int get_cabac_bypass_sign(CABACContext *c, int val){
         "sub %%edx, %%ecx                       \n\t"
         "test %%ax, %%ax                        \n\t"
         " jnz 1f                                \n\t"
-        "mov  "BYTE     "(%1), %%"REG_b"        \n\t"
+        "mov  %a4(%1), %%"REG_b"                \n\t"
         "subl $0xFFFF, %%eax                    \n\t"
         "movzwl (%%"REG_b"), %%edx              \n\t"
         "bswap %%edx                            \n\t"
         "shrl $15, %%edx                        \n\t"
         "add  $2, %%"REG_b"                     \n\t"
         "addl %%edx, %%eax                      \n\t"
-        "mov  %%"REG_b", "BYTE     "(%1)        \n\t"
+        "mov  %%"REG_b", %a4(%1)                \n\t"
         "1:                                     \n\t"
-        "movl %%eax, "LOW      "(%1)            \n\t"
+        "movl %%eax, %a3(%1)                    \n\t"
 
         :"+c"(val)
-        :"r"(c)
+        :"r"(c),
+         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
+         "i"(offsetof(CABACContext, bytestream))
         : "%eax", "%"REG_b, "%edx", "memory"
     );
     return val;

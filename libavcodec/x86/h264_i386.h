@@ -29,6 +29,8 @@
 #ifndef AVCODEC_X86_H264_I386_H
 #define AVCODEC_X86_H264_I386_H
 
+#include <stddef.h>
+
 #include "libavcodec/cabac.h"
 
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
@@ -42,20 +44,20 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     int minusindex= 4-(int)index;
     int coeff_count;
     __asm__ volatile(
-        "movl "RANGE    "(%3), %%esi            \n\t"
-        "movl "LOW      "(%3), %%ebx            \n\t"
+        "movl %a8(%3), %%esi                    \n\t"
+        "movl %a9(%3), %%ebx                    \n\t"
 
         "2:                                     \n\t"
 
         BRANCHLESS_GET_CABAC("%%edx", "%3", "(%1)", "%%ebx",
-                             "%%bx", "%%esi", "%%eax", "%%al")
+                             "%%bx", "%%esi", "%%eax", "%%al", "%a10")
 
         "test $1, %%edx                         \n\t"
         " jz 3f                                 \n\t"
         "add  %7, %1                            \n\t"
 
         BRANCHLESS_GET_CABAC("%%edx", "%3", "(%1)", "%%ebx",
-                             "%%bx", "%%esi", "%%eax", "%%al")
+                             "%%bx", "%%esi", "%%eax", "%%al", "%a10")
 
         "sub  %7, %1                            \n\t"
         "mov  %2, %%"REG_a"                     \n\t"
@@ -81,10 +83,12 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         "add  %6, %%eax                         \n\t"
         "shr $2, %%eax                          \n\t"
 
-        "movl %%esi, "RANGE    "(%3)            \n\t"
-        "movl %%ebx, "LOW      "(%3)            \n\t"
+        "movl %%esi, %a8(%3)                    \n\t"
+        "movl %%ebx, %a9(%3)                    \n\t"
         :"=&a"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index)
-        :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off)
+        :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off),
+         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
+         "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "%ebx", "%edx", "%esi", "memory"
     );
     return coeff_count;
@@ -97,8 +101,8 @@ static int decode_significance_8x8_x86(CABACContext *c,
     int coeff_count;
     x86_reg last=0;
     __asm__ volatile(
-        "movl "RANGE    "(%3), %%esi            \n\t"
-        "movl "LOW      "(%3), %%ebx            \n\t"
+        "movl %a8(%3), %%esi                    \n\t"
+        "movl %a9(%3), %%ebx                    \n\t"
 
         "mov %1, %%"REG_D"                      \n\t"
         "2:                                     \n\t"
@@ -108,7 +112,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "add %5, %%"REG_D"                      \n\t"
 
         BRANCHLESS_GET_CABAC("%%edx", "%3", "(%%"REG_D")", "%%ebx",
-                             "%%bx", "%%esi", "%%eax", "%%al")
+                             "%%bx", "%%esi", "%%eax", "%%al", "%a10")
 
         "mov %1, %%edi                          \n\t"
         "test $1, %%edx                         \n\t"
@@ -119,7 +123,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "add %7, %%"REG_D"                      \n\t"
 
         BRANCHLESS_GET_CABAC("%%edx", "%3", "(%%"REG_D")", "%%ebx",
-                             "%%bx", "%%esi", "%%eax", "%%al")
+                             "%%bx", "%%esi", "%%eax", "%%al", "%a10")
 
         "mov %2, %%"REG_a"                      \n\t"
         "mov %1, %%edi                          \n\t"
@@ -142,10 +146,12 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "addl %4, %%eax                         \n\t"
         "shr $2, %%eax                          \n\t"
 
-        "movl %%esi, "RANGE    "(%3)            \n\t"
-        "movl %%ebx, "LOW      "(%3)            \n\t"
+        "movl %%esi, %a8(%3)                    \n\t"
+        "movl %%ebx, %a9(%3)                    \n\t"
         :"=&a"(coeff_count),"+m"(last), "+m"(index)
-        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_off)
+        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_off),
+         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
+         "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "%ebx", "%edx", "%esi", "%"REG_D, "memory"
     );
     return coeff_count;
