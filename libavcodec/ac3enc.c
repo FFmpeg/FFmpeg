@@ -1023,47 +1023,6 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
 
 
 /**
- * Downgrade exponent strategies to reduce the bits used by the exponents.
- * This is a fallback for when bit allocation fails with the normal exponent
- * strategies.  Each time this function is run it only downgrades the
- * strategy in 1 channel of 1 block.
- * @return non-zero if downgrade was unsuccessful
- */
-static int downgrade_exponents(AC3EncodeContext *s)
-{
-    int ch, blk;
-
-    for (blk = AC3_MAX_BLOCKS-1; blk >= 0; blk--) {
-        for (ch = !s->blocks[blk].cpl_in_use; ch <= s->fbw_channels; ch++) {
-            if (s->exp_strategy[ch][blk] == EXP_D15) {
-                s->exp_strategy[ch][blk] = EXP_D25;
-                return 0;
-            }
-        }
-    }
-    for (blk = AC3_MAX_BLOCKS-1; blk >= 0; blk--) {
-        for (ch = !s->blocks[blk].cpl_in_use; ch <= s->fbw_channels; ch++) {
-            if (s->exp_strategy[ch][blk] == EXP_D25) {
-                s->exp_strategy[ch][blk] = EXP_D45;
-                return 0;
-            }
-        }
-    }
-    /* block 0 cannot reuse exponents, so only downgrade D45 to REUSE if
-       the block number > 0 */
-    for (blk = AC3_MAX_BLOCKS-1; blk > 0; blk--) {
-        for (ch = !s->blocks[blk].cpl_in_use; ch <= s->fbw_channels; ch++) {
-            if (s->exp_strategy[ch][blk] > EXP_REUSE) {
-                s->exp_strategy[ch][blk] = EXP_REUSE;
-                return 0;
-            }
-        }
-    }
-    return -1;
-}
-
-
-/**
  * Perform bit allocation search.
  * Finds the SNR offset value that maximizes quality and fits in the specified
  * frame size.  Output is the SNR offset and a set of bit allocation pointers
@@ -1071,39 +1030,11 @@ static int downgrade_exponents(AC3EncodeContext *s)
  */
 static int compute_bit_allocation(AC3EncodeContext *s)
 {
-    int ret;
-
     count_frame_bits(s);
 
     bit_alloc_masking(s);
 
-    ret = cbr_bit_allocation(s);
-    while (ret) {
-        /* fallback 1: disable channel coupling */
-        if (s->cpl_on) {
-            s->cpl_on = 0;
-            compute_coupling_strategy(s);
-            s->compute_rematrixing_strategy(s);
-            apply_rematrixing(s);
-            process_exponents(s);
-            ret = compute_bit_allocation(s);
-            continue;
-        }
-
-        /* fallback 2: downgrade exponents */
-        if (!downgrade_exponents(s)) {
-            extract_exponents(s);
-            encode_exponents(s);
-            group_exponents(s);
-            ret = compute_bit_allocation(s);
-            continue;
-        }
-
-        /* fallbacks were not enough... */
-        break;
-    }
-
-    return ret;
+    return cbr_bit_allocation(s);
 }
 
 
