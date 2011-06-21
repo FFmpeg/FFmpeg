@@ -1,0 +1,17 @@
+vcodec=libvpx
+g=120
+rc_lookahead=16
+quality=good
+speed=0
+profile=0
+qmax=51
+qmin=11
+slices=4
+vb=2M
+
+#ignored unless using -pass 2
+maxrate=24M
+minrate=100k
+arnr_max_frames=7
+arnr_strength=5
+arnr_type=3

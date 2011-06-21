@@ -395,11 +395,10 @@ int main(int argc, char **argv)
     int ret;
 
     av_register_all();
+    init_opts();
 #if CONFIG_AVDEVICE
     avdevice_register_all();
 #endif
-
-    avformat_opts = avformat_alloc_context();
 
     show_banner();
     parse_options(argc, argv, options, opt_input_file);

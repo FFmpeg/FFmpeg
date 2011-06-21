@@ -3148,6 +3148,11 @@ check_deps $CONFIG_LIST       \
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
+if test $target_os == "haiku"; then
+    disable memalign
+    disable posix_memalign
+fi
+
 ! enabled_any memalign posix_memalign malloc_aligned &&
     enabled_any $need_memalign && enable memalign_hack
 
