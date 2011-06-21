@@ -400,8 +400,6 @@ int main(int argc, char **argv)
     avdevice_register_all();
 #endif
 
-    avformat_opts = avformat_alloc_context();
-
     show_banner();
     parse_options(argc, argv, options, opt_input_file);
 
