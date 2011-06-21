@@ -30,7 +30,8 @@ guidelines.
 API changes
 -----------
 
-Please see the file doc/APIchanges for programmer-centric information. Note that a
+Please see git log of the public headers or the file doc/APIchanges for
+programmer-centric information. Note that a
 lot of long-time deprecated APIs have been removed. Also, a number of additional
 APIs have been deprecated and are scheduled for removal in the next release.
 
