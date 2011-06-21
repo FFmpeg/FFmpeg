@@ -1744,7 +1744,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
                         h->hpc.pred16x16_add[h->intra16x16_pred_mode](dest_y, block_offset, h->mb + (p*256 << pixel_shift), linesize);
                     }else{
                         for(i=0; i<16; i++){
-                            if(h->non_zero_count_cache[ scan8[i+p*16] ] || dctcoef_get(h->mb, pixel_shift, i*16))
+                            if(h->non_zero_count_cache[ scan8[i+p*16] ] || dctcoef_get(h->mb, pixel_shift, i*16+p*256))
                                 s->dsp.add_pixels4(dest_y + block_offset[i], h->mb + (i*16+p*256 << pixel_shift), linesize);
                         }
                     }
