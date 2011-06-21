@@ -1123,15 +1123,9 @@ static inline int sym_quant(int c, int e, int levels)
  */
 static inline int asym_quant(int c, int e, int qbits)
 {
-    int lshift, m, v;
+    int m, v;
 
-    lshift = e + qbits - 24;
-    if (lshift >= 0)
-        v = c << lshift;
-    else
-        v = c >> (-lshift);
-    /* rounding */
-    v = (v + 1) >> 1;
+    v = (((c << e) >> (24 - qbits)) + 1) >> 1;
     m = (1 << (qbits-1));
     if (v >= m)
         v = m - 1;
