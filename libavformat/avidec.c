@@ -554,8 +554,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 codec_type = AVMEDIA_TYPE_DATA;
                 break;
             default:
-                av_log(s, AV_LOG_ERROR, "unknown stream type %X\n", tag1);
-                goto fail;
+                av_log(s, AV_LOG_INFO, "unknown stream type %X\n", tag1);
             }
             if(ast->sample_size == 0)
                 st->duration = st->nb_frames;
@@ -797,7 +796,11 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
         if (!(sub_demuxer = av_probe_input_format2(&pd, 1, &score)))
             goto error;
 
-        if (!av_open_input_stream(&ast->sub_ctx, pb, "", sub_demuxer, NULL)) {
+        if (!(ast->sub_ctx = avformat_alloc_context()))
+            goto error;
+
+        ast->sub_ctx->pb      = pb;
+        if (!avformat_open_input(&ast->sub_ctx, "", sub_demuxer, NULL)) {
             av_read_packet(ast->sub_ctx, &ast->sub_pkt);
             *st->codec = *ast->sub_ctx->streams[0]->codec;
             ast->sub_ctx->streams[0]->codec->extradata = NULL;
@@ -1349,7 +1352,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         index = av_index_search_timestamp(
                 st2,
                 av_rescale_q(timestamp, st->time_base, st2->time_base) * FFMAX(ast2->sample_size, 1),
-                flags | AVSEEK_FLAG_BACKWARD);
+                flags | AVSEEK_FLAG_BACKWARD | (st2->codec->codec_type != AVMEDIA_TYPE_VIDEO ? AVSEEK_FLAG_ANY : 0));
         if(index<0)
             index=0;
         ast2->seek_pos= st2->index_entries[index].pos;
@@ -1365,7 +1368,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
         index = av_index_search_timestamp(
                 st2,
                 av_rescale_q(timestamp, st->time_base, st2->time_base) * FFMAX(ast2->sample_size, 1),
-                flags | AVSEEK_FLAG_BACKWARD);
+                flags | AVSEEK_FLAG_BACKWARD | (st2->codec->codec_type != AVMEDIA_TYPE_VIDEO ? AVSEEK_FLAG_ANY : 0));
         if(index<0)
             index=0;
         while(index>0 && st2->index_entries[index-1].pos >= pos_min)
@@ -1391,7 +1394,7 @@ static int avi_read_close(AVFormatContext *s)
         if (ast) {
             if (ast->sub_ctx) {
                 av_freep(&ast->sub_ctx->pb);
-                av_close_input_stream(ast->sub_ctx);
+                av_close_input_file(ast->sub_ctx);
             }
             av_free(ast->sub_buffer);
             av_free_packet(&ast->sub_pkt);

@@ -1677,6 +1677,11 @@ static void monowhite2Y_c(int16_t *dst, const uint8_t *src, int width, uint32_t 
         for(j=0; j<8; j++)
             dst[8*i+j]= ((d>>(7-j))&1)*16383;
     }
+    if(width&7){
+        int d= ~src[i];
+        for(j=0; j<(width&7); j++)
+            dst[8*i+j]= ((d>>(7-j))&1)*16383;
+    }
 }
 
 static void monoblack2Y_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
@@ -1685,6 +1690,11 @@ static void monoblack2Y_c(int16_t *dst, const uint8_t *src, int width, uint32_t 
     for (i=0; i<width/8; i++) {
         int d= src[i];
         for(j=0; j<8; j++)
+            dst[8*i+j]= ((d>>(7-j))&1)*16383;
+    }
+    if(width&7){
+        int d= src[i];
+        for(j=0; j<(width&7); j++)
             dst[8*i+j]= ((d>>(7-j))&1)*16383;
     }
 }

@@ -3,11 +3,10 @@
 # check for git short hash
 if ! test "$revision"; then
     revision=$(cd "$1" && git describe --tags --match N 2> /dev/null)
-    test "$revision" && revision=git-$revision
 fi
 
 # no revision number found
-test "$revision" || revision=UNKNOWN
+test "$revision" || revision=$(cd "$1" && cat RELEASE 2> /dev/null)
 
 # releases extract the version number from the VERSION file
 version=$(cd "$1" && cat VERSION 2> /dev/null)

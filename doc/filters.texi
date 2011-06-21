@@ -701,6 +701,118 @@ a float number which specifies chroma temporal strength, defaults to
 @var{luma_tmp}*@var{chroma_spatial}/@var{luma_spatial}
 @end table
 
+@section lut, lutrgb, lutyuv
+
+Compute a look-up table for binding each pixel component input value
+to an output value, and apply it to input video.
+
+@var{lutyuv} applies a lookup table to a YUV input video, @var{lutrgb}
+to an RGB input video.
+
+These filters accept in input a ":"-separated list of options, which
+specify the expressions used for computing the lookup table for the
+corresponding pixel component values.
+
+The @var{lut} filter requires either YUV or RGB pixel formats in
+input, and accepts the options:
+@table @option
+@var{c0} (first  pixel component)
+@var{c1} (second pixel component)
+@var{c2} (third  pixel component)
+@var{c3} (fourth pixel component, corresponds to the alpha component)
+@end table
+
+The exact component associated to each option depends on the format in
+input.
+
+The @var{lutrgb} filter requires RGB pixel formats in input, and
+accepts the options:
+@table @option
+@var{r} (red component)
+@var{g} (green component)
+@var{b} (blue component)
+@var{a} (alpha component)
+@end table
+
+The @var{lutyuv} filter requires YUV pixel formats in input, and
+accepts the options:
+@table @option
+@var{y} (Y/luminance component)
+@var{u} (U/Cb component)
+@var{v} (V/Cr component)
+@var{a} (alpha component)
+@end table
+
+The expressions can contain the following constants and functions:
+
+@table @option
+@item E, PI, PHI
+the corresponding mathematical approximated values for e
+(euler number), pi (greek PI), PHI (golden ratio)
+
+@item w, h
+the input width and heigth
+
+@item val
+input value for the pixel component
+
+@item clipval
+the input value clipped in the @var{minval}-@var{maxval} range
+
+@item maxval
+maximum value for the pixel component
+
+@item minval
+minimum value for the pixel component
+
+@item negval
+the negated value for the pixel component value clipped in the
+@var{minval}-@var{maxval} range , it corresponds to the expression
+"maxval-clipval+minval"
+
+@item clip(val)
+the computed value in @var{val} clipped in the
+@var{minval}-@var{maxval} range
+
+@item gammaval(gamma)
+the computed gamma correction value of the pixel component value
+clipped in the @var{minval}-@var{maxval} range, corresponds to the
+expression
+"pow((clipval-minval)/(maxval-minval)\,@var{gamma})*(maxval-minval)+minval"
+
+@end table
+
+All expressions default to "val".
+
+Some examples follow:
+@example
+# negate input video
+lutrgb="r=maxval+minval-val:g=maxval+minval-val:b=maxval+minval-val"
+lutyuv="y=maxval+minval-val:u=maxval+minval-val:v=maxval+minval-val"
+
+# the above is the same as
+lutrgb="r=negval:g=negval:b=negval"
+lutyuv="y=negval:u=negval:v=negval"
+
+# negate luminance
+lutyuv=negval
+
+# remove chroma components, turns the video into a graytone image
+lutyuv="u=128:v=128"
+
+# apply a luma burning effect
+lutyuv="y=2*val"
+
+# remove green and blue components
+lutrgb="g=0:b=0"
+
+# set a constant alpha channel value on input
+format=rgba,lutrgb=a="maxval-minval/2"
+
+# correct luminance gamma by a 0.5 factor
+lutyuv=y=gammaval(0.5)
+@end example
+
 @section mp
 
 Apply an MPlayer filter to the input video.
@@ -798,6 +910,13 @@ mp=hue=100:-10
 @end example
 
 See also mplayer(1), @url{http://www.mplayerhq.hu/}.
+
+@section negate
+
+Negate input video.
+
+This filter accepts an integer in input, if non-zero it negates the
+alpha component (if available). The default value in input is 0.
 
 @section noformat
 
@@ -1857,6 +1976,19 @@ frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
 @c man begin VIDEO SINKS
 
 Below is a description of the currently available video sinks.
+
+@section buffersink
+
+Buffer video frames, and make them available to the end of the filter
+graph.
+
+This sink is mainly intended for a programmatic use, in particular
+through the interface defined in @file{libavfilter/vsink_buffer.h}.
+
+It does not require a string parameter in input, but you need to
+specify a pointer to a list of supported pixel formats terminated by
+-1 in the opaque parameter provided to @code{avfilter_init_filter}
+when initializing this sink.
 
 @section nullsink
 

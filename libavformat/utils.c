@@ -28,6 +28,7 @@
 #include "libavcodec/raw.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
+#include "libavutil/pixdesc.h"
 #include "metadata.h"
 #include "id3v2.h"
 #include "libavutil/avstring.h"
@@ -460,6 +461,50 @@ static int set_codec_from_probe_data(AVFormatContext *s, AVStream *st, AVProbeDa
 /************************************************************/
 /* input media file */
 
+#if FF_API_FORMAT_PARAMETERS
+static AVDictionary *convert_format_parameters(AVFormatParameters *ap)
+{
+    char buf[1024];
+    AVDictionary *opts = NULL;
+
+    if (!ap)
+        return NULL;
+
+    if (ap->time_base.num) {
+        snprintf(buf, sizeof(buf), "%d/%d", ap->time_base.den, ap->time_base.num);
+        av_dict_set(&opts, "framerate", buf, 0);
+    }
+    if (ap->sample_rate) {
+        snprintf(buf, sizeof(buf), "%d", ap->sample_rate);
+        av_dict_set(&opts, "sample_rate", buf, 0);
+    }
+    if (ap->channels) {
+        snprintf(buf, sizeof(buf), "%d", ap->channels);
+        av_dict_set(&opts, "channels", buf, 0);
+    }
+    if (ap->width || ap->height) {
+        snprintf(buf, sizeof(buf), "%dx%d", ap->width, ap->height);
+        av_dict_set(&opts, "video_size", buf, 0);
+    }
+    if (ap->pix_fmt != PIX_FMT_NONE) {
+        av_dict_set(&opts, "pixel_format", av_get_pix_fmt_name(ap->pix_fmt), 0);
+    }
+    if (ap->channel) {
+        snprintf(buf, sizeof(buf), "%d", ap->channel);
+        av_dict_set(&opts, "channel", buf, 0);
+    }
+    if (ap->standard) {
+        av_dict_set(&opts, "standard", ap->standard, 0);
+    }
+    if (ap->mpeg2ts_compute_pcr) {
+        av_dict_set(&opts, "mpeg2ts_compute_pcr", "1", 0);
+    }
+    if (ap->initial_pause) {
+        av_dict_set(&opts, "initial_pause", "1", 0);
+    }
+    return opts;
+}
+
 /**
  * Open a media file from an IO stream. 'fmt' must be specified.
  */
@@ -468,6 +513,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
                          AVInputFormat *fmt, AVFormatParameters *ap)
 {
     int err;
+    AVDictionary *opts;
     AVFormatContext *ic;
     AVFormatParameters default_ap;
 
@@ -475,6 +521,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         ap=&default_ap;
         memset(ap, 0, sizeof(default_ap));
     }
+    opts = convert_format_parameters(ap);
 
     if(!ap->prealloced_context)
         ic = avformat_alloc_context();
@@ -484,67 +531,18 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         err = AVERROR(ENOMEM);
         goto fail;
     }
-    ic->iformat = fmt;
     ic->pb = pb;
-    ic->duration = AV_NOPTS_VALUE;
-    ic->start_time = AV_NOPTS_VALUE;
-    av_strlcpy(ic->filename, filename, sizeof(ic->filename));
 
-    /* allocate private data */
-    if (fmt->priv_data_size > 0) {
-        ic->priv_data = av_mallocz(fmt->priv_data_size);
-        if (!ic->priv_data) {
-            err = AVERROR(ENOMEM);
-            goto fail;
-        }
-        if (fmt->priv_class) {
-            *(const AVClass**)ic->priv_data= fmt->priv_class;
-            av_opt_set_defaults(ic->priv_data);
-        }
-    } else {
-        ic->priv_data = NULL;
-    }
-
-    // e.g. AVFMT_NOFILE formats will not have a AVIOContext
-    if (ic->pb)
-        ff_id3v2_read(ic, ID3v2_DEFAULT_MAGIC);
-
-    if (!(ic->flags&AVFMT_FLAG_PRIV_OPT) && ic->iformat->read_header) {
-        err = ic->iformat->read_header(ic, ap);
-        if (err < 0)
-            goto fail;
-    }
-
-    if (!(ic->flags&AVFMT_FLAG_PRIV_OPT) && pb && !ic->data_offset)
-        ic->data_offset = avio_tell(ic->pb);
+    err = avformat_open_input(ic_ptr, filename, fmt, &opts);
 
 #if FF_API_OLD_METADATA
     ff_metadata_demux_compat(ic);
 #endif
-
-    ic->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
-
-    *ic_ptr = ic;
-    return 0;
- fail:
-    if (ic) {
-        int i;
-        av_freep(&ic->priv_data);
-        for(i=0;i<ic->nb_streams;i++) {
-            AVStream *st = ic->streams[i];
-            if (st) {
-                av_free(st->priv_data);
-                av_free(st->codec->extradata);
-                av_free(st->codec);
-                av_free(st->info);
-            }
-            av_free(st);
-        }
-    }
-    av_free(ic);
-    *ic_ptr = NULL;
+fail:
+    av_dict_free(&opts);
     return err;
 }
+#endif
 
 int av_demuxer_open(AVFormatContext *ic, AVFormatParameters *ap){
     int err;
@@ -633,68 +631,124 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
     return ret;
 }
 
+#if FF_API_FORMAT_PARAMETERS
 int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap)
 {
     int err;
-    AVProbeData probe_data, *pd = &probe_data;
-    AVIOContext *pb = NULL;
-    void *logctx= ap && ap->prealloced_context ? *ic_ptr : NULL;
+    AVDictionary *opts = convert_format_parameters(ap);
 
-    pd->filename = "";
-    if (filename)
-        pd->filename = filename;
-    pd->buf = NULL;
-    pd->buf_size = 0;
+    if (!ap || !ap->prealloced_context)
+        *ic_ptr = NULL;
 
-    if (!fmt) {
-        /* guess format if no file can be opened */
-        fmt = av_probe_input_format(pd, 0);
+    err = avformat_open_input(ic_ptr, filename, fmt, &opts);
+
+    av_dict_free(&opts);
+    return err;
+}
+#endif
+
+/* open input file and probe the format if necessary */
+static int init_input(AVFormatContext *s, const char *filename)
+{
+    int ret;
+    AVProbeData pd = {filename, NULL, 0};
+
+    if (s->pb) {
+        s->flags |= AVFMT_FLAG_CUSTOM_IO;
+        if (!s->iformat)
+            return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, 0);
+        else if (s->iformat->flags & AVFMT_NOFILE)
+            return AVERROR(EINVAL);
+        return 0;
     }
 
-    /* Do not open file if the format does not need it. XXX: specific
-       hack needed to handle RTSP/TCP */
-    if (!fmt || !(fmt->flags & AVFMT_NOFILE)) {
-        /* if no file needed do not try to open one */
-        if ((err=avio_open(&pb, filename, AVIO_RDONLY)) < 0) {
-            goto fail;
-        }
-        if (buf_size > 0) {
-            ffio_set_buf_size(pb, buf_size);
-        }
-        if (!fmt && (err = av_probe_input_buffer(pb, &fmt, filename, logctx, 0, logctx ? (*ic_ptr)->probesize : 0)) < 0) {
-            goto fail;
-        }
-    }
+    if ( (s->iformat && s->iformat->flags & AVFMT_NOFILE) ||
+        (!s->iformat && (s->iformat = av_probe_input_format(&pd, 0))))
+        return 0;
 
-    /* if still no format found, error */
-    if (!fmt) {
-        err = AVERROR_INVALIDDATA;
+    if ((ret = avio_open(&s->pb, filename, AVIO_RDONLY)) < 0)
+       return ret;
+    if (s->iformat)
+        return 0;
+    return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, 0);
+}
+
+int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options)
+{
+    AVFormatContext *s = *ps;
+    int ret = 0;
+    AVFormatParameters ap = { 0 };
+    AVDictionary *tmp = NULL;
+
+    if (!s && !(s = avformat_alloc_context()))
+        return AVERROR(ENOMEM);
+    if (fmt)
+        s->iformat = fmt;
+
+    if (options)
+        av_dict_copy(&tmp, *options, 0);
+
+    if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
-    }
+
+    if ((ret = init_input(s, filename)) < 0)
+        goto fail;
 
     /* check filename in case an image number is expected */
-    if (fmt->flags & AVFMT_NEEDNUMBER) {
+    if (s->iformat->flags & AVFMT_NEEDNUMBER) {
         if (!av_filename_number_test(filename)) {
-            err = AVERROR_NUMEXPECTED;
+            ret = AVERROR(EINVAL);
             goto fail;
         }
     }
-    err = av_open_input_stream(ic_ptr, pb, filename, fmt, ap);
-    if (err)
-        goto fail;
-    return 0;
- fail:
-    av_freep(&pd->buf);
-    if (pb)
-        avio_close(pb);
-    if (ap && ap->prealloced_context)
-        av_free(*ic_ptr);
-    *ic_ptr = NULL;
-    return err;
 
+    s->duration = s->start_time = AV_NOPTS_VALUE;
+    av_strlcpy(s->filename, filename, sizeof(s->filename));
+
+    /* allocate private data */
+    if (s->iformat->priv_data_size > 0) {
+        if (!(s->priv_data = av_mallocz(s->iformat->priv_data_size))) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        if (s->iformat->priv_class) {
+            *(const AVClass**)s->priv_data = s->iformat->priv_class;
+            av_opt_set_defaults(s->priv_data);
+            if ((ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
+                goto fail;
+        }
+    }
+
+    /* e.g. AVFMT_NOFILE formats will not have a AVIOContext */
+    if (s->pb)
+        ff_id3v2_read(s, ID3v2_DEFAULT_MAGIC);
+
+    if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->iformat->read_header)
+        if ((ret = s->iformat->read_header(s, &ap)) < 0)
+            goto fail;
+
+    if (!(s->flags&AVFMT_FLAG_PRIV_OPT) && s->pb && !s->data_offset)
+        s->data_offset = avio_tell(s->pb);
+
+    s->raw_packet_buffer_remaining_size = RAW_PACKET_BUFFER_SIZE;
+
+    if (options) {
+        av_dict_free(options);
+        *options = tmp;
+    }
+    *ps = s;
+    return 0;
+
+fail:
+    av_dict_free(&tmp);
+    if (s->pb && !(s->flags & AVFMT_FLAG_CUSTOM_IO))
+        avio_close(s->pb);
+    avformat_free_context(s);
+    *ps = NULL;
+    return ret;
 }
 
 /*******************************************************/
@@ -2694,7 +2748,8 @@ void avformat_free_context(AVFormatContext *s)
 
 void av_close_input_file(AVFormatContext *s)
 {
-    AVIOContext *pb = s->iformat->flags & AVFMT_NOFILE ? NULL : s->pb;
+    AVIOContext *pb = (s->iformat->flags & AVFMT_NOFILE) || (s->flags & AVFMT_FLAG_CUSTOM_IO) ?
+                       NULL : s->pb;
     av_close_input_stream(s);
     if (pb)
         avio_close(pb);
@@ -2812,6 +2867,7 @@ AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int6
 /************************************************************/
 /* output media file */
 
+#if FF_API_FORMAT_PARAMETERS
 int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
 {
     if (s->oformat->priv_data_size > 0) {
@@ -2827,6 +2883,7 @@ int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap)
 
     return 0;
 }
+#endif
 
 int avformat_alloc_output_context2(AVFormatContext **avctx, AVOutputFormat *oformat,
                                    const char *format, const char *filename)
@@ -2924,15 +2981,29 @@ static int validate_codec_tag(AVFormatContext *s, AVStream *st)
     return 1;
 }
 
+#if FF_API_FORMAT_PARAMETERS
 int av_write_header(AVFormatContext *s)
 {
-    int ret, i;
+    return avformat_write_header(s, NULL);
+}
+#endif
+
+int avformat_write_header(AVFormatContext *s, AVDictionary **options)
+{
+    int ret = 0, i;
     AVStream *st;
+    AVDictionary *tmp = NULL;
+
+    if (options)
+        av_dict_copy(&tmp, *options, 0);
+    if ((ret = av_opt_set_dict(s, &tmp)) < 0)
+        goto fail;
 
     // some sanity checks
     if (s->nb_streams == 0 && !(s->oformat->flags & AVFMT_NOSTREAMS)) {
         av_log(s, AV_LOG_ERROR, "no streams\n");
-        return AVERROR(EINVAL);
+        ret = AVERROR(EINVAL);
+        goto fail;
     }
 
     for(i=0;i<s->nb_streams;i++) {
@@ -2942,7 +3013,8 @@ int av_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_AUDIO:
             if(st->codec->sample_rate<=0){
                 av_log(s, AV_LOG_ERROR, "sample rate not set\n");
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             if(!st->codec->block_align)
                 st->codec->block_align = st->codec->channels *
@@ -2951,15 +3023,18 @@ int av_write_header(AVFormatContext *s)
         case AVMEDIA_TYPE_VIDEO:
             if(st->codec->time_base.num<=0 || st->codec->time_base.den<=0){ //FIXME audio too?
                 av_log(s, AV_LOG_ERROR, "time base not set\n");
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             if((st->codec->width<=0 || st->codec->height<=0) && !(s->oformat->flags & AVFMT_NODIMENSIONS)){
                 av_log(s, AV_LOG_ERROR, "dimensions not set\n");
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             if(av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)){
                 av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between encoder and muxer layer\n");
-                return AVERROR(EINVAL);
+                ret = AVERROR(EINVAL);
+                goto fail;
             }
             break;
         }
@@ -2976,7 +3051,8 @@ int av_write_header(AVFormatContext *s)
                     av_log(s, AV_LOG_ERROR,
                            "Tag %s/0x%08x incompatible with output codec id '%d'\n",
                            tagbuf, st->codec->codec_tag, st->codec->codec_id);
-                    return AVERROR_INVALIDDATA;
+                    ret = AVERROR_INVALIDDATA;
+                    goto fail;
                 }
             }else
                 st->codec->codec_tag= av_codec_get_tag(s->oformat->codec_tag, st->codec->codec_id);
@@ -2989,8 +3065,16 @@ int av_write_header(AVFormatContext *s)
 
     if (!s->priv_data && s->oformat->priv_data_size > 0) {
         s->priv_data = av_mallocz(s->oformat->priv_data_size);
-        if (!s->priv_data)
-            return AVERROR(ENOMEM);
+        if (!s->priv_data) {
+            ret = AVERROR(ENOMEM);
+            goto fail;
+        }
+        if (s->oformat->priv_class) {
+            *(const AVClass**)s->priv_data= s->oformat->priv_class;
+            av_opt_set_defaults(s->priv_data);
+            if ((ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
+                goto fail;
+        }
     }
 
 #if FF_API_OLD_METADATA
@@ -3005,7 +3089,7 @@ int av_write_header(AVFormatContext *s)
     if(s->oformat->write_header){
         ret = s->oformat->write_header(s);
         if (ret < 0)
-            return ret;
+            goto fail;
     }
 
     /* init PTS generation */
@@ -3024,12 +3108,22 @@ int av_write_header(AVFormatContext *s)
             break;
         }
         if (den != AV_NOPTS_VALUE) {
-            if (den <= 0)
-                return AVERROR_INVALIDDATA;
+            if (den <= 0) {
+                ret = AVERROR_INVALIDDATA;
+                goto fail;
+            }
             av_frac_init(&st->pts, 0, 0, den);
         }
     }
+
+    if (options) {
+        av_dict_free(options);
+        *options = tmp;
+    }
     return 0;
+fail:
+    av_dict_free(&tmp);
+    return ret;
 }
 
 //FIXME merge with compute_pkt_fields
@@ -3328,8 +3422,13 @@ static void dump_metadata(void *ctx, AVDictionary *m, const char *indent)
 
         av_log(ctx, AV_LOG_INFO, "%sMetadata:\n", indent);
         while((tag=av_dict_get(m, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-            if(strcmp("language", tag->key))
-                av_log(ctx, AV_LOG_INFO, "%s  %-16s: %s\n", indent, tag->key, tag->value);
+            if(strcmp("language", tag->key)){
+                char tmp[256];
+                int i;
+                av_strlcpy(tmp, tag->value, sizeof(tmp));
+                for(i=0; i<strlen(tmp); i++) if(tmp[i]==0xd) tmp[i]=' ';
+                av_log(ctx, AV_LOG_INFO, "%s  %-16s: %s\n", indent, tag->key, tmp);
+            }
         }
     }
 }

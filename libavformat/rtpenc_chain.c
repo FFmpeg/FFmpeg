@@ -67,7 +67,7 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
         ffio_fdopen(&rtpctx->pb, handle);
     } else
         ffio_open_dyn_packet_buf(&rtpctx->pb, packet_size);
-    ret = av_write_header(rtpctx);
+    ret = avformat_write_header(rtpctx, NULL);
 
     if (ret) {
         if (handle) {

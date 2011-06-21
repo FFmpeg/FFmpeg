@@ -262,18 +262,18 @@ static void show_format(AVFormatContext *fmt_ctx)
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 {
     int err, i;
-    AVFormatParameters fmt_params;
-    AVFormatContext *fmt_ctx;
+    AVFormatContext *fmt_ctx = NULL;
+    AVDictionaryEntry *t;
 
-    memset(&fmt_params, 0, sizeof(fmt_params));
-    fmt_params.prealloced_context = 1;
-    fmt_ctx = avformat_alloc_context();
-    set_context_opts(fmt_ctx, avformat_opts, AV_OPT_FLAG_DECODING_PARAM, NULL);
-
-    if ((err = av_open_input_file(&fmt_ctx, filename, iformat, 0, &fmt_params)) < 0) {
+    if ((err = avformat_open_input(&fmt_ctx, filename, iformat, &format_opts)) < 0) {
         print_error(filename, err);
         return err;
     }
+    if ((t = av_dict_get(format_opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+        av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+        return AVERROR_OPTION_NOT_FOUND;
+    }
+
 
     /* fill the streams in the format context */
     if ((err = av_find_stream_info(fmt_ctx)) < 0) {

@@ -37,6 +37,25 @@ static const char* context_to_name(void* ptr) {
         return "NULL";
 }
 
+static const AVOption *opt_find(void *obj, const char *name, const char *unit, int opt_flags, int search_flags)
+{
+    AVCodecContext *s = obj;
+    AVCodec        *c = NULL;
+
+    if (s->priv_data) {
+        if (s->codec->priv_class)
+            return av_opt_find(s->priv_data, name, unit, opt_flags, search_flags);
+        return NULL;
+    }
+
+    while ((c = av_codec_next(c))) {
+        const AVOption *o;
+        if (c->priv_class && (o = av_opt_find(&c->priv_class, name, unit, opt_flags, search_flags)))
+            return o;
+    }
+    return NULL;
+}
+
 #define OFFSET(x) offsetof(AVCodecContext,x)
 #define DEFAULT 0 //should be NAN but it does not work as it is not a constant in glibc as required by ANSI/ISO C
 //these names are too long to be readable
@@ -458,7 +477,7 @@ static const AVOption options[]={
 #undef D
 #undef DEFAULT
 
-static const AVClass av_codec_context_class = { "AVCodecContext", context_to_name, options, LIBAVUTIL_VERSION_INT, OFFSET(log_level_offset) };
+static const AVClass av_codec_context_class = { "AVCodecContext", context_to_name, options, LIBAVUTIL_VERSION_INT, OFFSET(log_level_offset), .opt_find = opt_find};
 
 void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_type){
     int flags=0;

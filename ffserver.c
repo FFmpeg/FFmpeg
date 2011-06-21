@@ -207,7 +207,7 @@ typedef struct FFStream {
     char filename[1024];     /* stream filename */
     struct FFStream *feed;   /* feed we are using (can be null if
                                 coming from file) */
-    AVFormatParameters *ap_in; /* input parameters */
+    AVDictionary *in_opts;   /* input parameters */
     AVInputFormat *ifmt;       /* if non NULL, force input format */
     AVOutputFormat *fmt;
     IPAddressACL *acl;
@@ -2128,7 +2128,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
 {
     char buf[128];
     char input_filename[1024];
-    AVFormatContext *s;
+    AVFormatContext *s = NULL;
     int buf_size, i, ret;
     int64_t stream_pos;
 
@@ -2159,8 +2159,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
         return -1;
 
     /* open stream */
-    if ((ret = av_open_input_file(&s, input_filename, c->stream->ifmt,
-                                  buf_size, c->stream->ap_in)) < 0) {
+    if ((ret = avformat_open_input(&s, input_filename, c->stream->ifmt, &c->stream->in_opts)) < 0) {
         http_log("could not open %s: %d\n", input_filename, ret);
         return -1;
     }
@@ -2270,8 +2269,7 @@ static int http_prepare_data(HTTPContext *c)
         c->fmt_ctx.preload   = (int)(0.5*AV_TIME_BASE);
         c->fmt_ctx.max_delay = (int)(0.7*AV_TIME_BASE);
 
-        av_set_parameters(&c->fmt_ctx, NULL);
-        if (av_write_header(&c->fmt_ctx) < 0) {
+        if (avformat_write_header(&c->fmt_ctx, NULL) < 0) {
             http_log("Error writing output header\n");
             return -1;
         }
@@ -2711,10 +2709,13 @@ static int http_receive_data(HTTPContext *c)
             }
         } else {
             /* We have a header in our hands that contains useful data */
-            AVFormatContext *s = NULL;
+            AVFormatContext *s = avformat_alloc_context();
             AVIOContext *pb;
             AVInputFormat *fmt_in;
             int i;
+
+            if (!s)
+                goto fail;
 
             /* use feed output format name to find corresponding input format */
             fmt_in = av_find_input_format(feed->fmt->name);
@@ -2725,7 +2726,8 @@ static int http_receive_data(HTTPContext *c)
                                     0, NULL, NULL, NULL, NULL);
             pb->seekable = 0;
 
-            if (av_open_input_stream(&s, pb, c->stream->feed_filename, fmt_in, NULL) < 0) {
+            s->pb = pb;
+            if (avformat_open_input(&s, c->stream->feed_filename, fmt_in, NULL) < 0) {
                 av_free(pb);
                 goto fail;
             }
@@ -3445,8 +3447,7 @@ static int rtp_new_av_stream(HTTPContext *c,
         /* XXX: close stream */
         goto fail;
     }
-    av_set_parameters(ctx, NULL);
-    if (av_write_header(ctx) < 0) {
+    if (avformat_write_header(ctx, NULL) < 0) {
     fail:
         if (h)
             url_close(h);
@@ -3600,28 +3601,25 @@ static void extract_mpeg4_header(AVFormatContext *infile)
 static void build_file_streams(void)
 {
     FFStream *stream, *stream_next;
-    AVFormatContext *infile;
     int i, ret;
 
     /* gather all streams */
     for(stream = first_stream; stream != NULL; stream = stream_next) {
+        AVFormatContext *infile = NULL;
         stream_next = stream->next;
         if (stream->stream_type == STREAM_TYPE_LIVE &&
             !stream->feed) {
             /* the stream comes from a file */
             /* try to open the file */
             /* open stream */
-            stream->ap_in = av_mallocz(sizeof(AVFormatParameters));
             if (stream->fmt && !strcmp(stream->fmt->name, "rtp")) {
                 /* specific case : if transport stream output to RTP,
                    we use a raw transport stream reader */
-                stream->ap_in->mpeg2ts_raw = 1;
-                stream->ap_in->mpeg2ts_compute_pcr = 1;
+                av_dict_set(&stream->in_opts, "mpeg2ts_compute_pcr", "1", 0);
             }
 
             http_log("Opening file '%s'\n", stream->feed_filename);
-            if ((ret = av_open_input_file(&infile, stream->feed_filename,
-                                          stream->ifmt, 0, stream->ap_in)) < 0) {
+            if ((ret = avformat_open_input(&infile, stream->feed_filename, stream->ifmt, &stream->in_opts)) < 0) {
                 http_log("Could not open '%s': %d\n", stream->feed_filename, ret);
                 /* remove stream (no need to spend more time on it) */
             fail:
@@ -3681,10 +3679,10 @@ static void build_feed_streams(void)
 
         if (url_exist(feed->feed_filename)) {
             /* See if it matches */
-            AVFormatContext *s;
+            AVFormatContext *s = NULL;
             int matches = 0;
 
-            if (av_open_input_file(&s, feed->feed_filename, NULL, FFM_PACKET_SIZE, NULL) >= 0) {
+            if (avformat_open_input(&s, feed->feed_filename, NULL, NULL) >= 0) {
                 /* Now see if it matches */
                 if (s->nb_streams == feed->nb_streams) {
                     matches = 1;
@@ -3951,7 +3949,7 @@ static int ffserver_opt_default(const char *opt, const char *arg,
                        AVCodecContext *avctx, int type)
 {
     int ret = 0;
-    const AVOption *o = av_find_opt(avctx, opt, NULL, type, type);
+    const AVOption *o = av_opt_find(avctx, opt, NULL, type, 0);
     if(o)
         ret = av_set_string3(avctx, opt, arg, 1, NULL);
     return ret;

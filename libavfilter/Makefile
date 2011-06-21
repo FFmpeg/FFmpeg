@@ -6,7 +6,7 @@ FFLIBS-$(CONFIG_MOVIE_FILTER) += avformat avcodec
 FFLIBS-$(CONFIG_SCALE_FILTER) += swscale
 FFLIBS-$(CONFIG_MP_FILTER) += avcodec
 
-HEADERS = avcodec.h avfilter.h avfiltergraph.h vsrc_buffer.h
+HEADERS = avcodec.h avfilter.h avfiltergraph.h vsink_buffer.h vsrc_buffer.h
 
 OBJS = allfilters.o                                                     \
        avfilter.o                                                       \
@@ -38,7 +38,11 @@ OBJS-$(CONFIG_FREI0R_FILTER)                 += vf_frei0r.o
 OBJS-$(CONFIG_GRADFUN_FILTER)                += vf_gradfun.o
 OBJS-$(CONFIG_HFLIP_FILTER)                  += vf_hflip.o
 OBJS-$(CONFIG_HQDN3D_FILTER)                 += vf_hqdn3d.o
+OBJS-$(CONFIG_LUT_FILTER)                    += vf_lut.o
+OBJS-$(CONFIG_LUTRGB_FILTER)                 += vf_lut.o
+OBJS-$(CONFIG_LUTYUV_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_MP_FILTER)                     += vf_mp.o
+OBJS-$(CONFIG_NEGATE_FILTER)                 += vf_lut.o
 OBJS-$(CONFIG_NOFORMAT_FILTER)               += vf_format.o
 OBJS-$(CONFIG_NULL_FILTER)                   += vf_null.o
 OBJS-$(CONFIG_OCV_FILTER)                    += vf_libopencv.o
@@ -65,6 +69,7 @@ OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += vsrc_movie.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 
+OBJS-$(CONFIG_BUFFERSINK_FILTER)             += vsink_buffer.o
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
 

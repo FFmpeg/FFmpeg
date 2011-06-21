@@ -261,8 +261,8 @@ typedef struct AVFormatParameters {
     attribute_deprecated unsigned int mpeg2ts_compute_pcr:1;
     attribute_deprecated unsigned int initial_pause:1;       /**< Do not begin to play the stream
                                                                   immediately (RTSP only). */
+    attribute_deprecated unsigned int prealloced_context:1;
 #endif
-    unsigned int prealloced_context:1;
 #if FF_API_PARAMETERS_CODEC_ID
     attribute_deprecated enum CodecID video_codec_id;
     attribute_deprecated enum CodecID audio_codec_id;
@@ -814,10 +814,12 @@ typedef struct AVFormatContext {
 #if FF_API_FLAG_RTP_HINT
 #define AVFMT_FLAG_RTP_HINT     0x0040 ///< Deprecated, use the -movflags rtphint muxer specific AVOption instead
 #endif
-#define AVFMT_FLAG_MP4A_LATM    0x0080 ///< Enable RTP MP4A-LATM payload
+#define AVFMT_FLAG_CUSTOM_IO    0x0080 ///< The caller has supplied a custom AVIOContext, don't avio_close() it.
+#define AVFMT_FLAG_MP4A_LATM    0x8000 ///< Enable RTP MP4A-LATM payload
 #define AVFMT_FLAG_SORT_DTS    0x10000 ///< try to interleave outputted packets by dts (using this flag can slow demuxing down)
 #define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
 #define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Dont merge side data but keep it seperate.
+
     int loop_input;
 
     /**
@@ -1134,11 +1136,13 @@ int av_probe_input_buffer(AVIOContext *pb, AVInputFormat **fmt,
                           const char *filename, void *logctx,
                           unsigned int offset, unsigned int max_probe_size);
 
+#if FF_API_FORMAT_PARAMETERS
 /**
  * Allocate all the structures needed to read an input stream.
  *        This does not open the needed codecs for decoding the stream[s].
+ * @deprecated use avformat_open_input instead.
  */
-int av_open_input_stream(AVFormatContext **ic_ptr,
+attribute_deprecated int av_open_input_stream(AVFormatContext **ic_ptr,
                          AVIOContext *pb, const char *filename,
                          AVInputFormat *fmt, AVFormatParameters *ap);
 
@@ -1153,11 +1157,35 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
  * @param ap Additional parameters needed when opening the file
  *           (NULL if default).
  * @return 0 if OK, AVERROR_xxx otherwise
+ *
+ * @deprecated use avformat_open_input instead.
  */
-int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
+attribute_deprecated int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
                        AVInputFormat *fmt,
                        int buf_size,
                        AVFormatParameters *ap);
+#endif
+
+/**
+ * Open an input stream and read the header. The codecs are not opened.
+ * The stream must be closed with av_close_input_file().
+ *
+ * @param ps Pointer to user-supplied AVFormatContext (allocated by avformat_alloc_context).
+ *           May be a pointer to NULL, in which case an AVFormatContext is allocated by this
+ *           function and written into ps.
+ *           Note that a user-supplied AVFormatContext will be freed on failure.
+ * @param filename Name of the stream to open.
+ * @param fmt If non-NULL, this parameter forces a specific input format.
+ *            Otherwise the format is autodetected.
+ * @param options  A dictionary filled with AVFormatContext and demuxer-private options.
+ *                 On return this parameter will be destroyed and replaced with a dict containing
+ *                 options that were not found. May be NULL.
+ *
+ * @return 0 on success, a negative AVERROR on failure.
+ *
+ * @note If you want to use custom IO, preallocate the format context and set its pb field.
+ */
+int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
 
 #if FF_API_ALLOC_FORMAT_CONTEXT
 /**
@@ -1451,7 +1479,12 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
 /**
  * media file output
  */
+#if FF_API_FORMAT_PARAMETERS
+/**
+ * @deprecated pass the options to avformat_write_header directly.
+ */
 attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
+#endif
 
 /**
  * Split a URL string into components.
@@ -1480,6 +1513,24 @@ void av_url_split(char *proto,         int proto_size,
                   const char *url);
 
 /**
+ * Allocate the stream private data and write the stream header to
+ * an output media file.
+ *
+ * @param s Media file handle, must be allocated with avformat_alloc_context().
+ *          Its oformat field must be set to the desired output format;
+ *          Its pb field must be set to an already openened AVIOContext.
+ * @param options  An AVDictionary filled with AVFormatContext and muxer-private options.
+ *                 On return this parameter will be destroyed and replaced with a dict containing
+ *                 options that were not found. May be NULL.
+ *
+ * @return 0 on success, negative AVERROR on failure.
+ *
+ * @see av_opt_find, av_dict_set, avio_open, av_oformat_next.
+ */
+int avformat_write_header(AVFormatContext *s, AVDictionary **options);
+
+#if FF_API_FORMAT_PARAMETERS
+/**
  * Allocate the stream private data and write the stream header to an
  * output media file.
  * @note: this sets stream time-bases, if possible to stream->codec->time_base
@@ -1487,8 +1538,11 @@ void av_url_split(char *proto,         int proto_size,
  *
  * @param s media file handle
  * @return 0 if OK, AVERROR_xxx on error
+ *
+ * @deprecated use avformat_write_header.
  */
-int av_write_header(AVFormatContext *s);
+attribute_deprecated int av_write_header(AVFormatContext *s);
+#endif
 
 /**
  * Write a packet to an output media file.

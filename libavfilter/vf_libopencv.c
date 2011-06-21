@@ -61,7 +61,7 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_BGR24, PIX_FMT_BGRA, PIX_FMT_GRAY8, PIX_FMT_NONE
     };
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
     return 0;
 }
 

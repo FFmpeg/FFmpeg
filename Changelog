@@ -2,7 +2,7 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
-version <next>:
+version 0.7:
 
 - many many things we forgot because we rather write code than changelogs
 - libmpcodecs video filter support (3 times as many filters than before)
@@ -14,17 +14,24 @@ version <next>:
 - floating-point sample format support to the ac3, eac3, dca, aac, and vorbis decoders.
 - H264/MPEG frame-level multi-threading
 - All av_metadata_* functions renamed to av_dict_* and moved to libavutil
+- 4:4:4 H.264 decoding support
+- 10-bit H.264 optimizations for x86
+- lut, lutrgb, and lutyuv filters added
+- buffersink libavfilter sink added
+- Bump libswscale for recently reported ABI break
 
 
 version 0.7_beta2:
 
+- VP8 frame-multithreading
+- NEON optimizations for VP8
 - Lots of deprecated API cruft removed
 - fft and imdct optimizations for AVX (Sandy Bridge) processors
 - showinfo filter added
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
 - Apple Core Audio Format muxer
-- 9bit and 10bit H.264 decoding
+- 9bit and 10bit per sample support in the H.264 decoder
 - 9bit and 10bit FFV1 encoding / decoding
 - split filter added
 - select filter added

@@ -1842,6 +1842,19 @@ void ff_avg_h264_chroma_mc8_ssse3_rnd (uint8_t *dst, uint8_t *src,
 void ff_avg_h264_chroma_mc4_ssse3     (uint8_t *dst, uint8_t *src,
                                        int stride, int h, int x, int y);
 
+#define CHROMA_MC(OP, NUM, DEPTH, OPT) \
+void ff_ ## OP ## _h264_chroma_mc ## NUM ## _ ## DEPTH ## _ ## OPT \
+                                      (uint8_t *dst, uint8_t *src,\
+                                       int stride, int h, int x, int y);
+
+CHROMA_MC(put, 2, 10, mmxext)
+CHROMA_MC(avg, 2, 10, mmxext)
+CHROMA_MC(put, 4, 10, mmxext)
+CHROMA_MC(avg, 4, 10, mmxext)
+CHROMA_MC(put, 8, 10, sse2)
+CHROMA_MC(avg, 8, 10, sse2)
+CHROMA_MC(put, 8, 10, avx)
+CHROMA_MC(avg, 8, 10, avx)
 
 /* CAVS specific */
 void ff_put_cavs_qpel8_mc00_mmx2(uint8_t *dst, uint8_t *src, int stride) {
@@ -2324,6 +2337,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
     const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int bit_depth = avctx->bits_per_raw_sample;
 
     if (avctx->dsp_mask) {
         if (avctx->dsp_mask & AV_CPU_FLAG_FORCE)
@@ -2554,6 +2568,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->avg_h264_chroma_pixels_tab[2]= ff_avg_h264_chroma_mc2_mmx2;
             c->put_h264_chroma_pixels_tab[2]= ff_put_h264_chroma_mc2_mmx2;
             }
+            if (bit_depth == 10) {
+                c->put_h264_chroma_pixels_tab[2]= ff_put_h264_chroma_mc2_10_mmxext;
+                c->avg_h264_chroma_pixels_tab[2]= ff_avg_h264_chroma_mc2_10_mmxext;
+                c->put_h264_chroma_pixels_tab[1]= ff_put_h264_chroma_mc4_10_mmxext;
+                c->avg_h264_chroma_pixels_tab[1]= ff_avg_h264_chroma_mc4_10_mmxext;
+            }
 
             c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 #endif
@@ -2658,6 +2678,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 2, sse2);
             H264_QPEL_FUNCS(3, 3, sse2);
             }
+#if HAVE_YASM
+            if (bit_depth == 10) {
+                c->put_h264_chroma_pixels_tab[0]= ff_put_h264_chroma_mc8_10_sse2;
+                c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_10_sse2;
+            }
+#endif
         }
 #if HAVE_SSSE3
         if(mm_flags & AV_CPU_FLAG_SSSE3){
@@ -2755,6 +2781,14 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             }
 #endif
         }
+#if HAVE_AVX && HAVE_YASM
+        if (mm_flags & AV_CPU_FLAG_AVX) {
+            if (bit_depth == 10) {
+                c->put_h264_chroma_pixels_tab[0]= ff_put_h264_chroma_mc8_10_avx;
+                c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_10_avx;
+            }
+        }
+#endif
     }
 
     if (CONFIG_ENCODERS)

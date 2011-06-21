@@ -29,6 +29,7 @@
 
 #include "rational.h"
 #include "avutil.h"
+#include "dict.h"
 
 enum AVOptionType{
     FF_OPT_TYPE_FLAGS,
@@ -91,6 +92,7 @@ typedef struct AVOption {
     const char *unit;
 } AVOption;
 
+#if FF_API_FIND_OPT
 /**
  * Look for an option in obj. Look only for the options which
  * have the flags set as specified in mask and flags (that is,
@@ -102,8 +104,12 @@ typedef struct AVOption {
  * @param[in] unit the unit of the option to look for, or any if NULL
  * @return a pointer to the option found, or NULL if no option
  * has been found
+ *
+ * @deprecated use av_opt_find.
  */
+attribute_deprecated
 const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
+#endif
 
 /**
  * Set the field of obj with the given name to value.
@@ -163,6 +169,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags);
  * key. ctx must be an AVClass context, storing is done using
  * AVOptions.
  *
+ * @param opts options string to parse, may be NULL
  * @param key_val_sep a 0-terminated list of characters used to
  * separate key from value
  * @param pairs_sep a 0-terminated list of characters used to separate
@@ -190,5 +197,47 @@ void av_opt_free(void *obj);
  *         isn't of the right type, or the flags field doesn't exist.
  */
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name);
+
+/*
+ * Set all the options from a given dictionary on an object.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass
+ * @param options options to process. This dictionary will be freed and replaced
+ *                by a new one containing all options not found in obj.
+ *                Of course this new dictionary needs to be freed by caller
+ *                with av_dict_free().
+ *
+ * @return 0 on success, a negative AVERROR if some option was found in obj,
+ *         but could not be set.
+ *
+ * @see av_dict_copy()
+ */
+int av_opt_set_dict(void *obj, struct AVDictionary **options);
+
+#define AV_OPT_SEARCH_CHILDREN   0x0001 /**< Search in possible children of the
+                                             given object first. */
+
+/**
+ * Look for an option in an object. Consider only options which
+ * have all the specified flags set.
+ *
+ * @param[in] obj A pointer to a struct whose first element is a
+ *                pointer to an AVClass.
+ * @param[in] name The name of the option to look for.
+ * @param[in] unit When searching for named constants, name of the unit
+ *                 it belongs to.
+ * @param opt_flags Find only options with all the specified flags set (AV_OPT_FLAG).
+ * @param search_flags A combination of AV_OPT_SEARCH_*.
+ *
+ * @return A pointer to the option found, or NULL if no option
+ *         was found.
+ *
+ * @note Options found with AV_OPT_SEARCH_CHILDREN flag may not be settable
+ * directly with av_set_string3(). Use special calls which take an options
+ * AVDictionary (e.g. avformat_open_input()) to set options found with this
+ * flag.
+ */
+const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
+                            int opt_flags, int search_flags);
 
 #endif /* AVUTIL_OPT_H */

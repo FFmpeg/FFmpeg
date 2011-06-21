@@ -523,7 +523,7 @@ rdt_new_context (void)
 {
     PayloadContext *rdt = av_mallocz(sizeof(PayloadContext));
 
-    av_open_input_stream(&rdt->rmctx, NULL, "", &ff_rdt_demuxer, NULL);
+    avformat_open_input(&rdt->rmctx, "", &ff_rdt_demuxer, NULL);
 
     return rdt;
 }
@@ -539,7 +539,7 @@ rdt_free_context (PayloadContext *rdt)
             av_freep(&rdt->rmst[i]);
         }
     if (rdt->rmctx)
-        av_close_input_stream(rdt->rmctx);
+        av_close_input_file(rdt->rmctx);
     av_freep(&rdt->mlti_data);
     av_freep(&rdt->rmst);
     av_free(rdt);

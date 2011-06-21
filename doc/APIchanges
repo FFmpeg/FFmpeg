@@ -7,11 +7,31 @@ libavdevice: 2011-04-18
 libavfilter: 2011-04-18
 libavformat: 2011-04-18
 libpostproc: 2011-04-18
-libswscale:  2011-04-18
+libswscale:  2011-06-20
 libavutil:   2011-04-18
 
 
 API changes, most recent first:
+
+2011-06-19 - xxxxxxx - lavfi 2.23.0 - avfilter.h
+  Add layout negotiation fields and helper functions.
+
+  In particular, add in_chlayouts and out_chlayouts to AVFilterLink,
+  and the functions:
+  avfilter_set_common_sample_formats()
+  avfilter_set_common_channel_layouts()
+  avfilter_all_channel_layouts()
+
+2011-06-19 - xxxxxxx - lavfi 2.22.0 - AVFilterFormats
+  Change type of AVFilterFormats.formats from int * to int64_t *,
+  and update formats handling API accordingly.
+
+  avfilter_make_format_list() still takes a int32_t array and converts
+  it to int64_t. A new function, avfilter_make_format64_list(), that
+  takes int64_t arrays has been added.
+
+2011-06-19 - xxxxxxx - lavfi 2.21.0 - vsink_buffer.h
+  Add video sink buffer and vsink_buffer.h public header.
 
 2011-06-12 - xxxxxxx - lavfi 2.18.0 - avcodec.h
   Add avfilter_get_video_buffer_ref_from_frame() function in
@@ -22,6 +42,16 @@ API changes, most recent first:
 
 2011-06-12 - xxxxxxx - lavfi 2.16.0 - avfilter_graph_parse()
   Change avfilter_graph_parse() signature.
+
+2011-06-xx - xxxxxxx - lavf 53.2.0 - avformat.h
+  Add avformat_open_input and avformat_write_header().
+  Deprecate av_open_input_stream, av_open_input_file,
+  AVFormatParameters and av_write_header.
+
+2011-06-xx - xxxxxxx - lavu 51.7.0 - opt.h
+  Add av_opt_set_dict() and av_opt_find().
+  Deprecate av_find_opt().
+  Add AV_DICT_APPEND flag.
 
 2011-06-xx - xxxxxxx - lavu 51.6.0 - opt.h
   Add av_opt_flag_is_set().

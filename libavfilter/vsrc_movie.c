@@ -92,9 +92,9 @@ static int movie_init(AVFilterContext *ctx)
     iformat = movie->format_name ? av_find_input_format(movie->format_name) : NULL;
 
     movie->format_ctx = NULL;
-    if ((ret = av_open_input_file(&movie->format_ctx, movie->file_name, iformat, 0, NULL)) < 0) {
+    if ((ret = avformat_open_input(&movie->format_ctx, movie->file_name, iformat, NULL)) < 0) {
         av_log(ctx, AV_LOG_ERROR,
-               "Failed to av_open_input_file '%s'\n", movie->file_name);
+               "Failed to avformat_open_input '%s'\n", movie->file_name);
         return ret;
     }
     if ((ret = av_find_stream_info(movie->format_ctx)) < 0)
@@ -203,7 +203,7 @@ static int query_formats(AVFilterContext *ctx)
     MovieContext *movie = ctx->priv;
     enum PixelFormat pix_fmts[] = { movie->codec_ctx->pix_fmt, PIX_FMT_NONE };
 
-    avfilter_set_common_formats(ctx, avfilter_make_format_list(pix_fmts));
+    avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
     return 0;
 }
 

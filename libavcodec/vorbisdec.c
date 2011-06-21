@@ -1646,7 +1646,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
                                                vc->audio_channels);
 
     *data_size = len * vc->audio_channels *
-                 (av_get_bits_per_sample_fmt(avccontext->sample_fmt) / 8);
+                 av_get_bytes_per_sample(avccontext->sample_fmt);
 
     return buf_size ;
 }

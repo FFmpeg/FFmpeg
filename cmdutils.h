@@ -47,6 +47,7 @@ extern const char **opt_names;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
+extern AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
 
 /**
  * Initialize the cmdutils option system, in particular
@@ -258,20 +259,5 @@ int read_file(const char *filename, char **bufptr, size_t *size);
  */
 FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path, const char *codec_name);
-
-typedef struct {
-    enum PixelFormat pix_fmt;
-} FFSinkContext;
-
-extern AVFilter ffsink;
-
-/**
- * Extract a frame from sink.
- *
- * @return a negative error in case of failure, 1 if one frame has
- * been extracted successfully.
- */
-int get_filtered_video_frame(AVFilterContext *sink, AVFrame *frame,
-                             AVFilterBufferRef **picref, AVRational *pts_tb);
 
 #endif /* FFMPEG_CMDUTILS_H */

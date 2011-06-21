@@ -182,10 +182,11 @@ void avfilter_link_free(AVFilterLink **link)
 
                 av_freep(&picref->audio);
                 av_freep(&picref->video);
-                av_freep(&picref);
+                av_freep(&(*link)->pool->pic[i]);
             }
         }
-        av_freep(&(*link)->pool);
+        (*link)->pool->count = 0;
+//        av_freep(&(*link)->pool);
     }
     av_freep(link);
 }
@@ -217,6 +218,9 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     if (link->out_formats)
         avfilter_formats_changeref(&link->out_formats,
                                    &filt->outputs[filt_dstpad_idx]->out_formats);
+    if (link->out_chlayouts)
+        avfilter_formats_changeref(&link->out_chlayouts,
+                                   &filt->outputs[filt_dstpad_idx]->out_chlayouts);
 
     return 0;
 }

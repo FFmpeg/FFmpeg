@@ -54,7 +54,11 @@ void avfilter_register_all(void)
     REGISTER_FILTER (GRADFUN,     gradfun,     vf);
     REGISTER_FILTER (HFLIP,       hflip,       vf);
     REGISTER_FILTER (HQDN3D,      hqdn3d,      vf);
+    REGISTER_FILTER (LUT,         lut,         vf);
+    REGISTER_FILTER (LUTRGB,      lutrgb,      vf);
+    REGISTER_FILTER (LUTYUV,      lutyuv,      vf);
     REGISTER_FILTER (MP,          mp,          vf);
+    REGISTER_FILTER (NEGATE,      negate,      vf);
     REGISTER_FILTER (NOFORMAT,    noformat,    vf);
     REGISTER_FILTER (NULL,        null,        vf);
     REGISTER_FILTER (OCV,         ocv,         vf);
@@ -81,5 +85,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER (MOVIE,       movie,       vsrc);
     REGISTER_FILTER (NULLSRC,     nullsrc,     vsrc);
 
+    REGISTER_FILTER (BUFFER,      buffersink,  vsink);
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
 }
