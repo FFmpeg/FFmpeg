@@ -30,6 +30,8 @@ FFmpeg, please try git master to check if the issue still exists. If it does,
 make your report against the development code following the usual bug reporting
 guidelines.
 
+Note, if you have difficulty building for mingw, try --disable-outdev=sdl
+
 
 API changes
 -----------
