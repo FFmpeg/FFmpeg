@@ -828,7 +828,8 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     }
     if (buf_size < s->block_align)
         return AVERROR(EINVAL);
-    buf_size = s->block_align;
+    if(s->block_align)
+        buf_size = s->block_align;
 
     samples = data;
 
@@ -911,9 +912,8 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     }
 
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d outbytes:%d eaten:%d\n", s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,        (int8_t *)samples - (int8_t *)data, s->block_align);
-
     *data_size = (int8_t *)samples - (int8_t *)data;
-    return s->block_align;
+    return buf_size;
  fail:
     /* when error, we reset the bit reservoir */
     s->last_superframe_len = 0;
