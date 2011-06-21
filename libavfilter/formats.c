@@ -30,7 +30,7 @@ static void merge_ref(AVFilterFormats *ret, AVFilterFormats *a)
 {
     int i;
 
-    for(i = 0; i < a->refcount; i ++) {
+    for (i = 0; i < a->refcount; i++) {
         ret->refs[ret->refcount] = a->refs[i];
         *ret->refs[ret->refcount++] = ret;
     }
@@ -52,14 +52,14 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     /* merge list of formats */
     ret->formats = av_malloc(sizeof(*ret->formats) * FFMIN(a->format_count,
                                                            b->format_count));
-    for(i = 0; i < a->format_count; i ++)
-        for(j = 0; j < b->format_count; j ++)
-            if(a->formats[i] == b->formats[j])
+    for (i = 0; i < a->format_count; i++)
+        for (j = 0; j < b->format_count; j++)
+            if (a->formats[i] == b->formats[j])
                 ret->formats[k++] = a->formats[i];
 
     ret->format_count = k;
     /* check that there was at least one common format */
-    if(!ret->format_count) {
+    if (!ret->format_count) {
         av_free(ret->formats);
         av_free(ret);
         return NULL;
@@ -83,7 +83,7 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     if (!formats) return NULL;                                          \
     formats->format_count = count;                                      \
     if (count) {                                                        \
-        formats->formats  = av_malloc(sizeof(*formats->formats)*count); \
+        formats->formats = av_malloc(sizeof(*formats->formats)*count);  \
         if (!formats->formats) {                                        \
             av_free(formats);                                           \
             return NULL;                                                \
@@ -171,8 +171,8 @@ void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
 static int find_ref_index(AVFilterFormats **ref)
 {
     int i;
-    for(i = 0; i < (*ref)->refcount; i ++)
-        if((*ref)->refs[i] == ref)
+    for (i = 0; i < (*ref)->refcount; i++)
+        if ((*ref)->refs[i] == ref)
             return i;
     return -1;
 }
@@ -186,11 +186,11 @@ void avfilter_formats_unref(AVFilterFormats **ref)
 
     idx = find_ref_index(ref);
 
-    if(idx >= 0)
+    if (idx >= 0)
         memmove((*ref)->refs + idx, (*ref)->refs + idx+1,
             sizeof(AVFilterFormats**) * ((*ref)->refcount-idx-1));
 
-    if(!--(*ref)->refcount) {
+    if (!--(*ref)->refcount) {
         av_free((*ref)->formats);
         av_free((*ref)->refs);
         av_free(*ref);
@@ -203,7 +203,7 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
 {
     int idx = find_ref_index(oldref);
 
-    if(idx >= 0) {
+    if (idx >= 0) {
         (*oldref)->refs[idx] = newref;
         *newref = *oldref;
         *oldref = NULL;
