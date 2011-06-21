@@ -395,6 +395,7 @@ int main(int argc, char **argv)
     int ret;
 
     av_register_all();
+    init_opts();
 #if CONFIG_AVDEVICE
     avdevice_register_all();
 #endif
