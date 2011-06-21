@@ -12,11 +12,12 @@ This release enables frame-based multithreaded decoding for a number of codecs,
 including theora, huffyuv, VP8, H.263, mpeg4 and H.264. Additionally, there has
 been a major cleanup of
 both internal and external APIs. For this reason, the major versions of all
-libraries have been bumped. On the one hand, this means that 0.8 can be installed
-side-by-side with previous releases, on the other hand, in order to benefit
-from the new features, applications need to be recompiled.
+libraries except libpostproc have been bumped. This means that 0.8 can be installed
+side-by-side with previous releases, on the other hand applications need to be
+recompiled to use 0.8.
 
-Other important changes are additions of decoders including, but not limited to,
+Other important changes are more than 200 bugfixes, known regressions were fixed
+w.r.t 0.5 and 0.6, additions of decoders including, but not limited to,
 AMR-WB, single stream LATM/LOAS, G.722 ADPCM, a native VP8 decoder
 and HE-AACv2. Additionally, many new de/muxers such as WebM in Matroska, Apple
 HTTP Live Streaming, SAP, IEC 61937 (S/PDIF) have been added.
@@ -34,16 +35,22 @@ API changes
 -----------
 
 Please see git log of the public headers or the file doc/APIchanges for
-programmer-centric information. Note that a
-lot of long-time deprecated APIs have been removed. Also, a number of additional
-APIs have been deprecated and are scheduled for removal in the next release.
+programmer-centric information. Note that some long-time deprecated APIs have
+been removed. Also, a number of additional APIs have been deprecated and might
+be removed in the next release.
 
 
 Other notable changes
 ---------------------
 
+- high quality dithering in swscale to fix banding issues
+- ffmpeg is now interactive and various information can be turned on/off while its running
+- resolution changing support in ffmpeg
+- sdl output device
+- optimizations in libavfilter that make it much faster
+- split, buffer, select, lut, negate filters amongth others
+- more than 50 new video filters from mplayers libmpcodecs
 - many ARM NEON optimizations
-- libswscale cleanup started, optimizations should become easier in the future
 - nonfree libfaad support for AAC decoding removed
 - 4:4:4 H.264 decoding
 - 9/10bit H.264 decoding
