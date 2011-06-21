@@ -182,10 +182,11 @@ void avfilter_link_free(AVFilterLink **link)
 
                 av_freep(&picref->audio);
                 av_freep(&picref->video);
-                av_freep(&picref);
+                av_freep(&(*link)->pool->pic[i]);
             }
         }
-        av_freep(&(*link)->pool);
+        (*link)->pool->count = 0;
+//        av_freep(&(*link)->pool);
     }
     av_freep(link);
 }
