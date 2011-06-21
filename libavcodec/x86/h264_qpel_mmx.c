@@ -398,7 +398,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(uint8_t *dst,
             "2:                         \n\t"\
             \
             : "+a"(src), "+c"(dst)\
-            : "S"((x86_reg)srcStride), "D"((x86_reg)dstStride), "g"(h)\
+            : "S"((x86_reg)srcStride), "D"((x86_reg)dstStride), "rm"(h)\
             : "memory"\
         );\
         src += 4-(h+5)*srcStride;\
@@ -446,7 +446,7 @@ static av_always_inline void OPNAME ## h264_qpel8or16_hv1_lowpass_ ## MMX(int16_
             QPEL_H264HV(%%mm3, %%mm4, %%mm5, %%mm0, %%mm1, %%mm2, 15*48)\
             "2:                     \n\t"\
             : "+a"(src)\
-            : "c"(tmp), "S"((x86_reg)srcStride), "g"(size)\
+            : "c"(tmp), "S"((x86_reg)srcStride), "rm"(size)\
             : "memory"\
             );\
         tmp += 4;\
@@ -823,7 +823,7 @@ static av_noinline void OPNAME ## h264_qpel8or16_v_lowpass_ ## MMX(uint8_t *dst,
         "2:                          \n\t"\
         \
         : "+a"(src), "+c"(dst)\
-        : "S"((x86_reg)srcStride), "D"((x86_reg)dstStride), "g"(h)\
+        : "S"((x86_reg)srcStride), "D"((x86_reg)dstStride), "rm"(h)\
         : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3", \
                        "%xmm4", "%xmm5", "%xmm6", "%xmm7",)\
           "memory"\
@@ -878,7 +878,7 @@ static av_always_inline void put_h264_qpel8or16_hv1_lowpass_sse2(int16_t *tmp, u
             QPEL_H264HV_XMM(%%xmm3, %%xmm4, %%xmm5, %%xmm0, %%xmm1, %%xmm2, 15*48)
             "2:                         \n\t"
             : "+a"(src)
-            : "c"(tmp), "S"((x86_reg)srcStride), "g"(size)
+            : "c"(tmp), "S"((x86_reg)srcStride), "rm"(size)
             : XMM_CLOBBERS("%xmm0", "%xmm1", "%xmm2", "%xmm3",
                            "%xmm4", "%xmm5", "%xmm6", "%xmm7",)
               "memory"

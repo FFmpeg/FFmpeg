@@ -904,7 +904,7 @@ static void do_exit(void)
     if (show_status)
         printf("\n");
     SDL_Quit();
-    av_log(NULL, AV_LOG_QUIET, "");
+    av_log(NULL, AV_LOG_QUIET, "%s", "");
     exit(0);
 }
 
@@ -3032,6 +3032,8 @@ int main(int argc, char **argv)
         video_disable = 1;
     }
     flags = SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_TIMER;
+    if (audio_disable)
+        flags &= ~SDL_INIT_AUDIO;
 #if !defined(__MINGW32__) && !defined(__APPLE__)
     flags |= SDL_INIT_EVENTTHREAD; /* Not supported on Windows or Mac OS X */
 #endif
