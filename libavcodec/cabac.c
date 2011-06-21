@@ -161,19 +161,11 @@ void ff_init_cabac_states(CABACContext *c){
         ff_h264_mps_state[2*i+1]= 2*mps_state[i]+1;
 
         if( i ){
-#ifdef BRANCHLESS_CABAC_DECODER
             ff_h264_mlps_state[128-2*i-1]= 2*lps_state[i]+0;
             ff_h264_mlps_state[128-2*i-2]= 2*lps_state[i]+1;
         }else{
             ff_h264_mlps_state[128-2*i-1]= 1;
             ff_h264_mlps_state[128-2*i-2]= 0;
-#else
-            ff_h264_lps_state[2*i+0]= 2*lps_state[i]+0;
-            ff_h264_lps_state[2*i+1]= 2*lps_state[i]+1;
-        }else{
-            ff_h264_lps_state[2*i+0]= 1;
-            ff_h264_lps_state[2*i+1]= 0;
-#endif
         }
     }
 }

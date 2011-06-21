@@ -542,6 +542,9 @@ skip_mean_and_median:
                             ff_thread_await_progress((AVFrame *) s->last_picture_ptr,
                                                      mb_y, 0);
                         }
+                        if (!s->last_picture.motion_val[0] ||
+                            !s->last_picture.ref_index[0])
+                            goto skip_last_mv;
                         prev_x = s->last_picture.motion_val[0][mot_index][0];
                         prev_y = s->last_picture.motion_val[0][mot_index][1];
                         prev_ref = s->last_picture.ref_index[0][4*mb_xy];
@@ -556,6 +559,7 @@ skip_mean_and_median:
                     mv_predictor[pred_count][1]= prev_y;
                     ref         [pred_count]   = prev_ref;
                     pred_count++;
+                skip_last_mv:
 
                     s->mv_dir = MV_DIR_FORWARD;
                     s->mb_intra=0;

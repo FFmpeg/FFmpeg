@@ -1210,7 +1210,7 @@ int av_get_bits_per_sample(enum CodecID codec_id){
 
 #if FF_API_OLD_SAMPLE_FMT
 int av_get_bits_per_sample_format(enum AVSampleFormat sample_fmt) {
-    return av_get_bits_per_sample_fmt(sample_fmt);
+    return av_get_bytes_per_sample(sample_fmt) << 3;
 }
 #endif
 

@@ -18,6 +18,7 @@ version 0.7:
 - 10-bit H.264 optimizations for x86
 - lut, lutrgb, and lutyuv filters added
 - buffersink libavfilter sink added
+- Bump libswscale for recently reported ABI break
 
 
 version 0.7_beta2:

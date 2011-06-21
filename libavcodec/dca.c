@@ -1817,7 +1817,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
     }
 
     out_size = 256 / 8 * s->sample_blocks * channels *
-               (av_get_bits_per_sample_fmt(avctx->sample_fmt) / 8);
+               av_get_bytes_per_sample(avctx->sample_fmt);
     if (*data_size < out_size)
         return -1;
     *data_size = out_size;
