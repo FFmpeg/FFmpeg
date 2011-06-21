@@ -182,14 +182,14 @@ static int uyvyToYuv422Wrapper(SwsContext *c, const uint8_t* src[], int srcStrid
     return srcSliceH;
 }
 
-static void gray8aToPacked32(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
+static void gray8aToPacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
     int i;
     for (i=0; i<num_pixels; i++)
         ((uint32_t *) dst)[i] = ((const uint32_t *)palette)[src[i<<1]] | (src[(i<<1)+1] << 24);
 }
 
-static void gray8aToPacked32_1(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
+static void gray8aToPacked32_1(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
     int i;
 
@@ -197,7 +197,7 @@ static void gray8aToPacked32_1(const uint8_t *src, uint8_t *dst, int num_pixels,
         ((uint32_t *) dst)[i] = ((const uint32_t *)palette)[src[i<<1]] | src[(i<<1)+1];
 }
 
-static void gray8aToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
+static void gray8aToPacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
     int i;
 
@@ -215,7 +215,7 @@ static int palToRgbWrapper(SwsContext *c, const uint8_t* src[], int srcStride[],
 {
     const enum PixelFormat srcFormat= c->srcFormat;
     const enum PixelFormat dstFormat= c->dstFormat;
-    void (*conv)(const uint8_t *src, uint8_t *dst, int num_pixels,
+    void (*conv)(const uint8_t *src, uint8_t *dst, long num_pixels,
                  const uint8_t *palette)=NULL;
     int i;
     uint8_t *dstPtr= dst[0] + dstStride[0]*srcSliceY;
@@ -826,7 +826,7 @@ int sws_scale_ordered(SwsContext *c, const uint8_t* const src[], int srcStride[]
 #endif
 
 /* Convert the palette to the same packed 32-bit format as the palette */
-void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
+void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
     int i;
 
@@ -835,7 +835,7 @@ void sws_convertPalette8ToPacked32(const uint8_t *src, uint8_t *dst, int num_pix
 }
 
 /* Palette format: ABCD -> dst format: ABC */
-void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, int num_pixels, const uint8_t *palette)
+void sws_convertPalette8ToPacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
 {
     int i;
 
