@@ -146,6 +146,8 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     }
 
     snd_pcm_hw_params_get_period_size_min(hw_params, &period_size, NULL);
+    if (!period_size)
+        period_size = buffer_size / 4;
     res = snd_pcm_hw_params_set_period_size_near(h, hw_params, &period_size, NULL);
     if (res < 0) {
         av_log(ctx, AV_LOG_ERROR, "cannot set ALSA period size (%s)\n",
