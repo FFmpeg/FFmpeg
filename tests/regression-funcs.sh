@@ -15,10 +15,7 @@ datadir="./tests/data"
 target_datadir="${target_path}/${datadir}"
 
 this="$test.$test_ref"
-logdir="$datadir/regression/$test_ref"
-logfile="$logdir/$test"
 outfile="$datadir/$test_ref/"
-errfile="$datadir/$this.err"
 
 # various files
 ffmpeg="$target_exec ${target_path}/ffmpeg"
@@ -37,12 +34,8 @@ trap 'rm -f -- $cleanfiles' EXIT
 
 mkdir -p "$datadir"
 mkdir -p "$outfile"
-mkdir -p "$logdir"
-
-(exec >&3) 2>/dev/null || exec 3>&2
 
 [ "${V-0}" -gt 0 ] && echov=echov || echov=:
-[ "${V-0}" -gt 1 ] || exec 2>$errfile
 
 echov(){
     echo "$@" >&3
@@ -67,13 +60,13 @@ do_ffmpeg()
     shift
     set -- $* ${target_path}/$f
     run_ffmpeg $*
-    do_md5sum $f >> $logfile
+    do_md5sum $f
     if [ $f = $raw_dst ] ; then
-        $tiny_psnr $f $raw_ref >> $logfile
+        $tiny_psnr $f $raw_ref
     elif [ $f = $pcm_dst ] ; then
-        $tiny_psnr $f $pcm_ref 2 >> $logfile
+        $tiny_psnr $f $pcm_ref 2
     else
-        wc -c $f >> $logfile
+        wc -c $f
     fi
 }
 
@@ -84,11 +77,11 @@ do_ffmpeg_nomd5()
     set -- $* ${target_path}/$f
     run_ffmpeg $*
     if [ $f = $raw_dst ] ; then
-        $tiny_psnr $f $raw_ref >> $logfile
+        $tiny_psnr $f $raw_ref
     elif [ $f = $pcm_dst ] ; then
-        $tiny_psnr $f $pcm_ref 2 >> $logfile
+        $tiny_psnr $f $pcm_ref 2
     else
-        wc -c $f >> $logfile
+        wc -c $f
     fi
 }
 
@@ -97,7 +90,7 @@ do_ffmpeg_crc()
     f="$1"
     shift
     run_ffmpeg $* -f crc "$target_crcfile"
-    echo "$f $(cat $crcfile)" >> $logfile
+    echo "$f $(cat $crcfile)"
 }
 
 do_video_decoding()

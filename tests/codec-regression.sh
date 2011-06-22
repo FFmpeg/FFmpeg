@@ -11,8 +11,6 @@ set -e
 
 eval do_$test=y
 
-rm -f "$logfile"
-
 # generate reference for quality check
 if [ -n "$do_vref" ]; then
 do_ffmpeg $raw_ref -f image2 -vcodec pgmyuv -i $raw_src -an -f rawvideo
@@ -280,14 +278,14 @@ fi
 if [ -n "$do_mp2" ] ; then
 do_audio_encoding mp2.mp2
 do_audio_decoding
-$tiny_psnr $pcm_dst $pcm_ref 2 1924 >> $logfile
+$tiny_psnr $pcm_dst $pcm_ref 2 1924
 fi
 
 if [ -n "$do_ac3_fixed" ] ; then
 do_audio_encoding ac3.rm "-vn -acodec ac3_fixed"
 # binaries configured with --disable-sse decode ac3 differently
 #do_audio_decoding
-#$tiny_psnr $pcm_dst $pcm_ref 2 1024 >> $logfile
+#$tiny_psnr $pcm_dst $pcm_ref 2 1024
 fi
 
 if [ -n "$do_g726" ] ; then
@@ -333,12 +331,12 @@ fi
 if [ -n "$do_wmav1" ] ; then
 do_audio_encoding wmav1.asf "-acodec wmav1"
 do_ffmpeg_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -f wav
-$tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
+$tiny_psnr $pcm_dst $pcm_ref 2 8192
 fi
 if [ -n "$do_wmav2" ] ; then
 do_audio_encoding wmav2.asf "-acodec wmav2"
 do_ffmpeg_nomd5 $pcm_dst $DEC_OPTS -i $target_path/$file -f wav
-$tiny_psnr $pcm_dst $pcm_ref 2 8192 >> $logfile
+$tiny_psnr $pcm_dst $pcm_ref 2 8192
 fi
 
 #if [ -n "$do_vorbis" ] ; then
