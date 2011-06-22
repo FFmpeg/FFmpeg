@@ -40,6 +40,8 @@
         other formats */
 #define DEFAULT_CODEC_ID AV_NE(CODEC_ID_PCM_S16BE, CODEC_ID_PCM_S16LE)
 
+#define ALSA_BUFFER_SIZE_MAX 32768
+
 typedef struct {
     AVClass *class;
     snd_pcm_t *h;
