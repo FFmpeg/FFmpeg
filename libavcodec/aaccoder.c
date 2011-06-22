@@ -432,10 +432,26 @@ static void codebook_trellis_rate(AACEncContext *s, SingleChannelElement *sce,
     for (swb = 0; swb < max_sfb; swb++) {
         size = sce->ics.swb_sizes[swb];
         if (sce->zeroes[win*16 + swb]) {
-            for (cb = 0; cb < 12; cb++) {
-                path[swb+1][cb].prev_idx = cb;
-                path[swb+1][cb].cost     = path[swb][cb].cost;
-                path[swb+1][cb].run      = path[swb][cb].run + 1;
+            float cost_stay_here = path[swb][0].cost;
+            float cost_get_here  = next_minrd + run_bits + 4;
+            if (   run_value_bits[sce->ics.num_windows == 8][path[swb][0].run]
+                != run_value_bits[sce->ics.num_windows == 8][path[swb][0].run+1])
+                cost_stay_here += run_bits;
+            if (cost_get_here < cost_stay_here) {
+                path[swb+1][0].prev_idx = next_mincb;
+                path[swb+1][0].cost     = cost_get_here;
+                path[swb+1][0].run      = 1;
+            } else {
+                path[swb+1][0].prev_idx = 0;
+                path[swb+1][0].cost     = cost_stay_here;
+                path[swb+1][0].run      = path[swb][0].run + 1;
+            }
+            next_minrd = path[swb+1][0].cost;
+            next_mincb = 0;
+            for (cb = 1; cb < 12; cb++) {
+                path[swb+1][cb].cost = 61450;
+                path[swb+1][cb].prev_idx = -1;
+                path[swb+1][cb].run = 0;
             }
         } else {
             float minrd = next_minrd;
