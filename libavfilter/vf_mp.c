@@ -41,6 +41,7 @@
 
 
 //FIXME maybe link the orig in
+//XXX: identical pix_fmt must be following with each others
 static const struct {
     int fmt;
     enum PixelFormat pix_fmt;
@@ -785,13 +786,17 @@ static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *avfmts=NULL;
     MPContext *m = ctx->priv;
+    enum PixelFormat lastpixfmt = PIX_FMT_NONE;
     int i;
 
     for(i=0; conversion_map[i].fmt; i++){
         av_log(ctx, AV_LOG_DEBUG, "query: %X\n", conversion_map[i].fmt);
         if(m->vf.query_format(&m->vf, conversion_map[i].fmt)){
             av_log(ctx, AV_LOG_DEBUG, "supported,adding\n");
-            avfilter_add_format(&avfmts, conversion_map[i].pix_fmt);
+            if (conversion_map[i].pix_fmt != lastpixfmt) {
+                avfilter_add_format(&avfmts, conversion_map[i].pix_fmt);
+                lastpixfmt = conversion_map[i].pix_fmt;
+            }
         }
     }
 
