@@ -663,19 +663,33 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             filter_mb_mbaff_edgev ( h, img_y                ,   linesize, bS  , 1, qp [0] );
             filter_mb_mbaff_edgev ( h, img_y  + 8*  linesize,   linesize, bS+4, 1, qp [1] );
             if (chroma){
-                filter_mb_mbaff_edgecv( h, img_cb,                uvlinesize, bS  , 1, bqp[0] );
-                filter_mb_mbaff_edgecv( h, img_cb + 4*uvlinesize, uvlinesize, bS+4, 1, bqp[1] );
-                filter_mb_mbaff_edgecv( h, img_cr,                uvlinesize, bS  , 1, rqp[0] );
-                filter_mb_mbaff_edgecv( h, img_cr + 4*uvlinesize, uvlinesize, bS+4, 1, rqp[1] );
+                if (CHROMA444) {
+                    filter_mb_mbaff_edgev ( h, img_cb,                uvlinesize, bS  , 1, bqp[0] );
+                    filter_mb_mbaff_edgev ( h, img_cb + 8*uvlinesize, uvlinesize, bS+4, 1, bqp[1] );
+                    filter_mb_mbaff_edgev ( h, img_cr,                uvlinesize, bS  , 1, rqp[0] );
+                    filter_mb_mbaff_edgev ( h, img_cr + 8*uvlinesize, uvlinesize, bS+4, 1, rqp[1] );
+                }else{
+                    filter_mb_mbaff_edgecv( h, img_cb,                uvlinesize, bS  , 1, bqp[0] );
+                    filter_mb_mbaff_edgecv( h, img_cb + 4*uvlinesize, uvlinesize, bS+4, 1, bqp[1] );
+                    filter_mb_mbaff_edgecv( h, img_cr,                uvlinesize, bS  , 1, rqp[0] );
+                    filter_mb_mbaff_edgecv( h, img_cr + 4*uvlinesize, uvlinesize, bS+4, 1, rqp[1] );
+                }
             }
         }else{
             filter_mb_mbaff_edgev ( h, img_y              , 2*  linesize, bS  , 2, qp [0] );
             filter_mb_mbaff_edgev ( h, img_y  +   linesize, 2*  linesize, bS+1, 2, qp [1] );
             if (chroma){
-                filter_mb_mbaff_edgecv( h, img_cb,              2*uvlinesize, bS  , 2, bqp[0] );
-                filter_mb_mbaff_edgecv( h, img_cb + uvlinesize, 2*uvlinesize, bS+1, 2, bqp[1] );
-                filter_mb_mbaff_edgecv( h, img_cr,              2*uvlinesize, bS  , 2, rqp[0] );
-                filter_mb_mbaff_edgecv( h, img_cr + uvlinesize, 2*uvlinesize, bS+1, 2, rqp[1] );
+                if (CHROMA444) {
+                    filter_mb_mbaff_edgev ( h, img_cb,              2*uvlinesize, bS  , 2, bqp[0] );
+                    filter_mb_mbaff_edgev ( h, img_cb + uvlinesize, 2*uvlinesize, bS+1, 2, bqp[1] );
+                    filter_mb_mbaff_edgev ( h, img_cr,              2*uvlinesize, bS  , 2, rqp[0] );
+                    filter_mb_mbaff_edgev ( h, img_cr + uvlinesize, 2*uvlinesize, bS+1, 2, rqp[1] );
+                }else{
+                    filter_mb_mbaff_edgecv( h, img_cb,              2*uvlinesize, bS  , 2, bqp[0] );
+                    filter_mb_mbaff_edgecv( h, img_cb + uvlinesize, 2*uvlinesize, bS+1, 2, bqp[1] );
+                    filter_mb_mbaff_edgecv( h, img_cr,              2*uvlinesize, bS  , 2, rqp[0] );
+                    filter_mb_mbaff_edgecv( h, img_cr + uvlinesize, 2*uvlinesize, bS+1, 2, rqp[1] );
+                }
             }
         }
     }
