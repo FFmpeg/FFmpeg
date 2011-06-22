@@ -393,10 +393,10 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
                     AV_WN64A(bS, 0x0003000300030003ULL);
                 } else {
                     if(!CABAC && IS_8x8DCT(s->current_picture.mb_type[mbn_xy])){
-                        bS[0]= 1+((h->cbp_table[mbn_xy] & 4)||h->non_zero_count_cache[scan8[0]+0]);
-                        bS[1]= 1+((h->cbp_table[mbn_xy] & 4)||h->non_zero_count_cache[scan8[0]+1]);
-                        bS[2]= 1+((h->cbp_table[mbn_xy] & 8)||h->non_zero_count_cache[scan8[0]+2]);
-                        bS[3]= 1+((h->cbp_table[mbn_xy] & 8)||h->non_zero_count_cache[scan8[0]+3]);
+                        bS[0]= 1+((h->cbp_table[mbn_xy] & 0x4000)||h->non_zero_count_cache[scan8[0]+0]);
+                        bS[1]= 1+((h->cbp_table[mbn_xy] & 0x4000)||h->non_zero_count_cache[scan8[0]+1]);
+                        bS[2]= 1+((h->cbp_table[mbn_xy] & 0x8000)||h->non_zero_count_cache[scan8[0]+2]);
+                        bS[3]= 1+((h->cbp_table[mbn_xy] & 0x8000)||h->non_zero_count_cache[scan8[0]+3]);
                     }else{
                     const uint8_t *mbn_nnz = h->non_zero_count[mbn_xy] + 3*4;
                     int i;
@@ -635,7 +635,7 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
                 else{
                     bS[i] = 1 + !!(h->non_zero_count_cache[12+8*(i>>1)] |
                          ((!h->pps.cabac && IS_8x8DCT(mbn_type)) ?
-                            (h->cbp_table[mbn_xy] & ((MB_FIELD ? (i&2) : (mb_y&1)) ? 8 : 2))
+                            (h->cbp_table[mbn_xy] & (((MB_FIELD ? (i&2) : (mb_y&1)) ? 8 : 2) << 12))
                                                                        :
                             h->non_zero_count[mbn_xy][ off[i] ]));
                 }
