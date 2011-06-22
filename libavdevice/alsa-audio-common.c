@@ -137,6 +137,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     }
 
     snd_pcm_hw_params_get_buffer_size_max(hw_params, &buffer_size);
+    buffer_size = FFMIN(buffer_size, ALSA_BUFFER_SIZE_MAX);
     /* TODO: maybe use ctx->max_picture_buffer somehow */
     res = snd_pcm_hw_params_set_buffer_size_near(h, hw_params, &buffer_size);
     if (res < 0) {
