@@ -1120,7 +1120,6 @@ HAVE_LIST="
     sys_select_h
     sys_soundcard_h
     sys_videoio_h
-    ten_operands
     threads
     trunc
     truncf
@@ -2704,18 +2703,6 @@ EOF
     # check whether xmm clobbers are supported
     check_asm xmm_clobbers '"":::"%xmm0"'
 
-    # check whether more than 10 operands are supported
-    check_cc <<EOF && enable ten_operands
-int main(void) {
-    int x=0;
-    __asm__ volatile(
-        ""
-        :"+&rm"(x), "+&rm"(x), "+&rm"(x), "+&rm"(x), "+&rm"(x), "+&rm"(x)
-    );
-    return 0;
-}
-EOF
-
     # check whether binutils is new enough to compile SSSE3/MMX2
     enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
     enabled mmx2  && check_asm mmx2  '"pmaxub %mm0, %mm1"'
@@ -3126,7 +3113,6 @@ if enabled x86; then
     echo "CMOV is fast              ${fast_cmov-no}"
     echo "EBX available             ${ebx_available-no}"
     echo "EBP available             ${ebp_available-no}"
-    echo "10 operands supported     ${ten_operands-no}"
 fi
 if enabled arm; then
     echo "ARMv5TE enabled           ${armv5te-no}"

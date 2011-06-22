@@ -23,7 +23,7 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mlp.h"
 
-#if HAVE_7REGS && HAVE_TEN_OPERANDS
+#if HAVE_7REGS
 
 extern void ff_mlp_firorder_8;
 extern void ff_mlp_firorder_7;
@@ -171,11 +171,11 @@ static void mlp_filter_channel_x86(int32_t *state, const int32_t *coeff,
     );
 }
 
-#endif /* HAVE_7REGS && HAVE_TEN_OPERANDS */
+#endif /* HAVE_7REGS */
 
 void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx)
 {
-#if HAVE_7REGS && HAVE_TEN_OPERANDS
+#if HAVE_7REGS
     c->mlp_filter_channel = mlp_filter_channel_x86;
 #endif
 }
