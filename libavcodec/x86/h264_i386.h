@@ -36,7 +36,7 @@
 
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
-#if ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
+#if ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) && HAVE_TEN_OPERANDS
 static int decode_significance_x86(CABACContext *c, int max_coeff,
                                    uint8_t *significant_coeff_ctx_base,
                                    int *index, x86_reg last_off){
