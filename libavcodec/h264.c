@@ -3300,8 +3300,8 @@ static void loop_filter(H264Context *h, int start_x, int end_x){
                     uvlinesize = h->mb_uvlinesize = s->uvlinesize * 2;
                     if(mb_y&1){ //FIXME move out of this function?
                         dest_y -= s->linesize*15;
-                        dest_cb-= s->uvlinesize*7;
-                        dest_cr-= s->uvlinesize*7;
+                        dest_cb-= s->uvlinesize*((8 << CHROMA444)-1);
+                        dest_cr-= s->uvlinesize*((8 << CHROMA444)-1);
                     }
                 } else {
                     linesize   = h->mb_linesize   = s->linesize;
