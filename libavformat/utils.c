@@ -661,7 +661,8 @@ static int init_input(AVFormatContext *s, const char *filename)
         if (!s->iformat)
             return av_probe_input_buffer(s->pb, &s->iformat, filename, s, 0, 0);
         else if (s->iformat->flags & AVFMT_NOFILE)
-            return AVERROR(EINVAL);
+            av_log(s, AV_LOG_WARNING, "Custom AVIOContext makes no sense and "
+                                      "will be ignored with AVFMT_NOFILE format.\n");
         return 0;
     }
 
