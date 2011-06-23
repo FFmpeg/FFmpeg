@@ -281,7 +281,7 @@ unknown_opt:
                 *po->u.float_arg = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
             } else if (po->u.func_arg) {
                 if (po->u.func_arg(opt, arg) < 0) {
-                    fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
+                    fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg ? arg : "[null]", opt);
                     exit(1);
                 }
             }
