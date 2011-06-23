@@ -109,8 +109,6 @@ static const OptionDef options[];
 static const char *last_asked_format = NULL;
 static int64_t input_files_ts_offset[MAX_FILES];
 static double *input_files_ts_scale[MAX_FILES] = {NULL};
-static AVCodec **input_codecs = NULL;
-static int nb_input_codecs = 0;
 static int nb_input_files_ts_scale[MAX_FILES] = {0};
 
 static AVFormatContext *output_files[MAX_FILES];
@@ -310,6 +308,7 @@ typedef struct InputStream {
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     int64_t sample_index;      /* current sample */
+    AVCodec *dec;
 
     int64_t       start;     /* time when read started */
     int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
@@ -479,7 +478,6 @@ static int ffmpeg_exit(int ret)
     av_free(vstats_filename);
 
     av_free(streamid_map);
-    av_free(input_codecs);
     av_free(stream_maps);
     av_free(meta_data_maps);
 
@@ -2345,7 +2343,7 @@ static int transcode(AVFormatContext **output_files,
     for (i = 0; i < nb_input_streams; i++) {
         ist = &input_streams[i];
         if (ist->decoding_needed) {
-            AVCodec *codec = i < nb_input_codecs ? input_codecs[i] : NULL;
+            AVCodec *codec = ist->dec;
             if (!codec)
                 codec = avcodec_find_decoder(ist->st->codec->codec_id);
             if (!codec) {
@@ -3301,7 +3299,6 @@ static int opt_input_file(const char *opt, const char *filename)
         InputStream *ist;
 
         dec->thread_count = thread_count;
-        input_codecs = grow_array(input_codecs, sizeof(*input_codecs), &nb_input_codecs, nb_input_codecs + 1);
 
         input_streams = grow_array(input_streams, sizeof(*input_streams), &nb_input_streams, nb_input_streams + 1);
         ist = &input_streams[nb_input_streams - 1];
@@ -3311,16 +3308,16 @@ static int opt_input_file(const char *opt, const char *filename)
 
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(audio_codec_name);
-            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
+            ist->dec = avcodec_find_decoder_by_name(audio_codec_name);
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_AUDIO], AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM, ist->dec);
             channel_layout    = dec->channel_layout;
             audio_sample_fmt  = dec->sample_fmt;
             if(audio_disable)
                 st->discard= AVDISCARD_ALL;
             break;
         case AVMEDIA_TYPE_VIDEO:
-            input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(video_codec_name);
-            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, input_codecs[nb_input_codecs-1]);
+            ist->dec = avcodec_find_decoder_by_name(video_codec_name);
+            set_context_opts(dec, avcodec_opts[AVMEDIA_TYPE_VIDEO], AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, ist->dec);
             rfps      = ic->streams[i]->r_frame_rate.num;
             rfps_base = ic->streams[i]->r_frame_rate.den;
             if (dec->lowres) {
@@ -3348,7 +3345,7 @@ static int opt_input_file(const char *opt, const char *filename)
         case AVMEDIA_TYPE_DATA:
             break;
         case AVMEDIA_TYPE_SUBTITLE:
-            input_codecs[nb_input_codecs-1] = avcodec_find_decoder_by_name(subtitle_codec_name);
+            ist->dec = avcodec_find_decoder_by_name(subtitle_codec_name);
             if(subtitle_disable)
                 st->discard = AVDISCARD_ALL;
             break;
