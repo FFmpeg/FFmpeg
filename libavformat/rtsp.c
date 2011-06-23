@@ -59,9 +59,17 @@
 
 #define OFFSET(x) offsetof(RTSPState, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
 const AVOption ff_rtsp_options[] = {
     { "initial_pause",  "Don't start playing the stream immediately", OFFSET(initial_pause), AV_OPT_TYPE_INT, {0}, 0, 1, DEC },
     FF_RTP_FLAG_OPTS(RTSPState, rtp_muxer_flags),
+    { "rtsp_transport", "RTSP transport protocols", OFFSET(lower_transport_mask), AV_OPT_TYPE_FLAGS, {0}, INT_MIN, INT_MAX, DEC|ENC, "rtsp_transport" }, \
+    { "udp", "UDP", 0, AV_OPT_TYPE_CONST, {1 << RTSP_LOWER_TRANSPORT_UDP}, 0, 0, DEC|ENC, "rtsp_transport" }, \
+    { "tcp", "TCP", 0, AV_OPT_TYPE_CONST, {1 << RTSP_LOWER_TRANSPORT_TCP}, 0, 0, DEC|ENC, "rtsp_transport" }, \
+    { "udp_multicast", "UDP multicast", 0, AV_OPT_TYPE_CONST, {1 << RTSP_LOWER_TRANSPORT_UDP_MULTICAST}, 0, 0, DEC, "rtsp_transport" },
+    { "http", "HTTP tunneling", 0, AV_OPT_TYPE_CONST, {(1 << RTSP_LOWER_TRANSPORT_HTTP)}, 0, 0, DEC, "rtsp_transport" },
+    { "rtsp_flags", "RTSP flags", OFFSET(rtsp_flags), AV_OPT_TYPE_FLAGS, {0}, INT_MIN, INT_MAX, DEC, "rtsp_flags" },
+    { "filter_src", "Only receive packets from the negotiated peer IP", 0, AV_OPT_TYPE_CONST, {RTSP_FLAG_FILTER_SRC}, 0, 0, DEC, "rtsp_flags" },
     { NULL },
 };
 
@@ -1317,8 +1325,19 @@ int ff_rtsp_connect(AVFormatContext *s)
 
     if (!ff_network_init())
         return AVERROR(EIO);
-redirect:
+
     rt->control_transport = RTSP_MODE_PLAIN;
+    if (rt->lower_transport_mask & (1 << RTSP_LOWER_TRANSPORT_HTTP)) {
+        rt->lower_transport_mask = 1 << RTSP_LOWER_TRANSPORT_TCP;
+        rt->control_transport = RTSP_MODE_TUNNEL;
+    }
+    /* Only pass through valid flags from here */
+    rt->lower_transport_mask &= (1 << RTSP_LOWER_TRANSPORT_NB) - 1;
+    if (rt->rtsp_flags & RTSP_FLAG_FILTER_SRC)
+        rt->filter_source = 1;
+
+redirect:
+    lower_transport_mask = rt->lower_transport_mask;
     /* extract hostname and port */
     av_url_split(NULL, 0, auth, sizeof(auth),
                  host, sizeof(host), &port, path, sizeof(path), s->filename);
@@ -1328,6 +1347,7 @@ redirect:
     if (port < 0)
         port = RTSP_DEFAULT_PORT;
 
+#if FF_API_RTSP_URL_OPTIONS
     /* search for options */
     option_list = strrchr(path, '?');
     if (option_list) {
@@ -1335,6 +1355,7 @@ redirect:
          * the options back into the same string. */
         filename = option_list;
         while (option_list) {
+            int handled = 1;
             /* move the option pointer */
             option = ++option_list;
             option_list = strchr(option_list, '&');
@@ -1360,10 +1381,16 @@ redirect:
                 memmove(++filename, option, len);
                 filename += len;
                 if (option_list) *filename = '&';
+                handled = 0;
             }
+            if (handled)
+                av_log(s, AV_LOG_WARNING, "Options passed via URL are "
+                                          "deprecated, use -rtsp_transport "
+                                          "and -rtsp_flags instead.\n");
         }
         *filename = 0;
     }
+#endif
 
     if (!lower_transport_mask)
         lower_transport_mask = (1 << RTSP_LOWER_TRANSPORT_NB) - 1;
