@@ -306,8 +306,6 @@ static av_cold void exponent_init(AC3EncodeContext *s)
 
 /**
  * Extract exponents from the MDCT coefficients.
- * This takes into account the normalization that was done to the input samples
- * by adjusting the exponents by the exponent shift values.
  */
 static void extract_exponents(AC3EncodeContext *s)
 {
