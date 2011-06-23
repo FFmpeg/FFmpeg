@@ -2,6 +2,13 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
+version 0.7.1:
+
+- added various additional FOURCC codec identifiers
+- H.264 4:4:4 fixes
+- build system fixes
+
+
 version 0.7:
 
 - E-AC-3 audio encoder
