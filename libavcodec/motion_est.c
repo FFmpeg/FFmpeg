@@ -248,7 +248,7 @@ static int cmp_internal(MpegEncContext *s, const int x, const int y, const int s
     }
 }
 
-/*! \brief compares a block (either a full macroblock or a partition thereof)
+/** @brief compares a block (either a full macroblock or a partition thereof)
     against a proposed motion-compensated prediction of that block
  */
 static av_always_inline int cmp(MpegEncContext *s, const int x, const int y, const int subx, const int suby,

@@ -30,7 +30,7 @@
 #include "mpegvideo.h"
 
 /**
- * \addtogroup VAAPI_Decoding
+ * @addtogroup VAAPI_Decoding
  *
  * @{
  */

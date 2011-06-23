@@ -30,11 +30,11 @@
 #define PITCH_DELAY_MAX             143
 
 /**
- * \brief Decode pitch delay of the first subframe encoded by 8 bits with 1/3
+ * @brief Decode pitch delay of the first subframe encoded by 8 bits with 1/3
  *        resolution.
- * \param ac_index adaptive codebook index (8 bits)
+ * @param ac_index adaptive codebook index (8 bits)
  *
- * \return pitch delay in 1/3 units
+ * @return pitch delay in 1/3 units
  *
  * Pitch delay is coded:
  *    with 1/3 resolution, 19  < pitch_delay <  85
@@ -43,18 +43,18 @@
 int ff_acelp_decode_8bit_to_1st_delay3(int ac_index);
 
 /**
- * \brief Decode pitch delay of the second subframe encoded by 5 or 6 bits
+ * @brief Decode pitch delay of the second subframe encoded by 5 or 6 bits
  *        with 1/3 precision.
- * \param ac_index adaptive codebook index (5 or 6 bits)
- * \param pitch_delay_min lower bound (integer) of pitch delay interval
+ * @param ac_index adaptive codebook index (5 or 6 bits)
+ * @param pitch_delay_min lower bound (integer) of pitch delay interval
  *                      for second subframe
  *
- * \return pitch delay in 1/3 units
+ * @return pitch delay in 1/3 units
  *
  * Pitch delay is coded:
  *    with 1/3 resolution, -6 < pitch_delay - int(prev_pitch_delay) < 5
  *
- * \remark The routine is used in G.729 @@8k, AMR @@10.2k, AMR @@7.95k,
+ * @remark The routine is used in G.729 @@8k, AMR @@10.2k, AMR @@7.95k,
  *         AMR @@7.4k for the second subframe.
  */
 int ff_acelp_decode_5_6_bit_to_2nd_delay3(
@@ -62,19 +62,19 @@ int ff_acelp_decode_5_6_bit_to_2nd_delay3(
         int pitch_delay_min);
 
 /**
- * \brief Decode pitch delay with 1/3 precision.
- * \param ac_index adaptive codebook index (4 bits)
- * \param pitch_delay_min lower bound (integer) of pitch delay interval for
+ * @brief Decode pitch delay with 1/3 precision.
+ * @param ac_index adaptive codebook index (4 bits)
+ * @param pitch_delay_min lower bound (integer) of pitch delay interval for
  *                      second subframe
  *
- * \return pitch delay in 1/3 units
+ * @return pitch delay in 1/3 units
  *
  * Pitch delay is coded:
  *    integers only,          -6  < pitch_delay - int(prev_pitch_delay) <= -2
  *    with 1/3 resolution,    -2  < pitch_delay - int(prev_pitch_delay) <  1
  *    integers only,           1 <= pitch_delay - int(prev_pitch_delay) <  5
  *
- * \remark The routine is used in G.729 @@6.4k, AMR @@6.7k, AMR @@5.9k,
+ * @remark The routine is used in G.729 @@6.4k, AMR @@6.7k, AMR @@5.9k,
  *         AMR @@5.15k, AMR @@4.75k for the second subframe.
  */
 int ff_acelp_decode_4bit_to_2nd_delay3(
@@ -82,44 +82,44 @@ int ff_acelp_decode_4bit_to_2nd_delay3(
         int pitch_delay_min);
 
 /**
- * \brief Decode pitch delay of the first subframe encoded by 9 bits
+ * @brief Decode pitch delay of the first subframe encoded by 9 bits
  *        with 1/6 precision.
- * \param ac_index adaptive codebook index (9 bits)
+ * @param ac_index adaptive codebook index (9 bits)
  *
- * \return pitch delay in 1/6 units
+ * @return pitch delay in 1/6 units
  *
  * Pitch delay is coded:
  *    with 1/6 resolution,  17  < pitch_delay <  95
  *    integers only,        95 <= pitch_delay <= 143
  *
- * \remark The routine is used in AMR @@12.2k for the first and third subframes.
+ * @remark The routine is used in AMR @@12.2k for the first and third subframes.
  */
 int ff_acelp_decode_9bit_to_1st_delay6(int ac_index);
 
 /**
- * \brief Decode pitch delay of the second subframe encoded by 6 bits
+ * @brief Decode pitch delay of the second subframe encoded by 6 bits
  *        with 1/6 precision.
- * \param ac_index adaptive codebook index (6 bits)
- * \param pitch_delay_min lower bound (integer) of pitch delay interval for
+ * @param ac_index adaptive codebook index (6 bits)
+ * @param pitch_delay_min lower bound (integer) of pitch delay interval for
  *                      second subframe
  *
- * \return pitch delay in 1/6 units
+ * @return pitch delay in 1/6 units
  *
  * Pitch delay is coded:
  *    with 1/6 resolution, -6 < pitch_delay - int(prev_pitch_delay) < 5
  *
- * \remark The routine is used in AMR @@12.2k for the second and fourth subframes.
+ * @remark The routine is used in AMR @@12.2k for the second and fourth subframes.
  */
 int ff_acelp_decode_6bit_to_2nd_delay6(
         int ac_index,
         int pitch_delay_min);
 
 /**
- * \brief Update past quantized energies
- * \param[in,out]  quant_energy  past quantized energies (5.10)
- * \param gain_corr_factor gain correction factor
- * \param log2_ma_pred_order log2() of MA prediction order
- * \param erasure frame erasure flag
+ * @brief Update past quantized energies
+ * @param[in,out]  quant_energy  past quantized energies (5.10)
+ * @param gain_corr_factor gain correction factor
+ * @param log2_ma_pred_order log2() of MA prediction order
+ * @param erasure frame erasure flag
  *
  * If frame erasure flag is not equal to zero, memory is updated with
  * averaged energy, attenuated by 4dB:
@@ -128,7 +128,7 @@ int ff_acelp_decode_6bit_to_2nd_delay6(
  * In normal mode memory is updated with
  *     Er - Ep = 20 * log10(gain_corr_factor)
  *
- * \remark The routine is used in G.729 and AMR (all modes).
+ * @remark The routine is used in G.729 and AMR (all modes).
  */
 void ff_acelp_update_past_gain(
         int16_t* quant_energy,
@@ -137,16 +137,16 @@ void ff_acelp_update_past_gain(
         int erasure);
 
 /**
- * \brief Decode the adaptive codebook gain and add
+ * @brief Decode the adaptive codebook gain and add
  *        correction (4.1.5 and 3.9.1 of G.729).
- * \param dsp initialized dsputil context
- * \param gain_corr_factor gain correction factor (2.13)
- * \param fc_v fixed-codebook vector (2.13)
- * \param mr_energy mean innovation energy and fixed-point correction (7.13)
- * \param[in,out]  quant_energy  past quantized energies (5.10)
- * \param subframe_size length of subframe
+ * @param dsp initialized dsputil context
+ * @param gain_corr_factor gain correction factor (2.13)
+ * @param fc_v fixed-codebook vector (2.13)
+ * @param mr_energy mean innovation energy and fixed-point correction (7.13)
+ * @param[in,out]  quant_energy  past quantized energies (5.10)
+ * @param subframe_size length of subframe
  *
- * \return quantized fixed-codebook gain (14.1)
+ * @return quantized fixed-codebook gain (14.1)
  *
  * The routine implements equations 69, 66 and 71 of the G.729 specification (3.9.1)
  *
@@ -205,7 +205,7 @@ void ff_acelp_update_past_gain(
  *
  *        mr_energy = Em + 10log(N) + 10log(2^26)
  *
- * \remark The routine is used in G.729 and AMR (all modes).
+ * @remark The routine is used in G.729 and AMR (all modes).
  */
 int16_t ff_acelp_decode_gain_code(
     DSPContext *dsp,

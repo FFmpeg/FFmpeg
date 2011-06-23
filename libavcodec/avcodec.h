@@ -3255,7 +3255,7 @@ void av_resample_close(struct AVResampleContext *c);
 /**
  * Allocate memory for a picture.  Call avpicture_free() to free it.
  *
- * \see avpicture_fill()
+ * @see avpicture_fill()
  *
  * @param picture the picture to be filled in
  * @param pix_fmt the format of the picture
@@ -3302,7 +3302,7 @@ int avpicture_fill(AVPicture *picture, uint8_t *ptr,
  * The data is stored compactly, without any gaps for alignment or padding
  * which may be applied by avpicture_fill().
  *
- * \see avpicture_get_size()
+ * @see avpicture_get_size()
  *
  * @param[in] src AVPicture containing image data
  * @param[in] pix_fmt The format in which the picture data is stored.
@@ -3896,7 +3896,7 @@ typedef struct AVCodecParserContext {
     int64_t offset;      ///< byte offset from starting packet start
     int64_t cur_frame_end[AV_PARSER_PTS_NB];
 
-    /*!
+    /**
      * Set by parser to 1 for key frames and 0 for non-key frames.
      * It is initialized to -1, so if the parser doesn't set this flag,
      * old-style fallback using AV_PICTURE_TYPE_I picture type as key frames

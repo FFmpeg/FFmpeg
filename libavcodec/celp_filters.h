@@ -34,7 +34,7 @@
  *
  *  fc_out[n] = sum(i,0,len-1){ fc_in[i] * filter[(len + n - i)%len] }
  *
- * \note fc_in and fc_out should not overlap!
+ * @note fc_in and fc_out should not overlap!
  */
 void ff_celp_convolve_circ(int16_t *fc_out, const int16_t *fc_in,
                            const int16_t *filter, int len);

@@ -411,7 +411,7 @@ static inline float mulawinv(float y, float clip, float mu)
  * a*b == 200 and the nearest integer is ill-defined, use a table to emulate
  * the following broken float-based implementation used by the binary decoder:
  *
- * \code
+ * @code
  * static int very_broken_op(int a, int b)
  * {
  *    static float test; // Ugh, force gcc to do the division first...
@@ -419,7 +419,7 @@ static inline float mulawinv(float y, float clip, float mu)
  *    test = a/400.;
  *    return b * test +  0.5;
  * }
- * \endcode
+ * @endcode
  *
  * @note if this function is replaced by just ROUNDED_DIV(a*b,400.), the stddev
  * between the original file (before encoding with Yamaha encoder) and the
@@ -938,14 +938,14 @@ static void permutate_in_line(int16_t *tab, int num_vect, int num_blocks,
 /**
  * Interpret the input data as in the following table:
  *
- * \verbatim
+ * @verbatim
  *
  * abcdefgh
  * ijklmnop
  * qrstuvw
  * x123456
  *
- * \endverbatim
+ * @endverbatim
  *
  * and transpose it, giving the output
  * aiqxbjr1cks2dlt3emu4fvn5gow6hp

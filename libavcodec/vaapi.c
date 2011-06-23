@@ -24,7 +24,7 @@
 #include "vaapi_internal.h"
 
 /**
- * \addtogroup VAAPI_Decoding
+ * @addtogroup VAAPI_Decoding
  *
  * @{
  */
