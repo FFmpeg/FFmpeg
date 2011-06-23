@@ -264,7 +264,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     int map_len;
     int len;
     AVRational main_timebase = {0, 0};
-    struct gxf_stream_info si;
+    struct gxf_stream_info *si = s->priv_data;
     int i;
     if (!parse_packet_header(pb, &pkt_type, &map_len) || pkt_type != PKT_MAP) {
         av_log(s, AV_LOG_ERROR, "map packet not found\n");
@@ -282,7 +282,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         return 0;
     }
     map_len -= len;
-    gxf_material_tags(pb, &len, &si);
+    gxf_material_tags(pb, &len, si);
     avio_skip(pb, len);
     map_len -= 2;
     len = avio_rb16(pb); // length of track description
@@ -300,7 +300,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         track_id = avio_r8(pb);
         track_len = avio_rb16(pb);
         len -= track_len;
-        gxf_track_tags(pb, &track_len, &si);
+        gxf_track_tags(pb, &track_len, si);
         avio_skip(pb, track_len);
         if (!(track_type & 0x80)) {
            av_log(s, AV_LOG_ERROR, "invalid track type %x\n", track_type);
@@ -316,12 +316,12 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         if (idx < 0) continue;
         st = s->streams[idx];
         if (!main_timebase.num || !main_timebase.den) {
-            main_timebase.num = si.frames_per_second.den;
-            main_timebase.den = si.frames_per_second.num * 2;
+            main_timebase.num = si->frames_per_second.den;
+            main_timebase.den = si->frames_per_second.num * 2;
         }
-        st->start_time = si.first_field;
-        if (si.first_field != AV_NOPTS_VALUE && si.last_field != AV_NOPTS_VALUE)
-            st->duration = si.last_field - si.first_field;
+        st->start_time = si->first_field;
+        if (si->first_field != AV_NOPTS_VALUE && si->last_field != AV_NOPTS_VALUE)
+            st->duration = si->last_field - si->first_field;
     }
     if (len < 0)
         av_log(s, AV_LOG_ERROR, "invalid track description length specified\n");
@@ -422,6 +422,8 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
     AVIOContext *pb = s->pb;
     GXFPktType pkt_type;
     int pkt_len;
+    struct gxf_stream_info *si = s->priv_data;
+
     while (!pb->eof_reached) {
         AVStream *st;
         int track_type, track_id, ret;
@@ -473,6 +475,11 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
             avio_skip(pb, skip);
         pkt->stream_index = stream_index;
         pkt->dts = field_nr;
+
+        //set duration manually for DV or else lavf misdetects the frame rate
+        if (st->codec->codec_id == CODEC_ID_DVVIDEO)
+            pkt->duration = si->fields_per_frame;
+
         return ret;
     }
     return AVERROR(EIO);
@@ -518,7 +525,7 @@ static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
 AVInputFormat ff_gxf_demuxer = {
     "gxf",
     NULL_IF_CONFIG_SMALL("GXF format"),
-    0,
+    sizeof(struct gxf_stream_info),
     gxf_probe,
     gxf_header,
     gxf_packet,
