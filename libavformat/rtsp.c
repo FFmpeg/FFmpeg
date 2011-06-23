@@ -1235,7 +1235,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
         case RTSP_LOWER_TRANSPORT_UDP: {
             char url[1024], options[30] = "";
 
-            if (rt->filter_source)
+            if (rt->rtsp_flags & RTSP_FLAG_FILTER_SRC)
                 av_strlcpy(options, "?connect=1", sizeof(options));
             /* Use source address if specified */
             if (reply->transports[0].source[0]) {
@@ -1333,8 +1333,6 @@ int ff_rtsp_connect(AVFormatContext *s)
     }
     /* Only pass through valid flags from here */
     rt->lower_transport_mask &= (1 << RTSP_LOWER_TRANSPORT_NB) - 1;
-    if (rt->rtsp_flags & RTSP_FLAG_FILTER_SRC)
-        rt->filter_source = 1;
 
 redirect:
     lower_transport_mask = rt->lower_transport_mask;
@@ -1373,7 +1371,7 @@ redirect:
                 lower_transport_mask |= (1<< RTSP_LOWER_TRANSPORT_TCP);
                 rt->control_transport = RTSP_MODE_TUNNEL;
             } else if (!strcmp(option, "filter_src")) {
-                rt->filter_source = 1;
+                rt->rtsp_flags |= RTSP_FLAG_FILTER_SRC;
             } else {
                 /* Write options back into the buffer, using memmove instead
                  * of strcpy since the strings may overlap. */
