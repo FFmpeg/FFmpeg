@@ -172,7 +172,7 @@ testclean:
 clean:: testclean
 	$(RM) $(ALLPROGS)
 	$(RM) $(CLEANSUFFIXES)
-	$(RM) doc/*.html doc/*.pod doc/*.1
+	$(RM) doc/*.html doc/*.pod doc/*.1 doc/*.d doc/*~
 	$(RM) $(TOOLS)
 	$(RM) $(CLEANSUFFIXES:%=tools/%)
 
