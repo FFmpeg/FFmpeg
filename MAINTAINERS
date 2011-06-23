@@ -362,6 +362,16 @@ Sparc                                   Roman Shaposhnik
 x86                                     Michael Niedermayer
 
 
+Releases
+========
+
+0.5                                     *Deprecated/Unmaintained*
+0.6                                     Stefano Sabatini
+0.7                                     Michael Niedermayer
+0.8                                     Michael Niedermayer
+
+
+
 GnuPG Fingerprints of maintainers and others who have svn write access
 ======================================================================
 
