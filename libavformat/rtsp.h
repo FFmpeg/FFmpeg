@@ -29,6 +29,7 @@
 #include "httpauth.h"
 
 #include "libavutil/log.h"
+#include "libavutil/opt.h"
 
 /**
  * Network layer over which RTP/etc packet data will be transported.
@@ -536,5 +537,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
  * transport_priv and rtp_handle fields.
  */
 void ff_rtsp_undo_setup(AVFormatContext *s);
+
+extern const AVOption ff_rtsp_options[];
 
 #endif /* AVFORMAT_RTSP_H */

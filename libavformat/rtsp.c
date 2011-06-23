@@ -45,6 +45,7 @@
 #include "rtpdec_formats.h"
 #include "rtpenc_chain.h"
 #include "url.h"
+#include "rtpenc.h"
 
 //#define DEBUG
 
@@ -55,6 +56,12 @@
 #define MAX_TIMEOUTS READ_PACKET_TIMEOUT_S * 1000 / POLL_TIMEOUT_MS
 #define SDP_MAX_SIZE 16384
 #define RECVBUF_SIZE 10 * RTP_MAX_PACKET_LENGTH
+
+const AVOption ff_rtsp_options[] = {
+    { "initial_pause",  "Don't start playing the stream immediately", offsetof(RTSPState, initial_pause), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    FF_RTP_FLAG_OPTS(RTSPState, rtp_muxer_flags),
+    { NULL },
+};
 
 static void get_word_until_chars(char *buf, int buf_size,
                                  const char *sep, const char **pp)
