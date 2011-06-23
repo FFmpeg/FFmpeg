@@ -78,26 +78,26 @@ const char program_name[] = "ffmpeg";
 const int program_birth_year = 2000;
 
 /* select an input stream for an output stream */
-typedef struct AVStreamMap {
+typedef struct StreamMap {
     int file_index;
     int stream_index;
     int sync_file_index;
     int sync_stream_index;
-} AVStreamMap;
+} StreamMap;
 
 /**
  * select an input file for an output file
  */
-typedef struct AVMetaDataMap {
+typedef struct MetadataMap {
     int  file;      //< file index
     char type;      //< type of metadata to copy -- (g)lobal, (s)tream, (c)hapter or (p)rogram
     int  index;     //< stream/chapter/program number
-} AVMetaDataMap;
+} MetadataMap;
 
-typedef struct AVChapterMap {
+typedef struct ChapterMap {
     int in_file;
     int out_file;
-} AVChapterMap;
+} ChapterMap;
 
 static const OptionDef options[];
 
@@ -117,17 +117,17 @@ static AVFormatContext *output_files[MAX_FILES];
 static AVDictionary *output_opts[MAX_FILES];
 static int nb_output_files = 0;
 
-static AVStreamMap *stream_maps = NULL;
+static StreamMap *stream_maps = NULL;
 static int nb_stream_maps;
 
 /* first item specifies output metadata, second is input */
-static AVMetaDataMap (*meta_data_maps)[2] = NULL;
+static MetadataMap (*meta_data_maps)[2] = NULL;
 static int nb_meta_data_maps;
 static int metadata_global_autocopy   = 1;
 static int metadata_streams_autocopy  = 1;
 static int metadata_chapters_autocopy = 1;
 
-static AVChapterMap *chapter_maps = NULL;
+static ChapterMap *chapter_maps = NULL;
 static int nb_chapter_maps;
 
 /* indexed by output file stream index */
@@ -246,19 +246,19 @@ static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
-struct AVInputStream;
+struct InputStream;
 
-typedef struct AVOutputStream {
+typedef struct OutputStream {
     int file_index;          /* file index */
     int index;               /* stream index in the output file */
-    int source_index;        /* AVInputStream index */
+    int source_index;        /* InputStream index */
     AVStream *st;            /* stream in the output file */
     int encoding_needed;     /* true if encoding needed for this stream */
     int frame_number;
     /* input pts and corresponding output pts
        for A/V sync */
     //double sync_ipts;        /* dts from the AVPacket of the demuxer in second units */
-    struct AVInputStream *sync_ist; /* input stream to sync against */
+    struct InputStream *sync_ist; /* input stream to sync against */
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ //FIXME look at frame_number
     AVBitStreamFilterContext *bitstream_filters;
     AVCodec *enc;
@@ -299,12 +299,12 @@ typedef struct AVOutputStream {
 #endif
 
    int sws_flags;
-} AVOutputStream;
+} OutputStream;
 
-static AVOutputStream **output_streams_for_file[MAX_FILES] = { NULL };
+static OutputStream **output_streams_for_file[MAX_FILES] = { NULL };
 static int nb_output_streams_for_file[MAX_FILES] = { 0 };
 
-typedef struct AVInputStream {
+typedef struct InputStream {
     int file_index;
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
@@ -323,23 +323,23 @@ typedef struct AVInputStream {
     AVFrame *filter_frame;
     int has_filter_frame;
 #endif
-} AVInputStream;
+} InputStream;
 
-typedef struct AVInputFile {
+typedef struct InputFile {
     AVFormatContext *ctx;
     int eof_reached;      /* true if eof reached */
     int ist_index;        /* index of first stream in ist_table */
     int buffer_size;      /* current total buffer size */
-} AVInputFile;
+} InputFile;
 
-static AVInputStream *input_streams = NULL;
+static InputStream *input_streams = NULL;
 static int         nb_input_streams = 0;
-static AVInputFile   *input_files   = NULL;
+static InputFile   *input_files   = NULL;
 static int         nb_input_files   = 0;
 
 #if CONFIG_AVFILTER
 
-static int configure_video_filters(AVInputStream *ist, AVOutputStream *ost)
+static int configure_video_filters(InputStream *ist, OutputStream *ost)
 {
     AVFilterContext *last_filter, *filter;
     /** filter graph containing all filters including input & output */
@@ -647,10 +647,10 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
-static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
 {
     int idx = oc->nb_streams - 1;
-    AVOutputStream *ost;
+    OutputStream *ost;
 
     output_streams_for_file[file_idx] =
         grow_array(output_streams_for_file[file_idx],
@@ -658,7 +658,7 @@ static AVOutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
                    &nb_output_streams_for_file[file_idx],
                    oc->nb_streams);
     ost = output_streams_for_file[file_idx][idx] =
-        av_mallocz(sizeof(AVOutputStream));
+        av_mallocz(sizeof(OutputStream));
     if (!ost) {
         fprintf(stderr, "Could not alloc output stream\n");
         ffmpeg_exit(1);
@@ -727,9 +727,9 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 }
 
 static double
-get_sync_ipts(const AVOutputStream *ost)
+get_sync_ipts(const OutputStream *ost)
 {
-    const AVInputStream *ist = ost->sync_ist;
+    const InputStream *ist = ost->sync_ist;
     return (double)(ist->pts - start_time)/AV_TIME_BASE;
 }
 
@@ -768,8 +768,8 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
 #define MAX_AUDIO_PACKET_SIZE (128 * 1024)
 
 static void do_audio_out(AVFormatContext *s,
-                         AVOutputStream *ost,
-                         AVInputStream *ist,
+                         OutputStream *ost,
+                         InputStream *ist,
                          unsigned char *buf, int size)
 {
     uint8_t *buftmp;
@@ -1011,7 +1011,7 @@ need_realloc:
     }
 }
 
-static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void **bufp)
+static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void **bufp)
 {
     AVCodecContext *dec;
     AVPicture *picture2;
@@ -1054,8 +1054,8 @@ static void pre_process_video_frame(AVInputStream *ist, AVPicture *picture, void
 #define AV_DELAY_MAX 0.100
 
 static void do_subtitle_out(AVFormatContext *s,
-                            AVOutputStream *ost,
-                            AVInputStream *ist,
+                            OutputStream *ost,
+                            InputStream *ist,
                             AVSubtitle *sub,
                             int64_t pts)
 {
@@ -1120,8 +1120,8 @@ static int bit_buffer_size= 1024*256;
 static uint8_t *bit_buffer= NULL;
 
 static void do_video_out(AVFormatContext *s,
-                         AVOutputStream *ost,
-                         AVInputStream *ist,
+                         OutputStream *ost,
+                         InputStream *ist,
                          AVFrame *in_picture,
                          int *frame_size, float quality)
 {
@@ -1296,7 +1296,7 @@ static double psnr(double d){
     return -10.0*log(d)/log(10.0);
 }
 
-static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
+static void do_video_stats(AVFormatContext *os, OutputStream *ost,
                            int frame_size)
 {
     AVCodecContext *enc;
@@ -1334,11 +1334,11 @@ static void do_video_stats(AVFormatContext *os, AVOutputStream *ost,
 }
 
 static void print_report(AVFormatContext **output_files,
-                         AVOutputStream **ost_table, int nb_ostreams,
+                         OutputStream **ost_table, int nb_ostreams,
                          int is_last_report)
 {
     char buf[1024];
-    AVOutputStream *ost;
+    OutputStream *ost;
     AVFormatContext *oc;
     int64_t total_size;
     AVCodecContext *enc;
@@ -1464,12 +1464,12 @@ static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int output_packet(AVInputStream *ist, int ist_index,
-                         AVOutputStream **ost_table, int nb_ostreams,
+static int output_packet(InputStream *ist, int ist_index,
+                         OutputStream **ost_table, int nb_ostreams,
                          const AVPacket *pkt)
 {
     AVFormatContext *os;
-    AVOutputStream *ost;
+    OutputStream *ost;
     int ret, i;
     int got_output;
     AVFrame picture;
@@ -1916,7 +1916,7 @@ static int copy_chapters(int infile, int outfile)
     return 0;
 }
 
-static void parse_forced_key_frames(char *kf, AVOutputStream *ost,
+static void parse_forced_key_frames(char *kf, OutputStream *ost,
                                     AVCodecContext *avctx)
 {
     char *p;
@@ -1944,15 +1944,15 @@ static void parse_forced_key_frames(char *kf, AVOutputStream *ost,
  */
 static int transcode(AVFormatContext **output_files,
                      int nb_output_files,
-                     AVInputFile *input_files,
+                     InputFile *input_files,
                      int nb_input_files,
-                     AVStreamMap *stream_maps, int nb_stream_maps)
+                     StreamMap *stream_maps, int nb_stream_maps)
 {
     int ret = 0, i, j, k, n, nb_ostreams = 0;
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
-    AVOutputStream *ost, **ost_table = NULL;
-    AVInputStream *ist;
+    OutputStream *ost, **ost_table = NULL;
+    InputStream *ist;
     char error[1024];
     int want_sdp = 1;
     uint8_t no_packet[MAX_FILES]={0};
@@ -2001,7 +2001,7 @@ static int transcode(AVFormatContext **output_files,
         }
     }
 
-    ost_table = av_mallocz(sizeof(AVOutputStream *) * nb_ostreams);
+    ost_table = av_mallocz(sizeof(OutputStream *) * nb_ostreams);
     if (!ost_table)
         goto fail;
     n = 0;
@@ -2412,7 +2412,7 @@ static int transcode(AVFormatContext **output_files,
         files[1] = input_files[in_file_index].ctx;
 
         for (j = 0; j < 2; j++) {
-            AVMetaDataMap *map = &meta_data_maps[i][j];
+            MetadataMap *map = &meta_data_maps[i][j];
 
             switch (map->type) {
             case 'g':
@@ -2984,7 +2984,7 @@ static int opt_codec_tag(const char *opt, const char *arg)
 
 static int opt_map(const char *opt, const char *arg)
 {
-    AVStreamMap *m;
+    StreamMap *m;
     char *p;
 
     stream_maps = grow_array(stream_maps, sizeof(*stream_maps), &nb_stream_maps, nb_stream_maps + 1);
@@ -3031,7 +3031,7 @@ static void parse_meta_type(char *arg, char *type, int *index, char **endptr)
 
 static int opt_map_metadata(const char *opt, const char *arg)
 {
-    AVMetaDataMap *m, *m1;
+    MetadataMap *m, *m1;
     char *p;
 
     meta_data_maps = grow_array(meta_data_maps, sizeof(*meta_data_maps),
@@ -3066,7 +3066,7 @@ static int opt_map_meta_data(const char *opt, const char *arg)
 
 static int opt_map_chapters(const char *opt, const char *arg)
 {
-    AVChapterMap *c;
+    ChapterMap *c;
     char *p;
 
     chapter_maps = grow_array(chapter_maps, sizeof(*chapter_maps), &nb_chapter_maps,
@@ -3298,7 +3298,7 @@ static int opt_input_file(const char *opt, const char *filename)
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st = ic->streams[i];
         AVCodecContext *dec = st->codec;
-        AVInputStream *ist;
+        InputStream *ist;
 
         dec->thread_count = thread_count;
         input_codecs = grow_array(input_codecs, sizeof(*input_codecs), &nb_input_codecs, nb_input_codecs + 1);
@@ -3430,7 +3430,7 @@ static void check_inputs(int *has_video_ptr,
 static void new_video_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
-    AVOutputStream *ost;
+    OutputStream *ost;
     AVCodecContext *video_enc;
     enum CodecID codec_id = CODEC_ID_NONE;
     AVCodec *codec= NULL;
@@ -3569,7 +3569,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 static void new_audio_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
-    AVOutputStream *ost;
+    OutputStream *ost;
     AVCodec *codec= NULL;
     AVCodecContext *audio_enc;
     enum CodecID codec_id = CODEC_ID_NONE;
@@ -3679,7 +3679,7 @@ static void new_data_stream(AVFormatContext *oc, int file_idx)
 static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
-    AVOutputStream *ost;
+    OutputStream *ost;
     AVCodec *codec=NULL;
     AVCodecContext *subtitle_enc;
     enum CodecID codec_id = CODEC_ID_NONE;
