@@ -212,7 +212,7 @@ typedef struct AC3EncodeContext {
     int16_t *psd_buffer;
     int16_t *band_psd_buffer;
     int16_t *mask_buffer;
-    uint16_t *qmant_buffer;
+    int16_t *qmant_buffer;
     uint8_t *cpl_coord_exp_buffer;
     uint8_t *cpl_coord_mant_buffer;
 

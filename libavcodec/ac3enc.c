@@ -46,7 +46,7 @@
 #include "eac3enc.h"
 
 typedef struct AC3Mant {
-    uint16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
+    int16_t *qmant1_ptr, *qmant2_ptr, *qmant4_ptr; ///< mantissa pointers for bap=1,2,4
     int mant1_cnt, mant2_cnt, mant4_cnt;    ///< mantissa counts for bap=1,2,4
 } AC3Mant;
 
@@ -1123,20 +1123,14 @@ static inline int sym_quant(int c, int e, int levels)
  */
 static inline int asym_quant(int c, int e, int qbits)
 {
-    int lshift, m, v;
+    int m;
 
-    lshift = e + qbits - 24;
-    if (lshift >= 0)
-        v = c << lshift;
-    else
-        v = c >> (-lshift);
-    /* rounding */
-    v = (v + 1) >> 1;
+    c = (((c << e) >> (24 - qbits)) + 1) >> 1;
     m = (1 << (qbits-1));
-    if (v >= m)
-        v = m - 1;
-    av_assert2(v >= -m);
-    return v & ((1 << qbits)-1);
+    if (c >= m)
+        c = m - 1;
+    av_assert2(c >= -m);
+    return c;
 }
 
 
@@ -1145,7 +1139,7 @@ static inline int asym_quant(int c, int e, int qbits)
  */
 static void quantize_mantissas_blk_ch(AC3Mant *s, int32_t *fixed_coef,
                                       uint8_t *exp, uint8_t *bap,
-                                      uint16_t *qmant, int start_freq,
+                                      int16_t *qmant, int start_freq,
                                       int end_freq)
 {
     int i;
@@ -1497,14 +1491,14 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
             q = block->qmant[ch][i];
             b = s->ref_bap[ch][blk][i];
             switch (b) {
-            case 0:                                         break;
-            case 1: if (q != 128) put_bits(&s->pb,   5, q); break;
-            case 2: if (q != 128) put_bits(&s->pb,   7, q); break;
-            case 3:               put_bits(&s->pb,   3, q); break;
-            case 4: if (q != 128) put_bits(&s->pb,   7, q); break;
-            case 14:              put_bits(&s->pb,  14, q); break;
-            case 15:              put_bits(&s->pb,  16, q); break;
-            default:              put_bits(&s->pb, b-1, q); break;
+            case 0:                                          break;
+            case 1: if (q != 128) put_bits (&s->pb,   5, q); break;
+            case 2: if (q != 128) put_bits (&s->pb,   7, q); break;
+            case 3:               put_sbits(&s->pb,   3, q); break;
+            case 4: if (q != 128) put_bits (&s->pb,   7, q); break;
+            case 14:              put_sbits(&s->pb,  14, q); break;
+            case 15:              put_sbits(&s->pb,  16, q); break;
+            default:              put_sbits(&s->pb, b-1, q); break;
             }
         }
         if (ch == CPL_CH)

@@ -238,6 +238,7 @@ Advanced options (experts only):
   --malloc-prefix=PFX      prefix malloc and related names with PFX
   --enable-sram            allow use of on-chip SRAM
   --disable-symver         disable symbol versioning
+  --optflags               override optimization-related compiler flags
 
 Developer options (useful when working on FFmpeg itself):
   --disable-debug          disable debugging symbols
@@ -1187,6 +1188,7 @@ CMDLINE_SET="
     logfile
     malloc_prefix
     nm
+    optflags
     pkg_config
     samples
     strip
@@ -3062,7 +3064,9 @@ void ff_foo(void) {}
 EOF
 fi
 
-if enabled small; then
+if [ -n "$optflags" ]; then
+    add_cflags $optflags
+elif enabled small; then
     add_cflags $size_cflags
 elif enabled optimizations; then
     add_cflags $speed_cflags
@@ -3288,6 +3292,7 @@ if enabled source_path_used; then
         Makefile
         common.mak
         subdir.mak
+        doc/Makefile
         doc/texi2pod.pl
         libavcodec/Makefile
         libavcodec/${arch}/Makefile
@@ -3298,6 +3303,7 @@ if enabled source_path_used; then
         libavutil/Makefile
         libpostproc/Makefile
         libswscale/Makefile
+        tests/Makefile
     "
     map 'mkdir -p $v' $DIRS;
     map 'test -f "$source_path/$v" && $ln_s "$source_path/$v" $v' $FILES
