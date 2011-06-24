@@ -854,7 +854,8 @@ where SDL was installed. Verify that @file{sdl-config} can be launched from
 the MSYS command line.
 
 @item By using @code{./configure --enable-shared} when configuring FFmpeg,
-you can build the FFmpeg libraries as DLLs.
+you can build the FFmpeg libraries (e.g. libavutil, libavcodec,
+libavformat) as DLLs.
 
 @end itemize
 
