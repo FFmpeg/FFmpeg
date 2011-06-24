@@ -2133,20 +2133,26 @@ find_c_packed_planar_out_funcs(SwsContext *c,
             *yuv2packed2 = yuv2bgr24_2_c;
             *yuv2packedX = yuv2bgr24_X_c;
             break;
-        case PIX_FMT_RGB565:
-        case PIX_FMT_BGR565:
+        case PIX_FMT_RGB565LE:
+        case PIX_FMT_RGB565BE:
+        case PIX_FMT_BGR565LE:
+        case PIX_FMT_BGR565BE:
             *yuv2packed1 = yuv2rgb16_1_c;
             *yuv2packed2 = yuv2rgb16_2_c;
             *yuv2packedX = yuv2rgb16_X_c;
             break;
-        case PIX_FMT_RGB555:
-        case PIX_FMT_BGR555:
+        case PIX_FMT_RGB555LE:
+        case PIX_FMT_RGB555BE:
+        case PIX_FMT_BGR555LE:
+        case PIX_FMT_BGR555BE:
             *yuv2packed1 = yuv2rgb15_1_c;
             *yuv2packed2 = yuv2rgb15_2_c;
             *yuv2packedX = yuv2rgb15_X_c;
             break;
-        case PIX_FMT_RGB444:
-        case PIX_FMT_BGR444:
+        case PIX_FMT_RGB444LE:
+        case PIX_FMT_RGB444BE:
+        case PIX_FMT_BGR444LE:
+        case PIX_FMT_BGR444BE:
             *yuv2packed1 = yuv2rgb12_1_c;
             *yuv2packed2 = yuv2rgb12_2_c;
             *yuv2packedX = yuv2rgb12_X_c;
