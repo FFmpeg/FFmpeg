@@ -26,7 +26,8 @@ $(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
 $(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_DIR)/%=%)); $(INSTALL))
 endif
 
-IFLAGS   := -I. -I$(SRC_PATH)
+# NASM requires -I path terminated with /
+IFLAGS   := -I. -I$(SRC_PATH)/
 CPPFLAGS := $(IFLAGS) $(CPPFLAGS)
 CFLAGS   += $(ECFLAGS)
 YASMFLAGS += $(IFLAGS) -Pconfig.asm
