@@ -16,7 +16,7 @@ endif
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC AS YASM AR LD HOSTCC
+BRIEF  = CC AS YASM AR LD HOSTCC STRIP CP
 SILENT = DEPCC YASMDEP RM RANLIB
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
