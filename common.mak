@@ -49,6 +49,16 @@ HOSTCFLAGS += $(IFLAGS)
 
 %.c %.h: TAG = GEN
 
+# Dummy rule to stop make trying to rebuild removed or renamed headers
+%.h:
+	@:
+
+# Disable suffix rules.  Most of the builtin rules are suffix rules,
+# so this saves some time on slow systems.
+.SUFFIXES:
+
+# Do not delete intermediate files from chains of implicit rules
+$(OBJS):
 endif
 
 OBJS-$(HAVE_MMX) +=  $(MMX-OBJS-yes)

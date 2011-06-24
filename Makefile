@@ -7,9 +7,6 @@ vpath %.asm  $(SRC_PATH)
 vpath %.v    $(SRC_PATH)
 vpath %.texi $(SRC_PATH)
 
-# Do not delete intermediate files from chains of implicit rules
-$(OBJS):
-
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_FFPLAY)   += ffplay
 PROGS-$(CONFIG_FFPROBE)  += ffprobe
@@ -152,14 +149,6 @@ check: test
 
 include doc/Makefile
 include tests/Makefile
-
-# Dummy rule to stop make trying to rebuild removed or renamed headers
-%.h:
-	@:
-
-# Disable suffix rules.  Most of the builtin rules are suffix rules,
-# so this saves some time on slow systems.
-.SUFFIXES:
 
 .PHONY: all alltools *clean check config examples install*
 .PHONY: testprogs uninstall*
