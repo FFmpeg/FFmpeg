@@ -49,11 +49,11 @@ static int nuv_probe(AVProbeData *p) {
 #define PKTSIZE(s) (s &  0xffffff)
 
 /**
- * \brief read until we found all data needed for decoding
- * \param vst video stream of which to change parameters
- * \param ast video stream of which to change parameters
- * \param myth set if this is a MythTVVideo format file
- * \return 1 if all required codec data was found
+ * @brief read until we found all data needed for decoding
+ * @param vst video stream of which to change parameters
+ * @param ast video stream of which to change parameters
+ * @param myth set if this is a MythTVVideo format file
+ * @return 1 if all required codec data was found
  */
 static int get_codec_data(AVIOContext *pb, AVStream *vst,
                           AVStream *ast, int myth) {

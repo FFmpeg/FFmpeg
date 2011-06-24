@@ -1,13 +1,49 @@
 include config.mak
 
-SRC_DIR = $(SRC_PATH_BARE)
+vpath %.c    $(SRC_PATH)
+vpath %.h    $(SRC_PATH)
+vpath %.S    $(SRC_PATH)
+vpath %.asm  $(SRC_PATH)
+vpath %.v    $(SRC_PATH)
+vpath %.texi $(SRC_PATH)
 
-vpath %.c   $(SRC_DIR)
-vpath %.h   $(SRC_DIR)
-vpath %.S   $(SRC_DIR)
-vpath %.asm $(SRC_DIR)
-vpath %.v   $(SRC_DIR)
-vpath %.texi $(SRC_PATH_BARE)
+ifndef V
+Q      = @
+ECHO   = printf "$(1)\t%s\n" $(2)
+BRIEF  = CC AS YASM AR LD HOSTCC STRIP CP
+SILENT = DEPCC YASMDEP RM RANLIB
+MSG    = $@
+M      = @$(call ECHO,$(TAG),$@);
+$(foreach VAR,$(BRIEF), \
+    $(eval override $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
+$(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
+$(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_PATH)/%=%)); $(INSTALL))
+endif
+
+IFLAGS     := -I. -I$(SRC_PATH)
+CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
+CFLAGS     += $(ECFLAGS)
+YASMFLAGS  += $(IFLAGS) -Pconfig.asm
+HOSTCFLAGS += $(IFLAGS)
+
+%.o: %.c
+	$(CCDEP)
+	$(CC) $(CPPFLAGS) $(CFLAGS) $(CC_DEPFLAGS) -c $(CC_O) $<
+
+%.o: %.S
+	$(ASDEP)
+	$(AS) $(CPPFLAGS) $(ASFLAGS) $(AS_DEPFLAGS) -c -o $@ $<
+
+%.ho: %.h
+	$(CC) $(CPPFLAGS) $(CFLAGS) -Wno-unused -c -o $@ -x c $<
+
+%.ver: %.v
+	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
+
+%.c %.h: TAG = GEN
+
+# Do not delete intermediate files from chains of implicit rules
+$(OBJS):
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_FFPLAY)   += ffplay
@@ -37,7 +73,7 @@ FFLIBS-$(CONFIG_SWSCALE)  += swscale
 
 FFLIBS := avutil
 
-DATA_FILES := $(wildcard $(SRC_DIR)/ffpresets/*.ffpreset)
+DATA_FILES := $(wildcard $(SRC_PATH)/ffpresets/*.ffpreset)
 
 SKIPHEADERS = cmdutils_common_opts.h
 
@@ -54,7 +90,7 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(STRIP) $@
 
 config.h: .config
-.config: $(wildcard $(FFLIBS:%=$(SRC_DIR)/lib%/all*.c))
+.config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
 	@-tput bold 2>/dev/null
 	@-printf '\nWARNING: $(?F) newer than config.h, rerun configure\n\n'
 	@-tput sgr0 2>/dev/null
@@ -93,8 +129,8 @@ tools/%.o: tools/%.c
 
 -include $(wildcard tools/*.d)
 
-VERSION_SH  = $(SRC_PATH_BARE)/version.sh
-GIT_LOG     = $(SRC_PATH_BARE)/.git/logs/HEAD
+VERSION_SH  = $(SRC_PATH)/version.sh
+GIT_LOG     = $(SRC_PATH)/.git/logs/HEAD
 
 .version: $(wildcard $(GIT_LOG)) $(VERSION_SH) config.mak
 .version: M=@
@@ -150,6 +186,14 @@ check: test
 
 include doc/Makefile
 include tests/Makefile
+
+# Dummy rule to stop make trying to rebuild removed or renamed headers
+%.h:
+	@:
+
+# Disable suffix rules.  Most of the builtin rules are suffix rules,
+# so this saves some time on slow systems.
+.SUFFIXES:
 
 .PHONY: all alltools *clean check config examples install*
 .PHONY: testprogs uninstall*

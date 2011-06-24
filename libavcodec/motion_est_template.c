@@ -992,8 +992,8 @@ static av_always_inline int diamond_search(MpegEncContext * s, int *best, int dm
         return   var_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
 }
 
-/*!
-   \param P[10][2] a list of candidate mvs to check before starting the
+/**
+   @param P[10][2] a list of candidate mvs to check before starting the
    iterative search. If one of the candidates is close to the optimal mv, then
    it takes fewer iterations. And it increases the chance that we find the
    optimal mv.
@@ -1003,12 +1003,12 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
                              int ref_mv_scale, int flags, int size, int h)
 {
     MotionEstContext * const c= &s->me;
-    int best[2]={0, 0};      /*!< x and y coordinates of the best motion vector.
+    int best[2]={0, 0};      /**< x and y coordinates of the best motion vector.
                                i.e. the difference between the position of the
                                block currently being encoded and the position of
                                the block chosen to predict it from. */
     int d;                   ///< the score (cmp + penalty) of any given mv
-    int dmin;                /*!< the best value of d, i.e. the score
+    int dmin;                /**< the best value of d, i.e. the score
                                corresponding to the mv stored in best[]. */
     int map_generation;
     int penalty_factor;

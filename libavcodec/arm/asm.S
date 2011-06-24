@@ -26,7 +26,16 @@
 #   define ELF @
 #endif
 
+#if CONFIG_THUMB
+#   define A @
+#   define T
+#else
+#   define A
+#   define T @
+#endif
+
         .syntax unified
+T       .thumb
 
 .macro  require8 val=1
 ELF     .eabi_attribute 24, \val
@@ -80,6 +89,90 @@ ELF     .size   \name, . - \name
 #else
         ldr             \rd, =\val
 #endif
+.endm
+
+.macro  ldr_pre         rt,  rn,  rm:vararg
+A       ldr             \rt, [\rn, \rm]!
+T       add             \rn, \rn, \rm
+T       ldr             \rt, [\rn]
+.endm
+
+.macro  ldr_post        rt,  rn,  rm:vararg
+A       ldr             \rt, [\rn], \rm
+T       ldr             \rt, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  ldrd_reg        rt,  rt2, rn,  rm
+A       ldrd            \rt, \rt2, [\rn, \rm]
+T       add             \rt, \rn, \rm
+T       ldrd            \rt, \rt2, [\rt]
+.endm
+
+.macro  ldrd_post       rt,  rt2, rn,  rm
+A       ldrd            \rt, \rt2, [\rn], \rm
+T       ldrd            \rt, \rt2, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  ldrh_pre        rt,  rn,  rm
+A       ldrh            \rt, [\rn, \rm]!
+T       add             \rn, \rn, \rm
+T       ldrh            \rt, [\rn]
+.endm
+
+.macro  ldrh_dpre       rt,  rn,  rm
+A       ldrh            \rt, [\rn, -\rm]!
+T       sub             \rn, \rn, \rm
+T       ldrh            \rt, [\rn]
+.endm
+
+.macro  ldrh_post       rt,  rn,  rm
+A       ldrh            \rt, [\rn], \rm
+T       ldrh            \rt, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  str_post       rt,  rn,  rm:vararg
+A       str             \rt, [\rn], \rm
+T       str             \rt, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  strb_post       rt,  rn,  rm:vararg
+A       strb            \rt, [\rn], \rm
+T       strb            \rt, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  strd_post       rt,  rt2, rn,  rm
+A       strd            \rt, \rt2, [\rn], \rm
+T       strd            \rt, \rt2, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  strh_pre        rt,  rn,  rm
+A       strh            \rt, [\rn, \rm]!
+T       add             \rn, \rn, \rm
+T       strh            \rt, [\rn]
+.endm
+
+.macro  strh_dpre       rt,  rn,  rm
+A       strh            \rt, [\rn, -\rm]!
+T       sub             \rn, \rn, \rm
+T       strh            \rt, [\rn]
+.endm
+
+.macro  strh_post       rt,  rn,  rm
+A       strh            \rt, [\rn], \rm
+T       strh            \rt, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  strh_dpost       rt,  rn,  rm
+A       strh            \rt, [\rn], -\rm
+T       strh            \rt, [\rn]
+T       sub             \rn, \rn, \rm
 .endm
 
 #if HAVE_VFP_ARGS

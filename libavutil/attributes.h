@@ -127,8 +127,10 @@
 
 #ifdef __GNUC__
 #    define av_builtin_constant_p __builtin_constant_p
+#    define av_printf_format(fmtpos, attrpos) __attribute__((__format__(__printf__, fmtpos, attrpos)))
 #else
 #    define av_builtin_constant_p(x) 0
+#    define av_printf_format(fmtpos, attrpos)
 #endif
 
 #endif /* AVUTIL_ATTRIBUTES_H */

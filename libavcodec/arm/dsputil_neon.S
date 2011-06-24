@@ -531,6 +531,7 @@ function ff_vorbis_inverse_coupling_neon, export=1
 
 2:      vst1.32         {d2-d3},  [r3, :128]!
         vst1.32         {d0-d1},  [r12,:128]!
+        it              lt
         bxlt            lr
 
 3:      vld1.32         {d2-d3},  [r1,:128]
@@ -575,6 +576,7 @@ NOVFP   vdup.32         q8,  r2
 2:      vst1.32         {q2},[r0,:128]!
         vst1.32         {q3},[r0,:128]!
         ands            len, len, #15
+        it              eq
         bxeq            lr
 3:      vld1.32         {q0},[r1,:128]!
         vmul.f32        q0,  q0,  q8
@@ -638,6 +640,7 @@ NOVFP   ldr             r3,  [sp]
 2:      vst1.32         {q8},[r0,:128]!
         vst1.32         {q9},[r0,:128]!
         ands            r3,  r3,  #7
+        it              eq
         popeq           {pc}
 3:      vld1.32         {q0},[r1,:128]!
         ldr             r12, [r2], #4

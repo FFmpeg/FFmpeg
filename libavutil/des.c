@@ -240,7 +240,7 @@ static uint32_t f_func(uint32_t r, uint64_t k) {
 }
 
 /**
- * \brief rotate the two halves of the expanded 56 bit key each 1 bit left
+ * @brief rotate the two halves of the expanded 56 bit key each 1 bit left
  *
  * Note: the specification calls this "shift", so I kept it although
  * it is confusing.

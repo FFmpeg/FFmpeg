@@ -86,7 +86,7 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
  * "http://host:port/path?option1=val1&option2=val2...
  */
 
-static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
+static av_printf_format(3, 4) void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 {
     char buf1[1024];
     va_list ap;

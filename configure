@@ -971,6 +971,7 @@ CONFIG_LIST="
     static
     swscale
     swscale_alpha
+    thumb
     vaapi
     vdpau
     version3
@@ -1717,7 +1718,7 @@ DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -MM'
 
 # find source path
 if test -f configure; then
-    source_path="$(pwd)"
+    source_path=.
     disable source_path_used
 else
     source_path=$(cd $(dirname "$0"); pwd)
@@ -2300,7 +2301,7 @@ elif enabled arm; then
             case $cpu in
                 cortex-a*)                               subarch=armv7a  ;;
                 cortex-r*)                               subarch=armv7r  ;;
-                cortex-m*)                               subarch=armv7m  ;;
+                cortex-m*)                 enable thumb; subarch=armv7m  ;;
                 arm11*)                                  subarch=armv6   ;;
                 arm[79]*e*|arm9[24]6*|arm96*|arm102[26]) subarch=armv5te ;;
                 armv4*|arm7*|arm9[24]*)                  subarch=armv4   ;;
@@ -2640,7 +2641,7 @@ if enabled alpha; then
 
 elif enabled arm; then
 
-    check_cflags -marm
+    enabled thumb && check_cflags -mthumb || check_cflags -marm
     nogas=die
 
     if     check_cpp_condition stddef.h "defined __ARM_PCS_VFP"; then
@@ -3325,8 +3326,7 @@ INCDIR=\$(DESTDIR)$incdir
 BINDIR=\$(DESTDIR)$bindir
 DATADIR=\$(DESTDIR)$datadir
 MANDIR=\$(DESTDIR)$mandir
-SRC_PATH="$source_path"
-SRC_PATH_BARE=$source_path
+SRC_PATH=$source_path
 CC_IDENT=$cc_ident
 ARCH=$arch
 CC=$cc

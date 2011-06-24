@@ -73,8 +73,8 @@ typedef struct LclDecContext {
 
 
 /**
- * \param srcptr compressed source buffer, must be padded with at least 5 extra bytes
- * \param destptr must be padded sufficiently for av_memcpy_backptr
+ * @param srcptr compressed source buffer, must be padded with at least 5 extra bytes
+ * @param destptr must be padded sufficiently for av_memcpy_backptr
  */
 static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsigned char * destptr, unsigned int destsize)
 {
@@ -119,11 +119,11 @@ static unsigned int mszh_decomp(const unsigned char * srcptr, int srclen, unsign
 
 #if CONFIG_ZLIB_DECODER
 /**
- * \brief decompress a zlib-compressed data block into decomp_buf
- * \param src compressed input buffer
- * \param src_len data length in input buffer
- * \param offset offset in decomp_buf
- * \param expected expected decompressed length
+ * @brief decompress a zlib-compressed data block into decomp_buf
+ * @param src compressed input buffer
+ * @param src_len data length in input buffer
+ * @param offset offset in decomp_buf
+ * @param expected expected decompressed length
  */
 static int zlib_decomp(AVCodecContext *avctx, const uint8_t *src, int src_len, int offset, int expected)
 {

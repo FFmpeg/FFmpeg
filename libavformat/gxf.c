@@ -32,11 +32,11 @@ struct gxf_stream_info {
 };
 
 /**
- * \brief parses a packet header, extracting type and length
- * \param pb AVIOContext to read header from
- * \param type detected packet type is stored here
- * \param length detected packet length, excluding header is stored here
- * \return 0 if header not found or contains invalid data, 1 otherwise
+ * @brief parses a packet header, extracting type and length
+ * @param pb AVIOContext to read header from
+ * @param type detected packet type is stored here
+ * @param length detected packet length, excluding header is stored here
+ * @return 0 if header not found or contains invalid data, 1 otherwise
  */
 static int parse_packet_header(AVIOContext *pb, GXFPktType *type, int *length) {
     if (avio_rb32(pb))
@@ -58,7 +58,7 @@ static int parse_packet_header(AVIOContext *pb, GXFPktType *type, int *length) {
 }
 
 /**
- * \brief check if file starts with a PKT_MAP header
+ * @brief check if file starts with a PKT_MAP header
  */
 static int gxf_probe(AVProbeData *p) {
     static const uint8_t startcode[] = {0, 0, 0, 0, 1, 0xbc}; // start with map packet
@@ -70,10 +70,10 @@ static int gxf_probe(AVProbeData *p) {
 }
 
 /**
- * \brief gets the stream index for the track with the specified id, creates new
+ * @brief gets the stream index for the track with the specified id, creates new
  *        stream if not found
- * \param id     id of stream to find / add
- * \param format stream format identifier
+ * @param id     id of stream to find / add
+ * @param format stream format identifier
  */
 static int get_sindex(AVFormatContext *s, int id, int format) {
     int i;
@@ -153,9 +153,9 @@ static int get_sindex(AVFormatContext *s, int id, int format) {
 }
 
 /**
- * \brief filters out interesting tags from material information.
- * \param len length of tag section, will be adjusted to contain remaining bytes
- * \param si struct to store collected information into
+ * @brief filters out interesting tags from material information.
+ * @param len length of tag section, will be adjusted to contain remaining bytes
+ * @param si struct to store collected information into
  */
 static void gxf_material_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si) {
     si->first_field = AV_NOPTS_VALUE;
@@ -179,9 +179,9 @@ static void gxf_material_tags(AVIOContext *pb, int *len, struct gxf_stream_info 
 }
 
 /**
- * \brief convert fps tag value to AVRational fps
- * \param fps fps value from tag
- * \return fps as AVRational, or 0 / 0 if unknown
+ * @brief convert fps tag value to AVRational fps
+ * @param fps fps value from tag
+ * @return fps as AVRational, or 0 / 0 if unknown
  */
 static AVRational fps_tag2avr(int32_t fps) {
     extern const AVRational ff_frame_rate_tab[];
@@ -190,9 +190,9 @@ static AVRational fps_tag2avr(int32_t fps) {
 }
 
 /**
- * \brief convert UMF attributes flags to AVRational fps
- * \param flags UMF flags to convert
- * \return fps as AVRational, or 0 / 0 if unknown
+ * @brief convert UMF attributes flags to AVRational fps
+ * @param flags UMF flags to convert
+ * @return fps as AVRational, or 0 / 0 if unknown
  */
 static AVRational fps_umf2avr(uint32_t flags) {
     static const AVRational map[] = {{50, 1}, {60000, 1001}, {24, 1},
@@ -202,9 +202,9 @@ static AVRational fps_umf2avr(uint32_t flags) {
 }
 
 /**
- * \brief filters out interesting tags from track information.
- * \param len length of tag section, will be adjusted to contain remaining bytes
- * \param si struct to store collected information into
+ * @brief filters out interesting tags from track information.
+ * @param len length of tag section, will be adjusted to contain remaining bytes
+ * @param si struct to store collected information into
  */
 static void gxf_track_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si) {
     si->frames_per_second = (AVRational){0, 0};
@@ -228,7 +228,7 @@ static void gxf_track_tags(AVIOContext *pb, int *len, struct gxf_stream_info *si
 }
 
 /**
- * \brief read index from FLT packet into stream 0 av_index
+ * @brief read index from FLT packet into stream 0 av_index
  */
 static void gxf_read_index(AVFormatContext *s, int pkt_len) {
     AVIOContext *pb = s->pb;
@@ -374,11 +374,11 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
     }
 
 /**
- * \brief resync the stream on the next media packet with specified properties
- * \param max_interval how many bytes to search for matching packet at most
- * \param track track id the media packet must belong to, -1 for any
- * \param timestamp minimum timestamp (== field number) the packet must have, -1 for any
- * \return timestamp of packet found
+ * @brief resync the stream on the next media packet with specified properties
+ * @param max_interval how many bytes to search for matching packet at most
+ * @param track track id the media packet must belong to, -1 for any
+ * @param timestamp minimum timestamp (== field number) the packet must have, -1 for any
+ * @return timestamp of packet found
  */
 static int64_t gxf_resync_media(AVFormatContext *s, uint64_t max_interval, int track, int timestamp) {
     uint32_t tmp;

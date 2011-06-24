@@ -27,6 +27,7 @@ function ff_ac3_update_bap_counts_arm, export=1
         lsl             r3,  lr,  #1
         ldrh            r12, [r0, r3]
         subs            r2,  r2,  #1
+        it              gt
         ldrbgt          lr,  [r1], #1
         add             r12, r12, #1
         strh            r12, [r0, r3]

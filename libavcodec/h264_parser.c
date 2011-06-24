@@ -97,7 +97,7 @@ found:
     return i-(state&5);
 }
 
-/*!
+/**
  * Parse NAL units of found picture and decode some basic information.
  *
  * @param s parser context.

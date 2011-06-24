@@ -33,7 +33,7 @@
 #include "vdpau_internal.h"
 
 /**
- * \addtogroup VDPAU_Decoding
+ * @addtogroup VDPAU_Decoding
  *
  * @{
  */

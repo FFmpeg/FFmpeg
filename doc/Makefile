@@ -11,9 +11,9 @@ documentation: $(DOCS)
 TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
 doc/%.html: TAG = HTML
-doc/%.html: doc/%.texi $(SRC_PATH_BARE)/doc/t2h.init
+doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init
 	$(Q)$(TEXIDEP)
-	$(M)texi2html -monolithic --init-file $(SRC_PATH_BARE)/doc/t2h.init --output $@ $<
+	$(M)texi2html -monolithic --init-file $(SRC_PATH)/doc/t2h.init --output $@ $<
 
 doc/%.pod: TAG = POD
 doc/%.pod: doc/%.texi

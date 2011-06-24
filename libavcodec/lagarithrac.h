@@ -40,15 +40,15 @@ typedef struct lag_rac {
     AVCodecContext *avctx;
     unsigned low;
     unsigned range;
-    unsigned scale;             /*!< Number of bits of precision in range. */
-    unsigned hash_shift;        /*!< Number of bits to shift to calculate hash for radix search. */
+    unsigned scale;             /**< Number of bits of precision in range. */
+    unsigned hash_shift;        /**< Number of bits to shift to calculate hash for radix search. */
 
-    const uint8_t *bytestream_start;  /*!< Start of input bytestream. */
-    const uint8_t *bytestream;        /*!< Current position in input bytestream. */
-    const uint8_t *bytestream_end;    /*!< End position of input bytestream. */
+    const uint8_t *bytestream_start;  /**< Start of input bytestream. */
+    const uint8_t *bytestream;        /**< Current position in input bytestream. */
+    const uint8_t *bytestream_end;    /**< End position of input bytestream. */
 
-    uint32_t prob[258];         /*!< Table of cumulative probability for each symbol. */
-    uint8_t  range_hash[256];   /*!< Hash table mapping upper byte to approximate symbol. */
+    uint32_t prob[258];         /**< Table of cumulative probability for each symbol. */
+    uint8_t  range_hash[256];   /**< Hash table mapping upper byte to approximate symbol. */
 } lag_rac;
 
 void lag_rac_init(lag_rac *l, GetBitContext *gb, int length);

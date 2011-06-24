@@ -121,11 +121,13 @@ __b_evaluation:
         ldr r11, [r12, #offW7]   @ R11=W7
         mul r5, r10, r7          @ R5=W5*ROWr16[1]=b2 (ROWr16[1] must be the second arg, to have the possibility to save 1 cycle)
         mul r7, r11, r7          @ R7=W7*ROWr16[1]=b3 (ROWr16[1] must be the second arg, to have the possibility to save 1 cycle)
-                teq r2, #0               @ if null avoid muls
-                mlane r0, r9, r2, r0     @ R0+=W3*ROWr16[3]=b0 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
+        teq r2, #0               @ if null avoid muls
+        itttt ne
+        mlane r0, r9, r2, r0     @ R0+=W3*ROWr16[3]=b0 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
         rsbne r2, r2, #0         @ R2=-ROWr16[3]
         mlane r1, r11, r2, r1    @ R1-=W7*ROWr16[3]=b1 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
         mlane r5, r8, r2, r5     @ R5-=W1*ROWr16[3]=b2 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
+        it    ne
         mlane r7, r10, r2, r7    @ R7-=W5*ROWr16[3]=b3 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
 
         @@ at this point, R0=b0,  R1=b1, R2 (free), R3=ROWr32[2], R4=ROWr32[3],
@@ -148,19 +150,23 @@ __b_evaluation:
         @@ MAC16(b3, -W1, row[7]);
         @@ MAC16(b1, -W5, row[7]);
         mov r3, r3, asr #16      @ R3=ROWr16[5]
-                teq r3, #0               @ if null avoid muls
+        teq r3, #0               @ if null avoid muls
+        it    ne
         mlane r0, r10, r3, r0    @ R0+=W5*ROWr16[5]=b0
         mov r4, r4, asr #16      @ R4=ROWr16[7]
+        itttt ne
         mlane r5, r11, r3, r5    @ R5+=W7*ROWr16[5]=b2
         mlane r7, r9, r3, r7     @ R7+=W3*ROWr16[5]=b3
         rsbne r3, r3, #0         @ R3=-ROWr16[5]
         mlane r1, r8, r3, r1     @ R7-=W1*ROWr16[5]=b1
         @@ R3 is free now
-                teq r4, #0               @ if null avoid muls
+        teq r4, #0               @ if null avoid muls
+        itttt ne
         mlane r0, r11, r4, r0    @ R0+=W7*ROWr16[7]=b0
         mlane r5, r9, r4, r5     @ R5+=W3*ROWr16[7]=b2
         rsbne r4, r4, #0         @ R4=-ROWr16[7]
         mlane r7, r8, r4, r7     @ R7-=W1*ROWr16[7]=b3
+        it    ne
         mlane r1, r10, r4, r1    @ R1-=W5*ROWr16[7]=b1
         @@ R4 is free now
 __end_b_evaluation:
@@ -204,16 +210,19 @@ __a_evaluation:
         @@ a2 -= W4*row[4]
         @@ a3 += W4*row[4]
         ldrsh r11, [r14, #8]     @ R11=ROWr16[4]
-                teq r11, #0              @ if null avoid muls
+        teq r11, #0              @ if null avoid muls
+        it    ne
         mulne r11, r9, r11       @ R11=W4*ROWr16[4]
         @@ R9 is free now
         ldrsh r9, [r14, #12]     @ R9=ROWr16[6]
+        itttt ne
         addne r6, r6, r11        @ R6+=W4*ROWr16[4] (a0)
         subne r2, r2, r11        @ R2-=W4*ROWr16[4] (a1)
         subne r3, r3, r11        @ R3-=W4*ROWr16[4] (a2)
         addne r4, r4, r11        @ R4+=W4*ROWr16[4] (a3)
         @@ W6 alone is no more useful, save W2*ROWr16[6] in it instead
-                teq r9, #0               @ if null avoid muls
+        teq r9, #0               @ if null avoid muls
+        itttt ne
         mulne r11, r10, r9       @ R11=W6*ROWr16[6]
         addne r6, r6, r11        @ R6+=W6*ROWr16[6] (a0)
         mulne r10, r8, r9        @ R10=W2*ROWr16[6]
@@ -222,6 +231,7 @@ __a_evaluation:
         @@ a1 -= W2*row[6];
         @@ a2 += W2*row[6];
         subne r4, r4, r11        @ R4-=W6*ROWr16[6] (a3)
+        itt   ne
         subne r2, r2, r10        @ R2-=W2*ROWr16[6] (a1)
         addne r3, r3, r10        @ R3+=W2*ROWr16[6] (a2)
 
@@ -323,10 +333,12 @@ __b_evaluation2:
         ldrsh r2, [r14, #48]
         mul r7, r11, r7          @ R7=W7*ROWr16[1]=b3 (ROWr16[1] must be the second arg, to have the possibility to save 1 cycle)
         teq r2, #0               @ if 0, then avoid muls
+        itttt ne
         mlane r0, r9, r2, r0     @ R0+=W3*ROWr16[3]=b0 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
         rsbne r2, r2, #0         @ R2=-ROWr16[3]
         mlane r1, r11, r2, r1    @ R1-=W7*ROWr16[3]=b1 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
         mlane r5, r8, r2, r5     @ R5-=W1*ROWr16[3]=b2 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
+        it    ne
         mlane r7, r10, r2, r7    @ R7-=W5*ROWr16[3]=b3 (ROWr16[3] must be the second arg, to have the possibility to save 1 cycle)
 
         @@ at this point, R0=b0,  R1=b1, R2 (free), R3 (free), R4 (free),
@@ -342,18 +354,22 @@ __b_evaluation2:
         @@ MAC16(b1, -W5, col[7x8]);
         ldrsh r3, [r14, #80]     @ R3=COLr16[5x8]
         teq r3, #0               @ if 0 then avoid muls
+        itttt ne
         mlane r0, r10, r3, r0    @ R0+=W5*ROWr16[5x8]=b0
         mlane r5, r11, r3, r5    @ R5+=W7*ROWr16[5x8]=b2
         mlane r7, r9, r3, r7     @ R7+=W3*ROWr16[5x8]=b3
         rsbne r3, r3, #0         @ R3=-ROWr16[5x8]
         ldrsh r4, [r14, #112]    @ R4=COLr16[7x8]
+        it    ne
         mlane r1, r8, r3, r1     @ R7-=W1*ROWr16[5x8]=b1
         @@ R3 is free now
         teq r4, #0               @ if 0 then avoid muls
+        itttt ne
         mlane r0, r11, r4, r0    @ R0+=W7*ROWr16[7x8]=b0
         mlane r5, r9, r4, r5     @ R5+=W3*ROWr16[7x8]=b2
         rsbne r4, r4, #0         @ R4=-ROWr16[7x8]
         mlane r7, r8, r4, r7     @ R7-=W1*ROWr16[7x8]=b3
+        it    ne
         mlane r1, r10, r4, r1    @ R1-=W5*ROWr16[7x8]=b1
         @@ R4 is free now
 __end_b_evaluation2:
@@ -390,15 +406,18 @@ __a_evaluation2:
         @@ a3 += W4*row[4]
         ldrsh r11, [r14, #64]    @ R11=ROWr16[4]
         teq r11, #0              @ if null avoid muls
+        itttt ne
         mulne r11, r9, r11       @ R11=W4*ROWr16[4]
         @@ R9 is free now
         addne r6, r6, r11        @ R6+=W4*ROWr16[4] (a0)
         subne r2, r2, r11        @ R2-=W4*ROWr16[4] (a1)
         subne r3, r3, r11        @ R3-=W4*ROWr16[4] (a2)
         ldrsh r9, [r14, #96]     @ R9=ROWr16[6]
+        it    ne
         addne r4, r4, r11        @ R4+=W4*ROWr16[4] (a3)
         @@ W6 alone is no more useful, save W2*ROWr16[6] in it instead
         teq r9, #0               @ if null avoid muls
+        itttt ne
         mulne r11, r10, r9       @ R11=W6*ROWr16[6]
         addne r6, r6, r11        @ R6+=W6*ROWr16[6] (a0)
         mulne r10, r8, r9        @ R10=W2*ROWr16[6]
@@ -407,6 +426,7 @@ __a_evaluation2:
         @@ a1 -= W2*row[6];
         @@ a2 += W2*row[6];
         subne r4, r4, r11        @ R4-=W6*ROWr16[6] (a3)
+        itt   ne
         subne r2, r2, r10        @ R2-=W2*ROWr16[6] (a1)
         addne r3, r3, r10        @ R3+=W2*ROWr16[6] (a2)
 __end_a_evaluation2:
