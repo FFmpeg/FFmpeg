@@ -3821,23 +3821,20 @@ static void opt_output_file(const char *filename)
         use_subtitle = file_oformat->subtitle_codec != CODEC_ID_NONE || subtitle_stream_copy || subtitle_codec_name;
         use_data = data_stream_copy ||  data_codec_name; /* XXX once generic data codec will be available add a ->data_codec reference and use it here */
 
-        /* disable if no corresponding type found and at least one
-           input file */
-        if (nb_input_files > 0) {
-            check_inputs(&input_has_video,
-                         &input_has_audio,
-                         &input_has_subtitle,
-                         &input_has_data);
+        /* disable if no corresponding type found */
+        check_inputs(&input_has_video,
+                     &input_has_audio,
+                     &input_has_subtitle,
+                     &input_has_data);
 
-            if (!input_has_video)
-                use_video = 0;
-            if (!input_has_audio)
-                use_audio = 0;
-            if (!input_has_subtitle)
-                use_subtitle = 0;
-            if (!input_has_data)
-                use_data = 0;
-        }
+        if (!input_has_video)
+            use_video = 0;
+        if (!input_has_audio)
+            use_audio = 0;
+        if (!input_has_subtitle)
+            use_subtitle = 0;
+        if (!input_has_data)
+            use_data = 0;
 
         /* manual disable */
         if (audio_disable)    use_audio    = 0;
