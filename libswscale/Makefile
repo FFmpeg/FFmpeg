@@ -1,5 +1,3 @@
-include $(SUBDIR)../config.mak
-
 NAME = swscale
 FFLIBS = avutil
 
