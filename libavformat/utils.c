@@ -459,9 +459,14 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         err = AVERROR(ENOMEM);
         goto fail;
     }
-    ic->pb = pb;
+    if (pb && fmt && fmt->flags & AVFMT_NOFILE)
+        av_log(ic, AV_LOG_WARNING, "Custom AVIOContext makes no sense and "
+                                   "will be ignored with AVFMT_NOFILE format.\n");
+    else
+        ic->pb = pb;
 
     err = avformat_open_input(&ic, filename, fmt, &opts);
+    ic->pb = ic->pb ? ic->pb : pb; // don't leak custom pb if it wasn't set above
 
     *ic_ptr = ic;
 fail:
