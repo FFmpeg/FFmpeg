@@ -42,6 +42,7 @@ DATA_FILES := $(wildcard $(SRC_PATH)/ffpresets/*.ffpreset)
 
 SKIPHEADERS = cmdutils_common_opts.h
 
+MAIN_MAKEFILE=1
 include common.mak
 
 FF_LDFLAGS   := $(FFLDFLAGS)
