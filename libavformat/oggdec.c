@@ -550,15 +550,16 @@ static int ogg_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     struct ogg *ogg;
     struct ogg_stream *os;
-    int idx = -1;
+    int idx = -1, ret;
     int pstart, psize;
     int64_t fpos, pts, dts;
 
     //Get an ogg packet
 retry:
     do{
-        if (ogg_packet (s, &idx, &pstart, &psize, &fpos) < 0)
-            return AVERROR(EIO);
+        ret = ogg_packet (s, &idx, &pstart, &psize, &fpos);
+        if (ret < 0)
+            return ret;
     }while (idx < 0 || !s->streams[idx]);
 
     ogg = s->priv_data;
@@ -572,8 +573,9 @@ retry:
     os->keyframe_seek = 0;
 
     //Alloc a pkt
-    if (av_new_packet (pkt, psize) < 0)
-        return AVERROR(EIO);
+    ret = av_new_packet (pkt, psize);
+    if (ret < 0)
+        return ret;
     pkt->stream_index = idx;
     memcpy (pkt->data, os->buf + pstart, psize);
 
