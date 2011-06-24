@@ -7,41 +7,6 @@ vpath %.asm  $(SRC_PATH)
 vpath %.v    $(SRC_PATH)
 vpath %.texi $(SRC_PATH)
 
-ifndef V
-Q      = @
-ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC AS YASM AR LD HOSTCC STRIP CP
-SILENT = DEPCC YASMDEP RM RANLIB
-MSG    = $@
-M      = @$(call ECHO,$(TAG),$@);
-$(foreach VAR,$(BRIEF), \
-    $(eval override $(VAR) = @$$(call ECHO,$(VAR),$$(MSG)); $($(VAR))))
-$(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
-$(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_PATH)/%=%)); $(INSTALL))
-endif
-
-IFLAGS     := -I. -I$(SRC_PATH)
-CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
-CFLAGS     += $(ECFLAGS)
-YASMFLAGS  += $(IFLAGS) -Pconfig.asm
-HOSTCFLAGS += $(IFLAGS)
-
-%.o: %.c
-	$(CCDEP)
-	$(CC) $(CPPFLAGS) $(CFLAGS) $(CC_DEPFLAGS) -c $(CC_O) $<
-
-%.o: %.S
-	$(ASDEP)
-	$(AS) $(CPPFLAGS) $(ASFLAGS) $(AS_DEPFLAGS) -c -o $@ $<
-
-%.ho: %.h
-	$(CC) $(CPPFLAGS) $(CFLAGS) -Wno-unused -c -o $@ -x c $<
-
-%.ver: %.v
-	$(Q)sed 's/$$MAJOR/$($(basename $(@F))_VERSION_MAJOR)/' $^ > $@
-
-%.c %.h: TAG = GEN
-
 # Do not delete intermediate files from chains of implicit rules
 $(OBJS):
 
