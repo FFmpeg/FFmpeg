@@ -1895,9 +1895,7 @@ static int subtitle_thread(void *arg)
 /* copy samples for viewing in editor window */
 static void update_sample_display(VideoState *is, short *samples, int samples_size)
 {
-    int size, len, channels;
-
-    channels = is->audio_st->codec->channels;
+    int size, len;
 
     size = samples_size / sizeof(short);
     while (size > 0) {
