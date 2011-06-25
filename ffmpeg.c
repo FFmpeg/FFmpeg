@@ -640,10 +640,16 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
-static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, AVCodec *codec)
 {
-    int idx = oc->nb_streams - 1;
     OutputStream *ost;
+    AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
+    int idx      = oc->nb_streams - 1;
+
+    if (!st) {
+        av_log(NULL, AV_LOG_ERROR, "Could not alloc stream.\n");
+        ffmpeg_exit(1);
+    }
 
     output_streams_for_file[file_idx] =
         grow_array(output_streams_for_file[file_idx],
@@ -658,6 +664,10 @@ static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx)
     }
     ost->file_index = file_idx;
     ost->index = idx;
+    ost->st    = st;
+    ost->enc   = codec;
+
+    avcodec_get_context_defaults3(st->codec, codec);
 
     ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
@@ -673,27 +683,20 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
     if (err < 0)
         return err;
     /* copy stream format */
-    s->nb_streams = 0;
-    s->streams = av_mallocz(sizeof(AVStream *) * ic->nb_streams);
     for(i=0;i<ic->nb_streams;i++) {
         AVStream *st;
+        OutputStream *ost;
         AVCodec *codec;
 
-        s->nb_streams++;
+        codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
+        ost   = new_output_stream(s, nb_output_files, codec);
+        st    = ost->st;
 
         // FIXME: a more elegant solution is needed
-        st = av_mallocz(sizeof(AVStream));
         memcpy(st, ic->streams[i], sizeof(AVStream));
         st->info = NULL;
-        st->codec = avcodec_alloc_context();
-        if (!st->codec) {
-            print_error(filename, AVERROR(ENOMEM));
-            ffmpeg_exit(1);
-        }
         avcodec_copy_context(st->codec, ic->streams[i]->codec);
-        s->streams[i] = st;
 
-        codec = avcodec_find_encoder(st->codec->codec_id);
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (audio_stream_copy) {
                 st->stream_copy = 1;
@@ -708,8 +711,6 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 
         if(st->codec->flags & CODEC_FLAG_BITEXACT)
             nopts = 1;
-
-        new_output_stream(s, nb_output_files);
     }
 
     if (!nopts)
@@ -2003,7 +2004,6 @@ static int transcode(AVFormatContext **output_files,
         for(i=0;i<os->nb_streams;i++,n++) {
             int found;
             ost = ost_table[n] = output_streams_for_file[k][i];
-            ost->st = os->streams[i];
             if (nb_stream_maps > 0) {
                 ost->source_index = input_files[stream_maps[n].file_index].ist_index +
                     stream_maps[n].stream_index;
@@ -3428,24 +3428,20 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     enum CodecID codec_id = CODEC_ID_NONE;
     AVCodec *codec= NULL;
 
-    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
-    if (!st) {
-        fprintf(stderr, "Could not alloc stream\n");
-        ffmpeg_exit(1);
-    }
-    ost = new_output_stream(oc, file_idx);
-
     if(!video_stream_copy){
         if (video_codec_name) {
             codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1,
                                          avcodec_opts[AVMEDIA_TYPE_VIDEO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(video_codec_name);
-            ost->enc = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
             codec = avcodec_find_encoder(codec_id);
         }
+    }
 
+    ost = new_output_stream(oc, file_idx, codec);
+    st  = ost->st;
+    if (!video_stream_copy) {
         ost->frame_aspect_ratio = frame_aspect_ratio;
         frame_aspect_ratio = 0;
 #if CONFIG_AVFILTER
@@ -3454,7 +3450,6 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 #endif
     }
 
-    avcodec_get_context_defaults3(st->codec, codec);
     ost->bitstream_filters = video_bitstream_filters;
     video_bitstream_filters= NULL;
 
@@ -3567,26 +3562,18 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     AVCodecContext *audio_enc;
     enum CodecID codec_id = CODEC_ID_NONE;
 
-    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
-    if (!st) {
-        fprintf(stderr, "Could not alloc stream\n");
-        ffmpeg_exit(1);
-    }
-    ost = new_output_stream(oc, file_idx);
-
     if(!audio_stream_copy){
         if (audio_codec_name) {
             codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1,
                                          avcodec_opts[AVMEDIA_TYPE_AUDIO]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(audio_codec_name);
-            ost->enc = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_AUDIO);
             codec = avcodec_find_encoder(codec_id);
         }
     }
-
-    avcodec_get_context_defaults3(st->codec, codec);
+    ost = new_output_stream(oc, file_idx, codec);
+    st  = ost->st;
 
     ost->bitstream_filters = audio_bitstream_filters;
     audio_bitstream_filters= NULL;
@@ -3635,21 +3622,16 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 static void new_data_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
-    AVCodec *codec=NULL;
+    OutputStream *ost;
     AVCodecContext *data_enc;
 
-    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
-    if (!st) {
-        fprintf(stderr, "Could not alloc stream\n");
-        ffmpeg_exit(1);
-    }
-    new_output_stream(oc, file_idx);
+    ost = new_output_stream(oc, file_idx, NULL);
+    st  = ost->st;
     data_enc = st->codec;
     if (!data_stream_copy) {
         fprintf(stderr, "Data stream encoding not supported yet (only streamcopy)\n");
         ffmpeg_exit(1);
     }
-    avcodec_get_context_defaults3(st->codec, codec);
 
     data_enc->codec_type = AVMEDIA_TYPE_DATA;
 
@@ -3677,25 +3659,19 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
     AVCodecContext *subtitle_enc;
     enum CodecID codec_id = CODEC_ID_NONE;
 
-    st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
-    if (!st) {
-        fprintf(stderr, "Could not alloc stream\n");
-        ffmpeg_exit(1);
-    }
-    ost = new_output_stream(oc, file_idx);
-    subtitle_enc = st->codec;
     if(!subtitle_stream_copy){
         if (subtitle_codec_name) {
             codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1,
                                          avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
             codec = avcodec_find_encoder_by_name(subtitle_codec_name);
-            ost->enc = codec;
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_SUBTITLE);
             codec = avcodec_find_encoder(codec_id);
         }
     }
-    avcodec_get_context_defaults3(st->codec, codec);
+    ost = new_output_stream(oc, file_idx, codec);
+    st  = ost->st;
+    subtitle_enc = st->codec;
 
     ost->bitstream_filters = subtitle_bitstream_filters;
     subtitle_bitstream_filters= NULL;
