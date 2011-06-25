@@ -137,6 +137,95 @@ For more information read:
 
 IIDC1394 input device, based on libdc1394 and libraw1394.
 
+@section openal
+
+The OpenAL input device provides audio capture on all systems with a
+working OpenAL 1.1 implementation.
+
+To enable this input device during configuration, you need OpenAL
+headers and libraries installed on your system, and need to configure
+FFmpeg with @code{--enable-openal}.
+
+OpenAL headers and libraries should be provided as part of your OpenAL
+implementation, or as an additional download (an SDK). Depending on your
+installation you may need to specify additional flags via the
+@code{--extra-cflags} and @code{--extra-ldflags} for allowing the build
+system to locate the OpenAL headers and libraries.
+
+An incomplete list of OpenAL implementations follows:
+
+@table @strong
+@item Creative
+The official Windows implementation, providing hardware acceleration
+with supported devices and software fallback.
+See @url{http://openal.org/}.
+@item OpenAL Soft
+Portable, open source (LGPL) software implementation. Includes
+backends for the most common sound APIs on the Windows, Linux,
+Solaris, and BSD operating systems.
+See @url{http://kcat.strangesoft.net/openal.html}.
+@item Apple
+OpenAL is part of Core Audio, the official Mac OS X Audio interface.
+See @url{http://developer.apple.com/technologies/mac/audio-and-video.html}
+@end table
+
+This device allows to capture from an audio input device handled
+through OpenAL.
+
+You need to specify the name of the device to capture in the provided
+filename. If the empty string is provided, the device will
+automatically select the default device. You can get the list of the
+supported devices by using the option @var{list_devices}.
+
+@subsection Options
+
+@table @option
+
+@item channels
+Set the number of channels in the captured audio. Only the values
+@option{1} (monaural) and @option{2} (stereo) are currently supported.
+Defaults to @option{2}.
+
+@item sample_size
+Set the sample size (in bits) of the captured audio. Only the values
+@option{8} and @option{16} are currently supported. Defaults to
+@option{16}.
+
+@item sample_rate
+Set the sample rate (in Hz) of the captured audio.
+Defaults to @option{44.1k}.
+
+@item list_devices
+If set to @option{true}, print a list of devices and exit.
+Defaults to @option{false}.
+
+@end table
+
+@subsection Examples
+
+Print the list of OpenAL supported devices and exit:
+@example
+$ ffmpeg -list_devices true -f openal -i dummy out.ogg
+@end example
+
+Capture from the OpenAL device @file{DR-BT101 via PulseAudio}:
+@example
+$ ffmpeg -f openal -i 'DR-BT101 via PulseAudio' out.ogg
+@end example
+
+Capture from the default device (note the empty string '' as filename):
+@example
+$ ffmpeg -f openal -i '' out.ogg
+@end example
+
+Capture from two devices simultaneously, writing to two different files,
+within the same @file{ffmpeg} command:
+@example
+$ ffmpeg -f openal -i 'DR-BT101 via PulseAudio' out1.ogg -f openal -i 'ALSA Default' out2.ogg
+@end example
+Note: not all OpenAL implementations support multiple simultaneous capture -
+try the latest OpenAL Soft if the above does not work.
+
 @section oss
 
 Open Sound System input device.

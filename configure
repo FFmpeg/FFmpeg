@@ -188,6 +188,7 @@ External library support:
   --enable-libxavs         enable AVS encoding via xavs [no]
   --enable-libxvid         enable Xvid encoding via xvidcore,
                            native MPEG-4/Xvid encoder exists [no]
+  --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-mlib            enable Sun medialib [no]
   --enable-zlib            enable zlib [autodetect]
 
@@ -959,6 +960,7 @@ CONFIG_LIST="
     mpegaudiodsp
     network
     nonfree
+    openal
     pic
     postproc
     rdft
@@ -1471,6 +1473,7 @@ dv1394_indev_deps="dv1394 dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
 jack_indev_deps="jack_jack_h sem_timedwait"
 libdc1394_indev_deps="libdc1394"
+openal_indev_deps="openal"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
 sdl_outdev_deps="sdl"
@@ -2948,6 +2951,11 @@ enabled libx264    && require  libx264 x264.h x264_encoder_encode -lx264 &&
                         die "ERROR: libx264 version must be >= 0.115."; }
 enabled libxavs    && require  libxavs xavs.h xavs_encoder_encode -lxavs
 enabled libxvid    && require  libxvid xvid.h xvid_global -lxvidcore
+enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32"; do
+                        check_lib 'AL/al.h' alGetError "${al_libs}" && break; done } ||
+                        die "ERROR: openal not found"; } &&
+                      { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
+                        die "ERROR: openal version must be 1.1 or compatible"; }
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
 
 SDL_CONFIG="${cross_prefix}sdl-config"
@@ -3247,6 +3255,7 @@ echo "libvpx enabled            ${libvpx-no}"
 echo "libx264 enabled           ${libx264-no}"
 echo "libxavs enabled           ${libxavs-no}"
 echo "libxvid enabled           ${libxvid-no}"
+echo "openal enabled            ${openal-no}"
 echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
 echo
