@@ -11,6 +11,7 @@ version next:
 - thumbnail video filter
 - XML output in ffprobe
 - asplit audio filter
+- tinterlace video filter
 
 
 version 0.9:

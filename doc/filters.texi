@@ -2433,6 +2433,40 @@ Complete example of a thumbnail creation with @command{ffmpeg}:
 ffmpeg -i in.avi -vf thumbnail,scale=300:200 -frames:v 1 out.png
 @end example
 
+@section tinterlace
+
+Perform various types of temporal field interlacing.
+
+Frames are counted starting from 1, so the first input frame is
+considered odd.
+
+This filter accepts a single parameter specifying the mode. Available
+modes are:
+
+@table @samp
+@item 0
+Move odd frames into the upper field, even into the lower field,
+generating a double height frame at half framerate.
+
+@item 1
+Only output even frames, odd frames are dropped, generating a frame with
+unchanged height at half framerate.
+
+@item 2
+Only output odd frames, even frames are dropped, generating a frame with
+unchanged height at half framerate.
+
+@item 3
+Expand each frame to full height, but pad alternate lines with black,
+generating a frame with double height at the same input framerate.
+
+@item 4
+Interleave the upper field from odd frames with the lower field from
+even frames, generating a frame with unchanged height at half framerate.
+@end table
+
+Default mode is 0.
+
 @section transpose
 
 Transpose rows with columns in the input video and optionally flip it.

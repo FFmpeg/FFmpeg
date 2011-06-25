@@ -1652,6 +1652,7 @@ mptestsrc_filter_deps="gpl"
 negate_filter_deps="lut_filter"
 ocv_filter_deps="libopencv"
 scale_filter_deps="swscale"
+tinterlace_filter_deps="gpl"
 yadif_filter_deps="gpl"
 
 # libraries
