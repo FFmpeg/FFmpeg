@@ -1,11 +1,4 @@
-fulltest test: codectest lavftest lavfitest seektest
-
 FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
-
-codectest: fate-codec
-lavftest:  fate-lavf
-lavfitest: fate-lavfi
-seektest:  fate-seek
 
 AREF = fate-acodec-aref
 VREF = fate-vsynth1-vref fate-vsynth2-vref
@@ -120,4 +113,4 @@ testclean:
 
 -include $(wildcard tests/*.d)
 
-.PHONY: fate* *test
+.PHONY: fate*

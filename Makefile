@@ -185,8 +185,6 @@ distclean::
 config:
 	$(SRC_PATH)/configure $(value LIBAV_CONFIGURATION)
 
-check: test checkheaders
-
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/tests/Makefile
 
