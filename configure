@@ -3059,6 +3059,8 @@ elif enabled armcc; then
     add_cflags -W${armcc_opt},--diag_suppress=1207
     add_cflags -W${armcc_opt},--diag_suppress=1293 # assignment in condition
     add_cflags -W${armcc_opt},--diag_suppress=3343 # hardfp compat
+    add_cflags -W${armcc_opt},--diag_suppress=167  # pointer sign
+    add_cflags -W${armcc_opt},--diag_suppress=513  # pointer sign
 elif enabled tms470; then
     add_cflags -pds=824 -pds=837
 elif enabled pathscale; then
