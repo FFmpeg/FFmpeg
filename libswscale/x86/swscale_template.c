@@ -2203,7 +2203,8 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
     enum PixelFormat srcFormat = c->srcFormat,
                      dstFormat = c->dstFormat;
 
-    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat)) {
+    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
+        dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21) {
         if (!(c->flags & SWS_BITEXACT)) {
             if (c->flags & SWS_ACCURATE_RND) {
                 c->yuv2yuv1 = RENAME(yuv2yuv1_ar    );
