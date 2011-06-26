@@ -128,6 +128,7 @@ easier to use. The changes are:
 - CRI ADX audio format demuxer
 - Playstation Portable PMP format demuxer
 - Microsoft Windows ICO demuxer
+- life source
 
 
 version 0.8:
