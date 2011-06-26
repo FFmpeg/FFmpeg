@@ -306,21 +306,25 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterBufferRef *inpic  = inlink ->cur_buf;
     AVFilterBufferRef *outpic = outlink->out_buf;
-    uint8_t *inrow, *outrow;
+    uint8_t *inrow, *outrow, *inrow0, *outrow0;
     int i, j, k, plane;
 
     if (lut->is_rgb) {
         /* packed */
-        inrow  = inpic ->data[0] + y * inpic ->linesize[0];
-        outrow = outpic->data[0] + y * outpic->linesize[0];
+        inrow0  = inpic ->data[0] + y * inpic ->linesize[0];
+        outrow0 = outpic->data[0] + y * outpic->linesize[0];
 
         for (i = 0; i < h; i ++) {
+            inrow  = inrow0;
+            outrow = outrow0;
             for (j = 0; j < inlink->w; j++) {
                 for (k = 0; k < lut->step; k++)
                     outrow[k] = lut->lut[lut->rgba_map[k]][inrow[k]];
                 outrow += lut->step;
                 inrow  += lut->step;
             }
+            inrow0  += inpic ->linesize[0];
+            outrow0 += outpic->linesize[0];
         }
     } else {
         /* planar */
