@@ -1804,10 +1804,8 @@ static void rgb24ToUV_half_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
     }
 }
 
-
 // bilinear / bicubic scaling
 static void hScale_c(int16_t *dst, int dstW, const uint8_t *src,
-                     int srcW, int xInc,
                      const int16_t *filter, const int16_t *filterPos,
                      int filterSize)
 {
@@ -1886,7 +1884,7 @@ static av_always_inline void hyscale(SwsContext *c, uint16_t *dst, int dstWidth,
     }
 
     if (!c->hyscale_fast) {
-        c->hScale(dst, dstWidth, src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize);
+        c->hScale(dst, dstWidth, src, hLumFilter, hLumFilterPos, hLumFilterSize);
     } else { // fast bilinear upscale / crap downscale
         c->hyscale_fast(c, dst, dstWidth, src, srcW, xInc);
     }
@@ -1924,8 +1922,8 @@ static av_always_inline void hcscale(SwsContext *c, uint16_t *dst1, uint16_t *ds
     }
 
     if (!c->hcscale_fast) {
-        c->hScale(dst1, dstWidth, src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
-        c->hScale(dst2, dstWidth, src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hScale(dst1, dstWidth, src1, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hScale(dst2, dstWidth, src2, hChrFilter, hChrFilterPos, hChrFilterSize);
     } else { // fast bilinear upscale / crap downscale
         c->hcscale_fast(c, dst1, dst2, dstWidth, src1, src2, srcW, xInc);
     }

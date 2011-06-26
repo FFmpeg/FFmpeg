@@ -1906,8 +1906,7 @@ static void RENAME(rgb24ToUV)(uint8_t *dstU, uint8_t *dstV,
 #if !COMPILE_TEMPLATE_MMX2
 // bilinear / bicubic scaling
 static void RENAME(hScale)(int16_t *dst, int dstW,
-                           const uint8_t *src, int srcW,
-                           int xInc, const int16_t *filter,
+                           const uint8_t *src, const int16_t *filter,
                            const int16_t *filterPos, int filterSize)
 {
     assert(filterSize % 4 == 0 && filterSize>0);
