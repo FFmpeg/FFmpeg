@@ -26,7 +26,6 @@
  */
 
 #include "libavutil/avstring.h"
-#include "libavutil/integer.h"
 #include "libavutil/crc.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/audioconvert.h"
