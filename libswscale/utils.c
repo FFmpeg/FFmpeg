@@ -845,6 +845,19 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     getSubSampleFactors(&c->chrDstHSubSample, &c->chrDstVSubSample, dstFormat);
 
     // reuse chroma for 2 pixels RGB/BGR unless user wants full chroma interpolation
+    if (flags & SWS_FULL_CHR_H_INT &&
+        dstFormat != PIX_FMT_RGBA &&
+        dstFormat != PIX_FMT_ARGB &&
+        dstFormat != PIX_FMT_BGRA &&
+        dstFormat != PIX_FMT_ABGR &&
+        dstFormat != PIX_FMT_RGB24 &&
+        dstFormat != PIX_FMT_BGR24) {
+        av_log(c, AV_LOG_ERROR,
+               "full chroma interpolation for destination format '%s' not yet implemented\n",
+               sws_format_name(dstFormat));
+        flags &= ~SWS_FULL_CHR_H_INT;
+        c->flags = flags;
+    }
     if (isAnyRGB(dstFormat) && !(flags&SWS_FULL_CHR_H_INT)) c->chrDstHSubSample=1;
 
     // drop some chroma lines if the user wants it
