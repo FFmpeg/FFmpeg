@@ -70,7 +70,7 @@ static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 
 static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
 {
-    if (!ctx->cid_table) {
+    if (cid != ctx->cid) {
         int index;
 
         if ((index = ff_dnxhd_get_cid_table(cid)) < 0) {
@@ -78,6 +78,11 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
             return -1;
         }
         ctx->cid_table = &ff_dnxhd_cid_table[index];
+
+        free_vlc(&ctx->ac_vlc);
+        free_vlc(&ctx->dc_vlc);
+        free_vlc(&ctx->run_vlc);
+
         init_vlc(&ctx->ac_vlc, DNXHD_VLC_BITS, 257,
                  ctx->cid_table->ac_bits, 1, 1,
                  ctx->cid_table->ac_codes, 2, 2, 0);
@@ -89,6 +94,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
                  ctx->cid_table->run_codes, 2, 2, 0);
 
         ff_init_scantable(ctx->dsp.idct_permutation, &ctx->scantable, ff_zigzag_direct);
+        ctx->cid = cid;
     }
     return 0;
 }
@@ -96,7 +102,7 @@ static int dnxhd_init_vlc(DNXHDContext *ctx, int cid)
 static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_size, int first_field)
 {
     static const uint8_t header_prefix[] = { 0x00, 0x00, 0x02, 0x80, 0x01 };
-    int i;
+    int i, cid;
 
     if (buf_size < 0x280)
         return -1;
@@ -135,10 +141,10 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
         }
     }
 
-    ctx->cid = AV_RB32(buf + 0x28);
-    av_dlog(ctx->avctx, "compression id %d\n", ctx->cid);
+    cid = AV_RB32(buf + 0x28);
+    av_dlog(ctx->avctx, "compression id %d\n", cid);
 
-    if (dnxhd_init_vlc(ctx, ctx->cid) < 0)
+    if (dnxhd_init_vlc(ctx, cid) < 0)
         return -1;
 
     if (buf_size < ctx->cid_table->coding_unit_size) {
