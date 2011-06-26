@@ -1,3 +1,5 @@
+include $(SUBDIR)../config.mak
+
 NAME    = avdevice
 FFLIBS  = avformat avcodec avutil
 
