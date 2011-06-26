@@ -3300,6 +3300,7 @@ if enabled source_path_used; then
         libswscale
         libswscale/$arch
         tests
+        tests/fate
         tools
     "
     FILES="
@@ -3318,6 +3319,15 @@ if enabled source_path_used; then
         libpostproc/Makefile
         libswscale/Makefile
         tests/Makefile
+        tests/fate.mak
+        tests/fate2.mak
+        tests/fate/aac.mak
+        tests/fate/als.mak
+        tests/fate/fft.mak
+        tests/fate/h264.mak
+        tests/fate/mp3.mak
+        tests/fate/vorbis.mak
+        tests/fate/vp8.mak
     "
     map 'mkdir -p $v' $DIRS;
     map 'test -f "$source_path/$v" && $ln_s "$source_path/$v" $v' $FILES
