@@ -420,9 +420,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 
 @enumerate
 @item
-    Does @code{make fate} pass with the patch applied?
-@item
-    Does @code{make checkheaders} pass with the patch applied?
+    Does @code{make check} pass with the patch applied?
 @item
     Is the patch against latest Libav git master branch?
 @item
