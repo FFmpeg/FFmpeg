@@ -4075,13 +4075,13 @@ static void parse_matrix_coeffs(uint16_t *dest, const char *str)
     }
 }
 
-static void opt_inter_matrix(const char *arg)
+static void opt_inter_matrix(const char *opt, const char *arg)
 {
     inter_matrix = av_mallocz(sizeof(uint16_t) * 64);
     parse_matrix_coeffs(inter_matrix, arg);
 }
 
-static void opt_intra_matrix(const char *arg)
+static void opt_intra_matrix(const char *opt, const char *arg)
 {
     intra_matrix = av_mallocz(sizeof(uint16_t) * 64);
     parse_matrix_coeffs(intra_matrix, arg);
@@ -4379,7 +4379,7 @@ static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
 {
 }
 
-static void opt_passlogfile(const char *arg)
+static void opt_passlogfile(const char *opt, const char *arg)
 {
     pass_logfilename_prefix = arg;
     opt_default("passlogfile", arg);
