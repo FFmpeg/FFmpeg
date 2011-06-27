@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "bytestream.h"
 #include "targa.h"
 
 typedef struct TargaContext {
@@ -116,13 +117,13 @@ static int decode_frame(AVCodecContext *avctx,
     idlen = *buf++;
     buf++; /* pal */
     compr = *buf++;
-    first_clr = AV_RL16(buf); buf += 2;
-    colors = AV_RL16(buf); buf += 2;
+    first_clr = bytestream_get_le16(&buf);
+    colors = bytestream_get_le16(&buf);
     csize = *buf++;
     buf += 2; /* x */
-    y = AV_RL16(buf); buf += 2;
-    w = AV_RL16(buf); buf += 2;
-    h = AV_RL16(buf); buf += 2;
+    y = bytestream_get_le16(&buf);
+    w = bytestream_get_le16(&buf);
+    h = bytestream_get_le16(&buf);
     bpp = *buf++;
     flags = *buf++;
     //skip identifier if any
@@ -186,13 +187,10 @@ static int decode_frame(AVCodecContext *avctx,
         if(avctx->pix_fmt != PIX_FMT_PAL8)//should not occur but skip palette anyway
             buf += pal_size;
         else{
-            int r, g, b, t;
+            int t;
             int32_t *pal = ((int32_t*)p->data[1]) + first_clr;
             for(t = 0; t < colors; t++){
-                b = *buf++;
-                g = *buf++;
-                r = *buf++;
-                *pal++ = (0xff<<24) | (r << 16) | (g << 8) | b;
+                *pal++ = (0xff<<24) | bytestream_get_le24(&buf);
             }
             p->palette_has_changed = 1;
         }
