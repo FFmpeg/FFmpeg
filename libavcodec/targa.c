@@ -109,17 +109,22 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame * const p= (AVFrame*)&s->picture;
     uint8_t *dst;
     int stride;
-    int idlen, compr, y, w, h, bpp, flags;
+    int idlen, pal, compr, y, w, h, bpp, flags;
     int first_clr, colors, csize;
 
     /* parse image header */
     CHECK_BUFFER_SIZE(buf, buf_end, 18, "header");
     idlen = *buf++;
-    buf++; /* pal */
+    pal = *buf++;
     compr = *buf++;
     first_clr = bytestream_get_le16(&buf);
     colors = bytestream_get_le16(&buf);
     csize = *buf++;
+    if (!pal && (first_clr || colors || csize)) {
+        av_log(avctx, AV_LOG_WARNING, "File without colormap has colormap information set.\n");
+        // specification says we should ignore those value in this case
+        first_clr = colors = csize = 0;
+    }
     buf += 2; /* x */
     y = bytestream_get_le16(&buf);
     w = bytestream_get_le16(&buf);
