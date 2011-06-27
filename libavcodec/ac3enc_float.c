@@ -82,18 +82,27 @@ av_cold int ff_ac3_float_mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
 /**
  * Apply KBD window to input samples prior to MDCT.
  */
-void ff_ac3_float_apply_window(DSPContext *dsp, float *output,
-                               const float *input, const float *window,
-                               unsigned int len)
+static void apply_window(DSPContext *dsp, float *output, const float *input,
+                         const float *window, unsigned int len)
 {
     dsp->vector_fmul(output, input, window, len);
 }
 
 
 /**
+ * Normalize the input samples.
+ * Not needed for the floating-point encoder.
+ */
+static int normalize_samples(AC3EncodeContext *s)
+{
+    return 0;
+}
+
+
+/**
  * Scale MDCT coefficients from float to 24-bit fixed-point.
  */
-void ff_ac3_float_scale_coefficients(AC3EncodeContext *s)
+static void scale_coefficients(AC3EncodeContext *s)
 {
     int chan_size = AC3_MAX_COEFS * AC3_MAX_BLOCKS;
     s->ac3dsp.float_to_fixed24(s->fixed_coef_buffer + chan_size,
@@ -109,7 +118,7 @@ AVCodec ff_ac3_encoder = {
     CODEC_ID_AC3,
     sizeof(AC3EncodeContext),
     ff_ac3_encode_init,
-    ff_ac3_encode_frame,
+    ff_ac3_float_encode_frame,
     ff_ac3_encode_close,
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
