@@ -72,19 +72,6 @@ void AC3_NAME(apply_window)(DSPContext *dsp, int16_t *output,
 
 
 /**
- * Calculate the log2() of the maximum absolute value in an array.
- * @param tab input array
- * @param n   number of values in the array
- * @return    log2(max(abs(tab[])))
- */
-static int log2_tab(AC3EncodeContext *s, int16_t *src, int len)
-{
-    int v = s->ac3dsp.ac3_max_msb_abs_int16(src, len);
-    return av_log2(v);
-}
-
-
-/**
  * Normalize the input samples to use the maximum available precision.
  * This assumes signed 16-bit input samples.
  *
@@ -92,7 +79,8 @@ static int log2_tab(AC3EncodeContext *s, int16_t *src, int len)
  */
 int AC3_NAME(normalize_samples)(AC3EncodeContext *s)
 {
-    int v = 14 - log2_tab(s, s->windowed_samples, AC3_WINDOW_SIZE);
+    int v = s->ac3dsp.ac3_max_msb_abs_int16(s->windowed_samples, AC3_WINDOW_SIZE);
+    v = 14 - av_log2(v);
     if (v > 0)
         s->ac3dsp.ac3_lshift_int16(s->windowed_samples, AC3_WINDOW_SIZE, v);
     /* +6 to right-shift from 31-bit to 25-bit */
