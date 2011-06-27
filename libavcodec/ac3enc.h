@@ -50,12 +50,16 @@
 #if CONFIG_AC3ENC_FLOAT
 #define AC3_NAME(x) ff_ac3_float_ ## x
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
+#define COEF_MIN (-16777215.0/16777216.0)
+#define COEF_MAX ( 16777215.0/16777216.0)
 typedef float SampleType;
 typedef float CoefType;
 typedef float CoefSumType;
 #else
 #define AC3_NAME(x) ff_ac3_fixed_ ## x
 #define MAC_COEF(d,a,b) MAC64(d,a,b)
+#define COEF_MIN -16777215
+#define COEF_MAX  16777215
 typedef int16_t SampleType;
 typedef int32_t CoefType;
 typedef int64_t CoefSumType;
