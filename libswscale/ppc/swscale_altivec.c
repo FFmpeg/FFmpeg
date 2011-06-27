@@ -222,8 +222,7 @@ yuv2yuvX_altivec_real(SwsContext *c,
 }
 
 static void hScale_altivec_real(int16_t *dst, int dstW,
-                                const uint8_t *src, int srcW,
-                                int xInc, const int16_t *filter,
+                                const uint8_t *src, const int16_t *filter,
                                 const int16_t *filterPos, int filterSize)
 {
     register int i;
