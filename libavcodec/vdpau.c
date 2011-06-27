@@ -183,7 +183,8 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
     render->info.h264.deblocking_filter_control_present_flag = h->pps.deblocking_filter_parameters_present;
     render->info.h264.redundant_pic_cnt_present_flag         = h->pps.redundant_pic_cnt_present;
     memcpy(render->info.h264.scaling_lists_4x4, h->pps.scaling_matrix4, sizeof(render->info.h264.scaling_lists_4x4));
-    memcpy(render->info.h264.scaling_lists_8x8, h->pps.scaling_matrix8, sizeof(render->info.h264.scaling_lists_8x8));
+    memcpy(render->info.h264.scaling_lists_8x8[0], h->pps.scaling_matrix8[0], sizeof(render->info.h264.scaling_lists_8x8[0]));
+    memcpy(render->info.h264.scaling_lists_8x8[1], h->pps.scaling_matrix8[3], sizeof(render->info.h264.scaling_lists_8x8[0]));
 
     ff_draw_horiz_band(s, 0, s->avctx->height);
     render->bitstream_buffers_used = 0;
