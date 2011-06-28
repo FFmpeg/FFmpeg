@@ -57,24 +57,122 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t* src[],
                        int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t* dst[], int dstStride[]);
 
+/**
+ * Write one line of horizontally scaled Y/U/V/A to planar output
+ * without any additional vertical scaling (or point-scaling).
+ *
+ * @param c       SWS scaling context
+ * @param lumSrc  scaled luma (Y) source data, 15bit for 8bit output
+ * @param chrUSrc scaled chroma (U) source data, 15bit for 8bit output
+ * @param chrVSrc scaled chroma (V) source data, 15bit for 8bit output
+ * @param alpSrc  scaled alpha (A) source data, 15bit for 8bit output
+ * @param dest    pointer to the 4 output planes (Y/U/V/A)
+ * @param dstW    width of dest[0], dest[3], lumSrc and alpSrc in pixels
+ * @param chrDstW width of dest[1], dest[2], chrUSrc and chrVSrc
+ */
 typedef void (*yuv2planar1_fn) (struct SwsContext *c,
                                 const int16_t *lumSrc, const int16_t *chrUSrc,
                                 const int16_t *chrVSrc, const int16_t *alpSrc,
                                 uint8_t *dest[4], int dstW, int chrDstW);
+/**
+ * Write one line of horizontally scaled Y/U/V/A to planar output
+ * with multi-point vertical scaling between input pixels.
+ *
+ * @param c             SWS scaling context
+ * @param lumFilter     vertical luma/alpha scaling coefficients, 12bit [0,4096]
+ * @param lumSrc        scaled luma (Y) source data, 15bit for 8bit output
+ * @param lumFilterSize number of vertical luma/alpha input lines to scale
+ * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15bit for 8bit output
+ * @param chrVSrc       scaled chroma (V) source data, 15bit for 8bit output
+ * @param chrFilterSize number of vertical chroma input lines to scale
+ * @param alpSrc        scaled alpha (A) source data, 15bit for 8bit output
+ * @param dest          pointer to the 4 output planes (Y/U/V/A)
+ * @param dstW          width of dest[0], dest[3], lumSrc and alpSrc in pixels
+ * @param chrDstW       width of dest[1], dest[2], chrUSrc and chrVSrc
+ */
 typedef void (*yuv2planarX_fn) (struct SwsContext *c, const int16_t *lumFilter,
                                 const int16_t **lumSrc, int lumFilterSize,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
                                 const int16_t **chrVSrc,  int chrFilterSize,
                                 const int16_t **alpSrc, uint8_t *dest[4],
                                 int dstW, int chrDstW);
+/**
+ * Write one line of horizontally scaled Y/U/V/A to packed-pixel YUV/RGB
+ * output without any additional vertical scaling (or point-scaling). Note
+ * that this function may do chroma scaling, see the "uvalpha" argument.
+ *
+ * @param c       SWS scaling context
+ * @param lumSrc  scaled luma (Y) source data, 15bit for 8bit output
+ * @param chrUSrc scaled chroma (U) source data, 15bit for 8bit output
+ * @param chrVSrc scaled chroma (V) source data, 15bit for 8bit output
+ * @param alpSrc  scaled alpha (A) source data, 15bit for 8bit output
+ * @param dest    pointer to the output plane
+ * @param dstW    width of lumSrc and alpSrc in pixels, number of pixels
+ *                to write into dest[]
+ * @param uvalpha chroma scaling coefficient for the second line of chroma
+ *                pixels, either 2048 or 0. If 0, one chroma input is used
+ *                for 2 output pixels (or if the SWS_FLAG_FULL_CHR_INT flag
+ *                is set, it generates 1 output pixel). If 2048, two chroma
+ *                input pixels should be averaged for 2 output pixels (this
+ *                only happens if SWS_FLAG_FULL_CHR_INT is not set)
+ * @param y       vertical line number for this output. This does not need
+ *                to be used to calculate the offset in the destination,
+ *                but can be used to generate comfort noise using dithering
+ *                for some output formats.
+ */
 typedef void (*yuv2packed1_fn) (struct SwsContext *c,  const int16_t *lumSrc,
                                 const int16_t *chrUSrc[2], const int16_t *chrVSrc[2],
                                 const int16_t *alpSrc,  uint8_t *dest,
                                 int dstW, int uvalpha, int y);
+/**
+ * Write one line of horizontally scaled Y/U/V/A to packed-pixel YUV/RGB
+ * output by doing bilinear scaling between two input lines.
+ *
+ * @param c       SWS scaling context
+ * @param lumSrc  scaled luma (Y) source data, 15bit for 8bit output
+ * @param chrUSrc scaled chroma (U) source data, 15bit for 8bit output
+ * @param chrVSrc scaled chroma (V) source data, 15bit for 8bit output
+ * @param alpSrc  scaled alpha (A) source data, 15bit for 8bit output
+ * @param dest    pointer to the output plane
+ * @param dstW    width of lumSrc and alpSrc in pixels, number of pixels
+ *                to write into dest[]
+ * @param yalpha  luma/alpha scaling coefficients for the second input line.
+ *                The first line's coefficients can be calculated by using
+ *                4096 - yalpha
+ * @param uvalpha chroma scaling coefficient for the second input line. The
+ *                first line's coefficients can be calculated by using
+ *                4096 - uvalpha
+ * @param y       vertical line number for this output. This does not need
+ *                to be used to calculate the offset in the destination,
+ *                but can be used to generate comfort noise using dithering
+ *                for some output formats.
+ */
 typedef void (*yuv2packed2_fn) (struct SwsContext *c,  const int16_t *lumSrc[2],
                                 const int16_t *chrUSrc[2], const int16_t *chrVSrc[2],
                                 const int16_t *alpSrc[2], uint8_t *dest,
                                 int dstW, int yalpha, int uvalpha, int y);
+/**
+ * Write one line of horizontally scaled Y/U/V/A to packed-pixel YUV/RGB
+ * output by doing multi-point vertical scaling between input pixels.
+ *
+ * @param c             SWS scaling context
+ * @param lumFilter     vertical luma/alpha scaling coefficients, 12bit [0,4096]
+ * @param lumSrc        scaled luma (Y) source data, 15bit for 8bit output
+ * @param lumFilterSize number of vertical luma/alpha input lines to scale
+ * @param chrFilter     vertical chroma scaling coefficients, 12bit [0,4096]
+ * @param chrUSrc       scaled chroma (U) source data, 15bit for 8bit output
+ * @param chrVSrc       scaled chroma (V) source data, 15bit for 8bit output
+ * @param chrFilterSize number of vertical chroma input lines to scale
+ * @param alpSrc        scaled alpha (A) source data, 15bit for 8bit output
+ * @param dest          pointer to the output plane
+ * @param dstW          width of lumSrc and alpSrc in pixels, number of pixels
+ *                      to write into dest[]
+ * @param y             vertical line number for this output. This does not need
+ *                      to be used to calculate the offset in the destination,
+ *                      but can be used to generate comfort noise using dithering
+ *                      or some output formats.
+ */
 typedef void (*yuv2packedX_fn) (struct SwsContext *c, const int16_t *lumFilter,
                                 const int16_t **lumSrc, int lumFilterSize,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
