@@ -203,8 +203,12 @@ static void pick_format(AVFilterLink *link)
         link->channel_layout = link->in_chlayouts->formats[0];
         avfilter_formats_unref(&link->in_chlayouts);
         avfilter_formats_unref(&link->out_chlayouts);
-    }
 
+        link->in_packing->format_count = 1;
+        link->planar = link->in_packing->formats[0] == AVFILTER_PLANAR;
+        avfilter_formats_unref(&link->in_packing);
+        avfilter_formats_unref(&link->out_packing);
+    }
 }
 
 static void pick_formats(AVFilterGraph *graph)

@@ -221,6 +221,9 @@ int avfilter_insert_filter(AVFilterLink *link, AVFilterContext *filt,
     if (link->out_chlayouts)
         avfilter_formats_changeref(&link->out_chlayouts,
                                    &filt->outputs[filt_dstpad_idx]->out_chlayouts);
+    if (link->out_packing)
+        avfilter_formats_changeref(&link->out_packing,
+                                   &filt->outputs[filt_dstpad_idx]->out_packing);
 
     return 0;
 }

@@ -173,6 +173,17 @@ AVFilterFormats *avfilter_all_channel_layouts(void)
     return avfilter_make_format64_list(chlayouts);
 }
 
+AVFilterFormats *avfilter_all_packing_formats(void)
+{
+    static int packing[] = {
+        AVFILTER_PACKED,
+        AVFILTER_PLANAR,
+        -1,
+    };
+
+    return avfilter_make_format_list(packing);
+}
+
 void avfilter_formats_ref(AVFilterFormats *f, AVFilterFormats **ref)
 {
     *ref = f;

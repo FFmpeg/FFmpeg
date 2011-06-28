@@ -29,7 +29,7 @@
 #include "libavutil/rational.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 26
+#define LIBAVFILTER_VERSION_MINOR 27
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -265,6 +265,11 @@ AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
 AVFilterFormats *avfilter_all_channel_layouts(void);
 
 /**
+ * Return a list of all audio packing formats.
+ */
+AVFilterFormats *avfilter_all_packing_formats(void);
+
+/**
  * Return a format list which contains the intersection of the formats of
  * a and b. Also, all the references of a, all the references of b, and
  * a and b themselves will be deallocated.
@@ -482,6 +487,7 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
 void avfilter_set_common_pixel_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 void avfilter_set_common_sample_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 void avfilter_set_common_channel_layouts(AVFilterContext *ctx, AVFilterFormats *formats);
+void avfilter_set_common_packing_formats(AVFilterContext *ctx, AVFilterFormats *formats);
 
 /** Default handler for query_formats() */
 int avfilter_default_query_formats(AVFilterContext *ctx);
@@ -570,6 +576,11 @@ struct AVFilterContext {
     void *priv;                     ///< private data for use by the filter
 };
 
+enum AVFilterPacking {
+    AVFILTER_PACKED = 0,
+    AVFILTER_PLANAR,
+};
+
 /**
  * A link between two filters. This contains pointers to the source and
  * destination filters between which this link exists, and the indexes of
@@ -597,9 +608,10 @@ struct AVFilterLink {
     int w;                      ///< agreed upon image width
     int h;                      ///< agreed upon image height
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
-    /* These two parameters apply only to audio */
+    /* These parameters apply only to audio */
     int64_t channel_layout;     ///< channel layout of current buffer (see libavutil/audioconvert.h)
     int64_t sample_rate;        ///< samples per second
+    int planar;                 ///< agreed upon packing mode of audio buffers. true if planar.
 
     int format;                 ///< agreed upon media format
 
@@ -615,6 +627,8 @@ struct AVFilterLink {
 
     AVFilterFormats *in_chlayouts;
     AVFilterFormats *out_chlayouts;
+    AVFilterFormats *in_packing;
+    AVFilterFormats *out_packing;
 
     /**
      * The buffer reference currently being sent across the link by the source
