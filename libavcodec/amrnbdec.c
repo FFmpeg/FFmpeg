@@ -936,7 +936,8 @@ static int amrnb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     p->cur_frame_mode = unpack_bitstream(p, buf, buf_size);
     if (p->cur_frame_mode == MODE_DTX) {
-        av_log_missing_feature(avctx, "dtx mode", 1);
+        av_log_missing_feature(avctx, "dtx mode", 0);
+        av_log(avctx, AV_LOG_INFO, "Note: libopencore_amrnb supports dtx\n");
         return -1;
     }
 
