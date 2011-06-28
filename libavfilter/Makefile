@@ -58,8 +58,8 @@ OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
--include $(SUBDIR)$(ARCH)/Makefile
+-include $(SRC_PATH)/$(SUBDIR)$(ARCH)/Makefile
 
 DIRS = x86
 
-include $(SUBDIR)../subdir.mak
+include $(SRC_PATH)/subdir.mak

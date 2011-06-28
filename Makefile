@@ -79,7 +79,7 @@ DATA_FILES := $(wildcard $(SRC_PATH)/ffpresets/*.ffpreset)
 
 SKIPHEADERS = cmdutils_common_opts.h
 
-include common.mak
+include $(SRC_PATH)/common.mak
 
 FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
@@ -105,7 +105,7 @@ endef
 define DOSUBDIR
 $(foreach V,$(SUBDIR_VARS),$(eval $(call RESET,$(V))))
 SUBDIR := $(1)/
-include $(1)/Makefile
+include $(SRC_PATH)/$(1)/Makefile
 endef
 
 $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
@@ -182,8 +182,8 @@ config:
 
 check: test checkheaders
 
-include doc/Makefile
-include tests/Makefile
+include $(SRC_PATH)/doc/Makefile
+include $(SRC_PATH)/tests/Makefile
 
 # Dummy rule to stop make trying to rebuild removed or renamed headers
 %.h:

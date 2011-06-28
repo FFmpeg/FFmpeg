@@ -22,4 +22,4 @@ TESTPROGS = colorspace swscale
 
 DIRS = bfin mlib ppc sparc x86
 
-include $(SUBDIR)../subdir.mak
+include $(SRC_PATH)/subdir.mak
