@@ -104,7 +104,8 @@ enum AVMediaType {
 #define AV_TIME_BASE_Q          (AVRational){1, AV_TIME_BASE}
 
 enum AVPictureType {
-    AV_PICTURE_TYPE_I = 1, ///< Intra
+    AV_PICTURE_TYPE_NONE = 0, ///< Undefined
+    AV_PICTURE_TYPE_I,     ///< Intra
     AV_PICTURE_TYPE_P,     ///< Predicted
     AV_PICTURE_TYPE_B,     ///< Bi-dir predicted
     AV_PICTURE_TYPE_S,     ///< S(GMC)-VOP MPEG4
