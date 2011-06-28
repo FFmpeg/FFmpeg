@@ -3054,6 +3054,82 @@ int ff_h264_get_slice_type(const H264Context *h)
     }
 }
 
+static av_always_inline void fill_filter_caches_inter(H264Context *h, MpegEncContext * const s, int mb_type, int top_xy,
+                                                      int left_xy[2], int top_type, int left_type[2], int mb_xy, int list)
+{
+    int b_stride = h->b_stride;
+    int16_t (*mv_dst)[2] = &h->mv_cache[list][scan8[0]];
+    int8_t *ref_cache = &h->ref_cache[list][scan8[0]];
+    if(IS_INTER(mb_type) || IS_DIRECT(mb_type)){
+        if(USES_LIST(top_type, list)){
+            const int b_xy= h->mb2b_xy[top_xy] + 3*b_stride;
+            const int b8_xy= 4*top_xy + 2;
+            int (*ref2frm)[64] = h->ref2frm[ h->slice_table[top_xy]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
+            AV_COPY128(mv_dst - 1*8, s->current_picture.motion_val[list][b_xy + 0]);
+            ref_cache[0 - 1*8]=
+            ref_cache[1 - 1*8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 0]];
+            ref_cache[2 - 1*8]=
+            ref_cache[3 - 1*8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 1]];
+        }else{
+            AV_ZERO128(mv_dst - 1*8);
+            AV_WN32A(&ref_cache[0 - 1*8], ((LIST_NOT_USED)&0xFF)*0x01010101u);
+        }
+
+        if(!IS_INTERLACED(mb_type^left_type[0])){
+            if(USES_LIST(left_type[0], list)){
+                const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
+                const int b8_xy= 4*left_xy[0] + 1;
+                int (*ref2frm)[64] = h->ref2frm[ h->slice_table[left_xy[0]]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
+                AV_COPY32(mv_dst - 1 + 0, s->current_picture.motion_val[list][b_xy + b_stride*0]);
+                AV_COPY32(mv_dst - 1 + 8, s->current_picture.motion_val[list][b_xy + b_stride*1]);
+                AV_COPY32(mv_dst - 1 +16, s->current_picture.motion_val[list][b_xy + b_stride*2]);
+                AV_COPY32(mv_dst - 1 +24, s->current_picture.motion_val[list][b_xy + b_stride*3]);
+                ref_cache[-1 +  0]=
+                ref_cache[-1 +  8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 2*0]];
+                ref_cache[-1 + 16]=
+                ref_cache[-1 + 24]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 2*1]];
+            }else{
+                AV_ZERO32(mv_dst - 1 + 0);
+                AV_ZERO32(mv_dst - 1 + 8);
+                AV_ZERO32(mv_dst - 1 +16);
+                AV_ZERO32(mv_dst - 1 +24);
+                ref_cache[-1 +  0]=
+                ref_cache[-1 +  8]=
+                ref_cache[-1 + 16]=
+                ref_cache[-1 + 24]= LIST_NOT_USED;
+            }
+        }
+    }
+
+    if(!USES_LIST(mb_type, list)){
+        fill_rectangle(mv_dst, 4, 4, 8, pack16to32(0,0), 4);
+        AV_WN32A(&ref_cache[0*8], ((LIST_NOT_USED)&0xFF)*0x01010101u);
+        AV_WN32A(&ref_cache[1*8], ((LIST_NOT_USED)&0xFF)*0x01010101u);
+        AV_WN32A(&ref_cache[2*8], ((LIST_NOT_USED)&0xFF)*0x01010101u);
+        AV_WN32A(&ref_cache[3*8], ((LIST_NOT_USED)&0xFF)*0x01010101u);
+        return;
+    }
+
+    {
+        int8_t *ref = &s->current_picture.ref_index[list][4*mb_xy];
+        int (*ref2frm)[64] = h->ref2frm[ h->slice_num&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
+        uint32_t ref01 = (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101;
+        uint32_t ref23 = (pack16to32(ref2frm[list][ref[2]],ref2frm[list][ref[3]])&0x00FF00FF)*0x0101;
+        AV_WN32A(&ref_cache[0*8], ref01);
+        AV_WN32A(&ref_cache[1*8], ref01);
+        AV_WN32A(&ref_cache[2*8], ref23);
+        AV_WN32A(&ref_cache[3*8], ref23);
+    }
+
+    {
+        int16_t (*mv_src)[2] = &s->current_picture.motion_val[list][4*s->mb_x + 4*s->mb_y*b_stride];
+        AV_COPY128(mv_dst + 8*0, mv_src + 0*b_stride);
+        AV_COPY128(mv_dst + 8*1, mv_src + 1*b_stride);
+        AV_COPY128(mv_dst + 8*2, mv_src + 2*b_stride);
+        AV_COPY128(mv_dst + 8*3, mv_src + 3*b_stride);
+    }
+}
+
 /**
  *
  * @return non zero if the loop filter can be skiped
@@ -3063,10 +3139,10 @@ static int fill_filter_caches(H264Context *h, int mb_type){
     const int mb_xy= h->mb_xy;
     int top_xy, left_xy[2];
     int top_type, left_type[2];
+    uint8_t *nnz;
+    uint8_t *nnz_cache;
 
     top_xy     = mb_xy  - (s->mb_stride << MB_FIELD);
-
-    //FIXME deblocking could skip the intra and nnz parts.
 
     /* Wow, what a mess, why didn't they simplify the interlacing & intra
      * stuff, I can't imagine that these complex rules are worth it. */
@@ -3125,144 +3201,60 @@ static int fill_filter_caches(H264Context *h, int mb_type){
     if(IS_INTRA(mb_type))
         return 0;
 
-    AV_COPY32(&h->non_zero_count_cache[4+8* 1], &h->non_zero_count[mb_xy][ 0]);
-    AV_COPY32(&h->non_zero_count_cache[4+8* 2], &h->non_zero_count[mb_xy][ 4]);
-    AV_COPY32(&h->non_zero_count_cache[4+8* 3], &h->non_zero_count[mb_xy][ 8]);
-    AV_COPY32(&h->non_zero_count_cache[4+8* 4], &h->non_zero_count[mb_xy][12]);
+    fill_filter_caches_inter(h, s, mb_type, top_xy, left_xy, top_type, left_type, mb_xy, 0);
+    if(h->list_count == 2)
+        fill_filter_caches_inter(h, s, mb_type, top_xy, left_xy, top_type, left_type, mb_xy, 1);
 
+    nnz = h->non_zero_count[mb_xy];
+    nnz_cache = h->non_zero_count_cache;
+    AV_COPY32(&nnz_cache[4+8*1], &nnz[ 0]);
+    AV_COPY32(&nnz_cache[4+8*2], &nnz[ 4]);
+    AV_COPY32(&nnz_cache[4+8*3], &nnz[ 8]);
+    AV_COPY32(&nnz_cache[4+8*4], &nnz[12]);
     h->cbp= h->cbp_table[mb_xy];
 
-    {
-        int list;
-        for(list=0; list<h->list_count; list++){
-            int8_t *ref;
-            int y, b_stride;
-            int16_t (*mv_dst)[2];
-            int16_t (*mv_src)[2];
-
-            if(!USES_LIST(mb_type, list)){
-                fill_rectangle(  h->mv_cache[list][scan8[0]], 4, 4, 8, pack16to32(0,0), 4);
-                AV_WN32A(&h->ref_cache[list][scan8[ 0]], ((LIST_NOT_USED)&0xFF)*0x01010101u);
-                AV_WN32A(&h->ref_cache[list][scan8[ 2]], ((LIST_NOT_USED)&0xFF)*0x01010101u);
-                AV_WN32A(&h->ref_cache[list][scan8[ 8]], ((LIST_NOT_USED)&0xFF)*0x01010101u);
-                AV_WN32A(&h->ref_cache[list][scan8[10]], ((LIST_NOT_USED)&0xFF)*0x01010101u);
-                continue;
-            }
-
-            ref = &s->current_picture.ref_index[list][4*mb_xy];
-            {
-                int (*ref2frm)[64] = h->ref2frm[ h->slice_num&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
-                AV_WN32A(&h->ref_cache[list][scan8[ 0]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
-                AV_WN32A(&h->ref_cache[list][scan8[ 2]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
-                ref += 2;
-                AV_WN32A(&h->ref_cache[list][scan8[ 8]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
-                AV_WN32A(&h->ref_cache[list][scan8[10]], (pack16to32(ref2frm[list][ref[0]],ref2frm[list][ref[1]])&0x00FF00FF)*0x0101);
-            }
-
-            b_stride = h->b_stride;
-            mv_dst   = &h->mv_cache[list][scan8[0]];
-            mv_src   = &s->current_picture.motion_val[list][4*s->mb_x + 4*s->mb_y*b_stride];
-            for(y=0; y<4; y++){
-                AV_COPY128(mv_dst + 8*y, mv_src + y*b_stride);
-            }
-
-        }
-    }
-
-
-/*
-0 . T T. T T T T
-1 L . .L . . . .
-2 L . .L . . . .
-3 . T TL . . . .
-4 L . .L . . . .
-5 L . .. . . . .
-*/
-//FIXME constraint_intra_pred & partitioning & nnz (let us hope this is just a typo in the spec)
     if(top_type){
-        AV_COPY32(&h->non_zero_count_cache[4+8*0], &h->non_zero_count[top_xy][3*4]);
+        nnz = h->non_zero_count[top_xy];
+        AV_COPY32(&nnz_cache[4+8*0], &nnz[3*4]);
     }
 
     if(left_type[0]){
-        h->non_zero_count_cache[3+8*1]= h->non_zero_count[left_xy[0]][3+0*4];
-        h->non_zero_count_cache[3+8*2]= h->non_zero_count[left_xy[0]][3+1*4];
-        h->non_zero_count_cache[3+8*3]= h->non_zero_count[left_xy[0]][3+2*4];
-        h->non_zero_count_cache[3+8*4]= h->non_zero_count[left_xy[0]][3+3*4];
+        nnz = h->non_zero_count[left_xy[0]];
+        nnz_cache[3+8*1]= nnz[3+0*4];
+        nnz_cache[3+8*2]= nnz[3+1*4];
+        nnz_cache[3+8*3]= nnz[3+2*4];
+        nnz_cache[3+8*4]= nnz[3+3*4];
     }
 
     // CAVLC 8x8dct requires NNZ values for residual decoding that differ from what the loop filter needs
     if(!CABAC && h->pps.transform_8x8_mode){
         if(IS_8x8DCT(top_type)){
-            h->non_zero_count_cache[4+8*0]=
-            h->non_zero_count_cache[5+8*0]= (h->cbp_table[top_xy] & 0x4000) >> 12;
-            h->non_zero_count_cache[6+8*0]=
-            h->non_zero_count_cache[7+8*0]= (h->cbp_table[top_xy] & 0x8000) >> 12;
+            nnz_cache[4+8*0]=
+            nnz_cache[5+8*0]= (h->cbp_table[top_xy] & 0x4000) >> 12;
+            nnz_cache[6+8*0]=
+            nnz_cache[7+8*0]= (h->cbp_table[top_xy] & 0x8000) >> 12;
         }
         if(IS_8x8DCT(left_type[0])){
-            h->non_zero_count_cache[3+8*1]=
-            h->non_zero_count_cache[3+8*2]= (h->cbp_table[left_xy[0]]&0x2000) >> 12; //FIXME check MBAFF
+            nnz_cache[3+8*1]=
+            nnz_cache[3+8*2]= (h->cbp_table[left_xy[0]]&0x2000) >> 12; //FIXME check MBAFF
         }
         if(IS_8x8DCT(left_type[1])){
-            h->non_zero_count_cache[3+8*3]=
-            h->non_zero_count_cache[3+8*4]= (h->cbp_table[left_xy[1]]&0x8000) >> 12; //FIXME check MBAFF
+            nnz_cache[3+8*3]=
+            nnz_cache[3+8*4]= (h->cbp_table[left_xy[1]]&0x8000) >> 12; //FIXME check MBAFF
         }
 
         if(IS_8x8DCT(mb_type)){
-            h->non_zero_count_cache[scan8[0   ]]= h->non_zero_count_cache[scan8[1   ]]=
-            h->non_zero_count_cache[scan8[2   ]]= h->non_zero_count_cache[scan8[3   ]]= (h->cbp & 0x1000) >> 12;
+            nnz_cache[scan8[0   ]]= nnz_cache[scan8[1   ]]=
+            nnz_cache[scan8[2   ]]= nnz_cache[scan8[3   ]]= (h->cbp & 0x1000) >> 12;
 
-            h->non_zero_count_cache[scan8[0+ 4]]= h->non_zero_count_cache[scan8[1+ 4]]=
-            h->non_zero_count_cache[scan8[2+ 4]]= h->non_zero_count_cache[scan8[3+ 4]]= (h->cbp & 0x2000) >> 12;
+            nnz_cache[scan8[0+ 4]]= nnz_cache[scan8[1+ 4]]=
+            nnz_cache[scan8[2+ 4]]= nnz_cache[scan8[3+ 4]]= (h->cbp & 0x2000) >> 12;
 
-            h->non_zero_count_cache[scan8[0+ 8]]= h->non_zero_count_cache[scan8[1+ 8]]=
-            h->non_zero_count_cache[scan8[2+ 8]]= h->non_zero_count_cache[scan8[3+ 8]]= (h->cbp & 0x4000) >> 12;
+            nnz_cache[scan8[0+ 8]]= nnz_cache[scan8[1+ 8]]=
+            nnz_cache[scan8[2+ 8]]= nnz_cache[scan8[3+ 8]]= (h->cbp & 0x4000) >> 12;
 
-            h->non_zero_count_cache[scan8[0+12]]= h->non_zero_count_cache[scan8[1+12]]=
-            h->non_zero_count_cache[scan8[2+12]]= h->non_zero_count_cache[scan8[3+12]]= (h->cbp & 0x8000) >> 12;
-        }
-    }
-
-    if(IS_INTER(mb_type) || IS_DIRECT(mb_type)){
-        int list;
-        for(list=0; list<h->list_count; list++){
-            if(USES_LIST(top_type, list)){
-                const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
-                const int b8_xy= 4*top_xy + 2;
-                int (*ref2frm)[64] = h->ref2frm[ h->slice_table[top_xy]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
-                AV_COPY128(h->mv_cache[list][scan8[0] + 0 - 1*8], s->current_picture.motion_val[list][b_xy + 0]);
-                h->ref_cache[list][scan8[0] + 0 - 1*8]=
-                h->ref_cache[list][scan8[0] + 1 - 1*8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 0]];
-                h->ref_cache[list][scan8[0] + 2 - 1*8]=
-                h->ref_cache[list][scan8[0] + 3 - 1*8]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 1]];
-            }else{
-                AV_ZERO128(h->mv_cache[list][scan8[0] + 0 - 1*8]);
-                AV_WN32A(&h->ref_cache[list][scan8[0] + 0 - 1*8], ((LIST_NOT_USED)&0xFF)*0x01010101u);
-            }
-
-            if(!IS_INTERLACED(mb_type^left_type[0])){
-                if(USES_LIST(left_type[0], list)){
-                    const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
-                    const int b8_xy= 4*left_xy[0] + 1;
-                    int (*ref2frm)[64] = h->ref2frm[ h->slice_table[left_xy[0]]&(MAX_SLICES-1) ][0] + (MB_MBAFF ? 20 : 2);
-                    AV_COPY32(h->mv_cache[list][scan8[0] - 1 + 0 ], s->current_picture.motion_val[list][b_xy + h->b_stride*0]);
-                    AV_COPY32(h->mv_cache[list][scan8[0] - 1 + 8 ], s->current_picture.motion_val[list][b_xy + h->b_stride*1]);
-                    AV_COPY32(h->mv_cache[list][scan8[0] - 1 +16 ], s->current_picture.motion_val[list][b_xy + h->b_stride*2]);
-                    AV_COPY32(h->mv_cache[list][scan8[0] - 1 +24 ], s->current_picture.motion_val[list][b_xy + h->b_stride*3]);
-                    h->ref_cache[list][scan8[0] - 1 + 0 ]=
-                    h->ref_cache[list][scan8[0] - 1 + 8 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 2*0]];
-                    h->ref_cache[list][scan8[0] - 1 +16 ]=
-                    h->ref_cache[list][scan8[0] - 1 +24 ]= ref2frm[list][s->current_picture.ref_index[list][b8_xy + 2*1]];
-                }else{
-                    AV_ZERO32(h->mv_cache [list][scan8[0] - 1 + 0 ]);
-                    AV_ZERO32(h->mv_cache [list][scan8[0] - 1 + 8 ]);
-                    AV_ZERO32(h->mv_cache [list][scan8[0] - 1 +16 ]);
-                    AV_ZERO32(h->mv_cache [list][scan8[0] - 1 +24 ]);
-                    h->ref_cache[list][scan8[0] - 1 + 0  ]=
-                    h->ref_cache[list][scan8[0] - 1 + 8  ]=
-                    h->ref_cache[list][scan8[0] - 1 + 16 ]=
-                    h->ref_cache[list][scan8[0] - 1 + 24 ]= LIST_NOT_USED;
-                }
-            }
+            nnz_cache[scan8[0+12]]= nnz_cache[scan8[1+12]]=
+            nnz_cache[scan8[2+12]]= nnz_cache[scan8[3+12]]= (h->cbp & 0x8000) >> 12;
         }
     }
 
