@@ -1592,7 +1592,6 @@ test_deps _muxer _demuxer                                               \
 ac3_fixed_test_deps="ac3_fixed_encoder ac3_decoder rm_muxer rm_demuxer"
 mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
 
-set_ne_test_deps pixdesc
 set_ne_test_deps pixfmts_copy
 set_ne_test_deps pixfmts_crop
 set_ne_test_deps pixfmts_hflip
