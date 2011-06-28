@@ -122,8 +122,10 @@ alltools: $(TOOLS)
 tools/%$(EXESUF): tools/%.o
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-tools/%.o: tools/%.c
+tools/%.o: tools/%.c | tools
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
+
+OBJDIRS += tools
 
 -include $(wildcard tools/*.d)
 
@@ -184,6 +186,9 @@ check: test checkheaders
 
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/tests/Makefile
+
+$(sort $(OBJDIRS)):
+	$(Q)mkdir -p $@
 
 # Dummy rule to stop make trying to rebuild removed or renamed headers
 %.h:
