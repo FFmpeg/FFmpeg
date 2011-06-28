@@ -19,6 +19,13 @@
 
 /**
  * @file Public dictionary API.
+ * @deprecated
+ *  AVDictionary is provided for compatibility with libav. It is both in
+ *  implementation as well as API inefficient. It doesnt scale and is
+ *  be extreemly slow with large dictionaries.
+ *  It is recommanded that new code uses our tree container from tree.c/h
+ *  where applicable.
+ *  Which uses AVL trees to achive O(log n) performance
  */
 
 #ifndef AVUTIL_DICT_H
