@@ -3212,12 +3212,8 @@ if enabled source_path_used; then
         tests
         tools
     "
-    FILES="
-        Makefile
-        doc/texi2pod.pl
-    "
     map 'mkdir -p $v' $DIRS;
-    map '$ln_s "$source_path/$v" $v' $FILES
+    $ln_s "$source_path/Makefile" .
 fi
 
 config_files="$TMPH config.mak"

@@ -18,7 +18,7 @@ doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init
 doc/%.pod: TAG = POD
 doc/%.pod: doc/%.texi
 	$(Q)$(TEXIDEP)
-	$(M)doc/texi2pod.pl $< $@
+	$(M)$(SRC_PATH)/doc/texi2pod.pl $< $@
 
 doc/%.1: TAG = MAN
 doc/%.1: doc/%.pod
