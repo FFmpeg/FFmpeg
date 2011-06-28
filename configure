@@ -1511,11 +1511,6 @@ test_deps(){
     done
 }
 
-set_ne_test_deps(){
-    eval ${1}_be_test_deps="bigendian"
-    eval ${1}_le_test_deps="!bigendian"
-}
-
 test_deps _encoder _decoder                                             \
     adpcm_g726=g726                                                     \
     adpcm_ima_qt                                                        \
@@ -1591,14 +1586,6 @@ test_deps _muxer _demuxer                                               \
 
 ac3_fixed_test_deps="ac3_fixed_encoder ac3_decoder rm_muxer rm_demuxer"
 mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
-
-set_ne_test_deps pixfmts_copy
-set_ne_test_deps pixfmts_crop
-set_ne_test_deps pixfmts_hflip
-set_ne_test_deps pixfmts_null
-set_ne_test_deps pixfmts_pad
-set_ne_test_deps pixfmts_scale
-set_ne_test_deps pixfmts_vflip
 
 # default parameters
 
