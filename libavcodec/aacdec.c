@@ -530,6 +530,22 @@ static void reset_all_predictors(PredictorState *ps)
         reset_predict_state(&ps[i]);
 }
 
+static int sample_rate_idx (int rate)
+{
+         if (92017 <= rate) return 0;
+    else if (75132 <= rate) return 1;
+    else if (55426 <= rate) return 2;
+    else if (46009 <= rate) return 3;
+    else if (37566 <= rate) return 4;
+    else if (27713 <= rate) return 5;
+    else if (23004 <= rate) return 6;
+    else if (18783 <= rate) return 7;
+    else if (13856 <= rate) return 8;
+    else if (11502 <= rate) return 9;
+    else if (9391  <= rate) return 10;
+    else                    return 11;
+}
+
 static void reset_predictor_group(PredictorState *ps, int group_num)
 {
     int i;
@@ -552,10 +568,33 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ac->m4ac.sample_rate = avctx->sample_rate;
 
     if (avctx->extradata_size > 0) {
+        avctx->channels    = 0;
+        avctx->frame_size  = 0;
+        avctx->sample_rate = 0;
         if (decode_audio_specific_config(ac, ac->avctx, &ac->m4ac,
                                          avctx->extradata,
                                          avctx->extradata_size) < 0)
             return -1;
+    } else {
+        int sr, i;
+        enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];
+
+        sr = sample_rate_idx(avctx->sample_rate);
+        ac->m4ac.sampling_index = sr;
+        ac->m4ac.channels = avctx->channels;
+
+        for (i = 0; i < FF_ARRAY_ELEMS(ff_mpeg4audio_channels); i++)
+            if (ff_mpeg4audio_channels[i] == avctx->channels)
+                break;
+        if (i == FF_ARRAY_ELEMS(ff_mpeg4audio_channels)) {
+            i = 0;
+        }
+        ac->m4ac.chan_config = i;
+
+        if (ac->m4ac.chan_config) {
+            set_default_channel_config(avctx, new_che_pos, ac->m4ac.chan_config);
+            output_configure(ac, ac->che_pos, new_che_pos, ac->m4ac.chan_config, OC_GLOBAL_HDR);
+        }
     }
 
     if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT) {
@@ -2047,6 +2086,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
             if (output_configure(ac, ac->che_pos, new_che_pos, hdr_info.chan_config, OC_TRIAL_FRAME))
                 return -7;
         } else if (ac->output_configured != OC_LOCKED) {
+            ac->m4ac.chan_config = 0;
             ac->output_configured = OC_NONE;
         }
         if (ac->output_configured != OC_LOCKED) {
@@ -2514,6 +2554,7 @@ AVCodec ff_aac_decoder = {
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
+    .capabilities = CODEC_CAP_CHANNEL_CONF,
     .channel_layouts = aac_channel_layout,
 };
 
@@ -2534,5 +2575,6 @@ AVCodec ff_aac_latm_decoder = {
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
+    .capabilities = CODEC_CAP_CHANNEL_CONF,
     .channel_layouts = aac_channel_layout,
 };
