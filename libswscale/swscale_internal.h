@@ -386,6 +386,25 @@ typedef struct SwsContext {
     void (*chrToYV12)(uint8_t *dstU, uint8_t *dstV,
                       const uint8_t *src1, const uint8_t *src2,
                       int width, uint32_t *pal); ///< Unscaled conversion of chroma planes to YV12 for horizontal scaler.
+    /**
+     * Scale one horizontal line of input data using a bilinear filter
+     * to produce one line of output data. Compared to SwsContext->hScale(),
+     * please take note of the following caveats when using these:
+     * - Scaling is done using only 7bit instead of 14bit coefficients.
+     * - You can use no more than 5 input pixels to produce 4 output
+     *   pixels. Therefore, this filter should not be used for downscaling
+     *   by more than ~20% in width (because that equals more than 5/4th
+     *   downscaling and thus more than 5 pixels input per 4 pixels output).
+     * - In general, bilinear filters create artifacts during downscaling
+     *   (even when <20%), because one output pixel will span more than one
+     *   input pixel, and thus some pixels will need edges of both neighbor
+     *   pixels to interpolate the output pixel. Since you can use at most
+     *   two input pixels per output pixel in bilinear scaling, this is
+     *   impossible and thus downscaling by any size will create artifacts.
+     * To enable this type of scaling, set SWS_FLAG_FAST_BILINEAR
+     * in SwsContext->flags.
+     */
+    /** @{ */
     void (*hyscale_fast)(struct SwsContext *c,
                          int16_t *dst, int dstWidth,
                          const uint8_t *src, int srcW, int xInc);
@@ -393,7 +412,33 @@ typedef struct SwsContext {
                          int16_t *dst1, int16_t *dst2, int dstWidth,
                          const uint8_t *src1, const uint8_t *src2,
                          int srcW, int xInc);
+    /** @} */
 
+    /**
+     * Scale one horizontal line of input data using a filter over the input
+     * lines, to produce one (differently sized) line of output data.
+     *
+     * @param dst        pointer to destination buffer for horizontally scaled
+     *                   data. If the scaling depth (SwsContext->scalingBpp) is
+     *                   8, data will be 15bpp in 16bits (int16_t) width. If
+     *                   scaling depth is 16, data will be 19bpp in 32bpp
+     *                   (int32_t) width.
+     * @param dstW       width of destination image
+     * @param src        pointer to source data to be scaled. If scaling depth
+     *                   is 8, this is 8bpp in 8bpp (uint8_t) width. If scaling
+     *                   depth is 16, this is 16bpp in 16bpp (uint16_t) depth.
+     * @param filter     filter coefficients to be used per output pixel for
+     *                   scaling. This contains 14bpp filtering coefficients.
+     *                   Guaranteed to contain dstW * filterSize entries.
+     * @param filterPos  position of the first input pixel to be used for
+     *                   each output pixel during scaling. Guaranteed to
+     *                   contain dstW entries.
+     * @param filterSize the number of input coefficients to be used (and
+     *                   thus the number of input pixels to be used) for
+     *                   creating a single output pixel. Is aligned to 4
+     *                   (and input coefficients thus padded with zeroes)
+     *                   to simplify creating SIMD code.
+     */
     void (*hScale)(int16_t *dst, int dstW, const uint8_t *src,
                    const int16_t *filter, const int16_t *filterPos,
                    int filterSize);
