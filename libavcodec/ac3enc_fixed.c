@@ -63,24 +63,10 @@ av_cold int AC3_NAME(mdct_init)(AVCodecContext *avctx, AC3MDCTContext *mdct,
 /**
  * Apply KBD window to input samples prior to MDCT.
  */
-void AC3_NAME(apply_window)(DSPContext *dsp, int16_t *output,
-                            const int16_t *input, const int16_t *window,
-                            unsigned int len)
+static void apply_window(DSPContext *dsp, int16_t *output, const int16_t *input,
+                         const int16_t *window, unsigned int len)
 {
     dsp->apply_window_int16(output, input, window, len);
-}
-
-
-/**
- * Calculate the log2() of the maximum absolute value in an array.
- * @param tab input array
- * @param n   number of values in the array
- * @return    log2(max(abs(tab[])))
- */
-static int log2_tab(AC3EncodeContext *s, int16_t *src, int len)
-{
-    int v = s->ac3dsp.ac3_max_msb_abs_int16(src, len);
-    return av_log2(v);
 }
 
 
@@ -90,9 +76,10 @@ static int log2_tab(AC3EncodeContext *s, int16_t *src, int len)
  *
  * @return exponent shift
  */
-int AC3_NAME(normalize_samples)(AC3EncodeContext *s)
+static int normalize_samples(AC3EncodeContext *s)
 {
-    int v = 14 - log2_tab(s, s->windowed_samples, AC3_WINDOW_SIZE);
+    int v = s->ac3dsp.ac3_max_msb_abs_int16(s->windowed_samples, AC3_WINDOW_SIZE);
+    v = 14 - av_log2(v);
     if (v > 0)
         s->ac3dsp.ac3_lshift_int16(s->windowed_samples, AC3_WINDOW_SIZE, v);
     /* +6 to right-shift from 31-bit to 25-bit */
@@ -103,7 +90,7 @@ int AC3_NAME(normalize_samples)(AC3EncodeContext *s)
 /**
  * Scale MDCT coefficients to 25-bit signed fixed-point.
  */
-void AC3_NAME(scale_coefficients)(AC3EncodeContext *s)
+static void scale_coefficients(AC3EncodeContext *s)
 {
     int blk, ch;
 
@@ -131,7 +118,7 @@ AVCodec ff_ac3_fixed_encoder = {
     CODEC_ID_AC3,
     sizeof(AC3EncodeContext),
     ac3_fixed_encode_init,
-    ff_ac3_encode_frame,
+    ff_ac3_fixed_encode_frame,
     ff_ac3_encode_close,
     NULL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
