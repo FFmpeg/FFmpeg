@@ -49,18 +49,6 @@ typedef struct FlashSVContext {
 } FlashSVContext;
 
 
-static void copy_region(uint8_t *sptr, uint8_t *dptr,
-                        int dx, int dy, int h, int w, int stride)
-{
-    int i;
-
-    for (i = dx + h; i > dx; i--) {
-        memcpy(dptr + i * stride + dy * 3, sptr, w * 3);
-        sptr += w * 3;
-    }
-}
-
-
 static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
@@ -171,6 +159,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             /* skip unchanged blocks, which have size 0 */
             if (size) {
                 /* decompress block */
+                uint8_t *line = s->tmpblock;
+                int k;
                 int ret = inflateReset(&s->zstream);
                 if (ret != Z_OK) {
                     av_log(avctx, AV_LOG_ERROR,
@@ -193,10 +183,15 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                            "error in decompression of block %dx%d: %d\n", i, j, ret);
                     /* return -1; */
                 }
-                copy_region(s->tmpblock, s->frame.data[0],
-                            s->image_height - (y_pos + cur_blk_height + 1),
-                            x_pos, cur_blk_height, cur_blk_width,
-                            s->frame.linesize[0]);
+                /* Flash Screen Video stores the image upside down, so copy
+                 * lines to destination in reverse order. */
+                for (k = 1; k <= cur_blk_height; k++) {
+                    memcpy(s->frame.data[0] + x_pos * 3 +
+                           (s->image_height - y_pos - k) * s->frame.linesize[0],
+                           line, cur_blk_width * 3);
+                    /* advance source pointer to next line */
+                    line += cur_blk_width * 3;
+                }
                 skip_bits_long(&gb, 8 * size);   /* skip the consumed bits */
             }
         }
