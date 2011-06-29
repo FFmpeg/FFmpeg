@@ -364,7 +364,7 @@ static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, in
         if (msc == 0 || ics0->max_sfb == 0)
             cpe->ms_mode = 0;
         else
-            cpe->ms_mode = msc < ics0->max_sfb ? 1 : 2;
+            cpe->ms_mode = msc < ics0->max_sfb * ics0->num_windows ? 1 : 2;
     }
 }
 
