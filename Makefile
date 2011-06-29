@@ -1,3 +1,4 @@
+MAIN_MAKEFILE=1
 include config.mak
 
 vpath %.c    $(SRC_PATH)
@@ -39,7 +40,6 @@ DATA_FILES := $(wildcard $(SRC_PATH)/ffpresets/*.ffpreset)
 
 SKIPHEADERS = cmdutils_common_opts.h
 
-MAIN_MAKEFILE=1
 include $(SRC_PATH)/common.mak
 
 FF_LDFLAGS   := $(FFLDFLAGS)

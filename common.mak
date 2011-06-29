@@ -7,12 +7,6 @@ all: all-yes
 
 ifndef SUBDIR
 
-ifndef MAIN_MAKEFILE
-ifeq ($(SRC_PATH),.)
-SRC_PATH = ..
-endif
-endif
-
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)

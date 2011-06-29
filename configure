@@ -3297,6 +3297,9 @@ BINDIR=\$(DESTDIR)$bindir
 DATADIR=\$(DESTDIR)$datadir
 MANDIR=\$(DESTDIR)$mandir
 SRC_PATH=$source_path
+ifndef MAIN_MAKEFILE
+SRC_PATH:=\$(SRC_PATH:.%=..%)
+endif
 CC_IDENT=$cc_ident
 ARCH=$arch
 CC=$cc
