@@ -227,6 +227,10 @@ fate-aes: libavutil/aes-test$(EXESUF)
 fate-aes: CMD = run libavutil/aes-test
 fate-aes: REF = /dev/null
 
+FATE_TESTS += fate-base64
+fate-base64: libavutil/base64-test$(EXESUF)
+fate-base64: CMD = run libavutil/base64-test
+
 FATE_TESTS += fate-musepack7
 fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
 fate-musepack7: CMP = oneoff
