@@ -56,7 +56,6 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
-TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws graph2dot lavfi-showfiltfmts pktdumper probetest qt-faststart trasher))
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 
@@ -117,12 +116,16 @@ ffserver$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 $(PROGS): %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
+TOOLS     = cws2fws graph2dot lavfi-showfiltfmts pktdumper probetest qt-faststart trasher
+TOOLOBJS := $(TOOLS:%=tools/%.o)
+TOOLS    := $(TOOLS:%=tools/%$(EXESUF))
+
 alltools: $(TOOLS)
 
 tools/%$(EXESUF): tools/%.o
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-tools/%.o: tools/%.c | tools
+$(TOOLOBJS): %.o: %.c | tools
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
 
 OBJDIRS += tools
