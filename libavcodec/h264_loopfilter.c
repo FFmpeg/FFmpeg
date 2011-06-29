@@ -227,7 +227,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
         return;
     }
     assert(!FRAME_MBAFF);
-    left_type= h->left_type[0];
+    left_type= h->left_type[LTOP];
     top_type= h->top_type;
 
     mb_type = s->current_picture.mb_type[mb_xy];
@@ -329,7 +329,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
             AV_WN64A(bS[1][2], 0x0002000200020002ULL);
         } else {
             int mask_edge1 = (3*(((5*mb_type)>>5)&1)) | (mb_type>>4); //(mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : (mb_type & MB_TYPE_16x8) ? 1 : 0;
-            int mask_edge0 = 3*((mask_edge1>>1) & ((5*left_type)>>5)&1); // (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) && (h->left_type[0] & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : 0;
+            int mask_edge0 = 3*((mask_edge1>>1) & ((5*left_type)>>5)&1); // (mb_type & (MB_TYPE_16x16 | MB_TYPE_8x16)) && (h->left_type[LTOP] & (MB_TYPE_16x16 | MB_TYPE_8x16)) ? 3 : 0;
             int step =  1+(mb_type>>24); //IS_8x8DCT(mb_type) ? 2 : 1;
             edges = 4 - 3*((mb_type>>3) & !(h->cbp & 15)); //(mb_type & MB_TYPE_16x16) && !(h->cbp & 15) ? 1 : 4;
             h->h264dsp.h264_loop_filter_strength( bS, h->non_zero_count_cache, h->ref_cache, h->mv_cache,
@@ -411,7 +411,7 @@ static av_always_inline void filter_mb_dir(H264Context *h, int mb_x, int mb_y, u
     int edge;
     int chroma_qp_avg[2];
     const int mbm_xy = dir == 0 ? mb_xy -1 : h->top_mb_xy;
-    const int mbm_type = dir == 0 ? h->left_type[0] : h->top_type;
+    const int mbm_type = dir == 0 ? h->left_type[LTOP] : h->top_type;
 
     // how often to recheck mv-based bS when iterating between edges
     static const uint8_t mask_edge_tab[2][8]={{0,3,3,3,1,1,1,1},
@@ -647,9 +647,9 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
 
     if (FRAME_MBAFF
             // and current and left pair do not have the same interlaced type
-            && IS_INTERLACED(mb_type^h->left_type[0])
+            && IS_INTERLACED(mb_type^h->left_type[LTOP])
             // and left mb is in available to us
-            && h->left_type[0]) {
+            && h->left_type[LTOP]) {
         /* First vertical edge is different in MBAFF frames
          * There are 8 different bS to compute and 2 different Qp
          */
@@ -677,8 +677,8 @@ void ff_h264_filter_mb( H264Context *h, int mb_x, int mb_y, uint8_t *img_y, uint
             const uint8_t *off= offset[MB_FIELD][mb_y&1];
             for( i = 0; i < 8; i++ ) {
                 int j= MB_FIELD ? i>>2 : i&1;
-                int mbn_xy = h->left_mb_xy[j];
-                int mbn_type= h->left_type[j];
+                int mbn_xy = h->left_mb_xy[LEFT(j)];
+                int mbn_type= h->left_type[LEFT(j)];
 
                 if( IS_INTRA( mbn_type ) )
                     bS[i] = 4;

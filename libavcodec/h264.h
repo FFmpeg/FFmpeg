@@ -70,6 +70,10 @@
 #define MB_FIELD h->mb_field_decoding_flag
 #define FRAME_MBAFF h->mb_aff_frame
 #define FIELD_PICTURE (s->picture_structure != PICT_FRAME)
+#define LEFT_MBS 2
+#define LTOP 0
+#define LBOT 1
+#define LEFT(i) (i)
 #else
 #define MB_MBAFF 0
 #define MB_FIELD 0
@@ -77,6 +81,10 @@
 #define FIELD_PICTURE 0
 #undef  IS_INTERLACED
 #define IS_INTERLACED(mb_type) 0
+#define LEFT_MBS 1
+#define LTOP 0
+#define LBOT 0
+#define LEFT(i) 0
 #endif
 #define FIELD_OR_MBAFF_PICTURE (FRAME_MBAFF || FIELD_PICTURE)
 
@@ -272,12 +280,12 @@ typedef struct H264Context{
     int topleft_mb_xy;
     int top_mb_xy;
     int topright_mb_xy;
-    int left_mb_xy[2];
+    int left_mb_xy[LEFT_MBS];
 
     int topleft_type;
     int top_type;
     int topright_type;
-    int left_type[2];
+    int left_type[LEFT_MBS];
 
     const uint8_t * left_block;
     int topleft_partition;
@@ -767,7 +775,7 @@ static inline void pred_pskip_motion(H264Context * const h, int * const mx, int 
 static void fill_decode_neighbors(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
-    int topleft_xy, top_xy, topright_xy, left_xy[2];
+    int topleft_xy, top_xy, topright_xy, left_xy[LEFT_MBS];
     static const uint8_t left_block_options[4][32]={
         {0,1,2,3,7,10,8,11,3+0*4, 3+1*4, 3+2*4, 3+3*4, 1+4*4, 1+8*4, 1+5*4, 1+9*4},
         {2,2,3,3,8,11,8,11,3+2*4, 3+2*4, 3+3*4, 3+3*4, 1+5*4, 1+9*4, 1+5*4, 1+9*4},
@@ -784,16 +792,16 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
 
     topleft_xy = top_xy - 1;
     topright_xy= top_xy + 1;
-    left_xy[1] = left_xy[0] = mb_xy-1;
+    left_xy[LBOT] = left_xy[LTOP] = mb_xy-1;
     h->left_block = left_block_options[0];
     if(FRAME_MBAFF){
         const int left_mb_field_flag     = IS_INTERLACED(s->current_picture.mb_type[mb_xy-1]);
         const int curr_mb_field_flag     = IS_INTERLACED(mb_type);
         if(s->mb_y&1){
             if (left_mb_field_flag != curr_mb_field_flag) {
-                left_xy[1] = left_xy[0] = mb_xy - s->mb_stride - 1;
+                left_xy[LBOT] = left_xy[LTOP] = mb_xy - s->mb_stride - 1;
                 if (curr_mb_field_flag) {
-                    left_xy[1] += s->mb_stride;
+                    left_xy[LBOT] += s->mb_stride;
                     h->left_block = left_block_options[3];
                 } else {
                     topleft_xy += s->mb_stride;
@@ -810,7 +818,7 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
             }
             if (left_mb_field_flag != curr_mb_field_flag) {
                 if (curr_mb_field_flag) {
-                    left_xy[1] += s->mb_stride;
+                    left_xy[LBOT] += s->mb_stride;
                     h->left_block = left_block_options[3];
                 } else {
                     h->left_block = left_block_options[2];
@@ -822,25 +830,25 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
     h->topleft_mb_xy = topleft_xy;
     h->top_mb_xy     = top_xy;
     h->topright_mb_xy= topright_xy;
-    h->left_mb_xy[0] = left_xy[0];
-    h->left_mb_xy[1] = left_xy[1];
+    h->left_mb_xy[LTOP] = left_xy[LTOP];
+    h->left_mb_xy[LBOT] = left_xy[LBOT];
     //FIXME do we need all in the context?
 
     h->topleft_type = s->current_picture.mb_type[topleft_xy] ;
     h->top_type     = s->current_picture.mb_type[top_xy]     ;
     h->topright_type= s->current_picture.mb_type[topright_xy];
-    h->left_type[0] = s->current_picture.mb_type[left_xy[0]] ;
-    h->left_type[1] = s->current_picture.mb_type[left_xy[1]] ;
+    h->left_type[LTOP] = s->current_picture.mb_type[left_xy[LTOP]] ;
+    h->left_type[LBOT] = s->current_picture.mb_type[left_xy[LBOT]] ;
 
     if(FMO){
-    if(h->slice_table[topleft_xy ] != h->slice_num) h->topleft_type = 0;
-    if(h->slice_table[top_xy     ] != h->slice_num) h->top_type     = 0;
-    if(h->slice_table[left_xy[0] ] != h->slice_num) h->left_type[0] = h->left_type[1] = 0;
+    if(h->slice_table[topleft_xy    ] != h->slice_num) h->topleft_type = 0;
+    if(h->slice_table[top_xy        ] != h->slice_num) h->top_type     = 0;
+    if(h->slice_table[left_xy[LTOP] ] != h->slice_num) h->left_type[LTOP] = h->left_type[LBOT] = 0;
     }else{
         if(h->slice_table[topleft_xy ] != h->slice_num){
             h->topleft_type = 0;
-            if(h->slice_table[top_xy     ] != h->slice_num) h->top_type     = 0;
-            if(h->slice_table[left_xy[0] ] != h->slice_num) h->left_type[0] = h->left_type[1] = 0;
+            if(h->slice_table[top_xy        ] != h->slice_num) h->top_type     = 0;
+            if(h->slice_table[left_xy[LTOP] ] != h->slice_num) h->left_type[LTOP] = h->left_type[LBOT] = 0;
         }
     }
     if(h->slice_table[topright_xy] != h->slice_num) h->topright_type= 0;
@@ -848,23 +856,23 @@ static void fill_decode_neighbors(H264Context *h, int mb_type){
 
 static void fill_decode_caches(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
-    int topleft_xy, top_xy, topright_xy, left_xy[2];
-    int topleft_type, top_type, topright_type, left_type[2];
+    int topleft_xy, top_xy, topright_xy, left_xy[LEFT_MBS];
+    int topleft_type, top_type, topright_type, left_type[LEFT_MBS];
     const uint8_t * left_block= h->left_block;
     int i;
     uint8_t *nnz;
     uint8_t *nnz_cache;
 
-    topleft_xy   = h->topleft_mb_xy ;
-    top_xy       = h->top_mb_xy     ;
-    topright_xy  = h->topright_mb_xy;
-    left_xy[0]   = h->left_mb_xy[0] ;
-    left_xy[1]   = h->left_mb_xy[1] ;
-    topleft_type = h->topleft_type  ;
-    top_type     = h->top_type      ;
-    topright_type= h->topright_type ;
-    left_type[0] = h->left_type[0]  ;
-    left_type[1] = h->left_type[1]  ;
+    topleft_xy     = h->topleft_mb_xy;
+    top_xy         = h->top_mb_xy;
+    topright_xy    = h->topright_mb_xy;
+    left_xy[LTOP]  = h->left_mb_xy[LTOP];
+    left_xy[LBOT]  = h->left_mb_xy[LBOT];
+    topleft_type   = h->topleft_type;
+    top_type       = h->top_type;
+    topright_type  = h->topright_type;
+    left_type[LTOP]= h->left_type[LTOP];
+    left_type[LBOT]= h->left_type[LBOT];
 
     if(!IS_SKIP(mb_type)){
         if(IS_INTRA(mb_type)){
@@ -879,27 +887,27 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 h->top_samples_available= 0x33FF;
                 h->topright_samples_available= 0x26EA;
             }
-            if(IS_INTERLACED(mb_type) != IS_INTERLACED(left_type[0])){
+            if(IS_INTERLACED(mb_type) != IS_INTERLACED(left_type[LTOP])){
                 if(IS_INTERLACED(mb_type)){
-                    if(!(left_type[0] & type_mask)){
+                    if(!(left_type[LTOP] & type_mask)){
                         h->topleft_samples_available&= 0xDFFF;
                         h->left_samples_available&= 0x5FFF;
                     }
-                    if(!(left_type[1] & type_mask)){
+                    if(!(left_type[LBOT] & type_mask)){
                         h->topleft_samples_available&= 0xFF5F;
                         h->left_samples_available&= 0xFF5F;
                     }
                 }else{
-                    int left_typei = s->current_picture.mb_type[left_xy[0] + s->mb_stride];
+                    int left_typei = s->current_picture.mb_type[left_xy[LTOP] + s->mb_stride];
 
-                    assert(left_xy[0] == left_xy[1]);
-                    if(!((left_typei & type_mask) && (left_type[0] & type_mask))){
+                    assert(left_xy[LTOP] == left_xy[LBOT]);
+                    if(!((left_typei & type_mask) && (left_type[LTOP] & type_mask))){
                         h->topleft_samples_available&= 0xDF5F;
                         h->left_samples_available&= 0x5F5F;
                     }
                 }
             }else{
-                if(!(left_type[0] & type_mask)){
+                if(!(left_type[LTOP] & type_mask)){
                     h->topleft_samples_available&= 0xDF5F;
                     h->left_samples_available&= 0x5F5F;
                 }
@@ -921,13 +929,13 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     h->intra4x4_pred_mode_cache[7+8*0]= 2 - 3*!(top_type & type_mask);
                 }
                 for(i=0; i<2; i++){
-                    if(IS_INTRA4x4(left_type[i])){
-                        int8_t *mode= h->intra4x4_pred_mode + h->mb2br_xy[left_xy[i]];
+                    if(IS_INTRA4x4(left_type[LEFT(i)])){
+                        int8_t *mode= h->intra4x4_pred_mode + h->mb2br_xy[left_xy[LEFT(i)]];
                         h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]= mode[6-left_block[0+2*i]];
                         h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= mode[6-left_block[1+2*i]];
                     }else{
                         h->intra4x4_pred_mode_cache[3+8*1 + 2*8*i]=
-                        h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= 2 - 3*!(left_type[i] & type_mask);
+                        h->intra4x4_pred_mode_cache[3+8*2 + 2*8*i]= 2 - 3*!(left_type[LEFT(i)] & type_mask);
                     }
                 }
             }
@@ -962,8 +970,8 @@ static void fill_decode_caches(H264Context *h, int mb_type){
     }
 
     for (i=0; i<2; i++) {
-        if(left_type[i]){
-            nnz = h->non_zero_count[left_xy[i]];
+        if(left_type[LEFT(i)]){
+            nnz = h->non_zero_count[left_xy[LEFT(i)]];
             nnz_cache[3+8* 1 + 2*8*i]= nnz[left_block[8+0+2*i]];
             nnz_cache[3+8* 2 + 2*8*i]= nnz[left_block[8+1+2*i]];
             if(CHROMA444){
@@ -993,10 +1001,10 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             h->top_cbp = IS_INTRA(mb_type) ? 0x7CF : 0x00F;
         }
         // left_cbp
-        if (left_type[0]) {
-            h->left_cbp =   (h->cbp_table[left_xy[0]] & 0x7F0)
-                        |  ((h->cbp_table[left_xy[0]]>>(left_block[0]&(~1)))&2)
-                        | (((h->cbp_table[left_xy[1]]>>(left_block[2]&(~1)))&2) << 2);
+        if (left_type[LTOP]) {
+            h->left_cbp =   (h->cbp_table[left_xy[LTOP]] & 0x7F0)
+                        |  ((h->cbp_table[left_xy[LTOP]]>>(left_block[0]&(~1)))&2)
+                        | (((h->cbp_table[left_xy[LBOT]]>>(left_block[2]&(~1)))&2) << 2);
         } else {
             h->left_cbp = IS_INTRA(mb_type) ? 0x7CF : 0x00F;
         }
@@ -1031,9 +1039,9 @@ static void fill_decode_caches(H264Context *h, int mb_type){
             if(mb_type & (MB_TYPE_16x8|MB_TYPE_8x8)){
             for(i=0; i<2; i++){
                 int cache_idx = -1 + i*2*8;
-                if(USES_LIST(left_type[i], list)){
-                    const int b_xy= h->mb2b_xy[left_xy[i]] + 3;
-                    const int b8_xy= 4*left_xy[i] + 1;
+                if(USES_LIST(left_type[LEFT(i)], list)){
+                    const int b_xy= h->mb2b_xy[left_xy[LEFT(i)]] + 3;
+                    const int b8_xy= 4*left_xy[LEFT(i)] + 1;
                     AV_COPY32(mv_cache[cache_idx  ], mv[b_xy + b_stride*left_block[0+i*2]]);
                     AV_COPY32(mv_cache[cache_idx+8], mv[b_xy + b_stride*left_block[1+i*2]]);
                     ref_cache[cache_idx  ]= ref[b8_xy + (left_block[0+i*2]&~1)];
@@ -1042,18 +1050,18 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     AV_ZERO32(mv_cache[cache_idx  ]);
                     AV_ZERO32(mv_cache[cache_idx+8]);
                     ref_cache[cache_idx  ]=
-                    ref_cache[cache_idx+8]= (left_type[i]) ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                    ref_cache[cache_idx+8]= (left_type[LEFT(i)]) ? LIST_NOT_USED : PART_NOT_AVAILABLE;
                 }
             }
             }else{
-                if(USES_LIST(left_type[0], list)){
-                    const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
-                    const int b8_xy= 4*left_xy[0] + 1;
+                if(USES_LIST(left_type[LTOP], list)){
+                    const int b_xy= h->mb2b_xy[left_xy[LTOP]] + 3;
+                    const int b8_xy= 4*left_xy[LTOP] + 1;
                     AV_COPY32(mv_cache[-1], mv[b_xy + b_stride*left_block[0]]);
                     ref_cache[-1]= ref[b8_xy + (left_block[0]&~1)];
                 }else{
                     AV_ZERO32(mv_cache[-1]);
-                    ref_cache[-1]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                    ref_cache[-1]= left_type[LTOP] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
                 }
             }
 
@@ -1095,16 +1103,16 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     }else{
                         AV_ZERO64(mvd_cache[0 - 1*8]);
                     }
-                    if(USES_LIST(left_type[0], list)){
-                        const int b_xy= h->mb2br_xy[left_xy[0]] + 6;
+                    if(USES_LIST(left_type[LTOP], list)){
+                        const int b_xy= h->mb2br_xy[left_xy[LTOP]] + 6;
                         AV_COPY16(mvd_cache[-1 + 0*8], mvd[b_xy - left_block[0]]);
                         AV_COPY16(mvd_cache[-1 + 1*8], mvd[b_xy - left_block[1]]);
                     }else{
                         AV_ZERO16(mvd_cache[-1 + 0*8]);
                         AV_ZERO16(mvd_cache[-1 + 1*8]);
                     }
-                    if(USES_LIST(left_type[1], list)){
-                        const int b_xy= h->mb2br_xy[left_xy[1]] + 6;
+                    if(USES_LIST(left_type[LBOT], list)){
+                        const int b_xy= h->mb2br_xy[left_xy[LBOT]] + 6;
                         AV_COPY16(mvd_cache[-1 + 2*8], mvd[b_xy - left_block[2]]);
                         AV_COPY16(mvd_cache[-1 + 3*8], mvd[b_xy - left_block[3]]);
                     }else{
@@ -1128,17 +1136,17 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                             AV_WN32A(&direct_cache[-1*8], 0x01010101*(MB_TYPE_16x16>>1));
                         }
 
-                        if(IS_DIRECT(left_type[0]))
+                        if(IS_DIRECT(left_type[LTOP]))
                             direct_cache[-1 + 0*8]= MB_TYPE_DIRECT2>>1;
-                        else if(IS_8X8(left_type[0]))
-                            direct_cache[-1 + 0*8]= direct_table[4*left_xy[0] + 1 + (left_block[0]&~1)];
+                        else if(IS_8X8(left_type[LTOP]))
+                            direct_cache[-1 + 0*8]= direct_table[4*left_xy[LTOP] + 1 + (left_block[0]&~1)];
                         else
                             direct_cache[-1 + 0*8]= MB_TYPE_16x16>>1;
 
-                        if(IS_DIRECT(left_type[1]))
+                        if(IS_DIRECT(left_type[LBOT]))
                             direct_cache[-1 + 2*8]= MB_TYPE_DIRECT2>>1;
-                        else if(IS_8X8(left_type[1]))
-                            direct_cache[-1 + 2*8]= direct_table[4*left_xy[1] + 1 + (left_block[2]&~1)];
+                        else if(IS_8X8(left_type[LBOT]))
+                            direct_cache[-1 + 2*8]= direct_table[4*left_xy[LBOT] + 1 + (left_block[2]&~1)];
                         else
                             direct_cache[-1 + 2*8]= MB_TYPE_16x16>>1;
                     }
@@ -1152,10 +1160,10 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                     MAP_F2F(scan8[0] + 2 - 1*8, top_type)\
                     MAP_F2F(scan8[0] + 3 - 1*8, top_type)\
                     MAP_F2F(scan8[0] + 4 - 1*8, topright_type)\
-                    MAP_F2F(scan8[0] - 1 + 0*8, left_type[0])\
-                    MAP_F2F(scan8[0] - 1 + 1*8, left_type[0])\
-                    MAP_F2F(scan8[0] - 1 + 2*8, left_type[1])\
-                    MAP_F2F(scan8[0] - 1 + 3*8, left_type[1])
+                    MAP_F2F(scan8[0] - 1 + 0*8, left_type[LTOP])\
+                    MAP_F2F(scan8[0] - 1 + 1*8, left_type[LTOP])\
+                    MAP_F2F(scan8[0] - 1 + 2*8, left_type[LBOT])\
+                    MAP_F2F(scan8[0] - 1 + 3*8, left_type[LBOT])
                 if(MB_FIELD){
 #define MAP_F2F(idx, mb_type)\
                     if(!IS_INTERLACED(mb_type) && h->ref_cache[list][idx] >= 0){\
@@ -1179,7 +1187,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
         }
     }
 
-        h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[0]);
+        h->neighbor_transform_size= !!IS_8x8DCT(top_type) + !!IS_8x8DCT(left_type[LTOP]);
 }
 
 /**
