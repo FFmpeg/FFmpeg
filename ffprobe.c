@@ -353,7 +353,7 @@ static int opt_input_file(const char *opt, const char *arg)
     return 0;
 }
 
-static void show_help(void)
+static int opt_help(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
     show_usage();
@@ -361,6 +361,7 @@ static void show_help(void)
     printf("\n");
     av_opt_show2(avformat_opts, NULL,
                  AV_OPT_FLAG_DECODING_PARAM, 0);
+    return 0;
 }
 
 static void opt_pretty(void)
