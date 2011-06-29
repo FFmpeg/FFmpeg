@@ -71,7 +71,7 @@ static void copy_region(uint8_t *sptr, uint8_t *dptr,
     int i;
 
     for (i = dx + h; i > dx; i--) {
-        memcpy(dptr + (i * stride) + dy * 3, sptr, w * 3);
+        memcpy(dptr + i * stride + dy * 3, sptr, w * 3);
         sptr += w * 3;
     }
 }
@@ -86,7 +86,7 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
     s->zstream.zalloc = Z_NULL;
     s->zstream.zfree  = Z_NULL;
     s->zstream.opaque = Z_NULL;
-    zret = inflateInit(&(s->zstream));
+    zret = inflateInit(&s->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return 1;
@@ -139,13 +139,13 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     s->block_size = s->block_width * s->block_height;
 
     /* init the image size once */
-    if ((avctx->width == 0) && (avctx->height == 0)) {
+    if (avctx->width == 0 && avctx->height == 0) {
         avctx->width  = s->image_width;
         avctx->height = s->image_height;
     }
 
     /* check for changes of image width and image height */
-    if ((avctx->width != s->image_width) || (avctx->height != s->image_height)) {
+    if (avctx->width != s->image_width || avctx->height != s->image_height) {
         av_log(avctx, AV_LOG_ERROR, "Frame width or height differs from first frames!\n");
         av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n", avctx->height,
         avctx->width, s->image_height, s->image_width);
@@ -187,23 +187,23 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 /* no change, don't do anything */
             } else {
                 /* decompress block */
-                int ret = inflateReset(&(s->zstream));
+                int ret = inflateReset(&s->zstream);
                 if (ret != Z_OK) {
                     av_log(avctx, AV_LOG_ERROR, "error in decompression (reset) of block %dx%d\n", i, j);
                     /* return -1; */
                 }
-                s->zstream.next_in   = buf + (get_bits_count(&gb) / 8);
+                s->zstream.next_in   = buf + get_bits_count(&gb) / 8;
                 s->zstream.avail_in  = size;
                 s->zstream.next_out  = s->tmpblock;
                 s->zstream.avail_out = s->block_size * 3;
-                ret = inflate(&(s->zstream), Z_FINISH);
+                ret = inflate(&s->zstream, Z_FINISH);
                 if (ret == Z_DATA_ERROR) {
                     av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
-                    inflateSync(&(s->zstream));
-                    ret = inflate(&(s->zstream), Z_FINISH);
+                    inflateSync(&s->zstream);
+                    ret = inflate(&s->zstream, Z_FINISH);
                 }
 
-                if ((ret != Z_OK) && (ret != Z_STREAM_END)) {
+                if (ret != Z_OK && ret != Z_STREAM_END) {
                     av_log(avctx, AV_LOG_ERROR, "error in decompression of block %dx%d: %d\n", i, j, ret);
                     /* return -1; */
                 }
@@ -229,7 +229,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int flashsv_decode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
-    inflateEnd(&(s->zstream));
+    inflateEnd(&s->zstream);
     /* release the frame if needed */
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
