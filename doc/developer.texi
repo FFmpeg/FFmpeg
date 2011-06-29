@@ -54,7 +54,7 @@ These features are supported by all compilers we care about, so we will not
 accept patches to remove their use unless they absolutely do not impair
 clarity and performance.
 
-All code must compile with GCC 2.95 and GCC 3.3. Currently, FFmpeg also
+All code must compile with GCC 3.3. Currently, FFmpeg also
 compiles with several other compilers, such as the Compaq ccc compiler
 or Sun Studio 9, and we would like to keep it that way unless it would
 be exceedingly involved. To ensure compatibility, please do not use any
