@@ -62,7 +62,7 @@ void uninit_opts(void);
 
 /**
  * Trivial log callback.
- * Only suitable for show_help and similar since it lacks prefix handling.
+ * Only suitable for opt_help and similar since it lacks prefix handling.
  */
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
 
@@ -177,50 +177,58 @@ void show_banner(void);
  * Print the version of the program to stdout. The version message
  * depends on the current versions of the repository and of the libav*
  * libraries.
+ * This option processing function does not utilize the arguments.
  */
-void show_version(void);
+int opt_version(const char *opt, const char *arg);
 
 /**
  * Print the license of the program to stdout. The license depends on
  * the license of the libraries compiled into the program.
+ * This option processing function does not utilize the arguments.
  */
-void show_license(void);
+int opt_license(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the formats supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_formats(void);
+int opt_formats(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the codecs supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_codecs(void);
+int opt_codecs(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the filters supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_filters(void);
+int opt_filters(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the bit stream filters supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_bsfs(void);
+int opt_bsfs(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the protocols supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_protocols(void);
+int opt_protocols(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the pixel formats supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_pix_fmts(void);
+int opt_pix_fmts(const char *opt, const char *arg);
 
 /**
  * Return a positive value if a line read from standard input

@@ -212,7 +212,7 @@ typedef struct VideoState {
     int refresh;
 } VideoState;
 
-static void show_help(void);
+static int opt_help(const char *opt, const char *arg);
 
 /* options specified by the user */
 static AVInputFormat *file_iformat;
@@ -2950,7 +2950,7 @@ static void show_usage(void)
     printf("\n");
 }
 
-static void show_help(void)
+static int opt_help(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
     show_usage();
@@ -2982,6 +2982,7 @@ static void show_help(void)
            "down/up             seek backward/forward 1 minute\n"
            "mouse click         seek to percentage in file corresponding to fraction of width\n"
            );
+    return 0;
 }
 
 /* Called from the main */

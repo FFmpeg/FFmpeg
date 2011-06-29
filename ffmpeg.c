@@ -2943,7 +2943,7 @@ static int opt_frame_pix_fmt(const char *opt, const char *arg)
             return AVERROR(EINVAL);
         }
     } else {
-        show_pix_fmts();
+        opt_pix_fmts(NULL, NULL);
         ffmpeg_exit(0);
     }
     return 0;
@@ -4073,16 +4073,18 @@ static void parse_matrix_coeffs(uint16_t *dest, const char *str)
     }
 }
 
-static void opt_inter_matrix(const char *opt, const char *arg)
+static int opt_inter_matrix(const char *opt, const char *arg)
 {
     inter_matrix = av_mallocz(sizeof(uint16_t) * 64);
     parse_matrix_coeffs(inter_matrix, arg);
+    return 0;
 }
 
-static void opt_intra_matrix(const char *opt, const char *arg)
+static int opt_intra_matrix(const char *opt, const char *arg)
 {
     intra_matrix = av_mallocz(sizeof(uint16_t) * 64);
     parse_matrix_coeffs(intra_matrix, arg);
+    return 0;
 }
 
 static void show_usage(void)
@@ -4092,7 +4094,7 @@ static void show_usage(void)
     printf("\n");
 }
 
-static void show_help(void)
+static int opt_help(const char *opt, const char *arg)
 {
     AVCodec *c;
     AVOutputFormat *oformat = NULL;
@@ -4147,6 +4149,7 @@ static void show_help(void)
     }
 
     av_opt_show2(sws_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+    return 0;
 }
 
 static int opt_target(const char *opt, const char *arg)
@@ -4377,10 +4380,11 @@ static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
 {
 }
 
-static void opt_passlogfile(const char *opt, const char *arg)
+static int opt_passlogfile(const char *opt, const char *arg)
 {
     pass_logfilename_prefix = arg;
     opt_default("passlogfile", arg);
+    return 0;
 }
 
 static const OptionDef options[] = {

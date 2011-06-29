@@ -574,12 +574,13 @@ void show_banner(void)
     print_all_libs_info(stderr, INDENT|SHOW_VERSION);
 }
 
-void show_version(void) {
+int opt_version(const char *opt, const char *arg) {
     printf("%s " FFMPEG_VERSION "\n", program_name);
     print_all_libs_info(stdout, SHOW_VERSION);
+    return 0;
 }
 
-void show_license(void)
+int opt_license(const char *opt, const char *arg)
 {
     printf(
 #if CONFIG_NONFREE
@@ -646,9 +647,10 @@ void show_license(void)
     program_name, program_name, program_name
 #endif
     );
+    return 0;
 }
 
-void show_formats(void)
+int opt_formats(const char *opt, const char *arg)
 {
     AVInputFormat *ifmt=NULL;
     AVOutputFormat *ofmt=NULL;
@@ -695,9 +697,10 @@ void show_formats(void)
             name,
             long_name ? long_name:" ");
     }
+    return 0;
 }
 
-void show_codecs(void)
+int opt_codecs(const char *opt, const char *arg)
 {
     AVCodec *p=NULL, *p2;
     const char *last_name;
@@ -771,9 +774,10 @@ void show_codecs(void)
 "even though both encoding and decoding are supported. For example, the h263\n"
 "decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
 "worse.\n");
+    return 0;
 }
 
-void show_bsfs(void)
+int opt_bsfs(const char *opt, const char *arg)
 {
     AVBitStreamFilter *bsf=NULL;
 
@@ -781,9 +785,10 @@ void show_bsfs(void)
     while((bsf = av_bitstream_filter_next(bsf)))
         printf("%s\n", bsf->name);
     printf("\n");
+    return 0;
 }
 
-void show_protocols(void)
+int opt_protocols(const char *opt, const char *arg)
 {
     URLProtocol *up=NULL;
 
@@ -799,9 +804,10 @@ void show_protocols(void)
                up->url_write ? 'O' : '.',
                up->url_seek  ? 'S' : '.',
                up->name);
+    return 0;
 }
 
-void show_filters(void)
+int opt_filters(const char *opt, const char *arg)
 {
     AVFilter av_unused(**filter) = NULL;
 
@@ -810,9 +816,10 @@ void show_filters(void)
     while ((filter = av_filter_next(filter)) && *filter)
         printf("%-16s %s\n", (*filter)->name, (*filter)->description);
 #endif
+    return 0;
 }
 
-void show_pix_fmts(void)
+int opt_pix_fmts(const char *opt, const char *arg)
 {
     enum PixelFormat pix_fmt;
 
@@ -843,6 +850,7 @@ void show_pix_fmts(void)
                pix_desc->nb_components,
                av_get_bits_per_pixel(pix_desc));
     }
+    return 0;
 }
 
 int read_yesno(void)
