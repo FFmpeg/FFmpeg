@@ -580,7 +580,7 @@ static void add_bytes_mmx(uint8_t *dst, uint8_t *src, int w){
         dst[i+0] += src[i+0];
 }
 
-#if HAVE_7REGS && HAVE_TEN_OPERANDS
+#if HAVE_7REGS
 static void add_hfyu_median_prediction_cmov(uint8_t *dst, const uint8_t *top, const uint8_t *diff, int w, int *left, int *left_top) {
     x86_reg w2 = -w;
     x86_reg x;
@@ -2577,7 +2577,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
             c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 #endif
-#if HAVE_7REGS && HAVE_TEN_OPERANDS
+#if HAVE_7REGS
             if( mm_flags&AV_CPU_FLAG_3DNOW )
                 c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif

@@ -137,8 +137,8 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_yvu9.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 
 
--include $(SUBDIR)$(ARCH)/Makefile
+-include $(SRC_PATH)/$(SUBDIR)$(ARCH)/Makefile
 
 DIRS = x86 libmpcodecs
 
-include $(SUBDIR)../subdir.mak
+include $(SRC_PATH)/subdir.mak

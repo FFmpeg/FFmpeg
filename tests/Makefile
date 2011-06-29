@@ -112,7 +112,7 @@ clean:: testclean
 
 testclean:
 	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
-	$(RM) $(addprefix tests/,$(CLEANSUFFIXES))
+	$(RM) $(CLEANSUFFIXES:%=tests/%)
 	$(RM) tests/seek_test$(EXESUF) tests/seek_test.o
 	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
 

@@ -110,6 +110,9 @@ static int wv_read_block_header(AVFormatContext *ctx, AVIOContext *pb, int appen
         size = wc->blksize;
     }
     wc->flags = AV_RL32(wc->extra + 4);
+    // blocks with zero samples don't contain actual audio information and should be ignored
+    if (!AV_RN32(wc->extra))
+        return 0;
     //parse flags
     bpp = ((wc->flags & 3) + 1) << 3;
     chan = 1 + !(wc->flags & WV_MONO);
@@ -207,8 +210,14 @@ static int wv_read_header(AVFormatContext *s,
     AVStream *st;
 
     wc->block_parsed = 0;
-    if(wv_read_block_header(s, pb, 0) < 0)
-        return -1;
+    for(;;){
+        if(wv_read_block_header(s, pb, 0) < 0)
+            return -1;
+        if(!AV_RN32(wc->extra))
+            avio_skip(pb, wc->blksize - 24);
+        else
+            break;
+    }
 
     /* now we are ready: build format streams */
     st = av_new_stream(s, 0);

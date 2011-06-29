@@ -1,6 +1,6 @@
 SRC_DIR := $(SRC_PATH)/lib$(NAME)
 
-include $(SUBDIR)../common.mak
+include $(SRC_PATH)/common.mak
 
 LIBVERSION := $(lib$(NAME)_VERSION)
 LIBMAJOR   := $(lib$(NAME)_VERSION_MAJOR)

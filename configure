@@ -1125,7 +1125,6 @@ HAVE_LIST="
     sys_select_h
     sys_soundcard_h
     sys_videoio_h
-    ten_operands
     termios_h
     threads
     trunc
@@ -1542,11 +1541,6 @@ test_deps(){
     done
 }
 
-set_ne_test_deps(){
-    eval ${1}_be_test_deps="bigendian"
-    eval ${1}_le_test_deps="!bigendian"
-}
-
 test_deps _encoder _decoder                                             \
     adpcm_g726=g726                                                     \
     adpcm_ima_qt                                                        \
@@ -1622,15 +1616,6 @@ test_deps _muxer _demuxer                                               \
 
 ac3_fixed_test_deps="ac3_fixed_encoder ac3_decoder rm_muxer rm_demuxer"
 mpg_test_deps="mpeg1system_muxer mpegps_demuxer"
-
-set_ne_test_deps pixdesc
-set_ne_test_deps pixfmts_copy
-set_ne_test_deps pixfmts_crop
-set_ne_test_deps pixfmts_hflip
-set_ne_test_deps pixfmts_null
-set_ne_test_deps pixfmts_pad
-set_ne_test_deps pixfmts_scale
-set_ne_test_deps pixfmts_vflip
 
 # default parameters
 
@@ -2740,18 +2725,6 @@ EOF
     # check whether xmm clobbers are supported
     check_asm xmm_clobbers '"":::"%xmm0"'
 
-    # check whether more than 10 operands are supported
-    check_cc <<EOF && enable ten_operands
-int main(void) {
-    int x=0;
-    __asm__ volatile(
-        ""
-        :"+&rm"(x), "+&rm"(x), "+&rm"(x), "+&rm"(x), "+&rm"(x), "+&rm"(x)
-    );
-    return 0;
-}
-EOF
-
     # check whether binutils is new enough to compile SSSE3/MMX2
     enabled ssse3 && check_asm ssse3 '"pabsw %xmm0, %xmm0"'
     enabled mmx2  && check_asm mmx2  '"pmaxub %mm0, %mm1"'
@@ -3197,7 +3170,6 @@ if enabled x86; then
     echo "CMOV is fast              ${fast_cmov-no}"
     echo "EBX available             ${ebx_available-no}"
     echo "EBP available             ${ebp_available-no}"
-    echo "10 operands supported     ${ten_operands-no}"
 fi
 if enabled arm; then
     echo "ARMv5TE enabled           ${armv5te-no}"
@@ -3303,34 +3275,9 @@ if enabled source_path_used; then
         tests/fate
         tools
     "
-    FILES="
-        Makefile
-        common.mak
-        subdir.mak
-        doc/Makefile
-        doc/texi2pod.pl
-        libavcodec/Makefile
-        libavcodec/${arch}/Makefile
-        libavdevice/Makefile
-        libavfilter/Makefile
-        libavfilter/${arch}/Makefile
-        libavformat/Makefile
-        libavutil/Makefile
-        libpostproc/Makefile
-        libswscale/Makefile
-        tests/Makefile
-        tests/fate.mak
-        tests/fate2.mak
-        tests/fate/aac.mak
-        tests/fate/als.mak
-        tests/fate/fft.mak
-        tests/fate/h264.mak
-        tests/fate/mp3.mak
-        tests/fate/vorbis.mak
-        tests/fate/vp8.mak
-    "
+
     map 'mkdir -p $v' $DIRS;
-    map 'test -f "$source_path/$v" && $ln_s "$source_path/$v" $v' $FILES
+    $ln_s "$source_path/Makefile" .
 fi
 
 enabled stripping || strip="echo skipping strip"

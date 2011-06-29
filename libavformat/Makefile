@@ -342,4 +342,4 @@ OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o
 
 TESTPROGS = timefilter
 
-include $(SUBDIR)../subdir.mak
+include $(SRC_PATH)/subdir.mak

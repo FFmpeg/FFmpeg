@@ -4,7 +4,9 @@ bgr24               89108a4ba00201f79b75b9305c42352d
 bgr48be             ed82382da09b64a8e04728fcf76e6814
 bgr48le             0f1f135608c2ff24d26d03e939fc2112
 bgr4_byte           407fcf564ed764c38e1d748f700ab921
+bgr555be            f739d2519f7e9d494359bf67a3821537
 bgr555le            bd7b3ec4d684dfad075d89a606cb8b74
+bgr565be            f19e9a4786395e1ddcd51399c98c9f6c
 bgr565le            fdb617533e1e7ff512ea5b6b6233e738
 bgr8                c60f93fd152c6903391d1fe9decd3547
 bgra                7f9b799fb48544e49ce93e91d7f9fca8
@@ -19,7 +21,9 @@ rgb24               eaefabc168d0b14576bab45bc1e56e1e
 rgb48be             4e0c384163ebab06a08e74637beb02bc
 rgb48le             a77bfeefcd96750cf0e1917a2e2bf1e7
 rgb4_byte           8c6ff02df0b06dd2d574836c3741b2a2
+rgb555be            40dc33cfb5cf56aac1c5a290ac486c36
 rgb555le            4f8eaad29a17e0f8e9d8ab743e76b999
+rgb565be            b57623ad9df74648339311a0edcebc7b
 rgb565le            73f247a3315dceaea3022ac7c197c5ef
 rgb8                13a8d89ef78d8127297d899005456ff0
 rgba                1fc6e920a42ec812aaa3b2aa02f37987
