@@ -2282,8 +2282,10 @@ static int transcode(AVFormatContext **output_files,
                 }
                 choose_sample_rate(ost->st, ost->enc);
                 codec->time_base = (AVRational){1, codec->sample_rate};
-                if (!codec->channels)
+                if (!codec->channels) {
                     codec->channels = icodec->channels;
+                    codec->channel_layout = icodec->channel_layout;
+                }
                 if (av_get_channel_layout_nb_channels(codec->channel_layout) != codec->channels)
                     codec->channel_layout = 0;
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
