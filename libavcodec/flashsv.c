@@ -187,9 +187,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 return AVERROR_INVALIDDATA;
             }
 
-            if (size == 0) {
-                /* no change, don't do anything */
-            } else {
+            /* skip unchanged blocks, which have size 0 */
+            if (size) {
                 /* decompress block */
                 int ret = inflateReset(&s->zstream);
                 if (ret != Z_OK) {
