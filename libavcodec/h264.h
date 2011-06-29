@@ -308,11 +308,6 @@ typedef struct H264Context{
 #define PART_NOT_AVAILABLE -2
 
     /**
-     * is 1 if the specific list MV&references are set to 0,0,-2.
-     */
-    int mv_cache_clean[2];
-
-    /**
      * number of neighbors (top and/or left) that used 8x8 dct
      */
     int neighbor_transform_size;
@@ -857,6 +852,8 @@ static void fill_decode_caches(H264Context *h, int mb_type){
     int topleft_type, top_type, topright_type, left_type[2];
     const uint8_t * left_block= h->left_block;
     int i;
+    uint8_t *nnz;
+    uint8_t *nnz_cache;
 
     topleft_xy   = h->topleft_mb_xy ;
     top_xy       = h->top_mb_xy     ;
@@ -946,42 +943,45 @@ static void fill_decode_caches(H264Context *h, int mb_type){
 5 L . .. . . . .
 */
 //FIXME constraint_intra_pred & partitioning & nnz (let us hope this is just a typo in the spec)
+    nnz_cache = h->non_zero_count_cache;
     if(top_type){
-        AV_COPY32(&h->non_zero_count_cache[4+8* 0], &h->non_zero_count[top_xy][4*3]);
+        nnz = h->non_zero_count[top_xy];
+        AV_COPY32(&nnz_cache[4+8* 0], &nnz[4*3]);
         if(CHROMA444){
-            AV_COPY32(&h->non_zero_count_cache[4+8* 5], &h->non_zero_count[top_xy][4* 7]);
-            AV_COPY32(&h->non_zero_count_cache[4+8*10], &h->non_zero_count[top_xy][4*11]);
+            AV_COPY32(&nnz_cache[4+8* 5], &nnz[4* 7]);
+            AV_COPY32(&nnz_cache[4+8*10], &nnz[4*11]);
         }else{
-            AV_COPY32(&h->non_zero_count_cache[4+8* 5], &h->non_zero_count[top_xy][4* 5]);
-            AV_COPY32(&h->non_zero_count_cache[4+8*10], &h->non_zero_count[top_xy][4* 9]);
+            AV_COPY32(&nnz_cache[4+8* 5], &nnz[4* 5]);
+            AV_COPY32(&nnz_cache[4+8*10], &nnz[4* 9]);
         }
     }else{
         uint32_t top_empty = CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
-        AV_WN32A(&h->non_zero_count_cache[4+8* 0], top_empty);
-        AV_WN32A(&h->non_zero_count_cache[4+8* 5], top_empty);
-        AV_WN32A(&h->non_zero_count_cache[4+8*10], top_empty);
+        AV_WN32A(&nnz_cache[4+8* 0], top_empty);
+        AV_WN32A(&nnz_cache[4+8* 5], top_empty);
+        AV_WN32A(&nnz_cache[4+8*10], top_empty);
     }
 
     for (i=0; i<2; i++) {
         if(left_type[i]){
-            h->non_zero_count_cache[3+8* 1 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+0+2*i]];
-            h->non_zero_count_cache[3+8* 2 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+1+2*i]];
+            nnz = h->non_zero_count[left_xy[i]];
+            nnz_cache[3+8* 1 + 2*8*i]= nnz[left_block[8+0+2*i]];
+            nnz_cache[3+8* 2 + 2*8*i]= nnz[left_block[8+1+2*i]];
             if(CHROMA444){
-                h->non_zero_count_cache[3+8* 6 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+0+2*i]+4*4];
-                h->non_zero_count_cache[3+8* 7 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+1+2*i]+4*4];
-                h->non_zero_count_cache[3+8*11 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+0+2*i]+8*4];
-                h->non_zero_count_cache[3+8*12 + 2*8*i]= h->non_zero_count[left_xy[i]][left_block[8+1+2*i]+8*4];
+                nnz_cache[3+8* 6 + 2*8*i]= nnz[left_block[8+0+2*i]+4*4];
+                nnz_cache[3+8* 7 + 2*8*i]= nnz[left_block[8+1+2*i]+4*4];
+                nnz_cache[3+8*11 + 2*8*i]= nnz[left_block[8+0+2*i]+8*4];
+                nnz_cache[3+8*12 + 2*8*i]= nnz[left_block[8+1+2*i]+8*4];
             }else{
-                h->non_zero_count_cache[3+8* 6 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+4+2*i]];
-                h->non_zero_count_cache[3+8*11 +   8*i]= h->non_zero_count[left_xy[i]][left_block[8+5+2*i]];
+                nnz_cache[3+8* 6 +   8*i]= nnz[left_block[8+4+2*i]];
+                nnz_cache[3+8*11 +   8*i]= nnz[left_block[8+5+2*i]];
             }
         }else{
-            h->non_zero_count_cache[3+8* 1 + 2*8*i]=
-            h->non_zero_count_cache[3+8* 2 + 2*8*i]=
-            h->non_zero_count_cache[3+8* 6 + 2*8*i]=
-            h->non_zero_count_cache[3+8* 7 + 2*8*i]=
-            h->non_zero_count_cache[3+8*11 + 2*8*i]=
-            h->non_zero_count_cache[3+8*12 + 2*8*i]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
+            nnz_cache[3+8* 1 + 2*8*i]=
+            nnz_cache[3+8* 2 + 2*8*i]=
+            nnz_cache[3+8* 6 + 2*8*i]=
+            nnz_cache[3+8* 7 + 2*8*i]=
+            nnz_cache[3+8*11 + 2*8*i]=
+            nnz_cache[3+8*12 + 2*8*i]= CABAC && !IS_INTRA(mb_type) ? 0 : 64;
         }
     }
 
@@ -1005,143 +1005,144 @@ static void fill_decode_caches(H264Context *h, int mb_type){
 
     if(IS_INTER(mb_type) || (IS_DIRECT(mb_type) && h->direct_spatial_mv_pred)){
         int list;
+        int b_stride = h->b_stride;
         for(list=0; list<h->list_count; list++){
+            int8_t *ref_cache = &h->ref_cache[list][scan8[0]];
+            int8_t *ref = s->current_picture.ref_index[list];
+            int16_t (*mv_cache)[2] = &h->mv_cache[list][scan8[0]];
+            int16_t (*mv)[2] = s->current_picture.motion_val[list];
             if(!USES_LIST(mb_type, list)){
-                /*if(!h->mv_cache_clean[list]){
-                    memset(h->mv_cache [list],  0, 8*5*2*sizeof(int16_t)); //FIXME clean only input? clean at all?
-                    memset(h->ref_cache[list], PART_NOT_AVAILABLE, 8*5*sizeof(int8_t));
-                    h->mv_cache_clean[list]= 1;
-                }*/
                 continue;
             }
             assert(!(IS_DIRECT(mb_type) && !h->direct_spatial_mv_pred));
 
-            h->mv_cache_clean[list]= 0;
-
             if(USES_LIST(top_type, list)){
-                const int b_xy= h->mb2b_xy[top_xy] + 3*h->b_stride;
-                AV_COPY128(h->mv_cache[list][scan8[0] + 0 - 1*8], s->current_picture.motion_val[list][b_xy + 0]);
-                    h->ref_cache[list][scan8[0] + 0 - 1*8]=
-                    h->ref_cache[list][scan8[0] + 1 - 1*8]= s->current_picture.ref_index[list][4*top_xy + 2];
-                    h->ref_cache[list][scan8[0] + 2 - 1*8]=
-                    h->ref_cache[list][scan8[0] + 3 - 1*8]= s->current_picture.ref_index[list][4*top_xy + 3];
+                const int b_xy= h->mb2b_xy[top_xy] + 3*b_stride;
+                AV_COPY128(mv_cache[0 - 1*8], mv[b_xy + 0]);
+                ref_cache[0 - 1*8]=
+                ref_cache[1 - 1*8]= ref[4*top_xy + 2];
+                ref_cache[2 - 1*8]=
+                ref_cache[3 - 1*8]= ref[4*top_xy + 3];
             }else{
-                AV_ZERO128(h->mv_cache[list][scan8[0] + 0 - 1*8]);
-                AV_WN32A(&h->ref_cache[list][scan8[0] + 0 - 1*8], ((top_type ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101);
+                AV_ZERO128(mv_cache[0 - 1*8]);
+                AV_WN32A(&ref_cache[0 - 1*8], ((top_type ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101);
             }
 
             if(mb_type & (MB_TYPE_16x8|MB_TYPE_8x8)){
             for(i=0; i<2; i++){
-                int cache_idx = scan8[0] - 1 + i*2*8;
+                int cache_idx = -1 + i*2*8;
                 if(USES_LIST(left_type[i], list)){
                     const int b_xy= h->mb2b_xy[left_xy[i]] + 3;
                     const int b8_xy= 4*left_xy[i] + 1;
-                    AV_COPY32(h->mv_cache[list][cache_idx  ], s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[0+i*2]]);
-                    AV_COPY32(h->mv_cache[list][cache_idx+8], s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[1+i*2]]);
-                        h->ref_cache[list][cache_idx  ]= s->current_picture.ref_index[list][b8_xy + (left_block[0+i*2]&~1)];
-                        h->ref_cache[list][cache_idx+8]= s->current_picture.ref_index[list][b8_xy + (left_block[1+i*2]&~1)];
+                    AV_COPY32(mv_cache[cache_idx  ], mv[b_xy + b_stride*left_block[0+i*2]]);
+                    AV_COPY32(mv_cache[cache_idx+8], mv[b_xy + b_stride*left_block[1+i*2]]);
+                    ref_cache[cache_idx  ]= ref[b8_xy + (left_block[0+i*2]&~1)];
+                    ref_cache[cache_idx+8]= ref[b8_xy + (left_block[1+i*2]&~1)];
                 }else{
-                    AV_ZERO32(h->mv_cache [list][cache_idx  ]);
-                    AV_ZERO32(h->mv_cache [list][cache_idx+8]);
-                    h->ref_cache[list][cache_idx  ]=
-                    h->ref_cache[list][cache_idx+8]= (left_type[i]) ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                    AV_ZERO32(mv_cache[cache_idx  ]);
+                    AV_ZERO32(mv_cache[cache_idx+8]);
+                    ref_cache[cache_idx  ]=
+                    ref_cache[cache_idx+8]= (left_type[i]) ? LIST_NOT_USED : PART_NOT_AVAILABLE;
                 }
             }
             }else{
                 if(USES_LIST(left_type[0], list)){
                     const int b_xy= h->mb2b_xy[left_xy[0]] + 3;
                     const int b8_xy= 4*left_xy[0] + 1;
-                    AV_COPY32(h->mv_cache[list][scan8[0] - 1], s->current_picture.motion_val[list][b_xy + h->b_stride*left_block[0]]);
-                    h->ref_cache[list][scan8[0] - 1]= s->current_picture.ref_index[list][b8_xy + (left_block[0]&~1)];
+                    AV_COPY32(mv_cache[-1], mv[b_xy + b_stride*left_block[0]]);
+                    ref_cache[-1]= ref[b8_xy + (left_block[0]&~1)];
                 }else{
-                    AV_ZERO32(h->mv_cache [list][scan8[0] - 1]);
-                    h->ref_cache[list][scan8[0] - 1]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                    AV_ZERO32(mv_cache[-1]);
+                    ref_cache[-1]= left_type[0] ? LIST_NOT_USED : PART_NOT_AVAILABLE;
                 }
             }
 
             if(USES_LIST(topright_type, list)){
-                const int b_xy= h->mb2b_xy[topright_xy] + 3*h->b_stride;
-                AV_COPY32(h->mv_cache[list][scan8[0] + 4 - 1*8], s->current_picture.motion_val[list][b_xy]);
-                h->ref_cache[list][scan8[0] + 4 - 1*8]= s->current_picture.ref_index[list][4*topright_xy + 2];
+                const int b_xy= h->mb2b_xy[topright_xy] + 3*b_stride;
+                AV_COPY32(mv_cache[4 - 1*8], mv[b_xy]);
+                ref_cache[4 - 1*8]= ref[4*topright_xy + 2];
             }else{
-                AV_ZERO32(h->mv_cache [list][scan8[0] + 4 - 1*8]);
-                h->ref_cache[list][scan8[0] + 4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                AV_ZERO32(mv_cache[4 - 1*8]);
+                ref_cache[4 - 1*8]= topright_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
             }
-            if(h->ref_cache[list][scan8[0] + 4 - 1*8] < 0){
+            if(ref_cache[4 - 1*8] < 0){
                 if(USES_LIST(topleft_type, list)){
-                    const int b_xy = h->mb2b_xy [topleft_xy] + 3 + h->b_stride + (h->topleft_partition & 2*h->b_stride);
+                    const int b_xy = h->mb2b_xy[topleft_xy] + 3 + b_stride + (h->topleft_partition & 2*b_stride);
                     const int b8_xy= 4*topleft_xy + 1 + (h->topleft_partition & 2);
-                    AV_COPY32(h->mv_cache[list][scan8[0] - 1 - 1*8], s->current_picture.motion_val[list][b_xy]);
-                    h->ref_cache[list][scan8[0] - 1 - 1*8]= s->current_picture.ref_index[list][b8_xy];
+                    AV_COPY32(mv_cache[-1 - 1*8], mv[b_xy]);
+                    ref_cache[-1 - 1*8]= ref[b8_xy];
                 }else{
-                    AV_ZERO32(h->mv_cache[list][scan8[0] - 1 - 1*8]);
-                    h->ref_cache[list][scan8[0] - 1 - 1*8]= topleft_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
+                    AV_ZERO32(mv_cache[-1 - 1*8]);
+                    ref_cache[-1 - 1*8]= topleft_type ? LIST_NOT_USED : PART_NOT_AVAILABLE;
                 }
             }
 
             if((mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2)) && !FRAME_MBAFF)
                 continue;
 
-            if(!(mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2))) {
-            h->ref_cache[list][scan8[4 ]] =
-            h->ref_cache[list][scan8[12]] = PART_NOT_AVAILABLE;
-            AV_ZERO32(h->mv_cache [list][scan8[4 ]]);
-            AV_ZERO32(h->mv_cache [list][scan8[12]]);
+            if(!(mb_type&(MB_TYPE_SKIP|MB_TYPE_DIRECT2))){
+                uint8_t (*mvd_cache)[2] = &h->mvd_cache[list][scan8[0]];
+                uint8_t (*mvd)[2] = h->mvd_table[list];
+                ref_cache[2+8*0] =
+                ref_cache[2+8*2] = PART_NOT_AVAILABLE;
+                AV_ZERO32(mv_cache[2+8*0]);
+                AV_ZERO32(mv_cache[2+8*2]);
 
-            if( CABAC ) {
-                /* XXX beurk, Load mvd */
-                if(USES_LIST(top_type, list)){
-                    const int b_xy= h->mb2br_xy[top_xy];
-                    AV_COPY64(h->mvd_cache[list][scan8[0] + 0 - 1*8], h->mvd_table[list][b_xy + 0]);
-                }else{
-                    AV_ZERO64(h->mvd_cache[list][scan8[0] + 0 - 1*8]);
-                }
-                if(USES_LIST(left_type[0], list)){
-                    const int b_xy= h->mb2br_xy[left_xy[0]] + 6;
-                    AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 0*8], h->mvd_table[list][b_xy - left_block[0]]);
-                    AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 1*8], h->mvd_table[list][b_xy - left_block[1]]);
-                }else{
-                    AV_ZERO16(h->mvd_cache [list][scan8[0] - 1 + 0*8]);
-                    AV_ZERO16(h->mvd_cache [list][scan8[0] - 1 + 1*8]);
-                }
-                if(USES_LIST(left_type[1], list)){
-                    const int b_xy= h->mb2br_xy[left_xy[1]] + 6;
-                    AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 2*8], h->mvd_table[list][b_xy - left_block[2]]);
-                    AV_COPY16(h->mvd_cache[list][scan8[0] - 1 + 3*8], h->mvd_table[list][b_xy - left_block[3]]);
-                }else{
-                    AV_ZERO16(h->mvd_cache [list][scan8[0] - 1 + 2*8]);
-                    AV_ZERO16(h->mvd_cache [list][scan8[0] - 1 + 3*8]);
-                }
-                AV_ZERO16(h->mvd_cache [list][scan8[4 ]]);
-                AV_ZERO16(h->mvd_cache [list][scan8[12]]);
-                if(h->slice_type_nos == AV_PICTURE_TYPE_B){
-                    fill_rectangle(&h->direct_cache[scan8[0]], 4, 4, 8, MB_TYPE_16x16>>1, 1);
-
-                    if(IS_DIRECT(top_type)){
-                        AV_WN32A(&h->direct_cache[scan8[0] - 1*8], 0x01010101u*(MB_TYPE_DIRECT2>>1));
-                    }else if(IS_8X8(top_type)){
-                        int b8_xy = 4*top_xy;
-                        h->direct_cache[scan8[0] + 0 - 1*8]= h->direct_table[b8_xy + 2];
-                        h->direct_cache[scan8[0] + 2 - 1*8]= h->direct_table[b8_xy + 3];
+                if( CABAC ) {
+                    if(USES_LIST(top_type, list)){
+                        const int b_xy= h->mb2br_xy[top_xy];
+                        AV_COPY64(mvd_cache[0 - 1*8], mvd[b_xy + 0]);
                     }else{
-                        AV_WN32A(&h->direct_cache[scan8[0] - 1*8], 0x01010101*(MB_TYPE_16x16>>1));
+                        AV_ZERO64(mvd_cache[0 - 1*8]);
                     }
+                    if(USES_LIST(left_type[0], list)){
+                        const int b_xy= h->mb2br_xy[left_xy[0]] + 6;
+                        AV_COPY16(mvd_cache[-1 + 0*8], mvd[b_xy - left_block[0]]);
+                        AV_COPY16(mvd_cache[-1 + 1*8], mvd[b_xy - left_block[1]]);
+                    }else{
+                        AV_ZERO16(mvd_cache[-1 + 0*8]);
+                        AV_ZERO16(mvd_cache[-1 + 1*8]);
+                    }
+                    if(USES_LIST(left_type[1], list)){
+                        const int b_xy= h->mb2br_xy[left_xy[1]] + 6;
+                        AV_COPY16(mvd_cache[-1 + 2*8], mvd[b_xy - left_block[2]]);
+                        AV_COPY16(mvd_cache[-1 + 3*8], mvd[b_xy - left_block[3]]);
+                    }else{
+                        AV_ZERO16(mvd_cache[-1 + 2*8]);
+                        AV_ZERO16(mvd_cache[-1 + 3*8]);
+                    }
+                    AV_ZERO16(mvd_cache[2+8*0]);
+                    AV_ZERO16(mvd_cache[2+8*2]);
+                    if(h->slice_type_nos == AV_PICTURE_TYPE_B){
+                        uint8_t *direct_cache = &h->direct_cache[scan8[0]];
+                        uint8_t *direct_table = h->direct_table;
+                        fill_rectangle(direct_cache, 4, 4, 8, MB_TYPE_16x16>>1, 1);
 
-                    if(IS_DIRECT(left_type[0]))
-                        h->direct_cache[scan8[0] - 1 + 0*8]= MB_TYPE_DIRECT2>>1;
-                    else if(IS_8X8(left_type[0]))
-                        h->direct_cache[scan8[0] - 1 + 0*8]= h->direct_table[4*left_xy[0] + 1 + (left_block[0]&~1)];
-                    else
-                        h->direct_cache[scan8[0] - 1 + 0*8]= MB_TYPE_16x16>>1;
+                        if(IS_DIRECT(top_type)){
+                            AV_WN32A(&direct_cache[-1*8], 0x01010101u*(MB_TYPE_DIRECT2>>1));
+                        }else if(IS_8X8(top_type)){
+                            int b8_xy = 4*top_xy;
+                            direct_cache[0 - 1*8]= direct_table[b8_xy + 2];
+                            direct_cache[2 - 1*8]= direct_table[b8_xy + 3];
+                        }else{
+                            AV_WN32A(&direct_cache[-1*8], 0x01010101*(MB_TYPE_16x16>>1));
+                        }
 
-                    if(IS_DIRECT(left_type[1]))
-                        h->direct_cache[scan8[0] - 1 + 2*8]= MB_TYPE_DIRECT2>>1;
-                    else if(IS_8X8(left_type[1]))
-                        h->direct_cache[scan8[0] - 1 + 2*8]= h->direct_table[4*left_xy[1] + 1 + (left_block[2]&~1)];
-                    else
-                        h->direct_cache[scan8[0] - 1 + 2*8]= MB_TYPE_16x16>>1;
+                        if(IS_DIRECT(left_type[0]))
+                            direct_cache[-1 + 0*8]= MB_TYPE_DIRECT2>>1;
+                        else if(IS_8X8(left_type[0]))
+                            direct_cache[-1 + 0*8]= direct_table[4*left_xy[0] + 1 + (left_block[0]&~1)];
+                        else
+                            direct_cache[-1 + 0*8]= MB_TYPE_16x16>>1;
+
+                        if(IS_DIRECT(left_type[1]))
+                            direct_cache[-1 + 2*8]= MB_TYPE_DIRECT2>>1;
+                        else if(IS_8X8(left_type[1]))
+                            direct_cache[-1 + 2*8]= direct_table[4*left_xy[1] + 1 + (left_block[2]&~1)];
+                        else
+                            direct_cache[-1 + 2*8]= MB_TYPE_16x16>>1;
+                    }
                 }
-            }
             }
             if(FRAME_MBAFF){
 #define MAP_MVS\
