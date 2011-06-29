@@ -731,7 +731,7 @@ decode_intra_mb:
                 else
                     h->intra4x4_pred_mode_cache[ scan8[i] ] = mode;
             }
-            ff_h264_write_back_intra_pred_mode(h);
+            write_back_intra_pred_mode(h);
             if( ff_h264_check_intra4x4_pred_mode(h) < 0)
                 return -1;
         }else{

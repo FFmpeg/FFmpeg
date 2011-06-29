@@ -658,7 +658,6 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h);
  */
 int ff_h264_check_intra_pred_mode(H264Context *h, int mode);
 
-void ff_h264_write_back_intra_pred_mode(H264Context *h);
 void ff_h264_hl_decode_mb(H264Context *h);
 int ff_h264_frame_start(H264Context *h);
 int ff_h264_decode_extradata(H264Context *h);
@@ -1185,7 +1184,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
 /**
  * gets the predicted intra4x4 prediction mode.
  */
-static inline int pred_intra_mode(H264Context *h, int n){
+static av_always_inline int pred_intra_mode(H264Context *h, int n){
     const int index8= scan8[n];
     const int left= h->intra4x4_pred_mode_cache[index8 - 1];
     const int top = h->intra4x4_pred_mode_cache[index8 - 8];
@@ -1197,69 +1196,83 @@ static inline int pred_intra_mode(H264Context *h, int n){
     else      return min;
 }
 
-static inline void write_back_non_zero_count(H264Context *h){
-    const int mb_xy= h->mb_xy;
+static av_always_inline void write_back_intra_pred_mode(H264Context *h){
+    int8_t *i4x4= h->intra4x4_pred_mode + h->mb2br_xy[h->mb_xy];
+    int8_t *i4x4_cache= h->intra4x4_pred_mode_cache;
 
-    AV_COPY32(&h->non_zero_count[mb_xy][ 0], &h->non_zero_count_cache[4+8* 1]);
-    AV_COPY32(&h->non_zero_count[mb_xy][ 4], &h->non_zero_count_cache[4+8* 2]);
-    AV_COPY32(&h->non_zero_count[mb_xy][ 8], &h->non_zero_count_cache[4+8* 3]);
-    AV_COPY32(&h->non_zero_count[mb_xy][12], &h->non_zero_count_cache[4+8* 4]);
-    AV_COPY32(&h->non_zero_count[mb_xy][16], &h->non_zero_count_cache[4+8* 6]);
-    AV_COPY32(&h->non_zero_count[mb_xy][20], &h->non_zero_count_cache[4+8* 7]);
-    AV_COPY32(&h->non_zero_count[mb_xy][32], &h->non_zero_count_cache[4+8*11]);
-    AV_COPY32(&h->non_zero_count[mb_xy][36], &h->non_zero_count_cache[4+8*12]);
+    AV_COPY32(i4x4, i4x4_cache + 4 + 8*4);
+    i4x4[4]= i4x4_cache[7+8*3];
+    i4x4[5]= i4x4_cache[7+8*2];
+    i4x4[6]= i4x4_cache[7+8*1];
+}
+
+static av_always_inline void write_back_non_zero_count(H264Context *h){
+    const int mb_xy= h->mb_xy;
+    uint8_t *nnz = h->non_zero_count[mb_xy];
+    uint8_t *nnz_cache = h->non_zero_count_cache;
+
+    AV_COPY32(&nnz[ 0], &nnz_cache[4+8* 1]);
+    AV_COPY32(&nnz[ 4], &nnz_cache[4+8* 2]);
+    AV_COPY32(&nnz[ 8], &nnz_cache[4+8* 3]);
+    AV_COPY32(&nnz[12], &nnz_cache[4+8* 4]);
+    AV_COPY32(&nnz[16], &nnz_cache[4+8* 6]);
+    AV_COPY32(&nnz[20], &nnz_cache[4+8* 7]);
+    AV_COPY32(&nnz[32], &nnz_cache[4+8*11]);
+    AV_COPY32(&nnz[36], &nnz_cache[4+8*12]);
 
     if(CHROMA444){
-        AV_COPY32(&h->non_zero_count[mb_xy][24], &h->non_zero_count_cache[4+8* 8]);
-        AV_COPY32(&h->non_zero_count[mb_xy][28], &h->non_zero_count_cache[4+8* 9]);
-        AV_COPY32(&h->non_zero_count[mb_xy][40], &h->non_zero_count_cache[4+8*13]);
-        AV_COPY32(&h->non_zero_count[mb_xy][44], &h->non_zero_count_cache[4+8*14]);
+        AV_COPY32(&nnz[24], &nnz_cache[4+8* 8]);
+        AV_COPY32(&nnz[28], &nnz_cache[4+8* 9]);
+        AV_COPY32(&nnz[40], &nnz_cache[4+8*13]);
+        AV_COPY32(&nnz[44], &nnz_cache[4+8*14]);
     }
 }
 
-static inline void write_back_motion(H264Context *h, int mb_type){
+static av_always_inline void write_back_motion_list(H264Context *h, MpegEncContext * const s, int b_stride,
+                                                    int b_xy, int b8_xy, int mb_type, int list )
+{
+    int16_t (*mv_dst)[2] = &s->current_picture.motion_val[list][b_xy];
+    int16_t (*mv_src)[2] = &h->mv_cache[list][scan8[0]];
+    AV_COPY128(mv_dst + 0*b_stride, mv_src + 8*0);
+    AV_COPY128(mv_dst + 1*b_stride, mv_src + 8*1);
+    AV_COPY128(mv_dst + 2*b_stride, mv_src + 8*2);
+    AV_COPY128(mv_dst + 3*b_stride, mv_src + 8*3);
+    if( CABAC ) {
+        uint8_t (*mvd_dst)[2] = &h->mvd_table[list][FMO ? 8*h->mb_xy : h->mb2br_xy[h->mb_xy]];
+        uint8_t (*mvd_src)[2] = &h->mvd_cache[list][scan8[0]];
+        if(IS_SKIP(mb_type))
+            AV_ZERO128(mvd_dst);
+        else{
+            AV_COPY64(mvd_dst, mvd_src + 8*3);
+            AV_COPY16(mvd_dst + 3 + 3, mvd_src + 3 + 8*0);
+            AV_COPY16(mvd_dst + 3 + 2, mvd_src + 3 + 8*1);
+            AV_COPY16(mvd_dst + 3 + 1, mvd_src + 3 + 8*2);
+        }
+    }
+
+    {
+        int8_t *ref_index = &s->current_picture.ref_index[list][b8_xy];
+        int8_t *ref_cache = h->ref_cache[list];
+        ref_index[0+0*2]= ref_cache[scan8[0]];
+        ref_index[1+0*2]= ref_cache[scan8[4]];
+        ref_index[0+1*2]= ref_cache[scan8[8]];
+        ref_index[1+1*2]= ref_cache[scan8[12]];
+    }
+}
+
+static av_always_inline void write_back_motion(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
+    const int b_stride = h->b_stride;
     const int b_xy = 4*s->mb_x + 4*s->mb_y*h->b_stride; //try mb2b(8)_xy
     const int b8_xy= 4*h->mb_xy;
-    int list;
 
-    if(!USES_LIST(mb_type, 0))
+    if(USES_LIST(mb_type, 0)){
+        write_back_motion_list(h, s, b_stride, b_xy, b8_xy, mb_type, 0);
+    }else{
         fill_rectangle(&s->current_picture.ref_index[0][b8_xy], 2, 2, 2, (uint8_t)LIST_NOT_USED, 1);
-
-    for(list=0; list<h->list_count; list++){
-        int y, b_stride;
-        int16_t (*mv_dst)[2];
-        int16_t (*mv_src)[2];
-
-        if(!USES_LIST(mb_type, list))
-            continue;
-
-        b_stride = h->b_stride;
-        mv_dst   = &s->current_picture.motion_val[list][b_xy];
-        mv_src   = &h->mv_cache[list][scan8[0]];
-        for(y=0; y<4; y++){
-            AV_COPY128(mv_dst + y*b_stride, mv_src + 8*y);
-        }
-        if( CABAC ) {
-            uint8_t (*mvd_dst)[2] = &h->mvd_table[list][FMO ? 8*h->mb_xy : h->mb2br_xy[h->mb_xy]];
-            uint8_t (*mvd_src)[2] = &h->mvd_cache[list][scan8[0]];
-            if(IS_SKIP(mb_type))
-                AV_ZERO128(mvd_dst);
-            else{
-            AV_COPY64(mvd_dst, mvd_src + 8*3);
-                AV_COPY16(mvd_dst + 3 + 3, mvd_src + 3 + 8*0);
-                AV_COPY16(mvd_dst + 3 + 2, mvd_src + 3 + 8*1);
-                AV_COPY16(mvd_dst + 3 + 1, mvd_src + 3 + 8*2);
-            }
-        }
-
-        {
-            int8_t *ref_index = &s->current_picture.ref_index[list][b8_xy];
-            ref_index[0+0*2]= h->ref_cache[list][scan8[0]];
-            ref_index[1+0*2]= h->ref_cache[list][scan8[4]];
-            ref_index[0+1*2]= h->ref_cache[list][scan8[8]];
-            ref_index[1+1*2]= h->ref_cache[list][scan8[12]];
-        }
+    }
+    if(USES_LIST(mb_type, 1)){
+        write_back_motion_list(h, s, b_stride, b_xy, b8_xy, mb_type, 1);
     }
 
     if(h->slice_type_nos == AV_PICTURE_TYPE_B && CABAC){
@@ -1272,7 +1285,7 @@ static inline void write_back_motion(H264Context *h, int mb_type){
     }
 }
 
-static inline int get_dct8x8_allowed(H264Context *h){
+static av_always_inline int get_dct8x8_allowed(H264Context *h){
     if(h->sps.direct_8x8_inference_flag)
         return !(AV_RN64A(h->sub_mb_type) & ((MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_8x8                )*0x0001000100010001ULL));
     else

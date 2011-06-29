@@ -589,7 +589,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
             }
         }
 
-        ff_h264_write_back_intra_pred_mode(h);
+        write_back_intra_pred_mode(h);
 
         if (mb_type == 8) {
             ff_h264_check_intra4x4_pred_mode(h);

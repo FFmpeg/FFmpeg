@@ -60,15 +60,6 @@ static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
     PIX_FMT_NONE
 };
 
-void ff_h264_write_back_intra_pred_mode(H264Context *h){
-    int8_t *mode= h->intra4x4_pred_mode + h->mb2br_xy[h->mb_xy];
-
-    AV_COPY32(mode, h->intra4x4_pred_mode_cache + 4 + 8*4);
-    mode[4]= h->intra4x4_pred_mode_cache[7+8*3];
-    mode[5]= h->intra4x4_pred_mode_cache[7+8*2];
-    mode[6]= h->intra4x4_pred_mode_cache[7+8*1];
-}
-
 /**
  * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
  */
