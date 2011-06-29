@@ -150,7 +150,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                "Frame width or height differs from first frames!\n");
         av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
                avctx->height, avctx->width, s->image_height, s->image_width);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     av_log(avctx, AV_LOG_DEBUG,
@@ -184,7 +184,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             if (8 * size > get_bits_left(&gb)) {
                 avctx->release_buffer(avctx, &s->frame);
                 s->frame.data[0] = NULL;
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             if (size == 0) {
