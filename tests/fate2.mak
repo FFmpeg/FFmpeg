@@ -217,6 +217,11 @@ FATE_TESTS += fate-sha
 fate-sha: libavutil/sha-test$(EXESUF)
 fate-sha: CMD = run libavutil/sha-test
 
+FATE_TESTS += fate-adler32
+fate-adler32: libavutil/adler32-test$(EXESUF)
+fate-adler32: CMD = run libavutil/adler32-test
+fate-adler32: REF = /dev/null
+
 FATE_TESTS += fate-musepack7
 fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
 fate-musepack7: CMP = oneoff
