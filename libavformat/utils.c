@@ -2306,7 +2306,10 @@ int av_find_stream_info(AVFormatContext *ic)
         /* NOTE: a new stream can be added there if no header in file
            (AVFMTCTX_NOHEADER) */
         ret = av_read_frame_internal(ic, &pkt1);
-        if (ret < 0 && ret != AVERROR(EAGAIN)) {
+        if (ret == AVERROR(EAGAIN))
+            continue;
+
+        if (ret < 0) {
             /* EOF or error */
             ret = -1; /* we could not have all the codec parameters before EOF */
             for(i=0;i<ic->nb_streams;i++) {
@@ -2321,9 +2324,6 @@ int av_find_stream_info(AVFormatContext *ic)
             }
             break;
         }
-
-        if (ret == AVERROR(EAGAIN))
-            continue;
 
         pkt= add_to_pktbuf(&ic->packet_buffer, &pkt1, &ic->packet_buffer_end);
         if ((ret = av_dup_packet(pkt)) < 0)
