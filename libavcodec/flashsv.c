@@ -152,14 +152,13 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* loop over all block columns */
     for (j = 0; j < v_blocks + (v_part ? 1 : 0); j++) {
 
-        int hp = j * s->block_height; // vertical position in frame
-        int hs = (j < v_blocks) ? s->block_height : v_part; // block size
-
+        int y_pos  = j * s->block_height; // vertical position in frame
+        int cur_blk_height = (j < v_blocks) ? s->block_height : v_part;
 
         /* loop over all block rows */
         for (i = 0; i < h_blocks + (h_part ? 1 : 0); i++) {
-            int wp = i * s->block_width; // horizontal position in frame
-            int ws = (i < h_blocks) ? s->block_width : h_part; // block size
+            int x_pos = i * s->block_width; // horizontal position in frame
+            int cur_blk_width = (i < h_blocks) ? s->block_width : h_part;
 
             /* get the size of the compressed zlib chunk */
             int size = get_bits(&gb, 16);
@@ -195,8 +194,9 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                     /* return -1; */
                 }
                 copy_region(s->tmpblock, s->frame.data[0],
-                            s->image_height - (hp + hs + 1),
-                            wp, hs, ws, s->frame.linesize[0]);
+                            s->image_height - (y_pos + cur_blk_height + 1),
+                            x_pos, cur_blk_height, cur_blk_width,
+                            s->frame.linesize[0]);
                 skip_bits_long(&gb, 8 * size);   /* skip the consumed bits */
             }
         }
