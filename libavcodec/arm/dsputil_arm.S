@@ -24,11 +24,6 @@
 
         preserve8
 
-#if !HAVE_PLD
-.macro pld reg
-.endm
-#endif
-
 #if HAVE_ARMV5TE
 function ff_prefetch_arm, export=1
         subs            r2,  r2,  #1
@@ -37,6 +32,8 @@ function ff_prefetch_arm, export=1
         bne             ff_prefetch_arm
         bx              lr
 endfunc
+#else
+#define pld @
 #endif
 
 .macro  ALIGN_QWORD_D shift, Rd0, Rd1, Rd2, Rd3, Rn0, Rn1, Rn2, Rn3, Rn4
