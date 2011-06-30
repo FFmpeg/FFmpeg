@@ -85,7 +85,6 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                                 int *data_size, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     FlashSVContext *s  = avctx->priv_data;
     int h_blocks, v_blocks, h_part, v_part, i, j;
@@ -97,7 +96,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size < 4)
         return -1;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    init_get_bits(&gb, avpkt->data, buf_size * 8);
 
     /* start to parse the bitstream */
     s->block_width  = 16 * (get_bits(&gb,  4) + 1);
@@ -179,7 +178,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                            "error in decompression (reset) of block %dx%d\n", i, j);
                     /* return -1; */
                 }
-                s->zstream.next_in   = buf + get_bits_count(&gb) / 8;
+                s->zstream.next_in   = avpkt->data + get_bits_count(&gb) / 8;
                 s->zstream.avail_in  = size;
                 s->zstream.next_out  = s->tmpblock;
                 s->zstream.avail_out = s->block_size * 3;
