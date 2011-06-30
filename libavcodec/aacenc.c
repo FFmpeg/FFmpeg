@@ -219,7 +219,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     sizes[1]   = swb_size_128[i];
     lengths[0] = ff_aac_num_swb_1024[i];
     lengths[1] = ff_aac_num_swb_128[i];
-    ff_psy_init(&s->psy, avctx, 2, sizes, lengths);
+    ff_psy_init(&s->psy, avctx, 2, sizes, lengths, s->chan_map[0], &s->chan_map[1]);
     s->psypp = ff_psy_preprocess_init(avctx);
     s->coder = &ff_aac_coders[2];
 
@@ -373,7 +373,7 @@ static void adjust_frame_information(AACEncContext *apc, ChannelElement *cpe, in
         if (msc == 0 || ics0->max_sfb == 0)
             cpe->ms_mode = 0;
         else
-            cpe->ms_mode = msc < ics0->max_sfb ? 1 : 2;
+            cpe->ms_mode = msc < ics0->max_sfb * ics0->num_windows ? 1 : 2;
     }
 }
 
@@ -582,14 +582,17 @@ static int aac_encode_frame(AVCodecContext *avctx,
         memset(chan_el_counter, 0, sizeof(chan_el_counter));
         for (i = 0; i < s->chan_map[0]; i++) {
             FFPsyWindowInfo* wi = windows + start_ch;
+            const float *coeffs[2];
             tag      = s->chan_map[i+1];
             chans    = tag == TYPE_CPE ? 2 : 1;
             cpe      = &s->cpe[i];
             put_bits(&s->pb, 3, tag);
             put_bits(&s->pb, 4, chan_el_counter[tag]++);
+            for (ch = 0; ch < chans; ch++)
+                coeffs[ch] = cpe->ch[ch].coeffs;
+            s->psy.model->analyze(&s->psy, start_ch, coeffs, wi);
             for (ch = 0; ch < chans; ch++) {
-                s->cur_channel = start_ch + ch;
-                s->psy.model->analyze(&s->psy, s->cur_channel, cpe->ch[ch].coeffs, &wi[ch]);
+                s->cur_channel = start_ch * 2 + ch;
                 s->coder->search_for_quantizers(avctx, s, &cpe->ch[ch], s->lambda);
             }
             cpe->common_window = 0;
@@ -605,7 +608,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
                     }
                 }
             }
-            s->cur_channel = start_ch;
+            s->cur_channel = start_ch * 2;
             if (s->options.stereo_mode && cpe->common_window) {
                 if (s->options.stereo_mode > 0) {
                     IndividualChannelStream *ics = &cpe->ch[0].ics;

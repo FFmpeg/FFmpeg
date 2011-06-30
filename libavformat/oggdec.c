@@ -240,7 +240,8 @@ static int ogg_read_page(AVFormatContext *s, int *str)
 
             for (n = 0; n < ogg->nstreams; n++) {
                 av_freep(&ogg->streams[n].buf);
-                av_freep(&ogg->streams[n].private);
+                if (!ogg->state || ogg->state->streams[n].private != ogg->streams[n].private)
+                    av_freep(&ogg->streams[n].private);
             }
             ogg->curidx   = -1;
             ogg->nstreams = 0;

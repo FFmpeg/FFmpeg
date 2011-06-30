@@ -878,9 +878,9 @@ apply(){
 }
 
 cp_if_changed(){
-    cmp -s "$1" "$2" &&
-        echo "$2 is unchanged" ||
-        cp -f "$1" "$2"
+    cmp -s "$1" "$2" && echo "$2 is unchanged" && return
+    mkdir -p "$(dirname $2)"
+    cp -f "$1" "$2"
 }
 
 # CONFIG_LIST contains configurable options, while HAVE_LIST is for
@@ -1098,7 +1098,6 @@ HAVE_LIST="
     memalign
     mkstemp
     mmap
-    pld
     posix_memalign
     round
     roundf
@@ -1708,10 +1707,8 @@ DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -MM'
 # find source path
 if test -f configure; then
     source_path=.
-    disable source_path_used
 else
     source_path=$(cd $(dirname "$0"); pwd)
-    enable source_path_used
     echo "$source_path" | grep -q '[[:blank:]]' &&
         die "Out of tree builds are impossible with whitespace in source path."
     test -e "$source_path/config.h" &&
@@ -2646,9 +2643,6 @@ EOF
         warn "Compiler does not indicate floating-point ABI, guessing $fpabi."
     fi
 
-    # We have to check if pld is a nop and disable it.
-    check_asm pld '"pld [r0]"'
-
     enabled armv5te && check_asm armv5te '"qadd r0, r0, r0"'
     enabled armv6   && check_asm armv6   '"sadd16 r0, r0, r0"'
     enabled armv6t2 && check_asm armv6t2 '"movt r0, #0"'
@@ -3202,6 +3196,9 @@ echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
 echo "SDL support               ${sdl-no}"
 echo "Sun medialib support      ${mlib-no}"
+echo "libdxva2 enabled          ${dxva2-no}"
+echo "libva enabled             ${vaapi-no}"
+echo "libvdpau enabled          ${vdpau-no}"
 echo "AVISynth enabled          ${avisynth-no}"
 echo "libcelt enabled           ${libcelt-no}"
 echo "frei0r enabled            ${frei0r-no}"
@@ -3219,7 +3216,6 @@ echo "librtmp enabled           ${librtmp-no}"
 echo "libschroedinger enabled   ${libschroedinger-no}"
 echo "libspeex enabled          ${libspeex-no}"
 echo "libtheora enabled         ${libtheora-no}"
-echo "libva enabled             ${vaapi-no}"
 echo "libvo-aacenc support      ${libvo_aacenc-no}"
 echo "libvo-amrwbenc support    ${libvo_amrwbenc-no}"
 echo "libvorbis enabled         ${libvorbis-no}"
@@ -3254,31 +3250,7 @@ echo "License: $license"
 
 echo "Creating config.mak and config.h..."
 
-# build tree in object directory if source path is different from current one
-if enabled source_path_used; then
-    DIRS="
-        doc
-        libavcodec
-        libavcodec/$arch
-        libavdevice
-        libavfilter
-        libavfilter/$arch
-        libavfilter/libmpcodecs
-        libavfilter/libmpcodecs/libvo
-        libavformat
-        libavutil
-        libavutil/$arch
-        libpostproc
-        libswscale
-        libswscale/$arch
-        tests
-        tests/fate
-        tools
-    "
-
-    map 'mkdir -p $v' $DIRS;
-    $ln_s "$source_path/Makefile" .
-fi
+test -e Makefile || $ln_s "$source_path/Makefile" .
 
 enabled stripping || strip="echo skipping strip"
 
@@ -3466,6 +3438,7 @@ version=$3
 libs=$4
 requires=$5
 enabled ${name#lib} || return 0
+mkdir -p $name
 cat <<EOF > $name/$name.pc
 prefix=$prefix
 exec_prefix=\${prefix}

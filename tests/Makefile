@@ -46,6 +46,8 @@ include $(SRC_PATH)/tests/fate2.mak
 
 include $(SRC_PATH)/tests/fate/aac.mak
 include $(SRC_PATH)/tests/fate/als.mak
+include $(SRC_PATH)/tests/fate/amrnb.mak
+include $(SRC_PATH)/tests/fate/amrwb.mak
 include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/h264.mak
 include $(SRC_PATH)/tests/fate/mp3.mak

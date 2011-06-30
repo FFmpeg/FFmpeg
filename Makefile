@@ -16,7 +16,6 @@ PROGS-$(CONFIG_FFSERVER) += ffserver
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
 PROGS_G     = $(PROGS-yes:%=%_g$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
-TOOLS       = $(addprefix tools/, $(addsuffix $(EXESUF), cws2fws graph2dot lavfi-showfiltfmts pktdumper probetest qt-faststart trasher))
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 
@@ -82,13 +81,19 @@ ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 %_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
+TOOLS     = cws2fws graph2dot lavfi-showfiltfmts pktdumper probetest qt-faststart trasher
+TOOLOBJS := $(TOOLS:%=tools/%.o)
+TOOLS    := $(TOOLS:%=tools/%$(EXESUF))
+
 alltools: $(TOOLS)
 
 tools/%$(EXESUF): tools/%.o
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-tools/%.o: tools/%.c
+$(TOOLOBJS): %.o: %.c | tools
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
+
+OBJDIRS += tools
 
 -include $(wildcard tools/*.d)
 
@@ -150,5 +155,16 @@ check: test
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/tests/Makefile
 
-.PHONY: all alltools *clean check config examples install*
+$(sort $(OBJDIRS)):
+	$(Q)mkdir -p $@
+
+# Dummy rule to stop make trying to rebuild removed or renamed headers
+%.h:
+	@:
+
+# Disable suffix rules.  Most of the builtin rules are suffix rules,
+# so this saves some time on slow systems.
+.SUFFIXES:
+
+.PHONY: all all-yes alltools *clean check config examples install*
 .PHONY: testprogs uninstall*
