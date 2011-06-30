@@ -316,6 +316,9 @@ typedef struct AVOutputFormat {
 
     const AVClass *priv_class; ///< AVClass for the private context
 
+    void (*get_output_timestamp)(struct AVFormatContext *s, int stream,
+                                 int64_t *dts, int64_t *wall);
+
     /* private fields */
     struct AVOutputFormat *next;
 } AVOutputFormat;
@@ -1517,6 +1520,24 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
  * @return 0 if OK, AVERROR_xxx on error
  */
 int av_write_trailer(AVFormatContext *s);
+
+/**
+ * Get timing information for the data currently output.
+ * The exact meaning of "currently output" depends on the format.
+ * It is mostly relevant for devices that have an internal buffer and/or
+ * work in real time.
+ * @param s          media file handle
+ * @param stream     stream in the media file
+ * @param dts[out]   DTS of the last packet output for the stream, in stream
+ *                   time_base units
+ * @param wall[out]  absolute time when that packet whas output,
+ *                   in microsecond
+ * @return  0 if OK, AVERROR(ENOSYS) if the format does not support it
+ * Note: some formats or devices may not allow to measure dts and wall
+ * atomically.
+ */
+int av_get_output_timestamp(struct AVFormatContext *s, int stream,
+                            int64_t *dts, int64_t *wall);
 
 #if FF_API_DUMP_FORMAT
 /**
