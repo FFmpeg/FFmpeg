@@ -198,7 +198,7 @@ static int parse_picture_segment(AVCodecContext *avctx,
 
     /* Make sure the bitmap is not too large */
     if (avctx->width < width || avctx->height < height) {
-        av_log(avctx, AV_LOG_ERROR, "Bitmap dimensions larger then video.\n");
+        av_log(avctx, AV_LOG_ERROR, "Bitmap dimensions larger than video.\n");
         return -1;
     }
 
