@@ -104,7 +104,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     s->block_height = 16 * (get_bits(&gb,  4) + 1);
     s->image_height =       get_bits(&gb, 12);
 
-    /* calculate amount of blocks and the size of the border blocks */
+    /* calculate number of blocks and size of border (partial) blocks */
     h_blocks = s->image_width  / s->block_width;
     h_part   = s->image_width  % s->block_width;
     v_blocks = s->image_height / s->block_height;
@@ -121,7 +121,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     }
     s->block_size = s->block_width * s->block_height;
 
-    /* init the image size once */
+    /* initialize the image size once */
     if (avctx->width == 0 && avctx->height == 0) {
         avctx->width  = s->image_width;
         avctx->height = s->image_height;
@@ -152,14 +152,14 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* loop over all block columns */
     for (j = 0; j < v_blocks + (v_part ? 1 : 0); j++) {
 
-        int hp = j * s->block_height; // horiz position in frame
-        int hs = (j < v_blocks) ? s->block_height : v_part; // size of block
+        int hp = j * s->block_height; // vertical position in frame
+        int hs = (j < v_blocks) ? s->block_height : v_part; // block size
 
 
         /* loop over all block rows */
         for (i = 0; i < h_blocks + (h_part ? 1 : 0); i++) {
-            int wp = i * s->block_width; // vert position in frame
-            int ws = (i < h_blocks) ? s->block_width : h_part; // size of block
+            int wp = i * s->block_width; // horizontal position in frame
+            int ws = (i < h_blocks) ? s->block_width : h_part; // block size
 
             /* get the size of the compressed zlib chunk */
             int size = get_bits(&gb, 16);
