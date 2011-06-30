@@ -192,7 +192,13 @@ static int raw_decode(AVCodecContext *avctx,
             frame->palette_has_changed = 1;
         }
     }
-    if(avctx->pix_fmt==PIX_FMT_BGR24 && ((frame->linesize[0]+3)&~3)*avctx->height <= buf_size)
+    if((avctx->pix_fmt==PIX_FMT_BGR24    ||
+        avctx->pix_fmt==PIX_FMT_GRAY8    ||
+        avctx->pix_fmt==PIX_FMT_RGB555LE ||
+        avctx->pix_fmt==PIX_FMT_RGB555BE ||
+        avctx->pix_fmt==PIX_FMT_RGB565LE ||
+        avctx->pix_fmt==PIX_FMT_PAL8) &&
+        ((frame->linesize[0]+3)&~3)*avctx->height <= buf_size)
         frame->linesize[0] = (frame->linesize[0]+3)&~3;
 
     if(context->flip)
