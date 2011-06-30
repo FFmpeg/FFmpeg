@@ -61,6 +61,7 @@ static av_cold int audio_write_header(AVFormatContext *s1)
                st->codec->sample_rate, sample_rate);
         goto fail;
     }
+    av_set_pts_info(st, 64, 1, sample_rate);
 
     return res;
 
