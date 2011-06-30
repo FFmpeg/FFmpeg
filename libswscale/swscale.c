@@ -977,7 +977,7 @@ yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
         const uint32_t *b = (const uint32_t *) _b;
 
 #if CONFIG_SMALL
-        int sh = hasAlpha ? ((fmt == PIX_FMT_RGB32_1 || fmt == PIX_FMT_BGR32_1) ? 0 : 24) : 0;
+        int sh = hasAlpha ? ((target == PIX_FMT_RGB32_1 || target == PIX_FMT_BGR32_1) ? 0 : 24) : 0;
 
         dest[i * 2 + 0] = r[Y1] + g[Y1] + b[Y1] + (hasAlpha ? A1 << sh : 0);
         dest[i * 2 + 1] = r[Y2] + g[Y2] + b[Y2] + (hasAlpha ? A2 << sh : 0);
