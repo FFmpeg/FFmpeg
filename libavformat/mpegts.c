@@ -1247,7 +1247,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 {
     AVFormatContext *s = ts->stream;
     MpegTSFilter *tss;
-    int len, pid, cc, cc_ok, afc, is_start;
+    int len, pid, cc, expected_cc, cc_ok, afc, is_start;
     const uint8_t *p, *p_end;
     int64_t pos;
 
@@ -1265,7 +1265,8 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
     /* continuity check (currently not used) */
     cc = (packet[3] & 0xf);
-    cc_ok = (tss->last_cc < 0) || ((((tss->last_cc + 1) & 0x0f) == cc));
+    expected_cc = (packet[3] & 0x10) ? (tss->last_cc + 1) & 0x0f : tss->last_cc;
+    cc_ok = (tss->last_cc < 0) || (expected_cc == cc);
     tss->last_cc = cc;
 
     /* skip adaptation field */
