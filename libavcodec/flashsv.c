@@ -141,7 +141,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             s->image_width, s->image_height, s->block_width, s->block_height,
             h_blocks, v_blocks, h_part, v_part);
 
-    s->frame.reference    = 1;
+    s->frame.reference    = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID    |
                             FF_BUFFER_HINTS_PRESERVE |
                             FF_BUFFER_HINTS_REUSABLE;
