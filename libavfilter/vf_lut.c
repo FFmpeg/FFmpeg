@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 
 static const char *var_names[] = {
     "E",
@@ -165,16 +166,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int pix_fmt_is_in(enum PixelFormat pix_fmt, enum PixelFormat *pix_fmts)
-{
-    enum PixelFormat *p;
-    for (p = pix_fmts; *p != PIX_FMT_NONE; p++) {
-        if (pix_fmt == *p)
-            return 1;
-    }
-    return 0;
-}
-
 /**
  * Clip value val in the minval - maxval range.
  */
@@ -245,8 +236,8 @@ static int config_props(AVFilterLink *inlink)
     }
 
     lut->is_yuv = lut->is_rgb = 0;
-    if      (pix_fmt_is_in(inlink->format, yuv_pix_fmts)) lut->is_yuv = 1;
-    else if (pix_fmt_is_in(inlink->format, rgb_pix_fmts)) lut->is_rgb = 1;
+    if      (ff_fmt_is_in(inlink->format, yuv_pix_fmts)) lut->is_yuv = 1;
+    else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) lut->is_rgb = 1;
 
     if (lut->is_rgb) {
         switch (inlink->format) {
