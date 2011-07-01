@@ -31,12 +31,12 @@ uyvy422             314bd486277111a95d9369b944fa0400
 yuv410p             7df8f6d69b56a8dcb6c7ee908e5018b5
 yuv411p             1143e7c5cc28fe0922b051b17733bc4c
 yuv420p             fdad2d8df8985e3d17e73c71f713cb14
-yuv420p10be         8b5ad855229840a8fa87786cab83f856
-yuv420p10le         5264e87921d47b17411578d9c92672b1
+yuv420p10be         2343beaf83fccc2ab23a590b2049d38b
+yuv420p10le         94d511d783d175f573e7be5cce75ba4d
 yuv420p16be         f6ef3ba90f238b467c7e72ade927083d
 yuv420p16le         faf6aab3b1c16e8afbe160686dd360e0
-yuv420p9be          c14bf746d161face61e1f39b491bf7ef
-yuv420p9le          59457f9a51768bf1d4342238d50a9be3
+yuv420p9be          fdafb9ad473a559246c4cb0a1f416cd8
+yuv420p9le          fccfd3c3941da635b13739f579819b5a
 yuv422p             918e37701ee7377d16a8a6c119c56a40
 yuv422p16be         837945d3a771366a5a72a4ed095a4f53
 yuv422p16le         b8292ae9b52eb7afc3d8b93e8fd895b4

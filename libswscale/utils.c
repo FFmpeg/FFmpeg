@@ -877,7 +877,6 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
     }
 
-    // FIXME it's even nicer if bpp isn't 16, but max({src,dst}formatbpp)
     c->scalingBpp = FFMAX(av_pix_fmt_descriptors[srcFormat].comp[0].depth_minus1,
                           av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1) >= 8 ? 16 : 8;
     if (c->scalingBpp == 16)
