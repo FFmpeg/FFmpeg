@@ -1868,7 +1868,7 @@ static void RENAME(rgb24ToUV)(int16_t *dstU, int16_t *dstV,
 
 #if !COMPILE_TEMPLATE_MMX2
 // bilinear / bicubic scaling
-static void RENAME(hScale)(int16_t *dst, int dstW,
+static void RENAME(hScale)(SwsContext *c, int16_t *dst, int dstW,
                            const uint8_t *src, const int16_t *filter,
                            const int16_t *filterPos, int filterSize)
 {

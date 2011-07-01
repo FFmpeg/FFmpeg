@@ -1882,59 +1882,6 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
 
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
-// FIXME Maybe dither instead.
-static av_always_inline void
-yuv9_OR_10ToUV_c_template(uint16_t *dstU, uint16_t *dstV,
-                          const uint16_t *srcU, const uint16_t *srcV,
-                          int width, enum PixelFormat origin, int depth)
-{
-    int i;
-
-    for (i = 0; i < width; i++) {
-        int upx = input_pixel(&srcU[i]);
-        int vpx = input_pixel(&srcV[i]);
-        dstU[i] =  (upx << (16 - depth)) | (upx >> (2 * depth - 16));
-        dstV[i] =  (vpx << (16 - depth)) | (vpx >> (2 * depth - 16));
-    }
-}
-
-static av_always_inline void
-yuv9_or_10ToY_c_template(uint16_t *dstY, const uint16_t *srcY,
-                         int width, enum PixelFormat origin, int depth)
-{
-    int i;
-
-    for (i = 0; i < width; i++) {
-        int px = input_pixel(&srcY[i]);
-        dstY[i] =  (px << (16 - depth)) | (px >> (2 * depth - 16));
-    }
-}
-
-#undef input_pixel
-
-#define YUV_NBPS(depth, BE_LE, origin) \
-static void BE_LE ## depth ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
-                                     const uint8_t *_srcU, const uint8_t *_srcV, \
-                                     int width, uint32_t *unused) \
-{ \
-    uint16_t *dstU = (uint16_t *) _dstU, *dstV = (uint16_t *) _dstV; \
-    const uint16_t *srcU = (const uint16_t *) _srcU, \
-                   *srcV = (const uint16_t *) _srcV; \
-    yuv9_OR_10ToUV_c_template(dstU, dstV, srcU, srcV, width, origin, depth); \
-} \
-static void BE_LE ## depth ## ToY_c(uint8_t *_dstY, const uint8_t *_srcY, \
-                                    int width, uint32_t *unused) \
-{ \
-    uint16_t *dstY = (uint16_t *) _dstY; \
-    const uint16_t *srcY = (const uint16_t *) _srcY; \
-    yuv9_or_10ToY_c_template(dstY, srcY, width, origin, depth); \
-}
-
-YUV_NBPS( 9, LE, PIX_FMT_YUV420P9LE);
-YUV_NBPS( 9, BE, PIX_FMT_YUV420P9BE);
-YUV_NBPS(10, LE, PIX_FMT_YUV420P10LE);
-YUV_NBPS(10, BE, PIX_FMT_YUV420P10BE);
-
 static void bgr24ToY_c(int16_t *dst, const uint8_t *src,
                        int width, uint32_t *unused)
 {
@@ -2021,13 +1968,15 @@ static void rgb24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
     }
 }
 
-static void hScale16_c(int16_t *_dst, int dstW, const uint8_t *_src,
+static void hScale16_c(SwsContext *c, int16_t *_dst, int dstW, const uint8_t *_src,
                        const int16_t *filter,
                        const int16_t *filterPos, int filterSize)
 {
     int i;
     int32_t *dst = (int32_t *) _dst;
     const uint16_t *src = (const uint16_t *) _src;
+    int bits = av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
+    int sh = (bits <= 7) ? 11 : (bits - 4);
 
     for (i = 0; i < dstW; i++) {
         int j;
@@ -2038,12 +1987,12 @@ static void hScale16_c(int16_t *_dst, int dstW, const uint8_t *_src,
             val += src[srcPos + j] * filter[filterSize * i + j];
         }
         // filter=14 bit, input=16 bit, output=30 bit, >> 11 makes 19 bit
-        dst[i] = FFMIN(val >> 11, (1 << 19) - 1);
+        dst[i] = FFMIN(val >> sh, (1 << 19) - 1);
     }
 }
 
 // bilinear / bicubic scaling
-static void hScale_c(int16_t *dst, int dstW, const uint8_t *src,
+static void hScale_c(SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
                      const int16_t *filter, const int16_t *filterPos,
                      int filterSize)
 {
@@ -2213,7 +2162,7 @@ static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
         int shift= isAnyRGB(c->srcFormat) || c->srcFormat==PIX_FMT_PAL8 ? 13 : av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
         c->hScale16(dst, dstWidth, (const uint16_t*)src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize, shift);
     } else if (!c->hyscale_fast) {
-        c->hScale(dst, dstWidth, src, hLumFilter, hLumFilterPos, hLumFilterSize);
+        c->hScale(c, dst, dstWidth, src, hLumFilter, hLumFilterPos, hLumFilterSize);
     } else { // fast bilinear upscale / crap downscale
         c->hyscale_fast(c, dst, dstWidth, src, srcW, xInc);
     }
@@ -2271,8 +2220,8 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
         c->hScale16(dst1, dstWidth, (const uint16_t*)src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, shift);
         c->hScale16(dst2, dstWidth, (const uint16_t*)src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, shift);
     } else if (!c->hcscale_fast) {
-        c->hScale(dst1, dstWidth, src1, hChrFilter, hChrFilterPos, hChrFilterSize);
-        c->hScale(dst2, dstWidth, src2, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hScale(c, dst1, dstWidth, src1, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hScale(c, dst2, dstWidth, src2, hChrFilter, hChrFilterPos, hChrFilterSize);
     } else { // fast bilinear upscale / crap downscale
         c->hcscale_fast(c, dst1, dst2, dstWidth, src1, src2, srcW, xInc);
     }
