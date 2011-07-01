@@ -1637,32 +1637,6 @@ static void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV,
     assert(src1 == src2);
 }
 
-static void RENAME(LEToUV)(uint8_t *dstU, uint8_t *dstV,
-                           const uint8_t *src1, const uint8_t *src2,
-                           int width, uint32_t *unused)
-{
-    __asm__ volatile(
-        "mov                    %0, %%"REG_a"       \n\t"
-        "1:                                         \n\t"
-        "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
-        "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
-        "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
-        "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
-        "psrlw                  $8, %%mm0           \n\t"
-        "psrlw                  $8, %%mm1           \n\t"
-        "psrlw                  $8, %%mm2           \n\t"
-        "psrlw                  $8, %%mm3           \n\t"
-        "packuswb            %%mm1, %%mm0           \n\t"
-        "packuswb            %%mm3, %%mm2           \n\t"
-        "movq                %%mm0, (%3, %%"REG_a") \n\t"
-        "movq                %%mm2, (%4, %%"REG_a") \n\t"
-        "add                    $8, %%"REG_a"       \n\t"
-        " js                    1b                  \n\t"
-        : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
-        : "%"REG_a
-    );
-}
-
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
 static void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src,
@@ -1710,33 +1684,6 @@ static void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV,
         : "%"REG_a
     );
     assert(src1 == src2);
-}
-
-static void RENAME(BEToUV)(uint8_t *dstU, uint8_t *dstV,
-                           const uint8_t *src1, const uint8_t *src2,
-                           int width, uint32_t *unused)
-{
-    __asm__ volatile(
-        "movq "MANGLE(bm01010101)", %%mm4           \n\t"
-        "mov                    %0, %%"REG_a"       \n\t"
-        "1:                                         \n\t"
-        "movq    (%1, %%"REG_a",2), %%mm0           \n\t"
-        "movq   8(%1, %%"REG_a",2), %%mm1           \n\t"
-        "movq    (%2, %%"REG_a",2), %%mm2           \n\t"
-        "movq   8(%2, %%"REG_a",2), %%mm3           \n\t"
-        "pand                %%mm4, %%mm0           \n\t"
-        "pand                %%mm4, %%mm1           \n\t"
-        "pand                %%mm4, %%mm2           \n\t"
-        "pand                %%mm4, %%mm3           \n\t"
-        "packuswb            %%mm1, %%mm0           \n\t"
-        "packuswb            %%mm3, %%mm2           \n\t"
-        "movq                %%mm0, (%3, %%"REG_a") \n\t"
-        "movq                %%mm2, (%4, %%"REG_a") \n\t"
-        "add                    $8, %%"REG_a"       \n\t"
-        " js                    1b                  \n\t"
-        : : "g" ((x86_reg)-width), "r" (src1+width*2), "r" (src2+width*2), "r" (dstU+width), "r" (dstV+width)
-        : "%"REG_a
-    );
 }
 
 static av_always_inline void RENAME(nvXXtoUV)(uint8_t *dst1, uint8_t *dst2,
@@ -2433,6 +2380,7 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 
+    if (c->scalingBpp == 8) {
 #if !COMPILE_TEMPLATE_MMX2
     c->hScale       = RENAME(hScale      );
 #endif /* !COMPILE_TEMPLATE_MMX2 */
@@ -2450,6 +2398,7 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
 #if COMPILE_TEMPLATE_MMX2
     }
 #endif /* COMPILE_TEMPLATE_MMX2 */
+    }
 
 #if !COMPILE_TEMPLATE_MMX2
     switch(srcFormat) {
@@ -2457,13 +2406,10 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_UYVY422  : c->chrToYV12 = RENAME(uyvyToUV); break;
         case PIX_FMT_NV12     : c->chrToYV12 = RENAME(nv12ToUV); break;
         case PIX_FMT_NV21     : c->chrToYV12 = RENAME(nv21ToUV); break;
-        case PIX_FMT_GRAY16LE :
         case PIX_FMT_YUV420P9LE:
         case PIX_FMT_YUV422P10LE:
-        case PIX_FMT_YUV420P10LE:
-        case PIX_FMT_YUV420P16LE:
-        case PIX_FMT_YUV422P16LE:
-        case PIX_FMT_YUV444P16LE: c->hScale16= RENAME(hScale16); break;
+        case PIX_FMT_YUV420P10LE: c->hScale16= RENAME(hScale16); break;
+        default: break;
     }
 #endif /* !COMPILE_TEMPLATE_MMX2 */
     if (!c->chrSrcHSubSample) {
@@ -2477,10 +2423,8 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
     switch (srcFormat) {
 #if !COMPILE_TEMPLATE_MMX2
     case PIX_FMT_YUYV422  :
-    case PIX_FMT_Y400A    :
-                            c->lumToYV12 = RENAME(yuy2ToY); break;
-    case PIX_FMT_UYVY422  :
-                            c->lumToYV12 = RENAME(uyvyToY); break;
+    case PIX_FMT_Y400A    : c->lumToYV12 = RENAME(yuy2ToY); break;
+    case PIX_FMT_UYVY422  : c->lumToYV12 = RENAME(uyvyToY); break;
 #endif /* !COMPILE_TEMPLATE_MMX2 */
     case PIX_FMT_BGR24    : c->lumToYV12 = RENAME(bgr24ToY); break;
     case PIX_FMT_RGB24    : c->lumToYV12 = RENAME(rgb24ToY); break;
@@ -2494,6 +2438,6 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 #endif /* !COMPILE_TEMPLATE_MMX2 */
-    if(isAnyRGB(c->srcFormat))
+    if(isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
         c->hScale16= RENAME(hScale16);
 }

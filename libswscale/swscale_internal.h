@@ -208,6 +208,7 @@ typedef struct SwsContext {
     enum PixelFormat srcFormat;   ///< Source      pixel format.
     int dstFormatBpp;             ///< Number of bits per pixel of the destination pixel format.
     int srcFormatBpp;             ///< Number of bits per pixel of the source      pixel format.
+    int scalingBpp;
     int chrSrcHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in source      image.
     int chrSrcVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in source      image.
     int chrDstHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in destination image.
@@ -456,6 +457,15 @@ typedef struct SwsContext {
 
     void (*lumConvertRange)(int16_t *dst, int width); ///< Color range conversion function for luma plane if needed.
     void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width); ///< Color range conversion function for chroma planes if needed.
+
+    /**
+     * dst[..] = (src[..] << 8) | src[..];
+     */
+    void (*scale8To16Rv)(uint16_t *dst, const uint8_t *src, int len);
+    /**
+     * dst[..] = src[..] >> 4;
+     */
+    void (*scale19To15Fw)(int16_t *dst, const int32_t *src, int len);
 
     int needs_hcscale; ///< Set if there are chroma planes to be converted.
 
