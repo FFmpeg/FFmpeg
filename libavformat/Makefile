@@ -333,7 +333,7 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 # libavdevice dependencies
 OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o
 
-EXAMPLES  = output
+EXAMPLES  = metadata output
 TESTPROGS = timefilter
 
 include $(SRC_PATH)/subdir.mak
