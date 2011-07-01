@@ -127,11 +127,11 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     snd_htimestamp_t timestamp;
     snd_pcm_uframes_t ts_delay;
 
-    if (av_new_packet(pkt, s->period_size) < 0) {
+    if (av_new_packet(pkt, s->period_size * s->frame_size) < 0) {
         return AVERROR(EIO);
     }
 
-    while ((res = snd_pcm_readi(s->h, pkt->data, pkt->size / s->frame_size)) < 0) {
+    while ((res = snd_pcm_readi(s->h, pkt->data, s->period_size)) < 0) {
         if (res == -EAGAIN) {
             av_free_packet(pkt);
 

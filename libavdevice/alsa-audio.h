@@ -45,8 +45,8 @@ typedef void (*ff_reorder_func)(const void *, void *, int);
 typedef struct {
     AVClass *class;
     snd_pcm_t *h;
-    int frame_size;  ///< preferred size for reads and writes
-    int period_size; ///< bytes per sample * channels
+    int frame_size;  ///< bytes per sample * channels
+    int period_size; ///< preferred size for reads and writes, in frames
     int sample_rate; ///< sample rate set by user
     int channels;    ///< number of channels set by user
     void (*reorder_func)(const void *, void *, int);
