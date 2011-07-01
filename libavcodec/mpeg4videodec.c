@@ -113,7 +113,7 @@ static inline int mpeg4_is_resync(MpegEncContext *s){
     int bits_count= get_bits_count(&s->gb);
     int v= show_bits(&s->gb, 16);
 
-    if(s->workaround_bugs&FF_BUG_NO_PADDING){
+    if(s->workaround_bugs&FF_BUG_NO_PADDING && !s->resync_marker){
         return 0;
     }
 

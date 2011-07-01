@@ -269,7 +269,7 @@ static int decode_slice(MpegEncContext *s){
     if(      s->codec_id==CODEC_ID_MPEG4
        &&   (s->workaround_bugs&FF_BUG_AUTODETECT)
        &&    get_bits_left(&s->gb) >=0
-       &&    get_bits_left(&s->gb) < 48
+       &&    get_bits_left(&s->gb) < 137
 //       &&   !s->resync_marker
        &&   !s->data_partitioning){
 
