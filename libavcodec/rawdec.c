@@ -103,13 +103,15 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     }
 
     ff_set_systematic_pal2(context->palette, avctx->pix_fmt);
-    context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     if((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
        avctx->pix_fmt==PIX_FMT_PAL8 &&
        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))){
+        context->length = avpicture_get_size(avctx->pix_fmt, (avctx->width+3)&~3, avctx->height);
         context->buffer = av_malloc(context->length);
         if (!context->buffer)
             return -1;
+    } else {
+        context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     }
     context->pic.pict_type = AV_PICTURE_TYPE_I;
     context->pic.key_frame = 1;
