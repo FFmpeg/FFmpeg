@@ -137,7 +137,7 @@ static int vc1_init_common(VC1Context *v)
 
 /***********************************************************************/
 /**
- * @defgroup vc1bitplane VC-1 Bitplane decoding
+ * @name VC-1 Bitplane decoding
  * @see 8.7, p56
  * @{
  */
@@ -774,7 +774,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v)
 
 /***********************************************************************/
 /**
- * @defgroup vc1block VC-1 Block-level functions
+ * @name VC-1 Block-level functions
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
  * @{
  */
@@ -1512,7 +1512,7 @@ static inline int vc1_pred_dc(MpegEncContext *s, int overlap, int pq, int n,
 /** @} */ // Block group
 
 /**
- * @defgroup vc1_std_mb VC1 Macroblock-level functions in Simple/Main Profiles
+ * @name VC1 Macroblock-level functions in Simple/Main Profiles
  * @see 7.1.4, p91 and 8.1.1.7, p(1)04
  * @{
  */
