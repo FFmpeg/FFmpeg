@@ -109,6 +109,8 @@ struct AVFormatContext;
  variant_bitrate -- the total bitrate of the bitrate variant that the current stream is part of
  @endverbatim
  *
+ * Look in the examples section for an application example how to use the Metadata API.
+ *
  * @}
  */
 
