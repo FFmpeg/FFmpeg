@@ -24,7 +24,7 @@
  *  implementation as well as API inefficient. It does not scale and is
  *  extremely slow with large dictionaries.
  *  It is recommended that new code uses our tree container from tree.c/h
- *  where applicable, which uses AVL trees to achive O(log n) performance.
+ *  where applicable, which uses AVL trees to achieve O(log n) performance.
  */
 
 #ifndef AVUTIL_DICT_H
