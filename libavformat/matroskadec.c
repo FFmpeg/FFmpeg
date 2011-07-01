@@ -1903,6 +1903,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
 
     if ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
         avio_seek(s->pb, st->index_entries[st->nb_index_entries-1].pos, SEEK_SET);
+        matroska->current_id = 0;
         while ((index = av_index_search_timestamp(st, timestamp, flags)) < 0) {
             matroska_clear_queue(matroska);
             if (matroska_parse_cluster(matroska) < 0)
@@ -1931,6 +1932,7 @@ static int matroska_read_seek(AVFormatContext *s, int stream_index,
     }
 
     avio_seek(s->pb, st->index_entries[index_min].pos, SEEK_SET);
+    matroska->current_id = 0;
     matroska->skip_to_keyframe = !(flags & AVSEEK_FLAG_ANY);
     matroska->skip_to_timecode = st->index_entries[index].timestamp;
     matroska->done = 0;
