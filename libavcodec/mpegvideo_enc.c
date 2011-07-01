@@ -1787,7 +1787,7 @@ static av_always_inline void encode_mb(MpegEncContext *s, int motion_x, int moti
 static inline void copy_context_before_encode(MpegEncContext *d, MpegEncContext *s, int type){
     int i;
 
-    memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster then a loop?
+    memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster than a loop?
 
     /* mpeg1 */
     d->mb_skip_run= s->mb_skip_run;
@@ -1816,7 +1816,7 @@ static inline void copy_context_after_encode(MpegEncContext *d, MpegEncContext *
     int i;
 
     memcpy(d->mv, s->mv, 2*4*2*sizeof(int));
-    memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster then a loop?
+    memcpy(d->last_mv, s->last_mv, 2*2*2*sizeof(int)); //FIXME is memcpy faster than a loop?
 
     /* mpeg1 */
     d->mb_skip_run= s->mb_skip_run;

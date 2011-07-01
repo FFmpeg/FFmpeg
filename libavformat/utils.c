@@ -2246,11 +2246,7 @@ int av_find_stream_info(AVFormatContext *ic)
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
         st = ic->streams[i];
-        if (st->codec->codec_id == CODEC_ID_AAC) {
-            st->codec->sample_rate = 0;
-            st->codec->frame_size = 0;
-            st->codec->channels = 0;
-        }
+
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
             st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
 /*            if(!st->time_base.num)
@@ -2267,13 +2263,6 @@ int av_find_stream_info(AVFormatContext *ic)
         }
         assert(!st->codec->codec);
         codec = avcodec_find_decoder(st->codec->codec_id);
-
-        /* Force decoding of at least one frame of codec data
-         * this makes sure the codec initializes the channel configuration
-         * and does not trust the values from the container.
-         */
-        if (codec && codec->capabilities & CODEC_CAP_CHANNEL_CONF)
-            st->codec->channels = 0;
 
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
@@ -2417,8 +2406,16 @@ int av_find_stream_info(AVFormatContext *ic)
         /* if still no information, we try to open the codec and to
            decompress the frame. We try to avoid that in most cases as
            it takes longer and uses more memory. For MPEG-4, we need to
-           decompress for QuickTime. */
-        if (!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st))
+           decompress for QuickTime.
+
+           If CODEC_CAP_CHANNEL_CONF is set this will force decoding of at
+           least one frame of codec data, this makes sure the codec initializes
+           the channel configuration and does not only trust the values from the container.
+        */
+        if (!has_codec_parameters(st->codec) ||
+            !has_decode_delay_been_guessed(st) ||
+            (st->codec->codec &&
+             st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))
             try_decode_frame(st, pkt);
 
         st->codec_info_nb_frames++;

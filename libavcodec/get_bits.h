@@ -381,7 +381,7 @@ static inline int check_marker(GetBitContext *s, const char *msg)
 
 /**
  * init GetBitContext.
- * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger then the actual read bits
+ * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger than the actual read bits
  * because some optimized bitstream readers read 32 or 64 bit at once and could read over the end
  * @param bit_size the size of the buffer in bits
  *
@@ -504,7 +504,7 @@ void free_vlc(VLC *vlc);
 
 
 /**
- * parses a vlc code, faster then get_vlc()
+ * parses a vlc code, faster than get_vlc()
  * @param bits is the number of bits which will be read at once, must be
  *             identical to nb_bits in init_vlc()
  * @param max_depth is the number of times bits bits must be read to completely

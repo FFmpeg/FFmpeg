@@ -22,8 +22,11 @@
 
 /**
  * @file
- * Libavformat API example: Output a media file in any supported
- * libavformat format. The default codecs are used.
+ * libavformat API example.
+ *
+ * @example libavformat/output-example.c
+ * Output a media file in any supported libavformat format.
+ * The default codecs are used.
  */
 
 #include <stdlib.h>

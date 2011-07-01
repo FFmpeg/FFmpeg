@@ -150,8 +150,6 @@ distclean::
 config:
 	$(SRC_PATH)/configure $(value FFMPEG_CONFIGURATION)
 
-check: test
-
 include $(SRC_PATH)/doc/Makefile
 include $(SRC_PATH)/tests/Makefile
 
