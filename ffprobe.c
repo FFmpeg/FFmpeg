@@ -143,6 +143,7 @@ static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
     printf("pos=%"PRId64"\n"   , pkt->pos);
     printf("flags=%c\n"        , pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     printf("[/PACKET]\n");
+    fflush(stdout);
 }
 
 static void show_packets(AVFormatContext *fmt_ctx)
@@ -231,6 +232,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/STREAM]\n");
+    fflush(stdout);
 }
 
 static void show_format(AVFormatContext *fmt_ctx)
@@ -257,6 +259,7 @@ static void show_format(AVFormatContext *fmt_ctx)
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/FORMAT]\n");
+    fflush(stdout);
 }
 
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
