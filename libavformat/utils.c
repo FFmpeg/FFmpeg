@@ -461,8 +461,9 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     }
     ic->pb = pb;
 
-    err = avformat_open_input(ic_ptr, filename, fmt, &opts);
+    err = avformat_open_input(&ic, filename, fmt, &opts);
 
+    *ic_ptr = ic;
 fail:
     av_dict_free(&opts);
     return err;
