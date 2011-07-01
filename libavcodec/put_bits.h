@@ -70,8 +70,7 @@ static inline void init_put_bits(PutBitContext *s, uint8_t *buffer, int buffer_s
     s->buf_end = s->buf + buffer_size;
 #ifdef ALT_BITSTREAM_WRITER
     s->index=0;
-    ((uint32_t*)(s->buf))[0]=0;
-//    memset(buffer, 0, buffer_size);
+    AV_ZERO32(s->buf);
 #else
     s->buf_ptr = s->buf;
     s->bit_left=32;
@@ -164,12 +163,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
 #ifdef BITSTREAM_WRITER_LE
     bit_buf |= value << (32 - bit_left);
     if (n >= bit_left) {
-#if !HAVE_FAST_UNALIGNED
-        if (3 & (intptr_t) s->buf_ptr) {
-            AV_WL32(s->buf_ptr, bit_buf);
-        } else
-#endif
-        *(uint32_t *)s->buf_ptr = av_le2ne32(bit_buf);
+        AV_WL32(s->buf_ptr, bit_buf);
         s->buf_ptr+=4;
         bit_buf = (bit_left==32)?0:value >> bit_left;
         bit_left+=32;
@@ -182,12 +176,7 @@ static inline void put_bits(PutBitContext *s, int n, unsigned int value)
     } else {
         bit_buf<<=bit_left;
         bit_buf |= value >> (n - bit_left);
-#if !HAVE_FAST_UNALIGNED
-        if (3 & (intptr_t) s->buf_ptr) {
-            AV_WB32(s->buf_ptr, bit_buf);
-        } else
-#endif
-        *(uint32_t *)s->buf_ptr = av_be2ne32(bit_buf);
+        AV_WB32(s->buf_ptr, bit_buf);
         //printf("bitbuf = %08x\n", bit_buf);
         s->buf_ptr+=4;
         bit_left+=32 - n;
