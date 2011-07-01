@@ -59,6 +59,7 @@ static av_cold int audio_read_header(AVFormatContext *s1,
     int ret;
     enum CodecID codec_id;
     snd_pcm_sw_params_t *sw_params;
+    double o;
 
 #if FF_API_FORMAT_PARAMETERS
     if (ap->sample_rate > 0)
@@ -82,35 +83,17 @@ static av_cold int audio_read_header(AVFormatContext *s1,
         return AVERROR(EIO);
     }
 
-    if (snd_pcm_type(s->h) != SND_PCM_TYPE_HW)
-        av_log(s1, AV_LOG_WARNING,
-               "capture with some ALSA plugins, especially dsnoop, "
-               "may hang.\n");
-
-    ret = snd_pcm_sw_params_malloc(&sw_params);
-    if (ret < 0) {
-        av_log(s1, AV_LOG_ERROR, "cannot allocate software parameters structure (%s)\n",
-               snd_strerror(ret));
-        goto fail;
-    }
-
-    snd_pcm_sw_params_current(s->h, sw_params);
-    snd_pcm_sw_params_set_tstamp_mode(s->h, sw_params, SND_PCM_TSTAMP_ENABLE);
-
-    ret = snd_pcm_sw_params(s->h, sw_params);
-    snd_pcm_sw_params_free(sw_params);
-    if (ret < 0) {
-        av_log(s1, AV_LOG_ERROR, "cannot install ALSA software parameters (%s)\n",
-               snd_strerror(ret));
-        goto fail;
-    }
-
     /* take real parameters */
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id    = codec_id;
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels    = s->channels;
     av_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+    o = 2 * M_PI * s->period_size / s->sample_rate * 1.5; // bandwidth: 1.5Hz
+    s->timefilter = ff_timefilter_new(1000000.0 / s->sample_rate,
+                                      sqrt(2 * o), o * o);
+    if (!s->timefilter)
+        goto fail;
 
     return 0;
 
@@ -124,8 +107,8 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
     AlsaData *s  = s1->priv_data;
     AVStream *st = s1->streams[0];
     int res;
-    snd_htimestamp_t timestamp;
-    snd_pcm_uframes_t ts_delay;
+    int64_t dts;
+    snd_pcm_sframes_t delay = 0;
 
     if (av_new_packet(pkt, s->period_size * s->frame_size) < 0) {
         return AVERROR(EIO);
@@ -144,14 +127,13 @@ static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 
             return AVERROR(EIO);
         }
+        ff_timefilter_reset(s->timefilter);
     }
 
-    snd_pcm_htimestamp(s->h, &ts_delay, &timestamp);
-    ts_delay += res;
-    pkt->pts = timestamp.tv_sec * 1000000LL
-               + (timestamp.tv_nsec * st->codec->sample_rate
-                  - ts_delay * 1000000000LL + st->codec->sample_rate * 500LL)
-               / (st->codec->sample_rate * 1000LL);
+    dts = av_gettime();
+    snd_pcm_delay(s->h, &delay);
+    dts -= av_rescale(delay + res, 1000000, s->sample_rate);
+    pkt->pts = ff_timefilter_update(s->timefilter, dts, res);
 
     pkt->size = res * s->frame_size;
 

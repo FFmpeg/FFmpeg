@@ -33,6 +33,7 @@
 #include <alsa/asoundlib.h>
 #include "config.h"
 #include "libavutil/log.h"
+#include "libavformat/timefilter.h"
 #include "avdevice.h"
 
 /* XXX: we make the assumption that the soundcard accepts this format */
@@ -49,6 +50,7 @@ typedef struct {
     int period_size; ///< preferred size for reads and writes, in frames
     int sample_rate; ///< sample rate set by user
     int channels;    ///< number of channels set by user
+    TimeFilter *timefilter;
     void (*reorder_func)(const void *, void *, int);
     void *reorder_buf;
     int reorder_buf_size; ///< in frames
