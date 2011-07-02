@@ -229,6 +229,7 @@ static int config_props(AVFilterLink *inlink)
         min[Y] = min[U] = min[V] = 16;
         max[Y] = 235;
         max[U] = max[V] = 240;
+        min[A] = 0; max[A] = 255;
         break;
     default:
         min[0] = min[1] = min[2] = min[3] = 0;
