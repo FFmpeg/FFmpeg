@@ -389,7 +389,7 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
         goto end;
     }
 
-    if (open_inputs && !strcmp(open_inputs->name, "out") && curr_inputs) {
+    if (curr_inputs) {
         /* Last output pad, assume it is "[out]" if not specified */
         const char *tmp = "[out]";
         if ((ret = parse_outputs(&tmp, &curr_inputs, &open_inputs, &open_outputs,
