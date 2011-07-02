@@ -127,7 +127,7 @@ void av_aes_crypt(AVAES *a, uint8_t *dst_, const uint8_t *src_,
             crypt(a, 0, inv_sbox, dec_multbl);
             if (iv) {
                 addkey(&a->state[0], &a->state[0], iv);
-                memcpy(iv, src, 16);
+                *iv = *src;
             }
             addkey(dst, &a->state[0], &a->round_key[0]);
         } else {
@@ -136,7 +136,7 @@ void av_aes_crypt(AVAES *a, uint8_t *dst_, const uint8_t *src_,
             crypt(a, 2, sbox, enc_multbl);
             addkey(dst, &a->state[0], &a->round_key[0]);
             if (iv)
-                memcpy(iv, dst, 16);
+                *iv = *dst;
         }
         src++;
         dst++;
@@ -221,15 +221,14 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
     if (decrypt) {
         for (i = 1; i < rounds; i++) {
             av_aes_block tmp[3];
-            memcpy(&tmp[2], &a->round_key[i], 16);
+            tmp[2] = a->round_key[i];
             subshift(&tmp[1], 0, sbox);
             mix(tmp, dec_multbl, 1, 3);
-            memcpy(&a->round_key[i], &tmp[0], 16);
+            a->round_key[i] = tmp[0];
         }
     } else {
         for (i = 0; i < (rounds + 1) >> 1; i++) {
-            for (j = 0; j < 16; j++)
-                FFSWAP(int, a->round_key[i].u8[j], a->round_key[rounds-i].u8[j]);
+            FFSWAP(av_aes_block, a->round_key[i], a->round_key[rounds-i]);
         }
     }
 
