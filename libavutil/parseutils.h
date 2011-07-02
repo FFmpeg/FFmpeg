@@ -83,7 +83,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
  * January, 1970 up to the time of the parsed date.  If timestr cannot
  * be successfully parsed, set *time to INT64_MIN.
 
- * @param datestr a string representing a date or a duration.
+ * @param timestr a string representing a date or a duration.
  * - If a date the syntax is:
  * @code
  * [{YYYY-MM-DD|YYYYMMDD}[T|t| ]]{{HH[:MM[:SS[.m...]]]}|{HH[MM[SS[.m...]]]}}[Z]

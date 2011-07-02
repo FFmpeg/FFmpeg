@@ -488,9 +488,9 @@ void ff_rtsp_close_streams(AVFormatContext *s);
 /**
  * Close all connection handles within the RTSP (de)muxer
  *
- * @param rt RTSP (de)muxer context
+ * @param s RTSP (de)muxer context
  */
-void ff_rtsp_close_connections(AVFormatContext *rt);
+void ff_rtsp_close_connections(AVFormatContext *s);
 
 /**
  * Get the description of the stream and set up the RTSPStream child

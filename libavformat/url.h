@@ -74,12 +74,12 @@ typedef struct URLProtocol {
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffurl_alloc(URLContext **h, const char *url, int flags);
+int ffurl_alloc(URLContext **puc, const char *filename, int flags);
 
 /**
  * Connect an URLContext that has been allocated by ffurl_alloc
  */
-int ffurl_connect(URLContext *h);
+int ffurl_connect(URLContext *uc);
 
 /**
  * Create an URLContext for accessing to the resource indicated by
@@ -92,7 +92,7 @@ int ffurl_connect(URLContext *h);
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffurl_open(URLContext **h, const char *url, int flags);
+int ffurl_open(URLContext **puc, const char *filename, int flags);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store

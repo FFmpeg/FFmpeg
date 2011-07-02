@@ -80,16 +80,16 @@ void ff_rdt_subscribe_rule(char *cmd, int size,
  *
  * @param buf input buffer
  * @param len length of input buffer
- * @param set_id will be set to the set ID this packet belongs to
- * @param seq_no will be set to the sequence number of the packet
- * @param stream_id will be set to the stream ID this packet belongs to
- * @param is_keyframe will be whether this packet belongs to a keyframe
- * @param timestamp will be set to the timestamp of the packet
+ * @param pset_id will be set to the set ID this packet belongs to
+ * @param pseq_no will be set to the sequence number of the packet
+ * @param pstream_id will be set to the stream ID this packet belongs to
+ * @param pis_keyframe will be whether this packet belongs to a keyframe
+ * @param ptimestamp will be set to the timestamp of the packet
  * @return the amount of bytes consumed, or negative on error
  */
 int ff_rdt_parse_header(const uint8_t *buf, int len,
-                        int *set_id, int *seq_no, int *stream_id,
-                        int *is_keyframe, uint32_t *timestamp);
+                        int *pset_id, int *pseq_no, int *pstream_id,
+                        int *pis_keyframe, uint32_t *ptimestamp);
 
 /**
  * Parse RDT-style packet data (header + media data).
