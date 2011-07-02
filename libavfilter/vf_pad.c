@@ -45,7 +45,8 @@ static const char *var_names[] = {
     "out_h",  "oh",
     "x",
     "y",
-    "a",
+    "a", "dar",
+    "sar",
     "hsub",
     "vsub",
     NULL
@@ -61,7 +62,8 @@ enum var_name {
     VAR_OUT_H,  VAR_OH,
     VAR_X,
     VAR_Y,
-    VAR_A,
+    VAR_A, VAR_DAR,
+    VAR_SAR,
     VAR_HSUB,
     VAR_VSUB,
     VARS_NB
@@ -156,7 +158,9 @@ static int config_input(AVFilterLink *inlink)
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
     var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
     var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
-    var_values[VAR_A]     = (float) inlink->w / inlink->h;
+    var_values[VAR_DAR]   = var_values[VAR_A] = (float) inlink->w / inlink->h;
+    var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
+        (float) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
     var_values[VAR_HSUB]  = 1<<pad->hsub;
     var_values[VAR_VSUB]  = 2<<pad->vsub;
 

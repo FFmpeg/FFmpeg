@@ -1129,8 +1129,11 @@ same as @var{out_w} and @var{out_h}
 x and y offsets as specified by the @var{x} and @var{y}
 expressions, or NAN if not yet specified
 
-@item a
+@item dar, a
 input display aspect ratio, same as @var{iw} / @var{ih}
+
+@item sar
+input sample aspect ratio
 
 @item hsub, vsub
 horizontal and vertical chroma subsample values. For example for the
