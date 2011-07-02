@@ -43,11 +43,7 @@ const uint8_t ff_log2_run[41]={
 
 void align_put_bits(PutBitContext *s)
 {
-#ifdef ALT_BITSTREAM_WRITER
-    put_bits(s,(  - s->index) & 7,0);
-#else
     put_bits(s,s->bit_left & 7,0);
-#endif
 }
 
 void ff_put_string(PutBitContext *pb, const char *string, int terminate_string)
