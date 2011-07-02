@@ -578,8 +578,8 @@ yuv2gray16_1_c_template(SwsContext *c, const int32_t *buf0,
     int i;
 
     for (i = 0; i < (dstW >> 1); i++) {
-        int Y1 = buf0[i * 2    ] << 1;
-        int Y2 = buf0[i * 2 + 1] << 1;
+        int Y1 = (buf0[i * 2    ]+4)>>3;
+        int Y2 = (buf0[i * 2 + 1]+4)>>3;
 
         output_pixel(&dest[i * 2 + 0], Y1);
         output_pixel(&dest[i * 2 + 1], Y2);
