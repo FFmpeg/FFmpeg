@@ -41,6 +41,8 @@ static void apply_window(DSPContext *dsp, SampleType *output,
 
 static int normalize_samples(AC3EncodeContext *s);
 
+static void clip_coefficients(DSPContext *dsp, CoefType *coef, unsigned int len);
+
 
 int AC3_NAME(allocate_sample_buffers)(AC3EncodeContext *s)
 {
@@ -171,8 +173,8 @@ static void apply_channel_coupling(AC3EncodeContext *s)
                 cpl_coef[i] += ch_coef[i];
         }
 
-        /* coefficients must be clipped to +/- 1.0 in order to be encoded */
-        s->dsp.vector_clipf(cpl_coef, cpl_coef, -1.0f, 1.0f, num_cpl_coefs);
+        /* coefficients must be clipped in order to be encoded */
+        clip_coefficients(&s->dsp, cpl_coef, num_cpl_coefs);
 
         /* scale coupling coefficients from float to 24-bit fixed-point */
         s->ac3dsp.float_to_fixed24(&block->fixed_coef[CPL_CH][cpl_start],
@@ -300,6 +302,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         if (!block->cpl_in_use || !block->new_cpl_coords)
             continue;
 
+        clip_coefficients(&s->dsp, cpl_coords[blk][1], s->fbw_channels * 16);
         s->ac3dsp.float_to_fixed24(fixed_cpl_coords[blk][1],
                                    cpl_coords[blk][1],
                                    s->fbw_channels * 16);
@@ -433,7 +436,11 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
 
     apply_mdct(s);
 
-    scale_coefficients(s);
+    if (s->fixed_point)
+        scale_coefficients(s);
+
+    clip_coefficients(&s->dsp, s->blocks[0].mdct_coef[1],
+                      AC3_MAX_COEFS * AC3_MAX_BLOCKS * s->channels);
 
     s->cpl_on = s->cpl_enabled;
     ff_ac3_compute_coupling_strategy(s);
@@ -442,6 +449,9 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
         apply_channel_coupling(s);
 
     compute_rematrixing_strategy(s);
+
+    if (!s->fixed_point)
+        scale_coefficients(s);
 
     ff_ac3_apply_rematrixing(s);
 

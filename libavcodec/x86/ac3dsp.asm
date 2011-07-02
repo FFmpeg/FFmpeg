@@ -32,6 +32,11 @@ cextern ac3_bap_bits
 pw_bap_mul1: dw 21846, 21846, 0, 32768, 21846, 21846, 0, 32768
 pw_bap_mul2: dw 5, 7, 0, 7, 5, 7, 0, 7
 
+; used in ff_ac3_extract_exponents()
+pd_1:   times 4 dd 1
+pd_151: times 4 dd 151
+pb_shuf_4dwb: db 0, 4, 8, 12
+
 SECTION .text
 
 ;-----------------------------------------------------------------------------
@@ -346,3 +351,100 @@ cglobal ac3_compute_mantissa_size_sse2, 1,2,4, mant_cnt, sum
     movd       eax, m0
     add        eax, sumd
     RET
+
+;------------------------------------------------------------------------------
+; void ff_ac3_extract_exponents(uint8_t *exp, int32_t *coef, int nb_coefs)
+;------------------------------------------------------------------------------
+
+%macro PABSD_MMX 2 ; src/dst, tmp
+    pxor     %2, %2
+    pcmpgtd  %2, %1
+    pxor     %1, %2
+    psubd    %1, %2
+%endmacro
+
+%macro PABSD_SSSE3 1-2 ; src/dst, unused
+    pabsd    %1, %1
+%endmacro
+
+%ifdef HAVE_AMD3DNOW
+INIT_MMX
+cglobal ac3_extract_exponents_3dnow, 3,3,0, exp, coef, len
+    add      expq, lenq
+    lea     coefq, [coefq+4*lenq]
+    neg      lenq
+    movq       m3, [pd_1]
+    movq       m4, [pd_151]
+.loop:
+    movq       m0, [coefq+4*lenq  ]
+    movq       m1, [coefq+4*lenq+8]
+    PABSD_MMX  m0, m2
+    PABSD_MMX  m1, m2
+    pslld      m0, 1
+    por        m0, m3
+    pi2fd      m2, m0
+    psrld      m2, 23
+    movq       m0, m4
+    psubd      m0, m2
+    pslld      m1, 1
+    por        m1, m3
+    pi2fd      m2, m1
+    psrld      m2, 23
+    movq       m1, m4
+    psubd      m1, m2
+    packssdw   m0, m0
+    packuswb   m0, m0
+    packssdw   m1, m1
+    packuswb   m1, m1
+    punpcklwd  m0, m1
+    movd  [expq+lenq], m0
+    add      lenq, 4
+    jl .loop
+    REP_RET
+%endif
+
+%macro AC3_EXTRACT_EXPONENTS 1
+cglobal ac3_extract_exponents_%1, 3,3,5, exp, coef, len
+    add     expq, lenq
+    lea    coefq, [coefq+4*lenq]
+    neg     lenq
+    mova      m2, [pd_1]
+    mova      m3, [pd_151]
+%ifidn %1, ssse3 ;
+    movd      m4, [pb_shuf_4dwb]
+%endif
+.loop:
+    ; move 4 32-bit coefs to xmm0
+    mova      m0, [coefq+4*lenq]
+    ; absolute value
+    PABSD     m0, m1
+    ; convert to float and extract exponents
+    pslld     m0, 1
+    por       m0, m2
+    cvtdq2ps  m1, m0
+    psrld     m1, 23
+    mova      m0, m3
+    psubd     m0, m1
+    ; move the lowest byte in each of 4 dwords to the low dword
+%ifidn %1, ssse3
+    pshufb    m0, m4
+%else
+    packssdw  m0, m0
+    packuswb  m0, m0
+%endif
+    movd  [expq+lenq], m0
+
+    add     lenq, 4
+    jl .loop
+    REP_RET
+%endmacro
+
+%ifdef HAVE_SSE
+INIT_XMM
+%define PABSD PABSD_MMX
+AC3_EXTRACT_EXPONENTS sse2
+%ifdef HAVE_SSSE3
+%define PABSD PABSD_SSSE3
+AC3_EXTRACT_EXPONENTS ssse3
+%endif
+%endif

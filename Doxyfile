@@ -1160,6 +1160,7 @@ INCLUDE_FILE_PATTERNS  =
 
 PREDEFINED             = __attribute__(x)="" "RENAME(x)=x ## _TMPL" "DEF(x)=x ## _TMPL" \
                          HAVE_AV_CONFIG_H HAVE_MMX HAVE_MMX2 HAVE_AMD3DNOW \
+                         "DECLARE_ALIGNED(a,t,n)=t n" "offsetof(x,y)=0x42" \
 
 # If the MACRO_EXPANSION and EXPAND_ONLY_PREDEF tags are set to YES then
 # this tag can be used to specify a list of macro names that should be expanded.

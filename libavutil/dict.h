@@ -18,7 +18,8 @@
  */
 
 /**
- * @file Public dictionary API.
+ * @file
+ * Public dictionary API.
  * @deprecated
  *  AVDictionary is provided for compatibility with libav. It is both in
  *  implementation as well as API inefficient. It does not scale and is

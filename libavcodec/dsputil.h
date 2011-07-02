@@ -553,6 +553,22 @@ typedef struct DSPContext {
     void (*apply_window_int16)(int16_t *output, const int16_t *input,
                                const int16_t *window, unsigned int len);
 
+    /**
+     * Clip each element in an array of int32_t to a given minimum and maximum value.
+     * @param dst  destination array
+     *             constraints: 16-byte aligned
+     * @param src  source array
+     *             constraints: 16-byte aligned
+     * @param min  minimum value
+     *             constraints: must in the the range [-(1<<24), 1<<24]
+     * @param max  maximum value
+     *             constraints: must in the the range [-(1<<24), 1<<24]
+     * @param len  number of elements in the array
+     *             constraints: multiple of 32 greater than zero
+     */
+    void (*vector_clip_int32)(int32_t *dst, const int32_t *src, int32_t min,
+                              int32_t max, unsigned int len);
+
     /* rv30 functions */
     qpel_mc_func put_rv30_tpel_pixels_tab[4][16];
     qpel_mc_func avg_rv30_tpel_pixels_tab[4][16];

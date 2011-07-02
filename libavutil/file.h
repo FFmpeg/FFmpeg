@@ -22,7 +22,8 @@
 #include "avutil.h"
 
 /**
- * @file misc file utilities
+ * @file
+ * Misc file utilities.
  */
 
 /**

@@ -111,6 +111,15 @@ static void scale_coefficients(AC3EncodeContext *s)
 }
 
 
+/**
+ * Clip MDCT coefficients to allowable range.
+ */
+static void clip_coefficients(DSPContext *dsp, float *coef, unsigned int len)
+{
+    dsp->vector_clipf(coef, coef, COEF_MIN, COEF_MAX, len);
+}
+
+
 #if CONFIG_AC3_ENCODER
 AVCodec ff_ac3_float_encoder = {
     "ac3_float",
