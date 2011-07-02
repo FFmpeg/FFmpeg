@@ -319,7 +319,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         }
     } else {
         /* planar */
-        for (plane = 0; inpic->data[plane]; plane++) {
+        for (plane = 0; plane < 4 && inpic->data[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? lut->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? lut->hsub : 0;
 
