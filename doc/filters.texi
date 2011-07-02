@@ -1231,8 +1231,11 @@ the output (cropped) width and heigth
 @item ow, oh
 same as @var{out_w} and @var{out_h}
 
-@item a
+@item dar, a
 input display aspect ratio, same as @var{iw} / @var{ih}
+
+@item sar
+input sample aspect ratio
 
 @item hsub, vsub
 horizontal and vertical chroma subsample values. For example for the
