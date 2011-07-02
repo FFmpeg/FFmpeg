@@ -54,6 +54,8 @@ static uint32_t enc_multbl[4][256];
 static uint32_t dec_multbl[4][256];
 #endif
 
+#define ROT(x, s) ((x << s) | (x >> (32-s)))
+
 static inline void addkey(av_aes_block *dst, const av_aes_block *src,
                           const av_aes_block *round_key)
 {
@@ -86,7 +88,6 @@ static void subshift(av_aes_block s0[2], int s, const uint8_t *box)
 
 static inline int mix_core(uint32_t multbl[][256], int a, int b, int c, int d){
 #if CONFIG_SMALL
-#define ROT(x,s) ((x<<s)|(x>>(32-s)))
     return multbl[0][a] ^ ROT(multbl[0][b], 8) ^ ROT(multbl[0][c], 16) ^ ROT(multbl[0][d], 24);
 #else
     return multbl[0][a] ^ multbl[1][b] ^ multbl[2][c] ^ multbl[3][d];
@@ -143,22 +144,29 @@ void av_aes_crypt(AVAES *a, uint8_t *dst_, const uint8_t *src_,
     }
 }
 
-static void init_multbl2(uint8_t tbl[1024], const int c[4],
+static void init_multbl2(uint32_t tbl[][256], const int c[4],
                          const uint8_t *log8, const uint8_t *alog8,
                          const uint8_t *sbox)
 {
-    int i, j;
+    int i;
 
-    for (i = 0; i < 1024; i++) {
-        int x = sbox[i >> 2];
-        if (x)
-            tbl[i] = alog8[log8[x] + log8[c[i & 3]]];
-    }
+    for (i = 0; i < 256; i++) {
+        int x = sbox[i];
+        if (x) {
+            int k, l, m, n;
+            x = log8[x];
+            k = alog8[x + log8[c[0]]];
+            l = alog8[x + log8[c[1]]];
+            m = alog8[x + log8[c[2]]];
+            n = alog8[x + log8[c[3]]];
+            tbl[0][i] = AV_NE(MKBETAG(k,l,m,n), MKTAG(k,l,m,n));
 #if !CONFIG_SMALL
-    for (j = 256; j < 1024; j++)
-        for (i = 0; i < 4; i++)
-            tbl[4*j + i] = tbl[4*j + ((i - 1) & 3) - 1024];
+            tbl[1][i] = ROT(tbl[0][i], 8);
+            tbl[2][i] = ROT(tbl[0][i], 16);
+            tbl[3][i] = ROT(tbl[0][i], 24);
 #endif
+        }
+    }
 }
 
 // this is based on the reference AES code by Paulo Barreto and Vincent Rijmen
@@ -187,9 +195,9 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
             inv_sbox[j] = i;
             sbox[i] = j;
         }
-        init_multbl2(dec_multbl[0], (const int[4]) { 0xe, 0x9, 0xd, 0xb },
+        init_multbl2(dec_multbl, (const int[4]) { 0xe, 0x9, 0xd, 0xb },
                      log8, alog8, inv_sbox);
-        init_multbl2(enc_multbl[0], (const int[4]) { 0x2, 0x1, 0x1, 0x3 },
+        init_multbl2(enc_multbl, (const int[4]) { 0x2, 0x1, 0x1, 0x3 },
                      log8, alog8, sbox);
     }
 
