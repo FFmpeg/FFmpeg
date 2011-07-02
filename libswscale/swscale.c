@@ -1027,8 +1027,8 @@ yuv2rgb48_1_c_template(SwsContext *c, const int32_t *buf0,
         for (i = 0; i < (dstW >> 1); i++) {
             int Y1 = (buf0[i * 2]    ) >> 2;
             int Y2 = (buf0[i * 2 + 1]) >> 2;
-            int U  = (ubuf0[i] + ubuf1[i] + (-128 << 11)) >> 3;
-            int V  = (vbuf0[i] + vbuf1[i] + (-128 << 11)) >> 3;
+            int U  = (ubuf0[i] + ubuf1[i] + (-128 << 12)) >> 3;
+            int V  = (vbuf0[i] + vbuf1[i] + (-128 << 12)) >> 3;
             int R, G, B;
 
             Y1 -= c->yuv2rgb_y_offset;
