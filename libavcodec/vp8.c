@@ -1039,7 +1039,7 @@ static const uint8_t subpel_idx[3][8] = {
  * @param s VP8 decoding context
  * @param luma 1 for luma (Y) planes, 0 for chroma (Cb/Cr) planes
  * @param dst target buffer for block data at block position
- * @param src reference picture buffer at origin (0, 0)
+ * @param ref reference picture buffer at origin (0, 0)
  * @param mv motion vector (relative to block position) to get pixel data from
  * @param x_off horizontal position of block from origin (0, 0)
  * @param y_off vertical position of block from origin (0, 0)
