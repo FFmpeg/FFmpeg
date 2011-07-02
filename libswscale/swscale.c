@@ -299,9 +299,10 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
 {
     //FIXME Optimize (just quickly written not optimized..)
     int i;
+    int dword= output_bits == 16;
     uint16_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
              *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
-    int shift = 15 + 16 - output_bits;
+    int shift = 11 + 4*dword + 16 - output_bits;
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
@@ -318,24 +319,24 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
         } \
     }
     for (i = 0; i < dstW; i++) {
-        int val = 1 << (30-output_bits);
+        int val = 1 << (26-output_bits + 4*dword);
         int j;
 
         for (j = 0; j < lumFilterSize; j++)
-            val += lumSrc[j][i] * lumFilter[j];
+            val += (dword ? lumSrc[j][i] : ((int16_t**)lumSrc)[j][i]) * lumFilter[j];
 
         output_pixel(&yDest[i], val);
     }
 
     if (uDest) {
         for (i = 0; i < chrDstW; i++) {
-            int u = 1 << (30-output_bits);
-            int v = 1 << (30-output_bits);
+            int u = 1 << (26-output_bits + 4*dword);
+            int v = 1 << (26-output_bits + 4*dword);
             int j;
 
             for (j = 0; j < chrFilterSize; j++) {
-                u += chrUSrc[j][i] * chrFilter[j];
-                v += chrVSrc[j][i] * chrFilter[j];
+                u += (dword ? chrUSrc[j][i] : ((int16_t**)chrUSrc)[j][i]) * chrFilter[j];
+                v += (dword ? chrVSrc[j][i] : ((int16_t**)chrVSrc)[j][i]) * chrFilter[j];
             }
 
             output_pixel(&uDest[i], u);
@@ -345,11 +346,11 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
 
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         for (i = 0; i < dstW; i++) {
-            int val = 1 << (30-output_bits);
+            int val = 1 << (26-output_bits + 4*dword);
             int j;
 
             for (j = 0; j < lumFilterSize; j++)
-                val += alpSrc[j][i] * lumFilter[j];
+                val += (dword ? alpSrc[j][i] : ((int16_t**)alpSrc)[j][i]) * lumFilter[j];
 
             output_pixel(&aDest[i], val);
         }
@@ -2170,7 +2171,7 @@ static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
     if (convertRange)
         convertRange(dst, dstWidth);
 
-    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16) {
+    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 15 && c->scalingBpp == 16) {
         c->scale19To15Fw(dst, (int32_t *) dst, dstWidth);
     }
 }
@@ -2229,7 +2230,7 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
     if (c->chrConvertRange)
         c->chrConvertRange(dst1, dst2, dstWidth);
 
-    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16) {
+    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 15 && c->scalingBpp == 16) {
         c->scale19To15Fw(dst1, (int32_t *) dst1, dstWidth);
         c->scale19To15Fw(dst2, (int32_t *) dst2, dstWidth);
     }
