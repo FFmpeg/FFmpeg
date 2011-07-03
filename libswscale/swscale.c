@@ -2902,6 +2902,10 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         }
     }
     } else {
+        if(c->hScale16 == hScale16NX_c && !isAnyRGB(c->srcFormat)){
+            c->chrToYV12 = bswap16UV_c;
+            c->lumToYV12 = bswap16Y_c;
+        }
         c->hScale16 = NULL;
         c->hScale = hScale16_c;
         c->scale19To15Fw = scale19To15Fw_c;
