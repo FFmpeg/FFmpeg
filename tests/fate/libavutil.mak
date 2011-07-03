@@ -12,6 +12,10 @@ FATE_TESTS += fate-base64
 fate-base64: libavutil/base64-test$(EXESUF)
 fate-base64: CMD = run libavutil/base64-test
 
+FATE_TESTS += fate-crc
+fate-crc: libavutil/crc-test$(EXESUF)
+fate-crc: CMD = run libavutil/crc-test
+
 FATE_TESTS += fate-des
 fate-des: libavutil/des-test$(EXESUF)
 fate-des: CMD = run libavutil/des-test
