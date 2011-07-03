@@ -196,7 +196,6 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
                 return 0;
             notfirst=1;
         }
-        return AVERROR(EINVAL);
     }
 
     if (alloc) {

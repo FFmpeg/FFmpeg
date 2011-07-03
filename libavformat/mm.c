@@ -184,8 +184,6 @@ static int read_packet(AVFormatContext *s,
             avio_skip(pb, length);
         }
     }
-
-    return 0;
 }
 
 AVInputFormat ff_mm_demuxer = {

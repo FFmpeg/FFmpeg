@@ -462,7 +462,6 @@ const char *small_strptime(const char *p, const char *fmt,
             p++;
         }
     }
-    return p;
 }
 
 static time_t mktimegm(struct tm *tm)

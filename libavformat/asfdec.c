@@ -1099,8 +1099,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             assert(asf->packet_size_left < FRAME_HEADER_SIZE || asf->packet_segments < 1);
         asf->packet_time_start = 0;
     }
-
-    return 0;
 }
 
 // Added to support seeking after packets have been read

@@ -2308,7 +2308,6 @@ static int mov_probe(AVProbeData *p)
             return score;
         }
     }
-    return score;
 }
 
 // must be done after parsing all trak because there's no order requirement

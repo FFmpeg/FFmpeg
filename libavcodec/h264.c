@@ -3552,7 +3552,6 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
         ff_draw_horiz_band(s, 16*s->mb_y, 16);
     }
 #endif
-    return -1; //not reached
 }
 
 /**
