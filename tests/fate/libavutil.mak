@@ -21,6 +21,10 @@ fate-des: libavutil/des-test$(EXESUF)
 fate-des: CMD = run libavutil/des-test
 fate-des: REF = /dev/null
 
+FATE_TESTS += fate-md5
+fate-md5: libavutil/md5-test$(EXESUF)
+fate-md5: CMD = run libavutil/md5-test
+
 FATE_TESTS += fate-sha
 fate-sha: libavutil/sha-test$(EXESUF)
 fate-sha: CMD = run libavutil/sha-test
