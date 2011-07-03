@@ -533,6 +533,8 @@ int av_expr_parse_and_eval(double *d, const char *s,
 
 #ifdef TEST
 #undef printf
+#include <string.h>
+
 static double const_values[] = {
     M_PI,
     M_E,
@@ -545,7 +547,7 @@ static const char *const_names[] = {
     0
 };
 
-int main(void)
+int main(int argc, char **argv)
 {
     int i;
     double d;
@@ -617,13 +619,16 @@ int main(void)
                            NULL, NULL, NULL, NULL, NULL, 0, NULL);
     printf("%f == 0.931322575\n", d);
 
-    for (i=0; i<1050; i++) {
-        START_TIMER
+    if (argc > 1 && !strcmp(argv[1], "-t")) {
+        for (i = 0; i < 1050; i++) {
+            START_TIMER;
             av_expr_parse_and_eval(&d, "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
                                    const_names, const_values,
                                    NULL, NULL, NULL, NULL, NULL, 0, NULL);
-        STOP_TIMER("av_expr_parse_and_eval")
+            STOP_TIMER("av_expr_parse_and_eval");
+        }
     }
+
     return 0;
 }
 #endif
