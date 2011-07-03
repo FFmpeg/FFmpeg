@@ -74,6 +74,7 @@ struct algo {
     enum formattag { NO_PERM, MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM,
                      SSE2_PERM, PARTTRANS_PERM } format;
     int mm_support;
+    int nonspec;
 };
 
 #ifndef FAAN_POSTSCALE
@@ -115,13 +116,13 @@ static const struct algo idct_tab[] = {
 
 #if HAVE_MMX
 #if CONFIG_GPL
-    {"LIBMPEG2-MMX",    ff_mmx_idct,        ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX},
-    {"LIBMPEG2-MMX2",   ff_mmxext_idct,     ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX2},
+    {"LIBMPEG2-MMX",    ff_mmx_idct,        ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX, 1},
+    {"LIBMPEG2-MMX2",   ff_mmxext_idct,     ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX2, 1},
 #endif
     {"SIMPLE-MMX",      ff_simple_idct_mmx, ff_ref_idct, MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX},
-    {"XVID-MMX",        ff_idct_xvid_mmx,   ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX},
-    {"XVID-MMX2",       ff_idct_xvid_mmx2,  ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX2},
-    {"XVID-SSE2",       ff_idct_xvid_sse2,  ff_ref_idct, SSE2_PERM, AV_CPU_FLAG_SSE2},
+    {"XVID-MMX",        ff_idct_xvid_mmx,   ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX, 1},
+    {"XVID-MMX2",       ff_idct_xvid_mmx2,  ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX2, 1},
+    {"XVID-SSE2",       ff_idct_xvid_sse2,  ff_ref_idct, SSE2_PERM, AV_CPU_FLAG_SSE2, 1},
 #endif
 
 #if ARCH_BFIN
@@ -200,15 +201,17 @@ static inline void mmx_emms(void)
 #endif
 }
 
-static void dct_error(const struct algo *dct, int test, int is_idct, int speed)
+static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
 {
     int it, i, scale;
     int err_inf, v;
-    int64_t err2, ti, ti1, it1;
+    int64_t err2, ti, ti1, it1, err_sum = 0;
     int64_t sysErr[64], sysErrMax = 0;
     int maxout = 0;
     int blockSumErrMax = 0, blockSumErr;
     AVLFG prng;
+    double omse, ome;
+    int spec_err;
 
     av_lfg_init(&prng, 1);
 
@@ -276,7 +279,9 @@ static void dct_error(const struct algo *dct, int test, int is_idct, int speed)
 
         blockSumErr = 0;
         for (i = 0; i < 64; i++) {
-            v = abs(block[i] - block1[i]);
+            int err = block[i] - block1[i];
+            err_sum += err;
+            v = abs(err);
             if (v > err_inf)
                 err_inf = v;
             err2 += v * v;
@@ -298,13 +303,21 @@ static void dct_error(const struct algo *dct, int test, int is_idct, int speed)
     }
     printf("\n");
 
-    printf("%s %s: err_inf=%d err2=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
+    omse = (double) err2 / NB_ITS / 64;
+    ome  = (double) err_sum / NB_ITS / 64;
+
+    spec_err = is_idct && (err_inf > 1 || omse > 0.02 || fabs(ome) > 0.0015);
+
+    printf("%s %s: ppe=%d omse=%0.8f ome=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
            is_idct ? "IDCT" : "DCT", dct->name, err_inf,
-           (double) err2 / NB_ITS / 64.0, (double) sysErrMax / NB_ITS,
+           omse, ome, (double) sysErrMax / NB_ITS,
            maxout, blockSumErrMax);
 
+    if (spec_err && !dct->nonspec)
+        return 1;
+
     if (!speed)
-        return;
+        return 0;
 
     /* speed test */
     for (i = 0; i < 64; i++)
@@ -355,6 +368,8 @@ static void dct_error(const struct algo *dct, int test, int is_idct, int speed)
 
     printf("%s %s: %0.1f kdct/s\n", is_idct ? "IDCT" : "DCT", dct->name,
            (double) it1 * 1000.0 / (double) ti1);
+
+    return 0;
 }
 
 DECLARE_ALIGNED(8, static uint8_t, img_dest)[64];
@@ -514,6 +529,7 @@ int main(int argc, char **argv)
     int c, i;
     int test = 1;
     int speed = 0;
+    int err = 0;
 
     cpu_flags = av_get_cpu_flags();
 
@@ -559,8 +575,9 @@ int main(int argc, char **argv)
         const struct algo *algos = test_idct ? idct_tab : fdct_tab;
         for (i = 0; algos[i].name; i++)
             if (!(~cpu_flags & algos[i].mm_support)) {
-                dct_error(&algos[i], test, test_idct, speed);
+                err |= dct_error(&algos[i], test, test_idct, speed);
             }
     }
-    return 0;
+
+    return err;
 }
