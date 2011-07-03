@@ -7,6 +7,9 @@ version 0.7.1:
 - added various additional FOURCC codec identifiers
 - H.264 4:4:4 fixes
 - build system fixes
+- Doxygen corrections and improvements
+- fixed segfault in ffprobe
+- behavioral fix in av_open_input_stream()
 
 
 version 0.7:
