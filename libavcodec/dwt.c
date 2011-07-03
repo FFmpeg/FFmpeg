@@ -145,38 +145,6 @@ static av_always_inline void lift(DWTELEM *dst, DWTELEM *src, DWTELEM *ref,
                                  inverse);
 }
 
-static av_always_inline void inv_lift(IDWTELEM *dst, IDWTELEM *src, IDWTELEM *ref,
-                                      int dst_step, int src_step, int ref_step,
-                                      int width, int mul, int add, int shift,
-                                      int highpass, int inverse)
-{
-    const int mirror_left  = !highpass;
-    const int mirror_right = (width & 1) ^ highpass;
-    const int w            = (width >> 1) - 1 + (highpass & width);
-    int i;
-
-#define LIFT(src, ref, inv) ((src) + ((inv) ? -(ref) : +(ref)))
-    if (mirror_left) {
-        dst[0] = LIFT(src[0], ((mul * 2 * ref[0] + add) >> shift), inverse);
-        dst   += dst_step;
-        src   += src_step;
-    }
-
-    for (i = 0; i < w; i++)
-        dst[i * dst_step] = LIFT(src[i * src_step],
-                                 ((mul * (ref[i * ref_step] +
-                                          ref[(i + 1) * ref_step]) +
-                                   add) >> shift),
-                                 inverse);
-
-    if (mirror_right) {
-        dst[w * dst_step] = LIFT(src[w * src_step],
-                                 ((mul * 2 * ref[w * ref_step] + add) >> shift),
-                                 inverse);
-    }
-}
-
-#ifndef liftS
 static av_always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref,
                                    int dst_step, int src_step, int ref_step,
                                    int width, int mul, int add, int shift,
@@ -210,40 +178,6 @@ static av_always_inline void liftS(DWTELEM *dst, DWTELEM *src, DWTELEM *ref,
                                   inverse);
 }
 
-static av_always_inline void inv_liftS(IDWTELEM *dst, IDWTELEM *src,
-                                       IDWTELEM *ref, int dst_step,
-                                       int src_step, int ref_step,
-                                       int width, int mul, int add, int shift,
-                                       int highpass, int inverse)
-{
-    const int mirror_left  = !highpass;
-    const int mirror_right = (width & 1) ^ highpass;
-    const int w            = (width >> 1) - 1 + (highpass & width);
-    int i;
-
-    assert(shift == 4);
-#define LIFTS(src, ref, inv)                                            \
-    ((inv) ? (src) + (((ref) + 4 * (src)) >> shift)                     \
-           : -((-16 * (src) + (ref) + add /                             \
-                4 + 1 + (5 << 25)) / (5 * 4) - (1 << 23)))
-    if (mirror_left) {
-        dst[0] = LIFTS(src[0], mul * 2 * ref[0] + add, inverse);
-        dst   += dst_step;
-        src   += src_step;
-    }
-
-    for (i = 0; i < w; i++)
-        dst[i * dst_step] = LIFTS(src[i * src_step],
-                                  mul * (ref[i * ref_step] +
-                                         ref[(i + 1) * ref_step]) + add,
-                                  inverse);
-
-    if (mirror_right)
-        dst[w * dst_step] = LIFTS(src[w * src_step],
-                                  mul * 2 * ref[w * ref_step] + add, inverse);
-}
-#endif /* ! liftS */
-
 static void horizontal_decompose53i(DWTELEM *b, DWTELEM *temp, int width)
 {
     const int width2 = width >> 1;
@@ -256,41 +190,8 @@ static void horizontal_decompose53i(DWTELEM *b, DWTELEM *temp, int width)
     }
     if (width & 1)
         temp[x] = b[2 * x];
-#if 0
-    {
-        int A1, A2, A3, A4;
-        A2             = temp[1];
-        A4             = temp[0];
-        A1             = temp[0 + width2];
-        A1            -= (A2 + A4) >> 1;
-        A4            += (A1 +  1) >> 1;
-        b[0 + width2]  = A1;
-        b[0]           = A4;
-        for (x = 1; x + 1 < width2; x += 2) {
-            A3                 = temp[x + width2];
-            A4                 = temp[x + 1];
-            A3                -= (A2 + A4)     >> 1;
-            A2                += (A1 + A3 + 2) >> 2;
-            b[x + width2]      = A3;
-            b[x]               = A2;
-
-            A1                 = temp[x + 1 + width2];
-            A2                 = temp[x + 2];
-            A1                -= (A2 + A4)     >> 1;
-            A4                += (A1 + A3 + 2) >> 2;
-            b[x + 1 + width2]  = A1;
-            b[x + 1]           = A4;
-        }
-        A3            = temp[width - 1];
-        A3           -= A2;
-        A2           += (A1 + A3 + 2) >> 2;
-        b[width  - 1] = A3;
-        b[width2 - 1] = A2;
-    }
-#else
     lift(b + w2, temp + w2, temp,   1, 1, 1, width, -1, 0, 1, 1, 0);
     lift(b,      temp,      b + w2, 1, 1, 1, width,  1, 2, 2, 0, 0);
-#endif /* 0 */
 }
 
 static void vertical_decompose53iH0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2,
@@ -371,12 +272,8 @@ static void vertical_decompose97iL0(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2,
     int i;
 
     for (i = 0; i < width; i++)
-#ifdef liftS
-        b1[i] -= (W_BM * (b0[i] + b2[i]) + W_BO) >> W_BS;
-#else
         b1[i] = (16 * 4 * b1[i] - 4 * (b0[i] + b2[i]) + W_BO * 5 + (5 << 27)) /
                 (5 * 16) - (1 << 23);
-#endif
 }
 
 static void vertical_decompose97iL1(DWTELEM *b0, DWTELEM *b1, DWTELEM *b2,
@@ -580,15 +477,8 @@ static void av_unused spatial_compose53i(IDWTELEM *buffer, IDWTELEM *temp,
 void ff_snow_horizontal_compose97i(IDWTELEM *b, IDWTELEM *temp, int width)
 {
     const int w2 = (width + 1) >> 1;
-
-#if 0 //maybe more understadable but slower
-    inv_lift(temp,     b,      b + w2, 2, 1, 1, width, W_DM, W_DO, W_DS, 0, 1);
-    inv_lift(temp + 1, b + w2, temp,   2, 1, 2, width, W_CM, W_CO, W_CS, 1, 1);
-
-    inv_liftS(b,    temp,     temp + 1, 2, 2, 2, width, W_BM, W_BO, W_BS, 0, 1);
-    inv_lift(b + 1, temp + 1, b,        2, 2, 2, width, W_AM, W_AO, W_AS, 1, 0);
-#else
     int x;
+
     temp[0] = b[0] - ((3 * b[w2] + 2) >> 2);
     for (x = 1; x < (width >> 1); x++) {
         temp[2 * x]     = b[x] - ((3 * (b[x + w2 - 1] + b[x + w2]) + 4) >> 3);
@@ -610,7 +500,6 @@ void ff_snow_horizontal_compose97i(IDWTELEM *b, IDWTELEM *temp, int width)
         b[x - 1] = temp[x - 1] + ((3 * (b[x - 2] + b[x])) >> 1);
     } else
         b[x - 1] = temp[x - 1] + 3 * b[x - 2];
-#endif
 }
 
 static void vertical_compose97iH0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
@@ -637,11 +526,7 @@ static void vertical_compose97iL0(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
     int i;
 
     for (i = 0; i < width; i++)
-#ifdef liftS
-        b1[i] += (W_BM * (b0[i] + b2[i]) + W_BO) >> W_BS;
-#else
         b1[i] += (W_BM * (b0[i] + b2[i]) + 4 * b1[i] + W_BO) >> W_BS;
-#endif
 }
 
 static void vertical_compose97iL1(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
@@ -662,11 +547,7 @@ void ff_snow_vertical_compose97i(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2,
     for (i = 0; i < width; i++) {
         b4[i] -= (W_DM * (b3[i] + b5[i]) + W_DO) >> W_DS;
         b3[i] -= (W_CM * (b2[i] + b4[i]) + W_CO) >> W_CS;
-#ifdef liftS
-        b2[i] += (W_BM * (b1[i] + b3[i]) + W_BO) >> W_BS;
-#else
         b2[i] += (W_BM * (b1[i] + b3[i]) + 4 * b2[i] + W_BO) >> W_BS;
-#endif
         b1[i] += (W_AM * (b0[i] + b2[i]) + W_AO) >> W_AS;
     }
 }
