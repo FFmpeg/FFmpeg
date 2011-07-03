@@ -44,6 +44,12 @@ typedef struct {
 
     int frame_pending;
 
+    /**
+     *  0: deinterlace all frames
+     *  1: only deinterlace frames marked as interlaced
+     */
+    int auto_enable;
+
     AVFilterBufferRef *cur;
     AVFilterBufferRef *next;
     AVFilterBufferRef *prev;
@@ -240,6 +246,14 @@ static void start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     if (!yadif->cur)
         return;
 
+    if (yadif->auto_enable && !yadif->cur->video->interlaced) {
+        yadif->out  = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
+        avfilter_unref_buffer(yadif->prev);
+        yadif->prev = NULL;
+        avfilter_start_frame(ctx->outputs[0], yadif->out);
+        return;
+    }
+
     if (!yadif->prev)
         yadif->prev = avfilter_ref_buffer(yadif->cur, AV_PERM_READ);
 
@@ -258,6 +272,12 @@ static void end_frame(AVFilterLink *link)
 
     if (!yadif->out)
         return;
+
+    if (yadif->auto_enable && !yadif->cur->video->interlaced) {
+        avfilter_draw_slice(ctx->outputs[0], 0, link->h, 1);
+        avfilter_end_frame(ctx->outputs[0]);
+        return;
+    }
 
     return_frame(ctx, 0);
 }
@@ -298,6 +318,9 @@ static int poll_frame(AVFilterLink *link)
         val = avfilter_poll_frame(link->src->inputs[0]);
     }
     assert(yadif->next || !val);
+
+    if (yadif->auto_enable && yadif->next && !yadif->next->video->interlaced)
+        return val;
 
     return val * ((yadif->mode&1)+1);
 }
@@ -344,9 +367,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     yadif->mode = 0;
     yadif->parity = -1;
+    yadif->auto_enable = 0;
     yadif->csp = NULL;
 
-    if (args) sscanf(args, "%d:%d", &yadif->mode, &yadif->parity);
+    if (args) sscanf(args, "%d:%d:%d", &yadif->mode, &yadif->parity, &yadif->auto_enable);
 
     yadif->filter_line = filter_line_c;
     if (HAVE_SSSE3 && cpu_flags & AV_CPU_FLAG_SSSE3)
@@ -356,7 +380,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX)
         yadif->filter_line = ff_yadif_filter_line_mmx;
 
-    av_log(ctx, AV_LOG_INFO, "mode:%d parity:%d\n", yadif->mode, yadif->parity);
+    av_log(ctx, AV_LOG_INFO, "mode:%d parity:%d auto_enable:%d\n", yadif->mode, yadif->parity, yadif->auto_enable);
 
     return 0;
 }
