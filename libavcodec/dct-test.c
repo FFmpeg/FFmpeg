@@ -200,7 +200,7 @@ static inline void mmx_emms(void)
 #endif
 }
 
-static void dct_error(const struct algo *dct, int test, int is_idct)
+static void dct_error(const struct algo *dct, int test, int is_idct, int speed)
 {
     int it, i, scale;
     int err_inf, v;
@@ -302,6 +302,9 @@ static void dct_error(const struct algo *dct, int test, int is_idct)
            is_idct ? "IDCT" : "DCT", dct->name, err_inf,
            (double) err2 / NB_ITS / 64.0, (double) sysErrMax / NB_ITS,
            maxout, blockSumErrMax);
+
+    if (!speed)
+        return;
 
     /* speed test */
     for (i = 0; i < 64; i++)
@@ -439,7 +442,8 @@ static void idct248_ref(uint8_t *dest, int linesize, int16_t *block)
 
 static void idct248_error(const char *name,
                           void (*idct248_put)(uint8_t *dest, int line_size,
-                                              int16_t *block))
+                                              int16_t *block),
+                          int speed)
 {
     int it, i, it1, ti, ti1, err_max, v;
     AVLFG prng;
@@ -473,6 +477,9 @@ static void idct248_error(const char *name,
     }
     printf("%s %s: err_inf=%d\n", 1 ? "IDCT248" : "DCT248", name, err_max);
 
+    if (!speed)
+        return;
+
     ti = gettime();
     it1 = 0;
     do {
@@ -497,7 +504,8 @@ static void help(void)
            "            1 -> test with random sparse matrixes\n"
            "            2 -> do 3. test from mpeg4 std\n"
            "-i          test IDCT implementations\n"
-           "-4          test IDCT248 implementations\n");
+           "-4          test IDCT248 implementations\n"
+           "-t          speed test\n");
 }
 
 int main(int argc, char **argv)
@@ -505,6 +513,7 @@ int main(int argc, char **argv)
     int test_idct = 0, test_248_dct = 0;
     int c, i;
     int test = 1;
+    int speed = 0;
 
     cpu_flags = av_get_cpu_flags();
 
@@ -519,7 +528,7 @@ int main(int argc, char **argv)
     }
 
     for (;;) {
-        c = getopt(argc, argv, "ih4");
+        c = getopt(argc, argv, "ih4t");
         if (c == -1)
             break;
         switch (c) {
@@ -528,6 +537,9 @@ int main(int argc, char **argv)
             break;
         case '4':
             test_248_dct = 1;
+            break;
+        case 't':
+            speed = 1;
             break;
         default:
         case 'h':
@@ -542,12 +554,12 @@ int main(int argc, char **argv)
     printf("ffmpeg DCT/IDCT test\n");
 
     if (test_248_dct) {
-        idct248_error("SIMPLE-C", ff_simple_idct248_put);
+        idct248_error("SIMPLE-C", ff_simple_idct248_put, speed);
     } else {
         const struct algo *algos = test_idct ? idct_tab : fdct_tab;
         for (i = 0; algos[i].name; i++)
             if (!(~cpu_flags & algos[i].mm_support)) {
-                dct_error(&algos[i], test, test_idct);
+                dct_error(&algos[i], test, test_idct, speed);
             }
     }
     return 0;
