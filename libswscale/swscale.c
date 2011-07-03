@@ -1979,6 +1979,9 @@ static void hScale16_c(SwsContext *c, int16_t *_dst, int dstW, const uint8_t *_s
     int bits = av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
     int sh = (bits <= 7) ? 11 : (bits - 4);
 
+    if((isAnyRGB(c->srcFormat) || c->srcFormat==PIX_FMT_PAL8) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
+        sh= 9;
+
     for (i = 0; i < dstW; i++) {
         int j;
         int srcPos = filterPos[i];
@@ -2154,7 +2157,7 @@ static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
         src= formatConvBuffer;
     }
 
-    if (av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16) {
+    if (av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16 && !isAnyRGB(c->srcFormat)) {
         c->scale8To16Rv((uint16_t *) formatConvBuffer, src, srcW);
         src = formatConvBuffer;
     }
@@ -2208,7 +2211,7 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
         src2= buf2;
     }
 
-    if (av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16) {
+    if (av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16 && !isAnyRGB(c->srcFormat)) {
         uint8_t *buf2 = (formatConvBuffer + FFALIGN(srcW * 2+78, 16));
         c->scale8To16Rv((uint16_t *) formatConvBuffer, src1, srcW);
         c->scale8To16Rv((uint16_t *) buf2,             src2, srcW);
@@ -2878,8 +2881,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         }
     }
 
-    if((isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
-       || c->srcFormat == PIX_FMT_PAL8)
+    if(((isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
+       || c->srcFormat == PIX_FMT_PAL8) && c->scalingBpp == 8)
         c->hScale16= hScale16N_c;
 
     if (c->scalingBpp == 8) {
