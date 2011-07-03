@@ -505,8 +505,9 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply);
 int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr);
 
 /**
- * Parse a SDP description of streams by populating an RTSPState struct
- * within the AVFormatContext.
+ * Parse an SDP description of streams by populating an RTSPState struct
+ * within the AVFormatContext; also allocate the RTP streams and the
+ * pollfd array used for UDP streams.
  */
 int ff_sdp_parse(AVFormatContext *s, const char *content);
 
@@ -525,6 +526,7 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt);
 /**
  * Do the SETUP requests for each stream for the chosen
  * lower transport mode.
+ * @return 0 on success, <0 on error, 1 if protocol is unavailable
  */
 int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                                int lower_transport, const char *real_challenge);
