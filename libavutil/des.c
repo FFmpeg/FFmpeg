@@ -402,7 +402,7 @@ int main(void) {
         printf("Partial Monte-Carlo test failed\n");
         return 1;
     }
-    for (i = 0; i < 1000000; i++) {
+    for (i = 0; i < 1000; i++) {
         key[0] = rand64(); key[1] = rand64(); key[2] = rand64();
         data = rand64();
         av_des_init(&d, key, 192, 0);
