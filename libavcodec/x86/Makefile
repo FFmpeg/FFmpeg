@@ -46,6 +46,7 @@ MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           x86/fmtconvert.o              \
                                           x86/h264_chromamc.o           \
                                           x86/h264_chromamc_10bit.o     \
+                                          x86/h264_qpel_10bit.o         \
                                           $(YASM-OBJS-yes)
 
 MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
