@@ -153,7 +153,7 @@ static void draw_char(AVCodecContext *avctx, int c)
 
 /**
  * Execute ANSI escape code
- * @param <0 error
+ * @return 0 on success, negative on error
  */
 static int execute_code(AVCodecContext * avctx, int c)
 {
