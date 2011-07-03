@@ -56,8 +56,7 @@ void write_##type##_2d_array(const void *arg, int len, int len2)\
 }
 
 /**
- * \defgroup printfuncs Predefined functions for printing tables
- *
+ * @name Predefined functions for printing tables
  * \{
  */
 void write_int8_t_array     (const int8_t   *, int);

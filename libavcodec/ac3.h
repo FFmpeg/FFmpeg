@@ -92,7 +92,7 @@ typedef struct AC3BitAllocParameters {
  * Coded AC-3 header values up to the lfeon element, plus derived values.
  */
 typedef struct {
-    /** @defgroup coded Coded elements
+    /** @name Coded elements
      * @{
      */
     uint16_t sync_word;
@@ -110,7 +110,7 @@ typedef struct {
     int num_blocks;                         ///< number of audio blocks
     /** @} */
 
-    /** @defgroup derived Derived values
+    /** @name Derived values
      * @{
      */
     uint8_t sr_shift;

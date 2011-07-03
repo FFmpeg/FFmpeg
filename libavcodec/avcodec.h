@@ -2488,7 +2488,7 @@ typedef struct AVCodecContext {
 
 #if FF_API_FLAC_GLOBAL_OPTS
     /**
-     * @defgroup flac_opts FLAC options
+     * @name FLAC options
      * @deprecated Use FLAC encoder private options instead.
      * @{
      */
@@ -2897,7 +2897,7 @@ typedef struct AVCodec {
     const AVProfile *profiles;              ///< array of recognized profiles, or NULL if unknown, array is terminated by {FF_PROFILE_UNKNOWN}
 
     /**
-     * @defgroup framethreading Frame-level threading support functions.
+     * @name Frame-level threading support functions
      * @{
      */
     /**

@@ -204,7 +204,7 @@ static enum Mode unpack_bitstream(AMRContext *p, const uint8_t *buf,
 }
 
 
-/// @defgroup amr_lpc_decoding AMR pitch LPC coefficient decoding functions
+/// @name AMR pitch LPC coefficient decoding functions
 /// @{
 
 /**
@@ -341,7 +341,7 @@ static void lsf2lsp_3(AMRContext *p)
 /// @}
 
 
-/// @defgroup amr_pitch_vector_decoding AMR pitch vector decoding functions
+/// @name AMR pitch vector decoding functions
 /// @{
 
 /**
@@ -403,7 +403,7 @@ static void decode_pitch_vector(AMRContext *p,
 /// @}
 
 
-/// @defgroup amr_algebraic_code_book AMR algebraic code book (fixed) vector decoding functions
+/// @name AMR algebraic code book (fixed) vector decoding functions
 /// @{
 
 /**
@@ -547,7 +547,7 @@ static void pitch_sharpening(AMRContext *p, int subframe, enum Mode mode,
 /// @}
 
 
-/// @defgroup amr_gain_decoding AMR gain decoding functions
+/// @name AMR gain decoding functions
 /// @{
 
 /**
@@ -633,7 +633,7 @@ static void decode_gains(AMRContext *p, const AMRNBSubframe *amr_subframe,
 /// @}
 
 
-/// @defgroup amr_pre_processing AMR pre-processing functions
+/// @name AMR preprocessing functions
 /// @{
 
 /**
@@ -751,7 +751,7 @@ static const float *anti_sparseness(AMRContext *p, AMRFixed *fixed_sparse,
 /// @}
 
 
-/// @defgroup amr_synthesis AMR synthesis functions
+/// @name AMR synthesis functions
 /// @{
 
 /**
@@ -812,7 +812,7 @@ static int synthesis(AMRContext *p, float *lpc,
 /// @}
 
 
-/// @defgroup amr_update AMR update functions
+/// @name AMR update functions
 /// @{
 
 /**
@@ -837,7 +837,7 @@ static void update_state(AMRContext *p)
 /// @}
 
 
-/// @defgroup amr_postproc AMR Post processing functions
+/// @name AMR Postprocessing functions
 /// @{
 
 /**

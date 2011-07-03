@@ -217,7 +217,7 @@ static av_cold int ape_decode_close(AVCodecContext * avctx)
 }
 
 /**
- * @defgroup rangecoder APE range decoder
+ * @name APE range decoding functions
  * @{
  */
 
