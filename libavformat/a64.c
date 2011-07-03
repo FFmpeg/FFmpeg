@@ -55,7 +55,6 @@ static int a64_write_header(struct AVFormatContext *s)
         break;
     default:
         return AVERROR(EINVAL);
-        break;
     }
     avio_write(s->pb, header, 2);
     c->prev_pkt.size = 0;

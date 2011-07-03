@@ -149,7 +149,6 @@ static int oma_read_header(AVFormatContext *s,
         default:
             av_log(s, AV_LOG_ERROR, "Unsupported codec %d!\n",buf[32]);
             return -1;
-            break;
     }
 
     st->codec->block_align = framesize;

@@ -1156,7 +1156,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             default:
                 av_log_ask_for_sample(avctx, "Unknown Cook version.\n");
                 return -1;
-                break;
         }
 
         if(s > 1 && q->subpacket[s].samples_per_channel != q->samples_per_channel) {

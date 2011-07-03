@@ -1540,7 +1540,6 @@ eoi_parser:
                     }
 
                     goto the_end;
-                    break;
                 case SOS:
                     if (!s->got_picture) {
                         av_log(avctx, AV_LOG_WARNING, "Can not process SOS before SOF, skipping\n");
