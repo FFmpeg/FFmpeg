@@ -25,8 +25,7 @@
 #include "avcodec.h"
 
 /**
- * Default values for ASS style.
- * @defgroup ass_default
+ * @name Default values for ASS style
  * @{
  */
 #define ASS_DEFAULT_FONT        "Arial"

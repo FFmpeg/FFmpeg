@@ -861,7 +861,7 @@ static int get_stream_idx(int *d){
     }
 }
 
-static int avi_sync(AVFormatContext *s)
+static int avi_sync(AVFormatContext *s, int exit_early)
 {
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -941,7 +941,9 @@ start_sync:
             if(   (st->discard >= AVDISCARD_DEFAULT && size==0)
                /*|| (st->discard >= AVDISCARD_NONKEY && !(pkt->flags & AV_PKT_FLAG_KEY))*/ //FIXME needs a little reordering
                || st->discard >= AVDISCARD_ALL){
-                ast->frame_offset += get_duration(ast, size);
+                if (!exit_early) {
+                    ast->frame_offset += get_duration(ast, size);
+                }
                 avio_skip(pb, size);
                 goto start_sync;
             }
@@ -961,6 +963,8 @@ start_sync:
                          (d[2] == 'd' && d[3] == 'c') ||
                          (d[2] == 'w' && d[3] == 'b')*/) {
 
+                if (exit_early)
+                    return 0;
 //av_log(s, AV_LOG_DEBUG, "OK\n");
                 if(d[2]*256+d[3] == ast->prefix)
                     ast->prefix_count++;
@@ -1165,7 +1169,7 @@ resync:
         return size;
     }
 
-    if ((err = avi_sync(s)) < 0)
+    if ((err = avi_sync(s, 0)) < 0)
         return err;
     goto resync;
 }
@@ -1179,12 +1183,21 @@ static int avi_read_idx1(AVFormatContext *s, int size)
     int nb_index_entries, i;
     AVStream *st;
     AVIStream *ast;
-    unsigned int index, tag, flags, pos, len;
+    unsigned int index, tag, flags, pos, len, first_packet = 1;
     unsigned last_pos= -1;
+    int64_t idx1_pos, first_packet_pos = 0, data_offset = 0;
 
     nb_index_entries = size / 16;
     if (nb_index_entries <= 0)
         return -1;
+
+    idx1_pos = avio_tell(pb);
+    avio_seek(pb, avi->movi_list+4, SEEK_SET);
+    if (avi_sync(s, 1) == 0) {
+        first_packet_pos = avio_tell(pb) - 8;
+    }
+    avi->stream_index = -1;
+    avio_seek(pb, idx1_pos, SEEK_SET);
 
     /* Read the entries and sort them in each stream component. */
     for(i = 0; i < nb_index_entries; i++) {
@@ -1194,9 +1207,6 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         len = avio_rl32(pb);
         av_dlog(s, "%d: tag=0x%x flags=0x%x pos=0x%x len=%d/",
                 i, tag, flags, pos, len);
-        if(i==0 && pos > avi->movi_list)
-            avi->movi_list= 0; //FIXME better check
-        pos += avi->movi_list;
 
         index = ((tag & 0xff) - '0') * 10;
         index += ((tag >> 8) & 0xff) - '0';
@@ -1205,9 +1215,14 @@ static int avi_read_idx1(AVFormatContext *s, int size)
         st = s->streams[index];
         ast = st->priv_data;
 
-#if defined(DEBUG_SEEK)
-        av_log(s, AV_LOG_DEBUG, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
-#endif
+        if(first_packet && first_packet_pos && len) {
+            data_offset = first_packet_pos - pos;
+            first_packet = 0;
+        }
+        pos += data_offset;
+
+        av_dlog(s, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
+
         if(url_feof(pb))
             return -1;
 

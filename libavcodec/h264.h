@@ -507,7 +507,7 @@ typedef struct H264Context{
     int          cabac_init_idc;
 
     /**
-     * @defgroup multithreading Members for slice based multithreading
+     * @name Members for slice based multithreading
      * @{
      */
     struct H264Context *thread_context[MAX_THREADS];

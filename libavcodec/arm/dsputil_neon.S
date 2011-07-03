@@ -815,3 +815,19 @@ function ff_apply_window_int16_neon, export=1
 
         pop             {r4,pc}
 endfunc
+
+function ff_vector_clip_int32_neon, export=1
+        vdup.32         q0,  r2
+        vdup.32         q1,  r3
+        ldr             r2,  [sp]
+1:
+        vld1.32         {q2-q3},  [r1,:128]!
+        vmin.s32        q2,  q2,  q1
+        vmin.s32        q3,  q3,  q1
+        vmax.s32        q2,  q2,  q0
+        vmax.s32        q3,  q3,  q0
+        vst1.32         {q2-q3},  [r0,:128]!
+        subs            r2,  r2,  #8
+        bgt             1b
+        bx              lr
+endfunc

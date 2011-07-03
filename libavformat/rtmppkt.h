@@ -138,7 +138,7 @@ int ff_rtmp_packet_write(URLContext *h, RTMPPacket *p,
 void ff_rtmp_packet_dump(void *ctx, RTMPPacket *p);
 
 /**
- * @defgroup amffuncs functions used to work with AMF format (which is also used in .flv)
+ * @name Functions used to work with the AMF format (which is also used in .flv)
  * @see amf_* funcs in libavformat/flvdec.c
  * @{
  */

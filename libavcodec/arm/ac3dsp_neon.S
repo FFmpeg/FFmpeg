@@ -95,19 +95,14 @@ function ff_float_to_fixed24_neon, export=1
 endfunc
 
 function ff_ac3_extract_exponents_neon, export=1
-        vmov.i32        q14, #24
         vmov.i32        q15, #8
 1:
-        vld1.32         {q0},     [r1,:128]
+        vld1.32         {q0},     [r1,:128]!
         vabs.s32        q1,  q0
         vclz.i32        q3,  q1
         vsub.i32        q3,  q3,  q15
-        vcge.s32        q2,  q3,  q14
-        vbit            q3,  q14, q2
-        vbic            q0,  q0,  q2
         vmovn.i32       d6,  q3
         vmovn.i16       d6,  q3
-        vst1.32         {q0},     [r1,:128]!
         vst1.32         {d6[0]},  [r0,:32]!
         subs            r2,  r2,  #4
         bgt             1b

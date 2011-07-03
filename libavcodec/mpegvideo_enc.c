@@ -2170,9 +2170,7 @@ static int encode_thread(AVCodecContext *c, void *arg){
                         int d= 100 / s->avctx->error_rate;
                         if(r % d == 0){
                             current_packet_size=0;
-#ifndef ALT_BITSTREAM_WRITER
                             s->pb.buf_ptr= s->ptr_lastgob;
-#endif
                             assert(put_bits_ptr(&s->pb) == s->ptr_lastgob);
                         }
                     }
