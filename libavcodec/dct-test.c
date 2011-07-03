@@ -177,7 +177,6 @@ static void idct_mmx_init(void)
     /* the mmx/mmxext idct uses a reordered input, so we patch scan tables */
     for (i = 0; i < 64; i++) {
         idct_mmx_perm[i] = (i & 0x38) | ((i & 6) >> 1) | ((i & 1) << 2);
-//        idct_simple_mmx_perm[i] = simple_block_permute_op(i);
     }
 }
 
@@ -235,15 +234,6 @@ static void dct_error(const char *name, int is_idct,
         break;
         }
 
-#if 0 // simulate mismatch control
-{ int sum=0;
-        for(i=0;i<64;i++)
-           sum+=block1[i];
-
-        if((sum&1)==0) block1[63]^=1;
-}
-#endif
-
         for(i=0; i<64; i++)
             block_org[i]= block1[i];
 
@@ -264,14 +254,6 @@ static void dct_error(const char *name, int is_idct,
             for(i=0; i<64; i++)
                 block[i]= block1[i];
         }
-#if 0 // simulate mismatch control for tested IDCT but not the ref
-{ int sum=0;
-        for(i=0;i<64;i++)
-           sum+=block[i];
-
-        if((sum&1)==0) block[63]^=1;
-}
-#endif
 
         fdct_func(block);
         mmx_emms();
@@ -296,19 +278,6 @@ static void dct_error(const char *name, int is_idct,
             if( abs(block[i])>maxout) maxout=abs(block[i]);
         }
         if(blockSumErrMax < blockSumErr) blockSumErrMax= blockSumErr;
-#if 0 // print different matrix pairs
-        if(blockSumErr){
-            printf("\n");
-            for(i=0; i<64; i++){
-                if((i&7)==0) printf("\n");
-                printf("%4d ", block_org[i]);
-            }
-            for(i=0; i<64; i++){
-                if((i&7)==0) printf("\n");
-                printf("%4d ", block[i] - block1[i]);
-            }
-        }
-#endif
     }
     for(i=0; i<64; i++) sysErrMax= FFMAX(sysErrMax, FFABS(sysErr[i]));
 
@@ -362,8 +331,6 @@ static void dct_error(const char *name, int is_idct,
         for(it=0;it<NB_ITS_SPEED;it++) {
             for(i=0; i<64; i++)
                 block[i]= block1[i];
-//            memcpy(block, block1, sizeof(DCTELEM) * 64);
-// do not memcpy especially not fastmemcpy because it does movntq !!!
             fdct_func(block);
         }
         it1 += NB_ITS_SPEED;
@@ -504,8 +471,6 @@ static void idct248_error(const char *name,
         for(it=0;it<NB_ITS_SPEED;it++) {
             for(i=0; i<64; i++)
                 block[i]= block1[i];
-//            memcpy(block, block1, sizeof(DCTELEM) * 64);
-// do not memcpy especially not fastmemcpy because it does movntq !!!
             idct248_put(img_dest, 8, block);
         }
         it1 += NB_ITS_SPEED;
