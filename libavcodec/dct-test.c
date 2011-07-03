@@ -85,23 +85,36 @@ struct algo {
 
 static int cpu_flags;
 
-struct algo algos[] = {
+static const struct algo fdct_tab[] = {
     {"REF-DBL",         0, ff_ref_fdct,        ff_ref_fdct, NO_PERM},
     {"FAAN",            0, ff_faandct,         ff_ref_fdct, FAAN_SCALE},
-    {"FAANI",           1, ff_faanidct,        ff_ref_idct, NO_PERM},
     {"IJG-AAN-INT",     0, fdct_ifast,         ff_ref_fdct, SCALE_PERM},
     {"IJG-LLM-INT",     0, ff_jpeg_fdct_islow, ff_ref_fdct, NO_PERM},
+
+#if HAVE_MMX
+    {"MMX",             0, ff_fdct_mmx,        ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX},
+    {"MMX2",            0, ff_fdct_mmx2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX2},
+    {"SSE2",            0, ff_fdct_sse2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_SSE2},
+#endif
+
+#if HAVE_ALTIVEC
+    {"altivecfdct",     0, fdct_altivec,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_ALTIVEC},
+#endif
+
+#if ARCH_BFIN
+    {"BFINfdct",        0, ff_bfin_fdct,       ff_ref_fdct, NO_PERM},
+#endif
+
+    { 0 }
+};
+
+static const struct algo idct_tab[] = {
+    {"FAANI",           1, ff_faanidct,        ff_ref_idct, NO_PERM},
     {"REF-DBL",         1, ff_ref_idct,        ff_ref_idct, NO_PERM},
     {"INT",             1, j_rev_dct,          ff_ref_idct, MMX_PERM},
     {"SIMPLE-C",        1, ff_simple_idct,     ff_ref_idct, NO_PERM},
 
 #if HAVE_MMX
-    {"MMX",             0, ff_fdct_mmx,        ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX},
-#if HAVE_MMX2
-    {"MMX2",            0, ff_fdct_mmx2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX2},
-    {"SSE2",            0, ff_fdct_sse2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_SSE2},
-#endif
-
 #if CONFIG_GPL
     {"LIBMPEG2-MMX",    1, ff_mmx_idct,        ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX},
     {"LIBMPEG2-MMX2",   1, ff_mmxext_idct,     ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX2},
@@ -112,18 +125,14 @@ struct algo algos[] = {
     {"XVID-SSE2",       1, ff_idct_xvid_sse2,  ff_ref_idct, SSE2_PERM, AV_CPU_FLAG_SSE2},
 #endif
 
-#if HAVE_ALTIVEC
-    {"altivecfdct",     0, fdct_altivec,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_ALTIVEC},
-#endif
-
 #if ARCH_BFIN
-    {"BFINfdct",        0, ff_bfin_fdct,       ff_ref_fdct, NO_PERM},
     {"BFINidct",        1, ff_bfin_idct,       ff_ref_idct, NO_PERM},
 #endif
 
 #if ARCH_ARM
     {"SIMPLE-ARM",      1, ff_simple_idct_arm, ff_ref_idct, NO_PERM },
     {"INT-ARM",         1, ff_j_rev_dct_arm,   ff_ref_idct, MMX_PERM },
+#endif
 #if HAVE_ARMV5TE
     {"SIMPLE-ARMV5TE",  1, ff_simple_idct_armv5te, ff_ref_idct, NO_PERM },
 #endif
@@ -133,7 +142,6 @@ struct algo algos[] = {
 #if HAVE_NEON
     {"SIMPLE-NEON",     1, ff_simple_idct_neon, ff_ref_idct, PARTTRANS_PERM },
 #endif
-#endif /* ARCH_ARM */
 
 #if ARCH_ALPHA
     {"SIMPLE-ALPHA",    1, ff_simple_idct_axp,  ff_ref_idct, NO_PERM },
@@ -537,9 +545,9 @@ int main(int argc, char **argv)
     if (test_248_dct) {
         idct248_error("SIMPLE-C", ff_simple_idct248_put);
     } else {
+        const struct algo *algos = test_idct ? idct_tab : fdct_tab;
         for (i = 0; algos[i].name; i++)
-            if (algos[i].is_idct == test_idct &&
-                !(~cpu_flags & algos[i].mm_support)) {
+            if (!(~cpu_flags & algos[i].mm_support)) {
                 dct_error(&algos[i], test);
             }
     }
