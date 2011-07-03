@@ -2438,6 +2438,8 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 #endif /* !COMPILE_TEMPLATE_MMX2 */
-    if(isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15 && c->scalingBpp == 8)
+    if(isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
         c->hScale16= RENAME(hScale16);
+    if(c->scalingBpp != 8)
+        c->hScale16 = NULL;
 }

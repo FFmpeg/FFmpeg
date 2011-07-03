@@ -2881,8 +2881,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         }
     }
 
-    if(((isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
-       || c->srcFormat == PIX_FMT_PAL8) && c->scalingBpp == 8)
+    if((isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
+       || c->srcFormat == PIX_FMT_PAL8)
         c->hScale16= hScale16N_c;
 
     if (c->scalingBpp == 8) {
@@ -2902,6 +2902,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         }
     }
     } else {
+        c->hScale16 = NULL;
         c->hScale = hScale16_c;
         c->scale19To15Fw = scale19To15Fw_c;
         c->scale8To16Rv  = scale8To16Rv_c;
