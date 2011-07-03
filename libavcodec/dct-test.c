@@ -193,10 +193,7 @@ static inline void mmx_emms(void)
 #endif
 }
 
-static void dct_error(const char *name, int is_idct,
-                      void (*fdct_func)(DCTELEM *block),
-                      void (*fdct_ref)(DCTELEM *block), int form,
-                      int test)
+static void dct_error(const struct algo *dct, int test)
 {
     int it, i, scale;
     int err_inf, v;
@@ -219,7 +216,7 @@ static void dct_error(const char *name, int is_idct,
         case 0:
             for (i = 0; i < 64; i++)
                 block1[i] = (av_lfg_get(&prng) % 512) - 256;
-            if (is_idct) {
+            if (dct->is_idct) {
                 ff_ref_fdct(block1);
                 for (i = 0; i < 64; i++)
                     block1[i] >>= 3;
@@ -241,16 +238,16 @@ static void dct_error(const char *name, int is_idct,
         for (i = 0; i < 64; i++)
             block_org[i] = block1[i];
 
-        if (form == MMX_PERM) {
+        if (dct->format == MMX_PERM) {
             for (i = 0; i < 64; i++)
                 block[idct_mmx_perm[i]] = block1[i];
-        } else if (form == MMX_SIMPLE_PERM) {
+        } else if (dct->format == MMX_SIMPLE_PERM) {
             for (i = 0; i < 64; i++)
                 block[idct_simple_mmx_perm[i]] = block1[i];
-        } else if (form == SSE2_PERM) {
+        } else if (dct->format == SSE2_PERM) {
             for (i = 0; i < 64; i++)
                 block[(i & 0x38) | idct_sse2_row_perm[i & 7]] = block1[i];
-        } else if (form == PARTTRANS_PERM) {
+        } else if (dct->format == PARTTRANS_PERM) {
             for (i = 0; i < 64; i++)
                 block[(i & 0x24) | ((i & 3) << 3) | ((i >> 3) & 3)] = block1[i];
         } else {
@@ -258,17 +255,17 @@ static void dct_error(const char *name, int is_idct,
                 block[i] = block1[i];
         }
 
-        fdct_func(block);
+        dct->func(block);
         mmx_emms();
 
-        if (form == SCALE_PERM) {
+        if (dct->format == SCALE_PERM) {
             for (i = 0; i < 64; i++) {
                 scale = 8 * (1 << (AANSCALE_BITS + 11)) / ff_aanscales[i];
                 block[i] = (block[i] * scale) >> AANSCALE_BITS;
             }
         }
 
-        fdct_ref(block1);
+        dct->ref(block1);
 
         blockSumErr = 0;
         for (i = 0; i < 64; i++) {
@@ -295,7 +292,7 @@ static void dct_error(const char *name, int is_idct,
     printf("\n");
 
     printf("%s %s: err_inf=%d err2=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
-           is_idct ? "IDCT" : "DCT", name, err_inf,
+           dct->is_idct ? "IDCT" : "DCT", dct->name, err_inf,
            (double) err2 / NB_ITS / 64.0, (double) sysErrMax / NB_ITS,
            maxout, blockSumErrMax);
 
@@ -307,7 +304,7 @@ static void dct_error(const char *name, int is_idct,
     case 0:
         for (i = 0; i < 64; i++)
             block1[i] = av_lfg_get(&prng) % 512 - 256;
-        if (is_idct) {
+        if (dct->is_idct) {
             ff_ref_fdct(block1);
             for (i = 0; i < 64; i++)
                 block1[i] >>= 3;
@@ -322,10 +319,10 @@ static void dct_error(const char *name, int is_idct,
         break;
     }
 
-    if (form == MMX_PERM) {
+    if (dct->format == MMX_PERM) {
         for (i = 0; i < 64; i++)
             block[idct_mmx_perm[i]] = block1[i];
-    } else if (form == MMX_SIMPLE_PERM) {
+    } else if (dct->format == MMX_SIMPLE_PERM) {
         for (i = 0; i < 64; i++)
             block[idct_simple_mmx_perm[i]] = block1[i];
     } else {
@@ -339,14 +336,14 @@ static void dct_error(const char *name, int is_idct,
         for (it = 0; it < NB_ITS_SPEED; it++) {
             for (i = 0; i < 64; i++)
                 block[i] = block1[i];
-            fdct_func(block);
+            dct->func(block);
         }
         it1 += NB_ITS_SPEED;
         ti1 = gettime() - ti;
     } while (ti1 < 1000000);
     mmx_emms();
 
-    printf("%s %s: %0.1f kdct/s\n", is_idct ? "IDCT" : "DCT", name,
+    printf("%s %s: %0.1f kdct/s\n", dct->is_idct ? "IDCT" : "DCT", dct->name,
            (double) it1 * 1000.0 / (double) ti1);
 }
 
@@ -543,8 +540,7 @@ int main(int argc, char **argv)
         for (i = 0; algos[i].name; i++)
             if (algos[i].is_idct == test_idct &&
                 !(~cpu_flags & algos[i].mm_support)) {
-                dct_error(algos[i].name, algos[i].is_idct, algos[i].func,
-                          algos[i].ref,  algos[i].format, test);
+                dct_error(&algos[i], test);
             }
     }
     return 0;
