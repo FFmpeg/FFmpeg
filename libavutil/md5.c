@@ -32,6 +32,7 @@
 
 #include <stdint.h>
 #include "bswap.h"
+#include "intreadwrite.h"
 #include "md5.h"
 
 typedef struct AVMD5{
@@ -150,7 +151,7 @@ void av_md5_final(AVMD5 *ctx, uint8_t *dst){
     av_md5_update(ctx, (uint8_t*)&finalcount, 8);
 
     for(i=0; i<4; i++)
-        ((uint32_t*)dst)[i]= av_le2ne32(ctx->ABCD[3-i]);
+        AV_WL32(dst + 4*i, ctx->ABCD[3-i]);
 }
 
 void av_md5_sum(uint8_t *dst, const uint8_t *src, const int len){
