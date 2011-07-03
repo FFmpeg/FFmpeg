@@ -528,6 +528,14 @@
 %endif
 %endmacro
 
+%macro SPLATD 2-3 0
+%if mmsize == 16
+    pshufd %1, %2, (%3)*0x55
+%else
+    pshufw %1, %2, (%3)*0x11 + ((%3)+1)*0x44
+%endif
+%endmacro
+
 %macro CLIPW 3 ;(dst, min, max)
     pmaxsw %1, %2
     pminsw %1, %3
