@@ -69,7 +69,6 @@ void ff_simple_idct_axp(DCTELEM *data);
 
 struct algo {
     const char *name;
-    enum { FDCT, IDCT } is_idct;
     void (*func)(DCTELEM *block);
     void (*ref) (DCTELEM *block);
     enum formattag { NO_PERM, MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM,
@@ -86,65 +85,65 @@ struct algo {
 static int cpu_flags;
 
 static const struct algo fdct_tab[] = {
-    {"REF-DBL",         0, ff_ref_fdct,        ff_ref_fdct, NO_PERM},
-    {"FAAN",            0, ff_faandct,         ff_ref_fdct, FAAN_SCALE},
-    {"IJG-AAN-INT",     0, fdct_ifast,         ff_ref_fdct, SCALE_PERM},
-    {"IJG-LLM-INT",     0, ff_jpeg_fdct_islow, ff_ref_fdct, NO_PERM},
+    {"REF-DBL",         ff_ref_fdct,        ff_ref_fdct, NO_PERM},
+    {"FAAN",            ff_faandct,         ff_ref_fdct, FAAN_SCALE},
+    {"IJG-AAN-INT",     fdct_ifast,         ff_ref_fdct, SCALE_PERM},
+    {"IJG-LLM-INT",     ff_jpeg_fdct_islow, ff_ref_fdct, NO_PERM},
 
 #if HAVE_MMX
-    {"MMX",             0, ff_fdct_mmx,        ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX},
-    {"MMX2",            0, ff_fdct_mmx2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX2},
-    {"SSE2",            0, ff_fdct_sse2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_SSE2},
+    {"MMX",             ff_fdct_mmx,        ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX},
+    {"MMX2",            ff_fdct_mmx2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX2},
+    {"SSE2",            ff_fdct_sse2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_SSE2},
 #endif
 
 #if HAVE_ALTIVEC
-    {"altivecfdct",     0, fdct_altivec,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_ALTIVEC},
+    {"altivecfdct",     fdct_altivec,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_ALTIVEC},
 #endif
 
 #if ARCH_BFIN
-    {"BFINfdct",        0, ff_bfin_fdct,       ff_ref_fdct, NO_PERM},
+    {"BFINfdct",        ff_bfin_fdct,       ff_ref_fdct, NO_PERM},
 #endif
 
     { 0 }
 };
 
 static const struct algo idct_tab[] = {
-    {"FAANI",           1, ff_faanidct,        ff_ref_idct, NO_PERM},
-    {"REF-DBL",         1, ff_ref_idct,        ff_ref_idct, NO_PERM},
-    {"INT",             1, j_rev_dct,          ff_ref_idct, MMX_PERM},
-    {"SIMPLE-C",        1, ff_simple_idct,     ff_ref_idct, NO_PERM},
+    {"FAANI",           ff_faanidct,        ff_ref_idct, NO_PERM},
+    {"REF-DBL",         ff_ref_idct,        ff_ref_idct, NO_PERM},
+    {"INT",             j_rev_dct,          ff_ref_idct, MMX_PERM},
+    {"SIMPLE-C",        ff_simple_idct,     ff_ref_idct, NO_PERM},
 
 #if HAVE_MMX
 #if CONFIG_GPL
-    {"LIBMPEG2-MMX",    1, ff_mmx_idct,        ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX},
-    {"LIBMPEG2-MMX2",   1, ff_mmxext_idct,     ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX2},
+    {"LIBMPEG2-MMX",    ff_mmx_idct,        ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX},
+    {"LIBMPEG2-MMX2",   ff_mmxext_idct,     ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX2},
 #endif
-    {"SIMPLE-MMX",      1, ff_simple_idct_mmx, ff_ref_idct, MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX},
-    {"XVID-MMX",        1, ff_idct_xvid_mmx,   ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX},
-    {"XVID-MMX2",       1, ff_idct_xvid_mmx2,  ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX2},
-    {"XVID-SSE2",       1, ff_idct_xvid_sse2,  ff_ref_idct, SSE2_PERM, AV_CPU_FLAG_SSE2},
+    {"SIMPLE-MMX",      ff_simple_idct_mmx, ff_ref_idct, MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX},
+    {"XVID-MMX",        ff_idct_xvid_mmx,   ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX},
+    {"XVID-MMX2",       ff_idct_xvid_mmx2,  ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX2},
+    {"XVID-SSE2",       ff_idct_xvid_sse2,  ff_ref_idct, SSE2_PERM, AV_CPU_FLAG_SSE2},
 #endif
 
 #if ARCH_BFIN
-    {"BFINidct",        1, ff_bfin_idct,       ff_ref_idct, NO_PERM},
+    {"BFINidct",        ff_bfin_idct,       ff_ref_idct, NO_PERM},
 #endif
 
 #if ARCH_ARM
-    {"SIMPLE-ARM",      1, ff_simple_idct_arm, ff_ref_idct, NO_PERM },
-    {"INT-ARM",         1, ff_j_rev_dct_arm,   ff_ref_idct, MMX_PERM },
+    {"SIMPLE-ARM",      ff_simple_idct_arm, ff_ref_idct, NO_PERM },
+    {"INT-ARM",         ff_j_rev_dct_arm,   ff_ref_idct, MMX_PERM },
 #endif
 #if HAVE_ARMV5TE
-    {"SIMPLE-ARMV5TE",  1, ff_simple_idct_armv5te, ff_ref_idct, NO_PERM },
+    {"SIMPLE-ARMV5TE",  ff_simple_idct_armv5te, ff_ref_idct, NO_PERM },
 #endif
 #if HAVE_ARMV6
-    {"SIMPLE-ARMV6",    1, ff_simple_idct_armv6, ff_ref_idct, MMX_PERM },
+    {"SIMPLE-ARMV6",    ff_simple_idct_armv6, ff_ref_idct, MMX_PERM },
 #endif
 #if HAVE_NEON
-    {"SIMPLE-NEON",     1, ff_simple_idct_neon, ff_ref_idct, PARTTRANS_PERM },
+    {"SIMPLE-NEON",     ff_simple_idct_neon, ff_ref_idct, PARTTRANS_PERM },
 #endif
 
 #if ARCH_ALPHA
-    {"SIMPLE-ALPHA",    1, ff_simple_idct_axp,  ff_ref_idct, NO_PERM },
+    {"SIMPLE-ALPHA",    ff_simple_idct_axp,  ff_ref_idct, NO_PERM },
 #endif
 
     { 0 }
@@ -201,7 +200,7 @@ static inline void mmx_emms(void)
 #endif
 }
 
-static void dct_error(const struct algo *dct, int test)
+static void dct_error(const struct algo *dct, int test, int is_idct)
 {
     int it, i, scale;
     int err_inf, v;
@@ -224,7 +223,7 @@ static void dct_error(const struct algo *dct, int test)
         case 0:
             for (i = 0; i < 64; i++)
                 block1[i] = (av_lfg_get(&prng) % 512) - 256;
-            if (dct->is_idct) {
+            if (is_idct) {
                 ff_ref_fdct(block1);
                 for (i = 0; i < 64; i++)
                     block1[i] >>= 3;
@@ -300,7 +299,7 @@ static void dct_error(const struct algo *dct, int test)
     printf("\n");
 
     printf("%s %s: err_inf=%d err2=%0.8f syserr=%0.8f maxout=%d blockSumErr=%d\n",
-           dct->is_idct ? "IDCT" : "DCT", dct->name, err_inf,
+           is_idct ? "IDCT" : "DCT", dct->name, err_inf,
            (double) err2 / NB_ITS / 64.0, (double) sysErrMax / NB_ITS,
            maxout, blockSumErrMax);
 
@@ -312,7 +311,7 @@ static void dct_error(const struct algo *dct, int test)
     case 0:
         for (i = 0; i < 64; i++)
             block1[i] = av_lfg_get(&prng) % 512 - 256;
-        if (dct->is_idct) {
+        if (is_idct) {
             ff_ref_fdct(block1);
             for (i = 0; i < 64; i++)
                 block1[i] >>= 3;
@@ -351,7 +350,7 @@ static void dct_error(const struct algo *dct, int test)
     } while (ti1 < 1000000);
     mmx_emms();
 
-    printf("%s %s: %0.1f kdct/s\n", dct->is_idct ? "IDCT" : "DCT", dct->name,
+    printf("%s %s: %0.1f kdct/s\n", is_idct ? "IDCT" : "DCT", dct->name,
            (double) it1 * 1000.0 / (double) ti1);
 }
 
@@ -548,7 +547,7 @@ int main(int argc, char **argv)
         const struct algo *algos = test_idct ? idct_tab : fdct_tab;
         for (i = 0; algos[i].name; i++)
             if (!(~cpu_flags & algos[i].mm_support)) {
-                dct_error(&algos[i], test);
+                dct_error(&algos[i], test, test_idct);
             }
     }
     return 0;
