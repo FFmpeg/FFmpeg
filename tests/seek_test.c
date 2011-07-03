@@ -25,6 +25,7 @@
 #include <string.h>
 
 #include "libavutil/common.h"
+#include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
 
 #undef exit

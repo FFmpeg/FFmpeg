@@ -716,7 +716,7 @@ enum {
  * Parse WTV chunks
  * @param mode SEEK_TO_DATA or SEEK_TO_PTS
  * @param seekts timestamp
- * @param[out] len Length of data chunk
+ * @param[out] len_ptr Length of data chunk
  * @return stream index of data chunk, or <0 on error
  */
 static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_ptr)

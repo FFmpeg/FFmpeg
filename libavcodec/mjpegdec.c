@@ -1505,29 +1505,26 @@ eoi_parser:
                         av_log(avctx, AV_LOG_WARNING, "Found EOI before any SOF, ignoring\n");
                         break;
                     }
-                    {
-                        if (s->interlaced) {
-                            s->bottom_field ^= 1;
-                            /* if not bottom field, do not output image yet */
-                            if (s->bottom_field == !s->interlace_polarity)
-                                goto not_the_end;
-                        }
-                        *picture = *s->picture_ptr;
-                        *data_size = sizeof(AVFrame);
-
-                        if(!s->lossless){
-                            picture->quality= FFMAX3(s->qscale[0], s->qscale[1], s->qscale[2]);
-                            picture->qstride= 0;
-                            picture->qscale_table= s->qscale_table;
-                            memset(picture->qscale_table, picture->quality, (s->width+15)/16);
-                            if(avctx->debug & FF_DEBUG_QP)
-                                av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
-                            picture->quality*= FF_QP2LAMBDA;
-                        }
-
-                        goto the_end;
+                    if (s->interlaced) {
+                        s->bottom_field ^= 1;
+                        /* if not bottom field, do not output image yet */
+                        if (s->bottom_field == !s->interlace_polarity)
+                            goto not_the_end;
                     }
-                    break;
+                    *picture = *s->picture_ptr;
+                    *data_size = sizeof(AVFrame);
+
+                    if(!s->lossless){
+                        picture->quality= FFMAX3(s->qscale[0], s->qscale[1], s->qscale[2]);
+                        picture->qstride= 0;
+                        picture->qscale_table= s->qscale_table;
+                        memset(picture->qscale_table, picture->quality, (s->width+15)/16);
+                        if(avctx->debug & FF_DEBUG_QP)
+                            av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
+                        picture->quality*= FF_QP2LAMBDA;
+                    }
+
+                    goto the_end;
                 case SOS:
                     if (!s->got_picture) {
                         av_log(avctx, AV_LOG_WARNING, "Can not process SOS before SOF, skipping\n");

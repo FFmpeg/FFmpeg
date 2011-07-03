@@ -47,6 +47,7 @@
 
 #include <alsa/asoundlib.h>
 #include "libavutil/opt.h"
+#include "libavutil/mathematics.h"
 
 #include "avdevice.h"
 #include "alsa-audio.h"

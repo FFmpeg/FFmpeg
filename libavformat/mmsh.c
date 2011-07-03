@@ -208,7 +208,6 @@ static int get_http_header_data(MMSHContext *mmsh)
             }
         }
     }
-    return 0;
 }
 
 static int mmsh_open(URLContext *h, const char *uri, int flags)

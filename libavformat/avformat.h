@@ -41,6 +41,7 @@ const char *avformat_license(void);
 #include <stdio.h>  /* FILE */
 #include "libavcodec/avcodec.h"
 #include "libavutil/dict.h"
+#include "libavutil/log.h"
 
 #include "avio.h"
 #include "libavformat/version.h"

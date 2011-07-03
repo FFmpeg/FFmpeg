@@ -46,6 +46,7 @@
 //#define DEBUG
 
 #include "libavutil/aes.h"
+#include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "mxf.h"

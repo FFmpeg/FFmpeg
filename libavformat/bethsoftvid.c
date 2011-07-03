@@ -220,8 +220,6 @@ static int vid_read_packet(AVFormatContext *s,
             av_log(s, AV_LOG_ERROR, "unknown block (character = %c, decimal = %d, hex = %x)!!!\n",
                    block_type, block_type, block_type); return -1;
     }
-
-    return 0;
 }
 
 AVInputFormat ff_bethsoftvid_demuxer = {

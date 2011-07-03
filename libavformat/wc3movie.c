@@ -152,7 +152,6 @@ static int wc3_read_header(AVFormatContext *s,
                 (uint8_t)fourcc_tag, (uint8_t)(fourcc_tag >> 8), (uint8_t)(fourcc_tag >> 16), (uint8_t)(fourcc_tag >> 24),
                 (uint8_t)fourcc_tag, (uint8_t)(fourcc_tag >> 8), (uint8_t)(fourcc_tag >> 16), (uint8_t)(fourcc_tag >> 24));
             return AVERROR_INVALIDDATA;
-            break;
         }
 
         fourcc_tag = avio_rl32(pb);

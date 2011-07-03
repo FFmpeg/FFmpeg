@@ -69,7 +69,7 @@ int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
  *
  * @param data pointers array to be filled with the pointer for each image plane
  * @param ptr the pointer to a buffer which will contain the image
- * @param linesizes[4] the array containing the linesize for each
+ * @param linesizes the array containing the linesize for each
  * plane, should be filled by av_image_fill_linesizes()
  * @return the size in bytes required for the image buffer, a negative
  * error code in case of failure
@@ -106,8 +106,8 @@ void av_image_copy_plane(uint8_t       *dst, int dst_linesize,
 /**
  * Copy image in src_data to dst_data.
  *
- * @param dst_linesize linesizes for the image in dst_data
- * @param src_linesize linesizes for the image in src_data
+ * @param dst_linesizes linesizes for the image in dst_data
+ * @param src_linesizes linesizes for the image in src_data
  */
 void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
                    const uint8_t *src_data[4], const int src_linesizes[4],

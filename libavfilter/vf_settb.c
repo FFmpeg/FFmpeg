@@ -25,6 +25,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/rational.h"
 #include "avfilter.h"
 #include "internal.h"

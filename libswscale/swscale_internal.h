@@ -28,6 +28,8 @@
 #endif
 
 #include "libavutil/avutil.h"
+#include "libavutil/log.h"
+#include "libavutil/pixfmt.h"
 
 #define STR(s)         AV_TOSTRING(s) //AV_STRINGIFY is too long
 

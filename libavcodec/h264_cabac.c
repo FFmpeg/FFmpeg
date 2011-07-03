@@ -1296,9 +1296,9 @@ static int decode_cabac_intra_mb_type(H264Context *h, int ctx_base, int intra_sl
 
     if(intra_slice){
         int ctx=0;
-        if( h->left_type[0] & (MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM))
+        if( h->left_type[LTOP] & (MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM))
             ctx++;
-        if( h->top_type     & (MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM))
+        if( h->top_type        & (MB_TYPE_INTRA16x16|MB_TYPE_INTRA_PCM))
             ctx++;
         if( get_cabac_noinline( &h->cabac, &state[ctx] ) == 0 )
             return 0;   /* I4x4 */
@@ -1376,10 +1376,10 @@ static int decode_cabac_mb_chroma_pre_mode( H264Context *h) {
     int ctx = 0;
 
     /* No need to test for IS_INTRA4x4 and IS_INTRA16x16, as we set chroma_pred_mode_table to 0 */
-    if( h->left_type[0] && h->chroma_pred_mode_table[mba_xy] != 0 )
+    if( h->left_type[LTOP] && h->chroma_pred_mode_table[mba_xy] != 0 )
         ctx++;
 
-    if( h->top_type     && h->chroma_pred_mode_table[mbb_xy] != 0 )
+    if( h->top_type        && h->chroma_pred_mode_table[mbb_xy] != 0 )
         ctx++;
 
     if( get_cabac_noinline( &h->cabac, &h->cabac_state[64+ctx] ) == 0 )
@@ -1881,7 +1881,7 @@ int ff_h264_decode_mb_cabac(H264Context *h) {
         int ctx = 0;
         assert(h->slice_type_nos == AV_PICTURE_TYPE_B);
 
-        if( !IS_DIRECT( h->left_type[0]-1 ) )
+        if( !IS_DIRECT( h->left_type[LTOP]-1 ) )
             ctx++;
         if( !IS_DIRECT( h->top_type-1 ) )
             ctx++;
@@ -2000,7 +2000,7 @@ decode_intra_mb:
                 //av_log( s->avctx, AV_LOG_ERROR, "i4x4 pred=%d mode=%d\n", pred, h->intra4x4_pred_mode_cache[ scan8[i] ] );
                 }
             }
-            ff_h264_write_back_intra_pred_mode(h);
+            write_back_intra_pred_mode(h);
             if( ff_h264_check_intra4x4_pred_mode(h) < 0 ) return -1;
         } else {
             h->intra16x16_pred_mode= ff_h264_check_intra_pred_mode( h, h->intra16x16_pred_mode );
@@ -2249,21 +2249,22 @@ decode_intra_mb:
      * the transform mode of the current macroblock there. */
     if (CHROMA444 && IS_8x8DCT(mb_type)){
         int i;
+        uint8_t *nnz_cache = h->non_zero_count_cache;
         for (i = 0; i < 2; i++){
-            if (h->left_type[i] && !IS_8x8DCT(h->left_type[i])){
-                h->non_zero_count_cache[3+8* 1 + 2*8*i]=
-                h->non_zero_count_cache[3+8* 2 + 2*8*i]=
-                h->non_zero_count_cache[3+8* 6 + 2*8*i]=
-                h->non_zero_count_cache[3+8* 7 + 2*8*i]=
-                h->non_zero_count_cache[3+8*11 + 2*8*i]=
-                h->non_zero_count_cache[3+8*12 + 2*8*i]= IS_INTRA(mb_type) ? 64 : 0;
+            if (h->left_type[LEFT(i)] && !IS_8x8DCT(h->left_type[LEFT(i)])){
+                nnz_cache[3+8* 1 + 2*8*i]=
+                nnz_cache[3+8* 2 + 2*8*i]=
+                nnz_cache[3+8* 6 + 2*8*i]=
+                nnz_cache[3+8* 7 + 2*8*i]=
+                nnz_cache[3+8*11 + 2*8*i]=
+                nnz_cache[3+8*12 + 2*8*i]= IS_INTRA(mb_type) ? 64 : 0;
             }
         }
         if (h->top_type && !IS_8x8DCT(h->top_type)){
             uint32_t top_empty = CABAC && !IS_INTRA(mb_type) ? 0 : 0x40404040;
-            AV_WN32A(&h->non_zero_count_cache[4+8* 0], top_empty);
-            AV_WN32A(&h->non_zero_count_cache[4+8* 5], top_empty);
-            AV_WN32A(&h->non_zero_count_cache[4+8*10], top_empty);
+            AV_WN32A(&nnz_cache[4+8* 0], top_empty);
+            AV_WN32A(&nnz_cache[4+8* 5], top_empty);
+            AV_WN32A(&nnz_cache[4+8*10], top_empty);
         }
     }
     s->current_picture.mb_type[mb_xy]= mb_type;

@@ -39,6 +39,7 @@ static const uint8_t IP_shuffle[] = {
 };
 #undef T
 
+#if defined(CONFIG_SMALL) || defined(GENTABLES)
 #define T(a, b, c, d) 32-a,32-b,32-c,32-d
 static const uint8_t P_shuffle[] = {
     T(16,  7, 20, 21),
@@ -51,6 +52,7 @@ static const uint8_t P_shuffle[] = {
     T(22, 11,  4, 25)
 };
 #undef T
+#endif
 
 #define T(a, b, c, d, e, f, g) 64-a,64-b,64-c,64-d,64-e,64-f,64-g
 static const uint8_t PC1_shuffle[] = {
@@ -402,7 +404,7 @@ int main(void) {
         printf("Partial Monte-Carlo test failed\n");
         return 1;
     }
-    for (i = 0; i < 1000000; i++) {
+    for (i = 0; i < 1000; i++) {
         key[0] = rand64(); key[1] = rand64(); key[2] = rand64();
         data = rand64();
         av_des_init(&d, key, 192, 0);

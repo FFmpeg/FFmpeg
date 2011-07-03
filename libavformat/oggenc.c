@@ -21,6 +21,7 @@
 
 #include "libavutil/crc.h"
 #include "libavutil/opt.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/random_seed.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/bytestream.h"

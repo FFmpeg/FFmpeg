@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 #include "flv.h"
 #include "internal.h"

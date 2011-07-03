@@ -26,6 +26,7 @@
 
 #include "libavcodec/bytestream.h"
 #include "libavutil/avstring.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "libavutil/lfg.h"
 #include "libavutil/sha.h"
 #include "avformat.h"
@@ -761,7 +762,6 @@ static int get_packet(URLContext *s, int for_header)
         }
         ff_rtmp_packet_destroy(&rpkt);
     }
-    return 0;
 }
 
 static int rtmp_close(URLContext *h)

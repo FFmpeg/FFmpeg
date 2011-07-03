@@ -32,6 +32,7 @@
 #include "libavutil/avassert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/mathematics.h"
 #include "drawutils.h"
 
 static const char *var_names[] = {

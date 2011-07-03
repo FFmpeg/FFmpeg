@@ -335,7 +335,7 @@ static av_cold int cook_decode_close(AVCodecContext *avctx)
  * Fill the gain array for the timedomain quantization.
  *
  * @param gb          pointer to the GetBitContext
- * @param gaininfo[9] array of gain indexes
+ * @param gaininfo    array[9] of gain indexes
  */
 
 static void decode_gain_info(GetBitContext *gb, int *gaininfo)
@@ -1156,7 +1156,6 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             default:
                 av_log_ask_for_sample(avctx, "Unknown Cook version.\n");
                 return -1;
-                break;
         }
 
         if(s > 1 && q->subpacket[s].samples_per_channel != q->samples_per_channel) {

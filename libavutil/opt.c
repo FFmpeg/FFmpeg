@@ -30,6 +30,7 @@
 #include "opt.h"
 #include "eval.h"
 #include "dict.h"
+#include "log.h"
 
 #if FF_API_FIND_OPT
 //FIXME order them and do a bin search
@@ -195,7 +196,6 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
                 return 0;
             notfirst=1;
         }
-        return AVERROR(EINVAL);
     }
 
     if (alloc) {

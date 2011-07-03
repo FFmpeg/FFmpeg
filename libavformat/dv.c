@@ -32,6 +32,7 @@
 #include "avformat.h"
 #include "libavcodec/dvdata.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "dv.h"
 
 struct DVDemuxContext {

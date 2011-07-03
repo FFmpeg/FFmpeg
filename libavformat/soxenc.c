@@ -30,6 +30,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"

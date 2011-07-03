@@ -26,6 +26,8 @@
 //#define MOV_EXPORT_ALL_METADATA
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
@@ -2327,7 +2329,6 @@ static int mov_probe(AVProbeData *p)
             return score;
         }
     }
-    return score;
 }
 
 // must be done after parsing all trak because there's no order requirement

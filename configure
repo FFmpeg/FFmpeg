@@ -2560,8 +2560,6 @@ EOF
     exit 1;
 fi
 
-disabled static && LIBNAME=""
-
 die_license_disabled() {
     enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
 }

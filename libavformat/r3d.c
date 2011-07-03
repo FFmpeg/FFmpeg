@@ -23,6 +23,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 
 typedef struct {

@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/tree.h"
 #include "libavutil/dict.h"
 #include "libavcodec/mpegaudiodata.h"

@@ -23,6 +23,7 @@
 
 #include "imgutils.h"
 #include "internal.h"
+#include "log.h"
 #include "pixdesc.h"
 
 void av_image_fill_max_pixsteps(int max_pixsteps[4], int max_pixstep_comps[4],

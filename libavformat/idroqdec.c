@@ -209,7 +209,6 @@ static int roq_read_packet(AVFormatContext *s,
         default:
             av_log(s, AV_LOG_ERROR, "  unknown RoQ chunk (%04X)\n", chunk_type);
             return AVERROR_INVALIDDATA;
-            break;
         }
     }
 

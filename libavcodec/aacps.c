@@ -77,7 +77,7 @@ static VLC vlc_ps[10];
  * @param avctx contains the current codec context
  * @param gb    pointer to the input bitstream
  * @param ps    pointer to the Parametric Stereo context
- * @param par   pointer to the parameter to be read
+ * @param PAR   pointer to the parameter to be read
  * @param e     envelope to decode
  * @param dt    1: time delta-coded, 0: frequency delta-coded
  */

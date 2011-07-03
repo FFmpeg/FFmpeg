@@ -25,6 +25,7 @@
 #include "libavutil/common.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "libavcodec/mpegaudio.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -84,13 +85,11 @@ static const ff_asf_guid index_guid = {
     0x90, 0x08, 0x00, 0x33, 0xb1, 0xe5, 0xcf, 0x11, 0x89, 0xf4, 0x00, 0xa0, 0xc9, 0x03, 0x49, 0xcb
 };
 
+#ifdef DEBUG
 static const ff_asf_guid stream_bitrate_guid = { /* (http://get.to/sdp) */
     0xce, 0x75, 0xf8, 0x7b, 0x8d, 0x46, 0xd1, 0x11, 0x8d, 0x82, 0x00, 0x60, 0x97, 0xc9, 0xa2, 0xb2
 };
-/**********************************/
-/* decoding */
 
-#ifdef DEBUG
 #define PRINT_IF_GUID(g,cmp) \
 if (!ff_guidcmp(g, &cmp)) \
     av_dlog(NULL, "(GUID: %s) ", #cmp)
@@ -1094,8 +1093,6 @@ static int asf_read_packet(AVFormatContext *s, AVPacket *pkt)
             assert(asf->packet_size_left < FRAME_HEADER_SIZE || asf->packet_segments < 1);
         asf->packet_time_start = 0;
     }
-
-    return 0;
 }
 
 // Added to support seeking after packets have been read

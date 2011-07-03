@@ -24,6 +24,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "avio_internal.h"
+#include "libavutil/intfloat_readwrite.h"
 
 typedef struct {
     int64_t data;

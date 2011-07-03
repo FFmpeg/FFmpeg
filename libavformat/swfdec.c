@@ -204,7 +204,6 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
     skip:
         avio_skip(pb, len);
     }
-    return 0;
 }
 
 AVInputFormat ff_swf_demuxer = {

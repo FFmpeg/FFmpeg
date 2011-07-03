@@ -126,9 +126,5 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
 #include "common.h"
 #include "error.h"
 #include "mathematics.h"
-#include "rational.h"
-#include "intfloat_readwrite.h"
-#include "log.h"
-#include "pixfmt.h"
 
 #endif /* AVUTIL_AVUTIL_H */

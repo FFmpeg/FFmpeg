@@ -471,7 +471,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                         s->cur_chan = 0;
                         goto frame_done;
                     }
-                    break;
                 }
                 break;
             case FN_VERBATIM:
@@ -489,11 +488,9 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             case FN_QUIT:
                 *data_size = 0;
                 return buf_size;
-                break;
             default:
                 av_log(avctx, AV_LOG_ERROR, "unknown shorten function %d\n", cmd);
                 return -1;
-                break;
         }
     }
 frame_done:

@@ -23,6 +23,7 @@
  * aspect ratio modification video filters
  */
 
+#include "libavutil/mathematics.h"
 #include "avfilter.h"
 
 typedef struct {

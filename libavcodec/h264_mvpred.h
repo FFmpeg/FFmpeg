@@ -64,7 +64,6 @@ static inline int fetch_diagonal_mv(H264Context *h, const int16_t **C, int i, in
             if(!MB_FIELD
                && IS_INTERLACED(h->left_type[0])){
                 SET_DIAG_MV(*2, >>1, h->left_mb_xy[0]+s->mb_stride, (s->mb_y&1)*2+(i>>5));
-                assert(h->left_mb_xy[0] == h->left_mb_xy[1]);
             }
             if(MB_FIELD
                && !IS_INTERLACED(h->left_type[0])){

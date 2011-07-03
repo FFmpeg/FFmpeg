@@ -21,6 +21,7 @@
 
 #include <strings.h>
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
@@ -1289,20 +1290,16 @@ static int avi_load_index(AVFormatContext *s)
                 (tag >> 16) & 0xff,
                 (tag >> 24) & 0xff,
                 size);
-        switch(tag) {
-        case MKTAG('i', 'd', 'x', '1'):
-            if (avi_read_idx1(s, size) < 0)
-                goto skip;
+
+        if (tag == MKTAG('i', 'd', 'x', '1') &&
+            avi_read_idx1(s, size) >= 0) {
             ret = 0;
-                goto the_end;
-            break;
-        default:
-        skip:
-            size += (size & 1);
-            if (avio_skip(pb, size) < 0)
-                goto the_end; // something is wrong here
             break;
         }
+
+        size += (size & 1);
+        if (avio_skip(pb, size) < 0)
+            break; // something is wrong here
     }
  the_end:
     avio_seek(pb, pos, SEEK_SET);

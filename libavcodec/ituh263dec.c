@@ -30,6 +30,7 @@
 //#define DEBUG
 #include <limits.h>
 
+#include "libavutil/mathematics.h"
 #include "dsputil.h"
 #include "avcodec.h"
 #include "mpegvideo.h"

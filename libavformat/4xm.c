@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 
 #define     RIFF_TAG MKTAG('R', 'I', 'F', 'F')
