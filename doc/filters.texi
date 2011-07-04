@@ -99,6 +99,42 @@ build.
 
 Below is a description of the currently available audio filters.
 
+@section aconvert
+
+Convert the input audio format to the specified formats.
+
+The filter accepts a string of the form:
+"@var{sample_format}:@var{channel_layout}:@var{packing_format}".
+
+@var{sample_format} specifies the sample format, and can be a string or
+the corresponding numeric value defined in @file{libavutil/samplefmt.h}.
+
+@var{channel_layout} specifies the channel layout, and can be a string
+or the corresponding numer value defined in @file{libavutil/chlayout.h}.
+
+@var{packing_format} specifies the type of packing in output, can be one
+of "planar" or "packed", or the corresponding numeric values "0" or "1".
+
+The special parameter "auto", signifies that the filter will
+automatically select the output format depending on the output filter.
+
+Some examples follow.
+
+@itemize
+@item
+Convert input to unsigned 8-bit, stereo, packed:
+@example
+aconvert=u8:stereo:packed
+@end example
+
+@item
+Convert input to unsigned 8-bit, automatically select out channel layout
+and packing format:
+@example
+aconvert=u8:auto:auto
+@end example
+@end itemize
+
 @section aformat
 
 Convert the input audio to one of the specified formats. The framework will

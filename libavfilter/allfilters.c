@@ -34,6 +34,7 @@ void avfilter_register_all(void)
         return;
     initialized = 1;
 
+    REGISTER_FILTER (ACONVERT,    aconvert,    af);
     REGISTER_FILTER (AFORMAT,     aformat,     af);
     REGISTER_FILTER (ANULL,       anull,       af);
     REGISTER_FILTER (ARESAMPLE,   aresample,   af);
