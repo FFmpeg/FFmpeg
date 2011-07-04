@@ -2660,8 +2660,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             SET_QPEL_FUNCS(avg_h264_qpel, 1, 8, mmx2, );
             SET_QPEL_FUNCS(avg_h264_qpel, 2, 4, mmx2, );
             }
-#if HAVE_YASM
             else if (bit_depth == 10) {
+#if HAVE_YASM
 #if !ARCH_X86_64
                 SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_mmxext, ff_);
                 SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_mmxext, ff_);
@@ -2670,8 +2670,8 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #endif
                 SET_QPEL_FUNCS(put_h264_qpel, 2, 4,  10_mmxext, ff_);
                 SET_QPEL_FUNCS(avg_h264_qpel, 2, 4,  10_mmxext, ff_);
-            }
 #endif
+            }
 
             SET_QPEL_FUNCS(put_2tap_qpel, 0, 16, mmx2, );
             SET_QPEL_FUNCS(put_2tap_qpel, 1, 8, mmx2, );
