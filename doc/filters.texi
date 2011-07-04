@@ -275,6 +275,19 @@ the output (cropped) width and heigth
 @item ow, oh
 same as @var{out_w} and @var{out_h}
 
+@item a
+same as @var{iw} / @var{ih}
+
+@item sar
+input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
+
+@item hsub, vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+
 @item n
 the number of input frame, starting from 0
 
