@@ -30,6 +30,7 @@
 
 #include "avcodec.h"
 #include "libavutil/base64.h"
+#include "libavutil/mathematics.h"
 
 /**
  * Portion of struct vpx_codec_cx_pkt from vpx_encoder.h.
