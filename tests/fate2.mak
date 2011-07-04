@@ -218,3 +218,7 @@ fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
 fate-musepack7: CMP = oneoff
 fate-musepack7: REF = $(SAMPLES)/musepack/inside-mp7.pcm
 fate-musepack7: FUZZ = 1
+
+FATE_TESTS += fate-iirfilter
+fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
+fate-iirfilter: CMD = run libavcodec/iirfilter-test
