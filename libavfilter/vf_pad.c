@@ -158,7 +158,7 @@ static int config_input(AVFilterLink *inlink)
     var_values[VAR_OUT_H] = var_values[VAR_OH] = NAN;
     var_values[VAR_A]     = (float) inlink->w / inlink->h;
     var_values[VAR_HSUB]  = 1<<pad->hsub;
-    var_values[VAR_VSUB]  = 2<<pad->vsub;
+    var_values[VAR_VSUB]  = 1<<pad->vsub;
 
     /* evaluate width and height */
     av_expr_parse_and_eval(&res, (expr = pad->w_expr),
