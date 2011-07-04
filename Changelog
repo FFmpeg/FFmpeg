@@ -6,10 +6,12 @@ version 0.7.1:
 
 - added various additional FOURCC codec identifiers
 - H.264 4:4:4 fixes
-- build system fixes
-- Doxygen corrections and improvements
+- build system and compilation fixes
+- Doxygen and general documentation corrections and improvements
 - fixed segfault in ffprobe
 - behavioral fix in av_open_input_stream()
+- Licensing clarification for LGPL'ed vf_gradfun
+- bugfixes while seeking in multithreaded decoding
 
 
 version 0.7:
