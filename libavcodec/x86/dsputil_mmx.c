@@ -2835,11 +2835,13 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 2, ssse3);
             H264_QPEL_FUNCS(3, 3, ssse3);
             }
+#if HAVE_YASM
             else if (bit_depth == 10) {
                 H264_QPEL_FUNCS_10(1, 0, ssse3_cache64)
                 H264_QPEL_FUNCS_10(2, 0, ssse3_cache64)
                 H264_QPEL_FUNCS_10(3, 0, ssse3_cache64)
             }
+#endif
             c->add_png_paeth_prediction= add_png_paeth_prediction_ssse3;
 #if HAVE_YASM
             if (!high_bit_depth) {
