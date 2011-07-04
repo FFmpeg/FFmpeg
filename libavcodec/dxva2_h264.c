@@ -113,6 +113,9 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
 
     pp->bit_depth_luma_minus8         = h->sps.bit_depth_luma - 8;
     pp->bit_depth_chroma_minus8       = h->sps.bit_depth_chroma - 8;
+    if (ctx->workaround & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG)
+        pp->Reserved16Bits            = 0;
+    else
     pp->Reserved16Bits                = 3; /* FIXME is there a way to detect the right mode ? */
     pp->StatusReportFeedbackNumber    = 1 + ctx->report_id++;
     pp->CurrFieldOrderCnt[0] = 0;
@@ -150,10 +153,19 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     //pp->SliceGroupMap[810];               /* XXX not implemented by FFmpeg */
 }
 
-static void fill_scaling_lists(const H264Context *h, DXVA_Qmatrix_H264 *qm)
+static void fill_scaling_lists(struct dxva_context *ctx, const H264Context *h, DXVA_Qmatrix_H264 *qm)
 {
     unsigned i, j;
     memset(qm, 0, sizeof(*qm));
+    if (ctx->workaround & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG) {
+        for (i = 0; i < 6; i++)
+            for (j = 0; j < 16; j++)
+                qm->bScalingLists4x4[i][j] = h->pps.scaling_matrix4[i][j];
+
+        for (i = 0; i < 2; i++)
+            for (j = 0; j < 64; j++)
+                qm->bScalingLists8x8[i][j] = h->pps.scaling_matrix8[i][j];
+    } else {
     for (i = 0; i < 6; i++)
         for (j = 0; j < 16; j++)
             qm->bScalingLists4x4[i][j] = h->pps.scaling_matrix4[i][zigzag_scan[j]];
@@ -161,6 +173,7 @@ static void fill_scaling_lists(const H264Context *h, DXVA_Qmatrix_H264 *qm)
     for (i = 0; i < 2; i++)
         for (j = 0; j < 64; j++)
             qm->bScalingLists8x8[i][j] = h->pps.scaling_matrix8[i][ff_zigzag_direct[j]];
+    }
 }
 
 static int is_slice_short(struct dxva_context *ctx)
@@ -370,7 +383,7 @@ static int start_frame(AVCodecContext *avctx,
     fill_picture_parameters(ctx, h, &ctx_pic->pp);
 
     /* Fill up DXVA_Qmatrix_H264 */
-    fill_scaling_lists(h, &ctx_pic->qm);
+    fill_scaling_lists(ctx, h, &ctx_pic->qm);
 
     ctx_pic->slice_count    = 0;
     ctx_pic->bitstream_size = 0;
