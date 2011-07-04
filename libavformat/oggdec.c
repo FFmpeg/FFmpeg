@@ -373,8 +373,7 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
 
             // We have reached the first non-header packet in this stream.
             // Unfortunately more header packets may still follow for others,
-            // so we reset this later unless we are done with the headers
-            // for all streams.
+            // but if we continue with header parsing we may lose data packets.
             ogg->headers = 1;
 
             // Update the header state for all streams and
@@ -383,8 +382,6 @@ static int ogg_packet(AVFormatContext *s, int *str, int *dstart, int *dsize,
                 s->data_offset = os->sync_pos;
             for (i = 0; i < ogg->nstreams; i++) {
                 struct ogg_stream *cur_os = ogg->streams + i;
-                if (cur_os->header > 0)
-                    ogg->headers = 0;
 
                 // if we have a partial non-header packet, its start is
                 // obviously at or after the data start
