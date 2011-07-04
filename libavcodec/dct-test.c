@@ -70,7 +70,6 @@ void ff_simple_idct_axp(DCTELEM *data);
 struct algo {
     const char *name;
     void (*func)(DCTELEM *block);
-    void (*ref) (DCTELEM *block);
     enum formattag { NO_PERM, MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM,
                      SSE2_PERM, PARTTRANS_PERM } format;
     int mm_support;
@@ -86,65 +85,65 @@ struct algo {
 static int cpu_flags;
 
 static const struct algo fdct_tab[] = {
-    {"REF-DBL",         ff_ref_fdct,        ff_ref_fdct, NO_PERM},
-    {"FAAN",            ff_faandct,         ff_ref_fdct, FAAN_SCALE},
-    {"IJG-AAN-INT",     fdct_ifast,         ff_ref_fdct, SCALE_PERM},
-    {"IJG-LLM-INT",     ff_jpeg_fdct_islow, ff_ref_fdct, NO_PERM},
+    { "REF-DBL",        ff_ref_fdct,           NO_PERM    },
+    { "FAAN",           ff_faandct,            FAAN_SCALE },
+    { "IJG-AAN-INT",    fdct_ifast,            SCALE_PERM },
+    { "IJG-LLM-INT",    ff_jpeg_fdct_islow,    NO_PERM    },
 
 #if HAVE_MMX
-    {"MMX",             ff_fdct_mmx,        ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX},
-    {"MMX2",            ff_fdct_mmx2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_MMX2},
-    {"SSE2",            ff_fdct_sse2,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_SSE2},
+    { "MMX",            ff_fdct_mmx,           NO_PERM,   AV_CPU_FLAG_MMX     },
+    { "MMX2",           ff_fdct_mmx2,          NO_PERM,   AV_CPU_FLAG_MMX2    },
+    { "SSE2",           ff_fdct_sse2,          NO_PERM,   AV_CPU_FLAG_SSE2    },
 #endif
 
 #if HAVE_ALTIVEC
-    {"altivecfdct",     fdct_altivec,       ff_ref_fdct, NO_PERM, AV_CPU_FLAG_ALTIVEC},
+    { "altivecfdct",    fdct_altivec,          NO_PERM,   AV_CPU_FLAG_ALTIVEC },
 #endif
 
 #if ARCH_BFIN
-    {"BFINfdct",        ff_bfin_fdct,       ff_ref_fdct, NO_PERM},
+    { "BFINfdct",       ff_bfin_fdct,          NO_PERM  },
 #endif
 
     { 0 }
 };
 
 static const struct algo idct_tab[] = {
-    {"FAANI",           ff_faanidct,        ff_ref_idct, NO_PERM},
-    {"REF-DBL",         ff_ref_idct,        ff_ref_idct, NO_PERM},
-    {"INT",             j_rev_dct,          ff_ref_idct, MMX_PERM},
-    {"SIMPLE-C",        ff_simple_idct,     ff_ref_idct, NO_PERM},
+    { "FAANI",          ff_faanidct,           NO_PERM  },
+    { "REF-DBL",        ff_ref_idct,           NO_PERM  },
+    { "INT",            j_rev_dct,             MMX_PERM },
+    { "SIMPLE-C",       ff_simple_idct,        NO_PERM  },
 
 #if HAVE_MMX
 #if CONFIG_GPL
-    {"LIBMPEG2-MMX",    ff_mmx_idct,        ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX, 1},
-    {"LIBMPEG2-MMX2",   ff_mmxext_idct,     ff_ref_idct, MMX_PERM, AV_CPU_FLAG_MMX2, 1},
+    { "LIBMPEG2-MMX",   ff_mmx_idct,           MMX_PERM,  AV_CPU_FLAG_MMX,  1 },
+    { "LIBMPEG2-MMX2",  ff_mmxext_idct,        MMX_PERM,  AV_CPU_FLAG_MMX2, 1 },
 #endif
-    {"SIMPLE-MMX",      ff_simple_idct_mmx, ff_ref_idct, MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX},
-    {"XVID-MMX",        ff_idct_xvid_mmx,   ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX, 1},
-    {"XVID-MMX2",       ff_idct_xvid_mmx2,  ff_ref_idct, NO_PERM, AV_CPU_FLAG_MMX2, 1},
-    {"XVID-SSE2",       ff_idct_xvid_sse2,  ff_ref_idct, SSE2_PERM, AV_CPU_FLAG_SSE2, 1},
+    { "SIMPLE-MMX",     ff_simple_idct_mmx,  MMX_SIMPLE_PERM, AV_CPU_FLAG_MMX },
+    { "XVID-MMX",       ff_idct_xvid_mmx,      NO_PERM,   AV_CPU_FLAG_MMX,  1 },
+    { "XVID-MMX2",      ff_idct_xvid_mmx2,     NO_PERM,   AV_CPU_FLAG_MMX2, 1 },
+    { "XVID-SSE2",      ff_idct_xvid_sse2,     SSE2_PERM, AV_CPU_FLAG_SSE2, 1 },
 #endif
 
 #if ARCH_BFIN
-    {"BFINidct",        ff_bfin_idct,       ff_ref_idct, NO_PERM},
+    { "BFINidct",       ff_bfin_idct,          NO_PERM  },
 #endif
 
 #if ARCH_ARM
-    {"SIMPLE-ARM",      ff_simple_idct_arm, ff_ref_idct, NO_PERM },
-    {"INT-ARM",         ff_j_rev_dct_arm,   ff_ref_idct, MMX_PERM },
+    { "SIMPLE-ARM",     ff_simple_idct_arm,    NO_PERM  },
+    { "INT-ARM",        ff_j_rev_dct_arm,      MMX_PERM },
 #endif
 #if HAVE_ARMV5TE
-    {"SIMPLE-ARMV5TE",  ff_simple_idct_armv5te, ff_ref_idct, NO_PERM },
+    { "SIMPLE-ARMV5TE", ff_simple_idct_armv5te,NO_PERM  },
 #endif
 #if HAVE_ARMV6
-    {"SIMPLE-ARMV6",    ff_simple_idct_armv6, ff_ref_idct, MMX_PERM },
+    { "SIMPLE-ARMV6",   ff_simple_idct_armv6,  MMX_PERM },
 #endif
 #if HAVE_NEON
-    {"SIMPLE-NEON",     ff_simple_idct_neon, ff_ref_idct, PARTTRANS_PERM },
+    { "SIMPLE-NEON",    ff_simple_idct_neon,   PARTTRANS_PERM },
 #endif
 
 #if ARCH_ALPHA
-    {"SIMPLE-ALPHA",    ff_simple_idct_axp,  ff_ref_idct, NO_PERM },
+    { "SIMPLE-ALPHA",   ff_simple_idct_axp,    NO_PERM },
 #endif
 
     { 0 }
@@ -203,6 +202,7 @@ static inline void mmx_emms(void)
 
 static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
 {
+    void (*ref)(DCTELEM *block) = is_idct ? ff_ref_idct : ff_ref_fdct;
     int it, i, scale;
     int err_inf, v;
     int64_t err2, ti, ti1, it1, err_sum = 0;
@@ -275,7 +275,7 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed)
             }
         }
 
-        dct->ref(block1);
+        ref(block1);
 
         blockSumErr = 0;
         for (i = 0; i < 64; i++) {
