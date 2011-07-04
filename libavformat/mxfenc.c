@@ -1549,7 +1549,7 @@ static uint32_t ff_framenum_to_12m_time_code(unsigned frame, int drop, int fps)
            ((((frame / (fps * 60)) % 60) / 10)   << 12) | // tens  of minutes
            ((((frame / (fps * 60)) % 60) % 10)   <<  8) | // units of minutes
            (0                                    <<  7) | // b1
-           (0                                    <<  6) | // b2 (NSC), field phase (PAL)
+           (0                                    <<  6) | // b2 (NTSC), field phase (PAL)
            ((((frame / (fps * 3600) % 24)) / 10) <<  4) | // tens  of hours
            (  (frame / (fps * 3600) % 24)) % 10;          // units of hours
 }
