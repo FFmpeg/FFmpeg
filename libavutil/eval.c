@@ -461,7 +461,7 @@ int av_expr_parse(AVExpr **expr, const char *s,
                   const char * const *func2_names, double (* const *funcs2)(void *, double, double),
                   int log_offset, void *log_ctx)
 {
-    Parser p;
+    Parser p = { 0 };
     AVExpr *e = NULL;
     char *w = av_malloc(strlen(s) + 1);
     char *wp = w;
@@ -506,7 +506,7 @@ end:
 
 double av_expr_eval(AVExpr *e, const double *const_values, void *opaque)
 {
-    Parser p;
+    Parser p = { 0 };
 
     p.const_values = const_values;
     p.opaque     = opaque;
