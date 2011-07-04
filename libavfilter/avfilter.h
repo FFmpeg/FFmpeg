@@ -162,6 +162,7 @@ static inline void avfilter_copy_buffer_ref_props(AVFilterBufferRef *dst, AVFilt
     switch (src->type) {
     case AVMEDIA_TYPE_VIDEO: *dst->video = *src->video; break;
     case AVMEDIA_TYPE_AUDIO: *dst->audio = *src->audio; break;
+    default: break;
     }
 }
 
