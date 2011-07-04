@@ -45,7 +45,6 @@
 #define MB_INTRA_VLC_BITS 9
 #define DC_VLC_BITS 9
 #define AC_VLC_BITS 9
-static const uint16_t table_mb_intra[64][2];
 
 
 static const uint16_t vlc_offs[] = {

@@ -22,6 +22,7 @@
 
 #include "common.h"
 #include "aes.h"
+#include "intreadwrite.h"
 
 typedef union {
     uint64_t u64[2];
@@ -65,6 +66,20 @@ static inline void addkey(av_aes_block *dst, const av_aes_block *src,
 {
     dst->u64[0] = src->u64[0] ^ round_key->u64[0];
     dst->u64[1] = src->u64[1] ^ round_key->u64[1];
+}
+
+static inline void addkey_s(av_aes_block *dst, const uint8_t *src,
+                            const av_aes_block *round_key)
+{
+    dst->u64[0] = AV_RN64(src)     ^ round_key->u64[0];
+    dst->u64[1] = AV_RN64(src + 8) ^ round_key->u64[1];
+}
+
+static inline void addkey_d(uint8_t *dst, const av_aes_block *src,
+                            const av_aes_block *round_key)
+{
+    AV_WN64(dst,     src->u64[0] ^ round_key->u64[0]);
+    AV_WN64(dst + 8, src->u64[1] ^ round_key->u64[1]);
 }
 
 static void subshift(av_aes_block s0[2], int s, const uint8_t *box)
@@ -119,32 +134,28 @@ static inline void crypt(AVAES *a, int s, const uint8_t *sbox,
     subshift(&a->state[0], s, sbox);
 }
 
-void av_aes_crypt(AVAES *a, uint8_t *dst_, const uint8_t *src_,
-                  int count, uint8_t *iv_, int decrypt)
+void av_aes_crypt(AVAES *a, uint8_t *dst, const uint8_t *src,
+                  int count, uint8_t *iv, int decrypt)
 {
-    av_aes_block       *dst = (av_aes_block *) dst_;
-    const av_aes_block *src = (const av_aes_block *) src_;
-    av_aes_block        *iv = (av_aes_block *) iv_;
-
     while (count--) {
-        addkey(&a->state[1], src, &a->round_key[a->rounds]);
+        addkey_s(&a->state[1], src, &a->round_key[a->rounds]);
         if (decrypt) {
             crypt(a, 0, inv_sbox, dec_multbl);
             if (iv) {
-                addkey(&a->state[0], &a->state[0], iv);
-                *iv = *src;
+                addkey_s(&a->state[0], iv, &a->state[0]);
+                memcpy(iv, src, 16);
             }
-            addkey(dst, &a->state[0], &a->round_key[0]);
+            addkey_d(dst, &a->state[0], &a->round_key[0]);
         } else {
             if (iv)
-                addkey(&a->state[1], &a->state[1], iv);
+                addkey_s(&a->state[1], iv, &a->state[1]);
             crypt(a, 2, sbox, enc_multbl);
-            addkey(dst, &a->state[0], &a->round_key[0]);
+            addkey_d(dst, &a->state[0], &a->round_key[0]);
             if (iv)
-                *iv = *dst;
+                memcpy(iv, dst, 16);
         }
-        src++;
-        dst++;
+        src += 16;
+        dst += 16;
     }
 }
 

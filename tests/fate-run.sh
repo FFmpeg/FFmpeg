@@ -123,6 +123,7 @@ if test -e "$ref"; then
         diff)   diff -u -w "$ref" "$outfile"            >$cmpfile ;;
         oneoff) oneoff     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
         stddev) stddev     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
+        null)   cat               "$outfile"            >$cmpfile ;;
     esac
     cmperr=$?
     test $err = 0 && err=$cmperr

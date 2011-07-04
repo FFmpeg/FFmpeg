@@ -75,9 +75,9 @@
 .endm
 
 function fft4_neon
-        vld1.16         {d0-d1},  [r0,:128]
+        vld1.16         {d0-d1},  [r0]
         fft4            d0,  d1,  d2,  d3
-        vst1.16         {d0-d1},  [r0,:128]
+        vst1.16         {d0-d1},  [r0]
         bx              lr
 endfunc
 

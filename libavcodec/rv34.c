@@ -424,17 +424,6 @@ static inline RV34VLC* choose_vlc_set(int quant, int mod, int type)
 }
 
 /**
- * Decode quantizer difference and return modified quantizer.
- */
-static inline int rv34_decode_dquant(GetBitContext *gb, int quant)
-{
-    if(get_bits1(gb))
-        return rv34_dquant_tab[get_bits1(gb)][quant];
-    else
-        return get_bits(gb, 5);
-}
-
-/**
  * Decode macroblock header and return CBP in case of success, -1 otherwise.
  */
 static int rv34_decode_mb_header(RV34DecContext *r, int8_t *intra_types)
@@ -1253,15 +1242,6 @@ static int check_slice_end(RV34DecContext *r, MpegEncContext *s)
     if(bits < 0 || (bits < 8 && !show_bits(&s->gb, bits)))
         return 1;
     return 0;
-}
-
-static inline int slice_compare(SliceInfo *si1, SliceInfo *si2)
-{
-    return si1->type   != si2->type  ||
-           si1->start  >= si2->start ||
-           si1->width  != si2->width ||
-           si1->height != si2->height||
-           si1->pts    != si2->pts;
 }
 
 static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int buf_size)

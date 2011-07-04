@@ -237,6 +237,7 @@ void FUNCC(ff_h264_idct_add8)(uint8_t **dest, const int *block_offset, DCTELEM *
 }
 /**
  * IDCT transforms the 16 dc values and dequantizes them.
+ * @param qmul quantization parameter
  */
 void FUNCC(ff_h264_luma_dc_dequant_idct)(DCTELEM *p_output, DCTELEM *p_input, int qmul){
 #define stride 16
