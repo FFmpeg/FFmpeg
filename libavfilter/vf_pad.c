@@ -162,7 +162,7 @@ static int config_input(AVFilterLink *inlink)
     var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ?
         (float) inlink->sample_aspect_ratio.num / inlink->sample_aspect_ratio.den : 1;
     var_values[VAR_HSUB]  = 1<<pad->hsub;
-    var_values[VAR_VSUB]  = 2<<pad->vsub;
+    var_values[VAR_VSUB]  = 1<<pad->vsub;
 
     /* evaluate width and height */
     av_expr_parse_and_eval(&res, (expr = pad->w_expr),
