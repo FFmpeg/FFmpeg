@@ -2737,12 +2737,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             H264_QPEL_FUNCS(3, 2, ssse3);
             H264_QPEL_FUNCS(3, 3, ssse3);
             }
+#if HAVE_YASM
             else if (bit_depth == 10) {
                 H264_QPEL_FUNCS_10(1, 0, ssse3_cache64)
                 H264_QPEL_FUNCS_10(2, 0, ssse3_cache64)
                 H264_QPEL_FUNCS_10(3, 0, ssse3_cache64)
             }
-#if HAVE_YASM
             if (!high_bit_depth) {
             c->put_h264_chroma_pixels_tab[0]= ff_put_h264_chroma_mc8_ssse3_rnd;
             c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_ssse3_rnd;
