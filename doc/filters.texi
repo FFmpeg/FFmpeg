@@ -1743,7 +1743,7 @@ Flip the input video vertically.
 Deinterlace the input video ("yadif" means "yet another deinterlacing
 filter").
 
-It accepts the optional parameters: @var{mode}:@var{parity}:@var(auto).
+It accepts the optional parameters: @var{mode}:@var{parity}:@var{auto}.
 
 @var{mode} specifies the interlacing mode to adopt, accepts one of the
 following values:
@@ -1777,7 +1777,7 @@ Default value is -1.
 If interlacing is unknown or decoder does not export this information,
 top field first will be assumed.
 
-@var{auto] specifies if deinterlacer should trust the interlaced flag
+@var{auto} specifies if deinterlacer should trust the interlaced flag
 and only deinterlace frames marked as interlaced
 
 @table @option
