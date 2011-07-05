@@ -22,7 +22,6 @@
 
 /**
  * @file
- * @example libavformat/metadata-example.c
  * Shows how the metadata API can be used in application programs.
  */
 
