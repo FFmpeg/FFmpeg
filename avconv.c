@@ -2861,11 +2861,83 @@ static AVCodec *choose_codec(AVFormatContext *s, AVStream *st, enum AVMediaType 
     return NULL;
 }
 
+/**
+ * Add all the streams from the given input file to the global
+ * list of input streams.
+ */
+static void add_input_streams(AVFormatContext *ic)
+{
+    int i, rfps, rfps_base;
+
+    for (i = 0; i < ic->nb_streams; i++) {
+        AVStream *st = ic->streams[i];
+        AVCodecContext *dec = st->codec;
+        InputStream *ist;
+
+        dec->thread_count = thread_count;
+
+        input_streams = grow_array(input_streams, sizeof(*input_streams), &nb_input_streams, nb_input_streams + 1);
+        ist = &input_streams[nb_input_streams - 1];
+        ist->st = st;
+        ist->file_index = nb_input_files;
+        ist->discard = 1;
+        ist->opts = filter_codec_opts(codec_opts, ist->st->codec->codec_id, ic, st);
+
+        if (i < nb_ts_scale)
+            ist->ts_scale = ts_scale[i];
+
+        ist->dec = choose_codec(ic, st, dec->codec_type, codec_names);
+
+        switch (dec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            if(audio_disable)
+                st->discard= AVDISCARD_ALL;
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            rfps      = ic->streams[i]->r_frame_rate.num;
+            rfps_base = ic->streams[i]->r_frame_rate.den;
+            if (dec->lowres) {
+                dec->flags |= CODEC_FLAG_EMU_EDGE;
+                dec->height >>= dec->lowres;
+                dec->width  >>= dec->lowres;
+            }
+            if(me_threshold)
+                dec->debug |= FF_DEBUG_MV;
+
+            if (dec->time_base.den != rfps*dec->ticks_per_frame || dec->time_base.num != rfps_base) {
+
+                if (verbose >= 0)
+                    fprintf(stderr,"\nSeems stream %d codec frame rate differs from container frame rate: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
+                            i, (float)dec->time_base.den / dec->time_base.num, dec->time_base.den, dec->time_base.num,
+
+                    (float)rfps / rfps_base, rfps, rfps_base);
+            }
+
+            if(video_disable)
+                st->discard= AVDISCARD_ALL;
+            else if(video_discard)
+                st->discard= video_discard;
+            break;
+        case AVMEDIA_TYPE_DATA:
+            break;
+        case AVMEDIA_TYPE_SUBTITLE:
+            if(subtitle_disable)
+                st->discard = AVDISCARD_ALL;
+            break;
+        case AVMEDIA_TYPE_ATTACHMENT:
+        case AVMEDIA_TYPE_UNKNOWN:
+            break;
+        default:
+            abort();
+        }
+    }
+}
+
 static int opt_input_file(const char *opt, const char *filename)
 {
     AVFormatContext *ic;
     AVInputFormat *file_iformat = NULL;
-    int err, i, ret, rfps, rfps_base;
+    int err, i, ret;
     int64_t timestamp;
     uint8_t buf[128];
     AVDictionary **opts;
@@ -2978,68 +3050,7 @@ static int opt_input_file(const char *opt, const char *filename)
     }
 
     /* update the current parameters so that they match the one of the input stream */
-    for(i=0;i<ic->nb_streams;i++) {
-        AVStream *st = ic->streams[i];
-        AVCodecContext *dec = st->codec;
-        InputStream *ist;
-
-        dec->thread_count = thread_count;
-
-        input_streams = grow_array(input_streams, sizeof(*input_streams), &nb_input_streams, nb_input_streams + 1);
-        ist = &input_streams[nb_input_streams - 1];
-        ist->st = st;
-        ist->file_index = nb_input_files;
-        ist->discard = 1;
-        ist->opts = filter_codec_opts(codec_opts, ist->st->codec->codec_id, ic, st);
-
-        if (i < nb_ts_scale)
-            ist->ts_scale = ts_scale[i];
-
-        ist->dec = choose_codec(ic, st, dec->codec_type, codec_names);
-
-        switch (dec->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:
-            if(audio_disable)
-                st->discard= AVDISCARD_ALL;
-            break;
-        case AVMEDIA_TYPE_VIDEO:
-            rfps      = ic->streams[i]->r_frame_rate.num;
-            rfps_base = ic->streams[i]->r_frame_rate.den;
-            if (dec->lowres) {
-                dec->flags |= CODEC_FLAG_EMU_EDGE;
-                dec->height >>= dec->lowres;
-                dec->width  >>= dec->lowres;
-            }
-            if(me_threshold)
-                dec->debug |= FF_DEBUG_MV;
-
-            if (dec->time_base.den != rfps*dec->ticks_per_frame || dec->time_base.num != rfps_base) {
-
-                if (verbose >= 0)
-                    fprintf(stderr,"\nSeems stream %d codec frame rate differs from container frame rate: %2.2f (%d/%d) -> %2.2f (%d/%d)\n",
-                            i, (float)dec->time_base.den / dec->time_base.num, dec->time_base.den, dec->time_base.num,
-
-                    (float)rfps / rfps_base, rfps, rfps_base);
-            }
-
-            if(video_disable)
-                st->discard= AVDISCARD_ALL;
-            else if(video_discard)
-                st->discard= video_discard;
-            break;
-        case AVMEDIA_TYPE_DATA:
-            break;
-        case AVMEDIA_TYPE_SUBTITLE:
-            if(subtitle_disable)
-                st->discard = AVDISCARD_ALL;
-            break;
-        case AVMEDIA_TYPE_ATTACHMENT:
-        case AVMEDIA_TYPE_UNKNOWN:
-            break;
-        default:
-            abort();
-        }
-    }
+    add_input_streams(ic);
 
     /* dump the file content */
     if (verbose >= 0)
