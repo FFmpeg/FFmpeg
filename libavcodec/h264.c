@@ -1851,15 +1851,30 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                     tmp_y[j] = get_bits(&gb, bit_depth);
             }
             if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-                for (i = 0; i < 8; i++) {
-                    uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
-                    for (j = 0; j < 8; j++)
-                        tmp_cb[j] = get_bits(&gb, bit_depth);
-                }
-                for (i = 0; i < 8; i++) {
-                    uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
-                    for (j = 0; j < 8; j++)
-                        tmp_cr[j] = get_bits(&gb, bit_depth);
+                if (!h->sps.chroma_format_idc) {
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
+                        for (j = 0; j < 8; j++) {
+                            tmp_cb[j] = 1 << (bit_depth - 1);
+                        }
+                    }
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
+                        for (j = 0; j < 8; j++) {
+                            tmp_cr[j] = 1 << (bit_depth - 1);
+                        }
+                    }
+                } else {
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
+                        for (j = 0; j < 8; j++)
+                            tmp_cb[j] = get_bits(&gb, bit_depth);
+                    }
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
+                        for (j = 0; j < 8; j++)
+                            tmp_cr[j] = get_bits(&gb, bit_depth);
+                    }
                 }
             }
         } else {
@@ -1867,9 +1882,16 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                 memcpy(dest_y + i*  linesize, h->mb       + i*8, 16);
             }
             if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-                for (i=0; i<8; i++) {
-                    memcpy(dest_cb+ i*uvlinesize, h->mb + 128 + i*4,  8);
-                    memcpy(dest_cr+ i*uvlinesize, h->mb + 160 + i*4,  8);
+                if (!h->sps.chroma_format_idc) {
+                    for (i = 0; i < 8; i++) {
+                        memset(dest_cb + i*uvlinesize, 128, 8);
+                        memset(dest_cr + i*uvlinesize, 128, 8);
+                    }
+                } else {
+                    for (i = 0; i < 8; i++) {
+                        memcpy(dest_cb + i*uvlinesize, h->mb + 128 + i*4,  8);
+                        memcpy(dest_cr + i*uvlinesize, h->mb + 160 + i*4,  8);
+                    }
                 }
             }
         }
