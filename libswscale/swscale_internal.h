@@ -75,8 +75,7 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t* src[],
 typedef void (*yuv2planar1_fn) (struct SwsContext *c,
                                 const int16_t *lumSrc, const int16_t *chrUSrc,
                                 const int16_t *chrVSrc, const int16_t *alpSrc,
-                                uint8_t *dest[4], int dstW, int chrDstW,
-                                const uint8_t *lumDither, const uint8_t *chrDither);
+                                uint8_t *dest[4], int dstW, int chrDstW);
 /**
  * Write one line of horizontally scaled Y/U/V/A to planar output
  * with multi-point vertical scaling between input pixels.
@@ -99,7 +98,7 @@ typedef void (*yuv2planarX_fn) (struct SwsContext *c, const int16_t *lumFilter,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
                                 const int16_t **chrVSrc,  int chrFilterSize,
                                 const int16_t **alpSrc, uint8_t *dest[4],
-                                int dstW, int chrDstW, const uint8_t *lumDither, const uint8_t *chrDither);
+                                int dstW, int chrDstW);
 /**
  * Write one line of horizontally scaled Y/U/V/A to packed-pixel YUV/RGB
  * output without any additional vertical scaling (or point-scaling). Note
@@ -323,7 +322,7 @@ typedef struct SwsContext {
 #define UV_OFF                "11*8+4*4*256*3+48"
 #define UV_OFFx2              "11*8+4*4*256*3+56"
 #define DITHER16              "11*8+4*4*256*3+64"
-#define DITHER32              "11*8+4*4*256*3+64+16"
+#define DITHER32              "11*8+4*4*256*3+80"
 
     DECLARE_ALIGNED(8, uint64_t, redDither);
     DECLARE_ALIGNED(8, uint64_t, greenDither);
@@ -350,6 +349,8 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, ptrdiff_t, uv_offx2); ///< offset (in bytes) between u and v planes
     uint16_t dither16[8];
     uint32_t dither32[8];
+
+    const uint8_t *chrDither8, *lumDither8;
 
 #if HAVE_ALTIVEC
     vector signed short   CY;

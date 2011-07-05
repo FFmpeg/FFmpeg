@@ -70,26 +70,62 @@
         : "%"REG_d, "%"REG_S\
     );
 
+#if !COMPILE_TEMPLATE_MMX2
+static av_always_inline void
+dither_8to16(SwsContext *c, const uint8_t *srcDither, int rot)
+{
+    if (rot) {
+        __asm__ volatile("pxor      %%mm0, %%mm0\n\t"
+                         "movq       (%0), %%mm3\n\t"
+                         "movq      %%mm3, %%mm4\n\t"
+                         "psrlq       $24, %%mm3\n\t"
+                         "psllq       $40, %%mm4\n\t"
+                         "por       %%mm4, %%mm3\n\t"
+                         "movq      %%mm3, %%mm4\n\t"
+                         "punpcklbw %%mm0, %%mm3\n\t"
+                         "punpckhbw %%mm0, %%mm4\n\t"
+                         "psraw        $4, %%mm3\n\t"
+                         "psraw        $4, %%mm4\n\t"
+                         "movq      %%mm3, "DITHER16"+0(%1)\n\t"
+                         "movq      %%mm4, "DITHER16"+8(%1)\n\t"
+                         :: "r"(srcDither), "r"(&c->redDither)
+                         );
+    } else {
+        __asm__ volatile("pxor      %%mm0, %%mm0\n\t"
+                         "movq       (%0), %%mm3\n\t"
+                         "movq      %%mm3, %%mm4\n\t"
+                         "punpcklbw %%mm0, %%mm3\n\t"
+                         "punpckhbw %%mm0, %%mm4\n\t"
+                         "psraw        $4, %%mm3\n\t"
+                         "psraw        $4, %%mm4\n\t"
+                         "movq      %%mm3, "DITHER16"+0(%1)\n\t"
+                         "movq      %%mm4, "DITHER16"+8(%1)\n\t"
+                         :: "r"(srcDither), "r"(&c->redDither)
+                         );
+    }
+}
+#endif
+
 static void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
                              const int16_t **lumSrc, int lumFilterSize,
                              const int16_t *chrFilter, const int16_t **chrUSrc,
                              const int16_t **chrVSrc,
                              int chrFilterSize, const int16_t **alpSrc,
-                             uint8_t *dest[4], int dstW, int chrDstW,
-                             const uint8_t *lumDither, const uint8_t *chrDither)
+                             uint8_t *dest[4], int dstW, int chrDstW)
 {
     int i;
     uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
             *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
+    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
 
     if (uDest) {
         x86_reg uv_off = c->uv_offx2 >> 1;
-        for(i=0; i<8; i++) c->dither16[i] = chrDither[i]>>4;
+        dither_8to16(c, chrDither, 0);
         YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
-        for(i=0; i<8; i++) c->dither16[i] = chrDither[(i+3)&7]>>4;
+        dither_8to16(c, chrDither, 1);
         YSCALEYUV2YV12X(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
-    for(i=0; i<8; i++) c->dither16[i] = lumDither[i]>>4;
+    dither_8to16(c, lumDither, 0);
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
     }
@@ -104,10 +140,6 @@ static void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
         "movq                  "DITHER32"+8(%0), %%mm5      \n\t"\
         "movq                 "DITHER32"+16(%0), %%mm6      \n\t"\
         "movq                 "DITHER32"+24(%0), %%mm7      \n\t"\
-        "pxor                             %%mm4, %%mm4      \n\t"\
-        "pxor                             %%mm5, %%mm5      \n\t"\
-        "pxor                             %%mm6, %%mm6      \n\t"\
-        "pxor                             %%mm7, %%mm7      \n\t"\
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         ".p2align                             4             \n\t"\
         "1:                                                 \n\t"\
@@ -157,26 +189,87 @@ static void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
         : "%"REG_a, "%"REG_d, "%"REG_S\
     );
 
+#if !COMPILE_TEMPLATE_MMX2
+static av_always_inline void
+dither_8to32(SwsContext *c, const uint8_t *srcDither, int rot)
+{
+int i;
+if(rot) for(i=0; i<8; i++) c->dither32[i] = srcDither[(i+3)&7]<<12;
+else    for(i=0; i<8; i++) c->dither32[i] = srcDither[i&7]<<12;
+return;
+
+    if (rot) {
+        __asm__ volatile("pxor      %%mm0, %%mm0\n\t"
+                         "movq       (%0), %%mm4\n\t"
+                         "movq      %%mm4, %%mm5\n\t"
+                         "psrlq       $24, %%mm4\n\t"
+                         "psllq       $40, %%mm5\n\t"
+                         "por       %%mm5, %%mm4\n\t"
+                         "movq      %%mm4, %%mm6\n\t"
+                         "punpcklbw %%mm0, %%mm4\n\t"
+                         "punpckhbw %%mm0, %%mm6\n\t"
+                         "movq      %%mm4, %%mm5\n\t"
+                         "movq      %%mm6, %%mm7\n\t"
+                         "punpcklwd %%mm0, %%mm4\n\t"
+                         "punpckhwd %%mm0, %%mm5\n\t"
+                         "punpcklwd %%mm0, %%mm6\n\t"
+                         "punpckhwd %%mm0, %%mm7\n\t"
+                         "psllw       $12, %%mm4\n\t"
+                         "psllw       $12, %%mm5\n\t"
+                         "psllw       $12, %%mm6\n\t"
+                         "psllw       $12, %%mm7\n\t"
+                         "movq      %%mm4, "DITHER32"+0(%1)\n\t"
+                         "movq      %%mm5, "DITHER32"+8(%1)\n\t"
+                         "movq      %%mm6, "DITHER32"+16(%1)\n\t"
+                         "movq      %%mm7, "DITHER32"+24(%1)\n\t"
+                         :: "r"(srcDither), "r"(&c->redDither)
+                         );
+    } else {
+        __asm__ volatile("pxor      %%mm0, %%mm0\n\t"
+                         "movq       (%0), %%mm4\n\t"
+                         "movq      %%mm4, %%mm6\n\t"
+                         "punpcklbw %%mm0, %%mm4\n\t"
+                         "punpckhbw %%mm0, %%mm6\n\t"
+                         "movq      %%mm4, %%mm5\n\t"
+                         "movq      %%mm6, %%mm7\n\t"
+                         "punpcklwd %%mm0, %%mm4\n\t"
+                         "punpckhwd %%mm0, %%mm5\n\t"
+                         "punpcklwd %%mm0, %%mm6\n\t"
+                         "punpckhwd %%mm0, %%mm7\n\t"
+                         "psllw       $12, %%mm4\n\t"
+                         "psllw       $12, %%mm5\n\t"
+                         "psllw       $12, %%mm6\n\t"
+                         "psllw       $12, %%mm7\n\t"
+                         "movq      %%mm4, "DITHER32"+0(%1)\n\t"
+                         "movq      %%mm5, "DITHER32"+8(%1)\n\t"
+                         "movq      %%mm6, "DITHER32"+16(%1)\n\t"
+                         "movq      %%mm7, "DITHER32"+24(%1)\n\t"
+                         :: "r"(srcDither), "r"(&c->redDither)
+                         );
+    }
+}
+#endif
+
 static void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
                                 const int16_t **lumSrc, int lumFilterSize,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
                                 const int16_t **chrVSrc,
                                 int chrFilterSize, const int16_t **alpSrc,
-                                uint8_t *dest[4], int dstW, int chrDstW,
-                                const uint8_t *lumDither, const uint8_t *chrDither)
+                                uint8_t *dest[4], int dstW, int chrDstW)
 {
     int i;
     uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
             *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
+    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
 
     if (uDest) {
         x86_reg uv_off = c->uv_offx2 >> 1;
-        for(i=0; i<8; i++) c->dither32[i] = chrDither[i]<<12;
+        dither_8to32(c, chrDither, 0);
         YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, uDest, chrDstW, 0)
-        for(i=0; i<8; i++) c->dither32[i] = chrDither[(i+3)&7]<<12;
+        dither_8to32(c, chrDither, 1);
         YSCALEYUV2YV12X_ACCURATE(CHR_MMX_FILTER_OFFSET, vDest - uv_off, chrDstW + uv_off, uv_off)
     }
-    for(i=0; i<8; i++) c->dither32[i] = lumDither[i]<<12;
+    dither_8to32(c, lumDither, 0);
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         YSCALEYUV2YV12X_ACCURATE(ALP_MMX_FILTER_OFFSET, aDest, dstW, 0)
     }
@@ -187,8 +280,7 @@ static void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
 static void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
                              const int16_t *chrUSrc, const int16_t *chrVSrc,
                              const int16_t *alpSrc,
-                             uint8_t *dst[4], int dstW, int chrDstW,
-                             const uint8_t *lumDither, const uint8_t *chrDither)
+                             uint8_t *dst[4], int dstW, int chrDstW)
 {
     int p= 4;
     const int16_t *src[4]= {
@@ -222,8 +314,7 @@ static void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
 static void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
                                 const int16_t *chrUSrc, const int16_t *chrVSrc,
                                 const int16_t *alpSrc,
-                                uint8_t *dst[4], int dstW, int chrDstW,
-                                const uint8_t *lumDither, const uint8_t *chrDither)
+                                uint8_t *dst[4], int dstW, int chrDstW)
 {
     int p= 4;
     const int16_t *src[4]= {
@@ -231,15 +322,16 @@ static void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
         chrVSrc + chrDstW, alpSrc + dstW
     };
     x86_reg counter[4]= { dstW, chrDstW, chrDstW, dstW };
+    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
 
     while (p--) {
         if (dst[p]) {
             int i;
-            for(i=0; i<8; i++) c->dither16[i] = i<2 ? lumDither[i] : chrDither[i];
+            for(i=0; i<8; i++) c->dither16[i] = (p == 2 || p == 3) ? lumDither[i] : chrDither[i];
             __asm__ volatile(
                 "mov %2, %%"REG_a"                    \n\t"
-                "movq               0(%3), %%mm6      \n\t"
-                "movq               8(%3), %%mm7      \n\t"
+                "movq    "DITHER16"+0(%3), %%mm6      \n\t"
+                "movq    "DITHER16"+8(%3), %%mm7      \n\t"
                 ".p2align                4            \n\t" /* FIXME Unroll? */
                 "1:                                   \n\t"
                 "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"
@@ -253,7 +345,7 @@ static void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
                 "add                   $8, %%"REG_a"  \n\t"
                 "jnc                   1b             \n\t"
                 :: "r" (src[p]), "r" (dst[p] + counter[p]),
-                   "g" (-counter[p]), "r"(c->dither16)
+                   "g" (-counter[p]), "r"(&c->redDither)
                 : "%"REG_a
             );
         }
