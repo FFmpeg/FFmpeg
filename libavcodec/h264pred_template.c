@@ -26,7 +26,8 @@
  */
 
 #include "mathops.h"
-#include "high_bit_depth.h"
+
+#include "bit_depth_template.c"
 
 static void FUNCC(pred4x4_vertical)(uint8_t *_src, const uint8_t *topright, int _stride){
     pixel *src = (pixel*)_src;
