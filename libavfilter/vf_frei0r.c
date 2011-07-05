@@ -28,6 +28,7 @@
 #include <frei0r.h>
 #include "libavutil/avstring.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "avfilter.h"
 

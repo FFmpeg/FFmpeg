@@ -56,7 +56,7 @@
         vhsub.s16       \r0, \d0, \d1           @ t3, t4, t8, t7
         vhsub.s16       \r1, \d1, \d0
         vhadd.s16       \d0, \d0, \d1           @ t1, t2, t6, t5
-        vmov.i64        \d1, #0xffff<<32
+        vmov.i64        \d1, #0xffff00000000
         vbit            \r0, \r1, \d1
         vrev64.16       \r1, \r0                @ t7, t8, t4, t3
         vtrn.32         \r0, \r1                @ t3, t4, t7, t8
