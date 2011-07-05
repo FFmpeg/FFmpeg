@@ -370,7 +370,6 @@ typedef struct BlockInfo {
 
 /* bit budget for AC only in 5 MBs */
 static const int vs_total_ac_bits = (100 * 4 + 68*2) * 5;
-/* see dv_88_areas and dv_248_areas for details */
 static const int mb_area_start[5] = { 1, 6, 21, 43, 64 };
 
 static inline int put_bits_left(PutBitContext* s)
@@ -378,7 +377,7 @@ static inline int put_bits_left(PutBitContext* s)
     return (s->buf_end - s->buf) * 8 - put_bits_count(s);
 }
 
-/* decode ac coefficients */
+/* decode AC coefficients */
 static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 {
     int last_index = gb->size_in_bits;
@@ -391,7 +390,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
     OPEN_READER(re, gb);
     UPDATE_CACHE(re, gb);
 
-    /* if we must parse a partial vlc, we do it here */
+    /* if we must parse a partial VLC, we do it here */
     if (partial_bit_count > 0) {
         re_cache = ((unsigned)re_cache >> partial_bit_count) |
                    (mb->partial_bit_buffer << (sizeof(re_cache) * 8 - partial_bit_count));
@@ -486,7 +485,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
 
     memset(sblock, 0, 5*DV_MAX_BPM*sizeof(*sblock));
 
-    /* pass 1 : read DC and AC coefficients in blocks */
+    /* pass 1: read DC and AC coefficients in blocks */
     buf_ptr = &s->buf[work_chunk->buf_offset*80];
     block1  = &sblock[0][0];
     mb1     = mb_data;
@@ -503,7 +502,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             last_index = s->sys->block_sizes[j];
             init_get_bits(&gb, buf_ptr, last_index);
 
-            /* get the dc */
+            /* get the DC */
             dc       = get_sbits(&gb, 9);
             dct_mode = get_bits1(&gb);
             class1   = get_bits(&gb, 2);
@@ -530,7 +529,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             av_dlog(avctx, "MB block: %d, %d ", mb_index, j);
             dv_decode_ac(&gb, mb, block);
 
-            /* write the remaining bits  in a new buffer only if the
+            /* write the remaining bits in a new buffer only if the
                block is finished */
             if (mb->pos >= 64)
                 bit_copy(&pb, &gb);
@@ -539,7 +538,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             mb++;
         }
 
-        /* pass 2 : we can do it just after */
+        /* pass 2: we can do it just after */
         av_dlog(avctx, "***pass 2 size=%d MB#=%d\n", put_bits_count(&pb), mb_index);
         block = block1;
         mb    = mb1;
@@ -559,7 +558,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
             bit_copy(&vs_pb, &gb);
     }
 
-    /* we need a pass other the whole video segment */
+    /* we need a pass over the whole video segment */
     av_dlog(avctx, "***pass 3 size=%d\n", put_bits_count(&vs_pb));
     block = &sblock[0][0];
     mb    = mb_data;
@@ -640,7 +639,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
 }
 
 #if CONFIG_SMALL
-/* Converts run and level (where level != 0) pair into vlc, returning bit size */
+/* Converts run and level (where level != 0) pair into VLC, returning bit size */
 static av_always_inline int dv_rl2vlc(int run, int level, int sign, uint32_t* vlc)
 {
     int size;
@@ -817,7 +816,7 @@ static av_always_inline int dv_init_enc_block(EncBlockInfo* bi, uint8_t *data, i
 
           if (level + 15 > 30U) {
               bi->sign[i] = (level >> 31) & 1;
-              /* weigh it and and shift down into range, adding for rounding */
+              /* weight it and and shift down into range, adding for rounding */
               /* the extra division by a factor of 2^4 reverses the 8x expansion of the DCT
                  AND the 2x doubling of the weights */
               level = (FFABS(level) * weight[i] + (1 << (dv_weight_bits+3))) >> (dv_weight_bits+4);
