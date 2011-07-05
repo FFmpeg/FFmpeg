@@ -141,7 +141,9 @@ av_cold void ff_fft_init_altivec(FFTContext *s)
 {
 #if HAVE_GNU_AS
     s->fft_calc   = ff_fft_calc_interleave_altivec;
-    s->imdct_calc = ff_imdct_calc_altivec;
-    s->imdct_half = ff_imdct_half_altivec;
+    if (s->mdct_bits >= 5) {
+        s->imdct_calc = ff_imdct_calc_altivec;
+        s->imdct_half = ff_imdct_half_altivec;
+    }
 #endif
 }
