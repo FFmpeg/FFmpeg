@@ -543,7 +543,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
         block = block1;
         mb    = mb1;
         init_get_bits(&gb, mb_bit_buffer, put_bits_count(&pb));
-        put_bits32(&pb, 0); // padding must be zero'ed
+        put_bits32(&pb, 0); // padding must be zeroed
         flush_put_bits(&pb);
         for (j = 0; j < s->sys->bpm; j++, block += 64, mb++) {
             if (mb->pos < 64 && get_bits_left(&gb) > 0) {
@@ -564,7 +564,7 @@ static int dv_decode_video_segment(AVCodecContext *avctx, void *arg)
     block = &sblock[0][0];
     mb    = mb_data;
     init_get_bits(&gb, vs_bit_buffer, put_bits_count(&vs_pb));
-    put_bits32(&vs_pb, 0); // padding must be zero'ed
+    put_bits32(&vs_pb, 0); // padding must be zeroed
     flush_put_bits(&vs_pb);
     for (mb_index = 0; mb_index < 5; mb_index++) {
         for (j = 0; j < s->sys->bpm; j++) {
