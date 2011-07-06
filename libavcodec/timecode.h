@@ -52,6 +52,15 @@ struct ff_timecode {
 int ff_framenum_to_drop_timecode(int frame_num);
 
 /**
+ * @brief       Convert frame id (timecode) to SMPTE 12M binary representation
+ * @param frame Frame number
+ * @param fps   Frame rate
+ * @param drop  Drop flag
+ * @return      The actual binary representation
+ */
+uint32_t ff_framenum_to_smtpe_timecode(unsigned frame, int fps, int drop);
+
+/**
  * Parse SMTPE 12M time representation (hh:mm:ss[:;.]ff). str and rate fields
  * from tc struct must be set.
  *

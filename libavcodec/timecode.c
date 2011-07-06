@@ -37,6 +37,24 @@ int ff_framenum_to_drop_timecode(int frame_num)
     return frame_num + 18 * d + 2 * ((m - 2) / 1798);
 }
 
+uint32_t ff_framenum_to_smtpe_timecode(unsigned frame, int fps, int drop)
+{
+    return (0                                    << 31) | // color frame flag
+           (drop                                 << 30) | // drop  frame flag
+           ( ((frame % fps) / 10)                << 28) | // tens  of frames
+           ( ((frame % fps) % 10)                << 24) | // units of frames
+           (0                                    << 23) | // field phase (NTSC), b0 (PAL)
+           ((((frame / fps) % 60) / 10)          << 20) | // tens  of seconds
+           ((((frame / fps) % 60) % 10)          << 16) | // units of seconds
+           (0                                    << 15) | // b0 (NTSC), b2 (PAL)
+           ((((frame / (fps * 60)) % 60) / 10)   << 12) | // tens  of minutes
+           ((((frame / (fps * 60)) % 60) % 10)   <<  8) | // units of minutes
+           (0                                    <<  7) | // b1
+           (0                                    <<  6) | // b2 (NTSC), field phase (PAL)
+           ((((frame / (fps * 3600) % 24)) / 10) <<  4) | // tens  of hours
+           (  (frame / (fps * 3600) % 24)) % 10;          // units of hours
+}
+
 int ff_init_smtpe_timecode(void *avcl, struct ff_timecode *tc)
 {
     int hh, mm, ss, ff, fps;
