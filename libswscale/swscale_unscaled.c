@@ -34,6 +34,48 @@
 #include "libavutil/bswap.h"
 #include "libavutil/pixdesc.h"
 
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_1)[8][8] = {
+    {   0,  1,  0,  1,  0,  1,  0,  1,},
+    {   1,  0,  1,  0,  1,  0,  1,  0,},
+    {   0,  1,  0,  1,  0,  1,  0,  1,},
+    {   1,  0,  1,  0,  1,  0,  1,  0,},
+    {   0,  1,  0,  1,  0,  1,  0,  1,},
+    {   1,  0,  1,  0,  1,  0,  1,  0,},
+    {   0,  1,  0,  1,  0,  1,  0,  1,},
+    {   1,  0,  1,  0,  1,  0,  1,  0,},
+};
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_3)[8][8] = {
+    {   1,  2,  1,  2,  1,  2,  1,  2,},
+    {   3,  0,  3,  0,  3,  0,  3,  0,},
+    {   1,  2,  1,  2,  1,  2,  1,  2,},
+    {   3,  0,  3,  0,  3,  0,  3,  0,},
+    {   1,  2,  1,  2,  1,  2,  1,  2,},
+    {   3,  0,  3,  0,  3,  0,  3,  0,},
+    {   1,  2,  1,  2,  1,  2,  1,  2,},
+    {   3,  0,  3,  0,  3,  0,  3,  0,},
+};
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_64)[8][8] = {
+    {  18, 34, 30, 46, 17, 33, 29, 45,},
+    {  50,  2, 62, 14, 49,  1, 61, 13,},
+    {  26, 42, 22, 38, 25, 41, 21, 37,},
+    {  58, 10, 54,  6, 57,  9, 53,  5,},
+    {  16, 32, 28, 44, 19, 35, 31, 47,},
+    {  48,  0, 60, 12, 51,  3, 63, 15,},
+    {  24, 40, 20, 36, 27, 43, 23, 39,},
+    {  56,  8, 52,  4, 59, 11, 55,  7,},
+};
+extern const uint8_t dither_8x8_128[8][8];
+DECLARE_ALIGNED(8, const uint8_t, dither_8x8_256)[8][8] = {
+    {  72, 136, 120, 184,  68, 132, 116, 180,},
+    { 200,   8, 248,  56, 196,   4, 244,  52,},
+    { 104, 168,  88, 152, 100, 164,  84, 148,},
+    { 232,  40, 216,  24, 228,  36, 212,  20,},
+    {  64, 128, 102, 176,  76, 140, 124, 188,},
+    { 192,   0, 240,  48, 204,  12, 252,  60,},
+    {  96, 160,  80, 144, 108, 172,  92, 156,},
+    { 224,  32, 208,  16, 236,  44, 220,  28,},
+};
+
 #define RGB2YUV_SHIFT 15
 #define BY ( (int)(0.114*219/255*(1<<RGB2YUV_SHIFT)+0.5))
 #define BV (-(int)(0.081*224/255*(1<<RGB2YUV_SHIFT)+0.5))
@@ -412,6 +454,25 @@ static int packedCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
     return srcSliceH;
 }
 
+#define DITHER_COPY(dst, dstStride, wfunc, src, srcStride, rfunc, dithers, shift) \
+    for (i = 0; i < height; i++) { \
+        const uint8_t *dither = dithers[i & 7]; \
+        for (j = 0; j < length - 7; j += 8) { \
+            wfunc(&dst[j + 0], (rfunc(&src[j + 0]) + dither[0]) >> shift); \
+            wfunc(&dst[j + 1], (rfunc(&src[j + 1]) + dither[1]) >> shift); \
+            wfunc(&dst[j + 2], (rfunc(&src[j + 2]) + dither[2]) >> shift); \
+            wfunc(&dst[j + 3], (rfunc(&src[j + 3]) + dither[3]) >> shift); \
+            wfunc(&dst[j + 4], (rfunc(&src[j + 4]) + dither[4]) >> shift); \
+            wfunc(&dst[j + 5], (rfunc(&src[j + 5]) + dither[5]) >> shift); \
+            wfunc(&dst[j + 6], (rfunc(&src[j + 6]) + dither[6]) >> shift); \
+            wfunc(&dst[j + 7], (rfunc(&src[j + 7]) + dither[7]) >> shift); \
+        } \
+        for (; j < length; j++) \
+            wfunc(&dst[j],     (rfunc(&src[j]) + dither[j & 7]) >> shift); \
+        dst += dstStride; \
+        src += srcStride; \
+    }
+
 static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[], int srcSliceY,
                              int srcSliceH, uint8_t* dst[], int dstStride[])
 {
@@ -475,7 +536,9 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                         COPY9_OR_10TO9_OR_10(int srcpx = rfunc(&srcPtr2[j]); \
                             wfunc(&dstPtr2[j], (srcpx << 1) | (srcpx >> 9))); \
                     } else if (dst_depth < src_depth) { \
-                        COPY9_OR_10TO9_OR_10(wfunc(&dstPtr2[j], rfunc(&srcPtr2[j]) >> 1)); \
+                        DITHER_COPY(dstPtr2, dstStride[plane]/2, wfunc, \
+                                    srcPtr2, srcStride[plane]/2, rfunc, \
+                                    dither_8x8_1, 1); \
                     } else { \
                         COPY9_OR_10TO9_OR_10(wfunc(&dstPtr2[j], rfunc(&srcPtr2[j]))); \
                     }
@@ -493,14 +556,16 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                         }
                     }
                 } else {
-                    // FIXME Maybe dither instead.
+#define W8(a, b) { *(a) = (b); }
 #define COPY9_OR_10TO8(rfunc) \
-                    for (i = 0; i < height; i++) { \
-                        for (j = 0; j < length; j++) { \
-                            dstPtr[j] = rfunc(&srcPtr2[j])>>(src_depth-8); \
-                        } \
-                        dstPtr  += dstStride[plane]; \
-                        srcPtr2 += srcStride[plane]/2; \
+                    if (src_depth == 9) { \
+                        DITHER_COPY(dstPtr,  dstStride[plane],   W8, \
+                                    srcPtr2, srcStride[plane]/2, rfunc, \
+                                    dither_8x8_1, 1); \
+                    } else { \
+                        DITHER_COPY(dstPtr,  dstStride[plane],   W8, \
+                                    srcPtr2, srcStride[plane]/2, rfunc, \
+                                    dither_8x8_3, 2); \
                     }
                     if (isBE(c->srcFormat)) {
                         COPY9_OR_10TO8(AV_RB16);
@@ -515,12 +580,14 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                 if (is16BPS(c->srcFormat)) {
                     const uint16_t *srcPtr2 = (const uint16_t*)srcPtr;
 #define COPY16TO9_OR_10(rfunc, wfunc) \
-                    for (i = 0; i < height; i++) { \
-                        for (j = 0; j < length; j++) { \
-                            wfunc(&dstPtr2[j], rfunc(&srcPtr2[j])>>(16-dst_depth)); \
-                        } \
-                        dstPtr2 += dstStride[plane]/2; \
-                        srcPtr2 += srcStride[plane]/2; \
+                    if (dst_depth == 9) { \
+                        DITHER_COPY(dstPtr2, dstStride[plane]/2, wfunc, \
+                                    srcPtr2, srcStride[plane]/2, rfunc, \
+                                    dither_8x8_128, 7); \
+                    } else { \
+                        DITHER_COPY(dstPtr2, dstStride[plane]/2, wfunc, \
+                                    srcPtr2, srcStride[plane]/2, rfunc, \
+                                    dither_8x8_64, 6); \
                     }
                     if (isBE(c->dstFormat)) {
                         if (isBE(c->srcFormat)) {
@@ -552,11 +619,15 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                     }
                 }
             } else if(is16BPS(c->srcFormat) && !is16BPS(c->dstFormat)) {
-                if (!isBE(c->srcFormat)) srcPtr++;
-                for (i=0; i<height; i++) {
-                    for (j=0; j<length; j++) dstPtr[j] = srcPtr[j<<1];
-                    srcPtr+= srcStride[plane];
-                    dstPtr+= dstStride[plane];
+                const uint16_t *srcPtr2 = (const uint16_t*)srcPtr;
+#define COPY16TO8(rfunc) \
+                    DITHER_COPY(dstPtr,  dstStride[plane],   W8, \
+                                srcPtr2, srcStride[plane]/2, rfunc, \
+                                dither_8x8_256, 8);
+                if (isBE(c->srcFormat)) {
+                    COPY16TO8(AV_RB16);
+                } else {
+                    COPY16TO8(AV_RL16);
                 }
             } else if(!is16BPS(c->srcFormat) && is16BPS(c->dstFormat)) {
                 for (i=0; i<height; i++) {
