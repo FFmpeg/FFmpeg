@@ -424,15 +424,10 @@ static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, u
 {
     int r, c, alpha;
     unsigned int luma_pos, chroma_pos1, chroma_pos2;
-    uint8_t src_val, dst_pixel[4];
+    uint8_t src_val;
 
     for (r = 0; r < bitmap->rows && r+y < height; r++) {
         for (c = 0; c < bitmap->width && c+x < width; c++) {
-            /* get pixel in the picref (destination) */
-            dst_pixel[0] = picref->data[0][  c+x           +  (y+r)          * picref->linesize[0]];
-            dst_pixel[1] = picref->data[1][((c+x) >> hsub) + ((y+r) >> vsub) * picref->linesize[1]];
-            dst_pixel[2] = picref->data[2][((c+x) >> hsub) + ((y+r) >> vsub) * picref->linesize[2]];
-
             /* get intensity value in the glyph bitmap (source) */
             src_val = GET_BITMAP_VAL(r, c);
             if (!src_val)
@@ -460,18 +455,10 @@ static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
 {
     int r, c, alpha;
     uint8_t *p;
-    uint8_t src_val, dst_pixel[4];
+    uint8_t src_val;
 
     for (r = 0; r < bitmap->rows && r+y < height; r++) {
         for (c = 0; c < bitmap->width && c+x < width; c++) {
-            /* get pixel in the picref (destination) */
-            dst_pixel[0] = picref->data[0][(c+x + rgba_map[0]) * pixel_step +
-                                           (y+r) * picref->linesize[0]];
-            dst_pixel[1] = picref->data[0][(c+x + rgba_map[1]) * pixel_step +
-                                           (y+r) * picref->linesize[0]];
-            dst_pixel[2] = picref->data[0][(c+x + rgba_map[2]) * pixel_step +
-                                           (y+r) * picref->linesize[0]];
-
             /* get intensity value in the glyph bitmap (source) */
             src_val = GET_BITMAP_VAL(r, c);
             if (!src_val)
