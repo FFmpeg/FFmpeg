@@ -96,7 +96,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
+    uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LibSpeexContext *s = avctx->priv_data;
     int16_t *output = data, *end;
