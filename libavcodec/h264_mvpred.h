@@ -232,15 +232,17 @@ static av_always_inline void pred_8x16_motion(H264Context * const h, int n, int 
         }\
     }
 
-static av_always_inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my){
+static av_always_inline void pred_pskip_motion(H264Context * const h){
     DECLARE_ALIGNED(4, static const int16_t, zeromv)[2] = {0};
     DECLARE_ALIGNED(4, int16_t, mvbuf)[3][2];
     MpegEncContext * const s = &h->s;
     int8_t *ref = s->current_picture.ref_index[0];
     int16_t (*mv)[2] = s->current_picture.motion_val[0];
-    int top_ref, left_ref, diagonal_ref, match_count;
+    int top_ref, left_ref, diagonal_ref, match_count, mx, my;
     const int16_t *A, *B, *C;
     int b_stride = h->b_stride;
+
+    fill_rectangle(&h->ref_cache[0][scan8[0]], 4, 4, 8, 0, 1);
 
     /* To avoid doing an entire fill_decode_caches, we inline the relevant parts here.
      * FIXME: this is a partial duplicate of the logic in fill_decode_caches, but it's
@@ -251,15 +253,13 @@ static av_always_inline void pred_pskip_motion(H264Context * const h, int * cons
         A = mv[h->mb2b_xy[h->left_mb_xy[LTOP]] + 3 + b_stride*h->left_block[0]];
         FIX_MV_MBAFF(h->left_type[LTOP], left_ref, A, 0);
         if(!(left_ref | AV_RN32A(A))){
-            *mx = *my = 0;
-            return;
+            goto zeromv;
         }
     }else if(h->left_type[LTOP]){
         left_ref = LIST_NOT_USED;
         A = zeromv;
     }else{
-        *mx = *my = 0;
-        return;
+        goto zeromv;
     }
 
     if(USES_LIST(h->top_type, 0)){
@@ -267,15 +267,13 @@ static av_always_inline void pred_pskip_motion(H264Context * const h, int * cons
         B = mv[h->mb2b_xy[h->top_mb_xy] + 3*b_stride];
         FIX_MV_MBAFF(h->top_type, top_ref, B, 1);
         if(!(top_ref | AV_RN32A(B))){
-            *mx = *my = 0;
-            return;
+            goto zeromv;
         }
     }else if(h->top_type){
         top_ref = LIST_NOT_USED;
         B = zeromv;
     }else{
-        *mx = *my = 0;
-        return;
+        goto zeromv;
     }
 
     tprintf(h->s.avctx, "pred_pskip: (%d) (%d) at %2d %2d\n", top_ref, left_ref, h->s.mb_x, h->s.mb_y);
@@ -304,24 +302,28 @@ static av_always_inline void pred_pskip_motion(H264Context * const h, int * cons
     match_count= !diagonal_ref + !top_ref + !left_ref;
     tprintf(h->s.avctx, "pred_pskip_motion match_count=%d\n", match_count);
     if(match_count > 1){
-        *mx= mid_pred(A[0], B[0], C[0]);
-        *my= mid_pred(A[1], B[1], C[1]);
+        mx = mid_pred(A[0], B[0], C[0]);
+        my = mid_pred(A[1], B[1], C[1]);
     }else if(match_count==1){
         if(!left_ref){
-            *mx= A[0];
-            *my= A[1];
+            mx = A[0];
+            my = A[1];
         }else if(!top_ref){
-            *mx= B[0];
-            *my= B[1];
+            mx = B[0];
+            my = B[1];
         }else{
-            *mx= C[0];
-            *my= C[1];
+            mx = C[0];
+            my = C[1];
         }
     }else{
-        *mx= mid_pred(A[0], B[0], C[0]);
-        *my= mid_pred(A[1], B[1], C[1]);
+        mx = mid_pred(A[0], B[0], C[0]);
+        my = mid_pred(A[1], B[1], C[1]);
     }
 
+    fill_rectangle( h->mv_cache[0][scan8[0]], 4, 4, 8, pack16to32(mx,my), 4);
+    return;
+zeromv:
+    fill_rectangle( h->mv_cache[0][scan8[0]], 4, 4, 8, 0, 4);
     return;
 }
 
