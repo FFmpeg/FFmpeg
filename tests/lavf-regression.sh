@@ -63,7 +63,7 @@ do_lavf mpg
 fi
 
 if [ -n "$do_mxf" ] ; then
-do_lavf mxf "-ar 48000 -bf 2 -timecode_frame_start 264363"
+do_lavf mxf "-ar 48000 -bf 2 -timecode 02:56:14:13"
 fi
 
 if [ -n "$do_mxf_d10" ]; then
