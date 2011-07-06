@@ -213,21 +213,114 @@ static av_always_inline void pred_8x16_motion(H264Context * const h, int n, int 
     pred_motion(h, n, 2, list, ref, mx, my);
 }
 
-static inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my){
-    const int top_ref = h->ref_cache[0][ scan8[0] - 8 ];
-    const int left_ref= h->ref_cache[0][ scan8[0] - 1 ];
+#define FIX_MV_MBAFF(type, refn, mvn, idx)\
+    if(FRAME_MBAFF){\
+        if(MB_FIELD){\
+            if(!IS_INTERLACED(type)){\
+                refn <<= 1;\
+                AV_COPY32(mvbuf[idx], mvn);\
+                mvbuf[idx][1] /= 2;\
+                mvn = mvbuf[idx];\
+            }\
+        }else{\
+            if(IS_INTERLACED(type)){\
+                refn >>= 1;\
+                AV_COPY32(mvbuf[idx], mvn);\
+                mvbuf[idx][1] <<= 1;\
+                mvn = mvbuf[idx];\
+            }\
+        }\
+    }
 
-    tprintf(h->s.avctx, "pred_pskip: (%d) (%d) at %2d %2d\n", top_ref, left_ref, h->s.mb_x, h->s.mb_y);
+static av_always_inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my){
+    DECLARE_ALIGNED(4, static const int16_t, zeromv)[2] = {0};
+    DECLARE_ALIGNED(4, int16_t, mvbuf)[3][2];
+    MpegEncContext * const s = &h->s;
+    int8_t *ref = s->current_picture.ref_index[0];
+    int16_t (*mv)[2] = s->current_picture.motion_val[0];
+    int top_ref, left_ref, diagonal_ref, match_count;
+    const int16_t *A, *B, *C;
+    int b_stride = h->b_stride;
 
-    if(top_ref == PART_NOT_AVAILABLE || left_ref == PART_NOT_AVAILABLE
-       || !( top_ref | AV_RN32A(h->mv_cache[0][ scan8[0] - 8 ]))
-       || !(left_ref | AV_RN32A(h->mv_cache[0][ scan8[0] - 1 ]))){
-
+    /* To avoid doing an entire fill_decode_caches, we inline the relevant parts here.
+     * FIXME: this is a partial duplicate of the logic in fill_decode_caches, but it's
+     * faster this way.  Is there a way to avoid this duplication?
+     */
+    if(USES_LIST(h->left_type[LTOP], 0)){
+        left_ref = ref[4*h->left_mb_xy[LTOP] + 1 + (h->left_block[0]&~1)];
+        A = mv[h->mb2b_xy[h->left_mb_xy[LTOP]] + 3 + b_stride*h->left_block[0]];
+        FIX_MV_MBAFF(h->left_type[LTOP], left_ref, A, 0);
+        if(!(left_ref | AV_RN32A(A))){
+            *mx = *my = 0;
+            return;
+        }
+    }else if(h->left_type[LTOP]){
+        left_ref = LIST_NOT_USED;
+        A = zeromv;
+    }else{
         *mx = *my = 0;
         return;
     }
 
-    pred_motion(h, 0, 4, 0, 0, mx, my);
+    if(USES_LIST(h->top_type, 0)){
+        top_ref = ref[4*h->top_mb_xy + 2];
+        B = mv[h->mb2b_xy[h->top_mb_xy] + 3*b_stride];
+        FIX_MV_MBAFF(h->top_type, top_ref, B, 1);
+        if(!(top_ref | AV_RN32A(B))){
+            *mx = *my = 0;
+            return;
+        }
+    }else if(h->top_type){
+        top_ref = LIST_NOT_USED;
+        B = zeromv;
+    }else{
+        *mx = *my = 0;
+        return;
+    }
+
+    tprintf(h->s.avctx, "pred_pskip: (%d) (%d) at %2d %2d\n", top_ref, left_ref, h->s.mb_x, h->s.mb_y);
+
+    if(USES_LIST(h->topright_type, 0)){
+        diagonal_ref = ref[4*h->topright_mb_xy + 2];
+        C = mv[h->mb2b_xy[h->topright_mb_xy] + 3*b_stride];
+        FIX_MV_MBAFF(h->topright_type, diagonal_ref, C, 2);
+    }else if(h->topright_type){
+        diagonal_ref = LIST_NOT_USED;
+        C = zeromv;
+    }else{
+        if(USES_LIST(h->topleft_type, 0)){
+            diagonal_ref = ref[4*h->topleft_mb_xy + 1 + (h->topleft_partition & 2)];
+            C = mv[h->mb2b_xy[h->topleft_mb_xy] + 3 + b_stride + (h->topleft_partition & 2*b_stride)];
+            FIX_MV_MBAFF(h->topleft_type, diagonal_ref, C, 2);
+        }else if(h->topleft_type){
+            diagonal_ref = LIST_NOT_USED;
+            C = zeromv;
+        }else{
+            diagonal_ref = PART_NOT_AVAILABLE;
+            C = zeromv;
+        }
+    }
+
+    match_count= !diagonal_ref + !top_ref + !left_ref;
+    tprintf(h->s.avctx, "pred_pskip_motion match_count=%d\n", match_count);
+    if(match_count > 1){
+        *mx= mid_pred(A[0], B[0], C[0]);
+        *my= mid_pred(A[1], B[1], C[1]);
+    }else if(match_count==1){
+        if(!left_ref){
+            *mx= A[0];
+            *my= A[1];
+        }else if(!top_ref){
+            *mx= B[0];
+            *my= B[1];
+        }else{
+            *mx= C[0];
+            *my= C[1];
+        }
+    }else{
+        *mx= mid_pred(A[0], B[0], C[0]);
+        *my= mid_pred(A[1], B[1], C[1]);
+    }
 
     return;
 }
