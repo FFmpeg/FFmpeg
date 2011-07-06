@@ -208,7 +208,6 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
 
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
     SchroDecoder *decoder = p_schro_params->decoder;
-    SchroVideoFormat *format;
     AVPicture *picture = data;
     SchroBuffer *enc_buf;
     SchroFrame* frame;
@@ -240,7 +239,6 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
             go = 1;
         } else
             outer = 0;
-        format = p_schro_params->format;
 
         while (go) {
             /* Parse data and process result. */
