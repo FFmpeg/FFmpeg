@@ -1753,7 +1753,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     if (size <= 3 || !track || !track->stream) {
         av_log(matroska->ctx, AV_LOG_INFO,
                "Invalid stream %"PRIu64" or size %u\n", num, size);
-        return AVERROR_INVALIDDATA;
+        return res;
     }
     st = track->stream;
     if (st->discard >= AVDISCARD_ALL)
@@ -1990,7 +1990,7 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
     res = ebml_parse(matroska, matroska_clusters, &cluster);
     blocks_list = &cluster.blocks;
     blocks = blocks_list->elem;
-    for (i=0; i<blocks_list->nb_elem && !res; i++)
+    for (i=0; i<blocks_list->nb_elem; i++)
         if (blocks[i].bin.size > 0 && blocks[i].bin.data) {
             int is_keyframe = blocks[i].non_simple ? !blocks[i].reference : -1;
             res=matroska_parse_block(matroska,
@@ -2007,15 +2007,14 @@ static int matroska_parse_cluster(MatroskaDemuxContext *matroska)
 static int matroska_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MatroskaDemuxContext *matroska = s->priv_data;
-    int ret = 0;
 
-    while (!ret && matroska_deliver_packet(matroska, pkt)) {
+    while (matroska_deliver_packet(matroska, pkt)) {
         if (matroska->done)
             return AVERROR_EOF;
-        ret = matroska_parse_cluster(matroska);
+        matroska_parse_cluster(matroska);
     }
 
-    return ret;
+    return 0;
 }
 
 static int matroska_read_seek(AVFormatContext *s, int stream_index,
