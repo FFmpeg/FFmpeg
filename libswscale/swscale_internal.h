@@ -429,7 +429,10 @@ typedef struct SwsContext {
      * @param dstW       width of destination image
      * @param src        pointer to source data to be scaled. If scaling depth
      *                   is 8, this is 8bpp in 8bpp (uint8_t) width. If scaling
-     *                   depth is 16, this is 16bpp in 16bpp (uint16_t) depth.
+     *                   depth is 16, this is native depth in 16bbp (uint16_t)
+     *                   width. In other words, for 9-bit YUV input, this is
+     *                   9bpp, for 10-bit YUV input, this is 10bpp, and for
+     *                   16-bit RGB or YUV, this is 16bpp.
      * @param filter     filter coefficients to be used per output pixel for
      *                   scaling. This contains 14bpp filtering coefficients.
      *                   Guaranteed to contain dstW * filterSize entries.
