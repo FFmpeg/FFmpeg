@@ -16,8 +16,11 @@ Evaluating '+PI'
 Evaluating '1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)'
 '1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)' -> 12.700000
 
-Evaluating '80G/80Gi1k'
-'80G/80Gi1k' -> nan
+Evaluating '80G/80Gi'
+'80G/80Gi' -> 0.931323
+
+Evaluating '1k'
+'1k' -> 1000.000000
 
 Evaluating '1Gi'
 '1Gi' -> 1073741824.000000
