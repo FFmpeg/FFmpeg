@@ -573,8 +573,9 @@ const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
         return o;
 
     while (o = av_next_option(obj, o)) {
-        if (!strcmp(o->name, name) && (!unit || (o->unit && !strcmp(o->unit, unit))) &&
-            (o->flags & opt_flags) == opt_flags)
+        if (!strcmp(o->name, name) && (o->flags & opt_flags) == opt_flags &&
+            ((!unit && o->type != FF_OPT_TYPE_CONST) ||
+             (unit  && o->unit && !strcmp(o->unit, unit))))
             return o;
     }
     return NULL;
