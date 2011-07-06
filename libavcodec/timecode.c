@@ -28,6 +28,15 @@
 #include "timecode.h"
 #include "libavutil/log.h"
 
+int ff_framenum_to_drop_timecode(int frame_num)
+{
+    /* only works for NTSC 29.97 */
+    int d = frame_num / 17982;
+    int m = frame_num % 17982;
+    //if (m < 2) m += 2; /* not needed since -2,-1 / 1798 in C returns 0 */
+    return frame_num + 18 * d + 2 * ((m - 2) / 1798);
+}
+
 int ff_init_smtpe_timecode(void *avcl, struct ff_timecode *tc)
 {
     int hh, mm, ss, ff, fps;

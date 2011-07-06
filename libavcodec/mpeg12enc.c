@@ -299,13 +299,8 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             time_code = s->current_picture_ptr->f.coded_picture_number + s->avctx->timecode_frame_start;
 
             s->gop_picture_number = s->current_picture_ptr->f.coded_picture_number;
-            if (s->tc.drop) {
-                /* only works for NTSC 29.97 */
-                int d = time_code / 17982;
-                int m = time_code % 17982;
-                //if (m < 2) m += 2; /* not needed since -2,-1 / 1798 in C returns 0 */
-                time_code += 18 * d + 2 * ((m - 2) / 1798);
-            }
+            if (s->tc.drop)
+                time_code = ff_framenum_to_drop_timecode(time_code);
             put_bits(&s->pb, 5, (uint32_t)((time_code / (fps * 3600)) % 24));
             put_bits(&s->pb, 6, (uint32_t)((time_code / (fps * 60)) % 60));
             put_bits(&s->pb, 1, 1);

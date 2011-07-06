@@ -44,6 +44,14 @@ struct ff_timecode {
 };
 
 /**
+ * @brief           Adjust frame number for NTSC drop frame time code
+ * @param frame_num Actual frame number to adjust
+ * @return          Adjusted frame number
+ * @warning         Adjustment is only valid in NTSC 29.97
+ */
+int ff_framenum_to_drop_timecode(int frame_num);
+
+/**
  * Parse SMTPE 12M time representation (hh:mm:ss[:;.]ff). str and rate fields
  * from tc struct must be set.
  *
