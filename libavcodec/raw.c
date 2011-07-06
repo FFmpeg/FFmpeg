@@ -137,6 +137,7 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
 
     /* special */
     { PIX_FMT_RGB565LE,MKTAG( 3 ,  0 ,  0 ,  0 ) }, /* flipped RGB565LE */
+    { PIX_FMT_YUV444P, MKTAG('Y', 'V', '2', '4') }, /* YUV444P, swapped UV */
 
     { PIX_FMT_NONE, 0 },
 };

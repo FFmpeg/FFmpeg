@@ -208,6 +208,7 @@ static int raw_decode(AVCodecContext *avctx,
 
     if (   avctx->codec_tag == MKTAG('Y', 'V', '1', '2')
         || avctx->codec_tag == MKTAG('Y', 'V', '1', '6')
+        || avctx->codec_tag == MKTAG('Y', 'V', '2', '4')
         || avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
         FFSWAP(uint8_t *, picture->data[1], picture->data[2]);
 
