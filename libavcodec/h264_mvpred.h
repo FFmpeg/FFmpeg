@@ -48,15 +48,15 @@ static av_always_inline int fetch_diagonal_mv(H264Context *h, const int16_t **C,
                 const int mb_type = mb_types[xy+(y4>>2)*s->mb_stride];\
                 if(!USES_LIST(mb_type,list))\
                     return LIST_NOT_USED;\
-                mv = s->current_picture_ptr->motion_val[list][h->mb2b_xy[xy]+3 + y4*h->b_stride];\
+                mv = s->current_picture_ptr->f.motion_val[list][h->mb2b_xy[xy] + 3 + y4*h->b_stride];\
                 h->mv_cache[list][scan8[0]-2][0] = mv[0];\
                 h->mv_cache[list][scan8[0]-2][1] = mv[1] MV_OP;\
-                return s->current_picture_ptr->ref_index[list][4*xy+1 + (y4&~1)] REF_OP;
+                return s->current_picture_ptr->f.ref_index[list][4*xy + 1 + (y4 & ~1)] REF_OP;
 
         if(topright_ref == PART_NOT_AVAILABLE
            && i >= scan8[0]+8 && (i&7)==4
            && h->ref_cache[list][scan8[0]-1] != PART_NOT_AVAILABLE){
-            const uint32_t *mb_types = s->current_picture_ptr->mb_type;
+            const uint32_t *mb_types = s->current_picture_ptr->f.mb_type;
             const int16_t *mv;
             AV_ZERO32(h->mv_cache[list][scan8[0]-2]);
             *C = h->mv_cache[list][scan8[0]-2];
@@ -236,8 +236,8 @@ static av_always_inline void pred_pskip_motion(H264Context * const h){
     DECLARE_ALIGNED(4, static const int16_t, zeromv)[2] = {0};
     DECLARE_ALIGNED(4, int16_t, mvbuf)[3][2];
     MpegEncContext * const s = &h->s;
-    int8_t *ref = s->current_picture.ref_index[0];
-    int16_t (*mv)[2] = s->current_picture.motion_val[0];
+    int8_t *ref      = s->current_picture.f.ref_index[0];
+    int16_t (*mv)[2] = s->current_picture.f.motion_val[0];
     int top_ref, left_ref, diagonal_ref, match_count, mx, my;
     const int16_t *A, *B, *C;
     int b_stride = h->b_stride;

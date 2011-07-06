@@ -28,6 +28,7 @@
 #ifndef AVCODEC_MPEGVIDEO_H
 #define AVCODEC_MPEGVIDEO_H
 
+#include "avcodec.h"
 #include "dsputil.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -82,7 +83,7 @@ struct MpegEncContext;
  * Picture.
  */
 typedef struct Picture{
-    FF_COMMON_FRAME
+    struct AVFrame f;
 
     /**
      * halfpel luma planes.

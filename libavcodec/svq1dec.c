@@ -689,12 +689,12 @@ static int svq1_decode_frame(AVCodecContext *avctx,
       linesize= s->uvlinesize;
     }
 
-    current  = s->current_picture.data[i];
+    current = s->current_picture.f.data[i];
 
     if(s->pict_type==AV_PICTURE_TYPE_B){
-        previous = s->next_picture.data[i];
+        previous = s->next_picture.f.data[i];
     }else{
-        previous = s->last_picture.data[i];
+        previous = s->last_picture.f.data[i];
     }
 
     if (s->pict_type == AV_PICTURE_TYPE_I) {

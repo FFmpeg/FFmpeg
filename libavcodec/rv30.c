@@ -142,7 +142,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
 
     mb_pos = row * s->mb_stride;
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
-        int mbtype = s->current_picture_ptr->mb_type[mb_pos];
+        int mbtype = s->current_picture_ptr->f.mb_type[mb_pos];
         if(IS_INTRA(mbtype) || IS_SEPARATE_DC(mbtype))
             r->deblock_coefs[mb_pos] = 0xFFFF;
         if(IS_INTRA(mbtype))
@@ -154,11 +154,11 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
      */
     mb_pos = row * s->mb_stride;
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
-        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos]];
+        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos]];
         if(mb_x)
-            left_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos - 1]];
+            left_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos - 1]];
         for(j = 0; j < 16; j += 4){
-            Y = s->current_picture_ptr->data[0] + mb_x*16 + (row*16 + j) * s->linesize + 4 * !mb_x;
+            Y = s->current_picture_ptr->f.data[0] + mb_x*16 + (row*16 + j) * s->linesize + 4 * !mb_x;
             for(i = !mb_x; i < 4; i++, Y += 4){
                 int ij = i + j;
                 loc_lim = 0;
@@ -178,7 +178,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
             if(mb_x)
                 left_cbp = (r->cbp_chroma[mb_pos - 1] >> (k*4)) & 0xF;
             for(j = 0; j < 8; j += 4){
-                C = s->current_picture_ptr->data[k+1] + mb_x*8 + (row*8 + j) * s->uvlinesize + 4 * !mb_x;
+                C = s->current_picture_ptr->f.data[k + 1] + mb_x*8 + (row*8 + j) * s->uvlinesize + 4 * !mb_x;
                 for(i = !mb_x; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;
@@ -196,11 +196,11 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
     }
     mb_pos = row * s->mb_stride;
     for(mb_x = 0; mb_x < s->mb_width; mb_x++, mb_pos++){
-        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos]];
+        cur_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos]];
         if(row)
-            top_lim = rv30_loop_filt_lim[s->current_picture_ptr->qscale_table[mb_pos - s->mb_stride]];
+            top_lim = rv30_loop_filt_lim[s->current_picture_ptr->f.qscale_table[mb_pos - s->mb_stride]];
         for(j = 4*!row; j < 16; j += 4){
-            Y = s->current_picture_ptr->data[0] + mb_x*16 + (row*16 + j) * s->linesize;
+            Y = s->current_picture_ptr->f.data[0] + mb_x*16 + (row*16 + j) * s->linesize;
             for(i = 0; i < 4; i++, Y += 4){
                 int ij = i + j;
                 loc_lim = 0;
@@ -220,7 +220,7 @@ static void rv30_loop_filter(RV34DecContext *r, int row)
             if(row)
                 top_cbp = (r->cbp_chroma[mb_pos - s->mb_stride] >> (k*4)) & 0xF;
             for(j = 4*!row; j < 8; j += 4){
-                C = s->current_picture_ptr->data[k+1] + mb_x*8 + (row*8 + j) * s->uvlinesize;
+                C = s->current_picture_ptr->f.data[k+1] + mb_x*8 + (row*8 + j) * s->uvlinesize;
                 for(i = 0; i < 2; i++, C += 4){
                     int ij = i + (j >> 1);
                     loc_lim = 0;

@@ -741,266 +741,6 @@ typedef struct AVPanScan{
     int16_t position[3][2];
 }AVPanScan;
 
-#define FF_COMMON_FRAME \
-    /**\
-     * pointer to the picture planes.\
-     * This might be different from the first allocated byte\
-     * - encoding: \
-     * - decoding: \
-     */\
-    uint8_t *data[4];\
-    int linesize[4];\
-    /**\
-     * pointer to the first allocated byte of the picture. Can be used in get_buffer/release_buffer.\
-     * This isn't used by libavcodec unless the default get/release_buffer() is used.\
-     * - encoding: \
-     * - decoding: \
-     */\
-    uint8_t *base[4];\
-    /**\
-     * 1 -> keyframe, 0-> not\
-     * - encoding: Set by libavcodec.\
-     * - decoding: Set by libavcodec.\
-     */\
-    int key_frame;\
-\
-    /**\
-     * Picture type of the frame, see ?_TYPE below.\
-     * - encoding: Set by libavcodec. for coded_picture (and set by user for input).\
-     * - decoding: Set by libavcodec.\
-     */\
-    enum AVPictureType pict_type;\
-\
-    /**\
-     * presentation timestamp in time_base units (time when frame should be shown to user)\
-     * If AV_NOPTS_VALUE then frame_rate = 1/time_base will be assumed.\
-     * - encoding: MUST be set by user.\
-     * - decoding: Set by libavcodec.\
-     */\
-    int64_t pts;\
-\
-    /**\
-     * picture number in bitstream order\
-     * - encoding: set by\
-     * - decoding: Set by libavcodec.\
-     */\
-    int coded_picture_number;\
-    /**\
-     * picture number in display order\
-     * - encoding: set by\
-     * - decoding: Set by libavcodec.\
-     */\
-    int display_picture_number;\
-\
-    /**\
-     * quality (between 1 (good) and FF_LAMBDA_MAX (bad)) \
-     * - encoding: Set by libavcodec. for coded_picture (and set by user for input).\
-     * - decoding: Set by libavcodec.\
-     */\
-    int quality; \
-\
-    /**\
-     * buffer age (1->was last buffer and dint change, 2->..., ...).\
-     * Set to INT_MAX if the buffer has not been used yet.\
-     * - encoding: unused\
-     * - decoding: MUST be set by get_buffer().\
-     */\
-    int age;\
-\
-    /**\
-     * is this picture used as reference\
-     * The values for this are the same as the MpegEncContext.picture_structure\
-     * variable, that is 1->top field, 2->bottom field, 3->frame/both fields.\
-     * Set to 4 for delayed, non-reference frames.\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec. (before get_buffer() call)).\
-     */\
-    int reference;\
-\
-    /**\
-     * QP table\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec.\
-     */\
-    int8_t *qscale_table;\
-    /**\
-     * QP store stride\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec.\
-     */\
-    int qstride;\
-\
-    /**\
-     * mbskip_table[mb]>=1 if MB didn't change\
-     * stride= mb_width = (width+15)>>4\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec.\
-     */\
-    uint8_t *mbskip_table;\
-\
-    /**\
-     * motion vector table\
-     * @code\
-     * example:\
-     * int mv_sample_log2= 4 - motion_subsample_log2;\
-     * int mb_width= (width+15)>>4;\
-     * int mv_stride= (mb_width << mv_sample_log2) + 1;\
-     * motion_val[direction][x + y*mv_stride][0->mv_x, 1->mv_y];\
-     * @endcode\
-     * - encoding: Set by user.\
-     * - decoding: Set by libavcodec.\
-     */\
-    int16_t (*motion_val[2])[2];\
-\
-    /**\
-     * macroblock type table\
-     * mb_type_base + mb_width + 2\
-     * - encoding: Set by user.\
-     * - decoding: Set by libavcodec.\
-     */\
-    uint32_t *mb_type;\
-\
-    /**\
-     * log2 of the size of the block which a single vector in motion_val represents: \
-     * (4->16x16, 3->8x8, 2-> 4x4, 1-> 2x2)\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec.\
-     */\
-    uint8_t motion_subsample_log2;\
-\
-    /**\
-     * for some private data of the user\
-     * - encoding: unused\
-     * - decoding: Set by user.\
-     */\
-    void *opaque;\
-\
-    /**\
-     * error\
-     * - encoding: Set by libavcodec. if flags&CODEC_FLAG_PSNR.\
-     * - decoding: unused\
-     */\
-    uint64_t error[4];\
-\
-    /**\
-     * type of the buffer (to keep track of who has to deallocate data[*])\
-     * - encoding: Set by the one who allocates it.\
-     * - decoding: Set by the one who allocates it.\
-     * Note: User allocated (direct rendering) & internal buffers cannot coexist currently.\
-     */\
-    int type;\
-    \
-    /**\
-     * When decoding, this signals how much the picture must be delayed.\
-     * extra_delay = repeat_pict / (2*fps)\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec.\
-     */\
-    int repeat_pict;\
-    \
-    /**\
-     * \
-     */\
-    int qscale_type;\
-    \
-    /**\
-     * The content of the picture is interlaced.\
-     * - encoding: Set by user.\
-     * - decoding: Set by libavcodec. (default 0)\
-     */\
-    int interlaced_frame;\
-    \
-    /**\
-     * If the content is interlaced, is top field displayed first.\
-     * - encoding: Set by user.\
-     * - decoding: Set by libavcodec.\
-     */\
-    int top_field_first;\
-    \
-    /**\
-     * Pan scan.\
-     * - encoding: Set by user.\
-     * - decoding: Set by libavcodec.\
-     */\
-    AVPanScan *pan_scan;\
-    \
-    /**\
-     * Tell user application that palette has changed from previous frame.\
-     * - encoding: ??? (no palette-enabled encoder yet)\
-     * - decoding: Set by libavcodec. (default 0).\
-     */\
-    int palette_has_changed;\
-    \
-    /**\
-     * codec suggestion on buffer type if != 0\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec. (before get_buffer() call)).\
-     */\
-    int buffer_hints;\
-\
-    /**\
-     * DCT coefficients\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec.\
-     */\
-    short *dct_coeff;\
-\
-    /**\
-     * motion reference frame index\
-     * the order in which these are stored can depend on the codec.\
-     * - encoding: Set by user.\
-     * - decoding: Set by libavcodec.\
-     */\
-    int8_t *ref_index[2];\
-\
-    /**\
-     * reordered opaque 64bit (generally an integer or a double precision float\
-     * PTS but can be anything). \
-     * The user sets AVCodecContext.reordered_opaque to represent the input at\
-     * that time,\
-     * the decoder reorders values as needed and sets AVFrame.reordered_opaque\
-     * to exactly one of the values provided by the user through AVCodecContext.reordered_opaque \
-     * @deprecated in favor of pkt_pts\
-     * - encoding: unused\
-     * - decoding: Read by user.\
-     */\
-    int64_t reordered_opaque;\
-\
-    /**\
-     * hardware accelerator private data (Libav-allocated)\
-     * - encoding: unused\
-     * - decoding: Set by libavcodec\
-     */\
-    void *hwaccel_picture_private;\
-\
-    /**\
-     * reordered pts from the last AVPacket that has been input into the decoder\
-     * - encoding: unused\
-     * - decoding: Read by user.\
-     */\
-    int64_t pkt_pts;\
-\
-    /**\
-     * dts from the last AVPacket that has been input into the decoder\
-     * - encoding: unused\
-     * - decoding: Read by user.\
-     */\
-    int64_t pkt_dts;\
-\
-    /**\
-     * the AVCodecContext which ff_thread_get_buffer() was last called on\
-     * - encoding: Set by libavcodec.\
-     * - decoding: Set by libavcodec.\
-     */\
-    struct AVCodecContext *owner;\
-\
-    /**\
-     * used by multithreading to store frame-specific info\
-     * - encoding: Set by libavcodec.\
-     * - decoding: Set by libavcodec.\
-     */\
-    void *thread_opaque;\
-
 #define FF_QSCALE_TYPE_MPEG1 0
 #define FF_QSCALE_TYPE_MPEG2 1
 #define FF_QSCALE_TYPE_H264  2
@@ -1095,15 +835,270 @@ typedef struct AVPacket {
 
 /**
  * Audio Video Frame.
- * New fields can be added to the end of FF_COMMON_FRAME with minor version
- * bumps.
- * Removal, reordering and changes to existing fields require a major
- * version bump. No fields should be added into AVFrame before or after
- * FF_COMMON_FRAME!
+ * New fields can be added to the end of AVFRAME with minor version
+ * bumps. Removal, reordering and changes to existing fields require
+ * a major version bump.
  * sizeof(AVFrame) must not be used outside libav*.
  */
 typedef struct AVFrame {
-    FF_COMMON_FRAME
+    /**
+     * pointer to the picture planes.
+     * This might be different from the first allocated byte
+     * - encoding:
+     * - decoding:
+     */
+    uint8_t *data[4];
+    int linesize[4];
+    /**
+     * pointer to the first allocated byte of the picture. Can be used in get_buffer/release_buffer.
+     * This isn't used by libavcodec unless the default get/release_buffer() is used.
+     * - encoding:
+     * - decoding:
+     */
+    uint8_t *base[4];
+    /**
+     * 1 -> keyframe, 0-> not
+     * - encoding: Set by libavcodec.
+     * - decoding: Set by libavcodec.
+     */
+    int key_frame;
+
+    /**
+     * Picture type of the frame, see ?_TYPE below.
+     * - encoding: Set by libavcodec. for coded_picture (and set by user for input).
+     * - decoding: Set by libavcodec.
+     */
+    enum AVPictureType pict_type;
+
+    /**
+     * presentation timestamp in time_base units (time when frame should be shown to user)
+     * If AV_NOPTS_VALUE then frame_rate = 1/time_base will be assumed.
+     * - encoding: MUST be set by user.
+     * - decoding: Set by libavcodec.
+     */
+    int64_t pts;
+
+    /**
+     * picture number in bitstream order
+     * - encoding: set by
+     * - decoding: Set by libavcodec.
+     */
+    int coded_picture_number;
+    /**
+     * picture number in display order
+     * - encoding: set by
+     * - decoding: Set by libavcodec.
+     */
+    int display_picture_number;
+
+    /**
+     * quality (between 1 (good) and FF_LAMBDA_MAX (bad))
+     * - encoding: Set by libavcodec. for coded_picture (and set by user for input).
+     * - decoding: Set by libavcodec.
+     */
+    int quality;
+
+    /**
+     * buffer age (1->was last buffer and dint change, 2->..., ...).
+     * Set to INT_MAX if the buffer has not been used yet.
+     * - encoding: unused
+     * - decoding: MUST be set by get_buffer().
+     */
+    int age;
+
+    /**
+     * is this picture used as reference
+     * The values for this are the same as the MpegEncContext.picture_structure
+     * variable, that is 1->top field, 2->bottom field, 3->frame/both fields.
+     * Set to 4 for delayed, non-reference frames.
+     * - encoding: unused
+     * - decoding: Set by libavcodec. (before get_buffer() call)).
+     */
+    int reference;
+
+    /**
+     * QP table
+     * - encoding: unused
+     * - decoding: Set by libavcodec.
+     */
+    int8_t *qscale_table;
+    /**
+     * QP store stride
+     * - encoding: unused
+     * - decoding: Set by libavcodec.
+     */
+    int qstride;
+
+    /**
+     * mbskip_table[mb]>=1 if MB didn't change
+     * stride= mb_width = (width+15)>>4
+     * - encoding: unused
+     * - decoding: Set by libavcodec.
+     */
+    uint8_t *mbskip_table;
+
+    /**
+     * motion vector table
+     * @code
+     * example:
+     * int mv_sample_log2= 4 - motion_subsample_log2;
+     * int mb_width= (width+15)>>4;
+     * int mv_stride= (mb_width << mv_sample_log2) + 1;
+     * motion_val[direction][x + y*mv_stride][0->mv_x, 1->mv_y];
+     * @endcode
+     * - encoding: Set by user.
+     * - decoding: Set by libavcodec.
+     */
+    int16_t (*motion_val[2])[2];
+
+    /**
+     * macroblock type table
+     * mb_type_base + mb_width + 2
+     * - encoding: Set by user.
+     * - decoding: Set by libavcodec.
+     */
+    uint32_t *mb_type;
+
+    /**
+     * log2 of the size of the block which a single vector in motion_val represents:
+     * (4->16x16, 3->8x8, 2-> 4x4, 1-> 2x2)
+     * - encoding: unused
+     * - decoding: Set by libavcodec.
+     */
+    uint8_t motion_subsample_log2;
+
+    /**
+     * for some private data of the user
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+    void *opaque;
+
+    /**
+     * error
+     * - encoding: Set by libavcodec. if flags&CODEC_FLAG_PSNR.
+     * - decoding: unused
+     */
+    uint64_t error[4];
+
+    /**
+     * type of the buffer (to keep track of who has to deallocate data[*])
+     * - encoding: Set by the one who allocates it.
+     * - decoding: Set by the one who allocates it.
+     * Note: User allocated (direct rendering) & internal buffers cannot coexist currently.
+     */
+    int type;
+
+    /**
+     * When decoding, this signals how much the picture must be delayed.
+     * extra_delay = repeat_pict / (2*fps)
+     * - encoding: unused
+     * - decoding: Set by libavcodec.
+     */
+    int repeat_pict;
+
+    /**
+     *
+     */
+    int qscale_type;
+
+    /**
+     * The content of the picture is interlaced.
+     * - encoding: Set by user.
+     * - decoding: Set by libavcodec. (default 0)
+     */
+    int interlaced_frame;
+
+    /**
+     * If the content is interlaced, is top field displayed first.
+     * - encoding: Set by user.
+     * - decoding: Set by libavcodec.
+     */
+    int top_field_first;
+
+    /**
+     * Pan scan.
+     * - encoding: Set by user.
+     * - decoding: Set by libavcodec.
+     */
+    AVPanScan *pan_scan;
+
+    /**
+     * Tell user application that palette has changed from previous frame.
+     * - encoding: ??? (no palette-enabled encoder yet)
+     * - decoding: Set by libavcodec. (default 0).
+     */
+    int palette_has_changed;
+
+    /**
+     * codec suggestion on buffer type if != 0
+     * - encoding: unused
+     * - decoding: Set by libavcodec. (before get_buffer() call)).
+     */
+    int buffer_hints;
+
+    /**
+     * DCT coefficients
+     * - encoding: unused
+     * - decoding: Set by libavcodec.
+     */
+    short *dct_coeff;
+
+    /**
+     * motion reference frame index
+     * the order in which these are stored can depend on the codec.
+     * - encoding: Set by user.
+     * - decoding: Set by libavcodec.
+     */
+    int8_t *ref_index[2];
+
+    /**
+     * reordered opaque 64bit (generally an integer or a double precision float
+     * PTS but can be anything).
+     * The user sets AVCodecContext.reordered_opaque to represent the input at
+     * that time,
+     * the decoder reorders values as needed and sets AVFrame.reordered_opaque
+     * to exactly one of the values provided by the user through AVCodecContext.reordered_opaque
+     * @deprecated in favor of pkt_pts
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int64_t reordered_opaque;
+
+    /**
+     * hardware accelerator private data (Libav-allocated)
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    void *hwaccel_picture_private;
+
+    /**
+     * reordered pts from the last AVPacket that has been input into the decoder
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int64_t pkt_pts;
+
+    /**
+     * dts from the last AVPacket that has been input into the decoder
+     * - encoding: unused
+     * - decoding: Read by user.
+     */
+    int64_t pkt_dts;
+
+    /**
+     * the AVCodecContext which ff_thread_get_buffer() was last called on
+     * - encoding: Set by libavcodec.
+     * - decoding: Set by libavcodec.
+     */
+    struct AVCodecContext *owner;
+
+    /**
+     * used by multithreading to store frame-specific info
+     * - encoding: Set by libavcodec.
+     * - decoding: Set by libavcodec.
+     */
+    void *thread_opaque;
 } AVFrame;
 
 /**
