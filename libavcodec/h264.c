@@ -1443,7 +1443,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
         ff_thread_finish_setup(s->avctx);
 }
 
-static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int chroma444, int simple){
+static av_always_inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int chroma444, int simple){
     MpegEncContext * const s = &h->s;
     uint8_t *top_border;
     int top_idx = 1;
@@ -1518,7 +1518,7 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     }
 }
 
-static inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
+static av_always_inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
                                   uint8_t *src_cb, uint8_t *src_cr,
                                   int linesize, int uvlinesize,
                                   int xchg, int chroma444,

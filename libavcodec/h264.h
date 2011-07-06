@@ -766,11 +766,11 @@ static av_always_inline uint16_t pack8to16(int a, int b){
 /**
  * gets the chroma qp.
  */
-static inline int get_chroma_qp(H264Context *h, int t, int qscale){
+static av_always_inline int get_chroma_qp(H264Context *h, int t, int qscale){
     return h->pps.chroma_qp_table[t][qscale];
 }
 
-static inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my);
+static av_always_inline void pred_pskip_motion(H264Context * const h, int * const mx, int * const my);
 
 static void fill_decode_neighbors(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
