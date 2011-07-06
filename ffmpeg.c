@@ -306,7 +306,6 @@ typedef struct InputStream {
     AVStream *st;
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
-    int64_t sample_index;      /* current sample */
     AVCodec *dec;
 
     int64_t       start;     /* time when read started */
@@ -317,10 +316,6 @@ typedef struct InputStream {
     int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
     int is_past_recording_time;
-#if CONFIG_AVFILTER
-    AVFrame *filter_frame;
-    int has_filter_frame;
-#endif
 } InputStream;
 
 typedef struct InputFile {
