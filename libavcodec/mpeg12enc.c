@@ -32,6 +32,8 @@
 #include "mpeg12.h"
 #include "mpeg12data.h"
 #include "bytestream.h"
+#include "timecode.h"
+#include "libavutil/opt.h"
 
 
 static const uint8_t inv_non_linear_qscale[13] = {
@@ -172,11 +174,18 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
+    s->tc.drop = !!(avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE);
     if((avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE) && s->frame_rate_index != 4){
         av_log(avctx, AV_LOG_ERROR, "Drop frame time code only allowed with 1001/30000 fps\n");
         return -1;
     }
 
+    if (s->tc.str) {
+        s->tc.rate = ff_frame_rate_tab[s->frame_rate_index];
+        if (ff_init_smtpe_timecode(s, &s->tc) < 0)
+            return -1;
+        s->avctx->timecode_frame_start = s->tc.start;
+    }
     return 0;
 }
 
@@ -283,14 +292,14 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             }
 
             put_header(s, GOP_START_CODE);
-            put_bits(&s->pb, 1, !!(s->avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE)); /* drop frame flag */
+            put_bits(&s->pb, 1, s->tc.drop);
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = (framerate.num + framerate.den/2)/ framerate.den;
             time_code = s->current_picture_ptr->f.coded_picture_number + s->avctx->timecode_frame_start;
 
             s->gop_picture_number = s->current_picture_ptr->f.coded_picture_number;
-            if (s->avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE) {
+            if (s->tc.drop) {
                 /* only works for NTSC 29.97 */
                 int d = time_code / 17982;
                 int m = time_code % 17982;
@@ -925,6 +934,17 @@ static void mpeg1_encode_block(MpegEncContext *s,
     put_bits(&s->pb, table_vlc[112][1], table_vlc[112][0]);
 }
 
+static const AVClass class = {
+    .class_name = "mpegvideo",
+    .item_name  = av_default_item_name,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .option     = (const AVOption[]){
+        {TIMECODE_OPT(MpegEncContext,
+         AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM)},
+        {NULL}
+    },
+};
+
 AVCodec ff_mpeg1video_encoder = {
     .name           = "mpeg1video",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -937,6 +957,7 @@ AVCodec ff_mpeg1video_encoder = {
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
+    .priv_class = &class,
 };
 
 AVCodec ff_mpeg2video_encoder = {
@@ -951,4 +972,5 @@ AVCodec ff_mpeg2video_encoder = {
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-2 video"),
+    .priv_class = &class,
 };
