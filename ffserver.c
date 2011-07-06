@@ -2128,13 +2128,12 @@ static int open_input_stream(HTTPContext *c, const char *info)
     char buf[128];
     char input_filename[1024];
     AVFormatContext *s = NULL;
-    int buf_size, i, ret;
+    int i, ret;
     int64_t stream_pos;
 
     /* find file name */
     if (c->stream->feed) {
         strcpy(input_filename, c->stream->feed->feed_filename);
-        buf_size = FFM_PACKET_SIZE;
         /* compute position (absolute time) */
         if (av_find_info_tag(buf, sizeof(buf), "date", info)) {
             if ((ret = av_parse_time(&stream_pos, buf, 0)) < 0)
@@ -2146,7 +2145,6 @@ static int open_input_stream(HTTPContext *c, const char *info)
             stream_pos = av_gettime() - c->stream->prebuffer * (int64_t)1000;
     } else {
         strcpy(input_filename, c->stream->feed_filename);
-        buf_size = 0;
         /* compute position (relative time) */
         if (av_find_info_tag(buf, sizeof(buf), "date", info)) {
             if ((ret = av_parse_time(&stream_pos, buf, 1)) < 0)
