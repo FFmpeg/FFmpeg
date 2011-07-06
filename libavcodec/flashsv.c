@@ -25,26 +25,10 @@
  * Flash Screen Video decoder
  * @author Alex Beregszaszi
  * @author Benjamin Larsson
- */
-
-/* Bitstream description
- * The picture is divided into blocks that are zlib compressed.
  *
- * The decoder is fed complete frames, the frameheader contains:
- * 4bits of block width
- * 12bits of frame width
- * 4bits of block height
- * 12bits of frame height
- *
- * Directly after the header are the compressed blocks. The blocks
- * have their compressed size represented with 16bits in the beginnig.
- * If the size = 0 then the block is unchanged from the previous frame.
- * All blocks are decompressed until the buffer is consumed.
- *
- * Encoding ideas, a basic encoder would just use a fixed block size.
- * Block sizes can be multipels of 16, from 16 to 256. The blocks don't
- * have to be quadratic. A brute force search with a set of diffrent
- * block sizes should give a better result then to just use a fixed size.
+ * A description of the bitstream format for Flash Screen Video version 1/2
+ * is part of the SWF File Format Specification (version 10), which can be
+ * downloaded from http://www.adobe.com/devnet/swf.html.
  */
 
 #include <stdio.h>
@@ -71,7 +55,7 @@ static void copy_region(uint8_t *sptr, uint8_t *dptr,
     int i;
 
     for (i = dx + h; i > dx; i--) {
-        memcpy(dptr + (i * stride) + dy * 3, sptr, w * 3);
+        memcpy(dptr + i * stride + dy * 3, sptr, w * 3);
         sptr += w * 3;
     }
 }
@@ -86,7 +70,7 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
     s->zstream.zalloc = Z_NULL;
     s->zstream.zfree  = Z_NULL;
     s->zstream.opaque = Z_NULL;
-    zret = inflateInit(&(s->zstream));
+    zret = inflateInit(&s->zstream);
     if (zret != Z_OK) {
         av_log(avctx, AV_LOG_ERROR, "Inflate init error: %d\n", zret);
         return 1;
@@ -102,7 +86,6 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                                 int *data_size, AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     FlashSVContext *s  = avctx->priv_data;
     int h_blocks, v_blocks, h_part, v_part, i, j;
@@ -114,7 +97,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size < 4)
         return -1;
 
-    init_get_bits(&gb, buf, buf_size * 8);
+    init_get_bits(&gb, avpkt->data, buf_size * 8);
 
     /* start to parse the bitstream */
     s->block_width  = 16 * (get_bits(&gb,  4) + 1);
@@ -122,7 +105,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     s->block_height = 16 * (get_bits(&gb,  4) + 1);
     s->image_height =       get_bits(&gb, 12);
 
-    /* calculate amount of blocks and the size of the border blocks */
+    /* calculate number of blocks and size of border (partial) blocks */
     h_blocks = s->image_width  / s->block_width;
     h_part   = s->image_width  % s->block_width;
     v_blocks = s->image_height / s->block_height;
@@ -139,26 +122,29 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     }
     s->block_size = s->block_width * s->block_height;
 
-    /* init the image size once */
-    if ((avctx->width == 0) && (avctx->height == 0)) {
+    /* initialize the image size once */
+    if (avctx->width == 0 && avctx->height == 0) {
         avctx->width  = s->image_width;
         avctx->height = s->image_height;
     }
 
     /* check for changes of image width and image height */
-    if ((avctx->width != s->image_width) || (avctx->height != s->image_height)) {
-        av_log(avctx, AV_LOG_ERROR, "Frame width or height differs from first frames!\n");
-        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n", avctx->height,
-        avctx->width, s->image_height, s->image_width);
-        return -1;
+    if (avctx->width != s->image_width || avctx->height != s->image_height) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Frame width or height differs from first frames!\n");
+        av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
+               avctx->height, avctx->width, s->image_height, s->image_width);
+        return AVERROR_INVALIDDATA;
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
-           s->image_width, s->image_height, s->block_width, s->block_height,
-           h_blocks, v_blocks, h_part, v_part);
+    av_dlog(avctx, "image: %dx%d block: %dx%d num: %dx%d part: %dx%d\n",
+            s->image_width, s->image_height, s->block_width, s->block_height,
+            h_blocks, v_blocks, h_part, v_part);
 
-    s->frame.reference    = 1;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
+    s->frame.reference    = 3;
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID    |
+                            FF_BUFFER_HINTS_PRESERVE |
+                            FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &s->frame) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
@@ -167,48 +153,50 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* loop over all block columns */
     for (j = 0; j < v_blocks + (v_part ? 1 : 0); j++) {
 
-        int hp = j * s->block_height; // horiz position in frame
-        int hs = (j < v_blocks) ? s->block_height : v_part; // size of block
+        int hp = j * s->block_height; // vertical position in frame
+        int hs = (j < v_blocks) ? s->block_height : v_part; // block size
 
 
         /* loop over all block rows */
         for (i = 0; i < h_blocks + (h_part ? 1 : 0); i++) {
-            int wp = i * s->block_width; // vert position in frame
-            int ws = (i < h_blocks) ? s->block_width : h_part; // size of block
+            int wp = i * s->block_width; // horizontal position in frame
+            int ws = (i < h_blocks) ? s->block_width : h_part; // block size
 
             /* get the size of the compressed zlib chunk */
             int size = get_bits(&gb, 16);
             if (8 * size > get_bits_left(&gb)) {
                 avctx->release_buffer(avctx, &s->frame);
                 s->frame.data[0] = NULL;
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
-            if (size == 0) {
-                /* no change, don't do anything */
-            } else {
+            /* skip unchanged blocks, which have size 0 */
+            if (size) {
                 /* decompress block */
-                int ret = inflateReset(&(s->zstream));
+                int ret = inflateReset(&s->zstream);
                 if (ret != Z_OK) {
-                    av_log(avctx, AV_LOG_ERROR, "error in decompression (reset) of block %dx%d\n", i, j);
+                    av_log(avctx, AV_LOG_ERROR,
+                           "error in decompression (reset) of block %dx%d\n", i, j);
                     /* return -1; */
                 }
-                s->zstream.next_in   = buf + (get_bits_count(&gb) / 8);
+                s->zstream.next_in   = avpkt->data + get_bits_count(&gb) / 8;
                 s->zstream.avail_in  = size;
                 s->zstream.next_out  = s->tmpblock;
                 s->zstream.avail_out = s->block_size * 3;
-                ret = inflate(&(s->zstream), Z_FINISH);
+                ret = inflate(&s->zstream, Z_FINISH);
                 if (ret == Z_DATA_ERROR) {
                     av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
-                    inflateSync(&(s->zstream));
-                    ret = inflate(&(s->zstream), Z_FINISH);
+                    inflateSync(&s->zstream);
+                    ret = inflate(&s->zstream, Z_FINISH);
                 }
 
-                if ((ret != Z_OK) && (ret != Z_STREAM_END)) {
-                    av_log(avctx, AV_LOG_ERROR, "error in decompression of block %dx%d: %d\n", i, j, ret);
+                if (ret != Z_OK && ret != Z_STREAM_END) {
+                    av_log(avctx, AV_LOG_ERROR,
+                           "error in decompression of block %dx%d: %d\n", i, j, ret);
                     /* return -1; */
                 }
-                copy_region(s->tmpblock, s->frame.data[0], s->image_height - (hp + hs + 1),
+                copy_region(s->tmpblock, s->frame.data[0],
+                            s->image_height - (hp + hs + 1),
                             wp, hs, ws, s->frame.linesize[0]);
                 skip_bits_long(&gb, 8 * size);   /* skip the consumed bits */
             }
@@ -230,7 +218,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 static av_cold int flashsv_decode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
-    inflateEnd(&(s->zstream));
+    inflateEnd(&s->zstream);
     /* release the frame if needed */
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);

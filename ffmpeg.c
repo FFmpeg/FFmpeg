@@ -1155,7 +1155,7 @@ static void do_video_out(AVFormatContext *s,
                          AVOutputStream *ost,
                          AVInputStream *ist,
                          AVFrame *in_picture,
-                         int *frame_size)
+                         int *frame_size, float quality)
 {
     int nb_frames, i, ret, av_unused resample_changed;
     AVFrame *final_picture, *formatted_picture;
@@ -1286,7 +1286,7 @@ static void do_video_out(AVFormatContext *s,
 
             /* handles sameq here. This is not correct because it may
                not be a global option */
-            big_picture.quality = same_quality ? ist->st->quality : ost->st->quality;
+            big_picture.quality = quality;
             if(!me_threshold)
                 big_picture.pict_type = 0;
 //            big_picture.pts = AV_NOPTS_VALUE;
@@ -1530,6 +1530,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 #if CONFIG_AVFILTER
     int frame_available;
 #endif
+    float quality;
 
     AVPacket avpkt;
     int bps = av_get_bytes_per_sample(ist->st->codec->sample_fmt);
@@ -1610,7 +1611,7 @@ static int output_packet(AVInputStream *ist, int ist_index,
 
                     ret = avcodec_decode_video2(ist->st->codec,
                                                 &picture, &got_output, &avpkt);
-                    ist->st->quality= picture.quality;
+                    quality = same_quality ? picture.quality : 0;
                     if (ret < 0)
                         goto fail_decode;
                     if (!got_output) {
@@ -1736,7 +1737,8 @@ static int output_packet(AVInputStream *ist, int ist_index,
                             if (ost->picref->video && !ost->frame_aspect_ratio)
                                 ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
 #endif
-                            do_video_out(os, ost, ist, &picture, &frame_size);
+                            do_video_out(os, ost, ist, &picture, &frame_size,
+                                         same_quality ? quality : ost->st->codec->global_quality);
                             if (vstats_filename && frame_size)
                                 do_video_stats(os, ost, frame_size);
                             break;
@@ -3602,8 +3604,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
             video_enc->gop_size = 0;
         if (video_qscale || same_quality) {
             video_enc->flags |= CODEC_FLAG_QSCALE;
-            video_enc->global_quality=
-                st->quality = FF_QP2LAMBDA * video_qscale;
+            video_enc->global_quality = FF_QP2LAMBDA * video_qscale;
         }
 
         if(intra_matrix)
@@ -3721,7 +3722,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 
         if (audio_qscale > QSCALE_NONE) {
             audio_enc->flags |= CODEC_FLAG_QSCALE;
-            audio_enc->global_quality = st->quality = FF_QP2LAMBDA * audio_qscale;
+            audio_enc->global_quality = FF_QP2LAMBDA * audio_qscale;
         }
         if (audio_channels)
             audio_enc->channels = audio_channels;

@@ -500,6 +500,7 @@ int av_expr_parse(AVExpr **expr, const char *s,
     if ((ret = parse_expr(&e, &p)) < 0)
         goto end;
     if (*p.s) {
+        av_expr_free(e);
         av_log(&p, AV_LOG_ERROR, "Invalid chars '%s' at the end of expression '%s'\n", p.s, s0);
         ret = AVERROR(EINVAL);
         goto end;
@@ -601,7 +602,7 @@ int main(int argc, char **argv)
         "-PI",
         "+PI",
         "1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)",
-        "80G/80Gi"
+        "80G/80Gi",
         "1k",
         "1Gi",
         "1gi",

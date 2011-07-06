@@ -114,7 +114,6 @@ static int ffm_write_header(AVFormatContext *s)
         avio_wb32(pb, codec->codec_id);
         avio_w8(pb, codec->codec_type);
         avio_wb32(pb, codec->bit_rate);
-        avio_wb32(pb, st->quality);
         avio_wb32(pb, codec->flags);
         avio_wb32(pb, codec->flags2);
         avio_wb32(pb, codec->debug);
