@@ -183,7 +183,6 @@ static float mux_max_delay= 0.7;
 
 static int64_t recording_time = INT64_MAX;
 static int64_t start_time = 0;
-static int64_t recording_timestamp = 0;
 static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
 static AVDictionary *metadata;
@@ -711,9 +710,6 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         if(st->codec->flags & CODEC_FLAG_BITEXACT)
             nopts = 1;
     }
-
-    if (!nopts)
-        s->timestamp = av_gettime();
 
     av_close_input_file(ic);
     return 0;
@@ -3109,7 +3105,14 @@ static int opt_start_time(const char *opt, const char *arg)
 
 static int opt_recording_timestamp(const char *opt, const char *arg)
 {
-    recording_timestamp = parse_time_or_die(opt, arg, 0) / 1000000;
+    char buf[128];
+    int64_t recording_timestamp = parse_time_or_die(opt, arg, 0) / 1E6;
+    struct tm time = *gmtime((time_t*)&recording_timestamp);
+    strftime(buf, sizeof(buf), "creation_time=%FT%T%z", &time);
+    opt_metadata("metadata", buf);
+
+    av_log(NULL, AV_LOG_WARNING, "%s is deprecated, set the 'creation_time' metadata "
+                                 "tag instead.\n", opt);
     return 0;
 }
 
@@ -3822,8 +3825,6 @@ static void opt_output_file(const char *filename)
         if (use_audio)    new_audio_stream(oc, nb_output_files);
         if (use_subtitle) new_subtitle_stream(oc, nb_output_files);
         if (use_data)     new_data_stream(oc, nb_output_files);
-
-        oc->timestamp = recording_timestamp;
 
         av_dict_copy(&oc->metadata, metadata, 0);
         av_dict_free(&metadata);

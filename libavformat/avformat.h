@@ -674,7 +674,12 @@ typedef struct AVFormatContext {
     AVStream **streams;
     char filename[1024]; /**< input or output filename */
     /* stream info */
-    int64_t timestamp;
+#if FF_API_TIMESTAMP
+    /**
+     * @deprecated use 'creation_time' metadata tag instead
+     */
+    attribute_deprecated int64_t timestamp;
+#endif
 
     int ctx_flags; /**< Format-specific flags, see AVFMTCTX_xx */
     /* private data for pts handling (do not modify directly). */

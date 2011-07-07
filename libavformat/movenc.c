@@ -2129,6 +2129,7 @@ static int mov_write_header(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
     MOVMuxContext *mov = s->priv_data;
+    AVDictionaryEntry *t;
     int i, hint_track = 0;
 
     if (!s->pb->seekable) {
@@ -2259,7 +2260,18 @@ static int mov_write_header(AVFormatContext *s)
     }
 
     mov_write_mdat_tag(pb, mov);
-    mov->time = s->timestamp + 0x7C25B080; //1970 based -> 1904 based
+
+#if FF_API_TIMESTAMP
+    if (s->timestamp)
+        mov->time = s->timestamp;
+    else
+#endif
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
+        struct tm time = {0};
+        strptime(t->value, "%Y - %m - %dT%T", &time);
+        mov->time = mktime(&time);
+    }
+    mov->time += 0x7C25B080; //1970 based -> 1904 based
 
     if (mov->chapter_track)
         mov_create_chapter_track(s, mov->chapter_track);
