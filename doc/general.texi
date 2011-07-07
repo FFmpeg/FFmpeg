@@ -949,7 +949,7 @@ MSVC++-compatible import libraries.
 @item Build Libav with
 
 @example
-./configure --enable-shared --enable-memalign-hack
+./configure --enable-shared
 make
 make install
 @end example
@@ -1071,12 +1071,12 @@ and add some special flags to your configure invocation.
 
 For a static build run
 @example
-./configure --target-os=mingw32 --enable-memalign-hack --enable-static --disable-shared --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
+./configure --target-os=mingw32 --enable-static --disable-shared --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
 
 and for a build with shared libraries
 @example
-./configure --target-os=mingw32 --enable-memalign-hack --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
+./configure --target-os=mingw32 --enable-shared --disable-static --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
 
 @bye
