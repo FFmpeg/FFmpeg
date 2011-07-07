@@ -1690,6 +1690,8 @@ SLIBNAME='$(SLIBPREF)$(FULLNAME)$(SLIBSUF)'
 SLIBNAME_WITH_VERSION='$(SLIBNAME).$(LIBVERSION)'
 SLIBNAME_WITH_MAJOR='$(SLIBNAME).$(LIBMAJOR)'
 LIB_INSTALL_EXTRA_CMD='$$(RANLIB) "$(LIBDIR)/$(LIBNAME)"'
+SLIB_INSTALL_NAME='$(SLIBNAME_WITH_VERSION)'
+SLIB_INSTALL_LINKS='$(SLIBNAME_WITH_MAJOR) $(SLIBNAME)'
 
 AS_O='-o $@'
 CC_O='-o $@'
@@ -2455,12 +2457,11 @@ case $target_os in
         SLIBSUF=".dll"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME)-$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME)-$(LIBMAJOR)$(SLIBSUF)'
-        SLIB_EXTRA_CMD='-lib.exe /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)'
-        SLIB_INSTALL_EXTRA_CMD='-install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"; \
-            install -m 644 $(SUBDIR)$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.lib)"; \
-            install -d "$(LIBDIR)"; \
-            install -m 644 $(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) "$(LIBDIR)/lib$(SLIBNAME:$(SLIBSUF)=.dll.a)"'
-        SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(SHLIBDIR)/$(SLIBNAME:$(SLIBSUF)=.lib)"'
+        SLIB_EXTRA_CMD='-lib.exe /machine:$(LIBTARGET) /def:$$(@:$(SLIBSUF)=.def) /out:$(SUBDIR)$(SLIBNAME:$(SLIBSUF)=.lib)'
+        SLIB_INSTALL_NAME='$(SLIBNAME_WITH_MAJOR)'
+        SLIB_INSTALL_LINKS=
+        SLIB_INSTALL_EXTRA_SHLIB='$(SLIBNAME:$(SLIBSUF)=.lib)'
+        SLIB_INSTALL_EXTRA_LIB='lib$(SLIBNAME:$(SLIBSUF)=.dll.a) $(SLIBNAME_WITH_MAJOR:$(SLIBSUF)=.def)'
         SHFLAGS='-shared -Wl,--output-def,$$(@:$(SLIBSUF)=.def) -Wl,--out-implib,$(SUBDIR)lib$(SLIBNAME:$(SLIBSUF)=.dll.a) -Wl,--enable-runtime-pseudo-reloc -Wl,--enable-auto-image-base'
         objformat="win32"
         enable dos_paths
@@ -2518,8 +2519,7 @@ case $target_os in
           emxexp -o $(OBJS) >> $(SUBDIR)$(NAME).def'
         SLIB_EXTRA_CMD='emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.a $(SUBDIR)$(NAME).def; \
           emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib $(SUBDIR)$(NAME).def;'
-        SLIB_INSTALL_EXTRA_CMD='install -m 644 $(SUBDIR)$(LIBPREF)$(NAME)_dll.a $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib "$(LIBDIR)"'
-        SLIB_UNINSTALL_EXTRA_CMD='rm -f "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.a "$(LIBDIR)"/$(LIBPREF)$(NAME)_dll.lib'
+        SLIB_INSTALL_EXTRA_LIB='$(LIBPREF)$(NAME)_dll.a $(LIBPREF)$(NAME)_dll.lib'
         enable dos_paths
         ;;
     gnu/kfreebsd)
@@ -3324,8 +3324,10 @@ SLIBNAME_WITH_VERSION=${SLIBNAME_WITH_VERSION}
 SLIBNAME_WITH_MAJOR=${SLIBNAME_WITH_MAJOR}
 SLIB_CREATE_DEF_CMD=${SLIB_CREATE_DEF_CMD}
 SLIB_EXTRA_CMD=${SLIB_EXTRA_CMD}
-SLIB_INSTALL_EXTRA_CMD=${SLIB_INSTALL_EXTRA_CMD}
-SLIB_UNINSTALL_EXTRA_CMD=${SLIB_UNINSTALL_EXTRA_CMD}
+SLIB_INSTALL_NAME=${SLIB_INSTALL_NAME}
+SLIB_INSTALL_LINKS=${SLIB_INSTALL_LINKS}
+SLIB_INSTALL_EXTRA_LIB=${SLIB_INSTALL_EXTRA_LIB}
+SLIB_INSTALL_EXTRA_SHLIB=${SLIB_INSTALL_EXTRA_SHLIB}
 SAMPLES:=${samples:-\$(FATE_SAMPLES)}
 EOF
 

@@ -1037,7 +1037,7 @@ diffutils
 Then run
 
 @example
-./configure --enable-static --disable-shared
+./configure
 @end example
 
 to make a static build.
@@ -1084,7 +1084,7 @@ and add some special flags to your configure invocation.
 
 For a static build run
 @example
-./configure --target-os=mingw32 --enable-static --disable-shared --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
+./configure --target-os=mingw32 --extra-cflags=-mno-cygwin --extra-libs=-mno-cygwin
 @end example
 
 and for a build with shared libraries

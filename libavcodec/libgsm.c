@@ -139,7 +139,7 @@ AVCodec ff_libgsm_ms_encoder = {
 static int libgsm_decode_frame(AVCodecContext *avctx,
                                void *data, int *data_size,
                                AVPacket *avpkt) {
-    const uint8_t *buf = avpkt->data;
+    uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     *data_size = 0; /* In case of error */
     if(buf_size < avctx->block_align) return -1;

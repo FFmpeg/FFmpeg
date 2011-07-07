@@ -60,13 +60,12 @@ distclean:: clean
 
 install-lib$(NAME)-shared: $(SUBDIR)$(SLIBNAME)
 	$(Q)mkdir -p "$(SHLIBDIR)"
-	$$(INSTALL) -m 755 $$< "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
-	$$(STRIP) "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
-	$(Q)cd "$(SHLIBDIR)" && \
-		$(LN_S) $(SLIBNAME_WITH_VERSION) $(SLIBNAME_WITH_MAJOR)
-	$(Q)cd "$(SHLIBDIR)" && \
-		$(LN_S) $(SLIBNAME_WITH_VERSION) $(SLIBNAME)
-	$(SLIB_INSTALL_EXTRA_CMD)
+	$$(INSTALL) -m 755 $$< "$(SHLIBDIR)/$(SLIB_INSTALL_NAME)"
+	$$(STRIP) "$(SHLIBDIR)/$(SLIB_INSTALL_NAME)"
+	$(Q)$(foreach F,$(SLIB_INSTALL_LINKS),cd "$(SHLIBDIR)" && $(LN_S) $(SLIB_INSTALL_NAME) $(F);)
+	$(if $(SLIB_INSTALL_EXTRA_SHLIB),$$(INSTALL) -m 644 $(SLIB_INSTALL_EXTRA_SHLIB:%=$(SUBDIR)%) "$(SHLIBDIR)")
+	$(if $(SLIB_INSTALL_EXTRA_LIB),$(Q)mkdir -p "$(LIBDIR)")
+	$(if $(SLIB_INSTALL_EXTRA_LIB),$$(INSTALL) -m 644 $(SLIB_INSTALL_EXTRA_LIB:%=$(SUBDIR)%) "$(LIBDIR)")
 
 install-lib$(NAME)-static: $(SUBDIR)$(LIBNAME)
 	$(Q)mkdir -p "$(LIBDIR)"
@@ -85,7 +84,8 @@ uninstall-libs::
 	-$(RM) "$(SHLIBDIR)/$(SLIBNAME_WITH_MAJOR)" \
 	       "$(SHLIBDIR)/$(SLIBNAME)"            \
 	       "$(SHLIBDIR)/$(SLIBNAME_WITH_VERSION)"
-	-$(SLIB_UNINSTALL_EXTRA_CMD)
+	-$(RM) $(SLIB_INSTALL_EXTRA_SHLIB:%="$(SHLIBDIR)"%)
+	-$(RM) $(SLIB_INSTALL_EXTRA_LIB:%="$(LIBDIR)"%)
 	-$(RM) "$(LIBDIR)/$(LIBNAME)"
 
 uninstall-headers::
