@@ -107,8 +107,8 @@ static const OptionDef options[];
 #define FFM_PACKET_SIZE 4096 //XXX a duplicate of the line in ffm.h
 
 static const char *last_asked_format = NULL;
-static double *input_files_ts_scale[MAX_FILES] = {NULL};
-static int nb_input_files_ts_scale[MAX_FILES] = {0};
+static double *ts_scale;
+static int  nb_ts_scale;
 
 static AVFormatContext *output_files[MAX_FILES];
 static AVDictionary *output_opts[MAX_FILES];
@@ -312,6 +312,7 @@ typedef struct InputStream {
                                 is not defined */
     int64_t       pts;       /* current pts */
     PtsCorrectionContext pts_ctx;
+    double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
     int is_past_recording_time;
@@ -461,7 +462,6 @@ static int ffmpeg_exit(int ret)
     }
     for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i].ctx);
-        av_free(input_files_ts_scale[i]);
     }
 
     av_free(intra_matrix);
@@ -2615,12 +2615,11 @@ static int transcode(AVFormatContext **output_files,
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts += av_rescale_q(input_files[ist->file_index].ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
 
-        if (pkt.stream_index < nb_input_files_ts_scale[file_index]
-            && input_files_ts_scale[file_index][pkt.stream_index]){
+        if (ist->ts_scale) {
             if(pkt.pts != AV_NOPTS_VALUE)
-                pkt.pts *= input_files_ts_scale[file_index][pkt.stream_index];
+                pkt.pts *= ist->ts_scale;
             if(pkt.dts != AV_NOPTS_VALUE)
-                pkt.dts *= input_files_ts_scale[file_index][pkt.stream_index];
+                pkt.dts *= ist->ts_scale;
         }
 
 //        fprintf(stderr, "next:%"PRId64" dts:%"PRId64" off:%"PRId64" %d\n", ist->next_pts, pkt.dts, input_files[ist->file_index].ts_offset, ist->st->codec->codec_type);
@@ -3091,8 +3090,8 @@ static int opt_input_ts_scale(const char *opt, const char *arg)
     if(stream >= MAX_STREAMS)
         ffmpeg_exit(1);
 
-    input_files_ts_scale[nb_input_files] = grow_array(input_files_ts_scale[nb_input_files], sizeof(*input_files_ts_scale[nb_input_files]), &nb_input_files_ts_scale[nb_input_files], stream + 1);
-    input_files_ts_scale[nb_input_files][stream]= scale;
+    ts_scale = grow_array(ts_scale, sizeof(*ts_scale), &nb_ts_scale, stream + 1);
+    ts_scale[stream] = scale;
     return 0;
 }
 
@@ -3305,6 +3304,9 @@ static int opt_input_file(const char *opt, const char *filename)
         ist->file_index = nb_input_files;
         ist->discard = 1;
 
+        if (i < nb_ts_scale)
+            ist->ts_scale = ts_scale[i];
+
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ist->dec = avcodec_find_decoder_by_name(audio_codec_name);
@@ -3370,6 +3372,8 @@ static int opt_input_file(const char *opt, const char *filename)
     audio_sample_rate = 0;
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
+    av_freep(&ts_scale);
+    nb_ts_scale = 0;
 
     av_freep(&video_codec_name);
     av_freep(&audio_codec_name);
