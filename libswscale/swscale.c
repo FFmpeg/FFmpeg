@@ -302,7 +302,7 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
     int dword= output_bits == 16;
     uint16_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
              *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
-    int shift = 11 + 4*dword + 16 - output_bits;
+    int shift = 11 + 4*dword + 16 - output_bits - 1;
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
@@ -319,24 +319,24 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
         } \
     }
     for (i = 0; i < dstW; i++) {
-        int val = 1 << (26-output_bits + 4*dword);
+        int val = 1 << (26-output_bits + 4*dword - 1);
         int j;
 
         for (j = 0; j < lumFilterSize; j++)
-            val += (dword ? lumSrc[j][i] : ((int16_t**)lumSrc)[j][i]) * lumFilter[j];
+            val += ((dword ? lumSrc[j][i] : ((int16_t**)lumSrc)[j][i]) * lumFilter[j])>>1;
 
         output_pixel(&yDest[i], val);
     }
 
     if (uDest) {
         for (i = 0; i < chrDstW; i++) {
-            int u = 1 << (26-output_bits + 4*dword);
-            int v = 1 << (26-output_bits + 4*dword);
+            int u = 1 << (26-output_bits + 4*dword - 1);
+            int v = 1 << (26-output_bits + 4*dword - 1);
             int j;
 
             for (j = 0; j < chrFilterSize; j++) {
-                u += (dword ? chrUSrc[j][i] : ((int16_t**)chrUSrc)[j][i]) * chrFilter[j];
-                v += (dword ? chrVSrc[j][i] : ((int16_t**)chrVSrc)[j][i]) * chrFilter[j];
+                u += ((dword ? chrUSrc[j][i] : ((int16_t**)chrUSrc)[j][i]) * chrFilter[j]) >> 1;
+                v += ((dword ? chrVSrc[j][i] : ((int16_t**)chrVSrc)[j][i]) * chrFilter[j]) >> 1;
             }
 
             output_pixel(&uDest[i], u);
@@ -346,11 +346,11 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
 
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         for (i = 0; i < dstW; i++) {
-            int val = 1 << (26-output_bits + 4*dword);
+            int val = 1 << (26-output_bits + 4*dword - 1);
             int j;
 
             for (j = 0; j < lumFilterSize; j++)
-                val += (dword ? alpSrc[j][i] : ((int16_t**)alpSrc)[j][i]) * lumFilter[j];
+                val += ((dword ? alpSrc[j][i] : ((int16_t**)alpSrc)[j][i]) * lumFilter[j]) >> 1;
 
             output_pixel(&aDest[i], val);
         }
