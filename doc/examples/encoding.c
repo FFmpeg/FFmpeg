@@ -71,6 +71,7 @@ static void audio_encode_example(const char *filename)
     c->bit_rate = 64000;
     c->sample_rate = 44100;
     c->channels = 2;
+    c->sample_fmt = AV_SAMPLE_FMT_S16;
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
