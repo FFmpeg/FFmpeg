@@ -1854,7 +1854,7 @@ static void hScale16_c(SwsContext *c, int16_t *_dst, int dstW, const uint8_t *_s
     for (i = 0; i < dstW; i++) {
         int j;
         int srcPos = filterPos[i];
-        unsigned int val = 0;
+        int val = 0;
 
         for (j = 0; j < filterSize; j++) {
             val += src[srcPos + j] * filter[filterSize * i + j];
