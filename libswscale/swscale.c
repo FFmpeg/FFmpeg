@@ -1136,7 +1136,8 @@ yuv2rgb_2_c_template(SwsContext *c, const int16_t *buf[2],
     const int16_t *buf0  = buf[0],  *buf1  = buf[1],
                   *ubuf0 = ubuf[0], *ubuf1 = ubuf[1],
                   *vbuf0 = vbuf[0], *vbuf1 = vbuf[1],
-                  *abuf0 = abuf[0], *abuf1 = abuf[1];
+                  *abuf0 = hasAlpha ? abuf[0] : NULL,
+                  *abuf1 = hasAlpha ? abuf[1] : NULL;
     int  yalpha1 = 4095 - yalpha;
     int uvalpha1 = 4095 - uvalpha;
     int i;
