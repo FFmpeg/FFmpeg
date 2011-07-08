@@ -24,8 +24,8 @@ help out creating them.
 Nowhere. We do not support old Libav versions in any way, we simply lack
 the time, motivation and manpower to do so. If you have a problem with an
 old version of Libav, upgrade to the latest git snapshot. If you
-still experience the problem, then you can report it according to the
-guidelines in @url{http://libav.org/bugreports.html}.
+still experience the problem, then you can report it according to our
+@uref{http://libav.org/bugreports.html, bug reporting guidelines}.
 
 @section Why doesn't Libav support feature [xyz]?
 
@@ -46,7 +46,8 @@ Likely reasons
 @itemize
 @item We are busy and haven't had time yet to read your report or
 investigate the issue.
-@item You didn't follow @url{http://libav.org/bugreports.html}.
+@item You did not follow our
+      @uref{http://libav.org/bugreports.html, bug reporting guidelines}.
 @item You didn't use git master.
 @item You reported a segmentation fault without gdb output.
 @item You describe a problem but not how to reproduce it.
@@ -123,8 +124,9 @@ problem and an NP-hard problem...
 
 @section ffmpeg does not work; what is wrong?
 
-Try a @code{make distclean} in the ffmpeg source directory before the build. If this does not help see
-(@url{http://libav.org/bugreports.html}).
+Try a @code{make distclean} in the ffmpeg source directory before the build.
+If this does not help see our
+@uref{http://libav.org/bugreports.html, bug reporting guidelines}.
 
 @section How do I encode single pictures into movies?
 
@@ -285,7 +287,8 @@ Just create an "input.avs" text file with this single line ...
   ffmpeg -i input.avs
 @end example
 
-For ANY other help on Avisynth, please visit @url{http://www.avisynth.org/}.
+For ANY other help on Avisynth, please visit the
+@uref{http://www.avisynth.org/, Avisynth homepage}.
 
 @section How can I join video files?
 
@@ -413,7 +416,7 @@ No. These tools are too bloated and they complicate the build.
 Libav is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
-read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
+read @uref{http://www.tux.org/lkml/#s15, "Programming Religion"}.
 
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 

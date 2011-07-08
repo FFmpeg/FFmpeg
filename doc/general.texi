@@ -836,7 +836,7 @@ noticeable when running make for a second time (for example in
 @code{make install}).
 
 @item In order to compile FFplay, you must have the MinGW development library
-of SDL. Get it from @url{http://www.libsdl.org}.
+of @uref{http://www.libsdl.org/, SDL}.
 Edit the @file{bin/sdl-config} script so that it points to the correct prefix
 where SDL was installed. Verify that @file{sdl-config} can be launched from
 the MSYS command line.
@@ -1008,8 +1008,7 @@ Then configure Libav with the following options:
 (you can change the cross-prefix according to the prefix chosen for the
 MinGW tools).
 
-Then you can easily test Libav with Wine
-(@url{http://www.winehq.com/}).
+Then you can easily test Libav with @uref{http://www.winehq.com/, Wine}.
 
 @subsection Compilation under Cygwin
 
@@ -1048,8 +1047,8 @@ If you want to build Libav with additional libraries, download Cygwin
 libogg-devel, libvorbis-devel
 @end example
 
-These library packages are only available from Cygwin Ports
-(@url{http://sourceware.org/cygwinports/}) :
+These library packages are only available from
+@uref{http://sourceware.org/cygwinports/, Cygwin Ports}:
 
 @example
 yasm, libSDL-devel, libdirac-devel, libfaac-devel, libgsm-devel,
