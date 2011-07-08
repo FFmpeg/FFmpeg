@@ -205,7 +205,7 @@ static void video_encode_example(const char *filename)
     int i, out_size, size, x, y, outbuf_size;
     FILE *f;
     AVFrame *picture;
-    uint8_t *outbuf, *picture_buf;
+    uint8_t *outbuf;
 
     printf("Video encoding\n");
 
@@ -245,15 +245,11 @@ static void video_encode_example(const char *filename)
     /* alloc image and output buffer */
     outbuf_size = 100000;
     outbuf = malloc(outbuf_size);
-    size = c->width * c->height;
-    picture_buf = malloc((size * 3) / 2); /* size for YUV 420 */
 
-    picture->data[0] = picture_buf;
-    picture->data[1] = picture->data[0] + size;
-    picture->data[2] = picture->data[1] + size / 4;
-    picture->linesize[0] = c->width;
-    picture->linesize[1] = c->width / 2;
-    picture->linesize[2] = c->width / 2;
+    /* the image can be allocated by any means and av_image_alloc() is
+     * just the most convenient way if av_malloc() is to be used */
+    av_image_alloc(picture->data, picture->linesize,
+                   c->width, c->height, c->pix_fmt, 1);
 
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
@@ -296,11 +292,11 @@ static void video_encode_example(const char *filename)
     outbuf[3] = 0xb7;
     fwrite(outbuf, 1, 4, f);
     fclose(f);
-    free(picture_buf);
     free(outbuf);
 
     avcodec_close(c);
     av_free(c);
+    av_free(picture->data[0]);
     av_free(picture);
     printf("\n");
 }
