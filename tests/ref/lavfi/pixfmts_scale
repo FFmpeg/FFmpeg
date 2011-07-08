@@ -42,8 +42,8 @@ yuv422p16be         837945d3a771366a5a72a4ed095a4f53
 yuv422p16le         b8292ae9b52eb7afc3d8b93e8fd895b4
 yuv440p             461503fdb9b90451020aa3b25ddf041c
 yuv444p             81b2eba962d12e8d64f003ac56f6faf2
-yuv444p16be         cc7460f76477aa4b4c33442f67c06a89
-yuv444p16le         9a5ed60d68c0a4a5155f9d376174cdf7
+yuv444p16be         fe2c4a3708c4f44a2d91f3c413f33caf
+yuv444p16le         1b4fce808e546cd75ef01cdb91da26b5
 yuva420p            8673a9131fb47de69788863f93a50eb7
 yuvj420p            30427bd6caf5bda93a173dbebe759e09
 yuvj422p            fc8288f64fd149573f73cf8da05d8e6d
