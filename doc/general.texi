@@ -923,30 +923,7 @@ Libav, so you must add this line before @code{#include}ing libav*:
 
 This is how to create DLL and LIB files that are compatible with MSVC++:
 
-@enumerate
-
-@item Add a call to @file{vcvars32.bat} (which sets up the environment
-variables for the Visual C++ tools) as the first line of @file{msys.bat}.
-The standard location for @file{vcvars32.bat} is
-@file{C:\Program Files\Microsoft Visual Studio 8\VC\bin\vcvars32.bat},
-and the standard location for @file{msys.bat} is @file{C:\msys\1.0\msys.bat}.
-If this corresponds to your setup, add the following line as the first line
-of @file{msys.bat}:
-
-@example
-call "C:\Program Files\Microsoft Visual Studio 8\VC\bin\vcvars32.bat"
-@end example
-
-Alternatively, you may start the @file{Visual Studio 2005 Command Prompt},
-and run @file{c:\msys\1.0\msys.bat} from there.
-
-@item Within the MSYS shell, run @code{lib.exe}. If you get a help message
-from @file{Microsoft (R) Library Manager}, this means your environment
-variables are set up correctly, the @file{Microsoft (R) Library Manager}
-is on the path and will be used by Libav to create
-MSVC++-compatible import libraries.
-
-@item Build Libav with
+Within the MSYS shell, build Libav with
 
 @example
 ./configure --enable-shared
@@ -956,8 +933,6 @@ make install
 
 Your install path (@file{/usr/local/} by default) should now have the
 necessary DLL and LIB files under the @file{bin} directory.
-
-@end enumerate
 
 To use those files with MSVC++, do the same as you would do with
 the static libraries, as described above. But in Step 4,
