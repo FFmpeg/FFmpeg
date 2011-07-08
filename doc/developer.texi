@@ -224,7 +224,7 @@ Note, some rules were borrowed from the MPlayer project.
 
 @section Submitting patches
 
-First, read the (@pxref{Coding Rules}) above if you did not yet, in particular
+First, read the @ref{Coding Rules} above if you did not yet, in particular
 the rules regarding patch submission.
 
 As stated already, please do not submit a patch which contains several
@@ -238,7 +238,7 @@ for us and greatly increases your chances of getting your patch applied.
 Use the patcheck tool of Libav to check your patch.
 The tool is located in the tools directory.
 
-Run the @pxref{Regression Tests} before submitting a patch in order to verify
+Run the @ref{Regression Tests} before submitting a patch in order to verify
 it does not cause unexpected problems.
 
 Patches should be posted as base64 encoded attachments (or any other
