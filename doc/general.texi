@@ -948,10 +948,7 @@ libraries (@file{libxxx.a} files) you should add the MSVC import libraries
 libraries (@file{libxxx.dll.a} files), as these will give you undefined
 reference errors. There should be no need for @file{libmingwex.a},
 @file{libgcc.a}, and @file{wsock32.lib}, nor any other external library
-statically linked into the DLLs. The @file{bin} directory contains a bunch
-of DLL files, but the ones that are actually used to run your application
-are the ones with a major version number in their filenames
-(i.e. @file{avcodec-51.dll}).
+statically linked into the DLLs.
 
 Libav headers do not declare global data for Windows DLLs through the usual
 dllexport/dllimport interface. Such data will be exported properly while
