@@ -195,7 +195,7 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
     int i;
     uint16_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
              *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
-    int shift = 15 + 16 - output_bits;
+    int shift = 15 + 16 - output_bits - 1;
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
@@ -212,24 +212,24 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
         } \
     }
     for (i = 0; i < dstW; i++) {
-        int val = 1 << (30-output_bits);
+        int val = 1 << (30-output_bits - 1);
         int j;
 
         for (j = 0; j < lumFilterSize; j++)
-            val += lumSrc[j][i] * lumFilter[j];
+            val += (lumSrc[j][i] * lumFilter[j]) >> 1;
 
         output_pixel(&yDest[i], val);
     }
 
     if (uDest) {
         for (i = 0; i < chrDstW; i++) {
-            int u = 1 << (30-output_bits);
-            int v = 1 << (30-output_bits);
+            int u = 1 << (30-output_bits - 1);
+            int v = 1 << (30-output_bits - 1);
             int j;
 
             for (j = 0; j < chrFilterSize; j++) {
-                u += chrUSrc[j][i] * chrFilter[j];
-                v += chrVSrc[j][i] * chrFilter[j];
+                u += (chrUSrc[j][i] * chrFilter[j]) >> 1;
+                v += (chrVSrc[j][i] * chrFilter[j]) >> 1;
             }
 
             output_pixel(&uDest[i], u);
@@ -239,11 +239,11 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
 
     if (CONFIG_SWSCALE_ALPHA && aDest) {
         for (i = 0; i < dstW; i++) {
-            int val = 1 << (30-output_bits);
+            int val = 1 << (30-output_bits - 1);
             int j;
 
             for (j = 0; j < lumFilterSize; j++)
-                val += alpSrc[j][i] * lumFilter[j];
+                val += (alpSrc[j][i] * lumFilter[j]) >> 1;
 
             output_pixel(&aDest[i], val);
         }
