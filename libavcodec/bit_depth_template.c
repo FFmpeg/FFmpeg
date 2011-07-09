@@ -85,13 +85,7 @@
 #   define CLIP(a) cm[a]
 #endif
 
-#if BIT_DEPTH == 8
-#   define FUNC(a)  a ## _8
-#   define FUNCC(a) a ## _8_c
-#elif BIT_DEPTH == 9
-#   define FUNC(a)  a ## _9
-#   define FUNCC(a) a ## _9_c
-#elif BIT_DEPTH == 10
-#   define FUNC(a)  a ## _10
-#   define FUNCC(a) a ## _10_c
-#endif
+#define FUNC3(a, b, c)  a ## _ ## b ## c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define FUNC(a)  FUNC2(a, BIT_DEPTH,)
+#define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)
