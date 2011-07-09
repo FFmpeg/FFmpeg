@@ -211,8 +211,6 @@ EMULATED_EDGE(8)
 EMULATED_EDGE(9)
 EMULATED_EDGE(10)
 
-#define ff_emulated_edge_mc ff_emulated_edge_mc_8
-
 void ff_add_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
 void ff_put_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
 void ff_put_signed_pixels_clamped_c(const DCTELEM *block, uint8_t *dest, int linesize);
