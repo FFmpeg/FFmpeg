@@ -116,7 +116,7 @@ static void fill_picture_parameters(struct dxva_context *ctx, const H264Context 
     if (ctx->workaround & FF_DXVA2_WORKAROUND_SCALING_LIST_ZIGZAG)
         pp->Reserved16Bits            = 0;
     else
-    pp->Reserved16Bits                = 3; /* FIXME is there a way to detect the right mode ? */
+        pp->Reserved16Bits            = 3; /* FIXME is there a way to detect the right mode ? */
     pp->StatusReportFeedbackNumber    = 1 + ctx->report_id++;
     pp->CurrFieldOrderCnt[0] = 0;
     if ((s->picture_structure & PICT_TOP_FIELD) &&
@@ -166,13 +166,13 @@ static void fill_scaling_lists(struct dxva_context *ctx, const H264Context *h, D
             for (j = 0; j < 64; j++)
                 qm->bScalingLists8x8[i][j] = h->pps.scaling_matrix8[i][j];
     } else {
-    for (i = 0; i < 6; i++)
-        for (j = 0; j < 16; j++)
-            qm->bScalingLists4x4[i][j] = h->pps.scaling_matrix4[i][zigzag_scan[j]];
+        for (i = 0; i < 6; i++)
+            for (j = 0; j < 16; j++)
+                qm->bScalingLists4x4[i][j] = h->pps.scaling_matrix4[i][zigzag_scan[j]];
 
-    for (i = 0; i < 2; i++)
-        for (j = 0; j < 64; j++)
-            qm->bScalingLists8x8[i][j] = h->pps.scaling_matrix8[i][ff_zigzag_direct[j]];
+        for (i = 0; i < 2; i++)
+            for (j = 0; j < 64; j++)
+                qm->bScalingLists8x8[i][j] = h->pps.scaling_matrix8[i][ff_zigzag_direct[j]];
     }
 }
 
