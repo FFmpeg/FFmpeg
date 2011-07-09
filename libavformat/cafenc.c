@@ -72,6 +72,8 @@ static uint32_t samples_per_packet(enum CodecID codec_id) {
     case CODEC_ID_GSM:
     case CODEC_ID_QCELP:
         return 160;
+    case CODEC_ID_GSM_MS:
+        return 320;
     case CODEC_ID_MP1:
         return 384;
     case CODEC_ID_MP2:

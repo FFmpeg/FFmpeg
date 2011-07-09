@@ -41,6 +41,7 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { CODEC_ID_ADPCM_IMA_QT,    MKBETAG('i','m','a','4') },
     { CODEC_ID_AMR_NB,          MKBETAG('s','a','m','r') },
     { CODEC_ID_GSM,             MKBETAG('a','g','s','m') },
+    { CODEC_ID_GSM_MS,          MKBETAG('m','s', 0, '1') },
     { CODEC_ID_MACE3,           MKBETAG('M','A','C','3') },
     { CODEC_ID_MACE6,           MKBETAG('M','A','C','6') },
     { CODEC_ID_MP3,             MKBETAG('.','m','p','3') },
