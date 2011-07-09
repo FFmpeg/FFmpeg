@@ -747,12 +747,16 @@ typedef struct AVFormatContext {
     int preload;
     int max_delay;
 
+#if FF_API_LOOP_OUTPUT
 #define AVFMT_NOOUTPUTLOOP -1
 #define AVFMT_INFINITEOUTPUTLOOP 0
     /**
      * number of times to loop output in formats that support it
+     *
+     * @deprecated use the 'loop' private option in the gif muxer.
      */
-    int loop_output;
+    attribute_deprecated int loop_output;
+#endif
 
     int flags;
 #define AVFMT_FLAG_GENPTS       0x0001 ///< Generate missing pts even if it requires parsing future frames.
@@ -770,7 +774,12 @@ typedef struct AVFormatContext {
 #define AVFMT_FLAG_PRIV_OPT    0x20000 ///< Enable use of private options by delaying codec open (this could be made default once all code is converted)
 #define AVFMT_FLAG_KEEP_SIDE_DATA 0x40000 ///< Dont merge side data but keep it seperate.
 
-    int loop_input;
+#if FF_API_LOOP_INPUT
+    /**
+     * @deprecated, use the 'loop' img2 demuxer private option.
+     */
+    attribute_deprecated int loop_input;
+#endif
 
     /**
      * decoding: size of data to probe; encoding: unused.

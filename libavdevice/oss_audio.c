@@ -80,13 +80,6 @@ static int audio_open(AVFormatContext *s1, int is_output, const char *audio_devi
         fcntl(audio_fd, F_SETFL, O_NONBLOCK);
 
     s->frame_size = AUDIO_BLOCK_SIZE;
-#if 0
-    tmp = (NB_FRAGMENTS << 16) | FRAGMENT_BITS;
-    err = ioctl(audio_fd, SNDCTL_DSP_SETFRAGMENT, &tmp);
-    if (err < 0) {
-        perror("SNDCTL_DSP_SETFRAGMENT");
-    }
-#endif
 
     /* select format : favour native format */
     err = ioctl(audio_fd, SNDCTL_DSP_GETFMTS, &tmp);

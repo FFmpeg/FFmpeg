@@ -43,6 +43,7 @@ typedef struct {
     char *pixel_format;     /**< Set by a private option. */
     char *video_size;       /**< Set by a private option. */
     char *framerate;        /**< Set by a private option. */
+    int loop;
 } VideoData;
 
 typedef struct {
@@ -247,6 +248,11 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         framerate = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
 
+#if FF_API_LOOP_INPUT
+    if (s1->loop_input)
+        s->loop = s1->loop_input;
+#endif
+
     av_strlcpy(s->path, s1->filename, sizeof(s->path));
     s->img_number = 0;
     s->img_count = 0;
@@ -306,7 +312,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
 
     if (!s->is_pipe) {
         /* loop over input */
-        if (s1->loop_input && s->img_number > s->img_last) {
+        if (s->loop && s->img_number > s->img_last) {
             s->img_number = s->img_first;
         }
         if (s->img_number > s->img_last)
@@ -467,6 +473,7 @@ static const AVOption options[] = {
     { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "video_size",   "", OFFSET(video_size),   FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "framerate",    "", OFFSET(framerate),    FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { "loop",         "", OFFSET(loop),         FF_OPT_TYPE_INT,    {.dbl = 0},    0, 1, DEC },
     { NULL },
 };
 

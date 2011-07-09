@@ -21,10 +21,14 @@
 
 #include <strings.h>
 #include "avformat.h"
+#include "avio_internal.h"
 #include "id3v1.h"
 #include "id3v2.h"
 #include "rawenc.h"
 #include "libavutil/avstring.h"
+#include "libavcodec/mpegaudio.h"
+#include "libavcodec/mpegaudiodata.h"
+#include "libavcodec/mpegaudiodecheader.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavcodec/mpegaudio.h"
@@ -132,15 +136,39 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     return len + ID3v2_HEADER_SIZE;
 }
 
+#define VBR_NUM_BAGS 400
+#define VBR_TOC_SIZE 100
+typedef struct MP3Context {
+    const AVClass *class;
+    int id3v2_version;
+    int64_t frames_offset;
+    int32_t frames;
+    int32_t size;
+    uint32_t want;
+    uint32_t seen;
+    uint32_t pos;
+    uint64_t bag[VBR_NUM_BAGS];
+} MP3Context;
+
 static int mp2_write_trailer(struct AVFormatContext *s)
 {
     uint8_t buf[ID3v1_TAG_SIZE];
+    MP3Context *mp3 = s->priv_data;
 
     /* write the id3v1 tag */
     if (id3v1_create_tag(s, buf) > 0) {
         avio_write(s->pb, buf, ID3v1_TAG_SIZE);
-        avio_flush(s->pb);
     }
+
+    /* write number of frames */
+    if (mp3 && mp3->frames_offset) {
+        avio_seek(s->pb, mp3->frames_offset, SEEK_SET);
+        avio_wb32(s->pb, s->streams[0]->nb_frames);
+        avio_seek(s->pb, 0, SEEK_END);
+    }
+
+    avio_flush(s->pb);
+
     return 0;
 }
 
@@ -160,19 +188,6 @@ AVOutputFormat ff_mp2_muxer = {
 #endif
 
 #if CONFIG_MP3_MUXER
-#define VBR_NUM_BAGS 400
-#define VBR_TOC_SIZE 100
-typedef struct MP3Context {
-    const AVClass *class;
-    int id3v2_version;
-    int64_t frames_offset;
-    int32_t frames;
-    int32_t size;
-    uint32_t want;
-    uint32_t seen;
-    uint32_t pos;
-    uint64_t bag[VBR_NUM_BAGS];
-} MP3Context;
 
 static const AVOption options[] = {
     { "id3v2_version", "Select ID3v2 version to write. Currently 3 and 4 are supported.",

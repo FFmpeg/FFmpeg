@@ -49,18 +49,6 @@ typedef struct FlashSVContext {
 } FlashSVContext;
 
 
-static void copy_region(uint8_t *sptr, uint8_t *dptr,
-                        int dx, int dy, int h, int w, int stride)
-{
-    int i;
-
-    for (i = dx + h; i > dx; i--) {
-        memcpy(dptr + i * stride + dy * 3, sptr, w * 3);
-        sptr += w * 3;
-    }
-}
-
-
 static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
@@ -153,14 +141,13 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* loop over all block columns */
     for (j = 0; j < v_blocks + (v_part ? 1 : 0); j++) {
 
-        int hp = j * s->block_height; // vertical position in frame
-        int hs = (j < v_blocks) ? s->block_height : v_part; // block size
-
+        int y_pos  = j * s->block_height; // vertical position in frame
+        int cur_blk_height = (j < v_blocks) ? s->block_height : v_part;
 
         /* loop over all block rows */
         for (i = 0; i < h_blocks + (h_part ? 1 : 0); i++) {
-            int wp = i * s->block_width; // horizontal position in frame
-            int ws = (i < h_blocks) ? s->block_width : h_part; // block size
+            int x_pos = i * s->block_width; // horizontal position in frame
+            int cur_blk_width = (i < h_blocks) ? s->block_width : h_part;
 
             /* get the size of the compressed zlib chunk */
             int size = get_bits(&gb, 16);
@@ -173,6 +160,8 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
             /* skip unchanged blocks, which have size 0 */
             if (size) {
                 /* decompress block */
+                uint8_t *line = s->tmpblock;
+                int k;
                 int ret = inflateReset(&s->zstream);
                 if (ret != Z_OK) {
                     av_log(avctx, AV_LOG_ERROR,
@@ -195,9 +184,15 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                            "error in decompression of block %dx%d: %d\n", i, j, ret);
                     /* return -1; */
                 }
-                copy_region(s->tmpblock, s->frame.data[0],
-                            s->image_height - (hp + hs + 1),
-                            wp, hs, ws, s->frame.linesize[0]);
+                /* Flash Screen Video stores the image upside down, so copy
+                 * lines to destination in reverse order. */
+                for (k = 1; k <= cur_blk_height; k++) {
+                    memcpy(s->frame.data[0] + x_pos * 3 +
+                           (s->image_height - y_pos - k) * s->frame.linesize[0],
+                           line, cur_blk_width * 3);
+                    /* advance source pointer to next line */
+                    line += cur_blk_width * 3;
+                }
                 skip_bits_long(&gb, 8 * size);   /* skip the consumed bits */
             }
         }

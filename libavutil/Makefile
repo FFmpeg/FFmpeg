@@ -77,7 +77,8 @@ OBJS-$(ARCH_ARM) += arm/cpu.o
 OBJS-$(ARCH_PPC) += ppc/cpu.o
 OBJS-$(ARCH_X86) += x86/cpu.o
 
-TESTPROGS = adler32 aes base64 cpu crc des eval lls md5 pca sha tree
+TESTPROGS = adler32 aes avstring base64 cpu crc des eval file lfg lls \
+            md5 opt pca parseutils rational sha tree
 TESTPROGS-$(HAVE_LZO1X_999_COMPRESS) += lzo
 
 DIRS = arm bfin sh4 x86

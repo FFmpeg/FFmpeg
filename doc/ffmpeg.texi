@@ -556,16 +556,19 @@ The timestamps must be specified in ascending order.
 @item -aframes @var{number}
 Set the number of audio frames to record.
 @item -ar @var{freq}
-Set the audio sampling frequency. there is no default for input streams,
-for output streams it is set by default to the frequency of the input stream.
+Set the audio sampling frequency. For output streams it is set by
+default to the frequency of the corresponding input stream. For input
+streams this option only makes sense for audio grabbing devices and raw
+demuxers and is mapped to the corresponding demuxer options.
 @item -ab @var{bitrate}
 Set the audio bitrate in bit/s (default = 64k).
 @item -aq @var{q}
 Set the audio quality (codec-specific, VBR).
 @item -ac @var{channels}
-Set the number of audio channels. For input streams it is set by
-default to 1, for output streams it is set by default to the same
-number of audio channels in input.
+Set the number of audio channels. For output streams it is set by
+default to the number of input audio channels. For input streams
+this option only makes sense for audio grabbing devices and raw demuxers
+and is mapped to the corresponding demuxer options.
 @item -an
 Disable audio recording.
 @item -acodec @var{codec}
@@ -733,9 +736,11 @@ Read input at native frame rate. Mainly used to simulate a grab device.
 @item -loop_input
 Loop over the input stream. Currently it works only for image
 streams. This option is used for automatic FFserver testing.
+This option is deprecated, use -loop.
 @item -loop_output @var{number_of_times}
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
+This option is deprecated, use -loop.
 @item -threads @var{count}
 Thread count.
 @item -vsync @var{parameter}
