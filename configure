@@ -1497,6 +1497,7 @@ udp_protocol_deps="network"
 
 # filters
 blackframe_filter_deps="gpl"
+boxblur_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
 drawtext_filter_deps="libfreetype"
 frei0r_filter_deps="frei0r dlopen strtok_r"

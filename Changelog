@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 version next:
 
 - openal input device added
+- boxblur filter added
 
 
 version 0.8:

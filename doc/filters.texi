@@ -183,6 +183,66 @@ threshold, and defaults to 98.
 @var{threshold} is the threshold below which a pixel value is
 considered black, and defaults to 32.
 
+@section boxblur
+
+Apply boxblur algorithm to the input video.
+
+This filter accepts the parameters:
+@var{luma_power}:@var{luma_radius}:@var{chroma_radius}:@var{chroma_power}:@var{alpha_radius}:@var{alpha_power}
+
+Chroma and alpha parameters are optional, if not specified they default
+to the corresponding values set for @var{luma_radius} and
+@var{luma_power}.
+
+@var{luma_radius}, @var{chroma_radius}, and @var{alpha_radius} represent
+the radius in pixels of the box used for blurring the corresponding
+input plane. They are expressions, and can contain the following
+constants:
+@table @option
+@item w, h
+the input width and heigth in pixels
+
+@item cw, ch
+the input chroma image width and height in pixels
+
+@item hsub, vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+@end table
+
+The radius must be a non-negative number, and must be not greater than
+the value of the expression @code{min(w,h)/2} for the luma and alpha planes,
+and of @code{min(cw,ch)/2} for the chroma planes.
+
+@var{luma_power}, @var{chroma_power}, and @var{alpha_power} represent
+how many times the boxblur filter is applied to the corresponding
+plane.
+
+Some examples follow:
+
+@itemize
+
+@item
+Apply a boxblur filter with luma, chroma, and alpha radius
+set to 2:
+@example
+boxblur=2:1
+@end example
+
+@item
+Set luma radius to 2, alpha and chroma radius to 0
+@example
+boxblur=2:1:0:0:0:0
+@end example
+
+@item
+Set luma and chroma radius to a fraction of the video dimension
+@example
+boxblur=min(h\,w)/10:1:min(cw\,ch)/10:1
+@end example
+
+@end itemize
+
 @section copy
 
 Copy the input source unchanged to the output. Mainly useful for
