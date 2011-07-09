@@ -1129,7 +1129,7 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska, int idx
             || seekhead[idx].id == MATROSKA_ID_CLUSTER)
         return 0;
 
-        /* seek */
+    /* seek */
     offset = seekhead[idx].pos + matroska->segment_start;
     if (avio_seek(matroska->ctx->pb, offset, SEEK_SET) == offset) {
         /* We don't want to lose our seekhead level, so we add
@@ -1140,21 +1140,21 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska, int idx
                    "cannot parse further.\n", EBML_MAX_DEPTH);
             ret = AVERROR_INVALIDDATA;
         } else {
-        level.start = 0;
-        level.length = (uint64_t)-1;
-        matroska->levels[matroska->num_levels] = level;
-        matroska->num_levels++;
-        matroska->current_id = 0;
+            level.start = 0;
+            level.length = (uint64_t)-1;
+            matroska->levels[matroska->num_levels] = level;
+            matroska->num_levels++;
+            matroska->current_id = 0;
 
-        ebml_parse(matroska, matroska_segment, matroska);
+            ebml_parse(matroska, matroska_segment, matroska);
 
-        /* remove dummy level */
-        while (matroska->num_levels) {
-            uint64_t length = matroska->levels[--matroska->num_levels].length;
-            if (length == (uint64_t)-1)
-                break;
+            /* remove dummy level */
+            while (matroska->num_levels) {
+                uint64_t length = matroska->levels[--matroska->num_levels].length;
+                if (length == (uint64_t)-1)
+                    break;
+            }
         }
-    }
     }
     /* seek back */
     avio_seek(matroska->ctx->pb, before_pos, SEEK_SET);
