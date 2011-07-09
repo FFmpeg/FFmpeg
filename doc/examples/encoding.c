@@ -22,7 +22,6 @@
  * @file
  * libavcodec API use example.
  *
- * @example libavcodec/api-example.c
  * Note that this library only handles codecs (mpeg, mpeg4, etc...),
  * not file formats (avi, vob, etc...). See library 'libavformat' for the
  * format handling
