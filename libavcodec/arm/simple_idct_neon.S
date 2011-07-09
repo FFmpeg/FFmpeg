@@ -243,10 +243,9 @@ function idct_col4_st8_neon
         bx              lr
 endfunc
 
-        .section .rodata
-        .align 4
-idct_coeff_neon:
+const   idct_coeff_neon, align=4
         .short W1, W2, W3, W4, W5, W6, W7, W4c
+endconst
 
         .macro idct_start data
         push            {r4-r7, lr}

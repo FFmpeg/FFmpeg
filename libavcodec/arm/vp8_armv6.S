@@ -240,9 +240,9 @@ A       orrcs           r8,  r8,  r10, lsl r6
         b               5b
 endfunc
 
-        .section        .rodata
-zigzag_scan:
+const zigzag_scan
         .byte            0,  2,  8, 16
         .byte           10,  4,  6, 12
         .byte           18, 24, 26, 20
         .byte           14, 22, 28, 30
+endconst

@@ -20,11 +20,9 @@
 
 #include "asm.S"
 
-.section .rodata
-.align 4
-
-vp3_idct_constants:
+const   vp3_idct_constants, align=4
 .short 64277, 60547, 54491, 46341, 36410, 25080, 12785
+endconst
 
 #define xC1S7 d0[0]
 #define xC2S6 d0[1]
@@ -33,8 +31,6 @@ vp3_idct_constants:
 #define xC5S3 d1[0]
 #define xC6S2 d1[1]
 #define xC7S1 d1[2]
-
-.text
 
 .macro vp3_loop_filter
     vsubl.u8        q3,  d18, d17
