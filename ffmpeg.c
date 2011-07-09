@@ -102,7 +102,6 @@ typedef struct ChapterMap {
 static const OptionDef options[];
 
 #define MAX_FILES 100
-#define MAX_STREAMS 1024    /* arbitrary sanity check value */
 
 static const char *last_asked_format = NULL;
 static double *ts_scale;
@@ -3081,9 +3080,6 @@ static int opt_input_ts_scale(const char *opt, const char *arg)
         p++;
     scale= strtod(p, &p);
 
-    if(stream >= MAX_STREAMS)
-        ffmpeg_exit(1);
-
     ts_scale = grow_array(ts_scale, sizeof(*ts_scale), &nb_ts_scale, stream + 1);
     ts_scale[stream] = scale;
     return 0;
@@ -3742,7 +3738,7 @@ static int opt_streamid(const char *opt, const char *arg)
         ffmpeg_exit(1);
     }
     *p++ = '\0';
-    idx = parse_number_or_die(opt, idx_str, OPT_INT, 0, MAX_STREAMS-1);
+    idx = parse_number_or_die(opt, idx_str, OPT_INT, 0, INT_MAX);
     streamid_map = grow_array(streamid_map, sizeof(*streamid_map), &nb_streamid_map, idx+1);
     streamid_map[idx] = parse_number_or_die(opt, p, OPT_INT, 0, INT_MAX);
     return 0;
