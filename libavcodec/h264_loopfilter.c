@@ -317,7 +317,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
     } else {
         LOCAL_ALIGNED_8(int16_t, bS, [2], [4][4]);
         int edges;
-        if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 ) {
+        if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 && !chroma444 ) {
             edges = 4;
             AV_WN64A(bS[0][0], 0x0002000200020002ULL);
             AV_WN64A(bS[0][2], 0x0002000200020002ULL);
