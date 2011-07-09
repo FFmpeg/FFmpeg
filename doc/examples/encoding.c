@@ -27,14 +27,6 @@
  * format handling
  */
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#ifdef HAVE_AV_CONFIG_H
-#undef HAVE_AV_CONFIG_H
-#endif
-
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
 
