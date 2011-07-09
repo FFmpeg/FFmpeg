@@ -6,23 +6,23 @@ version 0.7:
 
 - E-AC-3 audio encoder
 - ac3enc: add channel coupling support
-- floating-point sample format support to the ac3, eac3, dca, aac, and vorbis decoders.
-- H264/MPEG frame-level multi-threading
-- All av_metadata_* functions renamed to av_dict_* and moved to libavutil
+- floating-point sample format support for (E-)AC-3, DCA, AAC, Vorbis decoders
+- H.264/MPEG frame-level multithreading
+- av_metadata_* functions renamed to av_dict_* and moved to libavutil
 - 4:4:4 H.264 decoding support
 - 10-bit H.264 optimizations for x86
-- Bump libswscale for recently reported ABI break
+- bump libswscale for recently reported ABI break
 
 
 version 0.7_beta2:
 
-- VP8 frame-multithreading
+- VP8 frame-level multithreading
 - NEON optimizations for VP8
-- Lots of deprecated API cruft removed
-- fft and imdct optimizations for AVX (Sandy Bridge) processors
+- removed a lot of deprecated API cruft
+- FFT and IMDCT optimizations for AVX (Sandy Bridge) processors
 - DPX image encoder
 - SMPTE 302M AES3 audio decoder
-- Remove support for quitting ffmpeg with 'q', ctrl+c should be used.
+- ffmpeg no longer quits after the 'q' key is pressed; use 'ctrl+c' instead
 - 9bit and 10bit per sample support in the H.264 decoder
 
 
@@ -75,10 +75,10 @@ version 0.7_beta1:
 - demuxer for receiving raw rtp:// URLs without an SDP description
 - single stream LATM/LOAS decoder
 - setpts filter added
-- Win64 support for optimized asm functions
+- Win64 support for optimized x86 assembly functions
 - MJPEG/AVI1 to JPEG/JFIF bitstream filter
 - ASS subtitle encoder and decoder
-- IEC 61937 encapsulation for E-AC3, TrueHD, DTS-HD (for HDMI passthrough)
+- IEC 61937 encapsulation for E-AC-3, TrueHD, DTS-HD (for HDMI passthrough)
 - overlay filter added
 - rename aspect filter to setdar, and pixelaspect to setsar
 - IEC 61937 demuxer
