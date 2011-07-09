@@ -152,7 +152,6 @@ extern const vf_info_t vf_info_unsharp;
 extern const vf_info_t vf_info_swapuv;
 extern const vf_info_t vf_info_il;
 extern const vf_info_t vf_info_fil;
-extern const vf_info_t vf_info_boxblur;
 extern const vf_info_t vf_info_sab;
 extern const vf_info_t vf_info_smartblur;
 extern const vf_info_t vf_info_perspective;
@@ -202,7 +201,6 @@ extern const vf_info_t vf_info_stereo3d;
 static const vf_info_t* const filters[]={
     &vf_info_2xsai,
     &vf_info_blackframe,
-    &vf_info_boxblur,
     &vf_info_cropdetect,
     &vf_info_decimate,
     &vf_info_delogo,
