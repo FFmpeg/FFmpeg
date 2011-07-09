@@ -104,8 +104,6 @@ static const OptionDef options[];
 #define MAX_FILES 100
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 
-#define FFM_PACKET_SIZE 4096 //XXX a duplicate of the line in ffm.h
-
 static const char *last_asked_format = NULL;
 static double *ts_scale;
 static int  nb_ts_scale;
