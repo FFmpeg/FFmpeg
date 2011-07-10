@@ -106,8 +106,8 @@ Configuration options:
   --disable-lpc            disable LPC code
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
-  --enable-vaapi           enable VAAPI code
-  --enable-vdpau           enable VDPAU code
+  --enable-vaapi           enable VAAPI code [autodetect]
+  --enable-vdpau           enable VDPAU code [autodetect]
   --disable-dxva2          disable DXVA2 code
   --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
