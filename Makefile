@@ -26,6 +26,7 @@ CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CFLAGS)
 YASMFLAGS  += $(IFLAGS) -Pconfig.asm
 HOSTCFLAGS += $(IFLAGS)
+LDFLAGS    += $(ALLFFLIBS:%=-Llib%)
 
 define COMPILE
 	$($(1)DEP)
@@ -82,7 +83,6 @@ SKIPHEADERS = cmdutils_common_opts.h
 
 include $(SRC_PATH)/common.mak
 
-FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 
@@ -118,10 +118,10 @@ $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
 ffplay$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
-ffserver$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
+ffserver$(EXESUF): LDFLAGS += $(FFSERVERLDFLAGS)
 
 $(PROGS): %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
-	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
+	$(LD) $(LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 
