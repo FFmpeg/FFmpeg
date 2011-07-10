@@ -43,7 +43,7 @@ extern const char **opt_names;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
-extern AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
+extern AVDictionary *format_opts, *codec_opts;
 
 /**
  * Initialize the cmdutils option system, in particular
@@ -150,6 +150,11 @@ void parse_options(int argc, char **argv, const OptionDef *options,
                    void (* parse_arg_function)(const char*));
 
 void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
+
+/**
+ * Filter out options for given codec.
+ */
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder);
 
 /**
  * Print an error message to stderr, indicating filename and a human

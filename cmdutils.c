@@ -55,7 +55,7 @@ static int opt_name_count;
 AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
-AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
+AVDictionary *format_opts, *codec_opts;
 
 static const int this_year = 2011;
 
@@ -93,9 +93,7 @@ void uninit_opts(void)
     av_freep(&opt_values);
     opt_name_count = 0;
     av_dict_free(&format_opts);
-    av_dict_free(&video_opts);
-    av_dict_free(&audio_opts);
-    av_dict_free(&sub_opts);
+    av_dict_free(&codec_opts);
 }
 
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
@@ -299,20 +297,14 @@ unknown_opt:
 }
 
 #define FLAGS (o->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
-#define SET_PREFIXED_OPTS(ch, flag, output) \
-    if (opt[0] == ch && avcodec_opts[0] && (o = av_opt_find(avcodec_opts[0], opt+1, NULL, flag, 0)))\
-        av_dict_set(&output, opt+1, arg, FLAGS);
 static int opt_default2(const char *opt, const char *arg)
 {
     const AVOption *o;
-    if ((o = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
-        if (o->flags & AV_OPT_FLAG_VIDEO_PARAM)
-            av_dict_set(&video_opts, opt, arg, FLAGS);
-        if (o->flags & AV_OPT_FLAG_AUDIO_PARAM)
-            av_dict_set(&audio_opts, opt, arg, FLAGS);
-        if (o->flags & AV_OPT_FLAG_SUBTITLE_PARAM)
-            av_dict_set(&sub_opts, opt, arg, FLAGS);
-    } else if ((o = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
+    if ((o = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)) ||
+         ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
+          (o = av_opt_find(avcodec_opts[0], opt+1, NULL, 0, 0))))
+        av_dict_set(&codec_opts, opt, arg, FLAGS);
+    else if ((o = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
         av_dict_set(&format_opts, opt, arg, FLAGS);
     else if ((o = av_opt_find(sws_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
         // XXX we only support sws_flags, not arbitrary sws options
@@ -321,12 +313,6 @@ static int opt_default2(const char *opt, const char *arg)
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;
         }
-    }
-
-    if (!o) {
-        SET_PREFIXED_OPTS('v', AV_OPT_FLAG_VIDEO_PARAM,    video_opts)
-        SET_PREFIXED_OPTS('a', AV_OPT_FLAG_AUDIO_PARAM,    audio_opts)
-        SET_PREFIXED_OPTS('s', AV_OPT_FLAG_SUBTITLE_PARAM, sub_opts)
     }
 
     if (o)
@@ -897,6 +883,33 @@ FILE *get_preset_file(char *filename, size_t filename_size,
     }
 
     return f;
+}
+
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder)
+{
+    AVDictionary    *ret = NULL;
+    AVDictionaryEntry *t = NULL;
+    AVCodec       *codec = encoder ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
+    int            flags = encoder ? AV_OPT_FLAG_ENCODING_PARAM : AV_OPT_FLAG_DECODING_PARAM;
+    char          prefix = 0;
+
+    if (!codec)
+        return NULL;
+
+    switch (codec->type) {
+    case AVMEDIA_TYPE_VIDEO:    prefix = 'v'; flags |= AV_OPT_FLAG_VIDEO_PARAM;    break;
+    case AVMEDIA_TYPE_AUDIO:    prefix = 'a'; flags |= AV_OPT_FLAG_AUDIO_PARAM;    break;
+    case AVMEDIA_TYPE_SUBTITLE: prefix = 's'; flags |= AV_OPT_FLAG_SUBTITLE_PARAM; break;
+    }
+
+    while (t = av_dict_get(opts, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        if (av_opt_find(avcodec_opts[0], t->key, NULL, flags, 0) ||
+            (codec && codec->priv_class && av_opt_find(&codec->priv_class, t->key, NULL, flags, 0)))
+            av_dict_set(&ret, t->key, t->value, 0);
+        else if (t->key[0] == prefix && av_opt_find(avcodec_opts[0], t->key+1, NULL, flags, 0))
+            av_dict_set(&ret, t->key+1, t->value, 0);
+    }
+    return ret;
 }
 
 #if CONFIG_AVFILTER
