@@ -1200,7 +1200,7 @@ static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
     int i, j;
 
     for (i = 0; i < seekhead_list->nb_elem; i++)
-        if (seekhead[i].id != MATROSKA_ID_CUES)
+        if (seekhead[i].id == MATROSKA_ID_CUES)
             break;
     assert(i <= seekhead_list->nb_elem);
 
