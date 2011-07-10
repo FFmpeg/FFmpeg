@@ -3027,6 +3027,7 @@ int main(int argc, char **argv)
 #endif
     if (SDL_Init (flags)) {
         fprintf(stderr, "Could not initialize SDL - %s\n", SDL_GetError());
+        fprintf(stderr, "(Did you set the DISPLAY variable?)\n");
         exit(1);
     }
 
