@@ -2103,7 +2103,7 @@ if test "$cpu" = host; then
         gcc|llvm_gcc)
             check_native(){
                 $cc $1=native -v -c -o $TMPO $TMPC >$TMPE 2>&1 || return
-                sed -n "/$1=/{
+                sed -n "/cc1.*$1=/{
                             s/.*$1=\\([^ ]*\\).*/\\1/
                             p
                             q
