@@ -24,7 +24,7 @@
 
 void *ff_dxva2_get_surface(const Picture *picture)
 {
-    return picture->data[3];
+    return picture->f.data[3];
 }
 
 unsigned ff_dxva2_get_surface_index(const struct dxva_context *ctx,
