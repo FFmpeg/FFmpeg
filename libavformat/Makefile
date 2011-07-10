@@ -335,6 +335,7 @@ OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o
 
 EXAMPLES  = metadata output
 TESTPROGS = timefilter
+TOOLS     = pktdumper probetest
 
 include $(SRC_PATH)/subdir.mak
 

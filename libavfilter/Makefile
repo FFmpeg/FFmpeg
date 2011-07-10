@@ -62,4 +62,6 @@ OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 
 DIRS = x86
 
+TOOLS = graph2dot lavfi-showfiltfmts
+
 include $(SRC_PATH)/subdir.mak
