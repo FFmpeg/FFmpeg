@@ -916,7 +916,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             c->chrXInc+= 20;
         }
         //we don't use the x86 asm scaler if MMX is available
-        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
+        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX && c->scalingBpp == 8) {
             c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
             c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
         }
