@@ -778,7 +778,7 @@ SwsContext *sws_alloc_context(void)
 
 int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 {
-    int i;
+    int i, j;
     int usesVFilter, usesHFilter;
     int unscaled;
     SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
@@ -1062,7 +1062,13 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     //try to avoid drawing green stuff between the right end and the stride end
     for (i=0; i<c->vChrBufSize; i++)
-        memset(c->chrUPixBuf[i], 64, dst_stride*2+1);
+        if(av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 == 15){
+            av_assert0(c->scalingBpp == 16);
+            for(j=0; j<dst_stride/2+1; j++)
+                ((int32_t*)(c->chrUPixBuf[i]))[j] = 1<<18;
+        } else
+            for(j=0; j<dst_stride+1; j++)
+                ((int16_t*)(c->chrUPixBuf[i]))[j] = 1<<14;
 
     assert(c->chrDstH <= dstH);
 
