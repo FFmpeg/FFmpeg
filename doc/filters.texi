@@ -1013,8 +1013,7 @@ Erode an image by using a specific structuring element.
 This filter corresponds to the libopencv function @code{cvErode}.
 
 The filter accepts the parameters: @var{struct_el}:@var{nb_iterations},
-with the same meaning and use of those of the dilate filter
-(@pxref{dilate}).
+with the same syntax and semantics as the @ref{dilate} filter.
 
 @subsection smooth
 
@@ -1432,7 +1431,7 @@ setdar=16:9
 setdar=1.77777
 @end example
 
-See also the "setsar" filter documentation (@pxref{setsar}).
+See also the @ref{setsar} filter documentation.
 
 @section setpts
 
@@ -1978,8 +1977,7 @@ form @var{width}x@var{height} or a frame size abbreviation.
 the form @var{num}/@var{den} or a frame rate abbreviation.
 @var{src_name} is the name to the frei0r source to load. For more
 information regarding frei0r and how to set the parameters read the
-section "frei0r" (@pxref{frei0r}) in the description of the video
-filters.
+section @ref{frei0r} in the description of the video filters.
 
 Some examples follow:
 @example

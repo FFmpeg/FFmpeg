@@ -216,7 +216,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
     MpegEncContext * const s = &h->s;
     int mb_xy;
     int mb_type, left_type, top_type;
-    int qp, qp0, qp1, qpc, qpc0, qpc1, qp_thresh;
+    int qp, qp0, qp1, qpc, qpc0, qpc1;
     int chroma = !(CONFIG_GRAY && (s->flags&CODEC_FLAG_GRAY));
     int chroma444 = CHROMA444;
 
@@ -241,10 +241,6 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
     qp1 = (qp + qp1 + 1) >> 1;
     qpc0 = (qpc + qpc0 + 1) >> 1;
     qpc1 = (qpc + qpc1 + 1) >> 1;
-    qp_thresh = 15+52 - h->slice_alpha_c0_offset;
-    if(qp <= qp_thresh && qp0 <= qp_thresh && qp1 <= qp_thresh &&
-       qpc <= qp_thresh && qpc0 <= qp_thresh && qpc1 <= qp_thresh)
-        return;
 
     if( IS_INTRA(mb_type) ) {
         static const int16_t bS4[4] = {4,4,4,4};
@@ -321,7 +317,7 @@ void ff_h264_filter_mb_fast( H264Context *h, int mb_x, int mb_y, uint8_t *img_y,
     } else {
         LOCAL_ALIGNED_8(int16_t, bS, [2], [4][4]);
         int edges;
-        if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 ) {
+        if( IS_8x8DCT(mb_type) && (h->cbp&7) == 7 && !chroma444 ) {
             edges = 4;
             AV_WN64A(bS[0][0], 0x0002000200020002ULL);
             AV_WN64A(bS[0][2], 0x0002000200020002ULL);

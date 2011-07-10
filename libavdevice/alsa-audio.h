@@ -43,6 +43,8 @@
 
 typedef void (*ff_reorder_func)(const void *, void *, int);
 
+#define ALSA_BUFFER_SIZE_MAX 32768
+
 typedef struct {
     AVClass *class;
     snd_pcm_t *h;

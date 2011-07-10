@@ -575,7 +575,11 @@ void MPV_decode_defaults(MpegEncContext *s){
  */
 av_cold int MPV_common_init(MpegEncContext *s)
 {
-    int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y, threads;
+    int y_size, c_size, yc_size, i, mb_array_size, mv_table_size, x, y,
+        threads = (s->encoding ||
+                   (HAVE_THREADS &&
+                    s->avctx->active_thread_type & FF_THREAD_SLICE)) ?
+                  s->avctx->thread_count : 1;
 
     if(s->codec_id == CODEC_ID_MPEG2VIDEO && !s->progressive_sequence)
         s->mb_height = (s->height + 31) / 32 * 2;
@@ -589,8 +593,10 @@ av_cold int MPV_common_init(MpegEncContext *s)
 
     if((s->encoding || (s->avctx->active_thread_type & FF_THREAD_SLICE)) &&
        (s->avctx->thread_count > MAX_THREADS || (s->avctx->thread_count > s->mb_height && s->mb_height))){
-        av_log(s->avctx, AV_LOG_ERROR, "too many threads\n");
-        return -1;
+        int max_threads = FFMIN(MAX_THREADS, s->mb_height);
+        av_log(s->avctx, AV_LOG_WARNING, "too many threads (%d), reducing to %d\n",
+               s->avctx->thread_count, max_threads);
+        threads = max_threads;
     }
 
     if((s->width || s->height) && av_image_check_size(s->width, s->height, 0, s->avctx))
@@ -747,8 +753,6 @@ av_cold int MPV_common_init(MpegEncContext *s)
     s->thread_context[0]= s;
 
     if (s->encoding || (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_SLICE)) {
-        threads = s->avctx->thread_count;
-
         for(i=1; i<threads; i++){
             s->thread_context[i]= av_malloc(sizeof(MpegEncContext));
             memcpy(s->thread_context[i], s, sizeof(MpegEncContext));

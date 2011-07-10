@@ -1819,8 +1819,7 @@ static av_always_inline void decode_cabac_luma_residual( H264Context *h, const u
                     }
                 }
             } else {
-                uint8_t * const nnz= &h->non_zero_count_cache[ scan8[4*i8x8+16*p] ];
-                nnz[0] = nnz[1] = nnz[8] = nnz[9] = 0;
+                fill_rectangle(&h->non_zero_count_cache[scan8[4*i8x8+16*p]], 2, 2, 8, 0, 1);
             }
         }
     }

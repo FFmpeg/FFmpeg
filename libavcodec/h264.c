@@ -778,24 +778,6 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
     prefetch_motion(h, 1, pixel_shift, chroma444);
 }
 
-#define hl_motion_fn(sh, bits) \
-static av_always_inline void hl_motion_ ## bits(H264Context *h, \
-                                       uint8_t *dest_y, \
-                                       uint8_t *dest_cb, uint8_t *dest_cr, \
-                                       qpel_mc_func (*qpix_put)[16], \
-                                       h264_chroma_mc_func (*chroma_put), \
-                                       qpel_mc_func (*qpix_avg)[16], \
-                                       h264_chroma_mc_func (*chroma_avg), \
-                                       h264_weight_func *weight_op, \
-                                       h264_biweight_func *weight_avg, \
-                                       int chroma444) \
-{ \
-    hl_motion(h, dest_y, dest_cb, dest_cr, qpix_put, chroma_put, \
-              qpix_avg, chroma_avg, weight_op, weight_avg, sh, chroma444); \
-}
-hl_motion_fn(0, 8);
-hl_motion_fn(1, 16);
-
 static void free_tables(H264Context *h, int free_rbsp){
     int i;
     H264Context *hx;
@@ -1443,7 +1425,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
         ff_thread_finish_setup(s->avctx);
 }
 
-static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int chroma444, int simple){
+static av_always_inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src_cb, uint8_t *src_cr, int linesize, int uvlinesize, int chroma444, int simple){
     MpegEncContext * const s = &h->s;
     uint8_t *top_border;
     int top_idx = 1;
@@ -1518,7 +1500,7 @@ static inline void backup_mb_border(H264Context *h, uint8_t *src_y, uint8_t *src
     }
 }
 
-static inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
+static av_always_inline void xchg_mb_border(H264Context *h, uint8_t *src_y,
                                   uint8_t *src_cb, uint8_t *src_cr,
                                   int linesize, int uvlinesize,
                                   int xchg, int chroma444,
@@ -1876,18 +1858,11 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, 0, simple, pixel_shift);
         }else if(is_h264){
-            if (pixel_shift) {
-                hl_motion_16(h, dest_y, dest_cb, dest_cr,
-                             s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                             s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
-                             h->h264dsp.weight_h264_pixels_tab,
-                             h->h264dsp.biweight_h264_pixels_tab, 0);
-            } else
-                hl_motion_8(h, dest_y, dest_cb, dest_cr,
-                            s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                            s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
-                            h->h264dsp.weight_h264_pixels_tab,
-                            h->h264dsp.biweight_h264_pixels_tab, 0);
+            hl_motion(h, dest_y, dest_cb, dest_cr,
+                      s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
+                      s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
+                      h->h264dsp.weight_h264_pixels_tab,
+                      h->h264dsp.biweight_h264_pixels_tab, pixel_shift, 0);
         }
 
         hl_decode_mb_idct_luma(h, mb_type, is_h264, simple, transform_bypass, pixel_shift, block_offset, linesize, dest_y, 0);
@@ -2020,18 +1995,11 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest[0], dest[1], dest[2], linesize, linesize, 0, 1, simple, pixel_shift);
         }else{
-            if (pixel_shift) {
-                hl_motion_16(h, dest[0], dest[1], dest[2],
-                             s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                             s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
-                             h->h264dsp.weight_h264_pixels_tab,
-                             h->h264dsp.biweight_h264_pixels_tab, 1);
-            } else
-                hl_motion_8(h, dest[0], dest[1], dest[2],
-                            s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                            s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
-                            h->h264dsp.weight_h264_pixels_tab,
-                            h->h264dsp.biweight_h264_pixels_tab, 1);
+            hl_motion(h, dest[0], dest[1], dest[2],
+                      s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
+                      s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
+                      h->h264dsp.weight_h264_pixels_tab,
+                      h->h264dsp.biweight_h264_pixels_tab, pixel_shift, 1);
         }
 
         for (p = 0; p < plane_count; p++)
@@ -2966,7 +2934,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             }
         }
     }
-    h->qp_thresh= 15 + 52 - FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset) - FFMAX3(0, h->pps.chroma_qp_index_offset[0], h->pps.chroma_qp_index_offset[1]);
+    h->qp_thresh = 15 + 52 - FFMIN(h->slice_alpha_c0_offset, h->slice_beta_offset)
+                 - FFMAX3(0, h->pps.chroma_qp_index_offset[0], h->pps.chroma_qp_index_offset[1])
+                 + 6 * (h->sps.bit_depth_luma - 8);
 
 #if 0 //FMO
     if( h->pps.num_slice_groups > 1  && h->pps.mb_slice_group_map_type >= 3 && h->pps.mb_slice_group_map_type <= 5)

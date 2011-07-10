@@ -244,7 +244,8 @@ Note, these rules are mostly borrowed from the MPlayer project.
 
 @section Submitting patches
 
-First, read the (@pxref{Coding Rules}) above if you did not yet.
+First, read the @ref{Coding Rules} above if you did not yet, in particular
+the rules regarding patch submission.
 
 When you submit your patch, please use @code{git format-patch} or
 @code{git send-email}. We cannot read other diffs :-)
@@ -259,8 +260,8 @@ for us and greatly increases your chances of getting your patch applied.
 Use the patcheck tool of FFmpeg to check your patch.
 The tool is located in the tools directory.
 
-Run the regression tests before submitting a patch so that you can
-verify that there are no big problems.
+Run the @ref{Regression Tests} before submitting a patch in order to verify
+it does not cause unexpected problems.
 
 Patches should be posted as base64 encoded attachments (or any other
 encoding which ensures that the patch will not be trashed during
