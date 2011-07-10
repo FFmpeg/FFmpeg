@@ -39,9 +39,9 @@ $(HOSTOBJS): %.o: %.c
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTCC) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
-$(OBJS):     | $(dir $(OBJS))
-$(HOSTOBJS): | $(dir $(HOSTOBJS))
-$(TESTOBJS): | $(dir $(TESTOBJS))
+$(OBJS):     | $(sort $(dir $(OBJS)))
+$(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
+$(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
 $(TOOLOBJS): | tools
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS))
