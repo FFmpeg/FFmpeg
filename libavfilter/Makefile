@@ -64,6 +64,7 @@ OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_color.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += vsrc_movie.o
 OBJS-$(CONFIG_NULLSRC_FILTER)                += vsrc_nullsrc.o
+OBJS-$(CONFIG_RGBTESTSRC_FILTER)             += vsrc_testsrc.o
 OBJS-$(CONFIG_TESTSRC_FILTER)                += vsrc_testsrc.o
 
 OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o

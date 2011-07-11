@@ -1974,13 +1974,17 @@ Some examples follow:
 frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
 @end example
 
-@section testsrc
+@section rgbtestsrc, testsrc
 
-Generate a test video pattern, showing a color pattern, a scrolling
-gradient and a timestamp. This is mainly intended for testing
-purposes.
+The @code{rgbtestsrc} source generates an RGB test pattern useful for
+detecting RGB vs BGR issues. You should see a red, green and blue
+stripe from top to bottom.
 
-It accepts an optional sequence of @var{key}=@var{value} pairs,
+The @code{testsrc} source generates a test video pattern, showing a
+color pattern, a scrolling gradient and a timestamp. This is mainly
+intended for testing purposes.
+
+Both sources accept an optional sequence of @var{key}=@var{value} pairs,
 separated by ":". The description of the accepted options follows.
 
 @table @option
