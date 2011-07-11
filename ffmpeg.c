@@ -1522,7 +1522,7 @@ static int output_packet(InputStream *ist, int ist_index,
                 ret = avcodec_decode_audio3(ist->st->codec, samples, &decoded_data_size,
                                             &avpkt);
                 if (ret < 0)
-                    goto fail_decode;
+                    return ret;
                 avpkt.data += ret;
                 avpkt.size -= ret;
                 data_size   = ret;
@@ -1549,7 +1549,7 @@ static int output_packet(InputStream *ist, int ist_index,
                                                 &picture, &got_output, &avpkt);
                     quality = same_quality ? picture.quality : 0;
                     if (ret < 0)
-                        goto fail_decode;
+                        return ret;
                     if (!got_output) {
                         /* no picture yet */
                         goto discard_packet;
@@ -1569,7 +1569,7 @@ static int output_packet(InputStream *ist, int ist_index,
                 ret = avcodec_decode_subtitle2(ist->st->codec,
                                                &subtitle, &got_output, &avpkt);
                 if (ret < 0)
-                    goto fail_decode;
+                    return ret;
                 if (!got_output) {
                     goto discard_packet;
                 }
@@ -1577,7 +1577,7 @@ static int output_packet(InputStream *ist, int ist_index,
                 avpkt.size = 0;
                 break;
             default:
-                goto fail_decode;
+                return -1;
             }
         } else {
             switch(ist->st->codec->codec_type) {
@@ -1849,8 +1849,6 @@ static int output_packet(InputStream *ist, int ist_index,
     }
 
     return 0;
- fail_decode:
-    return -1;
 }
 
 static void print_sdp(AVFormatContext **avc, int n)
