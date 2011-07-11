@@ -408,9 +408,10 @@ static void release_delayed_buffers(PerThreadContext *p)
     FrameThreadContext *fctx = p->parent;
 
     while (p->num_released_buffers > 0) {
-        AVFrame *f = &p->released_buffers[--p->num_released_buffers];
+        AVFrame *f;
 
         pthread_mutex_lock(&fctx->buffer_mutex);
+        f = &p->released_buffers[--p->num_released_buffers];
         free_progress(f);
         f->thread_opaque = NULL;
 
@@ -836,6 +837,7 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
 void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
 {
     PerThreadContext *p = avctx->thread_opaque;
+    FrameThreadContext *fctx;
 
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) {
         avctx->release_buffer(avctx, f);
@@ -851,7 +853,10 @@ void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
         av_log(avctx, AV_LOG_DEBUG, "thread_release_buffer called on pic %p, %d buffers used\n",
                                     f, f->owner->internal_buffer_count);
 
+    fctx = p->parent;
+    pthread_mutex_lock(&fctx->buffer_mutex);
     p->released_buffers[p->num_released_buffers++] = *f;
+    pthread_mutex_unlock(&fctx->buffer_mutex);
     memset(f->data, 0, sizeof(f->data));
 }
 
