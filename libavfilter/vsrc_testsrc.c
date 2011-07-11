@@ -40,6 +40,7 @@ typedef struct {
     char *size;                 ///< video frame size
     char *rate;                 ///< video frame rate
     char *duration;             ///< total duration of the generated video
+    void (* fill_picture_fn)(AVFilterContext *ctx, AVFilterBufferRef *picref);
 } TestSourceContext;
 
 #define OFFSET(x) offsetof(TestSourceContext, x)
@@ -53,17 +54,6 @@ static const AVOption testsrc_options[]= {
     { NULL },
 };
 
-static const char *testsrc_get_name(void *ctx)
-{
-    return "testsrc";
-}
-
-static const AVClass testsrc_class = {
-    "TestSourceContext",
-    testsrc_get_name,
-    testsrc_options
-};
-
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     TestSourceContext *test = ctx->priv;
@@ -71,7 +61,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int64_t duration = -1;
     int ret = 0;
 
-    test->class = &testsrc_class;
     av_opt_set_defaults2(test, 0, 0);
 
     if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0) {
@@ -118,6 +107,40 @@ static int config_props(AVFilterLink *outlink)
 
     return 0;
 }
+
+static int request_frame(AVFilterLink *outlink)
+{
+    TestSourceContext *test = outlink->src->priv;
+    AVFilterBufferRef *picref;
+
+    if (test->max_pts >= 0 && test->pts > test->max_pts)
+        return AVERROR_EOF;
+    picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
+                                       test->w, test->h);
+    picref->pts = test->pts++;
+    test->nb_frame++;
+    test->fill_picture_fn(outlink->src, picref);
+
+    avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
+    avfilter_draw_slice(outlink, 0, picref->video->h, 1);
+    avfilter_end_frame(outlink);
+    avfilter_unref_buffer(picref);
+
+    return 0;
+}
+
+#if CONFIG_TESTSRC_FILTER
+
+static const char *testsrc_get_name(void *ctx)
+{
+    return "testsrc";
+}
+
+static const AVClass testsrc_class = {
+    "TestSourceContext",
+    testsrc_get_name,
+    testsrc_options
+};
 
 /**
  * Fill a rectangle with value val.
@@ -191,8 +214,9 @@ static void draw_digit(int digit, uint8_t *dst, unsigned dst_linesize,
 
 #define GRADIENT_SIZE (6 * 256)
 
-static void fill_picture(TestSourceContext *test, AVFilterBufferRef *picref)
+static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
 {
+    TestSourceContext *test = ctx->priv;
     uint8_t *p, *p0;
     int x, y;
     int color, color_rest;
@@ -290,28 +314,16 @@ static void fill_picture(TestSourceContext *test, AVFilterBufferRef *picref)
     }
 }
 
-static int request_frame(AVFilterLink *outlink)
+static av_cold int test_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
-    TestSourceContext *test = outlink->src->priv;
-    AVFilterBufferRef *picref;
+    TestSourceContext *test = ctx->priv;
 
-    if (test->max_pts >= 0 && test->pts > test->max_pts)
-        return AVERROR_EOF;
-    picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
-                                       test->w, test->h);
-    picref->pts = test->pts++;
-    test->nb_frame++;
-    fill_picture(test, picref);
-
-    avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
-    avfilter_draw_slice(outlink, 0, picref->video->h, 1);
-    avfilter_end_frame(outlink);
-    avfilter_unref_buffer(picref);
-
-    return 0;
+    test->class = &testsrc_class;
+    test->fill_picture_fn = test_fill_picture;
+    return init(ctx, args, opaque);
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int test_query_formats(AVFilterContext *ctx)
 {
     static const enum PixelFormat pix_fmts[] = {
         PIX_FMT_RGB24, PIX_FMT_NONE
@@ -324,9 +336,9 @@ AVFilter avfilter_vsrc_testsrc = {
     .name      = "testsrc",
     .description = NULL_IF_CONFIG_SMALL("Generate test pattern."),
     .priv_size = sizeof(TestSourceContext),
-    .init      = init,
+    .init      = test_init,
 
-    .query_formats   = query_formats,
+    .query_formats   = test_query_formats,
 
     .inputs    = (AVFilterPad[]) {{ .name = NULL}},
 
@@ -336,3 +348,5 @@ AVFilter avfilter_vsrc_testsrc = {
                                     .config_props  = config_props, },
                                   { .name = NULL }},
 };
+
+#endif /* CONFIG_TESTSRC_FILTER */
