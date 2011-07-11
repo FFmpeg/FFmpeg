@@ -29,10 +29,18 @@ SECTION_RODATA
 
 SECTION .text
 
+cextern pw_16
 cextern pw_8
 cextern pw_4
 cextern pw_2
 cextern pw_1
+
+pw_m32101234: dw -3, -2, -1, 0, 1, 2, 3, 4
+pw_m3:        times 8 dw -3
+pw_pixel_max: times 8 dw ((1 << 10)-1)
+pw_512:       times 8 dw 512
+pd_17:        times 4 dd 17
+pd_16:        times 4 dd 16
 
 ; dest, left, right, src
 ; output: %1 = (t[n-1] + t[n]*2 + t[n+1] + 2) >> 2
@@ -464,7 +472,92 @@ PRED8x8_TOP_DC mmxext, pshufw
 INIT_XMM
 PRED8x8_TOP_DC sse2  , pshuflw
 
+;-----------------------------------------------------------------------------
+; void pred8x8_plane(pixel *src, int stride)
+;-----------------------------------------------------------------------------
+INIT_XMM
+cglobal pred8x8_plane_10_sse2, 2,7,7
+    sub       r0, r1
+    lea       r2, [r1+r1*2]
+    lea       r3, [r0+r1*4]
+    mova      m2, [r0]
+    pmaddwd   m2, [pw_m32101234]
+    HADDD     m2, m1
+    movd      m0, [r0-4]
+    psrld     m0, 14
+    psubw     m2, m0               ; H
+    movd      m0, [r3+r1*4-4]
+    movd      m1, [r0+12]
+    paddw     m0, m1
+    psllw     m0, 4                ; 16*(src[7*stride-1] + src[-stride+7])
+    movzx    r4d, word [r3+r1*1-2] ; src[4*stride-1]
+    movzx    r5d, word [r0+r2*1-2] ; src[2*stride-1]
+    sub      r4d, r5d
+    movzx    r6d, word [r3+r1*2-2] ; src[5*stride-1]
+    movzx    r5d, word [r0+r1*2-2] ; src[1*stride-1]
+    sub      r6d, r5d
+    lea      r4d, [r4+r6*2]
+    movzx    r5d, word [r3+r2*1-2] ; src[6*stride-1]
+    movzx    r6d, word [r0+r1*1-2] ; src[0*stride-1]
+    sub      r5d, r6d
+    lea      r5d, [r5+r5*2]
+    add      r4d, r5d
+    movzx    r6d, word [r3+r1*4-2] ; src[7*stride-1]
+    movzx    r5d, word [r0+r1*0-2] ; src[ -stride-1]
+    sub      r6d, r5d
+    lea      r4d, [r4+r6*4]
+    movd      m3, r4d              ; V
+    punpckldq m2, m3
+    pmaddwd   m2, [pd_17]
+    paddd     m2, [pd_16]
+    psrad     m2, 5                ; b, c
 
+    mova      m3, [pw_pixel_max]
+    pxor      m1, m1
+    SPLATW    m0, m0, 1
+    SPLATW    m4, m2, 2
+    SPLATW    m2, m2, 0
+    pmullw    m2, [pw_m32101234]   ; b
+    pmullw    m5, m4, [pw_m3]      ; c
+    paddw     m5, [pw_16]
+    mov      r2d, 8
+    add       r0, r1
+.loop:
+    paddsw    m6, m2, m5
+    paddsw    m6, m0
+    psraw     m6, 5
+    CLIPW     m6, m1, m3
+    mova    [r0], m6
+    paddw     m5, m4
+    add       r0, r1
+    dec r2d
+    jg .loop
+    REP_RET
+
+
+;-----------------------------------------------------------------------------
+; void pred8x8l_128_dc(pixel *src, int has_topleft, int has_topright, int stride)
+;-----------------------------------------------------------------------------
+%macro PRED8x8L_128_DC 1
+cglobal pred8x8l_128_dc_10_%1, 4,4
+    mova      m0, [pw_512]
+    lea       r1, [r3+r3*2]
+    lea       r2, [r0+r3*4]
+    MOV8 r0+r3*0, m0, m0
+    MOV8 r0+r3*1, m0, m0
+    MOV8 r0+r3*2, m0, m0
+    MOV8 r0+r1*1, m0, m0
+    MOV8 r2+r3*0, m0, m0
+    MOV8 r2+r3*1, m0, m0
+    MOV8 r2+r3*2, m0, m0
+    MOV8 r2+r1*1, m0, m0
+    RET
+%endmacro
+
+INIT_MMX
+PRED8x8L_128_DC mmxext
+INIT_XMM
+PRED8x8L_128_DC sse2
 
 ;-----------------------------------------------------------------------------
 ; void pred8x8l_top_dc(pixel *src, int has_topleft, int has_topright, int stride)
@@ -1258,7 +1351,7 @@ cglobal pred16x16_horizontal_10_%1, 2,3
     MOV16  r0+r1*1, m1, m1, m1, m1
     lea    r0, [r0+r1*2]
     dec    r2
-    jge .vloop
+    jg .vloop
     REP_RET
 %endmacro
 
@@ -1266,3 +1359,139 @@ INIT_MMX
 PRED16x16_HORIZONTAL mmxext
 INIT_XMM
 PRED16x16_HORIZONTAL sse2
+
+;-----------------------------------------------------------------------------
+; void pred16x16_dc(pixel *src, int stride)
+;-----------------------------------------------------------------------------
+%macro PRED16x16_DC 1
+cglobal pred16x16_dc_10_%1, 2,7
+    mov        r4, r0
+    sub        r0, r1
+    mova       m0, [r0+0]
+    paddw      m0, [r0+mmsize]
+%if mmsize==8
+    paddw      m0, [r0+16]
+    paddw      m0, [r0+24]
+%endif
+    HADDW      m0, m2
+
+    sub        r0, 2
+    movzx     r3d, word [r0+r1*1]
+    movzx     r5d, word [r0+r1*2]
+%rep 7
+    lea        r0, [r0+r1*2]
+    movzx     r2d, word [r0+r1*1]
+    add       r3d, r2d
+    movzx     r2d, word [r0+r1*2]
+    add       r5d, r2d
+%endrep
+    lea       r3d, [r3+r5+16]
+
+    movd       m1, r3d
+    paddw      m0, m1
+    psrlw      m0, 5
+    SPLATW     m0, m0
+    mov       r3d, 8
+.loop:
+    MOV16 r4+r1*0, m0, m0, m0, m0
+    MOV16 r4+r1*1, m0, m0, m0, m0
+    lea        r4, [r4+r1*2]
+    dec       r3d
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_MMX
+PRED16x16_DC mmxext
+INIT_XMM
+PRED16x16_DC sse2
+
+;-----------------------------------------------------------------------------
+; void pred16x16_top_dc(pixel *src, int stride)
+;-----------------------------------------------------------------------------
+%macro PRED16x16_TOP_DC 1
+cglobal pred16x16_top_dc_10_%1, 2,3
+    sub        r0, r1
+    mova       m0, [r0+0]
+    paddw      m0, [r0+mmsize]
+%if mmsize==8
+    paddw      m0, [r0+16]
+    paddw      m0, [r0+24]
+%endif
+    HADDW      m0, m2
+
+    SPLATW     m0, m0
+    paddw      m0, [pw_8]
+    psrlw      m0, 4
+    mov       r2d, 8
+.loop:
+    MOV16 r0+r1*1, m0, m0, m0, m0
+    MOV16 r0+r1*2, m0, m0, m0, m0
+    lea        r0, [r0+r1*2]
+    dec       r2d
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_MMX
+PRED16x16_TOP_DC mmxext
+INIT_XMM
+PRED16x16_TOP_DC sse2
+
+;-----------------------------------------------------------------------------
+; void pred16x16_left_dc(pixel *src, int stride)
+;-----------------------------------------------------------------------------
+%macro PRED16x16_LEFT_DC 1
+cglobal pred16x16_left_dc_10_%1, 2,7
+    mov        r4, r0
+
+    sub        r0, 2
+    movzx     r5d, word [r0+r1*0]
+    movzx     r6d, word [r0+r1*1]
+%rep 7
+    lea        r0, [r0+r1*2]
+    movzx     r2d, word [r0+r1*0]
+    movzx     r3d, word [r0+r1*1]
+    add       r5d, r2d
+    add       r6d, r3d
+%endrep
+    lea       r2d, [r5+r6+8]
+    shr       r2d, 4
+
+    movd       m0, r2d
+    SPLATW     m0, m0
+    mov       r3d, 8
+.loop:
+    MOV16 r4+r1*0, m0, m0, m0, m0
+    MOV16 r4+r1*1, m0, m0, m0, m0
+    lea        r4, [r4+r1*2]
+    dec       r3d
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_MMX
+PRED16x16_LEFT_DC mmxext
+INIT_XMM
+PRED16x16_LEFT_DC sse2
+
+;-----------------------------------------------------------------------------
+; void pred16x16_128_dc(pixel *src, int stride)
+;-----------------------------------------------------------------------------
+%macro PRED16x16_128_DC 1
+cglobal pred16x16_128_dc_10_%1, 2,3
+    mova       m0, [pw_512]
+    mov       r2d, 8
+.loop:
+    MOV16 r0+r1*0, m0, m0, m0, m0
+    MOV16 r0+r1*1, m0, m0, m0, m0
+    lea        r0, [r0+r1*2]
+    dec       r2d
+    jg .loop
+    REP_RET
+%endmacro
+
+INIT_MMX
+PRED16x16_128_DC mmxext
+INIT_XMM
+PRED16x16_128_DC sse2
