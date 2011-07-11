@@ -354,10 +354,11 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth)
 {
     int mm_flags = av_get_cpu_flags();
 
-    if (bit_depth == 8) {
     if (mm_flags & AV_CPU_FLAG_MMX2) {
         c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
     }
+
+    if (bit_depth == 8) {
 #if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->h264_idct_dc_add         =
