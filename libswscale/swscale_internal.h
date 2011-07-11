@@ -347,10 +347,13 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, uint64_t, v_temp);
     DECLARE_ALIGNED(8, uint64_t, y_temp);
     int32_t  alpMmxFilter[4*MAX_FILTER_SIZE];
+    // alignment of these values is not necessary, but merely here
+    // to maintain the same offset across x8632 and x86-64. Once we
+    // use proper offset macros in the asm, they can be removed.
     DECLARE_ALIGNED(8, ptrdiff_t, uv_off); ///< offset (in pixels) between u and v planes
     DECLARE_ALIGNED(8, ptrdiff_t, uv_offx2); ///< offset (in bytes) between u and v planes
-    uint16_t dither16[8];
-    uint32_t dither32[8];
+    DECLARE_ALIGNED(8, uint16_t, dither16)[8];
+    DECLARE_ALIGNED(8, uint32_t, dither32)[8];
 
     const uint8_t *chrDither8, *lumDither8;
 

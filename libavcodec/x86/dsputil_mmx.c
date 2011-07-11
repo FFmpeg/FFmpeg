@@ -1783,7 +1783,7 @@ static void gmc_mmx(uint8_t *dst, uint8_t *src, int stride, int h, int ox, int o
                     int dxx, int dxy, int dyx, int dyy, int shift, int r, int width, int height)
 {
     gmc(dst, src, stride, h, ox, oy, dxx, dxy, dyx, dyy, shift, r,
-        width, height, &ff_emulated_edge_mc);
+        width, height, &ff_emulated_edge_mc_8);
 }
 #endif
 

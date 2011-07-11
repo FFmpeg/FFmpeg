@@ -32,6 +32,7 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
+#include "libavutil/dict.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
@@ -485,9 +486,20 @@ static void avcodec_get_subtitle_defaults(AVSubtitle *sub)
     sub->pts = AV_NOPTS_VALUE;
 }
 
+#if FF_API_AVCODEC_OPEN
 int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
 {
+    return avcodec_open2(avctx, codec, NULL);
+}
+#endif
+
+int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options)
+{
     int ret = 0;
+    AVDictionary *tmp = NULL;
+
+    if (options)
+        av_dict_copy(&tmp, *options, 0);
 
     /* If there is a user-supplied mutex locking routine, call it. */
     if (ff_lockmgr_cb) {
@@ -514,14 +526,18 @@ int attribute_align_arg avcodec_open(AVCodecContext *avctx, AVCodec *codec)
             ret = AVERROR(ENOMEM);
             goto end;
         }
-        if(codec->priv_class){ //this can be droped once all user apps use   avcodec_get_context_defaults3()
+        if (codec->priv_class) {
             *(AVClass**)avctx->priv_data= codec->priv_class;
             av_opt_set_defaults(avctx->priv_data);
         }
       }
+      if (codec->priv_class && (ret = av_opt_set_dict(avctx->priv_data, &tmp) < 0))
+          goto free_and_end;
     } else {
         avctx->priv_data = NULL;
     }
+    if ((ret = av_opt_set_dict(avctx, &tmp)) < 0)
+        goto free_and_end;
 
     if(avctx->coded_width && avctx->coded_height)
         avcodec_set_dimensions(avctx, avctx->coded_width, avctx->coded_height);
@@ -640,8 +656,14 @@ end:
     if (ff_lockmgr_cb) {
         (*ff_lockmgr_cb)(&codec_mutex, AV_LOCK_RELEASE);
     }
+    if (options) {
+        av_dict_free(options);
+        *options = tmp;
+    }
+
     return ret;
 free_and_end:
+    av_dict_free(&tmp);
     av_freep(&avctx->priv_data);
     avctx->codec= NULL;
     goto end;

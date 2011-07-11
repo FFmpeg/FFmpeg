@@ -2115,7 +2115,7 @@ static void mov_create_chapter_track(AVFormatContext *s, int tracknum)
     track->mode = mov->mode;
     track->tag = MKTAG('t','e','x','t');
     track->timescale = MOV_TIMESCALE;
-    track->enc = avcodec_alloc_context();
+    track->enc = avcodec_alloc_context3(NULL);
     track->enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
 
     for (i = 0; i < s->nb_chapters; i++) {

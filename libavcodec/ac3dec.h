@@ -66,6 +66,7 @@
 #define AC3_FRAME_BUFFER_SIZE 32768
 
 typedef struct {
+    AVClass        *class;                  ///< class for AVOptions
     AVCodecContext *avctx;                  ///< parent context
     GetBitContext gbc;                      ///< bitstream reader
 
@@ -143,6 +144,7 @@ typedef struct {
 
 ///@name Dynamic range
     float dynamic_range[2];                 ///< dynamic range
+    float drc_scale;                        ///< percentage of dynamic range compression to be applied
 ///@}
 
 ///@name Bandwidth

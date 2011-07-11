@@ -144,7 +144,7 @@ int main(int argc, char **argv)
 
     printf("ffmpeg motion test\n");
 
-    ctx = avcodec_alloc_context();
+    ctx = avcodec_alloc_context3(NULL);
     ctx->dsp_mask = AV_CPU_FLAG_FORCE;
     dsputil_init(&cctx, ctx);
     for (c = 0; c < flags_size; c++) {

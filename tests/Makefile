@@ -31,9 +31,6 @@ tests/data/asynth1.sw tests/vsynth%/00.pgm: TAG = GEN
 tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
-tools/lavfi-showfiltfmts$(EXESUF): tools/lavfi-showfiltfmts.o $(FF_DEP_LIBS)
-	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
-
 include $(SRC_PATH)/tests/fate.mak
 include $(SRC_PATH)/tests/fate2.mak
 

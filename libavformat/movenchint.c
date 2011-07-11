@@ -36,7 +36,7 @@ int ff_mov_init_hinting(AVFormatContext *s, int index, int src_index)
     track->tag = MKTAG('r','t','p',' ');
     track->src_track = src_index;
 
-    track->enc = avcodec_alloc_context();
+    track->enc = avcodec_alloc_context3(NULL);
     if (!track->enc)
         goto fail;
     track->enc->codec_type = AVMEDIA_TYPE_DATA;

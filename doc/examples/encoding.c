@@ -56,7 +56,7 @@ static void audio_encode_example(const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
 
     /* put sample parameters */
     c->bit_rate = 64000;
@@ -127,7 +127,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
@@ -208,7 +208,7 @@ static void video_encode_example(const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
     picture= avcodec_alloc_frame();
 
     /* put sample parameters */
@@ -335,7 +335,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
     picture= avcodec_alloc_frame();
 
     if(codec->capabilities&CODEC_CAP_TRUNCATED)

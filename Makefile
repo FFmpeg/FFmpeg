@@ -18,6 +18,8 @@ PROGS_G     = $(PROGS-yes:%=%_g$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
+TOOLS       = qt-faststart trasher
+TOOLS-$(CONFIG_ZLIB) += cws2fws
 
 BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
@@ -51,6 +53,11 @@ $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(CP) $< $@
 	$(STRIP) $@
 
+$(TOOLS): %$(EXESUF): %.o
+	$(LD) $(LDFLAGS) -o $@ $< $(ELIBS)
+
+tools/cws2fws$(EXESUF): ELIBS = -lz
+
 config.h: .config
 .config: $(wildcard $(FFLIBS:%=$(SRC_PATH)/lib%/all*.c))
 	@-tput bold 2>/dev/null
@@ -59,7 +66,7 @@ config.h: .config
 
 SUBDIR_VARS := OBJS FFLIBS CLEANFILES DIRS TESTPROGS EXAMPLES SKIPHEADERS \
                ALTIVEC-OBJS MMX-OBJS NEON-OBJS X86-OBJS YASM-OBJS-FFT YASM-OBJS \
-               HOSTPROGS BUILT_HEADERS TESTOBJS ARCH_HEADERS ARMV6-OBJS
+               HOSTPROGS BUILT_HEADERS TESTOBJS ARCH_HEADERS ARMV6-OBJS TOOLS
 
 define RESET
 $(1) :=
@@ -80,18 +87,6 @@ ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
 
 %_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
-
-TOOLS     = cws2fws graph2dot lavfi-showfiltfmts pktdumper probetest qt-faststart trasher
-TOOLOBJS := $(TOOLS:%=tools/%.o)
-TOOLS    := $(TOOLS:%=tools/%$(EXESUF))
-
-alltools: $(TOOLS)
-
-tools/%$(EXESUF): tools/%.o
-	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
-
-$(TOOLOBJS): %.o: %.c | tools
-	$(CC) $(CPPFLAGS) $(CFLAGS) -c $(CC_O) $<
 
 OBJDIRS += tools
 

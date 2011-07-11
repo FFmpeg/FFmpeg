@@ -944,7 +944,7 @@ static int skip_check(MpegEncContext *s, Picture *p, Picture *ref){
 
 static int estimate_best_b_count(MpegEncContext *s){
     AVCodec *codec= avcodec_find_encoder(s->avctx->codec_id);
-    AVCodecContext *c= avcodec_alloc_context();
+    AVCodecContext *c = avcodec_alloc_context3(NULL);
     AVFrame input[FF_MAX_B_FRAMES+2];
     const int scale= s->avctx->brd_scale;
     int i, j, out_size, p_lambda, b_lambda, lambda2;
@@ -973,7 +973,7 @@ static int estimate_best_b_count(MpegEncContext *s){
     c->time_base= s->avctx->time_base;
     c->max_b_frames= s->max_b_frames;
 
-    if (avcodec_open(c, codec) < 0)
+    if (avcodec_open2(c, codec, NULL) < 0)
         return -1;
 
     for(i=0; i<s->max_b_frames+2; i++){

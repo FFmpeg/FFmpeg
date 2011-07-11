@@ -77,6 +77,9 @@ TESTOBJS  := $(TESTOBJS:%=$(SUBDIR)%) $(TESTPROGS:%=$(SUBDIR)%-test.o)
 TESTPROGS := $(TESTPROGS:%=$(SUBDIR)%-test$(EXESUF))
 HOSTOBJS  := $(HOSTPROGS:%=$(SUBDIR)%.o)
 HOSTPROGS := $(HOSTPROGS:%=$(SUBDIR)%$(HOSTEXESUF))
+TOOLS     += $(TOOLS-yes)
+TOOLOBJS  := $(TOOLS:%=tools/%.o)
+TOOLS     := $(TOOLS:%=tools/%$(EXESUF))
 
 DEP_LIBS := $(foreach NAME,$(FFLIBS),lib$(NAME)/$($(CONFIG_SHARED:yes=S)LIBNAME))
 
@@ -85,15 +88,18 @@ SKIPHEADERS += $(ARCH_HEADERS:%=$(ARCH)/%) $(SKIPHEADERS-)
 SKIPHEADERS := $(SKIPHEADERS:%=$(SUBDIR)%)
 checkheaders: $(filter-out $(SKIPHEADERS:.h=.ho),$(ALLHEADERS:.h=.ho))
 
+alltools: $(TOOLS)
+
 $(HOSTOBJS): %.o: %.c
 	$(HOSTCC) $(HOSTCFLAGS) -c -o $@ $<
 
 $(HOSTPROGS): %$(HOSTEXESUF): %.o
 	$(HOSTCC) $(HOSTLDFLAGS) -o $@ $< $(HOSTLIBS)
 
-$(OBJS):     | $(dir $(OBJS))
-$(HOSTOBJS): | $(dir $(HOSTOBJS))
-$(TESTOBJS): | $(dir $(TESTOBJS))
+$(OBJS):     | $(sort $(dir $(OBJS)))
+$(HOSTOBJS): | $(sort $(dir $(HOSTOBJS)))
+$(TESTOBJS): | $(sort $(dir $(TESTOBJS)))
+$(TOOLOBJS): | tools
 
 OBJDIRS := $(OBJDIRS) $(dir $(OBJS) $(HOSTOBJS) $(TESTOBJS))
 
