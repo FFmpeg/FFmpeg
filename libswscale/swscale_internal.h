@@ -77,8 +77,7 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t* src[],
 typedef void (*yuv2planar1_fn) (struct SwsContext *c,
                                 const int16_t *lumSrc, const int16_t *chrUSrc,
                                 const int16_t *chrVSrc, const int16_t *alpSrc,
-                                uint8_t *dest[4], int dstW, int chrDstW,
-                                const uint8_t *lumDither, const uint8_t *chrDither);
+                                uint8_t *dest[4], int dstW, int chrDstW);
 /**
  * Write one line of horizontally scaled Y/U/V/A to planar output
  * with multi-point vertical scaling between input pixels.
@@ -101,7 +100,7 @@ typedef void (*yuv2planarX_fn) (struct SwsContext *c, const int16_t *lumFilter,
                                 const int16_t *chrFilter, const int16_t **chrUSrc,
                                 const int16_t **chrVSrc,  int chrFilterSize,
                                 const int16_t **alpSrc, uint8_t *dest[4],
-                                int dstW, int chrDstW, const uint8_t *lumDither, const uint8_t *chrDither);
+                                int dstW, int chrDstW);
 /**
  * Write one line of horizontally scaled Y/U/V/A to packed-pixel YUV/RGB
  * output without any additional vertical scaling (or point-scaling). Note
@@ -210,6 +209,7 @@ typedef struct SwsContext {
     enum PixelFormat srcFormat;   ///< Source      pixel format.
     int dstFormatBpp;             ///< Number of bits per pixel of the destination pixel format.
     int srcFormatBpp;             ///< Number of bits per pixel of the source      pixel format.
+    int scalingBpp;
     int chrSrcHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in source      image.
     int chrSrcVSubSample;         ///< Binary logarithm of vertical   subsampling factor between luma/alpha and chroma planes in source      image.
     int chrDstHSubSample;         ///< Binary logarithm of horizontal subsampling factor between luma/alpha and chroma planes in destination image.
@@ -324,7 +324,7 @@ typedef struct SwsContext {
 #define UV_OFF                "11*8+4*4*256*3+48"
 #define UV_OFFx2              "11*8+4*4*256*3+56"
 #define DITHER16              "11*8+4*4*256*3+64"
-#define DITHER32              "11*8+4*4*256*3+64+16"
+#define DITHER32              "11*8+4*4*256*3+80"
 
     DECLARE_ALIGNED(8, uint64_t, redDither);
     DECLARE_ALIGNED(8, uint64_t, greenDither);
@@ -351,6 +351,8 @@ typedef struct SwsContext {
     DECLARE_ALIGNED(8, ptrdiff_t, uv_offx2); ///< offset (in bytes) between u and v planes
     uint16_t dither16[8];
     uint32_t dither32[8];
+
+    const uint8_t *chrDither8, *lumDither8;
 
 #if HAVE_ALTIVEC
     vector signed short   CY;
@@ -451,7 +453,7 @@ typedef struct SwsContext {
      *                   (and input coefficients thus padded with zeroes)
      *                   to simplify creating SIMD code.
      */
-    void (*hScale)(int16_t *dst, int dstW, const uint8_t *src,
+    void (*hScale)(struct SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
                    const int16_t *filter, const int16_t *filterPos,
                    int filterSize);
 
@@ -461,6 +463,15 @@ typedef struct SwsContext {
 
     void (*lumConvertRange)(int16_t *dst, int width); ///< Color range conversion function for luma plane if needed.
     void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width); ///< Color range conversion function for chroma planes if needed.
+
+    /**
+     * dst[..] = (src[..] << 8) | src[..];
+     */
+    void (*scale8To16Rv)(uint16_t *dst, const uint8_t *src, int len);
+    /**
+     * dst[..] = src[..] >> 4;
+     */
+    void (*scale19To15Fw)(int16_t *dst, const int32_t *src, int len);
 
     int needs_hcscale; ///< Set if there are chroma planes to be converted.
 

@@ -220,7 +220,7 @@ yuv2yuvX_altivec_real(SwsContext *c,
     }
 }
 
-static void hScale_altivec_real(int16_t *dst, int dstW,
+static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
                                 const uint8_t *src, const int16_t *filter,
                                 const int16_t *filterPos, int filterSize)
 {
@@ -406,7 +406,9 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
-    c->hScale       = hScale_altivec_real;
+    if (c->scalingBpp == 8) {
+        c->hScale       = hScale_altivec_real;
+    }
     if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
         dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21 &&
         !c->alpPixBuf) {

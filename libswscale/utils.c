@@ -46,6 +46,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/avassert.h"
 
 unsigned swscale_version(void)
 {
@@ -777,7 +778,7 @@ SwsContext *sws_alloc_context(void)
 
 int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 {
-    int i;
+    int i, j;
     int usesVFilter, usesHFilter;
     int unscaled;
     SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
@@ -785,7 +786,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     int srcH= c->srcH;
     int dstW= c->dstW;
     int dstH= c->dstH;
-    int dst_stride = FFALIGN(dstW * sizeof(int16_t)+66, 16), dst_stride_px = dst_stride >> 1;
+    int dst_stride = FFALIGN(dstW * sizeof(int16_t)+66, 16);
     int flags, cpu_flags;
     enum PixelFormat srcFormat= c->srcFormat;
     enum PixelFormat dstFormat= c->dstFormat;
@@ -882,8 +883,14 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
     }
 
+    c->scalingBpp = FFMAX(av_pix_fmt_descriptors[srcFormat].comp[0].depth_minus1,
+                          av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1) >= 15 ? 16 : 8;
+
+    if (c->scalingBpp == 16)
+        dst_stride <<= 1;
+    av_assert0(c->scalingBpp<=16);
     FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
-    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2) {
+    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2 && c->scalingBpp == 8) {
         c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
         if (!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR)) {
             if (flags&SWS_PRINT_INFO)
@@ -909,7 +916,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             c->chrXInc+= 20;
         }
         //we don't use the x86 asm scaler if MMX is available
-        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
+        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX && c->scalingBpp == 8) {
             c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
             c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
         }
@@ -1040,12 +1047,12 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i+c->vLumBufSize], dst_stride+1, fail);
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
-    c->uv_off = dst_stride_px;
+    c->uv_off = dst_stride>>1;
     c->uv_offx2 = dst_stride;
     for (i=0; i<c->vChrBufSize; i++) {
         FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], dst_stride*2+1, fail);
         c->chrUPixBuf[i] = c->chrUPixBuf[i+c->vChrBufSize];
-        c->chrVPixBuf[i] = c->chrVPixBuf[i+c->vChrBufSize] = c->chrUPixBuf[i] + dst_stride_px;
+        c->chrVPixBuf[i] = c->chrVPixBuf[i+c->vChrBufSize] = c->chrUPixBuf[i] + (dst_stride >> 1);
     }
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
         for (i=0; i<c->vLumBufSize; i++) {
@@ -1055,7 +1062,13 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     //try to avoid drawing green stuff between the right end and the stride end
     for (i=0; i<c->vChrBufSize; i++)
-        memset(c->chrUPixBuf[i], 64, dst_stride*2+1);
+        if(av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 == 15){
+            av_assert0(c->scalingBpp == 16);
+            for(j=0; j<dst_stride/2+1; j++)
+                ((int32_t*)(c->chrUPixBuf[i]))[j] = 1<<18;
+        } else
+            for(j=0; j<dst_stride+1; j++)
+                ((int16_t*)(c->chrUPixBuf[i]))[j] = 1<<14;
 
     assert(c->chrDstH <= dstH);
 
