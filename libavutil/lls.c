@@ -118,24 +118,27 @@ double av_evaluate_lls(LLSModel *m, double *param, int order)
 
 #ifdef TEST
 
-#include <stdlib.h>
 #include <stdio.h>
+#include <limits.h>
+#include "lfg.h"
 
 int main(void)
 {
     LLSModel m;
     int i, order;
+    AVLFG lfg;
 
+    av_lfg_init(&lfg, 1);
     av_init_lls(&m, 3);
 
     for (i = 0; i < 100; i++) {
         double var[4];
         double eval;
 
-        var[0] = (rand() / (double) RAND_MAX - 0.5) * 2;
-        var[1] = var[0] + rand() / (double) RAND_MAX - 0.5;
-        var[2] = var[1] + rand() / (double) RAND_MAX - 0.5;
-        var[3] = var[2] + rand() / (double) RAND_MAX - 0.5;
+        var[0] = (av_lfg_get(&lfg) / (double) UINT_MAX - 0.5) * 2;
+        var[1] = var[0] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
+        var[2] = var[1] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
+        var[3] = var[2] + av_lfg_get(&lfg) / (double) UINT_MAX - 0.5;
         av_update_lls(&m, var, 0.99);
         av_solve_lls(&m, 0.001, 0);
         for (order = 0; order < 3; order++) {

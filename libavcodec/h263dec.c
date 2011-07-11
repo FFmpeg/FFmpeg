@@ -406,7 +406,7 @@ retry:
 
     /* We need to set current_picture_ptr before reading the header,
      * otherwise we cannot store anyting in there */
-    if(s->current_picture_ptr==NULL || s->current_picture_ptr->data[0]){
+    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f.data[0]) {
         int i= ff_find_unused_picture(s, 0);
         s->current_picture_ptr= &s->picture[i];
     }
@@ -593,8 +593,8 @@ retry:
         s->gob_index = ff_h263_get_gob_height(s);
 
     // for skipping the frame
-    s->current_picture.pict_type= s->pict_type;
-    s->current_picture.key_frame= s->pict_type == AV_PICTURE_TYPE_I;
+    s->current_picture.f.pict_type = s->pict_type;
+    s->current_picture.f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
     /* skip B-frames if we don't have reference frames */
     if(s->last_picture_ptr==NULL && (s->pict_type==AV_PICTURE_TYPE_B || s->dropable)) return get_consumed_bytes(s, buf_size);

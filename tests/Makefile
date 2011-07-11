@@ -29,7 +29,7 @@ tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
 tests/data/asynth1.sw tests/vsynth%/00.pgm: TAG = GEN
 
 tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
-	$(LD) $(FF_LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
+	$(LD) $(LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
 
 include $(SRC_PATH)/tests/fate.mak
 include $(SRC_PATH)/tests/fate2.mak

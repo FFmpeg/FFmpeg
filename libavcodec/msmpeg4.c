@@ -780,10 +780,10 @@ static inline int msmpeg4_pred_dc(MpegEncContext * s, int n,
             }else{
                 if(n<4){
                     wrap= s->linesize;
-                    dest= s->current_picture.data[0] + (((n>>1) + 2*s->mb_y) * 8*  wrap ) + ((n&1) + 2*s->mb_x) * 8;
+                    dest= s->current_picture.f.data[0] + (((n >> 1) + 2*s->mb_y) * 8*  wrap ) + ((n & 1) + 2*s->mb_x) * 8;
                 }else{
                     wrap= s->uvlinesize;
-                    dest= s->current_picture.data[n-3] + (s->mb_y * 8 * wrap) + s->mb_x * 8;
+                    dest= s->current_picture.f.data[n - 3] + (s->mb_y * 8 * wrap) + s->mb_x * 8;
                 }
                 if(s->mb_x==0) a= (1024 + (scale>>1))/scale;
                 else           a= get_dc(dest-8, wrap, scale*8);
@@ -1172,7 +1172,7 @@ static int msmpeg4v34_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
 {
     int cbp, code, i;
     uint8_t *coded_val;
-    uint32_t * const mb_type_ptr= &s->current_picture.mb_type[ s->mb_x + s->mb_y*s->mb_stride ];
+    uint32_t * const mb_type_ptr = &s->current_picture.f.mb_type[s->mb_x + s->mb_y*s->mb_stride];
 
     if (s->pict_type == AV_PICTURE_TYPE_P) {
         if (s->use_skip_mb_code) {

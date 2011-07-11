@@ -290,8 +290,8 @@ static inline void svq3_mc_dir_part(MpegEncContext *s,
     }
 
     /* form component predictions */
-    dest = s->current_picture.data[0] + x + y*s->linesize;
-    src  = pic->data[0] + mx + my*s->linesize;
+    dest = s->current_picture.f.data[0] + x + y*s->linesize;
+    src  = pic->f.data[0] + mx + my*s->linesize;
 
     if (emu) {
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, src, s->linesize, (width + 1), (height + 1),
@@ -311,8 +311,8 @@ static inline void svq3_mc_dir_part(MpegEncContext *s,
         blocksize++;
 
         for (i = 1; i < 3; i++) {
-            dest = s->current_picture.data[i] + (x >> 1) + (y >> 1)*s->uvlinesize;
-            src  = pic->data[i] + mx + my*s->uvlinesize;
+            dest = s->current_picture.f.data[i] + (x >> 1) + (y >> 1) * s->uvlinesize;
+            src  = pic->f.data[i] + mx + my * s->uvlinesize;
 
             if (emu) {
                 s->dsp.emulated_edge_mc(s->edge_emu_buffer, src, s->uvlinesize, (width + 1), (height + 1),
@@ -349,8 +349,8 @@ static inline int svq3_mc_dir(H264Context *h, int size, int mode, int dir,
             if (mode != PREDICT_MODE) {
                 pred_motion(h, k, (part_width >> 2), dir, 1, &mx, &my);
             } else {
-                mx = s->next_picture.motion_val[0][b_xy][0]<<1;
-                my = s->next_picture.motion_val[0][b_xy][1]<<1;
+                mx = s->next_picture.f.motion_val[0][b_xy][0] << 1;
+                my = s->next_picture.f.motion_val[0][b_xy][1] << 1;
 
                 if (dir == 0) {
                     mx = ((mx * h->frame_num_offset) / h->prev_frame_num_offset + 1) >> 1;
@@ -427,7 +427,9 @@ static inline int svq3_mc_dir(H264Context *h, int size, int mode, int dir,
             }
 
             /* write back motion vectors */
-            fill_rectangle(s->current_picture.motion_val[dir][b_xy], part_width>>2, part_height>>2, h->b_stride, pack16to32(mx,my), 4);
+            fill_rectangle(s->current_picture.f.motion_val[dir][b_xy],
+                           part_width >> 2, part_height >> 2, h->b_stride,
+                           pack16to32(mx, my), 4);
         }
     }
 
@@ -450,7 +452,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     h->topright_samples_available = 0xFFFF;
 
     if (mb_type == 0) {           /* SKIP */
-        if (s->pict_type == AV_PICTURE_TYPE_P || s->next_picture.mb_type[mb_xy] == -1) {
+        if (s->pict_type == AV_PICTURE_TYPE_P || s->next_picture.f.mb_type[mb_xy] == -1) {
             svq3_mc_dir_part(s, 16*s->mb_x, 16*s->mb_y, 16, 16, 0, 0, 0, 0, 0, 0);
 
             if (s->pict_type == AV_PICTURE_TYPE_B) {
@@ -459,7 +461,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
 
             mb_type = MB_TYPE_SKIP;
         } else {
-            mb_type = FFMIN(s->next_picture.mb_type[mb_xy], 6);
+            mb_type = FFMIN(s->next_picture.f.mb_type[mb_xy], 6);
             if (svq3_mc_dir(h, mb_type, PREDICT_MODE, 0, 0) < 0)
                 return -1;
             if (svq3_mc_dir(h, mb_type, PREDICT_MODE, 1, 1) < 0)
@@ -488,7 +490,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
         for (m = 0; m < 2; m++) {
             if (s->mb_x > 0 && h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - 1]+6] != -1) {
                 for (i = 0; i < 4; i++) {
-                    *(uint32_t *) h->mv_cache[m][scan8[0] - 1 + i*8] = *(uint32_t *) s->current_picture.motion_val[m][b_xy - 1 + i*h->b_stride];
+                    *(uint32_t *) h->mv_cache[m][scan8[0] - 1 + i*8] = *(uint32_t *) s->current_picture.f.motion_val[m][b_xy - 1 + i*h->b_stride];
                 }
             } else {
                 for (i = 0; i < 4; i++) {
@@ -496,18 +498,18 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
                 }
             }
             if (s->mb_y > 0) {
-                memcpy(h->mv_cache[m][scan8[0] - 1*8], s->current_picture.motion_val[m][b_xy - h->b_stride], 4*2*sizeof(int16_t));
+                memcpy(h->mv_cache[m][scan8[0] - 1*8], s->current_picture.f.motion_val[m][b_xy - h->b_stride], 4*2*sizeof(int16_t));
                 memset(&h->ref_cache[m][scan8[0] - 1*8], (h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - s->mb_stride]] == -1) ? PART_NOT_AVAILABLE : 1, 4);
 
                 if (s->mb_x < (s->mb_width - 1)) {
-                    *(uint32_t *) h->mv_cache[m][scan8[0] + 4 - 1*8] = *(uint32_t *) s->current_picture.motion_val[m][b_xy - h->b_stride + 4];
+                    *(uint32_t *) h->mv_cache[m][scan8[0] + 4 - 1*8] = *(uint32_t *) s->current_picture.f.motion_val[m][b_xy - h->b_stride + 4];
                     h->ref_cache[m][scan8[0] + 4 - 1*8] =
                         (h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - s->mb_stride + 1]+6] == -1 ||
                          h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - s->mb_stride    ]  ] == -1) ? PART_NOT_AVAILABLE : 1;
                 }else
                     h->ref_cache[m][scan8[0] + 4 - 1*8] = PART_NOT_AVAILABLE;
                 if (s->mb_x > 0) {
-                    *(uint32_t *) h->mv_cache[m][scan8[0] - 1 - 1*8] = *(uint32_t *) s->current_picture.motion_val[m][b_xy - h->b_stride - 1];
+                    *(uint32_t *) h->mv_cache[m][scan8[0] - 1 - 1*8] = *(uint32_t *) s->current_picture.f.motion_val[m][b_xy - h->b_stride - 1];
                     h->ref_cache[m][scan8[0] - 1 - 1*8] = (h->intra4x4_pred_mode[h->mb2br_xy[mb_xy - s->mb_stride - 1]+3] == -1) ? PART_NOT_AVAILABLE : 1;
                 }else
                     h->ref_cache[m][scan8[0] - 1 - 1*8] = PART_NOT_AVAILABLE;
@@ -528,7 +530,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
                     return -1;
             } else {
                 for (i = 0; i < 4; i++) {
-                    memset(s->current_picture.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
+                    memset(s->current_picture.f.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
                 }
             }
             if (mb_type != 1) {
@@ -536,7 +538,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
                     return -1;
             } else {
                 for (i = 0; i < 4; i++) {
-                    memset(s->current_picture.motion_val[1][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
+                    memset(s->current_picture.f.motion_val[1][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
                 }
             }
         }
@@ -623,11 +625,11 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
 
     if (!IS_INTER(mb_type) && s->pict_type != AV_PICTURE_TYPE_I) {
         for (i = 0; i < 4; i++) {
-            memset(s->current_picture.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
+            memset(s->current_picture.f.motion_val[0][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
         }
         if (s->pict_type == AV_PICTURE_TYPE_B) {
             for (i = 0; i < 4; i++) {
-                memset(s->current_picture.motion_val[1][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
+                memset(s->current_picture.f.motion_val[1][b_xy + i*h->b_stride], 0, 4*2*sizeof(int16_t));
             }
         }
     }
@@ -708,7 +710,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     }
 
     h->cbp= cbp;
-    s->current_picture.mb_type[mb_xy] = mb_type;
+    s->current_picture.f.mb_type[mb_xy] = mb_type;
 
     if (IS_INTRA(mb_type)) {
         h->chroma_pred_mode = ff_h264_check_intra_pred_mode(h, DC_PRED8x8);
@@ -980,8 +982,8 @@ static int svq3_decode_frame(AVCodecContext *avctx,
     }
 
     /* for skipping the frame */
-    s->current_picture.pict_type = s->pict_type;
-    s->current_picture.key_frame = (s->pict_type == AV_PICTURE_TYPE_I);
+    s->current_picture.f.pict_type = s->pict_type;
+    s->current_picture.f.key_frame = (s->pict_type == AV_PICTURE_TYPE_I);
 
     /* Skip B-frames if we do not have reference frames. */
     if (s->last_picture_ptr == NULL && s->pict_type == AV_PICTURE_TYPE_B)
@@ -1065,7 +1067,7 @@ static int svq3_decode_frame(AVCodecContext *avctx,
             }
 
             if (s->pict_type != AV_PICTURE_TYPE_B && !s->low_delay) {
-                s->current_picture.mb_type[s->mb_x + s->mb_y*s->mb_stride] =
+                s->current_picture.f.mb_type[s->mb_x + s->mb_y * s->mb_stride] =
                     (s->pict_type == AV_PICTURE_TYPE_P && mb_type < 8) ? (mb_type - 1) : -1;
             }
         }

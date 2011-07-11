@@ -333,9 +333,9 @@ static inline void mc_dir_part(AVSContext *h,Picture *pic,int square,
     const int mx= mv->x + src_x_offset*8;
     const int my= mv->y + src_y_offset*8;
     const int luma_xy= (mx&3) + ((my&3)<<2);
-    uint8_t * src_y = pic->data[0] + (mx>>2) + (my>>2)*h->l_stride;
-    uint8_t * src_cb= pic->data[1] + (mx>>3) + (my>>3)*h->c_stride;
-    uint8_t * src_cr= pic->data[2] + (mx>>3) + (my>>3)*h->c_stride;
+    uint8_t * src_y  = pic->f.data[0] + (mx >> 2) + (my >> 2) * h->l_stride;
+    uint8_t * src_cb = pic->f.data[1] + (mx >> 3) + (my >> 3) * h->c_stride;
+    uint8_t * src_cr = pic->f.data[2] + (mx >> 3) + (my >> 3) * h->c_stride;
     int extra_width= 0; //(s->flags&CODEC_FLAG_EMU_EDGE) ? 0 : 16;
     int extra_height= extra_width;
     int emu=0;
@@ -344,7 +344,7 @@ static inline void mc_dir_part(AVSContext *h,Picture *pic,int square,
     const int pic_width  = 16*h->mb_width;
     const int pic_height = 16*h->mb_height;
 
-    if(!pic->data[0])
+    if(!pic->f.data[0])
         return;
     if(mx&7) extra_width -= 3;
     if(my&7) extra_height -= 3;
@@ -602,9 +602,9 @@ int ff_cavs_next_mb(AVSContext *h) {
         h->mbx = 0;
         h->mby++;
         /* re-calculate sample pointers */
-        h->cy = h->picture.data[0] + h->mby*16*h->l_stride;
-        h->cu = h->picture.data[1] + h->mby*8*h->c_stride;
-        h->cv = h->picture.data[2] + h->mby*8*h->c_stride;
+        h->cy = h->picture.f.data[0] + h->mby * 16 * h->l_stride;
+        h->cu = h->picture.f.data[1] + h->mby *  8 * h->c_stride;
+        h->cv = h->picture.f.data[2] + h->mby *  8 * h->c_stride;
         if(h->mby == h->mb_height) { //frame end
             return 0;
         }
@@ -629,11 +629,11 @@ void ff_cavs_init_pic(AVSContext *h) {
     h->mv[MV_FWD_X0] = ff_cavs_dir_mv;
     set_mvs(&h->mv[MV_FWD_X0], BLK_16X16);
     h->pred_mode_Y[3] = h->pred_mode_Y[6] = NOT_AVAIL;
-    h->cy = h->picture.data[0];
-    h->cu = h->picture.data[1];
-    h->cv = h->picture.data[2];
-    h->l_stride = h->picture.linesize[0];
-    h->c_stride = h->picture.linesize[1];
+    h->cy           = h->picture.f.data[0];
+    h->cu           = h->picture.f.data[1];
+    h->cv           = h->picture.f.data[2];
+    h->l_stride     = h->picture.f.linesize[0];
+    h->c_stride     = h->picture.f.linesize[1];
     h->luma_scan[2] = 8*h->l_stride;
     h->luma_scan[3] = 8*h->l_stride+8;
     h->mbx = h->mby = h->mbidx = 0;

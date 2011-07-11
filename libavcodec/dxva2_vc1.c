@@ -161,7 +161,7 @@ static int commit_bitstream_and_slice_buffer(AVCodecContext *avctx,
     const VC1Context *v = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
     const MpegEncContext *s = &v->s;
-    struct dxva2_picture_context *ctx_pic = s->current_picture_ptr->hwaccel_picture_private;
+    struct dxva2_picture_context *ctx_pic = s->current_picture_ptr->f.hwaccel_picture_private;
 
     DXVA_SliceInfo *slice = &ctx_pic->si;
 
@@ -213,7 +213,7 @@ static int start_frame(AVCodecContext *avctx,
 {
     const VC1Context *v = avctx->priv_data;
     struct dxva_context *ctx = avctx->hwaccel_context;
-    struct dxva2_picture_context *ctx_pic = v->s.current_picture_ptr->hwaccel_picture_private;
+    struct dxva2_picture_context *ctx_pic = v->s.current_picture_ptr->f.hwaccel_picture_private;
 
     if (!ctx->decoder || !ctx->cfg || ctx->surface_count <= 0)
         return -1;
@@ -231,7 +231,7 @@ static int decode_slice(AVCodecContext *avctx,
 {
     const VC1Context *v = avctx->priv_data;
     const Picture *current_picture = v->s.current_picture_ptr;
-    struct dxva2_picture_context *ctx_pic = current_picture->hwaccel_picture_private;
+    struct dxva2_picture_context *ctx_pic = current_picture->f.hwaccel_picture_private;
 
     if (ctx_pic->bitstream_size > 0)
         return -1;
@@ -252,7 +252,7 @@ static int decode_slice(AVCodecContext *avctx,
 static int end_frame(AVCodecContext *avctx)
 {
     VC1Context *v = avctx->priv_data;
-    struct dxva2_picture_context *ctx_pic = v->s.current_picture_ptr->hwaccel_picture_private;
+    struct dxva2_picture_context *ctx_pic = v->s.current_picture_ptr->f.hwaccel_picture_private;
 
     if (ctx_pic->bitstream_size <= 0)
         return -1;

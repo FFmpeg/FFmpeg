@@ -124,7 +124,7 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], const
 {
     int score= 0;
     int i, n;
-    int8_t * const qscale_table= s->current_picture.qscale_table;
+    int8_t * const qscale_table = s->current_picture.f.qscale_table;
 
     memcpy(zigzag_last_index, s->block_last_index, sizeof(int)*6);
 
@@ -201,7 +201,7 @@ static inline int decide_ac_pred(MpegEncContext * s, DCTELEM block[6][64], const
  */
 void ff_clean_mpeg4_qscales(MpegEncContext *s){
     int i;
-    int8_t * const qscale_table= s->current_picture.qscale_table;
+    int8_t * const qscale_table = s->current_picture.f.qscale_table;
 
     ff_clean_h263_qscales(s);
 
@@ -457,7 +457,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
             assert(mb_type>=0);
 
             /* nothing to do if this MB was skipped in the next P Frame */
-            if(s->next_picture.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]){ //FIXME avoid DCT & ...
+            if (s->next_picture.f.mbskip_table[s->mb_y * s->mb_stride + s->mb_x]) { //FIXME avoid DCT & ...
                 s->skip_count++;
                 s->mv[0][0][0]=
                 s->mv[0][0][1]=
@@ -587,7 +587,7 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     y= s->mb_y*16;
 
                     offset= x + y*s->linesize;
-                    p_pic= s->new_picture.data[0] + offset;
+                    p_pic = s->new_picture.f.data[0] + offset;
 
                     s->mb_skipped=1;
                     for(i=0; i<s->max_b_frames; i++){
@@ -595,10 +595,11 @@ void mpeg4_encode_mb(MpegEncContext * s,
                         int diff;
                         Picture *pic= s->reordered_input_picture[i+1];
 
-                        if(pic==NULL || pic->pict_type!=AV_PICTURE_TYPE_B) break;
+                        if (pic == NULL || pic->f.pict_type != AV_PICTURE_TYPE_B)
+                            break;
 
-                        b_pic= pic->data[0] + offset;
-                        if(pic->type != FF_BUFFER_TYPE_SHARED)
+                        b_pic = pic->f.data[0] + offset;
+                        if (pic->f.type != FF_BUFFER_TYPE_SHARED)
                             b_pic+= INPLACE_OFFSET;
 
                         if(x+16 > s->width || y+16 > s->height){
@@ -716,8 +717,8 @@ void mpeg4_encode_mb(MpegEncContext * s,
                     /* motion vectors: 8x8 mode*/
                     h263_pred_motion(s, i, 0, &pred_x, &pred_y);
 
-                    ff_h263_encode_motion_vector(s, s->current_picture.motion_val[0][ s->block_index[i] ][0] - pred_x,
-                                                    s->current_picture.motion_val[0][ s->block_index[i] ][1] - pred_y, s->f_code);
+                    ff_h263_encode_motion_vector(s, s->current_picture.f.motion_val[0][ s->block_index[i] ][0] - pred_x,
+                                                    s->current_picture.f.motion_val[0][ s->block_index[i] ][1] - pred_y, s->f_code);
                 }
             }
 
@@ -826,9 +827,9 @@ static void mpeg4_encode_gop_header(MpegEncContext * s){
     put_bits(&s->pb, 16, 0);
     put_bits(&s->pb, 16, GOP_STARTCODE);
 
-    time= s->current_picture_ptr->pts;
+    time = s->current_picture_ptr->f.pts;
     if(s->reordered_input_picture[1])
-        time= FFMIN(time, s->reordered_input_picture[1]->pts);
+        time = FFMIN(time, s->reordered_input_picture[1]->f.pts);
     time= time*s->avctx->time_base.num;
     s->last_time_base= FFUDIV(time, s->avctx->time_base.den);
 
@@ -1036,7 +1037,7 @@ void mpeg4_encode_picture_header(MpegEncContext * s, int picture_number)
     }
     put_bits(&s->pb, 3, 0);     /* intra dc VLC threshold */
     if(!s->progressive_sequence){
-         put_bits(&s->pb, 1, s->current_picture_ptr->top_field_first);
+         put_bits(&s->pb, 1, s->current_picture_ptr->f.top_field_first);
          put_bits(&s->pb, 1, s->alternate_scan);
     }
     //FIXME sprite stuff

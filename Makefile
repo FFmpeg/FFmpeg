@@ -8,6 +8,7 @@ vpath %.asm  $(SRC_PATH)
 vpath %.v    $(SRC_PATH)
 vpath %.texi $(SRC_PATH)
 
+
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_FFPLAY)   += ffplay
 PROGS-$(CONFIG_FFPROBE)  += ffprobe
@@ -43,11 +44,10 @@ SKIPHEADERS = cmdutils_common_opts.h
 
 include $(SRC_PATH)/common.mak
 
-FF_LDFLAGS   := $(FFLDFLAGS)
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 
-all: $(FF_DEP_LIBS) $(PROGS)
+all: $(PROGS)
 
 $(PROGS): %$(EXESUF): %_g$(EXESUF)
 	$(CP) $< $@
@@ -83,10 +83,10 @@ $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 ffplay.o: CFLAGS += $(SDL_CFLAGS)
 ffplay_g$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
-ffserver_g$(EXESUF): FF_LDFLAGS += $(FFSERVERLDFLAGS)
+ffserver_g$(EXESUF): LDFLAGS += $(FFSERVERLDFLAGS)
 
 %_g$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
-	$(LD) $(FF_LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
+	$(LD) $(LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)
 
 OBJDIRS += tools
 

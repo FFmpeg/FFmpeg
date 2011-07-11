@@ -27,6 +27,7 @@ CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CFLAGS)
 YASMFLAGS  += $(IFLAGS) -Pconfig.asm
 HOSTCFLAGS += $(IFLAGS)
+LDFLAGS    += $(ALLFFLIBS:%=-Llib%)
 
 define COMPILE
        $($(1)DEP)
@@ -69,7 +70,6 @@ FFLIBS    := $(FFLIBS-yes) $(FFLIBS)
 TESTPROGS += $(TESTPROGS-yes)
 
 FFEXTRALIBS := $(FFLIBS:%=-l%$(BUILDSUF)) $(EXTRALIBS)
-FFLDFLAGS   := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
 EXAMPLES  := $(EXAMPLES:%=$(SUBDIR)%-example$(EXESUF))
 OBJS      := $(sort $(OBJS:%=$(SUBDIR)%))
