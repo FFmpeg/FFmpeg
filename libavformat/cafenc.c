@@ -47,7 +47,7 @@ static uint32_t codec_flags(enum CodecID codec_id) {
     }
 }
 
-static uint32_t samples_per_packet(enum CodecID codec_id) {
+static uint32_t samples_per_packet(enum CodecID codec_id, int channels) {
     switch (codec_id) {
     case CODEC_ID_PCM_S8:
     case CODEC_ID_PCM_S16LE:
@@ -84,6 +84,10 @@ static uint32_t samples_per_packet(enum CodecID codec_id) {
     case CODEC_ID_ALAC:
     case CODEC_ID_QDM2:
         return 4096;
+    case CODEC_ID_ADPCM_IMA_WAV:
+        return (1024 - 4 * channels) * 8 / (4 * channels) + 1;
+    case CODEC_ID_ADPCM_MS:
+        return (1024 - 7 * channels) * 2 / channels + 2;
     default:
         return 0;
     }
@@ -133,7 +137,7 @@ static int caf_write_header(AVFormatContext *s)
     avio_wb32(pb, codec_tag);                         //< mFormatID
     avio_wb32(pb, codec_flags(enc->codec_id));        //< mFormatFlags
     avio_wb32(pb, enc->block_align);                  //< mBytesPerPacket
-    avio_wb32(pb, samples_per_packet(enc->codec_id)); //< mFramesPerPacket
+    avio_wb32(pb, samples_per_packet(enc->codec_id, enc->channels)); //< mFramesPerPacket
     avio_wb32(pb, enc->channels);                     //< mChannelsPerFrame
     avio_wb32(pb, enc->bits_per_coded_sample);        //< mBitsPerChannel
 
