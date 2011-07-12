@@ -45,6 +45,7 @@ const AVCodecTag ff_codec_caf_tags[] = {
     { CODEC_ID_MACE3,           MKBETAG('M','A','C','3') },
     { CODEC_ID_MACE6,           MKBETAG('M','A','C','6') },
     { CODEC_ID_MP3,             MKBETAG('.','m','p','3') },
+    { CODEC_ID_MP3,             MKBETAG('m','s', 0 ,'U') },
     { CODEC_ID_MP2,             MKBETAG('.','m','p','2') },
     { CODEC_ID_MP1,             MKBETAG('.','m','p','1') },
     { CODEC_ID_PCM_ALAW,        MKBETAG('a','l','a','w') },
