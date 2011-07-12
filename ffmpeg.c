@@ -509,6 +509,23 @@ static void assert_avoptions(AVDictionary *m)
     }
 }
 
+static void assert_codec_experimental(AVCodecContext *c, int encoder)
+{
+    const char *codec_string = encoder ? "encoder" : "decoder";
+    AVCodec *codec;
+    if (c->codec->capabilities & CODEC_CAP_EXPERIMENTAL &&
+        c->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
+        av_log(NULL, AV_LOG_ERROR, "%s '%s' is experimental and might produce bad "
+                "results.\nAdd '-strict experimental' if you want to use it.\n",
+                codec_string, c->codec->name);
+        codec = encoder ? avcodec_find_encoder(codec->id) : avcodec_find_decoder(codec->id);
+        if (!(codec->capabilities & CODEC_CAP_EXPERIMENTAL))
+            av_log(NULL, AV_LOG_ERROR, "Or use the non experimental %s '%s'.\n",
+                   codec_string, codec->name);
+        ffmpeg_exit(1);
+    }
+}
+
 /* similar to ff_dynarray_add() and av_fast_realloc() */
 static void *grow_array(void *array, int elem_size, int *size, int new_size)
 {
@@ -2324,6 +2341,7 @@ static int transcode(AVFormatContext **output_files,
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
+            assert_codec_experimental(ost->st->codec, 1);
             extra_size += ost->st->codec->extradata_size;
         }
     }
@@ -2358,6 +2376,7 @@ static int transcode(AVFormatContext **output_files,
                 ret = AVERROR(EINVAL);
                 goto dump_format;
             }
+            assert_codec_experimental(ist->st->codec, 0);
             //if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
             //    ist->st->codec->flags |= CODEC_FLAG_REPEAT_FIELD;
         }
@@ -3114,7 +3133,7 @@ static int opt_input_ts_offset(const char *opt, const char *arg)
     return 0;
 }
 
-static enum CodecID find_codec_or_die(const char *name, int type, int encoder, int strict)
+static enum CodecID find_codec_or_die(const char *name, int type, int encoder)
 {
     const char *codec_string = encoder ? "encoder" : "decoder";
     AVCodec *codec;
@@ -3130,19 +3149,6 @@ static enum CodecID find_codec_or_die(const char *name, int type, int encoder, i
     }
     if(codec->type != type) {
         fprintf(stderr, "Invalid %s type '%s'\n", codec_string, name);
-        ffmpeg_exit(1);
-    }
-    if(codec->capabilities & CODEC_CAP_EXPERIMENTAL &&
-       strict > FF_COMPLIANCE_EXPERIMENTAL) {
-        fprintf(stderr, "%s '%s' is experimental and might produce bad "
-                "results.\nAdd '-strict experimental' if you want to use it.\n",
-                codec_string, codec->name);
-        codec = encoder ?
-            avcodec_find_encoder(codec->id) :
-            avcodec_find_decoder(codec->id);
-        if (!(codec->capabilities & CODEC_CAP_EXPERIMENTAL))
-            fprintf(stderr, "Or use the non experimental %s '%s'.\n",
-                    codec_string, codec->name);
         ffmpeg_exit(1);
     }
     return codec->id;
@@ -3196,14 +3202,11 @@ static int opt_input_file(const char *opt, const char *filename)
         av_dict_set(&format_opts, "pixel_format", av_get_pix_fmt_name(frame_pix_fmt), 0);
 
     ic->video_codec_id   =
-        find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0,
-                          avcodec_opts[AVMEDIA_TYPE_VIDEO   ]->strict_std_compliance);
+        find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0);
     ic->audio_codec_id   =
-        find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0,
-                          avcodec_opts[AVMEDIA_TYPE_AUDIO   ]->strict_std_compliance);
+        find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0);
     ic->subtitle_codec_id=
-        find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0,
-                          avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
+        find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0);
     ic->flags |= AVFMT_FLAG_NONBLOCK;
 
     /* open the input file with generic libav function */
@@ -3431,8 +3434,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 
     if(!video_stream_copy){
         if (video_codec_name) {
-            codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1,
-                                         avcodec_opts[AVMEDIA_TYPE_VIDEO]->strict_std_compliance);
+            codec_id = find_codec_or_die(video_codec_name, AVMEDIA_TYPE_VIDEO, 1);
             codec = avcodec_find_encoder_by_name(video_codec_name);
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_VIDEO);
@@ -3564,8 +3566,7 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 
     if(!audio_stream_copy){
         if (audio_codec_name) {
-            codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1,
-                                         avcodec_opts[AVMEDIA_TYPE_AUDIO]->strict_std_compliance);
+            codec_id = find_codec_or_die(audio_codec_name, AVMEDIA_TYPE_AUDIO, 1);
             codec = avcodec_find_encoder_by_name(audio_codec_name);
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_AUDIO);
@@ -3658,8 +3659,7 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
 
     if(!subtitle_stream_copy){
         if (subtitle_codec_name) {
-            codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1,
-                                         avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->strict_std_compliance);
+            codec_id = find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 1);
             codec = avcodec_find_encoder_by_name(subtitle_codec_name);
         } else {
             codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, AVMEDIA_TYPE_SUBTITLE);
