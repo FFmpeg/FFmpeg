@@ -770,8 +770,6 @@ static av_always_inline int get_chroma_qp(H264Context *h, int t, int qscale){
     return h->pps.chroma_qp_table[t][qscale];
 }
 
-#include "h264_mvpred.h" //For pred_pskip_motion()
-
 static void fill_decode_neighbors(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
@@ -1300,45 +1298,6 @@ static av_always_inline int get_dct8x8_allowed(H264Context *h){
         return !(AV_RN64A(h->sub_mb_type) & ((MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_8x8                )*0x0001000100010001ULL));
     else
         return !(AV_RN64A(h->sub_mb_type) & ((MB_TYPE_16x8|MB_TYPE_8x16|MB_TYPE_8x8|MB_TYPE_DIRECT2)*0x0001000100010001ULL));
-}
-
-/**
- * decodes a P_SKIP or B_SKIP macroblock
- */
-static void av_unused decode_mb_skip(H264Context *h){
-    MpegEncContext * const s = &h->s;
-    const int mb_xy= h->mb_xy;
-    int mb_type=0;
-
-    memset(h->non_zero_count[mb_xy], 0, 48);
-
-    if(MB_FIELD)
-        mb_type|= MB_TYPE_INTERLACED;
-
-    if( h->slice_type_nos == AV_PICTURE_TYPE_B )
-    {
-        // just for fill_caches. pred_direct_motion will set the real mb_type
-        mb_type|= MB_TYPE_L0L1|MB_TYPE_DIRECT2|MB_TYPE_SKIP;
-        if(h->direct_spatial_mv_pred){
-            fill_decode_neighbors(h, mb_type);
-        fill_decode_caches(h, mb_type); //FIXME check what is needed and what not ...
-        }
-        ff_h264_pred_direct_motion(h, &mb_type);
-        mb_type|= MB_TYPE_SKIP;
-    }
-    else
-    {
-        mb_type|= MB_TYPE_16x16|MB_TYPE_P0L0|MB_TYPE_P1L0|MB_TYPE_SKIP;
-
-        fill_decode_neighbors(h, mb_type);
-        pred_pskip_motion(h);
-    }
-
-    write_back_motion(h, mb_type);
-    s->current_picture.f.mb_type[mb_xy]      = mb_type;
-    s->current_picture.f.qscale_table[mb_xy] = s->qscale;
-    h->slice_table[ mb_xy ]= h->slice_num;
-    h->prev_mb_skipped= 1;
 }
 
 #endif /* AVCODEC_H264_H */
