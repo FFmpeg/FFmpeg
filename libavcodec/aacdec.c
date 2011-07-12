@@ -568,9 +568,6 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
     ac->m4ac.sample_rate = avctx->sample_rate;
 
     if (avctx->extradata_size > 0) {
-        avctx->channels    = 0;
-        avctx->frame_size  = 0;
-        avctx->sample_rate = 0;
         if (decode_audio_specific_config(ac, ac->avctx, &ac->m4ac,
                                          avctx->extradata,
                                          avctx->extradata_size) < 0)

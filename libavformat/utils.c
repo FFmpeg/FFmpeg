@@ -2090,7 +2090,8 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             return ret;
     }
 
-    if(!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st)){
+    if(!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st) ||
+       (!st->codec_info_nb_frames && st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF)) {
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             avcodec_get_frame_defaults(&picture);
@@ -2387,11 +2388,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
            least one frame of codec data, this makes sure the codec initializes
            the channel configuration and does not only trust the values from the container.
         */
-        if (!has_codec_parameters(st->codec) ||
-            !has_decode_delay_been_guessed(st) ||
-            (st->codec->codec &&
-             st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))
-            try_decode_frame(st, pkt, (options && i <= orig_nb_streams )? &options[i] : NULL);
+        try_decode_frame(st, pkt, (options && i <= orig_nb_streams )? &options[i] : NULL);
 
         st->codec_info_nb_frames++;
         count++;
