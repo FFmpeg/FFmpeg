@@ -466,7 +466,8 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     else
         ic->pb = pb;
 
-    err = avformat_open_input(&ic, filename, fmt, &opts);
+    if ((err = avformat_open_input(&ic, filename, fmt, &opts)) < 0)
+        goto fail;
     ic->pb = ic->pb ? ic->pb : pb; // don't leak custom pb if it wasn't set above
 
     *ic_ptr = ic;
