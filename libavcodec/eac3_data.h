@@ -1,5 +1,5 @@
 /*
- * E-AC-3 decoder tables
+ * E-AC-3 tables
  * Copyright (c) 2007 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  *
  * This file is part of Libav.
@@ -19,8 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVCODEC_EAC3DEC_DATA_H
-#define AVCODEC_EAC3DEC_DATA_H
+#ifndef AVCODEC_EAC3_DATA_H
+#define AVCODEC_EAC3_DATA_H
 
 #include <stdint.h>
 
@@ -33,4 +33,4 @@ extern const int16_t (* const ff_eac3_mantissa_vq[8])[6];
 extern const uint8_t ff_eac3_frm_expstr[32][6];
 extern const float   ff_eac3_spx_atten_tab[32][3];
 
-#endif /* AVCODEC_EAC3DEC_DATA_H */
+#endif /* AVCODEC_EAC3_DATA_H */

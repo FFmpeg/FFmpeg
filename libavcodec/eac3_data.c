@@ -1,5 +1,5 @@
 /*
- * E-AC-3 decoder tables
+ * E-AC-3 tables
  * Copyright (c) 2007 Bartlomiej Wolowiec <bartek.wolowiec@gmail.com>
  *
  * This file is part of Libav.
@@ -24,7 +24,7 @@
  * Tables taken directly from the E-AC-3 spec.
  */
 
-#include "eac3dec_data.h"
+#include "eac3_data.h"
 #include "ac3.h"
 
 const uint8_t ff_eac3_bits_vs_hebap[20] = {
