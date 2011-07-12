@@ -1431,7 +1431,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
 static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacket *pkt)
 {
-    int len1 av_unused, got_picture, i;
+    int got_picture, i;
 
     if (packet_queue_get(&is->videoq, pkt, 1) < 0)
         return -1;
@@ -1458,9 +1458,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         return 0;
     }
 
-    len1 = avcodec_decode_video2(is->video_st->codec,
-                                 frame, &got_picture,
-                                 pkt);
+    avcodec_decode_video2(is->video_st->codec, frame, &got_picture, pkt);
 
     if (got_picture) {
         if (decoder_reorder_pts == -1) {
@@ -1807,7 +1805,7 @@ static int subtitle_thread(void *arg)
     VideoState *is = arg;
     SubPicture *sp;
     AVPacket pkt1, *pkt = &pkt1;
-    int len1 av_unused, got_subtitle;
+    int got_subtitle;
     double pts;
     int i, j;
     int r, g, b, y, u, v, a;
@@ -1841,9 +1839,9 @@ static int subtitle_thread(void *arg)
         if (pkt->pts != AV_NOPTS_VALUE)
             pts = av_q2d(is->subtitle_st->time_base)*pkt->pts;
 
-        len1 = avcodec_decode_subtitle2(is->subtitle_st->codec,
-                                    &sp->sub, &got_subtitle,
-                                    pkt);
+        avcodec_decode_subtitle2(is->subtitle_st->codec, &sp->sub,
+                                 &got_subtitle, pkt);
+
         if (got_subtitle && sp->sub.format == 0) {
             sp->pts = pts;
 

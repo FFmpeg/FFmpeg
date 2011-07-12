@@ -242,7 +242,7 @@ data transferred over RDT).
 
 The muxer can be used to send a stream using RTSP ANNOUNCE to a server
 supporting it (currently Darwin Streaming Server and Mischa Spiegelmock's
-RTSP server, @url{http://github.com/revmischa/rtsp-server}).
+@uref{http://github.com/revmischa/rtsp-server, RTSP server}).
 
 The required syntax for a RTSP url is:
 @example

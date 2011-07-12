@@ -394,6 +394,20 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     GXFContext *gxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int timecode_base = gxf->time_base.den == 60000 ? 60 : 50;
+    int64_t timestamp = 0;
+    AVDictionaryEntry *t;
+
+#if FF_API_TIMESTAMP
+    if (s->timestamp)
+        timestamp = s->timestamp;
+    else
+#endif
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
+        struct tm time = {0};
+        strptime(t->value, "%Y - %m - %dT%T", &time);
+        timestamp = mktime(&time);
+    }
+
 
     // XXX drop frame
     uint32_t timecode =
@@ -409,8 +423,8 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     avio_wl32(pb, gxf->nb_fields); /* mark out */
     avio_wl32(pb, 0); /* timecode mark in */
     avio_wl32(pb, timecode); /* timecode mark out */
-    avio_wl64(pb, s->timestamp); /* modification time */
-    avio_wl64(pb, s->timestamp); /* creation time */
+    avio_wl64(pb, timestamp); /* modification time */
+    avio_wl64(pb, timestamp); /* creation time */
     avio_wl16(pb, 0); /* reserved */
     avio_wl16(pb, 0); /* reserved */
     avio_wl16(pb, gxf->audio_tracks);

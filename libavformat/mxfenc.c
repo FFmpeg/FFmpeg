@@ -1407,6 +1407,8 @@ static int mxf_write_header(AVFormatContext *s)
     int i;
     uint8_t present[FF_ARRAY_ELEMS(mxf_essence_container_uls)] = {0};
     const int *samples_per_frame = NULL;
+    AVDictionaryEntry *t;
+    int64_t timestamp = 0;
 
     if (!s->nb_streams)
         return -1;
@@ -1512,8 +1514,18 @@ static int mxf_write_header(AVFormatContext *s)
         sc->order = AV_RB32(sc->track_essence_element_key+12);
     }
 
+#if FF_API_TIMESTAMP
     if (s->timestamp)
-        mxf->timestamp = mxf_parse_timestamp(s->timestamp);
+        timestamp = s->timestamp;
+    else
+#endif
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
+        struct tm time = {0};
+        strptime(t->value, "%Y - %m - %dT%T", &time);
+        timestamp = mktime(&time);
+    }
+    if (timestamp)
+        mxf->timestamp = mxf_parse_timestamp(timestamp);
     mxf->duration = -1;
 
     mxf->timecode_track = av_mallocz(sizeof(*mxf->timecode_track));

@@ -43,7 +43,7 @@ struct DVMuxContext {
     AVStream         *ast[2];        /* stereo audio streams */
     AVFifoBuffer     *audio_data[2]; /* FIFO for storing excessive amounts of PCM */
     int               frames;        /* current frame number */
-    time_t            start_time;    /* recording start time */
+    int64_t           start_time;    /* recording start time */
     int               has_audio;     /* frame under contruction has audio */
     int               has_video;     /* frame under contruction has video */
     uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
@@ -290,6 +290,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
 {
     DVMuxContext *c = s->priv_data;
     AVStream *vst = NULL;
+    AVDictionaryEntry *t;
     int i;
 
     /* we support at most 1 video and 2 audio streams */
@@ -337,7 +338,16 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
     c->frames     = 0;
     c->has_audio  = 0;
     c->has_video  = 0;
-    c->start_time = (time_t)s->timestamp;
+#if FF_API_TIMESTAMP
+    if (s->timestamp)
+        c->start_time = s->timestamp;
+    else
+#endif
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
+        struct tm time = {0};
+        strptime(t->value, "%Y - %m - %dT%T", &time);
+        c->start_time = mktime(&time);
+    }
 
     for (i=0; i < c->n_ast; i++) {
         if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*AVCODEC_MAX_AUDIO_FRAME_SIZE))) {

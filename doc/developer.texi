@@ -34,6 +34,7 @@ You can use libavcodec or libavformat in your commercial program, but
 @emph{any patch you make must be published}. The best way to proceed is
 to send your patches to the FFmpeg mailing list.
 
+
 @anchor{Coding Rules}
 @section Coding Rules
 

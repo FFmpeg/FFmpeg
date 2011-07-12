@@ -918,9 +918,9 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .log2_chroma_w= 0,
         .log2_chroma_h= 0,
         .comp = {
-            {0,1,1,0,9},        /* Y */
-            {1,1,1,0,9},        /* U */
-            {2,1,1,0,9},        /* V */
+            {0,1,1,0,8},        /* Y */
+            {1,1,1,0,8},        /* U */
+            {2,1,1,0,8},        /* V */
         },
         .flags = PIX_FMT_BE,
     },
