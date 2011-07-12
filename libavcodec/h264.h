@@ -770,7 +770,7 @@ static av_always_inline int get_chroma_qp(H264Context *h, int t, int qscale){
     return h->pps.chroma_qp_table[t][qscale];
 }
 
-static av_always_inline void pred_pskip_motion(H264Context * const h);
+#include "h264_mvpred.h" //For pred_pskip_motion()
 
 static void fill_decode_neighbors(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
@@ -1340,7 +1340,5 @@ static void av_unused decode_mb_skip(H264Context *h){
     h->slice_table[ mb_xy ]= h->slice_num;
     h->prev_mb_skipped= 1;
 }
-
-#include "h264_mvpred.h" //For pred_pskip_motion()
 
 #endif /* AVCODEC_H264_H */
