@@ -3463,7 +3463,6 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 
     if(oc->oformat->flags & AVFMT_GLOBALHEADER) {
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avcodec_opts[AVMEDIA_TYPE_VIDEO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
     }
 
     if (video_stream_copy) {
@@ -3589,7 +3588,6 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avcodec_opts[AVMEDIA_TYPE_AUDIO]->flags|= CODEC_FLAG_GLOBAL_HEADER;
     }
     if (audio_stream_copy) {
         st->stream_copy = 1;
@@ -3640,7 +3638,6 @@ static void new_data_stream(AVFormatContext *oc, int file_idx)
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         data_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avcodec_opts[AVMEDIA_TYPE_DATA]->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
     if (data_stream_copy) {
         st->stream_copy = 1;
@@ -3683,7 +3680,6 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         subtitle_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-        avcodec_opts[AVMEDIA_TYPE_SUBTITLE]->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
     if (subtitle_stream_copy) {
         st->stream_copy = 1;
