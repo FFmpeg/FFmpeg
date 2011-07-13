@@ -30,6 +30,16 @@
 #include "ac3enc.h"
 
 /**
+ * Initialize E-AC-3 exponent tables.
+ */
+void ff_eac3_exponent_init(void);
+
+/**
+ * Determine frame exponent strategy use and indices.
+ */
+void ff_eac3_get_frame_exp_strategy(AC3EncodeContext *s);
+
+/**
  * Set coupling states.
  * This determines whether certain flags must be written to the bitstream or
  * whether they will be implicitly already known by the decoder.

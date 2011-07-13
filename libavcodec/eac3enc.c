@@ -27,12 +27,58 @@
 #define CONFIG_AC3ENC_FLOAT 1
 #include "ac3enc.h"
 #include "eac3enc.h"
+#include "eac3_data.h"
 
 
 #define AC3ENC_TYPE AC3ENC_TYPE_EAC3
 #include "ac3enc_opts_template.c"
 static const AVClass eac3enc_class = { "E-AC-3 Encoder", av_default_item_name,
                                        eac3_options, LIBAVUTIL_VERSION_INT };
+
+
+/**
+ * LUT for finding a matching frame exponent strategy index from a set of
+ * exponent strategies for a single channel across all 6 blocks.
+ */
+static int8_t eac3_frame_expstr_index_tab[3][4][4][4][4][4];
+
+
+void ff_eac3_exponent_init(void)
+{
+    int i;
+
+    memset(eac3_frame_expstr_index_tab, -1, sizeof(eac3_frame_expstr_index_tab));
+    for (i = 0; i < 32; i++) {
+        eac3_frame_expstr_index_tab[ff_eac3_frm_expstr[i][0]-1]
+                                   [ff_eac3_frm_expstr[i][1]]
+                                   [ff_eac3_frm_expstr[i][2]]
+                                   [ff_eac3_frm_expstr[i][3]]
+                                   [ff_eac3_frm_expstr[i][4]]
+                                   [ff_eac3_frm_expstr[i][5]] = i;
+    }
+}
+
+
+void ff_eac3_get_frame_exp_strategy(AC3EncodeContext *s)
+{
+    int ch;
+
+    s->use_frame_exp_strategy = 1;
+    for (ch = !s->cpl_on; ch <= s->fbw_channels; ch++) {
+        int expstr = eac3_frame_expstr_index_tab[s->exp_strategy[ch][0]-1]
+                                                [s->exp_strategy[ch][1]]
+                                                [s->exp_strategy[ch][2]]
+                                                [s->exp_strategy[ch][3]]
+                                                [s->exp_strategy[ch][4]]
+                                                [s->exp_strategy[ch][5]];
+        if (expstr < 0) {
+            s->use_frame_exp_strategy = 0;
+            break;
+        }
+        s->frame_exp_strategy[ch] = expstr;
+    }
+}
+
 
 
 void ff_eac3_set_cpl_states(AC3EncodeContext *s)
@@ -98,7 +144,7 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
     put_bits(&s->pb, 1, 0);                         /* no additional bit stream info */
 
     /* frame header */
-    put_bits(&s->pb, 1, 1);                         /* exponent strategy syntax = each block */
+    put_bits(&s->pb, 1, !s->use_frame_exp_strategy);/* exponent strategy syntax */
     put_bits(&s->pb, 1, 0);                         /* aht enabled = no */
     put_bits(&s->pb, 2, 0);                         /* snr offset strategy = 1 */
     put_bits(&s->pb, 1, 0);                         /* transient pre-noise processing enabled = no */
@@ -120,16 +166,25 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
         }
     }
     /* exponent strategy */
+    if (s->use_frame_exp_strategy) {
+        for (ch = !s->cpl_on; ch <= s->fbw_channels; ch++)
+            put_bits(&s->pb, 5, s->frame_exp_strategy[ch]);
+    } else {
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
         for (ch = !s->blocks[blk].cpl_in_use; ch <= s->fbw_channels; ch++)
             put_bits(&s->pb, 2, s->exp_strategy[ch][blk]);
+    }
     if (s->lfe_on) {
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
             put_bits(&s->pb, 1, s->exp_strategy[s->lfe_channel][blk]);
     }
     /* E-AC-3 to AC-3 converter exponent strategy (unfortunately not optional...) */
-    for (ch = 1; ch <= s->fbw_channels; ch++)
-        put_bits(&s->pb, 5, 0);
+    for (ch = 1; ch <= s->fbw_channels; ch++) {
+        if (s->use_frame_exp_strategy)
+            put_bits(&s->pb, 5, s->frame_exp_strategy[ch]);
+        else
+            put_bits(&s->pb, 5, 0);
+    }
     /* snr offsets */
     put_bits(&s->pb, 6, s->coarse_snr_offset);
     put_bits(&s->pb, 4, s->fine_snr_offset[1]);

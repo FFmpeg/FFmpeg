@@ -194,6 +194,7 @@ void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s)
 {
     int blk, ch;
     int got_cpl_snr;
+    int num_cpl_blocks;
 
     /* set coupling use flags for each block/channel */
     /* TODO: turn coupling on/off and adjust start band based on bit usage */
@@ -206,12 +207,14 @@ void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s)
     /* enable coupling for each block if at least 2 channels have coupling
        enabled for that block */
     got_cpl_snr = 0;
+    num_cpl_blocks = 0;
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         block->num_cpl_channels = 0;
         for (ch = 1; ch <= s->fbw_channels; ch++)
             block->num_cpl_channels += block->channel_in_cpl[ch];
         block->cpl_in_use = block->num_cpl_channels > 1;
+        num_cpl_blocks += block->cpl_in_use;
         if (!block->cpl_in_use) {
             block->num_cpl_channels = 0;
             for (ch = 1; ch <= s->fbw_channels; ch++)
@@ -237,6 +240,8 @@ void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s)
             block->new_snr_offsets = 0;
         }
     }
+    if (!num_cpl_blocks)
+        s->cpl_on = 0;
 
     /* set bandwidth for each channel */
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
@@ -301,6 +306,9 @@ static av_cold void exponent_init(AC3EncodeContext *s)
     }
     /* LFE */
     exponent_group_tab[0][0][7] = 2;
+
+    if (CONFIG_EAC3_ENCODER && s->eac3)
+        ff_eac3_exponent_init();
 }
 
 
@@ -342,8 +350,15 @@ static void compute_exp_strategy(AC3EncodeContext *s)
         exp_strategy[0] = EXP_NEW;
         exp += AC3_MAX_COEFS;
         for (blk = 1; blk < AC3_MAX_BLOCKS; blk++, exp += AC3_MAX_COEFS) {
-            if ((ch == CPL_CH && (!s->blocks[blk].cpl_in_use || !s->blocks[blk-1].cpl_in_use)) ||
-                (ch  > CPL_CH && (s->blocks[blk].channel_in_cpl[ch] != s->blocks[blk-1].channel_in_cpl[ch]))) {
+            if (ch == CPL_CH) {
+                if (!s->blocks[blk-1].cpl_in_use) {
+                    exp_strategy[blk] = EXP_NEW;
+                    continue;
+                } else if (!s->blocks[blk].cpl_in_use) {
+                    exp_strategy[blk] = EXP_REUSE;
+                    continue;
+                }
+            } else if (s->blocks[blk].channel_in_cpl[ch] != s->blocks[blk-1].channel_in_cpl[ch]) {
                 exp_strategy[blk] = EXP_NEW;
                 continue;
             }
@@ -377,6 +392,10 @@ static void compute_exp_strategy(AC3EncodeContext *s)
         for (blk = 1; blk < AC3_MAX_BLOCKS; blk++)
             s->exp_strategy[ch][blk] = EXP_REUSE;
     }
+
+    /* for E-AC-3, determine frame exponent strategy */
+    if (CONFIG_EAC3_ENCODER && s->eac3)
+        ff_eac3_get_frame_exp_strategy(s);
 }
 
 
@@ -611,8 +630,12 @@ static void count_frame_bits_fixed(AC3EncodeContext *s)
         frame_bits += 2;
         frame_bits += 10;
         /* exponent strategy */
-        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
-            frame_bits += 2 * s->fbw_channels + s->lfe_on;
+        if (s->use_frame_exp_strategy)
+            frame_bits += 5 * s->fbw_channels;
+        else
+            frame_bits += AC3_MAX_BLOCKS * 2 * s->fbw_channels;
+        if (s->lfe_on)
+            frame_bits += AC3_MAX_BLOCKS;
         /* converter exponent strategy */
         frame_bits += s->fbw_channels * 5;
         /* snr offsets */
@@ -735,8 +758,14 @@ static void count_frame_bits(AC3EncodeContext *s)
             }
         }
         /* coupling exponent strategy */
-        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
-            frame_bits += 2 * s->blocks[blk].cpl_in_use;
+        if (s->cpl_on) {
+            if (s->use_frame_exp_strategy) {
+                frame_bits += 5 * s->cpl_on;
+            } else {
+                for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
+                    frame_bits += 2 * s->blocks[blk].cpl_in_use;
+            }
+        }
     } else {
         if (opt->audio_production_info)
             frame_bits += 7;
