@@ -39,6 +39,7 @@
 #include "libavcodec/bytestream.h"
 #include "audiointerleave.h"
 #include "avformat.h"
+#include "internal.h"
 #include "mxf.h"
 
 static const int NTSC_samples_per_frame[] = { 1602, 1601, 1602, 1601, 1602, 0 };
