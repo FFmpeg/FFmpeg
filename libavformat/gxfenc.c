@@ -402,12 +402,8 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
         timestamp = s->timestamp;
     else
 #endif
-    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
-        struct tm time = {0};
-        strptime(t->value, "%Y - %m - %dT%T", &time);
-        timestamp = mktime(&time);
-    }
-
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
+        timestamp = ff_iso8601_to_unix_time(t->value);
 
     // XXX drop frame
     uint32_t timecode =

@@ -3884,3 +3884,10 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
     }
     av_strlcat(buf, rel, size);
 }
+
+int64_t ff_iso8601_to_unix_time(const char *datestr)
+{
+    struct tm time = {0};
+    strptime(datestr, "%Y - %m - %dT%T", &time);
+    return mktime(&time);
+}

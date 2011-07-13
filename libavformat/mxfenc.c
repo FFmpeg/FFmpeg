@@ -1519,11 +1519,8 @@ static int mxf_write_header(AVFormatContext *s)
         timestamp = s->timestamp;
     else
 #endif
-    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
-        struct tm time = {0};
-        strptime(t->value, "%Y - %m - %dT%T", &time);
-        timestamp = mktime(&time);
-    }
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
+        timestamp = ff_iso8601_to_unix_time(t->value);
     if (timestamp)
         mxf->timestamp = mxf_parse_timestamp(timestamp);
     mxf->duration = -1;
