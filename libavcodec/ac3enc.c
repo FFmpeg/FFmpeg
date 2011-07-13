@@ -1836,8 +1836,7 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
         av_freep(&block->cpl_coord_mant);
     }
 
-    s->mdct_end(s->mdct);
-    av_freep(&s->mdct);
+    s->mdct_end(s);
 
     av_freep(&avctx->coded_frame);
     return 0;
@@ -2242,8 +2241,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     bit_alloc_init(s);
 
-    FF_ALLOCZ_OR_GOTO(avctx, s->mdct, sizeof(AC3MDCTContext), init_fail);
-    ret = s->mdct_init(avctx, s->mdct, 9);
+    ret = s->mdct_init(s);
     if (ret)
         goto init_fail;
 

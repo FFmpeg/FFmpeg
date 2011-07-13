@@ -45,10 +45,10 @@ static AVClass ac3enc_class = { "AC-3 Encoder", av_default_item_name,
 /**
  * Finalize MDCT and free allocated memory.
  */
-av_cold void ff_ac3_float_mdct_end(AC3MDCTContext *mdct)
+av_cold void ff_ac3_float_mdct_end(AC3EncodeContext *s)
 {
-    ff_mdct_end(&mdct->fft);
-    av_freep(&mdct->window);
+    ff_mdct_end(&s->mdct);
+    av_freep(&s->mdct_window);
 }
 
 
@@ -56,26 +56,25 @@ av_cold void ff_ac3_float_mdct_end(AC3MDCTContext *mdct)
  * Initialize MDCT tables.
  * @param nbits log2(MDCT size)
  */
-av_cold int ff_ac3_float_mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
-                                   int nbits)
+av_cold int ff_ac3_float_mdct_init(AC3EncodeContext *s)
 {
     float *window;
     int i, n, n2;
 
-    n  = 1 << nbits;
+    n  = 1 << 9;
     n2 = n >> 1;
 
     window = av_malloc(n * sizeof(*window));
     if (!window) {
-        av_log(avctx, AV_LOG_ERROR, "Cannot allocate memory.\n");
+        av_log(s->avctx, AV_LOG_ERROR, "Cannot allocate memory.\n");
         return AVERROR(ENOMEM);
     }
     ff_kbd_window_init(window, 5.0, n2);
     for (i = 0; i < n2; i++)
         window[n-1-i] = window[i];
-    mdct->window = window;
+    s->mdct_window = window;
 
-    return ff_mdct_init(&mdct->fft, nbits, 0, -2.0 / n);
+    return ff_mdct_init(&s->mdct, 9, 0, -2.0 / n);
 }
 
 
