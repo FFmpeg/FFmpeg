@@ -170,9 +170,9 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
         for (ch = !s->cpl_on; ch <= s->fbw_channels; ch++)
             put_bits(&s->pb, 5, s->frame_exp_strategy[ch]);
     } else {
-    for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
-        for (ch = !s->blocks[blk].cpl_in_use; ch <= s->fbw_channels; ch++)
-            put_bits(&s->pb, 2, s->exp_strategy[ch][blk]);
+        for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
+            for (ch = !s->blocks[blk].cpl_in_use; ch <= s->fbw_channels; ch++)
+                put_bits(&s->pb, 2, s->exp_strategy[ch][blk]);
     }
     if (s->lfe_on) {
         for (blk = 0; blk < AC3_MAX_BLOCKS; blk++)
