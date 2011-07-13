@@ -243,7 +243,7 @@ int ff_ac3_encode_init(AVCodecContext *avctx);
 
 int ff_ac3_encode_close(AVCodecContext *avctx);
 
-int ff_ac3_validate_metadata(AVCodecContext *avctx);
+int ff_ac3_validate_metadata(AC3EncodeContext *s);
 
 void ff_ac3_adjust_frame_size(AC3EncodeContext *s);
 

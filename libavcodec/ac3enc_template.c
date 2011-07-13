@@ -424,7 +424,7 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
     int ret;
 
     if (!s->eac3 && s->options.allow_per_frame_metadata) {
-        ret = ff_ac3_validate_metadata(avctx);
+        ret = ff_ac3_validate_metadata(s);
         if (ret)
             return ret;
     }
