@@ -1820,6 +1820,8 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
     av_freep(&s->band_psd_buffer);
     av_freep(&s->mask_buffer);
     av_freep(&s->qmant_buffer);
+    av_freep(&s->cpl_coord_exp_buffer);
+    av_freep(&s->cpl_coord_mant_buffer);
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         av_freep(&block->mdct_coef);
@@ -1830,6 +1832,8 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
         av_freep(&block->band_psd);
         av_freep(&block->mask);
         av_freep(&block->qmant);
+        av_freep(&block->cpl_coord_exp);
+        av_freep(&block->cpl_coord_mant);
     }
 
     s->mdct_end(s->mdct);
