@@ -3887,7 +3887,13 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
 
 int64_t ff_iso8601_to_unix_time(const char *datestr)
 {
+#if HAVE_STRPTIME
     struct tm time = {0};
     strptime(datestr, "%Y - %m - %dT%T", &time);
     return mktime(&time);
+#else
+    av_log(NULL, AV_LOG_WARNING, "strptime() unavailable on this system, cannot convert "
+                                 "the date string.\n");
+    return 0;
+#endif
 }
