@@ -20,13 +20,15 @@ $(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
 $(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_PATH)/%=%)); $(INSTALL))
 endif
 
+ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
+
 IFLAGS     := -I. -I$(SRC_PATH)
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CFLAGS)
 YASMFLAGS  += $(IFLAGS) -Pconfig.asm
 HOSTCFLAGS += $(IFLAGS)
-LDFLAGS    += $(ALLFFLIBS:%=-Llib%)
+LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
 define COMPILE
 	$($(1)DEP)
@@ -65,8 +67,6 @@ TOOLS-$(CONFIG_ZLIB) += cws2fws
 BASENAMES   = ffmpeg ffplay ffprobe ffserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
-
-ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
 
 FFLIBS-$(CONFIG_AVDEVICE) += avdevice
 FFLIBS-$(CONFIG_AVFILTER) += avfilter
