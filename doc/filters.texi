@@ -933,7 +933,6 @@ The list of the currently supported filters follows:
 @item qp
 @item rectangle
 @item remove-logo
-@item rgbtest
 @item rotate
 @item sab
 @item screenshot

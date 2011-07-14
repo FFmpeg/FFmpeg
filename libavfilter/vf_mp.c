@@ -181,7 +181,6 @@ extern const vf_info_t vf_info_fspp;
 extern const vf_info_t vf_info_pp7;
 extern const vf_info_t vf_info_yuvcsp;
 extern const vf_info_t vf_info_kerndeint;
-extern const vf_info_t vf_info_rgbtest;
 extern const vf_info_t vf_info_qp;
 extern const vf_info_t vf_info_phase;
 extern const vf_info_t vf_info_divtc;
@@ -239,7 +238,6 @@ static const vf_info_t* const filters[]={
     &vf_info_qp,
     &vf_info_rectangle,
     &vf_info_remove_logo,
-    &vf_info_rgbtest,
     &vf_info_rotate,
     &vf_info_sab,
     &vf_info_screenshot,
