@@ -22,9 +22,9 @@
 /**
  * @file
  * TTA (The Lossless True Audio) decoder
- * (www.true-audio.com or tta.corecodec.org)
+ * @see http://www.true-audio.com/
+ * @see http://tta.corecodec.org/
  * @author Alex Beregszaszi
- *
  */
 
 #define ALT_BITSTREAM_READER_LE

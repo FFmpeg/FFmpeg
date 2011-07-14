@@ -22,10 +22,8 @@
 /**
  * @file
  * Electronic Arts TQI Video Decoder
- * by Peter Ross <pross@xvid.org>
- *
- * Technical details here:
- * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TQI
+ * @author Peter Ross <pross@xvid.org>
+ * @see http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TQI
  */
 
 #include "avcodec.h"

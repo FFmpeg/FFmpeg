@@ -21,9 +21,9 @@
 
 /**
  * @file
- * VQA Video Decoder by Mike Melanson (melanson@pcisys.net)
- * For more information about the VQA format, visit:
- *   http://wiki.multimedia.cx/index.php?title=VQA
+ * VQA Video Decoder
+ * @author Mike Melanson (melanson@pcisys.net)
+ * @see http://wiki.multimedia.cx/index.php?title=VQA
  *
  * The VQA video decoder outputs PAL8 or RGB555 colorspace data, depending
  * on the type of data in the file.

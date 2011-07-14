@@ -23,9 +23,7 @@
  * RL2 file demuxer
  * @file
  * @author Sascha Sommer (saschasommer@freenet.de)
- *
- * For more information regarding the RL2 file format, visit:
- *   http://wiki.multimedia.cx/index.php?title=RL2
+ * @see http://wiki.multimedia.cx/index.php?title=RL2
  *
  * extradata:
  * 2 byte le initial drawing offset within 320x200 viewport

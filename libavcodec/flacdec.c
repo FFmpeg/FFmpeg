@@ -23,9 +23,7 @@
  * @file
  * FLAC (Free Lossless Audio Codec) decoder
  * @author Alex Beregszaszi
- *
- * For more information on the FLAC format, visit:
- *  http://flac.sourceforge.net/
+ * @see http://flac.sourceforge.net/
  *
  * This decoder can be used in 1 of 2 ways: Either raw FLAC data can be fed
  * through, starting from the initial 'fLaC' signature; or by passing the
