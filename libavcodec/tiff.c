@@ -20,10 +20,11 @@
  */
 
 /**
- * TIFF image decoder
  * @file
+ * TIFF image decoder
  * @author Konstantin Shishkov
  */
+
 #include "avcodec.h"
 #if CONFIG_ZLIB
 #include <zlib.h>

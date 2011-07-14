@@ -20,8 +20,8 @@
  */
 
 /**
- * 8088flex TMV video decoder
  * @file
+ * 8088flex TMV video decoder
  * @author Daniel Verkamp
  * @sa http://www.oldskool.org/pc/8088_Corruption
  */

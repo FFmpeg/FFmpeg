@@ -20,10 +20,11 @@
  */
 
 /**
- * TIFF tables
  * @file
+ * TIFF tables
  * @author Konstantin Shishkov
  */
+
 #ifndef AVCODEC_TIFF_H
 #define AVCODEC_TIFF_H
 

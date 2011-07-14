@@ -20,8 +20,8 @@
  */
 
 /**
- * PCX image encoder
  * @file
+ * PCX image encoder
  * @author Daniel Verkamp
  * @sa http://www.qzx.com/pc-gpe/pcx.txt
  */

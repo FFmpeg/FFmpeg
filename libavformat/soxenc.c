@@ -23,8 +23,8 @@
  */
 
 /**
- * SoX native format muxer
  * @file
+ * SoX native format muxer
  * @author Daniel Verkamp
  * @sa http://wiki.multimedia.cx/index.php?title=SoX_native_intermediate_format
  */
