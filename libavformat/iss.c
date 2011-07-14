@@ -23,7 +23,8 @@
  * @file
  * Funcom ISS file demuxer
  * @author Jaikrishnan Menon
- * for more information on the .iss file format, visit:
+ *
+ * For more information on the .iss file format, visit:
  * http://wiki.multimedia.cx/index.php?title=FunCom_ISS
  */
 
