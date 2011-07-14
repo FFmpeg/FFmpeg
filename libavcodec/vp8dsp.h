@@ -1,6 +1,4 @@
-/**
- * VP8 compatible video decoder
- *
+/*
  * Copyright (C) 2010 David Conrad
  * Copyright (C) 2010 Ronald S. Bultje
  *
@@ -21,6 +19,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * VP8 compatible video decoder
+ */
 
 #ifndef AVCODEC_VP8DSP_H
 #define AVCODEC_VP8DSP_H
