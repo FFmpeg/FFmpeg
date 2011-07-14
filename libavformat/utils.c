@@ -2394,7 +2394,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
            it takes longer and uses more memory. For MPEG-4, we need to
            decompress for QuickTime. */
         if (!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st))
-            try_decode_frame(st, pkt, (options && i <= orig_nb_streams )? &options[i] : NULL);
+            try_decode_frame(st, pkt, (options && i < orig_nb_streams )? &options[i] : NULL);
 
         st->codec_info_nb_frames++;
         count++;
