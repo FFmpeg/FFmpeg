@@ -76,10 +76,10 @@ void *av_malloc(size_t size) av_malloc_attrib av_alloc_size(1);
  * Allocate or reallocate a block of memory.
  * If ptr is NULL and size > 0, allocate a new block. If
  * size is zero, free the memory block pointed to by ptr.
- * @param size Size in bytes for the memory block to be allocated or
- * reallocated.
  * @param ptr Pointer to a memory block already allocated with
  * av_malloc(z)() or av_realloc() or NULL.
+ * @param size Size in bytes for the memory block to be allocated or
+ * reallocated.
  * @return Pointer to a newly reallocated block or NULL if the block
  * cannot be reallocated or the function is used to free the memory block.
  * @see av_fast_realloc()
