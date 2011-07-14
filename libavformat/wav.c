@@ -23,23 +23,85 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
+#include "libavutil/dict.h"
+#include "libavutil/log.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
+#include "avio.h"
+#include "avio_internal.h"
 #include "metadata.h"
 
 typedef struct {
+    const AVClass *class;
     int64_t data;
     int64_t data_end;
     int64_t minpts;
     int64_t maxpts;
     int last_duration;
     int w64;
+    int write_bext;
 } WAVContext;
 
 #if CONFIG_WAV_MUXER
+static inline void bwf_write_bext_string(AVFormatContext *s, const char *key, int maxlen)
+{
+    AVDictionaryEntry *tag;
+    int len = 0;
+
+    if (tag = av_dict_get(s->metadata, key, NULL, 0)) {
+        len = strlen(tag->value);
+        len = FFMIN(len, maxlen);
+        avio_write(s->pb, tag->value, len);
+    }
+
+    ffio_fill(s->pb, 0, maxlen - len);
+}
+
+static void bwf_write_bext_chunk(AVFormatContext *s)
+{
+    AVDictionaryEntry *tmp_tag;
+    uint64_t time_reference = 0;
+    int64_t bext = ff_start_tag(s->pb, "bext");
+
+    bwf_write_bext_string(s, "description", 256);
+    bwf_write_bext_string(s, "originator", 32);
+    bwf_write_bext_string(s, "originator_reference", 32);
+    bwf_write_bext_string(s, "origination_date", 10);
+    bwf_write_bext_string(s, "origination_time", 8);
+
+    if (tmp_tag = av_dict_get(s->metadata, "time_reference", NULL, 0))
+        time_reference = strtoll(tmp_tag->value, NULL, 10);
+    avio_wl64(s->pb, time_reference);
+    avio_wl16(s->pb, 1);  // set version to 1
+
+    if (tmp_tag = av_dict_get(s->metadata, "umid", NULL, 0)) {
+        unsigned char umidpart_str[17] = {0};
+        int i;
+        uint64_t umidpart;
+        int len = strlen(tmp_tag->value+2);
+
+        for (i = 0; i < len/16; i++) {
+            memcpy(umidpart_str, tmp_tag->value + 2 + (i*16), 16);
+            umidpart = strtoll(umidpart_str, NULL, 16);
+            avio_wb64(s->pb, umidpart);
+        }
+        ffio_fill(s->pb, 0, 64 - i*8);
+    } else
+        ffio_fill(s->pb, 0, 64); // zero UMID
+
+    ffio_fill(s->pb, 0, 190); // Reserved
+
+    if (tmp_tag = av_dict_get(s->metadata, "coding_history", NULL, 0))
+        avio_put_str(s->pb, tmp_tag->value);
+
+    ff_end_tag(s->pb, bext);
+}
+
 static int wav_write_header(AVFormatContext *s)
 {
     WAVContext *wav = s->priv_data;
@@ -65,6 +127,9 @@ static int wav_write_header(AVFormatContext *s)
         avio_wl32(pb, 0);
         ff_end_tag(pb, fact);
     }
+
+    if (wav->write_bext)
+        bwf_write_bext_chunk(s);
 
     av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
     wav->maxpts = wav->last_duration = 0;
@@ -126,6 +191,20 @@ static int wav_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(WAVContext, x)
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "write_bext", "Write BEXT chunk.", OFFSET(write_bext), FF_OPT_TYPE_INT, { 0 }, 0, 1, ENC },
+    { NULL },
+};
+
+static const AVClass wav_muxer_class = {
+    .class_name = "WAV muxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_wav_muxer = {
     "wav",
     NULL_IF_CONFIG_SMALL("WAV format"),
@@ -138,6 +217,7 @@ AVOutputFormat ff_wav_muxer = {
     wav_write_packet,
     wav_write_trailer,
     .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+    .priv_class = &wav_muxer_class,
 };
 #endif /* CONFIG_WAV_MUXER */
 
@@ -207,11 +287,13 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
     return 0;
 }
 
-static inline int wav_parse_bext_string(AVFormatContext *s, const char *key, int length)
+static inline int wav_parse_bext_string(AVFormatContext *s, const char *key,
+                                        int length)
 {
     char temp[257];
     int ret;
 
+    av_assert0(length <= sizeof(temp));
     if ((ret = avio_read(s->pb, temp, length)) < 0)
         return ret;
 
@@ -337,6 +419,7 @@ static int wav_read_header(AVFormatContext *s,
             return AVERROR_INVALIDDATA;
         }
         avio_skip(pb, size - 24); /* skip rest of ds64 chunk */
+
     }
 
     for (;;) {
@@ -378,7 +461,7 @@ static int wav_read_header(AVFormatContext *s,
                 goto break_loop;
             break;
         case MKTAG('f','a','c','t'):
-            if(!sample_count)
+            if (!sample_count)
                 sample_count = avio_rl32(pb);
             break;
         case MKTAG('b','e','x','t'):

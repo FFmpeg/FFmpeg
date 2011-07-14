@@ -1535,10 +1535,10 @@ void ff_ac3_output_frame(AC3EncodeContext *s, unsigned char *frame)
 }
 
 
-static void dprint_options(AVCodecContext *avctx)
+static void dprint_options(AC3EncodeContext *s)
 {
 #ifdef DEBUG
-    AC3EncodeContext *s = avctx->priv_data;
+    AVCodecContext *avctx = s->avctx;
     AC3EncOptions *opt = &s->options;
     char strbuf[32];
 
@@ -1689,9 +1689,9 @@ static void validate_mix_level(void *log_ctx, const char *opt_name,
  * Validate metadata options as set by AVOption system.
  * These values can optionally be changed per-frame.
  */
-int ff_ac3_validate_metadata(AVCodecContext *avctx)
+int ff_ac3_validate_metadata(AC3EncodeContext *s)
 {
-    AC3EncodeContext *s = avctx->priv_data;
+    AVCodecContext *avctx = s->avctx;
     AC3EncOptions *opt = &s->options;
 
     /* validate mixing levels */
@@ -1820,6 +1820,8 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
     av_freep(&s->band_psd_buffer);
     av_freep(&s->mask_buffer);
     av_freep(&s->qmant_buffer);
+    av_freep(&s->cpl_coord_exp_buffer);
+    av_freep(&s->cpl_coord_mant_buffer);
     for (blk = 0; blk < AC3_MAX_BLOCKS; blk++) {
         AC3Block *block = &s->blocks[blk];
         av_freep(&block->mdct_coef);
@@ -1830,10 +1832,11 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
         av_freep(&block->band_psd);
         av_freep(&block->mask);
         av_freep(&block->qmant);
+        av_freep(&block->cpl_coord_exp);
+        av_freep(&block->cpl_coord_mant);
     }
 
-    s->mdct_end(s->mdct);
-    av_freep(&s->mdct);
+    s->mdct_end(s);
 
     av_freep(&avctx->coded_frame);
     return 0;
@@ -1888,8 +1891,9 @@ static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
 }
 
 
-static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
+static av_cold int validate_options(AC3EncodeContext *s)
 {
+    AVCodecContext *avctx = s->avctx;
     int i, ret, max_sr;
 
     /* validate channel layout */
@@ -1994,7 +1998,7 @@ static av_cold int validate_options(AVCodecContext *avctx, AC3EncodeContext *s)
     }
 
     if (!s->eac3) {
-        ret = ff_ac3_validate_metadata(avctx);
+        ret = ff_ac3_validate_metadata(s);
         if (ret)
             return ret;
     }
@@ -2081,10 +2085,10 @@ static av_cold void set_bandwidth(AC3EncodeContext *s)
 }
 
 
-static av_cold int allocate_buffers(AVCodecContext *avctx)
+static av_cold int allocate_buffers(AC3EncodeContext *s)
 {
+    AVCodecContext *avctx = s->avctx;
     int blk, ch;
-    AC3EncodeContext *s = avctx->priv_data;
     int channels = s->channels + 1; /* includes coupling channel */
 
     if (s->allocate_sample_buffers(s))
@@ -2197,7 +2201,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     ff_ac3_common_init();
 
-    ret = validate_options(avctx, s);
+    ret = validate_options(s);
     if (ret)
         return ret;
 
@@ -2237,12 +2241,11 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
 
     bit_alloc_init(s);
 
-    FF_ALLOCZ_OR_GOTO(avctx, s->mdct, sizeof(AC3MDCTContext), init_fail);
-    ret = s->mdct_init(avctx, s->mdct, 9);
+    ret = s->mdct_init(s);
     if (ret)
         goto init_fail;
 
-    ret = allocate_buffers(avctx);
+    ret = allocate_buffers(s);
     if (ret)
         goto init_fail;
 
@@ -2251,7 +2254,7 @@ av_cold int ff_ac3_encode_init(AVCodecContext *avctx)
     dsputil_init(&s->dsp, avctx);
     ff_ac3dsp_init(&s->ac3dsp, avctx->flags & CODEC_FLAG_BITEXACT);
 
-    dprint_options(avctx);
+    dprint_options(s);
 
     return 0;
 init_fail:

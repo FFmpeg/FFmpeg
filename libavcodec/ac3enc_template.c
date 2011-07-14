@@ -108,13 +108,13 @@ static void apply_mdct(AC3EncodeContext *s)
             const SampleType *input_samples = &s->planar_samples[ch][blk * AC3_BLOCK_SIZE];
 
             apply_window(&s->dsp, s->windowed_samples, input_samples,
-                         s->mdct->window, AC3_WINDOW_SIZE);
+                         s->mdct_window, AC3_WINDOW_SIZE);
 
             if (s->fixed_point)
                 block->coeff_shift[ch+1] = normalize_samples(s);
 
-            s->mdct->fft.mdct_calcw(&s->mdct->fft, block->mdct_coef[ch+1],
-                                    s->windowed_samples);
+            s->mdct.mdct_calcw(&s->mdct, block->mdct_coef[ch+1],
+                               s->windowed_samples);
         }
     }
 }
@@ -424,7 +424,7 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
     int ret;
 
     if (!s->eac3 && s->options.allow_per_frame_metadata) {
-        ret = ff_ac3_validate_metadata(avctx);
+        ret = ff_ac3_validate_metadata(s);
         if (ret)
             return ret;
     }

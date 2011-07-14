@@ -28,9 +28,6 @@ tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
 
 tests/data/asynth1.sw tests/vsynth%/00.pgm: TAG = GEN
 
-tests/seek_test$(EXESUF): tests/seek_test.o $(FF_DEP_LIBS)
-	$(LD) $(LDFLAGS) -o $@ $< $(FF_EXTRALIBS)
-
 include $(SRC_PATH)/tests/fate.mak
 include $(SRC_PATH)/tests/fate2.mak
 
@@ -64,7 +61,7 @@ $(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
 $(filter-out %-vref,$(FATE_VCODEC)): $(VREF)
 $(FATE_LAVF):   $(REFS)
 $(FATE_LAVFI):  $(REFS) tools/lavfi-showfiltfmts$(EXESUF)
-$(FATE_SEEK):   fate-codec fate-lavf tests/seek_test$(EXESUF)
+$(FATE_SEEK):   fate-codec fate-lavf libavformat/seek-test$(EXESUF)
 
 $(FATE_ACODEC):  CMD = codectest acodec
 $(FATE_VSYNTH1): CMD = codectest vsynth1
@@ -107,7 +104,6 @@ clean:: testclean
 testclean:
 	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
 	$(RM) $(CLEANSUFFIXES:%=tests/%)
-	$(RM) tests/seek_test$(EXESUF) tests/seek_test.o
 	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
 
 -include $(wildcard tests/*.d)

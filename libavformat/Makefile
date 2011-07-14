@@ -341,7 +341,7 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 OBJS-$(CONFIG_ALSA_INDEV)                += timefilter.o
 OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o
 
-TESTPROGS = timefilter
+TESTPROGS = seek timefilter
 TOOLS     = pktdumper probetest
 
 include $(SRC_PATH)/subdir.mak

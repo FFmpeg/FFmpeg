@@ -246,4 +246,9 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
 
 enum CodecID ff_guess_image2_codec(const char *filename);
 
+/**
+ * Convert a date string in ISO8601 format to Unix timestamp.
+ */
+int64_t ff_iso8601_to_unix_time(const char *datestr);
+
 #endif /* AVFORMAT_INTERNAL_H */

@@ -3508,7 +3508,7 @@ static int add_av_stream(FFStream *feed, AVStream *st)
             case AVMEDIA_TYPE_AUDIO:
                 if (av1->channels == av->channels &&
                     av1->sample_rate == av->sample_rate)
-                    goto found;
+                    return i;
                 break;
             case AVMEDIA_TYPE_VIDEO:
                 if (av1->width == av->width &&
@@ -3516,7 +3516,7 @@ static int add_av_stream(FFStream *feed, AVStream *st)
                     av1->time_base.den == av->time_base.den &&
                     av1->time_base.num == av->time_base.num &&
                     av1->gop_size == av->gop_size)
-                    goto found;
+                    return i;
                 break;
             default:
                 abort();
@@ -3528,8 +3528,6 @@ static int add_av_stream(FFStream *feed, AVStream *st)
     if (!fst)
         return -1;
     return feed->nb_streams - 1;
- found:
-    return i;
 }
 
 static void remove_stream(FFStream *stream)

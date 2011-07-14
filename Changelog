@@ -5,6 +5,7 @@ version next:
 
 - openal input device added
 - boxblur filter added
+- BWF muxer
 
 
 version 0.8:

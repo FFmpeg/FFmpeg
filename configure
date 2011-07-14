@@ -1110,6 +1110,7 @@ HAVE_LIST="
     poll_h
     setrlimit
     strerror_r
+    strptime
     strtok_r
     struct_addrinfo
     struct_ipv6_mreq
@@ -2812,6 +2813,7 @@ check_func  mmap
 check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func  strerror_r
+check_func  strptime
 check_func  strtok_r
 check_func_headers conio.h kbhit
 check_func_headers io.h setmode

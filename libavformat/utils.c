@@ -471,7 +471,8 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     else
         ic->pb = pb;
 
-    err = avformat_open_input(&ic, filename, fmt, &opts);
+    if ((err = avformat_open_input(&ic, filename, fmt, &opts)) < 0)
+        goto fail;
     ic->pb = ic->pb ? ic->pb : pb; // don't leak custom pb if it wasn't set above
 
     *ic_ptr = ic;
@@ -2129,7 +2130,8 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             return ret;
     }
 
-    if(!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st)){
+    if(!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st) ||
+       (!st->codec_info_nb_frames && st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF)) {
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
             avcodec_get_frame_defaults(&picture);
@@ -2436,11 +2438,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
            least one frame of codec data, this makes sure the codec initializes
            the channel configuration and does not only trust the values from the container.
         */
-        if (!has_codec_parameters(st->codec) ||
-            !has_decode_delay_been_guessed(st) ||
-            (st->codec->codec &&
-             st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))
-            try_decode_frame(st, pkt, (options && i <= orig_nb_streams )? &options[i] : NULL);
+        try_decode_frame(st, pkt, (options && i <= orig_nb_streams )? &options[i] : NULL);
 
         st->codec_info_nb_frames++;
         count++;
@@ -4011,4 +4009,17 @@ void ff_make_absolute_url(char *buf, int size, const char *base,
         rel += 3;
     }
     av_strlcat(buf, rel, size);
+}
+
+int64_t ff_iso8601_to_unix_time(const char *datestr)
+{
+#if HAVE_STRPTIME
+    struct tm time = {0};
+    strptime(datestr, "%Y - %m - %dT%T", &time);
+    return mktime(&time);
+#else
+    av_log(NULL, AV_LOG_WARNING, "strptime() unavailable on this system, cannot convert "
+                                 "the date string.\n");
+    return 0;
+#endif
 }

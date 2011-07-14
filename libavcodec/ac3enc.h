@@ -66,10 +66,6 @@ typedef int64_t CoefSumType;
 #endif
 
 
-typedef struct AC3MDCTContext {
-    const SampleType *window;           ///< MDCT window function
-    FFTContext fft;                     ///< FFT context for MDCT calculation
-} AC3MDCTContext;
 #if 0
 /**
  * Encoding Options used by AVOption.
@@ -143,7 +139,8 @@ typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
-    AC3MDCTContext *mdct;                   ///< MDCT context
+    FFTContext mdct;                        ///< FFT context for MDCT calculation
+    const SampleType *mdct_window;          ///< MDCT window function array
 
     AC3Block blocks[AC3_MAX_BLOCKS];        ///< per-block info
 
@@ -226,8 +223,8 @@ typedef struct AC3EncodeContext {
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
 
     /* fixed vs. float function pointers */
-    void (*mdct_end)(AC3MDCTContext *mdct);
-    int  (*mdct_init)(AVCodecContext *avctx, AC3MDCTContext *mdct, int nbits);
+    void (*mdct_end)(struct AC3EncodeContext *s);
+    int  (*mdct_init)(struct AC3EncodeContext *s);
 
     /* fixed vs. float templated function pointers */
     int  (*allocate_sample_buffers)(struct AC3EncodeContext *s);
@@ -241,7 +238,7 @@ int ff_ac3_encode_init(AVCodecContext *avctx);
 
 int ff_ac3_encode_close(AVCodecContext *avctx);
 
-int ff_ac3_validate_metadata(AVCodecContext *avctx);
+int ff_ac3_validate_metadata(AC3EncodeContext *s);
 
 void ff_ac3_adjust_frame_size(AC3EncodeContext *s);
 
@@ -260,13 +257,11 @@ void ff_ac3_output_frame(AC3EncodeContext *s, unsigned char *frame);
 
 /* prototypes for functions in ac3enc_fixed.c and ac3enc_float.c */
 
-void ff_ac3_fixed_mdct_end(AC3MDCTContext *mdct);
-void ff_ac3_float_mdct_end(AC3MDCTContext *mdct);
+void ff_ac3_fixed_mdct_end(AC3EncodeContext *s);
+void ff_ac3_float_mdct_end(AC3EncodeContext *s);
 
-int ff_ac3_fixed_mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
-                           int nbits);
-int ff_ac3_float_mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
-                           int nbits);
+int ff_ac3_fixed_mdct_init(AC3EncodeContext *s);
+int ff_ac3_float_mdct_init(AC3EncodeContext *s);
 
 
 /* prototypes for functions in ac3enc_template.c */

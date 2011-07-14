@@ -343,11 +343,8 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
         c->start_time = s->timestamp;
     else
 #endif
-    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0)) {
-        struct tm time = {0};
-        strptime(t->value, "%Y - %m - %dT%T", &time);
-        c->start_time = mktime(&time);
-    }
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
+        c->start_time = ff_iso8601_to_unix_time(t->value);
 
     for (i=0; i < c->n_ast; i++) {
         if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*AVCODEC_MAX_AUDIO_FRAME_SIZE))) {

@@ -1690,10 +1690,10 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
 
     if ((ret = avfilter_graph_create_filter(&filt_src, &input_filter, "src",
                                             NULL, is, graph)) < 0)
-        goto the_end;
+        return ret;
     if ((ret = avfilter_graph_create_filter(&filt_out, avfilter_get_by_name("buffersink"), "out",
                                             NULL, pix_fmts, graph)) < 0)
-        goto the_end;
+        return ret;
 
     if(vfilters) {
         AVFilterInOut *outputs = avfilter_inout_alloc();
@@ -1710,18 +1710,18 @@ static int configure_video_filters(AVFilterGraph *graph, VideoState *is, const c
         inputs->next    = NULL;
 
         if ((ret = avfilter_graph_parse(graph, vfilters, &inputs, &outputs, NULL)) < 0)
-            goto the_end;
+            return ret;
         av_freep(&vfilters);
     } else {
         if ((ret = avfilter_link(filt_src, 0, filt_out, 0)) < 0)
-            goto the_end;
+            return ret;
     }
 
     if ((ret = avfilter_graph_config(graph, NULL)) < 0)
-        goto the_end;
+        return ret;
 
     is->out_video_filter = filt_out;
-the_end:
+
     return ret;
 }
 
@@ -1829,7 +1829,7 @@ static int subtitle_thread(void *arg)
         SDL_UnlockMutex(is->subpq_mutex);
 
         if (is->subtitleq.abort_request)
-            goto the_end;
+            return 0;
 
         sp = &is->subpq[is->subpq_windex];
 
@@ -1866,7 +1866,6 @@ static int subtitle_thread(void *arg)
         }
         av_free_packet(pkt);
     }
- the_end:
     return 0;
 }
 

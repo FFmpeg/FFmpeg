@@ -41,9 +41,9 @@ static AVClass ac3enc_class = { "Fixed-Point AC-3 Encoder", av_default_item_name
 /**
  * Finalize MDCT and free allocated memory.
  */
-av_cold void AC3_NAME(mdct_end)(AC3MDCTContext *mdct)
+av_cold void AC3_NAME(mdct_end)(AC3EncodeContext *s)
 {
-    ff_mdct_end(&mdct->fft);
+    ff_mdct_end(&s->mdct);
 }
 
 
@@ -51,11 +51,10 @@ av_cold void AC3_NAME(mdct_end)(AC3MDCTContext *mdct)
  * Initialize MDCT tables.
  * @param nbits log2(MDCT size)
  */
-av_cold int AC3_NAME(mdct_init)(AVCodecContext *avctx, AC3MDCTContext *mdct,
-                                int nbits)
+av_cold int AC3_NAME(mdct_init)(AC3EncodeContext *s)
 {
-    int ret = ff_mdct_init(&mdct->fft, nbits, 0, -1.0);
-    mdct->window = ff_ac3_window;
+    int ret = ff_mdct_init(&s->mdct, 9, 0, -1.0);
+    s->mdct_window = ff_ac3_window;
     return ret;
 }
 
