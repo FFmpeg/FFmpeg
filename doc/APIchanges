@@ -13,6 +13,12 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-07-xx - xxxxxxx - lavf 53.3.0
+  Add avformat_find_stream_info(), deprecate av_find_stream_info().
+
+2011-07-xx - xxxxxxx - lavc 53.6.0
+  Add avcodec_open2(), deprecate avcodec_open().
+
 2011-06-xx - xxxxxxx - lavu 51.8.0 - attributes.h
   Add av_printf_format().
 
