@@ -2349,6 +2349,9 @@ static int transcode(AVFormatContext **output_files,
             }
             assert_codec_experimental(ost->st->codec, 1);
             assert_avoptions(ost->opts);
+            if (ost->st->codec->bit_rate && ost->st->codec->bit_rate < 1000)
+                av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
+                                             "It takes bits/s as argument, not kbits/s\n");
             extra_size += ost->st->codec->extradata_size;
         }
     }
@@ -2787,18 +2790,6 @@ static int opt_frame_rate(const char *opt, const char *arg)
         fprintf(stderr, "Incorrect value for %s: %s\n", opt, arg);
         ffmpeg_exit(1);
     }
-    return 0;
-}
-
-static int opt_bitrate(const char *opt, const char *arg)
-{
-    int codec_type = opt[0]=='a' ? AVMEDIA_TYPE_AUDIO : AVMEDIA_TYPE_VIDEO;
-
-    opt_default(opt, arg);
-
-    if (av_get_int(avcodec_opts[codec_type], "b", NULL) < 1000)
-        fprintf(stderr, "WARNING: The bitrate parameter is set too low. It takes bits/s as argument, not kbits/s\n");
-
     return 0;
 }
 
@@ -4290,8 +4281,6 @@ static const OptionDef options[] = {
     { "copyinkf", OPT_BOOL | OPT_EXPERT, {(void*)&copy_initial_nonkeyframes}, "copy initial non-keyframes" },
 
     /* video options */
-    { "b", HAS_ARG | OPT_VIDEO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
-    { "vb", HAS_ARG | OPT_VIDEO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
     { "vframes", OPT_INT | HAS_ARG | OPT_VIDEO, {(void*)&max_frames[AVMEDIA_TYPE_VIDEO]}, "set the number of video frames to record", "number" },
     { "r", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
@@ -4338,7 +4327,6 @@ static const OptionDef options[] = {
     { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void *)&forced_key_frames}, "force key frames at specified timestamps", "timestamps" },
 
     /* audio options */
-    { "ab", HAS_ARG | OPT_AUDIO, {(void*)opt_bitrate}, "set bitrate (in bits/s)", "bitrate" },
     { "aframes", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&max_frames[AVMEDIA_TYPE_AUDIO]}, "set the number of audio frames to record", "number" },
     { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
     { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
