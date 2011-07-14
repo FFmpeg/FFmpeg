@@ -218,7 +218,7 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
  * top-bottom or bottom-top order. If slices are provided in
  * non-sequential order the behavior of the function is undefined.
  *
- * @param context   the scaling context previously created with
+ * @param c         the scaling context previously created with
  *                  sws_getContext()
  * @param srcSlice  the array containing the pointers to the planes of
  *                  the source slice
@@ -235,8 +235,9 @@ struct SwsContext *sws_getContext(int srcW, int srcH, enum PixelFormat srcFormat
  *                  the destination image
  * @return          the height of the output slice
  */
-int sws_scale(struct SwsContext *context, const uint8_t* const srcSlice[], const int srcStride[],
-              int srcSliceY, int srcSliceH, uint8_t* const dst[], const int dstStride[]);
+int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
+              const int srcStride[], int srcSliceY, int srcSliceH,
+              uint8_t* const dst[], const int dstStride[]);
 
 #if LIBSWSCALE_VERSION_MAJOR < 1
 /**

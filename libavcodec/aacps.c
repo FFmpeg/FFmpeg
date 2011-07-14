@@ -69,19 +69,19 @@ static const int huff_iid[] = {
 
 static VLC vlc_ps[10];
 
-/**
- * Read Inter-channel Intensity Difference/Inter-Channel Coherence/
- * Inter-channel Phase Difference/Overall Phase Difference parameters from the
- * bitstream.
- *
- * @param avctx contains the current codec context
- * @param gb    pointer to the input bitstream
- * @param ps    pointer to the Parametric Stereo context
- * @param PAR   pointer to the parameter to be read
- * @param e     envelope to decode
- * @param dt    1: time delta-coded, 0: frequency delta-coded
- */
 #define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION) \
+/** \
+ * Read Inter-channel Intensity Difference/Inter-Channel Coherence/ \
+ * Inter-channel Phase Difference/Overall Phase Difference parameters from the \
+ * bitstream. \
+ * \
+ * @param avctx contains the current codec context \
+ * @param gb    pointer to the input bitstream \
+ * @param ps    pointer to the Parametric Stereo context \
+ * @param PAR   pointer to the parameter to be read \
+ * @param e     envelope to decode \
+ * @param dt    1: time delta-coded, 0: frequency delta-coded \
+ */ \
 static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, \
                         int8_t (*PAR)[PS_MAX_NR_IIDICC], int table_idx, int e, int dt) \
 { \

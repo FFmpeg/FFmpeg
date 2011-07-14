@@ -141,6 +141,8 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
  * corresponding filter instance which is added to graph with
  * create_filter().
  *
+ * @param filt_ctx Pointer that is set to the created and configured filter
+ *                 context on success, set to NULL on failure.
  * @param filt_ctx put here a pointer to the created filter context on
  * success, NULL otherwise
  * @param buf pointer to the buffer to parse, *buf will be updated to

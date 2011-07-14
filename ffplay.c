@@ -2111,10 +2111,14 @@ static int stream_component_open(VideoState *is, int stream_index)
     AVCodecContext *avctx;
     AVCodec *codec;
     SDL_AudioSpec wanted_spec, spec;
+    AVDictionary *opts;
+    AVDictionaryEntry *t = NULL;
 
     if (stream_index < 0 || stream_index >= ic->nb_streams)
         return -1;
     avctx = ic->streams[stream_index]->codec;
+
+    opts = filter_codec_opts(codec_opts, avctx->codec_id, 0);
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -2141,13 +2145,16 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->error_concealment= error_concealment;
     avctx->thread_count= thread_count;
 
-    set_context_opts(avctx, avcodec_opts[avctx->codec_type], 0, codec);
-
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
-    if (avcodec_open(avctx, codec) < 0)
+    if (!codec ||
+        avcodec_open2(avctx, codec, &opts) < 0)
         return -1;
+    if ((t = av_dict_get(opts, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
+        av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+        return AVERROR_OPTION_NOT_FOUND;
+    }
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -2301,6 +2308,8 @@ static int read_thread(void *arg)
     int eof=0;
     int pkt_in_play_range = 0;
     AVDictionaryEntry *t;
+    AVDictionary **opts;
+    int orig_nb_streams;
 
     memset(st_index, -1, sizeof(st_index));
     is->video_stream = -1;
@@ -2326,12 +2335,19 @@ static int read_thread(void *arg)
     if(genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
 
-    err = av_find_stream_info(ic);
+    opts = setup_find_stream_info_opts(ic);
+    orig_nb_streams = ic->nb_streams;
+
+    err = avformat_find_stream_info(ic, opts);
     if (err < 0) {
         fprintf(stderr, "%s: could not find codec parameters\n", is->filename);
         ret = -1;
         goto fail;
     }
+    for (i = 0; i < orig_nb_streams; i++)
+        av_dict_free(&opts[i]);
+    av_freep(&opts);
+
     if(ic->pb)
         ic->pb->eof_reached= 0; //FIXME hack, ffplay maybe should not use url_feof() to test for the end
 

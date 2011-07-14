@@ -717,7 +717,9 @@ static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
     *v = av_pix_fmt_descriptors[format].log2_chroma_h;
 }
 
-int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation)
+int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
+                             int srcRange, const int table[4], int dstRange,
+                             int brightness, int contrast, int saturation)
 {
     memcpy(c->srcColorspaceTable, inv_table, sizeof(int)*4);
     memcpy(c->dstColorspaceTable,     table, sizeof(int)*4);
@@ -740,7 +742,9 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     return 0;
 }
 
-int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation)
+int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
+                             int *srcRange, int **table, int *dstRange,
+                             int *brightness, int *contrast, int *saturation)
 {
     if (!c || isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
 

@@ -2438,7 +2438,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
            least one frame of codec data, this makes sure the codec initializes
            the channel configuration and does not only trust the values from the container.
         */
-        try_decode_frame(st, pkt, (options && i <= orig_nb_streams )? &options[i] : NULL);
+        try_decode_frame(st, pkt, (options && i < orig_nb_streams )? &options[i] : NULL);
 
         st->codec_info_nb_frames++;
         count++;

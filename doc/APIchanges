@@ -13,6 +13,12 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-07-10 - a67c061 - lavf 53.3.0
+  Add avformat_find_stream_info(), deprecate av_find_stream_info().
+
+2011-07-10 - 0b950fe - lavc 53.6.0
+  Add avcodec_open2(), deprecate avcodec_open().
+
 2011-07-01 - b442ca6 - lavf 53.5.0 - avformat.h
   Add function av_get_output_timestamp().
 
@@ -49,20 +55,20 @@ API changes, most recent first:
 2011-06-12 - xxxxxxx - lavfi 2.16.0 - avfilter_graph_parse()
   Change avfilter_graph_parse() signature.
 
-2011-06-xx - xxxxxxx - lavu 51.8.0 - attributes.h
+2011-06-23 - 67e9ae1 - lavu 51.8.0 - attributes.h
   Add av_printf_format().
 
-2011-06-xx - xxxxxxx - lavf 53.2.0 - avformat.h
+2011-06-16 - 05e84c9, 25de595 - lavf 53.2.0 - avformat.h
   Add avformat_open_input and avformat_write_header().
   Deprecate av_open_input_stream, av_open_input_file,
   AVFormatParameters and av_write_header.
 
-2011-06-xx - xxxxxxx - lavu 51.7.0 - opt.h
+2011-06-16 - 7e83e1c, dc59ec5 - lavu 51.7.0 - opt.h
   Add av_opt_set_dict() and av_opt_find().
   Deprecate av_find_opt().
   Add AV_DICT_APPEND flag.
 
-2011-06-xx - xxxxxxx - lavu 51.6.0 - opt.h
+2011-06-10 - cb7c11c - lavu 51.6.0 - opt.h
   Add av_opt_flag_is_set().
 
 2011-06-10 - c381960 - lavfi 2.15.0 - avfilter_get_audio_buffer_ref_from_arrays

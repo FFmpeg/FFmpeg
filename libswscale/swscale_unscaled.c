@@ -686,18 +686,19 @@ static int check_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt,
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
  */
-int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], int srcSliceY,
-              int srcSliceH, uint8_t* const dst[], const int dstStride[])
+int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
+              const int srcStride[], int srcSliceY, int srcSliceH,
+              uint8_t* const dst[], const int dstStride[])
 {
     int i;
-    const uint8_t* src2[4]= {src[0], src[1], src[2], src[3]};
+    const uint8_t* src2[4]= {srcSlice[0], srcSlice[1], srcSlice[2], srcSlice[3]};
     uint8_t* dst2[4]= {dst[0], dst[1], dst[2], dst[3]};
 
     // do not mess up sliceDir if we have a "trailing" 0-size slice
     if (srcSliceH == 0)
         return 0;
 
-    if (!check_image_pointers(src, c->srcFormat, srcStride)) {
+    if (!check_image_pointers(srcSlice, c->srcFormat, srcStride)) {
         av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
         return 0;
     }
@@ -718,7 +719,7 @@ int sws_scale(SwsContext *c, const uint8_t* const src[], const int srcStride[], 
         for (i=0; i<256; i++) {
             int p, r, g, b, y, u, v, a = 0xff;
             if(c->srcFormat == PIX_FMT_PAL8) {
-                p=((const uint32_t*)(src[1]))[i];
+                p=((const uint32_t*)(srcSlice[1]))[i];
                 a= (p>>24)&0xFF;
                 r= (p>>16)&0xFF;
                 g= (p>> 8)&0xFF;

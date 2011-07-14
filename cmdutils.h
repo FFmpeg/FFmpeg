@@ -43,11 +43,10 @@ extern const char program_name[];
  */
 extern const int program_birth_year;
 
-extern const char **opt_names;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
-extern AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
+extern AVDictionary *format_opts, *codec_opts;
 
 /**
  * Initialize the cmdutils option system, in particular
@@ -153,7 +152,15 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 void parse_options(int argc, char **argv, const OptionDef *options,
                    int (* parse_arg_function)(const char *opt, const char *arg));
 
-void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
+/**
+ * Filter out options for given codec.
+ */
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder);
+
+/*
+ * Setup AVCodecContext options for avformat_find_stream_info.
+ */
+AVDictionary **setup_find_stream_info_opts(AVFormatContext *s);
 
 /**
  * Print an error message to stderr, indicating filename and a human
