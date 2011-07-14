@@ -151,6 +151,8 @@ typedef struct AC3EncodeContext {
     int bit_rate;                           ///< target bit rate, in bits-per-second
     int sample_rate;                        ///< sampling frequency, in Hz
 
+    int num_blks_code;                      ///< number of blocks code                  (numblkscod)
+    int num_blocks;                         ///< number of blocks per frame
     int frame_size_min;                     ///< minimum frame size in case rounding is necessary
     int frame_size;                         ///< current frame size in bytes
     int frame_size_code;                    ///< frame size code                        (frmsizecod)

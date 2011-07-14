@@ -103,7 +103,7 @@ static int normalize_samples(AC3EncodeContext *s)
  */
 static void scale_coefficients(AC3EncodeContext *s)
 {
-    int chan_size = AC3_MAX_COEFS * AC3_MAX_BLOCKS;
+    int chan_size = AC3_MAX_COEFS * s->num_blocks;
     s->ac3dsp.float_to_fixed24(s->fixed_coef_buffer + chan_size,
                                s->mdct_coef_buffer  + chan_size,
                                chan_size * s->channels);
