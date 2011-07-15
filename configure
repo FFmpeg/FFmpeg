@@ -2499,7 +2499,14 @@ case $target_os in
     symbian)
         SLIBSUF=".dll"
         enable dos_paths
-        add_cflags --include=$sysinclude/gcce/gcce.h
+        add_cflags --include=$sysinclude/gcce/gcce.h -fvisibility=default
+        add_cppflags -D__GCCE__ -D__SYMBIAN32__ -DSYMBIAN_OE_POSIX_SIGNALS
+        add_ldflags -Wl,--target1-abs,--no-undefined \
+                    -Wl,-Ttext,0x80000,-Tdata,0x1000000 -shared \
+                    -Wl,--entry=_E32Startup -Wl,-u,_E32Startup
+        add_extralibs -l:eexe.lib -l:usrt2_2.lib -l:dfpaeabi.dso \
+                      -l:drtaeabi.dso -l:scppnwdl.dso -lsupc++ -lgcc \
+                      -l:libc.dso -l:libm.dso -l:euser.dso -l:libcrt0.lib
         ;;
     none)
         ;;
