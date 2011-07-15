@@ -84,8 +84,8 @@ static int copy_region_enc(uint8_t *sptr, uint8_t *dptr, int dx, int dy,
     int diff = 0;
 
     for (i = dx + h; i > dx; i--) {
-        nsptr  = sptr  + (i * stride) + dy * 3;
-        npfptr = pfptr + (i * stride) + dy * 3;
+        nsptr  = sptr  + i * stride + dy * 3;
+        npfptr = pfptr + i * stride + dy * 3;
         for (j = 0; j < w * 3; j++) {
             diff    |= npfptr[j] ^ nsptr[j];
             dptr[j]  = nsptr[j];
@@ -103,13 +103,13 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
 
-    if ((avctx->width > 4095) || (avctx->height > 4095)) {
+    if (avctx->width > 4095 || avctx->height > 4095) {
         av_log(avctx, AV_LOG_ERROR, "Input dimensions too large, input must be max 4096x4096 !\n");
         return AVERROR_INVALIDDATA;
     }
 
     // Needed if zlib unused or init aborted before deflateInit
-    memset(&(s->zstream), 0, sizeof(z_stream));
+    memset(&s->zstream, 0, sizeof(z_stream));
 
     s->last_key_frame = 0;
 
@@ -140,9 +140,9 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
 
     init_put_bits(&pb, buf, buf_size * 8);
 
-    put_bits(&pb,  4, (block_width / 16) - 1);
+    put_bits(&pb,  4, block_width / 16 - 1);
     put_bits(&pb, 12, s->image_width);
-    put_bits(&pb,  4, (block_height / 16) - 1);
+    put_bits(&pb,  4, block_height / 16 - 1);
     put_bits(&pb, 12, s->image_height);
     flush_put_bits(&pb);
     buf_pos = 4;
@@ -179,7 +179,7 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
                 ret   = compress2(ptr + 2, &zsize, s->tmpblock, 3 * ws * hs, 9);
 
 
-                //ret = deflateReset(&(s->zstream));
+                //ret = deflateReset(&s->zstream);
                 if (ret != Z_OK)
                     av_log(s->avctx, AV_LOG_ERROR, "error while compressing block %dx%d\n", i, j);
 
@@ -227,7 +227,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf,
     }
 
     if (p->linesize[0] < 0)
-        pfptr = s->previous_frame - ((s->image_height - 1) * p->linesize[0]);
+        pfptr = s->previous_frame - (s->image_height - 1) * p->linesize[0];
     else
         pfptr = s->previous_frame;
 
@@ -277,7 +277,7 @@ static av_cold int flashsv_encode_end(AVCodecContext *avctx)
 {
     FlashSVContext *s = avctx->priv_data;
 
-    deflateEnd(&(s->zstream));
+    deflateEnd(&s->zstream);
 
     av_free(s->encbuffer);
     av_free(s->previous_frame);
