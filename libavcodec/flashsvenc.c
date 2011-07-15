@@ -104,7 +104,8 @@ static av_cold int flashsv_encode_init(AVCodecContext *avctx)
     s->avctx = avctx;
 
     if (avctx->width > 4095 || avctx->height > 4095) {
-        av_log(avctx, AV_LOG_ERROR, "Input dimensions too large, input must be max 4096x4096 !\n");
+        av_log(avctx, AV_LOG_ERROR,
+               "Input dimensions too large, input must be max 4096x4096 !\n");
         return AVERROR_INVALIDDATA;
     }
 
@@ -181,7 +182,8 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
 
                 //ret = deflateReset(&s->zstream);
                 if (ret != Z_OK)
-                    av_log(s->avctx, AV_LOG_ERROR, "error while compressing block %dx%d\n", i, j);
+                    av_log(s->avctx, AV_LOG_ERROR,
+                           "error while compressing block %dx%d\n", i, j);
 
                 bytestream_put_be16(&ptr, (unsigned int) zsize);
                 buf_pos += zsize + 2;
@@ -241,26 +243,28 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf,
     opt_w = 4;
     opt_h = 4;
 
-    if (buf_size < s->image_width*s->image_height*3) {
+    if (buf_size < s->image_width * s->image_height * 3) {
         //Conservative upper bound check for compressed data
         av_log(avctx, AV_LOG_ERROR, "buf_size %d <  %d\n",
                buf_size, s->image_width * s->image_height * 3);
         return -1;
     }
 
-    res = encode_bitstream(s, p, buf, buf_size, opt_w * 16, opt_h * 16, pfptr, &I_frame);
+    res = encode_bitstream(s, p, buf, buf_size, opt_w * 16, opt_h * 16,
+                           pfptr, &I_frame);
 
     //save the current frame
     if (p->linesize[0] > 0)
         memcpy(s->previous_frame, p->data[0], s->image_height * p->linesize[0]);
     else
-        memcpy(s->previous_frame, p->data[0] + p->linesize[0] * (s->image_height - 1),
+        memcpy(s->previous_frame,
+               p->data[0] + p->linesize[0] * (s->image_height - 1),
                s->image_height * FFABS(p->linesize[0]));
 
     //mark the frame type so the muxer can mux it correctly
     if (I_frame) {
-        p->pict_type = AV_PICTURE_TYPE_I;
-        p->key_frame = 1;
+        p->pict_type      = AV_PICTURE_TYPE_I;
+        p->key_frame      = 1;
         s->last_key_frame = avctx->frame_number;
         av_log(avctx, AV_LOG_DEBUG, "Inserting key frame at frame %d\n", avctx->frame_number);
     } else {
