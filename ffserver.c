@@ -3648,21 +3648,13 @@ static void build_feed_streams(void)
     for(stream = first_stream; stream != NULL; stream = stream->next) {
         feed = stream->feed;
         if (feed) {
-            if (!stream->is_feed) {
-                /* we handle a stream coming from a feed */
-                for(i=0;i<stream->nb_streams;i++)
-                    stream->feed_streams[i] = add_av_stream(feed, stream->streams[i]);
-            }
-        }
-    }
-
-    /* gather all streams */
-    for(stream = first_stream; stream != NULL; stream = stream->next) {
-        feed = stream->feed;
-        if (feed) {
             if (stream->is_feed) {
                 for(i=0;i<stream->nb_streams;i++)
                     stream->feed_streams[i] = i;
+            } else {
+                /* we handle a stream coming from a feed */
+                for(i=0;i<stream->nb_streams;i++)
+                    stream->feed_streams[i] = add_av_stream(feed, stream->streams[i]);
             }
         }
     }

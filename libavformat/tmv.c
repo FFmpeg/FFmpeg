@@ -20,10 +20,10 @@
  */
 
 /**
- * 8088flex TMV file demuxer
  * @file
+ * 8088flex TMV file demuxer
  * @author Daniel Verkamp
- * @sa http://www.oldskool.org/pc/8088_Corruption
+ * @see http://www.oldskool.org/pc/8088_Corruption
  */
 
 #include "libavutil/intreadwrite.h"

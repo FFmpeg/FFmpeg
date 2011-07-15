@@ -26,7 +26,6 @@
 
 /**
  * @file
- *
  * G.722 ADPCM audio codec
  *
  * This G.722 decoder is a bit-exact implementation of the ITU G.722

@@ -20,8 +20,8 @@
  */
 
 /**
- * LZW encoder
  * @file
+ * LZW encoder
  * @author Bartlomiej Wolowiec
  */
 

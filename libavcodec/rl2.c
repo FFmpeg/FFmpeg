@@ -20,11 +20,10 @@
  */
 
 /**
- * RL2 Video Decoder
  * @file
+ * RL2 Video Decoder
  * @author Sascha Sommer (saschasommer@freenet.de)
- * For more information about the RL2 format, visit:
- *   http://wiki.multimedia.cx/index.php?title=RL2
+ * @see http://wiki.multimedia.cx/index.php?title=RL2
  */
 
 #include <stdio.h>

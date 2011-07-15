@@ -22,6 +22,8 @@
 /**
  * @file
  * 8svx audio decoder
+ * @author Jaikrishnan Menon
+ *
  * supports: fibonacci delta encoding
  *         : exponential encoding
  *

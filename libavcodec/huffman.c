@@ -1,6 +1,4 @@
-/**
- * @file
- * huffman tree builder and VLC generator
+/*
  * Copyright (c) 2006 Konstantin Shishkov
  *
  * This file is part of FFmpeg.
@@ -18,6 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * @file
+ * huffman tree builder and VLC generator
  */
 
 #include "avcodec.h"

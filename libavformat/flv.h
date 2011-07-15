@@ -1,5 +1,4 @@
-/**
- * @file
+/*
  * FLV common header
  *
  * Copyright (c) 2006 The FFmpeg Project
@@ -19,6 +18,11 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * @file
+ * FLV common header
  */
 
 #ifndef AVFORMAT_FLV_H

@@ -23,9 +23,10 @@
 #include "vaapi_internal.h"
 #include "h264.h"
 
-/** @file
- *  This file implements the glue code between FFmpeg's and VA API's
- *  structures for H.264 decoding.
+/**
+ * @file
+ * This file implements the glue code between FFmpeg's and VA API's
+ * structures for H.264 decoding.
  */
 
 /**

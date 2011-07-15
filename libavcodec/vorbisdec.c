@@ -20,6 +20,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * Vorbis I decoder
+ * @author Denes Balatoni  ( dbalatoni programozo hu )
+ */
+
 #include <inttypes.h>
 #include <math.h>
 

@@ -24,7 +24,7 @@
  * @file
  * Linux framebuffer input device,
  * inspired by code from fbgrab.c by Gunnar Monell.
- * See also http://linux-fbdev.sourceforge.net/.
+ * @see http://linux-fbdev.sourceforge.net/
  */
 
 /* #define DEBUG */

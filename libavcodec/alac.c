@@ -23,9 +23,7 @@
  * @file
  * ALAC (Apple Lossless Audio Codec) decoder
  * @author 2005 David Hammerton
- *
- * For more information on the ALAC format, visit:
- *  http://crazney.net/programs/itunes/alac.html
+ * @see http://crazney.net/programs/itunes/alac.html
  *
  * Note: This decoder expects a 36- (0x24-)byte QuickTime atom to be
  * passed through the extradata[_size] fields. This atom is tacked onto

@@ -1,5 +1,4 @@
-/**
- * @file
+/*
  * Psygnosis YOP decoder
  *
  * Copyright (C) 2010 Mohamed Naufal Basheer <naufal11@gmail.com>

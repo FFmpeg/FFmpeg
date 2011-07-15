@@ -85,7 +85,7 @@ above them explaining what the function does, even if it is just one sentence.
 All structures and their member variables should be documented, too.
 @example
 /**
- * @@file mpeg.c
+ * @@file
  * MPEG codec.
  * @@author ...
  */

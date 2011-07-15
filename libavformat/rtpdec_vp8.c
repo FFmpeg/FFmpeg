@@ -23,7 +23,7 @@
  * @file
  * @brief RTP support for the VP8 payload
  * @author Josh Allmann <joshua.allmann@gmail.com>
- * ( http://www.webmproject.org/code/specs/rtp/ )
+ * @see http://www.webmproject.org/code/specs/rtp/
  */
 
 #include "libavcodec/bytestream.h"
