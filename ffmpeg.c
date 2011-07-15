@@ -2579,7 +2579,7 @@ static int transcode(AVFormatContext **output_files,
             ret = AVERROR(EINVAL);
             goto dump_format;
         }
-        assert_avoptions(output_opts[i]);
+//        assert_avoptions(output_opts[i]);
         if (strcmp(output_files[i]->oformat->name, "rtp")) {
             want_sdp = 0;
         }
