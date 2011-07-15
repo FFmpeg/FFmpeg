@@ -12,6 +12,7 @@ version 0.7.1:
 - behavioral fix in av_open_input_stream()
 - Licensing clarification for LGPL'ed vf_gradfun
 - bugfixes while seeking in multithreaded decoding
+- support newer versions of OpenCV
 
 
 version 0.7:
