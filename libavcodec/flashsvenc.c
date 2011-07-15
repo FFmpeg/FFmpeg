@@ -33,25 +33,24 @@
  * The picture is divided into blocks that are zlib-compressed.
  *
  * The decoder is fed complete frames, the frameheader contains:
- * 4bits of block width
- * 12bits of frame width
- * 4bits of block height
- * 12bits of frame height
+ *  4 bits of block width
+ * 12 bits of frame width
+ *  4 bits of block height
+ * 12 bits of frame height
  *
  * Directly after the header are the compressed blocks. The blocks
- * have their compressed size represented with 16bits in the beginig.
+ * have their compressed size represented with 16 bits in the beginning.
  * If the size = 0 then the block is unchanged from the previous frame.
  * All blocks are decompressed until the buffer is consumed.
  *
- * Encoding ideas, a basic encoder would just use a fixed block size.
- * Block sizes can be multipels of 16, from 16 to 256. The blocks don't
+ * Encoding ideas: A basic encoder would just use a fixed block size.
+ * Block sizes can be multiples of 16, from 16 to 256. The blocks don't
  * have to be quadratic. A brute force search with a set of different
  * block sizes should give a better result than to just use a fixed size.
- */
-
-/* TODO:
- * Don't reencode the frame in brute force mode if the frame is a dupe. Speed up.
- * Make the difference check faster.
+ *
+ * TODO:
+ * Don't reencode the frame in brute force mode if the frame is a dupe.
+ * Speed up. Make the difference check faster.
  */
 
 #include <stdio.h>
@@ -156,12 +155,12 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
     /* loop over all block columns */
     for (j = 0; j < v_blocks + (v_part ? 1 : 0); j++) {
 
-        int hp = j * block_height; // horiz position in frame
+        int hp = j * block_height; // horizontal position in frame
         int hs = (j < v_blocks) ? block_height : v_part; // size of block
 
         /* loop over all block rows */
         for (i = 0; i < h_blocks + (h_part ? 1 : 0); i++) {
-            int wp  = i * block_width; // vert position in frame
+            int wp  = i * block_width; // vertical position in frame
             int ws  = (i < h_blocks) ? block_width : h_part; // size of block
             int ret = Z_OK;
             uint8_t *ptr;
