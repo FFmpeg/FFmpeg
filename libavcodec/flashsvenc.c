@@ -183,7 +183,7 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
                     av_log(s->avctx, AV_LOG_ERROR,
                            "error while compressing block %dx%d\n", i, j);
 
-                bytestream_put_be16(&ptr, (unsigned int) zsize);
+                bytestream_put_be16(&ptr, zsize);
                 buf_pos += zsize + 2;
                 av_dlog(avctx, "buf_pos = %d\n", buf_pos);
             } else {
