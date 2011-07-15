@@ -627,16 +627,6 @@ void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 // it's faster than -funroll-loops, but using
 // -funroll-loops w/ this is bad - 74 cycles again.
 // all this is on a 7450, tuning for the 7450
-#if 0
-    for (i = 0; i < h; i++) {
-        pixelsv1 = vec_ld(0, pixels);
-        pixelsv2 = vec_ld(16, pixels);
-        vec_st(vec_perm(pixelsv1, pixelsv2, perm),
-               0, block);
-        pixels+=line_size;
-        block +=line_size;
-    }
-#else
     for (i = 0; i < h; i += 4) {
         pixelsv1  = vec_ld( 0, pixels);
         pixelsv2  = vec_ld(15, pixels);
@@ -657,7 +647,6 @@ void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
         pixels+=line_size_4;
         block +=line_size_4;
     }
-#endif
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
