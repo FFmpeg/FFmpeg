@@ -230,10 +230,9 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf,
         pfptr = s->previous_frame;
 
     /* Check the placement of keyframes */
-    if (avctx->gop_size > 0) {
-        if (avctx->frame_number >= s->last_key_frame + avctx->gop_size) {
-            I_frame = 1;
-        }
+    if (avctx->gop_size > 0 &&
+        avctx->frame_number >= s->last_key_frame + avctx->gop_size) {
+        I_frame = 1;
     }
 
     if (buf_size < s->image_width * s->image_height * 3) {
