@@ -164,7 +164,6 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
         }
         wf->sectors[0]  = first_sector;
         wf->nb_sectors  = 1;
-        wf->sector_bits = WTV_SECTOR_BITS;
     } else if (depth == 1) {
         wf->sectors = av_malloc(WTV_SECTOR_SIZE);
         if (!wf->sectors) {
@@ -172,7 +171,6 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
             return NULL;
         }
         wf->nb_sectors  = read_ints(s->pb, wf->sectors, WTV_SECTOR_SIZE / 4);
-        wf->sector_bits = length & (1ULL<<63) ? WTV_SECTOR_BITS : WTV_BIGSECTOR_BITS;
     } else if (depth == 2) {
         uint32_t sectors1[WTV_SECTOR_SIZE / 4];
         int nb_sectors1 = read_ints(s->pb, sectors1, WTV_SECTOR_SIZE / 4);
@@ -189,12 +187,12 @@ static AVIOContext * wtvfile_open_sector(int first_sector, uint64_t length, int 
                 break;
             wf->nb_sectors += read_ints(s->pb, wf->sectors + i * WTV_SECTOR_SIZE / 4, WTV_SECTOR_SIZE / 4);
         }
-        wf->sector_bits = length & (1ULL<<63) ? WTV_SECTOR_BITS : WTV_BIGSECTOR_BITS;
     } else {
         av_log(s, AV_LOG_ERROR, "unsupported file allocation table depth (0x%x)\n", depth);
         av_free(wf);
         return NULL;
     }
+    wf->sector_bits = length & (1ULL<<63) ? WTV_SECTOR_BITS : WTV_BIGSECTOR_BITS;
 
     if (!wf->nb_sectors) {
         av_free(wf->sectors);
