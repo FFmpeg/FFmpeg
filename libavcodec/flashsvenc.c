@@ -27,22 +27,13 @@
  * Flash Screen Video encoder
  * @author Alex Beregszaszi
  * @author Benjamin Larsson
+ *
+ * A description of the bitstream format for Flash Screen Video version 1/2
+ * is part of the SWF File Format Specification (version 10), which can be
+ * downloaded from http://www.adobe.com/devnet/swf.html.
  */
 
-/* Bitstream description
- * The picture is divided into blocks that are zlib-compressed.
- *
- * The decoder is fed complete frames, the frameheader contains:
- *  4 bits of block width
- * 12 bits of frame width
- *  4 bits of block height
- * 12 bits of frame height
- *
- * Directly after the header are the compressed blocks. The blocks
- * have their compressed size represented with 16 bits in the beginning.
- * If the size = 0 then the block is unchanged from the previous frame.
- * All blocks are decompressed until the buffer is consumed.
- *
+/*
  * Encoding ideas: A basic encoder would just use a fixed block size.
  * Block sizes can be multiples of 16, from 16 to 256. The blocks don't
  * have to be quadratic. A brute force search with a set of different
