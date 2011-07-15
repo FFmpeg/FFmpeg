@@ -156,25 +156,27 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
     /* loop over all block columns */
     for (j = 0; j < v_blocks + (v_part ? 1 : 0); j++) {
 
-        int hp = j * block_height; // horizontal position in frame
-        int hs = (j < v_blocks) ? block_height : v_part; // size of block
+        int y_pos = j * block_height; // vertical position in frame
+        int cur_blk_height = (j < v_blocks) ? block_height : v_part;
 
         /* loop over all block rows */
         for (i = 0; i < h_blocks + (h_part ? 1 : 0); i++) {
-            int wp  = i * block_width; // vertical position in frame
-            int ws  = (i < h_blocks) ? block_width : h_part; // size of block
+            int x_pos = i * block_width; // horizontal position in frame
+            int cur_blk_width = (i < h_blocks) ? block_width : h_part;
             int ret = Z_OK;
             uint8_t *ptr = buf + buf_pos;
 
             /* copy the block to the temp buffer before compression
              * (if it differs from the previous frame's block) */
             res = copy_region_enc(p->data[0], s->tmpblock,
-                                  s->image_height - (hp + hs + 1),
-                                  wp, hs, ws, p->linesize[0], previous_frame);
+                                  s->image_height - (y_pos + cur_blk_height + 1),
+                                  x_pos, cur_blk_height, cur_blk_width,
+                                  p->linesize[0], previous_frame);
 
             if (res || *I_frame) {
                 unsigned long zsize = 3 * block_width * block_height;
-                ret   = compress2(ptr + 2, &zsize, s->tmpblock, 3 * ws * hs, 9);
+                ret = compress2(ptr + 2, &zsize, s->tmpblock,
+                                3 * cur_blk_width * cur_blk_height, 9);
 
                 //ret = deflateReset(&s->zstream);
                 if (ret != Z_OK)
