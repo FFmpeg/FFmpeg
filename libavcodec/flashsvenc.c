@@ -164,9 +164,7 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
             int wp  = i * block_width; // vertical position in frame
             int ws  = (i < h_blocks) ? block_width : h_part; // size of block
             int ret = Z_OK;
-            uint8_t *ptr;
-
-            ptr = buf + buf_pos;
+            uint8_t *ptr = buf + buf_pos;
 
             /* copy the block to the temp buffer before compression
              * (if it differs from the previous frame's block) */
@@ -175,10 +173,8 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
                                   wp, hs, ws, p->linesize[0], previous_frame);
 
             if (res || *I_frame) {
-                unsigned long zsize;
-                zsize = 3 * block_width * block_height;
+                unsigned long zsize = 3 * block_width * block_height;
                 ret   = compress2(ptr + 2, &zsize, s->tmpblock, 3 * ws * hs, 9);
-
 
                 //ret = deflateReset(&s->zstream);
                 if (ret != Z_OK)
@@ -214,7 +210,7 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf,
     uint8_t *pfptr;
     int res;
     int I_frame = 0;
-    int opt_w, opt_h;
+    int opt_w = 4, opt_h = 4;
 
     *p = *pict;
 
@@ -239,9 +235,6 @@ static int flashsv_encode_frame(AVCodecContext *avctx, uint8_t *buf,
             I_frame = 1;
         }
     }
-
-    opt_w = 4;
-    opt_h = 4;
 
     if (buf_size < s->image_width * s->image_height * 3) {
         //Conservative upper bound check for compressed data
