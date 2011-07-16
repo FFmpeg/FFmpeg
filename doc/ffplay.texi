@@ -69,7 +69,8 @@ also sources and sinks).
 @section Advanced options
 @table @option
 @item -pix_fmt @var{format}
-Set pixel format.
+This option has been removed. Use private options for specifying the
+input pixel format.
 @item -stats
 Show the stream duration, the codec parameters, the current position in
 the stream and the audio/video synchronisation drift.

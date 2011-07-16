@@ -226,7 +226,6 @@ static int fs_screen_width;
 static int fs_screen_height;
 static int screen_width = 0;
 static int screen_height = 0;
-static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static int audio_disable;
 static int video_disable;
 static int wanted_stream[AVMEDIA_TYPE_NB]={
@@ -2850,8 +2849,9 @@ static int opt_format(const char *opt, const char *arg)
 
 static int opt_frame_pix_fmt(const char *opt, const char *arg)
 {
-    frame_pix_fmt = av_get_pix_fmt(arg);
-    return 0;
+    av_log(NULL, AV_LOG_ERROR,
+           "Option '%s' has been removed, use private format options instead\n", opt);
+    return AVERROR(EINVAL);
 }
 
 static int opt_sync(const char *opt, const char *arg)
