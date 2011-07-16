@@ -4,6 +4,7 @@ releases are sorted from youngest to oldest.
 
 version <next>:
 - BWF muxer
+- Flash Screen Video 2 decoder
 
 
 version 0.7:
