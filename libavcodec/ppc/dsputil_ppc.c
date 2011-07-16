@@ -48,7 +48,6 @@ static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x00000010);
     register int i = 0;
-#if 1
     if (misal) {
         ((unsigned long*)blocks)[0] = 0L;
         ((unsigned long*)blocks)[1] = 0L;
@@ -66,9 +65,6 @@ static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
         ((unsigned long*)blocks)[191] = 0L;
         i += 16;
     }
-#else
-    memset(blocks, 0, sizeof(DCTELEM)*6*64);
-#endif
 }
 
 /* same as above, when dcbzl clear a whole 128B cache line
@@ -78,7 +74,6 @@ static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x0000007f);
     register int i = 0;
-#if 1
     if (misal) {
         // we could probably also optimize this case,
         // but there's not much point as the machines
@@ -89,9 +84,6 @@ static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
         for ( ; i < sizeof(DCTELEM)*6*64 ; i += 128) {
             __asm__ volatile("dcbzl %0,%1" : : "b" (blocks), "r" (i) : "memory");
         }
-#else
-    memset(blocks, 0, sizeof(DCTELEM)*6*64);
-#endif
 }
 #else
 static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)

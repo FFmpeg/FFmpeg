@@ -62,7 +62,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
                                     void *data, int *data_size,
                                     AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
+    uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LibOpenJPEGContext *ctx = avctx->priv_data;
     AVFrame *picture = &ctx->image, *output = data;

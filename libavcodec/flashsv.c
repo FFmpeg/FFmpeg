@@ -71,6 +71,45 @@ static av_cold int flashsv_decode_init(AVCodecContext *avctx)
 }
 
 
+static int flashsv_decode_block(AVCodecContext *avctx, AVPacket *avpkt,
+                                GetBitContext *gb, int block_size,
+                                int width, int height, int x_pos, int y_pos)
+{
+    struct FlashSVContext *s = avctx->priv_data;
+    uint8_t *line = s->tmpblock;
+    int k;
+    int ret = inflateReset(&s->zstream);
+    if (ret != Z_OK) {
+        //return -1;
+    }
+    s->zstream.next_in   = avpkt->data + get_bits_count(gb) / 8;
+    s->zstream.avail_in  = block_size;
+    s->zstream.next_out  = s->tmpblock;
+    s->zstream.avail_out = s->block_size * 3;
+    ret = inflate(&s->zstream, Z_FINISH);
+    if (ret == Z_DATA_ERROR) {
+        av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
+        inflateSync(&s->zstream);
+        ret = inflate(&s->zstream, Z_FINISH);
+    }
+
+    if (ret != Z_OK && ret != Z_STREAM_END) {
+        //return -1;
+    }
+    /* Flash Screen Video stores the image upside down, so copy
+     * lines to destination in reverse order. */
+    for (k = 1; k <= height; k++) {
+        memcpy(s->frame.data[0] + x_pos * 3 +
+               (s->image_height - y_pos - k) * s->frame.linesize[0],
+               line, width * 3);
+        /* advance source pointer to next line */
+        line += width * 3;
+    }
+    skip_bits_long(gb, 8 * block_size); /* skip the consumed bits */
+    return 0;
+}
+
+
 static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                                 int *data_size, AVPacket *avpkt)
 {
@@ -159,41 +198,11 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
 
             /* skip unchanged blocks, which have size 0 */
             if (size) {
-                /* decompress block */
-                uint8_t *line = s->tmpblock;
-                int k;
-                int ret = inflateReset(&s->zstream);
-                if (ret != Z_OK) {
+                if (flashsv_decode_block(avctx, avpkt, &gb, size,
+                                         cur_blk_width, cur_blk_height,
+                                         x_pos, y_pos))
                     av_log(avctx, AV_LOG_ERROR,
-                           "error in decompression (reset) of block %dx%d\n", i, j);
-                    /* return -1; */
-                }
-                s->zstream.next_in   = avpkt->data + get_bits_count(&gb) / 8;
-                s->zstream.avail_in  = size;
-                s->zstream.next_out  = s->tmpblock;
-                s->zstream.avail_out = s->block_size * 3;
-                ret = inflate(&s->zstream, Z_FINISH);
-                if (ret == Z_DATA_ERROR) {
-                    av_log(avctx, AV_LOG_ERROR, "Zlib resync occurred\n");
-                    inflateSync(&s->zstream);
-                    ret = inflate(&s->zstream, Z_FINISH);
-                }
-
-                if (ret != Z_OK && ret != Z_STREAM_END) {
-                    av_log(avctx, AV_LOG_ERROR,
-                           "error in decompression of block %dx%d: %d\n", i, j, ret);
-                    /* return -1; */
-                }
-                /* Flash Screen Video stores the image upside down, so copy
-                 * lines to destination in reverse order. */
-                for (k = 1; k <= cur_blk_height; k++) {
-                    memcpy(s->frame.data[0] + x_pos * 3 +
-                           (s->image_height - y_pos - k) * s->frame.linesize[0],
-                           line, cur_blk_width * 3);
-                    /* advance source pointer to next line */
-                    line += cur_blk_width * 3;
-                }
-                skip_bits_long(&gb, 8 * size);   /* skip the consumed bits */
+                           "error in decompression of block %dx%d\n", i, j);
             }
         }
     }

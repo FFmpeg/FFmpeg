@@ -93,29 +93,9 @@ static void dct_unquantize_h263_intra_iwmmxt(MpegEncContext *s,
     block_orig[0] = level;
 }
 
-#if 0
-static void dct_unquantize_h263_inter_iwmmxt(MpegEncContext *s,
-                                             DCTELEM *block, int n, int qscale)
-{
-    int nCoeffs;
-
-    assert(s->block_last_index[n]>=0);
-
-    if(s->ac_pred)
-        nCoeffs=63;
-    else
-        nCoeffs= s->inter_scantable.raster_end[ s->block_last_index[n] ];
-
-    ippiQuantInvInter_Compact_H263_16s_I(block, nCoeffs+1, qscale);
-}
-#endif
-
 void MPV_common_init_iwmmxt(MpegEncContext *s)
 {
     if (!(mm_flags & AV_CPU_FLAG_IWMMXT)) return;
 
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_iwmmxt;
-#if 0
-    s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_iwmmxt;
-#endif
 }

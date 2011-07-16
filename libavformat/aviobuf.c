@@ -847,19 +847,13 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
     if (!buffer)
         return AVERROR(ENOMEM);
 
-    *s = av_mallocz(sizeof(AVIOContext));
-    if(!*s) {
+    *s = avio_alloc_context(buffer, buffer_size, h->flags & AVIO_FLAG_WRITE, h,
+                            ffurl_read, ffurl_write, ffurl_seek);
+    if (!*s) {
         av_free(buffer);
         return AVERROR(ENOMEM);
     }
 
-    if (ffio_init_context(*s, buffer, buffer_size,
-                      h->flags & AVIO_FLAG_WRITE, h,
-                      (void*)ffurl_read, (void*)ffurl_write, (void*)ffurl_seek) < 0) {
-        av_free(buffer);
-        av_freep(s);
-        return AVERROR(EIO);
-    }
 #if FF_API_OLD_AVIO
     (*s)->is_streamed = h->is_streamed;
 #endif
