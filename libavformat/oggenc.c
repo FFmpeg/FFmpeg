@@ -505,14 +505,14 @@ static int ogg_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_ogg_muxer = {
-    "ogg",
-    NULL_IF_CONFIG_SMALL("Ogg"),
-    "application/ogg",
-    "ogg,ogv,spx",
-    sizeof(OGGContext),
-    CODEC_ID_FLAC,
-    CODEC_ID_THEORA,
-    ogg_write_header,
-    ogg_write_packet,
-    ogg_write_trailer,
+    .name              = "ogg",
+    .long_name         = NULL_IF_CONFIG_SMALL("Ogg"),
+    .mime_type         = "application/ogg",
+    .extensions        = "ogg,ogv,spx",
+    .priv_data_size    = sizeof(OGGContext),
+    .audio_codec       = CODEC_ID_FLAC,
+    .video_codec       = CODEC_ID_THEORA,
+    .write_header      = ogg_write_header,
+    .write_packet      = ogg_write_packet,
+    .write_trailer     = ogg_write_trailer,
 };

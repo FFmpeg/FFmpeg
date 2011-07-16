@@ -90,15 +90,15 @@ static int voc_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_voc_muxer = {
-    "voc",
-    NULL_IF_CONFIG_SMALL("Creative Voice file format"),
-    "audio/x-voc",
-    "voc",
-    sizeof(VocEncContext),
-    CODEC_ID_PCM_U8,
-    CODEC_ID_NONE,
-    voc_write_header,
-    voc_write_packet,
-    voc_write_trailer,
+    .name              = "voc",
+    .long_name         = NULL_IF_CONFIG_SMALL("Creative Voice file format"),
+    .mime_type         = "audio/x-voc",
+    .extensions        = "voc",
+    .priv_data_size    = sizeof(VocEncContext),
+    .audio_codec       = CODEC_ID_PCM_U8,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = voc_write_header,
+    .write_packet      = voc_write_packet,
+    .write_trailer     = voc_write_trailer,
     .codec_tag=(const AVCodecTag* const []){ff_voc_codec_tags, 0},
 };

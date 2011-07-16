@@ -1051,15 +1051,15 @@ static int mpegts_write_end(AVFormatContext *s)
 }
 
 AVOutputFormat ff_mpegts_muxer = {
-    "mpegts",
-    NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
-    "video/x-mpegts",
-    "ts,m2t",
-    sizeof(MpegTSWrite),
-    CODEC_ID_MP2,
-    CODEC_ID_MPEG2VIDEO,
-    mpegts_write_header,
-    mpegts_write_packet,
-    mpegts_write_end,
+    .name              = "mpegts",
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
+    .mime_type         = "video/x-mpegts",
+    .extensions        = "ts,m2t",
+    .priv_data_size    = sizeof(MpegTSWrite),
+    .audio_codec       = CODEC_ID_MP2,
+    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .write_header      = mpegts_write_header,
+    .write_packet      = mpegts_write_packet,
+    .write_trailer     = mpegts_write_end,
     .priv_class = &mpegts_muxer_class,
 };

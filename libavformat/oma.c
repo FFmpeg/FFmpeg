@@ -192,14 +192,12 @@ static int oma_read_probe(AVProbeData *p)
 
 
 AVInputFormat ff_oma_demuxer = {
-    "oma",
-    NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
-    0,
-    oma_read_probe,
-    oma_read_header,
-    oma_read_packet,
-    0,
-    pcm_read_seek,
+    .name           = "oma",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
+    .read_probe     = oma_read_probe,
+    .read_header    = oma_read_header,
+    .read_packet    = oma_read_packet,
+    .read_seek      = pcm_read_seek,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "oma,aa3",
     .codec_tag= (const AVCodecTag* const []){codec_oma_tags, 0},

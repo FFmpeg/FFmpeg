@@ -143,12 +143,10 @@ static int sox_read_packet(AVFormatContext *s,
 }
 
 AVInputFormat ff_sox_demuxer = {
-    "sox",
-    NULL_IF_CONFIG_SMALL("SoX native format"),
-    0,
-    sox_probe,
-    sox_read_header,
-    sox_read_packet,
-    NULL,
-    pcm_read_seek,
+    .name           = "sox",
+    .long_name      = NULL_IF_CONFIG_SMALL("SoX native format"),
+    .read_probe     = sox_probe,
+    .read_header    = sox_read_header,
+    .read_packet    = sox_read_packet,
+    .read_seek      = pcm_read_seek,
 };

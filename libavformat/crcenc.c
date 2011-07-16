@@ -55,14 +55,13 @@ static int crc_write_trailer(struct AVFormatContext *s)
 }
 
 AVOutputFormat ff_crc_muxer = {
-    "crc",
-    NULL_IF_CONFIG_SMALL("CRC testing format"),
-    NULL,
-    "",
-    sizeof(CRCState),
-    CODEC_ID_PCM_S16LE,
-    CODEC_ID_RAWVIDEO,
-    crc_write_header,
-    crc_write_packet,
-    crc_write_trailer,
+    .name              = "crc",
+    .long_name         = NULL_IF_CONFIG_SMALL("CRC testing format"),
+    .extensions        = "",
+    .priv_data_size    = sizeof(CRCState),
+    .audio_codec       = CODEC_ID_PCM_S16LE,
+    .video_codec       = CODEC_ID_RAWVIDEO,
+    .write_header      = crc_write_header,
+    .write_packet      = crc_write_packet,
+    .write_trailer     = crc_write_trailer,
 };

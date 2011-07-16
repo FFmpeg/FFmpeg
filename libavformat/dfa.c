@@ -109,11 +109,10 @@ static int dfa_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 AVInputFormat ff_dfa_demuxer = {
-    "dfa",
-    NULL_IF_CONFIG_SMALL("Chronomaster DFA"),
-    0,
-    dfa_probe,
-    dfa_read_header,
-    dfa_read_packet,
+    .name           = "dfa",
+    .long_name      = NULL_IF_CONFIG_SMALL("Chronomaster DFA"),
+    .read_probe     = dfa_probe,
+    .read_header    = dfa_read_header,
+    .read_packet    = dfa_read_packet,
     .flags = AVFMT_GENERIC_INDEX,
 };

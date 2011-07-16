@@ -281,11 +281,11 @@ static int vmd_read_close(AVFormatContext *s)
 }
 
 AVInputFormat ff_vmd_demuxer = {
-    "vmd",
-    NULL_IF_CONFIG_SMALL("Sierra VMD format"),
-    sizeof(VmdDemuxContext),
-    vmd_probe,
-    vmd_read_header,
-    vmd_read_packet,
-    vmd_read_close,
+    .name           = "vmd",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sierra VMD format"),
+    .priv_data_size = sizeof(VmdDemuxContext),
+    .read_probe     = vmd_probe,
+    .read_header    = vmd_read_header,
+    .read_packet    = vmd_read_packet,
+    .read_close     = vmd_read_close,
 };

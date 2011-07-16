@@ -162,16 +162,14 @@ static int mp3_write_trailer(struct AVFormatContext *s)
 
 #if CONFIG_MP2_MUXER
 AVOutputFormat ff_mp2_muxer = {
-    "mp2",
-    NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
-    "audio/x-mpeg",
-    "mp2,m2a",
-    0,
-    CODEC_ID_MP2,
-    CODEC_ID_NONE,
-    NULL,
-    ff_raw_write_packet,
-    mp3_write_trailer,
+    .name              = "mp2",
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
+    .mime_type         = "audio/x-mpeg",
+    .extensions        = "mp2,m2a",
+    .audio_codec       = CODEC_ID_MP2,
+    .video_codec       = CODEC_ID_NONE,
+    .write_packet      = ff_raw_write_packet,
+    .write_trailer     = mp3_write_trailer,
 };
 #endif
 
@@ -306,17 +304,17 @@ static int mp3_write_header(struct AVFormatContext *s)
 }
 
 AVOutputFormat ff_mp3_muxer = {
-    "mp3",
-    NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
-    "audio/x-mpeg",
-    "mp3",
-    sizeof(MP3Context),
-    CODEC_ID_MP3,
-    CODEC_ID_NONE,
-    mp3_write_header,
-    ff_raw_write_packet,
-    mp3_write_trailer,
-    AVFMT_NOTIMESTAMPS,
+    .name              = "mp3",
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
+    .mime_type         = "audio/x-mpeg",
+    .extensions        = "mp3",
+    .priv_data_size    = sizeof(MP3Context),
+    .audio_codec       = CODEC_ID_MP3,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = mp3_write_header,
+    .write_packet      = ff_raw_write_packet,
+    .write_trailer     = mp3_write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class = &mp3_muxer_class,
 };
 #endif

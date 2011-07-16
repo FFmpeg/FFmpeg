@@ -1389,12 +1389,12 @@ static int avi_probe(AVProbeData *p)
 }
 
 AVInputFormat ff_avi_demuxer = {
-    "avi",
-    NULL_IF_CONFIG_SMALL("AVI format"),
-    sizeof(AVIContext),
-    avi_probe,
-    avi_read_header,
-    avi_read_packet,
-    avi_read_close,
-    avi_read_seek,
+    .name           = "avi",
+    .long_name      = NULL_IF_CONFIG_SMALL("AVI format"),
+    .priv_data_size = sizeof(AVIContext),
+    .read_probe     = avi_probe,
+    .read_header    = avi_read_header,
+    .read_packet    = avi_read_packet,
+    .read_close     = avi_read_close,
+    .read_seek      = avi_read_seek,
 };

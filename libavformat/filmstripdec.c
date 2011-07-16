@@ -99,13 +99,11 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
 }
 
 AVInputFormat ff_filmstrip_demuxer = {
-    "filmstrip",
-    NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
-    sizeof(FilmstripDemuxContext),
-    NULL,
-    read_header,
-    read_packet,
-    NULL,
-    read_seek,
+    .name           = "filmstrip",
+    .long_name      = NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
+    .priv_data_size = sizeof(FilmstripDemuxContext),
+    .read_header    = read_header,
+    .read_packet    = read_packet,
+    .read_seek      = read_seek,
     .extensions = "flm",
 };

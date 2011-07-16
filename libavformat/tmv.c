@@ -179,13 +179,12 @@ static int tmv_read_seek(AVFormatContext *s, int stream_index,
 }
 
 AVInputFormat ff_tmv_demuxer = {
-    "tmv",
-    NULL_IF_CONFIG_SMALL("8088flex TMV"),
-    sizeof(TMVContext),
-    tmv_probe,
-    tmv_read_header,
-    tmv_read_packet,
-    NULL,
-    tmv_read_seek,
+    .name           = "tmv",
+    .long_name      = NULL_IF_CONFIG_SMALL("8088flex TMV"),
+    .priv_data_size = sizeof(TMVContext),
+    .read_probe     = tmv_probe,
+    .read_header    = tmv_read_header,
+    .read_packet    = tmv_read_packet,
+    .read_seek      = tmv_read_seek,
     .flags = AVFMT_GENERIC_INDEX,
 };

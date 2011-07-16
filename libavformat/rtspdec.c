@@ -412,14 +412,14 @@ const AVClass rtsp_demuxer_class = {
 };
 
 AVInputFormat ff_rtsp_demuxer = {
-    "rtsp",
-    NULL_IF_CONFIG_SMALL("RTSP input format"),
-    sizeof(RTSPState),
-    rtsp_probe,
-    rtsp_read_header,
-    rtsp_read_packet,
-    rtsp_read_close,
-    rtsp_read_seek,
+    .name           = "rtsp",
+    .long_name      = NULL_IF_CONFIG_SMALL("RTSP input format"),
+    .priv_data_size = sizeof(RTSPState),
+    .read_probe     = rtsp_probe,
+    .read_header    = rtsp_read_header,
+    .read_packet    = rtsp_read_packet,
+    .read_close     = rtsp_read_close,
+    .read_seek      = rtsp_read_seek,
     .flags = AVFMT_NOFILE,
     .read_play = rtsp_read_play,
     .read_pause = rtsp_read_pause,

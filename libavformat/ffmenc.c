@@ -241,15 +241,14 @@ static int ffm_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_ffm_muxer = {
-    "ffm",
-    NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
-    "",
-    "ffm",
-    sizeof(FFMContext),
-    /* not really used */
-    CODEC_ID_MP2,
-    CODEC_ID_MPEG1VIDEO,
-    ffm_write_header,
-    ffm_write_packet,
-    ffm_write_trailer,
+    .name              = "ffm",
+    .long_name         = NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
+    .mime_type         = "",
+    .extensions        = "ffm",
+    .priv_data_size    = sizeof(FFMContext),
+    .audio_codec       = CODEC_ID_MP2,
+    .video_codec       = CODEC_ID_MPEG1VIDEO,
+    .write_header      = ffm_write_header,
+    .write_packet      = ffm_write_packet,
+    .write_trailer     = ffm_write_trailer,
 };

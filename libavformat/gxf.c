@@ -523,13 +523,12 @@ static int64_t gxf_read_timestamp(AVFormatContext *s, int stream_index,
 }
 
 AVInputFormat ff_gxf_demuxer = {
-    "gxf",
-    NULL_IF_CONFIG_SMALL("GXF format"),
-    sizeof(struct gxf_stream_info),
-    gxf_probe,
-    gxf_header,
-    gxf_packet,
-    NULL,
-    gxf_seek,
-    gxf_read_timestamp,
+    .name           = "gxf",
+    .long_name      = NULL_IF_CONFIG_SMALL("GXF format"),
+    .priv_data_size = sizeof(struct gxf_stream_info),
+    .read_probe     = gxf_probe,
+    .read_header    = gxf_header,
+    .read_packet    = gxf_packet,
+    .read_seek      = gxf_seek,
+    .read_timestamp = gxf_read_timestamp,
 };

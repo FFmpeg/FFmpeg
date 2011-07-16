@@ -924,14 +924,14 @@ static int nut_read_close(AVFormatContext *s)
 
 #if CONFIG_NUT_DEMUXER
 AVInputFormat ff_nut_demuxer = {
-    "nut",
-    NULL_IF_CONFIG_SMALL("NUT format"),
-    sizeof(NUTContext),
-    nut_probe,
-    nut_read_header,
-    nut_read_packet,
-    nut_read_close,
-    read_seek,
+    .name           = "nut",
+    .long_name      = NULL_IF_CONFIG_SMALL("NUT format"),
+    .priv_data_size = sizeof(NUTContext),
+    .read_probe     = nut_probe,
+    .read_header    = nut_read_header,
+    .read_packet    = nut_read_packet,
+    .read_close     = nut_read_close,
+    .read_seek      = read_seek,
     .extensions = "nut",
     .codec_tag = (const AVCodecTag * const []) { ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags, ff_nut_subtitle_tags, 0 },
 };

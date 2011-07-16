@@ -174,27 +174,25 @@ static int amr_read_packet(AVFormatContext *s,
 
 #if CONFIG_AMR_DEMUXER
 AVInputFormat ff_amr_demuxer = {
-    "amr",
-    NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
-    0, /*priv_data_size*/
-    amr_probe,
-    amr_read_header,
-    amr_read_packet,
-    NULL,
+    .name           = "amr",
+    .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
+    .priv_data_size = 0, /*priv_data_size*/
+    .read_probe     = amr_probe,
+    .read_header    = amr_read_header,
+    .read_packet    = amr_read_packet,
     .flags = AVFMT_GENERIC_INDEX,
 };
 #endif
 
 #if CONFIG_AMR_MUXER
 AVOutputFormat ff_amr_muxer = {
-    "amr",
-    NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
-    "audio/amr",
-    "amr",
-    0,
-    CODEC_ID_AMR_NB,
-    CODEC_ID_NONE,
-    amr_write_header,
-    amr_write_packet,
+    .name              = "amr",
+    .long_name         = NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
+    .mime_type         = "audio/amr",
+    .extensions        = "amr",
+    .audio_codec       = CODEC_ID_AMR_NB,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = amr_write_header,
+    .write_packet      = amr_write_packet,
 };
 #endif

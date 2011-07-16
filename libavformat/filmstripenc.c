@@ -72,14 +72,13 @@ static int write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_filmstrip_muxer = {
-    "filmstrip",
-    NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
-    NULL,
-    "flm",
-    sizeof(FilmstripMuxContext),
-    CODEC_ID_NONE,
-    CODEC_ID_RAWVIDEO,
-    write_header,
-    write_packet,
-    write_trailer,
+    .name              = "filmstrip",
+    .long_name         = NULL_IF_CONFIG_SMALL("Adobe Filmstrip"),
+    .extensions        = "flm",
+    .priv_data_size    = sizeof(FilmstripMuxContext),
+    .audio_codec       = CODEC_ID_NONE,
+    .video_codec       = CODEC_ID_RAWVIDEO,
+    .write_header      = write_header,
+    .write_packet      = write_packet,
+    .write_trailer     = write_trailer,
 };

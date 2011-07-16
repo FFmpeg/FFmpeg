@@ -66,12 +66,11 @@ static int dts_probe(AVProbeData *p)
 }
 
 AVInputFormat ff_dts_demuxer = {
-    "dts",
-    NULL_IF_CONFIG_SMALL("raw DTS"),
-    0,
-    dts_probe,
-    ff_raw_audio_read_header,
-    ff_raw_read_partial_packet,
+    .name           = "dts",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw DTS"),
+    .read_probe     = dts_probe,
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "dts",
     .value = CODEC_ID_DTS,

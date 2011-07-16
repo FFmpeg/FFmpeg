@@ -408,14 +408,13 @@ static int dv_write_trailer(struct AVFormatContext *s)
 }
 
 AVOutputFormat ff_dv_muxer = {
-    "dv",
-    NULL_IF_CONFIG_SMALL("DV video format"),
-    NULL,
-    "dv",
-    sizeof(DVMuxContext),
-    CODEC_ID_PCM_S16LE,
-    CODEC_ID_DVVIDEO,
-    dv_write_header,
-    dv_write_packet,
-    dv_write_trailer,
+    .name              = "dv",
+    .long_name         = NULL_IF_CONFIG_SMALL("DV video format"),
+    .extensions        = "dv",
+    .priv_data_size    = sizeof(DVMuxContext),
+    .audio_codec       = CODEC_ID_PCM_S16LE,
+    .video_codec       = CODEC_ID_DVVIDEO,
+    .write_header      = dv_write_header,
+    .write_packet      = dv_write_packet,
+    .write_trailer     = dv_write_trailer,
 };

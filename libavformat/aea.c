@@ -95,14 +95,12 @@ static int aea_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 AVInputFormat ff_aea_demuxer = {
-    "aea",
-    NULL_IF_CONFIG_SMALL("MD STUDIO audio"),
-    0,
-    aea_read_probe,
-    aea_read_header,
-    aea_read_packet,
-    0,
-    pcm_read_seek,
+    .name           = "aea",
+    .long_name      = NULL_IF_CONFIG_SMALL("MD STUDIO audio"),
+    .read_probe     = aea_read_probe,
+    .read_header    = aea_read_header,
+    .read_packet    = aea_read_packet,
+    .read_seek      = pcm_read_seek,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "aea",
 };

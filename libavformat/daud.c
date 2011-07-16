@@ -71,14 +71,10 @@ static int daud_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 
 #if CONFIG_DAUD_DEMUXER
 AVInputFormat ff_daud_demuxer = {
-    "daud",
-    NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
-    0,
-    NULL,
-    daud_header,
-    daud_packet,
-    NULL,
-    NULL,
+    .name           = "daud",
+    .long_name      = NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
+    .read_header    = daud_header,
+    .read_packet    = daud_packet,
     .extensions = "302",
 };
 #endif

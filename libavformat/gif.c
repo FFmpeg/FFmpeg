@@ -363,15 +363,15 @@ static const AVClass gif_muxer_class = {
 };
 
 AVOutputFormat ff_gif_muxer = {
-    "gif",
-    NULL_IF_CONFIG_SMALL("GIF Animation"),
-    "image/gif",
-    "gif",
-    sizeof(GIFContext),
-    CODEC_ID_NONE,
-    CODEC_ID_RAWVIDEO,
-    gif_write_header,
-    gif_write_packet,
-    gif_write_trailer,
+    .name              = "gif",
+    .long_name         = NULL_IF_CONFIG_SMALL("GIF Animation"),
+    .mime_type         = "image/gif",
+    .extensions        = "gif",
+    .priv_data_size    = sizeof(GIFContext),
+    .audio_codec       = CODEC_ID_NONE,
+    .video_codec       = CODEC_ID_RAWVIDEO,
+    .write_header      = gif_write_header,
+    .write_packet      = gif_write_packet,
+    .write_trailer     = gif_write_trailer,
     .priv_class = &gif_muxer_class,
 };

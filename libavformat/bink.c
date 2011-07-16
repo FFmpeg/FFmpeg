@@ -264,12 +264,11 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, in
 }
 
 AVInputFormat ff_bink_demuxer = {
-    "bink",
-    NULL_IF_CONFIG_SMALL("Bink"),
-    sizeof(BinkDemuxContext),
-    probe,
-    read_header,
-    read_packet,
-    NULL,
-    read_seek,
+    .name           = "bink",
+    .long_name      = NULL_IF_CONFIG_SMALL("Bink"),
+    .priv_data_size = sizeof(BinkDemuxContext),
+    .read_probe     = probe,
+    .read_header    = read_header,
+    .read_packet    = read_packet,
+    .read_seek      = read_seek,
 };

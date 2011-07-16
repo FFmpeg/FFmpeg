@@ -1999,12 +1999,12 @@ static int matroska_read_close(AVFormatContext *s)
 }
 
 AVInputFormat ff_matroska_demuxer = {
-    "matroska,webm",
-    NULL_IF_CONFIG_SMALL("Matroska/WebM file format"),
-    sizeof(MatroskaDemuxContext),
-    matroska_probe,
-    matroska_read_header,
-    matroska_read_packet,
-    matroska_read_close,
-    matroska_read_seek,
+    .name           = "matroska,webm",
+    .long_name      = NULL_IF_CONFIG_SMALL("Matroska/WebM file format"),
+    .priv_data_size = sizeof(MatroskaDemuxContext),
+    .read_probe     = matroska_probe,
+    .read_header    = matroska_read_header,
+    .read_packet    = matroska_read_packet,
+    .read_close     = matroska_read_close,
+    .read_seek      = matroska_read_seek,
 };

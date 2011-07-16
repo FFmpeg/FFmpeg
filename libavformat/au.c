@@ -185,30 +185,27 @@ static int au_read_packet(AVFormatContext *s,
 
 #if CONFIG_AU_DEMUXER
 AVInputFormat ff_au_demuxer = {
-    "au",
-    NULL_IF_CONFIG_SMALL("SUN AU format"),
-    0,
-    au_probe,
-    au_read_header,
-    au_read_packet,
-    NULL,
-    pcm_read_seek,
+    .name           = "au",
+    .long_name      = NULL_IF_CONFIG_SMALL("SUN AU format"),
+    .read_probe     = au_probe,
+    .read_header    = au_read_header,
+    .read_packet    = au_read_packet,
+    .read_seek      = pcm_read_seek,
     .codec_tag= (const AVCodecTag* const []){codec_au_tags, 0},
 };
 #endif
 
 #if CONFIG_AU_MUXER
 AVOutputFormat ff_au_muxer = {
-    "au",
-    NULL_IF_CONFIG_SMALL("SUN AU format"),
-    "audio/basic",
-    "au",
-    0,
-    CODEC_ID_PCM_S16BE,
-    CODEC_ID_NONE,
-    au_write_header,
-    au_write_packet,
-    au_write_trailer,
+    .name              = "au",
+    .long_name         = NULL_IF_CONFIG_SMALL("SUN AU format"),
+    .mime_type         = "audio/basic",
+    .extensions        = "au",
+    .audio_codec       = CODEC_ID_PCM_S16BE,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = au_write_header,
+    .write_packet      = au_write_packet,
+    .write_trailer     = au_write_trailer,
     .codec_tag= (const AVCodecTag* const []){codec_au_tags, 0},
 };
 #endif //CONFIG_AU_MUXER

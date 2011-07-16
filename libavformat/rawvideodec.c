@@ -45,12 +45,11 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 AVInputFormat ff_rawvideo_demuxer = {
-    "rawvideo",
-    NULL_IF_CONFIG_SMALL("raw video format"),
-    sizeof(FFRawVideoDemuxerContext),
-    NULL,
-    ff_raw_read_header,
-    rawvideo_read_packet,
+    .name           = "rawvideo",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw video format"),
+    .priv_data_size = sizeof(FFRawVideoDemuxerContext),
+    .read_header    = ff_raw_read_header,
+    .read_packet    = rawvideo_read_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "yuv,cif,qcif,rgb",
     .value = CODEC_ID_RAWVIDEO,
