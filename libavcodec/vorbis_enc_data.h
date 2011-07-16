@@ -492,13 +492,13 @@ static const struct {
     int dim;
     int subclass;
     int masterbook;
-    const int *nbooks;
+    const int nbooks[4];
 } floor_classes[] = {
-    { 3, 0, 0, (const int[]){  4             } },
-    { 4, 1, 0, (const int[]){  5,  6         } },
-    { 3, 1, 1, (const int[]){  7,  8         } },
-    { 4, 2, 2, (const int[]){ -1,  9, 10, 11 } },
-    { 3, 2, 3, (const int[]){ -1, 12, 13, 14 } },
+    { 3, 0, 0, {  4             } },
+    { 4, 1, 0, {  5,  6         } },
+    { 3, 1, 1, {  7,  8         } },
+    { 4, 2, 2, { -1,  9, 10, 11 } },
+    { 3, 2, 3, { -1, 12, 13, 14 } },
 };
 
 #endif /* AVCODEC_VORBIS_ENC_DATA_H */
