@@ -3976,7 +3976,6 @@ static int opt_output_file(const char *opt, const char *filename)
         av_log(NULL, AV_LOG_WARNING, "-loop_output is deprecated, use -loop\n");
         oc->loop_output = loop_output;
     }
-    oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     frame_rate    = (AVRational){0, 0};
     frame_width   = 0;
