@@ -153,8 +153,16 @@ void parse_options(int argc, char **argv, const OptionDef *options,
  */
 AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder);
 
-/*
- * Setup AVCodecContext options for avformat_find_stream_info.
+/**
+ * Setup AVCodecContext options for avformat_find_stream_info().
+ *
+ * Create an array of dictionaries, one dictionary for each stream
+ * contained in s.
+ * Each dictionary will contain the options from codec_opts which can
+ * be applied to the corresponding stream codec context.
+ *
+ * @return pointer to the created array of dictionaries, NULL if it
+ * cannot be created
  */
 AVDictionary **setup_find_stream_info_opts(AVFormatContext *s);
 
