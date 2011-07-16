@@ -38,8 +38,8 @@ Force displayed width.
 @item -y @var{height}
 Force displayed height.
 @item -s @var{size}
-Set frame size (WxH or abbreviation), needed for videos which don't
-contain a header with the frame size like raw YUV.
+This option has been removed. Use private format options for specifying the
+input video size.
 @item -an
 Disable audio.
 @item -vn
