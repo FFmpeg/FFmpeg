@@ -150,6 +150,12 @@ void parse_options(int argc, char **argv, const OptionDef *options,
 
 /**
  * Filter out options for given codec.
+ *
+ * Create a new options dictionary containing only the options from
+ * opts which apply to the codec with ID codec_id.
+ *
+ * @param encoder if non-zero the codec is an encoder, otherwise is a decoder
+ * @return a pointer to the created dictionary
  */
 AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder);
 
