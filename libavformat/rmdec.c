@@ -371,7 +371,7 @@ skip:
     return 0;
 }
 
-static int rm_read_header_old(AVFormatContext *s, AVFormatParameters *ap)
+static int rm_read_header_old(AVFormatContext *s)
 {
     RMDemuxContext *rm = s->priv_data;
     AVStream *st;
@@ -399,7 +399,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     tag = avio_rl32(pb);
     if (tag == MKTAG('.', 'r', 'a', 0xfd)) {
         /* very old .ra format */
-        return rm_read_header_old(s, ap);
+        return rm_read_header_old(s);
     } else if (tag != MKTAG('.', 'R', 'M', 'F')) {
         return AVERROR(EIO);
     }
