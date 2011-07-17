@@ -1887,15 +1887,15 @@ void ff_mpegts_parse_close(MpegTSContext *ts)
 }
 
 AVInputFormat ff_mpegts_demuxer = {
-    "mpegts",
-    NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
-    sizeof(MpegTSContext),
-    mpegts_probe,
-    mpegts_read_header,
-    mpegts_read_packet,
-    mpegts_read_close,
-    read_seek,
-    mpegts_get_pcr,
+    .name           = "mpegts",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 transport stream format"),
+    .priv_data_size = sizeof(MpegTSContext),
+    .read_probe     = mpegts_probe,
+    .read_header    = mpegts_read_header,
+    .read_packet    = mpegts_read_packet,
+    .read_close     = mpegts_read_close,
+    .read_seek      = read_seek,
+    .read_timestamp = mpegts_get_pcr,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
     .read_seek2 = read_seek2,
@@ -1903,15 +1903,14 @@ AVInputFormat ff_mpegts_demuxer = {
 };
 
 AVInputFormat ff_mpegtsraw_demuxer = {
-    "mpegtsraw",
-    NULL_IF_CONFIG_SMALL("MPEG-2 raw transport stream format"),
-    sizeof(MpegTSContext),
-    NULL,
-    mpegts_read_header,
-    mpegts_raw_read_packet,
-    mpegts_read_close,
-    read_seek,
-    mpegts_get_pcr,
+    .name           = "mpegtsraw",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-2 raw transport stream format"),
+    .priv_data_size = sizeof(MpegTSContext),
+    .read_header    = mpegts_read_header,
+    .read_packet    = mpegts_raw_read_packet,
+    .read_close     = mpegts_read_close,
+    .read_seek      = read_seek,
+    .read_timestamp = mpegts_get_pcr,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
     .read_seek2 = read_seek2,

@@ -571,10 +571,10 @@ get_video_packet:
 }
 
 AVInputFormat ff_ea_demuxer = {
-    "ea",
-    NULL_IF_CONFIG_SMALL("Electronic Arts Multimedia Format"),
-    sizeof(EaDemuxContext),
-    ea_probe,
-    ea_read_header,
-    ea_read_packet,
+    .name           = "ea",
+    .long_name      = NULL_IF_CONFIG_SMALL("Electronic Arts Multimedia Format"),
+    .priv_data_size = sizeof(EaDemuxContext),
+    .read_probe     = ea_probe,
+    .read_header    = ea_read_header,
+    .read_packet    = ea_read_packet,
 };

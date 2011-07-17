@@ -639,16 +639,16 @@ static int avi_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_avi_muxer = {
-    "avi",
-    NULL_IF_CONFIG_SMALL("AVI format"),
-    "video/x-msvideo",
-    "avi",
-    sizeof(AVIContext),
-    CODEC_ID_MP2,
-    CODEC_ID_MPEG4,
-    avi_write_header,
-    avi_write_packet,
-    avi_write_trailer,
+    .name              = "avi",
+    .long_name         = NULL_IF_CONFIG_SMALL("AVI format"),
+    .mime_type         = "video/x-msvideo",
+    .extensions        = "avi",
+    .priv_data_size    = sizeof(AVIContext),
+    .audio_codec       = CODEC_ID_MP2,
+    .video_codec       = CODEC_ID_MPEG4,
+    .write_header      = avi_write_header,
+    .write_packet      = avi_write_packet,
+    .write_trailer     = avi_write_trailer,
     .codec_tag= (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .flags= AVFMT_VARIABLE_FPS,
 };

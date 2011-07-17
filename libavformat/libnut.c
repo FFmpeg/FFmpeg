@@ -151,16 +151,16 @@ static int nut_write_trailer(AVFormatContext * avf) {
 }
 
 AVOutputFormat ff_libnut_muxer = {
-    "libnut",
-    "nut format",
-    "video/x-nut",
-    "nut",
-    sizeof(NUTContext),
-    CODEC_ID_VORBIS,
-    CODEC_ID_MPEG4,
-    nut_write_header,
-    nut_write_packet,
-    nut_write_trailer,
+    .name              = "libnut",
+    .long_name         = "nut format",
+    .mime_type         = "video/x-nut",
+    .extensions        = "nut",
+    .priv_data_size    = sizeof(NUTContext),
+    .audio_codec       = CODEC_ID_VORBIS,
+    .video_codec       = CODEC_ID_MPEG4,
+    .write_header      = nut_write_header,
+    .write_packet      = nut_write_packet,
+    .write_trailer     = nut_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
 };
 #endif /* CONFIG_LIBNUT_MUXER */
@@ -298,13 +298,13 @@ static int nut_read_close(AVFormatContext *s) {
 }
 
 AVInputFormat ff_libnut_demuxer = {
-    "libnut",
-    NULL_IF_CONFIG_SMALL("NUT format"),
-    sizeof(NUTContext),
-    nut_probe,
-    nut_read_header,
-    nut_read_packet,
-    nut_read_close,
-    nut_read_seek,
+    .name           = "libnut",
+    .long_name      = NULL_IF_CONFIG_SMALL("NUT format"),
+    .priv_data_size = sizeof(NUTContext),
+    .read_probe     = nut_probe,
+    .read_header    = nut_read_header,
+    .read_packet    = nut_read_packet,
+    .read_close     = nut_read_close,
+    .read_seek      = nut_read_seek,
     .extensions = "nut",
 };

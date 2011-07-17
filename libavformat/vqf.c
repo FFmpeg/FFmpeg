@@ -250,13 +250,12 @@ static int vqf_read_seek(AVFormatContext *s,
 }
 
 AVInputFormat ff_vqf_demuxer = {
-    "vqf",
-    NULL_IF_CONFIG_SMALL("Nippon Telegraph and Telephone Corporation (NTT) TwinVQ"),
-    sizeof(VqfContext),
-    vqf_probe,
-    vqf_read_header,
-    vqf_read_packet,
-    NULL,
-    vqf_read_seek,
+    .name           = "vqf",
+    .long_name      = NULL_IF_CONFIG_SMALL("Nippon Telegraph and Telephone Corporation (NTT) TwinVQ"),
+    .priv_data_size = sizeof(VqfContext),
+    .read_probe     = vqf_probe,
+    .read_header    = vqf_read_header,
+    .read_packet    = vqf_read_packet,
+    .read_seek      = vqf_read_seek,
     .extensions = "vqf",
 };

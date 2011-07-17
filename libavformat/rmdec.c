@@ -371,7 +371,7 @@ skip:
     return 0;
 }
 
-static int rm_read_header_old(AVFormatContext *s, AVFormatParameters *ap)
+static int rm_read_header_old(AVFormatContext *s)
 {
     RMDemuxContext *rm = s->priv_data;
     AVStream *st;
@@ -399,7 +399,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     tag = avio_rl32(pb);
     if (tag == MKTAG('.', 'r', 'a', 0xfd)) {
         /* very old .ra format */
-        return rm_read_header_old(s, ap);
+        return rm_read_header_old(s);
     } else if (tag != MKTAG('.', 'R', 'M', 'F')) {
         return AVERROR(EIO);
     }
@@ -937,23 +937,19 @@ static int64_t rm_read_dts(AVFormatContext *s, int stream_index,
 }
 
 AVInputFormat ff_rm_demuxer = {
-    "rm",
-    NULL_IF_CONFIG_SMALL("RealMedia format"),
-    sizeof(RMDemuxContext),
-    rm_probe,
-    rm_read_header,
-    rm_read_packet,
-    rm_read_close,
-    NULL,
-    rm_read_dts,
+    .name           = "rm",
+    .long_name      = NULL_IF_CONFIG_SMALL("RealMedia format"),
+    .priv_data_size = sizeof(RMDemuxContext),
+    .read_probe     = rm_probe,
+    .read_header    = rm_read_header,
+    .read_packet    = rm_read_packet,
+    .read_close     = rm_read_close,
+    .read_timestamp = rm_read_dts,
 };
 
 AVInputFormat ff_rdt_demuxer = {
-    "rdt",
-    NULL_IF_CONFIG_SMALL("RDT demuxer"),
-    sizeof(RMDemuxContext),
-    NULL,
-    NULL,
-    NULL,
-    rm_read_close,
+    .name           = "rdt",
+    .long_name      = NULL_IF_CONFIG_SMALL("RDT demuxer"),
+    .priv_data_size = sizeof(RMDemuxContext),
+    .read_close     = rm_read_close,
 };

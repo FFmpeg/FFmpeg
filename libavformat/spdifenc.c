@@ -541,16 +541,15 @@ static int spdif_write_packet(struct AVFormatContext *s, AVPacket *pkt)
 }
 
 AVOutputFormat ff_spdif_muxer = {
-    "spdif",
-    NULL_IF_CONFIG_SMALL("IEC 61937 (used on S/PDIF - IEC958)"),
-    NULL,
-    "spdif",
-    sizeof(IEC61937Context),
-    CODEC_ID_AC3,
-    CODEC_ID_NONE,
-    spdif_write_header,
-    spdif_write_packet,
-    spdif_write_trailer,
+    .name              = "spdif",
+    .long_name         = NULL_IF_CONFIG_SMALL("IEC 61937 (used on S/PDIF - IEC958)"),
+    .extensions        = "spdif",
+    .priv_data_size    = sizeof(IEC61937Context),
+    .audio_codec       = CODEC_ID_AC3,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = spdif_write_header,
+    .write_packet      = spdif_write_packet,
+    .write_trailer     = spdif_write_trailer,
     .flags = AVFMT_NOTIMESTAMPS,
     .priv_class = &class,
 };

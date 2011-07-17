@@ -34,17 +34,6 @@
 #include "mathops.h"
 #include "simple_idct.h"
 
-#if 0
-#define W1 2841 /* 2048*sqrt (2)*cos (1*pi/16) */
-#define W2 2676 /* 2048*sqrt (2)*cos (2*pi/16) */
-#define W3 2408 /* 2048*sqrt (2)*cos (3*pi/16) */
-#define W4 2048 /* 2048*sqrt (2)*cos (4*pi/16) */
-#define W5 1609 /* 2048*sqrt (2)*cos (5*pi/16) */
-#define W6 1108 /* 2048*sqrt (2)*cos (6*pi/16) */
-#define W7 565  /* 2048*sqrt (2)*cos (7*pi/16) */
-#define ROW_SHIFT 8
-#define COL_SHIFT 17
-#else
 #define W1  22725  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define W2  21407  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define W3  19266  //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
@@ -54,7 +43,6 @@
 #define W7  4520   //cos(i*M_PI/16)*sqrt(2)*(1<<14) + 0.5
 #define ROW_SHIFT 11
 #define COL_SHIFT 20 // 6
-#endif
 
 static inline void idctRowCondDC (DCTELEM * row)
 {

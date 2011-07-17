@@ -218,12 +218,11 @@ const AVClass ff_rawvideo_demuxer_class = {
 
 #if CONFIG_G722_DEMUXER
 AVInputFormat ff_g722_demuxer = {
-    "g722",
-    NULL_IF_CONFIG_SMALL("raw G.722"),
-    sizeof(RawAudioDemuxerContext),
-    NULL,
-    ff_raw_read_header,
-    ff_raw_read_partial_packet,
+    .name           = "g722",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw G.722"),
+    .priv_data_size = sizeof(RawAudioDemuxerContext),
+    .read_header    = ff_raw_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "g722,722",
     .value = CODEC_ID_ADPCM_G722,
@@ -233,12 +232,10 @@ AVInputFormat ff_g722_demuxer = {
 
 #if CONFIG_GSM_DEMUXER
 AVInputFormat ff_gsm_demuxer = {
-    "gsm",
-    NULL_IF_CONFIG_SMALL("raw GSM"),
-    0,
-    NULL,
-    ff_raw_audio_read_header,
-    ff_raw_read_partial_packet,
+    .name           = "gsm",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw GSM"),
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "gsm",
     .value = CODEC_ID_GSM,
@@ -251,12 +248,10 @@ FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", NULL, "mjpg,mjpeg", CODEC_ID_M
 
 #if CONFIG_MLP_DEMUXER
 AVInputFormat ff_mlp_demuxer = {
-    "mlp",
-    NULL_IF_CONFIG_SMALL("raw MLP"),
-    0,
-    NULL,
-    ff_raw_audio_read_header,
-    ff_raw_read_partial_packet,
+    .name           = "mlp",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw MLP"),
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "mlp",
     .value = CODEC_ID_MLP,
@@ -265,12 +260,10 @@ AVInputFormat ff_mlp_demuxer = {
 
 #if CONFIG_TRUEHD_DEMUXER
 AVInputFormat ff_truehd_demuxer = {
-    "truehd",
-    NULL_IF_CONFIG_SMALL("raw TrueHD"),
-    0,
-    NULL,
-    ff_raw_audio_read_header,
-    ff_raw_read_partial_packet,
+    .name           = "truehd",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw TrueHD"),
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "thd",
     .value = CODEC_ID_TRUEHD,
@@ -279,12 +272,10 @@ AVInputFormat ff_truehd_demuxer = {
 
 #if CONFIG_SHORTEN_DEMUXER
 AVInputFormat ff_shorten_demuxer = {
-    "shn",
-    NULL_IF_CONFIG_SMALL("raw Shorten"),
-    0,
-    NULL,
-    ff_raw_audio_read_header,
-    ff_raw_read_partial_packet,
+    .name           = "shn",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw Shorten"),
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "shn",
     .value = CODEC_ID_SHORTEN,

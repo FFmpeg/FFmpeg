@@ -190,7 +190,6 @@ static void idct_mmx_init(void)
 
 DECLARE_ALIGNED(16, static DCTELEM, block)[64];
 DECLARE_ALIGNED(8,  static DCTELEM, block1)[64];
-DECLARE_ALIGNED(8,  static DCTELEM, block_org)[64];
 
 static inline void mmx_emms(void)
 {
@@ -245,9 +244,6 @@ static int dct_error(const struct algo *dct, int test, int is_idct, int speed, c
             block1[63] = (block1[0] & 1) ^ 1;
             break;
         }
-
-        for (i = 0; i < 64; i++)
-            block_org[i] = block1[i];
 
         if (dct->format == MMX_PERM) {
             for (i = 0; i < 64; i++)

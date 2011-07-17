@@ -39,7 +39,7 @@ static const uint8_t IP_shuffle[] = {
 };
 #undef T
 
-#if defined(CONFIG_SMALL) || defined(GENTABLES)
+#if CONFIG_SMALL || defined(GENTABLES)
 #define T(a, b, c, d) 32-a,32-b,32-c,32-d
 static const uint8_t P_shuffle[] = {
     T(16,  7, 20, 21),

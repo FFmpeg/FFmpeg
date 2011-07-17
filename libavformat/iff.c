@@ -340,10 +340,10 @@ static int iff_read_packet(AVFormatContext *s,
 }
 
 AVInputFormat ff_iff_demuxer = {
-    "IFF",
-    NULL_IF_CONFIG_SMALL("IFF format"),
-    sizeof(IffDemuxContext),
-    iff_probe,
-    iff_read_header,
-    iff_read_packet,
+    .name           = "IFF",
+    .long_name      = NULL_IF_CONFIG_SMALL("IFF format"),
+    .priv_data_size = sizeof(IffDemuxContext),
+    .read_probe     = iff_probe,
+    .read_header    = iff_read_header,
+    .read_packet    = iff_read_packet,
 };

@@ -82,14 +82,14 @@ static int vc1test_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_vc1t_muxer = {
-    "rcv",
-    NULL_IF_CONFIG_SMALL("VC-1 test bitstream"),
-    "",
-    "rcv",
-    sizeof(RCVContext),
-    CODEC_ID_NONE,
-    CODEC_ID_WMV3,
-    vc1test_write_header,
-    vc1test_write_packet,
-    vc1test_write_trailer,
+    .name              = "rcv",
+    .long_name         = NULL_IF_CONFIG_SMALL("VC-1 test bitstream"),
+    .mime_type         = "",
+    .extensions        = "rcv",
+    .priv_data_size    = sizeof(RCVContext),
+    .audio_codec       = CODEC_ID_NONE,
+    .video_codec       = CODEC_ID_WMV3,
+    .write_header      = vc1test_write_header,
+    .write_packet      = vc1test_write_packet,
+    .write_trailer     = vc1test_write_trailer,
 };

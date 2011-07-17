@@ -2832,7 +2832,7 @@ av_cold void dsputil_static_init(void)
 
 int ff_check_alignment(void){
     static int did_fail=0;
-    DECLARE_ALIGNED(16, int, aligned);
+    LOCAL_ALIGNED_16(int, aligned);
 
     if((intptr_t)&aligned & 15){
         if(!did_fail){

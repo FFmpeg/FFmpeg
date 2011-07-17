@@ -1824,13 +1824,13 @@ static int sdp_read_close(AVFormatContext *s)
 }
 
 AVInputFormat ff_sdp_demuxer = {
-    "sdp",
-    NULL_IF_CONFIG_SMALL("SDP"),
-    sizeof(RTSPState),
-    sdp_probe,
-    sdp_read_header,
-    ff_rtsp_fetch_packet,
-    sdp_read_close,
+    .name           = "sdp",
+    .long_name      = NULL_IF_CONFIG_SMALL("SDP"),
+    .priv_data_size = sizeof(RTSPState),
+    .read_probe     = sdp_probe,
+    .read_header    = sdp_read_header,
+    .read_packet    = ff_rtsp_fetch_packet,
+    .read_close     = sdp_read_close,
 };
 #endif /* CONFIG_SDP_DEMUXER */
 
@@ -1928,13 +1928,13 @@ fail:
 }
 
 AVInputFormat ff_rtp_demuxer = {
-    "rtp",
-    NULL_IF_CONFIG_SMALL("RTP input format"),
-    sizeof(RTSPState),
-    rtp_probe,
-    rtp_read_header,
-    ff_rtsp_fetch_packet,
-    sdp_read_close,
+    .name           = "rtp",
+    .long_name      = NULL_IF_CONFIG_SMALL("RTP input format"),
+    .priv_data_size = sizeof(RTSPState),
+    .read_probe     = rtp_probe,
+    .read_header    = rtp_read_header,
+    .read_packet    = ff_rtsp_fetch_packet,
+    .read_close     = sdp_read_close,
     .flags = AVFMT_NOFILE,
 };
 #endif /* CONFIG_RTP_DEMUXER */

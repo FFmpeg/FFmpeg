@@ -1282,14 +1282,14 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
 }
 
 AVInputFormat ff_asf_demuxer = {
-    "asf",
-    NULL_IF_CONFIG_SMALL("ASF format"),
-    sizeof(ASFContext),
-    asf_probe,
-    asf_read_header,
-    asf_read_packet,
-    asf_read_close,
-    asf_read_seek,
-    asf_read_pts,
+    .name           = "asf",
+    .long_name      = NULL_IF_CONFIG_SMALL("ASF format"),
+    .priv_data_size = sizeof(ASFContext),
+    .read_probe     = asf_probe,
+    .read_header    = asf_read_header,
+    .read_packet    = asf_read_packet,
+    .read_close     = asf_read_close,
+    .read_seek      = asf_read_seek,
+    .read_timestamp = asf_read_pts,
     .flags = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH,
 };

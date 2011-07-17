@@ -206,16 +206,16 @@ static const AVClass wav_muxer_class = {
 };
 
 AVOutputFormat ff_wav_muxer = {
-    "wav",
-    NULL_IF_CONFIG_SMALL("WAV format"),
-    "audio/x-wav",
-    "wav",
-    sizeof(WAVContext),
-    CODEC_ID_PCM_S16LE,
-    CODEC_ID_NONE,
-    wav_write_header,
-    wav_write_packet,
-    wav_write_trailer,
+    .name              = "wav",
+    .long_name         = NULL_IF_CONFIG_SMALL("WAV format"),
+    .mime_type         = "audio/x-wav",
+    .extensions        = "wav",
+    .priv_data_size    = sizeof(WAVContext),
+    .audio_codec       = CODEC_ID_PCM_S16LE,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = wav_write_header,
+    .write_packet      = wav_write_packet,
+    .write_trailer     = wav_write_trailer,
     .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
     .priv_class = &wav_muxer_class,
 };
@@ -363,7 +363,7 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
 
         coding_history[size] = 0;
         if ((ret = av_dict_set(&s->metadata, "coding_history", coding_history,
-                               AV_METADATA_DONT_STRDUP_VAL)) < 0)
+                               AV_DICT_DONT_STRDUP_VAL)) < 0)
             return ret;
     }
 
@@ -575,14 +575,13 @@ static int wav_read_seek(AVFormatContext *s,
 }
 
 AVInputFormat ff_wav_demuxer = {
-    "wav",
-    NULL_IF_CONFIG_SMALL("WAV format"),
-    sizeof(WAVContext),
-    wav_probe,
-    wav_read_header,
-    wav_read_packet,
-    NULL,
-    wav_read_seek,
+    .name           = "wav",
+    .long_name      = NULL_IF_CONFIG_SMALL("WAV format"),
+    .priv_data_size = sizeof(WAVContext),
+    .read_probe     = wav_probe,
+    .read_header    = wav_read_header,
+    .read_packet    = wav_read_packet,
+    .read_seek      = wav_read_seek,
     .flags= AVFMT_GENERIC_INDEX,
     .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };
@@ -664,14 +663,13 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
 }
 
 AVInputFormat ff_w64_demuxer = {
-    "w64",
-    NULL_IF_CONFIG_SMALL("Sony Wave64 format"),
-    sizeof(WAVContext),
-    w64_probe,
-    w64_read_header,
-    wav_read_packet,
-    NULL,
-    wav_read_seek,
+    .name           = "w64",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony Wave64 format"),
+    .priv_data_size = sizeof(WAVContext),
+    .read_probe     = w64_probe,
+    .read_header    = w64_read_header,
+    .read_packet    = wav_read_packet,
+    .read_seek      = wav_read_seek,
     .flags = AVFMT_GENERIC_INDEX,
     .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };

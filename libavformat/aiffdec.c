@@ -320,13 +320,12 @@ static int aiff_read_packet(AVFormatContext *s,
 }
 
 AVInputFormat ff_aiff_demuxer = {
-    "aiff",
-    NULL_IF_CONFIG_SMALL("Audio IFF"),
-    sizeof(AIFFInputContext),
-    aiff_probe,
-    aiff_read_header,
-    aiff_read_packet,
-    NULL,
-    pcm_read_seek,
+    .name           = "aiff",
+    .long_name      = NULL_IF_CONFIG_SMALL("Audio IFF"),
+    .priv_data_size = sizeof(AIFFInputContext),
+    .read_probe     = aiff_probe,
+    .read_header    = aiff_read_header,
+    .read_packet    = aiff_read_packet,
+    .read_seek      = pcm_read_seek,
     .codec_tag= (const AVCodecTag* const []){ff_codec_aiff_tags, 0},
 };

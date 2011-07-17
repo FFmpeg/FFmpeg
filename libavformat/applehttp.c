@@ -668,12 +668,12 @@ static int applehttp_probe(AVProbeData *p)
 }
 
 AVInputFormat ff_applehttp_demuxer = {
-    "applehttp",
-    NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming format"),
-    sizeof(AppleHTTPContext),
-    applehttp_probe,
-    applehttp_read_header,
-    applehttp_read_packet,
-    applehttp_close,
-    applehttp_read_seek,
+    .name           = "applehttp",
+    .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming format"),
+    .priv_data_size = sizeof(AppleHTTPContext),
+    .read_probe     = applehttp_probe,
+    .read_header    = applehttp_read_header,
+    .read_packet    = applehttp_read_packet,
+    .read_close     = applehttp_close,
+    .read_seek      = applehttp_read_seek,
 };

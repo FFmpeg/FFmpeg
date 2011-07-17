@@ -170,7 +170,7 @@ AVOutputFormat ff_a64_muxer = {
     .extensions = "a64, A64",
     .priv_data_size = sizeof (A64Context),
     .video_codec = CODEC_ID_A64_MULTI,
-    a64_write_header,
-    a64_write_packet,
-    a64_write_trailer
+    .write_header  = a64_write_header,
+    .write_packet  = a64_write_packet,
+    .write_trailer = a64_write_trailer
 };

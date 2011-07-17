@@ -38,8 +38,8 @@ Force displayed width.
 @item -y @var{height}
 Force displayed height.
 @item -s @var{size}
-Set frame size (WxH or abbreviation), needed for videos which don't
-contain a header with the frame size like raw YUV.
+This option has been removed. Use private format options for specifying the
+input video size.
 @item -an
 Disable audio.
 @item -vn
@@ -89,7 +89,8 @@ Read @var{input_file}.
 @section Advanced options
 @table @option
 @item -pix_fmt @var{format}
-Set pixel format.
+This option has been removed. Use private options for specifying the
+input pixel format.
 @item -stats
 Show the stream duration, the codec parameters, the current position in
 the stream and the audio/video synchronisation drift.

@@ -374,30 +374,6 @@ int ff_init_me(MpegEncContext *s){
     return 0;
 }
 
-#if 0
-static int pix_dev(uint8_t * pix, int line_size, int mean)
-{
-    int s, i, j;
-
-    s = 0;
-    for (i = 0; i < 16; i++) {
-        for (j = 0; j < 16; j += 8) {
-            s += FFABS(pix[0]-mean);
-            s += FFABS(pix[1]-mean);
-            s += FFABS(pix[2]-mean);
-            s += FFABS(pix[3]-mean);
-            s += FFABS(pix[4]-mean);
-            s += FFABS(pix[5]-mean);
-            s += FFABS(pix[6]-mean);
-            s += FFABS(pix[7]-mean);
-            pix += 8;
-        }
-        pix += line_size - 16;
-    }
-    return s;
-}
-#endif
-
 static inline void no_motion_search(MpegEncContext * s,
                                     int *mx_ptr, int *my_ptr)
 {
@@ -1214,30 +1190,6 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
 
             intra_score= s->dsp.mb_cmp[0](s, c->scratchpad, pix, s->linesize, 16);
         }
-#if 0 //FIXME
-        /* get chroma score */
-        if(c->avctx->mb_cmp&FF_CMP_CHROMA){
-            for(i=1; i<3; i++){
-                uint8_t *dest_c;
-                int mean;
-
-                if(s->out_format == FMT_H263){
-                    mean= (s->dc_val[i][mb_x + mb_y*s->b8_stride] + 4)>>3; //FIXME not exact but simple ;)
-                }else{
-                    mean= (s->last_dc[i] + 4)>>3;
-                }
-                dest_c = s->new_picture.f.data[i] + (mb_y * 8  * (s->uvlinesize)) + mb_x * 8;
-
-                mean*= 0x01010101;
-                for(i=0; i<8; i++){
-                    *(uint32_t*)(&c->scratchpad[i*s->uvlinesize+ 0]) = mean;
-                    *(uint32_t*)(&c->scratchpad[i*s->uvlinesize+ 4]) = mean;
-                }
-
-                intra_score+= s->dsp.mb_cmp[1](s, c->scratchpad, dest_c, s->uvlinesize);
-            }
-        }
-#endif
         intra_score += c->mb_penalty_factor*16;
 
         if(intra_score < dmin){
@@ -1850,10 +1802,6 @@ void ff_estimate_b_frame_motion(MpegEncContext * s,
         if(dmin>256*256*16) type&= ~CANDIDATE_MB_TYPE_DIRECT; //do not try direct mode if it is invalid for this MB
         if(s->codec_id == CODEC_ID_MPEG4 && type&CANDIDATE_MB_TYPE_DIRECT && s->flags&CODEC_FLAG_MV0 && *(uint32_t*)s->b_direct_mv_table[xy])
             type |= CANDIDATE_MB_TYPE_DIRECT0;
-#if 0
-        if(s->out_format == FMT_MPEG1)
-            type |= CANDIDATE_MB_TYPE_INTRA;
-#endif
     }
 
     s->mb_type[mb_y*s->mb_stride + mb_x]= type;

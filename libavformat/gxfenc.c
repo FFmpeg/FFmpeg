@@ -943,17 +943,14 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
 }
 
 AVOutputFormat ff_gxf_muxer = {
-    "gxf",
-    NULL_IF_CONFIG_SMALL("GXF format"),
-    NULL,
-    "gxf",
-    sizeof(GXFContext),
-    CODEC_ID_PCM_S16LE,
-    CODEC_ID_MPEG2VIDEO,
-    gxf_write_header,
-    gxf_write_packet,
-    gxf_write_trailer,
-    0,
-    NULL,
-    gxf_interleave_packet,
+    .name              = "gxf",
+    .long_name         = NULL_IF_CONFIG_SMALL("GXF format"),
+    .extensions        = "gxf",
+    .priv_data_size    = sizeof(GXFContext),
+    .audio_codec       = CODEC_ID_PCM_S16LE,
+    .video_codec       = CODEC_ID_MPEG2VIDEO,
+    .write_header      = gxf_write_header,
+    .write_packet      = gxf_write_packet,
+    .write_trailer     = gxf_write_trailer,
+    .interleave_packet = gxf_interleave_packet,
 };
