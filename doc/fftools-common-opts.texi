@@ -91,3 +91,28 @@ The use of the environment variable @env{NO_COLOR} is deprecated and
 will be dropped in a following Libav version.
 
 @end table
+
+@section AVOptions
+
+These options are provided directly by the libavformat and libavcodec
+libraries. To see the list of available AVOptions, use the
+@option{-help} option. They are separated into two categories:
+@table @option
+@item generic
+Can be set for any container or codec. Generic options are listed under
+AVFormatContext options for containers and under AVCodecContext options
+for codecs.
+@item private
+Are specific to the given container or codec. Private options are listed
+under their corresponding containers/codecs.
+@end table
+
+For example to write an ID3v2.3 header instead of a default ID3v2.4 to
+an MP3 file, use the @option{id3v2_version} private option of the MP3
+muxer:
+@example
+ffmpeg -i input.flac -id3v2_version 3 out.mp3
+@end example
+
+Note -nooption syntax cannot be used for boolean AVOptions, use -option
+0/-option 1.
