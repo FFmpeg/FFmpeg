@@ -1665,10 +1665,6 @@ QPEL_2TAP(put_,  8, 3dnow)
 QPEL_2TAP(avg_,  8, 3dnow)
 
 
-#if 0
-static void just_return(void) { return; }
-#endif
-
 #if HAVE_YASM
 typedef void emu_edge_core_func (uint8_t *buf, const uint8_t *src,
                                  x86_reg linesize, x86_reg start_y,
@@ -2953,39 +2949,4 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
     if (CONFIG_ENCODERS)
         dsputilenc_init_mmx(c, avctx);
-
-#if 0
-    // for speed testing
-    get_pixels = just_return;
-    put_pixels_clamped = just_return;
-    add_pixels_clamped = just_return;
-
-    pix_abs16x16 = just_return;
-    pix_abs16x16_x2 = just_return;
-    pix_abs16x16_y2 = just_return;
-    pix_abs16x16_xy2 = just_return;
-
-    put_pixels_tab[0] = just_return;
-    put_pixels_tab[1] = just_return;
-    put_pixels_tab[2] = just_return;
-    put_pixels_tab[3] = just_return;
-
-    put_no_rnd_pixels_tab[0] = just_return;
-    put_no_rnd_pixels_tab[1] = just_return;
-    put_no_rnd_pixels_tab[2] = just_return;
-    put_no_rnd_pixels_tab[3] = just_return;
-
-    avg_pixels_tab[0] = just_return;
-    avg_pixels_tab[1] = just_return;
-    avg_pixels_tab[2] = just_return;
-    avg_pixels_tab[3] = just_return;
-
-    avg_no_rnd_pixels_tab[0] = just_return;
-    avg_no_rnd_pixels_tab[1] = just_return;
-    avg_no_rnd_pixels_tab[2] = just_return;
-    avg_no_rnd_pixels_tab[3] = just_return;
-
-    //av_fdct = just_return;
-    //ff_idct = just_return;
-#endif
 }
