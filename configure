@@ -1576,7 +1576,7 @@ test_deps _muxer _demuxer                                               \
     mmf                                                                 \
     mov                                                                 \
     pcm_mulaw=mulaw                                                     \
-    mxf                                                                 \
+    mxf="mxf mxf_d10"                                                   \
     nut                                                                 \
     ogg                                                                 \
     rawvideo=pixfmt                                                     \
