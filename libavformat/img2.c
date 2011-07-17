@@ -233,16 +233,6 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
         return ret;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->pix_fmt != PIX_FMT_NONE)
-        pix_fmt = ap->pix_fmt;
-    if (ap->width > 0)
-        width = ap->width;
-    if (ap->height > 0)
-        height = ap->height;
-    if (ap->time_base.num)
-        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
 
 #if FF_API_LOOP_INPUT
     if (s1->loop_input)

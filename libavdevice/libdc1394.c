@@ -142,16 +142,6 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
         av_log(c, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", dc1394->framerate);
         goto out;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->width > 0)
-        width = ap->width;
-    if (ap->height > 0)
-        height = ap->height;
-    if (ap->pix_fmt)
-        pix_fmt = ap->pix_fmt;
-    if (ap->time_base.num)
-        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
     dc1394->frame_rate = av_rescale(1000, framerate.num, framerate.den);
 
     for (fmt = dc1394_frame_formats; fmt->width; fmt++)
@@ -211,11 +201,6 @@ static int dc1394_v1_read_header(AVFormatContext *c, AVFormatParameters * ap)
 
     if (dc1394_read_common(c,ap,&fmt,&fps) != 0)
         return -1;
-
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->channel)
-        dc1394->channel = ap->channel;
-#endif
 
     /* Now let us prep the hardware. */
     dc1394->handle = dc1394_create_handle(0); /* FIXME: gotta have ap->port */

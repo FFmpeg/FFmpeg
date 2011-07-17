@@ -209,13 +209,6 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVStream *st;
     int ret;
 
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->sample_rate > 0)
-        s->sample_rate = ap->sample_rate;
-    if (ap->channels > 0)
-        s->channels = ap->channels;
-#endif
-
     st = av_new_stream(s1, 0);
     if (!st) {
         return AVERROR(ENOMEM);

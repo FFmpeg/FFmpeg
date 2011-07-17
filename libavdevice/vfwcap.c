@@ -267,11 +267,6 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(EIO);
     }
 
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->time_base.num)
-        framerate_q = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
-
     ctx->hwnd = capCreateCaptureWindow(NULL, 0, 0, 0, 0, 0, HWND_MESSAGE, 0);
     if(!ctx->hwnd) {
         av_log(s, AV_LOG_ERROR, "Could not create capture window.\n");
@@ -329,12 +324,6 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
             goto fail_bi;
         }
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->width > 0)
-        bi->bmiHeader.biWidth = ap->width;
-    if (ap->height > 0)
-        bi->bmiHeader.biHeight = ap->height;
-#endif
 
     if (0) {
         /* For testing yet unsupported compressions

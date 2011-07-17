@@ -183,14 +183,6 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Could not parse framerate: %s.\n", x11grab->framerate);
         goto out;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->width > 0)
-        x11grab->width = ap->width;
-    if (ap->height > 0)
-        x11grab->height = ap->height;
-    if (ap->time_base.num)
-        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
     av_log(s1, AV_LOG_INFO, "device: %s -> display: %s x: %d y: %d width: %d height: %d\n",
            s1->filename, param, x_off, y_off, x11grab->width, x11grab->height);
 

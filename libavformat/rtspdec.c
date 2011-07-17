@@ -164,11 +164,6 @@ static int rtsp_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     rt->real_setup = rt->real_setup_cache + s->nb_streams;
 
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->initial_pause)
-        rt->initial_pause = ap->initial_pause;
-#endif
-
     if (rt->initial_pause) {
          /* do not start immediately */
     } else {

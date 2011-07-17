@@ -95,23 +95,11 @@ static int read_header(AVFormatContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s->framerate);
         goto fail;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->width > 0)
-        width = ap->width;
-    if (ap->height > 0)
-        height = ap->height;
-    if (ap->time_base.num)
-        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
     st->codec->width  = width;
     st->codec->height = height;
     av_set_pts_info(st, 60, framerate.den, framerate.num);
 
     /* simulate tty display speed */
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->sample_rate)
-        s->chars_per_frame = ap->sample_rate;
-#endif
     s->chars_per_frame = FFMAX(av_q2d(st->time_base)*s->chars_per_frame, 1);
 
     if (avctx->pb->seekable) {

@@ -463,12 +463,6 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", s->framerate);
         return ret;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->channel > 0)
-        s->channel = ap->channel;
-    if (ap->time_base.num)
-        framerate_q = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
 
     /* set tv video input */
     memset (&input, 0, sizeof (input));
@@ -485,13 +479,6 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
                 s->channel);
         return AVERROR(EIO);
     }
-
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->standard) {
-        av_freep(&s->standard);
-        s->standard = av_strdup(ap->standard);
-    }
-#endif
 
     if (s->standard) {
         av_log(s1, AV_LOG_DEBUG, "The V4L2 driver set standard: %s\n",
@@ -609,14 +596,6 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         res = AVERROR(EINVAL);
         goto out;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->width > 0)
-        s->width  = ap->width;
-    if (ap->height > 0)
-        s->height = ap->height;
-    if (ap->pix_fmt)
-        pix_fmt = ap->pix_fmt;
-#endif
 
     capabilities = 0;
     s->fd = device_open(s1, &capabilities);
