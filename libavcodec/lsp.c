@@ -120,8 +120,8 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order)
 void ff_amrwb_lsp2lpc(const double *lsp, float *lp, int lp_order)
 {
     int lp_half_order = lp_order >> 1;
-    double buf[lp_half_order + 1];
-    double pa[lp_half_order + 1];
+    double buf[MAX_LP_HALF_ORDER + 1];
+    double pa[MAX_LP_HALF_ORDER + 1];
     double *qa = buf + 1;
     int i,j;
 

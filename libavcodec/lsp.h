@@ -91,7 +91,7 @@ void ff_amrwb_lsp2lpc(const double *lsp, float *lp, int lp_order);
 void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd, const int16_t* lsp_prev, int lp_order);
 
 
-#define MAX_LP_HALF_ORDER 8
+#define MAX_LP_HALF_ORDER 10
 #define MAX_LP_ORDER      (2*MAX_LP_HALF_ORDER)
 
 /**
