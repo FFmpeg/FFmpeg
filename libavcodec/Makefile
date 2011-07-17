@@ -667,7 +667,7 @@ SKIPHEADERS-$(CONFIG_XVMC)             += xvmc.h
 
 EXAMPLES = api
 
-TESTPROGS = cabac dct fft fft-fixed h264 iirfilter rangecoder snow
+TESTPROGS = cabac dct fft fft-fixed h264 iirfilter rangecoder
 TESTPROGS-$(HAVE_MMX) += motion
 TESTOBJS = dctref.o
 
