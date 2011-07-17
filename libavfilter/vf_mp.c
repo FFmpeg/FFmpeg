@@ -136,7 +136,6 @@ extern const vf_info_t vf_info_palette;
 extern const vf_info_t vf_info_lavc;
 extern const vf_info_t vf_info_zrmjpeg;
 extern const vf_info_t vf_info_dvbscale;
-extern const vf_info_t vf_info_cropdetect;
 extern const vf_info_t vf_info_test;
 extern const vf_info_t vf_info_noise;
 extern const vf_info_t vf_info_yvu9;
@@ -200,7 +199,6 @@ extern const vf_info_t vf_info_stereo3d;
 static const vf_info_t* const filters[]={
     &vf_info_2xsai,
     &vf_info_blackframe,
-    &vf_info_cropdetect,
     &vf_info_decimate,
     &vf_info_delogo,
     &vf_info_denoise3d,
