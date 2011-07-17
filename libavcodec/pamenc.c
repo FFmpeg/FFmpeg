@@ -109,12 +109,12 @@ static int pam_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
 
 
 AVCodec ff_pam_encoder = {
-    "pam",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_PAM,
-    sizeof(PNMContext),
-    ff_pnm_init,
-    pam_encode_frame,
+    .name           = "pam",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PAM,
+    .priv_data_size = sizeof(PNMContext),
+    .init           = ff_pnm_init,
+    .encode         = pam_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB32, PIX_FMT_GRAY8, PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PAM (Portable AnyMap) image"),
 };

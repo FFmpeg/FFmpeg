@@ -1190,14 +1190,13 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
 }
 
 AVCodec ff_wavpack_decoder = {
-    "wavpack",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_WAVPACK,
-    sizeof(WavpackContext),
-    wavpack_decode_init,
-    NULL,
-    wavpack_decode_end,
-    wavpack_decode_frame,
+    .name           = "wavpack",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_WAVPACK,
+    .priv_data_size = sizeof(WavpackContext),
+    .init           = wavpack_decode_init,
+    .close          = wavpack_decode_end,
+    .decode         = wavpack_decode_frame,
     .capabilities = CODEC_CAP_SUBFRAMES,
     .long_name = NULL_IF_CONFIG_SMALL("WavPack"),
 };

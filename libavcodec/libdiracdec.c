@@ -195,15 +195,14 @@ static void libdirac_flush(AVCodecContext *avccontext)
 
 
 AVCodec ff_libdirac_decoder = {
-    "libdirac",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DIRAC,
-    sizeof(FfmpegDiracDecoderParams),
-    libdirac_decode_init,
-    NULL,
-    libdirac_decode_close,
-    libdirac_decode_frame,
-    CODEC_CAP_DELAY,
+    .name           = "libdirac",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DIRAC,
+    .priv_data_size = sizeof(FfmpegDiracDecoderParams),
+    .init           = libdirac_decode_init,
+    .close          = libdirac_decode_close,
+    .decode         = libdirac_decode_frame,
+    .capabilities   = CODEC_CAP_DELAY,
     .flush = libdirac_flush,
     .long_name = NULL_IF_CONFIG_SMALL("libdirac Dirac 2.2"),
 };

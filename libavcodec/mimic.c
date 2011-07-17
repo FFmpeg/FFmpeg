@@ -416,15 +416,14 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_mimic_decoder = {
-    "mimic",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MIMIC,
-    sizeof(MimicContext),
-    mimic_decode_init,
-    NULL,
-    mimic_decode_end,
-    mimic_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
+    .name           = "mimic",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MIMIC,
+    .priv_data_size = sizeof(MimicContext),
+    .init           = mimic_decode_init,
+    .close          = mimic_decode_end,
+    .decode         = mimic_decode_frame,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .long_name = NULL_IF_CONFIG_SMALL("Mimic"),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(mimic_decode_update_thread_context)
 };

@@ -154,14 +154,13 @@ static av_cold int roq_dpcm_encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_roq_dpcm_encoder = {
-    "roq_dpcm",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_ROQ_DPCM,
-    sizeof(ROQDPCMContext),
-    roq_dpcm_encode_init,
-    roq_dpcm_encode_frame,
-    roq_dpcm_encode_close,
-    NULL,
+    .name           = "roq_dpcm",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_ROQ_DPCM,
+    .priv_data_size = sizeof(ROQDPCMContext),
+    .init           = roq_dpcm_encode_init,
+    .encode         = roq_dpcm_encode_frame,
+    .close          = roq_dpcm_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("id RoQ DPCM"),
 };

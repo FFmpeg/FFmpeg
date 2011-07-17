@@ -248,15 +248,13 @@ static av_cold int pcx_end(AVCodecContext *avctx) {
 }
 
 AVCodec ff_pcx_decoder = {
-    "pcx",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_PCX,
-    sizeof(PCXContext),
-    pcx_init,
-    NULL,
-    pcx_end,
-    pcx_decode_frame,
-    CODEC_CAP_DR1,
-    NULL,
+    .name           = "pcx",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PCX,
+    .priv_data_size = sizeof(PCXContext),
+    .init           = pcx_init,
+    .close          = pcx_end,
+    .decode         = pcx_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("PC Paintbrush PCX image"),
 };

@@ -423,13 +423,13 @@ static int libschroedinger_encode_close(AVCodecContext *avccontext)
 
 
 AVCodec ff_libschroedinger_encoder = {
-    "libschroedinger",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DIRAC,
-    sizeof(FfmpegSchroEncoderParams),
-    libschroedinger_encode_init,
-    libschroedinger_encode_frame,
-    libschroedinger_encode_close,
+    .name           = "libschroedinger",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DIRAC,
+    .priv_data_size = sizeof(FfmpegSchroEncoderParams),
+    .init           = libschroedinger_encode_init,
+    .encode         = libschroedinger_encode_frame,
+    .close          = libschroedinger_encode_close,
    .capabilities = CODEC_CAP_DELAY,
    .pix_fmts     = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE},
    .long_name    = NULL_IF_CONFIG_SMALL("libschroedinger Dirac 2.2"),

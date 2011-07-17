@@ -85,25 +85,21 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 AVCodec ff_gsm_decoder = {
-    "gsm",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_GSM,
-    sizeof(GSMContext),
-    gsm_init,
-    NULL,
-    NULL,
-    gsm_decode_frame,
+    .name           = "gsm",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_GSM,
+    .priv_data_size = sizeof(GSMContext),
+    .init           = gsm_init,
+    .decode         = gsm_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("GSM"),
 };
 
 AVCodec ff_gsm_ms_decoder = {
-    "gsm_ms",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_GSM_MS,
-    sizeof(GSMContext),
-    gsm_init,
-    NULL,
-    NULL,
-    gsm_decode_frame,
+    .name           = "gsm_ms",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_GSM_MS,
+    .priv_data_size = sizeof(GSMContext),
+    .init           = gsm_init,
+    .decode         = gsm_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
 };

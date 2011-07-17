@@ -674,13 +674,13 @@ static const AVClass aacenc_class = {
 };
 
 AVCodec ff_aac_encoder = {
-    "aac",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AAC,
-    sizeof(AACEncContext),
-    aac_encode_init,
-    aac_encode_frame,
-    aac_encode_end,
+    .name           = "aac",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AAC,
+    .priv_data_size = sizeof(AACEncContext),
+    .init           = aac_encode_init,
+    .encode         = aac_encode_frame,
+    .close          = aac_encode_end,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),

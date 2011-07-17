@@ -291,14 +291,12 @@ static void mpc7_decode_flush(AVCodecContext *avctx)
 }
 
 AVCodec ff_mpc7_decoder = {
-    "mpc7",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_MUSEPACK7,
-    sizeof(MPCContext),
-    mpc7_decode_init,
-    NULL,
-    NULL,
-    mpc7_decode_frame,
+    .name           = "mpc7",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_MUSEPACK7,
+    .priv_data_size = sizeof(MPCContext),
+    .init           = mpc7_decode_init,
+    .decode         = mpc7_decode_frame,
     .flush = mpc7_decode_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Musepack SV7"),
 };

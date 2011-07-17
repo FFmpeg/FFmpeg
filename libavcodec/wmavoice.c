@@ -2022,15 +2022,14 @@ static av_cold void wmavoice_flush(AVCodecContext *ctx)
 }
 
 AVCodec ff_wmavoice_decoder = {
-    "wmavoice",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_WMAVOICE,
-    sizeof(WMAVoiceContext),
-    wmavoice_decode_init,
-    NULL,
-    wmavoice_decode_end,
-    wmavoice_decode_packet,
-    CODEC_CAP_SUBFRAMES,
+    .name           = "wmavoice",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_WMAVOICE,
+    .priv_data_size = sizeof(WMAVoiceContext),
+    .init           = wmavoice_decode_init,
+    .close          = wmavoice_decode_end,
+    .decode         = wmavoice_decode_packet,
+    .capabilities   = CODEC_CAP_SUBFRAMES,
     .flush     = wmavoice_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio Voice"),
 };

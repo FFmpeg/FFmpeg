@@ -121,14 +121,13 @@ static void clip_coefficients(DSPContext *dsp, float *coef, unsigned int len)
 
 #if CONFIG_AC3_ENCODER
 AVCodec ff_ac3_encoder = {
-    "ac3",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AC3,
-    sizeof(AC3EncodeContext),
-    ff_ac3_encode_init,
-    ff_ac3_float_encode_frame,
-    ff_ac3_encode_close,
-    NULL,
+    .name           = "ac3",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AC3,
+    .priv_data_size = sizeof(AC3EncodeContext),
+    .init           = ff_ac3_encode_init,
+    .encode         = ff_ac3_float_encode_frame,
+    .close          = ff_ac3_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .priv_class = &ac3enc_class,

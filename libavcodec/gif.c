@@ -167,13 +167,13 @@ static int gif_encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_gif_encoder = {
-    "gif",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_GIF,
-    sizeof(GIFContext),
-    gif_encode_init,
-    gif_encode_frame,
-    gif_encode_close,
+    .name           = "gif",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_GIF,
+    .priv_data_size = sizeof(GIFContext),
+    .init           = gif_encode_init,
+    .encode         = gif_encode_frame,
+    .close          = gif_encode_close,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE, PIX_FMT_GRAY8, PIX_FMT_PAL8, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("GIF (Graphics Interchange Format)"),
 };

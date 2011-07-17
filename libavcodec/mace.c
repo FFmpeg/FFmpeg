@@ -280,26 +280,22 @@ static int mace_decode_frame(AVCodecContext *avctx,
 }
 
 AVCodec ff_mace3_decoder = {
-    "mace3",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_MACE3,
-    sizeof(MACEContext),
-    mace_decode_init,
-    NULL,
-    NULL,
-    mace_decode_frame,
+    .name           = "mace3",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_MACE3,
+    .priv_data_size = sizeof(MACEContext),
+    .init           = mace_decode_init,
+    .decode         = mace_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 3:1"),
 };
 
 AVCodec ff_mace6_decoder = {
-    "mace6",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_MACE6,
-    sizeof(MACEContext),
-    mace_decode_init,
-    NULL,
-    NULL,
-    mace_decode_frame,
+    .name           = "mace6",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_MACE6,
+    .priv_data_size = sizeof(MACEContext),
+    .init           = mace_decode_init,
+    .decode         = mace_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("MACE (Macintosh Audio Compression/Expansion) 6:1"),
 };
 

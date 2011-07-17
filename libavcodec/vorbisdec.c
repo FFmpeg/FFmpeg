@@ -1665,14 +1665,13 @@ static av_cold int vorbis_decode_close(AVCodecContext *avccontext)
 }
 
 AVCodec ff_vorbis_decoder = {
-    "vorbis",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_VORBIS,
-    sizeof(vorbis_context),
-    vorbis_decode_init,
-    NULL,
-    vorbis_decode_close,
-    vorbis_decode_frame,
+    .name           = "vorbis",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_VORBIS,
+    .priv_data_size = sizeof(vorbis_context),
+    .init           = vorbis_decode_init,
+    .close          = vorbis_decode_close,
+    .decode         = vorbis_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Vorbis"),
     .channel_layouts = ff_vorbis_channel_layouts,
     .sample_fmts = (const enum AVSampleFormat[]) {

@@ -85,13 +85,13 @@ void ff_flv2_encode_ac_esc(PutBitContext *pb, int slevel, int level, int run, in
 }
 
 AVCodec ff_flv_encoder = {
-    "flv",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_FLV1,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
+    .name           = "flv",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_FLV1,
+    .priv_data_size = sizeof(MpegEncContext),
+    .init           = MPV_encode_init,
+    .encode         = MPV_encode_picture,
+    .close          = MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("Flash Video (FLV) / Sorenson Spark / Sorenson H.263"),
 };

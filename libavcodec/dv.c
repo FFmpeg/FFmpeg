@@ -1279,12 +1279,12 @@ static int dvvideo_close(AVCodecContext *c)
 
 #if CONFIG_DVVIDEO_ENCODER
 AVCodec ff_dvvideo_encoder = {
-    "dvvideo",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DVVIDEO,
-    sizeof(DVVideoContext),
-    dvvideo_init_encoder,
-    dvvideo_encode_frame,
+    .name           = "dvvideo",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DVVIDEO,
+    .priv_data_size = sizeof(DVVideoContext),
+    .init           = dvvideo_init_encoder,
+    .encode         = dvvideo_encode_frame,
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts  = (const enum PixelFormat[]) {PIX_FMT_YUV411P, PIX_FMT_YUV422P, PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
@@ -1293,16 +1293,14 @@ AVCodec ff_dvvideo_encoder = {
 
 #if CONFIG_DVVIDEO_DECODER
 AVCodec ff_dvvideo_decoder = {
-    "dvvideo",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DVVIDEO,
-    sizeof(DVVideoContext),
-    dvvideo_init,
-    NULL,
-    dvvideo_close,
-    dvvideo_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
-    NULL,
+    .name           = "dvvideo",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DVVIDEO,
+    .priv_data_size = sizeof(DVVideoContext),
+    .init           = dvvideo_init,
+    .close          = dvvideo_close,
+    .decode         = dvvideo_decode_frame,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
     .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("DV (Digital Video)"),
 };
