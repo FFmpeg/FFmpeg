@@ -2232,18 +2232,18 @@ static int transcode(AVFormatContext **output_files,
 #if !CONFIG_AVFILTER
                     avcodec_get_frame_defaults(&ost->pict_tmp);
                     if(avpicture_alloc((AVPicture*)&ost->pict_tmp, codec->pix_fmt,
-                                         codec->width, codec->height)) {
+                                       codec->width, codec->height)) {
                         fprintf(stderr, "Cannot allocate temp picture, check pix fmt\n");
                         ffmpeg_exit(1);
                     }
                     ost->img_resample_ctx = sws_getContext(
                         icodec->width,
                         icodec->height,
-                            icodec->pix_fmt,
-                            codec->width,
-                            codec->height,
-                            codec->pix_fmt,
-                            ost->sws_flags, NULL, NULL, NULL);
+                        icodec->pix_fmt,
+                        codec->width,
+                        codec->height,
+                        codec->pix_fmt,
+                        ost->sws_flags, NULL, NULL, NULL);
                     if (ost->img_resample_ctx == NULL) {
                         fprintf(stderr, "Cannot get resampling context\n");
                         ffmpeg_exit(1);
