@@ -20,10 +20,10 @@
 
 #include <unistd.h>
 #include <fcntl.h>
+#include <math.h>
+#include <time.h>
 #include "timer.h"
-#include "time.h"
 #include "random_seed.h"
-#include "avutil.h"
 
 static int read_random(uint32_t *dst, const char *file)
 {
