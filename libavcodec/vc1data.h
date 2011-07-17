@@ -74,20 +74,11 @@ extern VLC ff_vc1_ac_coeff_table[8];
 //@}
 
 
-#if 0 //original bfraction from vc9data.h, not conforming to standard
-/* Denominator used for ff_vc1_bfraction_lut */
-#define B_FRACTION_DEN  840
-
-/* bfraction is fractional, we scale to the GCD 3*5*7*8 = 840 */
-extern const int16_t ff_vc1_bfraction_lut[23];
-#else
 /* Denominator used for ff_vc1_bfraction_lut */
 #define B_FRACTION_DEN  256
 
 /* pre-computed scales for all bfractions and base=256 */
 extern const int16_t ff_vc1_bfraction_lut[23];
-#endif
-
 extern const uint8_t ff_vc1_bfraction_bits[23];
 extern const uint8_t ff_vc1_bfraction_codes[23];
 
