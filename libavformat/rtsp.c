@@ -1116,17 +1116,9 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                 }
             }
 
-#if 0
-            /* then try on any port */
-            if (ffurl_open(&rtsp_st->rtp_handle, "rtp://", AVIO_FLAG_READ) < 0) {
-                err = AVERROR_INVALIDDATA;
-                goto fail;
-            }
-#else
             av_log(s, AV_LOG_ERROR, "Unable to open an input RTP port\n");
             err = AVERROR(EIO);
             goto fail;
-#endif
 
         rtp_opened:
             port = rtp_get_local_rtp_port(rtsp_st->rtp_handle);
