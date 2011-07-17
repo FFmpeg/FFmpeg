@@ -170,7 +170,7 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int e
  * @return pointer to the created array of dictionaries, NULL if it
  * cannot be created
  */
-AVDictionary **setup_find_stream_info_opts(AVFormatContext *s);
+AVDictionary **setup_find_stream_info_opts(AVFormatContext *s, AVDictionary *codec_opts);
 
 /**
  * Print an error message to stderr, indicating filename and a human
