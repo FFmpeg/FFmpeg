@@ -51,6 +51,11 @@ static int rv30_parse_slice_header(RV34DecContext *r, GetBitContext *gb, SliceIn
     skip_bits1(gb);
     si->pts = get_bits(gb, 13);
     rpr = get_bits(gb, r->rpr);
+    if (r->s.avctx->extradata_size < 8 + rpr*2) {
+        av_log(r->s.avctx, AV_LOG_WARNING,
+               "Extradata does not contain selected resolution\n");
+        rpr = 0;
+    }
     if(rpr){
         w = r->s.avctx->extradata[6 + rpr*2] << 2;
         h = r->s.avctx->extradata[7 + rpr*2] << 2;
