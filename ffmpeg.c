@@ -2219,6 +2219,12 @@ static int transcode(AVFormatContext **output_files,
                     fprintf(stderr, "Video pixel format is unknown, stream cannot be encoded\n");
                     ffmpeg_exit(1);
                 }
+
+                if (!codec->width || !codec->height) {
+                    codec->width  = icodec->width;
+                    codec->height = icodec->height;
+                }
+
                 ost->video_resample = codec->width   != icodec->width  ||
                                       codec->height  != icodec->height ||
                                       codec->pix_fmt != icodec->pix_fmt;
@@ -2245,10 +2251,7 @@ static int transcode(AVFormatContext **output_files,
 #endif
                     codec->bits_per_raw_sample= 0;
                 }
-                if (!codec->width || !codec->height) {
-                    codec->width  = icodec->width;
-                    codec->height = icodec->height;
-                }
+
                 ost->resample_height = icodec->height;
                 ost->resample_width  = icodec->width;
                 ost->resample_pix_fmt= icodec->pix_fmt;
