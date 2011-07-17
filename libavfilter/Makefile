@@ -79,7 +79,6 @@ OBJS-$(CONFIG_NULLSINK_FILTER)               += vsink_nullsink.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/mp_image.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/img_format.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_2xsai.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_blackframe.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_decimate.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_delogo.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_denoise3d.o

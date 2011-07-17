@@ -189,7 +189,6 @@ extern const vf_info_t vf_info_screenshot;
 extern const vf_info_t vf_info_ass;
 extern const vf_info_t vf_info_mcdeint;
 extern const vf_info_t vf_info_yadif;
-extern const vf_info_t vf_info_blackframe;
 extern const vf_info_t vf_info_geq;
 extern const vf_info_t vf_info_ow;
 extern const vf_info_t vf_info_fixpts;
@@ -198,7 +197,6 @@ extern const vf_info_t vf_info_stereo3d;
 
 static const vf_info_t* const filters[]={
     &vf_info_2xsai,
-    &vf_info_blackframe,
     &vf_info_decimate,
     &vf_info_delogo,
     &vf_info_denoise3d,

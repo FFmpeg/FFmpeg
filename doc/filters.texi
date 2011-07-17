@@ -895,7 +895,6 @@ the named filter.
 The list of the currently supported filters follows:
 @table @var
 @item 2xsai
-@item blackframe
 @item decimate
 @item delogo
 @item denoise3d
