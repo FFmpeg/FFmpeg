@@ -48,11 +48,7 @@ static void fill_random(uint8_t *tab, int size)
 
     av_lfg_init(&prng, 1);
     for(i=0;i<size;i++) {
-#if 1
         tab[i] = av_lfg_get(&prng) % 256;
-#else
-        tab[i] = i;
-#endif
     }
 }
 
