@@ -35,6 +35,7 @@
  * http://wiki.multimedia.cx/index.php?title=Nellymoser
  */
 
+#include "libavutil/mathematics.h"
 #include "nellymoser.h"
 #include "avcodec.h"
 #include "dsputil.h"
