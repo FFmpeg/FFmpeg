@@ -26,6 +26,7 @@
 
 #include "libavutil/log.h"
 #include "libavutil/fifo.h"
+#include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
 #include "libavformat/timefilter.h"
@@ -36,6 +37,7 @@
 #define FIFO_PACKETS_NUM 16
 
 typedef struct {
+    AVClass        *class;
     jack_client_t * client;
     int             activated;
     sem_t           packet_count;
@@ -136,7 +138,7 @@ static int supply_new_packets(JackData *self, AVFormatContext *context)
     return 0;
 }
 
-static int start_jack(AVFormatContext *context, AVFormatParameters *params)
+static int start_jack(AVFormatContext *context)
 {
     JackData *self = context->priv_data;
     jack_status_t status;
@@ -153,7 +155,6 @@ static int start_jack(AVFormatContext *context, AVFormatParameters *params)
     sem_init(&self->packet_count, 0, 0);
 
     self->sample_rate = jack_get_sample_rate(self->client);
-    self->nports      = params->channels;
     self->ports       = av_malloc(self->nports * sizeof(*self->ports));
     self->buffer_size = jack_get_buffer_size(self->client);
 
@@ -225,10 +226,7 @@ static int audio_read_header(AVFormatContext *context, AVFormatParameters *param
     AVStream *stream;
     int test;
 
-    if (params->sample_rate <= 0 || params->channels <= 0)
-        return -1;
-
-    if ((test = start_jack(context, params)))
+    if ((test = start_jack(context)))
         return test;
 
     stream = av_new_stream(context, 0);
@@ -314,6 +312,19 @@ static int audio_read_close(AVFormatContext *context)
     return 0;
 }
 
+#define OFFSET(x) offsetof(JackData, x)
+static const AVOption options[] = {
+    { "channels", "Number of audio channels.", OFFSET(nports), FF_OPT_TYPE_INT, { 2 }, 1, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
+static const AVClass jack_indev_class = {
+    .class_name     = "JACK indev",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_jack_demuxer = {
     "jack",
     NULL_IF_CONFIG_SMALL("JACK Audio Connection Kit"),
@@ -323,4 +334,5 @@ AVInputFormat ff_jack_demuxer = {
     audio_read_packet,
     audio_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class = &jack_indev_class,
 };
