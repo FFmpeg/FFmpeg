@@ -2418,9 +2418,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                      (st->codec_info_nb_frames-2)*(int64_t)st->time_base.den,
                       st->info->codec_info_duration*(int64_t)st->time_base.num, 60000);
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            if(st->codec->codec_id == CODEC_ID_RAWVIDEO && !st->codec->codec_tag && !st->codec->bits_per_coded_sample)
-                st->codec->codec_tag= avcodec_pix_fmt_to_codec_tag(st->codec->pix_fmt);
-
             // the check for tb_unreliable() is not completely correct, since this is not about handling
             // a unreliable/inexact time base, but a time base that is finer than necessary, as e.g.
             // ipmovie.c produces.
