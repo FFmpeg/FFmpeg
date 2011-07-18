@@ -120,7 +120,7 @@ static int au_probe(AVProbeData *p)
 static int au_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    int size;
+    int size, data_size = 0;
     unsigned int tag;
     AVIOContext *pb = s->pb;
     unsigned int id, channels, rate;
@@ -132,7 +132,12 @@ static int au_read_header(AVFormatContext *s,
     if (tag != MKTAG('.', 's', 'n', 'd'))
         return -1;
     size = avio_rb32(pb); /* header size */
-    avio_rb32(pb); /* data size */
+    data_size = avio_rb32(pb); /* data size in bytes */
+
+    if (data_size < 0) {
+        av_log(s, AV_LOG_ERROR, "Invalid negative data size '%d' found\n", data_size);
+        return AVERROR_INVALIDDATA;
+    }
 
     id = avio_rb32(pb);
     rate = avio_rb32(pb);
@@ -159,6 +164,7 @@ static int au_read_header(AVFormatContext *s,
     st->codec->codec_id = codec;
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
+    st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * av_get_bits_per_sample(codec));
     av_set_pts_info(st, 64, 1, rate);
     return 0;
 }
