@@ -198,14 +198,19 @@ static void check_default_settings(AVCodecContext *avctx)
     }
 }
 
-#define OPT_STR(opt, param)                                             \
-    do {                                                                \
-        if (param && x264_param_parse(&x4->params, opt, param) < 0) {   \
-            av_log(avctx, AV_LOG_ERROR,                                 \
-                   "bad value for '%s': '%s'\n", opt, param);           \
-            return -1;                                                  \
-        }                                                               \
-    } while (0);                                                        \
+#define OPT_STR(opt, param)                                                   \
+    do {                                                                      \
+        int ret;                                                              \
+        if (param && (ret = x264_param_parse(&x4->params, opt, param)) < 0) { \
+            if(ret == X264_PARAM_BAD_NAME)                                    \
+                av_log(avctx, AV_LOG_ERROR,                                   \
+                        "bad option '%s': '%s'\n", opt, param);               \
+            else                                                              \
+                av_log(avctx, AV_LOG_ERROR,                                   \
+                        "bad value for '%s': '%s'\n", opt, param);            \
+            return -1;                                                        \
+        }                                                                     \
+    } while (0);
 
 static av_cold int X264_init(AVCodecContext *avctx)
 {
