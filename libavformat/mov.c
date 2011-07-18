@@ -1193,7 +1193,18 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             st->codec->width = sc->width;
             st->codec->height = sc->height;
         } else {
-            /* other codec type, just skip (rtp, mp4s, tmcd ...) */
+            if (st->codec->codec_tag == MKTAG('t','m','c','d')) {
+                int val;
+                avio_rb32(pb);       /* reserved */
+                val = avio_rb32(pb); /* flags */
+                if (val & 1)
+                    st->codec->flags2 |= CODEC_FLAG2_DROP_FRAME_TIMECODE;
+                avio_rb32(pb);
+                avio_rb32(pb);
+                st->codec->time_base.den = get_byte(pb);
+                st->codec->time_base.num = 1;
+            }
+            /* other codec type, just skip (rtp, mp4s, ...) */
             avio_skip(pb, size - (avio_tell(pb) - start_pos));
         }
         /* this will read extra atoms at the end (wave, alac, damr, avcC, SMI ...) */
