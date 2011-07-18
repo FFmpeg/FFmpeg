@@ -120,7 +120,7 @@ static int au_probe(AVProbeData *p)
 static int au_read_header(AVFormatContext *s,
                           AVFormatParameters *ap)
 {
-    int size, data_size = 0;
+    int size, bps, data_size = 0;
     unsigned int tag;
     AVIOContext *pb = s->pb;
     unsigned int id, channels, rate;
@@ -145,7 +145,7 @@ static int au_read_header(AVFormatContext *s,
 
     codec = ff_codec_get_id(codec_au_tags, id);
 
-    if (!av_get_bits_per_sample(codec)) {
+    if (!(bps = av_get_bits_per_sample(codec))) {
         av_log_ask_for_sample(s, "could not determine bits per sample\n");
         return AVERROR_INVALIDDATA;
     }
@@ -164,7 +164,7 @@ static int au_read_header(AVFormatContext *s,
     st->codec->codec_id = codec;
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
-    st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * av_get_bits_per_sample(codec));
+    st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * bps);
     av_set_pts_info(st, 64, 1, rate);
     return 0;
 }
