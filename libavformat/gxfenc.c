@@ -396,6 +396,7 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     int timecode_base = gxf->time_base.den == 60000 ? 60 : 50;
     int64_t timestamp = 0;
     AVDictionaryEntry *t;
+    uint32_t timecode;
 
 #if FF_API_TIMESTAMP
     if (s->timestamp)
@@ -406,7 +407,7 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
         timestamp = ff_iso8601_to_unix_time(t->value);
 
     // XXX drop frame
-    uint32_t timecode =
+    timecode =
         gxf->nb_fields / (timecode_base * 3600) % 24 << 24 | // hours
         gxf->nb_fields / (timecode_base * 60) % 60   << 16 | // minutes
         gxf->nb_fields /  timecode_base % 60         <<  8 | // seconds
