@@ -64,6 +64,7 @@ typedef struct PixFmtInfo {
     uint8_t pixel_type;      /**< pixel storage type (see FF_PIXEL_xxx constants) */
     uint8_t is_alpha : 1;    /**< true if alpha can be specified */
     uint8_t depth;           /**< bit depth of the color components */
+    uint8_t padded_size;     /**< padded size in bits if different from the non-padded size */
 } PixFmtInfo;
 
 /* this table gives more information about formats */
@@ -210,21 +211,25 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
+        .padded_size = 16,
     },
     [PIX_FMT_RGB555LE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
+        .padded_size = 16,
     },
     [PIX_FMT_RGB444BE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 4,
+        .padded_size = 16,
     },
     [PIX_FMT_RGB444LE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 4,
+        .padded_size = 16,
     },
 
     /* gray / mono formats */
@@ -276,31 +281,37 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
+        .padded_size = 16,
     },
     [PIX_FMT_BGR565LE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
+        .padded_size = 16,
     },
     [PIX_FMT_BGR555BE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
+        .padded_size = 16,
     },
     [PIX_FMT_BGR555LE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 5,
+        .padded_size = 16,
     },
     [PIX_FMT_BGR444BE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 4,
+        .padded_size = 16,
     },
     [PIX_FMT_BGR444LE] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 4,
+        .padded_size = 16,
     },
     [PIX_FMT_RGB8] = {
         .color_type = FF_COLOR_RGB,
@@ -316,6 +327,7 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
+        .padded_size = 8,
     },
     [PIX_FMT_BGR8] = {
         .color_type = FF_COLOR_RGB,
@@ -331,6 +343,7 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .color_type = FF_COLOR_RGB,
         .pixel_type = FF_PIXEL_PACKED,
         .depth = 8,
+        .padded_size = 8,
     },
     [PIX_FMT_NV12] = {
         .color_type = FF_COLOR_YUV,
@@ -500,54 +513,11 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
 
 static int avg_bits_per_pixel(enum PixelFormat pix_fmt)
 {
-    int bits;
-    const PixFmtInfo *pf;
+    const PixFmtInfo *info = &pix_fmt_info[pix_fmt];
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
 
-    pf = &pix_fmt_info[pix_fmt];
-    switch(pf->pixel_type) {
-    case FF_PIXEL_PACKED:
-        switch(pix_fmt) {
-        case PIX_FMT_YUYV422:
-        case PIX_FMT_UYVY422:
-        case PIX_FMT_RGB565BE:
-        case PIX_FMT_RGB565LE:
-        case PIX_FMT_RGB555BE:
-        case PIX_FMT_RGB555LE:
-        case PIX_FMT_RGB444BE:
-        case PIX_FMT_RGB444LE:
-        case PIX_FMT_BGR565BE:
-        case PIX_FMT_BGR565LE:
-        case PIX_FMT_BGR555BE:
-        case PIX_FMT_BGR555LE:
-        case PIX_FMT_BGR444BE:
-        case PIX_FMT_BGR444LE:
-            bits = 16;
-            break;
-        case PIX_FMT_UYYVYY411:
-            bits = 12;
-            break;
-        default:
-            bits = av_get_bits_per_pixel(desc);
-            break;
-        }
-        break;
-    case FF_PIXEL_PLANAR:
-        if (desc->log2_chroma_w == 0 && desc->log2_chroma_h == 0) {
-            bits = av_get_bits_per_pixel(desc);
-        } else {
-            bits = pf->depth + ((2 * pf->depth) >>
-                                (desc->log2_chroma_w + desc->log2_chroma_h));
-        }
-        break;
-    case FF_PIXEL_PALETTE:
-        bits = 8;
-        break;
-    default:
-        bits = -1;
-        break;
-    }
-    return bits;
+    return info->padded_size ?
+        info->padded_size : av_get_bits_per_pixel(desc);
 }
 
 static enum PixelFormat avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
