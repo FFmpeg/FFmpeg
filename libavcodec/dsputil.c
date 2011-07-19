@@ -2823,9 +2823,9 @@ av_cold void dsputil_static_init(void)
 
 int ff_check_alignment(void){
     static int did_fail=0;
-    LOCAL_ALIGNED_16(int, aligned);
+    LOCAL_ALIGNED_16(int, aligned, [4]);
 
-    if((intptr_t)&aligned & 15){
+    if((intptr_t)aligned & 15){
         if(!did_fail){
 #if HAVE_MMX || HAVE_ALTIVEC
             av_log(NULL, AV_LOG_ERROR,
