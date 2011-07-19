@@ -220,9 +220,6 @@ typedef struct RTSPState {
      * see rtsp_read_play() and rtsp_read_seek(). */
     int64_t seek_timestamp;
 
-    /* XXX: currently we use unbuffered input */
-    //    AVIOContext rtsp_gb;
-
     int seq;                          /**< RTSP command sequence number */
 
     /** copy of RTSPMessageHeader->session_id, i.e. the server-provided session

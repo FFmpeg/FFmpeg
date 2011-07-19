@@ -58,7 +58,8 @@ FATE = $(FATE_ACODEC)                                                   \
        $(FATE_SEEK)                                                     \
 
 $(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
-$(filter-out %-vref,$(FATE_VCODEC)): $(VREF)
+$(filter-out %-vref,$(FATE_VSYNTH1)): fate-vsynth1-vref
+$(filter-out %-vref,$(FATE_VSYNTH2)): fate-vsynth2-vref
 $(FATE_LAVF):   $(REFS)
 $(FATE_LAVFI):  $(REFS) tools/lavfi-showfiltfmts$(EXESUF)
 $(FATE_SEEK):   fate-codec fate-lavf libavformat/seek-test$(EXESUF)

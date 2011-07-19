@@ -29,6 +29,8 @@
   based upon some outcommented c code from mpeg2dec (idct_mmx.c
   written by Aaron Holtzman <aholtzma@ess.engr.uvic.ca>)
  */
+
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mathops.h"
@@ -47,51 +49,27 @@
 static inline void idctRowCondDC (DCTELEM * row)
 {
         int a0, a1, a2, a3, b0, b1, b2, b3;
-#if HAVE_FAST_64BIT
-        uint64_t temp;
-#else
-        uint32_t temp;
-#endif
 
 #if HAVE_FAST_64BIT
-#if HAVE_BIGENDIAN
-#define ROW0_MASK 0xffff000000000000LL
-#else
-#define ROW0_MASK 0xffffLL
-#endif
-        if(sizeof(DCTELEM)==2){
-            if ( ((((uint64_t *)row)[0] & ~ROW0_MASK) |
-                  ((uint64_t *)row)[1]) == 0) {
-                temp = (row[0] << 3) & 0xffff;
-                temp += temp << 16;
-                temp += temp << 32;
-                ((uint64_t *)row)[0] = temp;
-                ((uint64_t *)row)[1] = temp;
-                return;
-            }
-        }else{
-            if (!(row[1]|row[2]|row[3]|row[4]|row[5]|row[6]|row[7])) {
-                row[0]=row[1]=row[2]=row[3]=row[4]=row[5]=row[6]=row[7]= row[0] << 3;
-                return;
-            }
+#define ROW0_MASK (0xffffLL << 48 * HAVE_BIGENDIAN)
+        if (((((uint64_t *)row)[0] & ~ROW0_MASK) | ((uint64_t *)row)[1]) == 0) {
+            uint64_t temp = (row[0] << 3) & 0xffff;
+            temp += temp << 16;
+            temp += temp << 32;
+            ((uint64_t *)row)[0] = temp;
+            ((uint64_t *)row)[1] = temp;
+            return;
         }
 #else
-        if(sizeof(DCTELEM)==2){
-            if (!(((uint32_t*)row)[1] |
-                  ((uint32_t*)row)[2] |
-                  ((uint32_t*)row)[3] |
-                  row[1])) {
-                temp = (row[0] << 3) & 0xffff;
-                temp += temp << 16;
-                ((uint32_t*)row)[0]=((uint32_t*)row)[1] =
+        if (!(((uint32_t*)row)[1] |
+              ((uint32_t*)row)[2] |
+              ((uint32_t*)row)[3] |
+              row[1])) {
+            uint32_t temp = (row[0] << 3) & 0xffff;
+            temp += temp << 16;
+            ((uint32_t*)row)[0]=((uint32_t*)row)[1] =
                 ((uint32_t*)row)[2]=((uint32_t*)row)[3] = temp;
-                return;
-            }
-        }else{
-            if (!(row[1]|row[2]|row[3]|row[4]|row[5]|row[6]|row[7])) {
-                row[0]=row[1]=row[2]=row[3]=row[4]=row[5]=row[6]=row[7]= row[0] << 3;
-                return;
-            }
+            return;
         }
 #endif
 
@@ -115,12 +93,7 @@ static inline void idctRowCondDC (DCTELEM * row)
         b3 = MUL16(W7, row[1]);
         MAC16(b3, -W5, row[3]);
 
-#if HAVE_FAST_64BIT
-        temp = ((uint64_t*)row)[1];
-#else
-        temp = ((uint32_t*)row)[2] | ((uint32_t*)row)[3];
-#endif
-        if (temp != 0) {
+        if (AV_RN64A(row + 4)) {
             a0 += W4*row[4] + W6*row[6];
             a1 += - W4*row[4] - W2*row[6];
             a2 += - W4*row[4] + W2*row[6];

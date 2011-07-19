@@ -383,12 +383,6 @@ static int rtsp_read_close(AVFormatContext *s)
 {
     RTSPState *rt = s->priv_data;
 
-#if 0
-    /* NOTE: it is valid to flush the buffer here */
-    if (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
-        avio_close(&rt->rtsp_gb);
-    }
-#endif
     ff_rtsp_send_cmd_async(s, "TEARDOWN", rt->control_uri, NULL);
 
     ff_rtsp_close_streams(s);
