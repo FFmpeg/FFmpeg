@@ -185,7 +185,7 @@ static int pix_norm1_c(uint8_t * pix, int line_size)
             s += sq[pix[6]];
             s += sq[pix[7]];
 #else
-#if LONG_MAX > 2147483647
+#if HAVE_FAST_64BIT
             register uint64_t x=*(uint64_t*)pix;
             s += sq[x&0xff];
             s += sq[(x>>8)&0xff];
