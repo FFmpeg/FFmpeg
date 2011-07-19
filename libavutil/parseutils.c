@@ -401,7 +401,16 @@ static int date_get_num(const char **pp,
     return val;
 }
 
-/* small strptime for ffmpeg */
+/**
+ * Parse the input string p according to the format string fmt and
+ * store its results in the structure dt.
+ * This implementation supports only a subset of the formats supported
+ * by the standard strptime().
+ *
+ * @return a pointer to the first character not processed in this
+ * function call, or NULL in case the function fails to match all of
+ * the fmt string and therefore an error occurred
+ */
 static
 const char *small_strptime(const char *p, const char *fmt,
                            struct tm *dt)
