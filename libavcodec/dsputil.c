@@ -3266,4 +3266,3 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Internal error, IDCT permutation not set\n");
     }
 }
-
