@@ -52,8 +52,12 @@ typedef struct DNXHDEncContext {
 
     struct DNXHDEncContext *thread[MAX_THREADS];
 
+    // Because our samples are either 8 or 16 bits for 8-bit and 10-bit
+    // encoding respectively, these refer either to bytes or to two-byte words.
     unsigned dct_y_offset;
     unsigned dct_uv_offset;
+    unsigned block_width_l2;
+
     int interlaced;
     int cur_field;
 
