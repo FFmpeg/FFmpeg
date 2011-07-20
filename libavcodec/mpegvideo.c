@@ -318,7 +318,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
     s->prev_pict_types[0]= s->dropable ? AV_PICTURE_TYPE_B : s->pict_type;
     if (pic->f.age < PREV_PICT_TYPES_BUFFER_SIZE && s->prev_pict_types[pic->f.age] == AV_PICTURE_TYPE_B)
         pic->f.age = INT_MAX; // Skipped MBs in B-frames are quite rare in MPEG-1/2 and it is a bit tricky to skip them anyway.
-    pic->owner2 = NULL;
+    pic->owner2 = s;
 
     return 0;
 fail: //for the FF_ALLOCZ_OR_GOTO macro
@@ -1041,14 +1041,16 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
     /* mark&release old frames */
     if (s->pict_type != AV_PICTURE_TYPE_B && s->last_picture_ptr && s->last_picture_ptr != s->next_picture_ptr && s->last_picture_ptr->f.data[0]) {
       if(s->out_format != FMT_H264 || s->codec_id == CODEC_ID_SVQ3){
-          free_frame_buffer(s, s->last_picture_ptr);
+          if (s->last_picture_ptr->owner2 == s)
+              free_frame_buffer(s, s->last_picture_ptr);
 
         /* release forgotten pictures */
         /* if(mpeg124/h263) */
         if(!s->encoding){
             for(i=0; i<s->picture_count; i++){
-                if (s->picture[i].f.data[0] && &s->picture[i] != s->next_picture_ptr && s->picture[i].f.reference) {
-                    av_log(avctx, AV_LOG_ERROR, "releasing zombie picture\n");
+                if (s->picture[i].owner2 == s && s->picture[i].f.data[0] && &s->picture[i] != s->next_picture_ptr && s->picture[i].f.reference) {
+                    if (!(avctx->active_thread_type & FF_THREAD_FRAME))
+                        av_log(avctx, AV_LOG_ERROR, "releasing zombie picture\n");
                     free_frame_buffer(s, &s->picture[i]);
                 }
             }
