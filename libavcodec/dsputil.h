@@ -58,8 +58,6 @@ void ff_h264_idct8_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride)
 void ff_h264_idct_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
 void ff_h264_idct8_dc_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
 void ff_h264_idct_dc_add_ ## depth ## _c(uint8_t *dst, DCTELEM *block, int stride);\
-void ff_h264_lowres_idct_add_ ## depth ## _c(uint8_t *dst, int stride, DCTELEM *block);\
-void ff_h264_lowres_idct_put_ ## depth ## _c(uint8_t *dst, int stride, DCTELEM *block);\
 void ff_h264_idct_add16_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
 void ff_h264_idct_add16intra_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\
 void ff_h264_idct8_add4_ ## depth ## _c(uint8_t *dst, const int *blockoffset, DCTELEM *block, int stride, const uint8_t nnzc[6*8]);\

@@ -218,6 +218,8 @@ typedef struct AC3EncodeContext {
     uint8_t *cpl_coord_mant_buffer;
 
     uint8_t exp_strategy[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< exponent strategies
+    uint8_t frame_exp_strategy[AC3_MAX_CHANNELS];           ///< frame exp strategy index
+    int use_frame_exp_strategy;                             ///< indicates use of frame exp strategy
     uint8_t exp_ref_block[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< reference blocks for EXP_REUSE
     uint8_t *ref_bap     [AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< bit allocation pointers (bap)
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
