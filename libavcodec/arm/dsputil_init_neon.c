@@ -177,7 +177,7 @@ void ff_dsputil_init_neon(DSPContext *c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
-    if (!avctx->lowres) {
+    if (!avctx->lowres && avctx->bits_per_raw_sample <= 8) {
         if (avctx->idct_algo == FF_IDCT_AUTO ||
             avctx->idct_algo == FF_IDCT_SIMPLENEON) {
             c->idct_put              = ff_simple_idct_put_neon;

@@ -97,7 +97,8 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx)
 
         if (!high_bit_depth)
         c->clear_blocks = clear_blocks_sh4;
-        if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4){
+        if (avctx->bits_per_raw_sample <= 8 &&
+            (idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SH4)) {
                 c->idct_put = idct_put;
                 c->idct_add = idct_add;
                c->idct     = idct_sh4;

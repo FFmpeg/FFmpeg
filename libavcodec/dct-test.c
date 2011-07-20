@@ -111,7 +111,7 @@ static const struct algo idct_tab[] = {
     { "FAANI",          ff_faanidct,           NO_PERM  },
     { "REF-DBL",        ff_ref_idct,           NO_PERM  },
     { "INT",            j_rev_dct,             MMX_PERM },
-    { "SIMPLE-C",       ff_simple_idct,        NO_PERM  },
+    { "SIMPLE-C",       ff_simple_idct_8,      NO_PERM  },
 
 #if HAVE_MMX
 #if CONFIG_GPL

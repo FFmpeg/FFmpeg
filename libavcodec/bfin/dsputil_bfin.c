@@ -256,16 +256,18 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
     if (avctx->dct_algo == FF_DCT_AUTO)
         c->fdct               = ff_bfin_fdct;
 
-    if (avctx->idct_algo==FF_IDCT_VP3) {
-        c->idct_permutation_type = FF_NO_IDCT_PERM;
-        c->idct               = ff_bfin_vp3_idct;
-        c->idct_add           = ff_bfin_vp3_idct_add;
-        c->idct_put           = ff_bfin_vp3_idct_put;
-    } else if (avctx->idct_algo == FF_IDCT_AUTO) {
-        c->idct_permutation_type = FF_NO_IDCT_PERM;
-        c->idct               = ff_bfin_idct;
-        c->idct_add           = bfin_idct_add;
-        c->idct_put           = bfin_idct_put;
+    if (avctx->bits_per_raw_sample <= 8) {
+        if (avctx->idct_algo == FF_IDCT_VP3) {
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
+            c->idct                  = ff_bfin_vp3_idct;
+            c->idct_add              = ff_bfin_vp3_idct_add;
+            c->idct_put              = ff_bfin_vp3_idct_put;
+        } else if (avctx->idct_algo == FF_IDCT_AUTO) {
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
+            c->idct                  = ff_bfin_idct;
+            c->idct_add              = bfin_idct_add;
+            c->idct_put              = bfin_idct_put;
+        }
     }
 }
 

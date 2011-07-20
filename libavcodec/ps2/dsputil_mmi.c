@@ -156,7 +156,8 @@ void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx)
 
     c->get_pixels = get_pixels_mmi;
 
-    if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_PS2){
+    if (avctx->bits_per_raw_sample <= 8 &&
+        (idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_PS2)) {
         c->idct_put= ff_mmi_idct_put;
         c->idct_add= ff_mmi_idct_add;
         c->idct    = ff_mmi_idct;

@@ -74,8 +74,9 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
 {
     const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
-    if (!avctx->lowres && (avctx->idct_algo == FF_IDCT_AUTO ||
-                           avctx->idct_algo == FF_IDCT_SIMPLEARMV6)) {
+    if (!avctx->lowres && avctx->bits_per_raw_sample <= 8 &&
+        (avctx->idct_algo == FF_IDCT_AUTO ||
+         avctx->idct_algo == FF_IDCT_SIMPLEARMV6)) {
         c->idct_put              = ff_simple_idct_put_armv6;
         c->idct_add              = ff_simple_idct_add_armv6;
         c->idct                  = ff_simple_idct_armv6;
