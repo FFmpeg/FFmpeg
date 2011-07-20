@@ -2863,29 +2863,8 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 #endif //CONFIG_ENCODERS
 
     if(avctx->lowres==1){
-        if(avctx->idct_algo==FF_IDCT_INT || avctx->idct_algo==FF_IDCT_AUTO || !CONFIG_H264_DECODER){
-            c->idct_put= ff_jref_idct4_put;
-            c->idct_add= ff_jref_idct4_add;
-        }else{
-            if (avctx->codec_id != CODEC_ID_H264) {
-                c->idct_put= ff_h264_lowres_idct_put_8_c;
-                c->idct_add= ff_h264_lowres_idct_add_8_c;
-            } else {
-                switch (avctx->bits_per_raw_sample) {
-                    case 9:
-                        c->idct_put= ff_h264_lowres_idct_put_9_c;
-                        c->idct_add= ff_h264_lowres_idct_add_9_c;
-                        break;
-                    case 10:
-                        c->idct_put= ff_h264_lowres_idct_put_10_c;
-                        c->idct_add= ff_h264_lowres_idct_add_10_c;
-                        break;
-                    default:
-                        c->idct_put= ff_h264_lowres_idct_put_8_c;
-                        c->idct_add= ff_h264_lowres_idct_add_8_c;
-                }
-            }
-        }
+        c->idct_put= ff_jref_idct4_put;
+        c->idct_add= ff_jref_idct4_add;
         c->idct    = j_rev_dct4;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }else if(avctx->lowres==2){
