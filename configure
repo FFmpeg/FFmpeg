@@ -2014,6 +2014,7 @@ elif $cc -V 2>&1 | grep -q Sun; then
     cc_ident=$($cc -V 2>&1 | head -n1 | cut -d' ' -f 2-)
     DEPEND_CMD='$(DEPCC) $(DEPFLAGS) $< | sed -e "1s,^.*: ,$@: ," -e "\$$!s,\$$, \\\," -e "1!s,^.*: , ," > $(@:.o=.d)'
     DEPFLAGS='$(CPPFLAGS) $(CFLAGS) -xM1'
+    add_ldflags -xc99
     speed_cflags='-O5'
     size_cflags='-O5 -xspace'
     filter_cflags=suncc_flags
