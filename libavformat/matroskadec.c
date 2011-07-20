@@ -903,6 +903,8 @@ static int matroska_probe(AVProbeData *p)
      * Not fully fool-proof, but good enough. */
     for (i = 0; i < FF_ARRAY_ELEMS(matroska_doctypes); i++) {
         int probelen = strlen(matroska_doctypes[i]);
+        if (total < probelen)
+            continue;
         for (n = 4+size; n <= 4+size+total-probelen; n++)
             if (!memcmp(p->buf+n, matroska_doctypes[i], probelen))
                 return AVPROBE_SCORE_MAX;
