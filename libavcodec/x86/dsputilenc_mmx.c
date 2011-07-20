@@ -1101,7 +1101,8 @@ void dsputilenc_init_mmx(DSPContext* c, AVCodecContext *avctx)
 
     if (mm_flags & AV_CPU_FLAG_MMX) {
         const int dct_algo = avctx->dct_algo;
-        if(dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX){
+        if (avctx->bits_per_raw_sample <= 8 &&
+            (dct_algo==FF_DCT_AUTO || dct_algo==FF_DCT_MMX)) {
             if(mm_flags & AV_CPU_FLAG_SSE2){
                 c->fdct = ff_fdct_sse2;
             }else if(mm_flags & AV_CPU_FLAG_MMX2){

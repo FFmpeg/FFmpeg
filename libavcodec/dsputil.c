@@ -2848,17 +2848,22 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     ff_check_alignment();
 
 #if CONFIG_ENCODERS
-    if(avctx->dct_algo==FF_DCT_FASTINT) {
-        c->fdct = fdct_ifast;
-        c->fdct248 = fdct_ifast248;
-    }
-    else if(avctx->dct_algo==FF_DCT_FAAN) {
-        c->fdct = ff_faandct;
-        c->fdct248 = ff_faandct248;
-    }
-    else {
-        c->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
-        c->fdct248 = ff_fdct248_islow;
+    if (avctx->bits_per_raw_sample == 10) {
+        c->fdct    = ff_jpeg_fdct_islow_10;
+        c->fdct248 = ff_fdct248_islow_10;
+    } else {
+        if(avctx->dct_algo==FF_DCT_FASTINT) {
+            c->fdct    = fdct_ifast;
+            c->fdct248 = fdct_ifast248;
+        }
+        else if(avctx->dct_algo==FF_DCT_FAAN) {
+            c->fdct    = ff_faandct;
+            c->fdct248 = ff_faandct248;
+        }
+        else {
+            c->fdct    = ff_jpeg_fdct_islow_8; //slow/accurate/default
+            c->fdct248 = ff_fdct248_islow_8;
+        }
     }
 #endif //CONFIG_ENCODERS
 

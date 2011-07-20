@@ -172,8 +172,9 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->gmc1 = gmc1_altivec;
 
 #if CONFIG_ENCODERS
-        if (avctx->dct_algo == FF_DCT_AUTO ||
-            avctx->dct_algo == FF_DCT_ALTIVEC) {
+        if (avctx->bits_per_raw_sample <= 8 &&
+            (avctx->dct_algo == FF_DCT_AUTO ||
+             avctx->dct_algo == FF_DCT_ALTIVEC)) {
             c->fdct = fdct_altivec;
         }
 #endif //CONFIG_ENCODERS

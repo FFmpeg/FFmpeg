@@ -69,7 +69,8 @@ void ff_convert_matrix(DSPContext *dsp, int (*qmat)[64], uint16_t (*qmat16)[2][6
 
     for(qscale=qmin; qscale<=qmax; qscale++){
         int i;
-        if (dsp->fdct == ff_jpeg_fdct_islow
+        if (dsp->fdct == ff_jpeg_fdct_islow_8 ||
+            dsp->fdct == ff_jpeg_fdct_islow_10
 #ifdef FAAN_POSTSCALE
             || dsp->fdct == ff_faandct
 #endif
