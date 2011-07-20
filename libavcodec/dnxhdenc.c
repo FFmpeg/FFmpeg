@@ -41,7 +41,7 @@ static const AVClass class = { "dnxhd", av_default_item_name, options, LIBAVUTIL
 
 #define LAMBDA_FRAC_BITS 10
 
-static av_always_inline void dnxhd_get_pixels_8x4(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
+static void dnxhd_get_pixels_8x4(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
     int i;
     for (i = 0; i < 4; i++) {
