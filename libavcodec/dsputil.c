@@ -3192,21 +3192,18 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     dspfunc2(avg_h264_qpel, 1,  8, depth);\
     dspfunc2(avg_h264_qpel, 2,  4, depth);
 
-    if (avctx->codec_id != CODEC_ID_H264 || avctx->bits_per_raw_sample == 8) {
-        BIT_DEPTH_FUNCS(8)
-    } else {
-        switch (avctx->bits_per_raw_sample) {
-            case 9:
-                BIT_DEPTH_FUNCS(9)
-                break;
-            case 10:
-                BIT_DEPTH_FUNCS(10)
-                break;
-            default:
-                av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
-                BIT_DEPTH_FUNCS(8)
-                break;
-        }
+    switch (avctx->bits_per_raw_sample) {
+    case 9:
+        BIT_DEPTH_FUNCS(9);
+        break;
+    case 10:
+        BIT_DEPTH_FUNCS(10);
+        break;
+    default:
+        av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
+    case 8:
+        BIT_DEPTH_FUNCS(8);
+        break;
     }
 
 
