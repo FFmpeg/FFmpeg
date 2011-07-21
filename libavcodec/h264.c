@@ -3870,6 +3870,7 @@ static inline void fill_mb_avail(H264Context *h){
 #undef random
 #define COUNT 8000
 #define SIZE (COUNT*40)
+extern AVCodec ff_h264_decoder;
 int main(void){
     int i;
     uint8_t temp[SIZE];
@@ -3878,6 +3879,8 @@ int main(void){
 //    int int_temp[10000];
     DSPContext dsp;
     AVCodecContext avctx;
+
+    avcodec_get_context_defaults3(&avctx, &ff_h264_decoder);
 
     dsputil_init(&dsp, &avctx);
 
