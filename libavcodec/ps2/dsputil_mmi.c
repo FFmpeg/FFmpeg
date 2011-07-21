@@ -142,7 +142,7 @@ static void put_pixels16_mmi(uint8_t *block, const uint8_t *pixels, int line_siz
 void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx)
 {
     const int idct_algo= avctx->idct_algo;
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (!high_bit_depth) {
     c->clear_blocks = clear_blocks_mmi;

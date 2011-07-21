@@ -1373,7 +1373,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int l
 
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     c->pix_abs[0][1] = sad16_x2_altivec;
     c->pix_abs[0][2] = sad16_y2_altivec;

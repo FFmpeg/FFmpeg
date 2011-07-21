@@ -270,7 +270,7 @@ static void put_pixels16_axp_asm(uint8_t *block, const uint8_t *pixels,
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
 {
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (!high_bit_depth) {
     c->put_pixels_tab[0][0] = put_pixels16_axp_asm;

@@ -2437,7 +2437,7 @@ void ff_vector_clip_int32_sse41   (int32_t *dst, const int32_t *src, int32_t min
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     const int bit_depth = avctx->bits_per_raw_sample;
 
     if (avctx->dsp_mask) {
