@@ -3159,13 +3159,13 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->PFX ## _pixels_tab[IDX][15] = FUNCC(PFX ## NUM ## _mc33, depth)
 
 
-#define BIT_DEPTH_FUNCS(depth)\
+#define BIT_DEPTH_FUNCS(depth, dct)\
     c->draw_edges                    = FUNCC(draw_edges            , depth);\
     c->emulated_edge_mc              = FUNC (ff_emulated_edge_mc   , depth);\
-    c->clear_block                   = FUNCC(clear_block           , depth);\
-    c->clear_blocks                  = FUNCC(clear_blocks          , depth);\
-    c->add_pixels8                   = FUNCC(add_pixels8           , depth);\
-    c->add_pixels4                   = FUNCC(add_pixels4           , depth);\
+    c->clear_block                   = FUNCC(clear_block  ## dct   , depth);\
+    c->clear_blocks                  = FUNCC(clear_blocks ## dct   , depth);\
+    c->add_pixels8                   = FUNCC(add_pixels8  ## dct   , depth);\
+    c->add_pixels4                   = FUNCC(add_pixels4  ## dct   , depth);\
     c->put_no_rnd_pixels_l2[0]       = FUNCC(put_no_rnd_pixels16_l2, depth);\
     c->put_no_rnd_pixels_l2[1]       = FUNCC(put_no_rnd_pixels8_l2 , depth);\
 \
@@ -3199,15 +3199,23 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     switch (avctx->bits_per_raw_sample) {
     case 9:
-        BIT_DEPTH_FUNCS(9);
+        if (c->dct_bits == 32) {
+            BIT_DEPTH_FUNCS(9, _32);
+        } else {
+            BIT_DEPTH_FUNCS(9, _16);
+        }
         break;
     case 10:
-        BIT_DEPTH_FUNCS(10);
+        if (c->dct_bits == 32) {
+            BIT_DEPTH_FUNCS(10, _32);
+        } else {
+            BIT_DEPTH_FUNCS(10, _16);
+        }
         break;
     default:
         av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
     case 8:
-        BIT_DEPTH_FUNCS(8);
+        BIT_DEPTH_FUNCS(8, _16);
         break;
     }
 
