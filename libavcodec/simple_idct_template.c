@@ -161,60 +161,63 @@ static inline void FUNC(idctRowCondDC)(DCTELEM *row)
         row[4] = (a3 - b3) >> ROW_SHIFT;
 }
 
+#define IDCT_COLS do {                                  \
+        a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4)); \
+        a1 = a0;                                        \
+        a2 = a0;                                        \
+        a3 = a0;                                        \
+                                                        \
+        a0 +=  W2*col[8*2];                             \
+        a1 +=  W6*col[8*2];                             \
+        a2 += -W6*col[8*2];                             \
+        a3 += -W2*col[8*2];                             \
+                                                        \
+        b0 = MUL(W1, col[8*1]);                         \
+        b1 = MUL(W3, col[8*1]);                         \
+        b2 = MUL(W5, col[8*1]);                         \
+        b3 = MUL(W7, col[8*1]);                         \
+                                                        \
+        MAC(b0,  W3, col[8*3]);                         \
+        MAC(b1, -W7, col[8*3]);                         \
+        MAC(b2, -W1, col[8*3]);                         \
+        MAC(b3, -W5, col[8*3]);                         \
+                                                        \
+        if (col[8*4]) {                                 \
+            a0 +=  W4*col[8*4];                         \
+            a1 += -W4*col[8*4];                         \
+            a2 += -W4*col[8*4];                         \
+            a3 +=  W4*col[8*4];                         \
+        }                                               \
+                                                        \
+        if (col[8*5]) {                                 \
+            MAC(b0,  W5, col[8*5]);                     \
+            MAC(b1, -W1, col[8*5]);                     \
+            MAC(b2,  W7, col[8*5]);                     \
+            MAC(b3,  W3, col[8*5]);                     \
+        }                                               \
+                                                        \
+        if (col[8*6]) {                                 \
+            a0 +=  W6*col[8*6];                         \
+            a1 += -W2*col[8*6];                         \
+            a2 +=  W2*col[8*6];                         \
+            a3 += -W6*col[8*6];                         \
+        }                                               \
+                                                        \
+        if (col[8*7]) {                                 \
+            MAC(b0,  W7, col[8*7]);                     \
+            MAC(b1, -W5, col[8*7]);                     \
+            MAC(b2,  W3, col[8*7]);                     \
+            MAC(b3, -W1, col[8*7]);                     \
+        }                                               \
+    } while (0)
+
 static inline void FUNC(idctSparseColPut)(pixel *dest, int line_size,
                                           DCTELEM *col)
 {
         int a0, a1, a2, a3, b0, b1, b2, b3;
         INIT_CLIP;
 
-        /* XXX: I did that only to give same values as previous code */
-        a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
-        a1 = a0;
-        a2 = a0;
-        a3 = a0;
-
-        a0 +=  + W2*col[8*2];
-        a1 +=  + W6*col[8*2];
-        a2 +=  - W6*col[8*2];
-        a3 +=  - W2*col[8*2];
-
-        b0 = MUL(W1, col[8*1]);
-        b1 = MUL(W3, col[8*1]);
-        b2 = MUL(W5, col[8*1]);
-        b3 = MUL(W7, col[8*1]);
-
-        MAC(b0, + W3, col[8*3]);
-        MAC(b1, - W7, col[8*3]);
-        MAC(b2, - W1, col[8*3]);
-        MAC(b3, - W5, col[8*3]);
-
-        if(col[8*4]){
-            a0 += + W4*col[8*4];
-            a1 += - W4*col[8*4];
-            a2 += - W4*col[8*4];
-            a3 += + W4*col[8*4];
-        }
-
-        if (col[8*5]) {
-            MAC(b0, + W5, col[8*5]);
-            MAC(b1, - W1, col[8*5]);
-            MAC(b2, + W7, col[8*5]);
-            MAC(b3, + W3, col[8*5]);
-        }
-
-        if(col[8*6]){
-            a0 += + W6*col[8*6];
-            a1 += - W2*col[8*6];
-            a2 += + W2*col[8*6];
-            a3 += - W6*col[8*6];
-        }
-
-        if (col[8*7]) {
-            MAC(b0, + W7, col[8*7]);
-            MAC(b1, - W5, col[8*7]);
-            MAC(b2, + W3, col[8*7]);
-            MAC(b3, - W1, col[8*7]);
-        }
+        IDCT_COLS;
 
         dest[0] = CLIP((a0 + b0) >> COL_SHIFT);
         dest += line_size;
@@ -239,54 +242,7 @@ static inline void FUNC(idctSparseColAdd)(pixel *dest, int line_size,
         int a0, a1, a2, a3, b0, b1, b2, b3;
         INIT_CLIP;
 
-        /* XXX: I did that only to give same values as previous code */
-        a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
-        a1 = a0;
-        a2 = a0;
-        a3 = a0;
-
-        a0 +=  + W2*col[8*2];
-        a1 +=  + W6*col[8*2];
-        a2 +=  - W6*col[8*2];
-        a3 +=  - W2*col[8*2];
-
-        b0 = MUL(W1, col[8*1]);
-        b1 = MUL(W3, col[8*1]);
-        b2 = MUL(W5, col[8*1]);
-        b3 = MUL(W7, col[8*1]);
-
-        MAC(b0, + W3, col[8*3]);
-        MAC(b1, - W7, col[8*3]);
-        MAC(b2, - W1, col[8*3]);
-        MAC(b3, - W5, col[8*3]);
-
-        if(col[8*4]){
-            a0 += + W4*col[8*4];
-            a1 += - W4*col[8*4];
-            a2 += - W4*col[8*4];
-            a3 += + W4*col[8*4];
-        }
-
-        if (col[8*5]) {
-            MAC(b0, + W5, col[8*5]);
-            MAC(b1, - W1, col[8*5]);
-            MAC(b2, + W7, col[8*5]);
-            MAC(b3, + W3, col[8*5]);
-        }
-
-        if(col[8*6]){
-            a0 += + W6*col[8*6];
-            a1 += - W2*col[8*6];
-            a2 += + W2*col[8*6];
-            a3 += - W6*col[8*6];
-        }
-
-        if (col[8*7]) {
-            MAC(b0, + W7, col[8*7]);
-            MAC(b1, - W5, col[8*7]);
-            MAC(b2, + W3, col[8*7]);
-            MAC(b3, - W1, col[8*7]);
-        }
+        IDCT_COLS;
 
         dest[0] = CLIP(dest[0] + ((a0 + b0) >> COL_SHIFT));
         dest += line_size;
@@ -309,54 +265,7 @@ static inline void FUNC(idctSparseCol)(DCTELEM *col)
 {
         int a0, a1, a2, a3, b0, b1, b2, b3;
 
-        /* XXX: I did that only to give same values as previous code */
-        a0 = W4 * (col[8*0] + ((1<<(COL_SHIFT-1))/W4));
-        a1 = a0;
-        a2 = a0;
-        a3 = a0;
-
-        a0 +=  + W2*col[8*2];
-        a1 +=  + W6*col[8*2];
-        a2 +=  - W6*col[8*2];
-        a3 +=  - W2*col[8*2];
-
-        b0 = MUL(W1, col[8*1]);
-        b1 = MUL(W3, col[8*1]);
-        b2 = MUL(W5, col[8*1]);
-        b3 = MUL(W7, col[8*1]);
-
-        MAC(b0, + W3, col[8*3]);
-        MAC(b1, - W7, col[8*3]);
-        MAC(b2, - W1, col[8*3]);
-        MAC(b3, - W5, col[8*3]);
-
-        if(col[8*4]){
-            a0 += + W4*col[8*4];
-            a1 += - W4*col[8*4];
-            a2 += - W4*col[8*4];
-            a3 += + W4*col[8*4];
-        }
-
-        if (col[8*5]) {
-            MAC(b0, + W5, col[8*5]);
-            MAC(b1, - W1, col[8*5]);
-            MAC(b2, + W7, col[8*5]);
-            MAC(b3, + W3, col[8*5]);
-        }
-
-        if(col[8*6]){
-            a0 += + W6*col[8*6];
-            a1 += - W2*col[8*6];
-            a2 += + W2*col[8*6];
-            a3 += - W6*col[8*6];
-        }
-
-        if (col[8*7]) {
-            MAC(b0, + W7, col[8*7]);
-            MAC(b1, - W5, col[8*7]);
-            MAC(b2, + W3, col[8*7]);
-            MAC(b3, - W1, col[8*7]);
-        }
+        IDCT_COLS;
 
         col[0 ] = ((a0 + b0) >> COL_SHIFT);
         col[8 ] = ((a1 + b1) >> COL_SHIFT);
