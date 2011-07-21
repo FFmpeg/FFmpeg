@@ -199,12 +199,12 @@ void dsputil_init_bfin( DSPContext* c, AVCodecContext *avctx )
 {
     const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
 
-    c->get_pixels         = ff_bfin_get_pixels;
     c->diff_pixels        = ff_bfin_diff_pixels;
     c->put_pixels_clamped = ff_bfin_put_pixels_clamped;
     c->add_pixels_clamped = ff_bfin_add_pixels_clamped;
 
     if (!high_bit_depth)
+    c->get_pixels         = ff_bfin_get_pixels;
     c->clear_blocks       = bfin_clear_blocks;
     c->pix_sum            = ff_bfin_pix_sum;
     c->pix_norm1          = ff_bfin_pix_norm1;

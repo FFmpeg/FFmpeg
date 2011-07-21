@@ -321,7 +321,8 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
         c->put_pixels_clamped = put_pixels_clamped_mvi_asm;
         c->add_pixels_clamped = add_pixels_clamped_mvi_asm;
 
-        c->get_pixels       = get_pixels_mvi;
+        if (!high_bit_depth)
+            c->get_pixels   = get_pixels_mvi;
         c->diff_pixels      = diff_pixels_mvi;
         c->sad[0]           = pix_abs16x16_mvi_asm;
         c->sad[1]           = pix_abs8x8_mvi;

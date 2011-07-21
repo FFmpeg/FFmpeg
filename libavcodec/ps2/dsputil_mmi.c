@@ -152,9 +152,9 @@ void dsputil_init_mmi(DSPContext* c, AVCodecContext *avctx)
 
     c->put_pixels_tab[0][0] = put_pixels16_mmi;
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_mmi;
-    }
 
     c->get_pixels = get_pixels_mmi;
+    }
 
     if (avctx->bits_per_raw_sample <= 8 &&
         (idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_PS2)) {

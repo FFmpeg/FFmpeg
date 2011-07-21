@@ -1387,11 +1387,10 @@ void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
     c->sse[0]= sse16_altivec;
     c->pix_sum = pix_sum_altivec;
     c->diff_pixels = diff_pixels_altivec;
-    c->get_pixels = get_pixels_altivec;
-    if (!high_bit_depth)
-    c->clear_block = clear_block_altivec;
     c->add_bytes= add_bytes_altivec;
     if (!high_bit_depth) {
+    c->get_pixels = get_pixels_altivec;
+    c->clear_block = clear_block_altivec;
     c->put_pixels_tab[0][0] = put_pixels16_altivec;
     /* the two functions do the same thing, so use the same code */
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;

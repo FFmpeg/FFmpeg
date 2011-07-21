@@ -307,25 +307,6 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
     return s;
 }
 
-static void get_pixels_c(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
-{
-    int i;
-
-    /* read the pixels */
-    for(i=0;i<8;i++) {
-        block[0] = pixels[0];
-        block[1] = pixels[1];
-        block[2] = pixels[2];
-        block[3] = pixels[3];
-        block[4] = pixels[4];
-        block[5] = pixels[5];
-        block[6] = pixels[6];
-        block[7] = pixels[7];
-        pixels += line_size;
-        block += 8;
-    }
-}
-
 static void diff_pixels_c(DCTELEM *restrict block, const uint8_t *s1,
                           const uint8_t *s2, int stride){
     int i;
@@ -2927,7 +2908,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         }
     }
 
-    c->get_pixels = get_pixels_c;
     c->diff_pixels = diff_pixels_c;
     c->put_pixels_clamped = ff_put_pixels_clamped_c;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_c;
@@ -3160,6 +3140,7 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
 
 #define BIT_DEPTH_FUNCS(depth, dct)\
+    c->get_pixels                    = FUNCC(get_pixels   ## dct   , depth);\
     c->draw_edges                    = FUNCC(draw_edges            , depth);\
     c->emulated_edge_mc              = FUNC (ff_emulated_edge_mc   , depth);\
     c->clear_block                   = FUNCC(clear_block  ## dct   , depth);\

@@ -193,6 +193,29 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src, int linesize, i
 }
 
 #define DCTELEM_FUNCS(dctcoef, suffix)                                  \
+static void FUNCC(get_pixels ## suffix)(DCTELEM *restrict _block,       \
+                                        const uint8_t *_pixels,         \
+                                        int line_size)                  \
+{                                                                       \
+    const pixel *pixels = (const pixel *) _pixels;                      \
+    dctcoef *restrict block = (dctcoef *) _block;                       \
+    int i;                                                              \
+                                                                        \
+    /* read the pixels */                                               \
+    for(i=0;i<8;i++) {                                                  \
+        block[0] = pixels[0];                                           \
+        block[1] = pixels[1];                                           \
+        block[2] = pixels[2];                                           \
+        block[3] = pixels[3];                                           \
+        block[4] = pixels[4];                                           \
+        block[5] = pixels[5];                                           \
+        block[6] = pixels[6];                                           \
+        block[7] = pixels[7];                                           \
+        pixels += line_size / sizeof(pixel);                            \
+        block += 8;                                                     \
+    }                                                                   \
+}                                                                       \
+                                                                        \
 static void FUNCC(add_pixels8 ## suffix)(uint8_t *restrict _pixels,     \
                                          DCTELEM *_block,               \
                                          int line_size)                 \

@@ -106,8 +106,9 @@ void av_cold ff_dsputil_init_armv6(DSPContext* c, AVCodecContext *avctx)
     c->avg_pixels_tab[1][0] = ff_avg_pixels8_armv6;
     }
 
+    if (!high_bit_depth)
+        c->get_pixels = ff_get_pixels_armv6;
     c->add_pixels_clamped = ff_add_pixels_clamped_armv6;
-    c->get_pixels = ff_get_pixels_armv6;
     c->diff_pixels = ff_diff_pixels_armv6;
 
     c->pix_abs[0][0] = ff_pix_abs16_armv6;
