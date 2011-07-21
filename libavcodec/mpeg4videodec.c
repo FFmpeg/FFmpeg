@@ -2256,6 +2256,25 @@ static av_cold int decode_init(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVProfile mpeg4_video_profiles[] = {
+    { FF_PROFILE_MPEG4_SIMPLE,                    "Simple Profile" },
+    { FF_PROFILE_MPEG4_SIMPLE_SCALABLE,           "Simple Scalable Profile" },
+    { FF_PROFILE_MPEG4_CORE,                      "Core Profile" },
+    { FF_PROFILE_MPEG4_MAIN,                      "Main Profile" },
+    { FF_PROFILE_MPEG4_N_BIT,                     "N-bit Profile" },
+    { FF_PROFILE_MPEG4_SCALABLE_TEXTURE,          "Scalable Texture Profile" },
+    { FF_PROFILE_MPEG4_SIMPLE_FACE_ANIMATION,     "Simple Face Animation Profile" },
+    { FF_PROFILE_MPEG4_BASIC_ANIMATED_TEXTURE,    "Basic Animated Texture Profile" },
+    { FF_PROFILE_MPEG4_HYBRID,                    "Hybrid Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_REAL_TIME,        "Advanced Real Time Simple Profile" },
+    { FF_PROFILE_MPEG4_CORE_SCALABLE,             "Code Scalable Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_CODING,           "Advanced Coding Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_CORE,             "Advanced Core Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_SCALABLE_TEXTURE, "Advanced Scalable Texture Profile" },
+    { FF_PROFILE_MPEG4_SIMPLE_STUDIO,             "Simple Studio Profile" },
+    { FF_PROFILE_MPEG4_ADVANCED_SIMPLE,           "Advanced Simple Profile" },
+};
+
 AVCodec ff_mpeg4_decoder = {
     "mpeg4",
     AVMEDIA_TYPE_VIDEO,
@@ -2270,6 +2289,7 @@ AVCodec ff_mpeg4_decoder = {
     .max_lowres= 3,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),
     .pix_fmts= ff_hwaccel_pixfmt_list_420,
+    .profiles = NULL_IF_CONFIG_SMALL(mpeg4_video_profiles),
     .update_thread_context= ONLY_IF_THREADS_ENABLED(ff_mpeg_update_thread_context)
 };
 
