@@ -41,7 +41,7 @@ static const AVClass class = { "dnxhd", av_default_item_name, options, LIBAVUTIL
 
 #define LAMBDA_FRAC_BITS 10
 
-static av_always_inline void dnxhd_get_pixels_8x4(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
+static void dnxhd_get_pixels_8x4(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
 {
     int i;
     for (i = 0; i < 4; i++) {
@@ -52,10 +52,10 @@ static av_always_inline void dnxhd_get_pixels_8x4(DCTELEM *restrict block, const
         pixels += line_size;
         block += 8;
     }
-    memcpy(block   , block- 8, sizeof(*block)*8);
-    memcpy(block+ 8, block-16, sizeof(*block)*8);
-    memcpy(block+16, block-24, sizeof(*block)*8);
-    memcpy(block+24, block-32, sizeof(*block)*8);
+    memcpy(block,      block -  8, sizeof(*block) * 8);
+    memcpy(block +  8, block - 16, sizeof(*block) * 8);
+    memcpy(block + 16, block - 24, sizeof(*block) * 8);
+    memcpy(block + 24, block - 32, sizeof(*block) * 8);
 }
 
 static int dnxhd_init_vlc(DNXHDEncContext *ctx)
@@ -64,9 +64,9 @@ static int dnxhd_init_vlc(DNXHDEncContext *ctx)
     int max_level = 1<<(ctx->cid_table->bit_depth+2);
 
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->vlc_codes, max_level*4*sizeof(*ctx->vlc_codes), fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->vlc_bits , max_level*4*sizeof(*ctx->vlc_bits ), fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_codes, 63*2                               , fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_bits , 63                                 , fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->vlc_bits,  max_level*4*sizeof(*ctx->vlc_bits) , fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_codes, 63*2,                                fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->run_bits,  63,                                  fail);
 
     ctx->vlc_codes += max_level*2;
     ctx->vlc_bits  += max_level*2;
@@ -119,8 +119,8 @@ static int dnxhd_init_qmat(DNXHDEncContext *ctx, int lbias, int cbias)
     uint16_t weight_matrix[64] = {1,}; // convert_matrix needs uint16_t*
     int qscale, i;
 
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_l,   (ctx->m.avctx->qmax+1) * 64 *     sizeof(int)     , fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_c,   (ctx->m.avctx->qmax+1) * 64 *     sizeof(int)     , fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_l,   (ctx->m.avctx->qmax+1) * 64 *     sizeof(int),      fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_c,   (ctx->m.avctx->qmax+1) * 64 *     sizeof(int),      fail);
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_l16, (ctx->m.avctx->qmax+1) * 64 * 2 * sizeof(uint16_t), fail);
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->qmatrix_c16, (ctx->m.avctx->qmax+1) * 64 * 2 * sizeof(uint16_t), fail);
 
@@ -218,7 +218,7 @@ static int dnxhd_encode_init(AVCodecContext *avctx)
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->slice_size, ctx->m.mb_height*sizeof(uint32_t), fail);
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->slice_offs, ctx->m.mb_height*sizeof(uint32_t), fail);
     FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_bits,    ctx->m.mb_num   *sizeof(uint16_t), fail);
-    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_qscale,  ctx->m.mb_num   *sizeof(uint8_t) , fail);
+    FF_ALLOCZ_OR_GOTO(ctx->m.avctx, ctx->mb_qscale,  ctx->m.mb_num   *sizeof(uint8_t),  fail);
 
     ctx->frame.key_frame = 1;
     ctx->frame.pict_type = AV_PICTURE_TYPE_I;
@@ -341,7 +341,7 @@ static av_always_inline int dnxhd_ssd_block(DCTELEM *qblock, DCTELEM *block)
     int score = 0;
     int i;
     for (i = 0; i < 64; i++)
-        score += (block[i]-qblock[i])*(block[i]-qblock[i]);
+        score += (block[i] - qblock[i]) * (block[i] - qblock[i]);
     return score;
 }
 
@@ -369,26 +369,28 @@ static av_always_inline void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, in
     const uint8_t *ptr_v = ctx->thread[0]->src[2] + ((mb_y << 4) * ctx->m.uvlinesize) + (mb_x << 3);
     DSPContext *dsp = &ctx->m.dsp;
 
-    dsp->get_pixels(ctx->blocks[0], ptr_y    , ctx->m.linesize);
+    dsp->get_pixels(ctx->blocks[0], ptr_y,     ctx->m.linesize);
     dsp->get_pixels(ctx->blocks[1], ptr_y + 8, ctx->m.linesize);
-    dsp->get_pixels(ctx->blocks[2], ptr_u    , ctx->m.uvlinesize);
-    dsp->get_pixels(ctx->blocks[3], ptr_v    , ctx->m.uvlinesize);
+    dsp->get_pixels(ctx->blocks[2], ptr_u,     ctx->m.uvlinesize);
+    dsp->get_pixels(ctx->blocks[3], ptr_v,     ctx->m.uvlinesize);
 
     if (mb_y+1 == ctx->m.mb_height && ctx->m.avctx->height == 1080) {
         if (ctx->interlaced) {
-            ctx->get_pixels_8x4_sym(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
+            ctx->get_pixels_8x4_sym(ctx->blocks[4], ptr_y + ctx->dct_y_offset,     ctx->m.linesize);
             ctx->get_pixels_8x4_sym(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
-            ctx->get_pixels_8x4_sym(ctx->blocks[6], ptr_u + ctx->dct_uv_offset   , ctx->m.uvlinesize);
-            ctx->get_pixels_8x4_sym(ctx->blocks[7], ptr_v + ctx->dct_uv_offset   , ctx->m.uvlinesize);
+            ctx->get_pixels_8x4_sym(ctx->blocks[6], ptr_u + ctx->dct_uv_offset,    ctx->m.uvlinesize);
+            ctx->get_pixels_8x4_sym(ctx->blocks[7], ptr_v + ctx->dct_uv_offset,    ctx->m.uvlinesize);
         } else {
-            dsp->clear_block(ctx->blocks[4]); dsp->clear_block(ctx->blocks[5]);
-            dsp->clear_block(ctx->blocks[6]); dsp->clear_block(ctx->blocks[7]);
+            dsp->clear_block(ctx->blocks[4]);
+            dsp->clear_block(ctx->blocks[5]);
+            dsp->clear_block(ctx->blocks[6]);
+            dsp->clear_block(ctx->blocks[7]);
         }
     } else {
-        dsp->get_pixels(ctx->blocks[4], ptr_y + ctx->dct_y_offset    , ctx->m.linesize);
+        dsp->get_pixels(ctx->blocks[4], ptr_y + ctx->dct_y_offset,     ctx->m.linesize);
         dsp->get_pixels(ctx->blocks[5], ptr_y + ctx->dct_y_offset + 8, ctx->m.linesize);
-        dsp->get_pixels(ctx->blocks[6], ptr_u + ctx->dct_uv_offset   , ctx->m.uvlinesize);
-        dsp->get_pixels(ctx->blocks[7], ptr_v + ctx->dct_uv_offset   , ctx->m.uvlinesize);
+        dsp->get_pixels(ctx->blocks[6], ptr_u + ctx->dct_uv_offset,    ctx->m.uvlinesize);
+        dsp->get_pixels(ctx->blocks[7], ptr_v + ctx->dct_uv_offset,    ctx->m.uvlinesize);
     }
 }
 
@@ -496,14 +498,14 @@ static void dnxhd_setup_threads_slices(DNXHDEncContext *ctx)
     for (mb_y = 0; mb_y < ctx->m.mb_height; mb_y++) {
         int thread_size;
         ctx->slice_offs[mb_y] = offset;
-            ctx->slice_size[mb_y] = 0;
-            for (mb_x = 0; mb_x < ctx->m.mb_width; mb_x++) {
-                unsigned mb = mb_y * ctx->m.mb_width + mb_x;
-                ctx->slice_size[mb_y] += ctx->mb_bits[mb];
-            }
-            ctx->slice_size[mb_y] = (ctx->slice_size[mb_y]+31)&~31;
-            ctx->slice_size[mb_y] >>= 3;
-            thread_size = ctx->slice_size[mb_y];
+        ctx->slice_size[mb_y] = 0;
+        for (mb_x = 0; mb_x < ctx->m.mb_width; mb_x++) {
+            unsigned mb = mb_y * ctx->m.mb_width + mb_x;
+            ctx->slice_size[mb_y] += ctx->mb_bits[mb];
+        }
+        ctx->slice_size[mb_y] = (ctx->slice_size[mb_y]+31)&~31;
+        ctx->slice_size[mb_y] >>= 3;
+        thread_size = ctx->slice_size[mb_y];
         offset += thread_size;
     }
 }

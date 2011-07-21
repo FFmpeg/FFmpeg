@@ -2369,7 +2369,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
     if (mm_flags & AV_CPU_FLAG_MMX) {
         const int idct_algo= avctx->idct_algo;
 
-        if(avctx->lowres==0){
+        if (avctx->lowres == 0 && avctx->bits_per_raw_sample <= 8) {
             if(idct_algo==FF_IDCT_AUTO || idct_algo==FF_IDCT_SIMPLEMMX){
                 c->idct_put= ff_simple_idct_put_mmx;
                 c->idct_add= ff_simple_idct_add_mmx;

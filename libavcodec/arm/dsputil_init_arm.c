@@ -80,7 +80,7 @@ void dsputil_init_arm(DSPContext* c, AVCodecContext *avctx)
     ff_put_pixels_clamped = c->put_pixels_clamped;
     ff_add_pixels_clamped = c->add_pixels_clamped;
 
-    if (!avctx->lowres) {
+    if (!avctx->lowres && avctx->bits_per_raw_sample <= 8) {
         if(avctx->idct_algo == FF_IDCT_AUTO ||
            avctx->idct_algo == FF_IDCT_ARM){
             c->idct_put              = j_rev_dct_arm_put;

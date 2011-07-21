@@ -178,7 +178,7 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         }
 #endif //CONFIG_ENCODERS
 
-        if (avctx->lowres==0) {
+        if (avctx->lowres == 0 && avctx->bits_per_raw_sample <= 8) {
             if ((avctx->idct_algo == FF_IDCT_AUTO) ||
                 (avctx->idct_algo == FF_IDCT_ALTIVEC)) {
                 c->idct_put = idct_put_altivec;

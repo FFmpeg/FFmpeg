@@ -20,6 +20,8 @@ $(foreach VAR,$(SILENT),$(eval override $(VAR) = @$($(VAR))))
 $(eval INSTALL = @$(call ECHO,INSTALL,$$(^:$(SRC_DIR)/%=%)); $(INSTALL))
 endif
 
+ALLFFLIBS = avcodec avdevice avfilter avformat avutil postproc swscale
+
 # NASM requires -I path terminated with /
 IFLAGS     := -I. -I$(SRC_PATH)/
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
@@ -27,7 +29,7 @@ CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CFLAGS)
 YASMFLAGS  += $(IFLAGS) -Pconfig.asm
 HOSTCFLAGS += $(IFLAGS)
-LDFLAGS    += $(ALLFFLIBS:%=-Llib%)
+LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
 
 define COMPILE
        $($(1)DEP)

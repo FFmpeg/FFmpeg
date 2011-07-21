@@ -184,7 +184,7 @@ static int pix_norm1_c(uint8_t * pix, int line_size)
             s += sq[pix[6]];
             s += sq[pix[7]];
 #else
-#if LONG_MAX > 2147483647
+#if HAVE_FAST_64BIT
             register uint64_t x=*(uint64_t*)pix;
             s += sq[x&0xff];
             s += sq[(x>>8)&0xff];
@@ -2225,7 +2225,7 @@ static int quant_psnr8x8_c(/*MpegEncContext*/ void *c, uint8_t *src1, uint8_t *s
 
     s->block_last_index[0/*FIXME*/]= s->fast_dct_quantize(s, temp, 0/*FIXME*/, s->qscale, &i);
     s->dct_unquantize_inter(s, temp, 0, s->qscale);
-    ff_simple_idct(temp); //FIXME
+    ff_simple_idct_8(temp); //FIXME
 
     for(i=0; i<64; i++)
         sum+= (temp[i]-bak[i])*(temp[i]-bak[i]);
@@ -2866,6 +2866,12 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         c->idct    = j_rev_dct1;
         c->idct_permutation_type= FF_NO_IDCT_PERM;
     }else{
+        if (avctx->bits_per_raw_sample == 10) {
+            c->idct_put              = ff_simple_idct_put_10;
+            c->idct_add              = ff_simple_idct_add_10;
+            c->idct                  = ff_simple_idct_10;
+            c->idct_permutation_type = FF_NO_IDCT_PERM;
+        } else {
         if(avctx->idct_algo==FF_IDCT_INT){
             c->idct_put= ff_jref_idct_put;
             c->idct_add= ff_jref_idct_add;
@@ -2896,10 +2902,11 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
             c->idct_put = ff_bink_idct_put_c;
             c->idct_permutation_type = FF_NO_IDCT_PERM;
         }else{ //accurate/default
-            c->idct_put= ff_simple_idct_put;
-            c->idct_add= ff_simple_idct_add;
-            c->idct    = ff_simple_idct;
+            c->idct_put = ff_simple_idct_put_8;
+            c->idct_add = ff_simple_idct_add_8;
+            c->idct     = ff_simple_idct_8;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
+        }
         }
     }
 
@@ -3169,21 +3176,18 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     dspfunc2(avg_h264_qpel, 1,  8, depth);\
     dspfunc2(avg_h264_qpel, 2,  4, depth);
 
-    if (avctx->codec_id != CODEC_ID_H264 || avctx->bits_per_raw_sample == 8) {
-        BIT_DEPTH_FUNCS(8)
-    } else {
-        switch (avctx->bits_per_raw_sample) {
-            case 9:
-                BIT_DEPTH_FUNCS(9)
-                break;
-            case 10:
-                BIT_DEPTH_FUNCS(10)
-                break;
-            default:
-                av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
-                BIT_DEPTH_FUNCS(8)
-                break;
-        }
+    switch (avctx->bits_per_raw_sample) {
+    case 9:
+        BIT_DEPTH_FUNCS(9);
+        break;
+    case 10:
+        BIT_DEPTH_FUNCS(10);
+        break;
+    default:
+        av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
+    case 8:
+        BIT_DEPTH_FUNCS(8);
+        break;
     }
 
 
@@ -3243,4 +3247,3 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Internal error, IDCT permutation not set\n");
     }
 }
-
