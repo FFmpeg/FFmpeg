@@ -1523,6 +1523,22 @@ static int mpeg4_decode_gop_header(MpegEncContext * s, GetBitContext *gb){
     return 0;
 }
 
+static int mpeg4_decode_profile_level(MpegEncContext * s, GetBitContext *gb){
+  int profile_and_level_indication;
+
+  profile_and_level_indication = get_bits(gb, 8);
+
+  s->avctx->profile = (profile_and_level_indication & 0xf0) >> 4;
+  s->avctx->level   = (profile_and_level_indication & 0x0f);
+
+  // for Simple profile, level 0
+  if (s->avctx->profile == 0 && s->avctx->level == 8) {
+      s->avctx->level = 0;
+  }
+
+  return 0;
+}
+
 static int decode_vol_header(MpegEncContext *s, GetBitContext *gb){
     int width, height, vo_ver_id;
 
@@ -2176,6 +2192,9 @@ int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
         }
         else if(startcode == GOP_STARTCODE){
             mpeg4_decode_gop_header(s, gb);
+        }
+        else if(startcode == VOS_STARTCODE){
+            mpeg4_decode_profile_level(s, gb);
         }
         else if(startcode == VOP_STARTCODE){
             break;
