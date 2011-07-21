@@ -13,7 +13,8 @@ version 0.7.1:
 - Licensing clarification for LGPL'ed vf_gradfun
 - bugfixes while seeking in multithreaded decoding
 - support newer versions of OpenCV
-
+- ffmpeg: fix operation with --disable-avfilter
+- fixed integer underflow in matroska decoder
 
 version 0.7:
 
