@@ -31,7 +31,7 @@
 #include "dnxhddata.h"
 #include "dsputil.h"
 
-typedef struct {
+typedef struct DNXHDContext {
     AVCodecContext *avctx;
     AVFrame picture;
     GetBitContext gb;
@@ -47,10 +47,15 @@ typedef struct {
     ScanTable scantable;
     const CIDEntry *cid_table;
     int bit_depth; // 8, 10 or 0 if not initialized at all.
+    void (*decode_dct_block)(struct DNXHDContext *ctx, DCTELEM *block,
+                             int n, int qscale);
 } DNXHDContext;
 
 #define DNXHD_VLC_BITS 9
 #define DNXHD_DC_VLC_BITS 7
+
+static void dnxhd_decode_dct_block_8(DNXHDContext *ctx, DCTELEM *block, int n, int qscale);
+static void dnxhd_decode_dct_block_10(DNXHDContext *ctx, DCTELEM *block, int n, int qscale);
 
 static av_cold int dnxhd_decode_init(AVCodecContext *avctx)
 {
@@ -118,6 +123,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
         if (ctx->bit_depth != 10) {
             dsputil_init(&ctx->dsp, ctx->avctx);
             ctx->bit_depth = 10;
+            ctx->decode_dct_block = dnxhd_decode_dct_block_10;
         }
     } else {
         ctx->avctx->pix_fmt = PIX_FMT_YUV422P;
@@ -125,6 +131,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
         if (ctx->bit_depth != 8) {
             dsputil_init(&ctx->dsp, ctx->avctx);
             ctx->bit_depth = 8;
+            ctx->decode_dct_block = dnxhd_decode_dct_block_8;
         }
     }
 
@@ -165,71 +172,94 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
     return 0;
 }
 
-static int dnxhd_decode_dc(DNXHDContext *ctx)
+static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
+                                                    DCTELEM *block, int n,
+                                                    int qscale,
+                                                    int index_bits,
+                                                    int level_bias,
+                                                    int level_shift)
 {
-    int len;
-
-    len = get_vlc2(&ctx->gb, ctx->dc_vlc.table, DNXHD_DC_VLC_BITS, 1);
-    return len ? get_xbits(&ctx->gb, len) : 0;
-}
-
-static void dnxhd_decode_dct_block(DNXHDContext *ctx, DCTELEM *block, int n, int qscale)
-{
-    int i, j, index, index2;
+    int i, j, index1, index2, len;
     int level, component, sign;
-    const uint8_t *weigth_matrix;
+    const uint8_t *weight_matrix;
+    OPEN_READER(bs, &ctx->gb);
 
     if (n&2) {
         component = 1 + (n&1);
-        weigth_matrix = ctx->cid_table->chroma_weight;
+        weight_matrix = ctx->cid_table->chroma_weight;
     } else {
         component = 0;
-        weigth_matrix = ctx->cid_table->luma_weight;
+        weight_matrix = ctx->cid_table->luma_weight;
     }
 
-    ctx->last_dc[component] += dnxhd_decode_dc(ctx);
+    UPDATE_CACHE(bs, &ctx->gb);
+    GET_VLC(len, bs, &ctx->gb, ctx->dc_vlc.table, DNXHD_DC_VLC_BITS, 1);
+    if (len) {
+        level = GET_CACHE(bs, &ctx->gb);
+        LAST_SKIP_BITS(bs, &ctx->gb, len);
+        sign  = ~level >> 31;
+        level = (NEG_USR32(sign ^ level, len) ^ sign) - sign;
+        ctx->last_dc[component] += level;
+    }
     block[0] = ctx->last_dc[component];
     //av_log(ctx->avctx, AV_LOG_DEBUG, "dc %d\n", block[0]);
+
     for (i = 1; ; i++) {
-        index = get_vlc2(&ctx->gb, ctx->ac_vlc.table, DNXHD_VLC_BITS, 2);
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "index %d\n", index);
-        level = ctx->cid_table->ac_level[index];
+        UPDATE_CACHE(bs, &ctx->gb);
+        GET_VLC(index1, bs, &ctx->gb, ctx->ac_vlc.table,
+                DNXHD_VLC_BITS, 2);
+        //av_log(ctx->avctx, AV_LOG_DEBUG, "index %d\n", index1);
+        level = ctx->cid_table->ac_level[index1];
         if (!level) { /* EOB */
             //av_log(ctx->avctx, AV_LOG_DEBUG, "EOB\n");
-            return;
-        }
-        sign = get_sbits(&ctx->gb, 1);
-
-        if (ctx->cid_table->ac_index_flag[index]) {
-            level += get_bits(&ctx->gb, ctx->cid_table->index_bits)<<6;
+            break;
         }
 
-        if (ctx->cid_table->ac_run_flag[index]) {
-            index2 = get_vlc2(&ctx->gb, ctx->run_vlc.table, DNXHD_VLC_BITS, 2);
+        sign = SHOW_SBITS(bs, &ctx->gb, 1);
+        SKIP_BITS(bs, &ctx->gb, 1);
+
+        if (ctx->cid_table->ac_index_flag[index1]) {
+            level += SHOW_UBITS(bs, &ctx->gb, index_bits) << 6;
+            SKIP_BITS(bs, &ctx->gb, index_bits);
+        }
+
+        if (ctx->cid_table->ac_run_flag[index1]) {
+            UPDATE_CACHE(bs, &ctx->gb);
+            GET_VLC(index2, bs, &ctx->gb, ctx->run_vlc.table,
+                    DNXHD_VLC_BITS, 2);
             i += ctx->cid_table->run[index2];
         }
 
         if (i > 63) {
             av_log(ctx->avctx, AV_LOG_ERROR, "ac tex damaged %d, %d\n", n, i);
-            return;
+            break;
         }
 
         j = ctx->scantable.permutated[i];
         //av_log(ctx->avctx, AV_LOG_DEBUG, "j %d\n", j);
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "level %d, weigth %d\n", level, weigth_matrix[i]);
-        level = (2*level+1) * qscale * weigth_matrix[i];
-        if (ctx->bit_depth == 10) {
-            if (weigth_matrix[i] != 8)
-                level += 8;
-            level >>= 4;
-        } else {
-            if (weigth_matrix[i] != 32)
-                level += 32;
-            level >>= 6;
-        }
+        //av_log(ctx->avctx, AV_LOG_DEBUG, "level %d, weight %d\n", level, weight_matrix[i]);
+        level = (2*level+1) * qscale * weight_matrix[i];
+        if (weight_matrix[i] != level_bias)
+            level += level_bias;
+        level >>= level_shift;
+
         //av_log(NULL, AV_LOG_DEBUG, "i %d, j %d, end level %d\n", i, j, level);
         block[j] = (level^sign) - sign;
     }
+
+    CLOSE_READER(bs, &ctx->gb);
+}
+
+static void dnxhd_decode_dct_block_8(DNXHDContext *ctx, DCTELEM *block,
+                                     int n, int qscale)
+{
+    dnxhd_decode_dct_block(ctx, block, n, qscale, 4, 32, 6);
+}
+
+static void dnxhd_decode_dct_block_10(DNXHDContext *ctx, DCTELEM *block,
+                                      int n, int qscale)
+{
+    dnxhd_decode_dct_block(ctx, block, n, qscale, 6, 8, 4);
 }
 
 static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
@@ -247,7 +277,7 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
 
     for (i = 0; i < 8; i++) {
         ctx->dsp.clear_block(ctx->blocks[i]);
-        dnxhd_decode_dct_block(ctx, ctx->blocks[i], i, qscale);
+        ctx->decode_dct_block(ctx, ctx->blocks[i], i, qscale);
     }
 
     if (ctx->picture.interlaced_frame) {
