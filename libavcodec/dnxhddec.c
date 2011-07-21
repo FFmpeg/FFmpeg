@@ -182,6 +182,8 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
     int i, j, index1, index2, len;
     int level, component, sign;
     const uint8_t *weight_matrix;
+    const uint8_t *ac_level = ctx->cid_table->ac_level;
+    const int eob_index     = ctx->cid_table->eob_index;
     OPEN_READER(bs, &ctx->gb);
 
     if (n&2) {
@@ -209,14 +211,15 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
     UPDATE_CACHE(bs, &ctx->gb);
     GET_VLC(index1, bs, &ctx->gb, ctx->ac_vlc.table,
             DNXHD_VLC_BITS, 2);
-    level = ctx->cid_table->ac_level[index1];
 
-    while (level) {
+    while (index1 != eob_index) {
+        level = ac_level[index1];
+
         sign = SHOW_SBITS(bs, &ctx->gb, 1);
         SKIP_BITS(bs, &ctx->gb, 1);
 
         if (ctx->cid_table->ac_index_flag[index1]) {
-            level += SHOW_UBITS(bs, &ctx->gb, index_bits) << 6;
+            level += SHOW_UBITS(bs, &ctx->gb, index_bits) << 7;
             SKIP_BITS(bs, &ctx->gb, index_bits);
         }
 
@@ -235,7 +238,7 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
         j = ctx->scantable.permutated[i];
         //av_log(ctx->avctx, AV_LOG_DEBUG, "j %d\n", j);
         //av_log(ctx->avctx, AV_LOG_DEBUG, "level %d, weight %d\n", level, weight_matrix[i]);
-        level = (2*level+1) * qscale * weight_matrix[i];
+        level *= qscale * weight_matrix[i];
         if (level_bias < 32 || weight_matrix[i] != level_bias)
             level += level_bias;
         level >>= level_shift;
@@ -246,7 +249,6 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
         UPDATE_CACHE(bs, &ctx->gb);
         GET_VLC(index1, bs, &ctx->gb, ctx->ac_vlc.table,
                 DNXHD_VLC_BITS, 2);
-        level = ctx->cid_table->ac_level[index1];
     }
 
     CLOSE_READER(bs, &ctx->gb);
