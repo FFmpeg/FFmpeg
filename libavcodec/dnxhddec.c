@@ -204,17 +204,14 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
     block[0] = ctx->last_dc[component];
     //av_log(ctx->avctx, AV_LOG_DEBUG, "dc %d\n", block[0]);
 
-    for (i = 1; ; i++) {
-        UPDATE_CACHE(bs, &ctx->gb);
-        GET_VLC(index1, bs, &ctx->gb, ctx->ac_vlc.table,
-                DNXHD_VLC_BITS, 2);
-        //av_log(ctx->avctx, AV_LOG_DEBUG, "index %d\n", index1);
-        level = ctx->cid_table->ac_level[index1];
-        if (!level) { /* EOB */
-            //av_log(ctx->avctx, AV_LOG_DEBUG, "EOB\n");
-            break;
-        }
+    i = 0;
 
+    UPDATE_CACHE(bs, &ctx->gb);
+    GET_VLC(index1, bs, &ctx->gb, ctx->ac_vlc.table,
+            DNXHD_VLC_BITS, 2);
+    level = ctx->cid_table->ac_level[index1];
+
+    while (level) {
         sign = SHOW_SBITS(bs, &ctx->gb, 1);
         SKIP_BITS(bs, &ctx->gb, 1);
 
@@ -230,7 +227,7 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
             i += ctx->cid_table->run[index2];
         }
 
-        if (i > 63) {
+        if (++i > 63) {
             av_log(ctx->avctx, AV_LOG_ERROR, "ac tex damaged %d, %d\n", n, i);
             break;
         }
@@ -245,6 +242,11 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
 
         //av_log(NULL, AV_LOG_DEBUG, "i %d, j %d, end level %d\n", i, j, level);
         block[j] = (level^sign) - sign;
+
+        UPDATE_CACHE(bs, &ctx->gb);
+        GET_VLC(index1, bs, &ctx->gb, ctx->ac_vlc.table,
+                DNXHD_VLC_BITS, 2);
+        level = ctx->cid_table->ac_level[index1];
     }
 
     CLOSE_READER(bs, &ctx->gb);
