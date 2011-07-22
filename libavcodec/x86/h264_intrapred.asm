@@ -2611,12 +2611,11 @@ cglobal pred4x4_down_left_mmxext, 3,3
     punpckldq m1, [r1]
     movq      m2, m1
     movq      m3, m1
-    movq      m4, m1
     psllq     m1, 8
     pxor      m2, m1
     psrlq     m2, 8
-    pxor      m3, m2
-    PRED4x4_LOWPASS m0, m1, m3, m4, m5
+    pxor      m2, m3
+    PRED4x4_LOWPASS m0, m1, m2, m3, m4
     lea       r1, [r0+r2*2]
     psrlq     m0, 8
     movd      [r0+r2*1], m0
