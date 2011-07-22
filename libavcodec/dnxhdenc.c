@@ -122,8 +122,8 @@ static int dnxhd_init_vlc(DNXHDEncContext *ctx)
             }
             for (j = 0; j < 257; j++) {
                 if (ctx->cid_table->ac_level[j] >> 1 == alevel &&
-                    (!offset || (ctx->cid_table->ac_index_flag[j] && offset)) &&
-                    (!run    || (ctx->cid_table->ac_run_flag  [j] && run))) {
+                    (!offset || (ctx->cid_table->ac_flags[j] & 1) && offset) &&
+                    (!run    || (ctx->cid_table->ac_flags[j] & 2) && run)) {
                     assert(!ctx->vlc_codes[index]);
                     if (alevel) {
                         ctx->vlc_codes[index] = (ctx->cid_table->ac_codes[j]<<1)|(sign&1);

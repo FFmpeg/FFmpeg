@@ -179,10 +179,11 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
                                                     int level_bias,
                                                     int level_shift)
 {
-    int i, j, index1, index2, len;
+    int i, j, index1, index2, len, flags;
     int level, component, sign;
     const uint8_t *weight_matrix;
     const uint8_t *ac_level = ctx->cid_table->ac_level;
+    const uint8_t *ac_flags = ctx->cid_table->ac_flags;
     const int eob_index     = ctx->cid_table->eob_index;
     OPEN_READER(bs, &ctx->gb);
 
@@ -214,16 +215,17 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
 
     while (index1 != eob_index) {
         level = ac_level[index1];
+        flags = ac_flags[index1];
 
         sign = SHOW_SBITS(bs, &ctx->gb, 1);
         SKIP_BITS(bs, &ctx->gb, 1);
 
-        if (ctx->cid_table->ac_index_flag[index1]) {
+        if (flags & 1) {
             level += SHOW_UBITS(bs, &ctx->gb, index_bits) << 7;
             SKIP_BITS(bs, &ctx->gb, index_bits);
         }
 
-        if (ctx->cid_table->ac_run_flag[index1]) {
+        if (flags & 2) {
             UPDATE_CACHE(bs, &ctx->gb);
             GET_VLC(index2, bs, &ctx->gb, ctx->run_vlc.table,
                     DNXHD_VLC_BITS, 2);
