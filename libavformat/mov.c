@@ -456,7 +456,7 @@ static int mov_read_hdlr(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     else if(type == MKTAG('m','1','a',' '))
         st->codec->codec_id = CODEC_ID_MP2;
-    else if(type == MKTAG('s','u','b','p'))
+    else if((type == MKTAG('s','u','b','p')) || (type == MKTAG('c','l','c','p')))
         st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
 
     avio_rb32(pb); /* component  manufacture */

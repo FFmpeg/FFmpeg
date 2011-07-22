@@ -155,7 +155,7 @@ static void nop(uint8_t *block, const uint8_t *pixels, int line_size, int h)
 void ff_dsputil_init_iwmmxt(DSPContext* c, AVCodecContext *avctx)
 {
     int mm_flags = AV_CPU_FLAG_IWMMXT; /* multimedia extension flags */
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (avctx->dsp_mask) {
         if (avctx->dsp_mask & AV_CPU_FLAG_FORCE)

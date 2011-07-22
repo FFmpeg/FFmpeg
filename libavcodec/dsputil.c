@@ -306,25 +306,6 @@ static int sse16_c(void *v, uint8_t *pix1, uint8_t *pix2, int line_size, int h)
     return s;
 }
 
-static void get_pixels_c(DCTELEM *restrict block, const uint8_t *pixels, int line_size)
-{
-    int i;
-
-    /* read the pixels */
-    for(i=0;i<8;i++) {
-        block[0] = pixels[0];
-        block[1] = pixels[1];
-        block[2] = pixels[2];
-        block[3] = pixels[3];
-        block[4] = pixels[4];
-        block[5] = pixels[5];
-        block[6] = pixels[6];
-        block[7] = pixels[7];
-        pixels += line_size;
-        block += 8;
-    }
-}
-
 static void diff_pixels_c(DCTELEM *restrict block, const uint8_t *s1,
                           const uint8_t *s2, int stride){
     int i;
@@ -2836,17 +2817,22 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     ff_check_alignment();
 
 #if CONFIG_ENCODERS
-    if(avctx->dct_algo==FF_DCT_FASTINT) {
-        c->fdct = fdct_ifast;
-        c->fdct248 = fdct_ifast248;
-    }
-    else if(avctx->dct_algo==FF_DCT_FAAN) {
-        c->fdct = ff_faandct;
-        c->fdct248 = ff_faandct248;
-    }
-    else {
-        c->fdct = ff_jpeg_fdct_islow; //slow/accurate/default
-        c->fdct248 = ff_fdct248_islow;
+    if (avctx->bits_per_raw_sample == 10) {
+        c->fdct    = ff_jpeg_fdct_islow_10;
+        c->fdct248 = ff_fdct248_islow_10;
+    } else {
+        if(avctx->dct_algo==FF_DCT_FASTINT) {
+            c->fdct    = fdct_ifast;
+            c->fdct248 = fdct_ifast248;
+        }
+        else if(avctx->dct_algo==FF_DCT_FAAN) {
+            c->fdct    = ff_faandct;
+            c->fdct248 = ff_faandct248;
+        }
+        else {
+            c->fdct    = ff_jpeg_fdct_islow_8; //slow/accurate/default
+            c->fdct248 = ff_fdct248_islow_8;
+        }
     }
 #endif //CONFIG_ENCODERS
 
@@ -2910,7 +2896,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         }
     }
 
-    c->get_pixels = get_pixels_c;
     c->diff_pixels = diff_pixels_c;
     c->put_pixels_clamped = ff_put_pixels_clamped_c;
     c->put_signed_pixels_clamped = ff_put_signed_pixels_clamped_c;
@@ -3138,13 +3123,14 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
     c->PFX ## _pixels_tab[IDX][15] = FUNCC(PFX ## NUM ## _mc33, depth)
 
 
-#define BIT_DEPTH_FUNCS(depth)\
+#define BIT_DEPTH_FUNCS(depth, dct)\
+    c->get_pixels                    = FUNCC(get_pixels   ## dct   , depth);\
     c->draw_edges                    = FUNCC(draw_edges            , depth);\
     c->emulated_edge_mc              = FUNC (ff_emulated_edge_mc   , depth);\
-    c->clear_block                   = FUNCC(clear_block           , depth);\
-    c->clear_blocks                  = FUNCC(clear_blocks          , depth);\
-    c->add_pixels8                   = FUNCC(add_pixels8           , depth);\
-    c->add_pixels4                   = FUNCC(add_pixels4           , depth);\
+    c->clear_block                   = FUNCC(clear_block  ## dct   , depth);\
+    c->clear_blocks                  = FUNCC(clear_blocks ## dct   , depth);\
+    c->add_pixels8                   = FUNCC(add_pixels8  ## dct   , depth);\
+    c->add_pixels4                   = FUNCC(add_pixels4  ## dct   , depth);\
     c->put_no_rnd_pixels_l2[0]       = FUNCC(put_no_rnd_pixels16_l2, depth);\
     c->put_no_rnd_pixels_l2[1]       = FUNCC(put_no_rnd_pixels8_l2 , depth);\
 \
@@ -3178,15 +3164,23 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     switch (avctx->bits_per_raw_sample) {
     case 9:
-        BIT_DEPTH_FUNCS(9);
+        if (c->dct_bits == 32) {
+            BIT_DEPTH_FUNCS(9, _32);
+        } else {
+            BIT_DEPTH_FUNCS(9, _16);
+        }
         break;
     case 10:
-        BIT_DEPTH_FUNCS(10);
+        if (c->dct_bits == 32) {
+            BIT_DEPTH_FUNCS(10, _32);
+        } else {
+            BIT_DEPTH_FUNCS(10, _16);
+        }
         break;
     default:
         av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", avctx->bits_per_raw_sample);
     case 8:
-        BIT_DEPTH_FUNCS(8);
+        BIT_DEPTH_FUNCS(8, _16);
         break;
     }
 

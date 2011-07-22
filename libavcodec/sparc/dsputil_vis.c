@@ -3953,7 +3953,7 @@ void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx)
 {
   /* VIS-specific optimizations */
   int accel = vis_level ();
-  const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+  const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
   if (accel & ACCEL_SPARC_VIS) {
       if (avctx->bits_per_raw_sample <= 8 &&

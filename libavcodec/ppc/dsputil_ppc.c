@@ -145,7 +145,7 @@ static void prefetch_ppc(void *mem, int stride, int h)
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     // Common optimizations whether AltiVec is available or not
     c->prefetch = prefetch_ppc;
@@ -172,8 +172,9 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->gmc1 = gmc1_altivec;
 
 #if CONFIG_ENCODERS
-        if (avctx->dct_algo == FF_DCT_AUTO ||
-            avctx->dct_algo == FF_DCT_ALTIVEC) {
+        if (avctx->bits_per_raw_sample <= 8 &&
+            (avctx->dct_algo == FF_DCT_AUTO ||
+             avctx->dct_algo == FF_DCT_ALTIVEC)) {
             c->fdct = fdct_altivec;
         }
 #endif //CONFIG_ENCODERS

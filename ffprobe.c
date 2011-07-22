@@ -202,6 +202,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
             }
             printf("pix_fmt=%s\n",                 dec_ctx->pix_fmt != PIX_FMT_NONE ?
                    av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
+            printf("level=%d\n",                   dec_ctx->level);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
