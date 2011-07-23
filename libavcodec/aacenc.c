@@ -165,6 +165,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     AACEncContext *s = avctx->priv_data;
     int i;
     const uint8_t *sizes[2];
+    uint8_t grouping[AAC_MAX_CHANNELS];
     int lengths[2];
 
     avctx->frame_size = 1024;
@@ -210,7 +211,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     sizes[1]   = swb_size_128[i];
     lengths[0] = ff_aac_num_swb_1024[i];
     lengths[1] = ff_aac_num_swb_128[i];
-    ff_psy_init(&s->psy, avctx, 2, sizes, lengths, s->chan_map[0], &s->chan_map[1]);
+    for (i = 0; i < s->chan_map[0]; i++)
+        grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
+    ff_psy_init(&s->psy, avctx, 2, sizes, lengths, s->chan_map[0], grouping);
     s->psypp = ff_psy_preprocess_init(avctx);
     s->coder = &ff_aac_coders[2];
 
