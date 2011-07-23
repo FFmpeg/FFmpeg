@@ -2894,11 +2894,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
         }else if(CONFIG_EATGQ_DECODER && avctx->idct_algo==FF_IDCT_EA) {
             c->idct_put= ff_ea_idct_put_c;
             c->idct_permutation_type= FF_NO_IDCT_PERM;
-        }else if(CONFIG_BINK_DECODER && avctx->idct_algo==FF_IDCT_BINK) {
-            c->idct     = ff_bink_idct_c;
-            c->idct_add = ff_bink_idct_add_c;
-            c->idct_put = ff_bink_idct_put_c;
-            c->idct_permutation_type = FF_NO_IDCT_PERM;
         }else{ //accurate/default
             c->idct_put = ff_simple_idct_put_8;
             c->idct_add = ff_simple_idct_add_8;

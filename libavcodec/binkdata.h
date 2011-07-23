@@ -285,7 +285,7 @@ static const uint8_t bink_patterns[16][64] = {
     }
 };
 
-static const uint32_t bink_intra_quant[16][64] = {
+static const int32_t bink_intra_quant[16][64] = {
 {
  0x010000, 0x016315, 0x01E83D, 0x02A535, 0x014E7B, 0x016577, 0x02F1E6, 0x02724C,
  0x010000, 0x00EEDA, 0x024102, 0x017F9B, 0x00BE80, 0x00611E, 0x01083C, 0x00A552,
@@ -448,7 +448,7 @@ static const uint32_t bink_intra_quant[16][64] = {
 },
 };
 
-static const uint32_t bink_inter_quant[16][64] = {
+static const int32_t bink_inter_quant[16][64] = {
 {
  0x010000, 0x017946, 0x01A5A9, 0x0248DC, 0x016363, 0x0152A7, 0x0243EC, 0x0209EA,
  0x012000, 0x00E248, 0x01BBDA, 0x015CBC, 0x00A486, 0x0053E0, 0x00F036, 0x008095,
