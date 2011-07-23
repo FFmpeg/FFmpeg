@@ -153,6 +153,7 @@ OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o flac.o vorbis_dat
 OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o
 OBJS-$(CONFIG_FLASHSV_ENCODER)         += flashsvenc.o
 OBJS-$(CONFIG_FLASHSV2_ENCODER)        += flashsv2enc.o
+OBJS-$(CONFIG_FLASHSV2_DECODER)        += flashsv.o
 OBJS-$(CONFIG_FLIC_DECODER)            += flicvideo.o
 OBJS-$(CONFIG_FOURXM_DECODER)          += 4xm.o
 OBJS-$(CONFIG_FRAPS_DECODER)           += fraps.o

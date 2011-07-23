@@ -6,6 +6,7 @@ version next:
 - openal input device added
 - boxblur filter added
 - BWF muxer
+- Flash Screen Video 2 decoder
 
 
 version 0.8:
