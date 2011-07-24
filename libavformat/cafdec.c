@@ -68,7 +68,7 @@ static int read_desc_chunk(AVFormatContext *s)
     /* parse format description */
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->sample_rate = av_int2dbl(avio_rb64(pb));
-    st->codec->codec_tag   = avio_rb32(pb);
+    st->codec->codec_tag   = avio_rl32(pb);
     flags = avio_rb32(pb);
     caf->bytes_per_packet  = avio_rb32(pb);
     st->codec->block_align = caf->bytes_per_packet;
@@ -85,7 +85,7 @@ static int read_desc_chunk(AVFormatContext *s)
     }
 
     /* determine codec */
-    if (st->codec->codec_tag == MKBETAG('l','p','c','m'))
+    if (st->codec->codec_tag == MKTAG('l','p','c','m'))
         st->codec->codec_id = ff_mov_get_lpcm_codec_id(st->codec->bits_per_coded_sample, (flags ^ 0x2) | 0x4);
     else
         st->codec->codec_id = ff_codec_get_id(ff_codec_caf_tags, st->codec->codec_tag);

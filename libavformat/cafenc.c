@@ -114,7 +114,7 @@ static int caf_write_header(AVFormatContext *s)
     case CODEC_ID_PCM_F64BE:
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_MULAW:
-        codec_tag = MKBETAG('l','p','c','m');
+        codec_tag = MKTAG('l','p','c','m');
     }
 
     if (!codec_tag) {
@@ -134,7 +134,7 @@ static int caf_write_header(AVFormatContext *s)
     ffio_wfourcc(pb, "desc");                         //< Audio Description chunk
     avio_wb64(pb, 32);                                //< mChunkSize
     avio_wb64(pb, av_dbl2int(enc->sample_rate));      //< mSampleRate
-    avio_wb32(pb, codec_tag);                         //< mFormatID
+    avio_wl32(pb, codec_tag);                         //< mFormatID
     avio_wb32(pb, codec_flags(enc->codec_id));        //< mFormatFlags
     avio_wb32(pb, enc->block_align);                  //< mBytesPerPacket
     avio_wb32(pb, samples_per_packet(enc->codec_id, enc->channels)); //< mFramesPerPacket
