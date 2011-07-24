@@ -719,6 +719,15 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
                 s->streams[i]->probe_packets = 0;
             continue;
         }
+
+        if ((s->flags & AVFMT_FLAG_DISCARD_CORRUPT) &&
+            (pkt->flags & AV_PKT_FLAG_CORRUPT)) {
+            av_log(s, AV_LOG_WARNING,
+                   "Dropped corrupted packet (stream = %d)\n",
+                   pkt->stream_index);
+            continue;
+        }
+
         st= s->streams[pkt->stream_index];
 
         switch(st->codec->codec_type){
