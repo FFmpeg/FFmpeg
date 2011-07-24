@@ -1625,6 +1625,7 @@ static int mpegts_read_packet(AVFormatContext *s,
             if (ts->pids[i] && ts->pids[i]->type == MPEGTS_PES) {
                 PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
                 av_freep(&pes->buffer);
+                ts->pids[i]->last_cc = -1;
                 pes->data_index = 0;
                 pes->state = MPEGTS_SKIP; /* skip until pes header */
             }
