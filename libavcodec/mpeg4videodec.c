@@ -1528,12 +1528,9 @@ static int mpeg4_decode_gop_header(MpegEncContext * s, GetBitContext *gb){
 }
 
 static int mpeg4_decode_profile_level(MpegEncContext * s, GetBitContext *gb){
-  int profile_and_level_indication;
 
-  profile_and_level_indication = get_bits(gb, 8);
-
-  s->avctx->profile = (profile_and_level_indication & 0xf0) >> 4;
-  s->avctx->level   = (profile_and_level_indication & 0x0f);
+  s->avctx->profile = get_bits(gb, 4);
+  s->avctx->level   = get_bits(gb, 4);
 
   // for Simple profile, level 0
   if (s->avctx->profile == 0 && s->avctx->level == 8) {
