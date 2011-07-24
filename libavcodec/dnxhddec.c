@@ -49,6 +49,9 @@ typedef struct DNXHDContext {
     int bit_depth; // 8, 10 or 0 if not initialized at all.
     void (*decode_dct_block)(struct DNXHDContext *ctx, DCTELEM *block,
                              int n, int qscale);
+    int last_qscale;
+    int luma_scale[64];
+    int chroma_scale[64];
 } DNXHDContext;
 
 #define DNXHD_VLC_BITS 9
@@ -181,6 +184,7 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
 {
     int i, j, index1, index2, len, flags;
     int level, component, sign;
+    const int *scale;
     const uint8_t *weight_matrix;
     const uint8_t *ac_level = ctx->cid_table->ac_level;
     const uint8_t *ac_flags = ctx->cid_table->ac_flags;
@@ -189,9 +193,11 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
 
     if (n&2) {
         component = 1 + (n&1);
+        scale = ctx->chroma_scale;
         weight_matrix = ctx->cid_table->chroma_weight;
     } else {
         component = 0;
+        scale = ctx->luma_scale;
         weight_matrix = ctx->cid_table->luma_weight;
     }
 
@@ -240,7 +246,7 @@ static av_always_inline void dnxhd_decode_dct_block(DNXHDContext *ctx,
         j = ctx->scantable.permutated[i];
         //av_log(ctx->avctx, AV_LOG_DEBUG, "j %d\n", j);
         //av_log(ctx->avctx, AV_LOG_DEBUG, "level %d, weight %d\n", level, weight_matrix[i]);
-        level *= qscale * weight_matrix[i];
+        level *= scale[i];
         if (level_bias < 32 || weight_matrix[i] != level_bias)
             level += level_bias;
         level >>= level_shift;
@@ -280,6 +286,14 @@ static int dnxhd_decode_macroblock(DNXHDContext *ctx, int x, int y)
     qscale = get_bits(&ctx->gb, 11);
     skip_bits1(&ctx->gb);
     //av_log(ctx->avctx, AV_LOG_DEBUG, "qscale %d\n", qscale);
+
+    if (qscale != ctx->last_qscale) {
+        for (i = 0; i < 64; i++) {
+            ctx->luma_scale[i]   = qscale * ctx->cid_table->luma_weight[i];
+            ctx->chroma_scale[i] = qscale * ctx->cid_table->chroma_weight[i];
+        }
+        ctx->last_qscale = qscale;
+    }
 
     for (i = 0; i < 8; i++) {
         ctx->dsp.clear_block(ctx->blocks[i]);
