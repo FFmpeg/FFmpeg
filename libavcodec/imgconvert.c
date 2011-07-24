@@ -393,28 +393,50 @@ int avpicture_get_size(enum PixelFormat pix_fmt, int width, int height)
     return avpicture_fill(&dummy_pict, NULL, pix_fmt, width, height);
 }
 
+static int get_pix_fmt_depth(int *min, int *max, enum PixelFormat pix_fmt)
+{
+    const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
+    int i;
+
+    if (!desc->nb_components) {
+        *min = *max = 0;
+        return AVERROR(EINVAL);
+    }
+
+    *min = INT_MAX, *max = -INT_MAX;
+    for (i = 0; i < desc->nb_components; i++) {
+        *min = FFMIN(desc->comp[i].depth_minus1+1, *min);
+        *max = FFMAX(desc->comp[i].depth_minus1+1, *max);
+    }
+    return 0;
+}
+
 int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_pix_fmt,
                              int has_alpha)
 {
     const PixFmtInfo *pf, *ps;
     const AVPixFmtDescriptor *src_desc = &av_pix_fmt_descriptors[src_pix_fmt];
     const AVPixFmtDescriptor *dst_desc = &av_pix_fmt_descriptors[dst_pix_fmt];
-    int loss;
+    int src_min_depth, src_max_depth, dst_min_depth, dst_max_depth;
+    int ret, loss;
 
     ps = &pix_fmt_info[src_pix_fmt];
 
     /* compute loss */
     loss = 0;
-    pf = &pix_fmt_info[dst_pix_fmt];
-    if (pf->depth < ps->depth ||
-        ((dst_pix_fmt == PIX_FMT_RGB555BE || dst_pix_fmt == PIX_FMT_RGB555LE ||
-          dst_pix_fmt == PIX_FMT_BGR555BE || dst_pix_fmt == PIX_FMT_BGR555LE) &&
-         (src_pix_fmt == PIX_FMT_RGB565BE || src_pix_fmt == PIX_FMT_RGB565LE ||
-          src_pix_fmt == PIX_FMT_BGR565BE || src_pix_fmt == PIX_FMT_BGR565LE)))
+
+    if ((ret = get_pix_fmt_depth(&src_min_depth, &src_max_depth, src_pix_fmt)) < 0)
+        return ret;
+    if ((ret = get_pix_fmt_depth(&dst_min_depth, &dst_max_depth, dst_pix_fmt)) < 0)
+        return ret;
+    if (dst_min_depth < src_min_depth ||
+        dst_max_depth < src_max_depth)
         loss |= FF_LOSS_DEPTH;
     if (dst_desc->log2_chroma_w > src_desc->log2_chroma_w ||
         dst_desc->log2_chroma_h > src_desc->log2_chroma_h)
         loss |= FF_LOSS_RESOLUTION;
+
+    pf = &pix_fmt_info[dst_pix_fmt];
     switch(pf->color_type) {
     case FF_COLOR_RGB:
         if (ps->color_type != FF_COLOR_RGB &&
