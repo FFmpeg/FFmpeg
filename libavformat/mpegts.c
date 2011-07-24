@@ -164,6 +164,7 @@ typedef struct PESContext {
     enum MpegTSState state;
     /* used to get the format */
     int data_index;
+    int flags; /**< copied to the AVPacket flags */
     int total_size;
     int pes_header_size;
     int extended_stream_id;
@@ -635,12 +636,14 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pkt->dts = pes->dts;
     /* store position of first TS packet of this PES packet */
     pkt->pos = pes->ts_packet_pos;
+    pkt->flags = pes->flags;
 
     /* reset pts values */
     pes->pts = AV_NOPTS_VALUE;
     pes->dts = AV_NOPTS_VALUE;
     pes->buffer = NULL;
     pes->data_index = 0;
+    pes->flags = 0;
 }
 
 /* return non zero if a packet could be constructed */
@@ -808,6 +811,7 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     // pes packet size is < ts size packet and pes data is padded with 0xff
                     // not sure if this is legal in ts but see issue #2392
                     buf_size = pes->total_size;
+                    pes->flags |= AV_PKT_FLAG_CORRUPT;
                 }
                 memcpy(pes->buffer+pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
@@ -1283,6 +1287,13 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
             || expected_cc == cc;
 
     tss->last_cc = cc;
+    if (!cc_ok) {
+        av_log(NULL, AV_LOG_WARNING, "Continuity Check Failed\n");
+        if(tss->type == MPEGTS_PES) {
+            PESContext *pc = tss->u.pes_filter.opaque;
+            pc->flags |= AV_PKT_FLAG_CORRUPT;
+        }
+    }
 
     if (!has_payload)
         return 0;
