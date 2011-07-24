@@ -625,6 +625,12 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pkt->destruct = av_destruct_packet;
     pkt->data = pes->buffer;
     pkt->size = pes->data_index;
+
+    if(pes->total_size != MAX_PES_PAYLOAD &&
+       pes->pes_header_size + pes->data_index != pes->total_size + 6) {
+        av_log(pes->ts, AV_LOG_WARNING, "PES packet size mismatch\n");
+        pes->flags |= AV_PKT_FLAG_CORRUPT;
+    }
     memset(pkt->data+pkt->size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
 
     // Separate out the AC3 substream from an HDMV combined TrueHD/AC3 PID
@@ -811,7 +817,6 @@ static int mpegts_push_data(MpegTSFilter *filter,
                     // pes packet size is < ts size packet and pes data is padded with 0xff
                     // not sure if this is legal in ts but see issue #2392
                     buf_size = pes->total_size;
-                    pes->flags |= AV_PKT_FLAG_CORRUPT;
                 }
                 memcpy(pes->buffer+pes->data_index, p, buf_size);
                 pes->data_index += buf_size;
@@ -1288,7 +1293,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
     tss->last_cc = cc;
     if (!cc_ok) {
-        av_log(NULL, AV_LOG_WARNING, "Continuity Check Failed\n");
+        av_log(ts, AV_LOG_WARNING, "Continuity Check Failed\n");
         if(tss->type == MPEGTS_PES) {
             PESContext *pc = tss->u.pes_filter.opaque;
             pc->flags |= AV_PKT_FLAG_CORRUPT;
