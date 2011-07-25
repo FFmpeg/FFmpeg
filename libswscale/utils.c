@@ -140,14 +140,10 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_YUV444P10LE] = { 1 , 0 },
 };
 
-#define isSupportedIn(x) (format_entries[x].is_supported_in)
-
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
 {
     return format_entries[pix_fmt].is_supported_in;
 }
-
-#define isSupportedOut(x) (format_entries[x].is_supported_out)
 
 int sws_isSupportedOutput(enum PixelFormat pix_fmt)
 {
@@ -759,11 +755,11 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     unscaled = (srcW == dstW && srcH == dstH);
 
-    if (!isSupportedIn(srcFormat)) {
+    if (!sws_isSupportedInput(srcFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as input pixel format\n", av_get_pix_fmt_name(srcFormat));
         return AVERROR(EINVAL);
     }
-    if (!isSupportedOut(dstFormat)) {
+    if (!sws_isSupportedOutput(dstFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as output pixel format\n", av_get_pix_fmt_name(dstFormat));
         return AVERROR(EINVAL);
     }
