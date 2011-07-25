@@ -1078,12 +1078,9 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
                    flags & SWS_FAST_BILINEAR ? "FAST_BILINEAR C" : "C");
         }
         if (isPlanarYUV(dstFormat)) {
-            if (c->vLumFilterSize==1)
-                av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n",
-                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-            else
-                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (YV12 like)\n",
-                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s-tap %s \"scaler\" for vertical scaling (YV12 like)\n",
+                   c->vLumFilterSize == 1 ? "1" : "n",
+                   HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX ? "MMX" : "C");
         } else {
             if (c->vLumFilterSize==1 && c->vChrFilterSize==2)
                 av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
