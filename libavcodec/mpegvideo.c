@@ -155,6 +155,8 @@ const uint8_t *ff_find_start_code(const uint8_t * restrict p, const uint8_t *end
 /* init common dct for both encoder and decoder */
 av_cold int ff_dct_common_init(MpegEncContext *s)
 {
+    dsputil_init(&s->dsp, s->avctx);
+
     s->dct_unquantize_h263_intra = dct_unquantize_h263_intra_c;
     s->dct_unquantize_h263_inter = dct_unquantize_h263_inter_c;
     s->dct_unquantize_mpeg1_intra = dct_unquantize_mpeg1_intra_c;
@@ -603,7 +605,6 @@ av_cold int MPV_common_init(MpegEncContext *s)
     if((s->width || s->height) && av_image_check_size(s->width, s->height, 0, s->avctx))
         return -1;
 
-    dsputil_init(&s->dsp, s->avctx);
     ff_dct_common_init(s);
 
     s->flags= s->avctx->flags;
