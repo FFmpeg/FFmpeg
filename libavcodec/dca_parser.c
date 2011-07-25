@@ -74,7 +74,8 @@ static int dca_find_frame_end(DCAParseContext * pc1, const uint8_t * buf,
             if (IS_MARKER(state, i, buf, buf_size) && (state == pc1->lastmarker || pc1->lastmarker == DCA_HD_MARKER)) {
                 if(pc1->framesize > pc1->size)
                     continue;
-                if(!pc1->framesize){
+                // We have to check that we really read a full frame here, and that it isn't a pure HD frame, because their size is not constant.
+                if(!pc1->framesize && state == pc1->lastmarker && state != DCA_HD_MARKER){
                     pc1->framesize = pc1->hd_pos ? pc1->hd_pos : pc1->size;
                 }
                 pc->frame_start_found = 0;
