@@ -426,7 +426,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             s->is_connected = strtol(buf, NULL, 10);
         }
-        if (av_find_info_tag(buf, sizeof(buf), "buf_size", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "fifo_size", p)) {
             s->circular_buffer_size = strtol(buf, NULL, 10)*188;
         }
     }
