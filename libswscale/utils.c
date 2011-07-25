@@ -67,7 +67,7 @@ const char *swscale_license(void)
 #define RET 0xC3 //near return opcode for x86
 
 typedef struct FormatEntry {
-int is_supported_in, is_supported_out;
+    int is_supported_in, is_supported_out;
 } FormatEntry;
 
 const static FormatEntry format_entries[PIX_FMT_NB] = {
