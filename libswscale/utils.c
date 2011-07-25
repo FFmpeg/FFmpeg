@@ -1069,29 +1069,17 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             if (c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
                 av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
             else {
-                if (c->hLumFilterSize==4)
-                    av_log(c, AV_LOG_VERBOSE, "using 4-tap MMX scaler for horizontal luminance scaling\n");
-                else if (c->hLumFilterSize==8)
-                    av_log(c, AV_LOG_VERBOSE, "using 8-tap MMX scaler for horizontal luminance scaling\n");
-                else
-                    av_log(c, AV_LOG_VERBOSE, "using n-tap MMX scaler for horizontal luminance scaling\n");
-
-                if (c->hChrFilterSize==4)
-                    av_log(c, AV_LOG_VERBOSE, "using 4-tap MMX scaler for horizontal chrominance scaling\n");
-                else if (c->hChrFilterSize==8)
-                    av_log(c, AV_LOG_VERBOSE, "using 8-tap MMX scaler for horizontal chrominance scaling\n");
-                else
-                    av_log(c, AV_LOG_VERBOSE, "using n-tap MMX scaler for horizontal chrominance scaling\n");
+                av_log(c, AV_LOG_VERBOSE, "using %s-tap MMX scaler for horizontal luminance scaling\n",
+                       c->hLumFilterSize == 4 ? "4" :
+                       c->hLumFilterSize == 8 ? "8" : "n");
+                av_log(c, AV_LOG_VERBOSE, "using %s-tap MMX scaler for horizontal chrominance scaling\n",
+                       c->hChrFilterSize == 4 ? "4" :
+                       c->hChrFilterSize == 8 ? "8" : "n");
             }
         } else {
-#if HAVE_MMX
-            av_log(c, AV_LOG_VERBOSE, "using x86 asm scaler for horizontal scaling\n");
-#else
-            if (flags & SWS_FAST_BILINEAR)
-                av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR C scaler for horizontal scaling\n");
-            else
-                av_log(c, AV_LOG_VERBOSE, "using C scaler for horizontal scaling\n");
-#endif
+            av_log(c, AV_LOG_VERBOSE, "using %s scaler for horizontal scaling\n",
+                   HAVE_MMX ? "x86 asm" :
+                   flags & SWS_FAST_BILINEAR ? "FAST_BILINEAR C" : "C");
         }
         if (isPlanarYUV(dstFormat)) {
             if (c->vLumFilterSize==1)
