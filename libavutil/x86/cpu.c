@@ -113,7 +113,7 @@ int ff_get_cpu_flags_x86(void)
 
     if(max_ext_level >= 0x80000001){
         cpuid(0x80000001, eax, ebx, ecx, ext_caps);
-        if (ext_caps & (1<<31))
+        if (ext_caps & (1U<<31))
             rval |= AV_CPU_FLAG_3DNOW;
         if (ext_caps & (1<<30))
             rval |= AV_CPU_FLAG_3DNOWEXT;
