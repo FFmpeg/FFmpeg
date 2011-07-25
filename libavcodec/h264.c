@@ -1682,7 +1682,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h, int mb_ty
                         uint64_t tr_high;
                         if(dir == DIAG_DOWN_LEFT_PRED || dir == VERT_LEFT_PRED){
                             const int topright_avail= (h->topright_samples_available<<i)&0x8000;
-                            assert(mb_y || linesize <= block_offset[i]);
+                            assert(s->mb_y || linesize <= block_offset[i]);
                             if(!topright_avail){
                                 if (pixel_shift) {
                                     tr_high= ((uint16_t*)ptr)[3 - linesize/2]*0x0001000100010001ULL;
@@ -2488,7 +2488,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     s->dropable= h->nal_ref_idc == 0;
 
-    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && !h->nal_ref_idc){
+    /* FIXME: 2tap qpel isn't implemented for high bit depth. */
+    if((s->avctx->flags2 & CODEC_FLAG2_FAST) && !h->nal_ref_idc && !h->pixel_shift){
         s->me.qpel_put= s->dsp.put_2tap_qpel_pixels_tab;
         s->me.qpel_avg= s->dsp.avg_2tap_qpel_pixels_tab;
     }else{

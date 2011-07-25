@@ -38,14 +38,14 @@
  * QCELP unpacked data frame
  */
 typedef struct {
-/// @defgroup qcelp_codebook_parameters QCELP excitation codebook parameters
+/// @name QCELP excitation codebook parameters
 /// @{
     uint8_t cbsign[16]; ///!< sign of the codebook gain for each codebook subframe
     uint8_t cbgain[16]; ///!< unsigned codebook gain for each codebook subframe
     uint8_t cindex[16]; ///!< codebook index for each codebook subframe
 /// @}
 
-/// @defgroup qcelp_pitch_parameters QCELP pitch prediction parameters
+/// @name QCELP pitch prediction parameters
 /// @{
     uint8_t plag[4];    ///!< pitch lag for each pitch subframe
     uint8_t pfrac[4];   ///!< fractional pitch lag for each pitch subframe

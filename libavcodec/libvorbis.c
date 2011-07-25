@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "vorbis.h"
+#include "libavutil/mathematics.h"
 
 #undef NDEBUG
 #include <assert.h>

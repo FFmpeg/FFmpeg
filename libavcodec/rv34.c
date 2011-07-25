@@ -62,8 +62,10 @@ static const int rv34_mb_type_to_lavc[12] = {
 
 static RV34VLC intra_vlcs[NUM_INTRA_TABLES], inter_vlcs[NUM_INTER_TABLES];
 
+static int rv34_decode_mv(RV34DecContext *r, int block_type);
+
 /**
- * @defgroup vlc RV30/40 VLC generating functions
+ * @name RV30/40 VLC generating functions
  * @{
  */
 
@@ -171,7 +173,7 @@ static av_cold void rv34_init_tables(void)
 
 
 /**
- * @defgroup transform RV30/40 inverse transform functions
+ * @name RV30/40 inverse transform functions
  * @{
  */
 
@@ -246,7 +248,7 @@ static void rv34_inv_transform_noround(DCTELEM *block){
 
 
 /**
- * @defgroup block RV30/40 4x4 block decoding functions
+ * @name RV30/40 4x4 block decoding functions
  * @{
  */
 
@@ -393,7 +395,7 @@ static inline void rv34_dequant4x4_16x16(DCTELEM *block, int Qdc, int Q)
 
 
 /**
- * @defgroup rv3040_bitstream RV30/40 bitstream parsing
+ * @name RV30/40 bitstream parsing
  * @{
  */
 
@@ -432,10 +434,76 @@ static inline int rv34_decode_dquant(GetBitContext *gb, int quant)
         return get_bits(gb, 5);
 }
 
+/**
+ * Decode macroblock header and return CBP in case of success, -1 otherwise.
+ */
+static int rv34_decode_mb_header(RV34DecContext *r, int8_t *intra_types)
+{
+    MpegEncContext *s = &r->s;
+    GetBitContext *gb = &s->gb;
+    int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
+    int i, t;
+
+    if(!r->si.type){
+        r->is16 = get_bits1(gb);
+        if(!r->is16 && !r->rv30){
+            if(!get_bits1(gb))
+                av_log(s->avctx, AV_LOG_ERROR, "Need DQUANT\n");
+        }
+        s->current_picture_ptr->mb_type[mb_pos] = r->is16 ? MB_TYPE_INTRA16x16 : MB_TYPE_INTRA;
+        r->block_type = r->is16 ? RV34_MB_TYPE_INTRA16x16 : RV34_MB_TYPE_INTRA;
+    }else{
+        r->block_type = r->decode_mb_info(r);
+        if(r->block_type == -1)
+            return -1;
+        s->current_picture_ptr->mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
+        r->mb_type[mb_pos] = r->block_type;
+        if(r->block_type == RV34_MB_SKIP){
+            if(s->pict_type == AV_PICTURE_TYPE_P)
+                r->mb_type[mb_pos] = RV34_MB_P_16x16;
+            if(s->pict_type == AV_PICTURE_TYPE_B)
+                r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
+        }
+        r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->mb_type[mb_pos]);
+        rv34_decode_mv(r, r->block_type);
+        if(r->block_type == RV34_MB_SKIP){
+            fill_rectangle(intra_types, 4, 4, r->intra_types_stride, 0, sizeof(intra_types[0]));
+            return 0;
+        }
+        r->chroma_vlc = 1;
+        r->luma_vlc   = 0;
+    }
+    if(IS_INTRA(s->current_picture_ptr->mb_type[mb_pos])){
+        if(r->is16){
+            t = get_bits(gb, 2);
+            fill_rectangle(intra_types, 4, 4, r->intra_types_stride, t, sizeof(intra_types[0]));
+            r->luma_vlc   = 2;
+        }else{
+            if(r->decode_intra_types(r, gb, intra_types) < 0)
+                return -1;
+            r->luma_vlc   = 1;
+        }
+        r->chroma_vlc = 0;
+        r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 0);
+    }else{
+        for(i = 0; i < 16; i++)
+            intra_types[(i & 3) + (i>>2) * r->intra_types_stride] = 0;
+        r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 1);
+        if(r->mb_type[mb_pos] == RV34_MB_P_MIX16x16){
+            r->is16 = 1;
+            r->chroma_vlc = 1;
+            r->luma_vlc   = 2;
+            r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 0);
+        }
+    }
+
+    return rv34_decode_cbp(gb, r->cur_vlcs, r->is16);
+}
+
 /** @} */ //bitstream functions
 
 /**
- * @defgroup mv motion vector related code (prediction, reconstruction, motion compensation)
+ * @name motion vector related code (prediction, reconstruction, motion compensation)
  * @{
  */
 
@@ -885,7 +953,7 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
 /** @} */ // mv group
 
 /**
- * @defgroup recons Macroblock reconstruction functions
+ * @name Macroblock reconstruction functions
  * @{
  */
 /** mapping of RV30/40 intra prediction types to standard H.264 types */
@@ -1027,79 +1095,6 @@ static void rv34_output_macroblock(RV34DecContext *r, int8_t *intra_types, int c
     }
 }
 
-/** @} */ // recons group
-
-/**
- * @addtogroup bitstream
- * Decode macroblock header and return CBP in case of success, -1 otherwise.
- */
-static int rv34_decode_mb_header(RV34DecContext *r, int8_t *intra_types)
-{
-    MpegEncContext *s = &r->s;
-    GetBitContext *gb = &s->gb;
-    int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
-    int i, t;
-
-    if(!r->si.type){
-        r->is16 = get_bits1(gb);
-        if(!r->is16 && !r->rv30){
-            if(!get_bits1(gb))
-                av_log(s->avctx, AV_LOG_ERROR, "Need DQUANT\n");
-        }
-        s->current_picture_ptr->mb_type[mb_pos] = r->is16 ? MB_TYPE_INTRA16x16 : MB_TYPE_INTRA;
-        r->block_type = r->is16 ? RV34_MB_TYPE_INTRA16x16 : RV34_MB_TYPE_INTRA;
-    }else{
-        r->block_type = r->decode_mb_info(r);
-        if(r->block_type == -1)
-            return -1;
-        s->current_picture_ptr->mb_type[mb_pos] = rv34_mb_type_to_lavc[r->block_type];
-        r->mb_type[mb_pos] = r->block_type;
-        if(r->block_type == RV34_MB_SKIP){
-            if(s->pict_type == AV_PICTURE_TYPE_P)
-                r->mb_type[mb_pos] = RV34_MB_P_16x16;
-            if(s->pict_type == AV_PICTURE_TYPE_B)
-                r->mb_type[mb_pos] = RV34_MB_B_DIRECT;
-        }
-        r->is16 = !!IS_INTRA16x16(s->current_picture_ptr->mb_type[mb_pos]);
-        rv34_decode_mv(r, r->block_type);
-        if(r->block_type == RV34_MB_SKIP){
-            fill_rectangle(intra_types, 4, 4, r->intra_types_stride, 0, sizeof(intra_types[0]));
-            return 0;
-        }
-        r->chroma_vlc = 1;
-        r->luma_vlc   = 0;
-    }
-    if(IS_INTRA(s->current_picture_ptr->mb_type[mb_pos])){
-        if(r->is16){
-            t = get_bits(gb, 2);
-            fill_rectangle(intra_types, 4, 4, r->intra_types_stride, t, sizeof(intra_types[0]));
-            r->luma_vlc   = 2;
-        }else{
-            if(r->decode_intra_types(r, gb, intra_types) < 0)
-                return -1;
-            r->luma_vlc   = 1;
-        }
-        r->chroma_vlc = 0;
-        r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 0);
-    }else{
-        for(i = 0; i < 16; i++)
-            intra_types[(i & 3) + (i>>2) * r->intra_types_stride] = 0;
-        r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 1);
-        if(r->mb_type[mb_pos] == RV34_MB_P_MIX16x16){
-            r->is16 = 1;
-            r->chroma_vlc = 1;
-            r->luma_vlc   = 2;
-            r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 0);
-        }
-    }
-
-    return rv34_decode_cbp(gb, r->cur_vlcs, r->is16);
-}
-
-/**
- * @addtogroup recons
- * @{
- */
 /**
  * mask for retrieving all bits in coded block pattern
  * corresponding to one 8x8 block
@@ -1108,6 +1103,8 @@ static int rv34_decode_mb_header(RV34DecContext *r, int8_t *intra_types)
 
 #define U_CBP_MASK 0x0F0000
 #define V_CBP_MASK 0xF00000
+
+/** @} */ // recons group
 
 
 static void rv34_apply_differences(RV34DecContext *r, int cbp)

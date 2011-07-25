@@ -18,7 +18,8 @@
  */
 
 /**
- * @file Public dictionary API.
+ * @file
+ * Public dictionary API.
  */
 
 #ifndef AVUTIL_DICT_H

@@ -42,7 +42,7 @@ typedef struct {
     uint8_t bs_xover_band;
 
     /**
-     * @defgroup bs_header_extra_1     Variables associated with bs_header_extra_1
+     * @name Variables associated with bs_header_extra_1
      * @{
      */
     uint8_t bs_freq_scale;
@@ -58,7 +58,7 @@ typedef struct {
  */
 typedef struct {
     /**
-     * @defgroup aac_bitstream     Main bitstream data variables
+     * @name Main bitstream data variables
      * @{
      */
     unsigned           bs_frame_class;
@@ -74,7 +74,7 @@ typedef struct {
     /** @} */
 
     /**
-     * @defgroup state         State variables
+     * @name State variables
      * @{
      */
     DECLARE_ALIGNED(16, float, synthesis_filterbank_samples)[SBR_SYNTHESIS_BUF_SIZE];
@@ -116,7 +116,7 @@ typedef struct {
     SpectrumParameters spectrum_params;
     int                bs_amp_res_header;
     /**
-     * @defgroup bs_header_extra_2     variables associated with bs_header_extra_2
+     * @name Variables associated with bs_header_extra_2
      * @{
      */
     unsigned           bs_limiter_bands;

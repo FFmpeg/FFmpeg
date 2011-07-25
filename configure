@@ -3064,7 +3064,6 @@ fi
 
 if enabled small; then
     add_cflags $size_cflags
-    optimizations="small"
 elif enabled optimizations; then
     add_cflags $speed_cflags
 else
@@ -3118,6 +3117,8 @@ elif enabled armcc; then
     add_cflags -W${armcc_opt},--diag_suppress=1207
     add_cflags -W${armcc_opt},--diag_suppress=1293 # assignment in condition
     add_cflags -W${armcc_opt},--diag_suppress=3343 # hardfp compat
+    add_cflags -W${armcc_opt},--diag_suppress=167  # pointer sign
+    add_cflags -W${armcc_opt},--diag_suppress=513  # pointer sign
 elif enabled tms470; then
     add_cflags -pds=824 -pds=837
 elif enabled pathscale; then
@@ -3204,6 +3205,7 @@ if enabled sparc; then
 fi
 echo "debug symbols             ${debug-no}"
 echo "strip symbols             ${stripping-no}"
+echo "optimize for size         ${small-no}"
 echo "optimizations             ${optimizations-no}"
 echo "static                    ${static-no}"
 echo "shared                    ${shared-no}"
@@ -3270,6 +3272,7 @@ if enabled source_path_used; then
         doc
         libavcodec
         libavcodec/$arch
+        libavcodec/mlib
         libavdevice
         libavfilter
         libavfilter/$arch
@@ -3281,6 +3284,7 @@ if enabled source_path_used; then
         libpostproc
         libswscale
         libswscale/$arch
+        libswscale/mlib
         tests
         tools
     "
