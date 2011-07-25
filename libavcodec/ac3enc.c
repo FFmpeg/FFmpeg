@@ -2134,9 +2134,9 @@ static av_cold int validate_options(AC3EncodeContext *s)
     if (s->cutoff > (s->sample_rate >> 1))
         s->cutoff = s->sample_rate >> 1;
 
-        ret = ff_ac3_validate_metadata(s);
-        if (ret)
-            return ret;
+    ret = ff_ac3_validate_metadata(s);
+    if (ret)
+        return ret;
 
     s->rematrixing_enabled = s->options.stereo_rematrixing &&
                              (s->channel_mode == AC3_CHMODE_STEREO);
