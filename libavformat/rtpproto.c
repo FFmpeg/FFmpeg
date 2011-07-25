@@ -115,6 +115,7 @@ static void build_udp_url(char *buf, int buf_size,
         url_add_option(buf, buf_size, "pkt_size=%d", max_packet_size);
     if (connect)
         url_add_option(buf, buf_size, "connect=1");
+    url_add_option(buf, buf_size, "fifo_size=0");
 }
 
 /**
