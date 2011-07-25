@@ -58,7 +58,6 @@
 typedef struct PixFmtInfo {
     uint8_t color_type;      /**< color type (see FF_COLOR_xxx constants) */
     uint8_t is_alpha : 1;    /**< true if alpha can be specified */
-    uint8_t depth;           /**< bit depth of the color components */
     uint8_t padded_size;     /**< padded size in bits if different from the non-padded size */
 } PixFmtInfo;
 
@@ -67,247 +66,193 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     /* YUV formats */
     [PIX_FMT_YUV420P] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_YUV422P] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_YUV444P] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_YUYV422] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_UYVY422] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_YUV410P] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_YUV411P] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_YUV440P] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_YUV420P16LE] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 16,
     },
     [PIX_FMT_YUV422P16LE] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 16,
     },
     [PIX_FMT_YUV444P16LE] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 16,
     },
     [PIX_FMT_YUV420P16BE] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 16,
     },
     [PIX_FMT_YUV422P16BE] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 16,
     },
     [PIX_FMT_YUV444P16BE] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 16,
     },
 
     /* YUV formats with alpha plane */
     [PIX_FMT_YUVA420P] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
 
     /* JPEG YUV */
     [PIX_FMT_YUVJ420P] = {
         .color_type = FF_COLOR_YUV_JPEG,
-        .depth = 8,
     },
     [PIX_FMT_YUVJ422P] = {
         .color_type = FF_COLOR_YUV_JPEG,
-        .depth = 8,
     },
     [PIX_FMT_YUVJ444P] = {
         .color_type = FF_COLOR_YUV_JPEG,
-        .depth = 8,
     },
     [PIX_FMT_YUVJ440P] = {
         .color_type = FF_COLOR_YUV_JPEG,
-        .depth = 8,
     },
 
     /* RGB formats */
     [PIX_FMT_RGB24] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_BGR24] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_ARGB] = {
         .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_RGB48BE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 16,
     },
     [PIX_FMT_RGB48LE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 16,
     },
     [PIX_FMT_RGB565BE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
     },
     [PIX_FMT_RGB565LE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
     },
     [PIX_FMT_RGB555BE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
         .padded_size = 16,
     },
     [PIX_FMT_RGB555LE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
         .padded_size = 16,
     },
     [PIX_FMT_RGB444BE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 4,
         .padded_size = 16,
     },
     [PIX_FMT_RGB444LE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 4,
         .padded_size = 16,
     },
 
     /* gray / mono formats */
     [PIX_FMT_GRAY16BE] = {
         .color_type = FF_COLOR_GRAY,
-        .depth = 16,
     },
     [PIX_FMT_GRAY16LE] = {
         .color_type = FF_COLOR_GRAY,
-        .depth = 16,
     },
     [PIX_FMT_GRAY8] = {
         .color_type = FF_COLOR_GRAY,
-        .depth = 8,
     },
     [PIX_FMT_MONOWHITE] = {
         .color_type = FF_COLOR_GRAY,
-        .depth = 1,
     },
     [PIX_FMT_MONOBLACK] = {
         .color_type = FF_COLOR_GRAY,
-        .depth = 1,
     },
 
     /* paletted formats */
     [PIX_FMT_PAL8] = {
         .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_UYYVYY411] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_ABGR] = {
         .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_BGR565BE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
         .padded_size = 16,
     },
     [PIX_FMT_BGR565LE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
         .padded_size = 16,
     },
     [PIX_FMT_BGR555BE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
         .padded_size = 16,
     },
     [PIX_FMT_BGR555LE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 5,
         .padded_size = 16,
     },
     [PIX_FMT_BGR444BE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 4,
         .padded_size = 16,
     },
     [PIX_FMT_BGR444LE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 4,
         .padded_size = 16,
     },
     [PIX_FMT_RGB8] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_RGB4] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 4,
     },
     [PIX_FMT_RGB4_BYTE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
         .padded_size = 8,
     },
     [PIX_FMT_BGR8] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_BGR4] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 4,
     },
     [PIX_FMT_BGR4_BYTE] = {
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
         .padded_size = 8,
     },
     [PIX_FMT_NV12] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
     [PIX_FMT_NV21] = {
         .color_type = FF_COLOR_YUV,
-        .depth = 8,
     },
 
     [PIX_FMT_BGRA] = {
         .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
     [PIX_FMT_RGBA] = {
         .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
-        .depth = 8,
     },
 };
 
