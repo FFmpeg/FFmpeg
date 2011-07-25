@@ -2929,6 +2929,9 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
         av_dict_copy(&tmp, *options, 0);
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
+    if (s->priv_data && s->oformat->priv_class && *(const AVClass**)s->priv_data==s->oformat->priv_class &&
+        (ret = av_opt_set_dict(s->priv_data, &tmp)) < 0)
+        goto fail;
 
     // some sanity checks
     if (s->nb_streams == 0 && !(s->oformat->flags & AVFMT_NOSTREAMS)) {
