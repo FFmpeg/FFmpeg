@@ -558,15 +558,6 @@ void MPV_common_init_altivec(MpegEncContext *s)
 {
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)) return;
 
-    if (s->avctx->lowres==0) {
-        if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||
-            (s->avctx->idct_algo == FF_IDCT_ALTIVEC)) {
-            s->dsp.idct_put = idct_put_altivec;
-            s->dsp.idct_add = idct_add_altivec;
-            s->dsp.idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-        }
-    }
-
     // Test to make sure that the dct required alignments are met.
     if ((((long)(s->q_intra_matrix) & 0x0f) != 0) ||
         (((long)(s->q_inter_matrix) & 0x0f) != 0)) {
