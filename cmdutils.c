@@ -284,17 +284,17 @@ unknown_opt:
     }
 }
 
-#define FLAGS (o->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
+#define FLAGS(o) ((o)->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
 int opt_default(const char *opt, const char *arg)
 {
-    const AVOption *o;
-    if ((o = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)) ||
+    const AVOption *oc, *of, *os;
+    if ((oc = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)) ||
          ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
-          (o = av_opt_find(avcodec_opts[0], opt+1, NULL, 0, 0))))
-        av_dict_set(&codec_opts, opt, arg, FLAGS);
-    else if ((o = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
-        av_dict_set(&format_opts, opt, arg, FLAGS);
-    else if ((o = av_opt_find(sws_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
+          (oc = av_opt_find(avcodec_opts[0], opt+1, NULL, 0, 0))))
+        av_dict_set(&codec_opts, opt, arg, FLAGS(oc));
+    if ((of = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
+        av_dict_set(&format_opts, opt, arg, FLAGS(of));
+    if ((os = av_opt_find(sws_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
         // XXX we only support sws_flags, not arbitrary sws options
         int ret = av_set_string3(sws_opts, opt, arg, 1, NULL);
         if (ret < 0) {
@@ -303,7 +303,7 @@ int opt_default(const char *opt, const char *arg)
         }
     }
 
-    if (o)
+    if (oc || of || os)
         return 0;
     fprintf(stderr, "Unrecognized option '%s'\n", opt);
     return AVERROR_OPTION_NOT_FOUND;
