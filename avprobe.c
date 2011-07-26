@@ -1,5 +1,5 @@
 /*
- * ffprobe : Simple Media Prober based on the Libav libraries
+ * avprobe : Simple Media Prober based on the Libav libraries
  * Copyright (c) 2007-2010 Stefano Sabatini
  *
  * This file is part of Libav.
@@ -29,7 +29,7 @@
 #include "libavdevice/avdevice.h"
 #include "cmdutils.h"
 
-const char program_name[] = "ffprobe";
+const char program_name[] = "avprobe";
 const int program_birth_year = 2007;
 
 static int do_show_format  = 0;
@@ -44,7 +44,7 @@ static int use_value_sexagesimal_format = 0;
 /* globals */
 static const OptionDef options[];
 
-/* FFprobe context */
+/* AVprobe context */
 static const char *input_filename;
 static AVInputFormat *iformat = NULL;
 
@@ -327,7 +327,7 @@ static int probe_file(const char *filename)
 static void show_usage(void)
 {
     printf("Simple multimedia streams analyzer\n");
-    printf("usage: ffprobe [OPTIONS] [INPUT_FILE]\n");
+    printf("usage: %s [OPTIONS] [INPUT_FILE]\n", program_name);
     printf("\n");
 }
 
@@ -407,7 +407,7 @@ int main(int argc, char **argv)
     if (!input_filename) {
         show_usage();
         fprintf(stderr, "You have to specify one input file.\n");
-        fprintf(stderr, "Use -h to get full help or, even better, run 'man ffprobe'.\n");
+        fprintf(stderr, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
         exit(1);
     }
 

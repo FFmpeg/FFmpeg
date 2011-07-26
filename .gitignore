@@ -13,7 +13,7 @@ doc/*.pod
 doxy
 ffmpeg
 avplay
-ffprobe
+avprobe
 ffserver
 libavcodec/*_tablegen
 libavcodec/*_tables.c

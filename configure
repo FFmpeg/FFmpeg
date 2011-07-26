@@ -82,7 +82,7 @@ Configuration options:
   --disable-doc            do not build documentation
   --disable-ffmpeg         disable ffmpeg build
   --disable-avplay         disable avplay build
-  --disable-ffprobe        disable ffprobe build
+  --disable-avprobe        disable avprobe build
   --disable-ffserver       disable ffserver build
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
@@ -914,7 +914,7 @@ CONFIG_LIST="
     fastdiv
     ffmpeg
     avplay
-    ffprobe
+    avprobe
     ffserver
     fft
     frei0r
@@ -1491,7 +1491,7 @@ ffmpeg_deps="avcodec avformat swscale"
 ffmpeg_select="buffer_filter"
 avplay_deps="avcodec avformat swscale sdl"
 avplay_select="rdft"
-ffprobe_deps="avcodec avformat"
+avprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 
@@ -1636,7 +1636,7 @@ enable doc
 enable fastdiv
 enable ffmpeg
 enable avplay
-enable ffprobe
+enable avprobe
 enable ffserver
 enable network
 enable optimizations

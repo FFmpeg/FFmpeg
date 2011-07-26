@@ -170,7 +170,7 @@ Seek to percentage in file corresponding to fraction of width.
 @settitle AVplay media player
 
 @c man begin SEEALSO
-ffmpeg(1), ffprobe(1), ffserver(1) and the Libav HTML documentation
+ffmpeg(1), avprobe(1), ffserver(1) and the Libav HTML documentation
 @c man end
 
 @c man begin AUTHORS

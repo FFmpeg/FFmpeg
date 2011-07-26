@@ -1079,7 +1079,7 @@ file to which you want to add them.
 @settitle ffmpeg video converter
 
 @c man begin SEEALSO
-avplay(1), ffprobe(1), ffserver(1) and the Libav HTML documentation
+avplay(1), avprobe(1), ffserver(1) and the Libav HTML documentation
 @c man end
 
 @c man begin AUTHORS
