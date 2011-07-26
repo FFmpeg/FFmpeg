@@ -1566,7 +1566,10 @@ static void mxf_write_system_item(AVFormatContext *s)
     avio_wb64(pb, 0); // creation date/time stamp
 
     avio_w8(pb, 0x81); // SMPTE 12M time code
-    time_code = ff_framenum_to_smtpe_timecode(frame, mxf->timecode_base,
+    time_code = frame;
+    if (mxf->tc.drop)
+        time_code = ff_framenum_to_drop_timecode(time_code);
+    time_code = ff_framenum_to_smtpe_timecode(time_code, mxf->timecode_base,
                                               mxf->tc.drop);
     avio_wb32(pb, time_code);
     avio_wb32(pb, 0); // binary group data
