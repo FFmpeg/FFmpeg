@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle ffserver Documentation
+@settitle avserver Documentation
 @titlepage
-@center @titlefont{ffserver Documentation}
+@center @titlefont{avserver Documentation}
 @end titlepage
 
 @top
@@ -15,37 +15,37 @@ The generic syntax is:
 
 @example
 @c man begin SYNOPSIS
-ffserver [options]
+avserver [options]
 @c man end
 @end example
 
 @chapter Description
 @c man begin DESCRIPTION
 
-ffserver is a streaming server for both audio and video. It supports
+avserver is a streaming server for both audio and video. It supports
 several live feeds, streaming from files and time shifting on live feeds
 (you can seek to positions in the past on each live feed, provided you
-specify a big enough feed storage in ffserver.conf).
+specify a big enough feed storage in avserver.conf).
 
-ffserver runs in daemon mode by default; that is, it puts itself in
+avserver runs in daemon mode by default; that is, it puts itself in
 the background and detaches from its TTY, unless it is launched in
 debug mode or a NoDaemon option is specified in the configuration
 file.
 
-This documentation covers only the streaming aspects of ffserver /
+This documentation covers only the streaming aspects of avserver /
 ffmpeg. All questions about parameters for ffmpeg, codec questions,
 etc. are not covered here. Read @file{ffmpeg-doc.html} for more
 information.
 
 @section How does it work?
 
-ffserver receives prerecorded files or FFM streams from some ffmpeg
+avserver receives prerecorded files or FFM streams from some ffmpeg
 instance as input, then streams them over RTP/RTSP/HTTP.
 
-An ffserver instance will listen on some port as specified in the
+An avserver instance will listen on some port as specified in the
 configuration file. You can launch one or more instances of ffmpeg and
-send one or more FFM streams to the port where ffserver is expecting
-to receive them. Alternately, you can make ffserver launch such ffmpeg
+send one or more FFM streams to the port where avserver is expecting
+to receive them. Alternately, you can make avserver launch such ffmpeg
 instances at startup.
 
 Input streams are called feeds, and each one is specified by a <Feed>
@@ -57,7 +57,7 @@ file.
 
 @section Status stream
 
-ffserver supports an HTTP interface which exposes the current status
+avserver supports an HTTP interface which exposes the current status
 of the server.
 
 Simply point your browser to the address of the special status stream
@@ -100,7 +100,7 @@ I understand that FreeBSD systems work just fine as well.
 @section How do I make it work?
 
 First, build the kit. It *really* helps to have installed LAME first. Then when
-you run the ffserver ./configure, make sure that you have the
+you run the avserver ./configure, make sure that you have the
 @code{--enable-libmp3lame} flag turned on.
 
 LAME is important as it allows for streaming audio to Windows Media Player.
@@ -110,7 +110,7 @@ As a simple test, just run the following two command lines where INPUTFILE
 is some file which you can decode with ffmpeg:
 
 @example
-./ffserver -f doc/ffserver.conf &
+./avserver -f doc/avserver.conf &
 ./ffmpeg -i INPUTFILE http://localhost:8090/feed1.ffm
 @end example
 
@@ -129,8 +129,8 @@ The same is true of AVI files.
 
 @section What happens next?
 
-You should edit the ffserver.conf file to suit your needs (in terms of
-frame rates etc). Then install ffserver and ffmpeg, write a script to start
+You should edit the avserver.conf file to suit your needs (in terms of
+frame rates etc). Then install avserver and ffmpeg, write a script to start
 them up, and off you go.
 
 @section Troubleshooting
@@ -166,14 +166,14 @@ I suspect that the new one is not available unless you have installed WMP 7].
 
 You can replay video from .ffm files that was recorded earlier.
 However, there are a number of caveats, including the fact that the
-ffserver parameters must match the original parameters used to record the
-file. If they do not, then ffserver deletes the file before recording into it.
+avserver parameters must match the original parameters used to record the
+file. If they do not, then avserver deletes the file before recording into it.
 (Now that I write this, it seems broken).
 
 You can fiddle with many of the codec choices and encoding parameters, and
 there are a bunch more parameters that you cannot control. Post a message
 to the mailing list if there are some 'must have' parameters. Look in
-ffserver.conf for a list of the currently available controls.
+avserver.conf for a list of the currently available controls.
 
 It will automatically generate the ASX or RAM files that are often used
 in browsers. These files are actually redirections to the underlying ASF
@@ -187,7 +187,7 @@ finishes.]
 
 * When you connect to a live stream, most players (WMP, RA, etc) want to
 buffer a certain number of seconds of material so that they can display the
-signal continuously. However, ffserver (by default) starts sending data
+signal continuously. However, avserver (by default) starts sending data
 in realtime. This means that there is a pause of a few seconds while the
 buffering is being done by the player. The good news is that this can be
 cured by adding a '?buffer=5' to the end of the URL. This means that the
@@ -195,13 +195,13 @@ stream should start 5 seconds in the past -- and so the first 5 seconds
 of the stream are sent as fast as the network will allow. It will then
 slow down to real time. This noticeably improves the startup experience.
 
-You can also add a 'Preroll 15' statement into the ffserver.conf that will
+You can also add a 'Preroll 15' statement into the avserver.conf that will
 add the 15 second prebuffering on all requests that do not otherwise
-specify a time. In addition, ffserver will skip frames until a key_frame
+specify a time. In addition, avserver will skip frames until a key_frame
 is found. This further reduces the startup delay by not transferring data
 that will be discarded.
 
-* You may want to adjust the MaxBandwidth in the ffserver.conf to limit
+* You may want to adjust the MaxBandwidth in the avserver.conf to limit
 the amount of bandwidth consumed by live streams.
 
 @section Why does the ?buffer / Preroll stop working after a time?
@@ -218,7 +218,7 @@ handled.
 @section Does the @code{?date=} stuff work.
 
 Yes (subject to the limitation outlined above). Also note that whenever you
-start ffserver, it deletes the ffm file (if any parameters have changed),
+start avserver, it deletes the ffm file (if any parameters have changed),
 thus wiping out what you had recorded before.
 
 The format of the @code{?date=xxxxxx} is fairly flexible. You should use one
@@ -246,26 +246,26 @@ For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
 
 @table @option
 @item -f @var{configfile}
-Use @file{configfile} instead of @file{/etc/ffserver.conf}.
+Use @file{configfile} instead of @file{/etc/avserver.conf}.
 @item -n
 Enable no-launch mode. This option disables all the Launch directives
-within the various <Stream> sections. Since ffserver will not launch
+within the various <Stream> sections. Since avserver will not launch
 any ffmpeg instances, you will have to launch them manually.
 @item -d
 Enable debug mode. This option increases log verbosity, directs log
-messages to stdout and causes ffserver to run in the foreground
+messages to stdout and causes avserver to run in the foreground
 rather than as a daemon.
 @end table
 @c man end
 
 @ignore
 
-@setfilename ffserver
-@settitle ffserver video server
+@setfilename avserver
+@settitle avserver video server
 
 @c man begin SEEALSO
 
-ffmpeg(1), avplay(1), avprobe(1), the @file{ffmpeg/doc/ffserver.conf}
+ffmpeg(1), avplay(1), avprobe(1), the @file{ffmpeg/doc/avserver.conf}
 example and the Libav HTML documentation
 @c man end
 

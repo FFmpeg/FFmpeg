@@ -691,7 +691,7 @@ static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, AVCode
     return ost;
 }
 
-static int read_ffserver_streams(AVFormatContext *s, const char *filename)
+static int read_avserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
     AVFormatContext *ic = NULL;
@@ -3766,9 +3766,9 @@ static void opt_output_file(const char *filename)
 
     if (!strcmp(file_oformat->name, "ffm") &&
         av_strstart(filename, "http:", NULL)) {
-        /* special case for files sent to ffserver: we get the stream
-           parameters from ffserver */
-        int err = read_ffserver_streams(oc, filename);
+        /* special case for files sent to avserver: we get the stream
+           parameters from avserver */
+        int err = read_avserver_streams(oc, filename);
         if (err < 0) {
             print_error(filename, err);
             ffmpeg_exit(1);

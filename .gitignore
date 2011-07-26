@@ -14,7 +14,7 @@ doxy
 ffmpeg
 avplay
 avprobe
-ffserver
+avserver
 libavcodec/*_tablegen
 libavcodec/*_tables.c
 libavcodec/*_tables.h

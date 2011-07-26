@@ -55,7 +55,7 @@ COMPILE_S = $(call COMPILE,AS)
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_AVPLAY)   += avplay
 PROGS-$(CONFIG_AVPROBE)  += avprobe
-PROGS-$(CONFIG_FFSERVER) += ffserver
+PROGS-$(CONFIG_AVSERVER) += avserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
@@ -64,7 +64,7 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
-BASENAMES   = ffmpeg avplay avprobe ffserver
+BASENAMES   = ffmpeg avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
 
@@ -118,7 +118,7 @@ $(foreach D,$(FFLIBS),$(eval $(call DOSUBDIR,lib$(D))))
 
 avplay.o: CFLAGS += $(SDL_CFLAGS)
 avplay$(EXESUF): FF_EXTRALIBS += $(SDL_LIBS)
-ffserver$(EXESUF): LDFLAGS += $(FFSERVERLDFLAGS)
+avserver$(EXESUF): LDFLAGS += $(AVSERVERLDFLAGS)
 
 $(PROGS): %$(EXESUF): %.o cmdutils.o $(FF_DEP_LIBS)
 	$(LD) $(LDFLAGS) -o $@ $< cmdutils.o $(FF_EXTRALIBS)

@@ -83,7 +83,7 @@ Configuration options:
   --disable-ffmpeg         disable ffmpeg build
   --disable-avplay         disable avplay build
   --disable-avprobe        disable avprobe build
-  --disable-ffserver       disable ffserver build
+  --disable-avserver       disable avserver build
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
@@ -915,7 +915,7 @@ CONFIG_LIST="
     ffmpeg
     avplay
     avprobe
-    ffserver
+    avserver
     fft
     frei0r
     golomb
@@ -1492,8 +1492,8 @@ ffmpeg_select="buffer_filter"
 avplay_deps="avcodec avformat swscale sdl"
 avplay_select="rdft"
 avprobe_deps="avcodec avformat"
-ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
-ffserver_extralibs='$ldl'
+avserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
+avserver_extralibs='$ldl'
 
 doc_deps="texi2html"
 
@@ -1637,7 +1637,7 @@ enable fastdiv
 enable ffmpeg
 enable avplay
 enable avprobe
-enable ffserver
+enable avserver
 enable network
 enable optimizations
 enable postproc
@@ -1648,7 +1648,7 @@ enable swscale_alpha
 
 # build settings
 SHFLAGS='-shared -Wl,-soname,$$(@F)'
-FFSERVERLDFLAGS=-Wl,-E
+AVSERVERLDFLAGS=-Wl,-E
 LIBPREF="lib"
 LIBSUF=".a"
 FULLNAME='$(NAME)$(BUILDSUF)'
@@ -2355,7 +2355,7 @@ case $target_os in
         host_libs=
         ;;
     sunos)
-        FFSERVERLDFLAGS=""
+        AVSERVERLDFLAGS=""
         SHFLAGS='-shared -Wl,-h,$$(@F)'
         enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
         network_extralibs="-lsocket -lnsl"
@@ -2400,7 +2400,7 @@ case $target_os in
         SLIBSUF=".dylib"
         SLIBNAME_WITH_VERSION='$(SLIBPREF)$(FULLNAME).$(LIBVERSION)$(SLIBSUF)'
         SLIBNAME_WITH_MAJOR='$(SLIBPREF)$(FULLNAME).$(LIBMAJOR)$(SLIBSUF)'
-        FFSERVERLDFLAGS=-Wl,-bind_at_load
+        AVSERVERLDFLAGS=-Wl,-bind_at_load
         objformat="macho"
         enabled x86_64 && objformat="macho64"
         enabled_any pic shared ||
@@ -2472,7 +2472,7 @@ case $target_os in
         add_cppflags -D_GNU_SOURCE
         add_ldflags -Zomf -Zbin-files -Zargs-wild -Zmap
         SHFLAGS='$(SUBDIR)$(NAME).def -Zdll -Zomf'
-        FFSERVERLDFLAGS=""
+        AVSERVERLDFLAGS=""
         LIBSUF="_s.a"
         SLIBPREF=""
         SLIBSUF=".dll"
@@ -3218,7 +3218,7 @@ AS_O=$CC_O
 CC_O=$CC_O
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
-FFSERVERLDFLAGS=$FFSERVERLDFLAGS
+AVSERVERLDFLAGS=$AVSERVERLDFLAGS
 SHFLAGS=$SHFLAGS
 YASMFLAGS=$YASMFLAGS
 BUILDSUF=$build_suffix

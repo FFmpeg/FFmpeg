@@ -164,7 +164,7 @@ Set the number of video frames to record.
 @item -r @var{fps}
 Set frame rate (Hz value, fraction or abbreviation), (default = 25).
 @item -s @var{size}
-Set frame size. The format is @samp{wxh} (ffserver default = 160x128, ffmpeg default = same as source).
+Set frame size. The format is @samp{wxh} (avserver default = 160x128, ffmpeg default = same as source).
 The following abbreviations are recognized:
 @table @samp
 @item sqcif
@@ -726,7 +726,7 @@ Set RTP payload size in bytes.
 Read input at native frame rate. Mainly used to simulate a grab device.
 @item -loop_input
 Loop over the input stream. Currently it works only for image
-streams. This option is used for automatic FFserver testing.
+streams. This option is used for automatic AVserver testing.
 This option is deprecated, use -loop.
 @item -loop_output @var{number_of_times}
 Repeatedly loop output for formats that support looping such as animated GIF
@@ -1079,7 +1079,7 @@ file to which you want to add them.
 @settitle ffmpeg video converter
 
 @c man begin SEEALSO
-avplay(1), avprobe(1), ffserver(1) and the Libav HTML documentation
+avplay(1), avprobe(1), avserver(1) and the Libav HTML documentation
 @c man end
 
 @c man begin AUTHORS

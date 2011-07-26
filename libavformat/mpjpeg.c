@@ -22,7 +22,7 @@
 
 /* Multipart JPEG */
 
-#define BOUNDARY_TAG "ffserver"
+#define BOUNDARY_TAG "avserver"
 
 static int mpjpeg_write_header(AVFormatContext *s)
 {

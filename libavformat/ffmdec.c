@@ -1,5 +1,5 @@
 /*
- * FFM (ffserver live feed) demuxer
+ * FFM (avserver live feed) demuxer
  * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of Libav.
@@ -23,7 +23,7 @@
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 #include "ffm.h"
-#if CONFIG_FFSERVER
+#if CONFIG_AVSERVER
 #include <unistd.h>
 
 int64_t ffm_read_write_index(int fd)
@@ -55,7 +55,7 @@ void ffm_set_write_index(AVFormatContext *s, int64_t pos, int64_t file_size)
     ffm->write_index = pos;
     ffm->file_size = file_size;
 }
-#endif // CONFIG_FFSERVER
+#endif // CONFIG_AVSERVER
 
 static int ffm_is_avail_data(AVFormatContext *s, int size)
 {
@@ -510,7 +510,7 @@ static int ffm_probe(AVProbeData *p)
 
 AVInputFormat ff_ffm_demuxer = {
     .name           = "ffm",
-    .long_name      = NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
+    .long_name      = NULL_IF_CONFIG_SMALL("FFM (AVserver live feed) format"),
     .priv_data_size = sizeof(FFMContext),
     .read_probe     = ffm_probe,
     .read_header    = ffm_read_header,

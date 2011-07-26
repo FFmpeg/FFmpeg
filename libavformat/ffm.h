@@ -1,5 +1,5 @@
 /*
- * FFM (ffserver live feed) common header
+ * FFM (avserver live feed) common header
  * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of Libav.
