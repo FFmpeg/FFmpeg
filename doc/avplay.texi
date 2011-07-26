@@ -1,8 +1,8 @@
 \input texinfo @c -*- texinfo -*-
 
-@settitle ffplay Documentation
+@settitle avplay Documentation
 @titlepage
-@center @titlefont{ffplay Documentation}
+@center @titlefont{avplay Documentation}
 @end titlepage
 
 @top
@@ -13,14 +13,14 @@
 
 @example
 @c man begin SYNOPSIS
-ffplay [options] @file{input_file}
+avplay [options] @file{input_file}
 @c man end
 @end example
 
 @chapter Description
 @c man begin DESCRIPTION
 
-FFplay is a very simple and portable media player using the Libav
+AVplay is a very simple and portable media player using the Libav
 libraries and the SDL library. It is mostly used as a testbed for the
 various Libav APIs.
 @c man end
@@ -166,8 +166,8 @@ Seek to percentage in file corresponding to fraction of width.
 
 @ignore
 
-@setfilename ffplay
-@settitle FFplay media player
+@setfilename avplay
+@settitle AVplay media player
 
 @c man begin SEEALSO
 ffmpeg(1), ffprobe(1), ffserver(1) and the Libav HTML documentation

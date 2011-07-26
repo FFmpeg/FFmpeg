@@ -1,5 +1,5 @@
 /*
- * ffplay : Simple Media Player based on the Libav libraries
+ * avplay : Simple Media Player based on the Libav libraries
  * Copyright (c) 2003 Fabrice Bellard
  *
  * This file is part of Libav.
@@ -55,7 +55,7 @@
 #include <unistd.h>
 #include <assert.h>
 
-const char program_name[] = "ffplay";
+const char program_name[] = "avplay";
 const int program_birth_year = 2003;
 
 #define MAX_QUEUE_SIZE (15 * 1024 * 1024)
@@ -1678,7 +1678,7 @@ static int input_config_props(AVFilterLink *link)
 
 static AVFilter input_filter =
 {
-    .name      = "ffplay_input",
+    .name      = "avplay_input",
 
     .priv_size = sizeof(FilterPriv),
 
@@ -2357,7 +2357,7 @@ static int decode_thread(void *arg)
     av_freep(&opts);
 
     if(ic->pb)
-        ic->pb->eof_reached= 0; //FIXME hack, ffplay maybe should not use url_feof() to test for the end
+        ic->pb->eof_reached= 0; //FIXME hack, avplay maybe should not use url_feof() to test for the end
 
     if(seek_by_bytes<0)
         seek_by_bytes= !!(ic->iformat->flags & AVFMT_TS_DISCONT);
@@ -2954,7 +2954,7 @@ static const OptionDef options[] = {
 static void show_usage(void)
 {
     printf("Simple media player\n");
-    printf("usage: ffplay [options] input_file\n");
+    printf("usage: %s [options] input_file\n", program_name);
     printf("\n");
 }
 
@@ -3030,7 +3030,7 @@ int main(int argc, char **argv)
     if (!input_filename) {
         show_usage();
         fprintf(stderr, "An input file must be specified\n");
-        fprintf(stderr, "Use -h to get full help or, even better, run 'man ffplay'\n");
+        fprintf(stderr, "Use -h to get full help or, even better, run 'man %s'\n", program_name);
         exit(1);
     }
 

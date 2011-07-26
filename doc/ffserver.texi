@@ -265,7 +265,7 @@ rather than as a daemon.
 
 @c man begin SEEALSO
 
-ffmpeg(1), ffplay(1), ffprobe(1), the @file{ffmpeg/doc/ffserver.conf}
+ffmpeg(1), avplay(1), ffprobe(1), the @file{ffmpeg/doc/ffserver.conf}
 example and the Libav HTML documentation
 @c man end
 

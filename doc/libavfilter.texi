@@ -24,7 +24,7 @@ some directory of your choice by:
 @end example
 
 And then read the README file in the top directory to learn how to
-integrate it into ffmpeg and ffplay.
+integrate it into ffmpeg and avplay.
 
 But note that there may still be serious bugs in the code and its API
 and ABI should not be considered stable yet!
@@ -56,7 +56,7 @@ result will be that in output the top half of the video is mirrored
 onto the bottom half.
 
 Video filters are loaded using the @var{-vf} option passed to
-ffmpeg or to ffplay. Filters in the same linear chain are separated by
+ffmpeg or to avplay. Filters in the same linear chain are separated by
 commas. In our example, @var{split, fifo, overlay} are in one linear
 chain, and @var{fifo, crop, vflip} are in another. The points where
 the linear chains join are labeled by names enclosed in square

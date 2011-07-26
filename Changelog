@@ -5,6 +5,7 @@ releases are sorted from youngest to oldest.
 version <next>:
 - BWF muxer
 - Flash Screen Video 2 decoder
+- ffplay renamed to avplay
 
 
 version 0.7:

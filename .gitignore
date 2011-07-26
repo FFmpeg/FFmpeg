@@ -12,7 +12,7 @@ doc/*.html
 doc/*.pod
 doxy
 ffmpeg
-ffplay
+avplay
 ffprobe
 ffserver
 libavcodec/*_tablegen

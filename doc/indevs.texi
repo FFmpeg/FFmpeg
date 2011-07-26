@@ -199,10 +199,10 @@ tools.
 @example
 # Grab and show the input of a video4linux device, frame rate is set
 # to the default of 25/1.
-ffplay -s 320x240 -f video4linux /dev/video0
+avplay -s 320x240 -f video4linux /dev/video0
 
 # Grab and show the input of a video4linux2 device, autoadjust size.
-ffplay -f video4linux2 /dev/video0
+avplay -f video4linux2 /dev/video0
 
 # Grab and record the input of a video4linux2 device, autoadjust size,
 # frame rate value defaults to 0/0 so it is read from the video4linux2

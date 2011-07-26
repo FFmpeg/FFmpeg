@@ -81,7 +81,7 @@ Configuration options:
                            and binaries will be unredistributable [no]
   --disable-doc            do not build documentation
   --disable-ffmpeg         disable ffmpeg build
-  --disable-ffplay         disable ffplay build
+  --disable-avplay         disable avplay build
   --disable-ffprobe        disable ffprobe build
   --disable-ffserver       disable ffserver build
   --disable-avdevice       disable libavdevice build
@@ -913,7 +913,7 @@ CONFIG_LIST="
     dxva2
     fastdiv
     ffmpeg
-    ffplay
+    avplay
     ffprobe
     ffserver
     fft
@@ -1489,8 +1489,8 @@ postproc_deps="gpl"
 # programs
 ffmpeg_deps="avcodec avformat swscale"
 ffmpeg_select="buffer_filter"
-ffplay_deps="avcodec avformat swscale sdl"
-ffplay_select="rdft"
+avplay_deps="avcodec avformat swscale sdl"
+avplay_select="rdft"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
@@ -1635,7 +1635,7 @@ enable debug
 enable doc
 enable fastdiv
 enable ffmpeg
-enable ffplay
+enable avplay
 enable ffprobe
 enable ffserver
 enable network

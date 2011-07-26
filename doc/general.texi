@@ -837,7 +837,7 @@ speed up is close to non-existent for normal one-off builds and is only
 noticeable when running make for a second time (for example in
 @code{make install}).
 
-@item In order to compile FFplay, you must have the MinGW development library
+@item In order to compile AVplay, you must have the MinGW development library
 of @uref{http://www.libsdl.org/, SDL}.
 Edit the @file{bin/sdl-config} script so that it points to the correct prefix
 where SDL was installed. Verify that @file{sdl-config} can be launched from

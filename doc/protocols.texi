@@ -52,10 +52,10 @@ resource to be concatenated, each one possibly specifying a distinct
 protocol.
 
 For example to read a sequence of files @file{split1.mpeg},
-@file{split2.mpeg}, @file{split3.mpeg} with @file{ffplay} use the
+@file{split2.mpeg}, @file{split3.mpeg} with @file{avplay} use the
 command:
 @example
-ffplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
+avplay concat:split1.mpeg\|split2.mpeg\|split3.mpeg
 @end example
 
 Note that you may need to escape the character "|" which is special for
@@ -183,10 +183,10 @@ application specified in @var{app}, may be prefixed by "mp4:".
 
 @end table
 
-For example to read with @file{ffplay} a multimedia resource named
+For example to read with @file{avplay} a multimedia resource named
 "sample" from the application "vod" from an RTMP server "myserver":
 @example
-ffplay rtmp://myserver/vod/sample
+avplay rtmp://myserver/vod/sample
 @end example
 
 @section rtmp, rtmpe, rtmps, rtmpt, rtmpte
@@ -224,9 +224,9 @@ For example, to stream a file in real-time to an RTMP server using
 ffmpeg -re -i myfile -f flv rtmp://myserver/live/mystream
 @end example
 
-To play the same stream using @file{ffplay}:
+To play the same stream using @file{avplay}:
 @example
-ffplay "rtmp://myserver/live/mystream live=1"
+avplay "rtmp://myserver/live/mystream live=1"
 @end example
 
 @section rtp
@@ -281,7 +281,7 @@ When receiving data over UDP, the demuxer tries to reorder received packets
 order for this to be enabled, a maximum delay must be specified in the
 @code{max_delay} field of AVFormatContext.
 
-When watching multi-bitrate Real-RTSP streams with @file{ffplay}, the
+When watching multi-bitrate Real-RTSP streams with @file{avplay}, the
 streams to display can be chosen with @code{-vst} @var{n} and
 @code{-ast} @var{n} for video and audio respectively, and can be switched
 on the fly by pressing @code{v} and @code{a}.
@@ -291,13 +291,13 @@ Example command lines:
 To watch a stream over UDP, with a max reordering delay of 0.5 seconds:
 
 @example
-ffplay -max_delay 500000 rtsp://server/video.mp4?udp
+avplay -max_delay 500000 rtsp://server/video.mp4?udp
 @end example
 
 To watch a stream tunneled over HTTP:
 
 @example
-ffplay rtsp://server/video.mp4?http
+avplay rtsp://server/video.mp4?http
 @end example
 
 To send a stream in realtime to a RTSP server, for others to watch:
@@ -358,13 +358,13 @@ To broadcast a stream on the local subnet, for watching in VLC:
 ffmpeg -re -i @var{input} -f sap sap://224.0.0.255?same_port=1
 @end example
 
-Similarly, for watching in ffplay:
+Similarly, for watching in avplay:
 
 @example
 ffmpeg -re -i @var{input} -f sap sap://224.0.0.255
 @end example
 
-And for watching in ffplay, over IPv6:
+And for watching in avplay, over IPv6:
 
 @example
 ffmpeg -re -i @var{input} -f sap sap://[ff0e::1:2:3:4]
@@ -389,13 +389,13 @@ Example command lines follow.
 To play back the first stream announced on the normal SAP multicast address:
 
 @example
-ffplay sap://
+avplay sap://
 @end example
 
 To play back the first stream announced on one the default IPv6 SAP multicast address:
 
 @example
-ffplay sap://[ff0e::2:7ffe]
+avplay sap://[ff0e::2:7ffe]
 @end example
 
 @section tcp
@@ -414,7 +414,7 @@ Listen for an incoming connection
 
 @example
 ffmpeg -i @var{input} -f @var{format} tcp://@var{hostname}:@var{port}?listen
-ffplay tcp://@var{hostname}:@var{port}
+avplay tcp://@var{hostname}:@var{port}
 @end example
 
 @end table
