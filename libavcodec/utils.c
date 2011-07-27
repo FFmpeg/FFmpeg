@@ -1053,7 +1053,7 @@ void avcodec_string(char *buf, int buf_size, AVCodecContext *enc, int encode)
                           enc->height*enc->sample_aspect_ratio.den,
                           1024*1024);
                 snprintf(buf + strlen(buf), buf_size - strlen(buf),
-                         " [PAR %d:%d DAR %d:%d]",
+                         " [SAR %d:%d DAR %d:%d]",
                          enc->sample_aspect_ratio.num, enc->sample_aspect_ratio.den,
                          display_aspect_ratio.num, display_aspect_ratio.den);
             }

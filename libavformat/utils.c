@@ -3402,7 +3402,7 @@ static void dump_stream_format(AVFormatContext *ic, int i, int index, int is_out
                   st->codec->width*st->sample_aspect_ratio.num,
                   st->codec->height*st->sample_aspect_ratio.den,
                   1024*1024);
-        av_log(NULL, AV_LOG_INFO, ", PAR %d:%d DAR %d:%d",
+        av_log(NULL, AV_LOG_INFO, ", SAR %d:%d DAR %d:%d",
                  st->sample_aspect_ratio.num, st->sample_aspect_ratio.den,
                  display_aspect_ratio.num, display_aspect_ratio.den);
     }
