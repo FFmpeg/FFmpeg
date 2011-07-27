@@ -486,22 +486,6 @@ static void fill_block8_c(uint8_t *block, uint8_t value, int line_size, int h)
     }
 }
 
-static void scale_block_c(const uint8_t src[64]/*align 8*/, uint8_t *dst/*align 8*/, int linesize)
-{
-    int i, j;
-    uint16_t *dst1 = (uint16_t *) dst;
-    uint16_t *dst2 = (uint16_t *)(dst + linesize);
-
-    for (j = 0; j < 8; j++) {
-        for (i = 0; i < 8; i++) {
-            dst1[i] = dst2[i] = src[i] * 0x0101;
-        }
-        src  += 8;
-        dst1 += linesize;
-        dst2 += linesize;
-    }
-}
-
 #define avg2(a,b) ((a+b+1)>>1)
 #define avg4(a,b,c,d) ((a+b+c+d+2)>>2)
 
@@ -2850,7 +2834,6 @@ av_cold void dsputil_init(DSPContext* c, AVCodecContext *avctx)
 
     c->fill_block_tab[0] = fill_block16_c;
     c->fill_block_tab[1] = fill_block8_c;
-    c->scale_block = scale_block_c;
 
     /* TODO [0] 16  [1] 8 */
     c->pix_abs[0][0] = pix_abs16_c;

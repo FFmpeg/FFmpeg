@@ -1050,7 +1050,7 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
                     return -1;
                 }
                 if (blk != FILL_BLOCK)
-                c->dsp.scale_block(ublock, dst, stride);
+                c->bdsp.scale_block(ublock, dst, stride);
                 bx++;
                 dst  += 8;
                 prev += 8;

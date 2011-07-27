@@ -559,7 +559,6 @@ typedef struct DSPContext {
 
     /* bink functions */
     op_fill_func fill_block_tab[2];
-    void (*scale_block)(const uint8_t src[64]/*align 8*/, uint8_t *dst/*align 8*/, int linesize);
 } DSPContext;
 
 void dsputil_static_init(void);
