@@ -72,8 +72,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         "test $1, %4                            \n\t"
         " jnz 4f                                \n\t"
 
-        "add  $4, %0                            \n\t"
-        "mov  %0, %2                            \n\t"
+        "add  $4, %2                            \n\t"
 
         "3:                                     \n\t"
         "add  $1, %1                            \n\t"
@@ -101,7 +100,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
 
 static int decode_significance_8x8_x86(CABACContext *c,
                                        uint8_t *significant_coeff_ctx_base,
-                                       int *index, x86_reg last_off, const uint8_t *sig_off){
+                                       int *index, uint8_t *last_coeff_ctx_base, const uint8_t *sig_off){
     int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
@@ -128,7 +127,6 @@ static int decode_significance_8x8_x86(CABACContext *c,
         " jz 3f                                 \n\t"
 
         "movzbl "MANGLE(last_coeff_flag_offset_8x8)"(%k6), %k6\n\t"
-        "add %9, %6                             \n\t"
         "add %11, %6                            \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "%7", "(%6)", "%3",
@@ -141,8 +139,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "test $1, %4                            \n\t"
         " jnz 4f                                \n\t"
 
-        "add $4, %0                             \n\t"
-        "mov %0, %2                             \n\t"
+        "add  $4, %2                            \n\t"
 
         "3:                                     \n\t"
         "addl $1, %k6                           \n\t"
@@ -159,7 +156,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "movl %3, %a13(%7)                      \n\t"
         :"=&q"(coeff_count),"+m"(last), "+m"(index), "=&r"(low), "=&r"(bit),
          "=&r"(range), "=&r"(state)
-        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_off),
+        :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_coeff_ctx_base),
          "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "memory"
