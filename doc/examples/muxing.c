@@ -372,7 +372,7 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
     if (oc->oformat->flags & AVFMT_RAWPICTURE) {
         /* raw video case. The API will change slightly in the near
-           futur for that */
+           future for that. */
         AVPacket pkt;
         av_init_packet(&pkt);
 
