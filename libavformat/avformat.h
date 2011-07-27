@@ -48,63 +48,70 @@ const char *avformat_license(void);
 struct AVFormatContext;
 
 
-/*
- * Public Metadata API.
+/**
+ * @defgroup metadata_api Public Metadata API
+ * @{
  * The metadata API allows libavformat to export metadata tags to a client
  * application using a sequence of key/value pairs. Like all strings in FFmpeg,
  * metadata must be stored as UTF-8 encoded Unicode. Note that metadata
  * exported by demuxers isn't checked to be valid UTF-8 in most cases.
  * Important concepts to keep in mind:
- * 1. Keys are unique; there can never be 2 tags with the same key. This is
+ * -  Keys are unique; there can never be 2 tags with the same key. This is
  *    also meant semantically, i.e., a demuxer should not knowingly produce
  *    several keys that are literally different but semantically identical.
  *    E.g., key=Author5, key=Author6. In this example, all authors must be
  *    placed in the same tag.
- * 2. Metadata is flat, not hierarchical; there are no subtags. If you
+ * -  Metadata is flat, not hierarchical; there are no subtags. If you
  *    want to store, e.g., the email address of the child of producer Alice
  *    and actor Bob, that could have key=alice_and_bobs_childs_email_address.
- * 3. Several modifiers can be applied to the tag name. This is done by
+ * -  Several modifiers can be applied to the tag name. This is done by
  *    appending a dash character ('-') and the modifier name in the order
  *    they appear in the list below -- e.g. foo-eng-sort, not foo-sort-eng.
- *    a) language -- a tag whose value is localized for a particular language
+ *    -  language -- a tag whose value is localized for a particular language
  *       is appended with the ISO 639-2/B 3-letter language code.
  *       For example: Author-ger=Michael, Author-eng=Mike
  *       The original/default language is in the unqualified "Author" tag.
  *       A demuxer should set a default if it sets any translated tag.
- *    b) sorting  -- a modified version of a tag that should be used for
+ *    -  sorting  -- a modified version of a tag that should be used for
  *       sorting will have '-sort' appended. E.g. artist="The Beatles",
  *       artist-sort="Beatles, The".
  *
- * 4. Demuxers attempt to export metadata in a generic format, however tags
+ * -  Demuxers attempt to export metadata in a generic format, however tags
  *    with no generic equivalents are left as they are stored in the container.
  *    Follows a list of generic tag names:
  *
- * album        -- name of the set this work belongs to
- * album_artist -- main creator of the set/album, if different from artist.
- *                 e.g. "Various Artists" for compilation albums.
- * artist       -- main creator of the work
- * comment      -- any additional description of the file.
- * composer     -- who composed the work, if different from artist.
- * copyright    -- name of copyright holder.
- * creation_time-- date when the file was created, preferably in ISO 8601.
- * date         -- date when the work was created, preferably in ISO 8601.
- * disc         -- number of a subset, e.g. disc in a multi-disc collection.
- * encoder      -- name/settings of the software/hardware that produced the file.
- * encoded_by   -- person/group who created the file.
- * filename     -- original name of the file.
- * genre        -- <self-evident>.
- * language     -- main language in which the work is performed, preferably
- *                 in ISO 639-2 format. Multiple languages can be specified by
- *                 separating them with commas.
- * performer    -- artist who performed the work, if different from artist.
- *                 E.g for "Also sprach Zarathustra", artist would be "Richard
- *                 Strauss" and performer "London Philharmonic Orchestra".
- * publisher    -- name of the label/publisher.
- * service_name     -- name of the service in broadcasting (channel name).
- * service_provider -- name of the service provider in broadcasting.
- * title        -- name of the work.
- * track        -- number of this work in the set, can be in form current/total.
- * variant_bitrate -- the total bitrate of the bitrate variant that the current stream is part of
+ @verbatim
+ album        -- name of the set this work belongs to
+ album_artist -- main creator of the set/album, if different from artist.
+                 e.g. "Various Artists" for compilation albums.
+ artist       -- main creator of the work
+ comment      -- any additional description of the file.
+ composer     -- who composed the work, if different from artist.
+ copyright    -- name of copyright holder.
+ creation_time-- date when the file was created, preferably in ISO 8601.
+ date         -- date when the work was created, preferably in ISO 8601.
+ disc         -- number of a subset, e.g. disc in a multi-disc collection.
+ encoder      -- name/settings of the software/hardware that produced the file.
+ encoded_by   -- person/group who created the file.
+ filename     -- original name of the file.
+ genre        -- <self-evident>.
+ language     -- main language in which the work is performed, preferably
+                 in ISO 639-2 format. Multiple languages can be specified by
+                 separating them with commas.
+ performer    -- artist who performed the work, if different from artist.
+                 E.g for "Also sprach Zarathustra", artist would be "Richard
+                 Strauss" and performer "London Philharmonic Orchestra".
+ publisher    -- name of the label/publisher.
+ service_name     -- name of the service in broadcasting (channel name).
+ service_provider -- name of the service provider in broadcasting.
+ title        -- name of the work.
+ track        -- number of this work in the set, can be in form current/total.
+ variant_bitrate -- the total bitrate of the bitrate variant that the current stream is part of
+ @endverbatim
+ *
+ * Look in the examples section for an application example how to use the Metadata API.
+ *
+ * @}
  */
 
 #if FF_API_OLD_METADATA2

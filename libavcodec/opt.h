@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * This header is provided for compatibility only and will be removed
+ * on next major bump
+ */
+
 #ifndef AVCODEC_OPT_H
 #define AVCODEC_OPT_H
 

@@ -69,7 +69,7 @@ int av_image_fill_linesizes(int linesizes[4], enum PixelFormat pix_fmt, int widt
  *
  * @param data pointers array to be filled with the pointer for each image plane
  * @param ptr the pointer to a buffer which will contain the image
- * @param linesizes[4] the array containing the linesize for each
+ * @param linesizes the array containing the linesize for each
  * plane, should be filled by av_image_fill_linesizes()
  * @return the size in bytes required for the image buffer, a negative
  * error code in case of failure
