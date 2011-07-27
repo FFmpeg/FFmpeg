@@ -79,13 +79,14 @@ static int dnxhd_10bit_dct_quantize(MpegEncContext *ctx, DCTELEM *block,
     const uint8_t *scantable= ctx->intra_scantable.scantable;
     const int *qmat = ctx->q_intra_matrix[qscale];
     int last_non_zero = 0;
+    int i;
 
     ctx->dsp.fdct(block);
 
     // Divide by 4 with rounding, to compensate scaling of DCT coefficients
     block[0] = (block[0] + 2) >> 2;
 
-    for (int i = 1; i < 64; ++i) {
+    for (i = 1; i < 64; ++i) {
         int j = scantable[i];
         int sign = block[j] >> 31;
         int level = (block[j] ^ sign) - sign;
@@ -634,9 +635,10 @@ static int dnxhd_mb_var_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
             int sum = 0;
             int sqsum = 0;
             int mean, sqmean;
+            int i, j;
             // Macroblocks are 16x16 pixels, unlike DCT blocks which are 8x8.
-            for (int i = 0; i < 16; ++i) {
-                for (int j = 0; j < 16; ++j) {
+            for (i = 0; i < 16; ++i) {
+                for (j = 0; j < 16; ++j) {
                     // Turn 16-bit pixels into 10-bit ones.
                     int const sample = (unsigned)pix[j] >> 6;
                     sum += sample;
