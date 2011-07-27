@@ -703,10 +703,11 @@ of the output file:
 @example
 avconv -i in.ogg -map_metadata 0:0,s0 out.mp3
 @end example
-@item -map_chapters @var{outfile}:@var{infile}
-Copy chapters from @var{infile} to @var{outfile}. If no chapter mapping is specified,
-then chapters are copied from the first input file with at least one chapter to all
-output files. Use a negative file index to disable any chapter copying.
+@item -map_chapters @var{input_file_index}
+Copy chapters from input file with index @var{input_file_index} to the next
+output file. If no chapter mapping is specified, then chapters are copied from
+the first input file with at least one chapter. Use a negative file index to
+disable any chapter copying.
 @item -debug
 Print specific debug info.
 @item -benchmark
