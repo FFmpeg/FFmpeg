@@ -4394,6 +4394,10 @@ int main(int argc, char **argv)
 
     show_banner();
 
+    av_log(NULL, AV_LOG_WARNING, "This program is not developed anymore and is only "
+                                 "provided for compatibility. Use avconv instead "
+                                 "(see Changelog for the list of incompatible changes).\n");
+
     /* parse options */
     parse_options(argc, argv, options, opt_output_file);
 
