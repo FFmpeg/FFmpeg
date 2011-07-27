@@ -1184,11 +1184,14 @@ same as @var{out_w} and @var{out_h}
 x and y offsets as specified by the @var{x} and @var{y}
 expressions, or NAN if not yet specified
 
-@item dar, a
-input display aspect ratio, same as @var{iw} / @var{ih}
+@item a
+same as @var{iw} / @var{ih}
 
 @item sar
 input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
 
 @item hsub, vsub
 horizontal and vertical chroma subsample values. For example for the
@@ -1289,11 +1292,14 @@ the output (cropped) width and heigth
 @item ow, oh
 same as @var{out_w} and @var{out_h}
 
-@item dar, a
-input display aspect ratio, same as @var{iw} / @var{ih}
+@item a
+same as @var{iw} / @var{ih}
 
 @item sar
 input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
 
 @item hsub, vsub
 horizontal and vertical chroma subsample values. For example for the
