@@ -1,18 +1,9 @@
-FFSERVER_REFFILE = $(SRC_PATH)/tests/ffserver.regression.ref
-
 AREF = fate-acodec-aref
 VREF = fate-vsynth1-vref fate-vsynth2-vref
 REFS = $(AREF) $(VREF)
 
 $(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
 $(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
-
-ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
-	@echo
-	@echo "Unfortunately ffserver is broken and therefore its regression"
-	@echo "test fails randomly. Treat the results accordingly."
-	@echo
-	$(SRC_PATH)/tests/ffserver-regression.sh $(FFSERVER_REFFILE) $(SRC_PATH)/tests/ffserver.conf
 
 tests/vsynth1/00.pgm: tests/videogen$(HOSTEXESUF)
 	@mkdir -p tests/vsynth1
