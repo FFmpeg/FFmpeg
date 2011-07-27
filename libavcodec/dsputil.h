@@ -111,11 +111,6 @@ void ff_vp3_idct_dc_add_c(uint8_t *dest/*align 8*/, int line_size, const DCTELEM
 void ff_vp3_v_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 
-/* Bink functions */
-void ff_bink_idct_c    (DCTELEM *block);
-void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block);
-void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
-
 /* EA functions */
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 
@@ -557,7 +552,6 @@ typedef struct DSPContext {
     h264_chroma_mc_func put_rv40_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_rv40_chroma_pixels_tab[3];
 
-    /* bink functions */
     op_fill_func fill_block_tab[2];
 } DSPContext;
 
