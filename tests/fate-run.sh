@@ -49,28 +49,28 @@ run(){
     $target_exec $target_path/"$@"
 }
 
-ffmpeg(){
-    run ffmpeg -v 0 -threads $threads -thread_type $thread_type "$@"
+avconv(){
+    run avconv -v 0 -threads $threads -thread_type $thread_type "$@"
 }
 
 framecrc(){
-    ffmpeg "$@" -f framecrc -
+    avconv "$@" -f framecrc -
 }
 
 framemd5(){
-    ffmpeg "$@" -f framemd5 -
+    avconv "$@" -f framemd5 -
 }
 
 crc(){
-    ffmpeg "$@" -f crc -
+    avconv "$@" -f crc -
 }
 
 md5(){
-    ffmpeg "$@" md5:
+    avconv "$@" md5:
 }
 
 pcm(){
-    ffmpeg "$@" -vn -f s16le -
+    avconv "$@" -vn -f s16le -
 }
 
 regtest(){

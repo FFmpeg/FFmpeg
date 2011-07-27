@@ -53,6 +53,7 @@ COMPILE_S = $(call COMPILE,AS)
 %.c %.h: TAG = GEN
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
+PROGS-$(CONFIG_AVCONV)   += avconv
 PROGS-$(CONFIG_AVPLAY)   += avplay
 PROGS-$(CONFIG_AVPROBE)  += avprobe
 PROGS-$(CONFIG_AVSERVER) += avserver
@@ -64,7 +65,7 @@ HOSTPROGS  := $(TESTTOOLS:%=tests/%)
 TOOLS       = qt-faststart trasher
 TOOLS-$(CONFIG_ZLIB) += cws2fws
 
-BASENAMES   = ffmpeg avplay avprobe avserver
+BASENAMES   = ffmpeg avconv avplay avprobe avserver
 ALLPROGS    = $(BASENAMES:%=%$(EXESUF))
 ALLMANPAGES = $(BASENAMES:%=%.1)
 

@@ -12,6 +12,7 @@ doc/*.html
 doc/*.pod
 doxy
 ffmpeg
+avconv
 avplay
 avprobe
 avserver
