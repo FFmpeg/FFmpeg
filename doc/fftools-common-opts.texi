@@ -114,5 +114,22 @@ muxer:
 ffmpeg -i input.flac -id3v2_version 3 out.mp3
 @end example
 
+You can precisely specify which stream(s) should the codec AVOption apply to by
+appending a stream specifier of the form
+@option{[:@var{stream_type}][:@var{stream_index}]} to the option name.
+@var{stream_type} is 'v' for video, 'a' for audio and 's' for subtitle streams.
+@var{stream_index} is a global stream index when @var{stream_type} isn't
+given, otherwise it counts streams of the given type only. As always, the index
+is zero-based. For example
+@example
+-foo -- applies to all applicable streams
+-foo:v -- applies to all video streams
+-foo:a:2 -- applies to the third audio stream
+-foo:0 -- applies to the first stream
+@end example
+
 Note -nooption syntax cannot be used for boolean AVOptions, use -option
 0/-option 1.
+
+Note2 old undocumented way of specifying per-stream AVOptions by prepending
+v/a/s to the options name is now obsolete and will be removed soon.

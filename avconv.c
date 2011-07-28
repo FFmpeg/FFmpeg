@@ -674,8 +674,10 @@ static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, AVCode
     ost->index = idx;
     ost->st    = st;
     ost->enc   = codec;
-    if (codec)
-        ost->opts  = filter_codec_opts(codec_opts, codec->id, 1);
+    if (codec) {
+        st->codec->codec_type = codec->type;
+        ost->opts  = filter_codec_opts(codec_opts, codec->id, oc, st);
+    }
 
     avcodec_get_context_defaults3(st->codec, codec);
 
@@ -3137,7 +3139,7 @@ static int opt_input_file(const char *opt, const char *filename)
         ist->st = st;
         ist->file_index = nb_input_files;
         ist->discard = 1;
-        ist->opts = filter_codec_opts(codec_opts, ist->st->codec->codec_id, 0);
+        ist->opts = filter_codec_opts(codec_opts, ist->st->codec->codec_id, ic, st);
 
         if (i < nb_ts_scale)
             ist->ts_scale = ts_scale[i];

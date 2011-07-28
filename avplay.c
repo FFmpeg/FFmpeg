@@ -2134,7 +2134,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         return -1;
     avctx = ic->streams[stream_index]->codec;
 
-    opts = filter_codec_opts(codec_opts, avctx->codec_id, 0);
+    opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index]);
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
