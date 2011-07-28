@@ -4381,7 +4381,9 @@ static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
 static void opt_passlogfile(const char *opt, const char *arg)
 {
     pass_logfilename_prefix = arg;
+#if CONFIG_LIBX264_ENCODER
     opt_default("passlogfile", arg);
+#endif
 }
 
 static const OptionDef options[] = {
