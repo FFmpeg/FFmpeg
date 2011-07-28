@@ -497,10 +497,10 @@
 %macro STORE_DIFFx2 8 ; add1, add2, reg1, reg2, zero, shift, source, stride
     movh       %3, [%7]
     movh       %4, [%7+%8]
-    punpcklbw  %3, %5
-    punpcklbw  %4, %5
     psraw      %1, %6
     psraw      %2, %6
+    punpcklbw  %3, %5
+    punpcklbw  %4, %5
     paddw      %3, %1
     paddw      %4, %2
     packuswb   %3, %5
