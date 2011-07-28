@@ -1432,13 +1432,6 @@ void sws_printVec2(SwsVector *a, AVClass *log_ctx, int log_level)
     }
 }
 
-#if LIBSWSCALE_VERSION_MAJOR < 1
-void sws_printVec(SwsVector *a)
-{
-    sws_printVec2(a, NULL, AV_LOG_DEBUG);
-}
-#endif
-
 void sws_freeVec(SwsVector *a)
 {
     if (!a) return;

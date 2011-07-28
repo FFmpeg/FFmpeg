@@ -123,34 +123,6 @@ void sws_rgb2rgb_init(void)
         rgb2rgb_init_x86();
 }
 
-#if LIBSWSCALE_VERSION_MAJOR < 1
-void palette8topacked32(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    sws_convertPalette8ToPacked32(src, dst, num_pixels, palette);
-}
-
-void palette8topacked24(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    sws_convertPalette8ToPacked24(src, dst, num_pixels, palette);
-}
-
-/**
- * Palette is assumed to contain BGR16, see rgb32to16 to convert the palette.
- */
-void palette8torgb16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    long i;
-    for (i=0; i<num_pixels; i++)
-        ((uint16_t *)dst)[i] = ((const uint16_t *)palette)[src[i]];
-}
-void palette8tobgr16(const uint8_t *src, uint8_t *dst, long num_pixels, const uint8_t *palette)
-{
-    long i;
-    for (i=0; i<num_pixels; i++)
-        ((uint16_t *)dst)[i] = av_bswap16(((const uint16_t *)palette)[src[i]]);
-}
-#endif
-
 void rgb32to24(const uint8_t *src, uint8_t *dst, int src_size)
 {
     int i;
