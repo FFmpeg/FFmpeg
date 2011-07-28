@@ -45,23 +45,18 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
     int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
-    int low;
-    int range;
     __asm__ volatile(
-        "movl %a11(%6), %5                      \n\t"
-        "movl %a12(%6), %3                      \n\t"
-
         "2:                                     \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "%6", "(%1)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a13")
+                             "%w3", "%5", "%k0", "%b0", "%a11")
 
         "test $1, %4                            \n\t"
         " jz 3f                                 \n\t"
         "add  %10, %1                           \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "%6", "(%1)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a13")
+                             "%w3", "%5", "%k0", "%b0", "%a11")
 
         "sub  %10, %1                           \n\t"
         "mov  %2, %0                            \n\t"
@@ -85,13 +80,9 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         "4:                                     \n\t"
         "add  %9, %k0                           \n\t"
         "shr $2, %k0                            \n\t"
-
-        "movl %5, %a11(%6)                      \n\t"
-        "movl %3, %a12(%6)                      \n\t"
         :"=&q"(coeff_count), "+r"(significant_coeff_ctx_base), "+m"(index),
-         "=&r"(low), "=&r"(bit), "=&r"(range)
+         "+&r"(c->low), "=&r"(bit), "+&r"(c->range)
         :"r"(c), "m"(minusstart), "m"(end), "m"(minusindex), "m"(last_off),
-         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "memory"
     );
@@ -104,14 +95,9 @@ static int decode_significance_8x8_x86(CABACContext *c,
     int minusindex= 4-(intptr_t)index;
     int bit;
     x86_reg coeff_count;
-    int low;
-    int range;
     x86_reg last=0;
     x86_reg state;
     __asm__ volatile(
-        "movl %a12(%7), %5                      \n\t"
-        "movl %a13(%7), %3                      \n\t"
-
         "mov %1, %6                             \n\t"
         "2:                                     \n\t"
 
@@ -120,7 +106,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "add %9, %6                             \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "%7", "(%6)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a14")
+                             "%w3", "%5", "%k0", "%b0", "%a12")
 
         "mov %1, %k6                            \n\t"
         "test $1, %4                            \n\t"
@@ -130,7 +116,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "add %11, %6                            \n\t"
 
         BRANCHLESS_GET_CABAC("%4", "%7", "(%6)", "%3",
-                             "%w3", "%5", "%k0", "%b0", "%a14")
+                             "%w3", "%5", "%k0", "%b0", "%a12")
 
         "mov %2, %0                             \n\t"
         "mov %1, %k6                            \n\t"
@@ -151,13 +137,9 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "4:                                     \n\t"
         "addl %8, %k0                           \n\t"
         "shr $2, %k0                            \n\t"
-
-        "movl %5, %a12(%7)                      \n\t"
-        "movl %3, %a13(%7)                      \n\t"
-        :"=&q"(coeff_count),"+m"(last), "+m"(index), "=&r"(low), "=&r"(bit),
-         "=&r"(range), "=&r"(state)
+        :"=&q"(coeff_count),"+m"(last), "+m"(index), "+&r"(c->low), "=&r"(bit),
+         "+&r"(c->range), "=&r"(state)
         :"r"(c), "m"(minusindex), "m"(significant_coeff_ctx_base), "m"(sig_off), "m"(last_coeff_ctx_base),
-         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "memory"
     );
