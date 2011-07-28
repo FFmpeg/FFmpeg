@@ -94,17 +94,17 @@ will be dropped in a following Libav version.
 
 @section AVOptions
 
-These options are provided directly by the libavformat and libavcodec
-libraries. To see the list of available AVOptions, use the
+These options are provided directly by the libavformat, libavdevice and
+libavcodec libraries. To see the list of available AVOptions, use the
 @option{-help} option. They are separated into two categories:
 @table @option
 @item generic
-Can be set for any container or codec. Generic options are listed under
-AVFormatContext options for containers and under AVCodecContext options
-for codecs.
+These options can be set for any container, codec or device. Generic options are
+listed under AVFormatContext options for containers/devices and under
+AVCodecContext options for codecs.
 @item private
-Are specific to the given container or codec. Private options are listed
-under their corresponding containers/codecs.
+These options are specific to the given container, device or codec. Private
+options are listed under their corresponding containers/devices/codecs.
 @end table
 
 For example to write an ID3v2.3 header instead of a default ID3v2.4 to
