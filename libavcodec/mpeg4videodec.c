@@ -990,28 +990,6 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         SKIP_COUNTER(re, &s->gb, 1+12+1);
                     }
 
-#if 0
-                    if(s->error_recognition >= FF_ER_COMPLIANT){
-                        const int abs_level= FFABS(level);
-                        if(abs_level<=MAX_LEVEL && run<=MAX_RUN){
-                            const int run1= run - rl->max_run[last][abs_level] - 1;
-                            if(abs_level <= rl->max_level[last][run]){
-                                av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, vlc encoding possible\n");
-                                return -1;
-                            }
-                            if(s->error_recognition > FF_ER_COMPLIANT){
-                                if(abs_level <= rl->max_level[last][run]*2){
-                                    av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 1 encoding possible\n");
-                                    return -1;
-                                }
-                                if(run1 >= 0 && abs_level <= rl->max_level[last][run1]){
-                                    av_log(s->avctx, AV_LOG_ERROR, "illegal 3. esc, esc 2 encoding possible\n");
-                                    return -1;
-                                }
-                            }
-                        }
-                    }
-#endif
                     if (level>0) level= level * qmul + qadd;
                     else         level= level * qmul - qadd;
 
