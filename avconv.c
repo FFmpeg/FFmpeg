@@ -143,8 +143,6 @@ static int do_deinterlace = 0;
 static int top_field_first = -1;
 static int me_threshold = 0;
 static int intra_dc_precision = 8;
-static int loop_input = 0;
-static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
@@ -2889,20 +2887,6 @@ static int opt_audio_channels(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_video_channel(const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -channel.\n");
-    opt_default("channel", arg);
-    return 0;
-}
-
-static int opt_video_standard(const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -standard.\n");
-    opt_default("standard", arg);
-    return 0;
-}
-
 static int opt_codec(int *pstream_copy, char **pcodec_name,
                       int codec_type, const char *arg)
 {
@@ -3028,13 +3012,6 @@ static int opt_map_metadata(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_map_meta_data(const char *opt, const char *arg)
-{
-    fprintf(stderr, "-map_meta_data is deprecated and will be removed soon. "
-                    "Use -map_metadata instead.\n");
-    return opt_map_metadata(opt, arg);
-}
-
 static int opt_input_ts_scale(const char *opt, const char *arg)
 {
     unsigned int stream;
@@ -3060,19 +3037,6 @@ static int opt_recording_time(const char *opt, const char *arg)
 static int opt_start_time(const char *opt, const char *arg)
 {
     start_time = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
-static int opt_recording_timestamp(const char *opt, const char *arg)
-{
-    char buf[128];
-    int64_t recording_timestamp = parse_time_or_die(opt, arg, 0) / 1E6;
-    struct tm time = *gmtime((time_t*)&recording_timestamp);
-    strftime(buf, sizeof(buf), "creation_time=%FT%T%z", &time);
-    opt_metadata("metadata", buf);
-
-    av_log(NULL, AV_LOG_WARNING, "%s is deprecated, set the 'creation_time' metadata "
-                                 "tag instead.\n", opt);
     return 0;
 }
 
@@ -3190,11 +3154,6 @@ static int opt_input_file(const char *opt, const char *filename)
             exit_program(1);
         }
         opt_programid=0;
-    }
-
-    if (loop_input) {
-        av_log(NULL, AV_LOG_WARNING, "-loop_input is deprecated, use -loop 1\n");
-        ic->loop_input = loop_input;
     }
 
     /* Set AVCodecContext options for avformat_find_stream_info */
@@ -3797,10 +3756,6 @@ static void opt_output_file(const char *filename)
 
     oc->preload= (int)(mux_preload*AV_TIME_BASE);
     oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
-    if (loop_output >= 0) {
-        av_log(NULL, AV_LOG_WARNING, "-loop_output is deprecated, use -loop\n");
-        oc->loop_output = loop_output;
-    }
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     /* copy chapters */
@@ -4212,8 +4167,6 @@ static const OptionDef options[] = {
     { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
-    { "map_meta_data", HAS_ARG | OPT_EXPERT, {(void*)opt_map_meta_data}, "DEPRECATED set meta data information of outfile from infile",
-      "outfile[,metadata]:infile[,metadata]" },
     { "map_metadata", HAS_ARG | OPT_EXPERT, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
@@ -4222,7 +4175,6 @@ static const OptionDef options[] = {
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "stream:scale" },
-    { "timestamp", HAS_ARG, {(void*)opt_recording_timestamp}, "set the recording timestamp ('now' to set the current time)", "time" },
     { "metadata", HAS_ARG, {(void*)opt_metadata}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
@@ -4233,8 +4185,6 @@ static const OptionDef options[] = {
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump},
       "when dumping packets, also dump the payload" },
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
-    { "loop_input", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "deprecated, use -loop" },
-    { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "deprecated, use -loop", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "set the verbosity level", "number" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "threads",  HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
@@ -4316,8 +4266,6 @@ static const OptionDef options[] = {
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_codec_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
     /* grab options */
-    { "vc", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_channel}, "deprecated, use -channel", "channel" },
-    { "tvstd", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_GRAB, {(void*)opt_video_standard}, "deprecated, use -standard", "standard" },
     { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, {(void*)&input_sync}, "sync read on input", "" },
 
     /* muxer options */

@@ -633,10 +633,6 @@ avconv -i file.mov -an -vn -sbsf mov2textsub -scodec copy -f rawvideo sub.txt
 @section Audio/Video grab options
 
 @table @option
-@item -vc @var{channel}
-Set video grab channel (DV1394 only).
-@item -tvstd @var{standard}
-Set television standard (NTSC, PAL (SECAM)).
 @item -isync
 Synchronize read on input.
 @end table
@@ -681,9 +677,6 @@ avconv -i a.mov -i b.mov -vcodec copy -acodec copy out.mov -map 0.2 -map 1.6
 To add more streams to the output file, you can use the
 @code{-newaudio}, @code{-newvideo}, @code{-newsubtitle} options.
 
-@item -map_meta_data @var{outfile}[,@var{metadata}]:@var{infile}[,@var{metadata}]
-Deprecated, use @var{-map_metadata} instead.
-
 @item -map_metadata @var{outfile}[,@var{metadata}]:@var{infile}[,@var{metadata}]
 Set metadata information of @var{outfile} from @var{infile}. Note that those
 are file indices (zero-based), not filenames.
@@ -725,14 +718,6 @@ Only use bit exact algorithms (for codec testing).
 Set RTP payload size in bytes.
 @item -re
 Read input at native frame rate. Mainly used to simulate a grab device.
-@item -loop_input
-Loop over the input stream. Currently it works only for image
-streams. This option is used for automatic AVserver testing.
-This option is deprecated, use -loop.
-@item -loop_output @var{number_of_times}
-Repeatedly loop output for formats that support looping such as animated GIF
-(0 will loop the output infinitely).
-This option is deprecated, use -loop.
 @item -threads @var{count}
 Thread count.
 @item -vsync @var{parameter}
