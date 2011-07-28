@@ -142,10 +142,48 @@ void ff_eac3_output_frame_header(AC3EncodeContext *s)
     put_bits(&s->pb, 5, s->bitstream_id);           /* bitstream id (EAC3=16) */
     put_bits(&s->pb, 5, -opt->dialogue_level);      /* dialogue normalization level */
     put_bits(&s->pb, 1, 0);                         /* no compression gain */
-    put_bits(&s->pb, 1, 0);                         /* no mixing metadata */
-    /* TODO: mixing metadata */
-    put_bits(&s->pb, 1, 0);                         /* no info metadata */
-    /* TODO: info metadata */
+    /* mixing metadata*/
+    put_bits(&s->pb, 1, opt->eac3_mixing_metadata);
+    if (opt->eac3_mixing_metadata) {
+        if (s->channel_mode > AC3_CHMODE_STEREO)
+            put_bits(&s->pb, 2, opt->preferred_stereo_downmix);
+        if (s->has_center) {
+            put_bits(&s->pb, 3, s->ltrt_center_mix_level);
+            put_bits(&s->pb, 3, s->loro_center_mix_level);
+        }
+        if (s->has_surround) {
+            put_bits(&s->pb, 3, s->ltrt_surround_mix_level);
+            put_bits(&s->pb, 3, s->loro_surround_mix_level);
+        }
+        if (s->lfe_on)
+            put_bits(&s->pb, 1, 0);
+        put_bits(&s->pb, 1, 0);                     /* no program scale */
+        put_bits(&s->pb, 1, 0);                     /* no ext program scale */
+        put_bits(&s->pb, 2, 0);                     /* no mixing parameters */
+        if (s->channel_mode < AC3_CHMODE_STEREO)
+            put_bits(&s->pb, 1, 0);                 /* no pan info */
+        put_bits(&s->pb, 1, 0);                     /* no frame mix config info */
+    }
+    /* info metadata*/
+    put_bits(&s->pb, 1, opt->eac3_info_metadata);
+    if (opt->eac3_info_metadata) {
+        put_bits(&s->pb, 3, s->bitstream_mode);
+        put_bits(&s->pb, 1, opt->copyright);
+        put_bits(&s->pb, 1, opt->original);
+        if (s->channel_mode == AC3_CHMODE_STEREO) {
+            put_bits(&s->pb, 2, opt->dolby_surround_mode);
+            put_bits(&s->pb, 2, opt->dolby_headphone_mode);
+        }
+        if (s->channel_mode >= AC3_CHMODE_2F2R)
+            put_bits(&s->pb, 2, opt->dolby_surround_ex_mode);
+        put_bits(&s->pb, 1, opt->audio_production_info);
+        if (opt->audio_production_info) {
+            put_bits(&s->pb, 5, opt->mixing_level - 80);
+            put_bits(&s->pb, 2, opt->room_type);
+            put_bits(&s->pb, 1, opt->ad_converter_type);
+        }
+        put_bits(&s->pb, 1, 0);
+    }
     if (s->num_blocks != 6)
         put_bits(&s->pb, 1, !(s->avctx->frame_number % 6)); /* converter sync flag */
     put_bits(&s->pb, 1, 0);                         /* no additional bit stream info */

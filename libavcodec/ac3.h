@@ -156,6 +156,8 @@ typedef struct AC3EncOptions {
     int dolby_surround_ex_mode;
     int dolby_headphone_mode;
     int ad_converter_type;
+    int eac3_mixing_metadata;
+    int eac3_info_metadata;
 
     /* other encoding options */
     int allow_per_frame_metadata;

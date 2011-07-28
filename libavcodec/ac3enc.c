@@ -759,6 +759,30 @@ static void count_frame_bits(AC3EncodeContext *s)
 
     /* header */
     if (s->eac3) {
+        if (opt->eac3_mixing_metadata) {
+            if (s->channel_mode > AC3_CHMODE_STEREO)
+                frame_bits += 2;
+            if (s->has_center)
+                frame_bits += 6;
+            if (s->has_surround)
+                frame_bits += 6;
+            frame_bits += s->lfe_on;
+            frame_bits += 1 + 1 + 2;
+            if (s->channel_mode < AC3_CHMODE_STEREO)
+                frame_bits++;
+            frame_bits++;
+        }
+        if (opt->eac3_info_metadata) {
+            frame_bits += 3 + 1 + 1;
+            if (s->channel_mode == AC3_CHMODE_STEREO)
+                frame_bits += 2 + 2;
+            if (s->channel_mode >= AC3_CHMODE_2F2R)
+                frame_bits += 2;
+            frame_bits++;
+            if (opt->audio_production_info)
+                frame_bits += 5 + 2 + 1;
+            frame_bits++;
+        }
         /* coupling */
         if (s->channel_mode > AC3_CHMODE_MONO) {
             frame_bits++;
@@ -1736,20 +1760,145 @@ int ff_ac3_validate_metadata(AC3EncodeContext *s)
     AVCodecContext *avctx = s->avctx;
     AC3EncOptions *opt = &s->options;
 
-    /* validate mixing levels */
-    if (s->has_center) {
-        validate_mix_level(avctx, "center_mix_level", &opt->center_mix_level,
-                           cmixlev_options, CMIXLEV_NUM_OPTIONS, 1, 0,
-                           &s->center_mix_level);
+    opt->audio_production_info = 0;
+    opt->extended_bsi_1        = 0;
+    opt->extended_bsi_2        = 0;
+    opt->eac3_mixing_metadata  = 0;
+    opt->eac3_info_metadata    = 0;
+
+    /* determine mixing metadata / xbsi1 use */
+    if (s->channel_mode > AC3_CHMODE_STEREO && opt->preferred_stereo_downmix >= 0) {
+        opt->extended_bsi_1       = 1;
+        opt->eac3_mixing_metadata = 1;
     }
-    if (s->has_surround) {
-        validate_mix_level(avctx, "surround_mix_level", &opt->surround_mix_level,
-                           surmixlev_options, SURMIXLEV_NUM_OPTIONS, 1, 0,
-                           &s->surround_mix_level);
+    if (s->has_center &&
+        (opt->ltrt_center_mix_level >= 0 || opt->loro_center_mix_level >= 0)) {
+        opt->extended_bsi_1       = 1;
+        opt->eac3_mixing_metadata = 1;
+    }
+    if (s->has_surround &&
+        (opt->ltrt_surround_mix_level >= 0 || opt->loro_surround_mix_level >= 0)) {
+        opt->extended_bsi_1       = 1;
+        opt->eac3_mixing_metadata = 1;
     }
 
-    /* set audio production info flag */
-    if (opt->mixing_level >= 0 || opt->room_type >= 0) {
+    if (s->eac3) {
+        /* determine info metadata use */
+        if (avctx->audio_service_type != AV_AUDIO_SERVICE_TYPE_MAIN)
+            opt->eac3_info_metadata = 1;
+        if (opt->copyright >= 0 || opt->original >= 0)
+            opt->eac3_info_metadata = 1;
+        if (s->channel_mode == AC3_CHMODE_STEREO &&
+            (opt->dolby_headphone_mode >= 0 || opt->dolby_surround_mode >= 0))
+            opt->eac3_info_metadata = 1;
+        if (s->channel_mode >= AC3_CHMODE_2F2R && opt->dolby_surround_ex_mode >= 0)
+            opt->eac3_info_metadata = 1;
+        if (opt->mixing_level >= 0 || opt->room_type >= 0 || opt->ad_converter_type >= 0) {
+            opt->audio_production_info = 1;
+            opt->eac3_info_metadata    = 1;
+        }
+    } else {
+        /* determine audio production info use */
+        if (opt->mixing_level >= 0 || opt->room_type >= 0)
+            opt->audio_production_info = 1;
+
+        /* determine xbsi2 use */
+        if (s->channel_mode >= AC3_CHMODE_2F2R && opt->dolby_surround_ex_mode >= 0)
+            opt->extended_bsi_2 = 1;
+        if (s->channel_mode == AC3_CHMODE_STEREO && opt->dolby_headphone_mode >= 0)
+            opt->extended_bsi_2 = 1;
+        if (opt->ad_converter_type >= 0)
+            opt->extended_bsi_2 = 1;
+    }
+
+    /* validate AC-3 mixing levels */
+    if (!s->eac3) {
+        if (s->has_center) {
+            validate_mix_level(avctx, "center_mix_level", &opt->center_mix_level,
+                            cmixlev_options, CMIXLEV_NUM_OPTIONS, 1, 0,
+                            &s->center_mix_level);
+        }
+        if (s->has_surround) {
+            validate_mix_level(avctx, "surround_mix_level", &opt->surround_mix_level,
+                            surmixlev_options, SURMIXLEV_NUM_OPTIONS, 1, 0,
+                            &s->surround_mix_level);
+        }
+    }
+
+    /* validate extended bsi 1 / mixing metadata */
+    if (opt->extended_bsi_1 || opt->eac3_mixing_metadata) {
+        /* default preferred stereo downmix */
+        if (opt->preferred_stereo_downmix < 0)
+            opt->preferred_stereo_downmix = 0;
+        if (!s->eac3 || s->has_center) {
+            /* validate Lt/Rt center mix level */
+            validate_mix_level(avctx, "ltrt_center_mix_level",
+                               &opt->ltrt_center_mix_level, extmixlev_options,
+                               EXTMIXLEV_NUM_OPTIONS, 5, 0,
+                               &s->ltrt_center_mix_level);
+            /* validate Lo/Ro center mix level */
+            validate_mix_level(avctx, "loro_center_mix_level",
+                               &opt->loro_center_mix_level, extmixlev_options,
+                               EXTMIXLEV_NUM_OPTIONS, 5, 0,
+                               &s->loro_center_mix_level);
+        }
+        if (!s->eac3 || s->has_surround) {
+            /* validate Lt/Rt surround mix level */
+            validate_mix_level(avctx, "ltrt_surround_mix_level",
+                               &opt->ltrt_surround_mix_level, extmixlev_options,
+                               EXTMIXLEV_NUM_OPTIONS, 6, 3,
+                               &s->ltrt_surround_mix_level);
+            /* validate Lo/Ro surround mix level */
+            validate_mix_level(avctx, "loro_surround_mix_level",
+                               &opt->loro_surround_mix_level, extmixlev_options,
+                               EXTMIXLEV_NUM_OPTIONS, 6, 3,
+                               &s->loro_surround_mix_level);
+        }
+    }
+
+    /* validate audio service type / channels combination */
+    if ((avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_KARAOKE &&
+         avctx->channels == 1) ||
+        ((avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_COMMENTARY ||
+          avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_EMERGENCY  ||
+          avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_VOICE_OVER)
+         && avctx->channels > 1)) {
+        av_log(avctx, AV_LOG_ERROR, "invalid audio service type for the "
+                                    "specified number of channels\n");
+        return AVERROR(EINVAL);
+    }
+
+    /* validate extended bsi 2 / info metadata */
+    if (opt->extended_bsi_2 || opt->eac3_info_metadata) {
+        /* default dolby headphone mode */
+        if (opt->dolby_headphone_mode < 0)
+            opt->dolby_headphone_mode = 0;
+        /* default dolby surround ex mode */
+        if (opt->dolby_surround_ex_mode < 0)
+            opt->dolby_surround_ex_mode = 0;
+        /* default A/D converter type */
+        if (opt->ad_converter_type < 0)
+            opt->ad_converter_type = 0;
+    }
+
+    /* copyright & original defaults */
+    if (!s->eac3 || opt->eac3_info_metadata) {
+        /* default copyright */
+        if (opt->copyright < 0)
+            opt->copyright = 0;
+        /* default original */
+        if (opt->original < 0)
+            opt->original = 1;
+    }
+
+    /* dolby surround mode default */
+    if (!s->eac3 || opt->eac3_info_metadata) {
+        if (opt->dolby_surround_mode < 0)
+            opt->dolby_surround_mode = 0;
+    }
+
+    /* validate audio production info */
+    if (opt->audio_production_info) {
         if (opt->mixing_level < 0) {
             av_log(avctx, AV_LOG_ERROR, "mixing_level must be set if "
                    "room_type is set\n");
@@ -1763,66 +1912,10 @@ int ff_ac3_validate_metadata(AC3EncodeContext *s)
         /* default room type */
         if (opt->room_type < 0)
             opt->room_type = 0;
-        opt->audio_production_info = 1;
-    } else {
-        opt->audio_production_info = 0;
-    }
-
-    /* set extended bsi 1 flag */
-    if ((s->has_center || s->has_surround) &&
-        (opt->preferred_stereo_downmix >= 0 ||
-         opt->ltrt_center_mix_level   >= 0 ||
-         opt->ltrt_surround_mix_level >= 0 ||
-         opt->loro_center_mix_level   >= 0 ||
-         opt->loro_surround_mix_level >= 0)) {
-        /* default preferred stereo downmix */
-        if (opt->preferred_stereo_downmix < 0)
-            opt->preferred_stereo_downmix = 0;
-        /* validate Lt/Rt center mix level */
-        validate_mix_level(avctx, "ltrt_center_mix_level",
-                           &opt->ltrt_center_mix_level, extmixlev_options,
-                           EXTMIXLEV_NUM_OPTIONS, 5, 0,
-                           &s->ltrt_center_mix_level);
-        /* validate Lt/Rt surround mix level */
-        validate_mix_level(avctx, "ltrt_surround_mix_level",
-                           &opt->ltrt_surround_mix_level, extmixlev_options,
-                           EXTMIXLEV_NUM_OPTIONS, 6, 3,
-                           &s->ltrt_surround_mix_level);
-        /* validate Lo/Ro center mix level */
-        validate_mix_level(avctx, "loro_center_mix_level",
-                           &opt->loro_center_mix_level, extmixlev_options,
-                           EXTMIXLEV_NUM_OPTIONS, 5, 0,
-                           &s->loro_center_mix_level);
-        /* validate Lo/Ro surround mix level */
-        validate_mix_level(avctx, "loro_surround_mix_level",
-                           &opt->loro_surround_mix_level, extmixlev_options,
-                           EXTMIXLEV_NUM_OPTIONS, 6, 3,
-                           &s->loro_surround_mix_level);
-        opt->extended_bsi_1 = 1;
-    } else {
-        opt->extended_bsi_1 = 0;
-    }
-
-    /* set extended bsi 2 flag */
-    if (opt->dolby_surround_ex_mode >= 0 ||
-        opt->dolby_headphone_mode   >= 0 ||
-        opt->ad_converter_type      >= 0) {
-        /* default dolby surround ex mode */
-        if (opt->dolby_surround_ex_mode < 0)
-            opt->dolby_surround_ex_mode = 0;
-        /* default dolby headphone mode */
-        if (opt->dolby_headphone_mode < 0)
-            opt->dolby_headphone_mode = 0;
-        /* default A/D converter type */
-        if (opt->ad_converter_type < 0)
-            opt->ad_converter_type = 0;
-        opt->extended_bsi_2 = 1;
-    } else {
-        opt->extended_bsi_2 = 0;
     }
 
     /* set bitstream id for alternate bitstream syntax */
-    if (opt->extended_bsi_1 || opt->extended_bsi_2) {
+    if (!s->eac3 && (opt->extended_bsi_1 || opt->extended_bsi_2)) {
         if (s->bitstream_id > 8 && s->bitstream_id < 11) {
             static int warn_once = 1;
             if (warn_once) {
@@ -2041,23 +2134,9 @@ static av_cold int validate_options(AC3EncodeContext *s)
     if (s->cutoff > (s->sample_rate >> 1))
         s->cutoff = s->sample_rate >> 1;
 
-    /* validate audio service type / channels combination */
-    if ((avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_KARAOKE &&
-         avctx->channels == 1) ||
-        ((avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_COMMENTARY ||
-          avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_EMERGENCY  ||
-          avctx->audio_service_type == AV_AUDIO_SERVICE_TYPE_VOICE_OVER)
-         && avctx->channels > 1)) {
-        av_log(avctx, AV_LOG_ERROR, "invalid audio service type for the "
-                                    "specified number of channels\n");
-        return AVERROR(EINVAL);
-    }
-
-    if (!s->eac3) {
-        ret = ff_ac3_validate_metadata(s);
-        if (ret)
-            return ret;
-    }
+    ret = ff_ac3_validate_metadata(s);
+    if (ret)
+        return ret;
 
     s->rematrixing_enabled = s->options.stereo_rematrixing &&
                              (s->channel_mode == AC3_CHMODE_STEREO);
