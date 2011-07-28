@@ -475,6 +475,8 @@ FF_ER_COMPLIANT
 FF_ER_AGGRESSIVE
 @item 4
 FF_ER_VERY_AGGRESSIVE
+@item 5
+FF_ER_EXPLODE
 @end table
 
 @item -ec @var{bit_mask}

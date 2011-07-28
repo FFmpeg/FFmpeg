@@ -2332,7 +2332,7 @@ static int read_thread(void *arg)
     if(genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
 
-    opts = setup_find_stream_info_opts(ic);
+    opts = setup_find_stream_info_opts(ic, codec_opts);
     orig_nb_streams = ic->nb_streams;
 
     err = avformat_find_stream_info(ic, opts);

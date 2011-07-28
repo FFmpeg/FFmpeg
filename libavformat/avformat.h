@@ -1188,6 +1188,7 @@ int avformat_alloc_output_context2(AVFormatContext **ctx, AVOutputFormat *oforma
  *
  * @deprecated use avformat_find_stream_info.
  */
+attribute_deprecated
 int av_find_stream_info(AVFormatContext *ic);
 #endif
 

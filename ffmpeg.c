@@ -3388,7 +3388,7 @@ static int opt_input_file(const char *opt, const char *filename)
     }
 
     /* Set AVCodecContext options for avformat_find_stream_info */
-    opts = setup_find_stream_info_opts(ic);
+    opts = setup_find_stream_info_opts(ic, codec_opts);
     orig_nb_streams = ic->nb_streams;
 
     /* If not enough info to get the stream parameters, we decode the

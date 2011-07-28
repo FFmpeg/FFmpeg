@@ -184,6 +184,7 @@ static const AVOption options[]={
 {"compliant", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_COMPLIANT }, INT_MIN, INT_MAX, V|D, "er"},
 {"aggressive", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "er"},
 {"very_aggressive", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_VERY_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "er"},
+{"explode", "abort decoding on error recognition", 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, V|D, "er"},
 {"has_b_frames", NULL, OFFSET(has_b_frames), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"block_align", NULL, OFFSET(block_align), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"parse_only", NULL, OFFSET(parse_only), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},

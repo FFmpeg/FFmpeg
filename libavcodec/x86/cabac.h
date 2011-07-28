@@ -34,8 +34,8 @@
         "cmova  %%ecx       , "range"   \n\t"\
         "sbb    %%ecx       , %%ecx     \n\t"\
         "and    %%ecx       , "tmp"     \n\t"\
-        "sub    "tmp"       , "low"     \n\t"\
-        "xor    %%ecx       , "ret"     \n\t"
+        "xor    %%ecx       , "ret"     \n\t"\
+        "sub    "tmp"       , "low"     \n\t"
 #else /* HAVE_FAST_CMOV */
 #define BRANCHLESS_GET_CABAC_UPDATE(ret, cabac, statep, low, lowword, range, tmp)\
         "mov    "tmp"       , %%ecx     \n\t"\
@@ -62,21 +62,20 @@
         "movzbl " MANGLE(ff_h264_norm_shift) "("range"), %%ecx          \n\t"\
         "shl    %%cl        , "range"                                   \n\t"\
         "movzbl "MANGLE(ff_h264_mlps_state)"+128("ret"), "tmp"          \n\t"\
-        "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "shl    %%cl        , "low"                                     \n\t"\
+        "mov    "tmpbyte"   , "statep"                                  \n\t"\
         "test   "lowword"   , "lowword"                                 \n\t"\
         " jnz   1f                                                      \n\t"\
         "mov "byte"("cabac"), %%"REG_c"                                 \n\t"\
+        "add    $2          , "byte    "("cabac")                       \n\t"\
         "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
-        "bswap  "tmp"                                                   \n\t"\
-        "shr    $15         , "tmp"                                     \n\t"\
-        "sub    $0xFFFF     , "tmp"                                     \n\t"\
-        "add    $2          , %%"REG_c"                                 \n\t"\
-        "mov    %%"REG_c"   , "byte    "("cabac")                       \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
         "shr    $15         , %%ecx                                     \n\t"\
+        "bswap  "tmp"                                                   \n\t"\
+        "shr    $15         , "tmp"                                     \n\t"\
         "movzbl " MANGLE(ff_h264_norm_shift) "(%%ecx), %%ecx            \n\t"\
+        "sub    $0xFFFF     , "tmp"                                     \n\t"\
         "neg    %%ecx                                                   \n\t"\
         "add    $7          , %%ecx                                     \n\t"\
         "shl    %%cl        , "tmp"                                     \n\t"\
@@ -88,19 +87,13 @@
 static av_always_inline int get_cabac_inline_x86(CABACContext *c,
                                                  uint8_t *const state)
 {
-    int bit, low, range, tmp;
+    int bit, tmp;
 
     __asm__ volatile(
-        "movl %a6(%5), %2               \n\t"
-        "movl %a7(%5), %1               \n\t"
         BRANCHLESS_GET_CABAC("%0", "%5", "(%4)", "%1", "%w1", "%2",
-                             "%3", "%b3", "%a8")
-        "movl %2, %a6(%5)               \n\t"
-        "movl %1, %a7(%5)               \n\t"
-
-        :"=&r"(bit), "=&r"(low), "=&r"(range), "=&q"(tmp)
+                             "%3", "%b3", "%a6")
+        :"=&r"(bit), "+&r"(c->low), "+&r"(c->range), "=&q"(tmp)
         :"r"(state), "r"(c),
-         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "memory"
     );
