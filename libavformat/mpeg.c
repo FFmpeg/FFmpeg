@@ -163,41 +163,6 @@ static int find_next_start_code(AVIOContext *pb, int *size_ptr,
     return val;
 }
 
-#if 0 /* unused, remove? */
-/* XXX: optimize */
-static int find_prev_start_code(AVIOContext *pb, int *size_ptr)
-{
-    int64_t pos, pos_start;
-    int max_size, start_code;
-
-    max_size = *size_ptr;
-    pos_start = avio_tell(pb);
-
-    /* in order to go faster, we fill the buffer */
-    pos = pos_start - 16386;
-    if (pos < 0)
-        pos = 0;
-    avio_seek(pb, pos, SEEK_SET);
-    avio_r8(pb);
-
-    pos = pos_start;
-    for(;;) {
-        pos--;
-        if (pos < 0 || (pos_start - pos) >= max_size) {
-            start_code = -1;
-            goto the_end;
-        }
-        avio_seek(pb, pos, SEEK_SET);
-        start_code = avio_rb32(pb);
-        if ((start_code & 0xffffff00) == 0x100)
-            break;
-    }
- the_end:
-    *size_ptr = pos_start - pos;
-    return start_code;
-}
-#endif
-
 /**
  * Extract stream types from a program stream map
  * According to ISO/IEC 13818-1 ('MPEG-2 Systems') table 2-35
@@ -327,12 +292,6 @@ static int mpegps_read_pes_header(AVFormatContext *s,
         }
     } else if ((c & 0xc0) == 0x80) {
         /* mpeg 2 PES */
-#if 0 /* some streams have this field set for no apparent reason */
-        if ((c & 0x30) != 0) {
-            /* Encrypted multiplex not handled */
-            goto redo;
-        }
-#endif
         flags = avio_r8(s->pb);
         header_len = avio_r8(s->pb);
         len -= 2;
