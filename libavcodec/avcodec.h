@@ -1445,8 +1445,12 @@ typedef struct AVCodecContext {
 #define FF_ER_CAREFUL         1
 #define FF_ER_COMPLIANT       2
 #define FF_ER_AGGRESSIVE      3
+#if FF_API_VERY_AGGRESSIVE
 #define FF_ER_VERY_AGGRESSIVE 4
 #define FF_ER_EXPLODE         5
+#else
+#define FF_ER_EXPLODE         4
+#endif /* FF_API_VERY_AGGRESSIVE */
 
     /**
      * Called at the beginning of each frame to get a buffer for it.
