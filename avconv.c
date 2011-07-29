@@ -79,6 +79,7 @@ const int program_birth_year = 2000;
 
 /* select an input stream for an output stream */
 typedef struct StreamMap {
+    int disabled;           /** 1 is this mapping is disabled by a negative map */
     int file_index;
     int stream_index;
     int sync_file_index;
@@ -2780,27 +2781,82 @@ static int opt_codec_tag(const char *opt, const char *arg)
 
 static int opt_map(const char *opt, const char *arg)
 {
-    StreamMap *m;
-    char *p;
+    StreamMap *m = NULL;
+    int i, negative = 0, file_idx;
+    int sync_file_idx = -1, sync_stream_idx;
+    char *p, *sync;
+    char *map;
 
-    stream_maps = grow_array(stream_maps, sizeof(*stream_maps), &nb_stream_maps, nb_stream_maps + 1);
-    m = &stream_maps[nb_stream_maps-1];
-
-    m->file_index = strtol(arg, &p, 0);
-    if (*p)
-        p++;
-
-    m->stream_index = strtol(p, &p, 0);
-    if (*p) {
-        p++;
-        m->sync_file_index = strtol(p, &p, 0);
-        if (*p)
-            p++;
-        m->sync_stream_index = strtol(p, &p, 0);
-    } else {
-        m->sync_file_index = m->file_index;
-        m->sync_stream_index = m->stream_index;
+    if (*arg == '-') {
+        negative = 1;
+        arg++;
     }
+    map = av_strdup(arg);
+
+    /* parse sync stream first, just pick first matching stream */
+    if (sync = strchr(map, ',')) {
+        *sync = 0;
+        sync_file_idx = strtol(sync + 1, &sync, 0);
+        if (sync_file_idx >= nb_input_files || sync_file_idx < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid sync file index: %d.\n", sync_file_idx);
+            exit_program(1);
+        }
+        if (*sync)
+            sync++;
+        for (i = 0; i < input_files[sync_file_idx].ctx->nb_streams; i++)
+            if (check_stream_specifier(input_files[sync_file_idx].ctx,
+                                       input_files[sync_file_idx].ctx->streams[i], sync) == 1) {
+                sync_stream_idx = i;
+                break;
+            }
+        if (i == input_files[sync_file_idx].ctx->nb_streams) {
+            av_log(NULL, AV_LOG_ERROR, "Sync stream specification in map %s does not "
+                                       "match any streams.\n", arg);
+            exit_program(1);
+        }
+    }
+
+
+    file_idx = strtol(map, &p, 0);
+    if (file_idx >= nb_input_files || file_idx < 0) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid input file index: %d.\n", file_idx);
+        exit_program(1);
+    }
+    if (negative)
+        /* disable some already defined maps */
+        for (i = 0; i < nb_stream_maps; i++) {
+            m = &stream_maps[i];
+            if (check_stream_specifier(input_files[m->file_index].ctx,
+                                       input_files[m->file_index].ctx->streams[m->stream_index],
+                                       *p == ':' ? p + 1 : p) > 0)
+                m->disabled = 1;
+        }
+    else
+        for (i = 0; i < input_files[file_idx].ctx->nb_streams; i++) {
+            if (check_stream_specifier(input_files[file_idx].ctx, input_files[file_idx].ctx->streams[i],
+                        *p == ':' ? p + 1 : p) <= 0)
+                continue;
+            stream_maps = grow_array(stream_maps, sizeof(*stream_maps), &nb_stream_maps, nb_stream_maps + 1);
+            m = &stream_maps[nb_stream_maps - 1];
+
+            m->file_index   = file_idx;
+            m->stream_index = i;
+
+            if (sync_file_idx >= 0) {
+                m->sync_file_index   = sync_file_idx;
+                m->sync_stream_index = sync_stream_idx;
+            } else {
+                m->sync_file_index   = file_idx;
+                m->sync_stream_index = i;
+            }
+        }
+
+    if (!m) {
+        av_log(NULL, AV_LOG_ERROR, "Stream map '%s' matches no streams.\n", arg);
+        exit_program(1);
+    }
+
+    av_freep(&map);
     return 0;
 }
 
@@ -3514,21 +3570,9 @@ static void opt_output_file(const char *filename)
     } else {
         for (i = 0; i < nb_stream_maps; i++) {
             StreamMap *map = &stream_maps[i];
-            int         fi = map->file_index;
-            int         si = map->stream_index;
 
-            if (fi < 0 || fi >= nb_input_files ||
-                si < 0 || si >= input_files[fi].ctx->nb_streams) {
-                av_log(NULL, AV_LOG_ERROR, "Input stream #%d.%d does not exist.\n", fi, si);
-                exit_program(1);
-            }
-            fi = map->sync_file_index;
-            si = map->sync_stream_index;
-            if (fi < 0 || fi >= nb_input_files ||
-                si < 0 || si >= input_files[fi].ctx->nb_streams) {
-                av_log(NULL, AV_LOG_ERROR, "Sync stream #%d.%d does not exist.\n", fi, si);
-                exit_program(1);
-            }
+            if (map->disabled)
+                continue;
 
             ist = &input_streams[input_files[map->file_index].ist_index + map->stream_index];
             switch (ist->st->codec->codec_type) {

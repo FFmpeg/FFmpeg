@@ -634,35 +634,60 @@ Synchronize read on input.
 @section Advanced options
 
 @table @option
-@item -map @var{input_file_id}.@var{input_stream_id}[:@var{sync_file_id}.@var{sync_stream_id}]
+@item -map [-]@var{input_file_id}[:@var{input_stream_type}][:@var{input_stream_id}][,@var{sync_file_id}[:@var{sync_stream_type}][:@var{sync_stream_id}]]
 
-Designate an input stream as a source for the output file. Each input
+Designate one or more input streams as a source for the output file. Each input
 stream is identified by the input file index @var{input_file_id} and
 the input stream index @var{input_stream_id} within the input
-file. Both indexes start at 0. If specified,
-@var{sync_file_id}.@var{sync_stream_id} sets which input stream
+file. Both indices start at 0. If specified,
+@var{sync_file_id}:@var{sync_stream_id} sets which input stream
 is used as a presentation sync reference.
+
+If @var{input_stream_type} is specified -- 'v' for video, 'a' for audio, 's' for
+subtitle and 'd' for data -- then @var{input_stream_id} counts only the streams
+of this type. Same for @var{sync_stream_type}.
+
+@var{input_stream_id} may be omitted, in which case all streams of the given
+type are mapped (or all streams in the file, if no type is specified).
 
 The first @code{-map} option on the command line specifies the
 source for output stream 0, the second @code{-map} option specifies
 the source for output stream 1, etc.
 
+A @code{-} character before the stream identifier creates a "negative" mapping.
+It disables matching streams from already created mappings.
+
+For example, to map ALL streams from the first input file to output
+@example
+av -i INPUT -map 0 output
+@end example
+
 For example, if you have two audio streams in the first input file,
-these streams are identified by "0.0" and "0.1". You can use
+these streams are identified by "0:0" and "0:1". You can use
 @code{-map} to select which streams to place in an output file. For
 example:
 @example
-avconv -i INPUT -map 0.1 out.wav
+avconv -i INPUT -map 0:1 out.wav
 @end example
-will map the input stream in @file{INPUT} identified by "0.1" to
+will map the input stream in @file{INPUT} identified by "0:1" to
 the (single) output stream in @file{out.wav}.
 
 For example, to select the stream with index 2 from input file
-@file{a.mov} (specified by the identifier "0.2"), and stream with
-index 6 from input @file{b.mov} (specified by the identifier "1.6"),
+@file{a.mov} (specified by the identifier "0:2"), and stream with
+index 6 from input @file{b.mov} (specified by the identifier "1:6"),
 and copy them to the output file @file{out.mov}:
 @example
-avconv -i a.mov -i b.mov -vcodec copy -acodec copy -map 0.2 -map 1.6 out.mov
+avconv -i a.mov -i b.mov -vcodec copy -acodec copy -map 0:2 -map 1:6 out.mov
+@end example
+
+To select all video and the third audio stream from an input file:
+@example
+avconv -i INPUT -map 0:v -map 0:a:2 OUTPUT
+@end example
+
+To map all the streams except the second audio, use negative mappings
+@example
+avconv -i INPUT -map 0 -map -0:a:1 OUTPUT
 @end example
 
 Note that using this option disables the default mappings for this output file.
@@ -943,7 +968,7 @@ You can encode to several formats at the same time and define a
 mapping from input stream to output streams:
 
 @example
-avconv -i /tmp/a.wav -ab 64k /tmp/a.mp2 -ab 128k /tmp/b.mp2 -map 0:0 -map 0:0
+avconv -i /tmp/a.wav -map 0:a -ab 64k /tmp/a.mp2 -map 0:a -ab 128k /tmp/b.mp2
 @end example
 
 Converts a.wav to a.mp2 at 64 kbits and to b.mp2 at 128 kbits. '-map
