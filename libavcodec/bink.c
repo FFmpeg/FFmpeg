@@ -624,7 +624,6 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
                         coef_list[--list_start] = ccoef;
                         mode_list[  list_start] = 3;
                     } else {
-                        int t;
                         if (!bits) {
                             t = 1 - (get_bits1(gb) << 1);
                         } else {
