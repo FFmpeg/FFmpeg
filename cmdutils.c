@@ -141,8 +141,11 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 }
 
 static const OptionDef* find_option(const OptionDef *po, const char *name){
+    const char *p = strchr(name, ':');
+    int len = p ? p - name : strlen(name);
+
     while (po->name != NULL) {
-        if (!strcmp(name, po->name))
+        if (!strncmp(name, po->name, len) && strlen(po->name) == len)
             break;
         po++;
     }
