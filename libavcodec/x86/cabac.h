@@ -67,7 +67,7 @@
         "test   "lowword"   , "lowword"                                 \n\t"\
         " jnz   1f                                                      \n\t"\
         "mov "byte"("cabac"), %%"REG_c"                                 \n\t"\
-        "add    $2          , "byte    "("cabac")                       \n\t"\
+        "add"OPSIZE" $2     , "byte    "("cabac")                       \n\t"\
         "movzwl (%%"REG_c")     , "tmp"                                 \n\t"\
         "lea    -1("low")   , %%ecx                                     \n\t"\
         "xor    "low"       , %%ecx                                     \n\t"\
