@@ -540,6 +540,12 @@ static int aac_encode_frame(AVCodecContext *avctx,
                 wi[ch].window_shape   = 0;
                 wi[ch].num_windows    = 1;
                 wi[ch].grouping[0]    = 1;
+
+                /* Only the lowest 12 coefficients are used in a LFE channel.
+                 * The expression below results in only the bottom 8 coefficients
+                 * being used for 11.025kHz to 16kHz sample rates.
+                 */
+                ics->num_swb = s->samplerate_index >= 8 ? 1 : 3;
             } else {
                 wi[ch] = s->psy.model->window(&s->psy, samples2, la, cur_channel,
                                               ics->window_sequence[0]);
@@ -550,7 +556,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             ics->use_kb_window[0]   = wi[ch].window_shape;
             ics->num_windows        = wi[ch].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
-            ics->num_swb            = tag == TYPE_LFE ? 12 : s->psy.num_bands[ics->num_windows == 8];
+            ics->num_swb            = tag == TYPE_LFE ? ics->num_swb : s->psy.num_bands[ics->num_windows == 8];
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
 
