@@ -65,6 +65,20 @@ specified for the inputs.
 
 @c man end DESCRIPTION
 
+@chapter Stream selection
+@c man begin STREAM SELECTION
+
+By default av tries to pick the "best" stream of each type present in input
+files and add them to each output file. For video, this means the highest
+resolution, for audio the highest channel count. For subtitle it's simply the
+first subtitle stream.
+
+You can disable some of those defaults by using @code{-vn/-an/-sn} options. For
+full manual control, use the @code{-map} option, which disables the defaults just
+described.
+
+@c man end STREAM SELECTION
+
 @chapter Options
 @c man begin OPTIONS
 
@@ -147,9 +161,6 @@ Set the number of data frames to record.
 
 @item -scodec @var{codec}
 Force subtitle codec ('copy' to copy stream).
-
-@item -newsubtitle
-Add a new subtitle stream to the current output stream.
 
 @item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
@@ -294,9 +305,6 @@ Set two-pass log file name prefix to @var{prefix}, the default file name
 prefix is ``av2pass''. The complete file name will be
 @file{PREFIX-N.log}, where N is a number specific to the output
 stream.
-
-@item -newvideo
-Add a new video stream to the current output stream.
 
 @item -vlang @var{code}
 Set the ISO 639 language code (3 letters) of the current video stream.
@@ -565,18 +573,6 @@ Disable audio recording.
 @item -acodec @var{codec}
 Force audio codec to @var{codec}. Use the @code{copy} special value to
 specify that the raw codec data must be copied as is.
-@item -newaudio
-Add a new audio track to the output file. If you want to specify parameters,
-do so before @code{-newaudio} (@code{-acodec}, @code{-ab}, etc..).
-
-Mapping will be done automatically, if the number of output streams is equal to
-the number of input streams, else it will pick the first one that matches. You
-can override the mapping using @code{-map} as usual.
-
-Example:
-@example
-avconv -i file.mpg -vcodec copy -acodec ac3 -ab 384k test.mpg -acodec mp2 -ab 192k -newaudio
-@end example
 @item -alang @var{code}
 Set the ISO 639 language code (3 letters) of the current audio stream.
 @end table
@@ -617,8 +613,6 @@ Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp"
 @table @option
 @item -scodec @var{codec}
 Force subtitle codec ('copy' to copy stream).
-@item -newsubtitle
-Add a new subtitle stream to the current output stream.
 @item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @item -sn
@@ -649,19 +643,16 @@ file. Both indexes start at 0. If specified,
 @var{sync_file_id}.@var{sync_stream_id} sets which input stream
 is used as a presentation sync reference.
 
-The @code{-map} options must be specified just after the output file.
-If any @code{-map} options are used, the number of @code{-map} options
-on the command line must match the number of streams in the output
-file. The first @code{-map} option on the command line specifies the
+The first @code{-map} option on the command line specifies the
 source for output stream 0, the second @code{-map} option specifies
 the source for output stream 1, etc.
 
 For example, if you have two audio streams in the first input file,
 these streams are identified by "0.0" and "0.1". You can use
-@code{-map} to select which stream to place in an output file. For
+@code{-map} to select which streams to place in an output file. For
 example:
 @example
-avconv -i INPUT out.wav -map 0.1
+avconv -i INPUT -map 0.1 out.wav
 @end example
 will map the input stream in @file{INPUT} identified by "0.1" to
 the (single) output stream in @file{out.wav}.
@@ -671,11 +662,10 @@ For example, to select the stream with index 2 from input file
 index 6 from input @file{b.mov} (specified by the identifier "1.6"),
 and copy them to the output file @file{out.mov}:
 @example
-avconv -i a.mov -i b.mov -vcodec copy -acodec copy out.mov -map 0.2 -map 1.6
+avconv -i a.mov -i b.mov -vcodec copy -acodec copy -map 0.2 -map 1.6 out.mov
 @end example
 
-To add more streams to the output file, you can use the
-@code{-newaudio}, @code{-newvideo}, @code{-newsubtitle} options.
+Note that using this option disables the default mappings for this output file.
 
 @item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}]
 Set metadata information of the next output file from @var{infile}. Note that
@@ -1008,16 +998,11 @@ only formats accepting a normal integer are suitable.
 You can put many streams of the same type in the output:
 
 @example
-avconv -i test1.avi -i test2.avi -vcodec copy -acodec copy -vcodec copy -acodec copy test12.avi -newvideo -newaudio
+avconv -i test1.avi -i test2.avi -map 0.3 -map 0.2 -map 0.1 -map 0.0 -vcodec copy -acodec copy -vcodec copy -acodec copy test12.nut
 @end example
 
-In addition to the first video and audio streams, the resulting
-output file @file{test12.avi} will contain the second video
-and the second audio stream found in the input streams list.
-
-The @code{-newvideo}, @code{-newaudio} and @code{-newsubtitle}
-options have to be specified immediately after the name of the output
-file to which you want to add them.
+The resulting output file @file{test12.avi} will contain first four streams from
+the input file in reverse order.
 
 @end itemize
 @c man end EXAMPLES
