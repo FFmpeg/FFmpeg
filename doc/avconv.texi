@@ -677,16 +677,16 @@ avconv -i a.mov -i b.mov -vcodec copy -acodec copy out.mov -map 0.2 -map 1.6
 To add more streams to the output file, you can use the
 @code{-newaudio}, @code{-newvideo}, @code{-newsubtitle} options.
 
-@item -map_metadata @var{outfile}[,@var{metadata}]:@var{infile}[,@var{metadata}]
-Set metadata information of @var{outfile} from @var{infile}. Note that those
-are file indices (zero-based), not filenames.
-Optional @var{metadata} parameters specify, which metadata to copy - (g)lobal
+@item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}]
+Set metadata information of the next output file from @var{infile}. Note that
+those are file indices (zero-based), not filenames.
+Optional @var{metadata_type} parameters specify, which metadata to copy - (g)lobal
 (i.e. metadata that applies to the whole file), per-(s)tream, per-(c)hapter or
 per-(p)rogram. All metadata specifiers other than global must be followed by the
-stream/chapter/program number. If metadata specifier is omitted, it defaults to
+stream/chapter/program index. If metadata specifier is omitted, it defaults to
 global.
 
-By default, global metadata is copied from the first input file to all output files,
+By default, global metadata is copied from the first input file,
 per-stream and per-chapter metadata is copied along with streams/chapters. These
 default mappings are disabled by creating any mapping of the relevant type. A negative
 file index can be used to create a dummy mapping that just disables automatic copying.
@@ -694,7 +694,7 @@ file index can be used to create a dummy mapping that just disables automatic co
 For example to copy metadata from the first stream of the input file to global metadata
 of the output file:
 @example
-avconv -i in.ogg -map_metadata 0:0,s0 out.mp3
+avconv -i in.ogg -map_metadata 0:s:0 out.mp3
 @end example
 @item -map_chapters @var{input_file_index}
 Copy chapters from input file with index @var{input_file_index} to the next
