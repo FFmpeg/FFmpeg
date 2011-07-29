@@ -101,10 +101,6 @@ float ff_xvid_rate_estimate_qscale(MpegEncContext *s, int dry_run){
     xvid_plg_data.bquant_offset = 0; //  100 * s->avctx->b_quant_offset;
     xvid_plg_data.bquant_ratio = 100; // * s->avctx->b_quant_factor;
 
-#if 0
-    xvid_plg_data.stats.hlength= X
-#endif
-
     if(!s->rc_context.dry_run_qscale){
         if(s->picture_number){
             xvid_plg_data.length=
