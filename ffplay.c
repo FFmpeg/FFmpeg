@@ -1652,6 +1652,7 @@ static int input_config_props(AVFilterLink *link)
 
     link->w = c->width;
     link->h = c->height;
+    link->sample_aspect_ratio = priv->is->video_st->sample_aspect_ratio;
     link->time_base = priv->is->video_st->time_base;
 
     return 0;
