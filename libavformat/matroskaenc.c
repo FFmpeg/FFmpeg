@@ -91,6 +91,8 @@ typedef struct MatroskaMuxContext {
 
     unsigned int    audio_buffer_size;
     AVPacket        cur_audio_pkt;
+
+    int have_attachments;
 } MatroskaMuxContext;
 
 
@@ -528,6 +530,11 @@ static int mkv_write_tracks(AVFormatContext *s)
         int output_sample_rate = 0;
         AVDictionaryEntry *tag;
 
+        if (codec->codec_type == AVMEDIA_TYPE_ATTACHMENT) {
+            mkv->have_attachments = 1;
+            continue;
+        }
+
         if (!bit_depth)
             bit_depth = av_get_bytes_per_sample(codec->sample_fmt) << 3;
 
@@ -797,6 +804,68 @@ static int mkv_write_tags(AVFormatContext *s)
     return 0;
 }
 
+static int mkv_write_attachments(AVFormatContext *s)
+{
+    MatroskaMuxContext *mkv = s->priv_data;
+    AVIOContext *pb = s->pb;
+    ebml_master attachments;
+    AVLFG c;
+    int i, ret;
+
+    if (!mkv->have_attachments)
+        return 0;
+
+    av_lfg_init(&c, av_get_random_seed());
+
+    ret = mkv_add_seekhead_entry(mkv->main_seekhead, MATROSKA_ID_ATTACHMENTS, avio_tell(pb));
+    if (ret < 0) return ret;
+
+    attachments = start_ebml_master(pb, MATROSKA_ID_ATTACHMENTS, 0);
+
+    for (i = 0; i < s->nb_streams; i++) {
+        AVStream *st = s->streams[i];
+        ebml_master attached_file;
+        AVDictionaryEntry *t;
+        const char *mimetype = NULL;
+
+        if (st->codec->codec_type != AVMEDIA_TYPE_ATTACHMENT)
+            continue;
+
+        attached_file = start_ebml_master(pb, MATROSKA_ID_ATTACHEDFILE, 0);
+
+        if (t = av_dict_get(st->metadata, "title", NULL, 0))
+            put_ebml_string(pb, MATROSKA_ID_FILEDESC, t->value);
+        if (!(t = av_dict_get(st->metadata, "filename", NULL, 0))) {
+            av_log(s, AV_LOG_ERROR, "Attachment stream %d has no filename tag.\n", i);
+            return AVERROR(EINVAL);
+        }
+        put_ebml_string(pb, MATROSKA_ID_FILENAME, t->value);
+        if (t = av_dict_get(st->metadata, "mimetype", NULL, 0))
+            mimetype = t->value;
+        else if (st->codec->codec_id != CODEC_ID_NONE ) {
+            int i;
+            for (i = 0; ff_mkv_mime_tags[i].id != CODEC_ID_NONE; i++)
+                if (ff_mkv_mime_tags[i].id == st->codec->codec_id) {
+                    mimetype = ff_mkv_mime_tags[i].str;
+                    break;
+                }
+        }
+        if (!mimetype) {
+            av_log(s, AV_LOG_ERROR, "Attachment stream %d has no mimetype tag and "
+                                    "it cannot be deduced from the codec id.\n", i);
+            return AVERROR(EINVAL);
+        }
+
+        put_ebml_string(pb, MATROSKA_ID_FILEMIMETYPE, mimetype);
+        put_ebml_binary(pb, MATROSKA_ID_FILEDATA, st->codec->extradata, st->codec->extradata_size);
+        put_ebml_uint(pb, MATROSKA_ID_FILEUID, av_lfg_get(&c));
+        end_ebml_master(pb, attached_file);
+    }
+    end_ebml_master(pb, attachments);
+
+    return 0;
+}
+
 static int mkv_write_header(AVFormatContext *s)
 {
     MatroskaMuxContext *mkv = s->priv_data;
@@ -869,6 +938,9 @@ static int mkv_write_header(AVFormatContext *s)
         if (ret < 0) return ret;
 
         ret = mkv_write_tags(s);
+        if (ret < 0) return ret;
+
+        ret = mkv_write_attachments(s);
         if (ret < 0) return ret;
     }
 
