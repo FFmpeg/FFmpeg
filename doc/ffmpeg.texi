@@ -916,6 +916,19 @@ ffmpeg -f x11grab -follow_mouse 100 -s cif -r 25 -i :0.0 /tmp/out.mpg
 Only follows when mouse pointer reaches within 100 pixels to the edge of
 region.
 
+@example
+ffmpeg -f x11grab -show_region 1 -s cif -r 25 -i :0.0+10,20 /tmp/out.mpg
+@end example
+
+The grabbing region will be indicated on screen.
+
+@example
+ffmpeg -f x11grab -follow_mouse centered -show_region 1 -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+The grabbing region indication will follow the mouse pointer.
+
+
 @section Video and Audio file format conversion
 
 Any supported file format and protocol can serve as input to ffmpeg:
