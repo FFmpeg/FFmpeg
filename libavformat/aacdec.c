@@ -47,6 +47,7 @@ static int adts_aac_probe(AVProbeData *p)
             fsize = (AV_RB32(buf2 + 3) >> 13) & 0x1FFF;
             if(fsize < 7)
                 break;
+            fsize = FFMIN(fsize, end - buf2);
             buf2 += fsize;
         }
         max_frames = FFMAX(max_frames, frames);
