@@ -510,15 +510,14 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_vmnc_decoder = {
-    "vmnc",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_VMNC,
-    sizeof(VmncContext),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "vmnc",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_VMNC,
+    .priv_data_size = sizeof(VmncContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("VMware Screen Codec / VMware Video"),
 };
 

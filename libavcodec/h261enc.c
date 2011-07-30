@@ -322,13 +322,13 @@ static void h261_encode_block(H261Context * h, DCTELEM * block, int n){
 }
 
 AVCodec ff_h261_encoder = {
-    "h261",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_H261,
-    sizeof(H261Context),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
+    .name           = "h261",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_H261,
+    .priv_data_size = sizeof(H261Context),
+    .init           = MPV_encode_init,
+    .encode         = MPV_encode_picture,
+    .close          = MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.261"),
 };

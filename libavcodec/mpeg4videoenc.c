@@ -1285,13 +1285,13 @@ void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
 }
 
 AVCodec ff_mpeg4_encoder = {
-    "mpeg4",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MPEG4,
-    sizeof(MpegEncContext),
-    encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
+    .name           = "mpeg4",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MPEG4,
+    .priv_data_size = sizeof(MpegEncContext),
+    .init           = encode_init,
+    .encode         = MPV_encode_picture,
+    .close          = MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-4 part 2"),

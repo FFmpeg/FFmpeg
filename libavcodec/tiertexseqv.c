@@ -221,14 +221,13 @@ static av_cold int seqvideo_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_tiertexseqvideo_decoder = {
-    "tiertexseqvideo",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_TIERTEXSEQVIDEO,
-    sizeof(SeqVideoContext),
-    seqvideo_decode_init,
-    NULL,
-    seqvideo_decode_end,
-    seqvideo_decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "tiertexseqvideo",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_TIERTEXSEQVIDEO,
+    .priv_data_size = sizeof(SeqVideoContext),
+    .init           = seqvideo_decode_init,
+    .close          = seqvideo_decode_end,
+    .decode         = seqvideo_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Tiertex Limited SEQ video"),
 };

@@ -67,7 +67,7 @@ static int decode_significance_x86(CABACContext *c, int max_coeff,
         "test $1, %4                            \n\t"
         " jnz 4f                                \n\t"
 
-        "add  $4, %2                            \n\t"
+        "add"OPSIZE"  $4, %2                    \n\t"
 
         "3:                                     \n\t"
         "add  $1, %1                            \n\t"
@@ -125,7 +125,7 @@ static int decode_significance_8x8_x86(CABACContext *c,
         "test $1, %4                            \n\t"
         " jnz 4f                                \n\t"
 
-        "add  $4, %2                            \n\t"
+        "add"OPSIZE"  $4, %2                    \n\t"
 
         "3:                                     \n\t"
         "addl $1, %k6                           \n\t"

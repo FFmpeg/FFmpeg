@@ -146,16 +146,14 @@ read_header:
 }
 
 AVCodec ff_mjpegb_decoder = {
-    "mjpegb",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MJPEGB,
-    sizeof(MJpegDecodeContext),
-    ff_mjpeg_decode_init,
-    NULL,
-    ff_mjpeg_decode_end,
-    mjpegb_decode_frame,
-    CODEC_CAP_DR1,
-    NULL,
+    .name           = "mjpegb",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MJPEGB,
+    .priv_data_size = sizeof(MJpegDecodeContext),
+    .init           = ff_mjpeg_decode_init,
+    .close          = ff_mjpeg_decode_end,
+    .decode         = mjpegb_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("Apple MJPEG-B"),
 };

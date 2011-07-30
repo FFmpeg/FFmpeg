@@ -1491,10 +1491,6 @@ static int mpegts_read_header(AVFormatContext *s,
     if (ap) {
         if (ap->mpeg2ts_compute_pcr)
             ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
-        if(ap->mpeg2ts_raw){
-            av_log(s, AV_LOG_ERROR, "use mpegtsraw_demuxer!\n");
-            return -1;
-        }
     }
 #endif
 

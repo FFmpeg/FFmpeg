@@ -399,14 +399,13 @@ static av_cold int decode_end(AVCodecContext * avctx)
 }
 
 AVCodec ff_kmvc_decoder = {
-    "kmvc",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_KMVC,
-    sizeof(KmvcContext),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "kmvc",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_KMVC,
+    .priv_data_size = sizeof(KmvcContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Karl Morton's video codec"),
 };

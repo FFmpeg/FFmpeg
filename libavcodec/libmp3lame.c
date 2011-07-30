@@ -269,13 +269,13 @@ static av_cold int MP3lame_encode_close(AVCodecContext *avctx)
 
 
 AVCodec ff_libmp3lame_encoder = {
-    "libmp3lame",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_MP3,
-    sizeof(Mp3AudioContext),
-    MP3lame_encode_init,
-    MP3lame_encode_frame,
-    MP3lame_encode_close,
+    .name           = "libmp3lame",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_MP3,
+    .priv_data_size = sizeof(Mp3AudioContext),
+    .init           = MP3lame_encode_init,
+    .encode         = MP3lame_encode_frame,
+    .close          = MP3lame_encode_close,
     .capabilities= CODEC_CAP_DELAY,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,
 #if 2147483647 == INT_MAX

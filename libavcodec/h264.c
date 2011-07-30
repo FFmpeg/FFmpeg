@@ -4006,16 +4006,15 @@ static const AVProfile profiles[] = {
 };
 
 AVCodec ff_h264_decoder = {
-    "h264",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_H264,
-    sizeof(H264Context),
-    ff_h264_decode_init,
-    NULL,
-    ff_h264_decode_end,
-    decode_frame,
-    /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY |
-        CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS,
+    .name           = "h264",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_H264,
+    .priv_data_size = sizeof(H264Context),
+    .init           = ff_h264_decode_init,
+    .close          = ff_h264_decode_end,
+    .decode         = decode_frame,
+    .capabilities   = /*CODEC_CAP_DRAW_HORIZ_BAND |*/ CODEC_CAP_DR1 | CODEC_CAP_DELAY |
+                      CODEC_CAP_SLICE_THREADS | CODEC_CAP_FRAME_THREADS,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .init_thread_copy      = ONLY_IF_THREADS_ENABLED(decode_init_thread_copy),
@@ -4025,15 +4024,14 @@ AVCodec ff_h264_decoder = {
 
 #if CONFIG_H264_VDPAU_DECODER
 AVCodec ff_h264_vdpau_decoder = {
-    "h264_vdpau",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_H264,
-    sizeof(H264Context),
-    ff_h264_decode_init,
-    NULL,
-    ff_h264_decode_end,
-    decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
+    .name           = "h264_vdpau",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_H264,
+    .priv_data_size = sizeof(H264Context),
+    .init           = ff_h264_decode_init,
+    .close          = ff_h264_decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY | CODEC_CAP_HWACCEL_VDPAU,
     .flush= flush_dpb,
     .long_name = NULL_IF_CONFIG_SMALL("H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 (VDPAU acceleration)"),
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_VDPAU_H264, PIX_FMT_NONE},

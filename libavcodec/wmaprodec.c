@@ -1605,14 +1605,13 @@ static void flush(AVCodecContext *avctx)
  *@brief wmapro decoder
  */
 AVCodec ff_wmapro_decoder = {
-    "wmapro",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_WMAPRO,
-    sizeof(WMAProDecodeCtx),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_packet,
+    .name           = "wmapro",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_WMAPRO,
+    .priv_data_size = sizeof(WMAProDecodeCtx),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_packet,
     .capabilities = CODEC_CAP_SUBFRAMES,
     .flush= flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),

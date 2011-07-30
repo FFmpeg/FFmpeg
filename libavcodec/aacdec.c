@@ -2541,14 +2541,13 @@ av_cold static int latm_decode_init(AVCodecContext *avctx)
 
 
 AVCodec ff_aac_decoder = {
-    "aac",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AAC,
-    sizeof(AACContext),
-    aac_decode_init,
-    NULL,
-    aac_decode_close,
-    aac_decode_frame,
+    .name           = "aac",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AAC,
+    .priv_data_size = sizeof(AACContext),
+    .init           = aac_decode_init,
+    .close          = aac_decode_close,
+    .decode         = aac_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE

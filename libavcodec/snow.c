@@ -1930,16 +1930,14 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_snow_decoder = {
-    "snow",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_SNOW,
-    sizeof(SnowContext),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_frame,
-    CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
-    NULL,
+    .name           = "snow",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_SNOW,
+    .priv_data_size = sizeof(SnowContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1 /*| CODEC_CAP_DRAW_HORIZ_BAND*/,
     .long_name = NULL_IF_CONFIG_SMALL("Snow"),
 };
 
@@ -3679,13 +3677,13 @@ static av_cold int encode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_snow_encoder = {
-    "snow",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_SNOW,
-    sizeof(SnowContext),
-    encode_init,
-    encode_frame,
-    encode_end,
+    .name           = "snow",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_SNOW,
+    .priv_data_size = sizeof(SnowContext),
+    .init           = encode_init,
+    .encode         = encode_frame,
+    .close          = encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("Snow"),
 };
 #endif

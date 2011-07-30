@@ -1379,14 +1379,13 @@ static const AVClass flac_encoder_class = {
 };
 
 AVCodec ff_flac_encoder = {
-    "flac",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_FLAC,
-    sizeof(FlacEncodeContext),
-    flac_encode_init,
-    flac_encode_frame,
-    flac_encode_close,
-    NULL,
+    .name           = "flac",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_FLAC,
+    .priv_data_size = sizeof(FlacEncodeContext),
+    .init           = flac_encode_init,
+    .encode         = flac_encode_frame,
+    .close          = flac_encode_close,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_LOSSLESS,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("FLAC (Free Lossless Audio Codec)"),

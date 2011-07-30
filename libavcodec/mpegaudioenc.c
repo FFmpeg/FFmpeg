@@ -764,14 +764,13 @@ static av_cold int MPA_encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_mp2_encoder = {
-    "mp2",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_MP2,
-    sizeof(MpegAudioContext),
-    MPA_encode_init,
-    MPA_encode_frame,
-    MPA_encode_close,
-    NULL,
+    .name           = "mp2",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_MP2,
+    .priv_data_size = sizeof(MpegAudioContext),
+    .init           = MPA_encode_init,
+    .encode         = MPA_encode_frame,
+    .close          = MPA_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .supported_samplerates= (const int[]){44100, 48000,  32000, 22050, 24000, 16000, 0},
     .long_name = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),

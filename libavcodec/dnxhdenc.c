@@ -993,13 +993,13 @@ static int dnxhd_encode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_dnxhd_encoder = {
-    "dnxhd",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DNXHD,
-    sizeof(DNXHDEncContext),
-    dnxhd_encode_init,
-    dnxhd_encode_picture,
-    dnxhd_encode_end,
+    .name           = "dnxhd",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DNXHD,
+    .priv_data_size = sizeof(DNXHDEncContext),
+    .init           = dnxhd_encode_init,
+    .encode         = dnxhd_encode_picture,
+    .close          = dnxhd_encode_end,
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("VC3/DNxHD"),

@@ -687,27 +687,23 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
 }
 
 AVCodec ff_smacker_decoder = {
-    "smackvid",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_SMACKVIDEO,
-    sizeof(SmackVContext),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "smackvid",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_SMACKVIDEO,
+    .priv_data_size = sizeof(SmackVContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Smacker video"),
 };
 
 AVCodec ff_smackaud_decoder = {
-    "smackaud",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_SMACKAUDIO,
-    0,
-    smka_decode_init,
-    NULL,
-    NULL,
-    smka_decode_frame,
+    .name           = "smackaud",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_SMACKAUDIO,
+    .init           = smka_decode_init,
+    .decode         = smka_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Smacker audio"),
 };
 

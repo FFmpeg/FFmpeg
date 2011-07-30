@@ -454,13 +454,12 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
 }
 
 AVCodec ff_tta_decoder = {
-    "tta",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_TTA,
-    sizeof(TTAContext),
-    tta_decode_init,
-    NULL,
-    tta_decode_close,
-    tta_decode_frame,
+    .name           = "tta",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_TTA,
+    .priv_data_size = sizeof(TTAContext),
+    .init           = tta_decode_init,
+    .close          = tta_decode_close,
+    .decode         = tta_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("True Audio (TTA)"),
 };

@@ -240,17 +240,17 @@ cextern pb_A1
 ; out: m1=p0' m2=q0'
 ; clobbers: m0,3-6
 %macro DEBLOCK_P0_Q0 0
-    pxor    m5, m1, m2   ; p0^q0
-    pand    m5, [pb_1]   ; (p0^q0)&1
     pcmpeqb m4, m4
+    pxor    m5, m1, m2   ; p0^q0
     pxor    m3, m4
+    pand    m5, [pb_1]   ; (p0^q0)&1
     pavgb   m3, m0       ; (p1 - q1 + 256)>>1
-    pavgb   m3, [pb_3]   ; (((p1 - q1 + 256)>>1)+4)>>1 = 64+2+(p1-q1)>>2
     pxor    m4, m1
+    pavgb   m3, [pb_3]   ; (((p1 - q1 + 256)>>1)+4)>>1 = 64+2+(p1-q1)>>2
     pavgb   m4, m2       ; (q0 - p0 + 256)>>1
     pavgb   m3, m5
-    paddusb m3, m4       ; d+128+33
     mova    m6, [pb_A1]
+    paddusb m3, m4       ; d+128+33
     psubusb m6, m3
     psubusb m3, [pb_A1]
     pminub  m6, m7
@@ -413,16 +413,16 @@ cglobal deblock_%2_luma_8_%1, 5,5
     LOAD_MASK r2, r3
 
     mov     r3, r4mp
+    pcmpeqb m3, m3
     movd    m4, [r3] ; tc0
     punpcklbw m4, m4
     punpcklbw m4, m4 ; tc = 4x tc0[3], 4x tc0[2], 4x tc0[1], 4x tc0[0]
     mova   [esp+%3], m4 ; tc
-    pcmpeqb m3, m3
     pcmpgtb m4, m3
+    mova    m3, [r4] ; p2
     pand    m4, m7
     mova   [esp], m4 ; mask
 
-    mova    m3, [r4] ; p2
     DIFF_GT2 m1, m3, m5, m6, m7 ; |p2-p0| > beta-1
     pand    m6, m4
     pand    m4, [esp+%3] ; tc
@@ -432,11 +432,10 @@ cglobal deblock_%2_luma_8_%1, 5,5
 
     mova    m4, [r0+2*r1] ; q2
     DIFF_GT2 m2, m4, m5, m6, m3 ; |q2-q0| > beta-1
-    mova    m5, [esp] ; mask
-    pand    m6, m5
+    pand    m6, [esp] ; mask
     mova    m5, [esp+%3] ; tc
-    pand    m5, m6
     psubb   m7, m6
+    pand    m5, m6
     mova    m3, [r0+r1]
     LUMA_Q1 m3, m4, [r0+2*r1], [r0+r1], m5, m6
 
@@ -484,10 +483,10 @@ cglobal deblock_h_luma_8_%1, 0,5
     ; transpose 16x4 -> original space  (only the middle 4 rows were changed by the filter)
     mov    r0, r0mp
     sub    r0, 2
-    lea    r1, [r0+r4]
 
     movq   m0, [pix_tmp+0x10]
     movq   m1, [pix_tmp+0x20]
+    lea    r1, [r0+r4]
     movq   m2, [pix_tmp+0x30]
     movq   m3, [pix_tmp+0x40]
     TRANSPOSE8x4B_STORE  PASS8ROWS(r0, r1, r3, r4)

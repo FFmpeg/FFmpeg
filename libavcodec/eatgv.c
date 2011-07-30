@@ -337,13 +337,12 @@ static av_cold int tgv_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_eatgv_decoder = {
-    "eatgv",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_TGV,
-    sizeof(TgvContext),
-    tgv_decode_init,
-    NULL,
-    tgv_decode_end,
-    tgv_decode_frame,
+    .name           = "eatgv",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_TGV,
+    .priv_data_size = sizeof(TgvContext),
+    .init           = tgv_decode_init,
+    .close          = tgv_decode_end,
+    .decode         = tgv_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TGV video"),
 };

@@ -57,13 +57,13 @@ void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 }
 
 AVCodec ff_rv10_encoder = {
-    "rv10",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_RV10,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
+    .name           = "rv10",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_RV10,
+    .priv_data_size = sizeof(MpegEncContext),
+    .init           = MPV_encode_init,
+    .encode         = MPV_encode_picture,
+    .close          = MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("RealVideo 1.0"),
 };

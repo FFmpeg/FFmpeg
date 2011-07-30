@@ -267,15 +267,14 @@ static av_cold int rv30_decode_init(AVCodecContext *avctx)
 }
 
 AVCodec ff_rv30_decoder = {
-    "rv30",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_RV30,
-    sizeof(RV34DecContext),
-    rv30_decode_init,
-    NULL,
-    ff_rv34_decode_end,
-    ff_rv34_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .name           = "rv30",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_RV30,
+    .priv_data_size = sizeof(RV34DecContext),
+    .init           = rv30_decode_init,
+    .close          = ff_rv34_decode_end,
+    .decode         = ff_rv34_decode_frame,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush = ff_mpeg_flush,
     .long_name = NULL_IF_CONFIG_SMALL("RealVideo 3.0"),
     .pix_fmts= ff_pixfmt_list_420,

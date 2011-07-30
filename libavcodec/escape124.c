@@ -366,15 +366,14 @@ static int escape124_decode_frame(AVCodecContext *avctx,
 
 
 AVCodec ff_escape124_decoder = {
-    "escape124",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_ESCAPE124,
-    sizeof(Escape124Context),
-    escape124_decode_init,
-    NULL,
-    escape124_decode_close,
-    escape124_decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "escape124",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_ESCAPE124,
+    .priv_data_size = sizeof(Escape124Context),
+    .init           = escape124_decode_init,
+    .close          = escape124_decode_close,
+    .decode         = escape124_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Escape 124"),
 };
 

@@ -114,12 +114,12 @@ static int pnm_encode_frame(AVCodecContext *avctx, unsigned char *outbuf,
 
 #if CONFIG_PGM_ENCODER
 AVCodec ff_pgm_encoder = {
-    "pgm",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_PGM,
-    sizeof(PNMContext),
-    ff_pnm_init,
-    pnm_encode_frame,
+    .name           = "pgm",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PGM,
+    .priv_data_size = sizeof(PNMContext),
+    .init           = ff_pnm_init,
+    .encode         = pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_GRAY8, PIX_FMT_GRAY16BE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PGM (Portable GrayMap) image"),
 };
@@ -127,12 +127,12 @@ AVCodec ff_pgm_encoder = {
 
 #if CONFIG_PGMYUV_ENCODER
 AVCodec ff_pgmyuv_encoder = {
-    "pgmyuv",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_PGMYUV,
-    sizeof(PNMContext),
-    ff_pnm_init,
-    pnm_encode_frame,
+    .name           = "pgmyuv",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PGMYUV,
+    .priv_data_size = sizeof(PNMContext),
+    .init           = ff_pnm_init,
+    .encode         = pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PGMYUV (Portable GrayMap YUV) image"),
 };
@@ -140,12 +140,12 @@ AVCodec ff_pgmyuv_encoder = {
 
 #if CONFIG_PPM_ENCODER
 AVCodec ff_ppm_encoder = {
-    "ppm",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_PPM,
-    sizeof(PNMContext),
-    ff_pnm_init,
-    pnm_encode_frame,
+    .name           = "ppm",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PPM,
+    .priv_data_size = sizeof(PNMContext),
+    .init           = ff_pnm_init,
+    .encode         = pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_RGB24, PIX_FMT_RGB48BE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PPM (Portable PixelMap) image"),
 };
@@ -153,12 +153,12 @@ AVCodec ff_ppm_encoder = {
 
 #if CONFIG_PBM_ENCODER
 AVCodec ff_pbm_encoder = {
-    "pbm",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_PBM,
-    sizeof(PNMContext),
-    ff_pnm_init,
-    pnm_encode_frame,
+    .name           = "pbm",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PBM,
+    .priv_data_size = sizeof(PNMContext),
+    .init           = ff_pnm_init,
+    .encode         = pnm_encode_frame,
     .pix_fmts  = (const enum PixelFormat[]){PIX_FMT_MONOWHITE, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("PBM (Portable BitMap) image"),
 };

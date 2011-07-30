@@ -118,14 +118,13 @@ static int amr_wb_encode_frame(AVCodecContext *avctx,
 }
 
 AVCodec ff_libvo_amrwbenc_encoder = {
-    "libvo_amrwbenc",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AMR_WB,
-    sizeof(AMRWBContext),
-    amr_wb_encode_init,
-    amr_wb_encode_frame,
-    amr_wb_encode_close,
-    NULL,
+    .name           = "libvo_amrwbenc",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AMR_WB,
+    .priv_data_size = sizeof(AMRWBContext),
+    .init           = amr_wb_encode_init,
+    .encode         = amr_wb_encode_frame,
+    .close          = amr_wb_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Android VisualOn Adaptive Multi-Rate "
                                       "(AMR) Wide-Band"),

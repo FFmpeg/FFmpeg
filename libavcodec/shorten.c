@@ -536,14 +536,13 @@ static void shorten_flush(AVCodecContext *avctx){
 }
 
 AVCodec ff_shorten_decoder = {
-    "shorten",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_SHORTEN,
-    sizeof(ShortenContext),
-    shorten_decode_init,
-    NULL,
-    shorten_decode_close,
-    shorten_decode_frame,
+    .name           = "shorten",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_SHORTEN,
+    .priv_data_size = sizeof(ShortenContext),
+    .init           = shorten_decode_init,
+    .close          = shorten_decode_close,
+    .decode         = shorten_decode_frame,
     .flush= shorten_flush,
     .long_name= NULL_IF_CONFIG_SMALL("Shorten"),
 };

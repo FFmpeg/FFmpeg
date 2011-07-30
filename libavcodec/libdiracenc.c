@@ -392,13 +392,13 @@ static av_cold int libdirac_encode_close(AVCodecContext *avccontext)
 
 
 AVCodec ff_libdirac_encoder = {
-    "libdirac",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DIRAC,
-    sizeof(FfmpegDiracEncoderParams),
-    libdirac_encode_init,
-    libdirac_encode_frame,
-    libdirac_encode_close,
+    .name           = "libdirac",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DIRAC,
+    .priv_data_size = sizeof(FfmpegDiracEncoderParams),
+    .init           = libdirac_encode_init,
+    .encode         = libdirac_encode_frame,
+    .close          = libdirac_encode_close,
    .capabilities = CODEC_CAP_DELAY,
    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_NONE},
    .long_name = NULL_IF_CONFIG_SMALL("libdirac Dirac 2.2"),
