@@ -1264,6 +1264,12 @@ pad="max(iw\,ih):ow:(ow-iw)/2:(oh-ih)/2"
 # pad the input to get a final w/h ratio of 16:9
 pad="ih*16/9:ih:(ow-iw)/2:(oh-ih)/2"
 
+# for anamorphic video, in order to set the output display aspect ratio,
+# it is necessary to use sar in the expression, according to the relation:
+# (ih * X / ih) * sar = output_dar
+# X = output_dar / sar
+pad="ih*16/9/sar:ih:(ow-iw)/2:(oh-ih)/2"
+
 # double output size and put the input video in the bottom-right
 # corner of the output padded area
 pad="2*iw:2*ih:ow-iw:oh-ih"
