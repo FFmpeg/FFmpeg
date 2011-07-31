@@ -3030,8 +3030,7 @@ static int opt_qscale(const char *opt, const char *arg)
 static int opt_top_field_first(const char *opt, const char *arg)
 {
     top_field_first = parse_number_or_die(opt, arg, OPT_INT, 0, 1);
-    opt_default(opt, arg);
-    return 0;
+    return opt_default(opt, arg);
 }
 
 static int opt_thread_count(const char *opt, const char *arg)
@@ -3077,15 +3076,13 @@ static int opt_audio_channels(const char *opt, const char *arg)
 static int opt_video_channel(const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -channel.\n");
-    opt_default("channel", arg);
-    return 0;
+    return opt_default("channel", arg);
 }
 
 static int opt_video_standard(const char *opt, const char *arg)
 {
     av_log(NULL, AV_LOG_WARNING, "This option is deprecated, use -standard.\n");
-    opt_default("standard", arg);
-    return 0;
+    return opt_default("standard", arg);
 }
 
 static int opt_codec(const char *opt, const char *arg)
@@ -4379,8 +4376,7 @@ static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
 static int opt_passlogfile(const char *opt, const char *arg)
 {
     pass_logfilename_prefix = arg;
-    opt_default("passlogfile", arg);
-    return 0;
+    return opt_default("passlogfile", arg);
 }
 
 static const OptionDef options[] = {
