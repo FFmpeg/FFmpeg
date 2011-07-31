@@ -103,7 +103,7 @@ fate-list:
 clean:: testclean
 
 testclean:
-	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data
+	$(RM) -r tests/vsynth1 tests/vsynth2 tests/data tools/lavfi-showfiltfmts$(EXESUF)
 	$(RM) $(CLEANSUFFIXES:%=tests/%)
 	$(RM) $(TESTTOOLS:%=tests/%$(HOSTEXESUF))
 
