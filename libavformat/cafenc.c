@@ -101,6 +101,17 @@ static int caf_write_header(AVFormatContext *s)
     unsigned int codec_tag = ff_codec_get_tag(ff_codec_caf_tags, enc->codec_id);
 
     switch (enc->codec_id) {
+    case CODEC_ID_AAC:
+    case CODEC_ID_AC3:
+    case CODEC_ID_ALAC:
+    case CODEC_ID_AMR_NB:
+    case CODEC_ID_QCELP:
+    case CODEC_ID_QDM2:
+        av_log(s, AV_LOG_ERROR, "muxing codec currently unsupported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    switch (enc->codec_id) {
     case CODEC_ID_PCM_S8:
     case CODEC_ID_PCM_S16LE:
     case CODEC_ID_PCM_S16BE:
