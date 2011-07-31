@@ -45,7 +45,6 @@ const PixelFormatTag ff_raw_pix_fmt_tags[] = {
     { PIX_FMT_YUVJ422P, MKTAG('Y', '4', '2', 'B') },
     { PIX_FMT_YUVJ422P, MKTAG('P', '4', '2', '2') },
     { PIX_FMT_GRAY8,    MKTAG('Y', '8', '0', '0') },
-    { PIX_FMT_GRAY8,    MKTAG(' ', ' ', 'Y', '8') },
     { PIX_FMT_GRAY8,    MKTAG('Y', '8', ' ', ' ') },
 
     { PIX_FMT_YUYV422, MKTAG('Y', 'U', 'Y', '2') }, /* Packed formats */
