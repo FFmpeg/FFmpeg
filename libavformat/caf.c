@@ -34,22 +34,22 @@
 const AVCodecTag ff_codec_caf_tags[] = {
     { CODEC_ID_AAC,             MKTAG('a','a','c',' ') },
     { CODEC_ID_AC3,             MKTAG('a','c','-','3') },
-    { CODEC_ID_ALAC,            MKTAG('a','l','a','c') },
-  /* FIXME: use DV demuxer, as done in MOV */
-  /*{ CODEC_ID_DVAUDIO,         MKTAG('v','d','v','a') },*/
-  /*{ CODEC_ID_DVAUDIO,         MKTAG('d','v','c','a') },*/
     { CODEC_ID_ADPCM_IMA_QT,    MKTAG('i','m','a','4') },
     { CODEC_ID_ADPCM_IMA_WAV,   MKTAG('m','s', 0, 17 ) },
     { CODEC_ID_ADPCM_MS,        MKTAG('m','s', 0,  2 ) },
+    { CODEC_ID_ALAC,            MKTAG('a','l','a','c') },
     { CODEC_ID_AMR_NB,          MKTAG('s','a','m','r') },
+  /* FIXME: use DV demuxer, as done in MOV */
+  /*{ CODEC_ID_DVAUDIO,         MKTAG('v','d','v','a') },*/
+  /*{ CODEC_ID_DVAUDIO,         MKTAG('d','v','c','a') },*/
     { CODEC_ID_GSM,             MKTAG('a','g','s','m') },
     { CODEC_ID_GSM_MS,          MKTAG('m','s', 0, '1') },
     { CODEC_ID_MACE3,           MKTAG('M','A','C','3') },
     { CODEC_ID_MACE6,           MKTAG('M','A','C','6') },
+    { CODEC_ID_MP1,             MKTAG('.','m','p','1') },
+    { CODEC_ID_MP2,             MKTAG('.','m','p','2') },
     { CODEC_ID_MP3,             MKTAG('.','m','p','3') },
     { CODEC_ID_MP3,             MKTAG('m','s', 0 ,'U') },
-    { CODEC_ID_MP2,             MKTAG('.','m','p','2') },
-    { CODEC_ID_MP1,             MKTAG('.','m','p','1') },
     { CODEC_ID_PCM_ALAW,        MKTAG('a','l','a','w') },
     { CODEC_ID_PCM_MULAW,       MKTAG('u','l','a','w') },
     { CODEC_ID_QCELP,           MKTAG('Q','c','l','p') },
