@@ -2811,9 +2811,8 @@ static void event_loop(void)
 
 static int opt_frame_size(const char *opt, const char *arg)
 {
-    av_log(NULL, AV_LOG_ERROR,
-           "Option '%s' has been removed, use private format options instead\n", opt);
-    return AVERROR(EINVAL);
+    av_log(NULL, AV_LOG_WARNING, "Option -s is deprecated, use -video_size.\n");
+    return opt_default("video_size", arg);
 }
 
 static int opt_width(const char *opt, const char *arg)
@@ -2840,9 +2839,8 @@ static int opt_format(const char *opt, const char *arg)
 
 static int opt_frame_pix_fmt(const char *opt, const char *arg)
 {
-    av_log(NULL, AV_LOG_ERROR,
-           "Option '%s' has been removed, use private format options instead\n", opt);
-    return AVERROR(EINVAL);
+    av_log(NULL, AV_LOG_WARNING, "Option -pix_fmt is deprecated, use -pixel_format.\n");
+    return opt_default("pixel_format", arg);
 }
 
 static int opt_sync(const char *opt, const char *arg)
