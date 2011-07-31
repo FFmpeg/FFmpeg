@@ -474,8 +474,6 @@ FF_ER_COMPLIANT
 @item 3
 FF_ER_AGGRESSIVE
 @item 4
-FF_ER_VERY_AGGRESSIVE
-@item 5
 FF_ER_EXPLODE
 @end table
 
@@ -906,8 +904,34 @@ the DISPLAY environment variable.
 ffmpeg -f x11grab -s cif -r 25 -i :0.0+10,20 /tmp/out.mpg
 @end example
 
-0.0 is display.screen number of your X11 server, same as the DISPLAY environment
-variable. 10 is the x-offset and 20 the y-offset for the grabbing.
+10 is the x-offset and 20 the y-offset for the grabbing.
+
+@example
+ffmpeg -f x11grab -follow_mouse centered -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+The grabbing region follows the mouse pointer, which stays at the center of
+region.
+
+@example
+ffmpeg -f x11grab -follow_mouse 100 -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+Only follows when mouse pointer reaches within 100 pixels to the edge of
+region.
+
+@example
+ffmpeg -f x11grab -show_region 1 -s cif -r 25 -i :0.0+10,20 /tmp/out.mpg
+@end example
+
+The grabbing region will be indicated on screen.
+
+@example
+ffmpeg -f x11grab -follow_mouse centered -show_region 1 -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+The grabbing region indication will follow the mouse pointer.
+
 
 @section Video and Audio file format conversion
 

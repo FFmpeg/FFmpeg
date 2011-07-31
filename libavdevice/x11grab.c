@@ -46,6 +46,7 @@
 #include <X11/Xproto.h>
 #include <X11/Xutil.h>
 #include <sys/shm.h>
+#include <X11/extensions/shape.h>
 #include <X11/extensions/XShm.h>
 #include <X11/extensions/Xfixes.h>
 #include "avdevice.h"
@@ -71,8 +72,73 @@ struct x11_grab
     int use_shm;             /**< !0 when using XShm extension */
     XShmSegmentInfo shminfo; /**< When using XShm, keeps track of XShm infos */
     int  draw_mouse;         /**< Set by a private option. */
+    int  follow_mouse;       /**< Set by a private option. */
+    int  show_region;        /**< set by a private option. */
     char *framerate;         /**< Set by a private option. */
+
+    Window region_win;       /**< This is used by show_region option. */
 };
+
+#define REGION_WIN_BORDER 3
+/**
+ * Draw grabbing region window
+ *
+ * @param s x11_grab context
+ */
+static void
+x11grab_draw_region_win(struct x11_grab *s)
+{
+    Display *dpy = s->dpy;
+    int screen;
+    Window win = s->region_win;
+    GC gc;
+
+    screen = DefaultScreen(dpy);
+    gc = XCreateGC(dpy, win, 0, 0);
+    XSetForeground(dpy, gc, WhitePixel(dpy, screen));
+    XSetBackground(dpy, gc, BlackPixel(dpy, screen));
+    XSetLineAttributes(dpy, gc, REGION_WIN_BORDER, LineDoubleDash, 0, 0);
+    XDrawRectangle(dpy, win, gc,
+                   1, 1,
+                   (s->width  + REGION_WIN_BORDER * 2) - 1 * 2 - 1,
+                   (s->height + REGION_WIN_BORDER * 2) - 1 * 2 - 1);
+    XFreeGC(dpy, gc);
+}
+
+/**
+ * Initialize grabbing region window
+ *
+ * @param s x11_grab context
+ */
+static void
+x11grab_region_win_init(struct x11_grab *s)
+{
+    Display *dpy = s->dpy;
+    int screen;
+    XSetWindowAttributes attribs;
+    XRectangle rect;
+
+    screen = DefaultScreen(dpy);
+    attribs.override_redirect = True;
+    s->region_win = XCreateWindow(dpy, RootWindow(dpy, screen),
+                                  s->x_off  - REGION_WIN_BORDER,
+                                  s->y_off  - REGION_WIN_BORDER,
+                                  s->width  + REGION_WIN_BORDER * 2,
+                                  s->height + REGION_WIN_BORDER * 2,
+                                  0, CopyFromParent,
+                                  InputOutput, CopyFromParent,
+                                  CWOverrideRedirect, &attribs);
+    rect.x = 0;
+    rect.y = 0;
+    rect.width  = s->width;
+    rect.height = s->height;
+    XShapeCombineRectangles(dpy, s->region_win,
+                            ShapeBounding, REGION_WIN_BORDER, REGION_WIN_BORDER,
+                            &rect, 1, ShapeSubtract, 0);
+    XMapWindow(dpy, s->region_win);
+    XSelectInput(dpy, s->region_win, ExposureMask | StructureNotifyMask);
+    x11grab_draw_region_win(s);
+}
 
 /**
  * Initialize the x11 grab device demuxer (public device demuxer API).
@@ -95,6 +161,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     XImage *image;
     int x_off = 0;
     int y_off = 0;
+    int screen;
     int use_shm;
     char *dpyname, *offset;
     int ret = 0;
@@ -142,6 +209,22 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     }
     av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
+    screen = DefaultScreen(dpy);
+
+    if (x11grab->follow_mouse) {
+        int screen_w, screen_h;
+        Window w;
+
+        screen_w = DisplayWidth(dpy, screen);
+        screen_h = DisplayHeight(dpy, screen);
+        XQueryPointer(dpy, RootWindow(dpy, screen), &w, &w, &x_off, &y_off, &ret, &ret, &ret);
+        x_off -= x11grab->width / 2;
+        y_off -= x11grab->height / 2;
+        x_off = FFMIN(FFMAX(x_off, 0), screen_w - x11grab->width);
+        y_off = FFMIN(FFMAX(y_off, 0), screen_h - x11grab->height);
+        av_log(s1, AV_LOG_INFO, "followmouse is enabled, resetting grabbing region to x: %d y: %d\n", x_off, y_off);
+    }
+
     use_shm = XShmQueryExtension(dpy);
     av_log(s1, AV_LOG_INFO, "shared memory extension%s found\n", use_shm ? "" : " not");
 
@@ -172,7 +255,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             goto out;
         }
     } else {
-        image = XGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)),
+        image = XGetImage(dpy, RootWindow(dpy, screen),
                           x_off,y_off,
                           x11grab->width, x11grab->height,
                           AllPlanes, ZPixmap);
@@ -375,6 +458,10 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     int x_off = s->x_off;
     int y_off = s->y_off;
 
+    int screen;
+    Window root;
+    int follow_mouse = s->follow_mouse;
+
     int64_t curtime, delay;
     struct timespec ts;
 
@@ -401,12 +488,60 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
     pkt->size = s->frame_size;
     pkt->pts = curtime;
 
+    screen = DefaultScreen(dpy);
+    root = RootWindow(dpy, screen);
+    if (follow_mouse) {
+        int screen_w, screen_h;
+        int pointer_x, pointer_y, _;
+        Window w;
+
+        screen_w = DisplayWidth(dpy, screen);
+        screen_h = DisplayHeight(dpy, screen);
+        XQueryPointer(dpy, root, &w, &w, &pointer_x, &pointer_y, &_, &_, &_);
+        if (follow_mouse == -1) {
+            // follow the mouse, put it at center of grabbing region
+            x_off += pointer_x - s->width  / 2 - x_off;
+            y_off += pointer_y - s->height / 2 - y_off;
+        } else {
+            // follow the mouse, but only move the grabbing region when mouse
+            // reaches within certain pixels to the edge.
+            if (pointer_x > x_off + s->width - follow_mouse) {
+                x_off += pointer_x - (x_off + s->width - follow_mouse);
+            } else if (pointer_x < x_off + follow_mouse)
+                x_off -= (x_off + follow_mouse) - pointer_x;
+            if (pointer_y > y_off + s->height - follow_mouse) {
+                y_off += pointer_y - (y_off + s->height - follow_mouse);
+            } else if (pointer_y < y_off + follow_mouse)
+                y_off -= (y_off + follow_mouse) - pointer_y;
+        }
+        // adjust grabbing region position if it goes out of screen.
+        s->x_off = x_off = FFMIN(FFMAX(x_off, 0), screen_w - s->width);
+        s->y_off = y_off = FFMIN(FFMAX(y_off, 0), screen_h - s->height);
+
+        if (s->show_region && s->region_win)
+            XMoveWindow(dpy, s->region_win,
+                        s->x_off - REGION_WIN_BORDER,
+                        s->y_off - REGION_WIN_BORDER);
+    }
+
+    if (s->show_region) {
+        if (s->region_win) {
+            XEvent evt;
+            // clean up the events, and do the initinal draw or redraw.
+            for (evt.type = NoEventMask; XCheckMaskEvent(dpy, ExposureMask | StructureNotifyMask, &evt); );
+            if (evt.type)
+                x11grab_draw_region_win(s);
+        } else {
+            x11grab_region_win_init(s);
+        }
+    }
+
     if(s->use_shm) {
-        if (!XShmGetImage(dpy, RootWindow(dpy, DefaultScreen(dpy)), image, x_off, y_off, AllPlanes)) {
+        if (!XShmGetImage(dpy, root, image, x_off, y_off, AllPlanes)) {
             av_log (s1, AV_LOG_INFO, "XShmGetImage() failed\n");
         }
     } else {
-        if (!xget_zpixmap(dpy, RootWindow(dpy, DefaultScreen(dpy)), image, x_off, y_off)) {
+        if (!xget_zpixmap(dpy, root, image, x_off, y_off)) {
             av_log (s1, AV_LOG_INFO, "XGetZPixmap() failed\n");
         }
     }
@@ -442,6 +577,10 @@ x11grab_read_close(AVFormatContext *s1)
         x11grab->image = NULL;
     }
 
+    if (x11grab->region_win) {
+        XDestroyWindow(x11grab->dpy, x11grab->region_win);
+    }
+
     /* Free X11 display */
     XCloseDisplay(x11grab->dpy);
     return 0;
@@ -453,6 +592,10 @@ static const AVOption options[] = {
     { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = "vga"}, 0, 0, DEC },
     { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { "draw_mouse", "Draw the mouse pointer.", OFFSET(draw_mouse), FF_OPT_TYPE_INT, { 1 }, 0, 1, DEC },
+    { "follow_mouse", "Move the grabbing region when the mouse pointer reaches within specified amount of pixels to the edge of region.",
+      OFFSET(follow_mouse), FF_OPT_TYPE_INT, { 0 }, -1, INT_MAX, DEC, "follow_mouse" },
+    { "centered", "Keep the mouse pointer at the center of grabbing region when following.", 0, FF_OPT_TYPE_CONST, { -1 }, INT_MIN, INT_MAX, DEC, "follow_mouse" },
+    { "show_region", "Show the grabbing region.", OFFSET(show_region), FF_OPT_TYPE_INT, { 0 }, 0, 1, DEC },
     { NULL },
 };
 
