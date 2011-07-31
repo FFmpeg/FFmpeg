@@ -139,7 +139,7 @@ static int caf_write_header(AVFormatContext *s)
     avio_wb32(pb, enc->block_align);                  //< mBytesPerPacket
     avio_wb32(pb, samples_per_packet(enc->codec_id, enc->channels)); //< mFramesPerPacket
     avio_wb32(pb, enc->channels);                     //< mChannelsPerFrame
-    avio_wb32(pb, enc->bits_per_coded_sample);        //< mBitsPerChannel
+    avio_wb32(pb, av_get_bits_per_sample(enc->codec_id)); //< mBitsPerChannel
 
     if (enc->channel_layout) {
         ffio_wfourcc(pb, "chan");
