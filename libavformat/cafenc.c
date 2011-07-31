@@ -28,6 +28,10 @@
 
 typedef struct {
     int64_t data;
+    uint8_t *pkt_sizes;
+    int size_buffer_size;
+    int size_entries_used;
+    int packets;
 } CAFContext;
 
 static uint32_t codec_flags(enum CodecID codec_id) {
@@ -133,9 +137,9 @@ static int caf_write_header(AVFormatContext *s)
         return AVERROR_INVALIDDATA;
     }
 
-    if (!enc->block_align) {
-        av_log(s, AV_LOG_ERROR, "muxing with unknown or variable packet size not yet supported\n");
-        return AVERROR_PATCHWELCOME;
+    if (!enc->block_align && !pb->seekable) {
+        av_log(s, AV_LOG_ERROR, "Muxing variable packet size not supported on non seekable output\n");
+        return AVERROR_INVALIDDATA;
     }
 
     ffio_wfourcc(pb, "caff"); //< mFileType
@@ -169,13 +173,38 @@ static int caf_write_header(AVFormatContext *s)
 
 static int caf_write_packet(AVFormatContext *s, AVPacket *pkt)
 {
+    CAFContext *caf = s->priv_data;
+
     avio_write(s->pb, pkt->data, pkt->size);
+    if (!s->streams[0]->codec->block_align) {
+        void *pkt_sizes = caf->pkt_sizes;
+        int i, alloc_size = caf->size_entries_used + 5;
+        if (alloc_size < 0) {
+            caf->pkt_sizes = NULL;
+        } else {
+            caf->pkt_sizes = av_fast_realloc(caf->pkt_sizes,
+                                             &caf->size_buffer_size,
+                                             alloc_size);
+        }
+        if (!caf->pkt_sizes) {
+            av_free(pkt_sizes);
+            return AVERROR(ENOMEM);
+        }
+        for (i = 4; i > 0; i--) {
+            unsigned top = pkt->size >> i * 7;
+            if (top)
+                caf->pkt_sizes[caf->size_entries_used++] = 128 | top;
+        }
+        caf->pkt_sizes[caf->size_entries_used++] = pkt->size & 127;
+        caf->packets++;
+    }
     return 0;
 }
 
 static int caf_write_trailer(AVFormatContext *s)
 {
     AVIOContext *pb = s->pb;
+    AVCodecContext *enc = s->streams[0]->codec;
 
     if (pb->seekable) {
         CAFContext *caf = s->priv_data;
@@ -184,6 +213,17 @@ static int caf_write_trailer(AVFormatContext *s)
         avio_seek(pb, caf->data, SEEK_SET);
         avio_wb64(pb, file_size - caf->data - 8);
         avio_seek(pb, file_size, SEEK_SET);
+        if (!enc->block_align) {
+            ffio_wfourcc(pb, "pakt");
+            avio_wb64(pb, caf->size_entries_used + 24);
+            avio_wb64(pb, caf->packets); ///< mNumberPackets
+            avio_wb64(pb, caf->packets * samples_per_packet(enc->codec_id, enc->channels)); ///< mNumberValidFrames
+            avio_wb32(pb, 0); ///< mPrimingFrames
+            avio_wb32(pb, 0); ///< mRemainderFrames
+            avio_write(pb, caf->pkt_sizes, caf->size_entries_used);
+            av_freep(&caf->pkt_sizes);
+            caf->size_buffer_size = 0;
+        }
         avio_flush(pb);
     }
     return 0;
