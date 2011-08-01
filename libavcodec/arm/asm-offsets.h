@@ -29,11 +29,11 @@
 #endif
 
 /* MpegEncContext */
-#define Y_DC_SCALE               0xb4
-#define C_DC_SCALE               0xb8
-#define AC_PRED                  0xbc
-#define BLOCK_LAST_INDEX         0xc0
-#define H263_AIC                 0xf0
-#define INTER_SCANTAB_RASTER_END 0x138
+#define Y_DC_SCALE               0xa8
+#define C_DC_SCALE               0xac
+#define AC_PRED                  0xb0
+#define BLOCK_LAST_INDEX         0xb4
+#define H263_AIC                 0xe4
+#define INTER_SCANTAB_RASTER_END 0x12c
 
 #endif /* AVCODEC_ARM_ASM_OFFSETS_H */
