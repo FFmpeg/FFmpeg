@@ -339,7 +339,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 @item
     Is the patch against latest FFmpeg git master branch?
 @item
-    Are you subscribed to ffmpeg-dev?
+    Are you subscribed to ffmpeg-devel?
     (the list is subscribers only due to spam)
 @item
     Have you checked that the changes are minimal, so that the same cannot be
