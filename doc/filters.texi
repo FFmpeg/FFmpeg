@@ -194,6 +194,51 @@ Adler-32 checksum for each input frame plane, expressed in the form
 
 Below is a description of the currently available audio sources.
 
+@section abuffer
+
+Buffer audio frames, and make them available to the filter chain.
+
+This source is mainly intended for a programmatic use, in particular
+through the interface defined in @file{libavfilter/asrc_abuffer.h}.
+
+It accepts the following mandatory parameters:
+@var{sample_rate}:@var{sample_fmt}:@var{channel_layout}:@var{packing}
+
+@table @option
+
+@item sample_rate
+The sample rate of the incoming audio buffers.
+
+@item sample_fmt
+The sample format of the incoming audio buffers.
+Either a sample format name or its corresponging integer representation from
+the enum AVSampleFormat in @file{libavutil/samplefmt.h}
+
+@item channel_layout
+The channel layout of the incoming audio buffers.
+Either a channel layout name from channel_layout_map in
+@file{libavutil/audioconvert.c} or its corresponding integer representation
+from the AV_CH_LAYOUT_* macros in @file{libavutil/audioconvert.h}
+
+@item packing
+Either "packed" or "planar", or their integer representation: 0 or 1
+respectively.
+
+@end table
+
+For example:
+@example
+abuffer=44100:s16:stereo:planar
+@end example
+
+will instruct the source to accept planar 16bit signed stereo at 44100Hz.
+Since the sample format with name "s16" corresponds to the number
+1 and the "stereo" channel layout corresponds to the value 3, this is
+equivalent to:
+@example
+abuffer=44100:1:3:1
+@end example
+
 @section anullsrc
 
 Null audio source, never return audio frames. It is mainly useful as a

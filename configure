@@ -1501,6 +1501,7 @@ tcp_protocol_deps="network"
 udp_protocol_deps="network"
 
 # filters
+abuffer="strtok_r"
 aformat_filter_deps="strtok_r"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
