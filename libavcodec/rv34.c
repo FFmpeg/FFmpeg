@@ -737,8 +737,8 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
         my = (s->current_picture_ptr->f.motion_val[dir][mv_pos][1] + (3 << 24)) / 3 - (1 << 24);
         lx = (s->current_picture_ptr->f.motion_val[dir][mv_pos][0] + (3 << 24)) % 3;
         ly = (s->current_picture_ptr->f.motion_val[dir][mv_pos][1] + (3 << 24)) % 3;
-        chroma_mx = (s->current_picture_ptr->f.motion_val[dir][mv_pos][0] + 1) >> 1;
-        chroma_my = (s->current_picture_ptr->f.motion_val[dir][mv_pos][1] + 1) >> 1;
+        chroma_mx = s->current_picture_ptr->f.motion_val[dir][mv_pos][0] / 2;
+        chroma_my = s->current_picture_ptr->f.motion_val[dir][mv_pos][1] / 2;
         umx = (chroma_mx + (3 << 24)) / 3 - (1 << 24);
         umy = (chroma_my + (3 << 24)) / 3 - (1 << 24);
         uvmx = chroma_coeffs[(chroma_mx + (3 << 24)) % 3];
