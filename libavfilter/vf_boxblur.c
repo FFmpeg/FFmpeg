@@ -144,8 +144,8 @@ static int config_input(AVFilterLink *inlink)
     char *expr;
     int ret;
 
-    if (!(boxblur->temp[0] = av_malloc(w)) ||
-        !(boxblur->temp[1] = av_malloc(w)))
+    if (!(boxblur->temp[0] = av_malloc(FFMAX(w, h))) ||
+        !(boxblur->temp[1] = av_malloc(FFMAX(w, h))))
         return AVERROR(ENOMEM);
 
     boxblur->hsub = desc->log2_chroma_w;
