@@ -211,9 +211,17 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
-        AV_WB16(pos, av_clip_uint16(val >> shift)); \
+        if (output_bits == 16) { \
+            AV_WB16(pos, av_clip_uint16(val >> shift)); \
+        } else { \
+            AV_WB16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+        } \
     } else { \
-        AV_WL16(pos, av_clip_uint16(val >> shift)); \
+        if (output_bits == 16) { \
+            AV_WL16(pos, av_clip_uint16(val >> shift)); \
+        } else { \
+            AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits)); \
+        } \
     }
     for (i = 0; i < dstW; i++) {
         int val = 1 << (30-output_bits - 1);
@@ -255,67 +263,7 @@ yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
 #undef output_pixel
 }
 
-static av_always_inline void
-yuv2yuvX10_c_template(const int16_t *lumFilter, const int16_t **lumSrc,
-                      int lumFilterSize, const int16_t *chrFilter,
-                      const int16_t **chrUSrc, const int16_t **chrVSrc,
-                      int chrFilterSize, const int16_t **alpSrc,
-                      uint16_t *dest[4], int dstW, int chrDstW,
-                      int big_endian, int output_bits)
-{
-    //FIXME Optimize (just quickly written not optimized..)
-    int i;
-    uint16_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
-    *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
-    int shift = 15 + 16 - output_bits - 1;
-
-#define output_pixel(pos, val) \
-    if (big_endian) { \
-        AV_WB16(pos, av_clip_uintp2(val >> shift, output_bits)); \
-    } else { \
-        AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits)); \
-    }
-    for (i = 0; i < dstW; i++) {
-        int val = 1 << (30-output_bits - 1);
-        int j;
-
-        for (j = 0; j < lumFilterSize; j++)
-            val += (lumSrc[j][i] * lumFilter[j]) >> 1;
-
-        output_pixel(&yDest[i], val);
-    }
-
-    if (uDest) {
-        for (i = 0; i < chrDstW; i++) {
-            int u = 1 << (30-output_bits - 1);
-            int v = 1 << (30-output_bits - 1);
-            int j;
-
-            for (j = 0; j < chrFilterSize; j++) {
-                u += (chrUSrc[j][i] * chrFilter[j]) >> 1;
-                v += (chrVSrc[j][i] * chrFilter[j]) >> 1;
-            }
-
-            output_pixel(&uDest[i], u);
-            output_pixel(&vDest[i], v);
-        }
-    }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest) {
-        for (i = 0; i < dstW; i++) {
-            int val = 1 << (30-output_bits - 1);
-            int j;
-
-            for (j = 0; j < lumFilterSize; j++)
-                val += (alpSrc[j][i] * lumFilter[j]) >> 1;
-
-            output_pixel(&aDest[i], val);
-        }
-    }
-#undef output_pixel
-}
-
-#define yuv2NBPS(bits, BE_LE, is_be, yuv2yuvX_template_fn, typeX_t) \
+#define yuv2NBPS(bits, BE_LE, is_be) \
 static void yuv2yuvX ## bits ## BE_LE ## _c(SwsContext *c, const int16_t *lumFilter, \
                               const int16_t **_lumSrc, int lumFilterSize, \
                               const int16_t *chrFilter, const int16_t **_chrUSrc, \
@@ -323,21 +271,21 @@ static void yuv2yuvX ## bits ## BE_LE ## _c(SwsContext *c, const int16_t *lumFil
                               int chrFilterSize, const int16_t **_alpSrc, \
                               uint8_t *_dest[4], int dstW, int chrDstW) \
 { \
-    const typeX_t **lumSrc  = (const typeX_t **) _lumSrc, \
-                  **chrUSrc = (const typeX_t **) _chrUSrc, \
-                  **chrVSrc = (const typeX_t **) _chrVSrc, \
-                  **alpSrc  = (const typeX_t **) _alpSrc; \
-    yuv2yuvX_template_fn(lumFilter, lumSrc, lumFilterSize, \
-                         chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
-                         alpSrc, (uint16_t **) _dest, \
-                         dstW, chrDstW, is_be, bits); \
+    const int32_t **lumSrc  = (const int32_t **) _lumSrc, \
+                  **chrUSrc = (const int32_t **) _chrUSrc, \
+                  **chrVSrc = (const int32_t **) _chrVSrc, \
+                  **alpSrc  = (const int32_t **) _alpSrc; \
+    yuv2yuvX16_c_template(lumFilter, lumSrc, lumFilterSize, \
+                          chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
+                          alpSrc, (uint16_t **) _dest, \
+                          dstW, chrDstW, is_be, bits); \
 }
-yuv2NBPS( 9, BE, 1, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS( 9, LE, 0, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(10, BE, 1, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(10, LE, 0, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(16, BE, 1, yuv2yuvX16_c_template, int32_t);
-yuv2NBPS(16, LE, 0, yuv2yuvX16_c_template, int32_t);
+yuv2NBPS( 9, BE, 1);
+yuv2NBPS( 9, LE, 0);
+yuv2NBPS(10, BE, 1);
+yuv2NBPS(10, LE, 0);
+yuv2NBPS(16, BE, 1);
+yuv2NBPS(16, LE, 0);
 
 static void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
                        const int16_t **lumSrc, int lumFilterSize,
@@ -1932,27 +1880,6 @@ static void hScale16_c(SwsContext *c, int16_t *_dst, int dstW, const uint8_t *_s
     }
 }
 
-static void hScale10_c(SwsContext *c, int16_t *dst, int dstW, const uint8_t *_src,
-                       const int16_t *filter,
-                       const int16_t *filterPos, int filterSize)
-{
-    int i;
-    const uint16_t *src = (const uint16_t *) _src;
-    int sh = av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
-
-    for (i = 0; i < dstW; i++) {
-        int j;
-        int srcPos = filterPos[i];
-        int val = 0;
-
-        for (j = 0; j < filterSize; j++) {
-            val += src[srcPos + j] * filter[filterSize * i + j];
-        }
-        // filter=14 bit, input=16 bit, output=30 bit, >> 11 makes 19 bit
-        dst[i] = FFMIN(val >> sh, (1 << 15) - 1);
-    }
-}
-
 // bilinear / bicubic scaling
 static void hScale_c(SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
                      const int16_t *filter, const int16_t *filterPos,
@@ -2098,7 +2025,7 @@ static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
     if (convertRange)
         convertRange(dst, dstWidth);
 
-    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 10 && c->scalingBpp == 16) {
+    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16) {
         c->scale19To15Fw(dst, (int32_t *) dst, dstWidth);
     }
 }
@@ -2125,7 +2052,7 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
                                      uint8_t *formatConvBuffer, uint32_t *pal)
 {
     if (c->chrToYV12) {
-        uint8_t *buf2 = formatConvBuffer + FFALIGN(srcW * FFALIGN(c->scalingBpp, 8) >> 3, 16);
+        uint8_t *buf2 = formatConvBuffer + FFALIGN(srcW * c->scalingBpp >> 3, 16);
         c->chrToYV12(formatConvBuffer, buf2, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= buf2;
@@ -2149,7 +2076,7 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
     if (c->chrConvertRange)
         c->chrConvertRange(dst1, dst2, dstWidth);
 
-    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 10 && c->scalingBpp == 16) {
+    if (av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 < 8 && c->scalingBpp == 16) {
         c->scale19To15Fw(dst1, (int32_t *) dst1, dstWidth);
         c->scale19To15Fw(dst2, (int32_t *) dst2, dstWidth);
     }
@@ -2808,27 +2735,27 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
     }
 
     if (c->scalingBpp == 8) {
-        c->hScale       = hScale_c;
-        if (c->flags & SWS_FAST_BILINEAR) {
-            c->hyscale_fast = hyscale_fast_c;
-            c->hcscale_fast = hcscale_fast_c;
-        }
-    } else {
-        c->hScale = c->scalingBpp == 16 ? hScale16_c : hScale10_c;
-        c->scale19To15Fw = scale19To15Fw_c;
-        c->scale8To16Rv  = scale8To16Rv_c;
+    c->hScale       = hScale_c;
+    if (c->flags & SWS_FAST_BILINEAR) {
+        c->hyscale_fast = hyscale_fast_c;
+        c->hcscale_fast = hcscale_fast_c;
     }
 
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
-        if (c->scalingBpp <= 10) {
-            if (c->srcRange) {
-                c->lumConvertRange = lumRangeFromJpeg_c;
-                c->chrConvertRange = chrRangeFromJpeg_c;
-            } else {
-                c->lumConvertRange = lumRangeToJpeg_c;
-                c->chrConvertRange = chrRangeToJpeg_c;
-            }
+        if (c->srcRange) {
+            c->lumConvertRange = lumRangeFromJpeg_c;
+            c->chrConvertRange = chrRangeFromJpeg_c;
         } else {
+            c->lumConvertRange = lumRangeToJpeg_c;
+            c->chrConvertRange = chrRangeToJpeg_c;
+        }
+    }
+    } else {
+        c->hScale = hScale16_c;
+        c->scale19To15Fw = scale19To15Fw_c;
+        c->scale8To16Rv  = scale8To16Rv_c;
+
+        if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {
             if (c->srcRange) {
                 c->lumConvertRange = lumRangeFromJpeg16_c;
                 c->chrConvertRange = chrRangeFromJpeg16_c;
