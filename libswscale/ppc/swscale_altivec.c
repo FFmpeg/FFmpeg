@@ -406,7 +406,7 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
-    if (c->scalingBpp == 8) {
+    if (c->srcBpc == 8 && c->dstBpc <= 10) {
         c->hScale       = hScale_altivec_real;
     }
     if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
