@@ -738,8 +738,17 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             continue;
         }
 
+        if ((s->flags & AVFMT_FLAG_DISCARD_CORRUPT) &&
+            (pkt->flags & AV_PKT_FLAG_CORRUPT)) {
+            av_log(s, AV_LOG_WARNING,
+                   "Dropped corrupted packet (stream = %d)\n",
+                   pkt->stream_index);
+            continue;
+        }
+
         if(!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
             av_packet_merge_side_data(pkt);
+
         st= s->streams[pkt->stream_index];
 
         switch(st->codec->codec_type){

@@ -1791,12 +1791,10 @@ static void windowing_and_mdct_ltp(AACContext *ac, float *out,
     } else {
         memset(in, 0, 448 * sizeof(float));
         ac->dsp.vector_fmul(in + 448, in + 448, swindow_prev, 128);
-        memcpy(in + 576, in + 576, 448 * sizeof(float));
     }
     if (ics->window_sequence[0] != LONG_START_SEQUENCE) {
         ac->dsp.vector_fmul_reverse(in + 1024, in + 1024, lwindow, 1024);
     } else {
-        memcpy(in + 1024, in + 1024, 448 * sizeof(float));
         ac->dsp.vector_fmul_reverse(in + 1024 + 448, in + 1024 + 448, swindow, 128);
         memset(in + 1024 + 576, 0, 448 * sizeof(float));
     }

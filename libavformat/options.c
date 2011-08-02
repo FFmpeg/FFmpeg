@@ -79,6 +79,7 @@ static const AVOption options[]={
 #if FF_API_FLAG_RTP_HINT
 {"rtphint", "add rtp hinting (deprecated, use the -movflags rtphint option instead)", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_RTP_HINT }, INT_MIN, INT_MAX, E, "fflags"},
 #endif
+{"discardcorrupt", "discard corrupted frames", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_DISCARD_CORRUPT }, INT_MIN, INT_MAX, D, "fflags"},
 {"sortdts", "try to interleave outputted packets by dts", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_SORT_DTS }, INT_MIN, INT_MAX, D, "fflags"},
 {"keepside", "dont merge side data", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_KEEP_SIDE_DATA }, INT_MIN, INT_MAX, D, "fflags"},
 {"latm", "enable RTP MP4A-LATM payload", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_MP4A_LATM }, INT_MIN, INT_MAX, E, "fflags"},

@@ -63,6 +63,13 @@ ps_p1p1m1m1: dd 0, 0, 0x80000000, 0x80000000, 0, 0, 0x80000000, 0x80000000
     mulps  %1, %3
 %endmacro
 
+%macro BUTTERFLY0_SSE2 5
+    pshufd %4, %1, %5
+    xorps  %1, %2
+    addps  %1, %4
+    mulps  %1, %3
+%endmacro
+
 %macro BUTTERFLY0_AVX 5
     vshufps %4, %1, %1, %5
     vxorps  %1, %1, %2
@@ -405,18 +412,17 @@ INIT_XMM
 
 
 INIT_XMM
+%macro DCT32_FUNC 1
 ; void ff_dct32_float_sse(FFTSample *out, const FFTSample *in)
-cglobal dct32_float_sse, 2,3,16, out, in, tmp
+cglobal dct32_float_%1, 2,3,16, out, in, tmp
     ; pass 1
 
     movaps      m0, [inq+0]
-    movaps      m1, [inq+112]
-    shufps      m1, m1, 0x1b
+    LOAD_INV    m1, [inq+112]
     BUTTERFLY   m0, m1, [ps_cos_vec], m3
 
     movaps      m7, [inq+64]
-    movaps      m4, [inq+48]
-    shufps      m4, m4, 0x1b
+    LOAD_INV    m4, [inq+48]
     BUTTERFLY   m7, m4, [ps_cos_vec+32], m3
 
     ; pass 2
@@ -427,13 +433,11 @@ cglobal dct32_float_sse, 2,3,16, out, in, tmp
 
     ; pass 1
     movaps      m1, [inq+16]
-    movaps      m6, [inq+96]
-    shufps      m6, m6, 0x1b
+    LOAD_INV    m6, [inq+96]
     BUTTERFLY   m1, m6, [ps_cos_vec+16], m3
 
     movaps      m4, [inq+80]
-    movaps      m5, [inq+32]
-    shufps      m5, m5, 0x1b
+    LOAD_INV    m5, [inq+32]
     BUTTERFLY   m4, m5, [ps_cos_vec+48], m3
 
     ; pass 2
@@ -492,3 +496,20 @@ cglobal dct32_float_sse, 2,3,16, out, in, tmp
     PASS5
     PASS6
     RET
+%endmacro
+
+%macro LOAD_INV_SSE 2
+    movaps      %1, %2
+    shufps      %1, %1, 0x1b
+%endmacro
+
+%define LOAD_INV LOAD_INV_SSE
+DCT32_FUNC sse
+
+%macro LOAD_INV_SSE2 2
+    pshufd      %1, %2, 0x1b
+%endmacro
+
+%define LOAD_INV LOAD_INV_SSE2
+%define BUTTERFLY0 BUTTERFLY0_SSE2
+DCT32_FUNC sse2
