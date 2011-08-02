@@ -896,11 +896,15 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
     }
 
-    c->scalingBpp = FFMAX(av_pix_fmt_descriptors[srcFormat].comp[0].depth_minus1,
-                          av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1) >= 8 ? 16 : 8;
+    c->scalingBpp = 1 + FFMAX(av_pix_fmt_descriptors[srcFormat].comp[0].depth_minus1,
+                             av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1);
+    if (c->scalingBpp <= 8)
+        c->scalingBpp = 8;
     if (c->scalingBpp == 16)
         dst_stride <<= 1;
-    FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW, 16) * 2 * c->scalingBpp >> 3, fail);
+    FF_ALLOC_OR_GOTO(c, c->formatConvBuffer,
+                     FFALIGN(srcW, 16) * 2 * FFALIGN(c->scalingBpp, 8) >> 3,
+                     fail);
     if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2 && c->scalingBpp == 8) {
         c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
         if (!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR)) {
@@ -1055,7 +1059,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
     // 64 / c->scalingBpp is the same as 16 / sizeof(scaling_intermediate)
-    c->uv_off_px   = dst_stride_px + 64 / c->scalingBpp;
+    c->uv_off_px   = dst_stride_px + 64 / (c->scalingBpp &~ 7);
     c->uv_off_byte = dst_stride + 16;
     for (i=0; i<c->vChrBufSize; i++) {
         FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], dst_stride*2+32, fail);
