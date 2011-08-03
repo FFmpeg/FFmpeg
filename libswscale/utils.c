@@ -63,133 +63,90 @@ const char *swscale_license(void)
 
 #define RET 0xC3 //near return opcode for x86
 
-#define isSupportedIn(x)    (       \
-           (x)==PIX_FMT_YUV420P     \
-        || (x)==PIX_FMT_YUVA420P    \
-        || (x)==PIX_FMT_YUYV422     \
-        || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_RGB48BE     \
-        || (x)==PIX_FMT_RGB48LE     \
-        || (x)==PIX_FMT_RGB32       \
-        || (x)==PIX_FMT_RGB32_1     \
-        || (x)==PIX_FMT_BGR48BE     \
-        || (x)==PIX_FMT_BGR48LE     \
-        || (x)==PIX_FMT_BGR24       \
-        || (x)==PIX_FMT_BGR565LE    \
-        || (x)==PIX_FMT_BGR565BE    \
-        || (x)==PIX_FMT_BGR555LE    \
-        || (x)==PIX_FMT_BGR555BE    \
-        || (x)==PIX_FMT_BGR32       \
-        || (x)==PIX_FMT_BGR32_1     \
-        || (x)==PIX_FMT_RGB24       \
-        || (x)==PIX_FMT_RGB565LE    \
-        || (x)==PIX_FMT_RGB565BE    \
-        || (x)==PIX_FMT_RGB555LE    \
-        || (x)==PIX_FMT_RGB555BE    \
-        || (x)==PIX_FMT_GRAY8       \
-        || (x)==PIX_FMT_Y400A       \
-        || (x)==PIX_FMT_YUV410P     \
-        || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_NV12        \
-        || (x)==PIX_FMT_NV21        \
-        || (x)==PIX_FMT_GRAY16BE    \
-        || (x)==PIX_FMT_GRAY16LE    \
-        || (x)==PIX_FMT_YUV444P     \
-        || (x)==PIX_FMT_YUV422P     \
-        || (x)==PIX_FMT_YUV411P     \
-        || (x)==PIX_FMT_YUVJ420P    \
-        || (x)==PIX_FMT_YUVJ422P    \
-        || (x)==PIX_FMT_YUVJ440P    \
-        || (x)==PIX_FMT_YUVJ444P    \
-        || (x)==PIX_FMT_PAL8        \
-        || (x)==PIX_FMT_BGR8        \
-        || (x)==PIX_FMT_RGB8        \
-        || (x)==PIX_FMT_BGR4_BYTE   \
-        || (x)==PIX_FMT_RGB4_BYTE   \
-        || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_MONOWHITE   \
-        || (x)==PIX_FMT_MONOBLACK   \
-        || (x)==PIX_FMT_YUV420P9LE    \
-        || (x)==PIX_FMT_YUV444P9LE    \
-        || (x)==PIX_FMT_YUV420P10LE   \
-        || (x)==PIX_FMT_YUV422P10LE   \
-        || (x)==PIX_FMT_YUV444P10LE   \
-        || (x)==PIX_FMT_YUV420P16LE   \
-        || (x)==PIX_FMT_YUV422P16LE   \
-        || (x)==PIX_FMT_YUV444P16LE   \
-        || (x)==PIX_FMT_YUV420P9BE    \
-        || (x)==PIX_FMT_YUV444P9BE    \
-        || (x)==PIX_FMT_YUV420P10BE   \
-        || (x)==PIX_FMT_YUV444P10BE   \
-        || (x)==PIX_FMT_YUV422P10BE   \
-        || (x)==PIX_FMT_YUV420P16BE   \
-        || (x)==PIX_FMT_YUV422P16BE   \
-        || (x)==PIX_FMT_YUV444P16BE   \
-    )
+typedef struct FormatEntry {
+    int is_supported_in, is_supported_out;
+} FormatEntry;
+
+const static FormatEntry format_entries[PIX_FMT_NB] = {
+    [PIX_FMT_YUV420P]     = { 1 , 1 },
+    [PIX_FMT_YUYV422]     = { 1 , 1 },
+    [PIX_FMT_RGB24]       = { 1 , 1 },
+    [PIX_FMT_BGR24]       = { 1 , 1 },
+    [PIX_FMT_YUV422P]     = { 1 , 1 },
+    [PIX_FMT_YUV444P]     = { 1 , 1 },
+    [PIX_FMT_YUV410P]     = { 1 , 1 },
+    [PIX_FMT_YUV411P]     = { 1 , 1 },
+    [PIX_FMT_GRAY8]       = { 1 , 1 },
+    [PIX_FMT_MONOWHITE]   = { 1 , 1 },
+    [PIX_FMT_MONOBLACK]   = { 1 , 1 },
+    [PIX_FMT_PAL8]        = { 1 , 0 },
+    [PIX_FMT_YUVJ420P]    = { 1 , 1 },
+    [PIX_FMT_YUVJ422P]    = { 1 , 1 },
+    [PIX_FMT_YUVJ444P]    = { 1 , 1 },
+    [PIX_FMT_UYVY422]     = { 1 , 1 },
+    [PIX_FMT_UYYVYY411]   = { 0 , 0 },
+    [PIX_FMT_BGR8]        = { 1 , 1 },
+    [PIX_FMT_BGR4]        = { 0 , 1 },
+    [PIX_FMT_BGR4_BYTE]   = { 1 , 1 },
+    [PIX_FMT_RGB8]        = { 1 , 1 },
+    [PIX_FMT_RGB4]        = { 0 , 1 },
+    [PIX_FMT_RGB4_BYTE]   = { 1 , 1 },
+    [PIX_FMT_NV12]        = { 1 , 1 },
+    [PIX_FMT_NV21]        = { 1 , 1 },
+    [PIX_FMT_ARGB]        = { 1 , 1 },
+    [PIX_FMT_RGBA]        = { 1 , 1 },
+    [PIX_FMT_ABGR]        = { 1 , 1 },
+    [PIX_FMT_BGRA]        = { 1 , 1 },
+    [PIX_FMT_GRAY16BE]    = { 1 , 1 },
+    [PIX_FMT_GRAY16LE]    = { 1 , 1 },
+    [PIX_FMT_YUV440P]     = { 1 , 1 },
+    [PIX_FMT_YUVJ440P]    = { 1 , 1 },
+    [PIX_FMT_YUVA420P]    = { 1 , 1 },
+    [PIX_FMT_RGB48BE]     = { 1 , 1 },
+    [PIX_FMT_RGB48LE]     = { 1 , 1 },
+    [PIX_FMT_RGB565BE]    = { 1 , 1 },
+    [PIX_FMT_RGB565LE]    = { 1 , 1 },
+    [PIX_FMT_RGB555BE]    = { 1 , 1 },
+    [PIX_FMT_RGB555LE]    = { 1 , 1 },
+    [PIX_FMT_BGR565BE]    = { 1 , 1 },
+    [PIX_FMT_BGR565LE]    = { 1 , 1 },
+    [PIX_FMT_BGR555BE]    = { 1 , 1 },
+    [PIX_FMT_BGR555LE]    = { 1 , 1 },
+    [PIX_FMT_YUV420P16LE] = { 1 , 1 },
+    [PIX_FMT_YUV420P16BE] = { 1 , 1 },
+    [PIX_FMT_YUV422P16LE] = { 1 , 1 },
+    [PIX_FMT_YUV422P16BE] = { 1 , 1 },
+    [PIX_FMT_YUV444P16LE] = { 1 , 1 },
+    [PIX_FMT_YUV444P16BE] = { 1 , 1 },
+    [PIX_FMT_RGB444LE]    = { 0 , 1 },
+    [PIX_FMT_RGB444BE]    = { 0 , 1 },
+    [PIX_FMT_BGR444LE]    = { 0 , 1 },
+    [PIX_FMT_BGR444BE]    = { 0 , 1 },
+    [PIX_FMT_Y400A]       = { 1 , 0 },
+    [PIX_FMT_BGR48BE]     = { 1 , 1 },
+    [PIX_FMT_BGR48LE]     = { 1 , 1 },
+    [PIX_FMT_YUV420P9BE]  = { 1 , 1 },
+    [PIX_FMT_YUV420P9LE]  = { 1 , 1 },
+    [PIX_FMT_YUV420P10BE] = { 1 , 1 },
+    [PIX_FMT_YUV420P10LE] = { 1 , 1 },
+    [PIX_FMT_YUV422P10BE] = { 1 , 1 },
+    [PIX_FMT_YUV422P10LE] = { 1 , 1 },
+    [PIX_FMT_YUV444P9BE]  = { 1 , 0 },
+    [PIX_FMT_YUV444P9LE]  = { 1 , 0 },
+    [PIX_FMT_YUV444P10BE] = { 1 , 0 },
+    [PIX_FMT_YUV444P10LE] = { 1 , 0 },
+};
 
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
 {
-    return isSupportedIn(pix_fmt);
+    return (unsigned)pix_fmt < PIX_FMT_NB ?
+        format_entries[pix_fmt].is_supported_in : 0;
 }
-
-#define isSupportedOut(x)   (       \
-           (x)==PIX_FMT_YUV420P     \
-        || (x)==PIX_FMT_YUVA420P    \
-        || (x)==PIX_FMT_YUYV422     \
-        || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_YUV444P     \
-        || (x)==PIX_FMT_YUV422P     \
-        || (x)==PIX_FMT_YUV411P     \
-        || (x)==PIX_FMT_YUVJ420P    \
-        || (x)==PIX_FMT_YUVJ422P    \
-        || (x)==PIX_FMT_YUVJ440P    \
-        || (x)==PIX_FMT_YUVJ444P    \
-        || isRGBinBytes(x)          \
-        || isBGRinBytes(x)          \
-        || (x)==PIX_FMT_RGB565LE    \
-        || (x)==PIX_FMT_RGB565BE    \
-        || (x)==PIX_FMT_RGB555LE    \
-        || (x)==PIX_FMT_RGB555BE    \
-        || (x)==PIX_FMT_RGB444LE    \
-        || (x)==PIX_FMT_RGB444BE    \
-        || (x)==PIX_FMT_BGR565LE    \
-        || (x)==PIX_FMT_BGR565BE    \
-        || (x)==PIX_FMT_BGR555LE    \
-        || (x)==PIX_FMT_BGR555BE    \
-        || (x)==PIX_FMT_BGR444LE    \
-        || (x)==PIX_FMT_BGR444BE    \
-        || (x)==PIX_FMT_RGB8        \
-        || (x)==PIX_FMT_BGR8        \
-        || (x)==PIX_FMT_RGB4_BYTE   \
-        || (x)==PIX_FMT_BGR4_BYTE   \
-        || (x)==PIX_FMT_RGB4        \
-        || (x)==PIX_FMT_BGR4        \
-        || (x)==PIX_FMT_MONOBLACK   \
-        || (x)==PIX_FMT_MONOWHITE   \
-        || (x)==PIX_FMT_NV12        \
-        || (x)==PIX_FMT_NV21        \
-        || (x)==PIX_FMT_GRAY16BE    \
-        || (x)==PIX_FMT_GRAY16LE    \
-        || (x)==PIX_FMT_GRAY8       \
-        || (x)==PIX_FMT_YUV410P     \
-        || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_YUV420P9LE    \
-        || (x)==PIX_FMT_YUV420P10LE   \
-        || (x)==PIX_FMT_YUV420P16LE   \
-        || (x)==PIX_FMT_YUV422P10LE   \
-        || (x)==PIX_FMT_YUV422P16LE   \
-        || (x)==PIX_FMT_YUV444P16LE   \
-        || (x)==PIX_FMT_YUV420P9BE    \
-        || (x)==PIX_FMT_YUV420P10BE   \
-        || (x)==PIX_FMT_YUV422P10BE   \
-        || (x)==PIX_FMT_YUV420P16BE   \
-        || (x)==PIX_FMT_YUV422P16BE   \
-        || (x)==PIX_FMT_YUV444P16BE   \
-    )
 
 int sws_isSupportedOutput(enum PixelFormat pix_fmt)
 {
-    return isSupportedOut(pix_fmt);
+    return (unsigned)pix_fmt < PIX_FMT_NB ?
+        format_entries[pix_fmt].is_supported_out : 0;
 }
 
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
@@ -798,11 +755,11 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     unscaled = (srcW == dstW && srcH == dstH);
 
-    if (!isSupportedIn(srcFormat)) {
+    if (!sws_isSupportedInput(srcFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as input pixel format\n", sws_format_name(srcFormat));
         return AVERROR(EINVAL);
     }
-    if (!isSupportedOut(dstFormat)) {
+    if (!sws_isSupportedOutput(dstFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as output pixel format\n", sws_format_name(dstFormat));
         return AVERROR(EINVAL);
     }
