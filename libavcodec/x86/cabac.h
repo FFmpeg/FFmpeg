@@ -87,13 +87,19 @@
 static av_always_inline int get_cabac_inline_x86(CABACContext *c,
                                                  uint8_t *const state)
 {
-    int bit, tmp;
+    int bit, low, range, tmp;
 
     __asm__ volatile(
+        "movl %a6(%5), %2               \n\t"
+        "movl %a7(%5), %1               \n\t"
         BRANCHLESS_GET_CABAC("%0", "%5", "(%4)", "%1", "%w1", "%2",
-                             "%3", "%b3", "%a6")
-        :"=&r"(bit), "+&r"(c->low), "+&r"(c->range), "=&q"(tmp)
+                             "%3", "%b3", "%a8")
+        "movl %2, %a6(%5)               \n\t"
+        "movl %1, %a7(%5)               \n\t"
+
+        :"=&r"(bit), "=&r"(low), "=&r"(range), "=&q"(tmp)
         :"r"(state), "r"(c),
+         "i"(offsetof(CABACContext, range)), "i"(offsetof(CABACContext, low)),
          "i"(offsetof(CABACContext, bytestream))
         : "%"REG_c, "memory"
     );
