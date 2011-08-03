@@ -98,6 +98,7 @@ typedef struct PacketQueue {
 typedef struct VideoPicture {
     double pts;                                  ///<presentation time stamp for this picture
     double target_clock;                         ///<av_gettime() time at which this should be displayed ideally
+    double duration;                             ///<expected duration of the frame
     int64_t pos;                                 ///<byte position in file
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
@@ -1136,7 +1137,7 @@ retry:
                 assert(nextvp->target_clock >= vp->target_clock);
                 next_target= nextvp->target_clock;
             }else{
-                next_target= vp->target_clock + is->video_clock - vp->pts; //FIXME pass durations cleanly
+                next_target= vp->target_clock + vp->duration;
             }
             if((framedrop>0 || (framedrop && is->audio_st)) && time > next_target){
                 is->skip_frames *= 1.0 + FRAME_SKIP_FACTOR;
@@ -1340,6 +1341,8 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         return -1;
 
     vp = &is->pictq[is->pictq_windex];
+
+    vp->duration = frame_delay;
 
     /* alloc or resize hardware picture buffer */
     if (!vp->bmp ||
