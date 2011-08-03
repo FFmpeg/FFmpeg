@@ -481,9 +481,14 @@ typedef struct SwsContext {
      *                   (and input coefficients thus padded with zeroes)
      *                   to simplify creating SIMD code.
      */
-    void (*hScale)(struct SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
-                   const int16_t *filter, const int16_t *filterPos,
-                   int filterSize);
+    /** @{ */
+    void (*hyScale)(struct SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
+                    const int16_t *filter, const int16_t *filterPos,
+                    int filterSize);
+    void (*hcScale)(struct SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
+                    const int16_t *filter, const int16_t *filterPos,
+                    int filterSize);
+    /** @} */
 
     void (*lumConvertRange)(int16_t *dst, int width); ///< Color range conversion function for luma plane if needed.
     void (*chrConvertRange)(int16_t *dst1, int16_t *dst2, int width); ///< Color range conversion function for chroma planes if needed.
