@@ -25,7 +25,7 @@
 ;******************************************************************************
 
 %include "libavutil/x86/x86inc.asm"
-%include "x86util.asm"
+%include "libavutil/x86/x86util.asm"
 
 SECTION .text
 
