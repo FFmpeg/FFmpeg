@@ -667,6 +667,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     if (st->codec->stream_codec_tag == AV_RL32("Axan")){
                         st->codec->codec_id  = CODEC_ID_XAN_DPCM;
                         st->codec->codec_tag = 0;
+                        ast->dshow_block_align = 0;
                     }
                     if (amv_file_format){
                         st->codec->codec_id  = CODEC_ID_ADPCM_IMA_AMV;
