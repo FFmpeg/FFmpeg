@@ -230,5 +230,5 @@ AVCodec ff_eightbps_decoder = {
     .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-        .long_name = NULL_IF_CONFIG_SMALL("QuickTime 8BPS video"),
+    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime 8BPS video"),
 };

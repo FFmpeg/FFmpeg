@@ -160,7 +160,6 @@ AVCodec ff_cljr_encoder = {
     .priv_data_size = sizeof(CLJRContext),
     .init           = encode_init,
     .encode         = encode_frame,
-    //encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
 };
 #endif

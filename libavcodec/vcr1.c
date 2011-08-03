@@ -197,7 +197,6 @@ AVCodec ff_vcr1_encoder = {
     .priv_data_size = sizeof(VCR1Context),
     .init           = encode_init,
     .encode         = encode_frame,
-    //encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("ATI VCR1"),
 };
 #endif
