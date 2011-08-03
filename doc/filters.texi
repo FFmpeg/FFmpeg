@@ -1846,9 +1846,9 @@ interlaced video, accepts one of the following values:
 
 @table @option
 @item 0
-assume bottom field first
-@item 1
 assume top field first
+@item 1
+assume bottom field first
 @item -1
 enable automatic detection
 @end table

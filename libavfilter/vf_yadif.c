@@ -36,8 +36,8 @@ typedef struct {
     int mode;
 
     /**
-     *  0: bottom field first
-     *  1: top field first
+     *  0: top field first
+     *  1: bottom field first
      * -1: auto-detection
      */
     int parity;
