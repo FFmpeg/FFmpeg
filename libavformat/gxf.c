@@ -346,6 +346,8 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
             avio_skip(pb, 0x30); // payload description
             fps = fps_umf2avr(avio_rl32(pb));
             if (!main_timebase.num || !main_timebase.den) {
+                av_log(s, AV_LOG_WARNING, "No FPS track tag, using UMF fps tag."
+                                          " This might give wrong results.\n");
                 // this may not always be correct, but simply the best we can get
                 main_timebase.num = fps.den;
                 main_timebase.den = fps.num * 2;
