@@ -3347,6 +3347,11 @@ static int opt_input_file(const char *opt, const char *filename)
         find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0);
     ic->flags |= AVFMT_FLAG_NONBLOCK;
 
+    if (loop_input) {
+        av_log(NULL, AV_LOG_WARNING, "-loop_input is deprecated, use -loop 1\n");
+        ic->loop_input = loop_input;
+    }
+
     /* open the input file with generic libav function */
     err = avformat_open_input(&ic, filename, file_iformat, &format_opts);
     if (err < 0) {
@@ -3377,11 +3382,6 @@ static int opt_input_file(const char *opt, const char *filename)
             ffmpeg_exit(1);
         }
         opt_programid=0;
-    }
-
-    if (loop_input) {
-        av_log(NULL, AV_LOG_WARNING, "-loop_input is deprecated, use -loop 1\n");
-        ic->loop_input = loop_input;
     }
 
     /* Set AVCodecContext options for avformat_find_stream_info */

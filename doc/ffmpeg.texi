@@ -732,7 +732,7 @@ Read input at native frame rate. Mainly used to simulate a grab device.
 @item -loop_input
 Loop over the input stream. Currently it works only for image
 streams. This option is used for automatic FFserver testing.
-This option is deprecated, use -loop.
+This option is deprecated, use -loop 1.
 @item -loop_output @var{number_of_times}
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
