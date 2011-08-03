@@ -344,6 +344,10 @@ static int decode_dvd_subtitles(AVSubtitle *sub_header,
                 sub_header->rects[0]->pict.linesize[0] = w;
             }
         }
+        if (next_cmd_pos < cmd_pos) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid command offset\n");
+            break;
+        }
         if (next_cmd_pos == cmd_pos)
             break;
         cmd_pos = next_cmd_pos;
