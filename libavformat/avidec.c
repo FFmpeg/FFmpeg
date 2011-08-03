@@ -1410,7 +1410,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
                 flags | AVSEEK_FLAG_BACKWARD | (st2->codec->codec_type != AVMEDIA_TYPE_VIDEO ? AVSEEK_FLAG_ANY : 0));
         if(index<0)
             index=0;
-        while(index>0 && st2->index_entries[index-1].pos >= pos_min)
+        while(!avi->non_interleaved && index>0 && st2->index_entries[index-1].pos >= pos_min)
             index--;
         ast2->frame_offset = st2->index_entries[index].timestamp;
     }
