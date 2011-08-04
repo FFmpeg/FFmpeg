@@ -18,8 +18,8 @@ output pads is called a "sink".
 
 A filtergraph can be represented using a textual representation, which
 is recognized by the @code{-vf} and @code{-af} options of the ff*
-tools, and by the @code{av_parse_graph()} function defined in
-@file{libavfilter/avfiltergraph}.
+tools, and by the @code{avfilter_graph_parse()} function defined in
+@file{libavfilter/avfiltergraph.h}.
 
 A filterchain consists of a sequence of connected filters, each one
 connected to the previous one in the sequence. A filterchain is
