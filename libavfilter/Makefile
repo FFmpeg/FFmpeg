@@ -18,7 +18,6 @@ OBJS = allfilters.o                                                     \
        buffer.o                                                         \
        buffersink.o                                                     \
        buffersrc.o                                                      \
-       defaults.o                                                       \
        drawutils.o                                                      \
        formats.o                                                        \
        graphparser.o                                                    \

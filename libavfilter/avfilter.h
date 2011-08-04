@@ -460,8 +460,11 @@ void avfilter_default_draw_slice(AVFilterLink *link, int y, int h, int slice_dir
 /** default handler for end_frame() for video inputs */
 void avfilter_default_end_frame(AVFilterLink *link);
 
+#if FF_API_DEFAULT_CONFIG_OUTPUT_LINK
 /** default handler for config_props() for audio/video outputs */
+attribute_deprecated
 int avfilter_default_config_output_link(AVFilterLink *link);
+#endif
 
 /** default handler for get_video_buffer() for video inputs */
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
