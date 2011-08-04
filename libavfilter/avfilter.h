@@ -464,9 +464,6 @@ void avfilter_default_end_frame(AVFilterLink *link);
 /** default handler for filter_samples() for audio inputs */
 void avfilter_default_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
-/** default handler for config_props() for audio/video outputs */
-int avfilter_default_config_output_link(AVFilterLink *link);
-
 /** default handler for get_video_buffer() for video inputs */
 AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                      int perms, int w, int h);

@@ -251,24 +251,51 @@ int avfilter_config_links(AVFilterContext *filter)
             if ((ret = avfilter_config_links(link->src)) < 0)
                 return ret;
 
-            if (!(config_link = link->srcpad->config_props))
-                config_link  = avfilter_default_config_output_link;
-            if ((ret = config_link(link)) < 0)
+            if (!(config_link = link->srcpad->config_props)) {
+                if (link->src->input_count != 1) {
+                    av_log(link->src, AV_LOG_ERROR, "Source filters and filters "
+                                                    "with more than one input "
+                                                    "must set config_props() "
+                                                    "callbacks on all outputs\n");
+                    return AVERROR(EINVAL);
+                }
+            } else if ((ret = config_link(link)) < 0)
                 return ret;
 
-            if (link->time_base.num == 0 && link->time_base.den == 0)
-                link->time_base = link->src && link->src->input_count ?
-                    link->src->inputs[0]->time_base : AV_TIME_BASE_Q;
+            switch (link->type) {
+            case AVMEDIA_TYPE_VIDEO:
+                if (!link->time_base.num && !link->time_base.den)
+                    link->time_base = link->src->input_count ?
+                        link->src->inputs[0]->time_base : AV_TIME_BASE_Q;
 
-            if (link->sample_aspect_ratio.num == 0 && link->sample_aspect_ratio.den == 0)
-                link->sample_aspect_ratio = link->src->input_count ?
-                    link->src->inputs[0]->sample_aspect_ratio : (AVRational){1,1};
+                if (!link->sample_aspect_ratio.num && !link->sample_aspect_ratio.den)
+                    link->sample_aspect_ratio = link->src->input_count ?
+                        link->src->inputs[0]->sample_aspect_ratio : (AVRational){1,1};
 
-            if (link->sample_rate == 0 && link->src && link->src->input_count)
-                link->sample_rate = link->src->inputs[0]->sample_rate;
+                if (link->src->input_count) {
+                    if (!link->w)
+                        link->w = link->src->inputs[0]->w;
+                    if (!link->h)
+                        link->h = link->src->inputs[0]->h;
+                } else if (!link->w || !link->h) {
+                    av_log(link->src, AV_LOG_ERROR,
+                           "Video source filters must set their output link's "
+                           "width and height\n");
+                    return AVERROR(EINVAL);
+                }
+                break;
 
-            if (link->channel_layout == 0 && link->src && link->src->input_count)
-                link->channel_layout = link->src->inputs[0]->channel_layout;
+            case AVMEDIA_TYPE_AUDIO:
+                if (link->src->input_count) {
+                    if (!link->sample_rate)
+                        link->sample_rate = link->src->inputs[0]->sample_rate;
+                } else if (!link->sample_rate) {
+                    av_log(link->src, AV_LOG_ERROR,
+                           "Audio source filters must set their output link's "
+                           "sample_rate\n");
+                    return AVERROR(EINVAL);
+                }
+            }
 
             if ((config_link = link->dstpad->config_props))
                 if ((ret = config_link(link)) < 0)
