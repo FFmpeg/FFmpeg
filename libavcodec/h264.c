@@ -1194,7 +1194,7 @@ static int decode_update_thread_context(AVCodecContext *dst, const AVCodecContex
     if(!s->current_picture_ptr) return 0;
 
     if(!s->dropable) {
-        ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+        err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
         h->prev_poc_msb     = h->poc_msb;
         h->prev_poc_lsb     = h->poc_lsb;
     }
@@ -1202,7 +1202,7 @@ static int decode_update_thread_context(AVCodecContext *dst, const AVCodecContex
     h->prev_frame_num       = h->frame_num;
     h->outputed_poc         = h->next_outputed_poc;
 
-    return 0;
+    return err;
 }
 
 int ff_h264_frame_start(H264Context *h){
@@ -2318,9 +2318,10 @@ static void init_scan_tables(H264Context *h){
     }
 }
 
-static void field_end(H264Context *h, int in_setup){
+static int field_end(H264Context *h, int in_setup){
     MpegEncContext * const s = &h->s;
     AVCodecContext * const avctx= s->avctx;
+    int err = 0;
     s->mb_y= 0;
 
     if (!in_setup && !s->dropable)
@@ -2332,7 +2333,7 @@ static void field_end(H264Context *h, int in_setup){
 
     if(in_setup || !(avctx->active_thread_type&FF_THREAD_FRAME)){
         if(!s->dropable) {
-            ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+            err = ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
             h->prev_poc_msb= h->poc_msb;
             h->prev_poc_lsb= h->poc_lsb;
         }
@@ -2367,6 +2368,8 @@ static void field_end(H264Context *h, int in_setup){
     MPV_frame_end(s);
 
     h->current_slice=0;
+
+    return err;
 }
 
 /**
@@ -2668,7 +2671,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             ff_thread_report_progress((AVFrame*)s->current_picture_ptr, INT_MAX, 0);
             ff_thread_report_progress((AVFrame*)s->current_picture_ptr, INT_MAX, 1);
             ff_generate_sliding_window_mmcos(h);
-            ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index);
+            if (ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index) < 0 &&
+                s->avctx->error_recognition >= FF_ER_EXPLODE)
+                return AVERROR_INVALIDDATA;
             /* Error concealment: if a ref is missing, copy the previous ref in its place.
              * FIXME: avoiding a memcpy would be nice, but ref handling makes many assumptions
              * about there being no actual duplicates.
@@ -2842,8 +2847,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         }
     }
 
-    if(h->nal_ref_idc)
-        ff_h264_decode_ref_pic_marking(h0, &s->gb);
+    if(h->nal_ref_idc && ff_h264_decode_ref_pic_marking(h0, &s->gb) < 0 &&
+       s->avctx->error_recognition >= FF_ER_EXPLODE)
+        return AVERROR_INVALIDDATA;
 
     if(FRAME_MBAFF){
         ff_h264_fill_mbaff_ref_list(h);
@@ -3467,18 +3473,16 @@ static int decode_slice(struct AVCodecContext *avctx, void *arg){
  * @param h h264 master context
  * @param context_count number of contexts to execute
  */
-static void execute_decode_slices(H264Context *h, int context_count){
+static int execute_decode_slices(H264Context *h, int context_count){
     MpegEncContext * const s = &h->s;
     AVCodecContext * const avctx= s->avctx;
     H264Context *hx;
     int i;
 
-    if (s->avctx->hwaccel)
-        return;
-    if(s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
-        return;
+    if (s->avctx->hwaccel || s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU)
+        return 0;
     if(context_count == 1) {
-        decode_slice(avctx, &h);
+        return decode_slice(avctx, &h);
     } else {
         for(i = 1; i < context_count; i++) {
             hx = h->thread_context[i];
@@ -3498,6 +3502,8 @@ static void execute_decode_slices(H264Context *h, int context_count){
         for(i = 1; i < context_count; i++)
             h->s.error_count += h->thread_context[i]->s.error_count;
     }
+
+    return 0;
 }
 
 

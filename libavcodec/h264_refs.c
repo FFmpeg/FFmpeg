@@ -498,7 +498,7 @@ void ff_generate_sliding_window_mmcos(H264Context *h) {
 int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
     MpegEncContext * const s = &h->s;
     int i, av_uninit(j);
-    int current_ref_assigned=0;
+    int current_ref_assigned=0, err=0;
     Picture *av_uninit(pic);
 
     if((s->avctx->debug&FF_DEBUG_MMCO) && mmco_count==0)
@@ -517,6 +517,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                 if(mmco[i].opcode != MMCO_SHORT2LONG || !h->long_ref[mmco[i].long_arg]
                    || h->long_ref[mmco[i].long_arg]->frame_num != frame_num)
                 av_log(h->s.avctx, AV_LOG_ERROR, "mmco: unref short failure\n");
+                err = AVERROR_INVALIDDATA;
                 continue;
             }
         }
@@ -608,10 +609,12 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                                              "assignment for second field "
                                              "in complementary field pair "
                                              "(first field is long term)\n");
+            err = AVERROR_INVALIDDATA;
         } else {
             pic= remove_short(h, s->current_picture_ptr->frame_num, 0);
             if(pic){
                 av_log(h->s.avctx, AV_LOG_ERROR, "illegal short term buffer state detected\n");
+                err = AVERROR_INVALIDDATA;
             }
 
             if(h->short_ref_count)
@@ -634,6 +637,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
                "number of reference frames (%d+%d) exceeds max (%d; probably "
                "corrupt input), discarding one\n",
                h->long_ref_count, h->short_ref_count, h->sps.ref_frame_count);
+        err = AVERROR_INVALIDDATA;
 
         if (h->long_ref_count && !h->short_ref_count) {
             for (i = 0; i < 16; ++i)
@@ -650,7 +654,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
 
     print_short_term(h);
     print_long_term(h);
-    return 0;
+    return err;
 }
 
 int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
