@@ -713,8 +713,8 @@ intrax8_decoded:
 
     MPV_frame_end(s);
 
-assert(s->current_picture.pict_type == s->current_picture_ptr->pict_type);
-assert(s->current_picture.pict_type == s->pict_type);
+    assert(s->current_picture.f.pict_type == s->current_picture_ptr->f.pict_type);
+    assert(s->current_picture.f.pict_type == s->pict_type);
     if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
         *pict= *(AVFrame*)s->current_picture_ptr;
     } else if (s->last_picture_ptr != NULL) {
