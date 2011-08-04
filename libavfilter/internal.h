@@ -61,4 +61,46 @@ void ff_avfilter_default_free_buffer(AVFilterBuffer *buf);
 /** Tell is a format is contained in the provided list terminated by -1. */
 int ff_fmt_is_in(int fmt, const int *fmts);
 
+/* Functions to parse audio format arguments */
+
+/**
+ * Parse a sample rate.
+ *
+ * @param ret unsigned integer pointer to where the value should be written
+ * @param arg string to parse
+ * @param log_ctx log context
+ * @return 0 in case of success, a negative AVERROR code on error
+ */
+int ff_parse_sample_rate(unsigned *ret, const char *arg, void *log_ctx);
+
+/**
+ * Parse a sample format name or a corresponding integer representation.
+ *
+ * @param ret integer pointer to where the value should be written
+ * @param arg string to parse
+ * @param log_ctx log context
+ * @return 0 in case of success, a negative AVERROR code on error
+ */
+int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx);
+
+/**
+ * Parse a channel layout or a corresponding integer representation.
+ *
+ * @param ret 64bit integer pointer to where the value should be written.
+ * @param arg string to parse
+ * @param log_ctx log context
+ * @return 0 in case of success, a negative AVERROR code on error
+ */
+int ff_parse_channel_layout(int64_t *ret, const char *arg, void *log_ctx);
+
+/**
+ * Parse a packing format or a corresponding integer representation.
+ *
+ * @param ret integer pointer to where the value should be written
+ * @param arg string to parse
+ * @param log_ctx log context
+ * @return 0 in case of success, a negative AVERROR code on error
+ */
+int ff_parse_packing_format(int *ret, const char *arg, void *log_ctx);
+
 #endif /* AVFILTER_INTERNAL_H */
