@@ -438,15 +438,18 @@ struct AVFilterPad {
     /**
      * Link configuration callback.
      *
-     * For output pads, this should set the link properties such as
-     * width/height. This should NOT set the format property - that is
-     * negotiated between filters by the filter system using the
+     * For output pads, this should set the following link properties:
+     * video: width, height, sample_aspect_ratio, time_base
+     * audio: sample_rate.
+     *
+     * This should NOT set properties such as format, channel_layout, etc which
+     * are negotiated between filters by the filter system using the
      * query_formats() callback before this function is called.
      *
      * For input pads, this should check the properties of the link, and update
      * the filter's internal state as necessary.
      *
-     * For both input and output filters, this should return zero on success,
+     * For both input and output pads, this should return zero on success,
      * and another value on error.
      */
     int (*config_props)(AVFilterLink *link);
