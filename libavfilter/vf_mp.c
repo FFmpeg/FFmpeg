@@ -142,7 +142,6 @@ extern const vf_info_t vf_info_yvu9;
 extern const vf_info_t vf_info_lavcdeint;
 extern const vf_info_t vf_info_eq;
 extern const vf_info_t vf_info_eq2;
-extern const vf_info_t vf_info_gradfun;
 extern const vf_info_t vf_info_halfpack;
 extern const vf_info_t vf_info_dint;
 extern const vf_info_t vf_info_1bpp;
@@ -214,7 +213,6 @@ static const vf_info_t* const filters[]={
     &vf_info_framestep,
     &vf_info_fspp,
     &vf_info_geq,
-    &vf_info_gradfun,
     &vf_info_harddup,
     &vf_info_hqdn3d,
     &vf_info_hue,

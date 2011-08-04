@@ -935,7 +935,6 @@ The list of the currently supported filters follows:
 @item framestep
 @item fspp
 @item geq
-@item gradfun
 @item harddup
 @item hqdn3d
 @item hue
