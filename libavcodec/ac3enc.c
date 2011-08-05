@@ -864,9 +864,9 @@ static void count_frame_bits(AC3EncodeContext *s)
         if (block->cpl_in_use) {
             for (ch = 1; ch <= s->fbw_channels; ch++) {
                 if (block->channel_in_cpl[ch]) {
-                    if (!s->eac3 || block->new_cpl_coords != 2)
+                    if (!s->eac3 || block->new_cpl_coords[ch] != 2)
                         frame_bits++;
-                    if (block->new_cpl_coords) {
+                    if (block->new_cpl_coords[ch]) {
                         frame_bits += 2;
                         frame_bits += (4 + 4) * s->num_cpl_bands;
                     }
@@ -1394,9 +1394,9 @@ static void output_audio_block(AC3EncodeContext *s, int blk)
     if (block->cpl_in_use) {
         for (ch = 1; ch <= s->fbw_channels; ch++) {
             if (block->channel_in_cpl[ch]) {
-                if (!s->eac3 || block->new_cpl_coords != 2)
-                    put_bits(&s->pb, 1, block->new_cpl_coords);
-                if (block->new_cpl_coords) {
+                if (!s->eac3 || block->new_cpl_coords[ch] != 2)
+                    put_bits(&s->pb, 1, block->new_cpl_coords[ch]);
+                if (block->new_cpl_coords[ch]) {
                     put_bits(&s->pb, 2, block->cpl_master_exp[ch]);
                     for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
                         put_bits(&s->pb, 4, block->cpl_coord_exp [ch][bnd]);
