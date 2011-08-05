@@ -125,7 +125,7 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_RGB444BE]    = { 0 , 1 },
     [PIX_FMT_BGR444LE]    = { 0 , 1 },
     [PIX_FMT_BGR444BE]    = { 0 , 1 },
-    [PIX_FMT_GRAY8A]      = { 1 , 0 },
+    [PIX_FMT_Y400A]       = { 1 , 0 },
     [PIX_FMT_BGR48BE]     = { 1 , 1 },
     [PIX_FMT_BGR48LE]     = { 1 , 1 },
     [PIX_FMT_YUV420P9BE]  = { 1 , 1 },
@@ -142,12 +142,14 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
 
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
 {
-    return format_entries[pix_fmt].is_supported_in;
+    return (unsigned)pix_fmt < PIX_FMT_NB ?
+        format_entries[pix_fmt].is_supported_in : 0;
 }
 
 int sws_isSupportedOutput(enum PixelFormat pix_fmt)
 {
-    return format_entries[pix_fmt].is_supported_out;
+    return (unsigned)pix_fmt < PIX_FMT_NB ?
+        format_entries[pix_fmt].is_supported_out : 0;
 }
 
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
@@ -1060,57 +1062,6 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         else if (HAVE_MMX      && cpu_flags & AV_CPU_FLAG_MMX)     av_log(c, AV_LOG_INFO, "using MMX\n");
         else if (HAVE_ALTIVEC  && cpu_flags & AV_CPU_FLAG_ALTIVEC) av_log(c, AV_LOG_INFO, "using AltiVec\n");
         else                                   av_log(c, AV_LOG_INFO, "using C\n");
-
-        if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
-            if (c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
-                av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
-            else {
-                av_log(c, AV_LOG_VERBOSE, "using %s-tap MMX scaler for horizontal luminance scaling\n",
-                       c->hLumFilterSize == 4 ? "4" :
-                       c->hLumFilterSize == 8 ? "8" : "n");
-                av_log(c, AV_LOG_VERBOSE, "using %s-tap MMX scaler for horizontal chrominance scaling\n",
-                       c->hChrFilterSize == 4 ? "4" :
-                       c->hChrFilterSize == 8 ? "8" : "n");
-            }
-        } else {
-            av_log(c, AV_LOG_VERBOSE, "using %s scaler for horizontal scaling\n",
-                   HAVE_MMX ? "x86 asm" :
-                   flags & SWS_FAST_BILINEAR ? "FAST_BILINEAR C" : "C");
-        }
-        if (isPlanarYUV(dstFormat)) {
-            av_log(c, AV_LOG_VERBOSE, "using %s-tap %s \"scaler\" for vertical scaling (YV12 like)\n",
-                   c->vLumFilterSize == 1 ? "1" : "n",
-                   HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX ? "MMX" : "C");
-        } else {
-            if (c->vLumFilterSize==1 && c->vChrFilterSize==2)
-                av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"
-                       "      2-tap scaler for vertical chrominance scaling (BGR)\n",
-                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-            else if (c->vLumFilterSize==2 && c->vChrFilterSize==2)
-                av_log(c, AV_LOG_VERBOSE, "using 2-tap linear %s scaler for vertical scaling (BGR)\n",
-                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-            else
-                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (BGR)\n",
-                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-        }
-
-        if (dstFormat==PIX_FMT_BGR24)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR24 converter\n",
-                   (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2) ? "MMX2" :
-                   ((HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C"));
-        else if (dstFormat==PIX_FMT_RGB32)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR32 converter\n",
-                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-        else if (dstFormat==PIX_FMT_BGR565)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR16 converter\n",
-                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-        else if (dstFormat==PIX_FMT_BGR555)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR15 converter\n",
-                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-        else if (dstFormat == PIX_FMT_RGB444BE || dstFormat == PIX_FMT_RGB444LE ||
-                 dstFormat == PIX_FMT_BGR444BE || dstFormat == PIX_FMT_BGR444LE)
-            av_log(c, AV_LOG_VERBOSE, "using %s YV12->BGR12 converter\n",
-                   (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
 
         av_log(c, AV_LOG_VERBOSE, "%dx%d -> %dx%d\n", srcW, srcH, dstW, dstH);
         av_log(c, AV_LOG_DEBUG, "lum srcW=%d srcH=%d dstW=%d dstH=%d xInc=%d yInc=%d\n",
