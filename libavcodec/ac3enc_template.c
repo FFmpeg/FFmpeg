@@ -202,33 +202,29 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         bnd++;
     }
 
+    /* calculate coupling coordinates for all blocks for all channels */
+    for (blk = 0; blk < s->num_blocks; blk++) {
+        AC3Block *block  = &s->blocks[blk];
+        if (!block->cpl_in_use)
+            continue;
+        for (ch = 1; ch <= s->fbw_channels; ch++) {
+            if (!block->channel_in_cpl[ch])
+                continue;
+            for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                cpl_coords[blk][ch][bnd] = calc_cpl_coord(energy[blk][ch][bnd],
+                                                          energy[blk][CPL_CH][bnd]);
+            }
+        }
+    }
+
     /* determine which blocks to send new coupling coordinates for */
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block  = &s->blocks[blk];
         AC3Block *block0 = blk ? &s->blocks[blk-1] : NULL;
-        CoefSumType coord_diff[AC3_MAX_CHANNELS] = {0,};
 
         memset(block->new_cpl_coords, 0, sizeof(block->new_cpl_coords));
 
         if (block->cpl_in_use) {
-            /* calculate coupling coordinates for all blocks and calculate the
-               average difference between coordinates in successive blocks */
-            for (ch = 1; ch <= s->fbw_channels; ch++) {
-                if (!block->channel_in_cpl[ch])
-                    continue;
-
-                for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
-                    cpl_coords[blk][ch][bnd] = calc_cpl_coord(energy[blk][ch][bnd],
-                                                              energy[blk][CPL_CH][bnd]);
-                    if (blk > 0 && block0->cpl_in_use &&
-                        block0->channel_in_cpl[ch]) {
-                        coord_diff[ch] += fabs(cpl_coords[blk-1][ch][bnd] -
-                                               cpl_coords[blk  ][ch][bnd]);
-                    }
-                }
-                coord_diff[ch] /= s->num_cpl_bands;
-            }
-
             /* send new coordinates if this is the first block, if previous
              * block did not use coupling but this block does, the channels
              * using coupling has changed from the previous block, or the
@@ -239,9 +235,19 @@ static void apply_channel_coupling(AC3EncodeContext *s)
                     block->new_cpl_coords[ch] = 1;
             } else {
                 for (ch = 1; ch <= s->fbw_channels; ch++) {
-                    if ((block->channel_in_cpl[ch] && !block0->channel_in_cpl[ch]) ||
-                        (block->channel_in_cpl[ch] && coord_diff[ch] > 0.03)) {
+                    if (!block->channel_in_cpl[ch])
+                        continue;
+                    if (!block0->channel_in_cpl[ch]) {
                         block->new_cpl_coords[ch] = 1;
+                    } else {
+                        CoefSumType coord_diff = 0;
+                        for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                            coord_diff += fabs(cpl_coords[blk-1][ch][bnd] -
+                                               cpl_coords[blk  ][ch][bnd]);
+                        }
+                        coord_diff /= s->num_cpl_bands;
+                        if (coord_diff > 0.03)
+                            block->new_cpl_coords[ch] = 1;
                     }
                 }
             }
