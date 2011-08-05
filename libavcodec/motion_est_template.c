@@ -44,75 +44,6 @@
     COPY3_IF_LT(dmin, d, bx, hx, by, hy)\
 }
 
-#if 0
-static int hpel_motion_search)(MpegEncContext * s,
-                                  int *mx_ptr, int *my_ptr, int dmin,
-                                  uint8_t *ref_data[3],
-                                  int size)
-{
-    const int xx = 16 * s->mb_x + 8*(n&1);
-    const int yy = 16 * s->mb_y + 8*(n>>1);
-    const int mx = *mx_ptr;
-    const int my = *my_ptr;
-    const int penalty_factor= c->sub_penalty_factor;
-
-    LOAD_COMMON
-
- //   INIT;
- //FIXME factorize
-    me_cmp_func cmp, chroma_cmp, cmp_sub, chroma_cmp_sub;
-
-    if(s->no_rounding /*FIXME b_type*/){
-        hpel_put= &s->dsp.put_no_rnd_pixels_tab[size];
-        chroma_hpel_put= &s->dsp.put_no_rnd_pixels_tab[size+1];
-    }else{
-        hpel_put=& s->dsp.put_pixels_tab[size];
-        chroma_hpel_put= &s->dsp.put_pixels_tab[size+1];
-    }
-    cmpf= s->dsp.me_cmp[size];
-    chroma_cmpf= s->dsp.me_cmp[size+1];
-    cmp_sub= s->dsp.me_sub_cmp[size];
-    chroma_cmp_sub= s->dsp.me_sub_cmp[size+1];
-
-    if(c->skip){ //FIXME somehow move up (benchmark)
-        *mx_ptr = 0;
-        *my_ptr = 0;
-        return dmin;
-    }
-
-    if(c->avctx->me_cmp != c->avctx->me_sub_cmp){
-        CMP_HPEL(dmin, 0, 0, mx, my, size);
-        if(mx || my)
-            dmin += (mv_penalty[2*mx - pred_x] + mv_penalty[2*my - pred_y])*penalty_factor;
-    }
-
-    if (mx > xmin && mx < xmax &&
-        my > ymin && my < ymax) {
-        int bx=2*mx, by=2*my;
-        int d= dmin;
-
-        CHECK_HALF_MV(1, 1, mx-1, my-1)
-        CHECK_HALF_MV(0, 1, mx  , my-1)
-        CHECK_HALF_MV(1, 1, mx  , my-1)
-        CHECK_HALF_MV(1, 0, mx-1, my  )
-        CHECK_HALF_MV(1, 0, mx  , my  )
-        CHECK_HALF_MV(1, 1, mx-1, my  )
-        CHECK_HALF_MV(0, 1, mx  , my  )
-        CHECK_HALF_MV(1, 1, mx  , my  )
-
-        assert(bx >= xmin*2 || bx <= xmax*2 || by >= ymin*2 || by <= ymax*2);
-
-        *mx_ptr = bx;
-        *my_ptr = by;
-    }else{
-        *mx_ptr =2*mx;
-        *my_ptr =2*my;
-    }
-
-    return dmin;
-}
-
-#else
 static int hpel_motion_search(MpegEncContext * s,
                                   int *mx_ptr, int *my_ptr, int dmin,
                                   int src_index, int ref_index,
@@ -220,7 +151,6 @@ static int hpel_motion_search(MpegEncContext * s,
 
     return dmin;
 }
-#endif
 
 static int no_sub_motion_search(MpegEncContext * s,
           int *mx_ptr, int *my_ptr, int dmin,
@@ -323,7 +253,6 @@ static int qpel_motion_search(MpegEncContext * s,
         int best_pos[8][2];
 
         memset(best, 64, sizeof(int)*8);
-#if 1
         if(s->me.dia_size>=2){
             const int tl= score_map[(index-(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)];
             const int bl= score_map[(index+(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)];
@@ -412,76 +341,6 @@ static int qpel_motion_search(MpegEncContext * s,
             CHECK_QUARTER_MV(nx&3, ny&3, nx>>2, ny>>2)
         }
 
-#if 0
-            const int tl= score_map[(index-(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)];
-            const int bl= score_map[(index+(1<<ME_MAP_SHIFT)-1)&(ME_MAP_SIZE-1)];
-            const int tr= score_map[(index-(1<<ME_MAP_SHIFT)+1)&(ME_MAP_SIZE-1)];
-            const int br= score_map[(index+(1<<ME_MAP_SHIFT)+1)&(ME_MAP_SIZE-1)];
-//            if(l < r && l < t && l < b && l < tl && l < bl && l < tr && l < br && bl < tl){
-            if(tl<br){
-
-//            nx= FFMAX(4*mx - bx, bx - 4*mx);
-//            ny= FFMAX(4*my - by, by - 4*my);
-
-            static int stats[7][7], count;
-            count++;
-            stats[4*mx - bx + 3][4*my - by + 3]++;
-            if(256*256*256*64 % count ==0){
-                for(i=0; i<49; i++){
-                    if((i%7)==0) printf("\n");
-                    printf("%6d ", stats[0][i]);
-                }
-                printf("\n");
-            }
-            }
-#endif
-#else
-
-        CHECK_QUARTER_MV(2, 2, mx-1, my-1)
-        CHECK_QUARTER_MV(0, 2, mx  , my-1)
-        CHECK_QUARTER_MV(2, 2, mx  , my-1)
-        CHECK_QUARTER_MV(2, 0, mx  , my  )
-        CHECK_QUARTER_MV(2, 2, mx  , my  )
-        CHECK_QUARTER_MV(0, 2, mx  , my  )
-        CHECK_QUARTER_MV(2, 2, mx-1, my  )
-        CHECK_QUARTER_MV(2, 0, mx-1, my  )
-
-        nx= bx;
-        ny= by;
-
-        for(i=0; i<8; i++){
-            int ox[8]= {0, 1, 1, 1, 0,-1,-1,-1};
-            int oy[8]= {1, 1, 0,-1,-1,-1, 0, 1};
-            CHECK_QUARTER_MV((nx + ox[i])&3, (ny + oy[i])&3, (nx + ox[i])>>2, (ny + oy[i])>>2)
-        }
-#endif
-#if 0
-        //outer ring
-        CHECK_QUARTER_MV(1, 3, mx-1, my-1)
-        CHECK_QUARTER_MV(1, 2, mx-1, my-1)
-        CHECK_QUARTER_MV(1, 1, mx-1, my-1)
-        CHECK_QUARTER_MV(2, 1, mx-1, my-1)
-        CHECK_QUARTER_MV(3, 1, mx-1, my-1)
-        CHECK_QUARTER_MV(0, 1, mx  , my-1)
-        CHECK_QUARTER_MV(1, 1, mx  , my-1)
-        CHECK_QUARTER_MV(2, 1, mx  , my-1)
-        CHECK_QUARTER_MV(3, 1, mx  , my-1)
-        CHECK_QUARTER_MV(3, 2, mx  , my-1)
-        CHECK_QUARTER_MV(3, 3, mx  , my-1)
-        CHECK_QUARTER_MV(3, 0, mx  , my  )
-        CHECK_QUARTER_MV(3, 1, mx  , my  )
-        CHECK_QUARTER_MV(3, 2, mx  , my  )
-        CHECK_QUARTER_MV(3, 3, mx  , my  )
-        CHECK_QUARTER_MV(2, 3, mx  , my  )
-        CHECK_QUARTER_MV(1, 3, mx  , my  )
-        CHECK_QUARTER_MV(0, 3, mx  , my  )
-        CHECK_QUARTER_MV(3, 3, mx-1, my  )
-        CHECK_QUARTER_MV(2, 3, mx-1, my  )
-        CHECK_QUARTER_MV(1, 3, mx-1, my  )
-        CHECK_QUARTER_MV(1, 2, mx-1, my  )
-        CHECK_QUARTER_MV(1, 1, mx-1, my  )
-        CHECK_QUARTER_MV(1, 0, mx-1, my  )
-#endif
         assert(bx >= xmin*4 && bx <= xmax*4 && by >= ymin*4 && by <= ymax*4);
 
         *mx_ptr = bx;
@@ -992,8 +851,8 @@ static av_always_inline int diamond_search(MpegEncContext * s, int *best, int dm
         return   var_diamond_search(s, best, dmin, src_index, ref_index, penalty_factor, size, h, flags);
 }
 
-/*!
-   \param P[10][2] a list of candidate mvs to check before starting the
+/**
+   @param P a list of candidate mvs to check before starting the
    iterative search. If one of the candidates is close to the optimal mv, then
    it takes fewer iterations. And it increases the chance that we find the
    optimal mv.
@@ -1003,12 +862,12 @@ static av_always_inline int epzs_motion_search_internal(MpegEncContext * s, int 
                              int ref_mv_scale, int flags, int size, int h)
 {
     MotionEstContext * const c= &s->me;
-    int best[2]={0, 0};      /*!< x and y coordinates of the best motion vector.
+    int best[2]={0, 0};      /**< x and y coordinates of the best motion vector.
                                i.e. the difference between the position of the
                                block currently being encoded and the position of
                                the block chosen to predict it from. */
     int d;                   ///< the score (cmp + penalty) of any given mv
-    int dmin;                /*!< the best value of d, i.e. the score
+    int dmin;                /**< the best value of d, i.e. the score
                                corresponding to the mv stored in best[]. */
     int map_generation;
     int penalty_factor;

@@ -32,7 +32,7 @@
 static void parse_mb_skip(Wmv2Context * w){
     int mb_x, mb_y;
     MpegEncContext * const s= &w->s;
-    uint32_t * const mb_type= s->current_picture_ptr->mb_type;
+    uint32_t * const mb_type = s->current_picture_ptr->f.mb_type;
 
     w->skip_type= get_bits(&s->gb, 2);
     switch(w->skip_type){
@@ -257,11 +257,11 @@ static int16_t *wmv2_pred_motion(Wmv2Context *w, int *px, int *py){
     wrap = s->b8_stride;
     xy = s->block_index[0];
 
-    mot_val = s->current_picture.motion_val[0][xy];
+    mot_val = s->current_picture.f.motion_val[0][xy];
 
-    A = s->current_picture.motion_val[0][xy - 1];
-    B = s->current_picture.motion_val[0][xy - wrap];
-    C = s->current_picture.motion_val[0][xy + 2 - wrap];
+    A = s->current_picture.f.motion_val[0][xy - 1];
+    B = s->current_picture.f.motion_val[0][xy - wrap];
+    C = s->current_picture.f.motion_val[0][xy + 2 - wrap];
 
     if(s->mb_x && !s->first_slice_line && !s->mspel && w->top_left_mv_flag)
         diff= FFMAX(FFABS(A[0] - B[0]), FFABS(A[1] - B[1]));
@@ -343,7 +343,7 @@ int ff_wmv2_decode_mb(MpegEncContext *s, DCTELEM block[6][64])
     if(w->j_type) return 0;
 
     if (s->pict_type == AV_PICTURE_TYPE_P) {
-        if(IS_SKIP(s->current_picture.mb_type[s->mb_y * s->mb_stride + s->mb_x])){
+        if (IS_SKIP(s->current_picture.f.mb_type[s->mb_y * s->mb_stride + s->mb_x])) {
             /* skip mb */
             s->mb_intra = 0;
             for(i=0;i<6;i++)
@@ -471,15 +471,14 @@ static av_cold int wmv2_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_wmv2_decoder = {
-    "wmv2",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_WMV2,
-    sizeof(Wmv2Context),
-    wmv2_decode_init,
-    NULL,
-    wmv2_decode_end,
-    ff_h263_decode_frame,
-    CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
+    .name           = "wmv2",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_WMV2,
+    .priv_data_size = sizeof(Wmv2Context),
+    .init           = wmv2_decode_init,
+    .close          = wmv2_decode_end,
+    .decode         = ff_h263_decode_frame,
+    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Video 8"),
     .pix_fmts= ff_pixfmt_list_420,
 };

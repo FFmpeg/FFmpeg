@@ -476,8 +476,8 @@ static int decode_pic(AVSContext *h) {
             return -1;
         }
         /* make sure we have the reference frames we need */
-        if(!h->DPB[0].data[0] ||
-          (!h->DPB[1].data[0] && h->pic_type == AV_PICTURE_TYPE_B))
+        if(!h->DPB[0].f.data[0] ||
+          (!h->DPB[1].f.data[0] && h->pic_type == AV_PICTURE_TYPE_B))
             return -1;
     } else {
         h->pic_type = AV_PICTURE_TYPE_I;
@@ -494,7 +494,7 @@ static int decode_pic(AVSContext *h) {
             skip_bits(&s->gb,1); //marker_bit
     }
     /* release last B frame */
-    if(h->picture.data[0])
+    if(h->picture.f.data[0])
         s->avctx->release_buffer(s->avctx, (AVFrame *)&h->picture);
 
     s->avctx->get_buffer(s->avctx, (AVFrame *)&h->picture);
@@ -585,7 +585,7 @@ static int decode_pic(AVSContext *h) {
         } while(ff_cavs_next_mb(h));
     }
     if(h->pic_type != AV_PICTURE_TYPE_B) {
-        if(h->DPB[1].data[0])
+        if(h->DPB[1].f.data[0])
             s->avctx->release_buffer(s->avctx, (AVFrame *)&h->DPB[1]);
         h->DPB[1] = h->DPB[0];
         h->DPB[0] = h->picture;
@@ -648,7 +648,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     s->avctx = avctx;
 
     if (buf_size == 0) {
-        if(!s->low_delay && h->DPB[0].data[0]) {
+        if (!s->low_delay && h->DPB[0].f.data[0]) {
             *data_size = sizeof(AVPicture);
             *picture = *(AVFrame *) &h->DPB[0];
         }
@@ -669,9 +669,9 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
             break;
         case PIC_I_START_CODE:
             if(!h->got_keyframe) {
-                if(h->DPB[0].data[0])
+                if(h->DPB[0].f.data[0])
                     avctx->release_buffer(avctx, (AVFrame *)&h->DPB[0]);
-                if(h->DPB[1].data[0])
+                if(h->DPB[1].f.data[0])
                     avctx->release_buffer(avctx, (AVFrame *)&h->DPB[1]);
                 h->got_keyframe = 1;
             }
@@ -685,7 +685,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
                 break;
             *data_size = sizeof(AVPicture);
             if(h->pic_type != AV_PICTURE_TYPE_B) {
-                if(h->DPB[1].data[0]) {
+                if(h->DPB[1].f.data[0]) {
                     *picture = *(AVFrame *) &h->DPB[1];
                 } else {
                     *data_size = 0;
@@ -710,15 +710,14 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
 }
 
 AVCodec ff_cavs_decoder = {
-    "cavs",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_CAVS,
-    sizeof(AVSContext),
-    ff_cavs_init,
-    NULL,
-    ff_cavs_end,
-    cavs_decode_frame,
-    CODEC_CAP_DR1 | CODEC_CAP_DELAY,
+    .name           = "cavs",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_CAVS,
+    .priv_data_size = sizeof(AVSContext),
+    .init           = ff_cavs_init,
+    .close          = ff_cavs_end,
+    .decode         = cavs_decode_frame,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
     .flush= cavs_flush,
     .long_name= NULL_IF_CONFIG_SMALL("Chinese AVS video (AVS1-P2, JiZhun profile)"),
 };

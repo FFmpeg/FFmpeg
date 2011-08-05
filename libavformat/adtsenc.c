@@ -59,6 +59,10 @@ int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf
         av_log(s, AV_LOG_ERROR, "Scalable configurations are not allowed in ADTS\n");
         return -1;
     }
+    if (get_bits(&gb, 1)) {
+        av_log(s, AV_LOG_ERROR, "Extension flag is not allowed in ADTS\n");
+        return -1;
+    }
     if (!adts->channel_conf) {
         init_put_bits(&pb, adts->pce_data, MAX_PCE_SIZE);
 
@@ -138,13 +142,13 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
 }
 
 AVOutputFormat ff_adts_muxer = {
-    "adts",
-    NULL_IF_CONFIG_SMALL("ADTS AAC"),
-    "audio/aac",
-    "aac,adts",
-    sizeof(ADTSContext),
-    CODEC_ID_AAC,
-    CODEC_ID_NONE,
-    adts_write_header,
-    adts_write_packet,
+    .name              = "adts",
+    .long_name         = NULL_IF_CONFIG_SMALL("ADTS AAC"),
+    .mime_type         = "audio/aac",
+    .extensions        = "aac,adts",
+    .priv_data_size    = sizeof(ADTSContext),
+    .audio_codec       = CODEC_ID_AAC,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = adts_write_header,
+    .write_packet      = adts_write_packet,
 };

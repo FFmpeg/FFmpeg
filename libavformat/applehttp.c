@@ -27,6 +27,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
@@ -413,7 +414,7 @@ reload:
     c->end_of_segment = 1;
     c->cur_seq_no = v->cur_seq_no;
 
-    if (v->ctx) {
+    if (v->ctx && v->ctx->nb_streams) {
         v->needed = 0;
         for (i = v->stream_offset; i < v->stream_offset + v->ctx->nb_streams;
              i++) {
@@ -669,12 +670,12 @@ static int applehttp_probe(AVProbeData *p)
 }
 
 AVInputFormat ff_applehttp_demuxer = {
-    "applehttp",
-    NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming format"),
-    sizeof(AppleHTTPContext),
-    applehttp_probe,
-    applehttp_read_header,
-    applehttp_read_packet,
-    applehttp_close,
-    applehttp_read_seek,
+    .name           = "applehttp",
+    .long_name      = NULL_IF_CONFIG_SMALL("Apple HTTP Live Streaming format"),
+    .priv_data_size = sizeof(AppleHTTPContext),
+    .read_probe     = applehttp_probe,
+    .read_header    = applehttp_read_header,
+    .read_packet    = applehttp_read_packet,
+    .read_close     = applehttp_close,
+    .read_seek      = applehttp_read_seek,
 };

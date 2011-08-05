@@ -96,6 +96,7 @@ int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *ctx,
 
 AVFilter avfilter_vsink_buffersink = {
     .name      = "buffersink",
+    .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
     .init      = init,
     .uninit    = uninit,

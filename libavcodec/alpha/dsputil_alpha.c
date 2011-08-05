@@ -270,7 +270,7 @@ static void put_pixels16_axp_asm(uint8_t *block, const uint8_t *pixels,
 
 void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
 {
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     if (!high_bit_depth) {
     c->put_pixels_tab[0][0] = put_pixels16_axp_asm;
@@ -321,7 +321,8 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
         c->put_pixels_clamped = put_pixels_clamped_mvi_asm;
         c->add_pixels_clamped = add_pixels_clamped_mvi_asm;
 
-        c->get_pixels       = get_pixels_mvi;
+        if (!high_bit_depth)
+            c->get_pixels   = get_pixels_mvi;
         c->diff_pixels      = diff_pixels_mvi;
         c->sad[0]           = pix_abs16x16_mvi_asm;
         c->sad[1]           = pix_abs8x8_mvi;
@@ -335,7 +336,7 @@ void dsputil_init_alpha(DSPContext* c, AVCodecContext *avctx)
     put_pixels_clamped_axp_p = c->put_pixels_clamped;
     add_pixels_clamped_axp_p = c->add_pixels_clamped;
 
-    if (!avctx->lowres &&
+    if (!avctx->lowres && avctx->bits_per_raw_sample <= 8 &&
         (avctx->idct_algo == FF_IDCT_AUTO ||
          avctx->idct_algo == FF_IDCT_SIMPLEALPHA)) {
         c->idct_put = ff_simple_idct_put_axp;

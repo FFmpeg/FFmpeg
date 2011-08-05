@@ -23,8 +23,7 @@
  * RL2 file demuxer
  * @file
  * @author Sascha Sommer (saschasommer@freenet.de)
- * For more information regarding the RL2 file format, visit:
- *   http://wiki.multimedia.cx/index.php?title=RL2
+ * @see http://wiki.multimedia.cx/index.php?title=RL2
  *
  * extradata:
  * 2 byte le initial drawing offset within 320x200 viewport
@@ -34,6 +33,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 
 #define EXTRADATA1_SIZE (6 + 256 * 3) ///< video base, clr, palette
@@ -286,13 +286,12 @@ static int rl2_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 }
 
 AVInputFormat ff_rl2_demuxer = {
-    "rl2",
-    NULL_IF_CONFIG_SMALL("RL2 format"),
-    sizeof(Rl2DemuxContext),
-    rl2_probe,
-    rl2_read_header,
-    rl2_read_packet,
-    NULL,
-    rl2_read_seek,
+    .name           = "rl2",
+    .long_name      = NULL_IF_CONFIG_SMALL("RL2 format"),
+    .priv_data_size = sizeof(Rl2DemuxContext),
+    .read_probe     = rl2_probe,
+    .read_header    = rl2_read_header,
+    .read_packet    = rl2_read_packet,
+    .read_seek      = rl2_read_seek,
 };
 

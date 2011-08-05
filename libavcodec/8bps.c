@@ -221,14 +221,13 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 
 AVCodec ff_eightbps_decoder = {
-        "8bps",
-        AVMEDIA_TYPE_VIDEO,
-        CODEC_ID_8BPS,
-        sizeof(EightBpsContext),
-        decode_init,
-        NULL,
-        decode_end,
-        decode_frame,
-        CODEC_CAP_DR1,
-        .long_name = NULL_IF_CONFIG_SMALL("QuickTime 8BPS video"),
+    .name           = "8bps",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_8BPS,
+    .priv_data_size = sizeof(EightBpsContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
+    .long_name      = NULL_IF_CONFIG_SMALL("QuickTime 8BPS video"),
 };

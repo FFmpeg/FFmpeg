@@ -34,6 +34,7 @@ You can use libavcodec or libavformat in your commercial program, but
 @emph{any patch you make must be published}. The best way to proceed is
 to send your patches to the FFmpeg mailing list.
 
+
 @anchor{Coding Rules}
 @section Coding Rules
 
@@ -54,10 +55,8 @@ These features are supported by all compilers we care about, so we will not
 accept patches to remove their use unless they absolutely do not impair
 clarity and performance.
 
-All code must compile with GCC 2.95 and GCC 3.3. Currently, FFmpeg also
-compiles with several other compilers, such as the Compaq ccc compiler
-or Sun Studio 9, and we would like to keep it that way unless it would
-be exceedingly involved. To ensure compatibility, please do not use any
+All code must compile with recent versions of GCC and a number of other
+currently supported compilers. To ensure compatibility, please do not use
 additional C99 features or GCC extensions. Especially watch out for:
 @itemize @bullet
 @item
@@ -86,7 +85,7 @@ above them explaining what the function does, even if it is just one sentence.
 All structures and their member variables should be documented, too.
 @example
 /**
- * @@file mpeg.c
+ * @@file
  * MPEG codec.
  * @@author ...
  */
@@ -244,7 +243,8 @@ Note, these rules are mostly borrowed from the MPlayer project.
 
 @section Submitting patches
 
-First, read the (@pxref{Coding Rules}) above if you did not yet.
+First, read the @ref{Coding Rules} above if you did not yet, in particular
+the rules regarding patch submission.
 
 When you submit your patch, please use @code{git format-patch} or
 @code{git send-email}. We cannot read other diffs :-)
@@ -259,8 +259,8 @@ for us and greatly increases your chances of getting your patch applied.
 Use the patcheck tool of FFmpeg to check your patch.
 The tool is located in the tools directory.
 
-Run the regression tests before submitting a patch so that you can
-verify that there are no big problems.
+Run the @ref{Regression Tests} before submitting a patch in order to verify
+it does not cause unexpected problems.
 
 Patches should be posted as base64 encoded attachments (or any other
 encoding which ensures that the patch will not be trashed during
@@ -339,7 +339,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 @item
     Is the patch against latest FFmpeg git master branch?
 @item
-    Are you subscribed to ffmpeg-dev?
+    Are you subscribed to ffmpeg-devel?
     (the list is subscribers only due to spam)
 @item
     Have you checked that the changes are minimal, so that the same cannot be

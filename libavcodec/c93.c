@@ -247,14 +247,13 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 }
 
 AVCodec ff_c93_decoder = {
-    "c93",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_C93,
-    sizeof(C93DecoderContext),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "c93",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_C93,
+    .priv_data_size = sizeof(C93DecoderContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Interplay C93"),
 };

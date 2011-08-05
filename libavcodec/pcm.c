@@ -440,7 +440,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         default:
             av_log(avctx, AV_LOG_ERROR, "PCM DVD unsupported sample depth\n");
             return -1;
-            break;
         }
         samples = (short *) dst_int32_t;
         break;

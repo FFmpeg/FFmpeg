@@ -26,6 +26,8 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
+#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
@@ -558,12 +560,12 @@ static int flv_read_seek2(AVFormatContext *s, int stream_index,
 #endif
 
 AVInputFormat ff_flv_demuxer = {
-    "flv",
-    NULL_IF_CONFIG_SMALL("FLV format"),
-    sizeof(FLVContext),
-    flv_probe,
-    flv_read_header,
-    flv_read_packet,
+    .name           = "flv",
+    .long_name      = NULL_IF_CONFIG_SMALL("FLV format"),
+    .priv_data_size = sizeof(FLVContext),
+    .read_probe     = flv_probe,
+    .read_header    = flv_read_header,
+    .read_packet    = flv_read_packet,
     .read_seek = flv_read_seek,
 #if 0
     .read_seek2 = flv_read_seek2,

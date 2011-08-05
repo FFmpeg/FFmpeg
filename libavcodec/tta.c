@@ -22,9 +22,9 @@
 /**
  * @file
  * TTA (The Lossless True Audio) decoder
- * (www.true-audio.com or tta.corecodec.org)
+ * @see http://www.true-audio.com/
+ * @see http://tta.corecodec.org/
  * @author Alex Beregszaszi
- *
  */
 
 #define ALT_BITSTREAM_READER_LE
@@ -66,23 +66,6 @@ typedef struct TTAContext {
     TTAChannel *ch_ctx;
 } TTAContext;
 
-#if 0
-static inline int shift_1(int i)
-{
-    if (i < 32)
-        return 1 << i;
-    else
-        return 0x80000000; // 16 << 31
-}
-
-static inline int shift_16(int i)
-{
-    if (i < 28)
-        return 16 << i;
-    else
-        return 0x80000000; // 16 << 27
-}
-#else
 static const uint32_t shift_1[] = {
     0x00000001, 0x00000002, 0x00000004, 0x00000008,
     0x00000010, 0x00000020, 0x00000040, 0x00000080,
@@ -97,7 +80,6 @@ static const uint32_t shift_1[] = {
 };
 
 static const uint32_t * const shift_16 = shift_1 + 4;
-#endif
 
 static const int32_t ttafilter_configs[4][2] = {
     {10, 1},
@@ -403,19 +385,6 @@ static int tta_decode_frame(AVCodecContext *avctx,
             }
             *predictor = *p;
 
-#if 0
-            // extract 32bit float from last two int samples
-            if (s->is_float && ((p - data) & 1)) {
-                uint32_t neg = *p & 0x80000000;
-                uint32_t hi = *(p - 1);
-                uint32_t lo = abs(*p) - 1;
-
-                hi += (hi || lo) ? 0x3f80 : 0;
-                // SWAP16: swap all the 16 bits
-                *(p - 1) = (hi << 16) | SWAP16(lo) | neg;
-            }
-#endif
-
             /*if ((get_bits_count(&s->gb)+7)/8 > buf_size)
             {
                 av_log(NULL, AV_LOG_INFO, "overread!!\n");
@@ -485,13 +454,12 @@ static av_cold int tta_decode_close(AVCodecContext *avctx) {
 }
 
 AVCodec ff_tta_decoder = {
-    "tta",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_TTA,
-    sizeof(TTAContext),
-    tta_decode_init,
-    NULL,
-    tta_decode_close,
-    tta_decode_frame,
+    .name           = "tta",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_TTA,
+    .priv_data_size = sizeof(TTAContext),
+    .init           = tta_decode_init,
+    .close          = tta_decode_close,
+    .decode         = tta_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("True Audio (TTA)"),
 };

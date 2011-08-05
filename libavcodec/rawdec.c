@@ -103,13 +103,15 @@ static av_cold int raw_init_decoder(AVCodecContext *avctx)
     }
 
     ff_set_systematic_pal2(context->palette, avctx->pix_fmt);
-    context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     if((avctx->bits_per_coded_sample == 4 || avctx->bits_per_coded_sample == 2) &&
        avctx->pix_fmt==PIX_FMT_PAL8 &&
        (!avctx->codec_tag || avctx->codec_tag == MKTAG('r','a','w',' '))){
+        context->length = avpicture_get_size(avctx->pix_fmt, (avctx->width+3)&~3, avctx->height);
         context->buffer = av_malloc(context->length);
         if (!context->buffer)
             return -1;
+    } else {
+        context->length = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     }
     context->pic.pict_type = AV_PICTURE_TYPE_I;
     context->pic.key_frame = 1;
@@ -188,13 +190,21 @@ static int raw_decode(AVCodecContext *avctx,
         memcpy(frame->data[1], avctx->palctrl->palette, AVPALETTE_SIZE);
         avctx->palctrl->palette_changed = 0;
     }
-    if(avctx->pix_fmt==PIX_FMT_BGR24 && ((frame->linesize[0]+3)&~3)*avctx->height <= buf_size)
+    if((avctx->pix_fmt==PIX_FMT_BGR24    ||
+        avctx->pix_fmt==PIX_FMT_GRAY8    ||
+        avctx->pix_fmt==PIX_FMT_RGB555LE ||
+        avctx->pix_fmt==PIX_FMT_RGB555BE ||
+        avctx->pix_fmt==PIX_FMT_RGB565LE ||
+        avctx->pix_fmt==PIX_FMT_PAL8) &&
+        ((frame->linesize[0]+3)&~3)*avctx->height <= buf_size)
         frame->linesize[0] = (frame->linesize[0]+3)&~3;
 
     if(context->flip)
         flip(avctx, picture);
 
     if (   avctx->codec_tag == MKTAG('Y', 'V', '1', '2')
+        || avctx->codec_tag == MKTAG('Y', 'V', '1', '6')
+        || avctx->codec_tag == MKTAG('Y', 'V', '2', '4')
         || avctx->codec_tag == MKTAG('Y', 'V', 'U', '9'))
         FFSWAP(uint8_t *, picture->data[1], picture->data[2]);
 
@@ -222,14 +232,13 @@ static av_cold int raw_close_decoder(AVCodecContext *avctx)
 }
 
 AVCodec ff_rawvideo_decoder = {
-    "rawvideo",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_RAWVIDEO,
-    sizeof(RawVideoContext),
-    raw_init_decoder,
-    NULL,
-    raw_close_decoder,
-    raw_decode,
+    .name           = "rawvideo",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_RAWVIDEO,
+    .priv_data_size = sizeof(RawVideoContext),
+    .init           = raw_init_decoder,
+    .close          = raw_close_decoder,
+    .decode         = raw_decode,
     .long_name = NULL_IF_CONFIG_SMALL("raw video"),
     .priv_class= &class,
 };

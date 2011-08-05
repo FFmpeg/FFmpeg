@@ -23,9 +23,10 @@
 #include "vaapi_internal.h"
 #include "h264.h"
 
-/** @file
- *  This file implements the glue code between FFmpeg's and VA API's
- *  structures for H.264 decoding.
+/**
+ * @file
+ * This file implements the glue code between FFmpeg's and VA API's
+ * structures for H.264 decoding.
  */
 
 /**
@@ -54,7 +55,7 @@ static void fill_vaapi_pic(VAPictureH264 *va_pic,
                            int            pic_structure)
 {
     if (pic_structure == 0)
-        pic_structure = pic->reference;
+        pic_structure = pic->f.reference;
     pic_structure &= PICT_FRAME; /* PICT_TOP_FIELD|PICT_BOTTOM_FIELD */
 
     va_pic->picture_id = ff_vaapi_get_surface_id(pic);
@@ -63,7 +64,7 @@ static void fill_vaapi_pic(VAPictureH264 *va_pic,
     va_pic->flags      = 0;
     if (pic_structure != PICT_FRAME)
         va_pic->flags |= (pic_structure & PICT_TOP_FIELD) ? VA_PICTURE_H264_TOP_FIELD : VA_PICTURE_H264_BOTTOM_FIELD;
-    if (pic->reference)
+    if (pic->f.reference)
         va_pic->flags |= pic->long_ref ? VA_PICTURE_H264_LONG_TERM_REFERENCE : VA_PICTURE_H264_SHORT_TERM_REFERENCE;
 
     va_pic->TopFieldOrderCnt = 0;
@@ -133,13 +134,13 @@ static int fill_vaapi_ReferenceFrames(VAPictureParameterBufferH264 *pic_param,
 
     for (i = 0; i < h->short_ref_count; i++) {
         Picture * const pic = h->short_ref[i];
-        if (pic && pic->reference && dpb_add(&dpb, pic) < 0)
+        if (pic && pic->f.reference && dpb_add(&dpb, pic) < 0)
             return -1;
     }
 
     for (i = 0; i < 16; i++) {
         Picture * const pic = h->long_ref[i];
-        if (pic && pic->reference && dpb_add(&dpb, pic) < 0)
+        if (pic && pic->f.reference && dpb_add(&dpb, pic) < 0)
             return -1;
     }
     return 0;
@@ -159,7 +160,7 @@ static void fill_vaapi_RefPicList(VAPictureH264 RefPicList[32],
 {
     unsigned int i, n = 0;
     for (i = 0; i < ref_count; i++)
-        if (ref_list[i].reference)
+        if (ref_list[i].f.reference)
             fill_vaapi_pic(&RefPicList[n++], &ref_list[i], 0);
 
     for (; n < 32; n++)

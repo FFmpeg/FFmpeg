@@ -47,16 +47,16 @@ function ff_put_pixels16_armv6, export=1
         ldr             r5,  [r1, #4]
         ldr             r6,  [r1, #8]
         ldr             r7,  [r1, #12]
-        ldr             r4,  [r1], r2
+        ldr_post        r4,  r1,  r2
         strd            r6,  r7,  [r0, #8]
         ldr             r9,  [r1, #4]
-        strd            r4,  r5,  [r0],  r2
+        strd_post       r4,  r5,  r0,  r2
         ldr             r10, [r1, #8]
         ldr             r11, [r1, #12]
-        ldr             r8,  [r1], r2
+        ldr_post        r8,  r1,  r2
         strd            r10, r11, [r0, #8]
         subs            r3,  r3,  #2
-        strd            r8,  r9,  [r0],  r2
+        strd_post       r8,  r9,  r0,  r2
         bne             1b
 
         pop             {r4-r11}
@@ -67,12 +67,12 @@ function ff_put_pixels8_armv6, export=1
         push            {r4-r7}
 1:
         ldr             r5,  [r1, #4]
-        ldr             r4,  [r1], r2
+        ldr_post        r4,  r1,  r2
         ldr             r7,  [r1, #4]
-        strd            r4,  r5,  [r0],  r2
-        ldr             r6,  [r1], r2
+        strd_post       r4,  r5,  r0,  r2
+        ldr_post        r6,  r1,  r2
         subs            r3,  r3,  #2
-        strd            r6,  r7,  [r0],  r2
+        strd_post       r6,  r7,  r0,  r2
         bne             1b
 
         pop             {r4-r7}
@@ -90,7 +90,7 @@ function ff_put_pixels8_x2_armv6, export=1
         ldr             r5,  [r1, #4]
         ldr             r7,  [r1, #5]
         lsr             r6,  r4,  #8
-        ldr             r8,  [r1, r2]!
+        ldr_pre         r8,  r1,  r2
         orr             r6,  r6,  r5,  lsl #24
         ldr             r9,  [r1, #4]
         ldr             r11, [r1, #5]
@@ -112,9 +112,9 @@ function ff_put_pixels8_x2_armv6, export=1
         uhadd8          r9,  r9,  r11
         and             r6,  r6,  r12
         uadd8           r8,  r8,  r14
-        strd            r4,  r5,  [r0],  r2
+        strd_post       r4,  r5,  r0,  r2
         uadd8           r9,  r9,  r6
-        strd            r8,  r9,  [r0],  r2
+        strd_post       r8,  r9,  r0,  r2
         bne             1b
 
         pop             {r4-r11, pc}
@@ -127,7 +127,7 @@ function ff_put_pixels8_y2_armv6, export=1
         orr             r12, r12, r12, lsl #16
         ldr             r4,  [r1]
         ldr             r5,  [r1, #4]
-        ldr             r6,  [r1, r2]!
+        ldr_pre         r6,  r1,  r2
         ldr             r7,  [r1, #4]
 1:
         subs            r3,  r3,  #2
@@ -136,7 +136,7 @@ function ff_put_pixels8_y2_armv6, export=1
         uhadd8          r9,  r5,  r7
         eor             r11, r5,  r7
         and             r10, r10, r12
-        ldr             r4,  [r1, r2]!
+        ldr_pre         r4,  r1,  r2
         uadd8           r8,  r8,  r10
         and             r11, r11, r12
         uadd8           r9,  r9,  r11
@@ -148,11 +148,11 @@ function ff_put_pixels8_y2_armv6, export=1
         eor             r7,  r5,  r7
         uadd8           r10, r10, r6
         and             r7,  r7,  r12
-        ldr             r6,  [r1, r2]!
+        ldr_pre         r6,  r1,  r2
         uadd8           r11, r11, r7
-        strd            r8,  r9,  [r0],  r2
+        strd_post       r8,  r9,  r0,  r2
         ldr             r7,  [r1, #4]
-        strd            r10, r11, [r0],  r2
+        strd_post       r10, r11, r0,  r2
         bne             1b
 
         pop             {r4-r11}
@@ -166,7 +166,7 @@ function ff_put_pixels8_x2_no_rnd_armv6, export=1
         ldr             r4,  [r1]
         ldr             r5,  [r1, #4]
         ldr             r7,  [r1, #5]
-        ldr             r8,  [r1, r2]!
+        ldr_pre         r8,  r1,  r2
         ldr             r9,  [r1, #4]
         ldr             r14, [r1, #5]
         add             r1,  r1,  r2
@@ -191,16 +191,16 @@ function ff_put_pixels8_y2_no_rnd_armv6, export=1
         push            {r4-r9, lr}
         ldr             r4,  [r1]
         ldr             r5,  [r1, #4]
-        ldr             r6,  [r1, r2]!
+        ldr_pre         r6,  r1,  r2
         ldr             r7,  [r1, #4]
 1:
         subs            r3,  r3,  #2
         uhadd8          r8,  r4,  r6
-        ldr             r4,  [r1, r2]!
+        ldr_pre         r4,  r1,  r2
         uhadd8          r9,  r5,  r7
         ldr             r5,  [r1, #4]
         uhadd8          r12, r4,  r6
-        ldr             r6,  [r1, r2]!
+        ldr_pre         r6,  r1,  r2
         uhadd8          r14, r5,  r7
         ldr             r7,  [r1, #4]
         stm             r0,  {r8,r9}
@@ -220,44 +220,44 @@ function ff_avg_pixels8_armv6, export=1
         orr             lr,  lr,  lr,  lsl #16
         ldrd            r4,  r5,  [r0]
         ldr             r10, [r1, #4]
-        ldr             r9,  [r1], r2
+        ldr_post        r9,  r1,  r2
         subs            r3,  r3,  #2
 1:
         pld             [r1, r2]
         eor             r8,  r4,  r9
         uhadd8          r4,  r4,  r9
         eor             r12, r5,  r10
-        ldrd            r6,  r7,  [r0, r2]
+        ldrd_reg        r6,  r7,  r0,  r2
         uhadd8          r5,  r5,  r10
         and             r8,  r8,  lr
         ldr             r10, [r1, #4]
         and             r12, r12, lr
         uadd8           r4,  r4,  r8
-        ldr             r9,  [r1], r2
+        ldr_post        r9,  r1,  r2
         eor             r8,  r6,  r9
         uadd8           r5,  r5,  r12
         pld             [r1, r2,  lsl #1]
         eor             r12, r7,  r10
         uhadd8          r6,  r6,  r9
-        strd            r4,  r5,  [r0], r2
+        strd_post       r4,  r5,  r0,  r2
         uhadd8          r7,  r7,  r10
         beq             2f
         and             r8,  r8,  lr
-        ldrd            r4,  r5,  [r0, r2]
+        ldrd_reg        r4,  r5,  r0,  r2
         uadd8           r6,  r6,  r8
         ldr             r10, [r1, #4]
         and             r12, r12, lr
         subs            r3,  r3,  #2
         uadd8           r7,  r7,  r12
-        ldr             r9,  [r1], r2
-        strd            r6,  r7,  [r0], r2
+        ldr_post        r9,  r1,  r2
+        strd_post       r6,  r7,  r0,  r2
         b               1b
 2:
         and             r8,  r8,  lr
         and             r12, r12, lr
         uadd8           r6,  r6,  r8
         uadd8           r7,  r7,  r12
-        strd            r6,  r7,  [r0], r2
+        strd_post       r6,  r7,  r0,  r2
 
         pop             {r4-r10, pc}
 endfunc
@@ -284,7 +284,7 @@ function ff_add_pixels_clamped_armv6, export=1
         orr             r6,  r8,  r5,  lsl #8
         orr             r7,  r4,  lr,  lsl #8
         subs            r3,  r3,  #1
-        strd            r6,  r7,  [r1],  r2
+        strd_post       r6,  r7,  r1,  r2
         bgt             1b
         pop             {r4-r8,pc}
 endfunc
@@ -294,7 +294,7 @@ function ff_get_pixels_armv6, export=1
         push            {r4-r8, lr}
         mov             lr,  #8
 1:
-        ldrd            r4,  r5,  [r1],  r2
+        ldrd_post       r4,  r5,  r1,  r2
         subs            lr,  lr,  #1
         uxtb16          r6,  r4
         uxtb16          r4,  r4,  ror #8
@@ -317,8 +317,8 @@ function ff_diff_pixels_armv6, export=1
         push            {r4-r9, lr}
         mov             lr,  #8
 1:
-        ldrd            r4,  r5,  [r1],  r3
-        ldrd            r6,  r7,  [r2],  r3
+        ldrd_post       r4,  r5,  r1,  r3
+        ldrd_post       r6,  r7,  r2,  r3
         uxtb16          r8,  r4
         uxtb16          r4,  r4,  ror #8
         uxtb16          r9,  r6
@@ -492,19 +492,19 @@ function ff_pix_abs8_armv6, export=1
         push            {r4-r9, lr}
         mov             r0,  #0
         mov             lr,  #0
-        ldrd            r4,  r5,  [r1], r3
+        ldrd_post       r4,  r5,  r1,  r3
 1:
         subs            r12, r12, #2
         ldr             r7,  [r2, #4]
-        ldr             r6,  [r2], r3
-        ldrd            r8,  r9,  [r1], r3
+        ldr_post        r6,  r2,  r3
+        ldrd_post       r8,  r9,  r1,  r3
         usada8          r0,  r4,  r6,  r0
         pld             [r2, r3]
         usada8          lr,  r5,  r7,  lr
         ldr             r7,  [r2, #4]
-        ldr             r6,  [r2], r3
+        ldr_post        r6,  r2,  r3
         beq             2f
-        ldrd            r4,  r5,  [r1], r3
+        ldrd_post       r4,  r5,  r1,  r3
         usada8          r0,  r8,  r6,  r0
         pld             [r2, r3]
         usada8          lr,  r9,  r7,  lr
@@ -613,7 +613,7 @@ function ff_pix_sum_armv6, export=1
         ldr             r7,  [r0, #12]
         usada8          r2,  r6,  lr,  r2
         beq             2f
-        ldr             r4,  [r0, r1]!
+        ldr_pre         r4,  r0,  r1
         usada8          r3,  r7,  lr,  r3
         bgt             1b
 2:

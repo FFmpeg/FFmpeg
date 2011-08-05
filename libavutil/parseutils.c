@@ -28,6 +28,7 @@
 #include "avstring.h"
 #include "avutil.h"
 #include "eval.h"
+#include "log.h"
 #include "random_seed.h"
 #include "parseutils.h"
 
@@ -400,7 +401,16 @@ static int date_get_num(const char **pp,
     return val;
 }
 
-/* small strptime for ffmpeg */
+/**
+ * Parse the input string p according to the format string fmt and
+ * store its results in the structure dt.
+ * This implementation supports only a subset of the formats supported
+ * by the standard strptime().
+ *
+ * @return a pointer to the first character not processed in this
+ * function call, or NULL in case the function fails to match all of
+ * the fmt string and therefore an error occurred
+ */
 static
 const char *small_strptime(const char *p, const char *fmt,
                            struct tm *dt)
@@ -462,7 +472,6 @@ const char *small_strptime(const char *p, const char *fmt,
             p++;
         }
     }
-    return p;
 }
 
 static time_t mktimegm(struct tm *tm)
@@ -484,7 +493,7 @@ static time_t mktimegm(struct tm *tm)
     return t;
 }
 
-int av_parse_time(int64_t *timeval, const char *datestr, int duration)
+int av_parse_time(int64_t *timeval, const char *timestr, int duration)
 {
     const char *p;
     int64_t t;
@@ -506,19 +515,19 @@ int av_parse_time(int64_t *timeval, const char *datestr, int duration)
 #undef time
     time_t now = time(0);
 
-    len = strlen(datestr);
+    len = strlen(timestr);
     if (len > 0)
-        lastch = datestr[len - 1];
+        lastch = timestr[len - 1];
     else
         lastch = '\0';
     is_utc = (lastch == 'z' || lastch == 'Z');
 
     memset(&dt, 0, sizeof(dt));
 
-    p = datestr;
+    p = timestr;
     q = NULL;
     if (!duration) {
-        if (!strncasecmp(datestr, "now", len)) {
+        if (!strncasecmp(timestr, "now", len)) {
             *timeval = (int64_t) now * 1000000;
             return 0;
         }
@@ -555,15 +564,15 @@ int av_parse_time(int64_t *timeval, const char *datestr, int duration)
             }
         }
     } else {
-        /* parse datestr as a duration */
+        /* parse timestr as a duration */
         if (p[0] == '-') {
             negative = 1;
             ++p;
         }
-        /* parse datestr as HH:MM:SS */
+        /* parse timestr as HH:MM:SS */
         q = small_strptime(p, time_fmt[0], &dt);
         if (!q) {
-            /* parse datestr as S+ */
+            /* parse timestr as S+ */
             dt.tm_sec = strtol(p, (char **)&q, 10);
             if (q == p) {
                 /* the parsing didn't succeed */

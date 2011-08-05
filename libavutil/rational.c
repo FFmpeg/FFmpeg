@@ -135,7 +135,8 @@ int av_find_nearest_q_idx(AVRational q, const AVRational* q_list)
 }
 
 #ifdef TEST
-main(){
+int main(void)
+{
     AVRational a,b;
     for(a.num=-2; a.num<=2; a.num++){
         for(a.den=-2; a.den<=2; a.den++){
@@ -151,5 +152,6 @@ main(){
             }
         }
     }
+    return 0;
 }
 #endif

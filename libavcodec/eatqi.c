@@ -22,10 +22,8 @@
 /**
  * @file
  * Electronic Arts TQI Video Decoder
- * by Peter Ross <pross@xvid.org>
- *
- * Technical details here:
- * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TQI
+ * @author Peter Ross <pross@xvid.org>
+ * @see http://wiki.multimedia.cx/index.php?title=Electronic_Arts_TQI
  */
 
 #include "avcodec.h"
@@ -155,14 +153,13 @@ static av_cold int tqi_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_eatqi_decoder = {
-    "eatqi",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_TQI,
-    sizeof(TqiContext),
-    tqi_decode_init,
-    NULL,
-    tqi_decode_end,
-    tqi_decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "eatqi",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_TQI,
+    .priv_data_size = sizeof(TqiContext),
+    .init           = tqi_decode_init,
+    .close          = tqi_decode_end,
+    .decode         = tqi_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Electronic Arts TQI Video"),
 };

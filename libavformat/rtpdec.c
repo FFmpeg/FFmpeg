@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/mathematics.h"
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "mpegts.h"
@@ -216,22 +217,6 @@ static int rtp_valid_packet_in_sequence(RTPStatistics *s, uint16_t seq)
     s->received++;
     return 1;
 }
-
-#if 0
-/**
-* This function is currently unused; without a valid local ntp time, I don't see how we could calculate the
-* difference between the arrival and sent timestamp.  As a result, the jitter and transit statistics values
-* never change.  I left this in in case someone else can see a way. (rdm)
-*/
-static void rtcp_update_jitter(RTPStatistics *s, uint32_t sent_timestamp, uint32_t arrival_timestamp)
-{
-    uint32_t transit= arrival_timestamp - sent_timestamp;
-    int d;
-    s->transit= transit;
-    d= FFABS(transit - s->transit);
-    s->jitter += d - ((s->jitter + 8)>>4);
-}
-#endif
 
 int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 {

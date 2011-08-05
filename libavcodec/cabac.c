@@ -75,18 +75,7 @@ static const uint8_t lps_state[64]= {
  33,33,34,34,35,35,35,36,
  36,36,37,37,37,38,38,63,
 };
-#if 0
-const uint8_t ff_h264_norm_shift_old[128]= {
- 7,6,5,5,4,4,4,4,3,3,3,3,3,3,3,3,
- 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,
- 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
- 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
- 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-};
-#endif
+
 const uint8_t ff_h264_norm_shift[512]= {
  9,8,7,7,6,6,6,6,5,5,5,5,5,5,5,5,
  4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,
@@ -176,6 +165,140 @@ void ff_init_cabac_states(CABACContext *c){
 #include "libavutil/lfg.h"
 #include "avcodec.h"
 #include "cabac.h"
+
+static void put_cabac(CABACContext *c, uint8_t * const state, int bit){
+    int RangeLPS= ff_h264_lps_range[2*(c->range&0xC0) + *state];
+
+    if(bit == ((*state)&1)){
+        c->range -= RangeLPS;
+        *state= ff_h264_mps_state[*state];
+    }else{
+        c->low += c->range - RangeLPS;
+        c->range = RangeLPS;
+        *state= ff_h264_lps_state[*state];
+    }
+
+    renorm_cabac_encoder(c);
+
+#ifdef STRICT_LIMITS
+    c->symCount++;
+#endif
+}
+
+/**
+ * @param bit 0 -> write zero bit, !=0 write one bit
+ */
+static void put_cabac_bypass(CABACContext *c, int bit){
+    c->low += c->low;
+
+    if(bit){
+        c->low += c->range;
+    }
+//FIXME optimize
+    if(c->low<0x200){
+        put_cabac_bit(c, 0);
+    }else if(c->low<0x400){
+        c->outstanding_count++;
+        c->low -= 0x200;
+    }else{
+        put_cabac_bit(c, 1);
+        c->low -= 0x400;
+    }
+
+#ifdef STRICT_LIMITS
+    c->symCount++;
+#endif
+}
+
+/**
+ *
+ * @return the number of bytes written
+ */
+static int put_cabac_terminate(CABACContext *c, int bit){
+    c->range -= 2;
+
+    if(!bit){
+        renorm_cabac_encoder(c);
+    }else{
+        c->low += c->range;
+        c->range= 2;
+
+        renorm_cabac_encoder(c);
+
+        assert(c->low <= 0x1FF);
+        put_cabac_bit(c, c->low>>9);
+        put_bits(&c->pb, 2, ((c->low>>7)&3)|1);
+
+        flush_put_bits(&c->pb); //FIXME FIXME FIXME XXX wrong
+    }
+
+#ifdef STRICT_LIMITS
+    c->symCount++;
+#endif
+
+    return (put_bits_count(&c->pb)+7)>>3;
+}
+
+/**
+ * put (truncated) unary binarization.
+ */
+static void put_cabac_u(CABACContext *c, uint8_t * state, int v, int max, int max_index, int truncated){
+    int i;
+
+    assert(v <= max);
+
+    for(i=0; i<v; i++){
+        put_cabac(c, state, 1);
+        if(i < max_index) state++;
+    }
+    if(truncated==0 || v<max)
+        put_cabac(c, state, 0);
+}
+
+/**
+ * put unary exp golomb k-th order binarization.
+ */
+static void put_cabac_ueg(CABACContext *c, uint8_t * state, int v, int max, int is_signed, int k, int max_index){
+    int i;
+
+    if(v==0)
+        put_cabac(c, state, 0);
+    else{
+        const int sign= v < 0;
+
+        if(is_signed) v= FFABS(v);
+
+        if(v<max){
+            for(i=0; i<v; i++){
+                put_cabac(c, state, 1);
+                if(i < max_index) state++;
+            }
+
+            put_cabac(c, state, 0);
+        }else{
+            int m= 1<<k;
+
+            for(i=0; i<max; i++){
+                put_cabac(c, state, 1);
+                if(i < max_index) state++;
+            }
+
+            v -= max;
+            while(v >= m){ //FIXME optimize
+                put_cabac_bypass(c, 1);
+                v-= m;
+                m+= m;
+            }
+            put_cabac_bypass(c, 0);
+            while(m>>=1){
+                put_cabac_bypass(c, v&m);
+            }
+        }
+
+        if(is_signed)
+            put_cabac_bypass(c, sign);
+    }
+}
 
 int main(void){
     CABACContext c;

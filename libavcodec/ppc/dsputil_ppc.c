@@ -48,7 +48,6 @@ static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x00000010);
     register int i = 0;
-#if 1
     if (misal) {
         ((unsigned long*)blocks)[0] = 0L;
         ((unsigned long*)blocks)[1] = 0L;
@@ -66,9 +65,6 @@ static void clear_blocks_dcbz32_ppc(DCTELEM *blocks)
         ((unsigned long*)blocks)[191] = 0L;
         i += 16;
     }
-#else
-    memset(blocks, 0, sizeof(DCTELEM)*6*64);
-#endif
 }
 
 /* same as above, when dcbzl clear a whole 128B cache line
@@ -78,7 +74,6 @@ static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
 {
     register int misal = ((unsigned long)blocks & 0x0000007f);
     register int i = 0;
-#if 1
     if (misal) {
         // we could probably also optimize this case,
         // but there's not much point as the machines
@@ -89,9 +84,6 @@ static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
         for ( ; i < sizeof(DCTELEM)*6*64 ; i += 128) {
             __asm__ volatile("dcbzl %0,%1" : : "b" (blocks), "r" (i) : "memory");
         }
-#else
-    memset(blocks, 0, sizeof(DCTELEM)*6*64);
-#endif
 }
 #else
 static void clear_blocks_dcbz128_ppc(DCTELEM *blocks)
@@ -153,7 +145,7 @@ static void prefetch_ppc(void *mem, int stride, int h)
 
 void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
 {
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     // Common optimizations whether AltiVec is available or not
     c->prefetch = prefetch_ppc;
@@ -180,13 +172,14 @@ void dsputil_init_ppc(DSPContext* c, AVCodecContext *avctx)
         c->gmc1 = gmc1_altivec;
 
 #if CONFIG_ENCODERS
-        if (avctx->dct_algo == FF_DCT_AUTO ||
-            avctx->dct_algo == FF_DCT_ALTIVEC) {
+        if (avctx->bits_per_raw_sample <= 8 &&
+            (avctx->dct_algo == FF_DCT_AUTO ||
+             avctx->dct_algo == FF_DCT_ALTIVEC)) {
             c->fdct = fdct_altivec;
         }
 #endif //CONFIG_ENCODERS
 
-        if (avctx->lowres==0) {
+        if (avctx->lowres == 0 && avctx->bits_per_raw_sample <= 8) {
             if ((avctx->idct_algo == FF_IDCT_AUTO) ||
                 (avctx->idct_algo == FF_IDCT_ALTIVEC)) {
                 c->idct_put = idct_put_altivec;

@@ -23,6 +23,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 
 typedef struct {
@@ -383,12 +384,12 @@ static int r3d_close(AVFormatContext *s)
 }
 
 AVInputFormat ff_r3d_demuxer = {
-    "r3d",
-    NULL_IF_CONFIG_SMALL("REDCODE R3D format"),
-    sizeof(R3DContext),
-    r3d_probe,
-    r3d_read_header,
-    r3d_read_packet,
-    r3d_close,
-    r3d_seek,
+    .name           = "r3d",
+    .long_name      = NULL_IF_CONFIG_SMALL("REDCODE R3D format"),
+    .priv_data_size = sizeof(R3DContext),
+    .read_probe     = r3d_probe,
+    .read_header    = r3d_read_header,
+    .read_packet    = r3d_read_packet,
+    .read_close     = r3d_close,
+    .read_seek      = r3d_seek,
 };

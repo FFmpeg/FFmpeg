@@ -1,39 +1,33 @@
 /*
  * Copyright (c) 2001 Fabrice Bellard
  *
- * This file is part of FFmpeg.
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
  *
- * FFmpeg is free software; you can redistribute it and/or
- * modify it under the terms of the GNU Lesser General Public
- * License as published by the Free Software Foundation; either
- * version 2.1 of the License, or (at your option) any later version.
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
  *
- * FFmpeg is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
- * Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License along with FFmpeg; if not, write to the Free Software
- * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL
+ * THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
  */
 
 /**
  * @file
- * avcodec API use example.
+ * libavcodec API use example.
  *
- * Note that this library only handles codecs (mpeg, mpeg4, etc...),
+ * Note that libavcodec only handles codecs (mpeg, mpeg4, etc...),
  * not file formats (avi, vob, etc...). See library 'libavformat' for the
  * format handling
  */
-
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-
-#ifdef HAVE_AV_CONFIG_H
-#undef HAVE_AV_CONFIG_H
-#endif
 
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
@@ -64,12 +58,13 @@ static void audio_encode_example(const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
 
     /* put sample parameters */
     c->bit_rate = 64000;
     c->sample_rate = 44100;
     c->channels = 2;
+    c->sample_fmt = AV_SAMPLE_FMT_S16;
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
@@ -134,7 +129,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
@@ -204,7 +199,7 @@ static void video_encode_example(const char *filename)
     int i, out_size, size, x, y, outbuf_size;
     FILE *f;
     AVFrame *picture;
-    uint8_t *outbuf, *picture_buf;
+    uint8_t *outbuf;
 
     printf("Video encoding\n");
 
@@ -215,7 +210,7 @@ static void video_encode_example(const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
     picture= avcodec_alloc_frame();
 
     /* put sample parameters */
@@ -244,15 +239,11 @@ static void video_encode_example(const char *filename)
     /* alloc image and output buffer */
     outbuf_size = 100000;
     outbuf = malloc(outbuf_size);
-    size = c->width * c->height;
-    picture_buf = malloc((size * 3) / 2); /* size for YUV 420 */
 
-    picture->data[0] = picture_buf;
-    picture->data[1] = picture->data[0] + size;
-    picture->data[2] = picture->data[1] + size / 4;
-    picture->linesize[0] = c->width;
-    picture->linesize[1] = c->width / 2;
-    picture->linesize[2] = c->width / 2;
+    /* the image can be allocated by any means and av_image_alloc() is
+     * just the most convenient way if av_malloc() is to be used */
+    av_image_alloc(picture->data, picture->linesize,
+                   c->width, c->height, c->pix_fmt, 1);
 
     /* encode 1 second of video */
     for(i=0;i<25;i++) {
@@ -295,11 +286,11 @@ static void video_encode_example(const char *filename)
     outbuf[3] = 0xb7;
     fwrite(outbuf, 1, 4, f);
     fclose(f);
-    free(picture_buf);
     free(outbuf);
 
     avcodec_close(c);
     av_free(c);
+    av_free(picture->data[0]);
     av_free(picture);
     printf("\n");
 }
@@ -346,7 +337,7 @@ static void video_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    c= avcodec_alloc_context();
+    c = avcodec_alloc_context3(codec);
     picture= avcodec_alloc_frame();
 
     if(codec->capabilities&CODEC_CAP_TRUNCATED)

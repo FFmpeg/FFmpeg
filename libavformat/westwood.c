@@ -368,21 +368,21 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
 #if CONFIG_WSAUD_DEMUXER
 AVInputFormat ff_wsaud_demuxer = {
-    "wsaud",
-    NULL_IF_CONFIG_SMALL("Westwood Studios audio format"),
-    sizeof(WsAudDemuxContext),
-    wsaud_probe,
-    wsaud_read_header,
-    wsaud_read_packet,
+    .name           = "wsaud",
+    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios audio format"),
+    .priv_data_size = sizeof(WsAudDemuxContext),
+    .read_probe     = wsaud_probe,
+    .read_header    = wsaud_read_header,
+    .read_packet    = wsaud_read_packet,
 };
 #endif
 #if CONFIG_WSVQA_DEMUXER
 AVInputFormat ff_wsvqa_demuxer = {
-    "wsvqa",
-    NULL_IF_CONFIG_SMALL("Westwood Studios VQA format"),
-    sizeof(WsVqaDemuxContext),
-    wsvqa_probe,
-    wsvqa_read_header,
-    wsvqa_read_packet,
+    .name           = "wsvqa",
+    .long_name      = NULL_IF_CONFIG_SMALL("Westwood Studios VQA format"),
+    .priv_data_size = sizeof(WsVqaDemuxContext),
+    .read_probe     = wsvqa_probe,
+    .read_header    = wsvqa_read_header,
+    .read_packet    = wsvqa_read_packet,
 };
 #endif

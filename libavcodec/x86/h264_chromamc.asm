@@ -72,17 +72,17 @@ SECTION .text
 .next4rows
     movq         mm0, [r1   ]
     movq         mm1, [r1+r2]
+    add           r1, r4
     CHROMAMC_AVG mm0, [r0   ]
     CHROMAMC_AVG mm1, [r0+r2]
     movq     [r0   ], mm0
     movq     [r0+r2], mm1
     add           r0, r4
-    add           r1, r4
     movq         mm0, [r1   ]
     movq         mm1, [r1+r2]
+    add           r1, r4
     CHROMAMC_AVG mm0, [r0   ]
     CHROMAMC_AVG mm1, [r0+r2]
-    add           r1, r4
     movq     [r0   ], mm0
     movq     [r0+r2], mm1
     add           r0, r4
@@ -472,8 +472,8 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     mov          r6d, r4d
     shl          r4d, 8
     sub           r4, r6
-    add           r4, 8           ; x*288+8 = x<<8 | (8-x)
     mov           r6, 8
+    add           r4, 8           ; x*288+8 = x<<8 | (8-x)
     sub          r6d, r5d
     imul          r6, r4          ; (8-y)*(x*255+8) = (8-y)*x<<8 | (8-y)*(8-x)
     imul         r4d, r5d         ;    y *(x*255+8) =    y *x<<8 |    y *(8-x)
@@ -481,24 +481,23 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     movd          m7, r6d
     movd          m6, r4d
     movdqa        m5, [rnd_2d_%2]
+    movq          m0, [r1  ]
+    movq          m1, [r1+1]
     pshuflw       m7, m7, 0
     pshuflw       m6, m6, 0
+    punpcklbw     m0, m1
     movlhps       m7, m7
     movlhps       m6, m6
 
-    movq          m0, [r1     ]
-    movq          m1, [r1   +1]
-    punpcklbw     m0, m1
-    add           r1, r2
 .next2rows
-    movq          m1, [r1     ]
-    movq          m2, [r1   +1]
-    movq          m3, [r1+r2  ]
-    movq          m4, [r1+r2+1]
+    movq          m1, [r1+r2*1   ]
+    movq          m2, [r1+r2*1+1]
+    movq          m3, [r1+r2*2  ]
+    movq          m4, [r1+r2*2+1]
     lea           r1, [r1+r2*2]
     punpcklbw     m1, m2
-    punpcklbw     m3, m4
     movdqa        m2, m1
+    punpcklbw     m3, m4
     movdqa        m4, m3
     pmaddubsw     m0, m7
     pmaddubsw     m1, m6
@@ -508,8 +507,8 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     paddw         m2, m5
     paddw         m1, m0
     paddw         m3, m2
-    movdqa        m0, m4
     psrlw         m1, 6
+    movdqa        m0, m4
     psrlw         m3, 6
 %ifidn %1, avg
     movq          m2, [r0   ]
@@ -576,6 +575,7 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     movq          m1, [r1+r2  ]
     movdqa        m2, m1
     movq          m3, [r1+r2*2]
+    lea           r1, [r1+r2*2]
     punpcklbw     m0, m1
     punpcklbw     m2, m3
     pmaddubsw     m0, m7
@@ -594,7 +594,6 @@ cglobal %1_%2_chroma_mc8_%3, 6, 7, 8
     movhps   [r0+r2], m0
     sub          r3d, 2
     lea           r0, [r0+r2*2]
-    lea           r1, [r1+r2*2]
     jg .next2yrows
     REP_RET
 %endmacro
@@ -607,8 +606,8 @@ cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
     mov           r6, r4
     shl          r4d, 8
     sub          r4d, r6d
-    add          r4d, 8           ; x*288+8
     mov           r6, 8
+    add          r4d, 8           ; x*288+8
     sub          r6d, r5d
     imul         r6d, r4d         ; (8-y)*(x*255+8) = (8-y)*x<<8 | (8-y)*(8-x)
     imul         r4d, r5d         ;    y *(x*255+8) =    y *x<<8 |    y *(8-x)
@@ -616,17 +615,16 @@ cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
     movd          m7, r6d
     movd          m6, r4d
     movq          m5, [pw_32]
+    movd          m0, [r1  ]
     pshufw        m7, m7, 0
+    punpcklbw     m0, [r1+1]
     pshufw        m6, m6, 0
 
-    movd          m0, [r1     ]
-    punpcklbw     m0, [r1   +1]
-    add           r1, r2
 .next2rows
-    movd          m1, [r1     ]
-    movd          m3, [r1+r2  ]
-    punpcklbw     m1, [r1   +1]
-    punpcklbw     m3, [r1+r2+1]
+    movd          m1, [r1+r2*1  ]
+    movd          m3, [r1+r2*2  ]
+    punpcklbw     m1, [r1+r2*1+1]
+    punpcklbw     m3, [r1+r2*2+1]
     lea           r1, [r1+r2*2]
     movq          m2, m1
     movq          m4, m3
@@ -638,8 +636,8 @@ cglobal %1_%2_chroma_mc4_%3, 6, 7, 0
     paddw         m2, m5
     paddw         m1, m0
     paddw         m3, m2
-    movq          m0, m4
     psrlw         m1, 6
+    movq          m0, m4
     psrlw         m3, 6
     packuswb      m1, m1
     packuswb      m3, m3

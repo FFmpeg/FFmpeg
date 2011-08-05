@@ -23,8 +23,8 @@
  * @file
  * @brief Bethesda Softworks VID (.vid) file demuxer
  * @author Nicholas Tung [ntung (at. ntung com] (2007-03)
- * @sa http://wiki.multimedia.cx/index.php?title=Bethsoft_VID
- * @sa http://www.svatopluk.com/andux/docs/dfvid.html
+ * @see http://wiki.multimedia.cx/index.php?title=Bethsoft_VID
+ * @see http://www.svatopluk.com/andux/docs/dfvid.html
  */
 
 #include "libavutil/intreadwrite.h"
@@ -220,15 +220,13 @@ static int vid_read_packet(AVFormatContext *s,
             av_log(s, AV_LOG_ERROR, "unknown block (character = %c, decimal = %d, hex = %x)!!!\n",
                    block_type, block_type, block_type); return -1;
     }
-
-    return 0;
 }
 
 AVInputFormat ff_bethsoftvid_demuxer = {
-    "bethsoftvid",
-    NULL_IF_CONFIG_SMALL("Bethesda Softworks VID format"),
-    sizeof(BVID_DemuxContext),
-    vid_probe,
-    vid_read_header,
-    vid_read_packet,
+    .name           = "bethsoftvid",
+    .long_name      = NULL_IF_CONFIG_SMALL("Bethesda Softworks VID format"),
+    .priv_data_size = sizeof(BVID_DemuxContext),
+    .read_probe     = vid_probe,
+    .read_header    = vid_read_header,
+    .read_packet    = vid_read_packet,
 };

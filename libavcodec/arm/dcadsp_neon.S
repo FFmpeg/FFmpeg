@@ -27,6 +27,7 @@ function ff_dca_lfe_fir_neon, export=1
         add             r5,  r2,  #256*4-16     @ cf1
         sub             r1,  r1,  #12
         cmp             r3,  #32
+        ite             eq
         moveq           r6,  #256/32
         movne           r6,  #256/64
 NOVFP   vldr            s0,  [sp, #16]          @ scale

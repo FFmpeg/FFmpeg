@@ -76,9 +76,6 @@ pcm(){
 regtest(){
     t="${test#$2-}"
     ref=${base}/ref/$2/$t
-    cleanfiles="$cleanfiles $outfile $errfile"
-    outfile=tests/data/regression/$2/$t
-    errfile=tests/data/$t.$2.err
     ${base}/${1}-regression.sh $t $2 $3 "$target_exec" "$target_path" "$threads" "$thread_type"
 }
 
@@ -107,7 +104,7 @@ seektest(){
                  file=$(echo tests/data/$d/$file)
                  ;;
     esac
-    $target_exec $target_path/tests/seek_test $target_path/$file
+    $target_exec $target_path/libavformat/seek-test $target_path/$file
 }
 
 mkdir -p "$outdir"
@@ -126,6 +123,7 @@ if test -e "$ref"; then
         diff)   diff -u -w "$ref" "$outfile"            >$cmpfile ;;
         oneoff) oneoff     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
         stddev) stddev     "$ref" "$outfile" "$fuzz"    >$cmpfile ;;
+        null)   cat               "$outfile"            >$cmpfile ;;
     esac
     cmperr=$?
     test $err = 0 && err=$cmperr

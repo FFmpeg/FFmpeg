@@ -22,6 +22,7 @@
 #include "libavutil/base64.h"
 #include "libavutil/avstring.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/random_seed.h"
 #include "libavutil/dict.h"
@@ -427,11 +428,6 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
         break;
     }
 }
-
-/**
- * Parse the sdp description and allocate the rtp streams and the
- * pollfd array used for udp ones.
- */
 
 int ff_sdp_parse(AVFormatContext *s, const char *content)
 {
@@ -1050,9 +1046,6 @@ retry:
     return 0;
 }
 
-/**
- * @return 0 on success, <0 on error, 1 if protocol is unavailable.
- */
 int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                               int lower_transport, const char *real_challenge)
 {
@@ -1078,7 +1071,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
     for (j = RTSP_RTP_PORT_MIN, i = 0; i < rt->nb_rtsp_streams; ++i) {
         char transport[2048];
 
-        /**
+        /*
          * WMS serves all UDP data over a single connection, the RTX, which
          * isn't necessarily the first in the SDP but has to be the first
          * to be set up, else the second/third SETUP will fail with a 461.
@@ -1123,17 +1116,9 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                 }
             }
 
-#if 0
-            /* then try on any port */
-            if (ffurl_open(&rtsp_st->rtp_handle, "rtp://", AVIO_RDONLY) < 0) {
-                err = AVERROR_INVALIDDATA;
-                goto fail;
-            }
-#else
             av_log(s, AV_LOG_ERROR, "Unable to open an input RTP port\n");
             err = AVERROR(EIO);
             goto fail;
-#endif
 
         rtp_opened:
             port = rtp_get_local_rtp_port(rtsp_st->rtp_handle);
@@ -1151,7 +1136,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
 
         /* RTP/TCP */
         else if (lower_transport == RTSP_LOWER_TRANSPORT_TCP) {
-            /** For WMS streams, the application streams are only used for
+            /* For WMS streams, the application streams are only used for
              * UDP. When trying to set it up for TCP streams, the server
              * will return an error. Therefore, we skip those streams. */
             if (rt->server_type == RTSP_SERVER_WMS &&
@@ -1482,14 +1467,14 @@ redirect:
         cmd[0] = 0;
         if (rt->server_type == RTSP_SERVER_REAL)
             av_strlcat(cmd,
-                       /**
+                       /*
                         * The following entries are required for proper
                         * streaming from a Realmedia server. They are
                         * interdependent in some way although we currently
                         * don't quite understand how. Values were copied
                         * from mplayer SVN r23589.
-                        * @param CompanyID is a 16-byte ID in base64
-                        * @param ClientChallenge is a 16-byte ID in hex
+                        *   ClientChallenge is a 16-byte ID in hex
+                        *   CompanyID is a 16-byte ID in base64
                         */
                        "ClientChallenge: 9e26d33f2984236010ef6253fb1887f7\r\n"
                        "PlayerStarttime: [28/03/2003:22:50:23 00:00]\r\n"
@@ -1831,13 +1816,13 @@ static int sdp_read_close(AVFormatContext *s)
 }
 
 AVInputFormat ff_sdp_demuxer = {
-    "sdp",
-    NULL_IF_CONFIG_SMALL("SDP"),
-    sizeof(RTSPState),
-    sdp_probe,
-    sdp_read_header,
-    ff_rtsp_fetch_packet,
-    sdp_read_close,
+    .name           = "sdp",
+    .long_name      = NULL_IF_CONFIG_SMALL("SDP"),
+    .priv_data_size = sizeof(RTSPState),
+    .read_probe     = sdp_probe,
+    .read_header    = sdp_read_header,
+    .read_packet    = ff_rtsp_fetch_packet,
+    .read_close     = sdp_read_close,
 };
 #endif /* CONFIG_SDP_DEMUXER */
 
@@ -1935,13 +1920,13 @@ fail:
 }
 
 AVInputFormat ff_rtp_demuxer = {
-    "rtp",
-    NULL_IF_CONFIG_SMALL("RTP input format"),
-    sizeof(RTSPState),
-    rtp_probe,
-    rtp_read_header,
-    ff_rtsp_fetch_packet,
-    sdp_read_close,
+    .name           = "rtp",
+    .long_name      = NULL_IF_CONFIG_SMALL("RTP input format"),
+    .priv_data_size = sizeof(RTSPState),
+    .read_probe     = rtp_probe,
+    .read_header    = rtp_read_header,
+    .read_packet    = ff_rtsp_fetch_packet,
+    .read_close     = sdp_read_close,
     .flags = AVFMT_NOFILE,
 };
 #endif /* CONFIG_RTP_DEMUXER */

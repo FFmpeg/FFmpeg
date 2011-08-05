@@ -69,19 +69,19 @@ static const int huff_iid[] = {
 
 static VLC vlc_ps[10];
 
-/**
- * Read Inter-channel Intensity Difference/Inter-Channel Coherence/
- * Inter-channel Phase Difference/Overall Phase Difference parameters from the
- * bitstream.
- *
- * @param avctx contains the current codec context
- * @param gb    pointer to the input bitstream
- * @param ps    pointer to the Parametric Stereo context
- * @param par   pointer to the parameter to be read
- * @param e     envelope to decode
- * @param dt    1: time delta-coded, 0: frequency delta-coded
- */
 #define READ_PAR_DATA(PAR, OFFSET, MASK, ERR_CONDITION) \
+/** \
+ * Read Inter-channel Intensity Difference/Inter-Channel Coherence/ \
+ * Inter-channel Phase Difference/Overall Phase Difference parameters from the \
+ * bitstream. \
+ * \
+ * @param avctx contains the current codec context \
+ * @param gb    pointer to the input bitstream \
+ * @param ps    pointer to the Parametric Stereo context \
+ * @param PAR   pointer to the parameter to be read \
+ * @param e     envelope to decode \
+ * @param dt    1: time delta-coded, 0: frequency delta-coded \
+ */ \
 static int read_ ## PAR ## _data(AVCodecContext *avctx, GetBitContext *gb, PSContext *ps, \
                         int8_t (*PAR)[PS_MAX_NR_IIDICC], int table_idx, int e, int dt) \
 { \
@@ -813,14 +813,17 @@ static void stereo_processing(PSContext *ps, float (*l)[32][2], float (*r)[32][2
     const float (*H_LUT)[8][4] = (PS_BASELINE || ps->icc_mode < 3) ? HA : HB;
 
     //Remapping
-    memcpy(H11[0][0], H11[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H11[0][0][0]));
-    memcpy(H11[1][0], H11[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H11[1][0][0]));
-    memcpy(H12[0][0], H12[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H12[0][0][0]));
-    memcpy(H12[1][0], H12[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H12[1][0][0]));
-    memcpy(H21[0][0], H21[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H21[0][0][0]));
-    memcpy(H21[1][0], H21[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H21[1][0][0]));
-    memcpy(H22[0][0], H22[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H22[0][0][0]));
-    memcpy(H22[1][0], H22[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H22[1][0][0]));
+    if (ps->num_env_old) {
+        memcpy(H11[0][0], H11[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H11[0][0][0]));
+        memcpy(H11[1][0], H11[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H11[1][0][0]));
+        memcpy(H12[0][0], H12[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H12[0][0][0]));
+        memcpy(H12[1][0], H12[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H12[1][0][0]));
+        memcpy(H21[0][0], H21[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H21[0][0][0]));
+        memcpy(H21[1][0], H21[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H21[1][0][0]));
+        memcpy(H22[0][0], H22[0][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H22[0][0][0]));
+        memcpy(H22[1][0], H22[1][ps->num_env_old], PS_MAX_NR_IIDICC*sizeof(H22[1][0][0]));
+    }
+
     if (is34) {
         remap34(&iid_mapped, ps->iid_par, ps->nr_iid_par, ps->num_env, 1);
         remap34(&icc_mapped, ps->icc_par, ps->nr_icc_par, ps->num_env, 1);

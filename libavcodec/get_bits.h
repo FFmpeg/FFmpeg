@@ -201,19 +201,11 @@ static inline void skip_bits_long(GetBitContext *s, int n){
         }                                                               \
     } while (0)
 
-#if ARCH_X86
-#   define SKIP_CACHE(name, gb, num)                            \
-    __asm__("shldl %2, %1, %0          \n\t"                    \
-            "shll  %2, %1              \n\t"                    \
-            : "+r" (name##_cache0), "+r" (name##_cache1)        \
-            : "Ic" ((uint8_t)(num)))
-#else
 #   define SKIP_CACHE(name, gb, num) do {               \
         name##_cache0 <<= (num);                        \
         name##_cache0 |= NEG_USR32(name##_cache1,num);  \
         name##_cache1 <<= (num);                        \
     } while (0)
-#endif
 
 #   define SKIP_COUNTER(name, gb, num) name##_bit_count += (num)
 
@@ -381,7 +373,7 @@ static inline int check_marker(GetBitContext *s, const char *msg)
 
 /**
  * init GetBitContext.
- * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger then the actual read bits
+ * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger than the actual read bits
  * because some optimized bitstream readers read 32 or 64 bit at once and could read over the end
  * @param bit_size the size of the buffer in bits
  *
@@ -504,7 +496,7 @@ void free_vlc(VLC *vlc);
 
 
 /**
- * parses a vlc code, faster then get_vlc()
+ * parses a vlc code, faster than get_vlc()
  * @param bits is the number of bits which will be read at once, must be
  *             identical to nb_bits in init_vlc()
  * @param max_depth is the number of times bits bits must be read to completely

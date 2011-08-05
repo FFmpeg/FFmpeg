@@ -38,14 +38,14 @@
  * QCELP unpacked data frame
  */
 typedef struct {
-/// @defgroup qcelp_codebook_parameters QCELP excitation codebook parameters
+/// @name QCELP excitation codebook parameters
 /// @{
     uint8_t cbsign[16]; ///!< sign of the codebook gain for each codebook subframe
     uint8_t cbgain[16]; ///!< unsigned codebook gain for each codebook subframe
     uint8_t cindex[16]; ///!< codebook index for each codebook subframe
 /// @}
 
-/// @defgroup qcelp_pitch_parameters QCELP pitch prediction parameters
+/// @name QCELP pitch prediction parameters
 /// @{
     uint8_t plag[4];    ///!< pitch lag for each pitch subframe
     uint8_t pfrac[4];   ///!< fractional pitch lag for each pitch subframe
@@ -74,9 +74,9 @@ typedef struct {
 static const float qcelp_hammsinc_table[4] = { -0.006822,  0.041249, -0.143459,  0.588863};
 
 typedef struct {
-    uint8_t index;  /*!< index into the QCELPContext structure */
-    uint8_t bitpos; /*!< position of the lowest bit in the value's byte */
-    uint8_t bitlen; /*!< number of bits to read */
+    uint8_t index;  /**< index into the QCELPContext structure */
+    uint8_t bitpos; /**< position of the lowest bit in the value's byte */
+    uint8_t bitlen; /**< number of bits to read */
 } QCELPBitmap;
 
 #define QCELP_OF(variable, bit, len) {offsetof(QCELPFrame, variable), bit, len}

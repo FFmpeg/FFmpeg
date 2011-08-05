@@ -46,7 +46,7 @@
 
 typedef enum
 {
-    I_F_Q = -1,    /*!< insufficient frame quality */
+    I_F_Q = -1,    /**< insufficient frame quality */
     SILENCE,
     RATE_OCTAVE,
     RATE_QUARTER,
@@ -58,12 +58,12 @@ typedef struct
 {
     GetBitContext     gb;
     qcelp_packet_rate bitrate;
-    QCELPFrame        frame;    /*!< unpacked data frame */
+    QCELPFrame        frame;    /**< unpacked data frame */
 
     uint8_t  erasure_count;
-    uint8_t  octave_count;      /*!< count the consecutive RATE_OCTAVE frames */
+    uint8_t  octave_count;      /**< count the consecutive RATE_OCTAVE frames */
     float    prev_lspf[10];
-    float    predictor_lspf[10];/*!< LSP predictor for RATE_OCTAVE and I_F_Q */
+    float    predictor_lspf[10];/**< LSP predictor for RATE_OCTAVE and I_F_Q */
     float    pitch_synthesis_filter_mem[303];
     float    pitch_pre_filter_mem[303];
     float    rnd_fir_filter_mem[180];

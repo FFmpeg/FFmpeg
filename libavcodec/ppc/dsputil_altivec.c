@@ -627,16 +627,6 @@ void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
 // it's faster than -funroll-loops, but using
 // -funroll-loops w/ this is bad - 74 cycles again.
 // all this is on a 7450, tuning for the 7450
-#if 0
-    for (i = 0; i < h; i++) {
-        pixelsv1 = vec_ld(0, pixels);
-        pixelsv2 = vec_ld(16, pixels);
-        vec_st(vec_perm(pixelsv1, pixelsv2, perm),
-               0, block);
-        pixels+=line_size;
-        block +=line_size;
-    }
-#else
     for (i = 0; i < h; i += 4) {
         pixelsv1  = vec_ld( 0, pixels);
         pixelsv2  = vec_ld(15, pixels);
@@ -657,7 +647,6 @@ void put_pixels16_altivec(uint8_t *block, const uint8_t *pixels, int line_size, 
         pixels+=line_size_4;
         block +=line_size_4;
     }
-#endif
 }
 
 /* next one assumes that ((line_size % 16) == 0) */
@@ -1384,7 +1373,7 @@ static void avg_pixels8_xy2_altivec(uint8_t *block, const uint8_t *pixels, int l
 
 void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
 {
-    const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+    const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
     c->pix_abs[0][1] = sad16_x2_altivec;
     c->pix_abs[0][2] = sad16_y2_altivec;
@@ -1398,11 +1387,10 @@ void dsputil_init_altivec(DSPContext* c, AVCodecContext *avctx)
     c->sse[0]= sse16_altivec;
     c->pix_sum = pix_sum_altivec;
     c->diff_pixels = diff_pixels_altivec;
-    c->get_pixels = get_pixels_altivec;
-    if (!high_bit_depth)
-    c->clear_block = clear_block_altivec;
     c->add_bytes= add_bytes_altivec;
     if (!high_bit_depth) {
+    c->get_pixels = get_pixels_altivec;
+    c->clear_block = clear_block_altivec;
     c->put_pixels_tab[0][0] = put_pixels16_altivec;
     /* the two functions do the same thing, so use the same code */
     c->put_no_rnd_pixels_tab[0][0] = put_pixels16_altivec;

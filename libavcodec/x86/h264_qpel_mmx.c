@@ -1,5 +1,6 @@
 /*
  * Copyright (c) 2004-2005 Michael Niedermayer, Loren Merritt
+ * Copyright (c) 2011 Daniel Kang
  *
  * This file is part of FFmpeg.
  *
@@ -1198,4 +1199,101 @@ H264_MC_816(H264_MC_HV, sse2)
 #if HAVE_SSSE3
 H264_MC_816(H264_MC_H, ssse3)
 H264_MC_816(H264_MC_HV, ssse3)
+#endif
+
+
+
+//10bit
+#define LUMA_MC_OP(OP, NUM, DEPTH, TYPE, OPT) \
+void ff_ ## OP ## _h264_qpel ## NUM ## _ ## TYPE ## _ ## DEPTH ## _ ## OPT \
+    (uint8_t *dst, uint8_t *src, int stride);
+
+#define LUMA_MC_ALL(DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(put,  4, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(avg,  4, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(put,  8, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(avg,  8, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(put, 16, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(avg, 16, DEPTH, TYPE, OPT)
+
+#define LUMA_MC_816(DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(put,  8, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(avg,  8, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(put, 16, DEPTH, TYPE, OPT) \
+    LUMA_MC_OP(avg, 16, DEPTH, TYPE, OPT)
+
+LUMA_MC_ALL(10, mc00, mmxext)
+LUMA_MC_ALL(10, mc10, mmxext)
+LUMA_MC_ALL(10, mc20, mmxext)
+LUMA_MC_ALL(10, mc30, mmxext)
+LUMA_MC_ALL(10, mc01, mmxext)
+LUMA_MC_ALL(10, mc11, mmxext)
+LUMA_MC_ALL(10, mc21, mmxext)
+LUMA_MC_ALL(10, mc31, mmxext)
+LUMA_MC_ALL(10, mc02, mmxext)
+LUMA_MC_ALL(10, mc12, mmxext)
+LUMA_MC_ALL(10, mc22, mmxext)
+LUMA_MC_ALL(10, mc32, mmxext)
+LUMA_MC_ALL(10, mc03, mmxext)
+LUMA_MC_ALL(10, mc13, mmxext)
+LUMA_MC_ALL(10, mc23, mmxext)
+LUMA_MC_ALL(10, mc33, mmxext)
+
+LUMA_MC_816(10, mc00, sse2)
+LUMA_MC_816(10, mc10, sse2)
+LUMA_MC_816(10, mc10, sse2_cache64)
+LUMA_MC_816(10, mc10, ssse3_cache64)
+LUMA_MC_816(10, mc20, sse2)
+LUMA_MC_816(10, mc20, sse2_cache64)
+LUMA_MC_816(10, mc20, ssse3_cache64)
+LUMA_MC_816(10, mc30, sse2)
+LUMA_MC_816(10, mc30, sse2_cache64)
+LUMA_MC_816(10, mc30, ssse3_cache64)
+LUMA_MC_816(10, mc01, sse2)
+LUMA_MC_816(10, mc11, sse2)
+LUMA_MC_816(10, mc21, sse2)
+LUMA_MC_816(10, mc31, sse2)
+LUMA_MC_816(10, mc02, sse2)
+LUMA_MC_816(10, mc12, sse2)
+LUMA_MC_816(10, mc22, sse2)
+LUMA_MC_816(10, mc32, sse2)
+LUMA_MC_816(10, mc03, sse2)
+LUMA_MC_816(10, mc13, sse2)
+LUMA_MC_816(10, mc23, sse2)
+LUMA_MC_816(10, mc33, sse2)
+
+#define QPEL16_OPMC(OP, MC, MMX)\
+void ff_ ## OP ## _h264_qpel16_ ## MC ## _10_ ## MMX(uint8_t *dst, uint8_t *src, int stride){\
+    ff_ ## OP ## _h264_qpel8_ ## MC ## _10_ ## MMX(dst   , src   , stride);\
+    ff_ ## OP ## _h264_qpel8_ ## MC ## _10_ ## MMX(dst+16, src+16, stride);\
+    src += 8*stride;\
+    dst += 8*stride;\
+    ff_ ## OP ## _h264_qpel8_ ## MC ## _10_ ## MMX(dst   , src   , stride);\
+    ff_ ## OP ## _h264_qpel8_ ## MC ## _10_ ## MMX(dst+16, src+16, stride);\
+}
+
+#define QPEL16_OP(MC, MMX)\
+QPEL16_OPMC(put, MC, MMX)\
+QPEL16_OPMC(avg, MC, MMX)
+
+#define QPEL16(MMX)\
+QPEL16_OP(mc00, MMX)\
+QPEL16_OP(mc01, MMX)\
+QPEL16_OP(mc02, MMX)\
+QPEL16_OP(mc03, MMX)\
+QPEL16_OP(mc10, MMX)\
+QPEL16_OP(mc11, MMX)\
+QPEL16_OP(mc12, MMX)\
+QPEL16_OP(mc13, MMX)\
+QPEL16_OP(mc20, MMX)\
+QPEL16_OP(mc21, MMX)\
+QPEL16_OP(mc22, MMX)\
+QPEL16_OP(mc23, MMX)\
+QPEL16_OP(mc30, MMX)\
+QPEL16_OP(mc31, MMX)\
+QPEL16_OP(mc32, MMX)\
+QPEL16_OP(mc33, MMX)
+
+#if ARCH_X86_32 && HAVE_YASM // ARCH_X86_64 implies sse2+
+QPEL16(mmxext)
 #endif

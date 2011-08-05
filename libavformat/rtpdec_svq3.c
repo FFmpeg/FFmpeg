@@ -22,8 +22,8 @@
 /**
  * @file
  * @brief RTP support for the SV3V (SVQ3) payload
- * (http://wiki.multimedia.cx/index.php?title=Sorenson_Video_3#Packetization)
  * @author Ronald S. Bultje <rbultje@ronald.bitfreak.net>
+ * @see http://wiki.multimedia.cx/index.php?title=Sorenson_Video_3#Packetization
  */
 
 #include <string.h>

@@ -39,6 +39,7 @@ static const uint8_t IP_shuffle[] = {
 };
 #undef T
 
+#if CONFIG_SMALL || defined(GENTABLES)
 #define T(a, b, c, d) 32-a,32-b,32-c,32-d
 static const uint8_t P_shuffle[] = {
     T(16,  7, 20, 21),
@@ -51,6 +52,7 @@ static const uint8_t P_shuffle[] = {
     T(22, 11,  4, 25)
 };
 #undef T
+#endif
 
 #define T(a, b, c, d, e, f, g) 64-a,64-b,64-c,64-d,64-e,64-f,64-g
 static const uint8_t PC1_shuffle[] = {
@@ -240,7 +242,7 @@ static uint32_t f_func(uint32_t r, uint64_t k) {
 }
 
 /**
- * \brief rotate the two halves of the expanded 56 bit key each 1 bit left
+ * @brief rotate the two halves of the expanded 56 bit key each 1 bit left
  *
  * Note: the specification calls this "shift", so I kept it although
  * it is confusing.
@@ -297,10 +299,10 @@ int av_des_init(AVDES *d, const uint8_t *key, int key_bits, int decrypt) {
 }
 
 void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int decrypt) {
-    uint64_t iv_val = iv ? av_be2ne64(*(uint64_t *)iv) : 0;
+    uint64_t iv_val = iv ? AV_RB64(iv) : 0;
     while (count-- > 0) {
         uint64_t dst_val;
-        uint64_t src_val = src ? av_be2ne64(*(const uint64_t *)src) : 0;
+        uint64_t src_val = src ? AV_RB64(src) : 0;
         if (decrypt) {
             uint64_t tmp = src_val;
             if (d->triple_des) {
@@ -317,12 +319,12 @@ void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t
             }
             iv_val = iv ? dst_val : 0;
         }
-        *(uint64_t *)dst = av_be2ne64(dst_val);
+        AV_WB64(dst, dst_val);
         src += 8;
         dst += 8;
     }
     if (iv)
-        *(uint64_t *)iv = av_be2ne64(iv_val);
+        AV_WB64(iv, iv_val);
 }
 
 #ifdef TEST
@@ -402,7 +404,7 @@ int main(void) {
         printf("Partial Monte-Carlo test failed\n");
         return 1;
     }
-    for (i = 0; i < 1000000; i++) {
+    for (i = 0; i < 1000; i++) {
         key[0] = rand64(); key[1] = rand64(); key[2] = rand64();
         data = rand64();
         av_des_init(&d, key, 192, 0);

@@ -881,7 +881,7 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
                 }
             }
 
-            if (s->restart_interval && show_bits(&s->gb, 8) == 0xFF){/* skip RSTn */
+            if (s->restart_interval && show_bits(&s->gb, 8) == 0xFF){ /* skip RSTn */
                 --s->restart_count;
                 align_get_bits(&s->gb);
                 while(show_bits(&s->gb, 8) == 0xFF)
@@ -1258,29 +1258,6 @@ static int mjpeg_decode_com(MJpegDecodeContext *s)
     return 0;
 }
 
-#if 0
-static int valid_marker_list[] =
-{
-        /* 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, a, b, c, d, e, f */
-/* 0 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 1 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 2 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 3 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 4 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 5 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 6 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 7 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 8 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* 9 */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* a */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* b */    0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-/* c */    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-/* d */    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-/* e */    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-/* f */    1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0,
-}
-#endif
-
 /* return the 8 bit start code value and update the search
    state. Return -1 if no start code found */
 static int find_marker(const uint8_t **pbuf_ptr, const uint8_t *buf_end)
@@ -1505,29 +1482,26 @@ eoi_parser:
                         av_log(avctx, AV_LOG_WARNING, "Found EOI before any SOF, ignoring\n");
                         break;
                     }
-                    {
-                        if (s->interlaced) {
-                            s->bottom_field ^= 1;
-                            /* if not bottom field, do not output image yet */
-                            if (s->bottom_field == !s->interlace_polarity)
-                                goto not_the_end;
-                        }
-                        *picture = *s->picture_ptr;
-                        *data_size = sizeof(AVFrame);
-
-                        if(!s->lossless){
-                            picture->quality= FFMAX3(s->qscale[0], s->qscale[1], s->qscale[2]);
-                            picture->qstride= 0;
-                            picture->qscale_table= s->qscale_table;
-                            memset(picture->qscale_table, picture->quality, (s->width+15)/16);
-                            if(avctx->debug & FF_DEBUG_QP)
-                                av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
-                            picture->quality*= FF_QP2LAMBDA;
-                        }
-
-                        goto the_end;
+                    if (s->interlaced) {
+                        s->bottom_field ^= 1;
+                        /* if not bottom field, do not output image yet */
+                        if (s->bottom_field == !s->interlace_polarity)
+                            goto not_the_end;
                     }
-                    break;
+                    *picture = *s->picture_ptr;
+                    *data_size = sizeof(AVFrame);
+
+                    if(!s->lossless){
+                        picture->quality= FFMAX3(s->qscale[0], s->qscale[1], s->qscale[2]);
+                        picture->qstride= 0;
+                        picture->qscale_table= s->qscale_table;
+                        memset(picture->qscale_table, picture->quality, (s->width+15)/16);
+                        if(avctx->debug & FF_DEBUG_QP)
+                            av_log(avctx, AV_LOG_DEBUG, "QP: %d\n", picture->quality);
+                        picture->quality*= FF_QP2LAMBDA;
+                    }
+
+                    goto the_end;
                 case SOS:
                     if (!s->got_picture) {
                         av_log(avctx, AV_LOG_WARNING, "Can not process SOS before SOF, skipping\n");
@@ -1604,31 +1578,27 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_mjpeg_decoder = {
-    "mjpeg",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MJPEG,
-    sizeof(MJpegDecodeContext),
-    ff_mjpeg_decode_init,
-    NULL,
-    ff_mjpeg_decode_end,
-    ff_mjpeg_decode_frame,
-    CODEC_CAP_DR1,
-    NULL,
+    .name           = "mjpeg",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MJPEG,
+    .priv_data_size = sizeof(MJpegDecodeContext),
+    .init           = ff_mjpeg_decode_init,
+    .close          = ff_mjpeg_decode_end,
+    .decode         = ff_mjpeg_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
 };
 
 AVCodec ff_thp_decoder = {
-    "thp",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_THP,
-    sizeof(MJpegDecodeContext),
-    ff_mjpeg_decode_init,
-    NULL,
-    ff_mjpeg_decode_end,
-    ff_mjpeg_decode_frame,
-    CODEC_CAP_DR1,
-    NULL,
+    .name           = "thp",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_THP,
+    .priv_data_size = sizeof(MJpegDecodeContext),
+    .init           = ff_mjpeg_decode_init,
+    .close          = ff_mjpeg_decode_end,
+    .decode         = ff_mjpeg_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("Nintendo Gamecube THP video"),
 };

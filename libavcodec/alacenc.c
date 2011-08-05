@@ -529,13 +529,13 @@ static av_cold int alac_encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_alac_encoder = {
-    "alac",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_ALAC,
-    sizeof(AlacEncodeContext),
-    alac_encode_init,
-    alac_encode_frame,
-    alac_encode_close,
+    .name           = "alac",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_ALAC,
+    .priv_data_size = sizeof(AlacEncodeContext),
+    .init           = alac_encode_init,
+    .encode         = alac_encode_frame,
+    .close          = alac_encode_close,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),

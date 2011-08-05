@@ -1,3 +1,21 @@
+/*
+ * This file is part of Libav.
+ *
+ * Libav is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * Libav is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with Libav; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
 #include "dsputil.h"
 
 #ifndef BIT_DEPTH
@@ -25,15 +43,6 @@
 #   undef PIXEL_SPLAT_X4
 #else
 #   define AVCODEC_H264_HIGH_DEPTH_H
-#   define CLIP_PIXEL(depth)\
-    static inline uint16_t av_clip_pixel_ ## depth (int p)\
-    {\
-        const int pixel_max = (1 << depth)-1;\
-        return (p & ~pixel_max) ? (-p)>>31 & pixel_max : p;\
-    }
-
-CLIP_PIXEL( 9)
-CLIP_PIXEL(10)
 #endif
 
 #if BIT_DEPTH > 8
@@ -52,6 +61,9 @@ CLIP_PIXEL(10)
 #   define AV_WN4P  AV_WN64
 #   define AV_WN4PA AV_WN64A
 #   define PIXEL_SPLAT_X4(x) ((x)*0x0001000100010001ULL)
+
+#   define av_clip_pixel(a) av_clip_uintp2(a, BIT_DEPTH)
+#   define CLIP(a)          av_clip_uintp2(a, BIT_DEPTH)
 #else
 #   define pixel  uint8_t
 #   define pixel2 uint16_t
@@ -68,21 +80,12 @@ CLIP_PIXEL(10)
 #   define AV_WN4P  AV_WN32
 #   define AV_WN4PA AV_WN32A
 #   define PIXEL_SPLAT_X4(x) ((x)*0x01010101U)
-#endif
 
-#if BIT_DEPTH == 8
 #   define av_clip_pixel(a) av_clip_uint8(a)
 #   define CLIP(a) cm[a]
-#   define FUNC(a)  a ## _8
-#   define FUNCC(a) a ## _8_c
-#elif BIT_DEPTH == 9
-#   define av_clip_pixel(a) av_clip_pixel_9(a)
-#   define CLIP(a)          av_clip_pixel_9(a)
-#   define FUNC(a)  a ## _9
-#   define FUNCC(a) a ## _9_c
-#elif BIT_DEPTH == 10
-#   define av_clip_pixel(a) av_clip_pixel_10(a)
-#   define CLIP(a)          av_clip_pixel_10(a)
-#   define FUNC(a)  a ## _10
-#   define FUNCC(a) a ## _10_c
 #endif
+
+#define FUNC3(a, b, c)  a ## _ ## b ## c
+#define FUNC2(a, b, c)  FUNC3(a, b, c)
+#define FUNC(a)  FUNC2(a, BIT_DEPTH,)
+#define FUNCC(a) FUNC2(a, BIT_DEPTH, _c)

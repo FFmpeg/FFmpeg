@@ -18,6 +18,8 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+
+#include "libavutil/mathematics.h"
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "get_bits.h"
@@ -134,13 +136,10 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 }
 
 AVCodec ff_xsub_decoder = {
-    "xsub",
-    AVMEDIA_TYPE_SUBTITLE,
-    CODEC_ID_XSUB,
-    0,
-    decode_init,
-    NULL,
-    NULL,
-    decode_frame,
+    .name      = "xsub",
+    .type      = AVMEDIA_TYPE_SUBTITLE,
+    .id        = CODEC_ID_XSUB,
+    .init      = decode_init,
+    .decode    = decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("XSUB"),
 };

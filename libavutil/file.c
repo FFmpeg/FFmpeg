@@ -17,6 +17,7 @@
  */
 
 #include "file.h"
+#include "log.h"
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>

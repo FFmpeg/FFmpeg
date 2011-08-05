@@ -606,14 +606,13 @@ static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,
 }
 
 AVInputFormat ff_mpegps_demuxer = {
-    "mpeg",
-    NULL_IF_CONFIG_SMALL("MPEG-PS format"),
-    sizeof(MpegDemuxContext),
-    mpegps_probe,
-    mpegps_read_header,
-    mpegps_read_packet,
-    NULL,
-    NULL, //mpegps_read_seek,
-    mpegps_read_dts,
+    .name           = "mpeg",
+    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-PS format"),
+    .priv_data_size = sizeof(MpegDemuxContext),
+    .read_probe     = mpegps_probe,
+    .read_header    = mpegps_read_header,
+    .read_packet    = mpegps_read_packet,
+    .read_seek      = NULL, //mpegps_read_seek,
+    .read_timestamp = mpegps_read_dts,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 };

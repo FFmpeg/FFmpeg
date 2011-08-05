@@ -96,7 +96,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
                                  void *data, int *data_size,
                                  AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
+    uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LibSpeexContext *s = avctx->priv_data;
     int16_t *output = data, *end;
@@ -139,13 +139,12 @@ static av_cold int libspeex_decode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_libspeex_decoder = {
-    "libspeex",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_SPEEX,
-    sizeof(LibSpeexContext),
-    libspeex_decode_init,
-    NULL,
-    libspeex_decode_close,
-    libspeex_decode_frame,
+    .name           = "libspeex",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_SPEEX,
+    .priv_data_size = sizeof(LibSpeexContext),
+    .init           = libspeex_decode_init,
+    .close          = libspeex_decode_close,
+    .decode         = libspeex_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("libspeex Speex"),
 };

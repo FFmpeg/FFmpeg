@@ -27,7 +27,7 @@
  * DSP utils
  */
 
-#include "high_bit_depth.h"
+#include "bit_depth_template.c"
 
 static inline void FUNC(copy_block2)(uint8_t *dst, const uint8_t *src, int dstStride, int srcStride, int h)
 {
@@ -192,187 +192,89 @@ void FUNC(ff_emulated_edge_mc)(uint8_t *buf, const uint8_t *src, int linesize, i
     }
 }
 
-static void FUNCC(add_pixels8)(uint8_t *restrict p_pixels, DCTELEM *p_block, int line_size)
-{
-    int i;
-    pixel *restrict pixels = (pixel *restrict)p_pixels;
-    dctcoef *block = (dctcoef*)p_block;
-    line_size >>= sizeof(pixel)-1;
-
-    for(i=0;i<8;i++) {
-        pixels[0] += block[0];
-        pixels[1] += block[1];
-        pixels[2] += block[2];
-        pixels[3] += block[3];
-        pixels[4] += block[4];
-        pixels[5] += block[5];
-        pixels[6] += block[6];
-        pixels[7] += block[7];
-        pixels += line_size;
-        block += 8;
-    }
+#define DCTELEM_FUNCS(dctcoef, suffix)                                  \
+static void FUNCC(get_pixels ## suffix)(DCTELEM *restrict _block,       \
+                                        const uint8_t *_pixels,         \
+                                        int line_size)                  \
+{                                                                       \
+    const pixel *pixels = (const pixel *) _pixels;                      \
+    dctcoef *restrict block = (dctcoef *) _block;                       \
+    int i;                                                              \
+                                                                        \
+    /* read the pixels */                                               \
+    for(i=0;i<8;i++) {                                                  \
+        block[0] = pixels[0];                                           \
+        block[1] = pixels[1];                                           \
+        block[2] = pixels[2];                                           \
+        block[3] = pixels[3];                                           \
+        block[4] = pixels[4];                                           \
+        block[5] = pixels[5];                                           \
+        block[6] = pixels[6];                                           \
+        block[7] = pixels[7];                                           \
+        pixels += line_size / sizeof(pixel);                            \
+        block += 8;                                                     \
+    }                                                                   \
+}                                                                       \
+                                                                        \
+static void FUNCC(add_pixels8 ## suffix)(uint8_t *restrict _pixels,     \
+                                         DCTELEM *_block,               \
+                                         int line_size)                 \
+{                                                                       \
+    int i;                                                              \
+    pixel *restrict pixels = (pixel *restrict)_pixels;                  \
+    dctcoef *block = (dctcoef*)_block;                                  \
+    line_size /= sizeof(pixel);                                         \
+                                                                        \
+    for(i=0;i<8;i++) {                                                  \
+        pixels[0] += block[0];                                          \
+        pixels[1] += block[1];                                          \
+        pixels[2] += block[2];                                          \
+        pixels[3] += block[3];                                          \
+        pixels[4] += block[4];                                          \
+        pixels[5] += block[5];                                          \
+        pixels[6] += block[6];                                          \
+        pixels[7] += block[7];                                          \
+        pixels += line_size;                                            \
+        block += 8;                                                     \
+    }                                                                   \
+}                                                                       \
+                                                                        \
+static void FUNCC(add_pixels4 ## suffix)(uint8_t *restrict _pixels,     \
+                                         DCTELEM *_block,               \
+                                         int line_size)                 \
+{                                                                       \
+    int i;                                                              \
+    pixel *restrict pixels = (pixel *restrict)_pixels;                  \
+    dctcoef *block = (dctcoef*)_block;                                  \
+    line_size /= sizeof(pixel);                                         \
+                                                                        \
+    for(i=0;i<4;i++) {                                                  \
+        pixels[0] += block[0];                                          \
+        pixels[1] += block[1];                                          \
+        pixels[2] += block[2];                                          \
+        pixels[3] += block[3];                                          \
+        pixels += line_size;                                            \
+        block += 4;                                                     \
+    }                                                                   \
+}                                                                       \
+                                                                        \
+static void FUNCC(clear_block ## suffix)(DCTELEM *block)                \
+{                                                                       \
+    memset(block, 0, sizeof(dctcoef)*64);                               \
+}                                                                       \
+                                                                        \
+/**                                                                     \
+ * memset(blocks, 0, sizeof(DCTELEM)*6*64)                              \
+ */                                                                     \
+static void FUNCC(clear_blocks ## suffix)(DCTELEM *blocks)              \
+{                                                                       \
+    memset(blocks, 0, sizeof(dctcoef)*6*64);                            \
 }
 
-static void FUNCC(add_pixels4)(uint8_t *restrict p_pixels, DCTELEM *p_block, int line_size)
-{
-    int i;
-    pixel *restrict pixels = (pixel *restrict)p_pixels;
-    dctcoef *block = (dctcoef*)p_block;
-    line_size >>= sizeof(pixel)-1;
-
-    for(i=0;i<4;i++) {
-        pixels[0] += block[0];
-        pixels[1] += block[1];
-        pixels[2] += block[2];
-        pixels[3] += block[3];
-        pixels += line_size;
-        block += 4;
-    }
-}
-
-#if 0
-
-#define PIXOP2(OPNAME, OP) \
-static void OPNAME ## _pixels(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
-{\
-    int i;\
-    for(i=0; i<h; i++){\
-        OP(*((uint64_t*)block), AV_RN64(pixels));\
-        pixels+=line_size;\
-        block +=line_size;\
-    }\
-}\
-\
-static void OPNAME ## _no_rnd_pixels_x2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
-{\
-    int i;\
-    for(i=0; i<h; i++){\
-        const uint64_t a= AV_RN64(pixels  );\
-        const uint64_t b= AV_RN64(pixels+1);\
-        OP(*((uint64_t*)block), (a&b) + (((a^b)&0xFEFEFEFEFEFEFEFEULL)>>1));\
-        pixels+=line_size;\
-        block +=line_size;\
-    }\
-}\
-\
-static void OPNAME ## _pixels_x2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
-{\
-    int i;\
-    for(i=0; i<h; i++){\
-        const uint64_t a= AV_RN64(pixels  );\
-        const uint64_t b= AV_RN64(pixels+1);\
-        OP(*((uint64_t*)block), (a|b) - (((a^b)&0xFEFEFEFEFEFEFEFEULL)>>1));\
-        pixels+=line_size;\
-        block +=line_size;\
-    }\
-}\
-\
-static void OPNAME ## _no_rnd_pixels_y2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
-{\
-    int i;\
-    for(i=0; i<h; i++){\
-        const uint64_t a= AV_RN64(pixels          );\
-        const uint64_t b= AV_RN64(pixels+line_size);\
-        OP(*((uint64_t*)block), (a&b) + (((a^b)&0xFEFEFEFEFEFEFEFEULL)>>1));\
-        pixels+=line_size;\
-        block +=line_size;\
-    }\
-}\
-\
-static void OPNAME ## _pixels_y2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
-{\
-    int i;\
-    for(i=0; i<h; i++){\
-        const uint64_t a= AV_RN64(pixels          );\
-        const uint64_t b= AV_RN64(pixels+line_size);\
-        OP(*((uint64_t*)block), (a|b) - (((a^b)&0xFEFEFEFEFEFEFEFEULL)>>1));\
-        pixels+=line_size;\
-        block +=line_size;\
-    }\
-}\
-\
-static void OPNAME ## _pixels_xy2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
-{\
-        int i;\
-        const uint64_t a= AV_RN64(pixels  );\
-        const uint64_t b= AV_RN64(pixels+1);\
-        uint64_t l0=  (a&0x0303030303030303ULL)\
-                    + (b&0x0303030303030303ULL)\
-                    + 0x0202020202020202ULL;\
-        uint64_t h0= ((a&0xFCFCFCFCFCFCFCFCULL)>>2)\
-                   + ((b&0xFCFCFCFCFCFCFCFCULL)>>2);\
-        uint64_t l1,h1;\
-\
-        pixels+=line_size;\
-        for(i=0; i<h; i+=2){\
-            uint64_t a= AV_RN64(pixels  );\
-            uint64_t b= AV_RN64(pixels+1);\
-            l1=  (a&0x0303030303030303ULL)\
-               + (b&0x0303030303030303ULL);\
-            h1= ((a&0xFCFCFCFCFCFCFCFCULL)>>2)\
-              + ((b&0xFCFCFCFCFCFCFCFCULL)>>2);\
-            OP(*((uint64_t*)block), h0+h1+(((l0+l1)>>2)&0x0F0F0F0F0F0F0F0FULL));\
-            pixels+=line_size;\
-            block +=line_size;\
-            a= AV_RN64(pixels  );\
-            b= AV_RN64(pixels+1);\
-            l0=  (a&0x0303030303030303ULL)\
-               + (b&0x0303030303030303ULL)\
-               + 0x0202020202020202ULL;\
-            h0= ((a&0xFCFCFCFCFCFCFCFCULL)>>2)\
-              + ((b&0xFCFCFCFCFCFCFCFCULL)>>2);\
-            OP(*((uint64_t*)block), h0+h1+(((l0+l1)>>2)&0x0F0F0F0F0F0F0F0FULL));\
-            pixels+=line_size;\
-            block +=line_size;\
-        }\
-}\
-\
-static void OPNAME ## _no_rnd_pixels_xy2_c(uint8_t *block, const uint8_t *pixels, int line_size, int h)\
-{\
-        int i;\
-        const uint64_t a= AV_RN64(pixels  );\
-        const uint64_t b= AV_RN64(pixels+1);\
-        uint64_t l0=  (a&0x0303030303030303ULL)\
-                    + (b&0x0303030303030303ULL)\
-                    + 0x0101010101010101ULL;\
-        uint64_t h0= ((a&0xFCFCFCFCFCFCFCFCULL)>>2)\
-                   + ((b&0xFCFCFCFCFCFCFCFCULL)>>2);\
-        uint64_t l1,h1;\
-\
-        pixels+=line_size;\
-        for(i=0; i<h; i+=2){\
-            uint64_t a= AV_RN64(pixels  );\
-            uint64_t b= AV_RN64(pixels+1);\
-            l1=  (a&0x0303030303030303ULL)\
-               + (b&0x0303030303030303ULL);\
-            h1= ((a&0xFCFCFCFCFCFCFCFCULL)>>2)\
-              + ((b&0xFCFCFCFCFCFCFCFCULL)>>2);\
-            OP(*((uint64_t*)block), h0+h1+(((l0+l1)>>2)&0x0F0F0F0F0F0F0F0FULL));\
-            pixels+=line_size;\
-            block +=line_size;\
-            a= AV_RN64(pixels  );\
-            b= AV_RN64(pixels+1);\
-            l0=  (a&0x0303030303030303ULL)\
-               + (b&0x0303030303030303ULL)\
-               + 0x0101010101010101ULL;\
-            h0= ((a&0xFCFCFCFCFCFCFCFCULL)>>2)\
-              + ((b&0xFCFCFCFCFCFCFCFCULL)>>2);\
-            OP(*((uint64_t*)block), h0+h1+(((l0+l1)>>2)&0x0F0F0F0F0F0F0F0FULL));\
-            pixels+=line_size;\
-            block +=line_size;\
-        }\
-}\
-\
-CALL_2X_PIXELS(OPNAME ## _pixels16_c    , OPNAME ## _pixels_c    , 8*sizeof(pixel))\
-CALL_2X_PIXELS(OPNAME ## _pixels16_x2_c , OPNAME ## _pixels_x2_c , 8*sizeof(pixel))\
-CALL_2X_PIXELS(OPNAME ## _pixels16_y2_c , OPNAME ## _pixels_y2_c , 8*sizeof(pixel))\
-CALL_2X_PIXELS(OPNAME ## _pixels16_xy2_c, OPNAME ## _pixels_xy2_c, 8*sizeof(pixel))\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_x2_c , OPNAME ## _no_rnd_pixels_x2_c , 8*sizeof(pixel))\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_y2_c , OPNAME ## _no_rnd_pixels_y2_c , 8*sizeof(pixel))\
-CALL_2X_PIXELS(OPNAME ## _no_rnd_pixels16_xy2_c, OPNAME ## _no_rnd_pixels_xy2_c, 8*sizeof(pixel))
-
-#define op_avg(a, b) a = ( ((a)|(b)) - ((((a)^(b))&0xFEFEFEFEFEFEFEFEULL)>>1) )
-#else // 64 bit variant
+DCTELEM_FUNCS(DCTELEM, _16)
+#if BIT_DEPTH > 8
+DCTELEM_FUNCS(dctcoef, _32)
+#endif
 
 #define PIXOP2(OPNAME, OP) \
 static void FUNCC(OPNAME ## _pixels2)(uint8_t *block, const uint8_t *pixels, int line_size, int h){\
@@ -749,7 +651,6 @@ CALL_2X_PIXELS(FUNCC(OPNAME ## _no_rnd_pixels16_y2) , FUNCC(OPNAME ## _no_rnd_pi
 CALL_2X_PIXELS(FUNCC(OPNAME ## _no_rnd_pixels16_xy2), FUNCC(OPNAME ## _no_rnd_pixels8_xy2), 8*sizeof(pixel))\
 
 #define op_avg(a, b) a = rnd_avg_pixel4(a, b)
-#endif
 #define op_put(a, b) a = b
 
 PIXOP2(avg, op_avg)
@@ -1375,18 +1276,5 @@ void FUNCC(ff_put_pixels16x16)(uint8_t *dst, uint8_t *src, int stride) {
 }
 void FUNCC(ff_avg_pixels16x16)(uint8_t *dst, uint8_t *src, int stride) {
     FUNCC(avg_pixels16)(dst, src, stride, 16);
-}
-
-static void FUNCC(clear_block)(DCTELEM *block)
-{
-    memset(block, 0, sizeof(dctcoef)*64);
-}
-
-/**
- * memset(blocks, 0, sizeof(DCTELEM)*6*64)
- */
-static void FUNCC(clear_blocks)(DCTELEM *blocks)
-{
-    memset(blocks, 0, sizeof(dctcoef)*6*64);
 }
 

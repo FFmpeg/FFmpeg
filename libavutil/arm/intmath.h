@@ -36,6 +36,7 @@ static av_always_inline av_const int FASTDIV(int a, int b)
     int r;
     __asm__ ("cmp     %2, #2               \n\t"
              "ldr     %0, [%3, %2, lsl #2] \n\t"
+             "ite     le                   \n\t"
              "lsrle   %0, %1, #1           \n\t"
              "smmulgt %0, %0, %1           \n\t"
              : "=&r"(r) : "r"(a), "r"(b), "r"(ff_inverse) : "cc");
@@ -101,6 +102,7 @@ static av_always_inline av_const int32_t av_clipl_int32_arm(int64_t a)
 {
     int x, y;
     __asm__ ("adds   %1, %R2, %Q2, lsr #31  \n\t"
+             "itet   ne                     \n\t"
              "mvnne  %1, #1<<31             \n\t"
              "moveq  %0, %Q2                \n\t"
              "eorne  %0, %1,  %R2, asr #31  \n\t"

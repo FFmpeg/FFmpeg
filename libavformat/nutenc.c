@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/tree.h"
 #include "libavutil/dict.h"
 #include "libavcodec/mpegaudiodata.h"
@@ -861,22 +862,22 @@ static int write_trailer(AVFormatContext *s){
 }
 
 AVOutputFormat ff_nut_muxer = {
-    "nut",
-    NULL_IF_CONFIG_SMALL("NUT format"),
-    "video/x-nut",
-    "nut",
-    sizeof(NUTContext),
+    .name           = "nut",
+    .long_name      = NULL_IF_CONFIG_SMALL("NUT format"),
+    .mime_type      = "video/x-nut",
+    .extensions     = "nut",
+    .priv_data_size = sizeof(NUTContext),
 #if   CONFIG_LIBVORBIS
-    CODEC_ID_VORBIS,
+    .audio_codec    = CODEC_ID_VORBIS,
 #elif CONFIG_LIBMP3LAME
-    CODEC_ID_MP3,
+    .audio_codec    = CODEC_ID_MP3,
 #else
-    CODEC_ID_MP2,
+    .audio_codec    = CODEC_ID_MP2,
 #endif
-    CODEC_ID_MPEG4,
-    write_header,
-    write_packet,
-    write_trailer,
+    .video_codec    = CODEC_ID_MPEG4,
+    .write_header   = write_header,
+    .write_packet   = write_packet,
+    .write_trailer  = write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag * const []){ ff_codec_bmp_tags, ff_nut_video_tags, ff_codec_wav_tags, ff_nut_subtitle_tags, 0 },
 };

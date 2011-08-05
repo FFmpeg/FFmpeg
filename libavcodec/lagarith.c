@@ -32,25 +32,25 @@
 #include "lagarithrac.h"
 
 enum LagarithFrameType {
-    FRAME_RAW           = 1,    /*!< uncompressed */
-    FRAME_U_RGB24       = 2,    /*!< unaligned RGB24 */
-    FRAME_ARITH_YUY2    = 3,    /*!< arithmetic coded YUY2 */
-    FRAME_ARITH_RGB24   = 4,    /*!< arithmetic coded RGB24 */
-    FRAME_SOLID_GRAY    = 5,    /*!< solid grayscale color frame */
-    FRAME_SOLID_COLOR   = 6,    /*!< solid non-grayscale color frame */
-    FRAME_OLD_ARITH_RGB = 7,    /*!< obsolete arithmetic coded RGB (no longer encoded by upstream since version 1.1.0) */
-    FRAME_ARITH_RGBA    = 8,    /*!< arithmetic coded RGBA */
-    FRAME_SOLID_RGBA    = 9,    /*!< solid RGBA color frame */
-    FRAME_ARITH_YV12    = 10,   /*!< arithmetic coded YV12 */
-    FRAME_REDUCED_RES   = 11,   /*!< reduced resolution YV12 frame */
+    FRAME_RAW           = 1,    /**< uncompressed */
+    FRAME_U_RGB24       = 2,    /**< unaligned RGB24 */
+    FRAME_ARITH_YUY2    = 3,    /**< arithmetic coded YUY2 */
+    FRAME_ARITH_RGB24   = 4,    /**< arithmetic coded RGB24 */
+    FRAME_SOLID_GRAY    = 5,    /**< solid grayscale color frame */
+    FRAME_SOLID_COLOR   = 6,    /**< solid non-grayscale color frame */
+    FRAME_OLD_ARITH_RGB = 7,    /**< obsolete arithmetic coded RGB (no longer encoded by upstream since version 1.1.0) */
+    FRAME_ARITH_RGBA    = 8,    /**< arithmetic coded RGBA */
+    FRAME_SOLID_RGBA    = 9,    /**< solid RGBA color frame */
+    FRAME_ARITH_YV12    = 10,   /**< arithmetic coded YV12 */
+    FRAME_REDUCED_RES   = 11,   /**< reduced resolution YV12 frame */
 };
 
 typedef struct LagarithContext {
     AVCodecContext *avctx;
     AVFrame picture;
     DSPContext dsp;
-    int zeros;                  /*!< number of consecutive zero bytes encountered */
-    int zeros_rem;              /*!< number of zero bytes remaining to output */
+    int zeros;                  /**< number of consecutive zero bytes encountered */
+    int zeros_rem;              /**< number of zero bytes remaining to output */
 } LagarithContext;
 
 /**
@@ -509,14 +509,13 @@ static av_cold int lag_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_lagarith_decoder = {
-    "lagarith",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_LAGARITH,
-    sizeof(LagarithContext),
-    lag_decode_init,
-    NULL,
-    lag_decode_end,
-    lag_decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "lagarith",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_LAGARITH,
+    .priv_data_size = sizeof(LagarithContext),
+    .init           = lag_decode_init,
+    .close          = lag_decode_end,
+    .decode         = lag_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Lagarith lossless"),
 };

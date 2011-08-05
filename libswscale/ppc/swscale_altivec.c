@@ -98,10 +98,9 @@ yuv2yuvX_altivec_real(SwsContext *c,
                       int lumFilterSize, const int16_t *chrFilter,
                       const int16_t **chrUSrc, const int16_t **chrVSrc,
                       int chrFilterSize, const int16_t **alpSrc,
-                      uint8_t *dest, uint8_t *uDest,
-                      uint8_t *vDest, uint8_t *aDest,
-                      int dstW, int chrDstW)
+                      uint8_t *dest[4], int dstW, int chrDstW)
 {
+    uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2];
     const vector signed int vini = {(1 << 18), (1 << 18), (1 << 18), (1 << 18)};
     register int i, j;
     {
@@ -150,7 +149,7 @@ yuv2yuvX_altivec_real(SwsContext *c,
                 val[i] += lumSrc[j][i] * lumFilter[j];
             }
         }
-        altivec_packIntArrayToCharArray(val, dest, dstW);
+        altivec_packIntArrayToCharArray(val, yDest, dstW);
     }
     if (uDest != 0) {
         DECLARE_ALIGNED(16, int, u)[chrDstW];
@@ -221,9 +220,8 @@ yuv2yuvX_altivec_real(SwsContext *c,
     }
 }
 
-static void hScale_altivec_real(int16_t *dst, int dstW,
-                                const uint8_t *src, int srcW,
-                                int xInc, const int16_t *filter,
+static void hScale_altivec_real(SwsContext *c, int16_t *dst, int dstW,
+                                const uint8_t *src, const int16_t *filter,
                                 const int16_t *filterPos, int filterSize)
 {
     register int i;
@@ -408,17 +406,25 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
-    c->hScale       = hScale_altivec_real;
-    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat)) {
+    if (c->scalingBpp == 8) {
+        c->hScale       = hScale_altivec_real;
+    }
+    if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
+        dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21 &&
+        !c->alpPixBuf) {
         c->yuv2yuvX     = yuv2yuvX_altivec_real;
     }
 
     /* The following list of supported dstFormat values should
      * match what's found in the body of ff_yuv2packedX_altivec() */
-    if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->alpPixBuf &&
-        (c->dstFormat==PIX_FMT_ABGR  || c->dstFormat==PIX_FMT_BGRA  ||
-         c->dstFormat==PIX_FMT_BGR24 || c->dstFormat==PIX_FMT_RGB24 ||
-         c->dstFormat==PIX_FMT_RGBA  || c->dstFormat==PIX_FMT_ARGB)) {
-            c->yuv2packedX  = ff_yuv2packedX_altivec;
+    if (!(c->flags & (SWS_BITEXACT | SWS_FULL_CHR_H_INT)) && !c->alpPixBuf) {
+        switch (c->dstFormat) {
+        case PIX_FMT_ABGR:  c->yuv2packedX = ff_yuv2abgr_X_altivec;  break;
+        case PIX_FMT_BGRA:  c->yuv2packedX = ff_yuv2bgra_X_altivec;  break;
+        case PIX_FMT_ARGB:  c->yuv2packedX = ff_yuv2argb_X_altivec;  break;
+        case PIX_FMT_RGBA:  c->yuv2packedX = ff_yuv2rgba_X_altivec;  break;
+        case PIX_FMT_BGR24: c->yuv2packedX = ff_yuv2bgr24_X_altivec; break;
+        case PIX_FMT_RGB24: c->yuv2packedX = ff_yuv2rgb24_X_altivec; break;
         }
+    }
 }

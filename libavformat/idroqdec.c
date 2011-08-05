@@ -209,7 +209,6 @@ static int roq_read_packet(AVFormatContext *s,
         default:
             av_log(s, AV_LOG_ERROR, "  unknown RoQ chunk (%04X)\n", chunk_type);
             return AVERROR_INVALIDDATA;
-            break;
         }
     }
 
@@ -217,10 +216,10 @@ static int roq_read_packet(AVFormatContext *s,
 }
 
 AVInputFormat ff_roq_demuxer = {
-    "RoQ",
-    NULL_IF_CONFIG_SMALL("id RoQ format"),
-    sizeof(RoqDemuxContext),
-    roq_probe,
-    roq_read_header,
-    roq_read_packet,
+    .name           = "RoQ",
+    .long_name      = NULL_IF_CONFIG_SMALL("id RoQ format"),
+    .priv_data_size = sizeof(RoqDemuxContext),
+    .read_probe     = roq_probe,
+    .read_header    = roq_read_header,
+    .read_packet    = roq_read_packet,
 };

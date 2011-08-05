@@ -49,13 +49,10 @@
 #include <sys/resource.h>
 #endif
 
-const char **opt_names;
-const char **opt_values;
-static int opt_name_count;
 AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
-AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
+AVDictionary *format_opts, *codec_opts;
 
 static const int this_year = 2011;
 
@@ -63,7 +60,7 @@ void init_opts(void)
 {
     int i;
     for (i = 0; i < AVMEDIA_TYPE_NB; i++)
-        avcodec_opts[i] = avcodec_alloc_context2(i);
+        avcodec_opts[i] = avcodec_alloc_context3(NULL);
     avformat_opts = avformat_alloc_context();
 #if CONFIG_SWSCALE
     sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC, NULL, NULL, NULL);
@@ -81,17 +78,8 @@ void uninit_opts(void)
     sws_freeContext(sws_opts);
     sws_opts = NULL;
 #endif
-    for (i = 0; i < opt_name_count; i++) {
-        av_freep(&opt_names[i]);
-        av_freep(&opt_values[i]);
-    }
-    av_freep(&opt_names);
-    av_freep(&opt_values);
-    opt_name_count = 0;
     av_dict_free(&format_opts);
-    av_dict_free(&video_opts);
-    av_dict_free(&audio_opts);
-    av_dict_free(&sub_opts);
+    av_dict_free(&codec_opts);
 }
 
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
@@ -281,7 +269,7 @@ unknown_opt:
                 *po->u.float_arg = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
             } else if (po->u.func_arg) {
                 if (po->u.func_arg(opt, arg) < 0) {
-                    fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
+                    fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg ? arg : "[null]", opt);
                     exit(1);
                 }
             }
@@ -297,20 +285,14 @@ unknown_opt:
 }
 
 #define FLAGS (o->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
-#define SET_PREFIXED_OPTS(ch, flag, output) \
-    if (opt[0] == ch && avcodec_opts[0] && (o = av_opt_find(avcodec_opts[0], opt+1, NULL, flag, 0)))\
-        av_dict_set(&output, opt+1, arg, FLAGS);
-static int opt_default2(const char *opt, const char *arg)
+int opt_default(const char *opt, const char *arg)
 {
     const AVOption *o;
-    if ((o = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
-        if (o->flags & AV_OPT_FLAG_VIDEO_PARAM)
-            av_dict_set(&video_opts, opt, arg, FLAGS);
-        if (o->flags & AV_OPT_FLAG_AUDIO_PARAM)
-            av_dict_set(&audio_opts, opt, arg, FLAGS);
-        if (o->flags & AV_OPT_FLAG_SUBTITLE_PARAM)
-            av_dict_set(&sub_opts, opt, arg, FLAGS);
-    } else if ((o = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
+    if ((o = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)) ||
+         ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
+          (o = av_opt_find(avcodec_opts[0], opt+1, NULL, 0, 0))))
+        av_dict_set(&codec_opts, opt, arg, FLAGS);
+    else if ((o = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
         av_dict_set(&format_opts, opt, arg, FLAGS);
     else if ((o = av_opt_find(sws_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
         // XXX we only support sws_flags, not arbitrary sws options
@@ -321,91 +303,10 @@ static int opt_default2(const char *opt, const char *arg)
         }
     }
 
-    if (!o) {
-        SET_PREFIXED_OPTS('v', AV_OPT_FLAG_VIDEO_PARAM,    video_opts)
-        SET_PREFIXED_OPTS('a', AV_OPT_FLAG_AUDIO_PARAM,    audio_opts)
-        SET_PREFIXED_OPTS('s', AV_OPT_FLAG_SUBTITLE_PARAM, sub_opts)
-    }
-
     if (o)
         return 0;
     fprintf(stderr, "Unrecognized option '%s'\n", opt);
     return AVERROR_OPTION_NOT_FOUND;
-}
-
-int opt_default(const char *opt, const char *arg){
-    int type;
-    int ret= 0;
-    const AVOption *o= NULL;
-    int opt_types[]={AV_OPT_FLAG_VIDEO_PARAM, AV_OPT_FLAG_AUDIO_PARAM, 0, AV_OPT_FLAG_SUBTITLE_PARAM, 0};
-    AVCodec *p = NULL;
-    AVOutputFormat *oformat = NULL;
-    AVInputFormat *iformat = NULL;
-
-    while ((p = av_codec_next(p))) {
-        const AVClass *c = p->priv_class;
-        if (c && av_find_opt(&c, opt, NULL, 0, 0))
-            break;
-    }
-    if (p)
-        goto out;
-    while ((oformat = av_oformat_next(oformat))) {
-        const AVClass *c = oformat->priv_class;
-        if (c && av_find_opt(&c, opt, NULL, 0, 0))
-            break;
-    }
-    if (oformat)
-        goto out;
-    while ((iformat = av_iformat_next(iformat))) {
-        const AVClass *c = iformat->priv_class;
-        if (c && av_find_opt(&c, opt, NULL, 0, 0))
-            break;
-    }
-    if (iformat)
-        goto out;
-
-    for(type=0; *avcodec_opts && type<AVMEDIA_TYPE_NB && ret>= 0; type++){
-        const AVOption *o2 = av_opt_find(avcodec_opts[0], opt, NULL, opt_types[type], 0);
-        if(o2)
-            ret = av_set_string3(avcodec_opts[type], opt, arg, 1, &o);
-    }
-    if(!o && avformat_opts)
-        ret = av_set_string3(avformat_opts, opt, arg, 1, &o);
-    if(!o && sws_opts)
-        ret = av_set_string3(sws_opts, opt, arg, 1, &o);
-    if(!o){
-        if (opt[0] == 'a' && avcodec_opts[AVMEDIA_TYPE_AUDIO])
-            ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_AUDIO], opt+1, arg, 1, &o);
-        else if(opt[0] == 'v' && avcodec_opts[AVMEDIA_TYPE_VIDEO])
-            ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_VIDEO], opt+1, arg, 1, &o);
-        else if(opt[0] == 's' && avcodec_opts[AVMEDIA_TYPE_SUBTITLE])
-            ret = av_set_string3(avcodec_opts[AVMEDIA_TYPE_SUBTITLE], opt+1, arg, 1, &o);
-        if (ret >= 0)
-            opt += 1;
-    }
-    if (o && ret < 0) {
-        fprintf(stderr, "Invalid value '%s' for option '%s'\n", arg, opt);
-        exit(1);
-    }
-    if (!o) {
-        fprintf(stderr, "Unrecognized option '%s'\n", opt);
-        exit(1);
-    }
-
- out:
-    if ((ret = opt_default2(opt, arg)) < 0)
-        return ret;
-
-//    av_log(NULL, AV_LOG_ERROR, "%s:%s: %f 0x%0X\n", opt, arg, av_get_double(avcodec_opts, opt, NULL), (int)av_get_int(avcodec_opts, opt, NULL));
-
-    opt_values= av_realloc(opt_values, sizeof(void*)*(opt_name_count+1));
-    opt_values[opt_name_count] = av_strdup(arg);
-    opt_names= av_realloc(opt_names, sizeof(void*)*(opt_name_count+1));
-    opt_names[opt_name_count++] = av_strdup(opt);
-
-    if ((*avcodec_opts && avcodec_opts[0]->debug) || (avformat_opts && avformat_opts->debug))
-        av_log_set_level(AV_LOG_DEBUG);
-    return 0;
 }
 
 int opt_loglevel(const char *opt, const char *arg)
@@ -454,59 +355,6 @@ int opt_timelimit(const char *opt, const char *arg)
     fprintf(stderr, "Warning: -%s not implemented on this OS\n", opt);
 #endif
     return 0;
-}
-
-static void *alloc_priv_context(int size, const AVClass *class)
-{
-    void *p = av_mallocz(size);
-    if (p) {
-        *(const AVClass **)p = class;
-        av_opt_set_defaults(p);
-    }
-    return p;
-}
-
-void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec)
-{
-    int i;
-    void *priv_ctx=NULL;
-    if(!strcmp("AVCodecContext", (*(AVClass**)ctx)->class_name)){
-        AVCodecContext *avctx= ctx;
-        if(codec && codec->priv_class){
-            if(!avctx->priv_data && codec->priv_data_size)
-                avctx->priv_data= alloc_priv_context(codec->priv_data_size, codec->priv_class);
-            priv_ctx= avctx->priv_data;
-        }
-    } else if (!strcmp("AVFormatContext", (*(AVClass**)ctx)->class_name)) {
-        AVFormatContext *avctx = ctx;
-        if (avctx->oformat && avctx->oformat->priv_class) {
-            priv_ctx = avctx->priv_data;
-        } else if (avctx->iformat && avctx->iformat->priv_class) {
-            priv_ctx = avctx->priv_data;
-        }
-    }
-
-    for(i=0; i<opt_name_count; i++){
-        char buf[256];
-        const AVOption *opt;
-        const char *str;
-        if (priv_ctx) {
-            if (av_find_opt(priv_ctx, opt_names[i], NULL, flags, flags)) {
-                if (av_set_string3(priv_ctx, opt_names[i], opt_values[i], 1, NULL) < 0) {
-                    fprintf(stderr, "Invalid value '%s' for option '%s'\n",
-                            opt_names[i], opt_values[i]);
-                    exit(1);
-                }
-            } else
-                goto global;
-        } else {
-        global:
-            str = av_get_string(opts_ctx, opt_names[i], &opt, buf, sizeof(buf));
-            /* if an option with name opt_names[i] is present in opts_ctx then str is non-NULL */
-            if (str && ((opt->flags & flags) == flags))
-                av_set_string3(ctx, opt_names[i], str, 1, NULL);
-        }
-    }
 }
 
 void print_error(const char *filename, int err)
@@ -574,12 +422,13 @@ void show_banner(void)
     print_all_libs_info(stderr, INDENT|SHOW_VERSION);
 }
 
-void show_version(void) {
+int opt_version(const char *opt, const char *arg) {
     printf("%s " FFMPEG_VERSION "\n", program_name);
     print_all_libs_info(stdout, SHOW_VERSION);
+    return 0;
 }
 
-void show_license(void)
+int opt_license(const char *opt, const char *arg)
 {
     printf(
 #if CONFIG_NONFREE
@@ -646,9 +495,10 @@ void show_license(void)
     program_name, program_name, program_name
 #endif
     );
+    return 0;
 }
 
-void show_formats(void)
+int opt_formats(const char *opt, const char *arg)
 {
     AVInputFormat *ifmt=NULL;
     AVOutputFormat *ofmt=NULL;
@@ -695,9 +545,10 @@ void show_formats(void)
             name,
             long_name ? long_name:" ");
     }
+    return 0;
 }
 
-void show_codecs(void)
+int opt_codecs(const char *opt, const char *arg)
 {
     AVCodec *p=NULL, *p2;
     const char *last_name;
@@ -771,9 +622,10 @@ void show_codecs(void)
 "even though both encoding and decoding are supported. For example, the h263\n"
 "decoder corresponds to the h263 and h263p encoders, for file formats it is even\n"
 "worse.\n");
+    return 0;
 }
 
-void show_bsfs(void)
+int opt_bsfs(const char *opt, const char *arg)
 {
     AVBitStreamFilter *bsf=NULL;
 
@@ -781,9 +633,10 @@ void show_bsfs(void)
     while((bsf = av_bitstream_filter_next(bsf)))
         printf("%s\n", bsf->name);
     printf("\n");
+    return 0;
 }
 
-void show_protocols(void)
+int opt_protocols(const char *opt, const char *arg)
 {
     URLProtocol *up=NULL;
 
@@ -799,9 +652,10 @@ void show_protocols(void)
                up->url_write ? 'O' : '.',
                up->url_seek  ? 'S' : '.',
                up->name);
+    return 0;
 }
 
-void show_filters(void)
+int opt_filters(const char *opt, const char *arg)
 {
     AVFilter av_unused(**filter) = NULL;
 
@@ -810,9 +664,10 @@ void show_filters(void)
     while ((filter = av_filter_next(filter)) && *filter)
         printf("%-16s %s\n", (*filter)->name, (*filter)->description);
 #endif
+    return 0;
 }
 
-void show_pix_fmts(void)
+int opt_pix_fmts(const char *opt, const char *arg)
 {
     enum PixelFormat pix_fmt;
 
@@ -843,6 +698,7 @@ void show_pix_fmts(void)
                pix_desc->nb_components,
                av_get_bits_per_pixel(pix_desc));
     }
+    return 0;
 }
 
 int read_yesno(void)
@@ -926,3 +782,48 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 
     return f;
 }
+
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder)
+{
+    AVDictionary    *ret = NULL;
+    AVDictionaryEntry *t = NULL;
+    AVCodec       *codec = encoder ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
+    int            flags = encoder ? AV_OPT_FLAG_ENCODING_PARAM : AV_OPT_FLAG_DECODING_PARAM;
+    char          prefix = 0;
+
+    if (!codec)
+        return NULL;
+
+    switch (codec->type) {
+    case AVMEDIA_TYPE_VIDEO:    prefix = 'v'; flags |= AV_OPT_FLAG_VIDEO_PARAM;    break;
+    case AVMEDIA_TYPE_AUDIO:    prefix = 'a'; flags |= AV_OPT_FLAG_AUDIO_PARAM;    break;
+    case AVMEDIA_TYPE_SUBTITLE: prefix = 's'; flags |= AV_OPT_FLAG_SUBTITLE_PARAM; break;
+    }
+
+    while (t = av_dict_get(opts, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        if (av_opt_find(avcodec_opts[0], t->key, NULL, flags, 0) ||
+            (codec && codec->priv_class && av_opt_find(&codec->priv_class, t->key, NULL, flags, 0)))
+            av_dict_set(&ret, t->key, t->value, 0);
+        else if (t->key[0] == prefix && av_opt_find(avcodec_opts[0], t->key+1, NULL, flags, 0))
+            av_dict_set(&ret, t->key+1, t->value, 0);
+    }
+    return ret;
+}
+
+AVDictionary **setup_find_stream_info_opts(AVFormatContext *s, AVDictionary *codec_opts)
+{
+    int i;
+    AVDictionary **opts;
+
+    if (!s->nb_streams)
+        return NULL;
+    opts = av_mallocz(s->nb_streams * sizeof(*opts));
+    if (!opts) {
+        av_log(NULL, AV_LOG_ERROR, "Could not alloc memory for stream options.\n");
+        return NULL;
+    }
+    for (i = 0; i < s->nb_streams; i++)
+        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id, 0);
+    return opts;
+}
+

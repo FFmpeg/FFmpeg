@@ -1,0 +1,164 @@
+Evaluating ''
+'' -> nan
+
+Evaluating '1;2'
+'1;2' -> 2.000000
+
+Evaluating '-20'
+'-20' -> -20.000000
+
+Evaluating '-PI'
+'-PI' -> -3.141593
+
+Evaluating '+PI'
+'+PI' -> 3.141593
+
+Evaluating '1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)'
+'1+(5-2)^(3-1)+1/2+sin(PI)-max(-2.2,-3.1)' -> 12.700000
+
+Evaluating '80G/80Gi'
+'80G/80Gi' -> 0.931323
+
+Evaluating '1k'
+'1k' -> 1000.000000
+
+Evaluating '1Gi'
+'1Gi' -> 1073741824.000000
+
+Evaluating '1gi'
+'1gi' -> nan
+
+Evaluating '1GiFoo'
+'1GiFoo' -> nan
+
+Evaluating '1k+1k'
+'1k+1k' -> 2000.000000
+
+Evaluating '1Gi*3foo'
+'1Gi*3foo' -> nan
+
+Evaluating 'foo'
+'foo' -> nan
+
+Evaluating 'foo('
+'foo(' -> nan
+
+Evaluating 'foo()'
+'foo()' -> nan
+
+Evaluating 'foo)'
+'foo)' -> nan
+
+Evaluating 'sin'
+'sin' -> nan
+
+Evaluating 'sin('
+'sin(' -> nan
+
+Evaluating 'sin()'
+'sin()' -> nan
+
+Evaluating 'sin)'
+'sin)' -> nan
+
+Evaluating 'sin 10'
+'sin 10' -> nan
+
+Evaluating 'sin(1,2,3)'
+'sin(1,2,3)' -> nan
+
+Evaluating 'sin(1 )'
+'sin(1 )' -> 0.841471
+
+Evaluating '1'
+'1' -> 1.000000
+
+Evaluating '1foo'
+'1foo' -> nan
+
+Evaluating 'bar + PI + E + 100f*2 + foo'
+'bar + PI + E + 100f*2 + foo' -> nan
+
+Evaluating '13k + 12f - foo(1, 2)'
+'13k + 12f - foo(1, 2)' -> nan
+
+Evaluating '1gi'
+'1gi' -> nan
+
+Evaluating '1Gi'
+'1Gi' -> 1073741824.000000
+
+Evaluating 'st(0, 123)'
+'st(0, 123)' -> 123.000000
+
+Evaluating 'st(1, 123); ld(1)'
+'st(1, 123); ld(1)' -> 123.000000
+
+Evaluating 'st(0, 1); while(lte(ld(0), 100), st(1, ld(1)+ld(0));st(0, ld(0)+1)); ld(1)'
+'st(0, 1); while(lte(ld(0), 100), st(1, ld(1)+ld(0));st(0, ld(0)+1)); ld(1)' -> 4950.000000
+
+Evaluating 'st(1, 1); st(2, 2); st(0, 1); while(lte(ld(0),10), st(3, ld(1)+ld(2)); st(1, ld(2)); st(2, ld(3)); st(0, ld(0)+1)); ld(3)'
+'st(1, 1); st(2, 2); st(0, 1); while(lte(ld(0),10), st(3, ld(1)+ld(2)); st(1, ld(2)); st(2, ld(3)); st(0, ld(0)+1)); ld(3)' -> 144.000000
+
+Evaluating 'while(0, 10)'
+'while(0, 10)' -> nan
+
+Evaluating 'st(0, 1); while(lte(ld(0),100), st(1, ld(1)+ld(0)); st(0, ld(0)+1))'
+'st(0, 1); while(lte(ld(0),100), st(1, ld(1)+ld(0)); st(0, ld(0)+1))' -> 100.000000
+
+Evaluating 'isnan(1)'
+'isnan(1)' -> 0.000000
+
+Evaluating 'isnan(NAN)'
+'isnan(NAN)' -> 1.000000
+
+Evaluating 'floor(NAN)'
+'floor(NAN)' -> nan
+
+Evaluating 'floor(123.123)'
+'floor(123.123)' -> 123.000000
+
+Evaluating 'floor(-123.123)'
+'floor(-123.123)' -> -124.000000
+
+Evaluating 'trunc(123.123)'
+'trunc(123.123)' -> 123.000000
+
+Evaluating 'trunc(-123.123)'
+'trunc(-123.123)' -> -123.000000
+
+Evaluating 'ceil(123.123)'
+'ceil(123.123)' -> 124.000000
+
+Evaluating 'ceil(-123.123)'
+'ceil(-123.123)' -> -123.000000
+
+Evaluating 'sqrt(1764)'
+'sqrt(1764)' -> 42.000000
+
+Evaluating 'sqrt(-1)'
+'sqrt(-1)' -> nan
+
+Evaluating 'not(1)'
+'not(1)' -> 0.000000
+
+Evaluating 'not(NAN)'
+'not(NAN)' -> 0.000000
+
+Evaluating 'not(0)'
+'not(0)' -> 1.000000
+
+Evaluating 'pow(0,1.23)'
+'pow(0,1.23)' -> 0.000000
+
+Evaluating 'pow(PI,1.23)'
+'pow(PI,1.23)' -> 4.087844
+
+Evaluating 'PI^1.23'
+'PI^1.23' -> 4.087844
+
+Evaluating 'pow(-1,1.23)'
+'pow(-1,1.23)' -> nan
+
+12.700000 == 12.7
+0.931323 == 0.931322575

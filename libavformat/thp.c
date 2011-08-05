@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 
 typedef struct ThpDemuxContext {
@@ -188,10 +189,10 @@ static int thp_read_packet(AVFormatContext *s,
 }
 
 AVInputFormat ff_thp_demuxer = {
-    "thp",
-    NULL_IF_CONFIG_SMALL("THP"),
-    sizeof(ThpDemuxContext),
-    thp_probe,
-    thp_read_header,
-    thp_read_packet
+    .name           = "thp",
+    .long_name      = NULL_IF_CONFIG_SMALL("THP"),
+    .priv_data_size = sizeof(ThpDemuxContext),
+    .read_probe     = thp_probe,
+    .read_header    = thp_read_header,
+    .read_packet    = thp_read_packet
 };

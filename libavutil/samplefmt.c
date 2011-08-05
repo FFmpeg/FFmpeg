@@ -85,7 +85,7 @@ int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
                            enum AVSampleFormat sample_fmt, int planar, int align)
 {
     int i, linesize;
-    int sample_size = av_get_bits_per_sample_fmt(sample_fmt) >> 3;
+    int sample_size = av_get_bytes_per_sample(sample_fmt);
 
     if (nb_channels * (uint64_t)nb_samples * sample_size >= INT_MAX - align*(uint64_t)nb_channels)
         return AVERROR(EINVAL);

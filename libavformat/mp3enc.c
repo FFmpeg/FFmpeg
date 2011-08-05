@@ -21,10 +21,14 @@
 
 #include <strings.h>
 #include "avformat.h"
+#include "avio_internal.h"
 #include "id3v1.h"
 #include "id3v2.h"
 #include "rawenc.h"
 #include "libavutil/avstring.h"
+#include "libavcodec/mpegaudio.h"
+#include "libavcodec/mpegaudiodata.h"
+#include "libavcodec/mpegaudiodecheader.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/opt.h"
 #include "libavcodec/mpegaudio.h"
@@ -132,34 +136,6 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
     return len + ID3v2_HEADER_SIZE;
 }
 
-static int mp2_write_trailer(struct AVFormatContext *s)
-{
-    uint8_t buf[ID3v1_TAG_SIZE];
-
-    /* write the id3v1 tag */
-    if (id3v1_create_tag(s, buf) > 0) {
-        avio_write(s->pb, buf, ID3v1_TAG_SIZE);
-        avio_flush(s->pb);
-    }
-    return 0;
-}
-
-#if CONFIG_MP2_MUXER
-AVOutputFormat ff_mp2_muxer = {
-    "mp2",
-    NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
-    "audio/x-mpeg",
-    "mp2,m2a",
-    0,
-    CODEC_ID_MP2,
-    CODEC_ID_NONE,
-    NULL,
-    ff_raw_write_packet,
-    mp2_write_trailer,
-};
-#endif
-
-#if CONFIG_MP3_MUXER
 #define VBR_NUM_BAGS 400
 #define VBR_TOC_SIZE 100
 typedef struct MP3Context {
@@ -173,6 +149,43 @@ typedef struct MP3Context {
     uint32_t pos;
     uint64_t bag[VBR_NUM_BAGS];
 } MP3Context;
+
+static int mp2_write_trailer(struct AVFormatContext *s)
+{
+    uint8_t buf[ID3v1_TAG_SIZE];
+    MP3Context *mp3 = s->priv_data;
+
+    /* write the id3v1 tag */
+    if (id3v1_create_tag(s, buf) > 0) {
+        avio_write(s->pb, buf, ID3v1_TAG_SIZE);
+    }
+
+    /* write number of frames */
+    if (mp3 && mp3->frames_offset) {
+        avio_seek(s->pb, mp3->frames_offset, SEEK_SET);
+        avio_wb32(s->pb, s->streams[0]->nb_frames);
+        avio_seek(s->pb, 0, SEEK_END);
+    }
+
+    avio_flush(s->pb);
+
+    return 0;
+}
+
+#if CONFIG_MP2_MUXER
+AVOutputFormat ff_mp2_muxer = {
+    .name              = "mp2",
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG audio layer 2"),
+    .mime_type         = "audio/x-mpeg",
+    .extensions        = "mp2,m2a",
+    .audio_codec       = CODEC_ID_MP2,
+    .video_codec       = CODEC_ID_NONE,
+    .write_packet      = ff_raw_write_packet,
+    .write_trailer     = mp2_write_trailer,
+};
+#endif
+
+#if CONFIG_MP3_MUXER
 
 static const AVOption options[] = {
     { "id3v2_version", "Select ID3v2 version to write. Currently 3 and 4 are supported.",
@@ -444,17 +457,17 @@ static int mp3_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_mp3_muxer = {
-    "mp3",
-    NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
-    "audio/x-mpeg",
-    "mp3",
-    sizeof(MP3Context),
-    CODEC_ID_MP3,
-    CODEC_ID_NONE,
-    mp3_write_header,
-    mp3_write_packet,
-    mp3_write_trailer,
-    AVFMT_NOTIMESTAMPS,
+    .name              = "mp3",
+    .long_name         = NULL_IF_CONFIG_SMALL("MPEG audio layer 3"),
+    .mime_type         = "audio/x-mpeg",
+    .extensions        = "mp3",
+    .priv_data_size    = sizeof(MP3Context),
+    .audio_codec       = CODEC_ID_MP3,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = mp3_write_header,
+    .write_packet      = mp3_write_packet,
+    .write_trailer     = mp3_write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
     .priv_class = &mp3_muxer_class,
 };
 #endif

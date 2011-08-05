@@ -57,6 +57,7 @@ function ff_dct_unquantize_h263_neon, export=1
         subs            r3,  r3,  #16
         vst1.16         {q0},     [r1,:128]!
         vst1.16         {q8},     [r1,:128]!
+        it              le
         bxle            lr
         cmp             r3,  #8
         bgt             1b
@@ -78,6 +79,7 @@ function ff_dct_unquantize_h263_intra_neon, export=1
         ldr             r6,  [r0, #AC_PRED]
         add             lr,  r0,  #INTER_SCANTAB_RASTER_END
         cmp             r6,  #0
+        it              ne
         movne           r12, #63
         bne             1f
         ldr             r12, [r12, r2, lsl #2]
@@ -86,9 +88,11 @@ function ff_dct_unquantize_h263_intra_neon, export=1
         ldrsh           r4,  [r1]
         cmp             r5,  #0
         mov             r5,  r1
+        it              ne
         movne           r2,  #0
         bne             2f
         cmp             r2,  #4
+        it              ge
         addge           r0,  r0,  #4
         sub             r2,  r3,  #1
         ldr             r6,  [r0, #Y_DC_SCALE]

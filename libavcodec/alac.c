@@ -23,9 +23,7 @@
  * @file
  * ALAC (Apple Lossless Audio Codec) decoder
  * @author 2005 David Hammerton
- *
- * For more information on the ALAC format, visit:
- *  http://crazney.net/programs/itunes/alac.html
+ * @see http://crazney.net/programs/itunes/alac.html
  *
  * Note: This decoder expects a 36- (0x24-)byte QuickTime atom to be
  * passed through the extradata[_size] fields. This atom is tacked onto
@@ -286,20 +284,9 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
             buffer_out[i+1] = val;
         }
 
-#if 0
     /* 4 and 8 are very common cases (the only ones i've seen). these
      * should be unrolled and optimized
      */
-    if (predictor_coef_num == 4) {
-        /* FIXME: optimized general case */
-        return;
-    }
-
-    if (predictor_coef_table == 8) {
-        /* FIXME: optimized general case */
-        return;
-    }
-#endif
 
     /* general case */
     if (predictor_coef_num > 0) {
@@ -692,13 +679,12 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_alac_decoder = {
-    "alac",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_ALAC,
-    sizeof(ALACContext),
-    alac_decode_init,
-    NULL,
-    alac_decode_close,
-    alac_decode_frame,
+    .name           = "alac",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_ALAC,
+    .priv_data_size = sizeof(ALACContext),
+    .init           = alac_decode_init,
+    .close          = alac_decode_close,
+    .decode         = alac_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };

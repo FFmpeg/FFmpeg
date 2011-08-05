@@ -198,6 +198,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (BLKSIZE - 4 * avctx->channels) * 8 / (4 * avctx->channels) + 1; /* each 16 bits sample gives one nibble */
                                                              /* and we have 4 bytes per channel overhead */
         avctx->block_align = BLKSIZE;
+        avctx->bits_per_coded_sample = 4;
         /* seems frame_size isn't taken into account... have to buffer the samples :-( */
         break;
     case CODEC_ID_ADPCM_IMA_QT:
@@ -208,6 +209,7 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         avctx->frame_size = (BLKSIZE - 7 * avctx->channels) * 2 / avctx->channels + 2; /* each 16 bits sample gives one nibble */
                                                              /* and we have 7 bytes per channel overhead */
         avctx->block_align = BLKSIZE;
+        avctx->bits_per_coded_sample = 4;
         avctx->extradata_size = 32;
         extradata = avctx->extradata = av_malloc(avctx->extradata_size);
         if (!extradata)

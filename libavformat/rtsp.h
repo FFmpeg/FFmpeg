@@ -220,9 +220,6 @@ typedef struct RTSPState {
      * see rtsp_read_play() and rtsp_read_seek(). */
     int64_t seek_timestamp;
 
-    /* XXX: currently we use unbuffered input */
-    //    AVIOContext rtsp_gb;
-
     int seq;                          /**< RTSP command sequence number */
 
     /** copy of RTSPMessageHeader->session_id, i.e. the server-provided session
@@ -488,9 +485,9 @@ void ff_rtsp_close_streams(AVFormatContext *s);
 /**
  * Close all connection handles within the RTSP (de)muxer
  *
- * @param rt RTSP (de)muxer context
+ * @param s RTSP (de)muxer context
  */
-void ff_rtsp_close_connections(AVFormatContext *rt);
+void ff_rtsp_close_connections(AVFormatContext *s);
 
 /**
  * Get the description of the stream and set up the RTSPStream child
@@ -505,8 +502,9 @@ int ff_rtsp_setup_input_streams(AVFormatContext *s, RTSPMessageHeader *reply);
 int ff_rtsp_setup_output_streams(AVFormatContext *s, const char *addr);
 
 /**
- * Parse a SDP description of streams by populating an RTSPState struct
- * within the AVFormatContext.
+ * Parse an SDP description of streams by populating an RTSPState struct
+ * within the AVFormatContext; also allocate the RTP streams and the
+ * pollfd array used for UDP streams.
  */
 int ff_sdp_parse(AVFormatContext *s, const char *content);
 
@@ -525,6 +523,7 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt);
 /**
  * Do the SETUP requests for each stream for the chosen
  * lower transport mode.
+ * @return 0 on success, <0 on error, 1 if protocol is unavailable
  */
 int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                                int lower_transport, const char *real_challenge);

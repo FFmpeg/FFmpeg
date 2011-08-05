@@ -208,7 +208,6 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
 
     FfmpegSchroDecoderParams *p_schro_params = avccontext->priv_data;
     SchroDecoder *decoder = p_schro_params->decoder;
-    SchroVideoFormat *format;
     AVPicture *picture = data;
     SchroBuffer *enc_buf;
     SchroFrame* frame;
@@ -240,7 +239,6 @@ static int libschroedinger_decode_frame(AVCodecContext *avccontext,
             go = 1;
         } else
             outer = 0;
-        format = p_schro_params->format;
 
         while (go) {
             /* Parse data and process result. */
@@ -347,15 +345,14 @@ static void libschroedinger_flush(AVCodecContext *avccontext)
 }
 
 AVCodec ff_libschroedinger_decoder = {
-    "libschroedinger",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DIRAC,
-    sizeof(FfmpegSchroDecoderParams),
-    libschroedinger_decode_init,
-    NULL,
-    libschroedinger_decode_close,
-    libschroedinger_decode_frame,
-    CODEC_CAP_DELAY,
+    .name           = "libschroedinger",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DIRAC,
+    .priv_data_size = sizeof(FfmpegSchroDecoderParams),
+    .init           = libschroedinger_decode_init,
+    .close          = libschroedinger_decode_close,
+    .decode         = libschroedinger_decode_frame,
+    .capabilities   = CODEC_CAP_DELAY,
     .flush = libschroedinger_flush,
     .long_name = NULL_IF_CONFIG_SMALL("libschroedinger Dirac 2.2"),
 };

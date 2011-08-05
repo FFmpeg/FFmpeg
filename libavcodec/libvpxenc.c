@@ -31,6 +31,7 @@
 #include "avcodec.h"
 #include "libavutil/base64.h"
 #include "libavutil/opt.h"
+#include "libavutil/mathematics.h"
 
 /**
  * Portion of struct vpx_codec_cx_pkt from vpx_encoder.h.
@@ -545,15 +546,14 @@ static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
 }
 
 AVCodec ff_libvpx_encoder = {
-    "libvpx",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_VP8,
-    sizeof(VP8Context),
-    vp8_init,
-    vp8_encode,
-    vp8_free,
-    NULL,
-    CODEC_CAP_DELAY,
+    .name           = "libvpx",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_VP8,
+    .priv_data_size = sizeof(VP8Context),
+    .init           = vp8_init,
+    .encode         = vp8_encode,
+    .close          = vp8_free,
+    .capabilities   = CODEC_CAP_DELAY,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .priv_class= &class,

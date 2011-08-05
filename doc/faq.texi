@@ -47,7 +47,7 @@ Likely reasons
 @item We are busy and haven't had time yet to read your report or
 investigate the issue.
 @item You didn't follow @url{http://ffmpeg.org/bugreports.html}.
-@item You didn't use git HEAD.
+@item You didn't use git master.
 @item You reported a segmentation fault without gdb output.
 @item You describe a problem but not how to reproduce it.
 @item It's unclear if you use ffmpeg as command line tool or use
@@ -123,7 +123,8 @@ problem and an NP-hard problem...
 
 @section ffmpeg does not work; what is wrong?
 
-Try a @code{make distclean} in the ffmpeg source directory before the build. If this does not help see
+Try a @code{make distclean} in the ffmpeg source directory before the build.
+If this does not help see
 (@url{http://ffmpeg.org/bugreports.html}).
 
 @section How do I encode single pictures into movies?
@@ -285,7 +286,8 @@ Just create an "input.avs" text file with this single line ...
   ffmpeg -i input.avs
 @end example
 
-For ANY other help on Avisynth, please visit @url{http://www.avisynth.org/}.
+For ANY other help on Avisynth, please visit the
+@uref{http://www.avisynth.org/, Avisynth homepage}.
 
 @section How can I join video files?
 
@@ -417,7 +419,7 @@ No. These tools are too bloated and they complicate the build.
 FFmpeg is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
 favor straight C; it works for them. For more arguments on this matter,
-read "Programming Religion" at (@url{http://www.tux.org/lkml/#s15}).
+read @uref{http://www.tux.org/lkml/#s15, "Programming Religion"}.
 
 @section Why are the ffmpeg programs devoid of debugging symbols?
 

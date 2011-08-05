@@ -30,6 +30,7 @@
 #include <string.h>
 
 #include "libavutil/crc.h"
+#include "libavutil/opt.h"
 #include "internal.h"
 #include "aac_ac3_parser.h"
 #include "ac3_parser.h"
@@ -1438,6 +1439,20 @@ static av_cold int ac3_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(AC3DecodeContext, x)
+#define PAR (AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_AUDIO_PARAM)
+static const AVOption options[] = {
+    { "drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), FF_OPT_TYPE_FLOAT, {1.0}, 0.0, 1.0, PAR },
+    { NULL},
+};
+
+static const AVClass ac3_decoder_class = {
+    .class_name = "(E-)AC3 decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_ac3_decoder = {
     .name = "ac3",
     .type = AVMEDIA_TYPE_AUDIO,
@@ -1450,6 +1465,7 @@ AVCodec ff_ac3_decoder = {
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
+    .priv_class = &ac3_decoder_class,
 };
 
 #if CONFIG_EAC3_DECODER
@@ -1465,5 +1481,6 @@ AVCodec ff_eac3_decoder = {
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
+    .priv_class = &ac3_decoder_class,
 };
 #endif

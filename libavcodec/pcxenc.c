@@ -20,10 +20,10 @@
  */
 
 /**
- * PCX image encoder
  * @file
+ * PCX image encoder
  * @author Daniel Verkamp
- * @sa http://www.qzx.com/pc-gpe/pcx.txt
+ * @see http://www.qzx.com/pc-gpe/pcx.txt
  */
 
 #include "avcodec.h"
@@ -190,13 +190,12 @@ static int pcx_encode_frame(AVCodecContext *avctx,
 }
 
 AVCodec ff_pcx_encoder = {
-    "pcx",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_PCX,
-    sizeof(PCXContext),
-    pcx_encode_init,
-    pcx_encode_frame,
-    NULL,
+    .name           = "pcx",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_PCX,
+    .priv_data_size = sizeof(PCXContext),
+    .init           = pcx_encode_init,
+    .encode         = pcx_encode_frame,
     .pix_fmts = (const enum PixelFormat[]){
         PIX_FMT_RGB24,
         PIX_FMT_RGB8, PIX_FMT_BGR8, PIX_FMT_RGB4_BYTE, PIX_FMT_BGR4_BYTE, PIX_FMT_GRAY8, PIX_FMT_PAL8,

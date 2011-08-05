@@ -143,6 +143,7 @@ static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
     printf("pos=%"PRId64"\n"   , pkt->pos);
     printf("flags=%c\n"        , pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     printf("[/PACKET]\n");
+    fflush(stdout);
 }
 
 static void show_packets(AVFormatContext *fmt_ctx)
@@ -201,6 +202,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
             }
             printf("pix_fmt=%s\n",                 dec_ctx->pix_fmt != PIX_FMT_NONE ?
                    av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
+            printf("level=%d\n",                   dec_ctx->level);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
@@ -231,6 +233,7 @@ static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/STREAM]\n");
+    fflush(stdout);
 }
 
 static void show_format(AVFormatContext *fmt_ctx)
@@ -257,6 +260,7 @@ static void show_format(AVFormatContext *fmt_ctx)
         printf("TAG:%s=%s\n", tag->key, tag->value);
 
     printf("[/FORMAT]\n");
+    fflush(stdout);
 }
 
 static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
@@ -291,7 +295,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
         if (!(codec = avcodec_find_decoder(stream->codec->codec_id))) {
             fprintf(stderr, "Unsupported codec with id %d for input stream %d\n",
                     stream->codec->codec_id, stream->index);
-        } else if (avcodec_open(stream->codec, codec) < 0) {
+        } else if (avcodec_open2(stream->codec, codec, NULL) < 0) {
             fprintf(stderr, "Error while opening codec for input stream %d\n",
                     stream->index);
         }
@@ -353,7 +357,7 @@ static int opt_input_file(const char *opt, const char *arg)
     return 0;
 }
 
-static void show_help(void)
+static int opt_help(const char *opt, const char *arg)
 {
     av_log_set_callback(log_callback_help);
     show_usage();
@@ -361,14 +365,16 @@ static void show_help(void)
     printf("\n");
     av_opt_show2(avformat_opts, NULL,
                  AV_OPT_FLAG_DECODING_PARAM, 0);
+    return 0;
 }
 
-static void opt_pretty(void)
+static int opt_pretty(const char *opt, const char *arg)
 {
     show_value_unit              = 1;
     use_value_prefix             = 1;
     use_byte_value_binary_prefix = 1;
     use_value_sexagesimal_format = 1;
+    return 0;
 }
 
 static const OptionDef options[] = {

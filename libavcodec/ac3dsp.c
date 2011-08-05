@@ -164,21 +164,8 @@ static void ac3_extract_exponents_c(uint8_t *exp, int32_t *coef, int nb_coefs)
     int i;
 
     for (i = 0; i < nb_coefs; i++) {
-        int e;
         int v = abs(coef[i]);
-        if (v == 0)
-            e = 24;
-        else {
-            e = 23 - av_log2(v);
-            if (e >= 24) {
-                e = 24;
-                coef[i] = 0;
-            } else if (e < 0) {
-                e = 0;
-                coef[i] = av_clip(coef[i], -16777215, 16777215);
-            }
-        }
-        exp[i] = e;
+        exp[i] = v ? 23 - av_log2(v) : 24;
     }
 }
 

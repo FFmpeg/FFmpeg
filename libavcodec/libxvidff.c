@@ -30,6 +30,7 @@
 #include "avcodec.h"
 #include "libavutil/cpu.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "libxvid_internal.h"
 #if !HAVE_MKSTEMP
 #include <fcntl.h>
@@ -749,7 +750,7 @@ static int xvid_ff_2pass_before(struct xvid_context *ref,
 static int xvid_ff_2pass_after(struct xvid_context *ref,
                                 xvid_plg_data_t *param) {
     char *log = ref->twopassbuffer;
-    char *frame_types = " ipbs";
+    const char *frame_types = " ipbs";
     char frame_type;
 
     /* Quick bounds check */
@@ -809,13 +810,13 @@ int xvid_ff_2pass(void *ref, int cmd, void *p1, void *p2) {
  * Xvid codec definition for libavcodec.
  */
 AVCodec ff_libxvid_encoder = {
-    "libxvid",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MPEG4,
-    sizeof(struct xvid_context),
-    xvid_encode_init,
-    xvid_encode_frame,
-    xvid_encode_close,
+    .name           = "libxvid",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MPEG4,
+    .priv_data_size = sizeof(struct xvid_context),
+    .init           = xvid_encode_init,
+    .encode         = xvid_encode_frame,
+    .close          = xvid_encode_close,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("libxvidcore MPEG-4 part 2"),
 };

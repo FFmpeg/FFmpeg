@@ -31,9 +31,9 @@ do_image_formats()
     mkdir -p "$outfile"
     file=${outfile}%02d.$1
     run_ffmpeg $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $2 $ENC_OPTS $3 -t 0.5 -y -qscale 10 $target_path/$file
-    do_md5sum ${outfile}02.$1 >> $logfile
+    do_md5sum ${outfile}02.$1
     do_ffmpeg_crc $file $DEC_OPTS $3 -i $target_path/$file
-    wc -c ${outfile}02.$1 >> $logfile
+    wc -c ${outfile}02.$1
 }
 
 do_audio_only()
@@ -42,8 +42,6 @@ do_audio_only()
     do_ffmpeg $file $DEC_OPTS $2 -ar 44100 -f s16le -i $pcm_src $ENC_OPTS -t 1 -qscale 10 $3
     do_ffmpeg_crc $file $DEC_OPTS $4 -i $target_path/$file
 }
-
-rm -f "$logfile"
 
 if [ -n "$do_avi" ] ; then
 do_lavf avi
@@ -66,6 +64,9 @@ fi
 
 if [ -n "$do_mxf" ] ; then
 do_lavf mxf "-ar 48000 -bf 2 -timecode_frame_start 264363"
+fi
+
+if [ -n "$do_mxf_d10" ]; then
 do_lavf mxf_d10 "-ar 48000 -ac 2 -r 25 -s 720x576 -vf pad=720:608:0:32 -vcodec mpeg2video -intra -flags +ildct+low_delay -dc 10 -flags2 +ivlc+non_linear_q -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -top 1 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
 fi
 

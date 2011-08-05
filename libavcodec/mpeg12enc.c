@@ -200,7 +200,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
 
         if(aspect_ratio==0.0) aspect_ratio= 1.0; //pixel aspect 1:1 (VGA)
 
-        if (s->current_picture.key_frame) {
+        if (s->current_picture.f.key_frame) {
             AVRational framerate= ff_frame_rate_tab[s->frame_rate_index];
 
             /* mpeg1 header repeated every gop */
@@ -287,9 +287,9 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = (framerate.num + framerate.den/2)/ framerate.den;
-            time_code = s->current_picture_ptr->coded_picture_number + s->avctx->timecode_frame_start;
+            time_code = s->current_picture_ptr->f.coded_picture_number + s->avctx->timecode_frame_start;
 
-            s->gop_picture_number = s->current_picture_ptr->coded_picture_number;
+            s->gop_picture_number = s->current_picture_ptr->f.coded_picture_number;
             if (s->avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE) {
                 /* only works for NTSC 29.97 */
                 int d = time_code / 17982;
@@ -396,7 +396,7 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         if (s->progressive_sequence) {
             put_bits(&s->pb, 1, 0); /* no repeat */
         } else {
-            put_bits(&s->pb, 1, s->current_picture_ptr->top_field_first);
+            put_bits(&s->pb, 1, s->current_picture_ptr->f.top_field_first);
         }
         /* XXX: optimize the generation of this flag with entropy
            measures */
@@ -926,13 +926,13 @@ static void mpeg1_encode_block(MpegEncContext *s,
 }
 
 AVCodec ff_mpeg1video_encoder = {
-    "mpeg1video",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MPEG1VIDEO,
-    sizeof(MpegEncContext),
-    encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
+    .name           = "mpeg1video",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MPEG1VIDEO,
+    .priv_data_size = sizeof(MpegEncContext),
+    .init           = encode_init,
+    .encode         = MPV_encode_picture,
+    .close          = MPV_encode_end,
     .supported_framerates= ff_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
@@ -940,13 +940,13 @@ AVCodec ff_mpeg1video_encoder = {
 };
 
 AVCodec ff_mpeg2video_encoder = {
-    "mpeg2video",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_MPEG2VIDEO,
-    sizeof(MpegEncContext),
-    encode_init,
-    MPV_encode_picture,
-    MPV_encode_end,
+    .name           = "mpeg2video",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_MPEG2VIDEO,
+    .priv_data_size = sizeof(MpegEncContext),
+    .init           = encode_init,
+    .encode         = MPV_encode_picture,
+    .close          = MPV_encode_end,
     .supported_framerates= ff_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,

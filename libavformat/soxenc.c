@@ -23,13 +23,14 @@
  */
 
 /**
- * SoX native format muxer
  * @file
+ * SoX native format muxer
  * @author Daniel Verkamp
- * @sa http://wiki.multimedia.cx/index.php?title=SoX_native_intermediate_format
+ * @see http://wiki.multimedia.cx/index.php?title=SoX_native_intermediate_format
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -115,14 +116,13 @@ static int sox_write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_sox_muxer = {
-    "sox",
-    NULL_IF_CONFIG_SMALL("SoX native format"),
-    NULL,
-    "sox",
-    sizeof(SoXContext),
-    CODEC_ID_PCM_S32LE,
-    CODEC_ID_NONE,
-    sox_write_header,
-    sox_write_packet,
-    sox_write_trailer,
+    .name              = "sox",
+    .long_name         = NULL_IF_CONFIG_SMALL("SoX native format"),
+    .extensions        = "sox",
+    .priv_data_size    = sizeof(SoXContext),
+    .audio_codec       = CODEC_ID_PCM_S32LE,
+    .video_codec       = CODEC_ID_NONE,
+    .write_header      = sox_write_header,
+    .write_packet      = sox_write_packet,
+    .write_trailer     = sox_write_trailer,
 };

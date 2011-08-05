@@ -47,6 +47,7 @@ static int adts_aac_probe(AVProbeData *p)
             fsize = (AV_RB32(buf2 + 3) >> 13) & 0x1FFF;
             if(fsize < 7)
                 break;
+            fsize = FFMIN(fsize, end - buf2);
             buf2 += fsize;
         }
         max_frames = FFMAX(max_frames, frames);
@@ -82,12 +83,11 @@ static int adts_aac_read_header(AVFormatContext *s,
 }
 
 AVInputFormat ff_aac_demuxer = {
-    "aac",
-    NULL_IF_CONFIG_SMALL("raw ADTS AAC"),
-    0,
-    adts_aac_probe,
-    adts_aac_read_header,
-    ff_raw_read_partial_packet,
+    .name           = "aac",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw ADTS AAC"),
+    .read_probe     = adts_aac_probe,
+    .read_header    = adts_aac_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "aac",
     .value = CODEC_ID_AAC,

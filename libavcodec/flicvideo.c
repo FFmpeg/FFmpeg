@@ -112,7 +112,6 @@ static av_cold int flic_decode_init(AVCodecContext *avctx)
         case 24 : avctx->pix_fmt = PIX_FMT_BGR24; /* Supposedly BGR, but havent any files to test with */
                   av_log(avctx, AV_LOG_ERROR, "24Bpp FLC/FLX is unsupported due to no test files.\n");
                   return -1;
-                  break;
         default :
                   av_log(avctx, AV_LOG_ERROR, "Unknown FLC/FLX depth of %d Bpp is unsupported.\n",depth);
                   return -1;
@@ -749,18 +748,13 @@ static av_cold int flic_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_flic_decoder = {
-    "flic",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_FLIC,
-    sizeof(FlicDecodeContext),
-    flic_decode_init,
-    NULL,
-    flic_decode_end,
-    flic_decode_frame,
-    CODEC_CAP_DR1,
-    NULL,
-    NULL,
-    NULL,
-    NULL,
+    .name           = "flic",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_FLIC,
+    .priv_data_size = sizeof(FlicDecodeContext),
+    .init           = flic_decode_init,
+    .close          = flic_decode_end,
+    .decode         = flic_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Autodesk Animator Flic video"),
 };

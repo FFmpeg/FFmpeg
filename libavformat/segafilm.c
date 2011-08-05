@@ -111,7 +111,9 @@ static int film_read_header(AVFormatContext *s,
         film->audio_samplerate = AV_RB16(&scratch[24]);
         film->audio_channels = scratch[21];
         film->audio_bits = scratch[22];
-        if (film->audio_bits == 8)
+        if (scratch[23] == 2)
+            film->audio_type = CODEC_ID_ADPCM_ADX;
+        else if (film->audio_bits == 8)
             film->audio_type = CODEC_ID_PCM_S8;
         else if (film->audio_bits == 16)
             film->audio_type = CODEC_ID_PCM_S16BE;
@@ -149,12 +151,19 @@ static int film_read_header(AVFormatContext *s,
         st->codec->codec_id = film->audio_type;
         st->codec->codec_tag = 1;
         st->codec->channels = film->audio_channels;
-        st->codec->bits_per_coded_sample = film->audio_bits;
         st->codec->sample_rate = film->audio_samplerate;
+
+        if (film->audio_type == CODEC_ID_ADPCM_ADX) {
+            st->codec->bits_per_coded_sample = 18 * 8 / 32;
+            st->codec->block_align = st->codec->channels * 18;
+        } else {
+            st->codec->bits_per_coded_sample = film->audio_bits;
+            st->codec->block_align = st->codec->channels *
+                st->codec->bits_per_coded_sample / 8;
+        }
+
         st->codec->bit_rate = st->codec->channels * st->codec->sample_rate *
             st->codec->bits_per_coded_sample;
-        st->codec->block_align = st->codec->channels *
-            st->codec->bits_per_coded_sample / 8;
     }
 
     /* load the sample table */
@@ -187,8 +196,12 @@ static int film_read_header(AVFormatContext *s,
             film->sample_table[i].pts *= film->base_clock;
             film->sample_table[i].pts /= film->audio_samplerate;
 
-            audio_frame_counter += (film->sample_table[i].sample_size /
-                (film->audio_channels * film->audio_bits / 8));
+            if (film->audio_type == CODEC_ID_ADPCM_ADX)
+                audio_frame_counter += (film->sample_table[i].sample_size * 32 /
+                    (18 * film->audio_channels));
+            else
+                audio_frame_counter += (film->sample_table[i].sample_size /
+                    (film->audio_channels * film->audio_bits / 8));
         } else {
             film->sample_table[i].stream = film->video_stream_index;
             film->sample_table[i].pts = AV_RB32(&scratch[8]) & 0x7FFFFFFF;
@@ -227,7 +240,8 @@ static int film_read_packet(AVFormatContext *s,
             return AVERROR(ENOMEM);
         avio_read(pb, pkt->data, sample->sample_size);
     } else if ((sample->stream == film->audio_stream_index) &&
-        (film->audio_channels == 2)) {
+        (film->audio_channels == 2) &&
+        (film->audio_type != CODEC_ID_ADPCM_ADX)) {
         /* stereo PCM needs to be interleaved */
 
         if (av_new_packet(pkt, sample->sample_size))
@@ -283,11 +297,11 @@ static int film_read_close(AVFormatContext *s)
 }
 
 AVInputFormat ff_segafilm_demuxer = {
-    "film_cpk",
-    NULL_IF_CONFIG_SMALL("Sega FILM/CPK format"),
-    sizeof(FilmDemuxContext),
-    film_probe,
-    film_read_header,
-    film_read_packet,
-    film_read_close,
+    .name           = "film_cpk",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sega FILM/CPK format"),
+    .priv_data_size = sizeof(FilmDemuxContext),
+    .read_probe     = film_probe,
+    .read_header    = film_read_header,
+    .read_packet    = film_read_packet,
+    .read_close     = film_read_close,
 };

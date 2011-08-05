@@ -32,6 +32,7 @@
 #include "avformat.h"
 #include "libavcodec/dvdata.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/mathematics.h"
 #include "dv.h"
 
 struct DVDemuxContext {
@@ -522,14 +523,14 @@ static int dv_probe(AVProbeData *p)
 
 #if CONFIG_DV_DEMUXER
 AVInputFormat ff_dv_demuxer = {
-    "dv",
-    NULL_IF_CONFIG_SMALL("DV video format"),
-    sizeof(RawDVContext),
-    dv_probe,
-    dv_read_header,
-    dv_read_packet,
-    dv_read_close,
-    dv_read_seek,
+    .name           = "dv",
+    .long_name      = NULL_IF_CONFIG_SMALL("DV video format"),
+    .priv_data_size = sizeof(RawDVContext),
+    .read_probe     = dv_probe,
+    .read_header    = dv_read_header,
+    .read_packet    = dv_read_packet,
+    .read_close     = dv_read_close,
+    .read_seek      = dv_read_seek,
     .extensions = "dv,dif",
 };
 #endif

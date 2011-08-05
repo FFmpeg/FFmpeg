@@ -407,7 +407,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     p = strchr(uri, '?');
     if (p) {
         if (av_find_info_tag(buf, sizeof(buf), "reuse", p)) {
-            char *endptr=NULL;
+            char *endptr = NULL;
             s->reuse_socket = strtol(buf, &endptr, 10);
             /* assume if no digits were found it is a request to enable it */
             if (buf == endptr)
@@ -429,7 +429,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             s->is_connected = strtol(buf, NULL, 10);
         }
-        if (av_find_info_tag(buf, sizeof(buf), "buf_size", p)) {
+        if (av_find_info_tag(buf, sizeof(buf), "fifo_size", p)) {
             s->circular_buffer_size = strtol(buf, NULL, 10)*188;
         }
     }
@@ -447,7 +447,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 
-    if (s->is_multicast && !(h->flags & AVIO_WRONLY))
+    if ((s->is_multicast || !s->local_port) && !(h->flags & AVIO_WRONLY))
         s->local_port = port;
     udp_fd = udp_socket_create(s, &my_addr, &len);
     if (udp_fd < 0)

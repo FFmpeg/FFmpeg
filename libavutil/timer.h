@@ -1,7 +1,4 @@
-/**
- * @file
- * high precision timer, useful to profile code
- *
+/*
  * copyright (c) 2006 Michael Niedermayer <michaelni@gmx.at>
  *
  * This file is part of FFmpeg.
@@ -19,6 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * @file
+ * high precision timer, useful to profile code
  */
 
 #ifndef AVUTIL_TIMER_H

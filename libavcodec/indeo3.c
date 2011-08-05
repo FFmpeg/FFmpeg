@@ -1147,15 +1147,13 @@ static av_cold int indeo3_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_indeo3_decoder = {
-    "indeo3",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_INDEO3,
-    sizeof(Indeo3DecodeContext),
-    indeo3_decode_init,
-    NULL,
-    indeo3_decode_end,
-    indeo3_decode_frame,
-    CODEC_CAP_DR1,
-    NULL,
+    .name           = "indeo3",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_INDEO3,
+    .priv_data_size = sizeof(Indeo3DecodeContext),
+    .init           = indeo3_decode_init,
+    .close          = indeo3_decode_end,
+    .decode         = indeo3_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
 };

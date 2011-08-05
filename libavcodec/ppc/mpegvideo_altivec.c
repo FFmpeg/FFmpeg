@@ -515,21 +515,6 @@ static void dct_unquantize_h263_altivec(MpegEncContext *s,
         qaddv = vec_splat((vec_s16)vec_lde(0, &qadd8), 0);
         nqaddv = vec_sub(vczero, qaddv);
 
-#if 0   // block *is* 16 bytes-aligned, it seems.
-        // first make sure block[j] is 16 bytes-aligned
-        for(j = 0; (j <= nCoeffs) && ((((unsigned long)block) + (j << 1)) & 0x0000000F) ; j++) {
-            level = block[j];
-            if (level) {
-                if (level < 0) {
-                    level = level * qmul - qadd;
-                } else {
-                    level = level * qmul + qadd;
-                }
-                block[j] = level;
-            }
-        }
-#endif
-
         // vectorize all the 16 bytes-aligned blocks
         // of 8 elements
         for(; (j + 7) <= nCoeffs ; j+=8) {
@@ -573,15 +558,6 @@ void MPV_common_init_altivec(MpegEncContext *s)
 {
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC)) return;
 
-    if (s->avctx->lowres==0) {
-        if ((s->avctx->idct_algo == FF_IDCT_AUTO) ||
-            (s->avctx->idct_algo == FF_IDCT_ALTIVEC)) {
-            s->dsp.idct_put = idct_put_altivec;
-            s->dsp.idct_add = idct_add_altivec;
-            s->dsp.idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
-        }
-    }
-
     // Test to make sure that the dct required alignments are met.
     if ((((long)(s->q_intra_matrix) & 0x0f) != 0) ||
         (((long)(s->q_inter_matrix) & 0x0f) != 0)) {
@@ -599,9 +575,6 @@ void MPV_common_init_altivec(MpegEncContext *s)
 
     if ((s->avctx->dct_algo == FF_DCT_AUTO) ||
             (s->avctx->dct_algo == FF_DCT_ALTIVEC)) {
-#if 0 /* seems to cause trouble under some circumstances */
-        s->dct_quantize = dct_quantize_altivec;
-#endif
         s->dct_unquantize_h263_intra = dct_unquantize_h263_altivec;
         s->dct_unquantize_h263_inter = dct_unquantize_h263_altivec;
     }

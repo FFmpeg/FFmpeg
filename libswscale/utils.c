@@ -46,6 +46,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/avassert.h"
 
 unsigned swscale_version(void)
 {
@@ -65,127 +66,88 @@ const char *swscale_license(void)
 
 #define RET 0xC3 //near return opcode for x86
 
-#define isSupportedIn(x)    (       \
-           (x)==PIX_FMT_YUV420P     \
-        || (x)==PIX_FMT_YUVA420P    \
-        || (x)==PIX_FMT_YUYV422     \
-        || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_RGB48BE     \
-        || (x)==PIX_FMT_RGB48LE     \
-        || (x)==PIX_FMT_RGB32       \
-        || (x)==PIX_FMT_RGB32_1     \
-        || (x)==PIX_FMT_BGR48BE     \
-        || (x)==PIX_FMT_BGR48LE     \
-        || (x)==PIX_FMT_BGR24       \
-        || (x)==PIX_FMT_BGR565LE    \
-        || (x)==PIX_FMT_BGR565BE    \
-        || (x)==PIX_FMT_BGR555LE    \
-        || (x)==PIX_FMT_BGR555BE    \
-        || (x)==PIX_FMT_BGR32       \
-        || (x)==PIX_FMT_BGR32_1     \
-        || (x)==PIX_FMT_RGB24       \
-        || (x)==PIX_FMT_RGB565LE    \
-        || (x)==PIX_FMT_RGB565BE    \
-        || (x)==PIX_FMT_RGB555LE    \
-        || (x)==PIX_FMT_RGB555BE    \
-        || (x)==PIX_FMT_GRAY8       \
-        || (x)==PIX_FMT_GRAY8A      \
-        || (x)==PIX_FMT_YUV410P     \
-        || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_NV12        \
-        || (x)==PIX_FMT_NV21        \
-        || (x)==PIX_FMT_GRAY16BE    \
-        || (x)==PIX_FMT_GRAY16LE    \
-        || (x)==PIX_FMT_YUV444P     \
-        || (x)==PIX_FMT_YUV422P     \
-        || (x)==PIX_FMT_YUV411P     \
-        || (x)==PIX_FMT_YUVJ420P    \
-        || (x)==PIX_FMT_YUVJ422P    \
-        || (x)==PIX_FMT_YUVJ440P    \
-        || (x)==PIX_FMT_YUVJ444P    \
-        || (x)==PIX_FMT_PAL8        \
-        || (x)==PIX_FMT_BGR8        \
-        || (x)==PIX_FMT_RGB8        \
-        || (x)==PIX_FMT_BGR4_BYTE   \
-        || (x)==PIX_FMT_RGB4_BYTE   \
-        || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_MONOWHITE   \
-        || (x)==PIX_FMT_MONOBLACK   \
-        || (x)==PIX_FMT_YUV420P9LE    \
-        || (x)==PIX_FMT_YUV444P9LE    \
-        || (x)==PIX_FMT_YUV420P10LE   \
-        || (x)==PIX_FMT_YUV422P10LE   \
-        || (x)==PIX_FMT_YUV444P10LE   \
-        || (x)==PIX_FMT_YUV420P16LE   \
-        || (x)==PIX_FMT_YUV422P16LE   \
-        || (x)==PIX_FMT_YUV444P16LE   \
-        || (x)==PIX_FMT_YUV420P9BE    \
-        || (x)==PIX_FMT_YUV444P9BE    \
-        || (x)==PIX_FMT_YUV420P10BE   \
-        || (x)==PIX_FMT_YUV444P10BE   \
-        || (x)==PIX_FMT_YUV422P10BE   \
-        || (x)==PIX_FMT_YUV420P16BE   \
-        || (x)==PIX_FMT_YUV422P16BE   \
-        || (x)==PIX_FMT_YUV444P16BE   \
-        || (x)==PIX_FMT_YUV422P10     \
-    )
+typedef struct FormatEntry {
+    int is_supported_in, is_supported_out;
+} FormatEntry;
+
+const static FormatEntry format_entries[PIX_FMT_NB] = {
+    [PIX_FMT_YUV420P]     = { 1 , 1 },
+    [PIX_FMT_YUYV422]     = { 1 , 1 },
+    [PIX_FMT_RGB24]       = { 1 , 1 },
+    [PIX_FMT_BGR24]       = { 1 , 1 },
+    [PIX_FMT_YUV422P]     = { 1 , 1 },
+    [PIX_FMT_YUV444P]     = { 1 , 1 },
+    [PIX_FMT_YUV410P]     = { 1 , 1 },
+    [PIX_FMT_YUV411P]     = { 1 , 1 },
+    [PIX_FMT_GRAY8]       = { 1 , 1 },
+    [PIX_FMT_MONOWHITE]   = { 1 , 1 },
+    [PIX_FMT_MONOBLACK]   = { 1 , 1 },
+    [PIX_FMT_PAL8]        = { 1 , 0 },
+    [PIX_FMT_YUVJ420P]    = { 1 , 1 },
+    [PIX_FMT_YUVJ422P]    = { 1 , 1 },
+    [PIX_FMT_YUVJ444P]    = { 1 , 1 },
+    [PIX_FMT_UYVY422]     = { 1 , 1 },
+    [PIX_FMT_UYYVYY411]   = { 0 , 0 },
+    [PIX_FMT_BGR8]        = { 1 , 1 },
+    [PIX_FMT_BGR4]        = { 0 , 1 },
+    [PIX_FMT_BGR4_BYTE]   = { 1 , 1 },
+    [PIX_FMT_RGB8]        = { 1 , 1 },
+    [PIX_FMT_RGB4]        = { 0 , 1 },
+    [PIX_FMT_RGB4_BYTE]   = { 1 , 1 },
+    [PIX_FMT_NV12]        = { 1 , 1 },
+    [PIX_FMT_NV21]        = { 1 , 1 },
+    [PIX_FMT_ARGB]        = { 1 , 1 },
+    [PIX_FMT_RGBA]        = { 1 , 1 },
+    [PIX_FMT_ABGR]        = { 1 , 1 },
+    [PIX_FMT_BGRA]        = { 1 , 1 },
+    [PIX_FMT_GRAY16BE]    = { 1 , 1 },
+    [PIX_FMT_GRAY16LE]    = { 1 , 1 },
+    [PIX_FMT_YUV440P]     = { 1 , 1 },
+    [PIX_FMT_YUVJ440P]    = { 1 , 1 },
+    [PIX_FMT_YUVA420P]    = { 1 , 1 },
+    [PIX_FMT_RGB48BE]     = { 1 , 1 },
+    [PIX_FMT_RGB48LE]     = { 1 , 1 },
+    [PIX_FMT_RGB565BE]    = { 1 , 1 },
+    [PIX_FMT_RGB565LE]    = { 1 , 1 },
+    [PIX_FMT_RGB555BE]    = { 1 , 1 },
+    [PIX_FMT_RGB555LE]    = { 1 , 1 },
+    [PIX_FMT_BGR565BE]    = { 1 , 1 },
+    [PIX_FMT_BGR565LE]    = { 1 , 1 },
+    [PIX_FMT_BGR555BE]    = { 1 , 1 },
+    [PIX_FMT_BGR555LE]    = { 1 , 1 },
+    [PIX_FMT_YUV420P16LE] = { 1 , 1 },
+    [PIX_FMT_YUV420P16BE] = { 1 , 1 },
+    [PIX_FMT_YUV422P16LE] = { 1 , 1 },
+    [PIX_FMT_YUV422P16BE] = { 1 , 1 },
+    [PIX_FMT_YUV444P16LE] = { 1 , 1 },
+    [PIX_FMT_YUV444P16BE] = { 1 , 1 },
+    [PIX_FMT_RGB444LE]    = { 0 , 1 },
+    [PIX_FMT_RGB444BE]    = { 0 , 1 },
+    [PIX_FMT_BGR444LE]    = { 0 , 1 },
+    [PIX_FMT_BGR444BE]    = { 0 , 1 },
+    [PIX_FMT_GRAY8A]      = { 1 , 0 },
+    [PIX_FMT_BGR48BE]     = { 1 , 1 },
+    [PIX_FMT_BGR48LE]     = { 1 , 1 },
+    [PIX_FMT_YUV420P9BE]  = { 1 , 1 },
+    [PIX_FMT_YUV420P9LE]  = { 1 , 1 },
+    [PIX_FMT_YUV420P10BE] = { 1 , 1 },
+    [PIX_FMT_YUV420P10LE] = { 1 , 1 },
+    [PIX_FMT_YUV422P10BE] = { 1 , 1 },
+    [PIX_FMT_YUV422P10LE] = { 1 , 1 },
+    [PIX_FMT_YUV444P9BE]  = { 1 , 0 },
+    [PIX_FMT_YUV444P9LE]  = { 1 , 0 },
+    [PIX_FMT_YUV444P10BE] = { 1 , 0 },
+    [PIX_FMT_YUV444P10LE] = { 1 , 0 },
+};
 
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
 {
-    return isSupportedIn(pix_fmt);
+    return format_entries[pix_fmt].is_supported_in;
 }
-
-#define isSupportedOut(x)   (       \
-           (x)==PIX_FMT_YUV420P     \
-        || (x)==PIX_FMT_YUVA420P    \
-        || (x)==PIX_FMT_YUYV422     \
-        || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_YUV444P     \
-        || (x)==PIX_FMT_YUV422P     \
-        || (x)==PIX_FMT_YUV411P     \
-        || (x)==PIX_FMT_YUVJ420P    \
-        || (x)==PIX_FMT_YUVJ422P    \
-        || (x)==PIX_FMT_YUVJ440P    \
-        || (x)==PIX_FMT_YUVJ444P    \
-        || isRGBinBytes(x)          \
-        || isBGRinBytes(x)          \
-        || (x)==PIX_FMT_RGB565      \
-        || (x)==PIX_FMT_RGB555      \
-        || (x)==PIX_FMT_RGB444      \
-        || (x)==PIX_FMT_BGR565      \
-        || (x)==PIX_FMT_BGR555      \
-        || (x)==PIX_FMT_BGR444      \
-        || (x)==PIX_FMT_RGB8        \
-        || (x)==PIX_FMT_BGR8        \
-        || (x)==PIX_FMT_RGB4_BYTE   \
-        || (x)==PIX_FMT_BGR4_BYTE   \
-        || (x)==PIX_FMT_RGB4        \
-        || (x)==PIX_FMT_BGR4        \
-        || (x)==PIX_FMT_MONOBLACK   \
-        || (x)==PIX_FMT_MONOWHITE   \
-        || (x)==PIX_FMT_NV12        \
-        || (x)==PIX_FMT_NV21        \
-        || (x)==PIX_FMT_GRAY16BE    \
-        || (x)==PIX_FMT_GRAY16LE    \
-        || (x)==PIX_FMT_GRAY8       \
-        || (x)==PIX_FMT_YUV410P     \
-        || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_YUV422P10   \
-        || (x)==PIX_FMT_YUV420P9LE    \
-        || (x)==PIX_FMT_YUV420P10LE   \
-        || (x)==PIX_FMT_YUV420P16LE   \
-        || (x)==PIX_FMT_YUV422P16LE   \
-        || (x)==PIX_FMT_YUV444P16LE   \
-        || (x)==PIX_FMT_YUV420P9BE    \
-        || (x)==PIX_FMT_YUV420P10BE   \
-        || (x)==PIX_FMT_YUV420P16BE   \
-        || (x)==PIX_FMT_YUV422P16BE   \
-        || (x)==PIX_FMT_YUV444P16BE   \
-    )
 
 int sws_isSupportedOutput(enum PixelFormat pix_fmt)
 {
-    return isSupportedOut(pix_fmt);
+    return format_entries[pix_fmt].is_supported_out;
 }
 
 extern const int32_t ff_yuv2rgb_coeffs[8][4];
@@ -708,7 +670,9 @@ static void getSubSampleFactors(int *h, int *v, enum PixelFormat format)
     *v = av_pix_fmt_descriptors[format].log2_chroma_h;
 }
 
-int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange, const int table[4], int dstRange, int brightness, int contrast, int saturation)
+int sws_setColorspaceDetails(struct SwsContext *c, const int inv_table[4],
+                             int srcRange, const int table[4], int dstRange,
+                             int brightness, int contrast, int saturation)
 {
     memcpy(c->srcColorspaceTable, inv_table, sizeof(int)*4);
     memcpy(c->dstColorspaceTable,     table, sizeof(int)*4);
@@ -731,7 +695,9 @@ int sws_setColorspaceDetails(SwsContext *c, const int inv_table[4], int srcRange
     return 0;
 }
 
-int sws_getColorspaceDetails(SwsContext *c, int **inv_table, int *srcRange, int **table, int *dstRange, int *brightness, int *contrast, int *saturation)
+int sws_getColorspaceDetails(struct SwsContext *c, int **inv_table,
+                             int *srcRange, int **table, int *dstRange,
+                             int *brightness, int *contrast, int *saturation)
 {
     if (!c || isYUV(c->dstFormat) || isGray(c->dstFormat)) return -1;
 
@@ -769,7 +735,7 @@ SwsContext *sws_alloc_context(void)
 
 int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 {
-    int i;
+    int i, j;
     int usesVFilter, usesHFilter;
     int unscaled;
     SwsFilter dummyFilter= {NULL, NULL, NULL, NULL};
@@ -777,7 +743,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     int srcH= c->srcH;
     int dstW= c->dstW;
     int dstH= c->dstH;
-    int dst_stride = FFALIGN(dstW * sizeof(int16_t)+66, 16), dst_stride_px = dst_stride >> 1;
+    int dst_stride = FFALIGN(dstW * sizeof(int16_t)+66, 16);
     int flags, cpu_flags;
     enum PixelFormat srcFormat= c->srcFormat;
     enum PixelFormat dstFormat= c->dstFormat;
@@ -789,11 +755,11 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     unscaled = (srcW == dstW && srcH == dstH);
 
-    if (!isSupportedIn(srcFormat)) {
+    if (!sws_isSupportedInput(srcFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as input pixel format\n", av_get_pix_fmt_name(srcFormat));
         return AVERROR(EINVAL);
     }
-    if (!isSupportedOut(dstFormat)) {
+    if (!sws_isSupportedOutput(dstFormat)) {
         av_log(c, AV_LOG_ERROR, "%s is not supported as output pixel format\n", av_get_pix_fmt_name(dstFormat));
         return AVERROR(EINVAL);
     }
@@ -874,8 +840,14 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
     }
 
+    c->scalingBpp = FFMAX(av_pix_fmt_descriptors[srcFormat].comp[0].depth_minus1,
+                          av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1) >= 15 ? 16 : 8;
+
+    if (c->scalingBpp == 16)
+        dst_stride <<= 1;
+    av_assert0(c->scalingBpp<=16);
     FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
-    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2) {
+    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2 && c->scalingBpp == 8) {
         c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
         if (!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR)) {
             if (flags&SWS_PRINT_INFO)
@@ -901,7 +873,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             c->chrXInc+= 20;
         }
         //we don't use the x86 asm scaler if MMX is available
-        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) {
+        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX && c->scalingBpp == 8) {
             c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
             c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
         }
@@ -1029,25 +1001,32 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     //Note we need at least one pixel more at the end because of the MMX code (just in case someone wanna replace the 4000/8000)
     /* align at 16 bytes for AltiVec */
     for (i=0; i<c->vLumBufSize; i++) {
-        FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i+c->vLumBufSize], dst_stride+1, fail);
+        FF_ALLOCZ_OR_GOTO(c, c->lumPixBuf[i+c->vLumBufSize], dst_stride+16, fail);
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
-    c->uv_off = dst_stride_px;
-    c->uv_offx2 = dst_stride;
+    // 64 / c->scalingBpp is the same as 16 / sizeof(scaling_intermediate)
+    c->uv_off   = (dst_stride>>1) + 64 / c->scalingBpp;
+    c->uv_offx2 = dst_stride + 16;
     for (i=0; i<c->vChrBufSize; i++) {
-        FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], dst_stride*2+1, fail);
+        FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], dst_stride*2+32, fail);
         c->chrUPixBuf[i] = c->chrUPixBuf[i+c->vChrBufSize];
-        c->chrVPixBuf[i] = c->chrVPixBuf[i+c->vChrBufSize] = c->chrUPixBuf[i] + dst_stride_px;
+        c->chrVPixBuf[i] = c->chrVPixBuf[i+c->vChrBufSize] = c->chrUPixBuf[i] + (dst_stride >> 1) + 8;
     }
     if (CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
         for (i=0; i<c->vLumBufSize; i++) {
-            FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf[i+c->vLumBufSize], dst_stride+1, fail);
+            FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf[i+c->vLumBufSize], dst_stride+16, fail);
             c->alpPixBuf[i] = c->alpPixBuf[i+c->vLumBufSize];
         }
 
     //try to avoid drawing green stuff between the right end and the stride end
     for (i=0; i<c->vChrBufSize; i++)
-        memset(c->chrUPixBuf[i], 64, dst_stride*2+1);
+        if(av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 == 15){
+            av_assert0(c->scalingBpp == 16);
+            for(j=0; j<dst_stride/2+1; j++)
+                ((int32_t*)(c->chrUPixBuf[i]))[j] = 1<<18;
+        } else
+            for(j=0; j<dst_stride+1; j++)
+                ((int16_t*)(c->chrUPixBuf[i]))[j] = 1<<14;
 
     assert(c->chrDstH <= dstH);
 
@@ -1086,37 +1065,22 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             if (c->canMMX2BeUsed && (flags&SWS_FAST_BILINEAR))
                 av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR MMX2 scaler for horizontal scaling\n");
             else {
-                if (c->hLumFilterSize==4)
-                    av_log(c, AV_LOG_VERBOSE, "using 4-tap MMX scaler for horizontal luminance scaling\n");
-                else if (c->hLumFilterSize==8)
-                    av_log(c, AV_LOG_VERBOSE, "using 8-tap MMX scaler for horizontal luminance scaling\n");
-                else
-                    av_log(c, AV_LOG_VERBOSE, "using n-tap MMX scaler for horizontal luminance scaling\n");
-
-                if (c->hChrFilterSize==4)
-                    av_log(c, AV_LOG_VERBOSE, "using 4-tap MMX scaler for horizontal chrominance scaling\n");
-                else if (c->hChrFilterSize==8)
-                    av_log(c, AV_LOG_VERBOSE, "using 8-tap MMX scaler for horizontal chrominance scaling\n");
-                else
-                    av_log(c, AV_LOG_VERBOSE, "using n-tap MMX scaler for horizontal chrominance scaling\n");
+                av_log(c, AV_LOG_VERBOSE, "using %s-tap MMX scaler for horizontal luminance scaling\n",
+                       c->hLumFilterSize == 4 ? "4" :
+                       c->hLumFilterSize == 8 ? "8" : "n");
+                av_log(c, AV_LOG_VERBOSE, "using %s-tap MMX scaler for horizontal chrominance scaling\n",
+                       c->hChrFilterSize == 4 ? "4" :
+                       c->hChrFilterSize == 8 ? "8" : "n");
             }
         } else {
-#if HAVE_MMX
-            av_log(c, AV_LOG_VERBOSE, "using x86 asm scaler for horizontal scaling\n");
-#else
-            if (flags & SWS_FAST_BILINEAR)
-                av_log(c, AV_LOG_VERBOSE, "using FAST_BILINEAR C scaler for horizontal scaling\n");
-            else
-                av_log(c, AV_LOG_VERBOSE, "using C scaler for horizontal scaling\n");
-#endif
+            av_log(c, AV_LOG_VERBOSE, "using %s scaler for horizontal scaling\n",
+                   HAVE_MMX ? "x86 asm" :
+                   flags & SWS_FAST_BILINEAR ? "FAST_BILINEAR C" : "C");
         }
         if (isPlanarYUV(dstFormat)) {
-            if (c->vLumFilterSize==1)
-                av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical scaling (YV12 like)\n",
-                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
-            else
-                av_log(c, AV_LOG_VERBOSE, "using n-tap %s scaler for vertical scaling (YV12 like)\n",
-                       (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX) ? "MMX" : "C");
+            av_log(c, AV_LOG_VERBOSE, "using %s-tap %s \"scaler\" for vertical scaling (YV12 like)\n",
+                   c->vLumFilterSize == 1 ? "1" : "n",
+                   HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX ? "MMX" : "C");
         } else {
             if (c->vLumFilterSize==1 && c->vChrFilterSize==2)
                 av_log(c, AV_LOG_VERBOSE, "using 1-tap %s \"scaler\" for vertical luminance scaling (BGR)\n"

@@ -315,8 +315,6 @@ static void filter(MpegAudioContext *s, int ch, const short *samples, int incr)
     int tmp1[32];
     int *out;
 
-    //    print_pow1(samples, 1152);
-
     offset = s->samples_offset[ch];
     out = &s->sb_samples[ch][0][0][0];
     for(j=0;j<36;j++) {
@@ -360,8 +358,6 @@ static void filter(MpegAudioContext *s, int ch, const short *samples, int incr)
         }
     }
     s->samples_offset[ch] = offset;
-
-    //    print_pow(s->sb_samples, 1152);
 }
 
 static void compute_scale_factors(unsigned char scale_code[SBLIMIT],
@@ -768,14 +764,13 @@ static av_cold int MPA_encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_mp2_encoder = {
-    "mp2",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_MP2,
-    sizeof(MpegAudioContext),
-    MPA_encode_init,
-    MPA_encode_frame,
-    MPA_encode_close,
-    NULL,
+    .name           = "mp2",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_MP2,
+    .priv_data_size = sizeof(MpegAudioContext),
+    .init           = MPA_encode_init,
+    .encode         = MPA_encode_frame,
+    .close          = MPA_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .supported_samplerates= (const int[]){44100, 48000,  32000, 22050, 24000, 16000, 0},
     .long_name = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),

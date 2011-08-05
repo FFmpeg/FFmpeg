@@ -40,6 +40,8 @@
  */
 
 #include "avformat.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 
 /* The GIF format uses reversed order for bitstreams... */
 /* at least they don't use PDP_ENDIAN :) */
@@ -245,8 +247,10 @@ static int gif_image_write_image(AVIOContext *pb,
 }
 
 typedef struct {
+    AVClass *class;         /** Class for private options. */
     int64_t time, file_time;
     uint8_t buffer[100]; /* data chunks */
+    int loop;
 } GIFContext;
 
 static int gif_write_header(AVFormatContext *s)
@@ -254,7 +258,7 @@ static int gif_write_header(AVFormatContext *s)
     GIFContext *gif = s->priv_data;
     AVIOContext *pb = s->pb;
     AVCodecContext *enc, *video_enc;
-    int i, width, height, loop_count /*, rate*/;
+    int i, width, height /*, rate*/;
 
 /* XXX: do we reject audio streams or just ignore them ?
     if(s->nb_streams > 1)
@@ -276,7 +280,6 @@ static int gif_write_header(AVFormatContext *s)
     } else {
         width = video_enc->width;
         height = video_enc->height;
-        loop_count = s->loop_output;
 //        rate = video_enc->time_base.den;
     }
 
@@ -285,7 +288,12 @@ static int gif_write_header(AVFormatContext *s)
         return AVERROR(EIO);
     }
 
-    gif_image_write_header(pb, width, height, loop_count, NULL);
+#if FF_API_LOOP_OUTPUT
+    if (s->loop_output)
+        gif->loop = s->loop_output;
+#endif
+
+    gif_image_write_header(pb, width, height, gif->loop, NULL);
 
     avio_flush(s->pb);
     return 0;
@@ -340,15 +348,30 @@ static int gif_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+#define OFFSET(x) offsetof(GIFContext, x)
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "loop", "Number of times to loop the output.", OFFSET(loop), FF_OPT_TYPE_INT, {0}, 0, 65535, ENC },
+    { NULL },
+};
+
+static const AVClass gif_muxer_class = {
+    .class_name = "GIF muxer",
+    .item_name  = av_default_item_name,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .option     = options,
+};
+
 AVOutputFormat ff_gif_muxer = {
-    "gif",
-    NULL_IF_CONFIG_SMALL("GIF Animation"),
-    "image/gif",
-    "gif",
-    sizeof(GIFContext),
-    CODEC_ID_NONE,
-    CODEC_ID_RAWVIDEO,
-    gif_write_header,
-    gif_write_packet,
-    gif_write_trailer,
+    .name              = "gif",
+    .long_name         = NULL_IF_CONFIG_SMALL("GIF Animation"),
+    .mime_type         = "image/gif",
+    .extensions        = "gif",
+    .priv_data_size    = sizeof(GIFContext),
+    .audio_codec       = CODEC_ID_NONE,
+    .video_codec       = CODEC_ID_RAWVIDEO,
+    .write_header      = gif_write_header,
+    .write_packet      = gif_write_packet,
+    .write_trailer     = gif_write_trailer,
+    .priv_class = &gif_muxer_class,
 };

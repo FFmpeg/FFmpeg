@@ -86,7 +86,7 @@ int rtp_set_remote_url(URLContext *h, const char *uri)
  * "http://host:port/path?option1=val1&option2=val2...
  */
 
-static void url_add_option(char *buf, int buf_size, const char *fmt, ...)
+static av_printf_format(3, 4) void url_add_option(char *buf, int buf_size, const char *fmt, ...)
 {
     char buf1[1024];
     va_list ap;
@@ -115,6 +115,7 @@ static void build_udp_url(char *buf, int buf_size,
         url_add_option(buf, buf_size, "pkt_size=%d", max_packet_size);
     if (connect)
         url_add_option(buf, buf_size, "connect=1");
+    url_add_option(buf, buf_size, "fifo_size=0");
 }
 
 /**
@@ -225,20 +226,6 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     int len, n;
     struct pollfd p[2] = {{s->rtp_fd, POLLIN, 0}, {s->rtcp_fd, POLLIN, 0}};
 
-#if 0
-    for(;;) {
-        from_len = sizeof(from);
-        len = recvfrom (s->rtp_fd, buf, size, 0,
-                        (struct sockaddr *)&from, &from_len);
-        if (len < 0) {
-            if (ff_neterrno() == AVERROR(EAGAIN) ||
-                ff_neterrno() == AVERROR(EINTR))
-                continue;
-            return AVERROR(EIO);
-        }
-        break;
-    }
-#else
     for(;;) {
         if (url_interrupt_cb())
             return AVERROR_EXIT;
@@ -277,7 +264,6 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
             return AVERROR(EIO);
         }
     }
-#endif
     return len;
 }
 
@@ -296,14 +282,6 @@ static int rtp_write(URLContext *h, const uint8_t *buf, int size)
     }
 
     ret = ffurl_write(hd, buf, size);
-#if 0
-    {
-        struct timespec ts;
-        ts.tv_sec = 0;
-        ts.tv_nsec = 10 * 1000000;
-        nanosleep(&ts, NULL);
-    }
-#endif
     return ret;
 }
 

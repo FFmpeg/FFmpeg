@@ -119,7 +119,7 @@ extern COSTABLE_CONST FFTSample* const FFT_NAME(ff_cos_tabs)[17];
 
 /**
  * Initialize the cosine table in ff_cos_tabs[index]
- * \param index index in ff_cos_tabs array of the table to initialize
+ * @param index index in ff_cos_tabs array of the table to initialize
  */
 void ff_init_ff_cos_tabs(int index);
 

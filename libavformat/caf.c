@@ -32,30 +32,34 @@
  * Known codec tags for CAF
  */
 const AVCodecTag ff_codec_caf_tags[] = {
-    { CODEC_ID_AAC,             MKBETAG('a','a','c',' ') },
-    { CODEC_ID_AC3,             MKBETAG('a','c','-','3') },
-    { CODEC_ID_ALAC,            MKBETAG('a','l','a','c') },
+    { CODEC_ID_AAC,             MKTAG('a','a','c',' ') },
+    { CODEC_ID_AC3,             MKTAG('a','c','-','3') },
+    { CODEC_ID_ADPCM_IMA_QT,    MKTAG('i','m','a','4') },
+    { CODEC_ID_ADPCM_IMA_WAV,   MKTAG('m','s', 0, 17 ) },
+    { CODEC_ID_ADPCM_MS,        MKTAG('m','s', 0,  2 ) },
+    { CODEC_ID_ALAC,            MKTAG('a','l','a','c') },
+    { CODEC_ID_AMR_NB,          MKTAG('s','a','m','r') },
   /* FIXME: use DV demuxer, as done in MOV */
-  /*{ CODEC_ID_DVAUDIO,         MKBETAG('v','d','v','a') },*/
-  /*{ CODEC_ID_DVAUDIO,         MKBETAG('d','v','c','a') },*/
-    { CODEC_ID_ADPCM_IMA_QT,    MKBETAG('i','m','a','4') },
-    { CODEC_ID_AMR_NB,          MKBETAG('s','a','m','r') },
-    { CODEC_ID_GSM,             MKBETAG('a','g','s','m') },
-    { CODEC_ID_MACE3,           MKBETAG('M','A','C','3') },
-    { CODEC_ID_MACE6,           MKBETAG('M','A','C','6') },
-    { CODEC_ID_MP3,             MKBETAG('.','m','p','3') },
-    { CODEC_ID_MP2,             MKBETAG('.','m','p','2') },
-    { CODEC_ID_MP1,             MKBETAG('.','m','p','1') },
-    { CODEC_ID_PCM_ALAW,        MKBETAG('a','l','a','w') },
-    { CODEC_ID_PCM_MULAW,       MKBETAG('u','l','a','w') },
-    { CODEC_ID_QCELP,           MKBETAG('Q','c','l','p') },
-    { CODEC_ID_QDM2,            MKBETAG('Q','D','M','2') },
-    { CODEC_ID_QDM2,            MKBETAG('Q','D','M','C') },
+  /*{ CODEC_ID_DVAUDIO,         MKTAG('v','d','v','a') },*/
+  /*{ CODEC_ID_DVAUDIO,         MKTAG('d','v','c','a') },*/
+    { CODEC_ID_GSM,             MKTAG('a','g','s','m') },
+    { CODEC_ID_GSM_MS,          MKTAG('m','s', 0, '1') },
+    { CODEC_ID_MACE3,           MKTAG('M','A','C','3') },
+    { CODEC_ID_MACE6,           MKTAG('M','A','C','6') },
+    { CODEC_ID_MP1,             MKTAG('.','m','p','1') },
+    { CODEC_ID_MP2,             MKTAG('.','m','p','2') },
+    { CODEC_ID_MP3,             MKTAG('.','m','p','3') },
+    { CODEC_ID_MP3,             MKTAG('m','s', 0 ,'U') },
+    { CODEC_ID_PCM_ALAW,        MKTAG('a','l','a','w') },
+    { CODEC_ID_PCM_MULAW,       MKTAG('u','l','a','w') },
+    { CODEC_ID_QCELP,           MKTAG('Q','c','l','p') },
+    { CODEC_ID_QDM2,            MKTAG('Q','D','M','2') },
+    { CODEC_ID_QDM2,            MKTAG('Q','D','M','C') },
   /* currently unsupported codecs */
-  /*{ AC-3 over S/PDIF          MKBETAG('c','a','c','3') },*/
-  /*{ MPEG4CELP                 MKBETAG('c','e','l','p') },*/
-  /*{ MPEG4HVXC                 MKBETAG('h','v','x','c') },*/
-  /*{ MPEG4TwinVQ               MKBETAG('t','w','v','q') },*/
+  /*{ AC-3 over S/PDIF          MKTAG('c','a','c','3') },*/
+  /*{ MPEG4CELP                 MKTAG('c','e','l','p') },*/
+  /*{ MPEG4HVXC                 MKTAG('h','v','x','c') },*/
+  /*{ MPEG4TwinVQ               MKTAG('t','w','v','q') },*/
     { CODEC_ID_NONE,            0 },
 };
 

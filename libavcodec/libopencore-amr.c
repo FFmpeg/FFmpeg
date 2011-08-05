@@ -88,7 +88,7 @@ typedef struct AMRContext {
 } AMRContext;
 
 static const AVOption options[] = {
-    { "dtx", "Allow DTX (generate comfort noise)", offsetof(AMRContext, enc_dtx), FF_OPT_TYPE_INT, 0, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
+    { "dtx", "Allow DTX (generate comfort noise)", offsetof(AMRContext, enc_dtx), FF_OPT_TYPE_INT, { 0 }, 0, 1, AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM },
     { NULL }
 };
 
@@ -158,14 +158,13 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 AVCodec ff_libopencore_amrnb_decoder = {
-    "libopencore_amrnb",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AMR_NB,
-    sizeof(AMRContext),
-    amr_nb_decode_init,
-    NULL,
-    amr_nb_decode_close,
-    amr_nb_decode_frame,
+    .name           = "libopencore_amrnb",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AMR_NB,
+    .priv_data_size = sizeof(AMRContext),
+    .init           = amr_nb_decode_init,
+    .close          = amr_nb_decode_close,
+    .decode         = amr_nb_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
 };
 
@@ -230,14 +229,13 @@ static int amr_nb_encode_frame(AVCodecContext *avctx,
 }
 
 AVCodec ff_libopencore_amrnb_encoder = {
-    "libopencore_amrnb",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AMR_NB,
-    sizeof(AMRContext),
-    amr_nb_encode_init,
-    amr_nb_encode_frame,
-    amr_nb_encode_close,
-    NULL,
+    .name           = "libopencore_amrnb",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AMR_NB,
+    .priv_data_size = sizeof(AMRContext),
+    .init           = amr_nb_encode_init,
+    .encode         = amr_nb_encode_frame,
+    .close          = amr_nb_encode_close,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
     .priv_class = &class,
@@ -308,14 +306,13 @@ static int amr_wb_decode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_libopencore_amrwb_decoder = {
-    "libopencore_amrwb",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_AMR_WB,
-    sizeof(AMRWBContext),
-    amr_wb_decode_init,
-    NULL,
-    amr_wb_decode_close,
-    amr_wb_decode_frame,
+    .name           = "libopencore_amrwb",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_AMR_WB,
+    .priv_data_size = sizeof(AMRWBContext),
+    .init           = amr_wb_decode_init,
+    .close          = amr_wb_decode_close,
+    .decode         = amr_wb_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Wide-Band"),
 };
 

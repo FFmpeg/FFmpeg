@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 #include "riff.h"
 
@@ -49,11 +50,11 @@ static int nuv_probe(AVProbeData *p) {
 #define PKTSIZE(s) (s &  0xffffff)
 
 /**
- * \brief read until we found all data needed for decoding
- * \param vst video stream of which to change parameters
- * \param ast video stream of which to change parameters
- * \param myth set if this is a MythTVVideo format file
- * \return 1 if all required codec data was found
+ * @brief read until we found all data needed for decoding
+ * @param vst video stream of which to change parameters
+ * @param ast video stream of which to change parameters
+ * @param myth set if this is a MythTVVideo format file
+ * @return 1 if all required codec data was found
  */
 static int get_codec_data(AVIOContext *pb, AVStream *vst,
                           AVStream *ast, int myth) {
@@ -258,13 +259,11 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
 }
 
 AVInputFormat ff_nuv_demuxer = {
-    "nuv",
-    NULL_IF_CONFIG_SMALL("NuppelVideo format"),
-    sizeof(NUVContext),
-    nuv_probe,
-    nuv_header,
-    nuv_packet,
-    NULL,
-    NULL,
+    .name           = "nuv",
+    .long_name      = NULL_IF_CONFIG_SMALL("NuppelVideo format"),
+    .priv_data_size = sizeof(NUVContext),
+    .read_probe     = nuv_probe,
+    .read_header    = nuv_header,
+    .read_packet    = nuv_packet,
     .flags = AVFMT_GENERIC_INDEX,
 };

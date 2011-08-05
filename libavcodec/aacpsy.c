@@ -377,9 +377,10 @@ static const uint8_t window_grouping[9] = {
  * Tell encoder which window types to use.
  * @see 3GPP TS26.403 5.4.1 "Blockswitching"
  */
-static FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
-                                       const int16_t *audio, const int16_t *la,
-                                       int channel, int prev_type)
+static av_unused FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
+                                                 const int16_t *audio,
+                                                 const int16_t *la,
+                                                 int channel, int prev_type)
 {
     int i, j;
     int br               = ctx->avctx->bit_rate / ctx->avctx->channels;
@@ -556,8 +557,8 @@ static float calc_reduced_thr_3gpp(AacPsyBand *band, float min_snr,
 /**
  * Calculate band thresholds as suggested in 3GPP TS26.403
  */
-static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
-                             const float *coefs, const FFPsyWindowInfo *wi)
+static void psy_3gpp_analyze_channel(FFPsyContext *ctx, int channel,
+                                     const float *coefs, const FFPsyWindowInfo *wi)
 {
     AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
     AacPsyChannel *pch  = &pctx->ch[channel];
@@ -626,7 +627,7 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     }
 
     /* 5.6.1.3.2 "Calculation of the desired perceptual entropy" */
-    ctx->pe[channel] = pe;
+    ctx->ch[channel].entropy = pe;
     desired_bits = calc_bit_demand(pctx, pe, ctx->bitres.bits, ctx->bitres.size, wi->num_windows == 8);
     desired_pe = PSY_3GPP_BITS_TO_PE(desired_bits);
     /* NOTE: PE correction is kept simple. During initial testing it had very
@@ -730,7 +731,7 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     for (w = 0; w < wi->num_windows*16; w += 16) {
         for (g = 0; g < num_bands; g++) {
             AacPsyBand *band     = &pch->band[w+g];
-            FFPsyBand  *psy_band = &ctx->psy_bands[channel*PSY_MAX_BANDS+w+g];
+            FFPsyBand  *psy_band = &ctx->ch[channel].psy_bands[w+g];
 
             psy_band->threshold = band->thr;
             psy_band->energy    = band->energy;
@@ -738,6 +739,16 @@ static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
     }
 
     memcpy(pch->prev_band, pch->band, sizeof(pch->band));
+}
+
+static void psy_3gpp_analyze(FFPsyContext *ctx, int channel,
+                                   const float **coeffs, const FFPsyWindowInfo *wi)
+{
+    int ch;
+    FFPsyChannelGroup *group = ff_psy_find_group(ctx, channel);
+
+    for (ch = 0; ch < group->num_ch; ch++)
+        psy_3gpp_analyze_channel(ctx, channel + ch, coeffs[ch], &wi[ch]);
 }
 
 static av_cold void psy_3gpp_end(FFPsyContext *apc)

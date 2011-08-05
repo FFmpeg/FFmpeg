@@ -215,7 +215,7 @@ static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
 
         s->mv_dir = MV_DIR_FORWARD;
         s->mv_type = MV_TYPE_16X16;
-        s->current_picture.mb_type[xy]= MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
+        s->current_picture.f.mb_type[xy] = MB_TYPE_SKIP | MB_TYPE_16x16 | MB_TYPE_L0;
         s->mv[0][0][0] = 0;
         s->mv[0][0][1] = 0;
         s->mb_skipped = 1;
@@ -323,14 +323,14 @@ static int h261_decode_mb(H261Context *h){
     }
 
     if(s->mb_intra){
-        s->current_picture.mb_type[xy]= MB_TYPE_INTRA;
+        s->current_picture.f.mb_type[xy] = MB_TYPE_INTRA;
         goto intra;
     }
 
     //set motion vectors
     s->mv_dir = MV_DIR_FORWARD;
     s->mv_type = MV_TYPE_16X16;
-    s->current_picture.mb_type[xy]= MB_TYPE_16x16 | MB_TYPE_L0;
+    s->current_picture.f.mb_type[xy] = MB_TYPE_16x16 | MB_TYPE_L0;
     s->mv[0][0][0] = h->current_mv_x * 2;//gets divided by 2 in motion compensation
     s->mv[0][0][1] = h->current_mv_y * 2;
 
@@ -464,7 +464,7 @@ static int h261_decode_picture_header(H261Context *h){
     s->picture_number = (s->picture_number&~31) + i;
 
     s->avctx->time_base= (AVRational){1001, 30000};
-    s->current_picture.pts= s->picture_number;
+    s->current_picture.f.pts = s->picture_number;
 
 
     /* PTYPE starts here */
@@ -570,7 +570,7 @@ retry:
     }
 
     //we need to set current_picture_ptr before reading the header, otherwise we cannot store anyting im there
-    if(s->current_picture_ptr==NULL || s->current_picture_ptr->data[0]){
+    if (s->current_picture_ptr == NULL || s->current_picture_ptr->f.data[0]) {
         int i= ff_find_unused_picture(s, 0);
         s->current_picture_ptr= &s->picture[i];
     }
@@ -596,8 +596,8 @@ retry:
     }
 
     // for skipping the frame
-    s->current_picture.pict_type= s->pict_type;
-    s->current_picture.key_frame= s->pict_type == AV_PICTURE_TYPE_I;
+    s->current_picture.f.pict_type = s->pict_type;
+    s->current_picture.f.key_frame = s->pict_type == AV_PICTURE_TYPE_I;
 
 #if FF_API_HURRY_UP
     /* skip everything if we are in a hurry>=5 */
@@ -644,15 +644,14 @@ static av_cold int h261_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_h261_decoder = {
-    "h261",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_H261,
-    sizeof(H261Context),
-    h261_decode_init,
-    NULL,
-    h261_decode_end,
-    h261_decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "h261",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_H261,
+    .priv_data_size = sizeof(H261Context),
+    .init           = h261_decode_init,
+    .close          = h261_decode_end,
+    .decode         = h261_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("H.261"),
 };

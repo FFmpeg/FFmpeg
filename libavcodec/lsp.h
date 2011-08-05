@@ -30,12 +30,12 @@
 */
 
 /**
- * \brief ensure a minimum distance between LSFs
- * \param[in,out] lsfq LSF to check and adjust
- * \param lsfq_min_distance minimum distance between LSFs
- * \param lsfq_min minimum allowed LSF value
- * \param lsfq_max maximum allowed LSF value
- * \param lp_order LP filter order
+ * @brief ensure a minimum distance between LSFs
+ * @param[in,out] lsfq LSF to check and adjust
+ * @param lsfq_min_distance minimum distance between LSFs
+ * @param lsfq_min minimum allowed LSF value
+ * @param lsfq_max maximum allowed LSF value
+ * @param lp_order LP filter order
  */
 void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, int lsfq_max, int lp_order);
 
@@ -53,12 +53,12 @@ void ff_acelp_reorder_lsf(int16_t* lsfq, int lsfq_min_distance, int lsfq_min, in
 void ff_set_min_dist_lsf(float *lsf, double min_spacing, int size);
 
 /**
- * \brief Convert LSF to LSP
- * \param[out] lsp LSP coefficients (-0x8000 <= (0.15) < 0x8000)
- * \param lsf normalized LSF coefficients (0 <= (2.13) < 0x2000 * PI)
- * \param lp_order LP filter order
+ * @brief Convert LSF to LSP
+ * @param[out] lsp LSP coefficients (-0x8000 <= (0.15) < 0x8000)
+ * @param lsf normalized LSF coefficients (0 <= (2.13) < 0x2000 * PI)
+ * @param lp_order LP filter order
  *
- * \remark It is safe to pass the same array into the lsf and lsp parameters.
+ * @remark It is safe to pass the same array into the lsf and lsp parameters.
  */
 void ff_acelp_lsf2lsp(int16_t *lsp, const int16_t *lsf, int lp_order);
 
@@ -68,10 +68,10 @@ void ff_acelp_lsf2lsp(int16_t *lsp, const int16_t *lsf, int lp_order);
 void ff_acelp_lsf2lspd(double *lsp, const float *lsf, int lp_order);
 
 /**
- * \brief LSP to LP conversion (3.2.6 of G.729)
- * \param[out] lp decoded LP coefficients (-0x8000 <= (3.12) < 0x8000)
- * \param lsp LSP coefficients (-0x8000 <= (0.15) < 0x8000)
- * \param lp_half_order LP filter order, divided by 2
+ * @brief LSP to LP conversion (3.2.6 of G.729)
+ * @param[out] lp decoded LP coefficients (-0x8000 <= (3.12) < 0x8000)
+ * @param lsp LSP coefficients (-0x8000 <= (0.15) < 0x8000)
+ * @param lp_half_order LP filter order, divided by 2
  */
 void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order);
 
@@ -81,17 +81,17 @@ void ff_acelp_lsp2lpc(int16_t* lp, const int16_t* lsp, int lp_half_order);
 void ff_amrwb_lsp2lpc(const double *lsp, float *lp, int lp_order);
 
 /**
- * \brief Interpolate LSP for the first subframe and convert LSP -> LP for both subframes (3.2.5 and 3.2.6 of G.729)
- * \param[out] lp_1st decoded LP coefficients for first subframe  (-0x8000 <= (3.12) < 0x8000)
- * \param[out] lp_2nd decoded LP coefficients for second subframe (-0x8000 <= (3.12) < 0x8000)
- * \param lsp_2nd LSP coefficients of the second subframe (-0x8000 <= (0.15) < 0x8000)
- * \param lsp_prev LSP coefficients from the second subframe of the previous frame (-0x8000 <= (0.15) < 0x8000)
- * \param lp_order LP filter order
+ * @brief Interpolate LSP for the first subframe and convert LSP -> LP for both subframes (3.2.5 and 3.2.6 of G.729)
+ * @param[out] lp_1st decoded LP coefficients for first subframe  (-0x8000 <= (3.12) < 0x8000)
+ * @param[out] lp_2nd decoded LP coefficients for second subframe (-0x8000 <= (3.12) < 0x8000)
+ * @param lsp_2nd LSP coefficients of the second subframe (-0x8000 <= (0.15) < 0x8000)
+ * @param lsp_prev LSP coefficients from the second subframe of the previous frame (-0x8000 <= (0.15) < 0x8000)
+ * @param lp_order LP filter order
  */
 void ff_acelp_lp_decode(int16_t* lp_1st, int16_t* lp_2nd, const int16_t* lsp_2nd, const int16_t* lsp_prev, int lp_order);
 
 
-#define MAX_LP_HALF_ORDER 8
+#define MAX_LP_HALF_ORDER 10
 #define MAX_LP_ORDER      (2*MAX_LP_HALF_ORDER)
 
 /**

@@ -94,7 +94,7 @@ typedef struct AC3BitAllocParameters {
  * Coded AC-3 header values up to the lfeon element, plus derived values.
  */
 typedef struct {
-    /** @defgroup coded Coded elements
+    /** @name Coded elements
      * @{
      */
     uint16_t sync_word;
@@ -112,7 +112,7 @@ typedef struct {
     int num_blocks;                         ///< number of audio blocks
     /** @} */
 
-    /** @defgroup derived Derived values
+    /** @name Derived values
      * @{
      */
     uint8_t sr_shift;
@@ -156,6 +156,8 @@ typedef struct AC3EncOptions {
     int dolby_surround_ex_mode;
     int dolby_headphone_mode;
     int ad_converter_type;
+    int eac3_mixing_metadata;
+    int eac3_info_metadata;
 
     /* other encoding options */
     int allow_per_frame_metadata;

@@ -281,12 +281,11 @@ static int mpc8_read_seek(AVFormatContext *s, int stream_index, int64_t timestam
 
 
 AVInputFormat ff_mpc8_demuxer = {
-    "mpc8",
-    NULL_IF_CONFIG_SMALL("Musepack SV8"),
-    sizeof(MPCContext),
-    mpc8_probe,
-    mpc8_read_header,
-    mpc8_read_packet,
-    NULL,
-    mpc8_read_seek,
+    .name           = "mpc8",
+    .long_name      = NULL_IF_CONFIG_SMALL("Musepack SV8"),
+    .priv_data_size = sizeof(MPCContext),
+    .read_probe     = mpc8_probe,
+    .read_header    = mpc8_read_header,
+    .read_packet    = mpc8_read_packet,
+    .read_seek      = mpc8_read_seek,
 };

@@ -265,7 +265,6 @@ void fdct_altivec(int16_t *block)
  * conversion to vector float.  The following code section takes advantage
  * of this.
  */
-#if 1
     /* fdct rows {{{ */
     x0 = ((vector float)vec_add(vs16(b00), vs16(b70)));
     x7 = ((vector float)vec_sub(vs16(b00), vs16(b70)));
@@ -389,29 +388,6 @@ void fdct_altivec(int16_t *block)
     b31 = vec_add(b31, x2);
     b11 = vec_add(b11, x3);
     /* }}} */
-#else
-    /* convert to float {{{ */
-#define CTF(n) \
-    vs32(b##n##1) = vec_unpackl(vs16(b##n##0)); \
-    vs32(b##n##0) = vec_unpackh(vs16(b##n##0)); \
-    b##n##1 = vec_ctf(vs32(b##n##1), 0); \
-    b##n##0 = vec_ctf(vs32(b##n##0), 0); \
-
-    CTF(0);
-    CTF(1);
-    CTF(2);
-    CTF(3);
-    CTF(4);
-    CTF(5);
-    CTF(6);
-    CTF(7);
-
-#undef CTF
-    /* }}} */
-
-    FDCTROW(b00, b10, b20, b30, b40, b50, b60, b70);
-    FDCTROW(b01, b11, b21, b31, b41, b51, b61, b71);
-#endif
 
 
     /* 8x8 matrix transpose (vector float[8][2]) {{{ */

@@ -51,7 +51,7 @@ and the input video converted to MPEG-2 video, use the command:
 ffmpeg -i INPUT -acodec pcm_u8 -vcodec mpeg2video -f crc -
 @end example
 
-See also the @code{framecrc} muxer (@pxref{framecrc}).
+See also the @ref{framecrc} muxer.
 
 @anchor{framecrc}
 @section framecrc
@@ -88,7 +88,7 @@ MPEG-2 video, use the command:
 ffmpeg -i INPUT -acodec pcm_u8 -vcodec mpeg2video -f framecrc -
 @end example
 
-See also the @code{crc} muxer (@pxref{crc}).
+See also the @ref{crc} muxer.
 
 @section image2
 

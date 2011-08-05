@@ -41,6 +41,7 @@
 
 
 //FIXME maybe link the orig in
+//XXX: identical pix_fmt must be following with each others
 static const struct {
     int fmt;
     enum PixelFormat pix_fmt;
@@ -135,7 +136,6 @@ extern const vf_info_t vf_info_palette;
 extern const vf_info_t vf_info_lavc;
 extern const vf_info_t vf_info_zrmjpeg;
 extern const vf_info_t vf_info_dvbscale;
-extern const vf_info_t vf_info_cropdetect;
 extern const vf_info_t vf_info_test;
 extern const vf_info_t vf_info_noise;
 extern const vf_info_t vf_info_yvu9;
@@ -151,7 +151,6 @@ extern const vf_info_t vf_info_unsharp;
 extern const vf_info_t vf_info_swapuv;
 extern const vf_info_t vf_info_il;
 extern const vf_info_t vf_info_fil;
-extern const vf_info_t vf_info_boxblur;
 extern const vf_info_t vf_info_sab;
 extern const vf_info_t vf_info_smartblur;
 extern const vf_info_t vf_info_perspective;
@@ -181,7 +180,6 @@ extern const vf_info_t vf_info_fspp;
 extern const vf_info_t vf_info_pp7;
 extern const vf_info_t vf_info_yuvcsp;
 extern const vf_info_t vf_info_kerndeint;
-extern const vf_info_t vf_info_rgbtest;
 extern const vf_info_t vf_info_qp;
 extern const vf_info_t vf_info_phase;
 extern const vf_info_t vf_info_divtc;
@@ -191,7 +189,6 @@ extern const vf_info_t vf_info_screenshot;
 extern const vf_info_t vf_info_ass;
 extern const vf_info_t vf_info_mcdeint;
 extern const vf_info_t vf_info_yadif;
-extern const vf_info_t vf_info_blackframe;
 extern const vf_info_t vf_info_geq;
 extern const vf_info_t vf_info_ow;
 extern const vf_info_t vf_info_fixpts;
@@ -200,9 +197,6 @@ extern const vf_info_t vf_info_stereo3d;
 
 static const vf_info_t* const filters[]={
     &vf_info_2xsai,
-    &vf_info_blackframe,
-    &vf_info_boxblur,
-    &vf_info_cropdetect,
     &vf_info_decimate,
     &vf_info_delogo,
     &vf_info_denoise3d,
@@ -240,7 +234,6 @@ static const vf_info_t* const filters[]={
     &vf_info_qp,
     &vf_info_rectangle,
     &vf_info_remove_logo,
-    &vf_info_rgbtest,
     &vf_info_rotate,
     &vf_info_sab,
     &vf_info_screenshot,
@@ -785,13 +778,17 @@ static int query_formats(AVFilterContext *ctx)
 {
     AVFilterFormats *avfmts=NULL;
     MPContext *m = ctx->priv;
+    enum PixelFormat lastpixfmt = PIX_FMT_NONE;
     int i;
 
     for(i=0; conversion_map[i].fmt; i++){
         av_log(ctx, AV_LOG_DEBUG, "query: %X\n", conversion_map[i].fmt);
         if(m->vf.query_format(&m->vf, conversion_map[i].fmt)){
             av_log(ctx, AV_LOG_DEBUG, "supported,adding\n");
-            avfilter_add_format(&avfmts, conversion_map[i].pix_fmt);
+            if (conversion_map[i].pix_fmt != lastpixfmt) {
+                avfilter_add_format(&avfmts, conversion_map[i].pix_fmt);
+                lastpixfmt = conversion_map[i].pix_fmt;
+            }
         }
     }
 

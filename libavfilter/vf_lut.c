@@ -28,6 +28,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 
 static const char *var_names[] = {
     "E",
@@ -165,16 +166,6 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int pix_fmt_is_in(enum PixelFormat pix_fmt, enum PixelFormat *pix_fmts)
-{
-    enum PixelFormat *p;
-    for (p = pix_fmts; *p != PIX_FMT_NONE; p++) {
-        if (pix_fmt == *p)
-            return 1;
-    }
-    return 0;
-}
-
 /**
  * Clip value val in the minval - maxval range.
  */
@@ -238,6 +229,7 @@ static int config_props(AVFilterLink *inlink)
         min[Y] = min[U] = min[V] = 16;
         max[Y] = 235;
         max[U] = max[V] = 240;
+        min[A] = 0; max[A] = 255;
         break;
     default:
         min[0] = min[1] = min[2] = min[3] = 0;
@@ -245,8 +237,8 @@ static int config_props(AVFilterLink *inlink)
     }
 
     lut->is_yuv = lut->is_rgb = 0;
-    if      (pix_fmt_is_in(inlink->format, yuv_pix_fmts)) lut->is_yuv = 1;
-    else if (pix_fmt_is_in(inlink->format, rgb_pix_fmts)) lut->is_rgb = 1;
+    if      (ff_fmt_is_in(inlink->format, yuv_pix_fmts)) lut->is_yuv = 1;
+    else if (ff_fmt_is_in(inlink->format, rgb_pix_fmts)) lut->is_rgb = 1;
 
     if (lut->is_rgb) {
         switch (inlink->format) {
@@ -306,25 +298,29 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     AVFilterLink *outlink = ctx->outputs[0];
     AVFilterBufferRef *inpic  = inlink ->cur_buf;
     AVFilterBufferRef *outpic = outlink->out_buf;
-    uint8_t *inrow, *outrow;
+    uint8_t *inrow, *outrow, *inrow0, *outrow0;
     int i, j, k, plane;
 
     if (lut->is_rgb) {
         /* packed */
-        inrow  = inpic ->data[0] + y * inpic ->linesize[0];
-        outrow = outpic->data[0] + y * outpic->linesize[0];
+        inrow0  = inpic ->data[0] + y * inpic ->linesize[0];
+        outrow0 = outpic->data[0] + y * outpic->linesize[0];
 
         for (i = 0; i < h; i ++) {
+            inrow  = inrow0;
+            outrow = outrow0;
             for (j = 0; j < inlink->w; j++) {
                 for (k = 0; k < lut->step; k++)
                     outrow[k] = lut->lut[lut->rgba_map[k]][inrow[k]];
                 outrow += lut->step;
                 inrow  += lut->step;
             }
+            inrow0  += inpic ->linesize[0];
+            outrow0 += outpic->linesize[0];
         }
     } else {
         /* planar */
-        for (plane = 0; inpic->data[plane]; plane++) {
+        for (plane = 0; plane < 4 && inpic->data[plane]; plane++) {
             int vsub = plane == 1 || plane == 2 ? lut->vsub : 0;
             int hsub = plane == 1 || plane == 2 ? lut->hsub : 0;
 
@@ -345,8 +341,8 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 
 #define DEFINE_LUT_FILTER(name_, description_, init_)                   \
     AVFilter avfilter_vf_##name_ = {                                    \
-        .name          = NULL_IF_CONFIG_SMALL(#name_),                  \
-        .description   = description_,                                  \
+        .name          = #name_,                                        \
+        .description   = NULL_IF_CONFIG_SMALL(description_),            \
         .priv_size     = sizeof(LutContext),                            \
                                                                         \
         .init          = init_,                                         \

@@ -30,7 +30,7 @@
 #include "mpegvideo.h"
 
 /**
- * \addtogroup VAAPI_Decoding
+ * @addtogroup VAAPI_Decoding
  *
  * @{
  */
@@ -38,7 +38,7 @@
 /** Extract VASurfaceID from a Picture */
 static inline VASurfaceID ff_vaapi_get_surface_id(Picture *pic)
 {
-    return (uintptr_t)pic->data[3];
+    return (uintptr_t)pic->f.data[3];
 }
 
 /** Common AVHWAccel.end_frame() implementation */

@@ -83,8 +83,8 @@ static char *parse_link_name(const char **buf, void *log_ctx)
  * Create an instance of a filter, initialize and insert it in the
  * filtergraph in *ctx.
  *
+ * @param filt_ctx put here a filter context in case of successful creation and configuration, NULL otherwise.
  * @param ctx the filtergraph context
- * @param put here a filter context in case of successful creation and configuration, NULL otherwise.
  * @param index an index which is supposed to be unique for each filter instance added to the filtergraph
  * @param filt_name the name of the filter to create
  * @param args the arguments provided to the filter during its initialization
@@ -141,6 +141,8 @@ static int create_filter(AVFilterContext **filt_ctx, AVFilterGraph *ctx, int ind
  * corresponding filter instance which is added to graph with
  * create_filter().
  *
+ * @param filt_ctx Pointer that is set to the created and configured filter
+ *                 context on success, set to NULL on failure.
  * @param filt_ctx put here a pointer to the created filter context on
  * success, NULL otherwise
  * @param buf pointer to the buffer to parse, *buf will be updated to
@@ -333,38 +335,40 @@ static int parse_outputs(const char **buf, AVFilterInOut **curr_inputs,
 }
 
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
-                         AVFilterInOut **open_inputs, AVFilterInOut **open_outputs,
+                         AVFilterInOut **open_inputs_ptr, AVFilterInOut **open_outputs_ptr,
                          void *log_ctx)
 {
-    int index = 0, ret;
+    int index = 0, ret = 0;
     char chr = 0;
 
     AVFilterInOut *curr_inputs = NULL;
+    AVFilterInOut *open_inputs  = open_inputs_ptr  ? *open_inputs_ptr  : NULL;
+    AVFilterInOut *open_outputs = open_outputs_ptr ? *open_outputs_ptr : NULL;
 
     do {
         AVFilterContext *filter;
         const char *filterchain = filters;
         filters += strspn(filters, WHITESPACES);
 
-        if ((ret = parse_inputs(&filters, &curr_inputs, open_outputs, log_ctx)) < 0)
-            goto fail;
+        if ((ret = parse_inputs(&filters, &curr_inputs, &open_outputs, log_ctx)) < 0)
+            goto end;
 
         if ((ret = parse_filter(&filter, &filters, graph, index, log_ctx)) < 0)
-            goto fail;
+            goto end;
 
         if (filter->input_count == 1 && !curr_inputs && !index) {
-            /* First input can be omitted if it is "[in]" */
+            /* First input pad, assume it is "[in]" if not specified */
             const char *tmp = "[in]";
-            if ((ret = parse_inputs(&tmp, &curr_inputs, open_outputs, log_ctx)) < 0)
-                goto fail;
+            if ((ret = parse_inputs(&tmp, &curr_inputs, &open_outputs, log_ctx)) < 0)
+                goto end;
         }
 
-        if ((ret = link_filter_inouts(filter, &curr_inputs, open_inputs, log_ctx)) < 0)
-            goto fail;
+        if ((ret = link_filter_inouts(filter, &curr_inputs, &open_inputs, log_ctx)) < 0)
+            goto end;
 
-        if ((ret = parse_outputs(&filters, &curr_inputs, open_inputs, open_outputs,
+        if ((ret = parse_outputs(&filters, &curr_inputs, &open_inputs, &open_outputs,
                                  log_ctx)) < 0)
-            goto fail;
+            goto end;
 
         filters += strspn(filters, WHITESPACES);
         chr = *filters++;
@@ -374,7 +378,7 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                    "Invalid filterchain containing an unlabelled output pad: \"%s\"\n",
                    filterchain);
             ret = AVERROR(EINVAL);
-            goto fail;
+            goto end;
         }
         index++;
     } while (chr == ',' || chr == ';');
@@ -384,25 +388,29 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                "Unable to parse graph description substring: \"%s\"\n",
                filters - 1);
         ret = AVERROR(EINVAL);
-        goto fail;
+        goto end;
     }
 
-    if (open_inputs && *open_inputs && !strcmp((*open_inputs)->name, "out") && curr_inputs) {
-        /* Last output can be omitted if it is "[out]" */
+    if (curr_inputs) {
+        /* Last output pad, assume it is "[out]" if not specified */
         const char *tmp = "[out]";
-        if ((ret = parse_outputs(&tmp, &curr_inputs, open_inputs, open_outputs,
+        if ((ret = parse_outputs(&tmp, &curr_inputs, &open_inputs, &open_outputs,
                                  log_ctx)) < 0)
-            goto fail;
+            goto end;
     }
 
-    return 0;
-
- fail:
-    for (; graph->filter_count > 0; graph->filter_count--)
-        avfilter_free(graph->filters[graph->filter_count - 1]);
-    av_freep(&graph->filters);
-    avfilter_inout_free(open_inputs);
-    avfilter_inout_free(open_outputs);
+end:
+    /* clear open_in/outputs only if not passed as parameters */
+    if (open_inputs_ptr) *open_inputs_ptr = open_inputs;
+    else avfilter_inout_free(&open_inputs);
+    if (open_outputs_ptr) *open_outputs_ptr = open_outputs;
+    else avfilter_inout_free(&open_outputs);
     avfilter_inout_free(&curr_inputs);
+
+    if (ret < 0) {
+        for (; graph->filter_count > 0; graph->filter_count--)
+            avfilter_free(graph->filters[graph->filter_count - 1]);
+        av_freep(&graph->filters);
+    }
     return ret;
 }

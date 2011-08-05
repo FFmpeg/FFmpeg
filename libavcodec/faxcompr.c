@@ -20,8 +20,8 @@
  */
 
 /**
- * CCITT Fax Group 3 and 4 decompression
  * @file
+ * CCITT Fax Group 3 and 4 decompression
  * @author Konstantin Shishkov
  */
 #include "avcodec.h"

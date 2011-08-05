@@ -63,11 +63,11 @@ static const uint8_t fallback_cquant[] = {
 };
 
 /**
- * \brief copy frame data from buffer to AVFrame, handling stride.
- * \param f destination AVFrame
- * \param src source buffer, does not use any line-stride
- * \param width width of the video frame
- * \param height height of the video frame
+ * @brief copy frame data from buffer to AVFrame, handling stride.
+ * @param f destination AVFrame
+ * @param src source buffer, does not use any line-stride
+ * @param width width of the video frame
+ * @param height height of the video frame
  */
 static void copy_frame(AVFrame *f, const uint8_t *src,
                        int width, int height) {
@@ -77,7 +77,7 @@ static void copy_frame(AVFrame *f, const uint8_t *src,
 }
 
 /**
- * \brief extract quantization tables from codec data into our context
+ * @brief extract quantization tables from codec data into our context
  */
 static int get_quant(AVCodecContext *avctx, NuvContext *c,
                      const uint8_t *buf, int size) {
@@ -94,7 +94,7 @@ static int get_quant(AVCodecContext *avctx, NuvContext *c,
 }
 
 /**
- * \brief set quantization tables from a quality value
+ * @brief set quantization tables from a quality value
  */
 static void get_quant_quality(NuvContext *c, int quality) {
     int i;
@@ -273,15 +273,14 @@ static av_cold int decode_end(AVCodecContext *avctx) {
 }
 
 AVCodec ff_nuv_decoder = {
-    "nuv",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_NUV,
-    sizeof(NuvContext),
-    decode_init,
-    NULL,
-    decode_end,
-    decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "nuv",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_NUV,
+    .priv_data_size = sizeof(NuvContext),
+    .init           = decode_init,
+    .close          = decode_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("NuppelVideo/RTJPEG"),
 };
 

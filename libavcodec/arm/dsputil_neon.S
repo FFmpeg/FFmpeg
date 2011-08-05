@@ -531,6 +531,7 @@ function ff_vorbis_inverse_coupling_neon, export=1
 
 2:      vst1.32         {d2-d3},  [r3, :128]!
         vst1.32         {d0-d1},  [r12,:128]!
+        it              lt
         bxlt            lr
 
 3:      vld1.32         {d2-d3},  [r1,:128]
@@ -575,115 +576,13 @@ NOVFP   vdup.32         q8,  r2
 2:      vst1.32         {q2},[r0,:128]!
         vst1.32         {q3},[r0,:128]!
         ands            len, len, #15
+        it              eq
         bxeq            lr
 3:      vld1.32         {q0},[r1,:128]!
         vmul.f32        q0,  q0,  q8
         vst1.32         {q0},[r0,:128]!
         subs            len, len, #4
         bgt             3b
-        bx              lr
-        .unreq          len
-endfunc
-
-function ff_vector_fmul_sv_scalar_2_neon, export=1
-VFP     vdup.32         d16, d0[0]
-NOVFP   vdup.32         d16, r3
-NOVFP   ldr             r3,  [sp]
-        vld1.32         {d0},[r1,:64]!
-        vld1.32         {d1},[r1,:64]!
-1:      subs            r3,  r3,  #4
-        vmul.f32        d4,  d0,  d16
-        vmul.f32        d5,  d1,  d16
-        ldr             r12, [r2], #4
-        vld1.32         {d2},[r12,:64]
-        ldr             r12, [r2], #4
-        vld1.32         {d3},[r12,:64]
-        vmul.f32        d4,  d4,  d2
-        vmul.f32        d5,  d5,  d3
-        beq             2f
-        vld1.32         {d0},[r1,:64]!
-        vld1.32         {d1},[r1,:64]!
-        vst1.32         {d4},[r0,:64]!
-        vst1.32         {d5},[r0,:64]!
-        b               1b
-2:      vst1.32         {d4},[r0,:64]!
-        vst1.32         {d5},[r0,:64]!
-        bx              lr
-endfunc
-
-function ff_vector_fmul_sv_scalar_4_neon, export=1
-VFP     vdup.32         q10, d0[0]
-NOVFP   vdup.32         q10, r3
-NOVFP   ldr             r3,  [sp]
-        push            {lr}
-        bics            lr,  r3,  #7
-        beq             3f
-        vld1.32         {q0},[r1,:128]!
-        vld1.32         {q2},[r1,:128]!
-1:      ldr             r12, [r2], #4
-        vld1.32         {q1},[r12,:128]
-        ldr             r12, [r2], #4
-        vld1.32         {q3},[r12,:128]
-        vmul.f32        q8,  q0,  q10
-        vmul.f32        q8,  q8,  q1
-        vmul.f32        q9,  q2,  q10
-        vmul.f32        q9,  q9,  q3
-        subs            lr,  lr,  #8
-        beq             2f
-        vld1.32         {q0},[r1,:128]!
-        vld1.32         {q2},[r1,:128]!
-        vst1.32         {q8},[r0,:128]!
-        vst1.32         {q9},[r0,:128]!
-        b               1b
-2:      vst1.32         {q8},[r0,:128]!
-        vst1.32         {q9},[r0,:128]!
-        ands            r3,  r3,  #7
-        popeq           {pc}
-3:      vld1.32         {q0},[r1,:128]!
-        ldr             r12, [r2], #4
-        vld1.32         {q1},[r12,:128]
-        vmul.f32        q0,  q0,  q10
-        vmul.f32        q0,  q0,  q1
-        vst1.32         {q0},[r0,:128]!
-        subs            r3,  r3,  #4
-        bgt             3b
-        pop             {pc}
-endfunc
-
-function ff_sv_fmul_scalar_2_neon, export=1
-VFP     len .req r2
-NOVFP   len .req r3
-VFP     vdup.32         q8,  d0[0]
-NOVFP   vdup.32         q8,  r2
-        ldr             r12, [r1], #4
-        vld1.32         {d0},[r12,:64]
-        ldr             r12, [r1], #4
-        vld1.32         {d1},[r12,:64]
-1:      vmul.f32        q1,  q0,  q8
-        subs            len, len, #4
-        beq             2f
-        ldr             r12, [r1], #4
-        vld1.32         {d0},[r12,:64]
-        ldr             r12, [r1], #4
-        vld1.32         {d1},[r12,:64]
-        vst1.32         {q1},[r0,:128]!
-        b               1b
-2:      vst1.32         {q1},[r0,:128]!
-        bx              lr
-        .unreq          len
-endfunc
-
-function ff_sv_fmul_scalar_4_neon, export=1
-VFP     len .req r2
-NOVFP   len .req r3
-VFP     vdup.32         q8,  d0[0]
-NOVFP   vdup.32         q8,  r2
-1:      ldr             r12, [r1], #4
-        vld1.32         {q0},[r12,:128]
-        vmul.f32        q0,  q0,  q8
-        vst1.32         {q0},[r0,:128]!
-        subs            len, len, #4
-        bgt             1b
         bx              lr
         .unreq          len
 endfunc
@@ -811,4 +710,20 @@ function ff_apply_window_int16_neon, export=1
         bgt             1b
 
         pop             {r4,pc}
+endfunc
+
+function ff_vector_clip_int32_neon, export=1
+        vdup.32         q0,  r2
+        vdup.32         q1,  r3
+        ldr             r2,  [sp]
+1:
+        vld1.32         {q2-q3},  [r1,:128]!
+        vmin.s32        q2,  q2,  q1
+        vmin.s32        q3,  q3,  q1
+        vmax.s32        q2,  q2,  q0
+        vmax.s32        q3,  q3,  q0
+        vst1.32         {q2-q3},  [r0,:128]!
+        subs            r2,  r2,  #8
+        bgt             1b
+        bx              lr
 endfunc

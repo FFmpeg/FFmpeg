@@ -1,5 +1,5 @@
 /*
- * Bink IDCT algorithm
+ * Bink DSP routines
  * Copyright (c) 2009 Kostya Shishkov
  *
  * This file is part of FFmpeg.
@@ -21,10 +21,11 @@
 
 /**
  * @file
- * Bink IDCT algorithm
+ * Bink DSP routines
  */
 
 #include "dsputil.h"
+#include "binkdsp.h"
 
 #define A1  2896 /* (1/sqrt(2))<<12 */
 #define A2  2217
@@ -62,7 +63,7 @@
 #define MUNGE_ROW(x) (((x) + 0x7F)>>8)
 #define IDCT_ROW(dest,src) IDCT_TRANSFORM(dest,0,1,2,3,4,5,6,7,0,1,2,3,4,5,6,7,MUNGE_ROW,src)
 
-static inline void bink_idct_col(int *dest, const DCTELEM *src)
+static inline void bink_idct_col(int *dest, const int32_t *src)
 {
     if ((src[8]|src[16]|src[24]|src[32]|src[40]|src[48]|src[56])==0) {
         dest[0]  =
@@ -78,7 +79,7 @@ static inline void bink_idct_col(int *dest, const DCTELEM *src)
     }
 }
 
-void ff_bink_idct_c(DCTELEM *block)
+static void bink_idct_c(int32_t *block)
 {
     int i;
     int temp[64];
@@ -90,17 +91,17 @@ void ff_bink_idct_c(DCTELEM *block)
     }
 }
 
-void ff_bink_idct_add_c(uint8_t *dest, int linesize, DCTELEM *block)
+static void bink_idct_add_c(uint8_t *dest, int linesize, int32_t *block)
 {
     int i, j;
 
-    ff_bink_idct_c(block);
+    bink_idct_c(block);
     for (i = 0; i < 8; i++, dest += linesize, block += 8)
         for (j = 0; j < 8; j++)
              dest[j] += block[j];
 }
 
-void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block)
+static void bink_idct_put_c(uint8_t *dest, int linesize, int32_t *block)
 {
     int i;
     int temp[64];
@@ -109,4 +110,27 @@ void ff_bink_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block)
     for (i = 0; i < 8; i++) {
         IDCT_ROW( (&dest[i*linesize]), (&temp[8*i]) );
     }
+}
+
+static void scale_block_c(const uint8_t src[64]/*align 8*/, uint8_t *dst/*align 8*/, int linesize)
+{
+    int i, j;
+    uint16_t *dst1 = (uint16_t *) dst;
+    uint16_t *dst2 = (uint16_t *)(dst + linesize);
+
+    for (j = 0; j < 8; j++) {
+        for (i = 0; i < 8; i++) {
+            dst1[i] = dst2[i] = src[i] * 0x0101;
+        }
+        src  += 8;
+        dst1 += linesize;
+        dst2 += linesize;
+    }
+}
+
+void ff_binkdsp_init(BinkDSPContext *c)
+{
+    c->idct_add    = bink_idct_add_c;
+    c->idct_put    = bink_idct_put_c;
+    c->scale_block = scale_block_c;
 }

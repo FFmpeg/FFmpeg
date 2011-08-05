@@ -21,9 +21,9 @@
 
 /**
  * @file
- * VQA Video Decoder by Mike Melanson (melanson@pcisys.net)
- * For more information about the VQA format, visit:
- *   http://wiki.multimedia.cx/index.php?title=VQA
+ * VQA Video Decoder
+ * @author Mike Melanson (melanson@pcisys.net)
+ * @see http://wiki.multimedia.cx/index.php?title=VQA
  *
  * The VQA video decoder outputs PAL8 or RGB555 colorspace data, depending
  * on the type of data in the file.
@@ -601,14 +601,13 @@ static av_cold int vqa_decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_vqa_decoder = {
-    "vqavideo",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_WS_VQA,
-    sizeof(VqaContext),
-    vqa_decode_init,
-    NULL,
-    vqa_decode_end,
-    vqa_decode_frame,
-    CODEC_CAP_DR1,
+    .name           = "vqavideo",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_WS_VQA,
+    .priv_data_size = sizeof(VqaContext),
+    .init           = vqa_decode_init,
+    .close          = vqa_decode_end,
+    .decode         = vqa_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Westwood Studios VQA (Vector Quantized Animation) video"),
 };

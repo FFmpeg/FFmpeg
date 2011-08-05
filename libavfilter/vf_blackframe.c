@@ -34,6 +34,7 @@ typedef struct {
     unsigned int bthresh; ///< black threshold
     unsigned int frame;   ///< frame number
     unsigned int nblack;  ///< number of black pixels counted so far
+    unsigned int last_keyframe; ///< frame number of the last received key-frame
 } BlackFrameContext;
 
 static int query_formats(AVFilterContext *ctx)
@@ -56,6 +57,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     blackframe->bthresh = 32;
     blackframe->nblack = 0;
     blackframe->frame = 0;
+    blackframe->last_keyframe = 0;
 
     if (args)
         sscanf(args, "%u:%u", &blackframe->bamount, &blackframe->bthresh);
@@ -95,11 +97,16 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterBufferRef *picref = inlink->cur_buf;
     int pblack = 0;
 
+    if (picref->video->key_frame)
+        blackframe->last_keyframe = blackframe->frame;
+
     pblack = blackframe->nblack * 100 / (inlink->w * inlink->h);
     if (pblack >= blackframe->bamount)
-        av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pos:%"PRId64" pts:%"PRId64" t:%f\n",
+        av_log(ctx, AV_LOG_INFO, "frame:%u pblack:%u pos:%"PRId64" pts:%"PRId64" t:%f "
+               "type:%c last_keyframe:%d\n",
                blackframe->frame, pblack, picref->pos, picref->pts,
-               picref->pts == AV_NOPTS_VALUE ? -1 : picref->pts * av_q2d(inlink->time_base));
+               picref->pts == AV_NOPTS_VALUE ? -1 : picref->pts * av_q2d(inlink->time_base),
+               av_get_picture_type_char(picref->video->pict_type), blackframe->last_keyframe);
 
     blackframe->frame++;
     blackframe->nblack = 0;

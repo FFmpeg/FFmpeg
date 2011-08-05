@@ -129,9 +129,11 @@ static void ape_dumpinfo(AVFormatContext * s, APEContext * ape_ctx)
     } else {
         for (i = 0; i < ape_ctx->seektablelength / sizeof(uint32_t); i++) {
             if (i < ape_ctx->totalframes - 1) {
-                av_log(s, AV_LOG_DEBUG, "%8d   %d (%d bytes)\n", i, ape_ctx->seektable[i], ape_ctx->seektable[i + 1] - ape_ctx->seektable[i]);
+                av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32" (%"PRIu32" bytes)\n",
+                       i, ape_ctx->seektable[i],
+                       ape_ctx->seektable[i + 1] - ape_ctx->seektable[i]);
             } else {
-                av_log(s, AV_LOG_DEBUG, "%8d   %d\n", i, ape_ctx->seektable[i]);
+                av_log(s, AV_LOG_DEBUG, "%8d   %"PRIu32"\n", i, ape_ctx->seektable[i]);
             }
         }
     }
@@ -169,7 +171,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
     ape->fileversion = avio_rl16(pb);
 
     if (ape->fileversion < APE_MIN_VERSION || ape->fileversion > APE_MAX_VERSION) {
-        av_log(s, AV_LOG_ERROR, "Unsupported file version - %"PRId16".%02"PRId16"\n",
+        av_log(s, AV_LOG_ERROR, "Unsupported file version - %d.%02d\n",
                ape->fileversion / 1000, (ape->fileversion % 1000) / 10);
         return -1;
     }
@@ -253,7 +255,8 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
         return -1;
     }
     if (ape->seektablelength && (ape->seektablelength / sizeof(*ape->seektable)) < ape->totalframes) {
-        av_log(s, AV_LOG_ERROR, "Number of seek entries is less than number of frames: %ld vs. %"PRIu32"\n",
+        av_log(s, AV_LOG_ERROR,
+               "Number of seek entries is less than number of frames: %zu vs. %"PRIu32"\n",
                ape->seektablelength / sizeof(*ape->seektable), ape->totalframes);
         return AVERROR_INVALIDDATA;
     }
@@ -405,13 +408,13 @@ static int ape_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 }
 
 AVInputFormat ff_ape_demuxer = {
-    "ape",
-    NULL_IF_CONFIG_SMALL("Monkey's Audio"),
-    sizeof(APEContext),
-    ape_probe,
-    ape_read_header,
-    ape_read_packet,
-    ape_read_close,
-    ape_read_seek,
+    .name           = "ape",
+    .long_name      = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
+    .priv_data_size = sizeof(APEContext),
+    .read_probe     = ape_probe,
+    .read_header    = ape_read_header,
+    .read_packet    = ape_read_packet,
+    .read_close     = ape_read_close,
+    .read_seek      = ape_read_seek,
     .extensions = "ape,apl,mac"
 };

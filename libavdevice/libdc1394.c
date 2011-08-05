@@ -23,6 +23,7 @@
 
 #include "config.h"
 #include "libavutil/log.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avdevice.h"
 

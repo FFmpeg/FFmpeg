@@ -248,7 +248,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     VideoData *s = s1->priv_data;
     AVStream *st;
     int width, height;
-    AVRational fps;
+    AVRational framerate;
     int ret = 0;
 
 #if FF_API_FORMAT_PARAMETERS
@@ -263,7 +263,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 #endif
 
     if ((ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Couldn't parse video size.\n");
+        av_log(s1, AV_LOG_ERROR, "Could not parse video size '%s'.\n", s->video_size);
         goto out;
     }
 
@@ -277,8 +277,8 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
             ret = AVERROR(EINVAL);
             goto out;
         }
-    if ((ret = av_parse_video_rate(&fps, s->framerate)) < 0) {
-        av_log(s1, AV_LOG_ERROR, "Couldn't parse framerate.\n");
+    if ((ret = av_parse_video_rate(&framerate, s->framerate)) < 0) {
+        av_log(s1, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", s->framerate);
         goto out;
     }
 #if FF_API_FORMAT_PARAMETERS
@@ -287,7 +287,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     if (ap->height > 0)
         height = ap->height;
     if (ap->time_base.num)
-        fps = (AVRational){ap->time_base.den, ap->time_base.num};
+        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
 #endif
 
     st = av_new_stream(s1, 0);
@@ -299,15 +299,15 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     s->width = width;
     s->height = height;
-    s->per_frame = ((uint64_t)1000000 * fps.den) / fps.num;
+    s->per_frame = ((uint64_t)1000000 * framerate.den) / framerate.num;
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->pix_fmt = PIX_FMT_YUV420P;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;
     st->codec->width = width;
     st->codec->height = height;
-    st->codec->time_base.den = fps.num;
-    st->codec->time_base.num = fps.den;
+    st->codec->time_base.den = framerate.num;
+    st->codec->time_base.num = framerate.den;
 
 
     if (bktr_init(s1->filename, width, height, s->standard,

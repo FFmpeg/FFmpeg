@@ -71,7 +71,7 @@ function idct_row4_pld_neon
         add             r3,  r0,  r1,  lsl #2
         pld             [r0, r1]
         pld             [r0, r1, lsl #1]
-        pld             [r3, -r1]
+A       pld             [r3, -r1]
         pld             [r3]
         pld             [r3, r1]
         add             r3,  r3,  r1,  lsl #1
@@ -164,6 +164,7 @@ function idct_col4_neon
         orrs            r4,  r4,  r5
 
         idct_col4_top
+        it              eq
         addeq           r2,  r2,  #16
         beq             1f
 
@@ -176,6 +177,7 @@ function idct_col4_neon
 
 1:      orrs            r6,  r6,  r7
         ldrd            r4,  [r2, #16]
+        it              eq
         addeq           r2,  r2,  #16
         beq             2f
 
@@ -187,6 +189,7 @@ function idct_col4_neon
 
 2:      orrs            r4,  r4,  r5
         ldrd            r4,  [r2, #16]
+        it              eq
         addeq           r2,  r2,  #16
         beq             3f
 
@@ -199,6 +202,7 @@ function idct_col4_neon
         vadd.i32        q13, q13, q8
 
 3:      orrs            r4,  r4,  r5
+        it              eq
         addeq           r2,  r2,  #16
         beq             4f
 
@@ -239,10 +243,9 @@ function idct_col4_st8_neon
         bx              lr
 endfunc
 
-        .section .rodata
-        .align 4
-idct_coeff_neon:
+const   idct_coeff_neon, align=4
         .short W1, W2, W3, W4, W5, W6, W7, W4c
+endconst
 
         .macro idct_start data
         push            {r4-r7, lr}

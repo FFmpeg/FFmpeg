@@ -217,7 +217,7 @@ static av_cold int ape_decode_close(AVCodecContext * avctx)
 }
 
 /**
- * @defgroup rangecoder APE range decoder
+ * @name APE range decoding functions
  * @{
  */
 
@@ -885,14 +885,13 @@ static void ape_flush(AVCodecContext *avctx)
 }
 
 AVCodec ff_ape_decoder = {
-    "ape",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_APE,
-    sizeof(APEContext),
-    ape_decode_init,
-    NULL,
-    ape_decode_close,
-    ape_decode_frame,
+    .name           = "ape",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_APE,
+    .priv_data_size = sizeof(APEContext),
+    .init           = ape_decode_init,
+    .close          = ape_decode_close,
+    .decode         = ape_decode_frame,
     .capabilities = CODEC_CAP_SUBFRAMES,
     .flush = ape_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Monkey's Audio"),

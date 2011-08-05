@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
 #include "ffm.h"
 #if CONFIG_FFSERVER
@@ -300,7 +301,6 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         codec->codec_id = avio_rb32(pb);
         codec->codec_type = avio_r8(pb); /* codec_type */
         codec->bit_rate = avio_rb32(pb);
-        st->quality = avio_rb32(pb);
         codec->flags = avio_rb32(pb);
         codec->flags2 = avio_rb32(pb);
         codec->debug = avio_rb32(pb);
@@ -508,12 +508,12 @@ static int ffm_probe(AVProbeData *p)
 }
 
 AVInputFormat ff_ffm_demuxer = {
-    "ffm",
-    NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
-    sizeof(FFMContext),
-    ffm_probe,
-    ffm_read_header,
-    ffm_read_packet,
-    ffm_close,
-    ffm_seek,
+    .name           = "ffm",
+    .long_name      = NULL_IF_CONFIG_SMALL("FFM (FFserver live feed) format"),
+    .priv_data_size = sizeof(FFMContext),
+    .read_probe     = ffm_probe,
+    .read_header    = ffm_read_header,
+    .read_packet    = ffm_read_packet,
+    .read_close     = ffm_close,
+    .read_seek      = ffm_seek,
 };

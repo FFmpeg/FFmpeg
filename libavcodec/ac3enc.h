@@ -50,22 +50,22 @@
 #if CONFIG_AC3ENC_FLOAT
 #define AC3_NAME(x) ff_ac3_float_ ## x
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
+#define COEF_MIN (-16777215.0/16777216.0)
+#define COEF_MAX ( 16777215.0/16777216.0)
 typedef float SampleType;
 typedef float CoefType;
 typedef float CoefSumType;
 #else
 #define AC3_NAME(x) ff_ac3_fixed_ ## x
 #define MAC_COEF(d,a,b) MAC64(d,a,b)
+#define COEF_MIN -16777215
+#define COEF_MAX  16777215
 typedef int16_t SampleType;
 typedef int32_t CoefType;
 typedef int64_t CoefSumType;
 #endif
 
 
-typedef struct AC3MDCTContext {
-    const SampleType *window;           ///< MDCT window function
-    FFTContext fft;                     ///< FFT context for MDCT calculation
-} AC3MDCTContext;
 #if 0
 /**
  * Encoding Options used by AVOption.
@@ -92,6 +92,8 @@ typedef struct AC3EncOptions {
     int dolby_surround_ex_mode;
     int dolby_headphone_mode;
     int ad_converter_type;
+    int eac3_mixing_metadata;
+    int eac3_info_metadata;
 
     /* other encoding options */
     int allow_per_frame_metadata;
@@ -139,7 +141,8 @@ typedef struct AC3EncodeContext {
     PutBitContext pb;                       ///< bitstream writer context
     DSPContext dsp;
     AC3DSPContext ac3dsp;                   ///< AC-3 optimized functions
-    AC3MDCTContext *mdct;                   ///< MDCT context
+    FFTContext mdct;                        ///< FFT context for MDCT calculation
+    const SampleType *mdct_window;          ///< MDCT window function array
 
     AC3Block blocks[AC3_MAX_BLOCKS];        ///< per-block info
 
@@ -151,6 +154,8 @@ typedef struct AC3EncodeContext {
     int bit_rate;                           ///< target bit rate, in bits-per-second
     int sample_rate;                        ///< sampling frequency, in Hz
 
+    int num_blks_code;                      ///< number of blocks code                  (numblkscod)
+    int num_blocks;                         ///< number of blocks per frame
     int frame_size_min;                     ///< minimum frame size in case rounding is necessary
     int frame_size;                         ///< current frame size in bytes
     int frame_size_code;                    ///< frame size code                        (frmsizecod)
@@ -212,31 +217,23 @@ typedef struct AC3EncodeContext {
     int16_t *psd_buffer;
     int16_t *band_psd_buffer;
     int16_t *mask_buffer;
-    uint16_t *qmant_buffer;
+    int16_t *qmant_buffer;
     uint8_t *cpl_coord_exp_buffer;
     uint8_t *cpl_coord_mant_buffer;
 
     uint8_t exp_strategy[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< exponent strategies
+    uint8_t frame_exp_strategy[AC3_MAX_CHANNELS];           ///< frame exp strategy index
+    int use_frame_exp_strategy;                             ///< indicates use of frame exp strategy
     uint8_t exp_ref_block[AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< reference blocks for EXP_REUSE
     uint8_t *ref_bap     [AC3_MAX_CHANNELS][AC3_MAX_BLOCKS]; ///< bit allocation pointers (bap)
     int ref_bap_set;                                         ///< indicates if ref_bap pointers have been set
 
     /* fixed vs. float function pointers */
-    void (*mdct_end)(AC3MDCTContext *mdct);
-    int  (*mdct_init)(AVCodecContext *avctx, AC3MDCTContext *mdct, int nbits);
-    void (*apply_window)(DSPContext *dsp, SampleType *output,
-                         const SampleType *input, const SampleType *window,
-                         unsigned int len);
-    int  (*normalize_samples)(struct AC3EncodeContext *s);
-    void (*scale_coefficients)(struct AC3EncodeContext *s);
+    void (*mdct_end)(struct AC3EncodeContext *s);
+    int  (*mdct_init)(struct AC3EncodeContext *s);
 
     /* fixed vs. float templated function pointers */
     int  (*allocate_sample_buffers)(struct AC3EncodeContext *s);
-    void (*deinterleave_input_samples)(struct AC3EncodeContext *s,
-                                       const SampleType *samples);
-    void (*apply_mdct)(struct AC3EncodeContext *s);
-    void (*apply_channel_coupling)(struct AC3EncodeContext *s);
-    void (*compute_rematrixing_strategy)(struct AC3EncodeContext *s);
 
     /* AC-3 vs. E-AC-3 function pointers */
     void (*output_frame_header)(struct AC3EncodeContext *s);
@@ -245,33 +242,32 @@ typedef struct AC3EncodeContext {
 
 int ff_ac3_encode_init(AVCodecContext *avctx);
 
-int ff_ac3_encode_frame(AVCodecContext *avctx, unsigned char *frame,
-                        int buf_size, void *data);
-
 int ff_ac3_encode_close(AVCodecContext *avctx);
+
+int ff_ac3_validate_metadata(AC3EncodeContext *s);
+
+void ff_ac3_adjust_frame_size(AC3EncodeContext *s);
+
+void ff_ac3_compute_coupling_strategy(AC3EncodeContext *s);
+
+void ff_ac3_apply_rematrixing(AC3EncodeContext *s);
+
+void ff_ac3_process_exponents(AC3EncodeContext *s);
+
+int ff_ac3_compute_bit_allocation(AC3EncodeContext *s);
+
+void ff_ac3_quantize_mantissas(AC3EncodeContext *s);
+
+void ff_ac3_output_frame(AC3EncodeContext *s, unsigned char *frame);
 
 
 /* prototypes for functions in ac3enc_fixed.c and ac3enc_float.c */
 
-void ff_ac3_fixed_mdct_end(AC3MDCTContext *mdct);
-void ff_ac3_float_mdct_end(AC3MDCTContext *mdct);
+void ff_ac3_fixed_mdct_end(AC3EncodeContext *s);
+void ff_ac3_float_mdct_end(AC3EncodeContext *s);
 
-int ff_ac3_fixed_mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
-                           int nbits);
-int ff_ac3_float_mdct_init(AVCodecContext *avctx, AC3MDCTContext *mdct,
-                           int nbits);
-
-void ff_ac3_fixed_apply_window(DSPContext *dsp, SampleType *output,
-                               const SampleType *input,
-                               const SampleType *window, unsigned int len);
-void ff_ac3_float_apply_window(DSPContext *dsp, SampleType *output,
-                               const SampleType *input,
-                               const SampleType *window, unsigned int len);
-
-int ff_ac3_fixed_normalize_samples(AC3EncodeContext *s);
-
-void ff_ac3_fixed_scale_coefficients(AC3EncodeContext *s);
-void ff_ac3_float_scale_coefficients(AC3EncodeContext *s);
+int ff_ac3_fixed_mdct_init(AC3EncodeContext *s);
+int ff_ac3_float_mdct_init(AC3EncodeContext *s);
 
 
 /* prototypes for functions in ac3enc_template.c */
@@ -279,18 +275,9 @@ void ff_ac3_float_scale_coefficients(AC3EncodeContext *s);
 int ff_ac3_fixed_allocate_sample_buffers(AC3EncodeContext *s);
 int ff_ac3_float_allocate_sample_buffers(AC3EncodeContext *s);
 
-void ff_ac3_fixed_deinterleave_input_samples(AC3EncodeContext *s,
-                                             const SampleType *samples);
-void ff_ac3_float_deinterleave_input_samples(AC3EncodeContext *s,
-                                             const SampleType *samples);
-
-void ff_ac3_fixed_apply_mdct(AC3EncodeContext *s);
-void ff_ac3_float_apply_mdct(AC3EncodeContext *s);
-
-void ff_ac3_fixed_apply_channel_coupling(AC3EncodeContext *s);
-void ff_ac3_float_apply_channel_coupling(AC3EncodeContext *s);
-
-void ff_ac3_fixed_compute_rematrixing_strategy(AC3EncodeContext *s);
-void ff_ac3_float_compute_rematrixing_strategy(AC3EncodeContext *s);
+int ff_ac3_fixed_encode_frame(AVCodecContext *avctx, unsigned char *frame,
+                              int buf_size, void *data);
+int ff_ac3_float_encode_frame(AVCodecContext *avctx, unsigned char *frame,
+                              int buf_size, void *data);
 
 #endif /* AVCODEC_AC3ENC_H */

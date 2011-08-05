@@ -22,8 +22,10 @@
 
 /**
  * @file
- * Libavformat API example: Output a media file in any supported
- * libavformat format. The default codecs are used.
+ * libavformat API example.
+ *
+ * Output a media file in any supported libavformat format.
+ * The default codecs are used.
  */
 
 #include <stdlib.h>
@@ -31,6 +33,7 @@
 #include <string.h>
 #include <math.h>
 
+#include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
 #include "libswscale/swscale.h"
 
@@ -78,7 +81,7 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
     c->channels = 2;
 
     // some formats want stream headers to be separate
-    if(oc->oformat->flags & AVFMT_GLOBALHEADER)
+    if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     return st;
@@ -141,7 +144,7 @@ static void get_audio_frame(int16_t *samples, int frame_size, int nb_channels)
     int16_t *q;
 
     q = samples;
-    for(j=0;j<frame_size;j++) {
+    for (j = 0; j < frame_size; j++) {
         v = (int)(sin(t) * 10000);
         for(i = 0; i < nb_channels; i++)
             *q++ = v;
@@ -160,13 +163,13 @@ static void write_audio_frame(AVFormatContext *oc, AVStream *st)
 
     get_audio_frame(samples, audio_input_frame_size, c->channels);
 
-    pkt.size= avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
+    pkt.size = avcodec_encode_audio(c, audio_outbuf, audio_outbuf_size, samples);
 
     if (c->coded_frame && c->coded_frame->pts != AV_NOPTS_VALUE)
         pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
     pkt.flags |= AV_PKT_FLAG_KEY;
-    pkt.stream_index= st->index;
-    pkt.data= audio_outbuf;
+    pkt.stream_index = st->index;
+    pkt.data = audio_outbuf;
 
     /* write the compressed frame in the media file */
     if (av_interleaved_write_frame(oc, &pkt) != 0) {
@@ -230,7 +233,7 @@ static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
         c->mb_decision=2;
     }
     // some formats want stream headers to be separate
-    if(oc->oformat->flags & AVFMT_GLOBALHEADER)
+    if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         c->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
     return st;
@@ -316,15 +319,15 @@ static void fill_yuv_image(AVFrame *pict, int frame_index, int width, int height
     i = frame_index;
 
     /* Y */
-    for(y=0;y<height;y++) {
-        for(x=0;x<width;x++) {
+    for (y = 0; y < height; y++) {
+        for (x = 0; x < width; x++) {
             pict->data[0][y * pict->linesize[0] + x] = x + y + i * 3;
         }
     }
 
     /* Cb and Cr */
-    for(y=0;y<height/2;y++) {
-        for(x=0;x<width/2;x++) {
+    for (y = 0; y < height/2; y++) {
+        for (x = 0; x < width/2; x++) {
             pict->data[1][y * pict->linesize[1] + x] = 128 + y + i * 2;
             pict->data[2][y * pict->linesize[2] + x] = 64 + x + i * 5;
         }
@@ -369,14 +372,14 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
 
     if (oc->oformat->flags & AVFMT_RAWPICTURE) {
         /* raw video case. The API will change slightly in the near
-           futur for that */
+           future for that. */
         AVPacket pkt;
         av_init_packet(&pkt);
 
         pkt.flags |= AV_PKT_FLAG_KEY;
-        pkt.stream_index= st->index;
-        pkt.data= (uint8_t *)picture;
-        pkt.size= sizeof(AVPicture);
+        pkt.stream_index = st->index;
+        pkt.data = (uint8_t *)picture;
+        pkt.size = sizeof(AVPicture);
 
         ret = av_interleaved_write_frame(oc, &pkt);
     } else {
@@ -391,9 +394,9 @@ static void write_video_frame(AVFormatContext *oc, AVStream *st)
                 pkt.pts= av_rescale_q(c->coded_frame->pts, c->time_base, st->time_base);
             if(c->coded_frame->key_frame)
                 pkt.flags |= AV_PKT_FLAG_KEY;
-            pkt.stream_index= st->index;
-            pkt.data= video_outbuf;
-            pkt.size= out_size;
+            pkt.stream_index = st->index;
+            pkt.data = video_outbuf;
+            pkt.size = out_size;
 
             /* write the compressed frame in the media file */
             ret = av_interleaved_write_frame(oc, &pkt);
@@ -455,7 +458,7 @@ int main(int argc, char **argv)
     if (!oc) {
         exit(1);
     }
-    fmt= oc->oformat;
+    fmt = oc->oformat;
 
     /* add the audio and video streams using the default format codecs
        and initialize the codecs */

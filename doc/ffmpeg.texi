@@ -159,8 +159,6 @@ Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @section Video Options
 
 @table @option
-@item -b @var{bitrate}
-Set the video bitrate in bit/s (default = 200 kb/s).
 @item -vframes @var{number}
 Set the number of video frames to record.
 @item -r @var{fps}
@@ -476,7 +474,7 @@ FF_ER_COMPLIANT
 @item 3
 FF_ER_AGGRESSIVE
 @item 4
-FF_ER_VERY_AGGRESSIVE
+FF_ER_EXPLODE
 @end table
 
 @item -ec @var{bit_mask}
@@ -556,16 +554,17 @@ The timestamps must be specified in ascending order.
 @item -aframes @var{number}
 Set the number of audio frames to record.
 @item -ar @var{freq}
-Set the audio sampling frequency. there is no default for input streams,
-for output streams it is set by default to the frequency of the input stream.
-@item -ab @var{bitrate}
-Set the audio bitrate in bit/s (default = 64k).
+Set the audio sampling frequency. For output streams it is set by
+default to the frequency of the corresponding input stream. For input
+streams this option only makes sense for audio grabbing devices and raw
+demuxers and is mapped to the corresponding demuxer options.
 @item -aq @var{q}
 Set the audio quality (codec-specific, VBR).
 @item -ac @var{channels}
-Set the number of audio channels. For input streams it is set by
-default to 1, for output streams it is set by default to the same
-number of audio channels in input.
+Set the number of audio channels. For output streams it is set by
+default to the number of input audio channels. For input streams
+this option only makes sense for audio grabbing devices and raw demuxers
+and is mapped to the corresponding demuxer options.
 @item -an
 Disable audio recording.
 @item -acodec @var{codec}
@@ -733,9 +732,11 @@ Read input at native frame rate. Mainly used to simulate a grab device.
 @item -loop_input
 Loop over the input stream. Currently it works only for image
 streams. This option is used for automatic FFserver testing.
+This option is deprecated, use -loop 1.
 @item -loop_output @var{number_of_times}
 Repeatedly loop output for formats that support looping such as animated GIF
 (0 will loop the output infinitely).
+This option is deprecated, use -loop.
 @item -threads @var{count}
 Thread count.
 @item -vsync @var{parameter}
@@ -883,8 +884,8 @@ ffmpeg -f oss -i /dev/dsp -f video4linux2 -i /dev/video0 /tmp/out.mpg
 @end example
 
 Note that you must activate the right video source and channel before
-launching ffmpeg with any TV viewer such as xawtv
-(@url{http://linux.bytesex.org/xawtv/}) by Gerd Knorr. You also
+launching ffmpeg with any TV viewer such as
+@uref{http://linux.bytesex.org/xawtv/, xawtv} by Gerd Knorr. You also
 have to set the audio recording levels correctly with a
 standard mixer.
 
@@ -903,8 +904,34 @@ the DISPLAY environment variable.
 ffmpeg -f x11grab -s cif -r 25 -i :0.0+10,20 /tmp/out.mpg
 @end example
 
-0.0 is display.screen number of your X11 server, same as the DISPLAY environment
-variable. 10 is the x-offset and 20 the y-offset for the grabbing.
+10 is the x-offset and 20 the y-offset for the grabbing.
+
+@example
+ffmpeg -f x11grab -follow_mouse centered -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+The grabbing region follows the mouse pointer, which stays at the center of
+region.
+
+@example
+ffmpeg -f x11grab -follow_mouse 100 -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+Only follows when mouse pointer reaches within 100 pixels to the edge of
+region.
+
+@example
+ffmpeg -f x11grab -show_region 1 -s cif -r 25 -i :0.0+10,20 /tmp/out.mpg
+@end example
+
+The grabbing region will be indicated on screen.
+
+@example
+ffmpeg -f x11grab -follow_mouse centered -show_region 1 -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+The grabbing region indication will follow the mouse pointer.
+
 
 @section Video and Audio file format conversion
 

@@ -24,6 +24,7 @@
  * RTMP protocol based on http://rtmpdump.mplayerhq.hu/ librtmp
  */
 
+#include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "url.h"
 

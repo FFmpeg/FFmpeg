@@ -36,8 +36,8 @@
 
 /**
  * Encode a single color run. At most 16 bits will be used.
- * \param len   length of the run, values > 255 mean "until end of line", may not be < 0.
- * \param color color to encode, only the lowest two bits are used and all others must be 0.
+ * @param len   length of the run, values > 255 mean "until end of line", may not be < 0.
+ * @param color color to encode, only the lowest two bits are used and all others must be 0.
  */
 static void put_xsub_rle(PutBitContext *pb, int len, int color)
 {
@@ -211,12 +211,10 @@ static av_cold int xsub_encoder_init(AVCodecContext *avctx)
 }
 
 AVCodec ff_xsub_encoder = {
-    "xsub",
-    AVMEDIA_TYPE_SUBTITLE,
-    CODEC_ID_XSUB,
-    0,
-    xsub_encoder_init,
-    xsub_encode,
-    NULL,
+    .name      = "xsub",
+    .type      = AVMEDIA_TYPE_SUBTITLE,
+    .id        = CODEC_ID_XSUB,
+    .init      = xsub_encoder_init,
+    .encode    = xsub_encode,
     .long_name = NULL_IF_CONFIG_SMALL("DivX subtitles (XSUB)"),
 };

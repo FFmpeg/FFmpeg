@@ -70,7 +70,15 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "Too many frames, seeking is not possible\n");
         return -1;
     }
-    c->frames = av_malloc(c->fcount * sizeof(MPCFrame));
+    if(c->fcount){
+        c->frames = av_malloc(c->fcount * sizeof(MPCFrame));
+        if(!c->frames){
+            av_log(s, AV_LOG_ERROR, "Cannot allocate seektable\n");
+            return AVERROR(ENOMEM);
+        }
+    }else{
+        av_log(s, AV_LOG_WARNING, "Container reports no frames\n");
+    }
     c->curframe = 0;
     c->lastframe = -1;
     c->curbits = 8;
@@ -111,7 +119,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, size, size2, curbits, cur = c->curframe;
     int64_t tmp, pos;
 
-    if (c->curframe >= c->fcount)
+    if (c->curframe >= c->fcount && c->fcount)
         return -1;
 
     if(c->curframe != c->lastframe + 1){
@@ -133,7 +141,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
     avio_seek(s->pb, pos, SEEK_SET);
 
     size = ((size2 + curbits + 31) & ~31) >> 3;
-    if(cur == c->frames_noted){
+    if(cur == c->frames_noted && c->fcount){
         c->frames[cur].pos = pos;
         c->frames[cur].size = size;
         c->frames[cur].skip = curbits - 20;
@@ -146,7 +154,7 @@ static int mpc_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
 
     pkt->data[0] = curbits;
-    pkt->data[1] = (c->curframe > c->fcount);
+    pkt->data[1] = (c->curframe > c->fcount) && c->fcount;
     pkt->data[2] = 0;
     pkt->data[3] = 0;
 
@@ -214,13 +222,13 @@ static int mpc_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
 
 
 AVInputFormat ff_mpc_demuxer = {
-    "mpc",
-    NULL_IF_CONFIG_SMALL("Musepack"),
-    sizeof(MPCContext),
-    mpc_probe,
-    mpc_read_header,
-    mpc_read_packet,
-    mpc_read_close,
-    mpc_read_seek,
+    .name           = "mpc",
+    .long_name      = NULL_IF_CONFIG_SMALL("Musepack"),
+    .priv_data_size = sizeof(MPCContext),
+    .read_probe     = mpc_probe,
+    .read_header    = mpc_read_header,
+    .read_packet    = mpc_read_packet,
+    .read_close     = mpc_read_close,
+    .read_seek      = mpc_read_seek,
     .extensions = "mpc",
 };

@@ -1,5 +1,4 @@
-/**
- * @file
+/*
  * Psygnosis YOP decoder
  *
  * Copyright (C) 2010 Mohamed Naufal Basheer <naufal11@gmail.com>
@@ -250,13 +249,12 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 }
 
 AVCodec ff_yop_decoder = {
-    "yop",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_YOP,
-    sizeof(YopDecContext),
-    yop_decode_init,
-    NULL,
-    yop_decode_close,
-    yop_decode_frame,
+    .name           = "yop",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_YOP,
+    .priv_data_size = sizeof(YopDecContext),
+    .init           = yop_decode_init,
+    .close          = yop_decode_close,
+    .decode         = yop_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("Psygnosis YOP Video"),
 };

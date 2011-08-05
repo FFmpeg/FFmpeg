@@ -26,6 +26,7 @@
  * @file
  * QDM2 decoder
  * @author Ewald Snel, Benjamin Larsson, Alex Beregszaszi, Roberto Togni
+ *
  * The decoder is not perfect yet, there are still some distortions
  * especially on files encoded with 16 or 8 subbands.
  */

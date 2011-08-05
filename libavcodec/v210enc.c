@@ -118,13 +118,12 @@ static av_cold int encode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_v210_encoder = {
-    "v210",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_V210,
-    0,
-    encode_init,
-    encode_frame,
-    encode_close,
+    .name           = "v210",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_V210,
+    .init           = encode_init,
+    .encode         = encode_frame,
+    .close          = encode_close,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Uncompressed 4:2:2 10-bit"),
 };

@@ -32,7 +32,6 @@ tests/audiogen
 tests/base64
 tests/data
 tests/rotozoom
-tests/seek_test
 tests/tiny_psnr
 tests/videogen
 tests/vsynth1
@@ -44,5 +43,4 @@ tools/pktdumper
 tools/probetest
 tools/qt-faststart
 tools/trasher
-tools/trasher*.d
 version.h

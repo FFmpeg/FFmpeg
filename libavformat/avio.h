@@ -147,7 +147,7 @@ typedef struct URLPollEntry {
 attribute_deprecated int url_poll(URLPollEntry *poll_table, int n, int timeout);
 
 /**
- * @defgroup open_modes URL open modes
+ * @name URL open modes
  * The flags argument to url_open and cosins must be one of the following
  * constants, optionally ORed with other flags.
  * @{
@@ -178,7 +178,7 @@ extern URLInterruptCB *url_interrupt_cb;
 
 /**
  * @defgroup old_url_funcs Old url_* functions
- * @deprecated use the buffered API based on AVIOContext instead
+ * The following functions are deprecated. Use the buffered API based on #AVIOContext instead.
  * @{
  */
 attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol *up,
@@ -238,7 +238,7 @@ attribute_deprecated AVIOContext *av_alloc_put_byte(
 
 /**
  * @defgroup old_avio_funcs Old put_/get_*() functions
- * @deprecated use the avio_ -prefixed functions instead.
+ * The following functions are deprecated. Use the "avio_"-prefixed functions instead.
  * @{
  */
 attribute_deprecated int          get_buffer(AVIOContext *s, unsigned char *buf, int size);
@@ -275,7 +275,7 @@ attribute_deprecated int64_t av_url_read_fseek (AVIOContext *h,    int stream_in
 
 /**
  * @defgroup old_url_f_funcs Old url_f* functions
- * @deprecated use the avio_ -prefixed functions instead.
+ * The following functions are deprecated, use the "avio_"-prefixed functions instead.
  * @{
  */
 attribute_deprecated int url_fopen( AVIOContext **s, const char *url, int flags);
@@ -287,11 +287,7 @@ attribute_deprecated int64_t url_fsize(AVIOContext *s);
 #define URL_EOF (-1)
 attribute_deprecated int url_fgetc(AVIOContext *s);
 attribute_deprecated int url_setbufsize(AVIOContext *s, int buf_size);
-#ifdef __GNUC__
-attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
-#else
-attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...);
-#endif
+attribute_deprecated int url_fprintf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);
 attribute_deprecated void put_flush_packet(AVIOContext *s);
 attribute_deprecated int url_open_dyn_buf(AVIOContext **s);
 attribute_deprecated int url_open_dyn_packet_buf(AVIOContext **s, int max_packet_size);
@@ -484,11 +480,7 @@ int64_t avio_size(AVIOContext *s);
 int url_feof(AVIOContext *s);
 
 /** @warning currently size is limited */
-#ifdef __GNUC__
-int avio_printf(AVIOContext *s, const char *fmt, ...) __attribute__ ((__format__ (__printf__, 2, 3)));
-#else
-int avio_printf(AVIOContext *s, const char *fmt, ...);
-#endif
+int avio_printf(AVIOContext *s, const char *fmt, ...) av_printf_format(2, 3);
 
 void avio_flush(AVIOContext *s);
 
@@ -500,7 +492,7 @@ void avio_flush(AVIOContext *s);
 int avio_read(AVIOContext *s, unsigned char *buf, int size);
 
 /**
- * @defgroup avio_read Functions for reading from AVIOContext.
+ * @name Functions for reading from AVIOContext
  * @{
  *
  * @note return 0 if EOF, so you cannot use it if EOF handling is
@@ -552,7 +544,7 @@ int url_resetbuf(AVIOContext *s, int flags);
 #endif
 
 /**
- * @defgroup open_modes URL open modes
+ * @name URL open modes
  * The flags argument to avio_open must be one of the following
  * constants, optionally ORed with other flags.
  * @{

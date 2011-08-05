@@ -24,7 +24,7 @@
 
 #include <stdint.h>
 
-/** \defgroup errflags Error flags returned by av_lzo1x_decode
+/** @name Error flags returned by av_lzo1x_decode
   * \{ */
 //! end of the input buffer reached before decoding finished
 #define AV_LZO_INPUT_DEPLETED 1
@@ -40,12 +40,12 @@
 #define AV_LZO_OUTPUT_PADDING 12
 
 /**
- * \brief Decodes LZO 1x compressed data.
- * \param out output buffer
- * \param outlen size of output buffer, number of bytes left are returned here
- * \param in input buffer
- * \param inlen size of input buffer, number of bytes left are returned here
- * \return 0 on success, otherwise a combination of the error flags above
+ * @brief Decodes LZO 1x compressed data.
+ * @param out output buffer
+ * @param outlen size of output buffer, number of bytes left are returned here
+ * @param in input buffer
+ * @param inlen size of input buffer, number of bytes left are returned here
+ * @return 0 on success, otherwise a combination of the error flags above
  *
  * Make sure all buffers are appropriately padded, in must provide
  * AV_LZO_INPUT_PADDING, out must provide AV_LZO_OUTPUT_PADDING additional bytes.
@@ -53,10 +53,10 @@
 int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen);
 
 /**
- * \brief deliberately overlapping memcpy implementation
- * \param dst destination buffer; must be padded with 12 additional bytes
- * \param back how many bytes back we start (the initial size of the overlapping window)
- * \param cnt number of bytes to copy, must be >= 0
+ * @brief deliberately overlapping memcpy implementation
+ * @param dst destination buffer; must be padded with 12 additional bytes
+ * @param back how many bytes back we start (the initial size of the overlapping window)
+ * @param cnt number of bytes to copy, must be >= 0
  *
  * cnt > back is valid, this will copy the bytes we just copied,
  * thus creating a repeating pattern with a period length of back.

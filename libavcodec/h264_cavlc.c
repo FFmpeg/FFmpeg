@@ -689,11 +689,11 @@ decode_intra_mb:
         }
 
         // In deblocking, the quantizer is 0
-        s->current_picture.qscale_table[mb_xy]= 0;
+        s->current_picture.f.qscale_table[mb_xy] = 0;
         // All coeffs are present
         memset(h->non_zero_count[mb_xy], 16, 48);
 
-        s->current_picture.mb_type[mb_xy]= mb_type;
+        s->current_picture.f.mb_type[mb_xy] = mb_type;
         return 0;
     }
 
@@ -731,7 +731,7 @@ decode_intra_mb:
                 else
                     h->intra4x4_pred_mode_cache[ scan8[i] ] = mode;
             }
-            ff_h264_write_back_intra_pred_mode(h);
+            write_back_intra_pred_mode(h);
             if( ff_h264_check_intra4x4_pred_mode(h) < 0)
                 return -1;
         }else{
@@ -990,7 +990,7 @@ decode_intra_mb:
     }
     h->cbp=
     h->cbp_table[mb_xy]= cbp;
-    s->current_picture.mb_type[mb_xy]= mb_type;
+    s->current_picture.f.mb_type[mb_xy] = mb_type;
 
     if(cbp || IS_INTRA16x16(mb_type)){
         int i4x4, chroma_idx;
@@ -1063,7 +1063,7 @@ decode_intra_mb:
         fill_rectangle(&h->non_zero_count_cache[scan8[16]], 4, 4, 8, 0, 1);
         fill_rectangle(&h->non_zero_count_cache[scan8[32]], 4, 4, 8, 0, 1);
     }
-    s->current_picture.qscale_table[mb_xy]= s->qscale;
+    s->current_picture.f.qscale_table[mb_xy] = s->qscale;
     write_back_non_zero_count(h);
 
     if(MB_MBAFF){

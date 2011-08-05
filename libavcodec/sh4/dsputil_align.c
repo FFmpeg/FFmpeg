@@ -333,7 +333,7 @@ DEFFUNC(avg,no_rnd,xy,16,OP_XY,PACK)
 
 void dsputil_init_align(DSPContext* c, AVCodecContext *avctx)
 {
-        const int high_bit_depth = avctx->codec_id == CODEC_ID_H264 && avctx->bits_per_raw_sample > 8;
+        const int high_bit_depth = avctx->bits_per_raw_sample > 8;
 
         if (!high_bit_depth) {
         c->put_pixels_tab[0][0] = put_rnd_pixels16_o;

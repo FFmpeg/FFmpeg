@@ -43,11 +43,10 @@ extern const char program_name[];
  */
 extern const int program_birth_year;
 
-extern const char **opt_names;
 extern AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
 extern AVFormatContext *avformat_opts;
 extern struct SwsContext *sws_opts;
-extern AVDictionary *format_opts, *video_opts, *audio_opts, *sub_opts;
+extern AVDictionary *format_opts, *codec_opts;
 
 /**
  * Initialize the cmdutils option system, in particular
@@ -62,7 +61,7 @@ void uninit_opts(void);
 
 /**
  * Trivial log callback.
- * Only suitable for show_help and similar since it lacks prefix handling.
+ * Only suitable for opt_help and similar since it lacks prefix handling.
  */
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl);
 
@@ -153,7 +152,29 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 void parse_options(int argc, char **argv, const OptionDef *options,
                    int (* parse_arg_function)(const char *opt, const char *arg));
 
-void set_context_opts(void *ctx, void *opts_ctx, int flags, AVCodec *codec);
+/**
+ * Filter out options for given codec.
+ *
+ * Create a new options dictionary containing only the options from
+ * opts which apply to the codec with ID codec_id.
+ *
+ * @param encoder if non-zero the codec is an encoder, otherwise is a decoder
+ * @return a pointer to the created dictionary
+ */
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder);
+
+/**
+ * Setup AVCodecContext options for avformat_find_stream_info().
+ *
+ * Create an array of dictionaries, one dictionary for each stream
+ * contained in s.
+ * Each dictionary will contain the options from codec_opts which can
+ * be applied to the corresponding stream codec context.
+ *
+ * @return pointer to the created array of dictionaries, NULL if it
+ * cannot be created
+ */
+AVDictionary **setup_find_stream_info_opts(AVFormatContext *s, AVDictionary *codec_opts);
 
 /**
  * Print an error message to stderr, indicating filename and a human
@@ -177,50 +198,58 @@ void show_banner(void);
  * Print the version of the program to stdout. The version message
  * depends on the current versions of the repository and of the libav*
  * libraries.
+ * This option processing function does not utilize the arguments.
  */
-void show_version(void);
+int opt_version(const char *opt, const char *arg);
 
 /**
  * Print the license of the program to stdout. The license depends on
  * the license of the libraries compiled into the program.
+ * This option processing function does not utilize the arguments.
  */
-void show_license(void);
+int opt_license(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the formats supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_formats(void);
+int opt_formats(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the codecs supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_codecs(void);
+int opt_codecs(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the filters supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_filters(void);
+int opt_filters(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the bit stream filters supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_bsfs(void);
+int opt_bsfs(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the protocols supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_protocols(void);
+int opt_protocols(const char *opt, const char *arg);
 
 /**
  * Print a listing containing all the pixel formats supported by the
  * program.
+ * This option processing function does not utilize the arguments.
  */
-void show_pix_fmts(void);
+int opt_pix_fmts(const char *opt, const char *arg);
 
 /**
  * Return a positive value if a line read from standard input

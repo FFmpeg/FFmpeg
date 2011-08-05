@@ -402,36 +402,17 @@ static av_cold int init(AVCodecContext *avctx)
             uint8_t *dummy_p;
             int dummy_int;
 
-            uint32_t orig_data_size = avctx->extradata_size;
-            uint8_t *orig_data = av_malloc(orig_data_size);
-            if (!orig_data) {
-                av_log(avctx, AV_LOG_ERROR,
-                       "Failed to allocate copy of extradata\n");
-                return AVERROR(ENOMEM);
-            }
-            memcpy(orig_data, avctx->extradata, orig_data_size);
-
-
             priv->bsfc = av_bitstream_filter_init("h264_mp4toannexb");
             if (!priv->bsfc) {
                 av_log(avctx, AV_LOG_ERROR,
                        "Cannot open the h264_mp4toannexb BSF!\n");
-                av_free(orig_data);
                 return AVERROR_BSF_NOT_FOUND;
             }
             av_bitstream_filter_filter(priv->bsfc, avctx, NULL, &dummy_p,
                                        &dummy_int, NULL, 0, 0);
-
-            priv->sps_pps_buf     = avctx->extradata;
-            priv->sps_pps_size    = avctx->extradata_size;
-            avctx->extradata      = orig_data;
-            avctx->extradata_size = orig_data_size;
-
-            format.pMetaData   = priv->sps_pps_buf;
-            format.metaDataSz  = priv->sps_pps_size;
-            format.startCodeSz = (avctx->extradata[4] & 0x03) + 1;
         }
-        break;
+        subtype = BC_MSUBTYPE_H264;
+        // Fall-through
     case BC_MSUBTYPE_H264:
         format.startCodeSz = 4;
         // Fall-through
@@ -809,7 +790,9 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
     CopyRet rec_ret;
     CHDContext *priv   = avctx->priv_data;
     HANDLE dev         = priv->dev;
+    uint8_t *in_data   = avpkt->data;
     int len            = avpkt->size;
+    int free_data      = 0;
     uint8_t pic_type   = 0;
 
     av_log(avctx, AV_LOG_VERBOSE, "CrystalHD: decode_frame\n");
@@ -834,15 +817,14 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
         int32_t tx_free = (int32_t)DtsTxFreeSize(dev);
 
         if (priv->parser) {
-            uint8_t *in_data = avpkt->data;
-            int in_len = len;
             int ret = 0;
 
             if (priv->bsfc) {
                 ret = av_bitstream_filter_filter(priv->bsfc, avctx, NULL,
-                                                 &in_data, &in_len,
+                                                 &in_data, &len,
                                                  avpkt->data, len, 0);
             }
+            free_data = ret > 0;
 
             if (ret >= 0) {
                 uint8_t *pout;
@@ -851,13 +833,13 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                 H264Context *h = priv->parser->priv_data;
 
                 index = av_parser_parse2(priv->parser, avctx, &pout, &psize,
-                                         in_data, in_len, avctx->pkt->pts,
+                                         in_data, len, avctx->pkt->pts,
                                          avctx->pkt->dts, 0);
                 if (index < 0) {
                     av_log(avctx, AV_LOG_WARNING,
                            "CrystalHD: Failed to parse h.264 packet to "
                            "detect interlacing.\n");
-                } else if (index != in_len) {
+                } else if (index != len) {
                     av_log(avctx, AV_LOG_WARNING,
                            "CrystalHD: Failed to parse h.264 packet "
                            "completely. Interlaced frames may be "
@@ -874,9 +856,6 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
                        "packet. Interlaced frames may be incorrectly "
                        "detected.\n");
             }
-            if (ret > 0) {
-                av_freep(&in_data);
-            }
         }
 
         if (len < tx_free - 1024) {
@@ -891,11 +870,17 @@ static int decode(AVCodecContext *avctx, void *data, int *data_size, AVPacket *a
              */
             uint64_t pts = opaque_list_push(priv, avctx->pkt->pts, pic_type);
             if (!pts) {
+                if (free_data) {
+                    av_freep(&in_data);
+                }
                 return AVERROR(ENOMEM);
             }
             av_log(priv->avctx, AV_LOG_VERBOSE,
                    "input \"pts\": %"PRIu64"\n", pts);
-            ret = DtsProcInput(dev, avpkt->data, len, pts, 0);
+            ret = DtsProcInput(dev, in_data, len, pts, 0);
+            if (free_data) {
+                av_freep(&in_data);
+            }
             if (ret == BC_STS_BUSY) {
                 av_log(avctx, AV_LOG_WARNING,
                        "CrystalHD: ProcInput returned busy\n");

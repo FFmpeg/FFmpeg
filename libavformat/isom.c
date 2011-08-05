@@ -246,7 +246,7 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_AC3, MKTAG('a', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
     { CODEC_ID_AC3, MKTAG('s', 'a', 'c', '3') }, /* Nero Recode */
     { CODEC_ID_DTS, MKTAG('d', 't', 's', 'c') }, /* mp4ra.org */
-    { CODEC_ID_DTS, MKTAG('D', 'T', 'S', ' ') }, /* non standard */
+    { CODEC_ID_DTS, MKTAG('D', 'T', 'S', ' ') }, /* non-standard */
 
     { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
     { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */

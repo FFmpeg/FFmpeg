@@ -40,7 +40,7 @@
 
 /***********************************************************************/
 /**
- * @defgroup vc1bitplane VC-1 Bitplane decoding
+ * @name VC-1 Bitplane decoding
  * @see 8.7, p56
  * @{
  */
@@ -337,11 +337,11 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     v->res_fasttx = get_bits1(gb);
     if (!v->res_fasttx)
     {
-        v->vc1dsp.vc1_inv_trans_8x8 = ff_simple_idct;
+        v->vc1dsp.vc1_inv_trans_8x8 = ff_simple_idct_8;
         v->vc1dsp.vc1_inv_trans_8x4 = ff_simple_idct84_add;
         v->vc1dsp.vc1_inv_trans_4x8 = ff_simple_idct48_add;
         v->vc1dsp.vc1_inv_trans_4x4 = ff_simple_idct44_add;
-        v->vc1dsp.vc1_inv_trans_8x8_dc = ff_simple_idct_add;
+        v->vc1dsp.vc1_inv_trans_8x8_dc = ff_simple_idct_add_8;
         v->vc1dsp.vc1_inv_trans_8x4_dc = ff_simple_idct84_add;
         v->vc1dsp.vc1_inv_trans_4x8_dc = ff_simple_idct48_add;
         v->vc1dsp.vc1_inv_trans_4x4_dc = ff_simple_idct44_add;

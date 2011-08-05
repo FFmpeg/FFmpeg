@@ -21,7 +21,9 @@
 /**
  * @file
  * TIFF image decoder
+ * @author Konstantin Shishkov
  */
+
 #include "avcodec.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -619,15 +621,13 @@ static av_cold int tiff_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_tiff_decoder = {
-    "tiff",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_TIFF,
-    sizeof(TiffContext),
-    tiff_init,
-    NULL,
-    tiff_end,
-    decode_frame,
-    CODEC_CAP_DR1,
-    NULL,
+    .name           = "tiff",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_TIFF,
+    .priv_data_size = sizeof(TiffContext),
+    .init           = tiff_init,
+    .close          = tiff_end,
+    .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
 };

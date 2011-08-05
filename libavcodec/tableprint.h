@@ -56,7 +56,7 @@ void write_##type##_2d_array(const void *arg, int len, int len2)\
 }
 
 /**
- * \defgroup printfuncs Predefined functions for printing tables
+ * @name Predefined functions for printing tables
  *
  * \{
  */

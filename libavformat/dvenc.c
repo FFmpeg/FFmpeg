@@ -35,6 +35,7 @@
 #include "libavcodec/dvdata.h"
 #include "dv.h"
 #include "libavutil/fifo.h"
+#include "libavutil/mathematics.h"
 
 struct DVMuxContext {
     const DVprofile*  sys;           /* current DV profile, e.g.: 525/60, 625/50 */
@@ -42,7 +43,7 @@ struct DVMuxContext {
     AVStream         *ast[2];        /* stereo audio streams */
     AVFifoBuffer     *audio_data[2]; /* FIFO for storing excessive amounts of PCM */
     int               frames;        /* current frame number */
-    time_t            start_time;    /* recording start time */
+    int64_t           start_time;    /* recording start time */
     int               has_audio;     /* frame under contruction has audio */
     int               has_video;     /* frame under contruction has video */
     uint8_t           frame_buf[DV_MAX_FRAME_SIZE]; /* frame under contruction */
@@ -289,6 +290,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
 {
     DVMuxContext *c = s->priv_data;
     AVStream *vst = NULL;
+    AVDictionaryEntry *t;
     int i;
 
     /* we support at most 1 video and 2 audio streams */
@@ -336,7 +338,13 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
     c->frames     = 0;
     c->has_audio  = 0;
     c->has_video  = 0;
-    c->start_time = (time_t)s->timestamp;
+#if FF_API_TIMESTAMP
+    if (s->timestamp)
+        c->start_time = s->timestamp;
+    else
+#endif
+    if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
+        c->start_time = ff_iso8601_to_unix_time(t->value);
 
     for (i=0; i < c->n_ast; i++) {
         if (c->ast[i] && !(c->audio_data[i]=av_fifo_alloc(100*AVCODEC_MAX_AUDIO_FRAME_SIZE))) {
@@ -400,14 +408,13 @@ static int dv_write_trailer(struct AVFormatContext *s)
 }
 
 AVOutputFormat ff_dv_muxer = {
-    "dv",
-    NULL_IF_CONFIG_SMALL("DV video format"),
-    NULL,
-    "dv",
-    sizeof(DVMuxContext),
-    CODEC_ID_PCM_S16LE,
-    CODEC_ID_DVVIDEO,
-    dv_write_header,
-    dv_write_packet,
-    dv_write_trailer,
+    .name              = "dv",
+    .long_name         = NULL_IF_CONFIG_SMALL("DV video format"),
+    .extensions        = "dv",
+    .priv_data_size    = sizeof(DVMuxContext),
+    .audio_codec       = CODEC_ID_PCM_S16LE,
+    .video_codec       = CODEC_ID_DVVIDEO,
+    .write_header      = dv_write_header,
+    .write_packet      = dv_write_packet,
+    .write_trailer     = dv_write_trailer,
 };
