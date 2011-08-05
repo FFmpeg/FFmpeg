@@ -34,7 +34,7 @@ enum { Y, U, V, A };
 typedef struct {
     int x, y, w, h;
     unsigned char yuv_color[4];
-    int vsub, hsub;   //< chroma subsampling
+    int vsub, hsub;   ///< chroma subsampling
 } DrawBoxContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)

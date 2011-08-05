@@ -139,7 +139,7 @@ static void ps_tableinit(void)
     }
 
     for (iid = 0; iid < 46; iid++) {
-        float c = iid_par_dequant[iid]; //<Linear Inter-channel Intensity Difference
+        float c = iid_par_dequant[iid]; ///< Linear Inter-channel Intensity Difference
         float c1 = (float)M_SQRT2 / sqrtf(1.0f + c*c);
         float c2 = c * c1;
         for (icc = 0; icc < 8; icc++) {

@@ -89,9 +89,9 @@ typedef struct StreamMap {
  * select an input file for an output file
  */
 typedef struct MetadataMap {
-    int  file;      //< file index
-    char type;      //< type of metadata to copy -- (g)lobal, (s)tream, (c)hapter or (p)rogram
-    int  index;     //< stream/chapter/program number
+    int  file;      ///< file index
+    char type;      ///< type of metadata to copy -- (g)lobal, (s)tream, (c)hapter or (p)rogram
+    int  index;     ///< stream/chapter/program number
 } MetadataMap;
 
 typedef struct ChapterMap {

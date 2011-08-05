@@ -28,9 +28,9 @@
 #include "aacps_tablegen.h"
 #include "aacpsdata.c"
 
-#define PS_BASELINE 0  //< Operate in Baseline PS mode
-                       //< Baseline implies 10 or 20 stereo bands,
-                       //< mixing mode A, and no ipd/opd
+#define PS_BASELINE 0  ///< Operate in Baseline PS mode
+                       ///< Baseline implies 10 or 20 stereo bands,
+                       ///< mixing mode A, and no ipd/opd
 
 #define numQMFSlots 32 //numTimeSlots * RATE
 
@@ -654,7 +654,7 @@ static void decorrelation(PSContext *ps, float (*out)[32][2], const float (*s)[3
     const int8_t *k_to_i = is34 ? k_to_i_34 : k_to_i_20;
     const float peak_decay_factor = 0.76592833836465f;
     const float transient_impact  = 1.5f;
-    const float a_smooth          = 0.25f; //< Smoothing coefficient
+    const float a_smooth          = 0.25f; ///< Smoothing coefficient
     int i, k, m, n;
     int n0 = 0, nL = 32;
     static const int link_delay[] = { 3, 4, 5 };

@@ -225,7 +225,7 @@ typedef struct Vp3DecodeContext {
 
     /* these arrays need to be on 16-byte boundaries since SSE2 operations
      * index into them */
-    DECLARE_ALIGNED(16, int16_t, qmat)[3][2][3][64];     //<qmat[qpi][is_inter][plane]
+    DECLARE_ALIGNED(16, int16_t, qmat)[3][2][3][64];     ///< qmat[qpi][is_inter][plane]
 
     /* This table contains superblock_count * 16 entries. Each set of 16
      * numbers corresponds to the fragment indexes 0..15 of the superblock.
