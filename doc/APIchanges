@@ -16,14 +16,6 @@ API changes, most recent first:
 2011-08-02 - 9d39cbf - lavc 53.7.1
   Add AV_PKT_FLAG_CORRUPT AVPacket flag.
 
-2011-07-16 - xxxxxx - lavfi 2.27.0
-  Add audio packing negotiation fields and helper functions.
-
-  In particular, add AVFilterPacking enum, planar, in_packings and
-  out_packings fields to AVFilterLink, and the functions:
-  avfilter_set_common_packing_formats()
-  avfilter_all_packing_formats()
-
 2011-07-10 - a67c061 - lavf 53.3.0
   Add avformat_find_stream_info(), deprecate av_find_stream_info().
 
