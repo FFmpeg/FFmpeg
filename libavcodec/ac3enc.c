@@ -527,19 +527,46 @@ static void encode_exponents(AC3EncodeContext *s)
 
 
 /**
+ * Count exponent bits based on bandwidth, coupling, and exponent strategies.
+ */
+static int count_exponent_bits(AC3EncodeContext *s)
+{
+    int blk, ch;
+    int nb_groups, bit_count;
+
+    bit_count = 0;
+    for (blk = 0; blk < s->num_blocks; blk++) {
+        AC3Block *block = &s->blocks[blk];
+        for (ch = !block->cpl_in_use; ch <= s->channels; ch++) {
+            int exp_strategy = s->exp_strategy[ch][blk];
+            int cpl          = (ch == CPL_CH);
+            int nb_coefs     = block->end_freq[ch] - s->start_freq[ch];
+
+            if (exp_strategy == EXP_REUSE)
+                continue;
+
+            nb_groups = exponent_group_tab[cpl][exp_strategy-1][nb_coefs];
+            bit_count += 4 + (nb_groups * 7);
+        }
+    }
+
+    return bit_count;
+}
+
+
+/**
  * Group exponents.
  * 3 delta-encoded exponents are in each 7-bit group. The number of groups
  * varies depending on exponent strategy and bandwidth.
  */
-static void group_exponents(AC3EncodeContext *s)
+void ff_ac3_group_exponents(AC3EncodeContext *s)
 {
     int blk, ch, i, cpl;
-    int group_size, nb_groups, bit_count;
+    int group_size, nb_groups;
     uint8_t *p;
     int delta0, delta1, delta2;
     int exp0, exp1;
 
-    bit_count = 0;
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block = &s->blocks[blk];
         for (ch = !block->cpl_in_use; ch <= s->channels; ch++) {
@@ -549,7 +576,6 @@ static void group_exponents(AC3EncodeContext *s)
             cpl = (ch == CPL_CH);
             group_size = exp_strategy + (exp_strategy == EXP_D45);
             nb_groups = exponent_group_tab[cpl][exp_strategy-1][block->end_freq[ch]-s->start_freq[ch]];
-            bit_count += 4 + (nb_groups * 7);
             p = block->exp[ch] + s->start_freq[ch] - cpl;
 
             /* DC exponent */
@@ -581,8 +607,6 @@ static void group_exponents(AC3EncodeContext *s)
             }
         }
     }
-
-    s->exponent_bits = bit_count;
 }
 
 
@@ -598,8 +622,6 @@ void ff_ac3_process_exponents(AC3EncodeContext *s)
     compute_exp_strategy(s);
 
     encode_exponents(s);
-
-    group_exponents(s);
 
     emms_c();
 }
@@ -1094,6 +1116,8 @@ static int cbr_bit_allocation(AC3EncodeContext *s)
 int ff_ac3_compute_bit_allocation(AC3EncodeContext *s)
 {
     count_frame_bits(s);
+
+    s->exponent_bits = count_exponent_bits(s);
 
     bit_alloc_masking(s);
 

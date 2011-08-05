@@ -463,6 +463,8 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
         return ret;
     }
 
+    ff_ac3_group_exponents(s);
+
     ff_ac3_quantize_mantissas(s);
 
     ff_ac3_output_frame(s, frame);
