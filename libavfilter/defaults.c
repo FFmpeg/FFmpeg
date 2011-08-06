@@ -181,12 +181,12 @@ static void set_common_formats(AVFilterContext *ctx, AVFilterFormats *fmts,
     for (i = 0; i < ctx->input_count; i++)
         if (ctx->inputs[i] && ctx->inputs[i]->type == type)
             avfilter_formats_ref(fmts,
-                                 (AVFilterFormats**)((void*)ctx->inputs[i]+offout));
+                                 (AVFilterFormats **)((uint8_t *)ctx->inputs[i]+offout));
 
     for (i = 0; i < ctx->output_count; i++)
         if (ctx->outputs[i] && ctx->outputs[i]->type == type)
             avfilter_formats_ref(fmts,
-                                 (AVFilterFormats**)((void*)ctx->outputs[i]+offin));
+                                 (AVFilterFormats **)((uint8_t *)ctx->outputs[i]+offin));
 
     if (!fmts->refcount) {
         av_free(fmts->formats);
