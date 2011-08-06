@@ -87,6 +87,9 @@ static const AVOption options[]={
 {"fdebug", "print specific debug info", OFFSET(debug), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, INT_MAX, E|D, "fdebug"},
 {"ts", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_FDEBUG_TS }, INT_MIN, INT_MAX, E|D, "fdebug"},
 {"max_delay", "maximum muxing or demuxing delay in microseconds", OFFSET(max_delay), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E|D},
+{"fer", "set error detection aggressivity", OFFSET(error_recognition), FF_OPT_TYPE_INT, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, D, "fer"},
+{"careful", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, D, "fer"},
+{"explode", "abort decoding on error recognition", 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, D, "fer"},
 {"fpsprobesize", "number of frames used to probe fps", OFFSET(fps_probe_size), FF_OPT_TYPE_INT, {.dbl = -1}, -1, INT_MAX-1, D},
 {NULL},
 };

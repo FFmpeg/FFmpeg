@@ -854,6 +854,14 @@ typedef struct AVFormatContext {
      * decoding: number of frames used to probe fps
      */
     int fps_probe_size;
+
+    /**
+     * Error recognition; higher values will detect more errors but may
+     * misdetect some more or less valid parts as errors.
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+    int error_recognition;
 } AVFormatContext;
 
 typedef struct AVPacketList {
