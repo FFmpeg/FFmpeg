@@ -144,6 +144,17 @@ anullsrc=48000:mono
 
 Below is a description of the currently available audio sinks.
 
+@section abuffersink
+
+Buffer audio frames, and make them available to the end of filter chain.
+
+This sink is mainly intended for programmatic use, in particular
+through the interface defined in @file{libavfilter/asink_abuffer.h}.
+
+It requires a pointer to a ABufferSinkContext structure, which defines the
+incoming buffers' format, to be passed as the opaque parameter to
+@code{avfilter_init_filter} for initialization.
+
 @section anullsink
 
 Null audio sink, do absolutely nothing with the input audio. It is

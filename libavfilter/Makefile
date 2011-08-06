@@ -22,6 +22,7 @@ OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 
+OBJS-$(CONFIG_ABUFFERSINK_FILTER)            += asink_abuffer.o
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
 
 OBJS-$(CONFIG_BLACKFRAME_FILTER)             += vf_blackframe.o
