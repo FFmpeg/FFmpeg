@@ -89,6 +89,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER (RGBTESTSRC,  rgbtestsrc,  vsrc);
     REGISTER_FILTER (TESTSRC,     testsrc,     vsrc);
 
-    REGISTER_FILTER (BUFFER,      buffersink,  vsink);
+    REGISTER_FILTER (BUFFERSINK,  buffersink,  vsink);
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
 }
