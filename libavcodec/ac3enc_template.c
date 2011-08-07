@@ -28,8 +28,6 @@
 
 #include <stdint.h>
 
-#include "ac3enc.h"
-
 
 /* prototypes for static functions in ac3enc_fixed.c and ac3enc_float.c */
 
