@@ -120,6 +120,18 @@ static void clip_coefficients(DSPContext *dsp, float *coef, unsigned int len)
 }
 
 
+/**
+ * Calculate a single coupling coordinate.
+ */
+static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl)
+{
+    float coord = 0.125;
+    if (energy_cpl > 0)
+        coord *= sqrtf(energy_ch / energy_cpl);
+    return FFMIN(coord, COEF_MAX);
+}
+
+
 #if CONFIG_AC3_ENCODER
 AVCodec ff_ac3_encoder = {
     .name           = "ac3",

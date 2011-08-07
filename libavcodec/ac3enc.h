@@ -52,6 +52,7 @@
 #define MAC_COEF(d,a,b) ((d)+=(a)*(b))
 #define COEF_MIN (-16777215.0/16777216.0)
 #define COEF_MAX ( 16777215.0/16777216.0)
+#define NEW_CPL_COORD_THRESHOLD 0.03
 typedef float SampleType;
 typedef float CoefType;
 typedef float CoefSumType;
@@ -60,6 +61,7 @@ typedef float CoefSumType;
 #define MAC_COEF(d,a,b) MAC64(d,a,b)
 #define COEF_MIN -16777215
 #define COEF_MAX  16777215
+#define NEW_CPL_COORD_THRESHOLD 503317
 typedef int16_t SampleType;
 typedef int32_t CoefType;
 typedef int64_t CoefSumType;

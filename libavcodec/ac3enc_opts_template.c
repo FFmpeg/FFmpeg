@@ -72,11 +72,9 @@ static const AVOption eac3_options[] = {
     {"hdcd",     "HDCD",               0, FF_OPT_TYPE_CONST, {.dbl = AC3ENC_OPT_ADCONV_HDCD     }, INT_MIN, INT_MAX, AC3ENC_PARAM, "ad_conv_type"},
 /* Other Encoding Options */
 {"stereo_rematrixing", "Stereo Rematrixing", OFFSET(stereo_rematrixing), FF_OPT_TYPE_INT, {.dbl = AC3ENC_OPT_ON }, AC3ENC_OPT_OFF, AC3ENC_OPT_ON, AC3ENC_PARAM},
-#if AC3ENC_TYPE != AC3ENC_TYPE_AC3_FIXED
 {"channel_coupling",   "Channel Coupling",   OFFSET(channel_coupling),   FF_OPT_TYPE_INT, {.dbl = AC3ENC_OPT_AUTO }, AC3ENC_OPT_AUTO, AC3ENC_OPT_ON, AC3ENC_PARAM, "channel_coupling"},
     {"auto", "Selected by the Encoder", 0, FF_OPT_TYPE_CONST, {.dbl = AC3ENC_OPT_AUTO }, INT_MIN, INT_MAX, AC3ENC_PARAM, "channel_coupling"},
 {"cpl_start_band", "Coupling Start Band", OFFSET(cpl_start), FF_OPT_TYPE_INT, {.dbl = AC3ENC_OPT_AUTO }, AC3ENC_OPT_AUTO, 15, AC3ENC_PARAM, "cpl_start_band"},
     {"auto", "Selected by the Encoder", 0, FF_OPT_TYPE_CONST, {.dbl = AC3ENC_OPT_AUTO }, INT_MIN, INT_MAX, AC3ENC_PARAM, "cpl_start_band"},
-#endif
 {NULL}
 };

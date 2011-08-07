@@ -2167,7 +2167,7 @@ static av_cold int validate_options(AC3EncodeContext *s)
                              (s->channel_mode == AC3_CHMODE_STEREO);
 
     s->cpl_enabled = s->options.channel_coupling &&
-                     s->channel_mode >= AC3_CHMODE_STEREO && !s->fixed_point;
+                     s->channel_mode >= AC3_CHMODE_STEREO;
 
     return 0;
 }

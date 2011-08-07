@@ -29,6 +29,7 @@
 #define CONFIG_FFT_FLOAT 0
 #undef CONFIG_AC3ENC_FLOAT
 #include "ac3enc.h"
+#include "eac3enc.h"
 
 #define AC3ENC_TYPE AC3ENC_TYPE_AC3_FIXED
 #include "ac3enc_opts_template.c"
@@ -109,6 +110,22 @@ static void scale_coefficients(AC3EncodeContext *s)
 static void clip_coefficients(DSPContext *dsp, int32_t *coef, unsigned int len)
 {
     dsp->vector_clip_int32(coef, coef, COEF_MIN, COEF_MAX, len);
+}
+
+
+/**
+ * Calculate a single coupling coordinate.
+ */
+static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl)
+{
+    if (energy_cpl <= COEF_MAX) {
+        return 1048576;
+    } else {
+        uint64_t coord   = energy_ch / (energy_cpl >> 24);
+        uint32_t coord32 = FFMIN(coord, 1073741824);
+        coord32          = ff_sqrt(coord32) << 9;
+        return FFMIN(coord32, COEF_MAX);
+    }
 }
 
 
