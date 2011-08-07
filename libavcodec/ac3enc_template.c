@@ -126,7 +126,7 @@ static inline float calc_cpl_coord(float energy_ch, float energy_cpl)
     float coord = 0.125;
     if (energy_cpl > 0)
         coord *= sqrtf(energy_ch / energy_cpl);
-    return coord;
+    return FFMIN(coord, COEF_MAX);
 }
 
 
@@ -291,7 +291,6 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         if (!block->cpl_in_use)
             continue;
 
-        clip_coefficients(&s->dsp, cpl_coords[blk][1], s->fbw_channels * 16);
         s->ac3dsp.float_to_fixed24(fixed_cpl_coords[blk][1],
                                    cpl_coords[blk][1],
                                    s->fbw_channels * 16);
