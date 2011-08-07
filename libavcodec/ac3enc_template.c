@@ -168,10 +168,6 @@ static void apply_channel_coupling(AC3EncodeContext *s)
 
         /* coefficients must be clipped in order to be encoded */
         clip_coefficients(&s->dsp, cpl_coef, num_cpl_coefs);
-
-        /* scale coupling coefficients from float to 24-bit fixed-point */
-        s->ac3dsp.float_to_fixed24(&block->fixed_coef[CPL_CH][cpl_start],
-                                   cpl_coef, num_cpl_coefs);
     }
 
     /* calculate energy in each band in coupling channel and each fbw channel */
