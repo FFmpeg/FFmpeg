@@ -305,8 +305,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
         check_default_settings(avctx);
 
     if (x4->preset || x4->tune) {
-        if (x264_param_default_preset(&x4->params, x4->preset, x4->tune) < 0)
-            return -1;
+        if (x264_param_default_preset(&x4->params, x4->preset, x4->tune) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting preset/tune %s/%s.\n", x4->preset, x4->tune);
+            return AVERROR(EINVAL);
+        }
     }
 
     x4->params.pf_log               = X264_log;
@@ -363,8 +365,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x264_param_apply_fastfirstpass(&x4->params);
 
     if (x4->profile)
-        if (x264_param_apply_profile(&x4->params, x4->profile) < 0)
-            return -1;
+        if (x264_param_apply_profile(&x4->params, x4->profile) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error setting profile %s.\n", x4->profile);
+            return AVERROR(EINVAL);
+        }
 
     x4->params.i_width          = avctx->width;
     x4->params.i_height         = avctx->height;
@@ -435,7 +439,12 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass class = { "libx264", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
+static const AVClass class = {
+    .class_name = "libx264",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_libx264_encoder = {
     .name           = "libx264",
