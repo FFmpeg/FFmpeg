@@ -29,8 +29,8 @@
 
 /**
  * Decode DXT1 encoded data to RGB32
- * @param *src source buffer, has to be aligned on a 4-byte boundary
- * @param *dst destination buffer
+ * @param src source buffer, has to be aligned on a 4-byte boundary
+ * @param dst destination buffer
  * @param w width of output image
  * @param h height of output image
  * @param stride line size of output image
@@ -40,8 +40,8 @@ void ff_decode_dxt1(const uint8_t *src, uint8_t *dst,
                     const unsigned int stride);
 /**
  * Decode DXT3 encoded data to RGB32
- * @param *src source buffer, has to be aligned on a 4-byte boundary
- * @param *dst destination buffer
+ * @param src source buffer, has to be aligned on a 4-byte boundary
+ * @param dst destination buffer
  * @param w width of output image
  * @param h height of output image
  * @param stride line size of output image
