@@ -209,6 +209,7 @@ enum CodecID {
     CODEC_ID_JV,
     CODEC_ID_DFA,
     CODEC_ID_8SVX_RAW,
+    CODEC_ID_G2M,
 
     /* various PCM "codecs" */
     CODEC_ID_PCM_S16LE= 0x10000,
