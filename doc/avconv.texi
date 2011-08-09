@@ -308,8 +308,11 @@ It is of little use elsewise.
 Set video buffer verifier buffer size (in bits).
 @item -vcodec @var{codec}
 Set the video codec. This is an alias for @code{-codec:v}.
-@item -sameq
+@item -same_quant
 Use same quantizer as source (implies VBR).
+
+Note that this is NOT SAME QUALITY. Do not use this option unless you know you
+need it.
 
 @item -pass @var{n}
 Select the pass number (1 or 2). It is used to do two-pass
@@ -847,11 +850,6 @@ To have very low audio bitrates, reduce the sampling frequency
 To have a constant quality (but a variable bitrate), use the option
 '-qscale n' when 'n' is between 1 (excellent quality) and 31 (worst
 quality).
-
-@item
-When converting video files, you can use the '-sameq' option which
-uses the same quality factor in the encoder as in the decoder.
-It allows almost lossless encoding.
 
 @end itemize
 @c man end TIPS
