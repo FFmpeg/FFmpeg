@@ -956,7 +956,7 @@ You can encode to several formats at the same time and define a
 mapping from input stream to output streams:
 
 @example
-avconv -i /tmp/a.wav -map 0:a -ab 64k /tmp/a.mp2 -map 0:a -ab 128k /tmp/b.mp2
+avconv -i /tmp/a.wav -map 0:a -b 64k /tmp/a.mp2 -map 0:a -b 128k /tmp/b.mp2
 @end example
 
 Converts a.wav to a.mp2 at 64 kbits and to b.mp2 at 128 kbits. '-map
@@ -967,7 +967,7 @@ stream, in the order of the definition of output streams.
 You can transcode decrypted VOBs:
 
 @example
-avconv -i snatch_1.vob -f avi -c:v mpeg4 -b 800k -g 300 -bf 2 -c:a libmp3lame -ab 128k snatch.avi
+avconv -i snatch_1.vob -f avi -c:v mpeg4 -b:v 800k -g 300 -bf 2 -c:a libmp3lame -b:a 128k snatch.avi
 @end example
 
 This is a typical DVD ripping example; the input is a VOB file, the

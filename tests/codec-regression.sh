@@ -16,7 +16,7 @@ if [ -n "$do_vref" ]; then
 do_avconv $raw_ref -f image2 -vcodec pgmyuv -i $raw_src -an -f rawvideo
 fi
 if [ -n "$do_aref" ]; then
-do_avconv $pcm_ref -ab 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav
+do_avconv $pcm_ref -b 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav
 fi
 
 if [ -n "$do_mpeg" ] ; then
@@ -279,7 +279,7 @@ do_audio_encoding ac3.rm "-vn -acodec ac3_fixed"
 fi
 
 if [ -n "$do_g726" ] ; then
-do_audio_encoding g726.wav "-ab 32k -ac 1 -ar 8000 -acodec g726"
+do_audio_encoding g726.wav "-b 32k -ac 1 -ar 8000 -acodec g726"
 do_audio_decoding
 fi
 
