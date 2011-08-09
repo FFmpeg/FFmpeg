@@ -808,6 +808,7 @@ an output mpegts file:
 avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
 @end example
 @end table
+@c man end OPTIONS
 
 @chapter Tips
 @c man begin TIPS
