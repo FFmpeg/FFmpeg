@@ -531,7 +531,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
             av_opt_set_defaults(avctx->priv_data);
         }
       }
-      if (codec->priv_class && (ret = av_opt_set_dict(avctx->priv_data, &tmp) < 0))
+      if (codec->priv_class && (ret = av_opt_set_dict(avctx->priv_data, &tmp)) < 0)
           goto free_and_end;
     } else {
         avctx->priv_data = NULL;
