@@ -114,6 +114,12 @@ void ff_vp3_h_loop_filter_c(uint8_t *src, int stride, int *bounding_values);
 /* EA functions */
 void ff_ea_idct_put_c(uint8_t *dest, int linesize, DCTELEM *block);
 
+/* RV40 functions */
+void ff_put_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_rv40_qpel16_mc33_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_put_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride);
+void ff_avg_rv40_qpel8_mc33_c(uint8_t *dst, uint8_t *src, int stride);
+
 /* 1/2^n downscaling functions from imgconvert.c */
 void ff_shrink22(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
 void ff_shrink44(uint8_t *dst, int dst_wrap, const uint8_t *src, int src_wrap, int width, int height);
@@ -542,16 +548,6 @@ typedef struct DSPContext {
     void (*vector_clip_int32)(int32_t *dst, const int32_t *src, int32_t min,
                               int32_t max, unsigned int len);
 
-    /* rv30 functions */
-    qpel_mc_func put_rv30_tpel_pixels_tab[4][16];
-    qpel_mc_func avg_rv30_tpel_pixels_tab[4][16];
-
-    /* rv40 functions */
-    qpel_mc_func put_rv40_qpel_pixels_tab[4][16];
-    qpel_mc_func avg_rv40_qpel_pixels_tab[4][16];
-    h264_chroma_mc_func put_rv40_chroma_pixels_tab[3];
-    h264_chroma_mc_func avg_rv40_chroma_pixels_tab[3];
-
     op_fill_func fill_block_tab[2];
 } DSPContext;
 
@@ -626,8 +622,6 @@ void dsputil_init_sh4(DSPContext* c, AVCodecContext *avctx);
 void dsputil_init_vis(DSPContext* c, AVCodecContext *avctx);
 
 void ff_dsputil_init_dwt(DSPContext *c);
-void ff_rv30dsp_init(DSPContext* c, AVCodecContext *avctx);
-void ff_rv40dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_intrax8dsp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init(DSPContext* c, AVCodecContext *avctx);
 void ff_mlp_init_x86(DSPContext* c, AVCodecContext *avctx);

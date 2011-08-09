@@ -32,6 +32,7 @@
 #include "mpegvideo.h"
 
 #include "h264pred.h"
+#include "rv34dsp.h"
 
 #define MB_TYPE_SEPARATE_DC 0x01000000
 #define IS_SEPARATE_DC(a)   ((a) & MB_TYPE_SEPARATE_DC)
@@ -83,6 +84,7 @@ typedef struct SliceInfo{
 /** decoder context */
 typedef struct RV34DecContext{
     MpegEncContext s;
+    RV34DSPContext rdsp;
     int8_t *intra_types_hist;///< old block types, used for prediction
     int8_t *intra_types;     ///< block types
     int    intra_types_stride;///< block types array stride
