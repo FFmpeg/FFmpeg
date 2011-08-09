@@ -181,16 +181,16 @@ static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
 {
     int i;
 
-    for(i=0; i<4; i++){
-        const int z0= 13*(block[i+8*0] +    block[i+8*2]);
-        const int z1= 13*(block[i+8*0] -    block[i+8*2]);
-        const int z2=  7* block[i+8*1] - 17*block[i+8*3];
-        const int z3= 17* block[i+8*1] +  7*block[i+8*3];
+    for(i = 0; i < 4; i++){
+        const int z0 = 13*(block[i+8*0] +    block[i+8*2]);
+        const int z1 = 13*(block[i+8*0] -    block[i+8*2]);
+        const int z2 =  7* block[i+8*1] - 17*block[i+8*3];
+        const int z3 = 17* block[i+8*1] +  7*block[i+8*3];
 
-        temp[4*i+0]= z0+z3;
-        temp[4*i+1]= z1+z2;
-        temp[4*i+2]= z1-z2;
-        temp[4*i+3]= z0-z3;
+        temp[4*i+0] = z0 + z3;
+        temp[4*i+1] = z1 + z2;
+        temp[4*i+2] = z1 - z2;
+        temp[4*i+3] = z0 - z3;
     }
 }
 
@@ -204,16 +204,16 @@ static void rv34_inv_transform(DCTELEM *block){
 
     rv34_row_transform(temp, block);
 
-    for(i=0; i<4; i++){
-        const int z0= 13*(temp[4*0+i] +    temp[4*2+i]) + 0x200;
-        const int z1= 13*(temp[4*0+i] -    temp[4*2+i]) + 0x200;
-        const int z2=  7* temp[4*1+i] - 17*temp[4*3+i];
-        const int z3= 17* temp[4*1+i] +  7*temp[4*3+i];
+    for(i = 0; i < 4; i++){
+        const int z0 = 13*(temp[4*0+i] +    temp[4*2+i]) + 0x200;
+        const int z1 = 13*(temp[4*0+i] -    temp[4*2+i]) + 0x200;
+        const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
+        const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
 
-        block[i*8+0]= (z0 + z3)>>10;
-        block[i*8+1]= (z1 + z2)>>10;
-        block[i*8+2]= (z1 - z2)>>10;
-        block[i*8+3]= (z0 - z3)>>10;
+        block[i*8+0] = (z0 + z3) >> 10;
+        block[i*8+1] = (z1 + z2) >> 10;
+        block[i*8+2] = (z1 - z2) >> 10;
+        block[i*8+3] = (z0 - z3) >> 10;
     }
 
 }
@@ -230,16 +230,16 @@ static void rv34_inv_transform_noround(DCTELEM *block){
 
     rv34_row_transform(temp, block);
 
-    for(i=0; i<4; i++){
-        const int z0= 13*(temp[4*0+i] +    temp[4*2+i]);
-        const int z1= 13*(temp[4*0+i] -    temp[4*2+i]);
-        const int z2=  7* temp[4*1+i] - 17*temp[4*3+i];
-        const int z3= 17* temp[4*1+i] +  7*temp[4*3+i];
+    for(i = 0; i < 4; i++){
+        const int z0 = 13*(temp[4*0+i] +    temp[4*2+i]);
+        const int z1 = 13*(temp[4*0+i] -    temp[4*2+i]);
+        const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
+        const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
 
-        block[i*8+0]= ((z0 + z3)*3)>>11;
-        block[i*8+1]= ((z1 + z2)*3)>>11;
-        block[i*8+2]= ((z1 - z2)*3)>>11;
-        block[i*8+3]= ((z0 - z3)*3)>>11;
+        block[i*8+0] = ((z0 + z3) * 3) >> 11;
+        block[i*8+1] = ((z1 + z2) * 3) >> 11;
+        block[i*8+2] = ((z1 - z2) * 3) >> 11;
+        block[i*8+3] = ((z0 - z3) * 3) >> 11;
     }
 
 }
@@ -772,7 +772,7 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
     srcV += uvsrc_y * s->uvlinesize + uvsrc_x;
     if(   (unsigned)(src_x - !!lx*2) > s->h_edge_pos - !!lx*2 - (width <<3) - 4
        || (unsigned)(src_y - !!ly*2) > s->v_edge_pos - !!ly*2 - (height<<3) - 4){
-        uint8_t *uvbuf= s->edge_emu_buffer + 22 * s->linesize;
+        uint8_t *uvbuf = s->edge_emu_buffer + 22 * s->linesize;
 
         srcY -= 2 + 2*s->linesize;
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, srcY, s->linesize, (width<<3)+6, (height<<3)+6,
@@ -1301,8 +1301,8 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
     }
     memset(r->intra_types_hist, -1, r->intra_types_stride * 4 * 2 * sizeof(*r->intra_types_hist));
     s->first_slice_line = 1;
-    s->resync_mb_x= s->mb_x;
-    s->resync_mb_y= s->mb_y;
+    s->resync_mb_x = s->mb_x;
+    s->resync_mb_y = s->mb_y;
 
     ff_init_block_index(s);
     while(!check_slice_end(r, s)) {
@@ -1344,11 +1344,11 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     MpegEncContext *s = &r->s;
 
     MPV_decode_defaults(s);
-    s->avctx= avctx;
+    s->avctx      = avctx;
     s->out_format = FMT_H263;
-    s->codec_id= avctx->codec_id;
+    s->codec_id   = avctx->codec_id;
 
-    s->width = avctx->width;
+    s->width  = avctx->width;
     s->height = avctx->height;
 
     r->s.avctx = avctx;
@@ -1404,8 +1404,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if (buf_size == 0) {
         /* special case for last picture */
         if (s->low_delay==0 && s->next_picture_ptr) {
-            *pict= *(AVFrame*)s->next_picture_ptr;
-            s->next_picture_ptr= NULL;
+            *pict = *(AVFrame*)s->next_picture_ptr;
+            s->next_picture_ptr = NULL;
 
             *data_size = sizeof(AVFrame);
         }
@@ -1436,13 +1436,13 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
        ||  avctx->skip_frame >= AVDISCARD_ALL)
         return buf_size;
 
-    for(i=0; i<slice_count; i++){
-        int offset= get_slice_offset(avctx, slices_hdr, i);
+    for(i = 0; i < slice_count; i++){
+        int offset = get_slice_offset(avctx, slices_hdr, i);
         int size;
         if(i+1 == slice_count)
-            size= buf_size - offset;
+            size = buf_size - offset;
         else
-            size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
+            size = get_slice_offset(avctx, slices_hdr, i+1) - offset;
 
         if(offset > buf_size){
             av_log(avctx, AV_LOG_ERROR, "Slice offset is greater than frame size\n");
@@ -1472,16 +1472,16 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         ff_er_frame_end(s);
         MPV_frame_end(s);
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
-            *pict= *(AVFrame*)s->current_picture_ptr;
+            *pict = *(AVFrame*)s->current_picture_ptr;
         } else if (s->last_picture_ptr != NULL) {
-            *pict= *(AVFrame*)s->last_picture_ptr;
+            *pict = *(AVFrame*)s->last_picture_ptr;
         }
 
         if(s->last_picture_ptr || s->low_delay){
             *data_size = sizeof(AVFrame);
             ff_print_debug_info(s, pict);
         }
-        s->current_picture_ptr= NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
+        s->current_picture_ptr = NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
     }
     return buf_size;
 }

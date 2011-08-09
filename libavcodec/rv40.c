@@ -677,7 +677,7 @@ AVCodec ff_rv40_decoder = {
     .close          = ff_rv34_decode_end,
     .decode         = ff_rv34_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DELAY,
-    .flush = ff_mpeg_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("RealVideo 4.0"),
-    .pix_fmts= ff_pixfmt_list_420,
+    .flush          = ff_mpeg_flush,
+    .long_name      = NULL_IF_CONFIG_SMALL("RealVideo 4.0"),
+    .pix_fmts       = ff_pixfmt_list_420,
 };
