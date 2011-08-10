@@ -2211,8 +2211,12 @@ static av_cold void set_bandwidth(AC3EncodeContext *s)
             cpl_start = s->options.cpl_start;
         } else {
             cpl_start = ac3_coupling_start_tab[s->channel_mode-2][s->bit_alloc.sr_code][s->frame_size_code/2];
-            if (cpl_start < 0)
-                s->cpl_enabled = 0;
+            if (cpl_start < 0) {
+                if (s->options.channel_coupling < 0)
+                    s->cpl_enabled = 0;
+                else
+                    cpl_start = 15;
+            }
         }
     }
     if (s->cpl_enabled) {
