@@ -330,7 +330,7 @@ static int probe_file(const char *filename)
 static void show_usage(void)
 {
     printf("Simple multimedia streams analyzer\n");
-    printf("usage: ffprobe [OPTIONS] [INPUT_FILE]\n");
+    printf("usage: %s [OPTIONS] [INPUT_FILE]\n", program_name);
     printf("\n");
 }
 
@@ -412,7 +412,7 @@ int main(int argc, char **argv)
     if (!input_filename) {
         show_usage();
         fprintf(stderr, "You have to specify one input file.\n");
-        fprintf(stderr, "Use -h to get full help or, even better, run 'man ffprobe'.\n");
+        fprintf(stderr, "Use -h to get full help or, even better, run 'man %s'.\n", program_name);
         exit(1);
     }
 

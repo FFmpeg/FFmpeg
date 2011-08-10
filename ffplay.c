@@ -2954,7 +2954,7 @@ static const OptionDef options[] = {
 static void show_usage(void)
 {
     printf("Simple media player\n");
-    printf("usage: ffplay [options] input_file\n");
+    printf("usage: %s [options] input_file\n", program_name);
     printf("\n");
 }
 
@@ -3019,7 +3019,7 @@ int main(int argc, char **argv)
     if (!input_filename) {
         show_usage();
         fprintf(stderr, "An input file must be specified\n");
-        fprintf(stderr, "Use -h to get full help or, even better, run 'man ffplay'\n");
+        fprintf(stderr, "Use -h to get full help or, even better, run 'man %s'\n", program_name);
         exit(1);
     }
 
