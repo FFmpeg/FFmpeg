@@ -59,7 +59,6 @@ static av_cold int audio_read_header(AVFormatContext *s1,
     AVStream *st;
     int ret;
     enum CodecID codec_id;
-    snd_pcm_sw_params_t *sw_params;
     double o;
 
 #if FF_API_FORMAT_PARAMETERS
@@ -106,7 +105,6 @@ fail:
 static int audio_read_packet(AVFormatContext *s1, AVPacket *pkt)
 {
     AlsaData *s  = s1->priv_data;
-    AVStream *st = s1->streams[0];
     int res;
     int64_t dts;
     snd_pcm_sframes_t delay = 0;
