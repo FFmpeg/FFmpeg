@@ -579,6 +579,8 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
         sr = sample_rate_idx(avctx->sample_rate);
         ac->m4ac.sampling_index = sr;
         ac->m4ac.channels = avctx->channels;
+        ac->m4ac.sbr = -1;
+        ac->m4ac.ps = -1;
 
         for (i = 0; i < FF_ARRAY_ELEMS(ff_mpeg4audio_channels); i++)
             if (ff_mpeg4audio_channels[i] == avctx->channels)
