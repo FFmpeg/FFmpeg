@@ -568,12 +568,8 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
  */
 static int calc_add_mv(RV34DecContext *r, int dir, int val)
 {
-    int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
-    int dist = dir ? -GET_PTS_DIFF(r->next_pts, r->cur_pts) : GET_PTS_DIFF(r->cur_pts, r->last_pts);
-    int mul;
+    int mul = dir ? -r->weight2 : r->weight1;
 
-    if(!refdist) return 0;
-    mul = (dist << 14) / refdist;
     return (val * mul + 0x2000) >> 14;
 }
 
@@ -1273,6 +1269,17 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         if(s->pict_type != AV_PICTURE_TYPE_B){
             r->last_pts = r->next_pts;
             r->next_pts = r->cur_pts;
+        }else{
+            int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
+            int dist0   = GET_PTS_DIFF(r->cur_pts,  r->last_pts);
+            int dist1   = GET_PTS_DIFF(r->next_pts, r->cur_pts);
+
+            if(!refdist){
+                r->weight1 = r->weight2 = 8192;
+            }else{
+                r->weight1 = (dist0 << 14) / refdist;
+                r->weight2 = (dist1 << 14) / refdist;
+            }
         }
         s->mb_x = s->mb_y = 0;
     }
