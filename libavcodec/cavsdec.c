@@ -115,7 +115,8 @@ static inline int get_ue_code(GetBitContext *gb, int order) {
 static int decode_residual_block(AVSContext *h, GetBitContext *gb,
                                  const struct dec_2dvlc *r, int esc_golomb_order,
                                  int qp, uint8_t *dst, int stride) {
-    int i, level_code, esc_code, level, run, mask;
+    int i, esc_code, level, mask;
+    unsigned int level_code, run;
     DCTELEM level_buf[65];
     uint8_t run_buf[65];
     DCTELEM *block = h->block;
