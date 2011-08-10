@@ -166,7 +166,7 @@ static inline int decode_residual_inter(AVSContext *h) {
 
     /* get coded block pattern */
     int cbp= get_ue_golomb(&h->s.gb);
-    if(cbp > 63){
+    if(cbp > 63U){
         av_log(h->s.avctx, AV_LOG_ERROR, "illegal inter cbp\n");
         return -1;
     }
@@ -226,7 +226,7 @@ static int decode_mb_i(AVSContext *h, int cbp_code) {
     /* get coded block pattern */
     if(h->pic_type == AV_PICTURE_TYPE_I)
         cbp_code = get_ue_golomb(gb);
-    if(cbp_code > 63){
+    if(cbp_code > 63U){
         av_log(h->s.avctx, AV_LOG_ERROR, "illegal intra cbp\n");
         return -1;
     }
