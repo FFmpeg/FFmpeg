@@ -116,6 +116,11 @@ typedef struct RV34DecContext{
     /** 8x8 block available flags (for MV prediction) */
     DECLARE_ALIGNED(8, uint32_t, avail_cache)[3*4];
 
+    /** temporary blocks for RV4 weighted MC */
+    uint8_t *tmp_b_block_y[2];
+    uint8_t *tmp_b_block_uv[4];
+    uint8_t *tmp_b_block_base;
+
     int (*parse_slice_header)(struct RV34DecContext *r, GetBitContext *gb, SliceInfo *si);
     int (*decode_mb_info)(struct RV34DecContext *r);
     int (*decode_intra_types)(struct RV34DecContext *r, GetBitContext *gb, int8_t *dst);

@@ -285,6 +285,23 @@ static void OPNAME ## rv40_chroma_mc8_c(uint8_t *dst/*align 8*/, uint8_t *src/*a
 RV40_CHROMA_MC(put_, op_put)
 RV40_CHROMA_MC(avg_, op_avg)
 
+#define RV40_WEIGHT_FUNC(size) \
+static void rv40_weight_func_ ## size (uint8_t *dst, uint8_t *src1, uint8_t *src2, int w1, int w2, int stride)\
+{\
+    int i, j;\
+\
+    for (j = 0; j < size; j++) {\
+        for (i = 0; i < size; i++)\
+            dst[i] = (((w2 * src1[i]) >> 9) + ((w1 * src2[i]) >> 9) + 0x10) >> 5;\
+        src1 += stride;\
+        src2 += stride;\
+        dst  += stride;\
+    }\
+}
+
+RV40_WEIGHT_FUNC(16)
+RV40_WEIGHT_FUNC(8)
+
 av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->put_pixels_tab[0][ 0] = dsp->put_h264_qpel_pixels_tab[0][0];
     c->put_pixels_tab[0][ 1] = put_rv40_qpel16_mc10_c;
@@ -355,6 +372,9 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->put_chroma_pixels_tab[1] = put_rv40_chroma_mc4_c;
     c->avg_chroma_pixels_tab[0] = avg_rv40_chroma_mc8_c;
     c->avg_chroma_pixels_tab[1] = avg_rv40_chroma_mc4_c;
+
+    c->rv40_weight_pixels_tab[0] = rv40_weight_func_16;
+    c->rv40_weight_pixels_tab[1] = rv40_weight_func_8;
 
     if (HAVE_MMX)
         ff_rv40dsp_init_x86(c, dsp);
