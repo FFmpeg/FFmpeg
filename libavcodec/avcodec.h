@@ -2559,7 +2559,6 @@ typedef struct AVCodecContext {
 
     /**
      * Bits per sample/pixel of internal libavcodec pixel/sample format.
-     * This field is applicable only when sample_fmt is AV_SAMPLE_FMT_S32.
      * - encoding: set by user.
      * - decoding: set by libavcodec.
      */
