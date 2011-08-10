@@ -124,7 +124,7 @@ typedef struct AC3Block {
     int      cpl_in_use;                        ///< coupling in use for this block     (cplinu)
     uint8_t  channel_in_cpl[AC3_MAX_CHANNELS];  ///< channel in coupling                (chincpl)
     int      num_cpl_channels;                  ///< number of channels in coupling
-    uint8_t  new_cpl_coords;                    ///< send new coupling coordinates      (cplcoe)
+    uint8_t  new_cpl_coords[AC3_MAX_CHANNELS];  ///< send new coupling coordinates      (cplcoe)
     uint8_t  cpl_master_exp[AC3_MAX_CHANNELS];  ///< coupling coord master exponents    (mstrcplco)
     int      new_snr_offsets;                   ///< send new SNR offsets
     int      new_cpl_leak;                      ///< send new coupling leak info
@@ -255,6 +255,8 @@ void ff_ac3_apply_rematrixing(AC3EncodeContext *s);
 void ff_ac3_process_exponents(AC3EncodeContext *s);
 
 int ff_ac3_compute_bit_allocation(AC3EncodeContext *s);
+
+void ff_ac3_group_exponents(AC3EncodeContext *s);
 
 void ff_ac3_quantize_mantissas(AC3EncodeContext *s);
 

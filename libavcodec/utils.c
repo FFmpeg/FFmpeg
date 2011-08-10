@@ -1144,6 +1144,9 @@ const char *avcodec_license(void)
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
+#if !FF_API_AVCODEC_INIT
+static
+#endif
 void avcodec_init(void)
 {
     static int initialized = 0;

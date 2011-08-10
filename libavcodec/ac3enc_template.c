@@ -28,8 +28,6 @@
 
 #include <stdint.h>
 
-#include "ac3enc.h"
-
 
 /* prototypes for static functions in ac3enc_fixed.c and ac3enc_float.c */
 
@@ -202,59 +200,56 @@ static void apply_channel_coupling(AC3EncodeContext *s)
         bnd++;
     }
 
+    /* calculate coupling coordinates for all blocks for all channels */
+    for (blk = 0; blk < s->num_blocks; blk++) {
+        AC3Block *block  = &s->blocks[blk];
+        if (!block->cpl_in_use)
+            continue;
+        for (ch = 1; ch <= s->fbw_channels; ch++) {
+            if (!block->channel_in_cpl[ch])
+                continue;
+            for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                cpl_coords[blk][ch][bnd] = calc_cpl_coord(energy[blk][ch][bnd],
+                                                          energy[blk][CPL_CH][bnd]);
+            }
+        }
+    }
+
     /* determine which blocks to send new coupling coordinates for */
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block  = &s->blocks[blk];
         AC3Block *block0 = blk ? &s->blocks[blk-1] : NULL;
-        int new_coords = 0;
-        CoefSumType coord_diff[AC3_MAX_CHANNELS] = {0,};
+
+        memset(block->new_cpl_coords, 0, sizeof(block->new_cpl_coords));
 
         if (block->cpl_in_use) {
-            /* calculate coupling coordinates for all blocks and calculate the
-               average difference between coordinates in successive blocks */
-            for (ch = 1; ch <= s->fbw_channels; ch++) {
-                if (!block->channel_in_cpl[ch])
-                    continue;
-
-                for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
-                    cpl_coords[blk][ch][bnd] = calc_cpl_coord(energy[blk][ch][bnd],
-                                                              energy[blk][CPL_CH][bnd]);
-                    if (blk > 0 && block0->cpl_in_use &&
-                        block0->channel_in_cpl[ch]) {
-                        coord_diff[ch] += fabs(cpl_coords[blk-1][ch][bnd] -
-                                               cpl_coords[blk  ][ch][bnd]);
-                    }
-                }
-                coord_diff[ch] /= s->num_cpl_bands;
-            }
-
             /* send new coordinates if this is the first block, if previous
              * block did not use coupling but this block does, the channels
              * using coupling has changed from the previous block, or the
              * coordinate difference from the last block for any channel is
              * greater than a threshold value. */
-            if (blk == 0) {
-                new_coords = 1;
-            } else if (!block0->cpl_in_use) {
-                new_coords = 1;
+            if (blk == 0 || !block0->cpl_in_use) {
+                for (ch = 1; ch <= s->fbw_channels; ch++)
+                    block->new_cpl_coords[ch] = 1;
             } else {
                 for (ch = 1; ch <= s->fbw_channels; ch++) {
-                    if (block->channel_in_cpl[ch] && !block0->channel_in_cpl[ch]) {
-                        new_coords = 1;
-                        break;
-                    }
-                }
-                if (!new_coords) {
-                    for (ch = 1; ch <= s->fbw_channels; ch++) {
-                        if (block->channel_in_cpl[ch] && coord_diff[ch] > 0.04) {
-                            new_coords = 1;
-                            break;
+                    if (!block->channel_in_cpl[ch])
+                        continue;
+                    if (!block0->channel_in_cpl[ch]) {
+                        block->new_cpl_coords[ch] = 1;
+                    } else {
+                        CoefSumType coord_diff = 0;
+                        for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
+                            coord_diff += fabs(cpl_coords[blk-1][ch][bnd] -
+                                               cpl_coords[blk  ][ch][bnd]);
                         }
+                        coord_diff /= s->num_cpl_bands;
+                        if (coord_diff > 0.03)
+                            block->new_cpl_coords[ch] = 1;
                     }
                 }
             }
         }
-        block->new_cpl_coords = new_coords;
     }
 
     /* calculate final coupling coordinates, taking into account reusing of
@@ -262,8 +257,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
     for (bnd = 0; bnd < s->num_cpl_bands; bnd++) {
         blk = 0;
         while (blk < s->num_blocks) {
-            int blk1;
-            CoefSumType energy_cpl;
+            int av_uninit(blk1);
             AC3Block *block  = &s->blocks[blk];
 
             if (!block->cpl_in_use) {
@@ -271,23 +265,18 @@ static void apply_channel_coupling(AC3EncodeContext *s)
                 continue;
             }
 
-            energy_cpl = energy[blk][CPL_CH][bnd];
-            blk1 = blk+1;
-            while (!s->blocks[blk1].new_cpl_coords && blk1 < s->num_blocks) {
-                if (s->blocks[blk1].cpl_in_use)
-                    energy_cpl += energy[blk1][CPL_CH][bnd];
-                blk1++;
-            }
-
             for (ch = 1; ch <= s->fbw_channels; ch++) {
-                CoefType energy_ch;
+                CoefSumType energy_ch, energy_cpl;
                 if (!block->channel_in_cpl[ch])
                     continue;
+                energy_cpl = energy[blk][CPL_CH][bnd];
                 energy_ch = energy[blk][ch][bnd];
                 blk1 = blk+1;
-                while (!s->blocks[blk1].new_cpl_coords && blk1 < s->num_blocks) {
-                    if (s->blocks[blk1].cpl_in_use)
+                while (!s->blocks[blk1].new_cpl_coords[ch] && blk1 < s->num_blocks) {
+                    if (s->blocks[blk1].cpl_in_use) {
+                        energy_cpl += energy[blk1][CPL_CH][bnd];
                         energy_ch += energy[blk1][ch][bnd];
+                    }
                     blk1++;
                 }
                 cpl_coords[blk][ch][bnd] = calc_cpl_coord(energy_ch, energy_cpl);
@@ -299,7 +288,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
     /* calculate exponents/mantissas for coupling coordinates */
     for (blk = 0; blk < s->num_blocks; blk++) {
         AC3Block *block = &s->blocks[blk];
-        if (!block->cpl_in_use || !block->new_cpl_coords)
+        if (!block->cpl_in_use)
             continue;
 
         clip_coefficients(&s->dsp, cpl_coords[blk][1], s->fbw_channels * 16);
@@ -312,6 +301,9 @@ static void apply_channel_coupling(AC3EncodeContext *s)
 
         for (ch = 1; ch <= s->fbw_channels; ch++) {
             int bnd, min_exp, max_exp, master_exp;
+
+            if (!block->new_cpl_coords[ch])
+                continue;
 
             /* determine master exponent */
             min_exp = max_exp = block->cpl_coord_exp[ch][0];
@@ -462,6 +454,8 @@ int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
         av_log(avctx, AV_LOG_ERROR, "Bit allocation failed. Try increasing the bitrate.\n");
         return ret;
     }
+
+    ff_ac3_group_exponents(s);
 
     ff_ac3_quantize_mantissas(s);
 

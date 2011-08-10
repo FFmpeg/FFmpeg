@@ -99,7 +99,7 @@ void ff_eac3_set_cpl_states(AC3EncodeContext *s)
         for (ch = 1; ch <= s->fbw_channels; ch++) {
             if (block->channel_in_cpl[ch]) {
                 if (first_cpl_coords[ch]) {
-                    block->new_cpl_coords = 2;
+                    block->new_cpl_coords[ch] = 2;
                     first_cpl_coords[ch]  = 0;
                 }
             } else {
