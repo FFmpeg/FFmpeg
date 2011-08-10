@@ -426,6 +426,58 @@ indicates never reset and return the largest area encountered during
 playback.
 @end table
 
+@section delogo
+
+Suppress a TV station logo by a simple interpolation of the surrounding
+pixels. Just set a rectangle covering the logo and watch it disappear
+(and sometimes something even uglier appear - your mileage may vary).
+
+The filter accepts parameters as a string of the form
+"@var{x}:@var{y}:@var{w}:@var{h}:@var{band}", or as a list of
+@var{key}=@var{value} pairs, separated by ":".
+
+The description of the accepted parameters follows.
+
+@table @option
+
+@item x, y
+Specify the top left corner coordinates of the logo. They must be
+specified.
+
+@item w, h
+Specify the width and height of the logo to clear. They must be
+specified.
+
+@item band, t
+Specify the thickness of the fuzzy edge of the rectangle (added to
+@var{w} and @var{h}). The default value is 4.
+
+@item show
+When set to 1, a green rectangle is drawn on the screen to simplify
+finding the right @var{x}, @var{y}, @var{w}, @var{h} parameters, and
+@var{band} is set to 4. The default value is 0.
+
+@end table
+
+Some examples follow.
+
+@itemize
+
+@item
+Set a rectangle covering the area with top left corner coordinates 0,0
+and size 100x77, setting a band of size 10:
+@example
+delogo=0:0:100:77:10
+@end example
+
+@item
+As the previous example, but use named options:
+@example
+delogo=x=0:y=0:w=100:h=77:band=10
+@end example
+
+@end itemize
+
 @section drawbox
 
 Draw a colored box on the input image.
