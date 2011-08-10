@@ -126,7 +126,6 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_softskip.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_spp.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_swapuv.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_telecine.o
-OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_test.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_tile.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_tinterlace.o
 OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/vf_unsharp.o

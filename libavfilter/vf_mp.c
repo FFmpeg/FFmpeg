@@ -241,7 +241,6 @@ static const vf_info_t* const filters[]={
     &vf_info_spp,
     &vf_info_swapuv,
     &vf_info_telecine,
-    &vf_info_test,
     &vf_info_tile,
     &vf_info_tinterlace,
     &vf_info_unsharp,

@@ -963,7 +963,6 @@ The list of the currently supported filters follows:
 @item spp
 @item swapuv
 @item telecine
-@item test
 @item tile
 @item tinterlace
 @item unsharp
