@@ -65,6 +65,23 @@ typedef int32_t CoefType;
 typedef int64_t CoefSumType;
 #endif
 
+/* common option values */
+#define AC3ENC_OPT_NONE            -1
+#define AC3ENC_OPT_AUTO            -1
+#define AC3ENC_OPT_OFF              0
+#define AC3ENC_OPT_ON               1
+#define AC3ENC_OPT_NOT_INDICATED    0
+#define AC3ENC_OPT_MODE_ON          1
+#define AC3ENC_OPT_MODE_OFF         2
+
+/* specific option values */
+#define AC3ENC_OPT_LARGE_ROOM       1
+#define AC3ENC_OPT_SMALL_ROOM       2
+#define AC3ENC_OPT_DOWNMIX_LTRT     1
+#define AC3ENC_OPT_DOWNMIX_LORO     2
+#define AC3ENC_OPT_ADCONV_STANDARD  0
+#define AC3ENC_OPT_ADCONV_HDCD      1
+
 
 #if 0
 /**
