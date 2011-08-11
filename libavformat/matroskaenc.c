@@ -1191,6 +1191,22 @@ static int mkv_write_trailer(AVFormatContext *s)
     return 0;
 }
 
+static int mkv_query_codec(enum CodecID codec_id, int std_compliance)
+{
+    int i;
+    for (i = 0; ff_mkv_codec_tags[i].id != CODEC_ID_NONE; i++)
+        if (ff_mkv_codec_tags[i].id == codec_id)
+            return 1;
+
+    if (std_compliance < FF_COMPLIANCE_NORMAL) {                // mkv theoretically supports any
+        enum AVMediaType type = avcodec_get_type(codec_id);     // video/audio through VFW/ACM
+        if (type == AVMEDIA_TYPE_VIDEO || type == AVMEDIA_TYPE_AUDIO)
+            return 1;
+    }
+
+    return 0;
+}
+
 #if CONFIG_MATROSKA_MUXER
 AVOutputFormat ff_matroska_muxer = {
     .name              = "matroska",
@@ -1206,6 +1222,7 @@ AVOutputFormat ff_matroska_muxer = {
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
     .codec_tag = (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_SSA,
+    .query_codec       = mkv_query_codec,
 };
 #endif
 
