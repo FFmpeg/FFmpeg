@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-08-xx - xxxxxxx - lavf 53.4.0
+  Add avformat_query_codec().
+
 2011-08-xx - xxxxxxx - lavc 53.8.0
   Add avcodec_get_type().
 
