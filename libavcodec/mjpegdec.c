@@ -1525,7 +1525,9 @@ eoi_parser:
                         av_log(avctx, AV_LOG_WARNING, "Can not process SOS before SOF, skipping\n");
                         break;
                     }
-                    ff_mjpeg_decode_sos(s, NULL, NULL);
+                    if (ff_mjpeg_decode_sos(s, NULL, NULL) < 0 &&
+                        avctx->error_recognition >= FF_ER_EXPLODE)
+                      return AVERROR_INVALIDDATA;
                     /* buggy avid puts EOI every 10-20th frame */
                     /* if restart period is over process EOI */
                     if ((s->buggy_avid && !s->interlaced) || s->restart_interval)
