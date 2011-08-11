@@ -1840,7 +1840,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         h->prev_interlaced_frame = 1;
 
         init_scan_tables(h);
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "Could not allocate memory for h264\n");
+            return AVERROR(ENOMEM);
+        }
 
         for(i = 1; i < s->avctx->thread_count; i++) {
             H264Context *c;
