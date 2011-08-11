@@ -210,6 +210,7 @@ enum CodecID {
     CODEC_ID_DFA,
 
     /* various PCM "codecs" */
+    CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
     CODEC_ID_PCM_S16LE= 0x10000,
     CODEC_ID_PCM_S16BE,
     CODEC_ID_PCM_U16LE,
@@ -340,6 +341,7 @@ enum CodecID {
     CODEC_ID_QDMC,
 
     /* subtitle codecs */
+    CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
     CODEC_ID_DVD_SUBTITLE= 0x17000,
     CODEC_ID_DVB_SUBTITLE,
     CODEC_ID_TEXT,  ///< raw UTF-8 text
@@ -351,6 +353,7 @@ enum CodecID {
     CODEC_ID_SRT,
 
     /* other specific kind of codecs (generally used for attachments) */
+    CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
     CODEC_ID_TTF= 0x18000,
 
     CODEC_ID_PROBE= 0x19000, ///< codec_id is not known (like CODEC_ID_NONE) but lavf should attempt to identify it
@@ -4272,5 +4275,10 @@ enum AVLockOp {
  *           lockmgr callback may also be invoked.
  */
 int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
+
+/**
+ * Get the type of the given codec.
+ */
+enum AVMediaType avcodec_get_type(enum CodecID codec_id);
 
 #endif /* AVCODEC_AVCODEC_H */
