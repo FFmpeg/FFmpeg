@@ -189,7 +189,7 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
         select->var_values[VAR_START_T] = TS2D(picref->pts) * av_q2d(inlink->time_base);
 
     select->var_values[VAR_PTS] = TS2D(picref->pts);
-    select->var_values[VAR_T  ] = picref->pts * av_q2d(inlink->time_base);
+    select->var_values[VAR_T  ] = TS2D(picref->pts) * av_q2d(inlink->time_base);
     select->var_values[VAR_POS] = picref->pos == -1 ? NAN : picref->pos;
     select->var_values[VAR_PREV_PTS] = TS2D(picref ->pts);
 
