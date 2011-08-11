@@ -185,6 +185,8 @@ static int select_frame(AVFilterContext *ctx, AVFilterBufferRef *picref)
 
     if (isnan(select->var_values[VAR_START_PTS]))
         select->var_values[VAR_START_PTS] = TS2D(picref->pts);
+    if (isnan(select->var_values[VAR_START_T]))
+        select->var_values[VAR_START_T] = TS2D(picref->pts) * av_q2d(inlink->time_base);
 
     select->var_values[VAR_PTS] = TS2D(picref->pts);
     select->var_values[VAR_T  ] = picref->pts * av_q2d(inlink->time_base);
