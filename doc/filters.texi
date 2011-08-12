@@ -4914,39 +4914,34 @@ transpose=1:portrait
 
 Sharpen or blur the input video.
 
-It accepts the following parameters:
+This filter accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+If the key of the first options is omitted, the arguments are
+interpreted according to the syntax:
 @var{luma_msize_x}:@var{luma_msize_y}:@var{luma_amount}:@var{chroma_msize_x}:@var{chroma_msize_y}:@var{chroma_amount}
 
-Negative values for the amount will blur the input video, while positive
-values will sharpen. All parameters are optional and default to the
-equivalent of the string '5:5:1.0:5:5:0.0'.
+A description of the accepted options follows.
 
 @table @option
+@item luma_msize_x, lx
+@item chroma_msize_x, cx
+Set the luma/chroma matrix horizontal size. It can be an integer
+between 3 and 63, default value is 5.
 
-@item luma_msize_x
-Set the luma matrix horizontal size. It can be an integer between 3
-and 63, default value is 5.
+@item luma_msize_y, ly
+@item chroma_msize_y, cy
+Set the luma/chroma matrix vertical size. It can be an integer between
+3 and 63, default value is 5.
 
-@item luma_msize_y
-Set the luma matrix vertical size. It can be an integer between 3
-and 63, default value is 5.
+@item luma_amount, la
+@item chroma_amount, ca
+Set the luma/chroma effect strength. It can be a float number between
+-2.0 and 5.0. Default value is 1.0 for @option{luma_amount}, 0.0 for
+@option{chroma_amount}.
 
-@item luma_amount
-Set the luma effect strength. It can be a float number between -2.0
-and 5.0, default value is 1.0.
-
-@item chroma_msize_x
-Set the chroma matrix horizontal size. It can be an integer between 3
-and 63, default value is 5.
-
-@item chroma_msize_y
-Set the chroma matrix vertical size. It can be an integer between 3
-and 63, default value is 5.
-
-@item chroma_amount
-Set the chroma effect strength. It can be a float number between -2.0
-and 5.0, default value is 0.0.
-
+Negative values will blur the input video, while positive values will
+sharpen.
 @end table
 
 @example

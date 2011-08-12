@@ -42,6 +42,7 @@
 #include "video.h"
 #include "libavutil/common.h"
 #include "libavutil/mem.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 
 #define MIN_MATRIX_SIZE 3
@@ -62,10 +63,35 @@ typedef struct FilterParam {
 } FilterParam;
 
 typedef struct {
+    const AVClass *class;
     FilterParam luma;   ///< luma parameters (width, height, amount)
     FilterParam chroma; ///< chroma parameters (width, height, amount)
     int hsub, vsub;
+    int luma_msize_x, luma_msize_y, chroma_msize_x, chroma_msize_y;
+    double luma_amount, chroma_amount;
 } UnsharpContext;
+
+#define OFFSET(x) offsetof(UnsharpContext, x)
+
+static const AVOption unsharp_options[] = {
+    { "luma_msize_x",    "set luma matrix x size",     OFFSET(luma_msize_x),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "lx",              "set luma matrix x size",     OFFSET(luma_msize_x),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "luma_msize_y",    "set luma matrix y size",     OFFSET(luma_msize_y),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "ly",              "set luma matrix y size",     OFFSET(luma_msize_y),    AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "luma_amount",     "set luma effect amount",     OFFSET(luma_amount),     AV_OPT_TYPE_DOUBLE, {.dbl=1.0}, -2.0, 5.0 },
+    { "la",              "set luma effect amount",     OFFSET(luma_amount),     AV_OPT_TYPE_DOUBLE, {.dbl=1.0}, -2.0, 5.0 },
+
+    { "chroma_msize_x",  "set chroma matrix x size",   OFFSET(chroma_msize_x), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "cx",              "set chroma matrix x size",   OFFSET(chroma_msize_x), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "chroma_msize_y",  "set chroma matrix y size",   OFFSET(chroma_msize_y), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "cy"          ,    "set chroma matrix y size",   OFFSET(chroma_msize_y), AV_OPT_TYPE_INT,    {.i64=5}, 3, 63 },
+    { "chroma_amount",   "set chroma effect strenght", OFFSET(chroma_amount),  AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -2.0, 5.0 },
+    { "ca",              "set chroma effect strenght", OFFSET(chroma_amount),  AV_OPT_TYPE_DOUBLE, {.dbl=0.0}, -2.0, 5.0 },
+
+    { NULL }
+};
+
+AVFILTER_DEFINE_CLASS(unsharp);
 
 static void apply_unsharp(      uint8_t *dst, int dst_stride,
                           const uint8_t *src, int src_stride,
@@ -135,24 +161,21 @@ static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, double a
 static av_cold int init(AVFilterContext *ctx, const char *args)
 {
     UnsharpContext *unsharp = ctx->priv;
-    int lmsize_x = 5, cmsize_x = 5;
-    int lmsize_y = 5, cmsize_y = 5;
-    double lamount = 1.0f, camount = 0.0f;
+    static const char *shorthand[] = {
+        "luma_msize_x", "luma_msize_y", "luma_amount",
+        "chroma_msize_x", "chroma_msize_y", "chroma_amount",
+        NULL
+    };
+    int ret;
 
-    if (args)
-        sscanf(args, "%d:%d:%lf:%d:%d:%lf", &lmsize_x, &lmsize_y, &lamount,
-                                            &cmsize_x, &cmsize_y, &camount);
+    unsharp->class = &unsharp_class;
+    av_opt_set_defaults(unsharp);
 
-    if ((lamount && (lmsize_x < 2 || lmsize_y < 2)) ||
-        (camount && (cmsize_x < 2 || cmsize_y < 2))) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Invalid value <2 for lmsize_x:%d or lmsize_y:%d or cmsize_x:%d or cmsize_y:%d\n",
-               lmsize_x, lmsize_y, cmsize_x, cmsize_y);
-        return AVERROR(EINVAL);
-    }
+    if ((ret = av_opt_set_from_string(unsharp, args, shorthand, "=", ":")) < 0)
+        return ret;
 
-    set_filter_param(&unsharp->luma,   lmsize_x, lmsize_y, lamount);
-    set_filter_param(&unsharp->chroma, cmsize_x, cmsize_y, camount);
+    set_filter_param(&unsharp->luma,   unsharp->luma_msize_x,   unsharp->luma_msize_y,   unsharp->luma_amount);
+    set_filter_param(&unsharp->chroma, unsharp->chroma_msize_x, unsharp->chroma_msize_y, unsharp->chroma_amount);
 
     return 0;
 }
@@ -212,6 +235,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     free_filter_param(&unsharp->luma);
     free_filter_param(&unsharp->chroma);
+    av_opt_free(unsharp);
 }
 
 static int filter_frame(AVFilterLink *link, AVFilterBufferRef *in)
@@ -269,4 +293,6 @@ AVFilter avfilter_vf_unsharp = {
     .inputs    = avfilter_vf_unsharp_inputs,
 
     .outputs   = avfilter_vf_unsharp_outputs,
+
+    .priv_class = &unsharp_class,
 };
