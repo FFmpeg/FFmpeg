@@ -63,7 +63,9 @@ typedef struct {
     FilterParam chroma; ///< chroma parameters (width, height, amount)
 } UnsharpContext;
 
-static void unsharpen(uint8_t *dst, const uint8_t *src, int dst_stride, int src_stride, int width, int height, FilterParam *fp)
+static void apply_unsharp(uint8_t *dst, const uint8_t *src,
+                          int dst_stride, int src_stride,
+                          int width, int height, FilterParam *fp)
 {
     uint32_t **sc = fp->sc;
     uint32_t sr[(MAX_SIZE * MAX_SIZE) - 1], tmp1, tmp2;
@@ -206,9 +208,9 @@ static void end_frame(AVFilterLink *link)
     AVFilterBufferRef *in  = link->cur_buf;
     AVFilterBufferRef *out = link->dst->outputs[0]->out_buf;
 
-    unsharpen(out->data[0], in->data[0], out->linesize[0], in->linesize[0], link->w,            link->h,             &unsharp->luma);
-    unsharpen(out->data[1], in->data[1], out->linesize[1], in->linesize[1], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), &unsharp->chroma);
-    unsharpen(out->data[2], in->data[2], out->linesize[2], in->linesize[2], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), &unsharp->chroma);
+    apply_unsharp(out->data[0], in->data[0], out->linesize[0], in->linesize[0], link->w,            link->h,             &unsharp->luma);
+    apply_unsharp(out->data[1], in->data[1], out->linesize[1], in->linesize[1], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), &unsharp->chroma);
+    apply_unsharp(out->data[2], in->data[2], out->linesize[2], in->linesize[2], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), &unsharp->chroma);
 
     avfilter_unref_buffer(in);
     avfilter_draw_slice(link->dst->outputs[0], 0, link->h, 1);
