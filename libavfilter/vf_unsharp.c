@@ -44,8 +44,8 @@
 #define MIN_SIZE 3
 #define MAX_SIZE 13
 
-#define CHROMA_WIDTH(link)  -((-link->w) >> av_pix_fmt_descriptors[link->format].log2_chroma_w)
-#define CHROMA_HEIGHT(link) -((-link->h) >> av_pix_fmt_descriptors[link->format].log2_chroma_h)
+/* right-shift and round-up */
+#define SHIFTUP(x,shift) (-((-(x))>>(shift)))
 
 typedef struct FilterParam {
     int msize_x;                             ///< matrix width
@@ -61,6 +61,7 @@ typedef struct FilterParam {
 typedef struct {
     FilterParam luma;   ///< luma parameters (width, height, amount)
     FilterParam chroma; ///< chroma parameters (width, height, amount)
+    int hsub, vsub;
 } UnsharpContext;
 
 static void apply_unsharp(      uint8_t *dst, int dst_stride,
@@ -180,8 +181,11 @@ static int config_props(AVFilterLink *link)
 {
     UnsharpContext *unsharp = link->dst->priv;
 
+    unsharp->hsub = av_pix_fmt_descriptors[link->format].log2_chroma_w;
+    unsharp->vsub = av_pix_fmt_descriptors[link->format].log2_chroma_h;
+
     init_filter_param(link->dst, &unsharp->luma,   "luma",   link->w);
-    init_filter_param(link->dst, &unsharp->chroma, "chroma", CHROMA_WIDTH(link));
+    init_filter_param(link->dst, &unsharp->chroma, "chroma", SHIFTUP(link->w, unsharp->hsub));
 
     return 0;
 }
@@ -207,10 +211,12 @@ static void end_frame(AVFilterLink *link)
     UnsharpContext *unsharp = link->dst->priv;
     AVFilterBufferRef *in  = link->cur_buf;
     AVFilterBufferRef *out = link->dst->outputs[0]->out_buf;
+    int cw = SHIFTUP(link->w, unsharp->hsub);
+    int ch = SHIFTUP(link->h, unsharp->vsub);
 
-    apply_unsharp(out->data[0], out->linesize[0], in->data[0], in->linesize[0], link->w,            link->h,             &unsharp->luma);
-    apply_unsharp(out->data[1], out->linesize[1], in->data[1], in->linesize[1], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), &unsharp->chroma);
-    apply_unsharp(out->data[2], out->linesize[2], in->data[2], in->linesize[2], CHROMA_WIDTH(link), CHROMA_HEIGHT(link), &unsharp->chroma);
+    apply_unsharp(out->data[0], out->linesize[0], in->data[0], in->linesize[0], link->w, link->h, &unsharp->luma);
+    apply_unsharp(out->data[1], out->linesize[1], in->data[1], in->linesize[1], cw,      ch,      &unsharp->chroma);
+    apply_unsharp(out->data[2], out->linesize[2], in->data[2], in->linesize[2], cw,      ch,      &unsharp->chroma);
 
     avfilter_unref_buffer(in);
     avfilter_draw_slice(link->dst->outputs[0], 0, link->h, 1);
