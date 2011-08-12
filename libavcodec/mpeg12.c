@@ -2260,18 +2260,6 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
             return buf_size;
     }
 
-#if 0
-    if (s->repeat_field % 2 == 1) {
-        s->repeat_field++;
-        //fprintf(stderr,"\nRepeating last frame: %d -> %d! pict: %d %d", avctx->frame_number-1, avctx->frame_number,
-        //        s2->picture_number, s->repeat_field);
-        if (avctx->flags & CODEC_FLAG_REPEAT_FIELD) {
-            *data_size = sizeof(AVPicture);
-            goto the_end;
-        }
-    }
-#endif
-
     if(s->mpeg_enc_ctx_allocated==0 && avctx->codec_tag == AV_RL32("VCR2"))
         vcr2_init_sequence(avctx);
 
