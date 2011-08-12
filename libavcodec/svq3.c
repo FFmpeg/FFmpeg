@@ -924,7 +924,10 @@ static av_cold int svq3_decode_init(AVCodecContext *avctx)
 
         h->b_stride = 4*s->mb_width;
 
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "svq3 memory allocation failed\n");
+            return AVERROR(ENOMEM);
+        }
     }
 
     return 0;
