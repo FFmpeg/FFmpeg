@@ -786,40 +786,6 @@ avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
 @end example
 @end table
 
-@section Preset files
-
-A preset file contains a sequence of @var{option}=@var{value} pairs,
-one for each line, specifying a sequence of options which would be
-awkward to specify on the command line. Lines starting with the hash
-('#') character are ignored and are used to provide comments. Check
-the @file{ffpresets} directory in the Libav source tree for examples.
-
-Preset files are specified with the @code{vpre}, @code{apre},
-@code{spre}, and @code{fpre} options. The @code{fpre} option takes the
-filename of the preset instead of a preset name as input and can be
-used for any kind of codec. For the @code{vpre}, @code{apre}, and
-@code{spre} options, the options specified in a preset file are
-applied to the currently selected codec of the same type as the preset
-option.
-
-The argument passed to the @code{vpre}, @code{apre}, and @code{spre}
-preset options identifies the preset file to use according to the
-following rules:
-
-First avconv searches for a file named @var{arg}.ffpreset in the
-directories @file{$av_DATADIR} (if set), and @file{$HOME/.avconv}, and in
-the datadir defined at configuration time (usually @file{PREFIX/share/avconv})
-in that order. For example, if the argument is @code{libx264-max}, it will
-search for the file @file{libx264-max.ffpreset}.
-
-If no such file is found, then avconv will search for a file named
-@var{codec_name}-@var{arg}.ffpreset in the above-mentioned
-directories, where @var{codec_name} is the name of the codec to which
-the preset file options will be applied. For example, if you select
-the video codec with @code{-vcodec libx264} and use @code{-vpre max},
-then it will search for the file @file{libx264-max.ffpreset}.
-@c man end
-
 @chapter Tips
 @c man begin TIPS
 
