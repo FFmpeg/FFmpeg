@@ -120,8 +120,8 @@ static void clip_coefficients(DSPContext *dsp, float *coef, unsigned int len)
 
 
 #if CONFIG_AC3_ENCODER
-AVCodec ff_ac3_float_encoder = {
-    .name           = "ac3 float",
+AVCodec ff_ac3_encoder = {
+    .name           = "ac3",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_AC3,
     .priv_data_size = sizeof(AC3EncodeContext),

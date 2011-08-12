@@ -83,7 +83,6 @@ typedef int64_t CoefSumType;
 #define AC3ENC_OPT_ADCONV_HDCD      1
 
 
-#if 0
 /**
  * Encoding Options used by AVOption.
  */
@@ -118,7 +117,7 @@ typedef struct AC3EncOptions {
     int channel_coupling;
     int cpl_start;
 } AC3EncOptions;
-#endif
+
 /**
  * Data for a single audio block.
  */
@@ -256,6 +255,8 @@ typedef struct AC3EncodeContext {
     void (*output_frame_header)(struct AC3EncodeContext *s);
 } AC3EncodeContext;
 
+
+extern const int64_t ff_ac3_channel_layouts[19];
 
 int ff_ac3_encode_init(AVCodecContext *avctx);
 
