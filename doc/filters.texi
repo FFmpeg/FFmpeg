@@ -4925,11 +4925,11 @@ equivalent of the string '5:5:1.0:5:5:0.0'.
 
 @item luma_msize_x
 Set the luma matrix horizontal size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item luma_msize_y
 Set the luma matrix vertical size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item luma_amount
 Set the luma effect strength. It can be a float number between -2.0
@@ -4937,11 +4937,11 @@ and 5.0, default value is 1.0.
 
 @item chroma_msize_x
 Set the chroma matrix horizontal size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item chroma_msize_y
 Set the chroma matrix vertical size. It can be an integer between 3
-and 13, default value is 5.
+and 63, default value is 5.
 
 @item chroma_amount
 Set the chroma effect strength. It can be a float number between -2.0
