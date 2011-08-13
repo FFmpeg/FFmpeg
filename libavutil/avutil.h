@@ -40,8 +40,8 @@
 #define AV_VERSION(a, b, c) AV_VERSION_DOT(a, b, c)
 
 #define LIBAVUTIL_VERSION_MAJOR 51
-#define LIBAVUTIL_VERSION_MINOR 11
-#define LIBAVUTIL_VERSION_MICRO  1
+#define LIBAVUTIL_VERSION_MINOR 12
+#define LIBAVUTIL_VERSION_MICRO  0
 
 #define LIBAVUTIL_VERSION_INT   AV_VERSION_INT(LIBAVUTIL_VERSION_MAJOR, \
                                                LIBAVUTIL_VERSION_MINOR, \
@@ -65,6 +65,9 @@
 #endif
 #ifndef FF_API_FIND_OPT
 #define FF_API_FIND_OPT                 (LIBAVUTIL_VERSION_MAJOR < 52)
+#endif
+#ifndef FF_API_AV_FIFO_PEEK
+#define FF_API_AV_FIFO_PEEK             (LIBAVUTIL_VERSION_MAJOR < 52)
 #endif
 
 /**

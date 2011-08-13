@@ -25,6 +25,7 @@
 #define AVUTIL_FIFO_H
 
 #include <stdint.h>
+#include "avutil.h"
 
 typedef struct AVFifoBuffer {
     uint8_t *buffer;
@@ -106,11 +107,35 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int size);
  */
 void av_fifo_drain(AVFifoBuffer *f, int size);
 
-static inline uint8_t av_fifo_peek(AVFifoBuffer *f, int offs)
+/**
+ * Return a pointer to the data stored in a FIFO buffer at a certain offset.
+ * The FIFO buffer is not modified.
+ *
+ * @param *f   AVFifoBuffer to peek at, f must be non-NULL
+ * @param offs an offset in bytes, its absolute value must be less
+ *             than the used buffer size or the returned pointer will
+ *             point outside to the buffer data.
+ *             The used buffer size can be checked with av_fifo_size().
+ */
+static inline uint8_t *av_fifo_peek2(const AVFifoBuffer *f, int offs)
 {
     uint8_t *ptr = f->rptr + offs;
     if (ptr >= f->end)
-        ptr -= f->end - f->buffer;
-    return *ptr;
+        ptr = f->buffer + (ptr - f->end);
+    else if (ptr < f->buffer)
+        ptr = f->end - (f->buffer - ptr);
+    return ptr;
 }
+
+#if FF_API_AV_FIFO_PEEK
+/**
+ * @deprecated Use av_fifo_peek2() instead.
+ */
+attribute_deprecated
+static inline uint8_t av_fifo_peek(AVFifoBuffer *f, int offs)
+{
+    return *av_fifo_peek2(f, offs);
+}
+#endif
+
 #endif /* AVUTIL_FIFO_H */
