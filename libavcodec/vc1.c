@@ -388,8 +388,9 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
     v->finterpflag = get_bits1(gb); //common
 
     if (v->res_sprite) {
-        v->s.avctx->width  = v->s.avctx->coded_width  = get_bits(gb, 11);
-        v->s.avctx->height = v->s.avctx->coded_height = get_bits(gb, 11);
+        int w = get_bits(gb, 11);
+        int h = get_bits(gb, 11);
+        avcodec_set_dimensions(v->s.avctx, w, h);
         skip_bits(gb, 5); //frame rate
         v->res_x8 = get_bits1(gb);
         if (get_bits1(gb)) { // something to do with DC VLC selection
@@ -426,6 +427,7 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
 
 static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
 {
+    int w, h;
     v->res_rtm_flag = 1;
     v->level = get_bits(gb, 3);
     if(v->level >= 5)
@@ -446,18 +448,17 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     v->bitrtq_postproc = get_bits(gb, 5); //common
     v->postprocflag = get_bits1(gb); //common
 
-    v->s.avctx->coded_width = (get_bits(gb, 12) + 1) << 1;
-    v->s.avctx->coded_height = (get_bits(gb, 12) + 1) << 1;
-    v->s.avctx->width = v->s.avctx->coded_width;
-    v->s.avctx->height = v->s.avctx->coded_height;
+    w = (get_bits(gb, 12) + 1) << 1;
+    h = (get_bits(gb, 12) + 1) << 1;
+    avcodec_set_dimensions(v->s.avctx, w, h);
     v->broadcast = get_bits1(gb);
     v->interlace = get_bits1(gb);
     v->tfcntrflag = get_bits1(gb);
     v->finterpflag = get_bits1(gb);
     skip_bits1(gb); // reserved
 
-    v->s.h_edge_pos = v->s.avctx->coded_width;
-    v->s.v_edge_pos = v->s.avctx->coded_height;
+    v->s.h_edge_pos = w;
+    v->s.v_edge_pos = h;
 
     av_log(v->s.avctx, AV_LOG_DEBUG,
                "Advanced Profile level %i:\nfrmrtq_postproc=%i, bitrtq_postproc=%i\n"
@@ -475,11 +476,12 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     }
     v->s.max_b_frames = v->s.avctx->max_b_frames = 7;
     if(get_bits1(gb)) { //Display Info - decoding is not affected by it
-        int w, h, ar = 0;
+        int dw, dh, ar = 0;
         av_log(v->s.avctx, AV_LOG_DEBUG, "Display extended info:\n");
-        v->s.avctx->width  = w = get_bits(gb, 14) + 1;
-        v->s.avctx->height = h = get_bits(gb, 14) + 1;
-        av_log(v->s.avctx, AV_LOG_DEBUG, "Display dimensions: %ix%i\n", w, h);
+        dw = get_bits(gb, 14) + 1;
+        dh = get_bits(gb, 14) + 1;
+        v->s.avctx->sample_aspect_ratio = av_div_q((AVRational){dw, dh}, (AVRational){w, h});
+        av_log(v->s.avctx, AV_LOG_DEBUG, "Display dimensions: %ix%i\n", dw, dh);
         if(get_bits1(gb))
             ar = get_bits(gb, 4);
         if(ar && ar < 14){
@@ -551,8 +553,9 @@ int vc1_decode_entry_point(AVCodecContext *avctx, VC1Context *v, GetBitContext *
     }
 
     if(get_bits1(gb)){
-        avctx->coded_width = (get_bits(gb, 12)+1)<<1;
-        avctx->coded_height = (get_bits(gb, 12)+1)<<1;
+        int w = (get_bits(gb, 12)+1)<<1;
+        int h = (get_bits(gb, 12)+1)<<1;
+        avcodec_set_dimensions(avctx, w, h);
     }
     if(v->extended_mv)
         v->extended_dmv = get_bits1(gb);
