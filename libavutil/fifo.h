@@ -94,6 +94,8 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void
 
 /**
  * Resize an AVFifoBuffer.
+ * In case of reallocation failure, the old FIFO is kept unchanged.
+ *
  * @param f AVFifoBuffer to resize
  * @param size new AVFifoBuffer size in bytes
  * @return <0 for failure, >=0 otherwise
