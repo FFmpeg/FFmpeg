@@ -25,7 +25,7 @@
 AVFifoBuffer *av_fifo_alloc(unsigned int size)
 {
     AVFifoBuffer *f= av_mallocz(sizeof(AVFifoBuffer));
-    if(!f)
+    if (!f)
         return NULL;
     f->buffer = av_malloc(size);
     f->end = f->buffer + size;
@@ -37,7 +37,7 @@ AVFifoBuffer *av_fifo_alloc(unsigned int size)
 
 void av_fifo_free(AVFifoBuffer *f)
 {
-    if(f){
+    if (f) {
         av_freep(&f->buffer);
         av_free(f);
     }
@@ -59,12 +59,13 @@ int av_fifo_space(AVFifoBuffer *f)
     return f->end - f->buffer - av_fifo_size(f);
 }
 
-int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
-    unsigned int old_size= f->end - f->buffer;
+int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size)
+{
+    unsigned int old_size = f->end - f->buffer;
 
-    if(old_size < new_size){
-        int len= av_fifo_size(f);
-        AVFifoBuffer *f2= av_fifo_alloc(new_size);
+    if (old_size < new_size) {
+        int len = av_fifo_size(f);
+        AVFifoBuffer *f2 = av_fifo_alloc(new_size);
 
         if (!f2)
             return -1;
@@ -72,7 +73,7 @@ int av_fifo_realloc2(AVFifoBuffer *f, unsigned int new_size) {
         f2->wptr += len;
         f2->wndx += len;
         av_free(f->buffer);
-        *f= *f2;
+        *f = *f2;
         av_free(f2);
     }
     return 0;
@@ -84,8 +85,8 @@ int av_fifo_generic_write(AVFifoBuffer *f, void *src, int size, int (*func)(void
     int total = size;
     do {
         int len = FFMIN(f->end - f->wptr, size);
-        if(func) {
-            if(func(src, f->wptr, len) <= 0)
+        if (func) {
+            if (func(src, f->wptr, len) <= 0)
                 break;
         } else {
             memcpy(f->wptr, src, len);
