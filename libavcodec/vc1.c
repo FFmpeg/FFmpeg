@@ -485,8 +485,8 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
         if(ar && ar < 14){
             v->s.avctx->sample_aspect_ratio = ff_vc1_pixel_aspect[ar];
         }else if(ar == 15){
-            w = get_bits(gb, 8);
-            h = get_bits(gb, 8);
+            w = get_bits(gb, 8) + 1;
+            h = get_bits(gb, 8) + 1;
             v->s.avctx->sample_aspect_ratio = (AVRational){w, h};
         }
         av_log(v->s.avctx, AV_LOG_DEBUG, "Aspect: %i:%i\n", v->s.avctx->sample_aspect_ratio.num, v->s.avctx->sample_aspect_ratio.den);
