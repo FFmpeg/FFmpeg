@@ -134,7 +134,7 @@ static int au_read_header(AVFormatContext *s,
     size = avio_rb32(pb); /* header size */
     data_size = avio_rb32(pb); /* data size in bytes */
 
-    if (data_size < 0) {
+    if (data_size < 0 && data_size != AU_UNKNOWN_SIZE) {
         av_log(s, AV_LOG_ERROR, "Invalid negative data size '%d' found\n", data_size);
         return AVERROR_INVALIDDATA;
     }
@@ -164,6 +164,7 @@ static int au_read_header(AVFormatContext *s,
     st->codec->codec_id = codec;
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
+    if (data_size != AU_UNKNOWN_SIZE)
     st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * bps);
     av_set_pts_info(st, 64, 1, rate);
     return 0;
