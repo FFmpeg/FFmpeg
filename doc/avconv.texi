@@ -175,7 +175,7 @@ Set the number of video frames to record.
 @item -r @var{fps}
 Set frame rate (Hz value, fraction or abbreviation), (default = 25).
 @item -s @var{size}
-Set frame size. The format is @samp{wxh} (avserver default = 160x128, avconv default = same as source).
+Set frame size. The format is @samp{wxh} (ffserver default = 160x128, avconv default = same as source).
 The following abbreviations are recognized:
 @table @samp
 @item sqcif
@@ -1049,7 +1049,7 @@ the input file in reverse order.
 @settitle avconv video converter
 
 @c man begin SEEALSO
-avplay(1), avprobe(1), avserver(1) and the Libav HTML documentation
+ffplay(1), ffprobe(1), ffserver(1) and the FFmpeg HTML documentation
 @c man end
 
 @c man begin AUTHORS
