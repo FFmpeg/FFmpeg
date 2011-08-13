@@ -637,133 +637,6 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
-static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
-{
-    const char *codec_string = encoder ? "encoder" : "decoder";
-    AVCodec *codec;
-
-    if(!name)
-        return CODEC_ID_NONE;
-    codec = encoder ?
-        avcodec_find_encoder_by_name(name) :
-        avcodec_find_decoder_by_name(name);
-    if(!codec) {
-        av_log(NULL, AV_LOG_ERROR, "Unknown %s '%s'\n", codec_string, name);
-        exit_program(1);
-    }
-    if(codec->type != type) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid %s type '%s'\n", codec_string, name);
-        exit_program(1);
-    }
-    return codec->id;
-}
-
-static AVCodec *choose_codec(AVFormatContext *s, AVStream *st, enum AVMediaType type, AVDictionary *codec_names)
-{
-    AVDictionaryEntry *e = NULL;
-    char *codec_name = NULL;
-    int ret;
-
-    while (e = av_dict_get(codec_names, "", e, AV_DICT_IGNORE_SUFFIX)) {
-        char *p = strchr(e->key, ':');
-
-        if ((ret = check_stream_specifier(s, st, p ? p + 1 : "")) > 0)
-            codec_name = e->value;
-        else if (ret < 0)
-            exit_program(1);
-    }
-
-    if (!codec_name) {
-        if (s->oformat) {
-            st->codec->codec_id = av_guess_codec(s->oformat, NULL, s->filename, NULL, type);
-            return avcodec_find_encoder(st->codec->codec_id);
-        }
-    } else if (!strcmp(codec_name, "copy"))
-        st->stream_copy = 1;
-    else {
-        st->codec->codec_id = find_codec_or_die(codec_name, type, s->iformat == NULL);
-        return s->oformat ? avcodec_find_encoder_by_name(codec_name) :
-                            avcodec_find_decoder_by_name(codec_name);
-    }
-
-    return NULL;
-}
-
-static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, enum AVMediaType type)
-{
-    OutputStream *ost;
-    AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
-    int idx      = oc->nb_streams - 1;
-
-    if (!st) {
-        av_log(NULL, AV_LOG_ERROR, "Could not alloc stream.\n");
-        exit_program(1);
-    }
-
-    output_streams_for_file[file_idx] =
-        grow_array(output_streams_for_file[file_idx],
-                   sizeof(*output_streams_for_file[file_idx]),
-                   &nb_output_streams_for_file[file_idx],
-                   oc->nb_streams);
-    ost = output_streams_for_file[file_idx][idx] =
-        av_mallocz(sizeof(OutputStream));
-    if (!ost) {
-        fprintf(stderr, "Could not alloc output stream\n");
-        exit_program(1);
-    }
-    ost->file_index = file_idx;
-    ost->index = idx;
-    ost->st    = st;
-    st->codec->codec_type = type;
-    ost->enc = choose_codec(oc, st, type, codec_names);
-    if (ost->enc) {
-        ost->opts  = filter_codec_opts(codec_opts, ost->enc->id, oc, st);
-    }
-
-    avcodec_get_context_defaults3(st->codec, ost->enc);
-    st->codec->codec_type = type; // XXX hack, avcodec_get_context_defaults2() sets type to unknown for stream copy
-
-    ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
-    return ost;
-}
-
-static int read_avserver_streams(AVFormatContext *s, const char *filename)
-{
-    int i, err;
-    AVFormatContext *ic = NULL;
-    int nopts = 0;
-
-    err = avformat_open_input(&ic, filename, NULL, NULL);
-    if (err < 0)
-        return err;
-    /* copy stream format */
-    for(i=0;i<ic->nb_streams;i++) {
-        AVStream *st;
-        OutputStream *ost;
-        AVCodec *codec;
-
-        codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
-        ost   = new_output_stream(s, nb_output_files, codec->type);
-        st    = ost->st;
-
-        // FIXME: a more elegant solution is needed
-        memcpy(st, ic->streams[i], sizeof(AVStream));
-        st->info = NULL;
-        avcodec_copy_context(st->codec, ic->streams[i]->codec);
-
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && !st->stream_copy)
-            choose_sample_fmt(st, codec);
-        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !st->stream_copy)
-            choose_pixel_fmt(st, codec);
-
-        if(st->codec->flags & CODEC_FLAG_BITEXACT)
-            nopts = 1;
-    }
-
-    av_close_input_file(ic);
-    return 0;
-}
-
 static double
 get_sync_ipts(const OutputStream *ost)
 {
@@ -2919,6 +2792,57 @@ static int opt_input_ts_offset(const char *opt, const char *arg)
     return 0;
 }
 
+static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
+{
+    const char *codec_string = encoder ? "encoder" : "decoder";
+    AVCodec *codec;
+
+    if(!name)
+        return CODEC_ID_NONE;
+    codec = encoder ?
+        avcodec_find_encoder_by_name(name) :
+        avcodec_find_decoder_by_name(name);
+    if(!codec) {
+        av_log(NULL, AV_LOG_ERROR, "Unknown %s '%s'\n", codec_string, name);
+        exit_program(1);
+    }
+    if(codec->type != type) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid %s type '%s'\n", codec_string, name);
+        exit_program(1);
+    }
+    return codec->id;
+}
+
+static AVCodec *choose_codec(AVFormatContext *s, AVStream *st, enum AVMediaType type, AVDictionary *codec_names)
+{
+    AVDictionaryEntry *e = NULL;
+    char *codec_name = NULL;
+    int ret;
+
+    while (e = av_dict_get(codec_names, "", e, AV_DICT_IGNORE_SUFFIX)) {
+        char *p = strchr(e->key, ':');
+
+        if ((ret = check_stream_specifier(s, st, p ? p + 1 : "")) > 0)
+            codec_name = e->value;
+        else if (ret < 0)
+            exit_program(1);
+    }
+
+    if (!codec_name) {
+        if (s->oformat) {
+            st->codec->codec_id = av_guess_codec(s->oformat, NULL, s->filename, NULL, type);
+            return avcodec_find_encoder(st->codec->codec_id);
+        }
+    } else if (!strcmp(codec_name, "copy"))
+        st->stream_copy = 1;
+    else {
+        st->codec->codec_id = find_codec_or_die(codec_name, type, s->iformat == NULL);
+        return s->oformat ? avcodec_find_encoder_by_name(codec_name) :
+                            avcodec_find_decoder_by_name(codec_name);
+    }
+
+    return NULL;
+}
 
 static int opt_input_file(const char *opt, const char *filename)
 {
@@ -3149,6 +3073,44 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
         t = parse_time_or_die("force_key_frames", p, 1);
         ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
     }
+}
+
+static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, enum AVMediaType type)
+{
+    OutputStream *ost;
+    AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
+    int idx      = oc->nb_streams - 1;
+
+    if (!st) {
+        av_log(NULL, AV_LOG_ERROR, "Could not alloc stream.\n");
+        exit_program(1);
+    }
+
+    output_streams_for_file[file_idx] =
+        grow_array(output_streams_for_file[file_idx],
+                   sizeof(*output_streams_for_file[file_idx]),
+                   &nb_output_streams_for_file[file_idx],
+                   oc->nb_streams);
+    ost = output_streams_for_file[file_idx][idx] =
+        av_mallocz(sizeof(OutputStream));
+    if (!ost) {
+        fprintf(stderr, "Could not alloc output stream\n");
+        exit_program(1);
+    }
+    ost->file_index = file_idx;
+    ost->index = idx;
+    ost->st    = st;
+    st->codec->codec_type = type;
+    ost->enc = choose_codec(oc, st, type, codec_names);
+    if (ost->enc) {
+        ost->opts  = filter_codec_opts(codec_opts, ost->enc->id, oc, st);
+    }
+
+    avcodec_get_context_defaults3(st->codec, ost->enc);
+    st->codec->codec_type = type; // XXX hack, avcodec_get_context_defaults2() sets type to unknown for stream copy
+
+    ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
+    return ost;
 }
 
 static OutputStream *new_video_stream(AVFormatContext *oc, int file_idx)
@@ -3427,6 +3389,43 @@ static int copy_chapters(int infile, int outfile)
             return AVERROR(ENOMEM);
         os->chapters[os->nb_chapters - 1] = out_ch;
     }
+    return 0;
+}
+
+static int read_avserver_streams(AVFormatContext *s, const char *filename)
+{
+    int i, err;
+    AVFormatContext *ic = NULL;
+    int nopts = 0;
+
+    err = avformat_open_input(&ic, filename, NULL, NULL);
+    if (err < 0)
+        return err;
+    /* copy stream format */
+    for(i=0;i<ic->nb_streams;i++) {
+        AVStream *st;
+        OutputStream *ost;
+        AVCodec *codec;
+
+        codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
+        ost   = new_output_stream(s, nb_output_files, codec->type);
+        st    = ost->st;
+
+        // FIXME: a more elegant solution is needed
+        memcpy(st, ic->streams[i], sizeof(AVStream));
+        st->info = NULL;
+        avcodec_copy_context(st->codec, ic->streams[i]->codec);
+
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && !st->stream_copy)
+            choose_sample_fmt(st, codec);
+        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !st->stream_copy)
+            choose_pixel_fmt(st, codec);
+
+        if(st->codec->flags & CODEC_FLAG_BITEXACT)
+            nopts = 1;
+    }
+
+    av_close_input_file(ic);
     return 0;
 }
 
