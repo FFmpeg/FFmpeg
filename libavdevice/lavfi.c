@@ -178,7 +178,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
                                                 pix_fmts, lavfi->graph)) < 0)
             FAIL(ret);
         lavfi->sinks[i] = sink;
-        if ((ret = avfilter_link(inout->filter_ctx, 0, sink, 0)) < 0)
+        if ((ret = avfilter_link(inout->filter_ctx, inout->pad_idx, sink, 0)) < 0)
             FAIL(ret);
     }
 
