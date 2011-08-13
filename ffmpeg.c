@@ -639,6 +639,7 @@ static void choose_sample_fmt(AVStream *st, AVCodec *codec)
         if (*p == -1) {
             if((codec->capabilities & CODEC_CAP_LOSSLESS) && av_get_sample_fmt_name(st->codec->sample_fmt) > av_get_sample_fmt_name(codec->sample_fmts[0]))
                 av_log(NULL, AV_LOG_ERROR, "Convertion will not be lossless'\n");
+            if(av_get_sample_fmt_name(st->codec->sample_fmt))
             av_log(NULL, AV_LOG_WARNING,
                    "Incompatible sample format '%s' for codec '%s', auto-selecting format '%s'\n",
                    av_get_sample_fmt_name(st->codec->sample_fmt),
