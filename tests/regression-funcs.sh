@@ -95,7 +95,7 @@ do_avconv_crc()
 
 do_video_decoding()
 {
-    do_avconv $raw_dst $DEC_OPTS $1 -i $target_path/$file -f rawvideo $ENC_OPTS -vsync 0 $2
+    do_avconv $raw_dst $DEC_OPTS $1 -i $target_path/$file -f rawvideo -vcodec rawvideo $ENC_OPTS -vsync 0 $2
 }
 
 do_video_encoding()
@@ -112,5 +112,5 @@ do_audio_encoding()
 
 do_audio_decoding()
 {
-    do_avconv $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav
+    do_avconv $pcm_dst $DEC_OPTS -i $target_path/$file -sample_fmt s16 -f wav -acodec pcm_s16le
 }

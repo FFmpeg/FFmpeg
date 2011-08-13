@@ -2829,10 +2829,7 @@ static AVCodec *choose_codec(AVFormatContext *s, AVStream *st, enum AVMediaType 
     }
 
     if (!codec_name) {
-        if (s->oformat) {
-            st->codec->codec_id = av_guess_codec(s->oformat, NULL, s->filename, NULL, type);
-            return avcodec_find_encoder(st->codec->codec_id);
-        }
+        return NULL;
     } else if (!strcmp(codec_name, "copy"))
         st->stream_copy = 1;
     else {
@@ -3075,7 +3072,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
     }
 }
 
-static OutputStream *new_output_stream(AVFormatContext *oc, enum AVMediaType type)
+static OutputStream *new_output_stream(AVFormatContext *oc, enum AVMediaType type, int source_idx)
 {
     OutputStream *ost;
     AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
@@ -3102,6 +3099,18 @@ static OutputStream *new_output_stream(AVFormatContext *oc, enum AVMediaType typ
     ost->st    = st;
     st->codec->codec_type = type;
     ost->enc = choose_codec(oc, st, type, codec_names);
+    if (!ost->enc) {
+        /* no codec specified, try copy if possible or fallback to format default */
+        if (source_idx >= 0 && avformat_query_codec(oc->oformat, input_streams[source_idx].st->codec->codec_id,
+                                                    FF_COMPLIANCE_NORMAL) == 1) {
+            st->codec->codec_id = input_streams[source_idx].st->codec->codec_id;
+            st->stream_copy = 1;
+        } else {
+            st->codec->codec_id = av_guess_codec(oc->oformat, NULL, oc->filename, NULL, type);
+            ost->enc = avcodec_find_encoder(st->codec->codec_id);
+        }
+    }
+
     if (ost->enc) {
         ost->opts  = filter_codec_opts(codec_opts, ost->enc->id, oc, st);
     }
@@ -3113,13 +3122,13 @@ static OutputStream *new_output_stream(AVFormatContext *oc, enum AVMediaType typ
     return ost;
 }
 
-static OutputStream *new_video_stream(AVFormatContext *oc)
+static OutputStream *new_video_stream(AVFormatContext *oc, int source_idx)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *video_enc;
 
-    ost = new_output_stream(oc, AVMEDIA_TYPE_VIDEO);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_VIDEO, source_idx);
     st  = ost->st;
     if (!st->stream_copy) {
         ost->frame_aspect_ratio = frame_aspect_ratio;
@@ -3228,13 +3237,13 @@ static OutputStream *new_video_stream(AVFormatContext *oc)
     return ost;
 }
 
-static OutputStream *new_audio_stream(AVFormatContext *oc)
+static OutputStream *new_audio_stream(AVFormatContext *oc, int source_idx)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *audio_enc;
 
-    ost = new_output_stream(oc, AVMEDIA_TYPE_AUDIO);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_AUDIO, source_idx);
     st  = ost->st;
 
     ost->bitstream_filters = audio_bitstream_filters;
@@ -3274,13 +3283,13 @@ static OutputStream *new_audio_stream(AVFormatContext *oc)
     return ost;
 }
 
-static OutputStream *new_data_stream(AVFormatContext *oc)
+static OutputStream *new_data_stream(AVFormatContext *oc, int source_idx)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *data_enc;
 
-    ost = new_output_stream(oc, AVMEDIA_TYPE_DATA);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_DATA, source_idx);
     st  = ost->st;
     data_enc = st->codec;
     if (!st->stream_copy) {
@@ -3299,13 +3308,13 @@ static OutputStream *new_data_stream(AVFormatContext *oc)
     return ost;
 }
 
-static OutputStream *new_subtitle_stream(AVFormatContext *oc)
+static OutputStream *new_subtitle_stream(AVFormatContext *oc, int source_idx)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *subtitle_enc;
 
-    ost = new_output_stream(oc, AVMEDIA_TYPE_SUBTITLE);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_SUBTITLE, source_idx);
     st  = ost->st;
     subtitle_enc = st->codec;
 
@@ -3407,7 +3416,7 @@ static int read_avserver_streams(AVFormatContext *s, const char *filename)
         AVCodec *codec;
 
         codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
-        ost   = new_output_stream(s, codec->type);
+        ost   = new_output_stream(s, codec->type, -1);
         st    = ost->st;
 
         // FIXME: a more elegant solution is needed
@@ -3474,7 +3483,7 @@ static void opt_output_file(const char *filename)
         /* pick the "best" stream of each type */
 #define NEW_STREAM(type, index)\
         if (index >= 0) {\
-            ost = new_ ## type ## _stream(oc);\
+            ost = new_ ## type ## _stream(oc, index);\
             ost->source_index = index;\
             ost->sync_ist     = &input_streams[index];\
             input_streams[index].discard = 0;\
@@ -3520,23 +3529,24 @@ static void opt_output_file(const char *filename)
     } else {
         for (i = 0; i < nb_stream_maps; i++) {
             StreamMap *map = &stream_maps[i];
+            int source_idx = input_files[map->file_index].ist_index + map->stream_index;
 
             if (map->disabled)
                 continue;
 
-            ist = &input_streams[input_files[map->file_index].ist_index + map->stream_index];
+            ist = &input_streams[source_idx];
             switch (ist->st->codec->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(oc);    break;
-            case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(oc);    break;
-            case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(oc); break;
-            case AVMEDIA_TYPE_DATA:     ost = new_data_stream(oc);     break;
+            case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(oc, source_idx);    break;
+            case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(oc, source_idx);    break;
+            case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(oc, source_idx); break;
+            case AVMEDIA_TYPE_DATA:     ost = new_data_stream(oc, source_idx);     break;
             default:
                 av_log(NULL, AV_LOG_ERROR, "Cannot map stream #%d.%d - unsupported type.\n",
                        map->file_index, map->stream_index);
                 exit_program(1);
             }
 
-            ost->source_index = input_files[map->file_index].ist_index + map->stream_index;
+            ost->source_index = source_idx;
             ost->sync_ist = &input_streams[input_files[map->sync_file_index].ist_index +
                                            map->sync_stream_index];
             ist->discard = 0;
