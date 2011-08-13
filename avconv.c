@@ -239,6 +239,8 @@ typedef struct InputFile {
     int ist_index;        /* index of first stream in ist_table */
     int buffer_size;      /* current total buffer size */
     int64_t ts_offset;
+    int nb_streams;       /* number of stream that avconv is aware of; may be different
+                             from ctx.nb_streams if new streams appear during av_read_frame() */
 } InputFile;
 
 typedef struct OutputStream {
@@ -2316,7 +2318,7 @@ static int transcode(OutputFile *output_files,
         }
         /* the following test is needed in case new streams appear
            dynamically in stream : we ignore them */
-        if (pkt.stream_index >= input_files[file_index].ctx->nb_streams)
+        if (pkt.stream_index >= input_files[file_index].nb_streams)
             goto discard_packet;
         ist_index = input_files[file_index].ist_index + pkt.stream_index;
         ist = &input_streams[ist_index];
@@ -2676,13 +2678,13 @@ static int opt_map(const char *opt, const char *arg)
         }
         if (*sync)
             sync++;
-        for (i = 0; i < input_files[sync_file_idx].ctx->nb_streams; i++)
+        for (i = 0; i < input_files[sync_file_idx].nb_streams; i++)
             if (check_stream_specifier(input_files[sync_file_idx].ctx,
                                        input_files[sync_file_idx].ctx->streams[i], sync) == 1) {
                 sync_stream_idx = i;
                 break;
             }
-        if (i == input_files[sync_file_idx].ctx->nb_streams) {
+        if (i == input_files[sync_file_idx].nb_streams) {
             av_log(NULL, AV_LOG_ERROR, "Sync stream specification in map %s does not "
                                        "match any streams.\n", arg);
             exit_program(1);
@@ -2705,7 +2707,7 @@ static int opt_map(const char *opt, const char *arg)
                 m->disabled = 1;
         }
     else
-        for (i = 0; i < input_files[file_idx].ctx->nb_streams; i++) {
+        for (i = 0; i < input_files[file_idx].nb_streams; i++) {
             if (check_stream_specifier(input_files[file_idx].ctx, input_files[file_idx].ctx->streams[i],
                         *p == ':' ? p + 1 : p) <= 0)
                 continue;
@@ -3068,6 +3070,7 @@ static int opt_input_file(const char *opt, const char *filename)
     input_files[nb_input_files - 1].ctx        = ic;
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
     input_files[nb_input_files - 1].ts_offset  = input_ts_offset - (copy_ts ? 0 : timestamp);
+    input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
 
     frame_rate    = (AVRational){0, 0};
     frame_pix_fmt = PIX_FMT_NONE;
@@ -3897,7 +3900,7 @@ static int opt_target(const char *opt, const char *arg)
             if(nb_input_files) {
                 int i, j;
                 for (j = 0; j < nb_input_files; j++) {
-                    for (i = 0; i < input_files[j].ctx->nb_streams; i++) {
+                    for (i = 0; i < input_files[j].nb_streams; i++) {
                         AVCodecContext *c = input_files[j].ctx->streams[i]->codec;
                         if(c->codec_type != AVMEDIA_TYPE_VIDEO)
                             continue;
