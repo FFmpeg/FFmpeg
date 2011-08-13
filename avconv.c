@@ -1186,7 +1186,7 @@ static void do_video_out(AVFormatContext *s,
                ost->resample_width, ost->resample_height, av_get_pix_fmt_name(ost->resample_pix_fmt),
                dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt));
         if(!ost->video_resample)
-            exit_program(1);
+            ost->video_resample = 1;
     }
 
 #if !CONFIG_AVFILTER
