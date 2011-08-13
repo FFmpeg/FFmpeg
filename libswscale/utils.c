@@ -842,14 +842,18 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         }
     }
 
-    c->scalingBpp = FFMAX(av_pix_fmt_descriptors[srcFormat].comp[0].depth_minus1,
-                          av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1) >= 15 ? 16 : 8;
-
-    if (c->scalingBpp == 16)
+    c->srcBpc = 1 + av_pix_fmt_descriptors[srcFormat].comp[0].depth_minus1;
+    if (c->srcBpc < 8)
+        c->srcBpc = 8;
+    c->dstBpc = 1 + av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1;
+    if (c->dstBpc < 8)
+        c->dstBpc = 8;
+    if (isAnyRGB(srcFormat) && c->dstBpc == 16)
+        c->srcBpc = 16;
+    if (c->dstBpc == 16)
         dst_stride <<= 1;
-    av_assert0(c->scalingBpp<=16);
     FF_ALLOC_OR_GOTO(c, c->formatConvBuffer, FFALIGN(srcW*2+78, 16) * 2, fail);
-    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2 && c->scalingBpp == 8) {
+    if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2 && c->srcBpc == 8 && c->dstBpc <= 10) {
         c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
         if (!c->canMMX2BeUsed && dstW >=srcW && (srcW&15)==0 && (flags&SWS_FAST_BILINEAR)) {
             if (flags&SWS_PRINT_INFO)
@@ -875,7 +879,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             c->chrXInc+= 20;
         }
         //we don't use the x86 asm scaler if MMX is available
-        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX && c->scalingBpp == 8) {
+        else if (HAVE_MMX && cpu_flags & AV_CPU_FLAG_MMX && c->dstBpc <= 10) {
             c->lumXInc = ((srcW-2)<<16)/(dstW-2) - 20;
             c->chrXInc = ((c->chrSrcW-2)<<16)/(c->chrDstW-2) - 20;
         }
@@ -1007,7 +1011,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         c->lumPixBuf[i] = c->lumPixBuf[i+c->vLumBufSize];
     }
     // 64 / c->scalingBpp is the same as 16 / sizeof(scaling_intermediate)
-    c->uv_off   = (dst_stride>>1) + 64 / c->scalingBpp;
+    c->uv_off   = (dst_stride>>1) + 64 / (c->dstBpc &~ 7);
     c->uv_offx2 = dst_stride + 16;
     for (i=0; i<c->vChrBufSize; i++) {
         FF_ALLOC_OR_GOTO(c, c->chrUPixBuf[i+c->vChrBufSize], dst_stride*2+32, fail);
@@ -1023,7 +1027,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     //try to avoid drawing green stuff between the right end and the stride end
     for (i=0; i<c->vChrBufSize; i++)
         if(av_pix_fmt_descriptors[c->dstFormat].comp[0].depth_minus1 == 15){
-            av_assert0(c->scalingBpp == 16);
+            av_assert0(c->dstBpc > 10);
             for(j=0; j<dst_stride/2+1; j++)
                 ((int32_t*)(c->chrUPixBuf[i]))[j] = 1<<18;
         } else

@@ -2472,7 +2472,7 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 
-    if (c->scalingBpp == 8) {
+    if (c->srcBpc == 8 && c->dstBpc <= 10) {
 #if !COMPILE_TEMPLATE_MMX2
     c->hScale       = RENAME(hScale      );
 #endif /* !COMPILE_TEMPLATE_MMX2 */
@@ -2532,6 +2532,6 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
 #endif /* !COMPILE_TEMPLATE_MMX2 */
     if(isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
         c->hScale16= RENAME(hScale16);
-    if(c->scalingBpp != 8)
+    if(c->dstBpc > 10)
         c->hScale16 = NULL;
 }

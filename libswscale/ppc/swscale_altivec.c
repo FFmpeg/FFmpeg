@@ -92,6 +92,7 @@ altivec_packIntArrayToCharArray(int *val, uint8_t* dest, int dstW)
     }
 }
 
+//FIXME remove the usage of scratch buffers.
 static void
 yuv2yuvX_altivec_real(SwsContext *c,
                       const int16_t *lumFilter, const int16_t **lumSrc,
@@ -101,17 +102,13 @@ yuv2yuvX_altivec_real(SwsContext *c,
                       uint8_t *dest[4], int dstW, int chrDstW)
 {
     uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2];
-    const vector signed int vini = {(1 << 18), (1 << 18), (1 << 18), (1 << 18)};
+    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
     register int i, j;
     {
         DECLARE_ALIGNED(16, int, val)[dstW];
 
-        for (i = 0; i < (dstW -7); i+=4) {
-            vec_st(vini, i << 2, val);
-        }
-        for (; i < dstW; i++) {
-            val[i] = (1 << 18);
-        }
+        for (i=0; i<dstW; i++)
+            val[i] = lumDither[i & 7] << 12;
 
         for (j = 0; j < lumFilterSize; j++) {
             vector signed short l1, vLumFilter = vec_ld(j << 1, lumFilter);
@@ -155,13 +152,9 @@ yuv2yuvX_altivec_real(SwsContext *c,
         DECLARE_ALIGNED(16, int, u)[chrDstW];
         DECLARE_ALIGNED(16, int, v)[chrDstW];
 
-        for (i = 0; i < (chrDstW -7); i+=4) {
-            vec_st(vini, i << 2, u);
-            vec_st(vini, i << 2, v);
-        }
-        for (; i < chrDstW; i++) {
-            u[i] = (1 << 18);
-            v[i] = (1 << 18);
+        for (i=0; i<chrDstW; i++) {
+            u[i] = chrDither[i & 7] << 12;
+            v[i] = chrDither[(i + 3) & 7] << 12;
         }
 
         for (j = 0; j < chrFilterSize; j++) {
@@ -406,7 +399,7 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
     if (!(av_get_cpu_flags() & AV_CPU_FLAG_ALTIVEC))
         return;
 
-    if (c->scalingBpp == 8) {
+    if (c->srcBpc == 8 && c->dstBpc <= 10) {
         c->hScale       = hScale_altivec_real;
     }
     if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&

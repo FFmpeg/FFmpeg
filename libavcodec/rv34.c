@@ -1311,7 +1311,8 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         if (!r->tmp_b_block_base || s->width != r->si.width || s->height != r->si.height) {
             int i;
 
-            r->tmp_b_block_base = av_realloc(r->tmp_b_block_base, s->linesize * 48);
+            av_free(r->tmp_b_block_base); //realloc() doesn't guarantee alignment
+            r->tmp_b_block_base = av_malloc(s->linesize * 48);
             for (i = 0; i < 2; i++)
                 r->tmp_b_block_y[i] = r->tmp_b_block_base + i * 16 * s->linesize;
             for (i = 0; i < 4; i++)
