@@ -65,7 +65,7 @@ Standard options:
   --disable-logging        do not log configure debug information
   --prefix=PREFIX          install in PREFIX [$prefix]
   --bindir=DIR             install binaries in DIR [PREFIX/bin]
-  --datadir=DIR            install data files in DIR [PREFIX/share/ffmpeg]
+  --datadir=DIR            install data files in DIR [PREFIX/share/avconv]
   --libdir=DIR             install libs in DIR [PREFIX/lib]
   --shlibdir=DIR           install shared libs in DIR [PREFIX/lib]
   --incdir=DIR             install includes in DIR [PREFIX/include]
@@ -81,6 +81,7 @@ Configuration options:
                            and binaries will be unredistributable [no]
   --disable-doc            do not build documentation
   --disable-ffmpeg         disable ffmpeg build
+  --disable-avconv         disable avconv build
   --disable-ffplay         disable ffplay build
   --disable-ffprobe        disable ffprobe build
   --disable-ffserver       disable ffserver build
@@ -917,6 +918,7 @@ CONFIG_LIST="
     dxva2
     fastdiv
     ffmpeg
+    avconv
     ffplay
     ffprobe
     ffserver
@@ -1522,6 +1524,8 @@ postproc_deps="gpl"
 # programs
 ffmpeg_deps="avcodec avformat swscale"
 ffmpeg_select="buffer_filter buffersink_filter"
+av_deps="avcodec avformat swscale"
+av_select="buffer_filter"
 ffplay_deps="avcodec avformat swscale sdl"
 ffplay_select="buffersink_filter rdft"
 ffprobe_deps="avcodec avformat"
@@ -1628,7 +1632,7 @@ logfile="config.log"
 # installation paths
 prefix_default="/usr/local"
 bindir_default='${prefix}/bin'
-datadir_default='${prefix}/share/ffmpeg'
+datadir_default='${prefix}/share/avconv'
 incdir_default='${prefix}/include'
 libdir_default='${prefix}/lib'
 mandir_default='${prefix}/share/man'
@@ -1670,6 +1674,7 @@ enable debug
 enable doc
 enable fastdiv
 enable ffmpeg
+enable avconv
 enable ffplay
 enable ffprobe
 enable ffserver
@@ -2532,6 +2537,7 @@ case $target_os in
         add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
         ;;
     gnu)
+        add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600
         ;;
     qnx)
         add_cppflags -D_QNX_SOURCE
@@ -3370,6 +3376,7 @@ cat > $TMPH <<EOF
 #define FFMPEG_CONFIGURATION "$(c_escape $FFMPEG_CONFIGURATION)"
 #define FFMPEG_LICENSE "$(c_escape $license)"
 #define FFMPEG_DATADIR "$(eval c_escape $datadir)"
+#define AVCONV_DATADIR "$(eval c_escape $datadir)"
 #define CC_TYPE "$cc_type"
 #define CC_VERSION $cc_version
 #define restrict $_restrict

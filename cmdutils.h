@@ -153,15 +153,27 @@ void parse_options(int argc, char **argv, const OptionDef *options,
                    int (* parse_arg_function)(const char *opt, const char *arg));
 
 /**
+ * Check if the given stream matches a stream specifier.
+ *
+ * @param s  Corresponding format context.
+ * @param st Stream from s to be checked.
+ * @param spec A stream specifier of the [v|a|s|d]:[<stream index>] form.
+ *
+ * @return 1 if the stream matches, 0 if it doesn't, <0 on error
+ */
+int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec);
+
+/**
  * Filter out options for given codec.
  *
  * Create a new options dictionary containing only the options from
  * opts which apply to the codec with ID codec_id.
  *
- * @param encoder if non-zero the codec is an encoder, otherwise is a decoder
+ * @param s Corresponding format context.
+ * @param st A stream from s for which the options should be filtered.
  * @return a pointer to the created dictionary
  */
-AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder);
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFormatContext *s, AVStream *st);
 
 /**
  * Setup AVCodecContext options for avformat_find_stream_info().

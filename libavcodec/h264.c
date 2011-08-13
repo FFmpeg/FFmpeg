@@ -1138,7 +1138,10 @@ static int decode_update_thread_context(AVCodecContext *dst, const AVCodecContex
         memcpy(&h->s + 1, &h1->s + 1, sizeof(H264Context) - sizeof(MpegEncContext)); //copy all fields after MpegEnc
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(dst, AV_LOG_ERROR, "Could not allocate memory for h264\n");
+            return AVERROR(ENOMEM);
+        }
         context_init(h);
 
         for(i=0; i<2; i++){
@@ -2619,7 +2622,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         h->prev_interlaced_frame = 1;
 
         init_scan_tables(h);
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "Could not allocate memory for h264\n");
+            return AVERROR(ENOMEM);
+        }
 
         if (!HAVE_THREADS || !(s->avctx->active_thread_type&FF_THREAD_SLICE)) {
             if (context_init(h) < 0) {

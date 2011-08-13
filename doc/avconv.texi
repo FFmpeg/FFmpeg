@@ -1,0 +1,1061 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle avconv Documentation
+@titlepage
+@center @titlefont{avconv Documentation}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Synopsis
+
+The generic syntax is:
+
+@example
+@c man begin SYNOPSIS
+avconv [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
+@c man end
+@end example
+
+@chapter Description
+@c man begin DESCRIPTION
+
+avconv is a very fast video and audio converter that can also grab from
+a live audio/video source. It can also convert between arbitrary sample
+rates and resize video on the fly with a high quality polyphase filter.
+
+The command line interface is designed to be intuitive, in the sense
+that avconv tries to figure out all parameters that can possibly be
+derived automatically. You usually only have to specify the target
+bitrate you want.
+
+As a general rule, options are applied to the next specified
+file. Therefore, order is important, and you can have the same
+option on the command line multiple times. Each occurrence is
+then applied to the next input or output file.
+
+@itemize
+@item
+To set the video bitrate of the output file to 64kbit/s:
+@example
+avconv -i input.avi -b 64k output.avi
+@end example
+
+@item
+To force the frame rate of the output file to 24 fps:
+@example
+avconv -i input.avi -r 24 output.avi
+@end example
+
+@item
+To force the frame rate of the input file (valid for raw formats only)
+to 1 fps and the frame rate of the output file to 24 fps:
+@example
+avconv -r 1 -i input.m2v -r 24 output.avi
+@end example
+@end itemize
+
+The format option may be needed for raw input files.
+
+By default avconv tries to convert as losslessly as possible: It
+uses the same audio and video parameters for the outputs as the one
+specified for the inputs.
+
+@c man end DESCRIPTION
+
+@chapter Stream selection
+@c man begin STREAM SELECTION
+
+By default av tries to pick the "best" stream of each type present in input
+files and add them to each output file. For video, this means the highest
+resolution, for audio the highest channel count. For subtitle it's simply the
+first subtitle stream.
+
+You can disable some of those defaults by using @code{-vn/-an/-sn} options. For
+full manual control, use the @code{-map} option, which disables the defaults just
+described.
+
+@c man end STREAM SELECTION
+
+@chapter Options
+@c man begin OPTIONS
+
+@include fftools-common-opts.texi
+
+@section Main options
+
+@table @option
+
+@item -f @var{fmt}
+Force format.
+
+@item -i @var{filename}
+input file name
+
+@item -y
+Overwrite output files.
+
+@item -t @var{duration}
+Restrict the transcoded/captured video sequence
+to the duration specified in seconds.
+@code{hh:mm:ss[.xxx]} syntax is also supported.
+
+@item -fs @var{limit_size}
+Set the file size limit.
+
+@item -ss @var{position}
+Seek to given time position in seconds.
+@code{hh:mm:ss[.xxx]} syntax is also supported.
+
+@item -itsoffset @var{offset}
+Set the input time offset in seconds.
+@code{[-]hh:mm:ss[.xxx]} syntax is also supported.
+This option affects all the input files that follow it.
+The offset is added to the timestamps of the input files.
+Specifying a positive offset means that the corresponding
+streams are delayed by 'offset' seconds.
+
+@item -timestamp @var{time}
+Set the recording timestamp in the container.
+The syntax for @var{time} is:
+@example
+now|([(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH[:MM[:SS[.m...]]])|(HH[MM[SS[.m...]]]))[Z|z])
+@end example
+If the value is "now" it takes the current time.
+Time is local time unless 'Z' or 'z' is appended, in which case it is
+interpreted as UTC.
+If the year-month-day part is not specified it takes the current
+year-month-day.
+
+@item -metadata @var{key}=@var{value}
+Set a metadata key/value pair.
+
+For example, for setting the title in the output file:
+@example
+avconv -i in.avi -metadata title="my title" out.flv
+@end example
+
+@item -v @var{number}
+Set the logging verbosity level.
+
+@item -target @var{type}
+Specify target file type ("vcd", "svcd", "dvd", "dv", "dv50", "pal-vcd",
+"ntsc-svcd", ... ). All the format options (bitrate, codecs,
+buffer sizes) are then set automatically. You can just type:
+
+@example
+avconv -i myfile.avi -target vcd /tmp/vcd.mpg
+@end example
+
+Nevertheless you can specify additional options as long as you know
+they do not conflict with the standard, as in:
+
+@example
+avconv -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
+@end example
+
+@item -dframes @var{number}
+Set the number of data frames to record.
+
+@item -scodec @var{codec}
+Force subtitle codec ('copy' to copy stream).
+
+@item -slang @var{code}
+Set the ISO 639 language code (3 letters) of the current subtitle stream.
+
+@end table
+
+@section Video Options
+
+@table @option
+@item -vframes @var{number}
+Set the number of video frames to record.
+@item -r @var{fps}
+Set frame rate (Hz value, fraction or abbreviation), (default = 25).
+@item -s @var{size}
+Set frame size. The format is @samp{wxh} (avserver default = 160x128, avconv default = same as source).
+The following abbreviations are recognized:
+@table @samp
+@item sqcif
+128x96
+@item qcif
+176x144
+@item cif
+352x288
+@item 4cif
+704x576
+@item 16cif
+1408x1152
+@item qqvga
+160x120
+@item qvga
+320x240
+@item vga
+640x480
+@item svga
+800x600
+@item xga
+1024x768
+@item uxga
+1600x1200
+@item qxga
+2048x1536
+@item sxga
+1280x1024
+@item qsxga
+2560x2048
+@item hsxga
+5120x4096
+@item wvga
+852x480
+@item wxga
+1366x768
+@item wsxga
+1600x1024
+@item wuxga
+1920x1200
+@item woxga
+2560x1600
+@item wqsxga
+3200x2048
+@item wquxga
+3840x2400
+@item whsxga
+6400x4096
+@item whuxga
+7680x4800
+@item cga
+320x200
+@item ega
+640x350
+@item hd480
+852x480
+@item hd720
+1280x720
+@item hd1080
+1920x1080
+@end table
+
+@item -aspect @var{aspect}
+Set the video display aspect ratio specified by @var{aspect}.
+
+@var{aspect} can be a floating point number string, or a string of the
+form @var{num}:@var{den}, where @var{num} and @var{den} are the
+numerator and denominator of the aspect ratio. For example "4:3",
+"16:9", "1.3333", and "1.7777" are valid argument values.
+
+@item -croptop @var{size}
+@item -cropbottom @var{size}
+@item -cropleft @var{size}
+@item -cropright @var{size}
+All the crop options have been removed. Use -vf
+crop=width:height:x:y instead.
+
+@item -padtop @var{size}
+@item -padbottom @var{size}
+@item -padleft @var{size}
+@item -padright @var{size}
+@item -padcolor @var{hex_color}
+All the pad options have been removed. Use -vf
+pad=width:height:x:y:color instead.
+@item -vn
+Disable video recording.
+@item -bt @var{tolerance}
+Set video bitrate tolerance (in bits, default 4000k).
+Has a minimum value of: (target_bitrate/target_framerate).
+In 1-pass mode, bitrate tolerance specifies how far ratecontrol is
+willing to deviate from the target average bitrate value. This is
+not related to min/max bitrate. Lowering tolerance too much has
+an adverse effect on quality.
+@item -maxrate @var{bitrate}
+Set max video bitrate (in bit/s).
+Requires -bufsize to be set.
+@item -minrate @var{bitrate}
+Set min video bitrate (in bit/s).
+Most useful in setting up a CBR encode:
+@example
+avconv -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1835k out.m2v
+@end example
+It is of little use elsewise.
+@item -bufsize @var{size}
+Set video buffer verifier buffer size (in bits).
+@item -vcodec @var{codec}
+Force video codec to @var{codec}. Use the @code{copy} special value to
+tell that the raw codec data must be copied as is.
+@item -sameq
+Use same quantizer as source (implies VBR).
+
+@item -pass @var{n}
+Select the pass number (1 or 2). It is used to do two-pass
+video encoding. The statistics of the video are recorded in the first
+pass into a log file (see also the option -passlogfile),
+and in the second pass that log file is used to generate the video
+at the exact requested bitrate.
+On pass 1, you may just deactivate audio and set output to null,
+examples for Windows and Unix:
+@example
+avconv -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y NUL
+avconv -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y /dev/null
+@end example
+
+@item -passlogfile @var{prefix}
+Set two-pass log file name prefix to @var{prefix}, the default file name
+prefix is ``av2pass''. The complete file name will be
+@file{PREFIX-N.log}, where N is a number specific to the output
+stream.
+
+@item -vlang @var{code}
+Set the ISO 639 language code (3 letters) of the current video stream.
+
+@item -vf @var{filter_graph}
+@var{filter_graph} is a description of the filter graph to apply to
+the input video.
+Use the option "-filters" to show all the available filters (including
+also sources and sinks).
+
+@end table
+
+@section Advanced Video Options
+
+@table @option
+@item -pix_fmt @var{format}
+Set pixel format. Use 'list' as parameter to show all the supported
+pixel formats.
+@item -sws_flags @var{flags}
+Set SwScaler flags.
+@item -g @var{gop_size}
+Set the group of pictures size.
+@item -intra
+Use only intra frames.
+@item -vdt @var{n}
+Discard threshold.
+@item -qscale @var{q}
+Use fixed video quantizer scale (VBR).
+@item -qmin @var{q}
+minimum video quantizer scale (VBR)
+@item -qmax @var{q}
+maximum video quantizer scale (VBR)
+@item -qdiff @var{q}
+maximum difference between the quantizer scales (VBR)
+@item -qblur @var{blur}
+video quantizer scale blur (VBR) (range 0.0 - 1.0)
+@item -qcomp @var{compression}
+video quantizer scale compression (VBR) (default 0.5).
+Constant of ratecontrol equation. Recommended range for default rc_eq: 0.0-1.0
+
+@item -lmin @var{lambda}
+minimum video lagrange factor (VBR)
+@item -lmax @var{lambda}
+max video lagrange factor (VBR)
+@item -mblmin @var{lambda}
+minimum macroblock quantizer scale (VBR)
+@item -mblmax @var{lambda}
+maximum macroblock quantizer scale (VBR)
+
+These four options (lmin, lmax, mblmin, mblmax) use 'lambda' units,
+but you may use the QP2LAMBDA constant to easily convert from 'q' units:
+@example
+avconv -i src.ext -lmax 21*QP2LAMBDA dst.ext
+@end example
+
+@item -rc_init_cplx @var{complexity}
+initial complexity for single pass encoding
+@item -b_qfactor @var{factor}
+qp factor between P- and B-frames
+@item -i_qfactor @var{factor}
+qp factor between P- and I-frames
+@item -b_qoffset @var{offset}
+qp offset between P- and B-frames
+@item -i_qoffset @var{offset}
+qp offset between P- and I-frames
+@item -rc_eq @var{equation}
+Set rate control equation (see section "Expression Evaluation")
+(default = @code{tex^qComp}).
+
+When computing the rate control equation expression, besides the
+standard functions defined in the section "Expression Evaluation", the
+following functions are available:
+@table @var
+@item bits2qp(bits)
+@item qp2bits(qp)
+@end table
+
+and the following constants are available:
+@table @var
+@item iTex
+@item pTex
+@item tex
+@item mv
+@item fCode
+@item iCount
+@item mcVar
+@item var
+@item isI
+@item isP
+@item isB
+@item avgQP
+@item qComp
+@item avgIITex
+@item avgPITex
+@item avgPPTex
+@item avgBPTex
+@item avgTex
+@end table
+
+@item -rc_override @var{override}
+rate control override for specific intervals
+@item -me_method @var{method}
+Set motion estimation method to @var{method}.
+Available methods are (from lowest to best quality):
+@table @samp
+@item zero
+Try just the (0, 0) vector.
+@item phods
+@item log
+@item x1
+@item hex
+@item umh
+@item epzs
+(default method)
+@item full
+exhaustive search (slow and marginally better than epzs)
+@end table
+
+@item -dct_algo @var{algo}
+Set DCT algorithm to @var{algo}. Available values are:
+@table @samp
+@item 0
+FF_DCT_AUTO (default)
+@item 1
+FF_DCT_FASTINT
+@item 2
+FF_DCT_INT
+@item 3
+FF_DCT_MMX
+@item 4
+FF_DCT_MLIB
+@item 5
+FF_DCT_ALTIVEC
+@end table
+
+@item -idct_algo @var{algo}
+Set IDCT algorithm to @var{algo}. Available values are:
+@table @samp
+@item 0
+FF_IDCT_AUTO (default)
+@item 1
+FF_IDCT_INT
+@item 2
+FF_IDCT_SIMPLE
+@item 3
+FF_IDCT_SIMPLEMMX
+@item 4
+FF_IDCT_LIBMPEG2MMX
+@item 5
+FF_IDCT_PS2
+@item 6
+FF_IDCT_MLIB
+@item 7
+FF_IDCT_ARM
+@item 8
+FF_IDCT_ALTIVEC
+@item 9
+FF_IDCT_SH4
+@item 10
+FF_IDCT_SIMPLEARM
+@end table
+
+@item -er @var{n}
+Set error resilience to @var{n}.
+@table @samp
+@item 1
+FF_ER_CAREFUL (default)
+@item 2
+FF_ER_COMPLIANT
+@item 3
+FF_ER_AGGRESSIVE
+@item 4
+FF_ER_VERY_AGGRESSIVE
+@end table
+
+@item -ec @var{bit_mask}
+Set error concealment to @var{bit_mask}. @var{bit_mask} is a bit mask of
+the following values:
+@table @samp
+@item 1
+FF_EC_GUESS_MVS (default = enabled)
+@item 2
+FF_EC_DEBLOCK (default = enabled)
+@end table
+
+@item -bf @var{frames}
+Use 'frames' B-frames (supported for MPEG-1, MPEG-2 and MPEG-4).
+@item -mbd @var{mode}
+macroblock decision
+@table @samp
+@item 0
+FF_MB_DECISION_SIMPLE: Use mb_cmp (cannot change it yet in avconv).
+@item 1
+FF_MB_DECISION_BITS: Choose the one which needs the fewest bits.
+@item 2
+FF_MB_DECISION_RD: rate distortion
+@end table
+
+@item -4mv
+Use four motion vector by macroblock (MPEG-4 only).
+@item -part
+Use data partitioning (MPEG-4 only).
+@item -bug @var{param}
+Work around encoder bugs that are not auto-detected.
+@item -strict @var{strictness}
+How strictly to follow the standards.
+@item -aic
+Enable Advanced intra coding (h263+).
+@item -umv
+Enable Unlimited Motion Vector (h263+)
+
+@item -deinterlace
+Deinterlace pictures.
+@item -ilme
+Force interlacing support in encoder (MPEG-2 and MPEG-4 only).
+Use this option if your input file is interlaced and you want
+to keep the interlaced format for minimum losses.
+The alternative is to deinterlace the input stream with
+@option{-deinterlace}, but deinterlacing introduces losses.
+@item -psnr
+Calculate PSNR of compressed frames.
+@item -vstats
+Dump video coding statistics to @file{vstats_HHMMSS.log}.
+@item -vstats_file @var{file}
+Dump video coding statistics to @var{file}.
+@item -top @var{n}
+top=1/bottom=0/auto=-1 field first
+@item -dc @var{precision}
+Intra_dc_precision.
+@item -vtag @var{fourcc/tag}
+Force video tag/fourcc.
+@item -qphist
+Show QP histogram.
+@item -vbsf @var{bitstream_filter}
+Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump", "mjpeg2jpeg".
+@example
+avconv -i h264.mp4 -vcodec copy -vbsf h264_mp4toannexb -an out.h264
+@end example
+@item -force_key_frames @var{time}[,@var{time}...]
+Force key frames at the specified timestamps, more precisely at the first
+frames after each specified time.
+This option can be useful to ensure that a seek point is present at a
+chapter mark or any other designated place in the output file.
+The timestamps must be specified in ascending order.
+@end table
+
+@section Audio Options
+
+@table @option
+@item -aframes @var{number}
+Set the number of audio frames to record.
+@item -ar @var{freq}
+Set the audio sampling frequency. For output streams it is set by
+default to the frequency of the corresponding input stream. For input
+streams this option only makes sense for audio grabbing devices and raw
+demuxers and is mapped to the corresponding demuxer options.
+@item -aq @var{q}
+Set the audio quality (codec-specific, VBR).
+@item -ac @var{channels}
+Set the number of audio channels. For output streams it is set by
+default to the number of input audio channels. For input streams
+this option only makes sense for audio grabbing devices and raw demuxers
+and is mapped to the corresponding demuxer options.
+@item -an
+Disable audio recording.
+@item -acodec @var{codec}
+Force audio codec to @var{codec}. Use the @code{copy} special value to
+specify that the raw codec data must be copied as is.
+@item -alang @var{code}
+Set the ISO 639 language code (3 letters) of the current audio stream.
+@end table
+
+@section Advanced Audio options:
+
+@table @option
+@item -atag @var{fourcc/tag}
+Force audio tag/fourcc.
+@item -audio_service_type @var{type}
+Set the type of service that the audio stream contains.
+@table @option
+@item ma
+Main Audio Service (default)
+@item ef
+Effects
+@item vi
+Visually Impaired
+@item hi
+Hearing Impaired
+@item di
+Dialogue
+@item co
+Commentary
+@item em
+Emergency
+@item vo
+Voice Over
+@item ka
+Karaoke
+@end table
+@item -absf @var{bitstream_filter}
+Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp", "mp3decomp".
+@end table
+
+@section Subtitle options:
+
+@table @option
+@item -scodec @var{codec}
+Force subtitle codec ('copy' to copy stream).
+@item -slang @var{code}
+Set the ISO 639 language code (3 letters) of the current subtitle stream.
+@item -sn
+Disable subtitle recording.
+@item -sbsf @var{bitstream_filter}
+Bitstream filters available are "mov2textsub", "text2movsub".
+@example
+avconv -i file.mov -an -vn -sbsf mov2textsub -scodec copy -f rawvideo sub.txt
+@end example
+@end table
+
+@section Audio/Video grab options
+
+@table @option
+@item -isync
+Synchronize read on input.
+@end table
+
+@section Advanced options
+
+@table @option
+@item -map [-]@var{input_file_id}[:@var{input_stream_type}][:@var{input_stream_id}][,@var{sync_file_id}[:@var{sync_stream_type}][:@var{sync_stream_id}]]
+
+Designate one or more input streams as a source for the output file. Each input
+stream is identified by the input file index @var{input_file_id} and
+the input stream index @var{input_stream_id} within the input
+file. Both indices start at 0. If specified,
+@var{sync_file_id}:@var{sync_stream_id} sets which input stream
+is used as a presentation sync reference.
+
+If @var{input_stream_type} is specified -- 'v' for video, 'a' for audio, 's' for
+subtitle and 'd' for data -- then @var{input_stream_id} counts only the streams
+of this type. Same for @var{sync_stream_type}.
+
+@var{input_stream_id} may be omitted, in which case all streams of the given
+type are mapped (or all streams in the file, if no type is specified).
+
+The first @code{-map} option on the command line specifies the
+source for output stream 0, the second @code{-map} option specifies
+the source for output stream 1, etc.
+
+A @code{-} character before the stream identifier creates a "negative" mapping.
+It disables matching streams from already created mappings.
+
+For example, to map ALL streams from the first input file to output
+@example
+av -i INPUT -map 0 output
+@end example
+
+For example, if you have two audio streams in the first input file,
+these streams are identified by "0:0" and "0:1". You can use
+@code{-map} to select which streams to place in an output file. For
+example:
+@example
+avconv -i INPUT -map 0:1 out.wav
+@end example
+will map the input stream in @file{INPUT} identified by "0:1" to
+the (single) output stream in @file{out.wav}.
+
+For example, to select the stream with index 2 from input file
+@file{a.mov} (specified by the identifier "0:2"), and stream with
+index 6 from input @file{b.mov} (specified by the identifier "1:6"),
+and copy them to the output file @file{out.mov}:
+@example
+avconv -i a.mov -i b.mov -vcodec copy -acodec copy -map 0:2 -map 1:6 out.mov
+@end example
+
+To select all video and the third audio stream from an input file:
+@example
+avconv -i INPUT -map 0:v -map 0:a:2 OUTPUT
+@end example
+
+To map all the streams except the second audio, use negative mappings
+@example
+avconv -i INPUT -map 0 -map -0:a:1 OUTPUT
+@end example
+
+Note that using this option disables the default mappings for this output file.
+
+@item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}]
+Set metadata information of the next output file from @var{infile}. Note that
+those are file indices (zero-based), not filenames.
+Optional @var{metadata_type} parameters specify, which metadata to copy - (g)lobal
+(i.e. metadata that applies to the whole file), per-(s)tream, per-(c)hapter or
+per-(p)rogram. All metadata specifiers other than global must be followed by the
+stream/chapter/program index. If metadata specifier is omitted, it defaults to
+global.
+
+By default, global metadata is copied from the first input file,
+per-stream and per-chapter metadata is copied along with streams/chapters. These
+default mappings are disabled by creating any mapping of the relevant type. A negative
+file index can be used to create a dummy mapping that just disables automatic copying.
+
+For example to copy metadata from the first stream of the input file to global metadata
+of the output file:
+@example
+avconv -i in.ogg -map_metadata 0:s:0 out.mp3
+@end example
+@item -map_chapters @var{input_file_index}
+Copy chapters from input file with index @var{input_file_index} to the next
+output file. If no chapter mapping is specified, then chapters are copied from
+the first input file with at least one chapter. Use a negative file index to
+disable any chapter copying.
+@item -debug
+Print specific debug info.
+@item -benchmark
+Show benchmarking information at the end of an encode.
+Shows CPU time used and maximum memory consumption.
+Maximum memory consumption is not supported on all systems,
+it will usually display as 0 if not supported.
+@item -dump
+Dump each input packet.
+@item -hex
+When dumping packets, also dump the payload.
+@item -bitexact
+Only use bit exact algorithms (for codec testing).
+@item -ps @var{size}
+Set RTP payload size in bytes.
+@item -re
+Read input at native frame rate. Mainly used to simulate a grab device.
+@item -threads @var{count}
+Thread count.
+@item -vsync @var{parameter}
+Video sync method.
+
+@table @option
+@item 0
+Each frame is passed with its timestamp from the demuxer to the muxer.
+@item 1
+Frames will be duplicated and dropped to achieve exactly the requested
+constant framerate.
+@item 2
+Frames are passed through with their timestamp or dropped so as to
+prevent 2 frames from having the same timestamp.
+@item -1
+Chooses between 1 and 2 depending on muxer capabilities. This is the
+default method.
+@end table
+
+With -map you can select from which stream the timestamps should be
+taken. You can leave either video or audio unchanged and sync the
+remaining stream(s) to the unchanged one.
+
+@item -async @var{samples_per_second}
+Audio sync method. "Stretches/squeezes" the audio stream to match the timestamps,
+the parameter is the maximum samples per second by which the audio is changed.
+-async 1 is a special case where only the start of the audio stream is corrected
+without any later correction.
+@item -copyts
+Copy timestamps from input to output.
+@item -copytb
+Copy input stream time base from input to output when stream copying.
+@item -shortest
+Finish encoding when the shortest input stream ends.
+@item -dts_delta_threshold
+Timestamp discontinuity delta threshold.
+@item -muxdelay @var{seconds}
+Set the maximum demux-decode delay.
+@item -muxpreload @var{seconds}
+Set the initial demux-decode delay.
+@item -streamid @var{output-stream-index}:@var{new-value}
+Assign a new stream-id value to an output stream. This option should be
+specified prior to the output filename to which it applies.
+For the situation where multiple output files exist, a streamid
+may be reassigned to a different value.
+
+For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
+an output mpegts file:
+@example
+avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
+@end example
+@end table
+
+@section Preset files
+
+A preset file contains a sequence of @var{option}=@var{value} pairs,
+one for each line, specifying a sequence of options which would be
+awkward to specify on the command line. Lines starting with the hash
+('#') character are ignored and are used to provide comments. Check
+the @file{ffpresets} directory in the Libav source tree for examples.
+
+Preset files are specified with the @code{vpre}, @code{apre},
+@code{spre}, and @code{fpre} options. The @code{fpre} option takes the
+filename of the preset instead of a preset name as input and can be
+used for any kind of codec. For the @code{vpre}, @code{apre}, and
+@code{spre} options, the options specified in a preset file are
+applied to the currently selected codec of the same type as the preset
+option.
+
+The argument passed to the @code{vpre}, @code{apre}, and @code{spre}
+preset options identifies the preset file to use according to the
+following rules:
+
+First avconv searches for a file named @var{arg}.ffpreset in the
+directories @file{$av_DATADIR} (if set), and @file{$HOME/.avconv}, and in
+the datadir defined at configuration time (usually @file{PREFIX/share/avconv})
+in that order. For example, if the argument is @code{libx264-max}, it will
+search for the file @file{libx264-max.ffpreset}.
+
+If no such file is found, then avconv will search for a file named
+@var{codec_name}-@var{arg}.ffpreset in the above-mentioned
+directories, where @var{codec_name} is the name of the codec to which
+the preset file options will be applied. For example, if you select
+the video codec with @code{-vcodec libx264} and use @code{-vpre max},
+then it will search for the file @file{libx264-max.ffpreset}.
+@c man end
+
+@chapter Tips
+@c man begin TIPS
+
+@itemize
+@item
+For streaming at very low bitrate application, use a low frame rate
+and a small GOP size. This is especially true for RealVideo where
+the Linux player does not seem to be very fast, so it can miss
+frames. An example is:
+
+@example
+avconv -g 3 -r 3 -t 10 -b 50k -s qcif -f rv10 /tmp/b.rm
+@end example
+
+@item
+The parameter 'q' which is displayed while encoding is the current
+quantizer. The value 1 indicates that a very good quality could
+be achieved. The value 31 indicates the worst quality. If q=31 appears
+too often, it means that the encoder cannot compress enough to meet
+your bitrate. You must either increase the bitrate, decrease the
+frame rate or decrease the frame size.
+
+@item
+If your computer is not fast enough, you can speed up the
+compression at the expense of the compression ratio. You can use
+'-me zero' to speed up motion estimation, and '-intra' to disable
+motion estimation completely (you have only I-frames, which means it
+is about as good as JPEG compression).
+
+@item
+To have very low audio bitrates, reduce the sampling frequency
+(down to 22050 Hz for MPEG audio, 22050 or 11025 for AC-3).
+
+@item
+To have a constant quality (but a variable bitrate), use the option
+'-qscale n' when 'n' is between 1 (excellent quality) and 31 (worst
+quality).
+
+@item
+When converting video files, you can use the '-sameq' option which
+uses the same quality factor in the encoder as in the decoder.
+It allows almost lossless encoding.
+
+@end itemize
+@c man end TIPS
+
+@chapter Examples
+@c man begin EXAMPLES
+
+@section Video and Audio grabbing
+
+If you specify the input format and device then avconv can grab video
+and audio directly.
+
+@example
+avconv -f oss -i /dev/dsp -f video4linux2 -i /dev/video0 /tmp/out.mpg
+@end example
+
+Note that you must activate the right video source and channel before
+launching avconv with any TV viewer such as
+@uref{http://linux.bytesex.org/xawtv/, xawtv} by Gerd Knorr. You also
+have to set the audio recording levels correctly with a
+standard mixer.
+
+@section X11 grabbing
+
+Grab the X11 display with avconv via
+
+@example
+avconv -f x11grab -s cif -r 25 -i :0.0 /tmp/out.mpg
+@end example
+
+0.0 is display.screen number of your X11 server, same as
+the DISPLAY environment variable.
+
+@example
+avconv -f x11grab -s cif -r 25 -i :0.0+10,20 /tmp/out.mpg
+@end example
+
+0.0 is display.screen number of your X11 server, same as the DISPLAY environment
+variable. 10 is the x-offset and 20 the y-offset for the grabbing.
+
+@section Video and Audio file format conversion
+
+Any supported file format and protocol can serve as input to avconv:
+
+Examples:
+@itemize
+@item
+You can use YUV files as input:
+
+@example
+avconv -i /tmp/test%d.Y /tmp/out.mpg
+@end example
+
+It will use the files:
+@example
+/tmp/test0.Y, /tmp/test0.U, /tmp/test0.V,
+/tmp/test1.Y, /tmp/test1.U, /tmp/test1.V, etc...
+@end example
+
+The Y files use twice the resolution of the U and V files. They are
+raw files, without header. They can be generated by all decent video
+decoders. You must specify the size of the image with the @option{-s} option
+if avconv cannot guess it.
+
+@item
+You can input from a raw YUV420P file:
+
+@example
+avconv -i /tmp/test.yuv /tmp/out.avi
+@end example
+
+test.yuv is a file containing raw YUV planar data. Each frame is composed
+of the Y plane followed by the U and V planes at half vertical and
+horizontal resolution.
+
+@item
+You can output to a raw YUV420P file:
+
+@example
+avconv -i mydivx.avi hugefile.yuv
+@end example
+
+@item
+You can set several input files and output files:
+
+@example
+avconv -i /tmp/a.wav -s 640x480 -i /tmp/a.yuv /tmp/a.mpg
+@end example
+
+Converts the audio file a.wav and the raw YUV video file a.yuv
+to MPEG file a.mpg.
+
+@item
+You can also do audio and video conversions at the same time:
+
+@example
+avconv -i /tmp/a.wav -ar 22050 /tmp/a.mp2
+@end example
+
+Converts a.wav to MPEG audio at 22050 Hz sample rate.
+
+@item
+You can encode to several formats at the same time and define a
+mapping from input stream to output streams:
+
+@example
+avconv -i /tmp/a.wav -map 0:a -ab 64k /tmp/a.mp2 -map 0:a -ab 128k /tmp/b.mp2
+@end example
+
+Converts a.wav to a.mp2 at 64 kbits and to b.mp2 at 128 kbits. '-map
+file:index' specifies which input stream is used for each output
+stream, in the order of the definition of output streams.
+
+@item
+You can transcode decrypted VOBs:
+
+@example
+avconv -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec libmp3lame -ab 128k snatch.avi
+@end example
+
+This is a typical DVD ripping example; the input is a VOB file, the
+output an AVI file with MPEG-4 video and MP3 audio. Note that in this
+command we use B-frames so the MPEG-4 stream is DivX5 compatible, and
+GOP size is 300 which means one intra frame every 10 seconds for 29.97fps
+input video. Furthermore, the audio stream is MP3-encoded so you need
+to enable LAME support by passing @code{--enable-libmp3lame} to configure.
+The mapping is particularly useful for DVD transcoding
+to get the desired audio language.
+
+NOTE: To see the supported input formats, use @code{avconv -formats}.
+
+@item
+You can extract images from a video, or create a video from many images:
+
+For extracting images from a video:
+@example
+avconv -i foo.avi -r 1 -s WxH -f image2 foo-%03d.jpeg
+@end example
+
+This will extract one video frame per second from the video and will
+output them in files named @file{foo-001.jpeg}, @file{foo-002.jpeg},
+etc. Images will be rescaled to fit the new WxH values.
+
+If you want to extract just a limited number of frames, you can use the
+above command in combination with the -vframes or -t option, or in
+combination with -ss to start extracting from a certain point in time.
+
+For creating a video from many images:
+@example
+avconv -f image2 -i foo-%03d.jpeg -r 12 -s WxH foo.avi
+@end example
+
+The syntax @code{foo-%03d.jpeg} specifies to use a decimal number
+composed of three digits padded with zeroes to express the sequence
+number. It is the same syntax supported by the C printf function, but
+only formats accepting a normal integer are suitable.
+
+@item
+You can put many streams of the same type in the output:
+
+@example
+avconv -i test1.avi -i test2.avi -map 0.3 -map 0.2 -map 0.1 -map 0.0 -vcodec copy -acodec copy -vcodec copy -acodec copy test12.nut
+@end example
+
+The resulting output file @file{test12.avi} will contain first four streams from
+the input file in reverse order.
+
+@end itemize
+@c man end EXAMPLES
+
+@include eval.texi
+@include encoders.texi
+@include demuxers.texi
+@include muxers.texi
+@include indevs.texi
+@include outdevs.texi
+@include protocols.texi
+@include bitstream_filters.texi
+@include filters.texi
+@include metadata.texi
+
+@ignore
+
+@setfilename avconv
+@settitle avconv video converter
+
+@c man begin SEEALSO
+avplay(1), avprobe(1), avserver(1) and the Libav HTML documentation
+@c man end
+
+@c man begin AUTHORS
+The Libav developers
+@c man end
+
+@end ignore
+
+@bye

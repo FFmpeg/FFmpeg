@@ -141,8 +141,11 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 }
 
 static const OptionDef* find_option(const OptionDef *po, const char *name){
+    const char *p = strchr(name, ':');
+    int len = p ? p - name : strlen(name);
+
     while (po->name != NULL) {
-        if (!strcmp(name, po->name))
+        if (!strncmp(name, po->name, len) && strlen(po->name) == len)
             break;
         po++;
     }
@@ -288,7 +291,14 @@ unknown_opt:
 int opt_default(const char *opt, const char *arg)
 {
     const AVOption *oc, *of, *os;
-    if ((oc = av_opt_find(avcodec_opts[0], opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)) ||
+    char opt_stripped[128];
+    const char *p;
+
+    if (!(p = strchr(opt, ':')))
+        p = opt + strlen(opt);
+    av_strlcpy(opt_stripped, opt, FFMIN(sizeof(opt_stripped), p - opt + 1));
+
+    if ((oc = av_opt_find(avcodec_opts[0], opt_stripped, NULL, 0, AV_OPT_SEARCH_CHILDREN)) ||
          ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
           (oc = av_opt_find(avcodec_opts[0], opt+1, NULL, 0, 0))))
         av_dict_set(&codec_opts, opt, arg, FLAGS(oc));
@@ -741,9 +751,9 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 {
     FILE *f = NULL;
     int i;
-    const char *base[3]= { getenv("FFMPEG_DATADIR"),
+    const char *base[3]= { getenv("AVCONV_DATADIR"),
                            getenv("HOME"),
-                           FFMPEG_DATADIR,
+                           AVCONV_DATADIR,
                          };
 
     if (is_path) {
@@ -770,11 +780,11 @@ FILE *get_preset_file(char *filename, size_t filename_size,
         for (i = 0; i < 3 && !f; i++) {
             if (!base[i])
                 continue;
-            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.ffmpeg", preset_name);
+            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.avconv", preset_name);
             f = fopen(filename, "r");
             if (!f && codec_name) {
                 snprintf(filename, filename_size,
-                         "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.ffmpeg", codec_name, preset_name);
+                         "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.avconv", codec_name, preset_name);
                 f = fopen(filename, "r");
             }
         }
@@ -783,12 +793,42 @@ FILE *get_preset_file(char *filename, size_t filename_size,
     return f;
 }
 
-AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int encoder)
+int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
+{
+    if (*spec <= '9' && *spec >= '0')                                        /* opt:index */
+        return strtol(spec, NULL, 0) == st->index;
+    else if (*spec == 'v' || *spec == 'a' || *spec == 's' || *spec == 'd') { /* opt:[vasd] */
+        enum AVMediaType type;
+
+        switch (*spec++) {
+        case 'v': type = AVMEDIA_TYPE_VIDEO;    break;
+        case 'a': type = AVMEDIA_TYPE_AUDIO;    break;
+        case 's': type = AVMEDIA_TYPE_SUBTITLE; break;
+        case 'd': type = AVMEDIA_TYPE_DATA;     break;
+        }
+        if (type != st->codec->codec_type)
+            return 0;
+        if (*spec++ == ':') {                                   /* possibly followed by :index */
+            int i, index = strtol(spec, NULL, 0);
+            for (i = 0; i < s->nb_streams; i++)
+                if (s->streams[i]->codec->codec_type == type && index-- == 0)
+                   return i == st->index;
+            return 0;
+        }
+        return 1;
+    } else if (!*spec) /* empty specifier, matches everything */
+        return 1;
+
+    av_log(s, AV_LOG_ERROR, "Invalid stream specifier: %s.\n", spec);
+    return AVERROR(EINVAL);
+}
+
+AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFormatContext *s, AVStream *st)
 {
     AVDictionary    *ret = NULL;
     AVDictionaryEntry *t = NULL;
-    AVCodec       *codec = encoder ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
-    int            flags = encoder ? AV_OPT_FLAG_ENCODING_PARAM : AV_OPT_FLAG_DECODING_PARAM;
+    AVCodec       *codec = s->oformat ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
+    int            flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM : AV_OPT_FLAG_DECODING_PARAM;
     char          prefix = 0;
 
     if (!codec)
@@ -801,11 +841,24 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, int e
     }
 
     while (t = av_dict_get(opts, "", t, AV_DICT_IGNORE_SUFFIX)) {
+        char *p = strchr(t->key, ':');
+
+        /* check stream specification in opt name */
+        if (p)
+            switch (check_stream_specifier(s, st, p + 1)) {
+            case  1: *p = 0; break;
+            case  0:         continue;
+            default:         return NULL;
+            }
+
         if (av_opt_find(avcodec_opts[0], t->key, NULL, flags, 0) ||
             (codec && codec->priv_class && av_opt_find(&codec->priv_class, t->key, NULL, flags, 0)))
             av_dict_set(&ret, t->key, t->value, 0);
         else if (t->key[0] == prefix && av_opt_find(avcodec_opts[0], t->key+1, NULL, flags, 0))
             av_dict_set(&ret, t->key+1, t->value, 0);
+
+        if (p)
+            *p = ':';
     }
     return ret;
 }
@@ -823,7 +876,7 @@ AVDictionary **setup_find_stream_info_opts(AVFormatContext *s, AVDictionary *cod
         return NULL;
     }
     for (i = 0; i < s->nb_streams; i++)
-        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id, 0);
+        opts[i] = filter_codec_opts(codec_opts, s->streams[i]->codec->codec_id, s, s->streams[i]);
     return opts;
 }
 

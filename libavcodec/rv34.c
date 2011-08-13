@@ -568,12 +568,8 @@ static void rv34_pred_mv(RV34DecContext *r, int block_type, int subblock_no, int
  */
 static int calc_add_mv(RV34DecContext *r, int dir, int val)
 {
-    int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
-    int dist = dir ? -GET_PTS_DIFF(r->next_pts, r->cur_pts) : GET_PTS_DIFF(r->cur_pts, r->last_pts);
-    int mul;
+    int mul = dir ? -r->weight2 : r->weight1;
 
-    if(!refdist) return 0;
-    mul = (dist << 14) / refdist;
     return (val * mul + 0x2000) >> 14;
 }
 
@@ -721,7 +717,7 @@ static const int chroma_coeffs[3] = { 0, 3, 5 };
 static inline void rv34_mc(RV34DecContext *r, const int block_type,
                           const int xoff, const int yoff, int mv_off,
                           const int width, const int height, int dir,
-                          const int thirdpel,
+                          const int thirdpel, int weighted,
                           qpel_mc_func (*qpel_mc)[16],
                           h264_chroma_mc_func (*chroma_mc))
 {
@@ -785,9 +781,15 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
         srcU = uvbuf;
         srcV = uvbuf + 16;
     }
-    Y = s->dest[0] + xoff      + yoff     *s->linesize;
-    U = s->dest[1] + (xoff>>1) + (yoff>>1)*s->uvlinesize;
-    V = s->dest[2] + (xoff>>1) + (yoff>>1)*s->uvlinesize;
+    if(!weighted){
+        Y = s->dest[0] + xoff      + yoff     *s->linesize;
+        U = s->dest[1] + (xoff>>1) + (yoff>>1)*s->uvlinesize;
+        V = s->dest[2] + (xoff>>1) + (yoff>>1)*s->uvlinesize;
+    }else{
+        Y = r->tmp_b_block_y [dir]     +  xoff     +  yoff    *s->linesize;
+        U = r->tmp_b_block_uv[dir*2]   + (xoff>>1) + (yoff>>1)*s->uvlinesize;
+        V = r->tmp_b_block_uv[dir*2+1] + (xoff>>1) + (yoff>>1)*s->uvlinesize;
+    }
 
     if(block_type == RV34_MB_P_16x8){
         qpel_mc[1][dxy](Y, srcY, s->linesize);
@@ -808,43 +810,70 @@ static void rv34_mc_1mv(RV34DecContext *r, const int block_type,
                         const int xoff, const int yoff, int mv_off,
                         const int width, const int height, int dir)
 {
-    rv34_mc(r, block_type, xoff, yoff, mv_off, width, height, dir, r->rv30,
-            r->rv30 ? r->s.dsp.put_rv30_tpel_pixels_tab
-                    : r->s.dsp.put_rv40_qpel_pixels_tab,
-            r->rv30 ? r->s.dsp.put_h264_chroma_pixels_tab
-                    : r->s.dsp.put_rv40_chroma_pixels_tab);
+    rv34_mc(r, block_type, xoff, yoff, mv_off, width, height, dir, r->rv30, 0,
+            r->rdsp.put_pixels_tab,
+            r->rdsp.put_chroma_pixels_tab);
+}
+
+static void rv4_weight(RV34DecContext *r)
+{
+    r->rdsp.rv40_weight_pixels_tab[0](r->s.dest[0],
+                                      r->tmp_b_block_y[0],
+                                      r->tmp_b_block_y[1],
+                                      r->weight1,
+                                      r->weight2,
+                                      r->s.linesize);
+    r->rdsp.rv40_weight_pixels_tab[1](r->s.dest[1],
+                                      r->tmp_b_block_uv[0],
+                                      r->tmp_b_block_uv[2],
+                                      r->weight1,
+                                      r->weight2,
+                                      r->s.uvlinesize);
+    r->rdsp.rv40_weight_pixels_tab[1](r->s.dest[2],
+                                      r->tmp_b_block_uv[1],
+                                      r->tmp_b_block_uv[3],
+                                      r->weight1,
+                                      r->weight2,
+                                      r->s.uvlinesize);
 }
 
 static void rv34_mc_2mv(RV34DecContext *r, const int block_type)
 {
-    rv34_mc(r, block_type, 0, 0, 0, 2, 2, 0, r->rv30,
-            r->rv30 ? r->s.dsp.put_rv30_tpel_pixels_tab
-                    : r->s.dsp.put_rv40_qpel_pixels_tab,
-            r->rv30 ? r->s.dsp.put_h264_chroma_pixels_tab
-                    : r->s.dsp.put_rv40_chroma_pixels_tab);
-    rv34_mc(r, block_type, 0, 0, 0, 2, 2, 1, r->rv30,
-            r->rv30 ? r->s.dsp.avg_rv30_tpel_pixels_tab
-                    : r->s.dsp.avg_rv40_qpel_pixels_tab,
-            r->rv30 ? r->s.dsp.avg_h264_chroma_pixels_tab
-                    : r->s.dsp.avg_rv40_chroma_pixels_tab);
+    int weighted = !r->rv30 && block_type != RV34_MB_B_BIDIR && r->weight1 != 8192;
+
+    rv34_mc(r, block_type, 0, 0, 0, 2, 2, 0, r->rv30, weighted,
+            r->rdsp.put_pixels_tab,
+            r->rdsp.put_chroma_pixels_tab);
+    if(!weighted){
+        rv34_mc(r, block_type, 0, 0, 0, 2, 2, 1, r->rv30, 0,
+                r->rdsp.avg_pixels_tab,
+                r->rdsp.avg_chroma_pixels_tab);
+    }else{
+        rv34_mc(r, block_type, 0, 0, 0, 2, 2, 1, r->rv30, 1,
+                r->rdsp.put_pixels_tab,
+                r->rdsp.put_chroma_pixels_tab);
+        rv4_weight(r);
+    }
 }
 
 static void rv34_mc_2mv_skip(RV34DecContext *r)
 {
     int i, j;
+    int weighted = !r->rv30 && r->weight1 != 8192;
+
     for(j = 0; j < 2; j++)
         for(i = 0; i < 2; i++){
              rv34_mc(r, RV34_MB_P_8x8, i*8, j*8, i+j*r->s.b8_stride, 1, 1, 0, r->rv30,
-                    r->rv30 ? r->s.dsp.put_rv30_tpel_pixels_tab
-                            : r->s.dsp.put_rv40_qpel_pixels_tab,
-                    r->rv30 ? r->s.dsp.put_h264_chroma_pixels_tab
-                            : r->s.dsp.put_rv40_chroma_pixels_tab);
+                     weighted,
+                     r->rdsp.put_pixels_tab,
+                     r->rdsp.put_chroma_pixels_tab);
              rv34_mc(r, RV34_MB_P_8x8, i*8, j*8, i+j*r->s.b8_stride, 1, 1, 1, r->rv30,
-                    r->rv30 ? r->s.dsp.avg_rv30_tpel_pixels_tab
-                            : r->s.dsp.avg_rv40_qpel_pixels_tab,
-                    r->rv30 ? r->s.dsp.avg_h264_chroma_pixels_tab
-                            : r->s.dsp.avg_rv40_chroma_pixels_tab);
+                     weighted,
+                     weighted ? r->rdsp.put_pixels_tab : r->rdsp.avg_pixels_tab,
+                     weighted ? r->rdsp.put_chroma_pixels_tab : r->rdsp.avg_chroma_pixels_tab);
         }
+    if(weighted)
+        rv4_weight(r);
 }
 
 /** number of motion vectors in each macroblock type */
@@ -1279,10 +1308,31 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         if(MPV_frame_start(s, s->avctx) < 0)
             return -1;
         ff_er_frame_start(s);
+        if (!r->tmp_b_block_base || s->width != r->si.width || s->height != r->si.height) {
+            int i;
+
+            r->tmp_b_block_base = av_realloc(r->tmp_b_block_base, s->linesize * 48);
+            for (i = 0; i < 2; i++)
+                r->tmp_b_block_y[i] = r->tmp_b_block_base + i * 16 * s->linesize;
+            for (i = 0; i < 4; i++)
+                r->tmp_b_block_uv[i] = r->tmp_b_block_base + 32 * s->linesize
+                                       + (i >> 1) * 8 * s->uvlinesize + (i & 1) * 16;
+        }
         r->cur_pts = r->si.pts;
         if(s->pict_type != AV_PICTURE_TYPE_B){
             r->last_pts = r->next_pts;
             r->next_pts = r->cur_pts;
+        }else{
+            int refdist = GET_PTS_DIFF(r->next_pts, r->last_pts);
+            int dist0   = GET_PTS_DIFF(r->cur_pts,  r->last_pts);
+            int dist1   = GET_PTS_DIFF(r->next_pts, r->cur_pts);
+
+            if(!refdist){
+                r->weight1 = r->weight2 = 8192;
+            }else{
+                r->weight1 = (dist0 << 14) / refdist;
+                r->weight2 = (dist1 << 14) / refdist;
+            }
         }
         s->mb_x = s->mb_y = 0;
     }
@@ -1362,6 +1412,15 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
         return -1;
 
     ff_h264_pred_init(&r->h, CODEC_ID_RV40, 8);
+
+#if CONFIG_RV30_DECODER
+    if (avctx->codec_id == CODEC_ID_RV30)
+        ff_rv30dsp_init(&r->rdsp, &r->s.dsp);
+#endif
+#if CONFIG_RV40_DECODER
+    if (avctx->codec_id == CODEC_ID_RV40)
+        ff_rv40dsp_init(&r->rdsp, &r->s.dsp);
+#endif
 
     r->intra_types_stride = 4*s->mb_stride + 4;
     r->intra_types_hist = av_malloc(r->intra_types_stride * 4 * 2 * sizeof(*r->intra_types_hist));
@@ -1494,6 +1553,7 @@ av_cold int ff_rv34_decode_end(AVCodecContext *avctx)
 
     av_freep(&r->intra_types_hist);
     r->intra_types = NULL;
+    av_freep(&r->tmp_b_block_base);
     av_freep(&r->mb_type);
     av_freep(&r->cbp_luma);
     av_freep(&r->cbp_chroma);

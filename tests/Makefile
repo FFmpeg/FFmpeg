@@ -4,8 +4,8 @@ AREF = fate-acodec-aref
 VREF = fate-vsynth1-vref fate-vsynth2-vref
 REFS = $(AREF) $(VREF)
 
-$(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
-$(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
+$(VREF): avconv$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
+$(AREF): avconv$(EXESUF) tests/data/asynth1.sw
 
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
@@ -93,7 +93,7 @@ FATE_UTILS = base64 tiny_psnr
 
 fate: $(FATE)
 
-$(FATE): ffmpeg$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
+$(FATE): avconv$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
 	$(Q)$(SRC_PATH)/tests/fate-run.sh $@ "$(SAMPLES)" "$(TARGET_EXEC)" "$(TARGET_PATH)" '$(CMD)' '$(CMP)' '$(REF)' '$(FUZZ)' '$(THREADS)' '$(THREAD_TYPE)'
 
