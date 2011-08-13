@@ -132,8 +132,8 @@ static void set_filter_param(FilterParam *fp, int msize_x, int msize_y, double a
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     UnsharpContext *unsharp = ctx->priv;
-    int lmsize_x = 5, cmsize_x = 0;
-    int lmsize_y = 5, cmsize_y = 0;
+    int lmsize_x = 5, cmsize_x = 5;
+    int lmsize_y = 5, cmsize_y = 5;
     double lamount = 1.0f, camount = 0.0f;
 
     if (args)
