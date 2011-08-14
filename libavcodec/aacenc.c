@@ -174,6 +174,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     AACEncContext *s = avctx->priv_data;
     int i;
     const uint8_t *sizes[2];
+    uint8_t grouping[AAC_MAX_CHANNELS];
     int lengths[2];
 
     avctx->frame_size = 1024;
@@ -219,7 +220,9 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     sizes[1]   = swb_size_128[i];
     lengths[0] = ff_aac_num_swb_1024[i];
     lengths[1] = ff_aac_num_swb_128[i];
-    ff_psy_init(&s->psy, avctx, 2, sizes, lengths, s->chan_map[0], &s->chan_map[1]);
+    for (i = 0; i < s->chan_map[0]; i++)
+        grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
+    ff_psy_init(&s->psy, avctx, 2, sizes, lengths, s->chan_map[0], grouping);
     s->psypp = ff_psy_preprocess_init(avctx);
     s->coder = &ff_aac_coders[2];
 
@@ -555,6 +558,12 @@ static int aac_encode_frame(AVCodecContext *avctx,
                 wi[ch].window_shape   = 0;
                 wi[ch].num_windows    = 1;
                 wi[ch].grouping[0]    = 1;
+
+                /* Only the lowest 12 coefficients are used in a LFE channel.
+                 * The expression below results in only the bottom 8 coefficients
+                 * being used for 11.025kHz to 16kHz sample rates.
+                 */
+                ics->num_swb = s->samplerate_index >= 8 ? 1 : 3;
             } else {
                 wi[ch] = s->psy.model->window(&s->psy, samples2, la, cur_channel,
                                               ics->window_sequence[0]);
@@ -565,7 +574,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             ics->use_kb_window[0]   = wi[ch].window_shape;
             ics->num_windows        = wi[ch].num_windows;
             ics->swb_sizes          = s->psy.bands    [ics->num_windows == 8];
-            ics->num_swb            = tag == TYPE_LFE ? 12 : s->psy.num_bands[ics->num_windows == 8];
+            ics->num_swb            = tag == TYPE_LFE ? ics->num_swb : s->psy.num_bands[ics->num_windows == 8];
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
 
