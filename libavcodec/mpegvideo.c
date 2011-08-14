@@ -2318,9 +2318,9 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
         s->dsp.draw_edges(s->current_picture_ptr->f.data[0] +  y         *s->linesize  , s->linesize,
                           s->h_edge_pos        , edge_h        , EDGE_WIDTH        , EDGE_WIDTH        , sides);
         s->dsp.draw_edges(s->current_picture_ptr->f.data[1] + (y>>vshift)*s->uvlinesize, s->uvlinesize,
-                          s->h_edge_pos>>hshift, edge_h>>hshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
+                          s->h_edge_pos>>hshift, edge_h>>vshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
         s->dsp.draw_edges(s->current_picture_ptr->f.data[2] + (y>>vshift)*s->uvlinesize, s->uvlinesize,
-                          s->h_edge_pos>>hshift, edge_h>>hshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
+                          s->h_edge_pos>>hshift, edge_h>>vshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
     }
 
     h= FFMIN(h, s->avctx->height - y);
