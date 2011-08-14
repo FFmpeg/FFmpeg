@@ -1412,7 +1412,7 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
     if (MPV_common_init(s) < 0)
         return -1;
 
-    ff_h264_pred_init(&r->h, CODEC_ID_RV40, 8);
+    ff_h264_pred_init(&r->h, CODEC_ID_RV40, 8, 1);
 
 #if CONFIG_RV30_DECODER
     if (avctx->codec_id == CODEC_ID_RV30)

@@ -396,7 +396,8 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
 #endif
     sps->crop= get_bits1(&s->gb);
     if(sps->crop){
-        int crop_limit = sps->chroma_format_idc == 3 ? 16 : 8;
+        int crop_vertical_limit = sps->chroma_format_idc & 2 ? 16 : 8;
+        int crop_horizontal_limit = sps->chroma_format_idc == 3 ? 16 : 8;
         sps->crop_left  = get_ue_golomb(&s->gb);
         sps->crop_right = get_ue_golomb(&s->gb);
         sps->crop_top   = get_ue_golomb(&s->gb);
@@ -404,7 +405,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
         if(sps->crop_left || sps->crop_top){
             av_log(h->s.avctx, AV_LOG_ERROR, "insane cropping not completely supported, this could look slightly wrong ...\n");
         }
-        if(sps->crop_right >= crop_limit || sps->crop_bottom >= crop_limit){
+        if(sps->crop_right >= crop_horizontal_limit || sps->crop_bottom >= crop_vertical_limit){
             av_log(h->s.avctx, AV_LOG_ERROR, "brainfart cropping not supported, this could look slightly wrong ...\n");
         }
     }else{

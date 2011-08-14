@@ -224,6 +224,39 @@ void FUNCC(ff_h264_idct_add8)(uint8_t **dest, const int *block_offset, DCTELEM *
         }
     }
 }
+
+void FUNCC(ff_h264_idct_add8_422)(uint8_t **dest, const int *block_offset, DCTELEM *block, int stride, const uint8_t nnzc[15*8]){
+    int i, j;
+
+#if 0
+    av_log(NULL, AV_LOG_INFO, "idct\n");
+    int32_t *b = block;
+    for (int i = 0; i < 256; i++) {
+        av_log(NULL, AV_LOG_INFO, "%5d ", b[i+256]);
+        if (!((i+1) % 16))
+            av_log(NULL, AV_LOG_INFO, "\n");
+    }
+#endif
+
+    for(j=1; j<3; j++){
+        for(i=j*16; i<j*16+4; i++){
+            if(nnzc[ scan8[i] ])
+                FUNCC(ff_h264_idct_add   )(dest[j-1] + block_offset[i], block + i*16*sizeof(pixel), stride);
+            else if(((dctcoef*)block)[i*16])
+                FUNCC(ff_h264_idct_dc_add)(dest[j-1] + block_offset[i], block + i*16*sizeof(pixel), stride);
+        }
+    }
+
+    for(j=1; j<3; j++){
+        for(i=j*16+4; i<j*16+8; i++){
+            if(nnzc[ scan8[i+4] ])
+                FUNCC(ff_h264_idct_add   )(dest[j-1] + block_offset[i+4], block + i*16*sizeof(pixel), stride);
+            else if(((dctcoef*)block)[i*16])
+                FUNCC(ff_h264_idct_dc_add)(dest[j-1] + block_offset[i+4], block + i*16*sizeof(pixel), stride);
+        }
+    }
+}
+
 /**
  * IDCT transforms the 16 dc values and dequantizes them.
  * @param qmul quantization parameter
@@ -261,6 +294,42 @@ void FUNCC(ff_h264_luma_dc_dequant_idct)(DCTELEM *p_output, DCTELEM *p_input, in
         output[stride* 5+offset]= ((((z0 - z3)*qmul + 128 ) >> 8));
     }
 #undef stride
+}
+
+void FUNCC(ff_h264_chroma422_dc_dequant_idct)(DCTELEM *p_block, int qmul){
+    const int stride= 16*2;
+    const int xStride= 16;
+    int i;
+    int temp[8];
+    static const uint8_t x_offset[2]={0, 16};
+    dctcoef *block = (dctcoef*)p_block;
+
+    for(i=0; i<4; i++){
+        temp[2*i+0] = block[stride*i + xStride*0] + block[stride*i + xStride*1];
+        temp[2*i+1] = block[stride*i + xStride*0] - block[stride*i + xStride*1];
+    }
+
+    for(i=0; i<2; i++){
+        const int offset= x_offset[i];
+        const int z0= temp[2*0+i] + temp[2*2+i];
+        const int z1= temp[2*0+i] - temp[2*2+i];
+        const int z2= temp[2*1+i] - temp[2*3+i];
+        const int z3= temp[2*1+i] + temp[2*3+i];
+
+        block[stride*0+offset]= ((z0 + z3)*qmul + 128) >> 8;
+        block[stride*1+offset]= ((z1 + z2)*qmul + 128) >> 8;
+        block[stride*2+offset]= ((z1 - z2)*qmul + 128) >> 8;
+        block[stride*3+offset]= ((z0 - z3)*qmul + 128) >> 8;
+    }
+
+#if 0
+    av_log(NULL, AV_LOG_INFO, "after chroma dc\n");
+    for (int i = 0; i < 256; i++) {
+        av_log(NULL, AV_LOG_INFO, "%5d ", block[i]);
+        if (!((i+1) % 16))
+            av_log(NULL, AV_LOG_INFO, "\n");
+    }
+#endif
 }
 
 void FUNCC(ff_h264_chroma_dc_dequant_idct)(DCTELEM *p_block, int qmul){

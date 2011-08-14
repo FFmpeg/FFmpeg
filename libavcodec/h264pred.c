@@ -363,7 +363,7 @@ static void pred8x8_tm_vp8_c(uint8_t *src, int stride){
 /**
  * Set the intra prediction function pointers.
  */
-void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth){
+void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth, const int chroma_format_idc){
 //    MpegEncContext * const s = &h->s;
 
 #undef FUNC
@@ -436,20 +436,39 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth){
     h->pred8x8l[TOP_DC_PRED         ]= FUNCC(pred8x8l_top_dc              , depth);\
     h->pred8x8l[DC_128_PRED         ]= FUNCC(pred8x8l_128_dc              , depth);\
 \
-    h->pred8x8[VERT_PRED8x8   ]= FUNCC(pred8x8_vertical                   , depth);\
-    h->pred8x8[HOR_PRED8x8    ]= FUNCC(pred8x8_horizontal                 , depth);\
+    if (chroma_format_idc == 1) {\
+        h->pred8x8[VERT_PRED8x8   ]= FUNCC(pred8x8_vertical               , depth);\
+        h->pred8x8[HOR_PRED8x8    ]= FUNCC(pred8x8_horizontal             , depth);\
+    } else {\
+        h->pred8x8[VERT_PRED8x8   ]= FUNCC(pred8x16_vertical              , depth);\
+        h->pred8x8[HOR_PRED8x8    ]= FUNCC(pred8x16_horizontal            , depth);\
+    }\
     if (codec_id != CODEC_ID_VP8) {\
-        h->pred8x8[PLANE_PRED8x8]= FUNCC(pred8x8_plane                    , depth);\
+        if (chroma_format_idc == 1) {\
+            h->pred8x8[PLANE_PRED8x8]= FUNCC(pred8x8_plane                , depth);\
+        } else {\
+            h->pred8x8[PLANE_PRED8x8]= FUNCC(pred8x16_plane               , depth);\
+        }\
     } else\
         h->pred8x8[PLANE_PRED8x8]= FUNCD(pred8x8_tm_vp8);\
     if(codec_id != CODEC_ID_RV40 && codec_id != CODEC_ID_VP8){\
-        h->pred8x8[DC_PRED8x8     ]= FUNCC(pred8x8_dc                     , depth);\
-        h->pred8x8[LEFT_DC_PRED8x8]= FUNCC(pred8x8_left_dc                , depth);\
-        h->pred8x8[TOP_DC_PRED8x8 ]= FUNCC(pred8x8_top_dc                 , depth);\
-        h->pred8x8[ALZHEIMER_DC_L0T_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_l0t, depth);\
-        h->pred8x8[ALZHEIMER_DC_0LT_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_0lt, depth);\
-        h->pred8x8[ALZHEIMER_DC_L00_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_l00, depth);\
-        h->pred8x8[ALZHEIMER_DC_0L0_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_0l0, depth);\
+        if (chroma_format_idc == 1) {\
+            h->pred8x8[DC_PRED8x8     ]= FUNCC(pred8x8_dc                     , depth);\
+            h->pred8x8[LEFT_DC_PRED8x8]= FUNCC(pred8x8_left_dc                , depth);\
+            h->pred8x8[TOP_DC_PRED8x8 ]= FUNCC(pred8x8_top_dc                 , depth);\
+            h->pred8x8[ALZHEIMER_DC_L0T_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_l0t, depth);\
+            h->pred8x8[ALZHEIMER_DC_0LT_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_0lt, depth);\
+            h->pred8x8[ALZHEIMER_DC_L00_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_l00, depth);\
+            h->pred8x8[ALZHEIMER_DC_0L0_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_0l0, depth);\
+        } else {\
+            h->pred8x8[DC_PRED8x8     ]= FUNCC(pred8x16_dc                    , depth);\
+            h->pred8x8[LEFT_DC_PRED8x8]= FUNCC(pred8x16_left_dc               , depth);\
+            h->pred8x8[TOP_DC_PRED8x8 ]= FUNCC(pred8x16_top_dc                , depth);\
+            h->pred8x8[ALZHEIMER_DC_L0T_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_l0t, depth);\
+            h->pred8x8[ALZHEIMER_DC_0LT_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_0lt, depth);\
+            h->pred8x8[ALZHEIMER_DC_L00_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_l00, depth);\
+            h->pred8x8[ALZHEIMER_DC_0L0_PRED8x8 ]= FUNC(pred8x8_mad_cow_dc_0l0, depth);\
+        }\
     }else{\
         h->pred8x8[DC_PRED8x8     ]= FUNCD(pred8x8_dc_rv40);\
         h->pred8x8[LEFT_DC_PRED8x8]= FUNCD(pred8x8_left_dc_rv40);\
@@ -459,7 +478,11 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth){
             h->pred8x8[DC_129_PRED8x8]= FUNCC(pred8x8_129_dc              , depth);\
         }\
     }\
-    h->pred8x8[DC_128_PRED8x8 ]= FUNCC(pred8x8_128_dc                     , depth);\
+    if (chroma_format_idc == 1) {\
+        h->pred8x8[DC_128_PRED8x8 ]= FUNCC(pred8x8_128_dc                 , depth);\
+    } else {\
+        h->pred8x8[DC_128_PRED8x8 ]= FUNCC(pred8x16_128_dc                , depth);\
+    }\
 \
     h->pred16x16[DC_PRED8x8     ]= FUNCC(pred16x16_dc                     , depth);\
     h->pred16x16[VERT_PRED8x8   ]= FUNCC(pred16x16_vertical               , depth);\
@@ -506,6 +529,6 @@ void ff_h264_pred_init(H264PredContext *h, int codec_id, const int bit_depth){
             break;
     }
 
-    if (ARCH_ARM) ff_h264_pred_init_arm(h, codec_id, bit_depth);
-    if (HAVE_MMX) ff_h264_pred_init_x86(h, codec_id, bit_depth);
+    if (ARCH_ARM) ff_h264_pred_init_arm(h, codec_id, bit_depth, chroma_format_idc);
+    if (HAVE_MMX) ff_h264_pred_init_x86(h, codec_id, bit_depth, chroma_format_idc);
 }

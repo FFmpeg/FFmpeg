@@ -275,6 +275,14 @@ static void FUNCC(h264_h_loop_filter_chroma_mbaff)(uint8_t *pix, int stride, int
 {
     FUNCC(h264_loop_filter_chroma)(pix, sizeof(pixel), stride, 1, alpha, beta, tc0);
 }
+static void FUNCC(h264_h_loop_filter_chroma422)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+{
+    FUNCC(h264_loop_filter_chroma)(pix, sizeof(pixel), stride, 4, alpha, beta, tc0);
+}
+static void FUNCC(h264_h_loop_filter_chroma422_mbaff)(uint8_t *pix, int stride, int alpha, int beta, int8_t *tc0)
+{
+    FUNCC(h264_loop_filter_chroma)(pix, sizeof(pixel), stride, 2, alpha, beta, tc0);
+}
 
 static av_always_inline av_flatten void FUNCC(h264_loop_filter_chroma_intra)(uint8_t *p_pix, int xstride, int ystride, int inner_iters, int alpha, int beta)
 {
@@ -311,4 +319,12 @@ static void FUNCC(h264_h_loop_filter_chroma_intra)(uint8_t *pix, int stride, int
 static void FUNCC(h264_h_loop_filter_chroma_mbaff_intra)(uint8_t *pix, int stride, int alpha, int beta)
 {
     FUNCC(h264_loop_filter_chroma_intra)(pix, sizeof(pixel), stride, 1, alpha, beta);
+}
+static void FUNCC(h264_h_loop_filter_chroma422_intra)(uint8_t *pix, int stride, int alpha, int beta)
+{
+    FUNCC(h264_loop_filter_chroma_intra)(pix, sizeof(pixel), stride, 4, alpha, beta);
+}
+static void FUNCC(h264_h_loop_filter_chroma422_mbaff_intra)(uint8_t *pix, int stride, int alpha, int beta)
+{
+    FUNCC(h264_loop_filter_chroma_intra)(pix, sizeof(pixel), stride, 2, alpha, beta);
 }

@@ -74,9 +74,9 @@ typedef struct H264DSPContext{
     void (*h264_chroma_dc_dequant_idct)(DCTELEM *block, int qmul);
 }H264DSPContext;
 
-void ff_h264dsp_init(H264DSPContext *c, const int bit_depth);
-void ff_h264dsp_init_arm(H264DSPContext *c, const int bit_depth);
-void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth);
-void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth);
+void ff_h264dsp_init(H264DSPContext *c, const int bit_depth, const int chroma_format_idc);
+void ff_h264dsp_init_arm(H264DSPContext *c, const int bit_depth, const int chroma_format_idc);
+void ff_h264dsp_init_ppc(H264DSPContext *c, const int bit_depth, const int chroma_format_idc);
+void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chroma_format_idc);
 
 #endif /* AVCODEC_H264DSP_H */
