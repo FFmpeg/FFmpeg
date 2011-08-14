@@ -2451,7 +2451,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         c->add_bytes= add_bytes_mmx;
 
         if (!high_bit_depth)
-        c->draw_edges = draw_edges_mmx;
+            c->draw_edges = draw_edges_mmx;
 
         if (CONFIG_H263_DECODER || CONFIG_H263_ENCODER) {
             c->h263_v_loop_filter= h263_v_loop_filter_mmx;
