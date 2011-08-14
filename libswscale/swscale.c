@@ -2092,20 +2092,6 @@ static void hScale8To15_c(SwsContext *c, int16_t *dst, int dstW, const uint8_t *
     }
 }
 
-static inline void hScale16NX_c(int16_t *dst, int dstW, const uint16_t *src, int srcW, int xInc,
-                                    const int16_t *filter, const int16_t *filterPos, long filterSize, int shift)
-{
-    int i, j;
-    for (i=0; i<dstW; i++) {
-        int srcPos= filterPos[i];
-        int val=0;
-        for (j=0; j<filterSize; j++) {
-            val += ((int)av_bswap16(src[srcPos + j]))*filter[filterSize*i + j];
-        }
-        dst[i] = FFMIN(val>>shift, (1<<15)-1); // the cubic equation does overflow ...
-    }
-}
-
 static void hScale8To19_c(SwsContext *c, int16_t *_dst, int dstW, const uint8_t *src,
                           const int16_t *filter, const int16_t *filterPos,
                           int filterSize)
@@ -2812,21 +2798,21 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_PAL8     :
         case PIX_FMT_BGR4_BYTE:
         case PIX_FMT_RGB4_BYTE: c->chrToYV12 = palToUV_c; break;
-        case PIX_FMT_YUV444P9BE:
-        case PIX_FMT_YUV420P9BE:
-        case PIX_FMT_YUV444P10BE:
-        case PIX_FMT_YUV422P10BE:
-        case PIX_FMT_YUV420P10BE: c->hScale16= HAVE_BIGENDIAN ? NULL : hScale16NX_c; break;
+#if HAVE_BIGENDIAN
         case PIX_FMT_YUV444P9LE:
         case PIX_FMT_YUV420P9LE:
         case PIX_FMT_YUV422P10LE:
         case PIX_FMT_YUV420P10LE:
-        case PIX_FMT_YUV444P10LE: c->hScale16= HAVE_BIGENDIAN ? hScale16NX_c : NULL; break;
-#if HAVE_BIGENDIAN
+        case PIX_FMT_YUV444P10LE:
         case PIX_FMT_YUV420P16LE:
         case PIX_FMT_YUV422P16LE:
         case PIX_FMT_YUV444P16LE: c->chrToYV12 = bswap16UV_c; break;
 #else
+        case PIX_FMT_YUV444P9BE:
+        case PIX_FMT_YUV420P9BE:
+        case PIX_FMT_YUV444P10BE:
+        case PIX_FMT_YUV422P10BE:
+        case PIX_FMT_YUV420P10BE:
         case PIX_FMT_YUV420P16BE:
         case PIX_FMT_YUV422P16BE:
         case PIX_FMT_YUV444P16BE: c->chrToYV12 = bswap16UV_c; break;
@@ -2880,11 +2866,21 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
     c->alpToYV12 = NULL;
     switch (srcFormat) {
 #if HAVE_BIGENDIAN
+    case PIX_FMT_YUV444P9LE:
+    case PIX_FMT_YUV420P9LE:
+    case PIX_FMT_YUV422P10LE:
+    case PIX_FMT_YUV420P10LE:
+    case PIX_FMT_YUV444P10LE:
     case PIX_FMT_YUV420P16LE:
     case PIX_FMT_YUV422P16LE:
     case PIX_FMT_YUV444P16LE:
     case PIX_FMT_GRAY16LE: c->lumToYV12 = bswap16Y_c; break;
 #else
+    case PIX_FMT_YUV444P9BE:
+    case PIX_FMT_YUV420P9BE:
+    case PIX_FMT_YUV444P10BE:
+    case PIX_FMT_YUV422P10BE:
+    case PIX_FMT_YUV420P10BE:
     case PIX_FMT_YUV420P16BE:
     case PIX_FMT_YUV422P16BE:
     case PIX_FMT_YUV444P16BE:
@@ -2940,16 +2936,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
             }
         } else {
             c->hScale = hScale8To19_c;
-            av_assert0(c->hScale16 != hScale16NX_c);
         }
     } else {
-        if(c->dstBpc > 10){
-            if(c->hScale16 == hScale16NX_c && !isAnyRGB(c->srcFormat)){
-                c->chrToYV12 = bswap16UV_c;
-                c->lumToYV12 = bswap16Y_c;
-            }
-            c->hScale16 = NULL;
-        }
         c->hScale = c->dstBpc > 10 ? hScale16To19_c : hScale16To15_c;
     }
 
