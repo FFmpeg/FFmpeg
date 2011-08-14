@@ -2676,12 +2676,12 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->add_hfyu_median_prediction = ff_add_hfyu_median_prediction_mmx2;
 #endif
 #if HAVE_7REGS
-            if( mm_flags&AV_CPU_FLAG_3DNOW )
+            if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW))
                 c->add_hfyu_median_prediction = add_hfyu_median_prediction_cmov;
 #endif
 
             c->add_png_paeth_prediction= add_png_paeth_prediction_mmx2;
-        } else if (mm_flags & AV_CPU_FLAG_3DNOW) {
+        } else if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW)) {
             c->prefetch = prefetch_3dnow;
 
             if (!high_bit_depth) {
@@ -2833,11 +2833,11 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
 #endif
 
-        if(mm_flags & AV_CPU_FLAG_3DNOW){
+        if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW)) {
             c->vorbis_inverse_coupling = vorbis_inverse_coupling_3dnow;
             c->vector_fmul = vector_fmul_3dnow;
         }
-        if(mm_flags & AV_CPU_FLAG_3DNOWEXT){
+        if (HAVE_AMD3DNOWEXT && (mm_flags & AV_CPU_FLAG_3DNOWEXT)) {
             c->vector_fmul_reverse = vector_fmul_reverse_3dnow2;
 #if HAVE_6REGS
             c->vector_fmul_window = vector_fmul_window_3dnow2;
@@ -2868,7 +2868,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->scalarproduct_float = ff_scalarproduct_float_sse;
 #endif
         }
-        if(mm_flags & AV_CPU_FLAG_3DNOW)
+        if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW))
             c->vector_fmul_add = vector_fmul_add_3dnow; // faster than sse
         if(mm_flags & AV_CPU_FLAG_SSE2){
 #if HAVE_YASM
