@@ -158,10 +158,13 @@ typedef struct VideoState {
     uint8_t *audio_buf;
     unsigned int audio_buf_size; /* in bytes */
     int audio_buf_index; /* in bytes */
+    int audio_write_buf_size;
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
     enum AVSampleFormat audio_src_fmt;
     AVAudioConvert *reformat_ctx;
+    double audio_current_pts;
+    double audio_current_pts_drift;
 
     enum ShowMode {
         SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
@@ -706,13 +709,6 @@ static void video_image_display(VideoState *is)
     }
 }
 
-/* get the current audio output buffer size, in samples. With SDL, we
-   cannot have a precise information */
-static int audio_write_get_buf_size(VideoState *is)
-{
-    return is->audio_buf_size - is->audio_buf_index;
-}
-
 static inline int compute_mod(int a, int b)
 {
     return a < 0 ? a%b + b : a%b;
@@ -735,7 +731,7 @@ static void video_audio_display(VideoState *s)
     if (!s->paused) {
         int data_used= s->show_mode == SHOW_MODE_WAVES ? s->width : (2*nb_freq);
         n = 2 * channels;
-        delay = audio_write_get_buf_size(s);
+        delay = s->audio_write_buf_size;
         delay /= n;
 
         /* to be more precise, we take into account the time spent since
@@ -989,18 +985,11 @@ static int refresh_thread(void *opaque)
 /* get the current audio clock value */
 static double get_audio_clock(VideoState *is)
 {
-    double pts;
-    int hw_buf_size, bytes_per_sec;
-    pts = is->audio_clock;
-    hw_buf_size = audio_write_get_buf_size(is);
-    bytes_per_sec = 0;
-    if (is->audio_st) {
-        bytes_per_sec = is->audio_st->codec->sample_rate *
-            2 * is->audio_st->codec->channels;
+    if (is->paused) {
+        return is->audio_current_pts;
+    } else {
+        return is->audio_current_pts_drift + av_gettime() / 1000000.0;
     }
-    if (bytes_per_sec)
-        pts -= (double)hw_buf_size / bytes_per_sec;
-    return pts;
 }
 
 /* get the current video clock value */
@@ -2074,6 +2063,7 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
 {
     VideoState *is = opaque;
     int audio_size, len1;
+    int bytes_per_sec;
     double pts;
 
     audio_callback_time = av_gettime();
@@ -2103,6 +2093,12 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
         stream += len1;
         is->audio_buf_index += len1;
     }
+    bytes_per_sec = is->audio_st->codec->sample_rate *
+            2 * is->audio_st->codec->channels;
+    is->audio_write_buf_size = is->audio_buf_size - is->audio_buf_index;
+    /* Let's assume the audio driver that is used by SDL has two periods. */
+    is->audio_current_pts = is->audio_clock - (double)(2 * is->audio_hw_buf_size + is->audio_write_buf_size) / bytes_per_sec;
+    is->audio_current_pts_drift = is->audio_current_pts - audio_callback_time / 1000000.0;
 }
 
 /* open a given stream. Return 0 if OK */
