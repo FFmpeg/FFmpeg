@@ -2959,9 +2959,6 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         }
     } else {
         if(c->dstBpc > 10){
-            if((isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
-            || c->srcFormat == PIX_FMT_PAL8)
-                c->hScale16= hScale16N_c;
             if(c->hScale16 == hScale16NX_c && !isAnyRGB(c->srcFormat)){
                 c->chrToYV12 = bswap16UV_c;
                 c->lumToYV12 = bswap16Y_c;
