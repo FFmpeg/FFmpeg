@@ -19,7 +19,7 @@
 ;* Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
 ;******************************************************************************
 
-%include "libavutil/x86/x86inc.asm"
+%include "x86inc.asm"
 
 SECTION_RODATA
 pb_f: times 16 db 15
