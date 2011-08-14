@@ -993,7 +993,6 @@ The list of the currently supported filters follows:
 @table @var
 @item 2xsai
 @item decimate
-@item delogo
 @item denoise3d
 @item detc
 @item dint
