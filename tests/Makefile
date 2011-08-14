@@ -81,7 +81,7 @@ fate-seek:   $(FATE_SEEK)
 ifdef SAMPLES
 FATE += $(FATE_TESTS)
 fate-rsync:
-	rsync -vaLW rsync://fate-suite.libav.org/fate-suite/ $(SAMPLES)
+	rsync -vaLW rsync://fate.ffmpeg.org/fate-suite/ $(SAMPLES)
 else
 fate-rsync:
 	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
