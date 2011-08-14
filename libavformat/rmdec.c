@@ -307,16 +307,6 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
 
 //        av_log(s, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
         st->codec->time_base.den = fps * st->codec->time_base.num;
-        //XXX: do we really need that?
-        switch(st->codec->extradata[4]>>4){
-        case 1: st->codec->codec_id = CODEC_ID_RV10; break;
-        case 2: st->codec->codec_id = CODEC_ID_RV20; break;
-        case 3: st->codec->codec_id = CODEC_ID_RV30; break;
-        case 4: st->codec->codec_id = CODEC_ID_RV40; break;
-        default:
-            av_log(st->codec, AV_LOG_ERROR, "extra:%02X %02X %02X %02X %02X\n", st->codec->extradata[0], st->codec->extradata[1], st->codec->extradata[2], st->codec->extradata[3], st->codec->extradata[4]);
-            goto fail1;
-        }
     }
 
 skip:
