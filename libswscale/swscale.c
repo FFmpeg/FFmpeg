@@ -2057,6 +2057,9 @@ static void hScale16To15_c(SwsContext *c, int16_t *dst, int dstW, const uint8_t 
     const uint16_t *src = (const uint16_t *) _src;
     int sh = av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
 
+    if(sh<15)
+        sh= isAnyRGB(c->srcFormat) || c->srcFormat==PIX_FMT_PAL8 ? 13 : av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
+
     for (i = 0; i < dstW; i++) {
         int j;
         int srcPos = filterPos[i];
@@ -2086,21 +2089,6 @@ static void hScale8To15_c(SwsContext *c, int16_t *dst, int dstW, const uint8_t *
         //filter += hFilterSize;
         dst[i] = FFMIN(val>>7, (1<<15)-1); // the cubic equation does overflow ...
         //dst[i] = val>>7;
-    }
-}
-
-static inline void hScale16N_c(int16_t *dst, int dstW, const uint16_t *src, int srcW, int xInc,
-                                    const int16_t *filter, const int16_t *filterPos, long filterSize, int shift)
-{
-    int i, j;
-
-    for (i=0; i<dstW; i++) {
-        int srcPos= filterPos[i];
-        int val=0;
-        for (j=0; j<filterSize; j++) {
-            val += ((int)src[srcPos + j])*filter[filterSize*i + j];
-        }
-        dst[i] = FFMIN(val>>shift, (1<<15)-1); // the cubic equation does overflow ...
     }
 }
 
@@ -2945,9 +2933,6 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
 
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 10) {
-            if((isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
-            || c->srcFormat == PIX_FMT_PAL8)
-                c->hScale16= hScale16N_c;
             c->hScale       = hScale8To15_c;
             if (c->flags & SWS_FAST_BILINEAR) {
                 c->hyscale_fast = hyscale_fast_c;
@@ -2955,7 +2940,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
             }
         } else {
             c->hScale = hScale8To19_c;
-            av_assert0(c->hScale16 != hScale16N_c && c->hScale16 != hScale16NX_c);
+            av_assert0(c->hScale16 != hScale16NX_c);
         }
     } else {
         if(c->dstBpc > 10){

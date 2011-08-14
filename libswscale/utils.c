@@ -848,7 +848,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     c->dstBpc = 1 + av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1;
     if (c->dstBpc < 8)
         c->dstBpc = 8;
-    if (isAnyRGB(srcFormat) && c->dstBpc == 16)
+    if (isAnyRGB(srcFormat) || srcFormat == PIX_FMT_PAL8)
         c->srcBpc = 16;
     if (c->dstBpc == 16)
         dst_stride <<= 1;
