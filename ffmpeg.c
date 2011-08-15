@@ -2482,8 +2482,6 @@ static int transcode(AVFormatContext **output_files,
             }
             assert_codec_experimental(ist->st->codec, 0);
             assert_avoptions(ost->opts);
-            //if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-            //    ist->st->codec->flags |= CODEC_FLAG_REPEAT_FIELD;
         }
     }
 

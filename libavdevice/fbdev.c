@@ -107,10 +107,6 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", fbdev->framerate);
         return ret;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->time_base.num)
-        fbdev->framerate_q = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
 
     if (!(st = av_new_stream(avctx, 0)))
         return AVERROR(ENOMEM);

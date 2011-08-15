@@ -49,13 +49,7 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
         case AVMEDIA_TYPE_AUDIO: {
             RawAudioDemuxerContext *s1 = s->priv_data;
 
-#if FF_API_FORMAT_PARAMETERS
-            if (ap->sample_rate)
-                st->codec->sample_rate = ap->sample_rate;
-            if (ap->channels)
-                st->codec->channels    = ap->channels;
-            else st->codec->channels   = 1;
-#endif
+            st->codec->channels = 1;
 
             if (s1->sample_rate)
                 st->codec->sample_rate = s1->sample_rate;
@@ -87,16 +81,6 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s1->framerate);
                 goto fail;
             }
-#if FF_API_FORMAT_PARAMETERS
-            if (ap->width > 0)
-                width = ap->width;
-            if (ap->height > 0)
-                height = ap->height;
-            if (ap->pix_fmt)
-                pix_fmt = ap->pix_fmt;
-            if (ap->time_base.num)
-                framerate = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
             av_set_pts_info(st, 64, framerate.den, framerate.num);
             st->codec->width  = width;
             st->codec->height = height;
@@ -171,10 +155,6 @@ int ff_raw_video_read_header(AVFormatContext *s,
         av_log(s, AV_LOG_ERROR, "Could not parse framerate: %s.\n", s1->framerate);
         goto fail;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->time_base.num)
-        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
 
     st->codec->time_base = (AVRational){framerate.den, framerate.num};
     av_set_pts_info(st, 64, 1, 1200000);

@@ -142,16 +142,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     /* set tv standard */
     if (!ioctl(video_fd, VIDIOCGTUNER, &tuner)) {
-#if FF_API_FORMAT_PARAMETERS
-        if (ap->standard) {
-            if (!strcasecmp(ap->standard, "pal"))
-                s->standard = VIDEO_MODE_PAL;
-            else if (!strcasecmp(ap->standard, "secam"))
-                s->standard = VIDEO_MODE_SECAM;
-            else
-                s->standard = VIDEO_MODE_NTSC;
-        }
-#endif
         tuner.mode = s->standard;
         ioctl(video_fd, VIDIOCSTUNER, &tuner);
     }

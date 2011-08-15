@@ -1728,6 +1728,8 @@ static int video_thread(void *arg)
 #if CONFIG_AVFILTER
     AVFilterGraph *graph = avfilter_graph_alloc();
     AVFilterContext *filt_out = NULL;
+    int last_w = is->video_st->codec->width;
+    int last_h = is->video_st->codec->height;
 
     if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
         goto the_end;
@@ -1744,6 +1746,18 @@ static int video_thread(void *arg)
         while (is->paused && !is->videoq.abort_request)
             SDL_Delay(10);
 #if CONFIG_AVFILTER
+        if (   last_w != is->video_st->codec->width
+            || last_h != is->video_st->codec->height) {
+            av_dlog(NULL, "Changing size %dx%d -> %dx%d\n", last_w, last_h,
+                    is->video_st->codec->width, is->video_st->codec->height);
+            avfilter_graph_free(&graph);
+            graph = avfilter_graph_alloc();
+            if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
+                goto the_end;
+            filt_out = is->out_video_filter;
+            last_w = is->video_st->codec->width;
+            last_h = is->video_st->codec->height;
+        }
         ret = av_vsink_buffer_get_video_buffer_ref(filt_out, &picref, 0);
         if (picref) {
             avfilter_fill_frame_from_video_buffer_ref(frame, picref);

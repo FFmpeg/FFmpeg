@@ -1529,13 +1529,6 @@ static int mpegts_read_header(AVFormatContext *s,
     int len;
     int64_t pos;
 
-#if FF_API_FORMAT_PARAMETERS
-    if (ap) {
-        if (ap->mpeg2ts_compute_pcr)
-            ts->mpeg2ts_compute_pcr = ap->mpeg2ts_compute_pcr;
-    }
-#endif
-
     /* read the first 1024 bytes to get packet size */
     pos = avio_tell(pb);
     len = avio_read(pb, buf, sizeof(buf));

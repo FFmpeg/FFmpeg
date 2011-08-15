@@ -1262,7 +1262,20 @@ static void do_video_out(AVFormatContext *s,
         sws_scale(ost->img_resample_ctx, formatted_picture->data, formatted_picture->linesize,
               0, ost->resample_height, final_picture->data, final_picture->linesize);
     }
+#else
+    if (resample_changed) {
+        avfilter_graph_free(&ost->graph);
+        if (configure_video_filters(ist, ost)) {
+            fprintf(stderr, "Error reinitialising filters!\n");
+            exit_program(1);
+        }
+    }
 #endif
+    if (resample_changed) {
+        ost->resample_width   = dec->width;
+        ost->resample_height  = dec->height;
+        ost->resample_pix_fmt = dec->pix_fmt;
+    }
 
     /* duplicates frame if needed */
     for(i=0;i<nb_frames;i++) {
@@ -2375,8 +2388,6 @@ static int transcode(AVFormatContext **output_files,
             }
             assert_codec_experimental(ist->st->codec, 0);
             assert_avoptions(ost->opts);
-            //if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-            //    ist->st->codec->flags |= CODEC_FLAG_REPEAT_FIELD;
         }
     }
 

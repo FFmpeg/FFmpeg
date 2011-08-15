@@ -251,17 +251,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     AVRational framerate;
     int ret = 0;
 
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->standard) {
-        if (!strcasecmp(ap->standard, "pal"))
-            s->standard = PAL;
-        else if (!strcasecmp(ap->standard, "secam"))
-            s->standard = SECAM;
-        else if (!strcasecmp(ap->standard, "ntsc"))
-            s->standard = NTSC;
-    }
-#endif
-
     if ((ret = av_parse_video_size(&width, &height, s->video_size)) < 0) {
         av_log(s1, AV_LOG_ERROR, "Could not parse video size '%s'.\n", s->video_size);
         goto out;
@@ -281,14 +270,6 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         av_log(s1, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", s->framerate);
         goto out;
     }
-#if FF_API_FORMAT_PARAMETERS
-    if (ap->width > 0)
-        width = ap->width;
-    if (ap->height > 0)
-        height = ap->height;
-    if (ap->time_base.num)
-        framerate = (AVRational){ap->time_base.den, ap->time_base.num};
-#endif
 
     st = av_new_stream(s1, 0);
     if (!st) {

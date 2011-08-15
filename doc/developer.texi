@@ -327,7 +327,7 @@ send a reminder by email. Your patch should eventually be dealt with.
 
 @enumerate
 @item
-    Does 'make fate' pass with the patch applied?
+    Does @code{make fate} pass with the patch applied?
 @item
     Was the patch generated with git format-patch or send-email?
 @item
