@@ -17,6 +17,7 @@ ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
 threads=${9:-1}
 thread_type=${10:-3}
+tool=$11
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
@@ -50,7 +51,7 @@ run(){
 }
 
 avconv(){
-    run avconv -v 0 -threads $threads -thread_type $thread_type "$@"
+    run $tool -v 0 -threads $threads -thread_type $thread_type "$@"
 }
 
 framecrc(){
