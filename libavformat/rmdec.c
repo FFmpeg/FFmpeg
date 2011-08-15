@@ -298,6 +298,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         st->codec->time_base.num= 1;
         fps= avio_rb16(pb);
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
         avio_rb32(pb);
         avio_skip(pb, 2);
         avio_rb16(pb);
