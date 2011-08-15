@@ -23,6 +23,7 @@
  * format audio filter
  */
 
+#define _BSD_SOURCE
 #include "libavutil/audioconvert.h"
 #include "avfilter.h"
 #include "internal.h"
