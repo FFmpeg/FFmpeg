@@ -3396,7 +3396,6 @@ static int read_avserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
     AVFormatContext *ic = NULL;
-    int nopts = 0;
 
     err = avformat_open_input(&ic, filename, NULL, NULL);
     if (err < 0)
@@ -3420,9 +3419,6 @@ static int read_avserver_streams(AVFormatContext *s, const char *filename)
             choose_sample_fmt(st, codec);
         else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !st->stream_copy)
             choose_pixel_fmt(st, codec);
-
-        if(st->codec->flags & CODEC_FLAG_BITEXACT)
-            nopts = 1;
     }
 
     av_close_input_file(ic);
