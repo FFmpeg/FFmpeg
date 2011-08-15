@@ -17,7 +17,7 @@ ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
 threads=${9:-1}
 thread_type=${10:-3}
-tool=$11
+tool=${11}
 
 outdir="tests/data/fate"
 outfile="${outdir}/${test}"
