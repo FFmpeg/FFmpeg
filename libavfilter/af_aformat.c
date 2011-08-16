@@ -42,60 +42,30 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (!args)
         goto arg_fail;
 
-    fmts_str = av_get_token(&args, ":");
-    if (!fmts_str || !*fmts_str)
-        goto arg_fail;
-    if (!strcmp(fmts_str, "all")) {
-        aformat->formats = avfilter_all_formats(AVMEDIA_TYPE_AUDIO);
-    } else {
-        for (fmt_str = fmts_str;
-             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {
-            if ((ret = ff_parse_sample_format((int*)&fmt, fmt_str, ctx)) < 0) {
-                av_freep(&fmts_str);
-                return ret;
-            }
-            avfilter_add_format(&aformat->formats, fmt);
-        }
-    }
-    av_freep(&fmts_str);
-
-    if (*args)
+#define ADD_FORMATS(all_formats, fmt_name, fmt_type, fmts_list)         \
+    fmts_str = av_get_token(&args, ":");                                \
+    if (!fmts_str || !*fmts_str)                                        \
+        goto arg_fail;                                                  \
+    if (!strcmp(fmts_str, "all")) {                                     \
+        aformat->fmts_list = all_formats;                               \
+    } else {                                                            \
+        for (fmt_str = fmts_str;                                        \
+             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {  \
+            if ((ret = ff_parse_##fmt_name((fmt_type *)&fmt,            \
+                                           fmt_str, ctx)) < 0) {        \
+                av_freep(&fmts_str);                                    \
+                return ret;                                             \
+            }                                                           \
+            avfilter_add_format(&aformat->fmts_list, fmt);              \
+        }                                                               \
+    }                                                                   \
+    av_freep(&fmts_str);                                                \
+    if (*args)                                                          \
         args++;
-    fmts_str = av_get_token(&args, ":");
-    if (!fmts_str || !*fmts_str)
-        goto arg_fail;
-    if (!strcmp(fmts_str, "all")) {
-        aformat->chlayouts = avfilter_all_channel_layouts();
-    } else {
-        for (fmt_str = fmts_str;
-             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {
-            if ((ret = ff_parse_channel_layout(&fmt, fmt_str, ctx)) < 0) {
-                av_freep(&fmts_str);
-                return ret;
-            }
-            avfilter_add_format(&aformat->chlayouts, fmt);
-        }
-    }
-    av_freep(&fmts_str);
 
-    if (*args)
-        args++;
-    fmts_str = av_get_token(&args, ":");
-    if (!fmts_str || !*fmts_str)
-        goto arg_fail;
-    if (!strcmp(fmts_str, "all")) {
-        aformat->packing = avfilter_all_packing_formats();
-    } else {
-        for (fmt_str = fmts_str;
-             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {
-            if ((ret = ff_parse_packing_format((int*)&fmt, fmt_str, ctx)) < 0) {
-                av_freep(&fmts_str);
-                return ret;
-            }
-            avfilter_add_format(&aformat->packing, fmt);
-        }
-    }
-    av_freep(&fmts_str);
+    ADD_FORMATS(avfilter_all_formats(AVMEDIA_TYPE_AUDIO), sample_format, int, formats);
+    ADD_FORMATS(avfilter_all_channel_layouts(), channel_layout, int64_t, chlayouts);
+    ADD_FORMATS(avfilter_all_packing_formats(), packing_format, int, packing);
 
     return 0;
 
