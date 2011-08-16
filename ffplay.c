@@ -1749,8 +1749,8 @@ static int video_thread(void *arg)
 #if CONFIG_AVFILTER
         if (   last_w != is->video_st->codec->width
             || last_h != is->video_st->codec->height) {
-            av_dlog(NULL, "Changing size %dx%d -> %dx%d\n", last_w, last_h,
-                    is->video_st->codec->width, is->video_st->codec->height);
+            av_log(NULL, AV_LOG_INFO, "Frame changed from size:%dx%d to size:%dx%d\n",
+                   last_w, last_h, is->video_st->codec->width, is->video_st->codec->height);
             avfilter_graph_free(&graph);
             graph = avfilter_graph_alloc();
             if ((ret = configure_video_filters(graph, is, vfilters)) < 0)
