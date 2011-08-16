@@ -23,8 +23,8 @@
  * format audio filter
  */
 
-#define _BSD_SOURCE
 #include "libavutil/audioconvert.h"
+#include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -35,51 +35,74 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     AFormatContext * const aformat = ctx->priv;
-    char *arg, *fmt_str;
+    char *fmts_str = NULL, *fmt_str, *ptr = NULL;
     int64_t fmt;
     int ret;
 
-    arg = strsep(&args, ":");
-    if (!arg) goto arg_fail;
-    if (!strcmp(arg, "all")) {
+    if (!args)
+        goto arg_fail;
+
+    fmts_str = av_get_token(&args, ":");
+    if (!fmts_str || !*fmts_str)
+        goto arg_fail;
+    if (!strcmp(fmts_str, "all")) {
         aformat->formats = avfilter_all_formats(AVMEDIA_TYPE_AUDIO);
     } else {
-        while (fmt_str = strsep(&arg, ",")) {
-            if ((ret = ff_parse_sample_format((int*)&fmt, fmt_str, ctx)) < 0)
+        for (fmt_str = fmts_str;
+             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {
+            if ((ret = ff_parse_sample_format((int*)&fmt, fmt_str, ctx)) < 0) {
+                av_freep(&fmts_str);
                 return ret;
+            }
             avfilter_add_format(&aformat->formats, fmt);
         }
     }
+    av_freep(&fmts_str);
 
-    arg = strsep(&args, ":");
-    if (!arg) goto arg_fail;
-    if (!strcmp(arg, "all")) {
+    if (*args)
+        args++;
+    fmts_str = av_get_token(&args, ":");
+    if (!fmts_str || !*fmts_str)
+        goto arg_fail;
+    if (!strcmp(fmts_str, "all")) {
         aformat->chlayouts = avfilter_all_channel_layouts();
     } else {
-        while (fmt_str = strsep(&arg, ",")) {
-            if ((ret = ff_parse_channel_layout(&fmt, fmt_str, ctx)) < 0)
+        for (fmt_str = fmts_str;
+             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {
+            if ((ret = ff_parse_channel_layout(&fmt, fmt_str, ctx)) < 0) {
+                av_freep(&fmts_str);
                 return ret;
+            }
             avfilter_add_format(&aformat->chlayouts, fmt);
         }
     }
+    av_freep(&fmts_str);
 
-    arg = strsep(&args, ":");
-    if (!arg) goto arg_fail;
-    if (!strcmp(arg, "all")) {
+    if (*args)
+        args++;
+    fmts_str = av_get_token(&args, ":");
+    if (!fmts_str || !*fmts_str)
+        goto arg_fail;
+    if (!strcmp(fmts_str, "all")) {
         aformat->packing = avfilter_all_packing_formats();
     } else {
-        while (fmt_str = strsep(&arg, ",")) {
-            if ((ret = ff_parse_packing_format((int*)&fmt, fmt_str, ctx)) < 0)
+        for (fmt_str = fmts_str;
+             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {
+            if ((ret = ff_parse_packing_format((int*)&fmt, fmt_str, ctx)) < 0) {
+                av_freep(&fmts_str);
                 return ret;
+            }
             avfilter_add_format(&aformat->packing, fmt);
         }
     }
+    av_freep(&fmts_str);
 
     return 0;
 
 arg_fail:
     av_log(ctx, AV_LOG_ERROR, "Invalid arguments, they must be of the form "
                               "sample_fmts:channel_layouts:packing_fmts\n");
+    av_freep(&fmts_str);
     return AVERROR(EINVAL);
 }
 
