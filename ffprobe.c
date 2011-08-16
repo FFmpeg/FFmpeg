@@ -83,9 +83,11 @@ static char *value_string(char *buf, int buf_size, double val, const char *unit)
             prefix_string = decimal_unit_prefixes[index];
         }
 
-        snprintf(buf, buf_size, "%.3f %s%s", val, prefix_string, show_value_unit ? unit : "");
+        snprintf(buf, buf_size, "%.3f%s%s%s", val, prefix_string || show_value_unit ? " " : "",
+                 prefix_string, show_value_unit ? unit : "");
     } else {
-        snprintf(buf, buf_size, "%f %s", val, show_value_unit ? unit : "");
+        snprintf(buf, buf_size, "%f%s%s", val, show_value_unit ? " " : "",
+                 show_value_unit ? unit : "");
     }
 
     return buf;
