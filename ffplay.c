@@ -1640,14 +1640,13 @@ static int input_query_formats(AVFilterContext *ctx)
 static int input_config_props(AVFilterLink *link)
 {
     FilterPriv *priv  = link->src->priv;
-    AVCodecContext *c = priv->is->video_st->codec;
     AVStream *s = priv->is->video_st;
 
-    link->w = c->width;
-    link->h = c->height;
+    link->w = s->codec->width;
+    link->h = s->codec->height;
     link->sample_aspect_ratio = s->sample_aspect_ratio.num ?
-        s->sample_aspect_ratio : c->sample_aspect_ratio;
-    link->time_base = priv->is->video_st->time_base;
+        s->sample_aspect_ratio : s->codec->sample_aspect_ratio;
+    link->time_base = s->time_base;
 
     return 0;
 }
