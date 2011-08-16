@@ -2092,10 +2092,10 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
         if (ac->output_configured != OC_LOCKED) {
             ac->m4ac.sbr = -1;
             ac->m4ac.ps  = -1;
+            ac->m4ac.sample_rate     = hdr_info.sample_rate;
+            ac->m4ac.sampling_index  = hdr_info.sampling_index;
+            ac->m4ac.object_type     = hdr_info.object_type;
         }
-        ac->m4ac.sample_rate     = hdr_info.sample_rate;
-        ac->m4ac.sampling_index  = hdr_info.sampling_index;
-        ac->m4ac.object_type     = hdr_info.object_type;
         if (!ac->avctx->sample_rate)
             ac->avctx->sample_rate = hdr_info.sample_rate;
         if (hdr_info.num_aac_frames == 1) {
