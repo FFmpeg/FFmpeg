@@ -1782,8 +1782,10 @@ static int video_thread(void *arg)
 
         if (ret < 0) goto the_end;
 
+#if CONFIG_AVFILTER
         if (!picref)
             continue;
+#endif
 
         pts = pts_int*av_q2d(is->video_st->time_base);
 
