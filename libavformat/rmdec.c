@@ -293,21 +293,21 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
 //        av_log(s, AV_LOG_DEBUG, "%X %X\n", st->codec->codec_tag, MKTAG('R', 'V', '2', '0'));
         if (st->codec->codec_id == CODEC_ID_NONE)
             goto fail1;
-        st->codec->width = avio_rb16(pb);
+        st->codec->width  = avio_rb16(pb);
         st->codec->height = avio_rb16(pb);
-        st->codec->time_base.num= 1;
-        fps= avio_rb16(pb);
+        avio_skip(pb, 2); // looks like bits per sample
+        avio_skip(pb, 4); // always zero?
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
-        avio_rb32(pb);
-        avio_skip(pb, 2);
-        avio_rb16(pb);
+        fps = avio_rb32(pb);
 
         if ((ret = rm_read_extradata(pb, st->codec, codec_data_size - (avio_tell(pb) - codec_pos))) < 0)
             return ret;
 
-//        av_log(s, AV_LOG_DEBUG, "fps= %d fps2= %d\n", fps, fps2);
-        st->codec->time_base.den = fps * st->codec->time_base.num;
+        av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
+                  0x10000, fps, (1 << 30) - 1);
+        st->avg_frame_rate.num = st->codec->time_base.den;
+        st->avg_frame_rate.den = st->codec->time_base.num;
     }
 
 skip:
