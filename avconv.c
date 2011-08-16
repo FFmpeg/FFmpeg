@@ -1217,11 +1217,11 @@ static void do_video_out(AVFormatContext *s,
     formatted_picture = in_picture;
     final_picture = formatted_picture;
 
-#if !CONFIG_AVFILTER
     resample_changed = ost->resample_width   != dec->width  ||
                        ost->resample_height  != dec->height ||
                        ost->resample_pix_fmt != dec->pix_fmt;
 
+#if !CONFIG_AVFILTER
     if (resample_changed) {
         av_log(NULL, AV_LOG_INFO,
                "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
