@@ -80,7 +80,14 @@ static const uint8_t luma_dc_field_scan[16]={
 
 static const uint8_t chroma_dc_scan[4]={
  (0+0*2)*16, (1+0*2)*16,
- (0+1*2)*16, (1+1*2)*16,  //FIXME
+ (0+1*2)*16, (1+1*2)*16,
+};
+
+static const uint8_t chroma422_dc_scan[8]={
+ (0+0*2)*16, (0+1*2)*16,
+ (1+0*2)*16, (0+2*2)*16,
+ (0+3*2)*16, (1+1*2)*16,
+ (1+2*2)*16, (1+3*2)*16,
 };
 
 // zigzag_scan8x8_cavlc[i] = zigzag_scan8x8[(i/4) + 16*(i%4)]
