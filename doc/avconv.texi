@@ -97,6 +97,34 @@ input file name
 @item -y
 Overwrite output files.
 
+@item -c[:@var{stream_type}][:@var{stream_index}] @var{codec}
+@item -codec[:@var{stream_type}][:@var{stream_index}] @var{codec}
+Select an encoder (when used before an output file) or a decoder (when used
+before an input file) for one or more streams. @var{codec} is the name of a
+decoder/encoder or a special value @code{copy} (output only) to indicate that
+the stream is not to be reencoded.
+
+@var{stream_type} may be 'v' for video, 'a' for audio, 's' for subtitle and 'd'
+for data streams.  @var{stream_index} is a global zero-based stream index if
+@var{stream_type} isn't given, otherwise it counts only streams of the given
+type. If @var{stream_index} is omitted, this option applies to all streams of
+the given type or all streams of any type if @var{stream_type} is missing as
+well (note that this only makes sense when all streams are of the same type or
+@var{codec} is @code{copy}).
+
+For example
+@example
+avconv -i INPUT -map 0 -c:v libx264 -c:a copy OUTPUT
+@end example
+encodes all video streams with libx264 and copies all audio streams.
+
+For each stream, the last matching @code{c} option is applied, so
+@example
+avconv -i INPUT -map 0 -c copy -c:v:1 libx264 -c:a:137 libvorbis OUTPUT
+@end example
+will copy all the streams except the second video, which will be encoded with
+libx264, and the 138th audio, which will be encoded with libvorbis.
+
 @item -t @var{duration}
 Restrict the transcoded/captured video sequence
 to the duration specified in seconds.
@@ -158,9 +186,6 @@ avconv -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 
 @item -dframes @var{number}
 Set the number of data frames to record.
-
-@item -scodec @var{codec}
-Force subtitle codec ('copy' to copy stream).
 
 @item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
@@ -282,10 +307,12 @@ It is of little use elsewise.
 @item -bufsize @var{size}
 Set video buffer verifier buffer size (in bits).
 @item -vcodec @var{codec}
-Force video codec to @var{codec}. Use the @code{copy} special value to
-tell that the raw codec data must be copied as is.
-@item -sameq
+Set the video codec. This is an alias for @code{-codec:v}.
+@item -same_quant
 Use same quantizer as source (implies VBR).
+
+Note that this is NOT SAME QUALITY. Do not use this option unless you know you
+need it.
 
 @item -pass @var{n}
 Select the pass number (1 or 2). It is used to do two-pass
@@ -296,8 +323,8 @@ at the exact requested bitrate.
 On pass 1, you may just deactivate audio and set output to null,
 examples for Windows and Unix:
 @example
-avconv -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y NUL
-avconv -i foo.mov -vcodec libxvid -pass 1 -an -f rawvideo -y /dev/null
+avconv -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y NUL
+avconv -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y /dev/null
 @end example
 
 @item -passlogfile @var{prefix}
@@ -541,7 +568,7 @@ Show QP histogram.
 @item -vbsf @var{bitstream_filter}
 Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump", "mjpeg2jpeg".
 @example
-avconv -i h264.mp4 -vcodec copy -vbsf h264_mp4toannexb -an out.h264
+avconv -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
 @end example
 @item -force_key_frames @var{time}[,@var{time}...]
 Force key frames at the specified timestamps, more precisely at the first
@@ -571,8 +598,7 @@ and is mapped to the corresponding demuxer options.
 @item -an
 Disable audio recording.
 @item -acodec @var{codec}
-Force audio codec to @var{codec}. Use the @code{copy} special value to
-specify that the raw codec data must be copied as is.
+Set the audio codec. This is an alias for @code{-codec:a}.
 @item -alang @var{code}
 Set the ISO 639 language code (3 letters) of the current audio stream.
 @end table
@@ -612,7 +638,7 @@ Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp"
 
 @table @option
 @item -scodec @var{codec}
-Force subtitle codec ('copy' to copy stream).
+Set the subtitle codec. This is an alias for @code{-codec:s}.
 @item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @item -sn
@@ -620,7 +646,7 @@ Disable subtitle recording.
 @item -sbsf @var{bitstream_filter}
 Bitstream filters available are "mov2textsub", "text2movsub".
 @example
-avconv -i file.mov -an -vn -sbsf mov2textsub -scodec copy -f rawvideo sub.txt
+avconv -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
 @end example
 @end table
 
@@ -677,7 +703,7 @@ For example, to select the stream with index 2 from input file
 index 6 from input @file{b.mov} (specified by the identifier "1:6"),
 and copy them to the output file @file{out.mov}:
 @example
-avconv -i a.mov -i b.mov -vcodec copy -acodec copy -map 0:2 -map 1:6 out.mov
+avconv -i a.mov -i b.mov -c copy -map 0:2 -map 1:6 out.mov
 @end example
 
 To select all video and the third audio stream from an input file:
@@ -785,40 +811,7 @@ an output mpegts file:
 avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
 @end example
 @end table
-
-@section Preset files
-
-A preset file contains a sequence of @var{option}=@var{value} pairs,
-one for each line, specifying a sequence of options which would be
-awkward to specify on the command line. Lines starting with the hash
-('#') character are ignored and are used to provide comments. Check
-the @file{ffpresets} directory in the Libav source tree for examples.
-
-Preset files are specified with the @code{vpre}, @code{apre},
-@code{spre}, and @code{fpre} options. The @code{fpre} option takes the
-filename of the preset instead of a preset name as input and can be
-used for any kind of codec. For the @code{vpre}, @code{apre}, and
-@code{spre} options, the options specified in a preset file are
-applied to the currently selected codec of the same type as the preset
-option.
-
-The argument passed to the @code{vpre}, @code{apre}, and @code{spre}
-preset options identifies the preset file to use according to the
-following rules:
-
-First avconv searches for a file named @var{arg}.ffpreset in the
-directories @file{$av_DATADIR} (if set), and @file{$HOME/.avconv}, and in
-the datadir defined at configuration time (usually @file{PREFIX/share/avconv})
-in that order. For example, if the argument is @code{libx264-max}, it will
-search for the file @file{libx264-max.ffpreset}.
-
-If no such file is found, then avconv will search for a file named
-@var{codec_name}-@var{arg}.ffpreset in the above-mentioned
-directories, where @var{codec_name} is the name of the codec to which
-the preset file options will be applied. For example, if you select
-the video codec with @code{-vcodec libx264} and use @code{-vpre max},
-then it will search for the file @file{libx264-max.ffpreset}.
-@c man end
+@c man end OPTIONS
 
 @chapter Tips
 @c man begin TIPS
@@ -857,11 +850,6 @@ To have very low audio bitrates, reduce the sampling frequency
 To have a constant quality (but a variable bitrate), use the option
 '-qscale n' when 'n' is between 1 (excellent quality) and 31 (worst
 quality).
-
-@item
-When converting video files, you can use the '-sameq' option which
-uses the same quality factor in the encoder as in the decoder.
-It allows almost lossless encoding.
 
 @end itemize
 @c man end TIPS
@@ -968,7 +956,7 @@ You can encode to several formats at the same time and define a
 mapping from input stream to output streams:
 
 @example
-avconv -i /tmp/a.wav -map 0:a -ab 64k /tmp/a.mp2 -map 0:a -ab 128k /tmp/b.mp2
+avconv -i /tmp/a.wav -map 0:a -b 64k /tmp/a.mp2 -map 0:a -b 128k /tmp/b.mp2
 @end example
 
 Converts a.wav to a.mp2 at 64 kbits and to b.mp2 at 128 kbits. '-map
@@ -979,7 +967,7 @@ stream, in the order of the definition of output streams.
 You can transcode decrypted VOBs:
 
 @example
-avconv -i snatch_1.vob -f avi -vcodec mpeg4 -b 800k -g 300 -bf 2 -acodec libmp3lame -ab 128k snatch.avi
+avconv -i snatch_1.vob -f avi -c:v mpeg4 -b:v 800k -g 300 -bf 2 -c:a libmp3lame -b:a 128k snatch.avi
 @end example
 
 This is a typical DVD ripping example; the input is a VOB file, the
@@ -1023,7 +1011,7 @@ only formats accepting a normal integer are suitable.
 You can put many streams of the same type in the output:
 
 @example
-avconv -i test1.avi -i test2.avi -map 0.3 -map 0.2 -map 0.1 -map 0.0 -vcodec copy -acodec copy -vcodec copy -acodec copy test12.nut
+avconv -i test1.avi -i test2.avi -map 0.3 -map 0.2 -map 0.1 -map 0.0 -c copy test12.nut
 @end example
 
 The resulting output file @file{test12.avi} will contain first four streams from

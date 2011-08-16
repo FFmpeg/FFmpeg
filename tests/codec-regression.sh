@@ -16,7 +16,7 @@ if [ -n "$do_vref" ]; then
 do_avconv $raw_ref -f image2 -vcodec pgmyuv -i $raw_src -an -f rawvideo
 fi
 if [ -n "$do_aref" ]; then
-do_avconv $pcm_ref -ab 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav
+do_avconv $pcm_ref -b 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav
 fi
 
 if [ -n "$do_mpeg" ] ; then
@@ -58,7 +58,7 @@ do_video_decoding
 
 # mpeg2 encoding interlaced
 file=${outfile}mpeg2reuse.mpg
-do_avconv $file $DEC_OPTS -me_threshold 256 -i ${target_path}/${outfile}mpeg2thread.mpg $ENC_OPTS -sameq -me_threshold 256 -mb_threshold 1024 -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4
+do_avconv $file $DEC_OPTS -me_threshold 256 -i ${target_path}/${outfile}mpeg2thread.mpg $ENC_OPTS -same_quant -me_threshold 256 -mb_threshold 1024 -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 4
 do_video_decoding
 fi
 
@@ -294,7 +294,7 @@ do_audio_encoding ac3.rm "-vn -acodec ac3_fixed"
 fi
 
 if [ -n "$do_g726" ] ; then
-do_audio_encoding g726.wav "-ab 32k -ac 1 -ar 8000 -acodec g726"
+do_audio_encoding g726.wav "-b 32k -ac 1 -ar 8000 -acodec g726"
 do_audio_decoding
 fi
 

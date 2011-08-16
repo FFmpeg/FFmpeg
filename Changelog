@@ -8,6 +8,39 @@ version next:
 - BWF muxer
 - Flash Screen Video 2 decoder
 - lavfi input device added
+- added avconv, which is almost the same for now, except
+for a few incompatible changes in the options, which will hopefully make them
+easier to use. The changes are:
+    * -newvideo/-newaudio/-newsubtitle are gone, because they were redundant and
+      worked in a nonstandard way. -map is sufficient to add streams to output
+      files.
+    * -map now has slightly different and more powerful syntax.
+        + it's possible to specify stream type. E.g. -map 0:a:2 means 'third
+          audio stream'.
+        + omitting the stream index now maps all the streams of the given
+          type, not just the first. E.g. -map 0:s maps all the subtitle streams.
+        + colons (':') are used to separate file index/stream type/stream
+          index. Comma (',') is used to separate the sync stream. This is done
+          for consistency with other options.
+        + since -map can now match multiple streams, negative mappings were
+          introduced. Negative mappings disable some streams from an already
+          defined map. E.g. '-map 0 -map -0:a:1' means 'map everything except
+          for the second audio stream'.
+    * -vcodec/-acodec/-scodec are replaced by -c (or -codec), which
+      allows to precisely specify target stream(s) consistently with other
+      options. E.g. '-c:v libx264' sets the codec for all video streams,
+      '-c:a:0 libvorbis' sets the codec for the first audio stream and '-c
+      copy' copies all the streams.
+    * It is now possible to precisely specify which stream should an AVOption
+      apply to. See the manual for detailed explanation.
+    * -map_chapters now takes only an input file index and applies to the next
+      output file. This is consistent with how all the other options work.
+    * -map_metadata now takes only an input metadata specifier and applies to
+      the next output file. Output metadata specifier is now part of the option
+      name, similarly to the AVOptions/map/codec feature above.
+    * Presets in avconv are disabled, because only libx264 used them and
+      presets for libx264 can now be specified using a private option
+      '-preset <presetname>'.
 
 
 version 0.8:
