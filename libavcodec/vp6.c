@@ -215,8 +215,8 @@ static int vp6_huff_cmp(const void *va, const void *vb)
     return (a->count - b->count)*16 + (b->sym - a->sym);
 }
 
-static void vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
-                                const uint8_t *map, unsigned size, VLC *vlc)
+static int vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
+                               const uint8_t *map, unsigned size, VLC *vlc)
 {
     Node nodes[2*VP6_MAX_HUFF_SIZE], *tmp = &nodes[size];
     int a, b, i;
@@ -231,9 +231,9 @@ static void vp6_build_huff_tree(VP56Context *s, uint8_t coeff_model[],
     }
 
     free_vlc(vlc);
-    /* then build the huffman tree accodring to probabilities */
-    ff_huff_build_tree(s->avctx, vlc, size, nodes, vp6_huff_cmp,
-                       FF_HUFFMAN_FLAG_HNODE_FIRST);
+    /* then build the huffman tree according to probabilities */
+    return ff_huff_build_tree(s->avctx, vlc, size, nodes, vp6_huff_cmp,
+                              FF_HUFFMAN_FLAG_HNODE_FIRST);
 }
 
 static void vp6_parse_coeff_models(VP56Context *s)
