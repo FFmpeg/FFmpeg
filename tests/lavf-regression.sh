@@ -44,7 +44,7 @@ do_audio_only()
 }
 
 if [ -n "$do_avi" ] ; then
-do_lavf avi "-acodec mp2"
+do_lavf avi
 fi
 
 if [ -n "$do_asf" ] ; then
@@ -63,11 +63,11 @@ do_lavf mpg
 fi
 
 if [ -n "$do_mxf" ] ; then
-do_lavf mxf "-acodec pcm_s16le -ar 48000 -bf 2 -timecode_frame_start 264363"
+do_lavf mxf "-ar 48000 -bf 2 -timecode_frame_start 264363"
 fi
 
 if [ -n "$do_mxf_d10" ]; then
-do_lavf mxf_d10 "-acodec pcm_s16le -ar 48000 -ac 2 -r 25 -s 720x576 -vf pad=720:608:0:32 -vcodec mpeg2video -intra -flags +ildct+low_delay -dc 10 -flags2 +ivlc+non_linear_q -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -top 1 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
+do_lavf mxf_d10 "-ar 48000 -ac 2 -r 25 -s 720x576 -vf pad=720:608:0:32 -vcodec mpeg2video -intra -flags +ildct+low_delay -dc 10 -flags2 +ivlc+non_linear_q -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -top 1 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
 fi
 
 if [ -n "$do_ts" ] ; then
@@ -91,11 +91,11 @@ do_lavf mov "-acodec pcm_alaw"
 fi
 
 if [ -n "$do_dv_fmt" ] ; then
-do_lavf dv "-acodec pcm_s16le -ar 48000 -r 25 -s pal -ac 2"
+do_lavf dv "-ar 48000 -r 25 -s pal -ac 2"
 fi
 
 if [ -n "$do_gxf" ] ; then
-do_lavf gxf "-acodec pcm_s16le -ar 48000 -r 25 -s pal -ac 1"
+do_lavf gxf "-ar 48000 -r 25 -s pal -ac 1"
 fi
 
 if [ -n "$do_nut" ] ; then
@@ -103,7 +103,7 @@ do_lavf nut "-acodec mp2"
 fi
 
 if [ -n "$do_mkv" ] ; then
-do_lavf mkv "-acodec mp2"
+do_lavf mkv
 fi
 
 
@@ -198,11 +198,11 @@ do_audio_only mmf
 fi
 
 if [ -n "$do_aiff" ] ; then
-do_audio_only aif "" "-acodec pcm_s16be"
+do_audio_only aif
 fi
 
 if [ -n "$do_voc" ] ; then
-do_audio_only voc "" "-acodec pcm_u8"
+do_audio_only voc
 fi
 
 if [ -n "$do_voc_s16" ] ; then
@@ -228,8 +228,8 @@ conversions="yuv420p yuv422p yuv444p yuyv422 yuv410p yuv411p yuvj420p \
 for pix_fmt in $conversions ; do
     file=${outfile}${pix_fmt}.yuv
     run_avconv $DEC_OPTS -r 1 -t 1 -f image2 -vcodec pgmyuv -i $raw_src \
-               $ENC_OPTS -f rawvideo -vcodec rawvideo -s 352x288 -pix_fmt $pix_fmt $target_path/$raw_dst
+               $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt $pix_fmt $target_path/$raw_dst
     do_avconv $file $DEC_OPTS -f rawvideo -s 352x288 -pix_fmt $pix_fmt -i $target_path/$raw_dst \
-                    $ENC_OPTS -f rawvideo -vcodec rawvideo -s 352x288 -pix_fmt yuv444p
+                    $ENC_OPTS -f rawvideo -s 352x288 -pix_fmt yuv444p
 done
 fi
