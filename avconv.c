@@ -2189,6 +2189,8 @@ static int transcode(AVFormatContext **output_files,
                 fprintf(stderr, " [sync #%d.%d]",
                         ost->sync_ist->file_index,
                         ost->sync_ist->st->index);
+            if (ost->st->stream_copy)
+                fprintf(stderr, " (copy)");
             fprintf(stderr, "\n");
         }
     }
