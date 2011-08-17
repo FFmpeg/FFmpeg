@@ -681,8 +681,6 @@ static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx
     }
 }
 
-#define MAX_AUDIO_PACKET_SIZE (128 * 1024)
-
 static void do_audio_out(AVFormatContext *s,
                          OutputStream *ost,
                          InputStream *ist,
@@ -965,9 +963,6 @@ static void pre_process_video_frame(InputStream *ist, AVPicture *picture, void *
         *picture = *picture2;
     *bufp = buf;
 }
-
-/* we begin to correct av delay at this threshold */
-#define AV_DELAY_MAX 0.100
 
 static void do_subtitle_out(AVFormatContext *s,
                             OutputStream *ost,
