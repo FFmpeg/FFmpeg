@@ -43,7 +43,6 @@ static int rv34_parse(AVCodecParserContext *s,
                       const uint8_t *buf, int buf_size)
 {
     RV34ParseContext *pc = s->priv_data;
-    int off;
     int type, pts, hdr;
 
     if (buf_size < 13 + *buf * 8) {
@@ -52,7 +51,6 @@ static int rv34_parse(AVCodecParserContext *s,
         return buf_size;
     }
 
-    off = AV_RL32(buf + 5);
     hdr = AV_RB32(buf + 9 + *buf * 8);
     if (avctx->codec_id == CODEC_ID_RV30) {
         type = (hdr >> 27) & 3;
