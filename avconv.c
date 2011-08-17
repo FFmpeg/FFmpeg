@@ -1552,25 +1552,6 @@ static int output_packet(InputStream *ist, int ist_index,
             avpkt.size = 0;
         }
 
-#if CONFIG_AVFILTER
-        if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            for (i = 0; i < nb_ostreams; i++) {
-                ost = &ost_table[i];
-                if (ost->input_video_filter && ost->source_index == ist_index) {
-                    AVRational sar;
-                    if (ist->st->sample_aspect_ratio.num)
-                        sar = ist->st->sample_aspect_ratio;
-                    else
-                        sar = ist->st->codec->sample_aspect_ratio;
-                    // add it to be filtered
-                    av_vsrc_buffer_add_frame(ost->input_video_filter, &picture,
-                                             ist->pts,
-                                             sar);
-                }
-            }
-        }
-#endif
-
         // preprocess audio (volume)
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (audio_volume != 256) {
@@ -1603,6 +1584,15 @@ static int output_packet(InputStream *ist, int ist_index,
                     continue;
 
 #if CONFIG_AVFILTER
+                if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+                    ost->input_video_filter) {
+                    AVRational sar;
+                    if (ist->st->sample_aspect_ratio.num)
+                        sar = ist->st->sample_aspect_ratio;
+                    else
+                        sar = ist->st->codec->sample_aspect_ratio;
+                    av_vsrc_buffer_add_frame(ost->input_video_filter, &picture, ist->pts, sar);
+                }
                 frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
                     !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);
                 while (frame_available) {
