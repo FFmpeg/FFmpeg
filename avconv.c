@@ -1,6 +1,6 @@
 /*
- * avconv main
- * Copyright (c) 2000-2011 The libav developers.
+ * ffmpeg main
+ * Copyright (c) 2000-2003 Fabrice Bellard
  *
  * This file is part of FFmpeg.
  *
