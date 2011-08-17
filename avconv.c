@@ -272,6 +272,7 @@ typedef struct OutputStream {
 
    int sws_flags;
    AVDictionary *opts;
+   int is_past_recording_time;
 } OutputStream;
 
 typedef struct InputStream {
@@ -289,7 +290,6 @@ typedef struct InputStream {
     double ts_scale;
     int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
-    int is_past_recording_time;
     AVDictionary *opts;
 } InputStream;
 
@@ -305,6 +305,7 @@ typedef struct OutputFile {
     AVFormatContext *ctx;
     AVDictionary *opts;
     int ost_index;       /* index of the first stream in output_streams */
+    int64_t recording_time; /* desired length of the resulting file in microseconds */
 } OutputFile;
 
 static InputStream *input_streams = NULL;
@@ -1577,11 +1578,19 @@ static int output_packet(InputStream *ist, int ist_index,
            encode packets and output them */
         if (start_time == 0 || ist->pts >= start_time)
             for(i=0;i<nb_ostreams;i++) {
+                OutputFile *of = &output_files[ost_table[i].file_index];
                 int frame_size;
 
                 ost = &ost_table[i];
                 if (ost->source_index != ist_index)
                     continue;
+
+                if (of->recording_time != INT64_MAX &&
+                    av_compare_ts(ist->pts, AV_TIME_BASE_Q, of->recording_time + start_time,
+                                  (AVRational){1, 1000000}) >= 0) {
+                    ost->is_past_recording_time = 1;
+                    continue;
+                }
 
 #if CONFIG_AVFILTER
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
@@ -2235,7 +2244,7 @@ static int transcode(OutputFile *output_files,
             ost = &output_streams[i];
             os = output_files[ost->file_index].ctx;
             ist = &input_streams[ost->source_index];
-            if(ist->is_past_recording_time || no_packet[ist->file_index])
+            if(ost->is_past_recording_time || no_packet[ist->file_index])
                 continue;
                 opts = ost->st->pts.val * av_q2d(ost->st->time_base);
             ipts = ist->pts;
@@ -2327,13 +2336,6 @@ static int transcode(OutputFile *output_files,
                 if(pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
             }
-        }
-
-        /* finish if recording time exhausted */
-        if (recording_time != INT64_MAX &&
-            av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, (AVRational){1, 1000000}) >= 0) {
-            ist->is_past_recording_time = 1;
-            goto discard_packet;
         }
 
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
@@ -3559,6 +3561,7 @@ static void opt_output_file(const char *filename)
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
+    output_files[nb_output_files - 1].recording_time = recording_time;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
@@ -3684,6 +3687,7 @@ static void opt_output_file(const char *filename)
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     chapters_input_file = INT_MAX;
+    recording_time = INT64_MAX;
 
     av_freep(&meta_data_maps);
     nb_meta_data_maps = 0;
