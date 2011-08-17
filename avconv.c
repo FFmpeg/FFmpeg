@@ -1579,137 +1579,137 @@ static int output_packet(InputStream *ist, int ist_index,
         /* if output time reached then transcode raw format,
            encode packets and output them */
         for (i = 0; i < nb_ostreams; i++) {
-                OutputFile *of = &output_files[ost_table[i].file_index];
-                int frame_size;
+            OutputFile *of = &output_files[ost_table[i].file_index];
+            int frame_size;
 
-                ost = &ost_table[i];
-                if (ost->source_index != ist_index)
-                    continue;
+            ost = &ost_table[i];
+            if (ost->source_index != ist_index)
+                continue;
 
-                if (of->start_time && ist->pts < of->start_time)
-                    continue;
+            if (of->start_time && ist->pts < of->start_time)
+                continue;
 
-                if (of->recording_time != INT64_MAX &&
-                    av_compare_ts(ist->pts, AV_TIME_BASE_Q, of->recording_time + of->start_time,
-                                  (AVRational){1, 1000000}) >= 0) {
-                    ost->is_past_recording_time = 1;
-                    continue;
-                }
+            if (of->recording_time != INT64_MAX &&
+                av_compare_ts(ist->pts, AV_TIME_BASE_Q, of->recording_time + of->start_time,
+                              (AVRational){1, 1000000}) >= 0) {
+                ost->is_past_recording_time = 1;
+                continue;
+            }
 
 #if CONFIG_AVFILTER
-                if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
-                    ost->input_video_filter) {
-                    AVRational sar;
-                    if (ist->st->sample_aspect_ratio.num)
-                        sar = ist->st->sample_aspect_ratio;
-                    else
-                        sar = ist->st->codec->sample_aspect_ratio;
-                    av_vsrc_buffer_add_frame(ost->input_video_filter, &picture, ist->pts, sar);
-                }
-                frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
-                    !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);
-                while (frame_available) {
-                    AVRational ist_pts_tb;
-                    if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ost->output_video_filter)
-                        get_filtered_video_frame(ost->output_video_filter, &picture, &ost->picref, &ist_pts_tb);
-                    if (ost->picref)
-                        ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+            if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+                ost->input_video_filter) {
+                AVRational sar;
+                if (ist->st->sample_aspect_ratio.num)
+                    sar = ist->st->sample_aspect_ratio;
+                else
+                    sar = ist->st->codec->sample_aspect_ratio;
+                av_vsrc_buffer_add_frame(ost->input_video_filter, &picture, ist->pts, sar);
+            }
+            frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
+                !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);
+            while (frame_available) {
+                AVRational ist_pts_tb;
+                if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ost->output_video_filter)
+                    get_filtered_video_frame(ost->output_video_filter, &picture, &ost->picref, &ist_pts_tb);
+                if (ost->picref)
+                    ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
 #endif
-                    os = output_files[ost->file_index].ctx;
+                os = output_files[ost->file_index].ctx;
 
-                    /* set the input output pts pairs */
-                    //ost->sync_ipts = (double)(ist->pts + input_files[ist->file_index].ts_offset - start_time)/ AV_TIME_BASE;
+                /* set the input output pts pairs */
+                //ost->sync_ipts = (double)(ist->pts + input_files[ist->file_index].ts_offset - start_time)/ AV_TIME_BASE;
 
-                    if (ost->encoding_needed) {
-                        av_assert0(ist->decoding_needed);
-                        switch(ost->st->codec->codec_type) {
-                        case AVMEDIA_TYPE_AUDIO:
-                            do_audio_out(os, ost, ist, decoded_data_buf, decoded_data_size);
-                            break;
-                        case AVMEDIA_TYPE_VIDEO:
+                if (ost->encoding_needed) {
+                    av_assert0(ist->decoding_needed);
+                    switch(ost->st->codec->codec_type) {
+                    case AVMEDIA_TYPE_AUDIO:
+                        do_audio_out(os, ost, ist, decoded_data_buf, decoded_data_size);
+                        break;
+                    case AVMEDIA_TYPE_VIDEO:
 #if CONFIG_AVFILTER
-                            if (ost->picref->video && !ost->frame_aspect_ratio)
-                                ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
+                        if (ost->picref->video && !ost->frame_aspect_ratio)
+                            ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
 #endif
-                            do_video_out(os, ost, ist, &picture, &frame_size,
-                                         same_quant ? quality : ost->st->codec->global_quality);
-                            if (vstats_filename && frame_size)
-                                do_video_stats(os, ost, frame_size);
-                            break;
-                        case AVMEDIA_TYPE_SUBTITLE:
-                            do_subtitle_out(os, ost, ist, &subtitle,
-                                            pkt->pts);
-                            break;
-                        default:
-                            abort();
-                        }
-                    } else {
-                        AVFrame avframe; //FIXME/XXX remove this
-                        AVPacket opkt;
-                        int64_t ost_tb_start_time= av_rescale_q(of->start_time, AV_TIME_BASE_Q, ost->st->time_base);
-
-                        av_init_packet(&opkt);
-
-                        if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
-#if !CONFIG_AVFILTER
-                            continue;
-#else
-                            goto cont;
-#endif
-
-                        /* no reencoding needed : output the packet directly */
-                        /* force the input stream PTS */
-
-                        avcodec_get_frame_defaults(&avframe);
-                        ost->st->codec->coded_frame= &avframe;
-                        avframe.key_frame = pkt->flags & AV_PKT_FLAG_KEY;
-
-                        if(ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-                            audio_size += data_size;
-                        else if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-                            video_size += data_size;
-                            ost->sync_opts++;
-                        }
-
-                        opkt.stream_index= ost->index;
-                        if(pkt->pts != AV_NOPTS_VALUE)
-                            opkt.pts= av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base) - ost_tb_start_time;
-                        else
-                            opkt.pts= AV_NOPTS_VALUE;
-
-                        if (pkt->dts == AV_NOPTS_VALUE)
-                            opkt.dts = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ost->st->time_base);
-                        else
-                            opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
-                        opkt.dts -= ost_tb_start_time;
-
-                        opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
-                        opkt.flags= pkt->flags;
-
-                        //FIXME remove the following 2 lines they shall be replaced by the bitstream filters
-                        if(   ost->st->codec->codec_id != CODEC_ID_H264
-                           && ost->st->codec->codec_id != CODEC_ID_MPEG1VIDEO
-                           && ost->st->codec->codec_id != CODEC_ID_MPEG2VIDEO
-                           ) {
-                            if(av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & AV_PKT_FLAG_KEY))
-                                opkt.destruct= av_destruct_packet;
-                        } else {
-                            opkt.data = data_buf;
-                            opkt.size = data_size;
-                        }
-
-                        write_frame(os, &opkt, ost->st->codec, ost->bitstream_filters);
-                        ost->st->codec->frame_number++;
-                        ost->frame_number++;
-                        av_free_packet(&opkt);
+                        do_video_out(os, ost, ist, &picture, &frame_size,
+                                     same_quant ? quality : ost->st->codec->global_quality);
+                        if (vstats_filename && frame_size)
+                            do_video_stats(os, ost, frame_size);
+                        break;
+                    case AVMEDIA_TYPE_SUBTITLE:
+                        do_subtitle_out(os, ost, ist, &subtitle,
+                                        pkt->pts);
+                        break;
+                    default:
+                        abort();
                     }
-#if CONFIG_AVFILTER
-                    cont:
-                    frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
-                                       ost->output_video_filter && avfilter_poll_frame(ost->output_video_filter->inputs[0]);
-                    if (ost->picref)
-                        avfilter_unref_buffer(ost->picref);
+                } else {
+                    AVFrame avframe; //FIXME/XXX remove this
+                    AVPacket opkt;
+                    int64_t ost_tb_start_time= av_rescale_q(of->start_time, AV_TIME_BASE_Q, ost->st->time_base);
+
+                    av_init_packet(&opkt);
+
+                    if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
+#if !CONFIG_AVFILTER
+                        continue;
+#else
+                        goto cont;
+#endif
+
+                    /* no reencoding needed : output the packet directly */
+                    /* force the input stream PTS */
+
+                    avcodec_get_frame_defaults(&avframe);
+                    ost->st->codec->coded_frame= &avframe;
+                    avframe.key_frame = pkt->flags & AV_PKT_FLAG_KEY;
+
+                    if(ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                        audio_size += data_size;
+                    else if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
+                        video_size += data_size;
+                        ost->sync_opts++;
+                    }
+
+                    opkt.stream_index= ost->index;
+                    if(pkt->pts != AV_NOPTS_VALUE)
+                        opkt.pts= av_rescale_q(pkt->pts, ist->st->time_base, ost->st->time_base) - ost_tb_start_time;
+                    else
+                        opkt.pts= AV_NOPTS_VALUE;
+
+                    if (pkt->dts == AV_NOPTS_VALUE)
+                        opkt.dts = av_rescale_q(ist->pts, AV_TIME_BASE_Q, ost->st->time_base);
+                    else
+                        opkt.dts = av_rescale_q(pkt->dts, ist->st->time_base, ost->st->time_base);
+                    opkt.dts -= ost_tb_start_time;
+
+                    opkt.duration = av_rescale_q(pkt->duration, ist->st->time_base, ost->st->time_base);
+                    opkt.flags= pkt->flags;
+
+                    //FIXME remove the following 2 lines they shall be replaced by the bitstream filters
+                    if(   ost->st->codec->codec_id != CODEC_ID_H264
+                       && ost->st->codec->codec_id != CODEC_ID_MPEG1VIDEO
+                       && ost->st->codec->codec_id != CODEC_ID_MPEG2VIDEO
+                       ) {
+                        if(av_parser_change(ist->st->parser, ost->st->codec, &opkt.data, &opkt.size, data_buf, data_size, pkt->flags & AV_PKT_FLAG_KEY))
+                            opkt.destruct= av_destruct_packet;
+                    } else {
+                        opkt.data = data_buf;
+                        opkt.size = data_size;
+                    }
+
+                    write_frame(os, &opkt, ost->st->codec, ost->bitstream_filters);
+                    ost->st->codec->frame_number++;
+                    ost->frame_number++;
+                    av_free_packet(&opkt);
                 }
+#if CONFIG_AVFILTER
+                cont:
+                frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
+                                   ost->output_video_filter && avfilter_poll_frame(ost->output_video_filter->inputs[0]);
+                if (ost->picref)
+                    avfilter_unref_buffer(ost->picref);
+            }
 #endif
             }
 
