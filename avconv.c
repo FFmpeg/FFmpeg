@@ -2280,6 +2280,8 @@ static int transcode(AVFormatContext **output_files,
                 fprintf(stderr, " [sync #%d.%d]",
                         ost->sync_ist->file_index,
                         ost->sync_ist->st->index);
+            if (ost->st->stream_copy)
+                fprintf(stderr, " (copy)");
             fprintf(stderr, "\n");
         }
     }
@@ -3804,7 +3806,7 @@ static int opt_output_file(const char *opt, const char *filename)
     }
 
     /* copy global metadata by default */
-    if (metadata_global_autocopy)
+    if (metadata_global_autocopy && nb_input_files)
         av_dict_copy(&oc->metadata, input_files[0].ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
     if (metadata_streams_autocopy)

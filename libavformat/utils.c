@@ -4035,3 +4035,17 @@ int64_t ff_iso8601_to_unix_time(const char *datestr)
     return 0;
 #endif
 }
+
+int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance)
+{
+    if (ofmt) {
+        if (ofmt->query_codec)
+            return ofmt->query_codec(codec_id, std_compliance);
+        else if (ofmt->codec_tag)
+            return !!av_codec_get_tag(ofmt->codec_tag, codec_id);
+        else if (codec_id == ofmt->video_codec || codec_id == ofmt->audio_codec ||
+                 codec_id == ofmt->subtitle_codec)
+                return 1;
+    }
+    return AVERROR_PATCHWELCOME;
+}

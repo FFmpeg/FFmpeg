@@ -141,6 +141,7 @@ static int id3v2_put_ttag(AVFormatContext *s, const char *str1, const char *str2
 typedef struct MP3Context {
     const AVClass *class;
     int id3v2_version;
+    int write_id3v1;
     int64_t frames_offset;
     int32_t frames;
     int32_t size;
@@ -156,7 +157,7 @@ static int mp2_write_trailer(struct AVFormatContext *s)
     MP3Context *mp3 = s->priv_data;
 
     /* write the id3v1 tag */
-    if (id3v1_create_tag(s, buf) > 0) {
+    if (mp3 && mp3->write_id3v1 && id3v1_create_tag(s, buf) > 0) {
         avio_write(s->pb, buf, ID3v1_TAG_SIZE);
     }
 
@@ -190,6 +191,8 @@ AVOutputFormat ff_mp2_muxer = {
 static const AVOption options[] = {
     { "id3v2_version", "Select ID3v2 version to write. Currently 3 and 4 are supported.",
       offsetof(MP3Context, id3v2_version), FF_OPT_TYPE_INT, {.dbl = 4}, 3, 4, AV_OPT_FLAG_ENCODING_PARAM},
+    { "write_id3v1", "Enable ID3v1 writing. ID3v1 tags are written in UTF-8 which may not be supported by most software.",
+      offsetof(MP3Context, write_id3v1), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
