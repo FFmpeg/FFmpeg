@@ -143,7 +143,6 @@ static int qp_hist = 0;
 static char *vfilters = NULL;
 #endif
 
-static int intra_only = 0;
 static int audio_sample_rate = 0;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
@@ -3166,8 +3165,6 @@ static OutputStream *new_video_stream(AVFormatContext *oc)
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
-        if (intra_only)
-            video_enc->gop_size = 0;
         if (video_qscale || same_quant) {
             video_enc->flags |= CODEC_FLAG_QSCALE;
             video_enc->global_quality = FF_QP2LAMBDA * video_qscale;
@@ -4089,7 +4086,6 @@ static const OptionDef options[] = {
     { "padleft", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "size" },
     { "padright", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "size" },
     { "padcolor", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "color" },
-    { "intra", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_only}, "use only intra frames"},
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },

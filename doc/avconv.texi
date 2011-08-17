@@ -354,8 +354,6 @@ pixel formats.
 Set SwScaler flags.
 @item -g @var{gop_size}
 Set the group of pictures size.
-@item -intra
-Use only intra frames.
 @item -vdt @var{n}
 Discard threshold.
 @item -qscale @var{q}
