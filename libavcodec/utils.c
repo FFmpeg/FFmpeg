@@ -984,6 +984,25 @@ static int get_bit_rate(AVCodecContext *ctx)
     return bit_rate;
 }
 
+const char *avcodec_get_name(enum CodecID id)
+{
+    AVCodec *codec;
+
+#if !CONFIG_SMALL
+    switch (id) {
+#include "libavcodec/codec_names.h"
+    }
+    av_log(NULL, AV_LOG_WARNING, "Codec 0x%x is not in the full list.\n", id);
+#endif
+    codec = avcodec_find_decoder(id);
+    if (codec)
+        return codec->name;
+    codec = avcodec_find_encoder(id);
+    if (codec)
+        return codec->name;
+    return "unknown_codec";
+}
+
 size_t av_get_codec_tag_string(char *buf, size_t buf_size, unsigned int codec_tag)
 {
     int i, len, ret = 0;

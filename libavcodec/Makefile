@@ -735,3 +735,9 @@ $(SUBDIR)motionpixels.o: $(SUBDIR)motionpixels_tables.h
 $(SUBDIR)pcm.o: $(SUBDIR)pcm_tables.h
 $(SUBDIR)qdm2.o: $(SUBDIR)qdm2_tables.h
 endif
+
+CODEC_NAMES_SH := $(SRC_PATH)/$(SUBDIR)codec_names.sh
+AVCODEC_H      := $(SRC_PATH)/$(SUBDIR)avcodec.h
+$(SUBDIR)codec_names.h: $(CODEC_NAMES_SH) config.h $(AVCODEC_H)
+	$(M)$(CODEC_NAMES_SH) config.h $(AVCODEC_H) $@
+$(SUBDIR)utils.o: $(SUBDIR)codec_names.h
