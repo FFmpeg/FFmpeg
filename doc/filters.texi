@@ -124,6 +124,19 @@ aformat=s16:mono\\,stereo:all
 
 Pass the audio source unchanged to the output.
 
+@section aresample
+
+Resample the input audio to the specified sample rate.
+
+The filter accepts exactly one parameter, the output sample rate. If not
+specified then the filter will automatically convert between its input
+and output sample rates.
+
+For example, to resample the input audio to 44100Hz:
+@example
+aresample=44100
+@end example
+
 @c man end AUDIO FILTERS
 
 @chapter Audio Sources
