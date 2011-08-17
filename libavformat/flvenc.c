@@ -384,7 +384,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
 
         flags = enc->codec_tag;
         if(flags == 0) {
-            av_log(enc, AV_LOG_ERROR, "video codec %X not compatible with flv\n",enc->codec_id);
+            av_log(enc, AV_LOG_ERROR, "video codec %s not compatible with flv\n", avcodec_get_name(enc->codec_id));
             return -1;
         }
 
