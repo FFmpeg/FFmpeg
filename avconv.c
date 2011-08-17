@@ -1030,14 +1030,76 @@ static void do_subtitle_out(AVFormatContext *s,
 static int bit_buffer_size= 1024*256;
 static uint8_t *bit_buffer= NULL;
 
+static void do_video_resample(OutputStream *ost,
+                              InputStream *ist,
+                              AVFrame *in_picture,
+                              AVFrame **out_picture)
+{
+    int resample_changed = 0;
+    AVCodecContext *dec = ist->st->codec;
+    *out_picture = in_picture;
+
+    resample_changed = ost->resample_width   != dec->width  ||
+                       ost->resample_height  != dec->height ||
+                       ost->resample_pix_fmt != dec->pix_fmt;
+
+    if (resample_changed) {
+        av_log(NULL, AV_LOG_INFO,
+               "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+               ist->file_index, ist->st->index,
+               ost->resample_width, ost->resample_height, av_get_pix_fmt_name(ost->resample_pix_fmt),
+               dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt));
+        if(!ost->video_resample)
+            ost->video_resample = 1;
+    }
+
+#if !CONFIG_AVFILTER
+    if (ost->video_resample) {
+        *out_picture = &ost->pict_tmp;
+        if (resample_changed) {
+            /* initialize a new scaler context */
+            sws_freeContext(ost->img_resample_ctx);
+            ost->img_resample_ctx = sws_getContext(
+                ist->st->codec->width,
+                ist->st->codec->height,
+                ist->st->codec->pix_fmt,
+                ost->st->codec->width,
+                ost->st->codec->height,
+                ost->st->codec->pix_fmt,
+                ost->sws_flags, NULL, NULL, NULL);
+            if (ost->img_resample_ctx == NULL) {
+                fprintf(stderr, "Cannot get resampling context\n");
+                exit_program(1);
+            }
+        }
+        sws_scale(ost->img_resample_ctx, in_picture->data, in_picture->linesize,
+              0, ost->resample_height, (*out_picture)->data, (*out_picture)->linesize);
+    }
+#else
+    if (resample_changed) {
+        avfilter_graph_free(&ost->graph);
+        if (configure_video_filters(ist, ost)) {
+            fprintf(stderr, "Error reinitialising filters!\n");
+            exit_program(1);
+        }
+    }
+#endif
+    if (resample_changed) {
+        ost->resample_width   = dec->width;
+        ost->resample_height  = dec->height;
+        ost->resample_pix_fmt = dec->pix_fmt;
+    }
+}
+
+
 static void do_video_out(AVFormatContext *s,
                          OutputStream *ost,
                          InputStream *ist,
                          AVFrame *in_picture,
                          int *frame_size, float quality)
 {
-    int nb_frames, i, ret, resample_changed;
-    AVFrame *final_picture, *formatted_picture;
+    int nb_frames, i, ret;
+    AVFrame *final_picture;
     AVCodecContext *enc, *dec;
     double sync_ipts;
 
@@ -1080,59 +1142,7 @@ static void do_video_out(AVFormatContext *s,
     if (nb_frames <= 0)
         return;
 
-    formatted_picture = in_picture;
-    final_picture = formatted_picture;
-
-    resample_changed = ost->resample_width   != dec->width  ||
-                       ost->resample_height  != dec->height ||
-                       ost->resample_pix_fmt != dec->pix_fmt;
-
-    if (resample_changed) {
-        av_log(NULL, AV_LOG_INFO,
-               "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
-               ist->file_index, ist->st->index,
-               ost->resample_width, ost->resample_height, av_get_pix_fmt_name(ost->resample_pix_fmt),
-               dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt));
-        if(!ost->video_resample)
-            ost->video_resample = 1;
-    }
-
-#if !CONFIG_AVFILTER
-    if (ost->video_resample) {
-        final_picture = &ost->pict_tmp;
-        if (resample_changed) {
-            /* initialize a new scaler context */
-            sws_freeContext(ost->img_resample_ctx);
-            ost->img_resample_ctx = sws_getContext(
-                ist->st->codec->width,
-                ist->st->codec->height,
-                ist->st->codec->pix_fmt,
-                ost->st->codec->width,
-                ost->st->codec->height,
-                ost->st->codec->pix_fmt,
-                ost->sws_flags, NULL, NULL, NULL);
-            if (ost->img_resample_ctx == NULL) {
-                fprintf(stderr, "Cannot get resampling context\n");
-                exit_program(1);
-            }
-        }
-        sws_scale(ost->img_resample_ctx, formatted_picture->data, formatted_picture->linesize,
-              0, ost->resample_height, final_picture->data, final_picture->linesize);
-    }
-#else
-    if (resample_changed) {
-        avfilter_graph_free(&ost->graph);
-        if (configure_video_filters(ist, ost)) {
-            fprintf(stderr, "Error reinitialising filters!\n");
-            exit_program(1);
-        }
-    }
-#endif
-    if (resample_changed) {
-        ost->resample_width   = dec->width;
-        ost->resample_height  = dec->height;
-        ost->resample_pix_fmt = dec->pix_fmt;
-    }
+    do_video_resample(ost, ist, in_picture, &final_picture);
 
     /* duplicates frame if needed */
     for(i=0;i<nb_frames;i++) {
