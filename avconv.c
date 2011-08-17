@@ -1599,7 +1599,9 @@ static int output_packet(InputStream *ist, int ist_index,
                 int frame_size;
 
                 ost = &ost_table[i];
-                if (ost->source_index == ist_index) {
+                if (ost->source_index != ist_index)
+                    continue;
+
 #if CONFIG_AVFILTER
                 frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
                     !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);
@@ -1706,7 +1708,6 @@ static int output_packet(InputStream *ist, int ist_index,
                         avfilter_unref_buffer(ost->picref);
                 }
 #endif
-                }
             }
 
         av_free(buffer_to_free);
