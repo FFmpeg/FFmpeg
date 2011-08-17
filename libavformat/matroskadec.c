@@ -1348,7 +1348,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
     for (i=0; i < matroska->tracks.nb_elem; i++) {
         MatroskaTrack *track = &tracks[i];
         enum CodecID codec_id = CODEC_ID_NONE;
-        EbmlList *encodings_list = &tracks->encodings;
+        EbmlList *encodings_list = &track->encodings;
         MatroskaTrackEncoding *encodings = encodings_list->elem;
         uint8_t *extradata = NULL;
         int extradata_size = 0;
