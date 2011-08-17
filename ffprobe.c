@@ -276,7 +276,7 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 
 
     /* fill the streams in the format context */
-    if ((err = av_find_stream_info(fmt_ctx)) < 0) {
+    if ((err = avformat_find_stream_info(fmt_ctx, NULL)) < 0) {
         print_error(filename, err);
         return err;
     }
