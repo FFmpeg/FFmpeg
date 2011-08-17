@@ -3499,6 +3499,8 @@ int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_
  * The pixel formats from which it chooses one, are determined by the
  * pix_fmt_mask parameter.
  *
+ * Note, only the first 64 pixel formats will fit in pix_fmt_mask.
+ *
  * @code
  * src_pix_fmt = PIX_FMT_YUV420P;
  * pix_fmt_mask = (1 << PIX_FMT_YUV422P) || (1 << PIX_FMT_RGB24);
