@@ -276,9 +276,6 @@ typedef struct OutputStream {
    AVDictionary *opts;
 } OutputStream;
 
-static OutputStream **output_streams_for_file[MAX_FILES] = { NULL };
-static int nb_output_streams_for_file[MAX_FILES] = { 0 };
-
 typedef struct InputStream {
     int file_index;
     AVStream *st;
@@ -309,6 +306,7 @@ typedef struct InputFile {
 typedef struct OutputFile {
     AVFormatContext *ctx;
     AVDictionary *opts;
+    int ost_index;       /* index of the first stream in output_streams */
 } OutputFile;
 
 static InputStream *input_streams = NULL;
@@ -316,6 +314,8 @@ static int         nb_input_streams = 0;
 static InputFile   *input_files   = NULL;
 static int         nb_input_files   = 0;
 
+static OutputStream *output_streams = NULL;
+static int        nb_output_streams = 0;
 static OutputFile   *output_files   = NULL;
 static int        nb_output_files   = 0;
 
@@ -445,7 +445,6 @@ static int exit_program(int ret)
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_close(s->pb);
         avformat_free_context(s);
-        av_free(output_streams_for_file[i]);
         av_dict_free(&output_files[i].opts);
     }
     for(i=0;i<nb_input_files;i++) {
@@ -466,6 +465,7 @@ static int exit_program(int ret)
 
     av_freep(&input_streams);
     av_freep(&input_files);
+    av_freep(&output_streams);
     av_freep(&output_files);
 
     uninit_opts();
@@ -1276,7 +1276,7 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
 }
 
 static void print_report(OutputFile *output_files,
-                         OutputStream **ost_table, int nb_ostreams,
+                         OutputStream *ost_table, int nb_ostreams,
                          int is_last_report)
 {
     char buf[1024];
@@ -1314,7 +1314,7 @@ static void print_report(OutputFile *output_files,
     vid = 0;
     for(i=0;i<nb_ostreams;i++) {
         float q = -1;
-        ost = ost_table[i];
+        ost = &ost_table[i];
         enc = ost->st->codec;
         if (!ost->st->stream_copy && enc->coded_frame)
             q = enc->coded_frame->quality/(float)FF_QP2LAMBDA;
@@ -1407,7 +1407,7 @@ static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int output_packet(InputStream *ist, int ist_index,
-                         OutputStream **ost_table, int nb_ostreams,
+                         OutputStream *ost_table, int nb_ostreams,
                          const AVPacket *pkt)
 {
     AVFormatContext *os;
@@ -1557,7 +1557,7 @@ static int output_packet(InputStream *ist, int ist_index,
 #if CONFIG_AVFILTER
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
             for (i = 0; i < nb_ostreams; i++) {
-                ost = ost_table[i];
+                ost = &ost_table[i];
                 if (ost->input_video_filter && ost->source_index == ist_index) {
                     AVRational sar;
                     if (ist->st->sample_aspect_ratio.num)
@@ -1600,7 +1600,7 @@ static int output_packet(InputStream *ist, int ist_index,
             for(i=0;i<nb_ostreams;i++) {
                 int frame_size;
 
-                ost = ost_table[i];
+                ost = &ost_table[i];
                 if (ost->source_index == ist_index) {
 #if CONFIG_AVFILTER
                 frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
@@ -1723,7 +1723,7 @@ static int output_packet(InputStream *ist, int ist_index,
         /* EOF handling */
 
         for(i=0;i<nb_ostreams;i++) {
-            ost = ost_table[i];
+            ost = &ost_table[i];
             if (ost->source_index == ist_index) {
                 AVCodecContext *enc= ost->st->codec;
                 os = output_files[ost->file_index].ctx;
@@ -1832,10 +1832,10 @@ static int transcode(OutputFile *output_files,
                      InputFile *input_files,
                      int nb_input_files)
 {
-    int ret = 0, i, j, k, n, nb_ostreams = 0;
+    int ret = 0, i, j;
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
-    OutputStream *ost, **ost_table = NULL;
+    OutputStream *ost;
     InputStream *ist;
     char error[1024];
     int want_sdp = 1;
@@ -1847,7 +1847,6 @@ static int transcode(OutputFile *output_files,
             input_streams[i].start = av_gettime();
 
     /* output stream init */
-    nb_ostreams = 0;
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i].ctx;
         if (!os->nb_streams && !(os->oformat->flags & AVFMT_NOSTREAMS)) {
@@ -1856,22 +1855,11 @@ static int transcode(OutputFile *output_files,
             ret = AVERROR(EINVAL);
             goto fail;
         }
-        nb_ostreams += os->nb_streams;
-    }
-
-    ost_table = av_mallocz(sizeof(OutputStream *) * nb_ostreams);
-    if (!ost_table)
-        goto fail;
-    n = 0;
-    for(k=0;k<nb_output_files;k++) {
-        os = output_files[k].ctx;
-        for (i = 0; i < os->nb_streams; i++, n++)
-            ost_table[n] = output_streams_for_file[k][i];
     }
 
     /* for each output stream, we compute the right encoding parameters */
-    for(i=0;i<nb_ostreams;i++) {
-        ost = ost_table[i];
+    for (i = 0; i < nb_output_streams; i++) {
+        ost = &output_streams[i];
         os = output_files[ost->file_index].ctx;
         ist = &input_streams[ost->source_index];
 
@@ -2099,8 +2087,8 @@ static int transcode(OutputFile *output_files,
     }
 
     /* open each encoder */
-    for(i=0;i<nb_ostreams;i++) {
-        ost = ost_table[i];
+    for (i = 0; i < nb_output_streams; i++) {
+        ost = &output_streams[i];
         if (ost->encoding_needed) {
             AVCodec *codec = ost->enc;
             AVCodecContext *dec = input_streams[ost->source_index].st->codec;
@@ -2150,8 +2138,8 @@ static int transcode(OutputFile *output_files,
 
             /* update requested sample format for the decoder based on the
                corresponding encoder sample format */
-            for (j = 0; j < nb_ostreams; j++) {
-                ost = ost_table[j];
+            for (j = 0; j < nb_output_streams; j++) {
+                ost = &output_streams[j];
                 if (ost->source_index == i) {
                     update_sample_fmt(ist->st->codec, codec, ost->st->codec);
                     break;
@@ -2204,8 +2192,8 @@ static int transcode(OutputFile *output_files,
     /* dump the stream mapping */
     if (verbose >= 0) {
         fprintf(stderr, "Stream mapping:\n");
-        for(i=0;i<nb_ostreams;i++) {
-            ost = ost_table[i];
+        for (i = 0; i < nb_output_streams;i ++) {
+            ost = &output_streams[i];
             fprintf(stderr, "  Stream #%d.%d -> #%d.%d",
                     input_streams[ost->source_index].file_index,
                     input_streams[ost->source_index].st->index,
@@ -2249,10 +2237,10 @@ static int transcode(OutputFile *output_files,
         /* select the stream that we must read now by looking at the
            smallest output pts */
         file_index = -1;
-        for(i=0;i<nb_ostreams;i++) {
+        for (i = 0; i < nb_output_streams; i++) {
             int64_t ipts;
             double  opts;
-            ost = ost_table[i];
+            ost = &output_streams[i];
             os = output_files[ost->file_index].ctx;
             ist = &input_streams[ost->source_index];
             if(ist->is_past_recording_time || no_packet[ist->file_index])
@@ -2357,7 +2345,7 @@ static int transcode(OutputFile *output_files,
         }
 
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
-        if (output_packet(ist, ist_index, ost_table, nb_ostreams, &pkt) < 0) {
+        if (output_packet(ist, ist_index, output_streams, nb_output_streams, &pkt) < 0) {
 
             if (verbose >= 0)
                 fprintf(stderr, "Error while decoding stream #%d.%d\n",
@@ -2372,14 +2360,14 @@ static int transcode(OutputFile *output_files,
         av_free_packet(&pkt);
 
         /* dump report by using the output first video and audio streams */
-        print_report(output_files, ost_table, nb_ostreams, 0);
+        print_report(output_files, output_streams, nb_output_streams, 0);
     }
 
     /* at the end of stream, we must flush the decoder buffers */
     for (i = 0; i < nb_input_streams; i++) {
         ist = &input_streams[i];
         if (ist->decoding_needed) {
-            output_packet(ist, i, ost_table, nb_ostreams, NULL);
+            output_packet(ist, i, output_streams, nb_output_streams, NULL);
         }
     }
 
@@ -2392,11 +2380,11 @@ static int transcode(OutputFile *output_files,
     }
 
     /* dump report by using the first video and audio streams */
-    print_report(output_files, ost_table, nb_ostreams, 1);
+    print_report(output_files, output_streams, nb_output_streams, 1);
 
     /* close each encoder */
-    for(i=0;i<nb_ostreams;i++) {
-        ost = ost_table[i];
+    for (i = 0; i < nb_output_streams; i++) {
+        ost = &output_streams[i];
         if (ost->encoding_needed) {
             av_freep(&ost->st->codec->stats_in);
             avcodec_close(ost->st->codec);
@@ -2420,9 +2408,9 @@ static int transcode(OutputFile *output_files,
  fail:
     av_freep(&bit_buffer);
 
-    if (ost_table) {
-        for(i=0;i<nb_ostreams;i++) {
-            ost = ost_table[i];
+    if (output_streams) {
+        for (i = 0; i < nb_output_streams; i++) {
+            ost = &output_streams[i];
             if (ost) {
                 if (ost->st->stream_copy)
                     av_freep(&ost->st->codec->extradata);
@@ -2442,10 +2430,8 @@ static int transcode(OutputFile *output_files,
                 if (ost->reformat_ctx)
                     av_audio_convert_free(ost->reformat_ctx);
                 av_dict_free(&ost->opts);
-                av_free(ost);
             }
         }
-        av_free(ost_table);
     }
     return ret;
 }
@@ -3124,17 +3110,9 @@ static OutputStream *new_output_stream(AVFormatContext *oc, enum AVMediaType typ
         exit_program(1);
     }
 
-    output_streams_for_file[nb_output_files] =
-        grow_array(output_streams_for_file[nb_output_files],
-                   sizeof(*output_streams_for_file[nb_output_files]),
-                   &nb_output_streams_for_file[nb_output_files],
-                   oc->nb_streams);
-    ost = output_streams_for_file[nb_output_files][idx] =
-        av_mallocz(sizeof(OutputStream));
-    if (!ost) {
-        fprintf(stderr, "Could not alloc output stream\n");
-        exit_program(1);
-    }
+    output_streams = grow_array(output_streams, sizeof(*output_streams), &nb_output_streams,
+                                nb_output_streams + 1);
+    ost = &output_streams[nb_output_streams - 1];
     ost->file_index = nb_output_files;
     ost->index = idx;
     ost->st    = st;
@@ -3589,6 +3567,7 @@ static void opt_output_file(const char *filename)
         exit_program(1);                /* a temporary hack until all the other MAX_FILES-sized arrays are removed */
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
+    output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
@@ -3702,9 +3681,9 @@ static void opt_output_file(const char *filename)
         av_dict_copy(&oc->metadata, input_files[0].ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
     if (metadata_streams_autocopy)
-        for (i = 0; i < oc->nb_streams; i++) {
-            InputStream *ist = &input_streams[output_streams_for_file[nb_output_files-1][i]->source_index];
-            av_dict_copy(&oc->streams[i]->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
+        for (i = output_files[nb_output_files - 1].ost_index; i < nb_output_streams; i++) {
+            InputStream *ist = &input_streams[output_streams[i].source_index];
+            av_dict_copy(&output_streams[i].st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
         }
 
     frame_rate    = (AVRational){0, 0};
