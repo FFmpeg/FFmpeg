@@ -204,8 +204,6 @@ static char *forced_key_frames = NULL;
 
 static float dts_delta_threshold = 10;
 
-static int64_t timer_start;
-
 static uint8_t *audio_buf;
 static uint8_t *audio_out;
 static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
@@ -1272,7 +1270,7 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
 
 static void print_report(OutputFile *output_files,
                          OutputStream *ost_table, int nb_ostreams,
-                         int is_last_report)
+                         int is_last_report, int64_t timer_start)
 {
     char buf[1024];
     OutputStream *ost;
@@ -1837,6 +1835,7 @@ static int transcode(OutputFile *output_files,
     int want_sdp = 1;
     uint8_t *no_packet;
     int no_packet_count=0;
+    int64_t timer_start;
 
     if (!(no_packet = av_mallocz(nb_input_files)))
         exit_program(1);
@@ -2352,7 +2351,7 @@ static int transcode(OutputFile *output_files,
         av_free_packet(&pkt);
 
         /* dump report by using the output first video and audio streams */
-        print_report(output_files, output_streams, nb_output_streams, 0);
+        print_report(output_files, output_streams, nb_output_streams, 0, timer_start);
     }
 
     /* at the end of stream, we must flush the decoder buffers */
@@ -2372,7 +2371,7 @@ static int transcode(OutputFile *output_files,
     }
 
     /* dump report by using the first video and audio streams */
-    print_report(output_files, output_streams, nb_output_streams, 1);
+    print_report(output_files, output_streams, nb_output_streams, 1, timer_start);
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
