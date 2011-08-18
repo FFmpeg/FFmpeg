@@ -27,9 +27,9 @@
 #include "avfilter.h"
 
 typedef struct {
-    enum AVSampleFormat sample_fmt;
-    int64_t channel_layout;
-    int planar;
+    const enum AVSampleFormat *sample_fmts; ///< list of allowed sample formats,  terminated by -1
+    const int64_t *channel_layouts;         ///< list of allowed channel layouts, terminated by -1
+    const int *packing_fmts;                ///< list of allowed packing formats, terminated by -1
 } ABufferSinkContext;
 
 

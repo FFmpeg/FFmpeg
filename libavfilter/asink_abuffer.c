@@ -46,22 +46,18 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
 static int query_formats(AVFilterContext *ctx)
 {
     ABufferSinkContext *abuffersink = ctx->priv;
-    AVFilterFormats *formats;
-    int ret;
+    AVFilterFormats *formats = NULL;
 
-    formats = NULL;
-    if ((ret = avfilter_add_format(&formats, abuffersink->sample_fmt)) < 0)
-        return ret;
+    if (!(formats = avfilter_make_format_list(abuffersink->sample_fmts)))
+        return AVERROR(ENOMEM);
     avfilter_set_common_sample_formats(ctx, formats);
 
-    formats = NULL;
-    if ((ret = avfilter_add_format(&formats, abuffersink->channel_layout)) < 0)
-        return ret;
+    if (!(formats = avfilter_make_format64_list(abuffersink->channel_layouts)))
+        return AVERROR(ENOMEM);
     avfilter_set_common_channel_layouts(ctx, formats);
 
-    formats = NULL;
-    if ((ret = avfilter_add_format(&formats, abuffersink->planar)) < 0)
-        return ret;
+    if (!(formats = avfilter_make_format_list(abuffersink->packing_fmts)))
+        return AVERROR(ENOMEM);
     avfilter_set_common_packing_formats(ctx, formats);
 
     return 0;
