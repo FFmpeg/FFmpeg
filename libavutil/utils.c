@@ -40,6 +40,18 @@ const char *avutil_license(void)
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
+const char *av_get_media_type_string(enum AVMediaType media_type)
+{
+    switch (media_type) {
+    case AVMEDIA_TYPE_VIDEO:      return "video";
+    case AVMEDIA_TYPE_AUDIO:      return "audio";
+    case AVMEDIA_TYPE_DATA:       return "data";
+    case AVMEDIA_TYPE_SUBTITLE:   return "subtitle";
+    case AVMEDIA_TYPE_ATTACHMENT: return "attachment";
+    default:                      return NULL;
+    }
+}
+
 char av_get_picture_type_char(enum AVPictureType pict_type)
 {
     switch (pict_type) {

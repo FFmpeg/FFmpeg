@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-08-20 - xxxxxx - lavu 51.13.0
+  Add av_get_media_type_string().
+
 2011-08-14 - xxxxxx - lavu 52.12.0
   Add av_fifo_peek2(), deprecate av_fifo_peek().
 
