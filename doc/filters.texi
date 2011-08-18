@@ -275,6 +275,86 @@ equivalent to:
 abuffer=44100:1:3:1
 @end example
 
+@section aevalsrc
+
+Generate an audio signal specified by an expression.
+
+This source accepts in input one or more expressions (one for each
+channel), which are evaluated and used to generate a corresponding
+audio signal.
+
+It accepts the syntax: @var{exprs}[::@var{options}].
+@var{exprs} is a list of expressions separated by ":", one for each
+separate channel. The output channel layout depends on the number of
+provided expressions, up to 8 channels are supported.
+
+@var{options} is an optional sequence of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted options follows.
+
+@table @option
+
+@item nb_samples, n
+Set the number of samples per channel per each output frame,
+default to 1024.
+
+@item sample_rate, s
+Specify the sample rate, default to 44100.
+@end table
+
+Each expression in @var{exprs} can contain the following constants:
+
+@table @option
+@item n
+number of the evaluated sample, starting from 0
+
+@item t
+time of the evaluated sample expressed in seconds, starting from 0
+
+@item s
+sample rate
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Generate silence:
+@example
+aevalsrc=0
+@end example
+
+@item
+
+Generate a sin signal with frequence of 440 Hz, set sample rate to
+8000 Hz:
+@example
+aevalsrc="sin(440*2*PI*t)::s=8000"
+@end example
+
+@item
+Generate white noise:
+@example
+aevalsrc="-2+random(0)"
+@end example
+
+@item
+Generate an amplitude modulated signal:
+@example
+aevalsrc="sin(10*2*PI*t)*sin(880*2*PI*t)"
+@end example
+
+@item
+Generate 2.5 Hz binaural beats on a 360 Hz carrier:
+@example
+aevalsrc=0.1*sin(2*PI*(360-2.5/2)*t) : 0.1*sin(2*PI*(360+2.5/2)*t)
+@end example
+
+@end itemize
+
 @section amovie
 
 Read an audio stream from a movie container.

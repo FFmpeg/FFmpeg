@@ -41,6 +41,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ASHOWINFO,   ashowinfo,   af);
 
     REGISTER_FILTER (ABUFFER,     abuffer,     asrc);
+    REGISTER_FILTER (AEVALSRC,    aevalsrc,    asrc);
     REGISTER_FILTER (AMOVIE,      amovie,      asrc);
     REGISTER_FILTER (ANULLSRC,    anullsrc,    asrc);
 
