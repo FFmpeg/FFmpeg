@@ -44,6 +44,7 @@ easier to use. The changes are:
     * -intra option was removed, it's equivalent to -g 0.
 - XMV demuxer
 - LOAS demuxer
+- ashowinfo filter added
 
 
 version 0.8:
