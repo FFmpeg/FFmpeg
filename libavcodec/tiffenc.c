@@ -29,6 +29,7 @@
 #if CONFIG_ZLIB
 #include <zlib.h>
 #endif
+#include "libavutil/opt.h"
 #include "bytestream.h"
 #include "tiff.h"
 #include "rle.h"
@@ -61,6 +62,7 @@ typedef struct TiffEncoderContext {
     int buf_size;                       ///< buffer size
     uint16_t subsampling[2];            ///< YUV subsampling factors
     struct LZWEncodeState *lzws;        ///< LZW Encode state
+    uint32_t dpi;                       ///< image resolution in DPI
 } TiffEncoderContext;
 
 
@@ -210,7 +212,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     uint32_t *strip_sizes = NULL;
     uint32_t *strip_offsets = NULL;
     int bytes_per_row;
-    uint32_t res[2] = { 72, 1 };        // image resolution (72/1)
+    uint32_t res[2] = { s->dpi, 1 };        // image resolution (72/1)
     uint16_t bpp_tab[] = { 8, 8, 8, 8 };
     int ret = -1;
     int is_yuv = 0;
@@ -441,6 +443,12 @@ fail:
     return ret;
 }
 
+static const AVOption options[]={
+{"dpi", "set the image resolution (in dpi)", offsetof(TiffEncoderContext, dpi), FF_OPT_TYPE_INT, {.dbl = 72}, 1, 0x10000, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_ENCODING_PARAM},
+{NULL}
+};
+static const AVClass class = { "tiff", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
+
 AVCodec ff_tiff_encoder = {
     .name           = "tiff",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -455,4 +463,5 @@ AVCodec ff_tiff_encoder = {
                               PIX_FMT_YUV411P,
                               PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
+    .priv_class= &class,
 };
