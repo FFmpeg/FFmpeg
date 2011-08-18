@@ -80,19 +80,17 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
 {
     LavfiContext *lavfi = avctx->priv_data;
     AVFilterInOut *input_links = NULL, *output_links = NULL, *inout;
-    AVFilter *buffersink;
+    AVFilter *buffersink, *abuffersink;
     int *pix_fmts = create_all_formats(PIX_FMT_NB);
+    enum AVMediaType type;
     int ret = 0, i, n;
 
 #define FAIL(ERR) { ret = ERR; goto end; }
 
     avfilter_register_all();
 
-    if (!(buffersink = avfilter_get_by_name("buffersink"))) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Missing required buffersink filter, aborting.\n");
-        FAIL(AVERROR_FILTER_NOT_FOUND);
-    }
+    buffersink = avfilter_get_by_name("buffersink");
+    abuffersink = avfilter_get_by_name("abuffersink");
 
     if (!lavfi->graph_str)
         lavfi->graph_str = av_strdup(avctx->filename);
@@ -143,9 +141,10 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
         }
 
         /* is a video output? */
-        if (inout->filter_ctx->output_pads[inout->pad_idx].type != AVMEDIA_TYPE_VIDEO) {
+        type = inout->filter_ctx->output_pads[inout->pad_idx].type;
+        if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
             av_log(avctx,  AV_LOG_ERROR,
-                   "Output '%s' is not a video output, not yet supported", inout->name);
+                   "Output '%s' is not a video or audio output, not yet supported\n", inout->name);
             FAIL(AVERROR(EINVAL));
         }
 
@@ -173,7 +172,19 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
 
     for (i = 0, inout = output_links; inout; i++, inout = inout->next) {
         AVFilterContext *sink;
+
+        type = inout->filter_ctx->output_pads[inout->pad_idx].type;
+
+        if (type == AVMEDIA_TYPE_VIDEO && ! buffersink ||
+            type == AVMEDIA_TYPE_AUDIO && ! abuffersink) {
+                av_log(avctx, AV_LOG_ERROR, "Missing required buffersink filter, aborting.\n");
+                FAIL(AVERROR_FILTER_NOT_FOUND);
+        }
+
+        if (type == AVMEDIA_TYPE_VIDEO) {
         AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
+        buffersink_params->pixel_fmts = pix_fmts;
+
 #if FF_API_OLD_VSINK_API
         ret = avfilter_graph_create_filter(&sink, buffersink,
                                            inout->name, NULL,
@@ -185,8 +196,25 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
                                            buffersink_params, lavfi->graph);
 #endif
         av_freep(&buffersink_params);
+
         if (ret < 0)
             goto end;
+        } else if (type == AVMEDIA_TYPE_AUDIO) {
+            enum AVSampleFormat sample_fmts[] = { AV_SAMPLE_FMT_S16, -1 };
+            const int packing_fmts[] = { AVFILTER_PACKED, -1 };
+            const int64_t *chlayouts = avfilter_all_channel_layouts;
+            AVABufferSinkParams *abuffersink_params = av_abuffersink_params_alloc();
+            abuffersink_params->sample_fmts = sample_fmts;
+            abuffersink_params->packing_fmts = packing_fmts;
+            abuffersink_params->channel_layouts = chlayouts;
+
+            ret = avfilter_graph_create_filter(&sink, abuffersink,
+                                               inout->name, NULL,
+                                               abuffersink_params, lavfi->graph);
+            av_free(abuffersink_params);
+            if (ret < 0)
+                goto end;
+        }
 
         lavfi->sinks[i] = sink;
         if ((ret = avfilter_link(inout->filter_ctx, inout->pad_idx, sink, 0)) < 0)
@@ -211,6 +239,13 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
             st->codec->height     = link->h;
             st       ->sample_aspect_ratio =
             st->codec->sample_aspect_ratio = link->sample_aspect_ratio;
+        } else if (link->type == AVMEDIA_TYPE_AUDIO) {
+            st->codec->codec_id    = CODEC_ID_PCM_S16LE;
+            st->codec->channels    = av_get_channel_layout_nb_channels(link->channel_layout);
+            st->codec->sample_fmt  = link->format;
+            st->codec->sample_rate = link->sample_rate;
+            st->codec->time_base   = link->time_base;
+            st->codec->channel_layout = link->channel_layout;
         }
     }
 
@@ -226,8 +261,8 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     LavfiContext *lavfi = avctx->priv_data;
     double min_pts = DBL_MAX;
-    int min_pts_sink_idx = 0;
-    AVFilterBufferRef *picref;
+    int stream_idx, min_pts_sink_idx = 0;
+    AVFilterBufferRef *ref;
     AVPicture pict;
     int ret, i, size;
 
@@ -237,10 +272,10 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         AVRational tb = lavfi->sinks[i]->inputs[0]->time_base;
         double d;
         int ret = av_buffersink_get_buffer_ref(lavfi->sinks[i],
-                                               &picref, AV_BUFFERSINK_FLAG_PEEK);
+                                               &ref, AV_BUFFERSINK_FLAG_PEEK);
         if (ret < 0)
             return ret;
-        d = av_rescale_q(picref->pts, tb, AV_TIME_BASE_Q);
+        d = av_rescale_q(ref->pts, tb, AV_TIME_BASE_Q);
         av_dlog(avctx, "sink_idx:%d time:%f\n", i, d);
 
         if (d < min_pts) {
@@ -250,22 +285,31 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     }
     av_dlog(avctx, "min_pts_sink_idx:%i\n", min_pts_sink_idx);
 
-    av_buffersink_get_buffer_ref(lavfi->sinks[min_pts_sink_idx], &picref, 0);
+    av_buffersink_get_buffer_ref(lavfi->sinks[min_pts_sink_idx], &ref, 0);
+    stream_idx = lavfi->sink_stream_map[min_pts_sink_idx];
 
-    size = avpicture_get_size(picref->format, picref->video->w, picref->video->h);
+    if (ref->video) {
+    size = avpicture_get_size(ref->format, ref->video->w, ref->video->h);
     if ((ret = av_new_packet(pkt, size)) < 0)
         return ret;
 
-    memcpy(pict.data,     picref->data,     4*sizeof(picref->data[0]));
-    memcpy(pict.linesize, picref->linesize, 4*sizeof(picref->linesize[0]));
+    memcpy(pict.data,     ref->data,     4*sizeof(ref->data[0]));
+    memcpy(pict.linesize, ref->linesize, 4*sizeof(ref->linesize[0]));
 
-    avpicture_layout(&pict, picref->format, picref->video->w,
-                     picref->video->h, pkt->data, size);
-    pkt->stream_index = lavfi->sink_stream_map[min_pts_sink_idx];
-    pkt->pts = picref->pts;
-    pkt->pos = picref->pos;
+    avpicture_layout(&pict, ref->format, ref->video->w,
+                     ref->video->h, pkt->data, size);
+    } else if (ref->audio) {
+        size = ref->linesize[0];
+        if ((ret = av_new_packet(pkt, size)) < 0)
+            return ret;
+        memcpy(pkt->data, ref->data[0], size);
+    }
+
+    pkt->stream_index = stream_idx;
+    pkt->pts = ref->pts;
+    pkt->pos = ref->pos;
     pkt->size = size;
-    avfilter_unref_buffer(picref);
+    avfilter_unref_buffer(ref);
 
     return size;
 }

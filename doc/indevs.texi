@@ -266,6 +266,21 @@ Create three different video test filtered sources and play them:
 @example
 ffplay -f lavfi -graph "testsrc [out0]; testsrc,hflip [out1]; testsrc,negate [out2]" test3
 @end example
+
+@item
+Read an audio stream from a file using the amovie source and play it
+back with @file{ffplay}:
+@example
+ffplay -f lavfi "amovie=test.wav"
+@end example
+
+@item
+Read an audio stream and a video stream and play it back with
+@file{ffplay}:
+@example
+ffplay -f lavfi "movie=test.avi[out0];amovie=test.wav[out1]"
+@end example
+
 @end itemize
 
 @section libdc1394

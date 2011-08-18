@@ -56,6 +56,7 @@ easier to use. The changes are:
 - Prores decoder
 - BIN/XBIN/ADF/IDF text file decoder
 - aconvert audio filter added
+- audio support to lavfi input device added
 
 
 version 0.8:
