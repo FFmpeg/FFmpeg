@@ -146,6 +146,8 @@ OBJS-$(CONFIG_MP_FILTER) += libmpcodecs/pullup.o
 
 DIRS = x86 libmpcodecs
 
+TESTPROGS = formats
+
 TOOLS = graph2dot lavfi-showfiltfmts
 
 include $(SRC_PATH)/subdir.mak

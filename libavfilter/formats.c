@@ -160,25 +160,14 @@ AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type)
     return ret;
 }
 
+const int64_t avfilter_all_channel_layouts[] = {
+#include "all_channel_layouts.h"
+    -1
+};
+
 AVFilterFormats *avfilter_make_all_channel_layouts(void)
 {
-    static int64_t chlayouts[] = {
-        AV_CH_LAYOUT_MONO,
-        AV_CH_LAYOUT_STEREO,
-        AV_CH_LAYOUT_4POINT0,
-        AV_CH_LAYOUT_QUAD,
-        AV_CH_LAYOUT_5POINT0,
-        AV_CH_LAYOUT_5POINT0_BACK,
-        AV_CH_LAYOUT_5POINT1,
-        AV_CH_LAYOUT_5POINT1_BACK,
-        AV_CH_LAYOUT_5POINT1|AV_CH_LAYOUT_STEREO_DOWNMIX,
-        AV_CH_LAYOUT_7POINT1,
-        AV_CH_LAYOUT_7POINT1_WIDE,
-        AV_CH_LAYOUT_7POINT1|AV_CH_LAYOUT_STEREO_DOWNMIX,
-        -1,
-    };
-
-    return avfilter_make_format64_list(chlayouts);
+    return avfilter_make_format64_list(avfilter_all_channel_layouts);
 }
 
 AVFilterFormats *avfilter_make_all_packing_formats(void)
@@ -317,3 +306,21 @@ int ff_parse_packing_format(int *ret, const char *arg, void *log_ctx)
     return 0;
 }
 
+#ifdef TEST
+
+#undef printf
+
+int main(void)
+{
+    const int64_t *cl;
+    char buf[512];
+
+    for (cl = avfilter_all_channel_layouts_int64; *cl != -1; cl++) {
+        av_get_channel_layout_string(buf, sizeof(buf), -1, *cl);
+        printf("%s\n", buf);
+    }
+
+    return 0;
+}
+
+#endif

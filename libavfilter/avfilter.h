@@ -29,7 +29,7 @@
 #include "libavutil/rational.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 41
+#define LIBAVFILTER_VERSION_MINOR 42
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -273,6 +273,11 @@ AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
  * Return a list of all formats supported by FFmpeg for the given media type.
  */
 AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type);
+
+/**
+ * A list of all channel layouts supported by libavfilter.
+ */
+extern const int64_t avfilter_all_channel_layouts[];
 
 /**
  * Return a list of all channel layouts supported by FFmpeg.
