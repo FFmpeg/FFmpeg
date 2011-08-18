@@ -393,7 +393,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
     codec->width  = ost->output_video_filter->inputs[0]->w;
     codec->height = ost->output_video_filter->inputs[0]->h;
     codec->sample_aspect_ratio = ost->st->sample_aspect_ratio =
-        ost->frame_aspect_ratio ? // overriden by the -aspect cli option
+        ost->frame_aspect_ratio ? // overridden by the -aspect cli option
         av_d2q(ost->frame_aspect_ratio*codec->height/codec->width, 255) :
         ost->output_video_filter->inputs[0]->sample_aspect_ratio;
 
@@ -1074,7 +1074,7 @@ static void do_video_resample(OutputStream *ost,
     if (resample_changed) {
         avfilter_graph_free(&ost->graph);
         if (configure_video_filters(ist, ost)) {
-            fprintf(stderr, "Error reinitialising filters!\n");
+            fprintf(stderr, "Error reinitializing filters!\n");
             exit_program(1);
         }
     }
@@ -1151,7 +1151,7 @@ static void do_video_out(AVFormatContext *s,
 
         if (s->oformat->flags & AVFMT_RAWPICTURE) {
             /* raw pictures are written as AVPicture structure to
-               avoid any copies. We support temorarily the older
+               avoid any copies. We support temporarily the older
                method. */
             AVFrame* old_frame = enc->coded_frame;
             enc->coded_frame = dec->coded_frame; //FIXME/XXX remove this hack
@@ -4097,7 +4097,7 @@ static const OptionDef options[] = {
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
-    { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "threshold" },
+    { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimation threshold",  "threshold" },
     { "same_quant", OPT_BOOL | OPT_VIDEO, {(void*)&same_quant},
       "use same quantizer as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_VIDEO, {(void*)opt_pass}, "select the pass number (1 or 2)", "n" },
