@@ -173,10 +173,21 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
 
     for (i = 0, inout = output_links; inout; i++, inout = inout->next) {
         AVFilterContext *sink;
-        if ((ret = avfilter_graph_create_filter(&sink, buffersink,
-                                                inout->name, NULL,
-                                                pix_fmts, lavfi->graph)) < 0)
-            FAIL(ret);
+        AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
+#if FF_API_OLD_VSINK_API
+        ret = avfilter_graph_create_filter(&sink, buffersink,
+                                           inout->name, NULL,
+                                           pix_fmts, lavfi->graph);
+#else
+        buffersink_params->pixel_fmts = pix_fmts;
+        ret = avfilter_graph_create_filter(&sink, buffersink,
+                                           inout->name, NULL,
+                                           buffersink_params, lavfi->graph);
+#endif
+        av_freep(&buffersink_params);
+        if (ret < 0)
+            goto end;
+
         lavfi->sinks[i] = sink;
         if ((ret = avfilter_link(inout->filter_ctx, inout->pad_idx, sink, 0)) < 0)
             FAIL(ret);
@@ -225,8 +236,8 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     for (i = 0; i < avctx->nb_streams; i++) {
         AVRational tb = lavfi->sinks[i]->inputs[0]->time_base;
         double d;
-        int ret = av_vsink_buffer_get_video_buffer_ref(lavfi->sinks[i],
-                                                       &picref, AV_VSINK_BUF_FLAG_PEEK);
+        int ret = av_buffersink_get_buffer_ref(lavfi->sinks[i],
+                                               &picref, AV_BUFFERSINK_FLAG_PEEK);
         if (ret < 0)
             return ret;
         d = av_rescale_q(picref->pts, tb, AV_TIME_BASE_Q);
@@ -239,8 +250,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     }
     av_dlog(avctx, "min_pts_sink_idx:%i\n", min_pts_sink_idx);
 
-    av_vsink_buffer_get_video_buffer_ref(lavfi->sinks[min_pts_sink_idx],
-                                         &picref, 0);
+    av_buffersink_get_buffer_ref(lavfi->sinks[min_pts_sink_idx], &picref, 0);
 
     size = avpicture_get_size(picref->format, picref->video->w, picref->video->h);
     if ((ret = av_new_packet(pkt, size)) < 0)

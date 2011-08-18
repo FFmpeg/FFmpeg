@@ -29,7 +29,7 @@
 #include "libavutil/rational.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 37
+#define LIBAVFILTER_VERSION_MINOR 38
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -39,6 +39,10 @@
                                            LIBAVFILTER_VERSION_MINOR,   \
                                            LIBAVFILTER_VERSION_MICRO)
 #define LIBAVFILTER_BUILD       LIBAVFILTER_VERSION_INT
+
+#ifndef FF_API_OLD_VSINK_API
+#define FF_API_OLD_VSINK_API        (LIBAVUTIL_VERSION_MAJOR < 3)
+#endif
 
 #include <stddef.h>
 

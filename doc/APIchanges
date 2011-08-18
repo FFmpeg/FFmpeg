@@ -13,6 +13,13 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-09-06 - xxxxxxx - lavfi 2.38.0
+  Unify video and audio sink API.
+
+  In particular, add av_buffersink_get_buffer_ref(), deprecate
+  av_vsink_buffer_get_video_buffer_ref() and change the value for the
+  opaque field passed to the abuffersink init function.
+
 2011-09-xx - xxxxxxx - lavu 51.16.0
   Add av_asprintf().
 

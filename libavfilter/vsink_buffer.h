@@ -21,27 +21,68 @@
 
 /**
  * @file
- * memory buffer sink API for video
+ * memory buffer sink API for audio and video
  */
 
 #include "avfilter.h"
 
 /**
- * Tell av_vsink_buffer_get_video_buffer_ref() to read the picref, but not
- * remove it from the buffer. This is useful if you need only to read
- * the picref, without to fetch it.
+ * Struct to use for initializing a buffersink context.
  */
-#define AV_VSINK_BUF_FLAG_PEEK 1
+typedef struct {
+    const enum PixelFormat *pixel_fmts; ///< list of allowed pixel formats, terminated by PIX_FMT_NONE
+} AVBufferSinkParams;
 
 /**
- * Get a video buffer data from buffer_sink and put it in picref.
+ * Create an AVBufferSinkParams structure.
  *
- * @param buffer_sink pointer to a buffer sink context
- * @param flags a combination of AV_VSINK_BUF_FLAG_* flags
+ * Must be freed with av_free().
+ */
+AVBufferSinkParams *av_buffersink_params_alloc(void);
+
+/**
+ * Struct to use for initializing an abuffersink context.
+ */
+typedef struct {
+    const enum AVSampleFormat *sample_fmts; ///< list of allowed sample formats, terminated by AV_SAMPLE_FMT_NONE
+    const int64_t *channel_layouts;         ///< list of allowed channel layouts, terminated by -1
+    const int *packing_fmts;                ///< list of allowed packing formats
+} AVABufferSinkParams;
+
+/**
+ * Create an AVABufferSinkParams structure.
+ *
+ * Must be freed with av_free().
+ */
+AVABufferSinkParams *av_abuffersink_params_alloc(void);
+
+/**
+ * Tell av_buffersink_get_buffer_ref() to read video/samples buffer
+ * reference, but not remove it from the buffer. This is useful if you
+ * need only to read a video/samples buffer, without to fetch it.
+ */
+#define AV_BUFFERSINK_FLAG_PEEK 1
+
+/**
+ * Get an audio/video buffer data from buffer_sink and put it in bufref.
+ *
+ * This function works with both audio and video buffer sinks.
+ *
+ * @param buffer_sink pointer to a buffersink or abuffersink context
+ * @param flags a combination of AV_BUFFERSINK_FLAG_* flags
  * @return >= 0 in case of success, a negative AVERROR code in case of
  * failure
  */
+int av_buffersink_get_buffer_ref(AVFilterContext *buffer_sink,
+                                 AVFilterBufferRef **bufref, int flags);
+
+#if FF_API_OLD_VSINK_API
+/**
+ * @deprecated Use av_buffersink_get_buffer_ref() instead.
+ */
+attribute_deprecated
 int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *buffer_sink,
                                          AVFilterBufferRef **picref, int flags);
+#endif
 
 #endif /* AVFILTER_VSINK_BUFFER_H */

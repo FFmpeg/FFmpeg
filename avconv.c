@@ -407,6 +407,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
     AVCodecContext *codec = ost->st->codec;
     AVCodecContext *icodec = ist->st->codec;
     enum PixelFormat pix_fmts[] = { codec->pix_fmt, PIX_FMT_NONE };
+    AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
     AVRational sample_aspect_ratio;
     char args[255];
     int ret;
@@ -426,8 +427,15 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
                                        "src", args, NULL, ost->graph);
     if (ret < 0)
         return ret;
+#if FF_API_OLD_VSINK_API
     ret = avfilter_graph_create_filter(&ost->output_video_filter, avfilter_get_by_name("buffersink"),
                                        "out", NULL, pix_fmts, ost->graph);
+#else
+    buffersink_params->pixel_fmts = pix_fmts;
+    ret = avfilter_graph_create_filter(&ost->output_video_filter, avfilter_get_by_name("buffersink"),
+                                       "out", NULL, buffersink_params, ost->graph);
+#endif
+    av_freep(&buffersink_params);
     if (ret < 0)
         return ret;
     last_filter = ost->input_video_filter;
@@ -1779,7 +1787,7 @@ static int output_packet(InputStream *ist, int ist_index,
             while (frame_available) {
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ost->output_video_filter) {
                     AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
-                    if (av_vsink_buffer_get_video_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0)
+                    if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0)
                         goto cont;
                     if (ost->picref) {
                         avfilter_fill_frame_from_video_buffer_ref(&picture, ost->picref);

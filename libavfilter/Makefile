@@ -29,7 +29,7 @@ OBJS-$(CONFIG_ABUFFER_FILTER)                += asrc_abuffer.o
 OBJS-$(CONFIG_AMOVIE_FILTER)                 += src_movie.o
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
 
-OBJS-$(CONFIG_ABUFFERSINK_FILTER)            += asink_abuffer.o
+OBJS-$(CONFIG_ABUFFERSINK_FILTER)            += vsink_buffer.o
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o
 
 OBJS-$(CONFIG_BLACKFRAME_FILTER)             += vf_blackframe.o
