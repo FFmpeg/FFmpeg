@@ -213,7 +213,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
 {
     LavfiContext *lavfi = avctx->priv_data;
     double min_pts = DBL_MAX;
-    int min_pts_sink_idx;
+    int min_pts_sink_idx = 0;
     AVFilterBufferRef *picref;
     AVPicture pict;
     int ret, i, size;
