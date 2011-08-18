@@ -55,6 +55,13 @@ typedef struct {
     /* video-only fields */
     int w, h;
     AVFilterBufferRef *picref;
+
+    /* audio-only fields */
+    void *samples_buf;
+    int samples_buf_size;
+    int bps;            ///< bytes per sample
+    AVPacket pkt, pkt0;
+    AVFilterBufferRef *samplesref;
 } MovieContext;
 
 #define OFFSET(x) offsetof(MovieContext, x)
@@ -185,7 +192,12 @@ static av_cold void movie_common_uninit(AVFilterContext *ctx)
 
     avfilter_unref_buffer(movie->picref);
     av_freep(&movie->frame);
+
+    avfilter_unref_buffer(movie->samplesref);
+    av_freep(&movie->samples_buf);
 }
+
+#if CONFIG_MOVIE_FILTER
 
 static av_cold int movie_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
@@ -317,3 +329,148 @@ AVFilter avfilter_vsrc_movie = {
                                     .config_props    = movie_config_output_props, },
                                   { .name = NULL}},
 };
+
+#endif  /* CONFIG_MOVIE_FILTER */
+
+#if CONFIG_AMOVIE_FILTER
+
+static av_cold int amovie_init(AVFilterContext *ctx, const char *args, void *opaque)
+{
+    MovieContext *movie = ctx->priv;
+    int ret;
+
+    if ((ret = movie_common_init(ctx, args, opaque, AVMEDIA_TYPE_AUDIO)) < 0)
+        return ret;
+
+    movie->bps = av_get_bytes_per_sample(movie->codec_ctx->sample_fmt);
+    return 0;
+}
+
+static int amovie_query_formats(AVFilterContext *ctx)
+{
+    MovieContext *movie = ctx->priv;
+    AVCodecContext *c = movie->codec_ctx;
+
+    enum AVSampleFormat sample_fmts[] = { c->sample_fmt, -1 };
+    int packing_fmts[] = { AVFILTER_PACKED, -1 };
+    int64_t chlayouts[] = { c->channel_layout, -1 };
+
+    avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
+    avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
+    avfilter_set_common_channel_layouts(ctx, avfilter_make_format64_list(chlayouts));
+
+    return 0;
+}
+
+static int amovie_config_output_props(AVFilterLink *outlink)
+{
+    MovieContext *movie = outlink->src->priv;
+    AVCodecContext *c = movie->codec_ctx;
+
+    outlink->sample_rate = c->sample_rate;
+    outlink->time_base = movie->format_ctx->streams[movie->stream_index]->time_base;
+
+    return 0;
+}
+
+static int amovie_get_samples(AVFilterLink *outlink)
+{
+    MovieContext *movie = outlink->src->priv;
+    AVPacket pkt;
+    int ret, samples_size, decoded_data_size;
+
+    if (!movie->pkt.size && movie->is_done == 1)
+        return AVERROR_EOF;
+
+    /* check for another frame, in case the previous one was completely consumed */
+    if (!movie->pkt.size) {
+        while ((ret = av_read_frame(movie->format_ctx, &pkt)) >= 0) {
+            // Is this a packet from the selected stream?
+            if (pkt.stream_index != movie->stream_index) {
+                av_free_packet(&pkt);
+                continue;
+            } else {
+                movie->pkt0 = movie->pkt = pkt;
+                break;
+            }
+        }
+
+        if (ret == AVERROR_EOF) {
+            movie->is_done = 1;
+            return ret;
+        }
+    }
+
+    /* reallocate the buffer for the decoded samples, if necessary */
+    samples_size =
+        FFMAX(movie->pkt.size*sizeof(movie->bps), AVCODEC_MAX_AUDIO_FRAME_SIZE);
+    if (samples_size > movie->samples_buf_size) {
+        movie->samples_buf = av_fast_realloc(movie->samples_buf,
+                                             &movie->samples_buf_size, samples_size);
+        if (!movie->samples_buf)
+            return AVERROR(ENOMEM);
+    }
+    decoded_data_size = movie->samples_buf_size;
+
+    /* decode and update the movie pkt */
+    ret = avcodec_decode_audio3(movie->codec_ctx, movie->samples_buf,
+                                &decoded_data_size, &movie->pkt);
+    if (ret < 0)
+        return ret;
+    movie->pkt.data += ret;
+    movie->pkt.size -= ret;
+
+    /* wrap the decoded data in a samplesref */
+    if (decoded_data_size > 0) {
+        int nb_samples = decoded_data_size / movie->bps / movie->codec_ctx->channels;
+        movie->samplesref =
+            avfilter_get_audio_buffer(outlink, AV_PERM_WRITE,
+                                      movie->codec_ctx->sample_fmt, nb_samples,
+                                      movie->codec_ctx->channel_layout, 0);
+        memcpy(movie->samplesref->data[0], movie->samples_buf, decoded_data_size);
+        movie->samplesref->pts = movie->pkt.pts;
+        movie->samplesref->pos = movie->pkt.pos;
+        movie->samplesref->audio->sample_rate = movie->codec_ctx->sample_rate;
+    }
+
+    // We got it. Free the packet since we are returning
+    if (movie->pkt.size <= 0)
+        av_free_packet(&movie->pkt0);
+
+    return 0;
+}
+
+static int amovie_request_frame(AVFilterLink *outlink)
+{
+    MovieContext *movie = outlink->src->priv;
+    int ret;
+
+    if (movie->is_done)
+        return AVERROR_EOF;
+    if ((ret = amovie_get_samples(outlink)) < 0)
+        return ret;
+
+    avfilter_filter_samples(outlink, avfilter_ref_buffer(movie->samplesref, ~0));
+    avfilter_unref_buffer(movie->samplesref);
+    movie->samplesref = NULL;
+
+    return 0;
+}
+
+AVFilter avfilter_asrc_amovie = {
+    .name          = "amovie",
+    .description   = NULL_IF_CONFIG_SMALL("Read audio from a movie source."),
+    .priv_size     = sizeof(MovieContext),
+    .init          = amovie_init,
+    .uninit        = movie_common_uninit,
+    .query_formats = amovie_query_formats,
+
+    .inputs    = (AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+                                    .type            = AVMEDIA_TYPE_AUDIO,
+                                    .request_frame   = amovie_request_frame,
+                                    .config_props    = amovie_config_output_props, },
+                                  { .name = NULL}},
+};
+
+#endif /* CONFIG_AMOVIE_FILTER */

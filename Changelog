@@ -46,6 +46,7 @@ easier to use. The changes are:
 - LOAS demuxer
 - ashowinfo filter added
 - Windows Media Image decoder
+- amovie source added
 
 
 version 0.8:

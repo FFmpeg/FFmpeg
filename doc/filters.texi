@@ -239,6 +239,38 @@ equivalent to:
 abuffer=44100:1:3:1
 @end example
 
+@section amovie
+
+Read an audio stream from a movie container.
+
+It accepts the syntax: @var{movie_name}[:@var{options}] where
+@var{movie_name} is the name of the resource to read (not necessarily
+a file but also a device or a stream accessed through some protocol),
+and @var{options} is an optional sequence of @var{key}=@var{value}
+pairs, separated by ":".
+
+The description of the accepted options follows.
+
+@table @option
+
+@item format_name, f
+Specify the format assumed for the movie to read, and can be either
+the name of a container or an input device. If not specified the
+format is guessed from @var{movie_name} or by probing.
+
+@item seek_point, sp
+Specify the seek point in seconds, the frames will be output
+starting from this seek point, the parameter is evaluated with
+@code{av_strtod} so the numerical value may be suffixed by an IS
+postfix. Default value is "0".
+
+@item stream_index, si
+Specify the index of the audio stream to read. If the value is -1,
+the best suited audio stream will be automatically selected. Default
+value is "-1".
+
+@end table
+
 @section anullsrc
 
 Null audio source, never return audio frames. It is mainly useful as a

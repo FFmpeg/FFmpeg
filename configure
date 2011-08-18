@@ -1505,6 +1505,7 @@ udp_protocol_deps="network"
 # filters
 abuffer_filter_deps="strtok_r"
 aformat_filter_deps="strtok_r"
+amovie_filter_deps="avcodec avformat"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
