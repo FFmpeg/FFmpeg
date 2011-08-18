@@ -41,6 +41,7 @@ easier to use. The changes are:
     * Presets in avconv are disabled, because only libx264 used them and
       presets for libx264 can now be specified using a private option
       '-preset <presetname>'.
+- XMV demuxer
 
 
 version 0.8:

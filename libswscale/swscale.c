@@ -2212,7 +2212,7 @@ static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
         int shift= isAnyRGB(c->srcFormat) || c->srcFormat==PIX_FMT_PAL8 ? 13 : av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1;
         c->hScale16(dst, dstWidth, (const uint16_t*)src, srcW, xInc, hLumFilter, hLumFilterPos, hLumFilterSize, shift);
     } else if (!c->hyscale_fast) {
-        c->hScale(c, dst, dstWidth, src, hLumFilter, hLumFilterPos, hLumFilterSize);
+        c->hyScale(c, dst, dstWidth, src, hLumFilter, hLumFilterPos, hLumFilterSize);
     } else { // fast bilinear upscale / crap downscale
         c->hyscale_fast(c, dst, dstWidth, src, srcW, xInc);
     }
@@ -2258,8 +2258,8 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
         c->hScale16(dst1, dstWidth, (const uint16_t*)src1, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, shift);
         c->hScale16(dst2, dstWidth, (const uint16_t*)src2, srcW, xInc, hChrFilter, hChrFilterPos, hChrFilterSize, shift);
     } else if (!c->hcscale_fast) {
-        c->hScale(c, dst1, dstWidth, src1, hChrFilter, hChrFilterPos, hChrFilterSize);
-        c->hScale(c, dst2, dstWidth, src2, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hcScale(c, dst1, dstWidth, src1, hChrFilter, hChrFilterPos, hChrFilterSize);
+        c->hcScale(c, dst2, dstWidth, src2, hChrFilter, hChrFilterPos, hChrFilterSize);
     } else { // fast bilinear upscale / crap downscale
         c->hcscale_fast(c, dst1, dst2, dstWidth, src1, src2, srcW, xInc);
     }
@@ -2929,16 +2929,16 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
 
     if (c->srcBpc == 8) {
         if (c->dstBpc <= 10) {
-            c->hScale       = hScale8To15_c;
+            c->hyScale = c->hcScale = hScale8To15_c;
             if (c->flags & SWS_FAST_BILINEAR) {
                 c->hyscale_fast = hyscale_fast_c;
                 c->hcscale_fast = hcscale_fast_c;
             }
         } else {
-            c->hScale = hScale8To19_c;
+            c->hyScale = c->hcScale = hScale8To19_c;
         }
     } else {
-        c->hScale = c->dstBpc > 10 ? hScale16To19_c : hScale16To15_c;
+        c->hyScale = c->hcScale = c->dstBpc > 10 ? hScale16To19_c : hScale16To15_c;
     }
 
     if (c->srcRange != c->dstRange && !isAnyRGB(c->dstFormat)) {

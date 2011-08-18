@@ -260,6 +260,8 @@ library:
     @tab Multimedia format used in Westwood Studios games.
 @item Westwood Studios VQA      @tab   @tab X
     @tab Multimedia format used in Westwood Studios games.
+@item XMV                       @tab   @tab X
+    @tab Microsoft video container used in Xbox games.
 @item xWMA                      @tab   @tab X
     @tab Microsoft audio container used by XAudio 2.
 @item YUV4MPEG pipe             @tab X @tab X

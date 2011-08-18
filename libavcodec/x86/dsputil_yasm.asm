@@ -20,6 +20,7 @@
 ;******************************************************************************
 
 %include "x86inc.asm"
+%include "x86util.asm"
 
 SECTION_RODATA
 pb_f: times 16 db 15
@@ -1053,39 +1054,6 @@ emu_edge mmx
 ; void ff_vector_clip_int32(int32_t *dst, const int32_t *src, int32_t min,
 ;                           int32_t max, unsigned int len)
 ;-----------------------------------------------------------------------------
-
-%macro PMINSD_MMX 3 ; dst, src, tmp
-    mova      %3, %2
-    pcmpgtd   %3, %1
-    pxor      %1, %2
-    pand      %1, %3
-    pxor      %1, %2
-%endmacro
-
-%macro PMAXSD_MMX 3 ; dst, src, tmp
-    mova      %3, %1
-    pcmpgtd   %3, %2
-    pand      %1, %3
-    pandn     %3, %2
-    por       %1, %3
-%endmacro
-
-%macro CLIPD_MMX 3-4 ; src/dst, min, max, tmp
-    PMINSD_MMX %1, %3, %4
-    PMAXSD_MMX %1, %2, %4
-%endmacro
-
-%macro CLIPD_SSE2 3-4 ; src/dst, min (float), max (float), unused
-    cvtdq2ps  %1, %1
-    minps     %1, %3
-    maxps     %1, %2
-    cvtps2dq  %1, %1
-%endmacro
-
-%macro CLIPD_SSE41 3-4 ;  src/dst, min, max, unused
-    pminsd  %1, %3
-    pmaxsd  %1, %2
-%endmacro
 
 %macro SPLATD_MMX 1
     punpckldq  %1, %1

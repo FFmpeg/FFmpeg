@@ -540,3 +540,36 @@
     pmaxsw %1, %2
     pminsw %1, %3
 %endmacro
+
+%macro PMINSD_MMX 3 ; dst, src, tmp
+    mova      %3, %2
+    pcmpgtd   %3, %1
+    pxor      %1, %2
+    pand      %1, %3
+    pxor      %1, %2
+%endmacro
+
+%macro PMAXSD_MMX 3 ; dst, src, tmp
+    mova      %3, %1
+    pcmpgtd   %3, %2
+    pand      %1, %3
+    pandn     %3, %2
+    por       %1, %3
+%endmacro
+
+%macro CLIPD_MMX 3-4 ; src/dst, min, max, tmp
+    PMINSD_MMX %1, %3, %4
+    PMAXSD_MMX %1, %2, %4
+%endmacro
+
+%macro CLIPD_SSE2 3-4 ; src/dst, min (float), max (float), unused
+    cvtdq2ps  %1, %1
+    minps     %1, %3
+    maxps     %1, %2
+    cvtps2dq  %1, %1
+%endmacro
+
+%macro CLIPD_SSE41 3-4 ;  src/dst, min, max, unused
+    pminsd  %1, %3
+    pmaxsd  %1, %2
+%endmacro

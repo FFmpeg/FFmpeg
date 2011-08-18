@@ -400,7 +400,7 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
         return;
 
     if (c->srcBpc == 8 && c->dstBpc <= 10) {
-        c->hScale       = hScale_altivec_real;
+        c->hyScale = c->hcScale = hScale_altivec_real;
     }
     if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
         dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21 &&

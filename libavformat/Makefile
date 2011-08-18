@@ -305,6 +305,7 @@ OBJS-$(CONFIG_WTV_DEMUXER)               += wtvdec.o wtv.o asfdec.o asf.o asfcry
                                             avlanguage.o mpegts.o isom.o riff.o
 OBJS-$(CONFIG_WV_DEMUXER)                += wv.o apetag.o
 OBJS-$(CONFIG_XA_DEMUXER)                += xa.o
+OBJS-$(CONFIG_XMV_DEMUXER)               += xmv.o
 OBJS-$(CONFIG_XWMA_DEMUXER)              += xwma.o riff.o
 OBJS-$(CONFIG_YOP_DEMUXER)               += yop.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o

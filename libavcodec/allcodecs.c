@@ -409,6 +409,8 @@ void avcodec_register_all(void)
     REGISTER_PARSER  (MPEGAUDIO, mpegaudio);
     REGISTER_PARSER  (MPEGVIDEO, mpegvideo);
     REGISTER_PARSER  (PNM, pnm);
+    REGISTER_PARSER  (RV30, rv30);
+    REGISTER_PARSER  (RV40, rv40);
     REGISTER_PARSER  (VC1, vc1);
     REGISTER_PARSER  (VP3, vp3);
     REGISTER_PARSER  (VP8, vp8);

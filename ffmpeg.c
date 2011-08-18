@@ -736,7 +736,6 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 {
     int i, err;
     AVFormatContext *ic = NULL;
-    int nopts = 0;
 
     err = avformat_open_input(&ic, filename, NULL, NULL);
     if (err < 0)
@@ -768,9 +767,6 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
             } else
                 choose_pixel_fmt(st, codec);
         }
-
-        if(st->codec->flags & CODEC_FLAG_BITEXACT)
-            nopts = 1;
     }
 
     av_close_input_file(ic);
@@ -1725,6 +1721,14 @@ static int output_packet(InputStream *ist, int ist_index,
                 int frame_size;
 
                 ost = ost_table[i];
+
+                /* finish if recording time exhausted */
+                if (recording_time != INT64_MAX &&
+                        av_compare_ts(ist->pts, AV_TIME_BASE_Q, recording_time + start_time, (AVRational){1, 1000000})
+                    >= 0) {
+                    ist->is_past_recording_time = 1;
+                    continue;
+                }
                 if (ost->source_index == ist_index) {
 #if CONFIG_AVFILTER
                 frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
@@ -2802,17 +2806,6 @@ static int transcode(AVFormatContext **output_files,
                 if(pkt.pts != AV_NOPTS_VALUE)
                     pkt.pts-= av_rescale_q(delta, AV_TIME_BASE_Q, ist->st->time_base);
             }
-        }
-
-        /* finish if recording time exhausted */
-        if (recording_time != INT64_MAX &&
-            (pkt.pts != AV_NOPTS_VALUE ?
-                av_compare_ts(pkt.pts, ist->st->time_base, recording_time + start_time, (AVRational){1, 1000000})
-                    :
-                av_compare_ts(ist->pts, AV_TIME_BASE_Q, recording_time + start_time, (AVRational){1, 1000000})
-            )>= 0) {
-            ist->is_past_recording_time = 1;
-            goto discard_packet;
         }
 
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);

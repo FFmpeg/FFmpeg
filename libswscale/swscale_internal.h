@@ -483,9 +483,14 @@ typedef struct SwsContext {
      *                   (and input coefficients thus padded with zeroes)
      *                   to simplify creating SIMD code.
      */
-    void (*hScale)(struct SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
-                   const int16_t *filter, const int16_t *filterPos,
-                   int filterSize);
+    /** @{ */
+    void (*hyScale)(struct SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
+                    const int16_t *filter, const int16_t *filterPos,
+                    int filterSize);
+    void (*hcScale)(struct SwsContext *c, int16_t *dst, int dstW, const uint8_t *src,
+                    const int16_t *filter, const int16_t *filterPos,
+                    int filterSize);
+    /** @} */
 
     void (*hScale16)(int16_t *dst, int dstW, const uint16_t *src, int srcW,
                    int xInc, const int16_t *filter, const int16_t *filterPos,

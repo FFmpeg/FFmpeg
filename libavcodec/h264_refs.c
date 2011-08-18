@@ -655,7 +655,7 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
 
     print_short_term(h);
     print_long_term(h);
-    return err;
+    return h->s.avctx->error_recognition >= FF_ER_EXPLODE ? err : 0;
 }
 
 int ff_h264_decode_ref_pic_marking(H264Context *h, GetBitContext *gb){
