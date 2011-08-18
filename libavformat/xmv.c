@@ -32,73 +32,77 @@
 #include "avformat.h"
 #include "riff.h"
 
+/** The min size of an XMV header. */
 #define XMV_MIN_HEADER_SIZE 36
 
+/** Audio flag: ADPCM'd 5.1 stream, front left / right channels */
 #define XMV_AUDIO_ADPCM51_FRONTLEFTRIGHT 1
+/** Audio flag: ADPCM'd 5.1 stream, front center / low frequency channels */
 #define XMV_AUDIO_ADPCM51_FRONTCENTERLOW 2
+/** Audio flag: ADPCM'd 5.1 stream, rear left / right channels */
 #define XMV_AUDIO_ADPCM51_REARLEFTRIGHT  4
 
+/** Audio flag: Any of the ADPCM'd 5.1 stream flags. */
 #define XMV_AUDIO_ADPCM51 (XMV_AUDIO_ADPCM51_FRONTLEFTRIGHT | \
                            XMV_AUDIO_ADPCM51_FRONTCENTERLOW | \
                            XMV_AUDIO_ADPCM51_REARLEFTRIGHT)
 
+/** A video packet with an XMV file. */
 typedef struct XMVVideoPacket {
-    /* The decoder stream index for this video packet. */
-    int stream_index;
+    int stream_index; ///< The decoder stream index for this video packet.
 
-    uint32_t data_size;
-    uint64_t data_offset;
+    uint32_t data_size;   ///< The size of the remaining video data.
+    uint64_t data_offset; ///< The offset of the video data within the file.
 
-    uint32_t current_frame;
-    uint32_t frame_count;
+    uint32_t current_frame; ///< The current frame within this video packet.
+    uint32_t frame_count;   ///< The amount of frames within this video packet.
 
-    /* Does the video packet contain extra data? */
-    int has_extradata;
+    int     has_extradata; ///< Does the video packet contain extra data?
+    uint8_t extradata[4];  ///< The extra data
 
-    /* Extra data */
-    uint8_t extradata[4];
-
-    int64_t last_pts;
-    int64_t pts;
+    int64_t last_pts; ///< PTS of the last video frame.
+    int64_t pts;      ///< PTS of the most current video frame.
 } XMVVideoPacket;
 
+/** An audio packet with an XMV file. */
 typedef struct XMVAudioPacket {
-    /* The decoder stream index for this audio packet. */
-    int stream_index;
+    int stream_index; ///< The decoder stream index for this audio packet.
 
-    uint16_t compression;
-    uint16_t channels;
-    uint32_t sample_rate;
-    uint16_t bits_per_sample;
-    uint32_t bit_rate;
-    uint16_t flags;
-    uint16_t block_align;
-    uint16_t block_samples;
+    /* Stream format properties. */
+    uint16_t compression;     ///< The type of compression.
+    uint16_t channels;        ///< Number of channels.
+    uint32_t sample_rate;     ///< Sampling rate.
+    uint16_t bits_per_sample; ///< Bits per compressed sample.
+    uint32_t bit_rate;        ///< Bits of compressed data per second.
+    uint16_t flags;           ///< Flags
+    uint16_t block_align;     ///< Bytes per compressed block.
+    uint16_t block_samples;   ///< Decompressed samples per compressed block.
 
-    enum CodecID codec_id;
+    enum CodecID codec_id; ///< The codec ID of the compression scheme.
 
-    uint32_t data_size;
-    uint64_t data_offset;
+    uint32_t data_size;   ///< The size of the remaining audio data.
+    uint64_t data_offset; ///< The offset of the audio data within the file.
 
-    uint32_t frame_size;
+    uint32_t frame_size; ///< Number of bytes to put into an audio frame.
 
-    uint64_t block_count;
+    uint64_t block_count; ///< Running counter of decompressed audio block.
 } XMVAudioPacket;
 
+/** Context for demuxing an XMV file. */
 typedef struct XMVDemuxContext {
-    uint16_t audio_track_count;
+    uint16_t audio_track_count; ///< Number of audio track in this file.
 
-    uint32_t this_packet_size;
-    uint32_t next_packet_size;
+    uint32_t this_packet_size; ///< Size of the current packet.
+    uint32_t next_packet_size; ///< Size of the next packet.
 
-    uint64_t this_packet_offset;
-    uint64_t next_packet_offset;
+    uint64_t this_packet_offset; ///< Offset of the current packet.
+    uint64_t next_packet_offset; ///< Offset of the next packet.
 
-    uint16_t current_stream;
-    uint16_t stream_count;
+    uint16_t current_stream; ///< The index of the stream currently handling.
+    uint16_t stream_count;   ///< The number of streams in this file.
 
-    XMVVideoPacket  video;
-    XMVAudioPacket *audio;
+    XMVVideoPacket  video; ///< The video packet contained in each packet.
+    XMVAudioPacket *audio; ///< The audio packets contained in each packet.
 } XMVDemuxContext;
 
 static int xmv_probe(AVProbeData *p)
@@ -219,7 +223,7 @@ static int xmv_read_header(AVFormatContext *s,
     }
 
 
-    /** Initialize the packet context */
+    /* Initialize the packet context */
 
     xmv->next_packet_offset = avio_tell(pb);
 
@@ -324,7 +328,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
              */
             packet->data_size = xmv->audio[audio_track - 1].data_size;
 
-        /** Carve up the audio data in frame_count slices */
+        /* Carve up the audio data in frame_count slices */
         packet->frame_size  = packet->data_size  / xmv->video.frame_count;
         packet->frame_size -= packet->frame_size % packet->block_align;
     }
