@@ -117,14 +117,8 @@ static char *ts_value_string (char *buf, int buf_size, int64_t ts)
 
 static const char *media_type_string(enum AVMediaType media_type)
 {
-    switch (media_type) {
-    case AVMEDIA_TYPE_VIDEO:      return "video";
-    case AVMEDIA_TYPE_AUDIO:      return "audio";
-    case AVMEDIA_TYPE_DATA:       return "data";
-    case AVMEDIA_TYPE_SUBTITLE:   return "subtitle";
-    case AVMEDIA_TYPE_ATTACHMENT: return "attachment";
-    default:                      return "unknown";
-    }
+    const char *s = av_get_media_type_string(media_type);
+    return s ? s : "unknown";
 }
 
 static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
