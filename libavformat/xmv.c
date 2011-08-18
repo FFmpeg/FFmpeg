@@ -450,7 +450,7 @@ static int xmv_fetch_video_packet(AVFormatContext *s,
     int result;
     uint32_t frame_header;
     uint32_t frame_size, frame_timestamp;
-    uint32_t i;
+    uint8_t *data, *end;
 
     /* Seek to it */
     if (avio_seek(pb, video->data_offset, SEEK_SET) != video->data_offset)
@@ -465,17 +465,17 @@ static int xmv_fetch_video_packet(AVFormatContext *s,
     if ((frame_size + 4) > video->data_size)
         return AVERROR(EIO);
 
-    /* Create the packet */
-    result = av_new_packet(pkt, frame_size);
-    if (result)
+    /* Get the packet data */
+    result = av_get_packet(pb, pkt, frame_size);
+    if (result != frame_size)
         return result;
 
     /* Contrary to normal WMV2 video, the bit stream in XMV's
      * WMV2 is little-endian.
      * TODO: This manual swap is of course suboptimal.
      */
-    for (i = 0; i < frame_size; i += 4)
-        AV_WB32(pkt->data + i, avio_rl32(pb));
+    for (data = pkt->data, end = pkt->data + frame_size; data < end; data += 4)
+        AV_WB32(data, AV_RL32(data));
 
     pkt->stream_index = video->stream_index;
 
