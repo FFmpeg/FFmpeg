@@ -206,7 +206,7 @@ static av_cold int movie_init(AVFilterContext *ctx, const char *args, void *opaq
     return 0;
 }
 
-static int query_formats(AVFilterContext *ctx)
+static int movie_query_formats(AVFilterContext *ctx)
 {
     MovieContext *movie = ctx->priv;
     enum PixelFormat pix_fmts[] = { movie->codec_ctx->pix_fmt, PIX_FMT_NONE };
@@ -215,7 +215,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static int config_output_props(AVFilterLink *outlink)
+static int movie_config_output_props(AVFilterLink *outlink)
 {
     MovieContext *movie = outlink->src->priv;
 
@@ -281,7 +281,7 @@ static int movie_get_frame(AVFilterLink *outlink)
     return ret;
 }
 
-static int request_frame(AVFilterLink *outlink)
+static int movie_request_frame(AVFilterLink *outlink)
 {
     AVFilterBufferRef *outpicref;
     MovieContext *movie = outlink->src->priv;
@@ -308,12 +308,12 @@ AVFilter avfilter_vsrc_movie = {
     .priv_size     = sizeof(MovieContext),
     .init          = movie_init,
     .uninit        = movie_common_uninit,
-    .query_formats = query_formats,
+    .query_formats = movie_query_formats,
 
     .inputs    = (AVFilterPad[]) {{ .name = NULL }},
     .outputs   = (AVFilterPad[]) {{ .name            = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
-                                    .request_frame   = request_frame,
-                                    .config_props    = config_output_props, },
+                                    .request_frame   = movie_request_frame,
+                                    .config_props    = movie_config_output_props, },
                                   { .name = NULL}},
 };
