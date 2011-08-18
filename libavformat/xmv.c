@@ -60,7 +60,7 @@ typedef struct XMVVideoPacket {
     int stream_index;
 
     uint32_t data_size;
-    uint32_t data_offset;
+    uint64_t data_offset;
 
     uint32_t current_frame;
     uint32_t frame_count;
@@ -83,11 +83,11 @@ typedef struct XMVAudioPacket {
     XMVAudioTrack *track;
 
     uint32_t data_size;
-    uint32_t data_offset;
+    uint64_t data_offset;
 
     uint32_t frame_size;
 
-    uint32_t block_count;
+    uint64_t block_count;
 } XMVAudioPacket;
 
 typedef struct XMVDemuxContext {
@@ -98,8 +98,8 @@ typedef struct XMVDemuxContext {
     uint32_t this_packet_size;
     uint32_t next_packet_size;
 
-    uint32_t this_packet_offset;
-    uint32_t next_packet_offset;
+    uint64_t this_packet_offset;
+    uint64_t next_packet_offset;
 
     uint16_t current_stream;
     uint16_t stream_count;
@@ -286,7 +286,7 @@ static int xmv_process_packet_header(AVFormatContext *s)
 
     uint8_t  data[8];
     uint16_t audio_track;
-    uint32_t data_offset;
+    uint64_t data_offset;
 
     /* Next packet size */
     xmv->next_packet_size = avio_rl32(pb);
