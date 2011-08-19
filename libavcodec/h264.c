@@ -1852,16 +1852,16 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                         }
                     }
                 } else {
-                for (i = 0; i < block_h; i++) {
-                    uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
-                    for (j = 0; j < 8; j++)
-                        tmp_cb[j] = get_bits(&gb, bit_depth);
-                }
-                for (i = 0; i < block_h; i++) {
-                    uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
-                    for (j = 0; j < 8; j++)
-                        tmp_cr[j] = get_bits(&gb, bit_depth);
-                }
+                    for (i = 0; i < block_h; i++) {
+                        uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
+                        for (j = 0; j < 8; j++)
+                            tmp_cb[j] = get_bits(&gb, bit_depth);
+                    }
+                    for (i = 0; i < block_h; i++) {
+                        uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
+                        for (j = 0; j < 8; j++)
+                            tmp_cr[j] = get_bits(&gb, bit_depth);
+                    }
                 }
             }
         } else {
@@ -1875,10 +1875,10 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                         memset(dest_cr+ i*uvlinesize, 1 << (bit_depth - 1), 8);
                     }
                 } else {
-                for (i=0; i<block_h; i++) {
-                    memcpy(dest_cb+ i*uvlinesize, h->mb + 128 + i*4,  8);
-                    memcpy(dest_cr+ i*uvlinesize, h->mb + 160 + i*4,  8);
-                }
+                    for (i=0; i<block_h; i++) {
+                        memcpy(dest_cb+ i*uvlinesize, h->mb + 128 + i*4,  8);
+                        memcpy(dest_cr+ i*uvlinesize, h->mb + 160 + i*4,  8);
+                    }
                 }
             }
         }
