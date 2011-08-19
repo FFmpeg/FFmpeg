@@ -68,7 +68,7 @@ specified for the inputs.
 @chapter Stream selection
 @c man begin STREAM SELECTION
 
-By default av tries to pick the "best" stream of each type present in input
+By default avconv tries to pick the "best" stream of each type present in input
 files and add them to each output file. For video, this means the highest
 resolution, for audio the highest channel count. For subtitle it's simply the
 first subtitle stream.
@@ -686,7 +686,7 @@ It disables matching streams from already created mappings.
 
 For example, to map ALL streams from the first input file to output
 @example
-av -i INPUT -map 0 output
+avconv -i INPUT -map 0 output
 @end example
 
 For example, if you have two audio streams in the first input file,
