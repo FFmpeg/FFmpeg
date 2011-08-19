@@ -144,7 +144,6 @@ slower, but more accurate.
 @item -itsoffset @var{offset}
 Set the input time offset in seconds.
 @code{[-]hh:mm:ss[.xxx]} syntax is also supported.
-This option affects all the input files that follow it.
 The offset is added to the timestamps of the input files.
 Specifying a positive offset means that the corresponding
 streams are delayed by 'offset' seconds.
