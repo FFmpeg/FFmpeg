@@ -1916,8 +1916,10 @@ static int transcode(OutputFile *output_files,
         if (ost->st->stream_copy) {
             uint64_t extra_size = (uint64_t)icodec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
 
-            if (extra_size > INT_MAX)
+            if (extra_size > INT_MAX) {
+                ret = AVERROR(EINVAL);
                 goto fail;
+            }
 
             /* if stream_copy is selected, no need to decode or encode */
             codec->codec_id = icodec->codec_id;
@@ -1934,8 +1936,10 @@ static int transcode(OutputFile *output_files,
             codec->rc_max_rate    = icodec->rc_max_rate;
             codec->rc_buffer_size = icodec->rc_buffer_size;
             codec->extradata= av_mallocz(extra_size);
-            if (!codec->extradata)
+            if (!codec->extradata) {
+                ret = AVERROR(ENOMEM);
                 goto fail;
+            }
             memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             codec->extradata_size= icodec->extradata_size;
             if(!copy_tb && av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/500){
@@ -1990,8 +1994,10 @@ static int transcode(OutputFile *output_files,
             switch(codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 ost->fifo= av_fifo_alloc(1024);
-                if(!ost->fifo)
+                if (!ost->fifo) {
+                    ret = AVERROR(ENOMEM);
                     goto fail;
+                }
                 ost->reformat_pair = MAKE_SFMT_PAIR(AV_SAMPLE_FMT_NONE,AV_SAMPLE_FMT_NONE);
                 if (!codec->sample_rate) {
                     codec->sample_rate = icodec->sample_rate;
