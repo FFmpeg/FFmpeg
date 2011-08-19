@@ -1860,27 +1860,18 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
     return 0;
 }
 
-/*
- * The following code is the main loop of the file converter
- */
-static int transcode(OutputFile *output_files,
-                     int nb_output_files,
-                     InputFile *input_files,
-                     int nb_input_files)
+static int transcode_init(OutputFile *output_files,
+                          int nb_output_files,
+                          InputFile *input_files,
+                          int nb_input_files)
 {
     int ret = 0, i;
-    AVFormatContext *is, *os;
+    AVFormatContext *os;
     AVCodecContext *codec, *icodec;
     OutputStream *ost;
     InputStream *ist;
     char error[1024];
     int want_sdp = 1;
-    uint8_t *no_packet;
-    int no_packet_count=0;
-    int64_t timer_start;
-
-    if (!(no_packet = av_mallocz(nb_input_files)))
-        exit_program(1);
 
     if (rate_emu)
         for (i = 0; i < nb_input_streams; i++)
@@ -1892,8 +1883,7 @@ static int transcode(OutputFile *output_files,
         if (!os->nb_streams && !(os->oformat->flags & AVFMT_NOSTREAMS)) {
             av_dump_format(os, i, os->filename, 1);
             fprintf(stderr, "Output file #%d does not contain any stream\n", i);
-            ret = AVERROR(EINVAL);
-            goto fail;
+            return AVERROR(EINVAL);
         }
     }
 
@@ -1914,8 +1904,7 @@ static int transcode(OutputFile *output_files,
             uint64_t extra_size = (uint64_t)icodec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
 
             if (extra_size > INT_MAX) {
-                ret = AVERROR(EINVAL);
-                goto fail;
+                return AVERROR(EINVAL);
             }
 
             /* if stream_copy is selected, no need to decode or encode */
@@ -1934,8 +1923,7 @@ static int transcode(OutputFile *output_files,
             codec->rc_buffer_size = icodec->rc_buffer_size;
             codec->extradata= av_mallocz(extra_size);
             if (!codec->extradata) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
+                return AVERROR(ENOMEM);
             }
             memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             codec->extradata_size= icodec->extradata_size;
@@ -1992,8 +1980,7 @@ static int transcode(OutputFile *output_files,
             case AVMEDIA_TYPE_AUDIO:
                 ost->fifo= av_fifo_alloc(1024);
                 if (!ost->fifo) {
-                    ret = AVERROR(ENOMEM);
-                    goto fail;
+                    return AVERROR(ENOMEM);
                 }
                 ost->reformat_pair = MAKE_SFMT_PAIR(AV_SAMPLE_FMT_NONE,AV_SAMPLE_FMT_NONE);
                 if (!codec->sample_rate) {
@@ -2128,8 +2115,7 @@ static int transcode(OutputFile *output_files,
     if (!bit_buffer) {
         fprintf(stderr, "Cannot allocate %d bytes output buffer\n",
                 bit_buffer_size);
-        ret = AVERROR(ENOMEM);
-        goto fail;
+        return AVERROR(ENOMEM);
     }
 
     /* open each encoder */
@@ -2216,12 +2202,38 @@ static int transcode(OutputFile *output_files,
 
     if (ret) {
         fprintf(stderr, "%s\n", error);
-        goto fail;
+        return ret;
     }
 
     if (want_sdp) {
         print_sdp(output_files, nb_output_files);
     }
+
+    return 0;
+}
+
+/*
+ * The following code is the main loop of the file converter
+ */
+static int transcode(OutputFile *output_files,
+                     int nb_output_files,
+                     InputFile *input_files,
+                     int nb_input_files)
+{
+    int ret, i;
+    AVFormatContext *is, *os;
+    OutputStream *ost;
+    InputStream *ist;
+    uint8_t *no_packet;
+    int no_packet_count=0;
+    int64_t timer_start;
+
+    if (!(no_packet = av_mallocz(nb_input_files)))
+        exit_program(1);
+
+    ret = transcode_init(output_files, nb_output_files, input_files, nb_input_files);
+    if (ret < 0)
+        goto fail;
 
     if (verbose >= 0)
         fprintf(stderr, "Press ctrl-c to stop encoding\n");
