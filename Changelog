@@ -43,6 +43,7 @@ easier to use. The changes are:
       '-preset <presetname>'.
     * -intra option was removed, it's equivalent to -g 0.
 - XMV demuxer
+- LOAS demuxer
 
 
 version 0.8:

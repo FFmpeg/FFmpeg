@@ -113,6 +113,7 @@ OBJS-$(CONFIG_IVF_DEMUXER)               += ivfdec.o riff.o
 OBJS-$(CONFIG_IVF_MUXER)                 += ivfenc.o
 OBJS-$(CONFIG_JV_DEMUXER)                += jvdec.o
 OBJS-$(CONFIG_LMLM4_DEMUXER)             += lmlm4.o
+OBJS-$(CONFIG_LOAS_DEMUXER)              += loasdec.o
 OBJS-$(CONFIG_LXF_DEMUXER)               += lxfdec.o
 OBJS-$(CONFIG_M4V_DEMUXER)               += m4vdec.o rawdec.o
 OBJS-$(CONFIG_M4V_MUXER)                 += rawenc.o

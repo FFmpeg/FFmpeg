@@ -120,6 +120,8 @@ library:
     @tab A format used by libvpx
 @item LMLM4                     @tab   @tab X
     @tab Used by Linux Media Labs MPEG-4 PCI boards
+@item LOAS                      @tab   @tab X
+    @tab contains LATM multiplexed AAC audio
 @item LXF                       @tab   @tab X
     @tab VR native stream format, used by Leitch/Harris' video servers.
 @item Matroska                  @tab X @tab X
