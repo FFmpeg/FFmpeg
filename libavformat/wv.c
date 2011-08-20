@@ -330,7 +330,8 @@ static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     int64_t pos, pts;
 
     /* if found, seek there */
-    if (index >= 0){
+    if (index >= 0 &&
+        timestamp <= st->index_entries[st->nb_index_entries - 1].timestamp) {
         wc->block_parsed = 1;
         avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
         return 0;
