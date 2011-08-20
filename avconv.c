@@ -2194,6 +2194,10 @@ static int transcode_init(OutputFile *output_files,
                         ost->sync_ist->st->index);
             if (ost->st->stream_copy)
                 fprintf(stderr, " (copy)");
+            else
+                fprintf(stderr, " (%s -> %s)", input_streams[ost->source_index].dec ?
+                        input_streams[ost->source_index].dec->name : "?",
+                        ost->enc ? ost->enc->name : "?");
             fprintf(stderr, "\n");
         }
     }
