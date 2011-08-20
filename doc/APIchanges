@@ -31,7 +31,7 @@ API changes, most recent first:
 2011-08-02 - 9d39cbf - lavc 53.7.1
   Add AV_PKT_FLAG_CORRUPT AVPacket flag.
 
-2011-07-16 - xxxxxx - lavfi 2.27.0
+2011-07-16 - b57df29 - lavfi 2.27.0
   Add audio packing negotiation fields and helper functions.
 
   In particular, add AVFilterPacking enum, planar, in_packings and
@@ -51,7 +51,7 @@ API changes, most recent first:
 2011-06-28 - 5129336 - lavu 51.11.0 - avutil.h
   Define the AV_PICTURE_TYPE_NONE value in AVPictureType enum.
 
-2011-06-19 - xxxxxxx - lavfi 2.23.0 - avfilter.h
+2011-06-19 - fd2c0a5 - lavfi 2.23.0 - avfilter.h
   Add layout negotiation fields and helper functions.
 
   In particular, add in_chlayouts and out_chlayouts to AVFilterLink,
@@ -60,7 +60,7 @@ API changes, most recent first:
   avfilter_set_common_channel_layouts()
   avfilter_all_channel_layouts()
 
-2011-06-19 - xxxxxxx - lavfi 2.22.0 - AVFilterFormats
+2011-06-19 - 527ca39 - lavfi 2.22.0 - AVFilterFormats
   Change type of AVFilterFormats.formats from int * to int64_t *,
   and update formats handling API accordingly.
 
@@ -68,17 +68,17 @@ API changes, most recent first:
   it to int64_t. A new function, avfilter_make_format64_list(), that
   takes int64_t arrays has been added.
 
-2011-06-19 - xxxxxxx - lavfi 2.21.0 - vsink_buffer.h
+2011-06-19 - 44f669e - lavfi 2.21.0 - vsink_buffer.h
   Add video sink buffer and vsink_buffer.h public header.
 
-2011-06-12 - xxxxxxx - lavfi 2.18.0 - avcodec.h
+2011-06-12 - 9fdf772 - lavfi 2.18.0 - avcodec.h
   Add avfilter_get_video_buffer_ref_from_frame() function in
   libavfilter/avcodec.h.
 
-2011-06-12 - xxxxxxx - lavfi 2.17.0 - avfiltergraph.h
+2011-06-12 - c535494 - lavfi 2.17.0 - avfiltergraph.h
   Add avfilter_inout_alloc() and avfilter_inout_free() functions.
 
-2011-06-12 - xxxxxxx - lavfi 2.16.0 - avfilter_graph_parse()
+2011-06-12 - 6119b23 - lavfi 2.16.0 - avfilter_graph_parse()
   Change avfilter_graph_parse() signature.
 
 2011-06-23 - 67e9ae1 - lavu 51.8.0 - attributes.h
