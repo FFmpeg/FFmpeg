@@ -644,7 +644,11 @@ AVOutputFormat ff_avi_muxer = {
     .mime_type         = "video/x-msvideo",
     .extensions        = "avi",
     .priv_data_size    = sizeof(AVIContext),
-    .audio_codec       = CODEC_ID_MP2,
+#if CONFIG_LIBMP3LAME_ENCODER
+    .audio_codec       = CODEC_ID_MP3,
+#else
+    .audio_codec       = CODEC_ID_AC3,
+#endif
     .video_codec       = CODEC_ID_MPEG4,
     .write_header      = avi_write_header,
     .write_packet      = avi_write_packet,

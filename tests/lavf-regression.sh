@@ -44,7 +44,7 @@ do_audio_only()
 }
 
 if [ -n "$do_avi" ] ; then
-do_lavf avi
+do_lavf avi "-acodec mp2"
 fi
 
 if [ -n "$do_asf" ] ; then
