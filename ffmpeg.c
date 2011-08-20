@@ -2623,6 +2623,13 @@ static int transcode(AVFormatContext **output_files,
                 fprintf(stderr, " [sync #%d.%d]",
                         ost->sync_ist->file_index,
                         ost->sync_ist->st->index);
+            if(ost->encoding_needed)
+                fprintf(stderr, ": %s -> %s",
+                    input_streams[ost->source_index].dec ?
+                        input_streams[ost->source_index].dec->name : "?",
+                    ost->enc ? ost->enc->name : "?");
+            else
+                fprintf(stderr, ": copy");
             fprintf(stderr, "\n");
         }
     }
