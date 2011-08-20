@@ -87,7 +87,7 @@ do_lavf flv -an
 fi
 
 if [ -n "$do_mov" ] ; then
-do_lavf mov "-acodec pcm_alaw"
+do_lavf mov "-acodec pcm_alaw -c:v mpeg4"
 fi
 
 if [ -n "$do_dv_fmt" ] ; then
