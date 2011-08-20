@@ -68,7 +68,7 @@ specified for the inputs.
 @chapter Stream selection
 @c man begin STREAM SELECTION
 
-By default av tries to pick the "best" stream of each type present in input
+By default avconv tries to pick the "best" stream of each type present in input
 files and add them to each output file. For video, this means the highest
 resolution, for audio the highest channel count. For subtitle it's simply the
 first subtitle stream.
@@ -134,13 +134,16 @@ to the duration specified in seconds.
 Set the file size limit.
 
 @item -ss @var{position}
-Seek to given time position in seconds.
-@code{hh:mm:ss[.xxx]} syntax is also supported.
+When used as an input option (before @code{-i}), seeks in this input file to
+@var{position}. When used as an output option (before an output filename),
+decodes but discards input until the timestamps reach @var{position}. This is
+slower, but more accurate.
+
+@var{position} may be either in seconds or in @code{hh:mm:ss[.xxx]} form.
 
 @item -itsoffset @var{offset}
 Set the input time offset in seconds.
 @code{[-]hh:mm:ss[.xxx]} syntax is also supported.
-This option affects all the input files that follow it.
 The offset is added to the timestamps of the input files.
 Specifying a positive offset means that the corresponding
 streams are delayed by 'offset' seconds.
@@ -683,7 +686,7 @@ It disables matching streams from already created mappings.
 
 For example, to map ALL streams from the first input file to output
 @example
-av -i INPUT -map 0 output
+avconv -i INPUT -map 0 output
 @end example
 
 For example, if you have two audio streams in the first input file,

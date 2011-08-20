@@ -213,7 +213,7 @@ static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
-static uint64_t limit_filesize = 0;
+static uint64_t limit_filesize = UINT64_MAX;
 static int force_fps = 0;
 static char *forced_key_frames = NULL;
 
@@ -324,6 +324,7 @@ typedef struct OutputFile {
     int ost_index;       /* index of the first stream in output_streams */
     int64_t recording_time; /* desired length of the resulting file in microseconds */
     int64_t start_time;     /* start time in microseconds */
+    uint64_t limit_filesize;
 } OutputFile;
 
 static InputStream *input_streams = NULL;
@@ -1455,7 +1456,7 @@ static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_
     memset(buf, fill_char, size);
 }
 
-static void flush_encoders(int ist_index, OutputStream *ost_table, int nb_ostreams)
+static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
 {
     int i, ret;
 
@@ -1464,7 +1465,7 @@ static void flush_encoders(int ist_index, OutputStream *ost_table, int nb_ostrea
         AVCodecContext *enc = ost->st->codec;
         AVFormatContext *os = output_files[ost->file_index].ctx;
 
-        if (ost->source_index != ist_index || !ost->encoding_needed)
+        if (!ost->encoding_needed)
             continue;
 
         if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <=1)
@@ -1865,10 +1866,6 @@ static int output_packet(InputStream *ist, int ist_index,
         }
     }
  discard_packet:
-    if (pkt == NULL) {
-        /* EOF handling */
-        flush_encoders(ist_index, ost_table, nb_ostreams);
-    }
 
     return 0;
 }
@@ -2354,14 +2351,17 @@ static int transcode(OutputFile *output_files,
            smallest output pts */
         file_index = -1;
         for (i = 0; i < nb_output_streams; i++) {
+            OutputFile *of;
             int64_t ipts;
             double  opts;
             ost = &output_streams[i];
+            of = &output_files[ost->file_index];
             os = output_files[ost->file_index].ctx;
             ist = &input_streams[ost->source_index];
-            if(ost->is_past_recording_time || no_packet[ist->file_index])
+            if (ost->is_past_recording_time || no_packet[ist->file_index] ||
+                (os->pb && avio_tell(os->pb) >= of->limit_filesize))
                 continue;
-                opts = ost->st->pts.val * av_q2d(ost->st->time_base);
+            opts = ost->st->pts.val * av_q2d(ost->st->time_base);
             ipts = ist->pts;
             if (!input_files[ist->file_index].eof_reached){
                 if(ipts < ipts_min) {
@@ -2388,10 +2388,6 @@ static int transcode(OutputFile *output_files,
             }
             break;
         }
-
-        /* finish if limit size exhausted */
-        if (limit_filesize != 0 && limit_filesize <= avio_tell(output_files[0].ctx->pb))
-            break;
 
         /* read a frame from it and output it in the fifo */
         is = input_files[file_index].ctx;
@@ -2479,6 +2475,7 @@ static int transcode(OutputFile *output_files,
             output_packet(ist, i, output_streams, nb_output_streams, NULL);
         }
     }
+    flush_encoders(output_streams, nb_output_streams);
 
     term_exit();
 
@@ -3182,6 +3179,7 @@ static int opt_input_file(const char *opt, const char *filename)
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     av_dict_free(&ts_scale);
+    input_ts_offset = 0;
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3668,6 +3666,7 @@ static int opt_output_file(const char *opt, const char *filename)
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
     output_files[nb_output_files - 1].recording_time = recording_time;
     output_files[nb_output_files - 1].start_time     = start_time;
+    output_files[nb_output_files - 1].limit_filesize = limit_filesize;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
@@ -3794,6 +3793,7 @@ static int opt_output_file(const char *opt, const char *filename)
     chapters_input_file = INT_MAX;
     recording_time = INT64_MAX;
     start_time     = 0;
+    limit_filesize = UINT64_MAX;
 
     av_freep(&meta_data_maps);
     nb_meta_data_maps = 0;
