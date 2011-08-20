@@ -248,6 +248,7 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
                      picref->video->h, pkt->data, size);
     pkt->stream_index = lavfi->sink_stream_map[min_pts_sink_idx];
     pkt->pts = picref->pts;
+    pkt->pos = picref->pos;
     pkt->size = size;
     avfilter_unref_buffer(picref);
 
