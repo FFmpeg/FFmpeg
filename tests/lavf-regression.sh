@@ -103,7 +103,7 @@ do_lavf nut "-acodec mp2"
 fi
 
 if [ -n "$do_mkv" ] ; then
-do_lavf mkv
+do_lavf mkv "-c:a mp2 -c:v mpeg4"
 fi
 
 
