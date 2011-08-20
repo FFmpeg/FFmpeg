@@ -362,7 +362,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(X264Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "preset",        "Set the encoding preset (cf. x264 --fullhelp)",   OFFSET(preset),        FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
+    { "preset",        "Set the encoding preset (cf. x264 --fullhelp)",   OFFSET(preset),        FF_OPT_TYPE_STRING, { .str = "medium" }, 0, 0, VE},
     { "tune",          "Tune the encoding params (cf. x264 --fullhelp)",  OFFSET(tune),          FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "profile",       "Set profile restrictions (cf. x264 --fullhelp) ", OFFSET(profile),       FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
