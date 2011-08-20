@@ -71,9 +71,17 @@ static void roqvideo_decode_frame(RoqContext *ri)
     }
 
     bpos = xpos = ypos = 0;
+    if (chunk_size > buf_end - buf) {
+        av_log(ri->avctx, AV_LOG_ERROR, "Chunk does not fit in input buffer\n");
+        chunk_size = buf_end - buf;
+    }
     while(bpos < chunk_size) {
         for (yp = ypos; yp < ypos + 16; yp += 8)
             for (xp = xpos; xp < xpos + 16; xp += 8) {
+                if (bpos >= chunk_size) {
+                    av_log(ri->avctx, AV_LOG_ERROR, "Input buffer too small\n");
+                    return;
+                }
                 if (vqflg_pos < 0) {
                     vqflg = buf[bpos++]; vqflg |= (buf[bpos++] << 8);
                     vqflg_pos = 7;
@@ -103,6 +111,10 @@ static void roqvideo_decode_frame(RoqContext *ri)
                         if(k & 0x01) x += 4;
                         if(k & 0x02) y += 4;
 
+                        if (bpos >= chunk_size) {
+                            av_log(ri->avctx, AV_LOG_ERROR, "Input buffer too small\n");
+                            return;
+                        }
                         if (vqflg_pos < 0) {
                             vqflg = buf[bpos++];
                             vqflg |= (buf[bpos++] << 8);
