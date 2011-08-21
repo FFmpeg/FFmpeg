@@ -125,6 +125,8 @@ static int decode_residual_block(AVSContext *h, GetBitContext *gb,
         level_code = get_ue_code(gb,r->golomb_order);
         if(level_code >= ESCAPE_CODE) {
             run = ((level_code - ESCAPE_CODE) >> 1) + 1;
+            if(run > 64)
+                return -1;
             esc_code = get_ue_code(gb,esc_golomb_order);
             level = esc_code + (run > r->max_run ? 1 : r->level_add[run]);
             while(level > r->inc_limit)
@@ -190,7 +192,8 @@ static inline int decode_residual_inter(AVSContext *h) {
 
 static int decode_mb_i(AVSContext *h, int cbp_code) {
     GetBitContext *gb = &h->s.gb;
-    int block, pred_mode_uv;
+    unsigned pred_mode_uv;
+    int block;
     uint8_t top[18];
     uint8_t *left = NULL;
     uint8_t *d;
@@ -446,6 +449,8 @@ static inline int check_for_slice(AVSContext *h) {
     if((show_bits_long(gb,24+align) & 0xFFFFFF) == 0x000001) {
         skip_bits_long(gb,24+align);
         h->stc = get_bits(gb,8);
+        if (h->stc >= h->mb_height)
+            return 0;
         decode_slice_header(h,gb);
         return 1;
     }
@@ -660,7 +665,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     buf_end = buf + buf_size;
     for(;;) {
         buf_ptr = ff_find_start_code(buf_ptr,buf_end, &stc);
-        if(stc & 0xFFFFFE00)
+        if((stc & 0xFFFFFE00) || buf_ptr == buf_end)
             return FFMAX(0, buf_ptr - buf - s->parse_context.last_index);
         input_size = (buf_end - buf_ptr)*8;
         switch(stc) {
