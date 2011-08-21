@@ -109,7 +109,6 @@ static int caf_write_header(AVFormatContext *s)
     case CODEC_ID_AC3:
     case CODEC_ID_ALAC:
     case CODEC_ID_AMR_NB:
-    case CODEC_ID_QCELP:
     case CODEC_ID_QDM2:
         av_log(s, AV_LOG_ERROR, "muxing codec currently unsupported\n");
         return AVERROR_PATCHWELCOME;
