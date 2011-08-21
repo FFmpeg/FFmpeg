@@ -198,6 +198,8 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
             st->codec->time_base  = link->time_base;
             st->codec->width      = link->w;
             st->codec->height     = link->h;
+            st       ->sample_aspect_ratio =
+            st->codec->sample_aspect_ratio = link->sample_aspect_ratio;
         }
     }
 
