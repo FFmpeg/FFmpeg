@@ -125,9 +125,9 @@ static inline void log_input_change(void *ctx, AVFilterLink *link, AVFilterBuffe
                                  -1, ref->audio->channel_layout);
     av_log(ctx, AV_LOG_INFO,
            "Audio input format changed: "
-           "%s:%s:%"PRId64" -> %s:%s:%u, normalizing\n",
+           "%s:%s:%d -> %s:%s:%d, normalizing\n",
            av_get_sample_fmt_name(link->format),
-           old_layout_str, link->sample_rate,
+           old_layout_str, (int)link->sample_rate,
            av_get_sample_fmt_name(ref->format),
            new_layout_str, ref->audio->sample_rate);
 }

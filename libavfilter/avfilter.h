@@ -106,7 +106,7 @@ typedef struct AVFilterBuffer {
 typedef struct AVFilterBufferRefAudioProps {
     int64_t channel_layout;     ///< channel layout of audio buffer
     int nb_samples;             ///< number of audio samples per channel
-    uint32_t sample_rate;       ///< audio buffer sample rate
+    int sample_rate;            ///< audio buffer sample rate
     int planar;                 ///< audio buffer - planar or packed
 } AVFilterBufferRefAudioProps;
 
@@ -623,7 +623,11 @@ struct AVFilterLink {
     AVRational sample_aspect_ratio; ///< agreed upon sample aspect ratio
     /* These parameters apply only to audio */
     int64_t channel_layout;     ///< channel layout of current buffer (see libavutil/audioconvert.h)
+#if LIBAVFILTER_VERSION_MAJOR < 3
     int64_t sample_rate;        ///< samples per second
+#else
+    int sample_rate;            ///< samples per second
+#endif
     int planar;                 ///< agreed upon packing mode of audio buffers. true if planar.
 
     int format;                 ///< agreed upon media format
