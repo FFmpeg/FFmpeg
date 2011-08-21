@@ -180,6 +180,7 @@ External library support:
                            and libraw1394 [no]
   --enable-libfaac         enable AAC encoding via libfaac [no]
   --enable-libfdk-aac      enable AAC encoding via libfdk-aac [no]
+  --enable-libflite        enable flite (voice synthesis) support via libflite [no]
   --enable-libfreetype     enable libfreetype [no]
   --enable-libgsm          enable GSM de/encoding via libgsm [no]
   --enable-libiec61883     enable iec61883 via libiec61883 [no]
@@ -1074,6 +1075,7 @@ CONFIG_LIST="
     libdc1394
     libfaac
     libfdk_aac
+    libflite
     libfreetype
     libgsm
     libiec61883
@@ -1787,6 +1789,7 @@ cropdetect_filter_deps="gpl"
 delogo_filter_deps="gpl"
 deshake_filter_deps="avcodec"
 drawtext_filter_deps="libfreetype"
+flite_filter_deps="libflite"
 frei0r_filter_deps="frei0r dlopen"
 frei0r_filter_extralibs='$ldl'
 frei0r_src_filter_deps="frei0r dlopen"
@@ -3390,6 +3393,8 @@ enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0 &&
 enabled libcaca    && require_pkg_config caca caca.h caca_create_canvas
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfdk_aac && require  libfdk_aac fdk-aac/aacenc_lib.h aacEncOpen -lfdk-aac
+flite_libs="-lflite_cmu_time_awb -lflite_cmu_us_awb -lflite_cmu_us_kal -lflite_cmu_us_kal16 -lflite_cmu_us_rms -lflite_cmu_us_slt -lflite_usenglish -lflite_cmulex -lflite"
+enabled libflite   && require2 libflite "flite/flite.h" flite_init $flite_libs
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
 enabled libilbc    && require  libilbc ilbc.h WebRtcIlbcfix_InitDecode -lilbc

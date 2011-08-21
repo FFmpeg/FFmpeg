@@ -1026,6 +1026,65 @@ Channel layout of the audio data, in the form that can be accepted by
 
 All the parameters need to be explicitly defined.
 
+@section flite
+
+Synthesize a voice utterance using the libflite library.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libflite}.
+
+The source accepts parameters as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted parameters follows.
+
+@table @option
+
+@item list_voices
+If set to 1, list the names of the available voices and exit
+immediately. Default value is 0.
+
+@item nb_samples, n
+Set the maximum number of samples per frame. Default value is 512.
+
+@item textfile
+Set the filename containing the text to speak.
+
+@item text
+Set the text to speak.
+
+@item voice, v
+Set the voice to use for the speech synthesis. Default value is
+@code{kal}. See also the @var{list_voices} option.
+@end table
+
+@section Examples
+
+@itemize
+@item
+Read from file @file{speech.txt}, and synthetize the text using the
+standard flite voice:
+@example
+flite=textfile=speech.txt
+@end example
+
+@item
+Read the specified text selecting the @code{slt} voice:
+@example
+flite=text='So fare thee well, poor devil of a Sub-Sub, whose commentator I am':voice=slt
+@end example
+
+@item
+Make @file{ffplay} speech the specified text, using @code{flite} and
+the @code{lavfi} device:
+@example
+ffplay -f lavfi flite='No more be grieved for which that thou hast done.'
+@end example
+@end itemize
+
+For more information about libflite, check:
+@url{http://www.speech.cs.cmu.edu/flite/}
+
 @c man end AUDIO SOURCES
 
 @chapter Audio Sinks

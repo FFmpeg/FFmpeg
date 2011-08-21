@@ -70,6 +70,7 @@ OBJS-$(CONFIG_VOLUME_FILTER)                 += af_volume.o
 
 OBJS-$(CONFIG_AEVALSRC_FILTER)               += asrc_aevalsrc.o
 OBJS-$(CONFIG_ANULLSRC_FILTER)               += asrc_anullsrc.o
+OBJS-$(CONFIG_FLITE_FILTER)                  += asrc_flite.o
 
 OBJS-$(CONFIG_ABUFFERSINK_FILTER)            += sink_buffer.o
 OBJS-$(CONFIG_ANULLSINK_FILTER)              += asink_anullsink.o

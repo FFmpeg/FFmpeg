@@ -37,6 +37,7 @@ version next:
 - caca output device using libcaca
 - alphaextract and alphamerge filters
 - concat filter
+- flite filter
 
 
 version 0.11:

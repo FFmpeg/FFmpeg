@@ -59,6 +59,7 @@ void avfilter_register_all(void)
 
     REGISTER_FILTER (AEVALSRC,    aevalsrc,    asrc);
     REGISTER_FILTER (ANULLSRC,    anullsrc,    asrc);
+    REGISTER_FILTER (FLITE,       flite,       asrc);
 
     REGISTER_FILTER (ABUFFERSINK, abuffersink, asink);
     REGISTER_FILTER (ANULLSINK,   anullsink,   asink);
