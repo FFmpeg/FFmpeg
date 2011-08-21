@@ -2340,6 +2340,9 @@ generated per second. It has to be a string in the format
 number or a valid video frame rate abbreviation. The default value is
 "25".
 
+@item sar
+Set the sample aspect ratio of the sourced video.
+
 @item duration
 Set the video duration of the sourced video. The accepted syntax is:
 @example

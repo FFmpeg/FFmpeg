@@ -46,6 +46,8 @@ typedef struct {
     char *size;                 ///< video frame size
     char *rate;                 ///< video frame rate
     char *duration;             ///< total duration of the generated video
+    AVRational sar;             ///< sample aspect ratio
+
     void (* fill_picture_fn)(AVFilterContext *ctx, AVFilterBufferRef *picref);
 
     /* only used by rgbtest */
@@ -60,6 +62,7 @@ static const AVOption testsrc_options[]= {
     { "rate",     "set video rate",     OFFSET(rate),     FF_OPT_TYPE_STRING, {.str = "25"},      0, 0 },
     { "r",        "set video rate",     OFFSET(rate),     FF_OPT_TYPE_STRING, {.str = "25"},      0, 0 },
     { "duration", "set video duration", OFFSET(duration), FF_OPT_TYPE_STRING, {.str = NULL},      0, 0 },
+    { "sar",      "set video sample aspect ratio", OFFSET(sar), FF_OPT_TYPE_RATIONAL, {.dbl= 1},  0, INT_MAX },
     { NULL },
 };
 
@@ -100,9 +103,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     test->nb_frame = 0;
     test->pts = 0;
 
-    av_log(ctx, AV_LOG_INFO, "size:%dx%d rate:%d/%d duration:%f\n",
+    av_log(ctx, AV_LOG_INFO, "size:%dx%d rate:%d/%d duration:%f sar:%d/%d\n",
            test->w, test->h, frame_rate_q.num, frame_rate_q.den,
-           duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base));
+           duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base),
+           test->sar.num, test->sar.den);
     return 0;
 }
 
@@ -112,6 +116,7 @@ static int config_props(AVFilterLink *outlink)
 
     outlink->w = test->w;
     outlink->h = test->h;
+    outlink->sample_aspect_ratio = test->sar;
     outlink->time_base = test->time_base;
 
     return 0;
@@ -127,6 +132,7 @@ static int request_frame(AVFilterLink *outlink)
     picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                        test->w, test->h);
     picref->pts = test->pts++;
+    picref->video->sample_aspect_ratio = test->sar;
     test->nb_frame++;
     test->fill_picture_fn(outlink->src, picref);
 
