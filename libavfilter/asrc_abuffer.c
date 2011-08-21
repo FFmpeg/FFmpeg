@@ -249,10 +249,11 @@ int av_asrc_buffer_add_buffer(AVFilterContext *ctx,
                                       pts, flags);
 }
 
-static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
+static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
 {
     ABufferSourceContext *abuffer = ctx->priv;
     char *arg = NULL, *ptr, chlayout_str[16];
+    char *args = av_strdup(args0);
     int ret;
 
     arg = strtok_r(args, ":", &ptr);
@@ -260,8 +261,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 #define ADD_FORMAT(fmt_name)                                            \
     if (!arg)                                                           \
         goto arg_fail;                                                  \
-    if ((ret = ff_parse_##fmt_name(&abuffer->fmt_name, arg, ctx)) < 0)  \
+    if ((ret = ff_parse_##fmt_name(&abuffer->fmt_name, arg, ctx)) < 0) { \
+        av_freep(&args);                                                \
         return ret;                                                     \
+    }                                                                   \
     if (*args)                                                          \
         arg = strtok_r(NULL, ":", &ptr)
 
@@ -281,12 +284,14 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     av_log(ctx, AV_LOG_INFO, "format:%s layout:%s rate:%d\n",
            av_get_sample_fmt_name(abuffer->sample_format), chlayout_str,
            abuffer->sample_rate);
+    av_freep(&args);
 
     return 0;
 
 arg_fail:
     av_log(ctx, AV_LOG_ERROR, "Invalid arguments, must be of the form "
                               "sample_rate:sample_fmt:channel_layout:packing\n");
+    av_freep(&args);
     return AVERROR(EINVAL);
 }
 
