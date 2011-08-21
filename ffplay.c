@@ -207,6 +207,7 @@ typedef struct VideoState {
 
     char filename[1024];
     int width, height, xleft, ytop;
+    int step;
 
 #if CONFIG_AVFILTER
     AVFilterContext *out_video_filter;          ///<the last filter in the video chain
@@ -240,7 +241,6 @@ static int show_status = 1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
 static int64_t duration = AV_NOPTS_VALUE;
-static int step = 0;
 static int thread_count = 1;
 static int workaround_bugs = 1;
 static int fast = 0;
@@ -1794,9 +1794,8 @@ static int video_thread(void *arg)
         if (ret < 0)
             goto the_end;
 
-        if (step)
-            if (cur_stream)
-                stream_toggle_pause(cur_stream);
+        if (cur_stream && cur_stream->step)
+            stream_toggle_pause(cur_stream);
     }
  the_end:
 #if CONFIG_AVFILTER
@@ -2648,21 +2647,18 @@ static void toggle_full_screen(void)
     video_open(cur_stream);
 }
 
-static void toggle_pause(void)
+static void toggle_pause(VideoState *is)
 {
-    if (cur_stream)
-        stream_toggle_pause(cur_stream);
-    step = 0;
+    stream_toggle_pause(is);
+    is->step = 0;
 }
 
-static void step_to_next_frame(void)
+static void step_to_next_frame(VideoState *is)
 {
-    if (cur_stream) {
-        /* if the stream is paused unpause it, then step */
-        if (cur_stream->paused)
-            stream_toggle_pause(cur_stream);
-    }
-    step = 1;
+    /* if the stream is paused unpause it, then step */
+    if (is->paused)
+        stream_toggle_pause(is);
+    is->step = 1;
 }
 
 static void toggle_audio_display(void)
@@ -2702,10 +2698,12 @@ static void event_loop(void)
                 break;
             case SDLK_p:
             case SDLK_SPACE:
-                toggle_pause();
+                if (cur_stream)
+                    toggle_pause(cur_stream);
                 break;
             case SDLK_s: //S: Step to next frame
-                step_to_next_frame();
+                if (cur_stream)
+                    step_to_next_frame(cur_stream);
                 break;
             case SDLK_a:
                 if (cur_stream)
