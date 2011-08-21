@@ -1189,6 +1189,15 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
     return s->samples_left > 0 ? 0 : avpkt->size;
 }
 
+static void wavpack_decode_flush(AVCodecContext *avctx)
+{
+    WavpackContext *s = avctx->priv_data;
+    int i;
+
+    for (i = 0; i < s->fdec_num; i++)
+        s->fdec[i]->samples_left = 0;
+}
+
 AVCodec ff_wavpack_decoder = {
     .name           = "wavpack",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -1197,6 +1206,7 @@ AVCodec ff_wavpack_decoder = {
     .init           = wavpack_decode_init,
     .close          = wavpack_decode_end,
     .decode         = wavpack_decode_frame,
+    .flush          = wavpack_decode_flush,
     .capabilities = CODEC_CAP_SUBFRAMES,
     .long_name = NULL_IF_CONFIG_SMALL("WavPack"),
 };

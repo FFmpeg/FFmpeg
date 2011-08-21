@@ -250,6 +250,7 @@ static int wv_read_packet(AVFormatContext *s,
     WVContext *wc = s->priv_data;
     int ret;
     int size, ver, off;
+    int64_t pos;
 
     if (url_feof(s->pb))
         return AVERROR(EIO);
@@ -258,6 +259,7 @@ static int wv_read_packet(AVFormatContext *s,
             return -1;
     }
 
+    pos = wc->pos;
     off = wc->multichannel ? 4 : 0;
     if(av_new_packet(pkt, wc->blksize + WV_EXTRA_SIZE + off) < 0)
         return AVERROR(ENOMEM);
@@ -314,7 +316,7 @@ static int wv_read_packet(AVFormatContext *s,
     pkt->stream_index = 0;
     wc->block_parsed = 1;
     pkt->pts = wc->soff;
-    av_add_index_entry(s->streams[0], wc->pos, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
+    av_add_index_entry(s->streams[0], pos, pkt->pts, 0, 0, AVINDEX_KEYFRAME);
     return 0;
 }
 
@@ -328,7 +330,8 @@ static int wv_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp,
     int64_t pos, pts;
 
     /* if found, seek there */
-    if (index >= 0){
+    if (index >= 0 &&
+        timestamp <= st->index_entries[st->nb_index_entries - 1].timestamp) {
         wc->block_parsed = 1;
         avio_seek(s->pb, st->index_entries[index].pos, SEEK_SET);
         return 0;
