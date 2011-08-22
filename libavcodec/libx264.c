@@ -42,6 +42,7 @@ typedef struct X264Context {
     char *profile;
     int fastfirstpass;
     float crf;
+    float crf_max;
     int cqp;
     int aq_mode;
     float aq_strength;
@@ -294,6 +295,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
             x4->params.rc.i_rc_method   = X264_RC_CQP;
             x4->params.rc.i_qp_constant = x4->cqp;
         }
+
+        if (x4->crf_max >= 0)
+            x4->params.rc.f_rf_constant_max = x4->crf_max;
     }
 
     if (avctx->rc_buffer_size && avctx->rc_initial_buffer_occupancy &&
@@ -410,6 +414,7 @@ static const AVOption options[] = {
     { "profile",       "Set profile restrictions (cf. x264 --fullhelp) ", OFFSET(profile),       FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
     { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
+    { "crf_max",       "In CRF mode, prevents VBV from lowering quality beyond this point.",OFFSET(crf_max), FF_OPT_TYPE_FLOAT, {-1 }, -1, FLT_MAX, VE },
     { "cqp",           "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
     { "aq_mode",       "AQ method",                                       OFFSET(aq_mode),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "aq_mode"},
     { "none",          NULL,                              0, FF_OPT_TYPE_CONST, {X264_AQ_NONE},         INT_MIN, INT_MAX, VE, "aq_mode" },

@@ -2764,7 +2764,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     attribute_deprecated int rc_lookahead;
-#endif
 
     /**
      * Constant rate factor maximum
@@ -2773,7 +2772,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: unused
      */
-    float crf_max;
+    attribute_deprecated float crf_max;
+#endif
 
     int log_level_offset;
 
