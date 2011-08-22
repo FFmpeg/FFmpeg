@@ -2722,6 +2722,7 @@ typedef struct AVCodecContext {
      */
     int weighted_p_pred;
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * AQ mode
      * 0: Disabled
@@ -2730,7 +2731,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    int aq_mode;
+    attribute_deprecated int aq_mode;
+#endif
 
     /**
      * AQ strength

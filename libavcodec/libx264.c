@@ -43,6 +43,7 @@ typedef struct X264Context {
     int fastfirstpass;
     float crf;
     int cqp;
+    int aq_mode;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -234,7 +235,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_me_method = X264_ME_TESA;
     else x4->params.analyse.i_me_method = X264_ME_HEX;
 
-    x4->params.rc.i_aq_mode               = avctx->aq_mode;
     x4->params.rc.f_aq_strength           = avctx->aq_strength;
     x4->params.rc.i_lookahead             = avctx->rc_lookahead;
 
@@ -307,6 +307,15 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
+
+#if FF_API_X264_GLOBAL_OPTS
+    if (avctx->aq_mode >= 0)
+        x4->params.rc.i_aq_mode = avctx->aq_mode;
+#endif
+
+    if (x4->aq_mode >= 0)
+        x4->params.rc.i_aq_mode = x4->aq_mode;
+
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -382,6 +391,10 @@ static const AVOption options[] = {
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
     { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
     { "cqp",           "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "aq_mode",       "AQ method",                                       OFFSET(aq_mode),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "aq_mode"},
+    { "none",          NULL,                              0, FF_OPT_TYPE_CONST, {X264_AQ_NONE},         INT_MIN, INT_MAX, VE, "aq_mode" },
+    { "variance",      "Variance AQ (complexity mask)",   0, FF_OPT_TYPE_CONST, {X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, "aq_mode" },
+    { "autovariance",  "Auto-variance AQ (experimental)", 0, FF_OPT_TYPE_CONST, {X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
     { NULL },
 };
 

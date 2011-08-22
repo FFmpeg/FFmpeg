@@ -439,7 +439,9 @@ static const AVOption options[]={
 {"psy", "use psycho visual optimization", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_PSY }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"psy_rd", "specify psycho visual strength", OFFSET(psy_rd), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0, FLT_MAX, V|E},
 {"psy_trellis", "specify psycho visual trellis", OFFSET(psy_trellis), FF_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, FLT_MAX, V|E},
-{"aq_mode", "specify aq method", OFFSET(aq_mode), FF_OPT_TYPE_INT, {.dbl = 1 }, 0, INT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
+{"aq_mode", "specify aq method", OFFSET(aq_mode), FF_OPT_TYPE_INT, {.dbl = -1 }, -1, INT_MAX, V|E},
+#endif
 {"aq_strength", "specify aq strength", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0, FLT_MAX, V|E},
 {"rc_lookahead", "specify number of frames to look ahead for frametype", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {.dbl = 40 }, 0, INT_MAX, V|E},
 {"ssim", "ssim will be calculated during encoding", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SSIM }, INT_MIN, INT_MAX, V|E, "flags2"},
