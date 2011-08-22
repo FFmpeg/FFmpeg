@@ -2732,7 +2732,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     attribute_deprecated int aq_mode;
-#endif
 
     /**
      * AQ strength
@@ -2740,7 +2739,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    float aq_strength;
+    attribute_deprecated float aq_strength;
+#endif
 
     /**
      * PSY RD
