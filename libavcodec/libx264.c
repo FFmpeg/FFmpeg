@@ -46,6 +46,7 @@ typedef struct X264Context {
     int aq_mode;
     float aq_strength;
     float psy_rd;
+    float psy_trellis;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -240,7 +241,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.rc.i_lookahead             = avctx->rc_lookahead;
 
     x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
-    x4->params.analyse.f_psy_trellis      = avctx->psy_trellis;
 
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
@@ -315,6 +315,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_aq_strength = avctx->aq_strength;
     if (avctx->psy_rd >= 0)
         x4->params.analyse.f_psy_rd           = avctx->psy_rd;
+    if (avctx->psy_trellis >= 0)
+        x4->params.analyse.f_psy_trellis      = avctx->psy_trellis;
 #endif
 
     if (x4->aq_mode >= 0)
@@ -323,6 +325,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_aq_strength = x4->aq_strength;
     if (x4->psy_rd >= 0)
         x4->params.analyse.f_psy_rd = x4->psy_rd;
+    if (x4->psy_trellis >= 0)
+        x4->params.analyse.f_psy_trellis = x4->psy_trellis;
 
 
     if (x4->fastfirstpass)
@@ -405,6 +409,7 @@ static const AVOption options[] = {
     { "autovariance",  "Auto-variance AQ (experimental)", 0, FF_OPT_TYPE_CONST, {X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
     { "aq_strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
     { "pdy_rd",        "Psy RD strength.",                                OFFSET(psy_rd),        FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
+    { "psy_trellis",   "Psy trellis strength",                            OFFSET(psy_trellis),   FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
     { NULL },
 };
 

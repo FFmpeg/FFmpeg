@@ -2748,7 +2748,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     attribute_deprecated float psy_rd;
-#endif
 
     /**
      * PSY trellis
@@ -2756,7 +2755,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    float psy_trellis;
+    attribute_deprecated float psy_trellis;
+#endif
 
     /**
      * RC lookahead
