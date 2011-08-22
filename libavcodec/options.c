@@ -437,7 +437,9 @@ static const AVOption options[]={
 {"color_range", NULL, OFFSET(color_range), FF_OPT_TYPE_INT, {.dbl = AVCOL_RANGE_UNSPECIFIED }, 0, AVCOL_RANGE_NB-1, V|E|D},
 {"chroma_sample_location", NULL, OFFSET(chroma_sample_location), FF_OPT_TYPE_INT, {.dbl = AVCHROMA_LOC_UNSPECIFIED }, 0, AVCHROMA_LOC_NB-1, V|E|D},
 {"psy", "use psycho visual optimization", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_PSY }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"psy_rd", "specify psycho visual strength", OFFSET(psy_rd), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0, FLT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
+{"psy_rd", "specify psycho visual strength", OFFSET(psy_rd), FF_OPT_TYPE_FLOAT, {.dbl = -1.0 }, -1, FLT_MAX, V|E},
+#endif
 {"psy_trellis", "specify psycho visual trellis", OFFSET(psy_trellis), FF_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, FLT_MAX, V|E},
 #if FF_API_X264_GLOBAL_OPTS
 {"aq_mode", "specify aq method", OFFSET(aq_mode), FF_OPT_TYPE_INT, {.dbl = -1 }, -1, INT_MAX, V|E},
