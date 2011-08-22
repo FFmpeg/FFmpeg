@@ -53,6 +53,7 @@ typedef struct X264Context {
     int ssim;
     int intra_refresh;
     int b_pyramid;
+    int mixed_refs;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -244,7 +245,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
 
-    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
     x4->params.analyse.b_chroma_me        = avctx->me_cmp & FF_CMP_CHROMA;
     x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
     x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
@@ -326,6 +326,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
     x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
+    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
 #endif
 
     if (x4->aq_mode >= 0)
@@ -349,7 +350,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_intra_refresh = x4->intra_refresh;
     if (x4->b_pyramid >= 0)
         x4->params.i_bframe_pyramid = x4->b_pyramid;
-
+    if (x4->mixed_refs >= 0)
+        x4->params.analyse.b_mixed_references = x4->mixed_refs;
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -443,6 +445,7 @@ static const AVOption options[] = {
     { "none",          NULL,                                  0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_NONE},   INT_MIN, INT_MAX, VE, "b_pyramid" },
     { "strict",        "Strictly hierarchical pyramid",       0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_STRICT}, INT_MIN, INT_MAX, VE, "b_pyramid" },
     { "normal",        "Non-strict (not Blu-ray compatible)", 0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_NORMAL}, INT_MIN, INT_MAX, VE, "b_pyramid" },
+    { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), FF_OPT_TYPE_INT, {-1}, -1, 1, VE },
     { NULL },
 };
 
