@@ -1233,6 +1233,18 @@ int av_find_stream_info(AVFormatContext *ic);
 int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options);
 
 /**
+ * Find the programs which belong to a given stream.
+ *
+ * @param ic    media file handle
+ * @param last  the last found program, the search will start after this
+ *              program, or from the beginning if it is NULL
+ * @param s     stream index
+ * @return the next program which belongs to s, NULL if no program is found or
+ *         the last program is not among the programs of ic.
+ */
+AVProgram *av_find_program_from_stream(AVFormatContext *ic, AVProgram *last, int s);
+
+/**
  * Find the "best" stream in the file.
  * The best stream is determined according to various heuristics as the most
  * likely to be what the user expects.

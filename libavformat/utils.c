@@ -2574,14 +2574,20 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     return ret;
 }
 
-static AVProgram *find_program_from_stream(AVFormatContext *ic, int s)
+AVProgram *av_find_program_from_stream(AVFormatContext *ic, AVProgram *last, int s)
 {
     int i, j;
 
-    for (i = 0; i < ic->nb_programs; i++)
-        for (j = 0; j < ic->programs[i]->nb_stream_indexes; j++)
-            if (ic->programs[i]->stream_index[j] == s)
-                return ic->programs[i];
+    for (i = 0; i < ic->nb_programs; i++) {
+        if (ic->programs[i] == last) {
+            last = NULL;
+        } else {
+            if (!last)
+                for (j = 0; j < ic->programs[i]->nb_stream_indexes; j++)
+                    if (ic->programs[i]->stream_index[j] == s)
+                        return ic->programs[i];
+        }
+    }
     return NULL;
 }
 
@@ -2598,7 +2604,7 @@ int av_find_best_stream(AVFormatContext *ic,
     AVCodec *decoder = NULL, *best_decoder = NULL;
 
     if (related_stream >= 0 && wanted_stream_nb < 0) {
-        AVProgram *p = find_program_from_stream(ic, related_stream);
+        AVProgram *p = av_find_program_from_stream(ic, NULL, related_stream);
         if (p) {
             program = p->stream_index;
             nb_streams = p->nb_stream_indexes;
