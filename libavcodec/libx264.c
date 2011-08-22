@@ -49,6 +49,7 @@ typedef struct X264Context {
     char *psy_rd;
     int rc_lookahead;
     int weightp;
+    int weightb;
     int ssim;
     int intra_refresh;
     int b_pyramid;
@@ -226,8 +227,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
 
-    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
-
     if (avctx->me_method == ME_EPZS)
         x4->params.analyse.i_me_method = X264_ME_DIA;
     else if (avctx->me_method == ME_HEX)
@@ -326,6 +325,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
     x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
+    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
 #endif
 
     if (x4->aq_mode >= 0)
@@ -340,6 +340,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.i_lookahead = x4->rc_lookahead;
     if (x4->weightp >= 0)
         x4->params.analyse.i_weighted_pred = x4->weightp;
+    if (x4->weightb >= 0)
+        x4->params.analyse.b_weighted_bipred = x4->weightb;
 
     if (x4->ssim >= 0)
         x4->params.analyse.b_ssim = x4->ssim;
@@ -430,6 +432,7 @@ static const AVOption options[] = {
     { "aq-strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
     { "psy-rd",        "Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.", OFFSET(psy_rd), FF_OPT_TYPE_STRING,  {0 }, 0, 0, VE},
     { "rc-lookahead",  "Number of frames to look ahead for frametype and ratecontrol", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {-1 }, -1, INT_MAX, VE },
+    { "weightb",       "Weighted prediction for B-frames.",               OFFSET(weightb),       FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
     { "weightp",       "Weighted prediction analysis method.",            OFFSET(weightp),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "weightp" },
     { "none",          NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_NONE},   INT_MIN, INT_MAX, VE, "weightp" },
     { "simple",        NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SIMPLE}, INT_MIN, INT_MAX, VE, "weightp" },
