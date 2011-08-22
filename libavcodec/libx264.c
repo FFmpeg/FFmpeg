@@ -23,6 +23,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include <x264.h>
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -40,6 +41,7 @@ typedef struct X264Context {
     char *tune;
     char *profile;
     int fastfirstpass;
+    float crf;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -274,13 +276,21 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->flags & CODEC_FLAG_PASS2) {
         x4->params.rc.b_stat_read = 1;
     } else {
+#if FF_API_X264_GLOBAL_OPTS
         if (avctx->crf) {
             x4->params.rc.i_rc_method   = X264_RC_CRF;
             x4->params.rc.f_rf_constant = avctx->crf;
             x4->params.rc.f_rf_constant_max = avctx->crf_max;
-        } else if (avctx->cqp > -1) {
+        } else
+#endif
+               if (avctx->cqp > -1) {
             x4->params.rc.i_rc_method   = X264_RC_CQP;
             x4->params.rc.i_qp_constant = avctx->cqp;
+        }
+
+        if (x4->crf >= 0) {
+            x4->params.rc.i_rc_method   = X264_RC_CRF;
+            x4->params.rc.f_rf_constant = x4->crf;
         }
     }
 
@@ -365,6 +375,7 @@ static const AVOption options[] = {
     { "tune",          "Tune the encoding params (cf. x264 --fullhelp)",  OFFSET(tune),          FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "profile",       "Set profile restrictions (cf. x264 --fullhelp) ", OFFSET(profile),       FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
+    { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
     { NULL },
 };
 
