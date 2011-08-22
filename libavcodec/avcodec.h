@@ -625,8 +625,8 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_PSY           0x00080000 ///< Use psycho visual optimizations.
 #if FF_API_X264_GLOBAL_OPTS
 #define CODEC_FLAG2_SSIM          0x00100000 ///< Compute SSIM during encoding, error[] values are undefined.
-#endif
 #define CODEC_FLAG2_INTRA_REFRESH 0x00200000 ///< Use periodic insertion of intra blocks instead of keyframes.
+#endif
 
 /* Unsupported options :
  *              Syntax Arithmetic coding (SAC)

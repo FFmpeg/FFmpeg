@@ -50,6 +50,7 @@ typedef struct X264Context {
     int rc_lookahead;
     int weightp;
     int ssim;
+    int intra_refresh;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -266,7 +267,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.p_log_private        = avctx;
     x4->params.i_log_level          = X264_LOG_DEBUG;
 
-    x4->params.b_intra_refresh      = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     if (avctx->bit_rate) {
         x4->params.rc.i_bitrate   = avctx->bit_rate / 1000;
         x4->params.rc.i_rc_method = X264_RC_ABR;
@@ -325,6 +325,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->weighted_p_pred >= 0)
         x4->params.analyse.i_weighted_pred    = avctx->weighted_p_pred;
     x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
+    x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
 #endif
 
     if (x4->aq_mode >= 0)
@@ -342,6 +343,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     if (x4->ssim >= 0)
         x4->params.analyse.b_ssim = x4->ssim;
+    if (x4->intra_refresh >= 0)
+        x4->params.b_intra_refresh = x4->intra_refresh;
 
 
     if (x4->fastfirstpass)
@@ -430,6 +433,7 @@ static const AVOption options[] = {
     { "simple",        NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SIMPLE}, INT_MIN, INT_MAX, VE, "weightp" },
     { "smart",         NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SMART},  INT_MIN, INT_MAX, VE, "weightp" },
     { "ssim",          "Calculate and print SSIM stats.",                 OFFSET(ssim),          FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
+    { "intra-refresh", "Use Periodic Intra Refresh instead of IDR frames.",OFFSET(intra_refresh),FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
     { NULL },
 };
 
