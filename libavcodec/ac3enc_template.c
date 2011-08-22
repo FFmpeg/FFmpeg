@@ -132,11 +132,6 @@ static inline float calc_cpl_coord(float energy_ch, float energy_cpl)
 
 /**
  * Calculate coupling channel and coupling coordinates.
- * TODO: Currently this is only used for the floating-point encoder. I was
- *       able to make it work for the fixed-point encoder, but quality was
- *       generally lower in most cases than not using coupling. If a more
- *       adaptive coupling strategy were to be implemented it might be useful
- *       at that time to use coupling for the fixed-point encoder as well.
  */
 static void apply_channel_coupling(AC3EncodeContext *s)
 {
