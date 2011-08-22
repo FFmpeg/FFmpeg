@@ -393,8 +393,8 @@ static const AVOption options[]={
 {"mixed_refs", "one reference per partition, as opposed to one reference per macroblock", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_MIXED_REFS }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"dct8x8", "high profile 8x8 transform (H.264)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_8X8DCT }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"fastpskip", "fast pskip (H.264)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_FASTPSKIP }, INT_MIN, INT_MAX, V|E, "flags2"},
-#endif
 {"aud", "access unit delimiters (H.264)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_AUD }, INT_MIN, INT_MAX, V|E, "flags2"},
+#endif
 {"skiprd", "RD optimal MB level residual skipping", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SKIP_RD }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"complexityblur", "reduce fluctuations in qp (before curve compression)", OFFSET(complexityblur), FF_OPT_TYPE_FLOAT, {.dbl = 20.0 }, FLT_MIN, FLT_MAX, V|E},
 {"deblockalpha", "in-loop deblocking filter alphac0 parameter", OFFSET(deblockalpha), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},

@@ -56,6 +56,7 @@ typedef struct X264Context {
     int mixed_refs;
     int dct8x8;
     int fast_pskip;
+    int aud;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -329,6 +330,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
     x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
     x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
+    x4->params.b_aud                      = avctx->flags2 & CODEC_FLAG2_AUD;
 #endif
 
     if (x4->aq_mode >= 0)
@@ -358,6 +360,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.b_transform_8x8    = x4->dct8x8;
     if (x4->fast_pskip >= 0)
         x4->params.analyse.b_fast_pskip       = x4->fast_pskip;
+    if (x4->aud >= 0)
+        x4->params.b_aud                      = x4->aud;
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -376,8 +380,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_fps_den = x4->params.i_timebase_num = avctx->time_base.num;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
-
-    x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
 
     x4->params.i_threads      = avctx->thread_count;
 
@@ -454,6 +456,7 @@ static const AVOption options[] = {
     { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), FF_OPT_TYPE_INT, {-1}, -1, 1, VE },
     { "8x8dct",        "High profile 8x8 transform.",                     OFFSET(dct8x8),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { NULL },
 };
 
