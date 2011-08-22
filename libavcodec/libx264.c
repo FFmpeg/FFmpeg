@@ -42,6 +42,7 @@ typedef struct X264Context {
     char *profile;
     int fastfirstpass;
     float crf;
+    int cqp;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -281,16 +282,18 @@ static av_cold int X264_init(AVCodecContext *avctx)
             x4->params.rc.i_rc_method   = X264_RC_CRF;
             x4->params.rc.f_rf_constant = avctx->crf;
             x4->params.rc.f_rf_constant_max = avctx->crf_max;
-        } else
-#endif
-               if (avctx->cqp > -1) {
+        } else if (avctx->cqp > -1) {
             x4->params.rc.i_rc_method   = X264_RC_CQP;
             x4->params.rc.i_qp_constant = avctx->cqp;
         }
+#endif
 
         if (x4->crf >= 0) {
             x4->params.rc.i_rc_method   = X264_RC_CRF;
             x4->params.rc.f_rf_constant = x4->crf;
+        } else if (x4->cqp >= 0) {
+            x4->params.rc.i_rc_method   = X264_RC_CQP;
+            x4->params.rc.i_qp_constant = x4->cqp;
         }
     }
 
@@ -343,7 +346,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
     avctx->has_b_frames = x4->params.i_bframe ?
         x4->params.i_bframe_pyramid ? 2 : 1 : 0;
     avctx->bit_rate = x4->params.rc.i_bitrate*1000;
+#if FF_API_X264_GLOBAL_OPTS
     avctx->crf = x4->params.rc.f_rf_constant;
+#endif
 
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
@@ -376,6 +381,7 @@ static const AVOption options[] = {
     { "profile",       "Set profile restrictions (cf. x264 --fullhelp) ", OFFSET(profile),       FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
     { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
+    { "cqp",           "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
     { NULL },
 };
 

@@ -2385,14 +2385,15 @@ typedef struct AVCodecContext {
      *   @deprecated use 'crf' libx264 private option
      */
     attribute_deprecated float crf;
-#endif
 
     /**
      * constant quantization parameter rate control method
      * - encoding: Set by user.
      * - decoding: unused
+     *   @deprecated use 'cqp' libx264 private option
      */
-    int cqp;
+    attribute_deprecated int cqp;
+#endif
 
     /**
      * minimum GOP size
