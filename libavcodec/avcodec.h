@@ -612,8 +612,8 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_WPRED         0x00000020 ///< H.264 weighted biprediction for B-frames
 #define CODEC_FLAG2_MIXED_REFS    0x00000040 ///< H.264 one reference per partition, as opposed to one reference per macroblock
 #define CODEC_FLAG2_8X8DCT        0x00000080 ///< H.264 high profile 8x8 transform
-#endif
 #define CODEC_FLAG2_FASTPSKIP     0x00000100 ///< H.264 fast pskip
+#endif
 #define CODEC_FLAG2_AUD           0x00000200 ///< H.264 access unit delimiters
 #define CODEC_FLAG2_BRDO          0x00000400 ///< B-frame rate-distortion optimization
 #define CODEC_FLAG2_INTRA_VLC     0x00000800 ///< Use MPEG-2 intra VLC table.
