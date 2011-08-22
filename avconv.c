@@ -1638,9 +1638,7 @@ static int output_packet(InputStream *ist, int ist_index,
                 volp = samples;
                 for(i=0;i<(decoded_data_size / sizeof(short));i++) {
                     int v = ((*volp) * audio_volume + 128) >> 8;
-                    if (v < -32768) v = -32768;
-                    if (v >  32767) v = 32767;
-                    *volp++ = v;
+                    *volp++ = av_clip_int16(v);
                 }
             }
         }
