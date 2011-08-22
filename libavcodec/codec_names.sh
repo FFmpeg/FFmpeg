@@ -79,7 +79,7 @@ parse_avcodec_h () {
 
 parse_config_h  < "$config"
 parse_avcodec_h < "$codecs"
-sed -e '/case.*:/ ! y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' \
+sed -e '/case.*:/!y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' \
     -e 's/extern avcodec /extern AVCodec /' > "$out" <<EOF
 $outval
 EOF
