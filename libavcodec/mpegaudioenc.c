@@ -25,6 +25,7 @@
  */
 
 #include "avcodec.h"
+#include "internal.h"
 #include "put_bits.h"
 
 #define FRAC_BITS   15   /* fractional bits for sb_samples and dct */
@@ -763,6 +764,11 @@ static av_cold int MPA_encode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static const AVCodecDefault mp2_defaults[] = {
+    { "b",    "128k" },
+    { NULL },
+};
+
 AVCodec ff_mp2_encoder = {
     .name           = "mp2",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -774,4 +780,5 @@ AVCodec ff_mp2_encoder = {
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .supported_samplerates= (const int[]){44100, 48000,  32000, 22050, 24000, 16000, 0},
     .long_name = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
+    .defaults       = mp2_defaults,
 };

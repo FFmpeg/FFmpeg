@@ -1221,8 +1221,16 @@ AVOutputFormat ff_matroska_muxer = {
     .mime_type         = "video/x-matroska",
     .extensions        = "mkv",
     .priv_data_size    = sizeof(MatroskaMuxContext),
-    .audio_codec       = CODEC_ID_MP2,
+#if CONFIG_LIBVORBIS_ENCODER
+    .audio_codec       = CODEC_ID_VORBIS,
+#else
+    .audio_codec       = CODEC_ID_AC3,
+#endif
+#if CONFIG_LIBX264_ENCODER
+    .video_codec       = CODEC_ID_H264,
+#else
     .video_codec       = CODEC_ID_MPEG4,
+#endif
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_packet,
     .write_trailer     = mkv_write_trailer,
@@ -1256,7 +1264,11 @@ AVOutputFormat ff_matroska_audio_muxer = {
     .mime_type         = "audio/x-matroska",
     .extensions        = "mka",
     .priv_data_size    = sizeof(MatroskaMuxContext),
-    .audio_codec       = CODEC_ID_MP2,
+#if CONFIG_LIBVORBIS_ENCODER
+    .audio_codec       = CODEC_ID_VORBIS,
+#else
+    .audio_codec       = CODEC_ID_AC3,
+#endif
     .video_codec       = CODEC_ID_NONE,
     .write_header      = mkv_write_header,
     .write_packet      = mkv_write_packet,

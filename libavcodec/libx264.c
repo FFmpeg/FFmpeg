@@ -21,6 +21,7 @@
 
 #include "libavutil/opt.h"
 #include "avcodec.h"
+#include "internal.h"
 #include <x264.h>
 #include <math.h>
 #include <stdio.h>
@@ -318,7 +319,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
     OPT_STR("weightp", x4->weightp);
 
     x4->params.b_intra_refresh      = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
-    x4->params.rc.i_bitrate         = avctx->bit_rate       / 1000;
+    if (avctx->bit_rate) {
+        x4->params.rc.i_bitrate   = avctx->bit_rate / 1000;
+        x4->params.rc.i_rc_method = X264_RC_ABR;
+    }
     x4->params.rc.i_vbv_buffer_size = avctx->rc_buffer_size / 1000;
     x4->params.rc.i_vbv_max_bitrate = avctx->rc_max_rate    / 1000;
     x4->params.rc.b_stat_write      = avctx->flags & CODEC_FLAG_PASS1;
@@ -336,11 +340,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     }
 
     OPT_STR("stats", x4->stats);
-
-    // if neither crf nor cqp modes are selected we have to enable the RC
-    // we do it this way because we cannot check if the bitrate has been set
-    if (!(avctx->crf || (avctx->cqp > -1)))
-        x4->params.rc.i_rc_method = X264_RC_ABR;
 
     if (avctx->rc_buffer_size && avctx->rc_initial_buffer_occupancy &&
         (avctx->rc_initial_buffer_occupancy <= avctx->rc_buffer_size)) {
@@ -428,7 +427,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[] = {
-    { "preset",        "Set the encoding preset (cf. x264 --fullhelp)",   OFFSET(preset),        FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
+    { "preset",        "Set the encoding preset (cf. x264 --fullhelp)",   OFFSET(preset),        FF_OPT_TYPE_STRING, { .str = "medium" }, 0, 0, VE},
     { "tune",          "Tune the encoding params (cf. x264 --fullhelp)",  OFFSET(tune),          FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "profile",       "Set profile restrictions (cf. x264 --fullhelp) ", OFFSET(profile),       FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
@@ -446,6 +445,11 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault x264_defaults[] = {
+    { "b",                "0" },
+    { NULL },
+};
+
 AVCodec ff_libx264_encoder = {
     .name           = "libx264",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -458,4 +462,5 @@ AVCodec ff_libx264_encoder = {
     .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_YUVJ420P, PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10"),
     .priv_class     = &class,
+    .defaults       = x264_defaults,
 };
