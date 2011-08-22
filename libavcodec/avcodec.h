@@ -2756,7 +2756,6 @@ typedef struct AVCodecContext {
      * - decoding: unused
      */
     attribute_deprecated float psy_trellis;
-#endif
 
     /**
      * RC lookahead
@@ -2764,7 +2763,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user
      * - decoding: unused
      */
-    int rc_lookahead;
+    attribute_deprecated int rc_lookahead;
+#endif
 
     /**
      * Constant rate factor maximum
