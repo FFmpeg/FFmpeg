@@ -49,6 +49,7 @@ typedef struct X264Context {
     char *psy_rd;
     int rc_lookahead;
     int weightp;
+    int ssim;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -323,6 +324,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.i_lookahead             = avctx->rc_lookahead;
     if (avctx->weighted_p_pred >= 0)
         x4->params.analyse.i_weighted_pred    = avctx->weighted_p_pred;
+    x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
 #endif
 
     if (x4->aq_mode >= 0)
@@ -338,6 +340,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (x4->weightp >= 0)
         x4->params.analyse.i_weighted_pred = x4->weightp;
 
+    if (x4->ssim >= 0)
+        x4->params.analyse.b_ssim = x4->ssim;
 
 
     if (x4->fastfirstpass)
@@ -357,7 +361,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_fps_den = x4->params.i_timebase_num = avctx->time_base.num;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
-    x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
 
     x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
 
@@ -426,6 +429,7 @@ static const AVOption options[] = {
     { "none",          NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_NONE},   INT_MIN, INT_MAX, VE, "weightp" },
     { "simple",        NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SIMPLE}, INT_MIN, INT_MAX, VE, "weightp" },
     { "smart",         NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SMART},  INT_MIN, INT_MAX, VE, "weightp" },
+    { "ssim",          "Calculate and print SSIM stats.",                 OFFSET(ssim),          FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
     { NULL },
 };
 
