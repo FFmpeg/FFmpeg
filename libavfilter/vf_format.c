@@ -25,6 +25,7 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 
 typedef struct {
     /**
@@ -41,7 +42,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     FormatContext *format = ctx->priv;
     const char *cur, *sep;
     char             pix_fmt_name[PIX_FMT_NAME_MAXSIZE];
-    int              pix_fmt_name_len;
+    int              pix_fmt_name_len, ret;
     enum PixelFormat pix_fmt;
 
     /* parse the list of formats */
@@ -57,12 +58,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
         memcpy(pix_fmt_name, cur, pix_fmt_name_len);
         pix_fmt_name[pix_fmt_name_len] = 0;
-        pix_fmt = av_get_pix_fmt(pix_fmt_name);
 
-        if (pix_fmt == PIX_FMT_NONE) {
-            av_log(ctx, AV_LOG_ERROR, "Unknown pixel format: %s\n", pix_fmt_name);
-            return -1;
-        }
+        if ((ret = ff_parse_pixel_format(&pix_fmt, pix_fmt_name, ctx)) < 0)
+            return ret;
 
         format->listed_pix_fmt_flags[pix_fmt] = 1;
     }

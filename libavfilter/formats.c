@@ -236,6 +236,21 @@ void avfilter_formats_changeref(AVFilterFormats **oldref,
 
 /* internal functions for parsing audio format arguments */
 
+int ff_parse_pixel_format(enum PixelFormat *ret, const char *arg, void *log_ctx)
+{
+    char *tail;
+    int pix_fmt = av_get_pix_fmt(arg);
+    if (pix_fmt == PIX_FMT_NONE) {
+        pix_fmt = strtol(arg, &tail, 0);
+        if (*tail || (unsigned)pix_fmt >= PIX_FMT_NB) {
+            av_log(log_ctx, AV_LOG_ERROR, "Invalid pixel format '%s'\n", arg);
+            return AVERROR(EINVAL);
+        }
+    }
+    *ret = pix_fmt;
+    return 0;
+}
+
 int ff_parse_sample_format(int *ret, const char *arg, void *log_ctx)
 {
     char *tail;
