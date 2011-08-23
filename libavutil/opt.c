@@ -54,7 +54,7 @@ const AVOption *av_next_option(void *obj, const AVOption *last)
     else                      return (*(AVClass**)obj)->option;
 }
 
-static int av_set_number2(void *obj, const char *name, double num, int den, int64_t intnum, const AVOption **o_out)
+static int write_number(void *obj, const char *name, double num, int den, int64_t intnum, const AVOption **o_out)
 {
     const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
     void *dst;
@@ -184,7 +184,7 @@ static int set_string_number(void *obj, const AVOption *o, const char *val, void
             else if (cmd == '-') d = notfirst*av_get_double(obj, o->name, NULL) - d;
         }
 
-        if ((ret = av_set_number2(obj, o->name, d, 1, 1, NULL)) < 0)
+        if ((ret = write_number(obj, o->name, d, 1, 1, NULL)) < 0)
             return ret;
         val += i;
         if (!*val)
@@ -225,7 +225,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
 static const AVOption *set_number(void *obj, const char *name, double num, int den, int64_t intnum)
 {
     const AVOption *o = NULL;
-    if (av_set_number2(obj, name, num, den, intnum, &o) < 0)
+    if (write_number(obj, name, num, den, intnum, &o) < 0)
         return NULL;
     else
         return o;
