@@ -102,6 +102,33 @@ static int tiff_uncompress(uint8_t *dst, unsigned long *len, const uint8_t *src,
 }
 #endif
 
+static void av_always_inline horizontal_fill(unsigned int bpp, uint8_t* dst,
+                                             int usePtr, const uint8_t *src,
+                                             uint8_t c, int width, int offset)
+{
+    int i;
+
+    if (bpp == 2) {
+        for (i = 0; i < width; i++) {
+            dst[(i+offset)*4+0] = (usePtr ? src[i] : c) >> 6;
+            dst[(i+offset)*4+1] = (usePtr ? src[i] : c) >> 4 & 0x3;
+            dst[(i+offset)*4+2] = (usePtr ? src[i] : c) >> 2 & 0x3;
+            dst[(i+offset)*4+3] = (usePtr ? src[i] : c) & 0x3;
+        }
+    } else if (bpp == 4) {
+        for (i = 0; i < width; i++) {
+            dst[(i+offset)*2+0] = (usePtr ? src[i] : c) >> 4;
+            dst[(i+offset)*2+1] = (usePtr ? src[i] : c) & 0xF;
+        }
+    } else {
+        if (usePtr) {
+            memcpy(dst + offset, src, width);
+        } else {
+            memset(dst + offset, c, width);
+        }
+    }
+}
+
 static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uint8_t *src, int size, int lines){
     int c, line, pixels, code;
     const uint8_t *ssrc = src;
@@ -173,7 +200,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         switch(s->compr){
         case TIFF_RAW:
             if (!s->fill_order) {
-                memcpy(dst, src, width);
+                horizontal_fill(s->bpp, dst, 1, src, 0, width, 0);
             } else {
                 int i;
                 for (i = 0; i < width; i++)
@@ -190,7 +217,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                         av_log(s->avctx, AV_LOG_ERROR, "Copy went out of bounds\n");
                         return -1;
                     }
-                    memcpy(dst + pixels, src, code);
+                    horizontal_fill(s->bpp, dst, 1, src, 0, code, pixels);
                     src += code;
                     pixels += code;
                 }else if(code != -128){ // -127..-1
@@ -200,7 +227,7 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                         return -1;
                     }
                     c = *src++;
-                    memset(dst + pixels, c, code);
+                    horizontal_fill(s->bpp, dst, 0, NULL, c, code, pixels);
                     pixels += code;
                 }
             }
@@ -227,6 +254,8 @@ static int init_image(TiffContext *s)
     case 11:
         s->avctx->pix_fmt = PIX_FMT_MONOBLACK;
         break;
+    case 21:
+    case 41:
     case 81:
         s->avctx->pix_fmt = PIX_FMT_PAL8;
         break;
