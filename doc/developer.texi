@@ -34,6 +34,21 @@ You can use libavcodec or libavformat in your commercial program, but
 @emph{any patch you make must be published}. The best way to proceed is
 to send your patches to the FFmpeg mailing list.
 
+@section Contributing
+
+There are 3 ways by which code gets into ffmpeg.
+@itemize @bullet
+@item Submiting Patches to the main developer mailing list
+      see @ref{Submitting patches} for details.
+@item Directly commiting changes to the main tree.
+@item Commiting changes to a git clone, for example on github.com or
+      gitorious.org. And asking us to merge these changes.
+@end itemize
+
+Whichever way, changes should be reviewed by the maintainer of the code
+before they are commited. And they should follow the @ref{Coding Rules}.
+The developer making the commit and the author are responsible for their changes
+and should try to fix issues their commit causes.
 
 @anchor{Coding Rules}
 @section Coding Rules
@@ -241,6 +256,7 @@ We think our rules are not too hard. If you have comments, contact us.
 
 Note, these rules are mostly borrowed from the MPlayer project.
 
+@anchor{Submitting patches}
 @section Submitting patches
 
 First, read the @ref{Coding Rules} above if you did not yet, in particular
