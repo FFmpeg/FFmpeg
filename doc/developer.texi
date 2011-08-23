@@ -428,6 +428,11 @@ After a patch is approved it will be committed to the repository.
 We will review all submitted patches, but sometimes we are quite busy so
 especially for large patches this can take several weeks.
 
+If you feel that the review process is too slow and you are willing to try to
+take over maintainership of the area of code you change then just clone
+git master and maintain the area of code there. We will merge each area from
+where its best maintained.
+
 When resubmitting patches, please do not make any significant changes
 not related to the comments received during review. Such patches will
 be rejected. Instead, submit  significant changes or new features as
