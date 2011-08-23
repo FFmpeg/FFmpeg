@@ -91,6 +91,8 @@ av_cold int ff_h263_decode_init(AVCodecContext *avctx)
         break;
     case CODEC_ID_VC1:
     case CODEC_ID_WMV3:
+    case CODEC_ID_VC1IMAGE:
+    case CODEC_ID_WMV3IMAGE:
         s->h263_pred = 1;
         s->msmpeg4_version=6;
         avctx->chroma_sample_location = AVCHROMA_LOC_LEFT;

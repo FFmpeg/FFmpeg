@@ -311,6 +311,9 @@ typedef struct VC1Context{
     //@{
     int new_sprite;
     int two_sprites;
+    AVFrame sprite_output_frame;
+    int output_width, output_height, sprite_width, sprite_height;
+    uint8_t* sr_rows[2][2];      ///< Sprite resizer line cache
     //@}
 
     int p_frame_skipped;

@@ -314,9 +314,6 @@ int vc1_decode_sequence_header(AVCodecContext *avctx, VC1Context *v, GetBitConte
                    "Old interlaced mode is not supported\n");
             return -1;
         }
-        if (v->res_sprite) {
-            av_log(avctx, AV_LOG_ERROR, "WMVP is not fully supported\n");
-        }
     }
 
     // (fps-2)/4 (->30)

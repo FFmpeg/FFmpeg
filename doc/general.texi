@@ -520,6 +520,7 @@ following image formats are supported:
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.
 @item Westwood Studios VQA (Vector Quantized Animation) video  @tab     @tab  X
+@item Windows Media Image    @tab     @tab  X
 @item Windows Media Video 7  @tab  X  @tab  X
 @item Windows Media Video 8  @tab  X  @tab  X
 @item Windows Media Video 9  @tab     @tab  X

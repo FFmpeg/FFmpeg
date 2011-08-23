@@ -212,6 +212,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (VC1, vc1);
     REGISTER_DECODER (VC1_CRYSTALHD, vc1_crystalhd);
     REGISTER_DECODER (VC1_VDPAU, vc1_vdpau);
+    REGISTER_DECODER (VC1IMAGE, vc1image);
     REGISTER_DECODER (VCR1, vcr1);
     REGISTER_DECODER (VMDVIDEO, vmdvideo);
     REGISTER_DECODER (VMNC, vmnc);
@@ -227,6 +228,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (WMV3, wmv3);
     REGISTER_DECODER (WMV3_CRYSTALHD, wmv3_crystalhd);
     REGISTER_DECODER (WMV3_VDPAU, wmv3_vdpau);
+    REGISTER_DECODER (WMV3IMAGE, wmv3image);
     REGISTER_DECODER (WNV1, wnv1);
     REGISTER_DECODER (XAN_WC3, xan_wc3);
     REGISTER_DECODER (XAN_WC4, xan_wc4);

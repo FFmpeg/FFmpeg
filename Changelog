@@ -45,6 +45,7 @@ easier to use. The changes are:
 - XMV demuxer
 - LOAS demuxer
 - ashowinfo filter added
+- Windows Media Image decoder
 
 
 version 0.8:
