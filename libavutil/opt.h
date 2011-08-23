@@ -129,9 +129,7 @@ const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int m
  * similarly, '-' unsets a flag.
  * @param[out] o_out if non-NULL put here a pointer to the AVOption
  * found
- * @param alloc when 1 then the old value will be av_freed() and the
- *                     new av_strduped()
- *              when 0 then no av_free() nor av_strdup() will be used
+ * @param alloc this parameter is currently ignored
  * @return 0 if the value has been set, or an AVERROR code in case of
  * error:
  * AVERROR_OPTION_NOT_FOUND if no matching option exists
