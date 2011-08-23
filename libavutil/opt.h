@@ -226,6 +226,30 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
  */
 int av_opt_set_dict(void *obj, struct AVDictionary **options);
 
+/**
+ * @defgroup opt_eval_funcs Evaluating option strings
+ * @{
+ * This group of functions can be used to evaluate option strings
+ * and get numbers out of them. They do the same thing as av_opt_set(),
+ * except the result is written into the caller-supplied pointer.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass.
+ * @param o an option for which the string is to be evaluated.
+ * @param val string to be evaluated.
+ * @param *_out value of the string will be written here.
+ *
+ * @return 0 on success, a negative number on failure.
+ */
+int av_opt_eval_flags (void *obj, const AVOption *o, const char *val, int        *flags_out);
+int av_opt_eval_int   (void *obj, const AVOption *o, const char *val, int        *int_out);
+int av_opt_eval_int64 (void *obj, const AVOption *o, const char *val, int64_t    *int64_out);
+int av_opt_eval_float (void *obj, const AVOption *o, const char *val, float      *float_out);
+int av_opt_eval_double(void *obj, const AVOption *o, const char *val, double     *double_out);
+int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational *q_out);
+/**
+ * @}
+ */
+
 #define AV_OPT_SEARCH_CHILDREN   0x0001 /**< Search in possible children of the
                                              given object first. */
 /**

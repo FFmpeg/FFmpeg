@@ -239,6 +239,21 @@ int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
     return AVERROR(EINVAL);
 }
 
+#define OPT_EVAL_NUMBER(name, opttype, vartype)\
+    int av_opt_eval_ ## name(void *obj, const AVOption *o, const char *val, vartype *name ## _out)\
+    {\
+        if (!o || o->type != opttype)\
+            return AVERROR(EINVAL);\
+        return set_string_number(obj, o, val, name ## _out);\
+    }
+
+OPT_EVAL_NUMBER(flags,  FF_OPT_TYPE_FLAGS,    int)
+OPT_EVAL_NUMBER(int,    FF_OPT_TYPE_INT,      int)
+OPT_EVAL_NUMBER(int64,  FF_OPT_TYPE_INT64,    int64_t)
+OPT_EVAL_NUMBER(float,  FF_OPT_TYPE_FLOAT,    float)
+OPT_EVAL_NUMBER(double, FF_OPT_TYPE_DOUBLE,   double)
+OPT_EVAL_NUMBER(q,      FF_OPT_TYPE_RATIONAL, AVRational)
+
 static int set_number(void *obj, const char *name, double num, int den, int64_t intnum,
                                   int search_flags)
 {
