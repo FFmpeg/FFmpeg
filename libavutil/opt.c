@@ -54,6 +54,21 @@ const AVOption *av_next_option(void *obj, const AVOption *last)
     else                      return (*(AVClass**)obj)->option;
 }
 
+static int read_number(const AVOption *o, void *dst, double *num, int *den, int64_t *intnum)
+{
+    switch (o->type) {
+    case FF_OPT_TYPE_FLAGS:     *intnum = *(unsigned int*)dst;return 0;
+    case FF_OPT_TYPE_INT:       *intnum = *(int         *)dst;return 0;
+    case FF_OPT_TYPE_INT64:     *intnum = *(int64_t     *)dst;return 0;
+    case FF_OPT_TYPE_FLOAT:     *num    = *(float       *)dst;return 0;
+    case FF_OPT_TYPE_DOUBLE:    *num    = *(double      *)dst;return 0;
+    case FF_OPT_TYPE_RATIONAL:  *intnum = ((AVRational*)dst)->num;
+                                *den    = ((AVRational*)dst)->den;
+                                                        return 0;
+    }
+    return AVERROR(EINVAL);
+}
+
 static int write_number(void *obj, const AVOption *o, void *dst, double num, int den, int64_t intnum)
 {
     if (o->max*den < num*intnum || o->min*den > num*intnum) {
@@ -138,10 +153,11 @@ static int set_string_number(void *obj, const AVOption *o, const char *val, void
 {
     int ret = 0, notfirst = 0;
     for (;;) {
-        int i;
+        int i, den = 1;
         char buf[256];
         int cmd = 0;
-        double d;
+        double d, num = 1;
+        int64_t intnum = 1;
 
         if (*val == '+' || *val == '-')
             cmd = *(val++);
@@ -168,11 +184,13 @@ static int set_string_number(void *obj, const AVOption *o, const char *val, void
             }
         }
         if (o->type == FF_OPT_TYPE_FLAGS) {
-            if      (cmd == '+') d = av_get_int(obj, o->name, NULL) | (int64_t)d;
-            else if (cmd == '-') d = av_get_int(obj, o->name, NULL) &~(int64_t)d;
+            read_number(o, dst, NULL, NULL, &intnum);
+            if      (cmd == '+') d = intnum | (int64_t)d;
+            else if (cmd == '-') d = intnum &~(int64_t)d;
         } else {
-            if      (cmd == '+') d = notfirst*av_get_double(obj, o->name, NULL) + d;
-            else if (cmd == '-') d = notfirst*av_get_double(obj, o->name, NULL) - d;
+            read_number(o, dst, &num, &den, &intnum);
+            if      (cmd == '+') d = notfirst*num*intnum/den + d;
+            else if (cmd == '-') d = notfirst*num*intnum/den - d;
         }
 
         if ((ret = write_number(obj, o, dst, d, 1, 1)) < 0)
@@ -373,16 +391,8 @@ static int get_number(void *obj, const char *name, const AVOption **o_out, doubl
 
     if (o_out) *o_out= o;
 
-    switch (o->type) {
-    case FF_OPT_TYPE_FLAGS:     *intnum= *(unsigned int*)dst;return 0;
-    case FF_OPT_TYPE_INT:       *intnum= *(int    *)dst;return 0;
-    case FF_OPT_TYPE_INT64:     *intnum= *(int64_t*)dst;return 0;
-    case FF_OPT_TYPE_FLOAT:     *num=    *(float  *)dst;return 0;
-    case FF_OPT_TYPE_DOUBLE:    *num=    *(double *)dst;return 0;
-    case FF_OPT_TYPE_RATIONAL:  *intnum= ((AVRational*)dst)->num;
-                                *den   = ((AVRational*)dst)->den;
-                                                        return 0;
-    }
+    return read_number(o, dst, num, den, intnum);
+
 error:
     *den=*intnum=0;
     return -1;
