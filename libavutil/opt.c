@@ -86,15 +86,6 @@ static int av_set_number2(void *obj, const char *name, double num, int den, int6
     return 0;
 }
 
-static const AVOption *av_set_number(void *obj, const char *name, double num, int den, int64_t intnum)
-{
-    const AVOption *o = NULL;
-    if (av_set_number2(obj, name, num, den, intnum, &o) < 0)
-        return NULL;
-    else
-        return o;
-}
-
 static const double const_values[] = {
     M_PI,
     M_E,
@@ -231,19 +222,28 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
     return AVERROR(EINVAL);
 }
 
+static const AVOption *set_number(void *obj, const char *name, double num, int den, int64_t intnum)
+{
+    const AVOption *o = NULL;
+    if (av_set_number2(obj, name, num, den, intnum, &o) < 0)
+        return NULL;
+    else
+        return o;
+}
+
 const AVOption *av_set_double(void *obj, const char *name, double n)
 {
-    return av_set_number(obj, name, n, 1, 1);
+    return set_number(obj, name, n, 1, 1);
 }
 
 const AVOption *av_set_q(void *obj, const char *name, AVRational n)
 {
-    return av_set_number(obj, name, n.num, n.den, 1);
+    return set_number(obj, name, n.num, n.den, 1);
 }
 
 const AVOption *av_set_int(void *obj, const char *name, int64_t n)
 {
-    return av_set_number(obj, name, 1, 1, n);
+    return set_number(obj, name, 1, 1, n);
 }
 
 /**
