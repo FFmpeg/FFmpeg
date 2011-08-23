@@ -449,7 +449,6 @@ static const AVOption options[]={
 {"thread_type", "select multithreading type", OFFSET(thread_type), FF_OPT_TYPE_INT, {.dbl = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|E|D, "thread_type"},
 {"slice", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_THREAD_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
 {"frame", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_THREAD_FRAME }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
-{"vbv_delay", "initial buffer fill time in periods of 27Mhz clock", 0, FF_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX},
 {"audio_service_type", "audio service type", OFFSET(audio_service_type), FF_OPT_TYPE_INT, {.dbl = AV_AUDIO_SERVICE_TYPE_MAIN }, 0, AV_AUDIO_SERVICE_TYPE_NB-1, A|E, "audio_service_type"},
 {"ma", "Main Audio Service", 0, FF_OPT_TYPE_CONST, {.dbl = AV_AUDIO_SERVICE_TYPE_MAIN },              INT_MIN, INT_MAX, A|E, "audio_service_type"},
 {"ef", "Effects",            0, FF_OPT_TYPE_CONST, {.dbl = AV_AUDIO_SERVICE_TYPE_EFFECTS },           INT_MIN, INT_MAX, A|E, "audio_service_type"},
