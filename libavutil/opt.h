@@ -134,7 +134,7 @@ const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int m
  *              when 0 then no av_free() nor av_strdup() will be used
  * @return 0 if the value has been set, or an AVERROR code in case of
  * error:
- * AVERROR(ENOENT) if no matching option exists
+ * AVERROR_OPTION_NOT_FOUND if no matching option exists
  * AVERROR(ERANGE) if the value is out of range
  * AVERROR(EINVAL) if the value is not valid
  */
