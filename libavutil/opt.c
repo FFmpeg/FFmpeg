@@ -261,7 +261,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     return buf;
 }
 
-static int av_get_number(void *obj, const char *name, const AVOption **o_out, double *num, int *den, int64_t *intnum)
+static int get_number(void *obj, const char *name, const AVOption **o_out, double *num, int *den, int64_t *intnum)
 {
     const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
     void *dst;
@@ -293,7 +293,7 @@ double av_get_double(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+    if (get_number(obj, name, o_out, &num, &den, &intnum) < 0)
         return NAN;
     return num*intnum/den;
 }
@@ -304,7 +304,7 @@ AVRational av_get_q(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+    if (get_number(obj, name, o_out, &num, &den, &intnum) < 0)
         return (AVRational){0, 0};
     if (num == 1.0 && (int)intnum == intnum)
         return (AVRational){intnum, den};
@@ -318,7 +318,7 @@ int64_t av_get_int(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    if (av_get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+    if (get_number(obj, name, o_out, &num, &den, &intnum) < 0)
         return -1;
     return num*intnum/den;
 }
