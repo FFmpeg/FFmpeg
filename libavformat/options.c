@@ -38,7 +38,7 @@ static const AVOption *opt_find(void *obj, const char *name, const char *unit, i
     AVFormatContext   *s = obj;
     AVInputFormat  *ifmt = NULL;
     AVOutputFormat *ofmt = NULL;
-    if (s->priv_data) {
+    if (!(search_flags & AV_OPT_SEARCH_FAKE_OBJ) && s->priv_data) {
         if ((s->iformat && !s->iformat->priv_class) ||
             (s->oformat && !s->oformat->priv_class))
             return NULL;

@@ -44,7 +44,7 @@ static const AVOption *opt_find(void *obj, const char *name, const char *unit, i
     AVCodecContext *s = obj;
     AVCodec        *c = NULL;
 
-    if (s->priv_data) {
+    if (!(search_flags & AV_OPT_SEARCH_FAKE_OBJ) && s->priv_data) {
         if (s->codec->priv_class)
             return av_opt_find(s->priv_data, name, unit, opt_flags, search_flags);
         return NULL;
