@@ -1074,6 +1074,7 @@ static void do_video_resample(OutputStream *ost,
 {
     int resample_changed = 0;
     AVCodecContext *dec = ist->st->codec;
+    AVCodecContext *enc = ost->st->codec;
     *out_picture = in_picture;
 
     resample_changed = ost->resample_width   != dec->width  ||
