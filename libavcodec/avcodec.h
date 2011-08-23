@@ -4306,4 +4306,12 @@ int av_lockmgr_register(int (*cb)(void **mutex, enum AVLockOp op));
  */
 enum AVMediaType avcodec_get_type(enum CodecID codec_id);
 
+/**
+ * Get the AVClass for AVCodecContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avcodec_get_class(void);
+
 #endif /* AVCODEC_AVCODEC_H */

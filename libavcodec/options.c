@@ -662,3 +662,8 @@ fail:
     av_freep(&dest->rc_eq);
     return AVERROR(ENOMEM);
 }
+
+const AVClass *avcodec_get_class(void)
+{
+    return &av_codec_context_class;
+}

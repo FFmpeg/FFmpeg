@@ -13,6 +13,11 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-08-xx - xxxxxxx - lavc 53.10.0
+                       lavf 53.6.0
+                       lsws  2.1.0
+  Add {avcodec,avformat,sws}_get_class().
+
 2011-08-xx - xxxxxxx - lavu 51.10.0
   Add AV_OPT_SEARCH_FAKE_OBJ flag for av_opt_find() function.
 
