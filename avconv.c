@@ -1627,7 +1627,6 @@ static int output_packet(InputStream *ist, int ist_index,
                 }
                 break;
             }
-            ret = avpkt.size;
             avpkt.size = 0;
         }
 
