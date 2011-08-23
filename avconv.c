@@ -2246,7 +2246,6 @@ static int transcode(OutputFile *output_files,
         int64_t ipts_min;
         double opts_min;
 
-    redo:
         ipts_min = INT64_MAX;
         opts_min= 1e100;
 
@@ -2361,7 +2360,7 @@ static int transcode(OutputFile *output_files,
             if (exit_on_error)
                 exit_program(1);
             av_free_packet(&pkt);
-            goto redo;
+            continue;
         }
 
     discard_packet:
