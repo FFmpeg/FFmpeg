@@ -54,21 +54,12 @@ const AVOption *av_next_option(void *obj, const AVOption *last)
     else                      return (*(AVClass**)obj)->option;
 }
 
-static int write_number(void *obj, const char *name, double num, int den, int64_t intnum, const AVOption **o_out)
+static int write_number(void *obj, const AVOption *o, void *dst, double num, int den, int64_t intnum)
 {
-    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
-    void *dst;
-    if (o_out)
-        *o_out= o;
-    if (!o)
-        return AVERROR_OPTION_NOT_FOUND;
-
     if (o->max*den < num*intnum || o->min*den > num*intnum) {
-        av_log(obj, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range\n", num, name);
+        av_log(obj, AV_LOG_ERROR, "Value %lf for parameter '%s' out of range\n", num, o->name);
         return AVERROR(ERANGE);
     }
-
-    dst= ((uint8_t*)obj) + o->offset;
 
     switch (o->type) {
     case FF_OPT_TYPE_FLAGS:
@@ -184,7 +175,7 @@ static int set_string_number(void *obj, const AVOption *o, const char *val, void
             else if (cmd == '-') d = notfirst*av_get_double(obj, o->name, NULL) - d;
         }
 
-        if ((ret = write_number(obj, o->name, d, 1, 1, NULL)) < 0)
+        if ((ret = write_number(obj, o, dst, d, 1, 1)) < 0)
             return ret;
         val += i;
         if (!*val)
@@ -224,8 +215,14 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
 
 static const AVOption *set_number(void *obj, const char *name, double num, int den, int64_t intnum)
 {
-    const AVOption *o = NULL;
-    if (write_number(obj, name, num, den, intnum, &o) < 0)
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
+    void *dst;
+
+    if (!o)
+        return NULL;
+
+    dst = ((uint8_t*)obj) + o->offset;
+    if (write_number(obj, o, dst, num, den, intnum) < 0)
         return NULL;
     else
         return o;
