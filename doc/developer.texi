@@ -439,8 +439,6 @@ make will abort if any test fails. To run all tests regardless,
 use make -k. To get a more verbose output, use 'make V=1 test' or
 'make V=2 test'.
 
-Run 'make fulltest' to test all the codecs, formats and FFserver.
-
 [Of course, some patches may change the results of the regression tests. In
 this case, the reference results of the regression tests shall be modified
 accordingly].
