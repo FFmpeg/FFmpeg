@@ -49,8 +49,6 @@
 #include <sys/resource.h>
 #endif
 
-AVCodecContext *avcodec_opts[AVMEDIA_TYPE_NB];
-AVFormatContext *avformat_opts;
 struct SwsContext *sws_opts;
 AVDictionary *format_opts, *codec_opts;
 
@@ -58,10 +56,6 @@ static const int this_year = 2011;
 
 void init_opts(void)
 {
-    int i;
-    for (i = 0; i < AVMEDIA_TYPE_NB; i++)
-        avcodec_opts[i] = avcodec_alloc_context3(NULL);
-    avformat_opts = avformat_alloc_context();
 #if CONFIG_SWSCALE
     sws_opts = sws_getContext(16, 16, 0, 16, 16, 0, SWS_BICUBIC, NULL, NULL, NULL);
 #endif
@@ -69,11 +63,6 @@ void init_opts(void)
 
 void uninit_opts(void)
 {
-    int i;
-    for (i = 0; i < AVMEDIA_TYPE_NB; i++)
-        av_freep(&avcodec_opts[i]);
-    av_freep(&avformat_opts->key);
-    av_freep(&avformat_opts);
 #if CONFIG_SWSCALE
     sws_freeContext(sws_opts);
     sws_opts = NULL;
@@ -291,18 +280,19 @@ int opt_default(const char *opt, const char *arg)
     const AVOption *o;
     char opt_stripped[128];
     const char *p;
+    const AVClass *cc = avcodec_get_class(), *fc = avformat_get_class(), *sc = sws_get_class();
 
     if (!(p = strchr(opt, ':')))
         p = opt + strlen(opt);
     av_strlcpy(opt_stripped, opt, FFMIN(sizeof(opt_stripped), p - opt + 1));
 
-    if ((o = av_opt_find(avcodec_opts[0], opt_stripped, NULL, 0, AV_OPT_SEARCH_CHILDREN)) ||
+    if ((o = av_opt_find(&cc, opt_stripped, NULL, 0, AV_OPT_SEARCH_CHILDREN|AV_OPT_SEARCH_FAKE_OBJ)) ||
          ((opt[0] == 'v' || opt[0] == 'a' || opt[0] == 's') &&
-          (o = av_opt_find(avcodec_opts[0], opt+1, NULL, 0, 0))))
+          (o = av_opt_find(&cc, opt+1, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ))))
         av_dict_set(&codec_opts, opt, arg, FLAGS);
-    else if ((o = av_opt_find(avformat_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN)))
+    else if ((o = av_opt_find(&fc, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ)))
         av_dict_set(&format_opts, opt, arg, FLAGS);
-    else if ((o = av_opt_find(sws_opts, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN))) {
+    else if ((o = av_opt_find(&sc, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         // XXX we only support sws_flags, not arbitrary sws options
         int ret = av_set_string3(sws_opts, opt, arg, 1, NULL);
         if (ret < 0) {
@@ -826,6 +816,7 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFor
     AVCodec       *codec = s->oformat ? avcodec_find_encoder(codec_id) : avcodec_find_decoder(codec_id);
     int            flags = s->oformat ? AV_OPT_FLAG_ENCODING_PARAM : AV_OPT_FLAG_DECODING_PARAM;
     char          prefix = 0;
+    const AVClass    *cc = avcodec_get_class();
 
     if (!codec)
         return NULL;
@@ -847,10 +838,10 @@ AVDictionary *filter_codec_opts(AVDictionary *opts, enum CodecID codec_id, AVFor
             default:         return NULL;
             }
 
-        if (av_opt_find(avcodec_opts[0], t->key, NULL, flags, 0) ||
-            (codec && codec->priv_class && av_opt_find(&codec->priv_class, t->key, NULL, flags, 0)))
+        if (av_opt_find(&cc, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ) ||
+            (codec && codec->priv_class && av_opt_find(&codec->priv_class, t->key, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ)))
             av_dict_set(&ret, t->key, t->value, 0);
-        else if (t->key[0] == prefix && av_opt_find(avcodec_opts[0], t->key+1, NULL, flags, 0))
+        else if (t->key[0] == prefix && av_opt_find(&cc, t->key+1, NULL, flags, AV_OPT_SEARCH_FAKE_OBJ))
             av_dict_set(&ret, t->key+1, t->value, 0);
 
         if (p)

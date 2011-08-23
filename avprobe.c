@@ -355,11 +355,12 @@ static void opt_input_file(const char *arg)
 
 static void show_help(void)
 {
+    const AVClass *class = avformat_get_class();
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n", 0, 0);
     printf("\n");
-    av_opt_show2(avformat_opts, NULL,
+    av_opt_show2(&class, NULL,
                  AV_OPT_FLAG_DECODING_PARAM, 0);
 }
 
@@ -399,8 +400,6 @@ int main(int argc, char **argv)
     avdevice_register_all();
 #endif
 
-    avformat_opts = avformat_alloc_context();
-
     show_banner();
     parse_options(argc, argv, options, opt_input_file);
 
@@ -412,8 +411,6 @@ int main(int argc, char **argv)
     }
 
     ret = probe_file(input_filename);
-
-    av_free(avformat_opts);
 
     return ret;
 }
