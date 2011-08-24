@@ -493,8 +493,9 @@ static int ogg_get_length(AVFormatContext *s)
         if (ogg->streams[i].granule != -1 && ogg->streams[i].granule != 0 &&
             ogg->streams[i].codec) {
             if(s->streams[i]->duration && s->streams[i]->start_time == AV_NOPTS_VALUE && !ogg->streams[i].got_start){
-                s->streams[i]->duration -=
-                    ogg_gptopts (s, i, ogg->streams[i].granule, NULL);
+                int64_t start= ogg_gptopts (s, i, ogg->streams[i].granule, NULL);
+                if(av_rescale_q(start, s->streams[i]->time_base, AV_TIME_BASE_Q) > AV_TIME_BASE)
+                    s->streams[i]->duration -= start;
                 ogg->streams[i].got_start= 1;
                 streams_left--;
             }
