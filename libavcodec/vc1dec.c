@@ -3020,7 +3020,7 @@ static void vc1_decode_i_blocks_adv(VC1Context *v)
         s->mb_x = 0;
         ff_init_block_index(s);
         memset(&s->coded_block[s->block_index[0]-s->b8_stride], 0,
-               s->b8_stride * sizeof(*s->coded_block));
+               (1 + s->b8_stride) * sizeof(*s->coded_block));
     }
     for(; s->mb_y < s->end_mb_y; s->mb_y++) {
         s->mb_x = 0;
