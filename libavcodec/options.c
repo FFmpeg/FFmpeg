@@ -141,7 +141,9 @@ static const AVOption options[]={
 {"b_qfactor", "qp factor between p and b frames", OFFSET(b_quant_factor), FF_OPT_TYPE_FLOAT, {.dbl = 1.25 }, -FLT_MAX, FLT_MAX, V|E},
 {"rc_strategy", "ratecontrol method", OFFSET(rc_strategy), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"b_strategy", "strategy to choose between I/P/B-frames", OFFSET(b_frame_strategy), FF_OPT_TYPE_INT, {.dbl = 0 }, INT_MIN, INT_MAX, V|E},
-{"wpredp", "weighted prediction analysis method", OFFSET(weighted_p_pred), FF_OPT_TYPE_INT, {.dbl = 0 }, INT_MIN, INT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
+{"wpredp", "weighted prediction analysis method", OFFSET(weighted_p_pred), FF_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, V|E},
+#endif
 {"ps", "rtp payload size in bytes", OFFSET(rtp_payload_size), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"mv_bits", NULL, OFFSET(mv_bits), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"header_bits", NULL, OFFSET(header_bits), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
@@ -375,8 +377,10 @@ static const AVOption options[]={
 {"all"             , NULL, 0, FF_OPT_TYPE_CONST, {.dbl = AVDISCARD_ALL     }, INT_MIN, INT_MAX, V|D, "avdiscard"},
 {"bidir_refine", "refine the two motion vectors used in bidirectional macroblocks", OFFSET(bidir_refine), FF_OPT_TYPE_INT, {.dbl = 1 }, 0, 4, V|E},
 {"brd_scale", "downscales frames for dynamic B-frame decision", OFFSET(brd_scale), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, 10, V|E},
+#if FF_API_X264_GLOBAL_OPTS
 {"crf", "enables constant quality mode, and selects the quality (x264/VP8)", OFFSET(crf), FF_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, 0, 63, V|E},
 {"cqp", "constant quantization parameter rate control method", OFFSET(cqp), FF_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, V|E},
+#endif
 {"keyint_min", "minimum interval between IDR-frames", OFFSET(keyint_min), FF_OPT_TYPE_INT, {.dbl = 25 }, INT_MIN, INT_MAX, V|E},
 {"refs", "reference frames to consider for motion compensation", OFFSET(refs), FF_OPT_TYPE_INT, {.dbl = 1 }, INT_MIN, INT_MAX, V|E},
 {"chromaoffset", "chroma qp offset from luma", OFFSET(chromaoffset), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
@@ -435,14 +439,18 @@ static const AVOption options[]={
 {"color_range", NULL, OFFSET(color_range), FF_OPT_TYPE_INT, {.dbl = AVCOL_RANGE_UNSPECIFIED }, 0, AVCOL_RANGE_NB-1, V|E|D},
 {"chroma_sample_location", NULL, OFFSET(chroma_sample_location), FF_OPT_TYPE_INT, {.dbl = AVCHROMA_LOC_UNSPECIFIED }, 0, AVCHROMA_LOC_NB-1, V|E|D},
 {"psy", "use psycho visual optimization", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_PSY }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"psy_rd", "specify psycho visual strength", OFFSET(psy_rd), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0, FLT_MAX, V|E},
-{"psy_trellis", "specify psycho visual trellis", OFFSET(psy_trellis), FF_OPT_TYPE_FLOAT, {.dbl = 0 }, 0, FLT_MAX, V|E},
-{"aq_mode", "specify aq method", OFFSET(aq_mode), FF_OPT_TYPE_INT, {.dbl = 1 }, 0, INT_MAX, V|E},
-{"aq_strength", "specify aq strength", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0, FLT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
+{"psy_rd", "specify psycho visual strength", OFFSET(psy_rd), FF_OPT_TYPE_FLOAT, {.dbl = -1.0 }, -1, FLT_MAX, V|E},
+{"psy_trellis", "specify psycho visual trellis", OFFSET(psy_trellis), FF_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, V|E},
+{"aq_mode", "specify aq method", OFFSET(aq_mode), FF_OPT_TYPE_INT, {.dbl = -1 }, -1, INT_MAX, V|E},
+{"aq_strength", "specify aq strength", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {.dbl = -1.0 }, -1, FLT_MAX, V|E},
 {"rc_lookahead", "specify number of frames to look ahead for frametype", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {.dbl = 40 }, 0, INT_MAX, V|E},
+#endif
 {"ssim", "ssim will be calculated during encoding", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SSIM }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"intra_refresh", "use periodic insertion of intra blocks instead of keyframes", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_INTRA_REFRESH }, INT_MIN, INT_MAX, V|E, "flags2"},
+#if FF_API_X264_GLOBAL_OPTS
 {"crf_max", "in crf mode, prevents vbv from lowering quality beyond this point", OFFSET(crf_max), FF_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, 0, 51, V|E},
+#endif
 {"log_level_offset", "set the log level offset", OFFSET(log_level_offset), FF_OPT_TYPE_INT, {.dbl = 0 }, INT_MIN, INT_MAX },
 #if FF_API_FLAC_GLOBAL_OPTS
 {"lpc_type", "deprecated, use flac-specific options", OFFSET(lpc_type), FF_OPT_TYPE_INT, {.dbl = AV_LPC_TYPE_DEFAULT }, AV_LPC_TYPE_DEFAULT, AV_LPC_TYPE_NB-1, A|E},
@@ -456,7 +464,6 @@ static const AVOption options[]={
 {"thread_type", "select multithreading type", OFFSET(thread_type), FF_OPT_TYPE_INT, {.dbl = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|E|D, "thread_type"},
 {"slice", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_THREAD_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
 {"frame", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_THREAD_FRAME }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
-{"vbv_delay", "initial buffer fill time in periods of 27Mhz clock", 0, FF_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX},
 {"audio_service_type", "audio service type", OFFSET(audio_service_type), FF_OPT_TYPE_INT, {.dbl = AV_AUDIO_SERVICE_TYPE_MAIN }, 0, AV_AUDIO_SERVICE_TYPE_NB-1, A|E, "audio_service_type"},
 {"ma", "Main Audio Service", 0, FF_OPT_TYPE_CONST, {.dbl = AV_AUDIO_SERVICE_TYPE_MAIN },              INT_MIN, INT_MAX, A|E, "audio_service_type"},
 {"ef", "Effects",            0, FF_OPT_TYPE_CONST, {.dbl = AV_AUDIO_SERVICE_TYPE_EFFECTS },           INT_MIN, INT_MAX, A|E, "audio_service_type"},

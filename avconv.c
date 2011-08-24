@@ -1687,7 +1687,6 @@ static int output_packet(InputStream *ist, int ist_index,
                 }
                 break;
             }
-            ret = avpkt.size;
             avpkt.size = 0;
         }
 
@@ -1698,9 +1697,7 @@ static int output_packet(InputStream *ist, int ist_index,
                 volp = samples;
                 for(i=0;i<(decoded_data_size / sizeof(short));i++) {
                     int v = ((*volp) * audio_volume + 128) >> 8;
-                    if (v < -32768) v = -32768;
-                    if (v >  32767) v = 32767;
-                    *volp++ = v;
+                    *volp++ = av_clip_int16(v);
                 }
             }
         }
@@ -2307,7 +2304,6 @@ static int transcode(OutputFile *output_files,
         int64_t ipts_min;
         double opts_min;
 
-    redo:
         ipts_min = INT64_MAX;
         opts_min= 1e100;
         /* if 'q' pressed, exits */
@@ -2473,7 +2469,7 @@ static int transcode(OutputFile *output_files,
             if (exit_on_error)
                 exit_program(1);
             av_free_packet(&pkt);
-            goto redo;
+            continue;
         }
 
     discard_packet:

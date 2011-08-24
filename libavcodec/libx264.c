@@ -23,6 +23,7 @@
 #include "avcodec.h"
 #include "internal.h"
 #include <x264.h>
+#include <float.h>
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,8 +43,17 @@ typedef struct X264Context {
     char *level;
     int fastfirstpass;
     char *stats;
-    char *weightp;
+    char *wpredp;
     char *x264opts;
+    float crf;
+    float crf_max;
+    int cqp;
+    int aq_mode;
+    float aq_strength;
+    float psy_rd;
+    float psy_trellis;
+    int rc_lookahead;
+    int weightp;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -278,13 +288,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_me_method = X264_ME_TESA;
     else x4->params.analyse.i_me_method = X264_ME_HEX;
 
-    x4->params.rc.i_aq_mode               = avctx->aq_mode;
-    x4->params.rc.f_aq_strength           = avctx->aq_strength;
-    x4->params.rc.i_lookahead             = avctx->rc_lookahead;
-
     x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
-    x4->params.analyse.f_psy_rd           = avctx->psy_rd;
-    x4->params.analyse.f_psy_trellis      = avctx->psy_trellis;
 
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
@@ -316,7 +320,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.p_log_private        = avctx;
     x4->params.i_log_level          = X264_LOG_DEBUG;
 
-    OPT_STR("weightp", x4->weightp);
+    OPT_STR("weightp", x4->wpredp);
 
     x4->params.b_intra_refresh      = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     if (avctx->bit_rate) {
@@ -329,6 +333,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (avctx->flags & CODEC_FLAG_PASS2) {
         x4->params.rc.b_stat_read = 1;
     } else {
+#if FF_API_X264_GLOBAL_OPTS
         if (avctx->crf) {
             x4->params.rc.i_rc_method   = X264_RC_CRF;
             x4->params.rc.f_rf_constant = avctx->crf;
@@ -337,6 +342,18 @@ static av_cold int X264_init(AVCodecContext *avctx)
             x4->params.rc.i_rc_method   = X264_RC_CQP;
             x4->params.rc.i_qp_constant = avctx->cqp;
         }
+#endif
+
+        if (x4->crf >= 0) {
+            x4->params.rc.i_rc_method   = X264_RC_CRF;
+            x4->params.rc.f_rf_constant = x4->crf;
+        } else if (x4->cqp >= 0) {
+            x4->params.rc.i_rc_method   = X264_RC_CQP;
+            x4->params.rc.i_qp_constant = x4->cqp;
+        }
+
+        if (x4->crf_max >= 0)
+            x4->params.rc.f_rf_constant_max = x4->crf_max;
     }
 
     OPT_STR("stats", x4->stats);
@@ -359,6 +376,36 @@ static av_cold int X264_init(AVCodecContext *avctx)
             p+=!!p;
         }
     }
+
+#if FF_API_X264_GLOBAL_OPTS
+    if (avctx->aq_mode >= 0)
+        x4->params.rc.i_aq_mode = avctx->aq_mode;
+    if (avctx->aq_strength >= 0)
+        x4->params.rc.f_aq_strength = avctx->aq_strength;
+    if (avctx->psy_rd >= 0)
+        x4->params.analyse.f_psy_rd           = avctx->psy_rd;
+    if (avctx->psy_trellis >= 0)
+        x4->params.analyse.f_psy_trellis      = avctx->psy_trellis;
+    if (avctx->rc_lookahead >= 0)
+        x4->params.rc.i_lookahead             = avctx->rc_lookahead;
+    if (avctx->weighted_p_pred >= 0)
+        x4->params.analyse.i_weighted_pred    = avctx->weighted_p_pred;
+#endif
+
+    if (x4->aq_mode >= 0)
+        x4->params.rc.i_aq_mode = x4->aq_mode;
+    if (x4->aq_strength >= 0)
+        x4->params.rc.f_aq_strength = x4->aq_strength;
+    if (x4->psy_rd >= 0)
+        x4->params.analyse.f_psy_rd = x4->psy_rd;
+    if (x4->psy_trellis >= 0)
+        x4->params.analyse.f_psy_trellis = x4->psy_trellis;
+    if (x4->rc_lookahead >= 0)
+        x4->params.rc.i_lookahead = x4->rc_lookahead;
+    if (x4->weightp >= 0)
+        x4->params.analyse.i_weighted_pred = x4->weightp;
+
+
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -398,7 +445,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
     avctx->has_b_frames = x4->params.i_bframe ?
         x4->params.i_bframe_pyramid ? 2 : 1 : 0;
     avctx->bit_rate = x4->params.rc.i_bitrate*1000;
+#if FF_API_X264_GLOBAL_OPTS
     avctx->crf = x4->params.rc.f_rf_constant;
+#endif
 
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
@@ -433,8 +482,23 @@ static const AVOption options[] = {
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
     {"level", "Specify level (as defined by Annex A)", OFFSET(level), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     {"passlogfile", "Filename for 2 pass stats", OFFSET(stats), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
-    {"wpredp", "Weighted prediction for P-frames", OFFSET(weightp), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    {"wpredp", "Weighted prediction for P-frames", OFFSET(wpredp), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     {"x264opts", "x264 options", OFFSET(x264opts), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
+    { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
+    { "crf_max",       "In CRF mode, prevents VBV from lowering quality beyond this point.",OFFSET(crf_max), FF_OPT_TYPE_FLOAT, {-1 }, -1, FLT_MAX, VE },
+    { "cqp",           "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "aq_mode",       "AQ method",                                       OFFSET(aq_mode),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "aq_mode"},
+    { "none",          NULL,                              0, FF_OPT_TYPE_CONST, {X264_AQ_NONE},         INT_MIN, INT_MAX, VE, "aq_mode" },
+    { "variance",      "Variance AQ (complexity mask)",   0, FF_OPT_TYPE_CONST, {X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, "aq_mode" },
+    { "autovariance",  "Auto-variance AQ (experimental)", 0, FF_OPT_TYPE_CONST, {X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
+    { "aq_strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
+    { "pdy_rd",        "Psy RD strength.",                                OFFSET(psy_rd),        FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
+    { "psy_trellis",   "Psy trellis strength",                            OFFSET(psy_trellis),   FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
+    { "rc_lookahead",  "Number of frames to look ahead for frametype and ratecontrol", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {-1 }, -1, INT_MAX, VE },
+    { "weightp",       "Weighted prediction analysis method.",            OFFSET(weightp),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "weightp" },
+    { "none",          NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_NONE},   INT_MIN, INT_MAX, VE, "weightp" },
+    { "simple",        NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SIMPLE}, INT_MIN, INT_MAX, VE, "weightp" },
+    { "smart",         NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SMART},  INT_MIN, INT_MAX, VE, "weightp" },
     { NULL },
 };
 
