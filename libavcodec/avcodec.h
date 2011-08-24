@@ -614,8 +614,8 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_8X8DCT        0x00000080 ///< H.264 high profile 8x8 transform
 #define CODEC_FLAG2_FASTPSKIP     0x00000100 ///< H.264 fast pskip
 #define CODEC_FLAG2_AUD           0x00000200 ///< H.264 access unit delimiters
-#endif
 #define CODEC_FLAG2_BRDO          0x00000400 ///< B-frame rate-distortion optimization
+#endif
 #define CODEC_FLAG2_INTRA_VLC     0x00000800 ///< Use MPEG-2 intra VLC table.
 #define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< Only do ME/MC (I frames -> ref, P frame -> ME+MC).
 #define CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000 ///< timecode is in drop frame format.
