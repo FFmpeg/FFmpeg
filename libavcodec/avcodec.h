@@ -515,6 +515,7 @@ enum AVColorSpace{
     AVCOL_SPC_BT470BG    =5, ///< also ITU-R BT601-6 625 / ITU-R BT1358 625 / ITU-R BT1700 625 PAL & SECAM / IEC 61966-2-4 xvYCC601
     AVCOL_SPC_SMPTE170M  =6, ///< also ITU-R BT601-6 525 / ITU-R BT1358 525 / ITU-R BT1700 NTSC / functionally identical to above
     AVCOL_SPC_SMPTE240M  =7,
+    AVCOL_SPC_YCGCO      =8,
     AVCOL_SPC_NB           , ///< Not part of ABI
 };
 
