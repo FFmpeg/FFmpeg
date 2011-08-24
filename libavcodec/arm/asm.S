@@ -97,6 +97,12 @@ T       add             \rn, \rn, \rm
 T       ldr             \rt, [\rn]
 .endm
 
+.macro  ldr_dpren       rt,  rn,  rm:vararg
+A       ldr             \rt, [\rn, -\rm]
+T       sub             \rt, \rn, \rm
+T       ldr             \rt, [\rt]
+.endm
+
 .macro  ldr_post        rt,  rn,  rm:vararg
 A       ldr             \rt, [\rn], \rm
 T       ldr             \rt, [\rn]
@@ -130,6 +136,12 @@ T       ldrh            \rt, [\rn]
 .macro  ldrh_post       rt,  rn,  rm
 A       ldrh            \rt, [\rn], \rm
 T       ldrh            \rt, [\rn]
+T       add             \rn, \rn, \rm
+.endm
+
+.macro  ldrb_post       rt,  rn,  rm
+A       ldrb            \rt, [\rn], \rm
+T       ldrb            \rt, [\rn]
 T       add             \rn, \rn, \rm
 .endm
 

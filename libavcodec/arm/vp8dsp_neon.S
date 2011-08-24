@@ -76,18 +76,6 @@ function ff_vp8_luma_dc_wht_neon, export=1
         bx              lr
 endfunc
 
-function ff_vp8_luma_dc_wht_dc_neon, export=1
-        ldrsh           r2,  [r1]
-        mov             r3,  #0
-        add             r2,  r2,  #3
-        strh            r3,  [r1]
-        asr             r2,  r2,  #3
-    .rept 16
-        strh            r2,  [r0], #32
-    .endr
-        bx              lr
-endfunc
-
 function ff_vp8_idct_add_neon, export=1
         vld1.16         {q0-q1},  [r1,:128]
         movw            r3,  #20091
@@ -739,23 +727,6 @@ function ff_put_vp8_pixels8_neon, export=1
         vst1.8          {d3},     [r0,:64], r1
         bgt             1b
         bx              lr
-endfunc
-
-function ff_put_vp8_pixels4_neon, export=1
-        ldr             r12, [sp, #0]           @ h
-        push            {r4-r6,lr}
-1:
-        subs            r12, r12, #4
-        ldr_post        r4,  r2,  r3
-        ldr_post        r5,  r2,  r3
-        ldr_post        r6,  r2,  r3
-        ldr_post        lr,  r2,  r3
-        str_post        r4,  r0,  r1
-        str_post        r5,  r0,  r1
-        str_post        r6,  r0,  r1
-        str_post        lr,  r0,  r1
-        bgt             1b
-        pop             {r4-r6,pc}
 endfunc
 
 /* 4/6-tap 8th-pel MC */
