@@ -473,8 +473,7 @@ int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom)
     avio_rb32(pb); /* version + flags */
     ff_mp4_read_descr(fc, pb, &tag);
     if (tag == MP4ESDescrTag) {
-        avio_rb16(pb); /* ID */
-        avio_r8(pb); /* priority */
+        ff_mp4_parse_es_descr(pb, NULL);
     } else
         avio_rb16(pb); /* ID */
 

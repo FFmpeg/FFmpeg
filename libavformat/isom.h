@@ -146,6 +146,7 @@ typedef struct MOVContext {
 int ff_mp4_read_descr_len(AVIOContext *pb);
 int ff_mp4_read_descr(AVFormatContext *fc, AVIOContext *pb, int *tag);
 int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb);
+void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 
 #define MP4IODescrTag                   0x02
 #define MP4ESDescrTag                   0x03
