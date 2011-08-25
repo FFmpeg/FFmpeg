@@ -30,6 +30,7 @@
 #include "avio_internal.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/fifo.h"
+#include "libavutil/intreadwrite.h"
 #include <unistd.h>
 #include "internal.h"
 #include "network.h"
@@ -46,6 +47,9 @@
 #define IPV6_ADD_MEMBERSHIP IPV6_JOIN_GROUP
 #define IPV6_DROP_MEMBERSHIP IPV6_LEAVE_GROUP
 #endif
+
+#define UDP_TX_BUF_SIZE 32768
+#define UDP_MAX_PKT_SIZE 65536
 
 typedef struct {
     int udp_fd;
@@ -65,10 +69,9 @@ typedef struct {
 #if HAVE_PTHREADS
     pthread_t circular_buffer_thread;
 #endif
+    uint8_t tmp[UDP_MAX_PKT_SIZE+4];
+    int remaining_in_dg;
 } UDPContext;
-
-#define UDP_TX_BUF_SIZE 32768
-#define UDP_MAX_PKT_SIZE 65536
 
 static int udp_set_multicast_ttl(int sockfd, int mcastTTL,
                                  struct sockaddr *addr)
@@ -347,26 +350,23 @@ static void *circular_buffer_task( void *_URLContext)
         /* How much do we have left to the end of the buffer */
         /* Whats the minimum we can read so that we dont comletely fill the buffer */
         left = av_fifo_space(s->fifo);
-        left = FFMIN(left, s->fifo->end - s->fifo->wptr);
 
         /* No Space left, error, what do we do now */
-        if( !left) {
+        if(left < UDP_MAX_PKT_SIZE + 4) {
             av_log(h, AV_LOG_ERROR, "circular_buffer: OVERRUN\n");
             s->circular_buffer_error = EIO;
             return NULL;
         }
-
-        len = recv(s->udp_fd, s->fifo->wptr, left, 0);
+        left = FFMIN(left, s->fifo->end - s->fifo->wptr);
+        len = recv(s->udp_fd, s->tmp+4, sizeof(s->tmp)-4, 0);
         if (len < 0) {
             if (ff_neterrno() != AVERROR(EAGAIN) && ff_neterrno() != AVERROR(EINTR)) {
                 s->circular_buffer_error = EIO;
                 return NULL;
             }
         }
-        s->fifo->wptr += len;
-        if (s->fifo->wptr >= s->fifo->end)
-            s->fifo->wptr = s->fifo->buffer;
-        s->fifo->wndx += len;
+        AV_WL32(s->tmp, len);
+        av_fifo_generic_write(s->fifo, s->tmp, len+4, NULL);
     }
 
     return NULL;
@@ -544,11 +544,17 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
         do {
             avail = av_fifo_size(s->fifo);
             if (avail) { // >=size) {
+                uint8_t tmp[4];
 
-                // Maximum amount available
-                size = FFMIN( avail, size);
-                av_fifo_generic_read(s->fifo, buf, size, NULL);
-                return size;
+                av_fifo_generic_read(s->fifo, tmp, 4, NULL);
+                avail= AV_RL32(tmp);
+                if(avail > size){
+                    av_log(h, AV_LOG_WARNING, "Part of datagram lost due to insufficient buffer size\n");
+                    avail= size;
+                }
+
+                av_fifo_generic_read(s->fifo, buf, avail, NULL);
+                return avail;
             }
             else {
                 FD_ZERO(&rfds);
