@@ -98,6 +98,8 @@ enum {
     FLV_CODECID_VP6A    = 5,
     FLV_CODECID_SCREEN2 = 6,
     FLV_CODECID_H264    = 7,
+    FLV_CODECID_REALH263= 8,
+    FLV_CODECID_MPEG4   = 9,
 };
 
 enum {

@@ -91,6 +91,7 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
     AVCodecContext *vcodec = vstream->codec;
     switch(flv_codecid) {
         case FLV_CODECID_H263  : vcodec->codec_id = CODEC_ID_FLV1   ; break;
+        case FLV_CODECID_REALH263: vcodec->codec_id = CODEC_ID_H263 ; break; // Really mean it this time
         case FLV_CODECID_SCREEN: vcodec->codec_id = CODEC_ID_FLASHSV; break;
         case FLV_CODECID_SCREEN2: vcodec->codec_id = CODEC_ID_FLASHSV2; break;
         case FLV_CODECID_VP6   : vcodec->codec_id = CODEC_ID_VP6F   ;
@@ -106,6 +107,9 @@ static int flv_set_video_codec(AVFormatContext *s, AVStream *vstream, int flv_co
         case FLV_CODECID_H264:
             vcodec->codec_id = CODEC_ID_H264;
             return 3; // not 4, reading packet type will consume one byte
+        case FLV_CODECID_MPEG4:
+            vcodec->codec_id = CODEC_ID_MPEG4;
+            return 3;
         default:
             av_log(s, AV_LOG_INFO, "Unsupported video codec (%x)\n", flv_codecid);
             vcodec->codec_tag = flv_codecid;
@@ -467,10 +471,11 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (st->codec->codec_id == CODEC_ID_AAC ||
-        st->codec->codec_id == CODEC_ID_H264) {
+        st->codec->codec_id == CODEC_ID_H264 ||
+        st->codec->codec_id == CODEC_ID_MPEG4) {
         int type = avio_r8(s->pb);
         size--;
-        if (st->codec->codec_id == CODEC_ID_H264) {
+        if (st->codec->codec_id == CODEC_ID_H264 || st->codec->codec_id == CODEC_ID_MPEG4) {
             int32_t cts = (avio_rb24(s->pb)+0xff800000)^0xff800000; // sign extension
             pts = dts + cts;
             if (cts < 0) { // dts are wrong
