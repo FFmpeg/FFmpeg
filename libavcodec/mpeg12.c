@@ -1948,6 +1948,8 @@ static int slice_decode_thread(AVCodecContext *c, void *arg){
 //av_log(c, AV_LOG_DEBUG, "ret:%d resync:%d/%d mb:%d/%d ts:%d/%d ec:%d\n",
 //ret, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, s->start_mb_y, s->end_mb_y, s->error_count);
         if(ret < 0){
+            if (c->error_recognition >= FF_ER_EXPLODE)
+                return AVERROR_INVALIDDATA;
             if(s->resync_mb_x>=0 && s->resync_mb_y>=0)
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
         }else{
@@ -2301,8 +2303,10 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     s->slice_count= 0;
 
-    if(avctx->extradata && !avctx->frame_number)
-        decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size);
+    if(avctx->extradata && !avctx->frame_number &&
+       decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size) < 0 &&
+       avctx->error_recognition >= FF_ER_EXPLODE)
+      return AVERROR_INVALIDDATA;
 
     return decode_chunks(avctx, picture, data_size, buf, buf_size);
 }
@@ -2355,11 +2359,13 @@ static int decode_chunks(AVCodecContext *avctx,
         switch(start_code) {
         case SEQ_START_CODE:
             if(last_code == 0){
-            mpeg1_decode_sequence(avctx, buf_ptr,
-                                    input_size);
+                mpeg1_decode_sequence(avctx, buf_ptr,
+                                      input_size);
                 s->sync=1;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring SEQ_START_CODE after %X\n", last_code);
+                if (avctx->error_recognition >= FF_ER_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
 
@@ -2388,6 +2394,8 @@ static int decode_chunks(AVCodecContext *avctx,
             last_code= PICTURE_START_CODE;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring pic after %X\n", last_code);
+                if (avctx->error_recognition >= FF_ER_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
         case EXT_START_CODE:
@@ -2399,6 +2407,8 @@ static int decode_chunks(AVCodecContext *avctx,
                 mpeg_decode_sequence_extension(s);
                 }else{
                     av_log(avctx, AV_LOG_ERROR, "ignoring seq ext after %X\n", last_code);
+                    if (avctx->error_recognition >= FF_ER_EXPLODE)
+                        return AVERROR_INVALIDDATA;
                 }
                 break;
             case 0x2:
@@ -2415,6 +2425,8 @@ static int decode_chunks(AVCodecContext *avctx,
                 mpeg_decode_picture_coding_extension(s);
                 }else{
                     av_log(avctx, AV_LOG_ERROR, "ignoring pic cod ext after %X\n", last_code);
+                    if (avctx->error_recognition >= FF_ER_EXPLODE)
+                        return AVERROR_INVALIDDATA;
                 }
                 break;
             }
@@ -2431,6 +2443,8 @@ static int decode_chunks(AVCodecContext *avctx,
                 s->sync=1;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring GOP_START_CODE after %X\n", last_code);
+                if (avctx->error_recognition >= FF_ER_EXPLODE)
+                    return AVERROR_INVALIDDATA;
             }
             break;
         default:
@@ -2475,6 +2489,8 @@ static int decode_chunks(AVCodecContext *avctx,
 
                 if(!s2->pict_type){
                     av_log(avctx, AV_LOG_ERROR, "Missing picture start code\n");
+                    if (avctx->error_recognition >= FF_ER_EXPLODE)
+                        return AVERROR_INVALIDDATA;
                     break;
                 }
 
@@ -2485,6 +2501,8 @@ static int decode_chunks(AVCodecContext *avctx,
                 }
                 if(!s2->current_picture_ptr){
                     av_log(avctx, AV_LOG_ERROR, "current_picture not initialized\n");
+                    if (avctx->error_recognition >= FF_ER_EXPLODE)
+                        return AVERROR_INVALIDDATA;
                     return -1;
                 }
 
@@ -2514,6 +2532,8 @@ static int decode_chunks(AVCodecContext *avctx,
                     emms_c();
 
                     if(ret < 0){
+                        if (avctx->error_recognition >= FF_ER_EXPLODE)
+                            return AVERROR_INVALIDDATA;
                         if(s2->resync_mb_x>=0 && s2->resync_mb_y>=0)
                             ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
                     }else{

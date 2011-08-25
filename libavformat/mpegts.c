@@ -898,9 +898,8 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
         avio_r8(&pb);
         len = ff_mp4_read_descr(s, &pb, &tag);
         if (tag == MP4ESDescrTag) {
-            *es_id = avio_rb16(&pb); /* ES_ID */
+            ff_mp4_parse_es_descr(&pb, es_id);
             av_dlog(s, "ES_ID %#x\n", *es_id);
-            avio_r8(&pb); /* priority */
             len = ff_mp4_read_descr(s, &pb, &tag);
             if (tag == MP4DecConfigDescrTag) {
                 *dec_config_descr = av_malloc(len);

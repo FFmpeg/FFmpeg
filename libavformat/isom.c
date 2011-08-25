@@ -372,6 +372,22 @@ int ff_mp4_read_descr(AVFormatContext *fc, AVIOContext *pb, int *tag)
     return len;
 }
 
+void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id)
+{
+     int flags;
+     if (es_id) *es_id = avio_rb16(pb);
+     else                avio_rb16(pb);
+     flags = avio_r8(pb);
+     if (flags & 0x80) //streamDependenceFlag
+         avio_rb16(pb);
+     if (flags & 0x40) { //URL_Flag
+         int len = avio_r8(pb);
+         avio_skip(pb, len);
+     }
+     if (flags & 0x20) //OCRstreamFlag
+         avio_rb16(pb);
+}
+
 static const AVCodecTag mp4_audio_types[] = {
     { CODEC_ID_MP3ON4, AOT_PS   }, /* old mp3on4 draft */
     { CODEC_ID_MP3ON4, AOT_L1   }, /* layer 1 */
