@@ -364,6 +364,7 @@ static void *circular_buffer_task( void *_URLContext)
                 s->circular_buffer_error = EIO;
                 return NULL;
             }
+            continue;
         }
         AV_WL32(s->tmp, len);
         av_fifo_generic_write(s->fifo, s->tmp, len+4, NULL);
