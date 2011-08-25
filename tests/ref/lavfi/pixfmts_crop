@@ -11,8 +11,8 @@ bgr565le            891664e5a54ae5968901347da92bc5e9
 bgr8                4b7159e05765bd4703180072d86423c8
 bgra                395c9f706fccda721471acaa5c96c16c
 gray                8c4850e66562a587a292dc728a65ea4a
-gray16be            daa5a6b98fb4a280c57c57bff1a2ab5a
-gray16le            84f5ea7259073edcb893113b42213c8e
+gray16be            257b4339925b0e672f552d8c9511f2c3
+gray16le            67cf7b26cda55356cc25e0f4e42cc136
 rgb24               3b90ed64b687d3dc186c6ef521dc71a8
 rgb48be             e6fd353c0eb9bea889423954414bea35
 rgb48le             68a1723da11ce08b502d42e204376503
@@ -26,8 +26,8 @@ rgba                fd00b24c7597268c32759a84a1de2de4
 yuv410p             a9f2eaa747bf988b7bebe4f442b9c67a
 yuv411p             3334d3aef8dba238658090ac172375d1
 yuv420p             bfea0188ddd4889787c403caae119cc7
-yuv420p16be         8365eff38b8c329aeb95fc605fa229bb
-yuv420p16le         5e8dd38d973d5854abe1ad4efad20cc1
+yuv420p16be         eb2f96b638a174377f5fc42cfc849ff5
+yuv420p16le         3eae4c172d620b6d4ef2aeca403c4f54
 yuv422p             f2f930a91fe00d4252c4720b5ecd8961
 yuv422p16be         167e4338811a7d272925a4c6417d60da
 yuv422p16le         3359395d5875d581fa1e975013d30114

@@ -444,6 +444,7 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
         int height= (plane==0 || plane==3) ? srcSliceH: -((-srcSliceH)>>c->chrDstVSubSample);
         const uint8_t *srcPtr= src[plane];
         uint8_t *dstPtr= dst[plane] + dstStride[plane]*y;
+        int shiftonly= plane==1 || plane==2 || (!c->srcRange && plane==0);
 
         if (!dst[plane]) continue;
         // ignore palette for GRAY8
@@ -469,14 +470,19 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                     }
                 } else if (src_depth == 8) {
                     for (i = 0; i < height; i++) {
+                        #define COPY816(w)\
+                        if(shiftonly){\
+                            for (j = 0; j < length; j++)\
+                                w(&dstPtr2[j], srcPtr[j]<<(dst_depth-8));\
+                        }else{\
+                            for (j = 0; j < length; j++)\
+                                w(&dstPtr2[j], (srcPtr[j]<<(dst_depth-8)) |\
+                                               (srcPtr[j]>>(2*8-dst_depth)));\
+                        }
                         if(isBE(c->dstFormat)){
-                            for (j = 0; j < length; j++)
-                                AV_WB16(&dstPtr2[j], (srcPtr[j]<<(dst_depth-8)) |
-                                                     (srcPtr[j]>>(2*8-dst_depth)));
+                            COPY816(AV_WB16)
                         } else {
-                            for (j = 0; j < length; j++)
-                                AV_WL16(&dstPtr2[j], (srcPtr[j]<<(dst_depth-8)) |
-                                                     (srcPtr[j]>>(2*8-dst_depth)));
+                            COPY816(AV_WL16)
                         }
                         dstPtr2 += dstStride[plane]/2;
                         srcPtr  += srcStride[plane];
@@ -484,10 +490,17 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
                 } else if (src_depth <= dst_depth) {
                     for (i = 0; i < height; i++) {
 #define COPY_UP(r,w) \
-    for (j = 0; j < length; j++){ \
-        unsigned int v= r(&srcPtr2[j]);\
-        w(&dstPtr2[j], (v<<(dst_depth-src_depth)) | \
-                       (v>>(2*src_depth-dst_depth)));\
+    if(shiftonly){\
+        for (j = 0; j < length; j++){ \
+            unsigned int v= r(&srcPtr2[j]);\
+            w(&dstPtr2[j], v<<(dst_depth-src_depth));\
+        }\
+    }else{\
+        for (j = 0; j < length; j++){ \
+            unsigned int v= r(&srcPtr2[j]);\
+            w(&dstPtr2[j], (v<<(dst_depth-src_depth)) | \
+                        (v>>(2*src_depth-dst_depth)));\
+        }\
     }
                         if(isBE(c->srcFormat)){
                             if(isBE(c->dstFormat)){
