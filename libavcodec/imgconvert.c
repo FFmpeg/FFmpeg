@@ -458,10 +458,27 @@ static enum PixelFormat avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
 }
 
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
-                              int has_alpha, int *loss_ptr)
+                                            int has_alpha, int *loss_ptr)
 {
     enum PixelFormat dst_pix_fmt;
-    int loss_mask, i;
+    int i;
+
+    if (loss_ptr) /* all losses count (for backward compatibility) */
+        *loss_ptr = 0;
+
+    dst_pix_fmt = PIX_FMT_NONE; /* so first iteration doesn't have to be treated special */
+    for(i = 0; i< FFMIN(PIX_FMT_NB, 64); i++){
+        if (pix_fmt_mask & (1ULL << i))
+            dst_pix_fmt = avcodec_find_best_pix_fmt2(dst_pix_fmt, i, src_pix_fmt, has_alpha, loss_ptr);
+    }
+    return dst_pix_fmt;
+}
+
+enum PixelFormat avcodec_find_best_pix_fmt2(enum PixelFormat dst_pix_fmt1, enum PixelFormat dst_pix_fmt2,
+                                            enum PixelFormat src_pix_fmt, int has_alpha, int *loss_ptr)
+{
+    enum PixelFormat dst_pix_fmt;
+    int loss1, loss2, loss_order1, loss_order2, i, loss_mask;
     static const int loss_mask_order[] = {
         ~0, /* no loss first */
         ~FF_LOSS_ALPHA,
@@ -469,22 +486,28 @@ enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelForma
         ~(FF_LOSS_COLORSPACE | FF_LOSS_RESOLUTION),
         ~FF_LOSS_COLORQUANT,
         ~FF_LOSS_DEPTH,
+        ~(FF_LOSS_RESOLUTION | FF_LOSS_DEPTH | FF_LOSS_COLORSPACE | FF_LOSS_ALPHA |
+          FF_LOSS_COLORQUANT | FF_LOSS_CHROMA),
         0,
     };
 
+    loss_mask= loss_ptr?~*loss_ptr:~0; /* use loss mask if provided */
+    dst_pix_fmt = PIX_FMT_NONE;
+    loss1 = avcodec_get_pix_fmt_loss(dst_pix_fmt1, src_pix_fmt, has_alpha) & loss_mask;
+    loss2 = avcodec_get_pix_fmt_loss(dst_pix_fmt2, src_pix_fmt, has_alpha) & loss_mask;
+
     /* try with successive loss */
-    i = 0;
-    for(;;) {
-        loss_mask = loss_mask_order[i++];
-        dst_pix_fmt = avcodec_find_best_pix_fmt1(pix_fmt_mask, src_pix_fmt,
-                                                 has_alpha, loss_mask);
-        if (dst_pix_fmt >= 0)
-            goto found;
-        if (loss_mask == 0)
-            break;
+    for(i = 0;loss_mask_order[i] != 0 && dst_pix_fmt == PIX_FMT_NONE;i++) {
+        loss_order1 = loss1 & loss_mask_order[i];
+        loss_order2 = loss2 & loss_mask_order[i];
+
+        if (loss_order1 == 0 && loss_order2 == 0){ /* use format with smallest depth */
+            dst_pix_fmt = avg_bits_per_pixel(dst_pix_fmt2) < avg_bits_per_pixel(dst_pix_fmt1) ? dst_pix_fmt2 : dst_pix_fmt1;
+        } else if (loss_order1 == 0 || loss_order2 == 0) { /* use format with no loss */
+            dst_pix_fmt = loss_order2 ? dst_pix_fmt1 : dst_pix_fmt2;
+        }
     }
-    return PIX_FMT_NONE;
- found:
+
     if (loss_ptr)
         *loss_ptr = avcodec_get_pix_fmt_loss(dst_pix_fmt, src_pix_fmt, has_alpha);
     return dst_pix_fmt;
