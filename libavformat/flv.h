@@ -63,6 +63,12 @@ enum {
 };
 
 enum {
+    FLV_STREAM_TYPE_VIDEO,
+    FLV_STREAM_TYPE_AUDIO,
+    FLV_STREAM_TYPE_DATA,
+};
+
+enum {
     FLV_MONO   = 0,
     FLV_STEREO = 1,
 };
