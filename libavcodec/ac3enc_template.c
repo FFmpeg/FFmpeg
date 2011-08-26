@@ -352,11 +352,6 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
         block = &s->blocks[blk];
         block->new_rematrixing_strategy = !blk;
 
-        if (!s->rematrixing_enabled) {
-            block0 = block;
-            continue;
-        }
-
         block->num_rematrixing_bands = 4;
         if (block->cpl_in_use) {
             block->num_rematrixing_bands -= (s->start_freq[CPL_CH] <= 61);
@@ -365,6 +360,11 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
                 block->new_rematrixing_strategy = 1;
         }
         nb_coefs = FFMIN(block->end_freq[1], block->end_freq[2]);
+
+        if (!s->rematrixing_enabled) {
+            block0 = block;
+            continue;
+        }
 
         for (bnd = 0; bnd < block->num_rematrixing_bands; bnd++) {
             /* calculate calculate sum of squared coeffs for one band in one block */
