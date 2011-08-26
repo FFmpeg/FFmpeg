@@ -31,13 +31,13 @@ typedef struct {
     int sampling_index;
     int sample_rate;
     int chan_config;
-    int sbr; //< -1 implicit, 1 presence
+    int sbr; ///< -1 implicit, 1 presence
     int ext_object_type;
     int ext_sampling_index;
     int ext_sample_rate;
     int ext_chan_config;
     int channels;
-    int ps;  //< -1 implicit, 1 presence
+    int ps;  ///< -1 implicit, 1 presence
 } MPEG4AudioConfig;
 
 extern const int ff_mpeg4audio_sample_rates[16];

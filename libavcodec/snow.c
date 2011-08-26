@@ -3306,7 +3306,7 @@ static void update_last_header_values(SnowContext *s){
 
 static int qscale2qlog(int qscale){
     return rint(QROOT*log(qscale / (float)FF_QP2LAMBDA)/log(2))
-           + 61*QROOT/8; //<64 >60
+           + 61*QROOT/8; ///< 64 > 60
 }
 
 static int ratecontrol_1pass(SnowContext *s, AVFrame *pict)

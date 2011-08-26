@@ -2162,7 +2162,7 @@ static int open_input_stream(HTTPContext *c, const char *info)
     }
     s->flags |= AVFMT_FLAG_GENPTS;
     c->fmt_in = s;
-    if (strcmp(s->iformat->name, "ffm") && av_find_stream_info(c->fmt_in) < 0) {
+    if (strcmp(s->iformat->name, "ffm") && avformat_find_stream_info(c->fmt_in, NULL) < 0) {
         http_log("Could not find stream info '%s'\n", input_filename);
         av_close_input_file(s);
         return -1;
@@ -3621,7 +3621,7 @@ static void build_file_streams(void)
             } else {
                 /* find all the AVStreams inside and reference them in
                    'stream' */
-                if (av_find_stream_info(infile) < 0) {
+                if (avformat_find_stream_info(infile, NULL) < 0) {
                     http_log("Could not find codec parameters from '%s'\n",
                              stream->feed_filename);
                     av_close_input_file(infile);

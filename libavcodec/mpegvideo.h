@@ -300,7 +300,7 @@ typedef struct MpegEncContext {
     Picture *current_picture_ptr;  ///< pointer to the current picture
     int picture_count;             ///< number of allocated pictures (MAX_PICTURE_COUNT * avctx->thread_count)
     int picture_range_start, picture_range_end; ///< the part of picture that this context can allocate in
-    uint8_t *visualization_buffer[3]; //< temporary buffer vor MV visualization
+    uint8_t *visualization_buffer[3]; ///< temporary buffer vor MV visualization
     int last_dc[3];                ///< last DC values for MPEG1
     int16_t *dc_val_base;
     int16_t *dc_val[3];            ///< used for mpeg4 DC prediction, all 3 arrays must be continuous

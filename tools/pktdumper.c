@@ -89,9 +89,9 @@ int main(int argc, char **argv)
         return 1;
     }
 
-    err = av_find_stream_info(fctx);
+    err = avformat_find_stream_info(fctx, NULL);
     if (err < 0) {
-        fprintf(stderr, "av_find_stream_info: error %d\n", err);
+        fprintf(stderr, "avformat_find_stream_info: error %d\n", err);
         return 1;
     }
 
