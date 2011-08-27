@@ -111,7 +111,7 @@ void av_fifo_drain(AVFifoBuffer *f, int size);
  * Return a pointer to the data stored in a FIFO buffer at a certain offset.
  * The FIFO buffer is not modified.
  *
- * @param *f   AVFifoBuffer to peek at, f must be non-NULL
+ * @param f    AVFifoBuffer to peek at, f must be non-NULL
  * @param offs an offset in bytes, its absolute value must be less
  *             than the used buffer size or the returned pointer will
  *             point outside to the buffer data.
