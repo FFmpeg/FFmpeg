@@ -219,6 +219,8 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
 {
     int len, nb_components, i, width, height, pix_fmt_id;
 
+    s->cur_scan = 0;
+
     /* XXX: verify len field validity */
     len = get_bits(&s->gb, 16);
     s->bits= get_bits(&s->gb, 8);
@@ -1484,10 +1486,10 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                         return -1;
                     break;
                 case EOI:
-                    s->cur_scan = 0;
                     if ((s->buggy_avid && !s->interlaced) || s->restart_interval)
                         break;
 eoi_parser:
+                    s->cur_scan = 0;
                     if (!s->got_picture) {
                         av_log(avctx, AV_LOG_WARNING, "Found EOI before any SOF, ignoring\n");
                         break;
