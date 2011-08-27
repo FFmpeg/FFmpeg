@@ -604,7 +604,9 @@ typedef struct RcOverride{
 #endif
 #define CODEC_FLAG_CBP_RD         0x04000000 ///< Use rate distortion optimization for cbp.
 #define CODEC_FLAG_QP_RD          0x08000000 ///< Use rate distortion optimization for qp selectioon.
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG_H263P_AIV      0x00000008 ///< H.263 alternative inter VLC
+#endif
 #define CODEC_FLAG_OBMC           0x00000001 ///< OBMC
 #define CODEC_FLAG_LOOP_FILTER    0x00000800 ///< loop filter
 #define CODEC_FLAG_H263P_SLICE_STRUCT 0x10000000

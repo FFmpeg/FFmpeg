@@ -609,10 +609,11 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
         if (avctx->flags & CODEC_FLAG_H263P_UMV)
             s->umvplus = 1;
+        if (avctx->flags & CODEC_FLAG_H263P_AIV)
+            s->alt_inter_vlc = 1;
 #endif
         s->h263_aic= (avctx->flags & CODEC_FLAG_AC_PRED) ? 1:0;
         s->modified_quant= s->h263_aic;
-        s->alt_inter_vlc= (avctx->flags & CODEC_FLAG_H263P_AIV) ? 1:0;
         s->obmc= (avctx->flags & CODEC_FLAG_OBMC) ? 1:0;
         s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
         s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
@@ -3798,6 +3799,7 @@ AVCodec ff_h263_encoder = {
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "umv",        "Use unlimited motion vectors.",    OFFSET(umvplus), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "aiv",        "Use alternative inter VLC.",       OFFSET(alt_inter_vlc), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { NULL },
 };
 static const AVClass h263p_class = {
