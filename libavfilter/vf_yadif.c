@@ -147,7 +147,7 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
         int refs = yadif->cur->linesize[i];
         int df = (yadif->csp->comp[i].depth_minus1+1) / 8;
 
-        if (i) {
+        if (i == 1 || i == 2) {
         /* Why is this not part of the per-plane description thing? */
             w >>= yadif->csp->log2_chroma_w;
             h >>= yadif->csp->log2_chroma_h;
@@ -357,6 +357,7 @@ static int query_formats(AVFilterContext *ctx)
         AV_NE( PIX_FMT_YUV420P16BE, PIX_FMT_YUV420P16LE ),
         AV_NE( PIX_FMT_YUV422P16BE, PIX_FMT_YUV422P16LE ),
         AV_NE( PIX_FMT_YUV444P16BE, PIX_FMT_YUV444P16LE ),
+        PIX_FMT_YUVA420P,
         PIX_FMT_NONE
     };
 
