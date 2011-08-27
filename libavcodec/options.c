@@ -87,7 +87,9 @@ static const AVOption options[]={
 {"input_preserved", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INPUT_PRESERVED }, INT_MIN, INT_MAX, 0, "flags"},
 {"pass1", "use internal 2pass ratecontrol in first  pass mode", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PASS1 }, INT_MIN, INT_MAX, 0, "flags"},
 {"pass2", "use internal 2pass ratecontrol in second pass mode", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PASS2 }, INT_MIN, INT_MAX, 0, "flags"},
+#if FF_API_MJPEG_GLOBAL_OPTS
 {"extern_huff", "use external huffman table (for mjpeg)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_EXTERN_HUFF }, INT_MIN, INT_MAX, 0, "flags"},
+#endif
 {"gray", "only decode/encode grayscale", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GRAY }, INT_MIN, INT_MAX, V|E|D, "flags"},
 {"emu_edge", "don't draw edges", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_EMU_EDGE }, INT_MIN, INT_MAX, 0, "flags"},
 {"psnr", "error[?] variables will be set during encoding", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_PSNR }, INT_MIN, INT_MAX, V|E, "flags"},
