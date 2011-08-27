@@ -570,7 +570,9 @@ typedef struct RcOverride{
 #define CODEC_FLAG_QPEL   0x0010  ///< Use qpel MC.
 #define CODEC_FLAG_GMC    0x0020  ///< Use GMC.
 #define CODEC_FLAG_MV0    0x0040  ///< Always try a MB with MV=<0,0>.
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG_PART   0x0080  ///< Use data partitioning.
+#endif
 /**
  * The parent program guarantees that the input for B-frames containing
  * streams is not written to for at least s->max_b_frames+1 frames, if
