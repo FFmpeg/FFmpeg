@@ -47,6 +47,7 @@ typedef struct X264Context {
     int aq_mode;
     float aq_strength;
     char *psy_rd;
+    int psy;
     int rc_lookahead;
     int weightp;
     int weightb;
@@ -243,8 +244,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_me_method = X264_ME_TESA;
     else x4->params.analyse.i_me_method = X264_ME_HEX;
 
-    x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
-
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
 
@@ -331,6 +330,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
     x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
     x4->params.b_aud                      = avctx->flags2 & CODEC_FLAG2_AUD;
+    x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
 #endif
 
     if (x4->aq_mode >= 0)
@@ -341,6 +341,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Error parsing option 'psy-rd' with value '%s'.\n", x4->psy_rd);
         return AVERROR(EINVAL);
     }
+    if (x4->psy >= 0)
+        x4->params.analyse.b_psy  = x4->psy;
     if (x4->rc_lookahead >= 0)
         x4->params.rc.i_lookahead = x4->rc_lookahead;
     if (x4->weightp >= 0)
@@ -440,6 +442,7 @@ static const AVOption options[] = {
     { "variance",      "Variance AQ (complexity mask)",   0, FF_OPT_TYPE_CONST, {X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, "aq_mode" },
     { "autovariance",  "Auto-variance AQ (experimental)", 0, FF_OPT_TYPE_CONST, {X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
     { "aq-strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
+    { "psy",           "Use psychovisual optimizations.",                 OFFSET(psy),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
     { "psy-rd",        "Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.", OFFSET(psy_rd), FF_OPT_TYPE_STRING,  {0 }, 0, 0, VE},
     { "rc-lookahead",  "Number of frames to look ahead for frametype and ratecontrol", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {-1 }, -1, INT_MAX, VE },
     { "weightb",       "Weighted prediction for B-frames.",               OFFSET(weightb),       FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
