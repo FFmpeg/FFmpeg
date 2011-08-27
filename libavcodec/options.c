@@ -115,7 +115,9 @@ static const AVOption options[]={
 {"slice", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_SLICE_STRUCT }, INT_MIN, INT_MAX, V|E, "flags"},
 #endif
 {"ilme", "interlaced motion estimation", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_ME }, INT_MIN, INT_MAX, V|E, "flags"},
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 {"scan_offset", "will reserve space for svcd scan offset user data", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_SVCD_SCAN_OFFSET }, INT_MIN, INT_MAX, V|E, "flags"},
+#endif
 {"cgop", "closed gop", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CLOSED_GOP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"fast", "allow non spec compliant speedup tricks", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_FAST }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"sgop", "strictly enforce gop size", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},

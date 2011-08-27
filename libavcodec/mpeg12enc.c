@@ -145,6 +145,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
     if (avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE)
         s->drop_frame_timecode = 1;
+    if (avctx->flags & CODEC_FLAG_SVCD_SCAN_OFFSET)
+        s->scan_offset = 1;
 #endif
 
     if(find_frame_rate_index(s) < 0){
@@ -420,7 +422,7 @@ void mpeg1_encode_picture_header(MpegEncContext *s, int picture_number)
         put_bits(&s->pb, 1, s->progressive_frame);
         put_bits(&s->pb, 1, 0); //composite_display_flag
     }
-    if(s->flags & CODEC_FLAG_SVCD_SCAN_OFFSET){
+    if (s->scan_offset) {
         int i;
 
         put_header(s, USER_START_CODE);
@@ -936,7 +938,8 @@ static void mpeg1_encode_block(MpegEncContext *s,
 #define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 #define COMMON_OPTS\
     { "intra_vlc",           "Use MPEG-2 intra VLC table.",       OFFSET(intra_vlc_format),    FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },\
-    { "drop_frame_timecode", "Timecode is in drop frame format.", OFFSET(drop_frame_timecode), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE},
+    { "drop_frame_timecode", "Timecode is in drop frame format.", OFFSET(drop_frame_timecode), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE}, \
+    { "scan_offset",         "Reserve space for SVCD scan offset user data.", OFFSET(scan_offset), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
 
 static const AVOption mpeg1_options[] = {
     COMMON_OPTS
