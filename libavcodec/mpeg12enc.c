@@ -142,6 +142,11 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if(MPV_encode_init(avctx) < 0)
         return -1;
 
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
+    if (avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE)
+        s->drop_frame_timecode = 1;
+#endif
+
     if(find_frame_rate_index(s) < 0){
         if(s->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL){
             av_log(avctx, AV_LOG_ERROR, "MPEG1/2 does not support %d/%d fps\n", avctx->time_base.den, avctx->time_base.num);
@@ -174,7 +179,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         }
     }
 
-    if((avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE) && s->frame_rate_index != 4){
+    if (s->drop_frame_timecode && s->frame_rate_index != 4) {
         av_log(avctx, AV_LOG_ERROR, "Drop frame time code only allowed with 1001/30000 fps\n");
         return -1;
     }
@@ -285,14 +290,14 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
             }
 
             put_header(s, GOP_START_CODE);
-            put_bits(&s->pb, 1, !!(s->avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE)); /* drop frame flag */
+            put_bits(&s->pb, 1, s->drop_frame_timecode); /* drop frame flag */
             /* time code : we must convert from the real frame rate to a
                fake mpeg frame rate in case of low frame rate */
             fps = (framerate.num + framerate.den/2)/ framerate.den;
             time_code = s->current_picture_ptr->f.coded_picture_number + s->avctx->timecode_frame_start;
 
             s->gop_picture_number = s->current_picture_ptr->f.coded_picture_number;
-            if (s->avctx->flags2 & CODEC_FLAG2_DROP_FRAME_TIMECODE) {
+            if (s->drop_frame_timecode) {
                 /* only works for NTSC 29.97 */
                 int d = time_code / 17982;
                 int m = time_code % 17982;
@@ -931,6 +936,7 @@ static void mpeg1_encode_block(MpegEncContext *s,
 #define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption options[] = {
     { "intra_vlc",           "Use MPEG-2 intra VLC table.",       OFFSET(intra_vlc_format),    FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "drop_frame_timecode", "Timecode is in drop frame format.", OFFSET(drop_frame_timecode), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE},
     { NULL },
 };
 
