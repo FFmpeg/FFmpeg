@@ -29,6 +29,7 @@
 
 #include "libavutil/intmath.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
@@ -605,7 +606,10 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
         s->out_format = FMT_H263;
         s->h263_plus = 1;
         /* Fx */
-        s->umvplus = (avctx->flags & CODEC_FLAG_H263P_UMV) ? 1:0;
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
+        if (avctx->flags & CODEC_FLAG_H263P_UMV)
+            s->umvplus = 1;
+#endif
         s->h263_aic= (avctx->flags & CODEC_FLAG_AC_PRED) ? 1:0;
         s->modified_quant= s->h263_aic;
         s->alt_inter_vlc= (avctx->flags & CODEC_FLAG_H263P_AIV) ? 1:0;
@@ -3790,6 +3794,19 @@ AVCodec ff_h263_encoder = {
     .long_name= NULL_IF_CONFIG_SMALL("H.263 / H.263-1996"),
 };
 
+#define OFFSET(x) offsetof(MpegEncContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "umv",        "Use unlimited motion vectors.",    OFFSET(umvplus), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { NULL },
+};
+static const AVClass h263p_class = {
+    .class_name = "H.263p encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_h263p_encoder = {
     .name           = "h263p",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -3801,6 +3818,7 @@ AVCodec ff_h263p_encoder = {
     .capabilities = CODEC_CAP_SLICE_THREADS,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("H.263+ / H.263-1998 / H.263 version 2"),
+    .priv_class     = &h263p_class,
 };
 
 AVCodec ff_msmpeg4v2_encoder = {

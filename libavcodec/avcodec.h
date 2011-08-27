@@ -599,7 +599,9 @@ typedef struct RcOverride{
 #define CODEC_FLAG_BITEXACT       0x00800000 ///< Use only bitexact stuff (except (I)DCT).
 /* Fx : Flag for h263+ extra options */
 #define CODEC_FLAG_AC_PRED        0x01000000 ///< H.263 advanced intra coding / MPEG-4 AC prediction
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG_H263P_UMV      0x02000000 ///< unlimited motion vector
+#endif
 #define CODEC_FLAG_CBP_RD         0x04000000 ///< Use rate distortion optimization for cbp.
 #define CODEC_FLAG_QP_RD          0x08000000 ///< Use rate distortion optimization for qp selectioon.
 #define CODEC_FLAG_H263P_AIV      0x00000008 ///< H.263 alternative inter VLC

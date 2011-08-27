@@ -103,7 +103,9 @@ static const AVOption options[]={
 {"global_header", "place global headers in extradata instead of every keyframe", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GLOBAL_HEADER }, INT_MIN, INT_MAX, V|A|E, "flags"},
 {"bitexact", "use only bitexact stuff (except (i)dct)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_BITEXACT }, INT_MIN, INT_MAX, A|V|S|D|E, "flags"},
 {"aic", "h263 advanced intra coding / mpeg4 ac prediction", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_AC_PRED }, INT_MIN, INT_MAX, V|E, "flags"},
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 {"umv", "use unlimited motion vectors", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_UMV }, INT_MIN, INT_MAX, V|E, "flags"},
+#endif
 {"cbp", "use rate distortion optimization for cbp", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CBP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
 {"qprd", "use rate distortion optimization for qp selection", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
 {"aiv", "h263 alternative inter vlc", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_AIV }, INT_MIN, INT_MAX, V|E, "flags"},
