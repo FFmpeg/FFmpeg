@@ -142,7 +142,7 @@ voc_get_packet(AVFormatContext *s, AVPacket *pkt, AVStream *st, int max_size)
         }
     }
 
-    dec->bit_rate = dec->sample_rate * dec->bits_per_coded_sample;
+    dec->bit_rate = dec->sample_rate * dec->channels * dec->bits_per_coded_sample;
 
     if (max_size <= 0)
         max_size = 2048;
