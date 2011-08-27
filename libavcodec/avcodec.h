@@ -609,7 +609,9 @@ typedef struct RcOverride{
 #define CODEC_FLAG_OBMC           0x00000001 ///< OBMC
 #endif
 #define CODEC_FLAG_LOOP_FILTER    0x00000800 ///< loop filter
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG_H263P_SLICE_STRUCT 0x10000000
+#endif
 #define CODEC_FLAG_INTERLACED_ME  0x20000000 ///< interlaced motion estimation
 #define CODEC_FLAG_SVCD_SCAN_OFFSET 0x40000000 ///< Will reserve space for SVCD scan offset user data.
 #define CODEC_FLAG_CLOSED_GOP     0x80000000

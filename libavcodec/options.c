@@ -112,8 +112,8 @@ static const AVOption options[]={
 {"qprd", "use rate distortion optimization for qp selection", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_QP_RD }, INT_MIN, INT_MAX, V|E, "flags"},
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
 {"aiv", "h263 alternative inter vlc", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_AIV }, INT_MIN, INT_MAX, V|E, "flags"},
-#endif
 {"slice", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_H263P_SLICE_STRUCT }, INT_MIN, INT_MAX, V|E, "flags"},
+#endif
 {"ilme", "interlaced motion estimation", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_ME }, INT_MIN, INT_MAX, V|E, "flags"},
 {"scan_offset", "will reserve space for svcd scan offset user data", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_SVCD_SCAN_OFFSET }, INT_MIN, INT_MAX, V|E, "flags"},
 {"cgop", "closed gop", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_CLOSED_GOP }, INT_MIN, INT_MAX, V|E, "flags"},

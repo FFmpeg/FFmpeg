@@ -612,12 +612,13 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
             s->umvplus = 1;
         if (avctx->flags & CODEC_FLAG_H263P_AIV)
             s->alt_inter_vlc = 1;
+        if (avctx->flags & CODEC_FLAG_H263P_SLICE_STRUCT)
+            s->h263_slice_structured = 1;
 #endif
         s->h263_aic= (avctx->flags & CODEC_FLAG_AC_PRED) ? 1:0;
         s->modified_quant= s->h263_aic;
         s->loop_filter= (avctx->flags & CODEC_FLAG_LOOP_FILTER) ? 1:0;
         s->unrestricted_mv= s->obmc || s->loop_filter || s->umvplus;
-        s->h263_slice_structured= (s->flags & CODEC_FLAG_H263P_SLICE_STRUCT) ? 1:0;
 
         /* /Fx */
         /* These are just to be sure */
@@ -3787,6 +3788,7 @@ int dct_quantize_c(MpegEncContext *s,
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption h263_options[] = {
     { "obmc",         "use overlapped block motion compensation.", OFFSET(obmc), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "structured_slices","Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE},
     { NULL },
 };
 
@@ -3814,6 +3816,7 @@ static const AVOption h263p_options[] = {
     { "umv",        "Use unlimited motion vectors.",    OFFSET(umvplus), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { "aiv",        "Use alternative inter VLC.",       OFFSET(alt_inter_vlc), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { "obmc",       "use overlapped block motion compensation.", OFFSET(obmc), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "structured_slices", "Write slice start position at every GOB header instead of just GOB number.", OFFSET(h263_slice_structured), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE},
     { NULL },
 };
 static const AVClass h263p_class = {
