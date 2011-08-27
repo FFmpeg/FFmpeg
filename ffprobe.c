@@ -41,6 +41,8 @@ static int use_value_prefix             = 0;
 static int use_byte_value_binary_prefix = 0;
 static int use_value_sexagesimal_format = 0;
 
+static char *print_format;
+
 /* globals */
 static const OptionDef options[];
 
@@ -121,141 +123,215 @@ static const char *media_type_string(enum AVMediaType media_type)
     return s ? s : "unknown";
 }
 
-static void show_packet(AVFormatContext *fmt_ctx, AVPacket *pkt)
+
+struct writer {
+    const char *name;
+    const char *item_sep;           ///< separator between key/value couples
+    const char *items_sep;          ///< separator between sets of key/value couples
+    const char *section_sep;        ///< separator between sections (streams, packets, ...)
+    const char *header, *footer;
+    void (*print_header)(const char *);
+    void (*print_footer)(const char *);
+    void (*print_fmt_f)(const char *, const char *, va_list ap);
+    void (*print_int_f)(const char *, int);
+    void (*show_tags)(struct writer *w, AVDictionary *dict);
+};
+
+
+/* Default output */
+
+static void default_print_header(const char *section)
+{
+    printf("[%s]\n", section);
+}
+
+static void default_print_fmt(const char *key, const char *fmt, va_list ap)
+{
+    printf("%s=", key);
+    vprintf(fmt, ap);
+}
+
+static void default_print_int(const char *key, int value)
+{
+    printf("%s=%d", key, value);
+}
+
+static void default_print_footer(const char *section)
+{
+    printf("\n[/%s]", section);
+}
+
+
+/* Print helpers */
+
+static void print_vfmt0(struct writer *w, const char *key, const char *fmt, ...)
+{
+    va_list ap;
+    va_start(ap, fmt);
+    w->print_fmt_f(key, fmt, ap);
+    va_end(ap);
+}
+
+#define print_fmt0(k, f, a...) print_vfmt0(w, k, f, ##a)
+#define print_fmt( k, f, a...) do {   \
+    if (w->item_sep)                  \
+        printf("%s", w->item_sep);    \
+    print_vfmt0(w, k, f, ##a);        \
+} while (0)
+
+#define print_int0(k, v) w->print_int_f(k, v)
+#define print_int( k, v) do {      \
+    if (w->item_sep)               \
+        printf("%s", w->item_sep); \
+    print_int0(k, v);              \
+} while (0)
+
+#define print_str0(k, v) print_fmt0(k, "%s", v)
+#define print_str( k, v) print_fmt (k, "%s", v)
+
+
+static void show_packet(struct writer *w, AVFormatContext *fmt_ctx, AVPacket *pkt, int packet_idx)
 {
     char val_str[128];
     AVStream *st = fmt_ctx->streams[pkt->stream_index];
 
-    printf("[PACKET]\n");
-    printf("codec_type=%s\n"   , media_type_string(st->codec->codec_type));
-    printf("stream_index=%d\n" , pkt->stream_index);
-    printf("pts=%s\n"          , ts_value_string  (val_str, sizeof(val_str), pkt->pts));
-    printf("pts_time=%s\n"     , time_value_string(val_str, sizeof(val_str), pkt->pts, &st->time_base));
-    printf("dts=%s\n"          , ts_value_string  (val_str, sizeof(val_str), pkt->dts));
-    printf("dts_time=%s\n"     , time_value_string(val_str, sizeof(val_str), pkt->dts, &st->time_base));
-    printf("duration=%s\n"     , ts_value_string  (val_str, sizeof(val_str), pkt->duration));
-    printf("duration_time=%s\n", time_value_string(val_str, sizeof(val_str), pkt->duration, &st->time_base));
-    printf("size=%s\n"         , value_string     (val_str, sizeof(val_str), pkt->size, unit_byte_str));
-    printf("pos=%"PRId64"\n"   , pkt->pos);
-    printf("flags=%c\n"        , pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
-    printf("[/PACKET]\n");
+    if (packet_idx)
+        printf("%s", w->items_sep);
+    w->print_header("PACKET");
+    print_str0("codec_type",      media_type_string(st->codec->codec_type));
+    print_int("stream_index",     pkt->stream_index);
+    print_str("pts",              ts_value_string  (val_str, sizeof(val_str), pkt->pts));
+    print_str("pts_time",         time_value_string(val_str, sizeof(val_str), pkt->pts, &st->time_base));
+    print_str("dts",              ts_value_string  (val_str, sizeof(val_str), pkt->dts));
+    print_str("dts_time",         time_value_string(val_str, sizeof(val_str), pkt->dts, &st->time_base));
+    print_str("duration",         ts_value_string  (val_str, sizeof(val_str), pkt->duration));
+    print_str("duration_time",    time_value_string(val_str, sizeof(val_str), pkt->duration, &st->time_base));
+    print_str("size",             value_string     (val_str, sizeof(val_str), pkt->size, unit_byte_str));
+    print_fmt("pos",   "%"PRId64, pkt->pos);
+    print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
+    w->print_footer("PACKET");
     fflush(stdout);
 }
 
-static void show_packets(AVFormatContext *fmt_ctx)
+static void show_packets(struct writer *w, AVFormatContext *fmt_ctx)
 {
     AVPacket pkt;
+    int i = 0;
 
     av_init_packet(&pkt);
 
     while (!av_read_frame(fmt_ctx, &pkt))
-        show_packet(fmt_ctx, &pkt);
+        show_packet(w, fmt_ctx, &pkt, i++);
 }
 
-static void show_stream(AVFormatContext *fmt_ctx, int stream_idx)
+static void default_show_tags(struct writer *w, AVDictionary *dict)
+{
+    AVDictionaryEntry *tag = NULL;
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        printf("\nTAG:");
+        print_str0(tag->key, tag->value);
+    }
+}
+
+static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_idx)
 {
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
     AVCodec *dec;
     char val_str[128];
-    AVDictionaryEntry *tag = NULL;
     AVRational display_aspect_ratio;
 
-    printf("[STREAM]\n");
+    if (stream_idx)
+        printf("%s", w->items_sep);
+    w->print_header("STREAM");
 
-    printf("index=%d\n",        stream->index);
+    print_int0("index", stream->index);
 
     if ((dec_ctx = stream->codec)) {
         if ((dec = dec_ctx->codec)) {
-            printf("codec_name=%s\n",         dec->name);
-            printf("codec_long_name=%s\n",    dec->long_name);
+            print_str("codec_name",      dec->name);
+            print_str("codec_long_name", dec->long_name);
         } else {
-            printf("codec_name=unknown\n");
+            print_str("codec_name",      "unknown");
         }
 
-        printf("codec_type=%s\n",         media_type_string(dec_ctx->codec_type));
-        printf("codec_time_base=%d/%d\n", dec_ctx->time_base.num, dec_ctx->time_base.den);
+        print_str("codec_type",               media_type_string(dec_ctx->codec_type));
+        print_fmt("codec_time_base", "%d/%d", dec_ctx->time_base.num, dec_ctx->time_base.den);
 
         /* print AVI/FourCC tag */
         av_get_codec_tag_string(val_str, sizeof(val_str), dec_ctx->codec_tag);
-        printf("codec_tag_string=%s\n", val_str);
-        printf("codec_tag=0x%04x\n", dec_ctx->codec_tag);
+        print_str("codec_tag_string",    val_str);
+        print_fmt("codec_tag", "0x%04x", dec_ctx->codec_tag);
 
         switch (dec_ctx->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            printf("width=%d\n",                   dec_ctx->width);
-            printf("height=%d\n",                  dec_ctx->height);
-            printf("has_b_frames=%d\n",            dec_ctx->has_b_frames);
+            print_int("width",        dec_ctx->width);
+            print_int("height",       dec_ctx->height);
+            print_int("has_b_frames", dec_ctx->has_b_frames);
             if (dec_ctx->sample_aspect_ratio.num) {
-                printf("sample_aspect_ratio=%d:%d\n", dec_ctx->sample_aspect_ratio.num,
-                                                      dec_ctx->sample_aspect_ratio.den);
+                print_fmt("sample_aspect_ratio", "%d:%d",
+                          dec_ctx->sample_aspect_ratio.num,
+                          dec_ctx->sample_aspect_ratio.den);
                 av_reduce(&display_aspect_ratio.num, &display_aspect_ratio.den,
                           dec_ctx->width  * dec_ctx->sample_aspect_ratio.num,
                           dec_ctx->height * dec_ctx->sample_aspect_ratio.den,
                           1024*1024);
-                printf("display_aspect_ratio=%d:%d\n", display_aspect_ratio.num,
-                                                       display_aspect_ratio.den);
+                print_fmt("display_aspect_ratio", "%d:%d",
+                          display_aspect_ratio.num,
+                          display_aspect_ratio.den);
             }
-            printf("pix_fmt=%s\n",                 dec_ctx->pix_fmt != PIX_FMT_NONE ?
-                   av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
-            printf("level=%d\n",                   dec_ctx->level);
+            print_str("pix_fmt", dec_ctx->pix_fmt != PIX_FMT_NONE ? av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
+            print_int("level",   dec_ctx->level);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
-            printf("sample_rate=%s\n",             value_string(val_str, sizeof(val_str),
-                                                                dec_ctx->sample_rate,
-                                                                unit_hertz_str));
-            printf("channels=%d\n",                dec_ctx->channels);
-            printf("bits_per_sample=%d\n",         av_get_bits_per_sample(dec_ctx->codec_id));
+            print_str("sample_rate",     value_string(val_str, sizeof(val_str), dec_ctx->sample_rate, unit_hertz_str));
+            print_int("channels",        dec_ctx->channels);
+            print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
             break;
         }
     } else {
-        printf("codec_type=unknown\n");
+        print_fmt("codec_type", "unknown");
     }
 
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
-        printf("id=0x%x\n", stream->id);
-    printf("r_frame_rate=%d/%d\n",         stream->r_frame_rate.num,   stream->r_frame_rate.den);
-    printf("avg_frame_rate=%d/%d\n",       stream->avg_frame_rate.num, stream->avg_frame_rate.den);
-    printf("time_base=%d/%d\n",            stream->time_base.num,      stream->time_base.den);
-    printf("start_time=%s\n",   time_value_string(val_str, sizeof(val_str), stream->start_time,
-                                                  &stream->time_base));
-    printf("duration=%s\n",     time_value_string(val_str, sizeof(val_str), stream->duration,
-                                                  &stream->time_base));
+        print_fmt("id=", "0x%x", stream->id);
+    print_fmt("r_frame_rate",   "%d/%d", stream->r_frame_rate.num,   stream->r_frame_rate.den);
+    print_fmt("avg_frame_rate", "%d/%d", stream->avg_frame_rate.num, stream->avg_frame_rate.den);
+    print_fmt("time_base",      "%d/%d", stream->time_base.num,      stream->time_base.den);
+    print_str("start_time", time_value_string(val_str, sizeof(val_str), stream->start_time, &stream->time_base));
+    print_str("duration",   time_value_string(val_str, sizeof(val_str), stream->duration,   &stream->time_base));
     if (stream->nb_frames)
-        printf("nb_frames=%"PRId64"\n",    stream->nb_frames);
+        print_fmt("nb_frames", "%"PRId64, stream->nb_frames);
 
-    while ((tag = av_dict_get(stream->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
-        printf("TAG:%s=%s\n", tag->key, tag->value);
+    w->show_tags(w, stream->metadata);
 
-    printf("[/STREAM]\n");
+    w->print_footer("STREAM");
     fflush(stdout);
 }
 
-static void show_format(AVFormatContext *fmt_ctx)
+static void show_streams(struct writer *w, AVFormatContext *fmt_ctx)
 {
-    AVDictionaryEntry *tag = NULL;
+    int i;
+    for (i = 0; i < fmt_ctx->nb_streams; i++)
+        show_stream(w, fmt_ctx, i);
+}
+
+static void show_format(struct writer *w, AVFormatContext *fmt_ctx)
+{
     char val_str[128];
 
-    printf("[FORMAT]\n");
-
-    printf("filename=%s\n",         fmt_ctx->filename);
-    printf("nb_streams=%d\n",       fmt_ctx->nb_streams);
-    printf("format_name=%s\n",      fmt_ctx->iformat->name);
-    printf("format_long_name=%s\n", fmt_ctx->iformat->long_name);
-    printf("start_time=%s\n",       time_value_string(val_str, sizeof(val_str), fmt_ctx->start_time,
-                                                      &AV_TIME_BASE_Q));
-    printf("duration=%s\n",         time_value_string(val_str, sizeof(val_str), fmt_ctx->duration,
-                                                      &AV_TIME_BASE_Q));
-    printf("size=%s\n",             value_string(val_str, sizeof(val_str), fmt_ctx->file_size,
-                                                 unit_byte_str));
-    printf("bit_rate=%s\n",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,
-                                                 unit_bit_per_second_str));
-
-    while ((tag = av_dict_get(fmt_ctx->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
-        printf("TAG:%s=%s\n", tag->key, tag->value);
-
-    printf("[/FORMAT]\n");
+    w->print_header("FORMAT");
+    print_str0("filename",        fmt_ctx->filename);
+    print_int("nb_streams",       fmt_ctx->nb_streams);
+    print_str("format_name",      fmt_ctx->iformat->name);
+    print_str("format_long_name", fmt_ctx->iformat->long_name);
+    print_str("start_time",       time_value_string(val_str, sizeof(val_str), fmt_ctx->start_time, &AV_TIME_BASE_Q));
+    print_str("duration",         time_value_string(val_str, sizeof(val_str), fmt_ctx->duration,   &AV_TIME_BASE_Q));
+    print_str("size",             value_string(val_str, sizeof(val_str), fmt_ctx->file_size, unit_byte_str));
+    print_str("bit_rate",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,  unit_bit_per_second_str));
+    w->show_tags(w, fmt_ctx->metadata);
+    w->print_footer("FORMAT");
     fflush(stdout);
 }
 
@@ -301,23 +377,67 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     return 0;
 }
 
+#define WRITER_FUNC(func)                  \
+    .print_header = func ## _print_header, \
+    .print_footer = func ## _print_footer, \
+    .print_fmt_f  = func ## _print_fmt,    \
+    .print_int_f  = func ## _print_int,    \
+    .show_tags    = func ## _show_tags
+
+static struct writer writers[] = {{
+        .name         = "default",
+        .item_sep     = "\n",
+        .items_sep    = "\n",
+        .section_sep  = "\n",
+        .footer       = "\n",
+        WRITER_FUNC(default),
+    }
+};
+
+static int get_writer(const char *name)
+{
+    int i;
+    if (!name)
+        return 0;
+    for (i = 0; i < FF_ARRAY_ELEMS(writers); i++)
+        if (!strcmp(writers[i].name, name))
+            return i;
+    return -1;
+}
+
+#define SECTION_PRINT(name, left) do {                        \
+    if (do_show_ ## name) {                                   \
+        show_ ## name (w, fmt_ctx);                           \
+        if (left)                                             \
+            printf("%s", w->section_sep);                     \
+    }                                                         \
+} while (0)
+
 static int probe_file(const char *filename)
 {
     AVFormatContext *fmt_ctx;
-    int ret, i;
+    int ret, writer_id;
+    struct writer *w;
+
+    writer_id = get_writer(print_format);
+    if (writer_id < 0) {
+        fprintf(stderr, "Invalid output format '%s'\n", print_format);
+        return AVERROR(EINVAL);
+    }
+    w = &writers[writer_id];
 
     if ((ret = open_input_file(&fmt_ctx, filename)))
         return ret;
 
-    if (do_show_packets)
-        show_packets(fmt_ctx);
+    if (w->header)
+        printf("%s", w->header);
 
-    if (do_show_streams)
-        for (i = 0; i < fmt_ctx->nb_streams; i++)
-            show_stream(fmt_ctx, i);
+    SECTION_PRINT(packets, do_show_streams || do_show_format);
+    SECTION_PRINT(streams, do_show_format);
+    SECTION_PRINT(format,  0);
 
-    if (do_show_format)
-        show_format(fmt_ctx);
+    if (w->footer)
+        printf("%s", w->footer);
 
     av_close_input_file(fmt_ctx);
     return 0;
