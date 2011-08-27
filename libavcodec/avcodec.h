@@ -619,7 +619,9 @@ typedef struct RcOverride{
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG2_INTRA_VLC     0x00000800 ///< Use MPEG-2 intra VLC table.
 #endif
+#if FF_API_SNOW_GLOBAL_OPTS
 #define CODEC_FLAG2_MEMC_ONLY     0x00001000 ///< Only do ME/MC (I frames -> ref, P frame -> ME+MC).
+#endif
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG2_DROP_FRAME_TIMECODE 0x00002000 ///< timecode is in drop frame format.
 #endif
