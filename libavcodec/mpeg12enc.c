@@ -33,6 +33,8 @@
 #include "mpeg12data.h"
 #include "bytestream.h"
 
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 
 static const uint8_t inv_non_linear_qscale[13] = {
     0, 2, 4, 6, 8,
@@ -925,6 +927,24 @@ static void mpeg1_encode_block(MpegEncContext *s,
     put_bits(&s->pb, table_vlc[112][1], table_vlc[112][0]);
 }
 
+#define OFFSET(x) offsetof(MpegEncContext, x)
+#define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
+static const AVOption options[] = {
+    { "intra_vlc",           "Use MPEG-2 intra VLC table.",       OFFSET(intra_vlc_format),    FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { NULL },
+};
+
+#define mpeg12_class(x)\
+static const AVClass mpeg## x ##_class = {\
+    .class_name   = "mpeg" #x "video encoder",\
+    .item_name    = av_default_item_name,\
+    .option       = options,\
+    .version      = LIBAVUTIL_VERSION_INT,\
+};
+
+mpeg12_class(1)
+mpeg12_class(2)
+
 AVCodec ff_mpeg1video_encoder = {
     .name           = "mpeg1video",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -937,6 +957,7 @@ AVCodec ff_mpeg1video_encoder = {
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
+    .priv_class     = &mpeg1_class,
 };
 
 AVCodec ff_mpeg2video_encoder = {
@@ -951,4 +972,5 @@ AVCodec ff_mpeg2video_encoder = {
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-2 video"),
+    .priv_class     = &mpeg2_class,
 };
