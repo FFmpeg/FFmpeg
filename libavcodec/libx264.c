@@ -46,8 +46,7 @@ typedef struct X264Context {
     int cqp;
     int aq_mode;
     float aq_strength;
-    float psy_rd;
-    float psy_trellis;
+    char *psy_rd;
     int rc_lookahead;
     int weightp;
 } X264Context;
@@ -330,10 +329,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.i_aq_mode = x4->aq_mode;
     if (x4->aq_strength >= 0)
         x4->params.rc.f_aq_strength = x4->aq_strength;
-    if (x4->psy_rd >= 0)
-        x4->params.analyse.f_psy_rd = x4->psy_rd;
-    if (x4->psy_trellis >= 0)
-        x4->params.analyse.f_psy_trellis = x4->psy_trellis;
+    if (x4->psy_rd && x264_param_parse(&x4->params, "psy-rd", x4->psy_rd) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error parsing option 'psy-rd' with value '%s'.\n", x4->psy_rd);
+        return AVERROR(EINVAL);
+    }
     if (x4->rc_lookahead >= 0)
         x4->params.rc.i_lookahead = x4->rc_lookahead;
     if (x4->weightp >= 0)
@@ -415,15 +414,14 @@ static const AVOption options[] = {
     { "fastfirstpass", "Use fast settings when encoding first pass",      OFFSET(fastfirstpass), FF_OPT_TYPE_INT,    { 1 }, 0, 1, VE},
     { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
     { "crf_max",       "In CRF mode, prevents VBV from lowering quality beyond this point.",OFFSET(crf_max), FF_OPT_TYPE_FLOAT, {-1 }, -1, FLT_MAX, VE },
-    { "cqp",           "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
-    { "aq_mode",       "AQ method",                                       OFFSET(aq_mode),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "aq_mode"},
+    { "qp",            "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "aq-mode",       "AQ method",                                       OFFSET(aq_mode),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "aq_mode"},
     { "none",          NULL,                              0, FF_OPT_TYPE_CONST, {X264_AQ_NONE},         INT_MIN, INT_MAX, VE, "aq_mode" },
     { "variance",      "Variance AQ (complexity mask)",   0, FF_OPT_TYPE_CONST, {X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, "aq_mode" },
     { "autovariance",  "Auto-variance AQ (experimental)", 0, FF_OPT_TYPE_CONST, {X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
-    { "aq_strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
-    { "pdy_rd",        "Psy RD strength.",                                OFFSET(psy_rd),        FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
-    { "psy_trellis",   "Psy trellis strength",                            OFFSET(psy_trellis),   FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
-    { "rc_lookahead",  "Number of frames to look ahead for frametype and ratecontrol", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {-1 }, -1, INT_MAX, VE },
+    { "aq-strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
+    { "psy-rd",        "Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.", OFFSET(psy_rd), FF_OPT_TYPE_STRING,  {0 }, 0, 0, VE},
+    { "rc-lookahead",  "Number of frames to look ahead for frametype and ratecontrol", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {-1 }, -1, INT_MAX, VE },
     { "weightp",       "Weighted prediction analysis method.",            OFFSET(weightp),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "weightp" },
     { "none",          NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_NONE},   INT_MIN, INT_MAX, VE, "weightp" },
     { "simple",        NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SIMPLE}, INT_MIN, INT_MAX, VE, "weightp" },
