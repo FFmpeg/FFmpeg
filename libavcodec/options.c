@@ -423,8 +423,8 @@ static const AVOption options[]={
 {"timecode_frame_start", "GOP timecode frame start number, in non drop frame format", OFFSET(timecode_frame_start), FF_OPT_TYPE_INT64, {.dbl = 0 }, 0, INT64_MAX, V|E},
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
 {"drop_frame_timecode", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_DROP_FRAME_TIMECODE }, INT_MIN, INT_MAX, V|E, "flags2"},
-#endif
 {"non_linear_q", "use non linear quantizer", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_NON_LINEAR_QUANT }, INT_MIN, INT_MAX, V|E, "flags2"},
+#endif
 #if FF_API_REQUEST_CHANNELS
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
 #endif

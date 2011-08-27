@@ -338,8 +338,8 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     s->alternate_scan= !!(s->flags & CODEC_FLAG_ALT_SCAN);
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
     s->intra_vlc_format= !!(s->flags2 & CODEC_FLAG2_INTRA_VLC);
-#endif
     s->q_scale_type= !!(s->flags2 & CODEC_FLAG2_NON_LINEAR_QUANT);
+#endif
 
     if(avctx->rc_max_rate && !avctx->rc_buffer_size){
         av_log(avctx, AV_LOG_ERROR, "a vbv buffer size is needed, for encoding with a maximum bitrate\n");
@@ -463,10 +463,12 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     }
 
     if(s->q_scale_type == 1){
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
         if(s->codec_id != CODEC_ID_MPEG2VIDEO){
             av_log(avctx, AV_LOG_ERROR, "non linear quant is only available for mpeg2\n");
             return -1;
         }
+#endif
         if(avctx->qmax > 12){
             av_log(avctx, AV_LOG_ERROR, "non linear quant only supports qmax <= 12 currently\n");
             return -1;

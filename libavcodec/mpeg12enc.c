@@ -934,9 +934,18 @@ static void mpeg1_encode_block(MpegEncContext *s,
 
 #define OFFSET(x) offsetof(MpegEncContext, x)
 #define VE AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
-static const AVOption options[] = {
-    { "intra_vlc",           "Use MPEG-2 intra VLC table.",       OFFSET(intra_vlc_format),    FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+#define COMMON_OPTS\
+    { "intra_vlc",           "Use MPEG-2 intra VLC table.",       OFFSET(intra_vlc_format),    FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },\
     { "drop_frame_timecode", "Timecode is in drop frame format.", OFFSET(drop_frame_timecode), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE},
+
+static const AVOption mpeg1_options[] = {
+    COMMON_OPTS
+    { NULL },
+};
+
+static const AVOption mpeg2_options[] = {
+    COMMON_OPTS
+    { "non_linear_quant",    "Use nonlinear quantizer.",          OFFSET(q_scale_type),         FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { NULL },
 };
 
@@ -944,7 +953,7 @@ static const AVOption options[] = {
 static const AVClass mpeg## x ##_class = {\
     .class_name   = "mpeg" #x "video encoder",\
     .item_name    = av_default_item_name,\
-    .option       = options,\
+    .option       = mpeg## x ##_options,\
     .version      = LIBAVUTIL_VERSION_INT,\
 };
 
