@@ -284,13 +284,12 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
 
 static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     AMFDataType type;
-    AVStream *stream, *astream, *vstream;
+    AVStream *stream, *astream, *vstream, *dstream;
     AVIOContext *ioc;
     int i;
     char buffer[11]; //only needs to hold the string "onMetaData". Anything longer is something we don't want.
 
-    astream = NULL;
-    vstream = NULL;
+    vstream = astream = dstream = NULL;
     ioc = s->pb;
 
     //first object needs to be "onMetaData" string
@@ -301,8 +300,9 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
     //find the streams now so that amf_parse_object doesn't need to do the lookup every time it is called.
     for(i = 0; i < s->nb_streams; i++) {
         stream = s->streams[i];
-        if     (stream->codec->codec_type == AVMEDIA_TYPE_AUDIO) astream = stream;
-        else if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) vstream = stream;
+        if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) vstream = stream;
+        else if(stream->codec->codec_type == AVMEDIA_TYPE_AUDIO) astream = stream;
+        else if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) dstream = stream;
     }
 
     //parse the second object (we want a mixed array)
@@ -322,6 +322,7 @@ static AVStream *create_stream(AVFormatContext *s, int stream_type){
         case FLV_STREAM_TYPE_DATA:
             st->codec->codec_type = AVMEDIA_TYPE_DATA;
             st->codec->codec_id = CODEC_ID_NONE; // Going to rely on copy for now
+            av_log(s, AV_LOG_DEBUG, "Data stream created\n");
     }
     av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;
@@ -379,7 +380,8 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     FLVContext *flv = s->priv_data;
-    int ret, i, type, size, flags, stream_type;
+    int ret, i, type, size, flags;
+    int stream_type=-1;
     int64_t next, pos;
     int64_t dts, pts = AV_NOPTS_VALUE;
     AVStream *st = NULL;
@@ -415,12 +417,10 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (size > 13+1+4 && dts == 0) {
             // Header-type metadata stuff
             flv_read_metabody(s, next);
-        } else if (dts != 0) {
-            // Script-data
-            stream_type=FLV_STREAM_TYPE_VIDEO;
             goto skip;
-
-            // TODO: Parse / set stuff, etc.
+        } else if (dts != 0) {
+            // Script-data "special" metadata frames - don't skip
+            stream_type=FLV_STREAM_TYPE_DATA;
         } else {
             goto skip;
         }
@@ -441,7 +441,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             break;
     }
     if(i == s->nb_streams){
-        av_log(s, AV_LOG_ERROR, "invalid stream\n");
+        av_log(s, AV_LOG_WARNING, "Stream discovered after head already parsed\n");
         st= create_stream(s, stream_type);
         s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     }
@@ -540,7 +540,9 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->pts = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;
 
-    if ((stream_type == FLV_STREAM_TYPE_AUDIO) || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
+    if (    stream_type == FLV_STREAM_TYPE_AUDIO ||
+            (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+            stream_type == FLV_STREAM_TYPE_DATA)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
 leave:

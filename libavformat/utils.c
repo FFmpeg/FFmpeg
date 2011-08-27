@@ -2119,6 +2119,8 @@ static int has_codec_parameters(AVCodecContext *avctx)
     case AVMEDIA_TYPE_VIDEO:
         val = avctx->width && avctx->pix_fmt != PIX_FMT_NONE;
         break;
+    case AVMEDIA_TYPE_DATA:
+        if(avctx->codec_id == CODEC_ID_NONE) return 1;
     default:
         val = 1;
         break;
