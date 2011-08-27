@@ -628,7 +628,9 @@ typedef struct RcOverride{
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG2_NON_LINEAR_QUANT 0x00010000 ///< Use MPEG-2 nonlinear quantizer.
 #endif
+#if FF_API_LAME_GLOBAL_OPTS
 #define CODEC_FLAG2_BIT_RESERVOIR 0x00020000 ///< Use a bit reservoir when encoding if possible
+#endif
 #define CODEC_FLAG2_MBTREE        0x00040000 ///< Use macroblock tree ratecontrol (x264 only)
 #define CODEC_FLAG2_PSY           0x00080000 ///< Use psycho visual optimizations.
 #if FF_API_X264_GLOBAL_OPTS
