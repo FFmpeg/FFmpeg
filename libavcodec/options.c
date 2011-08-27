@@ -434,7 +434,9 @@ static const AVOption options[]={
 #if FF_API_LAME_GLOBAL_OPTS
 {"reservoir", "use bit reservoir", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BIT_RESERVOIR }, INT_MIN, INT_MAX, A|E, "flags2"},
 #endif
+#if FF_API_X264_GLOBAL_OPTS
 {"mbtree", "use macroblock tree ratecontrol (x264 only)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_MBTREE }, INT_MIN, INT_MAX, V|E, "flags2"},
+#endif
 {"bits_per_raw_sample", NULL, OFFSET(bits_per_raw_sample), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"channel_layout", NULL, OFFSET(channel_layout), FF_OPT_TYPE_INT64, {.dbl = DEFAULT }, 0, INT64_MAX, A|E|D, "channel_layout"},
 {"request_channel_layout", NULL, OFFSET(request_channel_layout), FF_OPT_TYPE_INT64, {.dbl = DEFAULT }, 0, INT64_MAX, A|D, "request_channel_layout"},

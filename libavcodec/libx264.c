@@ -58,6 +58,7 @@ typedef struct X264Context {
     int dct8x8;
     int fast_pskip;
     int aud;
+    int mbtree;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -304,7 +305,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
             (float)avctx->rc_initial_buffer_occupancy / avctx->rc_buffer_size;
     }
 
-    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
@@ -331,6 +331,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
     x4->params.b_aud                      = avctx->flags2 & CODEC_FLAG2_AUD;
     x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
+    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
 #endif
 
     if (x4->aq_mode >= 0)
@@ -364,6 +365,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.b_fast_pskip       = x4->fast_pskip;
     if (x4->aud >= 0)
         x4->params.b_aud                      = x4->aud;
+    if (x4->mbtree >= 0)
+        x4->params.rc.b_mb_tree               = x4->mbtree;
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -460,6 +463,7 @@ static const AVOption options[] = {
     { "8x8dct",        "High profile 8x8 transform.",                     OFFSET(dct8x8),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { NULL },
 };
 
