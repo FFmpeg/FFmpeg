@@ -1486,7 +1486,7 @@ eoi_parser:
                         s->bottom_field ^= 1;
                         /* if not bottom field, do not output image yet */
                         if (s->bottom_field == !s->interlace_polarity)
-                            goto not_the_end;
+                            break;
                     }
                     *picture = *s->picture_ptr;
                     *data_size = sizeof(AVFrame);
@@ -1535,7 +1535,6 @@ eoi_parser:
 //                    break;
                 }
 
-not_the_end:
                 /* eof process start code */
                 buf_ptr += (get_bits_count(&s->gb)+7)/8;
                 av_log(avctx, AV_LOG_DEBUG, "marker parser used %d bytes (%d bits)\n",
