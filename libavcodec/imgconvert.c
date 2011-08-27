@@ -431,32 +431,6 @@ static int avg_bits_per_pixel(enum PixelFormat pix_fmt)
         info->padded_size : av_get_bits_per_pixel(desc);
 }
 
-static enum PixelFormat avcodec_find_best_pix_fmt1(int64_t pix_fmt_mask,
-                                      enum PixelFormat src_pix_fmt,
-                                      int has_alpha,
-                                      int loss_mask)
-{
-    int dist, i, loss, min_dist;
-    enum PixelFormat dst_pix_fmt;
-
-    /* find exact color match with smallest size */
-    dst_pix_fmt = PIX_FMT_NONE;
-    min_dist = 0x7fffffff;
-    for (i = 0; i < FFMIN(PIX_FMT_NB, 64); i++) {
-        if (pix_fmt_mask & (1ULL << i)) {
-            loss = avcodec_get_pix_fmt_loss(i, src_pix_fmt, has_alpha) & loss_mask;
-            if (loss == 0) {
-                dist = avg_bits_per_pixel(i);
-                if (dist < min_dist) {
-                    min_dist = dist;
-                    dst_pix_fmt = i;
-                }
-            }
-        }
-    }
-    return dst_pix_fmt;
-}
-
 enum PixelFormat avcodec_find_best_pix_fmt(int64_t pix_fmt_mask, enum PixelFormat src_pix_fmt,
                                             int has_alpha, int *loss_ptr)
 {
