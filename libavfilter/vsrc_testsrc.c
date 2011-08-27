@@ -132,6 +132,10 @@ static int request_frame(AVFilterLink *outlink)
     picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                        test->w, test->h);
     picref->pts = test->pts++;
+    picref->pos = -1;
+    picref->video->key_frame = 1;
+    picref->video->interlaced = 0;
+    picref->video->pict_type = AV_PICTURE_TYPE_I;
     picref->video->sample_aspect_ratio = test->sar;
     test->nb_frame++;
     test->fill_picture_fn(outlink->src, picref);
