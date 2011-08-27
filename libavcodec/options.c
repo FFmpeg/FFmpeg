@@ -97,7 +97,9 @@ static const AVOption options[]={
 {"naq", "normalize adaptive quantization", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_NORMALIZE_AQP }, INT_MIN, INT_MAX, V|E, "flags"},
 {"ildct", "use interlaced dct", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_INTERLACED_DCT }, INT_MIN, INT_MAX, V|E, "flags"},
 {"low_delay", "force low delay", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_LOW_DELAY }, INT_MIN, INT_MAX, V|D|E, "flags"},
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 {"alt", "enable alternate scantable (mpeg2/mpeg4)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_ALT_SCAN }, INT_MIN, INT_MAX, V|E, "flags"},
+#endif
 {"global_header", "place global headers in extradata instead of every keyframe", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_GLOBAL_HEADER }, INT_MIN, INT_MAX, V|A|E, "flags"},
 {"bitexact", "use only bitexact stuff (except (i)dct)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_BITEXACT }, INT_MIN, INT_MAX, A|V|S|D|E, "flags"},
 {"aic", "h263 advanced intra coding / mpeg4 ac prediction", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG_AC_PRED }, INT_MIN, INT_MAX, V|E, "flags"},

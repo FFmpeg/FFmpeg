@@ -946,6 +946,7 @@ static const AVOption mpeg1_options[] = {
 static const AVOption mpeg2_options[] = {
     COMMON_OPTS
     { "non_linear_quant",    "Use nonlinear quantizer.",          OFFSET(q_scale_type),         FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "alternate_scan",      "Enable alternate scantable.",       OFFSET(alternate_scan),       FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { NULL },
 };
 

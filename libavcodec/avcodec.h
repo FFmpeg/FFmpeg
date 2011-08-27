@@ -592,7 +592,9 @@ typedef struct RcOverride{
 #define CODEC_FLAG_NORMALIZE_AQP  0x00020000 ///< Normalize adaptive quantization.
 #define CODEC_FLAG_INTERLACED_DCT 0x00040000 ///< Use interlaced DCT.
 #define CODEC_FLAG_LOW_DELAY      0x00080000 ///< Force low delay.
+#if FF_API_MPEGVIDEO_GLOBAL_OPTS
 #define CODEC_FLAG_ALT_SCAN       0x00100000 ///< Use alternate scan.
+#endif
 #define CODEC_FLAG_GLOBAL_HEADER  0x00400000 ///< Place global headers in extradata instead of every keyframe.
 #define CODEC_FLAG_BITEXACT       0x00800000 ///< Use only bitexact stuff (except (I)DCT).
 /* Fx : Flag for h263+ extra options */
