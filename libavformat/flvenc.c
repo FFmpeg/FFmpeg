@@ -198,7 +198,7 @@ static int flv_write_header(AVFormatContext *s)
                 av_log(enc, AV_LOG_ERROR, "video codec not compatible with flv\n");
                 return -1;
             }
-        } else {
+        } else if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
             audio_enc = enc;
             if(get_audio_flags(enc)<0)
                 return -1;
@@ -391,13 +391,18 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         flags |= pkt->flags & AV_PKT_FLAG_KEY ? FLV_FRAME_KEY : FLV_FRAME_INTER;
-    } else {
-        assert(enc->codec_type == AVMEDIA_TYPE_AUDIO);
+    } else if (enc->codec_type == AVMEDIA_TYPE_AUDIO) {
         flags = get_audio_flags(enc);
 
         assert(size);
 
         avio_w8(pb, FLV_TAG_TYPE_AUDIO);
+    } else {
+        // In-band flv metadata ("scriptdata")
+        assert(enc->codec_type == AVMEDIA_TYPE_DATA);
+        avio_w8(pb, FLV_TAG_TYPE_META);
+        flags_size = 0;
+        flags = NULL;
     }
 
     if (enc->codec_id == CODEC_ID_H264 || enc->codec_id == CODEC_ID_MPEG4) {
@@ -423,7 +428,10 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_wb24(pb,ts);
     avio_w8(pb,(ts >> 24) & 0x7F); // timestamps are 32bits _signed_
     avio_wb24(pb,flv->reserved);
-    avio_w8(pb,flags);
+
+    if(flags_size)
+        avio_w8(pb,flags);
+
     if (enc->codec_id == CODEC_ID_VP6)
         avio_w8(pb,0);
     if (enc->codec_id == CODEC_ID_VP6F)
