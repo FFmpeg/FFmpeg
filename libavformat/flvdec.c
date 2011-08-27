@@ -414,17 +414,16 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if ((flags & 0xf0) == 0x50) /* video info / command frame */
             goto skip;
     } else if (type == FLV_TAG_TYPE_META) {
-        if (size > 13+1+4 && dts == 0) {
-            // Header-type metadata stuff
+        if (size > 13+1+4 && dts == 0) { // Header-type metadata stuff
             flv_read_metabody(s, next);
             goto skip;
-        } else if (dts != 0) {
-            // Script-data "special" metadata frames - don't skip
+        } else if (dts != 0) { // Script-data "special" metadata frames - don't skip
             stream_type=FLV_STREAM_TYPE_DATA;
         } else {
             goto skip;
         }
     } else {
+        av_log(s, AV_LOG_DEBUG, "skipping flv packet: type %d, size %d, flags %d\n", type, size, flags);
     skip:
         avio_seek(s->pb, next, SEEK_SET);
         continue;
@@ -541,7 +540,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->stream_index = st->index;
 
     if (    stream_type == FLV_STREAM_TYPE_AUDIO ||
-            (flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY ||
+            ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY) ||
             stream_type == FLV_STREAM_TYPE_DATA)
         pkt->flags |= AV_PKT_FLAG_KEY;
 
