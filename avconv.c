@@ -97,7 +97,6 @@ typedef struct MetadataMap {
 
 static const OptionDef options[];
 
-static const char *last_asked_format = NULL;
 static AVDictionary *ts_scale;
 
 static AVDictionary *codec_names;
@@ -313,6 +312,7 @@ static int        nb_output_files   = 0;
 typedef struct OptionsContext {
     /* input/output options */
     int64_t start_time;
+    const char *format;
 
     /* input options */
     int64_t input_ts_offset;
@@ -2465,12 +2465,6 @@ static int transcode(OutputFile *output_files,
     return ret;
 }
 
-static int opt_format(const char *opt, const char *arg)
-{
-    last_asked_format = arg;
-    return 0;
-}
-
 static int opt_video_rc_override_string(const char *opt, const char *arg)
 {
     video_rc_override_string = arg;
@@ -2931,12 +2925,11 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     AVDictionary **opts;
     int orig_nb_streams;                     // number of streams before avformat_find_stream_info
 
-    if (last_asked_format) {
-        if (!(file_iformat = av_find_input_format(last_asked_format))) {
-            fprintf(stderr, "Unknown input format: '%s'\n", last_asked_format);
+    if (o->format) {
+        if (!(file_iformat = av_find_input_format(o->format))) {
+            fprintf(stderr, "Unknown input format: '%s'\n", o->format);
             exit_program(1);
         }
-        last_asked_format = NULL;
     }
 
     if (!strcmp(filename, "-"))
@@ -3443,13 +3436,12 @@ static void opt_output_file(void *optctx, const char *filename)
         exit_program(1);
     }
 
-    if (last_asked_format) {
-        file_oformat = av_guess_format(last_asked_format, NULL, NULL);
+    if (o->format) {
+        file_oformat = av_guess_format(o->format, NULL, NULL);
         if (!file_oformat) {
-            fprintf(stderr, "Requested output format '%s' is not a suitable output format\n", last_asked_format);
+            fprintf(stderr, "Requested output format '%s' is not a suitable output format\n", o->format);
             exit_program(1);
         }
-        last_asked_format = NULL;
     } else {
         file_oformat = av_guess_format(NULL, filename, NULL);
         if (!file_oformat) {
@@ -3843,7 +3835,7 @@ static void show_help(void)
     av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
 }
 
-static int opt_target(const char *opt, const char *arg)
+static int opt_target(OptionsContext *o, const char *opt, const char *arg)
 {
     enum { PAL, NTSC, FILM, UNKNOWN } norm = UNKNOWN;
     static const char *const frame_rates[] = {"25", "30000/1001", "24000/1001"};
@@ -3902,7 +3894,7 @@ static int opt_target(const char *opt, const char *arg)
     if(!strcmp(arg, "vcd")) {
         opt_codec("c:v", "mpeg1video");
         opt_codec("c:a", "mp2");
-        opt_format("f", "vcd");
+        parse_option(o, "f", "vcd", options);
 
         opt_frame_size("s", norm == PAL ? "352x288" : "352x240");
         opt_frame_rate("r", frame_rates[norm]);
@@ -3930,7 +3922,7 @@ static int opt_target(const char *opt, const char *arg)
 
         opt_codec("c:v", "mpeg2video");
         opt_codec("c:a", "mp2");
-        opt_format("f", "svcd");
+        parse_option(o, "f", "svcd", options);
 
         opt_frame_size("s", norm == PAL ? "480x576" : "480x480");
         opt_frame_rate("r", frame_rates[norm]);
@@ -3952,7 +3944,7 @@ static int opt_target(const char *opt, const char *arg)
 
         opt_codec("c:v", "mpeg2video");
         opt_codec("c:a", "ac3");
-        opt_format("f", "dvd");
+        parse_option(o, "f", "dvd", options);
 
         opt_frame_size("vcodec", norm == PAL ? "720x576" : "720x480");
         opt_frame_rate("r", frame_rates[norm]);
@@ -3971,7 +3963,7 @@ static int opt_target(const char *opt, const char *arg)
 
     } else if(!strncmp(arg, "dv", 2)) {
 
-        opt_format("f", "dv");
+        parse_option(o, "f", "dv", options);
 
         opt_frame_size("s", norm == PAL ? "720x576" : "720x480");
         opt_frame_pix_fmt("pix_fmt", !strncmp(arg, "dv50", 4) ? "yuv422p" :
@@ -4031,7 +4023,7 @@ static int opt_bsf(const char *opt, const char *arg)
 static const OptionDef options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
-    { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
+    { "f", HAS_ARG | OPT_STRING | OPT_OFFSET, {.off = OFFSET(format)}, "force format", "fmt" },
     { "i", HAS_ARG | OPT_FUNC2, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "c", HAS_ARG, {(void*)opt_codec}, "codec name", "codec" },
@@ -4056,7 +4048,7 @@ static const OptionDef options[] = {
       "when dumping packets, also dump the payload" },
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "set the verbosity level", "number" },
-    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
+    { "target", HAS_ARG | OPT_FUNC2, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
