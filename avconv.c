@@ -190,7 +190,6 @@ static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
-static uint64_t limit_filesize = UINT64_MAX;
 static int force_fps = 0;
 static char *forced_key_frames = NULL;
 
@@ -323,6 +322,7 @@ typedef struct OptionsContext {
     int     nb_stream_maps;
 
     int64_t recording_time;
+    uint64_t limit_filesize;
 } OptionsContext;
 
 static void reset_options(OptionsContext *o)
@@ -353,6 +353,7 @@ static void reset_options(OptionsContext *o)
     memset(o, 0, sizeof(*o));
 
     o->recording_time = INT64_MAX;
+    o->limit_filesize = UINT64_MAX;
 
     uninit_opts();
     init_opts();
@@ -3552,7 +3553,7 @@ static void opt_output_file(void *optctx, const char *filename)
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
     output_files[nb_output_files - 1].recording_time = o->recording_time;
     output_files[nb_output_files - 1].start_time     = o->start_time;
-    output_files[nb_output_files - 1].limit_filesize = limit_filesize;
+    output_files[nb_output_files - 1].limit_filesize = o->limit_filesize;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
@@ -3678,7 +3679,6 @@ static void opt_output_file(void *optctx, const char *filename)
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     chapters_input_file = INT_MAX;
-    limit_filesize = UINT64_MAX;
 
     av_freep(&meta_data_maps);
     nb_meta_data_maps = 0;
@@ -4041,7 +4041,7 @@ static const OptionDef options[] = {
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
     { "t", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(recording_time)}, "record or transcode \"duration\" seconds of audio/video", "duration" },
-    { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
+    { "fs", HAS_ARG | OPT_INT64 | OPT_OFFSET, {.off = OFFSET(limit_filesize)}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(start_time)}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(input_ts_offset)}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "scale" },
