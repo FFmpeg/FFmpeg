@@ -2683,14 +2683,19 @@ static int transcode(AVFormatContext **output_files,
             }
             if (key == 'c' || key == 'C'){
                 char ret[4096], target[64], cmd[256], arg[256]={0};
-                fprintf(stderr, "\nEnter command: <target> <command>[ <argument>]\n");
-                if(scanf("%4095[^\n\r]%*c", ret) == 1 && sscanf(ret, "%63[^ ] %255[^ ] %255[^\n]", target, cmd, arg) >= 2){
+                double ts;
+                fprintf(stderr, "\nEnter command: <target> <time> <command>[ <argument>]\n");
+                if(scanf("%4095[^\n\r]%*c", ret) == 1 && sscanf(ret, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &ts, cmd, arg) >= 3){
                     for(i=0;i<nb_ostreams;i++) {
                         int r;
                         ost = ost_table[i];
                         if(ost->graph){
-                            r= avfilter_graph_send_command(ost->graph, target, cmd, arg, ret, sizeof(ret), key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
-                            fprintf(stderr, "Command reply for %d: %d, %s\n", i, r, ret);
+                            if(ts<0){
+                                r= avfilter_graph_send_command(ost->graph, target, cmd, arg, ret, sizeof(ret), key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
+                                fprintf(stderr, "Command reply for %d: %d, %s\n", i, r, ret);
+                            }else{
+                                r= avfilter_graph_queue_command(ost->graph, target, cmd, arg, 0, ts);
+                            }
                         }
                     }
                 }else{
