@@ -113,7 +113,6 @@ static void RENAME(yuv2yuvX)(SwsContext *c, const int16_t *lumFilter,
                              int chrFilterSize, const int16_t **alpSrc,
                              uint8_t *dest[4], int dstW, int chrDstW)
 {
-    int i;
     uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
             *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
     const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
@@ -257,7 +256,6 @@ static void RENAME(yuv2yuvX_ar)(SwsContext *c, const int16_t *lumFilter,
                                 int chrFilterSize, const int16_t **alpSrc,
                                 uint8_t *dest[4], int dstW, int chrDstW)
 {
-    int i;
     uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
             *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
     const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
