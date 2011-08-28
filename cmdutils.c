@@ -203,8 +203,8 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 }
 #endif /* WIN32 && !__MINGW32CE__ */
 
-void parse_options(int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(const char*))
+void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
+                   void (* parse_arg_function)(void *, const char*))
 {
     const char *opt, *arg;
     int optindex, handleoptions=1;
@@ -249,7 +249,9 @@ unknown_opt:
                     exit_program(1);
                 }
             }
-            dst = po->u.dst_ptr;
+            /* new-style options contain an offset into optctx, old-style address of
+             * a global var*/
+            dst = po->flags & OPT_OFFSET ? (uint8_t*)optctx + po->u.off : po->u.dst_ptr;
             if (po->flags & OPT_STRING) {
                 char *str;
                 str = av_strdup(arg);
@@ -263,7 +265,9 @@ unknown_opt:
             } else if (po->flags & OPT_FLOAT) {
                 *(float*)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
             } else if (po->u.func_arg) {
-                if (po->u.func_arg(opt, arg) < 0) {
+                int ret = po->flags & OPT_FUNC2 ? po->u.func2_arg(optctx, opt, arg) :
+                                                  po->u.func_arg(opt, arg);
+                if (ret < 0) {
                     fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
                     exit_program(1);
                 }
@@ -272,7 +276,7 @@ unknown_opt:
                 exit_program(0);
         } else {
             if (parse_arg_function)
-                parse_arg_function(opt);
+                parse_arg_function(optctx, opt);
         }
     }
 }

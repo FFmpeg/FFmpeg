@@ -3403,7 +3403,7 @@ static int read_avserver_streams(AVFormatContext *s, const char *filename)
     return 0;
 }
 
-static void opt_output_file(const char *filename)
+static void opt_output_file(void *optctx, const char *filename)
 {
     AVFormatContext *oc;
     int i, err;
@@ -4143,7 +4143,7 @@ int main(int argc, char **argv)
     show_banner();
 
     /* parse options */
-    parse_options(argc, argv, options, opt_output_file);
+    parse_options(NULL, argc, argv, options, opt_output_file);
 
     if(nb_output_files <= 0 && nb_input_files == 0) {
         show_usage();

@@ -3702,7 +3702,7 @@ static int opt_streamid(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_output_file(const char *filename)
+static void opt_output_file(void *optctx, const char *filename)
 {
     AVFormatContext *oc;
     int err, use_video, use_audio, use_subtitle, use_data;
@@ -4376,7 +4376,7 @@ int main(int argc, char **argv)
                                  "(see Changelog for the list of incompatible changes).\n");
 
     /* parse options */
-    parse_options(argc, argv, options, opt_output_file);
+    parse_options(NULL, argc, argv, options, opt_output_file);
 
     if(nb_output_files <= 0 && nb_input_files == 0) {
         show_usage();

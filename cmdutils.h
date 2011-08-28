@@ -124,9 +124,13 @@ typedef struct {
 #define OPT_INT64  0x0400
 #define OPT_EXIT   0x0800
 #define OPT_DATA   0x1000
+#define OPT_FUNC2  0x2000
+#define OPT_OFFSET 0x4000       /* option is specified as an offset in a passed optctx */
      union {
         void *dst_ptr;
         int (*func_arg)(const char *, const char *);
+        int (*func2_arg)(void *, const char *, const char *);
+        size_t off;
     } u;
     const char *help;
     const char *argname;
@@ -136,14 +140,16 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 
 /**
  * Parse the command line arguments.
+ *
+ * @param optctx an opaque options context
  * @param options Array with the definitions required to interpret every
  * option of the form: -option_name [argument]
  * @param parse_arg_function Name of the function called to process every
  * argument without a leading option name flag. NULL if such arguments do
  * not have to be processed.
  */
-void parse_options(int argc, char **argv, const OptionDef *options,
-                   void (* parse_arg_function)(const char*));
+void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
+                   void (* parse_arg_function)(void *optctx, const char*));
 
 /**
  * Check if the given stream matches a stream specifier.

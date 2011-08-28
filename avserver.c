@@ -4676,7 +4676,7 @@ int main(int argc, char **argv)
     my_program_dir = getcwd(0, 0);
     avserver_daemon = 1;
 
-    parse_options(argc, argv, options, NULL);
+    parse_options(NULL, argc, argv, options, NULL);
 
     unsetenv("http_proxy");             /* Kill the http_proxy */
 

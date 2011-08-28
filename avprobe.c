@@ -346,7 +346,7 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static void opt_input_file(const char *arg)
+static void opt_input_file(void *optctx, const char *arg)
 {
     if (input_filename) {
         fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
@@ -406,7 +406,7 @@ int main(int argc, char **argv)
 #endif
 
     show_banner();
-    parse_options(argc, argv, options, opt_input_file);
+    parse_options(NULL, argc, argv, options, opt_input_file);
 
     if (!input_filename) {
         show_usage();
