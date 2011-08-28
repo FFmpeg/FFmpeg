@@ -1209,7 +1209,6 @@ AVOutputFormat ff_matroska_muxer = {
     mkv_write_packet,
     mkv_write_trailer,
     .flags = AVFMT_GLOBALHEADER | AVFMT_VARIABLE_FPS,
-    .codec_tag = (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
     .subtitle_codec = CODEC_ID_TEXT,
 };
 #endif
@@ -1243,6 +1242,5 @@ AVOutputFormat ff_matroska_audio_muxer = {
     mkv_write_packet,
     mkv_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
-    .codec_tag = (const AVCodecTag* const []){ff_codec_wav_tags, 0},
 };
 #endif
