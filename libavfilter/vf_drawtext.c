@@ -401,6 +401,16 @@ static int config_input(AVFilterLink *inlink)
     return 0;
 }
 
+static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char *res, int res_len, int flags)
+{
+    if(!strcmp(cmd, "reinit")){
+        uninit(ctx);
+        return init(ctx, arg, NULL);
+    }
+
+    return AVERROR(ENOSYS);
+}
+
 #define GET_BITMAP_VAL(r, c)                                            \
     bitmap->pixel_mode == FT_PIXEL_MODE_MONO ?                          \
         (bitmap->buffer[(r) * bitmap->pitch + ((c)>>3)] & (0x80 >> ((c)&7))) * 255 : \
@@ -707,4 +717,5 @@ AVFilter avfilter_vf_drawtext = {
     .outputs   = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
+    .process_command = command,
 };
