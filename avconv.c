@@ -100,9 +100,6 @@ static const OptionDef options[];
 static const char *last_asked_format = NULL;
 static AVDictionary *ts_scale;
 
-static StreamMap *stream_maps = NULL;
-static int nb_stream_maps;
-
 static AVDictionary *codec_names;
 
 /* first item specifies output metadata, second is input */
@@ -316,6 +313,42 @@ static OutputStream *output_streams = NULL;
 static int        nb_output_streams = 0;
 static OutputFile   *output_files   = NULL;
 static int        nb_output_files   = 0;
+
+typedef struct OptionsContext {
+    /* output options */
+    StreamMap *stream_maps;
+    int     nb_stream_maps;
+} OptionsContext;
+
+static void reset_options(OptionsContext *o)
+{
+    const OptionDef *po = options;
+
+    /* all OPT_SPEC and OPT_STRING can be freed in generic way */
+    while (po->name) {
+        void *dst = (uint8_t*)o + po->u.off;
+
+        if (po->flags & OPT_SPEC) {
+            SpecifierOpt **so = dst;
+            int i, *count = (int*)(so + 1);
+            for (i = 0; i < *count; i++) {
+                av_freep(&(*so)[i].specifier);
+                if (po->flags & OPT_STRING)
+                    av_freep(&(*so)[i].u.str);
+            }
+            av_freep(so);
+            *count = 0;
+        } else if (po->flags & OPT_OFFSET && po->flags & OPT_STRING)
+            av_freep(dst);
+        po++;
+    }
+
+    av_freep(&o->stream_maps);
+
+    memset(o, 0, sizeof(*o));
+    uninit_opts();
+    init_opts();
+}
 
 #if CONFIG_AVFILTER
 
@@ -2609,7 +2642,7 @@ static int opt_codec_tag(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_map(const char *opt, const char *arg)
+static int opt_map(OptionsContext *o, const char *opt, const char *arg)
 {
     StreamMap *m = NULL;
     int i, negative = 0, file_idx;
@@ -2654,8 +2687,8 @@ static int opt_map(const char *opt, const char *arg)
     }
     if (negative)
         /* disable some already defined maps */
-        for (i = 0; i < nb_stream_maps; i++) {
-            m = &stream_maps[i];
+        for (i = 0; i < o->nb_stream_maps; i++) {
+            m = &o->stream_maps[i];
             if (check_stream_specifier(input_files[m->file_index].ctx,
                                        input_files[m->file_index].ctx->streams[m->stream_index],
                                        *p == ':' ? p + 1 : p) > 0)
@@ -2666,8 +2699,9 @@ static int opt_map(const char *opt, const char *arg)
             if (check_stream_specifier(input_files[file_idx].ctx, input_files[file_idx].ctx->streams[i],
                         *p == ':' ? p + 1 : p) <= 0)
                 continue;
-            stream_maps = grow_array(stream_maps, sizeof(*stream_maps), &nb_stream_maps, nb_stream_maps + 1);
-            m = &stream_maps[nb_stream_maps - 1];
+            o->stream_maps = grow_array(o->stream_maps, sizeof(*o->stream_maps),
+                                        &o->nb_stream_maps, o->nb_stream_maps + 1);
+            m = &o->stream_maps[o->nb_stream_maps - 1];
 
             m->file_index   = file_idx;
             m->stream_index = i;
@@ -2896,7 +2930,7 @@ static void add_input_streams(AVFormatContext *ic)
     }
 }
 
-static int opt_input_file(const char *opt, const char *filename)
+static int opt_input_file(OptionsContext *o, const char *opt, const char *filename)
 {
     AVFormatContext *ic;
     AVInputFormat *file_iformat = NULL;
@@ -3039,8 +3073,8 @@ static int opt_input_file(const char *opt, const char *filename)
         av_dict_free(&opts[i]);
     av_freep(&opts);
     av_dict_free(&codec_names);
-    uninit_opts();
-    init_opts();
+
+    reset_options(o);
     return 0;
 }
 
@@ -3405,6 +3439,7 @@ static int read_avserver_streams(AVFormatContext *s, const char *filename)
 
 static void opt_output_file(void *optctx, const char *filename)
 {
+    OptionsContext *o = optctx;
     AVFormatContext *oc;
     int i, err;
     AVOutputFormat *file_oformat;
@@ -3448,7 +3483,7 @@ static void opt_output_file(void *optctx, const char *filename)
             print_error(filename, err);
             exit_program(1);
         }
-    } else if (!nb_stream_maps) {
+    } else if (!o->nb_stream_maps) {
         /* pick the "best" stream of each type */
 #define NEW_STREAM(type, index)\
         if (index >= 0) {\
@@ -3496,8 +3531,8 @@ static void opt_output_file(void *optctx, const char *filename)
         }
         /* do something with data? */
     } else {
-        for (i = 0; i < nb_stream_maps; i++) {
-            StreamMap *map = &stream_maps[i];
+        for (i = 0; i < o->nb_stream_maps; i++) {
+            StreamMap *map = &o->stream_maps[i];
 
             if (map->disabled)
                 continue;
@@ -3665,16 +3700,13 @@ static void opt_output_file(void *optctx, const char *filename)
     metadata_global_autocopy   = 1;
     metadata_streams_autocopy  = 1;
     metadata_chapters_autocopy = 1;
-    av_freep(&stream_maps);
-    nb_stream_maps = 0;
     av_freep(&streamid_map);
     nb_streamid_map = 0;
 
     av_dict_free(&codec_names);
 
     av_freep(&forced_key_frames);
-    uninit_opts();
-    init_opts();
+    reset_options(o);
 }
 
 /* same option as mencoder */
@@ -4014,11 +4046,11 @@ static const OptionDef options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
     { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
-    { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
+    { "i", HAS_ARG | OPT_FUNC2, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "c", HAS_ARG, {(void*)opt_codec}, "codec name", "codec" },
     { "codec", HAS_ARG, {(void*)opt_codec}, "codec name", "codec" },
-    { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
+    { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
     { "map_metadata", HAS_ARG | OPT_EXPERT, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
@@ -4123,7 +4155,10 @@ static const OptionDef options[] = {
 
 int main(int argc, char **argv)
 {
+    OptionsContext o = { 0 };
     int64_t ti;
+
+    reset_options(&o);
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
@@ -4138,12 +4173,10 @@ int main(int argc, char **argv)
 
     avio_set_interrupt_cb(decode_interrupt_cb);
 
-    init_opts();
-
     show_banner();
 
     /* parse options */
-    parse_options(NULL, argc, argv, options, opt_output_file);
+    parse_options(&o, argc, argv, options, opt_output_file);
 
     if(nb_output_files <= 0 && nb_input_files == 0) {
         show_usage();
