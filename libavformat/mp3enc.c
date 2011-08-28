@@ -197,6 +197,7 @@ AVOutputFormat ff_mp2_muxer = {
     .video_codec       = AV_CODEC_ID_NONE,
     .write_packet      = ff_raw_write_packet,
     .write_trailer     = mp3_write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
 
