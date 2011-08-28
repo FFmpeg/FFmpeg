@@ -125,11 +125,8 @@ typedef struct {
 #define OPT_EXIT   0x0800
 #define OPT_DATA   0x1000
      union {
-        int *int_arg;
-        char **str_arg;
-        float *float_arg;
+        void *dst_ptr;
         int (*func_arg)(const char *, const char *);
-        int64_t *int64_arg;
     } u;
     const char *help;
     const char *argname;

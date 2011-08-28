@@ -216,6 +216,7 @@ void parse_options(int argc, char **argv, const OptionDef *options,
     /* parse options */
     optindex = 1;
     while (optindex < argc) {
+        void *dst;
         opt = argv[optindex++];
 
         if (handleoptions && opt[0] == '-' && opt[1] != '\0') {
@@ -248,18 +249,19 @@ unknown_opt:
                     exit_program(1);
                 }
             }
+            dst = po->u.dst_ptr;
             if (po->flags & OPT_STRING) {
                 char *str;
                 str = av_strdup(arg);
-                *po->u.str_arg = str;
+                *(char**)dst = str;
             } else if (po->flags & OPT_BOOL) {
-                *po->u.int_arg = bool_val;
+                *(int*)dst = bool_val;
             } else if (po->flags & OPT_INT) {
-                *po->u.int_arg = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
+                *(int*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
             } else if (po->flags & OPT_INT64) {
-                *po->u.int64_arg = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
+                *(int64_t*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
             } else if (po->flags & OPT_FLOAT) {
-                *po->u.float_arg = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
+                *(float*)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
             } else if (po->u.func_arg) {
                 if (po->u.func_arg(opt, arg) < 0) {
                     fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
