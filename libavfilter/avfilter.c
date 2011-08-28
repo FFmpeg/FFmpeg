@@ -26,6 +26,7 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
+#include "libavutil/avstring.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -614,6 +615,17 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
     if (!(draw_slice = link->dstpad->draw_slice))
         draw_slice = avfilter_default_draw_slice;
     draw_slice(link, y, h, slice_dir);
+}
+
+int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags)
+{
+    if(!strcmp(cmd, "ping")){
+        av_strlcatf(res, res_len, "pong from:%s %s\n", filter->filter->name, filter->name);
+        return 0;
+    }else if(filter->filter->process_command) {
+        return filter->filter->process_command(filter, cmd, arg, res, res_len, flags);
+    }
+    return AVERROR(ENOSYS);
 }
 
 void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)

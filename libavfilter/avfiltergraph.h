@@ -136,4 +136,21 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut **inputs, AVFilterInOut **outputs,
                          void *log_ctx);
 
+/**
+ * Send a command to one or more filter instances.
+ *
+ * @param graph  the filter graph
+ * @param target the filter(s) to which the command should be sent
+ *               "all" sends to all filters
+ *               otherwise it can be a filter or filter instance name
+ *               which will send the command to all matching filters.
+ * @param cmd    the command to sent, for handling simplicity all commands must be alphanumeric only
+ * @param arg    the argument for the command
+ * @param res    a buffer with size res_size where the filter(s) can return a response.
+ *
+ * @returns >=0 on success otherwise an error code.
+ *              AVERROR(ENOSYS) on unsupported commands
+ */
+int avfilter_graph_send_command(AVFilterGraph *graph, const char *target, const char *cmd, const char *arg, char *res, int res_len, int flags);
+
 #endif /* AVFILTER_AVFILTERGRAPH_H */

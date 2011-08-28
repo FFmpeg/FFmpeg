@@ -29,7 +29,7 @@
 #include "libavutil/rational.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 35
+#define LIBAVFILTER_VERSION_MINOR 36
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -552,6 +552,20 @@ typedef struct AVFilter {
      * NULL_IF_CONFIG_SMALL() macro to define it.
      */
     const char *description;
+
+    /**
+     * Make the filter instance process a command.
+     *
+     * @param cmd    the command to process, for handling simplicity all commands must be alphanumeric only
+     * @param arg    the argument for the command
+     * @param res    a buffer with size res_size where the filter(s) can return a response. This must not change when the command is not supported.
+     * @param flags  if AVFILTER_CMD_FLAG_FAST is set and the command would be
+     *               timeconsuming then a filter should treat it like an unsupported command
+     *
+     * @returns >=0 on success otherwise an error code.
+     *          AVERROR(ENOSYS) on unsupported commands
+     */
+    int (*process_command)(AVFilterContext *, const char *cmd, const char *arg, char *res, int res_len, int flags);
 } AVFilter;
 
 /** An instance of a filter */
@@ -790,6 +804,15 @@ void avfilter_end_frame(AVFilterLink *link);
  *             for other values the behavior of the function is undefined.
  */
 void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
+
+#define AVFILTER_CMD_FLAG_ONE   1 ///< Stop once a filter understood the command (for target=all for example), fast filters are favored automatically
+#define AVFILTER_CMD_FLAG_FAST  2 ///< Only execute command when its fast (like a video out that supports contrast adjustment in hw)
+
+/**
+ * Make the filter instance process a command.
+ * It is recommanded to use avfilter_graph_send_command().
+ */
+int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags);
 
 /**
  * Send a buffer of audio samples to the next filter.
