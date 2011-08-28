@@ -158,9 +158,6 @@ static unsigned int data_codec_tag = 0;
 static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
 
-static int64_t recording_time = INT64_MAX;
-static int64_t start_time = 0;
-static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
 static AVDictionary *metadata;
 static int do_benchmark = 0;
@@ -315,9 +312,17 @@ static OutputFile   *output_files   = NULL;
 static int        nb_output_files   = 0;
 
 typedef struct OptionsContext {
+    /* input/output options */
+    int64_t start_time;
+
+    /* input options */
+    int64_t input_ts_offset;
+
     /* output options */
     StreamMap *stream_maps;
     int     nb_stream_maps;
+
+    int64_t recording_time;
 } OptionsContext;
 
 static void reset_options(OptionsContext *o)
@@ -346,6 +351,9 @@ static void reset_options(OptionsContext *o)
     av_freep(&o->stream_maps);
 
     memset(o, 0, sizeof(*o));
+
+    o->recording_time = INT64_MAX;
+
     uninit_opts();
     init_opts();
 }
@@ -2778,24 +2786,6 @@ static int opt_input_ts_scale(const char *opt, const char *arg)
     return av_dict_set(&ts_scale, opt, arg, 0);
 }
 
-static int opt_recording_time(const char *opt, const char *arg)
-{
-    recording_time = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
-static int opt_start_time(const char *opt, const char *arg)
-{
-    start_time = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
-static int opt_input_ts_offset(const char *opt, const char *arg)
-{
-    input_ts_offset = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
 static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
 {
     const char *codec_string = encoder ? "encoder" : "decoder";
@@ -3030,20 +3020,18 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         exit_program(1);
     }
 
-    timestamp = start_time;
+    timestamp = o->start_time;
     /* add the stream start time */
     if (ic->start_time != AV_NOPTS_VALUE)
         timestamp += ic->start_time;
 
     /* if seeking requested, we execute it */
-    if (start_time != 0) {
+    if (o->start_time != 0) {
         ret = av_seek_frame(ic, -1, timestamp, AVSEEK_FLAG_BACKWARD);
         if (ret < 0) {
             fprintf(stderr, "%s: could not seek to position %0.3f\n",
                     filename, (double)timestamp / AV_TIME_BASE);
         }
-        /* reset seek info */
-        start_time = 0;
     }
 
     /* update the current parameters so that they match the one of the input stream */
@@ -3056,7 +3044,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     input_files = grow_array(input_files, sizeof(*input_files), &nb_input_files, nb_input_files + 1);
     input_files[nb_input_files - 1].ctx        = ic;
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
-    input_files[nb_input_files - 1].ts_offset  = input_ts_offset - (copy_ts ? 0 : timestamp);
+    input_files[nb_input_files - 1].ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
 
     frame_rate    = (AVRational){0, 0};
@@ -3067,7 +3055,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     av_dict_free(&ts_scale);
-    input_ts_offset = 0;
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3364,18 +3351,18 @@ static int opt_streamid(const char *opt, const char *arg)
     return 0;
 }
 
-static int copy_chapters(int infile, int outfile)
+static int copy_chapters(InputFile *ifile, OutputFile *ofile)
 {
-    AVFormatContext *is = input_files[infile].ctx;
-    AVFormatContext *os = output_files[outfile].ctx;
+    AVFormatContext *is = ifile->ctx;
+    AVFormatContext *os = ofile->ctx;
     int i;
 
     for (i = 0; i < is->nb_chapters; i++) {
         AVChapter *in_ch = is->chapters[i], *out_ch;
-        int64_t ts_off   = av_rescale_q(start_time - input_files[infile].ts_offset,
+        int64_t ts_off   = av_rescale_q(ofile->start_time - ifile->ts_offset,
                                       AV_TIME_BASE_Q, in_ch->time_base);
-        int64_t rt       = (recording_time == INT64_MAX) ? INT64_MAX :
-                           av_rescale_q(recording_time, AV_TIME_BASE_Q, in_ch->time_base);
+        int64_t rt       = (ofile->recording_time == INT64_MAX) ? INT64_MAX :
+                           av_rescale_q(ofile->recording_time, AV_TIME_BASE_Q, in_ch->time_base);
 
 
         if (in_ch->end < ts_off)
@@ -3563,8 +3550,8 @@ static void opt_output_file(void *optctx, const char *filename)
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
-    output_files[nb_output_files - 1].recording_time = recording_time;
-    output_files[nb_output_files - 1].start_time     = start_time;
+    output_files[nb_output_files - 1].recording_time = o->recording_time;
+    output_files[nb_output_files - 1].start_time     = o->start_time;
     output_files[nb_output_files - 1].limit_filesize = limit_filesize;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
@@ -3626,7 +3613,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
     if (chapters_input_file >= 0)
-        copy_chapters(chapters_input_file, nb_output_files - 1);
+        copy_chapters(&input_files[chapters_input_file], &output_files[nb_output_files - 1]);
 
     /* copy metadata */
     for (i = 0; i < nb_meta_data_maps; i++) {
@@ -3691,8 +3678,6 @@ static void opt_output_file(void *optctx, const char *filename)
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     chapters_input_file = INT_MAX;
-    recording_time = INT64_MAX;
-    start_time     = 0;
     limit_filesize = UINT64_MAX;
 
     av_freep(&meta_data_maps);
@@ -4042,6 +4027,7 @@ static int opt_bsf(const char *opt, const char *arg)
     return 0;
 }
 
+#define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
@@ -4054,10 +4040,10 @@ static const OptionDef options[] = {
     { "map_metadata", HAS_ARG | OPT_EXPERT, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
-    { "t", HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
+    { "t", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(recording_time)}, "record or transcode \"duration\" seconds of audio/video", "duration" },
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
-    { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
-    { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
+    { "ss", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(start_time)}, "set the start time offset", "time_off" },
+    { "itsoffset", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(input_ts_offset)}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "scale" },
     { "metadata", HAS_ARG, {(void*)opt_metadata}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },

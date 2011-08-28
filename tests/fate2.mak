@@ -125,7 +125,7 @@ fate-atrac3-3: CMP = oneoff
 fate-atrac3-3: REF = $(SAMPLES)/atrac3/mc_sich_at3_132_small.pcm
 
 FATE_TESTS += fate-gsm
-fate-gsm: CMD = framecrc -t 10 -i $(SAMPLES)/gsm/sample-gsm-8000.mov
+fate-gsm: CMD = framecrc -i $(SAMPLES)/gsm/sample-gsm-8000.mov -t 10
 
 FATE_TESTS += fate-gsm-ms
 fate-gsm-ms: CMD = framecrc -i $(SAMPLES)/gsm/ciao.wav

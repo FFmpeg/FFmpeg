@@ -254,6 +254,8 @@ unknown_opt:
         *(int*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
     } else if (po->flags & OPT_INT64) {
         *(int64_t*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
+    } else if (po->flags & OPT_TIME) {
+        *(int64_t*)dst = parse_time_or_die(opt, arg, 1);
     } else if (po->flags & OPT_FLOAT) {
         *(float*)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
     } else if (po->u.func_arg) {

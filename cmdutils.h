@@ -139,6 +139,7 @@ typedef struct {
 #define OPT_SPEC   0x8000       /* option is to be stored in an array of SpecifierOpt.
                                    Implies OPT_OFFSET. Next element after the offset is
                                    an int containing element count in the array. */
+#define OPT_TIME  0x10000
      union {
         void *dst_ptr;
         int (*func_arg)(const char *, const char *);
