@@ -2681,6 +2681,22 @@ static int transcode(AVFormatContext **output_files,
                     do_pkt_dump = 1;
                 av_log_set_level(AV_LOG_DEBUG);
             }
+            if (key == 'c' || key == 'C'){
+                char ret[4096], target[64], cmd[256], arg[256]={0};
+                fprintf(stderr, "\nEnter command: <target> <command>[ <argument>]\n");
+                if(scanf("%4095[^\n\r]%*c", ret) == 1 && sscanf(ret, "%63[^ ] %255[^ ] %255[^\n]", target, cmd, arg) >= 2){
+                    for(i=0;i<nb_ostreams;i++) {
+                        int r;
+                        ost = ost_table[i];
+                        if(ost->graph){
+                            r= avfilter_graph_send_command(ost->graph, target, cmd, arg, ret, sizeof(ret), key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
+                            fprintf(stderr, "Command reply for %d: %d, %s\n", i, r, ret);
+                        }
+                    }
+                }else{
+                    fprintf(stderr, "Parse error\n");
+                }
+            }
             if (key == 'd' || key == 'D'){
                 int debug=0;
                 if(key == 'D') {
@@ -2705,6 +2721,7 @@ static int transcode(AVFormatContext **output_files,
                                 "?      show this help\n"
                                 "+      increase verbosity\n"
                                 "-      decrease verbosity\n"
+                                "c      Send command to filtergraph\n"
                                 "D      cycle through available debug modes\n"
                                 "h      dump packets/hex press to cycle through the 3 states\n"
                                 "q      quit\n"
