@@ -33,6 +33,13 @@ typedef struct AVFilterPool {
     int count;
 } AVFilterPool;
 
+typedef struct AVFilterCommand {
+    double time;
+    char *command, *arg;
+    int flags;
+    struct AVFilterCommand *next;
+} AVFilterCommand;
+
 /**
  * Check for the validity of graph.
  *

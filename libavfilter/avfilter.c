@@ -45,6 +45,15 @@ const char *avfilter_license(void)
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
 }
 
+static void command_queue_pop(AVFilterContext *filter)
+{
+    AVFilterCommand *c= filter->command_queue;
+    av_freep(&c->arg);
+    av_freep(&c->command);
+    filter->command_queue= c->next;
+    av_free(c);
+}
+
 AVFilterBufferRef *avfilter_ref_buffer(AVFilterBufferRef *ref, int pmask)
 {
     AVFilterBufferRef *ret = av_malloc(sizeof(AVFilterBufferRef));
@@ -534,6 +543,7 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     void (*start_frame)(AVFilterLink *, AVFilterBufferRef *);
     AVFilterPad *dst = link->dstpad;
     int perms = picref->perms;
+    AVFilterCommand *cmd= link->dst->command_queue;
 
     FF_DPRINTF_START(NULL, start_frame); ff_dlog_link(NULL, link, 0); av_dlog(NULL, " "); ff_dlog_ref(NULL, picref, 1);
 
@@ -555,6 +565,11 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     }
     else
         link->cur_buf = picref;
+
+    if(cmd && cmd->time <= picref->pts * av_q2d(link->time_base)){
+        avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
+        command_queue_pop(link->dst);
+    }
 
     start_frame(link, link->cur_buf);
 }
@@ -815,6 +830,9 @@ void avfilter_free(AVFilterContext *filter)
     av_freep(&filter->inputs);
     av_freep(&filter->outputs);
     av_freep(&filter->priv);
+    while(filter->command_queue){
+        command_queue_pop(filter);
+    }
     av_free(filter);
 }
 

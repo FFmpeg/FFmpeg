@@ -153,4 +153,22 @@ int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
  */
 int avfilter_graph_send_command(AVFilterGraph *graph, const char *target, const char *cmd, const char *arg, char *res, int res_len, int flags);
 
+/**
+ * Queue a command for one or more filter instances.
+ *
+ * @param graph  the filter graph
+ * @param target the filter(s) to which the command should be sent
+ *               "all" sends to all filters
+ *               otherwise it can be a filter or filter instance name
+ *               which will send the command to all matching filters.
+ * @param cmd    the command to sent, for handling simplicity all commands must be alphanummeric only
+ * @param arg    the argument for the command
+ * @param ts     time at which the command should be sent to the filter
+ *
+ * @note As this executes commands after this function returns, no return code
+ *       from the filter is provided, also AVFILTER_CMD_FLAG_ONE is not supported.
+ */
+int avfilter_graph_queue_command(AVFilterGraph *graph, const char *target, const char *cmd, const char *arg, int flags, double ts);
+
+
 #endif /* AVFILTER_AVFILTERGRAPH_H */

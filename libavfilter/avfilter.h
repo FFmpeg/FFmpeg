@@ -29,7 +29,7 @@
 #include "libavutil/rational.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 36
+#define LIBAVFILTER_VERSION_MINOR 37
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -585,6 +585,8 @@ struct AVFilterContext {
     AVFilterLink **outputs;         ///< array of pointers to output links
 
     void *priv;                     ///< private data for use by the filter
+
+    struct AVFilterCommand *command_queue;
 };
 
 enum AVFilterPacking {
