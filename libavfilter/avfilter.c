@@ -566,9 +566,10 @@ void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref)
     else
         link->cur_buf = picref;
 
-    if(cmd && cmd->time <= picref->pts * av_q2d(link->time_base)){
+    while(cmd && cmd->time <= picref->pts * av_q2d(link->time_base)){
         avfilter_process_command(link->dst, cmd->command, cmd->arg, 0, 0, cmd->flags);
         command_queue_pop(link->dst);
+        cmd= link->dst->command_queue;
     }
 
     start_frame(link, link->cur_buf);
