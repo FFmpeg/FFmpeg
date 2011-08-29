@@ -56,6 +56,11 @@ static const char *unit_hertz_str           = "Hz"   ;
 static const char *unit_byte_str            = "byte" ;
 static const char *unit_bit_per_second_str  = "bit/s";
 
+void exit_program(int ret)
+{
+    exit(ret);
+}
+
 static char *value_string(char *buf, int buf_size, double val, const char *unit)
 {
     if (unit == unit_second_str && use_value_sexagesimal_format) {

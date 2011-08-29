@@ -92,7 +92,8 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
     else
         return d;
     fprintf(stderr, error, context, numstr, min, max);
-    exit(1);
+    exit_program(1);
+    return 0;
 }
 
 int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration)
@@ -101,7 +102,7 @@ int64_t parse_time_or_die(const char *context, const char *timestr, int is_durat
     if (av_parse_time(&us, timestr, is_duration) < 0) {
         fprintf(stderr, "Invalid %s specification for %s: %s\n",
                 is_duration ? "duration" : "date", context, timestr);
-        exit(1);
+        exit_program(1);
     }
     return us;
 }
@@ -237,14 +238,14 @@ void parse_options(int argc, char **argv, const OptionDef *options,
             if (!po->name) {
 unknown_opt:
                 fprintf(stderr, "%s: unrecognized option '%s'\n", argv[0], opt);
-                exit(1);
+                exit_program(1);
             }
             arg = NULL;
             if (po->flags & HAS_ARG) {
                 arg = argv[optindex++];
                 if (!arg) {
                     fprintf(stderr, "%s: missing argument for option '%s'\n", argv[0], opt);
-                    exit(1);
+                    exit_program(1);
                 }
             }
             if (po->flags & OPT_STRING) {
@@ -262,11 +263,11 @@ unknown_opt:
             } else if (po->u.func_arg) {
                 if (po->u.func_arg(opt, arg) < 0) {
                     fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
-                    exit(1);
+                    exit_program(1);
                 }
             }
             if(po->flags & OPT_EXIT)
-                exit(0);
+                exit_program(0);
         } else {
             if (parse_arg_function)
                 parse_arg_function(opt);
@@ -336,7 +337,7 @@ int opt_loglevel(const char *opt, const char *arg)
                         "Possible levels are numbers or:\n", arg);
         for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++)
             fprintf(stderr, "\"%s\"\n", log_levels[i].name);
-        exit(1);
+        exit_program(1);
     }
     av_log_set_level(level);
     return 0;

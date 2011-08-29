@@ -278,6 +278,11 @@ static AVPacket flush_pkt;
 
 static SDL_Surface *screen;
 
+void exit_program(int ret)
+{
+    exit(ret);
+}
+
 static int packet_queue_put(PacketQueue *q, AVPacket *pkt);
 
 /* packet queue handling */

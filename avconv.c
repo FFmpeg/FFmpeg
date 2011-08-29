@@ -433,7 +433,7 @@ static int decode_interrupt_cb(void)
     return received_nb_signals > 1;
 }
 
-static int exit_program(int ret)
+void exit_program(int ret)
 {
     int i;
 
@@ -483,7 +483,6 @@ static int exit_program(int ret)
     }
 
     exit(ret); /* not all OS-es handle main() return value */
-    return ret;
 }
 
 static void assert_avoptions(AVDictionary *m)
@@ -4192,5 +4191,6 @@ int main(int argc, char **argv)
         printf("bench: utime=%0.3fs maxrss=%ikB\n", ti / 1000000.0, maxrss);
     }
 
-    return exit_program(0);
+    exit_program(0);
+    return 0;
 }

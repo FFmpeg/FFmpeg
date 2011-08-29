@@ -327,4 +327,10 @@ extern AVFilter ffsink;
 int get_filtered_video_frame(AVFilterContext *sink, AVFrame *frame,
                              AVFilterBufferRef **picref, AVRational *pts_tb);
 
+/**
+ * Do all the necessary cleanup and abort.
+ * This function is implemented in the avtools, not cmdutils.
+ */
+void exit_program(int ret);
+
 #endif /* LIBAV_CMDUTILS_H */
