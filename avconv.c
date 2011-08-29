@@ -145,7 +145,6 @@ static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
 
 static int file_overwrite = 0;
-static AVDictionary *metadata;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
@@ -324,6 +323,9 @@ typedef struct OptionsContext {
 
     int64_t recording_time;
     uint64_t limit_filesize;
+
+    SpecifierOpt *metadata;
+    int        nb_metadata;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -2552,21 +2554,6 @@ static int opt_frame_aspect_ratio(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_metadata(const char *opt, const char *arg)
-{
-    char *mid= strchr(arg, '=');
-
-    if(!mid){
-        fprintf(stderr, "Missing =\n");
-        exit_program(1);
-    }
-    *mid++= 0;
-
-    av_dict_set(&metadata, arg, mid, 0);
-
-    return 0;
-}
-
 static int opt_qscale(const char *opt, const char *arg)
 {
     video_qscale = parse_number_or_die(opt, arg, OPT_FLOAT, 0, 255);
@@ -2735,7 +2722,7 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
 
 static void parse_meta_type(char *arg, char *type, int *index)
 {
-    if (*arg == ':') {
+    if (*arg) {
         *type = *(++arg);
         switch (*arg) {
         case 'g':
@@ -2764,11 +2751,11 @@ static int opt_map_metadata(OptionsContext *o, const char *opt, const char *arg)
 
     m = &o->meta_data_maps[o->nb_meta_data_maps - 1][1];
     m->file = strtol(arg, &p, 0);
-    parse_meta_type(p, &m->type, &m->index);
+    parse_meta_type(*p ? p + 1 : p, &m->type, &m->index);
 
     m1 = &o->meta_data_maps[o->nb_meta_data_maps - 1][0];
     if (p = strchr(opt, ':'))
-        parse_meta_type(p, &m1->type, &m1->index);
+        parse_meta_type(p + 1, &m1->type, &m1->index);
     else
         m1->type = 'g';
 
@@ -3517,10 +3504,6 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
 
-    av_dict_copy(&oc->metadata, metadata, 0);
-    av_dict_free(&metadata);
-
-
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
@@ -3645,6 +3628,47 @@ static void opt_output_file(void *optctx, const char *filename)
             InputStream *ist = &input_streams[output_streams[i].source_index];
             av_dict_copy(&output_streams[i].st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
         }
+
+    /* process manually set metadata */
+    for (i = 0; i < o->nb_metadata; i++) {
+        AVDictionary **m;
+        char type, *val;
+        int index = 0;
+
+        val = strchr(o->metadata[i].u.str, '=');
+        if (!val) {
+            av_log(NULL, AV_LOG_ERROR, "No '=' character in metadata string %s.\n",
+                   o->metadata[i].u.str);
+            exit_program(1);
+        }
+        *val++ = 0;
+
+        parse_meta_type(o->metadata[i].specifier, &type, &index);
+        switch (type) {
+        case 'g':
+            m = &oc->metadata;
+            break;
+        case 's':
+            if (index < 0 || index >= oc->nb_streams) {
+                av_log(NULL, AV_LOG_ERROR, "Invalid stream index %d in metadata specifier.\n", index);
+                exit_program(1);
+            }
+            m = &oc->streams[i]->metadata;
+            break;
+        case 'c':
+            if (index < 0 || index >= oc->nb_chapters) {
+                av_log(NULL, AV_LOG_ERROR, "Invalid chapter index %d in metadata specifier.\n", index);
+                exit_program(1);
+            }
+            m = &oc->chapters[i]->metadata;
+            break;
+        default:
+            av_log(NULL, AV_LOG_ERROR, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
+            exit_program(1);
+        }
+
+        av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
+    }
 
     frame_rate    = (AVRational){0, 0};
     frame_width   = 0;
@@ -4011,7 +4035,7 @@ static const OptionDef options[] = {
     { "ss", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(start_time)}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(input_ts_offset)}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(ts_scale)}, "set the input ts scale", "scale" },
-    { "metadata", HAS_ARG, {(void*)opt_metadata}, "add metadata", "string=string" },
+    { "metadata", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(metadata)}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
       "add timings for benchmarking" },

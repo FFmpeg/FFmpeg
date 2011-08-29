@@ -160,12 +160,24 @@ interpreted as UTC.
 If the year-month-day part is not specified it takes the current
 year-month-day.
 
-@item -metadata @var{key}=@var{value}
+@item -metadata[:metadata_specifier] @var{key}=@var{value}
 Set a metadata key/value pair.
+
+An optional @var{metadata_specifier} may be given to set metadata
+on streams or chapters. See @code{-map_metadata} documentation for
+details.
+
+This option overrides metadata set with @code{-map_metadata}. It is
+also possible to delete metadata by using an empty value.
 
 For example, for setting the title in the output file:
 @example
 avconv -i in.avi -metadata title="my title" out.flv
+@end example
+
+To set the language of the second stream:
+@example
+avconv -i INPUT -metadata:s:1 language=eng OUTPUT
 @end example
 
 @item -v @var{number}
