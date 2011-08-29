@@ -16,7 +16,7 @@ http(s)://ffmpeg.org/mailman/listinfo/ffmpeg-trac
 The URL of the webinterface of the tracker is:
 http(s)://ffmpeg.org/trac/ffmpeg
 
-NOTE: issue = (bug report || patch || feature request)
+NOTE: issue = (bug report || patch || feature request || license violation)
 
 Type:
 -----
@@ -123,15 +123,6 @@ Type/Status/Substatus:
     but which has not been provided by anyone within reasonable time.
 
 
-bug/open/analyzed
-
-bug/open/needs_more_info
-    Bug reports which are incomplete and or where more information is needed
-    from the submitter or another person who can provide it.
-    This state implicates that the bug has not been analyzed or reproduced.
-    Note, the idea behind needs_more_info is to offload work from the
-    developers to the users whenever possible.
-
 bug/closed/fixed
     Bugs which have to the best of our knowledge been fixed.
 
@@ -163,10 +154,6 @@ patch/closed/applied
 
 patch/closed/rejected
     Patches which have been rejected.
-
-feature_request/open/needs_more_info
-    Feature requests where it is not clear what exactly is wanted
-    (these also could be closed as invalid ...).
 
 feature_request/closed/implemented
     Feature requests which have been implemented.
