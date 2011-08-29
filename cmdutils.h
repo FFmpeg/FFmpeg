@@ -152,6 +152,13 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
                    void (* parse_arg_function)(void *optctx, const char*));
 
 /**
+ * Parse one given option.
+ *
+ * @return on success 1 if arg was consumed, 0 otherwise; negative number on error
+ */
+int parse_option(void *optctx, const char *opt, const char *arg, const OptionDef *options);
+
+/**
  * Check if the given stream matches a stream specifier.
  *
  * @param s  Corresponding format context.

@@ -203,12 +203,66 @@ static inline void prepare_app_arguments(int *argc_ptr, char ***argv_ptr)
 }
 #endif /* WIN32 && !__MINGW32CE__ */
 
+int parse_option(void *optctx, const char *opt, const char *arg, const OptionDef *options)
+{
+    const OptionDef *po;
+    int bool_val = 1;
+    void *dst;
+
+    po = find_option(options, opt);
+    if (!po->name && opt[0] == 'n' && opt[1] == 'o') {
+        /* handle 'no' bool option */
+        po = find_option(options, opt + 2);
+        if (!(po->name && (po->flags & OPT_BOOL)))
+            goto unknown_opt;
+        bool_val = 0;
+    }
+    if (!po->name)
+        po = find_option(options, "default");
+    if (!po->name) {
+unknown_opt:
+        av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
+        return AVERROR(EINVAL);
+    }
+    if (po->flags & HAS_ARG && !arg) {
+        av_log(NULL, AV_LOG_ERROR, "Missing argument for option '%s'\n", opt);
+        return AVERROR(EINVAL);
+    }
+
+    /* new-style options contain an offset into optctx, old-style address of
+     * a global var*/
+    dst = po->flags & (OPT_OFFSET) ? (uint8_t*)optctx + po->u.off : po->u.dst_ptr;
+
+    if (po->flags & OPT_STRING) {
+        char *str;
+        str = av_strdup(arg);
+        *(char**)dst = str;
+    } else if (po->flags & OPT_BOOL) {
+        *(int*)dst = bool_val;
+    } else if (po->flags & OPT_INT) {
+        *(int*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
+    } else if (po->flags & OPT_INT64) {
+        *(int64_t*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
+    } else if (po->flags & OPT_FLOAT) {
+        *(float*)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
+    } else if (po->u.func_arg) {
+        int ret = po->flags & OPT_FUNC2 ? po->u.func2_arg(optctx, opt, arg) :
+                                          po->u.func_arg(opt, arg);
+        if (ret < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Failed to set value '%s' for option '%s'\n", arg, opt);
+            return ret;
+        }
+    }
+    if (po->flags & OPT_EXIT)
+        exit_program(0);
+    return !!(po->flags & HAS_ARG);
+}
+
 void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
                    void (* parse_arg_function)(void *, const char*))
 {
-    const char *opt, *arg;
-    int optindex, handleoptions=1;
-    const OptionDef *po;
+    const char *opt;
+    int optindex, handleoptions = 1, ret;
 
     /* perform system-dependent conversions for arguments list */
     prepare_app_arguments(&argc, &argv);
@@ -216,64 +270,18 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
     /* parse options */
     optindex = 1;
     while (optindex < argc) {
-        void *dst;
         opt = argv[optindex++];
 
         if (handleoptions && opt[0] == '-' && opt[1] != '\0') {
-            int bool_val = 1;
             if (opt[1] == '-' && opt[2] == '\0') {
                 handleoptions = 0;
                 continue;
             }
             opt++;
-            po= find_option(options, opt);
-            if (!po->name && opt[0] == 'n' && opt[1] == 'o') {
-                /* handle 'no' bool option */
-                po = find_option(options, opt + 2);
-                if (!(po->name && (po->flags & OPT_BOOL)))
-                    goto unknown_opt;
-                bool_val = 0;
-            }
-            if (!po->name)
-                po= find_option(options, "default");
-            if (!po->name) {
-unknown_opt:
-                fprintf(stderr, "%s: unrecognized option '%s'\n", argv[0], opt);
+
+            if ((ret = parse_option(optctx, opt, argv[optindex], options)) < 0)
                 exit_program(1);
-            }
-            arg = NULL;
-            if (po->flags & HAS_ARG) {
-                arg = argv[optindex++];
-                if (!arg) {
-                    fprintf(stderr, "%s: missing argument for option '%s'\n", argv[0], opt);
-                    exit_program(1);
-                }
-            }
-            /* new-style options contain an offset into optctx, old-style address of
-             * a global var*/
-            dst = po->flags & OPT_OFFSET ? (uint8_t*)optctx + po->u.off : po->u.dst_ptr;
-            if (po->flags & OPT_STRING) {
-                char *str;
-                str = av_strdup(arg);
-                *(char**)dst = str;
-            } else if (po->flags & OPT_BOOL) {
-                *(int*)dst = bool_val;
-            } else if (po->flags & OPT_INT) {
-                *(int*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
-            } else if (po->flags & OPT_INT64) {
-                *(int64_t*)dst = parse_number_or_die(opt, arg, OPT_INT64, INT64_MIN, INT64_MAX);
-            } else if (po->flags & OPT_FLOAT) {
-                *(float*)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
-            } else if (po->u.func_arg) {
-                int ret = po->flags & OPT_FUNC2 ? po->u.func2_arg(optctx, opt, arg) :
-                                                  po->u.func_arg(opt, arg);
-                if (ret < 0) {
-                    fprintf(stderr, "%s: failed to set value '%s' for option '%s'\n", argv[0], arg, opt);
-                    exit_program(1);
-                }
-            }
-            if(po->flags & OPT_EXIT)
-                exit_program(0);
+            optindex += ret;
         } else {
             if (parse_arg_function)
                 parse_arg_function(optctx, opt);
