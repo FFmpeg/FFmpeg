@@ -289,15 +289,15 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
     stream_idx = lavfi->sink_stream_map[min_pts_sink_idx];
 
     if (ref->video) {
-    size = avpicture_get_size(ref->format, ref->video->w, ref->video->h);
-    if ((ret = av_new_packet(pkt, size)) < 0)
-        return ret;
+        size = avpicture_get_size(ref->format, ref->video->w, ref->video->h);
+        if ((ret = av_new_packet(pkt, size)) < 0)
+            return ret;
 
-    memcpy(pict.data,     ref->data,     4*sizeof(ref->data[0]));
-    memcpy(pict.linesize, ref->linesize, 4*sizeof(ref->linesize[0]));
+        memcpy(pict.data,     ref->data,     4*sizeof(ref->data[0]));
+        memcpy(pict.linesize, ref->linesize, 4*sizeof(ref->linesize[0]));
 
-    avpicture_layout(&pict, ref->format, ref->video->w,
-                     ref->video->h, pkt->data, size);
+        avpicture_layout(&pict, ref->format, ref->video->w,
+                         ref->video->h, pkt->data, size);
     } else if (ref->audio) {
         size = ref->linesize[0];
         if ((ret = av_new_packet(pkt, size)) < 0)
