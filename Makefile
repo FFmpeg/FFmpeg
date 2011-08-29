@@ -16,7 +16,6 @@ PROGS-$(CONFIG_FFPROBE)  += ffprobe
 PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
-PROGS_G     = $(PROGS-yes:%=%_g$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
