@@ -99,13 +99,6 @@ static const OptionDef options[];
 
 static AVDictionary *ts_scale;
 
-/* first item specifies output metadata, second is input */
-static MetadataMap (*meta_data_maps)[2] = NULL;
-static int nb_meta_data_maps;
-static int metadata_global_autocopy   = 1;
-static int metadata_streams_autocopy  = 1;
-static int metadata_chapters_autocopy = 1;
-
 static int chapters_input_file = INT_MAX;
 
 /* indexed by output file stream index */
@@ -321,6 +314,12 @@ typedef struct OptionsContext {
     /* output options */
     StreamMap *stream_maps;
     int     nb_stream_maps;
+    /* first item specifies output metadata, second is input */
+    MetadataMap (*meta_data_maps)[2];
+    int nb_meta_data_maps;
+    int metadata_global_manual;
+    int metadata_streams_manual;
+    int metadata_chapters_manual;
 
     int64_t recording_time;
     uint64_t limit_filesize;
@@ -362,6 +361,7 @@ static void reset_options(OptionsContext *o)
     }
 
     av_freep(&o->stream_maps);
+    av_freep(&o->meta_data_maps);
 
     memset(o, 0, sizeof(*o));
 
@@ -512,8 +512,6 @@ void exit_program(int ret)
     if (vstats_file)
         fclose(vstats_file);
     av_free(vstats_filename);
-
-    av_free(meta_data_maps);
 
     av_freep(&input_streams);
     av_freep(&input_files);
@@ -2756,30 +2754,30 @@ static void parse_meta_type(char *arg, char *type, int *index)
         *type = 'g';
 }
 
-static int opt_map_metadata(const char *opt, const char *arg)
+static int opt_map_metadata(OptionsContext *o, const char *opt, const char *arg)
 {
     MetadataMap *m, *m1;
     char *p;
 
-    meta_data_maps = grow_array(meta_data_maps, sizeof(*meta_data_maps),
-                                &nb_meta_data_maps, nb_meta_data_maps + 1);
+    o->meta_data_maps = grow_array(o->meta_data_maps, sizeof(*o->meta_data_maps),
+                                   &o->nb_meta_data_maps, o->nb_meta_data_maps + 1);
 
-    m = &meta_data_maps[nb_meta_data_maps - 1][1];
+    m = &o->meta_data_maps[o->nb_meta_data_maps - 1][1];
     m->file = strtol(arg, &p, 0);
     parse_meta_type(p, &m->type, &m->index);
 
-    m1 = &meta_data_maps[nb_meta_data_maps - 1][0];
+    m1 = &o->meta_data_maps[o->nb_meta_data_maps - 1][0];
     if (p = strchr(opt, ':'))
         parse_meta_type(p, &m1->type, &m1->index);
     else
         m1->type = 'g';
 
     if (m->type == 'g' || m1->type == 'g')
-        metadata_global_autocopy = 0;
+        o->metadata_global_manual = 1;
     if (m->type == 's' || m1->type == 's')
-        metadata_streams_autocopy = 0;
+        o->metadata_streams_manual = 1;
     if (m->type == 'c' || m1->type == 'c')
-        metadata_chapters_autocopy = 0;
+        o->metadata_chapters_manual = 1;
 
     return 0;
 }
@@ -3343,7 +3341,7 @@ static int opt_streamid(const char *opt, const char *arg)
     return 0;
 }
 
-static int copy_chapters(InputFile *ifile, OutputFile *ofile)
+static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
 {
     AVFormatContext *is = ifile->ctx;
     AVFormatContext *os = ofile->ctx;
@@ -3371,7 +3369,7 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile)
         out_ch->start     = FFMAX(0,  in_ch->start - ts_off);
         out_ch->end       = FFMIN(rt, in_ch->end   - ts_off);
 
-        if (metadata_chapters_autocopy)
+        if (copy_metadata)
             av_dict_copy(&out_ch->metadata, in_ch->metadata, 0);
 
         os->nb_chapters++;
@@ -3604,10 +3602,11 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
     if (chapters_input_file >= 0)
-        copy_chapters(&input_files[chapters_input_file], &output_files[nb_output_files - 1]);
+        copy_chapters(&input_files[chapters_input_file], &output_files[nb_output_files - 1],
+                      o->metadata_chapters_manual);
 
     /* copy metadata */
-    for (i = 0; i < nb_meta_data_maps; i++) {
+    for (i = 0; i < o->nb_meta_data_maps; i++) {
         AVFormatContext *files[2];
         AVDictionary    **meta[2];
         int j;
@@ -3619,7 +3618,7 @@ static void opt_output_file(void *optctx, const char *filename)
             exit_program(1);\
         }
 
-        int in_file_index = meta_data_maps[i][1].file;
+        int in_file_index = o->meta_data_maps[i][1].file;
         if (in_file_index < 0)
             continue;
         METADATA_CHECK_INDEX(in_file_index, nb_input_files, "input file")
@@ -3628,7 +3627,7 @@ static void opt_output_file(void *optctx, const char *filename)
         files[1] = input_files[in_file_index].ctx;
 
         for (j = 0; j < 2; j++) {
-            MetadataMap *map = &meta_data_maps[i][j];
+            MetadataMap *map = &o->meta_data_maps[i][j];
 
             switch (map->type) {
             case 'g':
@@ -3653,10 +3652,10 @@ static void opt_output_file(void *optctx, const char *filename)
     }
 
     /* copy global metadata by default */
-    if (metadata_global_autocopy && nb_input_files)
+    if (!o->metadata_global_manual && nb_input_files)
         av_dict_copy(&oc->metadata, input_files[0].ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
-    if (metadata_streams_autocopy)
+    if (!o->metadata_streams_manual)
         for (i = output_files[nb_output_files - 1].ost_index; i < nb_output_streams; i++) {
             InputStream *ist = &input_streams[output_streams[i].source_index];
             av_dict_copy(&output_streams[i].st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
@@ -3670,11 +3669,6 @@ static void opt_output_file(void *optctx, const char *filename)
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     chapters_input_file = INT_MAX;
 
-    av_freep(&meta_data_maps);
-    nb_meta_data_maps = 0;
-    metadata_global_autocopy   = 1;
-    metadata_streams_autocopy  = 1;
-    metadata_chapters_autocopy = 1;
     av_freep(&streamid_map);
     nb_streamid_map = 0;
 
@@ -4025,7 +4019,7 @@ static const OptionDef options[] = {
     { "c", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(codec_names)}, "codec name", "codec" },
     { "codec", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(codec_names)}, "codec name", "codec" },
     { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
-    { "map_metadata", HAS_ARG | OPT_EXPERT, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
+    { "map_metadata", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
     { "t", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(recording_time)}, "record or transcode \"duration\" seconds of audio/video", "duration" },
