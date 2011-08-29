@@ -53,6 +53,8 @@ important
     the separation to normal is somewhat fuzzy.
     For feature requests this priority would be used for things many people
     want.
+    Regressions also should be marked as important, regressions are bugs that
+    dont exist in a past revission or another branch.
 
 normal
 
