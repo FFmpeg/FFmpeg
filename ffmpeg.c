@@ -2206,10 +2206,6 @@ static int transcode(AVFormatContext **output_files,
         codec = ost->st->codec;
         icodec = ist->st->codec;
 
-        if (metadata_streams_autocopy)
-            av_dict_copy(&ost->st->metadata, ist->st->metadata,
-                         AV_DICT_DONT_OVERWRITE);
-
         ost->st->disposition = ist->st->disposition;
         codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
         codec->chroma_sample_location = icodec->chroma_sample_location;
@@ -2493,63 +2489,6 @@ static int transcode(AVFormatContext **output_files,
         ist->pts = st->avg_frame_rate.num ? - st->codec->has_b_frames*AV_TIME_BASE / av_q2d(st->avg_frame_rate) : 0;
         ist->next_pts = AV_NOPTS_VALUE;
         ist->is_start = 1;
-    }
-
-    /* set meta data information from input file if required */
-    for (i=0;i<nb_meta_data_maps;i++) {
-        AVFormatContext *files[2];
-        AVDictionary    **meta[2];
-        int j;
-
-#define METADATA_CHECK_INDEX(index, nb_elems, desc)\
-        if ((index) < 0 || (index) >= (nb_elems)) {\
-            snprintf(error, sizeof(error), "Invalid %s index %d while processing metadata maps\n",\
-                     (desc), (index));\
-            ret = AVERROR(EINVAL);\
-            goto dump_format;\
-        }
-
-        int out_file_index = meta_data_maps[i][0].file;
-        int in_file_index = meta_data_maps[i][1].file;
-        if (in_file_index < 0 || out_file_index < 0)
-            continue;
-        METADATA_CHECK_INDEX(out_file_index, nb_output_files, "output file")
-        METADATA_CHECK_INDEX(in_file_index, nb_input_files, "input file")
-
-        files[0] = output_files[out_file_index];
-        files[1] = input_files[in_file_index].ctx;
-
-        for (j = 0; j < 2; j++) {
-            MetadataMap *map = &meta_data_maps[i][j];
-
-            switch (map->type) {
-            case 'g':
-                meta[j] = &files[j]->metadata;
-                break;
-            case 's':
-                METADATA_CHECK_INDEX(map->index, files[j]->nb_streams, "stream")
-                meta[j] = &files[j]->streams[map->index]->metadata;
-                break;
-            case 'c':
-                METADATA_CHECK_INDEX(map->index, files[j]->nb_chapters, "chapter")
-                meta[j] = &files[j]->chapters[map->index]->metadata;
-                break;
-            case 'p':
-                METADATA_CHECK_INDEX(map->index, files[j]->nb_programs, "program")
-                meta[j] = &files[j]->programs[map->index]->metadata;
-                break;
-            }
-        }
-
-        av_dict_copy(meta[0], *meta[1], AV_DICT_DONT_OVERWRITE);
-    }
-
-    /* copy global metadata by default */
-    if (metadata_global_autocopy) {
-
-        for (i = 0; i < nb_output_files; i++)
-            av_dict_copy(&output_files[i]->metadata, input_files[0].ctx->metadata,
-                         AV_DICT_DONT_OVERWRITE);
     }
 
     /* open files and write file headers */
@@ -3136,10 +3075,9 @@ static int opt_map(const char *opt, const char *arg)
     return 0;
 }
 
-static void parse_meta_type(char *arg, char *type, int *index, char **endptr)
+static void parse_meta_type(char *arg, char *type, int *index)
 {
-    *endptr = arg;
-    if (*arg == ',') {
+    if (*arg == ':') {
         *type = *(++arg);
         switch (*arg) {
         case 'g':
@@ -3147,7 +3085,8 @@ static void parse_meta_type(char *arg, char *type, int *index, char **endptr)
         case 's':
         case 'c':
         case 'p':
-            *index = strtol(++arg, endptr, 0);
+            if (*(++arg) == ':')
+                *index = strtol(++arg, NULL, 0);
             break;
         default:
             fprintf(stderr, "Invalid metadata type %c.\n", *arg);
@@ -3165,15 +3104,15 @@ static int opt_map_metadata(const char *opt, const char *arg)
     meta_data_maps = grow_array(meta_data_maps, sizeof(*meta_data_maps),
                                 &nb_meta_data_maps, nb_meta_data_maps + 1);
 
-    m = &meta_data_maps[nb_meta_data_maps - 1][0];
+    m = &meta_data_maps[nb_meta_data_maps - 1][1];
     m->file = strtol(arg, &p, 0);
-    parse_meta_type(p, &m->type, &m->index, &p);
-    if (*p)
-        p++;
+    parse_meta_type(p, &m->type, &m->index);
 
-    m1 = &meta_data_maps[nb_meta_data_maps - 1][1];
-    m1->file = strtol(p, &p, 0);
-    parse_meta_type(p, &m1->type, &m1->index, &p);
+    m1 = &meta_data_maps[nb_meta_data_maps - 1][0];
+    if (p = strchr(opt, ':'))
+        parse_meta_type(p, &m1->type, &m1->index);
+    else
+        m1->type = 'g';
 
     if (m->type == 'g' || m1->type == 'g')
         metadata_global_autocopy = 0;
@@ -3977,6 +3916,62 @@ static int opt_output_file(const char *opt, const char *filename)
     if (chapters_input_file >= 0)
         copy_chapters(chapters_input_file, nb_output_files - 1);
 
+    /* copy metadata */
+    for (i = 0; i < nb_meta_data_maps; i++) {
+        AVFormatContext *files[2];
+        AVDictionary    **meta[2];
+        int j;
+
+#define METADATA_CHECK_INDEX(index, nb_elems, desc)\
+        if ((index) < 0 || (index) >= (nb_elems)) {\
+            av_log(NULL, AV_LOG_ERROR, "Invalid %s index %d while processing metadata maps\n",\
+                     (desc), (index));\
+            exit_program(1);\
+        }
+
+        int in_file_index = meta_data_maps[i][1].file;
+        if (in_file_index < 0)
+            continue;
+        METADATA_CHECK_INDEX(in_file_index, nb_input_files, "input file")
+
+        files[0] = oc;
+        files[1] = input_files[in_file_index].ctx;
+
+        for (j = 0; j < 2; j++) {
+            MetadataMap *map = &meta_data_maps[i][j];
+
+            switch (map->type) {
+            case 'g':
+                meta[j] = &files[j]->metadata;
+                break;
+            case 's':
+                METADATA_CHECK_INDEX(map->index, files[j]->nb_streams, "stream")
+                meta[j] = &files[j]->streams[map->index]->metadata;
+                break;
+            case 'c':
+                METADATA_CHECK_INDEX(map->index, files[j]->nb_chapters, "chapter")
+                meta[j] = &files[j]->chapters[map->index]->metadata;
+                break;
+            case 'p':
+                METADATA_CHECK_INDEX(map->index, files[j]->nb_programs, "program")
+                meta[j] = &files[j]->programs[map->index]->metadata;
+                break;
+            }
+        }
+
+        av_dict_copy(meta[0], *meta[1], AV_DICT_DONT_OVERWRITE);
+    }
+
+    /* copy global metadata by default */
+    if (metadata_global_autocopy)
+        av_dict_copy(&oc->metadata, input_files[0].ctx->metadata,
+                     AV_DICT_DONT_OVERWRITE);
+    if (metadata_streams_autocopy)
+        for (i = 0; i < oc->nb_streams; i++) {
+            InputStream *ist = &input_streams[output_streams_for_file[nb_output_files-1][i]->source_index];
+            av_dict_copy(&oc->streams[i]->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
+        }
+
     frame_rate    = (AVRational){0, 0};
     frame_width   = 0;
     frame_height  = 0;
@@ -3984,6 +3979,12 @@ static int opt_output_file(const char *opt, const char *filename)
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     chapters_input_file = INT_MAX;
+
+    av_freep(&meta_data_maps);
+    nb_meta_data_maps = 0;
+    metadata_global_autocopy   = 1;
+    metadata_streams_autocopy  = 1;
+    metadata_chapters_autocopy = 1;
 
     av_freep(&forced_key_frames);
     uninit_opts();
