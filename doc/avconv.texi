@@ -274,20 +274,6 @@ form @var{num}:@var{den}, where @var{num} and @var{den} are the
 numerator and denominator of the aspect ratio. For example "4:3",
 "16:9", "1.3333", and "1.7777" are valid argument values.
 
-@item -croptop @var{size}
-@item -cropbottom @var{size}
-@item -cropleft @var{size}
-@item -cropright @var{size}
-All the crop options have been removed. Use -vf
-crop=width:height:x:y instead.
-
-@item -padtop @var{size}
-@item -padbottom @var{size}
-@item -padleft @var{size}
-@item -padright @var{size}
-@item -padcolor @var{hex_color}
-All the pad options have been removed. Use -vf
-pad=width:height:x:y:color instead.
 @item -vn
 Disable video recording.
 @item -bt @var{tolerance}

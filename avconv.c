@@ -253,8 +253,9 @@ typedef struct InputFile {
     int eof_reached;      /* true if eof reached */
     int ist_index;        /* index of first stream in ist_table */
     int buffer_size;      /* current total buffer size */
-    int nb_streams;
     int64_t ts_offset;
+    int nb_streams;       /* number of stream that avconv is aware of; may be different
+                             from ctx.nb_streams if new streams appear during av_read_frame() */
 } InputFile;
 
 typedef struct OutputStream {
@@ -2587,12 +2588,6 @@ static int opt_frame_rate(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_frame_crop(const char *opt, const char *arg)
-{
-    fprintf(stderr, "Option '%s' has been removed, use the crop filter instead\n", opt);
-    return AVERROR(EINVAL);
-}
-
 static int opt_frame_size(const char *opt, const char *arg)
 {
     if (av_parse_video_size(&frame_width, &frame_height, arg) < 0) {
@@ -2600,11 +2595,6 @@ static int opt_frame_size(const char *opt, const char *arg)
         return AVERROR(EINVAL);
     }
     return 0;
-}
-
-static int opt_pad(const char *opt, const char *arg) {
-    fprintf(stderr, "Option '%s' has been removed, use the pad filter instead\n", opt);
-    return -1;
 }
 
 static int opt_frame_pix_fmt(const char *opt, const char *arg)
@@ -2785,13 +2775,13 @@ static int opt_map(const char *opt, const char *arg)
         }
         if (*sync)
             sync++;
-        for (i = 0; i < input_files[sync_file_idx].ctx->nb_streams; i++)
+        for (i = 0; i < input_files[sync_file_idx].nb_streams; i++)
             if (check_stream_specifier(input_files[sync_file_idx].ctx,
                                        input_files[sync_file_idx].ctx->streams[i], sync) == 1) {
                 sync_stream_idx = i;
                 break;
             }
-        if (i == input_files[sync_file_idx].ctx->nb_streams) {
+        if (i == input_files[sync_file_idx].nb_streams) {
             av_log(NULL, AV_LOG_ERROR, "Sync stream specification in map %s does not "
                                        "match any streams.\n", arg);
             exit_program(1);
@@ -2814,7 +2804,7 @@ static int opt_map(const char *opt, const char *arg)
                 m->disabled = 1;
         }
     else
-        for (i = 0; i < input_files[file_idx].ctx->nb_streams; i++) {
+        for (i = 0; i < input_files[file_idx].nb_streams; i++) {
             if (check_stream_specifier(input_files[file_idx].ctx, input_files[file_idx].ctx->streams[i],
                         *p == ':' ? p + 1 : p) <= 0)
                 continue;
@@ -4001,7 +3991,7 @@ static int opt_target(const char *opt, const char *arg)
             if(nb_input_files) {
                 int i, j;
                 for (j = 0; j < nb_input_files; j++) {
-                    for (i = 0; i < input_files[j].ctx->nb_streams; i++) {
+                    for (i = 0; i < input_files[j].nb_streams; i++) {
                         AVCodecContext *c = input_files[j].ctx->streams[i]->codec;
                         if(c->codec_type != AVMEDIA_TYPE_VIDEO)
                             continue;
@@ -4222,15 +4212,6 @@ static const OptionDef options[] = {
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
     { "bits_per_raw_sample", OPT_INT | HAS_ARG | OPT_VIDEO, {(void*)&frame_bits_per_raw_sample}, "set the number of bits per raw sample", "number" },
-    { "croptop",  HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop}, "Removed, use the crop filter instead", "size" },
-    { "cropbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop}, "Removed, use the crop filter instead", "size" },
-    { "cropleft", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop}, "Removed, use the crop filter instead", "size" },
-    { "cropright", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_crop}, "Removed, use the crop filter instead", "size" },
-    { "padtop", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "size" },
-    { "padbottom", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "size" },
-    { "padleft", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "size" },
-    { "padright", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "size" },
-    { "padcolor", HAS_ARG | OPT_VIDEO, {(void*)opt_pad}, "Removed, use the pad filter instead", "color" },
     { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
