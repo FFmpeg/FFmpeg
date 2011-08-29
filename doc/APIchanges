@@ -13,25 +13,25 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-08-22 - xxxxxx - lavf 53.10.0
+2011-08-22 - dacd827 - lavf 53.10.0
   Add av_find_program_from_stream().
 
-2011-08-20 - xxxxxx - lavu 51.13.0
+2011-08-20 - 69e2c1a - lavu 51.13.0
   Add av_get_media_type_string().
 
-2011-08-14 - xxxxxx - lavu 51.12.0
+2011-08-14 - 323b930 - lavu 51.12.0
   Add av_fifo_peek2(), deprecate av_fifo_peek().
 
-2011-08-xx - xxxxxxx - lavf 53.4.0
+2011-08-xx - 48f9e45 - lavf 53.8.0
   Add avformat_query_codec().
 
-2011-08-xx - xxxxxxx - lavc 53.8.0
+2011-08-xx - bca06e7 - lavc 53.11.0
   Add avcodec_get_type().
 
-2011-08-06 - 2f63440 - lavf 53.4.0
+2011-08-06 - 2f63440 - lavf 53.7.0
   Add error_recognition to AVFormatContext.
 
-2011-08-02 - 9d39cbf - lavc 53.7.1
+2011-08-02 - 9d39cbf - lavc 53.9.1
   Add AV_PKT_FLAG_CORRUPT AVPacket flag.
 
 2011-07-16 - b57df29 - lavfi 2.27.0
@@ -42,10 +42,10 @@ API changes, most recent first:
   avfilter_set_common_packing_formats()
   avfilter_all_packing_formats()
 
-2011-07-10 - a67c061 - lavf 53.3.0
+2011-07-10 - a67c061 - lavf 53.6.0
   Add avformat_find_stream_info(), deprecate av_find_stream_info().
 
-2011-07-10 - 0b950fe - lavc 53.6.0
+2011-07-10 - 0b950fe - lavc 53.8.0
   Add avcodec_open2(), deprecate avcodec_open().
 
 2011-07-01 - b442ca6 - lavf 53.5.0 - avformat.h
