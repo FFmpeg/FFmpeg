@@ -207,6 +207,7 @@ int parse_option(void *optctx, const char *opt, const char *arg, const OptionDef
 {
     const OptionDef *po;
     int bool_val = 1;
+    int *dstcount;
     void *dst;
 
     po = find_option(options, opt);
@@ -231,7 +232,17 @@ unknown_opt:
 
     /* new-style options contain an offset into optctx, old-style address of
      * a global var*/
-    dst = po->flags & (OPT_OFFSET) ? (uint8_t*)optctx + po->u.off : po->u.dst_ptr;
+    dst = po->flags & (OPT_OFFSET|OPT_SPEC) ? (uint8_t*)optctx + po->u.off : po->u.dst_ptr;
+
+    if (po->flags & OPT_SPEC) {
+        SpecifierOpt **so = dst;
+        char *p = strchr(opt, ':');
+
+        dstcount = (int*)(so + 1);
+        *so = grow_array(*so, sizeof(**so), dstcount, *dstcount + 1);
+        (*so)[*dstcount - 1].specifier = av_strdup(p ? p + 1 : "");
+        dst = &(*so)[*dstcount - 1].u;
+    }
 
     if (po->flags & OPT_STRING) {
         char *str;

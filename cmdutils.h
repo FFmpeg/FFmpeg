@@ -108,6 +108,16 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
  */
 int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration);
 
+typedef struct SpecifierOpt {
+    char *specifier;    /**< stream/chapter/program/... specifier */
+    union {
+        uint8_t *str;
+        int        i;
+        int64_t  i64;
+        float      f;
+    } u;
+} SpecifierOpt;
+
 typedef struct {
     const char *name;
     int flags;
@@ -126,6 +136,9 @@ typedef struct {
 #define OPT_DATA   0x1000
 #define OPT_FUNC2  0x2000
 #define OPT_OFFSET 0x4000       /* option is specified as an offset in a passed optctx */
+#define OPT_SPEC   0x8000       /* option is to be stored in an array of SpecifierOpt.
+                                   Implies OPT_OFFSET. Next element after the offset is
+                                   an int containing element count in the array. */
      union {
         void *dst_ptr;
         int (*func_arg)(const char *, const char *);
