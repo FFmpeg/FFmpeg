@@ -511,26 +511,6 @@ static void assert_codec_experimental(AVCodecContext *c, int encoder)
     }
 }
 
-/* similar to ff_dynarray_add() and av_fast_realloc() */
-static void *grow_array(void *array, int elem_size, int *size, int new_size)
-{
-    if (new_size >= INT_MAX / elem_size) {
-        fprintf(stderr, "Array too big.\n");
-        exit_program(1);
-    }
-    if (*size < new_size) {
-        uint8_t *tmp = av_realloc(array, new_size*elem_size);
-        if (!tmp) {
-            fprintf(stderr, "Could not alloc buffer.\n");
-            exit_program(1);
-        }
-        memset(tmp + *size*elem_size, 0, (new_size-*size) * elem_size);
-        *size = new_size;
-        return tmp;
-    }
-    return array;
-}
-
 static void choose_sample_fmt(AVStream *st, AVCodec *codec)
 {
     if(codec && codec->sample_fmts){

@@ -333,4 +333,14 @@ int get_filtered_video_frame(AVFilterContext *sink, AVFrame *frame,
  */
 void exit_program(int ret);
 
+/**
+ * Realloc array to hold new_size elements of elem_size.
+ * Calls exit_program() on failure.
+ *
+ * @param elem_size size in bytes of each element
+ * @param size new element count will be written here
+ * @return reallocated array
+ */
+void *grow_array(void *array, int elem_size, int *size, int new_size);
+
 #endif /* LIBAV_CMDUTILS_H */
