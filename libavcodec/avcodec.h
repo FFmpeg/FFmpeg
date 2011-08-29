@@ -2278,8 +2278,7 @@ typedef struct AVCodecContext {
      int lowres;
 
     /**
-     * Bitstream width / height, may be different from width/height if lowres
-     * or other things are used.
+     * Bitstream width / height, may be different from width/height if lowres enabled.
      * - encoding: unused
      * - decoding: Set by user before init if known. Codec should override / dynamically change if needed.
      */
