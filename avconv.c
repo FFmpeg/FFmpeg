@@ -106,7 +106,6 @@ static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static enum AVSampleFormat audio_sample_fmt = AV_SAMPLE_FMT_NONE;
-static int max_frames[4] = {INT_MAX, INT_MAX, INT_MAX, INT_MAX};
 static AVRational frame_rate;
 static float video_qscale = 0;
 static uint16_t *intra_matrix = NULL;
@@ -234,6 +233,7 @@ typedef struct OutputStream {
     int64_t sync_opts;       /* output frame counter, could be changed to some true timestamp */ //FIXME look at frame_number
     AVBitStreamFilterContext *bitstream_filters;
     AVCodec *enc;
+    int64_t max_frames;
 
     /* video only */
     int video_resample;
@@ -326,6 +326,8 @@ typedef struct OptionsContext {
 
     SpecifierOpt *metadata;
     int        nb_metadata;
+    SpecifierOpt *max_frames;
+    int        nb_max_frames;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -1174,7 +1176,7 @@ static void do_video_out(AVFormatContext *s,
     }else
         ost->sync_opts= lrintf(sync_ipts);
 
-    nb_frames= FFMIN(nb_frames, max_frames[AVMEDIA_TYPE_VIDEO] - ost->frame_number);
+    nb_frames = FFMIN(nb_frames, ost->max_frames - ost->frame_number);
     if (nb_frames <= 0)
         return;
 
@@ -2310,9 +2312,11 @@ static int transcode(OutputFile *output_files,
                     if(!input_sync) file_index = ist->file_index;
                 }
             }
-            if(ost->frame_number >= max_frames[ost->st->codec->codec_type]){
-                file_index= -1;
-                break;
+            if (ost->frame_number >= ost->max_frames) {
+                int j;
+                for (j = of->ost_index; j < of->ctx->nb_streams; j++)
+                    output_streams[j].is_past_recording_time = 1;
+                continue;
             }
         }
         /* if none, if is finished */
@@ -3055,6 +3059,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     OutputStream *ost;
     AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     int idx      = oc->nb_streams - 1;
+    int64_t max_frames = INT64_MAX;
 
     if (!st) {
         av_log(NULL, AV_LOG_ERROR, "Could not alloc stream.\n");
@@ -3075,6 +3080,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     avcodec_get_context_defaults3(st->codec, ost->enc);
     st->codec->codec_type = type; // XXX hack, avcodec_get_context_defaults2() sets type to unknown for stream copy
+
+    MATCH_PER_STREAM_OPT(max_frames, i64, max_frames, oc, st);
+    ost->max_frames = max_frames;
 
     ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
@@ -4017,6 +4025,21 @@ static int opt_bsf(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_video_frames(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "frames:v", arg, options);
+}
+
+static int opt_audio_frames(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "frames:a", arg, options);
+}
+
+static int opt_data_frames(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "frames:d", arg, options);
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -4036,7 +4059,7 @@ static const OptionDef options[] = {
     { "itsoffset", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(input_ts_offset)}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(ts_scale)}, "set the input ts scale", "scale" },
     { "metadata", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(metadata)}, "add metadata", "string=string" },
-    { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },
+    { "dframes", HAS_ARG | OPT_FUNC2, {(void*)opt_data_frames}, "set the number of data frames to record", "number" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},
       "add timings for benchmarking" },
     { "timelimit", HAS_ARG, {(void*)opt_timelimit}, "set max runtime in seconds", "limit" },
@@ -4057,9 +4080,10 @@ static const OptionDef options[] = {
     { "programid", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&opt_programid}, "desired program number", "" },
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
     { "copyinkf", OPT_BOOL | OPT_EXPERT, {(void*)&copy_initial_nonkeyframes}, "copy initial non-keyframes" },
+    { "frames", OPT_INT64 | HAS_ARG | OPT_SPEC, {.off = OFFSET(max_frames)}, "set the number of frames to record", "number" },
 
     /* video options */
-    { "vframes", OPT_INT | HAS_ARG | OPT_VIDEO, {(void*)&max_frames[AVMEDIA_TYPE_VIDEO]}, "set the number of video frames to record", "number" },
+    { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
     { "r", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
@@ -4094,7 +4118,7 @@ static const OptionDef options[] = {
     { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void *)&forced_key_frames}, "force key frames at specified timestamps", "timestamps" },
 
     /* audio options */
-    { "aframes", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&max_frames[AVMEDIA_TYPE_AUDIO]}, "set the number of audio frames to record", "number" },
+    { "aframes", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_frames}, "set the number of audio frames to record", "number" },
     { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
     { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },

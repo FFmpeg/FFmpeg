@@ -200,10 +200,13 @@ avconv -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
 @item -dframes @var{number}
-Set the number of data frames to record.
+Set the number of data frames to record. This is an alias for @code{-frames:d}.
 
 @item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
+
+@item -frames[:stream_specifier] @var{framecount}
+Stop writing to the stream after @var{framecount} frames.
 
 @end table
 
@@ -211,7 +214,7 @@ Set the ISO 639 language code (3 letters) of the current subtitle stream.
 
 @table @option
 @item -vframes @var{number}
-Set the number of video frames to record.
+Set the number of video frames to record. This is an alias for @code{-frames:v}.
 @item -r @var{fps}
 Set frame rate (Hz value, fraction or abbreviation), (default = 25).
 @item -s @var{size}
@@ -581,7 +584,7 @@ The timestamps must be specified in ascending order.
 
 @table @option
 @item -aframes @var{number}
-Set the number of audio frames to record.
+Set the number of audio frames to record. This is an alias for @code{-frames:a}.
 @item -ar @var{freq}
 Set the audio sampling frequency. For output streams it is set by
 default to the frequency of the corresponding input stream. For input
