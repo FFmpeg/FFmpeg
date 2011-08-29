@@ -97,8 +97,6 @@ typedef struct MetadataMap {
 
 static const OptionDef options[];
 
-static AVDictionary *ts_scale;
-
 /* indexed by output file stream index */
 static int *streamid_map = NULL;
 static int nb_streamid_map = 0;
@@ -308,6 +306,9 @@ typedef struct OptionsContext {
 
     /* input options */
     int64_t input_ts_offset;
+
+    SpecifierOpt *ts_scale;
+    int        nb_ts_scale;
 
     /* output options */
     StreamMap *stream_maps;
@@ -2360,12 +2361,10 @@ static int transcode(OutputFile *output_files,
         if (pkt.pts != AV_NOPTS_VALUE)
             pkt.pts += av_rescale_q(input_files[ist->file_index].ts_offset, AV_TIME_BASE_Q, ist->st->time_base);
 
-        if (ist->ts_scale) {
-            if(pkt.pts != AV_NOPTS_VALUE)
-                pkt.pts *= ist->ts_scale;
-            if(pkt.dts != AV_NOPTS_VALUE)
-                pkt.dts *= ist->ts_scale;
-        }
+        if(pkt.pts != AV_NOPTS_VALUE)
+            pkt.pts *= ist->ts_scale;
+        if(pkt.dts != AV_NOPTS_VALUE)
+            pkt.dts *= ist->ts_scale;
 
 //        fprintf(stderr, "next:%"PRId64" dts:%"PRId64" off:%"PRId64" %d\n", ist->next_pts, pkt.dts, input_files[ist->file_index].ts_offset, ist->st->codec->codec_type);
         if (pkt.dts != AV_NOPTS_VALUE && ist->next_pts != AV_NOPTS_VALUE
@@ -2783,11 +2782,6 @@ static int opt_map_metadata(OptionsContext *o, const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_input_ts_scale(const char *opt, const char *arg)
-{
-    return av_dict_set(&ts_scale, opt, arg, 0);
-}
-
 static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
 {
     const char *codec_string = encoder ? "encoder" : "decoder";
@@ -2837,14 +2831,13 @@ static AVCodec *choose_codec(OptionsContext *o, AVFormatContext *s, AVStream *st
  */
 static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 {
-    int i, rfps, rfps_base, ret;
+    int i, rfps, rfps_base;
 
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
         AVCodecContext *dec = st->codec;
-        AVDictionaryEntry *e = NULL;
         InputStream *ist;
-        char *scale = NULL;
+        double scale = 1.0;
 
         input_streams = grow_array(input_streams, sizeof(*input_streams), &nb_input_streams, nb_input_streams + 1);
         ist = &input_streams[nb_input_streams - 1];
@@ -2853,16 +2846,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         ist->discard = 1;
         ist->opts = filter_codec_opts(codec_opts, ist->st->codec->codec_id, ic, st);
 
-        while (e = av_dict_get(ts_scale, "", e, AV_DICT_IGNORE_SUFFIX)) {
-            char *p = strchr(e->key, ':');
-
-            if ((ret = check_stream_specifier(ic, st, p ? p + 1 : "")) > 0)
-                scale = e->value;
-            else if (ret < 0)
-                exit_program(1);
-        }
-        if (scale)
-            ist->ts_scale = strtod(scale, NULL);
+        MATCH_PER_STREAM_OPT(ts_scale, dbl, scale, ic, st);
+        ist->ts_scale = scale;
 
         ist->dec = choose_codec(o, ic, st, dec->codec_type);
         if (!ist->dec)
@@ -3046,7 +3031,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     audio_sample_rate = 0;
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
-    av_dict_free(&ts_scale);
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -4026,7 +4010,7 @@ static const OptionDef options[] = {
     { "fs", HAS_ARG | OPT_INT64 | OPT_OFFSET, {.off = OFFSET(limit_filesize)}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(start_time)}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(input_ts_offset)}, "set the input ts offset", "time_off" },
-    { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "scale" },
+    { "itsscale", HAS_ARG | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(ts_scale)}, "set the input ts scale", "scale" },
     { "metadata", HAS_ARG, {(void*)opt_metadata}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },
     { "benchmark", OPT_BOOL | OPT_EXPERT, {(void*)&do_benchmark},

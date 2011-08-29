@@ -115,6 +115,7 @@ typedef struct SpecifierOpt {
         int        i;
         int64_t  i64;
         float      f;
+        double   dbl;
     } u;
 } SpecifierOpt;
 
@@ -140,6 +141,7 @@ typedef struct {
                                    Implies OPT_OFFSET. Next element after the offset is
                                    an int containing element count in the array. */
 #define OPT_TIME  0x10000
+#define OPT_DOUBLE 0x20000
      union {
         void *dst_ptr;
         int (*func_arg)(const char *, const char *);

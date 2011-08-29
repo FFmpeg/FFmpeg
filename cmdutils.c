@@ -258,6 +258,8 @@ unknown_opt:
         *(int64_t*)dst = parse_time_or_die(opt, arg, 1);
     } else if (po->flags & OPT_FLOAT) {
         *(float*)dst = parse_number_or_die(opt, arg, OPT_FLOAT, -INFINITY, INFINITY);
+    } else if (po->flags & OPT_DOUBLE) {
+        *(double*)dst = parse_number_or_die(opt, arg, OPT_DOUBLE, -INFINITY, INFINITY);
     } else if (po->u.func_arg) {
         int ret = po->flags & OPT_FUNC2 ? po->u.func2_arg(optctx, opt, arg) :
                                           po->u.func_arg(opt, arg);
