@@ -99,8 +99,6 @@ static const OptionDef options[];
 
 static AVDictionary *ts_scale;
 
-static int chapters_input_file = INT_MAX;
-
 /* indexed by output file stream index */
 static int *streamid_map = NULL;
 static int nb_streamid_map = 0;
@@ -321,6 +319,8 @@ typedef struct OptionsContext {
     int metadata_streams_manual;
     int metadata_chapters_manual;
 
+    int chapters_input_file;
+
     int64_t recording_time;
     uint64_t limit_filesize;
 } OptionsContext;
@@ -367,6 +367,7 @@ static void reset_options(OptionsContext *o)
 
     o->recording_time = INT64_MAX;
     o->limit_filesize = UINT64_MAX;
+    o->chapters_input_file = INT_MAX;
 
     uninit_opts();
     init_opts();
@@ -3586,23 +3587,23 @@ static void opt_output_file(void *optctx, const char *filename)
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     /* copy chapters */
-    if (chapters_input_file >= nb_input_files) {
-        if (chapters_input_file == INT_MAX) {
+    if (o->chapters_input_file >= nb_input_files) {
+        if (o->chapters_input_file == INT_MAX) {
             /* copy chapters from the first input file that has them*/
-            chapters_input_file = -1;
+            o->chapters_input_file = -1;
             for (i = 0; i < nb_input_files; i++)
                 if (input_files[i].ctx->nb_chapters) {
-                    chapters_input_file = i;
+                    o->chapters_input_file = i;
                     break;
                 }
         } else {
             av_log(NULL, AV_LOG_ERROR, "Invalid input file index %d in chapter mapping.\n",
-                   chapters_input_file);
+                   o->chapters_input_file);
             exit_program(1);
         }
     }
-    if (chapters_input_file >= 0)
-        copy_chapters(&input_files[chapters_input_file], &output_files[nb_output_files - 1],
+    if (o->chapters_input_file >= 0)
+        copy_chapters(&input_files[o->chapters_input_file], &output_files[nb_output_files - 1],
                       o->metadata_chapters_manual);
 
     /* copy metadata */
@@ -3667,7 +3668,6 @@ static void opt_output_file(void *optctx, const char *filename)
     audio_sample_rate = 0;
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
-    chapters_input_file = INT_MAX;
 
     av_freep(&streamid_map);
     nb_streamid_map = 0;
@@ -4021,7 +4021,7 @@ static const OptionDef options[] = {
     { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
     { "map_metadata", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
-    { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
+    { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(chapters_input_file)},  "set chapters mapping", "input_file_index" },
     { "t", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(recording_time)}, "record or transcode \"duration\" seconds of audio/video", "duration" },
     { "fs", HAS_ARG | OPT_INT64 | OPT_OFFSET, {.off = OFFSET(limit_filesize)}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(start_time)}, "set the start time offset", "time_off" },
