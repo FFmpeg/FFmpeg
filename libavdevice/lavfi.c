@@ -230,11 +230,14 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         if (ret < 0)
             return ret;
         d = av_rescale_q(picref->pts, tb, AV_TIME_BASE_Q);
+        av_dlog(avctx, "sink_idx:%d time:%f\n", i, d);
+
         if (d < min_pts) {
             min_pts = d;
             min_pts_sink_idx = i;
         }
     }
+    av_dlog(avctx, "min_pts_sink_idx:%i\n", min_pts_sink_idx);
 
     av_vsink_buffer_get_video_buffer_ref(lavfi->sinks[min_pts_sink_idx],
                                          &picref, 0);
