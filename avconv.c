@@ -161,8 +161,6 @@ static FILE *vstats_file;
 static int opt_programid = 0;
 static int copy_initial_nonkeyframes = 0;
 
-static int rate_emu = 0;
-
 static int audio_volume = 256;
 
 static int exit_on_error = 0;
@@ -217,6 +215,7 @@ typedef struct InputFile {
     int64_t ts_offset;
     int nb_streams;       /* number of stream that avconv is aware of; may be different
                              from ctx.nb_streams if new streams appear during av_read_frame() */
+    int rate_emu;
 } InputFile;
 
 typedef struct OutputStream {
@@ -305,6 +304,7 @@ typedef struct OptionsContext {
 
     /* input options */
     int64_t input_ts_offset;
+    int rate_emu;
 
     SpecifierOpt *ts_scale;
     int        nb_ts_scale;
@@ -1680,7 +1680,7 @@ static int output_packet(InputStream *ist, int ist_index,
         }
 
         /* frame rate emulation */
-        if (rate_emu) {
+        if (input_files[ist->file_index].rate_emu) {
             int64_t pts = av_rescale(ist->pts, 1000000, AV_TIME_BASE);
             int64_t now = av_gettime() - ist->start;
             if (pts > now)
@@ -1897,7 +1897,7 @@ static int transcode_init(OutputFile *output_files,
                           InputFile *input_files,
                           int nb_input_files)
 {
-    int ret = 0, i;
+    int ret = 0, i, j;
     AVFormatContext *os;
     AVCodecContext *codec, *icodec;
     OutputStream *ost;
@@ -1905,9 +1905,13 @@ static int transcode_init(OutputFile *output_files,
     char error[1024];
     int want_sdp = 1;
 
-    if (rate_emu)
-        for (i = 0; i < nb_input_streams; i++)
-            input_streams[i].start = av_gettime();
+    /* init framerate emulation */
+    for (i = 0; i < nb_input_files; i++) {
+        InputFile *ifile = &input_files[i];
+        if (ifile->rate_emu)
+            for (j = 0; j < ifile->nb_streams; j++)
+                input_streams[j + ifile->ist_index].start = av_gettime();
+    }
 
     /* output stream init */
     for(i=0;i<nb_output_files;i++) {
@@ -4067,7 +4071,7 @@ static const OptionDef options[] = {
       "dump each input packet" },
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump},
       "when dumping packets, also dump the payload" },
-    { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
+    { "re", OPT_BOOL | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(rate_emu)}, "read input at native frame rate", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "set the verbosity level", "number" },
     { "target", HAS_ARG | OPT_FUNC2, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
