@@ -294,13 +294,16 @@ int avfilter_graph_queue_command(AVFilterGraph *graph, const char *target, const
     for (i = 0; i < graph->filter_count; i++) {
         AVFilterContext *filter = graph->filters[i];
         if(filter && (!strcmp(target, "all") || !strcmp(target, filter->name) || !strcmp(target, filter->filter->name))){
-            AVFilterCommand **que = &filter->command_queue;
-            while(*que) que = &(*que)->next;
+            AVFilterCommand **que = &filter->command_queue, *next;
+            while(*que && (*que)->time <= ts)
+                que = &(*que)->next;
+            next= *que;
             *que= av_mallocz(sizeof(AVFilterCommand));
             (*que)->command = av_strdup(command);
             (*que)->arg     = av_strdup(arg);
             (*que)->time    = ts;
             (*que)->flags   = flags;
+            (*que)->next    = next;
             if(flags & AVFILTER_CMD_FLAG_ONE)
                 return 0;
         }
