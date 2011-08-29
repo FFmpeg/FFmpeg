@@ -190,7 +190,6 @@ static int audio_volume = 256;
 static int exit_on_error = 0;
 static int using_stdin = 0;
 static int verbose = 1;
-static int thread_count= 1;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t extra_size = 0;
@@ -2558,16 +2557,6 @@ static int opt_top_field_first(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_thread_count(const char *opt, const char *arg)
-{
-    thread_count= parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-#if !HAVE_THREADS
-    if (verbose >= 0)
-        fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
-#endif
-    return 0;
-}
-
 static int opt_audio_sample_fmt(const char *opt, const char *arg)
 {
     if (strcmp(arg, "list")) {
@@ -2861,8 +2850,6 @@ static void add_input_streams(AVFormatContext *ic)
         InputStream *ist;
         char *scale = NULL;
 
-        dec->thread_count = thread_count;
-
         input_streams = grow_array(input_streams, sizeof(*input_streams), &nb_input_streams, nb_input_streams + 1);
         ist = &input_streams[nb_input_streams - 1];
         ist->st = st;
@@ -3151,8 +3138,6 @@ static OutputStream *new_video_stream(AVFormatContext *oc)
     ost->bitstream_filters = video_bitstream_filters;
     video_bitstream_filters= NULL;
 
-    st->codec->thread_count= thread_count;
-
     video_enc = st->codec;
 
     if(video_codec_tag)
@@ -3255,8 +3240,6 @@ static OutputStream *new_audio_stream(AVFormatContext *oc)
 
     ost->bitstream_filters = audio_bitstream_filters;
     audio_bitstream_filters= NULL;
-
-    st->codec->thread_count= thread_count;
 
     audio_enc = st->codec;
     audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
@@ -4073,7 +4056,6 @@ static const OptionDef options[] = {
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "set the verbosity level", "number" },
     { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
-    { "threads",  HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
