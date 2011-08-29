@@ -2188,12 +2188,8 @@ case "$arch" in
         arch="parisc"
         subarch="parisc64"
     ;;
-    "Power Macintosh"|ppc|powerpc)
+    "Power Macintosh"|ppc|powerpc|ppc64|powerpc64)
         arch="ppc"
-    ;;
-    ppc64|powerpc64)
-        arch="ppc"
-        subarch="ppc64"
     ;;
     s390|s390x)
         arch="s390"
@@ -2391,6 +2387,11 @@ EOF
         if test "$subarch" = "x86_64"; then
             spic=$shared
         fi
+    ;;
+    ppc)
+        check_cc <<EOF && subarch="ppc64"
+        int test[(int)sizeof(char*) - 7];
+EOF
     ;;
 esac
 
