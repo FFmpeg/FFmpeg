@@ -215,6 +215,7 @@ Advanced options (experts only):
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
   --build-suffix=SUFFIX    library name suffix []
+  --progs-suffix=SUFFIX    program name suffix []
   --arch=ARCH              select architecture [$arch]
   --cpu=CPU                select the minimum required CPU (affects
                            instruction selection, may crash on older CPUs)
@@ -1177,6 +1178,7 @@ CMDLINE_SET="
     arch
     as
     build_suffix
+    progs_suffix
     cc
     cpu
     cross_prefix
@@ -3170,6 +3172,9 @@ echo "ARCH                      $arch ($cpu)"
 if test "$build_suffix" != ""; then
     echo "build suffix              $build_suffix"
 fi
+if test "$progs_suffix" != ""; then
+    echo "progs suffix              $progs_suffix"
+fi
 if test "$extra_version" != ""; then
     echo "version string suffix     $extra_version"
 fi
@@ -3319,6 +3324,7 @@ FFSERVERLDFLAGS=$FFSERVERLDFLAGS
 SHFLAGS=$SHFLAGS
 YASMFLAGS=$YASMFLAGS
 BUILDSUF=$build_suffix
+PROGSSUF=$progs_suffix
 FULLNAME=$FULLNAME
 LIBPREF=$LIBPREF
 LIBSUF=$LIBSUF
