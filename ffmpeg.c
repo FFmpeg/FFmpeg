@@ -151,7 +151,7 @@ static int video_discard = 0;
 static char *video_codec_name = NULL;
 static unsigned int video_codec_tag = 0;
 static char *video_language = NULL;
-static int same_quality = 0;
+static int same_quant = 0;
 static int do_deinterlace = 0;
 static int top_field_first = -1;
 static int me_threshold = 0;
@@ -1295,7 +1295,7 @@ static void do_video_out(AVFormatContext *s,
                     big_picture.top_field_first = top_field_first;
             }
 
-            /* handles sameq here. This is not correct because it may
+            /* handles same_quant here. This is not correct because it may
                not be a global option */
             big_picture.quality = quality;
             if(!me_threshold)
@@ -1622,7 +1622,7 @@ static int output_packet(InputStream *ist, int ist_index,
 
                     ret = avcodec_decode_video2(ist->st->codec,
                                                 &picture, &got_output, &avpkt);
-                    quality = same_quality ? picture.quality : 0;
+                    quality = same_quant ? picture.quality : 0;
                     if (ret < 0)
                         return ret;
                     if (!got_output) {
@@ -1757,7 +1757,7 @@ static int output_packet(InputStream *ist, int ist_index,
                                 ost->st->codec->sample_aspect_ratio = ost->picref->video->sample_aspect_ratio;
 #endif
                             do_video_out(os, ost, ist, &picture, &frame_size,
-                                         same_quality ? quality : ost->st->codec->global_quality);
+                                         same_quant ? quality : ost->st->codec->global_quality);
                             if (vstats_filename && frame_size)
                                 do_video_stats(os, ost, frame_size);
                             break;
@@ -3533,7 +3533,7 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
 
         if (intra_only)
             video_enc->gop_size = 0;
-        if (video_qscale || same_quality) {
+        if (video_qscale || same_quant) {
             video_enc->flags |= CODEC_FLAG_QSCALE;
             video_enc->global_quality = FF_QP2LAMBDA * video_qscale;
         }
@@ -4445,8 +4445,8 @@ static const OptionDef options[] = {
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "threshold" },
-    { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality}, "use same quantizer as source (implies VBR)" },
-    { "same_quant", OPT_BOOL | OPT_VIDEO, {(void*)&same_quality}, "use same quantizer as source (implies VBR)" },
+    { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quant}, "use same quantizer as source (implies VBR)" },
+    { "same_quant", OPT_BOOL | OPT_VIDEO, {(void*)&same_quant}, "use same quantizer as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_VIDEO, {(void*)opt_pass}, "select the pass number (1 or 2)", "n" },
     { "passlogfile", HAS_ARG | OPT_VIDEO, {(void*)&opt_passlogfile}, "select two pass log file name prefix", "prefix" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace},
