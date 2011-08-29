@@ -723,8 +723,10 @@ static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, AVCode
     ost->index = idx;
     ost->st    = st;
     ost->enc   = codec;
-    if (codec)
+    if (codec) {
+        st->codec->codec_type = codec->type;
         ost->opts  = filter_codec_opts(codec_opts, codec->id, oc, st);
+    }
 
     avcodec_get_context_defaults3(st->codec, codec);
 
