@@ -106,11 +106,6 @@ typedef struct MetadataMap {
     int  index;     ///< stream/chapter/program number
 } MetadataMap;
 
-typedef struct ChapterMap {
-    int in_file;
-    int out_file;
-} ChapterMap;
-
 static const OptionDef options[];
 
 #define MAX_FILES 100
@@ -133,8 +128,7 @@ static int metadata_global_autocopy   = 1;
 static int metadata_streams_autocopy  = 1;
 static int metadata_chapters_autocopy = 1;
 
-static ChapterMap *chapter_maps = NULL;
-static int nb_chapter_maps;
+static int chapters_input_file = INT_MAX;
 
 /* indexed by output file stream index */
 static int *streamid_map = NULL;
@@ -2558,38 +2552,6 @@ static int transcode(AVFormatContext **output_files,
                          AV_DICT_DONT_OVERWRITE);
     }
 
-    /* copy chapters according to chapter maps */
-    for (i = 0; i < nb_chapter_maps; i++) {
-        int infile  = chapter_maps[i].in_file;
-        int outfile = chapter_maps[i].out_file;
-
-        if (infile < 0 || outfile < 0)
-            continue;
-        if (infile >= nb_input_files) {
-            snprintf(error, sizeof(error), "Invalid input file index %d in chapter mapping.\n", infile);
-            ret = AVERROR(EINVAL);
-            goto dump_format;
-        }
-        if (outfile >= nb_output_files) {
-            snprintf(error, sizeof(error), "Invalid output file index %d in chapter mapping.\n",outfile);
-            ret = AVERROR(EINVAL);
-            goto dump_format;
-        }
-        copy_chapters(infile, outfile);
-    }
-
-    /* copy chapters from the first input file that has them*/
-    if (!nb_chapter_maps)
-        for (i = 0; i < nb_input_files; i++) {
-            if (!input_files[i].ctx->nb_chapters)
-                continue;
-
-            for (j = 0; j < nb_output_files; j++)
-                if ((ret = copy_chapters(i, j)) < 0)
-                    goto dump_format;
-            break;
-        }
-
     /* open files and write file headers */
     for(i=0;i<nb_output_files;i++) {
         os = output_files[i];
@@ -3228,22 +3190,6 @@ static int opt_map_meta_data(const char *opt, const char *arg)
     fprintf(stderr, "-map_meta_data is deprecated and will be removed soon. "
                     "Use -map_metadata instead.\n");
     return opt_map_metadata(opt, arg);
-}
-
-static int opt_map_chapters(const char *opt, const char *arg)
-{
-    ChapterMap *c;
-    char *p;
-
-    chapter_maps = grow_array(chapter_maps, sizeof(*chapter_maps), &nb_chapter_maps,
-                              nb_chapter_maps + 1);
-    c = &chapter_maps[nb_chapter_maps - 1];
-    c->out_file = strtol(arg, &p, 0);
-    if (*p)
-        p++;
-
-    c->in_file = strtol(p, &p, 0);
-    return 0;
 }
 
 static int opt_input_ts_scale(const char *opt, const char *arg)
@@ -3899,7 +3845,7 @@ static int opt_streamid(const char *opt, const char *arg)
 static int opt_output_file(const char *opt, const char *filename)
 {
     AVFormatContext *oc;
-    int err, use_video, use_audio, use_subtitle, use_data;
+    int i, err, use_video, use_audio, use_subtitle, use_data;
     int input_has_video, input_has_audio, input_has_subtitle, input_has_data;
     AVOutputFormat *file_oformat;
 
@@ -4012,12 +3958,32 @@ static int opt_output_file(const char *opt, const char *filename)
         oc->loop_output = loop_output;
     }
 
+    /* copy chapters */
+    if (chapters_input_file >= nb_input_files) {
+        if (chapters_input_file == INT_MAX) {
+            /* copy chapters from the first input file that has them*/
+            chapters_input_file = -1;
+            for (i = 0; i < nb_input_files; i++)
+                if (input_files[i].ctx->nb_chapters) {
+                    chapters_input_file = i;
+                    break;
+                }
+        } else {
+            av_log(NULL, AV_LOG_ERROR, "Invalid input file index %d in chapter mapping.\n",
+                   chapters_input_file);
+            exit_program(1);
+        }
+    }
+    if (chapters_input_file >= 0)
+        copy_chapters(chapters_input_file, nb_output_files - 1);
+
     frame_rate    = (AVRational){0, 0};
     frame_width   = 0;
     frame_height  = 0;
     audio_sample_rate = 0;
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
+    chapters_input_file = INT_MAX;
 
     av_freep(&forced_key_frames);
     uninit_opts();
@@ -4422,7 +4388,7 @@ static const OptionDef options[] = {
       "outfile[,metadata]:infile[,metadata]" },
     { "map_metadata", HAS_ARG | OPT_EXPERT, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
-    { "map_chapters",  HAS_ARG | OPT_EXPERT, {(void*)opt_map_chapters},  "set chapters mapping", "outfile:infile" },
+    { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
     { "t", HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
