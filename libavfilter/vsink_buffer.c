@@ -114,7 +114,7 @@ int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *ctx,
         return AVERROR(EINVAL);
 
     if (flags & AV_VSINK_BUF_FLAG_PEEK)
-        *picref = (AVFilterBufferRef *)av_fifo_peek2(buf->fifo, 0);
+        *picref = *((AVFilterBufferRef **)av_fifo_peek2(buf->fifo, 0));
     else
         av_fifo_generic_read(buf->fifo, picref, sizeof(*picref), NULL);
 
