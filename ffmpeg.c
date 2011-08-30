@@ -1895,7 +1895,7 @@ static int transcode(OutputFile *output_files,
                      InputFile *input_files,
                      int nb_input_files)
 {
-    int ret = 0, i, j, k, n, nb_ostreams = 0, step;
+    int ret = 0, i, j, k, n, nb_ostreams = 0;
 
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
@@ -1906,8 +1906,6 @@ static int transcode(OutputFile *output_files,
     int want_sdp = 1;
     uint8_t no_packet[MAX_FILES]={0};
     int no_packet_count=0;
-    int nb_frame_threshold[AVMEDIA_TYPE_NB]={0};
-    int nb_streams[AVMEDIA_TYPE_NB]={0};
 
     if (rate_emu)
         for (i = 0; i < nb_input_streams; i++)
@@ -1929,43 +1927,6 @@ static int transcode(OutputFile *output_files,
     ost_table = av_mallocz(sizeof(OutputStream *) * nb_ostreams);
     if (!ost_table)
         goto fail;
-
-    for(k=0;k<nb_output_files;k++) {
-        os = output_files[k].ctx;
-        for(i=0;i<os->nb_streams;i++,n++) {
-            nb_streams[os->streams[i]->codec->codec_type]++;
-        }
-    }
-    for(step=1<<30; step; step>>=1){
-        int found_streams[AVMEDIA_TYPE_NB]={0};
-        for(j=0; j<AVMEDIA_TYPE_NB; j++)
-            nb_frame_threshold[j] += step;
-
-        for(j=0; j<nb_input_streams; j++) {
-            int skip=0;
-            ist = &input_streams[j];
-            if(opt_programid){
-                int pi,si;
-                AVFormatContext *f= input_files[ ist->file_index ].ctx;
-                skip=1;
-                for(pi=0; pi<f->nb_programs; pi++){
-                    AVProgram *p= f->programs[pi];
-                    if(p->id == opt_programid)
-                        for(si=0; si<p->nb_stream_indexes; si++){
-                            if(f->streams[ p->stream_index[si] ] == ist->st)
-                                skip=0;
-                        }
-                }
-            }
-            if (ist->discard && ist->st->discard != AVDISCARD_ALL && !skip
-                && nb_frame_threshold[ist->st->codec->codec_type] <= ist->st->codec_info_nb_frames){
-                found_streams[ist->st->codec->codec_type]++;
-            }
-        }
-        for(j=0; j<AVMEDIA_TYPE_NB; j++)
-            if(found_streams[j] < nb_streams[j])
-                nb_frame_threshold[j] -= step;
-    }
     n = 0;
     for(k=0;k<nb_output_files;k++) {
         os = output_files[k].ctx;
