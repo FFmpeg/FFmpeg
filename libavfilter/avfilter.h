@@ -387,8 +387,7 @@ struct AVFilterPad {
      * Input audio pads only.
      */
     AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
-                                           enum AVSampleFormat sample_fmt, int nb_samples,
-                                           uint64_t channel_layout);
+                                           int nb_samples);
 
     /**
      * Callback called after the slices of a frame are completely sent. If
@@ -473,9 +472,7 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
 
 /** default handler for get_audio_buffer() for audio inputs */
 AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     enum AVSampleFormat sample_fmt,
-                                                     int nb_samples,
-                                                     uint64_t channel_layout);
+                                                     int nb_samples);
 
 /**
  * A helper for query_formats() which sets all links to the same list of
@@ -505,8 +502,7 @@ AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
 
 /** get_audio_buffer() handler for filters which simply pass audio along */
 AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link, int perms,
-                                                  enum AVSampleFormat sample_fmt, int nb_samples,
-                                                  uint64_t channel_layout);
+                                                  int nb_samples);
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the
@@ -689,16 +685,12 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t *data[4], int linesize[4], int
  * @param link           the output link to the filter from which the buffer will
  *                       be requested
  * @param perms          the required access permissions
- * @param sample_fmt     the format of each sample in the buffer to allocate
  * @param nb_samples     the number of samples per channel
- * @param channel_layout the number and type of channels per sample in the buffer to allocate
- * @param planar         audio data layout - planar or packed
  * @return               A reference to the samples. This must be unreferenced with
  *                       avfilter_unref_buffer when you are finished with it.
  */
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             enum AVSampleFormat sample_fmt, int nb_samples,
-                                             uint64_t channel_layout);
+                                             int nb_samples);
 
 /**
  * Create an audio buffer reference wrapped around an already
