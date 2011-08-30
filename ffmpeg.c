@@ -2241,13 +2241,12 @@ static int transcode_init(OutputFile *output_files,
                 fprintf(stderr, " [sync #%d.%d]",
                         ost->sync_ist->file_index,
                         ost->sync_ist->st->index);
-            if(ost->encoding_needed)
-                fprintf(stderr, ": %s -> %s",
-                    input_streams[ost->source_index].dec ?
-                        input_streams[ost->source_index].dec->name : "?",
-                    ost->enc ? ost->enc->name : "?");
+            if (ost->st->stream_copy)
+                fprintf(stderr, " (copy)");
             else
-                fprintf(stderr, ": copy");
+                fprintf(stderr, " (%s -> %s)", input_streams[ost->source_index].dec ?
+                        input_streams[ost->source_index].dec->name : "?",
+                        ost->enc ? ost->enc->name : "?");
             fprintf(stderr, "\n");
         }
     }
