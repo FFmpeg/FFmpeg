@@ -54,7 +54,7 @@ important
     For feature requests this priority would be used for things many people
     want.
     Regressions also should be marked as important, regressions are bugs that
-    dont exist in a past revission or another branch.
+    don't exist in a past revision or another branch.
 
 normal
 
@@ -166,7 +166,7 @@ Note, please do not use type-status-substatus combinations other than the
 above without asking on ffmpeg-dev first!
 
 Note2, if you provide the requested info do not forget to remove the
-needs_more_info substate.
+needs_more_info substatus.
 
 Component:
 ----------
@@ -199,7 +199,7 @@ build system
     issues in or related to configure/Makefile
 
 regression
-    bugs which were working in a past revision
+    bugs which were not present in a past revision
 
 trac
     issues related to our issue tracker
