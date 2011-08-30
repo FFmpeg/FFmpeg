@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-09-xx - xxxxxxx - lavfi 2.x.0
+  Simplify signature for avfilter_get_audio_buffer(), make it
+  consistent with avfilter_get_video_buffer().
+
 2011-09-06 - xxxxxxx - lavfi 2.39.0
   Rename libavfilter/vsink_buffer.h to libavfilter/buffersink.h.
 

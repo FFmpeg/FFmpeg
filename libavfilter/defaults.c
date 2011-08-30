@@ -81,24 +81,23 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link, int per
 }
 
 AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     enum AVSampleFormat sample_fmt, int nb_samples,
-                                                     int64_t channel_layout, int planar)
+                                                     int nb_samples)
 {
     AVFilterBufferRef *samplesref = NULL;
     int linesize[8];
     uint8_t *data[8];
-    int nb_channels = av_get_channel_layout_nb_channels(channel_layout);
+    int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
 
     /* Calculate total buffer size, round to multiple of 16 to be SIMD friendly */
     if (av_samples_alloc(data, linesize,
-                         nb_channels, nb_samples, sample_fmt,
-                         planar, 16) < 0)
+                         nb_channels, nb_samples, link->format,
+                         link->planar, 16) < 0)
         return NULL;
 
     samplesref =
         avfilter_get_audio_buffer_ref_from_arrays(data, linesize, perms,
-                                                  nb_samples, sample_fmt,
-                                                  channel_layout, planar);
+                                                  nb_samples, link->format,
+                                                  link->channel_layout, link->planar);
     if (!samplesref) {
         av_free(data[0]);
         return NULL;
@@ -160,10 +159,8 @@ void avfilter_default_filter_samples(AVFilterLink *inlink, AVFilterBufferRef *sa
         outlink = inlink->dst->outputs[0];
 
     if (outlink) {
-        outlink->out_buf = avfilter_default_get_audio_buffer(inlink, AV_PERM_WRITE, samplesref->format,
-                                                             samplesref->audio->nb_samples,
-                                                             samplesref->audio->channel_layout,
-                                                             samplesref->audio->planar);
+        outlink->out_buf = avfilter_default_get_audio_buffer(inlink, AV_PERM_WRITE,
+                                                             samplesref->audio->nb_samples);
         outlink->out_buf->pts                = samplesref->pts;
         outlink->out_buf->audio->sample_rate = samplesref->audio->sample_rate;
         avfilter_filter_samples(outlink, avfilter_ref_buffer(outlink->out_buf, ~0));
@@ -259,10 +256,8 @@ AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link, int perms,
 }
 
 AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link, int perms,
-                                                  enum AVSampleFormat sample_fmt, int size,
-                                                  int64_t channel_layout, int packed)
+                                                  int nb_samples)
 {
-    return avfilter_get_audio_buffer(link->dst->outputs[0], perms, sample_fmt,
-                                     size, channel_layout, packed);
+    return avfilter_get_audio_buffer(link->dst->outputs[0], perms, nb_samples);
 }
 

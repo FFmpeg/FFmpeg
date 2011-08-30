@@ -270,10 +270,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamplesref
 
         aresample->outsamplesref = avfilter_get_audio_buffer(outlink,
                                                             AV_PERM_WRITE | AV_PERM_REUSE2,
-                                                            inlink->format,
-                                                            requested_out_nb_samples,
-                                                            insamplesref->audio->channel_layout,
-                                                            insamplesref->audio->planar);
+                                                             requested_out_nb_samples);
 
         avfilter_copy_buffer_ref_props(aresample->outsamplesref, insamplesref);
         aresample->outsamplesref->pts =

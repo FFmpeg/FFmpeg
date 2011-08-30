@@ -390,9 +390,7 @@ struct AVFilterPad {
      *
      * Input audio pads only.
      */
-    AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms,
-                                           enum AVSampleFormat sample_fmt, int nb_samples,
-                                           int64_t channel_layout, int planar);
+    AVFilterBufferRef *(*get_audio_buffer)(AVFilterLink *link, int perms, int nb_samples);
 
     /**
      * Callback called after the slices of a frame are completely sent. If
@@ -476,9 +474,8 @@ AVFilterBufferRef *avfilter_default_get_video_buffer(AVFilterLink *link,
                                                      int perms, int w, int h);
 
 /** default handler for get_audio_buffer() for audio inputs */
-AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int perms,
-                                                     enum AVSampleFormat sample_fmt, int nb_samples,
-                                                     int64_t channel_layout, int planar);
+AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link,
+                                                     int perms, int nb_samples);
 
 /**
  * Helpers for query_formats() which set all links to the same list of
@@ -510,9 +507,8 @@ AVFilterBufferRef *avfilter_null_get_video_buffer(AVFilterLink *link,
                                                   int perms, int w, int h);
 
 /** get_audio_buffer() handler for filters which simply pass audio along */
-AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link, int perms,
-                                                  enum AVSampleFormat sample_fmt, int size,
-                                                  int64_t channel_layout, int planar);
+AVFilterBufferRef *avfilter_null_get_audio_buffer(AVFilterLink *link,
+                                                  int perms, int nb_samples);
 
 /**
  * Filter definition. This defines the pads a filter contains, and all the
@@ -739,8 +735,7 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
  *                       avfilter_unref_buffer when you are finished with it.
  */
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
-                                             enum AVSampleFormat sample_fmt, int nb_samples,
-                                             int64_t channel_layout, int planar);
+                                             int nb_samples);
 
 /**
  * Create an audio buffer reference wrapped around an already
