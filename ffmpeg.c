@@ -236,7 +236,31 @@ static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
-struct InputStream;
+typedef struct InputStream {
+    int file_index;
+    AVStream *st;
+    int discard;             /* true if stream data should be discarded */
+    int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
+    AVCodec *dec;
+
+    int64_t       start;     /* time when read started */
+    int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
+                                is not defined */
+    int64_t       pts;       /* current pts */
+    double ts_scale;
+    int is_start;            /* is 1 at the start and after a discontinuity */
+    int showed_multi_packet_warning;
+    AVDictionary *opts;
+} InputStream;
+
+typedef struct InputFile {
+    AVFormatContext *ctx;
+    int eof_reached;      /* true if eof reached */
+    int ist_index;        /* index of first stream in ist_table */
+    int buffer_size;      /* current total buffer size */
+    int nb_streams;
+    int64_t ts_offset;
+} InputFile;
 
 typedef struct OutputStream {
     int file_index;          /* file index */
@@ -293,31 +317,6 @@ typedef struct OutputStream {
    int is_past_recording_time;
 } OutputStream;
 
-typedef struct InputStream {
-    int file_index;
-    AVStream *st;
-    int discard;             /* true if stream data should be discarded */
-    int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
-    AVCodec *dec;
-
-    int64_t       start;     /* time when read started */
-    int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
-                                is not defined */
-    int64_t       pts;       /* current pts */
-    double ts_scale;
-    int is_start;            /* is 1 at the start and after a discontinuity */
-    int showed_multi_packet_warning;
-    AVDictionary *opts;
-} InputStream;
-
-typedef struct InputFile {
-    AVFormatContext *ctx;
-    int eof_reached;      /* true if eof reached */
-    int ist_index;        /* index of first stream in ist_table */
-    int buffer_size;      /* current total buffer size */
-    int nb_streams;
-    int64_t ts_offset;
-} InputFile;
 
 #if HAVE_TERMIOS_H
 
