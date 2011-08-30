@@ -112,8 +112,7 @@ static const OptionDef options[];
 #define MAX_FILES 100
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 static const char *last_asked_format = NULL;
-static double *ts_scale;
-static int  nb_ts_scale;
+static AVDictionary *ts_scale;
 
 static AVFormatContext *output_files[MAX_FILES];
 static AVDictionary *output_opts[MAX_FILES];
@@ -2960,21 +2959,7 @@ static int opt_map_meta_data(const char *opt, const char *arg)
 
 static int opt_input_ts_scale(const char *opt, const char *arg)
 {
-    unsigned int stream;
-    double scale;
-    char *p;
-
-    stream = strtol(arg, &p, 0);
-    if (*p)
-        p++;
-    scale= strtod(p, &p);
-
-    if(stream >= MAX_STREAMS)
-        exit_program(1);
-
-    ts_scale = grow_array(ts_scale, sizeof(*ts_scale), &nb_ts_scale, stream + 1);
-    ts_scale[stream] = scale;
-    return 0;
+    return av_dict_set(&ts_scale, opt, arg, 0);
 }
 
 static int opt_recording_time(const char *opt, const char *arg)
@@ -3066,12 +3051,14 @@ static AVCodec *choose_codec(AVFormatContext *s, AVStream *st, enum AVMediaType 
  */
 static void add_input_streams(AVFormatContext *ic)
 {
-    int i, rfps, rfps_base;
+    int i, rfps, rfps_base, ret;
 
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
         AVCodecContext *dec = st->codec;
+        AVDictionaryEntry *e = NULL;
         InputStream *ist;
+        char *scale = NULL;
 
         dec->thread_count = thread_count;
 
@@ -3082,8 +3069,16 @@ static void add_input_streams(AVFormatContext *ic)
         ist->discard = 1;
         ist->opts = filter_codec_opts(codec_opts, ist->st->codec->codec_id, ic, st);
 
-        if (i < nb_ts_scale)
-            ist->ts_scale = ts_scale[i];
+        while (e = av_dict_get(ts_scale, "", e, AV_DICT_IGNORE_SUFFIX)) {
+            char *p = strchr(e->key, ':');
+
+            if ((ret = check_stream_specifier(ic, st, p ? p + 1 : "")) > 0)
+                scale = e->value;
+            else if (ret < 0)
+                exit_program(1);
+        }
+        if (scale)
+            ist->ts_scale = strtod(scale, NULL);
 
         ist->dec = choose_codec(ic, st, dec->codec_type, codec_names);
 
@@ -3278,8 +3273,7 @@ static int opt_input_file(const char *opt, const char *filename)
     audio_sample_rate = 0;
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
-    av_freep(&ts_scale);
-    nb_ts_scale = 0;
+    av_dict_free(&ts_scale);
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -4287,7 +4281,7 @@ static const OptionDef options[] = {
     { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
     { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
     { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
-    { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "stream:scale" },
+    { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "scale" },
     { "timestamp", HAS_ARG, {(void*)opt_recording_timestamp}, "set the recording timestamp ('now' to set the current time)", "time" },
     { "metadata", HAS_ARG, {(void*)opt_metadata}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },
