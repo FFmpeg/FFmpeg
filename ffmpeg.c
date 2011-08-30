@@ -330,6 +330,7 @@ typedef struct OutputFile {
     AVDictionary *opts;
     int ost_index;       /* index of the first stream in output_streams */
     int64_t recording_time; /* desired length of the resulting file in microseconds */
+    int64_t start_time;     /* start time in microseconds */
 } OutputFile;
 
 static InputStream *input_streams = NULL;
@@ -688,7 +689,8 @@ static double
 get_sync_ipts(const OutputStream *ost)
 {
     const InputStream *ist = ost->sync_ist;
-    return (double)(ist->pts - start_time)/AV_TIME_BASE;
+    OutputFile *of = &output_files[ost->file_index];
+    return (double)(ist->pts - of->start_time)/AV_TIME_BASE;
 }
 
 static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx, AVBitStreamFilterContext *bsfc){
@@ -1640,8 +1642,7 @@ static int output_packet(InputStream *ist, int ist_index,
         }
         /* if output time reached then transcode raw format,
            encode packets and output them */
-        if (start_time == 0 || ist->pts >= start_time)
-            for(i=0;i<nb_ostreams;i++) {
+        for (i = 0; i < nb_ostreams; i++) {
                 OutputFile *of = &output_files[ost_table[i].file_index];
                 int frame_size;
 
@@ -1649,8 +1650,11 @@ static int output_packet(InputStream *ist, int ist_index,
                 if (ost->source_index != ist_index)
                     continue;
 
+                if (of->start_time && ist->pts < of->start_time)
+                    continue;
+
                 if (of->recording_time != INT64_MAX &&
-                    av_compare_ts(ist->pts, AV_TIME_BASE_Q, of->recording_time + start_time,
+                    av_compare_ts(ist->pts, AV_TIME_BASE_Q, of->recording_time + of->start_time,
                                   (AVRational){1, 1000000}) >= 0) {
                     ost->is_past_recording_time = 1;
                     continue;
@@ -1702,7 +1706,7 @@ static int output_packet(InputStream *ist, int ist_index,
                         AVFrame avframe; //FIXME/XXX remove this
                         AVPicture pict;
                         AVPacket opkt;
-                        int64_t ost_tb_start_time= av_rescale_q(start_time, AV_TIME_BASE_Q, ost->st->time_base);
+                        int64_t ost_tb_start_time= av_rescale_q(of->start_time, AV_TIME_BASE_Q, ost->st->time_base);
 
                         av_init_packet(&opkt);
 
@@ -3724,6 +3728,7 @@ static int opt_output_file(const char *opt, const char *filename)
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
     output_files[nb_output_files - 1].recording_time = recording_time;
+    output_files[nb_output_files - 1].start_time     = start_time;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
@@ -3854,6 +3859,7 @@ static int opt_output_file(const char *opt, const char *filename)
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     chapters_input_file = INT_MAX;
     recording_time = INT64_MAX;
+    start_time     = 0;
 
     av_freep(&meta_data_maps);
     nb_meta_data_maps = 0;
