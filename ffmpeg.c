@@ -114,10 +114,6 @@ static const OptionDef options[];
 static const char *last_asked_format = NULL;
 static AVDictionary *ts_scale;
 
-static AVFormatContext *output_files[MAX_FILES];
-static AVDictionary *output_opts[MAX_FILES];
-static int nb_output_files = 0;
-
 static StreamMap *stream_maps = NULL;
 static int nb_stream_maps;
 
@@ -333,10 +329,18 @@ typedef struct InputFile {
 static struct termios oldtty;
 #endif
 
+typedef struct OutputFile {
+    AVFormatContext *ctx;
+    AVDictionary *opts;
+} OutputFile;
+
 static InputStream *input_streams = NULL;
 static int         nb_input_streams = 0;
 static InputFile   *input_files   = NULL;
 static int         nb_input_files   = 0;
+
+static OutputFile   *output_files   = NULL;
+static int        nb_output_files   = 0;
 
 #if CONFIG_AVFILTER
 
@@ -517,12 +521,12 @@ static int exit_program(int ret)
 
     /* close files */
     for(i=0;i<nb_output_files;i++) {
-        AVFormatContext *s = output_files[i];
+        AVFormatContext *s = output_files[i].ctx;
         if (!(s->oformat->flags & AVFMT_NOFILE) && s->pb)
             avio_close(s->pb);
         avformat_free_context(s);
         av_free(output_streams_for_file[i]);
-        av_dict_free(&output_opts[i]);
+        av_dict_free(&output_files[i].opts);
     }
     for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i].ctx);
@@ -542,6 +546,7 @@ static int exit_program(int ret)
 
     av_freep(&input_streams);
     av_freep(&input_files);
+    av_freep(&output_files);
 
     uninit_opts();
     av_free(audio_buf);
@@ -1308,7 +1313,7 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
     }
 }
 
-static void print_report(AVFormatContext **output_files,
+static void print_report(OutputFile *output_files,
                          OutputStream **ost_table, int nb_ostreams,
                          int is_last_report)
 {
@@ -1337,7 +1342,7 @@ static void print_report(AVFormatContext **output_files,
     }
 
 
-    oc = output_files[0];
+    oc = output_files[0].ctx;
 
     total_size = avio_size(oc->pb);
     if(total_size<0) // FIXME improve avio_size() so it works with non seekable output too
@@ -1663,7 +1668,7 @@ static int output_packet(InputStream *ist, int ist_index,
                         }
                     }
 #endif
-                    os = output_files[ost->file_index];
+                    os = output_files[ost->file_index].ctx;
 
                     /* set the input output pts pairs */
                     //ost->sync_ipts = (double)(ist->pts + input_files[ist->file_index].ts_offset - start_time)/ AV_TIME_BASE;
@@ -1784,7 +1789,7 @@ static int output_packet(InputStream *ist, int ist_index,
             ost = ost_table[i];
             if (ost->source_index == ist_index) {
                 AVCodecContext *enc= ost->st->codec;
-                os = output_files[ost->file_index];
+                os = output_files[ost->file_index].ctx;
 
                 if(ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <=1)
                     continue;
@@ -1865,19 +1870,27 @@ static int output_packet(InputStream *ist, int ist_index,
     return 0;
 }
 
-static void print_sdp(AVFormatContext **avc, int n)
+static void print_sdp(OutputFile *output_files, int n)
 {
     char sdp[2048];
+    int i;
+    AVFormatContext **avc = av_malloc(sizeof(*avc)*n);
+
+    if (!avc)
+        exit_program(1);
+    for (i = 0; i < n; i++)
+        avc[i] = output_files[i].ctx;
 
     av_sdp_create(avc, n, sdp, sizeof(sdp));
     printf("SDP:\n%s\n", sdp);
     fflush(stdout);
+    av_freep(&avc);
 }
 
 /*
  * The following code is the main loop of the file converter
  */
-static int transcode(AVFormatContext **output_files,
+static int transcode(OutputFile *output_files,
                      int nb_output_files,
                      InputFile *input_files,
                      int nb_input_files)
@@ -1903,9 +1916,9 @@ static int transcode(AVFormatContext **output_files,
     /* output stream init */
     nb_ostreams = 0;
     for(i=0;i<nb_output_files;i++) {
-        os = output_files[i];
+        os = output_files[i].ctx;
         if (!os->nb_streams && !(os->oformat->flags & AVFMT_NOSTREAMS)) {
-            av_dump_format(output_files[i], i, output_files[i]->filename, 1);
+            av_dump_format(os, i, os->filename, 1);
             fprintf(stderr, "Output file #%d does not contain any stream\n", i);
             ret = AVERROR(EINVAL);
             goto fail;
@@ -1918,7 +1931,7 @@ static int transcode(AVFormatContext **output_files,
         goto fail;
 
     for(k=0;k<nb_output_files;k++) {
-        os = output_files[k];
+        os = output_files[k].ctx;
         for(i=0;i<os->nb_streams;i++,n++) {
             nb_streams[os->streams[i]->codec->codec_type]++;
         }
@@ -1955,7 +1968,7 @@ static int transcode(AVFormatContext **output_files,
     }
     n = 0;
     for(k=0;k<nb_output_files;k++) {
-        os = output_files[k];
+        os = output_files[k].ctx;
         for (i = 0; i < os->nb_streams; i++, n++)
             ost_table[n] = output_streams_for_file[k][i];
     }
@@ -1963,7 +1976,7 @@ static int transcode(AVFormatContext **output_files,
     /* for each output stream, we compute the right encoding parameters */
     for(i=0;i<nb_ostreams;i++) {
         ost = ost_table[i];
-        os = output_files[ost->file_index];
+        os = output_files[ost->file_index].ctx;
         ist = &input_streams[ost->source_index];
 
         codec = ost->st->codec;
@@ -2255,15 +2268,15 @@ static int transcode(AVFormatContext **output_files,
     }
 
     /* open files and write file headers */
-    for(i=0;i<nb_output_files;i++) {
-        os = output_files[i];
-        if (avformat_write_header(os, &output_opts[i]) < 0) {
+    for (i = 0; i < nb_output_files; i++) {
+        os = output_files[i].ctx;
+        if (avformat_write_header(os, &output_files[i].opts) < 0) {
             snprintf(error, sizeof(error), "Could not write header for output file #%d (incorrect codec parameters ?)", i);
             ret = AVERROR(EINVAL);
             goto dump_format;
         }
-//        assert_avoptions(output_opts[i]);
-        if (strcmp(output_files[i]->oformat->name, "rtp")) {
+//        assert_avoptions(output_files[i].opts);
+        if (strcmp(os->oformat->name, "rtp")) {
             want_sdp = 0;
         }
     }
@@ -2272,7 +2285,7 @@ static int transcode(AVFormatContext **output_files,
     /* dump the file output parameters - cannot be done before in case
        of stream copy */
     for(i=0;i<nb_output_files;i++) {
-        av_dump_format(output_files[i], i, output_files[i]->filename, 1);
+        av_dump_format(output_files[i].ctx, i, output_files[i].ctx->filename, 1);
     }
 
     /* dump the stream mapping */
@@ -2408,7 +2421,7 @@ static int transcode(AVFormatContext **output_files,
             int64_t ipts;
             double  opts;
             ost = ost_table[i];
-            os = output_files[ost->file_index];
+            os = output_files[ost->file_index].ctx;
             ist = &input_streams[ost->source_index];
             if(ist->is_past_recording_time || no_packet[ist->file_index])
                 continue;
@@ -2441,7 +2454,7 @@ static int transcode(AVFormatContext **output_files,
         }
 
         /* finish if limit size exhausted */
-        if (limit_filesize != 0 && limit_filesize <= avio_tell(output_files[0]->pb))
+        if (limit_filesize != 0 && limit_filesize <= avio_tell(output_files[0].ctx->pb))
             break;
 
         /* read a frame from it and output it in the fifo */
@@ -2538,7 +2551,7 @@ static int transcode(AVFormatContext **output_files,
 
     /* write the trailer if needed and close file */
     for(i=0;i<nb_output_files;i++) {
-        os = output_files[i];
+        os = output_files[i].ctx;
         av_write_trailer(os);
     }
 
@@ -3622,7 +3635,7 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
 static int copy_chapters(int infile, int outfile)
 {
     AVFormatContext *is = input_files[infile].ctx;
-    AVFormatContext *os = output_files[outfile];
+    AVFormatContext *os = output_files[outfile].ctx;
     int i;
 
     for (i = 0; i < is->nb_chapters; i++) {
@@ -3666,11 +3679,6 @@ static int opt_output_file(const char *opt, const char *filename)
     AVOutputFormat *file_oformat;
     OutputStream *ost;
     InputStream  *ist;
-
-    if(nb_output_files >= FF_ARRAY_ELEMS(output_files)){
-        fprintf(stderr, "Too many output files\n");
-        exit_program(1);
-    }
 
     if (!strcmp(filename, "-"))
         filename = "pipe:";
@@ -3768,8 +3776,12 @@ static int opt_output_file(const char *opt, const char *filename)
     av_dict_copy(&oc->metadata, metadata, 0);
     av_dict_free(&metadata);
 
-    av_dict_copy(&output_opts[nb_output_files], format_opts, 0);
-    output_files[nb_output_files++] = oc;
+
+    if (nb_output_files == MAX_FILES)
+        exit_program(1);                /* a temporary hack until all the other MAX_FILES-sized arrays are removed */
+    output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
+    output_files[nb_output_files - 1].ctx       = oc;
+    av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
     if (oc->oformat->flags & AVFMT_NEEDNUMBER) {
