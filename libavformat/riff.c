@@ -325,6 +325,7 @@ const AVCodecTag ff_codec_wav_tags[] = {
     { CODEC_ID_PCM_MULAW,       0x6c75 },
     { CODEC_ID_AAC,             0x706d },
     { CODEC_ID_AAC,             0x4143 },
+    { CODEC_ID_SPEEX,           0xA109 },
     { CODEC_ID_FLAC,            0xF1AC },
     { CODEC_ID_ADPCM_SWF,       ('S'<<8)+'F' },
     { CODEC_ID_VORBIS,          ('V'<<8)+'o' }, //HACK/FIXME, does vorbis in WAV/AVI have an (in)official id?
