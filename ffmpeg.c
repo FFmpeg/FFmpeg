@@ -2328,8 +2328,8 @@ static int transcode(OutputFile *output_files,
                 int k;
                 fprintf(stderr, "\nEnter command: <target> <time> <command>[ <argument>]\n");
                 i=0;
-                while((k=read_key()) > 0 && k!='\n' && k!='\r' && i<sizeof(ret)-1)
-                    ret[i++]= k;
+                while((k=read_key()) !='\n' && k!='\r' && i<sizeof(ret)-1)
+                    if(k>0) ret[i++]= k;
                 ret[i]= 0;
                 if(k>0 && sscanf(ret, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &ts, cmd, arg) >= 3){
                     for(i=0;i<nb_output_streams;i++) {
