@@ -3288,7 +3288,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
     }
 }
 
-static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, enum AVMediaType type)
+static OutputStream *new_output_stream(AVFormatContext *oc, enum AVMediaType type)
 {
     OutputStream *ost;
     AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
@@ -3299,18 +3299,18 @@ static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, enum A
         exit_program(1);
     }
 
-    output_streams_for_file[file_idx] =
-        grow_array(output_streams_for_file[file_idx],
-                   sizeof(*output_streams_for_file[file_idx]),
-                   &nb_output_streams_for_file[file_idx],
+    output_streams_for_file[nb_output_files] =
+        grow_array(output_streams_for_file[nb_output_files],
+                   sizeof(*output_streams_for_file[nb_output_files]),
+                   &nb_output_streams_for_file[nb_output_files],
                    oc->nb_streams);
-    ost = output_streams_for_file[file_idx][idx] =
+    ost = output_streams_for_file[nb_output_files][idx] =
         av_mallocz(sizeof(OutputStream));
     if (!ost) {
         fprintf(stderr, "Could not alloc output stream\n");
         exit_program(1);
     }
-    ost->file_index = file_idx;
+    ost->file_index = nb_output_files;
     ost->index = idx;
     ost->st    = st;
     st->codec->codec_type = type;
@@ -3326,13 +3326,13 @@ static OutputStream *new_output_stream(AVFormatContext *oc, int file_idx, enum A
     return ost;
 }
 
-static OutputStream *new_video_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_video_stream(AVFormatContext *oc)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *video_enc;
 
-    ost = new_output_stream(oc, file_idx, AVMEDIA_TYPE_VIDEO);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_VIDEO);
     st  = ost->st;
     if (!st->stream_copy) {
         ost->frame_aspect_ratio = frame_aspect_ratio;
@@ -3442,13 +3442,13 @@ static OutputStream *new_video_stream(AVFormatContext *oc, int file_idx)
     return ost;
 }
 
-static OutputStream *new_audio_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_audio_stream(AVFormatContext *oc)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *audio_enc;
 
-    ost = new_output_stream(oc, file_idx, AVMEDIA_TYPE_AUDIO);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_AUDIO);
     st  = ost->st;
 
     ost->bitstream_filters = audio_bitstream_filters;
@@ -3488,13 +3488,13 @@ static OutputStream *new_audio_stream(AVFormatContext *oc, int file_idx)
     return ost;
 }
 
-static OutputStream *new_data_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_data_stream(AVFormatContext *oc)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *data_enc;
 
-    ost = new_output_stream(oc, file_idx, AVMEDIA_TYPE_DATA);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_DATA);
     st  = ost->st;
     data_enc = st->codec;
     if (!st->stream_copy) {
@@ -3513,13 +3513,13 @@ static OutputStream *new_data_stream(AVFormatContext *oc, int file_idx)
     return ost;
 }
 
-static OutputStream *new_subtitle_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_subtitle_stream(AVFormatContext *oc)
 {
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *subtitle_enc;
 
-    ost = new_output_stream(oc, file_idx, AVMEDIA_TYPE_SUBTITLE);
+    ost = new_output_stream(oc, AVMEDIA_TYPE_SUBTITLE);
     st  = ost->st;
     subtitle_enc = st->codec;
 
@@ -3580,7 +3580,7 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
         AVCodec *codec;
 
         codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
-        ost   = new_output_stream(s, nb_output_files, codec->type);
+        ost   = new_output_stream(s, codec->type);
         st    = ost->st;
 
         // FIXME: a more elegant solution is needed
@@ -3677,7 +3677,7 @@ static int opt_output_file(const char *opt, const char *filename)
         /* pick the "best" stream of each type */
 #define NEW_STREAM(type, index)\
         if (index >= 0) {\
-            ost = new_ ## type ## _stream(oc, nb_output_files);\
+            ost = new_ ## type ## _stream(oc);\
             ost->source_index = index;\
             ost->sync_ist     = &input_streams[index];\
             input_streams[index].discard = 0;\
@@ -3729,10 +3729,10 @@ static int opt_output_file(const char *opt, const char *filename)
 
             ist = &input_streams[input_files[map->file_index].ist_index + map->stream_index];
             switch (ist->st->codec->codec_type) {
-            case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(oc, nb_output_files);    break;
-            case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(oc, nb_output_files);    break;
-            case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(oc, nb_output_files); break;
-            case AVMEDIA_TYPE_DATA:     ost = new_data_stream(oc, nb_output_files);     break;
+            case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(oc);    break;
+            case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(oc);    break;
+            case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(oc); break;
+            case AVMEDIA_TYPE_DATA:     ost = new_data_stream(oc);     break;
             default:
                 av_log(NULL, AV_LOG_ERROR, "Cannot map stream #%d.%d - unsupported type.\n",
                        map->file_index, map->stream_index);
