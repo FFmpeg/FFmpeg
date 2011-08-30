@@ -109,7 +109,6 @@ typedef struct MetadataMap {
 
 static const OptionDef options[];
 
-#define MAX_FILES 100
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
 static const char *last_asked_format = NULL;
 static AVDictionary *ts_scale;
@@ -1903,8 +1902,11 @@ static int transcode(OutputFile *output_files,
     char error[1024];
     int key;
     int want_sdp = 1;
-    uint8_t no_packet[MAX_FILES]={0};
+    uint8_t *no_packet;
     int no_packet_count=0;
+
+    if (!(no_packet = av_mallocz(nb_input_files)))
+        exit_program(1);
 
     if (rate_emu)
         for (i = 0; i < nb_input_streams; i++)
@@ -2394,7 +2396,7 @@ static int transcode(OutputFile *output_files,
         if (file_index < 0) {
             if(no_packet_count){
                 no_packet_count=0;
-                memset(no_packet, 0, sizeof(no_packet));
+                memset(no_packet, 0, nb_input_files);
                 usleep(10000);
                 continue;
             }
@@ -2422,7 +2424,7 @@ static int transcode(OutputFile *output_files,
         }
 
         no_packet_count=0;
-        memset(no_packet, 0, sizeof(no_packet));
+        memset(no_packet, 0, nb_input_files);
 
         if (do_pkt_dump) {
             av_pkt_dump_log2(NULL, AV_LOG_DEBUG, &pkt, do_hex_dump,
@@ -2531,6 +2533,7 @@ static int transcode(OutputFile *output_files,
 
  fail:
     av_freep(&bit_buffer);
+    av_freep(&no_packet);
 
     if (output_streams) {
         for (i = 0; i < nb_output_streams; i++) {
@@ -3715,8 +3718,6 @@ static int opt_output_file(const char *opt, const char *filename)
     av_dict_free(&metadata);
 
 
-    if (nb_output_files == MAX_FILES)
-        exit_program(1);                /* a temporary hack until all the other MAX_FILES-sized arrays are removed */
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
