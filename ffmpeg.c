@@ -544,7 +544,6 @@ static int exit_program(int ret)
     av_free(vstats_filename);
 
     av_free(streamid_map);
-    av_free(stream_maps);
     av_free(meta_data_maps);
 
     av_freep(&input_streams);
@@ -2020,8 +2019,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
 static int transcode(AVFormatContext **output_files,
                      int nb_output_files,
                      InputFile *input_files,
-                     int nb_input_files,
-                     StreamMap *stream_maps, int nb_stream_maps)
+                     int nb_input_files)
 {
     int ret = 0, i, j, k, n, nb_ostreams = 0, step;
 
@@ -2052,32 +2050,6 @@ static int transcode(AVFormatContext **output_files,
             goto fail;
         }
         nb_ostreams += os->nb_streams;
-    }
-    if (nb_stream_maps > 0 && nb_stream_maps != nb_ostreams) {
-        fprintf(stderr, "Number of stream maps must match number of output streams\n");
-        ret = AVERROR(EINVAL);
-        goto fail;
-    }
-
-    /* Sanity check the mapping args -- do the input files & streams exist? */
-    for(i=0;i<nb_stream_maps;i++) {
-        int fi = stream_maps[i].file_index;
-        int si = stream_maps[i].stream_index;
-
-        if (fi < 0 || fi > nb_input_files - 1 ||
-            si < 0 || si > input_files[fi].nb_streams - 1) {
-            fprintf(stderr,"Could not find input stream #%d.%d\n", fi, si);
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
-        fi = stream_maps[i].sync_file_index;
-        si = stream_maps[i].sync_stream_index;
-        if (fi < 0 || fi > nb_input_files - 1 ||
-            si < 0 || si > input_files[fi].ctx->nb_streams - 1) {
-            fprintf(stderr,"Could not find sync stream #%d.%d\n", fi, si);
-            ret = AVERROR(EINVAL);
-            goto fail;
-        }
     }
 
     ost_table = av_mallocz(sizeof(OutputStream *) * nb_ostreams);
@@ -2123,78 +2095,8 @@ static int transcode(AVFormatContext **output_files,
     n = 0;
     for(k=0;k<nb_output_files;k++) {
         os = output_files[k];
-        for(i=0;i<os->nb_streams;i++,n++) {
-            int found;
-            ost = ost_table[n] = output_streams_for_file[k][i];
-            if (nb_stream_maps > 0) {
-                ost->source_index = input_files[stream_maps[n].file_index].ist_index +
-                    stream_maps[n].stream_index;
-
-                /* Sanity check that the stream types match */
-                if (input_streams[ost->source_index].st->codec->codec_type != ost->st->codec->codec_type) {
-                    int i= ost->file_index;
-                    av_dump_format(output_files[i], i, output_files[i]->filename, 1);
-                    fprintf(stderr, "Codec type mismatch for mapping #%d.%d -> #%d.%d\n",
-                        stream_maps[n].file_index, stream_maps[n].stream_index,
-                        ost->file_index, ost->index);
-                    exit_program(1);
-                }
-
-            } else {
-                /* get corresponding input stream index : we select the first one with the right type */
-                found = 0;
-                for (j = 0; j < nb_input_streams; j++) {
-                    int skip=0;
-                    ist = &input_streams[j];
-                    if(opt_programid){
-                        int pi,si;
-                        AVFormatContext *f = input_files[ist->file_index].ctx;
-                        skip=1;
-                        for(pi=0; pi<f->nb_programs; pi++){
-                            AVProgram *p= f->programs[pi];
-                            if(p->id == opt_programid)
-                                for(si=0; si<p->nb_stream_indexes; si++){
-                                    if(f->streams[ p->stream_index[si] ] == ist->st)
-                                        skip=0;
-                                }
-                        }
-                    }
-                    if (ist->discard && ist->st->discard != AVDISCARD_ALL && !skip &&
-                        ist->st->codec->codec_type == ost->st->codec->codec_type &&
-                        nb_frame_threshold[ist->st->codec->codec_type] <= ist->st->codec_info_nb_frames) {
-                            ost->source_index = j;
-                            found = 1;
-                            break;
-                    }
-                }
-
-                if (!found) {
-                    if(! opt_programid) {
-                        /* try again and reuse existing stream */
-                        for (j = 0; j < nb_input_streams; j++) {
-                            ist = &input_streams[j];
-                            if (   ist->st->codec->codec_type == ost->st->codec->codec_type
-                                && ist->st->discard != AVDISCARD_ALL) {
-                                ost->source_index = j;
-                                found = 1;
-                            }
-                        }
-                    }
-                    if (!found) {
-                        int i= ost->file_index;
-                        av_dump_format(output_files[i], i, output_files[i]->filename, 1);
-                        fprintf(stderr, "Could not find input stream matching output stream #%d.%d\n",
-                                ost->file_index, ost->index);
-                        exit_program(1);
-                    }
-                }
-            }
-            ist = &input_streams[ost->source_index];
-            ist->discard = 0;
-            ost->sync_ist = (nb_stream_maps > 0) ?
-                &input_streams[input_files[stream_maps[n].sync_file_index].ist_index +
-                         stream_maps[n].sync_stream_index] : ist;
-        }
+        for (i = 0; i < os->nb_streams; i++, n++)
+            ost_table[n] = output_streams_for_file[k][i];
     }
 
     /* for each output stream, we compute the right encoding parameters */
@@ -3426,50 +3328,7 @@ static int opt_input_file(const char *opt, const char *filename)
     return 0;
 }
 
-static void check_inputs(int *has_video_ptr,
-                         int *has_audio_ptr,
-                         int *has_subtitle_ptr,
-                         int *has_data_ptr)
-{
-    int has_video, has_audio, has_subtitle, has_data, i, j;
-    AVFormatContext *ic;
-
-    has_video = 0;
-    has_audio = 0;
-    has_subtitle = 0;
-    has_data = 0;
-
-    for(j=0;j<nb_input_files;j++) {
-        ic = input_files[j].ctx;
-        for(i=0;i<ic->nb_streams;i++) {
-            AVCodecContext *enc = ic->streams[i]->codec;
-            switch(enc->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:
-                has_audio = 1;
-                break;
-            case AVMEDIA_TYPE_VIDEO:
-                has_video = 1;
-                break;
-            case AVMEDIA_TYPE_SUBTITLE:
-                has_subtitle = 1;
-                break;
-            case AVMEDIA_TYPE_DATA:
-            case AVMEDIA_TYPE_ATTACHMENT:
-            case AVMEDIA_TYPE_UNKNOWN:
-                has_data = 1;
-                break;
-            default:
-                abort();
-            }
-        }
-    }
-    *has_video_ptr = has_video;
-    *has_audio_ptr = has_audio;
-    *has_subtitle_ptr = has_subtitle;
-    *has_data_ptr = has_data;
-}
-
-static void new_video_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_video_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
     OutputStream *ost;
@@ -3599,9 +3458,10 @@ static void new_video_stream(AVFormatContext *oc, int file_idx)
     av_freep(&forced_key_frames);
     video_stream_copy = 0;
     frame_pix_fmt = PIX_FMT_NONE;
+    return ost;
 }
 
-static void new_audio_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_audio_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
     OutputStream *ost;
@@ -3660,9 +3520,11 @@ static void new_audio_stream(AVFormatContext *oc, int file_idx)
     audio_disable = 0;
     av_freep(&audio_codec_name);
     audio_stream_copy = 0;
+
+    return ost;
 }
 
-static void new_data_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_data_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
     OutputStream *ost;
@@ -3691,9 +3553,10 @@ static void new_data_stream(AVFormatContext *oc, int file_idx)
     data_disable = 0;
     av_freep(&data_codec_name);
     data_stream_copy = 0;
+    return ost;
 }
 
-static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
+static OutputStream *new_subtitle_stream(AVFormatContext *oc, int file_idx)
 {
     AVStream *st;
     OutputStream *ost;
@@ -3739,24 +3602,7 @@ static void new_subtitle_stream(AVFormatContext *oc, int file_idx)
     subtitle_disable = 0;
     av_freep(&subtitle_codec_name);
     subtitle_stream_copy = 0;
-}
-
-static int opt_new_stream(const char *opt, const char *arg)
-{
-    AVFormatContext *oc;
-    int file_idx = nb_output_files - 1;
-    if (nb_output_files <= 0) {
-        fprintf(stderr, "At least one output file must be specified\n");
-        exit_program(1);
-    }
-    oc = output_files[file_idx];
-
-    if      (!strcmp(opt, "newvideo"   )) new_video_stream   (oc, file_idx);
-    else if (!strcmp(opt, "newaudio"   )) new_audio_stream   (oc, file_idx);
-    else if (!strcmp(opt, "newsubtitle")) new_subtitle_stream(oc, file_idx);
-    else if (!strcmp(opt, "newdata"    )) new_data_stream    (oc, file_idx);
-    else av_assert0(0);
-    return 0;
+    return ost;
 }
 
 /* arg format is "output-stream-index:streamid-value". */
@@ -3784,9 +3630,10 @@ static int opt_streamid(const char *opt, const char *arg)
 static int opt_output_file(const char *opt, const char *filename)
 {
     AVFormatContext *oc;
-    int i, err, use_video, use_audio, use_subtitle, use_data;
-    int input_has_video, input_has_audio, input_has_subtitle, input_has_data;
+    int i, err;
     AVOutputFormat *file_oformat;
+    OutputStream *ost;
+    InputStream  *ist;
 
     if(nb_output_files >= FF_ARRAY_ELEMS(output_files)){
         fprintf(stderr, "Too many output files\n");
@@ -3813,41 +3660,93 @@ static int opt_output_file(const char *opt, const char *filename)
             print_error(filename, err);
             exit_program(1);
         }
+    } else if (!nb_stream_maps) {
+        /* pick the "best" stream of each type */
+#define NEW_STREAM(type, index)\
+        if (index >= 0) {\
+            ost = new_ ## type ## _stream(oc, nb_output_files);\
+            ost->source_index = index;\
+            ost->sync_ist     = &input_streams[index];\
+            input_streams[index].discard = 0;\
+        }
+
+        /* video: highest resolution */
+        if (!video_disable && oc->oformat->video_codec != CODEC_ID_NONE) {
+            int area = 0, idx = -1;
+            for (i = 0; i < nb_input_streams; i++) {
+                ist = &input_streams[i];
+                if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO &&
+                    ist->st->codec->width * ist->st->codec->height > area) {
+                    area = ist->st->codec->width * ist->st->codec->height;
+                    idx = i;
+                }
+            }
+            NEW_STREAM(video, idx);
+        }
+
+        /* audio: most channels */
+        if (!audio_disable && oc->oformat->audio_codec != CODEC_ID_NONE) {
+            int channels = 0, idx = -1;
+            for (i = 0; i < nb_input_streams; i++) {
+                ist = &input_streams[i];
+                if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
+                    ist->st->codec->channels > channels) {
+                    channels = ist->st->codec->channels;
+                    idx = i;
+                }
+            }
+            NEW_STREAM(audio, idx);
+        }
+
+        /* subtitles: pick first */
+        if (!subtitle_disable && oc->oformat->subtitle_codec != CODEC_ID_NONE) {
+            for (i = 0; i < nb_input_streams; i++)
+                if (input_streams[i].st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+                    NEW_STREAM(subtitle, i);
+                    break;
+                }
+        }
+        /* do something with data? */
     } else {
-        use_video = file_oformat->video_codec != CODEC_ID_NONE || video_stream_copy || video_codec_name;
-        use_audio = file_oformat->audio_codec != CODEC_ID_NONE || audio_stream_copy || audio_codec_name;
-        use_subtitle = file_oformat->subtitle_codec != CODEC_ID_NONE || subtitle_stream_copy || subtitle_codec_name;
-        use_data = data_stream_copy ||  data_codec_name; /* XXX once generic data codec will be available add a ->data_codec reference and use it here */
+        for (i = 0; i < nb_stream_maps; i++) {
+            StreamMap *map = &stream_maps[i];
+            int         fi = map->file_index;
+            int         si = map->stream_index;
 
-        /* disable if no corresponding type found */
-        check_inputs(&input_has_video,
-                     &input_has_audio,
-                     &input_has_subtitle,
-                     &input_has_data);
+            if (fi < 0 || fi >= nb_input_files ||
+                si < 0 || si >= input_files[fi].ctx->nb_streams) {
+                av_log(NULL, AV_LOG_ERROR, "Input stream #%d.%d does not exist.\n", fi, si);
+                exit_program(1);
+            }
+            fi = map->sync_file_index;
+            si = map->sync_stream_index;
+            if (fi < 0 || fi >= nb_input_files ||
+                si < 0 || si >= input_files[fi].ctx->nb_streams) {
+                av_log(NULL, AV_LOG_ERROR, "Sync stream #%d.%d does not exist.\n", fi, si);
+                exit_program(1);
+            }
 
-        if (!input_has_video)
-            use_video = 0;
-        if (!input_has_audio)
-            use_audio = 0;
-        if (!input_has_subtitle)
-            use_subtitle = 0;
-        if (!input_has_data)
-            use_data = 0;
+            ist = &input_streams[input_files[map->file_index].ist_index + map->stream_index];
+            switch (ist->st->codec->codec_type) {
+            case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(oc, nb_output_files);    break;
+            case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(oc, nb_output_files);    break;
+            case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(oc, nb_output_files); break;
+            case AVMEDIA_TYPE_DATA:     ost = new_data_stream(oc, nb_output_files);     break;
+            default:
+                av_log(NULL, AV_LOG_ERROR, "Cannot map stream #%d.%d - unsupported type.\n",
+                       map->file_index, map->stream_index);
+                exit_program(1);
+            }
 
-        /* manual disable */
-        if (audio_disable)    use_audio    = 0;
-        if (video_disable)    use_video    = 0;
-        if (subtitle_disable) use_subtitle = 0;
-        if (data_disable)     use_data     = 0;
-
-        if (use_video)    new_video_stream(oc, nb_output_files);
-        if (use_audio)    new_audio_stream(oc, nb_output_files);
-        if (use_subtitle) new_subtitle_stream(oc, nb_output_files);
-        if (use_data)     new_data_stream(oc, nb_output_files);
-
-        av_dict_copy(&oc->metadata, metadata, 0);
-        av_dict_free(&metadata);
+            ost->source_index = input_files[map->file_index].ist_index + map->stream_index;
+            ost->sync_ist = &input_streams[input_files[map->sync_file_index].ist_index +
+                                           map->sync_stream_index];
+            ist->discard = 0;
+        }
     }
+
+    av_dict_copy(&oc->metadata, metadata, 0);
+    av_dict_free(&metadata);
 
     av_dict_copy(&output_opts[nb_output_files], format_opts, 0);
     output_files[nb_output_files++] = oc;
@@ -3985,6 +3884,8 @@ static int opt_output_file(const char *opt, const char *filename)
     metadata_global_autocopy   = 1;
     metadata_streams_autocopy  = 1;
     metadata_chapters_autocopy = 1;
+    av_freep(&stream_maps);
+    nb_stream_maps = 0;
 
     av_freep(&forced_key_frames);
     uninit_opts();
@@ -4462,7 +4363,6 @@ static const OptionDef options[] = {
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_codec_tag}, "force video tag/fourcc", "fourcc/tag" },
-    { "newvideo", OPT_VIDEO, {(void*)opt_new_stream}, "add a new video stream to the current output stream" },
     { "vlang", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void *)&video_language}, "set the ISO 639 language code (3 letters) of the current video stream" , "code" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
@@ -4478,14 +4378,12 @@ static const OptionDef options[] = {
     { "acodec", HAS_ARG | OPT_AUDIO, {(void*)opt_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_codec_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
-    { "newaudio", OPT_AUDIO, {(void*)opt_new_stream}, "add a new audio stream to the current output stream" },
     { "alang", HAS_ARG | OPT_STRING | OPT_AUDIO, {(void *)&audio_language}, "set the ISO 639 language code (3 letters) of the current audio stream" , "code" },
     { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_sample_fmt}, "set sample format, 'list' as argument shows all the sample formats supported", "format" },
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
     { "scodec", HAS_ARG | OPT_SUBTITLE, {(void*)opt_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
-    { "newsubtitle", OPT_SUBTITLE, {(void*)opt_new_stream}, "add a new subtitle stream to the current output stream" },
     { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_codec_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
@@ -4567,8 +4465,7 @@ int main(int argc, char **argv)
     }
 
     ti = getutime();
-    if (transcode(output_files, nb_output_files, input_files, nb_input_files,
-                  stream_maps, nb_stream_maps) < 0)
+    if (transcode(output_files, nb_output_files, input_files, nb_input_files) < 0)
         exit_program(1);
     ti = getutime() - ti;
     if (do_benchmark) {
