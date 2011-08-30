@@ -203,12 +203,14 @@ Advanced options (experts only):
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
   --cc=CC                  use C compiler CC [$cc_default]
+  --cxx=CXX                use C compiler CXX [$cxx_default]
   --ld=LD                  use linker LD
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
   --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host
   --host-libs=HLIBS        use libs HLIBS when linking for host
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
+  --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
@@ -578,6 +580,10 @@ add_cflags(){
     append CFLAGS $($filter_cflags "$@")
 }
 
+add_cxxflags(){
+    append CXXFLAGS $($filter_cflags "$@")
+}
+
 add_asflags(){
     append ASFLAGS $($filter_asflags "$@")
 }
@@ -600,6 +606,13 @@ check_cc(){
     cat > $TMPC
     log_file $TMPC
     check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c -o $TMPO $TMPC
+}
+
+check_cxx(){
+    log check_cxx "$@"
+    cat > $TMPCPP
+    log_file $TMPCPP
+    check_cmd $cxx $CPPFLAGS $CFLAGS $CXXFLAGS "$@" -c -o $TMPO $TMPCPP
 }
 
 check_cpp(){
@@ -637,12 +650,14 @@ check_yasm(){
 
 check_ld(){
     log check_ld "$@"
+    type=$1
+    shift 1
     flags=''
     libs=''
     for f; do
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
-    check_cc $($filter_cflags $flags) || return
+    check_$type $($filter_cflags $flags) || return
     check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
 }
 
@@ -662,9 +677,17 @@ int x;
 EOF
 }
 
+check_cxxflags(){
+    log check_cxxflags "$@"
+    set -- $($filter_cflags "$@")
+    check_cxx "$@" <<EOF && append CXXFLAGS "$@"
+int x;
+EOF
+}
+
 test_ldflags(){
     log test_ldflags "$@"
-    check_ld "$@" <<EOF
+    check_ld "cc" "$@" <<EOF
 int main(void){ return 0; }
 EOF
 }
@@ -690,7 +713,7 @@ check_func(){
     func=$1
     shift
     disable $func
-    check_ld "$@" <<EOF && enable $func
+    check_ld "cc" "$@" <<EOF && enable $func
 extern int $func();
 int main(void){ $func(); }
 EOF
@@ -701,7 +724,7 @@ check_mathfunc(){
     func=$1
     shift
     disable $func
-    check_ld "$@" <<EOF && enable $func
+    check_ld "cc" "$@" <<EOF && enable $func
 #include <math.h>
 float foo(float f) { return $func(f); }
 int main(void){ return 0; }
@@ -721,7 +744,26 @@ check_func_headers(){
             echo "long check_$func(void) { return (long) $func; }"
         done
         echo "int main(void) { return 0; }"
-    } | check_ld "$@" && enable $funcs && enable_safe $headers
+    } | check_ld "cc" "$@" && enable $funcs && enable_safe $headers
+}
+
+check_class_headers_cpp(){
+    log check_class_headers_cpp "$@"
+    headers=$1
+    classes=$2
+    shift 2
+    {
+        for hdr in $headers; do
+            echo "#include <$hdr>"
+        done
+        echo "int main(void) { "
+        i=1
+        for class in $classes; do
+            echo "$class obj$i;"
+            i=$(expr $i + 1)
+        done
+        echo "return 0; }"
+    } | check_ld "cxx" "$@" && enable $funcs && enable_safe $headers
 }
 
 check_cpp_condition(){
@@ -753,6 +795,14 @@ check_lib2(){
     check_func_headers "$headers" "$funcs" "$@" && add_extralibs "$@"
 }
 
+check_lib_cpp(){
+    log check_lib_cpp "$@"
+    headers="$1"
+    classes="$2"
+    shift 2
+    check_class_headers_cpp "$headers" "$classes" "$@" && add_extralibs "$@"
+}
+
 check_pkg_config(){
     log check_pkg_config "$@"
     pkg="$1"
@@ -768,7 +818,7 @@ check_pkg_config(){
 }
 
 check_exec(){
-    check_ld "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
+    check_ld "cc" "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
 }
 
 check_exec_crash(){
@@ -846,6 +896,14 @@ require2(){
     func="$3"
     shift 3
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
+}
+
+require_cpp(){
+    name="$1"
+    headers="$2"
+    classes="$3"
+    shift 3
+    check_lib_cpp "$headers" "$classes" "$@" || die "ERROR: $name not found"
 }
 
 require_pkg_config(){
@@ -1173,6 +1231,7 @@ CMDLINE_SET="
     cc
     cpu
     cross_prefix
+    cxx
     dep_cc
     extra_version
     host_cc
@@ -1196,6 +1255,7 @@ CMDLINE_SET="
 
 CMDLINE_APPEND="
     extra_cflags
+    extra_cxxflags
 "
 
 # code dependency declarations
@@ -1610,6 +1670,7 @@ shlibdir_default="$libdir_default"
 # toolchain
 ar_default="ar"
 cc_default="gcc"
+cxx_default="g++"
 cc_version=\"unknown\"
 host_cc_default="gcc"
 ln_s="ln -sf"
@@ -1671,6 +1732,7 @@ SLIB_INSTALL_LINKS='$(SLIBNAME_WITH_MAJOR) $(SLIBNAME)'
 
 AS_O='-o $@'
 CC_O='-o $@'
+CXX_O='-o $@'
 
 host_cflags='-D_ISOC99_SOURCE -O3 -g'
 host_libs='-lm'
@@ -1823,13 +1885,14 @@ set_default arch target_os
 
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
+cxx_default="${cross_prefix}${cxx_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc nm pkg_config sysinclude
+set_default cc cxx nm pkg_config sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -1871,6 +1934,7 @@ tmpfile(){
 trap 'rm -f -- $TMPFILES' EXIT
 
 tmpfile TMPC  .c
+tmpfile TMPCPP .cpp
 tmpfile TMPE  $EXESUF
 tmpfile TMPH  .h
 tmpfile TMPO  .o
@@ -2088,9 +2152,11 @@ test -n "$cc_type" && enable $cc_type ||
 set_default ar as dep_cc ld
 
 test -n "$CC_DEPFLAGS" || CCDEP=$DEPEND_CMD
+test -n "$CXX_DEPFLAGS" || CXXDEP=$DEPEND_CMD
 test -n "$AS_DEPFLAGS" || ASDEP=$DEPEND_CMD
 
 add_cflags $extra_cflags
+add_cxxflags $extra_cxxflags
 add_asflags $extra_cflags
 
 if test -n "$sysroot"; then
@@ -2325,6 +2391,7 @@ if test "$?" != 0; then
 fi
 
 add_cppflags -D_ISOC99_SOURCE
+add_cxxflags -D__STDC_CONSTANT_MACROS
 check_cflags -std=c99
 check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
@@ -2615,7 +2682,7 @@ elif enabled arm; then
     elif ! check_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__"; then
         case "${cross_prefix:-$cc}" in
             *hardfloat*)         enable vfp_args;   fpabi=vfp ;;
-            *) check_ld <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
+            *) check_ld "cc" <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
 EOF
@@ -3211,6 +3278,7 @@ SRC_PATH=$source_path
 CC_IDENT=$cc_ident
 ARCH=$arch
 CC=$cc
+CXX=$cxx
 AS=$as
 LD=$ld
 DEPCC=$dep_cc
@@ -3221,9 +3289,11 @@ RANLIB=$ranlib
 LN_S=$ln_s
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
+CXXFLAGS=$CXXFLAGS
 ASFLAGS=$ASFLAGS
 AS_O=$CC_O
 CC_O=$CC_O
+CXX_O=$CXX_O
 DLLTOOL=$dlltool
 LDFLAGS=$LDFLAGS
 AVSERVERLDFLAGS=$AVSERVERLDFLAGS
@@ -3240,6 +3310,7 @@ EXESUF=$EXESUF
 EXTRA_VERSION=$extra_version
 DEPFLAGS=$DEPFLAGS
 CCDEP=$CCDEP
+CXXDEP=$CXXDEP
 ASDEP=$ASDEP
 CC_DEPFLAGS=$CC_DEPFLAGS
 AS_DEPFLAGS=$AS_DEPFLAGS

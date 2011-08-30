@@ -1,6 +1,7 @@
 include config.mak
 
 vpath %.c    $(SRC_PATH)
+vpath %.cpp  $(SRC_PATH)
 vpath %.h    $(SRC_PATH)
 vpath %.S    $(SRC_PATH)
 vpath %.asm  $(SRC_PATH)
@@ -10,7 +11,7 @@ vpath %.texi $(SRC_PATH)
 ifndef V
 Q      = @
 ECHO   = printf "$(1)\t%s\n" $(2)
-BRIEF  = CC AS YASM AR LD HOSTCC
+BRIEF  = CC CXX AS YASM AR LD HOSTCC
 SILENT = DEPCC YASMDEP RM RANLIB
 MSG    = $@
 M      = @$(call ECHO,$(TAG),$@);
@@ -26,6 +27,7 @@ IFLAGS     := -I. -I$(SRC_PATH)
 CPPFLAGS   := $(IFLAGS) $(CPPFLAGS)
 CFLAGS     += $(ECFLAGS)
 CCFLAGS     = $(CFLAGS)
+CXXFLAGS   := $(CFLAGS) $(CXXFLAGS)
 YASMFLAGS  += $(IFLAGS) -I$(SRC_PATH)/libavutil/x86/ -Pconfig.asm
 HOSTCFLAGS += $(IFLAGS)
 LDFLAGS    := $(ALLFFLIBS:%=-Llib%) $(LDFLAGS)
@@ -36,10 +38,14 @@ define COMPILE
 endef
 
 COMPILE_C = $(call COMPILE,CC)
+COMPILE_CXX = $(call COMPILE,CXX)
 COMPILE_S = $(call COMPILE,AS)
 
 %.o: %.c
 	$(COMPILE_C)
+
+%.o: %.cpp
+	$(COMPILE_CXX)
 
 %.o: %.S
 	$(COMPILE_S)
