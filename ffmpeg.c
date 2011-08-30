@@ -538,7 +538,6 @@ static int exit_program(int ret)
         fclose(vstats_file);
     av_free(vstats_filename);
 
-    av_free(streamid_map);
     av_free(meta_data_maps);
 
     av_freep(&input_streams);
@@ -3860,6 +3859,8 @@ static int opt_output_file(const char *opt, const char *filename)
     metadata_chapters_autocopy = 1;
     av_freep(&stream_maps);
     nb_stream_maps = 0;
+    av_freep(&streamid_map);
+    nb_streamid_map = 0;
 
     av_dict_free(&codec_names);
 
