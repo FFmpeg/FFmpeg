@@ -1891,8 +1891,6 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
     InputStream *ist = &input_streams[ist_index];
     if (ist->decoding_needed) {
         AVCodec *codec = ist->dec;
-        if (!codec)
-            codec = avcodec_find_decoder(ist->st->codec->codec_id);
         if (!codec) {
             snprintf(error, sizeof(error), "Decoder (codec %s) not found for input stream #%d.%d",
                     avcodec_get_name(ist->st->codec->codec_id), ist->file_index, ist->st->index);
@@ -3061,6 +3059,8 @@ static void add_input_streams(AVFormatContext *ic)
             ist->ts_scale = strtod(scale, NULL);
 
         ist->dec = choose_codec(ic, st, dec->codec_type, codec_names);
+        if (!ist->dec)
+            ist->dec = avcodec_find_decoder(dec->codec_id);
 
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
