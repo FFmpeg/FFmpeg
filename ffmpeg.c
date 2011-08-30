@@ -2325,8 +2325,13 @@ static int transcode(OutputFile *output_files,
             if (key == 'c' || key == 'C'){
                 char ret[4096], target[64], cmd[256], arg[256]={0};
                 double ts;
+                int k;
                 fprintf(stderr, "\nEnter command: <target> <time> <command>[ <argument>]\n");
-                if(scanf("%4095[^\n\r]%*c", ret) == 1 && sscanf(ret, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &ts, cmd, arg) >= 3){
+                i=0;
+                while((k=read_key()) > 0 && k!='\n' && k!='\r' && i<sizeof(ret)-1)
+                    ret[i++]= k;
+                ret[i]= 0;
+                if(k>0 && sscanf(ret, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &ts, cmd, arg) >= 3){
                     for(i=0;i<nb_output_streams;i++) {
                         int r;
                         ost = &output_streams[i];
