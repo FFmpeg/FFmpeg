@@ -5,12 +5,15 @@ NOTE: This is a draft.
 
 Overview:
 ---------
+
 FFmpeg uses Trac for tracking issues, new issues and changes to
 existing issues can be done through a web interface.
+
 It is possible to subscribe to individual issues by adding yourself to the
 Cc list or to subscribe to the ffmpeg-trac mailing list which receives
 a mail for every change to every issue.
 (the above does all work already after light testing)
+
 The subscription URL for the ffmpeg-trac list is:
 http(s)://ffmpeg.org/mailman/listinfo/ffmpeg-trac
 The URL of the webinterface of the tracker is:
