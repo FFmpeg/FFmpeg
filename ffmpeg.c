@@ -256,8 +256,9 @@ typedef struct InputFile {
     int eof_reached;      /* true if eof reached */
     int ist_index;        /* index of first stream in ist_table */
     int buffer_size;      /* current total buffer size */
-    int nb_streams;
     int64_t ts_offset;
+    int nb_streams;       /* number of stream that avconv is aware of; may be different
+                             from ctx.nb_streams if new streams appear during av_read_frame() */
 } InputFile;
 
 typedef struct OutputStream {
@@ -2817,13 +2818,13 @@ static int opt_map(const char *opt, const char *arg)
         }
         if (*sync)
             sync++;
-        for (i = 0; i < input_files[sync_file_idx].ctx->nb_streams; i++)
+        for (i = 0; i < input_files[sync_file_idx].nb_streams; i++)
             if (check_stream_specifier(input_files[sync_file_idx].ctx,
                                        input_files[sync_file_idx].ctx->streams[i], sync) == 1) {
                 sync_stream_idx = i;
                 break;
             }
-        if (i == input_files[sync_file_idx].ctx->nb_streams) {
+        if (i == input_files[sync_file_idx].nb_streams) {
             av_log(NULL, AV_LOG_ERROR, "Sync stream specification in map %s does not "
                                        "match any streams.\n", arg);
             exit_program(1);
@@ -2846,7 +2847,7 @@ static int opt_map(const char *opt, const char *arg)
                 m->disabled = 1;
         }
     else
-        for (i = 0; i < input_files[file_idx].ctx->nb_streams; i++) {
+        for (i = 0; i < input_files[file_idx].nb_streams; i++) {
             if (check_stream_specifier(input_files[file_idx].ctx, input_files[file_idx].ctx->streams[i],
                         *p == ':' ? p + 1 : p) <= 0)
                 continue;
@@ -4064,7 +4065,7 @@ static int opt_target(const char *opt, const char *arg)
             if(nb_input_files) {
                 int i, j;
                 for (j = 0; j < nb_input_files; j++) {
-                    for (i = 0; i < input_files[j].ctx->nb_streams; i++) {
+                    for (i = 0; i < input_files[j].nb_streams; i++) {
                         AVCodecContext *c = input_files[j].ctx->streams[i]->codec;
                         if(c->codec_type != AVMEDIA_TYPE_VIDEO)
                             continue;
