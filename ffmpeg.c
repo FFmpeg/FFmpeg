@@ -2916,15 +2916,9 @@ static int opt_video_standard(const char *opt, const char *arg)
     return opt_default("standard", arg);
 }
 
-static int opt_codec(const char *opt, const char *arg)
+static int opt_codec(int *pstream_copy, char **pcodec_name,
+                      int codec_type, const char *arg)
 {
-    int *pstream_copy; char **pcodec_name; enum AVMediaType codec_type;
-
-    if      (!strcmp(opt, "acodec")) { pstream_copy = &audio_stream_copy;    pcodec_name = &audio_codec_name;    codec_type = AVMEDIA_TYPE_AUDIO;    }
-    else if (!strcmp(opt, "vcodec")) { pstream_copy = &video_stream_copy;    pcodec_name = &video_codec_name;    codec_type = AVMEDIA_TYPE_VIDEO;    }
-    else if (!strcmp(opt, "scodec")) { pstream_copy = &subtitle_stream_copy; pcodec_name = &subtitle_codec_name; codec_type = AVMEDIA_TYPE_SUBTITLE; }
-    else if (!strcmp(opt, "dcodec")) { pstream_copy = &data_stream_copy;     pcodec_name = &data_codec_name;     codec_type = AVMEDIA_TYPE_DATA;     }
-
     av_freep(pcodec_name);
     if (!strcmp(arg, "copy")) {
         *pstream_copy = 1;
@@ -2932,6 +2926,26 @@ static int opt_codec(const char *opt, const char *arg)
         *pcodec_name = av_strdup(arg);
     }
     return 0;
+}
+
+static int opt_audio_codec(const char *opt, const char *arg)
+{
+    return opt_codec(&audio_stream_copy, &audio_codec_name, AVMEDIA_TYPE_AUDIO, arg);
+}
+
+static int opt_video_codec(const char *opt, const char *arg)
+{
+    return opt_codec(&video_stream_copy, &video_codec_name, AVMEDIA_TYPE_VIDEO, arg);
+}
+
+static int opt_subtitle_codec(const char *opt, const char *arg)
+{
+    return opt_codec(&subtitle_stream_copy, &subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, arg);
+}
+
+static int opt_data_codec(const char *opt, const char *arg)
+{
+    return opt_codec(&data_stream_copy, &data_codec_name, AVMEDIA_TYPE_DATA, arg);
 }
 
 static int opt_codec_tag(const char *opt, const char *arg)
@@ -4142,8 +4156,8 @@ static int opt_target(const char *opt, const char *arg)
     }
 
     if(!strcmp(arg, "vcd")) {
-        opt_codec("vcodec", "mpeg1video");
-        opt_codec("acodec", "mp2");
+        opt_video_codec("vcodec", "mpeg1video");
+        opt_audio_codec("vcodec", "mp2");
         opt_format("f", "vcd");
 
         opt_frame_size("s", norm == PAL ? "352x288" : "352x240");
@@ -4170,8 +4184,8 @@ static int opt_target(const char *opt, const char *arg)
         mux_preload= (36000+3*1200) / 90000.0; //0.44
     } else if(!strcmp(arg, "svcd")) {
 
-        opt_codec("vcodec", "mpeg2video");
-        opt_codec("acodec", "mp2");
+        opt_video_codec("vcodec", "mpeg2video");
+        opt_audio_codec("acodec", "mp2");
         opt_format("f", "svcd");
 
         opt_frame_size("s", norm == PAL ? "480x576" : "480x480");
@@ -4193,8 +4207,8 @@ static int opt_target(const char *opt, const char *arg)
 
     } else if(!strcmp(arg, "dvd")) {
 
-        opt_codec("vcodec", "mpeg2video");
-        opt_codec("acodec", "ac3");
+        opt_video_codec("vcodec", "mpeg2video");
+        opt_audio_codec("vcodec", "ac3");
         opt_format("f", "dvd");
 
         opt_frame_size("vcodec", norm == PAL ? "720x576" : "720x480");
@@ -4293,11 +4307,14 @@ static int opt_preset(const char *opt, const char *arg)
             fprintf(stderr, "%s: Invalid syntax: '%s'\n", filename, line);
             exit_program(1);
         }
-        if (!strcmp(tmp, "acodec") ||
-            !strcmp(tmp, "vcodec") ||
-            !strcmp(tmp, "scodec") ||
-            !strcmp(tmp, "dcodec")) {
-            opt_codec(tmp, tmp2);
+        if(!strcmp(tmp, "acodec")){
+            opt_audio_codec(tmp, tmp2);
+        }else if(!strcmp(tmp, "vcodec")){
+            opt_video_codec(tmp, tmp2);
+        }else if(!strcmp(tmp, "scodec")){
+            opt_subtitle_codec(tmp, tmp2);
+        }else if(!strcmp(tmp, "dcodec")){
+            opt_data_codec(tmp, tmp2);
         }else if(opt_default(tmp, tmp2) < 0){
             fprintf(stderr, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n", filename, line, tmp, tmp2);
             exit_program(1);
@@ -4388,7 +4405,7 @@ static const OptionDef options[] = {
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
-    { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_codec}, "force video codec ('copy' to copy stream)", "codec" },
+    { "vcodec", HAS_ARG | OPT_VIDEO, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimaton threshold",  "threshold" },
     { "sameq", OPT_BOOL | OPT_VIDEO, {(void*)&same_quant}, "use same quantizer as source (implies VBR)" },
     { "same_quant", OPT_BOOL | OPT_VIDEO, {(void*)&same_quant}, "use same quantizer as source (implies VBR)" },
@@ -4419,7 +4436,7 @@ static const OptionDef options[] = {
     { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL | OPT_AUDIO, {(void*)&audio_disable}, "disable audio" },
-    { "acodec", HAS_ARG | OPT_AUDIO, {(void*)opt_codec}, "force audio codec ('copy' to copy stream)", "codec" },
+    { "acodec", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_codec_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
     { "alang", HAS_ARG | OPT_STRING | OPT_AUDIO, {(void *)&audio_language}, "set the ISO 639 language code (3 letters) of the current audio stream" , "code" },
@@ -4427,7 +4444,7 @@ static const OptionDef options[] = {
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
-    { "scodec", HAS_ARG | OPT_SUBTITLE, {(void*)opt_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
+    { "scodec", HAS_ARG | OPT_SUBTITLE, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
     { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_codec_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
@@ -4449,7 +4466,7 @@ static const OptionDef options[] = {
     { "spre", HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_preset}, "set the subtitle options to the indicated preset", "preset" },
     { "fpre", HAS_ARG | OPT_EXPERT, {(void*)opt_preset}, "set options from indicated preset file", "filename" },
     /* data codec support */
-    { "dcodec", HAS_ARG | OPT_DATA, {(void*)opt_codec}, "force data codec ('copy' to copy stream)", "codec" },
+    { "dcodec", HAS_ARG | OPT_DATA, {(void*)opt_data_codec}, "force data codec ('copy' to copy stream)", "codec" },
 
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
