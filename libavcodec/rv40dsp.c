@@ -106,10 +106,6 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc10_c(uint8_t *dst, uint8_t *src, i
     OPNAME ## rv40_qpel ## SIZE ## _h_lowpass(dst, src, stride, stride, SIZE, 52, 20, 6);\
 }\
 \
-static void OPNAME ## rv40_qpel ## SIZE ## _mc20_c(uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## rv40_qpel ## SIZE ## _h_lowpass(dst, src, stride, stride, SIZE, 20, 20, 5);\
-}\
-\
 static void OPNAME ## rv40_qpel ## SIZE ## _mc30_c(uint8_t *dst, uint8_t *src, int stride){\
     OPNAME ## rv40_qpel ## SIZE ## _h_lowpass(dst, src, stride, stride, SIZE, 20, 52, 6);\
 }\
@@ -137,10 +133,6 @@ static void OPNAME ## rv40_qpel ## SIZE ## _mc31_c(uint8_t *dst, uint8_t *src, i
     uint8_t * const full_mid = full + SIZE*2;\
     put_rv40_qpel ## SIZE ## _h_lowpass(full, src - 2*stride, SIZE, stride, SIZE+5, 20, 52, 6);\
     OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, full_mid, stride, SIZE, SIZE, 52, 20, 6);\
-}\
-\
-static void OPNAME ## rv40_qpel ## SIZE ## _mc02_c(uint8_t *dst, uint8_t *src, int stride){\
-    OPNAME ## rv40_qpel ## SIZE ## _v_lowpass(dst, src, stride, stride, SIZE, 20, 20, 5);\
 }\
 \
 static void OPNAME ## rv40_qpel ## SIZE ## _mc12_c(uint8_t *dst, uint8_t *src, int stride){\
@@ -305,13 +297,13 @@ RV40_WEIGHT_FUNC(8)
 av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->put_pixels_tab[0][ 0] = dsp->put_h264_qpel_pixels_tab[0][0];
     c->put_pixels_tab[0][ 1] = put_rv40_qpel16_mc10_c;
-    c->put_pixels_tab[0][ 2] = put_rv40_qpel16_mc20_c;
+    c->put_pixels_tab[0][ 2] = dsp->put_h264_qpel_pixels_tab[0][2];
     c->put_pixels_tab[0][ 3] = put_rv40_qpel16_mc30_c;
     c->put_pixels_tab[0][ 4] = put_rv40_qpel16_mc01_c;
     c->put_pixels_tab[0][ 5] = put_rv40_qpel16_mc11_c;
     c->put_pixels_tab[0][ 6] = put_rv40_qpel16_mc21_c;
     c->put_pixels_tab[0][ 7] = put_rv40_qpel16_mc31_c;
-    c->put_pixels_tab[0][ 8] = put_rv40_qpel16_mc02_c;
+    c->put_pixels_tab[0][ 8] = dsp->put_h264_qpel_pixels_tab[0][8];
     c->put_pixels_tab[0][ 9] = put_rv40_qpel16_mc12_c;
     c->put_pixels_tab[0][10] = put_rv40_qpel16_mc22_c;
     c->put_pixels_tab[0][11] = put_rv40_qpel16_mc32_c;
@@ -321,13 +313,13 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->put_pixels_tab[0][15] = ff_put_rv40_qpel16_mc33_c;
     c->avg_pixels_tab[0][ 0] = dsp->avg_h264_qpel_pixels_tab[0][0];
     c->avg_pixels_tab[0][ 1] = avg_rv40_qpel16_mc10_c;
-    c->avg_pixels_tab[0][ 2] = avg_rv40_qpel16_mc20_c;
+    c->avg_pixels_tab[0][ 2] = dsp->avg_h264_qpel_pixels_tab[0][2];
     c->avg_pixels_tab[0][ 3] = avg_rv40_qpel16_mc30_c;
     c->avg_pixels_tab[0][ 4] = avg_rv40_qpel16_mc01_c;
     c->avg_pixels_tab[0][ 5] = avg_rv40_qpel16_mc11_c;
     c->avg_pixels_tab[0][ 6] = avg_rv40_qpel16_mc21_c;
     c->avg_pixels_tab[0][ 7] = avg_rv40_qpel16_mc31_c;
-    c->avg_pixels_tab[0][ 8] = avg_rv40_qpel16_mc02_c;
+    c->avg_pixels_tab[0][ 8] = dsp->avg_h264_qpel_pixels_tab[0][8];
     c->avg_pixels_tab[0][ 9] = avg_rv40_qpel16_mc12_c;
     c->avg_pixels_tab[0][10] = avg_rv40_qpel16_mc22_c;
     c->avg_pixels_tab[0][11] = avg_rv40_qpel16_mc32_c;
@@ -337,13 +329,13 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->avg_pixels_tab[0][15] = ff_avg_rv40_qpel16_mc33_c;
     c->put_pixels_tab[1][ 0] = dsp->put_h264_qpel_pixels_tab[1][0];
     c->put_pixels_tab[1][ 1] = put_rv40_qpel8_mc10_c;
-    c->put_pixels_tab[1][ 2] = put_rv40_qpel8_mc20_c;
+    c->put_pixels_tab[1][ 2] = dsp->put_h264_qpel_pixels_tab[1][2];
     c->put_pixels_tab[1][ 3] = put_rv40_qpel8_mc30_c;
     c->put_pixels_tab[1][ 4] = put_rv40_qpel8_mc01_c;
     c->put_pixels_tab[1][ 5] = put_rv40_qpel8_mc11_c;
     c->put_pixels_tab[1][ 6] = put_rv40_qpel8_mc21_c;
     c->put_pixels_tab[1][ 7] = put_rv40_qpel8_mc31_c;
-    c->put_pixels_tab[1][ 8] = put_rv40_qpel8_mc02_c;
+    c->put_pixels_tab[1][ 8] = dsp->put_h264_qpel_pixels_tab[1][8];
     c->put_pixels_tab[1][ 9] = put_rv40_qpel8_mc12_c;
     c->put_pixels_tab[1][10] = put_rv40_qpel8_mc22_c;
     c->put_pixels_tab[1][11] = put_rv40_qpel8_mc32_c;
@@ -353,13 +345,13 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->put_pixels_tab[1][15] = ff_put_rv40_qpel8_mc33_c;
     c->avg_pixels_tab[1][ 0] = dsp->avg_h264_qpel_pixels_tab[1][0];
     c->avg_pixels_tab[1][ 1] = avg_rv40_qpel8_mc10_c;
-    c->avg_pixels_tab[1][ 2] = avg_rv40_qpel8_mc20_c;
+    c->avg_pixels_tab[1][ 2] = dsp->avg_h264_qpel_pixels_tab[1][2];
     c->avg_pixels_tab[1][ 3] = avg_rv40_qpel8_mc30_c;
     c->avg_pixels_tab[1][ 4] = avg_rv40_qpel8_mc01_c;
     c->avg_pixels_tab[1][ 5] = avg_rv40_qpel8_mc11_c;
     c->avg_pixels_tab[1][ 6] = avg_rv40_qpel8_mc21_c;
     c->avg_pixels_tab[1][ 7] = avg_rv40_qpel8_mc31_c;
-    c->avg_pixels_tab[1][ 8] = avg_rv40_qpel8_mc02_c;
+    c->avg_pixels_tab[1][ 8] = dsp->avg_h264_qpel_pixels_tab[1][8];
     c->avg_pixels_tab[1][ 9] = avg_rv40_qpel8_mc12_c;
     c->avg_pixels_tab[1][10] = avg_rv40_qpel8_mc22_c;
     c->avg_pixels_tab[1][11] = avg_rv40_qpel8_mc32_c;

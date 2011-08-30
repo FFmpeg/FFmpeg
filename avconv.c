@@ -1148,11 +1148,10 @@ static void do_video_out(AVFormatContext *s,
 {
     int nb_frames, i, ret, format_video_sync;
     AVFrame *final_picture;
-    AVCodecContext *enc, *dec;
+    AVCodecContext *enc;
     double sync_ipts;
 
     enc = ost->st->codec;
-    dec = ist->st->codec;
 
     sync_ipts = get_sync_ipts(ost) / av_q2d(enc->time_base);
 
@@ -1206,15 +1205,14 @@ static void do_video_out(AVFormatContext *s,
             /* raw pictures are written as AVPicture structure to
                avoid any copies. We support temporarily the older
                method. */
-            AVFrame* old_frame = enc->coded_frame;
-            enc->coded_frame = dec->coded_frame; //FIXME/XXX remove this hack
+            enc->coded_frame->interlaced_frame = in_picture->interlaced_frame;
+            enc->coded_frame->top_field_first  = in_picture->top_field_first;
             pkt.data= (uint8_t *)final_picture;
             pkt.size=  sizeof(AVPicture);
             pkt.pts= av_rescale_q(ost->sync_opts, enc->time_base, ost->st->time_base);
             pkt.flags |= AV_PKT_FLAG_KEY;
 
             write_frame(s, &pkt, ost->st->codec, ost->bitstream_filters);
-            enc->coded_frame = old_frame;
         } else {
             AVFrame big_picture;
 
