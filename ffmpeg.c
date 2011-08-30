@@ -2388,7 +2388,7 @@ static int transcode(OutputFile *output_files,
             if (ost->is_past_recording_time || no_packet[ist->file_index] ||
                 (os->pb && avio_tell(os->pb) >= of->limit_filesize))
                 continue;
-                opts = ost->st->pts.val * av_q2d(ost->st->time_base);
+            opts = ost->st->pts.val * av_q2d(ost->st->time_base);
             ipts = ist->pts;
             if (!input_files[ist->file_index].eof_reached){
                 if(ipts < ipts_min) {
