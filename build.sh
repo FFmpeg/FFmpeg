@@ -1,0 +1,41 @@
+#!/bin/bash
+
+if [ "$NDK" = "" ]; then
+	echo NDK variable not set, assuming ${HOME}/android-ndk
+	export NDK=${HOME}/android-ndk
+fi
+
+SYSROOT=$NDK/platforms/android-9/arch-arm
+# Expand the prebuilt/* path into the correct one
+TOOLCHAIN=`echo $NDK/toolchains/arm-linux-androideabi-4.4.3/prebuilt/*-x86`
+export PATH=$TOOLCHAIN/bin:$PATH
+ANDROID_SOURCE=$HOME/android
+ANDROID_LIBS=$HOME/glib
+
+rm -rf ../build/libav
+mkdir -p ../build/libav
+
+DEST=../build/libav
+FLAGS="--target-os=linux --cross-prefix=arm-linux-androideabi- --arch=arm --cpu=armv7-a"
+FLAGS="$FLAGS --sysroot=$SYSROOT"
+FLAGS="$FLAGS --disable-avdevice --disable-decoder=h264 --disable-decoder=h264_vdpau --enable-libstagefright"
+
+EXTRA_CFLAGS="-I$ANDROID_SOURCE/frameworks/base/include -I$ANDROID_SOURCE/system/core/include"
+EXTRA_CFLAGS="$EXTRA_CFLAGS -I$ANDROID_SOURCE/frameworks/base/media/libstagefright"
+EXTRA_CFLAGS="$EXTRA_CFLAGS -I$ANDROID_SOURCE/frameworks/base/include/media/stagefright/openmax"
+EXTRA_CFLAGS="$EXTRA_CFLAGS -I$NDK/sources/cxx-stl/system/include"
+
+EXTRA_CFLAGS="$EXTRA_CFLAGS -march=armv7-a -mfloat-abi=softfp -mfpu=neon"
+EXTRA_LDFLAGS="-Wl,--fix-cortex-a8 -L$ANDROID_LIBS -Wl,-rpath-link,$ANDROID_LIBS"
+EXTRA_CXXFLAGS="-Wno-multichar -fno-exceptions -fno-rtti"
+ABI="armeabi-v7a"
+DEST="$DEST/$ABI"
+FLAGS="$FLAGS --prefix=$DEST"
+
+mkdir -p $DEST
+
+echo $FLAGS --extra-cflags="$EXTRA_CFLAGS" --extra-ldflags="$EXTRA_LDFLAGS" --extra-cxxflags="$EXTRA_CXXFLAGS" > $DEST/info.txt
+./configure $FLAGS --extra-cflags="$EXTRA_CFLAGS" --extra-ldflags="$EXTRA_LDFLAGS" --extra-cxxflags="$EXTRA_CXXFLAGS" | tee $DEST/configuration.txt
+[ $PIPESTATUS == 0 ] || exit 1
+make clean
+make -j4 || exit 1
