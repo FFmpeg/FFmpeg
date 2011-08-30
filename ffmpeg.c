@@ -4115,7 +4115,7 @@ static int opt_target(const char *opt, const char *arg)
         opt_default("minrate", "1150000");
         opt_default("bufsize", "327680"); // 40*1024*8;
 
-        opt_default("ab", "224000");
+        opt_default("b:a", "224000");
         audio_sample_rate = 44100;
         audio_channels = 2;
 
@@ -4146,7 +4146,7 @@ static int opt_target(const char *opt, const char *arg)
         opt_default("flags", "+scan_offset");
 
 
-        opt_default("ab", "224000");
+        opt_default("b:a", "224000");
         audio_sample_rate = 44100;
 
         opt_default("packetsize", "2324");
@@ -4170,7 +4170,7 @@ static int opt_target(const char *opt, const char *arg)
         opt_default("packetsize", "2048");  // from www.mpucoder.com: DVD sectors contain 2048 bytes of data, this is also the size of one pack.
         opt_default("muxrate", "10080000"); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
 
-        opt_default("ab", "448000");
+        opt_default("b:a", "448000");
         audio_sample_rate = 48000;
 
     } else if(!strncmp(arg, "dv", 2)) {
