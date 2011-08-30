@@ -1882,6 +1882,36 @@ static void print_sdp(OutputFile *output_files, int n)
     av_freep(&avc);
 }
 
+static int init_input_stream(int ist_index, OutputStream *output_streams, int nb_output_streams,
+                             char *error, int error_len)
+{
+    int i;
+    InputStream *ist = &input_streams[ist_index];
+    if (ist->decoding_needed) {
+        AVCodec *codec = ist->dec;
+        if (!codec)
+            codec = avcodec_find_decoder(ist->st->codec->codec_id);
+        if (!codec) {
+            snprintf(error, sizeof(error), "Decoder (codec %s) not found for input stream #%d.%d",
+                    avcodec_get_name(ist->st->codec->codec_id), ist->file_index, ist->st->index);
+            return AVERROR(EINVAL);
+        }
+        if (avcodec_open2(ist->st->codec, codec, &ist->opts) < 0) {
+            snprintf(error, sizeof(error), "Error while opening decoder for input stream #%d.%d",
+                    ist->file_index, ist->st->index);
+            return AVERROR(EINVAL);
+        }
+        assert_codec_experimental(ist->st->codec, 0);
+        assert_avoptions(ist->opts);
+    }
+
+    ist->pts = ist->st->avg_frame_rate.num ? - ist->st->codec->has_b_frames*AV_TIME_BASE / av_q2d(ist->st->avg_frame_rate) : 0;
+    ist->next_pts = AV_NOPTS_VALUE;
+    ist->is_start = 1;
+
+    return 0;
+}
+
 /*
  * The following code is the main loop of the file converter
  */
@@ -1890,7 +1920,7 @@ static int transcode(OutputFile *output_files,
                      InputFile *input_files,
                      int nb_input_files)
 {
-    int ret = 0, i, j;
+    int ret = 0, i;
     AVFormatContext *is, *os;
     AVCodecContext *codec, *icodec;
     OutputStream *ost;
@@ -2180,39 +2210,10 @@ static int transcode(OutputFile *output_files,
         }
     }
 
-    /* open each decoder */
-    for (i = 0; i < nb_input_streams; i++) {
-        ist = &input_streams[i];
-        if (ist->decoding_needed) {
-            AVCodec *codec = ist->dec;
-            if (!codec)
-                codec = avcodec_find_decoder(ist->st->codec->codec_id);
-            if (!codec) {
-                snprintf(error, sizeof(error), "Decoder (codec %s) not found for input stream #%d.%d",
-                        avcodec_get_name(ist->st->codec->codec_id), ist->file_index, ist->st->index);
-                ret = AVERROR(EINVAL);
-                goto dump_format;
-            }
-            if (avcodec_open2(ist->st->codec, codec, &ist->opts) < 0) {
-                snprintf(error, sizeof(error), "Error while opening decoder for input stream #%d.%d",
-                        ist->file_index, ist->st->index);
-                ret = AVERROR(EINVAL);
-                goto dump_format;
-            }
-            assert_codec_experimental(ist->st->codec, 0);
-            assert_avoptions(ost->opts);
-        }
-    }
-
-    /* init pts */
-    for (i = 0; i < nb_input_streams; i++) {
-        AVStream *st;
-        ist = &input_streams[i];
-        st= ist->st;
-        ist->pts = st->avg_frame_rate.num ? - st->codec->has_b_frames*AV_TIME_BASE / av_q2d(st->avg_frame_rate) : 0;
-        ist->next_pts = AV_NOPTS_VALUE;
-        ist->is_start = 1;
-    }
+    /* init input streams */
+    for (i = 0; i < nb_input_streams; i++)
+        if ((ret = init_input_stream(i, output_streams, nb_output_streams, error, sizeof(error)) < 0))
+            goto dump_format;
 
     /* open files and write file headers */
     for (i = 0; i < nb_output_files; i++) {
