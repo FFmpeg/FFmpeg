@@ -355,6 +355,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_freep(&dtext->fontcolor_string);
     av_freep(&dtext->boxcolor_string);
     av_freep(&dtext->positions);
+    dtext->nb_positions = 0;
     av_freep(&dtext->shadowcolor_string);
     av_tree_enumerate(dtext->glyphs, NULL, NULL, glyph_enu_free);
     av_tree_destroy(dtext->glyphs);
