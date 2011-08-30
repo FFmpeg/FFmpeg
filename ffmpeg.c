@@ -2309,11 +2309,11 @@ static int transcode(AVFormatContext **output_files,
     for(; received_sigterm == 0;) {
         int file_index, ist_index;
         AVPacket pkt;
-        double ipts_min;
+        int64_t ipts_min;
         double opts_min;
 
     redo:
-        ipts_min= 1e100;
+        ipts_min= INT64_MAX;
         opts_min= 1e100;
         /* if 'q' pressed, exits */
         if (!using_stdin) {
@@ -2393,14 +2393,15 @@ static int transcode(AVFormatContext **output_files,
            smallest output pts */
         file_index = -1;
         for(i=0;i<nb_ostreams;i++) {
-            double ipts, opts;
+            int64_t ipts;
+            double  opts;
             ost = ost_table[i];
             os = output_files[ost->file_index];
             ist = &input_streams[ost->source_index];
             if(ist->is_past_recording_time || no_packet[ist->file_index])
                 continue;
                 opts = ost->st->pts.val * av_q2d(ost->st->time_base);
-            ipts = (double)ist->pts;
+            ipts = ist->pts;
             if (!input_files[ist->file_index].eof_reached){
                 if(ipts < ipts_min) {
                     ipts_min = ipts;
