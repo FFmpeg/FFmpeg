@@ -91,7 +91,7 @@ endif
 
 FATE_UTILS = base64 tiny_psnr
 
-TOOL = avconv
+TOOL = ffmpeg
 
 fate: $(FATE)
 
