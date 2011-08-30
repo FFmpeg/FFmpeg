@@ -3863,7 +3863,7 @@ static int opt_output_file(const char *opt, const char *filename)
     }
 
     /* copy global metadata by default */
-    if (metadata_global_autocopy)
+    if (metadata_global_autocopy && nb_input_files)
         av_dict_copy(&oc->metadata, input_files[0].ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
     if (metadata_streams_autocopy)
