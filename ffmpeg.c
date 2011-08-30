@@ -1446,7 +1446,7 @@ static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_
     memset(buf, fill_char, size);
 }
 
-static void flush_encoders(int ist_index, OutputStream *ost_table, int nb_ostreams)
+static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
 {
     int i, ret;
 
@@ -1455,7 +1455,7 @@ static void flush_encoders(int ist_index, OutputStream *ost_table, int nb_ostrea
         AVCodecContext *enc = ost->st->codec;
         AVFormatContext *os = output_files[ost->file_index].ctx;
 
-        if (ost->source_index != ist_index || !ost->encoding_needed)
+        if (!ost->encoding_needed)
             continue;
 
         if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <=1)
@@ -1863,10 +1863,6 @@ static int output_packet(InputStream *ist, int ist_index,
         }
     }
  discard_packet:
-    if (pkt == NULL) {
-        /* EOF handling */
-        flush_encoders(ist_index, ost_table, nb_ostreams);
-    }
 
     return 0;
 }
@@ -2505,6 +2501,7 @@ static int transcode(OutputFile *output_files,
             output_packet(ist, i, output_streams, nb_output_streams, NULL);
         }
     }
+    flush_encoders(output_streams, nb_output_streams);
 
     term_exit();
 
