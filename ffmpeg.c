@@ -1136,7 +1136,7 @@ static void do_video_out(AVFormatContext *s,
                          AVFrame *in_picture,
                          int *frame_size, float quality)
 {
-    int nb_frames, i, ret;
+    int nb_frames, i, ret, format_video_sync;
     AVFrame *final_picture;
     AVCodecContext *enc, *dec;
     double sync_ipts;
@@ -1151,12 +1151,16 @@ static void do_video_out(AVFormatContext *s,
 
     *frame_size = 0;
 
-    if(video_sync_method){
+    format_video_sync = video_sync_method;
+    if (format_video_sync < 0)
+        format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? 2 : 1;
+
+    if (format_video_sync) {
         double vdelta = sync_ipts - ost->sync_opts;
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
             nb_frames = 0;
-        else if (video_sync_method == 2 || (video_sync_method<0 && (s->oformat->flags & AVFMT_VARIABLE_FPS))){
+        else if (format_video_sync == 2) {
             if(vdelta<=-0.6){
                 nb_frames=0;
             }else if(vdelta>0.6)
