@@ -113,7 +113,6 @@ static uint16_t *inter_matrix = NULL;
 static const char *video_rc_override_string=NULL;
 static int video_disable = 0;
 static int video_discard = 0;
-static char *video_language = NULL;
 static int same_quant = 0;
 static int do_deinterlace = 0;
 static int top_field_first = -1;
@@ -129,10 +128,8 @@ static int audio_sample_rate = 0;
 static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
 static int audio_channels = 0;
-static char *audio_language = NULL;
 
 static int subtitle_disable = 0;
-static char *subtitle_language = NULL;
 
 static int data_disable = 0;
 
@@ -3191,10 +3188,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         if (forced_key_frames)
             parse_forced_key_frames(forced_key_frames, ost, video_enc);
     }
-    if (video_language) {
-        av_dict_set(&st->metadata, "language", video_language, 0);
-        av_freep(&video_language);
-    }
 
     /* reset some key parameters */
     video_disable = 0;
@@ -3229,10 +3222,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
             audio_enc->sample_fmt = audio_sample_fmt;
         if (audio_sample_rate)
             audio_enc->sample_rate = audio_sample_rate;
-    }
-    if (audio_language) {
-        av_dict_set(&st->metadata, "language", audio_language, 0);
-        av_freep(&audio_language);
     }
 
     /* reset some key parameters */
@@ -3277,11 +3266,6 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc)
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         subtitle_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-    }
-
-    if (subtitle_language) {
-        av_dict_set(&st->metadata, "language", subtitle_language, 0);
-        av_freep(&subtitle_language);
     }
 
     subtitle_disable = 0;
@@ -4095,7 +4079,6 @@ static const OptionDef options[] = {
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
-    { "vlang", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void *)&video_language}, "set the ISO 639 language code (3 letters) of the current video stream" , "code" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
     { "streamid", HAS_ARG | OPT_EXPERT, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
@@ -4110,13 +4093,11 @@ static const OptionDef options[] = {
     { "acodec", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
-    { "alang", HAS_ARG | OPT_STRING | OPT_AUDIO, {(void *)&audio_language}, "set the ISO 639 language code (3 letters) of the current audio stream" , "code" },
     { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_sample_fmt}, "set sample format, 'list' as argument shows all the sample formats supported", "format" },
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
     { "scodec", HAS_ARG | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
-    { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_subtitle_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
     /* grab options */
