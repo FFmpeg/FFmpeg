@@ -266,7 +266,6 @@ API changes, most recent first:
     d9d86e0 rename url_fprintf -> avio_printf
     59f65d9 deprecate url_setbufsize
     3e68b3b deprecate url_ferror
-    66e5b1d deprecate url_feof
     e8bb2e2 deprecate url_fget_max_packet_size
     76aa876 rename url_fsize -> avio_size
     e519753 deprecate url_fgetc
