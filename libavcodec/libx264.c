@@ -187,7 +187,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
 
-    x4->sei_size = 0;
     x264_param_default(&x4->params);
 
     x4->params.i_keyint_max         = avctx->gop_size;
