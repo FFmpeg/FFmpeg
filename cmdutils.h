@@ -278,6 +278,12 @@ void show_protocols(void);
 void show_pix_fmts(void);
 
 /**
+ * Print a listing containing all the sample formats supported by the
+ * program.
+ */
+int show_sample_fmts(const char *opt, const char *arg);
+
+/**
  * Return a positive value if a line read from standard input
  * starts with [yY], otherwise return 0.
  */

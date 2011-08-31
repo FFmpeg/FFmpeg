@@ -105,7 +105,6 @@ static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
-static enum AVSampleFormat audio_sample_fmt = AV_SAMPLE_FMT_NONE;
 static AVRational frame_rate;
 static float video_qscale = 0;
 static uint16_t *intra_matrix = NULL;
@@ -320,6 +319,8 @@ typedef struct OptionsContext {
     int        nb_bitstream_filters;
     SpecifierOpt *codec_tags;
     int        nb_codec_tags;
+    SpecifierOpt *sample_fmts;
+    int        nb_sample_fmts;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -2572,24 +2573,6 @@ static int opt_top_field_first(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_audio_sample_fmt(const char *opt, const char *arg)
-{
-    if (strcmp(arg, "list")) {
-        audio_sample_fmt = av_get_sample_fmt(arg);
-        if (audio_sample_fmt == AV_SAMPLE_FMT_NONE) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid sample format '%s'\n", arg);
-            return AVERROR(EINVAL);
-        }
-    } else {
-        int i;
-        char fmt_str[128];
-        for (i = -1; i < AV_SAMPLE_FMT_NB; i++)
-            printf("%s\n", av_get_sample_fmt_string(fmt_str, sizeof(fmt_str), i));
-        exit_program(0);
-    }
-    return 0;
-}
-
 static int opt_audio_rate(const char *opt, const char *arg)
 {
     audio_sample_rate = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
@@ -2994,7 +2977,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     frame_height = 0;
     frame_width  = 0;
     audio_sample_rate = 0;
-    audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3204,14 +3186,21 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
         audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
     if (!st->stream_copy) {
+        char *sample_fmt = NULL;
+
         if (audio_qscale > QSCALE_NONE) {
             audio_enc->flags |= CODEC_FLAG_QSCALE;
             audio_enc->global_quality = FF_QP2LAMBDA * audio_qscale;
         }
         MATCH_PER_STREAM_OPT(audio_channels, i, audio_enc->channels, oc, st);
 
-        if (audio_sample_fmt != AV_SAMPLE_FMT_NONE)
-            audio_enc->sample_fmt = audio_sample_fmt;
+        MATCH_PER_STREAM_OPT(sample_fmts, str, sample_fmt, oc, st);
+        if (sample_fmt &&
+            (audio_enc->sample_fmt = av_get_sample_fmt(sample_fmt)) == AV_SAMPLE_FMT_NONE) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid sample format '%s'\n", sample_fmt);
+            exit_program(1);
+        }
+
         if (audio_sample_rate)
             audio_enc->sample_rate = audio_sample_rate;
     }
@@ -3642,7 +3631,6 @@ static void opt_output_file(void *optctx, const char *filename)
     frame_width   = 0;
     frame_height  = 0;
     audio_sample_rate = 0;
-    audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
 
     av_freep(&streamid_map);
     nb_streamid_map = 0;
@@ -4079,7 +4067,7 @@ static const OptionDef options[] = {
     { "acodec", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
-    { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_sample_fmt}, "set sample format, 'list' as argument shows all the sample formats supported", "format" },
+    { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_SPEC | OPT_STRING, {.off = OFFSET(sample_fmts)}, "set sample format", "format" },
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE | OPT_OFFSET, {.off = OFFSET(subtitle_disable)}, "disable subtitle" },

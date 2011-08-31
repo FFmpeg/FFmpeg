@@ -590,6 +590,9 @@ and is mapped to the corresponding demuxer options.
 Disable audio recording.
 @item -acodec @var{codec}
 Set the audio codec. This is an alias for @code{-codec:a}.
+@item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt}
+Set the audio sample format. Use @code{-help sample_fmts} to get a list
+of supported sample formats.
 @end table
 
 @section Advanced Audio options:
