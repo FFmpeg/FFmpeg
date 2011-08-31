@@ -111,7 +111,6 @@ static float video_qscale = 0;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
 static const char *video_rc_override_string=NULL;
-static int video_disable = 0;
 static int video_discard = 0;
 static int same_quant = 0;
 static int do_deinterlace = 0;
@@ -126,12 +125,7 @@ static char *vfilters = NULL;
 static int audio_sample_rate = 0;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
-static int audio_disable = 0;
 static int audio_channels = 0;
-
-static int subtitle_disable = 0;
-
-static int data_disable = 0;
 
 static int file_overwrite = 0;
 static int do_benchmark = 0;
@@ -311,6 +305,11 @@ typedef struct OptionsContext {
     uint64_t limit_filesize;
     float mux_preload;
     float mux_max_delay;
+
+    int video_disable;
+    int audio_disable;
+    int subtitle_disable;
+    int data_disable;
 
     SpecifierOpt *metadata;
     int        nb_metadata;
@@ -2826,7 +2825,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
-            if(audio_disable)
+            if (o->audio_disable)
                 st->discard= AVDISCARD_ALL;
             break;
         case AVMEDIA_TYPE_VIDEO:
@@ -2849,7 +2848,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                     (float)rfps / rfps_base, rfps, rfps_base);
             }
 
-            if(video_disable)
+            if (o->video_disable)
                 st->discard= AVDISCARD_ALL;
             else if(video_discard)
                 st->discard= video_discard;
@@ -2857,7 +2856,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         case AVMEDIA_TYPE_DATA:
             break;
         case AVMEDIA_TYPE_SUBTITLE:
-            if(subtitle_disable)
+            if (o->subtitle_disable)
                 st->discard = AVDISCARD_ALL;
             break;
         case AVMEDIA_TYPE_ATTACHMENT:
@@ -3190,7 +3189,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     }
 
     /* reset some key parameters */
-    video_disable = 0;
     av_freep(&forced_key_frames);
     frame_pix_fmt = PIX_FMT_NONE;
     return ost;
@@ -3224,9 +3222,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
             audio_enc->sample_rate = audio_sample_rate;
     }
 
-    /* reset some key parameters */
-    audio_disable = 0;
-
     return ost;
 }
 
@@ -3248,7 +3243,6 @@ static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc)
         data_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
 
-    data_disable = 0;
     return ost;
 }
 
@@ -3268,7 +3262,6 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc)
         subtitle_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
 
-    subtitle_disable = 0;
     return ost;
 }
 
@@ -3423,7 +3416,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* video: highest resolution */
-        if (!video_disable && oc->oformat->video_codec != CODEC_ID_NONE) {
+        if (!o->video_disable && oc->oformat->video_codec != CODEC_ID_NONE) {
             int area = 0, idx = -1;
             for (i = 0; i < nb_input_streams; i++) {
                 ist = &input_streams[i];
@@ -3437,7 +3430,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* audio: most channels */
-        if (!audio_disable && oc->oformat->audio_codec != CODEC_ID_NONE) {
+        if (!o->audio_disable && oc->oformat->audio_codec != CODEC_ID_NONE) {
             int channels = 0, idx = -1;
             for (i = 0; i < nb_input_streams; i++) {
                 ist = &input_streams[i];
@@ -3451,7 +3444,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* subtitles: pick first */
-        if (!subtitle_disable && oc->oformat->subtitle_codec != CODEC_ID_NONE) {
+        if (!o->subtitle_disable && oc->oformat->subtitle_codec != CODEC_ID_NONE) {
             for (i = 0; i < nb_input_streams; i++)
                 if (input_streams[i].st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                     NEW_STREAM(subtitle, i);
@@ -4056,7 +4049,7 @@ static const OptionDef options[] = {
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
-    { "vn", OPT_BOOL | OPT_VIDEO, {(void*)&video_disable}, "disable video" },
+    { "vn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, {.off = OFFSET(video_disable)}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
@@ -4089,14 +4082,14 @@ static const OptionDef options[] = {
     { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
     { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
-    { "an", OPT_BOOL | OPT_AUDIO, {(void*)&audio_disable}, "disable audio" },
+    { "an", OPT_BOOL | OPT_AUDIO | OPT_OFFSET, {.off = OFFSET(audio_disable)}, "disable audio" },
     { "acodec", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
     { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_sample_fmt}, "set sample format, 'list' as argument shows all the sample formats supported", "format" },
 
     /* subtitle options */
-    { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
+    { "sn", OPT_BOOL | OPT_SUBTITLE | OPT_OFFSET, {.off = OFFSET(subtitle_disable)}, "disable subtitle" },
     { "scodec", HAS_ARG | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
     { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_subtitle_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
