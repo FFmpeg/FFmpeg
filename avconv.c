@@ -113,7 +113,6 @@ static uint16_t *inter_matrix = NULL;
 static const char *video_rc_override_string=NULL;
 static int video_disable = 0;
 static int video_discard = 0;
-static unsigned int video_codec_tag = 0;
 static char *video_language = NULL;
 static int same_quant = 0;
 static int do_deinterlace = 0;
@@ -130,15 +129,12 @@ static int audio_sample_rate = 0;
 static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
 static int audio_channels = 0;
-static unsigned int audio_codec_tag = 0;
 static char *audio_language = NULL;
 
 static int subtitle_disable = 0;
 static char *subtitle_language = NULL;
-static unsigned int subtitle_codec_tag = 0;
 
 static int data_disable = 0;
-static unsigned int data_codec_tag = 0;
 
 static int file_overwrite = 0;
 static int do_benchmark = 0;
@@ -325,6 +321,8 @@ typedef struct OptionsContext {
     int        nb_max_frames;
     SpecifierOpt *bitstream_filters;
     int        nb_bitstream_filters;
+    SpecifierOpt *codec_tags;
+    int        nb_codec_tags;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -2627,24 +2625,6 @@ static int opt_data_codec(OptionsContext *o, const char *opt, const char *arg)
     return parse_option(o, "codec:d", arg, options);
 }
 
-static int opt_codec_tag(const char *opt, const char *arg)
-{
-    char *tail;
-    uint32_t *codec_tag;
-
-    codec_tag = !strcmp(opt, "atag") ? &audio_codec_tag :
-                !strcmp(opt, "vtag") ? &video_codec_tag :
-                !strcmp(opt, "stag") ? &subtitle_codec_tag : NULL;
-    if (!codec_tag)
-        return -1;
-
-    *codec_tag = strtol(arg, &tail, 0);
-    if (!tail || *tail)
-        *codec_tag = AV_RL32(arg);
-
-    return 0;
-}
-
 static int opt_map(OptionsContext *o, const char *opt, const char *arg)
 {
     StreamMap *m = NULL;
@@ -3063,7 +3043,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     int idx      = oc->nb_streams - 1;
     int64_t max_frames = INT64_MAX;
-    char *bsf = NULL, *next;
+    char *bsf = NULL, *next, *codec_tag = NULL;
     AVBitStreamFilterContext *bsfc, *bsfc_prev = NULL;
 
     if (!st) {
@@ -3106,6 +3086,14 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         bsf       = next;
     }
 
+    MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, oc, st);
+    if (codec_tag) {
+        uint32_t tag = strtol(codec_tag, &next, 0);
+        if (*next)
+            tag = AV_RL32(codec_tag);
+        st->codec->codec_tag = tag;
+    }
+
     ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
 }
@@ -3128,9 +3116,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     }
 
     video_enc = st->codec;
-
-    if(video_codec_tag)
-        video_enc->codec_tag= video_codec_tag;
 
     if(oc->oformat->flags & AVFMT_GLOBALHEADER) {
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
@@ -3230,9 +3215,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
     audio_enc = st->codec;
     audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
 
-    if(audio_codec_tag)
-        audio_enc->codec_tag= audio_codec_tag;
-
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
@@ -3273,9 +3255,6 @@ static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc)
         exit_program(1);
     }
 
-    if (data_codec_tag)
-        data_enc->codec_tag= data_codec_tag;
-
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         data_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
@@ -3295,9 +3274,6 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc)
     subtitle_enc = st->codec;
 
     subtitle_enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
-
-    if(subtitle_codec_tag)
-        subtitle_enc->codec_tag= subtitle_codec_tag;
 
     if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
         subtitle_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
@@ -4032,6 +4008,21 @@ static int opt_data_frames(OptionsContext *o, const char *opt, const char *arg)
     return parse_option(o, "frames:d", arg, options);
 }
 
+static int opt_video_tag(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "tag:v", arg, options);
+}
+
+static int opt_audio_tag(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "tag:a", arg, options);
+}
+
+static int opt_subtitle_tag(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "tag:s", arg, options);
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -4073,6 +4064,7 @@ static const OptionDef options[] = {
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
     { "copyinkf", OPT_BOOL | OPT_EXPERT, {(void*)&copy_initial_nonkeyframes}, "copy initial non-keyframes" },
     { "frames", OPT_INT64 | HAS_ARG | OPT_SPEC, {.off = OFFSET(max_frames)}, "set the number of frames to record", "number" },
+    { "tag",   OPT_STRING | HAS_ARG | OPT_SPEC, {.off = OFFSET(codec_tags)}, "force codec tag/fourcc", "fourcc/tag" },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
@@ -4102,7 +4094,7 @@ static const OptionDef options[] = {
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
-    { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_codec_tag}, "force video tag/fourcc", "fourcc/tag" },
+    { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "vlang", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void *)&video_language}, "set the ISO 639 language code (3 letters) of the current video stream" , "code" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
@@ -4116,7 +4108,7 @@ static const OptionDef options[] = {
     { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL | OPT_AUDIO, {(void*)&audio_disable}, "disable audio" },
     { "acodec", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
-    { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_codec_tag}, "force audio tag/fourcc", "fourcc/tag" },
+    { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
     { "alang", HAS_ARG | OPT_STRING | OPT_AUDIO, {(void *)&audio_language}, "set the ISO 639 language code (3 letters) of the current audio stream" , "code" },
     { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO, {(void*)opt_audio_sample_fmt}, "set sample format, 'list' as argument shows all the sample formats supported", "format" },
@@ -4125,7 +4117,7 @@ static const OptionDef options[] = {
     { "sn", OPT_BOOL | OPT_SUBTITLE, {(void*)&subtitle_disable}, "disable subtitle" },
     { "scodec", HAS_ARG | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_subtitle_codec}, "force subtitle codec ('copy' to copy stream)", "codec" },
     { "slang", HAS_ARG | OPT_STRING | OPT_SUBTITLE, {(void *)&subtitle_language}, "set the ISO 639 language code (3 letters) of the current subtitle stream" , "code" },
-    { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE, {(void*)opt_codec_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
+    { "stag", HAS_ARG | OPT_EXPERT | OPT_SUBTITLE | OPT_FUNC2, {(void*)opt_subtitle_tag}, "force subtitle tag/fourcc", "fourcc/tag" },
 
     /* grab options */
     { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, {(void*)&input_sync}, "sync read on input", "" },

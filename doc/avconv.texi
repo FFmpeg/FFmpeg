@@ -564,7 +564,7 @@ top=1/bottom=0/auto=-1 field first
 @item -dc @var{precision}
 Intra_dc_precision.
 @item -vtag @var{fourcc/tag}
-Force video tag/fourcc.
+Force video tag/fourcc. This is an alias for @code{-tag:v}.
 @item -qphist
 Show QP histogram.
 @item -force_key_frames @var{time}[,@var{time}...]
@@ -604,7 +604,7 @@ Set the ISO 639 language code (3 letters) of the current audio stream.
 
 @table @option
 @item -atag @var{fourcc/tag}
-Force audio tag/fourcc.
+Force audio tag/fourcc. This is an alias for @code{-tag:a}.
 @item -audio_service_type @var{type}
 Set the type of service that the audio stream contains.
 @table @option
@@ -811,6 +811,9 @@ avconv -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
 @example
 avconv -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
 @end example
+
+@item -tag[:@var{stream_specifier}] @var{codec_tag}
+Force a tag/fourcc for matching streams.
 @end table
 @c man end OPTIONS
 
