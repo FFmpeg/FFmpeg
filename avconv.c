@@ -140,9 +140,6 @@ static unsigned int subtitle_codec_tag = 0;
 static int data_disable = 0;
 static unsigned int data_codec_tag = 0;
 
-static float mux_preload= 0.5;
-static float mux_max_delay= 0.7;
-
 static int file_overwrite = 0;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
@@ -319,6 +316,8 @@ typedef struct OptionsContext {
 
     int64_t recording_time;
     uint64_t limit_filesize;
+    float mux_preload;
+    float mux_max_delay;
 
     SpecifierOpt *metadata;
     int        nb_metadata;
@@ -368,6 +367,8 @@ static void reset_options(OptionsContext *o)
 
     memset(o, 0, sizeof(*o));
 
+    o->mux_preload    = 0.5;
+    o->mux_max_delay  = 0.7;
     o->recording_time = INT64_MAX;
     o->limit_filesize = UINT64_MAX;
     o->chapters_input_file = INT_MAX;
@@ -3569,8 +3570,8 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
 
-    oc->preload= (int)(mux_preload*AV_TIME_BASE);
-    oc->max_delay= (int)(mux_max_delay*AV_TIME_BASE);
+    oc->preload   = (int)(o->mux_preload   * AV_TIME_BASE);
+    oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
     /* copy chapters */
@@ -3935,7 +3936,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
            and the first pack from the other stream, respectively, may also have
            been written before.
            So the real data starts at SCR 36000+3*1200. */
-        mux_preload= (36000+3*1200) / 90000.0; //0.44
+        o->mux_preload = (36000+3*1200) / 90000.0; //0.44
     } else if(!strcmp(arg, "svcd")) {
 
         opt_video_codec(o, "c:v", "mpeg2video");
@@ -4130,8 +4131,8 @@ static const OptionDef options[] = {
     { "isync", OPT_BOOL | OPT_EXPERT | OPT_GRAB, {(void*)&input_sync}, "sync read on input", "" },
 
     /* muxer options */
-    { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
-    { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_preload}, "set the initial demux-decode delay", "seconds" },
+    { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT   | OPT_OFFSET, {.off = OFFSET(mux_max_delay)}, "set the maximum demux-decode delay", "seconds" },
+    { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(mux_preload)},   "set the initial demux-decode delay", "seconds" },
 
     { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(bitstream_filters)}, "A comma-separated list of bitstream filters", "bitstream_filters" },
 
