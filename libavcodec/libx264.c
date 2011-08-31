@@ -476,6 +476,7 @@ static const AVClass class = {
 
 static const AVCodecDefault x264_defaults[] = {
     { "b",                "0" },
+    { "threads",          "0" },
     { NULL },
 };
 
