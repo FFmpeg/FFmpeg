@@ -841,6 +841,26 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
             return 0;
         }
         return 1;
+    } else if (*spec == 'p' && *(spec + 1) == ':') {
+        int prog_id, i, j;
+        char *endptr;
+        spec += 2;
+        prog_id = strtol(spec, &endptr, 0);
+        for (i = 0; i < s->nb_programs; i++) {
+            if (s->programs[i]->id != prog_id)
+                continue;
+
+            if (*endptr++ == ':') {
+                int stream_idx = strtol(endptr, NULL, 0);
+                return (stream_idx >= 0 && stream_idx < s->programs[i]->nb_stream_indexes &&
+                        st->index == s->programs[i]->stream_index[stream_idx]);
+            }
+
+            for (j = 0; j < s->programs[i]->nb_stream_indexes; j++)
+                if (st->index == s->programs[i]->stream_index[j])
+                    return 1;
+        }
+        return 0;
     } else if (!*spec) /* empty specifier, matches everything */
         return 1;
 

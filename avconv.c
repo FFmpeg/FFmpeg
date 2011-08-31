@@ -140,7 +140,6 @@ static int copy_tb;
 static int opt_shortest = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
-static int opt_programid = 0;
 static int copy_initial_nonkeyframes = 0;
 
 static int audio_volume = 256;
@@ -1892,7 +1891,7 @@ static int transcode_init(OutputFile *output_files,
                           InputFile *input_files,
                           int nb_input_files)
 {
-    int ret = 0, i, j;
+    int ret = 0, i, j, k;
     AVFormatContext *os;
     AVCodecContext *codec, *icodec;
     OutputStream *ost;
@@ -2189,6 +2188,22 @@ static int transcode_init(OutputFile *output_files,
     for (i = 0; i < nb_input_streams; i++)
         if ((ret = init_input_stream(i, output_streams, nb_output_streams, error, sizeof(error))) < 0)
             goto dump_format;
+
+    /* discard unused programs */
+    for (i = 0; i < nb_input_files; i++) {
+        InputFile *ifile = &input_files[i];
+        for (j = 0; j < ifile->ctx->nb_programs; j++) {
+            AVProgram *p = ifile->ctx->programs[j];
+            int discard  = AVDISCARD_ALL;
+
+            for (k = 0; k < p->nb_stream_indexes; k++)
+                if (!input_streams[ifile->ist_index + p->stream_index[k]].discard) {
+                    discard = AVDISCARD_DEFAULT;
+                    break;
+                }
+            p->discard = discard;
+        }
+    }
 
     /* open files and write file headers */
     for (i = 0; i < nb_output_files; i++) {
@@ -2903,30 +2918,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         exit_program(1);
     }
     assert_avoptions(format_opts);
-
-    if(opt_programid) {
-        int i, j;
-        int found=0;
-        for(i=0; i<ic->nb_streams; i++){
-            ic->streams[i]->discard= AVDISCARD_ALL;
-        }
-        for(i=0; i<ic->nb_programs; i++){
-            AVProgram *p= ic->programs[i];
-            if(p->id != opt_programid){
-                p->discard = AVDISCARD_ALL;
-            }else{
-                found=1;
-                for(j=0; j<p->nb_stream_indexes; j++){
-                    ic->streams[p->stream_index[j]]->discard= AVDISCARD_DEFAULT;
-                }
-            }
-        }
-        if(!found){
-            fprintf(stderr, "Specified program id not found\n");
-            exit_program(1);
-        }
-        opt_programid=0;
-    }
 
     /* apply forced codec ids */
     for (i = 0; i < ic->nb_streams; i++)
@@ -4018,7 +4009,6 @@ static const OptionDef options[] = {
     { "copytb", OPT_BOOL | OPT_EXPERT, {(void*)&copy_tb}, "copy input stream time base when stream copying" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
-    { "programid", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&opt_programid}, "desired program number", "" },
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
     { "copyinkf", OPT_BOOL | OPT_EXPERT, {(void*)&copy_initial_nonkeyframes}, "copy initial non-keyframes" },
     { "frames", OPT_INT64 | HAS_ARG | OPT_SPEC, {.off = OFFSET(max_frames)}, "set the number of frames to record", "number" },
