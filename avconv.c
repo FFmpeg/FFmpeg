@@ -183,10 +183,6 @@ static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
 
 static short *samples;
 
-static AVBitStreamFilterContext *video_bitstream_filters=NULL;
-static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
-static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
-
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "av2pass"
 
 typedef struct InputStream {
@@ -328,6 +324,8 @@ typedef struct OptionsContext {
     int        nb_metadata;
     SpecifierOpt *max_frames;
     int        nb_max_frames;
+    SpecifierOpt *bitstream_filters;
+    int        nb_bitstream_filters;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -3064,6 +3062,8 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
     int idx      = oc->nb_streams - 1;
     int64_t max_frames = INT64_MAX;
+    char *bsf = NULL, *next;
+    AVBitStreamFilterContext *bsfc, *bsfc_prev = NULL;
 
     if (!st) {
         av_log(NULL, AV_LOG_ERROR, "Could not alloc stream.\n");
@@ -3088,6 +3088,23 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     MATCH_PER_STREAM_OPT(max_frames, i64, max_frames, oc, st);
     ost->max_frames = max_frames;
 
+    MATCH_PER_STREAM_OPT(bitstream_filters, str, bsf, oc, st);
+    while (bsf) {
+        if (next = strchr(bsf, ','))
+            *next++ = 0;
+        if (!(bsfc = av_bitstream_filter_init(bsf))) {
+            av_log(NULL, AV_LOG_ERROR, "Unknown bitstream filter %s\n", bsf);
+            exit_program(1);
+        }
+        if (bsfc_prev)
+            bsfc_prev->next = bsfc;
+        else
+            ost->bitstream_filters = bsfc;
+
+        bsfc_prev = bsfc;
+        bsf       = next;
+    }
+
     ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
 }
@@ -3108,9 +3125,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         vfilters = NULL;
 #endif
     }
-
-    ost->bitstream_filters = video_bitstream_filters;
-    video_bitstream_filters= NULL;
 
     video_enc = st->codec;
 
@@ -3212,9 +3226,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_AUDIO);
     st  = ost->st;
 
-    ost->bitstream_filters = audio_bitstream_filters;
-    audio_bitstream_filters= NULL;
-
     audio_enc = st->codec;
     audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
 
@@ -3281,9 +3292,6 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc)
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_SUBTITLE);
     st  = ost->st;
     subtitle_enc = st->codec;
-
-    ost->bitstream_filters = subtitle_bitstream_filters;
-    subtitle_bitstream_filters= NULL;
 
     subtitle_enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
 
@@ -4008,27 +4016,6 @@ static int opt_vstats(const char *opt, const char *arg)
     return opt_vstats_file(opt, filename);
 }
 
-static int opt_bsf(const char *opt, const char *arg)
-{
-    AVBitStreamFilterContext *bsfc= av_bitstream_filter_init(arg); //FIXME split name and args for filter at '='
-    AVBitStreamFilterContext **bsfp;
-
-    if(!bsfc){
-        fprintf(stderr, "Unknown bitstream filter %s\n", arg);
-        exit_program(1);
-    }
-
-    bsfp= *opt == 'v' ? &video_bitstream_filters :
-          *opt == 'a' ? &audio_bitstream_filters :
-                        &subtitle_bitstream_filters;
-    while(*bsfp)
-        bsfp= &(*bsfp)->next;
-
-    *bsfp= bsfc;
-
-    return 0;
-}
-
 static int opt_video_frames(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "frames:v", arg, options);
@@ -4146,9 +4133,7 @@ static const OptionDef options[] = {
     { "muxdelay", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_max_delay}, "set the maximum demux-decode delay", "seconds" },
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT, {(void*)&mux_preload}, "set the initial demux-decode delay", "seconds" },
 
-    { "absf", HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
-    { "vbsf", HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
-    { "sbsf", HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
+    { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(bitstream_filters)}, "A comma-separated list of bitstream filters", "bitstream_filters" },
 
     /* data codec support */
     { "dcodec", HAS_ARG | OPT_DATA | OPT_FUNC2, {(void*)opt_data_codec}, "force data codec ('copy' to copy stream)", "codec" },

@@ -567,11 +567,6 @@ Intra_dc_precision.
 Force video tag/fourcc.
 @item -qphist
 Show QP histogram.
-@item -vbsf @var{bitstream_filter}
-Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump", "mjpeg2jpeg".
-@example
-avconv -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
-@end example
 @item -force_key_frames @var{time}[,@var{time}...]
 Force key frames at the specified timestamps, more precisely at the first
 frames after each specified time.
@@ -632,8 +627,6 @@ Voice Over
 @item ka
 Karaoke
 @end table
-@item -absf @var{bitstream_filter}
-Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp", "mp3decomp".
 @end table
 
 @section Subtitle options:
@@ -645,11 +638,6 @@ Set the subtitle codec. This is an alias for @code{-codec:s}.
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @item -sn
 Disable subtitle recording.
-@item -sbsf @var{bitstream_filter}
-Bitstream filters available are "mov2textsub", "text2movsub".
-@example
-avconv -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
-@end example
 @end table
 
 @section Audio/Video grab options
@@ -811,6 +799,17 @@ For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
 an output mpegts file:
 @example
 avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
+@end example
+
+@item -bsf[:@var{stream_specifier}] @var{bitstream_filters}
+Set bitstream filters for matching streams. @var{bistream_filters} is
+a comma-separated list of bitstream filters. Use the @code{-bsfs} option
+to get the list of bitstream filters.
+@example
+avconv -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
+@end example
+@example
+avconv -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
 @end example
 @end table
 @c man end OPTIONS
