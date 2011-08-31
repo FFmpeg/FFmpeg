@@ -476,7 +476,7 @@ static const AVClass class = {
 
 static const AVCodecDefault x264_defaults[] = {
     { "b",                "0" },
-    { "threads",          "0" },
+    { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { NULL },
 };
 
