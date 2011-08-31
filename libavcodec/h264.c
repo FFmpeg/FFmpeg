@@ -1403,7 +1403,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
     pics = 0;
     while(h->delayed_pic[pics]) pics++;
 
-    assert(pics <= MAX_DELAYED_PIC_COUNT);
+    av_assert0(pics <= MAX_DELAYED_PIC_COUNT);
 
     h->delayed_pic[pics++] = cur;
     if(cur->reference == 0)
