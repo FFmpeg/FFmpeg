@@ -47,9 +47,7 @@ static av_cold int mxpeg_decode_init(AVCodecContext *avctx)
 
     s->picture[0].reference = s->picture[1].reference = 3;
     s->jpg.picture_ptr      = &s->picture[0];
-    ff_mjpeg_decode_init(avctx);
-
-    return 0;
+    return ff_mjpeg_decode_init(avctx);
 }
 
 static int mxpeg_decode_app(MXpegDecodeContext *s,

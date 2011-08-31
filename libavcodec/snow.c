@@ -19,6 +19,8 @@
  */
 
 #include "libavutil/intmath.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "dwt.h"
@@ -199,7 +201,7 @@ typedef struct Plane{
 }Plane;
 
 typedef struct SnowContext{
-
+    AVClass *class;
     AVCodecContext *avctx;
     RangeCoder c;
     DSPContext dsp;
@@ -252,6 +254,7 @@ typedef struct SnowContext{
     int me_cache[ME_CACHE_SIZE];
     int me_cache_generation;
     slice_buffer sb;
+    int memc_only;
 
     MpegEncContext m; // needed for motion estimation, should not be used for anything else, the idea is to eventually make the motion estimation independent of MpegEncContext, so this will be removed then (FIXME/XXX)
 
@@ -3518,7 +3521,7 @@ redo_frame:
         int x, y;
 //        int bits= put_bits_count(&s->c.pb);
 
-        if(!(avctx->flags2 & CODEC_FLAG2_MEMC_ONLY)){
+        if (!s->memc_only) {
             //FIXME optimize
             if(pict->data[plane_index]) //FIXME gray hack
                 for(y=0; y<h; y++){
@@ -3676,6 +3679,20 @@ static av_cold int encode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(SnowContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "memc_only",      "Only do ME/MC (I frames -> ref, P frame -> ME+MC).",   OFFSET(memc_only), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { NULL },
+};
+
+static const AVClass snowenc_class = {
+    .class_name = "snow encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_snow_encoder = {
     .name           = "snow",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -3685,6 +3702,7 @@ AVCodec ff_snow_encoder = {
     .encode         = encode_frame,
     .close          = encode_end,
     .long_name = NULL_IF_CONFIG_SMALL("Snow"),
+    .priv_class     = &snowenc_class,
 };
 #endif
 

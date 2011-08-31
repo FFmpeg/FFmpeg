@@ -35,6 +35,7 @@
 
 #include "libavutil/imgutils.h"
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mjpeg.h"
@@ -98,13 +99,17 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
 
     build_basic_mjpeg_vlc(s);
 
+#if FF_API_MJPEG_GLOBAL_OPTS
     if (avctx->flags & CODEC_FLAG_EXTERN_HUFF)
+        s->extern_huff = 1;
+#endif
+    if (s->extern_huff)
     {
         av_log(avctx, AV_LOG_INFO, "mjpeg: using external huffman table\n");
         init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
         if (ff_mjpeg_decode_dht(s)) {
-            av_log(avctx, AV_LOG_ERROR, "mjpeg: error using external huffman table, switching back to internal\n");
-            build_basic_mjpeg_vlc(s);
+            av_log(avctx, AV_LOG_ERROR, "mjpeg: error using external huffman table\n");
+            return AVERROR_INVALIDDATA;
         }
     }
     if (avctx->extradata_size > 9 &&
@@ -1578,6 +1583,20 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(MJpegDecodeContext, x)
+#define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "extern_huff",        "Use external huffman table.",  OFFSET(extern_huff), FF_OPT_TYPE_INT, { 0 }, 0, 1, VD },
+    { NULL },
+};
+
+static const AVClass mjpegdec_class = {
+    .class_name = "MJPEG decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVCodec ff_mjpeg_decoder = {
     .name           = "mjpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -1589,6 +1608,7 @@ AVCodec ff_mjpeg_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .max_lowres = 3,
     .long_name = NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
+    .priv_class     = &mjpegdec_class,
 };
 
 AVCodec ff_thp_decoder = {

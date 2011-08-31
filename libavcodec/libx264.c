@@ -50,10 +50,19 @@ typedef struct X264Context {
     int cqp;
     int aq_mode;
     float aq_strength;
-    float psy_rd;
-    float psy_trellis;
+    char *psy_rd;
+    int psy;
     int rc_lookahead;
     int weightp;
+    int weightb;
+    int ssim;
+    int intra_refresh;
+    int b_pyramid;
+    int mixed_refs;
+    int dct8x8;
+    int fast_pskip;
+    int aud;
+    int mbtree;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -236,7 +245,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.b_cabac           = avctx->coder_type == FF_CODER_TYPE_AC;
     x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
     x4->params.i_bframe_bias     = avctx->bframebias;
-    x4->params.i_bframe_pyramid  = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
 
     x4->params.i_keyint_min = avctx->keyint_min;
     if (x4->params.i_keyint_min > x4->params.i_keyint_max)
@@ -274,8 +282,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
 
-    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
-
     if (avctx->me_method == ME_EPZS)
         x4->params.analyse.i_me_method = X264_ME_DIA;
     else if (avctx->me_method == ME_HEX)
@@ -288,20 +294,14 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_me_method = X264_ME_TESA;
     else x4->params.analyse.i_me_method = X264_ME_HEX;
 
-    x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
-
     x4->params.analyse.i_me_range         = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
 
-    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
     x4->params.analyse.b_chroma_me        = avctx->me_cmp & FF_CMP_CHROMA;
-    x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
-    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
 
     x4->params.analyse.i_trellis          = avctx->trellis;
     x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
 
-    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
@@ -322,7 +322,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     OPT_STR("weightp", x4->wpredp);
 
-    x4->params.b_intra_refresh      = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     if (avctx->bit_rate) {
         x4->params.rc.i_bitrate   = avctx->bit_rate / 1000;
         x4->params.rc.i_rc_method = X264_RC_ABR;
@@ -390,22 +389,51 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.i_lookahead             = avctx->rc_lookahead;
     if (avctx->weighted_p_pred >= 0)
         x4->params.analyse.i_weighted_pred    = avctx->weighted_p_pred;
+    x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
+    x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
+    x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
+    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
+    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
+    x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
+    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
+    x4->params.b_aud                      = avctx->flags2 & CODEC_FLAG2_AUD;
+    x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
+    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
 #endif
 
     if (x4->aq_mode >= 0)
         x4->params.rc.i_aq_mode = x4->aq_mode;
     if (x4->aq_strength >= 0)
         x4->params.rc.f_aq_strength = x4->aq_strength;
-    if (x4->psy_rd >= 0)
-        x4->params.analyse.f_psy_rd = x4->psy_rd;
-    if (x4->psy_trellis >= 0)
-        x4->params.analyse.f_psy_trellis = x4->psy_trellis;
+    if (x4->psy_rd && x264_param_parse(&x4->params, "psy-rd", x4->psy_rd) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error parsing option 'psy-rd' with value '%s'.\n", x4->psy_rd);
+        return AVERROR(EINVAL);
+    }
+    if (x4->psy >= 0)
+        x4->params.analyse.b_psy  = x4->psy;
     if (x4->rc_lookahead >= 0)
         x4->params.rc.i_lookahead = x4->rc_lookahead;
     if (x4->weightp >= 0)
         x4->params.analyse.i_weighted_pred = x4->weightp;
+    if (x4->weightb >= 0)
+        x4->params.analyse.b_weighted_bipred = x4->weightb;
 
-
+    if (x4->ssim >= 0)
+        x4->params.analyse.b_ssim = x4->ssim;
+    if (x4->intra_refresh >= 0)
+        x4->params.b_intra_refresh = x4->intra_refresh;
+    if (x4->b_pyramid >= 0)
+        x4->params.i_bframe_pyramid = x4->b_pyramid;
+    if (x4->mixed_refs >= 0)
+        x4->params.analyse.b_mixed_references = x4->mixed_refs;
+    if (x4->dct8x8 >= 0)
+        x4->params.analyse.b_transform_8x8    = x4->dct8x8;
+    if (x4->fast_pskip >= 0)
+        x4->params.analyse.b_fast_pskip       = x4->fast_pskip;
+    if (x4->aud >= 0)
+        x4->params.b_aud                      = x4->aud;
+    if (x4->mbtree >= 0)
+        x4->params.rc.b_mb_tree               = x4->mbtree;
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -424,9 +452,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.i_fps_den = x4->params.i_timebase_num = avctx->time_base.num;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
-    x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
-
-    x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
 
     x4->params.i_threads      = avctx->thread_count;
 
@@ -486,19 +511,31 @@ static const AVOption options[] = {
     {"x264opts", "x264 options", OFFSET(x264opts), FF_OPT_TYPE_STRING, {.str=NULL}, 0, 0, VE},
     { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
     { "crf_max",       "In CRF mode, prevents VBV from lowering quality beyond this point.",OFFSET(crf_max), FF_OPT_TYPE_FLOAT, {-1 }, -1, FLT_MAX, VE },
-    { "cqp",           "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
-    { "aq_mode",       "AQ method",                                       OFFSET(aq_mode),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "aq_mode"},
+    { "qp",            "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "aq-mode",       "AQ method",                                       OFFSET(aq_mode),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "aq_mode"},
     { "none",          NULL,                              0, FF_OPT_TYPE_CONST, {X264_AQ_NONE},         INT_MIN, INT_MAX, VE, "aq_mode" },
     { "variance",      "Variance AQ (complexity mask)",   0, FF_OPT_TYPE_CONST, {X264_AQ_VARIANCE},     INT_MIN, INT_MAX, VE, "aq_mode" },
     { "autovariance",  "Auto-variance AQ (experimental)", 0, FF_OPT_TYPE_CONST, {X264_AQ_AUTOVARIANCE}, INT_MIN, INT_MAX, VE, "aq_mode" },
-    { "aq_strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
-    { "pdy_rd",        "Psy RD strength.",                                OFFSET(psy_rd),        FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
-    { "psy_trellis",   "Psy trellis strength",                            OFFSET(psy_trellis),   FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
-    { "rc_lookahead",  "Number of frames to look ahead for frametype and ratecontrol", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {-1 }, -1, INT_MAX, VE },
+    { "aq-strength",   "AQ strength. Reduces blocking and blurring in flat and textured areas.", OFFSET(aq_strength), FF_OPT_TYPE_FLOAT, {-1}, -1, FLT_MAX, VE},
+    { "psy",           "Use psychovisual optimizations.",                 OFFSET(psy),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
+    { "psy-rd",        "Strength of psychovisual optimization, in <psy-rd>:<psy-trellis> format.", OFFSET(psy_rd), FF_OPT_TYPE_STRING,  {0 }, 0, 0, VE},
+    { "rc-lookahead",  "Number of frames to look ahead for frametype and ratecontrol", OFFSET(rc_lookahead), FF_OPT_TYPE_INT, {-1 }, -1, INT_MAX, VE },
+    { "weightb",       "Weighted prediction for B-frames.",               OFFSET(weightb),       FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
     { "weightp",       "Weighted prediction analysis method.",            OFFSET(weightp),       FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "weightp" },
     { "none",          NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_NONE},   INT_MIN, INT_MAX, VE, "weightp" },
     { "simple",        NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SIMPLE}, INT_MIN, INT_MAX, VE, "weightp" },
     { "smart",         NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SMART},  INT_MIN, INT_MAX, VE, "weightp" },
+    { "ssim",          "Calculate and print SSIM stats.",                 OFFSET(ssim),          FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
+    { "intra-refresh", "Use Periodic Intra Refresh instead of IDR frames.",OFFSET(intra_refresh),FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
+    { "b-pyramid",     "Keep some B-frames as references.",               OFFSET(b_pyramid),     FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "b_pyramid" },
+    { "none",          NULL,                                  0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_NONE},   INT_MIN, INT_MAX, VE, "b_pyramid" },
+    { "strict",        "Strictly hierarchical pyramid",       0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_STRICT}, INT_MIN, INT_MAX, VE, "b_pyramid" },
+    { "normal",        "Non-strict (not Blu-ray compatible)", 0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_NORMAL}, INT_MIN, INT_MAX, VE, "b_pyramid" },
+    { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), FF_OPT_TYPE_INT, {-1}, -1, 1, VE },
+    { "8x8dct",        "High profile 8x8 transform.",                     OFFSET(dct8x8),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { NULL },
 };
 
@@ -511,6 +548,7 @@ static const AVClass class = {
 
 static const AVCodecDefault x264_defaults[] = {
     { "b",                "0" },
+    { "threads",          "0" },
     { NULL },
 };
 
