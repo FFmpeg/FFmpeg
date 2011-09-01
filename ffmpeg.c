@@ -232,6 +232,8 @@ static AVBitStreamFilterContext *video_bitstream_filters=NULL;
 static AVBitStreamFilterContext *audio_bitstream_filters=NULL;
 static AVBitStreamFilterContext *subtitle_bitstream_filters=NULL;
 
+static uint8_t *input_tmp= NULL;
+
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
 
 typedef struct InputStream {
@@ -557,6 +559,8 @@ static int exit_program(int ret)
     avfilter_uninit();
 #endif
 
+    av_freep(&input_tmp);
+
     if (received_sigterm) {
         fprintf(stderr,
             "Received signal %d: terminating.\n",
@@ -840,7 +844,6 @@ need_realloc:
                         return;
                     ist->is_start=0;
                 }else{
-                    static uint8_t *input_tmp= NULL;
                     input_tmp= av_realloc(input_tmp, byte_delta + size);
 
                     if(byte_delta > allocated_for_size - size){
