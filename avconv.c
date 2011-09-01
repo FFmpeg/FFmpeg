@@ -105,7 +105,6 @@ static int frame_width  = 0;
 static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
-static AVRational frame_rate;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
 static const char *video_rc_override_string=NULL;
@@ -276,6 +275,8 @@ typedef struct OptionsContext {
     int        nb_audio_channels;
     SpecifierOpt *audio_sample_rate;
     int        nb_audio_sample_rate;
+    SpecifierOpt *frame_rates;
+    int        nb_frame_rates;
 
     /* input options */
     int64_t input_ts_offset;
@@ -2516,15 +2517,6 @@ static int opt_verbose(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_frame_rate(const char *opt, const char *arg)
-{
-    if (av_parse_video_rate(&frame_rate, arg) < 0) {
-        fprintf(stderr, "Incorrect value for %s: %s\n", opt, arg);
-        exit_program(1);
-    }
-    return 0;
-}
-
 static int opt_frame_size(const char *opt, const char *arg)
 {
     if (av_parse_video_size(&frame_width, &frame_height, arg) < 0) {
@@ -2884,9 +2876,8 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         snprintf(buf, sizeof(buf), "%d", o->audio_channels[o->nb_audio_channels - 1].u.i);
         av_dict_set(&format_opts, "channels", buf, 0);
     }
-    if (frame_rate.num) {
-        snprintf(buf, sizeof(buf), "%d/%d", frame_rate.num, frame_rate.den);
-        av_dict_set(&format_opts, "framerate", buf, 0);
+    if (o->nb_frame_rates) {
+        av_dict_set(&format_opts, "framerate", o->frame_rates[o->nb_frame_rates - 1].u.str, 0);
     }
     if (frame_width && frame_height) {
         snprintf(buf, sizeof(buf), "%dx%d", frame_width, frame_height);
@@ -2949,7 +2940,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     input_files[nb_input_files - 1].ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
 
-    frame_rate    = (AVRational){0, 0};
     frame_pix_fmt = PIX_FMT_NONE;
     frame_height = 0;
     frame_width  = 0;
@@ -3081,11 +3071,14 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         st->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
     } else {
         const char *p;
-        char *forced_key_frames = NULL;
+        char *forced_key_frames = NULL, *frame_rate = NULL;
         int i, force_fps = 0;
 
-        if (frame_rate.num)
-            ost->frame_rate = frame_rate;
+        MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
+        if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid framerate value: %s\n", frame_rate);
+            exit_program(1);
+        }
 
         video_enc->width = frame_width;
         video_enc->height = frame_height;
@@ -3604,7 +3597,6 @@ static void opt_output_file(void *optctx, const char *filename)
         av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
     }
 
-    frame_rate    = (AVRational){0, 0};
     frame_width   = 0;
     frame_height  = 0;
 
@@ -3783,34 +3775,25 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         norm = FILM;
         arg += 5;
     } else {
-        int fr;
-        /* Calculate FR via float to avoid int overflow */
-        fr = (int)(frame_rate.num * 1000.0 / frame_rate.den);
-        if(fr == 25000) {
-            norm = PAL;
-        } else if((fr == 29970) || (fr == 23976)) {
-            norm = NTSC;
-        } else {
-            /* Try to determine PAL/NTSC by peeking in the input files */
-            if(nb_input_files) {
-                int i, j;
-                for (j = 0; j < nb_input_files; j++) {
-                    for (i = 0; i < input_files[j].nb_streams; i++) {
-                        AVCodecContext *c = input_files[j].ctx->streams[i]->codec;
-                        if(c->codec_type != AVMEDIA_TYPE_VIDEO)
-                            continue;
-                        fr = c->time_base.den * 1000 / c->time_base.num;
-                        if(fr == 25000) {
-                            norm = PAL;
-                            break;
-                        } else if((fr == 29970) || (fr == 23976)) {
-                            norm = NTSC;
-                            break;
-                        }
-                    }
-                    if(norm != UNKNOWN)
+        /* Try to determine PAL/NTSC by peeking in the input files */
+        if(nb_input_files) {
+            int i, j, fr;
+            for (j = 0; j < nb_input_files; j++) {
+                for (i = 0; i < input_files[j].nb_streams; i++) {
+                    AVCodecContext *c = input_files[j].ctx->streams[i]->codec;
+                    if(c->codec_type != AVMEDIA_TYPE_VIDEO)
+                        continue;
+                    fr = c->time_base.den * 1000 / c->time_base.num;
+                    if(fr == 25000) {
+                        norm = PAL;
                         break;
+                    } else if((fr == 29970) || (fr == 23976)) {
+                        norm = NTSC;
+                        break;
+                    }
                 }
+                if(norm != UNKNOWN)
+                    break;
             }
         }
         if(verbose > 0 && norm != UNKNOWN)
@@ -3830,7 +3813,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         parse_option(o, "f", "vcd", options);
 
         opt_frame_size("s", norm == PAL ? "352x288" : "352x240");
-        opt_frame_rate("r", frame_rates[norm]);
+        parse_option(o, "r", frame_rates[norm], options);
         opt_default("g", norm == PAL ? "15" : "18");
 
         opt_default("b", "1150000");
@@ -3858,7 +3841,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         parse_option(o, "f", "svcd", options);
 
         opt_frame_size("s", norm == PAL ? "480x576" : "480x480");
-        opt_frame_rate("r", frame_rates[norm]);
+        parse_option(o, "r", frame_rates[norm], options);
         opt_default("g", norm == PAL ? "15" : "18");
 
         opt_default("b", "2040000");
@@ -3880,7 +3863,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         parse_option(o, "f", "dvd", options);
 
         opt_frame_size("vcodec", norm == PAL ? "720x576" : "720x480");
-        opt_frame_rate("r", frame_rates[norm]);
+        parse_option(o, "r", frame_rates[norm], options);
         opt_default("g", norm == PAL ? "15" : "18");
 
         opt_default("b", "6000000");
@@ -3901,7 +3884,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_frame_size("s", norm == PAL ? "720x576" : "720x480");
         opt_frame_pix_fmt("pix_fmt", !strncmp(arg, "dv50", 4) ? "yuv422p" :
                           norm == PAL ? "yuv420p" : "yuv411p");
-        opt_frame_rate("r", frame_rates[norm]);
+        parse_option(o, "r", frame_rates[norm], options);
 
         parse_option(o, "ar", "48000", options);
         parse_option(o, "ac", "2", options);
@@ -4007,7 +3990,7 @@ static const OptionDef options[] = {
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
-    { "r", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_rate}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
+    { "r", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_rates)}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
