@@ -101,7 +101,6 @@ static const OptionDef options[];
 static int *streamid_map = NULL;
 static int nb_streamid_map = 0;
 
-static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
@@ -323,6 +322,8 @@ typedef struct OptionsContext {
     int        nb_forced_key_frames;
     SpecifierOpt *force_fps;
     int        nb_force_fps;
+    SpecifierOpt *frame_aspect_ratios;
+    int        nb_frame_aspect_ratios;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -2532,7 +2533,7 @@ static int opt_frame_pix_fmt(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_frame_aspect_ratio(const char *opt, const char *arg)
+static double parse_frame_aspect_ratio(const char *arg)
 {
     int x = 0, y = 0;
     double ar = 0;
@@ -2551,10 +2552,9 @@ static int opt_frame_aspect_ratio(const char *opt, const char *arg)
 
     if (!ar) {
         fprintf(stderr, "Incorrect aspect ratio specification.\n");
-        return AVERROR(EINVAL);
+        exit_program(1);
     }
-    frame_aspect_ratio = ar;
-    return 0;
+    return ar;
 }
 
 static int opt_top_field_first(const char *opt, const char *arg)
@@ -3040,8 +3040,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO);
     st  = ost->st;
     if (!st->stream_copy) {
-        ost->frame_aspect_ratio = frame_aspect_ratio;
-        frame_aspect_ratio = 0;
 #if CONFIG_AVFILTER
         ost->avfilter= vfilters;
         vfilters = NULL;
@@ -3057,6 +3055,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     if (!st->stream_copy) {
         const char *p;
         char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
+        char *frame_aspect_ratio = NULL;
         int i, force_fps = 0;
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -3070,6 +3069,10 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
             av_log(NULL, AV_LOG_ERROR, "Invalid frame size: %s.\n", frame_size);
             exit_program(1);
         }
+
+        MATCH_PER_STREAM_OPT(frame_aspect_ratios, str, frame_aspect_ratio, oc, st);
+        if (frame_aspect_ratio)
+            ost->frame_aspect_ratio = parse_frame_aspect_ratio(frame_aspect_ratio);
 
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
@@ -3978,7 +3981,7 @@ static const OptionDef options[] = {
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
     { "r", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_rates)}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "s", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_sizes)}, "set frame size (WxH or abbreviation)", "size" },
-    { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
+    { "aspect", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_aspect_ratios)}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
     { "vn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, {.off = OFFSET(video_disable)}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
