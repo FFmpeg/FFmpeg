@@ -31,6 +31,7 @@
 #include <alsa/asoundlib.h>
 #include "libavformat/avformat.h"
 #include "libavutil/avassert.h"
+#include "libavutil/audioconvert.h"
 
 #include "alsa-audio.h"
 
