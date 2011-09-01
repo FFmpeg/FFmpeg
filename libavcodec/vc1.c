@@ -470,7 +470,7 @@ static int decode_sequence_header_adv(VC1Context *v, GetBitContext *gb)
     }
     v->s.max_b_frames = v->s.avctx->max_b_frames = 7;
     if(get_bits1(gb)) { //Display Info - decoding is not affected by it
-        int dw, dh, ar = 0;
+        int w, h, ar = 0;
         av_log(v->s.avctx, AV_LOG_DEBUG, "Display extended info:\n");
         w = get_bits(gb, 14) + 1;
         h = get_bits(gb, 14) + 1;
