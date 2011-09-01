@@ -805,6 +805,7 @@ int check_stream_specifier(AVFormatContext *s, AVStream *st, const char *spec)
         case 'a': type = AVMEDIA_TYPE_AUDIO;    break;
         case 's': type = AVMEDIA_TYPE_SUBTITLE; break;
         case 'd': type = AVMEDIA_TYPE_DATA;     break;
+        default: abort(); // never reached, silence warning
         }
         if (type != st->codec->codec_type)
             return 0;
