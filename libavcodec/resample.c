@@ -121,11 +121,11 @@ static void surround_to_stereo(short **output, short *input, int channels, int s
     short l, r;
 
     for (i = 0; i < samples; i++) {
-        int fl,fr,c,rl,rr,lfe;
+        int fl,fr,c,rl,rr;
         fl = input[0];
         fr = input[1];
         c = input[2];
-        lfe = input[3];
+        // lfe = input[3];
         rl = input[4];
         rr = input[5];
 
