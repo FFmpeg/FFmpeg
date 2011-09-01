@@ -61,6 +61,7 @@ typedef struct X264Context {
     int aud;
     int mbtree;
     char *deblock;
+    float cplxblur;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -206,8 +207,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
 
-    x4->params.rc.f_complexity_blur = avctx->complexityblur;
-
     x4->params.analyse.inter    = 0;
     if (avctx->partitions) {
         if (avctx->partitions & X264_PART_I4X4)
@@ -319,6 +318,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
     if (avctx->deblockbeta)
         x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
+    if (avctx->complexityblur >= 0)
+        x4->params.rc.f_complexity_blur        = avctx->complexityblur;
     x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
     x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
@@ -364,6 +365,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_weighted_pred = x4->weightp;
     if (x4->weightb >= 0)
         x4->params.analyse.b_weighted_bipred = x4->weightb;
+    if (x4->cplxblur >= 0)
+        x4->params.rc.f_complexity_blur = x4->cplxblur;
 
     if (x4->ssim >= 0)
         x4->params.analyse.b_ssim = x4->ssim;
@@ -482,6 +485,7 @@ static const AVOption options[] = {
     { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "deblock",       "Loop filter parameters, in <alpha:beta> form.",   OFFSET(deblock),       FF_OPT_TYPE_STRING, { 0 },  0, 0, VE},
+    { "cplxblur",      "Reduce fluctuations in QP (before curve compression)", OFFSET(cplxblur), FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
     { NULL },
 };
 

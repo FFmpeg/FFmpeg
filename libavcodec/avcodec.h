@@ -2449,14 +2449,14 @@ typedef struct AVCodecContext {
      */
     int trellis;
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * Reduce fluctuations in qp (before curve compression).
      * - encoding: Set by user.
      * - decoding: unused
      */
-    float complexityblur;
+    attribute_deprecated float complexityblur;
 
-#if FF_API_X264_GLOBAL_OPTS
     /**
      * in-loop deblocking filter alphac0 parameter
      * alpha is in the range -6...6
