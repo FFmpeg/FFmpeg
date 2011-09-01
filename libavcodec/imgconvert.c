@@ -359,15 +359,17 @@ static int get_pix_fmt_depth(int *min, int *max, enum PixelFormat pix_fmt)
 int avcodec_get_pix_fmt_loss(enum PixelFormat dst_pix_fmt, enum PixelFormat src_pix_fmt,
                              int has_alpha)
 {
-    if (dst_pix_fmt>=PIX_FMT_NB || dst_pix_fmt<=PIX_FMT_NONE)
-        return ~0;
-
     const PixFmtInfo *pf, *ps;
-    const AVPixFmtDescriptor *src_desc = &av_pix_fmt_descriptors[src_pix_fmt];
-    const AVPixFmtDescriptor *dst_desc = &av_pix_fmt_descriptors[dst_pix_fmt];
+    const AVPixFmtDescriptor *src_desc;
+    const AVPixFmtDescriptor *dst_desc;
     int src_min_depth, src_max_depth, dst_min_depth, dst_max_depth;
     int ret, loss;
 
+    if (dst_pix_fmt >= PIX_FMT_NB || dst_pix_fmt <= PIX_FMT_NONE)
+        return ~0;
+
+    src_desc = &av_pix_fmt_descriptors[src_pix_fmt];
+    dst_desc = &av_pix_fmt_descriptors[dst_pix_fmt];
     ps = &pix_fmt_info[src_pix_fmt];
 
     /* compute loss */
