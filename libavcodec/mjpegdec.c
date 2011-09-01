@@ -108,8 +108,8 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_INFO, "mjpeg: using external huffman table\n");
         init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size*8);
         if (ff_mjpeg_decode_dht(s)) {
-            av_log(avctx, AV_LOG_ERROR, "mjpeg: error using external huffman table\n");
-            return AVERROR_INVALIDDATA;
+            av_log(avctx, AV_LOG_ERROR, "mjpeg: error using external huffman table, switching back to internal\n");
+            build_basic_mjpeg_vlc(s);
         }
     }
     if (avctx->extradata_size > 9 &&
