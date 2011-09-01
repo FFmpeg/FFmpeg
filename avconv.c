@@ -106,7 +106,6 @@ static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static AVRational frame_rate;
-static float video_qscale = 0;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
 static const char *video_rc_override_string=NULL;
@@ -120,9 +119,6 @@ static int qp_hist = 0;
 #if CONFIG_AVFILTER
 static char *vfilters = NULL;
 #endif
-
-#define QSCALE_NONE -99999
-static float audio_qscale = QSCALE_NONE;
 
 static int file_overwrite = 0;
 static int do_benchmark = 0;
@@ -321,6 +317,8 @@ typedef struct OptionsContext {
     int        nb_codec_tags;
     SpecifierOpt *sample_fmts;
     int        nb_sample_fmts;
+    SpecifierOpt *qscale;
+    int        nb_qscale;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -2573,16 +2571,6 @@ static int opt_frame_aspect_ratio(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_qscale(const char *opt, const char *arg)
-{
-    video_qscale = parse_number_or_die(opt, arg, OPT_FLOAT, 0, 255);
-    if (video_qscale == 0) {
-        fprintf(stderr, "qscale must be > 0.0 and <= 255\n");
-        return AVERROR(EINVAL);
-    }
-    return 0;
-}
-
 static int opt_top_field_first(const char *opt, const char *arg)
 {
     top_field_first = parse_number_or_die(opt, arg, OPT_INT, 0, 1);
@@ -3002,6 +2990,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     int64_t max_frames = INT64_MAX;
     char *bsf = NULL, *next, *codec_tag = NULL;
     AVBitStreamFilterContext *bsfc, *bsfc_prev = NULL;
+    double qscale = -1;
 
     if (!st) {
         av_log(NULL, AV_LOG_ERROR, "Could not alloc stream.\n");
@@ -3051,6 +3040,12 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         st->codec->codec_tag = tag;
     }
 
+    MATCH_PER_STREAM_OPT(qscale, dbl, qscale, oc, st);
+    if (qscale >= 0 || same_quant) {
+        st->codec->flags |= CODEC_FLAG_QSCALE;
+        st->codec->global_quality = FF_QP2LAMBDA * qscale;
+    }
+
     ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
 }
@@ -3092,11 +3087,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         video_enc->height = frame_height;
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
-
-        if (video_qscale || same_quant) {
-            video_enc->flags |= CODEC_FLAG_QSCALE;
-            video_enc->global_quality = FF_QP2LAMBDA * video_qscale;
-        }
 
         if(intra_matrix)
             video_enc->intra_matrix = intra_matrix;
@@ -3173,10 +3163,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
     if (!st->stream_copy) {
         char *sample_fmt = NULL;
 
-        if (audio_qscale > QSCALE_NONE) {
-            audio_enc->flags |= CODEC_FLAG_QSCALE;
-            audio_enc->global_quality = FF_QP2LAMBDA * audio_qscale;
-        }
         MATCH_PER_STREAM_OPT(audio_channels, i, audio_enc->channels, oc, st);
 
         MATCH_PER_STREAM_OPT(sample_fmts, str, sample_fmt, oc, st);
@@ -3694,6 +3680,11 @@ static void opt_intra_matrix(const char *arg)
     parse_matrix_coeffs(intra_matrix, arg);
 }
 
+static int opt_audio_qscale(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "q:a", arg, options);
+}
+
 static void show_usage(void)
 {
     printf("Hyper fast Audio and Video encoder\n");
@@ -4005,6 +3996,8 @@ static const OptionDef options[] = {
     { "copyinkf", OPT_BOOL | OPT_EXPERT, {(void*)&copy_initial_nonkeyframes}, "copy initial non-keyframes" },
     { "frames", OPT_INT64 | HAS_ARG | OPT_SPEC, {.off = OFFSET(max_frames)}, "set the number of frames to record", "number" },
     { "tag",   OPT_STRING | HAS_ARG | OPT_SPEC, {.off = OFFSET(codec_tags)}, "force codec tag/fourcc", "fourcc/tag" },
+    { "q", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
+    { "qscale", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
@@ -4014,7 +4007,6 @@ static const OptionDef options[] = {
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
     { "vn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, {.off = OFFSET(video_disable)}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
-    { "qscale", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_qscale}, "use fixed video quantizer scale (VBR)", "q" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimation threshold",  "threshold" },
@@ -4042,7 +4034,7 @@ static const OptionDef options[] = {
 
     /* audio options */
     { "aframes", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_frames}, "set the number of audio frames to record", "number" },
-    { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
+    { "aq", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_qscale}, "set audio quality (codec-specific)", "quality", },
     { "ar", HAS_ARG | OPT_AUDIO | OPT_INT | OPT_SPEC, {.off = OFFSET(audio_sample_rate)}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG | OPT_AUDIO | OPT_INT | OPT_SPEC, {.off = OFFSET(audio_channels)}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL | OPT_AUDIO | OPT_OFFSET, {.off = OFFSET(audio_disable)}, "disable audio" },

@@ -205,6 +205,11 @@ Set the number of data frames to record. This is an alias for @code{-frames:d}.
 @item -frames[:stream_specifier] @var{framecount}
 Stop writing to the stream after @var{framecount} frames.
 
+@item -q @var{q}
+@item -qscale @var{q}
+Use fixed quality scale (VBR). The meaning of @var{q} is
+codec-dependent.
+
 @end table
 
 @section Video Options
@@ -354,8 +359,6 @@ Set SwScaler flags.
 Set the group of pictures size.
 @item -vdt @var{n}
 Discard threshold.
-@item -qscale @var{q}
-Use fixed video quantizer scale (VBR).
 @item -qmin @var{q}
 minimum video quantizer scale (VBR)
 @item -qmax @var{q}
@@ -580,7 +583,7 @@ default to the frequency of the corresponding input stream. For input
 streams this option only makes sense for audio grabbing devices and raw
 demuxers and is mapped to the corresponding demuxer options.
 @item -aq @var{q}
-Set the audio quality (codec-specific, VBR).
+Set the audio quality (codec-specific, VBR). This is an alias for -q:a.
 @item -ac @var{channels}
 Set the number of audio channels. For output streams it is set by
 default to the number of input audio channels. For input streams
