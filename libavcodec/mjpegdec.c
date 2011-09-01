@@ -893,14 +893,18 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
                 }
             }
 
+            if (s->restart_interval) --s->restart_count;
             if (s->restart_interval && show_bits(&s->gb, 8) == 0xFF){ /* skip RSTn */
-                --s->restart_count;
+                int pos= get_bits_count(&s->gb);
                 align_get_bits(&s->gb);
                 while(show_bits(&s->gb, 8) == 0xFF)
                     skip_bits(&s->gb, 8);
-                skip_bits(&s->gb, 8);
-                for (i=0; i<nb_components; i++) /* reset dc */
-                    s->last_dc[i] = 1024;
+                if((get_bits(&s->gb, 8)&0xF8) == 0xD0){
+                    for (i=0; i<nb_components; i++) /* reset dc */
+                        s->last_dc[i] = 1024;
+                }else{
+                    skip_bits_long(&s->gb, pos - get_bits_count(&s->gb));
+                }
             }
         }
     }
