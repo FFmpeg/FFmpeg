@@ -1733,7 +1733,8 @@ rgb16_32ToUV_half_c_template(int16_t *dstU, int16_t *dstV,
 static void name ## ToY_c(uint8_t *dst, const uint8_t *src, \
                           int width, uint32_t *unused) \
 { \
-    rgb16_32ToY_c_template(dst, src, width, fmt, shr, shg, shb, shp, \
+    rgb16_32ToY_c_template((int16_t*)dst, src, width, fmt, \
+                           shr, shg, shb, shp, \
                            maskr, maskg, maskb, rsh, gsh, bsh, S); \
 } \
  \
@@ -1741,7 +1742,8 @@ static void name ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
                            const uint8_t *src, const uint8_t *dummy, \
                            int width, uint32_t *unused) \
 { \
-    rgb16_32ToUV_c_template(dstU, dstV, src, width, fmt, shr, shg, shb, shp, \
+    rgb16_32ToUV_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt,  \
+                            shr, shg, shb, shp, \
                             maskr, maskg, maskb, rsh, gsh, bsh, S); \
 } \
  \
@@ -1749,7 +1751,8 @@ static void name ## ToUV_half_c(uint8_t *dstU, uint8_t *dstV, \
                                 const uint8_t *src, const uint8_t *dummy, \
                                 int width, uint32_t *unused) \
 { \
-    rgb16_32ToUV_half_c_template(dstU, dstV, src, width, fmt, shr, shg, shb, shp, \
+    rgb16_32ToUV_half_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt, \
+                                 shr, shg, shb, shp, \
                                  maskr, maskg, maskb, rsh, gsh, bsh, S); \
 }
 
