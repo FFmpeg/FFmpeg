@@ -63,6 +63,7 @@ typedef struct X264Context {
     char *deblock;
     float cplxblur;
     char *partitions;
+    int direct_pred;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -208,8 +209,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
 
-    x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
-
     if (avctx->me_method == ME_EPZS)
         x4->params.analyse.i_me_method = X264_ME_DIA;
     else if (avctx->me_method == ME_HEX)
@@ -307,6 +306,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
     if (avctx->complexityblur >= 0)
         x4->params.rc.f_complexity_blur        = avctx->complexityblur;
+    if (avctx->directpred >= 0)
+        x4->params.analyse.i_direct_mv_pred    = avctx->directpred;
     if (avctx->partitions) {
         if (avctx->partitions & X264_PART_I4X4)
             x4->params.analyse.inter |= X264_ANALYSE_I4x4;
@@ -386,6 +387,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_aud                      = x4->aud;
     if (x4->mbtree >= 0)
         x4->params.rc.b_mb_tree               = x4->mbtree;
+    if (x4->direct_pred >= 0)
+        x4->params.analyse.i_direct_mv_pred   = x4->direct_pred;
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -488,6 +491,11 @@ static const AVOption options[] = {
     { "cplxblur",      "Reduce fluctuations in QP (before curve compression)", OFFSET(cplxblur), FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
     { "partitions",    "A comma-separated list of partitions to consider. "
                        "Possible values: p8x8, p4x4, b8x8, i8x8, i4x4, none, all", OFFSET(partitions), FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
+    { "direct-pred",   "Direct MV prediction mode",                       OFFSET(direct_pred),   FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "direct-pred" },
+    { "none",          NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_NONE },     0, 0, VE, "direct-pred" },
+    { "spatial",       NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
+    { "temporal",      NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
+    { "auto",          NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
     { NULL },
 };
 

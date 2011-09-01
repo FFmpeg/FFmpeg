@@ -2484,14 +2484,14 @@ typedef struct AVCodecContext {
 #define X264_PART_P8X8 0x010  /* Analyze p16x8, p8x16 and p8x8 */
 #define X264_PART_P4X4 0x020  /* Analyze p8x4, p4x8, p4x4 */
 #define X264_PART_B8X8 0x100  /* Analyze b16x8, b8x16 and b8x8 */
-#endif
 
     /**
      * direct MV prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int directpred;
+    attribute_deprecated int directpred;
+#endif
 
     /**
      * Audio cutoff bandwidth (0 means "automatic")

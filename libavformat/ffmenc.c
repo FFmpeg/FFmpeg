@@ -165,7 +165,6 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb64(pb, av_dbl2int(codec->qblur));
             avio_wb32(pb, codec->max_qdiff);
             avio_wb32(pb, codec->refs);
-            avio_wb32(pb, codec->directpred);
             break;
         case AVMEDIA_TYPE_AUDIO:
             avio_wb32(pb, codec->sample_rate);
