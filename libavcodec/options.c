@@ -398,7 +398,9 @@ static const AVOption options[]={
 {"keyint_min", "minimum interval between IDR-frames (x264)", OFFSET(keyint_min), FF_OPT_TYPE_INT, {.dbl = 25 }, INT_MIN, INT_MAX, V|E},
 {"refs", "reference frames to consider for motion compensation (Snow)", OFFSET(refs), FF_OPT_TYPE_INT, {.dbl = 1 }, INT_MIN, INT_MAX, V|E},
 {"chromaoffset", "chroma qp offset from luma", OFFSET(chromaoffset), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
 {"bframebias", "influences how often B-frames are used", OFFSET(bframebias), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 {"trellis", "rate-distortion optimal quantization", OFFSET(trellis), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"directpred", "direct mv prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)", OFFSET(directpred), FF_OPT_TYPE_INT, {.dbl = 2 }, INT_MIN, INT_MAX, V|E},
 #if FF_API_X264_GLOBAL_OPTS

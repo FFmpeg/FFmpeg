@@ -2433,12 +2433,14 @@ typedef struct AVCodecContext {
      */
     int chromaoffset;
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * Influences how often B-frames are used.
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int bframebias;
+    attribute_deprecated int bframebias;
+#endif
 
     /**
      * trellis RD quantization

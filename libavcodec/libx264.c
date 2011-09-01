@@ -53,6 +53,7 @@ typedef struct X264Context {
     int weightb;
     int ssim;
     int intra_refresh;
+    int b_bias;
     int b_pyramid;
     int mixed_refs;
     int dct8x8;
@@ -191,7 +192,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.b_cabac           = avctx->coder_type == FF_CODER_TYPE_AC;
     x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
-    x4->params.i_bframe_bias     = avctx->bframebias;
 
     x4->params.i_keyint_min = avctx->keyint_min;
     if (x4->params.i_keyint_min > x4->params.i_keyint_max)
@@ -308,6 +308,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.i_lookahead             = avctx->rc_lookahead;
     if (avctx->weighted_p_pred >= 0)
         x4->params.analyse.i_weighted_pred    = avctx->weighted_p_pred;
+    if (avctx->bframebias)
+        x4->params.i_bframe_bias              = avctx->bframebias;
     x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
     x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
@@ -360,6 +362,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.b_ssim = x4->ssim;
     if (x4->intra_refresh >= 0)
         x4->params.b_intra_refresh = x4->intra_refresh;
+    if (x4->b_bias != INT_MIN)
+        x4->params.i_bframe_bias              = x4->b_bias;
     if (x4->b_pyramid >= 0)
         x4->params.i_bframe_pyramid = x4->b_pyramid;
     if (x4->mixed_refs >= 0)
@@ -460,6 +464,7 @@ static const AVOption options[] = {
     { "smart",         NULL, 0, FF_OPT_TYPE_CONST, {X264_WEIGHTP_SMART},  INT_MIN, INT_MAX, VE, "weightp" },
     { "ssim",          "Calculate and print SSIM stats.",                 OFFSET(ssim),          FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
     { "intra-refresh", "Use Periodic Intra Refresh instead of IDR frames.",OFFSET(intra_refresh),FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE },
+    { "b-bias",        "Influences how often B-frames are used",          OFFSET(b_bias),        FF_OPT_TYPE_INT,    {INT_MIN}, INT_MIN, INT_MAX, VE },
     { "b-pyramid",     "Keep some B-frames as references.",               OFFSET(b_pyramid),     FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "b_pyramid" },
     { "none",          NULL,                                  0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_NONE},   INT_MIN, INT_MAX, VE, "b_pyramid" },
     { "strict",        "Strictly hierarchical pyramid",       0, FF_OPT_TYPE_CONST, {X264_B_PYRAMID_STRICT}, INT_MIN, INT_MAX, VE, "b_pyramid" },
