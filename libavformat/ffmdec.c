@@ -344,7 +344,6 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->thread_count = avio_r8(pb);
             codec->coder_type = avio_rb32(pb);
             codec->me_cmp = avio_rb32(pb);
-            codec->partitions = avio_rb32(pb);
             codec->me_subpel_quality = avio_rb32(pb);
             codec->me_range = avio_rb32(pb);
             codec->keyint_min = avio_rb32(pb);

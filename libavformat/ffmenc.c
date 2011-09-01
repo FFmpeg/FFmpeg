@@ -156,7 +156,6 @@ static int ffm_write_header(AVFormatContext *s)
             avio_w8(pb, codec->thread_count);
             avio_wb32(pb, codec->coder_type);
             avio_wb32(pb, codec->me_cmp);
-            avio_wb32(pb, codec->partitions);
             avio_wb32(pb, codec->me_subpel_quality);
             avio_wb32(pb, codec->me_range);
             avio_wb32(pb, codec->keyint_min);

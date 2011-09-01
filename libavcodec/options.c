@@ -416,13 +416,13 @@ static const AVOption options[]={
 {"complexityblur", "reduce fluctuations in qp (before curve compression)", OFFSET(complexityblur), FF_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, V|E},
 {"deblockalpha", "in-loop deblocking filter alphac0 parameter", OFFSET(deblockalpha), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
 {"deblockbeta", "in-loop deblocking filter beta parameter", OFFSET(deblockbeta), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
-#endif
 {"partitions", "macroblock subpartition sizes to consider", OFFSET(partitions), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti4x4", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partp4x4", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_P4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partp8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_P8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partb8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_B8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
+#endif
 {"sc_factor", "multiplied by qscale for each frame and added to scene_change_score", OFFSET(scenechange_factor), FF_OPT_TYPE_INT, {.dbl = 6 }, 0, INT_MAX, V|E},
 {"mv0_threshold", NULL, OFFSET(mv0_threshold), FF_OPT_TYPE_INT, {.dbl = 256 }, 0, INT_MAX, V|E},
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS

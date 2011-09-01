@@ -62,6 +62,7 @@ typedef struct X264Context {
     int mbtree;
     char *deblock;
     float cplxblur;
+    char *partitions;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -207,20 +208,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
 
-    x4->params.analyse.inter    = 0;
-    if (avctx->partitions) {
-        if (avctx->partitions & X264_PART_I4X4)
-            x4->params.analyse.inter |= X264_ANALYSE_I4x4;
-        if (avctx->partitions & X264_PART_I8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_I8x8;
-        if (avctx->partitions & X264_PART_P8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_PSUB16x16;
-        if (avctx->partitions & X264_PART_P4X4)
-            x4->params.analyse.inter |= X264_ANALYSE_PSUB8x8;
-        if (avctx->partitions & X264_PART_B8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_BSUB16x16;
-    }
-
     x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
 
     if (avctx->me_method == ME_EPZS)
@@ -320,6 +307,18 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
     if (avctx->complexityblur >= 0)
         x4->params.rc.f_complexity_blur        = avctx->complexityblur;
+    if (avctx->partitions) {
+        if (avctx->partitions & X264_PART_I4X4)
+            x4->params.analyse.inter |= X264_ANALYSE_I4x4;
+        if (avctx->partitions & X264_PART_I8X8)
+            x4->params.analyse.inter |= X264_ANALYSE_I8x8;
+        if (avctx->partitions & X264_PART_P8X8)
+            x4->params.analyse.inter |= X264_ANALYSE_PSUB16x16;
+        if (avctx->partitions & X264_PART_P4X4)
+            x4->params.analyse.inter |= X264_ANALYSE_PSUB8x8;
+        if (avctx->partitions & X264_PART_B8X8)
+            x4->params.analyse.inter |= X264_ANALYSE_BSUB16x16;
+    }
     x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
     x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
@@ -357,6 +356,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_aq_strength = x4->aq_strength;
     PARSE_X264_OPT("psy-rd", psy_rd);
     PARSE_X264_OPT("deblock", deblock);
+    PARSE_X264_OPT("partitions", partitions);
     if (x4->psy >= 0)
         x4->params.analyse.b_psy  = x4->psy;
     if (x4->rc_lookahead >= 0)
@@ -486,6 +486,8 @@ static const AVOption options[] = {
     { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "deblock",       "Loop filter parameters, in <alpha:beta> form.",   OFFSET(deblock),       FF_OPT_TYPE_STRING, { 0 },  0, 0, VE},
     { "cplxblur",      "Reduce fluctuations in QP (before curve compression)", OFFSET(cplxblur), FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
+    { "partitions",    "A comma-separated list of partitions to consider. "
+                       "Possible values: p8x8, p4x4, b8x8, i8x8, i4x4, none, all", OFFSET(partitions), FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
     { NULL },
 };
 
