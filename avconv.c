@@ -1822,7 +1822,7 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
     if (ist->decoding_needed) {
         AVCodec *codec = ist->dec;
         if (!codec) {
-            snprintf(error, sizeof(error), "Decoder (codec id %d) not found for input stream #%d.%d",
+            snprintf(error, error_len, "Decoder (codec id %d) not found for input stream #%d.%d",
                     ist->st->codec->codec_id, ist->file_index, ist->st->index);
             return AVERROR(EINVAL);
         }
@@ -1838,7 +1838,7 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
         }
 
         if (avcodec_open2(ist->st->codec, codec, &ist->opts) < 0) {
-            snprintf(error, sizeof(error), "Error while opening decoder for input stream #%d.%d",
+            snprintf(error, error_len, "Error while opening decoder for input stream #%d.%d",
                     ist->file_index, ist->st->index);
             return AVERROR(EINVAL);
         }
@@ -2150,7 +2150,7 @@ static int transcode_init(OutputFile *output_files,
 
     /* init input streams */
     for (i = 0; i < nb_input_streams; i++)
-        if ((ret = init_input_stream(i, output_streams, nb_output_streams, error, sizeof(error)) < 0))
+        if ((ret = init_input_stream(i, output_streams, nb_output_streams, error, sizeof(error))) < 0)
             goto dump_format;
 
     /* open files and write file headers */
