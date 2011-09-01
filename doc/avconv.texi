@@ -351,7 +351,7 @@ also sources and sinks).
 
 @table @option
 @item -pix_fmt @var{format}
-Set pixel format. Use 'list' as parameter to show all the supported
+Set pixel format. Use @code{-pix_fmts} to show all the supported
 pixel formats.
 @item -sws_flags @var{flags}
 Set SwScaler flags.

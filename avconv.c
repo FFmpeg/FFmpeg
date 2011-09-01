@@ -101,7 +101,6 @@ static const OptionDef options[];
 static int *streamid_map = NULL;
 static int nb_streamid_map = 0;
 
-static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
 static const char *video_rc_override_string=NULL;
@@ -276,6 +275,8 @@ typedef struct OptionsContext {
     int        nb_frame_rates;
     SpecifierOpt *frame_sizes;
     int        nb_frame_sizes;
+    SpecifierOpt *frame_pix_fmts;
+    int        nb_frame_pix_fmts;
 
     /* input options */
     int64_t input_ts_offset;
@@ -2518,21 +2519,6 @@ static int opt_verbose(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_frame_pix_fmt(const char *opt, const char *arg)
-{
-    if (strcmp(arg, "list")) {
-        frame_pix_fmt = av_get_pix_fmt(arg);
-        if (frame_pix_fmt == PIX_FMT_NONE) {
-            fprintf(stderr, "Unknown pixel format requested: %s\n", arg);
-            return AVERROR(EINVAL);
-        }
-    } else {
-        show_pix_fmts();
-        exit_program(0);
-    }
-    return 0;
-}
-
 static double parse_frame_aspect_ratio(const char *arg)
 {
     int x = 0, y = 0;
@@ -2873,8 +2859,8 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     if (o->nb_frame_sizes) {
         av_dict_set(&format_opts, "video_size", o->frame_sizes[o->nb_frame_sizes - 1].u.str, 0);
     }
-    if (frame_pix_fmt != PIX_FMT_NONE)
-        av_dict_set(&format_opts, "pixel_format", av_get_pix_fmt_name(frame_pix_fmt), 0);
+    if (o->nb_frame_pix_fmts)
+        av_dict_set(&format_opts, "pixel_format", o->frame_pix_fmts[o->nb_frame_pix_fmts - 1].u.str, 0);
 
     ic->flags |= AVFMT_FLAG_NONBLOCK;
 
@@ -2929,8 +2915,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
     input_files[nb_input_files - 1].ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
-
-    frame_pix_fmt = PIX_FMT_NONE;
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3055,7 +3039,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     if (!st->stream_copy) {
         const char *p;
         char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
-        char *frame_aspect_ratio = NULL;
+        char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         int i, force_fps = 0;
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -3074,7 +3058,11 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         if (frame_aspect_ratio)
             ost->frame_aspect_ratio = parse_frame_aspect_ratio(frame_aspect_ratio);
 
-        video_enc->pix_fmt = frame_pix_fmt;
+        MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
+        if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == PIX_FMT_NONE) {
+            av_log(NULL, AV_LOG_ERROR, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
+            exit_program(1);
+        }
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
         if(intra_matrix)
@@ -3132,8 +3120,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         ost->force_fps = force_fps;
     }
 
-    /* reset some key parameters */
-    frame_pix_fmt = PIX_FMT_NONE;
     return ost;
 }
 
@@ -3871,8 +3857,8 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         parse_option(o, "f", "dv", options);
 
         parse_option(o, "s", norm == PAL ? "720x576" : "720x480", options);
-        opt_frame_pix_fmt("pix_fmt", !strncmp(arg, "dv50", 4) ? "yuv422p" :
-                          norm == PAL ? "yuv420p" : "yuv411p");
+        parse_option(o, "pix_fmt", !strncmp(arg, "dv50", 4) ? "yuv422p" :
+                          norm == PAL ? "yuv420p" : "yuv411p", options);
         parse_option(o, "r", frame_rates[norm], options);
 
         parse_option(o, "ar", "48000", options);
@@ -3982,7 +3968,7 @@ static const OptionDef options[] = {
     { "r", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_rates)}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
     { "s", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_sizes)}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_aspect_ratios)}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
-    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
+    { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_pix_fmts)}, "set pixel format", "format" },
     { "vn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, {.off = OFFSET(video_disable)}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
