@@ -149,7 +149,6 @@ static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
 static int force_fps = 0;
-static char *forced_key_frames = NULL;
 
 static float dts_delta_threshold = 10;
 
@@ -319,6 +318,8 @@ typedef struct OptionsContext {
     int        nb_sample_fmts;
     SpecifierOpt *qscale;
     int        nb_qscale;
+    SpecifierOpt *forced_key_frames;
+    int        nb_forced_key_frames;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -3078,6 +3079,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         st->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
     } else {
         const char *p;
+        char *forced_key_frames = NULL;
         int i;
 
         if (frame_rate.num)
@@ -3135,12 +3137,12 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
             }
         }
 
+        MATCH_PER_STREAM_OPT(forced_key_frames, str, forced_key_frames, oc, st);
         if (forced_key_frames)
             parse_forced_key_frames(forced_key_frames, ost, video_enc);
     }
 
     /* reset some key parameters */
-    av_freep(&forced_key_frames);
     frame_pix_fmt = PIX_FMT_NONE;
     return ost;
 }
@@ -3604,7 +3606,6 @@ static void opt_output_file(void *optctx, const char *filename)
     av_freep(&streamid_map);
     nb_streamid_map = 0;
 
-    av_freep(&forced_key_frames);
     reset_options(o);
 }
 
@@ -4030,7 +4031,7 @@ static const OptionDef options[] = {
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
     { "streamid", HAS_ARG | OPT_EXPERT, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
-    { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void *)&forced_key_frames}, "force key frames at specified timestamps", "timestamps" },
+    { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_SPEC, {.off = OFFSET(forced_key_frames)}, "force key frames at specified timestamps", "timestamps" },
 
     /* audio options */
     { "aframes", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_frames}, "set the number of audio frames to record", "number" },
