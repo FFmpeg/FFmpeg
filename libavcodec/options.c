@@ -536,7 +536,6 @@ void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_typ
     s->pix_fmt= PIX_FMT_NONE;
     s->sample_fmt= AV_SAMPLE_FMT_NONE;
 
-    s->palctrl = NULL;
     s->reget_buffer= avcodec_default_reget_buffer;
     s->reordered_opaque= AV_NOPTS_VALUE;
 }
@@ -615,7 +614,6 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     /* set values specific to opened codecs back to their default state */
     dest->priv_data       = NULL;
     dest->codec           = NULL;
-    dest->palctrl         = NULL;
     dest->slice_offset    = NULL;
     dest->internal_buffer = NULL;
     dest->hwaccel         = NULL;
