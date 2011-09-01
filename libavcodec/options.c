@@ -447,7 +447,7 @@ static const AVOption options[]={
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
 #endif
 #if FF_API_DRC_SCALE
-{"drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0.0, 1.0, A|D},
+{"drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), FF_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 1.0, A|D},
 #endif
 #if FF_API_LAME_GLOBAL_OPTS
 {"reservoir", "use bit reservoir", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BIT_RESERVOIR }, INT_MIN, INT_MAX, A|E, "flags2"},
