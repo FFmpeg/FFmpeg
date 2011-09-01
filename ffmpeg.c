@@ -1077,15 +1077,16 @@ static void do_video_resample(OutputStream *ost,
                               AVFrame *in_picture,
                               AVFrame **out_picture)
 {
-    int resample_changed = 0;
+#if CONFIG_AVFILTER
     *out_picture = in_picture;
-#if !CONFIG_AVFILTER
+#else
     AVCodecContext *dec = ist->st->codec;
     AVCodecContext *enc = ost->st->codec;
-    resample_changed = ost->resample_width   != dec->width  ||
-                       ost->resample_height  != dec->height ||
-                       ost->resample_pix_fmt != dec->pix_fmt;
+    int resample_changed = ost->resample_width   != dec->width  ||
+                           ost->resample_height  != dec->height ||
+                           ost->resample_pix_fmt != dec->pix_fmt;
 
+    *out_picture = in_picture;
     if (resample_changed) {
         av_log(NULL, AV_LOG_INFO,
                "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
@@ -1884,7 +1885,6 @@ static void print_sdp(OutputFile *output_files, int n)
 static int init_input_stream(int ist_index, OutputStream *output_streams, int nb_output_streams,
                              char *error, int error_len)
 {
-    int i;
     InputStream *ist = &input_streams[ist_index];
     if (ist->decoding_needed) {
         AVCodec *codec = ist->dec;
