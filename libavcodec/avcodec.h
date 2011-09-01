@@ -3082,6 +3082,8 @@ typedef struct AVPicture {
     int linesize[4];       ///< number of bytes per line
 } AVPicture;
 
+#define AVPALETTE_SIZE 1024
+#define AVPALETTE_COUNT 256
 #if FF_API_PALETTE_CONTROL
 /**
  * AVPaletteControl
@@ -3091,8 +3093,6 @@ typedef struct AVPicture {
  * @deprecated Use AVPacket to send palette changes instead.
  * This is totally broken.
  */
-#define AVPALETTE_SIZE 1024
-#define AVPALETTE_COUNT 256
 typedef struct AVPaletteControl {
 
     /* Demuxer sets this to 1 to indicate the palette has changed;
