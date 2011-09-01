@@ -132,7 +132,7 @@ struct writer {
     const char *header, *footer;
     void (*print_header)(const char *);
     void (*print_footer)(const char *);
-    void (*print_fmt_f)(const char *, const char *, va_list ap);
+    void (*print_fmt_f)(const char *, const char *, ...);
     void (*print_int_f)(const char *, int);
     void (*show_tags)(struct writer *w, AVDictionary *dict);
 };
@@ -145,10 +145,13 @@ static void default_print_header(const char *section)
     printf("[%s]\n", section);
 }
 
-static void default_print_fmt(const char *key, const char *fmt, va_list ap)
+static void default_print_fmt(const char *key, const char *fmt, ...)
 {
+    va_list ap;
+    va_start(ap, fmt);
     printf("%s=", key);
     vprintf(fmt, ap);
+    va_end(ap);
 }
 
 static void default_print_int(const char *key, int value)
@@ -164,19 +167,11 @@ static void default_print_footer(const char *section)
 
 /* Print helpers */
 
-static void print_vfmt0(struct writer *w, const char *key, const char *fmt, ...)
-{
-    va_list ap;
-    va_start(ap, fmt);
-    w->print_fmt_f(key, fmt, ap);
-    va_end(ap);
-}
-
-#define print_fmt0(k, f, a...) print_vfmt0(w, k, f, ##a)
+#define print_fmt0(k, f, a...) w->print_fmt_f(k, f, ##a)
 #define print_fmt( k, f, a...) do {   \
     if (w->item_sep)                  \
         printf("%s", w->item_sep);    \
-    print_vfmt0(w, k, f, ##a);        \
+    w->print_fmt_f(k, f, ##a);        \
 } while (0)
 
 #define print_int0(k, v) w->print_int_f(k, v)
