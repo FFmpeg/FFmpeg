@@ -60,6 +60,7 @@ typedef struct X264Context {
     int fast_pskip;
     int aud;
     int mbtree;
+    char *deblock;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -184,6 +185,12 @@ static av_cold int X264_close(AVCodecContext *avctx)
     return 0;
 }
 
+#define PARSE_X264_OPT(name, var)\
+    if (x4->var && x264_param_parse(&x4->params, name, x4->var) < 0) {\
+        av_log(avctx, AV_LOG_ERROR, "Error parsing option '%s' with value '%s'.\n", name, x4->var);\
+        return AVERROR(EINVAL);\
+    }
+
 static av_cold int X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
@@ -198,8 +205,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_keyint_min = x4->params.i_keyint_max;
 
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
-    x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
-    x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
 
     x4->params.rc.f_complexity_blur = avctx->complexityblur;
 
@@ -310,6 +315,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.analyse.i_weighted_pred    = avctx->weighted_p_pred;
     if (avctx->bframebias)
         x4->params.i_bframe_bias              = avctx->bframebias;
+    if (avctx->deblockalpha)
+        x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
+    if (avctx->deblockbeta)
+        x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
     x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
     x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
@@ -345,10 +354,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.i_aq_mode = x4->aq_mode;
     if (x4->aq_strength >= 0)
         x4->params.rc.f_aq_strength = x4->aq_strength;
-    if (x4->psy_rd && x264_param_parse(&x4->params, "psy-rd", x4->psy_rd) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Error parsing option 'psy-rd' with value '%s'.\n", x4->psy_rd);
-        return AVERROR(EINVAL);
-    }
+    PARSE_X264_OPT("psy-rd", psy_rd);
+    PARSE_X264_OPT("deblock", deblock);
     if (x4->psy >= 0)
         x4->params.analyse.b_psy  = x4->psy;
     if (x4->rc_lookahead >= 0)
@@ -474,6 +481,7 @@ static const AVOption options[] = {
     { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "deblock",       "Loop filter parameters, in <alpha:beta> form.",   OFFSET(deblock),       FF_OPT_TYPE_STRING, { 0 },  0, 0, VE},
     { NULL },
 };
 

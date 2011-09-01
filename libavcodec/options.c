@@ -413,8 +413,10 @@ static const AVOption options[]={
 #endif
 {"skiprd", "RD optimal MB level residual skipping", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SKIP_RD }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"complexityblur", "reduce fluctuations in qp (before curve compression)", OFFSET(complexityblur), FF_OPT_TYPE_FLOAT, {.dbl = 20.0 }, FLT_MIN, FLT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
 {"deblockalpha", "in-loop deblocking filter alphac0 parameter", OFFSET(deblockalpha), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
 {"deblockbeta", "in-loop deblocking filter beta parameter", OFFSET(deblockbeta), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
+#endif
 {"partitions", "macroblock subpartition sizes to consider", OFFSET(partitions), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti4x4", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},

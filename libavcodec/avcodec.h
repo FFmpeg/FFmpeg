@@ -2456,13 +2456,14 @@ typedef struct AVCodecContext {
      */
     float complexityblur;
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * in-loop deblocking filter alphac0 parameter
      * alpha is in the range -6...6
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int deblockalpha;
+    attribute_deprecated int deblockalpha;
 
     /**
      * in-loop deblocking filter beta parameter
@@ -2470,7 +2471,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int deblockbeta;
+    attribute_deprecated int deblockbeta;
+#endif
 
     /**
      * macroblock subpartition sizes to consider - p8x8, p4x4, b8x8, i8x8, i4x4
