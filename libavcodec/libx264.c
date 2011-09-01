@@ -189,9 +189,6 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x264_param_default(&x4->params);
 
-    x4->params.i_keyint_max         = avctx->gop_size;
-
-    x4->params.i_bframe          = avctx->max_b_frames;
     x4->params.b_cabac           = avctx->coder_type == FF_CODER_TYPE_AC;
     x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
     x4->params.i_bframe_bias     = avctx->bframebias;
@@ -200,21 +197,11 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (x4->params.i_keyint_min > x4->params.i_keyint_max)
         x4->params.i_keyint_min = x4->params.i_keyint_max;
 
-    x4->params.i_scenecut_threshold        = avctx->scenechange_threshold;
-
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
     x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
     x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
 
-    x4->params.rc.i_qp_min                 = avctx->qmin;
-    x4->params.rc.i_qp_max                 = avctx->qmax;
-    x4->params.rc.i_qp_step                = avctx->max_qdiff;
-
-    x4->params.rc.f_qcompress       = avctx->qcompress; /* 0.0 => cbr, 1.0 => constant qp */
-    x4->params.rc.f_qblur           = avctx->qblur;     /* temporally blur quants */
     x4->params.rc.f_complexity_blur = avctx->complexityblur;
-
-    x4->params.i_frame_reference    = avctx->refs;
 
     x4->params.analyse.inter    = 0;
     if (avctx->partitions) {
@@ -332,6 +319,25 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
     x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
 #endif
+
+    if (avctx->gop_size >= 0)
+        x4->params.i_keyint_max         = avctx->gop_size;
+    if (avctx->max_b_frames >= 0)
+        x4->params.i_bframe             = avctx->max_b_frames;
+    if (avctx->scenechange_threshold >= 0)
+        x4->params.i_scenecut_threshold = avctx->scenechange_threshold;
+    if (avctx->qmin >= 0)
+        x4->params.rc.i_qp_min          = avctx->qmin;
+    if (avctx->qmax >= 0)
+        x4->params.rc.i_qp_max          = avctx->qmax;
+    if (avctx->max_qdiff >= 0)
+        x4->params.rc.i_qp_step         = avctx->max_qdiff;
+    if (avctx->qblur >= 0)
+        x4->params.rc.f_qblur           = avctx->qblur;     /* temporally blur quants */
+    if (avctx->qcompress >= 0)
+        x4->params.rc.f_qcompress       = avctx->qcompress; /* 0.0 => cbr, 1.0 => constant qp */
+    if (avctx->refs >= 0)
+        x4->params.i_frame_reference    = avctx->refs;
 
     if (x4->aq_mode >= 0)
         x4->params.rc.i_aq_mode = x4->aq_mode;
@@ -475,6 +481,15 @@ static const AVClass class = {
 
 static const AVCodecDefault x264_defaults[] = {
     { "b",                "0" },
+    { "bf",               "-1" },
+    { "g",                "-1" },
+    { "qmin",             "-1" },
+    { "qmax",             "-1" },
+    { "qdiff",            "-1" },
+    { "qblur",            "-1" },
+    { "qcomp",            "-1" },
+    { "refs",             "-1" },
+    { "sc_threshold",     "-1" },
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { NULL },
 };
