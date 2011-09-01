@@ -101,8 +101,6 @@ static const OptionDef options[];
 static int *streamid_map = NULL;
 static int nb_streamid_map = 0;
 
-static int frame_width  = 0;
-static int frame_height = 0;
 static float frame_aspect_ratio = 0;
 static enum PixelFormat frame_pix_fmt = PIX_FMT_NONE;
 static uint16_t *intra_matrix = NULL;
@@ -277,6 +275,8 @@ typedef struct OptionsContext {
     int        nb_audio_sample_rate;
     SpecifierOpt *frame_rates;
     int        nb_frame_rates;
+    SpecifierOpt *frame_sizes;
+    int        nb_frame_sizes;
 
     /* input options */
     int64_t input_ts_offset;
@@ -2517,15 +2517,6 @@ static int opt_verbose(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_frame_size(const char *opt, const char *arg)
-{
-    if (av_parse_video_size(&frame_width, &frame_height, arg) < 0) {
-        fprintf(stderr, "Incorrect frame size\n");
-        return AVERROR(EINVAL);
-    }
-    return 0;
-}
-
 static int opt_frame_pix_fmt(const char *opt, const char *arg)
 {
     if (strcmp(arg, "list")) {
@@ -2879,9 +2870,8 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     if (o->nb_frame_rates) {
         av_dict_set(&format_opts, "framerate", o->frame_rates[o->nb_frame_rates - 1].u.str, 0);
     }
-    if (frame_width && frame_height) {
-        snprintf(buf, sizeof(buf), "%dx%d", frame_width, frame_height);
-        av_dict_set(&format_opts, "video_size", buf, 0);
+    if (o->nb_frame_sizes) {
+        av_dict_set(&format_opts, "video_size", o->frame_sizes[o->nb_frame_sizes - 1].u.str, 0);
     }
     if (frame_pix_fmt != PIX_FMT_NONE)
         av_dict_set(&format_opts, "pixel_format", av_get_pix_fmt_name(frame_pix_fmt), 0);
@@ -2941,8 +2931,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
 
     frame_pix_fmt = PIX_FMT_NONE;
-    frame_height = 0;
-    frame_width  = 0;
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3066,12 +3054,9 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
 
-    if (st->stream_copy) {
-        video_enc->sample_aspect_ratio =
-        st->sample_aspect_ratio = av_d2q(frame_aspect_ratio*frame_height/frame_width, 255);
-    } else {
+    if (!st->stream_copy) {
         const char *p;
-        char *forced_key_frames = NULL, *frame_rate = NULL;
+        char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
         int i, force_fps = 0;
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -3080,8 +3065,12 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
             exit_program(1);
         }
 
-        video_enc->width = frame_width;
-        video_enc->height = frame_height;
+        MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, oc, st);
+        if (frame_size && av_parse_video_size(&video_enc->width, &video_enc->height, frame_size) < 0) {
+            av_log(NULL, AV_LOG_ERROR, "Invalid frame size: %s.\n", frame_size);
+            exit_program(1);
+        }
+
         video_enc->pix_fmt = frame_pix_fmt;
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
@@ -3597,9 +3586,6 @@ static void opt_output_file(void *optctx, const char *filename)
         av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
     }
 
-    frame_width   = 0;
-    frame_height  = 0;
-
     av_freep(&streamid_map);
     nb_streamid_map = 0;
 
@@ -3812,7 +3798,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_audio_codec(o, "c:a", "mp2");
         parse_option(o, "f", "vcd", options);
 
-        opt_frame_size("s", norm == PAL ? "352x288" : "352x240");
+        parse_option(o, "s", norm == PAL ? "352x288" : "352x240", options);
         parse_option(o, "r", frame_rates[norm], options);
         opt_default("g", norm == PAL ? "15" : "18");
 
@@ -3840,7 +3826,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_audio_codec(o, "c:a", "mp2");
         parse_option(o, "f", "svcd", options);
 
-        opt_frame_size("s", norm == PAL ? "480x576" : "480x480");
+        parse_option(o, "s", norm == PAL ? "480x576" : "480x480", options);
         parse_option(o, "r", frame_rates[norm], options);
         opt_default("g", norm == PAL ? "15" : "18");
 
@@ -3862,7 +3848,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_audio_codec(o, "c:a", "ac3");
         parse_option(o, "f", "dvd", options);
 
-        opt_frame_size("vcodec", norm == PAL ? "720x576" : "720x480");
+        parse_option(o, "s", norm == PAL ? "720x576" : "720x480", options);
         parse_option(o, "r", frame_rates[norm], options);
         opt_default("g", norm == PAL ? "15" : "18");
 
@@ -3881,7 +3867,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
 
         parse_option(o, "f", "dv", options);
 
-        opt_frame_size("s", norm == PAL ? "720x576" : "720x480");
+        parse_option(o, "s", norm == PAL ? "720x576" : "720x480", options);
         opt_frame_pix_fmt("pix_fmt", !strncmp(arg, "dv50", 4) ? "yuv422p" :
                           norm == PAL ? "yuv420p" : "yuv411p");
         parse_option(o, "r", frame_rates[norm], options);
@@ -3991,7 +3977,7 @@ static const OptionDef options[] = {
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
     { "r", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_rates)}, "set frame rate (Hz value, fraction or abbreviation)", "rate" },
-    { "s", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_size}, "set frame size (WxH or abbreviation)", "size" },
+    { "s", HAS_ARG | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_sizes)}, "set frame size (WxH or abbreviation)", "size" },
     { "aspect", HAS_ARG | OPT_VIDEO, {(void*)opt_frame_aspect_ratio}, "set aspect ratio (4:3, 16:9 or 1.3333, 1.7777)", "aspect" },
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_frame_pix_fmt}, "set pixel format, 'list' as argument shows all the pixel formats supported", "format" },
     { "vn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, {.off = OFFSET(video_disable)}, "disable video" },
