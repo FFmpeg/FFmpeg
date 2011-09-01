@@ -121,7 +121,6 @@ static int qp_hist = 0;
 static char *vfilters = NULL;
 #endif
 
-static int audio_sample_rate = 0;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
 
@@ -280,6 +279,8 @@ typedef struct OptionsContext {
     int        nb_codec_names;
     SpecifierOpt *audio_channels;
     int        nb_audio_channels;
+    SpecifierOpt *audio_sample_rate;
+    int        nb_audio_sample_rate;
 
     /* input options */
     int64_t input_ts_offset;
@@ -2588,12 +2589,6 @@ static int opt_top_field_first(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_audio_rate(const char *opt, const char *arg)
-{
-    audio_sample_rate = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-    return 0;
-}
-
 static int opt_audio_codec(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "codec:a", arg, options);
@@ -2890,8 +2885,8 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         print_error(filename, AVERROR(ENOMEM));
         exit_program(1);
     }
-    if (audio_sample_rate) {
-        snprintf(buf, sizeof(buf), "%d", audio_sample_rate);
+    if (o->nb_audio_sample_rate) {
+        snprintf(buf, sizeof(buf), "%d", o->audio_sample_rate[o->nb_audio_sample_rate - 1].u.i);
         av_dict_set(&format_opts, "sample_rate", buf, 0);
     }
     if (o->nb_audio_channels) {
@@ -2967,7 +2962,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     frame_pix_fmt = PIX_FMT_NONE;
     frame_height = 0;
     frame_width  = 0;
-    audio_sample_rate = 0;
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3192,8 +3186,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
             exit_program(1);
         }
 
-        if (audio_sample_rate)
-            audio_enc->sample_rate = audio_sample_rate;
+        MATCH_PER_STREAM_OPT(audio_sample_rate, i, audio_enc->sample_rate, oc, st);
     }
 
     return ost;
@@ -3621,7 +3614,6 @@ static void opt_output_file(void *optctx, const char *filename)
     frame_rate    = (AVRational){0, 0};
     frame_width   = 0;
     frame_height  = 0;
-    audio_sample_rate = 0;
 
     av_freep(&streamid_map);
     nb_streamid_map = 0;
@@ -3850,7 +3842,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_default("bufsize", "327680"); // 40*1024*8;
 
         opt_default("b:a", "224000");
-        audio_sample_rate = 44100;
+        parse_option(o, "ar", "44100", options);
         parse_option(o, "ac", "2", options);
 
         opt_default("packetsize", "2324");
@@ -3880,7 +3872,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
 
 
         opt_default("b:a", "224000");
-        audio_sample_rate = 44100;
+        parse_option(o, "ar", "44100", options);
 
         opt_default("packetsize", "2324");
 
@@ -3903,7 +3895,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_default("muxrate", "10080000"); // from mplex project: data_rate = 1260000. mux_rate = data_rate * 8
 
         opt_default("b:a", "448000");
-        audio_sample_rate = 48000;
+        parse_option(o, "ar", "48000", options);
 
     } else if(!strncmp(arg, "dv", 2)) {
 
@@ -3914,7 +3906,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
                           norm == PAL ? "yuv420p" : "yuv411p");
         opt_frame_rate("r", frame_rates[norm]);
 
-        audio_sample_rate = 48000;
+        parse_option(o, "ar", "48000", options);
         parse_option(o, "ac", "2", options);
 
     } else {
@@ -4051,7 +4043,7 @@ static const OptionDef options[] = {
     /* audio options */
     { "aframes", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_frames}, "set the number of audio frames to record", "number" },
     { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
-    { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
+    { "ar", HAS_ARG | OPT_AUDIO | OPT_INT | OPT_SPEC, {.off = OFFSET(audio_sample_rate)}, "set audio sampling rate (in Hz)", "rate" },
     { "ac", HAS_ARG | OPT_AUDIO | OPT_INT | OPT_SPEC, {.off = OFFSET(audio_channels)}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL | OPT_AUDIO | OPT_OFFSET, {.off = OFFSET(audio_disable)}, "disable audio" },
     { "acodec", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
