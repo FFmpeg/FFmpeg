@@ -1078,9 +1078,10 @@ static void do_video_resample(OutputStream *ost,
                               AVFrame **out_picture)
 {
     int resample_changed = 0;
-    AVCodecContext *dec = ist->st->codec;
     *out_picture = in_picture;
 #if !CONFIG_AVFILTER
+    AVCodecContext *dec = ist->st->codec;
+    AVCodecContext *enc = ost->st->codec;
     resample_changed = ost->resample_width   != dec->width  ||
                        ost->resample_height  != dec->height ||
                        ost->resample_pix_fmt != dec->pix_fmt;
@@ -2320,6 +2321,7 @@ static int transcode(OutputFile *output_files,
                     do_pkt_dump = 1;
                 av_log_set_level(AV_LOG_DEBUG);
             }
+#if CONFIG_AVFILTER
             if (key == 'c' || key == 'C'){
                 char ret[4096], target[64], cmd[256], arg[256]={0};
                 double ts;
@@ -2346,6 +2348,7 @@ static int transcode(OutputFile *output_files,
                     fprintf(stderr, "Parse error\n");
                 }
             }
+#endif
             if (key == 'd' || key == 'D'){
                 int debug=0;
                 if(key == 'D') {
