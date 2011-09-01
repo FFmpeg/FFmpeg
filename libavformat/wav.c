@@ -387,7 +387,7 @@ static int wav_read_header(AVFormatContext *s)
     int rf64;
     uint32_t tag, list_type;
     AVIOContext *pb = s->pb;
-    AVStream *st;
+    AVStream *st = NULL;
     WAVContext *wav = s->priv_data;
     int ret, got_fmt = 0;
     int64_t next_tag_ofs, data_ofs = -1;
