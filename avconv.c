@@ -148,7 +148,6 @@ static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
-static int force_fps = 0;
 
 static float dts_delta_threshold = 10;
 
@@ -213,6 +212,7 @@ typedef struct OutputStream {
     int resample_width;
     int resample_pix_fmt;
     AVRational frame_rate;
+    int force_fps;
 
     float frame_aspect_ratio;
 
@@ -320,6 +320,8 @@ typedef struct OptionsContext {
     int        nb_qscale;
     SpecifierOpt *forced_key_frames;
     int        nb_forced_key_frames;
+    SpecifierOpt *force_fps;
+    int        nb_force_fps;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -2086,7 +2088,7 @@ static int transcode_init(OutputFile *output_files,
 
                 if (!ost->frame_rate.num)
                     ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25,1};
-                if (ost->enc && ost->enc->supported_framerates && !force_fps) {
+                if (ost->enc && ost->enc->supported_framerates && !ost->force_fps) {
                     int idx = av_find_nearest_q_idx(ost->frame_rate, ost->enc->supported_framerates);
                     ost->frame_rate = ost->enc->supported_framerates[idx];
                 }
@@ -3080,7 +3082,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     } else {
         const char *p;
         char *forced_key_frames = NULL;
-        int i;
+        int i, force_fps = 0;
 
         if (frame_rate.num)
             ost->frame_rate = frame_rate;
@@ -3140,6 +3142,9 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         MATCH_PER_STREAM_OPT(forced_key_frames, str, forced_key_frames, oc, st);
         if (forced_key_frames)
             parse_forced_key_frames(forced_key_frames, ost, video_enc);
+
+        MATCH_PER_STREAM_OPT(force_fps, i, force_fps, oc, st);
+        ost->force_fps = force_fps;
     }
 
     /* reset some key parameters */
@@ -4029,7 +4034,7 @@ static const OptionDef options[] = {
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
-    { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&force_fps}, "force the selected framerate, disable the best supported framerate selection" },
+    { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO | OPT_SPEC, {.off = OFFSET(force_fps)}, "force the selected framerate, disable the best supported framerate selection" },
     { "streamid", HAS_ARG | OPT_EXPERT, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
     { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_SPEC, {.off = OFFSET(forced_key_frames)}, "force key frames at specified timestamps", "timestamps" },
 
