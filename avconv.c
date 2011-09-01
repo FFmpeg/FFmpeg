@@ -125,7 +125,6 @@ static char *vfilters = NULL;
 static int audio_sample_rate = 0;
 #define QSCALE_NONE -99999
 static float audio_qscale = QSCALE_NONE;
-static int audio_channels = 0;
 
 static int file_overwrite = 0;
 static int do_benchmark = 0;
@@ -281,6 +280,8 @@ typedef struct OptionsContext {
 
     SpecifierOpt *codec_names;
     int        nb_codec_names;
+    SpecifierOpt *audio_channels;
+    int        nb_audio_channels;
 
     /* input options */
     int64_t input_ts_offset;
@@ -2595,12 +2596,6 @@ static int opt_audio_rate(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_audio_channels(const char *opt, const char *arg)
-{
-    audio_channels = parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-    return 0;
-}
-
 static int opt_audio_codec(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "codec:a", arg, options);
@@ -2901,8 +2896,8 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         snprintf(buf, sizeof(buf), "%d", audio_sample_rate);
         av_dict_set(&format_opts, "sample_rate", buf, 0);
     }
-    if (audio_channels) {
-        snprintf(buf, sizeof(buf), "%d", audio_channels);
+    if (o->nb_audio_channels) {
+        snprintf(buf, sizeof(buf), "%d", o->audio_channels[o->nb_audio_channels - 1].u.i);
         av_dict_set(&format_opts, "channels", buf, 0);
     }
     if (frame_rate.num) {
@@ -2999,7 +2994,6 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     frame_height = 0;
     frame_width  = 0;
     audio_sample_rate = 0;
-    audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
 
     for (i = 0; i < orig_nb_streams; i++)
@@ -3214,8 +3208,8 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
             audio_enc->flags |= CODEC_FLAG_QSCALE;
             audio_enc->global_quality = FF_QP2LAMBDA * audio_qscale;
         }
-        if (audio_channels)
-            audio_enc->channels = audio_channels;
+        MATCH_PER_STREAM_OPT(audio_channels, i, audio_enc->channels, oc, st);
+
         if (audio_sample_fmt != AV_SAMPLE_FMT_NONE)
             audio_enc->sample_fmt = audio_sample_fmt;
         if (audio_sample_rate)
@@ -3648,7 +3642,6 @@ static void opt_output_file(void *optctx, const char *filename)
     frame_width   = 0;
     frame_height  = 0;
     audio_sample_rate = 0;
-    audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
 
     av_freep(&streamid_map);
@@ -3879,7 +3872,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
 
         opt_default("b:a", "224000");
         audio_sample_rate = 44100;
-        audio_channels = 2;
+        parse_option(o, "ac", "2", options);
 
         opt_default("packetsize", "2324");
         opt_default("muxrate", "1411200"); // 2352 * 75 * 8;
@@ -3943,7 +3936,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         opt_frame_rate("r", frame_rates[norm]);
 
         audio_sample_rate = 48000;
-        audio_channels = 2;
+        parse_option(o, "ac", "2", options);
 
     } else {
         fprintf(stderr, "Unknown target: %s\n", arg);
@@ -4081,7 +4074,7 @@ static const OptionDef options[] = {
     { "aframes", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_frames}, "set the number of audio frames to record", "number" },
     { "aq", OPT_FLOAT | HAS_ARG | OPT_AUDIO, {(void*)&audio_qscale}, "set audio quality (codec-specific)", "quality", },
     { "ar", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_rate}, "set audio sampling rate (in Hz)", "rate" },
-    { "ac", HAS_ARG | OPT_AUDIO, {(void*)opt_audio_channels}, "set number of audio channels", "channels" },
+    { "ac", HAS_ARG | OPT_AUDIO | OPT_INT | OPT_SPEC, {.off = OFFSET(audio_channels)}, "set number of audio channels", "channels" },
     { "an", OPT_BOOL | OPT_AUDIO | OPT_OFFSET, {.off = OFFSET(audio_disable)}, "disable audio" },
     { "acodec", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_codec}, "force audio codec ('copy' to copy stream)", "codec" },
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_tag}, "force audio tag/fourcc", "fourcc/tag" },
