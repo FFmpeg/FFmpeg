@@ -101,8 +101,6 @@ static const OptionDef options[];
 static int *streamid_map = NULL;
 static int nb_streamid_map = 0;
 
-static uint16_t *intra_matrix = NULL;
-static uint16_t *inter_matrix = NULL;
 static int video_discard = 0;
 static int same_quant = 0;
 static int do_deinterlace = 0;
@@ -324,6 +322,10 @@ typedef struct OptionsContext {
     int        nb_frame_aspect_ratios;
     SpecifierOpt *rc_overrides;
     int        nb_rc_overrides;
+    SpecifierOpt *intra_matrices;
+    int        nb_intra_matrices;
+    SpecifierOpt *inter_matrices;
+    int        nb_inter_matrices;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -509,9 +511,6 @@ void exit_program(int ret)
     }
     for (i = 0; i < nb_input_streams; i++)
         av_dict_free(&input_streams[i].opts);
-
-    av_free(intra_matrix);
-    av_free(inter_matrix);
 
     if (vstats_file)
         fclose(vstats_file);
@@ -3003,6 +3002,23 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     return ost;
 }
 
+static void parse_matrix_coeffs(uint16_t *dest, const char *str)
+{
+    int i;
+    const char *p = str;
+    for(i = 0;; i++) {
+        dest[i] = atoi(p);
+        if(i == 63)
+            break;
+        p = strchr(p, ',');
+        if(!p) {
+            fprintf(stderr, "Syntax error in matrix \"%s\" at coeff %d\n", str, i);
+            exit_program(1);
+        }
+        p++;
+    }
+}
+
 static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 {
     AVStream *st;
@@ -3028,6 +3044,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         const char *p = NULL;
         char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
+        char *intra_matrix = NULL, *inter_matrix = NULL;
         int i, force_fps = 0;
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -3053,10 +3070,22 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         }
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
 
-        if(intra_matrix)
-            video_enc->intra_matrix = intra_matrix;
-        if(inter_matrix)
-            video_enc->inter_matrix = inter_matrix;
+        MATCH_PER_STREAM_OPT(intra_matrices, str, intra_matrix, oc, st);
+        if (intra_matrix) {
+            if (!(video_enc->intra_matrix = av_mallocz(sizeof(*video_enc->intra_matrix) * 64))) {
+                av_log(NULL, AV_LOG_ERROR, "Could not allocate memory for intra matrix.\n");
+                exit_program(1);
+            }
+            parse_matrix_coeffs(video_enc->intra_matrix, intra_matrix);
+        }
+        MATCH_PER_STREAM_OPT(inter_matrices, str, inter_matrix, oc, st);
+        if (inter_matrix) {
+            if (!(video_enc->inter_matrix = av_mallocz(sizeof(*video_enc->inter_matrix) * 64))) {
+                av_log(NULL, AV_LOG_ERROR, "Could not allocate memory for inter matrix.\n");
+                exit_program(1);
+            }
+            parse_matrix_coeffs(video_enc->inter_matrix, inter_matrix);
+        }
 
         MATCH_PER_STREAM_OPT(rc_overrides, str, p, oc, st);
         for(i=0; p; i++){
@@ -3608,35 +3637,6 @@ static int64_t getmaxrss(void)
 #endif
 }
 
-static void parse_matrix_coeffs(uint16_t *dest, const char *str)
-{
-    int i;
-    const char *p = str;
-    for(i = 0;; i++) {
-        dest[i] = atoi(p);
-        if(i == 63)
-            break;
-        p = strchr(p, ',');
-        if(!p) {
-            fprintf(stderr, "Syntax error in matrix \"%s\" at coeff %d\n", str, i);
-            exit_program(1);
-        }
-        p++;
-    }
-}
-
-static void opt_inter_matrix(const char *arg)
-{
-    inter_matrix = av_mallocz(sizeof(uint16_t) * 64);
-    parse_matrix_coeffs(inter_matrix, arg);
-}
-
-static void opt_intra_matrix(const char *arg)
-{
-    intra_matrix = av_mallocz(sizeof(uint16_t) * 64);
-    parse_matrix_coeffs(intra_matrix, arg);
-}
-
 static int opt_audio_qscale(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "q:a", arg, options);
@@ -3968,8 +3968,8 @@ static const OptionDef options[] = {
 #if CONFIG_AVFILTER
     { "vf", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
 #endif
-    { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_intra_matrix}, "specify intra matrix coeffs", "matrix" },
-    { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_inter_matrix}, "specify inter matrix coeffs", "matrix" },
+    { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(intra_matrices)}, "specify intra matrix coeffs", "matrix" },
+    { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(inter_matrices)}, "specify inter matrix coeffs", "matrix" },
     { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
