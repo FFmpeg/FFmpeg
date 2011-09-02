@@ -106,9 +106,6 @@ static int same_quant = 0;
 static int do_deinterlace = 0;
 static int intra_dc_precision = 8;
 static int qp_hist = 0;
-#if CONFIG_AVFILTER
-static char *vfilters = NULL;
-#endif
 
 static int file_overwrite = 0;
 static int do_benchmark = 0;
@@ -328,6 +325,10 @@ typedef struct OptionsContext {
     int        nb_inter_matrices;
     SpecifierOpt *top_field_first;
     int        nb_top_field_first;
+#if CONFIG_AVFILTER
+    SpecifierOpt *filters;
+    int        nb_filters;
+#endif
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -3023,13 +3024,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO);
     st  = ost->st;
-    if (!st->stream_copy) {
-#if CONFIG_AVFILTER
-        ost->avfilter= vfilters;
-        vfilters = NULL;
-#endif
-    }
-
     video_enc = st->codec;
 
     if(oc->oformat->flags & AVFMT_GLOBALHEADER) {
@@ -3040,7 +3034,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         const char *p = NULL;
         char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
-        char *intra_matrix = NULL, *inter_matrix = NULL;
+        char *intra_matrix = NULL, *inter_matrix = NULL, *filters = NULL;
         int i, force_fps = 0, top_field_first = -1;
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
@@ -3130,6 +3124,12 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
         MATCH_PER_STREAM_OPT(top_field_first, i, top_field_first, oc, st);
         ost->top_field_first = top_field_first;
+
+#if CONFIG_AVFILTER
+        MATCH_PER_STREAM_OPT(filters, str, filters, oc, st);
+        if (filters)
+            ost->avfilter = av_strdup(filters);
+#endif
     }
 
     return ost;
@@ -3902,6 +3902,11 @@ static int opt_subtitle_tag(OptionsContext *o, const char *opt, const char *arg)
     return parse_option(o, "tag:s", arg, options);
 }
 
+static int opt_video_filters(OptionsContext *o, const char *opt, const char *arg)
+{
+    return parse_option(o, "filter:v", arg, options);
+}
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -3945,6 +3950,9 @@ static const OptionDef options[] = {
     { "tag",   OPT_STRING | HAS_ARG | OPT_SPEC, {.off = OFFSET(codec_tags)}, "force codec tag/fourcc", "fourcc/tag" },
     { "q", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
     { "qscale", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
+#if CONFIG_AVFILTER
+    { "filter", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(filters)}, "set stream filterchain", "filter_list" },
+#endif
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
@@ -3965,7 +3973,7 @@ static const OptionDef options[] = {
     { "vstats", OPT_EXPERT | OPT_VIDEO, {(void*)&opt_vstats}, "dump video coding statistics to file" },
     { "vstats_file", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_vstats_file}, "dump video coding statistics to file", "file" },
 #if CONFIG_AVFILTER
-    { "vf", OPT_STRING | HAS_ARG, {(void*)&vfilters}, "video filters", "filter list" },
+    { "vf", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_filters}, "video filters", "filter list" },
 #endif
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(intra_matrices)}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(inter_matrices)}, "specify inter matrix coeffs", "matrix" },

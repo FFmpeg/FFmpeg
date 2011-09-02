@@ -210,6 +210,11 @@ Stop writing to the stream after @var{framecount} frames.
 Use fixed quality scale (VBR). The meaning of @var{q} is
 codec-dependent.
 
+@item -filter[:stream_specifier] @var{filter_graph}
+@var{filter_graph} is a description of the filter graph to apply to
+the stream. Use @code{-filters} to show all the available filters
+(including also sources and sinks).
+
 @end table
 
 @section Video Options
@@ -343,7 +348,7 @@ stream.
 @var{filter_graph} is a description of the filter graph to apply to
 the input video.
 Use the option "-filters" to show all the available filters (including
-also sources and sinks).
+also sources and sinks).  This is an alias for @code{-filter:v}.
 
 @end table
 
