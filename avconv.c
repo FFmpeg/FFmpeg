@@ -117,7 +117,6 @@ static int file_overwrite = 0;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
 static int do_pkt_dump = 0;
-static int do_psnr = 0;
 static int do_pass = 0;
 static char *pass_logfilename_prefix = NULL;
 static int video_sync_method= -1;
@@ -3088,9 +3087,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
             video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
 
-        if (do_psnr)
-            video_enc->flags|= CODEC_FLAG_PSNR;
-
         /* two pass mode */
         if (do_pass) {
             if (do_pass == 1) {
@@ -3967,7 +3963,6 @@ static const OptionDef options[] = {
     { "passlogfile", HAS_ARG | OPT_STRING | OPT_VIDEO, {(void*)&pass_logfilename_prefix}, "select two pass log file name prefix", "prefix" },
     { "deinterlace", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_deinterlace},
       "deinterlace pictures" },
-    { "psnr", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, {(void*)&do_psnr}, "calculate PSNR of compressed frames" },
     { "vstats", OPT_EXPERT | OPT_VIDEO, {(void*)&opt_vstats}, "dump video coding statistics to file" },
     { "vstats_file", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_vstats_file}, "dump video coding statistics to file", "file" },
 #if CONFIG_AVFILTER

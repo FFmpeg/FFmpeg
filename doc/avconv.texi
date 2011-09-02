@@ -550,8 +550,6 @@ Use this option if your input file is interlaced and you want
 to keep the interlaced format for minimum losses.
 The alternative is to deinterlace the input stream with
 @option{-deinterlace}, but deinterlacing introduces losses.
-@item -psnr
-Calculate PSNR of compressed frames.
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}
