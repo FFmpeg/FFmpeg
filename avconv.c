@@ -104,7 +104,6 @@ static int nb_streamid_map = 0;
 static int video_discard = 0;
 static int same_quant = 0;
 static int do_deinterlace = 0;
-static int top_field_first = -1;
 static int intra_dc_precision = 8;
 static int qp_hist = 0;
 #if CONFIG_AVFILTER
@@ -203,6 +202,7 @@ typedef struct OutputStream {
     int resample_pix_fmt;
     AVRational frame_rate;
     int force_fps;
+    int top_field_first;
 
     float frame_aspect_ratio;
 
@@ -326,6 +326,8 @@ typedef struct OptionsContext {
     int        nb_intra_matrices;
     SpecifierOpt *inter_matrices;
     int        nb_inter_matrices;
+    SpecifierOpt *top_field_first;
+    int        nb_top_field_first;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -1205,10 +1207,10 @@ static void do_video_out(AVFormatContext *s,
                settings */
             big_picture.interlaced_frame = in_picture->interlaced_frame;
             if (ost->st->codec->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME)) {
-                if(top_field_first == -1)
+                if (ost->top_field_first == -1)
                     big_picture.top_field_first = in_picture->top_field_first;
                 else
-                    big_picture.top_field_first = top_field_first;
+                    big_picture.top_field_first = !!ost->top_field_first;
             }
 
             /* handles same_quant here. This is not correct because it may
@@ -2532,12 +2534,6 @@ static double parse_frame_aspect_ratio(const char *arg)
     return ar;
 }
 
-static int opt_top_field_first(const char *opt, const char *arg)
-{
-    top_field_first = parse_number_or_die(opt, arg, OPT_INT, 0, 1);
-    return 0;
-}
-
 static int opt_audio_codec(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "codec:a", arg, options);
@@ -3045,7 +3041,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         char *intra_matrix = NULL, *inter_matrix = NULL;
-        int i, force_fps = 0;
+        int i, force_fps = 0, top_field_first = -1;
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
         if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
@@ -3131,6 +3127,9 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
         MATCH_PER_STREAM_OPT(force_fps, i, force_fps, oc, st);
         ost->force_fps = force_fps;
+
+        MATCH_PER_STREAM_OPT(top_field_first, i, top_field_first, oc, st);
+        ost->top_field_first = top_field_first;
     }
 
     return ost;
@@ -3970,7 +3969,7 @@ static const OptionDef options[] = {
 #endif
     { "intra_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(intra_matrices)}, "specify intra matrix coeffs", "matrix" },
     { "inter_matrix", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(inter_matrices)}, "specify inter matrix coeffs", "matrix" },
-    { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_top_field_first}, "top=1/bottom=0/auto=-1 field first", "" },
+    { "top", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_INT| OPT_SPEC, {.off = OFFSET(top_field_first)}, "top=1/bottom=0/auto=-1 field first", "" },
     { "dc", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&intra_dc_precision}, "intra_dc_precision", "precision" },
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
