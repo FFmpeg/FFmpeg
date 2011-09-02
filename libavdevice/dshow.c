@@ -92,11 +92,7 @@ dshow_read_close(AVFormatContext *s)
         IMediaControl_Stop(ctx->control);
         IMediaControl_Release(ctx->control);
     }
-    if (ctx->graph)
-        IGraphBuilder_Release(ctx->graph);
 
-    /* FIXME remove filters from graph */
-    /* FIXME disconnect pins */
     if (ctx->capture_pin[VideoDevice])
         libAVPin_Release(ctx->capture_pin[VideoDevice]);
     if (ctx->capture_pin[AudioDevice])
@@ -114,6 +110,20 @@ dshow_read_close(AVFormatContext *s)
         IBaseFilter_Release(ctx->device_filter[VideoDevice]);
     if (ctx->device_filter[AudioDevice])
         IBaseFilter_Release(ctx->device_filter[AudioDevice]);
+
+    if (ctx->graph) {
+        IEnumFilters *fenum;
+        int r;
+        r = IGraphBuilder_EnumFilters(ctx->graph, &fenum);
+        if (r == S_OK) {
+            IBaseFilter *f;
+            IEnumFilters_Reset(fenum);
+            while (IEnumFilters_Next(fenum, 1, &f, NULL) == S_OK)
+                IGraphBuilder_RemoveFilter(ctx->graph, f);
+            IEnumFilters_Release(fenum);
+        }
+        IGraphBuilder_Release(ctx->graph);
+    }
 
     if (ctx->device_name[0])
         av_free(ctx->device_name[0]);
