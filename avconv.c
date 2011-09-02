@@ -103,7 +103,6 @@ static int nb_streamid_map = 0;
 
 static uint16_t *intra_matrix = NULL;
 static uint16_t *inter_matrix = NULL;
-static const char *video_rc_override_string=NULL;
 static int video_discard = 0;
 static int same_quant = 0;
 static int do_deinterlace = 0;
@@ -325,6 +324,8 @@ typedef struct OptionsContext {
     int        nb_force_fps;
     SpecifierOpt *frame_aspect_ratios;
     int        nb_frame_aspect_ratios;
+    SpecifierOpt *rc_overrides;
+    int        nb_rc_overrides;
 } OptionsContext;
 
 #define MATCH_PER_STREAM_OPT(name, type, outvar, fmtctx, st)\
@@ -2501,12 +2502,6 @@ static int transcode(OutputFile *output_files,
     return ret;
 }
 
-static int opt_video_rc_override_string(const char *opt, const char *arg)
-{
-    video_rc_override_string = arg;
-    return 0;
-}
-
 static int opt_me_threshold(const char *opt, const char *arg)
 {
     me_threshold = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
@@ -3037,7 +3032,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     }
 
     if (!st->stream_copy) {
-        const char *p;
+        const char *p = NULL;
         char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
         int i, force_fps = 0;
@@ -3070,7 +3065,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         if(inter_matrix)
             video_enc->inter_matrix = inter_matrix;
 
-        p= video_rc_override_string;
+        MATCH_PER_STREAM_OPT(rc_overrides, str, p, oc, st);
         for(i=0; p; i++){
             int start, end, q;
             int e=sscanf(p, "%d,%d,%d", &start, &end, &q);
@@ -3971,7 +3966,7 @@ static const OptionDef options[] = {
     { "pix_fmt", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(frame_pix_fmts)}, "set pixel format", "format" },
     { "vn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, {.off = OFFSET(video_disable)}, "disable video" },
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
-    { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_video_rc_override_string}, "rate control override for specific intervals", "override" },
+    { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(rc_overrides)}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
     { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimation threshold",  "threshold" },
     { "same_quant", OPT_BOOL | OPT_VIDEO, {(void*)&same_quant},
