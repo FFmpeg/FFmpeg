@@ -240,7 +240,7 @@ For example:   @samp{http://localhost:8080/test.asf?date=2002-07-26T23:05:00}.
 @chapter Options
 @c man begin OPTIONS
 
-@include fftools-common-opts.texi
+@include avtools-common-opts.texi
 
 @section Main options
 

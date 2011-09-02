@@ -13,7 +13,7 @@ commandline will set to false the boolean option with name "foo".
 
 @section Generic options
 
-These options are shared amongst the ff* tools.
+These options are shared amongst the av* tools.
 
 @table @option
 

@@ -82,7 +82,7 @@ described.
 @chapter Options
 @c man begin OPTIONS
 
-@include fftools-common-opts.texi
+@include avtools-common-opts.texi
 
 @section Main options
 
