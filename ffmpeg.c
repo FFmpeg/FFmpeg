@@ -145,6 +145,7 @@ static uint16_t *inter_matrix = NULL;
 static const char *video_rc_override_string=NULL;
 static int video_disable = 0;
 static int video_discard = 0;
+static char *video_codec_name = NULL;
 static unsigned int video_codec_tag = 0;
 static char *video_language = NULL;
 static int same_quant = 0;
@@ -165,14 +166,17 @@ static int audio_sample_rate = 0;
 static float audio_qscale = QSCALE_NONE;
 static int audio_disable = 0;
 static int audio_channels = 0;
+static char  *audio_codec_name = NULL;
 static unsigned int audio_codec_tag = 0;
 static char *audio_language = NULL;
 
 static int subtitle_disable = 0;
+static char *subtitle_codec_name = NULL;
 static char *subtitle_language = NULL;
 static unsigned int subtitle_codec_tag = 0;
 
 static int data_disable = 0;
+static char *data_codec_name = NULL;
 static unsigned int data_codec_tag = 0;
 
 static float mux_preload= 0.5;
@@ -2762,6 +2766,12 @@ static int opt_video_standard(const char *opt, const char *arg)
 
 static int opt_codec(const char *opt, const char *arg)
 {
+    switch(opt[strlen(opt)-1]){
+    case 'a':    audio_codec_name = arg; break;
+    case 'v':    video_codec_name = arg; break;
+    case 's': subtitle_codec_name = arg; break;
+    }
+
     return av_dict_set(&codec_names, opt, arg, 0);
 }
 
@@ -4233,6 +4243,47 @@ static int opt_bsf(const char *opt, const char *arg)
     return 0;
 }
 
+static int opt_preset(const char *opt, const char *arg)
+{
+    FILE *f=NULL;
+    char filename[1000], tmp[1000], tmp2[1000], line[1000];
+    char *codec_name = *opt == 'v' ? video_codec_name :
+                       *opt == 'a' ? audio_codec_name :
+                                     subtitle_codec_name;
+
+    if (!(f = get_preset_file(filename, sizeof(filename), arg, *opt == 'f', codec_name))) {
+        fprintf(stderr, "File for preset '%s' not found\n", arg);
+        exit_program(1);
+    }
+
+    while(!feof(f)){
+        int e= fscanf(f, "%999[^\n]\n", line) - 1;
+        if(line[0] == '#' && !e)
+            continue;
+        e|= sscanf(line, "%999[^=]=%999[^\n]\n", tmp, tmp2) - 2;
+        if(e){
+            fprintf(stderr, "%s: Invalid syntax: '%s'\n", filename, line);
+            exit_program(1);
+        }
+        if(!strcmp(tmp, "acodec")){
+            opt_audio_codec(tmp, tmp2);
+        }else if(!strcmp(tmp, "vcodec")){
+            opt_video_codec(tmp, tmp2);
+        }else if(!strcmp(tmp, "scodec")){
+            opt_subtitle_codec(tmp, tmp2);
+        }else if(!strcmp(tmp, "dcodec")){
+            opt_data_codec(tmp, tmp2);
+        }else if(opt_default(tmp, tmp2) < 0){
+            fprintf(stderr, "%s: Invalid option or argument: '%s', parsed as '%s' = '%s'\n", filename, line, tmp, tmp2);
+            exit_program(1);
+        }
+    }
+
+    fclose(f);
+
+    return 0;
+}
+
 static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
 {
 }
@@ -4370,6 +4421,10 @@ static const OptionDef options[] = {
     { "vbsf", HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
     { "sbsf", HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_bsf}, "", "bitstream_filter" },
 
+    { "apre", HAS_ARG | OPT_AUDIO | OPT_EXPERT, {(void*)opt_preset}, "set the audio options to the indicated preset", "preset" },
+    { "vpre", HAS_ARG | OPT_VIDEO | OPT_EXPERT, {(void*)opt_preset}, "set the video options to the indicated preset", "preset" },
+    { "spre", HAS_ARG | OPT_SUBTITLE | OPT_EXPERT, {(void*)opt_preset}, "set the subtitle options to the indicated preset", "preset" },
+    { "fpre", HAS_ARG | OPT_EXPERT, {(void*)opt_preset}, "set options from indicated preset file", "filename" },
     /* data codec support */
     { "dcodec", HAS_ARG | OPT_DATA, {(void*)opt_data_codec}, "force data codec ('copy' to copy stream)", "codec" },
 
