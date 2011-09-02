@@ -107,7 +107,6 @@ static int video_discard = 0;
 static int same_quant = 0;
 static int do_deinterlace = 0;
 static int top_field_first = -1;
-static int me_threshold = 0;
 static int intra_dc_precision = 8;
 static int qp_hist = 0;
 #if CONFIG_AVFILTER
@@ -1217,7 +1216,7 @@ static void do_video_out(AVFormatContext *s,
             /* handles same_quant here. This is not correct because it may
                not be a global option */
             big_picture.quality = quality;
-            if(!me_threshold)
+            if (!enc->me_threshold)
                 big_picture.pict_type = 0;
 //            big_picture.pts = AV_NOPTS_VALUE;
             big_picture.pts= ost->sync_opts;
@@ -2187,6 +2186,9 @@ static int transcode_init(OutputFile *output_files,
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
                                              "It takes bits/s as argument, not kbits/s\n");
             extra_size += ost->st->codec->extradata_size;
+
+            if (ost->st->codec->me_threshold)
+                input_streams[ost->source_index].st->codec->debug |= FF_DEBUG_MV;
         }
     }
 
@@ -2502,12 +2504,6 @@ static int transcode(OutputFile *output_files,
     return ret;
 }
 
-static int opt_me_threshold(const char *opt, const char *arg)
-{
-    me_threshold = parse_number_or_die(opt, arg, OPT_INT64, INT_MIN, INT_MAX);
-    return 0;
-}
-
 static int opt_verbose(const char *opt, const char *arg)
 {
     verbose = parse_number_or_die(opt, arg, OPT_INT64, -10, 10);
@@ -2779,8 +2775,6 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 dec->height >>= dec->lowres;
                 dec->width  >>= dec->lowres;
             }
-            if(me_threshold)
-                dec->debug |= FF_DEBUG_MV;
 
             if (dec->time_base.den != rfps*dec->ticks_per_frame || dec->time_base.num != rfps_base) {
 
@@ -3092,7 +3086,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         video_enc->rc_override_count=i;
         if (!video_enc->rc_initial_buffer_occupancy)
             video_enc->rc_initial_buffer_occupancy = video_enc->rc_buffer_size*3/4;
-        video_enc->me_threshold= me_threshold;
         video_enc->intra_dc_precision= intra_dc_precision - 8;
 
         if (do_psnr)
@@ -3968,7 +3961,6 @@ static const OptionDef options[] = {
     { "vdt", OPT_INT | HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)&video_discard}, "discard threshold", "n" },
     { "rc_override", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_STRING | OPT_SPEC, {.off = OFFSET(rc_overrides)}, "rate control override for specific intervals", "override" },
     { "vcodec", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_codec}, "force video codec ('copy' to copy stream)", "codec" },
-    { "me_threshold", HAS_ARG | OPT_EXPERT | OPT_VIDEO, {(void*)opt_me_threshold}, "motion estimation threshold",  "threshold" },
     { "same_quant", OPT_BOOL | OPT_VIDEO, {(void*)&same_quant},
       "use same quantizer as source (implies VBR)" },
     { "pass", HAS_ARG | OPT_VIDEO, {(void*)opt_pass}, "select the pass number (1 or 2)", "n" },
