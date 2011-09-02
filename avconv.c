@@ -97,10 +97,6 @@ typedef struct MetadataMap {
 
 static const OptionDef options[];
 
-/* indexed by output file stream index */
-static int *streamid_map = NULL;
-static int nb_streamid_map = 0;
-
 static int video_discard = 0;
 static int same_quant = 0;
 static int do_deinterlace = 0;
@@ -299,6 +295,10 @@ typedef struct OptionsContext {
     int subtitle_disable;
     int data_disable;
 
+    /* indexed by output file stream index */
+    int   *streamid_map;
+    int nb_streamid_map;
+
     SpecifierOpt *metadata;
     int        nb_metadata;
     SpecifierOpt *max_frames;
@@ -368,6 +368,7 @@ static void reset_options(OptionsContext *o)
 
     av_freep(&o->stream_maps);
     av_freep(&o->meta_data_maps);
+    av_freep(&o->streamid_map);
 
     memset(o, 0, sizeof(*o));
 
@@ -2934,7 +2935,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost,
 static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, enum AVMediaType type)
 {
     OutputStream *ost;
-    AVStream *st = av_new_stream(oc, oc->nb_streams < nb_streamid_map ? streamid_map[oc->nb_streams] : 0);
+    AVStream *st = av_new_stream(oc, oc->nb_streams < o->nb_streamid_map ? o->streamid_map[oc->nb_streams] : 0);
     int idx      = oc->nb_streams - 1;
     int64_t max_frames = INT64_MAX;
     char *bsf = NULL, *next, *codec_tag = NULL;
@@ -3209,7 +3210,7 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc)
 }
 
 /* arg format is "output-stream-index:streamid-value". */
-static int opt_streamid(const char *opt, const char *arg)
+static int opt_streamid(OptionsContext *o, const char *opt, const char *arg)
 {
     int idx;
     char *p;
@@ -3225,8 +3226,8 @@ static int opt_streamid(const char *opt, const char *arg)
     }
     *p++ = '\0';
     idx = parse_number_or_die(opt, idx_str, OPT_INT, 0, INT_MAX);
-    streamid_map = grow_array(streamid_map, sizeof(*streamid_map), &nb_streamid_map, idx+1);
-    streamid_map[idx] = parse_number_or_die(opt, p, OPT_INT, 0, INT_MAX);
+    o->streamid_map = grow_array(o->streamid_map, sizeof(*o->streamid_map), &o->nb_streamid_map, idx+1);
+    o->streamid_map[idx] = parse_number_or_die(opt, p, OPT_INT, 0, INT_MAX);
     return 0;
 }
 
@@ -3586,9 +3587,6 @@ static void opt_output_file(void *optctx, const char *filename)
 
         av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
     }
-
-    av_freep(&streamid_map);
-    nb_streamid_map = 0;
 
     reset_options(o);
 }
@@ -3982,7 +3980,7 @@ static const OptionDef options[] = {
     { "vtag", HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_tag}, "force video tag/fourcc", "fourcc/tag" },
     { "qphist", OPT_BOOL | OPT_EXPERT | OPT_VIDEO, { (void *)&qp_hist }, "show QP histogram" },
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO | OPT_SPEC, {.off = OFFSET(force_fps)}, "force the selected framerate, disable the best supported framerate selection" },
-    { "streamid", HAS_ARG | OPT_EXPERT, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
+    { "streamid", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
     { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_SPEC, {.off = OFFSET(forced_key_frames)}, "force key frames at specified timestamps", "timestamps" },
 
     /* audio options */
