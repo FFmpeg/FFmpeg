@@ -314,6 +314,11 @@ static int vfw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     dump_bih(s, &bi->bmiHeader);
 
+    ret = av_parse_video_rate(&framerate_q, ctx->framerate);
+    if (ret < 0) {
+        av_log(s, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", ctx->framerate);
+        goto fail;
+    }
 
     if (ctx->video_size) {
         ret = av_parse_video_size(&bi->bmiHeader.biWidth, &bi->bmiHeader.biHeight, ctx->video_size);
