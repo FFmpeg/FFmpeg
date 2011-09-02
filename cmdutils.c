@@ -751,9 +751,9 @@ FILE *get_preset_file(char *filename, size_t filename_size,
 {
     FILE *f = NULL;
     int i;
-    const char *base[3]= { getenv("AVCONV_DATADIR"),
+    const char *base[3]= { getenv("FFMPEG_DATADIR"),
                            getenv("HOME"),
-                           AVCONV_DATADIR,
+                           FFMPEG_DATADIR,
                          };
 
     if (is_path) {
@@ -780,11 +780,11 @@ FILE *get_preset_file(char *filename, size_t filename_size,
         for (i = 0; i < 3 && !f; i++) {
             if (!base[i])
                 continue;
-            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.avconv", preset_name);
+            snprintf(filename, filename_size, "%s%s/%s.ffpreset", base[i], i != 1 ? "" : "/.ffmpeg", preset_name);
             f = fopen(filename, "r");
             if (!f && codec_name) {
                 snprintf(filename, filename_size,
-                         "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.avconv", codec_name, preset_name);
+                         "%s%s/%s-%s.ffpreset", base[i],  i != 1 ? "" : "/.ffmpeg", codec_name, preset_name);
                 f = fopen(filename, "r");
             }
         }
