@@ -19,8 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavformat/timefilter.h"
-
 #include "avdevice.h"
 #include "dshow.h"
 
@@ -42,8 +40,6 @@ struct dshow_ctx {
     unsigned int video_frame_num;
 
     IMediaControl *control;
-
-    TimeFilter *timefilter;
 };
 
 static enum PixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
@@ -223,7 +219,7 @@ dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
     const char *device_name = ctx->device_name[devtype];
     int ret = AVERROR(EIO);
     IPin *pin;
-    int r, i;
+    int r;
 
     const GUID *device_guid[2] = { &CLSID_VideoInputDeviceCategory,
                                    &CLSID_AudioInputDeviceCategory };
@@ -287,7 +283,6 @@ fail1:
         goto error;
     }
 
-    i = 0;
     while (IEnumPins_Next(pins, 1, &pin, NULL) == S_OK && !device_pin) {
         IKsPropertySet *p = NULL;
         IEnumMediaTypes *types;
