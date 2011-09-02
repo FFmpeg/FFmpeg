@@ -1072,7 +1072,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     const uint8_t* vsc_pack;
     int apt, is16_9;
 
-    s->sys = ff_dv_frame_profile(s->sys, buf, buf_size);
+    s->sys = ff_dv_frame_profile2(avctx, s->sys, buf, buf_size);
     if (!s->sys || buf_size < s->sys->frame_size || dv_init_dynamic_tables(s->sys)) {
         av_log(avctx, AV_LOG_ERROR, "could not find dv frame profile\n");
         return -1; /* NOTE: we only accept several full frames */

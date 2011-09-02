@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/rational.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dvdata.h"
 
@@ -245,7 +246,7 @@ static const DVprofile dv_profiles[] = {
     }
 };
 
-const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
+const DVprofile* ff_dv_frame_profile2(AVCodecContext* codec, const DVprofile *sys,
                                   const uint8_t* frame, unsigned buf_size)
 {
    int i;
@@ -259,6 +260,9 @@ const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
        return &dv_profiles[2];
    }
 
+   if(codec && codec->codec_tag==AV_RL32("dvsd") &&  codec->width==720 && codec->height==576)
+       return &dv_profiles[1];
+
    for (i=0; i<FF_ARRAY_ELEMS(dv_profiles); i++)
        if (dsf == dv_profiles[i].dsf && stype == dv_profiles[i].video_stype)
            return &dv_profiles[i];
@@ -268,6 +272,12 @@ const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
        return sys;
 
    return NULL;
+}
+
+const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
+                                  const uint8_t* frame, unsigned buf_size)
+{
+    return ff_dv_frame_profile2(NULL, sys, frame, buf_size);
 }
 
 const DVprofile* ff_dv_codec_profile(AVCodecContext* codec)
