@@ -1912,7 +1912,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg){
 //ret, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, s->start_mb_y, s->end_mb_y, s->error_count);
         if(ret < 0){
             if (c->error_recognition >= FF_ER_EXPLODE)
-                return AVERROR_INVALIDDATA;
+                return ret;
             if(s->resync_mb_x>=0 && s->resync_mb_y>=0)
                 ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
         }else{
@@ -2267,10 +2267,11 @@ static int mpeg_decode_frame(AVCodecContext *avctx,
 
     s->slice_count= 0;
 
-    if(avctx->extradata && !avctx->frame_number &&
-       decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size) < 0 &&
-       avctx->error_recognition >= FF_ER_EXPLODE)
-      return AVERROR_INVALIDDATA;
+    if(avctx->extradata && !avctx->frame_number) {
+        int ret = decode_chunks(avctx, picture, data_size, avctx->extradata, avctx->extradata_size);
+        if (ret < 0 && avctx->error_recognition >= FF_ER_EXPLODE)
+            return ret;
+    }
 
     return decode_chunks(avctx, picture, data_size, buf, buf_size);
 }
@@ -2344,17 +2345,17 @@ static int decode_chunks(AVCodecContext *avctx,
                 s->slice_count = 0;
             }
             if(last_code == 0 || last_code == SLICE_MIN_START_CODE){
-            if(mpeg_decode_postinit(avctx) < 0){
-                av_log(avctx, AV_LOG_ERROR, "mpeg_decode_postinit() failure\n");
-                return -1;
-            }
+                ret = mpeg_decode_postinit(avctx);
+                if(ret < 0){
+                    av_log(avctx, AV_LOG_ERROR, "mpeg_decode_postinit() failure\n");
+                    return ret;
+                }
 
-            /* we have a complete image: we try to decompress it */
-            if(mpeg1_decode_picture(avctx,
-                                    buf_ptr, input_size) < 0)
-                s2->pict_type=0;
+                /* we have a complete image: we try to decompress it */
+                if (mpeg1_decode_picture(avctx, buf_ptr, input_size) < 0)
+                    s2->pict_type=0;
                 s2->first_slice = 1;
-            last_code= PICTURE_START_CODE;
+                last_code= PICTURE_START_CODE;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring pic after %X\n", last_code);
                 if (avctx->error_recognition >= FF_ER_EXPLODE)
@@ -2400,9 +2401,8 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
         case GOP_START_CODE:
             if(last_code == 0){
-            s2->first_field=0;
-            mpeg_decode_gop(avctx,
-                                    buf_ptr, input_size);
+                s2->first_field=0;
+                mpeg_decode_gop(avctx, buf_ptr, input_size);
                 s->sync=1;
             }else{
                 av_log(avctx, AV_LOG_ERROR, "ignoring GOP_START_CODE after %X\n", last_code);
@@ -2464,9 +2464,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 }
                 if(!s2->current_picture_ptr){
                     av_log(avctx, AV_LOG_ERROR, "current_picture not initialized\n");
-                    if (avctx->error_recognition >= FF_ER_EXPLODE)
-                        return AVERROR_INVALIDDATA;
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 if (avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU) {
@@ -2495,7 +2493,7 @@ static int decode_chunks(AVCodecContext *avctx,
 
                     if(ret < 0){
                         if (avctx->error_recognition >= FF_ER_EXPLODE)
-                            return AVERROR_INVALIDDATA;
+                            return ret;
                         if(s2->resync_mb_x>=0 && s2->resync_mb_y>=0)
                             ff_er_add_slice(s2, s2->resync_mb_x, s2->resync_mb_y, s2->mb_x, s2->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
                     }else{
