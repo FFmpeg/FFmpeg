@@ -11,6 +11,35 @@ corresponding value to true. They can be set to false by prefixing
 with "no" the option name, for example using "-nofoo" in the
 commandline will set to false the boolean option with name "foo".
 
+@section Stream specifiers
+Some options are applied per-stream, e.g. bitrate or codec. Stream specifiers
+are used to precisely specify which stream(s) does a given option belong to.
+
+A stream specifier is a string generally appended to the option name and
+separated from it by a colon. E.g. @code{-codec:a:1 ac3} option contains
+@code{a:1} stream specifer, which matches the second audio stream. Therefore it
+would select the ac3 codec for the second audio stream.
+
+A stream specifier can match several stream, the option is then applied to all
+of them. E.g. the stream specifier in @code{-b:a 128k} matches all audio
+streams.
+
+An empty stream specifier matches all streams, for example @code{-codec copy}
+or @code{-codec: copy} would copy all the streams without reencoding.
+
+Possible forms of stream specifiers are:
+@table @option
+@item @var{stream_index}
+Matches the stream with this index. E.g. @code{-threads:1 4} would set the
+thread count for the second stream to 4.
+@item @var{stream_type}[:@var{stream_index}]
+@var{stream_type} is one of: 'v' for video, 'a' for audio, 's' for subtitle and
+'d' for data. If @var{stream_index} is given, then matches stream number
+@var{stream_index} of this type. Otherwise matches all streams of this type.
+@item @var{program_id}[:@var{stream_index}]
+If @var{stream_index} is given, then matches stream number @var{stream_index} in
+program with id @var{program_id}. Otherwise matches all streams in this program.
+@end table
 @section Generic options
 
 These options are shared amongst the av* tools.
@@ -117,19 +146,8 @@ muxer:
 ffmpeg -i input.flac -id3v2_version 3 out.mp3
 @end example
 
-You can precisely specify which stream(s) should the codec AVOption apply to by
-appending a stream specifier of the form
-@option{[:@var{stream_type}][:@var{stream_index}]} to the option name.
-@var{stream_type} is 'v' for video, 'a' for audio and 's' for subtitle streams.
-@var{stream_index} is a global stream index when @var{stream_type} isn't
-given, otherwise it counts streams of the given type only. As always, the index
-is zero-based. For example
-@example
--foo -- applies to all applicable streams
--foo:v -- applies to all video streams
--foo:a:2 -- applies to the third audio stream
--foo:0 -- applies to the first stream
-@end example
+All codec AVOptions are obviously per-stream, so the chapter on stream
+specifiers applies to them
 
 Note -nooption syntax cannot be used for boolean AVOptions, use -option
 0/-option 1.
