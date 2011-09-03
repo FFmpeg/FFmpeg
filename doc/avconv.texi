@@ -26,11 +26,6 @@ avconv is a very fast video and audio converter that can also grab from
 a live audio/video source. It can also convert between arbitrary sample
 rates and resize video on the fly with a high quality polyphase filter.
 
-The command line interface is designed to be intuitive, in the sense
-that avconv tries to figure out all parameters that can possibly be
-derived automatically. You usually only have to specify the target
-bitrate you want.
-
 As a general rule, options are applied to the next specified
 file. Therefore, order is important, and you can have the same
 option on the command line multiple times. Each occurrence is
@@ -60,10 +55,6 @@ avconv -r 1 -i input.m2v -r 24 output.avi
 @end itemize
 
 The format option may be needed for raw input files.
-
-By default avconv tries to convert as losslessly as possible: It
-uses the same audio and video parameters for the outputs as the one
-specified for the inputs.
 
 @c man end DESCRIPTION
 
