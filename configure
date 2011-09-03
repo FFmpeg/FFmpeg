@@ -1101,6 +1101,7 @@ HAVE_LIST="
     memalign
     mkstemp
     mmap
+    PeekNamedPipe
     posix_memalign
     round
     roundf
@@ -2842,6 +2843,7 @@ check_func  strerror_r
 check_func  strptime
 check_func  strtok_r
 check_func_headers conio.h kbhit
+check_func_headers windows.h PeekNamedPipe
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi

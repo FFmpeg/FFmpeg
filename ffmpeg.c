@@ -487,9 +487,9 @@ static void term_init(void)
 /* read a key without blocking */
 static int read_key(void)
 {
+    unsigned char ch;
 #if HAVE_TERMIOS_H
     int n = 1;
-    unsigned char ch;
     struct timeval tv;
     fd_set rfds;
 
@@ -509,6 +509,32 @@ static int read_key(void)
         return n;
     }
 #elif HAVE_KBHIT
+#    if HAVE_PEEKNAMEDPIPE
+    static int is_pipe;
+    static HANDLE input_handle;
+    DWORD dw, nchars;
+    if(!input_handle){
+        input_handle = GetStdHandle(STD_INPUT_HANDLE);
+        is_pipe = !GetConsoleMode(input_handle, &dw);
+    }
+
+    if (stdin->_cnt > 0) {
+        read(0, &ch, 1);
+        return ch;
+    }
+    if (is_pipe) {
+        /* When running under a GUI, you will end here. */
+        if (!PeekNamedPipe(input_handle, NULL, 0, NULL, &nchars, NULL))
+            return -1;
+        //Read it
+        if(nchars != 0) {
+            read(0, &ch, 1);
+            return ch;
+        }else{
+            return -1;
+        }
+    }
+#    endif
     if(kbhit())
         return(getch());
 #endif
