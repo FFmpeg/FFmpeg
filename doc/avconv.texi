@@ -442,50 +442,6 @@ Try just the (0, 0) vector.
 exhaustive search (slow and marginally better than epzs)
 @end table
 
-@item -dct_algo @var{algo}
-Set DCT algorithm to @var{algo}. Available values are:
-@table @samp
-@item 0
-FF_DCT_AUTO (default)
-@item 1
-FF_DCT_FASTINT
-@item 2
-FF_DCT_INT
-@item 3
-FF_DCT_MMX
-@item 4
-FF_DCT_MLIB
-@item 5
-FF_DCT_ALTIVEC
-@end table
-
-@item -idct_algo @var{algo}
-Set IDCT algorithm to @var{algo}. Available values are:
-@table @samp
-@item 0
-FF_IDCT_AUTO (default)
-@item 1
-FF_IDCT_INT
-@item 2
-FF_IDCT_SIMPLE
-@item 3
-FF_IDCT_SIMPLEMMX
-@item 4
-FF_IDCT_LIBMPEG2MMX
-@item 5
-FF_IDCT_PS2
-@item 6
-FF_IDCT_MLIB
-@item 7
-FF_IDCT_ARM
-@item 8
-FF_IDCT_ALTIVEC
-@item 9
-FF_IDCT_SH4
-@item 10
-FF_IDCT_SIMPLEARM
-@end table
-
 @item -er @var{n}
 Set error resilience to @var{n}.
 @table @samp
@@ -522,27 +478,13 @@ FF_MB_DECISION_BITS: Choose the one which needs the fewest bits.
 FF_MB_DECISION_RD: rate distortion
 @end table
 
-@item -4mv
-Use four motion vector by macroblock (MPEG-4 only).
-@item -part
-Use data partitioning (MPEG-4 only).
 @item -bug @var{param}
 Work around encoder bugs that are not auto-detected.
 @item -strict @var{strictness}
 How strictly to follow the standards.
-@item -aic
-Enable Advanced intra coding (h263+).
-@item -umv
-Enable Unlimited Motion Vector (h263+)
 
 @item -deinterlace
 Deinterlace pictures.
-@item -ilme
-Force interlacing support in encoder (MPEG-2 and MPEG-4 only).
-Use this option if your input file is interlaced and you want
-to keep the interlaced format for minimum losses.
-The alternative is to deinterlace the input stream with
-@option{-deinterlace}, but deinterlacing introduces losses.
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}
