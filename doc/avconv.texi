@@ -15,7 +15,7 @@ The generic syntax is:
 
 @example
 @c man begin SYNOPSIS
-avconv [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
+avconv [global options] [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
 @c man end
 @end example
 
@@ -35,6 +35,8 @@ As a general rule, options are applied to the next specified
 file. Therefore, order is important, and you can have the same
 option on the command line multiple times. Each occurrence is
 then applied to the next input or output file.
+Exceptions from this rule are the global options (e.g. vebosity level),
+which should be specified first.
 
 @itemize
 @item
