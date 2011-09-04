@@ -223,7 +223,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     Glyph *glyph;
 
     dtext->class = &drawtext_class;
-    av_opt_set_defaults2(dtext, 0, 0);
+    av_opt_set_defaults(dtext);
     dtext->fontcolor_string = av_strdup("black");
     dtext->boxcolor_string = av_strdup("white");
     dtext->shadowcolor_string = av_strdup("black");

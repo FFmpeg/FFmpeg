@@ -414,12 +414,21 @@ int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags)
     return 0;
 }
 
+void av_opt_set_defaults(void *s)
+{
+#if FF_API_OLD_AVOPTIONS
+    av_opt_set_defaults2(s, 0, 0);
+}
+
 void av_opt_set_defaults2(void *s, int mask, int flags)
 {
+#endif
     const AVOption *opt = NULL;
     while ((opt = av_next_option(s, opt)) != NULL) {
+#if FF_API_OLD_AVOPTIONS
         if ((opt->flags & mask) != flags)
             continue;
+#endif
         switch (opt->type) {
             case FF_OPT_TYPE_CONST:
                 /* Nothing to be done here */
@@ -459,11 +468,6 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 av_log(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt->type, opt->name);
         }
     }
-}
-
-void av_opt_set_defaults(void *s)
-{
-    av_opt_set_defaults2(s, 0, 0);
 }
 
 /**
@@ -648,7 +652,7 @@ int main(void)
         };
 
         test_ctx.class = &test_class;
-        av_opt_set_defaults2(&test_ctx, 0, 0);
+        av_opt_set_defaults(&test_ctx);
         test_ctx.string = av_strdup("default");
 
         av_log_set_level(AV_LOG_DEBUG);
