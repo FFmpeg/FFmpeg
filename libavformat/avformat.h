@@ -1720,4 +1720,12 @@ int av_match_ext(const char *filename, const char *extensions);
  */
 int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance);
 
+/**
+ * Get the AVClass for AVFormatContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avformat_get_class(void);
+
 #endif /* AVFORMAT_AVFORMAT_H */

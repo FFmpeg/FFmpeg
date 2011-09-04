@@ -134,7 +134,7 @@ const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int m
  *              when 0 then no av_free() nor av_strdup() will be used
  * @return 0 if the value has been set, or an AVERROR code in case of
  * error:
- * AVERROR(ENOENT) if no matching option exists
+ * AVERROR_OPTION_NOT_FOUND if no matching option exists
  * AVERROR(ERANGE) if the value is out of range
  * AVERROR(EINVAL) if the value is not valid
  */
@@ -216,6 +216,13 @@ int av_opt_set_dict(void *obj, struct AVDictionary **options);
 
 #define AV_OPT_SEARCH_CHILDREN   0x0001 /**< Search in possible children of the
                                              given object first. */
+/**
+ *  The obj passed to av_opt_find() is fake -- only a double pointer to AVClass
+ *  instead of a required pointer to a struct containing AVClass. This is
+ *  useful for searching for options without needing to allocate the corresponding
+ *  object.
+ */
+#define AV_OPT_SEARCH_FAKE_OBJ   0x0002
 
 /**
  * Look for an option in an object. Consider only options which
@@ -223,6 +230,8 @@ int av_opt_set_dict(void *obj, struct AVDictionary **options);
  *
  * @param[in] obj A pointer to a struct whose first element is a
  *                pointer to an AVClass.
+ *                Alternatively a double pointer to an AVClass, if
+ *                AV_OPT_SEARCH_FAKE_OBJ search flag is set.
  * @param[in] name The name of the option to look for.
  * @param[in] unit When searching for named constants, name of the unit
  *                 it belongs to.

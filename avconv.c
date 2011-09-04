@@ -3883,6 +3883,7 @@ static int opt_help(const char *opt, const char *arg)
     AVCodec *c;
     AVOutputFormat *oformat = NULL;
     AVInputFormat  *iformat = NULL;
+    const AVClass *class;
 
     av_log_set_callback(log_callback_help);
     show_usage();
@@ -3910,7 +3911,8 @@ static int opt_help(const char *opt, const char *arg)
                       OPT_GRAB,
                       OPT_GRAB);
     printf("\n");
-    av_opt_show2(avcodec_opts[0], NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+    class = avcodec_get_class();
+    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
     printf("\n");
 
     /* individual codec options */
@@ -3922,7 +3924,8 @@ static int opt_help(const char *opt, const char *arg)
         }
     }
 
-    av_opt_show2(avformat_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+    class = avformat_get_class();
+    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
     printf("\n");
 
     /* individual muxer options */
@@ -3941,7 +3944,8 @@ static int opt_help(const char *opt, const char *arg)
         }
     }
 
-    av_opt_show2(sws_opts, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+    class = sws_get_class();
+    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
     return 0;
 }
 
