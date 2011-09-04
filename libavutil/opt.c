@@ -414,12 +414,6 @@ int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags)
     return 0;
 }
 
-/** Set the values of the AVCodecContext or AVFormatContext structure.
- * They are set to the defaults specified in the according AVOption options
- * array default_val field.
- *
- * @param s AVCodecContext or AVFormatContext for which the defaults will be set
- */
 void av_opt_set_defaults2(void *s, int mask, int flags)
 {
     const AVOption *opt = NULL;
