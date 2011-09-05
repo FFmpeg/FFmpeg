@@ -186,18 +186,26 @@ static int set_string_number(void *obj, const AVOption *o, const char *val, void
     return 0;
 }
 
+#if FF_API_OLD_AVOPTIONS
 int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out)
 {
     const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
-    void *dst;
     if (o_out)
         *o_out = o;
-    if (!o)
+    return av_opt_set(obj, name, val, 0);
+}
+#endif
+
+int av_opt_set(void *obj, const char *name, const char *val, int search_flags)
+{
+    void *dst, *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
         return AVERROR_OPTION_NOT_FOUND;
     if (!val)
         return AVERROR(EINVAL);
 
-    dst = ((uint8_t*)obj) + o->offset;
+    dst = ((uint8_t*)target_obj) + o->offset;
     switch (o->type) {
     case FF_OPT_TYPE_STRING:   return set_string(obj, o, val, dst);
     case FF_OPT_TYPE_BINARY:   return set_string_binary(obj, o, val, dst);
@@ -213,34 +221,58 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
     return AVERROR(EINVAL);
 }
 
-static const AVOption *set_number(void *obj, const char *name, double num, int den, int64_t intnum)
+static int set_number(void *obj, const char *name, double num, int den, int64_t intnum,
+                                  int search_flags)
 {
-    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
-    void *dst;
+    void *dst, *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
 
-    if (!o)
-        return NULL;
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
 
-    dst = ((uint8_t*)obj) + o->offset;
-    if (write_number(obj, o, dst, num, den, intnum) < 0)
-        return NULL;
-    else
-        return o;
+    dst = ((uint8_t*)target_obj) + o->offset;
+    return write_number(obj, o, dst, num, den, intnum);
 }
 
+#if FF_API_OLD_AVOPTIONS
 const AVOption *av_set_double(void *obj, const char *name, double n)
 {
-    return set_number(obj, name, n, 1, 1);
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
+    if (set_number(obj, name, n, 1, 1, 0) < 0)
+        return NULL;
+    return o;
 }
 
 const AVOption *av_set_q(void *obj, const char *name, AVRational n)
 {
-    return set_number(obj, name, n.num, n.den, 1);
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
+    if (set_number(obj, name, n.num, n.den, 1, 0) < 0)
+        return NULL;
+    return o;
 }
 
 const AVOption *av_set_int(void *obj, const char *name, int64_t n)
 {
-    return set_number(obj, name, 1, 1, n);
+    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
+    if (set_number(obj, name, 1, 1, n, 0) < 0)
+        return NULL;
+    return o;
+}
+#endif
+
+int av_opt_set_int(void *obj, const char *name, int64_t val, int search_flags)
+{
+    return set_number(obj, name, 1, 1, val, search_flags);
+}
+
+int av_opt_set_double(void *obj, const char *name, double val, int search_flags)
+{
+    return set_number(obj, name, val, 1, 1, search_flags);
+}
+
+int av_opt_set_q(void *obj, const char *name, AVRational val, int search_flags)
+{
+    return set_number(obj, name, val.num, val.den, 1, search_flags);
 }
 
 /**

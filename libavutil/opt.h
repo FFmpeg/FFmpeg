@@ -112,6 +112,7 @@ attribute_deprecated
 const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
 #endif
 
+#if FF_API_OLD_AVOPTIONS
 /**
  * Set the field of obj with the given name to value.
  *
@@ -136,12 +137,16 @@ const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int m
  * AVERROR_OPTION_NOT_FOUND if no matching option exists
  * AVERROR(ERANGE) if the value is out of range
  * AVERROR(EINVAL) if the value is not valid
+ * @deprecated use av_opt_set()
  */
+attribute_deprecated
 int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out);
 
-const AVOption *av_set_double(void *obj, const char *name, double n);
-const AVOption *av_set_q(void *obj, const char *name, AVRational n);
-const AVOption *av_set_int(void *obj, const char *name, int64_t n);
+attribute_deprecated const AVOption *av_set_double(void *obj, const char *name, double n);
+attribute_deprecated const AVOption *av_set_q(void *obj, const char *name, AVRational n);
+attribute_deprecated const AVOption *av_set_int(void *obj, const char *name, int64_t n);
+#endif
+
 double av_get_double(void *obj, const char *name, const AVOption **o_out);
 AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
 int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
@@ -295,5 +300,39 @@ void *av_opt_child_next(void *obj, void *prev);
  * @return AVClass corresponding to next potential child or NULL
  */
 const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *prev);
+
+/**
+ * @defgroup opt_set_funcs Option setting functions
+ * @{
+ * Those functions set the field of obj with the given name to value.
+ *
+ * @param[in] obj A struct whose first element is a pointer to an AVClass.
+ * @param[in] name the name of the field to set
+ * @param[in] val The value to set. In case of av_opt_set() if the field is not
+ * of a string type, then the given string is parsed.
+ * SI postfixes and some named scalars are supported.
+ * If the field is of a numeric type, it has to be a numeric or named
+ * scalar. Behavior with more than one scalar and +- infix operators
+ * is undefined.
+ * If the field is of a flags type, it has to be a sequence of numeric
+ * scalars or named flags separated by '+' or '-'. Prefixing a flag
+ * with '+' causes it to be set without affecting the other flags;
+ * similarly, '-' unsets a flag.
+ * @param search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
+ * is passed here, then the option may be set on a child of obj.
+ *
+ * @return 0 if the value has been set, or an AVERROR code in case of
+ * error:
+ * AVERROR_OPTION_NOT_FOUND if no matching option exists
+ * AVERROR(ERANGE) if the value is out of range
+ * AVERROR(EINVAL) if the value is not valid
+ */
+int av_opt_set       (void *obj, const char *name, const char *val, int search_flags);
+int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_flags);
+int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
+int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_OPT_H */
