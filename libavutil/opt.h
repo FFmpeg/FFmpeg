@@ -145,12 +145,12 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
 attribute_deprecated const AVOption *av_set_double(void *obj, const char *name, double n);
 attribute_deprecated const AVOption *av_set_q(void *obj, const char *name, AVRational n);
 attribute_deprecated const AVOption *av_set_int(void *obj, const char *name, int64_t n);
-#endif
 
-double av_get_double(void *obj, const char *name, const AVOption **o_out);
-AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
-int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
-const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
+attribute_deprecated double av_get_double(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
+#endif
 const AVOption *av_next_option(void *obj, const AVOption *last);
 
 /**
@@ -331,6 +331,29 @@ int av_opt_set       (void *obj, const char *name, const char *val, int search_f
 int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_flags);
 int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
 int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
+/**
+ * @}
+ */
+
+/**
+ * @defgroup opt_get_funcs Option getting functions
+ * @{
+ * Those functions get a value of the option with the given name from an object.
+ *
+ * @param[in] obj a struct whose first element is a pointer to an AVClass.
+ * @param[in] name name of the option to get.
+ * @param[in] search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
+ * is passed here, then the option may be found in a child of obj.
+ * @param[out] out_val value of the option will be written here
+ * @return 0 on success, a negative error code otherwise
+ */
+/**
+ * @note the returned string will av_malloc()ed and must be av_free()ed by the caller
+ */
+int av_opt_get       (void *obj, const char *name, int search_flags, uint8_t   **out_val);
+int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    *out_val);
+int av_opt_get_double(void *obj, const char *name, int search_flags, double     *out_val);
+int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
 /**
  * @}
  */

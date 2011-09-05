@@ -275,6 +275,7 @@ int av_opt_set_q(void *obj, const char *name, AVRational val, int search_flags)
     return set_number(obj, name, val.num, val.den, 1, search_flags);
 }
 
+#if FF_API_OLD_AVOPTIONS
 /**
  *
  * @param buf a buffer which is used for returning non string values as strings, can be NULL
@@ -312,15 +313,63 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     }
     return buf;
 }
+#endif
 
-static int get_number(void *obj, const char *name, const AVOption **o_out, double *num, int *den, int64_t *intnum)
+int av_opt_get(void *obj, const char *name, int search_flags, uint8_t **out_val)
 {
-    const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
-    void *dst;
-    if (!o)
+    void *dst, *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    uint8_t *bin, buf[128];
+    int len, i, ret;
+
+    if (!o || !target_obj)
+        return AVERROR_OPTION_NOT_FOUND;
+
+    dst = (uint8_t*)target_obj + o->offset;
+
+    buf[0] = 0;
+    switch (o->type) {
+    case FF_OPT_TYPE_FLAGS:     ret = snprintf(buf, sizeof(buf), "0x%08X",  *(int    *)dst);break;
+    case FF_OPT_TYPE_INT:       ret = snprintf(buf, sizeof(buf), "%d" ,     *(int    *)dst);break;
+    case FF_OPT_TYPE_INT64:     ret = snprintf(buf, sizeof(buf), "%"PRId64, *(int64_t*)dst);break;
+    case FF_OPT_TYPE_FLOAT:     ret = snprintf(buf, sizeof(buf), "%f" ,     *(float  *)dst);break;
+    case FF_OPT_TYPE_DOUBLE:    ret = snprintf(buf, sizeof(buf), "%f" ,     *(double *)dst);break;
+    case FF_OPT_TYPE_RATIONAL:  ret = snprintf(buf, sizeof(buf), "%d/%d",   ((AVRational*)dst)->num, ((AVRational*)dst)->den);break;
+    case FF_OPT_TYPE_STRING:
+        if (*(uint8_t**)dst)
+            *out_val = av_strdup(*(uint8_t**)dst);
+        else
+            *out_val = av_strdup("");
+        return 0;
+    case FF_OPT_TYPE_BINARY:
+        len = *(int*)(((uint8_t *)dst) + sizeof(uint8_t *));
+        if ((uint64_t)len*2 + 1 > INT_MAX)
+            return AVERROR(EINVAL);
+        if (!(*out_val = av_malloc(len*2 + 1)))
+            return AVERROR(ENOMEM);
+        bin = *(uint8_t**)dst;
+        for (i = 0; i < len; i++)
+            snprintf(*out_val + i*2, 3, "%02X", bin[i]);
+        return 0;
+    default:
+        return AVERROR(EINVAL);
+    }
+
+    if (ret >= sizeof(buf))
+        return AVERROR(EINVAL);
+    *out_val = av_strdup(buf);
+    return 0;
+}
+
+static int get_number(void *obj, const char *name, const AVOption **o_out, double *num, int *den, int64_t *intnum,
+                      int search_flags)
+{
+    void *dst, *target_obj;
+    const AVOption *o = av_opt_find2(obj, name, NULL, 0, search_flags, &target_obj);
+    if (!o || !target_obj)
         goto error;
 
-    dst= ((uint8_t*)obj) + o->offset;
+    dst = ((uint8_t*)target_obj) + o->offset;
 
     if (o_out) *o_out= o;
 
@@ -339,13 +388,14 @@ error:
     return -1;
 }
 
+#if FF_API_OLD_AVOPTIONS
 double av_get_double(void *obj, const char *name, const AVOption **o_out)
 {
     int64_t intnum=1;
     double num=1;
     int den=1;
 
-    if (get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+    if (get_number(obj, name, o_out, &num, &den, &intnum, 0) < 0)
         return NAN;
     return num*intnum/den;
 }
@@ -356,7 +406,7 @@ AVRational av_get_q(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    if (get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+    if (get_number(obj, name, o_out, &num, &den, &intnum, 0) < 0)
         return (AVRational){0, 0};
     if (num == 1.0 && (int)intnum == intnum)
         return (AVRational){intnum, den};
@@ -370,9 +420,50 @@ int64_t av_get_int(void *obj, const char *name, const AVOption **o_out)
     double num=1;
     int den=1;
 
-    if (get_number(obj, name, o_out, &num, &den, &intnum) < 0)
+    if (get_number(obj, name, o_out, &num, &den, &intnum, 0) < 0)
         return -1;
     return num*intnum/den;
+}
+#endif
+
+int av_opt_get_int(void *obj, const char *name, int search_flags, int64_t *out_val)
+{
+    int64_t intnum = 1;
+    double     num = 1;
+    int   ret, den = 1;
+
+    if ((ret = get_number(obj, name, NULL, &num, &den, &intnum, search_flags)) < 0)
+        return ret;
+    *out_val = num*intnum/den;
+    return 0;
+}
+
+int av_opt_get_double(void *obj, const char *name, int search_flags, double *out_val)
+{
+    int64_t intnum = 1;
+    double     num = 1;
+    int   ret, den = 1;
+
+    if ((ret = get_number(obj, name, NULL, &num, &den, &intnum, search_flags)) < 0)
+        return ret;
+    *out_val = num*intnum/den;
+    return 0;
+}
+
+int av_opt_get_q(void *obj, const char *name, int search_flags, AVRational *out_val)
+{
+    int64_t intnum = 1;
+    double     num = 1;
+    int   ret, den = 1;
+
+    if ((ret = get_number(obj, name, NULL, &num, &den, &intnum, search_flags)) < 0)
+        return ret;
+
+    if (num == 1.0 && (int)intnum == intnum)
+        *out_val = (AVRational){intnum, den};
+    else
+        *out_val = av_d2q(num*intnum/den, 1<<24);
+    return 0;
 }
 
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
