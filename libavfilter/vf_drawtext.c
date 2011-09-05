@@ -520,7 +520,7 @@ static inline int is_newline(uint32_t c)
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
                        int width, int height, const uint8_t rgbcolor[4], const uint8_t yuvcolor[4], int x, int y)
 {
-    char *text = HAVE_LOCALTIME_R ? dtext->expanded_text : dtext->text;
+    char *text = dtext->expanded_text;
     uint32_t code = 0;
     int i;
     uint8_t *p;
