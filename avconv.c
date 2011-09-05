@@ -3489,7 +3489,7 @@ static void opt_output_file(void *optctx, const char *filename)
     }
     if (o->chapters_input_file >= 0)
         copy_chapters(&input_files[o->chapters_input_file], &output_files[nb_output_files - 1],
-                      o->metadata_chapters_manual);
+                      !o->metadata_chapters_manual);
 
     /* copy metadata */
     for (i = 0; i < o->nb_meta_data_maps; i++) {
