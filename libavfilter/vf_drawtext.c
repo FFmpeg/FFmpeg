@@ -318,10 +318,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
     dtext->tabsize *= glyph->advance;
 
-#if !HAVE_LOCALTIME_R
-    av_log(ctx, AV_LOG_WARNING, "strftime() expansion unavailable!\n");
-#endif
-
     return 0;
 }
 
@@ -574,7 +570,6 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     Glyph *glyph = NULL, *prev_glyph = NULL;
     Glyph dummy = { 0 };
 
-#if HAVE_LOCALTIME_R
     time_t now = time(0);
     struct tm ltime;
     uint8_t *buf = dtext->expanded_text;
@@ -588,7 +583,12 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         buf = av_malloc(buf_size);
     }
 
+#if HAVE_LOCALTIME_R
     localtime_r(&now, &ltime);
+#else
+    if(strchr(dtext->text, '%'))
+        ltime= *localtime(&now);
+#endif
 
     do {
         *buf = 1;
@@ -601,7 +601,6 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         return AVERROR(ENOMEM);
     text = dtext->expanded_text = buf;
     dtext->expanded_text_size = buf_size;
-#endif
     if ((len = strlen(text)) > dtext->nb_positions) {
         if (!(dtext->positions =
               av_realloc(dtext->positions, len*sizeof(*dtext->positions))))
