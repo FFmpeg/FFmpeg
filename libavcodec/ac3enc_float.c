@@ -104,9 +104,10 @@ static int normalize_samples(AC3EncodeContext *s)
 static void scale_coefficients(AC3EncodeContext *s)
 {
     int chan_size = AC3_MAX_COEFS * s->num_blocks;
-    s->ac3dsp.float_to_fixed24(s->fixed_coef_buffer + chan_size,
-                               s->mdct_coef_buffer  + chan_size,
-                               chan_size * s->channels);
+    int cpl       = s->cpl_on;
+    s->ac3dsp.float_to_fixed24(s->fixed_coef_buffer + (chan_size * !cpl),
+                               s->mdct_coef_buffer  + (chan_size * !cpl),
+                               chan_size * (s->channels + cpl));
 }
 
 
@@ -116,6 +117,18 @@ static void scale_coefficients(AC3EncodeContext *s)
 static void clip_coefficients(DSPContext *dsp, float *coef, unsigned int len)
 {
     dsp->vector_clipf(coef, coef, COEF_MIN, COEF_MAX, len);
+}
+
+
+/**
+ * Calculate a single coupling coordinate.
+ */
+static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl)
+{
+    float coord = 0.125;
+    if (energy_cpl > 0)
+        coord *= sqrtf(energy_ch / energy_cpl);
+    return FFMIN(coord, COEF_MAX);
 }
 
 

@@ -160,12 +160,24 @@ interpreted as UTC.
 If the year-month-day part is not specified it takes the current
 year-month-day.
 
-@item -metadata @var{key}=@var{value}
+@item -metadata[:metadata_specifier] @var{key}=@var{value}
 Set a metadata key/value pair.
+
+An optional @var{metadata_specifier} may be given to set metadata
+on streams or chapters. See @code{-map_metadata} documentation for
+details.
+
+This option overrides metadata set with @code{-map_metadata}. It is
+also possible to delete metadata by using an empty value.
 
 For example, for setting the title in the output file:
 @example
 avconv -i in.avi -metadata title="my title" out.flv
+@end example
+
+To set the language of the second stream:
+@example
+avconv -i INPUT -metadata:s:1 language=eng OUTPUT
 @end example
 
 @item -v @var{number}
@@ -188,10 +200,13 @@ avconv -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
 @item -dframes @var{number}
-Set the number of data frames to record.
+Set the number of data frames to record. This is an alias for @code{-frames:d}.
 
 @item -slang @var{code}
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
+
+@item -frames[:stream_specifier] @var{framecount}
+Stop writing to the stream after @var{framecount} frames.
 
 @end table
 
@@ -199,7 +214,7 @@ Set the ISO 639 language code (3 letters) of the current subtitle stream.
 
 @table @option
 @item -vframes @var{number}
-Set the number of video frames to record.
+Set the number of video frames to record. This is an alias for @code{-frames:v}.
 @item -r @var{fps}
 Set frame rate (Hz value, fraction or abbreviation), (default = 25).
 @item -s @var{size}
@@ -552,11 +567,6 @@ Intra_dc_precision.
 Force video tag/fourcc.
 @item -qphist
 Show QP histogram.
-@item -vbsf @var{bitstream_filter}
-Bitstream filters available are "dump_extra", "remove_extra", "noise", "h264_mp4toannexb", "imxdump", "mjpegadump", "mjpeg2jpeg".
-@example
-avconv -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
-@end example
 @item -force_key_frames @var{time}[,@var{time}...]
 Force key frames at the specified timestamps, more precisely at the first
 frames after each specified time.
@@ -569,7 +579,7 @@ The timestamps must be specified in ascending order.
 
 @table @option
 @item -aframes @var{number}
-Set the number of audio frames to record.
+Set the number of audio frames to record. This is an alias for @code{-frames:a}.
 @item -ar @var{freq}
 Set the audio sampling frequency. For output streams it is set by
 default to the frequency of the corresponding input stream. For input
@@ -617,8 +627,6 @@ Voice Over
 @item ka
 Karaoke
 @end table
-@item -absf @var{bitstream_filter}
-Bitstream filters available are "dump_extra", "remove_extra", "noise", "mp3comp", "mp3decomp".
 @end table
 
 @section Subtitle options:
@@ -630,11 +638,6 @@ Set the subtitle codec. This is an alias for @code{-codec:s}.
 Set the ISO 639 language code (3 letters) of the current subtitle stream.
 @item -sn
 Disable subtitle recording.
-@item -sbsf @var{bitstream_filter}
-Bitstream filters available are "mov2textsub", "text2movsub".
-@example
-avconv -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
-@end example
 @end table
 
 @section Audio/Video grab options
@@ -796,6 +799,17 @@ For example, to set the stream 0 PID to 33 and the stream 1 PID to 36 for
 an output mpegts file:
 @example
 avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
+@end example
+
+@item -bsf[:@var{stream_specifier}] @var{bitstream_filters}
+Set bitstream filters for matching streams. @var{bistream_filters} is
+a comma-separated list of bitstream filters. Use the @code{-bsfs} option
+to get the list of bitstream filters.
+@example
+avconv -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
+@end example
+@example
+avconv -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
 @end example
 @end table
 @c man end OPTIONS

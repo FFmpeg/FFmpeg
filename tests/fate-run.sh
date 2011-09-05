@@ -16,7 +16,7 @@ cmp=${6:-diff}
 ref=${7:-"${base}/ref/fate/${test}"}
 fuzz=$8
 threads=${9:-1}
-thread_type=${10:-3}
+thread_type=${10:-frame+slice}
 tool=${11}
 
 outdir="tests/data/fate"

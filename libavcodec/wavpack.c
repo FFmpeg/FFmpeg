@@ -470,6 +470,7 @@ static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
 static void wv_reset_saved_context(WavpackFrameContext *s)
 {
     s->pos = 0;
+    s->samples_left = 0;
     s->sc.crc = s->extra_sc.crc = 0xFFFFFFFF;
 }
 
@@ -582,6 +583,7 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb, vo
 
     s->samples_left -= count;
     if(!s->samples_left){
+        wv_reset_saved_context(s);
         if(crc != s->CRC){
             av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
             return -1;
@@ -590,7 +592,6 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb, vo
             av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
             return -1;
         }
-        wv_reset_saved_context(s);
     }else{
         s->pos = pos;
         s->sc.crc = crc;
@@ -660,6 +661,7 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb, void
 
     s->samples_left -= count;
     if(!s->samples_left){
+        wv_reset_saved_context(s);
         if(crc != s->CRC){
             av_log(s->avctx, AV_LOG_ERROR, "CRC error\n");
             return -1;
@@ -668,7 +670,6 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb, void
             av_log(s->avctx, AV_LOG_ERROR, "Extra bits CRC error\n");
             return -1;
         }
-        wv_reset_saved_context(s);
     }else{
         s->pos = pos;
         s->sc.crc = crc;
@@ -779,7 +780,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         s->samples = AV_RL32(buf); buf += 4;
         if(!s->samples){
             *data_size = 0;
-            return buf_size;
+            return 0;
         }
     }else{
         s->samples = wc->samples;
@@ -1195,7 +1196,7 @@ static void wavpack_decode_flush(AVCodecContext *avctx)
     int i;
 
     for (i = 0; i < s->fdec_num; i++)
-        s->fdec[i]->samples_left = 0;
+        wv_reset_saved_context(s->fdec[i]);
 }
 
 AVCodec ff_wavpack_decoder = {
