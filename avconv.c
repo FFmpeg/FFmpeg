@@ -2730,7 +2730,7 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
 static void parse_meta_type(char *arg, char *type, int *index)
 {
     if (*arg) {
-        *type = *(++arg);
+        *type = *arg;
         switch (*arg) {
         case 'g':
             break;
