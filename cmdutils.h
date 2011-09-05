@@ -112,6 +112,16 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
  */
 int64_t parse_time_or_die(const char *context, const char *timestr, int is_duration);
 
+typedef struct SpecifierOpt {
+    char *specifier;    /**< stream/chapter/program/... specifier */
+    union {
+        uint8_t *str;
+        int        i;
+        int64_t  i64;
+        float      f;
+    } u;
+} SpecifierOpt;
+
 typedef struct {
     const char *name;
     int flags;
@@ -128,12 +138,17 @@ typedef struct {
 #define OPT_INT64  0x0400
 #define OPT_EXIT   0x0800
 #define OPT_DATA   0x1000
+#define OPT_FUNC2  0x2000
+#define OPT_OFFSET 0x4000       /* option is specified as an offset in a passed optctx */
+#define OPT_SPEC   0x8000       /* option is to be stored in an array of SpecifierOpt.
+                                   Implies OPT_OFFSET. Next element after the offset is
+                                   an int containing element count in the array. */
+#define OPT_TIME  0x10000
      union {
-        int *int_arg;
-        char **str_arg;
-        float *float_arg;
+        void *dst_ptr;
         int (*func_arg)(const char *, const char *);
-        int64_t *int64_arg;
+        int (*func2_arg)(void *, const char *, const char *);
+        size_t off;
     } u;
     const char *help;
     const char *argname;
@@ -143,14 +158,23 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
 
 /**
  * Parse the command line arguments.
+ *
+ * @param optctx an opaque options context
  * @param options Array with the definitions required to interpret every
  * option of the form: -option_name [argument]
  * @param parse_arg_function Name of the function called to process every
  * argument without a leading option name flag. NULL if such arguments do
  * not have to be processed.
  */
-void parse_options(int argc, char **argv, const OptionDef *options,
-                   int (* parse_arg_function)(const char *opt, const char *arg));
+void parse_options(void *optctx, int argc, char **argv, const OptionDef *options,
+                   void (* parse_arg_function)(void *optctx, const char*));
+
+/**
+ * Parse one given option.
+ *
+ * @return on success 1 if arg was consumed, 0 otherwise; negative number on error
+ */
+int parse_option(void *optctx, const char *opt, const char *arg, const OptionDef *options);
 
 /**
  * Check if the given stream matches a stream specifier.
@@ -301,4 +325,20 @@ int read_file(const char *filename, char **bufptr, size_t *size);
 FILE *get_preset_file(char *filename, size_t filename_size,
                       const char *preset_name, int is_path, const char *codec_name);
 
-#endif /* FFMPEG_CMDUTILS_H */
+/**
+ * Do all the necessary cleanup and abort.
+ * This function is implemented in the avtools, not cmdutils.
+ */
+void exit_program(int ret);
+
+/**
+ * Realloc array to hold new_size elements of elem_size.
+ * Calls exit_program() on failure.
+ *
+ * @param elem_size size in bytes of each element
+ * @param size new element count will be written here
+ * @return reallocated array
+ */
+void *grow_array(void *array, int elem_size, int *size, int new_size);
+
+#endif /* LIBAV_CMDUTILS_H */

@@ -58,6 +58,11 @@ static const char *unit_hertz_str           = "Hz"   ;
 static const char *unit_byte_str            = "byte" ;
 static const char *unit_bit_per_second_str  = "bit/s";
 
+void exit_program(int ret)
+{
+    exit(ret);
+}
+
 static char *value_string(char *buf, int buf_size, double val, const char *unit)
 {
     if (unit == unit_second_str && use_value_sexagesimal_format) {
@@ -455,7 +460,7 @@ static int opt_format(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_input_file(const char *opt, const char *arg)
+static void opt_input_file(void *optctx, const char *arg)
 {
     if (input_filename) {
         fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
@@ -465,7 +470,6 @@ static int opt_input_file(const char *opt, const char *arg)
     if (!strcmp(arg, "-"))
         arg = "pipe:";
     input_filename = arg;
-    return 0;
 }
 
 static int opt_help(const char *opt, const char *arg)
@@ -519,7 +523,7 @@ int main(int argc, char **argv)
 #endif
 
     show_banner();
-    parse_options(argc, argv, options, opt_input_file);
+    parse_options(NULL, argc, argv, options, opt_input_file);
 
     if (!input_filename) {
         show_usage();

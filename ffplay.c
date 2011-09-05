@@ -277,6 +277,11 @@ static AVPacket flush_pkt;
 
 static SDL_Surface *screen;
 
+void exit_program(int ret)
+{
+    exit(ret);
+}
+
 static int packet_queue_put(PacketQueue *q, AVPacket *pkt)
 {
     AVPacketList *pkt1;
@@ -2891,18 +2896,19 @@ static int opt_show_mode(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_input_file(const char *opt, const char *filename)
+static void opt_input_file(void *optctx, const char *filename)
 {
     if (input_filename) {
         fprintf(stderr, "Argument '%s' provided as input filename, but '%s' was already specified.\n",
                 filename, input_filename);
-        exit(1);
+        exit_program(1);
     }
     if (!strcmp(filename, "-"))
         filename = "pipe:";
     input_filename = filename;
-    return 0;
 }
+
+static int dummy;
 
 static const OptionDef options[] = {
 #include "cmdutils_common_opts.h"
@@ -2947,7 +2953,7 @@ static const OptionDef options[] = {
     { "rdftspeed", OPT_INT | HAS_ARG| OPT_AUDIO | OPT_EXPERT, {(void*)&rdftspeed}, "rdft speed", "msecs" },
     { "showmode", HAS_ARG, {(void*)opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
-    { "i", HAS_ARG, {(void *)opt_input_file}, "read specified file", "input_file"},
+    { "i", OPT_BOOL, {(void *)&dummy}, "read specified file", "input_file"},
     { NULL, },
 };
 
@@ -3038,7 +3044,7 @@ int main(int argc, char **argv)
 
     show_banner();
 
-    parse_options(argc, argv, options, opt_input_file);
+    parse_options(NULL, argc, argv, options, opt_input_file);
 
     if (!input_filename) {
         show_usage();

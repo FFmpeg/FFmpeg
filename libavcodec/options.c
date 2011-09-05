@@ -483,7 +483,7 @@ static const AVOption options[]={
 {"lpc_passes", "deprecated, use flac-specific options", OFFSET(lpc_passes), FF_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, A|E},
 #endif
 {"slices", "number of slices, used in parallelized decoding", OFFSET(slices), FF_OPT_TYPE_INT, {.dbl = 0 }, 0, INT_MAX, V|E},
-{"thread_type", "select multithreading type", OFFSET(thread_type), FF_OPT_TYPE_INT, {.dbl = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|E|D, "thread_type"},
+{"thread_type", "select multithreading type", OFFSET(thread_type), FF_OPT_TYPE_FLAGS, {.dbl = FF_THREAD_SLICE|FF_THREAD_FRAME }, 0, INT_MAX, V|E|D, "thread_type"},
 {"slice", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_THREAD_SLICE }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
 {"frame", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_THREAD_FRAME }, INT_MIN, INT_MAX, V|E|D, "thread_type"},
 {"audio_service_type", "audio service type", OFFSET(audio_service_type), FF_OPT_TYPE_INT, {.dbl = AV_AUDIO_SERVICE_TYPE_MAIN }, 0, AV_AUDIO_SERVICE_TYPE_NB-1, A|E, "audio_service_type"},

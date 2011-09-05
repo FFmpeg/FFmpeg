@@ -321,6 +321,11 @@ static AVLFG random_state;
 static FILE *logfile = NULL;
 
 /* FIXME: make ffserver work with IPv6 */
+void exit_program(int ret)
+{
+    exit(ret);
+}
+
 /* resolve host with also IP address parsing */
 static int resolve_host(struct in_addr *sin_addr, const char *hostname)
 {
@@ -4672,7 +4677,7 @@ int main(int argc, char **argv)
     my_program_dir = getcwd(0, 0);
     ffserver_daemon = 1;
 
-    parse_options(argc, argv, options, NULL);
+    parse_options(NULL, argc, argv, options, NULL);
 
     unsetenv("http_proxy");             /* Kill the http_proxy */
 

@@ -35,7 +35,7 @@ fate-bink-demux-video: CMD = framecrc  -i $(SAMPLES)/bink/hol2br.bik
 FATE_TESTS += fate-caf
 fate-caf: CMD = crc  -i $(SAMPLES)/caf/caf-pcm16.caf
 FATE_TESTS += fate-cdgraphics
-fate-cdgraphics: CMD = framecrc  -t 1 -i $(SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24
+fate-cdgraphics: CMD = framecrc  -i $(SAMPLES)/cdgraphics/BrotherJohn.cdg -pix_fmt rgb24 -t 1
 FATE_TESTS += fate-cljr
 fate-cljr: CMD = framecrc  -i $(SAMPLES)/cljr/testcljr-partial.avi
 FATE_TESTS += fate-corepng
@@ -129,7 +129,7 @@ fate-id-cin-video: CMD = framecrc  -i $(SAMPLES)/idcin/idlog-2MB.cin -pix_fmt rg
 FATE_TESTS += fate-idroq-video-dpcm
 fate-idroq-video-dpcm: CMD = framecrc  -i $(SAMPLES)/idroq/idlogo.roq
 FATE_TESTS += fate-idroq-video-encode
-fate-idroq-video-encode: CMD = md5  -t 0.2 -f image2 -vcodec pgmyuv -i $(SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vf pad=512:512:80:112 -f RoQ
+fate-idroq-video-encode: CMD = md5  -f image2 -vcodec pgmyuv -i $(SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vf pad=512:512:80:112 -f RoQ -t 0.2
 FATE_TESTS += fate-iff-byterun1
 fate-iff-byterun1: CMD = framecrc  -i $(SAMPLES)/iff/ASH.LBM -pix_fmt rgb24
 FATE_TESTS += fate-iff-fibonacci

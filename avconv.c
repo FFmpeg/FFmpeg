@@ -110,11 +110,7 @@ typedef struct MetadataMap {
 static const OptionDef options[];
 
 #define MAX_STREAMS 1024    /* arbitrary sanity check value */
-static const char *last_asked_format = NULL;
 static AVDictionary *ts_scale;
-
-static StreamMap *stream_maps = NULL;
-static int nb_stream_maps;
 
 static AVDictionary *codec_names;
 
@@ -175,9 +171,6 @@ static unsigned int data_codec_tag = 0;
 static float mux_preload= 0.5;
 static float mux_max_delay= 0.7;
 
-static int64_t recording_time = INT64_MAX;
-static int64_t start_time = 0;
-static int64_t input_ts_offset = 0;
 static int file_overwrite = 0;
 static AVDictionary *metadata;
 static int do_benchmark = 0;
@@ -212,7 +205,6 @@ static int64_t extra_size = 0;
 static int nb_frames_dup = 0;
 static int nb_frames_drop = 0;
 static int input_sync;
-static uint64_t limit_filesize = UINT64_MAX;
 static int force_fps = 0;
 static char *forced_key_frames = NULL;
 
@@ -336,6 +328,56 @@ static OutputStream *output_streams = NULL;
 static int        nb_output_streams = 0;
 static OutputFile   *output_files   = NULL;
 static int        nb_output_files   = 0;
+
+typedef struct OptionsContext {
+    /* input/output options */
+    int64_t start_time;
+    const char *format;
+
+    /* input options */
+    int64_t input_ts_offset;
+
+    /* output options */
+    StreamMap *stream_maps;
+    int     nb_stream_maps;
+
+    int64_t recording_time;
+    uint64_t limit_filesize;
+} OptionsContext;
+
+static void reset_options(OptionsContext *o)
+{
+    const OptionDef *po = options;
+
+    /* all OPT_SPEC and OPT_STRING can be freed in generic way */
+    while (po->name) {
+        void *dst = (uint8_t*)o + po->u.off;
+
+        if (po->flags & OPT_SPEC) {
+            SpecifierOpt **so = dst;
+            int i, *count = (int*)(so + 1);
+            for (i = 0; i < *count; i++) {
+                av_freep(&(*so)[i].specifier);
+                if (po->flags & OPT_STRING)
+                    av_freep(&(*so)[i].u.str);
+            }
+            av_freep(so);
+            *count = 0;
+        } else if (po->flags & OPT_OFFSET && po->flags & OPT_STRING)
+            av_freep(dst);
+        po++;
+    }
+
+    av_freep(&o->stream_maps);
+
+    memset(o, 0, sizeof(*o));
+
+    o->recording_time = INT64_MAX;
+    o->limit_filesize = UINT64_MAX;
+
+    uninit_opts();
+    init_opts();
+}
 
 #if CONFIG_AVFILTER
 
@@ -510,7 +552,7 @@ static int decode_interrupt_cb(void)
     return q_pressed > 1;
 }
 
-static int exit_program(int ret)
+void exit_program(int ret)
 {
     int i;
 
@@ -560,7 +602,6 @@ static int exit_program(int ret)
     }
 
     exit(ret); /* not all OS-es handle main() return value */
-    return ret;
 }
 
 static void assert_avoptions(AVDictionary *m)
@@ -587,26 +628,6 @@ static void assert_codec_experimental(AVCodecContext *c, int encoder)
                    codec_string, codec->name);
         exit_program(1);
     }
-}
-
-/* similar to ff_dynarray_add() and av_fast_realloc() */
-static void *grow_array(void *array, int elem_size, int *size, int new_size)
-{
-    if (new_size >= INT_MAX / elem_size) {
-        fprintf(stderr, "Array too big.\n");
-        exit_program(1);
-    }
-    if (*size < new_size) {
-        uint8_t *tmp = av_realloc(array, new_size*elem_size);
-        if (!tmp) {
-            fprintf(stderr, "Could not alloc buffer.\n");
-            exit_program(1);
-        }
-        memset(tmp + *size*elem_size, 0, (new_size-*size) * elem_size);
-        *size = new_size;
-        return tmp;
-    }
-    return array;
 }
 
 static void choose_sample_fmt(AVStream *st, AVCodec *codec)
@@ -2552,12 +2573,6 @@ static int transcode(OutputFile *output_files,
     return ret;
 }
 
-static int opt_format(const char *opt, const char *arg)
-{
-    last_asked_format = arg;
-    return 0;
-}
-
 static int opt_video_rc_override_string(const char *opt, const char *arg)
 {
     video_rc_override_string = arg;
@@ -2738,7 +2753,7 @@ static int opt_codec_tag(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_map(const char *opt, const char *arg)
+static int opt_map(OptionsContext *o, const char *opt, const char *arg)
 {
     StreamMap *m = NULL;
     int i, negative = 0, file_idx;
@@ -2783,8 +2798,8 @@ static int opt_map(const char *opt, const char *arg)
     }
     if (negative)
         /* disable some already defined maps */
-        for (i = 0; i < nb_stream_maps; i++) {
-            m = &stream_maps[i];
+        for (i = 0; i < o->nb_stream_maps; i++) {
+            m = &o->stream_maps[i];
             if (check_stream_specifier(input_files[m->file_index].ctx,
                                        input_files[m->file_index].ctx->streams[m->stream_index],
                                        *p == ':' ? p + 1 : p) > 0)
@@ -2795,8 +2810,9 @@ static int opt_map(const char *opt, const char *arg)
             if (check_stream_specifier(input_files[file_idx].ctx, input_files[file_idx].ctx->streams[i],
                         *p == ':' ? p + 1 : p) <= 0)
                 continue;
-            stream_maps = grow_array(stream_maps, sizeof(*stream_maps), &nb_stream_maps, nb_stream_maps + 1);
-            m = &stream_maps[nb_stream_maps - 1];
+            o->stream_maps = grow_array(o->stream_maps, sizeof(*o->stream_maps),
+                                        &o->nb_stream_maps, o->nb_stream_maps + 1);
+            m = &o->stream_maps[o->nb_stream_maps - 1];
 
             m->file_index   = file_idx;
             m->stream_index = i;
@@ -2871,24 +2887,6 @@ static int opt_map_metadata(const char *opt, const char *arg)
 static int opt_input_ts_scale(const char *opt, const char *arg)
 {
     return av_dict_set(&ts_scale, opt, arg, 0);
-}
-
-static int opt_recording_time(const char *opt, const char *arg)
-{
-    recording_time = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
-static int opt_start_time(const char *opt, const char *arg)
-{
-    start_time = parse_time_or_die(opt, arg, 1);
-    return 0;
-}
-
-static int opt_input_ts_offset(const char *opt, const char *arg)
-{
-    input_ts_offset = parse_time_or_die(opt, arg, 1);
-    return 0;
 }
 
 static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
@@ -3029,7 +3027,7 @@ static void add_input_streams(AVFormatContext *ic)
     }
 }
 
-static int opt_input_file(const char *opt, const char *filename)
+static int opt_input_file(OptionsContext *o, const char *opt, const char *filename)
 {
     AVFormatContext *ic;
     AVInputFormat *file_iformat = NULL;
@@ -3039,12 +3037,11 @@ static int opt_input_file(const char *opt, const char *filename)
     AVDictionary **opts;
     int orig_nb_streams;                     // number of streams before avformat_find_stream_info
 
-    if (last_asked_format) {
-        if (!(file_iformat = av_find_input_format(last_asked_format))) {
-            fprintf(stderr, "Unknown input format: '%s'\n", last_asked_format);
+    if (o->format) {
+        if (!(file_iformat = av_find_input_format(o->format))) {
+            fprintf(stderr, "Unknown input format: '%s'\n", o->format);
             exit_program(1);
         }
-        last_asked_format = NULL;
     }
 
     if (!strcmp(filename, "-"))
@@ -3129,20 +3126,18 @@ static int opt_input_file(const char *opt, const char *filename)
         exit_program(1);
     }
 
-    timestamp = start_time;
+    timestamp = o->start_time;
     /* add the stream start time */
     if (ic->start_time != AV_NOPTS_VALUE)
         timestamp += ic->start_time;
 
     /* if seeking requested, we execute it */
-    if (start_time != 0) {
+    if (o->start_time != 0) {
         ret = av_seek_frame(ic, -1, timestamp, AVSEEK_FLAG_BACKWARD);
         if (ret < 0) {
             fprintf(stderr, "%s: could not seek to position %0.3f\n",
                     filename, (double)timestamp / AV_TIME_BASE);
         }
-        /* reset seek info */
-        start_time = 0;
     }
 
     /* update the current parameters so that they match the one of the input stream */
@@ -3155,7 +3150,7 @@ static int opt_input_file(const char *opt, const char *filename)
     input_files = grow_array(input_files, sizeof(*input_files), &nb_input_files, nb_input_files + 1);
     input_files[nb_input_files - 1].ctx        = ic;
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
-    input_files[nb_input_files - 1].ts_offset  = input_ts_offset - (copy_ts ? 0 : timestamp);
+    input_files[nb_input_files - 1].ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
 
     top_field_first = -1;
@@ -3167,14 +3162,13 @@ static int opt_input_file(const char *opt, const char *filename)
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     av_dict_free(&ts_scale);
-    input_ts_offset = 0;
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
     av_freep(&opts);
     av_dict_free(&codec_names);
-    uninit_opts();
-    init_opts();
+
+    reset_options(o);
     return 0;
 }
 
@@ -3465,18 +3459,18 @@ static int opt_streamid(const char *opt, const char *arg)
     return 0;
 }
 
-static int copy_chapters(int infile, int outfile)
+static int copy_chapters(InputFile *ifile, OutputFile *ofile)
 {
-    AVFormatContext *is = input_files[infile].ctx;
-    AVFormatContext *os = output_files[outfile].ctx;
+    AVFormatContext *is = ifile->ctx;
+    AVFormatContext *os = ofile->ctx;
     int i;
 
     for (i = 0; i < is->nb_chapters; i++) {
         AVChapter *in_ch = is->chapters[i], *out_ch;
-        int64_t ts_off   = av_rescale_q(start_time - input_files[infile].ts_offset,
+        int64_t ts_off   = av_rescale_q(ofile->start_time - ifile->ts_offset,
                                       AV_TIME_BASE_Q, in_ch->time_base);
-        int64_t rt       = (recording_time == INT64_MAX) ? INT64_MAX :
-                           av_rescale_q(recording_time, AV_TIME_BASE_Q, in_ch->time_base);
+        int64_t rt       = (ofile->recording_time == INT64_MAX) ? INT64_MAX :
+                           av_rescale_q(ofile->recording_time, AV_TIME_BASE_Q, in_ch->time_base);
 
 
         if (in_ch->end < ts_off)
@@ -3539,8 +3533,9 @@ static int read_ffserver_streams(AVFormatContext *s, const char *filename)
     return 0;
 }
 
-static int opt_output_file(const char *opt, const char *filename)
+static void opt_output_file(void *optctx, const char *filename)
 {
+    OptionsContext *o = optctx;
     AVFormatContext *oc;
     int i, err;
     AVOutputFormat *file_oformat;
@@ -3550,8 +3545,7 @@ static int opt_output_file(const char *opt, const char *filename)
     if (!strcmp(filename, "-"))
         filename = "pipe:";
 
-    err = avformat_alloc_output_context2(&oc, NULL, last_asked_format, filename);
-    last_asked_format = NULL;
+    err = avformat_alloc_output_context2(&oc, NULL, o->format, filename);
     if (!oc) {
         print_error(filename, err);
         exit_program(1);
@@ -3568,7 +3562,7 @@ static int opt_output_file(const char *opt, const char *filename)
             print_error(filename, err);
             exit_program(1);
         }
-    } else if (!nb_stream_maps) {
+    } else if (!o->nb_stream_maps) {
         /* pick the "best" stream of each type */
 #define NEW_STREAM(type, index)\
         if (index >= 0) {\
@@ -3616,8 +3610,8 @@ static int opt_output_file(const char *opt, const char *filename)
         }
         /* do something with data? */
     } else {
-        for (i = 0; i < nb_stream_maps; i++) {
-            StreamMap *map = &stream_maps[i];
+        for (i = 0; i < o->nb_stream_maps; i++) {
+            StreamMap *map = &o->stream_maps[i];
 
             if (map->disabled)
                 continue;
@@ -3648,9 +3642,9 @@ static int opt_output_file(const char *opt, const char *filename)
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
-    output_files[nb_output_files - 1].recording_time = recording_time;
-    output_files[nb_output_files - 1].start_time     = start_time;
-    output_files[nb_output_files - 1].limit_filesize = limit_filesize;
+    output_files[nb_output_files - 1].recording_time = o->recording_time;
+    output_files[nb_output_files - 1].start_time     = o->start_time;
+    output_files[nb_output_files - 1].limit_filesize = o->limit_filesize;
     av_dict_copy(&output_files[nb_output_files - 1].opts, format_opts, 0);
 
     /* check filename in case of an image number is expected */
@@ -3710,7 +3704,7 @@ static int opt_output_file(const char *opt, const char *filename)
         }
     }
     if (chapters_input_file >= 0)
-        copy_chapters(chapters_input_file, nb_output_files - 1);
+        copy_chapters(&input_files[chapters_input_file], &output_files[nb_output_files - 1]);
 
     /* copy metadata */
     for (i = 0; i < nb_meta_data_maps; i++) {
@@ -3775,26 +3769,19 @@ static int opt_output_file(const char *opt, const char *filename)
     audio_channels    = 0;
     audio_sample_fmt  = AV_SAMPLE_FMT_NONE;
     chapters_input_file = INT_MAX;
-    recording_time = INT64_MAX;
-    start_time     = 0;
-    limit_filesize = UINT64_MAX;
 
     av_freep(&meta_data_maps);
     nb_meta_data_maps = 0;
     metadata_global_autocopy   = 1;
     metadata_streams_autocopy  = 1;
     metadata_chapters_autocopy = 1;
-    av_freep(&stream_maps);
-    nb_stream_maps = 0;
     av_freep(&streamid_map);
     nb_streamid_map = 0;
 
     av_dict_free(&codec_names);
 
     av_freep(&forced_key_frames);
-    uninit_opts();
-    init_opts();
-    return 0;
+    reset_options(o);
 }
 
 /* same option as mencoder */
@@ -3949,7 +3936,7 @@ static int opt_help(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_target(const char *opt, const char *arg)
+static int opt_target(OptionsContext *o, const char *opt, const char *arg)
 {
     enum { PAL, NTSC, FILM, UNKNOWN } norm = UNKNOWN;
     static const char *const frame_rates[] = {"25", "30000/1001", "24000/1001"};
@@ -4008,7 +3995,7 @@ static int opt_target(const char *opt, const char *arg)
     if(!strcmp(arg, "vcd")) {
         opt_codec("c:v", "mpeg1video");
         opt_codec("c:a", "mp2");
-        opt_format("f", "vcd");
+        parse_option(o, "f", "vcd", options);
 
         opt_frame_size("s", norm == PAL ? "352x288" : "352x240");
         opt_frame_rate("r", frame_rates[norm]);
@@ -4036,7 +4023,7 @@ static int opt_target(const char *opt, const char *arg)
 
         opt_codec("c:v", "mpeg2video");
         opt_codec("c:a", "mp2");
-        opt_format("f", "svcd");
+        parse_option(o, "f", "svcd", options);
 
         opt_frame_size("s", norm == PAL ? "480x576" : "480x480");
         opt_frame_rate("r", frame_rates[norm]);
@@ -4059,7 +4046,7 @@ static int opt_target(const char *opt, const char *arg)
 
         opt_codec("c:v", "mpeg2video");
         opt_codec("c:a", "ac3");
-        opt_format("f", "dvd");
+        parse_option(o, "f", "dvd", options);
 
         opt_frame_size("vcodec", norm == PAL ? "720x576" : "720x480");
         opt_frame_rate("r", frame_rates[norm]);
@@ -4079,7 +4066,7 @@ static int opt_target(const char *opt, const char *arg)
 
     } else if(!strncmp(arg, "dv", 2)) {
 
-        opt_format("f", "dv");
+        parse_option(o, "f", "dv", options);
 
         opt_frame_size("s", norm == PAL ? "720x576" : "720x480");
         opt_frame_pix_fmt("pix_fmt", !strncmp(arg, "dv50", 4) ? "yuv422p" :
@@ -4149,22 +4136,23 @@ static int opt_passlogfile(const char *opt, const char *arg)
 #endif
 }
 
+#define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
 #include "cmdutils_common_opts.h"
-    { "f", HAS_ARG, {(void*)opt_format}, "force format", "fmt" },
-    { "i", HAS_ARG, {(void*)opt_input_file}, "input file name", "filename" },
+    { "f", HAS_ARG | OPT_STRING | OPT_OFFSET, {.off = OFFSET(format)}, "force format", "fmt" },
+    { "i", HAS_ARG | OPT_FUNC2, {(void*)opt_input_file}, "input file name", "filename" },
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "c", HAS_ARG, {(void*)opt_codec}, "codec name", "codec" },
     { "codec", HAS_ARG, {(void*)opt_codec}, "codec name", "codec" },
-    { "map", HAS_ARG | OPT_EXPERT, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
+    { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
     { "map_metadata", HAS_ARG | OPT_EXPERT, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&chapters_input_file},  "set chapters mapping", "input_file_index" },
-    { "t", HAS_ARG, {(void*)opt_recording_time}, "record or transcode \"duration\" seconds of audio/video", "duration" },
-    { "fs", HAS_ARG | OPT_INT64, {(void*)&limit_filesize}, "set the limit file size in bytes", "limit_size" }, //
-    { "ss", HAS_ARG, {(void*)opt_start_time}, "set the start time offset", "time_off" },
-    { "itsoffset", HAS_ARG, {(void*)opt_input_ts_offset}, "set the input ts offset", "time_off" },
+    { "t", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(recording_time)}, "record or transcode \"duration\" seconds of audio/video", "duration" },
+    { "fs", HAS_ARG | OPT_INT64 | OPT_OFFSET, {.off = OFFSET(limit_filesize)}, "set the limit file size in bytes", "limit_size" }, //
+    { "ss", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(start_time)}, "set the start time offset", "time_off" },
+    { "itsoffset", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(input_ts_offset)}, "set the input ts offset", "time_off" },
     { "itsscale", HAS_ARG, {(void*)opt_input_ts_scale}, "set the input ts scale", "scale" },
     { "metadata", HAS_ARG, {(void*)opt_metadata}, "add metadata", "string=string" },
     { "dframes", OPT_INT | HAS_ARG, {(void*)&max_frames[AVMEDIA_TYPE_DATA]}, "set the number of data frames to record", "number" },
@@ -4177,7 +4165,7 @@ static const OptionDef options[] = {
       "when dumping packets, also dump the payload" },
     { "re", OPT_BOOL | OPT_EXPERT, {(void*)&rate_emu}, "read input at native frame rate", "" },
     { "v", HAS_ARG, {(void*)opt_verbose}, "set the verbosity level", "number" },
-    { "target", HAS_ARG, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
+    { "target", HAS_ARG | OPT_FUNC2, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
@@ -4263,7 +4251,10 @@ static const OptionDef options[] = {
 
 int main(int argc, char **argv)
 {
+    OptionsContext o = { 0 };
     int64_t ti;
+
+    reset_options(&o);
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
@@ -4289,13 +4280,11 @@ int main(int argc, char **argv)
         avio_set_interrupt_cb(decode_interrupt_cb);
 #endif
 
-    init_opts();
-
     if(verbose>=0)
         show_banner();
 
     /* parse options */
-    parse_options(argc, argv, options, opt_output_file);
+    parse_options(&o, argc, argv, options, opt_output_file);
 
     if(nb_output_files <= 0 && nb_input_files == 0) {
         show_usage();
@@ -4323,5 +4312,6 @@ int main(int argc, char **argv)
         printf("bench: utime=%0.3fs maxrss=%ikB\n", ti / 1000000.0, maxrss);
     }
 
-    return exit_program(0);
+    exit_program(0);
+    return 0;
 }
