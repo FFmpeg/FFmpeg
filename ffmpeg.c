@@ -356,9 +356,10 @@ typedef struct OptionsContext {
     uint64_t limit_filesize;
 } OptionsContext;
 
-static void reset_options(OptionsContext *o)
+static void reset_options(OptionsContext *o, int is_input)
 {
     const OptionDef *po = options;
+    OptionsContext bak= *o;
 
     /* all OPT_SPEC and OPT_STRING can be freed in generic way */
     while (po->name) {
@@ -383,8 +384,9 @@ static void reset_options(OptionsContext *o)
 
     memset(o, 0, sizeof(*o));
 
-    o->recording_time = INT64_MAX;
     o->limit_filesize = UINT64_MAX;
+    if(is_input) o->recording_time = bak.recording_time;
+    else         o->recording_time = INT64_MAX;
 
     uninit_opts();
     init_opts();
@@ -3297,7 +3299,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     av_freep(&opts);
     av_dict_free(&codec_names);
 
-    reset_options(o);
+    reset_options(o, 1);
     return 0;
 }
 
@@ -3920,7 +3922,7 @@ static void opt_output_file(void *optctx, const char *filename)
     av_dict_free(&codec_names);
 
     av_freep(&forced_key_frames);
-    reset_options(o);
+    reset_options(o, 0);
 }
 
 /* same option as mencoder */
@@ -4456,7 +4458,7 @@ int main(int argc, char **argv)
     OptionsContext o = { 0 };
     int64_t ti;
 
-    reset_options(&o);
+    reset_options(&o, 0);
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
 
