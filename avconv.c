@@ -3571,14 +3571,14 @@ static void opt_output_file(void *optctx, const char *filename)
                 av_log(NULL, AV_LOG_ERROR, "Invalid stream index %d in metadata specifier.\n", index);
                 exit_program(1);
             }
-            m = &oc->streams[i]->metadata;
+            m = &oc->streams[index]->metadata;
             break;
         case 'c':
             if (index < 0 || index >= oc->nb_chapters) {
                 av_log(NULL, AV_LOG_ERROR, "Invalid chapter index %d in metadata specifier.\n", index);
                 exit_program(1);
             }
-            m = &oc->chapters[i]->metadata;
+            m = &oc->chapters[index]->metadata;
             break;
         default:
             av_log(NULL, AV_LOG_ERROR, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
