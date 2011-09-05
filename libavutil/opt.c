@@ -60,7 +60,7 @@ static int av_set_number2(void *obj, const char *name, double num, int den, int6
     void *dst;
     if (o_out)
         *o_out= o;
-    if (!o || o->offset<=0)
+    if (!o)
         return AVERROR_OPTION_NOT_FOUND;
 
     if (o->max*den < num*intnum || o->min*den > num*intnum) {
@@ -124,7 +124,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
         *o_out = o;
     if (!o)
         return AVERROR_OPTION_NOT_FOUND;
-    if (!val || o->offset<=0)
+    if (!val)
         return AVERROR(EINVAL);
 
     if (o->type == FF_OPT_TYPE_BINARY) {
@@ -234,7 +234,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     void *dst;
     uint8_t *bin;
     int len, i;
-    if (!o || o->offset<=0)
+    if (!o)
         return NULL;
     if (o->type != FF_OPT_TYPE_STRING && (!buf || !buf_len))
         return NULL;
@@ -265,7 +265,7 @@ static int get_number(void *obj, const char *name, const AVOption **o_out, doubl
 {
     const AVOption *o = av_opt_find(obj, name, NULL, 0, 0);
     void *dst;
-    if (!o || o->offset<=0)
+    if (!o)
         goto error;
 
     dst= ((uint8_t*)obj) + o->offset;
