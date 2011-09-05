@@ -3723,7 +3723,7 @@ static void opt_output_file(void *optctx, const char *filename)
         }
 
         /* subtitles: pick first */
-        if (!subtitle_disable && oc->oformat->subtitle_codec != CODEC_ID_NONE) {
+        if (!subtitle_disable && (oc->oformat->subtitle_codec != CODEC_ID_NONE || subtitle_codec_name)) {
             for (i = 0; i < nb_input_streams; i++)
                 if (input_streams[i].st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                     NEW_STREAM(subtitle, i);
