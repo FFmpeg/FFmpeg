@@ -800,7 +800,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         s->samples = AV_RL32(buf); buf += 4;
         if(!s->samples){
             *data_size = 0;
-            return buf_size;
+            return 0;
         }
     }else{
         s->samples = wc->samples;
