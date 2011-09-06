@@ -882,7 +882,8 @@ static int mjpeg_decode_scan(MJpegDecodeContext *s, int nb_components, int Ah, i
             }
 
             if (s->restart_interval) --s->restart_count;
-            if (s->restart_interval && show_bits(&s->gb, 8) == 0xFF){ /* skip RSTn */
+            i= 8+((-get_bits_count(&s->gb))&7);
+            if (s->restart_interval && show_bits(&s->gb, i)  == (1<<i)-1){ /* skip RSTn */
                 int pos= get_bits_count(&s->gb);
                 align_get_bits(&s->gb);
                 while(show_bits(&s->gb, 8) == 0xFF)
