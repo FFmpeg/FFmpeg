@@ -3230,28 +3230,32 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
 
     for(i=0; i < s->nb_streams; i++) {
         if (s->streams[i]->last_in_packet_buffer) {
-            int64_t delta_dts =
-                av_rescale_q(s->streams[i]->last_in_packet_buffer->pkt.dts,
-                             s->streams[i]->time_base,
-                             AV_TIME_BASE_Q) -
-                av_rescale_q(s->packet_buffer->pkt.dts,
-                             s->streams[s->packet_buffer->pkt.stream_index]->time_base,
-                             AV_TIME_BASE_Q);
-            delta_dts_min = FFMIN(delta_dts_min, delta_dts);
             ++stream_count;
-        } else {
-            if(s->streams[i]->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
-                ++noninterleaved_count;
+        } else if(s->streams[i]->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            ++noninterleaved_count;
         }
     }
 
     if (s->nb_streams == stream_count) {
         flush = 1;
-    } else if (!flush &&
-             s->nb_streams == stream_count+noninterleaved_count &&
-             delta_dts_min > 20*AV_TIME_BASE) {
-        av_log(s, AV_LOG_DEBUG, "flushing with %d noninterleaved\n", noninterleaved_count);
-        flush = 1;
+    } else if (!flush){
+        for(i=0; i < s->nb_streams; i++) {
+            if (s->streams[i]->last_in_packet_buffer) {
+                int64_t delta_dts =
+                    av_rescale_q(s->streams[i]->last_in_packet_buffer->pkt.dts,
+                                s->streams[i]->time_base,
+                                AV_TIME_BASE_Q) -
+                    av_rescale_q(s->packet_buffer->pkt.dts,
+                                s->streams[s->packet_buffer->pkt.stream_index]->time_base,
+                                AV_TIME_BASE_Q);
+                delta_dts_min = FFMIN(delta_dts_min, delta_dts);
+            }
+        }
+        if(s->nb_streams == stream_count+noninterleaved_count &&
+           delta_dts_min > 20*AV_TIME_BASE) {
+            av_log(s, AV_LOG_DEBUG, "flushing with %d noninterleaved\n", noninterleaved_count);
+            flush = 1;
+        }
     }
     if(stream_count && flush){
         pktl= s->packet_buffer;
