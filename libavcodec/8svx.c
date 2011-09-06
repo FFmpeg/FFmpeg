@@ -83,8 +83,11 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
         buf += 2;
     }
 
-    if (*data_size < buf_size * 2)
+    if (*data_size < buf_size * 2) {
+        av_log(avctx, AV_LOG_ERROR, "Provided buffer with size %d is too small.\n",
+               *data_size);
         return AVERROR(EINVAL);
+    }
 
     delta_decode(out_data, buf, buf_size, &esc->fib_acc, esc->table);
 
