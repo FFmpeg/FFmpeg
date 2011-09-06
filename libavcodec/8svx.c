@@ -74,6 +74,10 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     int consumed = buf_size;
 
     if(avctx->frame_number == 0) {
+        if (buf_size < 2) {
+            av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
+            return AVERROR(EINVAL);
+        }
         esc->fib_acc = (int8_t)buf[1] + 128;
         buf_size -= 2;
         buf += 2;
