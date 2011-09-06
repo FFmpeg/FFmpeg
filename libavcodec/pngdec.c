@@ -317,6 +317,7 @@ static void png_handle_row(PNGDecContext *s)
             }
             s->y++;
             if (s->y == s->height) {
+                memset(s->last_row, 0, s->row_size);
                 for(;;) {
                     if (s->pass == NB_PASSES - 1) {
                         s->state |= PNG_ALLIMAGE;
