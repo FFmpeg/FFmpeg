@@ -1816,20 +1816,9 @@ static int dca_decode_frame(AVCodecContext * avctx,
         return -1;
     }
 
-
-    /* There is nothing that prevents a dts frame to change channel configuration
-       but FFmpeg doesn't support that so only set the channels if it is previously
-       unset. Ideally during the first probe for channels the crc should be checked
-       and only set avctx->channels when the crc is ok. Right now the decoder could
-       set the channels based on a broken first frame.*/
-    if (s->is_channels_set == 0) {
-        s->is_channels_set = 1;
-        avctx->channels = channels;
-    }
     if (avctx->channels != channels) {
-        av_log(avctx, AV_LOG_ERROR, "DCA decoder does not support number of "
-               "channels changing in stream. Skipping frame.\n");
-        return -1;
+        av_log(avctx, AV_LOG_INFO, "Number of channels changed in DCA decoder (%d -> %d)\n", avctx->channels, channels);
+        avctx->channels = channels;
     }
 
     out_size = 256 / 8 * s->sample_blocks * channels *
