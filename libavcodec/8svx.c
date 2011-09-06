@@ -41,6 +41,28 @@ static const int16_t fibonacci[16]   = { -34<<8, -21<<8, -13<<8,  -8<<8, -5<<8, 
 static const int16_t exponential[16] = { -128<<8, -64<<8, -32<<8, -16<<8, -8<<8, -4<<8, -2<<8, -1<<8,
                                           0, 1<<8, 2<<8, 4<<8, 8<<8, 16<<8, 32<<8, 64<<8 };
 
+/**
+ * Delta decode the compressed values in src, and put the resulting
+ * decoded samples in dst.
+ *
+ * @param[in,out] state starting value. it is saved for use in the next call.
+ */
+static void delta_decode(int16_t *dst, const uint8_t *src, int src_size,
+                         int16_t *state, const int16_t *table)
+{
+    int val = *state;
+
+    while (src_size--) {
+        uint8_t d = *src++;
+        val = av_clip_int16(val + table[d & 0xF]);
+        *dst++ = val;
+        val = av_clip_int16(val + table[d >> 4]);
+        *dst++ = val;
+    }
+
+    *state = val;
+}
+
 /** decode a frame */
 static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                  AVPacket *avpkt)
@@ -63,13 +85,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
 
     *data_size = buf_size << 2;
 
-    while(buf < buf_end) {
-        uint8_t d = *buf++;
-        esc->fib_acc += esc->table[d & 0x0f];
-        *out_data++ = esc->fib_acc;
-        esc->fib_acc += esc->table[d >> 4];
-        *out_data++ = esc->fib_acc;
-    }
+    delta_decode(out_data, buf, buf_size, &esc->fib_acc, esc->table);
 
     return consumed;
 }
