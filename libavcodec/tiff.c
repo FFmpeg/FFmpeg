@@ -294,8 +294,8 @@ static int init_image(TiffContext *s)
         } else {
             /* make default grayscale pal */
             pal = (uint32_t *) s->picture.data[1];
-            for (i = 0; i < 256; i++)
-                pal[i] = i * 0x010101;
+            for (i = 0; i < 1<<s->bpp; i++)
+                pal[i] = i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
     }
     return 0;
@@ -615,7 +615,7 @@ static int decode_frame(AVCodecContext *avctx,
         src = s->picture.data[0];
         for(j = 0; j < s->height; j++){
             for(i = 0; i < s->picture.linesize[0]; i++)
-                src[i] = 255 - src[i];
+                src[i] = (s->avctx->pix_fmt == PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - src[i];
             src += s->picture.linesize[0];
         }
     }
