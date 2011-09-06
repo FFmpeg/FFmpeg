@@ -27,7 +27,7 @@
 #include "png.h"
 
 /* TODO:
- * - add 2 and 16 bit depth support
+ * - add 16 bit depth support
  */
 
 #include <zlib.h>
