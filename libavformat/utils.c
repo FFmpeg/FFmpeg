@@ -3237,8 +3237,7 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
                 av_rescale_q(s->packet_buffer->pkt.dts,
                              s->streams[s->packet_buffer->pkt.stream_index]->time_base,
                              AV_TIME_BASE_Q);
-            if (delta_dts < delta_dts_min)
-                delta_dts_min = delta_dts;
+            delta_dts_min = FFMIN(delta_dts_min, delta_dts);
             ++stream_count;
         } else {
             if(s->streams[i]->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
