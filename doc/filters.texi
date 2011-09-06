@@ -360,7 +360,7 @@ considered black, and defaults to 32.
 Apply boxblur algorithm to the input video.
 
 This filter accepts the parameters:
-@var{luma_power}:@var{luma_radius}:@var{chroma_radius}:@var{chroma_power}:@var{alpha_radius}:@var{alpha_power}
+@var{luma_radius}:@var{luma_power}:@var{chroma_radius}:@var{chroma_power}:@var{alpha_radius}:@var{alpha_power}
 
 Chroma and alpha parameters are optional, if not specified they default
 to the corresponding values set for @var{luma_radius} and
