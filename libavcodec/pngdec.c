@@ -57,14 +57,12 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
     dsp_mask = png_pass_dsp_mask[pass];
     switch(bits_per_pixel) {
     case 1:
-        /* we must initialize the line to zero before writing to it */
-        if (pass == 0)
-            memset(dst, 0, (width + 7) >> 3);
         src_x = 0;
         for(x = 0; x < width; x++) {
             j = (x & 7);
             if ((dsp_mask << j) & 0x80) {
                 b = (src[src_x >> 3] >> (7 - (src_x & 7))) & 1;
+                dst[x >> 3] &= 0xFF7F>>j;
                 dst[x >> 3] |= b << (7 - j);
             }
             if ((mask << j) & 0x80)
