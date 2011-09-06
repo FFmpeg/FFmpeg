@@ -52,7 +52,7 @@
 # include "libavfilter/avcodec.h"
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
-# include "libavfilter/vsink_buffer.h"
+# include "libavfilter/buffersink.h"
 # include "libavfilter/vsrc_buffer.h"
 #endif
 

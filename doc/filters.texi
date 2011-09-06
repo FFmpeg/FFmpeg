@@ -310,7 +310,7 @@ Below is a description of the currently available audio sinks.
 Buffer audio frames, and make them available to the end of filter chain.
 
 This sink is mainly intended for programmatic use, in particular
-through the interface defined in @file{libavfilter/vsink_buffer.h}.
+through the interface defined in @file{libavfilter/buffersink.h}.
 
 It requires a pointer to an AVABufferSinkContext structure, which
 defines the incoming buffers' formats, to be passed as the opaque
@@ -2408,7 +2408,7 @@ Buffer video frames, and make them available to the end of the filter
 graph.
 
 This sink is mainly intended for a programmatic use, in particular
-through the interface defined in @file{libavfilter/vsink_buffer.h}.
+through the interface defined in @file{libavfilter/buffersink.h}.
 
 It does not require a string parameter in input, but you need to
 specify a pointer to a list of supported pixel formats terminated by

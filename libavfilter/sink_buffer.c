@@ -25,7 +25,7 @@
 
 #include "libavutil/fifo.h"
 #include "avfilter.h"
-#include "vsink_buffer.h"
+#include "buffersink.h"
 
 AVBufferSinkParams *av_buffersink_params_alloc(void)
 {
