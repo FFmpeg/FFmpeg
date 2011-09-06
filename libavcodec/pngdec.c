@@ -69,6 +69,20 @@ static void png_put_interlaced_row(uint8_t *dst, int width,
                 src_x++;
         }
         break;
+    case 2:
+        src_x = 0;
+        for(x = 0; x < width; x++) {
+            int j2 = 2*(x&3);
+            j = (x & 7);
+            if ((dsp_mask << j) & 0x80) {
+                b = (src[src_x >> 2] >> (6 - 2*(src_x & 3))) & 3;
+                dst[x >> 2] &= 0xFF3F>>j2;
+                dst[x >> 2] |= b << (6 - j2);
+            }
+            if ((mask << j) & 0x80)
+                src_x++;
+        }
+        break;
     default:
         bpp = bits_per_pixel >> 3;
         d = dst;
