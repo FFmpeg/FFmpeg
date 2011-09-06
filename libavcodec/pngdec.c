@@ -27,7 +27,7 @@
 #include "png.h"
 
 /* TODO:
- * - add 2, 4 and 16 bit depth support
+ * - add 2 and 16 bit depth support
  */
 
 #include <zlib.h>
@@ -580,6 +580,19 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
  exit_loop:
+
+    if(s->bits_per_pixel == 4){
+        int i, j;
+        uint8_t *pd = s->current_picture->data[0];
+        for(j=0; j < s->height; j++) {
+            for(i=s->width/2-1; i>=0; i--) {
+                pd[2*i+1]= pd[i]&15;
+                pd[2*i+0]= pd[i]>>4;
+            }
+            pd += s->image_linesize;
+        }
+    }
+
      /* handle p-frames only if a predecessor frame is available */
      if(s->last_picture->data[0] != NULL) {
          if(!(avpkt->flags & AV_PKT_FLAG_KEY)) {
