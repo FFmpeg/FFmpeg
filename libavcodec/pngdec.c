@@ -579,6 +579,19 @@ static int decode_frame(AVCodecContext *avctx,
     }
  exit_loop:
 
+    if(s->bits_per_pixel == 2){
+        int i, j;
+        uint8_t *pd = s->current_picture->data[0];
+        for(j=0; j < s->height; j++) {
+            for(i=s->width/4-1; i>=0; i--) {
+                pd[4*i+3]=  pd[i]    &3;
+                pd[4*i+2]= (pd[i]>>2)&3;
+                pd[4*i+1]= (pd[i]>>4)&3;
+                pd[4*i+0]=  pd[i]>>6;
+            }
+            pd += s->image_linesize;
+        }
+    }
     if(s->bits_per_pixel == 4){
         int i, j;
         uint8_t *pd = s->current_picture->data[0];
