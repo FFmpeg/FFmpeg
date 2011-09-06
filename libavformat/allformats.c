@@ -113,6 +113,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (IV8, iv8);
     REGISTER_MUXDEMUX (IVF, ivf);
     REGISTER_DEMUXER  (JV, jv);
+    REGISTER_MUXER    (LATM, latm);
     REGISTER_DEMUXER  (LMLM4, lmlm4);
     REGISTER_DEMUXER  (LXF, lxf);
     REGISTER_MUXDEMUX (M4V, m4v);
