@@ -2481,12 +2481,14 @@ typedef struct AVCodecContext {
      */
     int chromaoffset;
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * Influences how often B-frames are used.
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int bframebias;
+    attribute_deprecated int bframebias;
+#endif
 
     /**
      * trellis RD quantization
@@ -2495,12 +2497,13 @@ typedef struct AVCodecContext {
      */
     int trellis;
 
+#if FF_API_X264_GLOBAL_OPTS
     /**
      * Reduce fluctuations in qp (before curve compression).
      * - encoding: Set by user.
      * - decoding: unused
      */
-    float complexityblur;
+    attribute_deprecated float complexityblur;
 
     /**
      * in-loop deblocking filter alphac0 parameter
@@ -2508,7 +2511,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int deblockalpha;
+    attribute_deprecated int deblockalpha;
 
     /**
      * in-loop deblocking filter beta parameter
@@ -2516,7 +2519,8 @@ typedef struct AVCodecContext {
      * - encoding: Set by user.
      * - decoding: unused
      */
-    int deblockbeta;
+    attribute_deprecated int deblockbeta;
+#endif
 
     /**
      * macroblock subpartition sizes to consider - p8x8, p4x4, b8x8, i8x8, i4x4

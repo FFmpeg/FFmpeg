@@ -147,11 +147,11 @@ static const AVOption options[]={
 {"frame_number", NULL, OFFSET(frame_number), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"delay", NULL, OFFSET(delay), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"qcomp", "video quantizer scale compression (VBR)", OFFSET(qcompress), FF_OPT_TYPE_FLOAT, {.dbl = 0.5 }, -FLT_MAX, FLT_MAX, V|E},
-{"qblur", "video quantizer scale blur (VBR)", OFFSET(qblur), FF_OPT_TYPE_FLOAT, {.dbl = 0.5 }, 0, FLT_MAX, V|E},
-{"qmin", "min video quantizer scale (VBR)", OFFSET(qmin), FF_OPT_TYPE_INT, {.dbl = 2 }, 0, 69, V|E},
-{"qmax", "max video quantizer scale (VBR)", OFFSET(qmax), FF_OPT_TYPE_INT, {.dbl = 31 }, 0, 69, V|E},
+{"qblur", "video quantizer scale blur (VBR)", OFFSET(qblur), FF_OPT_TYPE_FLOAT, {.dbl = 0.5 }, -1, FLT_MAX, V|E},
+{"qmin", "min video quantizer scale (VBR)", OFFSET(qmin), FF_OPT_TYPE_INT, {.dbl = 2 }, -1, 69, V|E},
+{"qmax", "max video quantizer scale (VBR)", OFFSET(qmax), FF_OPT_TYPE_INT, {.dbl = 31 }, -1, 69, V|E},
 {"qdiff", "max difference between the quantizer scale (VBR)", OFFSET(max_qdiff), FF_OPT_TYPE_INT, {.dbl = 3 }, INT_MIN, INT_MAX, V|E},
-{"bf", "use 'frames' B frames", OFFSET(max_b_frames), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, FF_MAX_B_FRAMES, V|E},
+{"bf", "use 'frames' B frames", OFFSET(max_b_frames), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -1, FF_MAX_B_FRAMES, V|E},
 {"b_qfactor", "qp factor between p and b frames", OFFSET(b_quant_factor), FF_OPT_TYPE_FLOAT, {.dbl = 1.25 }, -FLT_MAX, FLT_MAX, V|E},
 {"rc_strategy", "ratecontrol method", OFFSET(rc_strategy), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"b_strategy", "strategy to choose between I/P/B-frames", OFFSET(b_frame_strategy), FF_OPT_TYPE_INT, {.dbl = 0 }, INT_MIN, INT_MAX, V|E},
@@ -398,7 +398,9 @@ static const AVOption options[]={
 {"keyint_min", "minimum interval between IDR-frames", OFFSET(keyint_min), FF_OPT_TYPE_INT, {.dbl = 25 }, INT_MIN, INT_MAX, V|E},
 {"refs", "reference frames to consider for motion compensation", OFFSET(refs), FF_OPT_TYPE_INT, {.dbl = 1 }, INT_MIN, INT_MAX, V|E},
 {"chromaoffset", "chroma qp offset from luma", OFFSET(chromaoffset), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
 {"bframebias", "influences how often B-frames are used", OFFSET(bframebias), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
+#endif
 {"trellis", "rate-distortion optimal quantization", OFFSET(trellis), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"directpred", "direct mv prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)", OFFSET(directpred), FF_OPT_TYPE_INT, {.dbl = 2 }, INT_MIN, INT_MAX, V|E},
 #if FF_API_X264_GLOBAL_OPTS
@@ -410,9 +412,11 @@ static const AVOption options[]={
 {"aud", "access unit delimiters (H.264)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_AUD }, INT_MIN, INT_MAX, V|E, "flags2"},
 #endif
 {"skiprd", "RD optimal MB level residual skipping", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SKIP_RD }, INT_MIN, INT_MAX, V|E, "flags2"},
-{"complexityblur", "reduce fluctuations in qp (before curve compression)", OFFSET(complexityblur), FF_OPT_TYPE_FLOAT, {.dbl = 20.0 }, FLT_MIN, FLT_MAX, V|E},
+#if FF_API_X264_GLOBAL_OPTS
+{"complexityblur", "reduce fluctuations in qp (before curve compression)", OFFSET(complexityblur), FF_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, V|E},
 {"deblockalpha", "in-loop deblocking filter alphac0 parameter", OFFSET(deblockalpha), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
 {"deblockbeta", "in-loop deblocking filter beta parameter", OFFSET(deblockbeta), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
+#endif
 {"partitions", "macroblock subpartition sizes to consider", OFFSET(partitions), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti4x4", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
