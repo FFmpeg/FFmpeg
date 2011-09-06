@@ -382,7 +382,7 @@ uint64_t time= rdtsc();
 
 
 retry:
-    if(s->divx_packed && s->xvid_build>=0 && s->bitstream_buffer_size){
+    if(s->divx_packed && s->bitstream_buffer_size){
         int i;
         for(i=0; i<buf_size-3; i++){
             if(buf[i]==0 && buf[i+1]==0 && buf[i+2]==1){
