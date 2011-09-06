@@ -198,6 +198,18 @@ AVInputFormat ff_gsm_demuxer = {
 };
 #endif
 
+#if CONFIG_LATM_DEMUXER
+AVInputFormat ff_latm_demuxer = {
+    .name           = "latm",
+    .long_name      = NULL_IF_CONFIG_SMALL("raw LOAS/LATM"),
+    .read_header    = ff_raw_audio_read_header,
+    .read_packet    = ff_raw_read_partial_packet,
+    .flags= AVFMT_GENERIC_INDEX,
+    .extensions = "latm",
+    .value = CODEC_ID_AAC_LATM,
+};
+#endif
+
 #if CONFIG_MJPEG_DEMUXER
 FF_DEF_RAWVIDEO_DEMUXER(mjpeg, "raw MJPEG video", NULL, "mjpg,mjpeg", CODEC_ID_MJPEG)
 #endif
