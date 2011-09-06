@@ -261,7 +261,7 @@ const AVCodecTag codec_movaudio_tags[] = {
     { CODEC_ID_GSM,  MKTAG('a', 'g', 's', 'm') },
     { CODEC_ID_ALAC, MKTAG('a', 'l', 'a', 'c') }, /* Apple Lossless */
 
-    { CODEC_ID_NELLYMOSER, MKTAG('n', 'm', 'o', 's') },
+    { CODEC_ID_NELLYMOSER, MKTAG('n', 'm', 'o', 's') }, /* Flash Media Server */
 
     { CODEC_ID_QCELP, MKTAG('Q','c','l','p') },
     { CODEC_ID_QCELP, MKTAG('Q','c','l','q') },
@@ -269,6 +269,8 @@ const AVCodecTag codec_movaudio_tags[] = {
 
     { CODEC_ID_QDMC, MKTAG('Q', 'D', 'M', 'C') }, /* QDMC */
     { CODEC_ID_QDM2, MKTAG('Q', 'D', 'M', '2') }, /* QDM2 */
+
+    { CODEC_ID_SPEEX, MKTAG('s','p','e','x') }, /* Flash Media Server */
 
     { CODEC_ID_DVAUDIO, MKTAG('v', 'd', 'v', 'a') },
     { CODEC_ID_DVAUDIO, MKTAG('d', 'v', 'c', 'a') },
