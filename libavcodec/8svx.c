@@ -32,14 +32,14 @@
 
 /** decoder context */
 typedef struct EightSvxContext {
-    int16_t fib_acc;
-    const int16_t *table;
+    uint8_t fib_acc;
+    const int8_t *table;
 } EightSvxContext;
 
-static const int16_t fibonacci[16]   = { -34<<8, -21<<8, -13<<8,  -8<<8, -5<<8, -3<<8, -2<<8, -1<<8,
-                                          0, 1<<8, 2<<8, 3<<8, 5<<8, 8<<8, 13<<8, 21<<8 };
-static const int16_t exponential[16] = { -128<<8, -64<<8, -32<<8, -16<<8, -8<<8, -4<<8, -2<<8, -1<<8,
-                                          0, 1<<8, 2<<8, 4<<8, 8<<8, 16<<8, 32<<8, 64<<8 };
+static const int8_t fibonacci[16]   = { -34, -21, -13,  -8, -5, -3, -2, -1,
+                                          0,   1,   2,   3,  5,  8, 13, 21 };
+static const int8_t exponential[16] = { -128, -64, -32, -16, -8, -4, -2, -1,
+                                           0,   1,   2,   4,  8, 16, 32, 64 };
 
 /**
  * Delta decode the compressed values in src, and put the resulting
@@ -47,16 +47,16 @@ static const int16_t exponential[16] = { -128<<8, -64<<8, -32<<8, -16<<8, -8<<8,
  *
  * @param[in,out] state starting value. it is saved for use in the next call.
  */
-static void delta_decode(int16_t *dst, const uint8_t *src, int src_size,
-                         int16_t *state, const int16_t *table)
+static void delta_decode(uint8_t *dst, const uint8_t *src, int src_size,
+                         uint8_t *state, const int8_t *table)
 {
-    int val = *state;
+    uint8_t val = *state;
 
     while (src_size--) {
         uint8_t d = *src++;
-        val = av_clip_int16(val + table[d & 0xF]);
+        val = av_clip_uint8(val + table[d & 0xF]);
         *dst++ = val;
-        val = av_clip_int16(val + table[d >> 4]);
+        val = av_clip_uint8(val + table[d >> 4]);
         *dst++ = val;
     }
 
@@ -70,22 +70,21 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     EightSvxContext *esc = avctx->priv_data;
-    int16_t *out_data = data;
+    uint8_t *out_data = data;
     int consumed = buf_size;
-    const uint8_t *buf_end = buf + buf_size;
-
-    if((*data_size >> 2) < buf_size)
-        return -1;
 
     if(avctx->frame_number == 0) {
-        esc->fib_acc = buf[1] << 8;
+        esc->fib_acc = (int8_t)buf[1] + 128;
         buf_size -= 2;
         buf += 2;
     }
 
-    *data_size = buf_size << 2;
+    if (*data_size < buf_size * 2)
+        return AVERROR(EINVAL);
 
     delta_decode(out_data, buf, buf_size, &esc->fib_acc, esc->table);
+
+    *data_size = buf_size * 2;
 
     return consumed;
 }
@@ -105,7 +104,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
         default:
           return -1;
     }
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_U8;
     return 0;
 }
 
