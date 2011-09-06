@@ -16,6 +16,7 @@ PROGS-$(CONFIG_FFPROBE)  += ffprobe
 PROGS-$(CONFIG_FFSERVER) += ffserver
 
 PROGS      := $(PROGS-yes:%=%$(EXESUF))
+INSTPROGS   = $(PROGS-yes:%=%$(PROGSSUF)$(EXESUF))
 OBJS        = $(PROGS-yes:%=%.o) cmdutils.o
 TESTTOOLS   = audiogen videogen rotozoom tiny_psnr base64
 HOSTPROGS  := $(TESTTOOLS:%=tests/%)
@@ -116,7 +117,7 @@ install-progs-$(CONFIG_SHARED): install-libs
 
 install-progs: install-progs-yes $(PROGS)
 	$(Q)mkdir -p "$(BINDIR)"
-	$(INSTALL) -c -m 755 $(PROGS) "$(BINDIR)"
+	$(INSTALL) -c -m 755 $(INSTPROGS) "$(BINDIR)"
 
 install-data: $(DATA_FILES)
 	$(Q)mkdir -p "$(DATADIR)"
