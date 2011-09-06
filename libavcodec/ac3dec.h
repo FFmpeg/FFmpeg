@@ -68,6 +68,7 @@
 typedef struct {
     AVClass        *class;                  ///< class for AVOptions
     AVCodecContext *avctx;                  ///< parent context
+    AVFrame frame;                          ///< AVFrame for decoded output
     GetBitContext gbc;                      ///< bitstream reader
 
 ///@name Bit stream information

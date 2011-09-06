@@ -72,6 +72,7 @@ typedef struct {
  * The atrac1 context, holds all needed parameters for decoding
  */
 typedef struct {
+    AVFrame frame;
     AT1SUCtx            SUs[AT1_MAX_CHANNELS];              ///< channel sound unit
     DECLARE_ALIGNED(32, float, spec)[AT1_SU_SAMPLES];      ///< the mdct spectrum buffer
 
@@ -273,14 +274,14 @@ static void at1_subband_synthesis(AT1Ctx *q, AT1SUCtx* su, float *pOut)
 
 
 static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
-                               int *data_size, AVPacket *avpkt)
+                               int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AT1Ctx *q          = avctx->priv_data;
-    int ch, ret, out_size;
+    int ch, ret;
     GetBitContext gb;
-    float* samples = data;
+    float *samples;
 
 
     if (buf_size < 212 * q->channels) {
@@ -288,12 +289,13 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    out_size = q->channels * AT1_SU_SAMPLES *
-               av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    q->frame.nb_samples = AT1_SU_SAMPLES;
+    if ((ret = avctx->get_buffer(avctx, &q->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (float *)q->frame.data[0];
 
     for (ch = 0; ch < q->channels; ch++) {
         AT1SUCtx* su = &q->SUs[ch];
@@ -321,7 +323,9 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
                                      AT1_SU_SAMPLES, 2);
     }
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = q->frame;
+
     return avctx->block_align;
 }
 
@@ -389,6 +393,9 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     q->SUs[1].spectrum[0] = q->SUs[1].spec1;
     q->SUs[1].spectrum[1] = q->SUs[1].spec2;
 
+    avcodec_get_frame_defaults(&q->frame);
+    avctx->coded_frame = &q->frame;
+
     return 0;
 }
 
@@ -401,5 +408,6 @@ AVCodec ff_atrac1_decoder = {
     .init = atrac1_decode_init,
     .close = atrac1_decode_end,
     .decode = atrac1_decode_frame,
+    .capabilities = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Atrac 1 (Adaptive TRansform Acoustic Coding)"),
 };

@@ -56,6 +56,7 @@ typedef enum
 
 typedef struct
 {
+    AVFrame           avframe;
     GetBitContext     gb;
     qcelp_packet_rate bitrate;
     QCELPFrame        frame;    /**< unpacked data frame */
@@ -96,6 +97,9 @@ static av_cold int qcelp_decode_init(AVCodecContext *avctx)
 
     for(i=0; i<10; i++)
         q->prev_lspf[i] = (i+1)/11.;
+
+    avcodec_get_frame_defaults(&q->avframe);
+    avctx->coded_frame = &q->avframe;
 
     return 0;
 }
@@ -682,23 +686,25 @@ static void postfilter(QCELPContext *q, float *samples, float *lpc)
         160, 0.9375, &q->postfilter_agc_mem);
 }
 
-static int qcelp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                              AVPacket *avpkt)
+static int qcelp_decode_frame(AVCodecContext *avctx, void *data,
+                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     QCELPContext *q = avctx->priv_data;
-    float *outbuffer = data;
-    int   i, out_size;
+    float *outbuffer;
+    int   i, ret;
     float quantized_lspf[10], lpc[10];
     float gain[16];
     float *formant_mem;
 
-    out_size = 160 * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    q->avframe.nb_samples = 160;
+    if ((ret = avctx->get_buffer(avctx, &q->avframe)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    outbuffer = (float *)q->avframe.data[0];
 
     if ((q->bitrate = determine_bitrate(avctx, buf_size, &buf)) == I_F_Q) {
         warn_insufficient_frame_quality(avctx, "bitrate cannot be determined.");
@@ -783,7 +789,8 @@ erasure:
     memcpy(q->prev_lspf, quantized_lspf, sizeof(q->prev_lspf));
     q->prev_bitrate = q->bitrate;
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = q->avframe;
 
     return buf_size;
 }
@@ -795,6 +802,7 @@ AVCodec ff_qcelp_decoder =
     .id     = CODEC_ID_QCELP,
     .init   = qcelp_decode_init,
     .decode = qcelp_decode_frame,
+    .capabilities = CODEC_CAP_DR1,
     .priv_data_size = sizeof(QCELPContext),
     .long_name = NULL_IF_CONFIG_SMALL("QCELP / PureVoice"),
 };

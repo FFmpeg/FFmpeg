@@ -646,6 +646,9 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
 
     cbrt_tableinit();
 
+    avcodec_get_frame_defaults(&ac->frame);
+    avctx->coded_frame = &ac->frame;
+
     return 0;
 }
 
@@ -2113,12 +2116,12 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
 }
 
 static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
-                                int *data_size, GetBitContext *gb)
+                                int *got_frame_ptr, GetBitContext *gb)
 {
     AACContext *ac = avctx->priv_data;
     ChannelElement *che = NULL, *che_prev = NULL;
     enum RawDataBlockType elem_type, elem_type_prev = TYPE_END;
-    int err, elem_id, data_size_tmp;
+    int err, elem_id;
     int samples = 0, multiplier, audio_found = 0;
 
     if (show_bits(gb, 12) == 0xfff) {
@@ -2222,24 +2225,26 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         avctx->frame_size = samples;
     }
 
-    data_size_tmp = samples * avctx->channels *
-                    av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < data_size_tmp) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Output buffer too small (%d) or trying to output too many samples (%d) for this frame.\n",
-               *data_size, data_size_tmp);
-        return -1;
-    }
-    *data_size = data_size_tmp;
-
     if (samples) {
+        /* get output buffer */
+        ac->frame.nb_samples = samples;
+        if ((err = avctx->get_buffer(avctx, &ac->frame)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return err;
+        }
+
         if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT)
-            ac->fmt_conv.float_interleave(data, (const float **)ac->output_data,
+            ac->fmt_conv.float_interleave((float *)ac->frame.data[0],
+                                          (const float **)ac->output_data,
                                           samples, avctx->channels);
         else
-            ac->fmt_conv.float_to_int16_interleave(data, (const float **)ac->output_data,
+            ac->fmt_conv.float_to_int16_interleave((int16_t *)ac->frame.data[0],
+                                                   (const float **)ac->output_data,
                                                    samples, avctx->channels);
+
+        *(AVFrame *)data = ac->frame;
     }
+    *got_frame_ptr = !!samples;
 
     if (ac->output_configured && audio_found)
         ac->output_configured = OC_LOCKED;
@@ -2248,7 +2253,7 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 }
 
 static int aac_decode_frame(AVCodecContext *avctx, void *data,
-                            int *data_size, AVPacket *avpkt)
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -2259,7 +2264,7 @@ static int aac_decode_frame(AVCodecContext *avctx, void *data,
 
     init_get_bits(&gb, buf, buf_size * 8);
 
-    if ((err = aac_decode_frame_int(avctx, data, data_size, &gb)) < 0)
+    if ((err = aac_decode_frame_int(avctx, data, got_frame_ptr, &gb)) < 0)
         return err;
 
     buf_consumed = (get_bits_count(&gb) + 7) >> 3;
@@ -2481,8 +2486,8 @@ static int read_audio_mux_element(struct LATMContext *latmctx,
 }
 
 
-static int latm_decode_frame(AVCodecContext *avctx, void *out, int *out_size,
-                             AVPacket *avpkt)
+static int latm_decode_frame(AVCodecContext *avctx, void *out,
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
     struct LATMContext *latmctx = avctx->priv_data;
     int                 muxlength, err;
@@ -2504,7 +2509,7 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out, int *out_size,
 
     if (!latmctx->initialized) {
         if (!avctx->extradata) {
-            *out_size = 0;
+            *got_frame_ptr = 0;
             return avpkt->size;
         } else {
             if ((err = decode_audio_specific_config(
@@ -2522,7 +2527,7 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out, int *out_size,
         return AVERROR_INVALIDDATA;
     }
 
-    if ((err = aac_decode_frame_int(avctx, out, out_size, &gb)) < 0)
+    if ((err = aac_decode_frame_int(avctx, out, got_frame_ptr, &gb)) < 0)
         return err;
 
     return muxlength;
@@ -2552,7 +2557,7 @@ AVCodec ff_aac_decoder = {
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
-    .capabilities = CODEC_CAP_CHANNEL_CONF,
+    .capabilities = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
 };
 
@@ -2573,6 +2578,6 @@ AVCodec ff_aac_latm_decoder = {
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
-    .capabilities = CODEC_CAP_CHANNEL_CONF,
+    .capabilities = CODEC_CAP_CHANNEL_CONF | CODEC_CAP_DR1,
     .channel_layouts = aac_channel_layout,
 };

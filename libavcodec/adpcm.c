@@ -84,6 +84,7 @@ static const int swf_index_tables[4][16] = {
 /* end of tables */
 
 typedef struct ADPCMDecodeContext {
+    AVFrame frame;
     ADPCMChannelStatus status[6];
 } ADPCMDecodeContext;
 
@@ -124,6 +125,10 @@ static av_cold int adpcm_decode_init(AVCodecContext * avctx)
         break;
     }
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
+    avcodec_get_frame_defaults(&c->frame);
+    avctx->coded_frame = &c->frame;
+
     return 0;
 }
 
@@ -501,9 +506,8 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
         decode_top_nibble_next = 1; \
     }
 
-static int adpcm_decode_frame(AVCodecContext *avctx,
-                            void *data, int *data_size,
-                            AVPacket *avpkt)
+static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
+                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -514,7 +518,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     const uint8_t *src;
     int st; /* stereo */
     int count1, count2;
-    int nb_samples, coded_samples, out_bps, out_size;
+    int nb_samples, coded_samples, ret;
 
     nb_samples = get_nb_samples(avctx, buf, buf_size, &coded_samples);
     if (nb_samples <= 0) {
@@ -522,22 +526,22 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    out_bps  = av_get_bytes_per_sample(avctx->sample_fmt);
-    out_size = nb_samples * avctx->channels * out_bps;
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    c->frame.nb_samples = nb_samples;
+    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (short *)c->frame.data[0];
+
     /* use coded_samples when applicable */
     /* it is always <= nb_samples, so the output buffer will be large enough */
     if (coded_samples) {
         if (coded_samples != nb_samples)
             av_log(avctx, AV_LOG_WARNING, "mismatch in coded sample count\n");
-        nb_samples = coded_samples;
-        out_size = nb_samples * avctx->channels * out_bps;
+        c->frame.nb_samples = nb_samples = coded_samples;
     }
 
-    samples = data;
     src = buf;
 
     st = avctx->channels == 2 ? 1 : 0;
@@ -576,7 +580,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 cs->step_index = 88;
             }
 
-            samples = (short*)data + channel;
+            samples = (short *)c->frame.data[0] + channel;
 
             for (m = 0; m < 32; m++) {
                 *samples = adpcm_ima_qt_expand_nibble(cs, src[0] & 0x0F, 3);
@@ -628,7 +632,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
 
         for (i = 0; i < avctx->channels; i++) {
-            samples = (short*)data + i;
+            samples = (short *)c->frame.data[0] + i;
             cs = &c->status[i];
             for (n = nb_samples >> 1; n > 0; n--, src++) {
                 uint8_t v = *src;
@@ -965,7 +969,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             }
         }
 
-        out_size = count * 28 * avctx->channels * out_bps;
+        c->frame.nb_samples = count * 28;
         src = src_end;
         break;
     }
@@ -1144,7 +1148,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             prev[0][i] = (int16_t)bytestream_get_be16(&src);
 
         for (ch = 0; ch <= st; ch++) {
-            samples = (unsigned short *) data + ch;
+            samples = (short *)c->frame.data[0] + ch;
 
             /* Read in every sample for this channel.  */
             for (i = 0; i < nb_samples / 14; i++) {
@@ -1177,7 +1181,10 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     default:
         return -1;
     }
-    *data_size = out_size;
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = c->frame;
+
     return src - buf;
 }
 
@@ -1190,6 +1197,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .priv_data_size = sizeof(ADPCMDecodeContext),           \
     .init           = adpcm_decode_init,                    \
     .decode         = adpcm_decode_frame,                   \
+    .capabilities   = CODEC_CAP_DR1,                        \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 

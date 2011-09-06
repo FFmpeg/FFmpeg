@@ -251,6 +251,7 @@ typedef struct {
  */
 typedef struct {
     AVCodecContext *avctx;
+    AVFrame frame;
 
     MPEG4AudioConfig m4ac;
 

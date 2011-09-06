@@ -66,6 +66,9 @@ static av_cold int g722_decode_init(AVCodecContext * avctx)
     c->band[1].scale_factor = 2;
     c->prev_samples_pos = 22;
 
+    avcodec_get_frame_defaults(&c->frame);
+    avctx->coded_frame = &c->frame;
+
     return 0;
 }
 
@@ -81,20 +84,22 @@ static const int16_t *low_inv_quants[3] = { ff_g722_low_inv_quant6,
                                             ff_g722_low_inv_quant4 };
 
 static int g722_decode_frame(AVCodecContext *avctx, void *data,
-                             int *data_size, AVPacket *avpkt)
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
     G722Context *c = avctx->priv_data;
-    int16_t *out_buf = data;
-    int j, out_len;
+    int16_t *out_buf;
+    int j, ret;
     const int skip = 8 - avctx->bits_per_coded_sample;
     const int16_t *quantizer_table = low_inv_quants[skip];
     GetBitContext gb;
 
-    out_len = avpkt->size * 2 * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_len) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    c->frame.nb_samples = avpkt->size * 2;
+    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    out_buf = (int16_t *)c->frame.data[0];
 
     init_get_bits(&gb, avpkt->data, avpkt->size * 8);
 
@@ -128,7 +133,10 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
             c->prev_samples_pos = 22;
         }
     }
-    *data_size = out_len;
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = c->frame;
+
     return avpkt->size;
 }
 
@@ -139,5 +147,6 @@ AVCodec ff_adpcm_g722_decoder = {
     .priv_data_size = sizeof(G722Context),
     .init           = g722_decode_init,
     .decode         = g722_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
 };

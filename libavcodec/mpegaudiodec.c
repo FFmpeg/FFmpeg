@@ -79,6 +79,7 @@ typedef struct MPADecodeContext {
     int err_recognition;
     AVCodecContext* avctx;
     MPADSPContext mpadsp;
+    AVFrame frame;
 } MPADecodeContext;
 
 #if CONFIG_FLOAT
@@ -474,6 +475,10 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
     if (avctx->codec_id == CODEC_ID_MP3ADU)
         s->adu_mode = 1;
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
@@ -1695,7 +1700,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
 static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
                            const uint8_t *buf, int buf_size)
 {
-    int i, nb_frames, ch;
+    int i, nb_frames, ch, ret;
     OUT_INT *samples_ptr;
 
     init_get_bits(&s->gb, buf + HEADER_SIZE, (buf_size - HEADER_SIZE) * 8);
@@ -1743,8 +1748,16 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
         assert(i <= buf_size - HEADER_SIZE && i >= 0);
         memcpy(s->last_buf + s->last_buf_size, s->gb.buffer + buf_size - HEADER_SIZE - i, i);
         s->last_buf_size += i;
+    }
 
-        break;
+    /* get output buffer */
+    if (!samples) {
+        s->frame.nb_samples = s->avctx->frame_size;
+        if ((ret = s->avctx->get_buffer(s->avctx, &s->frame)) < 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return ret;
+        }
+        samples = (OUT_INT *)s->frame.data[0];
     }
 
     /* apply the synthesis filter */
@@ -1764,7 +1777,7 @@ static int mp_decode_frame(MPADecodeContext *s, OUT_INT *samples,
     return nb_frames * 32 * sizeof(OUT_INT) * s->nb_channels;
 }
 
-static int decode_frame(AVCodecContext * avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext * avctx, void *data, int *got_frame_ptr,
                         AVPacket *avpkt)
 {
     const uint8_t *buf  = avpkt->data;
@@ -1772,7 +1785,6 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
     int out_size;
-    OUT_INT *out_samples = data;
 
     if (buf_size < HEADER_SIZE)
         return AVERROR_INVALIDDATA;
@@ -1795,10 +1807,6 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         avctx->bit_rate = s->bit_rate;
     avctx->sub_id = s->layer;
 
-    if (*data_size < avctx->frame_size * avctx->channels * sizeof(OUT_INT))
-        return AVERROR(EINVAL);
-    *data_size = 0;
-
     if (s->frame_size <= 0 || s->frame_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
         return AVERROR_INVALIDDATA;
@@ -1807,9 +1815,10 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         buf_size= s->frame_size;
     }
 
-    out_size = mp_decode_frame(s, out_samples, buf, buf_size);
+    out_size = mp_decode_frame(s, NULL, buf, buf_size);
     if (out_size >= 0) {
-        *data_size         = out_size;
+        *got_frame_ptr   = 1;
+        *(AVFrame *)data = s->frame;
         avctx->sample_rate = s->sample_rate;
         //FIXME maybe move the other codec info stuff from above here too
     } else {
@@ -1818,6 +1827,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size,
            If there is more data in the packet, just consume the bad frame
            instead of returning an error, which would discard the whole
            packet. */
+        *got_frame_ptr = 0;
         if (buf_size == avpkt->size)
             return out_size;
     }
@@ -1833,15 +1843,14 @@ static void flush(AVCodecContext *avctx)
 }
 
 #if CONFIG_MP3ADU_DECODER || CONFIG_MP3ADUFLOAT_DECODER
-static int decode_frame_adu(AVCodecContext *avctx, void *data, int *data_size,
-                            AVPacket *avpkt)
+static int decode_frame_adu(AVCodecContext *avctx, void *data,
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf  = avpkt->data;
     int buf_size        = avpkt->size;
     MPADecodeContext *s = avctx->priv_data;
     uint32_t header;
     int len, out_size;
-    OUT_INT *out_samples = data;
 
     len = buf_size;
 
@@ -1871,9 +1880,6 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data, int *data_size,
         avctx->bit_rate = s->bit_rate;
     avctx->sub_id = s->layer;
 
-    if (*data_size < avctx->frame_size * avctx->channels * sizeof(OUT_INT))
-        return AVERROR(EINVAL);
-
     s->frame_size = len;
 
 #if FF_API_PARSE_FRAME
@@ -1881,9 +1887,11 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data, int *data_size,
         out_size = buf_size;
     else
 #endif
-    out_size = mp_decode_frame(s, out_samples, buf, buf_size);
+    out_size = mp_decode_frame(s, NULL, buf, buf_size);
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
+
     return buf_size;
 }
 #endif /* CONFIG_MP3ADU_DECODER || CONFIG_MP3ADUFLOAT_DECODER */
@@ -1894,6 +1902,7 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data, int *data_size,
  * Context for MP3On4 decoder
  */
 typedef struct MP3On4DecodeContext {
+    AVFrame *frame;
     int frames;                     ///< number of mp3 frames per block (number of mp3 decoder instances)
     int syncword;                   ///< syncword patch
     const uint8_t *coff;            ///< channel offsets in output buffer
@@ -1984,6 +1993,7 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
     // Put decoder context in place to make init_decode() happy
     avctx->priv_data = s->mp3decctx[0];
     decode_init(avctx);
+    s->frame = avctx->coded_frame;
     // Restore mp3on4 context pointer
     avctx->priv_data = s;
     s->mp3decctx[0]->adu_mode = 1; // Set adu mode
@@ -2028,9 +2038,8 @@ static void flush_mp3on4(AVCodecContext *avctx)
 }
 
 
-static int decode_frame_mp3on4(AVCodecContext * avctx,
-                        void *data, int *data_size,
-                        AVPacket *avpkt)
+static int decode_frame_mp3on4(AVCodecContext *avctx, void *data,
+                               int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf     = avpkt->data;
     int buf_size           = avpkt->size;
@@ -2038,14 +2047,17 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     MPADecodeContext *m;
     int fsize, len = buf_size, out_size = 0;
     uint32_t header;
-    OUT_INT *out_samples = data;
+    OUT_INT *out_samples;
     OUT_INT *outptr, *bp;
-    int fr, j, n, ch;
+    int fr, j, n, ch, ret;
 
-    if (*data_size < MPA_FRAME_SIZE * avctx->channels * sizeof(OUT_INT)) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    s->frame->nb_samples = MPA_FRAME_SIZE;
+    if ((ret = avctx->get_buffer(avctx, s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    out_samples = (OUT_INT *)s->frame->data[0];
 
     // Discard too short frames
     if (buf_size < HEADER_SIZE)
@@ -2104,7 +2116,10 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     /* update codec info */
     avctx->sample_rate = s->mp3decctx[0]->sample_rate;
 
-    *data_size = out_size;
+    s->frame->nb_samples = out_size / (avctx->channels * sizeof(OUT_INT));
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = *s->frame;
+
     return buf_size;
 }
 #endif /* CONFIG_MP3ON4_DECODER || CONFIG_MP3ON4FLOAT_DECODER */
@@ -2119,7 +2134,9 @@ AVCodec ff_mp1_decoder = {
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
-    .capabilities   = CODEC_CAP_PARSE_ONLY,
+    .capabilities   = CODEC_CAP_PARSE_ONLY | CODEC_CAP_DR1,
+#else
+    .capabilities   = CODEC_CAP_DR1,
 #endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
@@ -2134,7 +2151,9 @@ AVCodec ff_mp2_decoder = {
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
-    .capabilities   = CODEC_CAP_PARSE_ONLY,
+    .capabilities   = CODEC_CAP_PARSE_ONLY | CODEC_CAP_DR1,
+#else
+    .capabilities   = CODEC_CAP_DR1,
 #endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
@@ -2149,7 +2168,9 @@ AVCodec ff_mp3_decoder = {
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
-    .capabilities   = CODEC_CAP_PARSE_ONLY,
+    .capabilities   = CODEC_CAP_PARSE_ONLY | CODEC_CAP_DR1,
+#else
+    .capabilities   = CODEC_CAP_DR1,
 #endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
@@ -2164,7 +2185,9 @@ AVCodec ff_mp3adu_decoder = {
     .init           = decode_init,
     .decode         = decode_frame_adu,
 #if FF_API_PARSE_FRAME
-    .capabilities   = CODEC_CAP_PARSE_ONLY,
+    .capabilities   = CODEC_CAP_PARSE_ONLY | CODEC_CAP_DR1,
+#else
+    .capabilities   = CODEC_CAP_DR1,
 #endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
@@ -2179,6 +2202,7 @@ AVCodec ff_mp3on4_decoder = {
     .init           = decode_init_mp3on4,
     .close          = decode_close_mp3on4,
     .decode         = decode_frame_mp3on4,
+    .capabilities   = CODEC_CAP_DR1,
     .flush          = flush_mp3on4,
     .long_name      = NULL_IF_CONFIG_SMALL("MP3onMP4"),
 };

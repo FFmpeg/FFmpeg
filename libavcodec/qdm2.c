@@ -130,6 +130,8 @@ typedef struct {
  * QDM2 decoder context
  */
 typedef struct {
+    AVFrame frame;
+
     /// Parameters from codec header, do not change during playback
     int nb_channels;         ///< number of channels
     int channels;            ///< number of channels
@@ -1875,6 +1877,9 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
 //    dump_context(s);
     return 0;
 }
@@ -1952,30 +1957,27 @@ static int qdm2_decode (QDM2Context *q, const uint8_t *in, int16_t *out)
 }
 
 
-static int qdm2_decode_frame(AVCodecContext *avctx,
-            void *data, int *data_size,
-            AVPacket *avpkt)
+static int qdm2_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     QDM2Context *s = avctx->priv_data;
-    int16_t *out = data;
-    int i, out_size;
+    int16_t *out;
+    int i, ret;
 
     if(!buf)
         return 0;
     if(buf_size < s->checksum_size)
         return -1;
 
-    out_size = 16 * s->channels * s->frame_size *
-               av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    s->frame.nb_samples = 16 * s->frame_size;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
-
-    av_log(avctx, AV_LOG_DEBUG, "decode(%d): %p[%d] -> %p[%d]\n",
-       buf_size, buf, s->checksum_size, data, *data_size);
+    out = (int16_t *)s->frame.data[0];
 
     for (i = 0; i < 16; i++) {
         if (qdm2_decode(s, buf, out) < 0)
@@ -1983,7 +1985,8 @@ static int qdm2_decode_frame(AVCodecContext *avctx,
         out += s->channels * s->frame_size;
     }
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
 
     return s->checksum_size;
 }
@@ -1997,5 +2000,6 @@ AVCodec ff_qdm2_decoder =
     .init = qdm2_decode_init,
     .close = qdm2_decode_close,
     .decode = qdm2_decode_frame,
+    .capabilities = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("QDesign Music Codec 2"),
 };

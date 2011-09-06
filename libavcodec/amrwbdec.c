@@ -41,6 +41,7 @@
 #include "amrwbdata.h"
 
 typedef struct {
+    AVFrame                              avframe; ///< AVFrame for decoded samples
     AMRWBFrame                             frame; ///< AMRWB parameters decoded from bitstream
     enum Mode                        fr_cur_mode; ///< mode index of current frame
     uint8_t                           fr_quality; ///< frame quality index (FQI)
@@ -101,6 +102,9 @@ static av_cold int amrwb_decode_init(AVCodecContext *avctx)
 
     for (i = 0; i < 4; i++)
         ctx->prediction_error[i] = MIN_ENERGY;
+
+    avcodec_get_frame_defaults(&ctx->avframe);
+    avctx->coded_frame = &ctx->avframe;
 
     return 0;
 }
@@ -1062,15 +1066,15 @@ static void update_sub_state(AMRWBContext *ctx)
             LP_ORDER_16k * sizeof(float));
 }
 
-static int amrwb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                              AVPacket *avpkt)
+static int amrwb_decode_frame(AVCodecContext *avctx, void *data,
+                              int *got_frame_ptr, AVPacket *avpkt)
 {
     AMRWBContext *ctx  = avctx->priv_data;
     AMRWBFrame   *cf   = &ctx->frame;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     int expected_fr_size, header_size;
-    float *buf_out = data;
+    float *buf_out;
     float spare_vector[AMRWB_SFR_SIZE];      // extra stack space to hold result from anti-sparseness processing
     float fixed_gain_factor;                 // fixed gain correction factor (gamma)
     float *synth_fixed_vector;               // pointer to the fixed vector that synthesis should use
@@ -1080,7 +1084,15 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     float hb_exc[AMRWB_SFR_SIZE_16k];        // excitation for the high frequency band
     float hb_samples[AMRWB_SFR_SIZE_16k];    // filtered high-band samples from synthesis
     float hb_gain;
-    int sub, i;
+    int sub, i, ret;
+
+    /* get output buffer */
+    ctx->avframe.nb_samples = 4 * AMRWB_SFR_SIZE_16k;
+    if ((ret = avctx->get_buffer(avctx, &ctx->avframe)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    buf_out = (float *)ctx->avframe.data[0];
 
     header_size      = decode_mime_header(ctx, buf);
     expected_fr_size = ((cf_sizes_wb[ctx->fr_cur_mode] + 7) >> 3) + 1;
@@ -1088,7 +1100,7 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (buf_size < expected_fr_size) {
         av_log(avctx, AV_LOG_ERROR,
             "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return buf_size;
     }
 
@@ -1219,8 +1231,8 @@ static int amrwb_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     memcpy(ctx->isp_sub4_past, ctx->isp[3], LP_ORDER * sizeof(ctx->isp[3][0]));
     memcpy(ctx->isf_past_final, ctx->isf_cur, LP_ORDER * sizeof(float));
 
-    /* report how many samples we got */
-    *data_size = 4 * AMRWB_SFR_SIZE_16k * sizeof(float);
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = ctx->avframe;
 
     return expected_fr_size;
 }
@@ -1232,6 +1244,7 @@ AVCodec ff_amrwb_decoder = {
     .priv_data_size = sizeof(AMRWBContext),
     .init           = amrwb_decode_init,
     .decode         = amrwb_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Adaptive Multi-Rate WideBand"),
     .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
 };

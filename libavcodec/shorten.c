@@ -79,6 +79,7 @@ static const uint8_t is_audio_command[10] = { 1, 1, 1, 1, 0, 0, 0, 1, 1, 0 };
 
 typedef struct ShortenContext {
     AVCodecContext *avctx;
+    AVFrame frame;
     GetBitContext gb;
 
     int min_framesize, max_framesize;
@@ -111,6 +112,9 @@ static av_cold int shorten_decode_init(AVCodecContext * avctx)
     ShortenContext *s = avctx->priv_data;
     s->avctx = avctx;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
 
     return 0;
 }
@@ -394,15 +398,13 @@ static int read_header(ShortenContext *s)
     return 0;
 }
 
-static int shorten_decode_frame(AVCodecContext *avctx,
-        void *data, int *data_size,
-        AVPacket *avpkt)
+static int shorten_decode_frame(AVCodecContext *avctx, void *data,
+                                int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     ShortenContext *s = avctx->priv_data;
     int i, input_buf_size = 0;
-    int16_t *samples = data;
     int ret;
 
     /* allocate internal bitstream buffer */
@@ -436,7 +438,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         /* do not decode until buffer has at least max_framesize bytes or
            the end of the file has been reached */
         if (buf_size < s->max_framesize && avpkt->data) {
-            *data_size = 0;
+            *got_frame_ptr = 0;
             return input_buf_size;
         }
     }
@@ -448,13 +450,13 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     if (!s->got_header) {
         if ((ret = read_header(s)) < 0)
             return ret;
-        *data_size = 0;
+        *got_frame_ptr = 0;
         goto finish_frame;
     }
 
     /* if quit command was read previously, don't decode anything */
     if (s->got_quit_command) {
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return avpkt->size;
     }
 
@@ -464,7 +466,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         int len;
 
         if (get_bits_left(&s->gb) < 3+FNSIZE) {
-            *data_size = 0;
+            *got_frame_ptr = 0;
             break;
         }
 
@@ -472,7 +474,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
 
         if (cmd > FN_VERBATIM) {
             av_log(avctx, AV_LOG_ERROR, "unknown shorten function %d\n", cmd);
-            *data_size = 0;
+            *got_frame_ptr = 0;
             break;
         }
 
@@ -507,7 +509,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                     break;
             }
             if (cmd == FN_BLOCKSIZE || cmd == FN_QUIT) {
-                *data_size = 0;
+                *got_frame_ptr = 0;
                 break;
             }
         } else {
@@ -571,19 +573,23 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             /* if this is the last channel in the block, output the samples */
             s->cur_chan++;
             if (s->cur_chan == s->channels) {
-                int out_size = s->blocksize * s->channels *
-                               av_get_bytes_per_sample(avctx->sample_fmt);
-                if (*data_size < out_size) {
-                    av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-                    return AVERROR(EINVAL);
+                /* get output buffer */
+                s->frame.nb_samples = s->blocksize;
+                if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+                    av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+                    return ret;
                 }
-                interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
-                *data_size = out_size;
+                /* interleave output */
+                interleave_buffer((int16_t *)s->frame.data[0], s->channels,
+                                  s->blocksize, s->decoded);
+
+                *got_frame_ptr   = 1;
+                *(AVFrame *)data = s->frame;
             }
         }
     }
     if (s->cur_chan < s->channels)
-        *data_size = 0;
+        *got_frame_ptr = 0;
 
 finish_frame:
     s->bitindex = get_bits_count(&s->gb) - 8*((get_bits_count(&s->gb))/8);
@@ -614,6 +620,7 @@ static av_cold int shorten_decode_close(AVCodecContext *avctx)
     }
     av_freep(&s->bitstream);
     av_freep(&s->coeffs);
+
     return 0;
 }
 
@@ -625,6 +632,6 @@ AVCodec ff_shorten_decoder = {
     .init           = shorten_decode_init,
     .close          = shorten_decode_close,
     .decode         = shorten_decode_frame,
-    .capabilities   = CODEC_CAP_DELAY,
+    .capabilities   = CODEC_CAP_DELAY | CODEC_CAP_DR1,
     .long_name= NULL_IF_CONFIG_SMALL("Shorten"),
 };

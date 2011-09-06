@@ -480,8 +480,10 @@ enum CodecID {
 #define CH_LAYOUT_STEREO_DOWNMIX AV_CH_LAYOUT_STEREO_DOWNMIX
 #endif
 
+#if FF_API_OLD_DECODE_AUDIO
 /* in bytes */
 #define AVCODEC_MAX_AUDIO_FRAME_SIZE 192000 // 1 second of 48khz 32bit audio
+#endif
 
 /**
  * Required number of additionally allocated bytes at the end of the input bitstream for decoding.
@@ -933,13 +935,24 @@ typedef struct AVFrame {
 #define AV_NUM_DATA_POINTERS 8
 #endif
     /**
-     * pointer to the picture planes.
+     * pointer to the picture/channel planes.
      * This might be different from the first allocated byte
-     * - encoding:
-     * - decoding:
+     * - encoding: Set by user
+     * - decoding: set by AVCodecContext.get_buffer()
      */
     uint8_t *data[AV_NUM_DATA_POINTERS];
+
+    /**
+     * Size, in bytes, of the data for each picture/channel plane.
+     *
+     * For audio, only linesize[0] may be set. For planar audio, each channel
+     * plane must be the same size.
+     *
+     * - encoding: Set by user (video only)
+     * - decoding: set by AVCodecContext.get_buffer()
+     */
     int linesize[AV_NUM_DATA_POINTERS];
+
     /**
      * pointer to the first allocated byte of the picture. Can be used in get_buffer/release_buffer.
      * This isn't used by libavcodec unless the default get/release_buffer() is used.
@@ -993,7 +1006,7 @@ typedef struct AVFrame {
      * buffer age (1->was last buffer and dint change, 2->..., ...).
      * Set to INT_MAX if the buffer has not been used yet.
      * - encoding: unused
-     * - decoding: MUST be set by get_buffer().
+     * - decoding: MUST be set by get_buffer() for video.
      */
     int age;
 
@@ -1190,6 +1203,33 @@ typedef struct AVFrame {
      * - decoding: Set by libavcodec.
      */
     void *thread_opaque;
+
+    /**
+     * number of audio samples (per channel) described by this frame
+     * - encoding: unused
+     * - decoding: Set by libavcodec
+     */
+    int nb_samples;
+
+    /**
+     * pointers to the data planes/channels.
+     *
+     * For video, this should simply point to data[].
+     *
+     * For planar audio, each channel has a separate data pointer, and
+     * linesize[0] contains the size of each channel buffer.
+     * For packed audio, there is just one data pointer, and linesize[0]
+     * contains the total size of the buffer for all channels.
+     *
+     * Note: Both data and extended_data will always be set by get_buffer(),
+     * but for planar audio with more channels that can fit in data,
+     * extended_data must be used by the decoder in order to access all
+     * channels.
+     *
+     * encoding: unused
+     * decoding: set by AVCodecContext.get_buffer()
+     */
+    uint8_t **extended_data;
 } AVFrame;
 
 struct AVCodecInternal;
@@ -1545,15 +1585,56 @@ typedef struct AVCodecContext {
 
     /**
      * Called at the beginning of each frame to get a buffer for it.
-     * If pic.reference is set then the frame will be read later by libavcodec.
-     * avcodec_align_dimensions2() should be used to find the required width and
-     * height, as they normally need to be rounded up to the next multiple of 16.
+     *
+     * The function will set AVFrame.data[], AVFrame.linesize[].
+     * AVFrame.extended_data[] must also be set, but it should be the same as
+     * AVFrame.data[] except for planar audio with more channels than can fit
+     * in AVFrame.data[]. In that case, AVFrame.data[] shall still contain as
+     * many data pointers as it can hold.
+     *
      * if CODEC_CAP_DR1 is not set then get_buffer() must call
      * avcodec_default_get_buffer() instead of providing buffers allocated by
      * some other means.
+     *
+     * AVFrame.data[] should be 32- or 16-byte-aligned unless the CPU doesn't
+     * need it. avcodec_default_get_buffer() aligns the output buffer properly,
+     * but if get_buffer() is overridden then alignment considerations should
+     * be taken into account.
+     *
+     * @see avcodec_default_get_buffer()
+     *
+     * Video:
+     *
+     * If pic.reference is set then the frame will be read later by libavcodec.
+     * avcodec_align_dimensions2() should be used to find the required width and
+     * height, as they normally need to be rounded up to the next multiple of 16.
+     *
      * If frame multithreading is used and thread_safe_callbacks is set,
-     * it may be called from a different thread, but not from more than one at once.
-     * Does not need to be reentrant.
+     * it may be called from a different thread, but not from more than one at
+     * once. Does not need to be reentrant.
+     *
+     * @see release_buffer(), reget_buffer()
+     * @see avcodec_align_dimensions2()
+     *
+     * Audio:
+     *
+     * Decoders request a buffer of a particular size by setting
+     * AVFrame.nb_samples prior to calling get_buffer(). The decoder may,
+     * however, utilize only part of the buffer by setting AVFrame.nb_samples
+     * to a smaller value in the output frame.
+     *
+     * Decoders cannot use the buffer after returning from
+     * avcodec_decode_audio4(), so they will not call release_buffer(), as it
+     * is assumed to be released immediately upon return.
+     *
+     * As a convenience, av_samples_get_buffer_size() and
+     * av_samples_fill_arrays() in libavutil may be used by custom get_buffer()
+     * functions to find the required data size and to fill data pointers and
+     * linesize. In AVFrame.linesize, only linesize[0] may be set for audio
+     * since all planes must be the same size.
+     *
+     * @see av_samples_get_buffer_size(), av_samples_fill_arrays()
+     *
      * - encoding: unused
      * - decoding: Set by libavcodec, user can override.
      */
@@ -3882,7 +3963,12 @@ int avcodec_open(AVCodecContext *avctx, AVCodec *codec);
  */
 int avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options);
 
+#if FF_API_OLD_DECODE_AUDIO
 /**
+ * Wrapper function which calls avcodec_decode_audio4.
+ *
+ * @deprecated Use avcodec_decode_audio4 instead.
+ *
  * Decode the audio frame of size avpkt->size from avpkt->data into samples.
  * Some decoders may support multiple frames in a single AVPacket, such
  * decoders would then just decode the first frame. In this case,
@@ -3917,6 +4003,8 @@ int avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options)
  *
  * @param avctx the codec context
  * @param[out] samples the output buffer, sample type in avctx->sample_fmt
+ *                     If the sample format is planar, each channel plane will
+ *                     be the same size, with no padding between channels.
  * @param[in,out] frame_size_ptr the output buffer size in bytes
  * @param[in] avpkt The input AVPacket containing the input buffer.
  *            You can create such packet with av_init_packet() and by then setting
@@ -3925,9 +4013,46 @@ int avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVDictionary **options)
  * @return On error a negative value is returned, otherwise the number of bytes
  * used or zero if no frame data was decompressed (used) from the input AVPacket.
  */
-int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
+attribute_deprecated int avcodec_decode_audio3(AVCodecContext *avctx, int16_t *samples,
                          int *frame_size_ptr,
                          AVPacket *avpkt);
+#endif
+
+/**
+ * Decode the audio frame of size avpkt->size from avpkt->data into frame.
+ *
+ * Some decoders may support multiple frames in a single AVPacket. Such
+ * decoders would then just decode the first frame. In this case,
+ * avcodec_decode_audio4 has to be called again with an AVPacket containing
+ * the remaining data in order to decode the second frame, etc...
+ * Even if no frames are returned, the packet needs to be fed to the decoder
+ * with remaining data until it is completely consumed or an error occurs.
+ *
+ * @warning The input buffer, avpkt->data must be FF_INPUT_BUFFER_PADDING_SIZE
+ *          larger than the actual read bytes because some optimized bitstream
+ *          readers read 32 or 64 bits at once and could read over the end.
+ *
+ * @note You might have to align the input buffer. The alignment requirements
+ *       depend on the CPU and the decoder.
+ *
+ * @param      avctx the codec context
+ * @param[out] frame The AVFrame in which to store decoded audio samples.
+ *                   Decoders request a buffer of a particular size by setting
+ *                   AVFrame.nb_samples prior to calling get_buffer(). The
+ *                   decoder may, however, only utilize part of the buffer by
+ *                   setting AVFrame.nb_samples to a smaller value in the
+ *                   output frame.
+ * @param[out] got_frame_ptr Zero if no frame could be decoded, otherwise it is
+ *                           non-zero.
+ * @param[in]  avpkt The input AVPacket containing the input buffer.
+ *                   At least avpkt->data and avpkt->size should be set. Some
+ *                   decoders might also require additional fields to be set.
+ * @return A negative error code is returned if an error occurred during
+ *         decoding, otherwise the number of bytes consumed from the input
+ *         AVPacket is returned.
+ */
+int avcodec_decode_audio4(AVCodecContext *avctx, AVFrame *frame,
+                          int *got_frame_ptr, AVPacket *avpkt);
 
 /**
  * Decode the video frame of size avpkt->size from avpkt->data into picture.

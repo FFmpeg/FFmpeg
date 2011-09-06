@@ -31,12 +31,15 @@
 
 typedef struct InternalBuffer {
     int last_pic_num;
-    uint8_t *base[4];
-    uint8_t *data[4];
-    int linesize[4];
+    uint8_t *base[AV_NUM_DATA_POINTERS];
+    uint8_t *data[AV_NUM_DATA_POINTERS];
+    int linesize[AV_NUM_DATA_POINTERS];
     int width;
     int height;
     enum PixelFormat pix_fmt;
+    uint8_t **extended_data;
+    int audio_data_size;
+    int nb_channels;
 } InternalBuffer;
 
 typedef struct AVCodecInternal {

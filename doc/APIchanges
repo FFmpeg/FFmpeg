@@ -13,6 +13,13 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-xx-xx - xxxxxxx - lavc 53.25.0
+  Add nb_samples and extended_data fields to AVFrame.
+  Deprecate AVCODEC_MAX_AUDIO_FRAME_SIZE.
+  Deprecate avcodec_decode_audio3() in favor of avcodec_decode_audio4().
+  avcodec_decode_audio4() writes output samples to an AVFrame, which allows
+  audio decoders to use get_buffer().
+
 2011-xx-xx - xxxxxxx - lavc 53.24.0
   Change AVFrame.data[4]/base[4]/linesize[4]/error[4] to [8] at next major bump.
   Change AVPicture.data[4]/linesize[4] to [8] at next major bump.

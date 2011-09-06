@@ -79,6 +79,7 @@ static int get_bitrate_mode(int bitrate, void *log_ctx)
 
 typedef struct AMRContext {
     AVClass *av_class;
+    AVFrame frame;
     void *dec_state;
     void *enc_state;
     int   enc_bitrate;
@@ -112,6 +113,9 @@ static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
@@ -120,26 +124,28 @@ static av_cold int amr_nb_decode_close(AVCodecContext *avctx)
     AMRContext *s = avctx->priv_data;
 
     Decoder_Interface_exit(s->dec_state);
+
     return 0;
 }
 
 static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
-                               int *data_size, AVPacket *avpkt)
+                               int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AMRContext *s      = avctx->priv_data;
     static const uint8_t block_size[16] = { 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
-    int packet_size, out_size;
+    int packet_size, ret;
 
     av_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
             buf, buf_size, avctx->frame_number);
 
-    out_size = 160 * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    s->frame.nb_samples = 160;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
 
     dec_mode    = (buf[0] >> 3) & 0x000F;
@@ -154,8 +160,10 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     av_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
               packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
-    Decoder_Interface_Decode(s->dec_state, buf, data, 0);
-    *data_size = out_size;
+    Decoder_Interface_Decode(s->dec_state, buf, (short *)s->frame.data[0], 0);
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
 
     return packet_size;
 }
@@ -168,6 +176,7 @@ AVCodec ff_libopencore_amrnb_decoder = {
     .init           = amr_nb_decode_init,
     .close          = amr_nb_decode_close,
     .decode         = amr_nb_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Narrow-Band"),
 };
 
@@ -251,6 +260,7 @@ AVCodec ff_libopencore_amrnb_encoder = {
 #include <opencore-amrwb/if_rom.h>
 
 typedef struct AMRWBContext {
+    AVFrame frame;
     void  *state;
 } AMRWBContext;
 
@@ -267,23 +277,27 @@ static av_cold int amr_wb_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOSYS);
     }
 
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
 static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
-                               int *data_size, AVPacket *avpkt)
+                               int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AMRWBContext *s    = avctx->priv_data;
-    int mode;
-    int packet_size, out_size;
+    int mode, ret;
+    int packet_size;
     static const uint8_t block_size[16] = {18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
 
-    out_size = 320 * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    s->frame.nb_samples = 320;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
 
     mode        = (buf[0] >> 3) & 0x000F;
@@ -295,8 +309,11 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    D_IF_decode(s->state, buf, data, _good_frame);
-    *data_size = out_size;
+    D_IF_decode(s->state, buf, (short *)s->frame.data[0], _good_frame);
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
+
     return packet_size;
 }
 
@@ -316,6 +333,7 @@ AVCodec ff_libopencore_amrwb_decoder = {
     .init           = amr_wb_decode_init,
     .close          = amr_wb_decode_close,
     .decode         = amr_wb_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("OpenCORE Adaptive Multi-Rate (AMR) Wide-Band"),
 };
 

@@ -122,6 +122,7 @@ typedef struct cook {
     void (* saturate_output) (struct cook *q, int chan, float *out);
 
     AVCodecContext*     avctx;
+    AVFrame             frame;
     GetBitContext       gb;
     /* stream data */
     int                 nb_channels;
@@ -131,6 +132,7 @@ typedef struct cook {
     int                 samples_per_channel;
     /* states */
     AVLFG               random_state;
+    int                 discarded_packets;
 
     /* transform data */
     FFTContext          mdct_ctx;
@@ -896,7 +898,8 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
                       float *out, int chan)
 {
     imlt_gain(q, decode_buffer, gains_ptr, previous_buffer);
-    q->saturate_output (q, chan, out);
+    if (out)
+        q->saturate_output(q, chan, out);
 }
 
 
@@ -953,24 +956,28 @@ static void decode_subpacket(COOKContext *q, COOKSubpacket *p,
  * @param avctx     pointer to the AVCodecContext
  */
 
-static int cook_decode_frame(AVCodecContext *avctx,
-            void *data, int *data_size,
-            AVPacket *avpkt) {
+static int cook_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
+{
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     COOKContext *q = avctx->priv_data;
-    int i, out_size;
+    float *samples = NULL;
+    int i, ret;
     int offset = 0;
     int chidx = 0;
 
     if (buf_size < avctx->block_align)
         return buf_size;
 
-    out_size = q->nb_channels * q->samples_per_channel *
-               av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    if (q->discarded_packets >= 2) {
+        q->frame.nb_samples = q->samples_per_channel;
+        if ((ret = avctx->get_buffer(avctx, &q->frame)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return ret;
+        }
+        samples = (float *)q->frame.data[0];
     }
 
     /* estimate subpacket sizes */
@@ -990,15 +997,21 @@ static int cook_decode_frame(AVCodecContext *avctx,
         q->subpacket[i].bits_per_subpacket = (q->subpacket[i].size*8)>>q->subpacket[i].bits_per_subpdiv;
         q->subpacket[i].ch_idx = chidx;
         av_log(avctx,AV_LOG_DEBUG,"subpacket[%i] size %i js %i %i block_align %i\n",i,q->subpacket[i].size,q->subpacket[i].joint_stereo,offset,avctx->block_align);
-        decode_subpacket(q, &q->subpacket[i], buf + offset, data);
+        decode_subpacket(q, &q->subpacket[i], buf + offset, samples);
         offset += q->subpacket[i].size;
         chidx += q->subpacket[i].num_channels;
         av_log(avctx,AV_LOG_DEBUG,"subpacket[%i] %i %i\n",i,q->subpacket[i].size * 8,get_bits_count(&q->gb));
     }
-    *data_size = out_size;
 
     /* Discard the first two frames: no valid audio. */
-    if (avctx->frame_number < 2) *data_size = 0;
+    if (q->discarded_packets < 2) {
+        q->discarded_packets++;
+        *got_frame_ptr = 0;
+        return avctx->block_align;
+    }
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = q->frame;
 
     return avctx->block_align;
 }
@@ -1246,6 +1259,9 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
     else
         avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
 
+    avcodec_get_frame_defaults(&q->frame);
+    avctx->coded_frame = &q->frame;
+
 #ifdef DEBUG
     dump_cook_context(q);
 #endif
@@ -1262,5 +1278,6 @@ AVCodec ff_cook_decoder =
     .init = cook_decode_init,
     .close = cook_decode_close,
     .decode = cook_decode_frame,
+    .capabilities = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("COOK"),
 };

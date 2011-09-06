@@ -47,6 +47,7 @@
 
 typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
+    AVFrame         frame;
     float          *float_buf;
     DECLARE_ALIGNED(16, float, state)[NELLY_BUF_LEN];
     AVLFG           random_state;
@@ -142,28 +143,27 @@ static av_cold int decode_init(AVCodecContext * avctx) {
         ff_init_ff_sine_windows(7);
 
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
-static int decode_tag(AVCodecContext * avctx,
-                      void *data, int *data_size,
-                      AVPacket *avpkt) {
+static int decode_tag(AVCodecContext *avctx, void *data,
+                      int *got_frame_ptr, AVPacket *avpkt)
+{
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     NellyMoserDecodeContext *s = avctx->priv_data;
-    int blocks, i, block_size;
-    int16_t *samples_s16 = data;
-    float   *samples_flt = data;
+    int blocks, i, ret;
+    int16_t *samples_s16;
+    float   *samples_flt;
 
-    block_size = NELLY_SAMPLES * av_get_bytes_per_sample(avctx->sample_fmt);
     blocks     = buf_size / NELLY_BLOCK_LEN;
     if (blocks <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
         return AVERROR_INVALIDDATA;
-    }
-    if (*data_size < blocks * block_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
     }
     if (buf_size % NELLY_BLOCK_LEN) {
         av_log(avctx, AV_LOG_WARNING, "Leftover bytes: %d.\n",
@@ -177,6 +177,15 @@ static int decode_tag(AVCodecContext * avctx,
      * 44100 Hz - 8
      */
 
+    /* get output buffer */
+    s->frame.nb_samples = NELLY_SAMPLES * blocks;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    samples_s16 = (int16_t *)s->frame.data[0];
+    samples_flt = (float   *)s->frame.data[0];
+
     for (i=0 ; i<blocks ; i++) {
         if (avctx->sample_fmt == SAMPLE_FMT_FLT) {
             nelly_decode_block(s, buf, samples_flt);
@@ -188,7 +197,9 @@ static int decode_tag(AVCodecContext * avctx,
         }
         buf += NELLY_BLOCK_LEN;
     }
-    *data_size = blocks * block_size;
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
 
     return buf_size;
 }
@@ -198,6 +209,7 @@ static av_cold int decode_end(AVCodecContext * avctx) {
 
     av_freep(&s->float_buf);
     ff_mdct_end(&s->imdct_ctx);
+
     return 0;
 }
 
@@ -209,6 +221,7 @@ AVCodec ff_nellymoser_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_tag,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
     .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
                                                       AV_SAMPLE_FMT_S16,

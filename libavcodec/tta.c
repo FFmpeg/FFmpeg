@@ -56,6 +56,7 @@ typedef struct TTAChannel {
 
 typedef struct TTAContext {
     AVCodecContext *avctx;
+    AVFrame frame;
     GetBitContext gb;
 
     int format, channels, bps, data_length;
@@ -276,17 +277,19 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         return -1;
     }
 
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
-static int tta_decode_frame(AVCodecContext *avctx,
-        void *data, int *data_size,
-        AVPacket *avpkt)
+static int tta_decode_frame(AVCodecContext *avctx, void *data,
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TTAContext *s = avctx->priv_data;
-    int i, out_size;
+    int i, ret;
     int cur_chan = 0, framelen = s->frame_length;
     int32_t *p;
 
@@ -297,10 +300,11 @@ static int tta_decode_frame(AVCodecContext *avctx,
     if (!s->total_frames && s->last_frame_length)
         framelen = s->last_frame_length;
 
-    out_size = framelen * s->channels * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer size is too small.\n");
-        return -1;
+    /* get output buffer */
+    s->frame.nb_samples = framelen;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
 
     // decode directly to output buffer for 24-bit sample format
@@ -396,19 +400,20 @@ static int tta_decode_frame(AVCodecContext *avctx,
 
     // convert to output buffer
     if (s->bps == 2) {
-        int16_t *samples = data;
+        int16_t *samples = (int16_t *)s->frame.data[0];
         for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
             *samples++ = *p;
     } else {
         // shift samples for 24-bit sample format
-        int32_t *samples = data;
+        int32_t *samples = (int32_t *)s->frame.data[0];
         for (i = 0; i < framelen * s->channels; i++)
             *samples++ <<= 8;
         // reset decode buffer
         s->decode_buffer = NULL;
     }
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
 
     return buf_size;
 }
@@ -430,5 +435,6 @@ AVCodec ff_tta_decoder = {
     .init           = tta_decode_init,
     .close          = tta_decode_close,
     .decode         = tta_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("True Audio (TTA)"),
 };
