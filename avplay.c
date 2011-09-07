@@ -2008,10 +2008,15 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     AVCodecContext *dec= is->audio_st->codec;
     int n, len1, data_size;
     double pts;
+    int new_packet = 0;
+    int flush_complete = 0;
 
     for(;;) {
         /* NOTE: the audio packet can contain several frames */
-        while (pkt_temp->size > 0) {
+        while (pkt_temp->size > 0 || (!pkt_temp->data && new_packet)) {
+            if (flush_complete)
+                break;
+            new_packet = 0;
             data_size = sizeof(is->audio_buf1);
             len1 = avcodec_decode_audio3(dec,
                                         (int16_t *)is->audio_buf1, &data_size,
@@ -2024,8 +2029,13 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
 
             pkt_temp->data += len1;
             pkt_temp->size -= len1;
-            if (data_size <= 0)
+
+            if (data_size <= 0) {
+                /* stop sending empty packets if the decoder is finished */
+                if (!pkt_temp->data && dec->codec->capabilities & CODEC_CAP_DELAY)
+                    flush_complete = 1;
                 continue;
+            }
 
             if (dec->sample_fmt != is->audio_src_fmt) {
                 if (is->reformat_ctx)
@@ -2086,12 +2096,11 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
         }
 
         /* read next packet */
-        if (packet_queue_get(&is->audioq, pkt, 1) < 0)
+        if ((new_packet = packet_queue_get(&is->audioq, pkt, 1)) < 0)
             return -1;
-        if(pkt->data == flush_pkt.data){
+
+        if (pkt->data == flush_pkt.data)
             avcodec_flush_buffers(dec);
-            continue;
-        }
 
         pkt_temp->data = pkt->data;
         pkt_temp->size = pkt->size;
@@ -2507,6 +2516,14 @@ static int decode_thread(void *arg)
                 pkt->size=0;
                 pkt->stream_index= is->video_stream;
                 packet_queue_put(&is->videoq, pkt);
+            }
+            if (is->audio_stream >= 0 &&
+                is->audio_st->codec->codec->capabilities & CODEC_CAP_DELAY) {
+                av_init_packet(pkt);
+                pkt->data = NULL;
+                pkt->size = 0;
+                pkt->stream_index = is->audio_stream;
+                packet_queue_put(&is->audioq, pkt);
             }
             SDL_Delay(10);
             if(is->audioq.size + is->videoq.size + is->subtitleq.size ==0){
