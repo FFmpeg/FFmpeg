@@ -229,14 +229,14 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.i_trellis          = avctx->trellis;
     x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
 
-    if (avctx->level > 0)
-        x4->params.i_level_idc = avctx->level;
-
     if (x4->preset || x4->tune)
         if (x264_param_default_preset(&x4->params, x4->preset, x4->tune) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error setting preset/tune %s/%s.\n", x4->preset, x4->tune);
             return AVERROR(EINVAL);
         }
+
+    if (avctx->level > 0)
+        x4->params.i_level_idc = avctx->level;
 
     x4->params.pf_log               = X264_log;
     x4->params.p_log_private        = avctx;
