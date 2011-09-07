@@ -292,7 +292,14 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb, int channel
             }
         }else{
             t = get_unary_0_33(gb);
-            if(t >= 2) t = get_bits(gb, t - 1) | (1 << (t-1));
+            if(t >= 2){
+                if(get_bits_left(gb) < t-1)
+                    goto error;
+                t = get_bits(gb, t - 1) | (1 << (t-1));
+            }else{
+                if(get_bits_left(gb) < 0)
+                    goto error;
+            }
             ctx->zeroes = t;
             if(ctx->zeroes){
                 memset(ctx->ch[0].median, 0, sizeof(ctx->ch[0].median));
@@ -303,24 +310,24 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb, int channel
         }
     }
 
-    if(get_bits_count(gb) >= ctx->data_size){
-        *last = 1;
-        return 0;
-    }
-
     if(ctx->zero){
         t = 0;
         ctx->zero = 0;
     }else{
         t = get_unary_0_33(gb);
-        if(get_bits_count(gb) >= ctx->data_size){
-            *last = 1;
-            return 0;
-        }
+        if(get_bits_left(gb) < 0)
+            goto error;
         if(t == 16) {
             t2 = get_unary_0_33(gb);
-            if(t2 < 2) t += t2;
-            else t += get_bits(gb, t2 - 1) | (1 << (t2 - 1));
+            if(t2 < 2){
+                if(get_bits_left(gb) < 0)
+                    goto error;
+                t += t2;
+            }else{
+                if(get_bits_left(gb) < t2 - 1)
+                    goto error;
+                t += get_bits(gb, t2 - 1) | (1 << (t2 - 1));
+            }
         }
 
         if(ctx->one){
@@ -360,9 +367,13 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb, int channel
     }
     if(!c->error_limit){
         ret = base + get_tail(gb, add);
+        if (get_bits_left(gb) <= 0)
+            goto error;
     }else{
         int mid = (base*2 + add + 1) >> 1;
         while(add > c->error_limit){
+            if(get_bits_left(gb) <= 0)
+                goto error;
             if(get_bits1(gb)){
                 add -= (mid - base);
                 base = mid;
@@ -376,6 +387,10 @@ static int wv_get_value(WavpackFrameContext *ctx, GetBitContext *gb, int channel
     if(ctx->hybrid_bitrate)
         c->slow_level += wp_log2(ret) - LEVEL_DECAY(c->slow_level);
     return sign ? ~ret : ret;
+
+error:
+    *last = 1;
+    return 0;
 }
 
 static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc, int S)
@@ -581,7 +596,10 @@ static inline int wv_unpack_stereo(WavpackFrameContext *s, GetBitContext *gb, vo
         count++;
     }while(!last && count < s->max_samples);
 
-    s->samples_left -= count;
+    if (last)
+        s->samples_left = 0;
+    else
+        s->samples_left -= count;
     if(!s->samples_left){
         wv_reset_saved_context(s);
         if(crc != s->CRC){
@@ -659,7 +677,10 @@ static inline int wv_unpack_mono(WavpackFrameContext *s, GetBitContext *gb, void
         count++;
     }while(!last && count < s->max_samples);
 
-    s->samples_left -= count;
+    if (last)
+        s->samples_left = 0;
+    else
+        s->samples_left -= count;
     if(!s->samples_left){
         wv_reset_saved_context(s);
         if(crc != s->CRC){
