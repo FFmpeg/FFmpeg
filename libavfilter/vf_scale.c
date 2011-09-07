@@ -232,6 +232,11 @@ static int config_props(AVFilterLink *outlink)
     if (!scale->sws)
         return AVERROR(EINVAL);
 
+    if (inlink->sample_aspect_ratio.num){
+        outlink->sample_aspect_ratio = av_mul_q((AVRational){outlink->h * inlink->w, outlink->w * inlink->h}, inlink->sample_aspect_ratio);
+    } else
+        outlink->sample_aspect_ratio = inlink->sample_aspect_ratio;
+
     return 0;
 
 fail:
