@@ -235,6 +235,8 @@ static int asfrtp_parse_packet(AVFormatContext *s, PayloadContext *asf,
                 int prev_len = out_len;
                 out_len += cur_len;
                 asf->buf = av_realloc(asf->buf, out_len);
+                if(!asf->buf || FFMIN(cur_len, len - off)<0)
+                    return -1;
                 memcpy(asf->buf + prev_len, buf + off,
                        FFMIN(cur_len, len - off));
                 avio_skip(pb, cur_len);
