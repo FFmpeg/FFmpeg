@@ -862,12 +862,13 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         }
         switch(id & WP_IDF_MASK){
         case WP_ID_DECTERMS:
-            s->terms = size;
-            if(s->terms > MAX_TERMS){
+            if(size > MAX_TERMS){
                 av_log(avctx, AV_LOG_ERROR, "Too many decorrelation terms\n");
+                s->terms = 0;
                 buf += ssize;
                 continue;
             }
+            s->terms = size;
             for(i = 0; i < s->terms; i++) {
                 s->decorr[s->terms - i - 1].value = (*buf & 0x1F) - 5;
                 s->decorr[s->terms - i - 1].delta = *buf >> 5;
