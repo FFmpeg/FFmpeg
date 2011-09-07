@@ -66,6 +66,8 @@ typedef struct X264Context {
     int mbtree;
     char *deblock;
     float cplxblur;
+    char *partitions;
+    int direct_pred;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -247,64 +249,19 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x264_param_default(&x4->params);
 
-    x4->params.b_cabac           = avctx->coder_type == FF_CODER_TYPE_AC;
-    x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
-
-    x4->params.i_keyint_min = avctx->keyint_min;
-    if (x4->params.i_keyint_min > x4->params.i_keyint_max)
-        x4->params.i_keyint_min = x4->params.i_keyint_max;
-
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
-
-    x4->params.analyse.inter    = 0;
-    if (avctx->partitions) {
-        if (avctx->partitions & X264_PART_I4X4)
-            x4->params.analyse.inter |= X264_ANALYSE_I4x4;
-        if (avctx->partitions & X264_PART_I8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_I8x8;
-        if (avctx->partitions & X264_PART_P8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_PSUB16x16;
-        if (avctx->partitions & X264_PART_P4X4)
-            x4->params.analyse.inter |= X264_ANALYSE_PSUB8x8;
-        if (avctx->partitions & X264_PART_B8X8)
-            x4->params.analyse.inter |= X264_ANALYSE_BSUB16x16;
-    }
-
-    x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
-
-    if (avctx->me_method == ME_EPZS)
-        x4->params.analyse.i_me_method = X264_ME_DIA;
-    else if (avctx->me_method == ME_HEX)
-        x4->params.analyse.i_me_method = X264_ME_HEX;
-    else if (avctx->me_method == ME_UMH)
-        x4->params.analyse.i_me_method = X264_ME_UMH;
-    else if (avctx->me_method == ME_FULL)
-        x4->params.analyse.i_me_method = X264_ME_ESA;
-    else if (avctx->me_method == ME_TESA)
-        x4->params.analyse.i_me_method = X264_ME_TESA;
-    else x4->params.analyse.i_me_method = X264_ME_HEX;
-
-    x4->params.analyse.i_me_range         = avctx->me_range;
-    x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
-
-    x4->params.analyse.b_chroma_me        = avctx->me_cmp & FF_CMP_CHROMA;
-
-    x4->params.analyse.i_trellis          = avctx->trellis;
-    x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
 
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
-
-    if (!x4->preset)
-        check_default_settings(avctx);
-
-    if (x4->preset || x4->tune) {
+    if (x4->preset || x4->tune)
         if (x264_param_default_preset(&x4->params, x4->preset, x4->tune) < 0) {
             av_log(avctx, AV_LOG_ERROR, "Error setting preset/tune %s/%s.\n", x4->preset, x4->tune);
             return AVERROR(EINVAL);
         }
-    }
+
+    if (avctx->level > 0)
+        x4->params.i_level_idc = avctx->level;
 
     x4->params.pf_log               = X264_log;
     x4->params.p_log_private        = avctx;
@@ -387,6 +344,20 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
     if (avctx->complexityblur >= 0)
         x4->params.rc.f_complexity_blur        = avctx->complexityblur;
+    if (avctx->directpred >= 0)
+        x4->params.analyse.i_direct_mv_pred    = avctx->directpred;
+    if (avctx->partitions) {
+        if (avctx->partitions & X264_PART_I4X4)
+            x4->params.analyse.inter |= X264_ANALYSE_I4x4;
+        if (avctx->partitions & X264_PART_I8X8)
+            x4->params.analyse.inter |= X264_ANALYSE_I8x8;
+        if (avctx->partitions & X264_PART_P8X8)
+            x4->params.analyse.inter |= X264_ANALYSE_PSUB16x16;
+        if (avctx->partitions & X264_PART_P4X4)
+            x4->params.analyse.inter |= X264_ANALYSE_PSUB8x8;
+        if (avctx->partitions & X264_PART_B8X8)
+            x4->params.analyse.inter |= X264_ANALYSE_BSUB16x16;
+    }
     x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
     x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
     x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
@@ -398,6 +369,17 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
     x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
 #endif
+
+    if (avctx->me_method == ME_EPZS)
+        x4->params.analyse.i_me_method = X264_ME_DIA;
+    else if (avctx->me_method == ME_HEX)
+        x4->params.analyse.i_me_method = X264_ME_HEX;
+    else if (avctx->me_method == ME_UMH)
+        x4->params.analyse.i_me_method = X264_ME_UMH;
+    else if (avctx->me_method == ME_FULL)
+        x4->params.analyse.i_me_method = X264_ME_ESA;
+    else if (avctx->me_method == ME_TESA)
+        x4->params.analyse.i_me_method = X264_ME_TESA;
 
     if (avctx->gop_size >= 0)
         x4->params.i_keyint_max         = avctx->gop_size;
@@ -417,6 +399,22 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_qcompress       = avctx->qcompress; /* 0.0 => cbr, 1.0 => constant qp */
     if (avctx->refs >= 0)
         x4->params.i_frame_reference    = avctx->refs;
+    if (avctx->trellis >= 0)
+        x4->params.analyse.i_trellis    = avctx->trellis;
+    if (avctx->me_range >= 0)
+        x4->params.analyse.i_me_range   = avctx->me_range;
+    if (avctx->noise_reduction >= 0)
+        x4->params.analyse.i_noise_reduction = avctx->noise_reduction;
+    if (avctx->me_subpel_quality >= 0)
+        x4->params.analyse.i_subpel_refine   = avctx->me_subpel_quality;
+    if (avctx->b_frame_strategy >= 0)
+        x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
+    if (avctx->keyint_min >= 0)
+        x4->params.i_keyint_min = avctx->keyint_min;
+    if (avctx->coder_type >= 0)
+        x4->params.b_cabac = avctx->coder_type == FF_CODER_TYPE_AC;
+    if (avctx->me_cmp >= 0)
+        x4->params.analyse.b_chroma_me = avctx->me_cmp & FF_CMP_CHROMA;
 
     if (x4->aq_mode >= 0)
         x4->params.rc.i_aq_mode = x4->aq_mode;
@@ -424,6 +422,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_aq_strength = x4->aq_strength;
     PARSE_X264_OPT("psy-rd", psy_rd);
     PARSE_X264_OPT("deblock", deblock);
+    PARSE_X264_OPT("partitions", partitions);
     if (x4->psy >= 0)
         x4->params.analyse.b_psy  = x4->psy;
     if (x4->rc_lookahead >= 0)
@@ -453,6 +452,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.b_aud                      = x4->aud;
     if (x4->mbtree >= 0)
         x4->params.rc.b_mb_tree               = x4->mbtree;
+    if (x4->direct_pred >= 0)
+        x4->params.analyse.i_direct_mv_pred   = x4->direct_pred;
 
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
@@ -516,9 +517,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     return 0;
 }
 
-#define OFFSET(x) offsetof(X264Context,x)
+#define OFFSET(x) offsetof(X264Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
-
 static const AVOption options[] = {
     { "preset",        "Set the encoding preset (cf. x264 --fullhelp)",   OFFSET(preset),        FF_OPT_TYPE_STRING, { .str = "medium" }, 0, 0, VE},
     { "tune",          "Tune the encoding params (cf. x264 --fullhelp)",  OFFSET(tune),          FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
@@ -558,6 +558,13 @@ static const AVOption options[] = {
     { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
     { "deblock",       "Loop filter parameters, in <alpha:beta> form.",   OFFSET(deblock),       FF_OPT_TYPE_STRING, { 0 },  0, 0, VE},
     { "cplxblur",      "Reduce fluctuations in QP (before curve compression)", OFFSET(cplxblur), FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
+    { "partitions",    "A comma-separated list of partitions to consider. "
+                       "Possible values: p8x8, p4x4, b8x8, i8x8, i4x4, none, all", OFFSET(partitions), FF_OPT_TYPE_STRING, { 0 }, 0, 0, VE},
+    { "direct-pred",   "Direct MV prediction mode",                       OFFSET(direct_pred),   FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "direct-pred" },
+    { "none",          NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_NONE },     0, 0, VE, "direct-pred" },
+    { "spatial",       NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
+    { "temporal",      NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
+    { "auto",          NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
     { NULL },
 };
 
@@ -579,6 +586,15 @@ static const AVCodecDefault x264_defaults[] = {
     { "qcomp",            "-1" },
     { "refs",             "-1" },
     { "sc_threshold",     "-1" },
+    { "trellis",          "-1" },
+    { "nr",               "-1" },
+    { "me_range",         "-1" },
+    { "me_method",        "-1" },
+    { "subq",             "-1" },
+    { "b_strategy",       "-1" },
+    { "keyint_min",       "-1" },
+    { "coder",            "-1" },
+    { "cmp",              "-1" },
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { NULL },
 };

@@ -59,7 +59,7 @@ static int av_set_number2(void *obj, const char *name, double num, int den, int6
     void *dst;
     if (o_out)
         *o_out= o;
-    if (!o || o->offset<=0)
+    if (!o)
         return AVERROR_OPTION_NOT_FOUND;
 
     if (o->max*den < num*intnum || o->min*den > num*intnum) {
@@ -123,7 +123,7 @@ int av_set_string3(void *obj, const char *name, const char *val, int alloc, cons
         *o_out = o;
     if (!o)
         return AVERROR_OPTION_NOT_FOUND;
-    if ((!val && o->type != FF_OPT_TYPE_STRING) || o->offset<=0)
+    if (!val && o->type != FF_OPT_TYPE_STRING)
         return AVERROR(EINVAL);
 
     if (o->type == FF_OPT_TYPE_BINARY) {
@@ -233,7 +233,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     void *dst;
     uint8_t *bin;
     int len, i;
-    if (!o || o->offset<=0)
+    if (!o)
         return NULL;
     if (o->type != FF_OPT_TYPE_STRING && (!buf || !buf_len))
         return NULL;
@@ -414,18 +414,21 @@ int av_opt_show2(void *obj, void *av_log_obj, int req_flags, int rej_flags)
     return 0;
 }
 
-/** Set the values of the AVCodecContext or AVFormatContext structure.
- * They are set to the defaults specified in the according AVOption options
- * array default_val field.
- *
- * @param s AVCodecContext or AVFormatContext for which the defaults will be set
- */
+void av_opt_set_defaults(void *s)
+{
+#if FF_API_OLD_AVOPTIONS
+    av_opt_set_defaults2(s, 0, 0);
+}
+
 void av_opt_set_defaults2(void *s, int mask, int flags)
 {
+#endif
     const AVOption *opt = NULL;
     while ((opt = av_next_option(s, opt)) != NULL) {
+#if FF_API_OLD_AVOPTIONS
         if ((opt->flags & mask) != flags)
             continue;
+#endif
         switch (opt->type) {
             case FF_OPT_TYPE_CONST:
                 /* Nothing to be done here */
@@ -465,11 +468,6 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
                 av_log(s, AV_LOG_DEBUG, "AVOption type %d of option %s not implemented yet\n", opt->type, opt->name);
         }
     }
-}
-
-void av_opt_set_defaults(void *s)
-{
-    av_opt_set_defaults2(s, 0, 0);
 }
 
 /**
@@ -656,7 +654,7 @@ int main(void)
         };
 
         test_ctx.class = &test_class;
-        av_opt_set_defaults2(&test_ctx, 0, 0);
+        av_opt_set_defaults(&test_ctx);
         test_ctx.string = av_strdup("default");
 
         av_log_set_level(AV_LOG_DEBUG);

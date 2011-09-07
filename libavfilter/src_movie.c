@@ -97,7 +97,7 @@ static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, voi
     int ret;
 
     movie->class = &movie_class;
-    av_opt_set_defaults2(movie, 0, 0);
+    av_opt_set_defaults(movie);
 
     if (args)
         movie->file_name = av_get_token(&args, ":");

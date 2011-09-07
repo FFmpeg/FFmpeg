@@ -547,6 +547,7 @@ OBJS-$(CONFIG_FLAC_MUXER)              += flacdec.o flacdata.o flac.o vorbis_dat
 OBJS-$(CONFIG_FLV_DEMUXER)             += mpeg4audio.o
 OBJS-$(CONFIG_GXF_DEMUXER)             += mpeg12data.o
 OBJS-$(CONFIG_IFF_DEMUXER)             += iff.o
+OBJS-$(CONFIG_LATM_MUXER)              += mpeg4audio.o
 OBJS-$(CONFIG_MATROSKA_AUDIO_MUXER)    += xiph.o mpeg4audio.o vorbis_data.o \
                                           flacdec.o flacdata.o flac.o
 OBJS-$(CONFIG_MATROSKA_DEMUXER)        += mpeg4audio.o mpegaudiodata.o

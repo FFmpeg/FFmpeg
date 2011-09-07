@@ -47,6 +47,7 @@ easier to use. The changes are:
 - ashowinfo filter added
 - Windows Media Image decoder
 - amovie source added
+- LATM muxer
 
 
 version 0.8:

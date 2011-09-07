@@ -402,8 +402,8 @@ static const AVOption options[]={
 {"bframebias", "influences how often B-frames are used", OFFSET(bframebias), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 #endif
 {"trellis", "rate-distortion optimal quantization", OFFSET(trellis), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
-{"directpred", "direct mv prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)", OFFSET(directpred), FF_OPT_TYPE_INT, {.dbl = 2 }, INT_MIN, INT_MAX, V|E},
 #if FF_API_X264_GLOBAL_OPTS
+{"directpred", "direct mv prediction mode - 0 (none), 1 (spatial), 2 (temporal), 3 (auto)", OFFSET(directpred), FF_OPT_TYPE_INT, {.dbl = -1 }, INT_MIN, INT_MAX, V|E},
 {"bpyramid", "allows B-frames to be used as references for predicting", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BPYRAMID }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"wpred", "weighted biprediction for b-frames (H.264)", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_WPRED }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"mixed_refs", "one reference per partition, as opposed to one reference per macroblock", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_MIXED_REFS }, INT_MIN, INT_MAX, V|E, "flags2"},
@@ -416,13 +416,13 @@ static const AVOption options[]={
 {"complexityblur", "reduce fluctuations in qp (before curve compression)", OFFSET(complexityblur), FF_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, V|E},
 {"deblockalpha", "in-loop deblocking filter alphac0 parameter", OFFSET(deblockalpha), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
 {"deblockbeta", "in-loop deblocking filter beta parameter", OFFSET(deblockbeta), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, -6, 6, V|E},
-#endif
 {"partitions", "macroblock subpartition sizes to consider", OFFSET(partitions), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti4x4", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"parti8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_I8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partp4x4", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_P4X4 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partp8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_P8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
 {"partb8x8", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = X264_PART_B8X8 }, INT_MIN, INT_MAX, V|E, "partitions"},
+#endif
 {"sc_factor", "multiplied by qscale for each frame and added to scene_change_score", OFFSET(scenechange_factor), FF_OPT_TYPE_INT, {.dbl = 6 }, 0, INT_MAX, V|E},
 {"mv0_threshold", NULL, OFFSET(mv0_threshold), FF_OPT_TYPE_INT, {.dbl = 256 }, 0, INT_MAX, V|E},
 #if FF_API_MPEGVIDEO_GLOBAL_OPTS
