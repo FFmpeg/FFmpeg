@@ -839,7 +839,7 @@ erasure:
 
     *data_size = 160 * sizeof(*outbuffer);
 
-    return *data_size;
+    return buf_size;
 }
 
 AVCodec ff_qcelp_decoder =
