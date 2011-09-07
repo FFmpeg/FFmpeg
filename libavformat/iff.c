@@ -59,8 +59,6 @@
 #define RIGHT   4
 #define STEREO  6
 
-#define PACKET_SIZE 1024
-
 typedef enum {
     COMP_NONE,
     COMP_FIB,
@@ -76,21 +74,8 @@ typedef struct {
     uint64_t  body_pos;
     uint32_t  body_size;
     uint32_t  sent_bytes;
-    uint32_t  audio_frame_count;
 } IffDemuxContext;
 
-
-static void interleave_stereo(const uint8_t *src, uint8_t *dest, int size)
-{
-    uint8_t *end = dest + size;
-    size = size>>1;
-
-    while(dest < end) {
-        *dest++ = *src;
-        *dest++ = *(src+size);
-        src++;
-    }
-}
 
 /* Metadata string read */
 static int get_metadata(AVFormatContext *s,
@@ -278,40 +263,20 @@ static int iff_read_packet(AVFormatContext *s,
 {
     IffDemuxContext *iff = s->priv_data;
     AVIOContext *pb = s->pb;
-    AVStream *st = s->streams[0];
     int ret;
 
     if(iff->sent_bytes >= iff->body_size)
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
-    if(st->codec->channels == 2) {
-        uint8_t sample_buffer[PACKET_SIZE];
-
-        ret = avio_read(pb, sample_buffer, PACKET_SIZE);
-        if(av_new_packet(pkt, PACKET_SIZE) < 0) {
-            av_log(s, AV_LOG_ERROR, "cannot allocate packet\n");
-            return AVERROR(ENOMEM);
-        }
-        interleave_stereo(sample_buffer, pkt->data, PACKET_SIZE);
-    } else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-        ret = av_get_packet(pb, pkt, iff->body_size);
-    } else {
-        ret = av_get_packet(pb, pkt, PACKET_SIZE);
-    }
+    ret = av_get_packet(pb, pkt, iff->body_size);
+    if (ret < 0)
+        return ret;
 
     if(iff->sent_bytes == 0)
         pkt->flags |= AV_PKT_FLAG_KEY;
+    iff->sent_bytes = iff->body_size;
 
-    if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        iff->sent_bytes += PACKET_SIZE;
-    } else {
-        iff->sent_bytes = iff->body_size;
-    }
     pkt->stream_index = 0;
-    if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-        pkt->pts = iff->audio_frame_count;
-        iff->audio_frame_count += ret / st->codec->channels;
-    }
     return ret;
 }
 
