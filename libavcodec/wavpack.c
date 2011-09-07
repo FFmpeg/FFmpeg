@@ -1009,7 +1009,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             int16_t *dst = (int16_t*)samples + samplecount * 2;
             int16_t *src = (int16_t*)samples + samplecount;
             int cnt = samplecount;
-            while(cnt--){
+            while(cnt-- > 0){
                 *--dst = *--src;
                 *--dst = *src;
             }
@@ -1018,7 +1018,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             int32_t *dst = (int32_t*)samples + samplecount * 2;
             int32_t *src = (int32_t*)samples + samplecount;
             int cnt = samplecount;
-            while(cnt--){
+            while(cnt-- > 0){
                 *--dst = *--src;
                 *--dst = *src;
             }
@@ -1027,7 +1027,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             float *dst = (float*)samples + samplecount * 2;
             float *src = (float*)samples + samplecount;
             int cnt = samplecount;
-            while(cnt--){
+            while(cnt-- > 0){
                 *--dst = *--src;
                 *--dst = *src;
             }
