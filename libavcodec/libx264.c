@@ -200,34 +200,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x264_param_default(&x4->params);
 
-    x4->params.b_cabac           = avctx->coder_type == FF_CODER_TYPE_AC;
-    x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
-
-    x4->params.i_keyint_min = avctx->keyint_min;
-    if (x4->params.i_keyint_min > x4->params.i_keyint_max)
-        x4->params.i_keyint_min = x4->params.i_keyint_max;
-
     x4->params.b_deblocking_filter         = avctx->flags & CODEC_FLAG_LOOP_FILTER;
-
-    if (avctx->me_method == ME_EPZS)
-        x4->params.analyse.i_me_method = X264_ME_DIA;
-    else if (avctx->me_method == ME_HEX)
-        x4->params.analyse.i_me_method = X264_ME_HEX;
-    else if (avctx->me_method == ME_UMH)
-        x4->params.analyse.i_me_method = X264_ME_UMH;
-    else if (avctx->me_method == ME_FULL)
-        x4->params.analyse.i_me_method = X264_ME_ESA;
-    else if (avctx->me_method == ME_TESA)
-        x4->params.analyse.i_me_method = X264_ME_TESA;
-    else x4->params.analyse.i_me_method = X264_ME_HEX;
-
-    x4->params.analyse.i_me_range         = avctx->me_range;
-    x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
-
-    x4->params.analyse.b_chroma_me        = avctx->me_cmp & FF_CMP_CHROMA;
-
-    x4->params.analyse.i_trellis          = avctx->trellis;
-    x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
 
     if (x4->preset || x4->tune)
         if (x264_param_default_preset(&x4->params, x4->preset, x4->tune) < 0) {
@@ -332,6 +305,17 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
 #endif
 
+    if (avctx->me_method == ME_EPZS)
+        x4->params.analyse.i_me_method = X264_ME_DIA;
+    else if (avctx->me_method == ME_HEX)
+        x4->params.analyse.i_me_method = X264_ME_HEX;
+    else if (avctx->me_method == ME_UMH)
+        x4->params.analyse.i_me_method = X264_ME_UMH;
+    else if (avctx->me_method == ME_FULL)
+        x4->params.analyse.i_me_method = X264_ME_ESA;
+    else if (avctx->me_method == ME_TESA)
+        x4->params.analyse.i_me_method = X264_ME_TESA;
+
     if (avctx->gop_size >= 0)
         x4->params.i_keyint_max         = avctx->gop_size;
     if (avctx->max_b_frames >= 0)
@@ -350,6 +334,22 @@ static av_cold int X264_init(AVCodecContext *avctx)
         x4->params.rc.f_qcompress       = avctx->qcompress; /* 0.0 => cbr, 1.0 => constant qp */
     if (avctx->refs >= 0)
         x4->params.i_frame_reference    = avctx->refs;
+    if (avctx->trellis >= 0)
+        x4->params.analyse.i_trellis    = avctx->trellis;
+    if (avctx->me_range >= 0)
+        x4->params.analyse.i_me_range   = avctx->me_range;
+    if (avctx->noise_reduction >= 0)
+        x4->params.analyse.i_noise_reduction = avctx->noise_reduction;
+    if (avctx->me_subpel_quality >= 0)
+        x4->params.analyse.i_subpel_refine   = avctx->me_subpel_quality;
+    if (avctx->b_frame_strategy >= 0)
+        x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
+    if (avctx->keyint_min >= 0)
+        x4->params.i_keyint_min = avctx->keyint_min;
+    if (avctx->coder_type >= 0)
+        x4->params.b_cabac = avctx->coder_type == FF_CODER_TYPE_AC;
+    if (avctx->me_cmp >= 0)
+        x4->params.analyse.b_chroma_me = avctx->me_cmp & FF_CMP_CHROMA;
 
     if (x4->aq_mode >= 0)
         x4->params.rc.i_aq_mode = x4->aq_mode;
@@ -517,6 +517,15 @@ static const AVCodecDefault x264_defaults[] = {
     { "qcomp",            "-1" },
     { "refs",             "-1" },
     { "sc_threshold",     "-1" },
+    { "trellis",          "-1" },
+    { "nr",               "-1" },
+    { "me_range",         "-1" },
+    { "me_method",        "-1" },
+    { "subq",             "-1" },
+    { "b_strategy",       "-1" },
+    { "keyint_min",       "-1" },
+    { "coder",            "-1" },
+    { "cmp",              "-1" },
     { "threads",          AV_STRINGIFY(X264_THREADS_AUTO) },
     { NULL },
 };
