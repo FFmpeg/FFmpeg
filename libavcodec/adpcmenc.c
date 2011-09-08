@@ -164,6 +164,39 @@ static inline unsigned char adpcm_ima_compress_sample(ADPCMChannelStatus *c, sho
     return nibble;
 }
 
+static inline unsigned char adpcm_ima_qt_compress_sample(ADPCMChannelStatus *c, short sample)
+{
+    int delta = sample - c->prev_sample;
+    int mask, step = ff_adpcm_step_table[c->step_index];
+    int diff = step >> 3;
+    int nibble = 0;
+
+    if (delta < 0) {
+        nibble = 8;
+        delta = -delta;
+    }
+
+    for (mask = 4; mask;) {
+        if (delta >= step) {
+            nibble |= mask;
+            delta -= step;
+            diff += step;
+        }
+        step >>= 1;
+        mask >>= 1;
+    }
+
+    if (nibble & 8)
+        c->prev_sample -= diff;
+    else
+        c->prev_sample += diff;
+
+    c->prev_sample = av_clip_int16(c->prev_sample);
+    c->step_index = av_clip(c->step_index + ff_adpcm_index_table[nibble], 0, 88);
+
+    return nibble;
+}
+
 static inline unsigned char adpcm_ms_compress_sample(ADPCMChannelStatus *c, short sample)
 {
     int predictor, nibble, bias;
@@ -497,16 +530,14 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
                 adpcm_compress_trellis(avctx, samples+ch, buf, &c->status[ch], 64);
                 for(i=0; i<64; i++)
                     put_bits(&pb, 4, buf[i^1]);
-                c->status[ch].prev_sample = c->status[ch].predictor & ~0x7F;
             } else {
                 for (i=0; i<64; i+=2){
                     int t1, t2;
-                    t1 = adpcm_ima_compress_sample(&c->status[ch], samples[avctx->channels*(i+0)+ch]);
-                    t2 = adpcm_ima_compress_sample(&c->status[ch], samples[avctx->channels*(i+1)+ch]);
+                    t1 = adpcm_ima_qt_compress_sample(&c->status[ch], samples[avctx->channels*(i+0)+ch]);
+                    t2 = adpcm_ima_qt_compress_sample(&c->status[ch], samples[avctx->channels*(i+1)+ch]);
                     put_bits(&pb, 4, t2);
                     put_bits(&pb, 4, t1);
                 }
-                c->status[ch].prev_sample &= ~0x7F;
             }
         }
 
