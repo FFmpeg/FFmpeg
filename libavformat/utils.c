@@ -1146,7 +1146,10 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (!st->need_parsing || !st->parser) {
                 /* no parsing needed: we just output the packet as is */
                 /* raw data support */
-                *pkt = st->cur_pkt; st->cur_pkt.data= NULL;
+                *pkt = st->cur_pkt;
+                st->cur_pkt.data= NULL;
+                st->cur_pkt.side_data_elems = 0;
+                st->cur_pkt.side_data = NULL;
                 compute_pkt_fields(s, st, NULL, pkt);
                 s->cur_st = NULL;
                 if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&
