@@ -68,6 +68,8 @@ typedef struct VP8EncoderContext {
     int arnr_max_frames;
     int arnr_strength;
     int arnr_type;
+
+    int rc_lookahead;
 } VP8Context;
 
 #define V AV_OPT_FLAG_VIDEO_PARAM
@@ -85,6 +87,11 @@ static const AVOption options[]={
 {"arnr_max_frames", "altref noise reduction max frame count", offsetof(VP8Context, arnr_max_frames), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 15, V|E},
 {"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), FF_OPT_TYPE_INT, {.dbl = 3}, 0, 6, V|E},
 {"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), FF_OPT_TYPE_INT, {.dbl = 3}, 1, 3, V|E},
+#if FF_API_X264_GLOBAL_OPTS
+{"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, rc_lookahead), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 25, V|E},
+#else
+{"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, rc_lookahead), FF_OPT_TYPE_INT, {.dbl = 25}, 0, 25, V|E},
+#endif
 {NULL}
 };
 static const AVClass class = { "libvpx", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
@@ -261,7 +268,13 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     enccfg.g_timebase.num = avctx->time_base.num;
     enccfg.g_timebase.den = avctx->time_base.den;
     enccfg.g_threads      = avctx->thread_count;
+#if FF_API_X264_GLOBAL_OPTS
     enccfg.g_lag_in_frames= FFMIN(avctx->rc_lookahead, 25);  //0-25, avoids init failure
+    if (ctx->rc_lookahead >= 0)
+        enccfg.g_lag_in_frames= ctx->rc_lookahead;
+#else
+    enccfg.g_lag_in_frames= ctx->rc_lookahead;
+#endif
 
     if (avctx->flags & CODEC_FLAG_PASS1)
         enccfg.g_pass = VPX_RC_FIRST_PASS;
