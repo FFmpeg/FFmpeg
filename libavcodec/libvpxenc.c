@@ -74,17 +74,17 @@ typedef struct VP8EncoderContext {
 #define E AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[]={
-{"speed", "", offsetof(VP8Context, cpuused), FF_OPT_TYPE_INT, 3, -16, 16, V|E},
-{"quality", "", offsetof(VP8Context, deadline), FF_OPT_TYPE_INT, VPX_DL_GOOD_QUALITY, INT_MIN, INT_MAX, V|E, "quality"},
-{"best", NULL, 0, FF_OPT_TYPE_CONST, VPX_DL_BEST_QUALITY, INT_MIN, INT_MAX, V|E, "quality"},
-{"good", NULL, 0, FF_OPT_TYPE_CONST, VPX_DL_GOOD_QUALITY, INT_MIN, INT_MAX, V|E, "quality"},
-{"realtime", NULL, 0, FF_OPT_TYPE_CONST, VPX_DL_REALTIME, INT_MIN, INT_MAX, V|E, "quality"},
-{"vp8flags", "", offsetof(VP8Context, flags), FF_OPT_TYPE_FLAGS, 0, 0, UINT_MAX, V|E, "flags"},
-{"error_resilient", "enable error resilience", 0, FF_OPT_TYPE_CONST, VP8F_ERROR_RESILIENT, INT_MIN, INT_MAX, V|E, "flags"},
-{"altref", "enable use of alternate reference frames (VP8/2-pass only)", 0, FF_OPT_TYPE_CONST, VP8F_AUTO_ALT_REF, INT_MIN, INT_MAX, V|E, "flags"},
-{"arnr_max_frames", "altref noise reduction max frame count", offsetof(VP8Context, arnr_max_frames), FF_OPT_TYPE_INT, 0, 0, 15, V|E},
-{"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), FF_OPT_TYPE_INT, 3, 0, 6, V|E},
-{"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), FF_OPT_TYPE_INT, 3, 1, 3, V|E},
+{"speed", "", offsetof(VP8Context, cpuused), FF_OPT_TYPE_INT, {.dbl = 3}, -16, 16, V|E},
+{"quality", "", offsetof(VP8Context, deadline), FF_OPT_TYPE_INT, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, V|E, "quality"},
+{"best", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_BEST_QUALITY}, INT_MIN, INT_MAX, V|E, "quality"},
+{"good", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, V|E, "quality"},
+{"realtime", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_REALTIME}, INT_MIN, INT_MAX, V|E, "quality"},
+{"vp8flags", "", offsetof(VP8Context, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, 0, UINT_MAX, V|E, "flags"},
+{"error_resilient", "enable error resilience", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_ERROR_RESILIENT}, INT_MIN, INT_MAX, V|E, "flags"},
+{"altref", "enable use of alternate reference frames (VP8/2-pass only)", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_AUTO_ALT_REF}, INT_MIN, INT_MAX, V|E, "flags"},
+{"arnr_max_frames", "altref noise reduction max frame count", offsetof(VP8Context, arnr_max_frames), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 15, V|E},
+{"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), FF_OPT_TYPE_INT, {.dbl = 3}, 0, 6, V|E},
+{"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), FF_OPT_TYPE_INT, {.dbl = 3}, 1, 3, V|E},
 {NULL}
 };
 static const AVClass class = { "libvpx", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
