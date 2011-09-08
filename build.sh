@@ -18,7 +18,7 @@ mkdir -p ../build/libav
 DEST=../build/libav
 FLAGS="--target-os=linux --cross-prefix=arm-linux-androideabi- --arch=arm --cpu=armv7-a"
 FLAGS="$FLAGS --sysroot=$SYSROOT"
-FLAGS="$FLAGS --disable-avdevice --disable-decoder=h264 --disable-decoder=h264_vdpau --enable-libstagefright"
+FLAGS="$FLAGS --disable-avdevice --disable-decoder=h264 --disable-decoder=h264_vdpau --enable-libstagefright-h264"
 
 EXTRA_CFLAGS="-I$ANDROID_SOURCE/frameworks/base/include -I$ANDROID_SOURCE/system/core/include"
 EXTRA_CFLAGS="$EXTRA_CFLAGS -I$ANDROID_SOURCE/frameworks/base/media/libstagefright"
