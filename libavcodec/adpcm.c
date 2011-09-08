@@ -379,7 +379,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_QT:
-        n = buf_size - 2*avctx->channels;
+        /* In QuickTime, IMA is encoded by chunks of 34 bytes (=64 samples).
+           Channel data is interleaved per-chunk. */
+        if (buf_size / 34 < avctx->channels) {
+            av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+            return AVERROR(EINVAL);
+        }
         for (channel = 0; channel < avctx->channels; channel++) {
             int16_t predictor;
             int step_index;
@@ -412,7 +417,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
             samples = (short*)data + channel;
 
-            for(m=32; n>0 && m>0; n--, m--) { /* in QuickTime, IMA is encoded by chuncks of 34 bytes (=64 samples) */
+            for (m = 0; m < 32; m++) {
                 *samples = adpcm_ima_qt_expand_nibble(cs, src[0] & 0x0F, 3);
                 samples += avctx->channels;
                 *samples = adpcm_ima_qt_expand_nibble(cs, src[0] >> 4  , 3);
