@@ -633,11 +633,17 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_EA:
-        if (buf_size < 4 || AV_RL32(src) >= ((buf_size - 12) * 2)) {
-            src += buf_size;
-            break;
+        /* Each EA ADPCM frame has a 12-byte header followed by 30-byte pieces,
+           each coding 28 stereo samples. */
+        if (buf_size < 12) {
+            av_log(avctx, AV_LOG_ERROR, "frame too small\n");
+            return AVERROR(EINVAL);
         }
         samples_in_chunk = AV_RL32(src);
+        if (samples_in_chunk / 28 > (buf_size - 12) / 30) {
+            av_log(avctx, AV_LOG_ERROR, "invalid frame\n");
+            return AVERROR(EINVAL);
+        }
         src += 4;
         current_left_sample   = (int16_t)bytestream_get_le16(&src);
         previous_left_sample  = (int16_t)bytestream_get_le16(&src);
