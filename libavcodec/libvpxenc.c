@@ -70,6 +70,7 @@ typedef struct VP8EncoderContext {
     int arnr_type;
 
     int rc_lookahead;
+    int crf;
 } VP8Context;
 
 #define V AV_OPT_FLAG_VIDEO_PARAM
@@ -89,8 +90,10 @@ static const AVOption options[]={
 {"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), FF_OPT_TYPE_INT, {.dbl = 3}, 1, 3, V|E},
 #if FF_API_X264_GLOBAL_OPTS
 {"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, rc_lookahead), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 25, V|E},
+{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 63, V|E},
 #else
 {"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, rc_lookahead), FF_OPT_TYPE_INT, {.dbl = 25}, 0, 25, V|E},
+{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 63, V|E},
 #endif
 {NULL}
 };
@@ -286,7 +289,11 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     if (avctx->rc_min_rate == avctx->rc_max_rate &&
         avctx->rc_min_rate == avctx->bit_rate)
         enccfg.rc_end_usage = VPX_CBR;
-    else if (avctx->crf)
+#if FF_API_X264_GLOBAL_OPTS
+    else if (avctx->crf || ctx->crf > 0)
+#else
+    else if (ctx->crf)
+#endif
         enccfg.rc_end_usage = VPX_CQ;
     enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                               AV_ROUND_NEAR_INF);
@@ -368,7 +375,13 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
     codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  avctx->mb_threshold);
+#if FF_API_X264_GLOBAL_OPTS
     codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          (int)avctx->crf);
+    if (ctx->crf >= 0)
+        codecctl_int(avctx, VP8E_SET_CQ_LEVEL,      ctx->crf);
+#else
+    codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
+#endif
     codecctl_int(avctx, VP8E_SET_ENABLEAUTOALTREF,  !!(ctx->flags & VP8F_AUTO_ALT_REF));
     codecctl_int(avctx, VP8E_SET_ARNR_MAXFRAMES,    ctx->arnr_max_frames);
     codecctl_int(avctx, VP8E_SET_ARNR_STRENGTH,     ctx->arnr_strength);
