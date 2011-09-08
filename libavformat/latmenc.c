@@ -25,6 +25,7 @@
 #include "libavcodec/mpeg4audio.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "rawenc.h"
 
 typedef struct {
     int off;
@@ -74,6 +75,9 @@ static int latm_write_header(AVFormatContext *s)
 {
     LATMContext *ctx = s->priv_data;
     AVCodecContext *avctx = s->streams[0]->codec;
+
+    if (avctx->codec_id == CODEC_ID_AAC_LATM)
+        return 0;
 
     if (avctx->extradata_size > 0 &&
         latm_decode_extradata(ctx, avctx->extradata, avctx->extradata_size) < 0)
@@ -134,6 +138,9 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     int i, len;
     uint8_t loas_header[] = "\x56\xe0\x00";
     uint8_t *buf;
+
+    if (s->streams[0]->codec->codec_id == CODEC_ID_AAC_LATM)
+        return ff_raw_write_packet(s, pkt);
 
     if (pkt->size > 2 && pkt->data[0] == 0xff && (pkt->data[1] >> 4) == 0xf) {
         av_log(s, AV_LOG_ERROR, "ADTS header detected - ADTS will not be incorrectly muxed into LATM\n");
