@@ -57,16 +57,19 @@
 
 /* These are for CD-ROM XA ADPCM */
 static const int xa_adpcm_table[5][2] = {
-   {   0,   0 },
-   {  60,   0 },
-   { 115, -52 },
-   {  98, -55 },
-   { 122, -60 }
+    {   0,   0 },
+    {  60,   0 },
+    { 115, -52 },
+    {  98, -55 },
+    { 122, -60 }
 };
 
 static const int ea_adpcm_table[] = {
-    0, 240, 460, 392, 0, 0, -208, -220, 0, 1,
-    3, 4, 7, 8, 10, 11, 0, -1, -3, -4
+    0,  240,  460,  392,
+    0,    0, -208, -220,
+    0,    1,    3,    4,
+    7,    8,   10,   11,
+    0,   -1,   -3,   -4
 };
 
 // padded to zero where table size is less then 16
