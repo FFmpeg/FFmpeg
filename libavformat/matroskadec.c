@@ -1148,7 +1148,7 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska, int idx
             matroska->num_levels++;
             matroska->current_id = 0;
 
-            ebml_parse(matroska, matroska_segment, matroska);
+            ret = ebml_parse(matroska, matroska_segment, matroska);
 
             /* remove dummy level */
             while (matroska->num_levels) {
