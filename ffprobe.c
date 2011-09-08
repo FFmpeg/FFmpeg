@@ -291,7 +291,7 @@ static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_i
             break;
         }
     } else {
-        print_fmt("codec_type", "unknown");
+        print_str("codec_type", "unknown");
     }
 
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
