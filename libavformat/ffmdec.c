@@ -121,6 +121,11 @@ static int ffm_read_data(AVFormatContext *s,
             if (avio_tell(pb) == ffm->file_size)
                 avio_seek(pb, ffm->packet_size, SEEK_SET);
     retry_read:
+            if (pb->buffer_size != ffm->packet_size) {
+                int64_t tell = avio_tell(pb);
+                url_setbufsize(pb, ffm->packet_size);
+                avio_seek(pb, tell, SEEK_SET);
+            }
             id = avio_rb16(pb); /* PACKET_ID */
             if (id != PACKET_ID)
                 if (ffm_resync(s, id) < 0)
