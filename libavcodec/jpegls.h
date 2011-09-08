@@ -86,6 +86,8 @@ static inline void ff_jpegls_downscale_state(JLSState *state, int Q){
 }
 
 static inline int ff_jpegls_update_state_regular(JLSState *state, int Q, int err){
+    if(FFABS(err) > 0xFFFF)
+        return -0x10000;
     state->A[Q] += FFABS(err);
     err *= state->twonear;
     state->B[Q] += err;
