@@ -997,6 +997,9 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
         else
             samplecount = wv_unpack_stereo(s, &s->gb, samples, SAMPLE_FMT_FLT);
 
+        if (samplecount < 0)
+            return -1;
+
     }else{
         if(avctx->sample_fmt == SAMPLE_FMT_S16)
             samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_S16);
@@ -1004,6 +1007,9 @@ static int wavpack_decode_frame(AVCodecContext *avctx,
             samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_S32);
         else
             samplecount = wv_unpack_mono(s, &s->gb, samples, SAMPLE_FMT_FLT);
+
+        if (samplecount < 0)
+            return -1;
 
         if(s->stereo && avctx->sample_fmt == SAMPLE_FMT_S16){
             int16_t *dst = (int16_t*)samples + samplecount * 2;
