@@ -1410,12 +1410,14 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
         av_dlog("Skipping after seek\n");
         /* seek detected, flush pes buffer */
         for (i = 0; i < NB_PID_MAX; i++) {
-            if (ts->pids[i] && ts->pids[i]->type == MPEGTS_PES) {
-                PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
-                av_freep(&pes->buffer);
+            if (ts->pids[i]) {
+                if (ts->pids[i]->type == MPEGTS_PES) {
+                   PESContext *pes = ts->pids[i]->u.pes_filter.opaque;
+                   av_freep(&pes->buffer);
+                   pes->data_index = 0;
+                   pes->state = MPEGTS_SKIP; /* skip until pes header */
+                }
                 ts->pids[i]->last_cc = -1;
-                pes->data_index = 0;
-                pes->state = MPEGTS_SKIP; /* skip until pes header */
             }
         }
     }
