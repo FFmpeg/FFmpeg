@@ -527,21 +527,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             *samples++ = c->status[1].predictor;
         }
         while (src < buf + buf_size) {
-
-            /* take care of the top nibble (always left or mono channel) */
-            *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                src[0] >> 4, 3);
-
-            /* take care of the bottom nibble, which is right sample for
-             * stereo, or another mono sample */
-            if (st)
-                *samples++ = adpcm_ima_expand_nibble(&c->status[1],
-                    src[0] & 0x0F, 3);
-            else
-                *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                    src[0] & 0x0F, 3);
-
-            src++;
+            uint8_t v = *src++;
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0 ], v >> 4  , 3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
         }
         break;
     case CODEC_ID_ADPCM_IMA_DK3:
@@ -600,39 +588,25 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
 
         while (src < buf + buf_size) {
-
+            uint8_t v1, v2;
+            uint8_t v = *src++;
+            /* nibbles are swapped for mono */
             if (st) {
-                *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                    src[0] >> 4  , 3);
-                *samples++ = adpcm_ima_expand_nibble(&c->status[1],
-                    src[0] & 0x0F, 3);
+                v1 = v >> 4;
+                v2 = v & 0x0F;
             } else {
-                *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                    src[0] & 0x0F, 3);
-                *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                    src[0] >> 4  , 3);
+                v2 = v >> 4;
+                v1 = v & 0x0F;
             }
-
-            src++;
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0 ], v1, 3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[st], v2, 3);
         }
         break;
     case CODEC_ID_ADPCM_IMA_WS:
-        /* no per-block initialization; just start decoding the data */
         while (src < buf + buf_size) {
-
-            if (st) {
-                *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                    src[0] >> 4  , 3);
-                *samples++ = adpcm_ima_expand_nibble(&c->status[1],
-                    src[0] & 0x0F, 3);
-            } else {
-                *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                    src[0] >> 4  , 3);
-                *samples++ = adpcm_ima_expand_nibble(&c->status[0],
-                    src[0] & 0x0F, 3);
-            }
-
-            src++;
+            uint8_t v = *src++;
+            *samples++ = adpcm_ima_expand_nibble(&c->status[0],  v >> 4  , 3);
+            *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
         }
         break;
     case CODEC_ID_ADPCM_XA:
@@ -886,18 +860,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         break;
     case CODEC_ID_ADPCM_CT:
         while (src < buf + buf_size) {
-            if (st) {
-                *samples++ = adpcm_ct_expand_nibble(&c->status[0],
-                    src[0] >> 4);
-                *samples++ = adpcm_ct_expand_nibble(&c->status[1],
-                    src[0] & 0x0F);
-            } else {
-                *samples++ = adpcm_ct_expand_nibble(&c->status[0],
-                    src[0] >> 4);
-                *samples++ = adpcm_ct_expand_nibble(&c->status[0],
-                    src[0] & 0x0F);
-            }
-            src++;
+            uint8_t v = *src++;
+            *samples++ = adpcm_ct_expand_nibble(&c->status[0 ], v >> 4  );
+            *samples++ = adpcm_ct_expand_nibble(&c->status[st], v & 0x0F);
         }
         break;
     case CODEC_ID_ADPCM_SBPRO_4:
@@ -1005,18 +970,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     }
     case CODEC_ID_ADPCM_YAMAHA:
         while (src < buf + buf_size) {
-            if (st) {
-                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
-                        src[0] & 0x0F);
-                *samples++ = adpcm_yamaha_expand_nibble(&c->status[1],
-                        src[0] >> 4  );
-            } else {
-                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
-                        src[0] & 0x0F);
-                *samples++ = adpcm_yamaha_expand_nibble(&c->status[0],
-                        src[0] >> 4  );
-            }
-            src++;
+            uint8_t v = *src++;
+            *samples++ = adpcm_yamaha_expand_nibble(&c->status[0 ], v & 0x0F);
+            *samples++ = adpcm_yamaha_expand_nibble(&c->status[st], v >> 4  );
         }
         break;
     case CODEC_ID_ADPCM_THP:
