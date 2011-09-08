@@ -1292,7 +1292,9 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
     tss->last_cc = cc;
     if (!cc_ok) {
-        av_log(ts->stream, AV_LOG_WARNING, "Continuity Check Failed\n");
+        av_log(ts->stream, AV_LOG_WARNING,
+               "Continuity check failed for pid %d expected %d got %d\n",
+               pid, expected_cc, cc);
         if(tss->type == MPEGTS_PES) {
             PESContext *pc = tss->u.pes_filter.opaque;
             pc->flags |= AV_PKT_FLAG_CORRUPT;
