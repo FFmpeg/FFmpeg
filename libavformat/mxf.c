@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/common.h"
 #include "mxf.h"
 
 /**
@@ -81,7 +82,7 @@ static const struct {
     {PIX_FMT_PAL8,    {'P', 8                                           }},
 };
 
-static const int num_pixel_layouts = sizeof(ff_mxf_pixel_layouts) / sizeof(*ff_mxf_pixel_layouts);
+static const int num_pixel_layouts = FF_ARRAY_ELEMS(ff_mxf_pixel_layouts);
 
 int ff_mxf_decode_pixel_layout(const char pixel_layout[16], enum PixelFormat *pix_fmt)
 {
