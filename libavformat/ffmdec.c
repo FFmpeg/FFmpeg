@@ -461,11 +461,25 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     av_dlog(s, "wanted_pts=%0.6f\n", wanted_pts / 1000000.0);
     /* find the position using linear interpolation (better than
        dichotomy in typical cases) */
-    pos_min = FFM_PACKET_SIZE;
-    pos_max = ffm->file_size - FFM_PACKET_SIZE;
+    if (ffm->write_index < ffm->file_size) {
+        if (get_dts(s, FFM_PACKET_SIZE) < wanted_pts) {
+            pos_min = FFM_PACKET_SIZE;
+            pos_max = ffm->write_index - FFM_PACKET_SIZE;
+        } else {
+            pos_min = ffm->write_index;
+            pos_max = ffm->file_size - FFM_PACKET_SIZE;
+        }
+    } else {
+        pos_min = FFM_PACKET_SIZE;
+        pos_max = ffm->file_size - FFM_PACKET_SIZE;
+    }
     while (pos_min <= pos_max) {
         pts_min = get_dts(s, pos_min);
         pts_max = get_dts(s, pos_max);
+        if (pts_min > wanted_pts || pts_max < wanted_pts) {
+            pos = pts_min > wanted_pts ? pos_min : pos_max;
+            goto found;
+        }
         /* linear interpolation */
         pos1 = (double)(pos_max - pos_min) * (double)(wanted_pts - pts_min) /
             (double)(pts_max - pts_min);
