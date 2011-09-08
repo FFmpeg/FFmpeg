@@ -86,6 +86,8 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         FF_ALLOC_OR_GOTO(avctx, s->trellis_hash, 65536 * sizeof(*s->trellis_hash), error);
     }
 
+    avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
+
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_WAV:
         avctx->frame_size = (BLKSIZE - 4 * avctx->channels) * 8 / (4 * avctx->channels) + 1; /* each 16 bits sample gives one nibble */
