@@ -265,10 +265,10 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         buf = dup_wchar_to_utf8(var.bstrVal);
 
         if (pfilter) {
-        if (strcmp(device_name, buf))
-            goto fail1;
+            if (strcmp(device_name, buf))
+                goto fail1;
 
-        IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
+            IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
         } else {
             av_log(avctx, AV_LOG_INFO, " \"%s\"\n", buf);
         }
@@ -284,12 +284,12 @@ fail1:
     IEnumMoniker_Release(classenum);
 
     if (pfilter) {
-    if (!device_filter) {
-        av_log(avctx, AV_LOG_ERROR, "Could not find %s device.\n",
-               devtypename);
-        return AVERROR(EIO);
-    }
-    *pfilter = device_filter;
+        if (!device_filter) {
+            av_log(avctx, AV_LOG_ERROR, "Could not find %s device.\n",
+                   devtypename);
+            return AVERROR(EIO);
+        }
+        *pfilter = device_filter;
     }
 
     return 0;
