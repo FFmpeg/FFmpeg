@@ -42,16 +42,17 @@
  * Features and limitations:
  *
  * Reference documents:
- * http://www.pcisys.net/~melanson/codecs/simpleaudio.html
- * http://www.geocities.com/SiliconValley/8682/aud3.txt
- * http://openquicktime.sourceforge.net/plugins.htm
- * XAnim sources (xa_codec.c) http://www.rasnaimaging.com/people/lapus/download.html
- * http://www.cs.ucla.edu/~leec/mediabench/applications.html
- * SoX source code http://home.sprynet.com/~cbagwell/sox.html
+ * http://wiki.multimedia.cx/index.php?title=Category:ADPCM_Audio_Codecs
+ * http://www.pcisys.net/~melanson/codecs/simpleaudio.html [dead]
+ * http://www.geocities.com/SiliconValley/8682/aud3.txt [dead]
+ * http://openquicktime.sourceforge.net/
+ * XAnim sources (xa_codec.c) http://xanim.polter.net/
+ * http://www.cs.ucla.edu/~leec/mediabench/applications.html [dead]
+ * SoX source code http://sox.sourceforge.net/
  *
  * CD-ROM XA:
- * http://ku-www.ss.titech.ac.jp/~yatsushi/xaadpcm.html
- * vagpack & depack http://homepages.compuserve.de/bITmASTER32/psx-index.html
+ * http://ku-www.ss.titech.ac.jp/~yatsushi/xaadpcm.html [dead]
+ * vagpack & depack http://homepages.compuserve.de/bITmASTER32/psx-index.html [dead]
  * readstr http://www.geocities.co.jp/Playtown/2004/
  */
 

@@ -32,13 +32,7 @@
  * Fringe ADPCM codecs (e.g., DK3, DK4, Westwood)
  *   by Mike Melanson (melanson@pcisys.net)
  *
- * Reference documents:
- * http://www.pcisys.net/~melanson/codecs/simpleaudio.html
- * http://www.geocities.com/SiliconValley/8682/aud3.txt
- * http://openquicktime.sourceforge.net/plugins.htm
- * XAnim sources (xa_codec.c) http://www.rasnaimaging.com/people/lapus/download.html
- * http://www.cs.ucla.edu/~leec/mediabench/applications.html
- * SoX source code http://home.sprynet.com/~cbagwell/sox.html
+ * See ADPCM decoder reference documents for codec information.
  */
 
 typedef struct TrellisPath {
