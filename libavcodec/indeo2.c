@@ -162,7 +162,7 @@ static int ir2_decode_frame(AVCodecContext *avctx,
 #endif
     start = 48; /* hardcoded for now */
 
-    init_get_bits(&s->gb, buf + start, buf_size - start);
+    init_get_bits(&s->gb, buf + start, (buf_size - start) * 8);
 
     if (s->decode_delta) { /* intraframe */
         ir2_decode_plane(s, avctx->width, avctx->height,
