@@ -172,11 +172,11 @@ static void default_print_footer(const char *section)
 
 /* Print helpers */
 
-#define print_fmt0(k, f, a...) w->print_fmt_f(k, f, ##a)
-#define print_fmt( k, f, a...) do {   \
-    if (w->item_sep)                  \
-        printf("%s", w->item_sep);    \
-    w->print_fmt_f(k, f, ##a);        \
+#define print_fmt0(k, f, ...) w->print_fmt_f(k, f, __VA_ARGS__)
+#define print_fmt( k, f, ...) do {     \
+    if (w->item_sep)                   \
+        printf("%s", w->item_sep);     \
+    w->print_fmt_f(k, f, __VA_ARGS__); \
 } while (0)
 
 #define print_int0(k, v) w->print_int_f(k, v)
