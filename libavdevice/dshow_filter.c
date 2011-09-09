@@ -191,6 +191,12 @@ libAVFilter_Setup(libAVFilter *this, void *priv_data, void *callback,
 
     return 1;
 }
+static int
+libAVFilter_Cleanup(libAVFilter *this)
+{
+    libAVPin_Release(this->pin);
+    return 1;
+}
 DECLARE_CREATE(libAVFilter, libAVFilter_Setup(this, priv_data, callback, type),
                void *priv_data, void *callback, enum dshowDeviceType type)
-DECLARE_DESTROY(libAVFilter, nothing)
+DECLARE_DESTROY(libAVFilter, libAVFilter_Cleanup)
