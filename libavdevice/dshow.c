@@ -261,7 +261,7 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
         return AVERROR(EIO);
     }
 
-    while (IEnumMoniker_Next(classenum, 1, &m, NULL) == S_OK && !device_filter) {
+    while (!device_filter && IEnumMoniker_Next(classenum, 1, &m, NULL) == S_OK) {
         IPropertyBag *bag = NULL;
         char *buf = NULL;
         VARIANT var;
@@ -469,7 +469,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
         av_log(avctx, AV_LOG_INFO, "DirectShow %s device options\n",
                devtypename);
     }
-    while (IEnumPins_Next(pins, 1, &pin, NULL) == S_OK && !device_pin) {
+    while (!device_pin && IEnumPins_Next(pins, 1, &pin, NULL) == S_OK) {
         IKsPropertySet *p = NULL;
         IEnumMediaTypes *types = NULL;
         PIN_INFO info = {0};
@@ -508,7 +508,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
             goto next;
 
         IEnumMediaTypes_Reset(types);
-        while (IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK && !device_pin) {
+        while (!device_pin && IEnumMediaTypes_Next(types, 1, &type, NULL) == S_OK) {
             if (IsEqualGUID(&type->majortype, mediatype[devtype])) {
                 device_pin = pin;
                 goto next;
