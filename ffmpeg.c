@@ -3265,6 +3265,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     input_files[nb_input_files - 1].ist_index  = nb_input_streams - ic->nb_streams;
     input_files[nb_input_files - 1].ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
+    input_files[nb_input_files - 1].rate_emu   = o->rate_emu;
 
     top_field_first = -1;
     frame_rate    = (AVRational){0, 0};
