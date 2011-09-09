@@ -73,6 +73,7 @@ libAVPin_Disconnect(libAVPin *this)
         return VFW_E_NOT_STOPPED;
     if (!this->connectedto)
         return S_FALSE;
+    IPin_Release(this->connectedto);
     this->connectedto = NULL;
 
     return S_OK;
