@@ -117,7 +117,7 @@ avs_decode_frame(AVCodecContext * avctx,
     table = buf + (256 * vect_w * vect_h);
     if (sub_type != AVS_I_FRAME) {
         int map_size = ((318 / vect_w + 7) / 8) * (198 / vect_h);
-        init_get_bits(&change_map, table, map_size);
+        init_get_bits(&change_map, table, map_size * 8);
         table += map_size;
     }
 

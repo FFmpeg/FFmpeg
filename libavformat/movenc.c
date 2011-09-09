@@ -206,7 +206,7 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, 11);
     ffio_wfourcc(pb, "dac3");
 
-    init_get_bits(&gbc, track->vosData+4, track->vosLen-4);
+    init_get_bits(&gbc, track->vosData+4, (track->vosLen-4) * 8);
     fscod      = get_bits(&gbc, 2);
     frmsizecod = get_bits(&gbc, 6);
     bsid       = get_bits(&gbc, 5);
