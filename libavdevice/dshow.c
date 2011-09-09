@@ -19,13 +19,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/opt.h"
+
 #include "avdevice.h"
 #include "dshow.h"
 
 struct dshow_ctx {
+    const AVClass *class;
+
     IGraphBuilder *graph;
 
     char *device_name[2];
+
+    int   list_devices;
 
     IBaseFilter *device_filter[2];
     IPin        *device_pin[2];
@@ -217,6 +223,7 @@ fail:
  * Cycle through available devices using the device enumerator devenum,
  * retrieve the device with type specified by devtype and return the
  * pointer to the object found in *pfilter.
+ * If pfilter is NULL, list all device names.
  */
 static int
 dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
@@ -257,10 +264,14 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
 
         buf = dup_wchar_to_utf8(var.bstrVal);
 
+        if (pfilter) {
         if (strcmp(device_name, buf))
             goto fail1;
 
         IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
+        } else {
+            av_log(avctx, AV_LOG_INFO, " \"%s\"\n", buf);
+        }
 
 fail1:
         if (buf)
@@ -272,12 +283,14 @@ fail1:
 
     IEnumMoniker_Release(classenum);
 
+    if (pfilter) {
     if (!device_filter) {
         av_log(avctx, AV_LOG_ERROR, "Could not find %s device.\n",
                devtypename);
         return AVERROR(EIO);
     }
     *pfilter = device_filter;
+    }
 
     return 0;
 }
@@ -555,7 +568,7 @@ static int dshow_read_header(AVFormatContext *avctx, AVFormatParameters *ap)
     int ret = AVERROR(EIO);
     int r;
 
-    if (!parse_device_name(avctx)) {
+    if (!ctx->list_devices && !parse_device_name(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Malformed dshow input string.\n");
         goto error;
     }
@@ -574,6 +587,15 @@ static int dshow_read_header(AVFormatContext *avctx, AVFormatParameters *ap)
                          &IID_ICreateDevEnum, (void **) &devenum);
     if (r != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not enumerate system devices.\n");
+        goto error;
+    }
+
+    if (ctx->list_devices) {
+        av_log(avctx, AV_LOG_INFO, "DirectShow video devices\n");
+        dshow_cycle_devices(avctx, devenum, VideoDevice, NULL);
+        av_log(avctx, AV_LOG_INFO, "DirectShow audio devices\n");
+        dshow_cycle_devices(avctx, devenum, AudioDevice, NULL);
+        ret = AVERROR_EXIT;
         goto error;
     }
 
@@ -664,6 +686,22 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
     return pkt->size;
 }
 
+#define OFFSET(x) offsetof(struct dshow_ctx, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "list_devices", "list available devices", OFFSET(list_devices), FF_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_devices" },
+    { "true", "", 0, FF_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_devices" },
+    { "false", "", 0, FF_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_devices" },
+    { NULL },
+};
+
+static const AVClass dshow_class = {
+    .class_name = "DirectShow indev",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_dshow_demuxer = {
     "dshow",
     NULL_IF_CONFIG_SMALL("DirectShow capture"),
@@ -673,4 +711,5 @@ AVInputFormat ff_dshow_demuxer = {
     dshow_read_packet,
     dshow_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class = &dshow_class,
 };
