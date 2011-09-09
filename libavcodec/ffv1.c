@@ -1765,7 +1765,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         bytes_read = c->bytestream - c->bytestream_start - 1;
         if(bytes_read ==0) av_log(avctx, AV_LOG_ERROR, "error at end of AC stream\n"); //FIXME
 //printf("pos=%d\n", bytes_read);
-        init_get_bits(&f->slice_context[0]->gb, buf + bytes_read, buf_size - bytes_read);
+        init_get_bits(&f->slice_context[0]->gb, buf + bytes_read, (buf_size - bytes_read) * 8);
     } else {
         bytes_read = 0; /* avoid warning */
     }
@@ -1782,7 +1782,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         if(fs->ac){
             ff_init_range_decoder(&fs->c, buf_p, v);
         }else{
-            init_get_bits(&fs->gb, buf_p, v);
+            init_get_bits(&fs->gb, buf_p, v * 8);
         }
     }
 
