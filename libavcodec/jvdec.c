@@ -150,7 +150,7 @@ static int decode_frame(AVCodecContext *avctx,
 
         if (video_type == 0 || video_type == 1) {
             GetBitContext gb;
-            init_get_bits(&gb, buf, FFMIN(video_size, buf_end - buf));
+            init_get_bits(&gb, buf, FFMIN(video_size, (buf_end - buf) * 8));
 
             for (j = 0; j < avctx->height; j += 8)
                 for (i = 0; i < avctx->width; i += 8)
