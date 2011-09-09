@@ -97,17 +97,18 @@ static av_cold int xan_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int xan_huffman_decode(unsigned char *dest, const unsigned char *src,
-    int dest_len)
+static int xan_huffman_decode(unsigned char *dest, int dest_len,
+                              const unsigned char *src, int src_len)
 {
     unsigned char byte = *src++;
     unsigned char ival = byte + 0x16;
     const unsigned char * ptr = src + byte*2;
+    int ptr_len = src_len - 1 - byte*2;
     unsigned char val = ival;
     unsigned char *dest_end = dest + dest_len;
     GetBitContext gb;
 
-    init_get_bits(&gb, ptr, 0); // FIXME: no src size available
+    init_get_bits(&gb, ptr, ptr_len * 8);
 
     while ( val != 0x16 ) {
         val = src[val - 0x17 + get_bits1(&gb) * byte];
@@ -272,7 +273,8 @@ static void xan_wc3_decode_frame(XanContext *s) {
     vector_segment =    s->buf + AV_RL16(&s->buf[4]);
     imagedata_segment = s->buf + AV_RL16(&s->buf[6]);
 
-    xan_huffman_decode(opcode_buffer, huffman_segment, opcode_buffer_size);
+    xan_huffman_decode(opcode_buffer, opcode_buffer_size,
+                       huffman_segment, s->size - (huffman_segment - s->buf) );
 
     if (imagedata_segment[0] == 2)
         xan_unpack(s->buffer2, &imagedata_segment[1], s->buffer2_size);
