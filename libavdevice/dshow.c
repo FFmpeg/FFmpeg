@@ -295,42 +295,27 @@ fail1:
     return 0;
 }
 
+/**
+ * Cycle through available pins using the device_filter device, of type
+ * devtype, retrieve the first output pin and return the pointer to the
+ * object found in *ppin.
+ */
 static int
-dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
-                  enum dshowDeviceType devtype)
+dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
+                 IBaseFilter *device_filter, IPin **ppin)
 {
-    struct dshow_ctx *ctx = avctx->priv_data;
-    IBaseFilter *device_filter = NULL;
-    IGraphBuilder *graph = ctx->graph;
     IEnumPins *pins = 0;
     IPin *device_pin = NULL;
-    libAVPin *capture_pin = NULL;
-    libAVFilter *capture_filter = NULL;
-    int ret = AVERROR(EIO);
     IPin *pin;
     int r;
 
     const GUID *mediatype[2] = { &MEDIATYPE_Video, &MEDIATYPE_Audio };
     const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
-    const wchar_t *filter_name[2] = { L"Audio capture filter", L"Video capture filter" };
-
-    if ((r = dshow_cycle_devices(avctx, devenum, devtype, &device_filter)) < 0) {
-        ret = r;
-        goto error;
-    }
-
-    ctx->device_filter [devtype] = device_filter;
-
-    r = IGraphBuilder_AddFilter(graph, device_filter, NULL);
-    if (r != S_OK) {
-        av_log(avctx, AV_LOG_ERROR, "Could not add device filter to graph.\n");
-        goto error;
-    }
 
     r = IBaseFilter_EnumPins(device_filter, &pins);
     if (r != S_OK) {
         av_log(avctx, AV_LOG_ERROR, "Could not enumerate pins.\n");
-        goto error;
+        return AVERROR(EIO);
     }
 
     while (IEnumPins_Next(pins, 1, &pin, NULL) == S_OK && !device_pin) {
@@ -375,9 +360,48 @@ next:
             IPin_Release(pin);
     }
 
+    IEnumPins_Release(pins);
+
     if (!device_pin) {
         av_log(avctx, AV_LOG_ERROR,
                "Could not find output pin from %s capture device.\n", devtypename);
+        return AVERROR(EIO);
+    }
+    *ppin = device_pin;
+
+    return 0;
+}
+
+static int
+dshow_open_device(AVFormatContext *avctx, ICreateDevEnum *devenum,
+                  enum dshowDeviceType devtype)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IBaseFilter *device_filter = NULL;
+    IGraphBuilder *graph = ctx->graph;
+    IPin *device_pin = NULL;
+    libAVPin *capture_pin = NULL;
+    libAVFilter *capture_filter = NULL;
+    int ret = AVERROR(EIO);
+    int r;
+
+    const wchar_t *filter_name[2] = { L"Audio capture filter", L"Video capture filter" };
+
+    if ((r = dshow_cycle_devices(avctx, devenum, devtype, &device_filter)) < 0) {
+        ret = r;
+        goto error;
+    }
+
+    ctx->device_filter [devtype] = device_filter;
+
+    r = IGraphBuilder_AddFilter(graph, device_filter, NULL);
+    if (r != S_OK) {
+        av_log(avctx, AV_LOG_ERROR, "Could not add device filter to graph.\n");
+        goto error;
+    }
+
+    if ((r = dshow_cycle_pins(avctx, devtype, device_filter, &device_pin)) < 0) {
+        ret = r;
         goto error;
     }
     ctx->device_pin[devtype] = device_pin;
@@ -409,9 +433,6 @@ next:
     ret = 0;
 
 error:
-    if (pins)
-        IEnumPins_Release(pins);
-
     return ret;
 }
 
