@@ -3226,7 +3226,7 @@ static int ff_interleave_compare_dts(AVFormatContext *s, AVPacket *next, AVPacke
 int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int flush){
     AVPacketList *pktl;
     int stream_count=0, noninterleaved_count=0;
-    int64_t delta_dts_min = INT64_MAX;
+    int64_t delta_dts_max = 0;
     int i;
 
     if(pkt){
@@ -3253,11 +3253,11 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out, AVPacket *pk
                     av_rescale_q(s->packet_buffer->pkt.dts,
                                 s->streams[s->packet_buffer->pkt.stream_index]->time_base,
                                 AV_TIME_BASE_Q);
-                delta_dts_min = FFMIN(delta_dts_min, delta_dts);
+                delta_dts_max= FFMAX(delta_dts_max, delta_dts);
             }
         }
         if(s->nb_streams == stream_count+noninterleaved_count &&
-           delta_dts_min > 20*AV_TIME_BASE) {
+           delta_dts_max > 20*AV_TIME_BASE) {
             av_log(s, AV_LOG_DEBUG, "flushing with %d noninterleaved\n", noninterleaved_count);
             flush = 1;
         }
