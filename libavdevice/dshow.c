@@ -32,6 +32,7 @@ struct dshow_ctx {
 
     char *device_name[2];
 
+    int   list_options;
     int   list_devices;
 
     IBaseFilter *device_filter[2];
@@ -311,6 +312,7 @@ fail1:
  * Cycle through available formats using the specified pin,
  * try to set parameters specified through AVOptions and if successful
  * return 1 in *pformat_set.
+ * If pformat_set is NULL, list all pin capabilities.
  */
 static void
 dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
@@ -357,6 +359,14 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
             } else {
                 goto next;
             }
+            if (!pformat_set) {
+                av_log(avctx, AV_LOG_INFO, "  min s=%ldx%ld fps=%g max s=%ldx%ld fps=%g\n",
+                       vcaps->MinOutputSize.cx, vcaps->MinOutputSize.cy,
+                       1e7 / vcaps->MinFrameInterval,
+                       vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy,
+                       1e7 / vcaps->MaxFrameInterval);
+                continue;
+            }
             if (ctx->framerate) {
                 int64_t framerate = ((int64_t) ctx->requested_framerate.den*10000000)
                                             /  ctx->requested_framerate.num;
@@ -384,6 +394,12 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
                 fx = (void *) type->pbFormat;
             } else {
                 goto next;
+            }
+            if (!pformat_set) {
+                av_log(avctx, AV_LOG_INFO, "  min ch=%lu bits=%lu rate=%6lu max ch=%lu bits=%lu rate=%6lu\n",
+                       acaps->MinimumChannels, acaps->MinimumBitsPerSample, acaps->MinimumSampleFrequency,
+                       acaps->MaximumChannels, acaps->MaximumBitsPerSample, acaps->MaximumSampleFrequency);
+                continue;
             }
             if (ctx->sample_rate) {
                 if (ctx->sample_rate > acaps->MaximumSampleFrequency ||
@@ -416,6 +432,7 @@ end:
     IAMStreamConfig_Release(config);
     if (caps)
         av_free(caps);
+    if (pformat_set)
     *pformat_set = format_set;
 }
 
@@ -423,6 +440,7 @@ end:
  * Cycle through available pins using the device_filter device, of type
  * devtype, retrieve the first output pin and return the pointer to the
  * object found in *ppin.
+ * If ppin is NULL, cycle through all pins listing audio/video capabilities.
  */
 static int
 dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
@@ -447,6 +465,10 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
         return AVERROR(EIO);
     }
 
+    if (!ppin) {
+        av_log(avctx, AV_LOG_INFO, "DirectShow %s device options\n",
+               devtypename);
+    }
     while (IEnumPins_Next(pins, 1, &pin, NULL) == S_OK && !device_pin) {
         IKsPropertySet *p = NULL;
         IEnumMediaTypes *types = NULL;
@@ -468,6 +490,13 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
         if (!IsEqualGUID(&category, &PIN_CATEGORY_CAPTURE))
             goto next;
 
+        if (!ppin) {
+            char *buf = dup_wchar_to_utf8(info.achName);
+            av_log(avctx, AV_LOG_INFO, " Pin \"%s\"\n", buf);
+            av_free(buf);
+            dshow_cycle_formats(avctx, devtype, pin, NULL);
+            goto next;
+        }
         if (set_format) {
             dshow_cycle_formats(avctx, devtype, pin, &format_set);
             if (!format_set) {
@@ -498,6 +527,7 @@ next:
 
     IEnumPins_Release(pins);
 
+    if (ppin) {
     if (set_format && !format_set) {
         av_log(avctx, AV_LOG_ERROR, "Could not set %s options\n", devtypename);
         return AVERROR(EIO);
@@ -508,6 +538,27 @@ next:
         return AVERROR(EIO);
     }
     *ppin = device_pin;
+    }
+
+    return 0;
+}
+
+/**
+ * List options for device with type devtype.
+ *
+ * @param devenum device enumerator used for accessing the device
+ */
+static int
+dshow_list_device_options(AVFormatContext *avctx, ICreateDevEnum *devenum,
+                          enum dshowDeviceType devtype)
+{
+    IBaseFilter *device_filter = NULL;
+    int r;
+
+    if ((r = dshow_cycle_devices(avctx, devenum, devtype, &device_filter)) < 0)
+        return r;
+    if ((r = dshow_cycle_pins(avctx, devtype, device_filter, NULL)) < 0)
+        return r;
 
     return 0;
 }
@@ -774,6 +825,14 @@ static int dshow_read_header(AVFormatContext *avctx, AVFormatParameters *ap)
         ret = AVERROR_EXIT;
         goto error;
     }
+    if (ctx->list_options) {
+        if (ctx->device_name[VideoDevice])
+            dshow_list_device_options(avctx, devenum, VideoDevice);
+        if (ctx->device_name[AudioDevice])
+            dshow_list_device_options(avctx, devenum, AudioDevice);
+        ret = AVERROR_EXIT;
+        goto error;
+    }
 
     if (ctx->device_name[VideoDevice]) {
         ret = dshow_open_device(avctx, devenum, VideoDevice);
@@ -873,6 +932,9 @@ static const AVOption options[] = {
     { "list_devices", "list available devices", OFFSET(list_devices), FF_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_devices" },
     { "true", "", 0, FF_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_devices" },
     { "false", "", 0, FF_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_devices" },
+    { "list_options", "list available options for specified device", OFFSET(list_options), FF_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_options" },
+    { "true", "", 0, FF_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_options" },
+    { "false", "", 0, FF_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_options" },
     { NULL },
 };
 
