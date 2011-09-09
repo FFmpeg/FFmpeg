@@ -1,8 +1,8 @@
 #!/bin/bash
 
 if [ "$NDK" = "" ]; then
-	echo NDK variable not set, assuming ${HOME}/android-ndk
-	export NDK=${HOME}/android-ndk
+    echo NDK variable not set, assuming ${HOME}/android-ndk
+    export NDK=${HOME}/android-ndk
 fi
 
 SYSROOT=$NDK/platforms/android-9/arch-arm
