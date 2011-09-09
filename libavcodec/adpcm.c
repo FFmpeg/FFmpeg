@@ -448,14 +448,18 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
 
         while(src < buf + buf_size){
-            for(m=0; m<4; m++){
-                for(i=0; i<=st; i++)
-                    *samples++ = adpcm_ima_expand_nibble(&c->status[i], src[4*i] & 0x0F, 3);
-                for(i=0; i<=st; i++)
-                    *samples++ = adpcm_ima_expand_nibble(&c->status[i], src[4*i] >> 4  , 3);
-                src++;
+            for (i = 0; i < avctx->channels; i++) {
+                cs = &c->status[i];
+                for (m = 0; m < 4; m++) {
+                    uint8_t v = *src++;
+                    *samples = adpcm_ima_expand_nibble(cs, v & 0x0F, 3);
+                    samples += avctx->channels;
+                    *samples = adpcm_ima_expand_nibble(cs, v >> 4  , 3);
+                    samples += avctx->channels;
+                }
+                samples -= 8 * avctx->channels - 1;
             }
-            src += 4*st;
+            samples += 7 * avctx->channels;
         }
         break;
     case CODEC_ID_ADPCM_4XM:
