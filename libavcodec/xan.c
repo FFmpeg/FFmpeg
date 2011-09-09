@@ -106,6 +106,9 @@ static int xan_huffman_decode(unsigned char *dest, int dest_len,
     unsigned char *dest_end = dest + dest_len;
     GetBitContext gb;
 
+    if (ptr_len < 0)
+        return AVERROR_INVALIDDATA;
+
     init_get_bits(&gb, ptr, ptr_len * 8);
 
     while ( val != 0x16 ) {
@@ -245,7 +248,7 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s,
     }
 }
 
-static void xan_wc3_decode_frame(XanContext *s) {
+static int xan_wc3_decode_frame(XanContext *s) {
 
     int width = s->avctx->width;
     int height = s->avctx->height;
@@ -265,14 +268,30 @@ static void xan_wc3_decode_frame(XanContext *s) {
     const unsigned char *size_segment;
     const unsigned char *vector_segment;
     const unsigned char *imagedata_segment;
+    int huffman_offset, size_offset, vector_offset, imagedata_offset;
 
-    huffman_segment =   s->buf + AV_RL16(&s->buf[0]);
-    size_segment =      s->buf + AV_RL16(&s->buf[2]);
-    vector_segment =    s->buf + AV_RL16(&s->buf[4]);
-    imagedata_segment = s->buf + AV_RL16(&s->buf[6]);
+    if (s->size < 8)
+        return AVERROR_INVALIDDATA;
 
-    xan_huffman_decode(opcode_buffer, opcode_buffer_size,
-                       huffman_segment, s->size - (huffman_segment - s->buf) );
+    huffman_offset    = AV_RL16(&s->buf[0]);
+    size_offset       = AV_RL16(&s->buf[2]);
+    vector_offset     = AV_RL16(&s->buf[4]);
+    imagedata_offset  = AV_RL16(&s->buf[6]);
+
+    if (huffman_offset   >= s->size ||
+        size_offset      >= s->size ||
+        vector_offset    >= s->size ||
+        imagedata_offset >= s->size)
+        return AVERROR_INVALIDDATA;
+
+    huffman_segment   = s->buf + huffman_offset;
+    size_segment      = s->buf + size_offset;
+    vector_segment    = s->buf + vector_offset;
+    imagedata_segment = s->buf + imagedata_offset;
+
+    if (xan_huffman_decode(opcode_buffer, opcode_buffer_size,
+                           huffman_segment, s->size - huffman_offset) < 0)
+        return AVERROR_INVALIDDATA;
 
     if (imagedata_segment[0] == 2)
         xan_unpack(s->buffer2, &imagedata_segment[1], s->buffer2_size);
@@ -358,6 +377,7 @@ static void xan_wc3_decode_frame(XanContext *s) {
         y += (x + size) / width;
         x  = (x + size) % width;
     }
+    return 0;
 }
 
 #if RUNTIME_GAMMA
@@ -519,7 +539,8 @@ static int xan_decode_frame(AVCodecContext *avctx,
     s->buf = buf;
     s->size = buf_size;
 
-    xan_wc3_decode_frame(s);
+    if (xan_wc3_decode_frame(s) < 0)
+        return AVERROR_INVALIDDATA;
 
     /* release the last frame if it is allocated */
     if (s->last_frame.data[0])
