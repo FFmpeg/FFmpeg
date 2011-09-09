@@ -563,4 +563,3 @@ AVCodec ff_xan_wc3_decoder = {
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Wing Commander III / Xan"),
 };
-
