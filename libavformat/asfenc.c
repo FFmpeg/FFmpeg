@@ -199,8 +199,8 @@ typedef struct {
     /* packet filling */
     unsigned char multi_payloads_present;
     int packet_size_left;
-    int packet_timestamp_start;
-    int packet_timestamp_end;
+    int64_t packet_timestamp_start;
+    int64_t packet_timestamp_end;
     unsigned int packet_nb_payloads;
     uint8_t packet_buf[PACKET_SIZE];
     AVIOContext pb;
@@ -684,7 +684,7 @@ static void flush_packet(AVFormatContext *s)
 static void put_payload_header(
                                 AVFormatContext *s,
                                 ASFStream       *stream,
-                                int             presentation_time,
+                                int64_t         presentation_time,
                                 int             m_obj_size,
                                 int             m_obj_offset,
                                 int             payload_len,
@@ -711,7 +711,7 @@ static void put_payload_header(
     avio_w8(pb, ASF_PAYLOAD_REPLICATED_DATA_LENGTH);
 
     avio_wl32(pb, m_obj_size);       //Replicated Data - Media Object Size
-    avio_wl32(pb, presentation_time);//Replicated Data - Presentation Time
+    avio_wl32(pb, (uint32_t) presentation_time);//Replicated Data - Presentation Time
 
     if (asf->multi_payloads_present){
         avio_wl16(pb, payload_len);   //payload length
@@ -722,7 +722,7 @@ static void put_frame(
                     AVFormatContext *s,
                     ASFStream       *stream,
                     AVStream        *avst,
-                    int             timestamp,
+                    int64_t         timestamp,
                     const uint8_t   *buf,
                     int             m_obj_size,
                     int             flags
