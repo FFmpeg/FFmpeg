@@ -216,7 +216,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
     if (avctx->extradata_size < 30)
         return -1;
 
-    init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size);
+    init_get_bits(&s->gb, avctx->extradata, avctx->extradata_size * 8);
     if (show_bits_long(&s->gb, 32) == AV_RL32("TTA1"))
     {
         /* signature */
