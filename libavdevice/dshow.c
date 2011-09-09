@@ -433,7 +433,7 @@ end:
     if (caps)
         av_free(caps);
     if (pformat_set)
-    *pformat_set = format_set;
+        *pformat_set = format_set;
 }
 
 /**
@@ -528,16 +528,16 @@ next:
     IEnumPins_Release(pins);
 
     if (ppin) {
-    if (set_format && !format_set) {
-        av_log(avctx, AV_LOG_ERROR, "Could not set %s options\n", devtypename);
-        return AVERROR(EIO);
-    }
-    if (!device_pin) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Could not find output pin from %s capture device.\n", devtypename);
-        return AVERROR(EIO);
-    }
-    *ppin = device_pin;
+        if (set_format && !format_set) {
+            av_log(avctx, AV_LOG_ERROR, "Could not set %s options\n", devtypename);
+            return AVERROR(EIO);
+        }
+        if (!device_pin) {
+            av_log(avctx, AV_LOG_ERROR,
+                "Could not find output pin from %s capture device.\n", devtypename);
+            return AVERROR(EIO);
+        }
+        *ppin = device_pin;
     }
 
     return 0;
