@@ -866,7 +866,7 @@ static int init_pass2(MpegEncContext *s)
         assert(filter_size%2==1);
 
         /* fixed I/B QP relative to P mode */
-        for(i=0; i<rcc->num_entries; i++){
+        for(i=FFMAX(0, rcc->num_entries-300); i<rcc->num_entries; i++){
             RateControlEntry *rce= &rcc->entry[i];
 
             qscale[i]= get_diff_limited_q(s, rce, qscale[i]);
