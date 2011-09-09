@@ -24,12 +24,16 @@
  * RV30/40 decoder common data
  */
 
+#include "libavutil/internal.h"
+
 #include "avcodec.h"
 #include "dsputil.h"
 #include "mpegvideo.h"
 #include "golomb.h"
+#include "internal.h"
 #include "mathops.h"
 #include "rectangle.h"
+#include "thread.h"
 
 #include "rv34vlc.h"
 #include "rv34data.h"
@@ -669,6 +673,14 @@ static inline void rv34_mc(RV34DecContext *r, const int block_type,
         if(uvmx == 6 && uvmy == 6)
             uvmx = uvmy = 4;
     }
+
+    if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME)) {
+        /* wait for the referenced mb row to be finished */
+        int mb_row = FFMIN(s->mb_height - 1, s->mb_y + ((yoff + my + 21) >> 4));
+        AVFrame *f = dir ? &s->next_picture_ptr->f : &s->last_picture_ptr->f;
+        ff_thread_await_progress(f, mb_row, 0);
+    }
+
     dxy = ly*4 + lx;
     srcY = dir ? s->next_picture_ptr->f.data[0] : s->last_picture_ptr->f.data[0];
     srcU = dir ? s->next_picture_ptr->f.data[1] : s->last_picture_ptr->f.data[1];
@@ -824,6 +836,10 @@ static int rv34_decode_mv(RV34DecContext *r, int block_type)
         }
     case RV34_MB_B_DIRECT:
         //surprisingly, it uses motion scheme from next reference frame
+        /* wait for the current mb row to be finished */
+        if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
+            ff_thread_await_progress(&s->next_picture_ptr->f, s->mb_y - 1, 0);
+
         next_bt = s->next_picture_ptr->f.mb_type[s->mb_x + s->mb_y * s->mb_stride];
         if(IS_INTRA(next_bt) || IS_SKIP(next_bt)){
             ZERO8x2(s->current_picture_ptr->f.motion_val[0][s->mb_x * 2 + s->mb_y * 2 * s->b8_stride], s->b8_stride);
@@ -1255,6 +1271,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             }
         }
         s->mb_x = s->mb_y = 0;
+        ff_thread_finish_setup(s->avctx);
     } else {
         int slice_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
 
@@ -1299,6 +1316,11 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
 
             if(r->loop_filter && s->mb_y >= 2)
                 r->loop_filter(r, s->mb_y - 2);
+
+            if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
+                ff_thread_report_progress(&s->current_picture_ptr->f,
+                                          s->mb_y - 2, 0);
+
         }
         if(s->mb_x == s->resync_mb_x)
             s->first_slice_line=0;
@@ -1360,6 +1382,71 @@ av_cold int ff_rv34_decode_init(AVCodecContext *avctx)
 
     if(!intra_vlcs[0].cbppattern[0].bits)
         rv34_init_tables();
+
+    return 0;
+}
+
+int ff_rv34_decode_init_thread_copy(AVCodecContext *avctx)
+{
+    RV34DecContext *r = avctx->priv_data;
+
+    r->s.avctx = avctx;
+
+    if (avctx->internal->is_copy) {
+        r->cbp_chroma       = av_malloc(r->s.mb_stride * r->s.mb_height *
+                                        sizeof(*r->cbp_chroma));
+        r->cbp_luma         = av_malloc(r->s.mb_stride * r->s.mb_height *
+                                        sizeof(*r->cbp_luma));
+        r->deblock_coefs    = av_malloc(r->s.mb_stride * r->s.mb_height *
+                                        sizeof(*r->deblock_coefs));
+        r->intra_types_hist = av_malloc(r->intra_types_stride * 4 * 2 *
+                                        sizeof(*r->intra_types_hist));
+        r->mb_type          = av_malloc(r->s.mb_stride * r->s.mb_height *
+                                        sizeof(*r->mb_type));
+
+        if (!(r->cbp_chroma       && r->cbp_luma && r->deblock_coefs &&
+              r->intra_types_hist && r->mb_type)) {
+            av_freep(&r->cbp_chroma);
+            av_freep(&r->cbp_luma);
+            av_freep(&r->deblock_coefs);
+            av_freep(&r->intra_types_hist);
+            av_freep(&r->mb_type);
+            r->intra_types = NULL;
+            return AVERROR(ENOMEM);
+        }
+
+        r->intra_types      = r->intra_types_hist + r->intra_types_stride * 4;
+        r->tmp_b_block_base = NULL;
+
+        memset(r->mb_type, 0,  r->s.mb_stride * r->s.mb_height *
+               sizeof(*r->mb_type));
+
+        MPV_common_init(&r->s);
+    }
+    return 0;
+}
+
+int ff_rv34_decode_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
+{
+    RV34DecContext *r = dst->priv_data, *r1 = src->priv_data;
+    MpegEncContext * const s = &r->s, * const s1 = &r1->s;
+    int err;
+
+    if (dst == src || !s1->context_initialized)
+        return 0;
+
+    if ((err = ff_mpeg_update_thread_context(dst, src)))
+        return err;
+
+    r->cur_pts  = r1->cur_pts;
+    r->last_pts = r1->last_pts;
+    r->next_pts = r1->next_pts;
+
+    memset(&r->si, 0, sizeof(r->si));
+
+    /* necessary since it is it the condition checked for in decode_slice
+     * to call MPV_frame_start. cmp. comment at the end of decode_frame */
+    s->current_picture_ptr = NULL;
 
     return 0;
 }
@@ -1465,6 +1552,9 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if(last && s->current_picture_ptr){
         if(r->loop_filter)
             r->loop_filter(r, s->mb_height - 1);
+        if (HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
+            ff_thread_report_progress(&s->current_picture_ptr->f,
+                                      s->mb_height - 1, 0);
         ff_er_frame_end(s);
         MPV_frame_end(s);
         if (s->pict_type == AV_PICTURE_TYPE_B || s->low_delay) {
