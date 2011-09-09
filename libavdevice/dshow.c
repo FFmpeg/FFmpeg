@@ -320,7 +320,7 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
 
     while (IEnumPins_Next(pins, 1, &pin, NULL) == S_OK && !device_pin) {
         IKsPropertySet *p = NULL;
-        IEnumMediaTypes *types;
+        IEnumMediaTypes *types = NULL;
         PIN_INFO info = {0};
         AM_MEDIA_TYPE *type;
         GUID category;
