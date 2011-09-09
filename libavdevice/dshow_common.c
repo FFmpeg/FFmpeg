@@ -82,6 +82,55 @@ static void dump_bih(void *s, BITMAPINFOHEADER *bih)
 }
 #endif
 
+void ff_print_VIDEO_STREAM_CONFIG_CAPS(const VIDEO_STREAM_CONFIG_CAPS *caps)
+{
+#if DSHOWDEBUG
+    dshowdebug(" VIDEO_STREAM_CONFIG_CAPS\n");
+    dshowdebug("  guid\t");
+    ff_printGUID(&caps->guid);
+    dshowdebug("\n");
+    dshowdebug("  VideoStandard\t%lu\n", caps->VideoStandard);
+    dshowdebug("  InputSize %ld\t%ld\n", caps->InputSize.cx, caps->InputSize.cy);
+    dshowdebug("  MinCroppingSize %ld\t%ld\n", caps->MinCroppingSize.cx, caps->MinCroppingSize.cy);
+    dshowdebug("  MaxCroppingSize %ld\t%ld\n", caps->MaxCroppingSize.cx, caps->MaxCroppingSize.cy);
+    dshowdebug("  CropGranularityX\t%d\n", caps->CropGranularityX);
+    dshowdebug("  CropGranularityY\t%d\n", caps->CropGranularityY);
+    dshowdebug("  CropAlignX\t%d\n", caps->CropAlignX);
+    dshowdebug("  CropAlignY\t%d\n", caps->CropAlignY);
+    dshowdebug("  MinOutputSize %ld\t%ld\n", caps->MinOutputSize.cx, caps->MinOutputSize.cy);
+    dshowdebug("  MaxOutputSize %ld\t%ld\n", caps->MaxOutputSize.cx, caps->MaxOutputSize.cy);
+    dshowdebug("  OutputGranularityX\t%d\n", caps->OutputGranularityX);
+    dshowdebug("  OutputGranularityY\t%d\n", caps->OutputGranularityY);
+    dshowdebug("  StretchTapsX\t%d\n", caps->StretchTapsX);
+    dshowdebug("  StretchTapsY\t%d\n", caps->StretchTapsY);
+    dshowdebug("  ShrinkTapsX\t%d\n", caps->ShrinkTapsX);
+    dshowdebug("  ShrinkTapsY\t%d\n", caps->ShrinkTapsY);
+    dshowdebug("  MinFrameInterval\t%"PRId64"\n", caps->MinFrameInterval);
+    dshowdebug("  MaxFrameInterval\t%"PRId64"\n", caps->MaxFrameInterval);
+    dshowdebug("  MinBitsPerSecond\t%ld\n", caps->MinBitsPerSecond);
+    dshowdebug("  MaxBitsPerSecond\t%ld\n", caps->MaxBitsPerSecond);
+#endif
+}
+
+void ff_print_AUDIO_STREAM_CONFIG_CAPS(const AUDIO_STREAM_CONFIG_CAPS *caps)
+{
+#if DSHOWDEBUG
+    dshowdebug(" AUDIO_STREAM_CONFIG_CAPS\n");
+    dshowdebug("  guid\t");
+    ff_printGUID(&caps->guid);
+    dshowdebug("\n");
+    dshowdebug("  MinimumChannels\t%lu\n", caps->MinimumChannels);
+    dshowdebug("  MaximumChannels\t%lu\n", caps->MaximumChannels);
+    dshowdebug("  ChannelsGranularity\t%lu\n", caps->ChannelsGranularity);
+    dshowdebug("  MinimumBitsPerSample\t%lu\n", caps->MinimumBitsPerSample);
+    dshowdebug("  MaximumBitsPerSample\t%lu\n", caps->MaximumBitsPerSample);
+    dshowdebug("  BitsPerSampleGranularity\t%lu\n", caps->BitsPerSampleGranularity);
+    dshowdebug("  MinimumSampleFrequency\t%lu\n", caps->MinimumSampleFrequency);
+    dshowdebug("  MaximumSampleFrequency\t%lu\n", caps->MaximumSampleFrequency);
+    dshowdebug("  SampleFrequencyGranularity\t%lu\n", caps->SampleFrequencyGranularity);
+#endif
+}
+
 void ff_print_AM_MEDIA_TYPE(const AM_MEDIA_TYPE *type)
 {
 #if DSHOWDEBUG

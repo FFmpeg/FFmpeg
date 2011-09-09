@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
 
 #include "avdevice.h"
@@ -46,6 +47,17 @@ struct dshow_ctx {
     unsigned int video_frame_num;
 
     IMediaControl *control;
+
+    char *video_size;
+    char *framerate;
+
+    int requested_width;
+    int requested_height;
+    AVRational requested_framerate;
+
+    int sample_rate;
+    int sample_size;
+    int channels;
 };
 
 static enum PixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
@@ -296,6 +308,118 @@ fail1:
 }
 
 /**
+ * Cycle through available formats using the specified pin,
+ * try to set parameters specified through AVOptions and if successful
+ * return 1 in *pformat_set.
+ */
+static void
+dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
+                    IPin *pin, int *pformat_set)
+{
+    struct dshow_ctx *ctx = avctx->priv_data;
+    IAMStreamConfig *config = NULL;
+    AM_MEDIA_TYPE *type = NULL;
+    int format_set = 0;
+    void *caps = NULL;
+    int i, n, size;
+
+    if (IPin_QueryInterface(pin, &IID_IAMStreamConfig, (void **) &config) != S_OK)
+        return;
+    if (IAMStreamConfig_GetNumberOfCapabilities(config, &n, &size) != S_OK)
+        goto end;
+
+    caps = av_malloc(size);
+    if (!caps)
+        goto end;
+
+    for (i = 0; i < n && !format_set; i++) {
+        IAMStreamConfig_GetStreamCaps(config, i, &type, (void *) caps);
+
+#if DSHOWDEBUG
+        ff_print_AM_MEDIA_TYPE(type);
+#endif
+
+        if (devtype == VideoDevice) {
+            VIDEO_STREAM_CONFIG_CAPS *vcaps = caps;
+            BITMAPINFOHEADER *bih;
+            int64_t *fr;
+#if DSHOWDEBUG
+            ff_print_VIDEO_STREAM_CONFIG_CAPS(vcaps);
+#endif
+            if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo)) {
+                VIDEOINFOHEADER *v = (void *) type->pbFormat;
+                fr = &v->AvgTimePerFrame;
+                bih = &v->bmiHeader;
+            } else if (IsEqualGUID(&type->formattype, &FORMAT_VideoInfo2)) {
+                VIDEOINFOHEADER2 *v = (void *) type->pbFormat;
+                fr = &v->AvgTimePerFrame;
+                bih = &v->bmiHeader;
+            } else {
+                goto next;
+            }
+            if (ctx->framerate) {
+                int64_t framerate = ((int64_t) ctx->requested_framerate.den*10000000)
+                                            /  ctx->requested_framerate.num;
+                if (framerate > vcaps->MaxFrameInterval ||
+                    framerate < vcaps->MinFrameInterval)
+                    goto next;
+                *fr = framerate;
+            }
+            if (ctx->video_size) {
+                if (ctx->requested_width  > vcaps->MaxOutputSize.cx ||
+                    ctx->requested_width  < vcaps->MinOutputSize.cx ||
+                    ctx->requested_height > vcaps->MaxOutputSize.cy ||
+                    ctx->requested_height < vcaps->MinOutputSize.cy)
+                    goto next;
+                bih->biWidth  = ctx->requested_width;
+                bih->biHeight = ctx->requested_height;
+            }
+        } else {
+            AUDIO_STREAM_CONFIG_CAPS *acaps = caps;
+            WAVEFORMATEX *fx;
+#if DSHOWDEBUG
+            ff_print_AUDIO_STREAM_CONFIG_CAPS(acaps);
+#endif
+            if (IsEqualGUID(&type->formattype, &FORMAT_WaveFormatEx)) {
+                fx = (void *) type->pbFormat;
+            } else {
+                goto next;
+            }
+            if (ctx->sample_rate) {
+                if (ctx->sample_rate > acaps->MaximumSampleFrequency ||
+                    ctx->sample_rate < acaps->MinimumSampleFrequency)
+                    goto next;
+                fx->nSamplesPerSec = ctx->sample_rate;
+            }
+            if (ctx->sample_size) {
+                if (ctx->sample_size > acaps->MaximumBitsPerSample ||
+                    ctx->sample_size < acaps->MinimumBitsPerSample)
+                    goto next;
+                fx->wBitsPerSample = ctx->sample_size;
+            }
+            if (ctx->channels) {
+                if (ctx->channels > acaps->MaximumChannels ||
+                    ctx->channels < acaps->MinimumChannels)
+                    goto next;
+                fx->nChannels = ctx->channels;
+            }
+        }
+        if (IAMStreamConfig_SetFormat(config, type) != S_OK)
+            goto next;
+        format_set = 1;
+next:
+        if (type->pbFormat)
+            CoTaskMemFree(type->pbFormat);
+        CoTaskMemFree(type);
+    }
+end:
+    IAMStreamConfig_Release(config);
+    if (caps)
+        av_free(caps);
+    *pformat_set = format_set;
+}
+
+/**
  * Cycle through available pins using the device_filter device, of type
  * devtype, retrieve the first output pin and return the pointer to the
  * object found in *ppin.
@@ -304,6 +428,7 @@ static int
 dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
                  IBaseFilter *device_filter, IPin **ppin)
 {
+    struct dshow_ctx *ctx = avctx->priv_data;
     IEnumPins *pins = 0;
     IPin *device_pin = NULL;
     IPin *pin;
@@ -311,6 +436,10 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
 
     const GUID *mediatype[2] = { &MEDIATYPE_Video, &MEDIATYPE_Audio };
     const char *devtypename = (devtype == VideoDevice) ? "video" : "audio";
+
+    int set_format = (devtype == VideoDevice && (ctx->video_size || ctx->framerate))
+                  || (devtype == AudioDevice && (ctx->channels || ctx->sample_rate));
+    int format_set = 0;
 
     r = IBaseFilter_EnumPins(device_filter, &pins);
     if (r != S_OK) {
@@ -339,6 +468,13 @@ dshow_cycle_pins(AVFormatContext *avctx, enum dshowDeviceType devtype,
         if (!IsEqualGUID(&category, &PIN_CATEGORY_CAPTURE))
             goto next;
 
+        if (set_format) {
+            dshow_cycle_formats(avctx, devtype, pin, &format_set);
+            if (!format_set) {
+                goto next;
+            }
+        }
+
         if (IPin_EnumMediaTypes(pin, &types) != S_OK)
             goto next;
 
@@ -362,6 +498,10 @@ next:
 
     IEnumPins_Release(pins);
 
+    if (set_format && !format_set) {
+        av_log(avctx, AV_LOG_ERROR, "Could not set %s options\n", devtypename);
+        return AVERROR(EIO);
+    }
     if (!device_pin) {
         av_log(avctx, AV_LOG_ERROR,
                "Could not find output pin from %s capture device.\n", devtypename);
@@ -594,6 +734,21 @@ static int dshow_read_header(AVFormatContext *avctx, AVFormatParameters *ap)
         goto error;
     }
 
+    if (ctx->video_size) {
+        r = av_parse_video_size(&ctx->requested_width, &ctx->requested_height, ctx->video_size);
+        if (r < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Could not parse video size '%s'.\n", ctx->video_size);
+            goto error;
+        }
+    }
+    if (ctx->framerate) {
+        r = av_parse_video_rate(&ctx->requested_framerate, ctx->framerate);
+        if (r < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Could not parse framerate '%s'.\n", ctx->framerate);
+            goto error;
+        }
+    }
+
     CoInitialize(0);
 
     r = CoCreateInstance(&CLSID_FilterGraph, NULL, CLSCTX_INPROC_SERVER,
@@ -710,6 +865,11 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(struct dshow_ctx, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
+    { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate", "set video frame rate", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "sample_rate", "set audio sample rate", OFFSET(sample_rate), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
+    { "sample_size", "set audio sample size", OFFSET(sample_size), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 16, DEC },
+    { "channels", "set number of audio channels, such as 1 or 2", OFFSET(channels), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
     { "list_devices", "list available devices", OFFSET(list_devices), FF_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_devices" },
     { "true", "", 0, FF_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_devices" },
     { "false", "", 0, FF_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_devices" },
