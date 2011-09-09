@@ -55,6 +55,87 @@ For more information see:
 
 BSD video input device.
 
+@section dshow
+
+Windows DirectShow input device.
+
+DirectShow support is enabled when FFmpeg is built with mingw-w64.
+Currently only audio and video devices are supported.
+
+Multiple devices may be opened as separate inputs, but they may also be
+opened on the same input, which should improve synchronism between them.
+
+The input name should be in the format:
+
+@example
+@var{TYPE}=@var{NAME}[:@var{TYPE}=@var{NAME}]
+@end example
+
+where @var{TYPE} can be either @var{audio} or @var{video},
+and @var{NAME} is the device's name.
+
+@subsection Options
+
+If no options are specified, the device's defaults are used.
+If the device does not support the requested options, it will
+fail to open.
+
+@table @option
+
+@item video_size
+Set the video size in the captured video.
+
+@item framerate
+Set the framerate in the captured video.
+
+@item sample_rate
+Set the sample rate (in Hz) of the captured audio.
+
+@item sample_size
+Set the sample size (in bits) of the captured audio.
+
+@item channels
+Set the number of channels in the captured audio.
+
+@item list_devices
+If set to @option{true}, print a list of devices and exit.
+
+@item list_options
+If set to @option{true}, print a list of selected device's options
+and exit.
+
+@end table
+
+@subsection Examples
+
+@itemize
+
+@item
+Print the list of DirectShow supported devices and exit:
+@example
+$ ffmpeg -list_devices true -f dshow -i dummy
+@end example
+
+@item
+Open video device @var{Camera}:
+@example
+$ ffmpeg -f dshow -i video="Camera"
+@end example
+
+@item
+Open video device @var{Camera} and audio device @var{Microphone}:
+@example
+$ ffmpeg -f dshow -i video="Camera":audio="Microphone"
+@end example
+
+@item
+Print the list of supported options in selected device and exit:
+@example
+$ ffmpeg -list_options true -f dshow -i video="Camera"
+@end example
+
+@end itemize
+
 @section dv1394
 
 Linux DV 1394 input device.
