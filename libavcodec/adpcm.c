@@ -344,22 +344,8 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     short *samples_end;
     const uint8_t *src;
     int st; /* stereo */
-
-    /* DK3 ADPCM accounting variables */
-    unsigned char last_byte = 0;
-    unsigned char nibble;
-    int decode_top_nibble_next = 0;
-    int diff_channel;
-
-    /* EA ADPCM state variables */
     uint32_t samples_in_chunk;
-    int32_t previous_left_sample, previous_right_sample;
-    int32_t current_left_sample, current_right_sample;
-    int32_t next_left_sample, next_right_sample;
-    int32_t coeff1l, coeff2l, coeff1r, coeff2r;
-    uint8_t shift_left, shift_right;
     int count1, count2;
-    int coeff[2][2], shift[2];//used in EA MAXIS ADPCM
 
     if (!buf_size)
         return 0;
@@ -548,6 +534,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_IMA_DK3:
+    {
+        unsigned char last_byte = 0;
+        unsigned char nibble;
+        int decode_top_nibble_next = 0;
+        int diff_channel;
+
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
 
@@ -592,6 +584,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             *samples++ = c->status[0].predictor - c->status[1].predictor;
         }
         break;
+    }
     case CODEC_ID_ADPCM_IMA_ISS:
         n = buf_size - 4 * avctx->channels;
         if (n < 0) {
@@ -662,6 +655,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_EA:
+    {
+        int32_t previous_left_sample, previous_right_sample;
+        int32_t current_left_sample, current_right_sample;
+        int32_t next_left_sample, next_right_sample;
+        int32_t coeff1l, coeff2l, coeff1r, coeff2r;
+        uint8_t shift_left, shift_right;
+
         /* Each EA ADPCM frame has a 12-byte header followed by 30-byte pieces,
            each coding 28 stereo samples. */
         if (buf_size < 12) {
@@ -715,7 +715,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src += 2; // Skip terminating 0x0000
 
         break;
+    }
     case CODEC_ID_ADPCM_EA_MAXIS_XA:
+    {
+        int coeff[2][2], shift[2];
+
         for(channel = 0; channel < avctx->channels; channel++) {
             for (i=0; i<2; i++)
                 coeff[channel][i] = ea_adpcm_table[(*src >> 4) + 4*i];
@@ -737,6 +741,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src+=avctx->channels;
         }
         break;
+    }
     case CODEC_ID_ADPCM_EA_R1:
     case CODEC_ID_ADPCM_EA_R2:
     case CODEC_ID_ADPCM_EA_R3: {
