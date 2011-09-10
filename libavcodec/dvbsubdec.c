@@ -1360,7 +1360,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
         rect->y = display->y_pos + offset_y;
         rect->w = region->width;
         rect->h = region->height;
-        rect->nb_colors = 16;
+        rect->nb_colors = (1 << region->depth);
         rect->type      = SUBTITLE_BITMAP;
         rect->pict.linesize[0] = region->width;
 
