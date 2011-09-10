@@ -165,7 +165,6 @@ static int avisynth_read_packet(AVFormatContext *s, AVPacket *pkt)
 
   res = AVIStreamRead(stream->handle, stream->read, stream->chunck_samples, pkt->data, stream->chunck_size, &read_size, NULL);
 
-  pkt->pts = stream->read;
   pkt->size = read_size;
 
   stream->read += stream->chunck_samples;
