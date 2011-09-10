@@ -528,6 +528,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
 
+        n = buf_size - 4 * avctx->channels;
+        if (n < 0) {
+            av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+            return AVERROR(EINVAL);
+        }
+
         for (channel = 0; channel < avctx->channels; channel++) {
             cs = &c->status[channel];
             cs->predictor  = (int16_t)bytestream_get_le16(&src);
@@ -535,7 +541,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src++;
             *samples++ = cs->predictor;
         }
-        while (src < buf + buf_size) {
+        while (n-- > 0) {
             uint8_t v = *src++;
             *samples++ = adpcm_ima_expand_nibble(&c->status[0 ], v >> 4  , 3);
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], v & 0x0F, 3);
