@@ -209,6 +209,7 @@ START_TIMER
 STOP_TIMER("put_cabac")
     }
 
+#if 0
     for(i=0; i<SIZE; i++){
 START_TIMER
         put_cabac_u(&c, state, r[i], 6, 3, i&1);
@@ -220,7 +221,7 @@ START_TIMER
         put_cabac_ueg(&c, state, r[i], 3, 0, 1, 2);
 STOP_TIMER("put_cabac_ueg")
     }
-
+#endif
     put_cabac_terminate(&c, 1);
 
     ff_init_cabac_decoder(&c, b, SIZE);
