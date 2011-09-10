@@ -593,13 +593,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_IMA_ISS:
-        c->status[0].predictor  = (int16_t)AV_RL16(src + 0);
-        c->status[0].step_index = src[2];
-        src += 4;
-        if(st) {
-            c->status[1].predictor  = (int16_t)AV_RL16(src + 0);
-            c->status[1].step_index = src[2];
-            src += 4;
+        for (channel = 0; channel < avctx->channels; channel++) {
+            cs = &c->status[channel];
+            cs->predictor  = (int16_t)bytestream_get_le16(&src);
+            cs->step_index = *src++;
+            src++;
         }
 
         while (src < buf + buf_size) {
