@@ -593,6 +593,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_IMA_ISS:
+        n = buf_size - 4 * avctx->channels;
+        if (n < 0) {
+            av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+            return AVERROR(EINVAL);
+        }
+
         for (channel = 0; channel < avctx->channels; channel++) {
             cs = &c->status[channel];
             cs->predictor  = (int16_t)bytestream_get_le16(&src);
@@ -600,7 +606,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src++;
         }
 
-        while (src < buf + buf_size) {
+        while (n-- > 0) {
             uint8_t v1, v2;
             uint8_t v = *src++;
             /* nibbles are swapped for mono */
