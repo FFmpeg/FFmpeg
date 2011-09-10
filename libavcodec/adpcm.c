@@ -340,7 +340,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     ADPCMDecodeContext *c = avctx->priv_data;
     ADPCMChannelStatus *cs;
     int n, m, channel, i;
-    int block_predictor[2];
     short *samples;
     short *samples_end;
     const uint8_t *src;
@@ -487,23 +486,27 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         samples -= (avctx->channels - 1);
         break;
     case CODEC_ID_ADPCM_MS:
+    {
+        int block_predictor;
+
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
         n = buf_size - 7 * avctx->channels;
         if (n < 0)
             return -1;
-        block_predictor[0] = av_clip(*src++, 0, 6);
-        block_predictor[1] = 0;
-        if (st)
-            block_predictor[1] = av_clip(*src++, 0, 6);
+
+        block_predictor = av_clip(*src++, 0, 6);
+        c->status[0].coeff1 = ff_adpcm_AdaptCoeff1[block_predictor];
+        c->status[0].coeff2 = ff_adpcm_AdaptCoeff2[block_predictor];
+        if (st) {
+            block_predictor = av_clip(*src++, 0, 6);
+            c->status[1].coeff1 = ff_adpcm_AdaptCoeff1[block_predictor];
+            c->status[1].coeff2 = ff_adpcm_AdaptCoeff2[block_predictor];
+        }
         c->status[0].idelta = (int16_t)bytestream_get_le16(&src);
         if (st){
             c->status[1].idelta = (int16_t)bytestream_get_le16(&src);
         }
-        c->status[0].coeff1 = ff_adpcm_AdaptCoeff1[block_predictor[0]];
-        c->status[0].coeff2 = ff_adpcm_AdaptCoeff2[block_predictor[0]];
-        c->status[1].coeff1 = ff_adpcm_AdaptCoeff1[block_predictor[1]];
-        c->status[1].coeff2 = ff_adpcm_AdaptCoeff2[block_predictor[1]];
 
         c->status[0].sample1 = bytestream_get_le16(&src);
         if (st) c->status[1].sample1 = bytestream_get_le16(&src);
@@ -520,6 +523,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             src ++;
         }
         break;
+    }
     case CODEC_ID_ADPCM_IMA_DK4:
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
