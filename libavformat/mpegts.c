@@ -540,6 +540,8 @@ static const StreamType HDMV_types[] = {
     { 0x82, AVMEDIA_TYPE_AUDIO, CODEC_ID_DTS },
     { 0x83, AVMEDIA_TYPE_AUDIO, CODEC_ID_TRUEHD },
     { 0x84, AVMEDIA_TYPE_AUDIO, CODEC_ID_EAC3 },
+    { 0x85, AVMEDIA_TYPE_AUDIO, CODEC_ID_DTS }, /* DTS HD */
+    { 0x86, AVMEDIA_TYPE_AUDIO, CODEC_ID_DTS }, /* DTS HD MASTER*/
     { 0x90, AVMEDIA_TYPE_SUBTITLE, CODEC_ID_HDMV_PGS_SUBTITLE },
     { 0 },
 };
@@ -555,6 +557,10 @@ static const StreamType REGD_types[] = {
     { MKTAG('d','r','a','c'), AVMEDIA_TYPE_VIDEO, CODEC_ID_DIRAC },
     { MKTAG('A','C','-','3'), AVMEDIA_TYPE_AUDIO,   CODEC_ID_AC3 },
     { MKTAG('B','S','S','D'), AVMEDIA_TYPE_AUDIO, CODEC_ID_S302M },
+    { MKTAG('D','T','S','1'), AVMEDIA_TYPE_AUDIO,   CODEC_ID_DTS },
+    { MKTAG('D','T','S','2'), AVMEDIA_TYPE_AUDIO,   CODEC_ID_DTS },
+    { MKTAG('D','T','S','3'), AVMEDIA_TYPE_AUDIO,   CODEC_ID_DTS },
+    { MKTAG('V','C','-','1'), AVMEDIA_TYPE_VIDEO,   CODEC_ID_VC1 },
     { 0 },
 };
 
