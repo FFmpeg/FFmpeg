@@ -28,11 +28,26 @@
 #include "audioconvert.h"
 
 static const char * const channel_names[] = {
-    "FL", "FR", "FC", "LFE", "BL",  "BR",  "FLC", "FRC",
-    "BC", "SL", "SR", "TC",  "TFL", "TFC", "TFR", "TBL",
-    "TBC", "TBR",
-    [29] = "DL",
-    [30] = "DR",
+    [0]  = "FL",        /* front left */
+    [1]  = "FR",        /* front right */
+    [2]  = "FC",        /* front center */
+    [3]  = "LFE",       /* low frequency */
+    [4]  = "BL",        /* back left */
+    [5]  = "BR",        /* back right */
+    [6]  = "FLC",       /* front left-of-center  */
+    [7]  = "FRC",       /* front right-of-center */
+    [8]  = "BC",        /* back-center */
+    [9]  = "SL",        /* side left */
+    [10] = "SR",        /* side right */
+    [11] = "TC",        /* top center */
+    [12] = "TFL",       /* top front left */
+    [13] = "TFC",       /* top front center */
+    [14] = "TFR",       /* top front right */
+    [15] = "TBL",       /* top back left */
+    [16] = "TBC",       /* top back center */
+    [17] = "TBR",       /* top back right */
+    [29] = "DL",        /* downmix left */
+    [30] = "DR",        /* downmix right */
 };
 
 static const char *get_channel_name(int channel_id)
