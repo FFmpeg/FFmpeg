@@ -1877,6 +1877,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 
     s->current_frame.reference = 3;
     s->current_frame.pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
+    s->current_frame.key_frame = s->keyframe;
     if (ff_thread_get_buffer(avctx, &s->current_frame) < 0) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         goto error;
