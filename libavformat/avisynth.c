@@ -122,6 +122,14 @@ static int avisynth_read_header(AVFormatContext *s, AVFormatParameters *ap)
                   st->codec->bit_rate = (uint64_t)stream->info.dwSampleSize * (uint64_t)stream->info.dwRate * 8 / (uint64_t)stream->info.dwScale;
                   st->codec->codec_tag = imgfmt.bmiHeader.biCompression;
                   st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, imgfmt.bmiHeader.biCompression);
+                  if (st->codec->codec_id == CODEC_ID_RAWVIDEO && imgfmt.bmiHeader.biCompression== BI_RGB) {
+                    st->codec->extradata = av_malloc(9 + FF_INPUT_BUFFER_PADDING_SIZE);
+                    if (st->codec->extradata) {
+                      st->codec->extradata_size = 9;
+                      memcpy(st->codec->extradata, "BottomUp", 9);
+                    }
+                  }
+
 
                   st->duration = stream->info.dwLength;
                 }
