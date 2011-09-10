@@ -4299,6 +4299,13 @@ static int opt_subtitle_tag(OptionsContext *o, const char *opt, const char *arg)
     return parse_option(o, "tag:s", arg, options);
 }
 
+static int opt_old2new(OptionsContext *o, const char *opt, const char *arg){
+    char *s= av_malloc(strlen(opt)+2);
+    snprintf(s, strlen(opt)+2, "%s:%c", opt+1, *opt);
+    return parse_option(o, s, arg, options);
+}
+
+
 #define OFFSET(x) offsetof(OptionsContext, x)
 static const OptionDef options[] = {
     /* main options */
@@ -4419,6 +4426,8 @@ static const OptionDef options[] = {
     { "muxpreload", OPT_FLOAT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(mux_preload)},   "set the initial demux-decode delay", "seconds" },
 
     { "bsf", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(bitstream_filters)}, "A comma-separated list of bitstream filters", "bitstream_filters" },
+    { "absf", HAS_ARG | OPT_AUDIO | OPT_EXPERT| OPT_FUNC2, {(void*)opt_old2new}, "deprecated", "audio bitstream_filters" },
+    { "vbsf", HAS_ARG | OPT_VIDEO | OPT_EXPERT| OPT_FUNC2, {(void*)opt_old2new}, "deprecated", "video bitstream_filters" },
 
     { "apre", HAS_ARG | OPT_AUDIO | OPT_EXPERT| OPT_FUNC2, {(void*)opt_preset}, "set the audio options to the indicated preset", "preset" },
     { "vpre", HAS_ARG | OPT_VIDEO | OPT_EXPERT| OPT_FUNC2, {(void*)opt_preset}, "set the video options to the indicated preset", "preset" },
