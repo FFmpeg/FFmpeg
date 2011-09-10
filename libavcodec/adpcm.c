@@ -528,15 +528,12 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
             buf_size = avctx->block_align;
 
-        c->status[0].predictor  = (int16_t)bytestream_get_le16(&src);
-        c->status[0].step_index = *src++;
-        src++;
-        *samples++ = c->status[0].predictor;
-        if (st) {
-            c->status[1].predictor  = (int16_t)bytestream_get_le16(&src);
-            c->status[1].step_index = *src++;
+        for (channel = 0; channel < avctx->channels; channel++) {
+            cs = &c->status[channel];
+            cs->predictor  = (int16_t)bytestream_get_le16(&src);
+            cs->step_index = *src++;
             src++;
-            *samples++ = c->status[1].predictor;
+            *samples++ = cs->predictor;
         }
         while (src < buf + buf_size) {
             uint8_t v = *src++;
