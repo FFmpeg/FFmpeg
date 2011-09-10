@@ -317,7 +317,8 @@ int main(void){
     ff_init_cabac_states(&c);
 
     for(i=0; i<SIZE; i++){
-        r[i] = av_lfg_get(&prng) % 7;
+        if(2*i<SIZE) r[i] = av_lfg_get(&prng) % 7;
+        else         r[i] = (i>>8)&1;
     }
 
     for(i=0; i<SIZE; i++){
