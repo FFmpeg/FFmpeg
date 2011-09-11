@@ -134,11 +134,13 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx
             return -1;
         }
         b1 = get_bits_count(gb);
-        i1 = get_vlc2(gb, ctx->v1->table, SMKTREE_BITS, 3);
+        i1 = ctx->v1->table ? get_vlc2(gb, ctx->v1->table, SMKTREE_BITS, 3) : 0;
         b1 = get_bits_count(gb) - b1;
         b2 = get_bits_count(gb);
-        i2 = get_vlc2(gb, ctx->v2->table, SMKTREE_BITS, 3);
+        i2 = ctx->v2->table ? get_vlc2(gb, ctx->v2->table, SMKTREE_BITS, 3) : 0;
         b2 = get_bits_count(gb) - b2;
+        if (i1 < 0 || i2 < 0)
+            return -1;
         val = ctx->recode1[i1] | (ctx->recode2[i2] << 8);
         if(val == ctx->escapes[0]) {
             ctx->last[0] = hc->current;
@@ -290,7 +292,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->mmap_tbl[0] = 0;
         smk->mmap_last[0] = smk->mmap_last[1] = smk->mmap_last[2] = 1;
     } else {
-        smacker_decode_header_tree(smk, &gb, &smk->mmap_tbl, smk->mmap_last, mmap_size);
+        if (smacker_decode_header_tree(smk, &gb, &smk->mmap_tbl, smk->mmap_last, mmap_size))
+            return -1;
     }
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping MCLR tree\n");
@@ -298,7 +301,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->mclr_tbl[0] = 0;
         smk->mclr_last[0] = smk->mclr_last[1] = smk->mclr_last[2] = 1;
     } else {
-        smacker_decode_header_tree(smk, &gb, &smk->mclr_tbl, smk->mclr_last, mclr_size);
+        if (smacker_decode_header_tree(smk, &gb, &smk->mclr_tbl, smk->mclr_last, mclr_size))
+            return -1;
     }
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping FULL tree\n");
@@ -306,7 +310,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->full_tbl[0] = 0;
         smk->full_last[0] = smk->full_last[1] = smk->full_last[2] = 1;
     } else {
-        smacker_decode_header_tree(smk, &gb, &smk->full_tbl, smk->full_last, full_size);
+        if (smacker_decode_header_tree(smk, &gb, &smk->full_tbl, smk->full_last, full_size))
+            return -1;
     }
     if(!get_bits1(&gb)) {
         av_log(smk->avctx, AV_LOG_INFO, "Skipping TYPE tree\n");
@@ -314,7 +319,8 @@ static int decode_header_trees(SmackVContext *smk) {
         smk->type_tbl[0] = 0;
         smk->type_last[0] = smk->type_last[1] = smk->type_last[2] = 1;
     } else {
-        smacker_decode_header_tree(smk, &gb, &smk->type_tbl, smk->type_last, type_size);
+        if (smacker_decode_header_tree(smk, &gb, &smk->type_tbl, smk->type_last, type_size))
+            return -1;
     }
 
     return 0;
@@ -523,8 +529,8 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    decode_header_trees(c);
-
+    if (decode_header_trees(c))
+        return -1;
 
     return 0;
 }
@@ -653,6 +659,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     } else { //8-bit data
         for(i = stereo; i >= 0; i--)
             pred[i] = get_bits(&gb, 8);
+        if (stereo + unp_size > data_size)
+            return -1;
         for(i = 0; i < stereo; i++)
             *samples8++ = pred[i];
         for(i = 0; i < unp_size; i++) {
