@@ -48,6 +48,7 @@ easier to use. The changes are:
 - Windows Media Image decoder
 - amovie source added
 - LATM muxer
+- Speex encoder via libspeex
 
 
 version 0.8:
