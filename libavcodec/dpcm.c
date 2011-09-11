@@ -169,6 +169,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     int in, out = 0;
     int predictor[2];
     int ch = 0;
+    int stereo = s->channels - 1;
     short *output_samples = data;
     int shift[2];
     unsigned char byte;
@@ -184,11 +185,11 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     switch(avctx->codec->id) {
 
     case CODEC_ID_ROQ_DPCM:
-        if (s->channels == 1)
-            predictor[0] = AV_RL16(&buf[6]);
-        else {
+        if (stereo) {
             predictor[0] = buf[7] << 8;
             predictor[1] = buf[6] << 8;
+        } else {
+            predictor[0] = AV_RL16(&buf[6]);
         }
         SE_16BIT(predictor[0]);
         SE_16BIT(predictor[1]);
@@ -200,7 +201,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             output_samples[out] = predictor[ch];
 
             /* toggle channel */
-            ch ^= s->channels - 1;
+            ch ^= stereo;
         }
         break;
 
@@ -210,7 +211,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         in += 2;
         SE_16BIT(predictor[0])
         output_samples[out++] = predictor[0];
-        if (s->channels == 2) {
+        if (stereo) {
             predictor[1] = AV_RL16(&buf[in]);
             in += 2;
             SE_16BIT(predictor[1])
@@ -223,7 +224,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             output_samples[out++] = predictor[ch];
 
             /* toggle channel */
-            ch ^= s->channels - 1;
+            ch ^= stereo;
         }
 
         break;
@@ -234,7 +235,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         predictor[0] = AV_RL16(&buf[in]);
         in += 2;
         SE_16BIT(predictor[0]);
-        if (s->channels == 2) {
+        if (stereo) {
             predictor[1] = AV_RL16(&buf[in]);
             in += 2;
             SE_16BIT(predictor[1]);
@@ -258,7 +259,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             output_samples[out++] = predictor[ch];
 
             /* toggle channel */
-            ch ^= s->channels - 1;
+            ch ^= stereo;
         }
         break;
     case CODEC_ID_SOL_DPCM:
@@ -271,13 +272,13 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
                 n1 = (buf[in] >> 4) & 0xF;
                 n2 = buf[in++] & 0xF;
                 s->sample[0] += s->sol_table[n1];
-                if (s->sample[0] < 0) s->sample[0] = 0;
+                if (s->sample[0] < 0)   s->sample[0] = 0;
                 if (s->sample[0] > 255) s->sample[0] = 255;
                 output_samples[out++] = (s->sample[0] - 128) << 8;
-                s->sample[s->channels - 1] += s->sol_table[n2];
-                if (s->sample[s->channels - 1] < 0) s->sample[s->channels - 1] = 0;
-                if (s->sample[s->channels - 1] > 255) s->sample[s->channels - 1] = 255;
-                output_samples[out++] = (s->sample[s->channels - 1] - 128) << 8;
+                s->sample[stereo] += s->sol_table[n2];
+                if (s->sample[stereo] < 0)   s->sample[stereo] = 0;
+                if (s->sample[stereo] > 255) s->sample[stereo] = 255;
+                output_samples[out++] = (s->sample[stereo] - 128) << 8;
             }
         } else {
             while (in < buf_size) {
@@ -288,7 +289,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
                 s->sample[ch] = av_clip_int16(s->sample[ch]);
                 output_samples[out++] = s->sample[ch];
                 /* toggle channel */
-                ch ^= s->channels - 1;
+                ch ^= stereo;
             }
         }
         break;
