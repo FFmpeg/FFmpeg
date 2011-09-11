@@ -1038,7 +1038,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
         }
         if(!best_st)
-            return -1;
+            return AVERROR_EOF;
 
         best_ast = best_st->priv_data;
         best_ts = av_rescale_q(best_ts, (AVRational){FFMAX(1, best_ast->sample_size), AV_TIME_BASE}, best_st->time_base);
@@ -1054,7 +1054,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(i>=0){
             int64_t pos= best_st->index_entries[i].pos;
             pos += best_ast->packet_size - best_ast->remaining;
-            avio_seek(s->pb, pos + 8, SEEK_SET);
+            if(avio_seek(s->pb, pos + 8, SEEK_SET) < 0)
+              return AVERROR_EOF;
 //        av_log(s, AV_LOG_DEBUG, "pos=%"PRId64"\n", pos);
 
             assert(best_ast->remaining <= best_ast->packet_size);
@@ -1064,6 +1065,8 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
                 best_ast->packet_size=
                 best_ast->remaining= best_st->index_entries[i].size;
         }
+        else
+          return AVERROR_EOF;
     }
 
 resync:
