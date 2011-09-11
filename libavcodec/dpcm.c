@@ -168,7 +168,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     DPCMContext *s = avctx->priv_data;
     int in, out = 0;
     int predictor[2];
-    int channel_number = 0;
+    int ch = 0;
     short *output_samples = data;
     int shift[2];
     unsigned char byte;
@@ -195,12 +195,12 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 
         /* decode the samples */
         for (in = 8, out = 0; in < buf_size; in++, out++) {
-            predictor[channel_number] += s->roq_square_array[buf[in]];
-            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
-            output_samples[out] = predictor[channel_number];
+            predictor[ch] += s->roq_square_array[buf[in]];
+            predictor[ch] = av_clip_int16(predictor[ch]);
+            output_samples[out] = predictor[ch];
 
             /* toggle channel */
-            channel_number ^= s->channels - 1;
+            ch ^= s->channels - 1;
         }
         break;
 
@@ -218,12 +218,12 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         }
 
         while (in < buf_size) {
-            predictor[channel_number] += interplay_delta_table[buf[in++]];
-            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
-            output_samples[out++] = predictor[channel_number];
+            predictor[ch] += interplay_delta_table[buf[in++]];
+            predictor[ch] = av_clip_int16(predictor[ch]);
+            output_samples[out++] = predictor[ch];
 
             /* toggle channel */
-            channel_number ^= s->channels - 1;
+            ch ^= s->channels - 1;
         }
 
         break;
@@ -244,21 +244,21 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             byte = buf[in++];
             diff = (byte & 0xFC) << 8;
             if ((byte & 0x03) == 3)
-                shift[channel_number]++;
+                shift[ch]++;
             else
-                shift[channel_number] -= (2 * (byte & 3));
+                shift[ch] -= (2 * (byte & 3));
             /* saturate the shifter to a lower limit of 0 */
-            if (shift[channel_number] < 0)
-                shift[channel_number] = 0;
+            if (shift[ch] < 0)
+                shift[ch] = 0;
 
-            diff >>= shift[channel_number];
-            predictor[channel_number] += diff;
+            diff >>= shift[ch];
+            predictor[ch] += diff;
 
-            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
-            output_samples[out++] = predictor[channel_number];
+            predictor[ch] = av_clip_int16(predictor[ch]);
+            output_samples[out++] = predictor[ch];
 
             /* toggle channel */
-            channel_number ^= s->channels - 1;
+            ch ^= s->channels - 1;
         }
         break;
     case CODEC_ID_SOL_DPCM:
@@ -283,12 +283,12 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             while (in < buf_size) {
                 int n;
                 n = buf[in++];
-                if (n & 0x80) s->sample[channel_number] -= s->sol_table[n & 0x7F];
-                else s->sample[channel_number] += s->sol_table[n & 0x7F];
-                s->sample[channel_number] = av_clip_int16(s->sample[channel_number]);
-                output_samples[out++] = s->sample[channel_number];
+                if (n & 0x80) s->sample[ch] -= s->sol_table[n & 0x7F];
+                else s->sample[ch] += s->sol_table[n & 0x7F];
+                s->sample[ch] = av_clip_int16(s->sample[ch]);
+                output_samples[out++] = s->sample[ch];
                 /* toggle channel */
-                channel_number ^= s->channels - 1;
+                ch ^= s->channels - 1;
             }
         }
         break;
