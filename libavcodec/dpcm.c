@@ -43,7 +43,7 @@
 
 typedef struct DPCMContext {
     int channels;
-    short roq_square_array[256];
+    int16_t roq_square_array[256];
     int sample[2];                  ///< previous sample (for SOL_DPCM)
     const int *sol_table;//for SOL_DPCM
 } DPCMContext;
@@ -115,7 +115,6 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 {
     DPCMContext *s = avctx->priv_data;
     int i;
-    short square;
 
     if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_INFO, "invalid number of channels\n");
@@ -130,7 +129,7 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     case CODEC_ID_ROQ_DPCM:
         /* initialize square table */
         for (i = 0; i < 128; i++) {
-            square = i * i;
+            int16_t square = i * i;
             s->roq_square_array[i      ] =  square;
             s->roq_square_array[i + 128] = -square;
         }
@@ -179,7 +178,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int predictor[2];
     int ch = 0;
     int stereo = s->channels - 1;
-    short *output_samples = data;
+    int16_t *output_samples = data;
 
     if (!buf_size)
         return 0;
