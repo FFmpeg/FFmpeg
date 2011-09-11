@@ -3834,9 +3834,12 @@ static void opt_output_file(void *optctx, const char *filename)
     }
 
     /* copy global metadata by default */
-    if (!o->metadata_global_manual && nb_input_files)
+    if (!o->metadata_global_manual && nb_input_files){
         av_dict_copy(&oc->metadata, input_files[0].ctx->metadata,
                      AV_DICT_DONT_OVERWRITE);
+        if(o->recording_time != INT64_MAX)
+            av_dict_set(&oc->metadata, "duration", NULL, 0);
+    }
     if (!o->metadata_streams_manual)
         for (i = output_files[nb_output_files - 1].ost_index; i < nb_output_streams; i++) {
             InputStream *ist = &input_streams[output_streams[i].source_index];
