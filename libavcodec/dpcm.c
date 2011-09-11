@@ -146,7 +146,6 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
             s->sample[0] = s->sample[1] = 0x80;
             break;
         case 3:
-            s->sol_table = sol_table_16;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unknown SOL subcodec\n");
@@ -297,8 +296,8 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         } else {
             while (buf < buf_end) {
                 uint8_t n = *buf++;
-                if (n & 0x80) s->sample[ch] -= s->sol_table[n & 0x7F];
-                else          s->sample[ch] += s->sol_table[n & 0x7F];
+                if (n & 0x80) s->sample[ch] -= sol_table_16[n & 0x7F];
+                else          s->sample[ch] += sol_table_16[n & 0x7F];
                 s->sample[ch] = av_clip_int16(s->sample[ch]);
                 *output_samples++ = s->sample[ch];
                 /* toggle channel */
