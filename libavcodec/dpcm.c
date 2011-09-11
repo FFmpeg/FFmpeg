@@ -117,6 +117,11 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     int i;
     short square;
 
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        av_log(avctx, AV_LOG_INFO, "invalid number of channels\n");
+        return AVERROR(EINVAL);
+    }
+
     s->channels = avctx->channels;
     s->sample[0] = s->sample[1] = 0;
 
