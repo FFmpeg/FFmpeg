@@ -45,10 +45,10 @@ typedef struct DPCMContext {
     int channels;
     int16_t roq_square_array[256];
     int sample[2];                  ///< previous sample (for SOL_DPCM)
-    const int *sol_table;//for SOL_DPCM
+    const int8_t *sol_table;        ///< delta table for SOL_DPCM
 } DPCMContext;
 
-static const int interplay_delta_table[] = {
+static const int16_t interplay_delta_table[] = {
          0,      1,      2,      3,      4,      5,      6,      7,
          8,      9,     10,     11,     12,     13,     14,     15,
         16,     17,     18,     19,     20,     21,     22,     23,
@@ -84,17 +84,17 @@ static const int interplay_delta_table[] = {
 
 };
 
-static const int sol_table_old[16] = {
+static const int8_t sol_table_old[16] = {
       0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF, 0x15,
     -0x15, -0xF, -0xA, -0x6, -0x3, -0x2, -0x1,  0x0
 };
 
-static const int sol_table_new[16] = {
+static const int8_t sol_table_new[16] = {
     0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF,  0x15,
     0x0, -0x1, -0x2, -0x3, -0x6, -0xA, -0xF, -0x15
 };
 
-static const int sol_table_16[128] = {
+static const int16_t sol_table_16[128] = {
     0x000, 0x008, 0x010, 0x020, 0x030, 0x040, 0x050, 0x060, 0x070, 0x080,
     0x090, 0x0A0, 0x0B0, 0x0C0, 0x0D0, 0x0E0, 0x0F0, 0x100, 0x110, 0x120,
     0x130, 0x140, 0x150, 0x160, 0x170, 0x180, 0x190, 0x1A0, 0x1B0, 0x1C0,
