@@ -176,7 +176,6 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     int stereo = s->channels - 1;
     short *output_samples = data;
     int shift[2];
-    unsigned char byte;
     short diff;
 
     if (!buf_size)
@@ -266,12 +265,12 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         }
 
         while (in < buf_size) {
-            byte = buf[in++];
-            diff = (byte & 0xFC) << 8;
-            if ((byte & 0x03) == 3)
+            uint8_t n = buf[in++];
+            diff = (n & 0xFC) << 8;
+            if ((n & 0x03) == 3)
                 shift[ch]++;
             else
-                shift[ch] -= (2 * (byte & 3));
+                shift[ch] -= (2 * (n & 3));
             /* saturate the shifter to a lower limit of 0 */
             if (shift[ch] < 0)
                 shift[ch] = 0;
@@ -303,8 +302,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             }
         } else {
             while (in < buf_size) {
-                int n;
-                n = buf[in++];
+                uint8_t n = buf[in++];
                 if (n & 0x80) s->sample[ch] -= s->sol_table[n & 0x7F];
                 else s->sample[ch] += s->sol_table[n & 0x7F];
                 s->sample[ch] = av_clip_int16(s->sample[ch]);
