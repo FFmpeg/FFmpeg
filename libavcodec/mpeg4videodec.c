@@ -1489,6 +1489,16 @@ end:
                 return -1;
             } else if (s->mb_x + s->mb_y*s->mb_width + 1 >= next)
                 return SLICE_END;
+
+            if(s->pict_type==AV_PICTURE_TYPE_B){
+                const int delta= s->mb_x + 1 == s->mb_width ? 2 : 1;
+                ff_thread_await_progress((AVFrame*)s->next_picture_ptr,
+                                        (s->mb_x + delta >= s->mb_width) ? FFMIN(s->mb_y+1, s->mb_height-1) : s->mb_y, 0);
+                if (s->next_picture.f.mbskip_table[xy + delta])
+                    return SLICE_OK;
+            }
+
+            return SLICE_END;
         }
     }
 
