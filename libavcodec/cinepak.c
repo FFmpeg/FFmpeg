@@ -336,7 +336,8 @@ static int cinepak_decode (CinepakContext *s)
              * If the frame header is followed by the bytes FE 00 00 06 00 00 then
              * this is probably one of the two known files that have 6 extra bytes
              * after the frame header. Else, assume 2 extra bytes. */
-            if ((s->data[10] == 0xFE) &&
+            if (s->size >= 16 &&
+                (s->data[10] == 0xFE) &&
                 (s->data[11] == 0x00) &&
                 (s->data[12] == 0x00) &&
                 (s->data[13] == 0x06) &&
