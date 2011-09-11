@@ -291,6 +291,10 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 frame_size -= 4;
                 smk->curstream++;
                 smk->bufs[smk->curstream] = av_realloc(smk->bufs[smk->curstream], size);
+                if (!smk->bufs[smk->curstream]) {
+                    smk->buf_sizes[smk->curstream] = 0;
+                    return AVERROR(ENOMEM);
+                }
                 smk->buf_sizes[smk->curstream] = size;
                 ret = avio_read(s->pb, smk->bufs[smk->curstream], size);
                 if(ret != size)
@@ -299,7 +303,9 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             flags >>= 1;
         }
-        if (av_new_packet(pkt, frame_size + 768))
+        if (frame_size < 0)
+            return AVERROR_INVALIDDATA;
+        if (av_new_packet(pkt, frame_size + 769))
             return AVERROR(ENOMEM);
         if(smk->frm_size[smk->cur_frame] & 1)
             palchange |= 2;
