@@ -284,6 +284,10 @@ static int smacker_read_packet(AVFormatContext *s, AVPacket *pkt)
                 frame_size -= 4;
                 smk->curstream++;
                 smk->bufs[smk->curstream] = av_realloc(smk->bufs[smk->curstream], size);
+                if (!smk->bufs[smk->curstream]) {
+                    smk->buf_sizes[smk->curstream] = 0;
+                    return AVERROR(ENOMEM);
+                }
                 smk->buf_sizes[smk->curstream] = size;
                 ret = get_buffer(s->pb, smk->bufs[smk->curstream], size);
                 if(ret != size)
