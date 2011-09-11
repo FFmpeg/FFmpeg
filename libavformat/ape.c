@@ -270,6 +270,8 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
 
     if (ape->seektablelength > 0) {
         ape->seektable = av_malloc(ape->seektablelength);
+        if (!ape->seektable)
+            return AVERROR(ENOMEM);
         for (i = 0; i < ape->seektablelength / sizeof(uint32_t); i++)
             ape->seektable[i] = avio_rl32(pb);
     }
