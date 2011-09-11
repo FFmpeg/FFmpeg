@@ -2320,8 +2320,15 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         //try to just open decoders, in case this is enough to get parameters
         if(!has_codec_parameters(st->codec)){
-            if (codec && !st->codec->codec)
-                avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
+            if (codec && !st->codec->codec){
+                AVDictionary *tmp = NULL;
+                if (options){
+                    av_dict_copy(&tmp, options[i], 0);
+                    av_dict_set(&tmp, "threads", 0, 0);
+                }
+                avcodec_open2(st->codec, codec, options ? &tmp : NULL);
+                av_dict_free(&tmp);
+            }
         }
     }
 

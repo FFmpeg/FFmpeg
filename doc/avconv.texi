@@ -15,7 +15,7 @@ The generic syntax is:
 
 @example
 @c man begin SYNOPSIS
-avconv [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
+avconv [global options] [[infile options][@option{-i} @var{infile}]]... @{[outfile options] @var{outfile}@}...
 @c man end
 @end example
 
@@ -26,15 +26,12 @@ avconv is a very fast video and audio converter that can also grab from
 a live audio/video source. It can also convert between arbitrary sample
 rates and resize video on the fly with a high quality polyphase filter.
 
-The command line interface is designed to be intuitive, in the sense
-that avconv tries to figure out all parameters that can possibly be
-derived automatically. You usually only have to specify the target
-bitrate you want.
-
 As a general rule, options are applied to the next specified
 file. Therefore, order is important, and you can have the same
 option on the command line multiple times. Each occurrence is
 then applied to the next input or output file.
+Exceptions from this rule are the global options (e.g. vebosity level),
+which should be specified first.
 
 @itemize
 @item
@@ -59,10 +56,6 @@ avconv -r 1 -i input.m2v -r 24 output.avi
 
 The format option may be needed for raw input files.
 
-By default avconv tries to convert as losslessly as possible: It
-uses the same audio and video parameters for the outputs as the one
-specified for the inputs.
-
 @c man end DESCRIPTION
 
 @chapter Stream selection
@@ -82,35 +75,27 @@ described.
 @chapter Options
 @c man begin OPTIONS
 
-@include fftools-common-opts.texi
+@include avtools-common-opts.texi
 
 @section Main options
 
 @table @option
 
-@item -f @var{fmt}
+@item -f @var{fmt} (@emph{input/output})
 Force format.
 
-@item -i @var{filename}
+@item -i @var{filename} (@emph{input})
 input file name
 
-@item -y
+@item -y (@emph{global})
 Overwrite output files.
 
-@item -c[:@var{stream_type}][:@var{stream_index}] @var{codec}
-@item -codec[:@var{stream_type}][:@var{stream_index}] @var{codec}
+@item -c[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
+@itemx -codec[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 Select an encoder (when used before an output file) or a decoder (when used
 before an input file) for one or more streams. @var{codec} is the name of a
 decoder/encoder or a special value @code{copy} (output only) to indicate that
 the stream is not to be reencoded.
-
-@var{stream_type} may be 'v' for video, 'a' for audio, 's' for subtitle and 'd'
-for data streams.  @var{stream_index} is a global zero-based stream index if
-@var{stream_type} isn't given, otherwise it counts only streams of the given
-type. If @var{stream_index} is omitted, this option applies to all streams of
-the given type or all streams of any type if @var{stream_type} is missing as
-well (note that this only makes sense when all streams are of the same type or
-@var{codec} is @code{copy}).
 
 For example
 @example
@@ -125,15 +110,15 @@ avconv -i INPUT -map 0 -c copy -c:v:1 libx264 -c:a:137 libvorbis OUTPUT
 will copy all the streams except the second video, which will be encoded with
 libx264, and the 138th audio, which will be encoded with libvorbis.
 
-@item -t @var{duration}
+@item -t @var{duration} (@emph{output})
 Restrict the transcoded/captured video sequence
 to the duration specified in seconds.
 @code{hh:mm:ss[.xxx]} syntax is also supported.
 
-@item -fs @var{limit_size}
+@item -fs @var{limit_size} (@emph{output})
 Set the file size limit.
 
-@item -ss @var{position}
+@item -ss @var{position} (@emph{input/output})
 When used as an input option (before @code{-i}), seeks in this input file to
 @var{position}. When used as an output option (before an output filename),
 decodes but discards input until the timestamps reach @var{position}. This is
@@ -141,26 +126,14 @@ slower, but more accurate.
 
 @var{position} may be either in seconds or in @code{hh:mm:ss[.xxx]} form.
 
-@item -itsoffset @var{offset}
+@item -itsoffset @var{offset} (@emph{input})
 Set the input time offset in seconds.
 @code{[-]hh:mm:ss[.xxx]} syntax is also supported.
 The offset is added to the timestamps of the input files.
 Specifying a positive offset means that the corresponding
 streams are delayed by 'offset' seconds.
 
-@item -timestamp @var{time}
-Set the recording timestamp in the container.
-The syntax for @var{time} is:
-@example
-now|([(YYYY-MM-DD|YYYYMMDD)[T|t| ]]((HH[:MM[:SS[.m...]]])|(HH[MM[SS[.m...]]]))[Z|z])
-@end example
-If the value is "now" it takes the current time.
-Time is local time unless 'Z' or 'z' is appended, in which case it is
-interpreted as UTC.
-If the year-month-day part is not specified it takes the current
-year-month-day.
-
-@item -metadata[:metadata_specifier] @var{key}=@var{value}
+@item -metadata[:metadata_specifier] @var{key}=@var{value} (@emph{output,per-metadata})
 Set a metadata key/value pair.
 
 An optional @var{metadata_specifier} may be given to set metadata
@@ -180,10 +153,10 @@ To set the language of the second stream:
 avconv -i INPUT -metadata:s:1 language=eng OUTPUT
 @end example
 
-@item -v @var{number}
+@item -v @var{number} (@emph{global})
 Set the logging verbosity level.
 
-@item -target @var{type}
+@item -target @var{type} (@emph{output})
 Specify target file type ("vcd", "svcd", "dvd", "dv", "dv50", "pal-vcd",
 "ntsc-svcd", ... ). All the format options (bitrate, codecs,
 buffer sizes) are then set automatically. You can just type:
@@ -199,23 +172,33 @@ they do not conflict with the standard, as in:
 avconv -i myfile.avi -target vcd -bf 2 /tmp/vcd.mpg
 @end example
 
-@item -dframes @var{number}
+@item -dframes @var{number} (@emph{output})
 Set the number of data frames to record. This is an alias for @code{-frames:d}.
 
-@item -frames[:stream_specifier] @var{framecount}
+@item -frames[:@var{stream_specifier}] @var{framecount} (@emph{output,per-stream})
 Stop writing to the stream after @var{framecount} frames.
+
+@item -q[:@var{stream_specifier}] @var{q} (@emph{output,per-stream})
+@itemx -qscale[:@var{stream_specifier}] @var{q} (@emph{output,per-stream})
+Use fixed quality scale (VBR). The meaning of @var{q} is
+codec-dependent.
+
+@item -filter[:@var{stream_specifier}] @var{filter_graph}
+@var{filter_graph} is a description of the filter graph to apply to
+the stream. Use @code{-filters} to show all the available filters
+(including also sources and sinks).
 
 @end table
 
 @section Video Options
 
 @table @option
-@item -vframes @var{number}
+@item -vframes @var{number} (@emph{output})
 Set the number of video frames to record. This is an alias for @code{-frames:v}.
-@item -r @var{fps}
+@item -r[:@var{stream_specifier}] @var{fps} (@emph{input/output,per-stream})
 Set frame rate (Hz value, fraction or abbreviation), (default = 25).
-@item -s @var{size}
-Set frame size. The format is @samp{wxh} (ffserver default = 160x128, avconv default = same as source).
+@item -s[:@var{stream_specifier}] @var{size} (@emph{input/output,per-stream})
+Set frame size. The format is @samp{wxh} (avserver default = 160x128, avconv default = same as source).
 The following abbreviations are recognized:
 @table @samp
 @item sqcif
@@ -278,7 +261,7 @@ The following abbreviations are recognized:
 1920x1080
 @end table
 
-@item -aspect @var{aspect}
+@item -aspect[:@var{stream_specifier}] @var{aspect} (@emph{output,per-stream})
 Set the video display aspect ratio specified by @var{aspect}.
 
 @var{aspect} can be a floating point number string, or a string of the
@@ -286,7 +269,7 @@ form @var{num}:@var{den}, where @var{num} and @var{den} are the
 numerator and denominator of the aspect ratio. For example "4:3",
 "16:9", "1.3333", and "1.7777" are valid argument values.
 
-@item -vn
+@item -vn (@emph{output})
 Disable video recording.
 @item -bt @var{tolerance}
 Set video bitrate tolerance (in bits, default 4000k).
@@ -307,7 +290,7 @@ avconv -i myfile.avi -b 4000k -minrate 4000k -maxrate 4000k -bufsize 1835k out.m
 It is of little use elsewise.
 @item -bufsize @var{size}
 Set video buffer verifier buffer size (in bits).
-@item -vcodec @var{codec}
+@item -vcodec @var{codec} (@emph{output})
 Set the video codec. This is an alias for @code{-codec:v}.
 @item -same_quant
 Use same quantizer as source (implies VBR).
@@ -328,34 +311,32 @@ avconv -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y NUL
 avconv -i foo.mov -c:v libxvid -pass 1 -an -f rawvideo -y /dev/null
 @end example
 
-@item -passlogfile @var{prefix}
+@item -passlogfile @var{prefix} (@emph{global})
 Set two-pass log file name prefix to @var{prefix}, the default file name
 prefix is ``av2pass''. The complete file name will be
 @file{PREFIX-N.log}, where N is a number specific to the output
 stream.
 
-@item -vf @var{filter_graph}
+@item -vf @var{filter_graph} (@emph{output})
 @var{filter_graph} is a description of the filter graph to apply to
 the input video.
 Use the option "-filters" to show all the available filters (including
-also sources and sinks).
+also sources and sinks).  This is an alias for @code{-filter:v}.
 
 @end table
 
 @section Advanced Video Options
 
 @table @option
-@item -pix_fmt @var{format}
-Set pixel format. Use 'list' as parameter to show all the supported
+@item -pix_fmt[:@var{stream_specifier}] @var{format} (@emph{input/output,per-stream})
+Set pixel format. Use @code{-pix_fmts} to show all the supported
 pixel formats.
-@item -sws_flags @var{flags}
+@item -sws_flags @var{flags} (@emph{input/output})
 Set SwScaler flags.
 @item -g @var{gop_size}
 Set the group of pictures size.
 @item -vdt @var{n}
 Discard threshold.
-@item -qscale @var{q}
-Use fixed video quantizer scale (VBR).
 @item -qmin @var{q}
 minimum video quantizer scale (VBR)
 @item -qmax @var{q}
@@ -427,7 +408,7 @@ and the following constants are available:
 @item avgTex
 @end table
 
-@item -rc_override @var{override}
+@item -rc_override[:@var{stream_specifier}] @var{override} (@emph{output,per-stream})
 rate control override for specific intervals
 @item -me_method @var{method}
 Set motion estimation method to @var{method}.
@@ -444,50 +425,6 @@ Try just the (0, 0) vector.
 (default method)
 @item full
 exhaustive search (slow and marginally better than epzs)
-@end table
-
-@item -dct_algo @var{algo}
-Set DCT algorithm to @var{algo}. Available values are:
-@table @samp
-@item 0
-FF_DCT_AUTO (default)
-@item 1
-FF_DCT_FASTINT
-@item 2
-FF_DCT_INT
-@item 3
-FF_DCT_MMX
-@item 4
-FF_DCT_MLIB
-@item 5
-FF_DCT_ALTIVEC
-@end table
-
-@item -idct_algo @var{algo}
-Set IDCT algorithm to @var{algo}. Available values are:
-@table @samp
-@item 0
-FF_IDCT_AUTO (default)
-@item 1
-FF_IDCT_INT
-@item 2
-FF_IDCT_SIMPLE
-@item 3
-FF_IDCT_SIMPLEMMX
-@item 4
-FF_IDCT_LIBMPEG2MMX
-@item 5
-FF_IDCT_PS2
-@item 6
-FF_IDCT_MLIB
-@item 7
-FF_IDCT_ARM
-@item 8
-FF_IDCT_ALTIVEC
-@item 9
-FF_IDCT_SH4
-@item 10
-FF_IDCT_SIMPLEARM
 @end table
 
 @item -er @var{n}
@@ -526,42 +463,26 @@ FF_MB_DECISION_BITS: Choose the one which needs the fewest bits.
 FF_MB_DECISION_RD: rate distortion
 @end table
 
-@item -4mv
-Use four motion vector by macroblock (MPEG-4 only).
-@item -part
-Use data partitioning (MPEG-4 only).
 @item -bug @var{param}
 Work around encoder bugs that are not auto-detected.
 @item -strict @var{strictness}
 How strictly to follow the standards.
-@item -aic
-Enable Advanced intra coding (h263+).
-@item -umv
-Enable Unlimited Motion Vector (h263+)
 
 @item -deinterlace
 Deinterlace pictures.
-@item -ilme
-Force interlacing support in encoder (MPEG-2 and MPEG-4 only).
-Use this option if your input file is interlaced and you want
-to keep the interlaced format for minimum losses.
-The alternative is to deinterlace the input stream with
-@option{-deinterlace}, but deinterlacing introduces losses.
-@item -psnr
-Calculate PSNR of compressed frames.
 @item -vstats
 Dump video coding statistics to @file{vstats_HHMMSS.log}.
 @item -vstats_file @var{file}
 Dump video coding statistics to @var{file}.
-@item -top @var{n}
+@item -top[:@var{stream_specifier}] @var{n} (@emph{output,per-stream})
 top=1/bottom=0/auto=-1 field first
 @item -dc @var{precision}
 Intra_dc_precision.
-@item -vtag @var{fourcc/tag}
+@item -vtag @var{fourcc/tag} (@emph{output})
 Force video tag/fourcc. This is an alias for @code{-tag:v}.
-@item -qphist
+@item -qphist (@emph{global})
 Show QP histogram.
-@item -force_key_frames @var{time}[,@var{time}...]
+@item -force_key_frames[:@var{stream_specifier}] @var{time}[,@var{time}...] (@emph{output,per-stream})
 Force key frames at the specified timestamps, more precisely at the first
 frames after each specified time.
 This option can be useful to ensure that a seek point is present at a
@@ -572,30 +493,33 @@ The timestamps must be specified in ascending order.
 @section Audio Options
 
 @table @option
-@item -aframes @var{number}
+@item -aframes @var{number} (@emph{output})
 Set the number of audio frames to record. This is an alias for @code{-frames:a}.
-@item -ar @var{freq}
+@item -ar[:@var{stream_specifier}] @var{freq} (@emph{input/output,per-stream})
 Set the audio sampling frequency. For output streams it is set by
 default to the frequency of the corresponding input stream. For input
 streams this option only makes sense for audio grabbing devices and raw
 demuxers and is mapped to the corresponding demuxer options.
-@item -aq @var{q}
-Set the audio quality (codec-specific, VBR).
-@item -ac @var{channels}
+@item -aq @var{q} (@emph{output})
+Set the audio quality (codec-specific, VBR). This is an alias for -q:a.
+@item -ac[:@var{stream_specifier}] @var{channels} (@emph{input/output,per-stream})
 Set the number of audio channels. For output streams it is set by
 default to the number of input audio channels. For input streams
 this option only makes sense for audio grabbing devices and raw demuxers
 and is mapped to the corresponding demuxer options.
-@item -an
+@item -an (@emph{output})
 Disable audio recording.
-@item -acodec @var{codec}
+@item -acodec @var{codec} (@emph{input/output})
 Set the audio codec. This is an alias for @code{-codec:a}.
+@item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
+Set the audio sample format. Use @code{-help sample_fmts} to get a list
+of supported sample formats.
 @end table
 
 @section Advanced Audio options:
 
 @table @option
-@item -atag @var{fourcc/tag}
+@item -atag @var{fourcc/tag} (@emph{output})
 Force audio tag/fourcc. This is an alias for @code{-tag:a}.
 @item -audio_service_type @var{type}
 Set the type of service that the audio stream contains.
@@ -624,37 +548,30 @@ Karaoke
 @section Subtitle options:
 
 @table @option
-@item -scodec @var{codec}
+@item -scodec @var{codec} (@emph{input/output})
 Set the subtitle codec. This is an alias for @code{-codec:s}.
-@item -sn
+@item -sn (@emph{output})
 Disable subtitle recording.
 @end table
 
 @section Audio/Video grab options
 
 @table @option
-@item -isync
+@item -isync (@emph{global})
 Synchronize read on input.
 @end table
 
 @section Advanced options
 
 @table @option
-@item -map [-]@var{input_file_id}[:@var{input_stream_type}][:@var{input_stream_id}][,@var{sync_file_id}[:@var{sync_stream_type}][:@var{sync_stream_id}]]
+@item -map [-]@var{input_file_id}[:@var{stream_specifier}][,@var{sync_file_id}[:@var{stream_specifier}]] (@emph{output})
 
 Designate one or more input streams as a source for the output file. Each input
 stream is identified by the input file index @var{input_file_id} and
 the input stream index @var{input_stream_id} within the input
 file. Both indices start at 0. If specified,
-@var{sync_file_id}:@var{sync_stream_id} sets which input stream
+@var{sync_file_id}:@var{stream_specifier} sets which input stream
 is used as a presentation sync reference.
-
-If @var{input_stream_type} is specified -- 'v' for video, 'a' for audio, 's' for
-subtitle and 'd' for data -- then @var{input_stream_id} counts only the streams
-of this type. Same for @var{sync_stream_type}.
-
-@var{input_stream_id} may be omitted, in which case all streams of the given
-type are mapped (or all streams in the file, if no type is specified).
 
 The first @code{-map} option on the command line specifies the
 source for output stream 0, the second @code{-map} option specifies
@@ -698,7 +615,7 @@ avconv -i INPUT -map 0 -map -0:a:1 OUTPUT
 
 Note that using this option disables the default mappings for this output file.
 
-@item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}]
+@item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}] (@emph{output,per-metadata})
 Set metadata information of the next output file from @var{infile}. Note that
 those are file indices (zero-based), not filenames.
 Optional @var{metadata_type} parameters specify, which metadata to copy - (g)lobal
@@ -717,27 +634,25 @@ of the output file:
 @example
 avconv -i in.ogg -map_metadata 0:s:0 out.mp3
 @end example
-@item -map_chapters @var{input_file_index}
+@item -map_chapters @var{input_file_index} (@emph{output})
 Copy chapters from input file with index @var{input_file_index} to the next
 output file. If no chapter mapping is specified, then chapters are copied from
 the first input file with at least one chapter. Use a negative file index to
 disable any chapter copying.
 @item -debug
 Print specific debug info.
-@item -benchmark
+@item -benchmark (@emph{global})
 Show benchmarking information at the end of an encode.
 Shows CPU time used and maximum memory consumption.
 Maximum memory consumption is not supported on all systems,
 it will usually display as 0 if not supported.
-@item -dump
+@item -dump (@emph{global})
 Dump each input packet.
-@item -hex
+@item -hex (@emph{global})
 When dumping packets, also dump the payload.
-@item -bitexact
-Only use bit exact algorithms (for codec testing).
 @item -ps @var{size}
 Set RTP payload size in bytes.
-@item -re
+@item -re (@emph{input})
 Read input at native frame rate. Mainly used to simulate a grab device.
 @item -threads @var{count}
 Thread count.
@@ -775,11 +690,11 @@ Copy input stream time base from input to output when stream copying.
 Finish encoding when the shortest input stream ends.
 @item -dts_delta_threshold
 Timestamp discontinuity delta threshold.
-@item -muxdelay @var{seconds}
+@item -muxdelay @var{seconds} (@emph{input})
 Set the maximum demux-decode delay.
-@item -muxpreload @var{seconds}
+@item -muxpreload @var{seconds} (@emph{input})
 Set the initial demux-decode delay.
-@item -streamid @var{output-stream-index}:@var{new-value}
+@item -streamid @var{output-stream-index}:@var{new-value} (@emph{output})
 Assign a new stream-id value to an output stream. This option should be
 specified prior to the output filename to which it applies.
 For the situation where multiple output files exist, a streamid
@@ -791,7 +706,7 @@ an output mpegts file:
 avconv -i infile -streamid 0:33 -streamid 1:36 out.ts
 @end example
 
-@item -bsf[:@var{stream_specifier}] @var{bitstream_filters}
+@item -bsf[:@var{stream_specifier}] @var{bitstream_filters} (@emph{output,per-stream})
 Set bitstream filters for matching streams. @var{bistream_filters} is
 a comma-separated list of bitstream filters. Use the @code{-bsfs} option
 to get the list of bitstream filters.
@@ -802,7 +717,7 @@ avconv -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
 avconv -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
 @end example
 
-@item -tag[:@var{stream_specifier}] @var{codec_tag}
+@item -tag[:@var{stream_specifier}] @var{codec_tag} (@emph{output,per-stream})
 Force a tag/fourcc for matching streams.
 @end table
 @c man end OPTIONS
