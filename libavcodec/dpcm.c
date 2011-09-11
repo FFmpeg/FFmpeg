@@ -175,8 +175,6 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     int ch = 0;
     int stereo = s->channels - 1;
     short *output_samples = data;
-    int shift[2];
-    short diff;
 
     if (!buf_size)
         return 0;
@@ -253,8 +251,9 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         break;
 
     case CODEC_ID_XAN_DPCM:
+    {
+        int shift[2] = { 4, 4 };
         in = 0;
-        shift[0] = shift[1] = 4;
         predictor[0] = AV_RL16(&buf[in]);
         in += 2;
         SE_16BIT(predictor[0]);
@@ -266,7 +265,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 
         while (in < buf_size) {
             uint8_t n = buf[in++];
-            diff = (n & 0xFC) << 8;
+            int16_t diff = (n & 0xFC) << 8;
             if ((n & 0x03) == 3)
                 shift[ch]++;
             else
@@ -285,6 +284,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             ch ^= stereo;
         }
         break;
+    }
     case CODEC_ID_SOL_DPCM:
         in = 0;
         if (avctx->codec_tag != 3) {
