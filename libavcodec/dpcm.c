@@ -43,7 +43,7 @@
 typedef struct DPCMContext {
     int channels;
     short roq_square_array[256];
-    long sample[2];//for SOL_DPCM
+    int sample[2];                  ///< previous sample (for SOL_DPCM)
     const int *sol_table;//for SOL_DPCM
 } DPCMContext;
 
@@ -155,7 +155,11 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         break;
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    if (avctx->codec->id == CODEC_ID_SOL_DPCM && avctx->codec_tag != 3)
+        avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+    else
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
     return 0;
 }
 
@@ -285,18 +289,17 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_SOL_DPCM:
         in = 0;
         if (avctx->codec_tag != 3) {
+            uint8_t *output_samples_u8 = data;
             while (in < buf_size) {
-                int n1, n2;
-                n1 = (buf[in] >> 4) & 0xF;
-                n2 = buf[in++] & 0xF;
-                s->sample[0] += s->sol_table[n1];
-                if (s->sample[0] < 0)   s->sample[0] = 0;
-                if (s->sample[0] > 255) s->sample[0] = 255;
-                *output_samples++ = (s->sample[0] - 128) << 8;
-                s->sample[stereo] += s->sol_table[n2];
-                if (s->sample[stereo] < 0)   s->sample[stereo] = 0;
-                if (s->sample[stereo] > 255) s->sample[stereo] = 255;
-                *output_samples++ = (s->sample[stereo] - 128) << 8;
+                uint8_t n = buf[in++];
+
+                s->sample[0] += s->sol_table[n >> 4];
+                s->sample[0]  = av_clip_uint8(s->sample[0]);
+                *output_samples_u8++ = s->sample[0];
+
+                s->sample[stereo] += s->sol_table[n & 0x0F];
+                s->sample[stereo]  = av_clip_uint8(s->sample[stereo]);
+                *output_samples_u8++ = s->sample[stereo];
             }
         } else {
             while (in < buf_size) {
