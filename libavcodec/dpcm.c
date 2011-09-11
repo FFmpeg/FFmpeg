@@ -39,6 +39,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bytestream.h"
 
 typedef struct DPCMContext {
     int channels;
@@ -46,8 +47,6 @@ typedef struct DPCMContext {
     int sample[2];                  ///< previous sample (for SOL_DPCM)
     const int *sol_table;//for SOL_DPCM
 } DPCMContext;
-
-#define SE_16BIT(x)  if (x & 0x8000) x -= 0x10000;
 
 static const int interplay_delta_table[] = {
          0,      1,      2,      3,      4,      5,      6,      7,
@@ -169,8 +168,9 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
+    const uint8_t *buf_end = buf + buf_size;
     DPCMContext *s = avctx->priv_data;
-    int in, out = 0;
+    int out = 0;
     int predictor[2];
     int ch = 0;
     int stereo = s->channels - 1;
@@ -207,18 +207,18 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     switch(avctx->codec->id) {
 
     case CODEC_ID_ROQ_DPCM:
+        buf += 6;
+
         if (stereo) {
-            predictor[0] = buf[7] << 8;
-            predictor[1] = buf[6] << 8;
+            predictor[1] = (int16_t)(bytestream_get_byte(&buf) << 8);
+            predictor[0] = (int16_t)(bytestream_get_byte(&buf) << 8);
         } else {
-            predictor[0] = AV_RL16(&buf[6]);
+            predictor[0] = (int16_t)bytestream_get_le16(&buf);
         }
-        SE_16BIT(predictor[0]);
-        SE_16BIT(predictor[1]);
 
         /* decode the samples */
-        for (in = 8; in < buf_size; in++) {
-            predictor[ch] += s->roq_square_array[buf[in]];
+        while (buf < buf_end) {
+            predictor[ch] += s->roq_square_array[*buf++];
             predictor[ch] = av_clip_int16(predictor[ch]);
             *output_samples++ = predictor[ch];
 
@@ -228,20 +228,16 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         break;
 
     case CODEC_ID_INTERPLAY_DPCM:
-        in = 6;  /* skip over the stream mask and stream length */
-        predictor[0] = AV_RL16(&buf[in]);
-        in += 2;
-        SE_16BIT(predictor[0])
-        *output_samples++ = predictor[0];
-        if (stereo) {
-            predictor[1] = AV_RL16(&buf[in]);
-            in += 2;
-            SE_16BIT(predictor[1])
-            *output_samples++ = predictor[1];
+        buf += 6;  /* skip over the stream mask and stream length */
+
+        for (ch = 0; ch < s->channels; ch++) {
+            predictor[ch] = (int16_t)bytestream_get_le16(&buf);
+            *output_samples++ = predictor[ch];
         }
 
-        while (in < buf_size) {
-            predictor[ch] += interplay_delta_table[buf[in++]];
+        ch = 0;
+        while (buf < buf_end) {
+            predictor[ch] += interplay_delta_table[*buf++];
             predictor[ch] = av_clip_int16(predictor[ch]);
             *output_samples++ = predictor[ch];
 
@@ -253,18 +249,13 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_XAN_DPCM:
     {
         int shift[2] = { 4, 4 };
-        in = 0;
-        predictor[0] = AV_RL16(&buf[in]);
-        in += 2;
-        SE_16BIT(predictor[0]);
-        if (stereo) {
-            predictor[1] = AV_RL16(&buf[in]);
-            in += 2;
-            SE_16BIT(predictor[1]);
-        }
 
-        while (in < buf_size) {
-            uint8_t n = buf[in++];
+        for (ch = 0; ch < s->channels; ch++)
+            predictor[ch] = (int16_t)bytestream_get_le16(&buf);
+
+        ch = 0;
+        while (buf < buf_end) {
+            uint8_t n = *buf++;
             int16_t diff = (n & 0xFC) << 8;
             if ((n & 0x03) == 3)
                 shift[ch]++;
@@ -286,11 +277,10 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         break;
     }
     case CODEC_ID_SOL_DPCM:
-        in = 0;
         if (avctx->codec_tag != 3) {
             uint8_t *output_samples_u8 = data;
-            while (in < buf_size) {
-                uint8_t n = buf[in++];
+            while (buf < buf_end) {
+                uint8_t n = *buf++;
 
                 s->sample[0] += s->sol_table[n >> 4];
                 s->sample[0]  = av_clip_uint8(s->sample[0]);
@@ -301,8 +291,8 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
                 *output_samples_u8++ = s->sample[stereo];
             }
         } else {
-            while (in < buf_size) {
-                uint8_t n = buf[in++];
+            while (buf < buf_end) {
+                uint8_t n = *buf++;
                 if (n & 0x80) s->sample[ch] -= s->sol_table[n & 0x7F];
                 else s->sample[ch] += s->sol_table[n & 0x7F];
                 s->sample[ch] = av_clip_int16(s->sample[ch]);
