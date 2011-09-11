@@ -72,9 +72,11 @@ typedef struct VmdVideoContext {
 #define QUEUE_SIZE 0x1000
 #define QUEUE_MASK 0x0FFF
 
-static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_len)
+static void lz_unpack(const unsigned char *src, int src_len,
+                      unsigned char *dest, int dest_len)
 {
     const unsigned char *s;
+    unsigned int s_len;
     unsigned char *d;
     unsigned char *d_end;
     unsigned char queue[QUEUE_SIZE];
@@ -87,13 +89,16 @@ static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_le
     unsigned int i, j;
 
     s = src;
+    s_len = src_len;
     d = dest;
     d_end = d + dest_len;
     dataleft = AV_RL32(s);
-    s += 4;
+    s += 4; s_len -= 4;
     memset(queue, 0x20, QUEUE_SIZE);
+    if (s_len < 4)
+        return;
     if (AV_RL32(s) == 0x56781234) {
-        s += 4;
+        s += 4; s_len -= 4;
         qpos = 0x111;
         speclen = 0xF + 3;
     } else {
@@ -101,32 +106,41 @@ static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_le
         speclen = 100;  /* no speclen */
     }
 
-    while (dataleft > 0) {
-        tag = *s++;
+    while (dataleft > 0 && s_len > 0) {
+        tag = *s++; s_len--;
         if ((tag == 0xFF) && (dataleft > 8)) {
-            if (d + 8 > d_end)
+            if (d + 8 > d_end || s_len < 8)
                 return;
             for (i = 0; i < 8; i++) {
                 queue[qpos++] = *d++ = *s++;
                 qpos &= QUEUE_MASK;
             }
+            s_len -= 8;
             dataleft -= 8;
         } else {
             for (i = 0; i < 8; i++) {
                 if (dataleft == 0)
                     break;
                 if (tag & 0x01) {
-                    if (d + 1 > d_end)
+                    if (d + 1 > d_end || s_len < 1)
                         return;
                     queue[qpos++] = *d++ = *s++;
                     qpos &= QUEUE_MASK;
                     dataleft--;
+                    s_len--;
                 } else {
+                    if (s_len < 2)
+                        return;
                     chainofs = *s++;
                     chainofs |= ((*s & 0xF0) << 4);
                     chainlen = (*s++ & 0x0F) + 3;
-                    if (chainlen == speclen)
+                    s_len -= 2;
+                    if (chainlen == speclen) {
+                        if (s_len < 1)
+                            return;
                         chainlen = *s++ + 0xF + 3;
+                        s_len--;
+                    }
                     if (d + chainlen > d_end)
                         return;
                     for (j = 0; j < chainlen; j++) {
@@ -143,7 +157,7 @@ static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_le
 }
 
 static int rle_unpack(const unsigned char *src, unsigned char *dest,
-    int src_len, int dest_len)
+    int src_count, int src_size, int dest_len)
 {
     const unsigned char *ps;
     unsigned char *pd;
@@ -152,31 +166,40 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
 
     ps = src;
     pd = dest;
-    if (src_len & 1)
+    if (src_count & 1) {
+        if (src_size < 1)
+            return 0;
         *pd++ = *ps++;
+        src_size--;
+    }
 
-    src_len >>= 1;
+    src_count >>= 1;
     i = 0;
     do {
+        if (src_size < 1)
+            break;
         l = *ps++;
+        src_size--;
         if (l & 0x80) {
             l = (l & 0x7F) * 2;
-            if (pd + l > dest_end)
+            if (pd + l > dest_end || src_size < l)
                 return ps - src;
             memcpy(pd, ps, l);
             ps += l;
+            src_size -= l;
             pd += l;
         } else {
-            if (pd + i > dest_end)
+            if (pd + i > dest_end || src_size < 2)
                 return ps - src;
             for (i = 0; i < l; i++) {
                 *pd++ = ps[0];
                 *pd++ = ps[1];
             }
             ps += 2;
+            src_size -= 2;
         }
         i += l;
-    } while (i < src_len);
+    } while (i < src_count);
 
     return ps - src;
 }
@@ -191,6 +214,7 @@ static void vmd_decode(VmdVideoContext *s)
     const unsigned char *p = s->buf + 16;
 
     const unsigned char *pb;
+    unsigned int pb_size;
     unsigned char meth;
     unsigned char *dp;   /* pointer to current frame */
     unsigned char *pp;   /* pointer to previous frame */
@@ -204,6 +228,16 @@ static void vmd_decode(VmdVideoContext *s)
     frame_y = AV_RL16(&s->buf[8]);
     frame_width = AV_RL16(&s->buf[10]) - frame_x + 1;
     frame_height = AV_RL16(&s->buf[12]) - frame_y + 1;
+    if (frame_x < 0 || frame_width < 0 ||
+        frame_x >= s->avctx->width ||
+        frame_width > s->avctx->width ||
+        frame_x + frame_width > s->avctx->width)
+        return;
+    if (frame_y < 0 || frame_height < 0 ||
+        frame_y >= s->avctx->height ||
+        frame_height > s->avctx->height ||
+        frame_y + frame_height > s->avctx->height)
+        return;
 
     if ((frame_width == s->avctx->width && frame_height == s->avctx->height) &&
         (frame_x || frame_y)) {
@@ -216,8 +250,9 @@ static void vmd_decode(VmdVideoContext *s)
 
     /* if only a certain region will be updated, copy the entire previous
      * frame before the decode */
-    if (frame_x || frame_y || (frame_width != s->avctx->width) ||
-        (frame_height != s->avctx->height)) {
+    if (s->prev_frame.data[0] &&
+        (frame_x || frame_y || (frame_width != s->avctx->width) ||
+        (frame_height != s->avctx->height))) {
 
         memcpy(s->frame.data[0], s->prev_frame.data[0],
             s->avctx->height * s->frame.linesize[0]);
@@ -235,14 +270,19 @@ static void vmd_decode(VmdVideoContext *s)
         }
         s->size -= (256 * 3 + 2);
     }
-    if (s->size >= 0) {
+    if (s->size > 0) {
         /* originally UnpackFrame in VAG's code */
         pb = p;
-        meth = *pb++;
+        pb_size = s->buf + s->size - pb;
+        if (pb_size < 1)
+            return;
+        meth = *pb++; pb_size--;
         if (meth & 0x80) {
-            lz_unpack(pb, s->unpack_buffer, s->unpack_buffer_size);
+            lz_unpack(pb, pb_size,
+                      s->unpack_buffer, s->unpack_buffer_size);
             meth &= 0x7F;
             pb = s->unpack_buffer;
+            pb_size = s->unpack_buffer_size;
         }
 
         dp = &s->frame.data[0][frame_y * s->frame.linesize[0] + frame_x];
@@ -252,17 +292,21 @@ static void vmd_decode(VmdVideoContext *s)
             for (i = 0; i < frame_height; i++) {
                 ofs = 0;
                 do {
+                    if (pb_size < 1)
+                        return;
                     len = *pb++;
+                    pb_size--;
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
-                        if (ofs + len > frame_width)
+                        if (ofs + len > frame_width || pb_size < len)
                             return;
                         memcpy(&dp[ofs], pb, len);
                         pb += len;
+                        pb_size -= len;
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
-                        if (ofs + len + 1 > frame_width)
+                        if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
                             return;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
@@ -280,8 +324,11 @@ static void vmd_decode(VmdVideoContext *s)
 
         case 2:
             for (i = 0; i < frame_height; i++) {
+                if (pb_size < frame_width)
+                    return;
                 memcpy(dp, pb, frame_width);
                 pb += frame_width;
+                pb_size -= frame_width;
                 dp += s->frame.linesize[0];
                 pp += s->prev_frame.linesize[0];
             }
@@ -291,18 +338,27 @@ static void vmd_decode(VmdVideoContext *s)
             for (i = 0; i < frame_height; i++) {
                 ofs = 0;
                 do {
+                    if (pb_size < 1)
+                        return;
                     len = *pb++;
+                    pb_size--;
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
+                        if (pb_size < 1)
+                            return;
                         if (*pb++ == 0xFF)
-                            len = rle_unpack(pb, &dp[ofs], len, frame_width - ofs);
-                        else
+                            len = rle_unpack(pb, &dp[ofs], len, pb_size, frame_width - ofs);
+                        else {
+                            if (pb_size < len)
+                                return;
                             memcpy(&dp[ofs], pb, len);
+                        }
                         pb += len;
+                        pb_size -= 1 + len;
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
-                        if (ofs + len + 1 > frame_width)
+                        if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
                             return;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
