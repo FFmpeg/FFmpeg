@@ -92,14 +92,24 @@ static int ogg_restore(AVFormatContext *s, int discard)
     ogg->state = ost->next;
 
     if (!discard){
+        struct ogg_stream *old_streams = ogg->streams;
+
         for (i = 0; i < ogg->nstreams; i++)
             av_free (ogg->streams[i].buf);
 
         avio_seek (bc, ost->pos, SEEK_SET);
         ogg->curidx = ost->curidx;
         ogg->nstreams = ost->nstreams;
-        memcpy(ogg->streams, ost->streams,
-               ost->nstreams * sizeof(*ogg->streams));
+        ogg->streams = av_realloc (ogg->streams,
+                                   ogg->nstreams * sizeof (*ogg->streams));
+
+        if (ogg->streams) {
+            memcpy(ogg->streams, ost->streams,
+                   ost->nstreams * sizeof(*ogg->streams));
+        } else {
+            av_free(old_streams);
+            ogg->nstreams = 0;
+        }
     }
 
     av_free (ost);
