@@ -219,10 +219,9 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
                 ret = av_new_packet(pkt, copyhdrsize + size);
                 if (ret < 0)
                     return ret;
-                // HACK: we have no idea if it is a keyframe,
-                // but if we mark none seeking will not work at all.
-                pkt->flags |= AV_PKT_FLAG_KEY;
+
                 pkt->pos = pos;
+                pkt->flags |= hdr[2] == 0 ? AV_PKT_FLAG_KEY : 0;
                 pkt->pts = AV_RL32(&hdr[4]);
                 pkt->stream_index = ctx->v_id;
                 memcpy(pkt->data, hdr, copyhdrsize);
