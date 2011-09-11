@@ -84,13 +84,15 @@ static const int interplay_delta_table[] = {
 
 };
 
-static const int sol_table_old[16] =
-    { 0x0,  0x1,  0x2 , 0x3,  0x6,  0xA,  0xF, 0x15,
-    -0x15, -0xF, -0xA, -0x6, -0x3, -0x2, -0x1, 0x0};
+static const int sol_table_old[16] = {
+      0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF, 0x15,
+    -0x15, -0xF, -0xA, -0x6, -0x3, -0x2, -0x1,  0x0
+};
 
-static const int sol_table_new[16] =
-    { 0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF,  0x15,
-      0x0, -0x1, -0x2, -0x3, -0x6, -0xA, -0xF, -0x15};
+static const int sol_table_new[16] = {
+    0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF,  0x15,
+    0x0, -0x1, -0x2, -0x3, -0x6, -0xA, -0xF, -0x15
+};
 
 static const int sol_table_16[128] = {
     0x000, 0x008, 0x010, 0x020, 0x030, 0x040, 0x050, 0x060, 0x070, 0x080,
@@ -109,7 +111,6 @@ static const int sol_table_16[128] = {
 };
 
 
-
 static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 {
     DPCMContext *s = avctx->priv_data;
@@ -125,24 +126,23 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         /* initialize square table */
         for (i = 0; i < 128; i++) {
             square = i * i;
-            s->roq_square_array[i] = square;
+            s->roq_square_array[i      ] =  square;
             s->roq_square_array[i + 128] = -square;
         }
         break;
 
-
     case CODEC_ID_SOL_DPCM:
         switch(avctx->codec_tag){
         case 1:
-            s->sol_table=sol_table_old;
+            s->sol_table = sol_table_old;
             s->sample[0] = s->sample[1] = 0x80;
             break;
         case 2:
-            s->sol_table=sol_table_new;
+            s->sol_table = sol_table_new;
             s->sample[0] = s->sample[1] = 0x80;
             break;
         case 3:
-            s->sol_table=sol_table_16;
+            s->sol_table = sol_table_16;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unknown SOL subcodec\n");
@@ -162,8 +162,8 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static int dpcm_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+
+static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
@@ -219,7 +219,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         /* decode the samples */
         while (buf < buf_end) {
             predictor[ch] += s->roq_square_array[*buf++];
-            predictor[ch] = av_clip_int16(predictor[ch]);
+            predictor[ch]  = av_clip_int16(predictor[ch]);
             *output_samples++ = predictor[ch];
 
             /* toggle channel */
@@ -238,7 +238,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
         ch = 0;
         while (buf < buf_end) {
             predictor[ch] += interplay_delta_table[*buf++];
-            predictor[ch] = av_clip_int16(predictor[ch]);
+            predictor[ch]  = av_clip_int16(predictor[ch]);
             *output_samples++ = predictor[ch];
 
             /* toggle channel */
@@ -294,7 +294,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
             while (buf < buf_end) {
                 uint8_t n = *buf++;
                 if (n & 0x80) s->sample[ch] -= s->sol_table[n & 0x7F];
-                else s->sample[ch] += s->sol_table[n & 0x7F];
+                else          s->sample[ch] += s->sol_table[n & 0x7F];
                 s->sample[ch] = av_clip_int16(s->sample[ch]);
                 *output_samples++ = s->sample[ch];
                 /* toggle channel */
@@ -320,6 +320,6 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
 }
 
 DPCM_DECODER(CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
-DPCM_DECODER(CODEC_ID_ROQ_DPCM, roq_dpcm, "DPCM id RoQ");
-DPCM_DECODER(CODEC_ID_SOL_DPCM, sol_dpcm, "DPCM Sol");
-DPCM_DECODER(CODEC_ID_XAN_DPCM, xan_dpcm, "DPCM Xan");
+DPCM_DECODER(CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");
+DPCM_DECODER(CODEC_ID_SOL_DPCM,       sol_dpcm,       "DPCM Sol");
+DPCM_DECODER(CODEC_ID_XAN_DPCM,       xan_dpcm,       "DPCM Xan");
