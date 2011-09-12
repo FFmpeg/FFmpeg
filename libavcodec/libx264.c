@@ -584,6 +584,7 @@ static const AVCodecDefault x264_defaults[] = {
     { "qdiff",            "-1" },
     { "qblur",            "-1" },
     { "qcomp",            "-1" },
+    { "rc_lookahead",     "-1" },
     { "refs",             "-1" },
     { "sc_threshold",     "-1" },
     { "trellis",          "-1" },
