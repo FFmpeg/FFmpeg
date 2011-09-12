@@ -258,6 +258,81 @@ static int nuv_packet(AVFormatContext *s, AVPacket *pkt) {
     return AVERROR(EIO);
 }
 
+/**
+ * \brief looks for the string RTjjjjjjjjjj in the stream too resync reading
+ * \return 1 if the syncword is found 0 otherwise.
+ */
+static int nuv_resync(AVFormatContext *s, int64_t pos_limit) {
+    AVIOContext *pb = s->pb;
+    uint32_t tag = 0;
+    while(!url_feof(pb) && avio_tell(pb) < pos_limit) {
+        tag = (tag << 8) | avio_r8(pb);
+        if (tag                  == MKBETAG('R','T','j','j') &&
+           (tag = avio_rb32(pb)) == MKBETAG('j','j','j','j') &&
+           (tag = avio_rb32(pb)) == MKBETAG('j','j','j','j'))
+            return 1;
+    }
+    return 0;
+}
+
+/**
+ * \brief attempts to read a timestamp from stream at the given stream position
+ * \return timestamp if successfull and AV_NOPTS_VALUE if failure
+ */
+static int64_t nuv_read_dts(AVFormatContext *s, int stream_index,
+                            int64_t *ppos, int64_t pos_limit)
+{
+    NUVContext *ctx = s->priv_data;
+    AVIOContext *pb = s->pb;
+    uint8_t hdr[HDRSIZE];
+    nuv_frametype frametype;
+    int size, key, idx;
+    int64_t pos, dts;
+
+    if (avio_seek(pb, *ppos, SEEK_SET) < 0)
+        return AV_NOPTS_VALUE;
+
+    if (!nuv_resync(s, pos_limit))
+        return AV_NOPTS_VALUE;
+
+    while (!url_feof(pb) && avio_tell(pb) < pos_limit) {
+        if (avio_read(pb, hdr, HDRSIZE) < HDRSIZE)
+            return AV_NOPTS_VALUE;
+        frametype = hdr[0];
+        size = PKTSIZE(AV_RL32(&hdr[8]));
+        switch (frametype) {
+            case NUV_SEEKP:
+                break;
+            case NUV_AUDIO:
+            case NUV_VIDEO:
+                if (frametype == NUV_VIDEO) {
+                    idx = ctx->v_id;
+                    key = hdr[2] == 0;
+                } else {
+                    idx = ctx->a_id;
+                    key = 1;
+                }
+                if (stream_index == idx) {
+
+                    pos = avio_tell(s->pb) - HDRSIZE;
+                    dts = AV_RL32(&hdr[4]);
+
+                    // TODO - add general support in av_gen_search, so it adds positions after reading timestamps
+                    av_add_index_entry(s->streams[stream_index], pos, dts, size + HDRSIZE, 0,
+                            key ? AVINDEX_KEYFRAME : 0);
+
+                    *ppos = pos;
+                    return dts;
+                }
+            default:
+                avio_skip(pb, size);
+                break;
+        }
+    }
+    return AV_NOPTS_VALUE;
+}
+
+
 AVInputFormat ff_nuv_demuxer = {
     .name           = "nuv",
     .long_name      = NULL_IF_CONFIG_SMALL("NuppelVideo format"),
@@ -265,5 +340,6 @@ AVInputFormat ff_nuv_demuxer = {
     .read_probe     = nuv_probe,
     .read_header    = nuv_header,
     .read_packet    = nuv_packet,
+    .read_timestamp = nuv_read_dts,
     .flags = AVFMT_GENERIC_INDEX,
 };
