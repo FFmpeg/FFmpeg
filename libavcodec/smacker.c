@@ -139,6 +139,8 @@ static int smacker_decode_bigtree(GetBitContext *gb, HuffContext *hc, DBCtx *ctx
         b2 = get_bits_count(gb);
         i2 = ctx->v2->table ? get_vlc2(gb, ctx->v2->table, SMKTREE_BITS, 3) : 0;
         b2 = get_bits_count(gb) - b2;
+        if (i1 < 0 || i2 < 0)
+            return -1;
         val = ctx->recode1[i1] | (ctx->recode2[i2] << 8);
         if(val == ctx->escapes[0]) {
             ctx->last[0] = hc->current;
