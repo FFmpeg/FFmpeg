@@ -60,7 +60,6 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
 
     int in_size, out_size;
     int sample = 128;
-    int i;
     uint8_t *samples = data;
     uint8_t *samples_end;
 
@@ -87,8 +86,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
     samples_end = samples + out_size;
 
     if (in_size == out_size) {
-        for (i = 0; i < out_size; i++)
-            *samples++ = *buf++;
+        memcpy(samples, buf, out_size);
         *data_size = out_size;
         return buf_size;
     }
@@ -153,16 +151,15 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
                 sample = av_clip_uint8(sample);
                 *samples++ = sample;
             } else { /* copy */
-                for (count++; count > 0; count--) {
-                    *samples++ = *buf++;
-                }
+                memcpy(samples, buf, smp);
+                samples += smp;
+                buf     += smp;
                 sample = buf[-1];
             }
             break;
         default: /* run */
-            for(count++; count > 0; count--) {
-                *samples++ = sample;
-            }
+            memset(samples, sample, smp);
+            samples += smp;
         }
     }
 
