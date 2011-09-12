@@ -549,7 +549,7 @@ static void assert_avoptions(AVDictionary *m)
 {
     AVDictionaryEntry *t;
     if ((t = av_dict_get(m, "", NULL, AV_DICT_IGNORE_SUFFIX))) {
-        av_log(NULL, AV_LOG_ERROR, "Option %s not found.\n", t->key);
+        av_log(NULL, AV_LOG_FATAL, "Option %s not found.\n", t->key);
         exit_program(1);
     }
 }
@@ -560,12 +560,12 @@ static void assert_codec_experimental(AVCodecContext *c, int encoder)
     AVCodec *codec;
     if (c->codec->capabilities & CODEC_CAP_EXPERIMENTAL &&
         c->strict_std_compliance > FF_COMPLIANCE_EXPERIMENTAL) {
-        av_log(NULL, AV_LOG_ERROR, "%s '%s' is experimental and might produce bad "
+        av_log(NULL, AV_LOG_FATAL, "%s '%s' is experimental and might produce bad "
                 "results.\nAdd '-strict experimental' if you want to use it.\n",
                 codec_string, c->codec->name);
         codec = encoder ? avcodec_find_encoder(c->codec->id) : avcodec_find_decoder(c->codec->id);
         if (!(codec->capabilities & CODEC_CAP_EXPERIMENTAL))
-            av_log(NULL, AV_LOG_ERROR, "Or use the non experimental %s '%s'.\n",
+            av_log(NULL, AV_LOG_FATAL, "Or use the non experimental %s '%s'.\n",
                    codec_string, codec->name);
         exit_program(1);
     }
@@ -2570,7 +2570,7 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
         *sync = 0;
         sync_file_idx = strtol(sync + 1, &sync, 0);
         if (sync_file_idx >= nb_input_files || sync_file_idx < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid sync file index: %d.\n", sync_file_idx);
+            av_log(NULL, AV_LOG_FATAL, "Invalid sync file index: %d.\n", sync_file_idx);
             exit_program(1);
         }
         if (*sync)
@@ -2582,7 +2582,7 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
                 break;
             }
         if (i == input_files[sync_file_idx].nb_streams) {
-            av_log(NULL, AV_LOG_ERROR, "Sync stream specification in map %s does not "
+            av_log(NULL, AV_LOG_FATAL, "Sync stream specification in map %s does not "
                                        "match any streams.\n", arg);
             exit_program(1);
         }
@@ -2591,7 +2591,7 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
 
     file_idx = strtol(map, &p, 0);
     if (file_idx >= nb_input_files || file_idx < 0) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid input file index: %d.\n", file_idx);
+        av_log(NULL, AV_LOG_FATAL, "Invalid input file index: %d.\n", file_idx);
         exit_program(1);
     }
     if (negative)
@@ -2625,7 +2625,7 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
         }
 
     if (!m) {
-        av_log(NULL, AV_LOG_ERROR, "Stream map '%s' matches no streams.\n", arg);
+        av_log(NULL, AV_LOG_FATAL, "Stream map '%s' matches no streams.\n", arg);
         exit_program(1);
     }
 
@@ -2693,11 +2693,11 @@ static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, i
         avcodec_find_encoder_by_name(name) :
         avcodec_find_decoder_by_name(name);
     if(!codec) {
-        av_log(NULL, AV_LOG_ERROR, "Unknown %s '%s'\n", codec_string, name);
+        av_log(NULL, AV_LOG_FATAL, "Unknown %s '%s'\n", codec_string, name);
         exit_program(1);
     }
     if(codec->type != type) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid %s type '%s'\n", codec_string, name);
+        av_log(NULL, AV_LOG_FATAL, "Invalid %s type '%s'\n", codec_string, name);
         exit_program(1);
     }
     return codec->id;
@@ -2939,7 +2939,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     double qscale = -1;
 
     if (!st) {
-        av_log(NULL, AV_LOG_ERROR, "Could not alloc stream.\n");
+        av_log(NULL, AV_LOG_FATAL, "Could not alloc stream.\n");
         exit_program(1);
     }
 
@@ -2966,7 +2966,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         if (next = strchr(bsf, ','))
             *next++ = 0;
         if (!(bsfc = av_bitstream_filter_init(bsf))) {
-            av_log(NULL, AV_LOG_ERROR, "Unknown bitstream filter %s\n", bsf);
+            av_log(NULL, AV_LOG_FATAL, "Unknown bitstream filter %s\n", bsf);
             exit_program(1);
         }
         if (bsfc_prev)
@@ -3036,13 +3036,13 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
         MATCH_PER_STREAM_OPT(frame_rates, str, frame_rate, oc, st);
         if (frame_rate && av_parse_video_rate(&ost->frame_rate, frame_rate) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid framerate value: %s\n", frame_rate);
+            av_log(NULL, AV_LOG_FATAL, "Invalid framerate value: %s\n", frame_rate);
             exit_program(1);
         }
 
         MATCH_PER_STREAM_OPT(frame_sizes, str, frame_size, oc, st);
         if (frame_size && av_parse_video_size(&video_enc->width, &video_enc->height, frame_size) < 0) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid frame size: %s.\n", frame_size);
+            av_log(NULL, AV_LOG_FATAL, "Invalid frame size: %s.\n", frame_size);
             exit_program(1);
         }
 
@@ -3052,7 +3052,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
         MATCH_PER_STREAM_OPT(frame_pix_fmts, str, frame_pix_fmt, oc, st);
         if (frame_pix_fmt && (video_enc->pix_fmt = av_get_pix_fmt(frame_pix_fmt)) == PIX_FMT_NONE) {
-            av_log(NULL, AV_LOG_ERROR, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
+            av_log(NULL, AV_LOG_FATAL, "Unknown pixel format requested: %s.\n", frame_pix_fmt);
             exit_program(1);
         }
         st->sample_aspect_ratio = video_enc->sample_aspect_ratio;
@@ -3060,7 +3060,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         MATCH_PER_STREAM_OPT(intra_matrices, str, intra_matrix, oc, st);
         if (intra_matrix) {
             if (!(video_enc->intra_matrix = av_mallocz(sizeof(*video_enc->intra_matrix) * 64))) {
-                av_log(NULL, AV_LOG_ERROR, "Could not allocate memory for intra matrix.\n");
+                av_log(NULL, AV_LOG_FATAL, "Could not allocate memory for intra matrix.\n");
                 exit_program(1);
             }
             parse_matrix_coeffs(video_enc->intra_matrix, intra_matrix);
@@ -3068,7 +3068,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         MATCH_PER_STREAM_OPT(inter_matrices, str, inter_matrix, oc, st);
         if (inter_matrix) {
             if (!(video_enc->inter_matrix = av_mallocz(sizeof(*video_enc->inter_matrix) * 64))) {
-                av_log(NULL, AV_LOG_ERROR, "Could not allocate memory for inter matrix.\n");
+                av_log(NULL, AV_LOG_FATAL, "Could not allocate memory for inter matrix.\n");
                 exit_program(1);
             }
             parse_matrix_coeffs(video_enc->inter_matrix, inter_matrix);
@@ -3155,7 +3155,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
         MATCH_PER_STREAM_OPT(sample_fmts, str, sample_fmt, oc, st);
         if (sample_fmt &&
             (audio_enc->sample_fmt = av_get_sample_fmt(sample_fmt)) == AV_SAMPLE_FMT_NONE) {
-            av_log(NULL, AV_LOG_ERROR, "Invalid sample format '%s'\n", sample_fmt);
+            av_log(NULL, AV_LOG_FATAL, "Invalid sample format '%s'\n", sample_fmt);
             exit_program(1);
         }
 
@@ -3406,7 +3406,7 @@ static void opt_output_file(void *optctx, const char *filename)
             case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(o, oc); break;
             case AVMEDIA_TYPE_DATA:     ost = new_data_stream(o, oc);     break;
             default:
-                av_log(NULL, AV_LOG_ERROR, "Cannot map stream #%d.%d - unsupported type.\n",
+                av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d.%d - unsupported type.\n",
                        map->file_index, map->stream_index);
                 exit_program(1);
             }
@@ -3478,7 +3478,7 @@ static void opt_output_file(void *optctx, const char *filename)
                     break;
                 }
         } else {
-            av_log(NULL, AV_LOG_ERROR, "Invalid input file index %d in chapter mapping.\n",
+            av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d in chapter mapping.\n",
                    o->chapters_input_file);
             exit_program(1);
         }
@@ -3495,7 +3495,7 @@ static void opt_output_file(void *optctx, const char *filename)
 
 #define METADATA_CHECK_INDEX(index, nb_elems, desc)\
         if ((index) < 0 || (index) >= (nb_elems)) {\
-            av_log(NULL, AV_LOG_ERROR, "Invalid %s index %d while processing metadata maps\n",\
+            av_log(NULL, AV_LOG_FATAL, "Invalid %s index %d while processing metadata maps\n",\
                      (desc), (index));\
             exit_program(1);\
         }
@@ -3551,7 +3551,7 @@ static void opt_output_file(void *optctx, const char *filename)
 
         val = strchr(o->metadata[i].u.str, '=');
         if (!val) {
-            av_log(NULL, AV_LOG_ERROR, "No '=' character in metadata string %s.\n",
+            av_log(NULL, AV_LOG_FATAL, "No '=' character in metadata string %s.\n",
                    o->metadata[i].u.str);
             exit_program(1);
         }
@@ -3564,20 +3564,20 @@ static void opt_output_file(void *optctx, const char *filename)
             break;
         case 's':
             if (index < 0 || index >= oc->nb_streams) {
-                av_log(NULL, AV_LOG_ERROR, "Invalid stream index %d in metadata specifier.\n", index);
+                av_log(NULL, AV_LOG_FATAL, "Invalid stream index %d in metadata specifier.\n", index);
                 exit_program(1);
             }
             m = &oc->streams[index]->metadata;
             break;
         case 'c':
             if (index < 0 || index >= oc->nb_chapters) {
-                av_log(NULL, AV_LOG_ERROR, "Invalid chapter index %d in metadata specifier.\n", index);
+                av_log(NULL, AV_LOG_FATAL, "Invalid chapter index %d in metadata specifier.\n", index);
                 exit_program(1);
             }
             m = &oc->chapters[index]->metadata;
             break;
         default:
-            av_log(NULL, AV_LOG_ERROR, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
+            av_log(NULL, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
             exit_program(1);
         }
 
