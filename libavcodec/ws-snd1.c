@@ -25,7 +25,7 @@
 
 /**
  * @file
- * Westwood SNDx codecs.
+ * Westwood SNDx codecs
  *
  * Reference documents about VQA format and its audio codecs
  * can be found here:
@@ -34,12 +34,11 @@
 
 static const int8_t ws_adpcm_4bit[] = {
     -9, -8, -6, -5, -4, -3, -2, -1,
-     0,  1,  2,  3,  4,  5,  6,  8 };
+     0,  1,  2,  3,  4,  5,  6,  8
+};
 
-static av_cold int ws_snd_decode_init(AVCodecContext * avctx)
+static av_cold int ws_snd_decode_init(AVCodecContext *avctx)
 {
-//    WSSNDContext *c = avctx->priv_data;
-
     if (avctx->channels != 1) {
         av_log_ask_for_sample(avctx, "unsupported number of channels\n");
         return AVERROR(EINVAL);
@@ -49,13 +48,11 @@ static av_cold int ws_snd_decode_init(AVCodecContext * avctx)
     return 0;
 }
 
-static int ws_snd_decode_frame(AVCodecContext *avctx,
-                void *data, int *data_size,
-                AVPacket *avpkt)
+static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
+                               int *data_size, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-//    WSSNDContext *c = avctx->priv_data;
+    int buf_size       = avpkt->size;
 
     int in_size, out_size;
     int sample = 128;
@@ -71,7 +68,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
     }
 
     out_size = AV_RL16(&buf[0]);
-    in_size = AV_RL16(&buf[2]);
+    in_size  = AV_RL16(&buf[2]);
     buf += 4;
 
     if (out_size > *data_size) {
@@ -93,8 +90,8 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
     while (samples < samples_end && buf - avpkt->data < buf_size) {
         int code, smp, size;
         uint8_t count;
-        code = (*buf) >> 6;
-        count = (*buf) & 0x3F;
+        code  = *buf >> 6;
+        count = *buf & 0x3F;
         buf++;
 
         /* make sure we don't write past the output buffer */
@@ -112,7 +109,7 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
         if ((buf - avpkt->data) + size > buf_size)
             break;
 
-        switch(code) {
+        switch (code) {
         case 0: /* ADPCM 2-bit */
             for (count++; count > 0; count--) {
                 code = *buf++;
