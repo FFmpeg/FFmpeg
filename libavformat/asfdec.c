@@ -1198,8 +1198,10 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
     int64_t current_pos= avio_tell(s->pb);
     int i;
 
-    if(avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET) < 0)
+    if(avio_seek(s->pb, asf->data_object_offset + asf->data_object_size, SEEK_SET) < 0) {
+        asf->index_read= -1;
         return;
+    }
 
     ff_get_guid(s->pb, &g);
 
@@ -1209,6 +1211,7 @@ static void asf_build_simple_index(AVFormatContext *s, int stream_index)
         int64_t gsize= avio_rl64(s->pb);
         if (gsize < 24 || url_feof(s->pb)) {
             avio_seek(s->pb, current_pos, SEEK_SET);
+            asf->index_read= -1;
             return;
         }
         avio_skip(s->pb, gsize-24);
@@ -1264,7 +1267,7 @@ static int asf_read_seek(AVFormatContext *s, int stream_index, int64_t pts, int 
     if (!asf->index_read)
         asf_build_simple_index(s, stream_index);
 
-    if((asf->index_read && st->index_entries)){
+    if((asf->index_read > 0 && st->index_entries)){
         index= av_index_search_timestamp(st, pts, flags);
         if(index >= 0) {
             /* find the position */
