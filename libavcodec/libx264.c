@@ -358,16 +358,18 @@ static av_cold int X264_init(AVCodecContext *avctx)
         if (avctx->partitions & X264_PART_B8X8)
             x4->params.analyse.inter |= X264_ANALYSE_BSUB16x16;
     }
-    x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
-    x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
-    x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
-    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
-    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
-    x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
-    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
-    x4->params.b_aud                      = avctx->flags2 & CODEC_FLAG2_AUD;
-    x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
-    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
+    if (avctx->flags2) {
+        x4->params.analyse.b_ssim = avctx->flags2 & CODEC_FLAG2_SSIM;
+        x4->params.b_intra_refresh = avctx->flags2 & CODEC_FLAG2_INTRA_REFRESH;
+        x4->params.i_bframe_pyramid = avctx->flags2 & CODEC_FLAG2_BPYRAMID ? X264_B_PYRAMID_NORMAL : X264_B_PYRAMID_NONE;
+        x4->params.analyse.b_weighted_bipred  = avctx->flags2 & CODEC_FLAG2_WPRED;
+        x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
+        x4->params.analyse.b_transform_8x8    = avctx->flags2 & CODEC_FLAG2_8X8DCT;
+        x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
+        x4->params.b_aud                      = avctx->flags2 & CODEC_FLAG2_AUD;
+        x4->params.analyse.b_psy              = avctx->flags2 & CODEC_FLAG2_PSY;
+        x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
+    }
 #endif
 
     if (avctx->me_method == ME_EPZS)
@@ -578,6 +580,7 @@ static const AVClass class = {
 static const AVCodecDefault x264_defaults[] = {
     { "b",                "0" },
     { "bf",               "-1" },
+    { "flags2",           "0" },
     { "g",                "-1" },
     { "qmin",             "-1" },
     { "qmax",             "-1" },
