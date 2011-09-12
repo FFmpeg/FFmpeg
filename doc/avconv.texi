@@ -30,7 +30,7 @@ As a general rule, options are applied to the next specified
 file. Therefore, order is important, and you can have the same
 option on the command line multiple times. Each occurrence is
 then applied to the next input or output file.
-Exceptions from this rule are the global options (e.g. vebosity level),
+Exceptions from this rule are the global options (e.g. verbosity level),
 which should be specified first.
 
 @itemize

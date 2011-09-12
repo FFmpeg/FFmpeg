@@ -1336,6 +1336,13 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             }
         }
         s->mb_x = s->mb_y = 0;
+    } else {
+        int slice_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
+
+        if (slice_type != s->pict_type) {
+            av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     r->si.end = end;

@@ -19,7 +19,7 @@
 
 /**
  * @file
- * filter fow showing textual video frame information
+ * filter for showing textual video frame information
  */
 
 #include "libavutil/adler32.h"

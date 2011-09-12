@@ -24,8 +24,11 @@
 #include <string.h>
 #include <math.h>
 #include <stdint.h>
+#include <float.h>
 #include <xavs.h>
 #include "avcodec.h"
+#include "internal.h"
+#include "libavutil/opt.h"
 
 #define END_OF_STREAM 0x001
 
@@ -41,6 +44,15 @@ typedef struct XavsContext {
     int             sei_size;
     AVFrame         out_pic;
     int             end_of_stream;
+    float crf;
+    int cqp;
+    int b_bias;
+    float cplxblur;
+    int direct_pred;
+    int aud;
+    int fast_pskip;
+    int mbtree;
+    int mixed_refs;
 } XavsContext;
 
 static void XAVS_log(void *p, int level, const char *fmt, va_list args)
@@ -181,13 +193,17 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     x4->params.pf_log               = XAVS_log;
     x4->params.p_log_private        = avctx;
     x4->params.i_keyint_max         = avctx->gop_size;
-    x4->params.rc.i_bitrate         = avctx->bit_rate       / 1000;
+    if (avctx->bit_rate) {
+        x4->params.rc.i_bitrate   = avctx->bit_rate / 1000;
+        x4->params.rc.i_rc_method = XAVS_RC_ABR;
+    }
     x4->params.rc.i_vbv_buffer_size = avctx->rc_buffer_size / 1000;
     x4->params.rc.i_vbv_max_bitrate = avctx->rc_max_rate    / 1000;
     x4->params.rc.b_stat_write      = avctx->flags & CODEC_FLAG_PASS1;
     if (avctx->flags & CODEC_FLAG_PASS2) {
         x4->params.rc.b_stat_read = 1;
     } else {
+#if FF_API_X264_GLOBAL_OPTS
         if (avctx->crf) {
             x4->params.rc.i_rc_method   = XAVS_RC_CRF;
             x4->params.rc.f_rf_constant = avctx->crf;
@@ -195,19 +211,63 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
             x4->params.rc.i_rc_method   = XAVS_RC_CQP;
             x4->params.rc.i_qp_constant = avctx->cqp;
         }
+#endif
+
+        if (x4->crf >= 0) {
+            x4->params.rc.i_rc_method   = XAVS_RC_CRF;
+            x4->params.rc.f_rf_constant = x4->crf;
+        } else if (x4->cqp >= 0) {
+            x4->params.rc.i_rc_method   = XAVS_RC_CQP;
+            x4->params.rc.i_qp_constant = x4->cqp;
+        }
     }
 
-    /* if neither crf nor cqp modes are selected we have to enable the RC */
-    /* we do it this way because we cannot check if the bitrate has been set */
-    if (!(avctx->crf || (avctx->cqp > -1)))
-        x4->params.rc.i_rc_method = XAVS_RC_ABR;
+#if FF_API_X264_GLOBAL_OPTS
+    if (avctx->bframebias)
+        x4->params.i_bframe_bias              = avctx->bframebias;
+    if (avctx->deblockalpha)
+        x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
+    if (avctx->deblockbeta)
+        x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
+    if (avctx->complexityblur >= 0)
+        x4->params.rc.f_complexity_blur        = avctx->complexityblur;
+    if (avctx->directpred >= 0)
+        x4->params.analyse.i_direct_mv_pred    = avctx->directpred;
+    if (avctx->partitions) {
+        if (avctx->partitions & XAVS_PART_I8X8)
+            x4->params.analyse.inter |= XAVS_ANALYSE_I8x8;
+        if (avctx->partitions & XAVS_PART_P8X8)
+            x4->params.analyse.inter |= XAVS_ANALYSE_PSUB16x16;
+        if (avctx->partitions & XAVS_PART_B8X8)
+            x4->params.analyse.inter |= XAVS_ANALYSE_BSUB16x16;
+    }
+    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
+    x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
+    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
+    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
+    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
+#endif
+
+    if (x4->aud >= 0)
+        x4->params.b_aud                      = x4->aud;
+    if (x4->mbtree >= 0)
+        x4->params.rc.b_mb_tree               = x4->mbtree;
+    if (x4->direct_pred >= 0)
+        x4->params.analyse.i_direct_mv_pred   = x4->direct_pred;
+    if (x4->fast_pskip >= 0)
+        x4->params.analyse.b_fast_pskip       = x4->fast_pskip;
+    if (x4->mixed_refs >= 0)
+        x4->params.analyse.b_mixed_references = x4->mixed_refs;
+    if (x4->b_bias != INT_MIN)
+        x4->params.i_bframe_bias              = x4->b_bias;
+    if (x4->cplxblur >= 0)
+        x4->params.rc.f_complexity_blur = x4->cplxblur;
 
     x4->params.i_bframe          = avctx->max_b_frames;
     /* cabac is not included in AVS JiZhun Profile */
     x4->params.b_cabac           = 0;
 
     x4->params.i_bframe_adaptive = avctx->b_frame_strategy;
-    x4->params.i_bframe_bias     = avctx->bframebias;
 
     avctx->has_b_frames          = !!avctx->max_b_frames;
 
@@ -220,8 +280,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     x4->params.i_scenecut_threshold        = avctx->scenechange_threshold;
 
    // x4->params.b_deblocking_filter       = avctx->flags & CODEC_FLAG_LOOP_FILTER;
-    x4->params.i_deblocking_filter_alphac0 = avctx->deblockalpha;
-    x4->params.i_deblocking_filter_beta    = avctx->deblockbeta;
 
     x4->params.rc.i_qp_min                 = avctx->qmin;
     x4->params.rc.i_qp_max                 = avctx->qmax;
@@ -229,7 +287,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
 
     x4->params.rc.f_qcompress       = avctx->qcompress; /* 0.0 => cbr, 1.0 => constant qp */
     x4->params.rc.f_qblur           = avctx->qblur;     /* temporally blur quants */
-    x4->params.rc.f_complexity_blur = avctx->complexityblur;
 
     x4->params.i_frame_reference    = avctx->refs;
 
@@ -241,20 +298,6 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     x4->params.i_fps_num            = avctx->time_base.den;
     x4->params.i_fps_den            = avctx->time_base.num;
     x4->params.analyse.inter        = XAVS_ANALYSE_I8x8 |XAVS_ANALYSE_PSUB16x16| XAVS_ANALYSE_BSUB16x16;
-    if (avctx->partitions) {
-        if (avctx->partitions & XAVS_PART_I8X8)
-            x4->params.analyse.inter |= XAVS_ANALYSE_I8x8;
-
-        if (avctx->partitions & XAVS_PART_P8X8)
-            x4->params.analyse.inter |= XAVS_ANALYSE_PSUB16x16;
-
-        if (avctx->partitions & XAVS_PART_B8X8)
-            x4->params.analyse.inter |= XAVS_ANALYSE_BSUB16x16;
-    }
-
-    x4->params.analyse.i_direct_mv_pred  = avctx->directpred;
-
-    x4->params.analyse.b_weighted_bipred = avctx->flags2 & CODEC_FLAG2_WPRED;
 
     switch (avctx->me_method) {
          case  ME_EPZS:
@@ -279,11 +322,9 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     x4->params.analyse.i_me_range = avctx->me_range;
     x4->params.analyse.i_subpel_refine    = avctx->me_subpel_quality;
 
-    x4->params.analyse.b_mixed_references = avctx->flags2 & CODEC_FLAG2_MIXED_REFS;
     x4->params.analyse.b_chroma_me        = avctx->me_cmp & FF_CMP_CHROMA;
     /* AVS P2 only enables 8x8 transform */
     x4->params.analyse.b_transform_8x8    = 1; //avctx->flags2 & CODEC_FLAG2_8X8DCT;
-    x4->params.analyse.b_fast_pskip       = avctx->flags2 & CODEC_FLAG2_FASTPSKIP;
 
     x4->params.analyse.i_trellis          = avctx->trellis;
     x4->params.analyse.i_noise_reduction  = avctx->noise_reduction;
@@ -303,14 +344,12 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
 
     /* TAG:do we have MB tree RC method */
     /* what is the RC method we are now using? Default NO */
-    x4->params.rc.b_mb_tree               = !!(avctx->flags2 & CODEC_FLAG2_MBTREE);
     x4->params.rc.f_ip_factor             = 1 / fabs(avctx->i_quant_factor);
     x4->params.rc.f_pb_factor             = avctx->b_quant_factor;
     x4->params.analyse.i_chroma_qp_offset = avctx->chromaoffset;
 
     x4->params.analyse.b_psnr = avctx->flags & CODEC_FLAG_PSNR;
     x4->params.i_log_level    = XAVS_LOG_DEBUG;
-    x4->params.b_aud          = avctx->flags2 & CODEC_FLAG2_AUD;
     x4->params.i_threads      = avctx->thread_count;
     x4->params.b_interlaced   = avctx->flags & CODEC_FLAG_INTERLACED_DCT;
 
@@ -336,6 +375,37 @@ static av_cold int XAVS_init(AVCodecContext *avctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(XavsContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "crf",           "Select the quality for constant quality mode",    OFFSET(crf),           FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE },
+    { "qp",            "Constant quantization parameter rate control method",OFFSET(cqp),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
+    { "b-bias",        "Influences how often B-frames are used",          OFFSET(b_bias),        FF_OPT_TYPE_INT,    {INT_MIN}, INT_MIN, INT_MAX, VE },
+    { "cplxblur",      "Reduce fluctuations in QP (before curve compression)", OFFSET(cplxblur), FF_OPT_TYPE_FLOAT,  {-1 }, -1, FLT_MAX, VE},
+    { "direct-pred",   "Direct MV prediction mode",                       OFFSET(direct_pred),   FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE, "direct-pred" },
+    { "none",          NULL,      0,    FF_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_NONE },     0, 0, VE, "direct-pred" },
+    { "spatial",       NULL,      0,    FF_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
+    { "temporal",      NULL,      0,    FF_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
+    { "auto",          NULL,      0,    FF_OPT_TYPE_CONST, { XAVS_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
+    { "aud",           "Use access unit delimiters.",                     OFFSET(aud),           FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "mbtree",        "Use macroblock tree ratecontrol.",                OFFSET(mbtree),        FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { "mixed-refs",    "One reference per partition, as opposed to one reference per macroblock", OFFSET(mixed_refs), FF_OPT_TYPE_INT, {-1}, -1, 1, VE },
+    { "fast-pskip",    NULL,                                              OFFSET(fast_pskip),    FF_OPT_TYPE_INT,    {-1 }, -1, 1, VE},
+    { NULL },
+};
+
+static const AVClass class = {
+    .class_name = "libxavs",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVCodecDefault xavs_defaults[] = {
+    { "b",                "0" },
+    { NULL },
+};
+
 AVCodec ff_libxavs_encoder = {
     .name           = "libxavs",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -347,5 +417,7 @@ AVCodec ff_libxavs_encoder = {
     .capabilities   = CODEC_CAP_DELAY,
     .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV420P, PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("libxavs - the Chinese Audio Video Standard Encoder"),
+    .priv_class     = &class,
+    .defaults       = xavs_defaults,
 };
 
