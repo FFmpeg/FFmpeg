@@ -1675,7 +1675,6 @@ enable avserver
 enable network
 enable optimizations
 enable postproc
-enable protocols
 enable static
 enable swscale
 enable swscale_alpha
