@@ -647,6 +647,8 @@ Show benchmarking information at the end of an encode.
 Shows CPU time used and maximum memory consumption.
 Maximum memory consumption is not supported on all systems,
 it will usually display as 0 if not supported.
+@item -timelimit @var{duration} (@emph{global})
+Exit after avconv has been running for @var{duration} seconds.
 @item -dump (@emph{global})
 Dump each input packet.
 @item -hex (@emph{global})
