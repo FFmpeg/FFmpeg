@@ -124,8 +124,6 @@ static const char *video_codec_name    = NULL;
 static const char *audio_codec_name    = NULL;
 static const char *subtitle_codec_name = NULL;
 
-static char *data_codec_name = NULL;
-
 static int file_overwrite = 0;
 static int do_benchmark = 0;
 static int do_hex_dump = 0;
