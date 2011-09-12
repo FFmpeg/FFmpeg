@@ -113,7 +113,6 @@ static const OptionDef options[];
 
 static int frame_bits_per_raw_sample = 0;
 static int video_discard = 0;
-static char *video_codec_name = NULL;
 static int same_quant = 0;
 static int do_deinterlace = 0;
 static int intra_dc_precision = 8;
@@ -121,8 +120,9 @@ static int loop_input = 0;
 static int loop_output = AVFMT_NOOUTPUTLOOP;
 static int qp_hist = 0;
 static int intra_only = 0;
-static char  *audio_codec_name = NULL;
-static char *subtitle_codec_name = NULL;
+static const char *video_codec_name    = NULL;
+static const char *audio_codec_name    = NULL;
+static const char *subtitle_codec_name = NULL;
 
 static char *data_codec_name = NULL;
 
@@ -4119,9 +4119,9 @@ static int opt_preset(OptionsContext *o, const char *opt, const char *arg)
 {
     FILE *f=NULL;
     char filename[1000], tmp[1000], tmp2[1000], line[1000];
-    char *codec_name = *opt == 'v' ? video_codec_name :
-                       *opt == 'a' ? audio_codec_name :
-                                     subtitle_codec_name;
+    const char *codec_name = *opt == 'v' ? video_codec_name :
+                             *opt == 'a' ? audio_codec_name :
+                                           subtitle_codec_name;
 
     if (!(f = get_preset_file(filename, sizeof(filename), arg, *opt == 'f', codec_name))) {
         fprintf(stderr, "File for preset '%s' not found\n", arg);
