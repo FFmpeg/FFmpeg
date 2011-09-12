@@ -41,6 +41,11 @@ static av_cold int ws_snd_decode_init(AVCodecContext * avctx)
 {
 //    WSSNDContext *c = avctx->priv_data;
 
+    if (avctx->channels != 1) {
+        av_log_ask_for_sample(avctx, "unsupported number of channels\n");
+        return AVERROR(EINVAL);
+    }
+
     avctx->sample_fmt = AV_SAMPLE_FMT_U8;
     return 0;
 }
