@@ -659,7 +659,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     } else { //8-bit data
         for(i = stereo; i >= 0; i--)
             pred[i] = get_bits(&gb, 8);
-        if (stereo + unp_size > data_size)
+        if (stereo + unp_size > *data_size)
             return -1;
         for(i = 0; i < stereo; i++)
             *samples8++ = pred[i];
