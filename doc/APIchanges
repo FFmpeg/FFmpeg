@@ -13,6 +13,14 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-09-16 - xxxxxxx - lavfi 2.41.0
+  Rename avfilter_all_* function names to avfilter_make_all_*.
+
+  In particular, apply the renames:
+  avfilter_all_formats         -> avfilter_make_all_formats
+  avfilter_all_channel_layouts -> avfilter_make_all_channel_layouts
+  avfilter_all_packing_formats -> avfilter_make_all_packing_formats
+
 2011-09-12 - xxxxxxx - lavfi 2.40.0
   Change AVFilterBufferRefAudioProps.sample_rate type from uint32_t to int.
 

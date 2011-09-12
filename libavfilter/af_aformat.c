@@ -63,9 +63,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     if (*args)                                                          \
         args++;
 
-    ADD_FORMATS(avfilter_all_formats(AVMEDIA_TYPE_AUDIO), sample_format, int, formats);
-    ADD_FORMATS(avfilter_all_channel_layouts(), channel_layout, int64_t, chlayouts);
-    ADD_FORMATS(avfilter_all_packing_formats(), packing_format, int, packing);
+    ADD_FORMATS(avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO), sample_format, int, formats);
+    ADD_FORMATS(avfilter_make_all_channel_layouts(), channel_layout, int64_t, chlayouts);
+    ADD_FORMATS(avfilter_make_all_packing_formats(), packing_format, int, packing);
 
     return 0;
 

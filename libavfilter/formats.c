@@ -138,7 +138,14 @@ int avfilter_add_format(AVFilterFormats **avff, int64_t fmt)
     return 0;
 }
 
+#if FF_API_OLD_ALL_FORMATS_API
 AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
+{
+    return avfilter_make_all_formats(type);
+}
+#endif
+
+AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type)
 {
     AVFilterFormats *ret = NULL;
     int fmt;
@@ -153,7 +160,7 @@ AVFilterFormats *avfilter_all_formats(enum AVMediaType type)
     return ret;
 }
 
-AVFilterFormats *avfilter_all_channel_layouts(void)
+AVFilterFormats *avfilter_make_all_channel_layouts(void)
 {
     static int64_t chlayouts[] = {
         AV_CH_LAYOUT_MONO,
@@ -174,7 +181,7 @@ AVFilterFormats *avfilter_all_channel_layouts(void)
     return avfilter_make_format64_list(chlayouts);
 }
 
-AVFilterFormats *avfilter_all_packing_formats(void)
+AVFilterFormats *avfilter_make_all_packing_formats(void)
 {
     static int packing[] = {
         AVFILTER_PACKED,

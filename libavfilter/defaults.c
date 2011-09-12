@@ -222,10 +222,10 @@ void avfilter_set_common_packing_formats(AVFilterContext *ctx, AVFilterFormats *
 
 int avfilter_default_query_formats(AVFilterContext *ctx)
 {
-    avfilter_set_common_pixel_formats(ctx, avfilter_all_formats(AVMEDIA_TYPE_VIDEO));
-    avfilter_set_common_sample_formats(ctx, avfilter_all_formats(AVMEDIA_TYPE_AUDIO));
-    avfilter_set_common_channel_layouts(ctx, avfilter_all_channel_layouts());
-    avfilter_set_common_packing_formats(ctx, avfilter_all_packing_formats());
+    avfilter_set_common_pixel_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_VIDEO));
+    avfilter_set_common_sample_formats(ctx, avfilter_make_all_formats(AVMEDIA_TYPE_AUDIO));
+    avfilter_set_common_channel_layouts(ctx, avfilter_make_all_channel_layouts());
+    avfilter_set_common_packing_formats(ctx, avfilter_make_all_packing_formats());
 
     return 0;
 }

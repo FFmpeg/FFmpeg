@@ -104,12 +104,12 @@ static int query_formats(AVFilterContext *ctx)
         return AVERROR(ENOMEM);
     avfilter_set_common_sample_formats(ctx, formats);
 
-    formats = avfilter_all_channel_layouts();
+    formats = avfilter_make_all_channel_layouts();
     if (!formats)
         return AVERROR(ENOMEM);
     avfilter_set_common_channel_layouts(ctx, formats);
 
-    formats = avfilter_all_packing_formats();
+    formats = avfilter_make_all_packing_formats();
     if (!formats)
         return AVERROR(ENOMEM);
     avfilter_set_common_packing_formats(ctx, formats);

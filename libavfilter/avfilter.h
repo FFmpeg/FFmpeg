@@ -29,7 +29,7 @@
 #include "libavutil/rational.h"
 
 #define LIBAVFILTER_VERSION_MAJOR  2
-#define LIBAVFILTER_VERSION_MINOR 40
+#define LIBAVFILTER_VERSION_MINOR 41
 #define LIBAVFILTER_VERSION_MICRO  0
 
 #define LIBAVFILTER_VERSION_INT AV_VERSION_INT(LIBAVFILTER_VERSION_MAJOR, \
@@ -42,6 +42,9 @@
 
 #ifndef FF_API_OLD_VSINK_API
 #define FF_API_OLD_VSINK_API        (LIBAVUTIL_VERSION_MAJOR < 3)
+#endif
+#ifndef FF_API_OLD_ALL_FORMATS_API
+#define FF_API_OLD_ALL_FORMATS_API (LIBAVUTIL_VERSION_MAJOR < 3)
 #endif
 
 #include <stddef.h>
@@ -258,20 +261,28 @@ AVFilterFormats *avfilter_make_format64_list(const int64_t *fmts);
  */
 int avfilter_add_format(AVFilterFormats **avff, int64_t fmt);
 
+#if FF_API_OLD_ALL_FORMATS_API
+/**
+ * @deprecated Use avfilter_make_all_formats() instead.
+ */
+attribute_deprecated
+AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
+#endif
+
 /**
  * Return a list of all formats supported by FFmpeg for the given media type.
  */
-AVFilterFormats *avfilter_all_formats(enum AVMediaType type);
+AVFilterFormats *avfilter_make_all_formats(enum AVMediaType type);
 
 /**
  * Return a list of all channel layouts supported by FFmpeg.
  */
-AVFilterFormats *avfilter_all_channel_layouts(void);
+AVFilterFormats *avfilter_make_all_channel_layouts(void);
 
 /**
  * Return a list of all audio packing formats.
  */
-AVFilterFormats *avfilter_all_packing_formats(void);
+AVFilterFormats *avfilter_make_all_packing_formats(void);
 
 /**
  * Return a format list which contains the intersection of the formats of
