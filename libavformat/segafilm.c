@@ -167,6 +167,8 @@ static int film_read_header(AVFormatContext *s,
     if(film->sample_count >= UINT_MAX / sizeof(film_sample))
         return -1;
     film->sample_table = av_malloc(film->sample_count * sizeof(film_sample));
+    if (!film->sample_table)
+        return AVERROR(ENOMEM);
 
     for(i=0; i<s->nb_streams; i++)
         av_set_pts_info(s->streams[i], 33, 1, film->base_clock);
@@ -238,6 +240,10 @@ static int film_read_packet(AVFormatContext *s,
             av_free(film->stereo_buffer);
             film->stereo_buffer_size = sample->sample_size;
             film->stereo_buffer = av_malloc(film->stereo_buffer_size);
+            if (!film->stereo_buffer) {
+                film->stereo_buffer_size = 0;
+                return AVERROR(ENOMEM);
+            }
         }
 
         pkt->pos= avio_tell(pb);
