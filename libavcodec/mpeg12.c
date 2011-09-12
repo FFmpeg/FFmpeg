@@ -1968,7 +1968,7 @@ static int slice_end(AVCodecContext *avctx, AVFrame *pict)
         ff_xvmc_field_end(s);
 
     /* end of slice reached */
-    if (/*s->mb_y << field_pic == s->mb_height &&*/ !s->first_field) {
+    if (/*s->mb_y << field_pic == s->mb_height &&*/ !s->first_field && !s->first_slice) {
         /* end of image */
 
         s->current_picture_ptr->f.qscale_type = FF_QSCALE_TYPE_MPEG2;
