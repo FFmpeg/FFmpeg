@@ -137,8 +137,8 @@ struct writer {
     const char *header, *footer;
     void (*print_header)(const char *);
     void (*print_footer)(const char *);
-    void (*print_fmt_f)(const char *, const char *, ...);
     void (*print_int_f)(const char *, int);
+    void (*print_str_f)(const char *, const char *);
     void (*show_tags)(struct writer *w, AVDictionary *dict);
 };
 
@@ -150,13 +150,9 @@ static void default_print_header(const char *section)
     printf("[%s]\n", section);
 }
 
-static void default_print_fmt(const char *key, const char *fmt, ...)
+static void default_print_str(const char *key, const char *value)
 {
-    va_list ap;
-    va_start(ap, fmt);
-    printf("%s=", key);
-    vprintf(fmt, ap);
-    va_end(ap);
+    printf("%s=%s", key, value);
 }
 
 static void default_print_int(const char *key, int value)
@@ -172,11 +168,51 @@ static void default_print_footer(const char *section)
 
 /* Print helpers */
 
-#define print_fmt0(k, f, ...) w->print_fmt_f(k, f, __VA_ARGS__)
+struct print_buf {
+    char *s;
+    int len;
+};
+
+static char *fast_asprintf(struct print_buf *pbuf, const char *fmt, ...)
+{
+    va_list va;
+    int len;
+
+    va_start(va, fmt);
+    len = vsnprintf(NULL, 0, fmt, va);
+    va_end(va);
+    if (len < 0)
+        goto fail;
+
+    if (pbuf->len < len) {
+        char *p = av_realloc(pbuf->s, len + 1);
+        if (!p)
+            goto fail;
+        pbuf->s   = p;
+        pbuf->len = len;
+    }
+
+    va_start(va, fmt);
+    len = vsnprintf(pbuf->s, len + 1, fmt, va);
+    va_end(va);
+    if (len < 0)
+        goto fail;
+    return pbuf->s;
+
+fail:
+    av_freep(&pbuf->s);
+    pbuf->len = 0;
+    return NULL;
+}
+
+#define print_fmt0(k, f, ...) do {             \
+    if (fast_asprintf(&pbuf, f, __VA_ARGS__))  \
+        w->print_str_f(k, pbuf.s);             \
+} while (0)
 #define print_fmt( k, f, ...) do {     \
     if (w->item_sep)                   \
         printf("%s", w->item_sep);     \
-    w->print_fmt_f(k, f, __VA_ARGS__); \
+    print_fmt0(k, f, __VA_ARGS__);     \
 } while (0)
 
 #define print_int0(k, v) w->print_int_f(k, v)
@@ -194,6 +230,7 @@ static void show_packet(struct writer *w, AVFormatContext *fmt_ctx, AVPacket *pk
 {
     char val_str[128];
     AVStream *st = fmt_ctx->streams[pkt->stream_index];
+    struct print_buf pbuf = {.s = NULL};
 
     if (packet_idx)
         printf("%s", w->items_sep);
@@ -210,6 +247,7 @@ static void show_packet(struct writer *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_fmt("pos",   "%"PRId64, pkt->pos);
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     w->print_footer("PACKET");
+    av_free(pbuf.s);
     fflush(stdout);
 }
 
@@ -227,10 +265,12 @@ static void show_packets(struct writer *w, AVFormatContext *fmt_ctx)
 static void default_show_tags(struct writer *w, AVDictionary *dict)
 {
     AVDictionaryEntry *tag = NULL;
+    struct print_buf pbuf = {.s = NULL};
     while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         printf("\nTAG:");
         print_str0(tag->key, tag->value);
     }
+    av_free(pbuf.s);
 }
 
 static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_idx)
@@ -240,6 +280,7 @@ static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_i
     AVCodec *dec;
     char val_str[128];
     AVRational display_aspect_ratio;
+    struct print_buf pbuf = {.s = NULL};
 
     if (stream_idx)
         printf("%s", w->items_sep);
@@ -307,6 +348,7 @@ static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_i
     w->show_tags(w, stream->metadata);
 
     w->print_footer("STREAM");
+    av_free(pbuf.s);
     fflush(stdout);
 }
 
@@ -320,6 +362,7 @@ static void show_streams(struct writer *w, AVFormatContext *fmt_ctx)
 static void show_format(struct writer *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
+    struct print_buf pbuf = {.s = NULL};
 
     w->print_header("FORMAT");
     print_str0("filename",        fmt_ctx->filename);
@@ -332,6 +375,7 @@ static void show_format(struct writer *w, AVFormatContext *fmt_ctx)
     print_str("bit_rate",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,  unit_bit_per_second_str));
     w->show_tags(w, fmt_ctx->metadata);
     w->print_footer("FORMAT");
+    av_free(pbuf.s);
     fflush(stdout);
 }
 
@@ -380,8 +424,8 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
 #define WRITER_FUNC(func)                  \
     .print_header = func ## _print_header, \
     .print_footer = func ## _print_footer, \
-    .print_fmt_f  = func ## _print_fmt,    \
     .print_int_f  = func ## _print_int,    \
+    .print_str_f  = func ## _print_str,    \
     .show_tags    = func ## _show_tags
 
 static struct writer writers[] = {{
