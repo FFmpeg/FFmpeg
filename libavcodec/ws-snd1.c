@@ -32,7 +32,6 @@
  * http://www.multimedia.cx
  */
 
-static const int8_t ws_adpcm_2bit[] = { -2, -1, 0, 1};
 static const int8_t ws_adpcm_4bit[] = {
     -9, -8, -6, -5, -4, -3, -2, -1,
      0,  1,  2,  3,  4,  5,  6,  8 };
@@ -117,16 +116,16 @@ static int ws_snd_decode_frame(AVCodecContext *avctx,
         case 0: /* ADPCM 2-bit */
             for (count++; count > 0; count--) {
                 code = *buf++;
-                sample += ws_adpcm_2bit[code & 0x3];
+                sample += ( code       & 0x3) - 2;
                 sample = av_clip_uint8(sample);
                 *samples++ = sample;
-                sample += ws_adpcm_2bit[(code >> 2) & 0x3];
+                sample += ((code >> 2) & 0x3) - 2;
                 sample = av_clip_uint8(sample);
                 *samples++ = sample;
-                sample += ws_adpcm_2bit[(code >> 4) & 0x3];
+                sample += ((code >> 4) & 0x3) - 2;
                 sample = av_clip_uint8(sample);
                 *samples++ = sample;
-                sample += ws_adpcm_2bit[(code >> 6) & 0x3];
+                sample +=  (code >> 6)        - 2;
                 sample = av_clip_uint8(sample);
                 *samples++ = sample;
             }
