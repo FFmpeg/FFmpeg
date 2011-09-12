@@ -113,11 +113,14 @@ static int film_read_header(AVFormatContext *s,
         film->audio_bits = scratch[22];
         if (scratch[23] == 2)
             film->audio_type = CODEC_ID_ADPCM_ADX;
-        else if (film->audio_bits == 8)
-            film->audio_type = CODEC_ID_PCM_S8;
-        else if (film->audio_bits == 16)
-            film->audio_type = CODEC_ID_PCM_S16BE;
-        else
+        else if (film->audio_channels > 0) {
+            if (film->audio_bits == 8)
+                film->audio_type = CODEC_ID_PCM_S8;
+            else if (film->audio_bits == 16)
+                film->audio_type = CODEC_ID_PCM_S16BE;
+            else
+                film->audio_type = CODEC_ID_NONE;
+        } else
             film->audio_type = CODEC_ID_NONE;
     }
 
@@ -201,7 +204,7 @@ static int film_read_header(AVFormatContext *s,
             if (film->audio_type == CODEC_ID_ADPCM_ADX)
                 audio_frame_counter += (film->sample_table[i].sample_size * 32 /
                     (18 * film->audio_channels));
-            else
+            else if (film->audio_type != CODEC_ID_NONE)
                 audio_frame_counter += (film->sample_table[i].sample_size /
                     (film->audio_channels * film->audio_bits / 8));
         } else {
