@@ -520,8 +520,7 @@ static void term_exit(void)
 
 static volatile int received_sigterm = 0;
 
-static void
-sigterm_handler(int sig)
+static void sigterm_handler(int sig)
 {
     received_sigterm = sig;
     q_pressed++;
@@ -766,15 +765,15 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
     }
 }
 
-static double
-get_sync_ipts(const OutputStream *ost)
+static double get_sync_ipts(const OutputStream *ost)
 {
     const InputStream *ist = ost->sync_ist;
     OutputFile *of = &output_files[ost->file_index];
     return (double)(ist->pts - of->start_time)/AV_TIME_BASE;
 }
 
-static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx, AVBitStreamFilterContext *bsfc){
+static void write_frame(AVFormatContext *s, AVPacket *pkt, AVCodecContext *avctx, AVBitStreamFilterContext *bsfc)
+{
     int ret;
 
     while(bsfc){
@@ -1349,7 +1348,8 @@ static void do_video_out(AVFormatContext *s,
     }
 }
 
-static double psnr(double d){
+static double psnr(double d)
+{
     return -10.0*log(d)/log(10.0);
 }
 
@@ -1521,7 +1521,7 @@ static void print_report(OutputFile *output_files,
     }
 }
 
-static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_t size)
+static void generate_silence(uint8_t *buf, enum AVSampleFormat sample_fmt, size_t size)
 {
     int fill_char = 0x00;
     if (sample_fmt == AV_SAMPLE_FMT_U8)
@@ -1992,10 +1992,8 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
     return 0;
 }
 
-static int transcode_init(OutputFile *output_files,
-                          int nb_output_files,
-                          InputFile *input_files,
-                          int nb_input_files)
+static int transcode_init(OutputFile *output_files, int nb_output_files,
+                          InputFile  *input_files,  int nb_input_files)
 {
     int ret = 0, i, j, k;
     AVFormatContext *os;
@@ -2369,10 +2367,8 @@ static int transcode_init(OutputFile *output_files,
 /*
  * The following code is the main loop of the file converter
  */
-static int transcode(OutputFile *output_files,
-                     int nb_output_files,
-                     InputFile *input_files,
-                     int nb_input_files)
+static int transcode(OutputFile *output_files, int nb_output_files,
+                     InputFile  *input_files,  int nb_input_files)
 {
     int ret, i;
     AVFormatContext *is, *os;
@@ -2699,7 +2695,8 @@ static int opt_frame_crop(const char *opt, const char *arg)
     return AVERROR(EINVAL);
 }
 
-static int opt_pad(const char *opt, const char *arg) {
+static int opt_pad(const char *opt, const char *arg)
+{
     fprintf(stderr, "Option '%s' has been removed, use the pad filter instead\n", opt);
     return -1;
 }
@@ -3146,8 +3143,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     return 0;
 }
 
-static void parse_forced_key_frames(char *kf, OutputStream *ost,
-                                    AVCodecContext *avctx)
+static void parse_forced_key_frames(char *kf, OutputStream *ost, AVCodecContext *avctx)
 {
     char *p;
     int n = 1, i;
@@ -4160,7 +4156,7 @@ static int opt_preset(OptionsContext *o, const char *opt, const char *arg)
     return 0;
 }
 
-static void log_callback_null(void* ptr, int level, const char* fmt, va_list vl)
+static void log_callback_null(void *ptr, int level, const char *fmt, va_list vl)
 {
 }
 
@@ -4174,7 +4170,8 @@ static int opt_passlogfile(const char *opt, const char *arg)
 #endif
 }
 
-static int opt_old2new(OptionsContext *o, const char *opt, const char *arg){
+static int opt_old2new(OptionsContext *o, const char *opt, const char *arg)
+{
     char *s= av_malloc(strlen(opt)+2);
     snprintf(s, strlen(opt)+2, "%s:%c", opt+1, *opt);
     return parse_option(o, s, arg, options);
