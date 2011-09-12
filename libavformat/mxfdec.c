@@ -1039,8 +1039,11 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 int res;
                 if (klv.key[5] == 0x53) {
                     res = mxf_read_local_tags(mxf, &klv, metadata->read, metadata->ctx_size, metadata->type);
-                } else
+                } else {
+                    uint64_t next = avio_tell(s->pb) + klv.length;
                     res = metadata->read(mxf, s->pb, 0, 0, klv.key);
+                    avio_seek(s->pb, next, SEEK_SET);
+                }
                 if (res < 0) {
                     av_log(s, AV_LOG_ERROR, "error reading header metadata\n");
                     return -1;
