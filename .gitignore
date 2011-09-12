@@ -10,6 +10,7 @@
 *.def
 *.dll
 *.lib
+*.exp
 config.*
 doc/*.1
 doc/*.html
