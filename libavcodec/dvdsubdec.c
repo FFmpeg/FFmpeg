@@ -29,6 +29,8 @@ typedef struct DVDSubContext
 {
   uint32_t palette[16];
   int      has_palette;
+  uint8_t  colormap[4];
+  uint8_t  alpha[256];
 } DVDSubContext;
 
 static void yuv_a_to_rgba(const uint8_t *ycbcr, const uint8_t *alpha, uint32_t *rgba, int num_values)
@@ -123,8 +125,6 @@ static int decode_rle(uint8_t *bitmap, int linesize, int w, int h,
 
 static void guess_palette(uint32_t *rgba_palette,
                           DVDSubContext* ctx,
-                          uint8_t *colormap,
-                          uint8_t *alpha,
                           uint32_t subtitle_color)
 {
     static const uint8_t level_map[4][4] = {
@@ -137,6 +137,7 @@ static void guess_palette(uint32_t *rgba_palette,
     };
     uint8_t color_used[16];
     int nb_opaque_colors, i, level, j, r, g, b;
+    uint8_t *colormap = ctx->colormap, *alpha = ctx->alpha;
 
     if(ctx->has_palette) {
         for(i = 0; i < 4; i++)
@@ -188,7 +189,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
     int cmd_pos, pos, cmd, x1, y1, x2, y2, offset1, offset2, next_cmd_pos;
     int big_offsets, offset_size, is_8bit = 0;
     const uint8_t *yuv_palette = 0;
-    uint8_t colormap[4], alpha[256];
+    uint8_t *colormap = ctx->colormap, *alpha = ctx->alpha;
     int date;
     int i;
     int is_menu = 0;
@@ -348,7 +349,7 @@ static int decode_dvd_subtitles(DVDSubContext *ctx, AVSubtitle *sub_header,
                 } else {
                     sub_header->rects[0]->nb_colors = 4;
                     guess_palette((uint32_t*)sub_header->rects[0]->pict.data[1], ctx,
-                                  colormap, alpha, 0xffff00);
+                                  0xffff00);
                 }
                 sub_header->rects[0]->x = x1;
                 sub_header->rects[0]->y = y1;
