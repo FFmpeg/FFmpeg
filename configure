@@ -179,6 +179,7 @@ External library support:
   --enable-librtmp         enable RTMP[E] support via librtmp [no]
   --enable-libschroedinger enable Dirac support via libschroedinger [no]
   --enable-libspeex        enable Speex encoding and decoding via libspeex [no]
+  --enable-libstagefright-h264  enable H.264 decoding via libstagefright [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libvo-aacenc    enable AAC encoding via libvo-aacenc [no]
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
@@ -205,12 +206,14 @@ Advanced options (experts only):
   --ar=AR                  use archive tool AR [$ar_default]
   --as=AS                  use assembler AS [$as_default]
   --cc=CC                  use C compiler CC [$cc_default]
+  --cxx=CXX                use C compiler CXX [$cxx_default]
   --ld=LD                  use linker LD
   --host-cc=HOSTCC         use host C compiler HOSTCC
   --host-cflags=HCFLAGS    use HCFLAGS when compiling for host
   --host-ldflags=HLDFLAGS  use HLDFLAGS when linking for host
   --host-libs=HLIBS        use libs HLIBS when linking for host
   --extra-cflags=ECFLAGS   add ECFLAGS to CFLAGS [$CFLAGS]
+  --extra-cxxflags=ECFLAGS add ECFLAGS to CXXFLAGS [$CXXFLAGS]
   --extra-ldflags=ELDFLAGS add ELDFLAGS to LDFLAGS [$LDFLAGS]
   --extra-libs=ELIBS       add ELIBS [$ELIBS]
   --extra-version=STRING   version string suffix []
@@ -582,6 +585,10 @@ add_cflags(){
     append CFLAGS $($filter_cflags "$@")
 }
 
+add_cxxflags(){
+    append CXXFLAGS $($filter_cflags "$@")
+}
+
 add_asflags(){
     append ASFLAGS $($filter_asflags "$@")
 }
@@ -604,6 +611,13 @@ check_cc(){
     cat > $TMPC
     log_file $TMPC
     check_cmd $cc $CPPFLAGS $CFLAGS "$@" -c -o $TMPO $TMPC
+}
+
+check_cxx(){
+    log check_cxx "$@"
+    cat > $TMPCPP
+    log_file $TMPCPP
+    check_cmd $cxx $CPPFLAGS $CFLAGS $CXXFLAGS "$@" -c -o $TMPO $TMPCPP
 }
 
 check_cpp(){
@@ -641,12 +655,14 @@ check_yasm(){
 
 check_ld(){
     log check_ld "$@"
+    type=$1
+    shift 1
     flags=''
     libs=''
     for f; do
         test "${f}" = "${f#-l}" && flags="$flags $f" || libs="$libs $f"
     done
-    check_cc $($filter_cflags $flags) || return
+    check_$type $($filter_cflags $flags) || return
     check_cmd $ld $LDFLAGS $flags -o $TMPE $TMPO $libs $extralibs
 }
 
@@ -666,9 +682,17 @@ int x;
 EOF
 }
 
+check_cxxflags(){
+    log check_cxxflags "$@"
+    set -- $($filter_cflags "$@")
+    check_cxx "$@" <<EOF && append CXXFLAGS "$@"
+int x;
+EOF
+}
+
 test_ldflags(){
     log test_ldflags "$@"
-    check_ld "$@" <<EOF
+    check_ld "cc" "$@" <<EOF
 int main(void){ return 0; }
 EOF
 }
@@ -694,7 +718,7 @@ check_func(){
     func=$1
     shift
     disable $func
-    check_ld "$@" <<EOF && enable $func
+    check_ld "cc" "$@" <<EOF && enable $func
 extern int $func();
 int main(void){ $func(); }
 EOF
@@ -705,7 +729,7 @@ check_mathfunc(){
     func=$1
     shift
     disable $func
-    check_ld "$@" <<EOF && enable $func
+    check_ld "cc" "$@" <<EOF && enable $func
 #include <math.h>
 float foo(float f) { return $func(f); }
 int main(void){ return (int) foo; }
@@ -725,7 +749,26 @@ check_func_headers(){
             echo "long check_$func(void) { return (long) $func; }"
         done
         echo "int main(void) { return 0; }"
-    } | check_ld "$@" && enable $funcs && enable_safe $headers
+    } | check_ld "cc" "$@" && enable $funcs && enable_safe $headers
+}
+
+check_class_headers_cpp(){
+    log check_class_headers_cpp "$@"
+    headers=$1
+    classes=$2
+    shift 2
+    {
+        for hdr in $headers; do
+            echo "#include <$hdr>"
+        done
+        echo "int main(void) { "
+        i=1
+        for class in $classes; do
+            echo "$class obj$i;"
+            i=$(expr $i + 1)
+        done
+        echo "return 0; }"
+    } | check_ld "cxx" "$@" && enable $funcs && enable_safe $headers
 }
 
 check_cpp_condition(){
@@ -757,6 +800,14 @@ check_lib2(){
     check_func_headers "$headers" "$funcs" "$@" && add_extralibs "$@"
 }
 
+check_lib_cpp(){
+    log check_lib_cpp "$@"
+    headers="$1"
+    classes="$2"
+    shift 2
+    check_class_headers_cpp "$headers" "$classes" "$@" && add_extralibs "$@"
+}
+
 check_pkg_config(){
     log check_pkg_config "$@"
     pkg="$1"
@@ -772,7 +823,7 @@ check_pkg_config(){
 }
 
 check_exec(){
-    check_ld "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
+    check_ld "cc" "$@" && { enabled cross_compile || $TMPE >> $logfile 2>&1; }
 }
 
 check_exec_crash(){
@@ -850,6 +901,14 @@ require2(){
     func="$3"
     shift 3
     check_lib2 "$headers" $func "$@" || die "ERROR: $name not found"
+}
+
+require_cpp(){
+    name="$1"
+    headers="$2"
+    classes="$3"
+    shift 3
+    check_lib_cpp "$headers" "$classes" "$@" || die "ERROR: $name not found"
 }
 
 require_pkg_config(){
@@ -947,6 +1006,7 @@ CONFIG_LIST="
     librtmp
     libschroedinger
     libspeex
+    libstagefright_h264
     libtheora
     libvo_aacenc
     libvo_amrwbenc
@@ -1183,6 +1243,7 @@ CMDLINE_SET="
     cc
     cpu
     cross_prefix
+    cxx
     dep_cc
     extra_version
     host_cc
@@ -1208,6 +1269,7 @@ CMDLINE_SET="
 
 CMDLINE_APPEND="
     extra_cflags
+    extra_cxxflags
 "
 
 # code dependency declarations
@@ -1430,6 +1492,7 @@ libschroedinger_decoder_deps="libschroedinger"
 libschroedinger_encoder_deps="libschroedinger"
 libspeex_decoder_deps="libspeex"
 libspeex_encoder_deps="libspeex"
+libstagefright_h264_decoder_deps="libstagefright_h264"
 libtheora_encoder_deps="libtheora"
 libvo_aacenc_encoder_deps="libvo_aacenc"
 libvo_amrwbenc_encoder_deps="libvo_amrwbenc"
@@ -1651,6 +1714,7 @@ shlibdir_default="$libdir_default"
 # toolchain
 ar_default="ar"
 cc_default="gcc"
+cxx_default="g++"
 cc_version=\"unknown\"
 host_cc_default="gcc"
 install="install"
@@ -1715,6 +1779,7 @@ SLIB_INSTALL_LINKS='$(SLIBNAME_WITH_MAJOR) $(SLIBNAME)'
 
 AS_O='-o $@'
 CC_O='-o $@'
+CXX_O='-o $@'
 
 host_cflags='-D_ISOC99_SOURCE -O3 -g'
 host_libs='-lm'
@@ -1867,6 +1932,7 @@ set_default arch target_os
 
 ar_default="${cross_prefix}${ar_default}"
 cc_default="${cross_prefix}${cc_default}"
+cxx_default="${cross_prefix}${cxx_default}"
 nm_default="${cross_prefix}${nm_default}"
 pkg_config_default="${cross_prefix}${pkg_config_default}"
 ranlib="${cross_prefix}${ranlib}"
@@ -1874,7 +1940,7 @@ strip_default="${cross_prefix}${strip_default}"
 
 sysinclude_default="${sysroot}/usr/include"
 
-set_default cc nm pkg_config strip sysinclude
+set_default cc cxx nm pkg_config strip sysinclude
 enabled cross_compile || host_cc_default=$cc
 set_default host_cc
 
@@ -1916,6 +1982,7 @@ tmpfile(){
 trap 'rm -f -- $TMPFILES' EXIT
 
 tmpfile TMPC  .c
+tmpfile TMPCPP .cpp
 tmpfile TMPE  $EXESUF
 tmpfile TMPH  .h
 tmpfile TMPO  .o
@@ -2133,9 +2200,11 @@ test -n "$cc_type" && enable $cc_type ||
 set_default ar as dep_cc ld
 
 test -n "$CC_DEPFLAGS" || CCDEP=$DEPEND_CMD
+test -n "$CXX_DEPFLAGS" || CXXDEP=$DEPEND_CMD
 test -n "$AS_DEPFLAGS" || ASDEP=$DEPEND_CMD
 
 add_cflags $extra_cflags
+add_cxxflags $extra_cxxflags
 add_asflags $extra_cflags
 
 if test -n "$sysroot"; then
@@ -2366,6 +2435,7 @@ if test "$?" != 0; then
 fi
 
 add_cppflags -D_ISOC99_SOURCE
+add_cxxflags -D__STDC_CONSTANT_MACROS
 check_cflags -std=c99
 check_cc -D_FILE_OFFSET_BITS=64 <<EOF && add_cppflags -D_FILE_OFFSET_BITS=64
 #include <stdlib.h>
@@ -2663,7 +2733,7 @@ elif enabled arm; then
     elif ! check_cpp_condition stddef.h "defined __ARM_PCS || defined __SOFTFP__"; then
         case "${cross_prefix:-$cc}" in
             *hardfloat*)         enable vfp_args;   fpabi=vfp ;;
-            *) check_ld <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
+            *) check_ld "cc" <<EOF && enable vfp_args && fpabi=vfp || fpabi=soft ;;
 __asm__ (".eabi_attribute 28, 1");
 int main(void) { return 0; }
 EOF
@@ -2932,6 +3002,9 @@ enabled libopenjpeg && require libopenjpeg openjpeg.h opj_version -lopenjpeg
 enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
+enabled libstagefright_h264  && require_cpp libstagefright_h264 "binder/ProcessState.h media/stagefright/MetaData.h
+    media/stagefright/MediaBufferGroup.h media/stagefright/MediaDebug.h media/stagefright/MediaDefs.h
+    media/stagefright/OMXClient.h media/stagefright/OMXCodec.h" android::OMXClient -lstagefright -lmedia -lutils -lbinder
 enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libvo_aacenc && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
 enabled libvo_amrwbenc && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
@@ -3246,6 +3319,7 @@ echo "libopenjpeg enabled       ${libopenjpeg-no}"
 echo "librtmp enabled           ${librtmp-no}"
 echo "libschroedinger enabled   ${libschroedinger-no}"
 echo "libspeex enabled          ${libspeex-no}"
+echo "libstagefright-h264 enabled    ${libstagefright_h264-no}"
 echo "libtheora enabled         ${libtheora-no}"
 echo "libvo-aacenc support      ${libvo_aacenc-no}"
 echo "libvo-amrwbenc support    ${libvo_amrwbenc-no}"
@@ -3306,6 +3380,7 @@ endif
 CC_IDENT=$cc_ident
 ARCH=$arch
 CC=$cc
+CXX=$cxx
 AS=$as
 LD=$ld
 DEPCC=$dep_cc
@@ -3318,9 +3393,11 @@ LN_S=$ln_s
 STRIP=$strip
 CPPFLAGS=$CPPFLAGS
 CFLAGS=$CFLAGS
+CXXFLAGS=$CXXFLAGS
 ASFLAGS=$ASFLAGS
 AS_O=$CC_O
 CC_O=$CC_O
+CXX_O=$CXX_O
 LDFLAGS=$LDFLAGS
 FFSERVERLDFLAGS=$FFSERVERLDFLAGS
 SHFLAGS=$SHFLAGS
@@ -3337,6 +3414,7 @@ EXESUF=$EXESUF
 EXTRA_VERSION=$extra_version
 DEPFLAGS=$DEPFLAGS
 CCDEP=$CCDEP
+CXXDEP=$CXXDEP
 ASDEP=$ASDEP
 CC_DEPFLAGS=$CC_DEPFLAGS
 AS_DEPFLAGS=$AS_DEPFLAGS

@@ -2,12 +2,12 @@ MAIN_MAKEFILE=1
 include config.mak
 
 vpath %.c    $(SRC_PATH)
+vpath %.cpp  $(SRC_PATH)
 vpath %.h    $(SRC_PATH)
 vpath %.S    $(SRC_PATH)
 vpath %.asm  $(SRC_PATH)
 vpath %.v    $(SRC_PATH)
 vpath %.texi $(SRC_PATH)
-
 
 PROGS-$(CONFIG_FFMPEG)   += ffmpeg
 PROGS-$(CONFIG_AVCONV)   += avconv
