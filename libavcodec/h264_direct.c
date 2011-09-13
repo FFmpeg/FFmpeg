@@ -172,7 +172,7 @@ static void pred_spatial_direct_motion(H264Context * const h, int *mb_type){
     int mv[2];
     int list;
 
-    assert(h->ref_list[1][0].reference&3);
+    assert(h->ref_list[1][0].f.reference & 3);
 
     await_reference_mb_row(h, &h->ref_list[1][0], s->mb_y + !!IS_INTERLACED(*mb_type));
 
@@ -416,7 +416,7 @@ static void pred_temp_direct_motion(H264Context * const h, int *mb_type){
     unsigned int sub_mb_type;
     int i8, i4;
 
-    assert(h->ref_list[1][0].reference&3);
+    assert(h->ref_list[1][0].f.reference & 3);
 
     await_reference_mb_row(h, &h->ref_list[1][0], s->mb_y + !!IS_INTERLACED(*mb_type));
 

@@ -1093,8 +1093,8 @@ static int select_input_picture(MpegEncContext *s){
                             s->input_picture[0]->f.data[i] = NULL;
                         s->input_picture[0]->f.type = 0;
                     }else{
-                        assert(   s->input_picture[0]->type==FF_BUFFER_TYPE_USER
-                               || s->input_picture[0]->type==FF_BUFFER_TYPE_INTERNAL);
+                        assert(   s->input_picture[0]->f.type == FF_BUFFER_TYPE_USER
+                               || s->input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
 
                         s->avctx->release_buffer(s->avctx, (AVFrame*)s->input_picture[0]);
                     }
@@ -1220,8 +1220,8 @@ no_output_pic:
         }else{
             // input is not a shared pix -> reuse buffer for current_pix
 
-            assert(   s->reordered_input_picture[0]->type==FF_BUFFER_TYPE_USER
-                   || s->reordered_input_picture[0]->type==FF_BUFFER_TYPE_INTERNAL);
+            assert(   s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_USER
+                   || s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_INTERNAL);
 
             s->current_picture_ptr= s->reordered_input_picture[0];
             for(i=0; i<4; i++){
@@ -2757,7 +2757,7 @@ static int estimate_qp(MpegEncContext *s, int dry_run){
 
 /* must be called before writing the header */
 static void set_frame_distances(MpegEncContext * s){
-    assert(s->current_picture_ptr->pts != AV_NOPTS_VALUE);
+    assert(s->current_picture_ptr->f.pts != AV_NOPTS_VALUE);
     s->time = s->current_picture_ptr->f.pts * s->avctx->time_base.num;
 
     if(s->pict_type==AV_PICTURE_TYPE_B){

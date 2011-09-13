@@ -225,7 +225,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     int r;
 
     if (s->avctx->hwaccel) {
-        assert(!pic->hwaccel_picture_private);
+        assert(!pic->f.hwaccel_picture_private);
         if (s->avctx->hwaccel->priv_data_size) {
             pic->f.hwaccel_picture_private = av_mallocz(s->avctx->hwaccel->priv_data_size);
             if (!pic->f.hwaccel_picture_private) {
@@ -276,7 +276,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
 
     if(shared){
         assert(pic->f.data[0]);
-        assert(pic->type == 0 || pic->type == FF_BUFFER_TYPE_SHARED);
+        assert(pic->f.type == 0 || pic->f.type == FF_BUFFER_TYPE_SHARED);
         pic->f.type = FF_BUFFER_TYPE_SHARED;
     }else{
         assert(!pic->f.data[0]);
