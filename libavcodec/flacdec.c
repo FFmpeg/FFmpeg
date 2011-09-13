@@ -226,9 +226,11 @@ static int get_metadata_size(const uint8_t *buf, int buf_size)
 
     buf += 4;
     do {
+        if (buf_end - buf < 4)
+            return 0;
         ff_flac_parse_block_header(buf, &metadata_last, NULL, &metadata_size);
         buf += 4;
-        if (buf + metadata_size > buf_end) {
+        if (buf_end - buf < metadata_size) {
             /* need more data in order to read the complete header */
             return 0;
         }
