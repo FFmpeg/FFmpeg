@@ -1220,8 +1220,17 @@ static void do_video_out(AVFormatContext *s,
     AVFrame *final_picture;
     AVCodecContext *enc;
     double sync_ipts;
+    double duration = 0;
 
     enc = ost->st->codec;
+
+    if (ist->st->start_time != AV_NOPTS_VALUE && ist->st->first_dts != AV_NOPTS_VALUE) {
+        duration = FFMAX(av_q2d(ist->st->time_base), av_q2d(ist->st->codec->time_base));
+        if(ist->st->avg_frame_rate.num)
+            duration= FFMAX(duration, 1/av_q2d(ist->st->avg_frame_rate));
+
+        duration /= av_q2d(enc->time_base);
+    }
 
     sync_ipts = get_sync_ipts(ost) / av_q2d(enc->time_base);
 
@@ -1235,7 +1244,7 @@ static void do_video_out(AVFormatContext *s,
         format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? 2 : 1;
 
     if (format_video_sync) {
-        double vdelta = sync_ipts - ost->sync_opts;
+        double vdelta = sync_ipts - ost->sync_opts + duration;
         //FIXME set to 0.5 after we fix some dts/pts bugs like in avidec.c
         if (vdelta < -1.1)
             nb_frames = 0;
