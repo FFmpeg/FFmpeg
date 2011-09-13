@@ -20,6 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
+#include "libavutil/avassert.h"
 #include "avformat.h"
 #include "internal.h"
 #include "wtv.h"
@@ -137,6 +138,7 @@ static void write_chunk_header(AVFormatContext *s, const ff_asf_guid *guid, int 
 
     if ((stream_id & 0x80000000) && guid != &index_guid) {
         WtvChunkEntry *t = wctx->index + wctx->nb_index;
+        av_assert0(wctx->nb_index < MAX_NB_INDEX);
         t->pos       = wctx->last_chunk_pos;
         t->serial    = wctx->serial;
         t->guid      = guid;
@@ -606,6 +608,8 @@ static int finish_file(AVFormatContext *s, enum WtvFileIndex index, int64_t star
     WtvFile *w = &wctx->file[index];
     int64_t end_pos = avio_tell(pb);
     int sector_bits, nb_sectors, pad;
+
+    av_assert0(index < WTV_FILES);
 
     w->length = (end_pos - start_pos);
 
