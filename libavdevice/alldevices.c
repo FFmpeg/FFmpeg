@@ -54,5 +54,6 @@ void avdevice_register_all(void)
     REGISTER_INDEV    (X11_GRAB_DEVICE, x11_grab_device);
 
     /* external libraries */
+    REGISTER_INDEV    (LIBCDIO, libcdio);
     REGISTER_INDEV    (LIBDC1394, libdc1394);
 }

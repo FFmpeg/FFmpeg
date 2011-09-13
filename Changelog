@@ -45,6 +45,7 @@ easier to use. The changes are:
 - LATM muxer
 - showinfo filter
 - split filter
+- libcdio-paranoia input device for audio CD grabbing
 
 
 version 0.7:
