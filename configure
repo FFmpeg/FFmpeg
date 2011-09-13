@@ -2853,7 +2853,7 @@ check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 
 check_header dlfcn.h
-check_header dxva2api.h
+check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
 check_header poll.h
