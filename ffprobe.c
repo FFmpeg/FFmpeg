@@ -139,8 +139,8 @@ struct writer {
     void (*print_section_end)  (const char *, int);
     void (*print_header)(const char *);
     void (*print_footer)(const char *);
-    void (*print_int_f)(const char *, int);
-    void (*print_str_f)(const char *, const char *);
+    void (*print_integer)(const char *, int);
+    void (*print_string)(const char *, const char *);
     void (*show_tags)(struct writer *w, AVDictionary *dict);
 };
 
@@ -287,7 +287,7 @@ fail:
 
 #define print_fmt0(k, f, ...) do {             \
     if (fast_asprintf(&pbuf, f, __VA_ARGS__))  \
-        w->print_str_f(k, pbuf.s);             \
+        w->print_string(k, pbuf.s);            \
 } while (0)
 #define print_fmt( k, f, ...) do {     \
     if (w->item_sep)                   \
@@ -295,7 +295,7 @@ fail:
     print_fmt0(k, f, __VA_ARGS__);     \
 } while (0)
 
-#define print_int0(k, v) w->print_int_f(k, v)
+#define print_int0(k, v) w->print_integer(k, v)
 #define print_int( k, v) do {      \
     if (w->item_sep)               \
         printf("%s", w->item_sep); \
@@ -522,12 +522,12 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     return 0;
 }
 
-#define WRITER_FUNC(func)                  \
-    .print_header = func ## _print_header, \
-    .print_footer = func ## _print_footer, \
-    .print_int_f  = func ## _print_int,    \
-    .print_str_f  = func ## _print_str,    \
-    .show_tags    = func ## _show_tags
+#define WRITER_FUNC(func)                   \
+    .print_header  = func ## _print_header, \
+    .print_footer  = func ## _print_footer, \
+    .print_integer = func ## _print_int,    \
+    .print_string  = func ## _print_str,    \
+    .show_tags     = func ## _show_tags
 
 static struct writer writers[] = {{
         .name         = "default",
