@@ -49,6 +49,7 @@ easier to use. The changes are:
 - amovie source added
 - LATM muxer
 - Speex encoder via libspeex
+- JSON output in ffprobe
 
 
 version 0.8:

@@ -135,12 +135,92 @@ struct writer {
     const char *items_sep;          ///< separator between sets of key/value couples
     const char *section_sep;        ///< separator between sections (streams, packets, ...)
     const char *header, *footer;
+    void (*print_section_start)(const char *, int);
+    void (*print_section_end)  (const char *, int);
     void (*print_header)(const char *);
     void (*print_footer)(const char *);
     void (*print_int_f)(const char *, int);
     void (*print_str_f)(const char *, const char *);
     void (*show_tags)(struct writer *w, AVDictionary *dict);
 };
+
+
+/* JSON output */
+
+static void json_print_header(const char *section)
+{
+    printf("{\n");
+}
+
+static char *json_escape_str(const char *s)
+{
+    static const char json_escape[] = {'"', '\\', '\b', '\f', '\n', '\r', '\t', 0};
+    static const char json_subst[]  = {'"', '\\',  'b',  'f',  'n',  'r',  't', 0};
+    char *ret, *p;
+    int i, len = 0;
+
+    // compute the length of the escaped string
+    for (i = 0; s[i]; i++) {
+        if (strchr(json_escape, s[i]))     len += 2; // simple escape
+        else if ((unsigned char)s[i] < 32) len += 6; // handle non-printable chars
+        else                               len += 1; // char copy
+    }
+
+    p = ret = av_malloc(len + 1);
+    if (!p)
+        return NULL;
+    for (i = 0; s[i]; i++) {
+        char *q = strchr(json_escape, s[i]);
+        if (q) {
+            *p++ = '\\';
+            *p++ = json_subst[q - json_escape];
+        } else if ((unsigned char)s[i] < 32) {
+            snprintf(p, 7, "\\u00%02x", s[i] & 0xff);
+            p += 6;
+        } else {
+            *p++ = s[i];
+        }
+    }
+    *p = 0;
+    return ret;
+}
+
+static void json_print_str(const char *key, const char *value)
+{
+    char *key_esc   = json_escape_str(key);
+    char *value_esc = json_escape_str(value);
+    printf("    \"%s\": \"%s\"",
+           key_esc   ? key_esc   : "",
+           value_esc ? value_esc : "");
+    av_free(key_esc);
+    av_free(value_esc);
+}
+
+static void json_print_int(const char *key, int value)
+{
+    char *key_esc = json_escape_str(key);
+    printf("    \"%s\": %d", key_esc ? key_esc : "", value);
+    av_free(key_esc);
+}
+
+static void json_print_footer(const char *section)
+{
+    printf("\n  }");
+}
+
+static void json_print_section_start(const char *section, int multiple_entries)
+{
+    char *section_esc = json_escape_str(section);
+    printf("\n  \"%s\":%s", section_esc ? section_esc : "",
+           multiple_entries ? " [" : " ");
+    av_free(section_esc);
+}
+
+static void json_print_section_end(const char *section, int multiple_entries)
+{
+    if (multiple_entries)
+        printf("]");
+}
 
 
 /* Default output */
@@ -260,6 +340,27 @@ static void show_packets(struct writer *w, AVFormatContext *fmt_ctx)
 
     while (!av_read_frame(fmt_ctx, &pkt))
         show_packet(w, fmt_ctx, &pkt, i++);
+}
+
+static void json_show_tags(struct writer *w, AVDictionary *dict)
+{
+    AVDictionaryEntry *tag = NULL;
+    struct print_buf pbuf = {.s = NULL};
+    int first = 1;
+
+    if (!dict)
+        return;
+    printf(",\n    \"tags\": {\n");
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        if (first) {
+            print_str0(tag->key, tag->value);
+            first = 0;
+        } else {
+            print_str(tag->key, tag->value);
+        }
+    }
+    printf("\n    }");
+    av_free(pbuf.s);
 }
 
 static void default_show_tags(struct writer *w, AVDictionary *dict)
@@ -435,6 +536,16 @@ static struct writer writers[] = {{
         .section_sep  = "\n",
         .footer       = "\n",
         WRITER_FUNC(default),
+    },{
+        .name         = "json",
+        .header       = "{",
+        .item_sep     = ",\n",
+        .items_sep    = ",",
+        .section_sep  = ",",
+        .footer       = "\n}\n",
+        .print_section_start = json_print_section_start,
+        .print_section_end   = json_print_section_end,
+        WRITER_FUNC(json),
     }
 };
 
@@ -449,9 +560,13 @@ static int get_writer(const char *name)
     return -1;
 }
 
-#define SECTION_PRINT(name, left) do {                        \
+#define SECTION_PRINT(name, multiple_entries, left) do {      \
     if (do_show_ ## name) {                                   \
+        if (w->print_section_start)                           \
+            w->print_section_start(#name, multiple_entries);  \
         show_ ## name (w, fmt_ctx);                           \
+        if (w->print_section_end)                             \
+            w->print_section_end(#name, multiple_entries);    \
         if (left)                                             \
             printf("%s", w->section_sep);                     \
     }                                                         \
@@ -476,9 +591,9 @@ static int probe_file(const char *filename)
     if (w->header)
         printf("%s", w->header);
 
-    SECTION_PRINT(packets, do_show_streams || do_show_format);
-    SECTION_PRINT(streams, do_show_format);
-    SECTION_PRINT(format,  0);
+    SECTION_PRINT(packets, 1, do_show_streams || do_show_format);
+    SECTION_PRINT(streams, 1, do_show_format);
+    SECTION_PRINT(format,  0, 0);
 
     if (w->footer)
         printf("%s", w->footer);
@@ -548,6 +663,7 @@ static const OptionDef options[] = {
       "use sexagesimal format HOURS:MM:SS.MICROSECONDS for time units" },
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
+    { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format}, "set the output printing format (available formats are: default, json)" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
