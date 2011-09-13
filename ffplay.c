@@ -241,7 +241,6 @@ static int show_status = 1;
 static int av_sync_type = AV_SYNC_AUDIO_MASTER;
 static int64_t start_time = AV_NOPTS_VALUE;
 static int64_t duration = AV_NOPTS_VALUE;
-static int thread_count = 1;
 static int workaround_bugs = 1;
 static int fast = 0;
 static int genpts = 0;
@@ -2172,7 +2171,6 @@ static int stream_component_open(VideoState *is, int stream_index)
     avctx->skip_loop_filter= skip_loop_filter;
     avctx->error_recognition= error_recognition;
     avctx->error_concealment= error_concealment;
-    avctx->thread_count= thread_count;
 
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
@@ -2887,12 +2885,6 @@ static int opt_duration(const char *opt, const char *arg)
     return 0;
 }
 
-static int opt_thread_count(const char *opt, const char *arg)
-{
-    thread_count= parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-    return 0;
-}
-
 static int opt_show_mode(const char *opt, const char *arg)
 {
     show_mode = !strcmp(arg, "video") ? SHOW_MODE_VIDEO :
@@ -2946,7 +2938,6 @@ static const OptionDef options[] = {
     { "er", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_recognition}, "set error detection threshold (0-4)",  "threshold" },
     { "ec", OPT_INT | HAS_ARG | OPT_EXPERT, {(void*)&error_concealment}, "set error concealment options",  "bit_mask" },
     { "sync", HAS_ARG | OPT_EXPERT, {(void*)opt_sync}, "set audio-video sync. type (type=audio/video/ext)", "type" },
-    { "threads", HAS_ARG | OPT_EXPERT, {(void*)opt_thread_count}, "thread count", "count" },
     { "autoexit", OPT_BOOL | OPT_EXPERT, {(void*)&autoexit}, "exit at the end", "" },
     { "exitonkeydown", OPT_BOOL | OPT_EXPERT, {(void*)&exit_on_keydown}, "exit on key down", "" },
     { "exitonmousedown", OPT_BOOL | OPT_EXPERT, {(void*)&exit_on_mousedown}, "exit on mouse down", "" },
