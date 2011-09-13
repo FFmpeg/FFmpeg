@@ -50,6 +50,7 @@ easier to use. The changes are:
 - LATM muxer
 - Speex encoder via libspeex
 - JSON output in ffprobe
+- WTV muxer
 
 
 version 0.8:
