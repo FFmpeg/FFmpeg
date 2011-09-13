@@ -176,7 +176,7 @@ static int encode_bitstream(FlashSVContext *s, AVFrame *p, uint8_t *buf,
 
                 bytestream_put_be16(&ptr, zsize);
                 buf_pos += zsize + 2;
-                av_dlog(avctx, "buf_pos = %d\n", buf_pos);
+                av_dlog(s->avctx, "buf_pos = %d\n", buf_pos);
             } else {
                 pred_blocks++;
                 bytestream_put_be16(&ptr, 0);
