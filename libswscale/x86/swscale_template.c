@@ -1951,162 +1951,6 @@ static void RENAME(rgb24ToUV)(int16_t *dstU, int16_t *dstV,
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_RGB24);
 }
 
-static inline void RENAME(hScale16)(int16_t *dst, int dstW, const uint16_t *src, int srcW, int xInc,
-                                    const int16_t *filter, const int16_t *filterPos, long filterSize, int shift)
-{
-    int i, j;
-
-    assert(filterSize % 4 == 0 && filterSize>0);
-    if (filterSize==4 && shift<15) { // Always true for upscaling, sometimes for down, too.
-        x86_reg counter= -2*dstW;
-        filter-= counter*2;
-        filterPos-= counter/2;
-        dst-= counter/2;
-        __asm__ volatile(
-            "movd                   %5, %%mm7       \n\t"
-#if defined(PIC)
-            "push            %%"REG_b"              \n\t"
-#endif
-            "push           %%"REG_BP"              \n\t" // we use 7 regs here ...
-            "mov             %%"REG_a", %%"REG_BP"  \n\t"
-            ".p2align                4              \n\t"
-            "1:                                     \n\t"
-            "movzwl   (%2, %%"REG_BP"), %%eax       \n\t"
-            "movzwl  2(%2, %%"REG_BP"), %%ebx       \n\t"
-            "movq  (%1, %%"REG_BP", 4), %%mm1       \n\t"
-            "movq 8(%1, %%"REG_BP", 4), %%mm3       \n\t"
-            "movq      (%3, %%"REG_a", 2), %%mm0    \n\t"
-            "movq      (%3, %%"REG_b", 2), %%mm2    \n\t"
-            "pmaddwd             %%mm1, %%mm0       \n\t"
-            "pmaddwd             %%mm2, %%mm3       \n\t"
-            "movq                %%mm0, %%mm4       \n\t"
-            "punpckldq           %%mm3, %%mm0       \n\t"
-            "punpckhdq           %%mm3, %%mm4       \n\t"
-            "paddd               %%mm4, %%mm0       \n\t"
-            "psrad               %%mm7, %%mm0       \n\t"
-            "packssdw            %%mm0, %%mm0       \n\t"
-            "movd                %%mm0, (%4, %%"REG_BP")    \n\t"
-            "add                    $4, %%"REG_BP"  \n\t"
-            " jnc                   1b              \n\t"
-
-            "pop            %%"REG_BP"              \n\t"
-#if defined(PIC)
-            "pop             %%"REG_b"              \n\t"
-#endif
-            : "+a" (counter)
-            : "c" (filter), "d" (filterPos), "S" (src), "D" (dst), "m"(shift)
-#if !defined(PIC)
-            : "%"REG_b
-#endif
-        );
-    } else if (filterSize==8 && shift<15) {
-        x86_reg counter= -2*dstW;
-        filter-= counter*4;
-        filterPos-= counter/2;
-        dst-= counter/2;
-        __asm__ volatile(
-            "movd                   %5, %%mm7       \n\t"
-#if defined(PIC)
-            "push            %%"REG_b"              \n\t"
-#endif
-            "push            %%"REG_BP"             \n\t" // we use 7 regs here ...
-            "mov              %%"REG_a", %%"REG_BP" \n\t"
-            ".p2align                 4             \n\t"
-            "1:                                     \n\t"
-            "movzwl    (%2, %%"REG_BP"), %%eax      \n\t"
-            "movzwl   2(%2, %%"REG_BP"), %%ebx      \n\t"
-            "movq   (%1, %%"REG_BP", 8), %%mm1      \n\t"
-            "movq 16(%1, %%"REG_BP", 8), %%mm3      \n\t"
-            "movq       (%3, %%"REG_a", 2), %%mm0   \n\t"
-            "movq       (%3, %%"REG_b", 2), %%mm2   \n\t"
-            "pmaddwd              %%mm1, %%mm0      \n\t"
-            "pmaddwd              %%mm2, %%mm3      \n\t"
-
-            "movq  8(%1, %%"REG_BP", 8), %%mm1      \n\t"
-            "movq 24(%1, %%"REG_BP", 8), %%mm5      \n\t"
-            "movq      8(%3, %%"REG_a", 2), %%mm4   \n\t"
-            "movq      8(%3, %%"REG_b", 2), %%mm2   \n\t"
-            "pmaddwd              %%mm1, %%mm4      \n\t"
-            "pmaddwd              %%mm2, %%mm5      \n\t"
-            "paddd                %%mm4, %%mm0      \n\t"
-            "paddd                %%mm5, %%mm3      \n\t"
-            "movq                 %%mm0, %%mm4      \n\t"
-            "punpckldq            %%mm3, %%mm0      \n\t"
-            "punpckhdq            %%mm3, %%mm4      \n\t"
-            "paddd                %%mm4, %%mm0      \n\t"
-            "psrad                %%mm7, %%mm0      \n\t"
-            "packssdw             %%mm0, %%mm0      \n\t"
-            "movd                 %%mm0, (%4, %%"REG_BP")   \n\t"
-            "add                     $4, %%"REG_BP" \n\t"
-            " jnc                    1b             \n\t"
-
-            "pop             %%"REG_BP"             \n\t"
-#if defined(PIC)
-            "pop             %%"REG_b"              \n\t"
-#endif
-            : "+a" (counter)
-            : "c" (filter), "d" (filterPos), "S" (src), "D" (dst), "m"(shift)
-#if !defined(PIC)
-            : "%"REG_b
-#endif
-        );
-    } else if (shift<15){
-        const uint16_t *offset = src+filterSize;
-        x86_reg counter= -2*dstW;
-        //filter-= counter*filterSize/2;
-        filterPos-= counter/2;
-        dst-= counter/2;
-        __asm__ volatile(
-            "movd                   %7, %%mm7       \n\t"
-            ".p2align                  4            \n\t"
-            "1:                                     \n\t"
-            "mov                      %2, %%"REG_c" \n\t"
-            "movzwl      (%%"REG_c", %0), %%eax     \n\t"
-            "movzwl     2(%%"REG_c", %0), %%edx     \n\t"
-            "mov                      %5, %%"REG_c" \n\t"
-            "pxor                  %%mm4, %%mm4     \n\t"
-            "pxor                  %%mm5, %%mm5     \n\t"
-            "2:                                     \n\t"
-            "movq                   (%1), %%mm1     \n\t"
-            "movq               (%1, %6), %%mm3     \n\t"
-            "movq (%%"REG_c", %%"REG_a", 2), %%mm0     \n\t"
-            "movq (%%"REG_c", %%"REG_d", 2), %%mm2     \n\t"
-            "pmaddwd               %%mm1, %%mm0     \n\t"
-            "pmaddwd               %%mm2, %%mm3     \n\t"
-            "paddd                 %%mm3, %%mm5     \n\t"
-            "paddd                 %%mm0, %%mm4     \n\t"
-            "add                      $8, %1        \n\t"
-            "add                      $8, %%"REG_c" \n\t"
-            "cmp                      %4, %%"REG_c" \n\t"
-            " jb                      2b            \n\t"
-            "add                      %6, %1        \n\t"
-            "movq                  %%mm4, %%mm0     \n\t"
-            "punpckldq             %%mm5, %%mm4     \n\t"
-            "punpckhdq             %%mm5, %%mm0     \n\t"
-            "paddd                 %%mm0, %%mm4     \n\t"
-            "psrad                 %%mm7, %%mm4     \n\t"
-            "packssdw              %%mm4, %%mm4     \n\t"
-            "mov                      %3, %%"REG_a" \n\t"
-            "movd                  %%mm4, (%%"REG_a", %0)   \n\t"
-            "add                      $4, %0        \n\t"
-            " jnc                     1b            \n\t"
-
-            : "+r" (counter), "+r" (filter)
-            : "m" (filterPos), "m" (dst), "m"(offset),
-            "m" (src), "r" ((x86_reg)filterSize*2), "m"(shift)
-            : "%"REG_a, "%"REG_c, "%"REG_d
-        );
-    } else
-    for (i=0; i<dstW; i++) {
-        int srcPos= filterPos[i];
-        int val=0;
-        for (j=0; j<filterSize; j++) {
-            val += ((int)src[srcPos + j])*filter[filterSize*i + j];
-        }
-        dst[i] = FFMIN(val>>shift, (1<<15)-1); // the cubic equation does overflow ...
-    }
-}
-
 #if COMPILE_TEMPLATE_MMX2
 static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
                                  int dstWidth, const uint8_t *src,
@@ -2328,9 +2172,6 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         case PIX_FMT_UYVY422  : c->chrToYV12 = RENAME(uyvyToUV); break;
         case PIX_FMT_NV12     : c->chrToYV12 = RENAME(nv12ToUV); break;
         case PIX_FMT_NV21     : c->chrToYV12 = RENAME(nv21ToUV); break;
-        case PIX_FMT_YUV420P9LE:
-        case PIX_FMT_YUV422P10LE:
-        case PIX_FMT_YUV420P10LE: c->hScale16= RENAME(hScale16); break;
         default: break;
     }
 #endif /* !COMPILE_TEMPLATE_MMX2 */
@@ -2360,8 +2201,4 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         }
     }
 #endif /* !COMPILE_TEMPLATE_MMX2 */
-    if(isAnyRGB(c->srcFormat) && av_pix_fmt_descriptors[c->srcFormat].comp[0].depth_minus1<15)
-        c->hScale16= RENAME(hScale16);
-    if(c->dstBpc > 10)
-        c->hScale16 = NULL;
 }
