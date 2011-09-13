@@ -708,7 +708,7 @@ check_mathfunc(){
     check_ld "$@" <<EOF && enable $func
 #include <math.h>
 float foo(float f) { return $func(f); }
-int main(void){ return 0; }
+int main(void){ return (int) foo; }
 EOF
 }
 
