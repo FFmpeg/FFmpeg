@@ -1714,11 +1714,11 @@ static int seek_frame_generic(AVFormatContext *s,
                 return ret;
         }
         for(i=0;; i++) {
-            int ret;
+            int read_status;
             do{
-                ret = av_read_frame(s, &pkt);
-            }while(ret == AVERROR(EAGAIN));
-            if(ret<0)
+                read_status = av_read_frame(s, &pkt);
+            } while (read_status == AVERROR(EAGAIN));
+            if (read_status < 0)
                 break;
             av_free_packet(&pkt);
             if(stream_index == pkt.stream_index){
