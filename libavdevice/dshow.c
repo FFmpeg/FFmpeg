@@ -138,7 +138,9 @@ dshow_read_close(AVFormatContext *s)
             IBaseFilter *f;
             IEnumFilters_Reset(fenum);
             while (IEnumFilters_Next(fenum, 1, &f, NULL) == S_OK)
-                IGraphBuilder_RemoveFilter(ctx->graph, f);
+                if (IGraphBuilder_RemoveFilter(ctx->graph, f) == S_OK)
+                    IEnumFilters_Reset(fenum); /* When a filter is removed,
+                                                * the list must be reset. */
             IEnumFilters_Release(fenum);
         }
         IGraphBuilder_Release(ctx->graph);
