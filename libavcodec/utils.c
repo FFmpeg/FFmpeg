@@ -576,6 +576,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     }
     avctx->frame_number = 0;
 
+    if (!HAVE_THREADS)
+        av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");
+
     if (HAVE_THREADS && !avctx->thread_opaque) {
         ret = ff_thread_init(avctx);
         if (ret < 0) {

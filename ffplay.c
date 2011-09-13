@@ -2890,9 +2890,6 @@ static int opt_duration(const char *opt, const char *arg)
 static int opt_thread_count(const char *opt, const char *arg)
 {
     thread_count= parse_number_or_die(opt, arg, OPT_INT64, 0, INT_MAX);
-#if !HAVE_THREADS
-    fprintf(stderr, "Warning: not compiled with thread support, using thread emulation\n");
-#endif
     return 0;
 }
 
