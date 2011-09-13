@@ -26,6 +26,8 @@
 #ifndef AVCODEC_ADPCM_DATA_H
 #define AVCODEC_ADPCM_DATA_H
 
+#include <stdint.h>
+
 extern const int8_t  ff_adpcm_index_table[16];
 extern const int16_t ff_adpcm_step_table[89];
 extern const int16_t ff_adpcm_AdaptationTable[];

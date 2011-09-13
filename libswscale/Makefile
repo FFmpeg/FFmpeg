@@ -19,6 +19,7 @@ OBJS-$(HAVE_MMX)           +=  x86/rgb2rgb.o            \
                                x86/swscale_mmx.o        \
                                x86/yuv2rgb_mmx.o
 OBJS-$(HAVE_VIS)           +=  sparc/yuv2rgb_vis.o
+OBJS-$(HAVE_YASM)          +=  x86/scale.o
 
 TESTPROGS = colorspace swscale
 
