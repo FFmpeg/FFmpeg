@@ -671,7 +671,7 @@ static pgm_structure * generate_half_size_image(vf_instance_t * vf, pgm_structur
  * \brief Checks if YV12 is supported by the next filter.
  */
 static unsigned int find_best(struct vf_instance *vf){
-  int is_format_okay = vf->next->query_format(vf->next, IMGFMT_YV12);
+  int is_format_okay = vf_next_query_format(vf, IMGFMT_YV12);
   if ((is_format_okay & VFCAP_CSP_SUPPORTED_BY_HW) || (is_format_okay & VFCAP_CSP_SUPPORTED))
     return IMGFMT_YV12;
   else
@@ -814,7 +814,7 @@ static int put_image(struct vf_instance *vf, mp_image_t *mpi, double pts){
 static int query_format(struct vf_instance *vf, unsigned int fmt)
 {
   if (fmt == IMGFMT_YV12)
-    return vf->next->query_format(vf->next, IMGFMT_YV12);
+    return vf_next_query_format(vf, IMGFMT_YV12);
   else
     return 0;
 }
