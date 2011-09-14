@@ -22,6 +22,8 @@
 #include "avformat.h"
 #include "rawdec.h"
 #include "pcm.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 
 #define RAW_SAMPLES     1024
 
@@ -46,7 +48,19 @@ static int raw_read_packet(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+static const AVOption pcm_options[] = {
+    { "sample_rate", "", offsetof(RawAudioDemuxerContext, sample_rate), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { "channels",    "", offsetof(RawAudioDemuxerContext, channels),    FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
+    { NULL },
+};
+
 #define PCMDEF(name, long_name, ext, codec) \
+static const AVClass name ## _demuxer_class = {\
+    .class_name = #name " demuxer",\
+    .item_name  = av_default_item_name,\
+    .option     = pcm_options,\
+    .version    = LIBAVUTIL_VERSION_INT,\
+};\
 AVInputFormat ff_pcm_ ## name ## _demuxer = {\
     #name,\
     NULL_IF_CONFIG_SMALL(long_name),\
@@ -59,7 +73,7 @@ AVInputFormat ff_pcm_ ## name ## _demuxer = {\
     .flags= AVFMT_GENERIC_INDEX,\
     .extensions = ext,\
     .value = codec,\
-    .priv_class = &ff_rawaudio_demuxer_class,\
+    .priv_class = &name ## _demuxer_class,\
 };
 
 PCMDEF(f64be, "PCM 64 bit floating-point big-endian format",

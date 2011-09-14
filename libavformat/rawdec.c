@@ -167,19 +167,6 @@ fail:
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
-static const AVOption audio_options[] = {
-    { "sample_rate", "", offsetof(RawAudioDemuxerContext, sample_rate), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "channels",    "", offsetof(RawAudioDemuxerContext, channels),    FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { NULL },
-};
-
-const AVClass ff_rawaudio_demuxer_class = {
-    .class_name     = "rawaudio demuxer",
-    .item_name      = av_default_item_name,
-    .option         = audio_options,
-    .version        = LIBAVUTIL_VERSION_INT,
-};
-
 #define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption video_options[] = {

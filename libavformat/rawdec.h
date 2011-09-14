@@ -38,7 +38,6 @@ typedef struct FFRawVideoDemuxerContext {
     char *framerate;          /**< String describing framerate, set by a private option. */
 } FFRawVideoDemuxerContext;
 
-extern const AVClass ff_rawaudio_demuxer_class;
 extern const AVClass ff_rawvideo_demuxer_class;
 
 int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap);
