@@ -181,8 +181,10 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
 
     out_size = RA288_BLOCK_SIZE * RA288_BLOCKS_PER_FRAME *
                av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size)
-        return -1;
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     init_get_bits(&gb, buf, avctx->block_align * 8);
 
