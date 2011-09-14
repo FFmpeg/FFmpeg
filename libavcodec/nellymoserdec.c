@@ -48,7 +48,7 @@
 typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
     DECLARE_ALIGNED(32, float, float_buf)[NELLY_SAMPLES];
-    float           state[128];
+    float           state[NELLY_BUF_LEN];
     AVLFG           random_state;
     GetBitContext   gb;
     float           scale_bias;
