@@ -58,7 +58,7 @@ struct StagefrightContext {
     AVBitStreamFilterContext *bsfc;
     uint8_t* orig_extradata;
     int orig_extradata_size;
-    sp<MediaSource> source;
+    sp<MediaSource> *source;
     List<Frame*> *in_queue, *out_queue;
     pthread_mutex_t in_mutex, out_mutex;
     pthread_cond_t condition;
@@ -74,7 +74,7 @@ struct StagefrightContext {
     int dummy_bufsize;
 
     OMXClient *client;
-    sp<MediaSource> decoder;
+    sp<MediaSource> *decoder;
     const char *decoder_component;
 };
 
@@ -156,9 +156,9 @@ void* decode_thread(void *arg)
             decode_done   = 1;
             s->end_frame  = NULL;
         } else {
-            frame->status = s->decoder->read(&buffer);
+            frame->status = (*s->decoder)->read(&buffer);
             if (frame->status == OK) {
-                sp<MetaData> outFormat = s->decoder->getFormat();
+                sp<MetaData> outFormat = (*s->decoder)->getFormat();
                 outFormat->findInt32(kKeyWidth , &frame->w);
                 outFormat->findInt32(kKeyHeight, &frame->h);
                 frame->size    = buffer->range_length();
@@ -220,7 +220,8 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
 
     android::ProcessState::self()->startThreadPool();
 
-    s->source    = new CustomSource(avctx, meta);
+    s->source    = new sp<MediaSource>();
+    *s->source   = new CustomSource(avctx, meta);
     s->in_queue  = new List<Frame*>;
     s->out_queue = new List<Frame*>;
     s->client    = new OMXClient;
@@ -237,17 +238,18 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
         goto fail;
     }
 
-    s->decoder = OMXCodec::Create(s->client->interface(), meta,
-                                  false, s->source, NULL,
+    s->decoder  = new sp<MediaSource>();
+    *s->decoder = OMXCodec::Create(s->client->interface(), meta,
+                                  false, *s->source, NULL,
                                   OMXCodec::kClientNeedsFramebuffer);
-    if (s->decoder->start() !=  OK) {
+    if ((*s->decoder)->start() !=  OK) {
         av_log(avctx, AV_LOG_ERROR, "Cannot start decoder\n");
         ret = -1;
         s->client->disconnect();
         goto fail;
     }
 
-    outFormat = s->decoder->getFormat();
+    outFormat = (*s->decoder)->getFormat();
     outFormat->findInt32(kKeyColorFormat, &colorFormat);
     if (colorFormat == OMX_QCOM_COLOR_FormatYVU420SemiPlanar ||
         colorFormat == OMX_COLOR_FormatYUV420SemiPlanar)
@@ -472,7 +474,7 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
         av_freep(&frame);
     }
 
-    s->decoder->stop();
+    (*s->decoder)->stop();
     s->client->disconnect();
 
     if (s->decoder_component)
@@ -490,6 +492,8 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
     delete s->in_queue;
     delete s->out_queue;
     delete s->client;
+    delete s->decoder;
+    delete s->source;
 
     pthread_mutex_destroy(&s->in_mutex);
     pthread_mutex_destroy(&s->out_mutex);

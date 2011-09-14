@@ -51,7 +51,7 @@ easier to use. The changes are:
 - Speex encoder via libspeex
 - JSON output in ffprobe
 - WTV muxer
-- C++ Support
+- Optional C++ Support (needed for libstagefright)
 - H.264 Decoding on Android via Stagefright
 
 
