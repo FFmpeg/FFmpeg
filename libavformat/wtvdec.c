@@ -997,19 +997,23 @@ static int read_seek(AVFormatContext *s, int stream_index,
 
     i = ff_index_search_timestamp(wtv->index_entries, wtv->nb_index_entries, ts_relative, flags);
     if (i < 0) {
-        if (wtv->last_valid_pts == AV_NOPTS_VALUE || ts < wtv->last_valid_pts)
-            avio_seek(pb, 0, SEEK_SET);
-        else if (st->duration != AV_NOPTS_VALUE && ts_relative > st->duration && wtv->nb_index_entries)
-            avio_seek(pb, wtv->index_entries[wtv->nb_index_entries - 1].pos, SEEK_SET);
+        if (wtv->last_valid_pts == AV_NOPTS_VALUE || ts < wtv->last_valid_pts) {
+            if (avio_seek(pb, 0, SEEK_SET) < 0)
+                return -1;
+        } else if (st->duration != AV_NOPTS_VALUE && ts_relative > st->duration && wtv->nb_index_entries) {
+            if (avio_seek(pb, wtv->index_entries[wtv->nb_index_entries - 1].pos, SEEK_SET) < 0)
+                return -1;
+        }
         if (parse_chunks(s, SEEK_TO_PTS, ts, 0) < 0)
             return AVERROR(ERANGE);
         return 0;
     }
+    if (avio_seek(pb, wtv->index_entries[i].pos, SEEK_SET) < 0)
+        return -1;
     wtv->pts = wtv->index_entries[i].timestamp;
     if (wtv->epoch != AV_NOPTS_VALUE)
         wtv->pts += wtv->epoch;
     wtv->last_valid_pts = wtv->pts;
-    avio_seek(pb, wtv->index_entries[i].pos, SEEK_SET);
     return 0;
 }
 
