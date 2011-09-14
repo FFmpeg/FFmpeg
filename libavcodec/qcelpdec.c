@@ -738,10 +738,16 @@ static int qcelp_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int buf_size = avpkt->size;
     QCELPContext *q = avctx->priv_data;
     float *outbuffer = data;
-    int   i;
+    int   i, out_size;
     float quantized_lspf[10], lpc[10];
     float gain[16];
     float *formant_mem;
+
+    out_size = 160 * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     if((q->bitrate = determine_bitrate(avctx, buf_size, &buf)) == I_F_Q)
     {
@@ -837,7 +843,7 @@ erasure:
     memcpy(q->prev_lspf, quantized_lspf, sizeof(q->prev_lspf));
     q->prev_bitrate = q->bitrate;
 
-    *data_size = 160 * sizeof(*outbuffer);
+    *data_size = out_size;
 
     return buf_size;
 }
