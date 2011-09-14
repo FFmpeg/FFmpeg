@@ -170,13 +170,13 @@ static int decode_tag(AVCodecContext * avctx,
         return buf_size;
     }
 
-    if (buf_size % 64) {
+    if (buf_size % NELLY_BLOCK_LEN) {
         av_log(avctx, AV_LOG_ERROR, "Tag size %d.\n", buf_size);
         *data_size = 0;
         return buf_size;
     }
     block_size = NELLY_SAMPLES * av_get_bytes_per_sample(avctx->sample_fmt);
-    blocks     = FFMIN(buf_size / 64, *data_size / block_size);
+    blocks     = FFMIN(buf_size / NELLY_BLOCK_LEN, *data_size / block_size);
     if (blocks <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
         return AVERROR(EINVAL);
