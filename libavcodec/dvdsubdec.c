@@ -516,12 +516,12 @@ static int dvdsub_decode(AVCodecContext *avctx,
 static int dvdsub_init(AVCodecContext *avctx)
 {
     DVDSubContext *ctx = (DVDSubContext*) avctx->priv_data;
-    char *data;
+    char *dataorig, *data;
 
     if (!avctx->extradata || !avctx->extradata_size)
         return 1;
 
-    data = av_malloc(avctx->extradata_size+1);
+    dataorig = data = av_malloc(avctx->extradata_size+1);
     if (!data)
         return AVERROR(ENOMEM);
     memcpy(data, avctx->extradata, avctx->extradata_size);
@@ -555,7 +555,7 @@ static int dvdsub_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_DEBUG, "\n");
     }
 
-    av_free(data);
+    av_free(dataorig);
     return 1;
 }
 
