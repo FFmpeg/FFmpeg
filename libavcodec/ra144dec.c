@@ -64,13 +64,15 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
     uint16_t block_coefs[4][10]; // LPC coefficients of each sub-block
     unsigned int lpc_refl[10];   // LPC reflection coefficients of the frame
     int i, j;
+    int out_size;
     int16_t *data = vdata;
     unsigned int energy;
 
     RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
-    if (*data_size < 2*160)
+    out_size = NBLOCKS * BLOCKSIZE * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size)
         return -1;
 
     if(buf_size < 20) {
@@ -110,7 +112,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 
     FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
 
-    *data_size = 2*160;
+    *data_size = out_size;
     return 20;
 }
 
