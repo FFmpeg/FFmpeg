@@ -69,6 +69,9 @@
 #define FN_ZERO         8
 #define FN_VERBATIM     9
 
+/** indicates if the FN_* command is audio or non-audio */
+static const uint8_t is_audio_command[10] = { 1, 1, 1, 1, 0, 0, 0, 1, 1, 0 };
+
 #define VERBATIM_CKSIZE_SIZE 5
 #define VERBATIM_BYTE_SIZE 8
 #define CANONICAL_HEADER_SIZE 44
@@ -388,14 +391,42 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         int cmd;
         int len;
         cmd = get_ur_golomb_shorten(&s->gb, FNSIZE);
-        switch (cmd) {
-            case FN_ZERO:
-            case FN_DIFF0:
-            case FN_DIFF1:
-            case FN_DIFF2:
-            case FN_DIFF3:
-            case FN_QLPC:
-                {
+
+        if (cmd > FN_VERBATIM) {
+            av_log(avctx, AV_LOG_ERROR, "unknown shorten function %d\n", cmd);
+            if (s->bitstream_size > 0) {
+                s->bitstream_index++;
+                s->bitstream_size--;
+            }
+            return -1;
+        }
+
+        if (!is_audio_command[cmd]) {
+            /* process non-audio command */
+            switch (cmd) {
+                case FN_VERBATIM:
+                    len = get_ur_golomb_shorten(&s->gb, VERBATIM_CKSIZE_SIZE);
+                    while (len--) {
+                        get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
+                    }
+                    break;
+                case FN_BITSHIFT:
+                    s->bitshift = get_ur_golomb_shorten(&s->gb, BITSHIFTSIZE);
+                    break;
+                case FN_BLOCKSIZE: {
+                    int blocksize = get_uint(s, av_log2(s->blocksize));
+                    if (blocksize > s->blocksize) {
+                        av_log(avctx, AV_LOG_ERROR, "Increasing block size is not supported\n");
+                        return AVERROR_PATCHWELCOME;
+                    }
+                    s->blocksize = blocksize;
+                    break;
+                }
+                case FN_QUIT:
+                    goto frame_done;
+            }
+        } else {
+            /* process audio command */
                     int residual_size = 0;
                     int channel = s->cur_chan;
                     int32_t coffset;
@@ -481,32 +512,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                         s->cur_chan = 0;
                         goto frame_done;
                     }
-                }
-                break;
-            case FN_VERBATIM:
-                len = get_ur_golomb_shorten(&s->gb, VERBATIM_CKSIZE_SIZE);
-                while (len--) {
-                    get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
-                }
-                break;
-            case FN_BITSHIFT:
-                s->bitshift = get_ur_golomb_shorten(&s->gb, BITSHIFTSIZE);
-                break;
-            case FN_BLOCKSIZE: {
-                int blocksize = get_uint(s, av_log2(s->blocksize));
-                if (blocksize > s->blocksize) {
-                    av_log(avctx, AV_LOG_ERROR, "Increasing block size is not supported\n");
-                    return AVERROR_PATCHWELCOME;
-                }
-                s->blocksize = blocksize;
-                break;
-            }
-            case FN_QUIT:
-                *data_size = 0;
-                return buf_size;
-            default:
-                av_log(avctx, AV_LOG_ERROR, "unknown shorten function %d\n", cmd);
-                return -1;
         }
     }
 frame_done:
