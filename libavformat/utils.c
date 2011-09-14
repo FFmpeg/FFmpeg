@@ -405,6 +405,7 @@ static AVDictionary *convert_format_parameters(AVFormatParameters *ap)
     if (!ap)
         return NULL;
 
+    AV_NOWARN_DEPRECATED(
     if (ap->time_base.num) {
         snprintf(buf, sizeof(buf), "%d/%d", ap->time_base.den, ap->time_base.num);
         av_dict_set(&opts, "framerate", buf, 0);
@@ -437,6 +438,7 @@ static AVDictionary *convert_format_parameters(AVFormatParameters *ap)
     if (ap->initial_pause) {
         av_dict_set(&opts, "initial_pause", "1", 0);
     }
+    )
     return opts;
 }
 
@@ -458,10 +460,12 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     }
     opts = convert_format_parameters(ap);
 
+    AV_NOWARN_DEPRECATED(
     if(!ap->prealloced_context)
         *ic_ptr = ic = avformat_alloc_context();
     else
         ic = *ic_ptr;
+    )
     if (!ic) {
         err = AVERROR(ENOMEM);
         goto fail;
@@ -585,8 +589,10 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
     int err;
     AVDictionary *opts = convert_format_parameters(ap);
 
+    AV_NOWARN_DEPRECATED(
     if (!ap || !ap->prealloced_context)
         *ic_ptr = NULL;
+    )
 
     err = avformat_open_input(ic_ptr, filename, fmt, &opts);
 
@@ -1773,10 +1779,12 @@ static int seek_frame_generic(AVFormatContext *s,
         return -1;
 
     ff_read_frame_flush(s);
+    AV_NOWARN_DEPRECATED(
     if (s->iformat->read_seek){
         if(s->iformat->read_seek(s, stream_index, timestamp, flags) >= 0)
             return 0;
     }
+    )
     ie = &st->index_entries[index];
     if ((ret = avio_seek(s->pb, ie->pos, SEEK_SET)) < 0)
         return ret;
@@ -1806,10 +1814,12 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
     }
 
     /* first, we try the format specific seek */
+    AV_NOWARN_DEPRECATED(
     if (s->iformat->read_seek)
         ret = s->iformat->read_seek(s, stream_index, timestamp, flags);
     else
         ret = -1;
+    )
     if (ret >= 0) {
         return 0;
     }
@@ -1838,8 +1848,10 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
 
     //Fallback to old API if new is not implemented but old is
     //Note the old has somewat different sematics
+    AV_NOWARN_DEPRECATED(
     if(s->iformat->read_seek || 1)
         return av_seek_frame(s, stream_index, ts, flags | (ts - min_ts > (uint64_t)(max_ts - ts) ? AVSEEK_FLAG_BACKWARD : 0));
+    )
 
     // try some generic seek like seek_frame_generic() but with new ts semantics
 }
