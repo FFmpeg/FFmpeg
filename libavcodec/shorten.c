@@ -385,6 +385,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         int ret;
         if ((ret = read_header(s)) < 0)
             return ret;
+        *data_size = 0;
     }
     else
     {
@@ -423,8 +424,9 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                     break;
                 }
                 case FN_QUIT:
-                    goto frame_done;
+                    break;
             }
+            *data_size = 0;
         } else {
             /* process audio command */
             int residual_size = 0;
@@ -510,12 +512,12 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             if (s->cur_chan == s->channels) {
                 samples = interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
                 s->cur_chan = 0;
-                goto frame_done;
+                *data_size = (int8_t *)samples - (int8_t *)data;
+            } else {
+                *data_size = 0;
             }
         }
     }
-frame_done:
-    *data_size = (int8_t *)samples - (int8_t *)data;
 
     //    s->last_blocksize = s->blocksize;
     s->bitindex = get_bits_count(&s->gb) - 8*((get_bits_count(&s->gb))/8);
