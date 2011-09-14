@@ -137,15 +137,20 @@ static av_cold int decode_init(AVCodecContext * avctx) {
     ff_mdct_init(&s->imdct_ctx, 8, 1, 1.0);
 
     dsputil_init(&s->dsp, avctx);
-    ff_fmt_convert_init(&s->fmt_conv, avctx);
 
-    s->scale_bias = 1.0/(1*8);
+    if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT) {
+        s->scale_bias = 1.0/(32768*8);
+        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    } else {
+        s->scale_bias = 1.0/(1*8);
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+        ff_fmt_convert_init(&s->fmt_conv, avctx);
+    }
 
     /* Generate overlap window */
     if (!ff_sine_128[127])
         ff_init_ff_sine_windows(7);
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->channel_layout = AV_CH_LAYOUT_MONO;
     return 0;
 }
@@ -157,8 +162,8 @@ static int decode_tag(AVCodecContext * avctx,
     int buf_size = avpkt->size;
     NellyMoserDecodeContext *s = avctx->priv_data;
     int blocks, i, block_size;
-    int16_t* samples;
-    samples = (int16_t*)data;
+    int16_t *samples_s16 = data;
+    float   *samples_flt = data;
 
     if (buf_size < avctx->block_align) {
         *data_size = 0;
@@ -185,8 +190,15 @@ static int decode_tag(AVCodecContext * avctx,
      */
 
     for (i=0 ; i<blocks ; i++) {
-        nelly_decode_block(s, &buf[i*NELLY_BLOCK_LEN], s->float_buf);
-        s->fmt_conv.float_to_int16(&samples[i*NELLY_SAMPLES], s->float_buf, NELLY_SAMPLES);
+        if (avctx->sample_fmt == SAMPLE_FMT_FLT) {
+            nelly_decode_block(s, buf, samples_flt);
+            samples_flt += NELLY_SAMPLES;
+        } else {
+            nelly_decode_block(s, buf, s->float_buf);
+            s->fmt_conv.float_to_int16(samples_s16, s->float_buf, NELLY_SAMPLES);
+            samples_s16 += NELLY_SAMPLES;
+        }
+        buf += NELLY_BLOCK_LEN;
     }
     *data_size = blocks * block_size;
 
@@ -209,5 +221,8 @@ AVCodec ff_nellymoser_decoder = {
     .close          = decode_end,
     .decode         = decode_tag,
     .long_name = NULL_IF_CONFIG_SMALL("Nellymoser Asao"),
+    .sample_fmts    = (const enum AVSampleFormat[]) { AV_SAMPLE_FMT_FLT,
+                                                      AV_SAMPLE_FMT_S16,
+                                                      AV_SAMPLE_FMT_NONE },
 };
 
