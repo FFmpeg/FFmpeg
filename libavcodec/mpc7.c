@@ -203,6 +203,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
     memset(bands, 0, sizeof(bands));
     if(buf_size <= 4){
         av_log(avctx, AV_LOG_ERROR, "Too small buffer passed (%i bytes)\n", buf_size);
+        return AVERROR(EINVAL);
     }
 
     out_size = (buf[1] ? c->lastframelen : MPC_FRAME_SIZE) * 4;
