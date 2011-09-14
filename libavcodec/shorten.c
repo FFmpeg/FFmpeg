@@ -260,20 +260,41 @@ static int16_t * interleave_buffer(int16_t *samples, int nchan, int blocksize, i
     return samples;
 }
 
-static void decode_subframe_lpc(ShortenContext *s, int channel, int residual_size, int pred_order)
+static int decode_subframe_lpc(ShortenContext *s, int channel,
+                               int residual_size, int32_t coffset)
 {
-    int sum, i, j;
+    int pred_order, sum, i, j;
     int *coeffs = s->coeffs;
 
+    /* read/validate prediction order */
+    pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
+    if (pred_order > s->nwrap) {
+        av_log(s->avctx, AV_LOG_ERROR, "invalid pred_order %d\n", pred_order);
+        return AVERROR(EINVAL);
+    }
+    /* read LPC coefficients */
     for (i=0; i<pred_order; i++)
         coeffs[i] = get_sr_golomb_shorten(&s->gb, LPCQUANT);
 
+    /* subtract offset from previous samples to use in prediction */
+    if (coffset)
+        for (i = -pred_order; i < 0; i++)
+            s->decoded[channel][i] -= coffset;
+
+    /* decode residual and do LPC prediction */
     for (i=0; i < s->blocksize; i++) {
         sum = s->lpcqoffset;
         for (j=0; j<pred_order; j++)
             sum += coeffs[j] * s->decoded[channel][i-j-1];
         s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + (sum >> LPCQUANT);
     }
+
+    /* add offset to current samples */
+    if (coffset != 0)
+        for (i = 0; i < s->blocksize; i++)
+            s->decoded[channel][i] += coffset;
+
+    return 0;
 }
 
 static int read_header(ShortenContext *s)
@@ -429,6 +450,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             *data_size = 0;
         } else {
             /* process audio command */
+            int ret;
             int residual_size = 0;
             int channel = s->cur_chan;
             int32_t coffset;
@@ -474,21 +496,9 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                                                                                               +   s->decoded[channel][i-3];
                     break;
                 case FN_QLPC:
-                    {
-                        int pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
-                        if (pred_order > s->nwrap) {
-                            av_log(avctx, AV_LOG_ERROR,
-                                    "invalid pred_order %d\n",
-                                    pred_order);
-                            return -1;
-                        }
-                        for (i=0; i<pred_order; i++)
-                            s->decoded[channel][i - pred_order] -= coffset;
-                        decode_subframe_lpc(s, channel, residual_size, pred_order);
-                        if (coffset != 0)
-                            for (i=0; i < s->blocksize; i++)
-                                s->decoded[channel][i] += coffset;
-                    }
+                    if ((ret = decode_subframe_lpc(s, channel, residual_size, coffset)) < 0)
+                        return ret;
+                    break;
             }
             if (s->nmean > 0) {
                 int32_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
