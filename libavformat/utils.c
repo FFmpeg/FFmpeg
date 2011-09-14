@@ -1742,7 +1742,6 @@ static int seek_frame_generic(AVFormatContext *s,
         return -1;
 
     if(index < 0 || index==st->nb_index_entries-1){
-        int i;
         AVPacket pkt;
 
         if(st->nb_index_entries){
@@ -1755,12 +1754,12 @@ static int seek_frame_generic(AVFormatContext *s,
             if ((ret = avio_seek(s->pb, s->data_offset, SEEK_SET)) < 0)
                 return ret;
         }
-        for(i=0;; i++) {
-            int ret;
+        for (;;) {
+            int read_status;
             do{
-                ret = av_read_frame(s, &pkt);
-            }while(ret == AVERROR(EAGAIN));
-            if(ret<0)
+                read_status = av_read_frame(s, &pkt);
+            } while (read_status == AVERROR(EAGAIN));
+            if (read_status < 0)
                 break;
             av_free_packet(&pkt);
             if(stream_index == pkt.stream_index){
