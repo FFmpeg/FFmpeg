@@ -44,6 +44,22 @@ static int rawvideo_read_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
+#define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption rawvideo_options[] = {
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { NULL },
+};
+
+static const AVClass rawvideo_demuxer_class = {
+    .class_name = "rawvideo demuxer",
+    .item_name  = av_default_item_name,
+    .option     = rawvideo_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_rawvideo_demuxer = {
     .name           = "rawvideo",
     .long_name      = NULL_IF_CONFIG_SMALL("raw video format"),
@@ -53,5 +69,5 @@ AVInputFormat ff_rawvideo_demuxer = {
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "yuv,cif,qcif,rgb",
     .value = CODEC_ID_RAWVIDEO,
-    .priv_class = &ff_rawvideo_demuxer_class,
+    .priv_class = &rawvideo_demuxer_class,
 };

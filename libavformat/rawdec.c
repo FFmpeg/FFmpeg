@@ -169,20 +169,9 @@ fail:
 
 #define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
-static const AVOption video_options[] = {
-    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
-    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+const AVOption ff_rawvideo_options[] = {
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC},
     { NULL },
-};
-#undef OFFSET
-#undef DEC
-
-const AVClass ff_rawvideo_demuxer_class = {
-    .class_name     = "rawvideo demuxer",
-    .item_name      = av_default_item_name,
-    .option         = video_options,
-    .version        = LIBAVUTIL_VERSION_INT,
 };
 
 #if CONFIG_G722_DEMUXER
