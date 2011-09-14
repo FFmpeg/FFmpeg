@@ -1544,22 +1544,22 @@ void ff_copy_and_dup(int16_t *target, const int16_t *source, int offset)
 int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
 {
     int b, i, j;
-    int buffer1[10];
-    int buffer2[10];
+    int buffer1[LPC_ORDER];
+    int buffer2[LPC_ORDER];
     int *bp1 = buffer1;
     int *bp2 = buffer2;
 
-    for (i=0; i < 10; i++)
+    for (i=0; i < LPC_ORDER; i++)
         buffer2[i] = coefs[i];
 
-    refl[9] = bp2[9];
+    refl[LPC_ORDER-1] = bp2[LPC_ORDER-1];
 
-    if ((unsigned) bp2[9] + 0x1000 > 0x1fff) {
+    if ((unsigned) bp2[LPC_ORDER-1] + 0x1000 > 0x1fff) {
         av_log(avctx, AV_LOG_ERROR, "Overflow. Broken sample?\n");
         return 1;
     }
 
-    for (i=8; i >= 0; i--) {
+    for (i = LPC_ORDER-2; i >= 0; i--) {
         b = 0x1000-((bp2[i+1] * bp2[i+1]) >> 12);
 
         if (!b)
@@ -1584,12 +1584,12 @@ int ff_eval_refl(int *refl, const int16_t *coefs, AVCodecContext *avctx)
  */
 void ff_eval_coefs(int *coefs, const int *refl)
 {
-    int buffer[10];
+    int buffer[LPC_ORDER];
     int *b1 = buffer;
     int *b2 = coefs;
     int i, j;
 
-    for (i=0; i < 10; i++) {
+    for (i=0; i < LPC_ORDER; i++) {
         b1[i] = refl[i] << 4;
 
         for (j=0; j < i; j++)
@@ -1598,7 +1598,7 @@ void ff_eval_coefs(int *coefs, const int *refl)
         FFSWAP(int *, b1, b2);
     }
 
-    for (i=0; i < 10; i++)
+    for (i=0; i < LPC_ORDER; i++)
         coefs[i] >>= 4;
 }
 
@@ -1606,7 +1606,7 @@ void ff_int_to_int16(int16_t *out, const int *inp)
 {
     int i;
 
-    for (i=0; i < 10; i++)
+    for (i = 0; i < LPC_ORDER; i++)
         *out++ = *inp++;
 }
 
@@ -1629,9 +1629,9 @@ unsigned int ff_rms(const int *data)
 {
     int i;
     unsigned int res = 0x10000;
-    int b = 10;
+    int b = LPC_ORDER;
 
-    for (i=0; i < 10; i++) {
+    for (i = 0; i < LPC_ORDER; i++) {
         res = (((0x1000000 - data[i]*data[i]) >> 12) * res) >> 12;
 
         if (res == 0)
@@ -1648,13 +1648,13 @@ unsigned int ff_rms(const int *data)
 
 int ff_interp(RA144Context *ractx, int16_t *out, int a, int copyold, int energy)
 {
-    int work[10];
+    int work[LPC_ORDER];
     int b = NBLOCKS - a;
     int i;
 
     // Interpolate block coefficients from the this frame's forth block and
     // last frame's forth block.
-    for (i=0; i<10; i++)
+    for (i = 0; i < LPC_ORDER; i++)
         out[i] = (a * ractx->lpc_coef[0][i] + b * ractx->lpc_coef[1][i])>> 2;
 
     if (ff_eval_refl(work, out, ractx->avctx)) {
@@ -1690,7 +1690,7 @@ void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
                            int cba_idx, int cb1_idx, int cb2_idx,
                            int gval, int gain)
 {
-    uint16_t buffer_a[40];
+    uint16_t buffer_a[BLOCKSIZE];
     uint16_t *block;
     int m[3];
 
@@ -1711,10 +1711,10 @@ void ff_subblock_synthesis(RA144Context *ractx, const uint16_t *lpc_coefs,
     ff_add_wav(block, gain, cba_idx, m, cba_idx? buffer_a: NULL,
                ff_cb1_vects[cb1_idx], ff_cb2_vects[cb2_idx]);
 
-    memcpy(ractx->curr_sblock, ractx->curr_sblock + 40,
-           10*sizeof(*ractx->curr_sblock));
+    memcpy(ractx->curr_sblock, ractx->curr_sblock + BLOCKSIZE,
+           LPC_ORDER*sizeof(*ractx->curr_sblock));
 
-    if (ff_celp_lp_synthesis_filter(ractx->curr_sblock + 10, lpc_coefs,
-                                    block, BLOCKSIZE, 10, 1, 0xfff))
-        memset(ractx->curr_sblock, 0, 50*sizeof(*ractx->curr_sblock));
+    if (ff_celp_lp_synthesis_filter(ractx->curr_sblock + LPC_ORDER, lpc_coefs,
+                                    block, BLOCKSIZE, LPC_ORDER, 1, 0xfff))
+        memset(ractx->curr_sblock, 0, (LPC_ORDER+BLOCKSIZE)*sizeof(*ractx->curr_sblock));
 }
