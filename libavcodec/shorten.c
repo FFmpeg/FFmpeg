@@ -273,6 +273,73 @@ static void decode_subframe_lpc(ShortenContext *s, int channel, int residual_siz
     }
 }
 
+static int read_header(ShortenContext *s)
+{
+    int i;
+    int maxnlpc = 0;
+    /* shorten signature */
+    if (get_bits_long(&s->gb, 32) != AV_RB32("ajkg")) {
+        av_log(s->avctx, AV_LOG_ERROR, "missing shorten magic 'ajkg'\n");
+        return -1;
+    }
+
+    s->lpcqoffset = 0;
+    s->blocksize = DEFAULT_BLOCK_SIZE;
+    s->channels = 1;
+    s->nmean = -1;
+    s->version = get_bits(&s->gb, 8);
+    s->internal_ftype = get_uint(s, TYPESIZE);
+
+    s->channels = get_uint(s, CHANSIZE);
+    if (s->channels > MAX_CHANNELS) {
+        av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
+        return -1;
+    }
+
+    /* get blocksize if version > 0 */
+    if (s->version > 0) {
+        int skip_bytes;
+        s->blocksize = get_uint(s, av_log2(DEFAULT_BLOCK_SIZE));
+        maxnlpc = get_uint(s, LPCQSIZE);
+        s->nmean = get_uint(s, 0);
+
+        skip_bytes = get_uint(s, NSKIPSIZE);
+        for (i=0; i<skip_bytes; i++) {
+            skip_bits(&s->gb, 8);
+        }
+    }
+    s->nwrap = FFMAX(NWRAP, maxnlpc);
+
+    if (allocate_buffers(s))
+        return -1;
+
+    init_offset(s);
+
+    if (s->version > 1)
+        s->lpcqoffset = V2LPCQOFFSET;
+
+    if (get_ur_golomb_shorten(&s->gb, FNSIZE) != FN_VERBATIM) {
+        av_log(s->avctx, AV_LOG_ERROR, "missing verbatim section at beginning of stream\n");
+        return -1;
+    }
+
+    s->header_size = get_ur_golomb_shorten(&s->gb, VERBATIM_CKSIZE_SIZE);
+    if (s->header_size >= OUT_BUFFER_SIZE || s->header_size < CANONICAL_HEADER_SIZE) {
+        av_log(s->avctx, AV_LOG_ERROR, "header is wrong size: %d\n", s->header_size);
+        return -1;
+    }
+
+    for (i=0; i<s->header_size; i++)
+        s->header[i] = (char)get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
+
+    if (decode_wave_header(s->avctx, s->header, s->header_size) < 0)
+        return -1;
+
+    s->cur_chan = 0;
+    s->bitshift = 0;
+
+    return 0;
+}
 
 static int shorten_decode_frame(AVCodecContext *avctx,
         void *data, int *data_size,
@@ -311,67 +378,9 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     skip_bits(&s->gb, s->bitindex);
     if (!s->blocksize)
     {
-        int maxnlpc = 0;
-        /* shorten signature */
-        if (get_bits_long(&s->gb, 32) != AV_RB32("ajkg")) {
-            av_log(s->avctx, AV_LOG_ERROR, "missing shorten magic 'ajkg'\n");
-            return -1;
-        }
-
-        s->lpcqoffset = 0;
-        s->blocksize = DEFAULT_BLOCK_SIZE;
-        s->channels = 1;
-        s->nmean = -1;
-        s->version = get_bits(&s->gb, 8);
-        s->internal_ftype = get_uint(s, TYPESIZE);
-
-        s->channels = get_uint(s, CHANSIZE);
-        if (s->channels > MAX_CHANNELS) {
-            av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
-            return -1;
-        }
-
-        /* get blocksize if version > 0 */
-        if (s->version > 0) {
-            int skip_bytes;
-            s->blocksize = get_uint(s, av_log2(DEFAULT_BLOCK_SIZE));
-            maxnlpc = get_uint(s, LPCQSIZE);
-            s->nmean = get_uint(s, 0);
-
-            skip_bytes = get_uint(s, NSKIPSIZE);
-            for (i=0; i<skip_bytes; i++) {
-                skip_bits(&s->gb, 8);
-            }
-        }
-        s->nwrap = FFMAX(NWRAP, maxnlpc);
-
-        if (allocate_buffers(s))
-            return -1;
-
-        init_offset(s);
-
-        if (s->version > 1)
-            s->lpcqoffset = V2LPCQOFFSET;
-
-        if (get_ur_golomb_shorten(&s->gb, FNSIZE) != FN_VERBATIM) {
-            av_log(s->avctx, AV_LOG_ERROR, "missing verbatim section at beginning of stream\n");
-            return -1;
-        }
-
-        s->header_size = get_ur_golomb_shorten(&s->gb, VERBATIM_CKSIZE_SIZE);
-        if (s->header_size >= OUT_BUFFER_SIZE || s->header_size < CANONICAL_HEADER_SIZE) {
-            av_log(s->avctx, AV_LOG_ERROR, "header is wrong size: %d\n", s->header_size);
-            return -1;
-        }
-
-        for (i=0; i<s->header_size; i++)
-            s->header[i] = (char)get_ur_golomb_shorten(&s->gb, VERBATIM_BYTE_SIZE);
-
-        if (decode_wave_header(avctx, s->header, s->header_size) < 0)
-            return -1;
-
-        s->cur_chan = 0;
-        s->bitshift = 0;
+        int ret;
+        if ((ret = read_header(s)) < 0)
+            return ret;
     }
     else
     {
