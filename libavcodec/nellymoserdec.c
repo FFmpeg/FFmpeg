@@ -47,7 +47,7 @@
 
 typedef struct NellyMoserDecodeContext {
     AVCodecContext* avctx;
-    DECLARE_ALIGNED(32, float, float_buf)[NELLY_SAMPLES];
+    float          *float_buf;
     float           state[NELLY_BUF_LEN];
     AVLFG           random_state;
     GetBitContext   gb;
@@ -145,6 +145,11 @@ static av_cold int decode_init(AVCodecContext * avctx) {
         s->scale_bias = 1.0/(1*8);
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
         ff_fmt_convert_init(&s->fmt_conv, avctx);
+        s->float_buf = av_mallocz(NELLY_SAMPLES * sizeof(*s->float_buf));
+        if (!s->float_buf) {
+            av_log(avctx, AV_LOG_ERROR, "error allocating float buffer\n");
+            return AVERROR(ENOMEM);
+        }
     }
 
     /* Generate overlap window */
@@ -208,6 +213,7 @@ static int decode_tag(AVCodecContext * avctx,
 static av_cold int decode_end(AVCodecContext * avctx) {
     NellyMoserDecodeContext *s = avctx->priv_data;
 
+    av_freep(&s->float_buf);
     ff_mdct_end(&s->imdct_ctx);
     return 0;
 }
