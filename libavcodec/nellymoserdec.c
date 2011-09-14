@@ -156,19 +156,26 @@ static int decode_tag(AVCodecContext * avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     NellyMoserDecodeContext *s = avctx->priv_data;
-    int blocks, i;
+    int blocks, i, block_size;
     int16_t* samples;
-    *data_size = 0;
     samples = (int16_t*)data;
 
-    if (buf_size < avctx->block_align)
+    if (buf_size < avctx->block_align) {
+        *data_size = 0;
         return buf_size;
+    }
 
     if (buf_size % 64) {
         av_log(avctx, AV_LOG_ERROR, "Tag size %d.\n", buf_size);
+        *data_size = 0;
         return buf_size;
     }
-    blocks = buf_size / 64;
+    block_size = NELLY_SAMPLES * av_get_bytes_per_sample(avctx->sample_fmt);
+    blocks     = FFMIN(buf_size / 64, *data_size / block_size);
+    if (blocks <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
     /* Normal numbers of blocks for sample rates:
      *  8000 Hz - 1
      * 11025 Hz - 2
@@ -180,8 +187,8 @@ static int decode_tag(AVCodecContext * avctx,
     for (i=0 ; i<blocks ; i++) {
         nelly_decode_block(s, &buf[i*NELLY_BLOCK_LEN], s->float_buf);
         s->fmt_conv.float_to_int16(&samples[i*NELLY_SAMPLES], s->float_buf, NELLY_SAMPLES);
-        *data_size += NELLY_SAMPLES*sizeof(int16_t);
     }
+    *data_size = blocks * block_size;
 
     return buf_size;
 }
