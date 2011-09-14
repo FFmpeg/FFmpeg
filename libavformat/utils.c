@@ -3359,8 +3359,8 @@ int av_interleaved_write_frame(AVFormatContext *s, AVPacket *pkt){
 
         if(ret<0)
             return ret;
-        if(url_ferror(s->pb))
-            return url_ferror(s->pb);
+        if(s->pb && s->pb->error)
+            return s->pb->error;
     }
 }
 
@@ -3384,7 +3384,7 @@ int av_write_trailer(AVFormatContext *s)
 
         if(ret<0)
             goto fail;
-        if(url_ferror(s->pb))
+        if(s->pb && s->pb->error)
             goto fail;
     }
 
@@ -3392,7 +3392,7 @@ int av_write_trailer(AVFormatContext *s)
         ret = s->oformat->write_trailer(s);
 fail:
     if(ret == 0)
-       ret=url_ferror(s->pb);
+       ret = s->pb ? s->pb->error : 0;
     for(i=0;i<s->nb_streams;i++) {
         av_freep(&s->streams[i]->priv_data);
         av_freep(&s->streams[i]->index_entries);
