@@ -72,8 +72,10 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
     GetBitContext gb;
 
     out_size = NBLOCKS * BLOCKSIZE * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size)
-        return -1;
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     if(buf_size < 20) {
         av_log(avctx, AV_LOG_ERROR,
