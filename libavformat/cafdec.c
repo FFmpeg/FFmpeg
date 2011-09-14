@@ -366,6 +366,7 @@ static int read_seek(AVFormatContext *s, int stream_index,
 {
     AVStream *st = s->streams[0];
     CaffContext *caf = s->priv_data;
+    CaffContext caf2 = *caf;
     int64_t pos;
 
     timestamp = FFMAX(timestamp, 0);
@@ -385,7 +386,10 @@ static int read_seek(AVFormatContext *s, int stream_index,
         return -1;
     }
 
-    avio_seek(s->pb, pos + caf->data_start, SEEK_SET);
+    if (avio_seek(s->pb, pos + caf->data_start, SEEK_SET) < 0) {
+        *caf = caf2;
+        return -1;
+    }
     return 0;
 }
 
