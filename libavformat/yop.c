@@ -183,8 +183,6 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
     int64_t frame_pos, pos_min, pos_max;
     int frame_count;
 
-    av_free_packet(&yop->video_packet);
-
     if (!stream_index)
         return -1;
 
@@ -195,9 +193,13 @@ static int yop_read_seek(AVFormatContext *s, int stream_index,
     timestamp      = FFMAX(0, FFMIN(frame_count, timestamp));
 
     frame_pos      = timestamp * yop->frame_size + pos_min;
+
+    if (avio_seek(s->pb, frame_pos, SEEK_SET) < 0)
+        return -1;
+
+    av_free_packet(&yop->video_packet);
     yop->odd_frame = timestamp & 1;
 
-    avio_seek(s->pb, frame_pos, SEEK_SET);
     return 0;
 }
 
