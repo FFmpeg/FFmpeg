@@ -231,10 +231,10 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
             return -1;
     }
 
-    avctx->channels = get_le16(&hb);
+    skip_bits(&hb, 16); // skip channels    (already got from shorten header)
     avctx->sample_rate = get_le32(&hb);
-    avctx->bit_rate = get_le32(&hb) * 8;
-    avctx->block_align = get_le16(&hb);
+    skip_bits(&hb, 32); // skip bit rate    (represents original uncompressed bit rate)
+    skip_bits(&hb, 16); // skip block align (not needed)
     avctx->bits_per_coded_sample = get_le16(&hb);
 
     if (avctx->bits_per_coded_sample != 16) {
@@ -295,6 +295,7 @@ static int read_header(ShortenContext *s)
         av_log(s->avctx, AV_LOG_ERROR, "too many channels: %d\n", s->channels);
         return -1;
     }
+    s->avctx->channels = s->channels;
 
     /* get blocksize if version > 0 */
     if (s->version > 0) {
