@@ -171,7 +171,7 @@ static int ffm_read_data(AVFormatContext *s,
 
 /* ensure that acutal seeking happens between FFM_PACKET_SIZE
    and file_size - FFM_PACKET_SIZE */
-static void ffm_seek1(AVFormatContext *s, int64_t pos1)
+static int64_t ffm_seek1(AVFormatContext *s, int64_t pos1)
 {
     FFMContext *ffm = s->priv_data;
     AVIOContext *pb = s->pb;
@@ -180,7 +180,7 @@ static void ffm_seek1(AVFormatContext *s, int64_t pos1)
     pos = FFMIN(pos1, ffm->file_size - FFM_PACKET_SIZE);
     pos = FFMAX(pos, FFM_PACKET_SIZE);
     av_dlog(s, "seek to %"PRIx64" -> %"PRIx64"\n", pos1, pos);
-    avio_seek(pb, pos, SEEK_SET);
+    return avio_seek(pb, pos, SEEK_SET);
 }
 
 static int64_t get_dts(AVFormatContext *s, int64_t pos)
@@ -506,7 +506,8 @@ static int ffm_seek(AVFormatContext *s, int stream_index, int64_t wanted_pts, in
     pos = (flags & AVSEEK_FLAG_BACKWARD) ? pos_min : pos_max;
 
  found:
-    ffm_seek1(s, pos);
+    if (ffm_seek1(s, pos) < 0)
+        return -1;
 
     /* reset read state */
     ffm->read_state = READ_HEADER;
