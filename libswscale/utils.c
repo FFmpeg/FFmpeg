@@ -184,8 +184,8 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
 
     emms_c(); //FIXME this should not be required but it IS (even for non-MMX versions)
 
-    // NOTE: the +1 is for the MMX scaler which reads over the end
-    FF_ALLOC_OR_GOTO(NULL, *filterPos, (dstW+1)*sizeof(int16_t), fail);
+    // NOTE: the +3 is for the MMX(+1)/SSE(+3) scaler which reads over the end
+    FF_ALLOC_OR_GOTO(NULL, *filterPos, (dstW+3)*sizeof(int16_t), fail);
 
     if (FFABS(xInc - 0x10000) <10) { // unscaled
         int i;
@@ -471,7 +471,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
 
     // Note the +1 is for the MMX scaler which reads over the end
     /* align at 16 for AltiVec (needed by hScale_altivec_real) */
-    FF_ALLOCZ_OR_GOTO(NULL, *outFilter, *outFilterSize*(dstW+1)*sizeof(int16_t), fail);
+    FF_ALLOCZ_OR_GOTO(NULL, *outFilter, *outFilterSize*(dstW+3)*sizeof(int16_t), fail);
 
     /* normalize & store in outFilter */
     for (i=0; i<dstW; i++) {
@@ -491,10 +491,14 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
         }
     }
 
-    (*filterPos)[dstW]= (*filterPos)[dstW-1]; // the MMX scaler will read over the end
+    (*filterPos)[dstW+0] =
+    (*filterPos)[dstW+1] =
+    (*filterPos)[dstW+2] = (*filterPos)[dstW-1]; // the MMX/SSE scaler will read over the end
     for (i=0; i<*outFilterSize; i++) {
-        int j= dstW*(*outFilterSize);
-        (*outFilter)[j + i]= (*outFilter)[j + i - (*outFilterSize)];
+        int k= (dstW - 1) * (*outFilterSize) + i;
+        (*outFilter)[k + 1 * (*outFilterSize)] =
+        (*outFilter)[k + 2 * (*outFilterSize)] =
+        (*outFilter)[k + 3 * (*outFilterSize)] = (*outFilter)[k];
     }
 
     ret=0;
