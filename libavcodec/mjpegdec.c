@@ -1447,10 +1447,6 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
 
                     s->restart_count = 0;
                     /* nothing to do on SOI */
-                    if (s->got_picture) {
-                        av_log(avctx, AV_LOG_WARNING, "EOI missing, emulating\n");
-                        goto eoi_parser;
-                    }
                     break;
                 case DQT:
                     ff_mjpeg_decode_dqt(s);
