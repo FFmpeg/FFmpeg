@@ -590,6 +590,8 @@ static void mpegts_find_stream_type(AVStream *st,
 static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
                                   uint32_t stream_type, uint32_t prog_reg_desc)
 {
+    int old_codec_type= st->codec->codec_type;
+    int old_codec_id  = st->codec->codec_id;
     av_set_pts_info(st, 33, 1, 90000);
     st->priv_data = pes;
     st->codec->codec_type = AVMEDIA_TYPE_DATA;
@@ -634,6 +636,10 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
     }
     if (st->codec->codec_id == CODEC_ID_NONE)
         mpegts_find_stream_type(st, pes->stream_type, MISC_types);
+    if (st->codec->codec_id == CODEC_ID_NONE){
+        st->codec->codec_id  = old_codec_id;
+        st->codec->codec_type= old_codec_type;
+    }
 
     return 0;
 }
