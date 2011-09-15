@@ -427,91 +427,91 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             }
         } else {
             /* process audio command */
-                    int residual_size = 0;
-                    int channel = s->cur_chan;
-                    int32_t coffset;
-                    if (cmd != FN_ZERO) {
-                        residual_size = get_ur_golomb_shorten(&s->gb, ENERGYSIZE);
-                        /* this is a hack as version 0 differed in defintion of get_sr_golomb_shorten */
-                        if (s->version == 0)
-                            residual_size--;
-                    }
+            int residual_size = 0;
+            int channel = s->cur_chan;
+            int32_t coffset;
+            if (cmd != FN_ZERO) {
+                residual_size = get_ur_golomb_shorten(&s->gb, ENERGYSIZE);
+                /* this is a hack as version 0 differed in defintion of get_sr_golomb_shorten */
+                if (s->version == 0)
+                    residual_size--;
+            }
 
-                    if (s->nmean == 0)
-                        coffset = s->offset[channel][0];
-                    else {
-                        int32_t sum = (s->version < 2) ? 0 : s->nmean / 2;
-                        for (i=0; i<s->nmean; i++)
-                            sum += s->offset[channel][i];
-                        coffset = sum / s->nmean;
-                        if (s->version >= 2)
-                            coffset >>= FFMIN(1, s->bitshift);
+            if (s->nmean == 0)
+                coffset = s->offset[channel][0];
+            else {
+                int32_t sum = (s->version < 2) ? 0 : s->nmean / 2;
+                for (i=0; i<s->nmean; i++)
+                    sum += s->offset[channel][i];
+                coffset = sum / s->nmean;
+                if (s->version >= 2)
+                    coffset >>= FFMIN(1, s->bitshift);
+            }
+            switch (cmd) {
+                case FN_ZERO:
+                    for (i=0; i<s->blocksize; i++)
+                        s->decoded[channel][i] = 0;
+                    break;
+                case FN_DIFF0:
+                    for (i=0; i<s->blocksize; i++)
+                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + coffset;
+                    break;
+                case FN_DIFF1:
+                    for (i=0; i<s->blocksize; i++)
+                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + s->decoded[channel][i - 1];
+                    break;
+                case FN_DIFF2:
+                    for (i=0; i<s->blocksize; i++)
+                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + 2*s->decoded[channel][i-1]
+                                                                                              -   s->decoded[channel][i-2];
+                    break;
+                case FN_DIFF3:
+                    for (i=0; i<s->blocksize; i++)
+                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + 3*s->decoded[channel][i-1]
+                                                                                              - 3*s->decoded[channel][i-2]
+                                                                                              +   s->decoded[channel][i-3];
+                    break;
+                case FN_QLPC:
+                    {
+                        int pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
+                        if (pred_order > s->nwrap) {
+                            av_log(avctx, AV_LOG_ERROR,
+                                    "invalid pred_order %d\n",
+                                    pred_order);
+                            return -1;
+                        }
+                        for (i=0; i<pred_order; i++)
+                            s->decoded[channel][i - pred_order] -= coffset;
+                        decode_subframe_lpc(s, channel, residual_size, pred_order);
+                        if (coffset != 0)
+                            for (i=0; i < s->blocksize; i++)
+                                s->decoded[channel][i] += coffset;
                     }
-                    switch (cmd) {
-                        case FN_ZERO:
-                            for (i=0; i<s->blocksize; i++)
-                                s->decoded[channel][i] = 0;
-                            break;
-                        case FN_DIFF0:
-                            for (i=0; i<s->blocksize; i++)
-                                s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + coffset;
-                            break;
-                        case FN_DIFF1:
-                            for (i=0; i<s->blocksize; i++)
-                                s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + s->decoded[channel][i - 1];
-                            break;
-                        case FN_DIFF2:
-                            for (i=0; i<s->blocksize; i++)
-                                s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + 2*s->decoded[channel][i-1]
-                                                                                                      -   s->decoded[channel][i-2];
-                            break;
-                        case FN_DIFF3:
-                            for (i=0; i<s->blocksize; i++)
-                                s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + 3*s->decoded[channel][i-1]
-                                                                                                      - 3*s->decoded[channel][i-2]
-                                                                                                      +   s->decoded[channel][i-3];
-                            break;
-                        case FN_QLPC:
-                            {
-                                int pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
-                                if (pred_order > s->nwrap) {
-                                    av_log(avctx, AV_LOG_ERROR,
-                                           "invalid pred_order %d\n",
-                                           pred_order);
-                                    return -1;
-                                }
-                                for (i=0; i<pred_order; i++)
-                                    s->decoded[channel][i - pred_order] -= coffset;
-                                decode_subframe_lpc(s, channel, residual_size, pred_order);
-                                if (coffset != 0)
-                                    for (i=0; i < s->blocksize; i++)
-                                        s->decoded[channel][i] += coffset;
-                            }
-                    }
-                    if (s->nmean > 0) {
-                        int32_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
-                        for (i=0; i<s->blocksize; i++)
-                            sum += s->decoded[channel][i];
+            }
+            if (s->nmean > 0) {
+                int32_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
+                for (i=0; i<s->blocksize; i++)
+                    sum += s->decoded[channel][i];
 
-                        for (i=1; i<s->nmean; i++)
-                            s->offset[channel][i-1] = s->offset[channel][i];
+                for (i=1; i<s->nmean; i++)
+                    s->offset[channel][i-1] = s->offset[channel][i];
 
-                        if (s->version < 2)
-                            s->offset[channel][s->nmean - 1] = sum / s->blocksize;
-                        else
-                            s->offset[channel][s->nmean - 1] = (sum / s->blocksize) << s->bitshift;
-                    }
-                    for (i=-s->nwrap; i<0; i++)
-                        s->decoded[channel][i] = s->decoded[channel][i + s->blocksize];
+                if (s->version < 2)
+                    s->offset[channel][s->nmean - 1] = sum / s->blocksize;
+                else
+                    s->offset[channel][s->nmean - 1] = (sum / s->blocksize) << s->bitshift;
+            }
+            for (i=-s->nwrap; i<0; i++)
+                s->decoded[channel][i] = s->decoded[channel][i + s->blocksize];
 
-                    fix_bitshift(s, s->decoded[channel]);
+            fix_bitshift(s, s->decoded[channel]);
 
-                    s->cur_chan++;
-                    if (s->cur_chan == s->channels) {
-                        samples = interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
-                        s->cur_chan = 0;
-                        goto frame_done;
-                    }
+            s->cur_chan++;
+            if (s->cur_chan == s->channels) {
+                samples = interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
+                s->cur_chan = 0;
+                goto frame_done;
+            }
         }
     }
 frame_done:
