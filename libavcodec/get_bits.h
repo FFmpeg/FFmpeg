@@ -201,11 +201,19 @@ static inline void skip_bits_long(GetBitContext *s, int n){
         }                                                               \
     } while (0)
 
+#if ARCH_X86
+#   define SKIP_CACHE(name, gb, num)                            \
+    __asm__("shldl %2, %1, %0          \n\t"                    \
+            "shll  %2, %1              \n\t"                    \
+            : "+r" (name##_cache0), "+r" (name##_cache1)        \
+            : "Ic" ((uint8_t)(num)))
+#else
 #   define SKIP_CACHE(name, gb, num) do {               \
         name##_cache0 <<= (num);                        \
         name##_cache0 |= NEG_USR32(name##_cache1,num);  \
         name##_cache1 <<= (num);                        \
     } while (0)
+#endif
 
 #   define SKIP_COUNTER(name, gb, num) name##_bit_count += (num)
 
