@@ -1122,7 +1122,7 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
             s->buggy_avid = 1;
 //        if (s->first_picture)
 //            printf("mjpeg: workarounding buggy AVID\n");
-        i = get_bits(&s->gb, 8);
+        i = get_bits(&s->gb, 8); len--;
         if     (i==2) s->bottom_field= 1;
         else if(i==1) s->bottom_field= 0;
 #if 0
