@@ -1191,7 +1191,7 @@ static int matroska_parse_seekhead_entry(MatroskaDemuxContext *matroska, int idx
             matroska->num_levels++;
             matroska->current_id = 0;
 
-            ebml_parse(matroska, matroska_segment, matroska);
+            ret = ebml_parse(matroska, matroska_segment, matroska);
 
             /* remove dummy level */
             while (matroska->num_levels) {
@@ -1383,7 +1383,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         }
         if (encodings_list->nb_elem > 1) {
             av_log(matroska->ctx, AV_LOG_ERROR,
-                   "Multiple combined encodings no supported");
+                   "Multiple combined encodings not supported");
         } else if (encodings_list->nb_elem == 1) {
             if (encodings[0].type ||
                 (encodings[0].compression.algo != MATROSKA_TRACK_ENCODING_COMP_HEADERSTRIP &&
