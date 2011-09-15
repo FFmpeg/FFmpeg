@@ -53,6 +53,7 @@ easier to use. The changes are:
 - WTV muxer
 - Optional C++ Support (needed for libstagefright)
 - H.264 Decoding on Android via Stagefright
+- Prores decoder
 
 
 version 0.8:
