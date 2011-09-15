@@ -116,6 +116,7 @@ static int allocate_buffers(ShortenContext *s)
 {
     int i, chan;
     int *coeffs;
+    void *tmp_ptr;
 
     for (chan=0; chan<s->channels; chan++) {
         if(FFMAX(1, s->nmean) >= UINT_MAX/sizeof(int32_t)){
@@ -127,9 +128,15 @@ static int allocate_buffers(ShortenContext *s)
             return -1;
         }
 
-        s->offset[chan] = av_realloc(s->offset[chan], sizeof(int32_t)*FFMAX(1, s->nmean));
+        tmp_ptr = av_realloc(s->offset[chan], sizeof(int32_t)*FFMAX(1, s->nmean));
+        if (!tmp_ptr)
+            return AVERROR(ENOMEM);
+        s->offset[chan] = tmp_ptr;
 
-        s->decoded[chan] = av_realloc(s->decoded[chan], sizeof(int32_t)*(s->blocksize + s->nwrap));
+        tmp_ptr = av_realloc(s->decoded[chan], sizeof(int32_t)*(s->blocksize + s->nwrap));
+        if (!tmp_ptr)
+            return AVERROR(ENOMEM);
+        s->decoded[chan] = tmp_ptr;
         for (i=0; i<s->nwrap; i++)
             s->decoded[chan][i] = 0;
         s->decoded[chan] += s->nwrap;
@@ -376,8 +383,15 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     int i, input_buf_size = 0;
     int16_t *samples = data;
     if(s->max_framesize == 0){
+        void *tmp_ptr;
         s->max_framesize= 1024; // should hopefully be enough for the first header
-        s->bitstream= av_fast_realloc(s->bitstream, &s->allocated_bitstream_size, s->max_framesize);
+        tmp_ptr = av_fast_realloc(s->bitstream, &s->allocated_bitstream_size,
+                                  s->max_framesize);
+        if (!tmp_ptr) {
+            av_log(avctx, AV_LOG_ERROR, "error allocating bitstream buffer\n");
+            return AVERROR(ENOMEM);
+        }
+        s->bitstream = tmp_ptr;
     }
 
     if(1 && s->max_framesize){//FIXME truncated
