@@ -267,37 +267,54 @@ static int16_t * interleave_buffer(int16_t *samples, int nchan, int blocksize, i
     return samples;
 }
 
-static int decode_subframe_lpc(ShortenContext *s, int channel,
+static const int fixed_coeffs[3][3] = {
+    { 1,  0,  0 },
+    { 2, -1,  0 },
+    { 3, -3,  1 }
+};
+
+static int decode_subframe_lpc(ShortenContext *s, int command, int channel,
                                int residual_size, int32_t coffset)
 {
-    int pred_order, sum, i, j;
-    int *coeffs = s->coeffs;
+    int pred_order, sum, qshift, init_sum, i, j;
+    const int *coeffs;
 
-    /* read/validate prediction order */
-    pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
-    if (pred_order > s->nwrap) {
-        av_log(s->avctx, AV_LOG_ERROR, "invalid pred_order %d\n", pred_order);
-        return AVERROR(EINVAL);
+    if (command == FN_QLPC) {
+        /* read/validate prediction order */
+        pred_order = get_ur_golomb_shorten(&s->gb, LPCQSIZE);
+        if (pred_order > s->nwrap) {
+            av_log(s->avctx, AV_LOG_ERROR, "invalid pred_order %d\n", pred_order);
+            return AVERROR(EINVAL);
+        }
+        /* read LPC coefficients */
+        for (i=0; i<pred_order; i++)
+            s->coeffs[i] = get_sr_golomb_shorten(&s->gb, LPCQUANT);
+        coeffs = s->coeffs;
+
+        qshift = LPCQUANT;
+    } else {
+        /* fixed LPC coeffs */
+        pred_order = command;
+        coeffs     = fixed_coeffs[pred_order-1];
+        qshift     = 0;
     }
-    /* read LPC coefficients */
-    for (i=0; i<pred_order; i++)
-        coeffs[i] = get_sr_golomb_shorten(&s->gb, LPCQUANT);
 
     /* subtract offset from previous samples to use in prediction */
-    if (coffset)
+    if (command == FN_QLPC && coffset)
         for (i = -pred_order; i < 0; i++)
             s->decoded[channel][i] -= coffset;
 
     /* decode residual and do LPC prediction */
+    init_sum = pred_order ? (command == FN_QLPC ? s->lpcqoffset : 0) : coffset;
     for (i=0; i < s->blocksize; i++) {
-        sum = s->lpcqoffset;
+        sum = init_sum;
         for (j=0; j<pred_order; j++)
             sum += coeffs[j] * s->decoded[channel][i-j-1];
-        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + (sum >> LPCQUANT);
+        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + (sum >> qshift);
     }
 
     /* add offset to current samples */
-    if (coffset != 0)
+    if (command == FN_QLPC && coffset)
         for (i = 0; i < s->blocksize; i++)
             s->decoded[channel][i] += coffset;
 
@@ -497,34 +514,12 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                 if (s->version >= 2)
                     coffset >>= FFMIN(1, s->bitshift);
             }
-            switch (cmd) {
-                case FN_ZERO:
-                    for (i=0; i<s->blocksize; i++)
-                        s->decoded[channel][i] = 0;
-                    break;
-                case FN_DIFF0:
-                    for (i=0; i<s->blocksize; i++)
-                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + coffset;
-                    break;
-                case FN_DIFF1:
-                    for (i=0; i<s->blocksize; i++)
-                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + s->decoded[channel][i - 1];
-                    break;
-                case FN_DIFF2:
-                    for (i=0; i<s->blocksize; i++)
-                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + 2*s->decoded[channel][i-1]
-                                                                                              -   s->decoded[channel][i-2];
-                    break;
-                case FN_DIFF3:
-                    for (i=0; i<s->blocksize; i++)
-                        s->decoded[channel][i] = get_sr_golomb_shorten(&s->gb, residual_size) + 3*s->decoded[channel][i-1]
-                                                                                              - 3*s->decoded[channel][i-2]
-                                                                                              +   s->decoded[channel][i-3];
-                    break;
-                case FN_QLPC:
-                    if ((ret = decode_subframe_lpc(s, channel, residual_size, coffset)) < 0)
-                        return ret;
-                    break;
+            if (cmd == FN_ZERO) {
+                for (i=0; i<s->blocksize; i++)
+                    s->decoded[channel][i] = 0;
+            } else {
+                if ((ret = decode_subframe_lpc(s, cmd, channel, residual_size, coffset)) < 0)
+                    return ret;
             }
             if (s->nmean > 0) {
                 int32_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
