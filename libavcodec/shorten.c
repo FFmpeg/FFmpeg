@@ -254,7 +254,7 @@ static int16_t * interleave_buffer(int16_t *samples, int nchan, int blocksize, i
     int i, chan;
     for (i=0; i<blocksize; i++)
         for (chan=0; chan < nchan; chan++)
-            *samples++ = FFMIN(buffer[chan][i], 32768);
+            *samples++ = av_clip_int16(buffer[chan][i]);
     return samples;
 }
 
