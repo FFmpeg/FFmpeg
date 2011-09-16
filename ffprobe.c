@@ -416,7 +416,7 @@ static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_i
                           display_aspect_ratio.num,
                           display_aspect_ratio.den);
             }
-            print_str("pix_fmt", dec_ctx->pix_fmt != PIX_FMT_NONE ? av_pix_fmt_descriptors[dec_ctx->pix_fmt].name : "unknown");
+            print_str("pix_fmt", av_x_if_null(av_get_pix_fmt_name(dec_ctx->pix_fmt), "unknown"));
             print_int("level",   dec_ctx->level);
             break;
 
