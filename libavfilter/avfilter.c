@@ -246,6 +246,8 @@ int avfilter_config_links(AVFilterContext *filter)
 
     for (i = 0; i < filter->input_count; i ++) {
         AVFilterLink *link = filter->inputs[i];
+        AVFilterLink *inlink = link->src->input_count ?
+            link->src->inputs[0] : NULL;
 
         if (!link) continue;
 
@@ -275,18 +277,17 @@ int avfilter_config_links(AVFilterContext *filter)
             switch (link->type) {
             case AVMEDIA_TYPE_VIDEO:
                 if (!link->time_base.num && !link->time_base.den)
-                    link->time_base = link->src->input_count ?
-                        link->src->inputs[0]->time_base : AV_TIME_BASE_Q;
+                    link->time_base = inlink ? inlink->time_base : AV_TIME_BASE_Q;
 
                 if (!link->sample_aspect_ratio.num && !link->sample_aspect_ratio.den)
-                    link->sample_aspect_ratio = link->src->input_count ?
-                        link->src->inputs[0]->sample_aspect_ratio : (AVRational){1,1};
+                    link->sample_aspect_ratio = inlink ?
+                        inlink->sample_aspect_ratio : (AVRational){1,1};
 
-                if (link->src->input_count) {
+                if (inlink) {
                     if (!link->w)
-                        link->w = link->src->inputs[0]->w;
+                        link->w = inlink->w;
                     if (!link->h)
-                        link->h = link->src->inputs[0]->h;
+                        link->h = inlink->h;
                 } else if (!link->w || !link->h) {
                     av_log(link->src, AV_LOG_ERROR,
                            "Video source filters must set their output link's "
@@ -296,11 +297,11 @@ int avfilter_config_links(AVFilterContext *filter)
                 break;
 
             case AVMEDIA_TYPE_AUDIO:
-                if (link->src->input_count) {
+                if (inlink) {
                     if (!link->sample_rate)
-                        link->sample_rate = link->src->inputs[0]->sample_rate;
+                        link->sample_rate = inlink->sample_rate;
                     if (!link->time_base.num && !link->time_base.den)
-                        link->time_base = link->src->inputs[0]->time_base;
+                        link->time_base = inlink->time_base;
                 } else if (!link->sample_rate) {
                     av_log(link->src, AV_LOG_ERROR,
                            "Audio source filters must set their output link's "
