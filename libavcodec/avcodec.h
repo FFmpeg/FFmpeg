@@ -361,6 +361,9 @@ enum CodecID {
     /* other specific kind of codecs (generally used for attachments) */
     CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
     CODEC_ID_TTF= 0x18000,
+    CODEC_ID_BINTEXT,
+    CODEC_ID_XBIN,
+    CODEC_ID_IDF,
 
     CODEC_ID_PROBE= 0x19000, ///< codec_id is not known (like CODEC_ID_NONE) but lavf should attempt to identify it
 

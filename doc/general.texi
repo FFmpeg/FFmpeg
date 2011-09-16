@@ -51,6 +51,7 @@ library:
     @tab Multimedia format used in games like Mad Dog McCree.
 @item 3GPP AMR                  @tab X @tab X
 @item Apple HTTP Live Streaming @tab   @tab X
+@item Artworx Data Format       @tab   @tab X
 @item ASF                       @tab X @tab X
 @item AVI                       @tab X @tab X
 @item AVISynth                  @tab   @tab X
@@ -60,6 +61,7 @@ library:
     @tab Audio and video format used in some games by Beam Software.
 @item Bethesda Softworks VID    @tab   @tab X
     @tab Used in some games from Bethesda Softworks.
+@item Binary text               @tab   @tab C
 @item Bink                      @tab   @tab X
     @tab Multimedia format used by many games.
 @item Bitmap Brothers JV        @tab   @tab X
@@ -106,6 +108,7 @@ library:
 @item GXF                       @tab X @tab X
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
          playout servers.
+@item iCEDraw File              @tab   @tab X
 @item id Quake II CIN video     @tab   @tab X
 @item id RoQ                    @tab X @tab X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
@@ -267,6 +270,7 @@ library:
     @tab Microsoft video container used in Xbox games.
 @item xWMA                      @tab   @tab X
     @tab Microsoft audio container used by XAudio 2.
+@item eXtended BINary text (XBIN) @tab @tab X
 @item YUV4MPEG pipe             @tab X @tab X
 @item Psygnosis YOP             @tab   @tab X
 @end multitable

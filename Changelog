@@ -54,6 +54,7 @@ easier to use. The changes are:
 - Optional C++ Support (needed for libstagefright)
 - H.264 Decoding on Android via Stagefright
 - Prores decoder
+- BIN/XBIN/ADF/IDF text file decoder
 
 
 version 0.8:

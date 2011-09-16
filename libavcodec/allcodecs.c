@@ -393,6 +393,11 @@ void avcodec_register_all(void)
     REGISTER_ENCODER (LIBXAVS, libxavs);
     REGISTER_ENCODER (LIBXVID, libxvid);
 
+    /* text */
+    REGISTER_DECODER (BINTEXT, bintext);
+    REGISTER_DECODER  (XBIN, xbin);
+    REGISTER_DECODER  (IDF, idf);
+
     /* parsers */
     REGISTER_PARSER  (AAC, aac);
     REGISTER_PARSER  (AAC_LATM, aac_latm);
