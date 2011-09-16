@@ -299,12 +299,17 @@ int avfilter_config_links(AVFilterContext *filter)
                 if (link->src->input_count) {
                     if (!link->sample_rate)
                         link->sample_rate = link->src->inputs[0]->sample_rate;
+                    if (!link->time_base.num && !link->time_base.den)
+                        link->time_base = link->src->inputs[0]->time_base;
                 } else if (!link->sample_rate) {
                     av_log(link->src, AV_LOG_ERROR,
                            "Audio source filters must set their output link's "
                            "sample_rate\n");
                     return AVERROR(EINVAL);
                 }
+
+                if (!link->time_base.num && !link->time_base.den)
+                    link->time_base = (AVRational) {1, link->sample_rate};
             }
 
             if ((config_link = link->dstpad->config_props))
