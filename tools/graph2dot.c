@@ -75,9 +75,10 @@ static void print_digraph(FILE *outfile, AVFilterGraph *graph)
                 } else if (link->type == AVMEDIA_TYPE_AUDIO) {
                     char buf[255];
                     av_get_channel_layout_string(buf, sizeof(buf), -1, link->channel_layout);
-                    fprintf(outfile, " [ label= \"fmt:%s sr:%"PRId64" cl:%s\" ]",
+                    fprintf(outfile, " [ label= \"fmt:%s sr:%"PRId64" cl:%s tb:%d/%d\" ]",
                             av_get_sample_fmt_name(link->format),
-                            link->sample_rate, buf);
+                            link->sample_rate, buf,
+                            link->time_base.num, link->time_base.den);
                 }
                 fprintf(outfile, ";\n");
             }
