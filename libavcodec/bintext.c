@@ -116,7 +116,7 @@ static void draw_char(AVCodecContext *avctx, int c, int a)
                     s->frame.linesize[0], s->font, s->font_height, c,
                     a & 0x0F, a >> 4);
     s->x += FONT_WIDTH;
-    if (s->x >= avctx->width) {
+    if (s->x > avctx->width - FONT_WIDTH) {
         s->x = 0;
         s->y += s->font_height;
     }
