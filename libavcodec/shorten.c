@@ -306,7 +306,7 @@ static int decode_subframe_lpc(ShortenContext *s, int channel,
 
 static int read_header(ShortenContext *s)
 {
-    int i;
+    int i, ret;
     int maxnlpc = 0;
     /* shorten signature */
     if (get_bits_long(&s->gb, 32) != AV_RB32("ajkg")) {
@@ -342,8 +342,8 @@ static int read_header(ShortenContext *s)
     }
     s->nwrap = FFMAX(NWRAP, maxnlpc);
 
-    if (allocate_buffers(s))
-        return -1;
+    if ((ret = allocate_buffers(s)) < 0)
+        return ret;
 
     init_offset(s);
 
