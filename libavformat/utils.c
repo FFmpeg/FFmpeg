@@ -2431,17 +2431,19 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
             int64_t duration= pkt->dts - last;
 
             if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && duration>0){
-                double dur= duration * av_q2d(st->time_base);
+                double dts= pkt->dts * av_q2d(st->time_base);
 
 //                if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
 //                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
-                if (st->info->duration_count < 2)
-                    memset(st->info->duration_error, 0, sizeof(st->info->duration_error));
-                for (i=1; i<FF_ARRAY_ELEMS(st->info->duration_error); i++) {
+                for (i=1; i<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); i++) {
                     int framerate= get_std_framerate(i);
-                    int ticks= lrintf(dur*framerate/(1001*12));
-                    double error= dur - ticks*1001*12/(double)framerate;
-                    st->info->duration_error[i] += error*error;
+                    double sdts= dts*framerate/(1001*12);
+                    for(j=0; j<2; j++){
+                        int ticks= lrintf(sdts+j*0.5);
+                        double error= sdts - ticks + j*0.5;
+                        st->info->duration_error[j][0][i] += error;
+                        st->info->duration_error[j][1][i] += error*error;
+                    }
                 }
                 st->info->duration_count++;
                 // ignore the first 4 values, they might have some random jitter
@@ -2505,16 +2507,24 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                //FIXME we should not special-case MPEG-2, but this needs testing with non-MPEG-2 ...
                st->time_base.num*duration_sum[i]/st->info->duration_count*101LL > st->time_base.den*/){
                 int num = 0;
-                double best_error= 2*av_q2d(st->time_base);
-                best_error = best_error*best_error*st->info->duration_count*1000*12*30;
+                double best_error= 0.01;
 
-                for (j=1; j<FF_ARRAY_ELEMS(st->info->duration_error); j++) {
-                    double error = st->info->duration_error[j] * get_std_framerate(j);
-//                    if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-//                        av_log(NULL, AV_LOG_ERROR, "%f %f\n", get_std_framerate(j) / 12.0/1001, error);
-                    if(error < best_error){
-                        best_error= error;
-                        num = get_std_framerate(j);
+                for (j=1; j<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); j++) {
+                    int k;
+
+                    if(st->info->codec_info_duration && st->info->codec_info_duration*av_q2d(st->time_base) < (1001*12.0)/get_std_framerate(j))
+                        continue;
+                    for(k=0; k<2; k++){
+                        int n= st->info->duration_count;
+                        double a= st->info->duration_error[k][0][j] / n;
+                        double error= st->info->duration_error[k][1][j]/n - a*a;
+
+                        if(error < best_error && best_error> 0.000000001){
+                            best_error= error;
+                            num = get_std_framerate(j);
+                        }
+                        if(error < 0.02)
+                            av_log(NULL, AV_LOG_DEBUG, "rfps: %f %f\n", get_std_framerate(j) / 12.0/1001, error);
                     }
                 }
                 // do not increase frame rate by more than 1 % in order to match a standard rate.
