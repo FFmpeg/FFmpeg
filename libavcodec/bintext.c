@@ -210,7 +210,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 AVCodec ff_bintext_decoder = {
-    "xbin",
+    "bintext",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_BINTEXT,
     sizeof(XbinContext),
