@@ -43,7 +43,6 @@ static int use_value_sexagesimal_format = 0;
 
 static char *print_format;
 
-/* globals */
 static const OptionDef options[];
 
 /* FFprobe context */
