@@ -330,8 +330,16 @@ static int read_header(ShortenContext *s)
 
     /* get blocksize if version > 0 */
     if (s->version > 0) {
-        int skip_bytes;
-        s->blocksize = get_uint(s, av_log2(DEFAULT_BLOCK_SIZE));
+        int skip_bytes, blocksize;
+
+        blocksize = get_uint(s, av_log2(DEFAULT_BLOCK_SIZE));
+        if (!blocksize || blocksize > MAX_BLOCKSIZE) {
+            av_log(s->avctx, AV_LOG_ERROR, "invalid or unsupported block size: %d\n",
+                   blocksize);
+            return AVERROR(EINVAL);
+        }
+        s->blocksize = blocksize;
+
         maxnlpc = get_uint(s, LPCQSIZE);
         s->nmean = get_uint(s, 0);
 
@@ -455,6 +463,11 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                     if (blocksize > s->blocksize) {
                         av_log(avctx, AV_LOG_ERROR, "Increasing block size is not supported\n");
                         return AVERROR_PATCHWELCOME;
+                    }
+                    if (!blocksize || blocksize > MAX_BLOCKSIZE) {
+                        av_log(avctx, AV_LOG_ERROR, "invalid or unsupported "
+                               "block size: %d\n", blocksize);
+                        return AVERROR(EINVAL);
                     }
                     s->blocksize = blocksize;
                     break;
