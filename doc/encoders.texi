@@ -551,27 +551,27 @@ Set the encoding preset.
 
 @item tune @var{tune_name}
 Tune the encoding params.
-Deprecated in favor of @var{x264_opts}
+Deprecated in favor of @var{x264opts}
 
 @item fastfirstpass @var{bool}
 Use fast settings when encoding first pass, default value is 1.
-Deprecated in favor of @var{x264_opts}.
+Deprecated in favor of @var{x264opts}.
 
 @item profile @var{profile_name}
 Set profile restrictions.
-Deprecated in favor of @var{x264_opts}.
+Deprecated in favor of @var{x264opts}.
 
 @item level @var{level}
 Specify level (as defined by Annex A).
-Deprecated in favor of @var{x264_opts}.
+Deprecated in favor of @var{x264opts}.
 
 @item passlogfile @var{filename}
 Specify filename for 2 pass stats.
-Deprecated in favor of @var{x264_opts}.
+Deprecated in favor of @var{x264opts}.
 
 @item wpredp @var{wpred_type}
 Specify Weighted prediction for P-frames.
-Deprecated in favor of @var{x264_opts}.
+Deprecated in favor of @var{x264opts}.
 
 @item x264opts @var{options}
 Allow to set any x264 option, see x264 manual for a list.
