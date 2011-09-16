@@ -315,7 +315,7 @@ int main(void)
     const int64_t *cl;
     char buf[512];
 
-    for (cl = avfilter_all_channel_layouts_int64; *cl != -1; cl++) {
+    for (cl = avfilter_all_channel_layouts; *cl != -1; cl++) {
         av_get_channel_layout_string(buf, sizeof(buf), -1, *cl);
         printf("%s\n", buf);
     }
