@@ -382,6 +382,8 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     ShortenContext *s = avctx->priv_data;
     int i, input_buf_size = 0;
     int16_t *samples = data;
+    int ret;
+
     if(s->max_framesize == 0){
         void *tmp_ptr;
         s->max_framesize= 1024; // should hopefully be enough for the first header
@@ -417,7 +419,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     skip_bits(&s->gb, s->bitindex);
     if (!s->blocksize)
     {
-        int ret;
         if ((ret = read_header(s)) < 0)
             return ret;
         *data_size = 0;
@@ -464,7 +465,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             *data_size = 0;
         } else {
             /* process audio command */
-            int ret;
             int residual_size = 0;
             int channel = s->cur_chan;
             int32_t coffset;
