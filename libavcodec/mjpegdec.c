@@ -1490,8 +1490,6 @@ int ff_mjpeg_decode_frame(AVCodecContext *avctx,
                         return -1;
                     break;
                 case EOI:
-                    if ((s->buggy_avid && !s->interlaced) || s->restart_interval)
-                        break;
 eoi_parser:
                     s->cur_scan = 0;
                     if (!s->got_picture) {
@@ -1526,10 +1524,6 @@ eoi_parser:
                     if (ff_mjpeg_decode_sos(s, NULL, NULL) < 0 &&
                         avctx->error_recognition >= FF_ER_EXPLODE)
                       return AVERROR_INVALIDDATA;
-                    /* buggy avid puts EOI every 10-20th frame */
-                    /* if restart period is over process EOI */
-                    if ((s->buggy_avid && !s->interlaced) || s->restart_interval)
-                        goto eoi_parser;
                     break;
                 case DRI:
                     mjpeg_decode_dri(s);
