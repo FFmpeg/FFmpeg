@@ -64,6 +64,7 @@ typedef struct X264Context {
     float cplxblur;
     char *partitions;
     int direct_pred;
+    int slice_max_size;
 } X264Context;
 
 static void X264_log(void *p, int level, const char *fmt, va_list args)
@@ -390,6 +391,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
     if (x4->direct_pred >= 0)
         x4->params.analyse.i_direct_mv_pred   = x4->direct_pred;
 
+    if (x4->slice_max_size >= 0)
+        x4->params.i_slice_max_size =  x4->slice_max_size;
+
     if (x4->fastfirstpass)
         x264_param_apply_fastfirstpass(&x4->params);
 
@@ -496,6 +500,7 @@ static const AVOption options[] = {
     { "spatial",       NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_SPATIAL },  0, 0, VE, "direct-pred" },
     { "temporal",      NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_TEMPORAL }, 0, 0, VE, "direct-pred" },
     { "auto",          NULL,      0,    FF_OPT_TYPE_CONST, { X264_DIRECT_PRED_AUTO },     0, 0, VE, "direct-pred" },
+    { "slice-max-size","Constant quantization parameter rate control method",OFFSET(slice_max_size),        FF_OPT_TYPE_INT,    {-1 }, -1, INT_MAX, VE },
     { NULL },
 };
 
