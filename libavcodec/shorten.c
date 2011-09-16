@@ -409,7 +409,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         input_buf_size= buf_size;
 
         if(s->bitstream_index + s->bitstream_size + buf_size > s->allocated_bitstream_size){
-            //                printf("memmove\n");
             memmove(s->bitstream, &s->bitstream[s->bitstream_index], s->bitstream_size);
             s->bitstream_index=0;
         }
@@ -556,7 +555,6 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         }
     }
 
-    //    s->last_blocksize = s->blocksize;
     s->bitindex = get_bits_count(&s->gb) - 8*((get_bits_count(&s->gb))/8);
     i= (get_bits_count(&s->gb))/8;
     if (i > buf_size) {
