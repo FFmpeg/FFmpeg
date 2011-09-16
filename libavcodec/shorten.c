@@ -481,6 +481,12 @@ static int shorten_decode_frame(AVCodecContext *avctx,
 
                     s->cur_chan++;
                     if (s->cur_chan == s->channels) {
+                        int out_size = s->blocksize * s->channels *
+                                       av_get_bytes_per_sample(avctx->sample_fmt);
+                        if (*data_size < out_size) {
+                            av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+                            return AVERROR(EINVAL);
+                        }
                         samples = interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
                         s->cur_chan = 0;
                         goto frame_done;
