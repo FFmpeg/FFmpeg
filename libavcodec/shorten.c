@@ -409,6 +409,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     int16_t *samples = data;
     int ret;
 
+    /* allocate internal bitstream buffer */
     if(s->max_framesize == 0){
         void *tmp_ptr;
         s->max_framesize= 1024; // should hopefully be enough for the first header
@@ -421,6 +422,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         s->bitstream = tmp_ptr;
     }
 
+    /* append current packet data to bitstream buffer */
     if(1 && s->max_framesize){//FIXME truncated
         buf_size= FFMIN(buf_size, s->max_framesize - s->bitstream_size);
         input_buf_size= buf_size;
@@ -434,13 +436,17 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         buf_size += s->bitstream_size;
         s->bitstream_size= buf_size;
 
+        /* do not decode until buffer has at least max_framesize bytes */
         if(buf_size < s->max_framesize){
             *data_size = 0;
             return input_buf_size;
         }
     }
+    /* init and position bitstream reader */
     init_get_bits(&s->gb, buf, buf_size*8);
     skip_bits(&s->gb, s->bitindex);
+
+    /* process header or next subblock */
     if (!s->blocksize)
     {
         if ((ret = read_header(s)) < 0)
@@ -497,6 +503,8 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             int residual_size = 0;
             int channel = s->cur_chan;
             int32_t coffset;
+
+            /* get Rice code for residual decoding */
             if (cmd != FN_ZERO) {
                 residual_size = get_ur_golomb_shorten(&s->gb, ENERGYSIZE);
                 /* this is a hack as version 0 differed in defintion of get_sr_golomb_shorten */
@@ -504,6 +512,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                     residual_size--;
             }
 
+            /* calculate sample offset using means from previous blocks */
             if (s->nmean == 0)
                 coffset = s->offset[channel][0];
             else {
@@ -514,6 +523,8 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                 if (s->version >= 2)
                     coffset >>= FFMIN(1, s->bitshift);
             }
+
+            /* decode samples for this channel */
             if (cmd == FN_ZERO) {
                 for (i=0; i<s->blocksize; i++)
                     s->decoded[channel][i] = 0;
@@ -521,6 +532,8 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                 if ((ret = decode_subframe_lpc(s, cmd, channel, residual_size, coffset)) < 0)
                     return ret;
             }
+
+            /* update means with info from the current block */
             if (s->nmean > 0) {
                 int32_t sum = (s->version < 2) ? 0 : s->blocksize / 2;
                 for (i=0; i<s->blocksize; i++)
@@ -534,11 +547,16 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                 else
                     s->offset[channel][s->nmean - 1] = (sum / s->blocksize) << s->bitshift;
             }
+
+            /* copy wrap samples for use with next block */
             for (i=-s->nwrap; i<0; i++)
                 s->decoded[channel][i] = s->decoded[channel][i + s->blocksize];
 
+            /* shift samples to add in unused zero bits which were removed
+               during encoding */
             fix_bitshift(s, s->decoded[channel]);
 
+            /* if this is the last channel in the block, output the samples */
             s->cur_chan++;
             if (s->cur_chan == s->channels) {
                 samples = interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
