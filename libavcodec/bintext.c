@@ -131,6 +131,9 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
 
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
+                            FF_BUFFER_HINTS_PRESERVE |
+                            FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &s->frame)) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
