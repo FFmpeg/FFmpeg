@@ -28,6 +28,7 @@
 
 #include <limits.h>
 #include "avcodec.h"
+#include "bytestream.h"
 #include "get_bits.h"
 #include "golomb.h"
 
@@ -191,47 +192,37 @@ static void init_offset(ShortenContext *s)
             s->offset[chan][i] = mean;
 }
 
-static inline int get_le32(GetBitContext *gb)
+static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
+                              int header_size)
 {
-    return av_bswap32(get_bits_long(gb, 32));
-}
-
-static inline short get_le16(GetBitContext *gb)
-{
-    return av_bswap16(get_bits_long(gb, 16));
-}
-
-static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header_size)
-{
-    GetBitContext hb;
     int len;
     short wave_format;
 
-    init_get_bits(&hb, header, header_size*8);
-    if (get_le32(&hb) != MKTAG('R','I','F','F')) {
+
+    if (bytestream_get_le32(&header) != MKTAG('R','I','F','F')) {
         av_log(avctx, AV_LOG_ERROR, "missing RIFF tag\n");
         return -1;
     }
 
-    skip_bits_long(&hb, 32);    /* chunk_size */
+    header += 4; /* chunk size */;
 
-    if (get_le32(&hb) != MKTAG('W','A','V','E')) {
+    if (bytestream_get_le32(&header) != MKTAG('W','A','V','E')) {
         av_log(avctx, AV_LOG_ERROR, "missing WAVE tag\n");
         return -1;
     }
 
-    while (get_le32(&hb) != MKTAG('f','m','t',' ')) {
-        len = get_le32(&hb);
-        skip_bits(&hb, 8*len);
+    while (bytestream_get_le32(&header) != MKTAG('f','m','t',' ')) {
+        len = bytestream_get_le32(&header);
+        header += len;
     }
-    len = get_le32(&hb);
+    len = bytestream_get_le32(&header);
 
     if (len < 16) {
         av_log(avctx, AV_LOG_ERROR, "fmt chunk was too short\n");
         return -1;
     }
 
-    wave_format = get_le16(&hb);
+    wave_format = bytestream_get_le16(&header);
 
     switch (wave_format) {
         case WAVE_FORMAT_PCM:
@@ -241,11 +232,11 @@ static int decode_wave_header(AVCodecContext *avctx, uint8_t *header, int header
             return -1;
     }
 
-    skip_bits(&hb, 16); // skip channels    (already got from shorten header)
-    avctx->sample_rate = get_le32(&hb);
-    skip_bits(&hb, 32); // skip bit rate    (represents original uncompressed bit rate)
-    skip_bits(&hb, 16); // skip block align (not needed)
-    avctx->bits_per_coded_sample = get_le16(&hb);
+    header += 2;        // skip channels    (already got from shorten header)
+    avctx->sample_rate = bytestream_get_le32(&header);
+    header += 4;        // skip bit rate    (represents original uncompressed bit rate)
+    header += 2;        // skip block align (not needed)
+    avctx->bits_per_coded_sample = bytestream_get_le16(&header);
 
     if (avctx->bits_per_coded_sample != 16) {
         av_log(avctx, AV_LOG_ERROR, "unsupported number of bits per sample\n");
