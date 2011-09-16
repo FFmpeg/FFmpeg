@@ -862,8 +862,8 @@ static int init_pass2(MpegEncContext *s)
         /* find qscale */
         for(i=0; i<rcc->num_entries; i++){
             RateControlEntry *rce= &rcc->entry[i];
-            qscale[i]= get_qscale(s, &rcc->entry[i], rate_factor, i);
-            rcc->last_qscale_for[rce->pict_type] = qscale[i];
+            double q = get_qscale(s, &rcc->entry[i], rate_factor, i);
+            qscale[i] = get_diff_limited_q(s, rce, q);
         }
         assert(filter_size%2==1);
 
