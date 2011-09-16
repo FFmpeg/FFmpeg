@@ -663,7 +663,7 @@ static const OptionDef options[] = {
       "use sexagesimal format HOURS:MM:SS.MICROSECONDS for time units" },
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
-    { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format}, "set the output printing format (available formats are: default, json)" },
+    { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format}, "set the output printing format (available formats are: default, json)", "format" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
