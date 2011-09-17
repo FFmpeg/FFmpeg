@@ -2370,6 +2370,12 @@ case $target_os in
         enabled x86 && SHFLAGS="-mimpure-text $SHFLAGS"
         network_extralibs="-lsocket -lnsl"
         add_cppflags -D__EXTENSIONS__
+        # When using suncc to build, the Solaris linker will mark
+        # an executable with each instruction set encountered by
+        # the Solaris assembler.  As our libraries contain their own
+        # guards for processor-specific code, instead suppress
+        # generation of the HWCAPS ELF section on Solaris x86 only.
+        enabled_all suncc x86 && echo "hwcap_1 = OVERRIDE;" > mapfile && add_ldflags -Wl,-M,mapfile
         nm_opts='-P -g'
         ;;
     netbsd)
