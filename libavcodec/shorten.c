@@ -102,6 +102,7 @@ typedef struct ShortenContext {
     int blocksize;
     int bitindex;
     int32_t lpcqoffset;
+    int got_header;
 } ShortenContext;
 
 static av_cold int shorten_decode_init(AVCodecContext * avctx)
@@ -386,6 +387,8 @@ static int read_header(ShortenContext *s)
     s->cur_chan = 0;
     s->bitshift = 0;
 
+    s->got_header = 1;
+
     return 0;
 }
 
@@ -438,8 +441,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
     skip_bits(&s->gb, s->bitindex);
 
     /* process header or next subblock */
-    if (!s->blocksize)
-    {
+    if (!s->got_header) {
         if ((ret = read_header(s)) < 0)
             return ret;
         *data_size = 0;
