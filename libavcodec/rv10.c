@@ -547,7 +547,11 @@ static int rv10_decode_packet(AVCodecContext *avctx,
         if(MPV_frame_start(s, avctx) < 0)
             return -1;
         ff_er_frame_start(s);
+    } else {
+        if (s->current_picture_ptr->f.pict_type != s->pict_type)
+            return -1;
     }
+
 
     av_dlog(avctx, "qscale=%d\n", s->qscale);
 
