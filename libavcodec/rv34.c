@@ -1538,7 +1538,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             break;
     }
 
-    if(last){
+    if(last && s->current_picture_ptr){
         if(r->loop_filter)
             r->loop_filter(r, s->mb_height - 1);
         ff_er_frame_end(s);
