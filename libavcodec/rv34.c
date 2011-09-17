@@ -1312,6 +1312,10 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
             return AVERROR_INVALIDDATA;
         }
+        if (s->width != r->si.width || s->height != r->si.height) {
+            av_log(s->avctx, AV_LOG_ERROR, "Size mismatch\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     r->si.end = end;
