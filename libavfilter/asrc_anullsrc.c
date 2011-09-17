@@ -33,6 +33,8 @@ typedef struct {
     int64_t channel_layout;
     char   *sample_rate_str;
     int     sample_rate;
+    int nb_samples;             ///< number of samples per requested frame
+    int64_t pts;
 } ANullContext;
 
 #define OFFSET(x) offsetof(ANullContext, x)
@@ -42,6 +44,8 @@ static const AVOption anullsrc_options[]= {
     { "cl",             "set channel_layout", OFFSET(channel_layout_str), FF_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0 },
     { "sample_rate",    "set sample rate",    OFFSET(sample_rate_str)   , FF_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
     { "r",              "set sample rate",    OFFSET(sample_rate_str)   , FF_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
+    { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), FF_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
+    { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), FF_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
     { NULL },
 };
 
@@ -92,15 +96,29 @@ static int config_props(AVFilterLink *outlink)
     chans_nb = av_get_channel_layout_nb_channels(priv->channel_layout);
     av_get_channel_layout_string(buf, sizeof(buf), chans_nb, priv->channel_layout);
     av_log(outlink->src, AV_LOG_INFO,
-           "sample_rate:%d channel_layout:%"PRId64 " channel_layout_description:'%s'\n",
-           priv->sample_rate, priv->channel_layout, buf);
+           "sample_rate:%d channel_layout:%"PRId64 " channel_layout_description:'%s' nb_samples:%d\n",
+           priv->sample_rate, priv->channel_layout, buf, priv->nb_samples);
 
     return 0;
 }
 
-static int request_frame(AVFilterLink *link)
+static int request_frame(AVFilterLink *outlink)
 {
-    return -1;
+    ANullContext *null = outlink->src->priv;
+    AVFilterBufferRef *samplesref;
+
+    samplesref =
+        avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, null->nb_samples);
+    samplesref->pts = null->pts;
+    samplesref->pos = -1;
+    samplesref->audio->channel_layout = null->channel_layout;
+    samplesref->audio->sample_rate = outlink->sample_rate;
+
+    avfilter_filter_samples(outlink, avfilter_ref_buffer(samplesref, ~0));
+    avfilter_unref_buffer(samplesref);
+
+    null->pts += null->nb_samples;
+    return 0;
 }
 
 AVFilter avfilter_asrc_anullsrc = {
