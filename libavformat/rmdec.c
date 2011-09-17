@@ -801,7 +801,8 @@ ff_rm_retrieve_cache (AVFormatContext *s, AVIOContext *pb,
 
     assert (rm->audio_pkt_cnt > 0);
 
-    if (st->codec->codec_id == CODEC_ID_AAC)
+    if (ast->deint_id == DEINT_ID_VBRF ||
+        ast->deint_id == DEINT_ID_VBRS)
         av_get_packet(pb, pkt, ast->sub_packet_lengths[ast->sub_packet_cnt - rm->audio_pkt_cnt]);
     else {
         av_new_packet(pkt, st->codec->block_align);
