@@ -96,8 +96,8 @@ static int config_props(AVFilterLink *outlink)
     chans_nb = av_get_channel_layout_nb_channels(priv->channel_layout);
     av_get_channel_layout_string(buf, sizeof(buf), chans_nb, priv->channel_layout);
     av_log(outlink->src, AV_LOG_INFO,
-           "sample_rate:%d channel_layout:%"PRId64 " channel_layout_description:'%s' nb_samples:%d\n",
-           priv->sample_rate, priv->channel_layout, buf, priv->nb_samples);
+           "sample_rate:%d channel_layout:'%s' nb_samples:%d\n",
+           priv->sample_rate, buf, priv->nb_samples);
 
     return 0;
 }
