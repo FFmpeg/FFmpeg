@@ -469,8 +469,8 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
         goto fail;
     ic->pb = ic->pb ? ic->pb : pb; // don't leak custom pb if it wasn't set above
 
-    *ic_ptr = ic;
 fail:
+    *ic_ptr = ic;
     av_dict_free(&opts);
     return err;
 }
