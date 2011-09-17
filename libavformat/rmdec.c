@@ -192,8 +192,9 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             ast->audio_framesize = st->codec->block_align;
             st->codec->block_align = coded_framesize;
 
-            if(ast->audio_framesize >= UINT_MAX / sub_packet_h){
-                av_log(s, AV_LOG_ERROR, "ast->audio_framesize * sub_packet_h too large\n");
+            if (ast->audio_framesize <= 0 || sub_packet_h <= 0 ||
+                ast->audio_framesize >= UINT_MAX / sub_packet_h){
+                av_log(s, AV_LOG_ERROR, "ast->audio_framesize * sub_packet_h is invalid\n");
                 return -1;
             }
 
@@ -229,8 +230,9 @@ static int rm_read_audio_stream_info(AVFormatContext *s, AVIOContext *pb,
             if ((ret = rm_read_extradata(pb, st->codec, codecdata_length)) < 0)
                 return ret;
 
-            if(ast->audio_framesize >= UINT_MAX / sub_packet_h){
-                av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h too large\n");
+            if (ast->audio_framesize <= 0 || sub_packet_h <= 0 ||
+                ast->audio_framesize >= UINT_MAX / sub_packet_h){
+                av_log(s, AV_LOG_ERROR, "rm->audio_framesize * sub_packet_h is invalid\n");
                 return -1;
             }
 
