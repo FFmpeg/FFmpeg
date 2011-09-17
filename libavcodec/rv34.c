@@ -1303,15 +1303,15 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             r->cbp_luma   = av_realloc(r->cbp_luma,   r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_luma));
             r->cbp_chroma = av_realloc(r->cbp_chroma, r->s.mb_stride * r->s.mb_height * sizeof(*r->cbp_chroma));
             r->deblock_coefs = av_realloc(r->deblock_coefs, r->s.mb_stride * r->s.mb_height * sizeof(*r->deblock_coefs));
+            av_freep(&r->tmp_b_block_base);
         }
         s->pict_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
         if(MPV_frame_start(s, s->avctx) < 0)
             return -1;
         ff_er_frame_start(s);
-        if (!r->tmp_b_block_base || s->width != r->si.width || s->height != r->si.height) {
+        if (!r->tmp_b_block_base) {
             int i;
 
-            av_free(r->tmp_b_block_base); //realloc() doesn't guarantee alignment
             r->tmp_b_block_base = av_malloc(s->linesize * 48);
             for (i = 0; i < 2; i++)
                 r->tmp_b_block_y[i] = r->tmp_b_block_base + i * 16 * s->linesize;
