@@ -1439,6 +1439,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         slice_count = (*buf++) + 1;
         slices_hdr = buf + 4;
         buf += 8 * slice_count;
+        buf_size -= 1 + 8 * slice_count;
     }else
         slice_count = avctx->slice_count;
 
@@ -1459,7 +1460,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==FF_B_TYPE)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=FF_I_TYPE)
        ||  avctx->skip_frame >= AVDISCARD_ALL)
-        return buf_size;
+        return avpkt->size;
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5)
         return buf_size;
@@ -1511,7 +1512,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         }
         s->current_picture_ptr= NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
     }
-    return buf_size;
+    return avpkt->size;
 }
 
 av_cold int ff_rv34_decode_end(AVCodecContext *avctx)
