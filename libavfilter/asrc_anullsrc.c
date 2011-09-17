@@ -62,23 +62,23 @@ static const AVClass anullsrc_class = {
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
-    ANullContext *priv = ctx->priv;
+    ANullContext *null = ctx->priv;
     int ret;
 
-    priv->class = &anullsrc_class;
-    av_opt_set_defaults(priv);
+    null->class = &anullsrc_class;
+    av_opt_set_defaults(null);
 
-    if ((ret = (av_set_options_string(priv, args, "=", ":"))) < 0) {
+    if ((ret = (av_set_options_string(null, args, "=", ":"))) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
         return ret;
     }
 
-    if ((ret = ff_parse_sample_rate(&priv->sample_rate,
-                                     priv->sample_rate_str, ctx)) < 0)
+    if ((ret = ff_parse_sample_rate(&null->sample_rate,
+                                     null->sample_rate_str, ctx)) < 0)
         return ret;
 
-    if ((ret = ff_parse_channel_layout(&priv->channel_layout,
-                                        priv->channel_layout_str, ctx)) < 0)
+    if ((ret = ff_parse_channel_layout(&null->channel_layout,
+                                        null->channel_layout_str, ctx)) < 0)
         return ret;
 
     return 0;
@@ -86,18 +86,18 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
 
 static int config_props(AVFilterLink *outlink)
 {
-    ANullContext *priv = outlink->src->priv;
+    ANullContext *null = outlink->src->priv;
     char buf[128];
     int chans_nb;
 
-    outlink->sample_rate = priv->sample_rate;
-    outlink->channel_layout = priv->channel_layout;
+    outlink->sample_rate = null->sample_rate;
+    outlink->channel_layout = null->channel_layout;
 
-    chans_nb = av_get_channel_layout_nb_channels(priv->channel_layout);
-    av_get_channel_layout_string(buf, sizeof(buf), chans_nb, priv->channel_layout);
+    chans_nb = av_get_channel_layout_nb_channels(null->channel_layout);
+    av_get_channel_layout_string(buf, sizeof(buf), chans_nb, null->channel_layout);
     av_log(outlink->src, AV_LOG_INFO,
            "sample_rate:%d channel_layout:'%s' nb_samples:%d\n",
-           priv->sample_rate, buf, priv->nb_samples);
+           null->sample_rate, buf, null->nb_samples);
 
     return 0;
 }
