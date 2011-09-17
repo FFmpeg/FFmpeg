@@ -21,37 +21,61 @@
  * null audio source
  */
 
-#include "avfilter.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/opt.h"
+
+#include "avfilter.h"
+#include "internal.h"
 
 typedef struct {
+    const AVClass *class;
+    char   *channel_layout_str;
     int64_t channel_layout;
-    int64_t sample_rate;
+    char   *sample_rate_str;
+    int     sample_rate;
 } ANullContext;
+
+#define OFFSET(x) offsetof(ANullContext, x)
+
+static const AVOption anullsrc_options[]= {
+    { "channel_layout", "set channel_layout", OFFSET(channel_layout_str), FF_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0 },
+    { "cl",             "set channel_layout", OFFSET(channel_layout_str), FF_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0 },
+    { "sample_rate",    "set sample rate",    OFFSET(sample_rate_str)   , FF_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
+    { "r",              "set sample rate",    OFFSET(sample_rate_str)   , FF_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
+    { NULL },
+};
+
+static const char *anullsrc_get_name(void *ctx)
+{
+    return "anullsrc";
+}
+
+static const AVClass anullsrc_class = {
+    "ANullSrcContext",
+    anullsrc_get_name,
+    anullsrc_options
+};
 
 static int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     ANullContext *priv = ctx->priv;
-    char channel_layout_str[128] = "";
+    int ret;
 
-    priv->sample_rate = 44100;
-    priv->channel_layout = AV_CH_LAYOUT_STEREO;
+    priv->class = &anullsrc_class;
+    av_opt_set_defaults(priv);
 
-    if (args)
-        sscanf(args, "%"PRId64":%s", &priv->sample_rate, channel_layout_str);
-
-    if (priv->sample_rate < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid negative sample rate: %"PRId64"\n", priv->sample_rate);
-        return AVERROR(EINVAL);
+    if ((ret = (av_set_options_string(priv, args, "=", ":"))) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return ret;
     }
 
-    if (*channel_layout_str)
-        if (!(priv->channel_layout = av_get_channel_layout(channel_layout_str))
-            && sscanf(channel_layout_str, "%"PRId64, &priv->channel_layout) != 1) {
-            av_log(ctx, AV_LOG_ERROR, "Invalid value '%s' for channel layout\n",
-                   channel_layout_str);
-            return AVERROR(EINVAL);
-        }
+    if ((ret = ff_parse_sample_rate(&priv->sample_rate,
+                                     priv->sample_rate_str, ctx)) < 0)
+        return ret;
+
+    if ((ret = ff_parse_channel_layout(&priv->channel_layout,
+                                        priv->channel_layout_str, ctx)) < 0)
+        return ret;
 
     return 0;
 }
@@ -68,7 +92,7 @@ static int config_props(AVFilterLink *outlink)
     chans_nb = av_get_channel_layout_nb_channels(priv->channel_layout);
     av_get_channel_layout_string(buf, sizeof(buf), chans_nb, priv->channel_layout);
     av_log(outlink->src, AV_LOG_INFO,
-           "sample_rate:%"PRId64 " channel_layout:%"PRId64 " channel_layout_description:'%s'\n",
+           "sample_rate:%d channel_layout:%"PRId64 " channel_layout_description:'%s'\n",
            priv->sample_rate, priv->channel_layout, buf);
 
     return 0;

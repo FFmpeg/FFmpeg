@@ -312,26 +312,34 @@ value is "-1".
 Null audio source, never return audio frames. It is mainly useful as a
 template and to be employed in analysis / debugging tools.
 
-It accepts as optional parameter a string of the form
-@var{sample_rate}:@var{channel_layout}.
+It accepts an optional sequence of @var{key}=@var{value} pairs,
+separated by ":".
 
-@var{sample_rate} specify the sample rate, and defaults to 44100.
+The description of the accepted options follows.
 
-@var{channel_layout} specify the channel layout, and can be either an
-integer or a string representing a channel layout. The default value
-of @var{channel_layout} is 3, which corresponds to CH_LAYOUT_STEREO.
+@table @option
+
+@item sample_rate, s
+Specify the sample rate, and defaults to 44100.
+
+@item channel_layout, cl
+
+Specify the channel layout, and can be either an integer or a string
+representing a channel layout. The default value of @var{channel_layout}
+is "stereo".
 
 Check the channel_layout_map definition in
 @file{libavcodec/audioconvert.c} for the mapping between strings and
 channel layout values.
+@end table
 
 Follow some examples:
 @example
-#  set the sample rate to 48000 Hz and the channel layout to CH_LAYOUT_MONO.
-anullsrc=48000:4
+#  set the sample rate to 48000 Hz and the channel layout to AV_CH_LAYOUT_MONO.
+anullsrc=r=48000:cl=4
 
 # same as
-anullsrc=48000:mono
+anullsrc=r=48000:cl=mono
 @end example
 
 @c man end AUDIO SOURCES
