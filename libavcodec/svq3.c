@@ -221,7 +221,7 @@ static inline int svq3_decode_block(GetBitContext *gb, DCTELEM *block,
     for (limit = (16 >> intra); index < 16; index = limit, limit += 8) {
         for (; (vlc = svq3_get_ue_golomb(gb)) != 0; index++) {
 
-          if (vlc == INVALID_VLC)
+          if (vlc < 0)
               return -1;
 
           sign = (vlc & 0x1) - 1;
@@ -239,7 +239,7 @@ static inline int svq3_decode_block(GetBitContext *gb, DCTELEM *block,
                   level = ((vlc + 9) >> 2) - run;
               }
           } else {
-              if (vlc < 16) {
+              if (vlc < 16U) {
                   run   = svq3_dct_tables[intra][vlc].run;
                   level = svq3_dct_tables[intra][vlc].level;
               } else if (intra) {
@@ -571,7 +571,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
             for (i = 0; i < 16; i+=2) {
                 vlc = svq3_get_ue_golomb(&s->gb);
 
-                if (vlc >= 25){
+                if (vlc >= 25U){
                     av_log(h->s.avctx, AV_LOG_ERROR, "luma prediction:%d\n", vlc);
                     return -1;
                 }
@@ -643,7 +643,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     }
 
     if (!IS_INTRA16x16(mb_type) && (!IS_SKIP(mb_type) || s->pict_type == AV_PICTURE_TYPE_B)) {
-        if ((vlc = svq3_get_ue_golomb(&s->gb)) >= 48){
+        if ((vlc = svq3_get_ue_golomb(&s->gb)) >= 48U){
             av_log(h->s.avctx, AV_LOG_ERROR, "cbp_vlc=%d\n", vlc);
             return -1;
         }
@@ -653,7 +653,7 @@ static int svq3_decode_mb(SVQ3Context *svq3, unsigned int mb_type)
     if (IS_INTRA16x16(mb_type) || (s->pict_type != AV_PICTURE_TYPE_I && s->adaptive_quant && cbp)) {
         s->qscale += svq3_get_se_golomb(&s->gb);
 
-        if (s->qscale > 31){
+        if (s->qscale > 31U){
             av_log(h->s.avctx, AV_LOG_ERROR, "qscale:%d\n", s->qscale);
             return -1;
         }
@@ -757,7 +757,7 @@ static int svq3_decode_slice_header(AVCodecContext *avctx)
         skip_bits_long(&s->gb, 0);
     }
 
-    if ((i = svq3_get_ue_golomb(&s->gb)) == INVALID_VLC || i >= 3){
+    if ((i = svq3_get_ue_golomb(&s->gb)) >= 3U){
         av_log(h->s.avctx, AV_LOG_ERROR, "illegal slice type %d \n", i);
         return -1;
     }
