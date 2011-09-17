@@ -103,6 +103,7 @@ typedef struct ShortenContext {
     int bitindex;
     int32_t lpcqoffset;
     int got_header;
+    int got_quit_command;
 } ShortenContext;
 
 static av_cold int shorten_decode_init(AVCodecContext * avctx)
@@ -425,13 +426,15 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             memmove(s->bitstream, &s->bitstream[s->bitstream_index], s->bitstream_size);
             s->bitstream_index=0;
         }
-        memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf, buf_size);
+        if (buf)
+            memcpy(&s->bitstream[s->bitstream_index + s->bitstream_size], buf, buf_size);
         buf= &s->bitstream[s->bitstream_index];
         buf_size += s->bitstream_size;
         s->bitstream_size= buf_size;
 
-        /* do not decode until buffer has at least max_framesize bytes */
-        if(buf_size < s->max_framesize){
+        /* do not decode until buffer has at least max_framesize bytes or
+           the end of the file has been reached */
+        if (buf_size < s->max_framesize && avpkt->data) {
             *data_size = 0;
             return input_buf_size;
         }
@@ -445,20 +448,31 @@ static int shorten_decode_frame(AVCodecContext *avctx,
         if ((ret = read_header(s)) < 0)
             return ret;
         *data_size = 0;
+        goto finish_frame;
     }
-    else
-    {
+
+    /* if quit command was read previously, don't decode anything */
+    if (s->got_quit_command) {
+        *data_size = 0;
+        return avpkt->size;
+    }
+
+    s->cur_chan = 0;
+    while (s->cur_chan < s->channels) {
         int cmd;
         int len;
+
+        if (get_bits_left(&s->gb) < 3+FNSIZE) {
+            *data_size = 0;
+            break;
+        }
+
         cmd = get_ur_golomb_shorten(&s->gb, FNSIZE);
 
         if (cmd > FN_VERBATIM) {
             av_log(avctx, AV_LOG_ERROR, "unknown shorten function %d\n", cmd);
-            if (s->bitstream_size > 0) {
-                s->bitstream_index++;
-                s->bitstream_size--;
-            }
-            return -1;
+            *data_size = 0;
+            break;
         }
 
         if (!is_audio_command[cmd]) {
@@ -488,9 +502,13 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                     break;
                 }
                 case FN_QUIT:
+                    s->got_quit_command = 1;
                     break;
             }
-            *data_size = 0;
+            if (cmd == FN_BLOCKSIZE || cmd == FN_QUIT) {
+                *data_size = 0;
+                break;
+            }
         } else {
             /* process audio command */
             int residual_size = 0;
@@ -559,14 +577,14 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                     return AVERROR(EINVAL);
                 }
                 samples = interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
-                s->cur_chan = 0;
                 *data_size = out_size;
-            } else {
-                *data_size = 0;
             }
         }
     }
+    if (s->cur_chan < s->channels)
+        *data_size = 0;
 
+finish_frame:
     s->bitindex = get_bits_count(&s->gb) - 8*((get_bits_count(&s->gb))/8);
     i= (get_bits_count(&s->gb))/8;
     if (i > buf_size) {
@@ -606,5 +624,6 @@ AVCodec ff_shorten_decoder = {
     .init           = shorten_decode_init,
     .close          = shorten_decode_close,
     .decode         = shorten_decode_frame,
+    .capabilities   = CODEC_CAP_DELAY,
     .long_name= NULL_IF_CONFIG_SMALL("Shorten"),
 };
