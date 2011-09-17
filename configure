@@ -168,6 +168,7 @@ External library support:
   --enable-frei0r          enable frei0r video filtering
   --enable-gnutls          enable gnutls [no]
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
+  --enable-libass          enable libass subtitles rendering [no]
   --enable-libcelt         enable CELT decoding via libcelt [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
@@ -1008,6 +1009,7 @@ CONFIG_LIST="
     hardcoded_tables
     huffman
     libaacplus
+    libass
     libcdio
     libcelt
     libdc1394
@@ -1613,6 +1615,7 @@ udp_protocol_deps="network"
 
 # filters
 amovie_filter_deps="avcodec avformat"
+ass_filter_deps="libass"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
@@ -3057,6 +3060,7 @@ enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
+enabled libass     && require_pkg_config libass ass/ass.h ass_library_init
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
 enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdirac   && require_pkg_config dirac                          \
@@ -3395,6 +3399,7 @@ echo "AVISynth enabled          ${avisynth-no}"
 echo "frei0r enabled            ${frei0r-no}"
 echo "gnutls enabled            ${gnutls-no}"
 echo "libaacplus enabled        ${libaacplus-no}"
+echo "libass enabled            ${libass-no}"
 echo "libcdio support           ${libcdio-no}"
 echo "libcelt enabled           ${libcelt-no}"
 echo "libdc1394 support         ${libdc1394-no}"

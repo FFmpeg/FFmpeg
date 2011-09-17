@@ -574,6 +574,22 @@ build.
 
 Below is a description of the currently available video filters.
 
+@section ass
+
+Draw ASS (Advanced Substation Alpha) subtitles on top of input video
+using the libass library.
+
+To enable compilation of this filter you need to configure FFmpeg with
+@code{--enable-libass}.
+
+This filter accepts in input the name of the ass file to render.
+
+For example, to render the file @file{sub.ass} on top of the input
+video, use the command:
+@example
+ass=sub.ass
+@end example
+
 @section blackframe
 
 Detect frames that are (almost) completely black. Can be useful to

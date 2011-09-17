@@ -124,6 +124,7 @@ easier to use. The changes are:
 - compact and csv output in ffprobe
 - pan audio filter
 - IFF Amiga Continuous Bitmap (ACBM) decoder
+- ass filter
 
 
 version 0.8:

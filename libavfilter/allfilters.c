@@ -51,6 +51,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ABUFFERSINK, abuffersink, asink);
     REGISTER_FILTER (ANULLSINK,   anullsink,   asink);
 
+    REGISTER_FILTER (ASS,         ass,  vf);
     REGISTER_FILTER (BLACKFRAME,  blackframe,  vf);
     REGISTER_FILTER (BOXBLUR,     boxblur,     vf);
     REGISTER_FILTER (COPY,        copy,        vf);
