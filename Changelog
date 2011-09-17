@@ -57,6 +57,7 @@ easier to use. The changes are:
 - BIN/XBIN/ADF/IDF text file decoder
 - aconvert audio filter added
 - audio support to lavfi input device added
+- libcdio-paranoia input device for audio CD grabbing
 
 
 version 0.8:

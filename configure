@@ -167,6 +167,7 @@ External library support:
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
+  --enable-libcdio         enable audio CD grabbing with libcdio
   --enable-libdc1394       enable IIDC-1394 grabbing using libdc1394
                            and libraw1394 [no]
   --enable-libdirac        enable Dirac support via libdirac [no]
@@ -992,6 +993,7 @@ CONFIG_LIST="
     h264pred
     hardcoded_tables
     huffman
+    libcdio
     libcelt
     libdc1394
     libdirac
@@ -1548,6 +1550,7 @@ dv1394_indev_deps="dv1394 dv_demuxer"
 fbdev_indev_deps="linux_fb_h"
 jack_indev_deps="jack_jack_h sem_timedwait"
 lavfi_indev_deps="avfilter"
+libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 openal_indev_deps="openal"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
@@ -2669,6 +2672,7 @@ die_license_disabled() {
     enabled $1 || { enabled $2 && die "$2 is $1 and --enable-$1 is not specified."; }
 }
 
+die_license_disabled gpl libcdio
 die_license_disabled gpl libx264
 die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
@@ -3092,6 +3096,9 @@ enabled jack_indev && check_lib2 jack/jack.h jack_client_open -ljack && check_fu
 
 enabled_any sndio_indev sndio_outdev && check_lib2 sndio.h sio_open -lsndio
 
+enabled libcdio &&
+    check_lib2 "cdio/cdda.h cdio/paranoia.h" cdio_cddap_open "-lcdio_paranoia -lcdio_cdda -lcdio"
+
 enabled x11grab                         &&
 check_header X11/Xlib.h                 &&
 check_header X11/extensions/XShm.h      &&
@@ -3315,6 +3322,7 @@ echo "libvdpau enabled          ${vdpau-no}"
 echo "AVISynth enabled          ${avisynth-no}"
 echo "libcelt enabled           ${libcelt-no}"
 echo "frei0r enabled            ${frei0r-no}"
+echo "libcdio support           ${libcdio-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"

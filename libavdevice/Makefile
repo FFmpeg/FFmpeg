@@ -33,6 +33,7 @@ OBJS-$(CONFIG_VFWCAP_INDEV)              += vfwcap.o
 OBJS-$(CONFIG_X11_GRAB_DEVICE_INDEV)     += x11grab.o
 
 # external libraries
+OBJS-$(CONFIG_LIBCDIO_INDEV)             += libcdio.o
 OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa-audio.h

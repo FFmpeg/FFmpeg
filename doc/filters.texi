@@ -1680,26 +1680,26 @@ the PTS of the first video frame in the video, NAN if undefined
 the time of the first video frame in the video, NAN if undefined
 
 @item pict_type
-the picture type of the filtered frame, can assume one of the following
+the type of the filtered frame, can assume one of the following
 values:
 @table @option
-@item PICT_TYPE_I
-@item PICT_TYPE_P
-@item PICT_TYPE_B
-@item PICT_TYPE_S
-@item PICT_TYPE_SI
-@item PICT_TYPE_SP
-@item PICT_TYPE_BI
+@item I
+@item P
+@item B
+@item S
+@item SI
+@item SP
+@item BI
 @end table
 
 @item interlace_type
 the frame interlace type, can assume one of the following values:
 @table @option
-@item INTERLACE_TYPE_P
+@item PROGRESSIVE
 the frame is progressive (not interlaced)
-@item INTERLACE_TYPE_T
+@item TOPFIRST
 the frame is top-field-first
-@item INTERLACE_TYPE_B
+@item BOTTOMFIRST
 the frame is bottom-field-first
 @end table
 
@@ -1726,7 +1726,7 @@ select=1
 select=0
 
 # select only I-frames
-select='eq(pict_type\,PICT_TYPE_I)'
+select='eq(pict_type\,I)'
 
 # select one frame every 100
 select='not(mod(n\,100))'
@@ -1735,7 +1735,7 @@ select='not(mod(n\,100))'
 select='gte(t\,10)*lte(t\,20)'
 
 # select only I frames contained in the 10-20 time interval
-select='gte(t\,10)*lte(t\,20)*eq(pict_type\,PICT_TYPE_I)'
+select='gte(t\,10)*lte(t\,20)*eq(pict_type\,I)'
 
 # select frames with a minimum distance of 10 seconds
 select='isnan(prev_selected_t)+gte(t-prev_selected_t\,10)'

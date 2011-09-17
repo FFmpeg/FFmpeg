@@ -51,9 +51,12 @@ int ff_raw_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
             st->codec->channels = 1;
 
-            if (s1->sample_rate)
+            if (id == CODEC_ID_ADPCM_G722)
+                st->codec->sample_rate = 16000;
+
+            if (s1 && s1->sample_rate)
                 st->codec->sample_rate = s1->sample_rate;
-            if (s1->channels)
+            if (s1 && s1->channels)
                 st->codec->channels    = s1->channels;
 
             st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
@@ -165,48 +168,22 @@ fail:
 
 /* Note: Do not forget to add new entries to the Makefile as well. */
 
-static const AVOption audio_options[] = {
-    { "sample_rate", "", offsetof(RawAudioDemuxerContext, sample_rate), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { "channels",    "", offsetof(RawAudioDemuxerContext, channels),    FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_DECODING_PARAM },
-    { NULL },
-};
-
-const AVClass ff_rawaudio_demuxer_class = {
-    .class_name     = "rawaudio demuxer",
-    .item_name      = av_default_item_name,
-    .option         = audio_options,
-    .version        = LIBAVUTIL_VERSION_INT,
-};
-
 #define OFFSET(x) offsetof(FFRawVideoDemuxerContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
-static const AVOption video_options[] = {
-    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "pixel_format", "", OFFSET(pixel_format), FF_OPT_TYPE_STRING, {.str = "yuv420p"}, 0, 0, DEC },
-    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+const AVOption ff_rawvideo_options[] = {
+    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC},
     { NULL },
-};
-#undef OFFSET
-#undef DEC
-
-const AVClass ff_rawvideo_demuxer_class = {
-    .class_name     = "rawvideo demuxer",
-    .item_name      = av_default_item_name,
-    .option         = video_options,
-    .version        = LIBAVUTIL_VERSION_INT,
 };
 
 #if CONFIG_G722_DEMUXER
 AVInputFormat ff_g722_demuxer = {
     .name           = "g722",
     .long_name      = NULL_IF_CONFIG_SMALL("raw G.722"),
-    .priv_data_size = sizeof(RawAudioDemuxerContext),
     .read_header    = ff_raw_read_header,
     .read_packet    = ff_raw_read_partial_packet,
     .flags= AVFMT_GENERIC_INDEX,
     .extensions = "g722,722",
     .value = CODEC_ID_ADPCM_G722,
-    .priv_class = &ff_rawaudio_demuxer_class,
 };
 #endif
 
