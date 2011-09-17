@@ -582,6 +582,8 @@ typedef struct H264Context{
     int cur_chroma_format_idc;
 
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
+
+    int sync;                      ///< did we had a keyframe or recovery point
 }H264Context;
 
 

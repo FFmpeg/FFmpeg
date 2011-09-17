@@ -2262,6 +2262,7 @@ static void flush_dpb(AVCodecContext *avctx){
     h->s.first_field= 0;
     ff_h264_reset_sei(h);
     ff_mpeg_flush(avctx);
+    h->sync= 0;
 }
 
 static int init_poc(H264Context *h){
@@ -3711,6 +3712,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             s->current_picture_ptr->f.key_frame |=
                     (hx->nal_unit_type == NAL_IDR_SLICE) ||
                     (h->sei_recovery_frame_cnt >= 0);
+            h->sync |= !!s->current_picture_ptr->f.key_frame;
+            s->current_picture_ptr->sync = h->sync;
 
             if (h->current_slice == 1) {
                 if(!(s->flags2 & CODEC_FLAG2_CHUNKS)) {
@@ -3914,13 +3917,13 @@ static int decode_frame(AVCodecContext *avctx,
 
         field_end(h, 0);
 
-        if (!h->next_output_pic) {
-            /* Wait for second field. */
-            *data_size = 0;
-
-        } else {
-            *data_size = sizeof(AVFrame);
-            *pict = *(AVFrame*)h->next_output_pic;
+        *data_size = 0; /* Wait for second field. */
+        if (h->next_output_pic && h->next_output_pic->sync) {
+            h->sync |= 2*!!h->next_output_pic->f.key_frame;
+            if(h->sync>1 || h->next_output_pic->f.pict_type != AV_PICTURE_TYPE_B){
+                *data_size = sizeof(AVFrame);
+                *pict = *(AVFrame*)h->next_output_pic;
+            }
         }
     }
 
