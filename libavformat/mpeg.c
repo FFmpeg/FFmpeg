@@ -106,6 +106,7 @@ static int mpegps_read_header(AVFormatContext *s,
     MpegDemuxContext *m = s->priv_data;
     const char *sofdec = "Sofdec";
     int v, i = 0;
+    int64_t last_pos = avio_tell(s->pb);
 
     m->header_state = 0xff;
     s->ctx_flags |= AVFMTCTX_NOHEADER;
@@ -118,6 +119,9 @@ static int mpegps_read_header(AVFormatContext *s,
     } while (v == sofdec[i] && i++ < 6);
 
     m->sofdec = (m->sofdec == 6) ? 1 : 0;
+
+    if (!m->sofdec)
+       avio_seek(s->pb, last_pos, SEEK_SET);
 
     /* no need to do more */
     return 0;
