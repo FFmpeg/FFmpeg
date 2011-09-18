@@ -3714,9 +3714,19 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             if((err = decode_slice_header(hx, h)))
                break;
 
+            if (h->sei_recovery_frame_cnt >= 0) {
+                h->recovery_frame = (h->frame_num + h->sei_recovery_frame_cnt) %
+                                    (1 << h->sps.log2_max_frame_num);
+            }
+
             s->current_picture_ptr->f.key_frame |=
-                    (hx->nal_unit_type == NAL_IDR_SLICE) ||
-                    (h->sei_recovery_frame_cnt >= 0);
+                    (hx->nal_unit_type == NAL_IDR_SLICE);
+
+            if (h->recovery_frame == h->frame_num) {
+                s->current_picture_ptr->f.key_frame |= 1;
+                h->recovery_frame = -1;
+            }
+
             h->sync |= !!s->current_picture_ptr->f.key_frame;
             h->sync |= 3*!!(s->flags2 & CODEC_FLAG2_SHOW_ALL);
             s->current_picture_ptr->sync = h->sync;

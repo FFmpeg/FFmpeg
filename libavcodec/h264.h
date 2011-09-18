@@ -571,6 +571,13 @@ typedef struct H264Context{
      * frames.
      */
     int sei_recovery_frame_cnt;
+    /**
+     * recovery_frame is the frame_num at which the next frame should
+     * be fully constructed.
+     *
+     * Set to -1 when not expecting a recovery point.
+     */
+    int recovery_frame;
 
     int luma_weight_flag[2];   ///< 7.4.3.2 luma_weight_lX_flag
     int chroma_weight_flag[2]; ///< 7.4.3.2 chroma_weight_lX_flag
