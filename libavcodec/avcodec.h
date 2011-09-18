@@ -1185,7 +1185,7 @@ typedef struct AVFrame {
  * New fields can be added to the end with minor version bumps.
  * Removal, reordering and changes to existing fields require a major
  * version bump.
- * Please use AVOptions (av_opt_set/get*()) to access these fields from user
+ * Please use AVOptions (av_opt* / av_set/get*()) to access these fields from user
  * applications.
  * sizeof(AVCodecContext) must not be used outside libav*.
  */
