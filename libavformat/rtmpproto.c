@@ -925,7 +925,7 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     uint32_t ts;
     const uint8_t *buf_temp = buf;
 
-    if (size < 11) {
+    if (!rt->flv_off && size < 11) {
         av_log(s, AV_LOG_DEBUG, "FLV packet too small %d\n", size);
         return 0;
     }
@@ -966,20 +966,22 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
         if (rt->flv_size - rt->flv_off > size_temp) {
             bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, size_temp);
             rt->flv_off += size_temp;
+            size_temp = 0;
         } else {
             bytestream_get_buffer(&buf_temp, rt->flv_data + rt->flv_off, rt->flv_size - rt->flv_off);
+            size_temp   -= rt->flv_size - rt->flv_off;
             rt->flv_off += rt->flv_size - rt->flv_off;
         }
 
         if (rt->flv_off == rt->flv_size) {
             bytestream_get_be32(&buf_temp);
-
+            size_temp -= 4;
             ff_rtmp_packet_write(rt->stream, &rt->out_pkt, rt->chunk_size, rt->prev_pkt[1]);
             ff_rtmp_packet_destroy(&rt->out_pkt);
             rt->flv_size = 0;
             rt->flv_off = 0;
         }
-    } while (buf_temp - buf < size_temp);
+    } while (buf_temp - buf < size);
     return size;
 }
 
