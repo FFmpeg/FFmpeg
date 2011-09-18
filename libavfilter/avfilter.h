@@ -747,10 +747,7 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t * const data[4], const int lin
  * @param link           the output link to the filter from which the buffer will
  *                       be requested
  * @param perms          the required access permissions
- * @param sample_fmt     the format of each sample in the buffer to allocate
  * @param nb_samples     the number of samples per channel
- * @param channel_layout the number and type of channels per sample in the buffer to allocate
- * @param planar         audio data layout - planar or packed
  * @return               A reference to the samples. This must be unreferenced with
  *                       avfilter_unref_buffer when you are finished with it.
  */
