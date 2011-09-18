@@ -654,12 +654,6 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
             x += delta.x >> 6;
         }
 
-        if (x + glyph->bbox.xMax >= width) {
-            str_w = FFMAX(str_w, x - dtext->x);
-            y += text_height;
-            x = dtext->x;
-        }
-
         /* save position */
         dtext->positions[i].x = x + glyph->bitmap_left;
         dtext->positions[i].y = y - glyph->bitmap_top + y_max;
