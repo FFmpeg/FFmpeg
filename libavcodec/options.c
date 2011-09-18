@@ -123,6 +123,7 @@ static const AVOption options[]={
 {"sgop", "strictly enforce gop size", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_STRICT_GOP }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"noout", "skip bitstream encoding", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_NO_OUTPUT }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"local_header", "place global headers at every keyframe instead of in extradata", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_LOCAL_HEADER }, INT_MIN, INT_MAX, V|E, "flags2"},
+{"showall", "Show all frames before the first keyframe", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SHOW_ALL }, INT_MIN, INT_MAX, V|D, "flags2"},
 {"sub_id", NULL, OFFSET(sub_id), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"me_method", "set motion estimation method", OFFSET(me_method), FF_OPT_TYPE_INT, {.dbl = ME_EPZS }, INT_MIN, INT_MAX, V|E, "me_method"},
 {"zero", "zero motion estimation (fastest)", 0, FF_OPT_TYPE_CONST, {.dbl = ME_ZERO }, INT_MIN, INT_MAX, V|E, "me_method" },

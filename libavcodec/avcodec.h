@@ -608,6 +608,7 @@ typedef struct RcOverride{
 #define CODEC_FLAG2_LOCAL_HEADER  0x00000008 ///< Place global headers at every keyframe instead of in extradata.
 #define CODEC_FLAG2_SKIP_RD       0x00004000 ///< RD optimal MB level residual skipping
 #define CODEC_FLAG2_CHUNKS        0x00008000 ///< Input bitstream might be truncated at a packet boundaries instead of only at frame boundaries.
+#define CODEC_FLAG2_SHOW_ALL      0x00400000 ///< Show all frames before the first keyframe
 /**
  * @defgroup deprecated_flags Deprecated codec flags
  * Use corresponding private codec options instead.
