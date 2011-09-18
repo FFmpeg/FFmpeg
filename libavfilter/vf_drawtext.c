@@ -30,6 +30,7 @@
 #include <time.h>
 
 #include "libavutil/colorspace.h"
+#include "libavutil/eval.h"
 #include "libavutil/file.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -45,6 +46,54 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
+static const char *var_names[] = {
+    "E",
+    "PHI",
+    "PI",
+    "w",                      ///< width  of the input video
+    "h",                      ///< height of the input video
+    "tw", "text_w",           ///< width  of the rendered text
+    "th", "text_h",           ///< height of the rendered text
+    "max_glyph_w",            ///< max glyph width
+    "max_glyph_h",            ///< max glyph height
+    "max_glyph_a", "ascent",  ///< max glyph ascent
+    "max_glyph_d", "descent", ///< min glyph descent
+    "line_h", "lh",           ///< line height, same as max_glyph_h
+    "sar",
+    "dar",
+    "hsub",
+    "vsub",
+    "x",
+    "y",
+    "n",                      ///< number of frame
+    "t",                      ///< timestamp expressed in seconds
+    NULL
+};
+
+enum var_name {
+    VAR_E,
+    VAR_PHI,
+    VAR_PI,
+    VAR_W,
+    VAR_H,
+    VAR_TW, VAR_TEXT_W,
+    VAR_TH, VAR_TEXT_H,
+    VAR_MAX_GLYPH_W,
+    VAR_MAX_GLYPH_H,
+    VAR_MAX_GLYPH_A, VAR_ASCENT,
+    VAR_MAX_GLYPH_D, VAR_DESCENT,
+    VAR_LINE_H, VAR_LH,
+    VAR_SAR,
+    VAR_DAR,
+    VAR_HSUB,
+    VAR_VSUB,
+    VAR_X,
+    VAR_Y,
+    VAR_N,
+    VAR_T,
+    VAR_VARS_NB
+};
+
 typedef struct {
     const AVClass *class;
     uint8_t *fontfile;              ///< font to be used
@@ -57,6 +106,11 @@ typedef struct {
     char *textfile;                 ///< file with text to be drawn
     int x;                          ///< x position to start drawing text
     int y;                          ///< y position to start drawing text
+    char *x_expr;                   ///< expression for x position
+    char *y_expr;                   ///< expression for y position
+    AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
+    int max_glyph_w;                ///< max glyph width
+    int max_glyph_h;                ///< max glyph heigth
     int shadowx, shadowy;
     unsigned int fontsize;          ///< font size to use
     char *fontcolor_string;         ///< font color as string
@@ -82,6 +136,7 @@ typedef struct {
     uint8_t rgba_map[4];            ///< map RGBA offsets to the positions in the packed RGBA format
     uint8_t *box_line[4];           ///< line used for filling the box background
     int64_t basetime;               ///< base pts time in the real world for display
+    double var_values[VAR_VARS_NB];
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -95,8 +150,8 @@ static const AVOption drawtext_options[]= {
 {"shadowcolor", "set shadow color",  OFFSET(shadowcolor_string), FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
 {"box",      "set box",              OFFSET(draw_box),           FF_OPT_TYPE_INT,    {.dbl=0},     0,        1        },
 {"fontsize", "set font size",        OFFSET(fontsize),           FF_OPT_TYPE_INT,    {.dbl=16},    1,        INT_MAX  },
-{"x",        "set x",                OFFSET(x),                  FF_OPT_TYPE_INT,    {.dbl=0},     0,        INT_MAX  },
-{"y",        "set y",                OFFSET(y),                  FF_OPT_TYPE_INT,    {.dbl=0},     0,        INT_MAX  },
+{"x",        "set x expression",     OFFSET(x_expr),             FF_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX },
+{"y",        "set y expression",     OFFSET(y_expr),             FF_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX },
 {"shadowx",  "set x",                OFFSET(shadowx),            FF_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"shadowy",  "set y",                OFFSET(shadowy),            FF_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"tabsize",  "set tab size",         OFFSET(tabsize),            FF_OPT_TYPE_INT,    {.dbl=4},     0,        INT_MAX  },
@@ -348,12 +403,18 @@ static av_cold void uninit(AVFilterContext *ctx)
     DrawTextContext *dtext = ctx->priv;
     int i;
 
+    av_expr_free(dtext->x_pexpr); dtext->x_pexpr = NULL;
+    av_expr_free(dtext->y_pexpr); dtext->y_pexpr = NULL;
+
     av_freep(&dtext->fontfile);
     av_freep(&dtext->text);
     av_freep(&dtext->expanded_text);
     av_freep(&dtext->fontcolor_string);
     av_freep(&dtext->boxcolor_string);
     av_freep(&dtext->positions);
+    av_freep(&dtext->x_expr);
+    av_freep(&dtext->y_expr);
+
     dtext->nb_positions = 0;
     av_freep(&dtext->shadowcolor_string);
     av_tree_enumerate(dtext->glyphs, NULL, NULL, glyph_enu_free);
@@ -371,6 +432,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int config_input(AVFilterLink *inlink)
 {
+    AVFilterContext *ctx = inlink->dst;
     DrawTextContext *dtext = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
     int ret;
@@ -397,6 +459,26 @@ static int config_input(AVFilterLink *inlink)
         dtext->shadowcolor[2] = RGB_TO_V_CCIR(rgba[0], rgba[1], rgba[2], 0);
         dtext->shadowcolor[3] = rgba[3];
     }
+
+    dtext->var_values[VAR_E]     = M_E;
+    dtext->var_values[VAR_PHI]   = M_PHI;
+    dtext->var_values[VAR_PI]    = M_PI;
+    dtext->var_values[VAR_W]     = inlink->w;
+    dtext->var_values[VAR_H]     = inlink->h;
+    dtext->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;
+    dtext->var_values[VAR_DAR]   = (double)inlink->w / inlink->h * dtext->var_values[VAR_SAR];
+    dtext->var_values[VAR_HSUB]  = 1<<pix_desc->log2_chroma_w;
+    dtext->var_values[VAR_VSUB]  = 1<<pix_desc->log2_chroma_h;
+    dtext->var_values[VAR_X]     = NAN;
+    dtext->var_values[VAR_Y]     = NAN;
+    dtext->var_values[VAR_N]     = 0;
+    dtext->var_values[VAR_T]     = NAN;
+
+    if ((ret = av_expr_parse(&dtext->x_pexpr, dtext->x_expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&dtext->y_pexpr, dtext->y_expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        return AVERROR(EINVAL);
 
     return 0;
 }
@@ -441,6 +523,9 @@ static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
 
     for (r = 0; r < bitmap->rows && r+y < height; r++) {
         for (c = 0; c < bitmap->width && c+x < width; c++) {
+            if (c+x < 0 || r+y < 0)
+                continue;
+
             /* get intensity value in the glyph bitmap (source) */
             src_val = GET_BITMAP_VAL(r, c);
             if (!src_val)
@@ -471,6 +556,8 @@ static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
 
     for (r = 0; r < bitmap->rows && r+y < height; r++) {
         for (c = 0; c < bitmap->width && c+x < width; c++) {
+            if (c+x < 0 || r+y < 0)
+                continue;
             /* get intensity value in the glyph bitmap (source) */
             src_val = GET_BITMAP_VAL(r, c);
             if (!src_val)
@@ -521,7 +608,7 @@ static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
 {
     char *text = dtext->expanded_text;
     uint32_t code = 0;
-    int i;
+    int i, x1, y1;
     uint8_t *p;
     Glyph *glyph = NULL;
 
@@ -540,13 +627,16 @@ static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
             glyph->bitmap.pixel_mode != FT_PIXEL_MODE_GRAY)
             return AVERROR(EINVAL);
 
+        x1 = dtext->positions[i].x+dtext->x+x;
+        y1 = dtext->positions[i].y+dtext->y+y;
+
         if (dtext->is_packed_rgb) {
             draw_glyph_rgb(picref, &glyph->bitmap,
-                           dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
+                           x1, y1, width, height,
                            dtext->pixel_step[0], rgbcolor, dtext->rgba_map);
         } else {
             draw_glyph_yuv(picref, &glyph->bitmap,
-                           dtext->positions[i].x+x, dtext->positions[i].y+y, width, height,
+                           x1, y1, width, height,
                            yuvcolor, dtext->hsub, dtext->vsub);
         }
     }
@@ -560,11 +650,12 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     DrawTextContext *dtext = ctx->priv;
     uint32_t code = 0, prev_code = 0;
     int x = 0, y = 0, i = 0, ret;
-    int text_height;
+    int max_text_line_w = 0, len;
+    int box_w, box_h;
     char *text = dtext->text;
     uint8_t *p;
-    int str_w = 0, len;
     int y_min = 32000, y_max = -32000;
+    int x_min = 32000, x_max = -32000;
     FT_Vector delta;
     Glyph *glyph = NULL, *prev_glyph = NULL;
     Glyph dummy = { 0 };
@@ -607,8 +698,8 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         dtext->nb_positions = len;
     }
 
-    x = dtext->x;
-    y = dtext->y;
+    x = 0;
+    y = 0;
 
     /* load and cache glyphs */
     for (i = 0, p = text; *p; i++) {
@@ -622,8 +713,11 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
         y_min = FFMIN(glyph->bbox.yMin, y_min);
         y_max = FFMAX(glyph->bbox.yMax, y_max);
+        x_min = FFMIN(glyph->bbox.xMin, x_min);
+        x_max = FFMAX(glyph->bbox.xMax, x_max);
     }
-    text_height = y_max - y_min;
+    dtext->max_glyph_h = y_max - y_min;
+    dtext->max_glyph_w = x_max - x_min;
 
     /* compute and save position for each glyph */
     glyph = NULL;
@@ -636,9 +730,9 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
         prev_code = code;
         if (is_newline(code)) {
-            str_w = FFMAX(str_w, x - dtext->x);
-            y += text_height;
-            x = dtext->x;
+            max_text_line_w = FFMAX(max_text_line_w, x);
+            y += dtext->max_glyph_h;
+            x = 0;
             continue;
         }
 
@@ -661,12 +755,31 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         else              x += glyph->advance;
     }
 
-    str_w = FFMIN(width - dtext->x - 1, FFMAX(str_w, x - dtext->x));
-    y     = FFMIN(y + text_height, height - 1);
+    max_text_line_w = FFMAX(x, max_text_line_w);
+
+    dtext->var_values[VAR_TW] = dtext->var_values[VAR_TEXT_W] = max_text_line_w;
+    dtext->var_values[VAR_TH] = dtext->var_values[VAR_TEXT_H] = y + dtext->max_glyph_h;
+
+    dtext->var_values[VAR_MAX_GLYPH_W] = dtext->max_glyph_w;
+    dtext->var_values[VAR_MAX_GLYPH_H] = dtext->max_glyph_h;
+    dtext->var_values[VAR_MAX_GLYPH_A] = dtext->var_values[VAR_ASCENT ] = y_max;
+    dtext->var_values[VAR_MAX_GLYPH_D] = dtext->var_values[VAR_DESCENT] = y_min;
+
+    dtext->var_values[VAR_LINE_H] = dtext->var_values[VAR_LH] = dtext->max_glyph_h;
+
+    dtext->x = dtext->var_values[VAR_X] = av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+    dtext->y = dtext->var_values[VAR_Y] = av_expr_eval(dtext->y_pexpr, dtext->var_values, NULL);
+    dtext->x = dtext->var_values[VAR_X] = av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+
+    dtext->x &= ~((1 << dtext->hsub) - 1);
+    dtext->y &= ~((1 << dtext->vsub) - 1);
+
+    box_w = FFMIN(width - 1 , max_text_line_w);
+    box_h = FFMIN(height - 1, y + dtext->max_glyph_h);
 
     /* draw box */
     if (dtext->draw_box)
-        drawbox(picref, dtext->x, dtext->y, str_w, y-dtext->y,
+        drawbox(picref, dtext->x, dtext->y, box_w, box_h,
                 dtext->box_line, dtext->pixel_step, dtext->boxcolor_rgba,
                 dtext->hsub, dtext->vsub, dtext->is_packed_rgb, dtext->rgba_map);
 
@@ -688,9 +801,21 @@ static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 static void end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
+    AVFilterContext *ctx = inlink->dst;
+    DrawTextContext *dtext = inlink->dst->priv;
     AVFilterBufferRef *picref = inlink->cur_buf;
 
-    draw_text(inlink->dst, picref, picref->video->w, picref->video->h);
+    dtext->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
+        NAN : picref->pts * av_q2d(inlink->time_base);
+
+    draw_text(ctx, picref, picref->video->w, picref->video->h);
+
+    av_log(ctx, AV_LOG_DEBUG, "n:%d t:%f text_w:%d text_h:%d x:%d y:%d\n",
+           (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
+           (int)dtext->var_values[VAR_TEXT_W], (int)dtext->var_values[VAR_TEXT_H],
+           dtext->x, dtext->y);
+
+    dtext->var_values[VAR_N] += 1.0;
 
     avfilter_draw_slice(outlink, 0, picref->video->h, 1);
     avfilter_end_frame(outlink);

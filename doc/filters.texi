@@ -738,10 +738,13 @@ parameter @var{text}.
 If both text and textfile are specified, an error is thrown.
 
 @item x, y
-The offsets where text will be drawn within the video frame.
-Relative to the top/left border of the output image.
+The expressions which specify the offsets where text will be drawn
+within the video frame. They are relative to the top/left border of the
+output image.
 
-The default value of @var{x} and @var{y} is 0.
+The default value of @var{x} and @var{y} is "0".
+
+See below for the list of accepted constants.
 
 @item fontsize
 The font size to be used for drawing text.
@@ -809,6 +812,66 @@ The size in number of spaces to use for rendering the tab.
 Default value is 4.
 @end table
 
+The parameters for @var{x} and @var{y} are expressions containing the
+following constants:
+
+@table @option
+@item E, PI, PHI
+the corresponding mathematical approximated values for e
+(euler number), pi (greek PI), PHI (golden ratio)
+
+@item w, h
+the input width and heigth
+
+@item tw, text_w
+the width of the rendered text
+
+@item th, text_h
+the height of the rendered text
+
+@item lh, line_h
+the height of each text line
+
+@item sar
+input sample aspect ratio
+
+@item dar
+input display aspect ratio, it is the same as (@var{w} / @var{h}) * @var{sar}
+
+@item hsub, vsub
+horizontal and vertical chroma subsample values. For example for the
+pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
+
+@item max_glyph_w
+maximum glyph width, that is the maximum width for all the glyphs
+contained in the rendered text
+
+@item max_glyph_h
+maximum glyph height, that is the maximum height for all the glyphs
+contained in the rendered text, it is equivalent to @var{ascent} -
+@var{descent}.
+
+@item max_glyph_a, ascent
+
+the maximum distance from the baseline to the highest/upper grid
+coordinate used to place a glyph outline point, for all the rendered
+glyphs.
+It is a positive value, due to the grid's orientation with the Y axis
+upwards.
+
+@item max_glyph_d, descent
+the maximum distance from the baseline to the lowest grid coordinate
+used to place a glyph outline point, for all the rendered glyphs.
+This is a negative value, due to the grid's orientation, with the Y axis
+upwards.
+
+@item n
+the number of input frame, starting from 0
+
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
+@end table
+
 Some examples follow.
 
 @itemize
@@ -834,6 +897,33 @@ drawtext="fontfile=/usr/share/fonts/truetype/freefont/FreeSerif.ttf: text='Test 
 
 Note that the double quotes are not necessary if spaces are not used
 within the parameter list.
+
+@item
+Show the text at the center of the video frame:
+@example
+drawtext=fontsize=30:fontfile=FreeSerif.ttf:text='hello world':x=(w-text_w)/2:y=(h-text_h-line_h)/2"
+@end example
+
+@item
+Show a text line sliding from right to left in the last row of the video
+frame. The file @file{LONG_LINE} is assumed to contain a single line
+with no newlines.
+@example
+drawtext=fontsize=15:fontfile=FreeSerif.ttf:text=LONG_LINE:y=h-line_h:x=-50*t
+@end example
+
+@item
+Show the content of file @file{CREDITS} off the bottom of the frame and scroll up.
+@example
+drawtext=fontsize=20:fontfile=FreeSerif.ttf:textfile=CREDITS:y=h-20*t"
+@end example
+
+@item
+Draw a single green letter "g", at the center of the input video.
+The glyph baseline is placed at half screen height.
+@example
+drawtext=fontsize=60:fontfile=FreeSerif.ttf:fontcolor=green:text=g:x=(w-max_glyph_w)/2:y=h/2-ascent
+@end example
 
 @end itemize
 
