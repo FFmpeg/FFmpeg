@@ -13,21 +13,21 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-08-xx - xxxxxxx - lavc 53.10.0
+2011-09-03 - fb4ca26 - lavc 53.10.0
                        lavf 53.6.0
                        lsws  2.1.0
   Add {avcodec,avformat,sws}_get_class().
 
-2011-08-xx - xxxxxxx - lavu 51.10.0
+2011-09-03 - c11fb82 - lavu 51.10.0
   Add AV_OPT_SEARCH_FAKE_OBJ flag for av_opt_find() function.
 
-2011-08-xx - xxxxxx - lavu 51.9.0
+2011-08-26 - f2011ed - lavu 51.9.0
   Add av_fifo_peek2(), deprecate av_fifo_peek().
 
-2011-08-xx - xxxxxxx - lavf 53.4.0
+2011-08-16 - 48f9e45 - lavf 53.4.0
   Add avformat_query_codec().
 
-2011-08-xx - xxxxxxx - lavc 53.8.0
+2011-08-16 - bca06e7 - lavc 53.8.0
   Add avcodec_get_type().
 
 2011-08-06 - 2f63440 - lavf 53.4.0
