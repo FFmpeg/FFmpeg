@@ -1201,6 +1201,7 @@ static int decode_update_thread_context(AVCodecContext *dst, const AVCodecContex
     copy_picture_range(h->delayed_pic, h1->delayed_pic, MAX_DELAYED_PIC_COUNT+2, s, s1);
 
     h->last_slice_type = h1->last_slice_type;
+    h->sync            = h1->sync;
 
     if(!s->current_picture_ptr) return 0;
 
@@ -1430,6 +1431,10 @@ static void decode_postinit(H264Context *h, int setup_finished){
             h->next_outputed_poc = out->poc;
     }else{
         av_log(s->avctx, AV_LOG_DEBUG, "no picture\n");
+    }
+
+    if (h->next_output_pic && h->next_output_pic->sync) {
+        h->sync |= 2*!!h->next_output_pic->f.key_frame;
     }
 
     if (setup_finished)
@@ -3920,7 +3925,6 @@ static int decode_frame(AVCodecContext *avctx,
 
         *data_size = 0; /* Wait for second field. */
         if (h->next_output_pic && h->next_output_pic->sync) {
-            h->sync |= 2*!!h->next_output_pic->f.key_frame;
             if(h->sync>1 || h->next_output_pic->f.pict_type != AV_PICTURE_TYPE_B){
                 *data_size = sizeof(AVFrame);
                 *pict = *(AVFrame*)h->next_output_pic;
