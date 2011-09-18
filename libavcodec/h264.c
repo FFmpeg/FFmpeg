@@ -3713,6 +3713,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     (hx->nal_unit_type == NAL_IDR_SLICE) ||
                     (h->sei_recovery_frame_cnt >= 0);
             h->sync |= !!s->current_picture_ptr->f.key_frame;
+            h->sync |= 3*!!(s->flags2 & CODEC_FLAG2_SHOW_ALL);
             s->current_picture_ptr->sync = h->sync;
 
             if (h->current_slice == 1) {
