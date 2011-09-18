@@ -123,7 +123,7 @@ static int request_frame(AVFilterLink *outlink)
 
 AVFilter avfilter_asrc_anullsrc = {
     .name        = "anullsrc",
-    .description = NULL_IF_CONFIG_SMALL("Null audio source, never return audio frames."),
+    .description = NULL_IF_CONFIG_SMALL("Null audio source, return empty audio frames."),
 
     .init        = init,
     .priv_size   = sizeof(ANullContext),
