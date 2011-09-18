@@ -110,7 +110,7 @@ The filter accepts a string of the form:
 the corresponding numeric value defined in @file{libavutil/samplefmt.h}.
 
 @var{channel_layout} specifies the channel layout, and can be a string
-or the corresponding numer value defined in @file{libavutil/chlayout.h}.
+or the corresponding number value defined in @file{libavutil/chlayout.h}.
 
 @var{packing_format} specifies the type of packing in output, can be one
 of "planar" or "packed", or the corresponding numeric values "0" or "1".
