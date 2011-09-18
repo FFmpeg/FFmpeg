@@ -2438,7 +2438,7 @@ static int decode_chunks(AVCodecContext *avctx,
                             break;
                     }
                 }
-                if (s2->pict_type == AV_PICTURE_TYPE_I)
+                if (s2->pict_type == AV_PICTURE_TYPE_I || (s2->flags2 & CODEC_FLAG2_SHOW_ALL))
                     s->sync=1;
                 if (s2->next_picture_ptr == NULL) {
                 /* Skip P-frames if we do not have a reference frame or we have an invalid header. */
