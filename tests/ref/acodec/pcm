@@ -66,7 +66,7 @@ stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
 529256 ./tests/data/acodec/pcm_zork.wav
 864c8c866ac25642c29a13b122c70709 *./tests/data/pcm.acodec.out.wav
 stddev:  633.11 PSNR: 40.30 MAXDIFF:32768 bytes:  1058400/  1058400
-8168a5c1343553ef027541830f2cb879 *./tests/data/acodec/pcm_s24daud.302
+1b75d5198ae789ab3c48f7024e08f4a9 *./tests/data/acodec/pcm_s24daud.302
 10368730 ./tests/data/acodec/pcm_s24daud.302
-f552afadfdfcd6348a07095da6382de5 *./tests/data/pcm.acodec.out.wav
-stddev: 9416.28 PSNR: 16.85 MAXDIFF:42744 bytes:  6911796/  1058400
+4708f86529c594e29404603c64bb208c *./tests/data/pcm.acodec.out.wav
+stddev: 8967.92 PSNR: 17.28 MAXDIFF:42548 bytes:  6911796/  1058400

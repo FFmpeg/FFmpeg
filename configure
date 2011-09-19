@@ -89,6 +89,7 @@ Configuration options:
   --disable-avdevice       disable libavdevice build
   --disable-avcodec        disable libavcodec build
   --disable-avformat       disable libavformat build
+  --disable-swresample     disable libswresample build
   --disable-swscale        disable libswscale build
   --disable-postproc       disable libpostproc build
   --disable-avfilter       disable video filter support [no]
@@ -1037,6 +1038,7 @@ CONFIG_LIST="
     small
     sram
     static
+    swresample
     swscale
     swscale_alpha
     thumb
@@ -1603,7 +1605,7 @@ avformat_deps="avcodec"
 postproc_deps="gpl"
 
 # programs
-ffmpeg_deps="avcodec avformat swscale"
+ffmpeg_deps="avcodec avformat swscale swresample"
 ffmpeg_select="buffer_filter buffersink_filter"
 avconv_deps="avcodec avformat swscale"
 avconv_select="buffer_filter"
@@ -1766,6 +1768,7 @@ enable postproc
 enable protocols
 enable static
 enable stripping
+enable swresample
 enable swscale
 enable swscale_alpha
 
@@ -3143,7 +3146,7 @@ enabled extra_warnings && check_cflags -Winline
 
 # add some linker flags
 check_ldflags -Wl,--warn-common
-check_ldflags -Wl,-rpath-link=libpostproc:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
+check_ldflags -Wl,-rpath-link=libpostproc:libswresample:libswscale:libavfilter:libavdevice:libavformat:libavcodec:libavutil
 test_ldflags -Wl,-Bsymbolic && append SHFLAGS -Wl,-Bsymbolic
 
 echo "X{};" > $TMPV
