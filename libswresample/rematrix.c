@@ -77,9 +77,9 @@ static int sane_layout(int64_t layout){
 
 int swr_rematrix_init(SwrContext *s){
     int i, j, in_i, out_i;
-    float matrix[64][64]={0};
+    double matrix[64][64]={0};
     int64_t unaccounted= s->in_ch_layout & ~s->out_ch_layout;
-    float maxcoef=0;
+    double maxcoef=0;
 
     for(i=0; i<64; i++){
         if(s->in_ch_layout & s->out_ch_layout & (1LL<<i))
