@@ -33,6 +33,7 @@ libavformat/libavformat*
 libavutil/avconfig.h
 libavutil/libavutil*
 libpostproc/libpostproc*
+libswresample/libswresample*
 libswscale/libswscale*
 tests/audiogen
 tests/base64
