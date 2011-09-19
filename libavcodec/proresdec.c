@@ -397,7 +397,8 @@ static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
                               const int *qmat)
 {
     ProresContext *ctx = avctx->priv_data;
-    DECLARE_ALIGNED(16, DCTELEM, blocks)[8*4*64], *block;
+    LOCAL_ALIGNED_16(DCTELEM, blocks, [8*4*64]);
+    DCTELEM *block;
     GetBitContext gb;
     int i, blocks_per_slice = slice->mb_count<<2;
 
@@ -426,7 +427,8 @@ static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
                                 const int *qmat)
 {
     ProresContext *ctx = avctx->priv_data;
-    DECLARE_ALIGNED(16, DCTELEM, blocks)[8*4*64], *block;
+    LOCAL_ALIGNED_16(DCTELEM, blocks, [8*4*64]);
+    DCTELEM *block;
     GetBitContext gb;
     int i, blocks_per_slice = slice->mb_count*2;
 
