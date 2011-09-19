@@ -9,4 +9,4 @@ OBJS = swresample.o audioconvert.o resample2.o rematrix.o
 
 TESTPROGS = swresample_test
 
-include $(SUBDIR)../subdir.mak
+include $(SRC_PATH)/subdir.mak
