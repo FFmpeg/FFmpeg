@@ -22,12 +22,18 @@
 #include "libavutil/audioconvert.h"
 #include "libavutil/avassert.h"
 
+#define ONE (1.0)
+#define R(x) x
 #define SAMPLE float
 #define RENAME(x) x ## _float
 #include "rematrix_template.c"
 #undef SAMPLE
 #undef RENAME
+#undef R
+#undef ONE
 
+#define ONE (-32768)
+#define R(x) (((x) + 16384)>>15)
 #define SAMPLE int16_t
 #define RENAME(x) x ## _s16
 #include "rematrix_template.c"
@@ -188,6 +194,7 @@ int swr_rematrix_init(SwrContext *s){
         int ch_in=0;
         for(j=0; j<64; j++){
             s->matrix[out_i][in_i]= matrix[i][j];
+            s->matrix16[out_i][in_i]= lrintf(matrix[i][j] * 32768);
             if(matrix[i][j]){
                 s->matrix_ch[out_i][++ch_in]= in_i;
                 sum += fabs(matrix[i][j]);
@@ -203,8 +210,10 @@ int swr_rematrix_init(SwrContext *s){
     if((   s->out_sample_fmt < AV_SAMPLE_FMT_FLT
         || s->int_sample_fmt < AV_SAMPLE_FMT_FLT) && maxcoef > 1.0){
         for(i=0; i<SWR_CH_MAX; i++)
-            for(j=0; j<SWR_CH_MAX; j++)
+            for(j=0; j<SWR_CH_MAX; j++){
                 s->matrix[i][j] /= maxcoef;
+                s->matrix16[i][j]= lrintf(s->matrix[i][j] * 32768);
+            }
     }
         for(i=0; i<av_get_channel_layout_nb_channels(s->out_ch_layout); i++){
             for(j=0; j<av_get_channel_layout_nb_channels(s->in_ch_layout); j++){
@@ -229,7 +238,7 @@ av_assert0(in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout))
                 if(s->int_sample_fmt == AV_SAMPLE_FMT_FLT){
                     copy_float(out->ch[out_i], in->ch[in_i], s->matrix[out_i][in_i], len);
                 }else
-                    copy_s16  (out->ch[out_i], in->ch[in_i], s->matrix[out_i][in_i], len);
+                    copy_s16  (out->ch[out_i], in->ch[in_i], s->matrix16[out_i][in_i], len);
             }else{
                 out->ch[out_i]= in->ch[in_i];
             }
@@ -241,7 +250,7 @@ av_assert0(in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout))
                            len);
             }else{
                 sum2_s16  (out->ch[out_i], in->ch[ s->matrix_ch[out_i][1] ],           in->ch[ s->matrix_ch[out_i][2] ],
-                                 s->matrix[out_i][ s->matrix_ch[out_i][1] ], s->matrix[out_i][ s->matrix_ch[out_i][2] ],
+                                 s->matrix16[out_i][ s->matrix_ch[out_i][1] ], s->matrix16[out_i][ s->matrix_ch[out_i][2] ],
                            len);
             }
             break;
@@ -260,9 +269,9 @@ av_assert0(in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout))
                     int v=0;
                     for(j=0; j<s->matrix_ch[out_i][0]; j++){
                         in_i= s->matrix_ch[out_i][1+j];
-                        v+= ((int16_t*)in->ch[in_i])[i] * s->matrix[out_i][in_i]; //FIXME use int16 coeffs
+                        v+= ((int16_t*)in->ch[in_i])[i] * s->matrix16[out_i][in_i];
                     }
-                    ((int16_t*)out->ch[out_i])[i]= v;
+                    ((int16_t*)out->ch[out_i])[i]= (v + 16384)>>15;
                 }
             }
         }

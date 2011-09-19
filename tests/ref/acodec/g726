@@ -1,4 +1,4 @@
-a76fc937faac62c5de057cd69191732a *./tests/data/acodec/g726.wav
+687d70267e999fc9afba2a1ecc960f3c *./tests/data/acodec/g726.wav
 24052 ./tests/data/acodec/g726.wav
-124de13e6cb5af64ea8758aa49feb7fc *./tests/data/g726.acodec.out.wav
-stddev: 8554.23 PSNR: 17.69 MAXDIFF:29353 bytes:    95984/  1058400
+700845e9457cae5f961fb703cb46d6a7 *./tests/data/g726.acodec.out.wav
+stddev: 8553.69 PSNR: 17.69 MAXDIFF:29353 bytes:    95984/  1058400
