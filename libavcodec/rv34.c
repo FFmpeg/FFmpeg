@@ -1441,8 +1441,9 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         slice_count = avctx->slice_count;
 
     //parse first slice header to check whether this frame can be decoded
-    if(get_slice_offset(avctx, slices_hdr, 0) > buf_size){
-        av_log(avctx, AV_LOG_ERROR, "Slice offset is greater than frame size\n");
+    if(get_slice_offset(avctx, slices_hdr, 0) < 0 ||
+       get_slice_offset(avctx, slices_hdr, 0) > buf_size){
+        av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
         return -1;
     }
     init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), (buf_size-get_slice_offset(avctx, slices_hdr, 0))*8);
@@ -1465,8 +1466,8 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         else
             size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
 
-        if(offset > buf_size){
-            av_log(avctx, AV_LOG_ERROR, "Slice offset is greater than frame size\n");
+        if(offset < 0 || offset > buf_size || size < 0){
+            av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
             break;
         }
 
