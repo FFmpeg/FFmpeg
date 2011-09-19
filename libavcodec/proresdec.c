@@ -322,7 +322,7 @@ static av_always_inline void decode_dc_coeffs(GetBitContext *gb, DCTELEM *out,
                                               int blocks_per_slice, const int *qmat)
 {
     DCTELEM prev_dc;
-    int code, code2, i, sign;
+    int code, i, sign;
 
     OPEN_READER(re, gb);
 
