@@ -101,15 +101,15 @@ int swr_rematrix_init(SwrContext *s){
 
     if(unaccounted & AV_CH_FRONT_CENTER){
         if((s->out_ch_layout & AV_CH_LAYOUT_STEREO) == AV_CH_LAYOUT_STEREO){
-            matrix[ FRONT_LEFT][FRONT_CENTER]+= sqrt(0.5);
-            matrix[FRONT_RIGHT][FRONT_CENTER]+= sqrt(0.5);
+            matrix[ FRONT_LEFT][FRONT_CENTER]+= M_SQRT1_2;
+            matrix[FRONT_RIGHT][FRONT_CENTER]+= M_SQRT1_2;
         }else
             av_assert0(0);
     }
     if(unaccounted & AV_CH_LAYOUT_STEREO){
         if(s->out_ch_layout & AV_CH_FRONT_CENTER){
-            matrix[FRONT_CENTER][ FRONT_LEFT]+= sqrt(0.5);
-            matrix[FRONT_CENTER][FRONT_RIGHT]+= sqrt(0.5);
+            matrix[FRONT_CENTER][ FRONT_LEFT]+= M_SQRT1_2;
+            matrix[FRONT_CENTER][FRONT_RIGHT]+= M_SQRT1_2;
             if(s->in_ch_layout & AV_CH_FRONT_CENTER)
                 matrix[FRONT_CENTER][ FRONT_CENTER] = s->clev*sqrt(2);
         }else
@@ -118,27 +118,27 @@ int swr_rematrix_init(SwrContext *s){
 
     if(unaccounted & AV_CH_BACK_CENTER){
         if(s->out_ch_layout & AV_CH_BACK_LEFT){
-            matrix[ BACK_LEFT][BACK_CENTER]+= sqrt(0.5);
-            matrix[BACK_RIGHT][BACK_CENTER]+= sqrt(0.5);
+            matrix[ BACK_LEFT][BACK_CENTER]+= M_SQRT1_2;
+            matrix[BACK_RIGHT][BACK_CENTER]+= M_SQRT1_2;
         }else if(s->out_ch_layout & AV_CH_SIDE_LEFT){
-            matrix[ SIDE_LEFT][BACK_CENTER]+= sqrt(0.5);
-            matrix[SIDE_RIGHT][BACK_CENTER]+= sqrt(0.5);
+            matrix[ SIDE_LEFT][BACK_CENTER]+= M_SQRT1_2;
+            matrix[SIDE_RIGHT][BACK_CENTER]+= M_SQRT1_2;
         }else if(s->out_ch_layout & AV_CH_FRONT_LEFT){
-            matrix[ FRONT_LEFT][BACK_CENTER]+= s->slev*sqrt(0.5);
-            matrix[FRONT_RIGHT][BACK_CENTER]+= s->slev*sqrt(0.5);
+            matrix[ FRONT_LEFT][BACK_CENTER]+= s->slev*M_SQRT1_2;
+            matrix[FRONT_RIGHT][BACK_CENTER]+= s->slev*M_SQRT1_2;
         }else if(s->out_ch_layout & AV_CH_FRONT_CENTER){
-            matrix[ FRONT_CENTER][BACK_CENTER]+= s->slev*sqrt(0.5);
+            matrix[ FRONT_CENTER][BACK_CENTER]+= s->slev*M_SQRT1_2;
         }else
             av_assert0(0);
     }
     if(unaccounted & AV_CH_BACK_LEFT){
         if(s->out_ch_layout & AV_CH_BACK_CENTER){
-            matrix[BACK_CENTER][ BACK_LEFT]+= sqrt(0.5);
-            matrix[BACK_CENTER][BACK_RIGHT]+= sqrt(0.5);
+            matrix[BACK_CENTER][ BACK_LEFT]+= M_SQRT1_2;
+            matrix[BACK_CENTER][BACK_RIGHT]+= M_SQRT1_2;
         }else if(s->out_ch_layout & AV_CH_SIDE_LEFT){
             if(s->in_ch_layout & AV_CH_SIDE_LEFT){
-                matrix[ SIDE_LEFT][ BACK_LEFT]+= sqrt(0.5);
-                matrix[SIDE_RIGHT][BACK_RIGHT]+= sqrt(0.5);
+                matrix[ SIDE_LEFT][ BACK_LEFT]+= M_SQRT1_2;
+                matrix[SIDE_RIGHT][BACK_RIGHT]+= M_SQRT1_2;
             }else{
             matrix[ SIDE_LEFT][ BACK_LEFT]+= 1.0;
             matrix[SIDE_RIGHT][BACK_RIGHT]+= 1.0;
@@ -147,8 +147,8 @@ int swr_rematrix_init(SwrContext *s){
             matrix[ FRONT_LEFT][ BACK_LEFT]+= s->slev;
             matrix[FRONT_RIGHT][BACK_RIGHT]+= s->slev;
         }else if(s->out_ch_layout & AV_CH_FRONT_CENTER){
-            matrix[ FRONT_CENTER][BACK_LEFT ]+= s->slev*sqrt(0.5);
-            matrix[ FRONT_CENTER][BACK_RIGHT]+= s->slev*sqrt(0.5);
+            matrix[ FRONT_CENTER][BACK_LEFT ]+= s->slev*M_SQRT1_2;
+            matrix[ FRONT_CENTER][BACK_RIGHT]+= s->slev*M_SQRT1_2;
         }else
             av_assert0(0);
     }
@@ -158,14 +158,14 @@ int swr_rematrix_init(SwrContext *s){
             matrix[ BACK_LEFT][ SIDE_LEFT]+= 1.0;
             matrix[BACK_RIGHT][SIDE_RIGHT]+= 1.0;
         }else if(s->out_ch_layout & AV_CH_BACK_CENTER){
-            matrix[BACK_CENTER][ SIDE_LEFT]+= sqrt(0.5);
-            matrix[BACK_CENTER][SIDE_RIGHT]+= sqrt(0.5);
+            matrix[BACK_CENTER][ SIDE_LEFT]+= M_SQRT1_2;
+            matrix[BACK_CENTER][SIDE_RIGHT]+= M_SQRT1_2;
         }else if(s->out_ch_layout & AV_CH_FRONT_LEFT){
             matrix[ FRONT_LEFT][ SIDE_LEFT]+= s->slev;
             matrix[FRONT_RIGHT][SIDE_RIGHT]+= s->slev;
         }else if(s->out_ch_layout & AV_CH_FRONT_CENTER){
-            matrix[ FRONT_CENTER][SIDE_LEFT ]+= s->slev*sqrt(0.5);
-            matrix[ FRONT_CENTER][SIDE_RIGHT]+= s->slev*sqrt(0.5);
+            matrix[ FRONT_CENTER][SIDE_LEFT ]+= s->slev*M_SQRT1_2;
+            matrix[ FRONT_CENTER][SIDE_RIGHT]+= s->slev*M_SQRT1_2;
         }else
             av_assert0(0);
     }
@@ -175,8 +175,8 @@ int swr_rematrix_init(SwrContext *s){
             matrix[ FRONT_LEFT][ FRONT_LEFT_OF_CENTER]+= 1.0;
             matrix[FRONT_RIGHT][FRONT_RIGHT_OF_CENTER]+= 1.0;
         }else if(s->out_ch_layout & AV_CH_FRONT_CENTER){
-            matrix[ FRONT_CENTER][ FRONT_LEFT_OF_CENTER]+= sqrt(0.5);
-            matrix[ FRONT_CENTER][FRONT_RIGHT_OF_CENTER]+= sqrt(0.5);
+            matrix[ FRONT_CENTER][ FRONT_LEFT_OF_CENTER]+= M_SQRT1_2;
+            matrix[ FRONT_CENTER][FRONT_RIGHT_OF_CENTER]+= M_SQRT1_2;
         }else
             av_assert0(0);
     }
