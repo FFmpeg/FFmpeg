@@ -204,7 +204,7 @@ redo:
     id  = buf[0];
     len = AV_RB16(buf + 1);
     av_dlog(s, "id=%d len=%d\n", id, len);
-    if (len > buf_size || len < 12)
+    if (len > buf_size || len < 8)
         goto redo;
     /* get the data */
     ret = ffurl_read_complete(rt->rtsp_hd, buf, len);
