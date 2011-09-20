@@ -2267,6 +2267,7 @@ static void flush_dpb(AVCodecContext *avctx){
     h->s.first_field= 0;
     ff_h264_reset_sei(h);
     ff_mpeg_flush(avctx);
+    h->recovery_frame= -1;
     h->sync= 0;
 }
 
