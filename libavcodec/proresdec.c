@@ -459,7 +459,7 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     SliceContext *slice = &ctx->slices[jobnr];
     const uint8_t *buf = slice->data;
     AVFrame *pic = avctx->coded_frame;
-    int i, hdr_size, qscale;
+    int i, hdr_size, qscale, log2_chroma_blocks_per_mb;
     int luma_stride, chroma_stride;
     int y_data_size, u_data_size, v_data_size;
     uint8_t *dest_y, *dest_u, *dest_v;
@@ -498,7 +498,14 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         chroma_stride = pic->linesize[1] << 1;
     }
 
-    mb_x_shift = (avctx->pix_fmt == PIX_FMT_YUV444P10) ? 5 : 4;
+    if (avctx->pix_fmt == PIX_FMT_YUV444P10) {
+        mb_x_shift = 5;
+        log2_chroma_blocks_per_mb = 2;
+    } else {
+        mb_x_shift = 4;
+        log2_chroma_blocks_per_mb = 1;
+    }
+
     dest_y = pic->data[0] + (slice->mb_y << 4) * luma_stride + (slice->mb_x << 5);
     dest_u = pic->data[1] + (slice->mb_y << 4) * chroma_stride + (slice->mb_x << mb_x_shift);
     dest_v = pic->data[2] + (slice->mb_y << 4) * chroma_stride + (slice->mb_x << mb_x_shift);
@@ -512,21 +519,13 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     decode_slice_luma(avctx, slice, dest_y, luma_stride,
                       buf, y_data_size, qmat_luma_scaled);
 
-    if ((avctx->flags & CODEC_FLAG_GRAY)) {
-    } else if (avctx->pix_fmt == PIX_FMT_YUV444P10) {
+    if (!(avctx->flags & CODEC_FLAG_GRAY)) {
         decode_slice_chroma(avctx, slice, dest_u, chroma_stride,
                             buf + y_data_size, u_data_size,
-                            qmat_chroma_scaled, 2);
+                            qmat_chroma_scaled, log2_chroma_blocks_per_mb);
         decode_slice_chroma(avctx, slice, dest_v, chroma_stride,
                             buf + y_data_size + u_data_size, v_data_size,
-                            qmat_chroma_scaled, 2);
-    } else {
-        decode_slice_chroma(avctx, slice, dest_u, chroma_stride,
-                            buf + y_data_size, u_data_size,
-                            qmat_chroma_scaled, 1);
-        decode_slice_chroma(avctx, slice, dest_v, chroma_stride,
-                            buf + y_data_size + u_data_size, v_data_size,
-                            qmat_chroma_scaled, 1);
+                            qmat_chroma_scaled, log2_chroma_blocks_per_mb);
     }
 
     return 0;
