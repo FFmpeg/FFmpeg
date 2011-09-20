@@ -173,7 +173,9 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     if (ret <= 0) {
-        return AVERROR(EIO);
+        if(ret<0)
+            return ret;
+        return AVERROR_EOF;
     }
 
     if (ret > ID3v1_TAG_SIZE &&
