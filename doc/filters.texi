@@ -809,27 +809,33 @@ The size in number of spaces to use for rendering the tab.
 Default value is 4.
 @end table
 
-For example the command:
+Some examples follow.
+
+@itemize
+
+@item
+Draw "Test Text" with font FreeSerif, using the default values for the
+optional parameters.
+
 @example
 drawtext="fontfile=/usr/share/fonts/truetype/freefont/FreeSerif.ttf: text='Test Text'"
 @end example
 
-will draw "Test Text" with font FreeSerif, using the default values
-for the optional parameters.
-
-The command:
-@example
-drawtext="fontfile=/usr/share/fonts/truetype/freefont/FreeSerif.ttf: text='Test Text':\
-          x=100: y=50: fontsize=24: fontcolor=yellow@@0.2: box=1: boxcolor=red@@0.2"
-@end example
-
+@item
 will draw 'Test Text' with font FreeSerif of size 24 at position x=100
 and y=50 (counting from the top-left corner of the screen), text is
 yellow with a red box around it. Both the text and the box have an
 opacity of 20%.
 
+@example
+drawtext="fontfile=/usr/share/fonts/truetype/freefont/FreeSerif.ttf: text='Test Text':\
+          x=100: y=50: fontsize=24: fontcolor=yellow@@0.2: box=1: boxcolor=red@@0.2"
+@end example
+
 Note that the double quotes are not necessary if spaces are not used
 within the parameter list.
+
+@end itemize
 
 For more information about libfreetype, check:
 @url{http://www.freetype.org/}.
