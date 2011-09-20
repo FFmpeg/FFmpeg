@@ -71,6 +71,7 @@ typedef struct RTMPContext {
     uint32_t      client_report_size;         ///< number of bytes after which client should report to server
     uint32_t      bytes_read;                 ///< number of bytes read from server
     uint32_t      last_bytes_read;            ///< number of bytes read last reported to server
+    int           skip_bytes;                 ///< number of bytes to skip from the input FLV stream in the next write call
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -925,7 +926,16 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
     uint32_t ts;
     const uint8_t *buf_temp = buf;
 
-    if (!rt->flv_off && size < 11) {
+    if (rt->skip_bytes) {
+        int skip = FFMIN(rt->skip_bytes, size);
+        buf_temp       += skip;
+        size_temp      -= skip;
+        rt->skip_bytes -= skip;
+        if (size_temp <= 0)
+            return size;
+    }
+
+    if (!rt->flv_off && size_temp < 11) {
         av_log(s, AV_LOG_DEBUG, "FLV packet too small %d\n", size);
         return 0;
     }
@@ -974,8 +984,14 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
         }
 
         if (rt->flv_off == rt->flv_size) {
-            bytestream_get_be32(&buf_temp);
-            size_temp -= 4;
+            if (size_temp < 4) {
+                rt->skip_bytes = 4 - size_temp;
+                buf_temp += size_temp;
+                size_temp = 0;
+            } else {
+                bytestream_get_be32(&buf_temp);
+                size_temp -= 4;
+            }
             ff_rtmp_packet_write(rt->stream, &rt->out_pkt, rt->chunk_size, rt->prev_pkt[1]);
             ff_rtmp_packet_destroy(&rt->out_pkt);
             rt->flv_size = 0;
