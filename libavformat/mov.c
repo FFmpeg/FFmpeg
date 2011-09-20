@@ -1052,6 +1052,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                     color_index = 255;
                     color_dec = 256 / (color_count - 1);
                     for (j = 0; j < color_count; j++) {
+                        if (id == CODEC_ID_CINEPAK){
+                            r = g = b = color_count - 1 - color_index;
+                        }else
                         r = g = b = color_index;
                         sc->palette[j] =
                             (r << 16) | (g << 8) | (b);
