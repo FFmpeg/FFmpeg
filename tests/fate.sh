@@ -35,7 +35,7 @@ checkout(){
 update()(
     cd ${src} || return
     case "$repo" in
-        git:*) git pull ;;
+        git:*) git pull --quiet ;;
     esac
 )
 
