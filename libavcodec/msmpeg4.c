@@ -62,10 +62,6 @@ static uint32_t v2_dc_chroma_table[512][2];
 /* vc1 externs */
 extern const uint8_t wmv3_dc_scale_table[32];
 
-#ifdef DEBUG
-int frame_count = 0;
-#endif
-
 #include "msmpeg4data.h"
 
 #if CONFIG_ENCODERS //strangely gcc includes this even if it is not referenced
