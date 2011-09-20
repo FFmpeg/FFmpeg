@@ -55,8 +55,8 @@ typedef struct {
     FT_Vector *positions;           ///< positions for each element in the text
     size_t nb_positions;            ///< number of elements of positions array
     char *textfile;                 ///< file with text to be drawn
-    unsigned int x;                 ///< x position to start drawing text
-    unsigned int y;                 ///< y position to start drawing text
+    int x;                          ///< x position to start drawing text
+    int y;                          ///< y position to start drawing text
     int shadowx, shadowy;
     unsigned int fontsize;          ///< font size to use
     char *fontcolor_string;         ///< font color as string
@@ -431,8 +431,8 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
     }\
 }
 
-static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, unsigned int x,
-                                 unsigned int y, unsigned int width, unsigned int height,
+static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
+                                 int x, int y, int width, int height,
                                  const uint8_t yuva_color[4], int hsub, int vsub)
 {
     int r, c, alpha;
@@ -462,8 +462,7 @@ static inline int draw_glyph_yuv(AVFilterBufferRef *picref, FT_Bitmap *bitmap, u
 }
 
 static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
-                                 unsigned int x, unsigned int y,
-                                 unsigned int width, unsigned int height, int pixel_step,
+                                 int x, int y, int width, int height, int pixel_step,
                                  const uint8_t rgba_color[4], const uint8_t rgba_map[4])
 {
     int r, c, alpha;
@@ -485,8 +484,8 @@ static inline int draw_glyph_rgb(AVFilterBufferRef *picref, FT_Bitmap *bitmap,
     return 0;
 }
 
-static inline void drawbox(AVFilterBufferRef *picref, unsigned int x, unsigned int y,
-                           unsigned int width, unsigned int height,
+static inline void drawbox(AVFilterBufferRef *picref, int x, int y,
+                           int width, int height,
                            uint8_t *line[4], int pixel_step[4], uint8_t color[4],
                            int hsub, int vsub, int is_rgba_packed, uint8_t rgba_map[4])
 {
