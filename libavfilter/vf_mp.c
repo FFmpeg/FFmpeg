@@ -237,6 +237,7 @@ static const vf_info_t* const filters[]={
     &vf_info_softpulldown,
     &vf_info_softskip,
     &vf_info_spp,
+    &vf_info_stereo3d,
     &vf_info_swapuv,
     &vf_info_telecine,
     &vf_info_tile,
@@ -265,7 +266,6 @@ lavcdeint
 noformat
 pp
 scale
-stereo3d
 tfields
 vo
 yadif
