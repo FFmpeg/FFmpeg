@@ -391,10 +391,10 @@ static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitConte
     CLOSE_READER(re, gb);
 }
 
-static void decode_slice_full(AVCodecContext *avctx, SliceContext *slice,
+static void decode_slice_luma(AVCodecContext *avctx, SliceContext *slice,
                               uint8_t *dst, int dst_stride,
                               const uint8_t *buf, unsigned buf_size,
-                              const int *qmat, int rotate)
+                              const int *qmat)
 {
     ProresContext *ctx = avctx->priv_data;
     LOCAL_ALIGNED_16(DCTELEM, blocks, [8*4*64]);
@@ -412,38 +412,27 @@ static void decode_slice_full(AVCodecContext *avctx, SliceContext *slice,
 
     block = blocks;
 
-    if (rotate) {
-        for (i = 0; i < slice->mb_count; i++) {
-            ctx->idct_put(block+(0<<6), dst, dst_stride);
-            ctx->idct_put(block+(2<<6), dst+16, dst_stride);
-            ctx->idct_put(block+(1<<6), dst+8*dst_stride, dst_stride);
-            ctx->idct_put(block+(3<<6), dst+8*dst_stride+16, dst_stride);
-            block += 4*64;
-            dst += 32;
-        }
-    } else {
-        for (i = 0; i < slice->mb_count; i++) {
-            ctx->idct_put(block+(0<<6), dst, dst_stride);
-            ctx->idct_put(block+(1<<6), dst+16, dst_stride);
-            ctx->idct_put(block+(2<<6), dst+8*dst_stride, dst_stride);
-            ctx->idct_put(block+(3<<6), dst+8*dst_stride+16, dst_stride);
-            block += 4*64;
-            dst += 32;
-        }
+    for (i = 0; i < slice->mb_count; i++) {
+        ctx->idct_put(block+(0<<6), dst, dst_stride);
+        ctx->idct_put(block+(1<<6), dst+16, dst_stride);
+        ctx->idct_put(block+(2<<6), dst+8*dst_stride, dst_stride);
+        ctx->idct_put(block+(3<<6), dst+8*dst_stride+16, dst_stride);
+        block += 4*64;
+        dst += 32;
     }
 
 }
 
-static void decode_slice_half(AVCodecContext *avctx, SliceContext *slice,
+static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
                                 uint8_t *dst, int dst_stride,
                                 const uint8_t *buf, unsigned buf_size,
-                                const int *qmat)
+                                const int *qmat, int log2_blocks_per_mb)
 {
     ProresContext *ctx = avctx->priv_data;
     LOCAL_ALIGNED_16(DCTELEM, blocks, [8*4*64]);
     DCTELEM *block;
     GetBitContext gb;
-    int i, blocks_per_slice = slice->mb_count<<1;
+    int i, j, blocks_per_slice = slice->mb_count << log2_blocks_per_mb;
 
     for (i = 0; i < blocks_per_slice; i++)
         ctx->dsp.clear_block(blocks+(i<<6));
@@ -455,10 +444,12 @@ static void decode_slice_half(AVCodecContext *avctx, SliceContext *slice,
 
     block = blocks;
     for (i = 0; i < slice->mb_count; i++) {
-        ctx->idct_put(block+(0<<6), dst,              dst_stride);
-        ctx->idct_put(block+(1<<6), dst+8*dst_stride, dst_stride);
-        block += 2*64;
-        dst += 16;
+        for (j = 0; j < log2_blocks_per_mb; j++) {
+            ctx->idct_put(block+(0<<6), dst,              dst_stride);
+            ctx->idct_put(block+(1<<6), dst+8*dst_stride, dst_stride);
+            block += 2*64;
+            dst += 16;
+        }
     }
 }
 
@@ -518,24 +509,24 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
         dest_v += pic->linesize[2];
     }
 
-    decode_slice_full(avctx, slice, dest_y, luma_stride,
-                      buf, y_data_size, qmat_luma_scaled, 0);
+    decode_slice_luma(avctx, slice, dest_y, luma_stride,
+                      buf, y_data_size, qmat_luma_scaled);
 
-    if (avctx->flags & CODEC_FLAG_GRAY) {
-    } else if(avctx->pix_fmt == PIX_FMT_YUV444P10) {
-        decode_slice_full(avctx, slice, dest_u, chroma_stride,
+    if ((avctx->flags & CODEC_FLAG_GRAY)) {
+    } else if (avctx->pix_fmt == PIX_FMT_YUV444P10) {
+        decode_slice_chroma(avctx, slice, dest_u, chroma_stride,
                             buf + y_data_size, u_data_size,
-                            qmat_chroma_scaled, 1);
-        decode_slice_full(avctx, slice, dest_v, chroma_stride,
+                            qmat_chroma_scaled, 2);
+        decode_slice_chroma(avctx, slice, dest_v, chroma_stride,
                             buf + y_data_size + u_data_size, v_data_size,
-                            qmat_chroma_scaled, 1);
+                            qmat_chroma_scaled, 2);
     } else {
-        decode_slice_half(avctx, slice, dest_u, chroma_stride,
+        decode_slice_chroma(avctx, slice, dest_u, chroma_stride,
                             buf + y_data_size, u_data_size,
-                            qmat_chroma_scaled);
-        decode_slice_half(avctx, slice, dest_v, chroma_stride,
+                            qmat_chroma_scaled, 1);
+        decode_slice_chroma(avctx, slice, dest_v, chroma_stride,
                             buf + y_data_size + u_data_size, v_data_size,
-                            qmat_chroma_scaled);
+                            qmat_chroma_scaled, 1);
     }
 
     return 0;
