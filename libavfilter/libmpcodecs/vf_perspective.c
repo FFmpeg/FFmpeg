@@ -32,6 +32,8 @@
 #include <malloc.h>
 #endif
 
+#include "libavutil/mem.h"
+
 #include "img_format.h"
 #include "mp_image.h"
 #include "vf.h"

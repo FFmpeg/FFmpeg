@@ -53,6 +53,8 @@ struct vf_priv_s {
 //FIXME stupid code duplication
 static void getSubSampleFactors(int *h, int *v, int format){
     switch(format){
+    default:
+        assert(0);
     case IMGFMT_YV12:
     case IMGFMT_I420:
         *h=1;

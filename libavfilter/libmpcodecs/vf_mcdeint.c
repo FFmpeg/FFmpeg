@@ -92,7 +92,6 @@ struct vf_priv_s {
 
 static void filter(struct vf_priv_s *p, uint8_t *dst[3], uint8_t *src[3], int dst_stride[3], int src_stride[3], int width, int height){
     int x, y, i;
-    int out_size;
 
     for(i=0; i<3; i++){
         p->frame->data[i]= src[i];
@@ -102,7 +101,7 @@ static void filter(struct vf_priv_s *p, uint8_t *dst[3], uint8_t *src[3], int ds
     p->avctx_enc->me_cmp=
     p->avctx_enc->me_sub_cmp= FF_CMP_SAD /*| (p->parity ? FF_CMP_ODD : FF_CMP_EVEN)*/;
     p->frame->quality= p->qp*FF_QP2LAMBDA;
-    out_size = avcodec_encode_video(p->avctx_enc, p->outbuf, p->outbuf_size, p->frame);
+    avcodec_encode_video(p->avctx_enc, p->outbuf, p->outbuf_size, p->frame);
     p->frame_dec = p->avctx_enc->coded_frame;
 
     for(i=0; i<3; i++){

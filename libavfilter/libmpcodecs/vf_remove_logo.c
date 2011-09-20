@@ -22,7 +22,7 @@
  */
 
 /**
- * \file vf_remove_logo.c
+ * \file
  *
  * \brief Advanced blur-based logo removing filter.
 
