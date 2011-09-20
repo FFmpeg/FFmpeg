@@ -430,7 +430,7 @@ static void decode_slice_chroma(AVCodecContext *avctx, SliceContext *slice,
     LOCAL_ALIGNED_16(DCTELEM, blocks, [8*4*64]);
     DCTELEM *block;
     GetBitContext gb;
-    int i, blocks_per_slice = slice->mb_count*2;
+    int i, blocks_per_slice = slice->mb_count<<1;
 
     for (i = 0; i < blocks_per_slice; i++)
         ctx->dsp.clear_block(blocks+(i<<6));
