@@ -216,6 +216,7 @@ const AVCodecTag codec_movvideo_tags[] = {
     { CODEC_ID_PRORES, MKTAG('a', 'p', '4', 'h') }, /* Apple ProRes 4444 */
 
     { CODEC_ID_MSMPEG4V3, MKTAG('3', 'I', 'V', 'D') }, /* 3ivx DivX Doctor */
+    { CODEC_ID_FLV1,      MKTAG('H', '2', '6', '3') }, /* Flash Media Server */
 
     { CODEC_ID_NONE, 0 },
 };
