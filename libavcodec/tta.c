@@ -182,7 +182,7 @@ static int tta_get_unary(GetBitContext *gb)
     int ret = 0;
 
     // count ones
-    while(get_bits1(gb))
+    while (get_bits_left(gb) > 0 && get_bits1(gb))
         ret++;
     return ret;
 }
