@@ -906,6 +906,7 @@ static int output_data_internal(MLPDecodeContext *m, unsigned int substr,
 {
     SubStream *s = &m->substream[substr];
     unsigned int i, out_ch = 0;
+    int out_size;
     int32_t *data_32 = (int32_t*) data;
     int16_t *data_16 = (int16_t*) data;
 
@@ -914,8 +915,11 @@ static int output_data_internal(MLPDecodeContext *m, unsigned int substr,
         return AVERROR_INVALIDDATA;
     }
 
-    if (*data_size < m->avctx->channels * s->blockpos * (is32 ? 4 : 2))
-        return -1;
+    out_size = s->blockpos * m->avctx->channels *
+               av_get_bytes_per_sample(m->avctx->sample_fmt);
+
+    if (*data_size < out_size)
+        return AVERROR(EINVAL);
 
     for (i = 0; i < s->blockpos; i++) {
         for (out_ch = 0; out_ch <= s->max_matrix_channel; out_ch++) {
@@ -928,7 +932,7 @@ static int output_data_internal(MLPDecodeContext *m, unsigned int substr,
         }
     }
 
-    *data_size = i * out_ch * (is32 ? 4 : 2);
+    *data_size = out_size;
 
     return 0;
 }
