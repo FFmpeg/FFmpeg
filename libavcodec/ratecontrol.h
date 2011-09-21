@@ -61,7 +61,6 @@ typedef struct RateControlEntry{
  * rate control context.
  */
 typedef struct RateControlContext{
-    FILE *stats_file;
     int num_entries;              ///< number of RateControlEntries
     RateControlEntry *entry;
     double buffer_index;          ///< amount of bits in the video/audio buffer
