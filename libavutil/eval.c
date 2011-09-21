@@ -608,7 +608,7 @@ int main(int argc, char **argv)
         "ceil(123.123)",
         "ceil(-123.123)",
         "sqrt(1764)",
-        "sqrt(-1)",
+        "isnan(sqrt(-1))",
         "not(1)",
         "not(NAN)",
         "not(0)",

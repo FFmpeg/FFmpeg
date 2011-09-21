@@ -136,8 +136,8 @@ Evaluating 'ceil(-123.123)'
 Evaluating 'sqrt(1764)'
 'sqrt(1764)' -> 42.000000
 
-Evaluating 'sqrt(-1)'
-'sqrt(-1)' -> -nan
+Evaluating 'isnan(sqrt(-1))'
+'isnan(sqrt(-1))' -> 1.000000
 
 Evaluating 'not(1)'
 'not(1)' -> 0.000000
