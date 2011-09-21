@@ -285,9 +285,10 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
         }
 
         FF_ALLOCZ_OR_GOTO(s->avctx, pic->mbskip_table , mb_array_size * sizeof(uint8_t)+2, fail) //the +2 is for the slice end check
-        FF_ALLOCZ_OR_GOTO(s->avctx, pic->qscale_table , mb_array_size * sizeof(uint8_t)  , fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, pic->qscale_table_base , (big_mb_num + s->mb_stride) * sizeof(uint8_t)  , fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, pic->mb_type_base , (big_mb_num + s->mb_stride) * sizeof(uint32_t), fail)
         pic->mb_type= pic->mb_type_base + 2*s->mb_stride+1;
+        pic->qscale_table = pic->qscale_table_base + 2*s->mb_stride + 1;
         if(s->out_format == FMT_H264){
             for(i=0; i<2; i++){
                 FF_ALLOCZ_OR_GOTO(s->avctx, pic->motion_val_base[i], 2 * (b4_array_size+4)  * sizeof(int16_t), fail)
@@ -339,7 +340,7 @@ static void free_picture(MpegEncContext *s, Picture *pic){
     av_freep(&pic->mc_mb_var);
     av_freep(&pic->mb_mean);
     av_freep(&pic->mbskip_table);
-    av_freep(&pic->qscale_table);
+    av_freep(&pic->qscale_table_base);
     av_freep(&pic->mb_type_base);
     av_freep(&pic->dct_coeff);
     av_freep(&pic->pan_scan);

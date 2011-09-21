@@ -59,6 +59,10 @@ int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf
         av_log(s, AV_LOG_ERROR, "Scalable configurations are not allowed in ADTS\n");
         return -1;
     }
+    if (get_bits(&gb, 1)) {
+        av_log(s, AV_LOG_ERROR, "Extension flag is not allowed in ADTS\n");
+        return -1;
+    }
     if (!adts->channel_conf) {
         init_put_bits(&pb, adts->pce_data, MAX_PCE_SIZE);
 
