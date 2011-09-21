@@ -85,6 +85,20 @@ AVCodec *av_codec_next(AVCodec *c){
     else  return first_avcodec;
 }
 
+#if !FF_API_AVCODEC_INIT
+static
+#endif
+void avcodec_init(void)
+{
+    static int initialized = 0;
+
+    if (initialized != 0)
+        return;
+    initialized = 1;
+
+    dsputil_static_init();
+}
+
 void avcodec_register(AVCodec *codec)
 {
     AVCodec **p;
@@ -1142,20 +1156,6 @@ const char *avcodec_license(void)
 {
 #define LICENSE_PREFIX "libavcodec license: "
     return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
-}
-
-#if !FF_API_AVCODEC_INIT
-static
-#endif
-void avcodec_init(void)
-{
-    static int initialized = 0;
-
-    if (initialized != 0)
-        return;
-    initialized = 1;
-
-    dsputil_static_init();
 }
 
 void avcodec_flush_buffers(AVCodecContext *avctx)

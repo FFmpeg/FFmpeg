@@ -45,6 +45,27 @@ enum ID3v2Encoding {
     ID3v2_ENCODING_UTF8     = 3,
 };
 
+typedef struct ID3v2ExtraMeta {
+    const char *tag;
+    void *data;
+    struct ID3v2ExtraMeta *next;
+} ID3v2ExtraMeta;
+
+typedef struct ID3v2ExtraMetaGEOB {
+    uint32_t datasize;
+    uint8_t *mime_type;
+    uint8_t *file_name;
+    uint8_t *description;
+    uint8_t *data;
+} ID3v2ExtraMetaGEOB;
+
+typedef struct ID3v2EMFunc {
+    const char *tag3;
+    const char *tag4;
+    void (*read)(AVFormatContext*, AVIOContext*, int, char*, ID3v2ExtraMeta **);
+    void (*free)();
+} ID3v2EMFunc;
+
 /**
  * Detect ID3v2 Header.
  * @param buf   must be ID3v2_HEADER_SIZE byte long
@@ -61,9 +82,24 @@ int ff_id3v2_match(const uint8_t *buf, const char *magic);
 int ff_id3v2_tag_len(const uint8_t *buf);
 
 /**
- * Read an ID3v2 tag
+ * Read an ID3v2 tag (text tags only)
  */
 void ff_id3v2_read(AVFormatContext *s, const char *magic);
+
+/**
+ * Read an ID3v2 tag, including supported extra metadata (currently only GEOB)
+ * @param extra_meta If not NULL, extra metadata is parsed into a list of
+ * ID3v2ExtraMeta structs and *extra_meta points to the head of the list
+ */
+void ff_id3v2_read_all(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra_meta);
+
+/**
+ * Free memory allocated parsing special (non-text) metadata.
+ * @param extra_meta Pointer to a pointer to the head of a ID3v2ExtraMeta list, *extra_meta is set to NULL.
+ */
+void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta);
+
+extern const ID3v2EMFunc ff_id3v2_extra_meta_funcs[];
 
 extern const AVMetadataConv ff_id3v2_34_metadata_conv[];
 extern const AVMetadataConv ff_id3v2_4_metadata_conv[];

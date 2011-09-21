@@ -1176,7 +1176,7 @@ static int mpeg_decode_update_thread_context(AVCodecContext *avctx, const AVCode
     if (!ctx->mpeg_enc_ctx_allocated)
         memcpy(s + 1, s1 + 1, sizeof(Mpeg1Context) - sizeof(MpegEncContext));
 
-    if (!(s->pict_type == FF_B_TYPE || s->low_delay))
+    if (!(s->pict_type == AV_PICTURE_TYPE_B || s->low_delay))
         s->picture_number++;
 
     return 0;

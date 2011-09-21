@@ -298,7 +298,7 @@ int av_des_init(AVDES *d, const uint8_t *key, int key_bits, int decrypt) {
     return 0;
 }
 
-void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int decrypt) {
+static void av_des_crypt_mac(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int decrypt, int mac) {
     uint64_t iv_val = iv ? AV_RB64(iv) : 0;
     while (count-- > 0) {
         uint64_t dst_val;
@@ -321,10 +321,19 @@ void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t
         }
         AV_WB64(dst, dst_val);
         src += 8;
-        dst += 8;
+        if (!mac)
+            dst += 8;
     }
     if (iv)
         AV_WB64(iv, iv_val);
+}
+
+void av_des_crypt(AVDES *d, uint8_t *dst, const uint8_t *src, int count, uint8_t *iv, int decrypt) {
+    av_des_crypt_mac(d, dst, src, count, iv, decrypt, 0);
+}
+
+void av_des_mac(AVDES *d, uint8_t *dst, const uint8_t *src, int count) {
+    av_des_crypt_mac(d, dst, src, count, (uint8_t[8]){0}, 0, 1);
 }
 
 #ifdef TEST

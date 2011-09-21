@@ -1444,7 +1444,7 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
 
     if (avio_tell(s->pb) != ts->last_pos) {
         int i;
-//        av_dlog("Skipping after seek\n");
+        av_dlog(ts->stream, "Skipping after seek\n");
         /* seek detected, flush pes buffer */
         for (i = 0; i < NB_PID_MAX; i++) {
             if (ts->pids[i]) {

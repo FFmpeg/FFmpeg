@@ -2774,7 +2774,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         if (s0->first_field) {
             assert(s0->current_picture_ptr);
             assert(s0->current_picture_ptr->f.data[0]);
-            assert(s0->current_picture_ptr->reference != DELAYED_PIC_REF);
+            assert(s0->current_picture_ptr->f.reference != DELAYED_PIC_REF);
 
             /* figure out if we have a complementary field pair */
             if (!FIELD_PICTURE || s->picture_structure == last_pic_structure) {

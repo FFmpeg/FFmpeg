@@ -448,7 +448,7 @@ static const AVOption options[]={
 {"request_channels", "set desired number of audio channels", OFFSET(request_channels), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, A|D},
 #endif
 #if FF_API_DRC_SCALE
-{"drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), FF_OPT_TYPE_FLOAT, {.dbl = 1.0 }, 0.0, 1.0, A|D},
+{"drc_scale", "percentage of dynamic range compression to apply", OFFSET(drc_scale), FF_OPT_TYPE_FLOAT, {.dbl = 0.0 }, 0.0, 1.0, A|D},
 #endif
 #if FF_API_LAME_GLOBAL_OPTS
 {"reservoir", "use bit reservoir", 0, FF_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_BIT_RESERVOIR }, INT_MIN, INT_MAX, A|E, "flags2"},
@@ -544,7 +544,6 @@ void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_typ
     s->pix_fmt= PIX_FMT_NONE;
     s->sample_fmt= AV_SAMPLE_FMT_NONE;
 
-    s->palctrl = NULL;
     s->reget_buffer= avcodec_default_reget_buffer;
     s->reordered_opaque= AV_NOPTS_VALUE;
 }
@@ -623,7 +622,6 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     /* set values specific to opened codecs back to their default state */
     dest->priv_data       = NULL;
     dest->codec           = NULL;
-    dest->palctrl         = NULL;
     dest->slice_offset    = NULL;
     dest->internal_buffer = NULL;
     dest->hwaccel         = NULL;

@@ -225,7 +225,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     int r;
 
     if (s->avctx->hwaccel) {
-        assert(!pic->hwaccel_picture_private);
+        assert(!pic->f.hwaccel_picture_private);
         if (s->avctx->hwaccel->priv_data_size) {
             pic->f.hwaccel_picture_private = av_mallocz(s->avctx->hwaccel->priv_data_size);
             if (!pic->f.hwaccel_picture_private) {
@@ -276,7 +276,7 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared){
 
     if(shared){
         assert(pic->f.data[0]);
-        assert(pic->type == 0 || pic->type == FF_BUFFER_TYPE_SHARED);
+        assert(pic->f.type == 0 || pic->f.type == FF_BUFFER_TYPE_SHARED);
         pic->f.type = FF_BUFFER_TYPE_SHARED;
     }else{
         assert(!pic->f.data[0]);
@@ -539,7 +539,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src
         s->last_pict_type= s1->pict_type;
         if (s1->current_picture_ptr) s->last_lambda_for[s1->pict_type] = s1->current_picture_ptr->f.quality;
 
-        if(s1->pict_type!=FF_B_TYPE){
+        if (s1->pict_type != AV_PICTURE_TYPE_B) {
             s->last_non_b_pict_type= s1->pict_type;
         }
     }
@@ -2662,6 +2662,6 @@ void ff_set_qscale(MpegEncContext * s, int qscale)
 
 void MPV_report_decode_progress(MpegEncContext *s)
 {
-    if (s->pict_type != FF_B_TYPE && !s->partitioned_frame && !s->error_occurred)
+    if (s->pict_type != AV_PICTURE_TYPE_B && !s->partitioned_frame && !s->error_occurred)
         ff_thread_report_progress((AVFrame*)s->current_picture_ptr, s->mb_y, 0);
 }
