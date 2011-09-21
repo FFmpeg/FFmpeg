@@ -38,8 +38,8 @@
 #define WIDTH 64
 #define HEIGHT 64
 
-uint8_t img1[WIDTH * HEIGHT];
-uint8_t img2[WIDTH * HEIGHT];
+static uint8_t img1[WIDTH * HEIGHT];
+static uint8_t img2[WIDTH * HEIGHT];
 
 static void fill_random(uint8_t *tab, int size)
 {
