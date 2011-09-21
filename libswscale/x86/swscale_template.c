@@ -1963,10 +1963,6 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #if defined(PIC)
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
-    // HACK: gcc 4.6 no longer decrements esp,
-    // use this to make it reserve space for the call
-    // return address
-    void *dummy;
 
     __asm__ volatile(
 #if defined(PIC)
@@ -2018,7 +2014,6 @@ static void RENAME(hyscale_fast)(SwsContext *c, int16_t *dst,
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
-          ,"m" (dummy)
         : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if !defined(PIC)
          ,"%"REG_b
@@ -2040,10 +2035,6 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #if defined(PIC)
     DECLARE_ALIGNED(8, uint64_t, ebxsave);
 #endif
-    // HACK: gcc 4.6 no longer decrements esp,
-    // use this to make it reserve space for the call
-    // return address
-    void *dummy;
 
     __asm__ volatile(
 #if defined(PIC)
@@ -2083,7 +2074,6 @@ static void RENAME(hcscale_fast)(SwsContext *c, int16_t *dst1, int16_t *dst2,
 #if defined(PIC)
           ,"m" (ebxsave)
 #endif
-          ,"m" (dummy)
         : "%"REG_a, "%"REG_c, "%"REG_d, "%"REG_S, "%"REG_D
 #if !defined(PIC)
          ,"%"REG_b

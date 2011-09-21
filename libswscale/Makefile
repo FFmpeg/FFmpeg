@@ -21,6 +21,8 @@ OBJS-$(HAVE_MMX)           +=  x86/rgb2rgb.o            \
 OBJS-$(HAVE_VIS)           +=  sparc/yuv2rgb_vis.o
 OBJS-$(HAVE_YASM)          +=  x86/scale.o
 
+$(SUBDIR)x86/swscale_mmx.o: CFLAGS += $(NOREDZONE_FLAGS)
+
 TESTPROGS = colorspace swscale
 
 DIRS = bfin mlib ppc sparc x86

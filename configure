@@ -3179,6 +3179,10 @@ else
 fi
 check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
+check_cc -mno-red-zone <<EOF && noredzone_flags="-mno-red-zone"
+int x;
+EOF
+
 
 if enabled icc; then
     # Just warnings, no remarks
@@ -3469,6 +3473,7 @@ SLIB_INSTALL_LINKS=${SLIB_INSTALL_LINKS}
 SLIB_INSTALL_EXTRA_LIB=${SLIB_INSTALL_EXTRA_LIB}
 SLIB_INSTALL_EXTRA_SHLIB=${SLIB_INSTALL_EXTRA_SHLIB}
 SAMPLES:=${samples:-\$(FATE_SAMPLES)}
+NOREDZONE_FLAGS=$noredzone_flags
 EOF
 
 get_version(){
