@@ -1272,6 +1272,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             st->codec->sample_rate = AV_RB32(st->codec->extradata+32);
         }
         break;
+    case CODEC_ID_AC3:
+        st->need_parsing = AVSTREAM_PARSE_FULL;
+        break;
     default:
         break;
     }
