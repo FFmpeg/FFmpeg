@@ -1,4 +1,7 @@
 /*
+ * Copyright (c) 2010-2011 Maxim Poliakovski
+ * Copyright (c) 2010-2011 Elvis Presley
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
