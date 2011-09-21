@@ -513,6 +513,16 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (!res)
             return -1;
 
+        if (res == 2) {
+            int i;
+            for (i = 0; i < 4; i++) {
+                if (s->frames[i].data[0])
+                    avctx->release_buffer(avctx, &s->frames[i]);
+            }
+            if (is_alpha)
+                return -1;
+        }
+
         if (!is_alpha) {
             p->reference = 1;
             if (avctx->get_buffer(avctx, p) < 0) {
