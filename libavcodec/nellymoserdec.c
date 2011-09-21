@@ -154,6 +154,7 @@ static int decode_tag(AVCodecContext * avctx,
                       void *data, int *data_size,
                       const uint8_t * buf, int buf_size) {
     NellyMoserDecodeContext *s = avctx->priv_data;
+    int data_max = *data_size;
     int blocks, i;
     int16_t* samples;
     *data_size = 0;
@@ -177,6 +178,8 @@ static int decode_tag(AVCodecContext * avctx,
     }
 
     for (i=0 ; i<blocks ; i++) {
+        if ((i + 1) * NELLY_SAMPLES * sizeof(int16_t) > data_max)
+            return i > 0 ? i * NELLY_BLOCK_LEN : -1;
         nelly_decode_block(s, &buf[i*NELLY_BLOCK_LEN], s->float_buf);
         s->dsp.float_to_int16(&samples[i*NELLY_SAMPLES], s->float_buf, NELLY_SAMPLES);
         *data_size += NELLY_SAMPLES*sizeof(int16_t);
