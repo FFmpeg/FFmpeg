@@ -989,6 +989,8 @@ int get_filtered_video_frame(AVFilterContext *ctx, AVFrame *frame,
     return 1;
 }
 
+#endif /* CONFIG_AVFILTER */
+
 void *grow_array(void *array, int elem_size, int *size, int new_size)
 {
     if (new_size >= INT_MAX / elem_size) {
@@ -1007,5 +1009,3 @@ void *grow_array(void *array, int elem_size, int *size, int new_size)
     }
     return array;
 }
-
-#endif /* CONFIG_AVFILTER */
