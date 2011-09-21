@@ -47,6 +47,7 @@ easier to use. The changes are:
 - split filter
 - libcdio-paranoia input device for audio CD grabbing
 - select filter
+- Apple ProRes decoder
 
 
 version 0.7:

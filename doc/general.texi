@@ -341,6 +341,7 @@ following image formats are supported:
     @tab Used in Chinese MP3 players.
 @item ANSI/ASCII art         @tab     @tab  X
 @item Apple MJPEG-B          @tab     @tab  X
+@item Apple ProRes           @tab     @tab  X
 @item Apple QuickDraw        @tab     @tab  X
     @tab fourcc: qdrw
 @item Asus v1                @tab  X  @tab  X
