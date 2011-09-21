@@ -606,6 +606,14 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
         av_log(avctx, AV_LOG_ERROR, "Frame is too large to fit in buffer\n");
         return -1;
     }
+    if (stereo ^ (avctx->channels != 1)) {
+        av_log(avctx, AV_LOG_ERROR, "channels mismatch\n");
+        return AVERROR(EINVAL);
+    }
+    if (bits && avctx->sample_fmt == AV_SAMPLE_FMT_U8) {
+        av_log(avctx, AV_LOG_ERROR, "sample format mismatch\n");
+        return AVERROR(EINVAL);
+    }
 
     memset(vlc, 0, sizeof(VLC) * 4);
     memset(h, 0, sizeof(HuffContext) * 4);
