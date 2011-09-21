@@ -7,6 +7,10 @@
 *-example
 *-test
 *_g
+*.def
+*.dll
+*.lib
+*.exp
 config.*
 doc/*.1
 doc/*.html

@@ -46,7 +46,7 @@ typedef void (*VP56Filter)(VP56Context *s, uint8_t *dst, uint8_t *src,
 typedef void (*VP56ParseCoeff)(VP56Context *s);
 typedef void (*VP56DefaultModelsInit)(VP56Context *s);
 typedef void (*VP56ParseVectorModels)(VP56Context *s);
-typedef void (*VP56ParseCoeffModels)(VP56Context *s);
+typedef int  (*VP56ParseCoeffModels)(VP56Context *s);
 typedef int  (*VP56ParseHeader)(VP56Context *s, const uint8_t *buf,
                                 int buf_size, int *golden_frame);
 

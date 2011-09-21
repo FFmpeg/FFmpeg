@@ -1305,6 +1305,17 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             r->next_pts = r->cur_pts;
         }
         s->mb_x = s->mb_y = 0;
+    } else {
+        int slice_type = r->si.type ? r->si.type : AV_PICTURE_TYPE_I;
+
+        if (slice_type != s->pict_type) {
+            av_log(s->avctx, AV_LOG_ERROR, "Slice type mismatch\n");
+            return AVERROR_INVALIDDATA;
+        }
+        if (s->width != r->si.width || s->height != r->si.height) {
+            av_log(s->avctx, AV_LOG_ERROR, "Size mismatch\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     r->si.end = end;
@@ -1436,15 +1447,17 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         slice_count = (*buf++) + 1;
         slices_hdr = buf + 4;
         buf += 8 * slice_count;
+        buf_size -= 1 + 8 * slice_count;
     }else
         slice_count = avctx->slice_count;
 
     //parse first slice header to check whether this frame can be decoded
-    if(get_slice_offset(avctx, slices_hdr, 0) > buf_size){
-        av_log(avctx, AV_LOG_ERROR, "Slice offset is greater than frame size\n");
+    if(get_slice_offset(avctx, slices_hdr, 0) < 0 ||
+       get_slice_offset(avctx, slices_hdr, 0) > buf_size){
+        av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
         return -1;
     }
-    init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), buf_size-get_slice_offset(avctx, slices_hdr, 0));
+    init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, 0), (buf_size-get_slice_offset(avctx, slices_hdr, 0))*8);
     if(r->parse_slice_header(r, &r->s.gb, &si) < 0 || si.start){
         av_log(avctx, AV_LOG_ERROR, "First slice header is incorrect\n");
         return -1;
@@ -1457,8 +1470,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
 #endif
     if(   (avctx->skip_frame >= AVDISCARD_NONREF && si.type==AV_PICTURE_TYPE_B)
        || (avctx->skip_frame >= AVDISCARD_NONKEY && si.type!=AV_PICTURE_TYPE_I)
-       ||  avctx->skip_frame >= AVDISCARD_ALL)
-        return buf_size;
+       ||  avctx->skip_frame >= AVDISCARD_ALL)        return avpkt->size;
 #if FF_API_HURRY_UP
     /* skip everything if we are in a hurry>=5 */
     if(avctx->hurry_up>=5)
@@ -1473,13 +1485,18 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         else
             size= get_slice_offset(avctx, slices_hdr, i+1) - offset;
 
-        if(offset > buf_size){
-            av_log(avctx, AV_LOG_ERROR, "Slice offset is greater than frame size\n");
+        if(offset < 0 || offset > buf_size){
+            av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
             break;
         }
 
         r->si.end = s->mb_width * s->mb_height;
         if(i+1 < slice_count){
+            if (get_slice_offset(avctx, slices_hdr, i+1) < 0 ||
+                get_slice_offset(avctx, slices_hdr, i+1) > buf_size) {
+                av_log(avctx, AV_LOG_ERROR, "Slice offset is invalid\n");
+                break;
+            }
             init_get_bits(&s->gb, buf+get_slice_offset(avctx, slices_hdr, i+1), (buf_size-get_slice_offset(avctx, slices_hdr, i+1))*8);
             if(r->parse_slice_header(r, &r->s.gb, &si) < 0){
                 if(i+2 < slice_count)
@@ -1489,13 +1506,17 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
             }else
                 r->si.end = si.start;
         }
+        if (size < 0 || size > buf_size - offset) {
+            av_log(avctx, AV_LOG_ERROR, "Slice size is invalid\n");
+            break;
+        }
         last = rv34_decode_slice(r, r->si.end, buf + offset, size);
         s->mb_num_left = r->s.mb_x + r->s.mb_y*r->s.mb_width - r->si.start;
         if(last)
             break;
     }
 
-    if(last){
+    if(last && s->current_picture_ptr){
         if(r->loop_filter)
             r->loop_filter(r, s->mb_height - 1);
         ff_er_frame_end(s);
@@ -1512,7 +1533,7 @@ int ff_rv34_decode_frame(AVCodecContext *avctx,
         }
         s->current_picture_ptr= NULL; //so we can detect if frame_end wasnt called (find some nicer solution...)
     }
-    return buf_size;
+    return avpkt->size;
 }
 
 av_cold int ff_rv34_decode_end(AVCodecContext *avctx)

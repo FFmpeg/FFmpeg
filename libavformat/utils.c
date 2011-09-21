@@ -547,6 +547,7 @@ int av_open_input_stream(AVFormatContext **ic_ptr,
     ff_metadata_demux_compat(ic);
 #endif
 fail:
+    *ic_ptr = ic;
     av_dict_free(&opts);
     return err;
 }
@@ -1066,7 +1067,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     // we take the conservative approach and discard both
     // Note, if this is misbehaving for a H.264 file then possibly presentation_delayed is not set correctly.
     if(delay==1 && pkt->dts == pkt->pts && pkt->dts != AV_NOPTS_VALUE && presentation_delayed){
-        av_log(s, AV_LOG_DEBUG, "invalid dts/pts combination\n");
+        av_log(s, AV_LOG_DEBUG, "invalid dts/pts combination %Ld\n", pkt->dts);
         pkt->dts= pkt->pts= AV_NOPTS_VALUE;
     }
 
@@ -1204,7 +1205,8 @@ static int av_read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (!st->need_parsing || !st->parser) {
                 /* no parsing needed: we just output the packet as is */
                 /* raw data support */
-                *pkt = st->cur_pkt; st->cur_pkt.data= NULL;
+                *pkt = st->cur_pkt;
+                st->cur_pkt.data= NULL;
                 compute_pkt_fields(s, st, NULL, pkt);
                 s->cur_st = NULL;
                 if ((s->iformat->flags & AVFMT_GENERIC_INDEX) &&

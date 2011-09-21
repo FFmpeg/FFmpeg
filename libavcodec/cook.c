@@ -1175,8 +1175,9 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             return -1;
         }
 
-        if ((q->subpacket[s].js_vlc_bits > 6) || (q->subpacket[s].js_vlc_bits < 0)) {
-            av_log(avctx,AV_LOG_ERROR,"js_vlc_bits = %d, only >= 0 and <= 6 allowed!\n",q->subpacket[s].js_vlc_bits);
+        if ((q->subpacket[s].js_vlc_bits > 6) || (q->subpacket[s].js_vlc_bits < 2*q->subpacket[s].joint_stereo)) {
+            av_log(avctx,AV_LOG_ERROR,"js_vlc_bits = %d, only >= %d and <= 6 allowed!\n",
+                   q->subpacket[s].js_vlc_bits, 2*q->subpacket[s].joint_stereo);
             return -1;
         }
 

@@ -109,8 +109,8 @@ static int mp3_parse_vbr_tags(AVFormatContext *s, AVStream *st, int64_t base)
         if(avio_rb16(s->pb) == 1) {
             /* skip delay and quality */
             avio_skip(s->pb, 4);
-            frames = avio_rb32(s->pb);
             size = avio_rb32(s->pb);
+            frames = avio_rb32(s->pb);
         }
     }
 
@@ -173,7 +173,9 @@ static int mp3_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = 0;
     if (ret <= 0) {
-        return AVERROR(EIO);
+        if(ret<0)
+            return ret;
+        return AVERROR_EOF;
     }
 
     if (ret > ID3v1_TAG_SIZE &&

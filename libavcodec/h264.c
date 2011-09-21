@@ -183,18 +183,26 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_l
         i-= RS;
     }
 
-    if(i>=length-1){ //no escaped 0
-        *dst_length= length;
-        *consumed= length+1; //+1 for the header
-        return src;
-    }
-
     bufidx = h->nal_unit_type == NAL_DPC ? 1 : 0; // use second escape buffer for inter data
-    av_fast_malloc(&h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+FF_INPUT_BUFFER_PADDING_SIZE);
+    si=h->rbsp_buffer_size[bufidx];
+    av_fast_malloc(&h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+FF_INPUT_BUFFER_PADDING_SIZE+MAX_MBPAIR_SIZE);
     dst= h->rbsp_buffer[bufidx];
+    if(si != h->rbsp_buffer_size[bufidx])
+        memset(dst + length, 0, FF_INPUT_BUFFER_PADDING_SIZE+MAX_MBPAIR_SIZE);
 
     if (dst == NULL){
         return NULL;
+    }
+
+    if(i>=length-1){ //no escaped 0
+        *dst_length= length;
+        *consumed= length+1; //+1 for the header
+        if(h->s.avctx->flags2 & CODEC_FLAG2_FAST){
+            return src;
+        }else{
+            memcpy(dst, src, length);
+            return dst;
+        }
     }
 
 //printf("decoding esc\n");
@@ -1165,7 +1173,10 @@ static int decode_update_thread_context(AVCodecContext *dst, const AVCodecContex
         memcpy(&h->s + 1, &h1->s + 1, sizeof(H264Context) - sizeof(MpegEncContext)); //copy all fields after MpegEnc
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(dst, AV_LOG_ERROR, "Could not allocate memory for h264\n");
+            return AVERROR(ENOMEM);
+        }
         context_init(h);
 
         for(i=0; i<2; i++){
@@ -1403,7 +1414,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
     pics = 0;
     while(h->delayed_pic[pics]) pics++;
 
-    assert(pics <= MAX_DELAYED_PIC_COUNT);
+    av_assert0(pics <= MAX_DELAYED_PIC_COUNT);
 
     h->delayed_pic[pics++] = cur;
     if(cur->reference == 0)
@@ -1848,15 +1859,30 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                     tmp_y[j] = get_bits(&gb, bit_depth);
             }
             if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-                for (i = 0; i < 8; i++) {
-                    uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
-                    for (j = 0; j < 8; j++)
-                        tmp_cb[j] = get_bits(&gb, bit_depth);
-                }
-                for (i = 0; i < 8; i++) {
-                    uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
-                    for (j = 0; j < 8; j++)
-                        tmp_cr[j] = get_bits(&gb, bit_depth);
+                if (!h->sps.chroma_format_idc) {
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
+                        for (j = 0; j < 8; j++) {
+                            tmp_cb[j] = 1 << (bit_depth - 1);
+                        }
+                    }
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
+                        for (j = 0; j < 8; j++) {
+                            tmp_cr[j] = 1 << (bit_depth - 1);
+                        }
+                    }
+                } else {
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cb = (uint16_t*)(dest_cb + i*uvlinesize);
+                        for (j = 0; j < 8; j++)
+                            tmp_cb[j] = get_bits(&gb, bit_depth);
+                    }
+                    for (i = 0; i < 8; i++) {
+                        uint16_t *tmp_cr = (uint16_t*)(dest_cr + i*uvlinesize);
+                        for (j = 0; j < 8; j++)
+                            tmp_cr[j] = get_bits(&gb, bit_depth);
+                    }
                 }
             }
         } else {
@@ -1864,9 +1890,16 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                 memcpy(dest_y + i*  linesize, h->mb       + i*8, 16);
             }
             if(simple || !CONFIG_GRAY || !(s->flags&CODEC_FLAG_GRAY)){
-                for (i=0; i<8; i++) {
-                    memcpy(dest_cb+ i*uvlinesize, h->mb + 128 + i*4,  8);
-                    memcpy(dest_cr+ i*uvlinesize, h->mb + 160 + i*4,  8);
+                if (!h->sps.chroma_format_idc) {
+                    for (i = 0; i < 8; i++) {
+                        memset(dest_cb + i*uvlinesize, 128, 8);
+                        memset(dest_cr + i*uvlinesize, 128, 8);
+                    }
+                } else {
+                    for (i = 0; i < 8; i++) {
+                        memcpy(dest_cb + i*uvlinesize, h->mb + 128 + i*4,  8);
+                        memcpy(dest_cr + i*uvlinesize, h->mb + 160 + i*4,  8);
+                    }
                 }
             }
         }
@@ -2198,15 +2231,17 @@ static void implicit_weight_table(H264Context *h, int field){
     for(ref0=ref_start; ref0 < ref_count0; ref0++){
         int poc0 = h->ref_list[0][ref0].poc;
         for(ref1=ref_start; ref1 < ref_count1; ref1++){
-            int poc1 = h->ref_list[1][ref1].poc;
-            int td = av_clip(poc1 - poc0, -128, 127);
-            int w= 32;
-            if(td){
-                int tb = av_clip(cur_poc - poc0, -128, 127);
-                int tx = (16384 + (FFABS(td) >> 1)) / td;
-                int dist_scale_factor = (tb*tx + 32) >> 8;
-                if(dist_scale_factor >= -64 && dist_scale_factor <= 128)
-                    w = 64 - dist_scale_factor;
+            int w = 32;
+            if (!h->ref_list[0][ref0].long_ref && !h->ref_list[1][ref1].long_ref) {
+                int poc1 = h->ref_list[1][ref1].poc;
+                int td = av_clip(poc1 - poc0, -128, 127);
+                if(td){
+                    int tb = av_clip(cur_poc - poc0, -128, 127);
+                    int tx = (16384 + (FFABS(td) >> 1)) / td;
+                    int dist_scale_factor = (tb*tx + 32) >> 8;
+                    if(dist_scale_factor >= -64 && dist_scale_factor <= 128)
+                        w = 64 - dist_scale_factor;
+                }
             }
             if(field<0){
                 h->implicit_weight[ref0][ref1][0]=
@@ -2233,7 +2268,7 @@ static void idr(H264Context *h){
 static void flush_dpb(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     int i;
-    for(i=0; i<MAX_DELAYED_PIC_COUNT; i++) {
+    for(i=0; i<=MAX_DELAYED_PIC_COUNT; i++) {
         if(h->delayed_pic[i])
             h->delayed_pic[i]->reference= 0;
         h->delayed_pic[i]= NULL;
@@ -2638,7 +2673,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         h->prev_interlaced_frame = 1;
 
         init_scan_tables(h);
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "Could not allocate memory for h264\n");
+            return AVERROR(ENOMEM);
+        }
 
         if (!HAVE_THREADS || !(s->avctx->active_thread_type&FF_THREAD_SLICE)) {
             if (context_init(h) < 0) {
@@ -3668,7 +3706,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             s->workaround_bugs |= FF_BUG_TRUNCATED;
 
         if(!(s->workaround_bugs & FF_BUG_TRUNCATED)){
-        while(ptr[dst_length - 1] == 0 && dst_length > 0)
+        while(dst_length > 0 && ptr[dst_length - 1] == 0)
             dst_length--;
         }
         bit_length= !dst_length ? 0 : (8*dst_length - ff_h264_decode_rbsp_trailing(h, ptr + dst_length - 1));
