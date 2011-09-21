@@ -203,10 +203,6 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
     {
         /* signature */
         skip_bits(&s->gb, 32);
-//        if (get_bits_long(&s->gb, 32) != av_bswap32(AV_RL32("TTA1"))) {
-//            av_log(s->avctx, AV_LOG_ERROR, "Missing magic\n");
-//            return -1;
-//        }
 
         s->flags = get_bits(&s->gb, 16);
         if (s->flags != 1 && s->flags != 3)
@@ -371,12 +367,6 @@ static int tta_decode_frame(AVCodecContext *avctx,
             }
             *predictor = *p;
 
-            /*if ((get_bits_count(&s->gb)+7)/8 > buf_size)
-            {
-                av_log(NULL, AV_LOG_INFO, "overread!!\n");
-                break;
-            }*/
-
             // flip channels
             if (cur_chan < (s->channels-1))
                 cur_chan++;
@@ -400,8 +390,6 @@ static int tta_decode_frame(AVCodecContext *avctx,
             case 2: {
                 uint16_t *samples = data;
                 for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++) {
-//                    *samples++ = (unsigned char)*p;
-//                    *samples++ = (unsigned char)(*p >> 8);
                     *samples++ = *p;
                 }
                 *data_size = (uint8_t *)samples - (uint8_t *)data;
@@ -412,7 +400,6 @@ static int tta_decode_frame(AVCodecContext *avctx,
         }
     }
 
-//    return get_bits_count(&s->gb)+7)/8;
     return buf_size;
 }
 
