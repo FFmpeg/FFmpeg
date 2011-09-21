@@ -29,14 +29,14 @@ int main(int argc, char *argv[])
     if (argc < 3)
     {
         printf("Usage: %s <infile.swf> <outfile.swf>\n", argv[0]);
-        exit(1);
+        return 1;
     }
 
     fd_in = open(argv[1], O_RDONLY);
     if (fd_in < 0)
     {
         perror("Error opening input file");
-        exit(1);
+        return 1;
     }
 
     fd_out = open(argv[2], O_WRONLY|O_CREAT, 00644);
@@ -44,7 +44,7 @@ int main(int argc, char *argv[])
     {
         perror("Error opening output file");
         close(fd_in);
-        exit(1);
+        return 1;
     }
 
     if (read(fd_in, &buf_in, 8) != 8)
@@ -52,13 +52,13 @@ int main(int argc, char *argv[])
         printf("Header error\n");
         close(fd_in);
         close(fd_out);
-        exit(1);
+        return 1;
     }
 
     if (buf_in[0] != 'C' || buf_in[1] != 'W' || buf_in[2] != 'S')
     {
         printf("Not a compressed flash file\n");
-        exit(1);
+        return 1;
     }
 
     fstat(fd_in, &statbuf);
@@ -71,7 +71,7 @@ int main(int argc, char *argv[])
     buf_in[0] = 'F';
     if (write(fd_out, &buf_in, 8) < 8) {
         perror("Error writing output file");
-        exit(1);
+        return 1;
     }
 
     zstream.zalloc = NULL;
@@ -97,7 +97,7 @@ int main(int argc, char *argv[])
         {
             printf("Error while decompressing: %d\n", ret);
             inflateEnd(&zstream);
-            exit(1);
+            return 1;
         }
 
         dbgprintf("a_in: %d t_in: %lu a_out: %d t_out: %lu -- %lu out\n",
@@ -106,7 +106,7 @@ int main(int argc, char *argv[])
 
         if (write(fd_out, &buf_out, zstream.total_out - last_out) < zstream.total_out - last_out) {
             perror("Error writing output file");
-            exit(1);
+            return 1;
         }
 
         i += len;
@@ -128,7 +128,7 @@ int main(int argc, char *argv[])
         lseek(fd_out, 4, SEEK_SET);
         if (write(fd_out, &buf_in, 4) < 4) {
             perror("Error writing output file");
-            exit(1);
+            return 1;
         }
     }
 

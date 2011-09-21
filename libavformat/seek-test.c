@@ -28,7 +28,6 @@
 #include "libavutil/mathematics.h"
 #include "libavformat/avformat.h"
 
-#undef exit
 #undef printf
 #undef fprintf
 
@@ -75,7 +74,7 @@ int main(int argc, char **argv)
     if (argc != 2) {
         printf("usage: %s input_file\n"
                "\n", argv[0]);
-        exit(1);
+        return 1;
     }
 
     filename = argv[1];
@@ -84,13 +83,13 @@ int main(int argc, char **argv)
     av_dict_free(&format_opts);
     if (ret < 0) {
         fprintf(stderr, "cannot open %s\n", filename);
-        exit(1);
+        return 1;
     }
 
     ret = avformat_find_stream_info(ic, NULL);
     if (ret < 0) {
         fprintf(stderr, "%s: could not find codec parameters\n", filename);
-        exit(1);
+        return 1;
     }
 
     for(i=0; ; i++){

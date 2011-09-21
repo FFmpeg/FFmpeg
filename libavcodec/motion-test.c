@@ -33,7 +33,6 @@
 #include "dsputil.h"
 #include "libavutil/lfg.h"
 
-#undef exit
 #undef printf
 
 #define WIDTH 64
@@ -61,7 +60,6 @@ static void help(void)
 {
     printf("motion-test [-h]\n"
            "test motion implementations\n");
-    exit(1);
 }
 
 static int64_t gettime(void)
@@ -138,7 +136,7 @@ int main(int argc, char **argv)
         switch(c) {
         case 'h':
             help();
-            break;
+            return 1;
         }
     }
 
