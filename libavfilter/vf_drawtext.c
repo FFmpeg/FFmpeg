@@ -560,7 +560,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     DrawTextContext *dtext = ctx->priv;
     uint32_t code = 0, prev_code = 0;
     int x = 0, y = 0, i = 0, ret;
-    int text_height, baseline;
+    int text_height;
     char *text = dtext->text;
     uint8_t *p;
     int str_w = 0, len;
@@ -624,7 +624,6 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         y_max = FFMAX(glyph->bbox.yMax, y_max);
     }
     text_height = y_max - y_min;
-    baseline    = y_max;
 
     /* compute and save position for each glyph */
     glyph = NULL;
@@ -663,7 +662,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
         /* save position */
         dtext->positions[i].x = x + glyph->bitmap_left;
-        dtext->positions[i].y = y - glyph->bitmap_top + baseline;
+        dtext->positions[i].y = y - glyph->bitmap_top + y_max;
         if (code == '\t') x  = (x / dtext->tabsize + 1)*dtext->tabsize;
         else              x += glyph->advance;
     }
