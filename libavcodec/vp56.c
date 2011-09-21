@@ -549,7 +549,8 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             s->mb_type = VP56_MB_INTER_NOVEC_PF;
         }
 
-        s->parse_coeff_models(s);
+        if (s->parse_coeff_models(s))
+            goto next;
 
         memset(s->prev_dc, 0, sizeof(s->prev_dc));
         s->prev_dc[1][VP56_FRAME_CURRENT] = 128;
@@ -613,6 +614,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             }
         }
 
+    next:
         if (p->key_frame || golden_frame) {
             if (s->framep[VP56_FRAME_GOLDEN]->data[0] &&
                 s->framep[VP56_FRAME_GOLDEN] != s->framep[VP56_FRAME_GOLDEN2])
