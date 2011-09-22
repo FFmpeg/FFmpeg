@@ -118,7 +118,7 @@ static void vp5_parse_vector_models(VP56Context *s)
                 model->vector_pdv[comp][node] = vp56_rac_gets_nn(c, 7);
 }
 
-static void vp5_parse_coeff_models(VP56Context *s)
+static int vp5_parse_coeff_models(VP56Context *s)
 {
     VP56RangeCoder *c = &s->c;
     VP56Model *model = s->modelp;
@@ -162,6 +162,7 @@ static void vp5_parse_coeff_models(VP56Context *s)
                 for (ctx=0; ctx<6; ctx++)
                     for (node=0; node<5; node++)
                         model->coeff_acct[pt][ct][cg][ctx][node] = av_clip(((model->coeff_ract[pt][ct][cg][node] * vp5_ract_lc[ct][cg][node][ctx][0] + 128) >> 8) + vp5_ract_lc[ct][cg][node][ctx][1], 1, 254);
+    return 0;
 }
 
 static void vp5_parse_coeff(VP56Context *s)

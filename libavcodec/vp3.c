@@ -2366,6 +2366,7 @@ AVCodec ff_vp3_decoder = {
     .decode         = vp3_decode_frame,
     .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_FRAME_THREADS,
     .flush = vp3_decode_flush,
+
     .long_name = NULL_IF_CONFIG_SMALL("On2 VP3"),
     .update_thread_context = ONLY_IF_THREADS_ENABLED(vp3_update_thread_context)
 };

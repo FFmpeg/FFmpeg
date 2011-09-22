@@ -174,18 +174,26 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_l
         i-= RS;
     }
 
-    if(i>=length-1){ //no escaped 0
-        *dst_length= length;
-        *consumed= length+1; //+1 for the header
-        return src;
-    }
-
     bufidx = h->nal_unit_type == NAL_DPC ? 1 : 0; // use second escape buffer for inter data
-    av_fast_malloc(&h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+FF_INPUT_BUFFER_PADDING_SIZE);
+    si=h->rbsp_buffer_size[bufidx];
+    av_fast_malloc(&h->rbsp_buffer[bufidx], &h->rbsp_buffer_size[bufidx], length+FF_INPUT_BUFFER_PADDING_SIZE+MAX_MBPAIR_SIZE);
     dst= h->rbsp_buffer[bufidx];
+    if(si != h->rbsp_buffer_size[bufidx])
+        memset(dst + length, 0, FF_INPUT_BUFFER_PADDING_SIZE+MAX_MBPAIR_SIZE);
 
     if (dst == NULL){
         return NULL;
+    }
+
+    if(i>=length-1){ //no escaped 0
+        *dst_length= length;
+        *consumed= length+1; //+1 for the header
+        if(h->s.avctx->flags2 & CODEC_FLAG2_FAST){
+            return src;
+        }else{
+            memcpy(dst, src, length);
+            return dst;
+        }
     }
 
 //printf("decoding esc\n");
@@ -1138,7 +1146,10 @@ static int decode_update_thread_context(AVCodecContext *dst, const AVCodecContex
         memcpy(&h->s + 1, &h1->s + 1, sizeof(H264Context) - sizeof(MpegEncContext)); //copy all fields after MpegEnc
         memset(h->sps_buffers, 0, sizeof(h->sps_buffers));
         memset(h->pps_buffers, 0, sizeof(h->pps_buffers));
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(dst, AV_LOG_ERROR, "Could not allocate memory for h264\n");
+            return AVERROR(ENOMEM);
+        }
         context_init(h);
 
         for(i=0; i<2; i++){
@@ -1376,7 +1387,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
     pics = 0;
     while(h->delayed_pic[pics]) pics++;
 
-    assert(pics <= MAX_DELAYED_PIC_COUNT);
+    av_assert0(pics <= MAX_DELAYED_PIC_COUNT);
 
     h->delayed_pic[pics++] = cur;
     if (cur->f.reference == 0)
@@ -2211,7 +2222,7 @@ static void idr(H264Context *h){
 static void flush_dpb(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     int i;
-    for(i=0; i<MAX_DELAYED_PIC_COUNT; i++) {
+    for(i=0; i<=MAX_DELAYED_PIC_COUNT; i++) {
         if(h->delayed_pic[i])
             h->delayed_pic[i]->f.reference = 0;
         h->delayed_pic[i]= NULL;
@@ -2616,7 +2627,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         h->prev_interlaced_frame = 1;
 
         init_scan_tables(h);
-        ff_h264_alloc_tables(h);
+        if (ff_h264_alloc_tables(h) < 0) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "Could not allocate memory for h264\n");
+            return AVERROR(ENOMEM);
+        }
 
         if (!HAVE_THREADS || !(s->avctx->active_thread_type&FF_THREAD_SLICE)) {
             if (context_init(h) < 0) {
@@ -3593,7 +3607,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             s->workaround_bugs |= FF_BUG_TRUNCATED;
 
         if(!(s->workaround_bugs & FF_BUG_TRUNCATED)){
-        while(ptr[dst_length - 1] == 0 && dst_length > 0)
+        while(dst_length > 0 && ptr[dst_length - 1] == 0)
             dst_length--;
         }
         bit_length= !dst_length ? 0 : (8*dst_length - ff_h264_decode_rbsp_trailing(h, ptr + dst_length - 1));

@@ -20,6 +20,7 @@
 
 #include "avlanguage.h"
 #include "libavutil/avstring.h"
+#include "libavutil/common.h"
 #include <stdlib.h>
 #include <stdint.h>
 #include <string.h>
@@ -736,7 +737,7 @@ const char *av_convert_lang_to(const char *lang, enum AVLangCodespace target_cod
 {
     int i;
     const LangEntry *entry = NULL;
-    const int NB_CODESPACES = sizeof(lang_table_counts)/sizeof(*lang_table_counts);
+    const int NB_CODESPACES = FF_ARRAY_ELEMS(lang_table_counts);
 
     if (target_codespace >= NB_CODESPACES)
         return NULL;

@@ -449,6 +449,11 @@ encompassing your FFmpeg includes using @code{extern "C"}.
 
 See @url{http://www.parashift.com/c++-faq-lite/mixing-c-and-cpp.html#faq-32.3}
 
+@section I'm using libavutil from within my C++ application but the compiler complains about 'UINT64_C' was not declared in this scope
+
+Libav is a pure C project using C99 math features, in order to enable C++
+to use them you have to append -D__STDC_CONSTANT_MACROS to your CXXFLAGS
+
 @section I have a file in memory / a API different from *open/*read/ libc how do I use it with libavformat?
 
 You have to implement a URLProtocol, see @file{libavformat/file.c} in

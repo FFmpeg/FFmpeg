@@ -426,7 +426,7 @@ static int gxf_packet(AVFormatContext *s, AVPacket *pkt) {
     int pkt_len;
     struct gxf_stream_info *si = s->priv_data;
 
-    while (!pb->eof_reached) {
+    while (!url_feof(pb)) {
         AVStream *st;
         int track_type, track_id, ret;
         int field_nr, field_info, skip = 0;

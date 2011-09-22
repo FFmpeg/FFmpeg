@@ -2074,7 +2074,7 @@ static int transcode(AVFormatContext **output_files,
         fi = stream_maps[i].sync_file_index;
         si = stream_maps[i].sync_stream_index;
         if (fi < 0 || fi > nb_input_files - 1 ||
-            si < 0 || si > input_files[fi].ctx->nb_streams - 1) {
+            si < 0 || si > input_files[fi].nb_streams - 1) {
             fprintf(stderr,"Could not find sync stream #%d.%d\n", fi, si);
             ret = AVERROR(EINVAL);
             goto fail;

@@ -231,8 +231,11 @@ static int rv40_decode_mb_info(RV34DecContext *r)
     int blocks[RV34_MB_TYPES] = {0};
     int count = 0;
 
-    if(!r->s.mb_skip_run)
+    if(!r->s.mb_skip_run) {
         r->s.mb_skip_run = svq3_get_ue_golomb(gb) + 1;
+        if(r->s.mb_skip_run > (unsigned)s->mb_num)
+            return -1;
+    }
 
     if(--r->s.mb_skip_run)
          return RV34_MB_SKIP;

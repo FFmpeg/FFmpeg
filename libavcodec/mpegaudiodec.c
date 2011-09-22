@@ -1809,7 +1809,7 @@ static int decode_frame(AVCodecContext * avctx,
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
         return -1;
     }else if(s->frame_size < buf_size){
-        av_log(avctx, AV_LOG_ERROR, "incorrect frame size\n");
+        av_log(avctx, AV_LOG_DEBUG, "incorrect frame size - multiple frames in buffer?\n");
         buf_size= s->frame_size;
     }
 

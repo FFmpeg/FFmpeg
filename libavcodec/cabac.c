@@ -150,10 +150,14 @@ void ff_init_cabac_states(CABACContext *c){
         ff_h264_mps_state[2*i+1]= 2*mps_state[i]+1;
 
         if( i ){
+            ff_h264_lps_state[2*i+0]=
             ff_h264_mlps_state[128-2*i-1]= 2*lps_state[i]+0;
+            ff_h264_lps_state[2*i+1]=
             ff_h264_mlps_state[128-2*i-2]= 2*lps_state[i]+1;
         }else{
+            ff_h264_lps_state[2*i+0]=
             ff_h264_mlps_state[128-2*i-1]= 1;
+            ff_h264_lps_state[2*i+1]=
             ff_h264_mlps_state[128-2*i-2]= 0;
         }
     }
@@ -313,7 +317,8 @@ int main(void){
     ff_init_cabac_states(&c);
 
     for(i=0; i<SIZE; i++){
-        r[i] = av_lfg_get(&prng) % 7;
+        if(2*i<SIZE) r[i] = av_lfg_get(&prng) % 7;
+        else         r[i] = (i>>8)&1;
     }
 
     for(i=0; i<SIZE; i++){
@@ -328,6 +333,7 @@ START_TIMER
 STOP_TIMER("put_cabac")
     }
 
+#if 0
     for(i=0; i<SIZE; i++){
 START_TIMER
         put_cabac_u(&c, state, r[i], 6, 3, i&1);
@@ -339,7 +345,7 @@ START_TIMER
         put_cabac_ueg(&c, state, r[i], 3, 0, 1, 2);
 STOP_TIMER("put_cabac_ueg")
     }
-
+#endif
     put_cabac_terminate(&c, 1);
 
     ff_init_cabac_decoder(&c, b, SIZE);

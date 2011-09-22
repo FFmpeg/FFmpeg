@@ -3,11 +3,99 @@ releases are sorted from youngest to oldest.
 
 version next:
 
+<<<<<<< HEAD
 - openal input device added
 - boxblur filter added
 - BWF muxer
 - Flash Screen Video 2 decoder
+||||||| merged common ancestors
+version 0.7:
 
+- many many things we forgot because we rather write code than changelogs
+- libmpcodecs video filter support (3 times as many filters than before)
+- mpeg2 aspect ratio dection fixed
+- libxvid aspect pickiness fixed
+- Frame multithreaded decoding
+- E-AC-3 audio encoder
+- ac3enc: add channel coupling support
+- floating-point sample format support to the ac3, eac3, dca, aac, and vorbis decoders.
+- H264/MPEG frame-level multi-threading
+- All av_metadata_* functions renamed to av_dict_* and moved to libavutil
+- 4:4:4 H.264 decoding support
+- 10-bit H.264 optimizations for x86
+- lut, lutrgb, and lutyuv filters added
+- buffersink libavfilter sink added
+- Bump libswscale for recently reported ABI break
+
+=======
+version 0.7.1:
+
+- added various additional FOURCC codec identifiers
+- H.264 4:4:4 fixes
+- build system and compilation fixes
+- Doxygen and general documentation corrections and improvements
+- fixed segfault in ffprobe
+- behavioral fix in av_open_input_stream()
+- Licensing clarification for LGPL'ed vf_gradfun
+- bugfixes while seeking in multithreaded decoding
+- support newer versions of OpenCV
+- ffmpeg: fix operation with --disable-avfilter
+- fixed integer underflow in matroska decoder
+
+version 0.7:
+
+- many many things we forgot because we rather write code than changelogs
+- libmpcodecs video filter support (3 times as many filters than before)
+- mpeg2 aspect ratio dection fixed
+- libxvid aspect pickiness fixed
+- Frame multithreaded decoding
+- E-AC-3 audio encoder
+- ac3enc: add channel coupling support
+- floating-point sample format support for (E-)AC-3, DCA, AAC, Vorbis decoders
+- H.264/MPEG frame-level multithreading
+- av_metadata_* functions renamed to av_dict_* and moved to libavutil
+- 4:4:4 H.264 decoding support
+- 10-bit H.264 optimizations for x86
+- lut, lutrgb, and lutyuv filters added
+- buffersink libavfilter sink added
+- bump libswscale for recently reported ABI break
+
+>>>>>>> release/0.7
+
+<<<<<<< HEAD
+||||||| merged common ancestors
+version 0.7_beta2:
+
+- VP8 frame-multithreading
+- NEON optimizations for VP8
+- Lots of deprecated API cruft removed
+- fft and imdct optimizations for AVX (Sandy Bridge) processors
+- showinfo filter added
+- DPX image encoder
+- SMPTE 302M AES3 audio decoder
+- Apple Core Audio Format muxer
+- 9bit and 10bit per sample support in the H.264 decoder
+- 9bit and 10bit FFV1 encoding / decoding
+- split filter added
+- select filter added
+- sdl output device added
+=======
+version 0.7_beta2:
+
+- VP8 frame-level multithreading
+- NEON optimizations for VP8
+- removed a lot of deprecated API cruft
+- FFT and IMDCT optimizations for AVX (Sandy Bridge) processors
+- showinfo filter added
+- DPX image encoder
+- SMPTE 302M AES3 audio decoder
+- Apple Core Audio Format muxer
+- 9bit and 10bit per sample support in the H.264 decoder
+- 9bit and 10bit FFV1 encoding / decoding
+- split filter added
+- select filter added
+- sdl output device added
+>>>>>>> release/0.7
 
 version 0.8:
 
