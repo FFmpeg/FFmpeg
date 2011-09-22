@@ -129,7 +129,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 
     hdr_size = AV_RB16(buf);
     if (hdr_size > data_size) {
-        av_log(avctx, AV_LOG_ERROR, "frame data too short!\n");
+        av_log(avctx, AV_LOG_ERROR, "frame data too small\n");
         return -1;
     }
 
@@ -144,7 +144,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     height = AV_RB16(buf + 10);
     if (width != avctx->width || height != avctx->height) {
         av_log(avctx, AV_LOG_ERROR,
-               "picture dimension changed! Old: %d x %d, new: %d x %d\n",
+               "picture dimension changed: old: %d x %d, new: %d x %d\n",
                avctx->width, avctx->height, width, height);
         return -1;
     }
@@ -152,7 +152,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     ctx->frame_type = (buf[12] >> 2) & 3;
     if (ctx->frame_type > 2) {
         av_log(avctx, AV_LOG_ERROR,
-               "unsupported frame type: %d!\n", ctx->frame_type);
+               "unsupported frame type: %d\n", ctx->frame_type);
         return -1;
     }
 
@@ -168,7 +168,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         break;
     default:
         av_log(avctx, AV_LOG_ERROR,
-               "unsupported picture format: %d!\n", ctx->pic_format);
+               "unsupported picture format: %d\n", ctx->pic_format);
         return -1;
     }
 
@@ -192,7 +192,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     flags = buf[19];
     if (flags & 2) {
         if (ptr - buf > hdr_size - 64) {
-            av_log(avctx, AV_LOG_ERROR, "Too short header data\n");
+            av_log(avctx, AV_LOG_ERROR, "header data too small\n");
             return -1;
         }
         if (memcmp(ctx->qmat_luma, ptr, 64)) {
@@ -207,7 +207,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
 
     if (flags & 1) {
         if (ptr - buf > hdr_size - 64) {
-            av_log(avctx, AV_LOG_ERROR, "Too short header data\n");
+            av_log(avctx, AV_LOG_ERROR, "header data too small\n");
             return -1;
         }
         if (memcmp(ctx->qmat_chroma, ptr, 64)) {
@@ -233,13 +233,13 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     hdr_size = data_size > 0 ? buf[0] >> 3 : 0;
     if (hdr_size < 8 || hdr_size > data_size) {
-        av_log(avctx, AV_LOG_ERROR, "picture header too short!\n");
+        av_log(avctx, AV_LOG_ERROR, "picture header too small\n");
         return -1;
     }
 
     pic_data_size = AV_RB32(buf + 1);
     if (pic_data_size > data_size) {
-        av_log(avctx, AV_LOG_ERROR, "picture data too short!\n");
+        av_log(avctx, AV_LOG_ERROR, "picture data too small\n");
         return -1;
     }
 
@@ -247,7 +247,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     slice_height_factor = buf[7] & 0xF;
     if (slice_width_factor > 3 || slice_height_factor) {
         av_log(avctx, AV_LOG_ERROR,
-               "unsupported slice dimension: %d x %d!\n",
+               "unsupported slice dimension: %d x %d\n",
                1 << slice_width_factor, 1 << slice_height_factor);
         return -1;
     }
@@ -266,7 +266,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     num_slices = num_x_slices * ctx->num_y_mbs;
     if (num_slices != AV_RB16(buf + 5)) {
-        av_log(avctx, AV_LOG_ERROR, "invalid number of slices!\n");
+        av_log(avctx, AV_LOG_ERROR, "invalid number of slices\n");
         return -1;
     }
 
@@ -279,7 +279,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     if (hdr_size + num_slices * 2 > data_size) {
-        av_log(avctx, AV_LOG_ERROR, "slice table too short!\n");
+        av_log(avctx, AV_LOG_ERROR, "slice table too small\n");
         return -1;
     }
 
@@ -294,7 +294,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     ctx->slice_data_index[i] = data_ptr;
 
     if (data_ptr > buf + data_size) {
-        av_log(avctx, AV_LOG_ERROR, "out of slice data!\n");
+        av_log(avctx, AV_LOG_ERROR, "out of slice data\n");
         return -1;
     }
 
@@ -570,7 +570,7 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
     }
 
     if (slice_data_size < 6) {
-        av_log(avctx, AV_LOG_ERROR, "slice data too short!\n");
+        av_log(avctx, AV_LOG_ERROR, "slice data too small\n");
         return -1;
     }
 
@@ -581,7 +581,7 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
     v_data_size = slice_data_size - y_data_size - u_data_size - hdr_size;
 
     if (v_data_size < 0 || hdr_size < 6) {
-        av_log(avctx, AV_LOG_ERROR, "invalid data sizes!\n");
+        av_log(avctx, AV_LOG_ERROR, "invalid data size\n");
         return -1;
     }
 
