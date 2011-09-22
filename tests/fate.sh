@@ -35,7 +35,7 @@ checkout(){
 update()(
     cd ${src} || return
     case "$repo" in
-        git:*) git pull ;;
+        git:*) git pull --quiet ;;
     esac
 )
 
@@ -70,7 +70,7 @@ fate()(
 )
 
 clean(){
-    rm -r ${build} ${inst}
+    rm -rf ${build} ${inst}
 }
 
 report(){

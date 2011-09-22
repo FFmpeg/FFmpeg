@@ -121,6 +121,10 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
             int buf_size = avpkt->size;
             int n = esc->samples_size;
 
+            if (buf_size < 2) {
+                av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
+                return AVERROR(EINVAL);
+            }
             if (!(deinterleaved_samples = av_mallocz(n)))
                 return AVERROR(ENOMEM);
 
