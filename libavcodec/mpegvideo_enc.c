@@ -415,7 +415,6 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
                avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
         av_reduce(&avctx->sample_aspect_ratio.num, &avctx->sample_aspect_ratio.den,
                    avctx->sample_aspect_ratio.num,  avctx->sample_aspect_ratio.den, 255);
-        return -1;
     }
 
     if((s->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME|CODEC_FLAG_ALT_SCAN))
