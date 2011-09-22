@@ -256,9 +256,9 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     ctx->slice_height_factor = slice_height_factor;
 
     ctx->num_x_mbs = (avctx->width + 15) >> 4;
-    ctx->num_y_mbs =
-        (avctx->height + (1 << (4 + ctx->picture.interlaced_frame)) - 1) >>
-        (4 + ctx->picture.interlaced_frame);
+    ctx->num_y_mbs = (avctx->height +
+                      (1 << (4 + ctx->picture.interlaced_frame)) - 1) >>
+                     (4 + ctx->picture.interlaced_frame);
 
     remainder    = ctx->num_x_mbs & ((1 << slice_width_factor) - 1);
     num_x_slices = (ctx->num_x_mbs >> slice_width_factor) + (remainder & 1) +
@@ -272,8 +272,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     if (ctx->total_slices != num_slices) {
         av_freep(&ctx->slice_data_index);
-        ctx->slice_data_index =
-            av_malloc((num_slices + 1) * sizeof(uint8_t*));
+        ctx->slice_data_index = av_malloc((num_slices + 1) * sizeof(uint8_t*));
         if (!ctx->slice_data_index)
             return AVERROR(ENOMEM);
         ctx->total_slices = num_slices;
@@ -330,7 +329,7 @@ static inline int decode_vlc_codeword(GetBitContext *gb, uint8_t codebook)
             LAST_SKIP_BITS(re, gb, log + 1);
         } else {
             prefix_len = log + 1;
-            code = (log << rice_order) + NEG_USR32((buf << prefix_len), rice_order);
+            code = (log << rice_order) + NEG_USR32(buf << prefix_len, rice_order);
             LAST_SKIP_BITS(re, gb, prefix_len + rice_order);
         }
     } else { /* otherwise we got a exp golomb code */
@@ -519,8 +518,7 @@ static void decode_slice_plane(ProresContext *ctx, const uint8_t *buf,
     /* inverse quantization, inverse transform and output */
     block_ptr = ctx->blocks;
 
-    for (blk_num = 0; blk_num < blocks_per_slice;
-         blk_num++, block_ptr += 64) {
+    for (blk_num = 0; blk_num < blocks_per_slice; blk_num++, block_ptr += 64) {
         /* TODO: the correct solution shoud be (block_ptr[i] * qmat[i]) >> 1
          * and the input of the inverse transform should be scaled by 2
          * in order to avoid rounding errors.
@@ -595,7 +593,7 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
     if (ctx->qmat_changed || sf != ctx->prev_slice_sf) {
         ctx->prev_slice_sf = sf;
         for (i = 0; i < 64; i++) {
-            ctx->qmat_luma_scaled[i]   = ctx->qmat_luma[i] * sf;
+            ctx->qmat_luma_scaled[i]   = ctx->qmat_luma[i]   * sf;
             ctx->qmat_chroma_scaled[i] = ctx->qmat_chroma[i] * sf;
         }
     }
