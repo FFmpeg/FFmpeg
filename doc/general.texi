@@ -61,7 +61,7 @@ library:
     @tab Audio and video format used in some games by Beam Software.
 @item Bethesda Softworks VID    @tab   @tab X
     @tab Used in some games from Bethesda Softworks.
-@item Binary text               @tab   @tab C
+@item Binary text               @tab   @tab X
 @item Bink                      @tab   @tab X
     @tab Multimedia format used by many games.
 @item Bitmap Brothers JV        @tab   @tab X
