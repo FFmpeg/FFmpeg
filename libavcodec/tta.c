@@ -285,14 +285,15 @@ static int tta_decode_frame(AVCodecContext *avctx,
         int cur_chan = 0, framelen = s->frame_length;
         int32_t *p;
 
-        if (*data_size < (framelen * s->channels * 2)) {
-            av_log(avctx, AV_LOG_ERROR, "Output buffer size is too small.\n");
-            return -1;
-        }
         // FIXME: seeking
         s->total_frames--;
         if (!s->total_frames && s->last_frame_length)
             framelen = s->last_frame_length;
+
+        if (*data_size < (framelen * s->channels * 2)) {
+            av_log(avctx, AV_LOG_ERROR, "Output buffer size is too small.\n");
+            return -1;
+        }
 
         // init per channel states
         for (i = 0; i < s->channels; i++) {
