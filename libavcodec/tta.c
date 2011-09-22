@@ -33,8 +33,8 @@
 #include "avcodec.h"
 #include "get_bits.h"
 
-#define FORMAT_INT 1
-#define FORMAT_FLOAT 3
+#define FORMAT_SIMPLE    1
+#define FORMAT_ENCRYPTED 2
 
 #define MAX_ORDER 16
 typedef struct TTAFilter {
@@ -58,7 +58,7 @@ typedef struct TTAContext {
     AVCodecContext *avctx;
     GetBitContext gb;
 
-    int flags, channels, bps, is_float, data_length;
+    int format, channels, bps, data_length;
     int frame_length, last_frame_length, total_frames;
 
     int32_t *decode_buffer;
@@ -204,13 +204,15 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         /* signature */
         skip_bits(&s->gb, 32);
 
-        s->flags = get_bits(&s->gb, 16);
-        if (s->flags != 1 && s->flags != 3)
-        {
-            av_log(s->avctx, AV_LOG_ERROR, "Invalid flags\n");
+        s->format = get_bits(&s->gb, 16);
+        if (s->format > 2) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid format\n");
             return -1;
         }
-        s->is_float = (s->flags == FORMAT_FLOAT);
+        if (s->format == FORMAT_ENCRYPTED) {
+            av_log_missing_feature(s->avctx, "Encrypted TTA", 0);
+            return AVERROR(EINVAL);
+        }
         avctx->channels = s->channels = get_bits(&s->gb, 16);
         avctx->bits_per_coded_sample = get_bits(&s->gb, 16);
         s->bps = (avctx->bits_per_coded_sample + 7) / 8;
@@ -222,13 +224,7 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         s->data_length = get_bits_long(&s->gb, 32);
         skip_bits(&s->gb, 32); // CRC32 of header
 
-        if (s->is_float)
-        {
-            avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-            av_log_ask_for_sample(s->avctx, "Unsupported sample format.\n");
-            return -1;
-        }
-        else switch(s->bps) {
+        switch(s->bps) {
 //            case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
             case 2: avctx->sample_fmt = AV_SAMPLE_FMT_S16; break;
 //            case 3: avctx->sample_fmt = AV_SAMPLE_FMT_S24; break;
@@ -247,8 +243,8 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         s->total_frames = s->data_length / s->frame_length +
                         (s->last_frame_length ? 1 : 0);
 
-        av_log(s->avctx, AV_LOG_DEBUG, "flags: %x chans: %d bps: %d rate: %d block: %d\n",
-            s->flags, avctx->channels, avctx->bits_per_coded_sample, avctx->sample_rate,
+        av_log(s->avctx, AV_LOG_DEBUG, "format: %d chans: %d bps: %d rate: %d block: %d\n",
+            s->format, avctx->channels, avctx->bits_per_coded_sample, avctx->sample_rate,
             avctx->block_align);
         av_log(s->avctx, AV_LOG_DEBUG, "data_length: %d frame_length: %d last: %d total: %d\n",
             s->data_length, s->frame_length, s->last_frame_length, s->total_frames);
@@ -372,7 +368,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
                 cur_chan++;
             else {
                 // decorrelate in case of stereo integer
-                if (!s->is_float && (s->channels > 1)) {
+                if (s->channels > 1) {
                     int32_t *r = p - 1;
                     for (*p += *r / 2; r > p - s->channels; r--)
                         *r = *(r + 1) - *r;
