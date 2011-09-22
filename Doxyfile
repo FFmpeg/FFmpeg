@@ -31,7 +31,7 @@ PROJECT_NAME           = FFmpeg
 # This could be handy for archiving the generated documentation or
 # if some version control system is used.
 
-PROJECT_NUMBER         = 0.8.3
+PROJECT_NUMBER         = 0.8.4
 
 # The OUTPUT_DIRECTORY tag is used to specify the (relative or absolute)
 # base path where the generated documentation will be put.
