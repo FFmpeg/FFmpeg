@@ -1236,20 +1236,11 @@ static void matroska_execute_seekhead(MatroskaDemuxContext *matroska)
     }
 }
 
-static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
-    EbmlList *seekhead_list = &matroska->seekhead;
-    MatroskaSeekhead *seekhead = seekhead_list->elem;
+static void matroska_add_index_entries(MatroskaDemuxContext *matroska) {
     EbmlList *index_list;
     MatroskaIndex *index;
     int index_scale = 1;
     int i, j;
-
-    for (i = 0; i < seekhead_list->nb_elem; i++)
-        if (seekhead[i].id == MATROSKA_ID_CUES)
-            break;
-    assert(i <= seekhead_list->nb_elem);
-
-    matroska_parse_seekhead_entry(matroska, i);
 
     index_list = &matroska->index;
     index = index_list->elem;
@@ -1270,6 +1261,20 @@ static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
                                    AVINDEX_KEYFRAME);
         }
     }
+}
+
+static void matroska_parse_cues(MatroskaDemuxContext *matroska) {
+    EbmlList *seekhead_list = &matroska->seekhead;
+    MatroskaSeekhead *seekhead = seekhead_list->elem;
+    int i;
+
+    for (i = 0; i < seekhead_list->nb_elem; i++)
+        if (seekhead[i].id == MATROSKA_ID_CUES)
+            break;
+    assert(i <= seekhead_list->nb_elem);
+
+    matroska_parse_seekhead_entry(matroska, i);
+    matroska_add_index_entries(matroska);
 }
 
 static int matroska_aac_profile(char *codec_id)
@@ -1658,6 +1663,8 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
                              "title", chapters[i].title, 0);
             max_start = chapters[i].start;
         }
+
+    matroska_add_index_entries(matroska);
 
     matroska_convert_tags(s);
 
