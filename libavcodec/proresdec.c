@@ -130,14 +130,14 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     hdr_size = AV_RB16(buf);
     if (hdr_size > data_size) {
         av_log(avctx, AV_LOG_ERROR, "frame data too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     version = AV_RB16(buf + 2);
     if (version >= 2) {
         av_log(avctx, AV_LOG_ERROR,
                "unsupported header version: %d\n", version);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     width  = AV_RB16(buf + 8);
@@ -146,14 +146,14 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         av_log(avctx, AV_LOG_ERROR,
                "picture dimension changed: old: %d x %d, new: %d x %d\n",
                avctx->width, avctx->height, width, height);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->frame_type = (buf[12] >> 2) & 3;
     if (ctx->frame_type > 2) {
         av_log(avctx, AV_LOG_ERROR,
                "unsupported frame type: %d\n", ctx->frame_type);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->chroma_factor     = (buf[12] >> 6) & 3;
@@ -169,7 +169,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     default:
         av_log(avctx, AV_LOG_ERROR,
                "unsupported picture format: %d\n", ctx->pic_format);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (ctx->scantable_type != ctx->frame_type) {
@@ -193,7 +193,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
     if (flags & 2) {
         if (ptr - buf > hdr_size - 64) {
             av_log(avctx, AV_LOG_ERROR, "header data too small\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (memcmp(ctx->qmat_luma, ptr, 64)) {
             memcpy(ctx->qmat_luma, ptr, 64);
@@ -234,13 +234,13 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     hdr_size = data_size > 0 ? buf[0] >> 3 : 0;
     if (hdr_size < 8 || hdr_size > data_size) {
         av_log(avctx, AV_LOG_ERROR, "picture header too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     pic_data_size = AV_RB32(buf + 1);
     if (pic_data_size > data_size) {
         av_log(avctx, AV_LOG_ERROR, "picture data too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     slice_width_factor  = buf[7] >> 4;
@@ -249,7 +249,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
         av_log(avctx, AV_LOG_ERROR,
                "unsupported slice dimension: %d x %d\n",
                1 << slice_width_factor, 1 << slice_height_factor);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     ctx->slice_width_factor  = slice_width_factor;
@@ -267,7 +267,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     num_slices = num_x_slices * ctx->num_y_mbs;
     if (num_slices != AV_RB16(buf + 5)) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of slices\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (ctx->total_slices != num_slices) {
@@ -280,7 +280,7 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
 
     if (hdr_size + num_slices * 2 > data_size) {
         av_log(avctx, AV_LOG_ERROR, "slice table too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* parse slice table allowing quick access to the slice data */
@@ -571,7 +571,7 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
 
     if (slice_data_size < 6) {
         av_log(avctx, AV_LOG_ERROR, "slice data too small\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     /* parse slice header */
@@ -582,7 +582,7 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
 
     if (v_data_size < 0 || hdr_size < 6) {
         av_log(avctx, AV_LOG_ERROR, "invalid data size\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     sf = av_clip(buf[1], 1, 224);
@@ -669,14 +669,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     if (buf_size < 28 || buf_size < AV_RB32(buf) ||
         AV_RB32(buf + 4) != FRAME_ID) {
         av_log(avctx, AV_LOG_ERROR, "invalid frame\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     MOVE_DATA_PTR(8);
 
     frame_hdr_size = decode_frame_header(ctx, buf, buf_size, avctx);
     if (frame_hdr_size < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     MOVE_DATA_PTR(frame_hdr_size);
 
@@ -690,7 +690,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     for (pic_num = 0; ctx->picture.interlaced_frame - pic_num + 1; pic_num++) {
         pic_data_size = decode_picture_header(ctx, buf, buf_size, avctx);
         if (pic_data_size < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         if (decode_picture(ctx, pic_num, avctx))
             return -1;
