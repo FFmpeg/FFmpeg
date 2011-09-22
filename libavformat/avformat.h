@@ -546,7 +546,7 @@ typedef struct AVStream {
 #endif
 
     /**
-     * Decoding: pts of the first frame of the stream, in stream time base.
+     * Decoding: pts of the first frame of the stream in presentation order, in stream time base.
      * Only set this if you are absolutely 100% sure that the value you set
      * it to really is the pts of the first frame.
      * This may be undefined (AV_NOPTS_VALUE).
