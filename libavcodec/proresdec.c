@@ -721,7 +721,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
 
 
 AVCodec ff_prores_decoder = {
-    .name           = "ProRes",
+    .name           = "prores",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_PRORES,
     .priv_data_size = sizeof(ProresContext),
