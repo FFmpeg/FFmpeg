@@ -279,11 +279,10 @@ static int tta_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     TTAContext *s = avctx->priv_data;
     int i;
+    int cur_chan = 0, framelen = s->frame_length;
+    int32_t *p;
 
     init_get_bits(&s->gb, buf, buf_size*8);
-    {
-        int cur_chan = 0, framelen = s->frame_length;
-        int32_t *p;
 
         // FIXME: seeking
         s->total_frames--;
@@ -395,7 +394,6 @@ static int tta_decode_frame(AVCodecContext *avctx,
             default:
                 av_log(s->avctx, AV_LOG_ERROR, "Error, only 16bit samples supported!\n");
         }
-    }
 
     return buf_size;
 }
