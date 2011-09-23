@@ -831,8 +831,7 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
     if (buf_size*8 < avctx->bit_rate*mtab->size/avctx->sample_rate + 8) {
         av_log(avctx, AV_LOG_ERROR,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        *data_size = 0;
-        return buf_size;
+        return AVERROR(EINVAL);
     }
 
     init_get_bits(&gb, buf, buf_size * 8);
