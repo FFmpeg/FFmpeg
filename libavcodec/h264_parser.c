@@ -257,7 +257,7 @@ static int h264_parse(AVCodecParserContext *s,
             // Note that estimate_timings_from_pts does exactly this.
             if (!avctx->has_b_frames)
                 h->s.low_delay = 1;
-            ff_h264_decode_extradata(h);
+            ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size);
         }
     }
 
