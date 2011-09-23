@@ -505,7 +505,8 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             if (flv->wrong_dts)
                 dts = AV_NOPTS_VALUE;
         }
-        if (type == 0) {
+
+        if (type == 0 && !st->codec->extradata) {
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
             if (st->codec->codec_id == CODEC_ID_AAC) {
