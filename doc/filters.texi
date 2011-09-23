@@ -822,7 +822,7 @@ drawtext="fontfile=/usr/share/fonts/truetype/freefont/FreeSerif.ttf: text='Test 
 @end example
 
 @item
-will draw 'Test Text' with font FreeSerif of size 24 at position x=100
+Draw 'Test Text' with font FreeSerif of size 24 at position x=100
 and y=50 (counting from the top-left corner of the screen), text is
 yellow with a red box around it. Both the text and the box have an
 opacity of 20%.
