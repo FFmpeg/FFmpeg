@@ -42,6 +42,7 @@ static const uint8_t type_sizes2[6] = {
 };
 
 typedef struct TiffEncoderContext {
+    AVClass *avclass;
     AVCodecContext *avctx;
     AVFrame picture;
 
