@@ -103,6 +103,11 @@ int ff_rtp_get_payload_type(AVCodecContext *codec)
                     continue;
             payload_type = AVRtpPayloadTypes[i].pt;
         }
+
+    /* dynamic payload type */
+    if (payload_type < 0)
+        payload_type = RTP_PT_PRIVATE + (codec->codec_type == AVMEDIA_TYPE_AUDIO);
+
     return payload_type;
 }
 
