@@ -614,23 +614,20 @@ static int decode_frame(AVCodecContext *avctx,
                 dst += stride;
             }
         } else {
-        for(i = 0; i < s->height; i++) {
-            for(j = soff; j < ssize; j++)
-                dst[j] += dst[j - soff];
-            dst += stride;
-        }
+            for(i = 0; i < s->height; i++) {
+                for(j = soff; j < ssize; j++)
+                    dst[j] += dst[j - soff];
+                dst += stride;
+            }
         }
     }
 
     if(s->invert){
-        uint8_t *src;
-        int j;
-
-        src = s->picture.data[0];
-        for(j = 0; j < s->height; j++){
-            for(i = 0; i < s->picture.linesize[0]; i++)
-                src[i] = (s->avctx->pix_fmt == PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - src[i];
-            src += s->picture.linesize[0];
+        dst = s->picture.data[0];
+        for(i = 0; i < s->height; i++){
+            for(j = 0; j < s->picture.linesize[0]; j++)
+                dst[j] = (s->avctx->pix_fmt == PIX_FMT_PAL8 ? (1<<s->bpp) - 1 : 255) - dst[j];
+            dst += s->picture.linesize[0];
         }
     }
     *picture= *(AVFrame*)&s->picture;
