@@ -145,9 +145,9 @@ static const AVOption drawtext_options[]= {
 {"fontfile", "set font file",        OFFSET(fontfile),           FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
 {"text",     "set text",             OFFSET(text),               FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
 {"textfile", "set text file",        OFFSET(textfile),           FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
-{"fontcolor","set foreground color", OFFSET(fontcolor_string),   FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
-{"boxcolor", "set box color",        OFFSET(boxcolor_string),    FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
-{"shadowcolor", "set shadow color",  OFFSET(shadowcolor_string), FF_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"fontcolor",   "set foreground color", OFFSET(fontcolor_string),   FF_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX },
+{"boxcolor",    "set box color",        OFFSET(boxcolor_string),    FF_OPT_TYPE_STRING, {.str="white"}, CHAR_MIN, CHAR_MAX },
+{"shadowcolor", "set shadow color",     OFFSET(shadowcolor_string), FF_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX },
 {"box",      "set box",              OFFSET(draw_box),           FF_OPT_TYPE_INT,    {.dbl=0},     0,        1        },
 {"fontsize", "set font size",        OFFSET(fontsize),           FF_OPT_TYPE_INT,    {.dbl=16},    1,        INT_MAX  },
 {"x",        "set x expression",     OFFSET(x_expr),             FF_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX },
@@ -282,9 +282,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     dtext->class = &drawtext_class;
     av_opt_set_defaults(dtext);
-    dtext->fontcolor_string = av_strdup("black");
-    dtext->boxcolor_string = av_strdup("white");
-    dtext->shadowcolor_string = av_strdup("black");
 
     if ((err = (av_set_options_string(dtext, args, "=", ":"))) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
