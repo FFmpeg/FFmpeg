@@ -93,9 +93,6 @@ static int rtp_write_header(AVFormatContext *s1)
     }
 
     s->payload_type = ff_rtp_get_payload_type(st->codec);
-    if (s->payload_type < 0)
-        s->payload_type = RTP_PT_PRIVATE + (st->codec->codec_type == AVMEDIA_TYPE_AUDIO);
-
     s->base_timestamp = av_get_random_seed();
     s->timestamp = s->base_timestamp;
     s->cur_timestamp = 0;
