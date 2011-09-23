@@ -1065,16 +1065,15 @@ static int roq_encode_end(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_roq_encoder =
-{
-    "roqvideo",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_ROQ,
-    sizeof(RoqContext),
-    roq_encode_init,
-    roq_encode_frame,
-    roq_encode_end,
+AVCodec ff_roq_encoder = {
+    .name                 = "roqvideo",
+    .type                 = AVMEDIA_TYPE_VIDEO,
+    .id                   = CODEC_ID_ROQ,
+    .priv_data_size       = sizeof(RoqContext),
+    .init                 = roq_encode_init,
+    .encode               = roq_encode_frame,
+    .close                = roq_encode_end,
     .supported_framerates = (const AVRational[]){{30,1}, {0,0}},
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV444P, PIX_FMT_NONE},
-    .long_name = NULL_IF_CONFIG_SMALL("id RoQ video"),
+    .pix_fmts             = (const enum PixelFormat[]){PIX_FMT_YUV444P, PIX_FMT_NONE},
+    .long_name            = NULL_IF_CONFIG_SMALL("id RoQ video"),
 };

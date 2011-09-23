@@ -1086,17 +1086,15 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 }
 
 
-#define ADPCM_DECODER(id,name,long_name_)       \
-AVCodec ff_ ## name ## _decoder = {             \
-    #name,                                      \
-    AVMEDIA_TYPE_AUDIO,                         \
-    id,                                         \
-    sizeof(ADPCMDecodeContext),                 \
-    adpcm_decode_init,                          \
-    NULL,                                       \
-    NULL,                                       \
-    adpcm_decode_frame,                         \
-    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
+#define ADPCM_DECODER(id_, name_, long_name_)               \
+AVCodec ff_ ## name_ ## _decoder = {                        \
+    .name           = #name_,                               \
+    .type           = AVMEDIA_TYPE_AUDIO,                   \
+    .id             = id_,                                  \
+    .priv_data_size = sizeof(ADPCMDecodeContext),           \
+    .init           = adpcm_decode_init,                    \
+    .decode         = adpcm_decode_frame,                   \
+    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 
 /* Note: Do not forget to add new entries to the Makefile as well. */

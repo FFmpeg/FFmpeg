@@ -298,17 +298,15 @@ static int dpcm_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
-#define DPCM_DECODER(id, name, long_name_)      \
-AVCodec ff_ ## name ## _decoder = {             \
-    #name,                                      \
-    AVMEDIA_TYPE_AUDIO,                         \
-    id,                                         \
-    sizeof(DPCMContext),                        \
-    dpcm_decode_init,                           \
-    NULL,                                       \
-    NULL,                                       \
-    dpcm_decode_frame,                          \
-    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
+#define DPCM_DECODER(id_, name_, long_name_)                \
+AVCodec ff_ ## name_ ## _decoder = {                        \
+    .name           = #name_,                               \
+    .type           = AVMEDIA_TYPE_AUDIO,                   \
+    .id             = id_,                                  \
+    .priv_data_size = sizeof(DPCMContext),                  \
+    .init           = dpcm_decode_init,                     \
+    .decode         = dpcm_decode_frame,                    \
+    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 
 DPCM_DECODER(CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");

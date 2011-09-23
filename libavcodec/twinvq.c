@@ -1120,15 +1120,13 @@ static av_cold int twin_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-AVCodec ff_twinvq_decoder =
-{
-    "twinvq",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_TWINVQ,
-    sizeof(TwinContext),
-    twin_decode_init,
-    NULL,
-    twin_decode_close,
-    twin_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("VQF TwinVQ"),
+AVCodec ff_twinvq_decoder = {
+    .name           = "twinvq",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_TWINVQ,
+    .priv_data_size = sizeof(TwinContext),
+    .init           = twin_decode_init,
+    .close          = twin_decode_close,
+    .decode         = twin_decode_frame,
+    .long_name      = NULL_IF_CONFIG_SMALL("VQF TwinVQ"),
 };
