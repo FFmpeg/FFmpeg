@@ -1607,7 +1607,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     vorbis_context *vc = avccontext->priv_data ;
     GetBitContext *gb = &(vc->gb);
     const float *channel_ptrs[255];
-    int i, len;
+    int i, len, out_size;
 
     if (!buf_size)
         return 0;
@@ -1632,6 +1632,13 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     av_dlog(NULL, "parsed %d bytes %d bits, returned %d samples (*ch*bits) \n",
             get_bits_count(gb) / 8, get_bits_count(gb) % 8, len);
 
+    out_size = len * vc->audio_channels *
+               av_get_bytes_per_sample(avccontext->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avccontext, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
+
     if (vc->audio_channels > 8) {
         for (i = 0; i < vc->audio_channels; i++)
             channel_ptrs[i] = vc->channel_floors + i * len;
@@ -1647,8 +1654,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
         vc->fmt_conv.float_to_int16_interleave(data, channel_ptrs, len,
                                                vc->audio_channels);
 
-    *data_size = len * vc->audio_channels *
-                 av_get_bytes_per_sample(avccontext->sample_fmt);
+    *data_size = out_size;
 
     return buf_size ;
 }
