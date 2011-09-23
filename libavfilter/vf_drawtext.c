@@ -798,9 +798,9 @@ static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 
 static void end_frame(AVFilterLink *inlink)
 {
-    AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterContext *ctx = inlink->dst;
-    DrawTextContext *dtext = inlink->dst->priv;
+    AVFilterLink *outlink = ctx->outputs[0];
+    DrawTextContext *dtext = ctx->priv;
     AVFilterBufferRef *picref = inlink->cur_buf;
 
     dtext->var_values[VAR_T] = picref->pts == AV_NOPTS_VALUE ?
