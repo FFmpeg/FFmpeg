@@ -2313,6 +2313,7 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
 {
     AVCodecContext *avctx = latmctx->aac_ctx.avctx;
     MPEG4AudioConfig m4ac;
+    AACContext *ac= &latmctx->aac_ctx;
     int  config_start_bit = get_bits_count(gb);
     int     bits_consumed, esize;
 
@@ -2322,12 +2323,13 @@ static int latm_decode_audio_specific_config(struct LATMContext *latmctx,
         return AVERROR_INVALIDDATA;
     } else {
         bits_consumed =
-            decode_audio_specific_config(NULL, avctx, &m4ac,
+            decode_audio_specific_config(ac, avctx, &m4ac,
                                          gb->buffer + (config_start_bit / 8),
                                          get_bits_left(gb) / 8, asclen);
 
         if (bits_consumed < 0)
             return AVERROR_INVALIDDATA;
+        ac->m4ac= m4ac;
 
         esize = (bits_consumed+7) / 8;
 
