@@ -533,6 +533,10 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_BGR48LE     \
         || (x)==PIX_FMT_RGB48BE     \
         || (x)==PIX_FMT_RGB48LE     \
+        || (x)==PIX_FMT_BGRA64BE    \
+        || (x)==PIX_FMT_BGRA64LE    \
+        || (x)==PIX_FMT_RGBA64BE    \
+        || (x)==PIX_FMT_RGBA64LE    \
         || (x)==PIX_FMT_YUV420P16LE \
         || (x)==PIX_FMT_YUV422P16LE \
         || (x)==PIX_FMT_YUV444P16LE \
@@ -606,6 +610,8 @@ const char *sws_format_name(enum PixelFormat format);
 #define isRGBinInt(x)   (           \
            (x)==PIX_FMT_RGB48BE     \
         || (x)==PIX_FMT_RGB48LE     \
+        || (x)==PIX_FMT_RGBA64BE    \
+        || (x)==PIX_FMT_RGBA64LE    \
         || (x)==PIX_FMT_RGB32       \
         || (x)==PIX_FMT_RGB32_1     \
         || (x)==PIX_FMT_RGB24       \
@@ -624,6 +630,8 @@ const char *sws_format_name(enum PixelFormat format);
 #define isBGRinInt(x)   (           \
            (x)==PIX_FMT_BGR48BE     \
         || (x)==PIX_FMT_BGR48LE     \
+        || (x)==PIX_FMT_BGRA64BE    \
+        || (x)==PIX_FMT_BGRA64LE    \
         || (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
         || (x)==PIX_FMT_BGR24       \
@@ -642,6 +650,8 @@ const char *sws_format_name(enum PixelFormat format);
 #define isRGBinBytes(x) (           \
            (x)==PIX_FMT_RGB48BE     \
         || (x)==PIX_FMT_RGB48LE     \
+        || (x)==PIX_FMT_RGBA64BE    \
+        || (x)==PIX_FMT_RGBA64LE    \
         || (x)==PIX_FMT_RGBA        \
         || (x)==PIX_FMT_ARGB        \
         || (x)==PIX_FMT_RGB24       \
@@ -649,6 +659,8 @@ const char *sws_format_name(enum PixelFormat format);
 #define isBGRinBytes(x) (           \
            (x)==PIX_FMT_BGR48BE     \
         || (x)==PIX_FMT_BGR48LE     \
+        || (x)==PIX_FMT_BGRA64BE    \
+        || (x)==PIX_FMT_BGRA64LE    \
         || (x)==PIX_FMT_BGRA        \
         || (x)==PIX_FMT_ABGR        \
         || (x)==PIX_FMT_BGR24       \
@@ -658,7 +670,11 @@ const char *sws_format_name(enum PixelFormat format);
         ||  isBGRinInt(x)           \
     )
 #define isALPHA(x)      (           \
-           (x)==PIX_FMT_BGR32       \
+           (x)==PIX_FMT_BGRA64BE    \
+        || (x)==PIX_FMT_BGRA64LE    \
+        || (x)==PIX_FMT_RGBA64BE    \
+        || (x)==PIX_FMT_RGBA64LE    \
+        || (x)==PIX_FMT_BGR32       \
         || (x)==PIX_FMT_BGR32_1     \
         || (x)==PIX_FMT_RGB32       \
         || (x)==PIX_FMT_RGB32_1     \

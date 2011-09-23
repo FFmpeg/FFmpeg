@@ -143,6 +143,14 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
     [PIX_FMT_RGB48LE] = {
         .color_type = FF_COLOR_RGB,
     },
+    [PIX_FMT_RGBA64BE] = {
+        .is_alpha = 1,
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_RGBA64LE] = {
+        .is_alpha = 1,
+        .color_type = FF_COLOR_RGB,
+    },
     [PIX_FMT_RGB565BE] = {
         .color_type = FF_COLOR_RGB,
     },
@@ -192,6 +200,20 @@ static const PixFmtInfo pix_fmt_info[PIX_FMT_NB] = {
         .color_type = FF_COLOR_YUV,
     },
     [PIX_FMT_ABGR] = {
+        .is_alpha = 1,
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_BGR48BE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_BGR48LE] = {
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_BGRA64BE] = {
+        .is_alpha = 1,
+        .color_type = FF_COLOR_RGB,
+    },
+    [PIX_FMT_BGRA64LE] = {
         .is_alpha = 1,
         .color_type = FF_COLOR_RGB,
     },
