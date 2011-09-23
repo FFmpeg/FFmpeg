@@ -403,20 +403,22 @@ static av_cold void uninit(AVFilterContext *ctx)
     av_expr_free(dtext->x_pexpr); dtext->x_pexpr = NULL;
     av_expr_free(dtext->y_pexpr); dtext->y_pexpr = NULL;
 
-    av_freep(&dtext->fontfile);
-    av_freep(&dtext->text);
+    av_freep(&dtext->boxcolor_string);
     av_freep(&dtext->expanded_text);
     av_freep(&dtext->fontcolor_string);
-    av_freep(&dtext->boxcolor_string);
-    av_freep(&dtext->positions);
+    av_freep(&dtext->fontfile);
+    av_freep(&dtext->shadowcolor_string);
+    av_freep(&dtext->text);
     av_freep(&dtext->x_expr);
     av_freep(&dtext->y_expr);
 
+    av_freep(&dtext->positions);
     dtext->nb_positions = 0;
-    av_freep(&dtext->shadowcolor_string);
+
     av_tree_enumerate(dtext->glyphs, NULL, NULL, glyph_enu_free);
     av_tree_destroy(dtext->glyphs);
-    dtext->glyphs = 0;
+    dtext->glyphs = NULL;
+
     FT_Done_Face(dtext->face);
     FT_Done_FreeType(dtext->library);
 
@@ -424,7 +426,6 @@ static av_cold void uninit(AVFilterContext *ctx)
         av_freep(&dtext->box_line[i]);
         dtext->pixel_step[i] = 0;
     }
-
 }
 
 static int config_input(AVFilterLink *inlink)
