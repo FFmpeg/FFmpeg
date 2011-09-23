@@ -1018,17 +1018,17 @@ static av_cold void common_init(H264Context *h){
     memset(h->pps.scaling_matrix8, 16, 2*64*sizeof(uint8_t));
 }
 
-int ff_h264_decode_extradata(H264Context *h)
+int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
 {
     AVCodecContext *avctx = h->s.avctx;
 
-    if(avctx->extradata[0] == 1){
+    if(buf[0] == 1){
         int i, cnt, nalsize;
-        unsigned char *p = avctx->extradata;
+        const unsigned char *p = buf;
 
         h->is_avc = 1;
 
-        if(avctx->extradata_size < 7) {
+        if(size < 7) {
             av_log(avctx, AV_LOG_ERROR, "avcC too short\n");
             return -1;
         }
@@ -1061,10 +1061,10 @@ int ff_h264_decode_extradata(H264Context *h)
             p += nalsize;
         }
         // Now store right nal length size, that will be use to parse all other nals
-        h->nal_length_size = (avctx->extradata[4] & 0x03) + 1;
+        h->nal_length_size = (buf[4] & 0x03) + 1;
     } else {
         h->is_avc = 0;
-        if(decode_nal_units(h, avctx->extradata, avctx->extradata_size) < 0)
+        if(decode_nal_units(h, buf, size) < 0)
             return -1;
     }
     return 0;
@@ -1108,7 +1108,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     }
 
     if(avctx->extradata_size > 0 && avctx->extradata &&
-        ff_h264_decode_extradata(h))
+        ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size))
         return -1;
 
     if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames < h->sps.num_reorder_frames){
