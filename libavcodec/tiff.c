@@ -665,14 +665,11 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     if (s->invert) {
-        uint8_t *src;
-        int j;
-
-        src = p->data[0];
-        for (j = 0; j < s->height; j++) {
-            for (i = 0; i < p->linesize[0]; i++)
-                src[i] = 255 - src[i];
-            src += p->linesize[0];
+        dst = p->data[0];
+        for (i = 0; i < s->height; i++) {
+            for (j = 0; j < p->linesize[0]; j++)
+                dst[j] = 255 - dst[j];
+            dst += stride;
         }
     }
     *got_frame = 1;
