@@ -1520,7 +1520,6 @@ static int output_packet(InputStream *ist, int ist_index,
     OutputStream *ost;
     int ret, i;
     int got_output;
-    AVFrame picture;
     void *buffer_to_free = NULL;
     static unsigned int samples_size= 0;
     AVSubtitle subtitle, *subtitle_to_free;
@@ -1555,6 +1554,7 @@ static int output_packet(InputStream *ist, int ist_index,
     while (avpkt.size > 0 || (!pkt && got_output)) {
         uint8_t *data_buf, *decoded_data_buf;
         int data_size, decoded_data_size;
+        AVFrame *decoded_frame, *filtered_frame;
     handle_eof:
         ist->pts= ist->next_pts;
 
@@ -1564,6 +1564,7 @@ static int output_packet(InputStream *ist, int ist_index,
             ist->showed_multi_packet_warning=1;
 
         /* decode the packet if needed */
+        decoded_frame    = filtered_frame = NULL;
         decoded_data_buf = NULL; /* fail safe */
         decoded_data_size= 0;
         data_buf  = avpkt.data;
@@ -1600,22 +1601,24 @@ static int output_packet(InputStream *ist, int ist_index,
                 break;}
             case AVMEDIA_TYPE_VIDEO:
                     decoded_data_size = (ist->st->codec->width * ist->st->codec->height * 3) / 2;
-                    /* XXX: allocate picture correctly */
-                    avcodec_get_frame_defaults(&picture);
+                    if (!(decoded_frame = avcodec_alloc_frame()))
+                        return AVERROR(ENOMEM);
                     avpkt.pts = pkt_pts;
                     avpkt.dts = ist->pts;
                     pkt_pts = AV_NOPTS_VALUE;
 
                     ret = avcodec_decode_video2(ist->st->codec,
-                                                &picture, &got_output, &avpkt);
-                    quality = same_quant ? picture.quality : 0;
+                                                decoded_frame, &got_output, &avpkt);
+                    quality = same_quant ? decoded_frame->quality : 0;
                     if (ret < 0)
-                        return ret;
+                        goto fail;
                     if (!got_output) {
                         /* no picture yet */
+                        av_freep(&decoded_frame);
                         goto discard_packet;
                     }
-                    ist->next_pts = ist->pts = guess_correct_pts(&ist->pts_ctx, picture.pkt_pts, picture.pkt_dts);
+                    ist->next_pts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
+                                                                 decoded_frame->pkt_dts);
                     if (ist->st->codec->time_base.num != 0) {
                         int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
                         ist->next_pts += ((int64_t)AV_TIME_BASE *
@@ -1624,7 +1627,7 @@ static int output_packet(InputStream *ist, int ist_index,
                     }
                     avpkt.size = 0;
                     buffer_to_free = NULL;
-                    pre_process_video_frame(ist, (AVPicture *)&picture, &buffer_to_free);
+                    pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
                     break;
             case AVMEDIA_TYPE_SUBTITLE:
                 ret = avcodec_decode_subtitle2(ist->st->codec,
@@ -1705,16 +1708,22 @@ static int output_packet(InputStream *ist, int ist_index,
                     sar = ist->st->sample_aspect_ratio;
                 else
                     sar = ist->st->codec->sample_aspect_ratio;
-                av_vsrc_buffer_add_frame(ost->input_video_filter, &picture, ist->pts, sar);
+                av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, ist->pts, sar);
+                if (!(filtered_frame = avcodec_alloc_frame())) {
+                    ret = AVERROR(ENOMEM);
+                    goto fail;
+                }
             }
             frame_available = ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO ||
                 !ost->output_video_filter || avfilter_poll_frame(ost->output_video_filter->inputs[0]);
             while (frame_available) {
                 AVRational ist_pts_tb;
                 if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && ost->output_video_filter)
-                    get_filtered_video_frame(ost->output_video_filter, &picture, &ost->picref, &ist_pts_tb);
+                    get_filtered_video_frame(ost->output_video_filter, filtered_frame, &ost->picref, &ist_pts_tb);
                 if (ost->picref)
                     ist->pts = av_rescale_q(ost->picref->pts, ist_pts_tb, AV_TIME_BASE_Q);
+#else
+                filtered_frame = decoded_frame;
 #endif
                 os = output_files[ost->file_index].ctx;
 
@@ -1732,7 +1741,7 @@ static int output_packet(InputStream *ist, int ist_index,
                         if (ost->picref->video && !ost->frame_aspect_ratio)
                             ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
 #endif
-                        do_video_out(os, ost, ist, &picture, &frame_size,
+                        do_video_out(os, ost, ist, filtered_frame, &frame_size,
                                      same_quant ? quality : ost->st->codec->global_quality);
                         if (vstats_filename && frame_size)
                             do_video_stats(os, ost, frame_size);
@@ -1806,15 +1815,20 @@ static int output_packet(InputStream *ist, int ist_index,
                 if (ost->picref)
                     avfilter_unref_buffer(ost->picref);
             }
+            av_freep(&filtered_frame);
 #endif
             }
 
+fail:
         av_free(buffer_to_free);
         /* XXX: allocate the subtitles in the codec ? */
         if (subtitle_to_free) {
             avsubtitle_free(subtitle_to_free);
             subtitle_to_free = NULL;
         }
+        av_freep(&decoded_frame);
+        if (ret < 0)
+            return ret;
     }
  discard_packet:
 
