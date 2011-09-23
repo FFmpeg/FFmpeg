@@ -2333,8 +2333,8 @@ static int transcode(OutputFile *output_files,
             }
             if (ost->frame_number >= ost->max_frames) {
                 int j;
-                for (j = of->ost_index; j < of->ctx->nb_streams; j++)
-                    output_streams[j].is_past_recording_time = 1;
+                for (j = 0; j < of->ctx->nb_streams; j++)
+                    output_streams[of->ost_index + j].is_past_recording_time = 1;
                 continue;
             }
         }
