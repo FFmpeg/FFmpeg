@@ -3911,6 +3911,8 @@ static int decode_frame(AVCodecContext *avctx,
 
         return 0;
     }
+    if(h->is_avc && AV_RB32(buf)==0x0164001F && buf[5] && buf[8]==0x67)
+        return ff_h264_decode_extradata(h, buf, buf_size);
 
     buf_index=decode_nal_units(h, buf, buf_size);
     if(buf_index < 0)
