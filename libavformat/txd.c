@@ -90,12 +90,10 @@ next_chunk:
     return 0;
 }
 
-AVInputFormat ff_txd_demuxer =
-{
-    "txd",
-    NULL_IF_CONFIG_SMALL("Renderware TeXture Dictionary"),
-    0,
-    txd_probe,
-    txd_read_header,
-    txd_read_packet,
+AVInputFormat ff_txd_demuxer = {
+    .name        = "txd",
+    .long_name   = NULL_IF_CONFIG_SMALL("Renderware TeXture Dictionary"),
+    .read_probe  = txd_probe,
+    .read_header = txd_read_header,
+    .read_packet = txd_read_packet,
 };

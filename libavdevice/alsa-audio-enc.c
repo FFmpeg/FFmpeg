@@ -102,15 +102,13 @@ static int audio_write_packet(AVFormatContext *s1, AVPacket *pkt)
 }
 
 AVOutputFormat ff_alsa_muxer = {
-    "alsa",
-    NULL_IF_CONFIG_SMALL("ALSA audio output"),
-    "",
-    "",
-    sizeof(AlsaData),
-    DEFAULT_CODEC_ID,
-    CODEC_ID_NONE,
-    audio_write_header,
-    audio_write_packet,
-    ff_alsa_close,
-    .flags = AVFMT_NOFILE,
+    .name           = "alsa",
+    .long_name      = NULL_IF_CONFIG_SMALL("ALSA audio output"),
+    .priv_data_size = sizeof(AlsaData),
+    .audio_codec    = DEFAULT_CODEC_ID,
+    .video_codec    = CODEC_ID_NONE,
+    .write_header   = audio_write_header,
+    .write_packet   = audio_write_packet,
+    .write_trailer  = ff_alsa_close,
+    .flags          = AVFMT_NOFILE,
 };

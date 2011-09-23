@@ -470,13 +470,12 @@ static const AVClass vfw_class = {
 };
 
 AVInputFormat ff_vfwcap_demuxer = {
-    "vfwcap",
-    NULL_IF_CONFIG_SMALL("VFW video capture"),
-    sizeof(struct vfw_ctx),
-    NULL,
-    vfw_read_header,
-    vfw_read_packet,
-    vfw_read_close,
-    .flags = AVFMT_NOFILE,
-    .priv_class = &vfw_class,
+    .name           = "vfwcap",
+    .long_name      = NULL_IF_CONFIG_SMALL("VfW video capture"),
+    .priv_data_size = sizeof(struct vfw_ctx),
+    .read_header    = vfw_read_header,
+    .read_packet    = vfw_read_packet,
+    .read_close     = vfw_read_close,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &vfw_class,
 };
