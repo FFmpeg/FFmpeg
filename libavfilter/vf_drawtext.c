@@ -96,6 +96,7 @@ enum var_name {
 
 typedef struct {
     const AVClass *class;
+    int reinit;                     ///< tells if the filter is being reinited
     uint8_t *fontfile;              ///< font to be used
     uint8_t *text;                  ///< text to be drawn
     uint8_t *expanded_text;         ///< used to contain the strftime()-expanded text
@@ -469,7 +470,8 @@ static int config_input(AVFilterLink *inlink)
     dtext->var_values[VAR_VSUB]  = 1<<pix_desc->log2_chroma_h;
     dtext->var_values[VAR_X]     = NAN;
     dtext->var_values[VAR_Y]     = NAN;
-    dtext->var_values[VAR_N]     = 0;
+    if (!dtext->reinit)
+        dtext->var_values[VAR_N] = 0;
     dtext->var_values[VAR_T]     = NAN;
 
     if ((ret = av_expr_parse(&dtext->x_pexpr, dtext->x_expr, var_names,
@@ -483,9 +485,12 @@ static int config_input(AVFilterLink *inlink)
 
 static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char *res, int res_len, int flags)
 {
+    DrawTextContext *dtext = ctx->priv;
+
     if(!strcmp(cmd, "reinit")){
         int ret;
         uninit(ctx);
+        dtext->reinit = 1;
         if((ret=init(ctx, arg, NULL)) < 0)
             return ret;
         return config_input(ctx->inputs[0]);
