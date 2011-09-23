@@ -1132,8 +1132,10 @@ FIND_MIN_MAX((%0, %1, 8))
 #endif
         "movq %%mm6, %%mm0                      \n\t" // max
         "psubb %%mm7, %%mm6                     \n\t" // max - min
-        "movd %%mm6, %%ecx                      \n\t"
-        "cmpb "MANGLE(deringThreshold)", %%cl   \n\t"
+        "push %k4                              \n\t"
+        "movd %%mm6, %k4                        \n\t"
+        "cmpb "MANGLE(deringThreshold)", %b4    \n\t"
+        "pop %k4                               \n\t"
         " jb 1f                                 \n\t"
         PAVGB(%%mm0, %%mm7)                           // a=(max + min)/2
         "punpcklbw %%mm7, %%mm7                 \n\t"
@@ -1261,8 +1263,8 @@ DERING_CORE((%%REGd, %1, 2),(%0, %1, 8)    ,%%mm0,%%mm2,%%mm4,%%mm1,%%mm3,%%mm5,
 DERING_CORE((%0, %1, 8)    ,(%%REGd, %1, 4),%%mm2,%%mm4,%%mm0,%%mm3,%%mm5,%%mm1,%%mm6,%%mm7)
 
         "1:                        \n\t"
-        : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "r"(tmp)
-        : "%"REG_a, "%"REG_d, "%"REG_c
+        : : "r" (src), "r" ((x86_reg)stride), "m" (c->pQPb), "m"(c->pQPb2), "q"(tmp)
+        : "%"REG_a, "%"REG_d
     );
 #else //HAVE_MMX2 || HAVE_AMD3DNOW
     int y;
