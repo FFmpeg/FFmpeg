@@ -348,7 +348,7 @@ static const ID3v2EMFunc *get_extra_meta_func(const char *tag, int isv34)
             return &ff_id3v2_extra_meta_funcs[i];
         i++;
     }
-    return NULL;
+    return &ff_id3v2_extra_meta_funcs[i];
 }
 
 static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags, ID3v2ExtraMeta **extra_meta)
@@ -531,7 +531,7 @@ void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
 
 const ID3v2EMFunc ff_id3v2_extra_meta_funcs[] = {
     { "GEO", "GEOB", read_geobtag, free_geobtag },
-    { NULL }
+    { NULL,  NULL,   NULL,         NULL }
 };
 
 const AVMetadataConv ff_id3v2_34_metadata_conv[] = {
