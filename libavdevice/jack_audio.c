@@ -326,13 +326,12 @@ static const AVClass jack_indev_class = {
 };
 
 AVInputFormat ff_jack_demuxer = {
-    "jack",
-    NULL_IF_CONFIG_SMALL("JACK Audio Connection Kit"),
-    sizeof(JackData),
-    NULL,
-    audio_read_header,
-    audio_read_packet,
-    audio_read_close,
-    .flags = AVFMT_NOFILE,
-    .priv_class = &jack_indev_class,
+    .name           = "jack",
+    .long_name      = NULL_IF_CONFIG_SMALL("JACK Audio Connection Kit"),
+    .priv_data_size = sizeof(JackData),
+    .read_header    = audio_read_header,
+    .read_packet    = audio_read_packet,
+    .read_close     = audio_read_close,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &jack_indev_class,
 };

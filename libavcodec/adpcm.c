@@ -666,11 +666,17 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_ADPCM_EA:
-        if (buf_size < 12 || AV_RL32(src) > (buf_size - 12)/30*28) {
-            src += buf_size;
-            break;
+        /* Each EA ADPCM frame has a 12-byte header followed by 30-byte pieces,
+           each coding 28 stereo samples. */
+        if (buf_size < 12) {
+            av_log(avctx, AV_LOG_ERROR, "frame too small\n");
+            return AVERROR(EINVAL);
         }
         samples_in_chunk = AV_RL32(src);
+        if (samples_in_chunk / 28 > (buf_size - 12) / 30) {
+            av_log(avctx, AV_LOG_ERROR, "invalid frame\n");
+            return AVERROR(EINVAL);
+        }
         src += 4;
         current_left_sample   = (int16_t)bytestream_get_le16(&src);
         previous_left_sample  = (int16_t)bytestream_get_le16(&src);
@@ -1080,17 +1086,15 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 }
 
 
-#define ADPCM_DECODER(id,name,long_name_)       \
-AVCodec ff_ ## name ## _decoder = {             \
-    #name,                                      \
-    AVMEDIA_TYPE_AUDIO,                         \
-    id,                                         \
-    sizeof(ADPCMDecodeContext),                 \
-    adpcm_decode_init,                          \
-    NULL,                                       \
-    NULL,                                       \
-    adpcm_decode_frame,                         \
-    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
+#define ADPCM_DECODER(id_, name_, long_name_)               \
+AVCodec ff_ ## name_ ## _decoder = {                        \
+    .name           = #name_,                               \
+    .type           = AVMEDIA_TYPE_AUDIO,                   \
+    .id             = id_,                                  \
+    .priv_data_size = sizeof(ADPCMDecodeContext),           \
+    .init           = adpcm_decode_init,                    \
+    .decode         = adpcm_decode_frame,                   \
+    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 
 /* Note: Do not forget to add new entries to the Makefile as well. */

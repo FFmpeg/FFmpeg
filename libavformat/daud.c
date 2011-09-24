@@ -80,17 +80,14 @@ AVInputFormat ff_daud_demuxer = {
 #endif
 
 #if CONFIG_DAUD_MUXER
-AVOutputFormat ff_daud_muxer =
-{
-    "daud",
-    NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
-    NULL,
-    "302",
-    0,
-    CODEC_ID_PCM_S24DAUD,
-    CODEC_ID_NONE,
-    daud_write_header,
-    daud_write_packet,
-    .flags= AVFMT_NOTIMESTAMPS,
+AVOutputFormat ff_daud_muxer = {
+    .name         = "daud",
+    .long_name    = NULL_IF_CONFIG_SMALL("D-Cinema audio format"),
+    .extensions   = "302",
+    .audio_codec  = CODEC_ID_PCM_S24DAUD,
+    .video_codec  = CODEC_ID_NONE,
+    .write_header = daud_write_header,
+    .write_packet = daud_write_packet,
+    .flags        = AVFMT_NOTIMESTAMPS,
 };
 #endif

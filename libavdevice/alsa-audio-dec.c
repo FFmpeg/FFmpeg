@@ -145,13 +145,12 @@ static const AVClass alsa_demuxer_class = {
 };
 
 AVInputFormat ff_alsa_demuxer = {
-    "alsa",
-    NULL_IF_CONFIG_SMALL("ALSA audio input"),
-    sizeof(AlsaData),
-    NULL,
-    audio_read_header,
-    audio_read_packet,
-    ff_alsa_close,
-    .flags = AVFMT_NOFILE,
-    .priv_class = &alsa_demuxer_class,
+    .name           = "alsa",
+    .long_name      = NULL_IF_CONFIG_SMALL("ALSA audio input"),
+    .priv_data_size = sizeof(AlsaData),
+    .read_header    = audio_read_header,
+    .read_packet    = audio_read_packet,
+    .read_close     = ff_alsa_close,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &alsa_demuxer_class,
 };

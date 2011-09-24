@@ -86,6 +86,8 @@ static av_cold int adpcm_encode_init(AVCodecContext *avctx)
         FF_ALLOC_OR_GOTO(avctx, s->trellis_hash, 65536 * sizeof(*s->trellis_hash), error);
     }
 
+    avctx->bits_per_coded_sample = av_get_bits_per_sample(avctx->codec->id);
+
     switch(avctx->codec->id) {
     case CODEC_ID_ADPCM_IMA_WAV:
         avctx->frame_size = (BLKSIZE - 4 * avctx->channels) * 8 / (4 * avctx->channels) + 1; /* each 16 bits sample gives one nibble */
@@ -670,18 +672,17 @@ static int adpcm_encode_frame(AVCodecContext *avctx,
 }
 
 
-#define ADPCM_ENCODER(id,name,long_name_)       \
-AVCodec ff_ ## name ## _encoder = {             \
-    #name,                                      \
-    AVMEDIA_TYPE_AUDIO,                         \
-    id,                                         \
-    sizeof(ADPCMEncodeContext),                 \
-    adpcm_encode_init,                          \
-    adpcm_encode_frame,                         \
-    adpcm_encode_close,                         \
-    NULL,                                       \
-    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE}, \
-    .long_name = NULL_IF_CONFIG_SMALL(long_name_), \
+#define ADPCM_ENCODER(id_, name_, long_name_)               \
+AVCodec ff_ ## name_ ## _encoder = {                        \
+    .name           = #name_,                               \
+    .type           = AVMEDIA_TYPE_AUDIO,                   \
+    .id             = id_,                                  \
+    .priv_data_size = sizeof(ADPCMEncodeContext),           \
+    .init           = adpcm_encode_init,                    \
+    .encode         = adpcm_encode_frame,                   \
+    .close          = adpcm_encode_close,                   \
+    .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE}, \
+    .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 
 ADPCM_ENCODER(CODEC_ID_ADPCM_IMA_QT, adpcm_ima_qt, "ADPCM IMA QuickTime");

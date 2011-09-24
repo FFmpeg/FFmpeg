@@ -508,14 +508,13 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 }
 
 
-AVCodec ff_ra_144_encoder =
-{
-    "real_144",
-    AVMEDIA_TYPE_AUDIO,
-    CODEC_ID_RA_144,
-    sizeof(RA144Context),
-    ra144_encode_init,
-    ra144_encode_frame,
-    ra144_encode_close,
-    .long_name = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K) encoder"),
+AVCodec ff_ra_144_encoder = {
+    .name           = "real_144",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_RA_144,
+    .priv_data_size = sizeof(RA144Context),
+    .init           = ra144_encode_init,
+    .encode         = ra144_encode_frame,
+    .close          = ra144_encode_close,
+    .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K) encoder"),
 };

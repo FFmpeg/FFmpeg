@@ -345,13 +345,12 @@ static const AVClass bktr_class = {
 };
 
 AVInputFormat ff_bktr_demuxer = {
-    "bktr",
-    NULL_IF_CONFIG_SMALL("video grab"),
-    sizeof(VideoData),
-    NULL,
-    grab_read_header,
-    grab_read_packet,
-    grab_read_close,
-    .flags = AVFMT_NOFILE,
-    .priv_class = &bktr_class,
+    .name           = "bktr",
+    .long_name      = NULL_IF_CONFIG_SMALL("video grab"),
+    .priv_data_size = sizeof(VideoData),
+    .read_header    = grab_read_header,
+    .read_packet    = grab_read_packet,
+    .read_close     = grab_read_close,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &bktr_class,
 };

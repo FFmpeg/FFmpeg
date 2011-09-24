@@ -423,7 +423,7 @@ static int mpegps_read_packet(AVFormatContext *s,
 {
     MpegDemuxContext *m = s->priv_data;
     AVStream *st;
-    int len, startcode, i, es_type;
+    int len, startcode, i, es_type, ret;
     int request_probe= 0;
     enum CodecID codec_id = CODEC_ID_NONE;
     enum AVMediaType type;
@@ -569,7 +569,13 @@ static int mpegps_read_packet(AVFormatContext *s,
             return AVERROR(EINVAL);
     }
     av_new_packet(pkt, len);
-    avio_read(s->pb, pkt->data, pkt->size);
+    ret = avio_read(s->pb, pkt->data, pkt->size);
+    if (ret < 0) {
+        pkt->size = 0;
+    } else if (ret < pkt->size) {
+        pkt->size = ret;
+        memset(pkt->data + ret, 0, FF_INPUT_BUFFER_PADDING_SIZE);
+    }
     pkt->pts = pts;
     pkt->dts = dts;
     pkt->pos = dummy_pos;
@@ -578,7 +584,7 @@ static int mpegps_read_packet(AVFormatContext *s,
             pkt->stream_index, pkt->pts / 90000.0, pkt->dts / 90000.0,
             pkt->size);
 
-    return 0;
+    return (ret < 0) ? ret : 0;
 }
 
 static int64_t mpegps_read_dts(AVFormatContext *s, int stream_index,

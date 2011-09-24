@@ -705,13 +705,12 @@ static const AVClass v4l2_class = {
 };
 
 AVInputFormat ff_v4l2_demuxer = {
-    "video4linux2",
-    NULL_IF_CONFIG_SMALL("Video4Linux2 device grab"),
-    sizeof(struct video_data),
-    NULL,
-    v4l2_read_header,
-    v4l2_read_packet,
-    v4l2_read_close,
-    .flags = AVFMT_NOFILE,
-    .priv_class = &v4l2_class,
+    .name           = "video4linux2",
+    .long_name      = NULL_IF_CONFIG_SMALL("Video4Linux2 device grab"),
+    .priv_data_size = sizeof(struct video_data),
+    .read_header    = v4l2_read_header,
+    .read_packet    = v4l2_read_packet,
+    .read_close     = v4l2_read_close,
+    .flags          = AVFMT_NOFILE,
+    .priv_class     = &v4l2_class,
 };
