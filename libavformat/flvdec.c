@@ -147,6 +147,9 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
             break;
 
         arraylen = avio_rb32(ioc);
+        if (arraylen >> 28)
+            break;
+
         /*
          * Expect only 'times' or 'filepositions' sub-arrays in other case refuse to use such metadata
          * for indexing
