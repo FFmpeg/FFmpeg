@@ -171,82 +171,6 @@ static av_cold void rv34_init_tables(void)
 
 /** @} */ // vlc group
 
-
-/**
- * @name RV30/40 inverse transform functions
- * @{
- */
-
-static av_always_inline void rv34_row_transform(int temp[16], DCTELEM *block)
-{
-    int i;
-
-    for(i = 0; i < 4; i++){
-        const int z0 = 13*(block[i+8*0] +    block[i+8*2]);
-        const int z1 = 13*(block[i+8*0] -    block[i+8*2]);
-        const int z2 =  7* block[i+8*1] - 17*block[i+8*3];
-        const int z3 = 17* block[i+8*1] +  7*block[i+8*3];
-
-        temp[4*i+0] = z0 + z3;
-        temp[4*i+1] = z1 + z2;
-        temp[4*i+2] = z1 - z2;
-        temp[4*i+3] = z0 - z3;
-    }
-}
-
-/**
- * Real Video 3.0/4.0 inverse transform
- * Code is almost the same as in SVQ3, only scaling is different.
- */
-static void rv34_inv_transform(DCTELEM *block){
-    int temp[16];
-    int i;
-
-    rv34_row_transform(temp, block);
-
-    for(i = 0; i < 4; i++){
-        const int z0 = 13*(temp[4*0+i] +    temp[4*2+i]) + 0x200;
-        const int z1 = 13*(temp[4*0+i] -    temp[4*2+i]) + 0x200;
-        const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
-        const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
-
-        block[i*8+0] = (z0 + z3) >> 10;
-        block[i*8+1] = (z1 + z2) >> 10;
-        block[i*8+2] = (z1 - z2) >> 10;
-        block[i*8+3] = (z0 - z3) >> 10;
-    }
-
-}
-
-/**
- * RealVideo 3.0/4.0 inverse transform for DC block
- *
- * Code is almost the same as rv34_inv_transform()
- * but final coefficients are multiplied by 1.5 and have no rounding.
- */
-static void rv34_inv_transform_noround(DCTELEM *block){
-    int temp[16];
-    int i;
-
-    rv34_row_transform(temp, block);
-
-    for(i = 0; i < 4; i++){
-        const int z0 = 13*(temp[4*0+i] +    temp[4*2+i]);
-        const int z1 = 13*(temp[4*0+i] -    temp[4*2+i]);
-        const int z2 =  7* temp[4*1+i] - 17*temp[4*3+i];
-        const int z3 = 17* temp[4*1+i] +  7*temp[4*3+i];
-
-        block[i*8+0] = ((z0 + z3) * 3) >> 11;
-        block[i*8+1] = ((z1 + z2) * 3) >> 11;
-        block[i*8+2] = ((z1 - z2) * 3) >> 11;
-        block[i*8+3] = ((z0 - z3) * 3) >> 11;
-    }
-
-}
-
-/** @} */ // transform
-
-
 /**
  * @name RV30/40 4x4 block decoding functions
  * @{
@@ -1226,7 +1150,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
         memset(block16, 0, sizeof(block16));
         rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0);
         rv34_dequant4x4_16x16(block16, rv34_qscale_tab[luma_dc_quant],rv34_qscale_tab[s->qscale]);
-        rv34_inv_transform_noround(block16);
+        r->rdsp.rv34_inv_transform_tab[1](block16);
     }
 
     for(i = 0; i < 16; i++, cbp >>= 1){
@@ -1238,7 +1162,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
         rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[s->qscale],rv34_qscale_tab[s->qscale]);
         if(r->is16) //FIXME: optimize
             s->block[blknum][blkoff] = block16[(i & 3) | ((i & 0xC) << 1)];
-        rv34_inv_transform(s->block[blknum] + blkoff);
+        r->rdsp.rv34_inv_transform_tab[0](s->block[blknum] + blkoff);
     }
     if(r->block_type == RV34_MB_P_MIX16x16)
         r->cur_vlcs = choose_vlc_set(r->si.quant, r->si.vlc_set, 1);
@@ -1248,7 +1172,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
         blkoff = ((i & 1) << 2) + ((i & 2) << 4);
         rv34_decode_block(s->block[blknum] + blkoff, gb, r->cur_vlcs, r->chroma_vlc, 1);
         rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]],rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]]);
-        rv34_inv_transform(s->block[blknum] + blkoff);
+        r->rdsp.rv34_inv_transform_tab[0](s->block[blknum] + blkoff);
     }
     if (IS_INTRA(s->current_picture_ptr->f.mb_type[mb_pos]))
         rv34_output_macroblock(r, intra_types, cbp2, r->is16);

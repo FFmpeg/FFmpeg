@@ -34,15 +34,19 @@ typedef void (*rv40_weight_func)(uint8_t *dst/*align width (8 or 16)*/,
                                  uint8_t *src2/*align width (8 or 16)*/,
                                  int w1, int w2, int stride);
 
+typedef void (*rv34_inv_transform_func)(DCTELEM *block);
+
 typedef struct RV34DSPContext {
     qpel_mc_func put_pixels_tab[4][16];
     qpel_mc_func avg_pixels_tab[4][16];
     h264_chroma_mc_func put_chroma_pixels_tab[3];
     h264_chroma_mc_func avg_chroma_pixels_tab[3];
     rv40_weight_func rv40_weight_pixels_tab[2];
+    rv34_inv_transform_func rv34_inv_transform_tab[2];
 } RV34DSPContext;
 
 void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp);
+void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp);
 void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp);
 
 void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp);

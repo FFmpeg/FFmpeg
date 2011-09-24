@@ -295,6 +295,9 @@ RV40_WEIGHT_FUNC(16)
 RV40_WEIGHT_FUNC(8)
 
 av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
+
+    ff_rv34dsp_init(c, dsp);
+
     c->put_pixels_tab[0][ 0] = dsp->put_h264_qpel_pixels_tab[0][0];
     c->put_pixels_tab[0][ 1] = put_rv40_qpel16_mc10_c;
     c->put_pixels_tab[0][ 2] = dsp->put_h264_qpel_pixels_tab[0][2];
