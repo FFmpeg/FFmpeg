@@ -107,6 +107,18 @@ void av_free(void *ptr);
 void *av_mallocz(size_t size) av_malloc_attrib av_alloc_size(1);
 
 /**
+ * Allocate a block of nmemb * size bytes with alignment suitable for all
+ * memory accesses (including vectors if available on the CPU) and
+ * zero all the bytes of the block.
+ * The allocation will fail if nmemb * size is greater than or equal
+ * to INT_MAX.
+ * @param nmemb
+ * @param size
+ * @return Pointer to the allocated block, NULL if it cannot be allocated.
+ */
+void *av_calloc(size_t nmemb, size_t size) av_malloc_attrib;
+
+/**
  * Duplicate the string s.
  * @param s string to be duplicated
  * @return Pointer to a newly allocated string containing a
