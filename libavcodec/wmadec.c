@@ -804,7 +804,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     WMACodecContext *s = avctx->priv_data;
-    int nb_frames, bit_offset, i, pos, len;
+    int nb_frames, bit_offset, i, pos, len, out_size;
     uint8_t *q;
     int16_t *samples;
 
@@ -825,13 +825,19 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     if (s->use_bit_reservoir) {
         /* read super frame header */
         skip_bits(&s->gb, 4); /* super frame index */
-        nb_frames = get_bits(&s->gb, 4) - 1;
+        nb_frames = get_bits(&s->gb, 4) - (s->last_superframe_len <= 0);
+    } else {
+        nb_frames = 1;
+    }
 
-        if((nb_frames+1) * s->nb_channels * s->frame_len * sizeof(int16_t) > *data_size){
-            av_log(s->avctx, AV_LOG_ERROR, "Insufficient output space\n");
-            goto fail;
-        }
+    out_size = nb_frames * s->frame_len * s->nb_channels *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(s->avctx, AV_LOG_ERROR, "Insufficient output space\n");
+        goto fail;
+    }
 
+    if (s->use_bit_reservoir) {
         bit_offset = get_bits(&s->gb, s->byte_offset_bits + 3);
 
         if (s->last_superframe_len > 0) {
@@ -860,6 +866,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
             if (wma_decode_frame(s, samples) < 0)
                 goto fail;
             samples += s->nb_channels * s->frame_len;
+            nb_frames--;
         }
 
         /* read each frame starting from bit_offset */
@@ -888,10 +895,6 @@ static int wma_decode_superframe(AVCodecContext *avctx,
         s->last_superframe_len = len;
         memcpy(s->last_superframe, buf + pos, len);
     } else {
-        if(s->nb_channels * s->frame_len * sizeof(int16_t) > *data_size){
-            av_log(s->avctx, AV_LOG_ERROR, "Insufficient output space\n");
-            goto fail;
-        }
         /* single frame decode */
         if (wma_decode_frame(s, samples) < 0)
             goto fail;
@@ -900,7 +903,7 @@ static int wma_decode_superframe(AVCodecContext *avctx,
 
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d outbytes:%d eaten:%d\n", s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,        (int8_t *)samples - (int8_t *)data, s->block_align);
 
-    *data_size = (int8_t *)samples - (int8_t *)data;
+    *data_size = out_size;
     return s->block_align;
  fail:
     /* when error, we reset the bit reservoir */
