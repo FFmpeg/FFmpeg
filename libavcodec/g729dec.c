@@ -345,6 +345,7 @@ static av_cold int decoder_init(AVCodecContext * avctx)
         av_log(avctx, AV_LOG_ERROR, "Only mono sound is supported (requested channels: %d).\n", avctx->channels);
         return AVERROR(EINVAL);
     }
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     /* Both 8kbit/s and 6.4kbit/s modes uses two subframes per frame. */
     avctx->frame_size = SUBFRAME_SIZE << 1;
