@@ -34,8 +34,9 @@ typedef struct AVFilterPool {
 } AVFilterPool;
 
 typedef struct AVFilterCommand {
-    double time;
-    char *command, *arg;
+    double time;                ///< time expressed in seconds
+    char *command;              ///< command
+    char *arg;                  ///< optional argument for the command
     int flags;
     struct AVFilterCommand *next;
 } AVFilterCommand;
