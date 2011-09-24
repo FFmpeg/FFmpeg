@@ -179,13 +179,13 @@ static int rle_unpack(const unsigned char *src, int src_len, int src_count,
         l = *ps++;
         if (l & 0x80) {
             l = (l & 0x7F) * 2;
-            if (pd + l > dest_end || ps_end - ps < l)
+            if (dest_end - pd < l || ps_end - ps < l)
                 return ps - src;
             memcpy(pd, ps, l);
             ps += l;
             pd += l;
         } else {
-            if (pd + i > dest_end || ps_end - ps < 2)
+            if (dest_end - pd < i || ps_end - ps < 2)
                 return ps - src;
             for (i = 0; i < l; i++) {
                 *pd++ = ps[0];
