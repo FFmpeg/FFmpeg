@@ -110,7 +110,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
     while (s_end - s > 0 && dataleft > 0) {
         tag = *s++;
         if ((tag == 0xFF) && (dataleft > 8)) {
-            if (d + 8 > d_end || s_end - s < 8)
+            if (d_end - d < 8 || s_end - s < 8)
                 return;
             for (i = 0; i < 8; i++) {
                 queue[qpos++] = *d++ = *s++;
@@ -122,7 +122,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
                 if (dataleft == 0)
                     break;
                 if (tag & 0x01) {
-                    if (d + 1 > d_end || s_end - s < 1)
+                    if (d_end - d < 1 || s_end - s < 1)
                         return;
                     queue[qpos++] = *d++ = *s++;
                     qpos &= QUEUE_MASK;
@@ -138,7 +138,7 @@ static void lz_unpack(const unsigned char *src, int src_len,
                             return;
                         chainlen = *s++ + 0xF + 3;
                     }
-                    if (d + chainlen > d_end)
+                    if (d_end - d < chainlen)
                         return;
                     for (j = 0; j < chainlen; j++) {
                         *d = queue[chainofs++ & QUEUE_MASK];
