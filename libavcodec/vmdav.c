@@ -203,6 +203,7 @@ static void vmd_decode(VmdVideoContext *s)
     const unsigned char *p_end = s->buf + s->size;
 
     const unsigned char *pb;
+    const unsigned char *pb_end;
     unsigned char meth;
     unsigned char *dp;   /* pointer to current frame */
     unsigned char *pp;   /* pointer to previous frame */
@@ -248,6 +249,8 @@ static void vmd_decode(VmdVideoContext *s)
 
     /* check if there is a new palette */
     if (s->buf[15] & 0x02) {
+        if (p_end - p < 2 + 3 * PALETTE_COUNT)
+            return;
         p += 2;
         palette32 = (unsigned int *)s->palette;
         for (i = 0; i < PALETTE_COUNT; i++) {
@@ -256,16 +259,17 @@ static void vmd_decode(VmdVideoContext *s)
             b = *p++ * 4;
             palette32[i] = (r << 16) | (g << 8) | (b);
         }
-        s->size -= (256 * 3 + 2);
     }
-    if (s->size >= 0) {
+    if (p < p_end) {
         /* originally UnpackFrame in VAG's code */
         pb = p;
+        pb_end = p_end;
         meth = *pb++;
         if (meth & 0x80) {
             lz_unpack(pb, p_end - pb, s->unpack_buffer, s->unpack_buffer_size);
             meth &= 0x7F;
             pb = s->unpack_buffer;
+            pb_end = s->unpack_buffer + s->unpack_buffer_size;
         }
 
         dp = &s->frame.data[0][frame_y * s->frame.linesize[0] + frame_x];
@@ -275,10 +279,12 @@ static void vmd_decode(VmdVideoContext *s)
             for (i = 0; i < frame_height; i++) {
                 ofs = 0;
                 do {
+                    if (pb_end - pb < 1)
+                        return;
                     len = *pb++;
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
-                        if (ofs + len > frame_width)
+                        if (ofs + len > frame_width || pb_end - pb < len)
                             return;
                         memcpy(&dp[ofs], pb, len);
                         pb += len;
@@ -303,6 +309,8 @@ static void vmd_decode(VmdVideoContext *s)
 
         case 2:
             for (i = 0; i < frame_height; i++) {
+                if (pb_end -pb < frame_width)
+                    return;
                 memcpy(dp, pb, frame_width);
                 pb += frame_width;
                 dp += s->frame.linesize[0];
@@ -314,13 +322,20 @@ static void vmd_decode(VmdVideoContext *s)
             for (i = 0; i < frame_height; i++) {
                 ofs = 0;
                 do {
+                    if (pb_end - pb < 1)
+                        return;
                     len = *pb++;
                     if (len & 0x80) {
                         len = (len & 0x7F) + 1;
+                        if (pb_end - pb < 1)
+                            return;
                         if (*pb++ == 0xFF)
                             len = rle_unpack(pb, &dp[ofs], len, frame_width - ofs);
-                        else
+                        else {
+                        if (pb_end - pb < len)
+                            return;
                             memcpy(&dp[ofs], pb, len);
+                        }
                         pb += len;
                         ofs += len;
                     } else {
