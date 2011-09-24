@@ -62,6 +62,12 @@ NEON-OBJS-$(CONFIG_AC3DSP)             += arm/ac3dsp_neon.o
 NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o       \
 
+NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_init_neon.o       \
+                                          arm/rv34dsp_neon.o            \
+
+NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_init_neon.o       \
+                                          arm/rv34dsp_neon.o            \
+
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 
 NEON-OBJS-$(CONFIG_VP5_DECODER)        += arm/vp56dsp_neon.o            \

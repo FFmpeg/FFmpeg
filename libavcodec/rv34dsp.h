@@ -56,6 +56,8 @@ void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp);
 void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp);
 void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp);
 
+void ff_rv34dsp_init_neon(RV34DSPContext *c, DSPContext *dsp);
+
 void ff_rv40dsp_init_x86(RV34DSPContext *c, DSPContext *dsp);
 
 #endif /* AVCODEC_RV34DSP_H */
