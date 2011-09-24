@@ -2184,6 +2184,8 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
+    wanted_spec.freq = avctx->sample_rate;
+    wanted_spec.channels = avctx->channels;
     if (!codec ||
         avcodec_open2(avctx, codec, &opts) < 0)
         return -1;
@@ -2198,9 +2200,7 @@ static int stream_component_open(VideoState *is, int stream_index)
             fprintf(stderr, "Invalid sample rate or channel count\n");
             return -1;
         }
-        wanted_spec.freq = avctx->sample_rate;
         wanted_spec.format = AUDIO_S16SYS;
-        wanted_spec.channels = avctx->channels;
         wanted_spec.silence = 0;
         wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
         wanted_spec.callback = sdl_audio_callback;
