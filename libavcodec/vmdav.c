@@ -523,7 +523,10 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
 
     silent_chunks = 0;
     if (block_type == BLOCK_TYPE_INITIAL) {
-        uint32_t flags = AV_RB32(buf);
+        uint32_t flags;
+        if (buf_size < 4)
+            return -1;
+        flags = AV_RB32(buf);
         silent_chunks  = av_popcount(flags);
         buf      += 4;
         buf_size -= 4;
