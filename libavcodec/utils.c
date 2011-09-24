@@ -747,6 +747,11 @@ int attribute_align_arg avcodec_decode_audio3(AVCodecContext *avctx, int16_t *sa
 
     avctx->pkt = avpkt;
 
+    if (!avpkt->data && avpkt->size) {
+        av_log(avctx, AV_LOG_ERROR, "invalid packet: NULL data, size != 0\n");
+        return AVERROR(EINVAL);
+    }
+
     if((avctx->codec->capabilities & CODEC_CAP_DELAY) || avpkt->size){
         //FIXME remove the check below _after_ ensuring that all audio check that the available space is enough
         if(*frame_size_ptr < AVCODEC_MAX_AUDIO_FRAME_SIZE){
