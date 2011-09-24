@@ -226,8 +226,9 @@ static void vmd_decode(VmdVideoContext *s)
 
     /* if only a certain region will be updated, copy the entire previous
      * frame before the decode */
-    if (frame_x || frame_y || (frame_width != s->avctx->width) ||
-        (frame_height != s->avctx->height)) {
+    if (s->prev_frame.data[0] &&
+        (frame_x || frame_y || (frame_width != s->avctx->width) ||
+        (frame_height != s->avctx->height))) {
 
         memcpy(s->frame.data[0], s->prev_frame.data[0],
             s->avctx->height * s->frame.linesize[0]);
@@ -272,7 +273,7 @@ static void vmd_decode(VmdVideoContext *s)
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
-                        if (ofs + len + 1 > frame_width)
+                        if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
                             return;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
@@ -312,7 +313,7 @@ static void vmd_decode(VmdVideoContext *s)
                         ofs += len;
                     } else {
                         /* interframe pixel copy */
-                        if (ofs + len + 1 > frame_width)
+                        if (ofs + len + 1 > frame_width || !s->prev_frame.data[0])
                             return;
                         memcpy(&dp[ofs], &pp[ofs], len + 1);
                         ofs += len + 1;
