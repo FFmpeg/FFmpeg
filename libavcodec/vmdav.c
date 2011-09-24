@@ -204,6 +204,16 @@ static void vmd_decode(VmdVideoContext *s)
     frame_y = AV_RL16(&s->buf[8]);
     frame_width = AV_RL16(&s->buf[10]) - frame_x + 1;
     frame_height = AV_RL16(&s->buf[12]) - frame_y + 1;
+    if (frame_x < 0 || frame_width < 0 ||
+        frame_x >= s->avctx->width ||
+        frame_width > s->avctx->width ||
+        frame_x + frame_width > s->avctx->width)
+        return;
+    if (frame_y < 0 || frame_height < 0 ||
+        frame_y >= s->avctx->height ||
+        frame_height > s->avctx->height ||
+        frame_y + frame_height > s->avctx->height)
+        return;
 
     if ((frame_width == s->avctx->width && frame_height == s->avctx->height) &&
         (frame_x || frame_y)) {
