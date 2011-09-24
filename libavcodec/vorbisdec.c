@@ -962,7 +962,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
 
 static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
 {
-    vorbis_context *vc = avccontext->priv_data ;
+    vorbis_context *vc = avccontext->priv_data;
     uint8_t *headers   = avccontext->extradata;
     int headers_len    = avccontext->extradata_size;
     uint8_t *header_start[3];
@@ -1026,7 +1026,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
     avccontext->sample_rate = vc->audio_samplerate;
     avccontext->frame_size  = FFMIN(vc->blocksize[0], vc->blocksize[1]) >> 2;
 
-    return 0 ;
+    return 0;
 }
 
 // Decode audiopackets -------------------------------------------------
@@ -1604,7 +1604,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    vorbis_context *vc = avccontext->priv_data ;
+    vorbis_context *vc = avccontext->priv_data;
     GetBitContext *gb = &(vc->gb);
     const float *channel_ptrs[255];
     int i, len, out_size;
@@ -1626,7 +1626,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     if (!vc->first_frame) {
         vc->first_frame = 1;
         *data_size = 0;
-        return buf_size ;
+        return buf_size;
     }
 
     av_dlog(NULL, "parsed %d bytes %d bits, returned %d samples (*ch*bits) \n",
@@ -1656,7 +1656,7 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 
     *data_size = out_size;
 
-    return buf_size ;
+    return buf_size;
 }
 
 // Close decoder
@@ -1667,7 +1667,7 @@ static av_cold int vorbis_decode_close(AVCodecContext *avccontext)
 
     vorbis_free(vc);
 
-    return 0 ;
+    return 0;
 }
 
 AVCodec ff_vorbis_decoder = {
