@@ -1436,7 +1436,7 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
         init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
     }
 
-    buflen = (s->num_saved_bits + len + 8) >> 3;
+    buflen = (put_bits_count(&s->pb) + len + 8) >> 3;
 
     if (len <= 0 || buflen > MAX_FRAMESIZE) {
         av_log_ask_for_sample(s->avctx, "input buffer too small\n");
