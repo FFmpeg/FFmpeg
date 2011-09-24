@@ -83,7 +83,7 @@ static int read_header(AVFormatContext *s,
     */
     if (st->codec->sample_rate != 8000) {
         av_log(s, AV_LOG_ERROR, "Sample rate %d is not supported.\n", st->codec->sample_rate);
-        return AVERROR_NOFMT;
+        return AVERROR_INVALIDDATA;
     }
 
     st->codec->frame_size=80;
