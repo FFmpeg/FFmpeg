@@ -12,7 +12,6 @@ static int probe(AVProbeData *p)
 {
     int i;
     i=AV_RL16(&p->buf[0]);
-av_log(NULL, AV_LOG_ERROR, "bit probe: %x\n", i);
     if(i != SYNC_WORD)
         return 0;
 
