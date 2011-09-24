@@ -72,9 +72,11 @@ typedef struct VmdVideoContext {
 #define QUEUE_SIZE 0x1000
 #define QUEUE_MASK 0x0FFF
 
-static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_len)
+static void lz_unpack(const unsigned char *src, int src_len,
+                      unsigned char *dest, int dest_len)
 {
     const unsigned char *s;
+    const unsigned char *s_end;
     unsigned char *d;
     unsigned char *d_end;
     unsigned char queue[QUEUE_SIZE];
@@ -87,8 +89,12 @@ static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_le
     unsigned int i, j;
 
     s = src;
+    s_end = src + src_len;
     d = dest;
     d_end = d + dest_len;
+
+    if (s_end - s < 8)
+        return;
     dataleft = AV_RL32(s);
     s += 4;
     memset(queue, 0x20, QUEUE_SIZE);
@@ -101,10 +107,10 @@ static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_le
         speclen = 100;  /* no speclen */
     }
 
-    while (dataleft > 0) {
+    while (s_end - s > 0 && dataleft > 0) {
         tag = *s++;
         if ((tag == 0xFF) && (dataleft > 8)) {
-            if (d + 8 > d_end)
+            if (d + 8 > d_end || s_end - s < 8)
                 return;
             for (i = 0; i < 8; i++) {
                 queue[qpos++] = *d++ = *s++;
@@ -116,17 +122,22 @@ static void lz_unpack(const unsigned char *src, unsigned char *dest, int dest_le
                 if (dataleft == 0)
                     break;
                 if (tag & 0x01) {
-                    if (d + 1 > d_end)
+                    if (d + 1 > d_end || s_end - s < 1)
                         return;
                     queue[qpos++] = *d++ = *s++;
                     qpos &= QUEUE_MASK;
                     dataleft--;
                 } else {
+                    if (s_end - s < 2)
+                        return;
                     chainofs = *s++;
                     chainofs |= ((*s & 0xF0) << 4);
                     chainlen = (*s++ & 0x0F) + 3;
-                    if (chainlen == speclen)
+                    if (chainlen == speclen) {
+                        if (s_end - s < 1)
+                            return;
                         chainlen = *s++ + 0xF + 3;
+                    }
                     if (d + chainlen > d_end)
                         return;
                     for (j = 0; j < chainlen; j++) {
@@ -189,6 +200,7 @@ static void vmd_decode(VmdVideoContext *s)
 
     /* point to the start of the encoded data */
     const unsigned char *p = s->buf + 16;
+    const unsigned char *p_end = s->buf + s->size;
 
     const unsigned char *pb;
     unsigned char meth;
@@ -251,7 +263,7 @@ static void vmd_decode(VmdVideoContext *s)
         pb = p;
         meth = *pb++;
         if (meth & 0x80) {
-            lz_unpack(pb, s->unpack_buffer, s->unpack_buffer_size);
+            lz_unpack(pb, p_end - pb, s->unpack_buffer, s->unpack_buffer_size);
             meth &= 0x7F;
             pb = s->unpack_buffer;
         }
