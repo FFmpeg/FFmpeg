@@ -2410,28 +2410,29 @@ static int transcode(OutputFile *output_files, int nb_output_files,
             }
 #if CONFIG_AVFILTER
             if (key == 'c' || key == 'C'){
-                char ret[4096], target[64], cmd[256], arg[256]={0};
-                double ts;
+                char buf[4096], target[64], command[256], arg[256] = {0};
+                double time;
                 int k;
                 fprintf(stderr, "\nEnter command: <target> <time> <command>[ <argument>]\n");
-                i=0;
-                while((k=read_key()) !='\n' && k!='\r' && i<sizeof(ret)-1)
-                    if(k>0) ret[i++]= k;
-                ret[i]= 0;
-                if(k>0 && sscanf(ret, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &ts, cmd, arg) >= 3){
-                    for(i=0;i<nb_output_streams;i++) {
-                        int r;
+                i = 0;
+                while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf)-1)
+                    if (k > 0)
+                        buf[i++] = k;
+                buf[i] = 0;
+                if (k > 0 && sscanf(buf, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &time, command, arg) >= 3) {
+                    for (i = 0; i < nb_output_streams; i++) {
                         ost = &output_streams[i];
-                        if(ost->graph){
-                            if(ts<0){
-                                r= avfilter_graph_send_command(ost->graph, target, cmd, arg, ret, sizeof(ret), key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
-                                fprintf(stderr, "Command reply for %d: %d, %s\n", i, r, ret);
-                            }else{
-                                r= avfilter_graph_queue_command(ost->graph, target, cmd, arg, 0, ts);
+                        if (ost->graph) {
+                            if (time < 0) {
+                                ret = avfilter_graph_send_command(ost->graph, target, command, arg, buf, sizeof(buf),
+                                                                  key == 'c' ? AVFILTER_CMD_FLAG_ONE : 0);
+                                fprintf(stderr, "Command reply for stream %d: ret:%d res:%s\n", i, ret, buf);
+                            } else {
+                                ret = avfilter_graph_queue_command(ost->graph, target, command, arg, 0, time);
                             }
                         }
                     }
-                }else{
+                } else {
                     fprintf(stderr, "Parse error\n");
                 }
             }
