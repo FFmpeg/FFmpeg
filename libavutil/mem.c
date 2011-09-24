@@ -168,6 +168,13 @@ void *av_mallocz(size_t size)
     return ptr;
 }
 
+void *av_calloc(size_t nmemb, size_t size)
+{
+    if (size <= 0 || nmemb >= INT_MAX / size)
+        return NULL;
+    return av_mallocz(nmemb * size);
+}
+
 char *av_strdup(const char *s)
 {
     char *ptr= NULL;
