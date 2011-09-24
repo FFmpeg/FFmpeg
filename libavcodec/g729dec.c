@@ -252,7 +252,7 @@ static void lsf_restore_from_previous(int16_t* lsfq,
  * @param gain_code (14.1) gain code
  * @param subframe_size length of the subframe
  */
-void g729d_get_new_exc(
+static void g729d_get_new_exc(
         int16_t* out,
         const int16_t* in,
         const int16_t* fc_cur,
@@ -280,7 +280,7 @@ void g729d_get_new_exc(
  *
  * @return onset decision result for current subframe
  */
-int g729d_onset_decision(int past_onset, const int16_t* past_gain_code)
+static int g729d_onset_decision(int past_onset, const int16_t* past_gain_code)
 {
     if((past_gain_code[0] >> 1) > past_gain_code[1])
         return 2;
