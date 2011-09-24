@@ -1013,6 +1013,8 @@ int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
         p += 6;
         for (i = 0; i < cnt; i++) {
             nalsize = AV_RB16(p) + 2;
+            if(nalsize > size - (p-buf))
+                return -1;
             if(decode_nal_units(h, p, nalsize) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Decoding sps %d from avcC failed\n", i);
                 return -1;
@@ -1023,6 +1025,8 @@ int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
         cnt = *(p++); // Number of pps
         for (i = 0; i < cnt; i++) {
             nalsize = AV_RB16(p) + 2;
+            if(nalsize > size - (p-buf))
+                return -1;
             if (decode_nal_units(h, p, nalsize) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Decoding pps %d from avcC failed\n", i);
                 return -1;
