@@ -2412,14 +2412,17 @@ static int transcode(OutputFile *output_files, int nb_output_files,
             if (key == 'c' || key == 'C'){
                 char buf[4096], target[64], command[256], arg[256] = {0};
                 double time;
-                int k;
+                int k, n = 0;
                 fprintf(stderr, "\nEnter command: <target> <time> <command>[ <argument>]\n");
                 i = 0;
                 while ((k = read_key()) != '\n' && k != '\r' && i < sizeof(buf)-1)
                     if (k > 0)
                         buf[i++] = k;
                 buf[i] = 0;
-                if (k > 0 && sscanf(buf, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &time, command, arg) >= 3) {
+                if (k > 0 &&
+                    (n = sscanf(buf, "%63[^ ] %lf %255[^ ] %255[^\n]", target, &time, command, arg)) >= 3) {
+                    av_log(NULL, AV_LOG_DEBUG, "Processing command target:%s time:%f command:%s arg:%s",
+                           target, time, command, arg);
                     for (i = 0; i < nb_output_streams; i++) {
                         ost = &output_streams[i];
                         if (ost->graph) {
@@ -2433,7 +2436,9 @@ static int transcode(OutputFile *output_files, int nb_output_files,
                         }
                     }
                 } else {
-                    fprintf(stderr, "Parse error\n");
+                    av_log(NULL, AV_LOG_ERROR,
+                           "Parse error, at least 3 arguments were expected, "
+                           "only %d given in string '%s'\n", n, buf);
                 }
             }
 #endif
