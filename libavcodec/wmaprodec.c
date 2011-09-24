@@ -86,6 +86,7 @@
  * subframe in order to reconstruct the output samples.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
@@ -770,7 +771,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
     /* Integers 0..15 as single-precision floats.  The table saves a
        costly int to float conversion, and storing the values as
        integers allows fast sign-flipping. */
-    static const int fval_tab[16] = {
+    static const uint32_t fval_tab[16] = {
         0x00000000, 0x3f800000, 0x40000000, 0x40400000,
         0x40800000, 0x40a00000, 0x40c00000, 0x40e00000,
         0x41000000, 0x41100000, 0x41200000, 0x41300000,
@@ -802,7 +803,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
       4 vector coded large values) */
     while ((s->transmit_num_vec_coeffs || !rl_mode) &&
            (cur_coeff + 3 < ci->num_vec_coeffs)) {
-        int vals[4];
+        uint32_t vals[4];
         int i;
         unsigned int idx;
 
@@ -812,15 +813,15 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
             for (i = 0; i < 4; i += 2) {
                 idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
                 if (idx == HUFF_VEC2_SIZE - 1) {
-                    int v0, v1;
+                    uint32_t v0, v1;
                     v0 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v0 == HUFF_VEC1_SIZE - 1)
                         v0 += ff_wma_get_large_val(&s->gb);
                     v1 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v1 == HUFF_VEC1_SIZE - 1)
                         v1 += ff_wma_get_large_val(&s->gb);
-                    ((float*)vals)[i  ] = v0;
-                    ((float*)vals)[i+1] = v1;
+                    vals[i  ] = ((av_alias32){ .f32 = v0 }).u32;
+                    vals[i+1] = ((av_alias32){ .f32 = v1 }).u32;
                 } else {
                     vals[i]   = fval_tab[symbol_to_vec2[idx] >> 4 ];
                     vals[i+1] = fval_tab[symbol_to_vec2[idx] & 0xF];
@@ -836,8 +837,8 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
         /** decode sign */
         for (i = 0; i < 4; i++) {
             if (vals[i]) {
-                int sign = get_bits1(&s->gb) - 1;
-                *(uint32_t*)&ci->coeffs[cur_coeff] = vals[i] ^ sign<<31;
+                uint32_t sign = get_bits1(&s->gb) - 1;
+                AV_WN32A(&ci->coeffs[cur_coeff], vals[i] ^ sign << 31);
                 num_zeros = 0;
             } else {
                 ci->coeffs[cur_coeff] = 0;
