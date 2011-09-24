@@ -808,15 +808,13 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     }
     s->frame_flags = AV_RL32(buf); buf += 4;
     if(s->frame_flags&0x80){
-        bpp = sizeof(float);
         avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
     } else if((s->frame_flags&0x03) <= 1){
-        bpp = 2;
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     } else {
-        bpp = 4;
         avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     }
+    bpp = av_get_bytes_per_sample(avctx->sample_fmt);
     samples = (uint8_t*)samples + bpp * wc->ch_offset;
 
     s->stereo = !(s->frame_flags & WV_MONO);
