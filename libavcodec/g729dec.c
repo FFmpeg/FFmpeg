@@ -371,7 +371,7 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     for(i=0; i<4; i++)
         ctx->quant_energy[i] = -14336; // -14 in (5.10)
 
-    avctx->dsp_mask = FF_MM_MMX | FF_MM_SSE2;
+    avctx->dsp_mask= ~AV_CPU_FLAG_FORCE;
     dsputil_init(&ctx->dsp, avctx);
 
     return 0;
