@@ -83,7 +83,7 @@
 /** Maximum sharpening factor
  *
  * The specification says 0.8, which should be 13107, but the reference C code
- * uses 13017 instead. (Amusingly the same applies to SHARP_MAX in bitexact G.729.)
+ * uses 13017 instead. (Amusingly the same applies to SHARP_MAX in g729dec.c.)
  */
 #define SHARP_MAX 0.79449462890625
 
