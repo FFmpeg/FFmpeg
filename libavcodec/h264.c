@@ -1022,6 +1022,9 @@ int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
 {
     AVCodecContext *avctx = h->s.avctx;
 
+    if(!buf || size <= 0)
+        return -1;
+
     if(buf[0] == 1){
         int i, cnt, nalsize;
         const unsigned char *p = buf;
