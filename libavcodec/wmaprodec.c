@@ -92,6 +92,7 @@
 #include "put_bits.h"
 #include "wmaprodata.h"
 #include "dsputil.h"
+#include "fmtconvert.h"
 #include "sinewin.h"
 #include "wma.h"
 
@@ -166,6 +167,7 @@ typedef struct WMAProDecodeCtx {
     /* generic decoder variables */
     AVCodecContext*  avctx;                         ///< codec context for av_log
     DSPContext       dsp;                           ///< accelerated DSP functions
+    FmtConvertContext fmt_conv;
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
@@ -279,6 +281,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
+    ff_fmt_convert_init(&s->fmt_conv, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
@@ -1281,6 +1284,7 @@ static int decode_frame(WMAProDecodeCtx *s)
     int more_frames = 0;
     int len = 0;
     int i;
+    const float *out_ptr[WMAPRO_MAX_CHANNELS];
 
     /** check for potential output buffer overflow */
     if (s->num_channels * s->samples_per_frame > s->samples_end - s->samples) {
@@ -1356,18 +1360,12 @@ static int decode_frame(WMAProDecodeCtx *s)
     }
 
     /** interleave samples and write them to the output buffer */
+    for (i = 0; i < s->num_channels; i++)
+        out_ptr[i] = s->channel[i].out;
+    s->fmt_conv.float_interleave(s->samples, out_ptr, s->samples_per_frame,
+                                 s->num_channels);
+
     for (i = 0; i < s->num_channels; i++) {
-        float* ptr  = s->samples + i;
-        int incr = s->num_channels;
-        float* iptr = s->channel[i].out;
-        float* iend = iptr + s->samples_per_frame;
-
-        // FIXME should create/use a DSP function here
-        while (iptr < iend) {
-            *ptr = *iptr++;
-            ptr += incr;
-        }
-
         /** reuse second half of the IMDCT output for the next frame */
         memcpy(&s->channel[i].out[0],
                &s->channel[i].out[s->samples_per_frame],
