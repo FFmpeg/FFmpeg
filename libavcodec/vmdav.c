@@ -153,32 +153,39 @@ static void lz_unpack(const unsigned char *src, int src_len,
     }
 }
 
-static int rle_unpack(const unsigned char *src, unsigned char *dest,
-    int src_len, int dest_len)
+static int rle_unpack(const unsigned char *src, int src_len, int src_count,
+                      unsigned char *dest, int dest_len)
 {
     const unsigned char *ps;
+    const unsigned char *ps_end;
     unsigned char *pd;
     int i, l;
     unsigned char *dest_end = dest + dest_len;
 
     ps = src;
+    ps_end = src + src_len;
     pd = dest;
-    if (src_len & 1)
+    if (src_count & 1) {
+        if (ps_end - ps < 1)
+            return 0;
         *pd++ = *ps++;
+    }
 
-    src_len >>= 1;
+    src_count >>= 1;
     i = 0;
     do {
+        if (ps_end - ps < 1)
+            break;
         l = *ps++;
         if (l & 0x80) {
             l = (l & 0x7F) * 2;
-            if (pd + l > dest_end)
+            if (pd + l > dest_end || ps_end - ps < l)
                 return ps - src;
             memcpy(pd, ps, l);
             ps += l;
             pd += l;
         } else {
-            if (pd + i > dest_end)
+            if (pd + i > dest_end || ps_end - ps < 2)
                 return ps - src;
             for (i = 0; i < l; i++) {
                 *pd++ = ps[0];
@@ -187,7 +194,7 @@ static int rle_unpack(const unsigned char *src, unsigned char *dest,
             ps += 2;
         }
         i += l;
-    } while (i < src_len);
+    } while (i < src_count);
 
     return ps - src;
 }
@@ -330,7 +337,7 @@ static void vmd_decode(VmdVideoContext *s)
                         if (pb_end - pb < 1)
                             return;
                         if (*pb++ == 0xFF)
-                            len = rle_unpack(pb, &dp[ofs], len, frame_width - ofs);
+                            len = rle_unpack(pb, pb_end - pb, len, &dp[ofs], frame_width - ofs);
                         else {
                         if (pb_end - pb < len)
                             return;
