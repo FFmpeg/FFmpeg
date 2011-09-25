@@ -601,10 +601,24 @@ static int decode_frame(AVCodecContext *avctx,
         dst = p->data[0];
         soff = s->bpp >> 3;
         ssize = s->width * soff;
+        if (s->avctx->pix_fmt == PIX_FMT_RGB48LE) {
+            for (i = 0; i < s->height; i++) {
+                for (j = soff; j < ssize; j += 2)
+                    AV_WL16(dst + j, AV_RL16(dst + j) + AV_RL16(dst + j - soff));
+                dst += stride;
+            }
+        } else if (s->avctx->pix_fmt == PIX_FMT_RGB48BE) {
+            for (i = 0; i < s->height; i++) {
+                for (j = soff; j < ssize; j += 2)
+                    AV_WB16(dst + j, AV_RB16(dst + j) + AV_RB16(dst + j - soff));
+                dst += stride;
+            }
+        } else {
         for(i = 0; i < s->height; i++) {
             for(j = soff; j < ssize; j++)
                 dst[j] += dst[j - soff];
             dst += stride;
+        }
         }
     }
 
