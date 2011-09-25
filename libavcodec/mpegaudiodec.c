@@ -2016,10 +2016,12 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     uint32_t header;
     OUT_INT *out_samples = data;
     OUT_INT *outptr, *bp;
-    int fr, j, n;
+    int fr, j, n, ch;
 
-    if(*data_size < MPA_FRAME_SIZE * MPA_MAX_CHANNELS * s->frames * sizeof(OUT_INT))
-        return -1;
+    if (*data_size < MPA_FRAME_SIZE * avctx->channels * sizeof(OUT_INT)) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     *data_size = 0;
     // Discard too short frames
@@ -2031,6 +2033,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
 
     avctx->bit_rate = 0;
 
+    ch = 0;
     for (fr = 0; fr < s->frames; fr++) {
         fsize = AV_RB16(buf) >> 4;
         fsize = FFMIN3(fsize, len, MPA_MAX_CODED_FRAME_SIZE);
@@ -2043,6 +2046,14 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
             break;
 
         avpriv_mpegaudio_decode_header((MPADecodeHeader *)m, header);
+
+        if (ch + m->nb_channels > avctx->channels) {
+            av_log(avctx, AV_LOG_ERROR, "frame channel count exceeds codec "
+                                        "channel count\n");
+            return AVERROR_INVALIDDATA;
+        }
+        ch += m->nb_channels;
+
         out_size += mp_decode_frame(m, outptr, buf, fsize);
         buf += fsize;
         len -= fsize;
