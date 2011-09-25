@@ -1748,7 +1748,10 @@ static int synth_superframe(AVCodecContext *ctx,
         s->sframe_cache_size = 0;
     }
 
-    if ((res = check_bits_for_superframe(gb, s)) == 1) return 1;
+    if ((res = check_bits_for_superframe(gb, s)) == 1) {
+        *data_size = 0;
+        return 1;
+    }
 
     /* First bit is speech/music bit, it differentiates between WMAVoice
      * speech samples (the actual codec) and WMAVoice music samples, which
@@ -1808,8 +1811,10 @@ static int synth_superframe(AVCodecContext *ctx,
                                &samples[n * MAX_FRAMESIZE],
                                lsps[n], n == 0 ? s->prev_lsps : lsps[n - 1],
                                &excitation[s->history_nsamples + n * MAX_FRAMESIZE],
-                               &synth[s->lsps + n * MAX_FRAMESIZE])))
+                               &synth[s->lsps + n * MAX_FRAMESIZE]))) {
+            *data_size = 0;
             return res;
+        }
     }
 
     /* Statistics? FIXME - we don't check for length, a slight overrun
@@ -1921,7 +1926,6 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
                *data_size, 480 * sizeof(float));
         return -1;
     }
-    *data_size = 0;
 
     /* Packets are sometimes a multiple of ctx->block_align, with a packet
      * header at each ctx->block_align bytes. However, Libav's ASF demuxer
@@ -1929,8 +1933,10 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
      * in a single "muxer" packet, so we artificially emulate that by
      * capping the packet size at ctx->block_align. */
     for (size = avpkt->size; size > ctx->block_align; size -= ctx->block_align);
-    if (!size)
+    if (!size) {
+        *data_size = 0;
         return 0;
+    }
     init_get_bits(&s->gb, avpkt->data, size << 3);
 
     /* size == ctx->block_align is used to indicate whether we are dealing with
