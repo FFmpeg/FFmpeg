@@ -44,6 +44,7 @@
 #include "mpeg4video.h"
 #include "internal.h"
 #include <limits.h>
+#include "sp5x.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -528,14 +529,9 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
 //        return -1;
     }
 
-    if(s->mpeg_quant || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO || s->codec_id==CODEC_ID_MJPEG){
+    if(s->mpeg_quant || s->codec_id==CODEC_ID_MPEG1VIDEO || s->codec_id==CODEC_ID_MPEG2VIDEO || s->codec_id==CODEC_ID_MJPEG || s->codec_id==CODEC_ID_AMV){
         s->intra_quant_bias= 3<<(QUANT_BIAS_SHIFT-3); //(a + x*3/8)/x
         s->inter_quant_bias= 0;
-    }else if(s->codec_id==CODEC_ID_AMV){
-        s->intra_quant_bias= 0;
-        s->inter_quant_bias= 0;
-        s->fixed_qscale = 1;
-        s->adaptive_quant = 0;
     }else{
         s->intra_quant_bias=0;
         s->inter_quant_bias=-(1<<(QUANT_BIAS_SHIFT-2)); //(a - x/4)/x
@@ -2099,6 +2095,11 @@ static int encode_thread(AVCodecContext *c, void *arg){
 
         s->current_picture.f.error[i] = 0;
     }
+    if(s->codec_id==CODEC_ID_AMV){
+        s->last_dc[0] = 128*8/13;
+        s->last_dc[1] = 128*8/14;
+        s->last_dc[2] = 128*8/14;
+    }
     s->mb_skip_run = 0;
     memset(s->last_mv, 0, sizeof(s->last_mv));
 
@@ -2937,6 +2938,21 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         s->y_dc_scale_table=
         s->c_dc_scale_table= ff_mpeg2_dc_scale_table[s->intra_dc_precision];
         s->intra_matrix[0] = ff_mpeg2_dc_scale_table[s->intra_dc_precision][8];
+        ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
+                       s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
+        s->qscale= 8;
+    }
+    if(s->codec_id == CODEC_ID_AMV){
+        static const uint8_t y[32]={13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13,13};
+        static const uint8_t c[32]={14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14,14};
+        for(i=1;i<64;i++){
+            int j= s->dsp.idct_permutation[ff_zigzag_direct[i]];
+
+            s->intra_matrix[j] = sp5x_quant_table[5*2][i];
+        }
+        s->y_dc_scale_table= y;
+        s->c_dc_scale_table= c;
+        s->intra_matrix[0] = 14;
         ff_convert_matrix(&s->dsp, s->q_intra_matrix, s->q_intra_matrix16,
                        s->intra_matrix, s->intra_quant_bias, 8, 8, 1);
         s->qscale= 8;
