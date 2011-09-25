@@ -59,7 +59,7 @@ static int read_packet(AVFormatContext *s,
     get_le16(pb); // sync word
     packet_size = get_le16(pb) / 8;
     if(packet_size > MAX_FRAME_SIZE)
-        return AVERROR(EIO);
+        return AVERROR_INVALIDDATA;
 
     ret = get_buffer(pb, (uint8_t*)buf, (8 * packet_size) * sizeof(uint16_t));
     if(ret<0)
