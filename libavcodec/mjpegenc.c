@@ -200,6 +200,9 @@ void ff_mjpeg_encode_picture_header(MpegEncContext *s)
 
     put_marker(&s->pb, SOI);
 
+    // hack for AMV mjpeg format
+    if(s->avctx->codec_id == CODEC_ID_AMV) return;
+
     jpeg_put_comments(s);
 
     jpeg_table_header(s);
@@ -445,6 +448,28 @@ void ff_mjpeg_encode_mb(MpegEncContext *s, DCTELEM block[6][64])
     s->i_tex_bits += get_bits_diff(s);
 }
 
+// maximum over s->mjpeg_vsample[i]
+#define V_MAX 2
+static int amv_encode_picture(AVCodecContext *avctx,
+                       unsigned char *buf, int buf_size, void *data)
+{
+
+    AVFrame* pic=data;
+    MpegEncContext *s = avctx->priv_data;
+    int i;
+
+    //CODEC_FLAG_EMU_EDGE have to be cleared
+    if(s->avctx->flags & CODEC_FLAG_EMU_EDGE)
+        return -1;
+
+    //picture should be flipped upside-down
+    for(i=0; i < 3; i++) {
+        pic->data[i] += (pic->linesize[i] * (s->mjpeg_vsample[i] * (8 * s->mb_height -((s->height/V_MAX)&7)) - 1 ));
+        pic->linesize[i] *= -1;
+    }
+    return MPV_encode_picture(avctx,buf, buf_size, pic);
+}
+
 AVCodec ff_mjpeg_encoder = {
     .name           = "mjpeg",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -455,4 +480,15 @@ AVCodec ff_mjpeg_encoder = {
     .close          = MPV_encode_end,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("MJPEG (Motion JPEG)"),
+};
+
+AVCodec ff_amv_encoder = {
+    "amv",
+    AVMEDIA_TYPE_VIDEO,
+    CODEC_ID_AMV,
+    sizeof(MpegEncContext),
+    MPV_encode_init,
+    amv_encode_picture,
+    MPV_encode_end,
+    .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, -1},
 };
