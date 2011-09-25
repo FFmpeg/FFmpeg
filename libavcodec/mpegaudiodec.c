@@ -2004,6 +2004,19 @@ alloc_fail:
 }
 
 
+static void flush_mp3on4(AVCodecContext *avctx)
+{
+    int i;
+    MP3On4DecodeContext *s = avctx->priv_data;
+
+    for (i = 0; i < s->frames; i++) {
+        MPADecodeContext *m = s->mp3decctx[i];
+        memset(m->synth_buf, 0, sizeof(m->synth_buf));
+        m->last_buf_size = 0;
+    }
+}
+
+
 static int decode_frame_mp3on4(AVCodecContext * avctx,
                         void *data, int *data_size,
                         AVPacket *avpkt)
@@ -2148,7 +2161,7 @@ AVCodec ff_mp3on4_decoder = {
     .init           = decode_init_mp3on4,
     .close          = decode_close_mp3on4,
     .decode         = decode_frame_mp3on4,
-    .flush          = flush,
+    .flush          = flush_mp3on4,
     .long_name      = NULL_IF_CONFIG_SMALL("MP3onMP4"),
 };
 #endif
