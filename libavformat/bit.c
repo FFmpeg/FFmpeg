@@ -68,7 +68,7 @@ static int read_packet(AVFormatContext *s,
     int i, j, ret;
 
     if(url_feof(pb))
-        return AVERROR(EIO);
+        return AVERROR_EOF;
 
     sync = get_le16(pb); // sync word
     packet_size = get_le16(pb) / 8;
