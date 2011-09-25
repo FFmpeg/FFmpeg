@@ -361,7 +361,6 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
     AudioData in, out, tmp;
     int ret_sum=0;
     int border=0;
-    int ch_count= s->resample_first ? s->in.ch_count : s->out.ch_count;
 
     tmp=out=*out_param;
     in =  *in_param;
