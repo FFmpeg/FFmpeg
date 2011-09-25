@@ -1730,7 +1730,7 @@ static int synth_superframe(AVCodecContext *ctx,
 {
     WMAVoiceContext *s = ctx->priv_data;
     GetBitContext *gb = &s->gb, s_gb;
-    int n, res, n_samples = 480;
+    int n, res, out_size, n_samples = 480;
     double lsps[MAX_FRAMES][MAX_LSPS];
     const double *mean_lsf = s->lsps == 16 ?
         wmavoice_mean_lsf16[s->lsp_def_mode] : wmavoice_mean_lsf10[s->lsp_def_mode];
@@ -1792,6 +1792,14 @@ static int synth_superframe(AVCodecContext *ctx,
             stabilize_lsps(lsps[n], s->lsps);
     }
 
+    out_size = n_samples * av_get_bytes_per_sample(ctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Output buffer too small (%d given - %zu needed)\n",
+               *data_size, out_size);
+        return -1;
+    }
+
     /* Parse frames, optionally preceeded by per-frame (independent) LSPs. */
     for (n = 0; n < 3; n++) {
         if (!s->has_residual_lsps) {
@@ -1826,7 +1834,7 @@ static int synth_superframe(AVCodecContext *ctx,
     }
 
     /* Specify nr. of output samples */
-    *data_size = n_samples * sizeof(float);
+    *data_size = out_size;
 
     /* Update history */
     memcpy(s->prev_lsps,           lsps[2],
@@ -1919,13 +1927,6 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
     WMAVoiceContext *s = ctx->priv_data;
     GetBitContext *gb = &s->gb;
     int size, res, pos;
-
-    if (*data_size < 480 * sizeof(float)) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Output buffer too small (%d given - %zu needed)\n",
-               *data_size, 480 * sizeof(float));
-        return -1;
-    }
 
     /* Packets are sometimes a multiple of ctx->block_align, with a packet
      * header at each ctx->block_align bytes. However, Libav's ASF demuxer
