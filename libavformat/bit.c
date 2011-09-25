@@ -10,19 +10,17 @@
 
 static int probe(AVProbeData *p)
 {
-    int i;
-    i=AV_RL16(&p->buf[0]);
-    if(i != SYNC_WORD)
-        return 0;
+    int i, j;
 
-    switch(AV_RL16(&p->buf[2]))
-    {
-    case 0x40:
-    case 0x50:
-        return AVPROBE_SCORE_MAX/2;
-    default:
-        return 0;
+    for(i=0; i+3<p->buf_size && i< 10*0x50; ){
+        if(AV_RL16(&p->buf[0]) != SYNC_WORD)
+            return 0;
+        j=AV_RL16(&p->buf[2]);
+        if(j!=0x40 && j!=0x50)
+            return 0;
+        i+=j;
     }
+    return AVPROBE_SCORE_MAX/2;
 }
 
 static int read_header(AVFormatContext *s, AVFormatParameters *ap)
