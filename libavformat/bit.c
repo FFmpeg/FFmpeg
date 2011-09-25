@@ -32,17 +32,6 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!st)
         return AVERROR(ENOMEM);
 
-    url_fskip(pb, 2);
-    switch(get_le16(pb))
-    {
-        case 0x40:
-            st->codec->bit_rate = 6400;
-            break;
-        case 0x50:
-            st->codec->bit_rate = 8000;
-            break;
-    }
-
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id=CODEC_ID_G729;
     st->codec->sample_rate=8000;
@@ -50,7 +39,6 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->channels=1;
 
     av_set_pts_info(st, 64, 1, 100);
-    url_fseek(pb, 0, SEEK_SET);
     return 0;
 }
 
