@@ -483,12 +483,12 @@ AVCodec ff_mjpeg_encoder = {
 };
 
 AVCodec ff_amv_encoder = {
-    "amv",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_AMV,
-    sizeof(MpegEncContext),
-    MPV_encode_init,
-    amv_encode_picture,
-    MPV_encode_end,
+    .name           = "amv",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_AMV,
+    .priv_data_size = sizeof(MpegEncContext),
+    .init           = MPV_encode_init,
+    .encode         = amv_encode_picture,
+    .close          = MPV_encode_end,
     .pix_fmts= (enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, -1},
 };
