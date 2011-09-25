@@ -309,13 +309,6 @@ static void draw_slice(AVFilterLink *inlink, int y0, int h0, int slice_dir)
     int cw = inlink->w >> boxblur->hsub, ch = h0 >> boxblur->vsub;
     int w[4] = { inlink->w, cw, cw, inlink->w };
     int h[4] = { h0, ch, ch, h0 };
-    uint8_t *dst[4], *src[4];
-
-    for (plane = 0; inpicref->data[plane] && plane < 4; plane++) {
-        int y = plane == 1 || plane == 2 ? y0 >> boxblur->vsub : y0;
-        src[plane] = inpicref ->data[plane] + inpicref ->linesize[plane] * y;
-        dst[plane] = outpicref->data[plane] + outpicref->linesize[plane] * y;
-    }
 
     for (plane = 0; inpicref->data[plane] && plane < 4; plane++)
         hblur(outpicref->data[plane], outpicref->linesize[plane],
