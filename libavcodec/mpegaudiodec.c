@@ -1901,16 +1901,16 @@ typedef struct MP3On4DecodeContext {
 
 /* Next 3 arrays are indexed by channel config number (passed via codecdata) */
 static const uint8_t mp3Frames[8] = {0,1,1,2,3,3,4,5};   /* number of mp3 decoder instances */
-/* offsets into output buffer, assume output order is FL FR BL BR C LFE */
+/* offsets into output buffer, assume output order is FL FR C LFE BL BR SL SR */
 static const uint8_t chan_offset[8][5] = {
     {0},
     {0},            // C
     {0},            // FLR
     {2,0},          // C FLR
     {2,0,3},        // C FLR BS
-    {4,0,2},        // C FLR BLRS
-    {4,0,2,5},      // C FLR BLRS LFE
-    {4,0,2,6,5},    // C FLR BLRS BLR LFE
+    {2,0,3},        // C FLR BLRS
+    {2,0,4,3},      // C FLR BLRS LFE
+    {2,0,6,4,3},    // C FLR BLRS BLR LFE
 };
 
 
