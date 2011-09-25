@@ -264,7 +264,7 @@ static int mpc8_read_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         mpc8_handle_chunk(s, tag, pos, size);
     }
-    return 0;
+    return AVERROR_EOF;
 }
 
 static int mpc8_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
