@@ -49,7 +49,6 @@ static int read_packet(AVFormatContext *s,
     PutBitContext pbo;
     uint16_t buf[8 * MAX_FRAME_SIZE + 2];
     int packet_size;
-    int sync;
     uint16_t* src=buf;
     int i, j, ret;
     int64_t pos= avio_tell(pb);
@@ -57,7 +56,7 @@ static int read_packet(AVFormatContext *s,
     if(url_feof(pb))
         return AVERROR_EOF;
 
-    sync = get_le16(pb); // sync word
+    get_le16(pb); // sync word
     packet_size = get_le16(pb) / 8;
     if(packet_size > MAX_FRAME_SIZE)
         return AVERROR(EIO);
