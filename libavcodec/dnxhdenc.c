@@ -502,11 +502,8 @@ static av_always_inline void dnxhd_get_blocks(DNXHDEncContext *ctx, int mb_x, in
 
 static av_always_inline int dnxhd_switch_matrix(DNXHDEncContext *ctx, int i)
 {
-    if (i&2) {
-        return 1 + (i&1);
-    } else {
-        return 0;
-    }
+    const static uint8_t component[8]={0,0,1,2,0,0,1,2,0,0,1,2,0,0,1,2};
+    return component[i];
 }
 
 static int dnxhd_calc_bits_thread(AVCodecContext *avctx, void *arg, int jobnr, int threadnr)
