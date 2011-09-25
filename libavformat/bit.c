@@ -26,7 +26,6 @@ static int probe(AVProbeData *p)
 static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream* st;
-    ByteIOContext *pb = s->pb;
 
     st=av_new_stream(s, 0);
     if (!st)
@@ -108,7 +107,6 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     ByteIOContext *pb = s->pb;
     GetBitContext gb;
     int i;
-    uint16_t b;
 
     put_le16(pb, SYNC_WORD);
     put_le16(pb, 8 * 10);
