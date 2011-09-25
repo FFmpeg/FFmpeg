@@ -111,7 +111,7 @@ static int16_t long_term_filter(DSPContext *dsp, int pitch_delay_int,
                                 const int16_t* residual, int16_t *residual_filt,
                                 int subframe_size)
 {
-    int i, k, n, tmp, tmp2;
+    int i, k, tmp, tmp2;
     int sum;
     int L_temp0;
     int L_temp1;
