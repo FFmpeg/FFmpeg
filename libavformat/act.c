@@ -1,5 +1,5 @@
 /*
- * ACT file format muxer/demuxer
+ * ACT file format demuxer
  * Copyright (c) 2007-2008 Vladimir Voroshilov
  *
  * This file is part of FFmpeg.
