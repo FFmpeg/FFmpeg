@@ -52,6 +52,7 @@ static int read_packet(AVFormatContext *s,
     int sync;
     uint16_t* src=buf;
     int i, j, ret;
+    int64_t pos= avio_tell(pb);
 
     if(url_feof(pb))
         return AVERROR_EOF;
@@ -77,6 +78,7 @@ static int read_packet(AVFormatContext *s,
     flush_put_bits(&pbo);
 
     pkt->duration=1;
+    pkt->pos = pos;
     return 0;
 }
 
