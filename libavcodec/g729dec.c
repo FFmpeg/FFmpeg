@@ -18,13 +18,9 @@
  * License along with FFmpeg; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include <stdlib.h>
+
 #include <inttypes.h>
-#include <limits.h>
-#include <stdio.h>
 #include <string.h>
-#include <math.h>
-#include <assert.h>
 
 #include "avcodec.h"
 #include "libavutil/avutil.h"
