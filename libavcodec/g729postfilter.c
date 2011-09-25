@@ -511,7 +511,7 @@ static int16_t apply_tilt_comp(int16_t* out, int16_t* res_pst, int refl_coeff,
     return tmp;
 }
 
-void g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int16_t* voicing,
+void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int16_t* voicing,
                      const int16_t *lp_filter_coeffs, int pitch_delay_int,
                      int16_t* residual, int16_t* res_filter_data,
                      int16_t* pos_filter_data, int16_t *speech, int subframe_size)
@@ -571,7 +571,7 @@ void g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int16_t* voicing,
  *
  * \return (3.12) last value of gain coefficient
  */
-int16_t g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *speech,
+int16_t ff_g729_adaptive_gain_control(int gain_before, int gain_after, int16_t *speech,
                                    int subframe_size, int16_t gain_prev)
 {
     int gain; // (3.12)

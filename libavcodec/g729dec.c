@@ -649,7 +649,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             gain_before += FFABS(synth[j+10]);
 
         /* Call postfilter and also update voicing decision for use in next frame. */
-        g729_postfilter(
+        ff_g729_postfilter(
                 &ctx->dsp,
                 &ctx->ht_prev_data,
                 &is_periodic,
@@ -666,7 +666,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         for(j=0; j<SUBFRAME_SIZE; j++)
             gain_after += FFABS(synth[j+10]);
 
-        ctx->gain_coeff = g729_adaptive_gain_control(
+        ctx->gain_coeff = ff_g729_adaptive_gain_control(
                 gain_before,
                 gain_after,
                 synth+10,
