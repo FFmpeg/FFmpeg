@@ -487,11 +487,11 @@ static int command(AVFilterContext *ctx, const char *cmd, const char *arg, char 
 {
     DrawTextContext *dtext = ctx->priv;
 
-    if(!strcmp(cmd, "reinit")){
+    if (!strcmp(cmd, "reinit")) {
         int ret;
         uninit(ctx);
         dtext->reinit = 1;
-        if((ret=init(ctx, arg, NULL)) < 0)
+        if ((ret = init(ctx, arg, NULL)) < 0)
             return ret;
         return config_input(ctx->inputs[0]);
     }
