@@ -1913,6 +1913,17 @@ static const uint8_t chan_offset[8][5] = {
     {2,0,6,4,3},    // C FLR BLRS BLR LFE
 };
 
+/* mp3on4 channel layouts */
+static const int16_t chan_layout[8] = {
+    0,
+    AV_CH_LAYOUT_MONO,
+    AV_CH_LAYOUT_STEREO,
+    AV_CH_LAYOUT_SURROUND,
+    AV_CH_LAYOUT_4POINT0,
+    AV_CH_LAYOUT_5POINT0,
+    AV_CH_LAYOUT_5POINT1,
+    AV_CH_LAYOUT_7POINT1
+};
 
 static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
 {
@@ -1947,6 +1958,7 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
     s->frames = mp3Frames[cfg.chan_config];
     s->coff = chan_offset[cfg.chan_config];
     avctx->channels = ff_mpeg4audio_channels[cfg.chan_config];
+    avctx->channel_layout = chan_layout[cfg.chan_config];
 
     if (cfg.sample_rate < 16000)
         s->syncword = 0xffe00000;
