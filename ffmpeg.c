@@ -1845,7 +1845,6 @@ static int output_packet(InputStream *ist, int ist_index,
                         abort();
                     }
                 } else {
-                    AVFrame avframe; //FIXME/XXX remove this
                     AVPicture pict;
                     AVPacket opkt;
                     int64_t ost_tb_start_time= av_rescale_q(of->start_time, AV_TIME_BASE_Q, ost->st->time_base);
@@ -1860,10 +1859,6 @@ static int output_packet(InputStream *ist, int ist_index,
 
                     /* no reencoding needed : output the packet directly */
                     /* force the input stream PTS */
-
-                    avcodec_get_frame_defaults(&avframe);
-                    ost->st->codec->coded_frame= &avframe;
-                    avframe.key_frame = pkt->flags & AV_PKT_FLAG_KEY;
 
                     if(ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
                         audio_size += data_size;
@@ -2503,8 +2498,8 @@ static int transcode(OutputFile *output_files, int nb_output_files,
             }
             if (ost->frame_number >= ost->max_frames) {
                 int j;
-                for (j = of->ost_index; j < of->ctx->nb_streams; j++)
-                    output_streams[j].is_past_recording_time = 1;
+                for (j = 0; j < of->ctx->nb_streams; j++)
+                    output_streams[of->ost_index + j].is_past_recording_time = 1;
                 continue;
             }
         }

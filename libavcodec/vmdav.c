@@ -465,9 +465,8 @@ static av_cold int vmdvideo_decode_end(AVCodecContext *avctx)
 #define BLOCK_TYPE_SILENCE  3
 
 typedef struct VmdAudioContext {
-    AVCodecContext *avctx;
     int out_bps;
-    int predictors[2];
+    int chunk_size;
 } VmdAudioContext;
 
 static const uint16_t vmdaudio_table[128] = {
@@ -490,12 +489,22 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
 {
     VmdAudioContext *s = avctx->priv_data;
 
-    s->avctx = avctx;
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
+        return AVERROR(EINVAL);
+    }
+    if (avctx->block_align < 1) {
+        av_log(avctx, AV_LOG_ERROR, "invalid block align\n");
+        return AVERROR(EINVAL);
+    }
+
     if (avctx->bits_per_coded_sample == 16)
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_U8;
     s->out_bps = av_get_bytes_per_sample(avctx->sample_fmt);
+
+    s->chunk_size = avctx->block_align + avctx->channels * (s->out_bps == 2);
 
     av_log(avctx, AV_LOG_DEBUG, "%d channels, %d bits/sample, "
            "block align = %d, sample rate = %d\n",
@@ -505,41 +514,33 @@ static av_cold int vmdaudio_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void vmdaudio_decode_audio(VmdAudioContext *s, unsigned char *data,
-    const uint8_t *buf, int buf_size, int stereo)
+static void decode_audio_s16(int16_t *out, const uint8_t *buf, int buf_size,
+                             int channels)
 {
-    int i;
-    int chan = 0;
-    int16_t *out = (int16_t*)data;
+    int ch;
+    const uint8_t *buf_end = buf + buf_size;
+    int predictor[2];
+    int st = channels - 1;
 
-    for(i = 0; i < buf_size; i++) {
-        if(buf[i] & 0x80)
-            s->predictors[chan] -= vmdaudio_table[buf[i] & 0x7F];
+    /* decode initial raw sample */
+    for (ch = 0; ch < channels; ch++) {
+        predictor[ch] = (int16_t)AV_RL16(buf);
+        buf += 2;
+        *out++ = predictor[ch];
+    }
+
+    /* decode DPCM samples */
+    ch = 0;
+    while (buf < buf_end) {
+        uint8_t b = *buf++;
+        if (b & 0x80)
+            predictor[ch] -= vmdaudio_table[b & 0x7F];
         else
-            s->predictors[chan] += vmdaudio_table[buf[i]];
-        s->predictors[chan] = av_clip_int16(s->predictors[chan]);
-        out[i] = s->predictors[chan];
-        chan ^= stereo;
+            predictor[ch] += vmdaudio_table[b];
+        predictor[ch] = av_clip_int16(predictor[ch]);
+        *out++ = predictor[ch];
+        ch ^= st;
     }
-}
-
-static int vmdaudio_loadsound(VmdAudioContext *s, unsigned char *data,
-    const uint8_t *buf, int silent_chunks, int data_size)
-{
-    int silent_size = s->avctx->block_align * silent_chunks * s->out_bps;
-
-    if (silent_chunks) {
-        memset(data, s->out_bps == 2 ? 0x00 : 0x80, silent_size);
-        data += silent_size;
-    }
-    if (s->avctx->bits_per_coded_sample == 16)
-        vmdaudio_decode_audio(s, data, buf, data_size, s->avctx->channels == 2);
-    else {
-        /* just copy the data */
-        memcpy(data, buf, data_size);
-    }
-
-    return silent_size + data_size * s->out_bps;
 }
 
 static int vmdaudio_decode_frame(AVCodecContext *avctx,
@@ -547,10 +548,13 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
+    const uint8_t *buf_end;
     int buf_size = avpkt->size;
     VmdAudioContext *s = avctx->priv_data;
-    int block_type, silent_chunks;
-    unsigned char *output_samples = (unsigned char *)data;
+    int block_type, silent_chunks, audio_chunks;
+    int nb_samples, out_size;
+    uint8_t *output_samples_u8  = data;
+    int16_t *output_samples_s16 = data;
 
     if (buf_size < 16) {
         av_log(avctx, AV_LOG_WARNING, "skipping small junk packet\n");
@@ -566,13 +570,16 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     buf      += 16;
     buf_size -= 16;
 
+    /* get number of silent chunks */
     silent_chunks = 0;
     if (block_type == BLOCK_TYPE_INITIAL) {
         uint32_t flags;
-        if (buf_size < 4)
-            return -1;
-        flags = AV_RB32(buf);
-        silent_chunks  = av_popcount(flags);
+        if (buf_size < 4) {
+            av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+            return AVERROR(EINVAL);
+        }
+        flags         = AV_RB32(buf);
+        silent_chunks = av_popcount(flags);
         buf      += 4;
         buf_size -= 4;
     } else if (block_type == BLOCK_TYPE_SILENCE) {
@@ -581,11 +588,41 @@ static int vmdaudio_decode_frame(AVCodecContext *avctx,
     }
 
     /* ensure output buffer is large enough */
-    if (*data_size < (avctx->block_align*silent_chunks + buf_size) * s->out_bps)
+    audio_chunks = buf_size / s->chunk_size;
+    nb_samples   = ((silent_chunks + audio_chunks) * avctx->block_align) / avctx->channels;
+    out_size     = nb_samples * avctx->channels * s->out_bps;
+    if (*data_size < out_size)
         return -1;
 
-    *data_size = vmdaudio_loadsound(s, output_samples, buf, silent_chunks, buf_size);
+    /* decode silent chunks */
+    if (silent_chunks > 0) {
+        int silent_size = avctx->block_align * silent_chunks;
+        if (s->out_bps == 2) {
+            memset(output_samples_s16, 0x00, silent_size * 2);
+            output_samples_s16 += silent_size;
+        } else {
+            memset(output_samples_u8,  0x80, silent_size);
+            output_samples_u8 += silent_size;
+        }
+    }
 
+    /* decode audio chunks */
+    if (audio_chunks > 0) {
+        buf_end = buf + buf_size;
+        while (buf < buf_end) {
+            if (s->out_bps == 2) {
+                decode_audio_s16(output_samples_s16, buf, s->chunk_size,
+                                 avctx->channels);
+                output_samples_s16 += avctx->block_align;
+            } else {
+                memcpy(output_samples_u8, buf, s->chunk_size);
+                output_samples_u8  += avctx->block_align;
+            }
+            buf += s->chunk_size;
+        }
+    }
+
+    *data_size = out_size;
     return avpkt->size;
 }
 
