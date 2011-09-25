@@ -1972,6 +1972,8 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
      */
     // Allocate zeroed memory for the first decoder context
     s->mp3decctx[0] = av_mallocz(sizeof(MPADecodeContext));
+    if (!s->mp3decctx[0])
+        goto alloc_fail;
     // Put decoder context in place to make init_decode() happy
     avctx->priv_data = s->mp3decctx[0];
     decode_init(avctx);
@@ -1984,6 +1986,8 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
      */
     for (i = 1; i < s->frames; i++) {
         s->mp3decctx[i] = av_mallocz(sizeof(MPADecodeContext));
+        if (!s->mp3decctx[i])
+            goto alloc_fail;
         s->mp3decctx[i]->adu_mode = 1;
         s->mp3decctx[i]->avctx = avctx;
         s->mp3decctx[i]->mpadsp = s->mp3decctx[0]->mpadsp;
