@@ -511,7 +511,7 @@ static int16_t apply_tilt_comp(int16_t* out, int16_t* res_pst, int refl_coeff,
     return tmp;
 }
 
-void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int16_t* voicing,
+void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
                      const int16_t *lp_filter_coeffs, int pitch_delay_int,
                      int16_t* residual, int16_t* res_filter_data,
                      int16_t* pos_filter_data, int16_t *speech, int subframe_size)

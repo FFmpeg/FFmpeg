@@ -93,7 +93,7 @@
  *   Short-term postfilter (4.2.2).
  *   Tilt-compensation (4.2.3)
  */
-void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int16_t* voicing,
+void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
                      const int16_t *lp_filter_coeffs, int pitch_delay_int,
                      int16_t* residual, int16_t* res_filter_data,
                      int16_t* pos_filter_data, int16_t *speech,
