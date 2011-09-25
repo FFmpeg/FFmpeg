@@ -2825,6 +2825,13 @@ static int encode_picture(MpegEncContext *s, int picture_number)
         update_qscale(s);
     }
 
+    if(s->codec_id != CODEC_ID_AMV){
+        if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
+        if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
+        s->q_chroma_intra_matrix   = s->q_intra_matrix;
+        s->q_chroma_intra_matrix16 = s->q_intra_matrix16;
+    }
+
     s->mb_intra=0; //for the rate distortion & bit compare functions
     for(i=1; i<context_count; i++){
         ff_update_duplicate_context(s->thread_context[i], s);
@@ -3091,7 +3098,7 @@ static int dct_quantize_trellis_c(MpegEncContext *s,
         block[0] = (block[0] + (q >> 1)) / q;
         start_i = 1;
         last_non_zero = 0;
-        qmat = s->q_intra_matrix[qscale];
+        qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
         if(s->mpeg_quant || s->out_format == FMT_MPEG1)
             bias= 1<<(QMAT_SHIFT-1);
         length     = s->intra_ac_vlc_length;
@@ -3762,7 +3769,7 @@ int dct_quantize_c(MpegEncContext *s,
         block[0] = (block[0] + (q >> 1)) / q;
         start_i = 1;
         last_non_zero = 0;
-        qmat = s->q_intra_matrix[qscale];
+        qmat = n < 4 ? s->q_intra_matrix[qscale] : s->q_chroma_intra_matrix[qscale];
         bias= s->intra_quant_bias<<(QMAT_SHIFT - QUANT_BIAS_SHIFT);
     } else {
         start_i = 0;

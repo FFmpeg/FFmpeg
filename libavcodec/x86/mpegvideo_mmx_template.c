@@ -110,10 +110,15 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
 
     if (s->mb_intra) {
         int dummy;
-        if (n < 4)
+        if (n < 4){
             q = s->y_dc_scale;
-        else
+            bias = s->q_intra_matrix16[qscale][1];
+            qmat = s->q_intra_matrix16[qscale][0];
+        }else{
             q = s->c_dc_scale;
+            bias = s->q_chroma_intra_matrix16[qscale][1];
+            qmat = s->q_chroma_intra_matrix16[qscale][0];
+        }
         /* note: block[0] is assumed to be positive */
         if (!s->h263_aic) {
         __asm__ volatile (
@@ -128,8 +133,6 @@ static int RENAME(dct_quantize)(MpegEncContext *s,
         block[0]=0; //avoid fake overflow
 //        temp_block[0] = (block[0] + (q >> 1)) / q;
         last_non_zero_p1 = 1;
-        bias = s->q_intra_matrix16[qscale][1];
-        qmat = s->q_intra_matrix16[qscale][0];
     } else {
         last_non_zero_p1 = 0;
         bias = s->q_inter_matrix16[qscale][1];

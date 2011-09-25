@@ -687,8 +687,10 @@ av_cold int MPV_common_init(MpegEncContext *s)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->lambda_table, mb_array_size * sizeof(int), fail)
 
         FF_ALLOCZ_OR_GOTO(s->avctx, s->q_intra_matrix  , 64*32   * sizeof(int), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->q_chroma_intra_matrix  , 64*32   * sizeof(int), fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->q_inter_matrix  , 64*32   * sizeof(int), fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->q_intra_matrix16, 64*32*2 * sizeof(uint16_t), fail)
+        FF_ALLOCZ_OR_GOTO(s->avctx, s->q_chroma_intra_matrix16, 64*32*2 * sizeof(uint16_t), fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->q_inter_matrix16, 64*32*2 * sizeof(uint16_t), fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->input_picture, MAX_PICTURE_COUNT * sizeof(Picture*), fail)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->reordered_input_picture, MAX_PICTURE_COUNT * sizeof(Picture*), fail)
@@ -846,6 +848,10 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->error_status_table);
     av_freep(&s->mb_index2xy);
     av_freep(&s->lambda_table);
+    if(s->q_chroma_intra_matrix   != s->q_intra_matrix  ) av_freep(&s->q_chroma_intra_matrix);
+    if(s->q_chroma_intra_matrix16 != s->q_intra_matrix16) av_freep(&s->q_chroma_intra_matrix16);
+    s->q_chroma_intra_matrix=   NULL;
+    s->q_chroma_intra_matrix16= NULL;
     av_freep(&s->q_intra_matrix);
     av_freep(&s->q_inter_matrix);
     av_freep(&s->q_intra_matrix16);

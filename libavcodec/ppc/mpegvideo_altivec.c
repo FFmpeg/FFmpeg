@@ -267,8 +267,13 @@ static int dct_quantize_altivec(MpegEncContext* s,
             baseVector = vec_cts(vec_splat(row0, 0), 0);
             vec_ste(baseVector, 0, &oldBaseValue);
 
-            qmat = (vector signed int*)s->q_intra_matrix[qscale];
-            biasAddr = &(s->intra_quant_bias);
+            if(n<4){
+                qmat = (vector signed int*)s->q_intra_matrix[qscale];
+                biasAddr = &(s->intra_quant_bias);
+            }else{
+                qmat = (vector signed int*)s->q_chroma_intra_matrix[qscale];
+                biasAddr = &(s->intra_quant_bias);
+            }
         } else {
             qmat = (vector signed int*)s->q_inter_matrix[qscale];
             biasAddr = &(s->inter_quant_bias);

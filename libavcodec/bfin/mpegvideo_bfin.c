@@ -61,8 +61,13 @@ static int dct_quantize_bfin (MpegEncContext *s,
         dc = block[0] = (block[0] + (q >> 1)) / q;
         start_i = 1;
         last_non_zero = 0;
-        bias = s->q_intra_matrix16[qscale][1];
-        qmat = s->q_intra_matrix16[qscale][0];
+        if(n<4){
+            bias = s->q_intra_matrix16[qscale][1];
+            qmat = s->q_intra_matrix16[qscale][0];
+        }else{
+            bias = s->q_chroma_intra_matrix16[qscale][1];
+            qmat = s->q_chroma_intra_matrix16[qscale][0];
+        }
 
     } else {
         start_i = 0;
