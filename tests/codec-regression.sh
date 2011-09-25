@@ -112,6 +112,11 @@ do_video_encoding huffyuv.avi "-an -vcodec huffyuv -pix_fmt yuv422p -sws_flags n
 do_video_decoding "" "-strict -2 -pix_fmt yuv420p -sws_flags neighbor+bitexact"
 fi
 
+if [ -n "$do_amv" ] ; then
+do_video_encoding amv.avi "-an -vcodec amv"
+do_video_decoding
+fi
+
 if [ -n "$do_rc" ] ; then
 do_video_encoding mpeg4-rc.avi "-b 400k -bf 2 -an -vcodec mpeg4"
 do_video_decoding

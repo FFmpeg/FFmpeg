@@ -1,0 +1,4 @@
+816a4226fe7640a835139f8a44286a12 *./tests/data/vsynth2/amv.avi
+761976 ./tests/data/vsynth2/amv.avi
+f1a9e46e77934d4cc5ca9f927662c4be *./tests/data/amv.vsynth2.out.yuv
+stddev:    8.14 PSNR: 29.91 MAXDIFF:   66 bytes:  7603200/  7603200
