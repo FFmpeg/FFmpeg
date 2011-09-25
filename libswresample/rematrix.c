@@ -82,7 +82,7 @@ static int sane_layout(int64_t layout){
 }
 
 int swr_rematrix_init(SwrContext *s){
-    int i, j, in_i, out_i;
+    int i, j, out_i;
     double matrix[64][64]={{0}};
     int64_t unaccounted= s->in_ch_layout & ~s->out_ch_layout;
     double maxcoef=0;
