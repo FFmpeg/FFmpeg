@@ -266,6 +266,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx,
         maxband = c->last_max_band + get_vlc2(gb, band_vlc.table, MPC8_BANDS_BITS, 2);
         if(maxband > 32) maxband -= 33;
     }
+    if(maxband > c->maxbands)
+        return AVERROR_INVALIDDATA;
     c->last_max_band = maxband;
 
     /* read subband indexes */
