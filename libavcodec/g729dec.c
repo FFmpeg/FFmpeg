@@ -380,7 +380,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int buf_size       = avpkt->size;
     int16_t *out_frame = data;
     GetBitContext gb;
-    G729FormatDescription format;
+    const G729FormatDescription *format;
     int frame_erasure = 0;    ///< frame erasure detected during decoding
     int bad_pitch = 0;        ///< parity check failed
     int i;
@@ -408,14 +408,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (buf_size == 10) {
         packet_type = FORMAT_G729_8K;
-        format = format_g729_8k;
+        format = &format_g729_8k;
         //Reset voice decision
         ctx->onset = 0;
         ctx->voice_decision = DECISION_VOICE;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729 @ 8kbit/s");
     } else if (buf_size == 8) {
         packet_type = FORMAT_G729D_6K4;
-        format = format_g729d_6k4;
+        format = &format_g729d_6k4;
         av_log(avctx, AV_LOG_DEBUG, "Packet type: %s\n", "G.729D @ 6.4kbit/s");
     } else {
         av_log(avctx, AV_LOG_ERROR, "Packet size %d is unknown.\n", buf_size);
@@ -463,13 +463,13 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         uint8_t gc_1st_index;  ///< gain codebook (first stage) index
         uint8_t gc_2nd_index;  ///< gain codebook (second stage) index
 
-        ac_index      = get_bits(&gb, format.ac_index_bits[i]);
-        if(!i && format.parity_bit)
+        ac_index      = get_bits(&gb, format->ac_index_bits[i]);
+        if(!i && format->parity_bit)
             bad_pitch = get_parity(ac_index) == get_bits1(&gb);
-        fc_indexes    = get_bits(&gb, format.fc_indexes_bits);
-        pulses_signs  = get_bits(&gb, format.fc_signs_bits);
-        gc_1st_index  = get_bits(&gb, format.gc_1st_index_bits);
-        gc_2nd_index  = get_bits(&gb, format.gc_2nd_index_bits);
+        fc_indexes    = get_bits(&gb, format->fc_indexes_bits);
+        pulses_signs  = get_bits(&gb, format->fc_signs_bits);
+        gc_1st_index  = get_bits(&gb, format->gc_1st_index_bits);
+        gc_2nd_index  = get_bits(&gb, format->gc_2nd_index_bits);
 
         if (frame_erasure)
             pitch_delay_3x   = 3 * ctx->pitch_delay_int_prev;
@@ -493,7 +493,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         if (frame_erasure) {
             ctx->rand_value = g729_prng(ctx->rand_value);
-            fc_indexes   = ctx->rand_value & ((1 << format.fc_indexes_bits) - 1);
+            fc_indexes   = ctx->rand_value & ((1 << format->fc_indexes_bits) - 1);
 
             ctx->rand_value = g729_prng(ctx->rand_value);
             pulses_signs = ctx->rand_value;
