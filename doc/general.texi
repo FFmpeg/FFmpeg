@@ -45,6 +45,8 @@ library:
 @item 4xm                       @tab   @tab X
     @tab 4X Technologies format, used in some games.
 @item 8088flex TMV              @tab   @tab X
+@item ACT Voice                 @tab   @tab X
+    @tab contains G.729 audio
 @item Adobe Filmstrip           @tab X @tab X
 @item Audio IFF (AIFF)          @tab X @tab X
 @item American Laser Games MM   @tab   @tab X
@@ -104,6 +106,7 @@ library:
 @item framecrc testing format   @tab X @tab
 @item FunCom ISS                @tab   @tab X
     @tab Audio format used in various games from FunCom like The Longest Journey.
+@item G.729 BIT                 @tab X @tab X
 @item GIF Animation             @tab X @tab
 @item GXF                       @tab X @tab X
     @tab General eXchange Format SMPTE 360M, used by Thomson Grass Valley
@@ -633,6 +636,7 @@ following image formats are supported:
 @item DV audio               @tab     @tab  X
 @item Enhanced AC-3          @tab  X  @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
+@item G.729                  @tab     @tab  X
 @item GSM                    @tab  E  @tab  X
     @tab encoding supported through external library libgsm
 @item GSM Microsoft variant  @tab  E  @tab  X
