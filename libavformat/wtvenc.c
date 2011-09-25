@@ -708,15 +708,15 @@ static int write_trailer(AVFormatContext *s)
 }
 
 AVOutputFormat ff_wtv_muxer = {
-    "wtv",
-    NULL_IF_CONFIG_SMALL("Windows Television (WTV)"),
-    NULL,
-    "wtv",
-    sizeof(WtvContext),
-    CODEC_ID_MP2,
-    CODEC_ID_MPEG2VIDEO,
-    write_header,
-    write_packet,
-    write_trailer,
-    .codec_tag= (const AVCodecTag* const []){ff_codec_bmp_tags, ff_codec_wav_tags, 0},
+    .name           = "wtv",
+    .long_name      = NULL_IF_CONFIG_SMALL("Windows Television (WTV)"),
+    .extensions     = "wtv",
+    .priv_data_size = sizeof(WtvContext),
+    .audio_codec    = CODEC_ID_MP2,
+    .video_codec    = CODEC_ID_MPEG2VIDEO,
+    .write_header   = write_header,
+    .write_packet   = write_packet,
+    .write_trailer  = write_trailer,
+    .codec_tag      = (const AVCodecTag* const []){ ff_codec_bmp_tags,
+                                                    ff_codec_wav_tags, 0 },
 };

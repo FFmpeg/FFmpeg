@@ -330,47 +330,45 @@ static int read_packet(AVFormatContext *s,
 
 #if CONFIG_BINTEXT_DEMUXER
 AVInputFormat ff_bintext_demuxer = {
-    "bin",
-    NULL_IF_CONFIG_SMALL("Binary text"),
-    sizeof(BinDemuxContext),
-    NULL,
-    bintext_read_header,
-    read_packet,
-    .extensions = "bin",
+    .name           = "bin",
+    .long_name      = NULL_IF_CONFIG_SMALL("Binary text"),
+    .priv_data_size = sizeof(BinDemuxContext),
+    .read_header    = bintext_read_header,
+    .read_packet    = read_packet,
+    .extensions     = "bin",
 };
 #endif
 
 #if CONFIG_XBIN_DEMUXER
 AVInputFormat ff_xbin_demuxer = {
-    "xbin",
-    NULL_IF_CONFIG_SMALL("eXtended BINary text (XBIN)"),
-    sizeof(BinDemuxContext),
-    xbin_probe,
-    xbin_read_header,
-    read_packet,
+    .name           = "xbin",
+    .long_name      = NULL_IF_CONFIG_SMALL("eXtended BINary text (XBIN)"),
+    .priv_data_size = sizeof(BinDemuxContext),
+    .read_probe     = xbin_probe,
+    .read_header    = xbin_read_header,
+    .read_packet    = read_packet,
 };
 #endif
 
 #if CONFIG_ADF_DEMUXER
 AVInputFormat ff_adf_demuxer = {
-    "adf",
-    NULL_IF_CONFIG_SMALL("Artworx Data Format"),
-    sizeof(BinDemuxContext),
-    NULL,
-    adf_read_header,
-    read_packet,
-    .extensions = "adf",
+    .name           = "adf",
+    .long_name      = NULL_IF_CONFIG_SMALL("Artworx Data Format"),
+    .priv_data_size = sizeof(BinDemuxContext),
+    .read_header    = adf_read_header,
+    .read_packet    = read_packet,
+    .extensions     = "adf",
 };
 #endif
 
 #if CONFIG_IDF_DEMUXER
 AVInputFormat ff_idf_demuxer = {
-    "idf",
-    NULL_IF_CONFIG_SMALL("iCE Draw File"),
-    sizeof(BinDemuxContext),
-    idf_probe,
-    idf_read_header,
-    read_packet,
-    .extensions = "idf",
+    .name           = "idf",
+    .long_name      = NULL_IF_CONFIG_SMALL("iCE Draw File"),
+    .priv_data_size = sizeof(BinDemuxContext),
+    .read_probe     = idf_probe,
+    .read_header    = idf_read_header,
+    .read_packet    = read_packet,
+    .extensions     = "idf",
 };
 #endif
