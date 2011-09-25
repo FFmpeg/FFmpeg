@@ -1894,6 +1894,7 @@ typedef struct MP3On4DecodeContext {
     int syncword; ///< syncword patch
     const uint8_t *coff; ///< channels offsets in output buffer
     MPADecodeContext *mp3decctx[5]; ///< MPADecodeContext for every decoder instance
+    OUT_INT *decoded_buf;           ///< output buffer for decoded samples
 } MP3On4DecodeContext;
 
 #include "mpeg4audio.h"
@@ -1911,6 +1912,20 @@ static const uint8_t chan_offset[8][5] = {
     {4,0,2,5},      // C FLR BLRS LFE
     {4,0,2,6,5},    // C FLR BLRS BLR LFE
 };
+
+
+static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
+{
+    MP3On4DecodeContext *s = avctx->priv_data;
+    int i;
+
+    for (i = 0; i < s->frames; i++)
+        av_free(s->mp3decctx[i]);
+
+    av_freep(&s->decoded_buf);
+
+    return 0;
+}
 
 
 static int decode_init_mp3on4(AVCodecContext * avctx)
@@ -1962,19 +1977,18 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
         s->mp3decctx[i]->mpadsp = s->mp3decctx[0]->mpadsp;
     }
 
-    return 0;
-}
-
-
-static av_cold int decode_close_mp3on4(AVCodecContext * avctx)
-{
-    MP3On4DecodeContext *s = avctx->priv_data;
-    int i;
-
-    for (i = 0; i < s->frames; i++)
-        av_free(s->mp3decctx[i]);
+    /* Allocate buffer for multi-channel output if needed */
+    if (s->frames > 1) {
+        s->decoded_buf = av_malloc(MPA_FRAME_SIZE * MPA_MAX_CHANNELS *
+                                   sizeof(*s->decoded_buf));
+        if (!s->decoded_buf)
+            goto alloc_fail;
+    }
 
     return 0;
+alloc_fail:
+    decode_close_mp3on4(avctx);
+    return AVERROR(ENOMEM);
 }
 
 
@@ -1989,7 +2003,6 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     int fsize, len = buf_size, out_size = 0;
     uint32_t header;
     OUT_INT *out_samples = data;
-    OUT_INT decoded_buf[MPA_FRAME_SIZE * MPA_MAX_CHANNELS];
     OUT_INT *outptr, *bp;
     int fr, j, n;
 
@@ -2002,7 +2015,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         return -1;
 
     // If only one decoder interleave is not needed
-    outptr = s->frames == 1 ? out_samples : decoded_buf;
+    outptr = s->frames == 1 ? out_samples : s->decoded_buf;
 
     avctx->bit_rate = 0;
 
@@ -2028,13 +2041,13 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
             bp = out_samples + s->coff[fr];
             if(m->nb_channels == 1) {
                 for(j = 0; j < n; j++) {
-                    *bp = decoded_buf[j];
+                    *bp = s->decoded_buf[j];
                     bp += avctx->channels;
                 }
             } else {
                 for(j = 0; j < n; j++) {
-                    bp[0] = decoded_buf[j++];
-                    bp[1] = decoded_buf[j];
+                    bp[0] = s->decoded_buf[j++];
+                    bp[1] = s->decoded_buf[j];
                     bp += avctx->channels;
                 }
             }
