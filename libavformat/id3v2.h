@@ -63,7 +63,7 @@ typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
     void (*read)(AVFormatContext*, AVIOContext*, int, char*, ID3v2ExtraMeta **);
-    void (*free)();
+    void (*free)(void *);
 } ID3v2EMFunc;
 
 /**

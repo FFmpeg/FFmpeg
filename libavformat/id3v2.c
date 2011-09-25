@@ -69,8 +69,9 @@ static unsigned int get_size(AVIOContext *s, int len)
 /**
  * Free GEOB type extra metadata.
  */
-static void free_geobtag(ID3v2ExtraMetaGEOB *geob)
+static void free_geobtag(void *obj)
 {
+    ID3v2ExtraMetaGEOB *geob = obj;
     av_free(geob->mime_type);
     av_free(geob->file_name);
     av_free(geob->description);
@@ -518,7 +519,7 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
 void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
 {
     ID3v2ExtraMeta *current = *extra_meta, *next;
-    void (*free_func)(ID3v2ExtraMeta*);
+    void (*free_func)(void *);
 
     while (current) {
         if ((free_func = get_extra_meta_func(current->tag, 1)->free))
