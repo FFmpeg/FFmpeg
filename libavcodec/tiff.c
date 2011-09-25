@@ -129,6 +129,16 @@ static void av_always_inline horizontal_fill(unsigned int bpp, uint8_t* dst,
     }
 }
 
+static void av_always_inline split_nibbles(uint8_t *dst, const uint8_t *src,
+                                           int width)
+{
+    while (--width >= 0) {
+        // src == dst for LZW
+        dst[width * 2 + 1] = src[width] & 0xF;
+        dst[width * 2 + 0] = src[width] >> 4;
+    }
+}
+
 static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uint8_t *src, int size, int lines){
     int c, line, pixels, code;
     const uint8_t *ssrc = src;
@@ -148,7 +158,11 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         }
         src = zbuf;
         for(line = 0; line < lines; line++){
-            memcpy(dst, src, width);
+            if(s->bpp == 4){
+                split_nibbles(dst, src, width);
+            }else{
+                memcpy(dst, src, width);
+            }
             dst += stride;
             src += width;
         }
@@ -238,6 +252,8 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
                 av_log(s->avctx, AV_LOG_ERROR, "Decoded only %i bytes of %i\n", pixels, width);
                 return -1;
             }
+            if(s->bpp == 4)
+                split_nibbles(dst, dst, width);
             break;
         }
         dst += stride;
