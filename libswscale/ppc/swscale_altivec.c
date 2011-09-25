@@ -36,13 +36,13 @@ altivec_packIntArrayToCharArray(int *val, uint8_t* dest, int dstW)
     register int i;
     vector unsigned int altivec_vectorShiftInt19 =
         vec_add(vec_splat_u32(10), vec_splat_u32(9));
-    if ((unsigned int)dest % 16) {
+    if ((uintptr_t)dest % 16) {
         /* badly aligned store, we force store alignment */
         /* and will handle load misalignment on val w/ vec_perm */
         vector unsigned char perm1;
         vector signed int v1;
         for (i = 0 ; (i < dstW) &&
-            (((unsigned int)dest + i) % 16) ; i++) {
+            (((uintptr_t)dest + i) % 16) ; i++) {
                 int t = val[i] >> 19;
                 dest[i] = (t < 0) ? 0 : ((t > 255) ? 255 : t);
         }
@@ -251,7 +251,7 @@ static void hScale_altivec_real(int16_t *dst, int dstW,
         vector unsigned char src_v1, src_vF;
         vector signed short src_v, filter_v;
         vector signed int val_vEven, val_s;
-        if ((((int)src + srcPos)% 16) > 12) {
+        if ((((uintptr_t)src + srcPos) % 16) > 12) {
             src_v1 = vec_ld(srcPos + 16, src);
         }
         src_vF = vec_perm(src_v0, src_v1, vec_lvsl(srcPos, src));
@@ -290,7 +290,7 @@ static void hScale_altivec_real(int16_t *dst, int dstW,
         vector unsigned char src_v1, src_vF;
         vector signed short src_v, filter_v;
         vector signed int val_v, val_s;
-        if ((((int)src + srcPos)% 16) > 8) {
+        if ((((uintptr_t)src + srcPos) % 16) > 8) {
             src_v1 = vec_ld(srcPos + 16, src);
         }
         src_vF = vec_perm(src_v0, src_v1, vec_lvsl(srcPos, src));
@@ -376,7 +376,7 @@ static void hScale_altivec_real(int16_t *dst, int dstW,
             //vector unsigned char src_v0 = vec_ld(srcPos + j, src);
             vector unsigned char src_v1, src_vF;
             vector signed short src_v, filter_v1R, filter_v;
-            if ((((int)src + srcPos)% 16) > 8) {
+            if ((((uintptr_t)src + srcPos) % 16) > 8) {
                 src_v1 = vec_ld(srcPos + j + 16, src);
             }
             src_vF = vec_perm(src_v0, src_v1, permS);
