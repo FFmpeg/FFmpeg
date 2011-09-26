@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <libavutil/opt.h>
 #include "avformat.h"
 
 #include "rtp.h"
@@ -89,9 +90,17 @@ int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
     return -1;
 }
 
-int ff_rtp_get_payload_type(AVCodecContext *codec)
+int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec)
 {
     int i, payload_type;
+    AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;
+
+    /* Was the payload type already specified for the RTP muxer? */
+    if (ofmt && ofmt->priv_class)
+        payload_type = av_get_int(fmt->priv_data, "payload_type", NULL);
+
+    if (payload_type >= 0)
+        return payload_type;
 
     /* compute the payload type */
     for (payload_type = -1, i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
