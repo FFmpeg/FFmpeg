@@ -92,32 +92,29 @@ int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
 
 int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec)
 {
-    int i, payload_type;
+    int i;
     AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;
 
     /* Was the payload type already specified for the RTP muxer? */
-    if (ofmt && ofmt->priv_class)
-        payload_type = av_get_int(fmt->priv_data, "payload_type", NULL);
+    if (ofmt && ofmt->priv_class) {
+        int payload_type = av_get_int(fmt->priv_data, "payload_type", NULL);
+        if (payload_type >= 0)
+            return payload_type;
+    }
 
-    if (payload_type >= 0)
-        return payload_type;
-
-    /* compute the payload type */
-    for (payload_type = -1, i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
+    /* static payload type */
+    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
         if (AVRtpPayloadTypes[i].codec_id == codec->codec_id) {
             if (codec->codec_id == CODEC_ID_H263)
                 continue;
             if (codec->codec_id == CODEC_ID_PCM_S16BE)
                 if (codec->channels != AVRtpPayloadTypes[i].audio_channels)
                     continue;
-            payload_type = AVRtpPayloadTypes[i].pt;
+            return AVRtpPayloadTypes[i].pt;
         }
 
     /* dynamic payload type */
-    if (payload_type < 0)
-        payload_type = RTP_PT_PRIVATE + (codec->codec_type == AVMEDIA_TYPE_AUDIO);
-
-    return payload_type;
+    return RTP_PT_PRIVATE + (codec->codec_type == AVMEDIA_TYPE_AUDIO);
 }
 
 const char *ff_rtp_enc_name(int payload_type)
