@@ -399,6 +399,7 @@ int main(int argc, char **argv)
 {
     int ret;
 
+    parse_loglevel(argc, argv, options);
     av_register_all();
     init_opts();
 #if CONFIG_AVDEVICE

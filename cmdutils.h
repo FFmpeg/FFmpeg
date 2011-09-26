@@ -175,6 +175,11 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
 int parse_option(void *optctx, const char *opt, const char *arg, const OptionDef *options);
 
 /**
+ * Find the '-loglevel' option in the commandline args and apply it.
+ */
+void parse_loglevel(int argc, char **argv, const OptionDef *options);
+
+/**
  * Check if the given stream matches a stream specifier.
  *
  * @param s  Corresponding format context.

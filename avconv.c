@@ -4019,6 +4019,7 @@ int main(int argc, char **argv)
     reset_options(&o);
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    parse_loglevel(argc, argv, options);
 
     avcodec_register_all();
 #if CONFIG_AVDEVICE

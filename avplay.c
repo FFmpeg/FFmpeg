@@ -3050,6 +3050,7 @@ int main(int argc, char **argv)
     int flags;
 
     av_log_set_flags(AV_LOG_SKIP_REPEATED);
+    parse_loglevel(argc, argv, options);
 
     /* register all codecs, demux and protocols */
     avcodec_register_all();
