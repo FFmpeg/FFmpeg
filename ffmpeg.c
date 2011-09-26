@@ -4107,7 +4107,10 @@ static int opt_preset(OptionsContext *o, const char *opt, const char *arg)
                                            subtitle_codec_name;
 
     if (!(f = get_preset_file(filename, sizeof(filename), arg, *opt == 'f', codec_name))) {
-        fprintf(stderr, "File for preset '%s' not found\n", arg);
+        if(!strncmp(arg, "libx264-lossless", strlen("libx264-lossless"))){
+            fprintf(stderr, "Please use -preset <speed> -qp 0\n");
+        }else
+            fprintf(stderr, "File for preset '%s' not found\n", arg);
         exit_program(1);
     }
 
