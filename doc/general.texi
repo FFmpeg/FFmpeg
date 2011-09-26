@@ -559,6 +559,8 @@ following image formats are supported:
 @multitable @columnfractions .4 .1 .1 .4
 @item Name @tab Encoding @tab Decoding @tab Comments
 @item 8SVX audio             @tab     @tab  X
+@item AAC+                   @tab  E  @tab  X
+    @tab encoding supported through external library libaacplus
 @item AAC                    @tab  E  @tab  X
     @tab encoding supported through external library libfaac and libvo-aacenc
 @item AC-3                   @tab IX  @tab  X
@@ -1105,7 +1107,7 @@ These library packages are only available from
 @uref{http://sourceware.org/cygwinports/, Cygwin Ports}:
 
 @example
-yasm, libSDL-devel, libdirac-devel, libfaac-devel, libgsm-devel,
+yasm, libSDL-devel, libdirac-devel, libfaac-devel, libaacplus-devel, libgsm-devel,
 libmp3lame-devel, libschroedinger1.0-devel, speex-devel, libtheora-devel,
 libxvidcore-devel
 @end example

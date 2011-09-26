@@ -72,6 +72,7 @@ version 0.8:
 - Demuxer for On2's IVF format
 - Pictor/PC Paint decoder
 - HE-AAC v2 decoder
+- HE-AAC v2 encoding with libaacplus
 - libfaad2 wrapper removed
 - DTS-ES extension (XCh) decoding support
 - native VP8 decoder
