@@ -70,9 +70,14 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
 
     /* Write the SEI as part of the first frame. */
     if (x4->sei_size > 0 && nnal > 0) {
+        if (x4->sei_size > size) {
+            av_log(ctx, AV_LOG_ERROR, "Error: nal buffer is too small\n");
+            return -1;
+        }
         memcpy(p, x4->sei, x4->sei_size);
         p += x4->sei_size;
         x4->sei_size = 0;
+        // why is x4->sei not freed?
     }
 
     for (i = 0; i < nnal; i++){
@@ -82,6 +87,11 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
             x4->sei      = av_malloc(x4->sei_size);
             memcpy(x4->sei, nals[i].p_payload, nals[i].i_payload);
             continue;
+        }
+        if (nals[i].i_payload > (size - (p - buf))) {
+            // return only complete nals which fit in buf
+            av_log(ctx, AV_LOG_ERROR, "Error: nal buffer is too small\n");
+            break;
         }
         memcpy(p, nals[i].p_payload, nals[i].i_payload);
         p += nals[i].i_payload;
