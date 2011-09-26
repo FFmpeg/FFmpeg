@@ -567,6 +567,7 @@ OBJS-$(CONFIG_WEBM_MUXER)              += xiph.o mpeg4audio.o \
 OBJS-$(CONFIG_WTV_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 
 # external codec libraries
+OBJS-$(CONFIG_LIBAACPLUS_ENCODER)         += libaacplus.o
 OBJS-$(CONFIG_LIBCELT_DECODER)            += libcelt_dec.o
 OBJS-$(CONFIG_LIBDIRAC_DECODER)           += libdiracdec.o
 OBJS-$(CONFIG_LIBDIRAC_ENCODER)           += libdiracenc.o libdirac_libschro.o

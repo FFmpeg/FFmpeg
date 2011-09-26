@@ -162,6 +162,7 @@ External library support:
   --enable-bzlib           enable bzlib [autodetect]
   --enable-libcelt         enable CELT/Opus decoding via libcelt [no]
   --enable-frei0r          enable frei0r video filtering
+  --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -927,6 +928,8 @@ CONFIG_LIST="
     h264pred
     hardcoded_tables
     huffman
+    libaacplus
+    libcdio
     libcelt
     libdc1394
     libdirac
@@ -1401,6 +1404,7 @@ vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 h264_parser_select="golomb h264dsp h264pred"
 
 # external libraries
+libaacplus_encoder_deps="libaacplus"
 libcelt_decoder_deps="libcelt"
 libdirac_decoder_deps="libdirac !libschroedinger"
 libdirac_encoder_deps="libdirac"
@@ -2584,6 +2588,7 @@ die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
 die_license_disabled gpl x11grab
 
+die_license_disabled nonfree libaacplus
 die_license_disabled nonfree libfaac
 
 die_license_disabled version3 libopencore_amrnb
@@ -2916,6 +2921,7 @@ check_mathfunc truncf
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
@@ -3227,6 +3233,7 @@ echo "frei0r enabled            ${frei0r-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"
+echo "libaacplus enabled        ${libaacplus-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"
 echo "libnut enabled            ${libnut-no}"
