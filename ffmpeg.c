@@ -4160,6 +4160,15 @@ static int opt_old2new(OptionsContext *o, const char *opt, const char *arg)
     return parse_option(o, s, arg, options);
 }
 
+static int opt_bitrate(OptionsContext *o, const char *opt, const char *arg)
+{
+    if(!strcmp(opt, "b")){
+        av_log(0,AV_LOG_WARNING, "Please use -b:a or -b:v, -b is ambigous\n");
+        return parse_option(o, av_strdup("b:v"), arg, options);
+    }
+    return opt_default(opt, arg);
+}
+
 static int opt_video_filters(OptionsContext *o, const char *opt, const char *arg)
 {
     return parse_option(o, "filter:v", arg, options);
@@ -4259,6 +4268,7 @@ static const OptionDef options[] = {
     { "force_fps", OPT_BOOL | OPT_EXPERT | OPT_VIDEO | OPT_SPEC, {.off = OFFSET(force_fps)}, "force the selected framerate, disable the best supported framerate selection" },
     { "streamid", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_streamid}, "set the value of an outfile streamid", "streamIndex:value" },
     { "force_key_frames", OPT_STRING | HAS_ARG | OPT_EXPERT | OPT_VIDEO | OPT_SPEC, {.off = OFFSET(forced_key_frames)}, "force key frames at specified timestamps", "timestamps" },
+    { "b", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_bitrate}, "video bitrate (please use -b:v)", "bitrate" },
 
     /* audio options */
     { "aframes", HAS_ARG | OPT_AUDIO | OPT_FUNC2, {(void*)opt_audio_frames}, "set the number of audio frames to record", "number" },

@@ -300,7 +300,7 @@ do_audio_encoding ac3.rm "-vn -acodec ac3_fixed"
 fi
 
 if [ -n "$do_g726" ] ; then
-do_audio_encoding g726.wav "-b 32k -ac 1 -ar 8000 -acodec g726"
+do_audio_encoding g726.wav "-b:a 32k -ac 1 -ar 8000 -acodec g726"
 do_audio_decoding
 fi
 
