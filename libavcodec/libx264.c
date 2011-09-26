@@ -103,7 +103,7 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
         memcpy(p, x4->sei, x4->sei_size);
         p += x4->sei_size;
         x4->sei_size = 0;
-        // why is x4->sei not freed?
+        av_freep(&x4->sei);
     }
 
     for (i = 0; i < nnal; i++){
