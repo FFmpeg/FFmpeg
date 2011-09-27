@@ -1029,7 +1029,7 @@ static int j2kenc_destroy(AVCodecContext *avctx)
 
 AVCodec ff_jpeg2000_encoder = {
     "j2k",
-    CODEC_TYPE_VIDEO,
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_JPEG2000,
     sizeof(J2kEncoderContext),
     j2kenc_init,
