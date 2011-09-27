@@ -1819,8 +1819,15 @@ static int decode_frame(AVCodecContext * avctx,
         *data_size = out_size;
         avctx->sample_rate = s->sample_rate;
         //FIXME maybe move the other codec info stuff from above here too
-    }else
-        av_log(avctx, AV_LOG_DEBUG, "Error while decoding MPEG audio frame.\n"); //FIXME return -1 / but also return the number of bytes consumed
+    } else {
+        av_log(avctx, AV_LOG_ERROR, "Error while decoding MPEG audio frame.\n");
+        /* Only return an error if the bad frame makes up the whole packet.
+           If there is more data in the packet, just consume the bad frame
+           instead of returning an error, which would discard the whole
+           packet. */
+        if (buf_size == avpkt->size)
+            return out_size;
+    }
     s->frame_size = 0;
     return buf_size;
 }
