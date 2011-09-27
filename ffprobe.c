@@ -121,123 +121,165 @@ static char *ts_value_string (char *buf, int buf_size, int64_t ts)
     return buf;
 }
 
+/* WRITERS API */
 
-struct writer {
+typedef struct WriterContext WriterContext;
+
+typedef struct Writer {
+    int priv_size;                  ///< private size for the writer context
     const char *name;
-    const char *item_sep;           ///< separator between key/value couples
-    const char *items_sep;          ///< separator between sets of key/value couples
-    const char *section_sep;        ///< separator between sections (streams, packets, ...)
-    const char *header, *footer;
-    void (*print_section_start)(const char *, int);
-    void (*print_section_end)  (const char *, int);
-    void (*print_header)(const char *);
-    void (*print_footer)(const char *);
-    void (*print_integer)(const char *, int);
-    void (*print_string)(const char *, const char *);
-    void (*show_tags)(struct writer *w, AVDictionary *dict);
+
+    int  (*init)  (WriterContext *wctx, const char *args, void *opaque);
+    void (*uninit)(WriterContext *wctx);
+
+    void (*print_header)(WriterContext *ctx);
+    void (*print_footer)(WriterContext *ctx);
+
+    void (*print_chapter_header)(WriterContext *wctx, const char *);
+    void (*print_chapter_footer)(WriterContext *wctx, const char *);
+    void (*print_section_header)(WriterContext *wctx, const char *);
+    void (*print_section_footer)(WriterContext *wctx, const char *);
+    void (*print_integer)       (WriterContext *wctx, const char *, int);
+    void (*print_string)        (WriterContext *wctx, const char *, const char *);
+    void (*show_tags)           (WriterContext *wctx, AVDictionary *dict);
+} Writer;
+
+struct WriterContext {
+    const AVClass *class;           ///< class of the writer
+    const Writer *writer;           ///< the Writer of which this is an instance
+    char *name;                     ///< name of this writer instance
+    void *priv;                     ///< private data for use by the filter
+    unsigned int nb_item;           ///< number of the item printed in the given section, starting at 0
+    unsigned int nb_section;        ///< number of the section printed in the given section sequence, starting at 0
+    unsigned int nb_chapter;        ///< number of the chapter, starting at 0
 };
 
-
-/* JSON output */
-
-static void json_print_header(const char *section)
+static void writer_close(WriterContext **wctx)
 {
-    printf("{\n");
+    if (*wctx && (*wctx)->writer->uninit)
+        (*wctx)->writer->uninit(*wctx);
+
+    av_freep(&((*wctx)->priv));
+    av_freep(wctx);
 }
 
-static char *json_escape_str(const char *s)
+static int writer_open(WriterContext **wctx, const Writer *writer,
+                       const char *args, void *opaque)
 {
-    static const char json_escape[] = {'"', '\\', '\b', '\f', '\n', '\r', '\t', 0};
-    static const char json_subst[]  = {'"', '\\',  'b',  'f',  'n',  'r',  't', 0};
-    char *ret, *p;
-    int i, len = 0;
+    int ret = 0;
 
-    // compute the length of the escaped string
-    for (i = 0; s[i]; i++) {
-        if (strchr(json_escape, s[i]))     len += 2; // simple escape
-        else if ((unsigned char)s[i] < 32) len += 6; // handle non-printable chars
-        else                               len += 1; // char copy
+    if (!(*wctx = av_malloc(sizeof(WriterContext)))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
 
-    p = ret = av_malloc(len + 1);
-    if (!p)
-        return NULL;
-    for (i = 0; s[i]; i++) {
-        char *q = strchr(json_escape, s[i]);
-        if (q) {
-            *p++ = '\\';
-            *p++ = json_subst[q - json_escape];
-        } else if ((unsigned char)s[i] < 32) {
-            snprintf(p, 7, "\\u00%02x", s[i] & 0xff);
-            p += 6;
-        } else {
-            *p++ = s[i];
-        }
+    if (!((*wctx)->priv = av_mallocz(writer->priv_size))) {
+        ret = AVERROR(ENOMEM);
+        goto fail;
     }
-    *p = 0;
+
+    (*wctx)->writer = writer;
+    if ((*wctx)->writer->init)
+        ret = (*wctx)->writer->init(*wctx, args, opaque);
+    if (ret < 0)
+        goto fail;
+
+    return 0;
+
+fail:
+    writer_close(wctx);
     return ret;
 }
 
-static void json_print_str(const char *key, const char *value)
+static inline void writer_print_header(WriterContext *wctx)
 {
-    char *key_esc   = json_escape_str(key);
-    char *value_esc = json_escape_str(value);
-    printf("    \"%s\": \"%s\"",
-           key_esc   ? key_esc   : "",
-           value_esc ? value_esc : "");
-    av_free(key_esc);
-    av_free(value_esc);
+    if (wctx->writer->print_header)
+        wctx->writer->print_header(wctx);
+    wctx->nb_chapter = 0;
 }
 
-static void json_print_int(const char *key, int value)
+static inline void writer_print_footer(WriterContext *wctx)
 {
-    char *key_esc = json_escape_str(key);
-    printf("    \"%s\": %d", key_esc ? key_esc : "", value);
-    av_free(key_esc);
+    if (wctx->writer->print_footer)
+        wctx->writer->print_footer(wctx);
 }
 
-static void json_print_footer(const char *section)
+static inline void writer_print_chapter_header(WriterContext *wctx,
+                                               const char *header)
 {
-    printf("\n  }");
+    if (wctx->writer->print_chapter_header)
+        wctx->writer->print_chapter_header(wctx, header);
+    wctx->nb_section = 0;
 }
 
-static void json_print_section_start(const char *section, int multiple_entries)
+static inline void writer_print_chapter_footer(WriterContext *wctx,
+                                               const char *footer)
 {
-    char *section_esc = json_escape_str(section);
-    printf("\n  \"%s\":%s", section_esc ? section_esc : "",
-           multiple_entries ? " [" : " ");
-    av_free(section_esc);
+    if (wctx->writer->print_chapter_footer)
+        wctx->writer->print_chapter_footer(wctx, footer);
+    wctx->nb_chapter++;
 }
 
-static void json_print_section_end(const char *section, int multiple_entries)
+static inline void writer_print_section_header(WriterContext *wctx,
+                                               const char *header)
 {
-    if (multiple_entries)
-        printf("]");
+    if (wctx->writer->print_section_header)
+        wctx->writer->print_section_header(wctx, header);
+    wctx->nb_item = 0;
 }
 
-
-/* Default output */
-
-static void default_print_header(const char *section)
+static inline void writer_print_section_footer(WriterContext *wctx,
+                                               const char *footer)
 {
-    printf("[%s]\n", section);
+    if (wctx->writer->print_section_footer)
+        wctx->writer->print_section_footer(wctx, footer);
+    wctx->nb_section++;
 }
 
-static void default_print_str(const char *key, const char *value)
+static inline void writer_print_integer(WriterContext *wctx,
+                                        const char *key, int val)
 {
-    printf("%s=%s", key, value);
+    wctx->writer->print_integer(wctx, key, val);
+    wctx->nb_item++;
 }
 
-static void default_print_int(const char *key, int value)
+static inline void writer_print_string(WriterContext *wctx,
+                                       const char *key, const char *val)
 {
-    printf("%s=%d", key, value);
+    wctx->writer->print_string(wctx, key, val);
+    wctx->nb_item++;
 }
 
-static void default_print_footer(const char *section)
+static inline void writer_show_tags(WriterContext *wctx, AVDictionary *dict)
 {
-    printf("\n[/%s]", section);
+    wctx->writer->show_tags(wctx, dict);
 }
 
+#define MAX_REGISTERED_WRITERS_NB 64
+
+static Writer *registered_writers[MAX_REGISTERED_WRITERS_NB + 1];
+
+static int writer_register(Writer *writer)
+{
+    static int next_registered_writer_idx = 0;
+
+    if (next_registered_writer_idx == MAX_REGISTERED_WRITERS_NB)
+        return AVERROR(ENOMEM);
+
+    registered_writers[next_registered_writer_idx++] = writer;
+    return 0;
+}
+
+static Writer *writer_get_by_name(const char *name)
+{
+    int i;
+
+    for (i = 0; registered_writers[i]; i++)
+        if (!strcmp(registered_writers[i]->name, name))
+            return registered_writers[i];
+
+    return NULL;
+}
 
 /* Print helpers */
 
@@ -278,37 +320,237 @@ fail:
     return NULL;
 }
 
-#define print_fmt0(k, f, ...) do {             \
+/* WRITERS */
+
+/* Default output */
+
+static void default_print_footer(WriterContext *wctx)
+{
+    printf("\n");
+}
+
+static void default_print_chapter_header(WriterContext *wctx, const char *chapter)
+{
+    if (wctx->nb_chapter)
+        printf("\n");
+}
+
+static void default_print_section_header(WriterContext *wctx, const char *section)
+{
+    if (wctx->nb_section)
+        printf("\n");
+    printf("[%s]\n", section);
+}
+
+static void default_print_section_footer(WriterContext *wctx, const char *section)
+{
+    printf("[/%s]", section);
+}
+
+static void default_print_str(WriterContext *wctx, const char *key, const char *value)
+{
+    printf("%s=%s\n", key, value);
+}
+
+static void default_print_int(WriterContext *wctx, const char *key, int value)
+{
+    printf("%s=%d\n", key, value);
+}
+
+static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
+{
+    AVDictionaryEntry *tag = NULL;
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        printf("TAG:");
+        writer_print_string(wctx, tag->key, tag->value);
+    }
+}
+
+static Writer default_writer = {
+    .name                  = "default",
+    .print_footer          = default_print_footer,
+    .print_chapter_header  = default_print_chapter_header,
+    .print_section_header  = default_print_section_header,
+    .print_section_footer  = default_print_section_footer,
+    .print_integer         = default_print_int,
+    .print_string          = default_print_str,
+    .show_tags             = default_show_tags
+};
+
+/* JSON output */
+
+typedef struct {
+    int multiple_entries; ///< tells if the given chapter requires multiple entries
+} JSONContext;
+
+static char *json_escape_str(const char *s)
+{
+    static const char json_escape[] = {'"', '\\', '\b', '\f', '\n', '\r', '\t', 0};
+    static const char json_subst[]  = {'"', '\\',  'b',  'f',  'n',  'r',  't', 0};
+    char *ret, *p;
+    int i, len = 0;
+
+    // compute the length of the escaped string
+    for (i = 0; s[i]; i++) {
+        if (strchr(json_escape, s[i]))     len += 2; // simple escape
+        else if ((unsigned char)s[i] < 32) len += 6; // handle non-printable chars
+        else                               len += 1; // char copy
+    }
+
+    p = ret = av_malloc(len + 1);
+    if (!p)
+        return NULL;
+    for (i = 0; s[i]; i++) {
+        char *q = strchr(json_escape, s[i]);
+        if (q) {
+            *p++ = '\\';
+            *p++ = json_subst[q - json_escape];
+        } else if ((unsigned char)s[i] < 32) {
+            snprintf(p, 7, "\\u00%02x", s[i] & 0xff);
+            p += 6;
+        } else {
+            *p++ = s[i];
+        }
+    }
+    *p = 0;
+    return ret;
+}
+
+static void json_print_header(WriterContext *wctx)
+{
+    printf("{");
+}
+
+static void json_print_footer(WriterContext *wctx)
+{
+    printf("\n}\n");
+}
+
+static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
+{
+    JSONContext *json = wctx->priv;
+    char *chapter_esc;
+
+    if (wctx->nb_chapter)
+        printf(",");
+    json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "streams");
+    chapter_esc = json_escape_str(chapter);
+    printf("\n  \"%s\":%s", chapter_esc ? chapter_esc : "",
+           json->multiple_entries ? " [" : " ");
+    av_free(chapter_esc);
+}
+
+static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
+{
+    JSONContext *json = wctx->priv;
+
+    if (json->multiple_entries)
+        printf("]");
+}
+
+static void json_print_section_header(WriterContext *wctx, const char *section)
+{
+    if (wctx->nb_section) printf(",");
+    printf("{\n");
+}
+
+static void json_print_section_footer(WriterContext *wctx, const char *section)
+{
+    printf("\n  }");
+}
+
+static inline void json_print_item_str(WriterContext *wctx,
+                                       const char *key, const char *value,
+                                       const char *indent)
+{
+    char *key_esc = json_escape_str(key);
+    char *value_esc = json_escape_str(value);
+
+    printf("%s\"%s\": \"%s\"", indent,
+           key_esc   ? key_esc   : "",
+           value_esc ? value_esc : "");
+    av_free(key_esc);
+    av_free(value_esc);
+}
+
+#define INDENT "    "
+
+static void json_print_str(WriterContext *wctx, const char *key, const char *value)
+{
+    if (wctx->nb_item) printf(",\n");
+    json_print_item_str(wctx, key, value, INDENT);
+}
+
+static void json_print_int(WriterContext *wctx, const char *key, int value)
+{
+    char *key_esc = json_escape_str(key);
+
+    if (wctx->nb_item) printf(",\n");
+    printf(INDENT "\"%s\": %d", key_esc ? key_esc : "", value);
+    av_free(key_esc);
+}
+
+static void json_show_tags(WriterContext *wctx, AVDictionary *dict)
+{
+    AVDictionaryEntry *tag = NULL;
+    int is_first = 1;
+    if (!dict)
+        return;
+    printf(",\n" INDENT "\"tags\": {\n");
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        if (is_first) is_first = 0;
+        else          printf(",\n");
+        json_print_item_str(wctx, tag->key, tag->value, INDENT INDENT);
+    }
+    printf("\n    }");
+}
+
+static Writer json_writer = {
+    .name         = "json",
+    .priv_size    = sizeof(JSONContext),
+
+    .print_header         = json_print_header,
+    .print_footer         = json_print_footer,
+    .print_chapter_header = json_print_chapter_header,
+    .print_chapter_footer = json_print_chapter_footer,
+    .print_section_header = json_print_section_header,
+    .print_section_footer = json_print_section_footer,
+    .print_integer        = json_print_int,
+    .print_string         = json_print_str,
+    .show_tags            = json_show_tags,
+};
+
+static void writer_register_all(void)
+{
+    static int initialized;
+
+    if (initialized)
+        return;
+    initialized = 1;
+
+    writer_register(&default_writer);
+    writer_register(&json_writer);
+}
+
+#define print_fmt(k, f, ...) do {              \
     if (fast_asprintf(&pbuf, f, __VA_ARGS__))  \
-        w->print_string(k, pbuf.s);            \
-} while (0)
-#define print_fmt( k, f, ...) do {     \
-    if (w->item_sep)                   \
-        printf("%s", w->item_sep);     \
-    print_fmt0(k, f, __VA_ARGS__);     \
+        writer_print_string(w, k, pbuf.s);     \
 } while (0)
 
-#define print_int0(k, v) w->print_integer(k, v)
-#define print_int( k, v) do {      \
-    if (w->item_sep)               \
-        printf("%s", w->item_sep); \
-    print_int0(k, v);              \
-} while (0)
+#define print_int(k, v)         writer_print_integer(w, k, v)
+#define print_str(k, v)         writer_print_string(w, k, v)
+#define print_section_header(s) writer_print_section_header(w, s)
+#define print_section_footer(s) writer_print_section_footer(w, s)
+#define show_tags(metadata)     writer_show_tags(w, metadata)
 
-#define print_str0(k, v) print_fmt0(k, "%s", v)
-#define print_str( k, v) print_fmt (k, "%s", v)
-
-
-static void show_packet(struct writer *w, AVFormatContext *fmt_ctx, AVPacket *pkt, int packet_idx)
+static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pkt, int packet_idx)
 {
     char val_str[128];
     AVStream *st = fmt_ctx->streams[pkt->stream_index];
     struct print_buf pbuf = {.s = NULL};
 
-    if (packet_idx)
-        printf("%s", w->items_sep);
-    w->print_header("PACKET");
-    print_str0("codec_type",      av_x_if_null(av_get_media_type_string(st->codec->codec_type), "unknown"));
+    print_section_header("PACKET");
+    print_str("codec_type",       av_x_if_null(av_get_media_type_string(st->codec->codec_type), "unknown"));
     print_int("stream_index",     pkt->stream_index);
     print_str("pts",              ts_value_string  (val_str, sizeof(val_str), pkt->pts));
     print_str("pts_time",         time_value_string(val_str, sizeof(val_str), pkt->pts, &st->time_base));
@@ -319,12 +561,13 @@ static void show_packet(struct writer *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_str("size",             value_string     (val_str, sizeof(val_str), pkt->size, unit_byte_str));
     print_fmt("pos",   "%"PRId64, pkt->pos);
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
-    w->print_footer("PACKET");
+    print_section_footer("PACKET");
+
     av_free(pbuf.s);
     fflush(stdout);
 }
 
-static void show_packets(struct writer *w, AVFormatContext *fmt_ctx)
+static void show_packets(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     AVPacket pkt;
     int i = 0;
@@ -335,39 +578,7 @@ static void show_packets(struct writer *w, AVFormatContext *fmt_ctx)
         show_packet(w, fmt_ctx, &pkt, i++);
 }
 
-static void json_show_tags(struct writer *w, AVDictionary *dict)
-{
-    AVDictionaryEntry *tag = NULL;
-    struct print_buf pbuf = {.s = NULL};
-    int first = 1;
-
-    if (!dict)
-        return;
-    printf(",\n    \"tags\": {\n");
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        if (first) {
-            print_str0(tag->key, tag->value);
-            first = 0;
-        } else {
-            print_str(tag->key, tag->value);
-        }
-    }
-    printf("\n    }");
-    av_free(pbuf.s);
-}
-
-static void default_show_tags(struct writer *w, AVDictionary *dict)
-{
-    AVDictionaryEntry *tag = NULL;
-    struct print_buf pbuf = {.s = NULL};
-    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
-        printf("\nTAG:");
-        print_str0(tag->key, tag->value);
-    }
-    av_free(pbuf.s);
-}
-
-static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_idx)
+static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_idx)
 {
     AVStream *stream = fmt_ctx->streams[stream_idx];
     AVCodecContext *dec_ctx;
@@ -376,11 +587,9 @@ static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_i
     AVRational display_aspect_ratio;
     struct print_buf pbuf = {.s = NULL};
 
-    if (stream_idx)
-        printf("%s", w->items_sep);
-    w->print_header("STREAM");
+    print_section_header("STREAM");
 
-    print_int0("index", stream->index);
+    print_int("index", stream->index);
 
     if ((dec_ctx = stream->codec)) {
         if ((dec = dec_ctx->codec)) {
@@ -439,27 +648,27 @@ static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_i
     if (stream->nb_frames)
         print_fmt("nb_frames", "%"PRId64, stream->nb_frames);
 
-    w->show_tags(w, stream->metadata);
+    show_tags(stream->metadata);
 
-    w->print_footer("STREAM");
+    print_section_footer("STREAM");
     av_free(pbuf.s);
     fflush(stdout);
 }
 
-static void show_streams(struct writer *w, AVFormatContext *fmt_ctx)
+static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     int i;
     for (i = 0; i < fmt_ctx->nb_streams; i++)
         show_stream(w, fmt_ctx, i);
 }
 
-static void show_format(struct writer *w, AVFormatContext *fmt_ctx)
+static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
     struct print_buf pbuf = {.s = NULL};
 
-    w->print_header("FORMAT");
-    print_str0("filename",        fmt_ctx->filename);
+    print_section_header("FORMAT");
+    print_str("filename",         fmt_ctx->filename);
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_str("format_name",      fmt_ctx->iformat->name);
     print_str("format_long_name", fmt_ctx->iformat->long_name);
@@ -467,8 +676,8 @@ static void show_format(struct writer *w, AVFormatContext *fmt_ctx)
     print_str("duration",         time_value_string(val_str, sizeof(val_str), fmt_ctx->duration,   &AV_TIME_BASE_Q));
     print_str("size",             value_string(val_str, sizeof(val_str), fmt_ctx->file_size, unit_byte_str));
     print_str("bit_rate",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,  unit_bit_per_second_str));
-    w->show_tags(w, fmt_ctx->metadata);
-    w->print_footer("FORMAT");
+    show_tags(fmt_ctx->metadata);
+    print_section_footer("FORMAT");
     av_free(pbuf.s);
     fflush(stdout);
 }
@@ -515,83 +724,46 @@ static int open_input_file(AVFormatContext **fmt_ctx_ptr, const char *filename)
     return 0;
 }
 
-#define WRITER_FUNC(func)                   \
-    .print_header  = func ## _print_header, \
-    .print_footer  = func ## _print_footer, \
-    .print_integer = func ## _print_int,    \
-    .print_string  = func ## _print_str,    \
-    .show_tags     = func ## _show_tags
-
-static struct writer writers[] = {{
-        .name         = "default",
-        .item_sep     = "\n",
-        .items_sep    = "\n",
-        .section_sep  = "\n",
-        .footer       = "\n",
-        WRITER_FUNC(default),
-    },{
-        .name         = "json",
-        .header       = "{",
-        .item_sep     = ",\n",
-        .items_sep    = ",",
-        .section_sep  = ",",
-        .footer       = "\n}\n",
-        .print_section_start = json_print_section_start,
-        .print_section_end   = json_print_section_end,
-        WRITER_FUNC(json),
-    }
-};
-
-static int get_writer(const char *name)
-{
-    int i;
-    if (!name)
-        return 0;
-    for (i = 0; i < FF_ARRAY_ELEMS(writers); i++)
-        if (!strcmp(writers[i].name, name))
-            return i;
-    return -1;
-}
-
-#define SECTION_PRINT(name, multiple_entries, left) do {      \
-    if (do_show_ ## name) {                                   \
-        if (w->print_section_start)                           \
-            w->print_section_start(#name, multiple_entries);  \
-        show_ ## name (w, fmt_ctx);                           \
-        if (w->print_section_end)                             \
-            w->print_section_end(#name, multiple_entries);    \
-        if (left)                                             \
-            printf("%s", w->section_sep);                     \
-    }                                                         \
+#define PRINT_CHAPTER(name) do {                                        \
+    if (do_show_ ## name) {                                             \
+        writer_print_chapter_header(wctx, #name);                       \
+        show_ ## name (wctx, fmt_ctx);                                  \
+        writer_print_chapter_footer(wctx, #name);                       \
+    }                                                                   \
 } while (0)
 
 static int probe_file(const char *filename)
 {
     AVFormatContext *fmt_ctx;
-    int ret, writer_id;
-    struct writer *w;
+    int ret;
+    Writer *w;
+    WriterContext *wctx;
 
-    writer_id = get_writer(print_format);
-    if (writer_id < 0) {
+    writer_register_all();
+
+    if (!print_format)
+        print_format = av_strdup("default");
+    w = writer_get_by_name(print_format);
+    if (!w) {
         fprintf(stderr, "Invalid output format '%s'\n", print_format);
         return AVERROR(EINVAL);
     }
-    w = &writers[writer_id];
+
+    if ((ret = writer_open(&wctx, w, NULL, NULL)) < 0)
+        return ret;
 
     if ((ret = open_input_file(&fmt_ctx, filename)))
         return ret;
 
-    if (w->header)
-        printf("%s", w->header);
-
-    SECTION_PRINT(packets, 1, do_show_streams || do_show_format);
-    SECTION_PRINT(streams, 1, do_show_format);
-    SECTION_PRINT(format,  0, 0);
-
-    if (w->footer)
-        printf("%s", w->footer);
+    writer_print_header(wctx);
+    PRINT_CHAPTER(packets);
+    PRINT_CHAPTER(streams);
+    PRINT_CHAPTER(format);
+    writer_print_footer(wctx);
 
     av_close_input_file(fmt_ctx);
+    writer_close(&wctx);
+
     return 0;
 }
 
