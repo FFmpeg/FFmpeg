@@ -1991,6 +1991,7 @@ static int transcode_init(OutputFile *output_files,
                 codec->height = icodec->height;
                 break;
             case AVMEDIA_TYPE_DATA:
+            case AVMEDIA_TYPE_ATTACHMENT:
                 break;
             default:
                 abort();
@@ -3160,6 +3161,13 @@ static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc)
     return ost;
 }
 
+static OutputStream *new_attachment_stream(OptionsContext *o, AVFormatContext *oc)
+{
+    OutputStream *ost = new_output_stream(o, oc, AVMEDIA_TYPE_ATTACHMENT);
+    ost->st->stream_copy = 1;
+    return ost;
+}
+
 static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc)
 {
     AVStream *st;
@@ -3375,6 +3383,7 @@ static void opt_output_file(void *optctx, const char *filename)
             case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(o, oc);    break;
             case AVMEDIA_TYPE_SUBTITLE: ost = new_subtitle_stream(o, oc); break;
             case AVMEDIA_TYPE_DATA:     ost = new_data_stream(o, oc);     break;
+            case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc); break;
             default:
                 av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d.%d - unsupported type.\n",
                        map->file_index, map->stream_index);
