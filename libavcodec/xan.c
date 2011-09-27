@@ -220,6 +220,10 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s,
     int width = s->avctx->width;
     unsigned char *palette_plane, *prev_palette_plane;
 
+    if ( y + motion_y < 0 || y + motion_y >= s->avctx->height ||
+         x + motion_x < 0 || x + motion_x >= s->avctx->width)
+        return;
+
     palette_plane = s->current_frame.data[0];
     prev_palette_plane = s->last_frame.data[0];
     if (!prev_palette_plane)
@@ -230,7 +234,9 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s,
     curframe_x = x;
     prevframe_index = (y + motion_y) * stride + x + motion_x;
     prevframe_x = x + motion_x;
-    while(pixel_count && (curframe_index < s->frame_size)) {
+    while(pixel_count &&
+          curframe_index  < s->frame_size &&
+          prevframe_index < s->frame_size) {
         int count = FFMIN3(pixel_count, width - curframe_x, width - prevframe_x);
 
         memcpy(palette_plane + curframe_index, prev_palette_plane + prevframe_index, count);
@@ -264,6 +270,7 @@ static int xan_wc3_decode_frame(XanContext *s) {
     int x, y;
 
     unsigned char *opcode_buffer = s->buffer1;
+    unsigned char *opcode_buffer_end = s->buffer1 + s->buffer1_size;
     int opcode_buffer_size = s->buffer1_size;
     const unsigned char *imagedata_buffer = s->buffer2;
 
@@ -272,7 +279,7 @@ static int xan_wc3_decode_frame(XanContext *s) {
     const unsigned char *size_segment;
     const unsigned char *vector_segment;
     const unsigned char *imagedata_segment;
-    int huffman_offset, size_offset, vector_offset, imagedata_offset;
+    int huffman_offset, size_offset, vector_offset, imagedata_offset, imagedata_size;
 
     if (s->size < 8)
         return AVERROR_INVALIDDATA;
@@ -297,14 +304,17 @@ static int xan_wc3_decode_frame(XanContext *s) {
                            huffman_segment, s->size - huffman_offset) < 0)
         return AVERROR_INVALIDDATA;
 
-    if (imagedata_segment[0] == 2)
+    if (imagedata_segment[0] == 2) {
         xan_unpack(s->buffer2, &imagedata_segment[1], s->buffer2_size);
-    else
+        imagedata_size = s->buffer2_size;
+    } else {
+        imagedata_size = s->size - imagedata_offset - 1;
         imagedata_buffer = &imagedata_segment[1];
+    }
 
     /* use the decoded data segments to build the frame */
     x = y = 0;
-    while (total_pixels) {
+    while (total_pixels && opcode_buffer < opcode_buffer_end) {
 
         opcode = *opcode_buffer++;
         size = 0;
@@ -353,6 +363,8 @@ static int xan_wc3_decode_frame(XanContext *s) {
             size_segment += 3;
             break;
         }
+        if (size > total_pixels)
+            break;
 
         if (opcode < 12) {
             flag ^= 1;
@@ -361,8 +373,11 @@ static int xan_wc3_decode_frame(XanContext *s) {
                 xan_wc3_copy_pixel_run(s, x, y, size, 0, 0);
             } else {
                 /* output a run of pixels from imagedata_buffer */
+                if (imagedata_size < size)
+                    break;
                 xan_wc3_output_pixel_run(s, imagedata_buffer, x, y, size);
                 imagedata_buffer += size;
+                imagedata_size -= size;
             }
         } else {
             /* run-based motion compensation from last frame */
