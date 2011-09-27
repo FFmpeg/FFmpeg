@@ -2157,8 +2157,7 @@ static int transcode_init(OutputFile *output_files,
                 break;
             }
             /* two pass mode */
-            if (ost->encoding_needed &&
-                (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
+            if ((codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
                 char logfilename[1024];
                 FILE *f;
 
