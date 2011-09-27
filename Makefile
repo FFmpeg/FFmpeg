@@ -252,8 +252,11 @@ FATE_SEEK    = $(SEEK_TESTS:seek_%=fate-seek-%)
 FATE = $(FATE_ACODEC)                                                   \
        $(FATE_VCODEC)                                                   \
        $(FATE_LAVF)                                                     \
-       $(FATE_LAVFI)                                                    \
        $(FATE_SEEK)                                                     \
+
+FATE-$(CONFIG_AVFILTER) += $(FATE_LAVFI)
+
+FATE += $(FATE-yes)
 
 $(filter-out %-aref,$(FATE_ACODEC)): $(AREF)
 $(filter-out %-vref,$(FATE_VCODEC)): $(VREF)
@@ -276,7 +279,7 @@ fate-lavfi:  $(FATE_LAVFI)
 fate-seek:   $(FATE_SEEK)
 
 ifdef SAMPLES
-FATE += $(FATE_TESTS)
+FATE += $(FATE_TESTS) $(FATE_TESTS-yes)
 fate-rsync:
 	rsync -vaLW rsync://fate-suite.libav.org/fate-suite/ $(SAMPLES)
 else

@@ -1504,7 +1504,7 @@ test_deps(){
         dep=${v%=*}
         tests=${v#*=}
         for name in ${tests}; do
-            eval ${name}_test_deps="'${dep}$suf1 ${dep}$suf2'"
+            append ${name}_test_deps ${dep}$suf1 ${dep}$suf2
         done
     done
 }
@@ -1513,6 +1513,9 @@ set_ne_test_deps(){
     eval ${1}_be_test_deps="bigendian"
     eval ${1}_le_test_deps="!bigendian"
 }
+
+mxf_d10_test_deps="avfilter"
+seek_lavf_mxf_d10_test_deps="mxf_d10_test"
 
 test_deps _encoder _decoder                                             \
     adpcm_g726=g726                                                     \
