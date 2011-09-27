@@ -888,7 +888,7 @@ static int encode_tile(J2kEncoderContext *s, J2kTile *tile, int tileno)
     return 0;
 }
 
-void cleanup(J2kEncoderContext *s)
+static void cleanup(J2kEncoderContext *s)
 {
     int tileno, compno;
     J2kCodingStyle *codsty = &s->codsty;
