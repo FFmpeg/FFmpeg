@@ -136,7 +136,7 @@ static uint8_t *audio_buf;
 static uint8_t *audio_out;
 static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
 
-static short *samples;
+static void *samples;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "av2pass"
 
