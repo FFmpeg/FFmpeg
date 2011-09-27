@@ -543,6 +543,8 @@ static const StreamType HDMV_types[] = {
     { 0x84, AVMEDIA_TYPE_AUDIO, CODEC_ID_EAC3 },
     { 0x85, AVMEDIA_TYPE_AUDIO, CODEC_ID_DTS }, /* DTS HD */
     { 0x86, AVMEDIA_TYPE_AUDIO, CODEC_ID_DTS }, /* DTS HD MASTER*/
+    { 0xa1, AVMEDIA_TYPE_AUDIO, CODEC_ID_EAC3 }, /* E-AC3 Secondary Audio */
+    { 0xa2, AVMEDIA_TYPE_AUDIO, CODEC_ID_DTS },  /* DTS Express Secondary Audio */
     { 0x90, AVMEDIA_TYPE_SUBTITLE, CODEC_ID_HDMV_PGS_SUBTITLE },
     { 0 },
 };
