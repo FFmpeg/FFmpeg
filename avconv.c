@@ -1600,7 +1600,6 @@ static int output_packet(InputStream *ist, int ist_index,
                     (ist->st->codec->sample_rate * ist->st->codec->channels);
                 break;}
             case AVMEDIA_TYPE_VIDEO:
-                    decoded_data_size = (ist->st->codec->width * ist->st->codec->height * 3) / 2;
                     if (!(decoded_frame = avcodec_alloc_frame()))
                         return AVERROR(ENOMEM);
                     avpkt.pts = pkt_pts;
