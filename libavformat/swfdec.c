@@ -28,7 +28,7 @@ static int get_swf_tag(AVIOContext *pb, int *len_ptr)
     int tag, len;
 
     if (url_feof(pb))
-        return -1;
+        return AVERROR_EOF;
 
     tag = avio_rl16(pb);
     len = tag & 0x3f;
@@ -90,7 +90,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
         uint64_t pos = avio_tell(pb);
         tag = get_swf_tag(pb, &len);
         if (tag < 0)
-            return AVERROR(EIO);
+            return tag;
         if (tag == TAG_VIDEOSTREAM) {
             int ch_id = avio_rl16(pb);
             len -= 2;
