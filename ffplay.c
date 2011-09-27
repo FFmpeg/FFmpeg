@@ -258,6 +258,9 @@ static int exit_on_mousedown;
 static int loop=1;
 static int framedrop=-1;
 static enum ShowMode show_mode = SHOW_MODE_NONE;
+static const char *audio_codec_name;
+static const char *subtitle_codec_name;
+static const char *video_codec_name;
 
 static int rdftspeed=20;
 #if CONFIG_AVFILTER
@@ -2167,6 +2170,11 @@ static int stream_component_open(VideoState *is, int stream_index)
     }
 
     codec = avcodec_find_decoder(avctx->codec_id);
+    switch(avctx->codec_type){
+        case AVMEDIA_TYPE_AUDIO   : codec= avcodec_find_decoder_by_name(   audio_codec_name); break;
+        case AVMEDIA_TYPE_SUBTITLE: codec= avcodec_find_decoder_by_name(subtitle_codec_name); break;
+        case AVMEDIA_TYPE_VIDEO   : codec= avcodec_find_decoder_by_name(   video_codec_name); break;
+    }
     if (!codec)
         return -1;
 
@@ -2923,6 +2931,16 @@ static void opt_input_file(void *optctx, const char *filename)
     input_filename = filename;
 }
 
+static int opt_codec(void *o, const char *opt, const char *arg)
+{
+    switch(opt[strlen(opt)-1]){
+    case 'a' :    audio_codec_name = arg; break;
+    case 's' : subtitle_codec_name = arg; break;
+    case 'v' :    video_codec_name = arg; break;
+    }
+    return 0;
+}
+
 static int dummy;
 
 static const OptionDef options[] = {
@@ -2968,6 +2986,7 @@ static const OptionDef options[] = {
     { "showmode", HAS_ARG, {(void*)opt_show_mode}, "select show mode (0 = video, 1 = waves, 2 = RDFT)", "mode" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { "i", OPT_BOOL, {(void *)&dummy}, "read specified file", "input_file"},
+    { "codec", HAS_ARG | OPT_FUNC2, {(void*)opt_codec}, "force decoder", "decoder" },
     { NULL, },
 };
 
