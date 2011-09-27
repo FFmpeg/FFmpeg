@@ -279,10 +279,15 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     sample_size = av_get_bits_per_sample(avctx->codec_id)/8;
 
     /* av_get_bits_per_sample returns 0 for CODEC_ID_PCM_DVD */
-    if (CODEC_ID_PCM_DVD == avctx->codec_id)
+    if (CODEC_ID_PCM_DVD == avctx->codec_id) {
+        if (avctx->bits_per_coded_sample != 20 &&
+            avctx->bits_per_coded_sample != 24) {
+            av_log(avctx, AV_LOG_ERROR, "PCM DVD unsupported sample depth\n");
+            return AVERROR(EINVAL);
+        }
         /* 2 samples are interleaved per block in PCM_DVD */
         sample_size = avctx->bits_per_coded_sample * 2 / 8;
-    else if (avctx->codec_id == CODEC_ID_PCM_LXF)
+    } else if (avctx->codec_id == CODEC_ID_PCM_LXF)
         /* we process 40-bit blocks per channel for LXF */
         sample_size = 5;
 
@@ -433,9 +438,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
                 src = src8;
             }
             break;
-        default:
-            av_log(avctx, AV_LOG_ERROR, "PCM DVD unsupported sample depth\n");
-            return -1;
         }
         samples = (uint8_t *) dst_int32_t;
         break;
