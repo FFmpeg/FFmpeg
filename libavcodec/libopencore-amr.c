@@ -274,10 +274,6 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     int packet_size;
     static const uint8_t block_size[16] = {18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
 
-    if (!buf_size)
-        /* nothing to do */
-        return 0;
-
     mode        = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[mode];
 
