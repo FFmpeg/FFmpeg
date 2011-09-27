@@ -213,6 +213,11 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
     PCMDecode *s = avctx->priv_data;
     int i;
 
+    if (avctx->channels <= 0 || avctx->channels > MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "PCM channels out of bounds\n");
+        return AVERROR(EINVAL);
+    }
+
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_ALAW:
         for(i=0;i<256;i++)
@@ -265,11 +270,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
 
     samples = data;
     src = buf;
-
-    if(avctx->channels <= 0 || avctx->channels > MAX_CHANNELS){
-        av_log(avctx, AV_LOG_ERROR, "PCM channels out of bounds\n");
-        return -1;
-    }
 
     sample_size = av_get_bits_per_sample(avctx->codec_id)/8;
 
