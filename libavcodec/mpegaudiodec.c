@@ -1486,7 +1486,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
             g->big_values = get_bits(&s->gb, 9);
             if(g->big_values > 288){
                 av_log(s->avctx, AV_LOG_ERROR, "big_values too big\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
 
             g->global_gain = get_bits(&s->gb, 8);
@@ -1504,7 +1504,7 @@ static int mp_decode_layer3(MPADecodeContext *s)
                 g->block_type = get_bits(&s->gb, 2);
                 if (g->block_type == 0){
                     av_log(s->avctx, AV_LOG_ERROR, "invalid block type\n");
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
                 g->switch_point = get_bits1(&s->gb);
                 for(i=0;i<2;i++)
@@ -1782,18 +1782,18 @@ static int decode_frame(AVCodecContext * avctx,
     OUT_INT *out_samples = data;
 
     if(buf_size < HEADER_SIZE)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     header = AV_RB32(buf);
     if(ff_mpa_check_header(header) < 0){
         av_log(avctx, AV_LOG_ERROR, "Header missing\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header) == 1) {
         /* free format: prepare to compute frame size */
         s->frame_size = -1;
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     /* update codec info */
     avctx->channels = s->nb_channels;
@@ -1803,12 +1803,12 @@ static int decode_frame(AVCodecContext * avctx,
     avctx->sub_id = s->layer;
 
     if(*data_size < 1152*avctx->channels*sizeof(OUT_INT))
-        return -1;
+        return AVERROR(EINVAL);
     *data_size = 0;
 
     if(s->frame_size<=0 || s->frame_size > buf_size){
         av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }else if(s->frame_size < buf_size){
         av_log(avctx, AV_LOG_ERROR, "incorrect frame size\n");
         buf_size= s->frame_size;
@@ -1954,13 +1954,13 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
 
     if ((avctx->extradata_size < 2) || (avctx->extradata == NULL)) {
         av_log(avctx, AV_LOG_ERROR, "Codec extradata missing or too short.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     avpriv_mpeg4audio_get_config(&cfg, avctx->extradata, avctx->extradata_size);
     if (!cfg.chan_config || cfg.chan_config > 7) {
         av_log(avctx, AV_LOG_ERROR, "Invalid channel config number.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->frames = mp3Frames[cfg.chan_config];
     s->coff = chan_offset[cfg.chan_config];
@@ -2050,7 +2050,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
     *data_size = 0;
     // Discard too short frames
     if (buf_size < HEADER_SIZE)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     // If only one decoder interleave is not needed
     outptr = s->frames == 1 ? out_samples : s->decoded_buf;
