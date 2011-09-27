@@ -701,9 +701,9 @@ static int decode_cblk(J2kDecoderContext *s, J2kCodingStyle *codsty, J2kT1Contex
     for (y = 0; y < height; y++)
         memset(t1->data[y], 0, width*sizeof(int));
 
-    ff_mqc_initdec(&t1->mqc, cblk->data);
     cblk->data[cblk->length] = 0xff;
     cblk->data[cblk->length+1] = 0xff;
+    ff_mqc_initdec(&t1->mqc, cblk->data);
 
     while(passno--){
         switch(pass_t){
