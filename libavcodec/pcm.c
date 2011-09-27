@@ -302,7 +302,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     }
 
     buf_size= FFMIN(buf_size, *data_size/2);
-    *data_size=0;
 
     n = buf_size/sample_size;
 
