@@ -74,9 +74,6 @@ typedef struct MPADecodeContext {
     DECLARE_ALIGNED(32, INTFLOAT, sb_samples)[MPA_MAX_CHANNELS][36][SBLIMIT];
     INTFLOAT mdct_buf[MPA_MAX_CHANNELS][SBLIMIT * 18]; /* previous samples, for layer 3 MDCT */
     GranuleDef granules[2][2]; /* Used in Layer 3 */
-#ifdef DEBUG
-    int frame_count;
-#endif
     int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
     int dither_state;
     int err_recognition;
@@ -1709,7 +1706,6 @@ static int mp_decode_frame(MPADecodeContext *s,
     if (s->error_protection)
         skip_bits(&s->gb, 16);
 
-    av_dlog(s->avctx, "frame %d:\n", s->frame_count);
     switch(s->layer) {
     case 1:
         s->avctx->frame_size = 384;
