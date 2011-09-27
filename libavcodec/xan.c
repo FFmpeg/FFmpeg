@@ -224,6 +224,8 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s,
 
     palette_plane = s->current_frame.data[0];
     prev_palette_plane = s->last_frame.data[0];
+    if (!prev_palette_plane)
+        prev_palette_plane = palette_plane;
     stride = s->current_frame.linesize[0];
     line_inc = stride - width;
     curframe_index = y * stride + x;
