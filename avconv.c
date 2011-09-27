@@ -2059,6 +2059,8 @@ static int transcode_init(OutputFile *output_files,
         } else {
             if (!ost->enc)
                 ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
+            ist->decoding_needed = 1;
+            ost->encoding_needed = 1;
             switch(codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 ost->fifo= av_fifo_alloc(1024);
@@ -2083,8 +2085,6 @@ static int transcode_init(OutputFile *output_files,
                     codec->channel_layout = 0;
                 ost->audio_resample = codec->sample_rate != icodec->sample_rate || audio_sync_method > 1;
                 icodec->request_channels = codec->channels;
-                ist->decoding_needed = 1;
-                ost->encoding_needed = 1;
                 ost->resample_sample_fmt  = icodec->sample_fmt;
                 ost->resample_sample_rate = icodec->sample_rate;
                 ost->resample_channels    = icodec->channels;
@@ -2134,8 +2134,6 @@ static int transcode_init(OutputFile *output_files,
                 ost->resample_height = icodec->height;
                 ost->resample_width  = icodec->width;
                 ost->resample_pix_fmt= icodec->pix_fmt;
-                ost->encoding_needed = 1;
-                ist->decoding_needed = 1;
 
                 if (!ost->frame_rate.num)
                     ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25,1};
@@ -2153,8 +2151,6 @@ static int transcode_init(OutputFile *output_files,
 #endif
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                ost->encoding_needed = 1;
-                ist->decoding_needed = 1;
                 break;
             default:
                 abort();
