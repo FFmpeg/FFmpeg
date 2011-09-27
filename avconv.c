@@ -1664,11 +1664,58 @@ static int output_packet(InputStream *ist, int ist_index,
         // preprocess audio (volume)
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (audio_volume != 256) {
+                switch (ist->st->codec->sample_fmt) {
+                case AV_SAMPLE_FMT_U8:
+                {
+                    uint8_t *volp = samples;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        int v = (((*volp - 128) * audio_volume + 128) >> 8) + 128;
+                        *volp++ = av_clip_uint8(v);
+                    }
+                    break;
+                }
+                case AV_SAMPLE_FMT_S16:
+                {
                 short *volp;
                 volp = samples;
                 for(i=0;i<(decoded_data_size / sizeof(short));i++) {
                     int v = ((*volp) * audio_volume + 128) >> 8;
                     *volp++ = av_clip_int16(v);
+                }
+                break;
+                }
+                case AV_SAMPLE_FMT_S32:
+                {
+                    int32_t *volp = samples;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        int64_t v = (((int64_t)*volp * audio_volume + 128) >> 8);
+                        *volp++ = av_clipl_int32(v);
+                    }
+                    break;
+                }
+                case AV_SAMPLE_FMT_FLT:
+                {
+                    float *volp = samples;
+                    float scale = audio_volume / 256.f;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        *volp++ *= scale;
+                    }
+                    break;
+                }
+                case AV_SAMPLE_FMT_DBL:
+                {
+                    double *volp = samples;
+                    double scale = audio_volume / 256.;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        *volp++ *= scale;
+                    }
+                    break;
+                }
+                default:
+                    av_log(NULL, AV_LOG_FATAL,
+                           "Audio volume adjustment on sample format %s is not supported.\n",
+                           av_get_sample_fmt_name(ist->st->codec->sample_fmt));
+                    exit_program(1);
                 }
             }
         }
