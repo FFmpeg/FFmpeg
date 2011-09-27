@@ -532,7 +532,7 @@ void ff_sdp_write_media(char *buff, int size, AVCodecContext *c, const char *des
     const char *type;
     int payload_type;
 
-    payload_type = ff_rtp_get_payload_type(c);
+    payload_type = ff_rtp_get_payload_type(fmt, c);
 
     switch (c->codec_type) {
         case AVMEDIA_TYPE_VIDEO   : type = "video"      ; break;

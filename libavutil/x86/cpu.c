@@ -133,6 +133,15 @@ int ff_get_cpu_flags_x86(void)
             rval & AV_CPU_FLAG_SSE2 && !(ecx & 0x00000040)) {
             rval |= AV_CPU_FLAG_SSE2SLOW;
         }
+
+        /* XOP and FMA4 use the AVX instruction coding scheme, so they can't be
+         * used unless the OS has AVX support. */
+        if (rval & AV_CPU_FLAG_AVX) {
+            if (ecx & 0x00000800)
+                rval |= AV_CPU_FLAG_XOP;
+            if (ecx & 0x00010000)
+                rval |= AV_CPU_FLAG_FMA4;
+        }
     }
 
     if (!strncmp(vendor.c, "GenuineIntel", 12)) {

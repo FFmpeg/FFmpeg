@@ -2122,14 +2122,14 @@ static int has_codec_parameters(AVCodecContext *avctx)
     switch (avctx->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
         val = avctx->sample_rate && avctx->channels && avctx->sample_fmt != AV_SAMPLE_FMT_NONE;
-        if(!avctx->frame_size &&
-           (avctx->codec_id == CODEC_ID_VORBIS ||
-            avctx->codec_id == CODEC_ID_AAC ||
-            avctx->codec_id == CODEC_ID_MP1 ||
-            avctx->codec_id == CODEC_ID_MP2 ||
-            avctx->codec_id == CODEC_ID_MP3 ||
-            avctx->codec_id == CODEC_ID_SPEEX ||
-            avctx->codec_id == CODEC_ID_CELT))
+        if (!avctx->frame_size &&
+            (avctx->codec_id == CODEC_ID_VORBIS ||
+             avctx->codec_id == CODEC_ID_AAC ||
+             avctx->codec_id == CODEC_ID_MP1 ||
+             avctx->codec_id == CODEC_ID_MP2 ||
+             avctx->codec_id == CODEC_ID_MP3 ||
+             avctx->codec_id == CODEC_ID_SPEEX ||
+             avctx->codec_id == CODEC_ID_CELT))
             return 0;
         break;
     case AVMEDIA_TYPE_VIDEO:

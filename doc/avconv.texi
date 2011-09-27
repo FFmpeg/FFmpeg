@@ -154,7 +154,8 @@ avconv -i INPUT -metadata:s:1 language=eng OUTPUT
 @end example
 
 @item -v @var{number} (@emph{global})
-Set the logging verbosity level.
+This option is deprecated and has no effect, use -loglevel
+to set verbosity level.
 
 @item -target @var{type} (@emph{output})
 Specify target file type ("vcd", "svcd", "dvd", "dv", "dv50", "pal-vcd",

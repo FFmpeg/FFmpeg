@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <libavutil/opt.h>
 #include "avformat.h"
 
 #include "rtp.h"
@@ -89,26 +90,31 @@ int ff_rtp_get_codec_info(AVCodecContext *codec, int payload_type)
     return -1;
 }
 
-int ff_rtp_get_payload_type(AVCodecContext *codec)
+int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec)
 {
-    int i, payload_type;
+    int i;
+    AVOutputFormat *ofmt = fmt ? fmt->oformat : NULL;
 
-    /* compute the payload type */
-    for (payload_type = -1, i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
+    /* Was the payload type already specified for the RTP muxer? */
+    if (ofmt && ofmt->priv_class) {
+        int payload_type = av_get_int(fmt->priv_data, "payload_type", NULL);
+        if (payload_type >= 0)
+            return payload_type;
+    }
+
+    /* static payload type */
+    for (i = 0; AVRtpPayloadTypes[i].pt >= 0; ++i)
         if (AVRtpPayloadTypes[i].codec_id == codec->codec_id) {
             if (codec->codec_id == CODEC_ID_H263)
                 continue;
             if (codec->codec_id == CODEC_ID_PCM_S16BE)
                 if (codec->channels != AVRtpPayloadTypes[i].audio_channels)
                     continue;
-            payload_type = AVRtpPayloadTypes[i].pt;
+            return AVRtpPayloadTypes[i].pt;
         }
 
     /* dynamic payload type */
-    if (payload_type < 0)
-        payload_type = RTP_PT_PRIVATE + (codec->codec_type == AVMEDIA_TYPE_AUDIO);
-
-    return payload_type;
+    return RTP_PT_PRIVATE + (codec->codec_type == AVMEDIA_TYPE_AUDIO);
 }
 
 const char *ff_rtp_enc_name(int payload_type)

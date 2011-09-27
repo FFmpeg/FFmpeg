@@ -91,7 +91,7 @@ double parse_number_or_die(const char *context, const char *numstr, int type, do
         error= "Expected int for %s but found %s\n";
     else
         return d;
-    fprintf(stderr, error, context, numstr, min, max);
+    av_log(NULL, AV_LOG_FATAL, error, context, numstr, min, max);
     exit_program(1);
     return 0;
 }
@@ -100,8 +100,8 @@ int64_t parse_time_or_die(const char *context, const char *timestr, int is_durat
 {
     int64_t us;
     if (av_parse_time(&us, timestr, is_duration) < 0) {
-        fprintf(stderr, "Invalid %s specification for %s: %s\n",
-                is_duration ? "duration" : "date", context, timestr);
+        av_log(NULL, AV_LOG_FATAL, "Invalid %s specification for %s: %s\n",
+               is_duration ? "duration" : "date", context, timestr);
         exit_program(1);
     }
     return us;
@@ -305,6 +305,41 @@ void parse_options(void *optctx, int argc, char **argv, const OptionDef *options
     }
 }
 
+/*
+ * Return index of option opt in argv or 0 if not found.
+ */
+static int locate_option(int argc, char **argv, const OptionDef *options, const char *optname)
+{
+    const OptionDef *po;
+    int i;
+
+    for (i = 1; i < argc; i++) {
+        const char *cur_opt = argv[i];
+
+        if (*cur_opt++ != '-')
+            continue;
+
+        po = find_option(options, cur_opt);
+        if (!po->name && cur_opt[0] == 'n' && cur_opt[1] == 'o')
+            po = find_option(options, cur_opt + 2);
+
+        if ((!po->name && !strcmp(cur_opt, optname)) ||
+             (po->name && !strcmp(optname, po->name)))
+            return i;
+
+        if (!po || po->flags & HAS_ARG)
+            i++;
+    }
+    return 0;
+}
+
+void parse_loglevel(int argc, char **argv, const OptionDef *options)
+{
+    int idx = locate_option(argc, argv, options, "loglevel");
+    if (idx && argv[idx + 1])
+        opt_loglevel("loglevel", argv[idx + 1]);
+}
+
 #define FLAGS(o) ((o)->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
 int opt_default(const char *opt, const char *arg)
 {
@@ -337,7 +372,7 @@ int opt_default(const char *opt, const char *arg)
 
     if (oc || of || os)
         return 0;
-    fprintf(stderr, "Unrecognized option '%s'\n", opt);
+    av_log(NULL, AV_LOG_ERROR, "Unrecognized option '%s'\n", opt);
     return AVERROR_OPTION_NOT_FOUND;
 }
 
@@ -366,10 +401,10 @@ int opt_loglevel(const char *opt, const char *arg)
 
     level = strtol(arg, &tail, 10);
     if (*tail) {
-        fprintf(stderr, "Invalid loglevel \"%s\". "
-                        "Possible levels are numbers or:\n", arg);
+        av_log(NULL, AV_LOG_FATAL, "Invalid loglevel \"%s\". "
+               "Possible levels are numbers or:\n", arg);
         for (i = 0; i < FF_ARRAY_ELEMS(log_levels); i++)
-            fprintf(stderr, "\"%s\"\n", log_levels[i].name);
+            av_log(NULL, AV_LOG_FATAL, "\"%s\"\n", log_levels[i].name);
         exit_program(1);
     }
     av_log_set_level(level);
@@ -384,7 +419,7 @@ int opt_timelimit(const char *opt, const char *arg)
     if (setrlimit(RLIMIT_CPU, &rl))
         perror("setrlimit");
 #else
-    fprintf(stderr, "Warning: -%s not implemented on this OS\n", opt);
+    av_log(NULL, AV_LOG_WARNING, "-%s not implemented on this OS\n", opt);
 #endif
     return 0;
 }
@@ -396,7 +431,7 @@ void print_error(const char *filename, int err)
 
     if (av_strerror(err, errbuf, sizeof(errbuf)) < 0)
         errbuf_ptr = strerror(AVUNERROR(err));
-    fprintf(stderr, "%s: %s\n", filename, errbuf_ptr);
+    av_log(NULL, AV_LOG_ERROR, "%s: %s\n", filename, errbuf_ptr);
 }
 
 static int warned_cfg = 0;
@@ -405,58 +440,59 @@ static int warned_cfg = 0;
 #define SHOW_VERSION  2
 #define SHOW_CONFIG   4
 
-#define PRINT_LIB_INFO(outstream,libname,LIBNAME,flags)                 \
+#define PRINT_LIB_INFO(libname, LIBNAME, flags, level)                  \
     if (CONFIG_##LIBNAME) {                                             \
         const char *indent = flags & INDENT? "  " : "";                 \
         if (flags & SHOW_VERSION) {                                     \
             unsigned int version = libname##_version();                 \
-            fprintf(outstream, "%slib%-9s %2d.%3d.%2d / %2d.%3d.%2d\n", \
-                    indent, #libname,                                   \
-                    LIB##LIBNAME##_VERSION_MAJOR,                       \
-                    LIB##LIBNAME##_VERSION_MINOR,                       \
-                    LIB##LIBNAME##_VERSION_MICRO,                       \
-                    version >> 16, version >> 8 & 0xff, version & 0xff); \
+            av_log(NULL, level, "%slib%-9s %2d.%3d.%2d / %2d.%3d.%2d\n",\
+                   indent, #libname,                                    \
+                   LIB##LIBNAME##_VERSION_MAJOR,                        \
+                   LIB##LIBNAME##_VERSION_MINOR,                        \
+                   LIB##LIBNAME##_VERSION_MICRO,                        \
+                   version >> 16, version >> 8 & 0xff, version & 0xff); \
         }                                                               \
         if (flags & SHOW_CONFIG) {                                      \
             const char *cfg = libname##_configuration();                \
             if (strcmp(FFMPEG_CONFIGURATION, cfg)) {                    \
                 if (!warned_cfg) {                                      \
-                    fprintf(outstream,                                  \
+                    av_log(NULL, level,                                 \
                             "%sWARNING: library configuration mismatch\n", \
                             indent);                                    \
                     warned_cfg = 1;                                     \
                 }                                                       \
-                fprintf(stderr, "%s%-11s configuration: %s\n",          \
+                av_log(NULL, level, "%s%-11s configuration: %s\n",      \
                         indent, #libname, cfg);                         \
             }                                                           \
         }                                                               \
     }                                                                   \
 
-static void print_all_libs_info(FILE* outstream, int flags)
+static void print_all_libs_info(int flags, int level)
 {
-    PRINT_LIB_INFO(outstream, avutil,   AVUTIL,   flags);
-    PRINT_LIB_INFO(outstream, avcodec,  AVCODEC,  flags);
-    PRINT_LIB_INFO(outstream, avformat, AVFORMAT, flags);
-    PRINT_LIB_INFO(outstream, avdevice, AVDEVICE, flags);
-    PRINT_LIB_INFO(outstream, avfilter, AVFILTER, flags);
-    PRINT_LIB_INFO(outstream, swscale,  SWSCALE,  flags);
-    PRINT_LIB_INFO(outstream, postproc, POSTPROC, flags);
+    PRINT_LIB_INFO(avutil,   AVUTIL,   flags, level);
+    PRINT_LIB_INFO(avcodec,  AVCODEC,  flags, level);
+    PRINT_LIB_INFO(avformat, AVFORMAT, flags, level);
+    PRINT_LIB_INFO(avdevice, AVDEVICE, flags, level);
+    PRINT_LIB_INFO(avfilter, AVFILTER, flags, level);
+    PRINT_LIB_INFO(swscale,  SWSCALE,  flags, level);
+    PRINT_LIB_INFO(postproc, POSTPROC, flags, level);
 }
 
 void show_banner(void)
 {
-    fprintf(stderr, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d the FFmpeg developers\n",
-            program_name, program_birth_year, this_year);
-    fprintf(stderr, "  built on %s %s with %s %s\n",
-            __DATE__, __TIME__, CC_TYPE, CC_VERSION);
-    fprintf(stderr, "  configuration: " FFMPEG_CONFIGURATION "\n");
-    print_all_libs_info(stderr, INDENT|SHOW_CONFIG);
-    print_all_libs_info(stderr, INDENT|SHOW_VERSION);
+    av_log(NULL, AV_LOG_INFO, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d the FFmpeg developers\n",
+           program_name, program_birth_year, this_year);
+    av_log(NULL, AV_LOG_INFO, "  built on %s %s with %s %s\n",
+           __DATE__, __TIME__, CC_TYPE, CC_VERSION);
+    av_log(NULL, AV_LOG_VERBOSE, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    print_all_libs_info(INDENT|SHOW_CONFIG,  AV_LOG_VERBOSE);
+    print_all_libs_info(INDENT|SHOW_VERSION, AV_LOG_VERBOSE);
 }
 
 int opt_version(const char *opt, const char *arg) {
+    av_log_set_callback(log_callback_help);
     printf("%s " FFMPEG_VERSION "\n", program_name);
-    print_all_libs_info(stdout, SHOW_VERSION);
+    print_all_libs_info(SHOW_VERSION, AV_LOG_INFO);
     return 0;
 }
 
@@ -758,7 +794,7 @@ int read_file(const char *filename, char **bufptr, size_t *size)
     FILE *f = fopen(filename, "rb");
 
     if (!f) {
-        fprintf(stderr, "Cannot read file '%s': %s\n", filename, strerror(errno));
+        av_log(NULL, AV_LOG_ERROR, "Cannot read file '%s': %s\n", filename, strerror(errno));
         return AVERROR(errno);
     }
     fseek(f, 0, SEEK_END);
@@ -766,7 +802,7 @@ int read_file(const char *filename, char **bufptr, size_t *size)
     fseek(f, 0, SEEK_SET);
     *bufptr = av_malloc(*size + 1);
     if (!*bufptr) {
-        fprintf(stderr, "Could not allocate file buffer\n");
+        av_log(NULL, AV_LOG_ERROR, "Could not allocate file buffer\n");
         fclose(f);
         return AVERROR(ENOMEM);
     }

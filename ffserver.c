@@ -4669,6 +4669,7 @@ int main(int argc, char **argv)
 {
     struct sigaction sigact;
 
+    parse_loglevel(argc, argv, options);
     av_register_all();
 
     show_banner();

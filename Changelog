@@ -59,6 +59,7 @@ easier to use. The changes are:
 - audio support to lavfi input device added
 - libcdio-paranoia input device for audio CD grabbing
 - Apple ProRes decoder
+- CELT in Ogg demuxing
 
 
 version 0.8:

@@ -32,6 +32,7 @@
 
 static const AVOption options[] = {
     FF_RTP_FLAG_OPTS(RTPMuxContext, flags),
+    { "payload_type", "Specify RTP payload type", offsetof(RTPMuxContext, payload_type), FF_OPT_TYPE_INT, {.dbl = -1 }, -1, 127, AV_OPT_FLAG_ENCODING_PARAM },
     { NULL },
 };
 
@@ -92,7 +93,8 @@ static int rtp_write_header(AVFormatContext *s1)
         return -1;
     }
 
-    s->payload_type = ff_rtp_get_payload_type(st->codec);
+    if (s->payload_type < 0)
+        s->payload_type = ff_rtp_get_payload_type(s1, st->codec);
     s->base_timestamp = av_get_random_seed();
     s->timestamp = s->base_timestamp;
     s->cur_timestamp = 0;

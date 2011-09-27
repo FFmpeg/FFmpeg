@@ -65,6 +65,8 @@ static const struct {
     { AV_CPU_FLAG_SSE4,      "sse4.1"     },
     { AV_CPU_FLAG_SSE42,     "sse4.2"     },
     { AV_CPU_FLAG_AVX,       "avx"        },
+    { AV_CPU_FLAG_XOP,       "xop"        },
+    { AV_CPU_FLAG_FMA4,      "fma4"       },
     { AV_CPU_FLAG_3DNOW,     "3dnow"      },
     { AV_CPU_FLAG_3DNOWEXT,  "3dnowext"   },
 #endif
