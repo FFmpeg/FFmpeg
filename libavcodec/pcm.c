@@ -95,11 +95,6 @@ static int pcm_encode_frame(AVCodecContext *avctx,
     samples = data;
     dst = frame;
 
-    if (avctx->sample_fmt!=avctx->codec->sample_fmts[0]) {
-        av_log(avctx, AV_LOG_ERROR, "invalid sample_fmt\n");
-        return -1;
-    }
-
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_U32LE:
         ENCODE(uint32_t, le32, samples, dst, n, 0, 0x80000000)
