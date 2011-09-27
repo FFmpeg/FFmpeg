@@ -1676,13 +1676,12 @@ static int output_packet(InputStream *ist, int ist_index,
                 }
                 case AV_SAMPLE_FMT_S16:
                 {
-                short *volp;
-                volp = samples;
-                for(i=0;i<(decoded_data_size / sizeof(short));i++) {
-                    int v = ((*volp) * audio_volume + 128) >> 8;
-                    *volp++ = av_clip_int16(v);
-                }
-                break;
+                    int16_t *volp = samples;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        int v = ((*volp) * audio_volume + 128) >> 8;
+                        *volp++ = av_clip_int16(v);
+                    }
+                    break;
                 }
                 case AV_SAMPLE_FMT_S32:
                 {
