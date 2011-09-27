@@ -247,7 +247,7 @@ static void read_tree(GetBitContext *gb, Tree *tree)
             tree->syms[i] = get_bits(gb, 4);
             tmp1[tree->syms[i]] = 1;
         }
-        for (i = 0; i < 16; i++)
+        for (i = 0; i < 16 && len < 16 - 1; i++)
             if (!tmp1[i])
                 tree->syms[++len] = i;
     } else {
