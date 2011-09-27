@@ -46,12 +46,16 @@ static av_cold int sunrast_init(AVCodecContext *avctx) {
 static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
                                 int *data_size, AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
+    const uint8_t *buf_end = avpkt->data + avpkt->size;
     SUNRASTContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
     unsigned int w, h, depth, type, maptype, maplength, stride, x, y, len, alen;
     uint8_t *ptr;
     const uint8_t *bufstart = buf;
+
+    if (avpkt->size < 32)
+        return AVERROR_INVALIDDATA;
 
     if (AV_RB32(buf) != 0x59a66a95) {
         av_log(avctx, AV_LOG_ERROR, "this is not sunras encoded data\n");
@@ -109,6 +113,9 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
 
     p->pict_type = AV_PICTURE_TYPE_I;
 
+    if (buf_end - buf < maplength)
+        return AVERROR_INVALIDDATA;
+
     if (depth != 8 && maplength) {
         av_log(avctx, AV_LOG_WARNING, "useless colormap found or file is corrupted, trying to recover\n");
 
@@ -143,8 +150,11 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         uint8_t *end = ptr + h*stride;
 
         x = 0;
-        while (ptr != end) {
+        while (ptr != end && buf < buf_end) {
             run = 1;
+            if (buf_end - buf < 1)
+                return AVERROR_INVALIDDATA;
+
             if ((value = *buf++) == 0x80) {
                 run = *buf++ + 1;
                 if (run != 1)
@@ -163,6 +173,8 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         }
     } else {
         for (y=0; y<h; y++) {
+            if (buf_end - buf < len)
+                break;
             memcpy(ptr, buf, len);
             ptr += stride;
             buf += alen;
