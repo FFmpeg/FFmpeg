@@ -377,7 +377,7 @@ static int init_tiles(J2kEncoderContext *s)
                         for (j = 0; j < 2; j++)
                             comp->coord[i][j] = ff_j2k_ceildivpow2(comp->coord[i][j], s->chroma_shift[i]);
 
-                if (ret = ff_j2k_init_component(comp, codsty, qntsty, s->cbps[compno]))
+                if (ret = ff_j2k_init_component(comp, codsty, qntsty, s->cbps[compno], compno?1<<s->chroma_shift[0]:1, compno?1<<s->chroma_shift[1]:1))
                     return ret;
             }
         }
