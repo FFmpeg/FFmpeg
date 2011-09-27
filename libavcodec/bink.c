@@ -973,8 +973,9 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     for (i = 0; i < BINK_NB_SRC; i++)
         read_bundle(gb, c, i);
 
-    ref_start = c->last.data[plane_idx];
-    ref_end   = c->last.data[plane_idx]
+    ref_start = c->last.data[plane_idx] ? c->last.data[plane_idx]
+                                        : c->pic.data[plane_idx];
+    ref_end   = ref_start
                 + (bw - 1 + c->last.linesize[plane_idx] * (bh - 1)) * 8;
 
     for (i = 0; i < 64; i++)
@@ -1003,7 +1004,8 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
         if (by == bh)
             break;
         dst  = c->pic.data[plane_idx]  + 8*by*stride;
-        prev = c->last.data[plane_idx] + 8*by*stride;
+        prev = (c->last.data[plane_idx] ? c->last.data[plane_idx]
+                                        : c->pic.data[plane_idx]) + 8*by*stride;
         for (bx = 0; bx < bw; bx++, dst += 8, prev += 8) {
             blk = get_value(c, BINK_SRC_BLOCK_TYPES);
             // 16x16 block type on odd line means part of the already decoded block, so skip it
