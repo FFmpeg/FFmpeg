@@ -68,13 +68,14 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     type      = AV_RB32(buf+20);
     maptype   = AV_RB32(buf+24);
     maplength = AV_RB32(buf+28);
+    buf += 32;
 
-    if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF) {
-        av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
+    if (type < RT_OLD || type > RT_FORMAT_IFF) {
+        av_log(avctx, AV_LOG_ERROR, "invalid (compression) type\n");
         return -1;
     }
-    if (type > RT_FORMAT_IFF) {
-        av_log(avctx, AV_LOG_ERROR, "invalid (compression) type\n");
+    if (av_image_check_size(w, h, 0, avctx)) {
+        av_log(avctx, AV_LOG_ERROR, "invalid image size\n");
         return -1;
     }
     if (maptype & ~1) {
@@ -82,7 +83,10 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    buf += 32;
+    if (type == RT_FORMAT_TIFF || type == RT_FORMAT_IFF) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported (compression) type\n");
+        return -1;
+    }
 
     switch (depth) {
         case 1:
@@ -102,8 +106,6 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     if (p->data[0])
         avctx->release_buffer(avctx, p);
 
-    if (av_image_check_size(w, h, 0, avctx))
-        return -1;
     if (w != avctx->width || h != avctx->height)
         avcodec_set_dimensions(avctx, w, h);
     if (avctx->get_buffer(avctx, p) < 0) {
