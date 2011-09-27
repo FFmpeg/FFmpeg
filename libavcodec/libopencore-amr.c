@@ -79,7 +79,6 @@ static int get_bitrate_mode(int bitrate, void *log_ctx)
 
 typedef struct AMRContext {
     AVClass *av_class;
-    int   frame_count;
     void *dec_state;
     void *enc_state;
     int   enc_bitrate;
@@ -100,7 +99,6 @@ static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 {
     AMRContext *s  = avctx->priv_data;
 
-    s->frame_count = 0;
     s->dec_state   = Decoder_Interface_init();
     if (!s->dec_state) {
         av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\n");
@@ -136,7 +134,7 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     int packet_size;
 
     av_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
-            buf, buf_size, s->frame_count);
+            buf, buf_size, avctx->frame_number);
 
     dec_mode    = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[dec_mode] + 1;
@@ -147,7 +145,6 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    s->frame_count++;
     av_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
               packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
@@ -171,8 +168,6 @@ AVCodec ff_libopencore_amrnb_decoder = {
 static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
 {
     AMRContext *s = avctx->priv_data;
-
-    s->frame_count = 0;
 
     if (avctx->sample_rate != 8000) {
         av_log(avctx, AV_LOG_ERROR, "Only 8000Hz sample rate supported\n");
