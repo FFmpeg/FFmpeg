@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-xx-xx - xxxxxxx - lavc 53.15.0
+  Remove avcodec_parse_frame.
+  Deprecate AVCodecContext.parse_only and CODEC_CAP_PARSE_ONLY.
+
 2011-10-xx - xxxxxxx - lavf 53.10.0
   Add avformat_new_stream(). Deprecate av_new_stream().
 

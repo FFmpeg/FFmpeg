@@ -279,7 +279,11 @@ static av_cold int decode_init(AVCodecContext * avctx)
     avctx->sample_fmt= OUT_FMT;
     s->err_recognition = avctx->err_recognition;
 
+#if FF_API_PARSE_FRAME
     if (!init && !avctx->parse_only) {
+#else
+    if (!init) {
+#endif
         int offset;
 
         /* scale factors table for layer 1/2 */
@@ -1869,10 +1873,12 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data, int *data_size,
 
     s->frame_size = len;
 
+#if FF_API_PARSE_FRAME
     if (avctx->parse_only)
         out_size = buf_size;
     else
-        out_size = mp_decode_frame(s, out_samples, buf, buf_size);
+#endif
+    out_size = mp_decode_frame(s, out_samples, buf, buf_size);
 
     *data_size = out_size;
     return buf_size;
@@ -2110,7 +2116,9 @@ AVCodec ff_mp1_decoder = {
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame,
+#if FF_API_PARSE_FRAME
     .capabilities   = CODEC_CAP_PARSE_ONLY,
+#endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP1 (MPEG audio layer 1)"),
 };
@@ -2123,7 +2131,9 @@ AVCodec ff_mp2_decoder = {
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame,
+#if FF_API_PARSE_FRAME
     .capabilities   = CODEC_CAP_PARSE_ONLY,
+#endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP2 (MPEG audio layer 2)"),
 };
@@ -2136,7 +2146,9 @@ AVCodec ff_mp3_decoder = {
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame,
+#if FF_API_PARSE_FRAME
     .capabilities   = CODEC_CAP_PARSE_ONLY,
+#endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("MP3 (MPEG audio layer 3)"),
 };
@@ -2149,7 +2161,9 @@ AVCodec ff_mp3adu_decoder = {
     .priv_data_size = sizeof(MPADecodeContext),
     .init           = decode_init,
     .decode         = decode_frame_adu,
+#if FF_API_PARSE_FRAME
     .capabilities   = CODEC_CAP_PARSE_ONLY,
+#endif
     .flush          = flush,
     .long_name      = NULL_IF_CONFIG_SMALL("ADU (Application Data Unit) MP3 (MPEG audio layer 3)"),
 };
