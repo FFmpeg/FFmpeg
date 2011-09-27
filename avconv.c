@@ -2976,6 +2976,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         st->codec->global_quality = FF_QP2LAMBDA * qscale;
     }
 
+    if (oc->oformat->flags & AVFMT_GLOBALHEADER)
+        st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
+
     ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
     return ost;
 }
@@ -3006,10 +3009,6 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_VIDEO);
     st  = ost->st;
     video_enc = st->codec;
-
-    if(oc->oformat->flags & AVFMT_GLOBALHEADER) {
-        video_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-    }
 
     if (!st->stream_copy) {
         const char *p = NULL;
@@ -3128,9 +3127,6 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
     audio_enc = st->codec;
     audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
 
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
-        audio_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-    }
     if (!st->stream_copy) {
         char *sample_fmt = NULL;
 
@@ -3153,18 +3149,12 @@ static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc)
 {
     AVStream *st;
     OutputStream *ost;
-    AVCodecContext *data_enc;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_DATA);
     st  = ost->st;
-    data_enc = st->codec;
     if (!st->stream_copy) {
         av_log(NULL, AV_LOG_FATAL, "Data stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
-    }
-
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
-        data_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
     }
 
     return ost;
@@ -3181,10 +3171,6 @@ static OutputStream *new_subtitle_stream(OptionsContext *o, AVFormatContext *oc)
     subtitle_enc = st->codec;
 
     subtitle_enc->codec_type = AVMEDIA_TYPE_SUBTITLE;
-
-    if (oc->oformat->flags & AVFMT_GLOBALHEADER) {
-        subtitle_enc->flags |= CODEC_FLAG_GLOBAL_HEADER;
-    }
 
     return ost;
 }
