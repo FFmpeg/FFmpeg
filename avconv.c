@@ -1518,7 +1518,7 @@ static int output_packet(InputStream *ist, int ist_index,
 {
     AVFormatContext *os;
     OutputStream *ost;
-    int ret, i;
+    int ret = 0, i;
     int got_output;
     void *buffer_to_free = NULL;
     static unsigned int samples_size= 0;
