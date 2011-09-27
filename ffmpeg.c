@@ -4150,7 +4150,7 @@ static int opt_old2new(OptionsContext *o, const char *opt, const char *arg)
 static int opt_bitrate(OptionsContext *o, const char *opt, const char *arg)
 {
     if(!strcmp(opt, "b")){
-        av_log(0,AV_LOG_WARNING, "Please use -b:a or -b:v, -b is ambigous\n");
+        av_log(0,AV_LOG_WARNING, "Please use -b:a or -b:v, -b is ambiguous\n");
         return parse_option(o, av_strdup("b:v"), arg, options);
     }
     return opt_default(opt, arg);
