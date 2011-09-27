@@ -401,6 +401,10 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     s->min_pitch_val    = ((ctx->sample_rate << 8)      /  400 + 50) >> 8;
     s->max_pitch_val    = ((ctx->sample_rate << 8) * 37 / 2000 + 50) >> 8;
     pitch_range         = s->max_pitch_val - s->min_pitch_val;
+    if (pitch_range <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid pitch range; broken extradata?\n");
+        return -1;
+    }
     s->pitch_nbits      = av_ceil_log2(pitch_range);
     s->last_pitch_val   = 40;
     s->last_acb_type    = ACB_TYPE_NONE;
@@ -422,6 +426,10 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     s->block_conv_table[2]      = (pitch_range * 44) >> 6;
     s->block_conv_table[3]      = s->max_pitch_val - 1;
     s->block_delta_pitch_hrange = (pitch_range >> 3) & ~0xF;
+    if (s->block_delta_pitch_hrange <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid delta pitch hrange; broken extradata?\n");
+        return -1;
+    }
     s->block_delta_pitch_nbits  = 1 + av_ceil_log2(s->block_delta_pitch_hrange);
     s->block_pitch_range        = s->block_conv_table[2] +
                                   s->block_conv_table[3] + 1 +
