@@ -285,7 +285,11 @@ static int put_cod(J2kEncoderContext *s)
     // SGcod
     bytestream_put_byte(&s->buf, 0); // progression level
     bytestream_put_be16(&s->buf, 1); // num of layers
-    bytestream_put_byte(&s->buf, 0); // multiple component transformation
+    if(s->avctx->pix_fmt == PIX_FMT_YUV444P){
+        bytestream_put_byte(&s->buf, 2); // ICT
+    }else{
+        bytestream_put_byte(&s->buf, 0); // unspecified
+    }
     // SPcod
     bytestream_put_byte(&s->buf, codsty->nreslevels - 1); // num of decomp. levels
     bytestream_put_byte(&s->buf, codsty->log2_cblk_width-2); // cblk width
