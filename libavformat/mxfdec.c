@@ -916,12 +916,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
             /* TODO: implement CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {
-                if (descriptor->bits_per_sample == 24)
+                if (descriptor->bits_per_sample > 16 && descriptor->bits_per_sample <= 24)
                     st->codec->codec_id = CODEC_ID_PCM_S24LE;
                 else if (descriptor->bits_per_sample == 32)
                     st->codec->codec_id = CODEC_ID_PCM_S32LE;
             } else if (st->codec->codec_id == CODEC_ID_PCM_S16BE) {
-                if (descriptor->bits_per_sample == 24)
+                if (descriptor->bits_per_sample > 16 && descriptor->bits_per_sample <= 24)
                     st->codec->codec_id = CODEC_ID_PCM_S24BE;
                 else if (descriptor->bits_per_sample == 32)
                     st->codec->codec_id = CODEC_ID_PCM_S32BE;
