@@ -59,7 +59,7 @@ typedef struct {
 
 typedef struct {
     AVCodecContext *avctx;
-    AVFrame *picture;
+    AVFrame picture;
 
     int width, height; ///< image width and height
     uint8_t cbps[4]; ///< bits per sample in particular components
@@ -394,18 +394,18 @@ static void copy_frame(J2kEncoderContext *s)
             for (compno = 0; compno < s->ncomponents; compno++){
                 J2kComponent *comp = tile->comp + compno;
                 int *dst = comp->data;
-                line = s->picture->data[compno]
-                       + comp->coord[1][0] * s->picture->linesize[compno]
+                line = s->picture.data[compno]
+                       + comp->coord[1][0] * s->picture.linesize[compno]
                        + comp->coord[0][0];
                 for (y = comp->coord[1][0]; y < comp->coord[1][1]; y++){
                     uint8_t *ptr = line;
                     for (x = comp->coord[0][0]; x < comp->coord[0][1]; x++)
                         *dst++ = *ptr++ - (1 << 7);
-                    line += s->picture->linesize[compno];
+                    line += s->picture.linesize[compno];
                 }
             }
         } else{
-            line = s->picture->data[0] + tile->comp[0].coord[1][0] * s->picture->linesize[0]
+            line = s->picture.data[0] + tile->comp[0].coord[1][0] * s->picture.linesize[0]
                    + tile->comp[0].coord[0][0] * s->ncomponents;
 
             i = 0;
@@ -416,7 +416,7 @@ static void copy_frame(J2kEncoderContext *s)
                         tile->comp[compno].data[i] = *ptr++  - (1 << 7);
                     }
                 }
-                line += s->picture->linesize[0];
+                line += s->picture.linesize[0];
             }
         }
     }
@@ -926,9 +926,10 @@ static int encode_frame(AVCodecContext *avctx,
     s->buf = s->buf_start = buf;
     s->buf_end = buf + buf_size;
 
-    s->picture = data;
+    s->picture = *(AVFrame*)data;
+    avctx->coded_frame= &s->picture;
 
-    s->lambda = s->picture->quality * LAMBDA_SCALE;
+    s->lambda = s->picture.quality * LAMBDA_SCALE;
 
     copy_frame(s);
     reinit(s);
