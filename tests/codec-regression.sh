@@ -161,6 +161,11 @@ do_video_encoding mjpeg.avi "-qscale 9 -an -vcodec mjpeg -pix_fmt yuvj420p"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
+if [ -n "$do_jpeg2000" ] ; then
+do_video_encoding jpeg2000.avi "-qscale 7 -an -vcodec j2k -strict experimental -pix_fmt rgb24"
+do_video_decoding "-vcodec j2k -strict experimental" "-pix_fmt yuv420p"
+fi
+
 if [ -n "$do_ljpeg" ] ; then
 do_video_encoding ljpeg.avi "-an -vcodec ljpeg -strict -1"
 do_video_decoding
