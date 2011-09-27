@@ -1035,8 +1035,7 @@ AVCodec ff_jpeg2000_encoder = {
     j2kenc_init,
     encode_frame,
     j2kenc_destroy,
-    NULL,
-    0,
+    .capabilities= CODEC_CAP_EXPERIMENTAL,
     .pix_fmts =
         (enum PixelFormat[]) {PIX_FMT_GRAY8, PIX_FMT_RGB24,
                               PIX_FMT_YUV422P, PIX_FMT_YUV444P,
