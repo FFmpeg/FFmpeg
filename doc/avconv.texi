@@ -82,13 +82,15 @@ described.
 @table @option
 
 @item -f @var{fmt} (@emph{input/output})
-Force format.
+Force input or output file format. The format is normally autodetected for input
+files and guessed from file extension for output files, so this option is not
+needed in most cases.
 
 @item -i @var{filename} (@emph{input})
 input file name
 
 @item -y (@emph{global})
-Overwrite output files.
+Overwrite output files without asking.
 
 @item -c[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
 @itemx -codec[:@var{stream_specifier}] @var{codec} (@emph{input/output,per-stream})
@@ -111,9 +113,8 @@ will copy all the streams except the second video, which will be encoded with
 libx264, and the 138th audio, which will be encoded with libvorbis.
 
 @item -t @var{duration} (@emph{output})
-Restrict the transcoded/captured video sequence
-to the duration specified in seconds.
-@code{hh:mm:ss[.xxx]} syntax is also supported.
+Stop writing the output after its duration reaches @var{duration}.
+@var{duration} may be a number in seconds, or in @code{hh:mm:ss[.xxx]} form.
 
 @item -fs @var{limit_size} (@emph{output})
 Set the file size limit.
@@ -131,7 +132,7 @@ Set the input time offset in seconds.
 @code{[-]hh:mm:ss[.xxx]} syntax is also supported.
 The offset is added to the timestamps of the input files.
 Specifying a positive offset means that the corresponding
-streams are delayed by 'offset' seconds.
+streams are delayed by @var{offset} seconds.
 
 @item -metadata[:metadata_specifier] @var{key}=@var{value} (@emph{output,per-metadata})
 Set a metadata key/value pair.
@@ -158,9 +159,10 @@ This option is deprecated and has no effect, use -loglevel
 to set verbosity level.
 
 @item -target @var{type} (@emph{output})
-Specify target file type ("vcd", "svcd", "dvd", "dv", "dv50", "pal-vcd",
-"ntsc-svcd", ... ). All the format options (bitrate, codecs,
-buffer sizes) are then set automatically. You can just type:
+Specify target file type (@code{vcd}, @code{svcd}, @code{dvd}, @code{dv},
+@code{dv50}). @var{type} may be prefixed with @code{pal-}, @code{ntsc-} or
+@code{film-} to use the corresponding standard. All the format options
+(bitrate, codecs, buffer sizes) are then set automatically. You can just type:
 
 @example
 avconv -i myfile.avi -target vcd /tmp/vcd.mpg
@@ -647,8 +649,10 @@ Show benchmarking information at the end of an encode.
 Shows CPU time used and maximum memory consumption.
 Maximum memory consumption is not supported on all systems,
 it will usually display as 0 if not supported.
+@item -timelimit @var{duration} (@emph{global})
+Exit after avconv has been running for @var{duration} seconds.
 @item -dump (@emph{global})
-Dump each input packet.
+Dump each input packet to stderr.
 @item -hex (@emph{global})
 When dumping packets, also dump the payload.
 @item -ps @var{size}
