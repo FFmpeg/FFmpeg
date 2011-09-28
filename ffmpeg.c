@@ -3303,6 +3303,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
                 av_log(NULL, AV_LOG_FATAL, "error parsing rc_override\n");
                 exit_program(1);
             }
+            /* FIXME realloc failure */
             video_enc->rc_override=
                 av_realloc(video_enc->rc_override,
                            sizeof(RcOverride)*(i+1));
@@ -3474,7 +3475,7 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
             av_dict_copy(&out_ch->metadata, in_ch->metadata, 0);
 
         os->nb_chapters++;
-        os->chapters = av_realloc(os->chapters, sizeof(AVChapter)*os->nb_chapters);
+        os->chapters = av_realloc_f(os->chapters, os->nb_chapters, sizeof(AVChapter));
         if (!os->chapters)
             return AVERROR(ENOMEM);
         os->chapters[os->nb_chapters - 1] = out_ch;
