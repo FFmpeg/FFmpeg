@@ -366,7 +366,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
                 if (s->color_depth != 0 && s->color_depth != 2) {
                     av_log(avctx, AV_LOG_ERROR,
                            "%dx%d invalid color depth %d\n", i, j, s->color_depth);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 if (has_diff) {
