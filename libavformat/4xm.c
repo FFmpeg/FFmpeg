@@ -173,8 +173,9 @@ static int fourxm_read_header(AVFormatContext *s,
             }
             if (current_track + 1 > fourxm->track_count) {
                 fourxm->track_count = current_track + 1;
-                fourxm->tracks = av_realloc(fourxm->tracks,
-                    fourxm->track_count * sizeof(AudioTrack));
+                fourxm->tracks = av_realloc_f(fourxm->tracks,
+                                              sizeof(AudioTrack),
+                                              fourxm->track_count);
                 if (!fourxm->tracks) {
                     ret=  AVERROR(ENOMEM);
                     goto fail;
