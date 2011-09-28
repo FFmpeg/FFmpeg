@@ -701,7 +701,7 @@ following image formats are supported:
     @tab experimental codec
 @item Sonic lossless         @tab  X  @tab  X
     @tab experimental codec
-@item Speex                  @tab     @tab  E
+@item Speex                  @tab  E  @tab  E
     @tab supported through external library libspeex
 @item True Audio (TTA)       @tab     @tab  X
 @item TrueHD                 @tab     @tab  X
