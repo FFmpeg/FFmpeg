@@ -1745,11 +1745,11 @@ static int output_packet(InputStream *ist, int ist_index,
             if (of->start_time == 0 || ist->pts >= of->start_time) {
                 ost = &ost_table[i];
                 if (ost->input_video_filter && ost->source_index == ist_index) {
-                if (!decoded_frame->sample_aspect_ratio.num)
-                    decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
-                decoded_frame->pts = ist->pts;
+                    if (!decoded_frame->sample_aspect_ratio.num)
+                        decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+                    decoded_frame->pts = ist->pts;
 
-                av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, AV_VSRC_BUF_FLAG_OVERWRITE);
+                    av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, AV_VSRC_BUF_FLAG_OVERWRITE);
                 }
             }
         }
