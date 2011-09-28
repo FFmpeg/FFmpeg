@@ -430,7 +430,7 @@ static void show_stream(struct writer *w, AVFormatContext *fmt_ctx, int stream_i
     }
 
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
-        print_fmt("id=", "0x%x", stream->id);
+        print_fmt("id", "0x%x", stream->id);
     print_fmt("r_frame_rate",   "%d/%d", stream->r_frame_rate.num,   stream->r_frame_rate.den);
     print_fmt("avg_frame_rate", "%d/%d", stream->avg_frame_rate.num, stream->avg_frame_rate.den);
     print_fmt("time_base",      "%d/%d", stream->time_base.num,      stream->time_base.den);
