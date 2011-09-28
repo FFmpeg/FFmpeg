@@ -507,8 +507,8 @@ static int queue_frames(AVCodecContext *avctx, uint8_t *buf, int buf_size,
             break;
         case VPX_CODEC_STATS_PKT: {
             struct vpx_fixed_buf *stats = &ctx->twopass_stats;
-            stats->buf = av_realloc(stats->buf,
-                                    stats->sz + pkt->data.twopass_stats.sz);
+            stats->buf = av_realloc_f(stats->buf, 1,
+                                      stats->sz + pkt->data.twopass_stats.sz);
             if (!stats->buf) {
                 av_log(avctx, AV_LOG_ERROR, "Stat buffer realloc failed\n");
                 return AVERROR(ENOMEM);
