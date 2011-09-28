@@ -4224,7 +4224,7 @@ static const float lossless_quant_d[32] = {
 
 /* Vector quantization tables */
 
-static const int8_t high_freq_vq[1024][32] =
+DECLARE_ALIGNED(8, static const int8_t, high_freq_vq)[1024][32] =
 {
   {  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,
      0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0,  0 },

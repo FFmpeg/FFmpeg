@@ -42,6 +42,10 @@
 #include "dcadsp.h"
 #include "fmtconvert.h"
 
+#if ARCH_ARM
+#   include "arm/dca.h"
+#endif
+
 //#define TRACE
 
 #define DCA_PRIM_CHANNELS_MAX (7)
@@ -320,7 +324,7 @@ typedef struct {
     int lfe_scale_factor;
 
     /* Subband samples history (for ADPCM) */
-    float subband_samples_hist[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
+    DECLARE_ALIGNED(16, float, subband_samples_hist)[DCA_PRIM_CHANNELS_MAX][DCA_SUBBANDS][4];
     DECLARE_ALIGNED(32, float, subband_fir_hist)[DCA_PRIM_CHANNELS_MAX][512];
     DECLARE_ALIGNED(32, float, subband_fir_noidea)[DCA_PRIM_CHANNELS_MAX][32];
     int hist_index[DCA_PRIM_CHANNELS_MAX];
@@ -1057,6 +1061,16 @@ static int decode_blockcode(int code, int levels, int *values)
 static const uint8_t abits_sizes[7] = { 7, 10, 12, 13, 15, 17, 19 };
 static const uint8_t abits_levels[7] = { 3, 5, 7, 9, 13, 17, 25 };
 
+#ifndef int8x8_fmul_int32
+static inline void int8x8_fmul_int32(float *dst, const int8_t *src, int scale)
+{
+    float fscale = scale / 16.0;
+    int i;
+    for (i = 0; i < 8; i++)
+        dst[i] = src[i] * fscale;
+}
+#endif
+
 static int dca_subsubframe(DCAContext * s, int base_channel, int block_index)
 {
     int k, l;
@@ -1161,19 +1175,16 @@ static int dca_subsubframe(DCAContext * s, int base_channel, int block_index)
         for (l = s->vq_start_subband[k]; l < s->subband_activity[k]; l++) {
             /* 1 vector -> 32 samples but we only need the 8 samples
              * for this subsubframe. */
-            int m;
+            int hfvq = s->high_freq_vq[k][l];
 
             if (!s->debug_flag & 0x01) {
                 av_log(s->avctx, AV_LOG_DEBUG, "Stream with high frequencies VQ coding\n");
                 s->debug_flag |= 0x01;
             }
 
-            for (m = 0; m < 8; m++) {
-                subband_samples[k][l][m] =
-                    high_freq_vq[s->high_freq_vq[k][l]][subsubframe * 8 +
-                                                        m]
-                    * (float) s->scale_factor[k][l][0] / 16.0;
-            }
+            int8x8_fmul_int32(subband_samples[k][l],
+                              &high_freq_vq[hfvq][subsubframe * 8],
+                              s->scale_factor[k][l][0]);
         }
     }
 
