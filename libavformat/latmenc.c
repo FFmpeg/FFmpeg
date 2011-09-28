@@ -28,6 +28,7 @@
 #include "rawenc.h"
 
 typedef struct {
+    AVClass *av_class;
     int off;
     int channel_conf;
     int object_type;

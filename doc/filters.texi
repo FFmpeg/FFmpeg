@@ -1687,6 +1687,9 @@ input sample aspect ratio
 @item dar
 input display aspect ratio, it is the same as (@var{iw} / @var{ih}) * @var{sar}
 
+@item sar
+input sample aspect ratio
+
 @item hsub, vsub
 horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.

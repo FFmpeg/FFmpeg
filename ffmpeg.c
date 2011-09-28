@@ -160,7 +160,7 @@ static uint8_t *audio_buf;
 static uint8_t *audio_out;
 static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
 
-static short *samples;
+static void *samples;
 static uint8_t *input_tmp= NULL;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "ffmpeg2pass"
@@ -1596,7 +1596,7 @@ static int output_packet(InputStream *ist, int ist_index,
 {
     AVFormatContext *os;
     OutputStream *ost;
-    int ret, i;
+    int ret = 0, i;
     int got_output;
     void *buffer_to_free = NULL;
     static unsigned int samples_size= 0;
@@ -1651,8 +1651,8 @@ static int output_packet(InputStream *ist, int ist_index,
         if (ist->decoding_needed) {
             switch(ist->st->codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:{
-                if(pkt && samples_size < FFMAX(pkt->size*sizeof(*samples), AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
-                    samples_size = FFMAX(pkt->size*sizeof(*samples), AVCODEC_MAX_AUDIO_FRAME_SIZE);
+                if(pkt && samples_size < FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
+                    samples_size = FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE);
                     av_free(samples);
                     samples= av_malloc(samples_size);
                 }
@@ -1758,11 +1758,57 @@ static int output_packet(InputStream *ist, int ist_index,
         // preprocess audio (volume)
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if (audio_volume != 256) {
-                short *volp;
-                volp = samples;
-                for(i=0;i<(decoded_data_size / sizeof(short));i++) {
-                    int v = ((*volp) * audio_volume + 128) >> 8;
-                    *volp++ = av_clip_int16(v);
+                switch (ist->st->codec->sample_fmt) {
+                case AV_SAMPLE_FMT_U8:
+                {
+                    uint8_t *volp = samples;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        int v = (((*volp - 128) * audio_volume + 128) >> 8) + 128;
+                        *volp++ = av_clip_uint8(v);
+                    }
+                    break;
+                }
+                case AV_SAMPLE_FMT_S16:
+                {
+                    int16_t *volp = samples;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        int v = ((*volp) * audio_volume + 128) >> 8;
+                        *volp++ = av_clip_int16(v);
+                    }
+                    break;
+                }
+                case AV_SAMPLE_FMT_S32:
+                {
+                    int32_t *volp = samples;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        int64_t v = (((int64_t)*volp * audio_volume + 128) >> 8);
+                        *volp++ = av_clipl_int32(v);
+                    }
+                    break;
+                }
+                case AV_SAMPLE_FMT_FLT:
+                {
+                    float *volp = samples;
+                    float scale = audio_volume / 256.f;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        *volp++ *= scale;
+                    }
+                    break;
+                }
+                case AV_SAMPLE_FMT_DBL:
+                {
+                    double *volp = samples;
+                    double scale = audio_volume / 256.;
+                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                        *volp++ *= scale;
+                    }
+                    break;
+                }
+                default:
+                    av_log(NULL, AV_LOG_FATAL,
+                           "Audio volume adjustment on sample format %s is not supported.\n",
+                           av_get_sample_fmt_name(ist->st->codec->sample_fmt));
+                    exit_program(1);
                 }
             }
         }

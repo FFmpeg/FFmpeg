@@ -967,6 +967,7 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
     uint8_t* data = *buf;
     int isize = *buf_size;
     uint8_t* pkt_data = NULL;
+    uint8_t* newpktdata;
     int pkt_size = isize;
     int result = 0;
     int olen;
@@ -996,7 +997,12 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         zstream.avail_in = isize;
         do {
             pkt_size *= 3;
-            pkt_data = av_realloc(pkt_data, pkt_size);
+            newpktdata = av_realloc(pkt_data, pkt_size);
+            if (!newpktdata) {
+                inflateEnd(&zstream);
+                goto failed;
+            }
+            pkt_data = newpktdata;
             zstream.avail_out = pkt_size - zstream.total_out;
             zstream.next_out = pkt_data + zstream.total_out;
             if (pkt_data) {
@@ -1020,7 +1026,12 @@ static int matroska_decode_buffer(uint8_t** buf, int* buf_size,
         bzstream.avail_in = isize;
         do {
             pkt_size *= 3;
-            pkt_data = av_realloc(pkt_data, pkt_size);
+            newpktdata = av_realloc(pkt_data, pkt_size);
+            if (!newpktdata) {
+                BZ2_bzDecompressEnd(&bzstream);
+                goto failed;
+            }
+            pkt_data = newpktdata;
             bzstream.avail_out = pkt_size - bzstream.total_out_lo32;
             bzstream.next_out = pkt_data + bzstream.total_out_lo32;
             if (pkt_data) {

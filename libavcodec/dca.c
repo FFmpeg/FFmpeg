@@ -1833,11 +1833,8 @@ static int dca_decode_frame(AVCodecContext * avctx,
             float* back_chan = s->samples + s->channel_order_tab[s->xch_base_channel] * 256;
             float* lt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 2] * 256;
             float* rt_chan   = s->samples + s->channel_order_tab[s->xch_base_channel - 1] * 256;
-            int j;
-            for(j = 0; j < 256; ++j) {
-                lt_chan[j] -= back_chan[j] * M_SQRT1_2;
-                rt_chan[j] -= back_chan[j] * M_SQRT1_2;
-            }
+            s->dsp.vector_fmac_scalar(lt_chan, back_chan, -M_SQRT1_2, 256);
+            s->dsp.vector_fmac_scalar(rt_chan, back_chan, -M_SQRT1_2, 256);
         }
 
         if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
