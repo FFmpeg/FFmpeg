@@ -755,7 +755,8 @@ static int mov_read_enda(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 }
 
 /* FIXME modify qdm2/svq3/h264 decoders to take full atom as extradata */
-static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom,
+                              enum CodecID codec_id)
 {
     AVStream *st;
     uint64_t size;
@@ -764,6 +765,10 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     if (c->fc->nb_streams < 1) // will happen with jp2 files
         return 0;
     st= c->fc->streams[c->fc->nb_streams-1];
+
+    if (st->codec->codec_id != codec_id)
+        return 0; /* unexpected codec_id - don't mess with extradata */
+
     size= (uint64_t)st->codec->extradata_size + atom.size + 8 + FF_INPUT_BUFFER_PADDING_SIZE;
     if(size > INT_MAX || (uint64_t)atom.size > INT_MAX)
         return -1;
@@ -777,6 +782,27 @@ static int mov_read_extradata(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     AV_WL32(       buf + 4, atom.type);
     avio_read(pb, buf + 8, atom.size);
     return 0;
+}
+
+/* wrapper functions for reading ALAC/AVS/MJPEG/MJPEG2000 extradata atoms only for those codecs */
+static int mov_read_alac(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    return mov_read_extradata(c, pb, atom, CODEC_ID_ALAC);
+}
+
+static int mov_read_avss(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    return mov_read_extradata(c, pb, atom, CODEC_ID_AVS);
+}
+
+static int mov_read_fiel(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    return mov_read_extradata(c, pb, atom, CODEC_ID_MJPEG);
+}
+
+static int mov_read_jp2h(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    return mov_read_extradata(c, pb, atom, CODEC_ID_JPEG2000);
 }
 
 static int mov_read_wave(MOVContext *c, AVIOContext *pb, MOVAtom atom)
@@ -2228,7 +2254,7 @@ static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 }
 
 static const MOVParseTableEntry mov_default_parse_table[] = {
-{ MKTAG('a','v','s','s'), mov_read_extradata },
+{ MKTAG('a','v','s','s'), mov_read_avss },
 { MKTAG('c','h','p','l'), mov_read_chpl },
 { MKTAG('c','o','6','4'), mov_read_stco },
 { MKTAG('c','t','t','s'), mov_read_ctts }, /* composition time to sample */
@@ -2237,12 +2263,12 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('e','d','t','s'), mov_read_default },
 { MKTAG('e','l','s','t'), mov_read_elst },
 { MKTAG('e','n','d','a'), mov_read_enda },
-{ MKTAG('f','i','e','l'), mov_read_extradata },
+{ MKTAG('f','i','e','l'), mov_read_fiel },
 { MKTAG('f','t','y','p'), mov_read_ftyp },
 { MKTAG('g','l','b','l'), mov_read_glbl },
 { MKTAG('h','d','l','r'), mov_read_hdlr },
 { MKTAG('i','l','s','t'), mov_read_ilst },
-{ MKTAG('j','p','2','h'), mov_read_extradata },
+{ MKTAG('j','p','2','h'), mov_read_jp2h },
 { MKTAG('m','d','a','t'), mov_read_mdat },
 { MKTAG('m','d','h','d'), mov_read_mdhd },
 { MKTAG('m','d','i','a'), mov_read_default },
@@ -2253,7 +2279,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('m','v','e','x'), mov_read_default },
 { MKTAG('m','v','h','d'), mov_read_mvhd },
 { MKTAG('S','M','I',' '), mov_read_smi }, /* Sorenson extension ??? */
-{ MKTAG('a','l','a','c'), mov_read_extradata }, /* alac specific atom */
+{ MKTAG('a','l','a','c'), mov_read_alac }, /* alac specific atom */
 { MKTAG('a','v','c','C'), mov_read_glbl },
 { MKTAG('p','a','s','p'), mov_read_pasp },
 { MKTAG('s','t','b','l'), mov_read_default },
