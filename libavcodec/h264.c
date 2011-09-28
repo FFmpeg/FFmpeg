@@ -1441,7 +1441,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
     }
 
     if (h->next_output_pic && h->next_output_pic->sync) {
-        h->sync |= 2*!!h->next_output_pic->f.key_frame;
+        h->sync |= 2;
     }
 
     if (setup_finished)
@@ -3731,7 +3731,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     (hx->nal_unit_type == NAL_IDR_SLICE);
 
             if (h->recovery_frame == h->frame_num) {
-                s->current_picture_ptr->f.key_frame |= 1;
+                h->sync |= 1;
                 h->recovery_frame = -1;
             }
 
