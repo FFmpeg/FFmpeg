@@ -2881,6 +2881,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->ref_count[1]= h->pps.ref_count[1];
 
     if(h->slice_type_nos != AV_PICTURE_TYPE_I){
+        unsigned max= (16<<(s->picture_structure != PICT_FRAME))-1;
         if(h->slice_type_nos == AV_PICTURE_TYPE_B){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
         }
@@ -2891,11 +2892,11 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             if(h->slice_type_nos==AV_PICTURE_TYPE_B)
                 h->ref_count[1]= get_ue_golomb(&s->gb) + 1;
 
-            if(h->ref_count[0]-1 > 32-1 || h->ref_count[1]-1 > 32-1){
-                av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
-                h->ref_count[0]= h->ref_count[1]= 1;
-                return -1;
-            }
+        }
+        if(h->ref_count[0]-1 > max || h->ref_count[1]-1 > max){
+            av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
+            h->ref_count[0]= h->ref_count[1]= 1;
+            return -1;
         }
         if(h->slice_type_nos == AV_PICTURE_TYPE_B)
             h->list_count= 2;
