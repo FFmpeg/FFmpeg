@@ -321,6 +321,8 @@ int ff_j2k_dwt_init(DWTContext *s, uint16_t border[2][2], int decomp_levels, int
     int i, j, lev = decomp_levels, maxlen,
         b[2][2];
 
+    if (decomp_levels >= FF_DWT_MAX_DECLVLS)
+        return AVERROR_INVALIDDATA;
     s->ndeclevels = decomp_levels;
     s->type = type;
 
