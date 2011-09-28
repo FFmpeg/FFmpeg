@@ -44,6 +44,7 @@ typedef struct {
     int line_count;
     int http_code;
     int64_t chunksize;      /**< Used if "Transfer-Encoding: chunked" otherwise -1. */
+    char *user_agent;
     int64_t off, filesize;
     char location[MAX_URL_SIZE];
     HTTPAuthState auth_state;
@@ -56,9 +57,11 @@ typedef struct {
 #define OFFSET(x) offsetof(HTTPContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
+#define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
 {"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, E },
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
+{"user-agent", "override User-Agent header", OFFSET(user_agent), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC},
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
@@ -342,8 +345,9 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 
     /* set default headers if needed */
     if (!has_header(s->headers, "\r\nUser-Agent: "))
-       len += av_strlcatf(headers + len, sizeof(headers) - len,
-                          "User-Agent: %s\r\n", LIBAVFORMAT_IDENT);
+        len += av_strlcatf(headers + len, sizeof(headers) - len,
+                           "User-Agent: %s\r\n",
+                           s->user_agent ? s->user_agent : LIBAVFORMAT_IDENT);
     if (!has_header(s->headers, "\r\nAccept: "))
         len += av_strlcpy(headers + len, "Accept: */*\r\n",
                           sizeof(headers) - len);
