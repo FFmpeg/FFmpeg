@@ -104,7 +104,7 @@ seektest(){
                  file=$(echo tests/data/$d/$file)
                  ;;
     esac
-    $target_exec $target_path/libavformat/seek-test $target_path/$file
+    run libavformat/seek-test $target_path/$file
 }
 
 mkdir -p "$outdir"
