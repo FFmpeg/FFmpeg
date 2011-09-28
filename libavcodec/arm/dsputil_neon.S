@@ -587,6 +587,54 @@ NOVFP   vdup.32         q8,  r2
         .unreq          len
 endfunc
 
+function ff_vector_fmac_scalar_neon, export=1
+VFP     len .req r2
+VFP     acc .req r3
+NOVFP   len .req r3
+NOVFP   acc .req r2
+VFP     vdup.32         q15, d0[0]
+NOVFP   vdup.32         q15, r2
+        bics            r12, len, #15
+        mov             acc, r0
+        beq             3f
+        vld1.32         {q0},     [r1,:128]!
+        vld1.32         {q8},     [acc,:128]!
+        vld1.32         {q1},     [r1,:128]!
+        vld1.32         {q9},     [acc,:128]!
+1:      vmla.f32        q8,  q0,  q15
+        vld1.32         {q2},     [r1,:128]!
+        vld1.32         {q10},    [acc,:128]!
+        vmla.f32        q9,  q1,  q15
+        vld1.32         {q3},     [r1,:128]!
+        vld1.32         {q11},    [acc,:128]!
+        vmla.f32        q10, q2,  q15
+        vst1.32         {q8},     [r0,:128]!
+        vmla.f32        q11, q3,  q15
+        vst1.32         {q9},     [r0,:128]!
+        subs            r12, r12, #16
+        beq             2f
+        vld1.32         {q0},     [r1,:128]!
+        vld1.32         {q8},     [acc,:128]!
+        vst1.32         {q10},    [r0,:128]!
+        vld1.32         {q1},     [r1,:128]!
+        vld1.32         {q9},     [acc,:128]!
+        vst1.32         {q11},    [r0,:128]!
+        b               1b
+2:      vst1.32         {q10},    [r0,:128]!
+        vst1.32         {q11},    [r0,:128]!
+        ands            len, len, #15
+        it              eq
+        bxeq            lr
+3:      vld1.32         {q0},     [r1,:128]!
+        vld1.32         {q8},     [acc,:128]!
+        vmla.f32        q8,  q0,  q15
+        vst1.32         {q8},     [r0,:128]!
+        subs            len, len, #4
+        bgt             3b
+        bx              lr
+        .unreq          len
+endfunc
+
 function ff_butterflies_float_neon, export=1
 1:      vld1.32         {q0},[r0,:128]
         vld1.32         {q1},[r1,:128]
