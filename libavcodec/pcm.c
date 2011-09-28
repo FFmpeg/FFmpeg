@@ -172,10 +172,11 @@ static int pcm_encode_frame(AVCodecContext *avctx,
         dst += n*sample_size;
         break;
     case CODEC_ID_PCM_ZORK:
-        for(;n>0;n--) {
-            v= *samples++ >> 8;
-            if(v<0)   v = -v;
-            else      v+= 128;
+        srcu8 = data;
+        for (; n > 0; n--) {
+            v = *srcu8++;
+            if (v < 128)
+                v = 128 - v;
             *dst++ = v;
         }
         break;
@@ -387,12 +388,11 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         samples += n * sample_size;
         break;
     case CODEC_ID_PCM_ZORK:
-        for(;n>0;n--) {
-            int x= *src++;
-            if(x&128) x-= 128;
-            else      x = -x;
-            AV_WN16A(samples, x << 8);
-            samples += 2;
+        for (; n > 0; n--) {
+            int v = *src++;
+            if (v < 128)
+                v = 128 - v;
+            *samples++ = v;
         }
         break;
     case CODEC_ID_PCM_ALAW:
@@ -518,4 +518,4 @@ PCM_CODEC  (CODEC_ID_PCM_U24BE, AV_SAMPLE_FMT_S32, pcm_u24be, "PCM unsigned 24-b
 PCM_CODEC  (CODEC_ID_PCM_U24LE, AV_SAMPLE_FMT_S32, pcm_u24le, "PCM unsigned 24-bit little-endian");
 PCM_CODEC  (CODEC_ID_PCM_U32BE, AV_SAMPLE_FMT_S32, pcm_u32be, "PCM unsigned 32-bit big-endian");
 PCM_CODEC  (CODEC_ID_PCM_U32LE, AV_SAMPLE_FMT_S32, pcm_u32le, "PCM unsigned 32-bit little-endian");
-PCM_CODEC  (CODEC_ID_PCM_ZORK,  AV_SAMPLE_FMT_S16, pcm_zork, "PCM Zork");
+PCM_CODEC  (CODEC_ID_PCM_ZORK,  AV_SAMPLE_FMT_U8,  pcm_zork,  "PCM Zork");
