@@ -161,7 +161,7 @@ static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaq
         return AVERROR(EINVAL);
     } else {
 #if FF_API_OLD_VSINK_API
-        buf->pixel_fmts = (const enum PixelFormats *)opaque;
+        buf->pixel_fmts = (const enum PixelFormat *)opaque;
 #else
         params = (AVBufferSinkParams *)opaque;
         buf->pixel_fmts = params->pixel_fmts;
