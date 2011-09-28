@@ -300,7 +300,7 @@ static int flashsv_decode_frame(AVCodecContext *avctx, void *data,
     /* check for changes of image width and image height */
     if (avctx->width != s->image_width || avctx->height != s->image_height) {
         av_log(avctx, AV_LOG_ERROR,
-               "Frame width or height differs from first frames!\n");
+               "Frame width or height differs from first frame!\n");
         av_log(avctx, AV_LOG_ERROR, "fh = %d, fv %d  vs  ch = %d, cv = %d\n",
                avctx->height, avctx->width, s->image_height, s->image_width);
         return AVERROR_INVALIDDATA;
