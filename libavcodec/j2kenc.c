@@ -330,7 +330,7 @@ static uint8_t *put_sot(J2kEncoderContext *s, int tileno)
     uint8_t *psotptr;
 
     if (s->buf_end - s->buf < 12)
-        return -1;
+        return NULL;
 
     bytestream_put_be16(&s->buf, J2K_SOT);
     bytestream_put_be16(&s->buf, 10); // Lsot
@@ -950,8 +950,8 @@ static int encode_frame(AVCodecContext *avctx,
 
     for (tileno = 0; tileno < s->numXtiles * s->numYtiles; tileno++){
         uint8_t *psotptr;
-        if ((psotptr = put_sot(s, tileno)) < 0)
-            return psotptr;
+        if (!(psotptr = put_sot(s, tileno)))
+            return -1;
         if (s->buf_end - s->buf < 2)
             return -1;
         bytestream_put_be16(&s->buf, J2K_SOD);
