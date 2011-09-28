@@ -915,7 +915,7 @@ int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size
 
     alloc_size = FFMAX(s->buffer_size, new_size);
     if (alloc_size > buf_size)
-        if (!(buf = av_realloc(buf, alloc_size)))
+        if (!(buf = av_realloc_f(buf, 1, alloc_size)))
             return AVERROR(ENOMEM);
 
     if (new_size > buf_size) {
@@ -1084,7 +1084,7 @@ static int dyn_buf_write(void *opaque, uint8_t *buf, int buf_size)
     }
 
     if (new_allocated_size > d->allocated_size) {
-        d->buffer = av_realloc(d->buffer, new_allocated_size);
+        d->buffer = av_realloc_f(d->buffer, 1, new_allocated_size);
         if(d->buffer == NULL)
              return AVERROR(ENOMEM);
         d->allocated_size = new_allocated_size;
