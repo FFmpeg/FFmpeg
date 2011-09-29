@@ -324,7 +324,7 @@ static void inverse_quant(int16_t *cur_lsp, int16_t *prev_lsp,
  * @param b 16 bit multiplier
  */
 #define MULL2(a, b) \
-        ((((a) >> 16) * (b) << 1) + (((a) & 0xffff) * (b) >> 15))
+        MULL(a,b,15)
 
 /**
  * Convert LSP frequencies to LPC coefficients.
