@@ -216,8 +216,8 @@ static int normalize_bits(int num, int width)
             return bits;
         if (num < 0)
             num = ~num;
-        for (i = 0; num < limit; i++)
-            num <<= 1;
+        i= bits - av_log2(num) - 1;
+        i= FFMAX(i, 0);
     }
     return i;
 }
