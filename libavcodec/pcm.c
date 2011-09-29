@@ -247,16 +247,15 @@ static int pcm_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
 {
-    const uint8_t *buf = avpkt->data;
+    const uint8_t *src = avpkt->data;
     int buf_size = avpkt->size;
     PCMDecode *s = avctx->priv_data;
     int sample_size, c, n, i;
     uint8_t *samples;
-    const uint8_t *src, *src8, *src2[MAX_CHANNELS];
+    const uint8_t *src8, *src2[MAX_CHANNELS];
     int32_t *dst_int32_t;
 
     samples = data;
-    src = buf;
 
     sample_size = av_get_bits_per_sample(avctx->codec_id)/8;
 
@@ -329,7 +328,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
                 AV_WN16A(samples, bytestream_get_le16(&src2[c]));
                 samples += 2;
             }
-        src = src2[avctx->channels-1];
         break;
     case CODEC_ID_PCM_U16LE:
         DECODE(16, le16, src, samples, n, 0, 0x8000)
@@ -375,7 +373,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
 #endif /* HAVE_BIGENDIAN */
     case CODEC_ID_PCM_U8:
         memcpy(samples, src, n*sample_size);
-        src += n*sample_size;
         samples += n * sample_size;
         break;
     case CODEC_ID_PCM_ZORK:
@@ -439,14 +436,13 @@ static int pcm_decode_frame(AVCodecContext *avctx,
                                  ((src8[2] & 0xF0) << 8) | (src8[4] << 4) | (src8[3] >> 4);
             }
         }
-        src += n * avctx->channels * 5;
         samples = (uint8_t *) dst_int32_t;
         break;
     default:
         return -1;
     }
     *data_size = samples - (uint8_t *)data;
-    return src - buf;
+    return buf_size;
 }
 
 #if CONFIG_ENCODERS
