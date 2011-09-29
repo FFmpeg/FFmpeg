@@ -253,6 +253,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     mp->dsp.bswap_buf((uint32_t *)mp->bswapbuf, (const uint32_t *)buf, buf_size / 4);
     if (buf_size & 3)
         memcpy(mp->bswapbuf + (buf_size & ~3), buf + (buf_size & ~3), buf_size & 3);
+    memset(mp->bswapbuf + buf_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&gb, mp->bswapbuf, buf_size * 8);
 
     memset(mp->changes_map, 0, avctx->width * avctx->height);
