@@ -220,6 +220,8 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
     if (bitmap_frame_size < palette_colors_count * (3 + (palette_type != 0)))
         return AVERROR_INVALIDDATA;
     if (palette_type == 0) {
+        if (palette_colors_count > 256)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < palette_colors_count; ++i) {
             cin->palette[i] = bytestream_get_le24(&buf);
             bitmap_frame_size -= 3;
