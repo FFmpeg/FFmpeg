@@ -242,7 +242,7 @@ static int scale_vector(int16_t *vector, int length)
     scale = shift_table[bits];
 
     for (i = 0; i < length; i++)
-        vector[i] = (int16_t)(av_clipl_int32(vector[i] * scale << 1) >> 4);
+        vector[i] = (vector[i] * scale) >> 3;
 
     return bits - 3;
 }
