@@ -144,10 +144,10 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
         }
     }
 
-    p->subframe[0].grid_index = get_bits(&gb, 1);
-    p->subframe[1].grid_index = get_bits(&gb, 1);
-    p->subframe[2].grid_index = get_bits(&gb, 1);
-    p->subframe[3].grid_index = get_bits(&gb, 1);
+    p->subframe[0].grid_index = get_bits1(&gb);
+    p->subframe[1].grid_index = get_bits1(&gb);
+    p->subframe[2].grid_index = get_bits1(&gb);
+    p->subframe[3].grid_index = get_bits1(&gb);
 
     if (p->cur_rate == Rate6k3) {
         skip_bits(&gb, 1);  /* skip reserved bit */
