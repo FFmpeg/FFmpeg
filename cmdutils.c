@@ -484,9 +484,9 @@ void show_banner(void)
            program_name, program_birth_year, this_year);
     av_log(NULL, AV_LOG_INFO, "  built on %s %s with %s %s\n",
            __DATE__, __TIME__, CC_TYPE, CC_VERSION);
-    av_log(NULL, AV_LOG_VERBOSE, "  configuration: " FFMPEG_CONFIGURATION "\n");
-    print_all_libs_info(INDENT|SHOW_CONFIG,  AV_LOG_VERBOSE);
-    print_all_libs_info(INDENT|SHOW_VERSION, AV_LOG_VERBOSE);
+    av_log(NULL, AV_LOG_INFO, "  configuration: " FFMPEG_CONFIGURATION "\n");
+    print_all_libs_info(INDENT|SHOW_CONFIG,  AV_LOG_INFO);
+    print_all_libs_info(INDENT|SHOW_VERSION, AV_LOG_INFO);
 }
 
 int opt_version(const char *opt, const char *arg) {
