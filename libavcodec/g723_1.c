@@ -543,8 +543,8 @@ static void gen_acb_excitation(int16_t *vector, int16_t *prev_excitation,
     /* Calculate adaptive vector */
     cb_ptr += subfrm.ad_cb_gain * 20;
     for (i = 0; i < SUBFRAME_LEN; i++) {
-        sum = ff_dot_product(residual + i, cb_ptr, PITCH_ORDER)<<1;
-        vector[i] = av_clipl_int32((sum << 1) + (1 << 15)) >> 16;
+        sum = ff_dot_product(residual + i, cb_ptr, PITCH_ORDER);
+        vector[i] = av_clipl_int32((sum << 2) + (1 << 15)) >> 16;
     }
 }
 
