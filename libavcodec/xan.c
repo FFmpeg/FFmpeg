@@ -130,13 +130,16 @@ static int xan_huffman_decode(unsigned char *dest, int dest_len,
  *
  * @param dest destination buffer of dest_len, must be padded with at least 130 bytes
  */
-static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_len)
+static void xan_unpack(unsigned char *dest, int dest_len,
+                       const unsigned char *src, int src_len)
 {
     unsigned char opcode;
     int size;
+    unsigned char *dest_org = dest;
     unsigned char *dest_end = dest + dest_len;
+    const unsigned char *src_end = src + src_len;
 
-    while (dest < dest_end) {
+    while (dest < dest_end && src < src_end) {
         opcode = *src++;
 
         if (opcode < 0xe0) {
@@ -161,9 +164,11 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
 
                 back  = ((opcode & 0x10) << 12) + bytestream_get_be16(&src) + 1;
                 size2 = ((opcode & 0x0c) <<  6) + *src++ + 5;
-                if (size + size2 > dest_end - dest)
-                    return;
             }
+            if (dest_end - dest < size + size2 ||
+                dest + size - dest_org < back ||
+                src_end - src < size)
+                return;
             memcpy(dest, src, size);  dest += size;  src += size;
             av_memcpy_backptr(dest, back, size2);
             dest += size2;
@@ -171,6 +176,8 @@ static void xan_unpack(unsigned char *dest, const unsigned char *src, int dest_l
             int finish = opcode >= 0xfc;
             size = finish ? opcode & 3 : ((opcode & 0x1f) << 2) + 4;
 
+            if (dest_end - dest < size || src_end - src < size)
+                return;
             memcpy(dest, src, size);  dest += size;  src += size;
             if (finish)
                 return;
@@ -303,7 +310,8 @@ static int xan_wc3_decode_frame(XanContext *s) {
         return AVERROR_INVALIDDATA;
 
     if (imagedata_segment[0] == 2) {
-        xan_unpack(s->buffer2, &imagedata_segment[1], s->buffer2_size);
+        xan_unpack(s->buffer2, s->buffer2_size,
+                   &imagedata_segment[1], s->size - imagedata_offset - 1);
         imagedata_size = s->buffer2_size;
     } else {
         imagedata_size = s->size - imagedata_offset - 1;
