@@ -68,11 +68,10 @@ static inline int bidir_sal(int value, int offset)
  * @param a input data array
  * @param b input data array
  * @param length number of elements
- * @param shift the result is scaled by 2^shift
  *
  * @return dot product = sum of elementwise products
  */
-int ff_dot_product(const int16_t *a, const int16_t *b, int length, int shift);
+int ff_dot_product(const int16_t *a, const int16_t *b, int length);
 
 /**
  * returns the dot product.

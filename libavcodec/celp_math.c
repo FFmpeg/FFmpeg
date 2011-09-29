@@ -197,14 +197,14 @@ int ff_log2(uint32_t value)
     return (power_int << 15) + value;
 }
 
-int ff_dot_product(const int16_t *a, const int16_t *b, int length, int shift)
+int ff_dot_product(const int16_t *a, const int16_t *b, int length)
 {
-    int i, sum = 0;
+    int i;
+    int64_t sum = 0;
 
-    for (i = 0; i < length; i++) {
-        int64_t prod = av_clipl_int32(MUL64(a[i], b[i]) << shift);
-        sum = av_clipl_int32(sum + prod);
-    }
+    for (i = 0; i < length; i++)
+        sum += MUL16(a[i], b[i]);
+
     return sum;
 }
 
