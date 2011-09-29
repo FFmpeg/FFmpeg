@@ -258,6 +258,8 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_CAVS,         MKTAG('C', 'A', 'V', 'S') },
     { CODEC_ID_JPEG2000,     MKTAG('m', 'j', 'p', '2') },
     { CODEC_ID_JPEG2000,     MKTAG('M', 'J', '2', 'C') },
+    { CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'C') },
+    { CODEC_ID_JPEG2000,     MKTAG('L', 'J', '2', 'K') },
     { CODEC_ID_VMNC,         MKTAG('V', 'M', 'n', 'c') },
     { CODEC_ID_TARGA,        MKTAG('t', 'g', 'a', ' ') },
     { CODEC_ID_PNG,          MKTAG('M', 'P', 'N', 'G') },
