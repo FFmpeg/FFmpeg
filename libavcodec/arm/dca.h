@@ -23,6 +23,45 @@
 
 #include <stdint.h>
 #include "config.h"
+#include "libavutil/intmath.h"
+
+#if HAVE_ARMV6 && HAVE_INLINE_ASM
+
+#define decode_blockcode decode_blockcode
+static inline int decode_blockcode(int code, int levels, int *values)
+{
+    int v0, v1, v2, v3;
+
+    __asm__ ("smmul   %4, %8, %11           \n"
+             "smlabb  %8, %4, %10, %8       \n"
+             "smmul   %5, %4, %11           \n"
+             "sub     %8, %8, %9, lsr #1    \n"
+             "smlabb  %4, %5, %10, %4       \n"
+             "smmul   %6, %5, %11           \n"
+             "str     %8, %0                \n"
+             "sub     %4, %4, %9, lsr #1    \n"
+             "smlabb  %5, %6, %10, %5       \n"
+             "smmul   %7, %6, %11           \n"
+             "str     %4, %1                \n"
+             "sub     %5, %5, %9, lsr #1    \n"
+             "smlabb  %6, %7, %10, %6       \n"
+             "cmp     %7, #0                \n"
+             "str     %5, %2                \n"
+             "sub     %6, %6, %9, lsr #1    \n"
+             "it      eq                    \n"
+             "mvneq   %7, #0                \n"
+             "str     %6, %3                \n"
+             : "=m"(values[0]), "=m"(values[1]),
+               "=m"(values[2]), "=m"(values[3]),
+               "=&r"(v0), "=&r"(v1), "=&r"(v2), "=&r"(v3),
+               "+&r"(code)
+             : "r"(levels - 1), "r"(-levels), "r"(ff_inverse[levels])
+             : "cc");
+
+    return v3;
+}
+
+#endif
 
 #if HAVE_NEON && HAVE_INLINE_ASM && HAVE_ASM_MOD_Y
 

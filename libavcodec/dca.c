@@ -1038,6 +1038,7 @@ static void dca_downmix(float *samples, int srcfmt,
 }
 
 
+#ifndef decode_blockcode
 /* Very compact version of the block code decoder that does not use table
  * look-up but is slightly slower */
 static int decode_blockcode(int code, int levels, int *values)
@@ -1058,6 +1059,7 @@ static int decode_blockcode(int code, int levels, int *values)
         return -1;
     }
 }
+#endif
 
 static const uint8_t abits_sizes[7] = { 7, 10, 12, 13, 15, 17, 19 };
 static const uint8_t abits_levels[7] = { 3, 5, 7, 9, 13, 17, 25 };
