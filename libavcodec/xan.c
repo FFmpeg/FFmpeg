@@ -553,6 +553,11 @@ static int xan_decode_frame(AVCodecContext *avctx,
         }
         buf_size = buf_end - buf;
     }
+    if (s->palettes_count <= 0) {
+        av_log(s->avctx, AV_LOG_ERROR, "No palette found\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if ((ret = avctx->get_buffer(avctx, &s->current_frame))) {
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return ret;
