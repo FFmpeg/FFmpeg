@@ -39,10 +39,10 @@ static const AVOption options[]={
 {"och", "output channel count", OFFSET(out.ch_count   ), FF_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
 {"isr",  "input sample rate"  , OFFSET( in_sample_rate), FF_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
 {"osr", "output sample rate"  , OFFSET(out_sample_rate), FF_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
-{"ip" ,  "input planar"       , OFFSET( in.planar     ), FF_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
-{"op" , "output planar"       , OFFSET(out.planar     ), FF_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
-{"isf",  "input sample format", OFFSET( in_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1, 0},
-{"osf", "output sample format", OFFSET(out_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1, 0},
+//{"ip" ,  "input planar"       , OFFSET( in.planar     ), FF_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
+//{"op" , "output planar"       , OFFSET(out.planar     ), FF_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
+{"isf",  "input sample format", OFFSET( in_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1+256, 0},
+{"osf", "output sample format", OFFSET(out_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1+256, 0},
 {"tsf", "internal sample format", OFFSET(int_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_NONE}, -1, AV_SAMPLE_FMT_FLT, 0},
 {"icl",  "input channel layout" , OFFSET( in_ch_layout), FF_OPT_TYPE_INT64, {.dbl=0}, 0, INT64_MAX, 0, "channel_layout"},
 {"ocl",  "output channel layout", OFFSET(out_ch_layout), FF_OPT_TYPE_INT64, {.dbl=0}, 0, INT64_MAX, 0, "channel_layout"},
@@ -138,6 +138,11 @@ int swr_init(SwrContext *s){
     free_temp(&s->in_buffer);
     swr_audio_convert_free(&s-> in_convert);
     swr_audio_convert_free(&s->out_convert);
+
+    s-> in.planar= s-> in_sample_fmt >= 0x100;
+    s->out.planar= s->out_sample_fmt >= 0x100;
+    s-> in_sample_fmt &= 0xFF;
+    s->out_sample_fmt &= 0xFF;
 
     //We assume AVOptions checked the various values and the defaults where allowed
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16
@@ -250,6 +255,17 @@ static void copy(AudioData *out, AudioData *in,
         memcpy(out->ch[0], in->ch[0], count*out->ch_count*out->bps);
 }
 
+static void fill_audiodata(AudioData *out, uint8_t *in_arg [SWR_CH_MAX]){
+    int i;
+    if(out->planar){
+        for(i=0; i<out->ch_count; i++)
+            out->ch[i]= in_arg[i];
+    }else{
+        for(i=0; i<out->ch_count; i++)
+            out->ch[i]= in_arg[0] + i*out->bps;
+    }
+}
+
 int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_count,
                          const uint8_t *in_arg [SWR_CH_MAX], int  in_count){
     AudioData *postin, *midbuf, *preout;
@@ -264,12 +280,8 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         out_count = in_count;
     }
 
-    av_assert0(in ->planar == 0);
-    av_assert0(out->planar == 0);
-    for(i=0; i<s-> in.ch_count; i++)
-        in ->ch[i]=  in_arg[0] + i* in->bps;
-    for(i=0; i<s->out.ch_count; i++)
-        out->ch[i]= out_arg[0] + i*out->bps;
+    fill_audiodata(in ,  in_arg);
+    fill_audiodata(out, out_arg);
 
 //     in_max= out_count*(int64_t)s->in_sample_rate / s->out_sample_rate + resample_filter_taps;
 //     in_count= FFMIN(in_count, in_in + 2 - s->hist_buffer_count);
