@@ -150,7 +150,7 @@ static int unpack_bitstream(G723_1_Context *p, const uint8_t *buf,
     p->subframe[3].grid_index = get_bits1(&gb);
 
     if (p->cur_rate == Rate6k3) {
-        skip_bits(&gb, 1);  /* skip reserved bit */
+        skip_bits1(&gb);  /* skip reserved bit */
 
         /* Compute pulse_pos index using the 13-bit combined position index */
         temp = get_bits(&gb, 13);
