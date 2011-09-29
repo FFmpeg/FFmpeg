@@ -250,7 +250,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     const uint8_t *src = avpkt->data;
     int buf_size = avpkt->size;
     PCMDecode *s = avctx->priv_data;
-    int sample_size, c, n;
+    int sample_size, c, n, out_size;
     uint8_t *samples;
     int32_t *dst_int32_t;
 
@@ -286,9 +286,16 @@ static int pcm_decode_frame(AVCodecContext *avctx,
             buf_size -= buf_size % n;
     }
 
-    buf_size= FFMIN(buf_size, *data_size/2);
-
     n = buf_size/sample_size;
+
+    out_size = n * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (avctx->codec_id == CODEC_ID_PCM_DVD ||
+        avctx->codec_id == CODEC_ID_PCM_LXF)
+        out_size *= 2;
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer too small\n");
+        return AVERROR(EINVAL);
+    }
 
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_U32LE:
@@ -450,7 +457,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     default:
         return -1;
     }
-    *data_size = samples - (uint8_t *)data;
+    *data_size = out_size;
     return buf_size;
 }
 
