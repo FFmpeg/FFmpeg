@@ -334,7 +334,7 @@ int64_t guess_correct_pts(PtsCorrectionContext *ctx, int64_t pts, int64_t dts);
  *
  * If is_path is non-zero, look for the file in the path preset_name.
  * Otherwise search for a file named arg.ffpreset in the directories
- * $FFMPEG_DATADIR (if set), $HOME/.ffmpeg, and in the datadir defined
+ * $AVCONV_DATADIR (if set), $HOME/.avconv, and in the datadir defined
  * at configuration time, in that order. If no such file is found and
  * codec_name is defined, then search for a file named
  * codec_name-preset_name.ffpreset in the above-mentioned directories.
