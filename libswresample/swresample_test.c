@@ -123,7 +123,7 @@ int main(int argc, char **argv){
                             double sum_aa= 0;
                             double sum_bb= 0;
                             double sum_ab= 0;
-                            for(i=0; i<SAMPLES; i++){
+                            for(i=0; i<out_count; i++){
                                 double a= get(array_in , ch + i*in_ch_count, in_sample_fmt);
                                 double b= get(array_out, ch + i*in_ch_count, in_sample_fmt);
                                 sum_a += a;
@@ -136,7 +136,7 @@ int main(int argc, char **argv){
                             x = sum_ab/sum_bb;
                             sse= sum_aa + sum_bb*x*x - 2*x*sum_ab;
 
-                            fprintf(stderr, "[%f %f %f] len:%5d\n", sqrt(sse/SAMPLES), x, maxdiff, out_count);
+                            fprintf(stderr, "[%f %f %f] len:%5d\n", sqrt(sse/out_count), x, maxdiff, out_count);
                         }
                         fprintf(stderr, "\n");
                     }
