@@ -281,6 +281,8 @@ static int mp_decode_frame(AVCodecContext *avctx,
     if (sz == 0)
         goto end;
 
+    if (mp->max_codes_bits <= 0)
+        goto end;
     if (init_vlc(&mp->vlc, mp->max_codes_bits, mp->codes_count, &mp->codes[0].size, sizeof(HuffCode), 1, &mp->codes[0].code, sizeof(HuffCode), 4, 0))
         goto end;
     mp_decode_frame_helper(mp, &gb);
