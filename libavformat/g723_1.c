@@ -78,6 +78,6 @@ AVInputFormat ff_g723_1_demuxer = {
     NULL,
     g723_1_init,
     g723_1_read_packet,
-    .extensions = "tco",
+    .extensions = "tco,rco",
     .flags = AVFMT_GENERIC_INDEX
 };
