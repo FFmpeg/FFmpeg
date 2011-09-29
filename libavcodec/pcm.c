@@ -250,9 +250,8 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     const uint8_t *src = avpkt->data;
     int buf_size = avpkt->size;
     PCMDecode *s = avctx->priv_data;
-    int sample_size, c, n, i;
+    int sample_size, c, n;
     uint8_t *samples;
-    const uint8_t *src8, *src2[MAX_CHANNELS];
     int32_t *dst_int32_t;
 
     samples = data;
@@ -320,6 +319,8 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_PCM_S16LE_PLANAR:
+    {
+        const uint8_t *src2[MAX_CHANNELS];
         n /= avctx->channels;
         for(c=0;c<avctx->channels;c++)
             src2[c] = &src[c*n*2];
@@ -329,6 +330,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
                 samples += 2;
             }
         break;
+    }
     case CODEC_ID_PCM_U16LE:
         DECODE(16, le16, src, samples, n, 0, 0x8000)
         break;
@@ -391,6 +393,8 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         break;
     case CODEC_ID_PCM_DVD:
+    {
+        const uint8_t *src8;
         dst_int32_t = data;
         n /= avctx->channels;
         switch (avctx->bits_per_coded_sample) {
@@ -419,7 +423,11 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         samples = (uint8_t *) dst_int32_t;
         break;
+    }
     case CODEC_ID_PCM_LXF:
+    {
+        int i;
+        const uint8_t *src8;
         dst_int32_t = data;
         n /= avctx->channels;
         //unpack and de-planerize
@@ -438,6 +446,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         }
         samples = (uint8_t *) dst_int32_t;
         break;
+    }
     default:
         return -1;
     }
