@@ -104,6 +104,14 @@ If set to @option{true}, print a list of devices and exit.
 If set to @option{true}, print a list of selected device's options
 and exit.
 
+@item video_device_number
+Set video device number for devices with same name (starts at 0,
+defaults to 0).
+
+@item audio_device_number
+Set audio device number for devices with same name (starts at 0,
+defaults to 0).
+
 @end table
 
 @subsection Examples
@@ -120,6 +128,12 @@ $ ffmpeg -list_devices true -f dshow -i dummy
 Open video device @var{Camera}:
 @example
 $ ffmpeg -f dshow -i video="Camera"
+@end example
+
+@item
+Open second video device with name @var{Camera}:
+@example
+$ ffmpeg -f dshow -video_device_number 1 -i video="Camera"
 @end example
 
 @item

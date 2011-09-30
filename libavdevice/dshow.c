@@ -31,6 +31,8 @@ struct dshow_ctx {
     IGraphBuilder *graph;
 
     char *device_name[2];
+    int video_device_number;
+    int audio_device_number;
 
     int   list_options;
     int   list_devices;
@@ -249,6 +251,8 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
     IEnumMoniker *classenum = NULL;
     IMoniker *m = NULL;
     const char *device_name = ctx->device_name[devtype];
+    int skip = (devtype == VideoDevice) ? ctx->video_device_number
+                                        : ctx->audio_device_number;
     int r;
 
     const GUID *device_guid[2] = { &CLSID_VideoInputDeviceCategory,
@@ -283,6 +287,7 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
             if (strcmp(device_name, buf))
                 goto fail1;
 
+            if (!skip--)
             IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
         } else {
             av_log(avctx, AV_LOG_INFO, " \"%s\"\n", buf);
@@ -938,6 +943,8 @@ static const AVOption options[] = {
     { "list_options", "list available options for specified device", OFFSET(list_options), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_options" },
     { "true", "", 0, AV_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_options" },
     { "false", "", 0, AV_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_options" },
+    { "video_device_number", "set video device number for devices with same name (starts at 0)", OFFSET(video_device_number), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
+    { "audio_device_number", "set audio device number for devices with same name (starts at 0)", OFFSET(audio_device_number), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
     { NULL },
 };
 
