@@ -545,8 +545,8 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
     if (ctx->qmat_changed || sf != ctx->prev_slice_sf) {
         ctx->prev_slice_sf = sf;
         for (i = 0; i < 64; i++) {
-            ctx->qmat_luma_scaled[i]   = ctx->qmat_luma[i]   * sf;
-            ctx->qmat_chroma_scaled[i] = ctx->qmat_chroma[i] * sf;
+            ctx->qmat_luma_scaled[ctx->dsp.idct_permutation[i]]   = ctx->qmat_luma[i]   * sf;
+            ctx->qmat_chroma_scaled[ctx->dsp.idct_permutation[i]] = ctx->qmat_chroma[i] * sf;
         }
     }
 
