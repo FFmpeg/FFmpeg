@@ -288,7 +288,7 @@ dshow_cycle_devices(AVFormatContext *avctx, ICreateDevEnum *devenum,
                 goto fail1;
 
             if (!skip--)
-            IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
+                IMoniker_BindToObject(m, 0, 0, &IID_IBaseFilter, (void *) &device_filter);
         } else {
             av_log(avctx, AV_LOG_INFO, " \"%s\"\n", buf);
         }
