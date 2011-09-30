@@ -249,9 +249,10 @@ static av_cold int vp8_init(AVCodecContext *avctx)
         enccfg.rc_end_usage = VPX_CBR;
     enccfg.rc_target_bitrate = av_rescale_rnd(avctx->bit_rate, 1, 1000,
                                               AV_ROUND_NEAR_INF);
-
-    enccfg.rc_min_quantizer = avctx->qmin;
-    enccfg.rc_max_quantizer = avctx->qmax;
+    if (avctx->qmin > 0)
+        enccfg.rc_min_quantizer = avctx->qmin;
+    if (avctx->qmax > 0)
+        enccfg.rc_max_quantizer = avctx->qmax;
     enccfg.rc_dropframe_thresh = avctx->frame_skip_threshold;
 
     //0-100 (0 => CBR, 100 => VBR)
@@ -271,9 +272,10 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     enccfg.rc_buf_optimal_sz     = enccfg.rc_buf_sz * 5 / 6;
 
     //_enc_init() will balk if kf_min_dist differs from max w/VPX_KF_AUTO
-    if (avctx->keyint_min == avctx->gop_size)
+    if (avctx->keyint_min >= 0 && avctx->keyint_min == avctx->gop_size)
         enccfg.kf_min_dist = avctx->keyint_min;
-    enccfg.kf_max_dist     = avctx->gop_size;
+    if (avctx->gop_size >= 0)
+        enccfg.kf_max_dist = avctx->gop_size;
 
     if (enccfg.g_pass == VPX_RC_FIRST_PASS)
         enccfg.g_lag_in_frames = 0;
@@ -552,6 +554,14 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVCodecDefault defaults[] = {
+    { "qmin",             "-1" },
+    { "qmax",             "-1" },
+    { "g",                "-1" },
+    { "keyint_min",       "-1" },
+    { NULL },
+};
+
 AVCodec ff_libvpx_encoder = {
     .name           = "libvpx",
     .type           = AVMEDIA_TYPE_VIDEO,
@@ -564,4 +574,5 @@ AVCodec ff_libvpx_encoder = {
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("libvpx VP8"),
     .priv_class = &class,
+    .defaults       = defaults,
 };
