@@ -630,10 +630,11 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             buf_size -= 128;
         }
         break;
-    case CODEC_ID_ADPCM_IMA_EA_EACS:
+    case CODEC_ID_ADPCM_IMA_EA_EACS: {
+        unsigned header_size = 4 + (8<<st);
         samples_in_chunk = bytestream_get_le32(&src) >> (1-st);
 
-        if (samples_in_chunk > buf_size-4-(8<<st)) {
+        if (buf_size < header_size || samples_in_chunk > buf_size - header_size) {
             src += buf_size - 4;
             break;
         }
@@ -648,6 +649,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             *samples++ = adpcm_ima_expand_nibble(&c->status[st], *src&0x0F, 3);
         }
         break;
+    }
     case CODEC_ID_ADPCM_IMA_EA_SEAD:
         for (; src < buf+buf_size; src++) {
             *samples++ = adpcm_ima_expand_nibble(&c->status[0], src[0] >> 4, 6);
