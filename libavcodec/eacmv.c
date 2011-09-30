@@ -110,9 +110,10 @@ static void cmv_decode_inter(CmvContext * s, const uint8_t *buf, const uint8_t *
         }else{  /* inter using last frame as reference */
             int xoffset = (buf[i] & 0xF) - 7;
             int yoffset = ((buf[i] >> 4)) - 7;
-            cmv_motcomp(s->frame.data[0], s->frame.linesize[0],
-                      s->last_frame.data[0], s->last_frame.linesize[0],
-                      x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
+            if (s->last_frame.data[0])
+                cmv_motcomp(s->frame.data[0], s->frame.linesize[0],
+                          s->last_frame.data[0], s->last_frame.linesize[0],
+                          x*4, y*4, xoffset, yoffset, s->avctx->width, s->avctx->height);
         }
         i++;
     }
