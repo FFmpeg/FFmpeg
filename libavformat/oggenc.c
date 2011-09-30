@@ -519,6 +519,8 @@ static int ogg_write_trailer(AVFormatContext *s)
             av_free(oggstream->header[0]);
             av_free(oggstream->header[1]);
         }
+        else
+            av_free(oggstream->header[1]);
         av_freep(&st->priv_data);
     }
     return 0;
