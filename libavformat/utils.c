@@ -2299,15 +2299,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     for(i=0;i<ic->nb_streams;i++) {
         AVCodec *codec;
         st = ic->streams[i];
-        if (st->codec->codec_id == CODEC_ID_AAC && st->codec->extradata_size) {
-            // We need to discard these since they can be plain wrong for
-            // backwards compatible HE-AAC signaling.
-            // But when we have no extradata we need to keep them or we can't
-            // play anything at all.
-            st->codec->sample_rate = 0;
-            st->codec->frame_size = 0;
-            st->codec->channels = 0;
-        }
 
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
             st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
