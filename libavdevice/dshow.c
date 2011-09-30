@@ -371,9 +371,9 @@ dshow_cycle_formats(AVFormatContext *avctx, enum dshowDeviceType devtype,
             if (!pformat_set) {
                 av_log(avctx, AV_LOG_INFO, "  min s=%ldx%ld fps=%g max s=%ldx%ld fps=%g\n",
                        vcaps->MinOutputSize.cx, vcaps->MinOutputSize.cy,
-                       1e7 / vcaps->MinFrameInterval,
+                       1e7 / vcaps->MaxFrameInterval,
                        vcaps->MaxOutputSize.cx, vcaps->MaxOutputSize.cy,
-                       1e7 / vcaps->MaxFrameInterval);
+                       1e7 / vcaps->MinFrameInterval);
                 continue;
             }
             if (ctx->framerate) {
