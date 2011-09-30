@@ -163,6 +163,8 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
             sub_type = get_byte(s->pb);
             type = get_byte(s->pb);
             size = get_le16(s->pb);
+            if (size < 4)
+                return AVERROR_INVALIDDATA;
             avs->remaining_frame_size -= size;
 
             switch (type) {
