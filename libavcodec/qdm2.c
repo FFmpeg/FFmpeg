@@ -1355,6 +1355,8 @@ static void qdm2_fft_decode_tones (QDM2Context *q, int duration, GetBitContext *
             return;
 
         local_int_14 = (offset >> local_int_8);
+        if (local_int_14 >= FF_ARRAY_ELEMS(fft_level_index_table))
+            return;
 
         if (q->nb_channels > 1) {
             channel = get_bits1(gb);
