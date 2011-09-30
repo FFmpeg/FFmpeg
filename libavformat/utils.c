@@ -3333,7 +3333,7 @@ void av_dump_format(AVFormatContext *ic,
                     int is_output)
 {
     int i;
-    uint8_t *printed = av_mallocz(ic->nb_streams);
+    uint8_t *printed = ic->nb_streams ? av_mallocz(ic->nb_streams) : NULL;
     if (ic->nb_streams && !printed)
         return;
 
