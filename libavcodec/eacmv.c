@@ -52,7 +52,7 @@ static void cmv_decode_intra(CmvContext * s, const uint8_t *buf, const uint8_t *
     unsigned char *dst = s->frame.data[0];
     int i;
 
-    for (i=0; i < s->avctx->height && buf+s->avctx->width<=buf_end; i++) {
+    for (i=0; i < s->avctx->height && buf_end - buf >= s->avctx->width; i++) {
         memcpy(dst, buf, s->avctx->width);
         dst += s->frame.linesize[0];
         buf += s->avctx->width;
@@ -84,7 +84,7 @@ static void cmv_decode_inter(CmvContext * s, const uint8_t *buf, const uint8_t *
 
     i = 0;
     for(y=0; y<s->avctx->height/4; y++)
-    for(x=0; x<s->avctx->width/4 && buf+i<buf_end; x++) {
+    for(x=0; x<s->avctx->width/4 && buf_end - buf > i; x++) {
         if (buf[i]==0xFF) {
             unsigned char *dst = s->frame.data[0] + (y*4)*s->frame.linesize[0] + x*4;
             if (raw+16<buf_end && *raw==0xFF) { /* intra */
@@ -118,7 +118,7 @@ static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t 
 {
     int pal_start, pal_count, i;
 
-    if(buf+16>=buf_end) {
+    if(buf_end - buf < 16) {
         av_log(s->avctx, AV_LOG_WARNING, "truncated header\n");
         return;
     }
@@ -135,7 +135,7 @@ static void cmv_process_header(CmvContext *s, const uint8_t *buf, const uint8_t 
     pal_count = AV_RL16(&buf[14]);
 
     buf += 16;
-    for (i=pal_start; i<pal_start+pal_count && i<AVPALETTE_COUNT && buf+2<buf_end; i++) {
+    for (i=pal_start; i<pal_start+pal_count && i<AVPALETTE_COUNT && buf_end - buf >= 3; i++) {
         s->palette[i] = AV_RB24(buf);
         buf += 3;
     }
