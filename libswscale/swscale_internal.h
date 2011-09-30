@@ -59,28 +59,22 @@ typedef int (*SwsFunc)(struct SwsContext *context, const uint8_t* src[],
                        int srcStride[], int srcSliceY, int srcSliceH,
                        uint8_t* dst[], int dstStride[]);
 
+
 /**
- * Write one line of horizontally scaled Y/U/V/A to planar output
+ * Write one line of horizontally scaled data to planar output
  * without any additional vertical scaling (or point-scaling).
  *
- * @param c       SWS scaling context
- * @param lumSrc  scaled luma (Y) source data, 15bit for 8-10bit output,
+ * @param src     scaled source data, 15bit for 8-10bit output,
  *                19-bit for 16bit output (in int32_t)
- * @param chrUSrc scaled chroma (U) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param chrVSrc scaled chroma (V) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param alpSrc  scaled alpha (A) source data, 15bit for 8-10bit output,
- *                19-bit for 16bit output (in int32_t)
- * @param dest    pointer to the 4 output planes (Y/U/V/A). For >8bit
+ * @param dest    pointer to the output plane. For >8bit
  *                output, this is in uint16_t
- * @param dstW    width of dest[0], dest[3], lumSrc and alpSrc in pixels
- * @param chrDstW width of dest[1], dest[2], chrUSrc and chrVSrc
+ * @param dstW    width of destination in pixels
+ * @param dither  ordered dither array of type int16_t and size 8
+ * @param offset  Dither offset
  */
-typedef void (*yuv2planar1_fn) (struct SwsContext *c,
-                                const int16_t *lumSrc, const int16_t *chrUSrc,
-                                const int16_t *chrVSrc, const int16_t *alpSrc,
-                                uint8_t *dest[4], int dstW, int chrDstW);
+typedef void (*yuv2planar1_fn) (const int16_t *src, uint8_t *dest, int dstW,
+                                const uint8_t *dither, int offset);
+
 /**
  * Write one line of horizontally scaled Y/U/V/A to planar output
  * with multi-point vertical scaling between input pixels.

@@ -2103,8 +2103,8 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21) {
         if (!(c->flags & SWS_BITEXACT)) {
             if (c->flags & SWS_ACCURATE_RND) {
-                c->yuv2yuv1 = RENAME(yuv2yuv1_ar    );
-                c->yuv2yuvX = RENAME(yuv2yuvX_ar    );
+                //c->yuv2yuv1 = RENAME(yuv2yuv1_ar    );
+                //c->yuv2yuvX = RENAME(yuv2yuvX_ar    );
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
                     case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
@@ -2116,8 +2116,8 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
                     }
                 }
             } else {
-                c->yuv2yuv1 = RENAME(yuv2yuv1    );
-                c->yuv2yuvX = RENAME(yuv2yuvX    );
+                //c->yuv2yuv1 = RENAME(yuv2yuv1    );
+                //c->yuv2yuvX = RENAME(yuv2yuvX    );
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
                     case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;

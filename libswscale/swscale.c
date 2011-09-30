@@ -386,34 +386,14 @@ static void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
         }
 }
 
-static void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
-                       const int16_t *chrUSrc, const int16_t *chrVSrc,
-                       const int16_t *alpSrc,
-                       uint8_t *dest[4], int dstW, int chrDstW)
+static void yuv2yuv1_c(const int16_t *src, uint8_t *dest, int dstW,
+                       const uint8_t *dither, int offset)
 {
-    uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
-            *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
     int i;
-    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
-
     for (i=0; i<dstW; i++) {
-        int val = (lumSrc[i]+  lumDither[i & 7]) >> 7;
-        yDest[i]= av_clip_uint8(val);
+        int val = (src[i] + dither[(i + offset) & 7]) >> 7;
+        dest[i]= av_clip_uint8(val);
     }
-
-    if (uDest)
-        for (i=0; i<chrDstW; i++) {
-            int u = (chrUSrc[i] + chrDither[i & 7])       >> 7;
-            int v = (chrVSrc[i] + chrDither[(i + 3) & 7]) >> 7;
-            uDest[i]= av_clip_uint8(u);
-            vDest[i]= av_clip_uint8(v);
-        }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest)
-        for (i=0; i<dstW; i++) {
-            int val = (alpSrc[i] + lumDither[i & 7]) >> 7;
-            aDest[i]= av_clip_uint8(val);
-        }
 }
 
 static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
@@ -2582,10 +2562,18 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
                 if ((dstY&chrSkipMask) || isGray(dstFormat))
                     dest[1] = dest[2] = NULL; //FIXME split functions in lumi / chromi
+                const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
+
                 if (c->yuv2yuv1 && vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
-                    const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
-                    yuv2yuv1(c, lumSrcPtr[0], chrUSrcPtr[0], chrVSrcPtr[0], alpBuf,
-                             dest, dstW, chrDstW);
+                    yuv2yuv1(lumSrcPtr[0], dest[0], dstW, c->lumDither8, 0);
+
+                    if (dest[1]){
+                        yuv2yuv1(chrUSrcPtr[0], dest[1], chrDstW, c->chrDither8, 0);
+                        yuv2yuv1(chrVSrcPtr[0], dest[2], chrDstW, c->chrDither8, 3);
+                    }
+
+                    if (alpBuf && dest[3])
+                        yuv2yuv1(alpBuf, dest[3], dstW, c->lumDither8, 0);
                 } else { //General YV12
                     yuv2yuvX(c, vLumFilter + dstY * vLumFilterSize,
                              lumSrcPtr, vLumFilterSize,
