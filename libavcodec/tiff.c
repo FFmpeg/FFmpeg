@@ -173,6 +173,8 @@ static int tiff_unpack_strip(TiffContext *s, uint8_t* dst, int stride, const uin
         }
         switch(s->compr){
         case TIFF_RAW:
+            if (ssrc + size - src < width)
+                return AVERROR_INVALIDDATA;
             if (!s->fill_order) {
                 memcpy(dst, src, width);
             } else {
@@ -280,6 +282,8 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
     uint32_t *pal;
     const uint8_t *rp, *gp, *bp;
 
+    if (end_buf - buf < 12)
+        return -1;
     tag = tget_short(&buf, s->le);
     type = tget_short(&buf, s->le);
     count = tget_long(&buf, s->le);
@@ -339,7 +343,7 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
             case TIFF_SHORT:
             case TIFF_LONG:
                 s->bpp = 0;
-                for(i = 0; i < count; i++) s->bpp += tget(&buf, type, s->le);
+                for(i = 0; i < count && buf < end_buf; i++) s->bpp += tget(&buf, type, s->le);
                 break;
             default:
                 s->bpp = -1;
@@ -453,6 +457,8 @@ static int tiff_decode_tag(TiffContext *s, const uint8_t *start, const uint8_t *
     case TIFF_PAL:
         pal = (uint32_t *) s->palette;
         off = type_sizes[type];
+        if (count / 3 > 256 || end_buf - buf < count / 3 * off * 3)
+            return -1;
         rp = buf;
         gp = buf + count / 3 * off;
         bp = buf + count / 3 * off * 2;
@@ -495,12 +501,16 @@ static int decode_frame(AVCodecContext *avctx,
     AVFrame *picture = data;
     AVFrame * const p= (AVFrame*)&s->picture;
     const uint8_t *orig_buf = buf, *end_buf = buf + buf_size;
-    int id, le, off, ret;
+    unsigned off;
+    int id, le, ret;
     int i, j, entries;
-    int stride, soff, ssize;
+    int stride;
+    unsigned soff, ssize;
     uint8_t *dst;
 
     //parse image header
+    if (end_buf - buf < 8)
+        return AVERROR_INVALIDDATA;
     id = AV_RL16(buf); buf += 2;
     if(id == 0x4949) le = 1;
     else if(id == 0x4D4D) le = 0;
@@ -520,9 +530,9 @@ static int decode_frame(AVCodecContext *avctx,
     }
     /* parse image file directory */
     off = tget_long(&buf, le);
-    if(orig_buf + off + 14 >= end_buf){
+    if (off >= UINT_MAX - 14 || end_buf - orig_buf < off + 14) {
         av_log(avctx, AV_LOG_ERROR, "IFD offset is greater than image size\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     buf = orig_buf + off;
     entries = tget_short(&buf, le);
@@ -546,23 +556,23 @@ static int decode_frame(AVCodecContext *avctx,
     stride = p->linesize[0];
     dst = p->data[0];
     for(i = 0; i < s->height; i += s->rps){
-        if(s->stripsizes)
+        if(s->stripsizes) {
+            if (s->stripsizes >= end_buf)
+                return AVERROR_INVALIDDATA;
             ssize = tget(&s->stripsizes, s->sstype, s->le);
-        else
+        } else
             ssize = s->stripsize;
 
-        if (ssize > buf_size) {
-            av_log(avctx, AV_LOG_ERROR, "Buffer size is smaller than strip size\n");
-            return -1;
-        }
-
         if(s->stripdata){
+            if (s->stripdata >= end_buf)
+                return AVERROR_INVALIDDATA;
             soff = tget(&s->stripdata, s->sot, s->le);
         }else
             soff = s->stripoff;
-        if (soff < 0) {
-            av_log(avctx, AV_LOG_ERROR, "Invalid stripoff: %d\n", soff);
-            return AVERROR(EINVAL);
+
+        if (soff > buf_size || ssize > buf_size - soff) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid strip size/offset\n");
+            return -1;
         }
         if(tiff_unpack_strip(s, dst, stride, orig_buf + soff, ssize, FFMIN(s->rps, s->height - i)) < 0)
             break;
