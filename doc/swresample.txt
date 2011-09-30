@@ -1,0 +1,44 @@
+    The official guide to swresample for confused developers.
+   =========================================================
+
+Current (simplified) Architecture:
+---------------------------------
+                        Input
+                          v
+       __________________/|\___________
+      /                   |            \
+     /    input sample format convert   v
+    /                     | ___________/
+    |                     |/
+    |                     v
+    |         ___________/|\___________              _____________
+    |        /            |            \            |             |
+    |   Rematrix          |          resample <---->|   Buffers   |
+    |        \___________ | ___________/            |_____________|
+    v                    \|/
+Special Converter         v
+    v         ___________/|\___________              _____________
+    |        /            |            \            |             |
+    |   Rematrix          |          resample <---->|   Buffers   |
+    |        \___________ | ___________/            |_____________|
+    |                    \|/
+    |                     v
+    |                     |\___________
+    \                     |            \
+     \   output sample format convert   v
+      \_________________  | ___________/
+                         \|/
+                          v
+                        Output
+
+Planar/Packed convertion is done when needed during sample format convertion
+Every step can be skiped without memcpy when its not needed.
+Either Resampling and Rematrixing can be performed first depending on which
+way its faster.
+The Buffers are needed for resampling due to resamplng being a process that
+requires future and past data, it thus also introduces inevitably a delay when
+used.
+Internally 32bit float and 16bit int is supported currently, other formats can
+easily be added
+Externally all sample formats in packed and planar configuration are supported
+Its also trivial to add special converters for common cases
