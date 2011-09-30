@@ -77,6 +77,7 @@ do { \
 #define SAMPLES_NEEDED_2(why) \
      av_log (NULL,AV_LOG_INFO,"This file triggers some missing code. Please contact the developers.\nPosition: %s\n",why);
 
+#define QDM2_MAX_FRAME_SIZE 512
 
 typedef int8_t sb_int8_array[2][30][64];
 
@@ -169,7 +170,7 @@ typedef struct {
     /// I/O data
     const uint8_t *compressed_data;
     int compressed_size;
-    float output_buffer[1024];
+    float output_buffer[QDM2_MAX_FRAME_SIZE * 2];
 
     /// Synthesis filter
     MPADSPContext mpadsp;
@@ -1798,6 +1799,8 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     avctx->channels = s->nb_channels = s->channels = AV_RB32(extradata);
     extradata += 4;
+    if (s->channels > MPA_MAX_CHANNELS)
+        return AVERROR_INVALIDDATA;
 
     avctx->sample_rate = AV_RB32(extradata);
     extradata += 4;
@@ -1819,6 +1822,8 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     // something like max decodable tones
     s->group_order = av_log2(s->group_size) + 1;
     s->frame_size = s->group_size / 16; // 16 iterations per super block
+    if (s->frame_size > QDM2_MAX_FRAME_SIZE)
+        return AVERROR_INVALIDDATA;
 
     s->sub_sampling = s->fft_order - 7;
     s->frequency_range = 255 / (1 << (2 - s->sub_sampling));
