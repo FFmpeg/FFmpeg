@@ -27,6 +27,7 @@
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
+#include "thread.h"
 #define  OPJ_STATIC
 #include <openjpeg.h>
 
@@ -53,6 +54,14 @@ static av_cold int libopenjpeg_decode_init(AVCodecContext *avctx)
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
     opj_set_default_decoder_parameters(&ctx->dec_params);
+    avctx->coded_frame = &ctx->image;
+    return 0;
+}
+
+static av_cold int libopenjpeg_decode_init_thread_copy(AVCodecContext *avctx)
+{
+    LibOpenJPEGContext *ctx = avctx->priv_data;
+
     avctx->coded_frame = &ctx->image;
     return 0;
 }
@@ -94,7 +103,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
     opj_set_event_mgr((opj_common_ptr)dec, NULL, NULL);
 
-    ctx->dec_params.cp_reduce = avctx->lowres;
+    ctx->dec_params.cp_limit_decoding = LIMIT_TO_MAIN_HEADER;
     // Tie decoder with decoding parameters
     opj_setup_decoder(dec, &ctx->dec_params);
     stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
@@ -104,7 +113,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    // Decode the codestream
+    // Decode the header only
     image = opj_decode_with_info(dec, stream, NULL);
     opj_cio_close(stream);
     if(!image) {
@@ -112,8 +121,8 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         opj_destroy_decompress(dec);
         return -1;
     }
-    width  = image->comps[0].w << avctx->lowres;
-    height = image->comps[0].h << avctx->lowres;
+    width  = image->x1 - image->x0;
+    height = image->y1 - image->y0;
     if(av_image_check_size(width, height, 0, avctx) < 0) {
         av_log(avctx, AV_LOG_ERROR, "%dx%d dimension invalid.\n", width, height);
         goto done;
@@ -139,12 +148,29 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     }
 
     if(picture->data[0])
-        avctx->release_buffer(avctx, picture);
+        ff_thread_release_buffer(avctx, picture);
 
-    if(avctx->get_buffer(avctx, picture) < 0) {
-        av_log(avctx, AV_LOG_ERROR, "Couldn't allocate image buffer.\n");
+    if(ff_thread_get_buffer(avctx, picture) < 0){
+        av_log(avctx, AV_LOG_ERROR, "ff_thread_get_buffer() failed\n");
         return -1;
     }
+
+    ff_thread_finish_setup(avctx);
+
+    ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
+    ctx->dec_params.cp_reduce = avctx->lowres;
+    // Tie decoder with decoding parameters
+    opj_setup_decoder(dec, &ctx->dec_params);
+    stream = opj_cio_open((opj_common_ptr)dec, buf, buf_size);
+    if(!stream) {
+        av_log(avctx, AV_LOG_ERROR, "Codestream could not be opened for reading.\n");
+        opj_destroy_decompress(dec);
+        return -1;
+    }
+
+    // Decode the codestream
+    image = opj_decode_with_info(dec, stream, NULL);
+    opj_cio_close(stream);
 
     for(x = 0; x < image->numcomps; x++) {
         adjust[x] = FFMAX(image->comps[x].prec - 8, 0);
@@ -179,7 +205,7 @@ static av_cold int libopenjpeg_decode_close(AVCodecContext *avctx)
     LibOpenJPEGContext *ctx = avctx->priv_data;
 
     if(ctx->image.data[0])
-        avctx->release_buffer(avctx, &ctx->image);
+        ff_thread_release_buffer(avctx, &ctx->image);
     return 0 ;
 }
 
@@ -192,7 +218,8 @@ AVCodec ff_libopenjpeg_decoder = {
     .init           = libopenjpeg_decode_init,
     .close          = libopenjpeg_decode_close,
     .decode         = libopenjpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_FRAME_THREADS,
     .max_lowres     = 5,
     .long_name      = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 decoder"),
+    .init_thread_copy = ONLY_IF_THREADS_ENABLED(libopenjpeg_decode_init_thread_copy)
 };
