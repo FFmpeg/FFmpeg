@@ -1,6 +1,48 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.2:
+
+- check buffer and input values in various parts of the code:
+  H.264, VC-1, APE, FLV, Indeo 2, XAN, Ogg, MXF, wavpack, ffv1, MOV,
+  cavs (OCERT-2011-002, CVE-2011-3362), Smacker, cpu detection, lavf,
+  Matroska (CVE-2011-3504), RV10, RV30/RV40
+- memory leaks: vf_scale, eval
+
+- ARM: workaround for bug in GNU assembler
+- AVOptions: fix av_set_string3() doxy to match reality. (Bug #28)
+- Reintroduce AVInputStream.nb_streams to avoid crashes
+- aac: Only output configure if audio was found
+- aac: Remove some suspicious illegal memcpy()s from LTP
+- aacps: skip some memcpy() if src and dst would be equal
+- adts: fix PCE copying
+- alsa: fallback to buffer_size/4 for period_size
+- alsa: limit buffer_size to 32768 frames
+- cljr, indeo2: init_get_bits size in bits instead of bytes
+- configure: add missing CFLAGS to fix building on the HURD
+- dca: set AVCodecContext frame_size for DTS audio
+- fate: allow testing with libavfilter disabled
+- gxf: fix 25 fps DV material in GXF being misdetected as 50 fps
+- h264: correct implicit weight table computation for long ref pics
+- h264: correct the check for invalid long term frame index in MMCO decode
+- h264: fix PCM intra-coded blocks in monochrome case
+- jpegdec: actually search for and parse RSTn
+- lavc: fix type for thread_type option
+- lavf: fix context pointer in av_open_input_stream when avformat_open_input fails
+- lavf: do not set codec_tag for rawvideo
+- libx264: do not set pic quality if no frame is output
+- movenc: create an alternate group for each media type
+- mpegts: fix Continuity Counter error detection
+- mxfenc: fix ignored drop flag in binary timecode representation
+- fix crashes in 32-bit PIC builds (cf e.g. http://bugs.debian.org/639948)
+- ppc64: fix cast related random failures
+- riff: Add mpgv MPEG-2 fourcc
+- swscale: don't use planar output functions to write to NV12/21
+- vc1: properly zero coded_block[] edges on new slice entry
+- vp3/theora: flush after seek
+
+- various bug other fixes
+
 
 version 0.7.1:
 
@@ -15,6 +57,7 @@ version 0.7.1:
 - support newer versions of OpenCV
 - ffmpeg: fix operation with --disable-avfilter
 - fixed integer underflow in matroska decoder
+
 
 version 0.7:
 
