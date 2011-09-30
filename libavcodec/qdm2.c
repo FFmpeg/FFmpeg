@@ -1800,6 +1800,8 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
 
     avctx->channels = s->nb_channels = s->channels = AV_RB32(extradata);
     extradata += 4;
+    if (s->channels > MPA_MAX_CHANNELS)
+        return AVERROR_INVALIDDATA;
 
     avctx->sample_rate = AV_RB32(extradata);
     extradata += 4;
@@ -1821,6 +1823,8 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     // something like max decodable tones
     s->group_order = av_log2(s->group_size) + 1;
     s->frame_size = s->group_size / 16; // 16 iterations per super block
+    if (s->frame_size > FF_ARRAY_ELEMS(s->output_buffer) / 2)
+        return AVERROR_INVALIDDATA;
 
     s->sub_sampling = s->fft_order - 7;
     s->frequency_range = 255 / (1 << (2 - s->sub_sampling));
