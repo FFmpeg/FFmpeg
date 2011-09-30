@@ -153,6 +153,9 @@ static int cmv_decode_frame(AVCodecContext *avctx,
     CmvContext *s = avctx->priv_data;
     const uint8_t *buf_end = buf + buf_size;
 
+    if (buf_end - buf < EA_PREAMBLE_SIZE)
+        return AVERROR_INVALIDDATA;
+
     if (AV_RL32(buf)==MVIh_TAG||AV_RB32(buf)==MVIh_TAG) {
         cmv_process_header(s, buf+EA_PREAMBLE_SIZE, buf_end);
         return buf_size;
