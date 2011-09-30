@@ -79,6 +79,8 @@ static inline int op(uint8_t **dst, const uint8_t *dst_end,
         int striplen = FFMIN(count, remaining);
         if (buf) {
             striplen = FFMIN(striplen, buf_end - *buf);
+            if (*buf >= buf_end)
+                goto exhausted;
             memcpy(*dst, *buf, striplen);
             *buf += striplen;
         } else if (pixel >= 0)
