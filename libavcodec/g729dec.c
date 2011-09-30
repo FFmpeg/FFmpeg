@@ -332,6 +332,16 @@ static int16_t g729d_voice_decision(int onset, int prev_voice_decision, const in
     return voice_decision;
 }
 
+static int32_t scalarproduct_int16_c(const int16_t * v1, const int16_t * v2, int order, int shift)
+{
+    int res = 0;
+
+    while (order--)
+        res += (*v1++ * *v2++) >> shift;
+
+    return res;
+}
+
 static av_cold int decoder_init(AVCodecContext * avctx)
 {
     G729Context* ctx = avctx->priv_data;
@@ -367,8 +377,8 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     for(i=0; i<4; i++)
         ctx->quant_energy[i] = -14336; // -14 in (5.10)
 
-    avctx->dsp_mask= ~AV_CPU_FLAG_FORCE;
     dsputil_init(&ctx->dsp, avctx);
+    ctx->dsp.scalarproduct_int16 = scalarproduct_int16_c;
 
     return 0;
 }
