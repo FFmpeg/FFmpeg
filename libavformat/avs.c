@@ -169,6 +169,8 @@ static int avs_read_packet(AVFormatContext * s, AVPacket * pkt)
 
             switch (type) {
             case AVS_PALETTE:
+                if (size - 4 > sizeof(palette))
+                    return AVERROR_INVALIDDATA;
                 ret = avio_read(s->pb, palette, size - 4);
                 if (ret < size - 4)
                     return AVERROR(EIO);
