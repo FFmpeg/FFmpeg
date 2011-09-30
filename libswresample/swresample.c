@@ -144,7 +144,15 @@ int swr_init(SwrContext *s){
     s-> in_sample_fmt &= 0xFF;
     s->out_sample_fmt &= 0xFF;
 
-    //We assume AVOptions checked the various values and the defaults where allowed
+    if(s-> in_sample_fmt >= AV_SAMPLE_FMT_NB){
+        av_log(s, AV_LOG_ERROR, "Requested sample format %s is invalid\n", av_get_sample_fmt_name(s->in_sample_fmt));
+        return AVERROR(EINVAL);
+    }
+    if(s->out_sample_fmt >= AV_SAMPLE_FMT_NB){
+        av_log(s, AV_LOG_ERROR, "Requested sample format %s is invalid\n", av_get_sample_fmt_name(s->out_sample_fmt));
+        return AVERROR(EINVAL);
+    }
+
     if(   s->int_sample_fmt != AV_SAMPLE_FMT_S16
         &&s->int_sample_fmt != AV_SAMPLE_FMT_FLT){
         av_log(s, AV_LOG_ERROR, "Requested sample format %s is not supported internally, only float & S16 is supported\n", av_get_sample_fmt_name(s->int_sample_fmt));
