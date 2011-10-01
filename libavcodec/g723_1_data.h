@@ -485,7 +485,7 @@ static const int16_t lsp_band2[LSP_CB_SIZE][4] = {
  * for the MP-MLQ codebook
  */
 static const int32_t combinatorial_table[PULSE_MAX][SUBFRAME_LEN/GRID_SIZE] = {
-    {118755, 98280, 80730, 65780L, 53130,
+    {118755, 98280, 80730,  65780, 53130,
       42504, 33649, 26334,  20349, 15504,
       11628,  8568,  6188,   4368,  3003,
        2002,  1287,   792,    462,   252,
