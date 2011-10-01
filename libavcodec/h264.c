@@ -3801,7 +3801,11 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             break;
         case NAL_SPS:
             init_get_bits(&s->gb, ptr, bit_length);
-            ff_h264_decode_seq_parameter_set(h);
+            if(ff_h264_decode_seq_parameter_set(h) < 0 && h->is_avc && (nalsize != consumed) && nalsize){
+                av_log(h->s.avctx, AV_LOG_DEBUG, "SPS decoding failure, trying alternative mode\n");
+                init_get_bits(&s->gb, &buf[buf_index + 1 - consumed], 8*nalsize);
+                ff_h264_decode_seq_parameter_set(h);
+            }
 
             if (s->flags& CODEC_FLAG_LOW_DELAY ||
                 (h->sps.bitstream_restriction_flag && !h->sps.num_reorder_frames))
