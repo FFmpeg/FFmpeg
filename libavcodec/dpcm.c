@@ -39,17 +39,16 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "bytestream.h"
 
 typedef struct DPCMContext {
     int channels;
-    short roq_square_array[256];
-    long sample[2];//for SOL_DPCM
-    const int *sol_table;//for SOL_DPCM
+    int16_t roq_square_array[256];
+    int sample[2];                  ///< previous sample (for SOL_DPCM)
+    const int8_t *sol_table;        ///< delta table for SOL_DPCM
 } DPCMContext;
 
-#define SE_16BIT(x)  if (x & 0x8000) x -= 0x10000;
-
-static const int interplay_delta_table[] = {
+static const int16_t interplay_delta_table[] = {
          0,      1,      2,      3,      4,      5,      6,      7,
          8,      9,     10,     11,     12,     13,     14,     15,
         16,     17,     18,     19,     20,     21,     22,     23,
@@ -85,15 +84,17 @@ static const int interplay_delta_table[] = {
 
 };
 
-static const int sol_table_old[16] =
-    { 0x0,  0x1,  0x2 , 0x3,  0x6,  0xA,  0xF, 0x15,
-    -0x15, -0xF, -0xA, -0x6, -0x3, -0x2, -0x1, 0x0};
+static const int8_t sol_table_old[16] = {
+      0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF, 0x15,
+    -0x15, -0xF, -0xA, -0x6, -0x3, -0x2, -0x1,  0x0
+};
 
-static const int sol_table_new[16] =
-    { 0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF,  0x15,
-      0x0, -0x1, -0x2, -0x3, -0x6, -0xA, -0xF, -0x15};
+static const int8_t sol_table_new[16] = {
+    0x0,  0x1,  0x2,  0x3,  0x6,  0xA,  0xF,  0x15,
+    0x0, -0x1, -0x2, -0x3, -0x6, -0xA, -0xF, -0x15
+};
 
-static const int sol_table_16[128] = {
+static const int16_t sol_table_16[128] = {
     0x000, 0x008, 0x010, 0x020, 0x030, 0x040, 0x050, 0x060, 0x070, 0x080,
     0x090, 0x0A0, 0x0B0, 0x0C0, 0x0D0, 0x0E0, 0x0F0, 0x100, 0x110, 0x120,
     0x130, 0x140, 0x150, 0x160, 0x170, 0x180, 0x190, 0x1A0, 0x1B0, 0x1C0,
@@ -110,12 +111,15 @@ static const int sol_table_16[128] = {
 };
 
 
-
 static av_cold int dpcm_decode_init(AVCodecContext *avctx)
 {
     DPCMContext *s = avctx->priv_data;
     int i;
-    short square;
+
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        av_log(avctx, AV_LOG_INFO, "invalid number of channels\n");
+        return AVERROR(EINVAL);
+    }
 
     s->channels = avctx->channels;
     s->sample[0] = s->sample[1] = 0;
@@ -125,25 +129,23 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     case CODEC_ID_ROQ_DPCM:
         /* initialize square table */
         for (i = 0; i < 128; i++) {
-            square = i * i;
-            s->roq_square_array[i] = square;
+            int16_t square = i * i;
+            s->roq_square_array[i      ] =  square;
             s->roq_square_array[i + 128] = -square;
         }
         break;
 
-
     case CODEC_ID_SOL_DPCM:
         switch(avctx->codec_tag){
         case 1:
-            s->sol_table=sol_table_old;
+            s->sol_table = sol_table_old;
             s->sample[0] = s->sample[1] = 0x80;
             break;
         case 2:
-            s->sol_table=sol_table_new;
+            s->sol_table = sol_table_new;
             s->sample[0] = s->sample[1] = 0x80;
             break;
         case 3:
-            s->sol_table=sol_table_16;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR, "Unknown SOL subcodec\n");
@@ -155,146 +157,160 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
         break;
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    if (avctx->codec->id == CODEC_ID_SOL_DPCM && avctx->codec_tag != 3)
+        avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+    else
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
     return 0;
 }
 
-static int dpcm_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
+
+static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                              AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
+    const uint8_t *buf_end = buf + buf_size;
     DPCMContext *s = avctx->priv_data;
-    int in, out = 0;
+    int out = 0;
     int predictor[2];
-    int channel_number = 0;
-    short *output_samples = data;
-    int shift[2];
-    unsigned char byte;
-    short diff;
+    int ch = 0;
+    int stereo = s->channels - 1;
+    int16_t *output_samples = data;
 
     if (!buf_size)
         return 0;
 
-    // almost every DPCM variant expands one byte of data into two
-    if(*data_size/2 < buf_size)
-        return -1;
+    /* calculate output size */
+    switch(avctx->codec->id) {
+    case CODEC_ID_ROQ_DPCM:
+        out = buf_size - 8;
+        break;
+    case CODEC_ID_INTERPLAY_DPCM:
+        out = buf_size - 6 - s->channels;
+        break;
+    case CODEC_ID_XAN_DPCM:
+        out = buf_size - 2 * s->channels;
+        break;
+    case CODEC_ID_SOL_DPCM:
+        if (avctx->codec_tag != 3)
+            out = buf_size * 2;
+        else
+            out = buf_size;
+        break;
+    }
+    out *= av_get_bytes_per_sample(avctx->sample_fmt);
+    if (out < 0) {
+        av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+        return AVERROR(EINVAL);
+    }
+    if (*data_size < out) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     switch(avctx->codec->id) {
 
     case CODEC_ID_ROQ_DPCM:
-        if (s->channels == 1)
-            predictor[0] = AV_RL16(&buf[6]);
-        else {
-            predictor[0] = buf[7] << 8;
-            predictor[1] = buf[6] << 8;
+        buf += 6;
+
+        if (stereo) {
+            predictor[1] = (int16_t)(bytestream_get_byte(&buf) << 8);
+            predictor[0] = (int16_t)(bytestream_get_byte(&buf) << 8);
+        } else {
+            predictor[0] = (int16_t)bytestream_get_le16(&buf);
         }
-        SE_16BIT(predictor[0]);
-        SE_16BIT(predictor[1]);
 
         /* decode the samples */
-        for (in = 8, out = 0; in < buf_size; in++, out++) {
-            predictor[channel_number] += s->roq_square_array[buf[in]];
-            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
-            output_samples[out] = predictor[channel_number];
+        while (buf < buf_end) {
+            predictor[ch] += s->roq_square_array[*buf++];
+            predictor[ch]  = av_clip_int16(predictor[ch]);
+            *output_samples++ = predictor[ch];
 
             /* toggle channel */
-            channel_number ^= s->channels - 1;
+            ch ^= stereo;
         }
         break;
 
     case CODEC_ID_INTERPLAY_DPCM:
-        in = 6;  /* skip over the stream mask and stream length */
-        predictor[0] = AV_RL16(&buf[in]);
-        in += 2;
-        SE_16BIT(predictor[0])
-        output_samples[out++] = predictor[0];
-        if (s->channels == 2) {
-            predictor[1] = AV_RL16(&buf[in]);
-            in += 2;
-            SE_16BIT(predictor[1])
-            output_samples[out++] = predictor[1];
+        buf += 6;  /* skip over the stream mask and stream length */
+
+        for (ch = 0; ch < s->channels; ch++) {
+            predictor[ch] = (int16_t)bytestream_get_le16(&buf);
+            *output_samples++ = predictor[ch];
         }
 
-        while (in < buf_size) {
-            predictor[channel_number] += interplay_delta_table[buf[in++]];
-            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
-            output_samples[out++] = predictor[channel_number];
+        ch = 0;
+        while (buf < buf_end) {
+            predictor[ch] += interplay_delta_table[*buf++];
+            predictor[ch]  = av_clip_int16(predictor[ch]);
+            *output_samples++ = predictor[ch];
 
             /* toggle channel */
-            channel_number ^= s->channels - 1;
+            ch ^= stereo;
         }
-
         break;
 
     case CODEC_ID_XAN_DPCM:
-        in = 0;
-        shift[0] = shift[1] = 4;
-        predictor[0] = AV_RL16(&buf[in]);
-        in += 2;
-        SE_16BIT(predictor[0]);
-        if (s->channels == 2) {
-            predictor[1] = AV_RL16(&buf[in]);
-            in += 2;
-            SE_16BIT(predictor[1]);
-        }
+    {
+        int shift[2] = { 4, 4 };
 
-        while (in < buf_size) {
-            byte = buf[in++];
-            diff = (byte & 0xFC) << 8;
-            if ((byte & 0x03) == 3)
-                shift[channel_number]++;
+        for (ch = 0; ch < s->channels; ch++)
+            predictor[ch] = (int16_t)bytestream_get_le16(&buf);
+
+        ch = 0;
+        while (buf < buf_end) {
+            uint8_t n = *buf++;
+            int16_t diff = (n & 0xFC) << 8;
+            if ((n & 0x03) == 3)
+                shift[ch]++;
             else
-                shift[channel_number] -= (2 * (byte & 3));
+                shift[ch] -= (2 * (n & 3));
             /* saturate the shifter to a lower limit of 0 */
-            if (shift[channel_number] < 0)
-                shift[channel_number] = 0;
+            if (shift[ch] < 0)
+                shift[ch] = 0;
 
-            diff >>= shift[channel_number];
-            predictor[channel_number] += diff;
+            diff >>= shift[ch];
+            predictor[ch] += diff;
 
-            predictor[channel_number] = av_clip_int16(predictor[channel_number]);
-            output_samples[out++] = predictor[channel_number];
+            predictor[ch] = av_clip_int16(predictor[ch]);
+            *output_samples++ = predictor[ch];
 
             /* toggle channel */
-            channel_number ^= s->channels - 1;
+            ch ^= stereo;
         }
         break;
+    }
     case CODEC_ID_SOL_DPCM:
-        in = 0;
         if (avctx->codec_tag != 3) {
-            if(*data_size/4 < buf_size)
-                return -1;
-            while (in < buf_size) {
-                int n1, n2;
-                n1 = (buf[in] >> 4) & 0xF;
-                n2 = buf[in++] & 0xF;
-                s->sample[0] += s->sol_table[n1];
-                if (s->sample[0] < 0) s->sample[0] = 0;
-                if (s->sample[0] > 255) s->sample[0] = 255;
-                output_samples[out++] = (s->sample[0] - 128) << 8;
-                s->sample[s->channels - 1] += s->sol_table[n2];
-                if (s->sample[s->channels - 1] < 0) s->sample[s->channels - 1] = 0;
-                if (s->sample[s->channels - 1] > 255) s->sample[s->channels - 1] = 255;
-                output_samples[out++] = (s->sample[s->channels - 1] - 128) << 8;
+            uint8_t *output_samples_u8 = data;
+            while (buf < buf_end) {
+                uint8_t n = *buf++;
+
+                s->sample[0] += s->sol_table[n >> 4];
+                s->sample[0]  = av_clip_uint8(s->sample[0]);
+                *output_samples_u8++ = s->sample[0];
+
+                s->sample[stereo] += s->sol_table[n & 0x0F];
+                s->sample[stereo]  = av_clip_uint8(s->sample[stereo]);
+                *output_samples_u8++ = s->sample[stereo];
             }
         } else {
-            while (in < buf_size) {
-                int n;
-                n = buf[in++];
-                if (n & 0x80) s->sample[channel_number] -= s->sol_table[n & 0x7F];
-                else s->sample[channel_number] += s->sol_table[n & 0x7F];
-                s->sample[channel_number] = av_clip_int16(s->sample[channel_number]);
-                output_samples[out++] = s->sample[channel_number];
+            while (buf < buf_end) {
+                uint8_t n = *buf++;
+                if (n & 0x80) s->sample[ch] -= sol_table_16[n & 0x7F];
+                else          s->sample[ch] += sol_table_16[n & 0x7F];
+                s->sample[ch] = av_clip_int16(s->sample[ch]);
+                *output_samples++ = s->sample[ch];
                 /* toggle channel */
-                channel_number ^= s->channels - 1;
+                ch ^= stereo;
             }
         }
         break;
     }
 
-    *data_size = out * sizeof(short);
+    *data_size = out;
     return buf_size;
 }
 
@@ -310,6 +326,6 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
 }
 
 DPCM_DECODER(CODEC_ID_INTERPLAY_DPCM, interplay_dpcm, "DPCM Interplay");
-DPCM_DECODER(CODEC_ID_ROQ_DPCM, roq_dpcm, "DPCM id RoQ");
-DPCM_DECODER(CODEC_ID_SOL_DPCM, sol_dpcm, "DPCM Sol");
-DPCM_DECODER(CODEC_ID_XAN_DPCM, xan_dpcm, "DPCM Xan");
+DPCM_DECODER(CODEC_ID_ROQ_DPCM,       roq_dpcm,       "DPCM id RoQ");
+DPCM_DECODER(CODEC_ID_SOL_DPCM,       sol_dpcm,       "DPCM Sol");
+DPCM_DECODER(CODEC_ID_XAN_DPCM,       xan_dpcm,       "DPCM Xan");

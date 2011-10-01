@@ -49,6 +49,10 @@ static int check_pes(uint8_t *p, uint8_t *end){
     return pes1||pes2;
 }
 
+static int check_pack_header(const uint8_t *buf) {
+    return (buf[1] & 0xC0) == 0x40 || (buf[1] & 0xF0) == 0x20;
+}
+
 static int mpegps_probe(AVProbeData *p)
 {
     uint32_t code= -1;
@@ -61,9 +65,10 @@ static int mpegps_probe(AVProbeData *p)
         if ((code & 0xffffff00) == 0x100) {
             int len= p->buf[i+1] << 8 | p->buf[i+2];
             int pes= check_pes(p->buf+i, p->buf+p->buf_size);
+            int pack = check_pack_header(p->buf+i);
 
             if(code == SYSTEM_HEADER_START_CODE) sys++;
-            else if(code == PACK_START_CODE)     pspack++;
+            else if(code == PACK_START_CODE && pack) pspack++;
             else if((code & 0xf0) == VIDEO_ID &&  pes) vid++;
             // skip pes payload to avoid start code emulation for private
             // and audio streams
