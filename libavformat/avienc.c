@@ -523,6 +523,11 @@ static int avi_write_packet(AVFormatContext *s, AVPacket *pkt)
     while(enc->block_align==0 && pkt->dts != AV_NOPTS_VALUE && pkt->dts > avist->packet_count){
         AVPacket empty_packet;
 
+        if(pkt->dts - avist->packet_count > 60000){
+            av_log(s, AV_LOG_ERROR, "Too large number of skiped frames %Ld\n", pkt->dts - avist->packet_count);
+            return AVERROR(EINVAL);
+        }
+
         av_init_packet(&empty_packet);
         empty_packet.size= 0;
         empty_packet.data= NULL;
