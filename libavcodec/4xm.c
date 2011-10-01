@@ -885,6 +885,10 @@ static av_cold int decode_init(AVCodecContext *avctx){
         av_log(avctx, AV_LOG_ERROR, "extradata wrong or missing\n");
         return 1;
     }
+    if((avctx->width % 16) || (avctx->height % 16)) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported width/height\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     avcodec_get_frame_defaults(&f->current_picture);
     avcodec_get_frame_defaults(&f->last_picture);
