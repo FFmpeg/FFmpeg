@@ -516,7 +516,7 @@ void ff_g729_postfilter(DSPContext *dsp, int16_t* ht_prev_data, int* voicing,
                      int16_t* residual, int16_t* res_filter_data,
                      int16_t* pos_filter_data, int16_t *speech, int subframe_size)
 {
-    int16_t residual_filt_buf[SUBFRAME_SIZE+10];
+    int16_t residual_filt_buf[SUBFRAME_SIZE+11];
     int16_t lp_gn[33]; // (3.12)
     int16_t lp_gd[11]; // (3.12)
     int tilt_comp_coeff;
