@@ -2379,6 +2379,8 @@ static int read_thread(void *arg)
     if(genpts)
         ic->flags |= AVFMT_FLAG_GENPTS;
 
+    av_dict_set(&codec_opts, "request_channels", "2", 0);
+
     opts = setup_find_stream_info_opts(ic, codec_opts);
     orig_nb_streams = ic->nb_streams;
 
