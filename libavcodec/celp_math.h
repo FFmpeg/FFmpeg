@@ -71,7 +71,7 @@ static inline int bidir_sal(int value, int offset)
  *
  * @return dot product = sum of elementwise products
  */
-int ff_dot_product(const int16_t *a, const int16_t *b, int length);
+int64_t ff_dot_product(const int16_t *a, const int16_t *b, int length);
 
 /**
  * returns the dot product.

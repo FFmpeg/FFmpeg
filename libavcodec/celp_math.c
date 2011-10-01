@@ -197,7 +197,7 @@ int ff_log2(uint32_t value)
     return (power_int << 15) + value;
 }
 
-int ff_dot_product(const int16_t *a, const int16_t *b, int length)
+int64_t ff_dot_product(const int16_t *a, const int16_t *b, int length)
 {
     int i;
     int64_t sum = 0;
