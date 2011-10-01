@@ -660,7 +660,7 @@ static int is_intra_more_likely(MpegEncContext *s){
 
     if(s->codec_id == CODEC_ID_H264){
         H264Context *h= (void*)s;
-        if (h->ref_count[0] <= 0 || !h->ref_list[0][0].f.data[0])
+        if (h->list_count <= 0 || h->ref_count[0] <= 0 || !h->ref_list[0][0].f.data[0])
             return 1;
     }
 
