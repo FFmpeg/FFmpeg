@@ -601,9 +601,10 @@ static const uint8_t *read_huffman_tables(FourXContext *f, const uint8_t * const
         len_tab[j]= len;
     }
 
-    init_vlc(&f->pre_vlc, ACDC_VLC_BITS, 257,
-             len_tab , 1, 1,
-             bits_tab, 4, 4, 0);
+    if (init_vlc(&f->pre_vlc, ACDC_VLC_BITS, 257,
+                 len_tab , 1, 1,
+                 bits_tab, 4, 4, 0))
+        return NULL;
 
     return ptr;
 }
