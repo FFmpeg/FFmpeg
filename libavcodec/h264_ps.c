@@ -228,7 +228,6 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         get_ue_golomb(&s->gb); /*max_dec_frame_buffering*/
 
         if (get_bits_left(&s->gb) < 0) {
-            av_log(h->s.avctx, AV_LOG_ERROR, "Overread VUI by %d bits\n", -get_bits_left(&s->gb));
             sps->num_reorder_frames=0;
             sps->bitstream_restriction_flag= 0;
         }
@@ -237,6 +236,10 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
             av_log(h->s.avctx, AV_LOG_ERROR, "illegal num_reorder_frames %d\n", sps->num_reorder_frames);
             return -1;
         }
+    }
+    if (get_bits_left(&s->gb) < 0) {
+        av_log(h->s.avctx, AV_LOG_ERROR, "Overread VUI by %d bits\n", -get_bits_left(&s->gb));
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
