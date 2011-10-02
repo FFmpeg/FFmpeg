@@ -197,12 +197,19 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
     int i, ch;
     int mb = -1;
     Band *bands = c->bands;
-    int off;
+    int off, out_size;
     int bits_used, bits_avail;
 
     memset(bands, 0, sizeof(bands));
     if(buf_size <= 4){
         av_log(avctx, AV_LOG_ERROR, "Too small buffer passed (%i bytes)\n", buf_size);
+        return AVERROR(EINVAL);
+    }
+
+    out_size = (buf[1] ? c->lastframelen : MPC_FRAME_SIZE) * 4;
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
     }
 
     bits = av_malloc(((buf_size - 1) & ~3) + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -277,7 +284,7 @@ static int mpc7_decode_frame(AVCodecContext * avctx,
         *data_size = 0;
         return buf_size;
     }
-    *data_size = (buf[1] ? c->lastframelen : MPC_FRAME_SIZE) * 4;
+    *data_size = out_size;
 
     return buf_size;
 }
