@@ -325,8 +325,11 @@ static void xa_decode(short *out, const unsigned char *in,
     } \
     else \
     { \
+        if (end_of_packet) \
+            break; \
         last_byte = *src++; \
-        if (src >= buf + buf_size) break; \
+        if (src >= buf + buf_size) \
+            end_of_packet = 1; \
         nibble = last_byte & 0x0F; \
         decode_top_nibble_next = 1; \
     }
@@ -534,6 +537,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         unsigned char last_byte = 0;
         unsigned char nibble;
         int decode_top_nibble_next = 0;
+        int end_of_packet = 0;
         int diff_channel;
 
         if (avctx->block_align != 0 && buf_size > avctx->block_align)
