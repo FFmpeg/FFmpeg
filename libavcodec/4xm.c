@@ -330,8 +330,10 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
     assert(code>=0 && code<=6);
 
     if(code == 0){
-        if (f->bytestream_end - f->bytestream < 1)
+        if (f->bytestream_end - f->bytestream < 1){
+            av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
+        }
         src += f->mv[ *f->bytestream++ ];
         if(start > src || src > end){
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
@@ -349,23 +351,31 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
     }else if(code == 3 && f->version<2){
         mcdc(dst, src, log2w, h, stride, 1, 0);
     }else if(code == 4){
-        if (f->bytestream_end - f->bytestream < 1)
+        if (f->bytestream_end - f->bytestream < 1){
+            av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
+        }
         src += f->mv[ *f->bytestream++ ];
         if(start > src || src > end){
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
         }
-        if (f->wordstream_end - f->wordstream < 1)
+        if (f->wordstream_end - f->wordstream < 1){
+            av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
+        }
         mcdc(dst, src, log2w, h, stride, 1, av_le2ne16(*f->wordstream++));
     }else if(code == 5){
-        if (f->wordstream_end - f->wordstream < 1)
+        if (f->wordstream_end - f->wordstream < 1){
+            av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
+        }
         mcdc(dst, src, log2w, h, stride, 0, av_le2ne16(*f->wordstream++));
     }else if(code == 6){
-        if (f->wordstream_end - f->wordstream < 2)
+        if (f->wordstream_end - f->wordstream < 2){
+            av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
+        }
         if(log2w){
             dst[0] = av_le2ne16(*f->wordstream++);
             dst[1] = av_le2ne16(*f->wordstream++);
@@ -753,8 +763,10 @@ static int decode_frame(AVCodecContext *avctx,
         const int whole_size= AV_RL32(buf+16);
         CFrameBuffer *cfrm;
 
-        if (data_size < 0 || whole_size < 0)
+        if (data_size < 0 || whole_size < 0){
+            av_log(f->avctx, AV_LOG_ERROR, "sizes invalid\n");
             return AVERROR_INVALIDDATA;
+        }
 
         for(i=0; i<CFRAME_BUFFER_COUNT; i++){
             if(f->cfrm[i].id && f->cfrm[i].id < avctx->frame_number)
@@ -817,12 +829,16 @@ static int decode_frame(AVCodecContext *avctx,
 
     if(frame_4cc == AV_RL32("ifr2")){
         p->pict_type= AV_PICTURE_TYPE_I;
-        if(decode_i2_frame(f, buf-4, frame_size) < 0)
+        if(decode_i2_frame(f, buf-4, frame_size) < 0){
+            av_log(f->avctx, AV_LOG_ERROR, "decode i2 frame failed\n");
             return -1;
+        }
     }else if(frame_4cc == AV_RL32("ifrm")){
         p->pict_type= AV_PICTURE_TYPE_I;
-        if(decode_i_frame(f, buf, frame_size) < 0)
+        if(decode_i_frame(f, buf, frame_size) < 0){
+            av_log(f->avctx, AV_LOG_ERROR, "decode i frame failed\n");
             return -1;
+        }
     }else if(frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")){
         if(!f->last_picture.data[0]){
             f->last_picture.reference= 1;
@@ -833,8 +849,10 @@ static int decode_frame(AVCodecContext *avctx,
         }
 
         p->pict_type= AV_PICTURE_TYPE_P;
-        if(decode_p_frame(f, buf, frame_size) < 0)
+        if(decode_p_frame(f, buf, frame_size) < 0){
+            av_log(f->avctx, AV_LOG_ERROR, "decode p frame failed\n");
             return -1;
+        }
     }else if(frame_4cc == AV_RL32("snd_")){
         av_log(avctx, AV_LOG_ERROR, "ignoring snd_ chunk length:%d\n", buf_size);
     }else{
