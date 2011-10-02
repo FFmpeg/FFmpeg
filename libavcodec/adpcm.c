@@ -431,7 +431,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             if (*src++) av_log(avctx, AV_LOG_ERROR, "unused byte should be null but is %d!!\n", src[-1]); /* unused */
         }
 
-        while(src < buf + buf_size){
+        while (src <= buf + buf_size - (avctx->channels * 4)) {
             for (i = 0; i < avctx->channels; i++) {
                 cs = &c->status[i];
                 for (m = 0; m < 4; m++) {
