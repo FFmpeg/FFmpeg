@@ -113,7 +113,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     int ret;
 
     lut->class = &lut_class;
-    av_opt_set_defaults2(lut, 0, 0);
+    av_opt_set_defaults(lut);
 
     lut->var_values[VAR_PHI] = M_PHI;
     lut->var_values[VAR_PI]  = M_PI;

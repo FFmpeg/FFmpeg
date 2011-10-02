@@ -178,7 +178,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int ret = 0;
 
     delogo->class = &delogo_class;
-    av_opt_set_defaults2(delogo, 0, 0);
+    av_opt_set_defaults(delogo);
 
     if (args)
         ret = sscanf(args, "%d:%d:%d:%d:%d",

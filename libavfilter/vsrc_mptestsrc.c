@@ -270,7 +270,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int ret;
 
     test->class = &mptestsrc_class;
-    av_opt_set_defaults2(test, 0, 0);
+    av_opt_set_defaults(test);
 
     if ((ret = (av_set_options_string(test, args, "=", ":"))) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
