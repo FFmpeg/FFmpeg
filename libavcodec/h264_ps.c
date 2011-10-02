@@ -70,7 +70,7 @@ static const AVRational pixel_aspect[17]={
     QP(37,d), QP(37,d), QP(37,d), QP(38,d), QP(38,d), QP(38,d),\
     QP(39,d), QP(39,d), QP(39,d), QP(39,d)
 
-const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1] = {
+const uint8_t ff_h264_chroma_qp[5][QP_MAX_NUM+1] = {
     {
         CHROMA_QP_TABLE_END(8)
     },
@@ -82,6 +82,19 @@ const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1] = {
         0, 1, 2, 3,  4,  5,
         6, 7, 8, 9, 10, 11,
         CHROMA_QP_TABLE_END(10)
+    },
+    {
+        0,  1, 2, 3,  4,  5,
+        6,  7, 8, 9, 10, 11,
+        12,13,14,15, 16, 17,
+        CHROMA_QP_TABLE_END(11)
+    },
+    {
+        0,  1, 2, 3,  4,  5,
+        6,  7, 8, 9, 10, 11,
+        12,13,14,15, 16, 17,
+        18,19,20,21, 22, 23,
+        CHROMA_QP_TABLE_END(12)
     },
 };
 
