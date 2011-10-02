@@ -50,14 +50,14 @@ struct FrameListData {
 };
 
 typedef struct VP8EncoderContext {
-    AVClass *av_class;
+    AVClass *class;
     struct vpx_codec_ctx encoder;
     struct vpx_image rawimg;
     struct vpx_fixed_buf twopass_stats;
     int deadline; //i.e., RT/GOOD/BEST
     struct FrameListData *coded_frame_list;
 
-    int cpuused;
+    int cpu_used;
 
     /**
      * VP8 specific flags, see VP8F_* below.
@@ -70,7 +70,7 @@ typedef struct VP8EncoderContext {
     int arnr_strength;
     int arnr_type;
 
-    int rc_lookahead;
+    int lag_in_frames;
     int crf;
 } VP8Context;
 
@@ -245,10 +245,10 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     enccfg.g_threads      = avctx->thread_count;
 #if FF_API_X264_GLOBAL_OPTS
     enccfg.g_lag_in_frames= FFMIN(avctx->rc_lookahead, 25);  //0-25, avoids init failure
-    if (ctx->rc_lookahead >= 0)
-        enccfg.g_lag_in_frames= ctx->rc_lookahead;
+    if (ctx->lag_in_frames >= 0)
+        enccfg.g_lag_in_frames = ctx->lag_in_frames;
 #else
-    enccfg.g_lag_in_frames= ctx->rc_lookahead;
+    enccfg.g_lag_in_frames= ctx->lag_in_frames;
 #endif
 
     if (avctx->flags & CODEC_FLAG_PASS1)
@@ -345,7 +345,11 @@ static av_cold int vp8_init(AVCodecContext *avctx)
 
     //codec control failures are currently treated only as warnings
     av_log(avctx, AV_LOG_DEBUG, "vpx_codec_control\n");
-    codecctl_int(avctx, VP8E_SET_CPUUSED,           ctx->cpuused);
+    codecctl_int(avctx, VP8E_SET_CPUUSED,           ctx->cpu_used);
+    codecctl_int(avctx, VP8E_SET_ENABLEAUTOALTREF,  !!(ctx->flags & VP8F_AUTO_ALT_REF));
+    codecctl_int(avctx, VP8E_SET_ARNR_MAXFRAMES,    ctx->arnr_max_frames);
+    codecctl_int(avctx, VP8E_SET_ARNR_STRENGTH,     ctx->arnr_strength);
+    codecctl_int(avctx, VP8E_SET_ARNR_TYPE,         ctx->arnr_type);
     codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
     codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  avctx->mb_threshold);
@@ -356,10 +360,6 @@ static av_cold int vp8_init(AVCodecContext *avctx)
 #else
     codecctl_int(avctx, VP8E_SET_CQ_LEVEL,          ctx->crf);
 #endif
-    codecctl_int(avctx, VP8E_SET_ENABLEAUTOALTREF,  !!(ctx->flags & VP8F_AUTO_ALT_REF));
-    codecctl_int(avctx, VP8E_SET_ARNR_MAXFRAMES,    ctx->arnr_max_frames);
-    codecctl_int(avctx, VP8E_SET_ARNR_STRENGTH,     ctx->arnr_strength);
-    codecctl_int(avctx, VP8E_SET_ARNR_TYPE,         ctx->arnr_type);
 
     av_log(avctx, AV_LOG_DEBUG, "Using deadline: %d\n", ctx->deadline);
 
@@ -545,33 +545,29 @@ static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return coded_size;
 }
 
-#define V AV_OPT_FLAG_VIDEO_PARAM
-#define E AV_OPT_FLAG_ENCODING_PARAM
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[]={
-{"speed", "", offsetof(VP8Context, cpuused), FF_OPT_TYPE_INT, {.dbl = 3}, -16, 16, V|E},
-{"quality", "", offsetof(VP8Context, deadline), FF_OPT_TYPE_INT, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, V|E, "quality"},
-{"best", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_BEST_QUALITY}, INT_MIN, INT_MAX, V|E, "quality"},
-{"good", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, V|E, "quality"},
-{"realtime", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_REALTIME}, INT_MIN, INT_MAX, V|E, "quality"},
-{"vp8flags", "", offsetof(VP8Context, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, 0, UINT_MAX, V|E, "flags"},
-{"error_resilient", "enable error resilience", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_ERROR_RESILIENT}, INT_MIN, INT_MAX, V|E, "flags"},
-{"altref", "enable use of alternate reference frames (VP8/2-pass only)", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_AUTO_ALT_REF}, INT_MIN, INT_MAX, V|E, "flags"},
-{"arnr_max_frames", "altref noise reduction max frame count", offsetof(VP8Context, arnr_max_frames), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 15, V|E},
-{"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), FF_OPT_TYPE_INT, {.dbl = 3}, 0, 6, V|E},
-{"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), FF_OPT_TYPE_INT, {.dbl = 3}, 1, 3, V|E},
+{"speed", "", offsetof(VP8Context, cpu_used), FF_OPT_TYPE_INT, {.dbl = 3}, -16, 16, VE},
+{"quality", "", offsetof(VP8Context, deadline), FF_OPT_TYPE_INT, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
+{"best", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_BEST_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
+{"good", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
+{"realtime", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_REALTIME}, INT_MIN, INT_MAX, VE, "quality"},
+{"vp8flags", "", offsetof(VP8Context, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, 0, UINT_MAX, VE, "flags"},
+{"error_resilient", "enable error resilience", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_ERROR_RESILIENT}, INT_MIN, INT_MAX, VE, "flags"},
+{"altref", "enable use of alternate reference frames (VP8/2-pass only)", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_AUTO_ALT_REF}, INT_MIN, INT_MAX, VE, "flags"},
+{"arnr_max_frames", "altref noise reduction max frame count", offsetof(VP8Context, arnr_max_frames), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 15, VE},
+{"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), FF_OPT_TYPE_INT, {.dbl = 3}, 0, 6, VE},
+{"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), FF_OPT_TYPE_INT, {.dbl = 3}, 1, 3, VE},
 #if FF_API_X264_GLOBAL_OPTS
-{"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, rc_lookahead), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 25, V|E},
-{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 63, V|E},
+{"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, lag_in_frames), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 25, VE},
+{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), FF_OPT_TYPE_INT, {.dbl = -1}, -1, 63, VE},
 #else
-{"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, rc_lookahead), FF_OPT_TYPE_INT, {.dbl = 25}, 0, 25, V|E},
-{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 63, V|E},
+{"rc_lookahead", "Number of frames to look ahead for alternate reference frame selection", offsetof(VP8Context, lag_in_frames), FF_OPT_TYPE_INT, {.dbl = 25}, 0, 25, VE},
+{"crf", "Select the quality for constant quality mode", offsetof(VP8Context, crf), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 63, VE},
 #endif
 {NULL}
 };
-
-#undef V
-#undef E
 
 static const AVClass class = {
     .class_name = "libvpx encoder",
