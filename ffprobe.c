@@ -462,6 +462,232 @@ static Writer default_writer = {
     .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
 };
 
+/* Compact output */
+
+/**
+ * Escape \n, \r, \\ and sep characters contained in s, and print the
+ * resulting string.
+ */
+static const char *c_escape_str(char **dst, size_t *dst_size,
+                                const char *src, const char sep, void *log_ctx)
+{
+    const char *p;
+    char *q;
+    size_t size = 1;
+
+    /* precompute size */
+    for (p = src; *p; p++, size++) {
+        ESCAPE_CHECK_SIZE(src, size, SIZE_MAX-2);
+        if (*p == '\n' || *p == '\r' || *p == '\\')
+            size++;
+    }
+
+    ESCAPE_REALLOC_BUF(dst_size, dst, src, size);
+
+    q = *dst;
+    for (p = src; *p; p++) {
+        switch (*src) {
+        case '\n': *q++ = '\\'; *q++ = 'n';  break;
+        case '\r': *q++ = '\\'; *q++ = 'r';  break;
+        case '\\': *q++ = '\\'; *q++ = '\\'; break;
+        default:
+            if (*p == sep)
+                *q++ = '\\';
+            *q++ = *p;
+        }
+    }
+    *q = 0;
+    return *dst;
+}
+
+/**
+ * Quote fields containing special characters, check RFC4180.
+ */
+static const char *csv_escape_str(char **dst, size_t *dst_size,
+                                  const char *src, const char sep, void *log_ctx)
+{
+    const char *p;
+    char *q;
+    size_t size = 1;
+    int quote = 0;
+
+    /* precompute size */
+    for (p = src; *p; p++, size++) {
+        ESCAPE_CHECK_SIZE(src, size, SIZE_MAX-4);
+        if (*p == '"' || *p == sep || *p == '\n' || *p == '\r')
+            if (!quote) {
+                quote = 1;
+                size += 2;
+            }
+        if (*p == '"')
+            size++;
+    }
+
+    ESCAPE_REALLOC_BUF(dst_size, dst, src, size);
+
+    q = *dst;
+    p = src;
+    if (quote)
+        *q++ = '\"';
+    while (*p) {
+        if (*p == '"')
+            *q++ = '\"';
+        *q++ = *p++;
+    }
+    if (quote)
+        *q++ = '\"';
+    *q = 0;
+
+    return *dst;
+}
+
+static const char *none_escape_str(char **dst, size_t *dst_size,
+                                   const char *src, const char sep, void *log_ctx)
+{
+    return src;
+}
+
+typedef struct CompactContext {
+    const AVClass *class;
+    char *item_sep_str;
+    char item_sep;
+    int nokey;
+    char  *buf;
+    size_t buf_size;
+    char *escape_mode_str;
+    const char * (*escape_str)(char **dst, size_t *dst_size,
+                               const char *src, const char sep, void *log_ctx);
+} CompactContext;
+
+#define OFFSET(x) offsetof(CompactContext, x)
+
+static const AVOption compact_options[]= {
+    {"item_sep", "set item separator",    OFFSET(item_sep_str),    AV_OPT_TYPE_STRING, {.str="|"},  CHAR_MIN, CHAR_MAX },
+    {"s",        "set item separator",    OFFSET(item_sep_str),    AV_OPT_TYPE_STRING, {.str="|"},  CHAR_MIN, CHAR_MAX },
+    {"nokey",    "force no key printing", OFFSET(nokey),           AV_OPT_TYPE_INT,    {.dbl=0},    0,        1        },
+    {"nk",       "force no key printing", OFFSET(nokey),           AV_OPT_TYPE_INT,    {.dbl=0},    0,        1        },
+    {"escape",   "set escape mode",       OFFSET(escape_mode_str), AV_OPT_TYPE_STRING, {.str="c"},  CHAR_MIN, CHAR_MAX },
+    {"e",        "set escape mode",       OFFSET(escape_mode_str), AV_OPT_TYPE_STRING, {.str="c"},  CHAR_MIN, CHAR_MAX },
+    {NULL},
+};
+
+static const char *compact_get_name(void *ctx)
+{
+    return "compact";
+}
+
+static const AVClass compact_class = {
+    "CompactContext",
+    compact_get_name,
+    compact_options
+};
+
+static av_cold int compact_init(WriterContext *wctx, const char *args, void *opaque)
+{
+    CompactContext *compact = wctx->priv;
+    int err;
+
+    compact->class = &compact_class;
+    av_opt_set_defaults(compact);
+
+    if (args &&
+        (err = (av_set_options_string(compact, args, "=", ":"))) < 0) {
+        av_log(wctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return err;
+    }
+    if (strlen(compact->item_sep_str) != 1) {
+        av_log(wctx, AV_LOG_ERROR, "Item separator '%s' specified, but must contain a single character\n",
+               compact->item_sep_str);
+        return AVERROR(EINVAL);
+    }
+    compact->item_sep = compact->item_sep_str[0];
+
+    compact->buf_size = ESCAPE_INIT_BUF_SIZE;
+    if (!(compact->buf = av_malloc(compact->buf_size)))
+        return AVERROR(ENOMEM);
+
+    if      (!strcmp(compact->escape_mode_str, "none")) compact->escape_str = none_escape_str;
+    else if (!strcmp(compact->escape_mode_str, "c"   )) compact->escape_str = c_escape_str;
+    else if (!strcmp(compact->escape_mode_str, "csv" )) compact->escape_str = csv_escape_str;
+    else {
+        av_log(wctx, AV_LOG_ERROR, "Unknown escape mode '%s'\n", compact->escape_mode_str);
+        return AVERROR(EINVAL);
+    }
+
+    return 0;
+}
+
+static av_cold void compact_uninit(WriterContext *wctx)
+{
+    CompactContext *compact = wctx->priv;
+
+    av_freep(&compact->item_sep_str);
+    av_freep(&compact->buf);
+    av_freep(&compact->escape_mode_str);
+}
+
+static void compact_print_section_header(WriterContext *wctx, const char *section)
+{
+    CompactContext *compact = wctx->priv;
+
+    printf("%s%c", section, compact->item_sep);
+}
+
+static void compact_print_section_footer(WriterContext *wctx, const char *section)
+{
+    printf("\n");
+}
+
+static void compact_print_str(WriterContext *wctx, const char *key, const char *value)
+{
+    CompactContext *compact = wctx->priv;
+
+    if (wctx->nb_item) printf("%c", compact->item_sep);
+    if (!compact->nokey)
+        printf("%s=", key);
+    printf("%s", compact->escape_str(&compact->buf, &compact->buf_size,
+                                     value, compact->item_sep, wctx));
+}
+
+static void compact_print_int(WriterContext *wctx, const char *key, int value)
+{
+    CompactContext *compact = wctx->priv;
+
+    if (wctx->nb_item) printf("%c", compact->item_sep);
+    if (!compact->nokey)
+        printf("%s=", key);
+    printf("%d", value);
+}
+
+static void compact_show_tags(WriterContext *wctx, AVDictionary *dict)
+{
+    CompactContext *compact = wctx->priv;
+    AVDictionaryEntry *tag = NULL;
+
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        if (wctx->nb_item) printf("%c", compact->item_sep);
+        if (!compact->nokey)
+            printf("tag:%s=", compact->escape_str(&compact->buf, &compact->buf_size,
+                                                  tag->key, compact->item_sep, wctx));
+        printf("%s", compact->escape_str(&compact->buf, &compact->buf_size,
+                                         tag->value, compact->item_sep, wctx));
+    }
+}
+
+static Writer compact_writer = {
+    .name          = "compact",
+    .priv_size     = sizeof(CompactContext),
+
+    .init                  = compact_init,
+    .uninit                = compact_uninit,
+    .print_section_header  = compact_print_section_header,
+    .print_section_footer  = compact_print_section_footer,
+    .print_integer         = compact_print_int,
+    .print_string          = compact_print_str,
+    .show_tags             = compact_show_tags,
+    .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS
+};
+
 /* JSON output */
 
 typedef struct {
@@ -630,6 +856,7 @@ static void writer_register_all(void)
     initialized = 1;
 
     writer_register(&default_writer);
+    writer_register(&compact_writer);
     writer_register(&json_writer);
 }
 
@@ -976,7 +1203,7 @@ static const OptionDef options[] = {
       "use sexagesimal format HOURS:MM:SS.MICROSECONDS for time units" },
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
-    { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format}, "set the output printing format (available formats are: default, json)", "format" },
+    { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format}, "set the output printing format (available formats are: default, compact, json)", "format" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },

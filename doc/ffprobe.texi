@@ -147,6 +147,58 @@ keyN=valN
 Metadata tags are printed as a line in the corresponding FORMAT or
 STREAM section, and are prefixed by the string "TAG:".
 
+@section compact
+Compact format.
+
+Each section is printed on a single line.
+If no option is specifid, the output has the form:
+@example
+section|key1=val1| ... |keyN=valN
+@end example
+
+Metadata tags are printed in the corresponding "format" or "stream"
+section. A metadata tag key, if printed, is prefixed by the string
+"tag:".
+
+This writer accepts options as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted options follows.
+
+@table @option
+
+@item item_sep, s
+Specify the character to use for separating fields in the output line.
+It must be a single printable character, it is "|" by default.
+
+@item nokey, nk
+If set to 1 specify not to print the key of each field. Its default
+value is 0.
+
+@item escape, e
+Set the escape mode to use, default to "c".
+
+It can assume one of the following values:
+@table @option
+@item c
+Perform C-like escaping. Strings containing a newline ('\n') or
+carriage return ('\r'), the escaping character ('\') or the item
+separator character @var{SEP} are escaped using C-like fashioned
+escaping, so that a newline is converted to the sequence "\n", a
+carriage return to "\r", '\' to "\\" and the separator @var{SEP} is
+converted to "\@var{SEP}".
+
+@item csv
+Perform CSV-like escaping, as described in RFC4180.  Strings
+containing a newline ('\n'), a carriage return ('\r'), a double quote
+('"'), or @var{SEP} are enclosed in double-quotes.
+
+@item none
+Perform no escaping.
+@end table
+
+@end table
+
 @section json
 JSON based format.
 
