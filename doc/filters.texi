@@ -1238,7 +1238,7 @@ lutrgb="r=negval:g=negval:b=negval"
 lutyuv="y=negval:u=negval:v=negval"
 
 # negate luminance
-lutyuv=negval
+lutyuv=y=negval
 
 # remove chroma components, turns the video into a graytone image
 lutyuv="u=128:v=128"
