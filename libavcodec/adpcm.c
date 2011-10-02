@@ -347,9 +347,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
     uint32_t samples_in_chunk;
     int count1, count2;
 
-    if (!buf_size)
-        return 0;
-
     //should protect all 4bit ADPCM variants
     //8 is needed for CODEC_ID_ADPCM_IMA_WAV with 2 channels
     //
