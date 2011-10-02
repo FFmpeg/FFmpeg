@@ -39,12 +39,15 @@ static av_cold int ptx_init(AVCodecContext *avctx) {
 static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                             AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
+    const uint8_t *buf_end = avpkt->data + avpkt->size;
     PTXContext * const s = avctx->priv_data;
     AVFrame *picture = data;
     AVFrame * const p = &s->picture;
     unsigned int offset, w, h, y, stride, bytes_per_pixel;
     uint8_t *ptr;
 
+    if (buf_end - buf < 14)
+        return AVERROR_INVALIDDATA;
     offset          = AV_RL16(buf);
     w               = AV_RL16(buf+8);
     h               = AV_RL16(buf+10);
@@ -57,6 +60,8 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     avctx->pix_fmt = PIX_FMT_RGB555;
 
+    if (buf_end - buf < offset)
+        return AVERROR_INVALIDDATA;
     if (offset != 0x2c)
         av_log_ask_for_sample(avctx, "offset != 0x2c\n");
 
@@ -80,6 +85,8 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     stride = p->linesize[0];
 
     for (y=0; y<h; y++) {
+        if (buf_end - buf < w * bytes_per_pixel)
+            break;
 #if HAVE_BIGENDIAN
         unsigned int x;
         for (x=0; x<w*bytes_per_pixel; x+=bytes_per_pixel)
