@@ -42,18 +42,11 @@ for specifying which information to display, and for setting how
 ffprobe will show it.
 
 ffprobe output is designed to be easily parsable by a textual filter,
-and consists of one or more sections of the form:
-@example
-[SECTION]
-key1=val1
-...
-keyN=valN
-[/SECTION]
-@end example
+and consists of one or more sections of a form defined by the selected
+writer, which is specified by the @option{print_format} option.
 
 Metadata tags stored in the container or in the streams are recognized
-and printed in the corresponding "FORMAT" or "STREAM" section, and
-are prefixed by the string "TAG:".
+and printed in the corresponding "FORMAT" or "STREAM" section.
 
 @c man end
 
@@ -89,7 +82,14 @@ options "-unit -prefix -byte_binary_prefix -sexagesimal".
 
 @item -print_format @var{format}
 Set the output printing format.
-Current available formats are "default" and "json".
+
+For example for printing the output in JSON format, specify:
+@example
+-print_format json
+@end example
+
+For more details on the available output printing formats, see the
+Writers section below.
 
 @item -show_format
 Show information about the container format of the input multimedia
@@ -117,6 +117,41 @@ Read @var{input_file}.
 
 @end table
 @c man end
+
+@chapter Writers
+@c man begin WRITERS
+
+A writer defines the output format adopted by @file{ffprobe}, and will be
+used for printing all the parts of the output.
+
+A writer may accept one or more arguments, which specify the options to
+adopt.
+
+A description of the currently available writers follows.
+
+@section default
+Default format.
+
+Print each section in the form:
+@example
+[SECTION]
+key1=val1
+...
+keyN=valN
+[/SECTION]
+@end example
+
+Metadata tags are printed as a line in the corresponding FORMAT or
+STREAM section, and are prefixed by the string "TAG:".
+
+@section json
+JSON based format.
+
+Each section is printed using JSON notation.
+
+For more information about JSON, see @url{http://www.json.org/}.
+
+@c man end WRITERS
 
 @include decoders.texi
 @include demuxers.texi
