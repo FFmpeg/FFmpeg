@@ -1750,6 +1750,8 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
     AVStream *st;
 
     if (flags & AVSEEK_FLAG_BYTE) {
+        if (s->iformat->flags & AVFMT_NO_BYTE_SEEK)
+            return -1;
         ff_read_frame_flush(s);
         return seek_frame_byte(s, stream_index, timestamp, flags);
     }

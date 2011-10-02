@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-xx-xx - xxxxxxx - lavf 53.9.0
+  Add AVFMT_NO_BYTE_SEEK AVInputFormat flag.
+
 2011-10-12 - lavu 51.12.0
   AVOptions API rewrite.
 
