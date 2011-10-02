@@ -2183,8 +2183,15 @@ static int stream_component_open(VideoState *is, int stream_index)
     if(codec->capabilities & CODEC_CAP_DR1)
         avctx->flags |= CODEC_FLAG_EMU_EDGE;
 
-    wanted_spec.freq = avctx->sample_rate;
-    wanted_spec.channels = avctx->channels;
+    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
+        if(avctx->sample_rate <= 0 || avctx->channels <= 0){
+            fprintf(stderr, "Invalid sample rate or channel count\n");
+            return -1;
+        }
+        wanted_spec.freq = avctx->sample_rate;
+        wanted_spec.channels = avctx->channels;
+    }
+
     if (!codec ||
         avcodec_open2(avctx, codec, &opts) < 0)
         return -1;
@@ -2195,10 +2202,6 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     /* prepare audio output */
     if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        if(avctx->sample_rate <= 0 || avctx->channels <= 0){
-            fprintf(stderr, "Invalid sample rate or channel count\n");
-            return -1;
-        }
         wanted_spec.format = AUDIO_S16SYS;
         wanted_spec.silence = 0;
         wanted_spec.samples = SDL_AUDIO_BUFFER_SIZE;
@@ -2225,7 +2228,7 @@ static int stream_component_open(VideoState *is, int stream_index)
         is->audio_diff_avg_count = 0;
         /* since we do not have a precise anough audio fifo fullness,
            we correct audio sync only if larger than this threshold */
-        is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / avctx->sample_rate;
+        is->audio_diff_threshold = 2.0 * SDL_AUDIO_BUFFER_SIZE / wanted_spec.freq;
 
         memset(&is->audio_pkt, 0, sizeof(is->audio_pkt));
         packet_queue_init(&is->audioq);
