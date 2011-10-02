@@ -668,7 +668,12 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h);
 /**
  * Check if the top & left blocks are available if needed & change the dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra_pred_mode(H264Context *h, int mode);
+int ff_h264_check_intra16x16_pred_mode(H264Context *h, int mode);
+
+/**
+ * Check if the top & left blocks are available if needed & change the dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra_chroma_pred_mode(H264Context *h, int mode);
 
 void ff_h264_hl_decode_mb(H264Context *h);
 int ff_h264_frame_start(H264Context *h);
