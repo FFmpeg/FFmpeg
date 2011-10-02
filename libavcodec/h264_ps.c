@@ -349,6 +349,11 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
             sps->residual_color_transform_flag = get_bits1(&s->gb);
         sps->bit_depth_luma   = get_ue_golomb(&s->gb) + 8;
         sps->bit_depth_chroma = get_ue_golomb(&s->gb) + 8;
+        if (sps->bit_depth_luma > 12U || sps->bit_depth_chroma > 12U) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "illegal bit depth value (%d, %d)\n",
+                   sps->bit_depth_luma, sps->bit_depth_chroma);
+            goto fail;
+        }
         sps->transform_bypass = get_bits1(&s->gb);
         decode_scaling_matrices(h, sps, NULL, 1, sps->scaling_matrix4, sps->scaling_matrix8);
     }else{
