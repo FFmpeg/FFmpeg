@@ -3940,8 +3940,10 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         fill_default_ref_list(h);
     }
 
-    if(h->slice_type_nos!=FF_I_TYPE && decode_ref_pic_list_reordering(h) < 0)
+    if(h->slice_type_nos!=FF_I_TYPE && decode_ref_pic_list_reordering(h) < 0) {
+        h->ref_count[1]= h->ref_count[0]= 0;
         return -1;
+    }
 
     if(h->slice_type_nos!=FF_I_TYPE){
         s->last_picture_ptr= &h->ref_list[0][0];
