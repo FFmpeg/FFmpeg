@@ -194,6 +194,7 @@ void av_register_all(void)
     av_register_rdt_dynamic_payload_handlers();
 #endif
     REGISTER_DEMUXER  (SEGAFILM, segafilm);
+    REGISTER_MUXER    (SEGMENT, segment);
     REGISTER_DEMUXER  (SHORTEN, shorten);
     REGISTER_DEMUXER  (SIFF, siff);
     REGISTER_DEMUXER  (SMACKER, smacker);
