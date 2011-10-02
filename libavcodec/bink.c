@@ -246,7 +246,7 @@ static void read_tree(GetBitContext *gb, Tree *tree)
             tree->syms[i] = get_bits(gb, 4);
             tmp1[tree->syms[i]] = 1;
         }
-        for (i = 0; i < 16; i++)
+        for (i = 0; i < 16 && len < 16 - 1; i++)
             if (!tmp1[i])
                 tree->syms[++len] = i;
     } else {
@@ -343,14 +343,14 @@ static int read_motion_values(AVCodecContext *avctx, GetBitContext *gb, Bundle *
         memset(b->cur_dec, v, t);
         b->cur_dec += t;
     } else {
-        do {
+        while (b->cur_dec < dec_end) {
             v = GET_HUFF(gb, b->tree);
             if (v) {
                 sign = -get_bits1(gb);
                 v = (v ^ sign) - sign;
             }
             *b->cur_dec++ = v;
-        } while (b->cur_dec < dec_end);
+        }
     }
     return 0;
 }
@@ -374,7 +374,7 @@ static int read_block_types(AVCodecContext *avctx, GetBitContext *gb, Bundle *b)
         memset(b->cur_dec, v, t);
         b->cur_dec += t;
     } else {
-        do {
+        while (b->cur_dec < dec_end) {
             v = GET_HUFF(gb, b->tree);
             if (v < 12) {
                 last = v;
@@ -382,10 +382,12 @@ static int read_block_types(AVCodecContext *avctx, GetBitContext *gb, Bundle *b)
             } else {
                 int run = bink_rlelens[v - 12];
 
+                if (dec_end - b->cur_dec < run)
+                    return -1;
                 memset(b->cur_dec, last, run);
                 b->cur_dec += run;
             }
-        } while (b->cur_dec < dec_end);
+        }
     }
     return 0;
 }
@@ -456,6 +458,7 @@ static int read_dcs(AVCodecContext *avctx, GetBitContext *gb, Bundle *b,
 {
     int i, j, len, len2, bsize, sign, v, v2;
     int16_t *dst = (int16_t*)b->cur_dec;
+    int16_t *dst_end =( int16_t*)b->data_end;
 
     CHECK_READ_VAL(gb, b, len);
     v = get_bits(gb, start_bits - has_sign);
@@ -463,10 +466,14 @@ static int read_dcs(AVCodecContext *avctx, GetBitContext *gb, Bundle *b,
         sign = -get_bits1(gb);
         v = (v ^ sign) - sign;
     }
+    if (dst_end - dst < 1)
+        return -1;
     *dst++ = v;
     len--;
     for (i = 0; i < len; i += 8) {
         len2 = FFMIN(len - i, 8);
+        if (dst_end - dst < len2)
+            return -1;
         bsize = get_bits(gb, 4);
         if (bsize) {
             for (j = 0; j < len2; j++) {
@@ -534,6 +541,8 @@ static int binkb_read_bundle(BinkContext *c, GetBitContext *gb, int bundle_num)
     int i, len;
 
     CHECK_READ_VAL(gb, b, len);
+    if (b->data_end - b->cur_dec < len * (1 + (bits > 8)))
+        return -1;
     if (bits <= 8) {
         if (!issigned) {
             for (i = 0; i < len; i++)
@@ -964,8 +973,9 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
     for (i = 0; i < BINK_NB_SRC; i++)
         read_bundle(gb, c, i);
 
-    ref_start = c->last.data[plane_idx];
-    ref_end   = c->last.data[plane_idx]
+    ref_start = c->last.data[plane_idx] ? c->last.data[plane_idx]
+                                        : c->pic.data[plane_idx];
+    ref_end   = ref_start
                 + (bw - 1 + c->last.linesize[plane_idx] * (bh - 1)) * 8;
 
     for (i = 0; i < 64; i++)
@@ -994,7 +1004,8 @@ static int bink_decode_plane(BinkContext *c, GetBitContext *gb, int plane_idx,
         if (by == bh)
             break;
         dst  = c->pic.data[plane_idx]  + 8*by*stride;
-        prev = c->last.data[plane_idx] + 8*by*stride;
+        prev = (c->last.data[plane_idx] ? c->last.data[plane_idx]
+                                        : c->pic.data[plane_idx]) + 8*by*stride;
         for (bx = 0; bx < bw; bx++, dst += 8, prev += 8) {
             blk = get_value(c, BINK_SRC_BLOCK_TYPES);
             // 16x16 block type on odd line means part of the already decoded block, so skip it

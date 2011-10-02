@@ -127,6 +127,8 @@ static av_cold int mpc8_decode_init(AVCodecContext * avctx)
 
     skip_bits(&gb, 3);//sample rate
     c->maxbands = get_bits(&gb, 5) + 1;
+    if (c->maxbands >= BANDS)
+        return AVERROR_INVALIDDATA;
     channels = get_bits(&gb, 4) + 1;
     if (channels > 2) {
         av_log_missing_feature(avctx, "Multichannel MPC SV8", 1);
@@ -260,6 +262,8 @@ static int mpc8_decode_frame(AVCodecContext * avctx,
         maxband = c->last_max_band + get_vlc2(gb, band_vlc.table, MPC8_BANDS_BITS, 2);
         if(maxband > 32) maxband -= 33;
     }
+    if(maxband > c->maxbands)
+        return AVERROR_INVALIDDATA;
     c->last_max_band = maxband;
 
     /* read subband indexes */

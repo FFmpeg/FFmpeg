@@ -66,6 +66,9 @@ fi
 
 if [ -n "$do_mxf" ] ; then
 do_lavf mxf "-ar 48000 -bf 2 -timecode_frame_start 264363"
+fi
+
+if [ -n "$do_mxf_d10" ]; then
 do_lavf mxf_d10 "-ar 48000 -ac 2 -r 25 -s 720x576 -vf pad=720:608:0:32 -vcodec mpeg2video -intra -flags +ildct+low_delay -dc 10 -flags2 +ivlc+non_linear_q -qscale 1 -ps 1 -qmin 1 -rc_max_vbv_use 1 -rc_min_vbv_use 1 -pix_fmt yuv422p -minrate 30000k -maxrate 30000k -b 30000k -bufsize 1200000 -top 1 -rc_init_occupancy 1200000 -qmax 12 -f mxf_d10"
 fi
 

@@ -251,7 +251,7 @@ static int h264_parse(AVCodecParserContext *s,
         h->got_first = 1;
         if (avctx->extradata_size) {
             h->s.avctx = avctx;
-            ff_h264_decode_extradata(h);
+            ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size);
         }
     }
 

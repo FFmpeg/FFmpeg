@@ -366,8 +366,8 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     int i;
 
     // edge emu needs blocksize + filter length - 1 (=17x17 for halfpel / 21x21 for h264)
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->allocated_edge_emu_buffer, (s->width+64)*2*21*2, fail); //(width + edge + align)*interlaced*MBsize*tolerance
-    s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*21;
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->allocated_edge_emu_buffer, (s->width+64)*2*21*2*2, fail); //(width + edge + align)*interlaced*MBsize*tolerance
+    s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*21*2;
 
      //FIXME should be linesize instead of s->width*2 but that is not known before get_buffer()
     FF_ALLOCZ_OR_GOTO(s->avctx, s->me.scratchpad,  (s->width+64)*4*16*2*sizeof(uint8_t), fail)

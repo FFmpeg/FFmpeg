@@ -251,7 +251,7 @@ static void hScale_altivec_real(int16_t *dst, int dstW,
         vector unsigned char src_v1, src_vF;
         vector signed short src_v, filter_v;
         vector signed int val_vEven, val_s;
-        if ((((int)src + srcPos)% 16) > 12) {
+        if ((((uintptr_t)src + srcPos) % 16) > 12) {
             src_v1 = vec_ld(srcPos + 16, src);
         }
         src_vF = vec_perm(src_v0, src_v1, vec_lvsl(srcPos, src));
@@ -290,7 +290,7 @@ static void hScale_altivec_real(int16_t *dst, int dstW,
         vector unsigned char src_v1, src_vF;
         vector signed short src_v, filter_v;
         vector signed int val_v, val_s;
-        if ((((int)src + srcPos)% 16) > 8) {
+        if ((((uintptr_t)src + srcPos) % 16) > 8) {
             src_v1 = vec_ld(srcPos + 16, src);
         }
         src_vF = vec_perm(src_v0, src_v1, vec_lvsl(srcPos, src));
@@ -376,7 +376,7 @@ static void hScale_altivec_real(int16_t *dst, int dstW,
             //vector unsigned char src_v0 = vec_ld(srcPos + j, src);
             vector unsigned char src_v1, src_vF;
             vector signed short src_v, filter_v1R, filter_v;
-            if ((((int)src + srcPos)% 16) > 8) {
+            if ((((uintptr_t)src + srcPos) % 16) > 8) {
                 src_v1 = vec_ld(srcPos + j + 16, src);
             }
             src_vF = vec_perm(src_v0, src_v1, permS);

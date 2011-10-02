@@ -70,7 +70,7 @@ static const AVRational pixel_aspect[17]={
     QP(37,d), QP(37,d), QP(37,d), QP(38,d), QP(38,d), QP(38,d),\
     QP(39,d), QP(39,d), QP(39,d), QP(39,d)
 
-const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1] = {
+const uint8_t ff_h264_chroma_qp[5][QP_MAX_NUM+1] = {
     {
         CHROMA_QP_TABLE_END(8)
     },
@@ -82,6 +82,19 @@ const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1] = {
         0, 1, 2, 3,  4,  5,
         6, 7, 8, 9, 10, 11,
         CHROMA_QP_TABLE_END(10)
+    },
+    {
+        0,  1, 2, 3,  4,  5,
+        6,  7, 8, 9, 10, 11,
+        12,13,14,15, 16, 17,
+        CHROMA_QP_TABLE_END(11)
+    },
+    {
+        0,  1, 2, 3,  4,  5,
+        6,  7, 8, 9, 10, 11,
+        12,13,14,15, 16, 17,
+        18,19,20,21, 22, 23,
+        CHROMA_QP_TABLE_END(12)
     },
 };
 
@@ -333,6 +346,11 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
             sps->residual_color_transform_flag = get_bits1(&s->gb);
         sps->bit_depth_luma   = get_ue_golomb(&s->gb) + 8;
         sps->bit_depth_chroma = get_ue_golomb(&s->gb) + 8;
+        if (sps->bit_depth_luma > 12U || sps->bit_depth_chroma > 12U) {
+            av_log(h->s.avctx, AV_LOG_ERROR, "illegal bit depth value (%d, %d)\n",
+                   sps->bit_depth_luma, sps->bit_depth_chroma);
+            goto fail;
+        }
         sps->transform_bypass = get_bits1(&s->gb);
         decode_scaling_matrices(h, sps, NULL, 1, sps->scaling_matrix4, sps->scaling_matrix8);
     }else{
@@ -365,7 +383,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
     }
 
     sps->ref_frame_count= get_ue_golomb_31(&s->gb);
-    if(sps->ref_frame_count > MAX_PICTURE_COUNT-2 || sps->ref_frame_count >= 32U){
+    if(sps->ref_frame_count > MAX_PICTURE_COUNT-2 || sps->ref_frame_count > 16U){
         av_log(h->s.avctx, AV_LOG_ERROR, "too many reference frames\n");
         goto fail;
     }

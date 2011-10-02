@@ -162,6 +162,7 @@ External library support:
   --enable-bzlib           enable bzlib [autodetect]
   --enable-libcelt         enable CELT/Opus decoding via libcelt [no]
   --enable-frei0r          enable frei0r video filtering
+  --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -927,6 +928,8 @@ CONFIG_LIST="
     h264pred
     hardcoded_tables
     huffman
+    libaacplus
+    libcdio
     libcelt
     libdc1394
     libdirac
@@ -1401,6 +1404,7 @@ vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 h264_parser_select="golomb h264dsp h264pred"
 
 # external libraries
+libaacplus_encoder_deps="libaacplus"
 libcelt_decoder_deps="libcelt"
 libdirac_decoder_deps="libdirac !libschroedinger"
 libdirac_encoder_deps="libdirac"
@@ -1532,7 +1536,7 @@ test_deps(){
         dep=${v%=*}
         tests=${v#*=}
         for name in ${tests}; do
-            eval ${name}_test_deps="'${dep}$suf1 ${dep}$suf2'"
+            append ${name}_test_deps ${dep}$suf1 ${dep}$suf2
         done
     done
 }
@@ -1541,6 +1545,9 @@ set_ne_test_deps(){
     eval ${1}_be_test_deps="bigendian"
     eval ${1}_le_test_deps="!bigendian"
 }
+
+mxf_d10_test_deps="avfilter"
+seek_lavf_mxf_d10_test_deps="mxf_d10_test"
 
 test_deps _encoder _decoder                                             \
     adpcm_g726=g726                                                     \
@@ -1604,7 +1611,7 @@ test_deps _muxer _demuxer                                               \
     mmf                                                                 \
     mov                                                                 \
     pcm_mulaw=mulaw                                                     \
-    mxf                                                                 \
+    mxf="mxf mxf_d10"                                                   \
     nut                                                                 \
     ogg                                                                 \
     rawvideo=pixfmt                                                     \
@@ -2584,6 +2591,7 @@ die_license_disabled gpl libxavs
 die_license_disabled gpl libxvid
 die_license_disabled gpl x11grab
 
+die_license_disabled nonfree libaacplus
 die_license_disabled nonfree libfaac
 
 die_license_disabled version3 libopencore_amrnb
@@ -2916,6 +2924,7 @@ check_mathfunc truncf
 enabled avisynth   && require2 vfw32 "windows.h vfw.h" AVIFileInit -lavifil32
 enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
+enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
 enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
@@ -3073,6 +3082,10 @@ else
 fi
 check_cflags -fno-math-errno
 check_cflags -fno-signed-zeros
+check_cc -mno-red-zone <<EOF && noredzone_flags="-mno-red-zone"
+int x;
+EOF
+
 
 if enabled icc; then
     # Just warnings, no remarks
@@ -3223,6 +3236,7 @@ echo "frei0r enabled            ${frei0r-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"
+echo "libaacplus enabled        ${libaacplus-no}"
 echo "libgsm enabled            ${libgsm-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"
 echo "libnut enabled            ${libnut-no}"
@@ -3383,6 +3397,7 @@ SLIB_EXTRA_CMD=${SLIB_EXTRA_CMD}
 SLIB_INSTALL_EXTRA_CMD=${SLIB_INSTALL_EXTRA_CMD}
 SLIB_UNINSTALL_EXTRA_CMD=${SLIB_UNINSTALL_EXTRA_CMD}
 SAMPLES:=${samples:-\$(FATE_SAMPLES)}
+NOREDZONE_FLAGS=$noredzone_flags
 EOF
 
 get_version(){

@@ -961,18 +961,20 @@ static int decode_codestream(J2kDecoderContext *s)
 
 static int jp2_find_codestream(J2kDecoderContext *s)
 {
-    int32_t atom_size;
+    uint32_t atom_size;
     int found_codestream = 0, search_range = 10;
 
     // skip jpeg2k signature atom
     s->buf += 12;
 
-    while(!found_codestream && search_range) {
+    while(!found_codestream && search_range && s->buf_end - s->buf >= 8) {
         atom_size = AV_RB32(s->buf);
         if(AV_RB32(s->buf + 4) == JP2_CODESTREAM) {
             found_codestream = 1;
             s->buf += 8;
         } else {
+            if (s->buf_end - s->buf < atom_size)
+                return 0;
             s->buf += atom_size;
             search_range--;
         }
@@ -1005,7 +1007,8 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR(EINVAL);
 
     // check if the image is in jp2 format
-    if((AV_RB32(s->buf) == 12) && (AV_RB32(s->buf + 4) == JP2_SIG_TYPE) &&
+    if(s->buf_end - s->buf >= 12 &&
+       (AV_RB32(s->buf) == 12) && (AV_RB32(s->buf + 4) == JP2_SIG_TYPE) &&
        (AV_RB32(s->buf + 8) == JP2_SIG_VALUE)) {
         if(!jp2_find_codestream(s)) {
             av_log(avctx, AV_LOG_ERROR, "couldn't find jpeg2k codestream atom\n");

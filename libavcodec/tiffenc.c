@@ -42,6 +42,7 @@ static const uint8_t type_sizes2[6] = {
 };
 
 typedef struct TiffEncoderContext {
+    AVClass *avclass;
     AVCodecContext *avctx;
     AVFrame picture;
 
@@ -216,6 +217,7 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     uint8_t *yuv_line = NULL;
     int shift_h, shift_v;
 
+    s->avctx = avctx;
     s->buf_start = buf;
     s->buf = &ptr;
     s->buf_size = buf_size;

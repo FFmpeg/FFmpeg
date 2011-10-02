@@ -2728,16 +2728,16 @@ void avformat_free_context(AVFormatContext *s)
             av_free_packet(&st->cur_pkt);
         }
         av_dict_free(&st->metadata);
-        av_free(st->index_entries);
-        av_free(st->codec->extradata);
-        av_free(st->codec->subtitle_header);
-        av_free(st->codec);
+        av_freep(&st->index_entries);
+        av_freep(&st->codec->extradata);
+        av_freep(&st->codec->subtitle_header);
+        av_freep(&st->codec);
 #if FF_API_OLD_METADATA
-        av_free(st->filename);
+        av_freep(&st->filename);
 #endif
-        av_free(st->priv_data);
-        av_free(st->info);
-        av_free(st);
+        av_freep(&st->priv_data);
+        av_freep(&st->info);
+        av_freep(&st);
     }
     for(i=s->nb_programs-1; i>=0; i--) {
 #if FF_API_OLD_METADATA
@@ -2755,7 +2755,7 @@ void avformat_free_context(AVFormatContext *s)
         av_free(s->chapters[s->nb_chapters]->title);
 #endif
         av_dict_free(&s->chapters[s->nb_chapters]->metadata);
-        av_free(s->chapters[s->nb_chapters]);
+        av_freep(&s->chapters[s->nb_chapters]);
     }
     av_freep(&s->chapters);
     av_metadata_free(&s->metadata);
@@ -3048,7 +3048,9 @@ int avformat_write_header(AVFormatContext *s, AVDictionary **options)
                 ret = AVERROR(EINVAL);
                 goto fail;
             }
-            if(av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)){
+            if(av_cmp_q(st->sample_aspect_ratio, st->codec->sample_aspect_ratio)
+               && FFABS(av_q2d(st->sample_aspect_ratio) - av_q2d(st->codec->sample_aspect_ratio)) > 0.001
+            ){
                 av_log(s, AV_LOG_ERROR, "Aspect ratio mismatch between encoder and muxer layer\n");
                 ret = AVERROR(EINVAL);
                 goto fail;
@@ -3529,7 +3531,7 @@ void av_dump_format(AVFormatContext *ic,
                     int is_output)
 {
     int i;
-    uint8_t *printed = av_mallocz(ic->nb_streams);
+    uint8_t *printed = ic->nb_streams ? av_mallocz(ic->nb_streams) : NULL;
     if (ic->nb_streams && !printed)
         return;
 

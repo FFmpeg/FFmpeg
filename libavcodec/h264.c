@@ -106,12 +106,9 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h){
     }
 
     return 0;
-} //FIXME cleanup like ff_h264_check_intra_pred_mode
+} //FIXME cleanup like check_intra_pred_mode
 
-/**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
- */
-int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
+static int check_intra_pred_mode(H264Context *h, int mode, int is_chroma){
     MpegEncContext * const s = &h->s;
     static const int8_t top [7]= {LEFT_DC_PRED8x8, 1,-1,-1};
     static const int8_t left[7]= { TOP_DC_PRED8x8,-1, 2,-1,DC_128_PRED8x8};
@@ -131,7 +128,7 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
 
     if((h->left_samples_available&0x8080) != 0x8080){
         mode= left[ mode ];
-        if(h->left_samples_available&0x8080){ //mad cow disease mode, aka MBAFF + constrained_intra_pred
+        if(is_chroma && (h->left_samples_available&0x8080)){ //mad cow disease mode, aka MBAFF + constrained_intra_pred
             mode= ALZHEIMER_DC_L0T_PRED8x8 + (!(h->left_samples_available&0x8000)) + 2*(mode == DC_128_PRED8x8);
         }
         if(mode<0){
@@ -142,6 +139,23 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
 
     return mode;
 }
+
+/**
+ * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra16x16_pred_mode(H264Context *h, int mode)
+{
+    return check_intra_pred_mode(h, mode, 0);
+}
+
+/**
+ * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra_chroma_pred_mode(H264Context *h, int mode)
+{
+    return check_intra_pred_mode(h, mode, 1);
+}
+
 
 const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_length, int *consumed, int length){
     int i, si, di;
@@ -1018,17 +1032,20 @@ static av_cold void common_init(H264Context *h){
     memset(h->pps.scaling_matrix8, 16, 2*64*sizeof(uint8_t));
 }
 
-int ff_h264_decode_extradata(H264Context *h)
+int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
 {
     AVCodecContext *avctx = h->s.avctx;
 
-    if(avctx->extradata[0] == 1){
+    if(!buf || size <= 0)
+        return -1;
+
+    if(buf[0] == 1){
         int i, cnt, nalsize;
-        unsigned char *p = avctx->extradata;
+        const unsigned char *p = buf;
 
         h->is_avc = 1;
 
-        if(avctx->extradata_size < 7) {
+        if(size < 7) {
             av_log(avctx, AV_LOG_ERROR, "avcC too short\n");
             return -1;
         }
@@ -1040,6 +1057,8 @@ int ff_h264_decode_extradata(H264Context *h)
         p += 6;
         for (i = 0; i < cnt; i++) {
             nalsize = AV_RB16(p) + 2;
+            if(nalsize > size - (p-buf))
+                return -1;
             if(decode_nal_units(h, p, nalsize) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Decoding sps %d from avcC failed\n", i);
                 return -1;
@@ -1050,6 +1069,8 @@ int ff_h264_decode_extradata(H264Context *h)
         cnt = *(p++); // Number of pps
         for (i = 0; i < cnt; i++) {
             nalsize = AV_RB16(p) + 2;
+            if(nalsize > size - (p-buf))
+                return -1;
             if (decode_nal_units(h, p, nalsize) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "Decoding pps %d from avcC failed\n", i);
                 return -1;
@@ -1057,10 +1078,10 @@ int ff_h264_decode_extradata(H264Context *h)
             p += nalsize;
         }
         // Now store right nal length size, that will be use to parse all other nals
-        h->nal_length_size = (avctx->extradata[4] & 0x03) + 1;
+        h->nal_length_size = (buf[4] & 0x03) + 1;
     } else {
         h->is_avc = 0;
-        if(decode_nal_units(h, avctx->extradata, avctx->extradata_size) < 0)
+        if(decode_nal_units(h, buf, size) < 0)
             return -1;
     }
     return 0;
@@ -1104,7 +1125,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     }
 
     if(avctx->extradata_size > 0 && avctx->extradata &&
-        ff_h264_decode_extradata(h))
+        ff_h264_decode_extradata(h, avctx->extradata, avctx->extradata_size))
         return -1;
 
     if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames < h->sps.num_reorder_frames){
@@ -2872,6 +2893,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     h->ref_count[1]= h->pps.ref_count[1];
 
     if(h->slice_type_nos != AV_PICTURE_TYPE_I){
+        unsigned max= (16<<(s->picture_structure != PICT_FRAME))-1;
         if(h->slice_type_nos == AV_PICTURE_TYPE_B){
             h->direct_spatial_mv_pred= get_bits1(&s->gb);
         }
@@ -2882,25 +2904,27 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             if(h->slice_type_nos==AV_PICTURE_TYPE_B)
                 h->ref_count[1]= get_ue_golomb(&s->gb) + 1;
 
-            if(h->ref_count[0]-1 > 32-1 || h->ref_count[1]-1 > 32-1){
-                av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
-                h->ref_count[0]= h->ref_count[1]= 1;
-                return -1;
-            }
+        }
+        if(h->ref_count[0]-1 > max || h->ref_count[1]-1 > max){
+            av_log(h->s.avctx, AV_LOG_ERROR, "reference overflow\n");
+            h->ref_count[0]= h->ref_count[1]= 1;
+            return -1;
         }
         if(h->slice_type_nos == AV_PICTURE_TYPE_B)
             h->list_count= 2;
         else
             h->list_count= 1;
     }else
-        h->list_count= 0;
+        h->ref_count[1]= h->ref_count[0]= h->list_count= 0;
 
     if(!default_ref_list_done){
         ff_h264_fill_default_ref_list(h);
     }
 
-    if(h->slice_type_nos!=AV_PICTURE_TYPE_I && ff_h264_decode_ref_pic_list_reordering(h) < 0)
+    if(h->slice_type_nos!=AV_PICTURE_TYPE_I && ff_h264_decode_ref_pic_list_reordering(h) < 0) {
+        h->ref_count[1]= h->ref_count[0]= 0;
         return -1;
+    }
 
     if(h->slice_type_nos!=AV_PICTURE_TYPE_I){
         s->last_picture_ptr= &h->ref_list[0][0];

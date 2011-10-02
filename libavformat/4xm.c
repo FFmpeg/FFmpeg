@@ -172,13 +172,16 @@ static int fourxm_read_header(AVFormatContext *s,
                 goto fail;
             }
             if (current_track + 1 > fourxm->track_count) {
-                fourxm->track_count = current_track + 1;
-                fourxm->tracks = av_realloc(fourxm->tracks,
-                    fourxm->track_count * sizeof(AudioTrack));
+                fourxm->tracks = av_realloc_f(fourxm->tracks,
+                                              sizeof(AudioTrack),
+                                              current_track + 1);
                 if (!fourxm->tracks) {
                     ret=  AVERROR(ENOMEM);
                     goto fail;
                 }
+                memset(&fourxm->tracks[fourxm->track_count], 0,
+                       sizeof(AudioTrack) * (current_track + 1 - fourxm->track_count));
+                fourxm->track_count = current_track + 1;
             }
             fourxm->tracks[current_track].adpcm       = AV_RL32(&header[i + 12]);
             fourxm->tracks[current_track].channels    = AV_RL32(&header[i + 36]);

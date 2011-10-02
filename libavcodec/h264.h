@@ -101,7 +101,7 @@
  */
 #define DELAYED_PIC_REF 4
 
-#define QP_MAX_NUM (51 + 2*6)           // The maximum supported qp
+#define QP_MAX_NUM (51 + 4*6)           // The maximum supported qp
 
 /* NAL unit types */
 enum {
@@ -584,7 +584,7 @@ typedef struct H264Context{
 }H264Context;
 
 
-extern const uint8_t ff_h264_chroma_qp[3][QP_MAX_NUM+1]; ///< One chroma qp table for each supported bit depth (8, 9, 10).
+extern const uint8_t ff_h264_chroma_qp[5][QP_MAX_NUM+1]; ///< One chroma qp table for each possible bit depth (8-12).
 
 /**
  * Decode SEI
@@ -658,12 +658,17 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h);
 /**
  * Check if the top & left blocks are available if needed & change the dc mode so it only uses the available blocks.
  */
-int ff_h264_check_intra_pred_mode(H264Context *h, int mode);
+int ff_h264_check_intra16x16_pred_mode(H264Context *h, int mode);
+
+/**
+ * Check if the top & left blocks are available if needed & change the dc mode so it only uses the available blocks.
+ */
+int ff_h264_check_intra_chroma_pred_mode(H264Context *h, int mode);
 
 void ff_h264_write_back_intra_pred_mode(H264Context *h);
 void ff_h264_hl_decode_mb(H264Context *h);
 int ff_h264_frame_start(H264Context *h);
-int ff_h264_decode_extradata(H264Context *h);
+int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size);
 av_cold int ff_h264_decode_init(AVCodecContext *avctx);
 av_cold int ff_h264_decode_end(AVCodecContext *avctx);
 av_cold void ff_h264_decode_init_vlc(void);

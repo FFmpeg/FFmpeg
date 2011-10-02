@@ -128,7 +128,7 @@ FATE_TESTS += fate-id-cin-video
 fate-id-cin-video: CMD = framecrc  -i $(SAMPLES)/idcin/idlog-2MB.cin -pix_fmt rgb24
 FATE_TESTS += fate-idroq-video-dpcm
 fate-idroq-video-dpcm: CMD = framecrc  -i $(SAMPLES)/idroq/idlogo.roq
-FATE_TESTS += fate-idroq-video-encode
+FATE_TESTS-$(CONFIG_AVFILTER) += fate-idroq-video-encode
 fate-idroq-video-encode: CMD = md5  -t 0.2 -f image2 -vcodec pgmyuv -i $(SAMPLES)/ffmpeg-synthetic/vsynth1/%02d.pgm -sws_flags +bitexact -vf pad=512:512:80:112 -f RoQ
 FATE_TESTS += fate-iff-byterun1
 fate-iff-byterun1: CMD = framecrc  -i $(SAMPLES)/iff/ASH.LBM -pix_fmt rgb24

@@ -37,6 +37,7 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
+    const uint8_t *buf_end = avpkt->data + avpkt->size;
     int buf_size = avpkt->size;
     QdrawContext * const a = avctx->priv_data;
     AVFrame * const p= (AVFrame*)&a->pic;
@@ -59,6 +60,8 @@ static int decode_frame(AVCodecContext *avctx,
 
     outdata = a->pic.data[0];
 
+    if (buf_end - buf < 0x68 + 4)
+        return AVERROR_INVALIDDATA;
     buf += 0x68; /* jump to palette */
     colors = AV_RB32(buf);
     buf += 4;
@@ -67,6 +70,8 @@ static int decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Error color count - %i(0x%X)\n", colors, colors);
         return -1;
     }
+    if (buf_end - buf < (colors + 1) * 8)
+        return AVERROR_INVALIDDATA;
 
     pal = (uint32_t*)p->data[1];
     for (i = 0; i <= colors; i++) {
@@ -89,6 +94,8 @@ static int decode_frame(AVCodecContext *avctx,
     }
     p->palette_has_changed = 1;
 
+    if (buf_end - buf < 18)
+        return AVERROR_INVALIDDATA;
     buf += 18; /* skip unneeded data */
     for (i = 0; i < avctx->height; i++) {
         int size, left, code, pix;
@@ -100,6 +107,9 @@ static int decode_frame(AVCodecContext *avctx,
         out = outdata;
         size = AV_RB16(buf); /* size of packed line */
         buf += 2;
+        if (buf_end - buf < size)
+            return AVERROR_INVALIDDATA;
+
         left = size;
         next = buf + size;
         while (left > 0) {
@@ -115,6 +125,8 @@ static int decode_frame(AVCodecContext *avctx,
             } else { /* copy */
                 if ((out + code) > (outdata +  a->pic.linesize[0]))
                     break;
+                if (buf_end - buf < code + 1)
+                    return AVERROR_INVALIDDATA;
                 memcpy(out, buf, code + 1);
                 out += code + 1;
                 buf += code + 1;

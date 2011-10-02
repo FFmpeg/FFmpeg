@@ -155,7 +155,7 @@ static void fix_bitshift(ShortenContext *s, int32_t *buffer)
 
     if (s->bitshift != 0)
         for (i = 0; i < s->blocksize; i++)
-            buffer[s->nwrap + i] <<= s->bitshift;
+            buffer[i] <<= s->bitshift;
 }
 
 
@@ -483,9 +483,15 @@ static int shorten_decode_frame(AVCodecContext *avctx,
             case FN_BITSHIFT:
                 s->bitshift = get_ur_golomb_shorten(&s->gb, BITSHIFTSIZE);
                 break;
-            case FN_BLOCKSIZE:
-                s->blocksize = get_uint(s, av_log2(s->blocksize));
+            case FN_BLOCKSIZE: {
+                int blocksize = get_uint(s, av_log2(s->blocksize));
+                if (blocksize > s->blocksize) {
+                    av_log(avctx, AV_LOG_ERROR, "Increasing block size is not supported\n");
+                    return AVERROR_PATCHWELCOME;
+                }
+                s->blocksize = blocksize;
                 break;
+            }
             case FN_QUIT:
                 *data_size = 0;
                 return buf_size;
