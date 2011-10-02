@@ -539,11 +539,13 @@ static const AVOption options[] = {
     { "good",            NULL, 0, FF_OPT_TYPE_CONST, {VPX_DL_GOOD_QUALITY}, 0, 0, VE, "quality"},
     { "realtime",        NULL, 0, FF_OPT_TYPE_CONST, {VPX_DL_REALTIME},     0, 0, VE, "quality"},
     { "error-resilient", "Error resilience configuration", OFFSET(error_resilient), FF_OPT_TYPE_FLAGS, {0}, INT_MIN, INT_MAX, VE, "er"},
+#ifdef VPX_ERROR_RESILIENT_DEFAULT
     { "default",         "Improve resiliency against losses of whole frames", 0, FF_OPT_TYPE_CONST, {VPX_ERROR_RESILIENT_DEFAULT}, 0, 0, VE, "er"},
     { "partitions",      "The frame partitions are independently decodable "
                          "by the bool decoder, meaning that partitions can be decoded even "
                          "though earlier partitions have been lost. Note that intra predicition"
                          " is still done over the partition boundary.",       0, FF_OPT_TYPE_CONST, {VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"},
+#endif
     { NULL }
 };
 
