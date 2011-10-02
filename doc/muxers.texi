@@ -90,6 +90,7 @@ avconv -i INPUT -c:a pcm_u8 -c:v mpeg2video -f framecrc -
 
 See also the @ref{crc} muxer.
 
+@anchor{image2}
 @section image2
 
 Image file muxer.
@@ -266,5 +267,36 @@ For example a 3D WebM clip can be created using the following command line:
 @example
 avconv -i sample_left_right_clip.mpg -an -c:v libvpx -metadata STEREO_MODE=left_right -y stereo_clip.webm
 @end example
+
+@section segment
+
+Basic stream segmenter.
+
+The segmenter muxer outputs streams to a number of separate files of nearly
+fixed duration. Output filename pattern can be set in a fashion similar to
+@ref{image2}.
+
+Every segment starts with a video keyframe, if a video stream is present.
+The segment muxer works best with a single constant frame rate video.
+
+Optionally it can generate a flat list of the created segments, one segment
+per line.
+
+@table @option
+@item segment_format @var{format}
+Override the inner container format, by default it is guessed by the filename
+extension.
+@item segment_time @var{t}
+Set segment duration to @var{t} seconds.
+@item segment_list @var{name}
+Generate also a listfile named @var{name}.
+@item segment_list_size @var{size}
+Overwrite the listfile once it reaches @var{size} entries.
+@end table
+
+@example
+avconv -i in.mkv -c copy -map 0 -f segment -list out.list out%03d.nut
+@end example
+
 
 @c man end MUXERS
