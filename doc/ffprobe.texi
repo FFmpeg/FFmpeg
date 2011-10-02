@@ -80,8 +80,11 @@ Use sexagesimal format HH:MM:SS.MICROSECONDS for time values.
 Prettify the format of the displayed values, it corresponds to the
 options "-unit -prefix -byte_binary_prefix -sexagesimal".
 
-@item -print_format @var{format}
+@item -print_format @var{writer_name}[=@var{writer_options}]
 Set the output printing format.
+
+@var{writer_name} specifies the name of the writer, and
+@var{writer_options} specifies the options to be passed to the writer.
 
 For example for printing the output in JSON format, specify:
 @example

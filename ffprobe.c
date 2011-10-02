@@ -23,6 +23,7 @@
 
 #include "libavformat/avformat.h"
 #include "libavcodec/avcodec.h"
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/dict.h"
@@ -737,23 +738,34 @@ static int probe_file(const char *filename)
     AVFormatContext *fmt_ctx;
     int ret;
     Writer *w;
+    const char *buf = print_format;
+    char *w_str = NULL, *w_args = NULL;
     WriterContext *wctx;
 
     writer_register_all();
 
-    if (!print_format)
-        print_format = av_strdup("default");
-    w = writer_get_by_name(print_format);
-    if (!w) {
-        fprintf(stderr, "Invalid output format '%s'\n", print_format);
-        return AVERROR(EINVAL);
+    if (buf) {
+        w_str = av_get_token(&buf, "=");
+        if (*buf == '=') {
+            buf++;
+            w_args = av_get_token(&buf, "");
+        }
     }
 
-    if ((ret = writer_open(&wctx, w, NULL, NULL)) < 0)
-        return ret;
+    if (!w_str)
+        w_str = av_strdup("default");
 
+    w = writer_get_by_name(w_str);
+    if (!w) {
+        av_log(NULL, AV_LOG_ERROR, "Invalid output format '%s'\n", w_str);
+        ret = AVERROR(EINVAL);
+        goto end;
+    }
+
+    if ((ret = writer_open(&wctx, w, w_args, NULL)) < 0)
+        goto end;
     if ((ret = open_input_file(&fmt_ctx, filename)))
-        return ret;
+        goto end;
 
     writer_print_header(wctx);
     PRINT_CHAPTER(packets);
@@ -764,7 +776,11 @@ static int probe_file(const char *filename)
     av_close_input_file(fmt_ctx);
     writer_close(&wctx);
 
-    return 0;
+end:
+    av_free(w_str);
+    av_free(w_args);
+
+    return ret;
 }
 
 static void show_usage(void)
