@@ -358,7 +358,6 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
 
     samples = data;
     samples_end= samples + *data_size/2;
-    *data_size= 0;
     src = buf;
 
     st = avctx->channels == 2 ? 1 : 0;
