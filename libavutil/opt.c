@@ -500,12 +500,14 @@ int av_opt_get_q(void *obj, const char *name, int search_flags, AVRational *out_
 
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
 {
-    const AVOption *field = av_find_opt(obj, field_name, NULL, 0, 0);
-    const AVOption *flag  = av_find_opt(obj, flag_name,  NULL, 0, 0);
+    const AVOption *field = av_opt_find(obj, field_name, NULL, 0, 0);
+    const AVOption *flag  = av_opt_find(obj, flag_name,  NULL, 0, 0);
+    int64_t res;
 
-    if (!field || !flag || flag->type != FF_OPT_TYPE_CONST)
+    if (!field || !flag || flag->type != FF_OPT_TYPE_CONST ||
+        av_opt_get_int(obj, field_name, 0, &res) < 0)
         return 0;
-    return av_get_int(obj, field_name, NULL) & (int) flag->default_val.dbl;
+    return res & (int) flag->default_val.dbl;
 }
 
 static void opt_list(void *obj, void *av_log_obj, const char *unit,
@@ -513,7 +515,7 @@ static void opt_list(void *obj, void *av_log_obj, const char *unit,
 {
     const AVOption *opt=NULL;
 
-    while ((opt= av_next_option(obj, opt))) {
+    while ((opt = av_opt_next(obj, opt))) {
         if (!(opt->flags & req_flags) || (opt->flags & rej_flags))
             continue;
 
@@ -599,7 +601,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
 {
 #endif
     const AVOption *opt = NULL;
-    while ((opt = av_next_option(s, opt)) != NULL) {
+    while ((opt = av_opt_next(s, opt)) != NULL) {
 #if FF_API_OLD_AVOPTIONS
         if ((opt->flags & mask) != flags)
             continue;
@@ -612,29 +614,29 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
             case FF_OPT_TYPE_INT: {
                 int val;
                 val = opt->default_val.dbl;
-                av_set_int(s, opt->name, val);
+                av_opt_set_int(s, opt->name, val, 0);
             }
             break;
             case FF_OPT_TYPE_INT64:
                 if ((double)(opt->default_val.dbl+0.6) == opt->default_val.dbl)
                     av_log(s, AV_LOG_DEBUG, "loss of precision in default of %s\n", opt->name);
-                av_set_int(s, opt->name, opt->default_val.dbl);
+                av_opt_set_int(s, opt->name, opt->default_val.dbl, 0);
             break;
             case FF_OPT_TYPE_DOUBLE:
             case FF_OPT_TYPE_FLOAT: {
                 double val;
                 val = opt->default_val.dbl;
-                av_set_double(s, opt->name, val);
+                av_opt_set_double(s, opt->name, val, 0);
             }
             break;
             case FF_OPT_TYPE_RATIONAL: {
                 AVRational val;
                 val = av_d2q(opt->default_val.dbl, INT_MAX);
-                av_set_q(s, opt->name, val);
+                av_opt_set_q(s, opt->name, val, 0);
             }
             break;
             case FF_OPT_TYPE_STRING:
-                av_set_string3(s, opt->name, opt->default_val.str, 1, NULL);
+                av_opt_set(s, opt->name, opt->default_val.str, 0);
                 break;
             case FF_OPT_TYPE_BINARY:
                 /* Cannot set default for binary */
@@ -659,7 +661,7 @@ void av_opt_set_defaults2(void *s, int mask, int flags)
  * set, or a negative value corresponding to an AVERROR code in case
  * of error:
  * AVERROR(EINVAL) if the key/value pair cannot be parsed,
- * the error code issued by av_set_string3() if the key/value pair
+ * the error code issued by av_opt_set() if the key/value pair
  * cannot be set
  */
 static int parse_key_value_pair(void *ctx, const char **buf,
@@ -680,7 +682,7 @@ static int parse_key_value_pair(void *ctx, const char **buf,
 
     av_log(ctx, AV_LOG_DEBUG, "Setting value '%s' for key '%s'\n", val, key);
 
-    ret = av_set_string3(ctx, key, val, 1, NULL);
+    ret = av_opt_set(ctx, key, val, 0);
     if (ret == AVERROR_OPTION_NOT_FOUND)
         av_log(ctx, AV_LOG_ERROR, "Key '%s' not found.\n", key);
 
@@ -709,7 +711,7 @@ int av_set_options_string(void *ctx, const char *opts,
 void av_opt_free(void *obj)
 {
     const AVOption *o = NULL;
-    while ((o = av_next_option(obj, o)))
+    while ((o = av_opt_next(obj, o)))
         if (o->type == FF_OPT_TYPE_STRING || o->type == FF_OPT_TYPE_BINARY)
             av_freep((uint8_t *)obj + o->offset);
 }
@@ -721,7 +723,7 @@ int av_opt_set_dict(void *obj, AVDictionary **options)
     int ret = 0;
 
     while ((t = av_dict_get(*options, "", t, AV_DICT_IGNORE_SUFFIX))) {
-        ret = av_set_string3(obj, t->key, t->value, 1, NULL);
+        ret = av_opt_set(obj, t->key, t->value, 0);
         if (ret == AVERROR_OPTION_NOT_FOUND)
             av_dict_set(&tmp, t->key, t->value, 0);
         else if (ret < 0) {
@@ -761,7 +763,7 @@ const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
         }
     }
 
-    while (o = av_next_option(obj, o)) {
+    while (o = av_opt_next(obj, o)) {
         if (!strcmp(o->name, name) && (o->flags & opt_flags) == opt_flags &&
             ((!unit && o->type != FF_OPT_TYPE_CONST) ||
              (unit  && o->unit && !strcmp(o->unit, unit)))) {

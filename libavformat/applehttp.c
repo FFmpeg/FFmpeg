@@ -350,8 +350,8 @@ static int open_input(struct variant *var)
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
         if ((ret = ffurl_alloc(&var->input, url, AVIO_FLAG_READ)) < 0)
             return ret;
-        av_set_string3(var->input->priv_data, "key", key, 0, NULL);
-        av_set_string3(var->input->priv_data, "iv", iv, 0, NULL);
+        av_opt_set(var->input->priv_data, "key", key, 0);
+        av_opt_set(var->input->priv_data, "iv", iv, 0);
         if ((ret = ffurl_connect(var->input)) < 0) {
             ffurl_close(var->input);
             var->input = NULL;

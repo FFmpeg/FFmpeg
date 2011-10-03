@@ -361,7 +361,7 @@ int opt_default(const char *opt, const char *arg)
         av_dict_set(&format_opts, opt, arg, FLAGS);
     else if ((o = av_opt_find(&sc, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         // XXX we only support sws_flags, not arbitrary sws options
-        int ret = av_set_string3(sws_opts, opt, arg, 1, NULL);
+        int ret = av_opt_set(sws_opts, opt, arg, 0);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;

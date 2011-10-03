@@ -224,7 +224,7 @@ typedef struct OutputStream {
     AVFilterGraph *graph;
 #endif
 
-   int sws_flags;
+   int64_t sws_flags;
    AVDictionary *opts;
    int is_past_recording_time;
 } OutputStream;
@@ -421,7 +421,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
         snprintf(args, 255, "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
-                 ost->sws_flags);
+                 (unsigned)ost->sws_flags);
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 NULL, args, NULL, ost->graph)) < 0)
             return ret;
@@ -430,7 +430,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
         last_filter = filter;
     }
 
-    snprintf(args, sizeof(args), "flags=0x%X", ost->sws_flags);
+    snprintf(args, sizeof(args), "flags=0x%X", (unsigned)ost->sws_flags);
     ost->graph->scale_sws_opts = av_strdup(args);
 
     if (ost->avfilter) {
@@ -3033,7 +3033,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
-    ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
+    av_opt_get_int(sws_opts, "sws_flags", 0, &ost->sws_flags);
     return ost;
 }
 

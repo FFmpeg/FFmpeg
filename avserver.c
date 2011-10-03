@@ -3938,7 +3938,7 @@ static int avserver_opt_default(const char *opt, const char *arg,
     int ret = 0;
     const AVOption *o = av_opt_find(avctx, opt, NULL, type, 0);
     if(o)
-        ret = av_set_string3(avctx, opt, arg, 1, NULL);
+        ret = av_opt_set(avctx, opt, arg, 0);
     return ret;
 }
 
