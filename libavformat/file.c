@@ -37,13 +37,15 @@
 static int file_read(URLContext *h, unsigned char *buf, int size)
 {
     int fd = (intptr_t) h->priv_data;
-    return read(fd, buf, size);
+    int r = read(fd, buf, size);
+    return (-1 == r)?AVERROR(errno):r;
 }
 
 static int file_write(URLContext *h, const unsigned char *buf, int size)
 {
     int fd = (intptr_t) h->priv_data;
-    return write(fd, buf, size);
+    int r = write(fd, buf, size);
+    return (-1 == r)?AVERROR(errno):r;
 }
 
 static int file_get_handle(URLContext *h)
