@@ -47,7 +47,14 @@ const AVOption *av_find_opt(void *v, const char *name, const char *unit, int mas
 }
 #endif
 
+#if FF_API_OLD_AVOPTIONS
 const AVOption *av_next_option(void *obj, const AVOption *last)
+{
+    return av_opt_next(obj, last);
+}
+#endif
+
+const AVOption *av_opt_next(void *obj, const AVOption *last)
 {
     if (last && last[1].name) return ++last;
     else if (last)            return NULL;

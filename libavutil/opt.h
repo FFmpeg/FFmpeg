@@ -150,8 +150,8 @@ attribute_deprecated double av_get_double(void *obj, const char *name, const AVO
 attribute_deprecated AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
 attribute_deprecated int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
 attribute_deprecated const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
+attribute_deprecated const AVOption *av_next_option(void *obj, const AVOption *last);
 #endif
-const AVOption *av_next_option(void *obj, const AVOption *last);
 
 /**
  * Show the obj options.
@@ -308,6 +308,17 @@ const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
  */
 const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
                              int opt_flags, int search_flags, void **target_obj);
+
+/**
+ * Iterate over all AVOptions belonging to obj.
+ *
+ * @param obj an AVOptions-enabled struct or a double pointer to an
+ *            AVClass describing it.
+ * @param prev result of the previous call to av_opt_next() on this object
+ *             or NULL
+ * @return next AVOption or NULL
+ */
+const AVOption *av_opt_next(void *obj, const AVOption *prev);
 
 /**
  * Iterate over AVOptions-enabled children of obj.
