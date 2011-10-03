@@ -3710,9 +3710,13 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             switch (hx->nal_unit_type) {
                 case NAL_SPS:
                 case NAL_PPS:
+                    nals_needed = nal_index;
+                    break;
                 case NAL_IDR_SLICE:
                 case NAL_SLICE:
-                    nals_needed = nal_index;
+                    init_get_bits(&hx->s.gb, ptr, bit_length);
+                    if(!get_ue_golomb(&hx->s.gb))
+                        nals_needed = nal_index;
             }
             continue;
         }
