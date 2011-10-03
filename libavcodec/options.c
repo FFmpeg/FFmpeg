@@ -516,7 +516,14 @@ static const AVOption options[]={
 #undef D
 #undef DEFAULT
 
-static const AVClass av_codec_context_class = { "AVCodecContext", context_to_name, options, LIBAVUTIL_VERSION_INT, OFFSET(log_level_offset), .opt_find = opt_find};
+static const AVClass av_codec_context_class = {
+    .class_name              = "AVCodecContext",
+    .item_name               = context_to_name,
+    .option                  = options,
+    .version                 = LIBAVUTIL_VERSION_INT,
+    .log_level_offset_offset = OFFSET(log_level_offset),
+    .opt_find                = opt_find,
+};
 
 void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_type){
     memset(s, 0, sizeof(AVCodecContext));
