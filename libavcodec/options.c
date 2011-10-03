@@ -39,22 +39,27 @@ static const char* context_to_name(void* ptr) {
         return "NULL";
 }
 
-static const AVOption *opt_find(void *obj, const char *name, const char *unit, int opt_flags, int search_flags)
+static void *codec_child_next(void *obj, void *prev)
 {
     AVCodecContext *s = obj;
-    AVCodec        *c = NULL;
+    if (!prev && s->codec && s->codec->priv_class && s->priv_data)
+        return s->priv_data;
+    return NULL;
+}
 
-    if (!(search_flags & AV_OPT_SEARCH_FAKE_OBJ) && s->priv_data) {
-        if (s->codec->priv_class)
-            return av_opt_find(s->priv_data, name, unit, opt_flags, search_flags);
-        return NULL;
-    }
+static const AVClass *codec_child_class_next(const AVClass *prev)
+{
+    AVCodec *c = NULL;
 
-    while ((c = av_codec_next(c))) {
-        const AVOption *o;
-        if (c->priv_class && (o = av_opt_find(&c->priv_class, name, unit, opt_flags, search_flags)))
-            return o;
-    }
+    /* find the codec that corresponds to prev */
+    while (prev && (c = av_codec_next(c)))
+        if (c->priv_class == prev)
+            break;
+
+    /* find next codec with priv options */
+    while (c = av_codec_next(c))
+        if (c->priv_class)
+            return c->priv_class;
     return NULL;
 }
 
@@ -522,7 +527,8 @@ static const AVClass av_codec_context_class = {
     .option                  = options,
     .version                 = LIBAVUTIL_VERSION_INT,
     .log_level_offset_offset = OFFSET(log_level_offset),
-    .opt_find                = opt_find,
+    .child_next              = codec_child_next,
+    .child_class_next        = codec_child_class_next,
 };
 
 void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_type){

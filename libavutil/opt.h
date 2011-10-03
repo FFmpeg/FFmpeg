@@ -30,6 +30,7 @@
 #include "rational.h"
 #include "avutil.h"
 #include "dict.h"
+#include "log.h"
 
 enum AVOptionType{
     FF_OPT_TYPE_FLAGS,
@@ -254,5 +255,45 @@ int av_opt_set_dict(void *obj, struct AVDictionary **options);
  */
 const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
                             int opt_flags, int search_flags);
+
+/**
+ * Look for an option in an object. Consider only options which
+ * have all the specified flags set.
+ *
+ * @param[in] obj A pointer to a struct whose first element is a
+ *                pointer to an AVClass.
+ *                Alternatively a double pointer to an AVClass, if
+ *                AV_OPT_SEARCH_FAKE_OBJ search flag is set.
+ * @param[in] name The name of the option to look for.
+ * @param[in] unit When searching for named constants, name of the unit
+ *                 it belongs to.
+ * @param opt_flags Find only options with all the specified flags set (AV_OPT_FLAG).
+ * @param search_flags A combination of AV_OPT_SEARCH_*.
+ * @param[out] target_obj if non-NULL, an object to which the option belongs will be
+ * written here. It may be different from obj if AV_OPT_SEARCH_CHILDREN is present
+ * in search_flags. This parameter is ignored if search_flags contain
+ * AV_OPT_SEARCH_FAKE_OBJ.
+ *
+ * @return A pointer to the option found, or NULL if no option
+ *         was found.
+ */
+const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
+                             int opt_flags, int search_flags, void **target_obj);
+
+/**
+ * Iterate over AVOptions-enabled children of obj.
+ *
+ * @param prev result of a previous call to this function or NULL
+ * @return next AVOptions-enabled child or NULL
+ */
+void *av_opt_child_next(void *obj, void *prev);
+
+/**
+ * Iterate over potential AVOptions-enabled children of parent.
+ *
+ * @param prev result of a previous call to this function or NULL
+ * @return AVClass corresponding to next potential child or NULL
+ */
+const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *prev);
 
 #endif /* AVUTIL_OPT_H */

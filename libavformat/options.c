@@ -33,30 +33,36 @@ static const char* format_to_name(void* ptr)
     else return "NULL";
 }
 
-static const AVOption *opt_find(void *obj, const char *name, const char *unit, int opt_flags, int search_flags)
+static void *format_child_next(void *obj, void *prev)
 {
-    AVFormatContext   *s = obj;
+    AVFormatContext *s = obj;
+    if (!prev && s->priv_data &&
+        ((s->iformat && s->iformat->priv_class) ||
+          s->oformat && s->oformat->priv_class))
+        return s->priv_data;
+    return NULL;
+}
+
+static const AVClass *format_child_class_next(const AVClass *prev)
+{
     AVInputFormat  *ifmt = NULL;
     AVOutputFormat *ofmt = NULL;
-    if (!(search_flags & AV_OPT_SEARCH_FAKE_OBJ) && s->priv_data) {
-        if ((s->iformat && !s->iformat->priv_class) ||
-            (s->oformat && !s->oformat->priv_class))
-            return NULL;
-        return av_opt_find(s->priv_data, name, unit, opt_flags, search_flags);
-    }
 
-    while ((ifmt = av_iformat_next(ifmt))) {
-        const AVOption *o;
+    while (prev && (ifmt = av_iformat_next(ifmt)))
+        if (ifmt->priv_class == prev)
+            break;
+    if ((prev && ifmt) || (!prev))
+        while (ifmt = av_iformat_next(ifmt))
+            if (ifmt->priv_class)
+                return ifmt->priv_class;
 
-        if (ifmt->priv_class && (o = av_opt_find(&ifmt->priv_class, name, unit, opt_flags, search_flags)))
-            return o;
-    }
-    while ((ofmt = av_oformat_next(ofmt))) {
-        const AVOption *o;
+    while (prev && (ofmt = av_oformat_next(ofmt)))
+        if (ofmt->priv_class == prev)
+            break;
+    while (ofmt = av_oformat_next(ofmt))
+        if (ofmt->priv_class)
+            return ofmt->priv_class;
 
-        if (ofmt->priv_class && (o = av_opt_find(&ofmt->priv_class, name, unit, opt_flags, search_flags)))
-            return o;
-    }
     return NULL;
 }
 
@@ -103,7 +109,8 @@ static const AVClass av_format_context_class = {
     .item_name      = format_to_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
-    .opt_find       = opt_find,
+    .child_next     = format_child_next,
+    .child_class_next = format_child_class_next,
 };
 
 static void avformat_get_context_defaults(AVFormatContext *s)

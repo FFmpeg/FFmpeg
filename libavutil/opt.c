@@ -583,19 +583,57 @@ int av_opt_set_dict(void *obj, AVDictionary **options)
 const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
                             int opt_flags, int search_flags)
 {
-    AVClass *c = *(AVClass**)obj;
+    return av_opt_find2(obj, name, unit, opt_flags, search_flags, NULL);
+}
+
+const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
+                             int opt_flags, int search_flags, void **target_obj)
+{
+    const AVClass  *c = *(AVClass**)obj;
     const AVOption *o = NULL;
 
-    if (c->opt_find && search_flags & AV_OPT_SEARCH_CHILDREN &&
-        (o = c->opt_find(obj, name, unit, opt_flags, search_flags)))
-        return o;
+    if (search_flags & AV_OPT_SEARCH_CHILDREN) {
+        if (search_flags & AV_OPT_SEARCH_FAKE_OBJ) {
+            const AVClass *child = NULL;
+            while (child = av_opt_child_class_next(c, child))
+                if (o = av_opt_find2(&child, name, unit, opt_flags, search_flags, NULL))
+                    return o;
+        } else {
+            void *child = NULL;
+            while (child = av_opt_child_next(obj, child))
+                if (o = av_opt_find2(child, name, unit, opt_flags, search_flags, target_obj))
+                    return o;
+        }
+    }
 
     while (o = av_next_option(obj, o)) {
         if (!strcmp(o->name, name) && (o->flags & opt_flags) == opt_flags &&
             ((!unit && o->type != FF_OPT_TYPE_CONST) ||
-             (unit  && o->unit && !strcmp(o->unit, unit))))
+             (unit  && o->unit && !strcmp(o->unit, unit)))) {
+            if (target_obj) {
+                if (!(search_flags & AV_OPT_SEARCH_FAKE_OBJ))
+                    *target_obj = obj;
+                else
+                    *target_obj = NULL;
+            }
             return o;
+        }
     }
+    return NULL;
+}
+
+void *av_opt_child_next(void *obj, void *prev)
+{
+    const AVClass *c = *(AVClass**)obj;
+    if (c->child_next)
+        return c->child_next(obj, prev);
+    return NULL;
+}
+
+const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *prev)
+{
+    if (parent->child_class_next)
+        return parent->child_class_next(prev);
     return NULL;
 }
 
