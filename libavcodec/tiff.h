@@ -64,6 +64,12 @@ enum TiffTags{
     TIFF_YCBCR_SUBSAMPLING = 0x212,
     TIFF_YCBCR_POSITIONING = 0x213,
     TIFF_REFERENCE_BW = 0x214,
+    TIFF_MODEL_TIEPOINT = 0x8482,
+    TIFF_MODEL_PIXEL_SCALE = 0x830E,
+    TIFF_MODEL_TRANSFORMATION = 0x8480,
+    TIFF_GEO_KEY_DIRECTORY = 0x87AF,
+    TIFF_GEO_DOUBLE_PARAMS = 0x87B0,
+    TIFF_GEO_ASCII_PARAMS = 0x87B1
 };
 
 /** list of TIFF compression types */
@@ -86,11 +92,91 @@ enum TiffTypes{
     TIFF_SHORT,
     TIFF_LONG,
     TIFF_RATIONAL,
+    TIFF_SBYTE,
+    TIFF_UNDEFINED,
+    TIFF_SSHORT,
+    TIFF_SLONG,
+    TIFF_SRATIONAL,
+    TIFF_FLOAT,
+    TIFF_DOUBLE,
+    TIFF_IFD
+};
+
+enum TiffGeoTagKey {
+    TIFF_GT_MODEL_TYPE_GEOKEY                = 1024,
+    TIFF_GT_RASTER_TYPE_GEOKEY               = 1025,
+    TIFF_GT_CITATION_GEOKEY                  = 1026,
+    TIFF_GEOGRAPHIC_TYPE_GEOKEY              = 2048,
+    TIFF_GEOG_CITATION_GEOKEY                = 2049,
+    TIFF_GEOG_GEODETIC_DATUM_GEOKEY          = 2050,
+    TIFF_GEOG_PRIME_MERIDIAN_GEOKEY          = 2051,
+    TIFF_GEOG_LINEAR_UNITS_GEOKEY            = 2052,
+    TIFF_GEOG_LINEAR_UNIT_SIZE_GEOKEY        = 2053,
+    TIFF_GEOG_ANGULAR_UNITS_GEOKEY           = 2054,
+    TIFF_GEOG_ANGULAR_UNIT_SIZE_GEOKEY       = 2055,
+    TIFF_GEOG_ELLIPSOID_GEOKEY               = 2056,
+    TIFF_GEOG_SEMI_MAJOR_AXIS_GEOKEY         = 2057,
+    TIFF_GEOG_SEMI_MINOR_AXIS_GEOKEY         = 2058,
+    TIFF_GEOG_INV_FLATTENING_GEOKEY          = 2059,
+    TIFF_GEOG_AZIMUTH_UNITS_GEOKEY           = 2060,
+    TIFF_GEOG_PRIME_MERIDIAN_LONG_GEOKEY     = 2061,
+    TIFF_PROJECTED_CS_TYPE_GEOKEY            = 3072,
+    TIFF_PCS_CITATION_GEOKEY                 = 3073,
+    TIFF_PROJECTION_GEOKEY                   = 3074,
+    TIFF_PROJ_COORD_TRANS_GEOKEY             = 3075,
+    TIFF_PROJ_LINEAR_UNITS_GEOKEY            = 3076,
+    TIFF_PROJ_LINEAR_UNIT_SIZE_GEOKEY        = 3077,
+    TIFF_PROJ_STD_PARALLEL1_GEOKEY           = 3078,
+    TIFF_PROJ_STD_PARALLEL2_GEOKEY           = 3079,
+    TIFF_PROJ_NAT_ORIGIN_LONG_GEOKEY         = 3080,
+    TIFF_PROJ_NAT_ORIGIN_LAT_GEOKEY          = 3081,
+    TIFF_PROJ_FALSE_EASTING_GEOKEY           = 3082,
+    TIFF_PROJ_FALSE_NORTHING_GEOKEY          = 3083,
+    TIFF_PROJ_FALSE_ORIGIN_LONG_GEOKEY       = 3084,
+    TIFF_PROJ_FALSE_ORIGIN_LAT_GEOKEY        = 3085,
+    TIFF_PROJ_FALSE_ORIGIN_EASTING_GEOKEY    = 3086,
+    TIFF_PROJ_FALSE_ORIGIN_NORTHING_GEOKEY   = 3087,
+    TIFF_PROJ_CENTER_LONG_GEOKEY             = 3088,
+    TIFF_PROJ_CENTER_LAT_GEOKEY              = 3089,
+    TIFF_PROJ_CENTER_EASTING_GEOKEY          = 3090,
+    TIFF_PROJ_CENTER_NORTHING_GEOKEY         = 3091,
+    TIFF_PROJ_SCALE_AT_NAT_ORIGIN_GEOKEY     = 3092,
+    TIFF_PROJ_SCALE_AT_CENTER_GEOKEY         = 3093,
+    TIFF_PROJ_AZIMUTH_ANGLE_GEOKEY           = 3094,
+    TIFF_PROJ_STRAIGHT_VERT_POLE_LONG_GEOKEY = 3095,
+    TIFF_VERTICAL_CS_TYPE_GEOKEY             = 4096,
+    TIFF_VERTICAL_CITATION_GEOKEY            = 4097,
+    TIFF_VERTICAL_DATUM_GEOKEY               = 4098,
+    TIFF_VERTICAL_UNITS_GEOKEY               = 4099
+};
+
+enum TiffGeoTagType {
+    GEOTIFF_SHORT  = 0,
+    GEOTIFF_DOUBLE = 34736,
+    GEOTIFF_STRING = 34737
 };
 
 /** sizes of various TIFF field types (string size = 100)*/
-static const uint8_t type_sizes[6] = {
-    0, 1, 100, 2, 4, 8
+static const uint8_t type_sizes[14] = {
+    0, 1, 100, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8, 4
 };
+
+typedef struct TiffGeoTag {
+    enum TiffGeoTagKey key;
+    enum TiffTags type;
+    int count;
+    int offset;
+    char *val;
+} TiffGeoTag;
+
+typedef struct TiffGeoTagKeyName {
+    const enum TiffGeoTagKey key;
+    const char *const name;
+} TiffGeoTagKeyName;
+
+typedef struct TiffGeoTagNameType {
+    const char *const name;
+    const enum TiffGeoTagType type;
+} TiffGeoTagNameType;
 
 #endif /* AVCODEC_TIFF_H */

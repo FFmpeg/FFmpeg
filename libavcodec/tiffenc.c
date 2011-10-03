@@ -44,8 +44,8 @@
 #define TIFF_MAX_ENTRY 32
 
 /** sizes of various TIFF field types (string size = 1)*/
-static const uint8_t type_sizes2[6] = {
-    0, 1, 1, 2, 4, 8
+static const uint8_t type_sizes2[14] = {
+    0, 1, 1, 2, 4, 8, 1, 1, 2, 4, 8, 4, 8, 4
 };
 
 typedef struct TiffEncoderContext {
