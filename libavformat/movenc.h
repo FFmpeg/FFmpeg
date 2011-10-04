@@ -112,6 +112,9 @@ typedef struct MOVMuxContext {
 
     int flags;
     int rtp_flags;
+    int iods_skip;
+    int iods_video_profile;
+    int iods_audio_profile;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1
