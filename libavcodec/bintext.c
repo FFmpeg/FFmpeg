@@ -22,7 +22,7 @@
  */
 
 /**
- * @file libavcodec/xbin.c
+ * @file
  * Binary text decoder
  * eXtended BINary text (XBIN) decoder
  * iCEDraw File decoder
