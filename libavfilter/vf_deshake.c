@@ -61,34 +61,34 @@
 #define CHROMA_HEIGHT(link) -((-link->h) >> av_pix_fmt_descriptors[link->format].log2_chroma_h)
 
 enum SearchMethod {
-    EXHAUSTIVE,         //< Search all possible positions
-    SMART_EXHAUSTIVE,   //< Search most possible positions (faster)
+    EXHAUSTIVE,        ///< Search all possible positions
+    SMART_EXHAUSTIVE,  ///< Search most possible positions (faster)
     SEARCH_COUNT
 };
 
 typedef struct {
-    double x;              //< Horizontal shift
-    double y;              //< Vertical shift
+    double x;             ///< Horizontal shift
+    double y;             ///< Vertical shift
 } MotionVector;
 
 typedef struct {
-    MotionVector vector; //< Motion vector
-    double angle;        //< Angle of rotation
-    double zoom;         //< Zoom percentage
+    MotionVector vector;  ///< Motion vector
+    double angle;         ///< Angle of rotation
+    double zoom;          ///< Zoom percentage
 } Transform;
 
 typedef struct {
-    AVFilterBufferRef *ref;     //< Previous frame
-    int rx;                     //< Maximum horizontal shift
-    int ry;                     //< Maximum vertical shift
-    enum FillMethod edge;       //< Edge fill method
-    int blocksize;              //< Size of blocks to compare
-    int contrast;               //< Contrast threshold
-    enum SearchMethod search;   //< Motion search method
+    AVFilterBufferRef *ref;    ///< Previous frame
+    int rx;                    ///< Maximum horizontal shift
+    int ry;                    ///< Maximum vertical shift
+    enum FillMethod edge;      ///< Edge fill method
+    int blocksize;             ///< Size of blocks to compare
+    int contrast;              ///< Contrast threshold
+    enum SearchMethod search;  ///< Motion search method
     AVCodecContext *avctx;
-    DSPContext c;               //< Context providing optimized SAD methods
-    Transform last;             //< Transform from last frame
-    int refcount;             //< Number of reference frames (defines averaging window)
+    DSPContext c;              ///< Context providing optimized SAD methods
+    Transform last;            ///< Transform from last frame
+    int refcount;              ///< Number of reference frames (defines averaging window)
     FILE *fp;
 } DeshakeContext;
 
