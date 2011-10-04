@@ -58,19 +58,14 @@ typedef struct VP8EncoderContext {
     struct FrameListData *coded_frame_list;
 
     int cpu_used;
-
-    /**
-     * VP8 specific flags, see VP8F_* below.
-     */
-    int flags;
-#define VP8F_ERROR_RESILIENT 0x00000001 ///< Enable measures appropriate for streaming over lossy links
-#define VP8F_AUTO_ALT_REF    0x00000002 ///< Enable automatic alternate reference frame generation
+    int auto_alt_ref;
 
     int arnr_max_frames;
     int arnr_strength;
     int arnr_type;
 
     int lag_in_frames;
+    int error_resilient;
     int crf;
 } VP8Context;
 
@@ -333,7 +328,7 @@ static av_cold int vp8_init(AVCodecContext *avctx)
    if (avctx->profile != FF_PROFILE_UNKNOWN)
        enccfg.g_profile = avctx->profile;
 
-    enccfg.g_error_resilient = ctx->flags & VP8F_ERROR_RESILIENT;
+    enccfg.g_error_resilient = ctx->error_resilient;
 
     dump_enc_cfg(avctx, &enccfg);
     /* Construct Encoder Context */
@@ -345,11 +340,16 @@ static av_cold int vp8_init(AVCodecContext *avctx)
 
     //codec control failures are currently treated only as warnings
     av_log(avctx, AV_LOG_DEBUG, "vpx_codec_control\n");
-    codecctl_int(avctx, VP8E_SET_CPUUSED,           ctx->cpu_used);
-    codecctl_int(avctx, VP8E_SET_ENABLEAUTOALTREF,  !!(ctx->flags & VP8F_AUTO_ALT_REF));
-    codecctl_int(avctx, VP8E_SET_ARNR_MAXFRAMES,    ctx->arnr_max_frames);
-    codecctl_int(avctx, VP8E_SET_ARNR_STRENGTH,     ctx->arnr_strength);
-    codecctl_int(avctx, VP8E_SET_ARNR_TYPE,         ctx->arnr_type);
+    if (ctx->cpu_used != INT_MIN)
+        codecctl_int(avctx, VP8E_SET_CPUUSED,          ctx->cpu_used);
+    if (ctx->auto_alt_ref >= 0)
+        codecctl_int(avctx, VP8E_SET_ENABLEAUTOALTREF, ctx->auto_alt_ref);
+    if (ctx->arnr_max_frames >= 0)
+        codecctl_int(avctx, VP8E_SET_ARNR_MAXFRAMES,   ctx->arnr_max_frames);
+    if (ctx->arnr_strength >= 0)
+        codecctl_int(avctx, VP8E_SET_ARNR_STRENGTH,    ctx->arnr_strength);
+    if (ctx->arnr_type >= 0)
+        codecctl_int(avctx, VP8E_SET_ARNR_TYPE,        ctx->arnr_type);
     codecctl_int(avctx, VP8E_SET_NOISE_SENSITIVITY, avctx->noise_reduction);
     codecctl_int(avctx, VP8E_SET_TOKEN_PARTITIONS,  av_log2(avctx->slices));
     codecctl_int(avctx, VP8E_SET_STATIC_THRESHOLD,  avctx->mb_threshold);
@@ -545,17 +545,38 @@ static int vp8_encode(AVCodecContext *avctx, uint8_t *buf, int buf_size,
     return coded_size;
 }
 
+#define OFFSET(x) offsetof(VP8Context, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 
 static const AVOption options[]={
+    { "cpu-used",        "Quality/Speed ratio modifier",           OFFSET(cpu_used),        FF_OPT_TYPE_INT, {INT_MIN}, INT_MIN, INT_MAX, VE},
+    { "auto-alt-ref",    "Enable use of alternate reference "
+                         "frames (2-pass only)",                   OFFSET(auto_alt_ref),    FF_OPT_TYPE_INT, {-1},      -1,      1,       VE},
+    { "lag-in-frames",   "Number of frames to look ahead for "
+                         "alternate reference frame selection",    OFFSET(lag_in_frames),   FF_OPT_TYPE_INT, {-1},      -1,      INT_MAX, VE},
+    { "arnr-maxframes",  "altref noise reduction max frame count", OFFSET(arnr_max_frames), FF_OPT_TYPE_INT, {-1},      -1,      INT_MAX, VE},
+    { "arnr-strength",   "altref noise reduction filter strength", OFFSET(arnr_strength),   FF_OPT_TYPE_INT, {-1},      -1,      INT_MAX, VE},
+    { "arnr-type",       "altref noise reduction filter type",     OFFSET(arnr_type),       FF_OPT_TYPE_INT, {-1},      -1,      INT_MAX, VE, "arnr_type"},
+    { "backward",        NULL, 0, FF_OPT_TYPE_CONST, {1}, 0, 0, VE, "arnr_type" },
+    { "forward",         NULL, 0, FF_OPT_TYPE_CONST, {2}, 0, 0, VE, "arnr_type" },
+    { "centered",        NULL, 0, FF_OPT_TYPE_CONST, {3}, 0, 0, VE, "arnr_type" },
+    { "deadline",        "Time to spend encoding, in microseconds.", OFFSET(deadline),      FF_OPT_TYPE_INT, {VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
+    { "best",            NULL, 0, FF_OPT_TYPE_CONST, {VPX_DL_BEST_QUALITY}, 0, 0, VE, "quality"},
+    { "good",            NULL, 0, FF_OPT_TYPE_CONST, {VPX_DL_GOOD_QUALITY}, 0, 0, VE, "quality"},
+    { "realtime",        NULL, 0, FF_OPT_TYPE_CONST, {VPX_DL_REALTIME},     0, 0, VE, "quality"},
+    { "error-resilient", "Error resilience configuration", OFFSET(error_resilient), FF_OPT_TYPE_FLAGS, {0}, INT_MIN, INT_MAX, VE, "er"},
+#ifdef VPX_ERROR_RESILIENT_DEFAULT
+    { "default",         "Improve resiliency against losses of whole frames", 0, FF_OPT_TYPE_CONST, {VPX_ERROR_RESILIENT_DEFAULT}, 0, 0, VE, "er"},
+    { "partitions",      "The frame partitions are independently decodable "
+                         "by the bool decoder, meaning that partitions can be decoded even "
+                         "though earlier partitions have been lost. Note that intra predicition"
+                         " is still done over the partition boundary.",       0, FF_OPT_TYPE_CONST, {VPX_ERROR_RESILIENT_PARTITIONS}, 0, 0, VE, "er"},
+#endif
 {"speed", "", offsetof(VP8Context, cpu_used), FF_OPT_TYPE_INT, {.dbl = 3}, -16, 16, VE},
 {"quality", "", offsetof(VP8Context, deadline), FF_OPT_TYPE_INT, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
 {"best", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_BEST_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
 {"good", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_GOOD_QUALITY}, INT_MIN, INT_MAX, VE, "quality"},
 {"realtime", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = VPX_DL_REALTIME}, INT_MIN, INT_MAX, VE, "quality"},
-{"vp8flags", "", offsetof(VP8Context, flags), FF_OPT_TYPE_FLAGS, {.dbl = 0}, 0, UINT_MAX, VE, "flags"},
-{"error_resilient", "enable error resilience", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_ERROR_RESILIENT}, INT_MIN, INT_MAX, VE, "flags"},
-{"altref", "enable use of alternate reference frames (VP8/2-pass only)", 0, FF_OPT_TYPE_CONST, {.dbl = VP8F_AUTO_ALT_REF}, INT_MIN, INT_MAX, VE, "flags"},
 {"arnr_max_frames", "altref noise reduction max frame count", offsetof(VP8Context, arnr_max_frames), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 15, VE},
 {"arnr_strength", "altref noise reduction filter strength", offsetof(VP8Context, arnr_strength), FF_OPT_TYPE_INT, {.dbl = 3}, 0, 6, VE},
 {"arnr_type", "altref noise reduction filter type", offsetof(VP8Context, arnr_type), FF_OPT_TYPE_INT, {.dbl = 3}, 1, 3, VE},
