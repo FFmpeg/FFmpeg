@@ -356,7 +356,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         deshake->contrast = av_clip(deshake->contrast, 1, 255);
         deshake->search = av_clip(deshake->search, EXHAUSTIVE, SEARCH_COUNT - 1);
     }
-    if (strlen(filename))
+    if (*filename)
         deshake->fp = fopen(filename, "w");
     if (deshake->fp)
         fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", sizeof(char), 104, deshake->fp);
