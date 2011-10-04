@@ -61,6 +61,7 @@ easier to use. The changes are:
 - Apple ProRes decoder
 - CELT in Ogg demuxing
 - G.723.1 demuxer and decoder
+- libmodplug support (--enable-libmodplug)
 
 
 version 0.8:

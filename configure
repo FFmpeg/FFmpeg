@@ -176,6 +176,7 @@ External library support:
   --enable-libfaac         enable FAAC support via libfaac [no]
   --enable-libfreetype     enable libfreetype [no]
   --enable-libgsm          enable GSM support via libgsm [no]
+  --enable-libmodplug      enable ModPlug via libmodplug [no]
   --enable-libmp3lame      enable MP3 encoding via libmp3lame [no]
   --enable-libnut          enable NUT (de)muxing via libnut,
                            native (de)muxer exists [no]
@@ -1003,6 +1004,7 @@ CONFIG_LIST="
     libfaac
     libfreetype
     libgsm
+    libmodplug
     libmp3lame
     libnut
     libopencore_amrnb
@@ -1495,6 +1497,7 @@ libgsm_decoder_deps="libgsm"
 libgsm_encoder_deps="libgsm"
 libgsm_ms_decoder_deps="libgsm"
 libgsm_ms_encoder_deps="libgsm"
+libmodplug_decode_deps="libmodplug"
 libmp3lame_encoder_deps="libmp3lame"
 libopencore_amrnb_decoder_deps="libopencore_amrnb"
 libopencore_amrnb_encoder_deps="libopencore_amrnb"
@@ -3026,6 +3029,7 @@ enabled libdirac   && require_pkg_config dirac                          \
 enabled libfaac    && require2 libfaac "stdint.h faac.h" faacEncGetVersion -lfaac
 enabled libfreetype && require_pkg_config freetype2 "ft2build.h freetype/freetype.h" FT_Init_FreeType
 enabled libgsm     && require  libgsm gsm/gsm.h gsm_create -lgsm
+enabled libmodplug && require  libmodplug libmodplug/modplug.h ModPlug_Load -lmodplug
 enabled libmp3lame && require  "libmp3lame >= 3.98.3" lame/lame.h lame_set_VBR_quality -lmp3lame
 enabled libnut     && require  libnut libnut.h nut_demuxer_init -lnut
 enabled libopencore_amrnb  && require libopencore_amrnb opencore-amrnb/interf_dec.h Decoder_Interface_init -lopencore-amrnb
@@ -3352,6 +3356,7 @@ echo "libdirac enabled          ${libdirac-no}"
 echo "libfaac enabled           ${libfaac-no}"
 echo "libaacplus enabled        ${libaacplus-no}"
 echo "libgsm enabled            ${libgsm-no}"
+echo "libmodplug enabled        ${libmodplug-no}"
 echo "libmp3lame enabled        ${libmp3lame-no}"
 echo "libnut enabled            ${libnut-no}"
 echo "libopencore-amrnb support ${libopencore_amrnb-no}"

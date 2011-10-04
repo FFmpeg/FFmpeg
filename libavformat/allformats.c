@@ -242,6 +242,9 @@ void av_register_all(void)
     REGISTER_MUXDEMUX (YUV4MPEGPIPE, yuv4mpegpipe);
 
     /* external libraries */
+#if CONFIG_LIBMODPLUG
+    REGISTER_DEMUXER  (LIBMODPLUG, libmodplug);
+#endif
     REGISTER_MUXDEMUX (LIBNUT, libnut);
 
     /* protocols */

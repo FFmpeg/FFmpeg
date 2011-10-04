@@ -287,6 +287,7 @@ Muxers/Demuxers:
   img2.c                                Michael Niedermayer
   iss.c                                 Stefan Gehrer
   jvdec.c                               Peter Ross
+  libmodplug.c                          Clément Bœsch
   libnut.c                              Oded Shimon
   lmlm4.c                               Ivo van Poorten
   lxfdec.c                              Tomas Härdin

@@ -324,6 +324,7 @@ OBJS-$(CONFIG_YUV4MPEGPIPE_MUXER)        += yuv4mpeg.o
 OBJS-$(CONFIG_YUV4MPEGPIPE_DEMUXER)      += yuv4mpeg.o
 
 # external libraries
+OBJS-$(CONFIG_LIBMODPLUG_DEMUXER)        += libmodplug.o
 OBJS-$(CONFIG_LIBNUT_DEMUXER)            += libnut.o riff.o
 OBJS-$(CONFIG_LIBNUT_MUXER)              += libnut.o riff.o
 
