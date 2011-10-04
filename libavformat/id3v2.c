@@ -81,23 +81,20 @@ static void free_geobtag(void *obj)
 
 /**
  * Decode characters to UTF-8 according to encoding type. The decoded buffer is
- * always null terminated.
+ * always null terminated. Stop reading when either *maxread bytes are read from
+ * pb or U+0000 character is found.
  *
  * @param dst Pointer where the address of the buffer with the decoded bytes is
  * stored. Buffer must be freed by caller.
- * @param dstlen Pointer to an int where the length of the decoded string
- * is stored (in bytes, incl. null termination)
  * @param maxread Pointer to maximum number of characters to read from the
  * AVIOContext. After execution the value is decremented by the number of bytes
  * actually read.
- * @seeknull If true, decoding stops after the first U+0000 character found, if
- * there is any before maxread is reached
  * @returns 0 if no error occured, dst is uninitialized on error
  */
 static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
-                      uint8_t **dst, int *dstlen, int *maxread, const int seeknull)
+                      uint8_t **dst, int *maxread)
 {
-    int len, ret;
+    int ret;
     uint8_t tmp;
     uint32_t ch = 1;
     int left = *maxread;
@@ -112,7 +109,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
     switch (encoding) {
 
     case ID3v2_ENCODING_ISO8859:
-        while (left && (!seeknull || ch)) {
+        while (left && ch) {
             ch = avio_r8(pb);
             PUT_UTF8(ch, tmp, avio_w8(dynbuf, tmp);)
             left--;
@@ -122,7 +119,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
     case ID3v2_ENCODING_UTF16BOM:
         if ((left -= 2) < 0) {
             av_log(s, AV_LOG_ERROR, "Cannot read BOM value, input too short\n");
-            avio_close_dyn_buf(dynbuf, (uint8_t **)dst);
+            avio_close_dyn_buf(dynbuf, dst);
             av_freep(dst);
             return AVERROR_INVALIDDATA;
         }
@@ -133,7 +130,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
             break;
         default:
             av_log(s, AV_LOG_ERROR, "Incorrect BOM value\n");
-            avio_close_dyn_buf(dynbuf, (uint8_t **)dst);
+            avio_close_dyn_buf(dynbuf, dst);
             av_freep(dst);
             *maxread = left;
             return AVERROR_INVALIDDATA;
@@ -141,7 +138,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
         // fall-through
 
     case ID3v2_ENCODING_UTF16BE:
-        while ((left > 1) && (!seeknull || ch)) {
+        while ((left > 1) && ch) {
             GET_UTF16(ch, ((left -= 2) >= 0 ? get(pb) : 0), break;)
             PUT_UTF8(ch, tmp, avio_w8(dynbuf, tmp);)
         }
@@ -150,7 +147,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
         break;
 
     case ID3v2_ENCODING_UTF8:
-        while (left && (!seeknull || ch)) {
+        while (left && ch) {
             ch = avio_r8(pb);
             avio_w8(dynbuf, ch);
             left--;
@@ -163,10 +160,7 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
     if (ch)
         avio_w8(dynbuf, 0);
 
-    len = avio_close_dyn_buf(dynbuf, (uint8_t **)dst);
-    if (dstlen)
-        *dstlen = len;
-
+    avio_close_dyn_buf(dynbuf, dst);
     *maxread = left;
 
     return 0;
@@ -178,38 +172,40 @@ static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
 static void read_ttag(AVFormatContext *s, AVIOContext *pb, int taglen, const char *key)
 {
     uint8_t *dst;
-    const char *val = NULL;
-    int len, dstlen;
+    int encoding, dict_flags = AV_DICT_DONT_OVERWRITE;
     unsigned genre;
 
     if (taglen < 1)
         return;
 
+    encoding = avio_r8(pb);
     taglen--; /* account for encoding type byte */
 
-    if (decode_str(s, pb, avio_r8(pb), &dst, &dstlen, &taglen, 0) < 0) {
+    if (decode_str(s, pb, encoding, &dst, &taglen) < 0) {
         av_log(s, AV_LOG_ERROR, "Error reading frame %s, skipped\n", key);
         return;
     }
 
     if (!(strcmp(key, "TCON") && strcmp(key, "TCO"))
         && (sscanf(dst, "(%d)", &genre) == 1 || sscanf(dst, "%d", &genre) == 1)
-        && genre <= ID3v1_GENRE_MAX)
-        val = ff_id3v1_genre_str[genre];
-    else if (!(strcmp(key, "TXXX") && strcmp(key, "TXX"))) {
-        /* dst now contains two 0-terminated strings */
-        dst[dstlen] = 0;
-        len = strlen(dst);
+        && genre <= ID3v1_GENRE_MAX) {
+        av_freep(&dst);
+        dst = ff_id3v1_genre_str[genre];
+    } else if (!(strcmp(key, "TXXX") && strcmp(key, "TXX"))) {
+        /* dst now contains the key, need to get value */
         key = dst;
-        val = dst + FFMIN(len + 1, dstlen);
+        if (decode_str(s, pb, encoding, &dst, &taglen) < 0) {
+            av_log(s, AV_LOG_ERROR, "Error reading frame %s, skipped\n", key);
+            av_freep(&key);
+            return;
+        }
+        dict_flags |= AV_DICT_DONT_STRDUP_VAL | AV_DICT_DONT_STRDUP_KEY;
     }
     else if (*dst)
-        val = dst;
+        dict_flags |= AV_DICT_DONT_STRDUP_VAL;
 
-    if (val)
-        av_dict_set(&s->metadata, key, val, AV_DICT_DONT_OVERWRITE);
-
-    av_free(dst);
+    if (dst)
+        av_dict_set(&s->metadata, key, dst, dict_flags);
 }
 
 /**
@@ -242,17 +238,17 @@ static void read_geobtag(AVFormatContext *s, AVIOContext *pb, int taglen, char *
     taglen--;
 
     /* read MIME type (always ISO-8859) */
-    if (decode_str(s, pb, ID3v2_ENCODING_ISO8859, &geob_data->mime_type, NULL, &taglen, 1) < 0
+    if (decode_str(s, pb, ID3v2_ENCODING_ISO8859, &geob_data->mime_type, &taglen) < 0
         || taglen <= 0)
         goto fail;
 
     /* read file name */
-    if (decode_str(s, pb, encoding, &geob_data->file_name, NULL, &taglen, 1) < 0
+    if (decode_str(s, pb, encoding, &geob_data->file_name, &taglen) < 0
         || taglen <= 0)
         goto fail;
 
     /* read content description */
-    if (decode_str(s, pb, encoding, &geob_data->description, NULL, &taglen, 1) < 0
+    if (decode_str(s, pb, encoding, &geob_data->description, &taglen) < 0
         || taglen < 0)
         goto fail;
 
@@ -410,7 +406,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             tag[3] = 0;
             tlen = avio_rb24(s->pb);
         }
-        if (tlen > (1<<28) || !tlen)
+        if (tlen > (1<<28))
             break;
         len -= taghdrlen + tlen;
 
@@ -418,6 +414,12 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             break;
 
         next = avio_tell(s->pb) + tlen;
+
+        if (!tlen) {
+            if (tag[0])
+                av_log(s, AV_LOG_DEBUG, "Invalid empty frame %s, skipping.\n", tag);
+            continue;
+        }
 
         if (tflags & ID3v2_FLAG_DATALEN) {
             if (tlen < 4)

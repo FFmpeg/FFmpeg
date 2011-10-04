@@ -24,7 +24,7 @@
 #include <stdint.h>
 #include "config.h"
 
-#if HAVE_NEON && HAVE_INLINE_ASM
+#if HAVE_NEON && HAVE_INLINE_ASM && HAVE_ASM_MOD_Y
 
 #define int8x8_fmul_int32 int8x8_fmul_int32
 static inline void int8x8_fmul_int32(float *dst, const int8_t *src, int scale)
