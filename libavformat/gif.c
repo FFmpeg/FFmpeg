@@ -351,7 +351,7 @@ static int gif_write_trailer(AVFormatContext *s)
 #define OFFSET(x) offsetof(GIFContext, x)
 #define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "loop", "Number of times to loop the output.", OFFSET(loop), FF_OPT_TYPE_INT, {0}, 0, 65535, ENC },
+    { "loop", "Number of times to loop the output.", OFFSET(loop), AV_OPT_TYPE_INT, {0}, 0, 65535, ENC },
     { NULL },
 };
 

@@ -66,8 +66,8 @@ typedef struct RTPMuxContext RTPMuxContext;
 #define FF_RTP_FLAG_MP4A_LATM 1
 
 #define FF_RTP_FLAG_OPTS(ctx, fieldname) \
-    { "rtpflags", "RTP muxer flags", offsetof(ctx, fieldname), FF_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" }, \
-    { "latm", "Use MP4A-LATM packetization instead of MPEG4-GENERIC for AAC", 0, FF_OPT_TYPE_CONST, {.dbl = FF_RTP_FLAG_MP4A_LATM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" } \
+    { "rtpflags", "RTP muxer flags", offsetof(ctx, fieldname), AV_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" }, \
+    { "latm", "Use MP4A-LATM packetization instead of MPEG4-GENERIC for AAC", 0, AV_OPT_TYPE_CONST, {.dbl = FF_RTP_FLAG_MP4A_LATM}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "rtpflags" } \
 
 void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m);
 

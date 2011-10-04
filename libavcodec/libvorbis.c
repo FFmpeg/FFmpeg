@@ -56,7 +56,7 @@ typedef struct OggVorbisContext {
 } OggVorbisContext ;
 
 static const AVOption options[]={
-{"iblock", "Sets the impulse block bias", offsetof(OggVorbisContext, iblock), FF_OPT_TYPE_DOUBLE, {.dbl = 0}, -15, 0, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_ENCODING_PARAM},
+{"iblock", "Sets the impulse block bias", offsetof(OggVorbisContext, iblock), AV_OPT_TYPE_DOUBLE, {.dbl = 0}, -15, 0, AV_OPT_FLAG_AUDIO_PARAM|AV_OPT_FLAG_ENCODING_PARAM},
 {NULL}
 };
 static const AVClass class = { "libvorbis", av_default_item_name, options, LIBAVUTIL_VERSION_INT };

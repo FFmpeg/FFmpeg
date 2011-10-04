@@ -246,7 +246,7 @@ av_cold static int fbdev_read_close(AVFormatContext *avctx)
 #define OFFSET(x) offsetof(FBDevContext, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "framerate","", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
+    { "framerate","", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
     { NULL },
 };
 

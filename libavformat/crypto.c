@@ -46,8 +46,8 @@ typedef struct {
 
 #define OFFSET(x) offsetof(CryptoContext, x)
 static const AVOption options[] = {
-    {"key", "AES decryption key", OFFSET(key), FF_OPT_TYPE_BINARY },
-    {"iv",  "AES decryption initialization vector", OFFSET(iv),  FF_OPT_TYPE_BINARY },
+    {"key", "AES decryption key", OFFSET(key), AV_OPT_TYPE_BINARY },
+    {"iv",  "AES decryption initialization vector", OFFSET(iv),  AV_OPT_TYPE_BINARY },
     { NULL }
 };
 

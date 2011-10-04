@@ -341,7 +341,7 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
         opt_loglevel("loglevel", argv[idx + 1]);
 }
 
-#define FLAGS (o->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
+#define FLAGS (o->type == AV_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
 int opt_default(const char *opt, const char *arg)
 {
     const AVOption *o;

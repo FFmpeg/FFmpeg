@@ -457,8 +457,8 @@ static int vfw_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(struct vfw_ctx, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "framerate", "", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
+    { "video_size", "A string describing frame size, such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate", "", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = "ntsc"}, 0, 0, DEC },
     { NULL },
 };
 

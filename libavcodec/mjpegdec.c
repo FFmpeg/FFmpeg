@@ -1605,7 +1605,7 @@ av_cold int ff_mjpeg_decode_end(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(MJpegDecodeContext, x)
 #define VD AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "extern_huff",        "Use external huffman table.",  OFFSET(extern_huff), FF_OPT_TYPE_INT, { 0 }, 0, 1, VD },
+    { "extern_huff",        "Use external huffman table.",  OFFSET(extern_huff), AV_OPT_TYPE_INT, { 0 }, 0, 1, VD },
     { NULL },
 };
 

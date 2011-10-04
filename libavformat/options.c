@@ -73,30 +73,30 @@ static const AVClass *format_child_class_next(const AVClass *prev)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[]={
-{"probesize", "set probing size", OFFSET(probesize), FF_OPT_TYPE_INT, {.dbl = 5000000 }, 32, INT_MAX, D},
-{"muxrate", "set mux rate", OFFSET(mux_rate), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
-{"packetsize", "set packet size", OFFSET(packet_size), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
-{"fflags", NULL, OFFSET(flags), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, D|E, "fflags"},
-{"ignidx", "ignore index", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_IGNIDX }, INT_MIN, INT_MAX, D, "fflags"},
-{"genpts", "generate pts", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_GENPTS }, INT_MIN, INT_MAX, D, "fflags"},
-{"nofillin", "do not fill in missing values that can be exactly calculated", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_NOFILLIN }, INT_MIN, INT_MAX, D, "fflags"},
-{"noparse", "disable AVParsers, this needs nofillin too", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_NOPARSE }, INT_MIN, INT_MAX, D, "fflags"},
-{"igndts", "ignore dts", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_IGNDTS }, INT_MIN, INT_MAX, D, "fflags"},
+{"probesize", "set probing size", OFFSET(probesize), AV_OPT_TYPE_INT, {.dbl = 5000000 }, 32, INT_MAX, D},
+{"muxrate", "set mux rate", OFFSET(mux_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
+{"packetsize", "set packet size", OFFSET(packet_size), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
+{"fflags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, D|E, "fflags"},
+{"ignidx", "ignore index", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_IGNIDX }, INT_MIN, INT_MAX, D, "fflags"},
+{"genpts", "generate pts", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_GENPTS }, INT_MIN, INT_MAX, D, "fflags"},
+{"nofillin", "do not fill in missing values that can be exactly calculated", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_NOFILLIN }, INT_MIN, INT_MAX, D, "fflags"},
+{"noparse", "disable AVParsers, this needs nofillin too", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_NOPARSE }, INT_MIN, INT_MAX, D, "fflags"},
+{"igndts", "ignore dts", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_IGNDTS }, INT_MIN, INT_MAX, D, "fflags"},
 #if FF_API_FLAG_RTP_HINT
-{"rtphint", "add rtp hinting (deprecated, use the -movflags rtphint option instead)", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_RTP_HINT }, INT_MIN, INT_MAX, E, "fflags"},
+{"rtphint", "add rtp hinting (deprecated, use the -movflags rtphint option instead)", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_RTP_HINT }, INT_MIN, INT_MAX, E, "fflags"},
 #endif
-{"discardcorrupt", "discard corrupted frames", 0, FF_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_DISCARD_CORRUPT }, INT_MIN, INT_MAX, D, "fflags"},
-{"analyzeduration", "how many microseconds are analyzed to estimate duration", OFFSET(max_analyze_duration), FF_OPT_TYPE_INT, {.dbl = 5*AV_TIME_BASE }, 0, INT_MAX, D},
-{"cryptokey", "decryption key", OFFSET(key), FF_OPT_TYPE_BINARY, {.dbl = 0}, 0, 0, D},
-{"indexmem", "max memory used for timestamp index (per stream)", OFFSET(max_index_size), FF_OPT_TYPE_INT, {.dbl = 1<<20 }, 0, INT_MAX, D},
-{"rtbufsize", "max memory used for buffering real-time frames", OFFSET(max_picture_buffer), FF_OPT_TYPE_INT, {.dbl = 3041280 }, 0, INT_MAX, D}, /* defaults to 1s of 15fps 352x288 YUYV422 video */
-{"fdebug", "print specific debug info", OFFSET(debug), FF_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, INT_MAX, E|D, "fdebug"},
-{"ts", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_FDEBUG_TS }, INT_MIN, INT_MAX, E|D, "fdebug"},
-{"max_delay", "maximum muxing or demuxing delay in microseconds", OFFSET(max_delay), FF_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E|D},
-{"fer", "set error detection aggressivity", OFFSET(error_recognition), FF_OPT_TYPE_INT, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, D, "fer"},
-{"careful", NULL, 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, D, "fer"},
-{"explode", "abort decoding on error recognition", 0, FF_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, D, "fer"},
-{"fpsprobesize", "number of frames used to probe fps", OFFSET(fps_probe_size), FF_OPT_TYPE_INT, {.dbl = -1}, -1, INT_MAX-1, D},
+{"discardcorrupt", "discard corrupted frames", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_DISCARD_CORRUPT }, INT_MIN, INT_MAX, D, "fflags"},
+{"analyzeduration", "how many microseconds are analyzed to estimate duration", OFFSET(max_analyze_duration), AV_OPT_TYPE_INT, {.dbl = 5*AV_TIME_BASE }, 0, INT_MAX, D},
+{"cryptokey", "decryption key", OFFSET(key), AV_OPT_TYPE_BINARY, {.dbl = 0}, 0, 0, D},
+{"indexmem", "max memory used for timestamp index (per stream)", OFFSET(max_index_size), AV_OPT_TYPE_INT, {.dbl = 1<<20 }, 0, INT_MAX, D},
+{"rtbufsize", "max memory used for buffering real-time frames", OFFSET(max_picture_buffer), AV_OPT_TYPE_INT, {.dbl = 3041280 }, 0, INT_MAX, D}, /* defaults to 1s of 15fps 352x288 YUYV422 video */
+{"fdebug", "print specific debug info", OFFSET(debug), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, 0, INT_MAX, E|D, "fdebug"},
+{"ts", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_FDEBUG_TS }, INT_MIN, INT_MAX, E|D, "fdebug"},
+{"max_delay", "maximum muxing or demuxing delay in microseconds", OFFSET(max_delay), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E|D},
+{"fer", "set error detection aggressivity", OFFSET(error_recognition), AV_OPT_TYPE_INT, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, D, "fer"},
+{"careful", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, D, "fer"},
+{"explode", "abort decoding on error recognition", 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, D, "fer"},
+{"fpsprobesize", "number of frames used to probe fps", OFFSET(fps_probe_size), AV_OPT_TYPE_INT, {.dbl = -1}, -1, INT_MAX-1, D},
 {NULL},
 };
 

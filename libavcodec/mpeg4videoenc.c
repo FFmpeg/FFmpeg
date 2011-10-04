@@ -1279,8 +1279,8 @@ void ff_mpeg4_encode_video_packet_header(MpegEncContext *s)
 #define OFFSET(x) offsetof(MpegEncContext, x)
 #define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "data_partitioning",       "Use data partitioning.",      OFFSET(data_partitioning), FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
-    { "alternate_scan",          "Enable alternate scantable.", OFFSET(alternate_scan),    FF_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "data_partitioning",       "Use data partitioning.",      OFFSET(data_partitioning), AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
+    { "alternate_scan",          "Enable alternate scantable.", OFFSET(alternate_scan),    AV_OPT_TYPE_INT, { 0 }, 0, 1, VE },
     { NULL },
 };
 
