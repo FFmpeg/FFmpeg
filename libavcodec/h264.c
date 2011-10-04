@@ -3743,6 +3743,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         free_tables(h);
         flush_dpb(s->avctx);
         MPV_common_end(s);
+        h->list_count = 0;
     }
     if (!s->context_initialized) {
         if(h != h0)
