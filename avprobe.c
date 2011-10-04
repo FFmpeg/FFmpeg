@@ -360,13 +360,11 @@ static void opt_input_file(void *optctx, const char *arg)
 
 static void show_help(void)
 {
-    const AVClass *class = avformat_get_class();
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n", 0, 0);
     printf("\n");
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_DECODING_PARAM, 0);
+    show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 }
 
 static void opt_pretty(void)

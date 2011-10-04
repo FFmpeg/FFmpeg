@@ -130,6 +130,16 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
     }
 }
 
+void show_help_children(const AVClass *class, int flags)
+{
+    const AVClass *child = NULL;
+    av_opt_show2(&class, NULL, flags, 0);
+    printf("\n");
+
+    while (child = av_opt_child_class_next(class, child))
+        show_help_children(child, flags);
+}
+
 static const OptionDef* find_option(const OptionDef *po, const char *name){
     const char *p = strchr(name, ':');
     int len = p ? p - name : strlen(name);

@@ -2996,7 +2996,6 @@ static void show_usage(void)
 
 static void show_help(void)
 {
-    const AVClass *class;
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n",
@@ -3004,18 +3003,10 @@ static void show_help(void)
     show_help_options(options, "\nAdvanced options:\n",
                       OPT_EXPERT, OPT_EXPERT);
     printf("\n");
-    class = avcodec_get_class();
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
-    class = avformat_get_class();
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_DECODING_PARAM, 0);
+    show_help_children(avcodec_get_class(), AV_OPT_FLAG_DECODING_PARAM);
+    show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 #if !CONFIG_AVFILTER
-    printf("\n");
-    class = sws_get_class();
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_ENCODING_PARAM, 0);
+    show_help_children(sws_get_class(), AV_OPT_FLAG_ENCODING_PARAM);
 #endif
     printf("\nWhile playing:\n"
            "q, ESC              quit\n"

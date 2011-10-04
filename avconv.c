@@ -3676,11 +3676,7 @@ static void show_usage(void)
 
 static void show_help(void)
 {
-    AVCodec *c;
-    AVOutputFormat *oformat = NULL;
-    AVInputFormat  *iformat = NULL;
-    const AVClass *class;
-
+    int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n",
@@ -3707,41 +3703,9 @@ static void show_help(void)
                       OPT_GRAB,
                       OPT_GRAB);
     printf("\n");
-    class = avcodec_get_class();
-    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
-
-    /* individual codec options */
-    c = NULL;
-    while ((c = av_codec_next(c))) {
-        if (c->priv_class) {
-            av_opt_show2(&c->priv_class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-            printf("\n");
-        }
-    }
-
-    class = avformat_get_class();
-    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
-
-    /* individual muxer options */
-    while ((oformat = av_oformat_next(oformat))) {
-        if (oformat->priv_class) {
-            av_opt_show2(&oformat->priv_class, NULL, AV_OPT_FLAG_ENCODING_PARAM, 0);
-            printf("\n");
-        }
-    }
-
-    /* individual demuxer options */
-    while ((iformat = av_iformat_next(iformat))) {
-        if (iformat->priv_class) {
-            av_opt_show2(&iformat->priv_class, NULL, AV_OPT_FLAG_DECODING_PARAM, 0);
-            printf("\n");
-        }
-    }
-
-    class = sws_get_class();
-    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
+    show_help_children(avcodec_get_class(), flags);
+    show_help_children(avformat_get_class(), flags);
+    show_help_children(sws_get_class(), flags);
 }
 
 static int opt_target(OptionsContext *o, const char *opt, const char *arg)
