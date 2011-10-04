@@ -78,6 +78,7 @@ typedef struct {
 } Transform;
 
 typedef struct {
+    AVClass av_class;
     AVFilterBufferRef *ref;    ///< Previous frame
     int rx;                    ///< Maximum horizontal shift
     int ry;                    ///< Maximum vertical shift
@@ -331,6 +332,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     DeshakeContext *deshake = ctx->priv;
+    char filename[256]={0};
 
     deshake->rx = 16;
     deshake->ry = 16;
@@ -339,12 +341,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     deshake->contrast = 125;
     deshake->search = EXHAUSTIVE;
     deshake->refcount = 20;
-    deshake->fp = fopen("stats.txt", "w");
-    fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", sizeof(char), 104, deshake->fp);
 
     if (args) {
-        sscanf(args, "%d:%d:%d:%d:%d:%d", &deshake->rx, &deshake->ry, (int *)&deshake->edge,
-               &deshake->blocksize, &deshake->contrast, (int *)&deshake->search);
+        sscanf(args, "%d:%d:%d:%d:%d:%d:%255s", &deshake->rx, &deshake->ry, (int *)&deshake->edge,
+               &deshake->blocksize, &deshake->contrast, (int *)&deshake->search, filename);
 
         deshake->blocksize /= 2;
 
@@ -355,6 +355,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         deshake->contrast = av_clip(deshake->contrast, 1, 255);
         deshake->search = av_clip(deshake->search, EXHAUSTIVE, SEARCH_COUNT - 1);
     }
+    if(strlen(filename))
+        deshake->fp = fopen(filename, "w");
+    if(deshake->fp)
+        fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", sizeof(char), 104, deshake->fp);
 
     av_log(ctx, AV_LOG_INFO, "rx: %d, ry: %d, edge: %d blocksize: %d contrast: %d search: %d\n",
            deshake->rx, deshake->ry, deshake->edge, deshake->blocksize * 2, deshake->contrast, deshake->search);
@@ -396,7 +400,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     DeshakeContext *deshake = ctx->priv;
 
     avfilter_unref_buffer(deshake->ref);
-    fclose(deshake->fp);
+    if(deshake->fp)
+        fclose(deshake->fp);
 }
 
 static void end_frame(AVFilterLink *link)
@@ -438,8 +443,10 @@ static void end_frame(AVFilterLink *link)
     t.angle *= -1;
 
     // Write statistics to file
-    snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vector.x, deshake->avg.vector.x, t.vector.x, orig.vector.y, deshake->avg.vector.y, t.vector.y, orig.angle, deshake->avg.angle, t.angle, orig.zoom, deshake->avg.zoom, t.zoom);
-    fwrite(tmp, sizeof(char), strlen(tmp), deshake->fp);
+    if(deshake->fp){
+        snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vector.x, deshake->avg.vector.x, t.vector.x, orig.vector.y, deshake->avg.vector.y, t.vector.y, orig.angle, deshake->avg.angle, t.angle, orig.zoom, deshake->avg.zoom, t.zoom);
+        fwrite(tmp, sizeof(char), strlen(tmp), deshake->fp);
+    }
 
     // Turn relative current frame motion into absolute by adding it to the
     // last absolute motion
