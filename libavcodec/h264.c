@@ -1019,8 +1019,12 @@ static av_cold void common_init(H264Context *h){
     s->height = s->avctx->height;
     s->codec_id= s->avctx->codec->id;
 
-    ff_h264dsp_init(&h->h264dsp, 8);
-    ff_h264_pred_init(&h->hpc, s->codec_id, 8);
+    s->avctx->bits_per_raw_sample = 8;
+
+    ff_h264dsp_init(&h->h264dsp,
+                    s->avctx->bits_per_raw_sample);
+    ff_h264_pred_init(&h->hpc, s->codec_id,
+                      s->avctx->bits_per_raw_sample);
 
     h->dequant_coeff_pps= -1;
     s->unrestricted_mv=1;
