@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/proresdec.c
+ * @file
  * Known FOURCCs: 'apch' (HQ), 'apcn' (SD), 'apcs' (LT), 'acpo' (Proxy), 'ap4c' (4444)
  */
 
