@@ -333,7 +333,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     deshake->rx = 16;
     deshake->ry = 16;
-    deshake->edge = FILL_BLANK;
+    deshake->edge = FILL_MIRROR;
     deshake->blocksize = 8;
     deshake->contrast = 125;
     deshake->search = EXHAUSTIVE;
