@@ -251,7 +251,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     int contrast;
 
     int pos;
-    double angles[1200];
+    double *angles= av_malloc(sizeof(double)*width*height/(16*deshake->blocksize));
     double totalangles = 0;
 
     int center_x = 0, center_y = 0;
@@ -327,6 +327,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     t->angle = av_clipf(t->angle, -0.1, 0.1);
 
     //av_log(NULL, AV_LOG_ERROR, "%d x %d\n", avg->x, avg->y);
+    av_free(angles);
 }
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
