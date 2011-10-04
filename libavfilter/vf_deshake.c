@@ -90,6 +90,7 @@ typedef struct {
     Transform last;            ///< Transform from last frame
     int refcount;              ///< Number of reference frames (defines averaging window)
     FILE *fp;
+    Transform avg;
 } DeshakeContext;
 
 static int cmp(void const *ca, void const *cb)
@@ -404,15 +405,7 @@ static void end_frame(AVFilterLink *link)
     AVFilterBufferRef *in  = link->cur_buf;
     AVFilterBufferRef *out = link->dst->outputs[0]->out_buf;
     Transform t;
-    static float matrix[9];
-    static Transform avg = {
-        .vector = {
-            .x = 0,
-            .y = 0
-        },
-        .angle = 0,
-        .zoom = 0.0f
-    };
+    float matrix[9];
     float alpha = 2.0 / deshake->refcount;
     char tmp[256];
     Transform orig;
@@ -427,17 +420,17 @@ static void end_frame(AVFilterLink *link)
     orig.zoom = t.zoom;
 
     // Generate a one-sided moving exponential average
-    avg.vector.x = alpha * t.vector.x + (1.0 - alpha) * avg.vector.x;
-    avg.vector.y = alpha * t.vector.y + (1.0 - alpha) * avg.vector.y;
-    avg.angle = alpha * t.angle + (1.0 - alpha) * avg.angle;
-    avg.zoom = alpha * t.zoom + (1.0 - alpha) * avg.zoom;
+    deshake->avg.vector.x = alpha * t.vector.x + (1.0 - alpha) * deshake->avg.vector.x;
+    deshake->avg.vector.y = alpha * t.vector.y + (1.0 - alpha) * deshake->avg.vector.y;
+    deshake->avg.angle = alpha * t.angle + (1.0 - alpha) * deshake->avg.angle;
+    deshake->avg.zoom = alpha * t.zoom + (1.0 - alpha) * deshake->avg.zoom;
 
     // Remove the average from the current motion to detect the motion that
     // is not on purpose, just as jitter from bumping the camera
-    t.vector.x -= avg.vector.x;
-    t.vector.y -= avg.vector.y;
-    t.angle -= avg.angle;
-    t.zoom -= avg.zoom;
+    t.vector.x -= deshake->avg.vector.x;
+    t.vector.y -= deshake->avg.vector.y;
+    t.angle -= deshake->avg.angle;
+    t.zoom -= deshake->avg.zoom;
 
     // Invert the motion to undo it
     t.vector.x *= -1;
@@ -445,7 +438,7 @@ static void end_frame(AVFilterLink *link)
     t.angle *= -1;
 
     // Write statistics to file
-    snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vector.x, avg.vector.x, t.vector.x, orig.vector.y, avg.vector.y, t.vector.y, orig.angle, avg.angle, t.angle, orig.zoom, avg.zoom, t.zoom);
+    snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vector.x, deshake->avg.vector.x, t.vector.x, orig.vector.y, deshake->avg.vector.y, t.vector.y, orig.angle, deshake->avg.angle, t.angle, orig.zoom, deshake->avg.zoom, t.zoom);
     fwrite(tmp, sizeof(char), strlen(tmp), deshake->fp);
 
     // Turn relative current frame motion into absolute by adding it to the
