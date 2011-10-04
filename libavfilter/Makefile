@@ -18,7 +18,7 @@ OBJS = allfilters.o                                                     \
        defaults.o                                                       \
        drawutils.o                                                      \
        formats.o                                                        \
-       graphparser.o							\
+       graphparser.o                                                    \
        transform.o                                                      \
 
 OBJS-$(CONFIG_AVCODEC)                       += avcodec.o
