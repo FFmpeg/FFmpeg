@@ -251,7 +251,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
     int contrast;
 
     int pos;
-    double *angles= av_malloc(sizeof(double)*width*height/(16*deshake->blocksize));
+    double *angles = av_malloc(sizeof(*angles) * width * height / (16 * deshake->blocksize));
     double totalangles = 0;
 
     int center_x = 0, center_y = 0;
@@ -333,7 +333,7 @@ static void find_motion(DeshakeContext *deshake, uint8_t *src1, uint8_t *src2,
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     DeshakeContext *deshake = ctx->priv;
-    char filename[256]={0};
+    char filename[256] = {0};
 
     deshake->rx = 16;
     deshake->ry = 16;
@@ -356,9 +356,9 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         deshake->contrast = av_clip(deshake->contrast, 1, 255);
         deshake->search = av_clip(deshake->search, EXHAUSTIVE, SEARCH_COUNT - 1);
     }
-    if(strlen(filename))
+    if (strlen(filename))
         deshake->fp = fopen(filename, "w");
-    if(deshake->fp)
+    if (deshake->fp)
         fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", sizeof(char), 104, deshake->fp);
 
     av_log(ctx, AV_LOG_INFO, "rx: %d, ry: %d, edge: %d blocksize: %d contrast: %d search: %d\n",
@@ -390,7 +390,7 @@ static int config_props(AVFilterLink *link)
     deshake->last.angle = 0;
     deshake->last.zoom = 0;
 
-    deshake->avctx= avcodec_alloc_context3(NULL);
+    deshake->avctx = avcodec_alloc_context3(NULL);
     dsputil_init(&deshake->c, deshake->avctx);
 
     return 0;
@@ -401,7 +401,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     DeshakeContext *deshake = ctx->priv;
 
     avfilter_unref_buffer(deshake->ref);
-    if(deshake->fp)
+    if (deshake->fp)
         fclose(deshake->fp);
 }
 
@@ -444,7 +444,7 @@ static void end_frame(AVFilterLink *link)
     t.angle *= -1;
 
     // Write statistics to file
-    if(deshake->fp){
+    if (deshake->fp) {
         snprintf(tmp, 256, "%f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f, %f\n", orig.vector.x, deshake->avg.vector.x, t.vector.x, orig.vector.y, deshake->avg.vector.y, t.vector.y, orig.angle, deshake->avg.angle, t.angle, orig.zoom, deshake->avg.zoom, t.zoom);
         fwrite(tmp, sizeof(char), strlen(tmp), deshake->fp);
     }
