@@ -13,6 +13,25 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-10-12 - lavu 51.12.0
+  AVOptions API rewrite.
+
+  - 145f741 FF_OPT_TYPE* renamed to AV_OPT_TYPE_*
+  - new setting/getting functions with slightly different semantics:
+        dac66da av_set_string3 -> av_opt_set
+                av_set_double  -> av_opt_set_double
+                av_set_q       -> av_opt_set_q
+                av_set_int     -> av_opt_set_int
+
+        41d9d51 av_get_string  -> av_opt_get
+                av_get_double  -> av_opt_get_double
+                av_get_q       -> av_opt_get_q
+                av_get_int     -> av_opt_get_int
+
+  - 8c5dcaa trivial rename av_next_option -> av_opt_next
+  - 641c7af new functions - av_opt_child_next, av_opt_child_class_next
+    and av_opt_find2()
+
 2011-09-03 - fb4ca26 - lavc 53.10.0
                        lavf 53.6.0
                        lsws  2.1.0
