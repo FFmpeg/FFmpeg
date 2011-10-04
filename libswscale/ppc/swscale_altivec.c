@@ -405,7 +405,7 @@ void ff_sws_init_swScale_altivec(SwsContext *c)
     if (!is16BPS(dstFormat) && !is9_OR_10BPS(dstFormat) &&
         dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21 &&
         !c->alpPixBuf) {
-        c->yuv2yuvX     = yuv2yuvX_altivec_real;
+//        c->yuv2yuvX     = yuv2yuvX_altivec_real;
     }
 
     /* The following list of supported dstFormat values should
