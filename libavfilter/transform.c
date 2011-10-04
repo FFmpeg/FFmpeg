@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavfilter/transform.c
+ * @file
  * transform input video
  */
 

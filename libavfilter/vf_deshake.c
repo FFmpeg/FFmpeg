@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavfilter/vf_deshake.c
+ * @file
  * fast deshake / depan video filter
  *
  * SAD block-matching motion compensation to fix small changes in

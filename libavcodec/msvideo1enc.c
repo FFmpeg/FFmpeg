@@ -20,7 +20,7 @@
  */
 
 /**
- * @file msvideo1enc.c
+ * @file
  * Microsoft Video-1 encoder
  */
 

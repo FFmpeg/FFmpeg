@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/flashsv2enc.c
+ * @file
  * Flash Screen Video Version 2 encoder
  * @author Joshua Warner
  */

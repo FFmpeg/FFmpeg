@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavfilter/transform.h
+ * @file
  * transform input video
  *
  * All matrices are defined as a single 9-item block of contiguous memory. For
