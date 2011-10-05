@@ -227,7 +227,7 @@ section .text
     imul r2, 0x01010101
 %endmacro
 
-; I dont know why the sign extension is needed...
+; I do not know why the sign extension is needed...
 %macro PSIGNW_SRA_MMX 2
     psraw %2, 15
     PSIGNW_MMX %1, %2

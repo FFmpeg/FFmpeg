@@ -456,7 +456,7 @@ static inline int get16(const uint8_t **pp, const uint8_t *p_end)
     return c;
 }
 
-/* read and allocate a DVB string preceeded by its length */
+/* read and allocate a DVB string preceded by its length */
 static char *getstr8(const uint8_t **pp, const uint8_t *p_end)
 {
     int len;
@@ -1672,7 +1672,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
         return 0;
     p = packet + 4;
     if (has_adaptation) {
-        /* skip adapation field */
+        /* skip adaptation field */
         p += p[0] + 1;
     }
     /* if past the end of packet, ignore */
@@ -1750,7 +1750,7 @@ static int read_packet(AVFormatContext *s, uint8_t *buf, int raw_packet_size)
         len = avio_read(pb, buf, TS_PACKET_SIZE);
         if (len != TS_PACKET_SIZE)
             return len < 0 ? len : AVERROR_EOF;
-        /* check paquet sync byte */
+        /* check packet sync byte */
         if (buf[0] != 0x47) {
             /* find a new packet start */
             avio_seek(pb, -TS_PACKET_SIZE, SEEK_CUR);
@@ -1892,7 +1892,7 @@ static int mpegts_read_header(AVFormatContext *s,
     if (s->iformat == &ff_mpegts_demuxer) {
         /* normal demux */
 
-        /* first do a scaning to get all the services */
+        /* first do a scan to get all the services */
         if (pb->seekable && avio_seek(pb, pos, SEEK_SET) < 0)
             av_log(s, AV_LOG_ERROR, "Unable to seek back to the start\n");
 

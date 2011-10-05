@@ -24,7 +24,7 @@
 
 static int probe(AVProbeData *p)
 {
-    // the single file i have starts with that, i dont know if others do too
+    // the single file I have starts with that, I do not know if others do, too
     if(   p->buf[0] == 1
        && p->buf[1] == 1
        && p->buf[2] == 3

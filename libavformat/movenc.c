@@ -243,7 +243,7 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
 
 /**
  * This function writes extradata "as is".
- * Extradata must be formated like a valid atom (with size and tag)
+ * Extradata must be formatted like a valid atom (with size and tag).
  */
 static int mov_write_extradata_tag(AVIOContext *pb, MOVTrack *track)
 {

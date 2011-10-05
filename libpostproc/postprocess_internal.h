@@ -100,7 +100,7 @@ typedef struct PPMode{
 
     int minAllowedY;                ///< for brigtness correction
     int maxAllowedY;                ///< for brihtness correction
-    float maxClippedThreshold;      ///< amount of "black" u r willing to loose to get a brightness corrected picture
+    float maxClippedThreshold;      ///< amount of "black" you are willing to lose to get a brightness-corrected picture
 
     int maxTmpNoise[3];             ///< for Temporal Noise Reducing filter (Maximal sum of abs differences)
 

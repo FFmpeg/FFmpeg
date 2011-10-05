@@ -485,7 +485,7 @@ following image formats are supported:
 @item id RoQ video           @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item IFF ILBM               @tab     @tab  X
-    @tab IFF interlaved bitmap
+    @tab IFF interleaved bitmap
 @item IFF ByteRun1           @tab     @tab  X
     @tab IFF run length encoded bitmap
 @item Intel H.263            @tab     @tab  X

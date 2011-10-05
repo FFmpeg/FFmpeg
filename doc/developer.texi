@@ -49,7 +49,7 @@ mailing list.
 The code is written in K&R C style. That means the following:
 @itemize @bullet
 @item
-The control statements are formatted by putting space betwen the statement
+The control statements are formatted by putting space between the statement
 and parenthesis in the following way:
 @example
 for (i = 0; i < filter->input_count; i++) @{
@@ -79,7 +79,7 @@ if (!pic || !picref)
     goto fail;
 @end example
 @item
-Do not put spaces immediately inside parenthesis. @samp{if (ret)} is
+Do not put spaces immediately inside parentheses. @samp{if (ret)} is
 a valid style; @samp{if ( ret )} is not.
 @end itemize
 

@@ -498,8 +498,8 @@ typedef struct DSPContext {
      * with the zigzag/alternate scan<br>
      * an example to avoid confusion:
      * - (->decode coeffs -> zigzag reorder -> dequant -> reference idct ->...)
-     * - (x -> referece dct -> reference idct -> x)
-     * - (x -> referece dct -> simple_mmx_perm = idct_permutation -> simple_idct_mmx -> x)
+     * - (x -> reference dct -> reference idct -> x)
+     * - (x -> reference dct -> simple_mmx_perm = idct_permutation -> simple_idct_mmx -> x)
      * - (->decode coeffs -> zigzag reorder -> simple_mmx_perm -> dequant -> simple_idct_mmx ->...)
      */
     uint8_t idct_permutation[64];

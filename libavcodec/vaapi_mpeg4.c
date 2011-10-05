@@ -98,7 +98,7 @@ static int vaapi_mpeg4_start_frame(AVCodecContext *avctx, av_unused const uint8_
         pic_param->forward_reference_picture  = ff_vaapi_get_surface_id(&s->last_picture);
 
     /* Fill in VAIQMatrixBufferMPEG4 */
-    /* Only the first inverse quantisation method uses the weighthing matrices */
+    /* Only the first inverse quantisation method uses the weighting matrices */
     if (pic_param->vol_fields.bits.quant_type) {
         iq_matrix = ff_vaapi_alloc_iq_matrix(vactx, sizeof(VAIQMatrixBufferMPEG4));
         if (!iq_matrix)

@@ -432,7 +432,7 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
                      (!st->codec->extradata_size &&
                       AV_RL32(pkt->data+4) != MKTAG('j','P',' ',' '))){ // signature
             error:
-                av_log(s, AV_LOG_ERROR, "malformated jpeg2000 codestream\n");
+                av_log(s, AV_LOG_ERROR, "malformed JPEG 2000 codestream\n");
                 return -1;
             }
         }

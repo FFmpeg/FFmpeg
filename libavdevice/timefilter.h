@@ -72,7 +72,7 @@ TimeFilter * ff_timefilter_new(double clock_period, double feedback2_factor, dou
  *
  * system_time, in seconds, should be the value of the system clock time,
  * at (or as close as possible to) the moment the device hardware interrupt
- * occured (or any other event the device clock raises at the beginning of a
+ * occurred (or any other event the device clock raises at the beginning of a
  * cycle).
  *
  * @return the filtered time, in seconds

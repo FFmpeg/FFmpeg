@@ -1425,7 +1425,7 @@ static int remaining_bits(WMAProDecodeCtx *s, GetBitContext *gb)
  *@param s codec context
  *@param gb bitstream reader context
  *@param len length of the partial frame
- *@param append decides wether to reset the buffer or not
+ *@param append decides whether to reset the buffer or not
  */
 static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
                       int append)

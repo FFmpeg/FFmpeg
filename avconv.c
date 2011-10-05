@@ -3682,7 +3682,7 @@ static void opt_output_file(void *optctx, const char *filename)
     }
 
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
-        /* test if it already exists to avoid loosing precious files */
+        /* test if it already exists to avoid losing precious files */
         assert_file_overwrite(filename);
 
         /* open the file */

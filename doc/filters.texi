@@ -200,7 +200,7 @@ input plane. They are expressions, and can contain the following
 constants:
 @table @option
 @item w, h
-the input width and heigth in pixels
+the input width and height in pixels
 
 @item cw, ch
 the input chroma image width and height in pixels
@@ -888,7 +888,7 @@ the corresponding mathematical approximated values for e
 (euler number), pi (greek PI), PHI (golden ratio)
 
 @item w, h
-the input width and heigth
+the input width and height
 
 @item val
 input value for the pixel component
@@ -992,7 +992,7 @@ The filter takes the parameters: @var{filter_name}@{:=@}@var{filter_params}.
 filter. If not specified the default values are assumed.
 
 Refer to the official libopencv documentation for more precise
-informations:
+information:
 @url{http://opencv.willowgarage.com/documentation/c/image_filtering.html}
 
 Follows the list of supported libopencv filters.
@@ -1008,7 +1008,7 @@ It accepts the parameters: @var{struct_el}:@var{nb_iterations}.
 @var{struct_el} represents a structuring element, and has the syntax:
 @var{cols}x@var{rows}+@var{anchor_x}x@var{anchor_y}/@var{shape}
 
-@var{cols} and @var{rows} represent the number of colums and rows of
+@var{cols} and @var{rows} represent the number of columns and rows of
 the structuring element, @var{anchor_x} and @var{anchor_y} the anchor
 point, and @var{shape} the shape for the structuring element, and
 can be one of the values "rect", "cross", "ellipse", "custom".
@@ -1184,7 +1184,7 @@ value for @var{width} or @var{height} is 0, the corresponding input size
 is used for the output.
 
 The @var{width} expression can reference the value set by the
-@var{height} expression, and viceversa.
+@var{height} expression, and vice versa.
 
 The default value of @var{width} and @var{height} is 0.
 
@@ -1194,7 +1194,7 @@ Specify the offsets where to place the input image in the padded area
 with respect to the top/left border of the output image.
 
 The @var{x} expression can reference the value set by the @var{y}
-expression, and viceversa.
+expression, and vice versa.
 
 The default value of @var{x} and @var{y} is 0.
 
@@ -1608,7 +1608,7 @@ seconds
 
 @item pos
 position of the frame in the input stream, -1 if this information in
-unavailable and/or meanigless (for example in case of synthetic video)
+unavailable and/or meaningless (for example in case of synthetic video)
 
 @item fmt
 pixel format name
@@ -1825,7 +1825,7 @@ through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 It accepts the following parameters:
 @var{width}:@var{height}:@var{pix_fmt_string}:@var{timebase_num}:@var{timebase_den}:@var{sample_aspect_ratio_num}:@var{sample_aspect_ratio.den}
 
-All the parameters need to be explicitely defined.
+All the parameters need to be explicitly defined.
 
 Follows the list of the accepted parameters.
 
@@ -2017,7 +2017,7 @@ separated by ":". The description of the accepted options follows.
 
 @item size, s
 Specify the size of the sourced video, it may be a string of the form
-@var{width}x@var{heigth}, or the name of a size abbreviation. The
+@var{width}x@var{height}, or the name of a size abbreviation. The
 default value is "320x240".
 
 @item rate, r

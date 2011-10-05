@@ -150,7 +150,7 @@ that only captures in stereo and also requires that one channel be flipped.
 If you are one of these people, then export 'AUDIO_FLIP_LEFT=1' before
 starting avconv.
 
-@subsection The audio and video loose sync after a while.
+@subsection The audio and video lose sync after a while.
 
 Yes, they do.
 

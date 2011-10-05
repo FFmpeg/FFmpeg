@@ -361,7 +361,7 @@ static int flv_write_trailer(AVFormatContext *s)
 
     file_size = avio_tell(pb);
 
-    /* update informations */
+    /* update information */
     avio_seek(pb, flv->duration_offset, SEEK_SET);
     put_amf_double(pb, flv->duration / (double)1000);
     avio_seek(pb, flv->filesize_offset, SEEK_SET);
@@ -412,7 +412,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (enc->codec_id == CODEC_ID_H264) {
-        /* check if extradata looks like mp4 formated */
+        /* check if extradata looks like MP4 */
         if (enc->extradata_size > 0 && *(uint8_t*)enc->extradata != 1) {
             if (ff_avc_parse_nal_units_buf(pkt->data, &data, &size) < 0)
                 return -1;

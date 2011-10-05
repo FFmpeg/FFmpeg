@@ -142,7 +142,7 @@ static void free_geobtag(void *obj)
  * @param maxread Pointer to maximum number of characters to read from the
  * AVIOContext. After execution the value is decremented by the number of bytes
  * actually read.
- * @returns 0 if no error occured, dst is uninitialized on error
+ * @returns 0 if no error occurred, dst is uninitialized on error
  */
 static int decode_str(AVFormatContext *s, AVIOContext *pb, int encoding,
                       uint8_t **dst, int *maxread)

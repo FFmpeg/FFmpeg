@@ -944,7 +944,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         uint32_t state = -1;
 
         if (pkt->size < 5 || AV_RB32(pkt->data) != 0x0000001) {
-            av_log(s, AV_LOG_ERROR, "h264 bitstream malformated, "
+            av_log(s, AV_LOG_ERROR, "H.264 bitstream malformed, "
                    "no startcode found, use -vbsf h264_mp4toannexb\n");
             return -1;
         }
