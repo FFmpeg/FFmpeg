@@ -1749,6 +1749,7 @@ static int seek_frame_generic(AVFormatContext *s,
 
     if(index < 0 || index==st->nb_index_entries-1){
         AVPacket pkt;
+        int nonkey=0;
 
         if(st->nb_index_entries){
             assert(st->index_entries);
@@ -1768,9 +1769,13 @@ static int seek_frame_generic(AVFormatContext *s,
             if (read_status < 0)
                 break;
             av_free_packet(&pkt);
-            if(stream_index == pkt.stream_index){
-                if((pkt.flags & AV_PKT_FLAG_KEY) && pkt.dts > timestamp)
+            if(stream_index == pkt.stream_index && pkt.dts > timestamp){
+                if(pkt.flags & AV_PKT_FLAG_KEY)
                     break;
+                if(nonkey++ > 1000){
+                    av_log(s, AV_LOG_ERROR,"seek_frame_generic failed as this stream seems to contain no keyframes after the target timestamp, %d non keyframes found\n", nonkey);
+                    break;
+                }
             }
         }
         index = av_index_search_timestamp(st, timestamp, flags);
