@@ -491,15 +491,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
     } else
         outputsamples = alac->setinfo_max_samples_per_frame;
 
-    switch (alac->setinfo_sample_size) {
-    case 16: avctx->sample_fmt    = AV_SAMPLE_FMT_S16;
-             break;
-    case 24: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
-             break;
-    default: av_log(avctx, AV_LOG_ERROR, "Sample depth %d is not supported.\n",
-                    alac->setinfo_sample_size);
-             return -1;
-    }
     alac->bytespersample = channels * av_get_bytes_per_sample(avctx->sample_fmt);
 
     if(outputsamples > *outputsize / alac->bytespersample){
@@ -658,6 +649,16 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     if (alac_set_info(alac)) {
         av_log(avctx, AV_LOG_ERROR, "alac: set_info failed\n");
         return -1;
+    }
+
+    switch (alac->setinfo_sample_size) {
+    case 16: avctx->sample_fmt    = AV_SAMPLE_FMT_S16;
+             break;
+    case 24: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
+             break;
+    default: av_log(avctx, AV_LOG_ERROR, "Sample depth %d is not supported.\n",
+                    alac->setinfo_sample_size);
+             return -1;
     }
 
     return 0;
