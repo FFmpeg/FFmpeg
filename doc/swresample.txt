@@ -42,3 +42,5 @@ Internally 32bit float and 16bit int is supported currently, other formats can
 easily be added
 Externally all sample formats in packed and planar configuration are supported
 Its also trivial to add special converters for common cases
+If only sample format and or packed/planar convertion is needed it
+is performed from input to output directly in a single pass with no intermediates.
