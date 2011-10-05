@@ -115,7 +115,7 @@ static int dnxhd_decode_header(DNXHDContext *ctx, const uint8_t *buf, int buf_si
     ctx->height = AV_RB16(buf + 0x18);
     ctx->width  = AV_RB16(buf + 0x1a);
 
-    av_dlog(ctx->avctx, "width %d, heigth %d\n", ctx->width, ctx->height);
+    av_dlog(ctx->avctx, "width %d, height %d\n", ctx->width, ctx->height);
 
     if (buf[0x21] & 0x40) {
         ctx->avctx->pix_fmt = PIX_FMT_YUV422P10;

@@ -204,13 +204,13 @@ the computed values for @var{x} and @var{y}. They are evaluated for
 each new frame.
 
 @item in_w, in_h
-the input width and heigth
+the input width and height
 
 @item iw, ih
 same as @var{in_w} and @var{in_h}
 
 @item out_w, out_h
-the output (cropped) width and heigth
+the output (cropped) width and height
 
 @item ow, oh
 same as @var{out_w} and @var{out_h}
@@ -895,13 +895,13 @@ the corresponding mathematical approximated values for e
 (euler number), pi (greek PI), phi (golden ratio)
 
 @item in_w, in_h
-the input video width and heigth
+the input video width and height
 
 @item iw, ih
 same as @var{in_w} and @var{in_h}
 
 @item out_w, out_h
-the output width and heigth, that is the size of the padded area as
+the output width and height, that is the size of the padded area as
 specified by the @var{width} and @var{height} expressions
 
 @item ow, oh
@@ -1002,13 +1002,13 @@ the corresponding mathematical approximated values for e
 (euler number), pi (greek PI), phi (golden ratio)
 
 @item in_w, in_h
-the input width and heigth
+the input width and height
 
 @item iw, ih
 same as @var{in_w} and @var{in_h}
 
 @item out_w, out_h
-the output (cropped) width and heigth
+the output (cropped) width and height
 
 @item ow, oh
 same as @var{out_w} and @var{out_h}
@@ -1626,7 +1626,7 @@ alpha specifier. The default value is "black".
 
 @item frame_size
 Specify the size of the sourced video, it may be a string of the form
-@var{width}x@var{heigth}, or the name of a size abbreviation. The
+@var{width}x@var{height}, or the name of a size abbreviation. The
 default value is "320x240".
 
 @item frame_rate
