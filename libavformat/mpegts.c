@@ -909,7 +909,7 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
                               uint8_t *mp4_dec_config_descr)
 {
     const uint8_t *desc_end;
-    int desc_len, desc_tag;
+    int desc_len, desc_tag, desc_es_id;
     char language[252];
     int i;
 
@@ -930,6 +930,18 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
         mpegts_find_stream_type(st, desc_tag, DESC_types);
 
     switch(desc_tag) {
+    case 0x1E: /* SL descriptor */
+        desc_es_id = get16(pp, desc_end);
+        if (mp4_dec_config_descr_len && mp4_es_id == desc_es_id) {
+            AVIOContext pb;
+            ffio_init_context(&pb, mp4_dec_config_descr,
+                          mp4_dec_config_descr_len, 0, NULL, NULL, NULL, NULL);
+            ff_mp4_read_dec_config_descr(fc, st, &pb);
+            if (st->codec->codec_id == CODEC_ID_AAC &&
+                st->codec->extradata_size > 0)
+                st->need_parsing = 0;
+        }
+        break;
     case 0x1F: /* FMC descriptor */
         get16(pp, desc_end);
         if (st->codec->codec_id == CODEC_ID_AAC_LATM &&
