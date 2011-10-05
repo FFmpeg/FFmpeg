@@ -202,20 +202,26 @@ yuv2yuvX16_c_template(const int16_t *filter, int filterSize,
 {
 #define output_pixel(pos, val) \
     if (big_endian) { \
-        AV_WB16(pos, av_clip_uint16(val >> shift)); \
+        AV_WB16(pos, 0x8000 + av_clip_int16(val >> shift)); \
     } else { \
-        AV_WL16(pos, av_clip_uint16(val >> shift)); \
+        AV_WL16(pos, 0x8000 + av_clip_int16(val >> shift)); \
     }
 
     int i;
-    int shift = 15 + 16 - output_bits - 1;
+    int shift = 15 + 16 - output_bits;
 
     for (i = 0; i < dstW; i++) {
-        int val = 1 << (30-output_bits - 1);
+        int val = 1 << (30-output_bits);
         int j;
 
+        /* range of val is [0,0x7FFFFFFF], so 31 bits, but with lanczos/spline
+         * filters (or anything with negative coeffs, the range can be slightly
+         * wider in both directions. To account for this overflow, we subtract
+         * a constant so it always fits in the signed range (assuming a
+         * reasonable filterSize), and re-add that at the end. */
+        val -= 0x40000000;
         for (j = 0; j < filterSize; j++)
-            val += (src[j][i] * filter[j]) >> 1;
+            val += src[j][i] * filter[j];
 
         output_pixel(&dest[i], val);
     }
