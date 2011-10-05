@@ -38,7 +38,7 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ModPlug_Settings settings;
     ModPlugContext *modplug = s->priv_data;
 
-    int sz = avio_read(pb, modplug->buf, sizeof modplug->buf);
+    int sz = avio_read(pb, modplug->buf, sizeof(modplug->buf));
 
     ModPlug_GetSettings(&settings);
     settings.mChannels       = 2;
@@ -70,7 +70,7 @@ static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
     ModPlugContext *modplug = s->priv_data;
     uint8_t buf[512];
 
-    n = ModPlug_Read(modplug->f, buf, sizeof buf);
+    n = ModPlug_Read(modplug->f, buf, sizeof(buf));
     if (n <= 0)
         return AVERROR(EIO);
 
