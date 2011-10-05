@@ -195,18 +195,31 @@ DECLARE_ALIGNED(8, const uint8_t, dither_8x8_128)[8][8] = {
 DECLARE_ALIGNED(8, const uint8_t, ff_sws_pb_64)[8] =
 {  64, 64, 64, 64, 64, 64, 64, 64 };
 
-static av_always_inline void
-yuv2yuvX16_c_template(const int16_t *filter, int filterSize,
-                      const int32_t **src, uint16_t *dest, int dstW,
-                      int big_endian, int output_bits)
-{
-#define output_pixel(pos, val) \
+#define output_pixel(pos, val, bias, signedness) \
     if (big_endian) { \
-        AV_WB16(pos, 0x8000 + av_clip_int16(val >> shift)); \
+        AV_WB16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
     } else { \
-        AV_WL16(pos, 0x8000 + av_clip_int16(val >> shift)); \
+        AV_WL16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
     }
 
+static av_always_inline void
+yuv2plane1_16_c_template(const int32_t *src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 19 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val, 0, uint);
+    }
+}
+
+static av_always_inline void
+yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
+                         const int32_t **src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
     int i;
     int shift = 15 + 16 - output_bits;
 
@@ -223,10 +236,11 @@ yuv2yuvX16_c_template(const int16_t *filter, int filterSize,
         for (j = 0; j < filterSize; j++)
             val += src[j][i] * filter[j];
 
-        output_pixel(&dest[i], val);
+        output_pixel(&dest[i], val, 0x8000, int);
     }
-#undef output_pixel
 }
+
+#undef output_pixel
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
@@ -236,9 +250,22 @@ yuv2yuvX16_c_template(const int16_t *filter, int filterSize,
     }
 
 static av_always_inline void
-yuv2yuvX10_c_template(const int16_t *filter, int filterSize,
-                      const int16_t **src, uint16_t *dest, int dstW,
-                      int big_endian, int output_bits)
+yuv2plane1_10_c_template(const int16_t *src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 15 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val);
+    }
+}
+
+static av_always_inline void
+yuv2planeX_10_c_template(const int16_t *filter, int filterSize,
+                         const int16_t **src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
 {
     int i;
     int shift = 11 + 16 - output_bits;
@@ -256,24 +283,32 @@ yuv2yuvX10_c_template(const int16_t *filter, int filterSize,
 
 #undef output_pixel
 
-#define yuv2NBPS(bits, BE_LE, is_be, yuv2yuvX_template_fn, typeX_t) \
-static void yuv2yuvX ## bits ## BE_LE ## _c(const int16_t *filter, int filterSize, \
-                              const int16_t **src, uint16_t *dest, int dstW, \
+#define yuv2NBPS(bits, BE_LE, is_be, template_size, typeX_t) \
+static void yuv2plane1_ ## bits ## BE_LE ## _c(const int16_t *src, \
+                              uint8_t *dest, int dstW, \
                               const uint8_t *dither, int offset)\
 { \
-    yuv2yuvX_template_fn(filter, filterSize, (const typeX_t **) src, \
-                         dest, dstW, is_be, bits); \
+    yuv2plane1_ ## template_size ## _c_template((const typeX_t *) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
+}\
+static void yuv2planeX_ ## bits ## BE_LE ## _c(const int16_t *filter, int filterSize, \
+                              const int16_t **src, uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
+{ \
+    yuv2planeX_## template_size ## _c_template(filter, \
+                         filterSize, (const typeX_t **) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
 }
-yuv2NBPS( 9, BE, 1, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS( 9, LE, 0, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(10, BE, 1, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(10, LE, 0, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(16, BE, 1, yuv2yuvX16_c_template, int32_t);
-yuv2NBPS(16, LE, 0, yuv2yuvX16_c_template, int32_t);
+yuv2NBPS( 9, BE, 1, 10, int16_t);
+yuv2NBPS( 9, LE, 0, 10, int16_t);
+yuv2NBPS(10, BE, 1, 10, int16_t);
+yuv2NBPS(10, LE, 0, 10, int16_t);
+yuv2NBPS(16, BE, 1, 16, int32_t);
+yuv2NBPS(16, LE, 0, 16, int32_t);
 
-static void yuv2yuvX_c(const int16_t *filter, int filterSize,
-                       const int16_t **src, uint8_t *dest, int dstW,
-                       const uint8_t *dither, int offset)
+static void yuv2planeX_8_c(const int16_t *filter, int filterSize,
+                           const int16_t **src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
 {
     int i;
     for (i=0; i<dstW; i++) {
@@ -286,8 +321,8 @@ static void yuv2yuvX_c(const int16_t *filter, int filterSize,
     }
 }
 
-static void yuv2yuv1_c(const int16_t *src, uint8_t *dest, int dstW,
-                       const uint8_t *dither, int offset)
+static void yuv2plane1_8_c(const int16_t *src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
 {
     int i;
     for (i=0; i<dstW; i++) {
@@ -296,7 +331,7 @@ static void yuv2yuv1_c(const int16_t *src, uint8_t *dest, int dstW,
     }
 }
 
-static void yuv2nv12X_chroma_c(SwsContext *c, const int16_t *chrFilter, int chrFilterSize,
+static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterSize,
                         const int16_t **chrUSrc, const int16_t **chrVSrc,
                         uint8_t *dest, int chrDstW)
 {
@@ -2000,27 +2035,29 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
 
 static av_always_inline void
 find_c_packed_planar_out_funcs(SwsContext *c,
-                               yuv2planar1_fn *yuv2yuv1, yuv2planarX_fn *yuv2planeX_luma,
-                               yuv2planarX_fn *yuv2planeX_chroma, yuv2interleavedX_fn *yuv2nv12X_chroma,
+                               yuv2planar1_fn *yuv2plane1, yuv2planarX_fn *yuv2planeX,
+                               yuv2interleavedX_fn *yuv2nv12cX,
                                yuv2packed1_fn *yuv2packed1, yuv2packed2_fn *yuv2packed2,
                                yuv2packedX_fn *yuv2packedX)
 {
     enum PixelFormat dstFormat = c->dstFormat;
 
-    if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-        *yuv2planeX_luma = yuv2yuvX_c;
-        *yuv2nv12X_chroma     = yuv2nv12X_chroma_c;
-    } else if (is16BPS(dstFormat)) {
-        *yuv2planeX_luma = *yuv2planeX_chroma = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
+    if (is16BPS(dstFormat)) {
+        *yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_c  : yuv2planeX_16LE_c;
+        *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_c  : yuv2plane1_16LE_c;
     } else if (is9_OR_10BPS(dstFormat)) {
         if (av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1 == 8) {
-            *yuv2planeX_luma = *yuv2planeX_chroma = isBE(dstFormat) ? yuv2yuvX9BE_c :  yuv2yuvX9LE_c;
+            *yuv2planeX = isBE(dstFormat) ? yuv2planeX_9BE_c  : yuv2planeX_9LE_c;
+            *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_9BE_c  : yuv2plane1_9LE_c;
         } else {
-            *yuv2planeX_luma = *yuv2planeX_chroma = isBE(dstFormat) ? yuv2yuvX10BE_c : yuv2yuvX10LE_c;
+            *yuv2planeX = isBE(dstFormat) ? yuv2planeX_10BE_c  : yuv2planeX_10LE_c;
+            *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_10BE_c  : yuv2plane1_10LE_c;
         }
     } else {
-        *yuv2yuv1     = yuv2yuv1_c;
-        *yuv2planeX_luma = *yuv2planeX_chroma = yuv2yuvX_c;
+        *yuv2plane1 = yuv2plane1_8_c;
+        *yuv2planeX = yuv2planeX_8_c;
+        if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)
+            *yuv2nv12cX = yuv2nv12cX_c;
     }
 
     if(c->flags & SWS_FULL_CHR_H_INT) {
@@ -2281,10 +2318,9 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     const int chrSrcSliceH= -((-srcSliceH) >> c->chrSrcVSubSample);
     int lastDstY;
     uint32_t *pal=c->pal_yuv;
-    yuv2planar1_fn yuv2yuv1 = c->yuv2yuv1;
-    yuv2planarX_fn yuv2planeX_luma = c->yuv2planeX_luma;
-    yuv2planarX_fn yuv2planeX_chroma = c->yuv2planeX_chroma;
-    yuv2interleavedX_fn yuv2nv12X_chroma = c->yuv2nv12X_chroma;
+    yuv2planar1_fn yuv2plane1 = c->yuv2plane1;
+    yuv2planarX_fn yuv2planeX = c->yuv2planeX;
+    yuv2interleavedX_fn yuv2nv12cX = c->yuv2nv12cX;
     yuv2packed1_fn yuv2packed1 = c->yuv2packed1;
     yuv2packed2_fn yuv2packed2 = c->yuv2packed2;
     yuv2packedX_fn yuv2packedX = c->yuv2packedX;
@@ -2436,9 +2472,8 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         }
         if (dstY >= dstH-2) {
             // hmm looks like we can't use MMX here without overwriting this array's tail
-            find_c_packed_planar_out_funcs(c, &yuv2yuv1, &yuv2planeX_luma, &yuv2planeX_chroma,
-                                           &yuv2nv12X_chroma, &yuv2packed1, &yuv2packed2,
-                                           &yuv2packedX);
+            find_c_packed_planar_out_funcs(c, &yuv2plane1, &yuv2planeX,  &yuv2nv12cX,
+                                           &yuv2packed1, &yuv2packed2, &yuv2packedX);
         }
 
         {
@@ -2448,36 +2483,35 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
             if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if ((dstY&chrSkipMask) || isGray(dstFormat))
-                    dest[1] = dest[2] = NULL; //FIXME split functions in lumi / chromi
-                const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
 
-                if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-                    yuv2planeX_luma(vLumFilter + dstY * vLumFilterSize, vLumFilterSize, lumSrcPtr, dest[0], dstW, c->lumDither8, 0);
+                if (vLumFilterSize == 1) {
+                    yuv2plane1(lumSrcPtr[0], dest[0], dstW, c->lumDither8, 0);
+                } else {
+                    yuv2planeX(vLumFilter + dstY * vLumFilterSize, vLumFilterSize,
+                               lumSrcPtr, dest[0], dstW, c->lumDither8, 0);
+                }
 
-                    if (dest[1]){
-                        yuv2nv12X_chroma(c, vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize, chrUSrcPtr, chrVSrcPtr, dest[1], chrDstW);
+                if (!((dstY&chrSkipMask) || isGray(dstFormat))) {
+                    if (yuv2nv12cX) {
+                        yuv2nv12cX(c, vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize, chrUSrcPtr, chrVSrcPtr, dest[1], chrDstW);
+                    } else if (vChrFilterSize == 1) {
+                        yuv2plane1(chrUSrcPtr[0], dest[1], chrDstW, c->chrDither8, 0);
+                        yuv2plane1(chrVSrcPtr[0], dest[2], chrDstW, c->chrDither8, 3);
+                    } else {
+                        yuv2planeX(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize,
+                                   chrUSrcPtr, dest[1], chrDstW, c->chrDither8, 0);
+                        yuv2planeX(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize,
+                                   chrVSrcPtr, dest[2], chrDstW, c->chrDither8, 3);
                     }
-                } else if (c->yuv2yuv1 && vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
-                    yuv2yuv1(lumSrcPtr[0], dest[0], dstW, c->lumDither8, 0);
+                }
 
-                    if (dest[1]){
-                        yuv2yuv1(chrUSrcPtr[0], dest[1], chrDstW, c->chrDither8, 0);
-                        yuv2yuv1(chrVSrcPtr[0], dest[2], chrDstW, c->chrDither8, 3);
+                if (CONFIG_SWSCALE_ALPHA && alpPixBuf){
+                    if (vLumFilterSize == 1) {
+                        yuv2plane1(alpSrcPtr[0], dest[3], dstW, c->lumDither8, 0);
+                    } else {
+                        yuv2planeX(vLumFilter + dstY * vLumFilterSize, vLumFilterSize,
+                                   alpSrcPtr, dest[3], dstW, c->lumDither8, 0);
                     }
-
-                    if (alpBuf && dest[3])
-                        yuv2yuv1(alpBuf, dest[3], dstW, c->lumDither8, 0);
-                } else { //General YV12
-                    yuv2planeX_luma(vLumFilter + dstY * vLumFilterSize, vLumFilterSize, lumSrcPtr, dest[0], dstW, c->lumDither8, 0);
-
-                    if (dest[1]){
-                        yuv2planeX_chroma(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize, chrUSrcPtr, dest[1], chrDstW, c->chrDither8, 0);
-                        yuv2planeX_chroma(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize, chrVSrcPtr, dest[2], chrDstW, c->chrDither8, 3);
-                    }
-
-                    if (alpBuf && dest[3])
-                        yuv2planeX_luma(vLumFilter + dstY * vLumFilterSize, vLumFilterSize, alpSrcPtr, dest[3], dstW, c->lumDither8, 0);
                 }
             } else {
                 assert(lumSrcPtr  + vLumFilterSize - 1 < lumPixBuf  + vLumBufSize*2);
@@ -2531,8 +2565,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
 {
     enum PixelFormat srcFormat = c->srcFormat;
 
-    find_c_packed_planar_out_funcs(c, &c->yuv2yuv1, &c->yuv2planeX_luma, &c->yuv2planeX_chroma,
-                                   &c->yuv2nv12X_chroma, &c->yuv2packed1, &c->yuv2packed2,
+    find_c_packed_planar_out_funcs(c, &c->yuv2plane1, &c->yuv2planeX,
+                                   &c->yuv2nv12cX, &c->yuv2packed1, &c->yuv2packed2,
                                    &c->yuv2packedX);
 
     c->chrToYV12 = NULL;

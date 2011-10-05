@@ -412,10 +412,9 @@ typedef struct SwsContext {
 #endif
 
     /* function pointers for swScale() */
-    yuv2planar1_fn yuv2yuv1;
-    yuv2planarX_fn yuv2planeX_luma;
-    yuv2planarX_fn yuv2planeX_chroma;
-    yuv2interleavedX_fn yuv2nv12X_chroma;
+    yuv2planar1_fn yuv2plane1;
+    yuv2planarX_fn yuv2planeX;
+    yuv2interleavedX_fn yuv2nv12cX;
     yuv2packed1_fn yuv2packed1;
     yuv2packed2_fn yuv2packed2;
     yuv2packedX_fn yuv2packedX;
