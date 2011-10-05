@@ -19,6 +19,7 @@
 /**
 * @file
 * ModPlug demuxer
+* @todo better probing than extensions matching
 */
 
 #include <libmodplug/modplug.h>
