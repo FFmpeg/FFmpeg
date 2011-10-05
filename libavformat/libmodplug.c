@@ -19,10 +19,10 @@
 /**
 * @file
 * ModPlug demuxer
-* @todo metadata
 */
 
 #include <libmodplug/modplug.h>
+#include "libavutil/avstring.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 
@@ -67,6 +67,59 @@ static const AVOption options[] = {
         settings.mFlags |= flag;                            \
     }                                                       \
 } while (0)
+
+#define ADD_META_MULTIPLE_ENTRIES(entry_name, fname) do {                      \
+    if (n_## entry_name ##s) {                                                 \
+        unsigned i, n = 0;                                                     \
+                                                                               \
+        for (i = 0; i < n_## entry_name ##s; i++) {                            \
+            char item_name[64] = {0};                                          \
+            fname(f, i, item_name);                                            \
+            if (!*item_name)                                                   \
+                continue;                                                      \
+            if (n)                                                             \
+                av_dict_set(&s->metadata, #entry_name, "\n", AV_DICT_APPEND);  \
+            av_dict_set(&s->metadata, #entry_name, item_name, AV_DICT_APPEND); \
+            n++;                                                               \
+        }                                                                      \
+                                                                               \
+        extra = av_asprintf(", %u/%u " #entry_name "%s",                       \
+                            n, n_## entry_name ##s, n > 1 ? "s" : "");         \
+        if (!extra)                                                            \
+            return AVERROR(ENOMEM);                                            \
+        av_dict_set(&s->metadata, "extra info", extra, AV_DICT_APPEND);        \
+        av_free(extra);                                                        \
+    }                                                                          \
+} while (0)
+
+static int modplug_load_metadata(AVFormatContext *s)
+{
+    ModPlugContext *modplug = s->priv_data;
+    ModPlugFile *f = modplug->f;
+    char *extra;
+    const char *name = ModPlug_GetName(f);
+    const char *msg  = ModPlug_GetMessage(f);
+
+    unsigned n_instruments = ModPlug_NumInstruments(f);
+    unsigned n_samples     = ModPlug_NumSamples(f);
+    unsigned n_patterns    = ModPlug_NumPatterns(f);
+    unsigned n_channels    = ModPlug_NumChannels(f);
+
+    if (name && *name) av_dict_set(&s->metadata, "name",    name, 0);
+    if (msg  && *msg)  av_dict_set(&s->metadata, "message", msg,  0);
+
+    extra = av_asprintf("%u pattern%s, %u channel%s",
+                        n_patterns, n_patterns > 1 ? "s" : "",
+                        n_channels, n_channels > 1 ? "s" : "");
+    if (!extra)
+        return AVERROR(ENOMEM);
+    av_dict_set(&s->metadata, "extra info", extra, AV_DICT_DONT_STRDUP_VAL);
+
+    ADD_META_MULTIPLE_ENTRIES(instrument, ModPlug_InstrumentName);
+    ADD_META_MULTIPLE_ENTRIES(sample,     ModPlug_SampleName);
+
+    return 0;
+}
 
 static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
@@ -127,7 +180,8 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_id    = CODEC_ID_PCM_S16LE;
     st->codec->channels    = settings.mChannels;
     st->codec->sample_rate = settings.mFrequency;
-    return 0;
+
+    return modplug_load_metadata(s);
 }
 
 static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
