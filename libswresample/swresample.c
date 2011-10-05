@@ -110,6 +110,7 @@ void swr_free(SwrContext **ss){
         free_temp(&s->in_buffer);
         swr_audio_convert_free(&s-> in_convert);
         swr_audio_convert_free(&s->out_convert);
+        swr_audio_convert_free(&s->full_convert);
         swr_resample_free(&s->resample);
     }
 
@@ -138,6 +139,7 @@ int swr_init(SwrContext *s){
     free_temp(&s->in_buffer);
     swr_audio_convert_free(&s-> in_convert);
     swr_audio_convert_free(&s->out_convert);
+    swr_audio_convert_free(&s->full_convert);
 
     s-> in.planar= s-> in_sample_fmt >= 0x100;
     s->out.planar= s->out_sample_fmt >= 0x100;
@@ -195,6 +197,12 @@ av_assert0(s->out.ch_count);
     s-> in.bps= av_get_bits_per_sample_fmt(s-> in_sample_fmt)/8;
     s->int_bps= av_get_bits_per_sample_fmt(s->int_sample_fmt)/8;
     s->out.bps= av_get_bits_per_sample_fmt(s->out_sample_fmt)/8;
+
+    if(!s->resample && !s->rematrix){
+        s->full_convert = swr_audio_convert_alloc(s->out_sample_fmt,
+                                                  s-> in_sample_fmt, s-> in.ch_count, 0);
+        return 0;
+    }
 
     s->in_convert = swr_audio_convert_alloc(s->int_sample_fmt,
                                             s-> in_sample_fmt, s-> in.ch_count, 0);
@@ -290,6 +298,12 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 
     fill_audiodata(in ,  in_arg);
     fill_audiodata(out, out_arg);
+
+    if(s->full_convert){
+        av_assert0(!s->resample);
+        swr_audio_convert(s->full_convert, out, in, in_count);
+        return out_count;
+    }
 
 //     in_max= out_count*(int64_t)s->in_sample_rate / s->out_sample_rate + resample_filter_taps;
 //     in_count= FFMIN(in_count, in_in + 2 - s->hist_buffer_count);
