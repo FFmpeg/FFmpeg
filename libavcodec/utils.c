@@ -107,6 +107,9 @@ void avcodec_register(AVCodec *codec)
     while (*p != NULL) p = &(*p)->next;
     *p = codec;
     codec->next = NULL;
+
+    if (codec->init_static_data)
+        codec->init_static_data(codec);
 }
 
 unsigned avcodec_get_edge_width(void)

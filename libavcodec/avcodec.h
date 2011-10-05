@@ -2984,6 +2984,11 @@ typedef struct AVCodec {
      * Private codec-specific defaults.
      */
     const AVCodecDefault *defaults;
+
+    /**
+     * Initialize codec static data, called from avcodec_register().
+     */
+    void (*init_static_data)(struct AVCodec *codec);
 } AVCodec;
 
 /**
