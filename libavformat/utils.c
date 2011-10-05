@@ -1903,7 +1903,7 @@ static void update_stream_timings(AVFormatContext *ic)
         st = ic->streams[i];
         if (st->start_time != AV_NOPTS_VALUE && st->time_base.den) {
             start_time1= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
-            if (st->codec->codec_id == CODEC_ID_DVB_TELETEXT || st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
                 if (start_time1 < start_time_text)
                     start_time_text = start_time1;
             } else
