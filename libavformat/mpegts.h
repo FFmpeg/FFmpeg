@@ -64,6 +64,12 @@ int ff_mpegts_parse_packet(MpegTSContext *ts, AVPacket *pkt,
                            const uint8_t *buf, int len);
 void ff_mpegts_parse_close(MpegTSContext *ts);
 
+typedef struct {
+    int es_id;
+    int dec_config_descr_len;
+    uint8_t *dec_config_descr;
+} Mp4Descr;
+
 /**
  * Parse an MPEG-2 descriptor
  * @param[in] fc                    Format context (used for logging only)
@@ -79,7 +85,6 @@ void ff_mpegts_parse_close(MpegTSContext *ts);
  */
 int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
                               const uint8_t **pp, const uint8_t *desc_list_end,
-                              int mp4_dec_config_descr_len, int mp4_es_id, int pid,
-                              uint8_t *mp4_dec_config_descr);
+                              Mp4Descr *mp4_descr, int mp4_descr_count, int pid);
 
 #endif /* AVFORMAT_MPEGTS_H */
