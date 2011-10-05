@@ -74,7 +74,7 @@ static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->size = ModPlug_Read(modplug->f, pkt->data, 512);
     if (pkt->size <= 0) {
         av_free_packet(pkt);
-        return AVERROR(EIO);
+        return pkt->size == 0 ? AVERROR_EOF : AVERROR(EIO);
     }
     return 0;
 }
