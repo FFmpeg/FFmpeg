@@ -911,7 +911,7 @@ AVOutputFormat ff_asf_stream_muxer = {
 #if CONFIG_LIBMP3LAME
     .audio_codec    = CODEC_ID_MP3,
 #else
-    .audio_codec    = CODEC_ID_MP2,
+    .audio_codec    = CODEC_ID_WMAV2,
 #endif
     .video_codec    = CODEC_ID_MSMPEG4V3,
     .write_header   = asf_write_stream_header,
