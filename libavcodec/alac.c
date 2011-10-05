@@ -116,10 +116,6 @@ static int alac_set_info(ALACContext *alac)
     alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
     ptr++;                          /* ??? */
     alac->setinfo_sample_size           = *ptr++;
-    if (alac->setinfo_sample_size > 32) {
-        av_log(alac->avctx, AV_LOG_ERROR, "setinfo_sample_size too large\n");
-        return -1;
-    }
     alac->setinfo_rice_historymult      = *ptr++;
     alac->setinfo_rice_initialhistory   = *ptr++;
     alac->setinfo_rice_kmodifier        = *ptr++;
