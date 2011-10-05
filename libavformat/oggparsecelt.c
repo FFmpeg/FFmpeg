@@ -66,7 +66,6 @@ static int celt_header(AVFormatContext *s, int idx)
         st->codec->sample_rate    = sample_rate;
         st->codec->channels       = nb_channels;
         st->codec->frame_size     = frame_size;
-        st->codec->sample_fmt     = AV_SAMPLE_FMT_S16;
         av_free(st->codec->extradata);
         st->codec->extradata      = extradata;
         st->codec->extradata_size = 2 * sizeof(uint32_t);

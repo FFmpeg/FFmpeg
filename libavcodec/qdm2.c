@@ -77,6 +77,7 @@ do { \
 #define SAMPLES_NEEDED_2(why) \
      av_log (NULL,AV_LOG_INFO,"This file triggers some missing code. Please contact the developers.\nPosition: %s\n",why);
 
+#define QDM2_MAX_FRAME_SIZE 512
 
 typedef int8_t sb_int8_array[2][30][64];
 
@@ -169,7 +170,7 @@ typedef struct {
     /// I/O data
     const uint8_t *compressed_data;
     int compressed_size;
-    float output_buffer[1024];
+    float output_buffer[QDM2_MAX_FRAME_SIZE * 2];
 
     /// Synthesis filter
     MPADSPContext mpadsp;
@@ -1823,7 +1824,8 @@ static av_cold int qdm2_decode_init(AVCodecContext *avctx)
     // something like max decodable tones
     s->group_order = av_log2(s->group_size) + 1;
     s->frame_size = s->group_size / 16; // 16 iterations per super block
-    if (s->frame_size > FF_ARRAY_ELEMS(s->output_buffer) / 2)
+
+    if (s->frame_size > QDM2_MAX_FRAME_SIZE)
         return AVERROR_INVALIDDATA;
 
     s->sub_sampling = s->fft_order - 7;
@@ -1959,12 +1961,19 @@ static int qdm2_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     QDM2Context *s = avctx->priv_data;
     int16_t *out = data;
-    int i;
+    int i, out_size;
 
     if(!buf)
         return 0;
     if(buf_size < s->checksum_size)
         return -1;
+
+    out_size = 16 * s->channels * s->frame_size *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     av_log(avctx, AV_LOG_DEBUG, "decode(%d): %p[%d] -> %p[%d]\n",
        buf_size, buf, s->checksum_size, data, *data_size);
@@ -1975,7 +1984,7 @@ static int qdm2_decode_frame(AVCodecContext *avctx,
         out += s->channels * s->frame_size;
     }
 
-    *data_size = (uint8_t*)out - (uint8_t*)data;
+    *data_size = out_size;
 
     return s->checksum_size;
 }
