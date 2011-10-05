@@ -66,20 +66,16 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, n;
     ModPlugContext *modplug = s->priv_data;
-    uint8_t buf[512];
 
-    n = ModPlug_Read(modplug->f, buf, sizeof(buf));
-    if (n <= 0)
+    if (av_new_packet(pkt, 512) < 0)
+        return AVERROR(ENOMEM);
+
+    pkt->size = ModPlug_Read(modplug->f, pkt->data, 512);
+    if (pkt->size <= 0) {
+        av_free_packet(pkt);
         return AVERROR(EIO);
-
-    ret = av_new_packet(pkt, n);
-    if (ret)
-        return ret;
-    pkt->pts  = pkt->dts = AV_NOPTS_VALUE;
-    pkt->size = n;
-    memcpy(pkt->data, buf, n);
+    }
     return 0;
 }
 
