@@ -29,7 +29,7 @@
 typedef struct ModPlugContext {
     const AVClass *class;
     ModPlugFile *f;
-    uint8_t buf[5 * 1<<20]; ///< input file content, 5M max
+    uint8_t *buf; ///< input file content
 
     /* options */
     int noise_reduction;
@@ -39,7 +39,12 @@ typedef struct ModPlugContext {
     int bass_range;
     int surround_depth;
     int surround_delay;
+
+    int max_size; ///< max file size to allocate
 } ModPlugContext;
+
+#define FF_MODPLUG_MAX_FILE_SIZE (100 * 1<<20) // 100M
+#define FF_MODPLUG_DEF_FILE_SIZE (  5 * 1<<20) //   5M
 
 #define OFFSET(x) offsetof(ModPlugContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
@@ -51,6 +56,8 @@ static const AVOption options[] = {
     {"bass_range",      "XBass cutoff in Hz 10-100",            OFFSET(bass_range),      FF_OPT_TYPE_INT, {.dbl = 0}, 0,     100, D},
     {"surround_depth",  "Surround level 0(quiet)-100(heavy)",   OFFSET(surround_depth),  FF_OPT_TYPE_INT, {.dbl = 0}, 0,     100, D},
     {"surround_delay",  "Surround delay in ms, usually 5-40ms", OFFSET(surround_delay),  FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, D},
+    {"max_size",        "Max file size supported (in bytes). Default is 5MB. Set to 0 for no limit (not recommended)",
+     OFFSET(max_size), FF_OPT_TYPE_INT, {.dbl = FF_MODPLUG_DEF_FILE_SIZE}, 0, FF_MODPLUG_MAX_FILE_SIZE, D},
     {NULL},
 };
 
@@ -67,8 +74,21 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIOContext *pb = s->pb;
     ModPlug_Settings settings;
     ModPlugContext *modplug = s->priv_data;
+    int sz = avio_size(pb);
 
-    int sz = avio_read(pb, modplug->buf, sizeof(modplug->buf));
+    if (sz < 0) {
+        av_log(s, AV_LOG_WARNING, "Could not determine file size\n");
+        sz = modplug->max_size;
+    } else if (modplug->max_size && sz > modplug->max_size) {
+        sz = modplug->max_size;
+        av_log(s, AV_LOG_WARNING, "Max file size reach%s, allocating %dB "
+               "but demuxing is likely to fail due to incomplete buffer\n",
+               sz == FF_MODPLUG_DEF_FILE_SIZE ? " (see -max_size)" : "", sz);
+    }
+    modplug->buf = av_malloc(modplug->max_size);
+    if (!modplug->buf)
+        return AVERROR(ENOMEM);
+    sz = avio_read(pb, modplug->buf, sz);
 
     ModPlug_GetSettings(&settings);
     settings.mChannels       = 2;
