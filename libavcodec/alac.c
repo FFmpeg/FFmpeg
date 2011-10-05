@@ -493,15 +493,14 @@ static int alac_decode_frame(AVCodecContext *avctx,
 
     switch (alac->setinfo_sample_size) {
     case 16: avctx->sample_fmt    = AV_SAMPLE_FMT_S16;
-             alac->bytespersample = channels << 1;
              break;
     case 24: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
-             alac->bytespersample = channels << 2;
              break;
     default: av_log(avctx, AV_LOG_ERROR, "Sample depth %d is not supported.\n",
                     alac->setinfo_sample_size);
              return -1;
     }
+    alac->bytespersample = channels * av_get_bytes_per_sample(avctx->sample_fmt);
 
     if(outputsamples > *outputsize / alac->bytespersample){
         av_log(avctx, AV_LOG_ERROR, "sample buffer too small\n");
