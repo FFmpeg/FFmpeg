@@ -2220,6 +2220,10 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                     av_log(os, AV_LOG_WARNING, "Frame rate very high for a muxer not effciciently supporting it.\n"
                                                "Please consider specifiying a lower framerate, a different muxer or -vsync 2\n");
                 }
+                for (j = 0; j < ost->forced_kf_count; j++)
+                    ost->forced_kf_pts[j] = av_rescale_q(ost->forced_kf_pts[j],
+                                                         AV_TIME_BASE_Q,
+                                                         codec->time_base);
 
 #if CONFIG_AVFILTER
                 if (configure_video_filters(ist, ost)) {
@@ -3171,11 +3175,10 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     return 0;
 }
 
-static void parse_forced_key_frames(char *kf, OutputStream *ost, AVCodecContext *avctx)
+static void parse_forced_key_frames(char *kf, OutputStream *ost)
 {
     char *p;
     int n = 1, i;
-    int64_t t;
 
     for (p = kf; *p; p++)
         if (*p == ',')
@@ -3188,8 +3191,7 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost, AVCodecContext 
     }
     for (i = 0; i < n; i++) {
         p = i ? strchr(p, ',') + 1 : kf;
-        t = parse_time_or_die("force_key_frames", p, 1);
-        ost->forced_kf_pts[i] = av_rescale_q(t, AV_TIME_BASE_Q, avctx->time_base);
+        ost->forced_kf_pts[i] = parse_time_or_die("force_key_frames", p, 1);
     }
 }
 
@@ -3382,7 +3384,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
         MATCH_PER_STREAM_OPT(forced_key_frames, str, forced_key_frames, oc, st);
         if (forced_key_frames)
-            parse_forced_key_frames(forced_key_frames, ost, video_enc);
+            parse_forced_key_frames(forced_key_frames, ost);
 
         MATCH_PER_STREAM_OPT(force_fps, i, force_fps, oc, st);
         ost->force_fps = force_fps;
