@@ -870,38 +870,147 @@ static PESContext *add_pes_stream(MpegTSContext *ts, int pid, int pcr_pid)
     return pes;
 }
 
-static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
-                         int *es_id, uint8_t **dec_config_descr,
-                         int *dec_config_descr_size)
-{
+#define MAX_LEVEL 4
+typedef struct {
+    AVFormatContext *s;
     AVIOContext pb;
-    int tag;
-    unsigned len;
+    Mp4Descr *descr;
+    Mp4Descr *active_descr;
+    int descr_count;
+    int max_descr_count;
+    int level;
+} MP4DescrParseContext;
 
-    ffio_init_context(&pb, buf, size, 0, NULL, NULL, NULL, NULL);
+static int init_MP4DescrParseContext(
+    MP4DescrParseContext *d, AVFormatContext *s, const uint8_t *buf,
+    unsigned size, Mp4Descr *descr, int max_descr_count)
+{
+    int ret;
+    if (size > (1<<30))
+        return AVERROR_INVALIDDATA;
 
-    len = ff_mp4_read_descr(s, &pb, &tag);
-    if (tag == MP4IODescrTag) {
-        avio_rb16(&pb); // ID
-        avio_r8(&pb);
-        avio_r8(&pb);
-        avio_r8(&pb);
-        avio_r8(&pb);
-        avio_r8(&pb);
-        len = ff_mp4_read_descr(s, &pb, &tag);
-        if (tag == MP4ESDescrTag) {
-            ff_mp4_parse_es_descr(&pb, es_id);
-            av_dlog(s, "ES_ID %#x\n", *es_id);
-            len = ff_mp4_read_descr(s, &pb, &tag);
-            if (tag == MP4DecConfigDescrTag) {
-                *dec_config_descr = av_malloc(len);
-                if (!*dec_config_descr)
-                    return AVERROR(ENOMEM);
-                *dec_config_descr_size = len;
-                avio_read(&pb, *dec_config_descr, len);
-            }
-        }
+    if ((ret = ffio_init_context(&d->pb, (unsigned char*)buf, size, 0,
+                          NULL, NULL, NULL, NULL)) < 0)
+        return ret;
+
+    d->s = s;
+    d->level = 0;
+    d->descr_count = 0;
+    d->descr = descr;
+    d->active_descr = NULL;
+    d->max_descr_count = max_descr_count;
+
+    return 0;
+}
+
+static void update_offsets(AVIOContext *pb, int64_t *off, int *len) {
+    int64_t new_off = avio_tell(pb);
+    (*len) -= new_off - *off;
+    *off = new_off;
+}
+
+static int parse_mp4_descr(MP4DescrParseContext *d, int64_t off, int len,
+                           int target_tag);
+
+static int parse_mp4_descr_arr(MP4DescrParseContext *d, int64_t off, int len)
+{
+    while (len > 0) {
+        if (parse_mp4_descr(d, off, len, 0) < 0)
+            return -1;
+        update_offsets(&d->pb, &off, &len);
     }
+    return 0;
+}
+
+static int parse_MP4IODescrTag(MP4DescrParseContext *d, int64_t off, int len)
+{
+    avio_rb16(&d->pb); // ID
+    avio_r8(&d->pb);
+    avio_r8(&d->pb);
+    avio_r8(&d->pb);
+    avio_r8(&d->pb);
+    avio_r8(&d->pb);
+    update_offsets(&d->pb, &off, &len);
+    return parse_mp4_descr_arr(d, off, len);
+}
+
+static int parse_MP4ESDescrTag(MP4DescrParseContext *d, int64_t off, int len)
+{
+    int es_id = 0;
+    if (d->descr_count >= d->max_descr_count)
+        return -1;
+    ff_mp4_parse_es_descr(&d->pb, &es_id);
+    d->active_descr = d->descr + (d->descr_count++);
+
+    d->active_descr->es_id = es_id;
+    update_offsets(&d->pb, &off, &len);
+    parse_mp4_descr(d, off, len, MP4DecConfigDescrTag);
+    //SLConfigDescriptor
+    d->active_descr = NULL;
+    return 0;
+}
+
+static int parse_MP4DecConfigDescrTag(MP4DescrParseContext *d, int64_t off, int len)
+{
+    Mp4Descr *descr = d->active_descr;
+    if (!descr)
+        return -1;
+    d->active_descr->dec_config_descr = av_malloc(len);
+    if (!descr->dec_config_descr)
+        return AVERROR(ENOMEM);
+    descr->dec_config_descr_len = len;
+    avio_read(&d->pb, descr->dec_config_descr, len);
+    return 0;
+}
+
+static int parse_mp4_descr(MP4DescrParseContext *d, int64_t off, int len,
+                           int target_tag) {
+    int tag;
+    int len1 = ff_mp4_read_descr(d->s, &d->pb, &tag);
+    update_offsets(&d->pb, &off, &len);
+    if (len < 0 || len1 > len || len1 <= 0) {
+        av_log(d->s, AV_LOG_ERROR, "Tag %x length violation new length %d bytes remaining %d\n", tag, len1, len);
+        return -1;
+    }
+
+    if (d->level++ >= MAX_LEVEL) {
+        av_log(d->s, AV_LOG_ERROR, "Maximum MP4 descriptor level exceeded\n");
+        goto done;
+    }
+
+    if (target_tag && tag != target_tag) {
+        av_log(d->s, AV_LOG_ERROR, "Found tag %x expected %x\n", tag, target_tag);
+        goto done;
+    }
+
+    switch (tag) {
+    case MP4IODescrTag:
+        parse_MP4IODescrTag(d, off, len1);
+        break;
+    case MP4ESDescrTag:
+        parse_MP4ESDescrTag(d, off, len1);
+        break;
+    case MP4DecConfigDescrTag:
+        parse_MP4DecConfigDescrTag(d, off, len1);
+        break;
+    }
+
+done:
+    d->level--;
+    avio_seek(&d->pb, off + len1, SEEK_SET);
+    return 0;
+}
+
+static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
+                         Mp4Descr *descr, int *descr_count, int max_descr_count)
+{
+    MP4DescrParseContext d;
+    if (init_MP4DescrParseContext(&d, s, buf, size, descr, max_descr_count) < 0)
+        return -1;
+
+    parse_mp4_descr(&d, avio_tell(&d.pb), size, MP4IODescrTag);
+
+    *descr_count = d.descr_count;
     return 0;
 }
 
@@ -1080,11 +1189,8 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             get8(&p, p_end); // scope
             get8(&p, p_end); // label
             len -= 2;
-            if (mp4_descr_count < MAX_MP4_DESCR_COUNT) {
-                mp4_descr_count++;
-                mp4_read_iods(ts->stream, p, len, &mp4_descr->es_id,
-                              &mp4_descr->dec_config_descr, &mp4_descr->dec_config_descr_len);
-            }
+            mp4_read_iods(ts->stream, p, len, mp4_descr + mp4_descr_count,
+                          &mp4_descr_count, MAX_MP4_DESCR_COUNT);
         } else if (tag == 0x05 && len >= 4) { // registration descriptor
             prog_reg_desc = bytestream_get_le32(&p);
             len -= 4;
