@@ -38,6 +38,12 @@ void ff_simple_idct_8(DCTELEM *block);
 void ff_simple_idct_put_10(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_simple_idct_add_10(uint8_t *dest, int line_size, DCTELEM *block);
 void ff_simple_idct_10(DCTELEM *block);
+/**
+ * Special version of ff_simple_idct_10() which does dequantization
+ * and scales by a factor of 2 more between the two IDCTs to account
+ * for larger scale of input coefficients.
+ */
+void ff_prores_idct(DCTELEM *block, const int16_t *qmat);
 
 void ff_simple_idct_mmx(int16_t *block);
 void ff_simple_idct_add_mmx(uint8_t *dest, int line_size, int16_t *block);
