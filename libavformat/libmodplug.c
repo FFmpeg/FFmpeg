@@ -204,6 +204,7 @@ static int modplug_read_close(AVFormatContext *s)
 {
     ModPlugContext *modplug = s->priv_data;
     ModPlug_Unload(modplug->f);
+    av_freep(&modplug->buf);
     return 0;
 }
 
