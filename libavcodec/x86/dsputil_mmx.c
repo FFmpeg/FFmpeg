@@ -31,6 +31,7 @@
 #include "libavcodec/ac3dec.h"
 #include "dsputil_mmx.h"
 #include "idct_xvid.h"
+#include "diracdsp_mmx.h"
 
 //#undef NDEBUG
 //#include <assert.h>
@@ -1901,6 +1902,46 @@ static void put_vp_no_rnd_pixels16_l2_mmx(uint8_t *dst, const uint8_t *a, const 
     put_vp_no_rnd_pixels8_l2_mmx(dst, a, b, stride, h);
     put_vp_no_rnd_pixels8_l2_mmx(dst+8, a+8, b+8, stride, h);
 }
+
+#if CONFIG_DIRAC_DECODER
+#define DIRAC_PIXOP(OPNAME, EXT)\
+void ff_ ## OPNAME ## _dirac_pixels8_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
+{\
+    OPNAME ## _pixels8_ ## EXT(dst, src[0], stride, h);\
+}\
+void ff_ ## OPNAME ## _dirac_pixels16_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
+{\
+    OPNAME ## _pixels16_ ## EXT(dst, src[0], stride, h);\
+}\
+void ff_ ## OPNAME ## _dirac_pixels32_ ## EXT(uint8_t *dst, const uint8_t *src[5], int stride, int h)\
+{\
+    OPNAME ## _pixels16_ ## EXT(dst   , src[0]   , stride, h);\
+    OPNAME ## _pixels16_ ## EXT(dst+16, src[0]+16, stride, h);\
+}
+
+DIRAC_PIXOP(put, mmx)
+DIRAC_PIXOP(avg, mmx)
+DIRAC_PIXOP(avg, mmx2)
+
+void ff_put_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+{
+    put_pixels16_sse2(dst, src[0], stride, h);
+}
+void ff_avg_dirac_pixels16_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+{
+    avg_pixels16_sse2(dst, src[0], stride, h);
+}
+void ff_put_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+{
+    put_pixels16_sse2(dst   , src[0]   , stride, h);
+    put_pixels16_sse2(dst+16, src[0]+16, stride, h);
+}
+void ff_avg_dirac_pixels32_sse2(uint8_t *dst, const uint8_t *src[5], int stride, int h)
+{
+    avg_pixels16_sse2(dst   , src[0]   , stride, h);
+    avg_pixels16_sse2(dst+16, src[0]+16, stride, h);
+}
+#endif
 
 /* XXX: those functions should be suppressed ASAP when all IDCTs are
    converted */
