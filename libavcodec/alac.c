@@ -85,49 +85,6 @@ typedef struct {
     int wasted_bits;
 } ALACContext;
 
-static void allocate_buffers(ALACContext *alac)
-{
-    int chan;
-    for (chan = 0; chan < alac->numchannels; chan++) {
-        alac->predicterror_buffer[chan] =
-            av_malloc(alac->setinfo_max_samples_per_frame * 4);
-
-        alac->outputsamples_buffer[chan] =
-            av_malloc(alac->setinfo_max_samples_per_frame * 4);
-
-        alac->wasted_bits_buffer[chan] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
-    }
-}
-
-static int alac_set_info(ALACContext *alac)
-{
-    const unsigned char *ptr = alac->avctx->extradata;
-
-    ptr += 4; /* size */
-    ptr += 4; /* alac */
-    ptr += 4; /* 0 ? */
-
-    if(AV_RB32(ptr) >= UINT_MAX/4){
-        av_log(alac->avctx, AV_LOG_ERROR, "setinfo_max_samples_per_frame too large\n");
-        return -1;
-    }
-
-    /* buffer size / 2 ? */
-    alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
-    ptr++;                          /* ??? */
-    alac->setinfo_sample_size           = *ptr++;
-    alac->setinfo_rice_historymult      = *ptr++;
-    alac->setinfo_rice_initialhistory   = *ptr++;
-    alac->setinfo_rice_kmodifier        = *ptr++;
-    alac->numchannels                   = *ptr++;
-    bytestream_get_be16(&ptr);      /* ??? */
-    bytestream_get_be32(&ptr);      /* max coded frame size */
-    bytestream_get_be32(&ptr);      /* bitrate ? */
-    bytestream_get_be32(&ptr);      /* samplerate */
-
-    return 0;
-}
-
 static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsamplesize){
     /* read x - number of 1s before 0 represent the rice */
     int x = get_unary_0_9(gb);
@@ -627,8 +584,74 @@ static int alac_decode_frame(AVCodecContext *avctx,
     return input_buffer_size;
 }
 
+static av_cold int alac_decode_close(AVCodecContext *avctx)
+{
+    ALACContext *alac = avctx->priv_data;
+
+    int chan;
+    for (chan = 0; chan < alac->numchannels; chan++) {
+        av_freep(&alac->predicterror_buffer[chan]);
+        av_freep(&alac->outputsamples_buffer[chan]);
+        av_freep(&alac->wasted_bits_buffer[chan]);
+    }
+
+    return 0;
+}
+
+static int allocate_buffers(ALACContext *alac)
+{
+    int chan;
+    for (chan = 0; chan < alac->numchannels; chan++) {
+        alac->predicterror_buffer[chan] =
+            av_malloc(alac->setinfo_max_samples_per_frame * 4);
+
+        alac->outputsamples_buffer[chan] =
+            av_malloc(alac->setinfo_max_samples_per_frame * 4);
+
+        alac->wasted_bits_buffer[chan] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
+
+        if (!alac->predicterror_buffer[chan]  ||
+            !alac->outputsamples_buffer[chan] ||
+            !alac->wasted_bits_buffer[chan]) {
+            alac_decode_close(alac->avctx);
+            return AVERROR(ENOMEM);
+        }
+    }
+    return 0;
+}
+
+static int alac_set_info(ALACContext *alac)
+{
+    const unsigned char *ptr = alac->avctx->extradata;
+
+    ptr += 4; /* size */
+    ptr += 4; /* alac */
+    ptr += 4; /* 0 ? */
+
+    if(AV_RB32(ptr) >= UINT_MAX/4){
+        av_log(alac->avctx, AV_LOG_ERROR, "setinfo_max_samples_per_frame too large\n");
+        return -1;
+    }
+
+    /* buffer size / 2 ? */
+    alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
+    ptr++;                          /* ??? */
+    alac->setinfo_sample_size           = *ptr++;
+    alac->setinfo_rice_historymult      = *ptr++;
+    alac->setinfo_rice_initialhistory   = *ptr++;
+    alac->setinfo_rice_kmodifier        = *ptr++;
+    alac->numchannels                   = *ptr++;
+    bytestream_get_be16(&ptr);      /* ??? */
+    bytestream_get_be32(&ptr);      /* max coded frame size */
+    bytestream_get_be32(&ptr);      /* bitrate ? */
+    bytestream_get_be32(&ptr);      /* samplerate */
+
+    return 0;
+}
+
 static av_cold int alac_decode_init(AVCodecContext * avctx)
 {
+    int ret;
     ALACContext *alac = avctx->priv_data;
     alac->avctx = avctx;
 
@@ -668,20 +691,9 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
         return AVERROR_PATCHWELCOME;
     }
 
-    allocate_buffers(alac);
-
-    return 0;
-}
-
-static av_cold int alac_decode_close(AVCodecContext *avctx)
-{
-    ALACContext *alac = avctx->priv_data;
-
-    int chan;
-    for (chan = 0; chan < alac->numchannels; chan++) {
-        av_freep(&alac->predicterror_buffer[chan]);
-        av_freep(&alac->outputsamples_buffer[chan]);
-        av_freep(&alac->wasted_bits_buffer[chan]);
+    if ((ret = allocate_buffers(alac)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "Error allocating buffers\n");
+        return ret;
     }
 
     return 0;
