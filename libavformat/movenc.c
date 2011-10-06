@@ -48,11 +48,12 @@ static const AVOption options[] = {
     { NULL },
 };
 
-static const AVClass mov_muxer_class = {
-    .class_name = "MOV/3GP/MP4/3G2 muxer",
-    .item_name  = av_default_item_name,
-    .option     = options,
-    .version    = LIBAVUTIL_VERSION_INT,
+#define MOV_CLASS(flavor)\
+static const AVClass flavor ## _muxer_class = {\
+    .class_name = #flavor " muxer",\
+    .item_name  = av_default_item_name,\
+    .option     = options,\
+    .version    = LIBAVUTIL_VERSION_INT,\
 };
 
 //FIXME support 64 bit variant with wide placeholders
@@ -2351,6 +2352,7 @@ static int mov_write_trailer(AVFormatContext *s)
 }
 
 #if CONFIG_MOV_MUXER
+MOV_CLASS(mov)
 AVOutputFormat ff_mov_muxer = {
     .name              = "mov",
     .long_name         = NULL_IF_CONFIG_SMALL("MOV format"),
@@ -2371,6 +2373,7 @@ AVOutputFormat ff_mov_muxer = {
 };
 #endif
 #if CONFIG_TGP_MUXER
+MOV_CLASS(tgp)
 AVOutputFormat ff_tgp_muxer = {
     .name              = "3gp",
     .long_name         = NULL_IF_CONFIG_SMALL("3GP format"),
@@ -2383,10 +2386,11 @@ AVOutputFormat ff_tgp_muxer = {
     .write_trailer     = mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
-    .priv_class = &mov_muxer_class,
+    .priv_class = &tgp_muxer_class,
 };
 #endif
 #if CONFIG_MP4_MUXER
+MOV_CLASS(mp4)
 AVOutputFormat ff_mp4_muxer = {
     .name              = "mp4",
     .long_name         = NULL_IF_CONFIG_SMALL("MP4 format"),
@@ -2404,10 +2408,11 @@ AVOutputFormat ff_mp4_muxer = {
     .write_trailer     = mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
-    .priv_class = &mov_muxer_class,
+    .priv_class = &mp4_muxer_class,
 };
 #endif
 #if CONFIG_PSP_MUXER
+MOV_CLASS(psp)
 AVOutputFormat ff_psp_muxer = {
     .name              = "psp",
     .long_name         = NULL_IF_CONFIG_SMALL("PSP MP4 format"),
@@ -2424,10 +2429,11 @@ AVOutputFormat ff_psp_muxer = {
     .write_trailer     = mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){ff_mp4_obj_type, 0},
-    .priv_class = &mov_muxer_class,
+    .priv_class = &psp_muxer_class,
 };
 #endif
 #if CONFIG_TG2_MUXER
+MOV_CLASS(tg2)
 AVOutputFormat ff_tg2_muxer = {
     .name              = "3g2",
     .long_name         = NULL_IF_CONFIG_SMALL("3GP2 format"),
@@ -2440,10 +2446,11 @@ AVOutputFormat ff_tg2_muxer = {
     .write_trailer     = mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_3gp_tags, 0},
-    .priv_class = &mov_muxer_class,
+    .priv_class = &tg2_muxer_class,
 };
 #endif
 #if CONFIG_IPOD_MUXER
+MOV_CLASS(ipod)
 AVOutputFormat ff_ipod_muxer = {
     .name              = "ipod",
     .long_name         = NULL_IF_CONFIG_SMALL("iPod H.264 MP4 format"),
@@ -2457,6 +2464,6 @@ AVOutputFormat ff_ipod_muxer = {
     .write_trailer     = mov_write_trailer,
     .flags = AVFMT_GLOBALHEADER,
     .codec_tag = (const AVCodecTag* const []){codec_ipod_tags, 0},
-    .priv_class = &mov_muxer_class,
+    .priv_class = &ipod_muxer_class,
 };
 #endif

@@ -1463,7 +1463,7 @@ static const AVOption options[] = {
 };
 
 static const AVClass ac3_decoder_class = {
-    .class_name = "(E-)AC3 decoder",
+    .class_name = "AC3 decoder",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
@@ -1485,6 +1485,12 @@ AVCodec ff_ac3_decoder = {
 };
 
 #if CONFIG_EAC3_DECODER
+static const AVClass eac3_decoder_class = {
+    .class_name = "E-AC3 decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 AVCodec ff_eac3_decoder = {
     .name = "eac3",
     .type = AVMEDIA_TYPE_AUDIO,
@@ -1497,6 +1503,6 @@ AVCodec ff_eac3_decoder = {
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
     },
-    .priv_class = &ac3_decoder_class,
+    .priv_class = &eac3_decoder_class,
 };
 #endif

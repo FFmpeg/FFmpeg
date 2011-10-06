@@ -469,15 +469,14 @@ static const AVOption options[] = {
     { NULL },
 };
 
+/* input */
+#if CONFIG_IMAGE2_DEMUXER
 static const AVClass img2_class = {
     .class_name = "image2 demuxer",
     .item_name  = av_default_item_name,
     .option     = options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
-
-/* input */
-#if CONFIG_IMAGE2_DEMUXER
 AVInputFormat ff_image2_demuxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
@@ -490,13 +489,19 @@ AVInputFormat ff_image2_demuxer = {
 };
 #endif
 #if CONFIG_IMAGE2PIPE_DEMUXER
+static const AVClass img2pipe_class = {
+    .class_name = "image2pipe demuxer",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 AVInputFormat ff_image2pipe_demuxer = {
     .name           = "image2pipe",
     .long_name      = NULL_IF_CONFIG_SMALL("piped image2 sequence"),
     .priv_data_size = sizeof(VideoData),
     .read_header    = read_header,
     .read_packet    = read_packet,
-    .priv_class     = &img2_class,
+    .priv_class     = &img2pipe_class,
 };
 #endif
 

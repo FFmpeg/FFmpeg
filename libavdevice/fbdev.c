@@ -84,7 +84,7 @@ typedef struct {
     int64_t time_frame;      ///< time for the next frame to output (in 1/1000000 units)
 
     int fd;                  ///< framebuffer device file descriptor
-    int width, heigth;       ///< assumed frame resolution
+    int width, height;       ///< assumed frame resolution
     int frame_linesize;      ///< linesize of the output frame, it is assumed to be constant
     int bytes_per_pixel;
 
@@ -147,10 +147,10 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
     }
 
     fbdev->width           = fbdev->varinfo.xres;
-    fbdev->heigth          = fbdev->varinfo.yres;
+    fbdev->height          = fbdev->varinfo.yres;
     fbdev->bytes_per_pixel = (fbdev->varinfo.bits_per_pixel + 7) >> 3;
     fbdev->frame_linesize  = fbdev->width * fbdev->bytes_per_pixel;
-    fbdev->frame_size      = fbdev->frame_linesize * fbdev->heigth;
+    fbdev->frame_size      = fbdev->frame_linesize * fbdev->height;
     fbdev->time_frame      = AV_NOPTS_VALUE;
     fbdev->data = mmap(NULL, fbdev->fixinfo.smem_len, PROT_READ, MAP_SHARED, fbdev->fd, 0);
     if (fbdev->data == MAP_FAILED) {
@@ -162,15 +162,15 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_RAWVIDEO;
     st->codec->width      = fbdev->width;
-    st->codec->height     = fbdev->heigth;
+    st->codec->height     = fbdev->height;
     st->codec->pix_fmt    = pix_fmt;
     st->codec->time_base  = (AVRational){fbdev->framerate_q.den, fbdev->framerate_q.num};
     st->codec->bit_rate   =
-        fbdev->width * fbdev->heigth * fbdev->bytes_per_pixel * av_q2d(fbdev->framerate_q) * 8;
+        fbdev->width * fbdev->height * fbdev->bytes_per_pixel * av_q2d(fbdev->framerate_q) * 8;
 
     av_log(avctx, AV_LOG_INFO,
            "w:%d h:%d bpp:%d pixfmt:%s fps:%d/%d bit_rate:%d\n",
-           fbdev->width, fbdev->heigth, fbdev->varinfo.bits_per_pixel,
+           fbdev->width, fbdev->height, fbdev->varinfo.bits_per_pixel,
            av_pix_fmt_descriptors[pix_fmt].name,
            fbdev->framerate_q.num, fbdev->framerate_q.den,
            st->codec->bit_rate);
@@ -225,7 +225,7 @@ static int fbdev_read_packet(AVFormatContext *avctx, AVPacket *pkt)
                         fbdev->varinfo.yoffset * fbdev->fixinfo.line_length;
     pout = pkt->data;
 
-    for (i = 0; i < fbdev->heigth; i++) {
+    for (i = 0; i < fbdev->height; i++) {
         memcpy(pout, pin, fbdev->frame_linesize);
         pin  += fbdev->fixinfo.line_length;
         pout += fbdev->frame_linesize;
