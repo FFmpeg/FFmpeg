@@ -49,6 +49,7 @@ easier to use. The changes are:
 - select filter
 - Apple ProRes decoder
 - CELT in Ogg demuxing
+- VC-1 interlaced decoding
 
 
 version 0.7:
