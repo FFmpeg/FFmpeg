@@ -88,7 +88,7 @@ typedef struct {
 static void allocate_buffers(ALACContext *alac)
 {
     int chan;
-    for (chan = 0; chan < MAX_CHANNELS; chan++) {
+    for (chan = 0; chan < alac->numchannels; chan++) {
         alac->predicterror_buffer[chan] =
             av_malloc(alac->setinfo_max_samples_per_frame * 4);
 
@@ -124,8 +124,6 @@ static int alac_set_info(ALACContext *alac)
     bytestream_get_be32(&ptr);      /* max coded frame size */
     bytestream_get_be32(&ptr);      /* bitrate ? */
     bytestream_get_be32(&ptr);      /* samplerate */
-
-    allocate_buffers(alac);
 
     return 0;
 }
@@ -670,6 +668,8 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
         return AVERROR_PATCHWELCOME;
     }
 
+    allocate_buffers(alac);
+
     return 0;
 }
 
@@ -678,7 +678,7 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
     ALACContext *alac = avctx->priv_data;
 
     int chan;
-    for (chan = 0; chan < MAX_CHANNELS; chan++) {
+    for (chan = 0; chan < alac->numchannels; chan++) {
         av_freep(&alac->predicterror_buffer[chan]);
         av_freep(&alac->outputsamples_buffer[chan]);
         av_freep(&alac->wasted_bits_buffer[chan]);
