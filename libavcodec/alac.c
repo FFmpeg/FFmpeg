@@ -119,7 +119,7 @@ static int alac_set_info(ALACContext *alac)
     alac->setinfo_rice_historymult      = *ptr++;
     alac->setinfo_rice_initialhistory   = *ptr++;
     alac->setinfo_rice_kmodifier        = *ptr++;
-    ptr++;                         /* channels? */
+    alac->numchannels                   = *ptr++;
     bytestream_get_be16(&ptr);      /* ??? */
     bytestream_get_be32(&ptr);      /* max coded frame size */
     bytestream_get_be32(&ptr);      /* bitrate ? */
@@ -456,10 +456,9 @@ static int alac_decode_frame(AVCodecContext *avctx,
     init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
 
     channels = get_bits(&alac->gb, 3) + 1;
-    if (channels > MAX_CHANNELS) {
-        av_log(avctx, AV_LOG_ERROR, "channels > %d not supported\n",
-               MAX_CHANNELS);
-        return -1;
+    if (channels != avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "frame header channel count mismatch\n");
+        return AVERROR_INVALIDDATA;
     }
 
     /* 2^result = something to do with output waiting.
@@ -634,7 +633,6 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
 {
     ALACContext *alac = avctx->priv_data;
     alac->avctx = avctx;
-    alac->numchannels = alac->avctx->channels;
 
     /* initialize from the extradata */
     if (alac->avctx->extradata_size != ALAC_EXTRADATA_SIZE) {
@@ -655,6 +653,21 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
     default: av_log(avctx, AV_LOG_ERROR, "Sample depth %d is not supported.\n",
                     alac->setinfo_sample_size);
              return -1;
+    }
+
+    if (alac->numchannels < 1) {
+        av_log(avctx, AV_LOG_WARNING, "Invalid channel count\n");
+        alac->numchannels = avctx->channels;
+    } else {
+        if (alac->numchannels > MAX_CHANNELS)
+            alac->numchannels = avctx->channels;
+        else
+            avctx->channels = alac->numchannels;
+    }
+    if (avctx->channels > MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported channel count: %d\n",
+               avctx->channels);
+        return AVERROR_PATCHWELCOME;
     }
 
     return 0;
