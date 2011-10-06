@@ -177,6 +177,11 @@ int swr_init(SwrContext *s){
         return -1;
     }
 
+    if(s-> in.ch_count && s->in.ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
+        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than there actually is, ignoring layout\n");
+        s-> in_ch_layout= 0;
+    }
+
     if(!s-> in_ch_layout)
         s-> in_ch_layout= guess_layout(s->in.ch_count);
     if(!s->out_ch_layout)
