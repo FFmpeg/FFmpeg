@@ -1128,6 +1128,7 @@ typedef struct Mpeg1Context {
     int save_width, save_height, save_progressive_seq;
     AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
     int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
+    int tmpgexs;
 } Mpeg1Context;
 
 static av_cold int mpeg_decode_init(AVCodecContext *avctx)
@@ -2122,7 +2123,21 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
 static void mpeg_decode_user_data(AVCodecContext *avctx,
                                   const uint8_t *p, int buf_size)
 {
+    Mpeg1Context *s = avctx->priv_data;
     const uint8_t *buf_end = p + buf_size;
+
+    if(buf_size > 29){
+        int i;
+        for(i=0; i<20; i++)
+            if(!memcmp(p+i, "\0TMPGEXS\0", 9)){
+                s->tmpgexs= 1;
+            }
+
+/*        for(i=0; !(!p[i-2] && !p[i-1] && p[i]==1) && i<buf_size; i++){
+            av_log(0,0, "%c", p[i]);
+        }
+            av_log(0,0, "\n");*/
+    }
 
     /* we parse the DTG active format information */
     if (buf_end - p >= 5 &&
@@ -2341,6 +2356,10 @@ static int decode_chunks(AVCodecContext *avctx,
             break;
 
         case PICTURE_START_CODE:
+            if(s->tmpgexs){
+                s2->intra_dc_precision= 3;
+                s2->intra_matrix[0]= 1;
+            }
             if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE) && s->slice_count) {
                 int i;
 
