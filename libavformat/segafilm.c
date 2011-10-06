@@ -257,6 +257,10 @@ static int film_read_packet(AVFormatContext *s,
             av_free(film->stereo_buffer);
             film->stereo_buffer_size = sample->sample_size;
             film->stereo_buffer = av_malloc(film->stereo_buffer_size);
+            if (!film->stereo_buffer) {
+                film->stereo_buffer_size = 0;
+                return AVERROR(ENOMEM);
+            }
         }
 
         pkt->pos= avio_tell(pb);
