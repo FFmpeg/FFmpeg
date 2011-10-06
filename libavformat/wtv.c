@@ -837,7 +837,7 @@ static int parse_chunks(AVFormatContext *s, int mode, int64_t seekts, int *len_p
                 buf_size = FFMIN(len - consumed, sizeof(buf));
                 avio_read(pb, buf, buf_size);
                 consumed += buf_size;
-                ff_parse_mpeg2_descriptor(s, st, 0, &pbuf, buf + buf_size, NULL, 0, 0);
+                ff_parse_mpeg2_descriptor(s, st, 0, &pbuf, buf + buf_size, NULL, 0, 0, NULL);
             }
         } else if (!ff_guidcmp(g, EVENTID_AudioTypeSpanningEvent)) {
             int stream_index = ff_find_stream_index(s, sid);

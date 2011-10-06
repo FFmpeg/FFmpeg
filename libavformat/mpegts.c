@@ -1014,9 +1014,28 @@ static int mp4_read_iods(AVFormatContext *s, const uint8_t *buf, unsigned size,
     return 0;
 }
 
+static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
+{
+    MpegTSContext *ts = filter->u.section_filter.opaque;
+    SectionHeader h1, *h = &h1;
+    const uint8_t *p, *p_end;
+
+    av_dlog(ts->stream, "m4SL/od:\n");
+    hex_dump_debug(ts->stream, (uint8_t *)section, section_len);
+
+    p_end = section + section_len - 4;
+    p = section;
+    if (parse_section_header(h, &p, p_end) < 0)
+        return;
+    if (h->tid != M4OD_TID)
+        return;
+
+}
+
 int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
                               const uint8_t **pp, const uint8_t *desc_list_end,
-                              Mp4Descr *mp4_descr, int mp4_descr_count, int pid)
+                              Mp4Descr *mp4_descr, int mp4_descr_count, int pid,
+                              MpegTSContext *ts)
 {
     const uint8_t *desc_end;
     int desc_len, desc_tag, desc_es_id;
@@ -1052,6 +1071,8 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
             if (st->codec->codec_id == CODEC_ID_AAC &&
                 st->codec->extradata_size > 0)
                 st->need_parsing = 0;
+            if (st->codec->codec_id == CODEC_ID_MPEG4SYSTEMS)
+                mpegts_open_section_filter(ts, pid, m4sl_cb, ts, 1);
         }
         break;
     case 0x1F: /* FMC descriptor */
@@ -1207,6 +1228,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     for(;;) {
         st = 0;
+        pes = NULL;
         stream_type = get8(&p, p_end);
         if (stream_type < 0)
             break;
@@ -1222,19 +1244,27 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
                 st->id = pes->pid;
             }
             st = pes->st;
-        } else {
+        } else if (stream_type != 0x13) {
             if (ts->pids[pid]) mpegts_close_filter(ts, ts->pids[pid]); //wrongly added sdt filter probably
             pes = add_pes_stream(ts, pid, pcr_pid);
             if (pes) {
                 st = avformat_new_stream(pes->stream, NULL);
                 st->id = pes->pid;
             }
+        } else {
+            int idx = ff_find_stream_index(ts->stream, pid);
+            if (idx >= 0) {
+                st = ts->stream->streams[idx];
+            } else {
+                st = avformat_new_stream(pes->stream, NULL);
+                st->id = pid;
+            }
         }
 
         if (!st)
             goto out;
 
-        if (!pes->stream_type)
+        if (pes && !pes->stream_type)
             mpegts_set_stream_info(st, pes, stream_type, prog_reg_desc);
 
         add_pid_to_pmt(ts, h->id, pid);
@@ -1249,10 +1279,10 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             break;
         for(;;) {
             if (ff_parse_mpeg2_descriptor(ts->stream, st, stream_type, &p, desc_list_end,
-                mp4_descr, mp4_descr_count, pid) < 0)
+                mp4_descr, mp4_descr_count, pid, ts) < 0)
                 break;
 
-            if (prog_reg_desc == AV_RL32("HDMV") && stream_type == 0x83 && pes->sub_st) {
+            if (pes && prog_reg_desc == AV_RL32("HDMV") && stream_type == 0x83 && pes->sub_st) {
                 ff_program_add_stream_index(ts->stream, h->id, pes->sub_st->index);
                 pes->sub_st->codec->codec_tag = st->codec->codec_tag;
             }

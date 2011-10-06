@@ -39,6 +39,7 @@
 /* table ids */
 #define PAT_TID   0x00
 #define PMT_TID   0x02
+#define M4OD_TID  0x05
 #define SDT_TID   0x42
 
 #define STREAM_TYPE_VIDEO_MPEG1     0x01
@@ -85,6 +86,7 @@ typedef struct {
  */
 int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
                               const uint8_t **pp, const uint8_t *desc_list_end,
-                              Mp4Descr *mp4_descr, int mp4_descr_count, int pid);
+                              Mp4Descr *mp4_descr, int mp4_descr_count, int pid,
+                              MpegTSContext *ts);
 
 #endif /* AVFORMAT_MPEGTS_H */
