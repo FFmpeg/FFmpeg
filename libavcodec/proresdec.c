@@ -38,6 +38,14 @@
 #include "get_bits.h"
 
 typedef struct {
+    const uint8_t *index;            ///< pointers to the data of this slice
+    int slice_num;
+    int x_pos, y_pos;
+    int slice_width;
+    DECLARE_ALIGNED(16, DCTELEM, blocks[8 * 4 * 64]);
+} ProresThreadData;
+
+typedef struct {
     ProresDSPContext dsp;
     AVFrame    picture;
     ScanTable  scantable;
@@ -51,9 +59,9 @@ typedef struct {
     int        prev_slice_sf;            ///< scalefactor of the previous decoded slice
     DECLARE_ALIGNED(16, int16_t, qmat_luma_scaled[64]);
     DECLARE_ALIGNED(16, int16_t, qmat_chroma_scaled[64]);
-    DECLARE_ALIGNED(16, DCTELEM, blocks[8 * 4 * 64]);
     int        total_slices;            ///< total number of slices in a picture
-    const uint8_t **slice_data_index;   ///< array of pointers to the data of each slice
+    ProresThreadData *slice_data;
+    int        pic_num;
     int        chroma_factor;
     int        mb_chroma_factor;
     int        num_chroma_blocks;       ///< number of chrominance blocks in a macroblock
@@ -94,7 +102,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     ProresContext *ctx = avctx->priv_data;
 
     ctx->total_slices     = 0;
-    ctx->slice_data_index = 0;
+    ctx->slice_data       = NULL;
 
     avctx->pix_fmt = PIX_FMT_YUV422P10; // set default pixel format
 
@@ -265,9 +273,9 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     }
 
     if (ctx->total_slices != num_slices) {
-        av_freep(&ctx->slice_data_index);
-        ctx->slice_data_index = av_malloc((num_slices + 1) * sizeof(uint8_t*));
-        if (!ctx->slice_data_index)
+        av_freep(&ctx->slice_data);
+        ctx->slice_data = av_malloc((num_slices + 1) * sizeof(ctx->slice_data[0]));
+        if (!ctx->slice_data)
             return AVERROR(ENOMEM);
         ctx->total_slices = num_slices;
     }
@@ -282,10 +290,10 @@ static int decode_picture_header(ProresContext *ctx, const uint8_t *buf,
     data_ptr = index_ptr + num_slices * 2;
 
     for (i = 0; i < num_slices; i++) {
-        ctx->slice_data_index[i] = data_ptr;
+        ctx->slice_data[i].index = data_ptr;
         data_ptr += AV_RB16(index_ptr + i * 2);
     }
-    ctx->slice_data_index[i] = data_ptr;
+    ctx->slice_data[i].index = data_ptr;
 
     if (data_ptr > buf + data_size) {
         av_log(avctx, AV_LOG_ERROR, "out of slice data\n");
@@ -446,7 +454,8 @@ static inline void decode_ac_coeffs(GetBitContext *gb, DCTELEM *out,
 /**
  * Decode a slice plane (luma or chroma).
  */
-static void decode_slice_plane(ProresContext *ctx, const uint8_t *buf,
+static void decode_slice_plane(ProresContext *ctx, ProresThreadData *td,
+                               const uint8_t *buf,
                                int data_size, uint16_t *out_ptr,
                                int linesize, int mbs_per_slice,
                                int blocks_per_mb, int plane_size_factor,
@@ -458,17 +467,17 @@ static void decode_slice_plane(ProresContext *ctx, const uint8_t *buf,
 
     blocks_per_slice = mbs_per_slice * blocks_per_mb;
 
-    memset(ctx->blocks, 0, 8 * 4 * 64 * sizeof(*ctx->blocks));
+    memset(td->blocks, 0, 8 * 4 * 64 * sizeof(*td->blocks));
 
     init_get_bits(&gb, buf, data_size << 3);
 
-    decode_dc_coeffs(&gb, ctx->blocks, blocks_per_slice);
+    decode_dc_coeffs(&gb, td->blocks, blocks_per_slice);
 
-    decode_ac_coeffs(&gb, ctx->blocks, blocks_per_slice,
+    decode_ac_coeffs(&gb, td->blocks, blocks_per_slice,
                      plane_size_factor, ctx->scantable.permutated);
 
     /* inverse quantization, inverse transform and output */
-    block_ptr = ctx->blocks;
+    block_ptr = td->blocks;
 
     for (mb_num = 0; mb_num < mbs_per_slice; mb_num++, out_ptr += blocks_per_mb * 4) {
         ctx->dsp.idct_put(out_ptr,                    linesize, block_ptr, qmat);
@@ -487,10 +496,14 @@ static void decode_slice_plane(ProresContext *ctx, const uint8_t *buf,
 }
 
 
-static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
-                        int mb_x_pos, int mb_y_pos, int mbs_per_slice,
-                        AVCodecContext *avctx)
+static int decode_slice(AVCodecContext *avctx, ProresThreadData *td)
 {
+    ProresContext *ctx = avctx->priv_data;
+    int mb_x_pos  = td->x_pos;
+    int mb_y_pos  = td->y_pos;
+    int pic_num   = ctx->pic_num;
+    int slice_num = td->slice_num;
+    int mbs_per_slice = td->slice_width;
     const uint8_t *buf;
     uint8_t *y_data, *u_data, *v_data;
     AVFrame *pic = avctx->coded_frame;
@@ -498,8 +511,8 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
     int slice_data_size, hdr_size, y_data_size, u_data_size, v_data_size;
     int y_linesize, u_linesize, v_linesize;
 
-    buf             = ctx->slice_data_index[slice_num];
-    slice_data_size = ctx->slice_data_index[slice_num + 1] - buf;
+    buf             = ctx->slice_data[slice_num].index;
+    slice_data_size = ctx->slice_data[slice_num + 1].index - buf;
 
     slice_width_factor = av_log2(mbs_per_slice);
 
@@ -551,14 +564,14 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
     }
 
     /* decode luma plane */
-    decode_slice_plane(ctx, buf + hdr_size, y_data_size,
+    decode_slice_plane(ctx, td, buf + hdr_size, y_data_size,
                        (uint16_t*) (y_data + (mb_y_pos << 4) * y_linesize +
                                     (mb_x_pos << 5)), y_linesize,
                        mbs_per_slice, 4, slice_width_factor + 2,
                        ctx->qmat_luma_scaled);
 
     /* decode U chroma plane */
-    decode_slice_plane(ctx, buf + hdr_size + y_data_size, u_data_size,
+    decode_slice_plane(ctx, td, buf + hdr_size + y_data_size, u_data_size,
                        (uint16_t*) (u_data + (mb_y_pos << 4) * u_linesize +
                                     (mb_x_pos << ctx->mb_chroma_factor)),
                        u_linesize, mbs_per_slice, ctx->num_chroma_blocks,
@@ -566,7 +579,7 @@ static int decode_slice(ProresContext *ctx, int pic_num, int slice_num,
                        ctx->qmat_chroma_scaled);
 
     /* decode V chroma plane */
-    decode_slice_plane(ctx, buf + hdr_size + y_data_size + u_data_size,
+    decode_slice_plane(ctx, td, buf + hdr_size + y_data_size + u_data_size,
                        v_data_size,
                        (uint16_t*) (v_data + (mb_y_pos << 4) * v_linesize +
                                     (mb_x_pos << ctx->mb_chroma_factor)),
@@ -585,6 +598,7 @@ static int decode_picture(ProresContext *ctx, int pic_num,
 
     slice_num = 0;
 
+    ctx->pic_num = pic_num;
     for (y_pos = 0; y_pos < ctx->num_y_mbs; y_pos++) {
         slice_width = 1 << ctx->slice_width_factor;
 
@@ -593,15 +607,18 @@ static int decode_picture(ProresContext *ctx, int pic_num,
             while (ctx->num_x_mbs - x_pos < slice_width)
                 slice_width >>= 1;
 
-            if (decode_slice(ctx, pic_num, slice_num, x_pos, y_pos,
-                             slice_width, avctx) < 0)
-                return -1;
+            ctx->slice_data[slice_num].slice_num   = slice_num;
+            ctx->slice_data[slice_num].x_pos       = x_pos;
+            ctx->slice_data[slice_num].y_pos       = y_pos;
+            ctx->slice_data[slice_num].slice_width = slice_width;
 
             slice_num++;
         }
     }
 
-    return 0;
+    return avctx->execute(avctx, (void *) decode_slice,
+                          ctx->slice_data, NULL, slice_num,
+                          sizeof(ctx->slice_data[0]));
 }
 
 
@@ -664,7 +681,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     if (ctx->picture.data[0])
         avctx->release_buffer(avctx, &ctx->picture);
 
-    av_freep(&ctx->slice_data_index);
+    av_freep(&ctx->slice_data);
 
     return 0;
 }
@@ -678,6 +695,6 @@ AVCodec ff_prores_decoder = {
     .init           = decode_init,
     .close          = decode_close,
     .decode         = decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
     .long_name      = NULL_IF_CONFIG_SMALL("Apple ProRes (iCodec Pro)")
 };
