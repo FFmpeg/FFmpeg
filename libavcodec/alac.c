@@ -305,8 +305,6 @@ static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
                                   uint8_t interlacing_leftweight)
 {
     int i;
-    if (numsamples <= 0)
-        return;
 
     /* weighted interlacing */
     if (interlacing_leftweight) {
@@ -347,9 +345,6 @@ static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
                                   uint8_t interlacing_leftweight)
 {
     int i;
-
-    if (numsamples <= 0)
-        return;
 
     /* weighted interlacing */
     if (interlacing_leftweight) {
