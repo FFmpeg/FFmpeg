@@ -22,6 +22,7 @@
 #include "swresample_internal.h"
 #include "audioconvert.h"
 #include "libavutil/avassert.h"
+#include "libavutil/audioconvert.h"
 
 #define  C30DB  M_SQRT2
 #define  C15DB  1.189207115
@@ -117,18 +118,6 @@ void swr_free(SwrContext **ss){
     av_freep(ss);
 }
 
-static int64_t guess_layout(int ch){
-    switch(ch){
-    case 1: return AV_CH_LAYOUT_MONO;
-    case 2: return AV_CH_LAYOUT_STEREO;
-    case 5: return AV_CH_LAYOUT_5POINT0;
-    case 6: return AV_CH_LAYOUT_5POINT1;
-    case 7: return AV_CH_LAYOUT_7POINT0;
-    case 8: return AV_CH_LAYOUT_7POINT1;
-    default: return 0;
-    }
-}
-
 int swr_init(SwrContext *s){
     s->in_buffer_index= 0;
     s->in_buffer_count= 0;
@@ -183,9 +172,9 @@ int swr_init(SwrContext *s){
     }
 
     if(!s-> in_ch_layout)
-        s-> in_ch_layout= guess_layout(s->in.ch_count);
+        s-> in_ch_layout= av_get_default_channel_layout(s->in.ch_count);
     if(!s->out_ch_layout)
-        s->out_ch_layout= guess_layout(s->out.ch_count);
+        s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
 
     s->rematrix= s->out_ch_layout  !=s->in_ch_layout;
 
