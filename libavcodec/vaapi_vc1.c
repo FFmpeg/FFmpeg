@@ -116,6 +116,18 @@ static inline VAMvModeVC1 vc1_get_MVMODE2(VC1Context *v)
     return 0;
 }
 
+/** Reconstruct bitstream TTFRM (7.1.1.41, Table-53) */
+static inline int vc1_get_TTFRM(VC1Context *v)
+{
+    switch (v->ttfrm) {
+    case TT_8X8: return 0;
+    case TT_8X4: return 1;
+    case TT_4X8: return 2;
+    case TT_4X4: return 3;
+    }
+    return 0;
+}
+
 /** Pack FFmpeg bitplanes into a VABitPlaneBuffer element */
 static inline void vc1_pack_bitplanes(uint8_t *bitplane, int n, const uint8_t *ff_bp[3], int x, int y, int stride)
 {
@@ -239,7 +251,7 @@ static int vaapi_vc1_start_frame(AVCodecContext *avctx, av_unused const uint8_t 
     pic_param->transform_fields.value                               = 0; /* reset all bits */
     pic_param->transform_fields.bits.variable_sized_transform_flag  = v->vstransform;
     pic_param->transform_fields.bits.mb_level_transform_type_flag   = v->ttmbf;
-    pic_param->transform_fields.bits.frame_level_transform_type     = v->ttfrm;
+    pic_param->transform_fields.bits.frame_level_transform_type     = vc1_get_TTFRM(v);
     pic_param->transform_fields.bits.transform_ac_codingset_idx1    = v->c_ac_table_index;
     pic_param->transform_fields.bits.transform_ac_codingset_idx2    = v->y_ac_table_index;
     pic_param->transform_fields.bits.intra_transform_dc_table       = v->s.dc_table_index;
