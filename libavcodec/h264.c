@@ -2648,7 +2648,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
         if (s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma ||
             h->cur_chroma_format_idc != h->sps.chroma_format_idc) {
-            if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10) {
+            if (h->sps.bit_depth_luma >= 8 && h->sps.bit_depth_luma <= 10 &&
+                (h->sps.bit_depth_luma != 9 || !CHROMA422)) {
                 s->avctx->bits_per_raw_sample = h->sps.bit_depth_luma;
                 h->cur_chroma_format_idc = h->sps.chroma_format_idc;
                 h->pixel_shift = h->sps.bit_depth_luma > 8;
@@ -2658,7 +2659,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 s->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
                 dsputil_init(&s->dsp, s->avctx);
             } else {
-                av_log(s->avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
+                av_log(s->avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d chroma_idc: %d\n",
+                       h->sps.bit_depth_luma, h->sps.chroma_format_idc);
                 return -1;
             }
         }
