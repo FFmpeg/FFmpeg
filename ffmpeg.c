@@ -3648,6 +3648,13 @@ static void opt_output_file(void *optctx, const char *filename)
                 continue;
 
             ist = &input_streams[input_files[map->file_index].ist_index + map->stream_index];
+            if(o->subtitle_disable && ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE)
+                continue;
+            if(o->   audio_disable && ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                continue;
+            if(o->   video_disable && ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                continue;
+
             switch (ist->st->codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(o, oc);    break;
             case AVMEDIA_TYPE_AUDIO:    ost = new_audio_stream(o, oc);    break;
