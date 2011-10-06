@@ -132,7 +132,7 @@ int av_get_channel_layout_nb_channels(int64_t channel_layout)
     return count;
 }
 
-int av_get_default_channel_layout(int nb_channels) {
+int64_t av_get_default_channel_layout(int nb_channels) {
     int i;
     for (i = 0; channel_layout_map[i].name; i++)
         if (nb_channels == channel_layout_map[i].nb_channels)

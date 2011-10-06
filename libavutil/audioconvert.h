@@ -95,6 +95,6 @@ int av_get_channel_layout_nb_channels(int64_t channel_layout);
 /**
  * Return default channel layout for a given number of channels.
  */
-int av_get_default_channel_layout(int nb_channels);
+int64_t av_get_default_channel_layout(int nb_channels);
 
 #endif /* AVUTIL_AUDIOCONVERT_H */
