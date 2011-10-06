@@ -74,7 +74,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     } else {
         switch(s->font_height) {
         default:
-            av_log(avctx, AV_LOG_WARNING, "font height %i not support\n", s->font_height);
+            av_log(avctx, AV_LOG_WARNING, "font height %i not supported\n", s->font_height);
             s->font_height = 8;
         case 8:
             s->font = ff_cga_font;
