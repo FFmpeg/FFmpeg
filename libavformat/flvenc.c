@@ -281,6 +281,22 @@ static int flv_write_header(AVFormatContext *s)
     }
 
     while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        if(   !strcmp(tag->key, "width")
+            ||!strcmp(tag->key, "height")
+            ||!strcmp(tag->key, "videodatarate")
+            ||!strcmp(tag->key, "framerate")
+            ||!strcmp(tag->key, "videocodecid")
+            ||!strcmp(tag->key, "audiodatarate")
+            ||!strcmp(tag->key, "audiosamplerate")
+            ||!strcmp(tag->key, "audiosamplesize")
+            ||!strcmp(tag->key, "stereo")
+            ||!strcmp(tag->key, "audiocodecid")
+            ||!strcmp(tag->key, "duration")
+            ||!strcmp(tag->key, "onMetaData")
+        ){
+            av_log(s, AV_LOG_DEBUG, "ignoring metadata for %s\n", tag->key);
+            continue;
+        }
         put_amf_string(pb, tag->key);
         avio_w8(pb, AMF_DATA_TYPE_STRING);
         put_amf_string(pb, tag->value);
