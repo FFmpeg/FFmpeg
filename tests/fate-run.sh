@@ -50,7 +50,7 @@ run(){
 }
 
 avconv(){
-    run avconv -v 0 -threads $threads -thread_type $thread_type "$@"
+    run avconv -nostats -threads $threads -thread_type $thread_type "$@"
 }
 
 framecrc(){
