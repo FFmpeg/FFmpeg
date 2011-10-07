@@ -75,7 +75,6 @@ typedef struct {
     int complete;
     MXFPartitionType type;
     uint64_t previous_partition;
-    uint64_t footer_partition;
     int index_sid;
     int body_sid;
 } MXFPartition;
@@ -166,6 +165,7 @@ typedef struct {
     struct AVAES *aesc;
     uint8_t *local_tags;
     int local_tags_count;
+    uint64_t footer_partition;
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -402,6 +402,7 @@ static int mxf_read_partition_pack(void *arg, ByteIOContext *pb, int tag, int si
     MXFContext *mxf = arg;
     MXFPartition *partition;
     UID op;
+    uint64_t footer_partition;
 
     if (mxf->partitions_count+1 >= UINT_MAX / sizeof(*mxf->partitions))
         return AVERROR(ENOMEM);
@@ -432,16 +433,26 @@ static int mxf_read_partition_pack(void *arg, ByteIOContext *pb, int tag, int si
     partition->complete = uid[14] > 2;
     avio_skip(pb, 16);
     partition->previous_partition = avio_rb64(pb);
-    partition->footer_partition = avio_rb64(pb);
+    footer_partition = avio_rb64(pb);
     avio_skip(pb, 16);
     partition->index_sid = avio_rb32(pb);
     avio_skip(pb, 8);
     partition->body_sid = avio_rb32(pb);
     avio_read(pb, op, sizeof(UID));
 
+    /* some files don'thave FooterPartition set in every partition */
+    if (footer_partition) {
+        if (mxf->footer_partition && mxf->footer_partition != footer_partition) {
+            av_log(mxf->fc, AV_LOG_ERROR, "inconsistent FooterPartition value: %li != %li\n",
+                   mxf->footer_partition, footer_partition);
+        } else {
+            mxf->footer_partition = footer_partition;
+        }
+    }
+
     av_dlog(mxf->fc, "PartitionPack: PreviousPartition = 0x%lx, "
             "FooterPartition = 0x%lx, IndexSID = %i, BodySID = %i\n",
-            partition->previous_partition, partition->footer_partition,
+            partition->previous_partition, footer_partition,
             partition->index_sid, partition->body_sid);
 
     if      (op[12] == 1 && op[13] == 1) mxf->op = OP1a;
