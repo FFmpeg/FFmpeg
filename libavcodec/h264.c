@@ -2670,7 +2670,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         }
 
         if(h->sps.video_signal_type_present_flag){
-            s->avctx->color_range = h->sps.full_range ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
+            s->avctx->color_range = h->sps.full_range>0 ? AVCOL_RANGE_JPEG : AVCOL_RANGE_MPEG;
             if(h->sps.colour_description_present_flag){
                 s->avctx->color_primaries = h->sps.color_primaries;
                 s->avctx->color_trc       = h->sps.color_trc;
