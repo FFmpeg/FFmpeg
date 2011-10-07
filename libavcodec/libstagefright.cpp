@@ -460,6 +460,7 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
         if (s->dummy_buf && (frame = (Frame*)av_mallocz(sizeof(Frame)))) {
             frame->status = OK;
             frame->size   = s->dummy_bufsize;
+            frame->key    = 1;
             frame->buffer = s->dummy_buf;
             pthread_mutex_lock(&s->in_mutex);
             s->in_queue->push_back(frame);
