@@ -174,7 +174,15 @@ void* decode_thread(void *arg)
                 decode_done = 1;
             }
         }
-        pthread_mutex_lock(&s->out_mutex);
+        while (true) {
+            pthread_mutex_lock(&s->out_mutex);
+            if (s->out_queue->size() >= 10) {
+                pthread_mutex_unlock(&s->out_mutex);
+                usleep(10000);
+                continue;
+            }
+            break;
+        }
         s->out_queue->push_back(frame);
         pthread_mutex_unlock(&s->out_mutex);
     } while (!decode_done && !s->stop_decode);
@@ -434,6 +442,17 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
 
     if (!s->thread_exited) {
         s->stop_decode = 1;
+
+        // Make sure decode_thread() doesn't get stuck
+        pthread_mutex_lock(&s->out_mutex);
+        while (!s->out_queue->empty()) {
+            frame = *s->out_queue->begin();
+            s->out_queue->erase(s->out_queue->begin());
+            if (frame->size)
+                frame->mbuffer->release();
+            av_freep(&frame);
+        }
+        pthread_mutex_unlock(&s->out_mutex);
 
         // Feed a dummy frame prior to signalling EOF.
         // This is required to terminate the decoder(OMX.SEC)
