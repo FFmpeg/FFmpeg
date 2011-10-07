@@ -154,10 +154,6 @@ To set the language of the second stream:
 avconv -i INPUT -metadata:s:1 language=eng OUTPUT
 @end example
 
-@item -v @var{number} (@emph{global})
-This option is deprecated and has no effect, use -loglevel
-to set verbosity level.
-
 @item -target @var{type} (@emph{output})
 Specify target file type (@code{vcd}, @code{svcd}, @code{dvd}, @code{dv},
 @code{dv50}). @var{type} may be prefixed with @code{pal-}, @code{ntsc-} or

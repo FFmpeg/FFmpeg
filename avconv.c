@@ -2548,12 +2548,6 @@ static int transcode(OutputFile *output_files,
     return ret;
 }
 
-static int opt_verbose(const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -loglevel\n", opt);
-    return 0;
-}
-
 static double parse_frame_aspect_ratio(const char *arg)
 {
     int x = 0, y = 0;
@@ -3967,7 +3961,6 @@ static const OptionDef options[] = {
     { "hex", OPT_BOOL | OPT_EXPERT, {(void*)&do_hex_dump},
       "when dumping packets, also dump the payload" },
     { "re", OPT_BOOL | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(rate_emu)}, "read input at native frame rate", "" },
-    { "v", HAS_ARG, {(void*)opt_verbose}, "deprecated, use -loglevel instead", "number" },
     { "target", HAS_ARG | OPT_FUNC2, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },

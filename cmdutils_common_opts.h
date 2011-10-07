@@ -12,3 +12,4 @@
     { "pix_fmts" , OPT_EXIT, {(void*)show_pix_fmts }, "show available pixel formats" },
     { "sample_fmts", OPT_EXIT, {.func_arg = show_sample_fmts }, "show available audio sample formats" },
     { "loglevel", HAS_ARG, {(void*)opt_loglevel}, "set libav* logging level", "loglevel" },
+    { "v", HAS_ARG, {(void*)opt_loglevel}, "set libav* logging level", "loglevel" },
