@@ -1661,7 +1661,7 @@ static int dirac_decode_picture_header(DiracContext *s)
     return 0;
 }
 
-static int get_delayed_pic(DiracContext *s, DiracFrame *picture, int *data_size)
+static int get_delayed_pic(DiracContext *s, AVFrame *picture, int *data_size)
 {
     DiracFrame *out = s->delay_frames[0];
     int i, out_idx = 0;
@@ -1678,8 +1678,8 @@ static int get_delayed_pic(DiracContext *s, DiracFrame *picture, int *data_size)
 
     if (out) {
         out->avframe.reference ^= DELAYED_PIC_REF;
-        *data_size = sizeof(DiracFrame);
-        *picture = *out;
+        *data_size = sizeof(AVFrame);
+        *(AVFrame *)picture = out->avframe;
     }
 
     return 0;
@@ -1792,7 +1792,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     // end of stream, so flush delayed pics
     if (buf_size == 0)
-        return get_delayed_pic(s, picture, data_size);
+      return get_delayed_pic(s, (AVFrame *)data, data_size);
 
     for (;;) {
       //[DIRAC_STD] Here starts the code from parse_info() defined in 9.6
@@ -1815,10 +1815,12 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             buf_idx += 4;
             continue;
         }
-
         // [DIRAC_STD] dirac_decode_data_unit makes reference to the while defined in 9.3 inside the function parse_sequence()
         if (dirac_decode_data_unit(avctx, buf+buf_idx, data_unit_size))
+          {
+            av_log(s->avctx, AV_LOG_ERROR,"Error in dirac_decode_data_unit\n");
             return -1;
+          }
         buf_idx += data_unit_size;
     }
 
@@ -1846,13 +1848,13 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         if (delayed_frame) {
             delayed_frame->avframe.reference ^= DELAYED_PIC_REF;
-            *data_size = sizeof(DiracFrame);
-            *picture = *delayed_frame;
+            *(AVFrame*)data = delayed_frame->avframe;
+            *data_size = sizeof(AVFrame);
         }
     } else if (s->current_picture->avframe.display_picture_number == s->frame_number) {
         // The right frame at the right time :-)
-        *data_size = sizeof(DiracFrame);
-        *picture = *s->current_picture;
+      *(AVFrame*)data = s->current_picture->avframe;
+      *data_size = sizeof(AVFrame);
     }
 
     if (*data_size)
