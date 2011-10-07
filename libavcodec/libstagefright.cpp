@@ -104,6 +104,8 @@ public:
         Frame *frame;
         status_t ret;
 
+        if (s->thread_exited)
+            return ERROR_END_OF_STREAM;
         pthread_mutex_lock(&s->in_mutex);
 
         while (s->in_queue->empty())
