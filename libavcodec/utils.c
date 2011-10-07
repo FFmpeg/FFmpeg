@@ -238,6 +238,22 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     *width=FFALIGN(*width, align);
 }
 
+void ff_init_buffer_info(AVCodecContext *s, AVFrame *pic)
+{
+    if (s->pkt) {
+        pic->pkt_pts = s->pkt->pts;
+        pic->pkt_pos = s->pkt->pos;
+    } else {
+        pic->pkt_pts = AV_NOPTS_VALUE;
+        pic->pkt_pos = -1;
+    }
+    pic->reordered_opaque= s->reordered_opaque;
+    pic->sample_aspect_ratio = s->sample_aspect_ratio;
+    pic->width               = s->width;
+    pic->height              = s->height;
+    pic->format              = s->pix_fmt;
+}
+
 int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     int i;
     int w= s->width;
@@ -1357,6 +1373,9 @@ unsigned int ff_toupper4(unsigned int x)
 int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
 {
     f->owner = avctx;
+
+    ff_init_buffer_info(avctx, f);
+
     return avctx->get_buffer(avctx, f);
 }
 

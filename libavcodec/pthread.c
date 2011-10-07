@@ -32,6 +32,7 @@
 #include <pthread.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "thread.h"
 
 typedef int (action_func)(AVCodecContext *c, void *arg);
@@ -786,6 +787,8 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
     int *progress, err;
 
     f->owner = avctx;
+
+    ff_init_buffer_info(avctx, f);
 
     if (!(avctx->active_thread_type&FF_THREAD_FRAME)) {
         f->thread_opaque = NULL;

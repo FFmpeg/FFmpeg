@@ -55,4 +55,9 @@ int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
 unsigned int ff_toupper4(unsigned int x);
 
+/**
+ * does needed setup of pkt_pts/pos and such for (re)get_buffer();
+ */
+void ff_init_buffer_info(AVCodecContext *s, AVFrame *pic);
+
 #endif /* AVCODEC_INTERNAL_H */
