@@ -217,9 +217,9 @@ int swr_rematrix_init(SwrContext *s){
     }
         for(i=0; i<av_get_channel_layout_nb_channels(s->out_ch_layout); i++){
             for(j=0; j<av_get_channel_layout_nb_channels(s->in_ch_layout); j++){
-                av_log(NULL, AV_LOG_ERROR, "%f ", s->matrix[i][j]);
+                av_log(NULL, AV_LOG_DEBUG, "%f ", s->matrix[i][j]);
             }
-            av_log(NULL, AV_LOG_ERROR, "\n");
+            av_log(NULL, AV_LOG_DEBUG, "\n");
         }
     return 0;
 }
