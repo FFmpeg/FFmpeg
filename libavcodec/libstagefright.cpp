@@ -311,7 +311,7 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
         frame = (Frame*)av_mallocz(sizeof(Frame));
         if (avpkt->data) {
             frame->status  = OK;
-            frame->size    = orig_size;
+            frame->size    = avpkt->size;
             // Stagefright can't handle negative timestamps -
             // if needed, work around this by offsetting them manually?
             if (avpkt->pts >= 0)
@@ -324,8 +324,10 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
             }
             uint8_t *ptr = avpkt->data;
             // The OMX.SEC decoder fails without this.
-            if (avpkt->size == orig_size + avctx->extradata_size)
+            if (avpkt->size == orig_size + avctx->extradata_size) {
                 ptr += avctx->extradata_size;
+                frame->size = orig_size;
+            }
             memcpy(frame->buffer, ptr, orig_size);
         } else {
             frame->status  = ERROR_END_OF_STREAM;
