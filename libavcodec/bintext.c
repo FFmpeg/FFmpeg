@@ -131,6 +131,7 @@ static int decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     const uint8_t *buf_end = buf+buf_size;
 
+    s->x = s->y = 0;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
                             FF_BUFFER_HINTS_PRESERVE |
                             FF_BUFFER_HINTS_REUSABLE;
