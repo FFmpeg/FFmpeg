@@ -66,7 +66,7 @@ struct StagefrightContext {
 
     Frame *end_frame;
     bool source_done;
-    volatile sig_atomic_t thread_exited, stop_decode;
+    volatile sig_atomic_t thread_started, thread_exited, stop_decode;
 
     AVFrame ret_frame;
 
@@ -274,7 +274,6 @@ static av_cold int Stagefright_init(AVCodecContext *avctx)
     pthread_mutex_init(&s->in_mutex, NULL);
     pthread_mutex_init(&s->out_mutex, NULL);
     pthread_cond_init(&s->condition, NULL);
-    pthread_create(&s->decode_thread_id, NULL, &decode_thread, avctx);
     return 0;
 
 fail:
@@ -302,6 +301,11 @@ static int Stagefright_decode_frame(AVCodecContext *avctx, void *data,
     int orig_size = avpkt->size;
     AVPacket pkt = *avpkt;
     int ret;
+
+    if (!s->thread_started) {
+        pthread_create(&s->decode_thread_id, NULL, &decode_thread, avctx);
+        s->thread_started = true;
+    }
 
     if (avpkt && avpkt->data) {
         av_bitstream_filter_filter(s->bsfc, avctx, NULL, &pkt.data, &pkt.size,
@@ -440,6 +444,7 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
     StagefrightContext *s = (StagefrightContext*)avctx->priv_data;
     Frame *frame;
 
+    if (s->thread_started) {
     if (!s->thread_exited) {
         s->stop_decode = 1;
 
@@ -481,6 +486,9 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
 
     if (s->ret_frame.data[0])
         avctx->release_buffer(avctx, &s->ret_frame);
+
+    s->thread_started = false;
+    }
 
     while (!s->in_queue->empty()) {
         frame = *s->in_queue->begin();
