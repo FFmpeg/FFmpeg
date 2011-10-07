@@ -24,6 +24,7 @@
 
 #include <libmodplug/modplug.h>
 #include "libavutil/avstring.h"
+#include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
 
@@ -42,7 +43,38 @@ typedef struct ModPlugContext {
     int surround_delay;
 
     int max_size; ///< max file size to allocate
+
+    /* optional video stream */
+    double ts_per_packet; ///< used to define the pts/dts using packet_count;
+    int packet_count;     ///< total number of audio packets
+    int print_textinfo;   ///< bool flag for printing speed, tempo, order, ...
+    int video_stream;     ///< 1 if the user want a video stream, otherwise 0
+    int w;                ///< video stream width  in char (one char = 8x8px)
+    int h;                ///< video stream height in char (one char = 8x8px)
+    int video_switch;     ///< 1 if current packet is video, otherwise 0
+    int fsize;            ///< constant frame size
+    int linesize;         ///< line size in bytes
+    char *color_eval;     ///< color eval user input expression
+    int eval_err;         ///< 1 if eval failed once, otherwise 0 (used to disable video)
 } ModPlugContext;
+
+static const char *var_names[] = {
+    "E", "PHI", "PI",
+    "x", "y",
+    "w", "h",
+    "t",
+    "speed", "tempo", "order", "pattern", "row",
+    NULL
+};
+
+enum var_name {
+    VAR_E, VAR_PHI, VAR_PI,
+    VAR_X, VAR_Y,
+    VAR_W, VAR_H,
+    VAR_TIME,
+    VAR_SPEED, VAR_TEMPO, VAR_ORDER, VAR_PATTERN, VAR_ROW,
+    VAR_VARS_NB
+};
 
 #define FF_MODPLUG_MAX_FILE_SIZE (100 * 1<<20) // 100M
 #define FF_MODPLUG_DEF_FILE_SIZE (  5 * 1<<20) //   5M
@@ -59,6 +91,11 @@ static const AVOption options[] = {
     {"surround_delay",  "Surround delay in ms, usually 5-40ms", OFFSET(surround_delay),  FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, D},
     {"max_size",        "Max file size supported (in bytes). Default is 5MB. Set to 0 for no limit (not recommended)",
      OFFSET(max_size), FF_OPT_TYPE_INT, {.dbl = FF_MODPLUG_DEF_FILE_SIZE}, 0, FF_MODPLUG_MAX_FILE_SIZE, D},
+    {"video_stream_expr", "Color formula",                                  OFFSET(color_eval),     FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, D},
+    {"video_stream",      "Make demuxer output a video stream",             OFFSET(video_stream),   FF_OPT_TYPE_INT, {.dbl = 0},   0,   1, D},
+    {"video_stream_w",    "Video stream width in char (one char = 8x8px)",  OFFSET(w),              FF_OPT_TYPE_INT, {.dbl = 30}, 20, 512, D},
+    {"video_stream_h",    "Video stream height in char (one char = 8x8px)", OFFSET(h),              FF_OPT_TYPE_INT, {.dbl = 30}, 20, 512, D},
+    {"video_stream_ptxt", "Print speed, tempo, order, ... in video stream", OFFSET(print_textinfo), FF_OPT_TYPE_INT, {.dbl = 1},   0,   1, D},
     {NULL},
 };
 
@@ -122,6 +159,8 @@ static int modplug_load_metadata(AVFormatContext *s)
     return 0;
 }
 
+#define AUDIO_PKT_SIZE 512
+
 static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream *st;
@@ -182,17 +221,113 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->channels    = settings.mChannels;
     st->codec->sample_rate = settings.mFrequency;
 
+    // timebase = 1/1000, 2ch 16bits 44.1kHz-> 2*2*44100
+    modplug->ts_per_packet = 1000*AUDIO_PKT_SIZE / (4*44100.);
+
+    if (modplug->video_stream) {
+        AVStream *vst = av_new_stream(s, 1);
+        if (!vst)
+            return AVERROR(ENOMEM);
+        av_set_pts_info(vst, 64, 1, 1000);
+        vst->duration = st->duration;
+        vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
+        vst->codec->codec_id   = CODEC_ID_XBIN;
+        vst->codec->width      = modplug->w << 3;
+        vst->codec->height     = modplug->h << 3;
+        modplug->linesize = modplug->w * 3;
+        modplug->fsize    = modplug->linesize * modplug->h;
+    }
+
     return modplug_load_metadata(s);
 }
+
+static void write_text(uint8_t *dst, const char *s, int linesize, int x, int y)
+{
+    int i;
+    dst += y*linesize + x*3;
+    for (i = 0; s[i]; i++, dst += 3) {
+        dst[0] = 0x0;   // count - 1
+        dst[1] = s[i];  // char
+        dst[2] = 0x0f;  // background / foreground
+    }
+}
+
+#define PRINT_INFO(line, name, idvalue) do {                            \
+    snprintf(intbuf, sizeof(intbuf), "%.0f", var_values[idvalue]);      \
+    write_text(pkt->data, name ":", modplug->linesize,  0+1, line+1);   \
+    write_text(pkt->data, intbuf,   modplug->linesize, 10+1, line+1);   \
+} while (0)
 
 static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     ModPlugContext *modplug = s->priv_data;
 
-    if (av_new_packet(pkt, 512) < 0)
+    if (modplug->video_stream) {
+        modplug->video_switch ^= 1; // one video packet for one audio packet
+        if (modplug->video_switch) {
+            double var_values[VAR_VARS_NB];
+
+            var_values[VAR_E      ] = M_E;
+            var_values[VAR_PHI    ] = M_PHI;
+            var_values[VAR_PI     ] = M_PI;
+            var_values[VAR_W      ] = modplug->w;
+            var_values[VAR_H      ] = modplug->h;
+            var_values[VAR_TIME   ] = modplug->packet_count * modplug->ts_per_packet;
+            var_values[VAR_SPEED  ] = ModPlug_GetCurrentSpeed  (modplug->f);
+            var_values[VAR_TEMPO  ] = ModPlug_GetCurrentTempo  (modplug->f);
+            var_values[VAR_ORDER  ] = ModPlug_GetCurrentOrder  (modplug->f);
+            var_values[VAR_PATTERN] = ModPlug_GetCurrentPattern(modplug->f);
+            var_values[VAR_ROW    ] = ModPlug_GetCurrentRow    (modplug->f);
+
+            if (av_new_packet(pkt, modplug->fsize) < 0)
+                return AVERROR(ENOMEM);
+            pkt->stream_index = 1;
+            memset(pkt->data, 0, modplug->fsize);
+
+            if (modplug->print_textinfo) {
+                char intbuf[32];
+                PRINT_INFO(0, "speed",   VAR_SPEED);
+                PRINT_INFO(1, "tempo",   VAR_TEMPO);
+                PRINT_INFO(2, "order",   VAR_ORDER);
+                PRINT_INFO(3, "pattern", VAR_PATTERN);
+                PRINT_INFO(4, "row",     VAR_ROW);
+                PRINT_INFO(5, "ts",      VAR_TIME);
+            }
+
+            if (modplug->color_eval && !modplug->eval_err) {
+                int x, y;
+                for (y = 0; y < modplug->h; y++) {
+                    for (x = 0; x < modplug->w; x++) {
+                        double color;
+
+                        var_values[VAR_X] = x;
+                        var_values[VAR_Y] = y;
+                        if (av_expr_parse_and_eval(&color, modplug->color_eval,
+                                                   var_names, var_values,
+                                                   NULL, NULL, NULL, NULL, NULL, 0, s) < 0) {
+                            av_log(s, AV_LOG_ERROR,
+                                   "Error while evaluating the expression '%s' with x=%d y=%d\n",
+                                   modplug->color_eval, x, y);
+                            modplug->eval_err = 1;
+                            return 0;
+                        }
+                        pkt->data[y*modplug->linesize + x*3 + 2] |= av_clip((int)color, 0, 0xf)<<4;
+                    }
+                }
+            }
+            pkt->pts = pkt->dts = var_values[VAR_TIME];
+            pkt->flags |= AV_PKT_FLAG_KEY;
+            return 0;
+        }
+    }
+
+    if (av_new_packet(pkt, AUDIO_PKT_SIZE) < 0)
         return AVERROR(ENOMEM);
 
-    pkt->size = ModPlug_Read(modplug->f, pkt->data, 512);
+    if (modplug->video_stream)
+        pkt->pts = pkt->dts = modplug->packet_count++ * modplug->ts_per_packet;
+
+    pkt->size = ModPlug_Read(modplug->f, pkt->data, AUDIO_PKT_SIZE);
     if (pkt->size <= 0) {
         av_free_packet(pkt);
         return pkt->size == 0 ? AVERROR_EOF : AVERROR(EIO);
@@ -210,8 +345,10 @@ static int modplug_read_close(AVFormatContext *s)
 
 static int modplug_read_seek(AVFormatContext *s, int stream_idx, int64_t ts, int flags)
 {
-    const ModPlugContext *modplug = s->priv_data;
+    ModPlugContext *modplug = s->priv_data;
     ModPlug_Seek(modplug->f, (int)ts);
+    if (modplug->video_stream)
+        modplug->packet_count = ts / modplug->ts_per_packet;
     return 0;
 }
 
