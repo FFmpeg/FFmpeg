@@ -2219,7 +2219,11 @@ static void implicit_weight_table(H264Context *h, int field){
     }
 
     if(field < 0){
-        cur_poc = s->current_picture_ptr->poc;
+        if (s->picture_structure == PICT_FRAME) {
+            cur_poc = s->current_picture_ptr->poc;
+        } else {
+            cur_poc = s->current_picture_ptr->field_poc[s->picture_structure - 1];
+        }
     if(   h->ref_count[0] == 1 && h->ref_count[1] == 1 && !FRAME_MBAFF
        && h->ref_list[0][0].poc + h->ref_list[1][0].poc == 2*cur_poc){
         h->use_weight= 0;
