@@ -592,6 +592,12 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUV422P16BE \
         || (x)==PIX_FMT_YUV444P16BE \
     )
+
+#define isPlanar(x)  (              \
+        isPlanarYUV(x)              \
+        ||  (x)==PIX_FMT_GBR24P     \
+    )
+
 #define isYUV(x)        (           \
            (x)==PIX_FMT_UYVY422     \
         || (x)==PIX_FMT_YUYV422     \
@@ -668,6 +674,7 @@ const char *sws_format_name(enum PixelFormat format);
 #define isAnyRGB(x)     (           \
             isRGBinInt(x)           \
         ||  isBGRinInt(x)           \
+        ||  (x)==PIX_FMT_GBR24P     \
     )
 #define isALPHA(x)      (           \
            (x)==PIX_FMT_BGRA64BE    \
@@ -687,7 +694,8 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_YUYV422     \
         || (x)==PIX_FMT_UYVY422     \
         || (x)==PIX_FMT_Y400A       \
-        || isAnyRGB(x)              \
+        ||  isRGBinInt(x)           \
+        ||  isBGRinInt(x)           \
     )
 #define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) || (x) == PIX_FMT_GRAY8A)
 

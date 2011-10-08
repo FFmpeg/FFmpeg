@@ -672,7 +672,7 @@ static void reset_ptr(const uint8_t* src[], int format)
 {
     if(!isALPHA(format))
         src[3]=NULL;
-    if(!isPlanarYUV(format)) {
+    if(!isPlanar(format)) {
         src[3]=src[2]=NULL;
 
         if (!usePal(format))
