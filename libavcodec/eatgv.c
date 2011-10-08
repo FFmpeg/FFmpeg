@@ -138,7 +138,7 @@ static int unpack(const uint8_t *src, const uint8_t *src_end, unsigned char *dst
  * @return 0 on success, -1 on critical buffer underflow
  */
 static int tgv_decode_inter(TgvContext * s, const uint8_t *buf, const uint8_t *buf_end){
-    unsigned char *frame0_end = s->last_frame.data[0] + s->avctx->width*s->last_frame.linesize[0];
+    unsigned char *frame0_end = s->last_frame.data[0] + s->avctx->height*s->last_frame.linesize[0];
     int num_mvs;
     int num_blocks_raw;
     int num_blocks_packed;
@@ -211,7 +211,7 @@ static int tgv_decode_inter(TgvContext * s, const uint8_t *buf, const uint8_t *b
                   (y*4 + s->mv_codebook[vector][1])*s->last_frame.linesize[0] +
                    x*4 + s->mv_codebook[vector][0];
             src_stride = s->last_frame.linesize[0];
-            if (src+3*src_stride+3>=frame0_end)
+            if (src < s->last_frame.data[0] || src+3*src_stride+3>=frame0_end)
                 continue;
         }else{
             int offset = vector - num_mvs;
