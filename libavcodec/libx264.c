@@ -127,6 +127,49 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
     return p - buf;
 }
 
+static int avfmt2_csp(int avfmt)
+{
+    switch (avfmt) {
+    case PIX_FMT_YUV420P:
+    case PIX_FMT_YUVJ420P:
+    case PIX_FMT_YUV420P9:
+    case PIX_FMT_YUV420P10:
+        return X264_CSP_I420;
+#ifdef X264_CSP_I444
+    case PIX_FMT_YUV444P:
+        return X264_CSP_I444;
+#endif
+#ifdef X264_CSP_BGR
+    case PIX_FMT_BGR24:
+        return X264_CSP_BGR;
+
+    case PIX_FMT_RGB24:
+        return X264_CSP_RGB;
+#endif
+    default:
+        return X264_CSP_NONE;
+    }
+}
+
+static int avfmt2_num_planes(int avfmt)
+{
+    switch (avfmt) {
+    case PIX_FMT_YUV420P:
+    case PIX_FMT_YUVJ420P:
+    case PIX_FMT_YUV420P9:
+    case PIX_FMT_YUV420P10:
+    case PIX_FMT_YUV444P:
+        return 3;
+
+    case PIX_FMT_BGR24:
+    case PIX_FMT_RGB24:
+        return 1;
+
+    default:
+        return 3;
+    }
+}
+
 static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
                       int orig_bufsize, void *data)
 {
@@ -138,13 +181,13 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     int bufsize;
 
     x264_picture_init( &x4->pic );
-    x4->pic.img.i_csp   = X264_CSP_I420;
+    x4->pic.img.i_csp   = avfmt2_csp(ctx->pix_fmt);
     if (x264_bit_depth > 8)
         x4->pic.img.i_csp |= X264_CSP_HIGH_DEPTH;
-    x4->pic.img.i_plane = 3;
+    x4->pic.img.i_plane = avfmt2_num_planes(ctx->pix_fmt);
 
     if (frame) {
-        for (i = 0; i < 3; i++) {
+        for (i = 0; i < x4->pic.img.i_plane; i++) {
             x4->pic.img.plane[i]    = frame->data[i];
             x4->pic.img.i_stride[i] = frame->linesize[i];
         }
@@ -490,6 +533,8 @@ static av_cold int X264_init(AVCodecContext *avctx)
     avctx->crf = x4->params.rc.f_rf_constant;
 #endif
 
+    x4->params.i_csp = avfmt2_csp(avctx->pix_fmt);
+
     x4->enc = x264_encoder_open(&x4->params);
     if (!x4->enc)
         return -1;
@@ -516,6 +561,13 @@ static av_cold int X264_init(AVCodecContext *avctx)
 static const enum PixelFormat pix_fmts_8bit[] = {
     PIX_FMT_YUV420P,
     PIX_FMT_YUVJ420P,
+#ifdef X264_CSP_I444
+    PIX_FMT_YUV444P,
+#endif
+#ifdef X264_CSP_BGR
+    PIX_FMT_BGR24,
+    PIX_FMT_RGB24,
+#endif
     PIX_FMT_NONE
 };
 static const enum PixelFormat pix_fmts_9bit[] = {
