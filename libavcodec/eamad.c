@@ -205,7 +205,8 @@ static void decode_mb(MadContext *t, int inter)
     for (j=0; j<6; j++) {
         if (mv_map & (1<<j)) {  // mv_x and mv_y are guarded by mv_map
             int add = 2*decode_motion(&s->gb);
-            comp_block(t, s->mb_x, s->mb_y, j, mv_x, mv_y, add);
+            if (t->last_frame.data[0])
+                comp_block(t, s->mb_x, s->mb_y, j, mv_x, mv_y, add);
         } else {
             s->dsp.clear_block(t->block);
             decode_block_intra(t, t->block);
