@@ -72,6 +72,7 @@ static enum PixelFormat dshow_pixfmt(DWORD biCompression, WORD biBitCount)
         return PIX_FMT_YUYV422;
     case MKTAG('I', '4', '2', '0'):
         return PIX_FMT_YUV420P;
+    case BI_BITFIELDS:
     case BI_RGB:
         switch(biBitCount) { /* 1-8 are untested */
             case 1:
@@ -711,7 +712,7 @@ dshow_add_device(AVFormatContext *avctx, AVFormatParameters *ap,
             codec->bits_per_coded_sample = bih->biBitCount;
         } else {
             codec->codec_id = CODEC_ID_RAWVIDEO;
-            if (bih->biCompression == BI_RGB) {
+            if (bih->biCompression == BI_RGB || bih->biCompression == BI_BITFIELDS) {
                 codec->bits_per_coded_sample = bih->biBitCount;
                 codec->extradata = av_malloc(9 + FF_INPUT_BUFFER_PADDING_SIZE);
                 if (codec->extradata) {
