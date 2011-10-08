@@ -1016,7 +1016,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
     /* intra / predictive decision */
     pix = c->src[0][0];
     sum = s->dsp.pix_sum(pix, s->linesize);
-    varc = s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500;
+    varc = s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)sum*sum)>>8) + 500;
 
     pic->mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
     pic->mb_var [s->mb_stride * mb_y + mb_x] = (varc+128)>>8;
@@ -1178,7 +1178,7 @@ void ff_estimate_p_frame_motion(MpegEncContext * s,
         if((c->avctx->mb_cmp&0xFF)==FF_CMP_SSE){
             intra_score= varc - 500;
         }else{
-            int mean= (sum+128)>>8;
+            unsigned mean = (sum+128)>>8;
             mean*= 0x01010101;
 
             for(i=0; i<16; i++){
