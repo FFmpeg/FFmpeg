@@ -3118,6 +3118,12 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     if (o->nb_frame_pix_fmts)
         av_dict_set(&format_opts, "pixel_format", o->frame_pix_fmts[o->nb_frame_pix_fmts - 1].u.str, 0);
 
+    ic->video_codec_id   =
+        find_codec_or_die(video_codec_name   , AVMEDIA_TYPE_VIDEO   , 0);
+    ic->audio_codec_id   =
+        find_codec_or_die(audio_codec_name   , AVMEDIA_TYPE_AUDIO   , 0);
+    ic->subtitle_codec_id=
+        find_codec_or_die(subtitle_codec_name, AVMEDIA_TYPE_SUBTITLE, 0);
     ic->flags |= AVFMT_FLAG_NONBLOCK;
 
     if (loop_input) {
