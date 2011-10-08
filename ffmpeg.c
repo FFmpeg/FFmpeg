@@ -146,7 +146,7 @@ static int audio_volume = 256;
 static int exit_on_error = 0;
 static int using_stdin = 0;
 static int run_as_daemon  = 0;
-static volatile int q_pressed = 0;
+static volatile int received_nb_signals = 0;
 static int64_t video_size = 0;
 static int64_t audio_size = 0;
 static int64_t extra_size = 0;
@@ -520,7 +520,7 @@ static volatile int received_sigterm = 0;
 static void sigterm_handler(int sig)
 {
     received_sigterm = sig;
-    q_pressed++;
+    received_nb_signals++;
     term_exit();
 }
 
@@ -626,7 +626,7 @@ static int read_yn(void)
 
 static int decode_interrupt_cb(void)
 {
-    return q_pressed > 1;
+    return received_nb_signals > 1;
 }
 
 void exit_program(int ret)
@@ -2449,7 +2449,7 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         opts_min= 1e100;
         /* if 'q' pressed, exits */
         if (!using_stdin) {
-            if (q_pressed)
+            if (received_nb_signals)
                 break;
             /* read_key() returns 0 on EOF */
             key = read_key();
