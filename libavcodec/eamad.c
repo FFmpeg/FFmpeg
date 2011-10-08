@@ -273,6 +273,8 @@ static int decode_frame(AVCodecContext *avctx,
         avcodec_set_dimensions(avctx, s->width, s->height);
         if (t->frame.data[0])
             avctx->release_buffer(avctx, &t->frame);
+        if (t->last_frame.data[0])
+            avctx->release_buffer(avctx, &t->last_frame);
     }
 
     t->frame.reference = 1;
