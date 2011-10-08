@@ -988,6 +988,15 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,1,2,0,7},        /* A */
         },
     },
+    [PIX_FMT_GBR24P] = {
+        .name = "gbr24p",
+        .nb_components= 3,
+        .comp = {
+            {0,1,1,0,7},        /* G */
+            {1,1,1,0,7},        /* B */
+            {2,1,1,0,7},        /* R */
+        },
+    },
 };
 
 static enum PixelFormat get_pix_fmt_internal(const char *name)
