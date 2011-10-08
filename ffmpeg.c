@@ -2444,10 +2444,15 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         opts_min= 1e100;
         /* if 'q' pressed, exits */
         if (!using_stdin) {
+            static int64_t last_time;
             if (received_nb_signals)
                 break;
             /* read_key() returns 0 on EOF */
-            key = run_as_daemon ? -1 : read_key();
+            if(cur_time - last_time >= 100000 && !run_as_daemon){
+                key =  read_key();
+                last_time = cur_time;
+            }else
+                key = -1;
             if (key == 'q')
                 break;
             if (key == '+') av_log_set_level(av_log_get_level()+10);
