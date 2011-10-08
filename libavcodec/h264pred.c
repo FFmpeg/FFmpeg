@@ -67,8 +67,6 @@ static void pred4x4_horizontal_vp8_c(uint8_t *src, const uint8_t *topright, int 
 static void pred4x4_down_left_svq3_c(uint8_t *src, const uint8_t *topright, int stride){
     LOAD_TOP_EDGE
     LOAD_LEFT_EDGE
-    const av_unused int unu0= t0;
-    const av_unused int unu1= l0;
 
     src[0+0*stride]=(l1 + t1)>>1;
     src[1+0*stride]=
