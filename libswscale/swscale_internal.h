@@ -418,12 +418,12 @@ typedef struct SwsContext {
     yuv2packed2_fn yuv2packed2;
     yuv2packedX_fn yuv2packedX;
 
-    void (*lumToYV12)(uint8_t *dst, const uint8_t *src,
+    void (*lumToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
                       int width, uint32_t *pal); ///< Unscaled conversion of luma plane to YV12 for horizontal scaler.
-    void (*alpToYV12)(uint8_t *dst, const uint8_t *src,
+    void (*alpToYV12)(uint8_t *dst, const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
                       int width, uint32_t *pal); ///< Unscaled conversion of alpha plane to YV12 for horizontal scaler.
     void (*chrToYV12)(uint8_t *dstU, uint8_t *dstV,
-                      const uint8_t *src1, const uint8_t *src2,
+                      const uint8_t *src1, const uint8_t *src2, const uint8_t *src3,
                       int width, uint32_t *pal); ///< Unscaled conversion of chroma planes to YV12 for horizontal scaler.
     /**
      * Scale one horizontal line of input data using a bilinear filter

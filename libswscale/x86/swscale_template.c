@@ -1674,7 +1674,7 @@ static void RENAME(yuv2yuyv422_1)(SwsContext *c, const int16_t *buf0,
 #if !COMPILE_TEMPLATE_MMX2
 //FIXME yuy2* can read up to 7 samples too much
 
-static void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src,
+static void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
                             int width, uint32_t *unused)
 {
     __asm__ volatile(
@@ -1695,7 +1695,7 @@ static void RENAME(yuy2ToY)(uint8_t *dst, const uint8_t *src,
 }
 
 static void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
+                             const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
                              int width, uint32_t *unused)
 {
     __asm__ volatile(
@@ -1724,7 +1724,7 @@ static void RENAME(yuy2ToUV)(uint8_t *dstU, uint8_t *dstV,
 
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
-static void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src,
+static void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
                             int width, uint32_t *unused)
 {
     __asm__ volatile(
@@ -1744,7 +1744,7 @@ static void RENAME(uyvyToY)(uint8_t *dst, const uint8_t *src,
 }
 
 static void RENAME(uyvyToUV)(uint8_t *dstU, uint8_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
+                             const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
                              int width, uint32_t *unused)
 {
     __asm__ volatile(
@@ -1798,14 +1798,14 @@ static av_always_inline void RENAME(nvXXtoUV)(uint8_t *dst1, uint8_t *dst2,
 }
 
 static void RENAME(nv12ToUV)(uint8_t *dstU, uint8_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
+                             const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
                              int width, uint32_t *unused)
 {
     RENAME(nvXXtoUV)(dstU, dstV, src1, width);
 }
 
 static void RENAME(nv21ToUV)(uint8_t *dstU, uint8_t *dstV,
-                             const uint8_t *src1, const uint8_t *src2,
+                             const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
                              int width, uint32_t *unused)
 {
     RENAME(nvXXtoUV)(dstV, dstU, src1, width);
@@ -1865,13 +1865,13 @@ static av_always_inline void RENAME(bgr24ToY_mmx)(int16_t *dst, const uint8_t *s
     );
 }
 
-static void RENAME(bgr24ToY)(int16_t *dst, const uint8_t *src,
+static void RENAME(bgr24ToY)(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
                              int width, uint32_t *unused)
 {
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_BGR24);
 }
 
-static void RENAME(rgb24ToY)(int16_t *dst, const uint8_t *src,
+static void RENAME(rgb24ToY)(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
                              int width, uint32_t *unused)
 {
     RENAME(bgr24ToY_mmx)(dst, src, width, PIX_FMT_RGB24);
@@ -1936,7 +1936,7 @@ static av_always_inline void RENAME(bgr24ToUV_mmx)(int16_t *dstU, int16_t *dstV,
 }
 
 static void RENAME(bgr24ToUV)(int16_t *dstU, int16_t *dstV,
-                              const uint8_t *src1, const uint8_t *src2,
+                              const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
                               int width, uint32_t *unused)
 {
     RENAME(bgr24ToUV_mmx)(dstU, dstV, src1, width, PIX_FMT_BGR24);
@@ -1944,7 +1944,7 @@ static void RENAME(bgr24ToUV)(int16_t *dstU, int16_t *dstV,
 }
 
 static void RENAME(rgb24ToUV)(int16_t *dstU, int16_t *dstV,
-                              const uint8_t *src1, const uint8_t *src2,
+                              const uint8_t *unused1, const uint8_t *src1, const uint8_t *src2,
                               int width, uint32_t *unused)
 {
     assert(src1==src2);

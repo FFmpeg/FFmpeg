@@ -1610,7 +1610,7 @@ rgb48ToUV_half_c_template(uint16_t *dstU, uint16_t *dstV,
 #undef input_pixel
 
 #define rgb48funcs(pattern, BE_LE, origin) \
-static void pattern ## 48 ## BE_LE ## ToY_c(uint8_t *_dst, const uint8_t *_src, \
+static void pattern ## 48 ## BE_LE ## ToY_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused0, const uint8_t *unused1,\
                                     int width, uint32_t *unused) \
 { \
     const uint16_t *src = (const uint16_t *) _src; \
@@ -1619,7 +1619,7 @@ static void pattern ## 48 ## BE_LE ## ToY_c(uint8_t *_dst, const uint8_t *_src, 
 } \
  \
 static void pattern ## 48 ## BE_LE ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
-                                    const uint8_t *_src1, const uint8_t *_src2, \
+                                    const uint8_t *unused0, const uint8_t *_src1, const uint8_t *_src2, \
                                     int width, uint32_t *unused) \
 { \
     const uint16_t *src1 = (const uint16_t *) _src1, \
@@ -1629,7 +1629,7 @@ static void pattern ## 48 ## BE_LE ## ToUV_c(uint8_t *_dstU, uint8_t *_dstV, \
 } \
  \
 static void pattern ## 48 ## BE_LE ## ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV, \
-                                    const uint8_t *_src1, const uint8_t *_src2, \
+                                    const uint8_t *unused0, const uint8_t *_src1, const uint8_t *_src2, \
                                     int width, uint32_t *unused) \
 { \
     const uint16_t *src1 = (const uint16_t *) _src1, \
@@ -1730,7 +1730,7 @@ rgb16_32ToUV_half_c_template(int16_t *dstU, int16_t *dstV,
 
 #define rgb16_32_wrapper(fmt, name, shr, shg, shb, shp, maskr, \
                          maskg, maskb, rsh, gsh, bsh, S) \
-static void name ## ToY_c(uint8_t *dst, const uint8_t *src, \
+static void name ## ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, \
                           int width, uint32_t *unused) \
 { \
     rgb16_32ToY_c_template((int16_t*)dst, src, width, fmt, \
@@ -1739,7 +1739,7 @@ static void name ## ToY_c(uint8_t *dst, const uint8_t *src, \
 } \
  \
 static void name ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
-                           const uint8_t *src, const uint8_t *dummy, \
+                           const uint8_t *unused0, const uint8_t *src, const uint8_t *dummy, \
                            int width, uint32_t *unused) \
 { \
     rgb16_32ToUV_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt,  \
@@ -1748,7 +1748,7 @@ static void name ## ToUV_c(uint8_t *dstU, uint8_t *dstV, \
 } \
  \
 static void name ## ToUV_half_c(uint8_t *dstU, uint8_t *dstV, \
-                                const uint8_t *src, const uint8_t *dummy, \
+                                const uint8_t *unused0, const uint8_t *src, const uint8_t *dummy, \
                                 int width, uint32_t *unused) \
 { \
     rgb16_32ToUV_half_c_template((int16_t*)dstU, (int16_t*)dstV, src, width, fmt, \
@@ -1769,7 +1769,7 @@ rgb16_32_wrapper(PIX_FMT_BGR555BE, bgr15be, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7
 rgb16_32_wrapper(PIX_FMT_RGB565BE, rgb16be, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT+8);
 rgb16_32_wrapper(PIX_FMT_RGB555BE, rgb15be, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT+7);
 
-static void abgrToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
+static void abgrToA_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -1777,7 +1777,7 @@ static void abgrToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unu
     }
 }
 
-static void rgbaToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
+static void rgbaToA_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *unused)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -1785,7 +1785,7 @@ static void rgbaToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unu
     }
 }
 
-static void palToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *pal)
+static void palToA_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width, uint32_t *pal)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -1795,7 +1795,7 @@ static void palToA_c(int16_t *dst, const uint8_t *src, int width, uint32_t *pal)
     }
 }
 
-static void palToY_c(int16_t *dst, const uint8_t *src, long width, uint32_t *pal)
+static void palToY_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, long width, uint32_t *pal)
 {
     int i;
     for (i=0; i<width; i++) {
@@ -1806,7 +1806,7 @@ static void palToY_c(int16_t *dst, const uint8_t *src, long width, uint32_t *pal
 }
 
 static void palToUV_c(uint16_t *dstU, int16_t *dstV,
-                           const uint8_t *src1, const uint8_t *src2,
+                           const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
                            int width, uint32_t *pal)
 {
     int i;
@@ -1819,7 +1819,7 @@ static void palToUV_c(uint16_t *dstU, int16_t *dstV,
     }
 }
 
-static void monowhite2Y_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
+static void monowhite2Y_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++) {
@@ -1834,7 +1834,7 @@ static void monowhite2Y_c(int16_t *dst, const uint8_t *src, int width, uint32_t 
     }
 }
 
-static void monoblack2Y_c(int16_t *dst, const uint8_t *src, int width, uint32_t *unused)
+static void monoblack2Y_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width, uint32_t *unused)
 {
     int i, j;
     for (i=0; i<width/8; i++) {
@@ -1851,7 +1851,7 @@ static void monoblack2Y_c(int16_t *dst, const uint8_t *src, int width, uint32_t 
 
 //FIXME yuy2* can read up to 7 samples too much
 
-static void yuy2ToY_c(uint8_t *dst, const uint8_t *src, int width,
+static void yuy2ToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width,
                       uint32_t *unused)
 {
     int i;
@@ -1859,7 +1859,7 @@ static void yuy2ToY_c(uint8_t *dst, const uint8_t *src, int width,
         dst[i]= src[2*i];
 }
 
-static void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
+static void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
                        const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
@@ -1870,7 +1870,7 @@ static void yuy2ToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
     assert(src1 == src2);
 }
 
-static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, int width, uint32_t *unused)
+static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, const uint8_t *unused1, const uint8_t *unused2,  int width, uint32_t *unused)
 {
     int i;
     const uint16_t *src = (const uint16_t *) _src;
@@ -1880,7 +1880,7 @@ static void bswap16Y_c(uint8_t *_dst, const uint8_t *_src, int width, uint32_t *
     }
 }
 
-static void bswap16UV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *_src1,
+static void bswap16UV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *unused0, const uint8_t *_src1,
                         const uint8_t *_src2, int width, uint32_t *unused)
 {
     int i;
@@ -1895,7 +1895,7 @@ static void bswap16UV_c(uint8_t *_dstU, uint8_t *_dstV, const uint8_t *_src1,
 
 /* This is almost identical to the previous, end exists only because
  * yuy2ToY/UV)(dst, src+1, ...) would have 100% unaligned accesses. */
-static void uyvyToY_c(uint8_t *dst, const uint8_t *src, int width,
+static void uyvyToY_c(uint8_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,  int width,
                       uint32_t *unused)
 {
     int i;
@@ -1903,7 +1903,7 @@ static void uyvyToY_c(uint8_t *dst, const uint8_t *src, int width,
         dst[i]= src[2*i+1];
 }
 
-static void uyvyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *src1,
+static void uyvyToUV_c(uint8_t *dstU, uint8_t *dstV, const uint8_t *unused0, const uint8_t *src1,
                        const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
@@ -1925,14 +1925,14 @@ static av_always_inline void nvXXtoUV_c(uint8_t *dst1, uint8_t *dst2,
 }
 
 static void nv12ToUV_c(uint8_t *dstU, uint8_t *dstV,
-                       const uint8_t *src1, const uint8_t *src2,
+                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
                        int width, uint32_t *unused)
 {
     nvXXtoUV_c(dstU, dstV, src1, width);
 }
 
 static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
-                       const uint8_t *src1, const uint8_t *src2,
+                       const uint8_t *unused0, const uint8_t *src1, const uint8_t *src2,
                        int width, uint32_t *unused)
 {
     nvXXtoUV_c(dstV, dstU, src1, width);
@@ -1940,7 +1940,7 @@ static void nv21ToUV_c(uint8_t *dstU, uint8_t *dstV,
 
 #define input_pixel(pos) (isBE(origin) ? AV_RB16(pos) : AV_RL16(pos))
 
-static void bgr24ToY_c(int16_t *dst, const uint8_t *src,
+static void bgr24ToY_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2,
                        int width, uint32_t *unused)
 {
     int i;
@@ -1953,7 +1953,7 @@ static void bgr24ToY_c(int16_t *dst, const uint8_t *src,
     }
 }
 
-static void bgr24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
+static void bgr24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused0, const uint8_t *src1,
                         const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
@@ -1968,7 +1968,7 @@ static void bgr24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
     assert(src1 == src2);
 }
 
-static void bgr24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
+static void bgr24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused0, const uint8_t *src1,
                              const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
@@ -1983,7 +1983,7 @@ static void bgr24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
     assert(src1 == src2);
 }
 
-static void rgb24ToY_c(int16_t *dst, const uint8_t *src, int width,
+static void rgb24ToY_c(int16_t *dst, const uint8_t *src, const uint8_t *unused1, const uint8_t *unused2, int width,
                        uint32_t *unused)
 {
     int i;
@@ -1996,7 +1996,7 @@ static void rgb24ToY_c(int16_t *dst, const uint8_t *src, int width,
     }
 }
 
-static void rgb24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
+static void rgb24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused0, const uint8_t *src1,
                         const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
@@ -2011,7 +2011,7 @@ static void rgb24ToUV_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
     }
 }
 
-static void rgb24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *src1,
+static void rgb24ToUV_half_c(int16_t *dstU, int16_t *dstV, const uint8_t *unused0, const uint8_t *src1,
                                     const uint8_t *src2, int width, uint32_t *unused)
 {
     int i;
@@ -2197,17 +2197,18 @@ static void hyscale_fast_c(SwsContext *c, int16_t *dst, int dstWidth,
 
 // *** horizontal scale Y line to temp buffer
 static av_always_inline void hyscale(SwsContext *c, int16_t *dst, int dstWidth,
-                                     const uint8_t *src, int srcW, int xInc,
+                                     const uint8_t *src, const uint8_t *src2, const uint8_t *src3,
+                                     int srcW, int xInc,
                                      const int16_t *hLumFilter,
                                      const int16_t *hLumFilterPos, int hLumFilterSize,
                                      uint8_t *formatConvBuffer,
                                      uint32_t *pal, int isAlpha)
 {
-    void (*toYV12)(uint8_t *, const uint8_t *, int, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
+    void (*toYV12)(uint8_t *, const uint8_t *, const uint8_t *, const uint8_t *, int, uint32_t *) = isAlpha ? c->alpToYV12 : c->lumToYV12;
     void (*convertRange)(int16_t *, int) = isAlpha ? NULL : c->lumConvertRange;
 
     if (toYV12) {
-        toYV12(formatConvBuffer, src, srcW, pal);
+        toYV12(formatConvBuffer, src, src2, src3, srcW, pal);
         src= formatConvBuffer;
     }
 
@@ -2241,14 +2242,14 @@ static void hcscale_fast_c(SwsContext *c, int16_t *dst1, int16_t *dst2,
 }
 
 static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2, int dstWidth,
-                                     const uint8_t *src1, const uint8_t *src2,
+                                     const uint8_t *src0, const uint8_t *src1, const uint8_t *src2,
                                      int srcW, int xInc, const int16_t *hChrFilter,
                                      const int16_t *hChrFilterPos, int hChrFilterSize,
                                      uint8_t *formatConvBuffer, uint32_t *pal)
 {
     if (c->chrToYV12) {
         uint8_t *buf2 = formatConvBuffer + FFALIGN(srcW*2+78, 16);
-        c->chrToYV12(formatConvBuffer, buf2, src1, src2, srcW, pal);
+        c->chrToYV12(formatConvBuffer, buf2, src0, src1, src2, srcW, pal);
         src1= formatConvBuffer;
         src2= buf2;
     }
@@ -2650,17 +2651,19 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         //Do horizontal scaling
         while(lastInLumBuf < lastLumSrcY) {
             const uint8_t *src1= src[0]+(lastInLumBuf + 1 - srcSliceY)*srcStride[0];
-            const uint8_t *src2= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
+            const uint8_t *src2= src[1]+(lastInLumBuf + 1 - srcSliceY)*srcStride[1];
+            const uint8_t *src3= src[2]+(lastInLumBuf + 1 - srcSliceY)*srcStride[2];
+            const uint8_t *src4= src[3]+(lastInLumBuf + 1 - srcSliceY)*srcStride[3];
             lumBufIndex++;
             assert(lumBufIndex < 2*vLumBufSize);
             assert(lastInLumBuf + 1 - srcSliceY < srcSliceH);
             assert(lastInLumBuf + 1 - srcSliceY >= 0);
-            hyscale(c, lumPixBuf[ lumBufIndex ], dstW, src1, srcW, lumXInc,
+            hyscale(c, lumPixBuf[ lumBufIndex ], dstW, src1, src2, src3, srcW, lumXInc,
                     hLumFilter, hLumFilterPos, hLumFilterSize,
                     formatConvBuffer,
                     pal, 0);
             if (CONFIG_SWSCALE_ALPHA && alpPixBuf)
-                hyscale(c, alpPixBuf[ lumBufIndex ], dstW, src2, srcW,
+                hyscale(c, alpPixBuf[ lumBufIndex ], dstW, src4, NULL, NULL, srcW,
                         lumXInc, hLumFilter, hLumFilterPos, hLumFilterSize,
                         formatConvBuffer,
                         pal, 1);
@@ -2669,6 +2672,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                                lumBufIndex,    lastInLumBuf);
         }
         while(lastInChrBuf < lastChrSrcY) {
+            const uint8_t *src0= src[0]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[0];
             const uint8_t *src1= src[1]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[1];
             const uint8_t *src2= src[2]+(lastInChrBuf + 1 - chrSrcSliceY)*srcStride[2];
             chrBufIndex++;
@@ -2679,7 +2683,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
 
             if (c->needs_hcscale)
                 hcscale(c, chrUPixBuf[chrBufIndex], chrVPixBuf[chrBufIndex],
-                          chrDstW, src1, src2, chrSrcW, chrXInc,
+                          chrDstW, src0, src1, src2, chrSrcW, chrXInc,
                           hChrFilter, hChrFilterPos, hChrFilterSize,
                           formatConvBuffer, pal);
             lastInChrBuf++;
