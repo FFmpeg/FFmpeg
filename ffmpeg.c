@@ -564,9 +564,6 @@ static int read_key(void)
     struct timeval tv;
     fd_set rfds;
 
-    if(run_as_daemon)
-        return -1;
-
     FD_ZERO(&rfds);
     FD_SET(0, &rfds);
     tv.tv_sec = 0;
@@ -2452,7 +2449,7 @@ static int transcode(OutputFile *output_files, int nb_output_files,
             if (received_nb_signals)
                 break;
             /* read_key() returns 0 on EOF */
-            key = read_key();
+            key = run_as_daemon ? -1 : read_key();
             if (key == 'q')
                 break;
             if (key == '+') av_log_set_level(av_log_get_level()+10);
