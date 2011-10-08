@@ -57,7 +57,7 @@ static AVCRC av_crc_table[AV_CRC_MAX][257];
  * @return <0 on failure
  */
 int av_crc_init(AVCRC *ctx, int le, int bits, uint32_t poly, int ctx_size){
-    int i, j;
+    unsigned i, j;
     uint32_t c;
 
     if (bits < 8 || bits > 32 || poly >= (1LL<<bits))
