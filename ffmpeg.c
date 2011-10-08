@@ -612,6 +612,18 @@ static int read_key(void)
     return -1;
 }
 
+static int read_yn(void)
+{
+    int c;
+#if HAVE_TERMIOS_H || HAVE_KBHIT
+    while((c=read_key()) < 0);
+#else
+    c= getchar();
+#endif
+
+    return (toupper(c) == 'Y');
+}
+
 static int decode_interrupt_cb(void)
 {
     return q_pressed > 1;
@@ -2424,7 +2436,6 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         av_log(NULL, AV_LOG_INFO, "Press [q] to stop, [?] for help\n");
         avio_set_interrupt_cb(decode_interrupt_cb);
     }
-    term_init();
 
     timer_start = av_gettime();
 
@@ -3699,10 +3710,11 @@ static void opt_output_file(void *optctx, const char *filename)
                 if (!using_stdin) {
                     fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                     fflush(stderr);
-                    if (!read_yesno()) {
-                        av_log(0, AV_LOG_FATAL, "Not overwriting - exiting\n");
+                    if (!read_yn()) {
+                        av_log(0, AV_LOG_FATAL, "\nNot overwriting - exiting\n");
                         exit_program(1);
                     }
+                    fprintf(stderr,"\n");
                 }
                 else {
                     av_log(0, AV_LOG_FATAL,"File '%s' already exists. Exiting.\n", filename);
@@ -4393,6 +4405,8 @@ int main(int argc, char **argv)
 #endif
 
     show_banner();
+
+    term_init();
 
     /* parse options */
     parse_options(&o, argc, argv, options, opt_output_file);
