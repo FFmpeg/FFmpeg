@@ -44,7 +44,7 @@ typedef struct Parser {
     int log_offset;
     void *log_ctx;
 #define VARS 10
-    double var[VARS];
+    double *var;
 } Parser;
 
 static const AVClass class = { "Eval", av_default_item_name, NULL, LIBAVUTIL_VERSION_INT, offsetof(Parser,log_offset), offsetof(Parser,log_ctx) };
@@ -136,6 +136,7 @@ struct AVExpr {
         double (*func2)(void *, double, double);
     } a;
     struct AVExpr *param[2];
+    double *var;
 };
 
 static double eval_expr(Parser *p, AVExpr *e)
@@ -190,6 +191,7 @@ void av_expr_free(AVExpr *e)
     if (!e) return;
     av_expr_free(e->param[0]);
     av_expr_free(e->param[1]);
+    av_freep(&e->var);
     av_freep(&e);
 }
 
@@ -510,6 +512,7 @@ int av_expr_parse(AVExpr **expr, const char *s,
         ret = AVERROR(EINVAL);
         goto end;
     }
+    e->var= av_mallocz(sizeof(double) *VARS);
     *expr = e;
 end:
     av_free(w);
@@ -519,6 +522,7 @@ end:
 double av_expr_eval(AVExpr *e, const double *const_values, void *opaque)
 {
     Parser p = { 0 };
+    p.var= e->var;
 
     p.const_values = const_values;
     p.opaque     = opaque;
