@@ -2322,7 +2322,7 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
             assert_avoptions(ost->opts);
             if (ost->st->codec->bit_rate && ost->st->codec->bit_rate < 1000)
                 av_log(NULL, AV_LOG_WARNING, "The bitrate parameter is set too low."
-                                             "It takes bits/s as argument, not kbits/s\n");
+                                             " It takes bits/s as argument, not kbits/s\n");
             extra_size += ost->st->codec->extradata_size;
 
             if (ost->st->codec->me_threshold)
