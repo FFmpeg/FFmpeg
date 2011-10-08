@@ -614,7 +614,6 @@ static int read_key(void)
 
 static int decode_interrupt_cb(void)
 {
-    q_pressed += read_key() == 'q';
     return q_pressed > 1;
 }
 
