@@ -1106,7 +1106,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
 
     // stop parsing after pmt, we found header
     if (!ts->stream->nb_streams)
-        ts->stop_parse = 1;
+        ts->stop_parse = 2;
 
     for(;;) {
         st = 0;
@@ -1462,11 +1462,15 @@ static int handle_packets(MpegTSContext *ts, int nb_packets)
     ts->stop_parse = 0;
     packet_num = 0;
     for(;;) {
-        if (ts->stop_parse>0)
-            break;
         packet_num++;
-        if (nb_packets != 0 && packet_num >= nb_packets)
+        if (nb_packets != 0 && packet_num >= nb_packets ||
+            ts->stop_parse > 1) {
+            ret = AVERROR(EAGAIN);
             break;
+        }
+        if (ts->stop_parse > 0)
+            break;
+
         ret = read_packet(s, packet, ts->raw_packet_size);
         if (ret != 0)
             break;
