@@ -230,6 +230,8 @@ static void decode_format80(const unsigned char *src, int src_size,
             src_index += 2;
             av_dlog(NULL, "(1) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
+            if (src_pos + count > dest_size)
+                return;
             for (i = 0; i < count; i++)
                 dest[dest_index + i] = dest[src_pos + i];
             dest_index += count;
@@ -252,6 +254,8 @@ static void decode_format80(const unsigned char *src, int src_size,
             src_index += 2;
             av_dlog(NULL, "(3) copy %X bytes from absolute pos %X\n", count, src_pos);
             CHECK_COUNT();
+            if (src_pos + count > dest_size)
+                return;
             for (i = 0; i < count; i++)
                 dest[dest_index + i] = dest[src_pos + i];
             dest_index += count;
@@ -272,6 +276,8 @@ static void decode_format80(const unsigned char *src, int src_size,
             src_index += 2;
             av_dlog(NULL, "(5) copy %X bytes from relpos %X\n", count, src_pos);
             CHECK_COUNT();
+            if (dest_index < src_pos)
+                return;
             for (i = 0; i < count; i++)
                 dest[dest_index + i] = dest[dest_index - src_pos + i];
             dest_index += count;
