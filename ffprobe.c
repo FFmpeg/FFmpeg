@@ -867,6 +867,248 @@ static const Writer json_writer = {
     .show_tags            = json_show_tags,
 };
 
+/* XML output */
+
+typedef struct {
+    const AVClass *class;
+    int within_tag;
+    int multiple_entries; ///< tells if the given chapter requires multiple entries
+    int indent_level;
+    int fully_qualified;
+    int xsd_strict;
+    char *buf;
+    size_t buf_size;
+} XMLContext;
+
+#undef OFFSET
+#define OFFSET(x) offsetof(XMLContext, x)
+
+static const AVOption xml_options[] = {
+    {"fully_qualified", "specify if the output should be fully qualified", OFFSET(fully_qualified), AV_OPT_TYPE_INT, {.dbl=0},  0, 1 },
+    {"q",               "specify if the output should be fully qualified", OFFSET(fully_qualified), AV_OPT_TYPE_INT, {.dbl=0},  0, 1 },
+    {"xsd_strict",      "ensure that the output is XSD compliant",         OFFSET(xsd_strict),      AV_OPT_TYPE_INT, {.dbl=0},  0, 1 },
+    {"x",               "ensure that the output is XSD compliant",         OFFSET(xsd_strict),      AV_OPT_TYPE_INT, {.dbl=0},  0, 1 },
+    {NULL},
+};
+
+static const char *xml_get_name(void *ctx)
+{
+    return "xml";
+}
+
+static const AVClass xml_class = {
+    "XMLContext",
+    xml_get_name,
+    xml_options
+};
+
+static av_cold int xml_init(WriterContext *wctx, const char *args, void *opaque)
+{
+    XMLContext *xml = wctx->priv;
+    int err;
+
+    xml->class = &xml_class;
+    av_opt_set_defaults(xml);
+
+    if (args &&
+        (err = (av_set_options_string(xml, args, "=", ":"))) < 0) {
+        av_log(wctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return err;
+    }
+
+    if (xml->xsd_strict) {
+        xml->fully_qualified = 1;
+#define CHECK_COMPLIANCE(opt, opt_name)                                 \
+        if (opt) {                                                      \
+            av_log(wctx, AV_LOG_ERROR,                                  \
+                   "XSD-compliant output selected but option '%s' was selected, XML output may be non-compliant.\n" \
+                   "You need to disable such option with '-no%s'\n", opt_name, opt_name); \
+        }
+        CHECK_COMPLIANCE(show_private_data, "private");
+        CHECK_COMPLIANCE(show_value_unit,   "unit");
+        CHECK_COMPLIANCE(use_value_prefix,  "prefix");
+    }
+
+    xml->buf_size = ESCAPE_INIT_BUF_SIZE;
+    if (!(xml->buf = av_malloc(xml->buf_size)))
+        return AVERROR(ENOMEM);
+    return 0;
+}
+
+static av_cold void xml_uninit(WriterContext *wctx)
+{
+    XMLContext *xml = wctx->priv;
+    av_freep(&xml->buf);
+}
+
+static const char *xml_escape_str(char **dst, size_t *dst_size, const char *src,
+                                  void *log_ctx)
+{
+    const char *p;
+    char *q;
+    size_t size = 1;
+
+    /* precompute size */
+    for (p = src; *p; p++, size++) {
+        ESCAPE_CHECK_SIZE(src, size, SIZE_MAX-10);
+        switch (*p) {
+        case '&' : size += strlen("&amp;");  break;
+        case '<' : size += strlen("&lt;");   break;
+        case '>' : size += strlen("&gt;");   break;
+        case '\"': size += strlen("&quot;"); break;
+        case '\'': size += strlen("&apos;"); break;
+        default: size++;
+        }
+    }
+    ESCAPE_REALLOC_BUF(dst_size, dst, src, size);
+
+#define COPY_STR(str) {      \
+        const char *s = str; \
+        while (*s)           \
+            *q++ = *s++;     \
+    }
+
+    p = src;
+    q = *dst;
+    while (*p) {
+        switch (*p) {
+        case '&' : COPY_STR("&amp;");  break;
+        case '<' : COPY_STR("&lt;");   break;
+        case '>' : COPY_STR("&gt;");   break;
+        case '\"': COPY_STR("&quot;"); break;
+        case '\'': COPY_STR("&apos;"); break;
+        default: *q++ = *p;
+        }
+        p++;
+    }
+    *q = 0;
+
+    return *dst;
+}
+
+static void xml_print_header(WriterContext *wctx)
+{
+    XMLContext *xml = wctx->priv;
+    const char *qual = " xmlns:xsi='http://www.w3.org/2001/XMLSchema-instance' "
+        "xmlns:ffprobe='http://www.ffmpeg.org/schema/ffprobe' "
+        "xsi:schemaLocation='http://www.ffmpeg.org/schema/ffprobe ffprobe.xsd'";
+
+    printf("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n");
+    printf("<%sffprobe%s>\n",
+           xml->fully_qualified ? "ffprobe:" : "",
+           xml->fully_qualified ? qual : "");
+
+    xml->indent_level++;
+}
+
+static void xml_print_footer(WriterContext *wctx)
+{
+    XMLContext *xml = wctx->priv;
+
+    xml->indent_level--;
+    printf("</%sffprobe>\n", xml->fully_qualified ? "ffprobe:" : "");
+}
+
+#define XML_INDENT() { int i; for (i = 0; i < xml->indent_level; i++) printf(INDENT); }
+
+static void xml_print_chapter_header(WriterContext *wctx, const char *chapter)
+{
+    XMLContext *xml = wctx->priv;
+
+    if (wctx->nb_chapter)
+        printf("\n");
+    xml->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "streams");
+
+    if (xml->multiple_entries) {
+        XML_INDENT(); printf("<%s>\n", chapter);
+        xml->indent_level++;
+    }
+}
+
+static void xml_print_chapter_footer(WriterContext *wctx, const char *chapter)
+{
+    XMLContext *xml = wctx->priv;
+
+    if (xml->multiple_entries) {
+        xml->indent_level--;
+        XML_INDENT(); printf("</%s>\n", chapter);
+    }
+}
+
+static void xml_print_section_header(WriterContext *wctx, const char *section)
+{
+    XMLContext *xml = wctx->priv;
+
+    XML_INDENT(); printf("<%s ", section);
+    xml->within_tag = 1;
+}
+
+static void xml_print_section_footer(WriterContext *wctx, const char *section)
+{
+    XMLContext *xml = wctx->priv;
+
+    if (xml->within_tag)
+        printf("/>\n");
+    else {
+        XML_INDENT(); printf("</%s>\n", section);
+    }
+}
+
+static void xml_print_str(WriterContext *wctx, const char *key, const char *value)
+{
+    XMLContext *xml = wctx->priv;
+
+    if (wctx->nb_item)
+        printf(" ");
+    printf("%s=\"%s\"", key, xml_escape_str(&xml->buf, &xml->buf_size, value, wctx));
+}
+
+static void xml_print_int(WriterContext *wctx, const char *key, long long int value)
+{
+    if (wctx->nb_item)
+        printf(" ");
+    printf("%s=\"%lld\"", key, value);
+}
+
+static void xml_show_tags(WriterContext *wctx, AVDictionary *dict)
+{
+    XMLContext *xml = wctx->priv;
+    AVDictionaryEntry *tag = NULL;
+    int is_first = 1;
+
+    xml->indent_level++;
+    while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+        if (is_first) {
+            /* close section tag */
+            printf(">\n");
+            xml->within_tag = 0;
+            is_first = 0;
+        }
+        XML_INDENT();
+        printf("<tag key=\"%s\"",
+               xml_escape_str(&xml->buf, &xml->buf_size, tag->key,   wctx));
+        printf(" value=\"%s\"/>\n",
+               xml_escape_str(&xml->buf, &xml->buf_size, tag->value, wctx));
+    }
+    xml->indent_level--;
+}
+
+static Writer xml_writer = {
+    .name                 = "xml",
+    .priv_size            = sizeof(XMLContext),
+    .init                 = xml_init,
+    .uninit               = xml_uninit,
+    .print_header         = xml_print_header,
+    .print_footer         = xml_print_footer,
+    .print_chapter_header = xml_print_chapter_header,
+    .print_chapter_footer = xml_print_chapter_footer,
+    .print_section_header = xml_print_section_header,
+    .print_section_footer = xml_print_section_footer,
+    .print_integer        = xml_print_int,
+    .print_string         = xml_print_str,
+    .show_tags            = xml_show_tags,
+};
+
 static void writer_register_all(void)
 {
     static int initialized;
@@ -879,6 +1121,7 @@ static void writer_register_all(void)
     writer_register(&compact_writer);
     writer_register(&csv_writer);
     writer_register(&json_writer);
+    writer_register(&xml_writer);
 }
 
 #define print_fmt(k, f, ...) do {              \
@@ -1236,7 +1479,7 @@ static const OptionDef options[] = {
     { "pretty", 0, {(void*)&opt_pretty},
       "prettify the format of displayed values, make it more human readable" },
     { "print_format", OPT_STRING | HAS_ARG, {(void*)&print_format},
-      "set the output printing format (available formats are: default, compact, csv, json)", "format" },
+      "set the output printing format (available formats are: default, compact, csv, json, xml)", "format" },
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },

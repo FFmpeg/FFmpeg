@@ -9,6 +9,7 @@ version next:
 - SMJPEG demuxer
 - dv: add timecode to metadata
 - thumbnail video filter
+- XML output in ffprobe
 
 
 version 0.9:

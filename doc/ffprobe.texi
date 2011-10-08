@@ -218,6 +218,39 @@ Each section is printed using JSON notation.
 
 For more information about JSON, see @url{http://www.json.org/}.
 
+@section xml
+XML based format.
+
+The XML output is described in the XML schema description file
+@file{ffprobe.xsd} installed in the FFmpeg datadir.
+
+Note that the output issued will be compliant to the
+@file{ffprobe.xsd} schema only when no special global output options
+(@option{unit}, @option{prefix}, @option{byte_binary_prefix},
+@option{sexagesimal} etc.) are specified.
+
+This writer accepts options as a list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted options follows.
+
+@table @option
+
+@item fully_qualified, q
+If set to 1 specify if the output should be fully qualified. Default
+value is 0.
+This is required for generating an XML file which can be validated
+through an XSD file.
+
+@item xsd_compliant, x
+If set to 1 perform more checks for ensuring that the output is XSD
+compliant. Default value is 0.
+This option automatically sets @option{fully_qualified} to 1.
+@end table
+
+For more information about the XML format, see
+@url{http://www.w3.org/XML/}.
+
 @c man end WRITERS
 
 @include decoders.texi

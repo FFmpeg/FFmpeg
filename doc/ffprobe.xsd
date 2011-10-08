@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<xsd:schema xmlns:xsd="http://www.w3.org/2001/XMLSchema"
+    targetNamespace="http://www.ffmpeg.org/schema/ffprobe"
+    xmlns:ffprobe="http://www.ffmpeg.org/schema/ffprobe">
+
+    <xsd:element name="ffprobe" type="ffprobe:ffprobeType"/>
+
+    <xsd:complexType name="ffprobeType">
+        <xsd:sequence>
+            <xsd:element name="packets"  type="ffprobe:packetsType" minOccurs="0" maxOccurs="1" />
+            <xsd:element name="streams"  type="ffprobe:streamsType" minOccurs="0" maxOccurs="1" />
+            <xsd:element name="format"   type="ffprobe:formatType"  minOccurs="0" maxOccurs="1" />
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="packetsType">
+        <xsd:sequence>
+            <xsd:element name="packet" type="ffprobe:packetType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="packetType">
+      <xsd:attribute name="codec_type"    type="xsd:string" use="required" />
+      <xsd:attribute name="stream_index"  type="xsd:int" use="required" />
+      <xsd:attribute name="pts"           type="xsd:long"  />
+      <xsd:attribute name="pts_time"      type="xsd:float" />
+      <xsd:attribute name="dts"           type="xsd:long"  />
+      <xsd:attribute name="dts_time"      type="xsd:float" />
+      <xsd:attribute name="duration"      type="xsd:long"  />
+      <xsd:attribute name="duration_time" type="xsd:float" />
+      <xsd:attribute name="size"          type="xsd:long" use="required" />
+      <xsd:attribute name="pos"           type="xsd:long"  />
+      <xsd:attribute name="flags"         type="xsd:string" use="required" />
+    </xsd:complexType>
+
+    <xsd:complexType name="streamsType">
+        <xsd:sequence>
+            <xsd:element name="stream" type="ffprobe:streamType" minOccurs="0" maxOccurs="unbounded"/>
+        </xsd:sequence>
+    </xsd:complexType>
+
+    <xsd:complexType name="streamType">
+      <xsd:attribute name="index"            type="xsd:int" use="required"/>
+      <xsd:attribute name="codec_name"       type="xsd:string" />
+      <xsd:attribute name="codec_long_name"  type="xsd:string" />
+      <xsd:attribute name="codec_type"       type="xsd:string" />
+      <xsd:attribute name="codec_time_base"  type="xsd:string" use="required"/>
+      <xsd:attribute name="codec_tag"        type="xsd:string" use="required"/>
+      <xsd:attribute name="codec_tag_string" type="xsd:string" use="required"/>
+
+      <!-- video attributes -->
+      <xsd:attribute name="width"                type="xsd:int"/>
+      <xsd:attribute name="height"               type="xsd:int"/>
+      <xsd:attribute name="has_b_frames"         type="xsd:int"/>
+      <xsd:attribute name="sample_aspect_ratio"  type="xsd:string"/>
+      <xsd:attribute name="display_aspect_ratio" type="xsd:string"/>
+      <xsd:attribute name="pix_fmt"              type="xsd:string"/>
+      <xsd:attribute name="level"                type="xsd:int"/>
+      <xsd:attribute name="timecode"             type="xsd:string"/>
+
+      <!-- audio attributes -->
+      <xsd:attribute name="sample_fmt"       type="xsd:string"/>
+      <xsd:attribute name="sample_rate"      type="xsd:int"/>
+      <xsd:attribute name="channels"         type="xsd:int"/>
+      <xsd:attribute name="bits_per_sample"  type="xsd:int"/>
+
+      <xsd:attribute name="id"               type="xsd:string"/>
+      <xsd:attribute name="r_frame_rate"     type="xsd:string" use="required"/>
+      <xsd:attribute name="avg_frame_rate"   type="xsd:string" use="required"/>
+      <xsd:attribute name="time_base"        type="xsd:string" use="required"/>
+      <xsd:attribute name="start_time"       type="xsd:float"/>
+      <xsd:attribute name="duration"         type="xsd:float"/>
+      <xsd:attribute name="nb_frames"        type="xsd:int"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="formatType">
+      <xsd:sequence>
+        <xsd:element name="tag" type="ffprobe:tagType" minOccurs="0" maxOccurs="unbounded"/>
+      </xsd:sequence>
+
+      <xsd:attribute name="filename"         type="xsd:string" use="required"/>
+      <xsd:attribute name="nb_streams"       type="xsd:int"    use="required"/>
+      <xsd:attribute name="format_name"      type="xsd:string" use="required"/>
+      <xsd:attribute name="format_long_name" type="xsd:string" use="required"/>
+      <xsd:attribute name="start_time"       type="xsd:float"/>
+      <xsd:attribute name="duration"         type="xsd:float"/>
+      <xsd:attribute name="size"             type="xsd:long"/>
+      <xsd:attribute name="bit_rate"         type="xsd:long"/>
+    </xsd:complexType>
+
+    <xsd:complexType name="tagType">
+      <xsd:attribute name="key"   type="xsd:string" use="required"/>
+      <xsd:attribute name="value" type="xsd:string" use="required"/>
+    </xsd:complexType>
+</xsd:schema>
