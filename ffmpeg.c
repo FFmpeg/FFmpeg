@@ -609,20 +609,6 @@ static int read_key(void)
     return -1;
 }
 
-static int read_yn(void)
-{
-    int c, t;
-#if HAVE_TERMIOS_H || HAVE_KBHIT
-    while((c=read_key()) < 0);
-#else
-    t=c= getchar();
-    while (t != '\n' && t != EOF)
-        t = getchar();
-#endif
-
-    return (toupper(c) == 'Y');
-}
-
 static int decode_interrupt_cb(void)
 {
     return received_nb_signals > 1;
@@ -3718,11 +3704,12 @@ static void opt_output_file(void *optctx, const char *filename)
                 if (!using_stdin) {
                     fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                     fflush(stderr);
-                    if (!read_yn()) {
-                        av_log(0, AV_LOG_FATAL, "\nNot overwriting - exiting\n");
+                    term_exit();
+                    if (!read_yesno()) {
+                        av_log(0, AV_LOG_FATAL, "Not overwriting - exiting\n");
                         exit_program(1);
                     }
-                    fprintf(stderr,"\n");
+                    term_init();
                 }
                 else {
                     av_log(0, AV_LOG_FATAL,"File '%s' already exists. Exiting.\n", filename);
