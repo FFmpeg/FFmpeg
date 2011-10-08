@@ -126,7 +126,7 @@ struct AVExpr {
         e_mod, e_max, e_min, e_eq, e_gt, e_gte,
         e_pow, e_mul, e_div, e_add,
         e_last, e_st, e_while, e_floor, e_ceil, e_trunc,
-        e_sqrt, e_not, e_random, e_hypot,
+        e_sqrt, e_not, e_random, e_hypot, e_gcd,
     } type;
     double value; // is sign in other types
     union {
@@ -174,6 +174,7 @@ static double eval_expr(Parser *p, AVExpr *e)
             double d2 = eval_expr(p, e->param[1]);
             switch (e->type) {
                 case e_mod: return e->value * (d - floor(d/d2)*d2);
+                case e_gcd: return e->value * av_gcd(d,d2);
                 case e_max: return e->value * (d >  d2 ?   d : d2);
                 case e_min: return e->value * (d <  d2 ?   d : d2);
                 case e_eq:  return e->value * (d == d2 ? 1.0 : 0.0);
@@ -304,6 +305,7 @@ static int parse_primary(AVExpr **e, Parser *p)
     else if (strmatch(next, "pow"   )) d->type = e_pow;
     else if (strmatch(next, "random")) d->type = e_random;
     else if (strmatch(next, "hypot" )) d->type = e_hypot;
+    else if (strmatch(next, "gcd"   )) d->type = e_gcd;
     else {
         for (i=0; p->func1_names && p->func1_names[i]; i++) {
             if (strmatch(next, p->func1_names[i])) {
