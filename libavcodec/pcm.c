@@ -236,7 +236,7 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
 
 /**
  * Read PCM samples macro
- * @param type Datatype of native machine format
+ * @param size Data size of native machine format
  * @param endian bytestream_get_xxx() endian suffix
  * @param src Source pointer (variable name)
  * @param dst Destination pointer (variable name)
@@ -244,13 +244,12 @@ static av_cold int pcm_decode_init(AVCodecContext * avctx)
  * @param shift Bitshift (bits)
  * @param offset Sample value offset
  */
-#define DECODE(type, endian, src, dst, n, shift, offset) \
-    dst_##type = (type*)dst; \
+#define DECODE(size, endian, src, dst, n, shift, offset) \
     for(;n>0;n--) { \
-        register type v = bytestream_get_##endian(&src); \
-        *dst_##type++ = (v - offset) << shift; \
-    } \
-    dst = (short*)dst_##type;
+        uint##size##_t v = bytestream_get_##endian(&src); \
+        AV_WN##size##A(dst, (v - offset) << shift); \
+        dst += size / 8; \
+    }
 
 static int pcm_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
@@ -260,14 +259,9 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     PCMDecode *s = avctx->priv_data;
     int sample_size, c, n, i;
-    short *samples;
+    uint8_t *samples;
     const uint8_t *src, *src8, *src2[MAX_CHANNELS];
-    uint8_t *dstu8;
-    int16_t *dst_int16_t;
     int32_t *dst_int32_t;
-    int64_t *dst_int64_t;
-    uint16_t *dst_uint16_t;
-    uint32_t *dst_uint32_t;
 
     samples = data;
     src = buf;
@@ -314,29 +308,30 @@ static int pcm_decode_frame(AVCodecContext *avctx,
 
     switch(avctx->codec->id) {
     case CODEC_ID_PCM_U32LE:
-        DECODE(uint32_t, le32, src, samples, n, 0, 0x80000000)
+        DECODE(32, le32, src, samples, n, 0, 0x80000000)
         break;
     case CODEC_ID_PCM_U32BE:
-        DECODE(uint32_t, be32, src, samples, n, 0, 0x80000000)
+        DECODE(32, be32, src, samples, n, 0, 0x80000000)
         break;
     case CODEC_ID_PCM_S24LE:
-        DECODE(int32_t, le24, src, samples, n, 8, 0)
+        DECODE(32, le24, src, samples, n, 8, 0)
         break;
     case CODEC_ID_PCM_S24BE:
-        DECODE(int32_t, be24, src, samples, n, 8, 0)
+        DECODE(32, be24, src, samples, n, 8, 0)
         break;
     case CODEC_ID_PCM_U24LE:
-        DECODE(uint32_t, le24, src, samples, n, 8, 0x800000)
+        DECODE(32, le24, src, samples, n, 8, 0x800000)
         break;
     case CODEC_ID_PCM_U24BE:
-        DECODE(uint32_t, be24, src, samples, n, 8, 0x800000)
+        DECODE(32, be24, src, samples, n, 8, 0x800000)
         break;
     case CODEC_ID_PCM_S24DAUD:
         for(;n>0;n--) {
           uint32_t v = bytestream_get_be24(&src);
           v >>= 4; // sync flags are here
-          *samples++ = av_reverse[(v >> 8) & 0xff] +
-                       (av_reverse[v & 0xff] << 8);
+          AV_WN16A(samples, av_reverse[(v >> 8) & 0xff] +
+                           (av_reverse[v & 0xff] << 8));
+          samples += 2;
         }
         break;
     case CODEC_ID_PCM_S16LE_PLANAR:
@@ -344,33 +339,33 @@ static int pcm_decode_frame(AVCodecContext *avctx,
         for(c=0;c<avctx->channels;c++)
             src2[c] = &src[c*n*2];
         for(;n>0;n--)
-            for(c=0;c<avctx->channels;c++)
-                *samples++ = bytestream_get_le16(&src2[c]);
+            for(c=0;c<avctx->channels;c++) {
+                AV_WN16A(samples, bytestream_get_le16(&src2[c]));
+                samples += 2;
+            }
         src = src2[avctx->channels-1];
         break;
     case CODEC_ID_PCM_U16LE:
-        DECODE(uint16_t, le16, src, samples, n, 0, 0x8000)
+        DECODE(16, le16, src, samples, n, 0, 0x8000)
         break;
     case CODEC_ID_PCM_U16BE:
-        DECODE(uint16_t, be16, src, samples, n, 0, 0x8000)
+        DECODE(16, be16, src, samples, n, 0, 0x8000)
         break;
     case CODEC_ID_PCM_S8:
-        dstu8= (uint8_t*)samples;
         for(;n>0;n--) {
-            *dstu8++ = *src++ + 128;
+            *samples++ = *src++ + 128;
         }
-        samples= (short*)dstu8;
         break;
 #if HAVE_BIGENDIAN
     case CODEC_ID_PCM_F64LE:
-        DECODE(int64_t, le64, src, samples, n, 0, 0)
+        DECODE(64, le64, src, samples, n, 0, 0)
         break;
     case CODEC_ID_PCM_S32LE:
     case CODEC_ID_PCM_F32LE:
-        DECODE(int32_t, le32, src, samples, n, 0, 0)
+        DECODE(32, le32, src, samples, n, 0, 0)
         break;
     case CODEC_ID_PCM_S16LE:
-        DECODE(int16_t, le16, src, samples, n, 0, 0)
+        DECODE(16, le16, src, samples, n, 0, 0)
         break;
     case CODEC_ID_PCM_F64BE:
     case CODEC_ID_PCM_F32BE:
@@ -378,14 +373,14 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_S16BE:
 #else
     case CODEC_ID_PCM_F64BE:
-        DECODE(int64_t, be64, src, samples, n, 0, 0)
+        DECODE(64, be64, src, samples, n, 0, 0)
         break;
     case CODEC_ID_PCM_F32BE:
     case CODEC_ID_PCM_S32BE:
-        DECODE(int32_t, be32, src, samples, n, 0, 0)
+        DECODE(32, be32, src, samples, n, 0, 0)
         break;
     case CODEC_ID_PCM_S16BE:
-        DECODE(int16_t, be16, src, samples, n, 0, 0)
+        DECODE(16, be16, src, samples, n, 0, 0)
         break;
     case CODEC_ID_PCM_F64LE:
     case CODEC_ID_PCM_F32LE:
@@ -395,20 +390,22 @@ static int pcm_decode_frame(AVCodecContext *avctx,
     case CODEC_ID_PCM_U8:
         memcpy(samples, src, n*sample_size);
         src += n*sample_size;
-        samples = (short*)((uint8_t*)data + n*sample_size);
+        samples += n * sample_size;
         break;
     case CODEC_ID_PCM_ZORK:
         for(;n>0;n--) {
             int x= *src++;
             if(x&128) x-= 128;
             else      x = -x;
-            *samples++ = x << 8;
+            AV_WN16A(samples, x << 8);
+            samples += 2;
         }
         break;
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_MULAW:
         for(;n>0;n--) {
-            *samples++ = s->table[*src++];
+            AV_WN16A(samples, s->table[*src++]);
+            samples += 2;
         }
         break;
     case CODEC_ID_PCM_DVD:
@@ -441,7 +438,7 @@ static int pcm_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "PCM DVD unsupported sample depth\n");
             return -1;
         }
-        samples = (short *) dst_int32_t;
+        samples = (uint8_t *) dst_int32_t;
         break;
     case CODEC_ID_PCM_LXF:
         dst_int32_t = data;
@@ -461,12 +458,12 @@ static int pcm_decode_frame(AVCodecContext *avctx,
             }
         }
         src += n * avctx->channels * 5;
-        samples = (short *) dst_int32_t;
+        samples = (uint8_t *) dst_int32_t;
         break;
     default:
         return -1;
     }
-    *data_size = (uint8_t *)samples - (uint8_t *)data;
+    *data_size = samples - (uint8_t *)data;
     return src - buf;
 }
 
