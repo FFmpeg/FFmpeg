@@ -138,6 +138,10 @@ static av_cold int vqa_decode_init(AVCodecContext *avctx)
     /* load up the VQA parameters from the header */
     vqa_header = (unsigned char *)s->avctx->extradata;
     s->vqa_version = vqa_header[0];
+    if (s->vqa_version < 1 || s->vqa_version > 3) {
+        av_log(s->avctx, AV_LOG_ERROR, "  VQA video: unsupported version %d\n", s->vqa_version);
+        return -1;
+    }
     s->width = AV_RL16(&vqa_header[6]);
     s->height = AV_RL16(&vqa_header[8]);
     if(av_image_check_size(s->width, s->height, 0, avctx)){
