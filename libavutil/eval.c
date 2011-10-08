@@ -155,7 +155,7 @@ static double eval_expr(Parser *p, AVExpr *e)
         case e_ceil :  return e->value * ceil (eval_expr(p, e->param[0]));
         case e_trunc:  return e->value * trunc(eval_expr(p, e->param[0]));
         case e_sqrt:   return e->value * sqrt (eval_expr(p, e->param[0]));
-        case e_not:    return e->value * eval_expr(p, e->param[0]) == 0;
+        case e_not:    return e->value * (eval_expr(p, e->param[0]) == 0);
         case e_random:{
             int idx= av_clip(eval_expr(p, e->param[0]), 0, VARS-1);
             uint64_t r= isnan(p->var[idx]) ? 0 : p->var[idx];
