@@ -83,6 +83,20 @@ Return 1.0 if @var{expr} is zero, 0.0 otherwise.
 @item pow(x, y)
 Compute the power of @var{x} elevated @var{y}, it is equivalent to
 "(@var{x})^(@var{y})".
+
+@item random(x)
+Return a pseudo random value between 0.0 and 1.0. @var{x} is the index of the
+internal variable which will be used to save the seed/state.
+
+@item hypot(x, y)
+This function is similar to the C function with the same name; it returns
+"sqrt(@var{x}*@var{x} + @var{y}*@var{y})", the length of the hypotenuse of a
+right triangle with sides of length @var{x} and @var{y}, or the distance of the
+point (@var{x}, @var{y}) from the origin.
+
+@item gcd(x, y)
+Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
+@var{y} are 0 or either or both are less than zero then behavior is undefined.
 @end table
 
 Note that:
