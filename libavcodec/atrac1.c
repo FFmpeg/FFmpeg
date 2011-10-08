@@ -282,7 +282,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
 
 
     if (buf_size < 212 * q->channels) {
-        av_log(q,AV_LOG_ERROR,"Not enought data to decode!\n");
+        av_log(avctx, AV_LOG_ERROR,"Not enought data to decode!\n");
         return -1;
     }
 
