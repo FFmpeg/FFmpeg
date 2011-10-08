@@ -464,6 +464,8 @@ static int qtrle_decode_frame(AVCodecContext *avctx,
         stream_ptr += 4;
         height = AV_RB16(&s->buf[stream_ptr]);
         stream_ptr += 4;
+        if (height > s->avctx->height - start_line)
+            goto done;
     } else {
         start_line = 0;
         height = s->avctx->height;
