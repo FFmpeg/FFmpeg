@@ -531,30 +531,32 @@ static const AVClass av_codec_context_class = {
     .child_class_next        = codec_child_class_next,
 };
 
+#if FF_API_ALLOC_CONTEXT
 void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_type){
-    memset(s, 0, sizeof(AVCodecContext));
-
-    s->av_class= &av_codec_context_class;
-
-    s->codec_type = codec_type;
-    av_opt_set_defaults(s);
-
-    s->time_base= (AVRational){0,1};
-    s->get_buffer= avcodec_default_get_buffer;
-    s->release_buffer= avcodec_default_release_buffer;
-    s->get_format= avcodec_default_get_format;
-    s->execute= avcodec_default_execute;
-    s->execute2= avcodec_default_execute2;
-    s->sample_aspect_ratio= (AVRational){0,1};
-    s->pix_fmt= PIX_FMT_NONE;
-    s->sample_fmt= AV_SAMPLE_FMT_NONE;
-
-    s->reget_buffer= avcodec_default_reget_buffer;
-    s->reordered_opaque= AV_NOPTS_VALUE;
+    avcodec_get_context_defaults3(s, NULL);
 }
+#endif
 
 int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
-    avcodec_get_context_defaults2(s, codec ? codec->type : AVMEDIA_TYPE_UNKNOWN);
+    memset(s, 0, sizeof(AVCodecContext));
+
+    s->av_class = &av_codec_context_class;
+
+    s->codec_type = codec ? codec->type : AVMEDIA_TYPE_UNKNOWN;
+    av_opt_set_defaults(s);
+
+    s->time_base           = (AVRational){0,1};
+    s->get_buffer          = avcodec_default_get_buffer;
+    s->release_buffer      = avcodec_default_release_buffer;
+    s->get_format          = avcodec_default_get_format;
+    s->execute             = avcodec_default_execute;
+    s->execute2            = avcodec_default_execute2;
+    s->sample_aspect_ratio = (AVRational){0,1};
+    s->pix_fmt             = PIX_FMT_NONE;
+    s->sample_fmt          = AV_SAMPLE_FMT_NONE;
+
+    s->reget_buffer        = avcodec_default_reget_buffer;
+    s->reordered_opaque    = AV_NOPTS_VALUE;
     if(codec && codec->priv_data_size){
         if(!s->priv_data){
             s->priv_data= av_mallocz(codec->priv_data_size);
@@ -602,13 +604,11 @@ AVCodecContext *avcodec_alloc_context2(enum AVMediaType codec_type){
 
     return avctx;
 }
-#endif
 
 void avcodec_get_context_defaults(AVCodecContext *s){
     avcodec_get_context_defaults2(s, AVMEDIA_TYPE_UNKNOWN);
 }
 
-#if FF_API_ALLOC_CONTEXT
 AVCodecContext *avcodec_alloc_context(void){
     return avcodec_alloc_context2(AVMEDIA_TYPE_UNKNOWN);
 }
