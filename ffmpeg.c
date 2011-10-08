@@ -611,11 +611,13 @@ static int read_key(void)
 
 static int read_yn(void)
 {
-    int c;
+    int c, t;
 #if HAVE_TERMIOS_H || HAVE_KBHIT
     while((c=read_key()) < 0);
 #else
-    c= getchar();
+    t=c= getchar();
+    while (t != '\n' && t != EOF)
+        t = getchar();
 #endif
 
     return (toupper(c) == 'Y');
