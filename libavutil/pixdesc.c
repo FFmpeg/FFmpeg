@@ -992,9 +992,9 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .name = "gbr24p",
         .nb_components= 3,
         .comp = {
-            {0,1,1,0,7},        /* G */
-            {1,1,1,0,7},        /* B */
-            {2,1,1,0,7},        /* R */
+            {1,0,1,0,7},        /* B */
+            {0,0,1,0,7},        /* G */
+            {2,0,1,0,7},        /* R */
         },
     },
 };
