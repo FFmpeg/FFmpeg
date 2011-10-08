@@ -2358,9 +2358,9 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         }
         {
             int64_t last = st->info->last_dts;
-            int64_t duration= pkt->dts - last;
 
-            if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && duration>0){
+            if(pkt->dts != AV_NOPTS_VALUE && last != AV_NOPTS_VALUE && pkt->dts > last){
+                int64_t duration= pkt->dts - last;
                 double dur= duration * av_q2d(st->time_base);
 
 //                if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
