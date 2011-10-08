@@ -1378,7 +1378,7 @@ static void do_video_stats(AVFormatContext *os, OutputStream *ost,
 
 static void print_report(OutputFile *output_files,
                          OutputStream *ost_table, int nb_ostreams,
-                         int is_last_report, int64_t timer_start)
+                         int is_last_report, int64_t timer_start, int64_t cur_time)
 {
     char buf[1024];
     OutputStream *ost;
@@ -1393,9 +1393,6 @@ static void print_report(OutputFile *output_files,
     int hours, mins, secs, us;
 
     if (!is_last_report) {
-        int64_t cur_time;
-        /* display the report every 0.5 seconds */
-        cur_time = av_gettime();
         if (last_time == -1) {
             last_time = cur_time;
             return;
@@ -1424,7 +1421,7 @@ static void print_report(OutputFile *output_files,
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ", q);
         }
         if (!vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-            float t = (av_gettime()-timer_start) / 1000000.0;
+            float t = (cur_time-timer_start) / 1000000.0;
 
             frame_number = ost->frame_number;
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "frame=%5d fps=%3d q=%3.1f ",
@@ -2441,6 +2438,7 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         AVPacket pkt;
         int64_t ipts_min;
         double opts_min;
+        int64_t cur_time= av_gettime();
 
         ipts_min= INT64_MAX;
         opts_min= 1e100;
@@ -2650,7 +2648,7 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         av_free_packet(&pkt);
 
         /* dump report by using the output first video and audio streams */
-        print_report(output_files, output_streams, nb_output_streams, 0, timer_start);
+        print_report(output_files, output_streams, nb_output_streams, 0, timer_start, cur_time);
     }
 
     /* at the end of stream, we must flush the decoder buffers */
@@ -2671,7 +2669,7 @@ static int transcode(OutputFile *output_files, int nb_output_files,
     }
 
     /* dump report by using the first video and audio streams */
-    print_report(output_files, output_streams, nb_output_streams, 1, timer_start);
+    print_report(output_files, output_streams, nb_output_streams, 1, timer_start, av_gettime());
 
     /* close each encoder */
     for (i = 0; i < nb_output_streams; i++) {
