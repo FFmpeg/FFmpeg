@@ -223,7 +223,10 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
     }
 
     ctx->mb_width  = (avctx->width  + 15) >> 4;
-    ctx->mb_height = (avctx->height + 15) >> 4;
+    if (ctx->frame_type)
+        ctx->mb_height = (avctx->height + 31) >> 5;
+    else
+        ctx->mb_height = (avctx->height + 15) >> 4;
 
     slice_count = AV_RB16(buf + 5);
 
@@ -280,6 +283,12 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
             av_log(avctx, AV_LOG_ERROR, "error, slice out of bounds\n");
             return -1;
         }
+    }
+
+    if (mb_x || mb_y != ctx->mb_height) {
+        av_log(avctx, AV_LOG_ERROR, "error wrong mb count y %d h %d\n",
+               mb_y, ctx->mb_height);
+        return -1;
     }
 
     return pic_data_size;
