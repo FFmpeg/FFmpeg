@@ -52,7 +52,7 @@ static inline int sad_hpel_motion_search(MpegEncContext * s,
                                   int src_index, int ref_index,
                                   int size, int h);
 
-static inline int update_map_generation(MotionEstContext *c)
+static inline unsigned update_map_generation(MotionEstContext *c)
 {
     c->map_generation+= 1<<(ME_MAP_MV_BITS*2);
     if(c->map_generation==0){
