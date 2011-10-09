@@ -534,11 +534,11 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
 {
     ALACContext *alac = avctx->priv_data;
 
-    int chan;
-    for (chan = 0; chan < alac->numchannels; chan++) {
-        av_freep(&alac->predicterror_buffer[chan]);
-        av_freep(&alac->outputsamples_buffer[chan]);
-        av_freep(&alac->extra_bits_buffer[chan]);
+    int ch;
+    for (ch = 0; ch < alac->numchannels; ch++) {
+        av_freep(&alac->predicterror_buffer[ch]);
+        av_freep(&alac->outputsamples_buffer[ch]);
+        av_freep(&alac->extra_bits_buffer[ch]);
     }
 
     return 0;
@@ -546,19 +546,19 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
 
 static int allocate_buffers(ALACContext *alac)
 {
-    int chan;
-    for (chan = 0; chan < alac->numchannels; chan++) {
-        alac->predicterror_buffer[chan] =
+    int ch;
+    for (ch = 0; ch < alac->numchannels; ch++) {
+        alac->predicterror_buffer[ch] =
             av_malloc(alac->setinfo_max_samples_per_frame * 4);
 
-        alac->outputsamples_buffer[chan] =
+        alac->outputsamples_buffer[ch] =
             av_malloc(alac->setinfo_max_samples_per_frame * 4);
 
-        alac->extra_bits_buffer[chan] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
+        alac->extra_bits_buffer[ch] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
 
-        if (!alac->predicterror_buffer[chan]  ||
-            !alac->outputsamples_buffer[chan] ||
-            !alac->extra_bits_buffer[chan]) {
+        if (!alac->predicterror_buffer[ch]  ||
+            !alac->outputsamples_buffer[ch] ||
+            !alac->extra_bits_buffer[ch]) {
             alac_decode_close(alac->avctx);
             return AVERROR(ENOMEM);
         }
