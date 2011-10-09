@@ -688,7 +688,7 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
 
     assert(IS_INTER(mb_type));
 
-    if(HAVE_PTHREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
+    if(HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
         await_references(h);
     prefetch_motion(h, 0, pixel_shift, chroma444);
 

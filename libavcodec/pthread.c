@@ -29,10 +29,15 @@
  * @see doc/multithreading.txt
  */
 
-#include <pthread.h>
-
+#include "config.h"
 #include "avcodec.h"
 #include "thread.h"
+
+#if HAVE_PTHREADS
+#include <pthread.h>
+#elif HAVE_W32THREADS
+#include "w32pthreads.h"
+#endif
 
 typedef int (action_func)(AVCodecContext *c, void *arg);
 typedef int (action_func2)(AVCodecContext *c, void *arg, int jobnr, int threadnr);
@@ -897,6 +902,10 @@ int ff_thread_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "avcodec_thread_init is ignored after avcodec_open\n");
         return -1;
     }
+
+#if HAVE_W32THREADS
+    w32thread_init();
+#endif
 
     if (avctx->codec) {
         validate_thread_parameters(avctx);

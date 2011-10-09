@@ -147,7 +147,7 @@ static void await_reference_mb_row(H264Context * const h, Picture *ref, int mb_y
     int ref_field_picture = ref->field_picture;
     int ref_height = 16*h->s.mb_height >> ref_field_picture;
 
-    if(!HAVE_PTHREADS || !(h->s.avctx->active_thread_type&FF_THREAD_FRAME))
+    if(!HAVE_THREADS || !(h->s.avctx->active_thread_type&FF_THREAD_FRAME))
         return;
 
     //FIXME it can be safe to access mb stuff

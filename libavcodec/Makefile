@@ -645,7 +645,7 @@ OBJS-$(CONFIG_TEXT2MOVSUB_BSF)            += movsub_bsf.o
 
 # thread libraries
 OBJS-$(HAVE_PTHREADS)                  += pthread.o
-OBJS-$(HAVE_W32THREADS)                += w32thread.o
+OBJS-$(HAVE_W32THREADS)                += pthread.o
 
 OBJS-$(CONFIG_MLIB)                    += mlib/dsputil_mlib.o           \
 
