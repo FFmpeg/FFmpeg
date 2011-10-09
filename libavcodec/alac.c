@@ -484,11 +484,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         if (alac->setinfo_sample_size <= 16) {
         for (i = 0; i < outputsamples; i++)
             for (chan = 0; chan < channels; chan++) {
-                int32_t audiobits;
-
-                audiobits = get_sbits_long(&alac->gb, alac->setinfo_sample_size);
-
-                alac->outputsamples_buffer[chan][i] = audiobits;
+                alac->outputsamples_buffer[chan][i] = get_sbits_long(&alac->gb,
+                                                                     alac->setinfo_sample_size);
             }
         } else {
             for (i = 0; i < outputsamples; i++) {
