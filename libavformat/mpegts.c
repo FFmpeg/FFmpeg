@@ -1327,7 +1327,7 @@ static int handle_packet(MpegTSContext *ts, const uint8_t *packet)
 
     tss->last_cc = cc;
     if (!cc_ok) {
-        av_log(ts->stream, AV_LOG_WARNING,
+        av_log(ts->stream, AV_LOG_DEBUG,
                "Continuity check failed for pid %d expected %d got %d\n",
                pid, expected_cc, cc);
         if(tss->type == MPEGTS_PES) {
