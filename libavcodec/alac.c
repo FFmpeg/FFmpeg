@@ -366,6 +366,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     int isnotcompressed;
     uint8_t interlacing_shift;
     uint8_t interlacing_leftweight;
+    int i, ch;
 
     /* short-circuit null buffers */
     if (!inbuffer || !input_buffer_size)
@@ -425,51 +426,49 @@ static int alac_decode_frame(AVCodecContext *avctx,
         int prediction_type[MAX_CHANNELS];
         int prediction_quantitization[MAX_CHANNELS];
         int ricemodifier[MAX_CHANNELS];
-        int i, chan;
 
         interlacing_shift = get_bits(&alac->gb, 8);
         interlacing_leftweight = get_bits(&alac->gb, 8);
 
-        for (chan = 0; chan < channels; chan++) {
-            prediction_type[chan] = get_bits(&alac->gb, 4);
-            prediction_quantitization[chan] = get_bits(&alac->gb, 4);
+        for (ch = 0; ch < channels; ch++) {
+            prediction_type[ch] = get_bits(&alac->gb, 4);
+            prediction_quantitization[ch] = get_bits(&alac->gb, 4);
 
-            ricemodifier[chan] = get_bits(&alac->gb, 3);
-            predictor_coef_num[chan] = get_bits(&alac->gb, 5);
+            ricemodifier[ch] = get_bits(&alac->gb, 3);
+            predictor_coef_num[ch] = get_bits(&alac->gb, 5);
 
             /* read the predictor table */
-            for (i = 0; i < predictor_coef_num[chan]; i++)
-                predictor_coef_table[chan][i] = (int16_t)get_bits(&alac->gb, 16);
+            for (i = 0; i < predictor_coef_num[ch]; i++)
+                predictor_coef_table[ch][i] = (int16_t)get_bits(&alac->gb, 16);
         }
 
         if (alac->extra_bits) {
-            int i, ch;
             for (i = 0; i < outputsamples; i++) {
                 for (ch = 0; ch < channels; ch++)
                     alac->extra_bits_buffer[ch][i] = get_bits(&alac->gb, alac->extra_bits);
             }
         }
-        for (chan = 0; chan < channels; chan++) {
+        for (ch = 0; ch < channels; ch++) {
             bastardized_rice_decompress(alac,
-                                        alac->predicterror_buffer[chan],
+                                        alac->predicterror_buffer[ch],
                                         outputsamples,
                                         readsamplesize,
                                         alac->setinfo_rice_initialhistory,
                                         alac->setinfo_rice_kmodifier,
-                                        ricemodifier[chan] * alac->setinfo_rice_historymult / 4,
+                                        ricemodifier[ch] * alac->setinfo_rice_historymult / 4,
                                         (1 << alac->setinfo_rice_kmodifier) - 1);
 
-            if (prediction_type[chan] == 0) {
+            if (prediction_type[ch] == 0) {
                 /* adaptive fir */
-                predictor_decompress_fir_adapt(alac->predicterror_buffer[chan],
-                                               alac->outputsamples_buffer[chan],
+                predictor_decompress_fir_adapt(alac->predicterror_buffer[ch],
+                                               alac->outputsamples_buffer[ch],
                                                outputsamples,
                                                readsamplesize,
-                                               predictor_coef_table[chan],
-                                               predictor_coef_num[chan],
-                                               prediction_quantitization[chan]);
+                                               predictor_coef_table[ch],
+                                               predictor_coef_num[ch],
+                                               prediction_quantitization[ch]);
             } else {
-                av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type[chan]);
+                av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type[ch]);
                 /* I think the only other prediction type (or perhaps this is
                  * just a boolean?) runs adaptive fir twice.. like:
                  * predictor_decompress_fir_adapt(predictor_error, tempout, ...)
@@ -480,11 +479,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
         }
     } else {
         /* not compressed, easy case */
-        int i, chan;
         for (i = 0; i < outputsamples; i++) {
-            for (chan = 0; chan < channels; chan++) {
-                alac->outputsamples_buffer[chan][i] = get_sbits_long(&alac->gb,
-                                                                     alac->setinfo_sample_size);
+            for (ch = 0; ch < channels; ch++) {
+                alac->outputsamples_buffer[ch][i] = get_sbits_long(&alac->gb,
+                                                                   alac->setinfo_sample_size);
             }
         }
         alac->extra_bits = 0;
@@ -510,7 +508,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
             interleave_stereo_16(alac->outputsamples_buffer, outbuffer,
                                  outputsamples);
         } else {
-            int i;
             for (i = 0; i < outputsamples; i++) {
                 ((int16_t*)outbuffer)[i] = alac->outputsamples_buffer[0][i];
             }
@@ -521,7 +518,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
             interleave_stereo_24(alac->outputsamples_buffer, outbuffer,
                                  outputsamples);
         } else {
-            int i;
             for (i = 0; i < outputsamples; i++)
                 ((int32_t *)outbuffer)[i] = alac->outputsamples_buffer[0][i] << 8;
         }
