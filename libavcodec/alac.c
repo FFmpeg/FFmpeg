@@ -299,8 +299,7 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
 }
 
 static void decorrelate_stereo(int32_t *buffer[MAX_CHANNELS],
-                               int numchannels, int numsamples,
-                               uint8_t interlacing_shift,
+                               int numsamples, uint8_t interlacing_shift,
                                uint8_t interlacing_leftweight)
 {
     int i;
@@ -331,37 +330,25 @@ static void append_extra_bits(int32_t *buffer[MAX_CHANNELS],
 }
 
 static void interleave_stereo_16(int32_t *buffer[MAX_CHANNELS],
-                                 int16_t *buffer_out, int numchannels,
-                                 int numsamples)
+                                 int16_t *buffer_out, int numsamples)
 {
     int i;
 
     for (i = 0; i < numsamples; i++) {
-        int16_t left, right;
-
-        left = buffer[0][i];
-        right = buffer[1][i];
-
-        buffer_out[i*numchannels] = left;
-        buffer_out[i*numchannels + 1] = right;
+        *buffer_out++ = buffer[0][i];
+        *buffer_out++ = buffer[1][i];
     }
 }
 
 static void interleave_stereo_24(int32_t *buffer[MAX_CHANNELS],
-                                 int32_t *buffer_out, int numchannels,
-                                 int numsamples)
+                                 int32_t *buffer_out, int numsamples)
 {
     int i;
 
-        for (i = 0; i < numsamples; i++) {
-            int32_t left, right;
-
-            left  = buffer[0][i];
-            right = buffer[1][i];
-
-            buffer_out[i * numchannels]     = left  << 8;
-            buffer_out[i * numchannels + 1] = right << 8;
-        }
+    for (i = 0; i < numsamples; i++) {
+        *buffer_out++ = buffer[0][i] << 8;
+        *buffer_out++ = buffer[1][i] << 8;
+    }
 }
 
 static int alac_decode_frame(AVCodecContext *avctx,
@@ -521,9 +508,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "Error : Wrong End Of Frame\n");
 
     if (channels == 2 && interlacing_leftweight) {
-        decorrelate_stereo(alac->outputsamples_buffer, alac->numchannels,
-                           outputsamples, interlacing_shift,
-                           interlacing_leftweight);
+        decorrelate_stereo(alac->outputsamples_buffer, outputsamples,
+                           interlacing_shift, interlacing_leftweight);
     }
 
     if (alac->extra_bits) {
@@ -535,7 +521,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     case 16:
         if (channels == 2) {
             interleave_stereo_16(alac->outputsamples_buffer, outbuffer,
-                                 alac->numchannels, outputsamples);
+                                 outputsamples);
         } else {
             int i;
             for (i = 0; i < outputsamples; i++) {
@@ -546,7 +532,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     case 24:
         if (channels == 2) {
             interleave_stereo_24(alac->outputsamples_buffer, outbuffer,
-                                 alac->numchannels, outputsamples);
+                                 outputsamples);
         } else {
             int i;
             for (i = 0; i < outputsamples; i++)
