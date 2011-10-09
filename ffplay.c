@@ -71,8 +71,6 @@ const int program_birth_year = 2003;
 /* no AV correction is done if too big error */
 #define AV_NOSYNC_THRESHOLD 10.0
 
-#define FRAME_SKIP_FACTOR 0.05
-
 /* maximum audio speed change to get correct sync */
 #define SAMPLE_CORRECTION_PERCENT_MAX 10
 
@@ -221,8 +219,6 @@ typedef struct VideoState {
     AVFilterContext *out_video_filter;          ///<the last filter in the video chain
 #endif
 
-    float skip_frames;
-    float skip_frames_index;
     int refresh;
 } VideoState;
 
@@ -1161,7 +1157,6 @@ retry:
             }
 
             if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
-                is->skip_frames *= 1.0 + FRAME_SKIP_FACTOR;
                 if(is->pictq_size > 1){
                     pictq_next_picture(is);
                     goto retry;
@@ -1248,10 +1243,9 @@ retry:
             av_diff = 0;
             if (is->audio_st && is->video_st)
                 av_diff = get_audio_clock(is) - get_video_clock(is);
-            printf("%7.2f A-V:%7.3f s:%3.1f aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
+            printf("%7.2f A-V:%7.3f aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
                    get_master_clock(is),
                    av_diff,
-                   FFMAX(is->skip_frames-1, 0),
                    aqsize / 1024,
                    vqsize / 1024,
                    sqsize,
@@ -1334,9 +1328,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
-
-    if(is->pictq_size>=VIDEO_PICTURE_QUEUE_SIZE && !is->refresh)
-        is->skip_frames= FFMAX(1.0 - FRAME_SKIP_FACTOR, is->skip_frames * (1.0-FRAME_SKIP_FACTOR));
 
     while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
            !is->videoq.abort_request) {
@@ -1465,8 +1456,6 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         is->frame_last_pts = AV_NOPTS_VALUE;
         is->frame_last_duration = 0;
         is->frame_timer = (double)av_gettime() / 1000000.0;
-        is->skip_frames = 1;
-        is->skip_frames_index = 0;
         return 0;
     }
 
@@ -1485,11 +1474,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             *pts = 0;
         }
 
-        is->skip_frames_index += 1;
-        if(is->skip_frames_index >= is->skip_frames){
-            is->skip_frames_index -= FFMAX(is->skip_frames, 1.0);
-            return 1;
-        }
+        return 1;
 
     }
     return 0;
