@@ -505,9 +505,9 @@ static void ac3_decode_transform_coeffs_ch(AC3DecodeContext *s, int ch_index, ma
                 mantissa = b5_mantissas[get_bits(gbc, 4)];
                 break;
             default: /* 6 to 15 */
-                mantissa = get_bits(gbc, quantization_tab[bap]);
                 /* Shift mantissa and sign-extend it. */
-                mantissa = (mantissa << (32-quantization_tab[bap]))>>8;
+                mantissa = get_sbits(gbc, quantization_tab[bap]);
+                mantissa <<= 24 - quantization_tab[bap];
                 break;
         }
         coeffs[freq] = mantissa >> exps[freq];
