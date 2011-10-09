@@ -2023,7 +2023,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
             int varc;
             int sum = s->dsp.pix_sum(pix, s->linesize);
 
-            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
+            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)sum*sum)>>8) + 500 + 128)>>8;
 
             s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
             s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;
