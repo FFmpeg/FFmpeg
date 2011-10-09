@@ -1142,7 +1142,8 @@ retry:
                 return;
 
             is->frame_last_pts = vp->pts;
-            is->frame_timer += delay;
+            if (delay > 0)
+                is->frame_timer += delay * FFMAX(1, floor((time-is->frame_timer) / delay));
 
             /* update current video pts */
             is->video_current_pts = vp->pts;
