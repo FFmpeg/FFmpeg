@@ -2101,7 +2101,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
  */
 int ff_mpeg4_decode_picture_header(MpegEncContext * s, GetBitContext *gb)
 {
-    int startcode, v;
+    unsigned startcode, v;
 
     /* search next start code */
     align_get_bits(gb);
