@@ -1159,10 +1159,14 @@ corresponding pixel component values.
 The @var{lut} filter requires either YUV or RGB pixel formats in
 input, and accepts the options:
 @table @option
-@var{c0} (first  pixel component)
-@var{c1} (second pixel component)
-@var{c2} (third  pixel component)
-@var{c3} (fourth pixel component, corresponds to the alpha component)
+@item c0
+first  pixel component
+@item c1
+second pixel component
+@item c2
+third  pixel component
+@item c3
+fourth pixel component, corresponds to the alpha component
 @end table
 
 The exact component associated to each option depends on the format in
@@ -1171,19 +1175,27 @@ input.
 The @var{lutrgb} filter requires RGB pixel formats in input, and
 accepts the options:
 @table @option
-@var{r} (red component)
-@var{g} (green component)
-@var{b} (blue component)
-@var{a} (alpha component)
+@item r
+red component
+@item g
+green component
+@item b
+blue component
+@item a
+alpha component
 @end table
 
 The @var{lutyuv} filter requires YUV pixel formats in input, and
 accepts the options:
 @table @option
-@var{y} (Y/luminance component)
-@var{u} (U/Cb component)
-@var{v} (V/Cr component)
-@var{a} (alpha component)
+@item y
+Y/luminance component
+@item u
+U/Cb component
+@item v
+V/Cr component
+@item a
+alpha component
 @end table
 
 The expressions can contain the following constants and functions:
