@@ -171,7 +171,7 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         ctx->frame.top_field_first = ctx->frame_type == 1;
     }
 
-    avctx->pix_fmt = ((buf[12] & 0xC0) == 0xC0) ? PIX_FMT_YUV444P10 : PIX_FMT_YUV422P10;
+    avctx->pix_fmt = (buf[12] & 0xC0) == 0xC0 ? PIX_FMT_YUV444P10 : PIX_FMT_YUV422P10;
 
     ptr   = buf + 20;
     flags = buf[19];
@@ -298,7 +298,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
         rice_order  =  codebook >> 5;                                   \
         exp_order   = (codebook >> 2) & 7;                              \
                                                                         \
-        q = 31-av_log2(buf);                                         \
+        q = 31 - av_log2(buf);                                          \
                                                                         \
         if (q > switch_bits) { /* exp golomb */                         \
             bits = exp_order - switch_bits + (q<<1);                    \
@@ -558,7 +558,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int buf_size = avpkt->size;
     int frame_hdr_size, pic_size;
 
-    if (buf_size < 28 || AV_RL32(buf +  4) != AV_RL32("icpf")) {
+    if (buf_size < 28 || AV_RL32(buf + 4) != AV_RL32("icpf")) {
         av_log(avctx, AV_LOG_ERROR, "invalid frame header\n");
         return -1;
     }
