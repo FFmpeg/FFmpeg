@@ -116,7 +116,9 @@ static inline av_const int mid_pred(int a, int b, int c)
 #ifndef sign_extend
 static inline av_const int sign_extend(int val, unsigned bits)
 {
-    return (val << ((8 * sizeof(int)) - bits)) >> ((8 * sizeof(int)) - bits);
+    unsigned shift = 8 * sizeof(int) - bits;
+    union { unsigned u; int s; } v = { (unsigned) val << shift };
+    return v.s >> shift;
 }
 #endif
 
