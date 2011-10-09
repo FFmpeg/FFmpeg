@@ -131,10 +131,10 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_YUV420P10LE] = { 1 , 1 },
     [PIX_FMT_YUV422P10BE] = { 1 , 1 },
     [PIX_FMT_YUV422P10LE] = { 1 , 1 },
-    [PIX_FMT_YUV444P9BE]  = { 1 , 0 },
-    [PIX_FMT_YUV444P9LE]  = { 1 , 0 },
-    [PIX_FMT_YUV444P10BE] = { 1 , 0 },
-    [PIX_FMT_YUV444P10LE] = { 1 , 0 },
+    [PIX_FMT_YUV444P9BE]  = { 1 , 1 },
+    [PIX_FMT_YUV444P9LE]  = { 1 , 1 },
+    [PIX_FMT_YUV444P10BE] = { 1 , 1 },
+    [PIX_FMT_YUV444P10LE] = { 1 , 1 },
 };
 
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
