@@ -89,5 +89,8 @@
 #ifndef FF_API_FILESIZE
 #define FF_API_FILESIZE                (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
+#ifndef FF_API_MUXRATE
+#define FF_API_MUXRATE                 (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
 
 #endif /* AVFORMAT_VERSION_H */
