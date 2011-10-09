@@ -72,7 +72,7 @@ typedef struct {
 
     int32_t *outputsamples_buffer[MAX_CHANNELS];
 
-    int32_t *wasted_bits_buffer[MAX_CHANNELS];
+    int32_t *extra_bits_buffer[MAX_CHANNELS];
 
     /* stuff from setinfo */
     uint32_t setinfo_max_samples_per_frame; /* 0x1000 = 4096 */    /* max samples per frame? */
@@ -82,7 +82,7 @@ typedef struct {
     uint8_t setinfo_rice_kmodifier; /* 0x0e */
     /* end setinfo stuff */
 
-    int wasted_bits;
+    int extra_bits;                         /**< number of extra bits beyond 16-bit */
 } ALACContext;
 
 static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsamplesize){
@@ -338,8 +338,8 @@ static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
 
 static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
                                   int32_t *buffer_out,
-                                  int32_t *wasted_bits_buffer[MAX_CHANNELS],
-                                  int wasted_bits,
+                                  int32_t *extra_bits_buffer[MAX_CHANNELS],
+                                  int extra_bits,
                                   int numchannels, int numsamples,
                                   uint8_t interlacing_shift,
                                   uint8_t interlacing_leftweight)
@@ -357,9 +357,9 @@ static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
             a -= (b * interlacing_leftweight) >> interlacing_shift;
             b += a;
 
-            if (wasted_bits) {
-                b  = (b  << wasted_bits) | wasted_bits_buffer[0][i];
-                a  = (a  << wasted_bits) | wasted_bits_buffer[1][i];
+            if (extra_bits) {
+                b  = (b  << extra_bits) | extra_bits_buffer[0][i];
+                a  = (a  << extra_bits) | extra_bits_buffer[1][i];
             }
 
             buffer_out[i * numchannels]     = b << 8;
@@ -372,9 +372,9 @@ static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
             left  = buffer[0][i];
             right = buffer[1][i];
 
-            if (wasted_bits) {
-                left   = (left   << wasted_bits) | wasted_bits_buffer[0][i];
-                right  = (right  << wasted_bits) | wasted_bits_buffer[1][i];
+            if (extra_bits) {
+                left   = (left   << extra_bits) | extra_bits_buffer[0][i];
+                right  = (right  << extra_bits) | extra_bits_buffer[1][i];
             }
 
             buffer_out[i * numchannels]     = left  << 8;
@@ -421,7 +421,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     /* the output sample size is stored soon */
     hassize = get_bits1(&alac->gb);
 
-    alac->wasted_bits = get_bits(&alac->gb, 2) << 3;
+    alac->extra_bits = get_bits(&alac->gb, 2) << 3;
 
     /* whether the frame is compressed */
     isnotcompressed = get_bits1(&alac->gb);
@@ -444,7 +444,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     }
 
     *outputsize = outputsamples * alac->bytespersample;
-    readsamplesize = alac->setinfo_sample_size - (alac->wasted_bits) + channels - 1;
+    readsamplesize = alac->setinfo_sample_size - alac->extra_bits + channels - 1;
     if (readsamplesize > MIN_CACHE_BITS) {
         av_log(avctx, AV_LOG_ERROR, "readsamplesize too big (%d)\n", readsamplesize);
         return -1;
@@ -474,11 +474,11 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 predictor_coef_table[chan][i] = (int16_t)get_bits(&alac->gb, 16);
         }
 
-        if (alac->wasted_bits) {
+        if (alac->extra_bits) {
             int i, ch;
             for (i = 0; i < outputsamples; i++) {
                 for (ch = 0; ch < channels; ch++)
-                    alac->wasted_bits_buffer[ch][i] = get_bits(&alac->gb, alac->wasted_bits);
+                    alac->extra_bits_buffer[ch][i] = get_bits(&alac->gb, alac->extra_bits);
             }
         }
         for (chan = 0; chan < channels; chan++) {
@@ -532,7 +532,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
                 }
             }
         }
-        alac->wasted_bits = 0;
+        alac->extra_bits = 0;
         interlacing_shift = 0;
         interlacing_leftweight = 0;
     }
@@ -559,8 +559,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         if (channels == 2) {
             decorrelate_stereo_24(alac->outputsamples_buffer,
                                   outbuffer,
-                                  alac->wasted_bits_buffer,
-                                  alac->wasted_bits,
+                                  alac->extra_bits_buffer,
+                                  alac->extra_bits,
                                   alac->numchannels,
                                   outputsamples,
                                   interlacing_shift,
@@ -587,7 +587,7 @@ static av_cold int alac_decode_close(AVCodecContext *avctx)
     for (chan = 0; chan < alac->numchannels; chan++) {
         av_freep(&alac->predicterror_buffer[chan]);
         av_freep(&alac->outputsamples_buffer[chan]);
-        av_freep(&alac->wasted_bits_buffer[chan]);
+        av_freep(&alac->extra_bits_buffer[chan]);
     }
 
     return 0;
@@ -603,11 +603,11 @@ static int allocate_buffers(ALACContext *alac)
         alac->outputsamples_buffer[chan] =
             av_malloc(alac->setinfo_max_samples_per_frame * 4);
 
-        alac->wasted_bits_buffer[chan] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
+        alac->extra_bits_buffer[chan] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
 
         if (!alac->predicterror_buffer[chan]  ||
             !alac->outputsamples_buffer[chan] ||
-            !alac->wasted_bits_buffer[chan]) {
+            !alac->extra_bits_buffer[chan]) {
             alac_decode_close(alac->avctx);
             return AVERROR(ENOMEM);
         }
