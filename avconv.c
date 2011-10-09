@@ -1407,7 +1407,7 @@ static void print_report(OutputFile *output_files,
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
                 nb_frames_dup, nb_frames_drop);
 
-    av_log(NULL, is_last_report ? AV_LOG_WARNING : AV_LOG_INFO, "%s    \r", buf);
+    av_log(NULL, AV_LOG_INFO, "%s    \r", buf);
 
     fflush(stderr);
 
