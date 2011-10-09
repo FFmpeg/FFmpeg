@@ -330,9 +330,9 @@ static void append_extra_bits(int32_t *buffer[MAX_CHANNELS],
             buffer[ch][i] = (buffer[ch][i] << extra_bits) | extra_bits_buffer[ch][i];
 }
 
-static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
-                                  int16_t *buffer_out,
-                                  int numchannels, int numsamples)
+static void interleave_stereo_16(int32_t *buffer[MAX_CHANNELS],
+                                 int16_t *buffer_out, int numchannels,
+                                 int numsamples)
 {
     int i;
 
@@ -347,9 +347,9 @@ static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
     }
 }
 
-static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
-                                  int32_t *buffer_out,
-                                  int numchannels, int numsamples)
+static void interleave_stereo_24(int32_t *buffer[MAX_CHANNELS],
+                                 int32_t *buffer_out, int numchannels,
+                                 int numsamples)
 {
     int i;
 
@@ -534,10 +534,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
     switch(alac->setinfo_sample_size) {
     case 16:
         if (channels == 2) {
-            reconstruct_stereo_16(alac->outputsamples_buffer,
-                                  (int16_t*)outbuffer,
-                                  alac->numchannels,
-                                  outputsamples);
+            interleave_stereo_16(alac->outputsamples_buffer, outbuffer,
+                                 alac->numchannels, outputsamples);
         } else {
             int i;
             for (i = 0; i < outputsamples; i++) {
@@ -547,10 +545,8 @@ static int alac_decode_frame(AVCodecContext *avctx,
         break;
     case 24:
         if (channels == 2) {
-            decorrelate_stereo_24(alac->outputsamples_buffer,
-                                  outbuffer,
-                                  alac->numchannels,
-                                  outputsamples);
+            interleave_stereo_24(alac->outputsamples_buffer, outbuffer,
+                                 alac->numchannels, outputsamples);
         } else {
             int i;
             for (i = 0; i < outputsamples; i++)
