@@ -5,12 +5,27 @@ if [ "$NDK" = "" ]; then
     export NDK=${HOME}/android-ndk
 fi
 
+echo "Fetching Android system headers"
+git clone --depth=1 git://github.com/CyanogenMod/android_frameworks_base.git ../android-source/frameworks/base
+git clone --depth=1 git://github.com/CyanogenMod/android_system_core.git ../android-source/system/core
+
+echo "Fetching Android libraries for linking"
+# Libraries from any froyo/gingerbread device/emulator should work
+# fine, since the symbols used should be available on most of them.
+if [ ! -f "../update-cm-7.0.3-N1-signed.zip" ]; then
+    wget http://download.cyanogenmod.com/get/update-cm-7.0.3-N1-signed.zip -P../
+    unzip update-cm-7.0.3-N1-signed.zip system/lib/* -d../
+    mv ../system/lib ../android-libs
+    rmdir ../system
+fi
+
+
 SYSROOT=$NDK/platforms/android-9/arch-arm
 # Expand the prebuilt/* path into the correct one
 TOOLCHAIN=`echo $NDK/toolchains/arm-linux-androideabi-4.4.3/prebuilt/*-x86`
 export PATH=$TOOLCHAIN/bin:$PATH
-ANDROID_SOURCE=$HOME/android
-ANDROID_LIBS=$HOME/glib
+ANDROID_SOURCE=../android-source
+ANDROID_LIBS=../android-libs
 
 rm -rf ../build/stagefright
 mkdir -p ../build/stagefright
