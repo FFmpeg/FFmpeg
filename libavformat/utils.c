@@ -1837,7 +1837,7 @@ static int has_duration(AVFormatContext *ic)
 static void update_stream_timings(AVFormatContext *ic)
 {
     int64_t start_time, start_time1, end_time, end_time1;
-    int64_t duration, duration1;
+    int64_t duration, duration1, filesize;
     int i;
     AVStream *st;
 
@@ -1872,9 +1872,9 @@ static void update_stream_timings(AVFormatContext *ic)
     }
     if (duration != INT64_MIN) {
         ic->duration = duration;
-        if (ic->file_size > 0) {
+        if (ic->pb && (filesize = avio_size(ic->pb)) > 0) {
             /* compute the bitrate */
-            ic->bit_rate = (double)ic->file_size * 8.0 * AV_TIME_BASE /
+            ic->bit_rate = (double)filesize * 8.0 * AV_TIME_BASE /
                 (double)ic->duration;
         }
     }
@@ -1916,9 +1916,8 @@ static void estimate_timings_from_bit_rate(AVFormatContext *ic)
 
     /* if duration is already set, we believe it */
     if (ic->duration == AV_NOPTS_VALUE &&
-        ic->bit_rate != 0 &&
-        ic->file_size != 0)  {
-        filesize = ic->file_size;
+        ic->bit_rate != 0) {
+        filesize = ic->pb ? avio_size(ic->pb) : 0;
         if (filesize > 0) {
             for(i = 0; i < ic->nb_streams; i++) {
                 st = ic->streams[i];
@@ -1962,7 +1961,7 @@ static void estimate_timings_from_pts(AVFormatContext *ic, int64_t old_offset)
 
     /* estimate the end time (duration) */
     /* XXX: may need to support wrapping */
-    filesize = ic->file_size;
+    filesize = ic->pb ? avio_size(ic->pb) : 0;
     end_time = AV_NOPTS_VALUE;
     do{
         offset = filesize - (DURATION_MAX_READ_SIZE<<retry);
@@ -2026,7 +2025,6 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         if (file_size < 0)
             file_size = 0;
     }
-    ic->file_size = file_size;
 
     if ((!strcmp(ic->iformat->name, "mpeg") ||
          !strcmp(ic->iformat->name, "mpegts")) &&
