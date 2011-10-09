@@ -743,7 +743,9 @@ typedef struct AVFormatContext {
     attribute_deprecated int mux_rate;
 #endif
     unsigned int packet_size;
-    int preload;
+#if FF_API_PRELOAD
+    attribute_deprecated int preload;
+#endif
     int max_delay;
 
 #if FF_API_LOOP_OUTPUT

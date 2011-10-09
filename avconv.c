@@ -375,7 +375,6 @@ static void reset_options(OptionsContext *o)
 
     memset(o, 0, sizeof(*o));
 
-    o->mux_preload    = 0.5;
     o->mux_max_delay  = 0.7;
     o->recording_time = INT64_MAX;
     o->limit_filesize = UINT64_MAX;
@@ -3572,7 +3571,11 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
 
-    oc->preload   = (int)(o->mux_preload   * AV_TIME_BASE);
+    if (o->mux_preload) {
+        uint8_t buf[64];
+        snprintf(buf, sizeof(buf), "%d", (int)(o->mux_preload*AV_TIME_BASE));
+        av_dict_set(&output_files[nb_output_files - 1].opts, "preload", buf, 0);
+    }
     oc->max_delay = (int)(o->mux_max_delay * AV_TIME_BASE);
     oc->flags |= AVFMT_FLAG_NONBLOCK;
 
