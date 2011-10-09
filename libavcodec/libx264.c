@@ -123,7 +123,7 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     x264_picture_t pic_out;
 
     x264_picture_init( &x4->pic );
-    x4->pic.img.i_csp   = X264_CSP_I420;
+    x4->pic.img.i_csp   = x4->params.i_csp;
     if (x264_bit_depth > 8)
         x4->pic.img.i_csp |= X264_CSP_HIGH_DEPTH;
     x4->pic.img.i_plane = 3;
@@ -192,6 +192,22 @@ static av_cold int X264_close(AVCodecContext *avctx)
     return 0;
 }
 
+static int convert_pix_fmt(enum PixelFormat pix_fmt)
+{
+    switch (pix_fmt) {
+    case PIX_FMT_YUV420P:
+    case PIX_FMT_YUVJ420P:
+    case PIX_FMT_YUV420P9:
+    case PIX_FMT_YUV420P10: return X264_CSP_I420;
+    case PIX_FMT_YUV422P:
+    case PIX_FMT_YUV422P10: return X264_CSP_I422;
+    case PIX_FMT_YUV444P:
+    case PIX_FMT_YUV444P9:
+    case PIX_FMT_YUV444P10: return X264_CSP_I444;
+    };
+    return 0;
+}
+
 #define PARSE_X264_OPT(name, var)\
     if (x4->var && x264_param_parse(&x4->params, name, x4->var) < 0) {\
         av_log(avctx, AV_LOG_ERROR, "Error parsing option '%s' with value '%s'.\n", name, x4->var);\
@@ -218,6 +234,7 @@ static av_cold int X264_init(AVCodecContext *avctx)
     x4->params.pf_log               = X264_log;
     x4->params.p_log_private        = avctx;
     x4->params.i_log_level          = X264_LOG_DEBUG;
+    x4->params.i_csp                = convert_pix_fmt(avctx->pix_fmt);
 
     if (avctx->bit_rate) {
         x4->params.rc.i_bitrate   = avctx->bit_rate / 1000;
@@ -462,14 +479,19 @@ static av_cold int X264_init(AVCodecContext *avctx)
 static const enum PixelFormat pix_fmts_8bit[] = {
     PIX_FMT_YUV420P,
     PIX_FMT_YUVJ420P,
+    PIX_FMT_YUV422P,
+    PIX_FMT_YUV444P,
     PIX_FMT_NONE
 };
 static const enum PixelFormat pix_fmts_9bit[] = {
     PIX_FMT_YUV420P9,
+    PIX_FMT_YUV444P9,
     PIX_FMT_NONE
 };
 static const enum PixelFormat pix_fmts_10bit[] = {
     PIX_FMT_YUV420P10,
+    PIX_FMT_YUV422P10,
+    PIX_FMT_YUV444P10,
     PIX_FMT_NONE
 };
 
