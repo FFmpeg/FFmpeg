@@ -70,80 +70,16 @@ static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mu
     );
 }
 
-static void float_to_int16_3dnow(int16_t *dst, const float *src, long len){
-    x86_reg reglen = len;
-    // not bit-exact: pf2id uses different rounding than C and SSE
-    __asm__ volatile(
-        "add        %0          , %0        \n\t"
-        "lea         (%2,%0,2)  , %2        \n\t"
-        "add        %0          , %1        \n\t"
-        "neg        %0                      \n\t"
-        "1:                                 \n\t"
-        "pf2id       (%2,%0,2)  , %%mm0     \n\t"
-        "pf2id      8(%2,%0,2)  , %%mm1     \n\t"
-        "pf2id     16(%2,%0,2)  , %%mm2     \n\t"
-        "pf2id     24(%2,%0,2)  , %%mm3     \n\t"
-        "packssdw   %%mm1       , %%mm0     \n\t"
-        "packssdw   %%mm3       , %%mm2     \n\t"
-        "movq       %%mm0       ,  (%1,%0)  \n\t"
-        "movq       %%mm2       , 8(%1,%0)  \n\t"
-        "add        $16         , %0        \n\t"
-        " js 1b                             \n\t"
-        "femms                              \n\t"
-        :"+r"(reglen), "+r"(dst), "+r"(src)
-    );
-}
+#if HAVE_YASM
 
-static void float_to_int16_sse(int16_t *dst, const float *src, long len){
-    x86_reg reglen = len;
-    __asm__ volatile(
-        "add        %0          , %0        \n\t"
-        "lea         (%2,%0,2)  , %2        \n\t"
-        "add        %0          , %1        \n\t"
-        "neg        %0                      \n\t"
-        "1:                                 \n\t"
-        "cvtps2pi    (%2,%0,2)  , %%mm0     \n\t"
-        "cvtps2pi   8(%2,%0,2)  , %%mm1     \n\t"
-        "cvtps2pi  16(%2,%0,2)  , %%mm2     \n\t"
-        "cvtps2pi  24(%2,%0,2)  , %%mm3     \n\t"
-        "packssdw   %%mm1       , %%mm0     \n\t"
-        "packssdw   %%mm3       , %%mm2     \n\t"
-        "movq       %%mm0       ,  (%1,%0)  \n\t"
-        "movq       %%mm2       , 8(%1,%0)  \n\t"
-        "add        $16         , %0        \n\t"
-        " js 1b                             \n\t"
-        "emms                               \n\t"
-        :"+r"(reglen), "+r"(dst), "+r"(src)
-    );
-}
-
-static void float_to_int16_sse2(int16_t *dst, const float *src, long len){
-    x86_reg reglen = len;
-    __asm__ volatile(
-        "add        %0          , %0        \n\t"
-        "lea         (%2,%0,2)  , %2        \n\t"
-        "add        %0          , %1        \n\t"
-        "neg        %0                      \n\t"
-        "1:                                 \n\t"
-        "cvtps2dq    (%2,%0,2)  , %%xmm0    \n\t"
-        "cvtps2dq  16(%2,%0,2)  , %%xmm1    \n\t"
-        "packssdw   %%xmm1      , %%xmm0    \n\t"
-        "movdqa     %%xmm0      ,  (%1,%0)  \n\t"
-        "add        $16         , %0        \n\t"
-        " js 1b                             \n\t"
-        :"+r"(reglen), "+r"(dst), "+r"(src)
-    );
-}
+void ff_float_to_int16_3dnow(int16_t *dst, const float *src, long len);
+void ff_float_to_int16_sse  (int16_t *dst, const float *src, long len);
+void ff_float_to_int16_sse2 (int16_t *dst, const float *src, long len);
 
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
 
-#if !HAVE_YASM
-#define ff_float_to_int16_interleave6_sse(a,b,c)   float_to_int16_interleave_misc_sse(a,b,c,6)
-#define ff_float_to_int16_interleave6_3dnow(a,b,c) float_to_int16_interleave_misc_3dnow(a,b,c,6)
-#define ff_float_to_int16_interleave6_3dn2(a,b,c)  float_to_int16_interleave_misc_3dnow(a,b,c,6)
-#endif
 #define ff_float_to_int16_interleave6_sse2 ff_float_to_int16_interleave6_sse
 
 #define FLOAT_TO_INT16_INTERLEAVE(cpu, body) \
@@ -152,7 +88,7 @@ static av_noinline void float_to_int16_interleave_misc_##cpu(int16_t *dst, const
     DECLARE_ALIGNED(16, int16_t, tmp)[len];\
     int i,j,c;\
     for(c=0; c<channels; c++){\
-        float_to_int16_##cpu(tmp, src[c], len);\
+        ff_float_to_int16_##cpu(tmp, src[c], len);\
         for(i=0, j=c; i<len; i++, j+=channels)\
             dst[j] = tmp[i];\
     }\
@@ -160,7 +96,7 @@ static av_noinline void float_to_int16_interleave_misc_##cpu(int16_t *dst, const
 \
 static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, long len, int channels){\
     if(channels==1)\
-        float_to_int16_##cpu(dst, src[0], len);\
+        ff_float_to_int16_##cpu(dst, src[0], len);\
     else if(channels==2){\
         x86_reg reglen = len; \
         const float *src0 = src[0];\
@@ -235,7 +171,6 @@ static void float_to_int16_interleave_3dn2(int16_t *dst, const float **src, long
         float_to_int16_interleave_3dnow(dst, src, len, channels);
 }
 
-#if HAVE_YASM
 void ff_float_interleave2_mmx(float *dst, const float **src, unsigned int len);
 void ff_float_interleave2_sse(float *dst, const float **src, unsigned int len);
 
@@ -272,11 +207,10 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
     if (mm_flags & AV_CPU_FLAG_MMX) {
 #if HAVE_YASM
         c->float_interleave = float_interleave_mmx;
-#endif
 
         if(mm_flags & AV_CPU_FLAG_3DNOW){
             if(!(avctx->flags & CODEC_FLAG_BITEXACT)){
-                c->float_to_int16 = float_to_int16_3dnow;
+                c->float_to_int16 = ff_float_to_int16_3dnow;
                 c->float_to_int16_interleave = float_to_int16_interleave_3dnow;
             }
         }
@@ -285,18 +219,21 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
                 c->float_to_int16_interleave = float_to_int16_interleave_3dn2;
             }
         }
+#endif
         if(mm_flags & AV_CPU_FLAG_SSE){
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse;
-            c->float_to_int16 = float_to_int16_sse;
-            c->float_to_int16_interleave = float_to_int16_interleave_sse;
 #if HAVE_YASM
+            c->float_to_int16 = ff_float_to_int16_sse;
+            c->float_to_int16_interleave = float_to_int16_interleave_sse;
             c->float_interleave = float_interleave_sse;
 #endif
         }
         if(mm_flags & AV_CPU_FLAG_SSE2){
             c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse2;
-            c->float_to_int16 = float_to_int16_sse2;
+#if HAVE_YASM
+            c->float_to_int16 = ff_float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;
+#endif
         }
     }
 }

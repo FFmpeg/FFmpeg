@@ -24,6 +24,48 @@
 
 SECTION_TEXT
 
+;------------------------------------------------------------------------------
+; void ff_float_to_int16(int16_t *dst, const float *src, long len);
+;------------------------------------------------------------------------------
+%macro FLOAT_TO_INT16 2
+cglobal float_to_int16_%1, 3,3,%2, dst, src, len
+    add       lenq, lenq
+    lea       srcq, [srcq+2*lenq]
+    add       dstq, lenq
+    neg       lenq
+.loop:
+%ifidn %1, sse2
+    cvtps2dq    m0, [srcq+2*lenq   ]
+    cvtps2dq    m1, [srcq+2*lenq+16]
+    packssdw    m0, m1
+    mova  [dstq+lenq], m0
+%else
+    cvtps2pi    m0, [srcq+2*lenq   ]
+    cvtps2pi    m1, [srcq+2*lenq+ 8]
+    cvtps2pi    m2, [srcq+2*lenq+16]
+    cvtps2pi    m3, [srcq+2*lenq+24]
+    packssdw    m0, m1
+    packssdw    m2, m3
+    mova  [dstq+lenq  ], m0
+    mova  [dstq+lenq+8], m2
+%endif
+    add       lenq, 16
+    js .loop
+%ifnidn %1, sse2
+    emms
+%endif
+    REP_RET
+%endmacro
+
+INIT_XMM
+FLOAT_TO_INT16 sse2, 2
+INIT_MMX
+FLOAT_TO_INT16 sse, 0
+%define cvtps2pi pf2id
+FLOAT_TO_INT16 3dnow, 0
+%undef cvtps2pi
+
+
 %macro PSWAPD_SSE 2
     pshufw %1, %2, 0x4e
 %endmacro
