@@ -186,7 +186,7 @@ Stop writing to the stream after @var{framecount} frames.
 Use fixed quality scale (VBR). The meaning of @var{q} is
 codec-dependent.
 
-@item -filter[:@var{stream_specifier}] @var{filter_graph}
+@item -filter[:@var{stream_specifier}] @var{filter_graph} (@emph{output,per-stream})
 @var{filter_graph} is a description of the filter graph to apply to
 the stream. Use @code{-filters} to show all the available filters
 (including also sources and sinks).
