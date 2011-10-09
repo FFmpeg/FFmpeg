@@ -211,6 +211,14 @@ SCALE_FUNCS_SSE(sse2);
 SCALE_FUNCS_SSE(ssse3);
 SCALE_FUNCS_SSE(sse4);
 
+extern void ff_yuv2planeX10_sse4(const int16_t *filter, int filterSize,
+                                 const int16_t **src, uint8_t *dest, int dstW,
+                                 const uint8_t *dither, int offset);
+
+extern void ff_yuv2planeX10_avx(const int16_t *filter, int filterSize,
+                                const int16_t **src, uint8_t *dest, int dstW,
+                                const uint8_t *dither, int offset);
+
 void ff_sws_init_swScale_mmx(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -270,6 +278,13 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
         /* Xto15 don't need special sse4 functions */
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, sse4, ssse3);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse4, ssse3);
+        if (c->dstBpc == 10 && !isBE(c->dstFormat))
+            c->yuv2planeX = ff_yuv2planeX10_sse4;
+    }
+
+    if (cpu_flags & AV_CPU_FLAG_AVX) {
+        if (c->dstBpc == 10 && !isBE(c->dstFormat))
+            c->yuv2planeX = ff_yuv2planeX10_avx;
     }
 #endif
 }

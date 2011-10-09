@@ -1,6 +1,7 @@
 ;******************************************************************************
-;* x86-optimized horizontal line scaling functions
+;* x86-optimized horizontal/vertical line scaling functions
 ;* Copyright (c) 2011 Ronald S. Bultje <rsbultje@gmail.com>
+;*                    Kieran Kunhya <kieran@kunhya.com>
 ;*
 ;* This file is part of Libav.
 ;*
@@ -28,6 +29,8 @@ max_19bit_int: times 4 dd 0x7ffff
 max_19bit_flt: times 4 dd 524287.0
 minshort:      times 8 dw 0x8000
 unicoeff:      times 4 dd 0x20000000
+yuv2yuvX_10_start:  times 4 dd 0x10000
+yuv2yuvX_10_upper:  times 8 dw 0x3ff
 
 SECTION .text
 
@@ -427,3 +430,75 @@ INIT_XMM
 SCALE_FUNCS2 sse2,  6, 7, 8
 SCALE_FUNCS2 ssse3, 6, 6, 8
 SCALE_FUNCS2 sse4,  6, 6, 8
+
+;-----------------------------------------------------------------------------
+; vertical line scaling
+;
+; void yuv2plane1_<output_size>_<opt>(const int16_t *src, uint8_t *dst, int dstW,
+;                                     const uint8_t *dither, int offset)
+; and
+; void yuv2planeX_<output_size>_<opt>(const int16_t *filter, int filterSize,
+;                                     const int16_t **src, uint8_t *dst, int dstW,
+;                                     const uint8_t *dither, int offset)
+;
+; Scale one or $filterSize lines of source data to generate one line of output
+; data. The input is 15-bit in int16_t if $output_size is [8,10] and 19-bit in
+; int32_t if $output_size is 16. $filter is 12-bits. $filterSize is a multiple
+; of 2. $offset is either 0 or 3. $dither holds 8 values.
+;-----------------------------------------------------------------------------
+
+%macro yuv2planeX10 1
+
+%ifdef ARCH_X86_32
+%define cntr_reg r1
+%else
+%define cntr_reg r11
+%endif
+
+cglobal yuv2planeX10_%1, 7, 7
+    xor      r5, r5
+.pixelloop
+    mova     m1, [yuv2yuvX_10_start]
+    mova     m2, m1
+    movsxdifnidn cntr_reg, r1d
+.filterloop
+    pxor     m0, m0
+
+    mov      r6, [r2+gprsize*cntr_reg-2*gprsize]
+    mova     m3, [r6+r5]
+
+    mov      r6, [r2+gprsize*cntr_reg-gprsize]
+    mova     m4, [r6+r5]
+
+    punpcklwd m5, m3, m4
+    punpckhwd m3, m4
+
+    movd     m0, [r0+2*cntr_reg-4]
+    SPLATD   m0, m0
+
+    pmaddwd  m5, m0
+    pmaddwd  m3, m0
+
+    paddd    m2, m5
+    paddd    m1, m3
+
+    sub      cntr_reg, 2
+    jg .filterloop
+
+    psrad    m2, 17
+    psrad    m1, 17
+
+    packusdw m2, m1
+    pminsw   m2, [yuv2yuvX_10_upper]
+    mova     [r3+r5], m2
+
+    add      r5, mmsize
+    sub      r4d, mmsize/2
+    jg .pixelloop
+    REP_RET
+%endmacro
+
+INIT_XMM
+yuv2planeX10 sse4
+INIT_AVX
+yuv2planeX10 avx
