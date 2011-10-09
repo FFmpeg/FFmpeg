@@ -298,33 +298,33 @@ static void predictor_decompress_fir_adapt(int32_t *error_buffer,
     }
 }
 
-static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
-                                  int16_t *buffer_out,
-                                  int numchannels, int numsamples,
-                                  uint8_t interlacing_shift,
-                                  uint8_t interlacing_leftweight)
+static void decorrelate_stereo(int32_t *buffer[MAX_CHANNELS],
+                               int numchannels, int numsamples,
+                               uint8_t interlacing_shift,
+                               uint8_t interlacing_leftweight)
 {
     int i;
 
-    /* weighted interlacing */
-    if (interlacing_leftweight) {
-        for (i = 0; i < numsamples; i++) {
-            int32_t a, b;
+    for (i = 0; i < numsamples; i++) {
+        int32_t a, b;
 
-            a = buffer[0][i];
-            b = buffer[1][i];
+        a = buffer[0][i];
+        b = buffer[1][i];
 
-            a -= (b * interlacing_leftweight) >> interlacing_shift;
-            b += a;
+        a -= (b * interlacing_leftweight) >> interlacing_shift;
+        b += a;
 
-            buffer_out[i*numchannels] = b;
-            buffer_out[i*numchannels + 1] = a;
-        }
-
-        return;
+        buffer[0][i] = b;
+        buffer[1][i] = a;
     }
+}
 
-    /* otherwise basic interlacing took place */
+static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
+                                  int16_t *buffer_out,
+                                  int numchannels, int numsamples)
+{
+    int i;
+
     for (i = 0; i < numsamples; i++) {
         int16_t left, right;
 
@@ -340,32 +340,10 @@ static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
                                   int32_t *buffer_out,
                                   int32_t *extra_bits_buffer[MAX_CHANNELS],
                                   int extra_bits,
-                                  int numchannels, int numsamples,
-                                  uint8_t interlacing_shift,
-                                  uint8_t interlacing_leftweight)
+                                  int numchannels, int numsamples)
 {
     int i;
 
-    /* weighted interlacing */
-    if (interlacing_leftweight) {
-        for (i = 0; i < numsamples; i++) {
-            int32_t a, b;
-
-            a = buffer[0][i];
-            b = buffer[1][i];
-
-            a -= (b * interlacing_leftweight) >> interlacing_shift;
-            b += a;
-
-            if (extra_bits) {
-                b  = (b  << extra_bits) | extra_bits_buffer[0][i];
-                a  = (a  << extra_bits) | extra_bits_buffer[1][i];
-            }
-
-            buffer_out[i * numchannels]     = b << 8;
-            buffer_out[i * numchannels + 1] = a << 8;
-        }
-    } else {
         for (i = 0; i < numsamples; i++) {
             int32_t left, right;
 
@@ -380,7 +358,6 @@ static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
             buffer_out[i * numchannels]     = left  << 8;
             buffer_out[i * numchannels + 1] = right << 8;
         }
-    }
 }
 
 static int alac_decode_frame(AVCodecContext *avctx,
@@ -539,15 +516,19 @@ static int alac_decode_frame(AVCodecContext *avctx,
     if (get_bits(&alac->gb, 3) != 7)
         av_log(avctx, AV_LOG_ERROR, "Error : Wrong End Of Frame\n");
 
+    if (channels == 2 && interlacing_leftweight) {
+        decorrelate_stereo(alac->outputsamples_buffer, alac->numchannels,
+                           outputsamples, interlacing_shift,
+                           interlacing_leftweight);
+    }
+
     switch(alac->setinfo_sample_size) {
     case 16:
         if (channels == 2) {
             reconstruct_stereo_16(alac->outputsamples_buffer,
                                   (int16_t*)outbuffer,
                                   alac->numchannels,
-                                  outputsamples,
-                                  interlacing_shift,
-                                  interlacing_leftweight);
+                                  outputsamples);
         } else {
             int i;
             for (i = 0; i < outputsamples; i++) {
@@ -562,9 +543,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
                                   alac->extra_bits_buffer,
                                   alac->extra_bits,
                                   alac->numchannels,
-                                  outputsamples,
-                                  interlacing_shift,
-                                  interlacing_leftweight);
+                                  outputsamples);
         } else {
             int i;
             for (i = 0; i < outputsamples; i++)
