@@ -277,7 +277,7 @@ static void init_mv(FourXContext *f){
     }
 #endif
 
-static inline void mcdc(uint16_t *dst, uint16_t *src, int log2w, int h, int stride, int scale, int dc){
+static inline void mcdc(uint16_t *dst, uint16_t *src, int log2w, int h, int stride, int scale, unsigned dc){
    int i;
    dc*= 0x10001;
 
