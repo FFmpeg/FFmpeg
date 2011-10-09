@@ -191,6 +191,9 @@ codec-dependent.
 the stream. Use @code{-filters} to show all the available filters
 (including also sources and sinks).
 
+@item -stats (@emph{global})
+Print encoding progress/statistics. On by default.
+
 @end table
 
 @section Video Options

@@ -132,6 +132,8 @@ static int input_sync;
 
 static float dts_delta_threshold = 10;
 
+static int print_stats = 1;
+
 static uint8_t *audio_buf;
 static uint8_t *audio_out;
 static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
@@ -1312,6 +1314,9 @@ static void print_report(OutputFile *output_files,
     double bitrate, ti1, pts;
     static int64_t last_time = -1;
     static int qp_histogram[52];
+
+    if (!print_stats && !is_last_report)
+        return;
 
     if (!is_last_report) {
         int64_t cur_time;
@@ -3980,6 +3985,7 @@ static const OptionDef options[] = {
 #if CONFIG_AVFILTER
     { "filter", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(filters)}, "set stream filterchain", "filter_list" },
 #endif
+    { "stats", OPT_BOOL, {&print_stats}, "print progress report during encoding", },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
