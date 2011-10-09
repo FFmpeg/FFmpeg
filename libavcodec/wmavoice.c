@@ -1085,7 +1085,7 @@ static void aw_pulse_set2(WMAVoiceContext *s, GetBitContext *gb,
             int excl_range         = s->aw_pulse_range; // always 16 or 24
             uint16_t *use_mask_ptr = &use_mask[idx >> 4];
             int first_sh           = 16 - (idx & 15);
-            *use_mask_ptr++       &= 0xFFFF << first_sh;
+            *use_mask_ptr++       &= 0xFFFFu << first_sh;
             excl_range            -= first_sh;
             if (excl_range >= 16) {
                 *use_mask_ptr++    = 0;
