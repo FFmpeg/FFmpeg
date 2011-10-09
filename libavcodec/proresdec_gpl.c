@@ -575,18 +575,18 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     buf += frame_hdr_size;
     buf_size -= frame_hdr_size;
 
+    if (frame->data[0])
+        avctx->release_buffer(avctx, frame);
+
+    if (avctx->get_buffer(avctx, frame) < 0)
+        return -1;
+
  decode_picture:
     pic_size = decode_picture_header(avctx, buf, buf_size);
     if (pic_size < 0) {
         av_log(avctx, AV_LOG_ERROR, "error decoding picture header\n");
         return -1;
     }
-
-    if (frame->data[0])
-        avctx->release_buffer(avctx, frame);
-
-    if (avctx->get_buffer(avctx, frame) < 0)
-        return -1;
 
     if (decode_picture(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "error decoding picture\n");
