@@ -481,20 +481,10 @@ static int alac_decode_frame(AVCodecContext *avctx,
     } else {
         /* not compressed, easy case */
         int i, chan;
-        if (alac->setinfo_sample_size <= 16) {
-        for (i = 0; i < outputsamples; i++)
+        for (i = 0; i < outputsamples; i++) {
             for (chan = 0; chan < channels; chan++) {
                 alac->outputsamples_buffer[chan][i] = get_sbits_long(&alac->gb,
                                                                      alac->setinfo_sample_size);
-            }
-        } else {
-            for (i = 0; i < outputsamples; i++) {
-                for (chan = 0; chan < channels; chan++) {
-                    alac->outputsamples_buffer[chan][i] = get_bits(&alac->gb,
-                                                          alac->setinfo_sample_size);
-                    alac->outputsamples_buffer[chan][i] = sign_extend(alac->outputsamples_buffer[chan][i],
-                                                                      alac->setinfo_sample_size);
-                }
             }
         }
         alac->extra_bits = 0;
