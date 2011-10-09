@@ -271,7 +271,7 @@ int ff_h263_resync(MpegEncContext *s){
 
 int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 {
-    int code, val, sign, shift, l;
+    int code, val, sign, shift;
     code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
 
     if (code == 0)
@@ -293,8 +293,7 @@ int h263_decode_motion(MpegEncContext * s, int pred, int f_code)
 
     /* modulo decoding */
     if (!s->h263_long_vectors) {
-        l = INT_BIT - 5 - f_code;
-        val = (val<<l)>>l;
+        val = sign_extend(val, 5 + f_code);
     } else {
         /* horrible h263 long vector mode */
         if (pred < -31 && val < -63)
