@@ -70,7 +70,15 @@ typedef struct FmtConvertContext {
                                       long len, int channels);
 
     /**
-     * Convert an array of interleaved float to multiple arrays of float.
+     * Convert multiple arrays of float to an array of interleaved float.
+     *
+     * @param dst destination array of interleaved float.
+     *            constraints: 16-byte aligned
+     * @param src source array of float arrays, one for each channel.
+     *            constraints: 16-byte aligned
+     * @param len number of elements to convert.
+     *            constraints: multiple of 8
+     * @param channels number of channels
      */
     void (*float_interleave)(float *dst, const float **src, unsigned int len,
                              int channels);
