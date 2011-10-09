@@ -617,9 +617,9 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
              break;
     case 24: avctx->sample_fmt    = AV_SAMPLE_FMT_S32;
              break;
-    default: av_log(avctx, AV_LOG_ERROR, "Sample depth %d is not supported.\n",
-                    alac->setinfo_sample_size);
-             return -1;
+    default: av_log_ask_for_sample(avctx, "Sample depth %d is not supported.\n",
+                                   alac->setinfo_sample_size);
+             return AVERROR_PATCHWELCOME;
     }
 
     if (alac->numchannels < 1) {
