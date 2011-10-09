@@ -319,6 +319,17 @@ static void decorrelate_stereo(int32_t *buffer[MAX_CHANNELS],
     }
 }
 
+static void append_extra_bits(int32_t *buffer[MAX_CHANNELS],
+                              int32_t *extra_bits_buffer[MAX_CHANNELS],
+                              int extra_bits, int numchannels, int numsamples)
+{
+    int i, ch;
+
+    for (ch = 0; ch < numchannels; ch++)
+        for (i = 0; i < numsamples; i++)
+            buffer[ch][i] = (buffer[ch][i] << extra_bits) | extra_bits_buffer[ch][i];
+}
+
 static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
                                   int16_t *buffer_out,
                                   int numchannels, int numsamples)
@@ -338,8 +349,6 @@ static void reconstruct_stereo_16(int32_t *buffer[MAX_CHANNELS],
 
 static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
                                   int32_t *buffer_out,
-                                  int32_t *extra_bits_buffer[MAX_CHANNELS],
-                                  int extra_bits,
                                   int numchannels, int numsamples)
 {
     int i;
@@ -349,11 +358,6 @@ static void decorrelate_stereo_24(int32_t *buffer[MAX_CHANNELS],
 
             left  = buffer[0][i];
             right = buffer[1][i];
-
-            if (extra_bits) {
-                left   = (left   << extra_bits) | extra_bits_buffer[0][i];
-                right  = (right  << extra_bits) | extra_bits_buffer[1][i];
-            }
 
             buffer_out[i * numchannels]     = left  << 8;
             buffer_out[i * numchannels + 1] = right << 8;
@@ -522,6 +526,11 @@ static int alac_decode_frame(AVCodecContext *avctx,
                            interlacing_leftweight);
     }
 
+    if (alac->extra_bits) {
+        append_extra_bits(alac->outputsamples_buffer, alac->extra_bits_buffer,
+                          alac->extra_bits, alac->numchannels, outputsamples);
+    }
+
     switch(alac->setinfo_sample_size) {
     case 16:
         if (channels == 2) {
@@ -540,8 +549,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
         if (channels == 2) {
             decorrelate_stereo_24(alac->outputsamples_buffer,
                                   outbuffer,
-                                  alac->extra_bits_buffer,
-                                  alac->extra_bits,
                                   alac->numchannels,
                                   outputsamples);
         } else {
