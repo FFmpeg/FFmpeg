@@ -458,8 +458,8 @@ static int read_dcs(AVCodecContext *avctx, GetBitContext *gb, Bundle *b,
                     int start_bits, int has_sign)
 {
     int i, j, len, len2, bsize, sign, v, v2;
-    int16_t *dst = (int16_t*)b->cur_dec;
-    int16_t *dst_end =( int16_t*)b->data_end;
+    int16_t *dst     = (int16_t*)b->cur_dec;
+    int16_t *dst_end = (int16_t*)b->data_end;
 
     CHECK_READ_VAL(gb, b, len);
     v = get_bits(gb, start_bits - has_sign);

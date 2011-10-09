@@ -1131,7 +1131,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
                             cb_idx = cb_vector_idx[code];
                             nnz = cb_idx >> 8 & 15;
-                            bits = SHOW_UBITS(re, gb, nnz) << (32-nnz);
+                            bits = nnz ? GET_CACHE(re, gb) : 0;
                             LAST_SKIP_BITS(re, gb, nnz);
                             cf = VMUL4S(cf, vq, cb_idx, bits, sf + idx);
                         } while (len -= 4);
@@ -1171,7 +1171,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
                             GET_VLC(code, re, gb, vlc_tab, 8, 2);
                             cb_idx = cb_vector_idx[code];
                             nnz = cb_idx >> 8 & 15;
-                            sign = SHOW_UBITS(re, gb, nnz) << (cb_idx >> 12);
+                            sign = nnz ? SHOW_UBITS(re, gb, nnz) << (cb_idx >> 12) : 0;
                             LAST_SKIP_BITS(re, gb, nnz);
                             cf = VMUL2S(cf, vq, cb_idx, sign, sf + idx);
                         } while (len -= 2);
