@@ -26,51 +26,10 @@
 #include "libavutil/x86_cpu.h"
 #include "libavcodec/fmtconvert.h"
 
-static void int32_to_float_fmul_scalar_sse(float *dst, const int *src, float mul, int len)
-{
-    x86_reg i = -4*len;
-    __asm__ volatile(
-        "movss  %3, %%xmm4 \n"
-        "shufps $0, %%xmm4, %%xmm4 \n"
-        "1: \n"
-        "cvtpi2ps   (%2,%0), %%xmm0 \n"
-        "cvtpi2ps  8(%2,%0), %%xmm1 \n"
-        "cvtpi2ps 16(%2,%0), %%xmm2 \n"
-        "cvtpi2ps 24(%2,%0), %%xmm3 \n"
-        "movlhps  %%xmm1,    %%xmm0 \n"
-        "movlhps  %%xmm3,    %%xmm2 \n"
-        "mulps    %%xmm4,    %%xmm0 \n"
-        "mulps    %%xmm4,    %%xmm2 \n"
-        "movaps   %%xmm0,   (%1,%0) \n"
-        "movaps   %%xmm2, 16(%1,%0) \n"
-        "add $32, %0 \n"
-        "jl 1b \n"
-        :"+r"(i)
-        :"r"(dst+len), "r"(src+len), "m"(mul)
-    );
-}
-
-static void int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mul, int len)
-{
-    x86_reg i = -4*len;
-    __asm__ volatile(
-        "movss  %3, %%xmm4 \n"
-        "shufps $0, %%xmm4, %%xmm4 \n"
-        "1: \n"
-        "cvtdq2ps   (%2,%0), %%xmm0 \n"
-        "cvtdq2ps 16(%2,%0), %%xmm1 \n"
-        "mulps    %%xmm4,    %%xmm0 \n"
-        "mulps    %%xmm4,    %%xmm1 \n"
-        "movaps   %%xmm0,   (%1,%0) \n"
-        "movaps   %%xmm1, 16(%1,%0) \n"
-        "add $32, %0 \n"
-        "jl 1b \n"
-        :"+r"(i)
-        :"r"(dst+len), "r"(src+len), "m"(mul)
-    );
-}
-
 #if HAVE_YASM
+
+void ff_int32_to_float_fmul_scalar_sse (float *dst, const int *src, float mul, int len);
+void ff_int32_to_float_fmul_scalar_sse2(float *dst, const int *src, float mul, int len);
 
 void ff_float_to_int16_3dnow(int16_t *dst, const float *src, long len);
 void ff_float_to_int16_sse  (int16_t *dst, const float *src, long len);
@@ -204,8 +163,8 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_MMX) {
 #if HAVE_YASM
+    if (mm_flags & AV_CPU_FLAG_MMX) {
         c->float_interleave = float_interleave_mmx;
 
         if (HAVE_AMD3DNOW && mm_flags & AV_CPU_FLAG_3DNOW) {
@@ -219,21 +178,17 @@ void ff_fmt_convert_init_x86(FmtConvertContext *c, AVCodecContext *avctx)
                 c->float_to_int16_interleave = float_to_int16_interleave_3dn2;
             }
         }
-#endif
         if (HAVE_SSE && mm_flags & AV_CPU_FLAG_SSE) {
-            c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse;
-#if HAVE_YASM
+            c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse;
             c->float_to_int16 = ff_float_to_int16_sse;
             c->float_to_int16_interleave = float_to_int16_interleave_sse;
             c->float_interleave = float_interleave_sse;
-#endif
         }
         if (HAVE_SSE && mm_flags & AV_CPU_FLAG_SSE2) {
-            c->int32_to_float_fmul_scalar = int32_to_float_fmul_scalar_sse2;
-#if HAVE_YASM
+            c->int32_to_float_fmul_scalar = ff_int32_to_float_fmul_scalar_sse2;
             c->float_to_int16 = ff_float_to_int16_sse2;
             c->float_to_int16_interleave = float_to_int16_interleave_sse2;
-#endif
         }
     }
+#endif
 }

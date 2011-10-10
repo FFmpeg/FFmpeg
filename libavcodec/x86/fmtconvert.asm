@@ -24,6 +24,52 @@
 
 SECTION_TEXT
 
+;---------------------------------------------------------------------------------
+; void int32_to_float_fmul_scalar(float *dst, const int *src, float mul, int len);
+;---------------------------------------------------------------------------------
+%macro INT32_TO_FLOAT_FMUL_SCALAR 2
+%ifdef ARCH_X86_64
+cglobal int32_to_float_fmul_scalar_%1, 3,3,%2, dst, src, len
+%else
+cglobal int32_to_float_fmul_scalar_%1, 4,4,%2, dst, src, mul, len
+    movss   m0, mulm
+%endif
+    SPLATD  m0
+    shl     lenq, 2
+    add     srcq, lenq
+    add     dstq, lenq
+    neg     lenq
+.loop:
+%ifidn %1, sse2
+    cvtdq2ps  m1, [srcq+lenq   ]
+    cvtdq2ps  m2, [srcq+lenq+16]
+%else
+    cvtpi2ps  m1, [srcq+lenq   ]
+    cvtpi2ps  m3, [srcq+lenq+ 8]
+    cvtpi2ps  m2, [srcq+lenq+16]
+    cvtpi2ps  m4, [srcq+lenq+24]
+    movlhps   m1, m3
+    movlhps   m2, m4
+%endif
+    mulps     m1, m0
+    mulps     m2, m0
+    mova  [dstq+lenq   ], m1
+    mova  [dstq+lenq+16], m2
+    add     lenq, 32
+    jl .loop
+    REP_RET
+%endmacro
+
+INIT_XMM
+%define SPLATD SPLATD_SSE
+%define movdqa movaps
+INT32_TO_FLOAT_FMUL_SCALAR sse, 5
+%undef movdqa
+%define SPLATD SPLATD_SSE2
+INT32_TO_FLOAT_FMUL_SCALAR sse2, 3
+%undef SPLATD
+
+
 ;------------------------------------------------------------------------------
 ; void ff_float_to_int16(int16_t *dst, const float *src, long len);
 ;------------------------------------------------------------------------------
