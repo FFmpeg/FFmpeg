@@ -186,6 +186,8 @@ codec-dependent.
 @var{filter_graph} is a description of the filter graph to apply to
 the stream. Use @code{-filters} to show all the available filters
 (including also sources and sinks).
+@item -pre[:@var{stream_specifier}] @var{preset_name} (@emph{output,per-stream})
+Specify the preset for matching stream(s).
 
 @item -stats (@emph{global})
 Print encoding progress/statistics. On by default.
@@ -769,6 +771,21 @@ quality).
 
 @chapter Examples
 @c man begin EXAMPLES
+
+@section Preset files
+
+A preset file contains a sequence of @var{option=value} pairs, one for
+each line, specifying a sequence of options which can be specified also on
+the command line. Lines starting with the hash ('#') character are ignored and
+are used to provide comments. Empty lines are also ignored. Check the
+@file{ffpresets} directory in the Libav source tree for examples.
+
+Preset files are specified with the @code{pre} option, this option takes a
+preset name as input.  Avconv searches for a file named @var{preset_name}.avpreset in
+the directories @file{$AVCONV_DATADIR} (if set), and @file{$HOME/.avconv}, and in
+the data directory defined at configuration time (usually @file{$PREFIX/share/avconv})
+in that order.  For example, if the argument is @code{libx264-max}, it will
+search for the file @file{libx264-max.avpreset}.
 
 @section Video and Audio grabbing
 
