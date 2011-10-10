@@ -802,11 +802,6 @@ static int ape_decode_frame(AVCodecContext * avctx,
     int blockstodecode;
     int bytes_used;
 
-    if (buf_size == 0 && !s->samples) {
-        *data_size = 0;
-        return 0;
-    }
-
     /* should not happen but who knows */
     if (BLOCKS_PER_LOOP * 2 * avctx->channels > *data_size) {
         av_log (avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc! (max is %d where you have %d)\n", *data_size, s->samples * 2 * avctx->channels);
