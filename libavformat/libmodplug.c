@@ -167,7 +167,7 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIOContext *pb = s->pb;
     ModPlug_Settings settings;
     ModPlugContext *modplug = s->priv_data;
-    int r, sz = avio_size(pb);
+    int sz = avio_size(pb);
 
     if (sz < 0) {
         av_log(s, AV_LOG_WARNING, "Could not determine file size\n");
@@ -179,10 +179,12 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
                sz == FF_MODPLUG_DEF_FILE_SIZE ? " (see -max_size)" : "", sz);
     }
 
-    r = av_expr_parse(&modplug->expr, modplug->color_eval, var_names,
-                      NULL, NULL, NULL, NULL, 0, s);
-    if (r < 0)
-        return r;
+    if (modplug->color_eval) {
+        int r = av_expr_parse(&modplug->expr, modplug->color_eval, var_names,
+                              NULL, NULL, NULL, NULL, 0, s);
+        if (r < 0)
+            return r;
+    }
 
     modplug->buf = av_malloc(modplug->max_size);
     if (!modplug->buf)
