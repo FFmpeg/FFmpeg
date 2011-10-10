@@ -35,13 +35,17 @@ void ff_float_to_int16_3dnow(int16_t *dst, const float *src, long len);
 void ff_float_to_int16_sse  (int16_t *dst, const float *src, long len);
 void ff_float_to_int16_sse2 (int16_t *dst, const float *src, long len);
 
+void ff_float_to_int16_interleave2_3dnow(int16_t *dst, const float **src, long len);
+void ff_float_to_int16_interleave2_sse  (int16_t *dst, const float **src, long len);
+void ff_float_to_int16_interleave2_sse2 (int16_t *dst, const float **src, long len);
+
 void ff_float_to_int16_interleave6_sse(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dnow(int16_t *dst, const float **src, int len);
 void ff_float_to_int16_interleave6_3dn2(int16_t *dst, const float **src, int len);
 
 #define ff_float_to_int16_interleave6_sse2 ff_float_to_int16_interleave6_sse
 
-#define FLOAT_TO_INT16_INTERLEAVE(cpu, body) \
+#define FLOAT_TO_INT16_INTERLEAVE(cpu) \
 /* gcc pessimizes register allocation if this is in the same function as float_to_int16_interleave_sse2*/\
 static av_noinline void float_to_int16_interleave_misc_##cpu(int16_t *dst, const float **src, long len, int channels){\
     DECLARE_ALIGNED(16, int16_t, tmp)[len];\
@@ -57,71 +61,16 @@ static void float_to_int16_interleave_##cpu(int16_t *dst, const float **src, lon
     if(channels==1)\
         ff_float_to_int16_##cpu(dst, src[0], len);\
     else if(channels==2){\
-        x86_reg reglen = len; \
-        const float *src0 = src[0];\
-        const float *src1 = src[1];\
-        __asm__ volatile(\
-            "shl $2, %0 \n"\
-            "add %0, %1 \n"\
-            "add %0, %2 \n"\
-            "add %0, %3 \n"\
-            "neg %0 \n"\
-            body\
-            :"+r"(reglen), "+r"(dst), "+r"(src0), "+r"(src1)\
-        );\
+        ff_float_to_int16_interleave2_##cpu(dst, src, len);\
     }else if(channels==6){\
         ff_float_to_int16_interleave6_##cpu(dst, src, len);\
     }else\
         float_to_int16_interleave_misc_##cpu(dst, src, len, channels);\
 }
 
-FLOAT_TO_INT16_INTERLEAVE(3dnow,
-    "1:                         \n"
-    "pf2id     (%2,%0), %%mm0   \n"
-    "pf2id    8(%2,%0), %%mm1   \n"
-    "pf2id     (%3,%0), %%mm2   \n"
-    "pf2id    8(%3,%0), %%mm3   \n"
-    "packssdw    %%mm1, %%mm0   \n"
-    "packssdw    %%mm3, %%mm2   \n"
-    "movq        %%mm0, %%mm1   \n"
-    "punpcklwd   %%mm2, %%mm0   \n"
-    "punpckhwd   %%mm2, %%mm1   \n"
-    "movq        %%mm0,  (%1,%0)\n"
-    "movq        %%mm1, 8(%1,%0)\n"
-    "add $16, %0                \n"
-    "js 1b                      \n"
-    "femms                      \n"
-)
-
-FLOAT_TO_INT16_INTERLEAVE(sse,
-    "1:                         \n"
-    "cvtps2pi  (%2,%0), %%mm0   \n"
-    "cvtps2pi 8(%2,%0), %%mm1   \n"
-    "cvtps2pi  (%3,%0), %%mm2   \n"
-    "cvtps2pi 8(%3,%0), %%mm3   \n"
-    "packssdw    %%mm1, %%mm0   \n"
-    "packssdw    %%mm3, %%mm2   \n"
-    "movq        %%mm0, %%mm1   \n"
-    "punpcklwd   %%mm2, %%mm0   \n"
-    "punpckhwd   %%mm2, %%mm1   \n"
-    "movq        %%mm0,  (%1,%0)\n"
-    "movq        %%mm1, 8(%1,%0)\n"
-    "add $16, %0                \n"
-    "js 1b                      \n"
-    "emms                       \n"
-)
-
-FLOAT_TO_INT16_INTERLEAVE(sse2,
-    "1:                         \n"
-    "cvtps2dq  (%2,%0), %%xmm0  \n"
-    "cvtps2dq  (%3,%0), %%xmm1  \n"
-    "packssdw   %%xmm1, %%xmm0  \n"
-    "movhlps    %%xmm0, %%xmm1  \n"
-    "punpcklwd  %%xmm1, %%xmm0  \n"
-    "movdqa     %%xmm0, (%1,%0) \n"
-    "add $16, %0                \n"
-    "js 1b                      \n"
-)
+FLOAT_TO_INT16_INTERLEAVE(3dnow)
+FLOAT_TO_INT16_INTERLEAVE(sse)
+FLOAT_TO_INT16_INTERLEAVE(sse2)
 
 static void float_to_int16_interleave_3dn2(int16_t *dst, const float **src, long len, int channels){
     if(channels==6)

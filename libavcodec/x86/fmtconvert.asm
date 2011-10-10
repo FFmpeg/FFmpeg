@@ -112,6 +112,58 @@ FLOAT_TO_INT16 3dnow, 0
 %undef cvtps2pi
 
 
+;-------------------------------------------------------------------------------
+; void ff_float_to_int16_interleave2(int16_t *dst, const float **src, long len);
+;-------------------------------------------------------------------------------
+%macro FLOAT_TO_INT16_INTERLEAVE2 1
+cglobal float_to_int16_interleave2_%1, 3,4,2, dst, src0, src1, len
+    lea      lenq, [4*r2q]
+    mov     src1q, [src0q+gprsize]
+    mov     src0q, [src0q]
+    add      dstq, lenq
+    add     src0q, lenq
+    add     src1q, lenq
+    neg      lenq
+.loop:
+%ifidn %1, sse2
+    cvtps2dq   m0, [src0q+lenq]
+    cvtps2dq   m1, [src1q+lenq]
+    packssdw   m0, m1
+    movhlps    m1, m0
+    punpcklwd  m0, m1
+    mova  [dstq+lenq], m0
+%else
+    cvtps2pi   m0, [src0q+lenq  ]
+    cvtps2pi   m1, [src0q+lenq+8]
+    cvtps2pi   m2, [src1q+lenq  ]
+    cvtps2pi   m3, [src1q+lenq+8]
+    packssdw   m0, m1
+    packssdw   m2, m3
+    mova       m1, m0
+    punpcklwd  m0, m2
+    punpckhwd  m1, m2
+    mova  [dstq+lenq  ], m0
+    mova  [dstq+lenq+8], m1
+%endif
+    add      lenq, 16
+    js .loop
+%ifnidn %1, sse2
+    emms
+%endif
+    REP_RET
+%endmacro
+
+INIT_MMX
+%define cvtps2pi pf2id
+FLOAT_TO_INT16_INTERLEAVE2 3dnow
+%undef cvtps2pi
+%define movdqa movaps
+FLOAT_TO_INT16_INTERLEAVE2 sse
+%undef movdqa
+INIT_XMM
+FLOAT_TO_INT16_INTERLEAVE2 sse2
+
+
 %macro PSWAPD_SSE 2
     pshufw %1, %2, 0x4e
 %endmacro
