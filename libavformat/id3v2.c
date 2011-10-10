@@ -54,7 +54,7 @@ const AVMetadataConv ff_id3v2_4_metadata_conv[] = {
     { 0 }
 };
 
-const AVMetadataConv ff_id3v2_2_metadata_conv[] = {
+static const AVMetadataConv id3v2_2_metadata_conv[] = {
     { "TAL",  "album"},
     { "TCO",  "genre"},
     { "TT2",  "title"},
@@ -380,7 +380,14 @@ finish:
         av_dict_set(m, "date", date, 0);
 }
 
-const ID3v2EMFunc ff_id3v2_extra_meta_funcs[] = {
+typedef struct ID3v2EMFunc {
+    const char *tag3;
+    const char *tag4;
+    void (*read)(AVFormatContext*, AVIOContext*, int, char*, ID3v2ExtraMeta **);
+    void (*free)();
+} ID3v2EMFunc;
+
+static const ID3v2EMFunc id3v2_extra_meta_funcs[] = {
     { "GEO", "GEOB", read_geobtag, free_geobtag },
     { NULL }
 };
@@ -393,13 +400,12 @@ const ID3v2EMFunc ff_id3v2_extra_meta_funcs[] = {
 static const ID3v2EMFunc *get_extra_meta_func(const char *tag, int isv34)
 {
     int i = 0;
-    while (ff_id3v2_extra_meta_funcs[i].tag3) {
+    while (id3v2_extra_meta_funcs[i].tag3) {
         if (!memcmp(tag,
-                    (isv34 ?
-                        ff_id3v2_extra_meta_funcs[i].tag4 :
-                        ff_id3v2_extra_meta_funcs[i].tag3),
+                    (isv34 ? id3v2_extra_meta_funcs[i].tag4 :
+                             id3v2_extra_meta_funcs[i].tag3),
                     (isv34 ? 4 : 3)))
-            return &ff_id3v2_extra_meta_funcs[i];
+            return &id3v2_extra_meta_funcs[i];
         i++;
     }
     return NULL;
@@ -560,7 +566,7 @@ void ff_id3v2_read_all(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **e
         }
     } while (found_header);
     ff_metadata_conv(&s->metadata, NULL, ff_id3v2_34_metadata_conv);
-    ff_metadata_conv(&s->metadata, NULL, ff_id3v2_2_metadata_conv);
+    ff_metadata_conv(&s->metadata, NULL, id3v2_2_metadata_conv);
     ff_metadata_conv(&s->metadata, NULL, ff_id3v2_4_metadata_conv);
     merge_date(&s->metadata);
 }
