@@ -99,6 +99,7 @@ OBJS-$(CONFIG_GXF_MUXER)                 += gxfenc.o audiointerleave.o
 OBJS-$(CONFIG_G722_DEMUXER)              += rawdec.o
 OBJS-$(CONFIG_G722_MUXER)                += rawenc.o
 OBJS-$(CONFIG_G723_1_DEMUXER)            += g723_1.o
+OBJS-$(CONFIG_G723_1_MUXER)              += g723_1.o
 OBJS-$(CONFIG_H261_DEMUXER)              += h261dec.o rawdec.o
 OBJS-$(CONFIG_H261_MUXER)                += rawenc.o
 OBJS-$(CONFIG_H263_DEMUXER)              += h263dec.o rawdec.o
