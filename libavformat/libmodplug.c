@@ -55,7 +55,7 @@ typedef struct ModPlugContext {
     int fsize;            ///< constant frame size
     int linesize;         ///< line size in bytes
     char *color_eval;     ///< color eval user input expression
-    int eval_err;         ///< 1 if eval failed once, otherwise 0 (used to disable video)
+    AVExpr *expr;         ///< parsed color eval expression
 } ModPlugContext;
 
 static const char *var_names[] = {
@@ -167,7 +167,7 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVIOContext *pb = s->pb;
     ModPlug_Settings settings;
     ModPlugContext *modplug = s->priv_data;
-    int sz = avio_size(pb);
+    int r, sz = avio_size(pb);
 
     if (sz < 0) {
         av_log(s, AV_LOG_WARNING, "Could not determine file size\n");
@@ -178,6 +178,12 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
                "but demuxing is likely to fail due to incomplete buffer\n",
                sz == FF_MODPLUG_DEF_FILE_SIZE ? " (see -max_size)" : "", sz);
     }
+
+    r = av_expr_parse(&modplug->expr, modplug->color_eval, var_names,
+                      NULL, NULL, NULL, NULL, 0, s);
+    if (r < 0)
+        return r;
+
     modplug->buf = av_malloc(modplug->max_size);
     if (!modplug->buf)
         return AVERROR(ENOMEM);
@@ -294,23 +300,14 @@ static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
                 PRINT_INFO(5, "ts",      VAR_TIME);
             }
 
-            if (modplug->color_eval && !modplug->eval_err) {
+            if (modplug->expr) {
                 int x, y;
                 for (y = 0; y < modplug->h; y++) {
                     for (x = 0; x < modplug->w; x++) {
                         double color;
-
                         var_values[VAR_X] = x;
                         var_values[VAR_Y] = y;
-                        if (av_expr_parse_and_eval(&color, modplug->color_eval,
-                                                   var_names, var_values,
-                                                   NULL, NULL, NULL, NULL, NULL, 0, s) < 0) {
-                            av_log(s, AV_LOG_ERROR,
-                                   "Error while evaluating the expression '%s' with x=%d y=%d\n",
-                                   modplug->color_eval, x, y);
-                            modplug->eval_err = 1;
-                            return 0;
-                        }
+                        color = av_expr_eval(modplug->expr, var_values, NULL);
                         pkt->data[y*modplug->linesize + x*3 + 2] |= av_clip((int)color, 0, 0xf)<<4;
                     }
                 }
