@@ -35,6 +35,7 @@ typedef struct {
     char path[1024];
     AVFormatContext *avf;
     char *format;          /**< Set by a private option. */
+    char *pattern;         /**< Set by a private option. */
     float time;            /**< Set by a private option. */
     int64_t offset_time;
     int64_t recording_time;
@@ -49,7 +50,8 @@ static int segment_header(SegmentContext *s)
 
     av_strlcpy(oc->filename, s->path, sizeof(oc->filename));
 
-    av_strlcatf(oc->filename, sizeof(oc->filename), "%03d", s->number++);
+    av_strlcatf(oc->filename, sizeof(oc->filename),
+                s->pattern, s->number++);
 
     if ((err = avio_open(&oc->pb, oc->filename, AVIO_FLAG_WRITE)) < 0) {
         return err;
@@ -116,7 +118,8 @@ static int seg_write_header(AVFormatContext *s)
 
     av_strlcpy(oc->filename, seg->path, sizeof(oc->filename));
 
-    av_strlcatf(oc->filename, sizeof(oc->filename), "%2d", seg->number++);
+    av_strlcatf(oc->filename, sizeof(oc->filename),
+                seg->pattern, seg->number++);
 
     if ((ret = avio_open(&oc->pb, oc->filename, AVIO_FLAG_WRITE)) < 0) {
         avformat_free_context(oc);
@@ -129,6 +132,9 @@ static int seg_write_header(AVFormatContext *s)
 
     if (ret)
         avformat_free_context(oc);
+
+    avio_printf(s->pb, "%s\n", oc->filename);
+    avio_flush(s->pb);
 
     return ret;
 }
@@ -156,7 +162,8 @@ static int seg_write_packet(AVFormatContext *s, AVPacket *pkt)
             avformat_free_context(oc);
             return ret;
         }
-
+        avio_printf(s->pb, "%s\n", oc->filename);
+        avio_flush(s->pb);
     }
 
     ret = oc->oformat->write_packet(oc, pkt);
@@ -178,7 +185,9 @@ static int seg_write_trailer(struct AVFormatContext *s)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "container_format", "container format used for the segments", OFFSET(format), FF_OPT_TYPE_STRING, {.str = "nut"}, 0, 0, E },
-    { "segment_time",     "segment lenght in seconds",              OFFSET(time),     FF_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E },
+    { "segment_time",     "segment lenght in seconds",              OFFSET(time),   FF_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E },
+    { "segment_pattern",  "pattern to use in segment files",        OFFSET(pattern),FF_OPT_TYPE_STRING, {.str = "%03d"}, 0, 0, E },
+
     { NULL },
 };
 
