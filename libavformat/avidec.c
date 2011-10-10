@@ -848,7 +848,7 @@ static int avi_sync(AVFormatContext *s, int exit_early)
     int64_t i, sync;
 
 start_sync:
-    memset(d, -1, sizeof(int)*8);
+    memset(d, -1, sizeof(d));
     for(i=sync=avio_tell(pb); !pb->eof_reached; i++) {
         int j;
 
