@@ -106,7 +106,7 @@ library:
 @item framecrc testing format   @tab X @tab
 @item FunCom ISS                @tab   @tab X
     @tab Audio format used in various games from FunCom like The Longest Journey.
-@item G.723.1                   @tab   @tab X
+@item G.723.1                   @tab X @tab X
 @item G.729 BIT                 @tab X @tab X
 @item GIF Animation             @tab X @tab
 @item GXF                       @tab X @tab X
@@ -638,6 +638,7 @@ following image formats are supported:
 @item DV audio               @tab     @tab  X
 @item Enhanced AC-3          @tab  X  @tab  X
 @item FLAC (Free Lossless Audio Codec)  @tab  X  @tab  IX
+@item G.723.1                @tab X @tab X
 @item G.729                  @tab     @tab  X
 @item GSM                    @tab  E  @tab  X
     @tab encoding supported through external library libgsm
