@@ -462,6 +462,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     unsigned int pps_id= get_ue_golomb(&s->gb);
     PPS *pps;
     const int qp_bd_offset = 6*(h->sps.bit_depth_luma-8);
+    int bits_left;
 
     if(pps_id >= MAX_PPS_COUNT) {
         av_log(h->s.avctx, AV_LOG_ERROR, "pps_id (%d) out of range\n", pps_id);
@@ -538,7 +539,9 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     memcpy(pps->scaling_matrix4, h->sps_buffers[pps->sps_id]->scaling_matrix4, sizeof(pps->scaling_matrix4));
     memcpy(pps->scaling_matrix8, h->sps_buffers[pps->sps_id]->scaling_matrix8, sizeof(pps->scaling_matrix8));
 
-    if(get_bits_count(&s->gb) < bit_length){
+    bits_left = bit_length - get_bits_count(&s->gb);
+    if (bits_left && (bits_left > 8 ||
+                      show_bits(&s->gb, bits_left) != 1 << (bits_left - 1))) {
         pps->transform_8x8_mode= get_bits1(&s->gb);
         decode_scaling_matrices(h, h->sps_buffers[pps->sps_id], pps, 0, pps->scaling_matrix4, pps->scaling_matrix8);
         pps->chroma_qp_index_offset[1]= get_se_golomb(&s->gb); //second_chroma_qp_index_offset
