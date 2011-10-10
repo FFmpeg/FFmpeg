@@ -2487,9 +2487,6 @@ static int latm_decode_frame(AVCodecContext *avctx, void *out, int *out_size,
     int                 muxlength, err;
     GetBitContext       gb;
 
-    if (avpkt->size == 0)
-        return 0;
-
     init_get_bits(&gb, avpkt->data, avpkt->size * 8);
 
     // check for LOAS sync word
