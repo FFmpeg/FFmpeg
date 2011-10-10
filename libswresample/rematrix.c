@@ -215,20 +215,20 @@ int swr_rematrix_init(SwrContext *s){
                 s->matrix16[i][j]= lrintf(s->matrix[i][j] * 32768);
             }
     }
-        for(i=0; i<av_get_channel_layout_nb_channels(s->out_ch_layout); i++){
-            for(j=0; j<av_get_channel_layout_nb_channels(s->in_ch_layout); j++){
-                av_log(NULL, AV_LOG_DEBUG, "%f ", s->matrix[i][j]);
-            }
-            av_log(NULL, AV_LOG_DEBUG, "\n");
+    for(i=0; i<av_get_channel_layout_nb_channels(s->out_ch_layout); i++){
+        for(j=0; j<av_get_channel_layout_nb_channels(s->in_ch_layout); j++){
+            av_log(NULL, AV_LOG_DEBUG, "%f ", s->matrix[i][j]);
         }
+        av_log(NULL, AV_LOG_DEBUG, "\n");
+    }
     return 0;
 }
 
 int swr_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){
     int out_i, in_i, i, j;
 
-av_assert0(out->ch_count == av_get_channel_layout_nb_channels(s->out_ch_layout));
-av_assert0(in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout));
+    av_assert0(out->ch_count == av_get_channel_layout_nb_channels(s->out_ch_layout));
+    av_assert0(in ->ch_count == av_get_channel_layout_nb_channels(s-> in_ch_layout));
 
     for(out_i=0; out_i<out->ch_count; out_i++){
         switch(s->matrix_ch[out_i][0]){
