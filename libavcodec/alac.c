@@ -368,10 +368,6 @@ static int alac_decode_frame(AVCodecContext *avctx,
     uint8_t interlacing_leftweight;
     int i, ch;
 
-    /* short-circuit null buffers */
-    if (!inbuffer || !input_buffer_size)
-        return -1;
-
     init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
 
     channels = get_bits(&alac->gb, 3) + 1;
