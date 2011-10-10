@@ -548,22 +548,21 @@ static int allocate_buffers(ALACContext *alac)
 {
     int ch;
     for (ch = 0; ch < alac->numchannels; ch++) {
-        alac->predicterror_buffer[ch] =
-            av_malloc(alac->setinfo_max_samples_per_frame * 4);
+        int buf_size = alac->setinfo_max_samples_per_frame * sizeof(int32_t);
 
-        alac->outputsamples_buffer[ch] =
-            av_malloc(alac->setinfo_max_samples_per_frame * 4);
+        FF_ALLOC_OR_GOTO(alac->avctx, alac->predicterror_buffer[ch],
+                         buf_size, buf_alloc_fail);
 
-        alac->extra_bits_buffer[ch] = av_malloc(alac->setinfo_max_samples_per_frame * 4);
+        FF_ALLOC_OR_GOTO(alac->avctx, alac->outputsamples_buffer[ch],
+                         buf_size, buf_alloc_fail);
 
-        if (!alac->predicterror_buffer[ch]  ||
-            !alac->outputsamples_buffer[ch] ||
-            !alac->extra_bits_buffer[ch]) {
-            alac_decode_close(alac->avctx);
-            return AVERROR(ENOMEM);
-        }
+        FF_ALLOC_OR_GOTO(alac->avctx, alac->extra_bits_buffer[ch],
+                         buf_size, buf_alloc_fail);
     }
     return 0;
+buf_alloc_fail:
+    alac_decode_close(alac->avctx);
+    return AVERROR(ENOMEM);
 }
 
 static int alac_set_info(ALACContext *alac)
