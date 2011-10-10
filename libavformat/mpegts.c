@@ -1567,7 +1567,7 @@ static int mpegts_read_header(AVFormatContext *s,
          * probe buffer usually is big enough. Only warn if the seek failed
          * on files where the seek should work. */
         if (avio_seek(pb, pos, SEEK_SET) < 0)
-            av_log(s, AV_LOG_ERROR, "Unable to seek back to the start\n");
+            av_log(s, pb->seekable ? AV_LOG_ERROR : AV_LOG_INFO, "Unable to seek back to the start\n");
 
         mpegts_open_section_filter(ts, SDT_PID, sdt_cb, ts, 1);
 
