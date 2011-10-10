@@ -156,6 +156,8 @@ static int input_sync;
 
 static float dts_delta_threshold = 10;
 
+static int print_stats = 1;
+
 static uint8_t *audio_buf;
 static uint8_t *audio_out;
 static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
@@ -1380,6 +1382,9 @@ static void print_report(OutputFile *output_files,
     static int qp_histogram[52];
     int hours, mins, secs, us;
 
+    if (!print_stats && !is_last_report)
+        return;
+
     if (!is_last_report) {
         if (last_time == -1) {
             last_time = cur_time;
@@ -1473,7 +1478,7 @@ static void print_report(OutputFile *output_files,
         snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), " dup=%d drop=%d",
                 nb_frames_dup, nb_frames_drop);
 
-    av_log(NULL, is_last_report ? AV_LOG_WARNING : AV_LOG_INFO, "%s    \r", buf);
+    av_log(NULL, AV_LOG_INFO, "%s    \r", buf);
 
     fflush(stderr);
 
@@ -1671,7 +1676,6 @@ static int output_packet(InputStream *ist, int ist_index,
                     (ist->st->codec->sample_rate * ist->st->codec->channels);
                 break;}
             case AVMEDIA_TYPE_VIDEO:
-                    decoded_data_size = (ist->st->codec->width * ist->st->codec->height * 3) / 2;
                     if (!(decoded_frame = avcodec_alloc_frame()))
                         return AVERROR(ENOMEM);
                     avpkt.pts = pkt_pts;
@@ -2143,6 +2147,8 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
         } else {
             if (!ost->enc)
                 ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
+            ist->decoding_needed = 1;
+            ost->encoding_needed = 1;
             switch(codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:
                 ost->fifo= av_fifo_alloc(1024);
@@ -2167,8 +2173,6 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 ost->audio_resample |=    codec->sample_fmt     != icodec->sample_fmt
                                        || codec->channel_layout != icodec->channel_layout;
                 icodec->request_channels = codec->channels;
-                ist->decoding_needed = 1;
-                ost->encoding_needed = 1;
                 ost->resample_sample_fmt  = icodec->sample_fmt;
                 ost->resample_sample_rate = icodec->sample_rate;
                 ost->resample_channels    = icodec->channels;
@@ -2198,8 +2202,6 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 ost->resample_height = icodec->height;
                 ost->resample_width  = icodec->width;
                 ost->resample_pix_fmt= icodec->pix_fmt;
-                ost->encoding_needed = 1;
-                ist->decoding_needed = 1;
 
                 if (!ost->frame_rate.num)
                     ost->frame_rate = ist->st->r_frame_rate.num ? ist->st->r_frame_rate : (AVRational){25,1};
@@ -2226,15 +2228,13 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
 #endif
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
-                ost->encoding_needed = 1;
-                ist->decoding_needed = 1;
                 break;
             default:
                 abort();
                 break;
             }
             /* two pass mode */
-            if (ost->encoding_needed && codec->codec_id != CODEC_ID_H264 &&
+            if (codec->codec_id != CODEC_ID_H264 &&
                 (codec->flags & (CODEC_FLAG_PASS1 | CODEC_FLAG_PASS2))) {
                 char logfilename[1024];
                 FILE *f;
@@ -2714,12 +2714,6 @@ static int transcode(OutputFile *output_files, int nb_output_files,
         }
     }
     return ret;
-}
-
-static int opt_verbose(const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "-%s is deprecated, use -loglevel\n", opt);
-    return 0;
 }
 
 static int opt_frame_crop(const char *opt, const char *arg)
@@ -4265,7 +4259,6 @@ static const OptionDef options[] = {
     { "re", OPT_BOOL | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(rate_emu)}, "read input at native frame rate", "" },
     { "loop_input", OPT_BOOL | OPT_EXPERT, {(void*)&loop_input}, "deprecated, use -loop" },
     { "loop_output", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&loop_output}, "deprecated, use -loop", "" },
-    { "v", HAS_ARG, {(void*)opt_verbose}, "deprecated, use -loglevel instead", "number" },
     { "target", HAS_ARG | OPT_FUNC2, {(void*)opt_target}, "specify target file type (\"vcd\", \"svcd\", \"dvd\", \"dv\", \"dv50\", \"pal-vcd\", \"ntsc-svcd\", ...)", "type" },
     { "vsync", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&video_sync_method}, "video sync method", "" },
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
@@ -4283,6 +4276,7 @@ static const OptionDef options[] = {
 #if CONFIG_AVFILTER
     { "filter", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(filters)}, "set stream filterchain", "filter_list" },
 #endif
+    { "stats", OPT_BOOL, {&print_stats}, "print progress report during encoding", },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },

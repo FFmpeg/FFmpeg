@@ -40,7 +40,7 @@
 #undef BIT_DEPTH
 
 static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
-    const int lt= src[-1-1*stride];
+    const unsigned lt = src[-1-1*stride];
     LOAD_TOP_EDGE
     LOAD_TOP_RIGHT_EDGE
     uint32_t v = PACK_4U8((lt + 2*t0 + t1 + 2) >> 2,
@@ -55,7 +55,7 @@ static void pred4x4_vertical_vp8_c(uint8_t *src, const uint8_t *topright, int st
 }
 
 static void pred4x4_horizontal_vp8_c(uint8_t *src, const uint8_t *topright, int stride){
-    const int lt= src[-1-1*stride];
+    const unsigned lt = src[-1-1*stride];
     LOAD_LEFT_EDGE
 
     AV_WN32A(src+0*stride, ((lt + 2*l0 + l1 + 2) >> 2)*0x01010101);
@@ -67,8 +67,6 @@ static void pred4x4_horizontal_vp8_c(uint8_t *src, const uint8_t *topright, int 
 static void pred4x4_down_left_svq3_c(uint8_t *src, const uint8_t *topright, int stride){
     LOAD_TOP_EDGE
     LOAD_LEFT_EDGE
-    const av_unused int unu0= t0;
-    const av_unused int unu1= l0;
 
     src[0+0*stride]=(l1 + t1)>>1;
     src[1+0*stride]=
@@ -292,7 +290,7 @@ static void pred16x16_tm_vp8_c(uint8_t *src, int stride){
 
 static void pred8x8_left_dc_rv40_c(uint8_t *src, int stride){
     int i;
-    int dc0;
+    unsigned dc0;
 
     dc0=0;
     for(i=0;i<8; i++)
@@ -307,7 +305,7 @@ static void pred8x8_left_dc_rv40_c(uint8_t *src, int stride){
 
 static void pred8x8_top_dc_rv40_c(uint8_t *src, int stride){
     int i;
-    int dc0;
+    unsigned dc0;
 
     dc0=0;
     for(i=0;i<8; i++)
@@ -322,7 +320,7 @@ static void pred8x8_top_dc_rv40_c(uint8_t *src, int stride){
 
 static void pred8x8_dc_rv40_c(uint8_t *src, int stride){
     int i;
-    int dc0=0;
+    unsigned dc0 = 0;
 
     for(i=0;i<4; i++){
         dc0+= src[-1+i*stride] + src[i-stride];

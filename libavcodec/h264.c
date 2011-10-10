@@ -1722,7 +1722,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h, int mb_ty
                                     tr_high= ((uint16_t*)ptr)[3 - linesize/2]*0x0001000100010001ULL;
                                     topright= (uint8_t*) &tr_high;
                                 } else {
-                                    tr= ptr[3 - linesize]*0x01010101;
+                                    tr= ptr[3 - linesize]*0x01010101u;
                                     topright= (uint8_t*) &tr;
                                 }
                             }else

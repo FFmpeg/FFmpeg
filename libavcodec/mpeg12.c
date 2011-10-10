@@ -55,7 +55,7 @@ static VLC mv_vlc;
 /* as H.263, but only 17 codes */
 static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
 {
-    int code, sign, val, l, shift;
+    int code, sign, val, shift;
 
     code = get_vlc2(&s->gb, mv_vlc.table, MV_VLC_BITS, 2);
     if (code == 0) {
@@ -78,9 +78,7 @@ static int mpeg_decode_motion(MpegEncContext *s, int fcode, int pred)
     val += pred;
 
     /* modulo decoding */
-    l   = INT_BIT - 5 - shift;
-    val = (val << l) >> l;
-    return val;
+    return sign_extend(val, 5 + shift);
 }
 
 static inline int mpeg1_decode_block_intra(MpegEncContext *s, DCTELEM *block, int n)

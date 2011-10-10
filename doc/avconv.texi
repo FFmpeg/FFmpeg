@@ -154,10 +154,6 @@ To set the language of the second stream:
 avconv -i INPUT -metadata:s:1 language=eng OUTPUT
 @end example
 
-@item -v @var{number} (@emph{global})
-This option is deprecated and has no effect, use -loglevel
-to set verbosity level.
-
 @item -target @var{type} (@emph{output})
 Specify target file type (@code{vcd}, @code{svcd}, @code{dvd}, @code{dv},
 @code{dv50}). @var{type} may be prefixed with @code{pal-}, @code{ntsc-} or
@@ -186,10 +182,13 @@ Stop writing to the stream after @var{framecount} frames.
 Use fixed quality scale (VBR). The meaning of @var{q} is
 codec-dependent.
 
-@item -filter[:@var{stream_specifier}] @var{filter_graph}
+@item -filter[:@var{stream_specifier}] @var{filter_graph} (@emph{output,per-stream})
 @var{filter_graph} is a description of the filter graph to apply to
 the stream. Use @code{-filters} to show all the available filters
 (including also sources and sinks).
+
+@item -stats (@emph{global})
+Print encoding progress/statistics. On by default.
 
 @end table
 

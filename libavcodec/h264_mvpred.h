@@ -593,7 +593,7 @@ static void fill_decode_caches(H264Context *h, int mb_type){
                 ref_cache[3 - 1*8]= ref[4*top_xy + 3];
             }else{
                 AV_ZERO128(mv_cache[0 - 1*8]);
-                AV_WN32A(&ref_cache[0 - 1*8], ((top_type ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101);
+                AV_WN32A(&ref_cache[0 - 1*8], ((top_type ? LIST_NOT_USED : PART_NOT_AVAILABLE)&0xFF)*0x01010101u);
             }
 
             if(mb_type & (MB_TYPE_16x8|MB_TYPE_8x8)){

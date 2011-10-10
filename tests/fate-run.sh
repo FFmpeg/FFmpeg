@@ -51,7 +51,7 @@ run(){
 }
 
 avconv(){
-    run $tool -v 0 -threads $threads -thread_type $thread_type "$@"
+    run $tool -nostats -threads $threads -thread_type $thread_type "$@"
 }
 
 framecrc(){
