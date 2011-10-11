@@ -28,6 +28,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavcodec/bytestream.h"
+#include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "internal.h"
@@ -175,6 +176,7 @@ typedef struct PESContext {
     int64_t ts_packet_pos; /**< position of first TS packet of this PES packet */
     uint8_t header[MAX_PES_HEADER_SIZE];
     uint8_t *buffer;
+    SLConfigDescr sl;
 } PESContext;
 
 extern AVInputFormat ff_mpegts_demuxer;
@@ -658,6 +660,83 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pes->flags = 0;
 }
 
+static uint64_t get_bits64(GetBitContext *gb, int bits)
+{
+    uint64_t ret = 0;
+    while (bits > 17) {
+        ret <<= 17;
+        ret |= get_bits(gb, 17);
+        bits -= 17;
+    }
+    ret <<= bits;
+    ret |= get_bits(gb, bits);
+    return ret;
+}
+
+static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf, int buf_size)
+{
+    GetBitContext gb;
+    int au_start_flag = 0, au_end_flag = 0, ocr_flag = 0, idle_flag = 0;
+    int padding_flag = 0, padding_bits = 0, inst_bitrate_flag = 0;
+    int dts_flag = -1, cts_flag = -1;
+    int64_t dts = AV_NOPTS_VALUE, cts = AV_NOPTS_VALUE;
+    init_get_bits(&gb, buf, buf_size*8);
+
+    if (sl->use_au_start)
+        au_start_flag = get_bits1(&gb);
+    if (sl->use_au_end)
+        au_end_flag = get_bits1(&gb);
+    if (!sl->use_au_start && !sl->use_au_end)
+        au_start_flag = au_end_flag = 1;
+    if (sl->ocr_len > 0)
+        ocr_flag = get_bits1(&gb);
+    if (sl->use_idle)
+        idle_flag = get_bits1(&gb);
+    if (sl->use_padding)
+        padding_flag = get_bits1(&gb);
+    if (padding_flag)
+        padding_bits = get_bits(&gb, 3);
+
+    if (!idle_flag && (!padding_flag || padding_bits != 0)) {
+        if (sl->packet_seq_num_len)
+            skip_bits_long(&gb, sl->packet_seq_num_len);
+        if (sl->degr_prior_len)
+            if (get_bits1(&gb))
+                skip_bits(&gb, sl->degr_prior_len);
+        if (ocr_flag)
+            skip_bits_long(&gb, sl->ocr_len);
+        if (au_start_flag) {
+            if (sl->use_rand_acc_pt)
+                get_bits1(&gb);
+            if (sl->au_seq_num_len > 0)
+                skip_bits_long(&gb, sl->au_seq_num_len);
+            if (sl->use_timestamps) {
+                dts_flag = get_bits1(&gb);
+                cts_flag = get_bits1(&gb);
+            }
+        }
+        if (sl->inst_bitrate_len)
+            inst_bitrate_flag = get_bits1(&gb);
+        if (dts_flag == 1)
+            dts = get_bits64(&gb, sl->timestamp_len);
+        if (cts_flag == 1)
+            cts = get_bits64(&gb, sl->timestamp_len);
+        if (sl->au_len > 0)
+            skip_bits_long(&gb, sl->au_len);
+        if (inst_bitrate_flag)
+            skip_bits_long(&gb, sl->inst_bitrate_len);
+    }
+
+    if (dts != AV_NOPTS_VALUE)
+        pes->dts = dts;
+    if (cts != AV_NOPTS_VALUE)
+        pes->pts = cts;
+
+    av_set_pts_info(pes->st, sl->timestamp_len, 1, sl->timestamp_res);
+
+    return (get_bits_count(&gb) + 7) >> 3;
+}
+
 /* return non zero if a packet could be constructed */
 static int mpegts_push_data(MpegTSFilter *filter,
                             const uint8_t *buf, int buf_size, int is_start,
@@ -809,6 +888,12 @@ static int mpegts_push_data(MpegTSFilter *filter,
                 /* we got the full header. We parse it and get the payload */
                 pes->state = MPEGTS_PAYLOAD;
                 pes->data_index = 0;
+                if (pes->stream_type == 0x12) {
+                    int sl_header_bytes = read_sl_header(pes, &pes->sl, p, buf_size);
+                    pes->pes_header_size += sl_header_bytes;
+                    p += sl_header_bytes;
+                    buf_size -= sl_header_bytes;
+                }
             }
             break;
         case MPEGTS_PAYLOAD:
@@ -962,7 +1047,9 @@ static int parse_MP4ESDescrTag(MP4DescrParseContext *d, int64_t off, int len)
     d->active_descr->es_id = es_id;
     update_offsets(&d->pb, &off, &len);
     parse_mp4_descr(d, off, len, MP4DecConfigDescrTag);
-    //SLConfigDescriptor
+    update_offsets(&d->pb, &off, &len);
+    if (len > 0)
+        parse_mp4_descr(d, off, len, MP4SLDescrTag);
     d->active_descr = NULL;
     return 0;
 }
@@ -977,6 +1064,39 @@ static int parse_MP4DecConfigDescrTag(MP4DescrParseContext *d, int64_t off, int 
         return AVERROR(ENOMEM);
     descr->dec_config_descr_len = len;
     avio_read(&d->pb, descr->dec_config_descr, len);
+    return 0;
+}
+
+static int parse_MP4SLDescrTag(MP4DescrParseContext *d, int64_t off, int len)
+{
+    Mp4Descr *descr = d->active_descr;
+    int predefined;
+    if (!descr)
+        return -1;
+
+    predefined = avio_r8(&d->pb);
+    if (!predefined) {
+        int lengths;
+        int flags = avio_r8(&d->pb);
+        descr->sl.use_au_start       = !!(flags & 0x80);
+        descr->sl.use_au_end         = !!(flags & 0x40);
+        descr->sl.use_rand_acc_pt    = !!(flags & 0x20);
+        descr->sl.use_padding        = !!(flags & 0x08);
+        descr->sl.use_timestamps     = !!(flags & 0x04);
+        descr->sl.use_idle           = !!(flags & 0x02);
+        descr->sl.timestamp_res      = avio_rb32(&d->pb);
+                                       avio_rb32(&d->pb);
+        descr->sl.timestamp_len      = avio_r8(&d->pb);
+        descr->sl.ocr_len            = avio_r8(&d->pb);
+        descr->sl.au_len             = avio_r8(&d->pb);
+        descr->sl.inst_bitrate_len   = avio_r8(&d->pb);
+        lengths                      = avio_rb16(&d->pb);
+        descr->sl.degr_prior_len     = lengths >> 12;
+        descr->sl.au_seq_num_len     = (lengths >> 7) & 0x1f;
+        descr->sl.packet_seq_num_len = (lengths >> 2) & 0x1f;
+    } else {
+        av_log_missing_feature(d->s, "Predefined SLConfigDescriptor\n", 0);
+    }
     return 0;
 }
 
@@ -1013,6 +1133,9 @@ static int parse_mp4_descr(MP4DescrParseContext *d, int64_t off, int len,
     case MP4DecConfigDescrTag:
         parse_MP4DecConfigDescrTag(d, off, len1);
         break;
+    case MP4SLDescrTag:
+        parse_MP4SLDescrTag(d, off, len1);
+        break;
     }
 
 done:
@@ -1047,12 +1170,23 @@ static int mp4_read_od(AVFormatContext *s, const uint8_t *buf, unsigned size,
     return 0;
 }
 
-static void SL_packet(AVFormatContext *s, MpegTSContext *ts, const uint8_t *p, const uint8_t *p_end)
+static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
 {
+    MpegTSContext *ts = filter->u.section_filter.opaque;
+    SectionHeader h;
+    const uint8_t *p, *p_end;
     AVIOContext pb;
     Mp4Descr mp4_descr[MAX_MP4_DESCR_COUNT] = {{ 0 }};
     int mp4_descr_count = 0;
     int i, pid;
+    AVFormatContext *s = ts->stream;
+
+    p_end = section + section_len - 4;
+    p = section;
+    if (parse_section_header(&h, &p, p_end) < 0)
+        return;
+    if (h.tid != M4OD_TID)
+        return;
 
     mp4_read_od(s, p, (unsigned)(p_end - p), mp4_descr, &mp4_descr_count, MAX_MP4_DESCR_COUNT);
 
@@ -1073,6 +1207,8 @@ static void SL_packet(AVFormatContext *s, MpegTSContext *ts, const uint8_t *p, c
             if (!st) {
                 continue;
             }
+
+            pes->sl = mp4_descr[i].sl;
 
             ffio_init_context(&pb, mp4_descr[i].dec_config_descr,
                               mp4_descr[i].dec_config_descr_len, 0, NULL, NULL, NULL, NULL);
@@ -1096,25 +1232,6 @@ static void SL_packet(AVFormatContext *s, MpegTSContext *ts, const uint8_t *p, c
     }
     for (i = 0; i < mp4_descr_count; i++)
         av_free(mp4_descr[i].dec_config_descr);
-}
-
-static void m4sl_cb(MpegTSFilter *filter, const uint8_t *section, int section_len)
-{
-    MpegTSContext *ts = filter->u.section_filter.opaque;
-    SectionHeader h1, *h = &h1;
-    const uint8_t *p, *p_end;
-
-    av_dlog(ts->stream, "m4SL/od:\n");
-    hex_dump_debug(ts->stream, (uint8_t *)section, section_len);
-
-    p_end = section + section_len - 4;
-    p = section;
-    if (parse_section_header(h, &p, p_end) < 0)
-        return;
-    if (h->tid != M4OD_TID)
-        return;
-
-    SL_packet(ts->stream, ts, p, p_end);
 }
 
 int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type,
