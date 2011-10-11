@@ -813,7 +813,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
     APEContext *s = avctx->priv_data;
     int16_t *samples = data;
     uint32_t nblocks;
-    int i, n;
+    int i;
     int blockstodecode;
     int bytes_used;
 
@@ -824,6 +824,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
     }
 
     if(!s->samples){
+        uint32_t offset;
         void *tmp_data = av_realloc(s->data, (buf_size + 3) & ~3);
         if (!tmp_data)
             return AVERROR(ENOMEM);
@@ -833,13 +834,13 @@ static int ape_decode_frame(AVCodecContext *avctx,
         s->data_end = s->data + buf_size;
 
         nblocks = bytestream_get_be32(&s->ptr);
-        n =  bytestream_get_be32(&s->ptr);
-        if(n < 0 || n > 3){
+        offset  = bytestream_get_be32(&s->ptr);
+        if (offset > 3) {
             av_log(avctx, AV_LOG_ERROR, "Incorrect offset passed\n");
             s->data = NULL;
             return AVERROR_INVALIDDATA;
         }
-        s->ptr += n;
+        s->ptr += offset;
 
         if (!nblocks || nblocks > INT_MAX) {
             av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
