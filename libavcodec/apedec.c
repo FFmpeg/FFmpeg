@@ -735,7 +735,6 @@ static void init_frame_decoder(APEContext * ctx)
 
 static void ape_unpack_mono(APEContext * ctx, int count)
 {
-    int32_t left;
     int32_t *decoded0 = ctx->decoded0;
     int32_t *decoded1 = ctx->decoded1;
 
@@ -754,10 +753,7 @@ static void ape_unpack_mono(APEContext * ctx, int count)
 
     /* Pseudo-stereo - just copy left channel to right channel */
     if (ctx->channels == 2) {
-        while (count--) {
-            left = *decoded0;
-            *(decoded1++) = *(decoded0++) = left;
-        }
+        memcpy(decoded1, decoded0, count * sizeof(*decoded1));
     }
 }
 
