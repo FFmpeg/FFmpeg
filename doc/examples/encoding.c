@@ -25,7 +25,7 @@
  * libavcodec API use example.
  *
  * Note that libavcodec only handles codecs (mpeg, mpeg4, etc...),
- * not file formats (avi, vob, etc...). See library 'libavformat' for the
+ * not file formats (avi, vob, mp4, mov, mkv, mxf, flv, mpegts, mpegps, etc...). See library 'libavformat' for the
  * format handling
  */
 
