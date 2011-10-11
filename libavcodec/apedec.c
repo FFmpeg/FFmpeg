@@ -841,13 +841,12 @@ static int ape_decode_frame(AVCodecContext *avctx,
         }
         s->ptr += n;
 
-        s->currentframeblocks = nblocks;
         buf += 4;
         if (!nblocks || nblocks > INT_MAX) {
             av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
             return AVERROR_INVALIDDATA;
         }
-        s->samples = nblocks;
+        s->currentframeblocks = s->samples = nblocks;
 
         memset(s->decoded0,  0, sizeof(s->decoded0));
         memset(s->decoded1,  0, sizeof(s->decoded1));
