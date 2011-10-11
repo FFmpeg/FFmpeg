@@ -832,7 +832,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
         s->ptr = s->last_ptr = s->data;
         s->data_end = s->data + buf_size;
 
-        nblocks = s->samples = bytestream_get_be32(&s->ptr);
+        nblocks = bytestream_get_be32(&s->ptr);
         n =  bytestream_get_be32(&s->ptr);
         if(n < 0 || n > 3){
             av_log(avctx, AV_LOG_ERROR, "Incorrect offset passed\n");
@@ -843,10 +843,11 @@ static int ape_decode_frame(AVCodecContext *avctx,
 
         s->currentframeblocks = nblocks;
         buf += 4;
-        if (s->samples <= 0) {
+        if (nblocks <= 0) {
             *data_size = 0;
             return buf_size;
         }
+        s->samples = nblocks;
 
         memset(s->decoded0,  0, sizeof(s->decoded0));
         memset(s->decoded1,  0, sizeof(s->decoded1));
