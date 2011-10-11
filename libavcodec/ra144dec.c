@@ -59,29 +59,33 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    static const uint8_t sizes[10] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
-    unsigned int refl_rms[4];    // RMS of the reflection coefficients
-    uint16_t block_coefs[4][10]; // LPC coefficients of each sub-block
-    unsigned int lpc_refl[10];   // LPC reflection coefficients of the frame
+    static const uint8_t sizes[LPC_ORDER] = {6, 5, 5, 4, 4, 3, 3, 3, 3, 2};
+    unsigned int refl_rms[NBLOCKS];           // RMS of the reflection coefficients
+    uint16_t block_coefs[NBLOCKS][LPC_ORDER]; // LPC coefficients of each sub-block
+    unsigned int lpc_refl[LPC_ORDER];         // LPC reflection coefficients of the frame
     int i, j;
+    int out_size;
     int16_t *data = vdata;
     unsigned int energy;
 
     RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
-    if (*data_size < 2*160)
-        return -1;
+    out_size = NBLOCKS * BLOCKSIZE * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
-    if(buf_size < 20) {
+    if(buf_size < FRAMESIZE) {
         av_log(avctx, AV_LOG_ERROR,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
         *data_size = 0;
         return buf_size;
     }
-    init_get_bits(&gb, buf, 20 * 8);
+    init_get_bits(&gb, buf, FRAMESIZE * 8);
 
-    for (i=0; i<10; i++)
+    for (i = 0; i < LPC_ORDER; i++)
         lpc_refl[i] = ff_lpc_refl_cb[i][get_bits(&gb, sizes[i])];
 
     ff_eval_coefs(ractx->lpc_coef[0], lpc_refl);
@@ -98,7 +102,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 
     ff_int_to_int16(block_coefs[3], ractx->lpc_coef[0]);
 
-    for (i=0; i < 4; i++) {
+    for (i=0; i < NBLOCKS; i++) {
         do_output_subblock(ractx, block_coefs[i], refl_rms[i], &gb);
 
         for (j=0; j < BLOCKSIZE; j++)
@@ -110,8 +114,8 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 
     FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
 
-    *data_size = 2*160;
-    return 20;
+    *data_size = out_size;
+    return FRAMESIZE;
 }
 
 AVCodec ff_ra_144_decoder = {

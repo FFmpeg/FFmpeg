@@ -31,6 +31,9 @@
 #define MAX_BACKWARD_FILTER_LEN    40
 #define MAX_BACKWARD_FILTER_NONREC 35
 
+#define RA288_BLOCK_SIZE        5
+#define RA288_BLOCKS_PER_FRAME 32
+
 typedef struct {
     float sp_lpc[36];      ///< LPC coefficients for speech data (spec: A)
     float gain_lpc[10];    ///< LPC coefficients for gain        (spec: GB)
@@ -165,7 +168,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     float *out = data;
-    int i, j;
+    int i, j, out_size;
     RA288Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
@@ -176,18 +179,22 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         return 0;
     }
 
-    if (*data_size < 32*5*4)
-        return -1;
+    out_size = RA288_BLOCK_SIZE * RA288_BLOCKS_PER_FRAME *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     init_get_bits(&gb, buf, avctx->block_align * 8);
 
-    for (i=0; i < 32; i++) {
+    for (i=0; i < RA288_BLOCKS_PER_FRAME; i++) {
         float gain = amptable[get_bits(&gb, 3)];
         int cb_coef = get_bits(&gb, 6 + (i&1));
 
         decode(ractx, gain, cb_coef);
 
-        for (j=0; j < 5; j++)
+        for (j=0; j < RA288_BLOCK_SIZE; j++)
             *(out++) = ractx->sp_hist[70 + 36 + j];
 
         if ((i & 7) == 3) {
@@ -199,7 +206,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         }
     }
 
-    *data_size = (char *)out - (char *)data;
+    *data_size = out_size;
     return avctx->block_align;
 }
 

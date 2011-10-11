@@ -256,12 +256,13 @@ static int mxf_get_d10_aes3_packet(AVIOContext *pb, AVStream *st, AVPacket *pkt,
 
     if (length > 61444) /* worst case PAL 1920 samples 8 channels */
         return -1;
-    av_new_packet(pkt, length);
-    avio_read(pb, pkt->data, length);
+    length = av_get_packet(pb, pkt, length);
+    if (length < 0)
+        return length;
     data_ptr = pkt->data;
     end_ptr = pkt->data + length;
     buf_ptr = pkt->data + 4; /* skip SMPTE 331M header */
-    for (; buf_ptr < end_ptr; ) {
+    for (; buf_ptr + st->codec->channels*4 < end_ptr; ) {
         for (i = 0; i < st->codec->channels; i++) {
             uint32_t sample = bytestream_get_le32(&buf_ptr);
             if (st->codec->bits_per_coded_sample == 24)
@@ -271,7 +272,7 @@ static int mxf_get_d10_aes3_packet(AVIOContext *pb, AVStream *st, AVPacket *pkt,
         }
         buf_ptr += 32 - st->codec->channels*4; // always 8 channels stored SMPTE 331M
     }
-    pkt->size = data_ptr - pkt->data;
+    av_shrink_packet(pkt, data_ptr - pkt->data);
     return 0;
 }
 
@@ -323,12 +324,16 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     if (memcmp(tmpbuf, checkv, 16))
         av_log(s, AV_LOG_ERROR, "probably incorrect decryption key\n");
     size -= 32;
-    av_get_packet(pb, pkt, size);
+    size = av_get_packet(pb, pkt, size);
+    if (size < 0)
+        return size;
+    else if (size < plaintext_size)
+        return AVERROR_INVALIDDATA;
     size -= plaintext_size;
     if (mxf->aesc)
         av_aes_crypt(mxf->aesc, &pkt->data[plaintext_size],
                      &pkt->data[plaintext_size], size >> 4, ivec, 1);
-    pkt->size = orig_size;
+    av_shrink_packet(pkt, orig_size);
     pkt->stream_index = index;
     avio_skip(pb, end - avio_tell(pb));
     return 0;
@@ -365,8 +370,11 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
                     av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
                     return -1;
                 }
-            } else
-                av_get_packet(s->pb, pkt, klv.length);
+            } else {
+                int ret = av_get_packet(s->pb, pkt, klv.length);
+                if (ret < 0)
+                    return ret;
+            }
             pkt->stream_index = index;
             pkt->pos = klv.offset;
             return 0;

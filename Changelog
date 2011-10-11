@@ -62,6 +62,7 @@ easier to use. The changes are:
 - CELT in Ogg demuxing
 - G.723.1 demuxer and decoder
 - libmodplug support (--enable-libmodplug)
+- VC-1 interlaced decoding
 
 
 version 0.8:

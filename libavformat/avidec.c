@@ -874,12 +874,13 @@ static int avi_sync(AVFormatContext *s, int exit_early)
 {
     AVIContext *avi = s->priv_data;
     AVIOContext *pb = s->pb;
-    int n, d[8];
+    int n;
+    unsigned int d[8];
     unsigned int size;
     int64_t i, sync;
 
 start_sync:
-    memset(d, -1, sizeof(int)*8);
+    memset(d, -1, sizeof(d));
     for(i=sync=avio_tell(pb); !url_feof(pb); i++) {
         int j;
 
@@ -891,7 +892,7 @@ start_sync:
 
         n= get_stream_idx(d+2);
 //av_log(s, AV_LOG_DEBUG, "%X %X %X %X %X %X %X %X %"PRId64" %d %d\n", d[0], d[1], d[2], d[3], d[4], d[5], d[6], d[7], i, size, n);
-        if(i + (uint64_t)size > avi->fsize || d[0]<0)
+        if(i + (uint64_t)size > avi->fsize || d[0] > 127)
             continue;
 
         //parse ix##

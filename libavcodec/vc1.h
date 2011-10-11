@@ -105,12 +105,25 @@ enum MVModes {
 };
 //@}
 
+/** MBMODE for interlaced frame P-picture */
+//@{
+enum MBModesIntfr {
+    MV_PMODE_INTFR_1MV,
+    MV_PMODE_INTFR_2MV_FIELD,
+    MV_PMODE_INTFR_2MV,
+    MV_PMODE_INTFR_4MV_FIELD,
+    MV_PMODE_INTFR_4MV,
+    MV_PMODE_INTFR_INTRA,
+};
+//@}
+
 /** @name MV types for B frames */
 //@{
 enum BMVTypes {
     BMV_TYPE_BACKWARD,
     BMV_TYPE_FORWARD,
-    BMV_TYPE_INTERPOLATED
+    BMV_TYPE_INTERPOLATED,
+    BMV_TYPE_DIRECT
 };
 //@}
 
@@ -260,16 +273,18 @@ typedef struct VC1Context{
      * -# 2 -> [-512, 511.f] x [-128, 127.f]
      * -# 3 -> [-1024, 1023.f] x [-256, 255.f]
      */
-    uint8_t mvrange;
+    uint8_t mvrange;              ///< Extended MV range flag
     uint8_t pquantizer;           ///< Uniform (over sequence) quantizer in use
     VLC *cbpcy_vlc;               ///< CBPCY VLC table
-    int tt_index;                 ///< Index for Transform Type tables
+    int tt_index;                 ///< Index for Transform Type tables (to decode TTMB)
     uint8_t* mv_type_mb_plane;    ///< bitplane for mv_type == (4MV)
     uint8_t* direct_mb_plane;     ///< bitplane for "direct" MBs
+    uint8_t* forward_mb_plane;    ///< bitplane for "forward" MBs
     int mv_type_is_raw;           ///< mv type mb plane is not coded
     int dmb_is_raw;               ///< direct mb plane is raw
+    int fmb_is_raw;               ///< forward mb plane is raw
     int skip_is_raw;              ///< skip mb plane is not coded
-    uint8_t luty[256], lutuv[256]; // lookup tables used for intensity compensation
+    uint8_t luty[256], lutuv[256];///< lookup tables used for intensity compensation
     int use_ic;                   ///< use intensity compensation in B-frames
     int rnd;                      ///< rounding control
 
@@ -306,6 +321,44 @@ typedef struct VC1Context{
     uint8_t range_mapy;
     uint8_t range_mapuv;
     //@}
+
+    /** Frame decoding info for interlaced picture */
+    uint8_t dmvrange;   ///< Extended differential MV range flag
+    int fourmvswitch;
+    int intcomp;
+    uint8_t lumscale2;  ///< for interlaced field P picture
+    uint8_t lumshift2;
+    uint8_t luty2[256], lutuv2[256]; // lookup tables used for intensity compensation
+    VLC* mbmode_vlc;
+    VLC* imv_vlc;
+    VLC* twomvbp_vlc;
+    VLC* fourmvbp_vlc;
+    uint8_t twomvbp;
+    uint8_t fourmvbp;
+    uint8_t* fieldtx_plane;
+    int fieldtx_is_raw;
+    int8_t zzi_8x8[64];
+    uint8_t *blk_mv_type_base, *blk_mv_type;    ///< 0: frame MV, 1: field MV (interlaced frame)
+    uint8_t *mv_f_base, *mv_f[2];               ///< 0: MV obtained from same field, 1: opposite field
+    uint8_t *mv_f_last_base, *mv_f_last[2];
+    uint8_t *mv_f_next_base, *mv_f_next[2];
+    int field_mode;     ///< 1 for interlaced field pictures
+    int fptype;
+    int second_field;
+    int refdist;        ///< distance of the current picture from reference
+    int numref;         ///< number of past field pictures used as reference
+                        // 0 corresponds to 1 and 1 corresponds to 2 references
+    int reffield;       ///< if numref = 0 (1 reference) then reffield decides which
+                        // field to use among the two fields from previous frame
+    int intcompfield;   ///< which of the two fields to be intensity compensated
+                        // 0: both fields, 1: bottom field, 2: top field
+    int cur_field_type;     ///< 0: top, 1: bottom
+    int ref_field_type[2];  ///< forward and backward reference field type (top or bottom)
+    int blocks_off, mb_off;
+    int qs_last;        ///< if qpel has been used in the previous (tr.) picture
+    int bmvtype;
+    int frfd, brfd;     ///< reference frame distance (forward or backward)
+    int pic_header_flag;
 
     /** Frame decoding info for sprite modes */
     //@{

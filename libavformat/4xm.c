@@ -177,7 +177,7 @@ static int fourxm_read_header(AVFormatContext *s,
                                               sizeof(AudioTrack),
                                               current_track + 1);
                 if (!fourxm->tracks) {
-                    ret=  AVERROR(ENOMEM);
+                    ret = AVERROR(ENOMEM);
                     goto fail;
                 }
                 memset(&fourxm->tracks[fourxm->track_count], 0,
