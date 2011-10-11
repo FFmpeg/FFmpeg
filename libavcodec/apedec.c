@@ -247,9 +247,12 @@ static inline void range_dec_normalize(APEContext *ctx)
 {
     while (ctx->rc.range <= BOTTOM_VALUE) {
         ctx->rc.buffer <<= 8;
-        if(ctx->ptr < ctx->data_end)
+        if(ctx->ptr < ctx->data_end) {
             ctx->rc.buffer += *ctx->ptr;
-        ctx->ptr++;
+            ctx->ptr++;
+        } else {
+            ctx->error = 1;
+        }
         ctx->rc.low    = (ctx->rc.low << 8)    | ((ctx->rc.buffer >> 1) & 0xFF);
         ctx->rc.range  <<= 8;
     }
@@ -893,7 +896,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
         ape_unpack_stereo(s, blockstodecode);
     emms_c();
 
-    if(s->error || s->ptr > s->data_end){
+    if (s->error) {
         s->samples=0;
         av_log(avctx, AV_LOG_ERROR, "Error decoding frame\n");
         return AVERROR_INVALIDDATA;
