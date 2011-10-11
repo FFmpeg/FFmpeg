@@ -762,6 +762,11 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
         if(!(s->flags & AVFMT_FLAG_KEEP_SIDE_DATA))
             av_packet_merge_side_data(pkt);
 
+        if(pkt->stream_index >= (unsigned)s->nb_streams){
+            av_log(s, AV_LOG_ERROR, "Invalid stream index %d\n", pkt->stream_index);
+            continue;
+        }
+
         st= s->streams[pkt->stream_index];
 
         switch(st->codec->codec_type){
