@@ -75,6 +75,20 @@ static inline int get_ue_golomb(GetBitContext *gb){
     }
 }
 
+/**
+ * Read an unsigned Exp-Golomb code in the range 0 to UINT32_MAX-1.
+ */
+static inline unsigned get_ue_golomb_long(GetBitContext *gb)
+{
+    unsigned buf, log;
+
+    buf = show_bits_long(gb, 32);
+    log = 31 - av_log2(buf);
+    skip_bits_long(gb, log);
+
+    return get_bits_long(gb, log + 1) - 1;
+}
+
  /**
  * read unsigned exp golomb code, constraint to a max of 31.
  * the return value is undefined if the stored value exceeds 31.
