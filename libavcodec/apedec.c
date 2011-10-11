@@ -802,7 +802,7 @@ static int ape_decode_frame(AVCodecContext * avctx,
     int buf_size = avpkt->size;
     APEContext *s = avctx->priv_data;
     int16_t *samples = data;
-    int nblocks;
+    uint32_t nblocks;
     int i, n;
     int blockstodecode;
     int bytes_used;
@@ -838,9 +838,10 @@ static int ape_decode_frame(AVCodecContext * avctx,
 
         s->currentframeblocks = nblocks;
         buf += 4;
-        if (s->samples <= 0) {
+        if (!nblocks || nblocks > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
             *data_size = 0;
-            return buf_size;
+            return AVERROR_INVALIDDATA;
         }
 
         memset(s->decoded0,  0, sizeof(s->decoded0));
