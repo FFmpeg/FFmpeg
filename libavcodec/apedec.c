@@ -163,7 +163,7 @@ typedef struct APEContext {
 
 // TODO: dsputilize
 
-static av_cold int ape_decode_close(AVCodecContext * avctx)
+static av_cold int ape_decode_close(AVCodecContext *avctx)
 {
     APEContext *s = avctx->priv_data;
     int i;
@@ -175,7 +175,7 @@ static av_cold int ape_decode_close(AVCodecContext * avctx)
     return 0;
 }
 
-static av_cold int ape_decode_init(AVCodecContext * avctx)
+static av_cold int ape_decode_init(AVCodecContext *avctx)
 {
     APEContext *s = avctx->priv_data;
     int i;
@@ -198,9 +198,11 @@ static av_cold int ape_decode_init(AVCodecContext * avctx)
     s->compression_level = AV_RL16(avctx->extradata + 2);
     s->flags             = AV_RL16(avctx->extradata + 4);
 
-    av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n", s->compression_level, s->flags);
+    av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n",
+           s->compression_level, s->flags);
     if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE) {
-        av_log(avctx, AV_LOG_ERROR, "Incorrect compression level %d\n", s->compression_level);
+        av_log(avctx, AV_LOG_ERROR, "Incorrect compression level %d\n",
+               s->compression_level);
         return AVERROR_INVALIDDATA;
     }
     s->fset = s->compression_level / 1000 - 1;
@@ -233,7 +235,7 @@ filter_alloc_fail:
 #define BOTTOM_VALUE (TOP_VALUE >> 8)
 
 /** Start the decoder */
-static inline void range_start_decoding(APEContext * ctx)
+static inline void range_start_decoding(APEContext *ctx)
 {
     ctx->rc.buffer = bytestream_get_byte(&ctx->ptr);
     ctx->rc.low    = ctx->rc.buffer >> (8 - EXTRA_BITS);
@@ -241,7 +243,7 @@ static inline void range_start_decoding(APEContext * ctx)
 }
 
 /** Perform normalization */
-static inline void range_dec_normalize(APEContext * ctx)
+static inline void range_dec_normalize(APEContext *ctx)
 {
     while (ctx->rc.range <= BOTTOM_VALUE) {
         ctx->rc.buffer <<= 8;
@@ -259,7 +261,7 @@ static inline void range_dec_normalize(APEContext * ctx)
  * @param tot_f is the total frequency or (code_value)1<<shift
  * @return the culmulative frequency
  */
-static inline int range_decode_culfreq(APEContext * ctx, int tot_f)
+static inline int range_decode_culfreq(APEContext *ctx, int tot_f)
 {
     range_dec_normalize(ctx);
     ctx->rc.help = ctx->rc.range / tot_f;
@@ -271,7 +273,7 @@ static inline int range_decode_culfreq(APEContext * ctx, int tot_f)
  * @param ctx decoder context
  * @param shift number of bits to decode
  */
-static inline int range_decode_culshift(APEContext * ctx, int shift)
+static inline int range_decode_culshift(APEContext *ctx, int shift)
 {
     range_dec_normalize(ctx);
     ctx->rc.help = ctx->rc.range >> shift;
@@ -285,14 +287,14 @@ static inline int range_decode_culshift(APEContext * ctx, int shift)
  * @param sy_f the interval length (frequency of the symbol)
  * @param lt_f the lower end (frequency sum of < symbols)
  */
-static inline void range_decode_update(APEContext * ctx, int sy_f, int lt_f)
+static inline void range_decode_update(APEContext *ctx, int sy_f, int lt_f)
 {
     ctx->rc.low  -= ctx->rc.help * lt_f;
     ctx->rc.range = ctx->rc.help * sy_f;
 }
 
 /** Decode n bits (n <= 16) without modelling */
-static inline int range_decode_bits(APEContext * ctx, int n)
+static inline int range_decode_bits(APEContext *ctx, int n)
 {
     int sym = range_decode_culshift(ctx, n);
     range_decode_update(ctx, 1, sym);
@@ -344,7 +346,7 @@ static const uint16_t counts_diff_3980[21] = {
  * @param counts probability range start position
  * @param counts_diff probability range widths
  */
-static inline int range_get_symbol(APEContext * ctx,
+static inline int range_get_symbol(APEContext *ctx,
                                    const uint16_t counts[],
                                    const uint16_t counts_diff[])
 {
@@ -379,7 +381,7 @@ static inline void update_rice(APERice *rice, int x)
         rice->k++;
 }
 
-static inline int ape_decode_value(APEContext * ctx, APERice *rice)
+static inline int ape_decode_value(APEContext *ctx, APERice *rice)
 {
     int x, overflow;
 
@@ -446,7 +448,7 @@ static inline int ape_decode_value(APEContext * ctx, APERice *rice)
         return -(x >> 1);
 }
 
-static void entropy_decode(APEContext * ctx, int blockstodecode, int stereo)
+static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
 {
     int32_t *decoded0 = ctx->decoded0;
     int32_t *decoded1 = ctx->decoded1;
@@ -469,7 +471,7 @@ static void entropy_decode(APEContext * ctx, int blockstodecode, int stereo)
         range_dec_normalize(ctx);   /* normalize to use up all bytes */
 }
 
-static void init_entropy_decoder(APEContext * ctx)
+static void init_entropy_decoder(APEContext *ctx)
 {
     /* Read the CRC */
     ctx->CRC = bytestream_get_be32(&ctx->ptr);
@@ -501,7 +503,7 @@ static const int32_t initial_coeffs[4] = {
     360, 317, -109, 98
 };
 
-static void init_predictor_decoder(APEContext * ctx)
+static void init_predictor_decoder(APEContext *ctx)
 {
     APEPredictor *p = &ctx->predictor;
 
@@ -524,7 +526,10 @@ static inline int APESIGN(int32_t x) {
     return (x < 0) - (x > 0);
 }
 
-static av_always_inline int predictor_update_filter(APEPredictor *p, const int decoded, const int filter, const int delayA, const int delayB, const int adaptA, const int adaptB)
+static av_always_inline int predictor_update_filter(APEPredictor *p,
+                                                    const int decoded, const int filter,
+                                                    const int delayA,  const int delayB,
+                                                    const int adaptA,  const int adaptB)
 {
     int32_t predictionA, predictionB, sign;
 
@@ -568,7 +573,7 @@ static av_always_inline int predictor_update_filter(APEPredictor *p, const int d
     return p->filterA[filter];
 }
 
-static void predictor_decode_stereo(APEContext * ctx, int count)
+static void predictor_decode_stereo(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded0;
@@ -576,9 +581,11 @@ static void predictor_decode_stereo(APEContext * ctx, int count)
 
     while (count--) {
         /* Predictor Y */
-        *decoded0 = predictor_update_filter(p, *decoded0, 0, YDELAYA, YDELAYB, YADAPTCOEFFSA, YADAPTCOEFFSB);
+        *decoded0 = predictor_update_filter(p, *decoded0, 0, YDELAYA, YDELAYB,
+                                            YADAPTCOEFFSA, YADAPTCOEFFSB);
         decoded0++;
-        *decoded1 = predictor_update_filter(p, *decoded1, 1, XDELAYA, XDELAYB, XADAPTCOEFFSA, XADAPTCOEFFSB);
+        *decoded1 = predictor_update_filter(p, *decoded1, 1, XDELAYA, XDELAYB,
+                                            XADAPTCOEFFSA, XADAPTCOEFFSB);
         decoded1++;
 
         /* Combined */
@@ -592,7 +599,7 @@ static void predictor_decode_stereo(APEContext * ctx, int count)
     }
 }
 
-static void predictor_decode_mono(APEContext * ctx, int count)
+static void predictor_decode_mono(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded0;
@@ -637,7 +644,7 @@ static void predictor_decode_mono(APEContext * ctx, int count)
     p->lastA[0] = currentA;
 }
 
-static void do_init_filter(APEFilter *f, int16_t * buf, int order)
+static void do_init_filter(APEFilter *f, int16_t *buf, int order)
 {
     f->coeffs = buf;
     f->historybuffer = buf + order;
@@ -649,20 +656,23 @@ static void do_init_filter(APEFilter *f, int16_t * buf, int order)
     f->avg = 0;
 }
 
-static void init_filter(APEContext * ctx, APEFilter *f, int16_t * buf, int order)
+static void init_filter(APEContext *ctx, APEFilter *f, int16_t *buf, int order)
 {
     do_init_filter(&f[0], buf, order);
     do_init_filter(&f[1], buf + order * 3 + HISTORY_SIZE, order);
 }
 
-static void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t *data, int count, int order, int fracbits)
+static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
+                            int32_t *data, int count, int order, int fracbits)
 {
     int res;
     int absres;
 
     while (count--) {
         /* round fixedpoint scalar product */
-        res = ctx->dsp.scalarproduct_and_madd_int16(f->coeffs, f->delay - order, f->adaptcoeffs - order, order, APESIGN(*data));
+        res = ctx->dsp.scalarproduct_and_madd_int16(f->coeffs, f->delay - order,
+                                                    f->adaptcoeffs - order,
+                                                    order, APESIGN(*data));
         res = (res + (1 << (fracbits - 1))) >> fracbits;
         res += *data;
         *data++ = res;
@@ -681,7 +691,8 @@ static void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t
             /* Update the adaption coefficients */
             absres = FFABS(res);
             if (absres)
-                *f->adaptcoeffs = ((res & (1<<31)) - (1<<30)) >> (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
+                *f->adaptcoeffs = ((res & (1<<31)) - (1<<30)) >>
+                                  (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
             else
                 *f->adaptcoeffs = 0;
 
@@ -704,8 +715,8 @@ static void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t
     }
 }
 
-static void apply_filter(APEContext * ctx, APEFilter *f,
-                         int32_t * data0, int32_t * data1,
+static void apply_filter(APEContext *ctx, APEFilter *f,
+                         int32_t *data0, int32_t *data1,
                          int count, int order, int fracbits)
 {
     do_apply_filter(ctx, ctx->fileversion, &f[0], data0, count, order, fracbits);
@@ -713,19 +724,21 @@ static void apply_filter(APEContext * ctx, APEFilter *f,
         do_apply_filter(ctx, ctx->fileversion, &f[1], data1, count, order, fracbits);
 }
 
-static void ape_apply_filters(APEContext * ctx, int32_t * decoded0,
-                              int32_t * decoded1, int count)
+static void ape_apply_filters(APEContext *ctx, int32_t *decoded0,
+                              int32_t *decoded1, int count)
 {
     int i;
 
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
         if (!ape_filter_orders[ctx->fset][i])
             break;
-        apply_filter(ctx, ctx->filters[i], decoded0, decoded1, count, ape_filter_orders[ctx->fset][i], ape_filter_fracbits[ctx->fset][i]);
+        apply_filter(ctx, ctx->filters[i], decoded0, decoded1, count,
+                     ape_filter_orders[ctx->fset][i],
+                     ape_filter_fracbits[ctx->fset][i]);
     }
 }
 
-static void init_frame_decoder(APEContext * ctx)
+static void init_frame_decoder(APEContext *ctx)
 {
     int i;
     init_entropy_decoder(ctx);
@@ -734,11 +747,12 @@ static void init_frame_decoder(APEContext * ctx)
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
         if (!ape_filter_orders[ctx->fset][i])
             break;
-        init_filter(ctx, ctx->filters[i], ctx->filterbuf[i], ape_filter_orders[ctx->fset][i]);
+        init_filter(ctx, ctx->filters[i], ctx->filterbuf[i],
+                    ape_filter_orders[ctx->fset][i]);
     }
 }
 
-static void ape_unpack_mono(APEContext * ctx, int count)
+static void ape_unpack_mono(APEContext *ctx, int count)
 {
     int32_t *decoded0 = ctx->decoded0;
     int32_t *decoded1 = ctx->decoded1;
@@ -762,7 +776,7 @@ static void ape_unpack_mono(APEContext * ctx, int count)
     }
 }
 
-static void ape_unpack_stereo(APEContext * ctx, int count)
+static void ape_unpack_stereo(APEContext *ctx, int count)
 {
     int32_t left, right;
     int32_t *decoded0 = ctx->decoded0;
@@ -790,7 +804,7 @@ static void ape_unpack_stereo(APEContext * ctx, int count)
     }
 }
 
-static int ape_decode_frame(AVCodecContext * avctx,
+static int ape_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
 {
@@ -805,7 +819,9 @@ static int ape_decode_frame(AVCodecContext * avctx,
 
     /* should not happen but who knows */
     if (BLOCKS_PER_LOOP * 2 * avctx->channels > *data_size) {
-        av_log (avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc! (max is %d where you have %d)\n", *data_size, s->samples * 2 * avctx->channels);
+        av_log (avctx, AV_LOG_ERROR, "Packet size is too big to be handled "
+                "in lavc! (max is %d where you have %d)\n",
+                *data_size, s->samples * 2 * avctx->channels);
         return -1;
     }
 
