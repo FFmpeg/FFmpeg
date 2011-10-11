@@ -163,6 +163,18 @@ typedef struct APEContext {
 
 // TODO: dsputilize
 
+static av_cold int ape_decode_close(AVCodecContext * avctx)
+{
+    APEContext *s = avctx->priv_data;
+    int i;
+
+    for (i = 0; i < APE_FILTER_LEVELS; i++)
+        av_freep(&s->filterbuf[i]);
+
+    av_freep(&s->data);
+    return 0;
+}
+
 static av_cold int ape_decode_init(AVCodecContext * avctx)
 {
     APEContext *s = avctx->priv_data;
@@ -195,25 +207,18 @@ static av_cold int ape_decode_init(AVCodecContext * avctx)
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
         if (!ape_filter_orders[s->fset][i])
             break;
-        s->filterbuf[i] = av_malloc((ape_filter_orders[s->fset][i] * 3 + HISTORY_SIZE) * 4);
+        FF_ALLOC_OR_GOTO(avctx, s->filterbuf[i],
+                         (ape_filter_orders[s->fset][i] * 3 + HISTORY_SIZE) * 4,
+                         filter_alloc_fail);
     }
 
     dsputil_init(&s->dsp, avctx);
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     return 0;
-}
-
-static av_cold int ape_decode_close(AVCodecContext * avctx)
-{
-    APEContext *s = avctx->priv_data;
-    int i;
-
-    for (i = 0; i < APE_FILTER_LEVELS; i++)
-        av_freep(&s->filterbuf[i]);
-
-    av_freep(&s->data);
-    return 0;
+filter_alloc_fail:
+    ape_decode_close(avctx);
+    return AVERROR(ENOMEM);
 }
 
 /**
