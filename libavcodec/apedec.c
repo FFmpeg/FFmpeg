@@ -26,6 +26,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/avassert.h"
 
 /**
  * @file
@@ -833,6 +834,10 @@ static int ape_decode_frame(AVCodecContext *avctx,
         av_log (avctx, AV_LOG_ERROR, "Output buffer is too small.\n");
         return AVERROR(EINVAL);
     }
+
+    /* this should never be negative, but bad things will happen if it is, so
+       check it just to make sure. */
+    av_assert0(s->samples >= 0);
 
     if(!s->samples){
         uint32_t offset;
