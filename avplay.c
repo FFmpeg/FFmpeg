@@ -157,6 +157,7 @@ typedef struct VideoState {
        compensation */
     DECLARE_ALIGNED(16,uint8_t,audio_buf1)[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
     DECLARE_ALIGNED(16,uint8_t,audio_buf2)[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
+    uint8_t silence_buf[SDL_AUDIO_BUFFER_SIZE];
     uint8_t *audio_buf;
     unsigned int audio_buf_size; /* in bytes */
     int audio_buf_index; /* in bytes */
@@ -2129,9 +2130,8 @@ static void sdl_audio_callback(void *opaque, Uint8 *stream, int len)
            audio_size = audio_decode_frame(is, &pts);
            if (audio_size < 0) {
                 /* if error, just output silence */
-               is->audio_buf = is->audio_buf1;
-               is->audio_buf_size = 1024;
-               memset(is->audio_buf, 0, is->audio_buf_size);
+               is->audio_buf      = is->silence_buf;
+               is->audio_buf_size = sizeof(is->silence_buf);
            } else {
                if (is->show_audio)
                    update_sample_display(is, (int16_t *)is->audio_buf, audio_size);
