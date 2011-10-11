@@ -824,7 +824,10 @@ static int ape_decode_frame(AVCodecContext *avctx,
     }
 
     if(!s->samples){
-        s->data = av_realloc(s->data, (buf_size + 3) & ~3);
+        void *tmp_data = av_realloc(s->data, (buf_size + 3) & ~3);
+        if (!tmp_data)
+            return AVERROR(ENOMEM);
+        s->data = tmp_data;
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
         s->ptr = s->last_ptr = s->data;
         s->data_end = s->data + buf_size;
