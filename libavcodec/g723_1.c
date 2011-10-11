@@ -2179,7 +2179,7 @@ static int g723_1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
         gen_acb_excitation(impulse_resp, p->prev_excitation, p->pitch_lag[i >> 1],
                            p->subframe[i], Rate6k3);
 
-        memcpy(p->prev_excitation, p->prev_excitation + SUBFRAME_LEN,
+        memmove(p->prev_excitation, p->prev_excitation + SUBFRAME_LEN,
                sizeof(int16_t) * (PITCH_MAX - SUBFRAME_LEN));
         for (j = 0; j < SUBFRAME_LEN; j++)
             in[j] = av_clip_int16((in[j] << 1) + impulse_resp[j]);
