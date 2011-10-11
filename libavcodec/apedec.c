@@ -841,7 +841,6 @@ static int ape_decode_frame(AVCodecContext *avctx,
         }
         s->ptr += n;
 
-        buf += 4;
         if (!nblocks || nblocks > INT_MAX) {
             av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
             return AVERROR_INVALIDDATA;
