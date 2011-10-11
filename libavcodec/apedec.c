@@ -820,7 +820,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
     /* should not happen but who knows */
     if (BLOCKS_PER_LOOP * 2 * avctx->channels > *data_size) {
         av_log (avctx, AV_LOG_ERROR, "Output buffer is too small.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if(!s->samples){
@@ -834,7 +834,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
         if(n < 0 || n > 3){
             av_log(avctx, AV_LOG_ERROR, "Incorrect offset passed\n");
             s->data = NULL;
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         s->ptr += n;
 
@@ -871,7 +871,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
     if(s->error || s->ptr > s->data_end){
         s->samples=0;
         av_log(avctx, AV_LOG_ERROR, "Error decoding frame\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     for (i = 0; i < blockstodecode; i++) {
