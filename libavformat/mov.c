@@ -81,15 +81,20 @@ typedef struct MOVParseTableEntry {
 
 static const MOVParseTableEntry mov_default_parse_table[];
 
-static int mov_metadata_trkn(MOVContext *c, AVIOContext *pb, unsigned len)
+static int mov_metadata_track_or_disc_number(MOVContext *c, AVIOContext *pb,
+                                             unsigned len, const char *key)
 {
     char buf[16];
 
+    short current, total;
     avio_rb16(pb); // unknown
-    snprintf(buf, sizeof(buf), "%d", avio_rb16(pb));
-    av_dict_set(&c->fc->metadata, "track", buf, 0);
-
-    avio_rb16(pb); // total tracks
+    current = avio_rb16(pb);
+    total = avio_rb16(pb);
+    if (!total)
+        snprintf(buf, sizeof(buf), "%d", current);
+    else
+        snprintf(buf, sizeof(buf), "%d/%d", current, total);
+    av_dict_set(&c->fc->metadata, key, buf, 0);
 
     return 0;
 }
@@ -140,7 +145,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     const char *key = NULL;
     uint16_t str_size, langcode = 0;
     uint32_t data_type = 0;
-    int (*parse)(MOVContext*, AVIOContext*, unsigned) = NULL;
+    int (*parse)(MOVContext*, AVIOContext*, unsigned, const char*) = NULL;
 
     switch (atom.type) {
     case MKTAG(0xa9,'n','a','m'): key = "title";     break;
@@ -163,7 +168,9 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 't','v','e','n'): key = "episode_id";break;
     case MKTAG( 't','v','n','n'): key = "network";   break;
     case MKTAG( 't','r','k','n'): key = "track";
-        parse = mov_metadata_trkn; break;
+        parse = mov_metadata_track_or_disc_number; break;
+    case MKTAG( 'd','i','s','k'): key = "disc";
+        parse = mov_metadata_track_or_disc_number; break;
     }
 
     if (c->itunes_metadata && atom.size > 8) {
@@ -198,7 +205,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     str_size = FFMIN3(sizeof(str)-1, str_size, atom.size);
 
     if (parse)
-        parse(c, pb, str_size);
+        parse(c, pb, str_size, key);
     else {
         if (data_type == 3 || (data_type == 0 && langcode < 0x800)) { // MAC Encoded
             mov_read_mac_string(c, pb, str_size, str, sizeof(str));
