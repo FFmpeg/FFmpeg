@@ -985,6 +985,8 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         break;
     case AV_PICTURE_TYPE_P:
         if (v->field_mode) {
+            av_log(v->s.avctx, AV_LOG_ERROR, "P Fields do not work currently\n");
+            return -1;
             v->numref = get_bits1(gb);
             if (!v->numref) {
                 v->reffield          = get_bits1(gb);
@@ -1157,6 +1159,8 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
 
         if (v->field_mode) {
             int mvmode;
+            av_log(v->s.avctx, AV_LOG_ERROR, "B Fields do not work currently\n");
+            return -1;
             if (v->extended_dmv)
                 v->dmvrange = get_unary(gb, 0, 3);
             mvmode = get_unary(gb, 1, 3);
