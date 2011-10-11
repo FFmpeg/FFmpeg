@@ -471,9 +471,11 @@ static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
         range_dec_normalize(ctx);   /* normalize to use up all bytes */
 }
 
-static void init_entropy_decoder(APEContext *ctx)
+static int init_entropy_decoder(APEContext *ctx)
 {
     /* Read the CRC */
+    if (ctx->data_end - ctx->ptr < 6)
+        return AVERROR_INVALIDDATA;
     ctx->CRC = bytestream_get_be32(&ctx->ptr);
 
     /* Read the frame flags if they exist */
@@ -481,6 +483,8 @@ static void init_entropy_decoder(APEContext *ctx)
     if ((ctx->fileversion > 3820) && (ctx->CRC & 0x80000000)) {
         ctx->CRC &= ~0x80000000;
 
+        if (ctx->data_end - ctx->ptr < 6)
+            return AVERROR_INVALIDDATA;
         ctx->frameflags = bytestream_get_be32(&ctx->ptr);
     }
 
@@ -497,6 +501,8 @@ static void init_entropy_decoder(APEContext *ctx)
     ctx->ptr++;
 
     range_start_decoding(ctx);
+
+    return 0;
 }
 
 static const int32_t initial_coeffs[4] = {
@@ -738,10 +744,11 @@ static void ape_apply_filters(APEContext *ctx, int32_t *decoded0,
     }
 }
 
-static void init_frame_decoder(APEContext *ctx)
+static int init_frame_decoder(APEContext *ctx)
 {
-    int i;
-    init_entropy_decoder(ctx);
+    int i, ret;
+    if ((ret = init_entropy_decoder(ctx)) < 0)
+        return ret;
     init_predictor_decoder(ctx);
 
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
@@ -750,6 +757,7 @@ static void init_frame_decoder(APEContext *ctx)
         init_filter(ctx, ctx->filters[i], ctx->filterbuf[i],
                     ape_filter_orders[ctx->fset][i]);
     }
+    return 0;
 }
 
 static void ape_unpack_mono(APEContext *ctx, int count)
@@ -825,7 +833,14 @@ static int ape_decode_frame(AVCodecContext *avctx,
 
     if(!s->samples){
         uint32_t offset;
-        void *tmp_data = av_realloc(s->data, (buf_size + 3) & ~3);
+        void *tmp_data;
+
+        if (buf_size < 8) {
+            av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        tmp_data = av_realloc(s->data, (buf_size + 3) & ~3);
         if (!tmp_data)
             return AVERROR(ENOMEM);
         s->data = tmp_data;
@@ -840,6 +855,10 @@ static int ape_decode_frame(AVCodecContext *avctx,
             s->data = NULL;
             return AVERROR_INVALIDDATA;
         }
+        if (s->data_end - s->ptr < offset) {
+            av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+            return AVERROR_INVALIDDATA;
+        }
         s->ptr += offset;
 
         if (!nblocks || nblocks > INT_MAX) {
@@ -852,7 +871,10 @@ static int ape_decode_frame(AVCodecContext *avctx,
         memset(s->decoded1,  0, sizeof(s->decoded1));
 
         /* Initialize the frame decoder */
-        init_frame_decoder(s);
+        if (init_frame_decoder(s) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error reading frame header\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if (!s->data) {
