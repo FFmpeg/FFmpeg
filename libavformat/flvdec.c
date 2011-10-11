@@ -296,6 +296,20 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
                 acodec->bit_rate = num_val * 1024.0;
         }
 
+        if (!strcmp(key, "duration")        ||
+            !strcmp(key, "filesize")        ||
+            !strcmp(key, "width")           ||
+            !strcmp(key, "height")          ||
+            !strcmp(key, "videodatarate")   ||
+            !strcmp(key, "framerate")       ||
+            !strcmp(key, "videocodecid")    ||
+            !strcmp(key, "audiodatarate")   ||
+            !strcmp(key, "audiosamplerate") ||
+            !strcmp(key, "audiosamplesize") ||
+            !strcmp(key, "stereo")          ||
+            !strcmp(key, "audiocodecid"))
+            return 0;
+
         if(amf_type == AMF_DATA_TYPE_BOOL) {
             av_strlcpy(str_val, num_val > 0 ? "true" : "false", sizeof(str_val));
             av_dict_set(&s->metadata, key, str_val, 0);
