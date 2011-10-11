@@ -843,7 +843,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
             return AVERROR_INVALIDDATA;
         }
 
-        tmp_data = av_realloc(s->data, (buf_size + 3) & ~3);
+        tmp_data = av_realloc(s->data, FFALIGN(buf_size, 4));
         if (!tmp_data)
             return AVERROR(ENOMEM);
         s->data = tmp_data;
