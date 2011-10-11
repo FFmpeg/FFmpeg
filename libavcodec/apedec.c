@@ -182,15 +182,15 @@ static av_cold int ape_decode_init(AVCodecContext * avctx)
 
     if (avctx->extradata_size != 6) {
         av_log(avctx, AV_LOG_ERROR, "Incorrect extradata\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if (avctx->bits_per_coded_sample != 16) {
         av_log(avctx, AV_LOG_ERROR, "Only 16-bit samples are supported\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Only mono and stereo is supported\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
     s->avctx             = avctx;
     s->channels          = avctx->channels;
@@ -201,7 +201,7 @@ static av_cold int ape_decode_init(AVCodecContext * avctx)
     av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n", s->compression_level, s->flags);
     if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE) {
         av_log(avctx, AV_LOG_ERROR, "Incorrect compression level %d\n", s->compression_level);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     s->fset = s->compression_level / 1000 - 1;
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
