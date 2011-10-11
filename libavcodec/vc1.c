@@ -825,6 +825,8 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     int scale, shift, i; /* for initializing LUT for intensity compensation */
 
     v->numref=0;
+    v->fcm=0;
+    v->field_mode=0;
     v->p_frame_skipped = 0;
     if (v->second_field) {
         v->s.pict_type = (v->fptype & 1) ? AV_PICTURE_TYPE_P : AV_PICTURE_TYPE_I;
