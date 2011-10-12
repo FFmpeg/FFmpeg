@@ -2271,6 +2271,11 @@ static void stream_component_close(VideoState *is, int stream_index)
         if (is->reformat_ctx)
             av_audio_convert_free(is->reformat_ctx);
         is->reformat_ctx = NULL;
+
+        if (is->rdft) {
+            av_rdft_end(is->rdft);
+            av_freep(&is->rdft_data);
+        }
         break;
     case AVMEDIA_TYPE_VIDEO:
         packet_queue_abort(&is->videoq);
