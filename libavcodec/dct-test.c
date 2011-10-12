@@ -71,7 +71,7 @@ struct algo {
     const char *name;
     void (*func)(DCTELEM *block);
     enum formattag { NO_PERM, MMX_PERM, MMX_SIMPLE_PERM, SCALE_PERM,
-                     SSE2_PERM, PARTTRANS_PERM } format;
+                     SSE2_PERM, PARTTRANS_PERM, TRANSPOSE_PERM } format;
     int mm_support;
     int nonspec;
 };
@@ -243,6 +243,9 @@ static void permute(DCTELEM dst[64], const DCTELEM src[64], int perm)
     } else if (perm == PARTTRANS_PERM) {
         for (i = 0; i < 64; i++)
             dst[(i & 0x24) | ((i & 3) << 3) | ((i >> 3) & 3)] = src[i];
+    } else if (perm == TRANSPOSE_PERM) {
+        for (i = 0; i < 64; i++)
+            dst[(i>>3) | ((i<<3)&0x38)] = src[i];
     } else {
         for (i = 0; i < 64; i++)
             dst[i] = src[i];
