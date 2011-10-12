@@ -52,6 +52,7 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
     ret = av_get_packet(s->pb, pkt, CDG_PACKET_SIZE);
 
     pkt->stream_index = 0;
+    pkt->dts=pkt->pts= s->streams[0]->cur_dts;
     return ret;
 }
 
