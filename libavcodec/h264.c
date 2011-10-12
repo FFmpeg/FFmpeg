@@ -3752,7 +3752,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                     s->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
                     dsputil_init(&s->dsp, s->avctx);
                 } else {
-                    av_log(avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
+                    av_log(avctx, AV_LOG_ERROR, "Unsupported bit depth: %d\n", h->sps.bit_depth_luma);
                     return -1;
                 }
             }
