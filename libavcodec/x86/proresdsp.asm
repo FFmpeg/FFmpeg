@@ -49,9 +49,9 @@ w5_min_w1:  times 4 dw W5sh2, -W1sh2
 w5_plus_w7: times 4 dw W5sh2, +W7sh2
 w7_min_w5:  times 4 dw W7sh2, -W5sh2
 row_round:  times 8 dw (1<<14)
+pw_88:      times 8 dw 0x2008
 
 cextern pw_4
-cextern pw_8
 cextern pw_512
 cextern pw_1019
 
@@ -93,7 +93,7 @@ section .text align=16
     ; a2 -= W6 * row[2];
     ; a3 -= W2 * row[2];
 %ifidn %1, col
-    paddw       m10,[pw_8]
+    paddw       m10,[pw_88]
 %endif
     SBUTTERFLY3 wd,  0,  1, 10,  8 ; { row[0], row[2] }[0-3]/[4-7]
 %ifidn %1, row
@@ -269,17 +269,8 @@ cglobal prores_idct_put_10_%1, 4, 4, %2
     IDCT_1D     col, 18,  %1
 
     ; clip/store
-    mova        m6, [pw_512]
     mova        m3, [pw_4]
     mova        m5, [pw_1019]
-    paddw       m8,  m6
-    paddw       m0,  m6
-    paddw       m1,  m6
-    paddw       m2,  m6
-    paddw       m4,  m6
-    paddw       m11, m6
-    paddw       m9,  m6
-    paddw       m10, m6
     pmaxsw      m8,  m3
     pmaxsw      m0,  m3
     pmaxsw      m1,  m3
