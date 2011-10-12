@@ -115,7 +115,7 @@ static int rtcp_parse_packet(RTPDemuxContext *s, const unsigned char *buf, int l
     while (len >= 2) {
         switch (buf[1]) {
         case RTCP_SR:
-            if (len < 16) {
+            if (len < 20) {
                 av_log(NULL, AV_LOG_ERROR, "Invalid length for RTCP SR packet\n");
                 return AVERROR_INVALIDDATA;
             }
