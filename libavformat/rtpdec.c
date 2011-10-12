@@ -218,7 +218,7 @@ static int rtp_valid_packet_in_sequence(RTPStatistics *s, uint16_t seq)
     return 1;
 }
 
-int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
+int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
 {
     AVIOContext *pb;
     uint8_t *buf;
@@ -315,7 +315,7 @@ int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count)
     return 0;
 }
 
-void rtp_send_punch_packets(URLContext* rtp_handle)
+void ff_rtp_send_punch_packets(URLContext* rtp_handle)
 {
     AVIOContext *pb;
     uint8_t *buf;
@@ -359,7 +359,7 @@ void rtp_send_punch_packets(URLContext* rtp_handle)
  * MPEG2TS streams to indicate that they should be demuxed inside the
  * rtp demux (otherwise CODEC_ID_MPEG2TS packets are returned)
  */
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, int queue_size)
+RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, int queue_size)
 {
     RTPDemuxContext *s;
 
@@ -407,8 +407,8 @@ RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *r
 }
 
 void
-rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
-                               RTPDynamicProtocolHandler *handler)
+ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
+                                  RTPDynamicProtocolHandler *handler)
 {
     s->dynamic_protocol_context = ctx;
     s->parse_packet = handler->parse_packet;
@@ -722,8 +722,8 @@ static int rtp_parse_one_packet(RTPDemuxContext *s, AVPacket *pkt,
  * @return 0 if a packet is returned, 1 if a packet is returned and more can follow
  * (use buf as NULL to read the next). -1 if no packet (error or no more packet).
  */
-int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
-                     uint8_t **bufptr, int len)
+int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+                        uint8_t **bufptr, int len)
 {
     int rv = rtp_parse_one_packet(s, pkt, bufptr, len);
     s->prev_ret = rv;
@@ -732,7 +732,7 @@ int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
     return rv ? rv : has_next_packet(s);
 }
 
-void rtp_parse_close(RTPDemuxContext *s)
+void ff_rtp_parse_close(RTPDemuxContext *s)
 {
     ff_rtp_reset_packet_queue(s);
     if (!strcmp(ff_rtp_enc_name(s->payload_type), "MP2T")) {

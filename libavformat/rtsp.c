@@ -501,7 +501,7 @@ void ff_rtsp_undo_setup(AVFormatContext *s)
             } else if (rt->transport == RTSP_TRANSPORT_RDT && CONFIG_RTPDEC)
                 ff_rdt_parse_close(rtsp_st->transport_priv);
             else if (CONFIG_RTPDEC)
-                rtp_parse_close(rtsp_st->transport_priv);
+                ff_rtp_parse_close(rtsp_st->transport_priv);
         }
         rtsp_st->transport_priv = NULL;
         if (rtsp_st->rtp_handle)
@@ -558,7 +558,7 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
                                             rtsp_st->dynamic_protocol_context,
                                             rtsp_st->dynamic_handler);
     else if (CONFIG_RTPDEC)
-        rtsp_st->transport_priv = rtp_parse_open(s, st, rtsp_st->rtp_handle,
+        rtsp_st->transport_priv = ff_rtp_parse_open(s, st, rtsp_st->rtp_handle,
                                          rtsp_st->sdp_payload_type,
             (rt->lower_transport == RTSP_LOWER_TRANSPORT_TCP || !s->max_delay)
             ? 0 : RTP_REORDER_QUEUE_DEFAULT_SIZE);
@@ -567,9 +567,9 @@ static int rtsp_open_transport_ctx(AVFormatContext *s, RTSPStream *rtsp_st)
          return AVERROR(ENOMEM);
     } else if (rt->transport != RTSP_TRANSPORT_RDT && CONFIG_RTPDEC) {
         if (rtsp_st->dynamic_handler) {
-            rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
-                                           rtsp_st->dynamic_protocol_context,
-                                           rtsp_st->dynamic_handler);
+            ff_rtp_parse_set_dynamic_protocol(rtsp_st->transport_priv,
+                                              rtsp_st->dynamic_protocol_context,
+                                              rtsp_st->dynamic_handler);
         }
     }
 
@@ -1121,7 +1121,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
             goto fail;
 
         rtp_opened:
-            port = rtp_get_local_rtp_port(rtsp_st->rtp_handle);
+            port = ff_rtp_get_local_rtp_port(rtsp_st->rtp_handle);
         have_port:
             snprintf(transport, sizeof(transport) - 1,
                      "%s/UDP;", trans_pref);
@@ -1225,7 +1225,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
                             reply->transports[0].server_port_min, "%s", options);
             }
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) &&
-                rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
+                ff_rtp_set_remote_url(rtsp_st->rtp_handle, url) < 0) {
                 err = AVERROR_INVALIDDATA;
                 goto fail;
             }
@@ -1235,7 +1235,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
              */
             if (!(rt->server_type == RTSP_SERVER_WMS && i > 1) && s->iformat &&
                 CONFIG_RTPDEC)
-                rtp_send_punch_packets(rtsp_st->rtp_handle);
+                ff_rtp_send_punch_packets(rtsp_st->rtp_handle);
             break;
         }
         case RTSP_LOWER_TRANSPORT_UDP_MULTICAST: {
@@ -1569,7 +1569,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
             if (rtsp_st->rtp_handle) {
                 p[max_p].fd = ffurl_get_file_handle(rtsp_st->rtp_handle);
                 p[max_p++].events = POLLIN;
-                p[max_p].fd = rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
+                p[max_p].fd = ff_rtp_get_rtcp_file_handle(rtsp_st->rtp_handle);
                 p[max_p++].events = POLLIN;
             }
         }
@@ -1624,7 +1624,7 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
         if (rt->transport == RTSP_TRANSPORT_RDT) {
             ret = ff_rdt_parse_packet(rt->cur_transport_priv, pkt, NULL, 0);
         } else
-            ret = rtp_parse_packet(rt->cur_transport_priv, pkt, NULL, 0);
+            ret = ff_rtp_parse_packet(rt->cur_transport_priv, pkt, NULL, 0);
         if (ret == 0) {
             rt->cur_transport_priv = NULL;
             return 0;
@@ -1672,13 +1672,13 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     case RTSP_LOWER_TRANSPORT_UDP_MULTICAST:
         len = udp_read_packet(s, &rtsp_st, rt->recvbuf, RECVBUF_SIZE, wait_end);
         if (len > 0 && rtsp_st->transport_priv && rt->transport == RTSP_TRANSPORT_RTP)
-            rtp_check_and_send_back_rr(rtsp_st->transport_priv, len);
+            ff_rtp_check_and_send_back_rr(rtsp_st->transport_priv, len);
         break;
     }
     if (len == AVERROR(EAGAIN) && first_queue_st &&
         rt->transport == RTSP_TRANSPORT_RTP) {
         rtsp_st = first_queue_st;
-        ret = rtp_parse_packet(rtsp_st->transport_priv, pkt, NULL, 0);
+        ret = ff_rtp_parse_packet(rtsp_st->transport_priv, pkt, NULL, 0);
         goto end;
     }
     if (len < 0)
@@ -1688,7 +1688,7 @@ int ff_rtsp_fetch_packet(AVFormatContext *s, AVPacket *pkt)
     if (rt->transport == RTSP_TRANSPORT_RDT) {
         ret = ff_rdt_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
     } else {
-        ret = rtp_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
+        ret = ff_rtp_parse_packet(rtsp_st->transport_priv, pkt, &rt->recvbuf, len);
         if (ret < 0) {
             /* Either bad packet, or a RTCP packet. Check if the
              * first_rtcp_ntp_time field was initialized. */
