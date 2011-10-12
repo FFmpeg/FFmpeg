@@ -109,14 +109,6 @@ section .text align=16
     pmaddwd     m7,  m1, [w4_min_w2]
     pmaddwd     m0, [w4_plus_w2]
     pmaddwd     m1, [w4_plus_w2]
-    pslld       m2,  2
-    pslld       m3,  2
-    pslld       m4,  2
-    pslld       m5,  2
-    pslld       m6,  2
-    pslld       m7,  2
-    pslld       m0,  2
-    pslld       m1,  2
 
     ; a0: -1*row[0]-1*row[2]
     ; a1: -1*row[0]
@@ -143,16 +135,12 @@ section .text align=16
     SIGNEXTEND  m13, m14, m10      ; { row[4] }[0-3] / [4-7]
     pmaddwd     m10, m8, [w4_plus_w6]
     pmaddwd     m11, m9, [w4_plus_w6]
-    pslld       m10, 2
-    pslld       m11, 2
     psubd       m10,  m13
     psubd       m11,  m14
     paddd       m0,  m10            ; a0[0-3]
     paddd       m1,  m11            ; a0[4-7]
     pmaddwd     m10, m8, [w4_min_w6]
     pmaddwd     m11, m9, [w4_min_w6]
-    pslld       m10, 2
-    pslld       m11, 2
     psubd       m10, m13
     psubd       m11, m14
     paddd       m6,  m10           ; a3[0-3]
@@ -161,10 +149,6 @@ section .text align=16
     pmaddwd     m11, m9, [w4_min_w2]
     pmaddwd     m8, [w4_plus_w2]
     pmaddwd     m9, [w4_plus_w2]
-    pslld       m10, 2
-    pslld       m11, 2
-    pslld       m8,  2
-    pslld       m9,  2
     psubd       m10, m13
     psubd       m11, m14
     psubd       m8,  m13
@@ -218,14 +202,6 @@ section .text align=16
     pmaddwd     m7,  m1, [w7_min_w5]
     pmaddwd     m0, [w1_plus_w3]
     pmaddwd     m1, [w1_plus_w3]
-    pslld       m2,  2
-    pslld       m3,  2
-    pslld       m4,  2
-    pslld       m5,  2
-    pslld       m6,  2
-    pslld       m7,  2
-    pslld       m0,  2
-    pslld       m1,  2
 
     ; b0: +1*row[1]+2*row[3]
     ; b1: +2*row[1]-1*row[3]
@@ -285,10 +261,6 @@ section .text align=16
     pmaddwd     m11, m9, [w1_plus_w5]
     pmaddwd     m12, m8, [w5_plus_w7]
     pmaddwd     m13, m9, [w5_plus_w7]
-    pslld       m10, 2
-    pslld       m11, 2
-    pslld       m12,  2
-    pslld       m13,  2
     psubd       m2,  m10           ; b1[0-3]
     psubd       m3,  m11           ; b1[4-7]
     paddd       m0,  m12            ; b0[0-3]
@@ -297,10 +269,6 @@ section .text align=16
     pmaddwd     m13, m9, [w7_plus_w3]
     pmaddwd     m8, [w3_min_w1]
     pmaddwd     m9, [w3_min_w1]
-    pslld       m12, 2
-    pslld       m13, 2
-    pslld       m8,  2
-    pslld       m9,  2
     paddd       m4,  m12           ; b2[0-3]
     paddd       m5,  m13           ; b2[4-7]
     paddd       m6,  m8            ; b3[0-3]
@@ -347,7 +315,7 @@ cglobal prores_idct_put_10_%1, 4, 4, %2
     pmullw      m13,[r3+64]
     pmullw      m12,[r3+96]
 
-    IDCT_1D     row, 17,  %1
+    IDCT_1D     row, 15,  %1
 
     ; transpose for second part of IDCT
     TRANSPOSE8x8W 8, 0, 1, 2, 4, 11, 9, 10, 3
@@ -362,7 +330,7 @@ cglobal prores_idct_put_10_%1, 4, 4, %2
 
     ; for (i = 0; i < 8; i++)
     ;     idctSparseColAdd(dest + i, line_size, block + i);
-    IDCT_1D     col, 20,  %1
+    IDCT_1D     col, 18,  %1
 
     ; clip/store
     mova        m6, [pw_512]
