@@ -107,6 +107,22 @@ static const struct algo fdct_tab[] = {
     { 0 }
 };
 
+#if HAVE_MMX
+void ff_prores_idct_put_10_sse2(uint16_t *dst, int linesize,
+                                DCTELEM *block, int16_t *qmat);
+
+static void ff_prores_idct_put_10_sse2_wrap(uint16_t *dst){
+    int16_t qmat[64]; int i;
+    int16_t tmp[64];
+
+    for(i=0; i<64; i++){
+        qmat[i]=4;
+        tmp[i]= dst[i];
+    }
+    ff_prores_idct_put_10_sse2(dst, 16, tmp, qmat);
+}
+#endif
+
 static const struct algo idct_tab[] = {
     { "FAANI",          ff_faanidct,           NO_PERM  },
     { "REF-DBL",        ff_ref_idct,           NO_PERM  },
@@ -122,6 +138,7 @@ static const struct algo idct_tab[] = {
     { "XVID-MMX",       ff_idct_xvid_mmx,      NO_PERM,   AV_CPU_FLAG_MMX,  1 },
     { "XVID-MMX2",      ff_idct_xvid_mmx2,     NO_PERM,   AV_CPU_FLAG_MMX2, 1 },
     { "XVID-SSE2",      ff_idct_xvid_sse2,     SSE2_PERM, AV_CPU_FLAG_SSE2, 1 },
+    { "PR-SSE2",        ff_prores_idct_put_10_sse2_wrap,     TRANSPOSE_PERM, AV_CPU_FLAG_SSE2, 1 },
 #endif
 
 #if ARCH_BFIN
