@@ -76,7 +76,6 @@ Configuration options:
   --enable-shared          build shared libraries [no]
   --enable-gpl             allow use of GPL code, the resulting libs
                            and binaries will be under GPL [no]
-  --enable-version2        force GPL version 2 [no]
   --enable-version3        upgrade (L)GPL to version 3 [no]
   --enable-nonfree         allow use of nonfree code, the resulting libs
                            and binaries will be unredistributable [no]
@@ -1048,7 +1047,6 @@ CONFIG_LIST="
     thumb
     vaapi
     vdpau
-    version2
     version3
     x11grab
     zlib
@@ -1216,7 +1214,6 @@ HAVE_LIST="
 CONFIG_EXTRA="
     avutil
     gplv3
-    gplv2
     lgplv3
 "
 
@@ -1420,7 +1417,6 @@ nellymoser_decoder_select="mdct sinewin"
 nellymoser_encoder_select="mdct sinewin"
 png_decoder_select="zlib"
 png_encoder_select="zlib"
-prores_gpl_decoder_deps="version2 gpl"
 qcelp_decoder_select="lsp"
 qdm2_decoder_select="mdct rdft mpegaudiodsp"
 ra_144_encoder_select="lpc"
@@ -2705,11 +2701,7 @@ die_license_disabled version3 libopencore_amrwb
 die_license_disabled version3 libvo_aacenc
 die_license_disabled version3 libvo_amrwbenc
 
-! enabled gpl && enabled version2 && die "LGPLv2 mode is unsupported"
-enabled version3 && enabled version2 && ! enabled nonfree && die "GPLv2 (not v2+) and GPLv3 without --enable-nonfree"
-
 enabled version3 && { enabled gpl && enable gplv3 || enable lgplv3; }
-enabled version2 && enabled gpl && enable gplv2
 
 disabled optimizations || check_cflags -fomit-frame-pointer
 
@@ -3393,8 +3385,6 @@ if enabled nonfree; then
     license="nonfree and unredistributable"
 elif enabled gplv3; then
     license="GPL version 3 or later"
-elif enabled gplv2; then
-    license="GPL version 2"
 elif enabled lgplv3; then
     license="LGPL version 3 or later"
 elif enabled gpl; then
