@@ -73,8 +73,8 @@ typedef int64_t CoefSumType;
 #define AC3ENC_OPT_OFF              0
 #define AC3ENC_OPT_ON               1
 #define AC3ENC_OPT_NOT_INDICATED    0
-#define AC3ENC_OPT_MODE_ON          1
-#define AC3ENC_OPT_MODE_OFF         2
+#define AC3ENC_OPT_MODE_ON          2
+#define AC3ENC_OPT_MODE_OFF         1
 
 /* specific option values */
 #define AC3ENC_OPT_LARGE_ROOM       1

@@ -360,7 +360,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     AVIOContext *pbx;
     unsigned char *buffer = NULL;
     int buffer_size = 0;
-    void (*extra_func)(AVFormatContext*, AVIOContext*, int, char*, ID3v2ExtraMeta**) = NULL;
+    const ID3v2EMFunc *extra_func;
 
     switch (version) {
     case 2:
@@ -432,7 +432,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
             av_log(s, AV_LOG_WARNING, "Skipping encrypted/compressed ID3v2 frame %s.\n", tag);
             avio_skip(s->pb, tlen);
         /* check for text tag or supported special meta tag */
-        } else if (tag[0] == 'T' || (extra_meta && (extra_func = get_extra_meta_func(tag, isv34)->read))) {
+        } else if (tag[0] == 'T' || (extra_meta && (extra_func = get_extra_meta_func(tag, isv34)))) {
             if (unsync || tunsync) {
                 int i, j;
                 av_fast_malloc(&buffer, &buffer_size, tlen);
@@ -458,7 +458,7 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
                 read_ttag(s, pbx, tlen, tag);
             else
                 /* parse special meta tag */
-                extra_func(s, pbx, tlen, tag, extra_meta);
+                extra_func->read(s, pbx, tlen, tag, extra_meta);
         }
         else if (!tag[0]) {
             if (tag[1])
@@ -521,11 +521,11 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic)
 void ff_id3v2_free_extra_meta(ID3v2ExtraMeta **extra_meta)
 {
     ID3v2ExtraMeta *current = *extra_meta, *next;
-    void (*free_func)(void *);
+    const ID3v2EMFunc *extra_func;
 
     while (current) {
-        if ((free_func = get_extra_meta_func(current->tag, 1)->free))
-            free_func(current->data);
+        if ((extra_func = get_extra_meta_func(current->tag, 1)))
+            extra_func->free(current->data);
         next = current->next;
         av_freep(&current);
         current = next;

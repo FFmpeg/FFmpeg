@@ -369,7 +369,7 @@ cglobal hscale%1to%2_%4_%5, %6, 7, %7
     cvtps2dq      m0, m0
 %endif ; mmx/sse2/ssse3/sse4
 %ifnidn %3, X
-    movu [r1+r2*(4>>r2shr)], m0
+    mova [r1+r2*(4>>r2shr)], m0
 %else ; %3 == X
     movq   [r1+r2*4], m0
 %endif ; %3 ==/!= X

@@ -204,6 +204,8 @@ typedef struct ScanTable{
 } ScanTable;
 
 void ff_init_scantable(uint8_t *, ScanTable *st, const uint8_t *src_scantable);
+void ff_init_scantable_permutation(uint8_t *idct_permutation,
+                                   int idct_permutation_type);
 
 #define EMULATED_EDGE(depth) \
 void ff_emulated_edge_mc_ ## depth (uint8_t *buf, const uint8_t *src, int linesize,\

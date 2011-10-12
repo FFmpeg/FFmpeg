@@ -143,8 +143,8 @@ static inline int decode_hrd_parameters(H264Context *h, SPS *sps){
     get_bits(&s->gb, 4); /* bit_rate_scale */
     get_bits(&s->gb, 4); /* cpb_size_scale */
     for(i=0; i<cpb_count; i++){
-        get_ue_golomb(&s->gb); /* bit_rate_value_minus1 */
-        get_ue_golomb(&s->gb); /* cpb_size_value_minus1 */
+        get_ue_golomb_long(&s->gb); /* bit_rate_value_minus1 */
+        get_ue_golomb_long(&s->gb); /* cpb_size_value_minus1 */
         get_bits1(&s->gb);     /* cbr_flag */
     }
     sps->initial_cpb_removal_delay_length = get_bits(&s->gb, 5) + 1;
@@ -494,6 +494,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     unsigned int pps_id= get_ue_golomb(&s->gb);
     PPS *pps;
     const int qp_bd_offset = 6*(h->sps.bit_depth_luma-8);
+    int bits_left;
 
     if(pps_id >= MAX_PPS_COUNT) {
         av_log(h->s.avctx, AV_LOG_ERROR, "pps_id (%d) out of range\n", pps_id);
@@ -570,6 +571,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     memcpy(pps->scaling_matrix4, h->sps_buffers[pps->sps_id]->scaling_matrix4, sizeof(pps->scaling_matrix4));
     memcpy(pps->scaling_matrix8, h->sps_buffers[pps->sps_id]->scaling_matrix8, sizeof(pps->scaling_matrix8));
 
+    bits_left = bit_length - get_bits_count(&s->gb);
     if(get_bits_count(&s->gb) < bit_length){
         pps->transform_8x8_mode= get_bits1(&s->gb);
         decode_scaling_matrices(h, h->sps_buffers[pps->sps_id], pps, 0, pps->scaling_matrix4, pps->scaling_matrix8);
