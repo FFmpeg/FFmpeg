@@ -644,6 +644,8 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             break;
 
         case AVMEDIA_TYPE_AUDIO:
+            print_str("sample_fmt",
+                      av_x_if_null(av_get_sample_fmt_name(dec_ctx->sample_fmt), "unknown"));
             print_str("sample_rate",     value_string(val_str, sizeof(val_str), dec_ctx->sample_rate, unit_hertz_str));
             print_int("channels",        dec_ctx->channels);
             print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
