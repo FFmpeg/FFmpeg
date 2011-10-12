@@ -99,8 +99,6 @@ section .text align=16
 %ifidn %1, row
     psubw       m10,[row_round]
 %endif
-    SIGNEXTEND  m8,  m9,  m14      ; { row[2] }[0-3] / [4-7]
-    SIGNEXTEND  m10, m11, m14      ; { row[0] }[0-3] / [4-7]
     pmaddwd     m2,  m0, [w4_plus_w6]
     pmaddwd     m3,  m1, [w4_plus_w6]
     pmaddwd     m4,  m0, [w4_min_w6]
@@ -114,54 +112,28 @@ section .text align=16
     ; a1: -1*row[0]
     ; a2: -1*row[0]
     ; a3: -1*row[0]+1*row[2]
-    psubd       m2,  m10           ; a1[0-3]
-    psubd       m3,  m11           ; a1[4-7]
-    psubd       m4,  m10           ; a2[0-3]
-    psubd       m5,  m11           ; a2[4-7]
-    psubd       m0,  m10
-    psubd       m1,  m11
-    psubd       m6,  m10
-    psubd       m7,  m11
-    psubd       m0,  m8            ; a0[0-3]
-    psubd       m1,  m9            ; a0[4-7]
-    paddd       m6,  m8            ; a3[0-3]
-    paddd       m7,  m9            ; a3[4-7]
 
     ; a0 +=   W4*row[4] + W6*row[6]; i.e. -1*row[4]
     ; a1 -=   W4*row[4] + W2*row[6]; i.e. -1*row[4]-1*row[6]
     ; a2 -=   W4*row[4] - W2*row[6]; i.e. -1*row[4]+1*row[6]
     ; a3 +=   W4*row[4] - W6*row[6]; i.e. -1*row[4]
     SBUTTERFLY3 wd,  8,  9, 13, 12 ; { row[4], row[6] }[0-3]/[4-7]
-    SIGNEXTEND  m13, m14, m10      ; { row[4] }[0-3] / [4-7]
     pmaddwd     m10, m8, [w4_plus_w6]
     pmaddwd     m11, m9, [w4_plus_w6]
-    psubd       m10,  m13
-    psubd       m11,  m14
     paddd       m0,  m10            ; a0[0-3]
     paddd       m1,  m11            ; a0[4-7]
     pmaddwd     m10, m8, [w4_min_w6]
     pmaddwd     m11, m9, [w4_min_w6]
-    psubd       m10, m13
-    psubd       m11, m14
     paddd       m6,  m10           ; a3[0-3]
     paddd       m7,  m11           ; a3[4-7]
     pmaddwd     m10, m8, [w4_min_w2]
     pmaddwd     m11, m9, [w4_min_w2]
     pmaddwd     m8, [w4_plus_w2]
     pmaddwd     m9, [w4_plus_w2]
-    psubd       m10, m13
-    psubd       m11, m14
-    psubd       m8,  m13
-    psubd       m9,  m14
     psubd       m4,  m10           ; a2[0-3] intermediate
     psubd       m5,  m11           ; a2[4-7] intermediate
     psubd       m2,  m8            ; a1[0-3] intermediate
     psubd       m3,  m9            ; a1[4-7] intermediate
-    SIGNEXTEND  m12, m13, m10      ; { row[6] }[0-3] / [4-7]
-    psubd       m4,  m12           ; a2[0-3]
-    psubd       m5,  m13           ; a2[4-7]
-    paddd       m2,  m12           ; a1[0-3]
-    paddd       m3,  m13           ; a1[4-7]
 
     ; load/store
     mova   [r2+  0], m0
@@ -192,8 +164,6 @@ section .text align=16
     ; b3 = MUL(W7, row[1]);
     ; MAC(b3, -W5, row[3]);
     SBUTTERFLY3 wd,  0,  1, 10, 8  ; { row[1], row[3] }[0-3]/[4-7]
-    SIGNEXTEND  m10, m11, m12      ; { row[1] }[0-3] / [4-7]
-    SIGNEXTEND  m8,  m9,  m12      ; { row[3] }[0-3] / [4-7]
     pmaddwd     m2,  m0, [w3_min_w7]
     pmaddwd     m3,  m1, [w3_min_w7]
     pmaddwd     m4,  m0, [w5_min_w1]
@@ -207,22 +177,6 @@ section .text align=16
     ; b1: +2*row[1]-1*row[3]
     ; b2: -1*row[1]-1*row[3]
     ; b3: +1*row[1]+1*row[3]
-    psubd       m2,  m8
-    psubd       m3,  m9
-    paddd       m0,  m8
-    paddd       m1,  m9
-    paddd       m8,  m10           ; { row[1] + row[3] }[0-3]
-    paddd       m9,  m11           ; { row[1] + row[3] }[4-7]
-    paddd       m10, m10
-    paddd       m11, m11
-    paddd       m0,  m8            ; b0[0-3]
-    paddd       m1,  m9            ; b0[4-7]
-    paddd       m2,  m10           ; b1[0-3]
-    paddd       m3,  m11           ; b2[4-7]
-    psubd       m4,  m8            ; b2[0-3]
-    psubd       m5,  m9            ; b2[4-7]
-    paddd       m6,  m8            ; b3[0-3]
-    paddd       m7,  m9            ; b3[4-7]
 
     ; MAC(b0,  W5, row[5]);
     ; MAC(b0,  W7, row[7]);
@@ -233,29 +187,11 @@ section .text align=16
     ; MAC(b3,  W3, row[5]);
     ; MAC(b3, -W1, row[7]);
     SBUTTERFLY3 wd,  8,  9, 13, 14 ; { row[5], row[7] }[0-3]/[4-7]
-    SIGNEXTEND  m13, m12, m11      ; { row[5] }[0-3] / [4-7]
-    SIGNEXTEND  m14, m11, m10      ; { row[7] }[0-3] / [4-7]
 
     ; b0: -1*row[5]+1*row[7]
     ; b1: -1*row[5]+1*row[7]
     ; b2: +1*row[5]+2*row[7]
     ; b3: +2*row[5]-1*row[7]
-    paddd       m4,  m13
-    paddd       m5,  m12
-    paddd       m6,  m13
-    paddd       m7,  m12
-    psubd       m13, m14           ; { row[5] - row[7] }[0-3]
-    psubd       m12, m11           ; { row[5] - row[7] }[4-7]
-    paddd       m14, m14
-    paddd       m11, m11
-    psubd       m0,  m13
-    psubd       m1,  m12
-    psubd       m2,  m13
-    psubd       m3,  m12
-    paddd       m4,  m14
-    paddd       m5,  m11
-    paddd       m6,  m13
-    paddd       m7,  m12
 
     pmaddwd     m10, m8, [w1_plus_w5]
     pmaddwd     m11, m9, [w1_plus_w5]
@@ -374,25 +310,9 @@ cglobal prores_idct_put_10_%1, 4, 4, %2
     RET
 %endmacro
 
-%macro signextend_sse2 3 ; dstlow, dsthigh, tmp
-    pxor        %3,  %3
-    pcmpgtw     %3,  %1
-    mova        %2,  %1
-    punpcklwd   %1,  %3
-    punpckhwd   %2,  %3
-%endmacro
-
-%macro signextend_sse4 2-3 ; dstlow, dsthigh
-    movhlps     %2,  %1
-    pmovsxwd    %1,  %1
-    pmovsxwd    %2,  %2
-%endmacro
-
 INIT_XMM
-%define SIGNEXTEND signextend_sse2
 idct_put_fn sse2, 16
 INIT_XMM
-%define SIGNEXTEND signextend_sse4
 idct_put_fn sse4, 16
 INIT_AVX
 idct_put_fn avx,  16
