@@ -246,11 +246,14 @@ supporting it (currently Darwin Streaming Server and Mischa Spiegelmock's
 
 The required syntax for a RTSP url is:
 @example
-rtsp://@var{hostname}[:@var{port}]/@var{path}[?@var{options}]
+rtsp://@var{hostname}[:@var{port}]/@var{path}
 @end example
 
-@var{options} is a @code{&}-separated list. The following options
+The following options (set on the @file{avconv}/@file{avplay} command
+line, or set in code via @code{AVOption}s or in @code{avformat_open_input}),
 are supported:
+
+Flags for @code{rtsp_transport}:
 
 @table @option
 
@@ -261,20 +264,24 @@ Use UDP as lower transport protocol.
 Use TCP (interleaving within the RTSP control channel) as lower
 transport protocol.
 
-@item multicast
+@item udp_multicast
 Use UDP multicast as lower transport protocol.
 
 @item http
 Use HTTP tunneling as lower transport protocol, which is useful for
 passing proxies.
-
-@item filter_src
-Accept packets only from negotiated peer address and port.
 @end table
 
 Multiple lower transport protocols may be specified, in that case they are
 tried one at a time (if the setup of one fails, the next one is tried).
 For the muxer, only the @code{tcp} and @code{udp} options are supported.
+
+Flags for @code{rtsp_flags}:
+
+@table @option
+@item filter_src
+Accept packets only from negotiated peer address and port.
+@end table
 
 When receiving data over UDP, the demuxer tries to reorder received packets
 (since they may arrive out of order, or packets may get lost totally). In
@@ -291,13 +298,13 @@ Example command lines:
 To watch a stream over UDP, with a max reordering delay of 0.5 seconds:
 
 @example
-avplay -max_delay 500000 rtsp://server/video.mp4?udp
+avplay -max_delay 500000 -rtsp_transport udp rtsp://server/video.mp4
 @end example
 
 To watch a stream tunneled over HTTP:
 
 @example
-avplay rtsp://server/video.mp4?http
+avplay -rtsp_transport http rtsp://server/video.mp4
 @end example
 
 To send a stream in realtime to a RTSP server, for others to watch:
