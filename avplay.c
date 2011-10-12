@@ -153,18 +153,16 @@ typedef struct VideoState {
     AVStream *audio_st;
     PacketQueue audioq;
     int audio_hw_buf_size;
-    /* samples output by the codec. we reserve more space for avsync
-       compensation */
-    DECLARE_ALIGNED(16,uint8_t,audio_buf1)[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
-    DECLARE_ALIGNED(16,uint8_t,audio_buf2)[(AVCODEC_MAX_AUDIO_FRAME_SIZE * 3) / 2];
     uint8_t silence_buf[SDL_AUDIO_BUFFER_SIZE];
     uint8_t *audio_buf;
+    uint8_t *audio_buf1;
     unsigned int audio_buf_size; /* in bytes */
     int audio_buf_index; /* in bytes */
     AVPacket audio_pkt_temp;
     AVPacket audio_pkt;
     enum AVSampleFormat audio_src_fmt;
     AVAudioConvert *reformat_ctx;
+    AVFrame *frame;
 
     int show_audio; /* if true, display audio samples */
     int16_t sample_array[SAMPLE_ARRAY_SIZE];
@@ -2010,7 +2008,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     AVPacket *pkt_temp = &is->audio_pkt_temp;
     AVPacket *pkt = &is->audio_pkt;
     AVCodecContext *dec= is->audio_st->codec;
-    int n, len1, data_size;
+    int n, len1, data_size, got_frame;
     double pts;
     int new_packet = 0;
     int flush_complete = 0;
@@ -2018,13 +2016,16 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     for(;;) {
         /* NOTE: the audio packet can contain several frames */
         while (pkt_temp->size > 0 || (!pkt_temp->data && new_packet)) {
+            if (!is->frame) {
+                if (!(is->frame = avcodec_alloc_frame()))
+                    return AVERROR(ENOMEM);
+            } else
+                avcodec_get_frame_defaults(is->frame);
+
             if (flush_complete)
                 break;
             new_packet = 0;
-            data_size = sizeof(is->audio_buf1);
-            len1 = avcodec_decode_audio3(dec,
-                                        (int16_t *)is->audio_buf1, &data_size,
-                                        pkt_temp);
+            len1 = avcodec_decode_audio4(dec, is->frame, &got_frame, pkt_temp);
             if (len1 < 0) {
                 /* if error, we skip the frame */
                 pkt_temp->size = 0;
@@ -2034,12 +2035,15 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             pkt_temp->data += len1;
             pkt_temp->size -= len1;
 
-            if (data_size <= 0) {
+            if (!got_frame) {
                 /* stop sending empty packets if the decoder is finished */
                 if (!pkt_temp->data && dec->codec->capabilities & CODEC_CAP_DELAY)
                     flush_complete = 1;
                 continue;
             }
+            data_size = av_samples_get_buffer_size(NULL, dec->channels,
+                                                   is->frame->nb_samples,
+                                                   dec->sample_fmt, 1);
 
             if (dec->sample_fmt != is->audio_src_fmt) {
                 if (is->reformat_ctx)
@@ -2056,21 +2060,26 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
             }
 
             if (is->reformat_ctx) {
-                const void *ibuf[6]= {is->audio_buf1};
-                void *obuf[6]= {is->audio_buf2};
+                const void *ibuf[6]= { is->frame->data[0] };
+                void *obuf[6];
                 int istride[6]= {av_get_bytes_per_sample(dec->sample_fmt)};
                 int ostride[6]= {2};
                 int len= data_size/istride[0];
+                obuf[0] = av_realloc(is->audio_buf1, FFALIGN(len * ostride[0], 32));
+                if (!obuf[0]) {
+                    return AVERROR(ENOMEM);
+                }
+                is->audio_buf1 = obuf[0];
                 if (av_audio_convert(is->reformat_ctx, obuf, ostride, ibuf, istride, len)<0) {
                     printf("av_audio_convert() failed\n");
                     break;
                 }
-                is->audio_buf= is->audio_buf2;
+                is->audio_buf = is->audio_buf1;
                 /* FIXME: existing code assume that data_size equals framesize*channels*2
                           remove this legacy cruft */
                 data_size= len*2;
             }else{
-                is->audio_buf= is->audio_buf1;
+                is->audio_buf = is->frame->data[0];
             }
 
             /* if no pts, then compute it */
@@ -2106,8 +2115,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
         if (pkt->data == flush_pkt.data)
             avcodec_flush_buffers(dec);
 
-        pkt_temp->data = pkt->data;
-        pkt_temp->size = pkt->size;
+        *pkt_temp = *pkt;
 
         /* if update the audio clock with the pts */
         if (pkt->pts != AV_NOPTS_VALUE) {
@@ -2275,6 +2283,9 @@ static void stream_component_close(VideoState *is, int stream_index)
         if (is->reformat_ctx)
             av_audio_convert_free(is->reformat_ctx);
         is->reformat_ctx = NULL;
+        av_freep(&is->audio_buf1);
+        is->audio_buf = NULL;
+        av_freep(&is->frame);
 
         if (is->rdft) {
             av_rdft_end(is->rdft);
