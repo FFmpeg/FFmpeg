@@ -354,7 +354,7 @@ void ff_h264dsp_init_x86(H264DSPContext *c, const int bit_depth, const int chrom
 {
     int mm_flags = av_get_cpu_flags();
 
-    if (mm_flags & AV_CPU_FLAG_MMX2) {
+    if (chroma_format_idc == 1 && mm_flags & AV_CPU_FLAG_MMX2) {
         c->h264_loop_filter_strength= h264_loop_filter_strength_mmx2;
     }
 
