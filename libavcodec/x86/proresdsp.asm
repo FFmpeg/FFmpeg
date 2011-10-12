@@ -49,9 +49,9 @@ w1_plus_w5: times 4 dw W1sh2, +W5sh2
 w5_min_w1:  times 4 dw W5sh2, -W1sh2
 w5_plus_w7: times 4 dw W5sh2, +W7sh2
 w7_min_w5:  times 4 dw W7sh2, -W5sh2
-row_round:  times 8 dw (1<<14)
 pw_88:      times 8 dw 0x2008
 
+cextern pw_1
 cextern pw_4
 cextern pw_512
 cextern pw_1019
@@ -96,10 +96,10 @@ section .text align=16
 %ifidn %1, col
     paddw       m10,[pw_88]
 %endif
-    SBUTTERFLY3 wd,  0,  1, 10,  8 ; { row[0], row[2] }[0-3]/[4-7]
 %ifidn %1, row
-    psubw       m10,[row_round]
+    paddw       m10,[pw_1]
 %endif
+    SBUTTERFLY3 wd,  0,  1, 10,  8 ; { row[0], row[2] }[0-3]/[4-7]
     pmaddwd     m2,  m0, [w4_plus_w6]
     pmaddwd     m3,  m1, [w4_plus_w6]
     pmaddwd     m4,  m0, [w4_min_w6]
