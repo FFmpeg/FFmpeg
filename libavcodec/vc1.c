@@ -832,17 +832,18 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             goto parse_common_info;
     }
 
+    v->field_mode = 0;
     if (v->interlace) {
         v->fcm = decode012(gb);
         if (v->fcm) {
             if (v->fcm == 2)
                 v->field_mode = 1;
-            else
-                v->field_mode = 0;
             if (!v->warn_interlaced++)
                 av_log(v->s.avctx, AV_LOG_ERROR,
                        "Interlaced frames/fields support is incomplete\n");
         }
+    } else {
+        v->fcm = 0;
     }
 
     if (v->field_mode) {
