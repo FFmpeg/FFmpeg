@@ -31,11 +31,8 @@
 #include "avfilter.h"
 
 static const char *var_names[] = {
-    "E",           ///< Euler number
     "INTERLACED",  ///< tell if the current frame is interlaced
     "N",           ///< frame number (starting at zero)
-    "PHI",         ///< golden ratio
-    "PI",          ///< greek pi
     "POS",         ///< original position in the file of the frame
     "PREV_INPTS",  ///< previous  input PTS
     "PREV_OUTPTS", ///< previous output PTS
@@ -46,11 +43,8 @@ static const char *var_names[] = {
 };
 
 enum var_name {
-    VAR_E,
     VAR_INTERLACED,
     VAR_N,
-    VAR_PHI,
-    VAR_PI,
     VAR_POS,
     VAR_PREV_INPTS,
     VAR_PREV_OUTPTS,
@@ -76,10 +70,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return ret;
     }
 
-    setpts->var_values[VAR_E          ] = M_E;
     setpts->var_values[VAR_N          ] = 0.0;
-    setpts->var_values[VAR_PHI        ] = M_PHI;
-    setpts->var_values[VAR_PI         ] = M_PI;
     setpts->var_values[VAR_PREV_INPTS ] = NAN;
     setpts->var_values[VAR_PREV_OUTPTS] = NAN;
     setpts->var_values[VAR_STARTPTS   ] = NAN;

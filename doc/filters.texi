@@ -1882,15 +1882,6 @@ can contain the following constants:
 @item PTS
 the presentation timestamp in input
 
-@item PI
-Greek PI
-
-@item PHI
-golden ratio
-
-@item E
-Euler number
-
 @item N
 the count of the input frame, starting from 0.
 
