@@ -310,7 +310,6 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
 
     int i, j;
     short *samples = data;
-    int consumed = 0;
     int iterations, out_size;
 
     iterations = buf_size / 32;
@@ -330,8 +329,8 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
     memset(samples, 0, out_size);
 
     for(j = 0; j < iterations; j++) {
-        truespeech_read_frame(c, buf + consumed);
-        consumed += 32;
+        truespeech_read_frame(c, buf);
+        buf += 32;
 
         truespeech_correlate_filter(c);
         truespeech_filters_merge(c);
@@ -349,7 +348,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
 
     *data_size = out_size;
 
-    return consumed;
+    return buf_size;
 }
 
 AVCodec ff_truespeech_decoder = {
