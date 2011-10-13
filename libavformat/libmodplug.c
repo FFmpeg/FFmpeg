@@ -59,7 +59,6 @@ typedef struct ModPlugContext {
 } ModPlugContext;
 
 static const char *var_names[] = {
-    "E", "PHI", "PI",
     "x", "y",
     "w", "h",
     "t",
@@ -68,7 +67,6 @@ static const char *var_names[] = {
 };
 
 enum var_name {
-    VAR_E, VAR_PHI, VAR_PI,
     VAR_X, VAR_Y,
     VAR_W, VAR_H,
     VAR_TIME,
@@ -275,9 +273,6 @@ static int modplug_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (modplug->video_switch) {
             double var_values[VAR_VARS_NB];
 
-            var_values[VAR_E      ] = M_E;
-            var_values[VAR_PHI    ] = M_PHI;
-            var_values[VAR_PI     ] = M_PI;
             var_values[VAR_W      ] = modplug->w;
             var_values[VAR_H      ] = modplug->h;
             var_values[VAR_TIME   ] = modplug->packet_count * modplug->ts_per_packet;
