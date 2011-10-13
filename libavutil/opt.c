@@ -71,6 +71,7 @@ static int read_number(const AVOption *o, void *dst, double *num, int *den, int6
     case AV_OPT_TYPE_RATIONAL:  *intnum = ((AVRational*)dst)->num;
                                 *den    = ((AVRational*)dst)->den;
                                                         return 0;
+    case AV_OPT_TYPE_CONST:     *num    = o->default_val.dbl; return 0;
     }
     return AVERROR(EINVAL);
 }
@@ -341,6 +342,7 @@ const char *av_get_string(void *obj, const char *name, const AVOption **o_out, c
     case AV_OPT_TYPE_FLOAT:     snprintf(buf, buf_len, "%f" , *(float  *)dst);break;
     case AV_OPT_TYPE_DOUBLE:    snprintf(buf, buf_len, "%f" , *(double *)dst);break;
     case AV_OPT_TYPE_RATIONAL:  snprintf(buf, buf_len, "%d/%d", ((AVRational*)dst)->num, ((AVRational*)dst)->den);break;
+    case AV_OPT_TYPE_CONST:     snprintf(buf, buf_len, "%f" , o->default_val.dbl);break;
     case AV_OPT_TYPE_STRING:    return *(void**)dst;
     case AV_OPT_TYPE_BINARY:
         len = *(int*)(((uint8_t *)dst) + sizeof(uint8_t *));
