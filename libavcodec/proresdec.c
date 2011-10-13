@@ -589,5 +589,5 @@ AVCodec ff_prores_decoder = {
     .close          = decode_close,
     .decode         = decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("ProRes"),
-    .capabilities   = CODEC_CAP_SLICE_THREADS,
+    .capabilities   = CODEC_CAP_DR1 | CODEC_CAP_SLICE_THREADS,
 };
