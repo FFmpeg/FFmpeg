@@ -344,9 +344,6 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
     int16_t out_buf[240];
     int iterations;
 
-    if (!buf_size)
-        return 0;
-
     if (buf_size < 32) {
         av_log(avctx, AV_LOG_ERROR,
                "Too small input buffer (%d bytes), need at least 32 bytes\n", buf_size);
