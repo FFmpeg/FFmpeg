@@ -31,18 +31,12 @@
 #include "internal.h"
 
 static const char *var_names[] = {
-    "E",
-    "PHI",
-    "PI",
     "AVTB",   /* default timebase 1/AV_TIME_BASE */
     "intb",   /* input timebase */
     NULL
 };
 
 enum var_name {
-    VAR_E,
-    VAR_PHI,
-    VAR_PI,
     VAR_AVTB,
     VAR_INTB,
     VAR_VARS_NB
@@ -73,9 +67,6 @@ static int config_output_props(AVFilterLink *outlink)
     int ret;
     double res;
 
-    settb->var_values[VAR_E]    = M_E;
-    settb->var_values[VAR_PHI]  = M_PHI;
-    settb->var_values[VAR_PI]   = M_PI;
     settb->var_values[VAR_AVTB] = av_q2d(AV_TIME_BASE_Q);
     settb->var_values[VAR_INTB] = av_q2d(inlink->time_base);
 

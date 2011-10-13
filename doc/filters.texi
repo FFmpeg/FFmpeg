@@ -1954,7 +1954,7 @@ Set the timebase to use for the output frames timestamps.
 It is mainly useful for testing timebase configuration.
 
 It accepts in input an arithmetic expression representing a rational.
-The expression can contain the constants "PI", "E", "PHI", "AVTB" (the
+The expression can contain the constants "AVTB" (the
 default timebase), and "intb" (the input timebase).
 
 The default value for the input is "intb".
