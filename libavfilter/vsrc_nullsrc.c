@@ -28,17 +28,11 @@
 #include "avfilter.h"
 
 static const char *var_names[] = {
-    "E",
-    "PHI",
-    "PI",
     "AVTB",   /* default timebase 1/AV_TIME_BASE */
     NULL
 };
 
 enum var_name {
-    VAR_E,
-    VAR_PHI,
-    VAR_PI,
     VAR_AVTB,
     VAR_VARS_NB
 };
@@ -76,9 +70,6 @@ static int config_props(AVFilterLink *outlink)
     int ret;
     double res;
 
-    priv->var_values[VAR_E]    = M_E;
-    priv->var_values[VAR_PHI]  = M_PHI;
-    priv->var_values[VAR_PI]   = M_PI;
     priv->var_values[VAR_AVTB] = av_q2d(AV_TIME_BASE_Q);
 
     if ((ret = av_expr_parse_and_eval(&res, priv->tb_expr, var_names, priv->var_values,
