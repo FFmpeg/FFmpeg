@@ -1197,10 +1197,6 @@ alpha component
 The expressions can contain the following constants and functions:
 
 @table @option
-@item E, PI, PHI
-the corresponding mathematical approximated values for e
-(euler number), pi (greek PI), PHI (golden ratio)
-
 @item w, h
 the input width and heigth
 

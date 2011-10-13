@@ -31,9 +31,6 @@
 #include "internal.h"
 
 static const char *var_names[] = {
-    "E",
-    "PHI",
-    "PI",
     "w",        ///< width of the input video
     "h",        ///< height of the input video
     "val",      ///< input value for the pixel
@@ -45,9 +42,6 @@ static const char *var_names[] = {
 };
 
 enum var_name {
-    VAR_E,
-    VAR_PHI,
-    VAR_PI,
     VAR_W,
     VAR_H,
     VAR_VAL,
@@ -114,10 +108,6 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     lut->class = &lut_class;
     av_opt_set_defaults(lut);
-
-    lut->var_values[VAR_PHI] = M_PHI;
-    lut->var_values[VAR_PI]  = M_PI;
-    lut->var_values[VAR_E ]  = M_E;
 
     lut->is_rgb = !strcmp(ctx->filter->name, "lutrgb");
     lut->is_yuv = !strcmp(ctx->filter->name, "lutyuv");
