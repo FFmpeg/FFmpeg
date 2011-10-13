@@ -342,14 +342,22 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
     short *samples = data;
     int consumed = 0;
     int16_t out_buf[240];
-    int iterations;
+    int iterations, out_size;
 
-    if (buf_size < 32) {
+    iterations = buf_size / 32;
+
+    if (!iterations) {
         av_log(avctx, AV_LOG_ERROR,
                "Too small input buffer (%d bytes), need at least 32 bytes\n", buf_size);
         return -1;
     }
-    iterations = FFMIN(buf_size / 32, *data_size / 480);
+
+    out_size = iterations * 240 * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
+
     for(j = 0; j < iterations; j++) {
         truespeech_read_frame(c, buf + consumed);
         consumed += 32;
@@ -373,7 +381,7 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
 
     }
 
-    *data_size = consumed * 15;
+    *data_size = out_size;
 
     return consumed;
 }
