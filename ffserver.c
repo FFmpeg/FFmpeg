@@ -3169,8 +3169,8 @@ static void rtsp_cmd_setup(HTTPContext *c, const char *url,
 
     switch(rtp_c->rtp_protocol) {
     case RTSP_LOWER_TRANSPORT_UDP:
-        rtp_port = rtp_get_local_rtp_port(rtp_c->rtp_handles[stream_index]);
-        rtcp_port = rtp_get_local_rtcp_port(rtp_c->rtp_handles[stream_index]);
+        rtp_port = ff_rtp_get_local_rtp_port(rtp_c->rtp_handles[stream_index]);
+        rtcp_port = ff_rtp_get_local_rtcp_port(rtp_c->rtp_handles[stream_index]);
         avio_printf(c->pb, "Transport: RTP/AVP/UDP;unicast;"
                     "client_port=%d-%d;server_port=%d-%d",
                     th->client_port_min, th->client_port_max,
@@ -3938,7 +3938,7 @@ static int ffserver_opt_default(const char *opt, const char *arg,
     int ret = 0;
     const AVOption *o = av_opt_find(avctx, opt, NULL, type, 0);
     if(o)
-        ret = av_set_string3(avctx, opt, arg, 1, NULL);
+        ret = av_opt_set(avctx, opt, arg, 0);
     return ret;
 }
 

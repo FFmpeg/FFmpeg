@@ -1871,8 +1871,18 @@ static int mxf_interleave(AVFormatContext *s, AVPacket *out, AVPacket *pkt, int 
                                mxf_interleave_get_packet, mxf_compare_timestamps);
 }
 
-static const AVClass class = {
+static const AVClass mxf_class = {
     .class_name = "mxf",
+    .item_name  = av_default_item_name,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .option     = (const AVOption[]){
+        {TIMECODE_OPT(MXFContext, AV_OPT_FLAG_ENCODING_PARAM)},
+        {NULL}
+    },
+};
+
+static const AVClass mxf_d10_class = {
+    .class_name = "mxf_d10",
     .item_name  = av_default_item_name,
     .version    = LIBAVUTIL_VERSION_INT,
     .option     = (const AVOption[]){
@@ -1894,7 +1904,7 @@ AVOutputFormat ff_mxf_muxer = {
     .write_trailer     = mxf_write_footer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
-    .priv_class        = &class,
+    .priv_class        = &mxf_class,
 };
 
 AVOutputFormat ff_mxf_d10_muxer = {
@@ -1909,5 +1919,5 @@ AVOutputFormat ff_mxf_d10_muxer = {
     .write_trailer     = mxf_write_footer,
     .flags             = AVFMT_NOTIMESTAMPS,
     .interleave_packet = mxf_interleave,
-    .priv_class        = &class,
+    .priv_class        = &mxf_d10_class,
 };

@@ -38,18 +38,18 @@ typedef struct RTPDynamicProtocolHandler_s RTPDynamicProtocolHandler;
 #define RTP_NOTS_VALUE ((uint32_t)-1)
 
 typedef struct RTPDemuxContext RTPDemuxContext;
-RTPDemuxContext *rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, int queue_size);
-void rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
-                                    RTPDynamicProtocolHandler *handler);
-int rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
-                     uint8_t **buf, int len);
-void rtp_parse_close(RTPDemuxContext *s);
+RTPDemuxContext *ff_rtp_parse_open(AVFormatContext *s1, AVStream *st, URLContext *rtpc, int payload_type, int queue_size);
+void ff_rtp_parse_set_dynamic_protocol(RTPDemuxContext *s, PayloadContext *ctx,
+                                       RTPDynamicProtocolHandler *handler);
+int ff_rtp_parse_packet(RTPDemuxContext *s, AVPacket *pkt,
+                        uint8_t **buf, int len);
+void ff_rtp_parse_close(RTPDemuxContext *s);
 int64_t ff_rtp_queued_packet_time(RTPDemuxContext *s);
 void ff_rtp_reset_packet_queue(RTPDemuxContext *s);
-int rtp_get_local_rtp_port(URLContext *h);
-int rtp_get_local_rtcp_port(URLContext *h);
+int ff_rtp_get_local_rtp_port(URLContext *h);
+int ff_rtp_get_local_rtcp_port(URLContext *h);
 
-int rtp_set_remote_url(URLContext *h, const char *uri);
+int ff_rtp_set_remote_url(URLContext *h, const char *uri);
 
 /**
  * Send a dummy packet on both port pairs to set up the connection
@@ -62,19 +62,19 @@ int rtp_set_remote_url(URLContext *h, const char *uri);
  * The same routine is used with RDT too, even if RDT doesn't use normal
  * RTP packets otherwise.
  */
-void rtp_send_punch_packets(URLContext* rtp_handle);
+void ff_rtp_send_punch_packets(URLContext* rtp_handle);
 
 /**
  * some rtp servers assume client is dead if they don't hear from them...
  * so we send a Receiver Report to the provided ByteIO context
  * (we don't have access to the rtcp handle from here)
  */
-int rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
+int ff_rtp_check_and_send_back_rr(RTPDemuxContext *s, int count);
 
 /**
  * Get the file handle for the RTCP socket.
  */
-int rtp_get_rtcp_file_handle(URLContext *h);
+int ff_rtp_get_rtcp_file_handle(URLContext *h);
 
 // these statistics are used for rtcp receiver reports...
 typedef struct {

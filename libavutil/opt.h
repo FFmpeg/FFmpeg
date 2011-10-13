@@ -30,9 +30,20 @@
 #include "rational.h"
 #include "avutil.h"
 #include "dict.h"
+#include "log.h"
 
 enum AVOptionType{
-    FF_OPT_TYPE_FLAGS,
+    AV_OPT_TYPE_FLAGS,
+    AV_OPT_TYPE_INT,
+    AV_OPT_TYPE_INT64,
+    AV_OPT_TYPE_DOUBLE,
+    AV_OPT_TYPE_FLOAT,
+    AV_OPT_TYPE_STRING,
+    AV_OPT_TYPE_RATIONAL,
+    AV_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
+    AV_OPT_TYPE_CONST = 128,
+#if FF_API_OLD_AVOPTIONS
+    FF_OPT_TYPE_FLAGS = 0,
     FF_OPT_TYPE_INT,
     FF_OPT_TYPE_INT64,
     FF_OPT_TYPE_DOUBLE,
@@ -41,6 +52,7 @@ enum AVOptionType{
     FF_OPT_TYPE_RATIONAL,
     FF_OPT_TYPE_BINARY,  ///< offset must point to a pointer immediately followed by an int for the length
     FF_OPT_TYPE_CONST=128,
+#endif
 };
 
 /**
@@ -111,6 +123,7 @@ attribute_deprecated
 const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int mask, int flags);
 #endif
 
+#if FF_API_OLD_AVOPTIONS
 /**
  * Set the field of obj with the given name to value.
  *
@@ -135,17 +148,21 @@ const AVOption *av_find_opt(void *obj, const char *name, const char *unit, int m
  * AVERROR_OPTION_NOT_FOUND if no matching option exists
  * AVERROR(ERANGE) if the value is out of range
  * AVERROR(EINVAL) if the value is not valid
+ * @deprecated use av_opt_set()
  */
+attribute_deprecated
 int av_set_string3(void *obj, const char *name, const char *val, int alloc, const AVOption **o_out);
 
-const AVOption *av_set_double(void *obj, const char *name, double n);
-const AVOption *av_set_q(void *obj, const char *name, AVRational n);
-const AVOption *av_set_int(void *obj, const char *name, int64_t n);
-double av_get_double(void *obj, const char *name, const AVOption **o_out);
-AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
-int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
-const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
-const AVOption *av_next_option(void *obj, const AVOption *last);
+attribute_deprecated const AVOption *av_set_double(void *obj, const char *name, double n);
+attribute_deprecated const AVOption *av_set_q(void *obj, const char *name, AVRational n);
+attribute_deprecated const AVOption *av_set_int(void *obj, const char *name, int64_t n);
+
+attribute_deprecated double av_get_double(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated AVRational av_get_q(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated int64_t av_get_int(void *obj, const char *name, const AVOption **o_out);
+attribute_deprecated const char *av_get_string(void *obj, const char *name, const AVOption **o_out, char *buf, int buf_len);
+attribute_deprecated const AVOption *av_next_option(void *obj, const AVOption *last);
+#endif
 
 /**
  * Show the obj options.
@@ -221,6 +238,30 @@ int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
  */
 int av_opt_set_dict(void *obj, struct AVDictionary **options);
 
+/**
+ * @defgroup opt_eval_funcs Evaluating option strings
+ * @{
+ * This group of functions can be used to evaluate option strings
+ * and get numbers out of them. They do the same thing as av_opt_set(),
+ * except the result is written into the caller-supplied pointer.
+ *
+ * @param obj a struct whose first element is a pointer to AVClass.
+ * @param o an option for which the string is to be evaluated.
+ * @param val string to be evaluated.
+ * @param *_out value of the string will be written here.
+ *
+ * @return 0 on success, a negative number on failure.
+ */
+int av_opt_eval_flags (void *obj, const AVOption *o, const char *val, int        *flags_out);
+int av_opt_eval_int   (void *obj, const AVOption *o, const char *val, int        *int_out);
+int av_opt_eval_int64 (void *obj, const AVOption *o, const char *val, int64_t    *int64_out);
+int av_opt_eval_float (void *obj, const AVOption *o, const char *val, float      *float_out);
+int av_opt_eval_double(void *obj, const AVOption *o, const char *val, double     *double_out);
+int av_opt_eval_q     (void *obj, const AVOption *o, const char *val, AVRational *q_out);
+/**
+ * @}
+ */
+
 #define AV_OPT_SEARCH_CHILDREN   0x0001 /**< Search in possible children of the
                                              given object first. */
 /**
@@ -255,5 +296,113 @@ int av_opt_set_dict(void *obj, struct AVDictionary **options);
  */
 const AVOption *av_opt_find(void *obj, const char *name, const char *unit,
                             int opt_flags, int search_flags);
+
+/**
+ * Look for an option in an object. Consider only options which
+ * have all the specified flags set.
+ *
+ * @param[in] obj A pointer to a struct whose first element is a
+ *                pointer to an AVClass.
+ *                Alternatively a double pointer to an AVClass, if
+ *                AV_OPT_SEARCH_FAKE_OBJ search flag is set.
+ * @param[in] name The name of the option to look for.
+ * @param[in] unit When searching for named constants, name of the unit
+ *                 it belongs to.
+ * @param opt_flags Find only options with all the specified flags set (AV_OPT_FLAG).
+ * @param search_flags A combination of AV_OPT_SEARCH_*.
+ * @param[out] target_obj if non-NULL, an object to which the option belongs will be
+ * written here. It may be different from obj if AV_OPT_SEARCH_CHILDREN is present
+ * in search_flags. This parameter is ignored if search_flags contain
+ * AV_OPT_SEARCH_FAKE_OBJ.
+ *
+ * @return A pointer to the option found, or NULL if no option
+ *         was found.
+ */
+const AVOption *av_opt_find2(void *obj, const char *name, const char *unit,
+                             int opt_flags, int search_flags, void **target_obj);
+
+/**
+ * Iterate over all AVOptions belonging to obj.
+ *
+ * @param obj an AVOptions-enabled struct or a double pointer to an
+ *            AVClass describing it.
+ * @param prev result of the previous call to av_opt_next() on this object
+ *             or NULL
+ * @return next AVOption or NULL
+ */
+const AVOption *av_opt_next(void *obj, const AVOption *prev);
+
+/**
+ * Iterate over AVOptions-enabled children of obj.
+ *
+ * @param prev result of a previous call to this function or NULL
+ * @return next AVOptions-enabled child or NULL
+ */
+void *av_opt_child_next(void *obj, void *prev);
+
+/**
+ * Iterate over potential AVOptions-enabled children of parent.
+ *
+ * @param prev result of a previous call to this function or NULL
+ * @return AVClass corresponding to next potential child or NULL
+ */
+const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *prev);
+
+/**
+ * @defgroup opt_set_funcs Option setting functions
+ * @{
+ * Those functions set the field of obj with the given name to value.
+ *
+ * @param[in] obj A struct whose first element is a pointer to an AVClass.
+ * @param[in] name the name of the field to set
+ * @param[in] val The value to set. In case of av_opt_set() if the field is not
+ * of a string type, then the given string is parsed.
+ * SI postfixes and some named scalars are supported.
+ * If the field is of a numeric type, it has to be a numeric or named
+ * scalar. Behavior with more than one scalar and +- infix operators
+ * is undefined.
+ * If the field is of a flags type, it has to be a sequence of numeric
+ * scalars or named flags separated by '+' or '-'. Prefixing a flag
+ * with '+' causes it to be set without affecting the other flags;
+ * similarly, '-' unsets a flag.
+ * @param search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
+ * is passed here, then the option may be set on a child of obj.
+ *
+ * @return 0 if the value has been set, or an AVERROR code in case of
+ * error:
+ * AVERROR_OPTION_NOT_FOUND if no matching option exists
+ * AVERROR(ERANGE) if the value is out of range
+ * AVERROR(EINVAL) if the value is not valid
+ */
+int av_opt_set       (void *obj, const char *name, const char *val, int search_flags);
+int av_opt_set_int   (void *obj, const char *name, int64_t     val, int search_flags);
+int av_opt_set_double(void *obj, const char *name, double      val, int search_flags);
+int av_opt_set_q     (void *obj, const char *name, AVRational  val, int search_flags);
+/**
+ * @}
+ */
+
+/**
+ * @defgroup opt_get_funcs Option getting functions
+ * @{
+ * Those functions get a value of the option with the given name from an object.
+ *
+ * @param[in] obj a struct whose first element is a pointer to an AVClass.
+ * @param[in] name name of the option to get.
+ * @param[in] search_flags flags passed to av_opt_find2. I.e. if AV_OPT_SEARCH_CHILDREN
+ * is passed here, then the option may be found in a child of obj.
+ * @param[out] out_val value of the option will be written here
+ * @return 0 on success, a negative error code otherwise
+ */
+/**
+ * @note the returned string will av_malloc()ed and must be av_free()ed by the caller
+ */
+int av_opt_get       (void *obj, const char *name, int search_flags, uint8_t   **out_val);
+int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    *out_val);
+int av_opt_get_double(void *obj, const char *name, int search_flags, double     *out_val);
+int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_OPT_H */

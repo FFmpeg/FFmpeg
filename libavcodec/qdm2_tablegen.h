@@ -90,7 +90,7 @@ static av_cold void rnd_table_init(void) {
 
 static av_cold void init_noise_samples(void) {
     int i;
-    int random_seed = 0;
+    unsigned random_seed = 0;
     float delta = 1.0 / 16384.0;
     for (i = 0; i < 128;i++) {
         random_seed = random_seed * 214013 + 2531011;

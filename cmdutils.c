@@ -130,6 +130,16 @@ void show_help_options(const OptionDef *options, const char *msg, int mask, int 
     }
 }
 
+void show_help_children(const AVClass *class, int flags)
+{
+    const AVClass *child = NULL;
+    av_opt_show2(&class, NULL, flags, 0);
+    printf("\n");
+
+    while (child = av_opt_child_class_next(class, child))
+        show_help_children(child, flags);
+}
+
 static const OptionDef* find_option(const OptionDef *po, const char *name){
     const char *p = strchr(name, ':');
     int len = p ? p - name : strlen(name);
@@ -342,7 +352,7 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
         opt_loglevel("loglevel", argv[idx + 1]);
 }
 
-#define FLAGS(o) ((o)->type == FF_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
+#define FLAGS(o) ((o)->type == AV_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
 int opt_default(const char *opt, const char *arg)
 {
     const AVOption *oc, *of, *os;
@@ -364,7 +374,7 @@ int opt_default(const char *opt, const char *arg)
     sc = sws_get_class();
     if ((os = av_opt_find(&sc, opt, NULL, 0, AV_OPT_SEARCH_CHILDREN | AV_OPT_SEARCH_FAKE_OBJ))) {
         // XXX we only support sws_flags, not arbitrary sws options
-        int ret = av_set_string3(sws_opts, opt, arg, 1, NULL);
+        int ret = av_opt_set(sws_opts, opt, arg, 0);
         if (ret < 0) {
             av_log(NULL, AV_LOG_ERROR, "Error setting option %s.\n", opt);
             return ret;

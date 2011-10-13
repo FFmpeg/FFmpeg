@@ -389,7 +389,7 @@ static int rtsp_read_close(AVFormatContext *s)
 }
 
 static const AVOption options[] = {
-    { "initial_pause",  "Don't start playing the stream immediately", offsetof(RTSPState, initial_pause),  FF_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { "initial_pause",  "Don't start playing the stream immediately", offsetof(RTSPState, initial_pause),  AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
     { NULL },
 };
 

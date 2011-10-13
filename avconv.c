@@ -240,7 +240,7 @@ typedef struct OutputStream {
     AVFilterGraph *graph;
 #endif
 
-   int sws_flags;
+   int64_t sws_flags;
    AVDictionary *opts;
    int is_past_recording_time;
 } OutputStream;
@@ -450,7 +450,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
         snprintf(args, 255, "%d:%d:flags=0x%X",
                  codec->width,
                  codec->height,
-                 ost->sws_flags);
+                 (unsigned)ost->sws_flags);
         if ((ret = avfilter_graph_create_filter(&filter, avfilter_get_by_name("scale"),
                                                 NULL, args, NULL, ost->graph)) < 0)
             return ret;
@@ -459,7 +459,7 @@ static int configure_video_filters(InputStream *ist, OutputStream *ost)
         last_filter = filter;
     }
 
-    snprintf(args, sizeof(args), "flags=0x%X", ost->sws_flags);
+    snprintf(args, sizeof(args), "flags=0x%X", (unsigned)ost->sws_flags);
     ost->graph->scale_sws_opts = av_strdup(args);
 
     if (ost->avfilter) {
@@ -3154,7 +3154,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     if (oc->oformat->flags & AVFMT_GLOBALHEADER)
         st->codec->flags |= CODEC_FLAG_GLOBAL_HEADER;
 
-    ost->sws_flags = av_get_int(sws_opts, "sws_flags", NULL);
+    av_opt_get_int(sws_opts, "sws_flags", 0, &ost->sws_flags);
     return ost;
 }
 
@@ -3781,11 +3781,7 @@ static void show_usage(void)
 
 static int opt_help(const char *opt, const char *arg)
 {
-    AVCodec *c;
-    AVOutputFormat *oformat = NULL;
-    AVInputFormat  *iformat = NULL;
-    const AVClass *class;
-
+    int flags = AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_ENCODING_PARAM;
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n",
@@ -3812,41 +3808,10 @@ static int opt_help(const char *opt, const char *arg)
                       OPT_GRAB,
                       OPT_GRAB);
     printf("\n");
-    class = avcodec_get_class();
-    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
+    show_help_children(avcodec_get_class(), flags);
+    show_help_children(avformat_get_class(), flags);
+    show_help_children(sws_get_class(), flags);
 
-    /* individual codec options */
-    c = NULL;
-    while ((c = av_codec_next(c))) {
-        if (c->priv_class) {
-            av_opt_show2(&c->priv_class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-            printf("\n");
-        }
-    }
-
-    class = avformat_get_class();
-    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
-
-    /* individual muxer options */
-    while ((oformat = av_oformat_next(oformat))) {
-        if (oformat->priv_class) {
-            av_opt_show2(&oformat->priv_class, NULL, AV_OPT_FLAG_ENCODING_PARAM, 0);
-            printf("\n");
-        }
-    }
-
-    /* individual demuxer options */
-    while ((iformat = av_iformat_next(iformat))) {
-        if (iformat->priv_class) {
-            av_opt_show2(&iformat->priv_class, NULL, AV_OPT_FLAG_DECODING_PARAM, 0);
-            printf("\n");
-        }
-    }
-
-    class = sws_get_class();
-    av_opt_show2(&class, NULL, AV_OPT_FLAG_ENCODING_PARAM|AV_OPT_FLAG_DECODING_PARAM, 0);
     return 0;
 }
 

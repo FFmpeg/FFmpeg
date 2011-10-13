@@ -320,10 +320,10 @@ apply Dolby Surround EX processing.
 Not Indicated (default)
 @item 1
 @itemx on
-Dolby Surround EX On
+Dolby Surround EX Off
 @item 2
 @itemx off
-Dolby Surround EX Off
+Dolby Surround EX On
 @end table
 
 @item -dheadphone_mode @var{mode}
@@ -337,10 +337,10 @@ processing.
 Not Indicated (default)
 @item 1
 @itemx on
-Dolby Headphone On
+Dolby Headphone Off
 @item 2
 @itemx off
-Dolby Headphone Off
+Dolby Headphone On
 @end table
 
 @item -ad_conv_type @var{type}

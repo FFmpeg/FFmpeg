@@ -30,7 +30,7 @@
  * arbitrary struct of which the first field is a pointer to an
  * AVClass struct (e.g. AVCodecContext, AVFormatContext etc.).
  */
-typedef struct {
+typedef struct AVClass {
     /**
      * The name of the class; usually it is the same name as the
      * context structure type to which the AVClass is associated.
@@ -73,11 +73,19 @@ typedef struct {
     int parent_log_context_offset;
 
     /**
-     * A function for extended searching, e.g. in possible
-     * children objects.
+     * Return next AVOptions-enabled child or NULL
      */
-    const struct AVOption* (*opt_find)(void *obj, const char *name, const char *unit,
-                                       int opt_flags, int search_flags);
+    void* (*child_next)(void *obj, void *prev);
+
+    /**
+     * Return an AVClass corresponding to next potential
+     * AVOptions-enabled child.
+     *
+     * The difference between child_next and this is that
+     * child_next iterates over _already existing_ objects, while
+     * child_class_next iterates over _all possible_ children.
+     */
+    const struct AVClass* (*child_class_next)(const struct AVClass *prev);
 } AVClass;
 
 /* av_log API */

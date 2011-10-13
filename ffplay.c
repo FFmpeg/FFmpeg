@@ -2307,6 +2307,12 @@ static void stream_component_close(VideoState *is, int stream_index)
         packet_queue_end(&is->audioq);
         if (is->swr_ctx)
             swr_free(&is->swr_ctx);
+        av_free_packet(&is->audio_pkt);
+
+        if (is->rdft) {
+            av_rdft_end(is->rdft);
+            av_freep(&is->rdft_data);
+        }
         break;
     case AVMEDIA_TYPE_VIDEO:
         packet_queue_abort(&is->videoq);
@@ -3029,7 +3035,6 @@ static void show_usage(void)
 
 static int opt_help(const char *opt, const char *arg)
 {
-    const AVClass *class;
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n",
@@ -3037,18 +3042,10 @@ static int opt_help(const char *opt, const char *arg)
     show_help_options(options, "\nAdvanced options:\n",
                       OPT_EXPERT, OPT_EXPERT);
     printf("\n");
-    class = avcodec_get_class();
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_DECODING_PARAM, 0);
-    printf("\n");
-    class = avformat_get_class();
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_DECODING_PARAM, 0);
+    show_help_children(avcodec_get_class(), AV_OPT_FLAG_DECODING_PARAM);
+    show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
 #if !CONFIG_AVFILTER
-    printf("\n");
-    class = sws_get_class();
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_ENCODING_PARAM, 0);
+    show_help_children(sws_get_class(), AV_OPT_FLAG_ENCODING_PARAM);
 #endif
     printf("\nWhile playing:\n"
            "q, ESC              quit\n"

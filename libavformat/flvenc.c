@@ -180,9 +180,9 @@ static int flv_write_header(AVFormatContext *s)
     AVIOContext *pb = s->pb;
     FLVContext *flv = s->priv_data;
     AVCodecContext *audio_enc = NULL, *video_enc = NULL;
-    int i;
+    int i, metadata_count = 0;
     double framerate = 0.0;
-    int64_t metadata_size_pos, data_size;
+    int64_t metadata_size_pos, data_size, metadata_count_pos;
     AVDictionaryEntry *tag = NULL;
 
     for(i=0; i<s->nb_streams; i++){
@@ -240,7 +240,9 @@ static int flv_write_header(AVFormatContext *s)
 
     /* mixed array (hash) with size and string/type/data tuples */
     avio_w8(pb, AMF_DATA_TYPE_MIXEDARRAY);
-    avio_wb32(pb, 5*!!video_enc + 5*!!audio_enc + 2); // +2 for duration and file size
+    metadata_count_pos = avio_tell(pb);
+    metadata_count = 5*!!video_enc + 5*!!audio_enc + 2; // +2 for duration and file size
+    avio_wb32(pb, metadata_count);
 
     put_amf_string(pb, "duration");
     flv->duration_offset= avio_tell(pb);
@@ -300,6 +302,7 @@ static int flv_write_header(AVFormatContext *s)
         put_amf_string(pb, tag->key);
         avio_w8(pb, AMF_DATA_TYPE_STRING);
         put_amf_string(pb, tag->value);
+        metadata_count++;
     }
 
     put_amf_string(pb, "filesize");
@@ -311,6 +314,10 @@ static int flv_write_header(AVFormatContext *s)
 
     /* write total size of tag */
     data_size= avio_tell(pb) - metadata_size_pos - 10;
+
+    avio_seek(pb, metadata_count_pos, SEEK_SET);
+    avio_wb32(pb, metadata_count);
+
     avio_seek(pb, metadata_size_pos, SEEK_SET);
     avio_wb24(pb, data_size);
     avio_skip(pb, data_size + 10 - 3);

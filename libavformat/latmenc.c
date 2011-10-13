@@ -38,7 +38,7 @@ typedef struct {
 
 static const AVOption options[] = {
     {"smc-interval", "StreamMuxConfig interval.",
-     offsetof(LATMContext, mod), FF_OPT_TYPE_INT, {.dbl = 0x0014}, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
+     offsetof(LATMContext, mod), AV_OPT_TYPE_INT, {.dbl = 0x0014}, 0x0001, 0xffff, AV_OPT_FLAG_ENCODING_PARAM},
     {NULL},
 };
 

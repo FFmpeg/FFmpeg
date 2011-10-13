@@ -60,7 +60,7 @@ typedef struct RTPContext {
  * @return zero if no error.
  */
 
-int rtp_set_remote_url(URLContext *h, const char *uri)
+int ff_rtp_set_remote_url(URLContext *h, const char *uri)
 {
     RTPContext *s = h->priv_data;
     char hostname[256];
@@ -301,7 +301,7 @@ static int rtp_close(URLContext *h)
  * @return the local port number
  */
 
-int rtp_get_local_rtp_port(URLContext *h)
+int ff_rtp_get_local_rtp_port(URLContext *h)
 {
     RTPContext *s = h->priv_data;
     return ff_udp_get_local_port(s->rtp_hd);
@@ -313,7 +313,7 @@ int rtp_get_local_rtp_port(URLContext *h)
  * @return the local port number
  */
 
-int rtp_get_local_rtcp_port(URLContext *h)
+int ff_rtp_get_local_rtcp_port(URLContext *h)
 {
     RTPContext *s = h->priv_data;
     return ff_udp_get_local_port(s->rtcp_hd);
@@ -325,7 +325,7 @@ static int rtp_get_file_handle(URLContext *h)
     return s->rtp_fd;
 }
 
-int rtp_get_rtcp_file_handle(URLContext *h) {
+int ff_rtp_get_rtcp_file_handle(URLContext *h) {
     RTPContext *s = h->priv_data;
     return s->rtcp_fd;
 }

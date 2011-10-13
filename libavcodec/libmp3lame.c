@@ -277,7 +277,7 @@ static av_cold int MP3lame_encode_close(AVCodecContext *avctx)
 #define OFFSET(x) offsetof(Mp3AudioContext, x)
 #define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "reservoir",      "Use bit reservoir.",   OFFSET(reservoir),  FF_OPT_TYPE_INT, { 1 }, 0, 1, AE },
+    { "reservoir",      "Use bit reservoir.",   OFFSET(reservoir),  AV_OPT_TYPE_INT, { 1 }, 0, 1, AE },
     { NULL },
 };
 

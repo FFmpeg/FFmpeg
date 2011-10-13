@@ -830,13 +830,13 @@ static void opt_input_file(void *optctx, const char *arg)
 
 static int opt_help(const char *opt, const char *arg)
 {
-    const AVClass *class = avformat_get_class();
     av_log_set_callback(log_callback_help);
     show_usage();
     show_help_options(options, "Main options:\n", 0, 0);
     printf("\n");
-    av_opt_show2(&class, NULL,
-                 AV_OPT_FLAG_DECODING_PARAM, 0);
+
+    show_help_children(avformat_get_class(), AV_OPT_FLAG_DECODING_PARAM);
+
     return 0;
 }
 
