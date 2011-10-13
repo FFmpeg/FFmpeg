@@ -34,9 +34,6 @@
 #include "internal.h"
 
 static const char *var_names[] = {
-    "E",
-    "PHI",
-    "PI",
     "main_w",    "W", ///< width  of the main    video
     "main_h",    "H", ///< height of the main    video
     "overlay_w", "w", ///< width  of the overlay video
@@ -45,9 +42,6 @@ static const char *var_names[] = {
 };
 
 enum var_name {
-    VAR_E,
-    VAR_PHI,
-    VAR_PI,
     VAR_MAIN_W,    VAR_MW,
     VAR_MAIN_H,    VAR_MH,
     VAR_OVERLAY_W, VAR_OW,
@@ -126,10 +120,6 @@ static int config_input_overlay(AVFilterLink *inlink)
 
     /* Finish the configuration by evaluating the expressions
        now when both inputs are configured. */
-    var_values[VAR_E  ] = M_E;
-    var_values[VAR_PHI] = M_PHI;
-    var_values[VAR_PI ] = M_PI;
-
     var_values[VAR_MAIN_W   ] = var_values[VAR_MW] = ctx->inputs[MAIN   ]->w;
     var_values[VAR_MAIN_H   ] = var_values[VAR_MH] = ctx->inputs[MAIN   ]->h;
     var_values[VAR_OVERLAY_W] = var_values[VAR_OW] = ctx->inputs[OVERLAY]->w;
