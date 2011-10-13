@@ -909,7 +909,12 @@ static int output_data_internal(MLPDecodeContext *m, unsigned int substr,
     int32_t *data_32 = (int32_t*) data;
     int16_t *data_16 = (int16_t*) data;
 
-    if (*data_size < (s->max_channel + 1) * s->blockpos * (is32 ? 4 : 2))
+    if (m->avctx->channels != s->max_matrix_channel + 1) {
+        av_log(m->avctx, AV_LOG_ERROR, "channel count mismatch\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if (*data_size < m->avctx->channels * s->blockpos * (is32 ? 4 : 2))
         return -1;
 
     for (i = 0; i < s->blockpos; i++) {
