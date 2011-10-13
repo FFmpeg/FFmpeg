@@ -477,10 +477,6 @@ Crop the input video to @var{out_w}:@var{out_h}:@var{x}:@var{y}.
 The parameters are expressions containing the following constants:
 
 @table @option
-@item E, PI, PHI
-the corresponding mathematical approximated values for e
-(euler number), pi (greek PI), PHI (golden ratio)
-
 @item x, y
 the computed values for @var{x} and @var{y}. They are evaluated for
 each new frame.
