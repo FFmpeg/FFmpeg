@@ -47,9 +47,6 @@
 #include FT_GLYPH_H
 
 static const char *var_names[] = {
-    "E",
-    "PHI",
-    "PI",
     "w",                      ///< width  of the input video
     "h",                      ///< height of the input video
     "tw", "text_w",           ///< width  of the rendered text
@@ -71,9 +68,6 @@ static const char *var_names[] = {
 };
 
 enum var_name {
-    VAR_E,
-    VAR_PHI,
-    VAR_PI,
     VAR_W,
     VAR_H,
     VAR_TW, VAR_TEXT_W,
@@ -459,9 +453,6 @@ static int config_input(AVFilterLink *inlink)
         dtext->shadowcolor[3] = rgba[3];
     }
 
-    dtext->var_values[VAR_E]     = M_E;
-    dtext->var_values[VAR_PHI]   = M_PHI;
-    dtext->var_values[VAR_PI]    = M_PI;
     dtext->var_values[VAR_W]     = inlink->w;
     dtext->var_values[VAR_H]     = inlink->h;
     dtext->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;

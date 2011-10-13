@@ -816,10 +816,6 @@ The parameters for @var{x} and @var{y} are expressions containing the
 following constants:
 
 @table @option
-@item E, PI, PHI
-the corresponding mathematical approximated values for e
-(euler number), pi (greek PI), PHI (golden ratio)
-
 @item w, h
 the input width and heigth
 
