@@ -901,14 +901,15 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
 
 /** Write the audio data into the output buffer. */
 
-static int output_data_internal(MLPDecodeContext *m, unsigned int substr,
-                                uint8_t *data, unsigned int *data_size, int is32)
+static int output_data(MLPDecodeContext *m, unsigned int substr,
+                       uint8_t *data, unsigned int *data_size)
 {
     SubStream *s = &m->substream[substr];
     unsigned int i, out_ch = 0;
     int out_size;
     int32_t *data_32 = (int32_t*) data;
     int16_t *data_16 = (int16_t*) data;
+    int is32 = (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
     if (m->avctx->channels != s->max_matrix_channel + 1) {
         av_log(m->avctx, AV_LOG_ERROR, "channel count mismatch\n");
@@ -936,16 +937,6 @@ static int output_data_internal(MLPDecodeContext *m, unsigned int substr,
 
     return 0;
 }
-
-static int output_data(MLPDecodeContext *m, unsigned int substr,
-                       uint8_t *data, unsigned int *data_size)
-{
-    if (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32)
-        return output_data_internal(m, substr, data, data_size, 1);
-    else
-        return output_data_internal(m, substr, data, data_size, 0);
-}
-
 
 /** Read an access unit from the stream.
  *  @return negative on error, 0 if not enough data is present in the input stream,
