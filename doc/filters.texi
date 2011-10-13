@@ -1547,10 +1547,6 @@ The parameters @var{width}, @var{height}, @var{x}, and @var{y} are
 expressions containing the following constants:
 
 @table @option
-@item E, PI, PHI
-the corresponding mathematical approximated values for e
-(euler number), pi (greek PI), phi (golden ratio)
-
 @item in_w, in_h
 the input video width and height
 

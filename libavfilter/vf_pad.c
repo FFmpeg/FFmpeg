@@ -36,9 +36,6 @@
 #include "drawutils.h"
 
 static const char *var_names[] = {
-    "PI",
-    "PHI",
-    "E",
     "in_w",   "iw",
     "in_h",   "ih",
     "out_w",  "ow",
@@ -54,9 +51,6 @@ static const char *var_names[] = {
 };
 
 enum var_name {
-    VAR_PI,
-    VAR_PHI,
-    VAR_E,
     VAR_IN_W,   VAR_IW,
     VAR_IN_H,   VAR_IH,
     VAR_OUT_W,  VAR_OW,
@@ -153,9 +147,6 @@ static int config_input(AVFilterLink *inlink)
     pad->hsub = pix_desc->log2_chroma_w;
     pad->vsub = pix_desc->log2_chroma_h;
 
-    var_values[VAR_PI]    = M_PI;
-    var_values[VAR_PHI]   = M_PHI;
-    var_values[VAR_E]     = M_E;
     var_values[VAR_IN_W]  = var_values[VAR_IW] = inlink->w;
     var_values[VAR_IN_H]  = var_values[VAR_IH] = inlink->h;
     var_values[VAR_OUT_W] = var_values[VAR_OW] = NAN;
