@@ -21,6 +21,8 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
+#include "dsputil.h"
+#include "get_bits.h"
 
 #include "truespeech_data.h"
 /**
@@ -32,7 +34,9 @@
  * TrueSpeech decoder context
  */
 typedef struct {
+    DSPContext dsp;
     /* input data */
+    uint8_t buffer[32];
     int16_t vector[8];  ///< input vector: 5/5/4/4/4/3/3/3
     int offset1[2];     ///< 8-bit value, used in one copying offset
     int offset2[4];     ///< 7-bit value, encodes offsets for copying and for two-point filter
@@ -54,7 +58,7 @@ typedef struct {
 
 static av_cold int truespeech_decode_init(AVCodecContext * avctx)
 {
-//    TSContext *c = avctx->priv_data;
+    TSContext *c = avctx->priv_data;
 
     if (avctx->channels != 1) {
         av_log_ask_for_sample(avctx, "Unsupported channel count: %d\n", avctx->channels);
@@ -62,97 +66,58 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
+    dsputil_init(&c->dsp, avctx);
+
     return 0;
 }
 
 static void truespeech_read_frame(TSContext *dec, const uint8_t *input)
 {
-    uint32_t t;
+    GetBitContext gb;
 
-    /* first dword */
-    t = AV_RL32(input);
-    input += 4;
+    dec->dsp.bswap_buf((uint32_t *)dec->buffer, (const uint32_t *)input, 8);
+    init_get_bits(&gb, dec->buffer, 32 * 8);
 
-    dec->flag = t & 1;
+    dec->vector[7] = ts_codebook[7][get_bits(&gb, 3)];
+    dec->vector[6] = ts_codebook[6][get_bits(&gb, 3)];
+    dec->vector[5] = ts_codebook[5][get_bits(&gb, 3)];
+    dec->vector[4] = ts_codebook[4][get_bits(&gb, 4)];
+    dec->vector[3] = ts_codebook[3][get_bits(&gb, 4)];
+    dec->vector[2] = ts_codebook[2][get_bits(&gb, 4)];
+    dec->vector[1] = ts_codebook[1][get_bits(&gb, 5)];
+    dec->vector[0] = ts_codebook[0][get_bits(&gb, 5)];
+    dec->flag      = get_bits1(&gb);
 
-    dec->vector[0] = ts_codebook[0][(t >>  1) & 0x1F];
-    dec->vector[1] = ts_codebook[1][(t >>  6) & 0x1F];
-    dec->vector[2] = ts_codebook[2][(t >> 11) &  0xF];
-    dec->vector[3] = ts_codebook[3][(t >> 15) &  0xF];
-    dec->vector[4] = ts_codebook[4][(t >> 19) &  0xF];
-    dec->vector[5] = ts_codebook[5][(t >> 23) &  0x7];
-    dec->vector[6] = ts_codebook[6][(t >> 26) &  0x7];
-    dec->vector[7] = ts_codebook[7][(t >> 29) &  0x7];
+    dec->offset1[0] = get_bits(&gb, 4) << 4;
+    dec->offset2[3] = get_bits(&gb, 7);
+    dec->offset2[2] = get_bits(&gb, 7);
+    dec->offset2[1] = get_bits(&gb, 7);
+    dec->offset2[0] = get_bits(&gb, 7);
 
-    /* second dword */
-    t = AV_RL32(input);
-    input += 4;
+    dec->offset1[1]  = get_bits(&gb, 4);
+    dec->pulseval[1] = get_bits(&gb, 14);
+    dec->pulseval[0] = get_bits(&gb, 14);
 
-    dec->offset2[0] = (t >>  0) & 0x7F;
-    dec->offset2[1] = (t >>  7) & 0x7F;
-    dec->offset2[2] = (t >> 14) & 0x7F;
-    dec->offset2[3] = (t >> 21) & 0x7F;
+    dec->offset1[1] |= get_bits(&gb, 4) << 4;
+    dec->pulseval[3] = get_bits(&gb, 14);
+    dec->pulseval[2] = get_bits(&gb, 14);
 
-    dec->offset1[0] = ((t >> 28) & 0xF) << 4;
+    dec->offset1[0] |= get_bits1(&gb);
+    dec->pulsepos[0] = get_bits_long(&gb, 27);
+    dec->pulseoff[0] = get_bits(&gb, 4);
 
-    /* third dword */
-    t = AV_RL32(input);
-    input += 4;
+    dec->offset1[0] |= get_bits1(&gb) << 1;
+    dec->pulsepos[1] = get_bits_long(&gb, 27);
+    dec->pulseoff[1] = get_bits(&gb, 4);
 
-    dec->pulseval[0] = (t >>  0) & 0x3FFF;
-    dec->pulseval[1] = (t >> 14) & 0x3FFF;
+    dec->offset1[0] |= get_bits1(&gb) << 2;
+    dec->pulsepos[2] = get_bits_long(&gb, 27);
+    dec->pulseoff[2] = get_bits(&gb, 4);
 
-    dec->offset1[1] = (t >> 28) & 0x0F;
-
-    /* fourth dword */
-    t = AV_RL32(input);
-    input += 4;
-
-    dec->pulseval[2] = (t >>  0) & 0x3FFF;
-    dec->pulseval[3] = (t >> 14) & 0x3FFF;
-
-    dec->offset1[1] |= ((t >> 28) & 0x0F) << 4;
-
-    /* fifth dword */
-    t = AV_RL32(input);
-    input += 4;
-
-    dec->pulsepos[0] = (t >> 4) & 0x7FFFFFF;
-
-    dec->pulseoff[0] = (t >> 0) & 0xF;
-
-    dec->offset1[0] |= (t >> 31) & 1;
-
-    /* sixth dword */
-    t = AV_RL32(input);
-    input += 4;
-
-    dec->pulsepos[1] = (t >> 4) & 0x7FFFFFF;
-
-    dec->pulseoff[1] = (t >> 0) & 0xF;
-
-    dec->offset1[0] |= ((t >> 31) & 1) << 1;
-
-    /* seventh dword */
-    t = AV_RL32(input);
-    input += 4;
-
-    dec->pulsepos[2] = (t >> 4) & 0x7FFFFFF;
-
-    dec->pulseoff[2] = (t >> 0) & 0xF;
-
-    dec->offset1[0] |= ((t >> 31) & 1) << 2;
-
-    /* eighth dword */
-    t = AV_RL32(input);
-    input += 4;
-
-    dec->pulsepos[3] = (t >> 4) & 0x7FFFFFF;
-
-    dec->pulseoff[3] = (t >> 0) & 0xF;
-
-    dec->offset1[0] |= ((t >> 31) & 1) << 3;
-
+    dec->offset1[0] |= get_bits1(&gb) << 3;
+    dec->pulsepos[3] = get_bits_long(&gb, 27);
+    dec->pulseoff[3] = get_bits(&gb, 4);
 }
 
 static void truespeech_correlate_filter(TSContext *dec)
