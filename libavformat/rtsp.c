@@ -57,8 +57,10 @@
 #define SDP_MAX_SIZE 16384
 #define RECVBUF_SIZE 10 * RTP_MAX_PACKET_LENGTH
 
+#define OFFSET(x) offsetof(RTSPState, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
 const AVOption ff_rtsp_options[] = {
-    { "initial_pause",  "Don't start playing the stream immediately", offsetof(RTSPState, initial_pause), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_DECODING_PARAM },
+    { "initial_pause",  "Don't start playing the stream immediately", OFFSET(initial_pause), AV_OPT_TYPE_INT, {0}, 0, 1, DEC },
     FF_RTP_FLAG_OPTS(RTSPState, rtp_muxer_flags),
     { NULL },
 };
