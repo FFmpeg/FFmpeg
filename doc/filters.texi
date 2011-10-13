@@ -1744,15 +1744,6 @@ is selected and passed to the output, otherwise it is discarded.
 The expression can contain the following constants:
 
 @table @option
-@item PI
-Greek PI
-
-@item PHI
-golden ratio
-
-@item E
-Euler number
-
 @item n
 the sequential number of the filtered frame, starting from 0
 

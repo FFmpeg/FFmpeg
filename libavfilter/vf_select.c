@@ -28,10 +28,6 @@
 #include "avfilter.h"
 
 static const char *var_names[] = {
-    "E",                 ///< Euler number
-    "PHI",               ///< golden ratio
-    "PI",                ///< greek pi
-
     "TB",                ///< timebase
 
     "pts",               ///< original pts in the file of the frame
@@ -69,10 +65,6 @@ static const char *var_names[] = {
 };
 
 enum var_name {
-    VAR_E,
-    VAR_PHI,
-    VAR_PI,
-
     VAR_TB,
 
     VAR_PTS,
@@ -145,10 +137,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 static int config_input(AVFilterLink *inlink)
 {
     SelectContext *select = inlink->dst->priv;
-
-    select->var_values[VAR_E]   = M_E;
-    select->var_values[VAR_PHI] = M_PHI;
-    select->var_values[VAR_PI]  = M_PI;
 
     select->var_values[VAR_N]          = 0.0;
     select->var_values[VAR_SELECTED_N] = 0.0;
