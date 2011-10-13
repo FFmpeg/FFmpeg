@@ -445,49 +445,49 @@ static av_cold int Stagefright_close(AVCodecContext *avctx)
     Frame *frame;
 
     if (s->thread_started) {
-    if (!s->thread_exited) {
-        s->stop_decode = 1;
+        if (!s->thread_exited) {
+            s->stop_decode = 1;
 
-        // Make sure decode_thread() doesn't get stuck
-        pthread_mutex_lock(&s->out_mutex);
-        while (!s->out_queue->empty()) {
-            frame = *s->out_queue->begin();
-            s->out_queue->erase(s->out_queue->begin());
-            if (frame->size)
-                frame->mbuffer->release();
-            av_freep(&frame);
-        }
-        pthread_mutex_unlock(&s->out_mutex);
+            // Make sure decode_thread() doesn't get stuck
+            pthread_mutex_lock(&s->out_mutex);
+            while (!s->out_queue->empty()) {
+                frame = *s->out_queue->begin();
+                s->out_queue->erase(s->out_queue->begin());
+                if (frame->size)
+                    frame->mbuffer->release();
+                av_freep(&frame);
+            }
+            pthread_mutex_unlock(&s->out_mutex);
 
-        // Feed a dummy frame prior to signalling EOF.
-        // This is required to terminate the decoder(OMX.SEC)
-        // when only one frame is read during stream info detection.
-        if (s->dummy_buf && (frame = (Frame*)av_mallocz(sizeof(Frame)))) {
-            frame->status = OK;
-            frame->size   = s->dummy_bufsize;
-            frame->key    = 1;
-            frame->buffer = s->dummy_buf;
+            // Feed a dummy frame prior to signalling EOF.
+            // This is required to terminate the decoder(OMX.SEC)
+            // when only one frame is read during stream info detection.
+            if (s->dummy_buf && (frame = (Frame*)av_mallocz(sizeof(Frame)))) {
+                frame->status = OK;
+                frame->size   = s->dummy_bufsize;
+                frame->key    = 1;
+                frame->buffer = s->dummy_buf;
+                pthread_mutex_lock(&s->in_mutex);
+                s->in_queue->push_back(frame);
+                pthread_cond_signal(&s->condition);
+                pthread_mutex_unlock(&s->in_mutex);
+                s->dummy_buf = NULL;
+            }
+
             pthread_mutex_lock(&s->in_mutex);
-            s->in_queue->push_back(frame);
+            s->end_frame->status = ERROR_END_OF_STREAM;
+            s->in_queue->push_back(s->end_frame);
             pthread_cond_signal(&s->condition);
             pthread_mutex_unlock(&s->in_mutex);
-            s->dummy_buf = NULL;
+            s->end_frame = NULL;
         }
 
-        pthread_mutex_lock(&s->in_mutex);
-        s->end_frame->status = ERROR_END_OF_STREAM;
-        s->in_queue->push_back(s->end_frame);
-        pthread_cond_signal(&s->condition);
-        pthread_mutex_unlock(&s->in_mutex);
-        s->end_frame = NULL;
-    }
+        pthread_join(s->decode_thread_id, NULL);
 
-    pthread_join(s->decode_thread_id, NULL);
+        if (s->ret_frame.data[0])
+            avctx->release_buffer(avctx, &s->ret_frame);
 
-    if (s->ret_frame.data[0])
-        avctx->release_buffer(avctx, &s->ret_frame);
-
-    s->thread_started = false;
+        s->thread_started = false;
     }
 
     while (!s->in_queue->empty()) {
