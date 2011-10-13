@@ -127,7 +127,7 @@ static void truespeech_correlate_filter(TSContext *dec)
 
     for(i = 0; i < 8; i++){
         if(i > 0){
-            memcpy(tmp, dec->cvector, i * 2);
+            memcpy(tmp, dec->cvector, i * sizeof(*tmp));
             for(j = 0; j < i; j++)
                 dec->cvector[j] = ((tmp[i - j - 1] * dec->vector[i]) +
                                    (dec->cvector[j] << 15) + 0x4000) >> 15;
@@ -169,7 +169,7 @@ static void truespeech_apply_twopoint_filter(TSContext *dec, int quart)
 
     t = dec->offset2[quart];
     if(t == 127){
-        memset(dec->newvec, 0, 60 * 2);
+        memset(dec->newvec, 0, 60 * sizeof(*dec->newvec));
         return;
     }
     for(i = 0; i < 146; i++)
@@ -194,7 +194,7 @@ static void truespeech_place_pulses(TSContext *dec, int16_t *out, int quart)
     int16_t *ptr2;
     int coef;
 
-    memset(out, 0, 60 * 2);
+    memset(out, 0, 60 * sizeof(*out));
     for(i = 0; i < 7; i++) {
         t = dec->pulseval[quart] & 3;
         dec->pulseval[quart] >>= 2;
