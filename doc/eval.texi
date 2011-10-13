@@ -99,6 +99,16 @@ Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
 @var{y} are 0 or either or both are less than zero then behavior is undefined.
 @end table
 
+The following constants are available:
+@table @option
+@item PI
+area of the unit disc, approximatively 3.14
+@item E
+exp(1) (Euler's number), approximatively 2.718
+@item PHI
+golden ratio (1+sqrt(5))/2, approximatively 1.618
+@end table
+
 Note that:
 
 @code{*} works like AND

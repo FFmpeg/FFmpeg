@@ -72,6 +72,15 @@ static const int8_t si_prefixes['z' - 'E' + 1] = {
     ['Y'-'E']=  24,
 };
 
+static const struct {
+    const char *name;
+    double value;
+} constants[] = {
+    { "E",   M_E   },
+    { "PI",  M_PI  },
+    { "PHI", M_PHI },
+};
+
 double av_strtod(const char *numstr, char **tail)
 {
     double d;
@@ -229,6 +238,15 @@ static int parse_primary(AVExpr **e, Parser *p)
             p->s+= strlen(p->const_names[i]);
             d->type = e_const;
             d->a.const_index = i;
+            *e = d;
+            return 0;
+        }
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(constants); i++) {
+        if (strmatch(p->s, constants[i].name)) {
+            p->s += strlen(constants[i].name);
+            d->type = e_value;
+            d->value = constants[i].value;
             *e = d;
             return 0;
         }
