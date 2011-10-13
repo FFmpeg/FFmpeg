@@ -32,10 +32,10 @@
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
     int number;
-    char path[1024];
     AVFormatContext *avf;
     char *format;          /**< Set by a private option. */
     char *pattern;         /**< Set by a private option. */
+    char *path;            /**< Set by a private option. */
     float time;            /**< Set by a private option. */
     int64_t offset_time;
     int64_t recording_time;
@@ -96,7 +96,12 @@ static int seg_write_header(AVFormatContext *s)
     seg->recording_time = seg->time*1000000;
     seg->offset_time = 0;
 
-    av_strlcpy(seg->path, "test", sizeof("test"));
+    if (!seg->path) {
+        char *t;
+        seg->path = strdup(s->filename);
+        t = rindex(seg->path, '.');
+        if (t) t = '\0';
+    }
 
     oc = avformat_alloc_context();
 
@@ -184,10 +189,10 @@ static int seg_write_trailer(struct AVFormatContext *s)
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "container_format", "container format used for the segments", OFFSET(format), FF_OPT_TYPE_STRING, {.str = "nut"}, 0, 0, E },
-    { "segment_time",     "segment lenght in seconds",              OFFSET(time),   FF_OPT_TYPE_FLOAT,  {.dbl = 2},     0, FLT_MAX, E },
+    { "container_format", "container format used for the segments", OFFSET(format), FF_OPT_TYPE_STRING, {.str = "nut"},  0, 0, E },
+    { "segment_time",     "segment lenght in seconds",              OFFSET(time),   FF_OPT_TYPE_FLOAT,  {.dbl = 2},      0, FLT_MAX, E },
     { "segment_pattern",  "pattern to use in segment files",        OFFSET(pattern),FF_OPT_TYPE_STRING, {.str = "%03d"}, 0, 0, E },
-
+    { "segment_basename", "basename to use in segment files",       OFFSET(pattern),FF_OPT_TYPE_STRING, {.str = NULL},   0, 0, E },
     { NULL },
 };
 
