@@ -335,6 +335,31 @@ fail:
     return NULL;
 }
 
+#define ESCAPE_INIT_BUF_SIZE 256
+
+#define ESCAPE_CHECK_SIZE(src, size, max_size)                          \
+    if (size > max_size) {                                              \
+        char buf[64];                                                   \
+        snprintf(buf, sizeof(buf), "%s", src);                          \
+        av_log(log_ctx, AV_LOG_WARNING,                                 \
+               "String '%s...' with is too big\n", buf);                \
+        return "FFPROBE_TOO_BIG_STRING";                                \
+    }
+
+#define ESCAPE_REALLOC_BUF(dst_size_p, dst_p, src, size)                \
+    if (*dst_size_p < size) {                                           \
+        char *q = av_realloc(*dst_p, size);                             \
+        if (!q) {                                                       \
+            char buf[64];                                               \
+            snprintf(buf, sizeof(buf), "%s", src);                      \
+            av_log(log_ctx, AV_LOG_WARNING,                             \
+                   "String '%s...' could not be escaped\n", buf);       \
+            return "FFPROBE_THIS_STRING_COULD_NOT_BE_ESCAPED";          \
+        }                                                               \
+        *dst_size_p = size;                                             \
+        *dst = q;                                                       \
+    }
+
 /* WRITERS */
 
 /* Default output */
@@ -414,8 +439,6 @@ typedef struct {
     size_t buf_size;
 } JSONContext;
 
-#define ESCAPE_INIT_BUF_SIZE 256
-
 static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
 {
     JSONContext *json = wctx->priv;
@@ -432,29 +455,6 @@ static av_cold void json_uninit(WriterContext *wctx)
     JSONContext *json = wctx->priv;
     av_freep(&json->buf);
 }
-
-#define ESCAPE_CHECK_SIZE(src, size, max_size)                          \
-    if (size > max_size) {                                              \
-        char buf[64];                                                   \
-        snprintf(buf, sizeof(buf), "%s", src);                          \
-        av_log(log_ctx, AV_LOG_WARNING,                                 \
-               "String '%s...' with is too big\n", buf);                \
-        return "FFPROBE_TOO_BIG_STRING";                                \
-    }
-
-#define ESCAPE_REALLOC_BUF(dst_size_p, dst_p, src, size)                \
-    if (*dst_size_p < size) {                                           \
-        char *q = av_realloc(*dst_p, size);                             \
-        if (!q) {                                                       \
-            char buf[64];                                               \
-            snprintf(buf, sizeof(buf), "%s", src);                      \
-            av_log(log_ctx, AV_LOG_WARNING,                             \
-                   "String '%s...' could not be escaped\n", buf);       \
-            return "FFPROBE_THIS_STRING_COULD_NOT_BE_ESCAPED";          \
-        }                                                               \
-        *dst_size_p = size;                                             \
-        *dst = q;                                                       \
-    }
 
 static const char *json_escape_str(char **dst, size_t *dst_size, const char *src,
                                    void *log_ctx)
