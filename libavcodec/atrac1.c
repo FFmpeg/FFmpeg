@@ -336,6 +336,11 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
+    if (avctx->channels < 1 || avctx->channels > AT1_MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %d\n",
+               avctx->channels);
+        return AVERROR(EINVAL);
+    }
     q->channels = avctx->channels;
 
     /* Init the mdct transforms */
