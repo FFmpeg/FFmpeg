@@ -2380,7 +2380,7 @@ static void mov_read_chapters(AVFormatContext *s)
             else {
                 AV_WB16(title, ch);
                 if (len == 1 || len == 2)
-                    title[len] = '0';
+                    title[len] = 0;
                 else
                     avio_get_str(sc->pb, len - 2, title + 2, title_len - 2);
             }
