@@ -532,14 +532,14 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
                             }
                         }
                     } else if (bits == 1) {
-                        pixels_read += 2;
                         if (map_table)
                             bits = map_table[0];
                         else
                             bits = 0;
-                        if (pixels_read <= dbuf_len) {
+                        run_length = 2;
+                        while (run_length-- > 0 && pixels_read < dbuf_len) {
                             *destbuf++ = bits;
-                            *destbuf++ = bits;
+                            pixels_read++;
                         }
                     } else {
                         (*srcbuf) += (get_bits_count(&gb) + 7) >> 3;
@@ -656,14 +656,14 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
                             }
                         }
                     } else if (bits == 1) {
-                        pixels_read += 2;
                         if (map_table)
                             bits = map_table[0];
                         else
                             bits = 0;
-                        if (pixels_read <= dbuf_len) {
+                        run_length = 2;
+                        while (run_length-- > 0 && pixels_read < dbuf_len) {
                             *destbuf++ = bits;
-                            *destbuf++ = bits;
+                            pixels_read++;
                         }
                     } else {
                         if (map_table)
