@@ -834,8 +834,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     if (buf_size < avctx->block_align) {
         av_log(avctx, AV_LOG_ERROR,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        *data_size = 0;
-        return buf_size;
+        return AVERROR_INVALIDDATA;
     }
 
     out_size = 1024 * q->channels * av_get_bytes_per_sample(avctx->sample_fmt);
