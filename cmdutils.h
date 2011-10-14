@@ -362,4 +362,4 @@ void exit_program(int ret);
  */
 void *grow_array(void *array, int elem_size, int *size, int new_size);
 
-#endif /* LIBAV_CMDUTILS_H */
+#endif /* CMDUTILS_H */
