@@ -1058,9 +1058,10 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
     }
     region->clut = *buf++;
 
-    if (region->depth == 8)
+    if (region->depth == 8) {
         region->bgcolor = *buf++;
-    else {
+        buf += 1;
+    } else {
         buf += 1;
 
         if (region->depth == 4)
