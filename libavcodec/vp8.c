@@ -492,6 +492,7 @@ void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
 
     AV_ZERO32(&near_mv[0]);
     AV_ZERO32(&near_mv[1]);
+    AV_ZERO32(&near_mv[2]);
 
     /* Process MB on top, left and top-left */
     #define MV_EDGE_CHECK(n)\
