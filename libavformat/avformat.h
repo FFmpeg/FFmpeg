@@ -274,9 +274,10 @@ typedef struct AVFormatParameters {
 #define AVFMT_NOSTREAMS     0x1000 /**< Format does not require any streams */
 #define AVFMT_NOBINSEARCH   0x2000 /**< Format does not allow to fallback to binary search via read_timestamp */
 #define AVFMT_NOGENSEARCH   0x4000 /**< Format does not allow to fallback to generic search */
-#define AVFMT_TS_NONSTRICT  0x8000 /**< Format does not require strictly
-                                          increasing timestamps, but they must
-                                          still be monotonic */
+#define AVFMT_NO_BYTE_SEEK  0x8000 /**< Format does not allow seeking by bytes */
+#define AVFMT_TS_NONSTRICT  0x8000000 /**< Format does not require strictly
+                                           increasing timestamps, but they must
+                                           still be monotonic */
 
 typedef struct AVOutputFormat {
     const char *name;
@@ -411,7 +412,9 @@ typedef struct AVInputFormat {
                               int64_t *pos, int64_t pos_limit);
 
     /**
-     * Can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER.
+     * Can use flags: AVFMT_NOFILE, AVFMT_NEEDNUMBER, AVFMT_SHOW_IDS,
+     * AVFMT_GENERIC_INDEX, AVFMT_TS_DISCONT, AVFMT_NOBINSEARCH,
+     * AVFMT_NOGENSEARCH, AVFMT_NO_BYTE_SEEK.
      */
     int flags;
 

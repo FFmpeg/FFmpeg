@@ -40,6 +40,7 @@ include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/h264.mak
 include $(SRC_PATH)/tests/fate/libavutil.mak
 include $(SRC_PATH)/tests/fate/mp3.mak
+#include $(SRC_PATH)/tests/fate/prores.mak
 include $(SRC_PATH)/tests/fate/vorbis.mak
 include $(SRC_PATH)/tests/fate/vp8.mak
 

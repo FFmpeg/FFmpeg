@@ -1808,10 +1808,12 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
     int ret;
     AVStream *st;
 
-    ff_read_frame_flush(s);
-
-    if(flags & AVSEEK_FLAG_BYTE)
+    if (flags & AVSEEK_FLAG_BYTE) {
+        if (s->iformat->flags & AVFMT_NO_BYTE_SEEK)
+            return -1;
+        ff_read_frame_flush(s);
         return seek_frame_byte(s, stream_index, timestamp, flags);
+    }
 
     if(stream_index < 0){
         stream_index= av_find_default_stream_index(s);
@@ -1825,19 +1827,23 @@ int av_seek_frame(AVFormatContext *s, int stream_index, int64_t timestamp, int f
 
     /* first, we try the format specific seek */
     AV_NOWARN_DEPRECATED(
-    if (s->iformat->read_seek)
+    if (s->iformat->read_seek) {
+        ff_read_frame_flush(s);
         ret = s->iformat->read_seek(s, stream_index, timestamp, flags);
-    else
+    } else
         ret = -1;
     )
     if (ret >= 0) {
         return 0;
     }
 
-    if(s->iformat->read_timestamp && !(s->iformat->flags & AVFMT_NOBINSEARCH))
+    if (s->iformat->read_timestamp && !(s->iformat->flags & AVFMT_NOBINSEARCH)) {
+        ff_read_frame_flush(s);
         return av_seek_frame_binary(s, stream_index, timestamp, flags);
-    else if (!(s->iformat->flags & AVFMT_NOGENSEARCH))
+    } else if (!(s->iformat->flags & AVFMT_NOGENSEARCH)) {
+        ff_read_frame_flush(s);
         return seek_frame_generic(s, stream_index, timestamp, flags);
+    }
     else
         return -1;
 }
@@ -1847,10 +1853,10 @@ int avformat_seek_file(AVFormatContext *s, int stream_index, int64_t min_ts, int
     if(min_ts > ts || max_ts < ts)
         return -1;
 
-    ff_read_frame_flush(s);
-
-    if (s->iformat->read_seek2)
+    if (s->iformat->read_seek2) {
+        ff_read_frame_flush(s);
         return s->iformat->read_seek2(s, stream_index, min_ts, ts, max_ts, flags);
+    }
 
     if(s->iformat->read_timestamp){
         //try to seek via read_timestamp()

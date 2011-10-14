@@ -245,7 +245,7 @@ AVInputFormat ff_shorten_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("raw Shorten"),
     .read_header    = ff_raw_audio_read_header,
     .read_packet    = ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
+    .flags          = AVFMT_NOBINSEARCH | AVFMT_NOGENSEARCH | AVFMT_NO_BYTE_SEEK,
     .extensions = "shn",
     .value = CODEC_ID_SHORTEN,
 };
