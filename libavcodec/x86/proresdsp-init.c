@@ -29,10 +29,13 @@ void ff_prores_idct_put_10_sse4(uint16_t *dst, int linesize,
 void ff_prores_idct_put_10_avx (uint16_t *dst, int linesize,
                                 DCTELEM *block);
 
-void ff_proresdsp_x86_init(ProresDSPContext *dsp)
+void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx)
 {
 #if ARCH_X86_64 && HAVE_YASM
     int flags = av_get_cpu_flags();
+
+    if(avctx->flags & CODEC_FLAG_BITEXACT)
+        return;
 
     if (flags & AV_CPU_FLAG_SSE2) {
         dsp->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;

@@ -107,7 +107,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
     avctx->pix_fmt = PIX_FMT_YUV422P10; // set default pixel format
 
     avctx->bits_per_raw_sample = PRORES_BITS_PER_SAMPLE;
-    ff_proresdsp_init(&ctx->dsp);
+    ff_proresdsp_init(&ctx->dsp, avctx);
 
     avctx->coded_frame = &ctx->picture;
     avcodec_get_frame_defaults(&ctx->picture);

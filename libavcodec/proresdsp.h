@@ -33,8 +33,8 @@ typedef struct {
     void (* idct_put) (uint16_t *out, int linesize, DCTELEM *block, const int16_t *qmat);
 } ProresDSPContext;
 
-void ff_proresdsp_init(ProresDSPContext *dsp);
+void ff_proresdsp_init(ProresDSPContext *dsp, AVCodecContext *avctx);
 
-void ff_proresdsp_x86_init(ProresDSPContext *dsp);
+void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx);
 
 #endif /* AVCODEC_PRORESDSP_H */
