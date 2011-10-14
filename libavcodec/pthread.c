@@ -633,7 +633,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
 
     park_frame_worker_threads(fctx, thread_count);
 
-    if (fctx->prev_thread)
+    if (fctx->prev_thread && fctx->prev_thread != fctx->threads)
         update_context_from_thread(fctx->threads->avctx, fctx->prev_thread->avctx, 0);
 
     fctx->die = 1;
