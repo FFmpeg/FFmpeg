@@ -310,15 +310,11 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         ret = at1_imdct_block(su, q);
         if (ret < 0)
             return ret;
-        at1_subband_synthesis(q, su, q->out_samples[ch]);
+        at1_subband_synthesis(q, su, q->channels == 1 ? samples : q->out_samples[ch]);
     }
 
     /* interleave; FIXME, should create/use a DSP function */
-    if (q->channels == 1) {
-        /* mono */
-        memcpy(samples, q->out_samples[0], AT1_SU_SAMPLES * 4);
-    } else {
-        /* stereo */
+    if (q->channels == 2) {
         for (i = 0; i < AT1_SU_SAMPLES; i++) {
             samples[i * 2]     = q->out_samples[0][i];
             samples[i * 2 + 1] = q->out_samples[1][i];
