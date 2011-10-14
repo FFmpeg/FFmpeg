@@ -155,6 +155,19 @@ struct WriterContext {
     unsigned int nb_chapter;        ///< number of the chapter, starting at 0
 };
 
+static const char *writer_get_name(void *p)
+{
+    WriterContext *wctx = p;
+    return wctx->writer->name;
+}
+
+static const AVClass writer_class = {
+    "Writer",
+    writer_get_name,
+    NULL,
+    LIBAVUTIL_VERSION_INT,
+};
+
 static void writer_close(WriterContext **wctx)
 {
     if (*wctx && (*wctx)->writer->uninit)
@@ -179,6 +192,7 @@ static int writer_open(WriterContext **wctx, const Writer *writer,
         goto fail;
     }
 
+    (*wctx)->class = &writer_class;
     (*wctx)->writer = writer;
     if ((*wctx)->writer->init)
         ret = (*wctx)->writer->init(*wctx, args, opaque);
