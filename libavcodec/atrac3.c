@@ -208,7 +208,7 @@ static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
         }
 
     /* Initialize the MDCT transform. */
-    ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0);
+    ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0 / 32768);
 }
 
 /**
@@ -825,7 +825,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     ATRAC3Context *q = avctx->priv_data;
     int result = 0, i;
     const uint8_t* databuf;
-    int16_t* samples = data;
+    float *samples = data;
 
     if (buf_size < avctx->block_align) {
         av_log(avctx, AV_LOG_ERROR,
@@ -852,16 +852,15 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     if (q->channels == 1) {
         /* mono */
         for (i = 0; i<1024; i++)
-            samples[i] = av_clip_int16(round(q->outSamples[i]));
-        *data_size = 1024 * sizeof(int16_t);
+            samples[i] = q->outSamples[i];
     } else {
         /* stereo */
         for (i = 0; i < 1024; i++) {
-            samples[i*2] = av_clip_int16(round(q->outSamples[i]));
-            samples[i*2+1] = av_clip_int16(round(q->outSamples[1024+i]));
+            samples[i*2]   = q->outSamples[i];
+            samples[i*2+1] = q->outSamples[1024+i];
         }
-        *data_size = 2048 * sizeof(int16_t);
     }
+    *data_size = 1024 * q->channels * av_get_bytes_per_sample(avctx->sample_fmt);
 
     return avctx->block_align;
 }
@@ -1014,7 +1013,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
     return 0;
 }
 
