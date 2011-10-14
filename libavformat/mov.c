@@ -2433,14 +2433,21 @@ static void mov_read_chapters(AVFormatContext *s)
         // The samples could theoretically be in any encoding if there's an encd
         // atom following, but in practice are only utf-8 or utf-16, distinguished
         // instead by the presence of a BOM
-        ch = avio_rb16(sc->pb);
-        if (ch == 0xfeff)
-            avio_get_str16be(sc->pb, len, title, title_len);
-        else if (ch == 0xfffe)
-            avio_get_str16le(sc->pb, len, title, title_len);
-        else {
-            AV_WB16(title, ch);
-            get_strz(sc->pb, title + 2, len - 1);
+        if (!len) {
+            title[0] = 0;
+        } else {
+            ch = avio_rb16(sc->pb);
+            if (ch == 0xfeff)
+                avio_get_str16be(sc->pb, len, title, title_len);
+            else if (ch == 0xfffe)
+                avio_get_str16le(sc->pb, len, title, title_len);
+            else {
+                AV_WB16(title, ch);
+                if (len == 1 || len == 2)
+                    title[len] = 0;
+                else
+                    get_strz(sc->pb, title + 2, len - 1);
+            }
         }
 
         ff_new_chapter(s, i, st->time_base, sample->timestamp, end, title);

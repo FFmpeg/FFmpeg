@@ -1518,22 +1518,20 @@ typedef struct AVCodecContext {
      */
     float b_quant_offset;
 
+#if FF_API_ER
     /**
      * Error recognition; higher values will detect more errors but may
      * misdetect some more or less valid parts as errors.
      * - encoding: unused
      * - decoding: Set by user.
      */
-    int error_recognition;
+    attribute_deprecated int error_recognition;
 #define FF_ER_CAREFUL         1
 #define FF_ER_COMPLIANT       2
 #define FF_ER_AGGRESSIVE      3
-#if FF_API_VERY_AGGRESSIVE
 #define FF_ER_VERY_AGGRESSIVE 4
 #define FF_ER_EXPLODE         5
-#else
-#define FF_ER_EXPLODE         4
-#endif /* FF_API_VERY_AGGRESSIVE */
+#endif /* FF_API_ER */
 
     /**
      * Called at the beginning of each frame to get a buffer for it.
@@ -2959,6 +2957,21 @@ typedef struct AVCodecContext {
      * Decoder will decode to this format if it can.
      */
     enum AVSampleFormat request_sample_fmt;
+
+    /**
+     * Error recognition; may misdetect some more or less valid parts as errors.
+     * - encoding: unused
+     * - decoding: Set by user.
+     */
+#if FF_API_ER
+    int error_recognition2;
+#else
+    int error_recognition;
+#endif /* FF_API_ER */
+#define AV_ER_CRCCHECK   (1<<0)
+#define AV_ER_BITSTREAM  (1<<1)
+#define AV_ER_AGGRESSIVE (1<<2)
+#define AV_ER_EXPLODE    (1<<3)
 
     /**
      * Current statistics for PTS correction.
