@@ -154,6 +154,7 @@ static void png_save2(const char *filename, uint32_t *bitmap, int w, int h)
 
 typedef struct DVBSubCLUT {
     int id;
+    int version;
 
     uint32_t clut4[4];
     uint32_t clut16[16];
@@ -180,6 +181,7 @@ typedef struct DVBSubObjectDisplay {
 
 typedef struct DVBSubObject {
     int id;
+    int version;
 
     int type;
 
@@ -199,6 +201,7 @@ typedef struct DVBSubRegionDisplay {
 
 typedef struct DVBSubRegion {
     int id;
+    int version;
 
     int width;
     int height;
@@ -229,6 +232,7 @@ typedef struct DVBSubContext {
     int composition_id;
     int ancillary_id;
 
+    int version;
     int time_out;
     DVBSubRegion *region_list;
     DVBSubCLUT   *clut_list;
@@ -374,6 +378,8 @@ static av_cold int dvbsub_init_decoder(AVCodecContext *avctx)
         ctx->composition_id = AV_RB16(avctx->extradata);
         ctx->ancillary_id   = AV_RB16(avctx->extradata + 2);
     }
+
+    ctx->version = -1;
 
     default_clut.id = -1;
     default_clut.next = NULL;
@@ -928,6 +934,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
 
     const uint8_t *buf_end = buf + buf_size;
     int i, clut_id;
+    int version;
     DVBSubCLUT *clut;
     int entry_id, depth , full_range;
     int y, cr, cb, alpha;
@@ -945,6 +952,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
         av_dlog(avctx, "\n");
 
     clut_id = *buf++;
+    version = ((*buf)>>4)&15;
     buf += 1;
 
     clut = get_clut(ctx, clut_id);
@@ -955,10 +963,15 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
         memcpy(clut, &default_clut, sizeof(DVBSubCLUT));
 
         clut->id = clut_id;
+        clut->version = -1;
 
         clut->next = ctx->clut_list;
         ctx->clut_list = clut;
     }
+
+    if (clut->version != version) {
+
+    clut->version = version;
 
     while (buf + 4 < buf_end) {
         entry_id = *buf++;
@@ -1001,6 +1014,7 @@ static void dvbsub_parse_clut_segment(AVCodecContext *avctx,
         if (depth & 0x20)
             clut->clut256[entry_id] = RGBA(r,g,b,255 - alpha);
     }
+    }
 }
 
 
@@ -1011,6 +1025,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
 
     const uint8_t *buf_end = buf + buf_size;
     int region_id, object_id;
+    int version;
     DVBSubRegion *region;
     DVBSubObject *object;
     DVBSubObjectDisplay *display;
@@ -1027,11 +1042,13 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
         region = av_mallocz(sizeof(DVBSubRegion));
 
         region->id = region_id;
+        region->version = -1;
 
         region->next = ctx->region_list;
         ctx->region_list = region;
     }
 
+    version = ((*buf)>>4) & 15;
     fill = ((*buf++) >> 3) & 1;
 
     region->width = AV_RB16(buf);
@@ -1127,12 +1144,20 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
     const uint8_t *buf_end = buf + buf_size;
     int region_id;
     int page_state;
+    int timeout;
+    int version;
 
     if (buf_size < 1)
         return;
 
-    ctx->time_out = *buf++;
+    timeout = *buf++;
+    version = ((*buf)>>4) & 15;
     page_state = ((*buf++) >> 2) & 3;
+
+    if (ctx->version != version) {
+
+    ctx->time_out = timeout;
+    ctx->version = version;
 
     av_dlog(avctx, "Page time out %ds, state %d\n", ctx->time_out, page_state);
 
@@ -1183,6 +1208,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
         tmp_display_list = display->next;
 
         av_free(display);
+    }
     }
 
 }
