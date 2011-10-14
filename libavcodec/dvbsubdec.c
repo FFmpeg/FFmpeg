@@ -209,6 +209,7 @@ typedef struct DVBSubRegion {
 
     uint8_t *pbuf;
     int buf_size;
+    int dirty;
 
     DVBSubObjectDisplay *display_list;
 
@@ -781,6 +782,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
         return;
 
     pbuf = region->pbuf;
+    region->dirty = 1;
 
     x_pos = display->x_pos;
     y_pos = display->y_pos;
@@ -1044,6 +1046,7 @@ static void dvbsub_parse_region_segment(AVCodecContext *avctx,
         region->pbuf = av_malloc(region->buf_size);
 
         fill = 1;
+        region->dirty = 0;
     }
 
     region->depth = 1 << (((*buf++) >> 2) & 7);
@@ -1356,6 +1359,10 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
         if (!region)
             continue;
 
+        if (!region->dirty)
+            continue;
+
+        rect = sub->rects[i];
         rect->x = display->x_pos + offset_x;
         rect->y = display->y_pos + offset_y;
         rect->w = region->width;
