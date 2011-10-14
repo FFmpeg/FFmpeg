@@ -763,6 +763,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
                          0x88, 0x99, 0xaa, 0xbb, 0xcc, 0xdd, 0xee, 0xff};
     uint8_t *map_table;
 
+#if 0
     av_dlog(avctx, "DVB pixel block size %d, %s field:\n", buf_size,
             top_bottom ? "bottom" : "top");
 
@@ -777,6 +778,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
 
     if (i % 16)
         av_dlog(avctx, "\n");
+#endif
 
     if (region == 0)
         return;
