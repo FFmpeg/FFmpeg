@@ -49,6 +49,8 @@
 #define JOINT_STEREO    0x12
 #define STEREO          0x2
 
+#define SAMPLES_PER_FRAME 1024
+#define MDCT_SIZE          512
 
 /* These structures are needed to store the parsed gain control data. */
 typedef struct {
@@ -71,12 +73,12 @@ typedef struct {
     int               bandsCoded;
     int               numComponents;
     tonal_component   components[64];
-    float             prevFrame[1024];
+    float             prevFrame[SAMPLES_PER_FRAME];
     int               gcBlkSwitch;
     gain_block        gainBlock[2];
 
-    DECLARE_ALIGNED(32, float, spectrum)[1024];
-    DECLARE_ALIGNED(32, float, IMDCT_buf)[1024];
+    DECLARE_ALIGNED(32, float, spectrum)[SAMPLES_PER_FRAME];
+    DECLARE_ALIGNED(32, float, IMDCT_buf)[SAMPLES_PER_FRAME];
 
     float             delayBuf1[46]; ///<qmf delay buffers
     float             delayBuf2[46];
@@ -124,7 +126,7 @@ typedef struct {
     FmtConvertContext   fmt_conv;
 } ATRAC3Context;
 
-static DECLARE_ALIGNED(32, float, mdct_window)[512];
+static DECLARE_ALIGNED(32, float, mdct_window)[MDCT_SIZE];
 static VLC              spectral_coeff_tab[7];
 static float            gain_tab1[16];
 static float            gain_tab2[31];
@@ -161,7 +163,7 @@ static void IMLT(ATRAC3Context *q, float *pInput, float *pOutput, int odd_band)
     q->mdct_ctx.imdct_calc(&q->mdct_ctx,pOutput,pInput);
 
     /* Perform windowing on the output. */
-    dsp.vector_fmul(pOutput, pOutput, mdct_window, 512);
+    dsp.vector_fmul(pOutput, pOutput, mdct_window, MDCT_SIZE);
 
 }
 
@@ -344,7 +346,7 @@ static int decodeSpectrum (GetBitContext *gb, float *pOut)
 
     /* Clear the subbands that were not coded. */
     first = subbandTab[cnt];
-    memset(pOut+first, 0, (1024 - first) * sizeof(float));
+    memset(pOut+first, 0, (SAMPLES_PER_FRAME - first) * sizeof(float));
     return numSubbands;
 }
 
@@ -400,7 +402,7 @@ static int decodeTonalComponents (GetBitContext *gb, tonal_component *pComponent
             for (k=0; k<coded_components; k++) {
                 sfIndx = get_bits(gb,6);
                 pComponent[component_count].pos = j * 64 + (get_bits(gb,6));
-                max_coded_values = 1024 - pComponent[component_count].pos;
+                max_coded_values = SAMPLES_PER_FRAME - pComponent[component_count].pos;
                 coded_values = coded_values_per_component + 1;
                 coded_values = FFMIN(max_coded_values,coded_values);
 
@@ -837,7 +839,8 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    out_size = 1024 * q->channels * av_get_bytes_per_sample(avctx->sample_fmt);
+    out_size = SAMPLES_PER_FRAME * q->channels *
+               av_get_bytes_per_sample(avctx->sample_fmt);
     if (*data_size < out_size) {
         av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
         return AVERROR(EINVAL);
@@ -861,7 +864,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     /* interleave */
     if (q->channels == 2) {
         q->fmt_conv.float_interleave(samples, (const float **)q->outSamples,
-                                     1024, 2);
+                                     SAMPLES_PER_FRAME, 2);
     }
     *data_size = out_size;
 
@@ -901,7 +904,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         av_log(avctx,AV_LOG_DEBUG,"[12-13] %d\n",bytestream_get_le16(&edata_ptr));  //Unknown always 0
 
         /* setup */
-        q->samples_per_frame = 1024 * q->channels;
+        q->samples_per_frame = SAMPLES_PER_FRAME * q->channels;
         q->atrac3version = 4;
         q->delay = 0x88E;
         if (q->codingMode)
@@ -937,7 +940,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (q->samples_per_frame != 1024 && q->samples_per_frame != 2048) {
+    if (q->samples_per_frame != SAMPLES_PER_FRAME && q->samples_per_frame != SAMPLES_PER_FRAME*2) {
         av_log(avctx,AV_LOG_ERROR,"Unknown amount of samples per frame %d.\n",q->samples_per_frame);
         return -1;
     }
@@ -1018,8 +1021,8 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
 
     if (avctx->channels > 1) {
-        q->outSamples[0] = av_mallocz(1024 * 2 * sizeof(*q->outSamples[0]));
-        q->outSamples[1] = q->outSamples[0] + 1024;
+        q->outSamples[0] = av_mallocz(SAMPLES_PER_FRAME * 2 * sizeof(*q->outSamples[0]));
+        q->outSamples[1] = q->outSamples[0] + SAMPLES_PER_FRAME;
         if (!q->outSamples[0]) {
             atrac3_decode_close(avctx);
             return AVERROR(ENOMEM);
