@@ -36,6 +36,7 @@
 #include "get_bits.h"
 #include "dsputil.h"
 #include "fft.h"
+#include "fmtconvert.h"
 #include "sinewin.h"
 
 #include "atrac.h"
@@ -78,10 +79,11 @@ typedef struct {
     DECLARE_ALIGNED(32, float,  mid)[256];
     DECLARE_ALIGNED(32, float, high)[512];
     float*              bands[3];
-    DECLARE_ALIGNED(32, float, out_samples)[AT1_MAX_CHANNELS][AT1_SU_SAMPLES];
+    float              *out_samples[AT1_MAX_CHANNELS];
     FFTContext          mdct_ctx[3];
     int                 channels;
     DSPContext          dsp;
+    FmtConvertContext   fmt_conv;
 } AT1Ctx;
 
 /** size of the transform in samples in the long mode for each QMF band */
@@ -276,7 +278,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AT1Ctx *q          = avctx->priv_data;
-    int ch, ret, i, out_size;
+    int ch, ret, out_size;
     GetBitContext gb;
     float* samples = data;
 
@@ -313,12 +315,10 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         at1_subband_synthesis(q, su, q->channels == 1 ? samples : q->out_samples[ch]);
     }
 
-    /* interleave; FIXME, should create/use a DSP function */
+    /* interleave */
     if (q->channels == 2) {
-        for (i = 0; i < AT1_SU_SAMPLES; i++) {
-            samples[i * 2]     = q->out_samples[0][i];
-            samples[i * 2 + 1] = q->out_samples[1][i];
-        }
+        q->fmt_conv.float_interleave(samples, (const float **)q->out_samples,
+                                     AT1_SU_SAMPLES, 2);
     }
 
     *data_size = out_size;
@@ -339,6 +339,15 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     }
     q->channels = avctx->channels;
 
+    if (avctx->channels == 2) {
+        q->out_samples[0] = av_malloc(2 * AT1_SU_SAMPLES * sizeof(*q->out_samples[0]));
+        q->out_samples[1] = q->out_samples[0] + AT1_SU_SAMPLES;
+        if (!q->out_samples[0]) {
+            av_freep(&q->out_samples[0]);
+            return AVERROR(ENOMEM);
+        }
+    }
+
     /* Init the mdct transforms */
     ff_mdct_init(&q->mdct_ctx[0], 6, 1, -1.0/ (1 << 15));
     ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1 << 15));
@@ -349,6 +358,7 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     atrac_generate_tables();
 
     dsputil_init(&q->dsp, avctx);
+    ff_fmt_convert_init(&q->fmt_conv, avctx);
 
     q->bands[0] = q->low;
     q->bands[1] = q->mid;
@@ -366,6 +376,8 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 
 static av_cold int atrac1_decode_end(AVCodecContext * avctx) {
     AT1Ctx *q = avctx->priv_data;
+
+    av_freep(&q->out_samples[0]);
 
     ff_mdct_end(&q->mdct_ctx[0]);
     ff_mdct_end(&q->mdct_ctx[1]);
