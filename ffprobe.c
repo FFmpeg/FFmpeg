@@ -809,26 +809,20 @@ static int probe_file(const char *filename)
     AVFormatContext *fmt_ctx;
     int ret;
     Writer *w;
-    const char *buf = print_format;
-    char *w_str = NULL, *w_args = NULL;
+    char *buf;
+    char *w_name = NULL, *w_args = NULL;
     WriterContext *wctx;
 
     writer_register_all();
 
-    if (buf) {
-        w_str = av_get_token(&buf, "=");
-        if (*buf == '=') {
-            buf++;
-            w_args = av_get_token(&buf, "");
-        }
-    }
+    if (!print_format)
+        print_format = av_strdup("default");
+    w_name  = av_strtok(print_format, "=", &buf);
+    w_args = buf;
 
-    if (!w_str)
-        w_str = av_strdup("default");
-
-    w = writer_get_by_name(w_str);
+    w = writer_get_by_name(w_name);
     if (!w) {
-        av_log(NULL, AV_LOG_ERROR, "Invalid output format '%s'\n", w_str);
+        av_log(NULL, AV_LOG_ERROR, "Unknown output format with name '%s'\n", w_name);
         ret = AVERROR(EINVAL);
         goto end;
     }
@@ -848,8 +842,7 @@ static int probe_file(const char *filename)
     writer_close(&wctx);
 
 end:
-    av_free(w_str);
-    av_free(w_args);
+    av_free(print_format);
 
     return ret;
 }
