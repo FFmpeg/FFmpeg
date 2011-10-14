@@ -410,39 +410,85 @@ static Writer default_writer = {
 
 typedef struct {
     int multiple_entries; ///< tells if the given chapter requires multiple entries
+    char *buf;
+    size_t buf_size;
 } JSONContext;
 
-static char *json_escape_str(const char *s)
+#define ESCAPE_INIT_BUF_SIZE 256
+
+static av_cold int json_init(WriterContext *wctx, const char *args, void *opaque)
+{
+    JSONContext *json = wctx->priv;
+
+    json->buf_size = ESCAPE_INIT_BUF_SIZE;
+    if (!(json->buf = av_malloc(json->buf_size)))
+        return AVERROR(ENOMEM);
+
+    return 0;
+}
+
+static av_cold void json_uninit(WriterContext *wctx)
+{
+    JSONContext *json = wctx->priv;
+    av_freep(&json->buf);
+}
+
+#define ESCAPE_CHECK_SIZE(src, size, max_size)                          \
+    if (size > max_size) {                                              \
+        char buf[64];                                                   \
+        snprintf(buf, sizeof(buf), "%s", src);                          \
+        av_log(log_ctx, AV_LOG_WARNING,                                 \
+               "String '%s...' with is too big\n", buf);                \
+        return "FFPROBE_TOO_BIG_STRING";                                \
+    }
+
+#define ESCAPE_REALLOC_BUF(dst_size_p, dst_p, src, size)                \
+    if (*dst_size_p < size) {                                           \
+        char *q = av_realloc(*dst_p, size);                             \
+        if (!q) {                                                       \
+            char buf[64];                                               \
+            snprintf(buf, sizeof(buf), "%s", src);                      \
+            av_log(log_ctx, AV_LOG_WARNING,                             \
+                   "String '%s...' could not be escaped\n", buf);       \
+            return "FFPROBE_THIS_STRING_COULD_NOT_BE_ESCAPED";          \
+        }                                                               \
+        *dst_size_p = size;                                             \
+        *dst = q;                                                       \
+    }
+
+static const char *json_escape_str(char **dst, size_t *dst_size, const char *src,
+                                   void *log_ctx)
 {
     static const char json_escape[] = {'"', '\\', '\b', '\f', '\n', '\r', '\t', 0};
     static const char json_subst[]  = {'"', '\\',  'b',  'f',  'n',  'r',  't', 0};
-    char *ret, *p;
-    int i, len = 0;
+    const char *p;
+    char *q;
+    size_t size = 1;
 
     // compute the length of the escaped string
-    for (i = 0; s[i]; i++) {
-        if (strchr(json_escape, s[i]))     len += 2; // simple escape
-        else if ((unsigned char)s[i] < 32) len += 6; // handle non-printable chars
-        else                               len += 1; // char copy
+    for (p = src; *p; p++) {
+        ESCAPE_CHECK_SIZE(src, size, SIZE_MAX-6);
+        if (strchr(json_escape, *p))     size += 2; // simple escape
+        else if ((unsigned char)*p < 32) size += 6; // handle non-printable chars
+        else                             size += 1; // char copy
     }
+    ESCAPE_REALLOC_BUF(dst_size, dst, src, size);
 
-    p = ret = av_malloc(len + 1);
-    if (!p)
-        return NULL;
-    for (i = 0; s[i]; i++) {
-        char *q = strchr(json_escape, s[i]);
-        if (q) {
-            *p++ = '\\';
-            *p++ = json_subst[q - json_escape];
-        } else if ((unsigned char)s[i] < 32) {
-            snprintf(p, 7, "\\u00%02x", s[i] & 0xff);
-            p += 6;
+    q = *dst;
+    for (p = src; *p; p++) {
+        char *s = strchr(json_escape, *p);
+        if (s) {
+            *q++ = '\\';
+            *q++ = json_subst[s - json_escape];
+        } else if ((unsigned char)*p < 32) {
+            snprintf(q, 7, "\\u00%02x", *p & 0xff);
+            q += 6;
         } else {
-            *p++ = s[i];
+            *q++ = *p;
         }
     }
-    *p = 0;
-    return ret;
+    *q = 0;
+    return *dst;
 }
 
 static void json_print_header(WriterContext *wctx)
@@ -458,15 +504,12 @@ static void json_print_footer(WriterContext *wctx)
 static void json_print_chapter_header(WriterContext *wctx, const char *chapter)
 {
     JSONContext *json = wctx->priv;
-    char *chapter_esc;
 
     if (wctx->nb_chapter)
         printf(",");
     json->multiple_entries = !strcmp(chapter, "packets") || !strcmp(chapter, "streams");
-    chapter_esc = json_escape_str(chapter);
-    printf("\n  \"%s\":%s", chapter_esc ? chapter_esc : "",
+    printf("\n  \"%s\":%s", json_escape_str(&json->buf, &json->buf_size, chapter, wctx),
            json->multiple_entries ? " [" : " ");
-    av_free(chapter_esc);
 }
 
 static void json_print_chapter_footer(WriterContext *wctx, const char *chapter)
@@ -492,14 +535,10 @@ static inline void json_print_item_str(WriterContext *wctx,
                                        const char *key, const char *value,
                                        const char *indent)
 {
-    char *key_esc = json_escape_str(key);
-    char *value_esc = json_escape_str(value);
+    JSONContext *json = wctx->priv;
 
-    printf("%s\"%s\": \"%s\"", indent,
-           key_esc   ? key_esc   : "",
-           value_esc ? value_esc : "");
-    av_free(key_esc);
-    av_free(value_esc);
+    printf("%s\"%s\":", indent, json_escape_str(&json->buf, &json->buf_size, key,   wctx));
+    printf(" \"%s\"",           json_escape_str(&json->buf, &json->buf_size, value, wctx));
 }
 
 #define INDENT "    "
@@ -512,11 +551,11 @@ static void json_print_str(WriterContext *wctx, const char *key, const char *val
 
 static void json_print_int(WriterContext *wctx, const char *key, int value)
 {
-    char *key_esc = json_escape_str(key);
+    JSONContext *json = wctx->priv;
 
     if (wctx->nb_item) printf(",\n");
-    printf(INDENT "\"%s\": %d", key_esc ? key_esc : "", value);
-    av_free(key_esc);
+    printf(INDENT "\"%s\": %d",
+           json_escape_str(&json->buf, &json->buf_size, key, wctx), value);
 }
 
 static void json_show_tags(WriterContext *wctx, AVDictionary *dict)
@@ -538,6 +577,8 @@ static Writer json_writer = {
     .name         = "json",
     .priv_size    = sizeof(JSONContext),
 
+    .init                 = json_init,
+    .uninit               = json_uninit,
     .print_header         = json_print_header,
     .print_footer         = json_print_footer,
     .print_chapter_header = json_print_chapter_header,
