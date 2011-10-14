@@ -789,8 +789,7 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
     x_pos = display->x_pos;
     y_pos = display->y_pos;
 
-    if ((y_pos & 1) != top_bottom)
-        y_pos++;
+    y_pos += top_bottom;
 
     while (buf < buf_end) {
         if (x_pos >= region->width || y_pos >= region->height) {
