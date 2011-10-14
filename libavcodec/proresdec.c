@@ -71,6 +71,7 @@ typedef struct {
     int        slice_height_factor;
     int        num_x_mbs;
     int        num_y_mbs;
+    int        alpha_info;
 } ProresContext;
 
 
@@ -188,6 +189,10 @@ static int decode_frame_header(ProresContext *ctx, const uint8_t *buf,
         ctx->picture.interlaced_frame = 1;
         ctx->picture.top_field_first  = ctx->frame_type & 1;
     }
+
+    ctx->alpha_info = buf[17] & 0xf;
+    if (ctx->alpha_info)
+        av_log_missing_feature(avctx, "alpha channel", 0);
 
     ctx->qmat_changed = 0;
     ptr   = buf + 20;
