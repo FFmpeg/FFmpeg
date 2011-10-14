@@ -469,15 +469,17 @@ static av_cold int dvbsub_close_decoder(AVCodecContext *avctx)
 
 static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
                                    const uint8_t **srcbuf, int buf_size,
-                                   int non_mod, uint8_t *map_table)
+                                   int non_mod, uint8_t *map_table, int x_pos)
 {
     GetBitContext gb;
 
     int bits;
     int run_length;
-    int pixels_read = 0;
+    int pixels_read = x_pos;
 
     init_get_bits(&gb, *srcbuf, buf_size << 3);
+
+    destbuf += x_pos;
 
     while (get_bits_count(&gb) < buf_size << 3 && pixels_read < dbuf_len) {
         bits = get_bits(&gb, 2);
@@ -574,15 +576,17 @@ static int dvbsub_read_2bit_string(uint8_t *destbuf, int dbuf_len,
 
 static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
                                    const uint8_t **srcbuf, int buf_size,
-                                   int non_mod, uint8_t *map_table)
+                                   int non_mod, uint8_t *map_table, int x_pos)
 {
     GetBitContext gb;
 
     int bits;
     int run_length;
-    int pixels_read = 0;
+    int pixels_read = x_pos;
 
     init_get_bits(&gb, *srcbuf, buf_size << 3);
+
+    destbuf += x_pos;
 
     while (get_bits_count(&gb) < buf_size << 3 && pixels_read < dbuf_len) {
         bits = get_bits(&gb, 4);
@@ -695,12 +699,14 @@ static int dvbsub_read_4bit_string(uint8_t *destbuf, int dbuf_len,
 
 static int dvbsub_read_8bit_string(uint8_t *destbuf, int dbuf_len,
                                     const uint8_t **srcbuf, int buf_size,
-                                    int non_mod, uint8_t *map_table)
+                                    int non_mod, uint8_t *map_table, int x_pos)
 {
     const uint8_t *sbuf_end = (*srcbuf) + buf_size;
     int bits;
     int run_length;
-    int pixels_read = 0;
+    int pixels_read = x_pos;
+
+    destbuf += x_pos;
 
     while (*srcbuf < sbuf_end && pixels_read < dbuf_len) {
         bits = *(*srcbuf)++;
@@ -812,9 +818,9 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
             else
                 map_table = NULL;
 
-            x_pos += dvbsub_read_2bit_string(pbuf + (y_pos * region->width) + x_pos,
-                                                region->width - x_pos, &buf, buf_end - buf,
-                                                non_mod, map_table);
+            x_pos = dvbsub_read_2bit_string(pbuf + (y_pos * region->width),
+                                            region->width, &buf, buf_end - buf,
+                                            non_mod, map_table, x_pos);
             break;
         case 0x11:
             if (region->depth < 4) {
@@ -827,9 +833,9 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
             else
                 map_table = NULL;
 
-            x_pos += dvbsub_read_4bit_string(pbuf + (y_pos * region->width) + x_pos,
-                                                region->width - x_pos, &buf, buf_end - buf,
-                                                non_mod, map_table);
+            x_pos = dvbsub_read_4bit_string(pbuf + (y_pos * region->width),
+                                            region->width, &buf, buf_end - buf,
+                                            non_mod, map_table, x_pos);
             break;
         case 0x12:
             if (region->depth < 8) {
@@ -837,9 +843,9 @@ static void dvbsub_parse_pixel_data_block(AVCodecContext *avctx, DVBSubObjectDis
                 return;
             }
 
-            x_pos += dvbsub_read_8bit_string(pbuf + (y_pos * region->width) + x_pos,
-                                                region->width - x_pos, &buf, buf_end - buf,
-                                                non_mod, NULL);
+            x_pos = dvbsub_read_8bit_string(pbuf + (y_pos * region->width),
+                                            region->width, &buf, buf_end - buf,
+                                            non_mod, NULL, x_pos);
             break;
 
         case 0x20:
