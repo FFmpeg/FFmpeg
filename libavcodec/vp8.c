@@ -273,7 +273,7 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
 
     if (!s->macroblocks_base || /* first frame */
         width != s->avctx->width || height != s->avctx->height) {
-        if ((ret = update_dimensions(s, width, height) < 0))
+        if ((ret = update_dimensions(s, width, height)) < 0)
             return ret;
     }
 
