@@ -41,6 +41,7 @@
 #include "dsputil.h"
 #include "bytestream.h"
 #include "fft.h"
+#include "fmtconvert.h"
 
 #include "atrac.h"
 #include "atrac3data.h"
@@ -107,7 +108,7 @@ typedef struct {
     //@}
     //@{
     /** data buffers */
-    float               outSamples[2048];
+    float              *outSamples[2];
     uint8_t*            decoded_bytes_buffer;
     float               tempBuf[1070];
     //@}
@@ -120,6 +121,7 @@ typedef struct {
     //@}
 
     FFTContext          mdct_ctx;
+    FmtConvertContext   fmt_conv;
 } ATRAC3Context;
 
 static DECLARE_ALIGNED(32, float, mdct_window)[512];
@@ -221,6 +223,8 @@ static av_cold int atrac3_decode_close(AVCodecContext *avctx)
 
     av_free(q->pUnits);
     av_free(q->decoded_bytes_buffer);
+    av_freep(&q->outSamples[0]);
+
     ff_mdct_end(&q->mdct_ctx);
 
     return 0;
@@ -824,7 +828,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     ATRAC3Context *q = avctx->priv_data;
-    int result = 0, i;
+    int result = 0;
     const uint8_t* databuf;
     float *samples = data;
 
@@ -843,7 +847,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
         databuf = buf;
     }
 
-    result = decodeFrame(q, databuf, q->channels == 2 ? q->outSamples : samples);
+    result = decodeFrame(q, databuf, q->channels == 2 ? q->outSamples[0] : samples);
 
     if (result != 0) {
         av_log(NULL,AV_LOG_ERROR,"Frame decoding error!\n");
@@ -852,10 +856,8 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
 
     /* interleave */
     if (q->channels == 2) {
-        for (i = 0; i < 1024; i++) {
-            samples[i*2]   = q->outSamples[i];
-            samples[i*2+1] = q->outSamples[1024+i];
-        }
+        q->fmt_conv.float_interleave(samples, (const float **)q->outSamples,
+                                     1024, 2);
     }
     *data_size = 1024 * q->channels * av_get_bytes_per_sample(avctx->sample_fmt);
 
@@ -1003,11 +1005,21 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
     }
 
     dsputil_init(&dsp, avctx);
+    ff_fmt_convert_init(&q->fmt_conv, avctx);
 
     q->pUnits = av_mallocz(sizeof(channel_unit)*q->channels);
     if (!q->pUnits) {
         av_free(q->decoded_bytes_buffer);
         return AVERROR(ENOMEM);
+    }
+
+    if (avctx->channels > 1) {
+        q->outSamples[0] = av_mallocz(1024 * 2 * sizeof(*q->outSamples[0]));
+        q->outSamples[1] = q->outSamples[0] + 1024;
+        if (!q->outSamples[0]) {
+            atrac3_decode_close(avctx);
+            return AVERROR(ENOMEM);
+        }
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
