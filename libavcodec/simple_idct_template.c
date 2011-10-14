@@ -85,14 +85,19 @@
 
 #endif
 
-static inline void FUNC(idctRowCondDC)(DCTELEM *row)
+static inline void FUNC(idctRowCondDC)(DCTELEM *row, int extra_shift)
 {
     int a0, a1, a2, a3, b0, b1, b2, b3;
 
 #if HAVE_FAST_64BIT
 #define ROW0_MASK (0xffffLL << 48 * HAVE_BIGENDIAN)
     if (((((uint64_t *)row)[0] & ~ROW0_MASK) | ((uint64_t *)row)[1]) == 0) {
-        uint64_t temp = (row[0] << DC_SHIFT) & 0xffff;
+        uint64_t temp;
+        if (DC_SHIFT - extra_shift > 0) {
+            temp = (row[0] << (DC_SHIFT - extra_shift)) & 0xffff;
+        } else {
+            temp = (row[0] >> (extra_shift - DC_SHIFT)) & 0xffff;
+        }
         temp += temp << 16;
         temp += temp << 32;
         ((uint64_t *)row)[0] = temp;
@@ -104,7 +109,12 @@ static inline void FUNC(idctRowCondDC)(DCTELEM *row)
           ((uint32_t*)row)[2] |
           ((uint32_t*)row)[3] |
           row[1])) {
-        uint32_t temp = (row[0] << DC_SHIFT) & 0xffff;
+        uint32_t temp;
+        if (DC_SHIFT - extra_shift > 0) {
+            temp = (row[0] << (DC_SHIFT - extra_shift)) & 0xffff;
+        } else {
+            temp = (row[0] >> (extra_shift - DC_SHIFT)) & 0xffff;
+        }
         temp += temp << 16;
         ((uint32_t*)row)[0]=((uint32_t*)row)[1] =
             ((uint32_t*)row)[2]=((uint32_t*)row)[3] = temp;
@@ -150,14 +160,14 @@ static inline void FUNC(idctRowCondDC)(DCTELEM *row)
         MAC(b3, -W1, row[7]);
     }
 
-    row[0] = (a0 + b0) >> ROW_SHIFT;
-    row[7] = (a0 - b0) >> ROW_SHIFT;
-    row[1] = (a1 + b1) >> ROW_SHIFT;
-    row[6] = (a1 - b1) >> ROW_SHIFT;
-    row[2] = (a2 + b2) >> ROW_SHIFT;
-    row[5] = (a2 - b2) >> ROW_SHIFT;
-    row[3] = (a3 + b3) >> ROW_SHIFT;
-    row[4] = (a3 - b3) >> ROW_SHIFT;
+    row[0] = (a0 + b0) >> (ROW_SHIFT + extra_shift);
+    row[7] = (a0 - b0) >> (ROW_SHIFT + extra_shift);
+    row[1] = (a1 + b1) >> (ROW_SHIFT + extra_shift);
+    row[6] = (a1 - b1) >> (ROW_SHIFT + extra_shift);
+    row[2] = (a2 + b2) >> (ROW_SHIFT + extra_shift);
+    row[5] = (a2 - b2) >> (ROW_SHIFT + extra_shift);
+    row[3] = (a3 + b3) >> (ROW_SHIFT + extra_shift);
+    row[4] = (a3 - b3) >> (ROW_SHIFT + extra_shift);
 }
 
 #define IDCT_COLS do {                                  \
@@ -284,7 +294,7 @@ void FUNC(ff_simple_idct_put)(uint8_t *dest_, int line_size, DCTELEM *block)
     line_size /= sizeof(pixel);
 
     for (i = 0; i < 8; i++)
-        FUNC(idctRowCondDC)(block + i*8);
+        FUNC(idctRowCondDC)(block + i*8, 0);
 
     for (i = 0; i < 8; i++)
         FUNC(idctSparseColPut)(dest + i, line_size, block + i);
@@ -298,7 +308,7 @@ void FUNC(ff_simple_idct_add)(uint8_t *dest_, int line_size, DCTELEM *block)
     line_size /= sizeof(pixel);
 
     for (i = 0; i < 8; i++)
-        FUNC(idctRowCondDC)(block + i*8);
+        FUNC(idctRowCondDC)(block + i*8, 0);
 
     for (i = 0; i < 8; i++)
         FUNC(idctSparseColAdd)(dest + i, line_size, block + i);
@@ -309,7 +319,7 @@ void FUNC(ff_simple_idct)(DCTELEM *block)
     int i;
 
     for (i = 0; i < 8; i++)
-        FUNC(idctRowCondDC)(block + i*8);
+        FUNC(idctRowCondDC)(block + i*8, 0);
 
     for (i = 0; i < 8; i++)
         FUNC(idctSparseCol)(block + i);
