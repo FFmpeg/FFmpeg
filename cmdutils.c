@@ -423,6 +423,12 @@ int opt_loglevel(const char *opt, const char *arg)
     return 0;
 }
 
+int opt_codec_debug(const char *opt, const char *arg)
+{
+    av_log_set_level(AV_LOG_DEBUG);
+    return opt_default(opt, arg);
+}
+
 int opt_timelimit(const char *opt, const char *arg)
 {
 #if HAVE_SETRLIMIT

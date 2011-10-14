@@ -76,6 +76,8 @@ int opt_default(const char *opt, const char *arg);
  */
 int opt_loglevel(const char *opt, const char *arg);
 
+int opt_codec_debug(const char *opt, const char *arg);
+
 /**
  * Limit the execution time.
  */
