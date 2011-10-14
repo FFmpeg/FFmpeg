@@ -827,7 +827,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     ATRAC3Context *q = avctx->priv_data;
-    int result = 0;
+    int result = 0, out_size;
     const uint8_t* databuf;
     float *samples = data;
 
@@ -836,6 +836,12 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
         *data_size = 0;
         return buf_size;
+    }
+
+    out_size = 1024 * q->channels * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
     }
 
     /* Check if we need to descramble and what buffer to pass on. */
@@ -858,7 +864,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
         q->fmt_conv.float_interleave(samples, (const float **)q->outSamples,
                                      1024, 2);
     }
-    *data_size = 1024 * q->channels * av_get_bytes_per_sample(avctx->sample_fmt);
+    *data_size = out_size;
 
     return avctx->block_align;
 }
