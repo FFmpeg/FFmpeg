@@ -1136,7 +1136,7 @@ static void dvbsub_parse_page_segment(AVCodecContext *avctx,
 
     av_dlog(avctx, "Page time out %ds, state %d\n", ctx->time_out, page_state);
 
-    if (page_state == 2) {
+    if (page_state == 1 || page_state == 2) {
         delete_regions(ctx);
         delete_objects(ctx);
         delete_cluts(ctx);
