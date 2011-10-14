@@ -2413,7 +2413,7 @@ static void mov_read_chapters(AVFormatContext *s)
             else {
                 AV_WB16(title, ch);
                 if (len == 1 || len == 2)
-                    title[len] = '0';
+                    title[len] = 0;
                 else
                     get_strz(sc->pb, title + 2, len - 1);
             }
