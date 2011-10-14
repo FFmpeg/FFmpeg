@@ -869,7 +869,6 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
     DVBSubContext *ctx = avctx->priv_data;
 
     const uint8_t *buf_end = buf + buf_size;
-    const uint8_t *block;
     int object_id;
     DVBSubObject *object;
     DVBSubObjectDisplay *display;
@@ -900,7 +899,8 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
         }
 
         for (display = object->display_list; display; display = display->object_list_next) {
-            block = buf;
+            const uint8_t *block = buf;
+            int bfl = bottom_field_len;
 
             dvbsub_parse_pixel_data_block(avctx, display, block, top_field_len, 0,
                                             non_modifying_color);
@@ -908,9 +908,9 @@ static void dvbsub_parse_object_segment(AVCodecContext *avctx,
             if (bottom_field_len > 0)
                 block = buf + top_field_len;
             else
-                bottom_field_len = top_field_len;
+                bfl = top_field_len;
 
-            dvbsub_parse_pixel_data_block(avctx, display, block, bottom_field_len, 1,
+            dvbsub_parse_pixel_data_block(avctx, display, block, bfl, 1,
                                             non_modifying_color);
         }
 
