@@ -28,6 +28,7 @@
  */
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/avstring.h"
 #include "libavcodec/audioconvert.h"
 #include "avfilter.h"
 #include "internal.h"
@@ -125,15 +126,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
     aconvert->out_chlayout    = 0;
     aconvert->out_packing_fmt = -1;
 
-    if ((arg = strtok_r(args, ":", &ptr)) && strcmp(arg, "auto")) {
+    if ((arg = av_strtok(args, ":", &ptr)) && strcmp(arg, "auto")) {
         if ((ret = ff_parse_sample_format(&aconvert->out_sample_fmt, arg, ctx)) < 0)
             goto end;
     }
-    if ((arg = strtok_r(NULL, ":", &ptr)) && strcmp(arg, "auto")) {
+    if ((arg = av_strtok(NULL, ":", &ptr)) && strcmp(arg, "auto")) {
         if ((ret = ff_parse_channel_layout(&aconvert->out_chlayout, arg, ctx)) < 0)
             goto end;
     }
-    if ((arg = strtok_r(NULL, ":", &ptr)) && strcmp(arg, "auto")) {
+    if ((arg = av_strtok(NULL, ":", &ptr)) && strcmp(arg, "auto")) {
         if ((ret = ff_parse_packing_format((int *)&aconvert->out_packing_fmt, arg, ctx)) < 0)
             goto end;
     }

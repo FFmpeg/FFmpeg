@@ -1186,7 +1186,6 @@ HAVE_LIST="
     setrlimit
     strerror_r
     strptime
-    strtok_r
     struct_addrinfo
     struct_ipv6_mreq
     struct_sockaddr_in6
@@ -1585,17 +1584,14 @@ tcp_protocol_deps="network"
 udp_protocol_deps="network"
 
 # filters
-abuffer_filter_deps="strtok_r"
-aconvert_filter_deps="strtok_r"
-aformat_filter_deps="strtok_r"
 amovie_filter_deps="avcodec avformat"
 blackframe_filter_deps="gpl"
 boxblur_filter_deps="gpl"
 cropdetect_filter_deps="gpl"
 delogo_filter_deps="gpl"
 drawtext_filter_deps="libfreetype"
-frei0r_filter_deps="frei0r dlopen strtok_r"
-frei0r_src_filter_deps="frei0r dlopen strtok_r"
+frei0r_filter_deps="frei0r dlopen"
+frei0r_src_filter_deps="frei0r dlopen"
 hqdn3d_filter_deps="gpl"
 movie_filter_deps="avcodec avformat"
 mp_filter_deps="gpl avcodec"
@@ -2942,7 +2938,6 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func  strerror_r
 check_func  strptime
-check_func  strtok_r
 check_func_headers conio.h kbhit
 check_func_headers windows.h PeekNamedPipe
 check_func_headers io.h setmode

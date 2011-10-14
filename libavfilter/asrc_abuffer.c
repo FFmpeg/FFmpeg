@@ -25,6 +25,7 @@
  */
 
 #include "libavutil/audioconvert.h"
+#include "libavutil/avstring.h"
 #include "libavutil/fifo.h"
 #include "asrc_abuffer.h"
 #include "internal.h"
@@ -256,7 +257,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
     char *args = av_strdup(args0);
     int ret;
 
-    arg = strtok_r(args, ":", &ptr);
+    arg = av_strtok(args, ":", &ptr);
 
 #define ADD_FORMAT(fmt_name)                                            \
     if (!arg)                                                           \
@@ -266,7 +267,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args0, void *opaque)
         return ret;                                                     \
     }                                                                   \
     if (*args)                                                          \
-        arg = strtok_r(NULL, ":", &ptr)
+        arg = av_strtok(NULL, ":", &ptr)
 
     ADD_FORMAT(sample_rate);
     ADD_FORMAT(sample_format);

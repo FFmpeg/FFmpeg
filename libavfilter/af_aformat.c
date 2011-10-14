@@ -50,7 +50,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         aformat->fmts_list = all_formats;                               \
     } else {                                                            \
         for (fmt_str = fmts_str;                                        \
-             fmt_str = strtok_r(fmt_str, ",", &ptr); fmt_str = NULL) {  \
+             fmt_str = av_strtok(fmt_str, ",", &ptr); fmt_str = NULL) { \
             if ((ret = ff_parse_##fmt_name((fmt_type *)&fmt,            \
                                            fmt_str, ctx)) < 0) {        \
                 av_freep(&fmts_str);                                    \

@@ -216,7 +216,7 @@ static av_cold int frei0r_init(AVFilterContext *ctx,
     /* see: http://piksel.org/frei0r/1.2/spec/1.2/spec/group__pluglocations.html */
     if ((path = av_strdup(getenv("FREI0R_PATH")))) {
         char *p, *ptr = NULL;
-        for (p = path; p = strtok_r(p, ":", &ptr); p = NULL)
+        for (p = path; p = av_strtok(p, ":", &ptr); p = NULL)
             if (frei0r->dl_handle = load_path(ctx, p, dl_name))
                 break;
         av_free(path);
