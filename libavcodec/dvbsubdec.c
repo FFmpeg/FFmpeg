@@ -1376,13 +1376,11 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
         sub->rects = av_mallocz(sizeof(*sub->rects) * sub->num_rects);
         for(i=0; i<sub->num_rects; i++)
             sub->rects[i] = av_mallocz(sizeof(*sub->rects[i]));
-    }
 
     i = 0;
 
     for (display = ctx->display_list; display; display = display->next) {
         region = get_region(ctx, display->region_id);
-        rect = sub->rects[i];
 
         if (!region)
             continue;
@@ -1427,7 +1425,7 @@ static int dvbsub_display_end_segment(AVCodecContext *avctx, const uint8_t *buf,
     }
 
     sub->num_rects = i;
-
+    }
 #ifdef DEBUG
     save_display_set(ctx);
 #endif
