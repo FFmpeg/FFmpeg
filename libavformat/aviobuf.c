@@ -769,13 +769,14 @@ int avio_get_str(AVIOContext *s, int maxlen, char *buf, int buflen)
 {
     int i;
 
+    if (buflen <= 0)
+        return AVERROR(EINVAL);
     // reserve 1 byte for terminating 0
     buflen = FFMIN(buflen - 1, maxlen);
     for (i = 0; i < buflen; i++)
         if (!(buf[i] = avio_r8(s)))
             return i + 1;
-    if (buflen)
-        buf[i] = 0;
+    buf[i] = 0;
     for (; i < maxlen; i++)
         if (!avio_r8(s))
             return i + 1;
@@ -787,6 +788,8 @@ int avio_get_str(AVIOContext *s, int maxlen, char *buf, int buflen)
 {\
     char* q = buf;\
     int ret = 0;\
+    if (buflen <= 0) \
+        return AVERROR(EINVAL); \
     while (ret + 1 < maxlen) {\
         uint8_t tmp;\
         uint32_t ch;\
