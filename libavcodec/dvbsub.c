@@ -321,14 +321,17 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
     if (!s->hide_state) {
 
         for (object_id = 0; object_id < h->num_rects; object_id++) {
-            /* Object Data segment */
+            void (*dvb_encode_rle)(uint8_t **pq,
+                                    const uint8_t *bitmap, int linesize,
+                                    int w, int h);
 
+            /* bpp_index maths */
             if (h->rects[object_id]->nb_colors <= 4) {
                 /* 2 bpp, some decoders do not support it correctly */
-                bpp_index = 0;
+                dvb_encode_rle = dvb_encode_rle2;
             } else if (h->rects[object_id]->nb_colors <= 16) {
                 /* 4 bpp, standard encoding */
-                bpp_index = 1;
+                dvb_encode_rle = dvb_encode_rle4;
             } else {
                 return -1;
             }
@@ -345,18 +348,11 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                                                                        non_modifying_color_flag */
             {
                 uint8_t *ptop_field_len, *pbottom_field_len, *top_ptr, *bottom_ptr;
-                void (*dvb_encode_rle)(uint8_t **pq,
-                                        const uint8_t *bitmap, int linesize,
-                                        int w, int h);
+
                 ptop_field_len = q;
                 q += 2;
                 pbottom_field_len = q;
                 q += 2;
-
-                if (bpp_index == 0)
-                    dvb_encode_rle = dvb_encode_rle2;
-                else
-                    dvb_encode_rle = dvb_encode_rle4;
 
                 top_ptr = q;
                 dvb_encode_rle(&q, h->rects[object_id]->pict.data[0], h->rects[object_id]->w * 2,
