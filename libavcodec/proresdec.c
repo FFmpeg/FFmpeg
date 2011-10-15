@@ -546,9 +546,11 @@ static int decode_slice(AVCodecContext *avctx, ProresThreadData *td)
     hdr_size    = buf[0] >> 3;
     y_data_size = AV_RB16(buf + 2);
     u_data_size = AV_RB16(buf + 4);
-    v_data_size = slice_data_size - y_data_size - u_data_size - hdr_size;
+    v_data_size = hdr_size > 7 ? AV_RB16(buf + 6) :
+        slice_data_size - y_data_size - u_data_size - hdr_size;
 
-    if (v_data_size < 0 || hdr_size < 6) {
+    if (hdr_size + y_data_size + u_data_size + v_data_size > slice_data_size ||
+        v_data_size < 0 || hdr_size < 6) {
         av_log(avctx, AV_LOG_ERROR, "invalid data size\n");
         return AVERROR_INVALIDDATA;
     }
