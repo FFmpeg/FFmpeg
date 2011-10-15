@@ -307,6 +307,8 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                 return -1;
             }
 
+
+            /* CLUT segment */
             *q++ = 0x0f; /* sync byte */
             *q++ = 0x12; /* CLUT definition segment */
             bytestream_put_be16(&q, page_id);
@@ -397,6 +399,7 @@ static int encode_dvb_subtitles(DVBSubtitleContext *s,
                 return -1;
             }
 
+            /* Object Data segment */
             *q++ = 0x0f; /* sync byte */
             *q++ = 0x13;
             bytestream_put_be16(&q, page_id);
