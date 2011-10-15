@@ -29,8 +29,11 @@ max_19bit_int: times 4 dd 0x7ffff
 max_19bit_flt: times 4 dd 524287.0
 minshort:      times 8 dw 0x8000
 unicoeff:      times 4 dd 0x20000000
+yuv2yuvX_16_start:  times 4 dd 0x4000 - 0x40000000
 yuv2yuvX_10_start:  times 4 dd 0x10000
+yuv2yuvX_9_start:   times 4 dd 0x20000
 yuv2yuvX_10_upper:  times 8 dw 0x3ff
+yuv2yuvX_9_upper:   times 8 dw 0x1ff
 
 SECTION .text
 
@@ -447,58 +450,216 @@ SCALE_FUNCS2 sse4,  6, 6, 8
 ; of 2. $offset is either 0 or 3. $dither holds 8 values.
 ;-----------------------------------------------------------------------------
 
-%macro yuv2planeX10 1
+%macro yuv2planeX_fn 4
 
 %ifdef ARCH_X86_32
 %define cntr_reg r1
+%define movsx mov
 %else
 %define cntr_reg r11
+%define movsx movsxd
 %endif
 
-cglobal yuv2planeX10_%1, 7, 7
-    xor      r5, r5
+cglobal yuv2planeX_%2_%1, %4, 7, %3
+%if %2 == 8 || %2 == 9 || %2 == 10
+    pxor            m6,  m6
+%endif ; %2 == 8/9/10
+
+%if %2 == 8
+%ifdef ARCH_X86_32
+%assign pad 0x2c - (stack_offset & 15)
+    SUB             rsp, pad
+%define m_dith m7
+%else ; x86-64
+%define m_dith m9
+%endif ; x86-32
+
+    ; create registers holding dither
+    movq        m_dith, [r5]             ; dither
+    test            r6d, r6d
+    jz              .no_rot
+%if mmsize == 16
+    punpcklqdq  m_dith,  m_dith
+%endif ; mmsize == 16
+    PALIGNR     m_dith,  m_dith,  3,  m0
+.no_rot:
+%if mmsize == 16
+    punpcklbw   m_dith,  m6
+%ifdef ARCH_X86_64
+    punpcklwd       m8,  m_dith,  m6
+    pslld           m8,  12
+%else ; x86-32
+    punpcklwd       m5,  m_dith,  m6
+    pslld           m5,  12
+%endif ; x86-32/64
+    punpckhwd   m_dith,  m6
+    pslld       m_dith,  12
+%ifdef ARCH_X86_32
+    mova      [rsp+ 0],  m5
+    mova      [rsp+16],  m_dith
+%endif
+%else ; mmsize == 8
+    punpcklbw       m5,  m_dith,  m6
+    punpckhbw   m_dith,  m6
+    punpcklwd       m4,  m5,  m6
+    punpckhwd       m5,  m6
+    punpcklwd       m3,  m_dith,  m6
+    punpckhwd   m_dith,  m6
+    pslld           m4,  12
+    pslld           m5,  12
+    pslld           m3,  12
+    pslld       m_dith,  12
+    mova      [rsp+ 0],  m4
+    mova      [rsp+ 8],  m5
+    mova      [rsp+16],  m3
+    mova      [rsp+24],  m_dith
+%endif ; mmsize == 8/16
+%endif ; %2 == 8
+
+    xor             r5,  r5
+
 .pixelloop
-    mova     m1, [yuv2yuvX_10_start]
-    mova     m2, m1
-    movsxdifnidn cntr_reg, r1d
-.filterloop
-    pxor     m0, m0
+%assign %%i 0
+    ; the rep here is for the 8bit output mmx case, where dither covers
+    ; 8 pixels but we can only handle 2 pixels per register, and thus 4
+    ; pixels per iteration. In order to not have to keep track of where
+    ; we are w.r.t. dithering, we unroll the mmx/8bit loop x2.
+%if %2 == 8
+%rep 16/mmsize
+%endif ; %2 == 8
 
-    mov      r6, [r2+gprsize*cntr_reg-2*gprsize]
-    mova     m3, [r6+r5]
+%if %2 == 8
+%ifdef ARCH_X86_32
+    mova            m2, [rsp+mmsize*(0+%%i)]
+    mova            m1, [rsp+mmsize*(1+%%i)]
+%else ; x86-64
+    mova            m2,  m8
+    mova            m1,  m_dith
+%endif ; x86-32/64
+%else ; %2 == 9/10/16
+    mova            m1, [yuv2yuvX_%2_start]
+    mova            m2,  m1
+%endif ; %2 == 8/9/10/16
+    movsx     cntr_reg,  r1m
+.filterloop_ %+ %%i
+    ; input pixels
+    mov             r6, [r2+gprsize*cntr_reg-2*gprsize]
+%if %2 == 16
+    mova            m3, [r6+r5*4]
+    mova            m5, [r6+r5*4+mmsize]
+%else ; %2 == 8/9/10
+    mova            m3, [r6+r5*2]
+%endif ; %2 == 8/9/10/16
+    mov             r6, [r2+gprsize*cntr_reg-gprsize]
+%if %2 == 16
+    mova            m4, [r6+r5*4]
+    mova            m6, [r6+r5*4+mmsize]
+%else ; %2 == 8/9/10
+    mova            m4, [r6+r5*2]
+%endif ; %2 == 8/9/10/16
 
-    mov      r6, [r2+gprsize*cntr_reg-gprsize]
-    mova     m4, [r6+r5]
+    ; coefficients
+    movd            m0, [r0+2*cntr_reg-4]; coeff[0], coeff[1]
+%if %2 == 16
+    pshuflw         m7,  m0,  0          ; coeff[0]
+    pshuflw         m0,  m0,  0x55       ; coeff[1]
+    pmovsxwd        m7,  m7              ; word -> dword
+    pmovsxwd        m0,  m0              ; word -> dword
 
-    punpcklwd m5, m3, m4
-    punpckhwd m3, m4
+    pmulld          m3,  m7
+    pmulld          m5,  m7
+    pmulld          m4,  m0
+    pmulld          m6,  m0
 
-    movd     m0, [r0+2*cntr_reg-4]
-    SPLATD   m0, m0
+    paddd           m2,  m3
+    paddd           m1,  m5
+    paddd           m2,  m4
+    paddd           m1,  m6
+%else ; %2 == 10/9/8
+    punpcklwd       m5,  m3,  m4
+    punpckhwd       m3,  m4
+    SPLATD          m0,  m0
 
-    pmaddwd  m5, m0
-    pmaddwd  m3, m0
+    pmaddwd         m5,  m0
+    pmaddwd         m3,  m0
 
-    paddd    m2, m5
-    paddd    m1, m3
+    paddd           m2,  m5
+    paddd           m1,  m3
+%endif ; %2 == 8/9/10/16
 
-    sub      cntr_reg, 2
-    jg .filterloop
+    sub       cntr_reg,  2
+    jg .filterloop_ %+ %%i
 
-    psrad    m2, 17
-    psrad    m1, 17
+%if %2 == 16
+    psrad           m2,  31 - %2
+    psrad           m1,  31 - %2
+%else ; %2 == 10/9/8
+    psrad           m2,  27 - %2
+    psrad           m1,  27 - %2
+%endif ; %2 == 8/9/10/16
 
-    packusdw m2, m1
-    pminsw   m2, [yuv2yuvX_10_upper]
-    mova     [r3+r5], m2
+%if %2 == 8
+    packssdw        m2,  m1
+    packuswb        m2,  m2
+    movh     [r3+r5*1],  m2
+%else ; %2 == 9/10/16
+%if %2 == 16
+    packssdw        m2,  m1
+    paddw           m2, [minshort]
+%else ; %2 == 9/10
+%ifidn %1, sse4
+    packusdw        m2,  m1
+%elifidn %1, avx
+    packusdw        m2,  m1
+%else ; mmx2/sse2
+    packssdw        m2,  m1
+    pmaxsw          m2,  m6
+%endif ; mmx2/sse2/sse4/avx
+    pminsw          m2, [yuv2yuvX_%2_upper]
+%endif ; %2 == 9/10/16
+    mova     [r3+r5*2],  m2
+%endif ; %2 == 8/9/10/16
 
-    add      r5, mmsize
-    sub      r4d, mmsize/2
+    add             r5,  mmsize/2
+    sub             r4d, mmsize/2
+%if %2 == 8
+%assign %%i %%i+2
+%endrep
+%endif ; %2 == 8
     jg .pixelloop
+
+%if %2 == 8
+%ifdef ARCH_X86_32
+    ADD             rsp, pad
+    RET
+%else ; x86-64
     REP_RET
+%endif ; x86-32/64
+%else ; %2 == 9/10/16
+    REP_RET
+%endif ; %2 == 8/9/10/16
 %endmacro
 
+%define PALIGNR PALIGNR_MMX
+%ifdef ARCH_X86_32
+INIT_MMX
+yuv2planeX_fn mmx,   8,  0, 7
+yuv2planeX_fn mmx2,  9,  0, 5
+yuv2planeX_fn mmx2, 10,  0, 5
+%endif
+
 INIT_XMM
-yuv2planeX10 sse4
+yuv2planeX_fn sse2,  8, 10, 7
+yuv2planeX_fn sse2,  9,  7, 5
+yuv2planeX_fn sse2, 10,  7, 5
+
+%define PALIGNR PALIGNR_SSSE3
+yuv2planeX_fn sse4,  8, 10, 7
+yuv2planeX_fn sse4,  9,  7, 5
+yuv2planeX_fn sse4, 10,  7, 5
+yuv2planeX_fn sse4, 16,  8, 5
+
 INIT_AVX
-yuv2planeX10 avx
+yuv2planeX_fn avx,   8, 10, 7
+yuv2planeX_fn avx,   9,  7, 5
+yuv2planeX_fn avx,  10,  7, 5

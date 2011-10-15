@@ -211,13 +211,22 @@ SCALE_FUNCS_SSE(sse2);
 SCALE_FUNCS_SSE(ssse3);
 SCALE_FUNCS_SSE(sse4);
 
-extern void ff_yuv2planeX10_sse4(const int16_t *filter, int filterSize,
-                                 const int16_t **src, uint8_t *dest, int dstW,
-                                 const uint8_t *dither, int offset);
+#define VSCALEX_FUNC(size, opt) \
+extern void ff_yuv2planeX_ ## size ## _ ## opt(const int16_t *filter, int filterSize, \
+                                               const int16_t **src, uint8_t *dest, int dstW, \
+                                               const uint8_t *dither, int offset)
+#define VSCALEX_FUNCS(opt1, opt2) \
+    VSCALEX_FUNC(8,  opt1); \
+    VSCALEX_FUNC(9,  opt2); \
+    VSCALEX_FUNC(10, opt2)
 
-extern void ff_yuv2planeX10_avx(const int16_t *filter, int filterSize,
-                                const int16_t **src, uint8_t *dest, int dstW,
-                                const uint8_t *dither, int offset);
+#if ARCH_X86_32
+VSCALEX_FUNCS(mmx,  mmx2);
+#endif
+VSCALEX_FUNCS(sse2, sse2);
+VSCALEX_FUNCS(sse4, sse4);
+VSCALEX_FUNC(16, sse4);
+VSCALEX_FUNCS(avx,  avx);
 
 void ff_sws_init_swScale_mmx(SwsContext *c)
 {
@@ -252,10 +261,18 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
     case 8:  ASSIGN_SCALE_FUNC2(hscalefn, 8, opt1, opt2); break; \
     default: ASSIGN_SCALE_FUNC2(hscalefn, X, opt1, opt2); break; \
     }
+#define ASSIGN_VSCALEX_FUNC(vscalefn, opt1, opt2, opt2chk, do_16_case) \
+switch(c->dstBpc){ \
+    case 16:                                     do_16_case;                           break; \
+    case 10: if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2planeX_10_ ## opt2; break; \
+    case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2planeX_9_  ## opt2; break; \
+    default:                                     vscalefn = ff_yuv2planeX_8_  ## opt1; break; \
+    }
 #if ARCH_X86_32
     if (cpu_flags & AV_CPU_FLAG_MMX) {
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
         ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
+        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMX2,);
     }
 #endif
 #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
@@ -269,6 +286,7 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
     if (cpu_flags & AV_CPU_FLAG_SSE2) {
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, sse2, sse2);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse2, sse2);
+        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse2, sse2, 1,);
     }
     if (cpu_flags & AV_CPU_FLAG_SSSE3) {
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, ssse3, ssse3);
@@ -278,13 +296,12 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
         /* Xto15 don't need special sse4 functions */
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, sse4, ssse3);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse4, ssse3);
-        if (c->dstBpc == 10 && !isBE(c->dstFormat))
-            c->yuv2planeX = ff_yuv2planeX10_sse4;
+        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse4, sse4, 1,
+                            if (!isBE(c->dstFormat)) c->yuv2planeX = ff_yuv2planeX_16_sse4);
     }
 
     if (cpu_flags & AV_CPU_FLAG_AVX) {
-        if (c->dstBpc == 10 && !isBE(c->dstFormat))
-            c->yuv2planeX = ff_yuv2planeX10_avx;
+        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, avx, avx, 1,);
     }
 #endif
 }
