@@ -45,10 +45,13 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     uint32_t plane_checksum[8] = {0}, checksum = 0;
     char chlayout_str[128];
     int plane;
+    int linesize =
+        av_get_channel_layout_nb_channels(samplesref->audio->channel_layout) *
+        samplesref->audio->nb_samples *
+        av_get_bytes_per_sample(samplesref->format);
 
     for (plane = 0; samplesref->data[plane] && plane < 8; plane++) {
         uint8_t *data = samplesref->data[plane];
-        int linesize = samplesref->linesize[plane];
 
         plane_checksum[plane] = av_adler32_update(plane_checksum[plane],
                                                   data, linesize);
