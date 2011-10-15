@@ -46,9 +46,10 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     char chlayout_str[128];
     int plane;
     int linesize =
-        av_get_channel_layout_nb_channels(samplesref->audio->channel_layout) *
         samplesref->audio->nb_samples *
         av_get_bytes_per_sample(samplesref->format);
+    if (!samplesref->audio->planar) /* packed layout */
+        linesize *= av_get_channel_layout_nb_channels(samplesref->audio->channel_layout);
 
     for (plane = 0; samplesref->data[plane] && plane < 8; plane++) {
         uint8_t *data = samplesref->data[plane];
