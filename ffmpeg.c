@@ -2988,6 +2988,7 @@ static AVCodec *choose_codec(OptionsContext *o, AVFormatContext *s, AVStream *st
 static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 {
     int i, rfps, rfps_base;
+    char *next, *codec_tag = NULL;
 
     for (i = 0; i < ic->nb_streams; i++) {
         AVStream *st = ic->streams[i];
@@ -3004,6 +3005,14 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
 
         MATCH_PER_STREAM_OPT(ts_scale, dbl, scale, ic, st);
         ist->ts_scale = scale;
+
+        MATCH_PER_STREAM_OPT(codec_tags, str, codec_tag, ic, st);
+        if (codec_tag) {
+            uint32_t tag = strtol(codec_tag, &next, 0);
+            if (*next)
+                tag = AV_RL32(codec_tag);
+            st->codec->codec_tag = tag;
+        }
 
         ist->dec = choose_codec(o, ic, st, dec->codec_type);
         if (!ist->dec)

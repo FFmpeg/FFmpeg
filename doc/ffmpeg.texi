@@ -864,7 +864,7 @@ ffmpeg -i h264.mp4 -c:v copy -vbsf h264_mp4toannexb -an out.h264
 ffmpeg -i file.mov -an -vn -sbsf mov2textsub -c:s copy -f rawvideo sub.txt
 @end example
 
-@item -tag[:@var{stream_specifier}] @var{codec_tag} (@emph{output,per-stream})
+@item -tag[:@var{stream_specifier}] @var{codec_tag} (@emph{per-stream})
 Force a tag/fourcc for matching streams.
 @end table
 
