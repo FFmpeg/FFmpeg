@@ -165,6 +165,9 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
 
     if (type == 0) {         // UTF16-LE
         avio_get_str16le(s->pb, len, value, 2*len + 1);
+    } else if (type == -1) { // ASCII
+        get_buffer(s->pb, value, len);
+        value[len]=0;
     } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type);
         snprintf(value, len, "%"PRIu64, num);
@@ -636,8 +639,18 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         } else {
             if (!s->keylen) {
                 if (!ff_guidcmp(&g, &ff_asf_content_encryption)) {
+                    unsigned int len;
+                    AVPacket pkt;
                     av_log(s, AV_LOG_WARNING, "DRM protected stream detected, decoding will likely fail!\n");
-                    av_dict_set(&s->metadata, "encryption", "ASF Content Encryption", 0);
+                    len= avio_rl32(pb);
+                    av_log(s, AV_LOG_DEBUG, "Secret data:\n");
+                    av_get_packet(pb, &pkt, len); av_hex_dump_log(s, AV_LOG_DEBUG, pkt.data, pkt.size); av_free_packet(&pkt);
+                    len= avio_rl32(pb);
+                    get_tag(s, "ASF_Protection_Type", -1, len);
+                    len= avio_rl32(pb);
+                    get_tag(s, "ASF_Key_ID", -1, len);
+                    len= avio_rl32(pb);
+                    get_tag(s, "ASF_License_URL", -1, len);
                 } else if (!ff_guidcmp(&g, &ff_asf_ext_content_encryption)) {
                     av_log(s, AV_LOG_WARNING, "Ext DRM protected stream detected, decoding will likely fail!\n");
                     av_dict_set(&s->metadata, "encryption", "ASF Extended Content Encryption", 0);
