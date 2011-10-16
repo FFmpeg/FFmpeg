@@ -71,8 +71,6 @@ const int program_birth_year = 2003;
 /* no AV correction is done if too big error */
 #define AV_NOSYNC_THRESHOLD 10.0
 
-#define FRAME_SKIP_FACTOR 0.05
-
 /* maximum audio speed change to get correct sync */
 #define SAMPLE_CORRECTION_PERCENT_MAX 10
 
@@ -98,9 +96,9 @@ typedef struct PacketQueue {
 
 typedef struct VideoPicture {
     double pts;                                  ///<presentation time stamp for this picture
-    double target_clock;                         ///<av_gettime() time at which this should be displayed ideally
     double duration;                             ///<expected duration of the frame
     int64_t pos;                                 ///<byte position in file
+    int skip;
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
     int allocated;
@@ -197,7 +195,7 @@ typedef struct VideoState {
 
     double frame_timer;
     double frame_last_pts;
-    double frame_last_delay;
+    double frame_last_duration;
     double video_clock;                          ///<pts of last decoded frame / predicted pts of next decoded frame
     int video_stream;
     AVStream *video_st;
@@ -221,8 +219,6 @@ typedef struct VideoState {
     AVFilterContext *out_video_filter;          ///<the last filter in the video chain
 #endif
 
-    float skip_frames;
-    float skip_frames_index;
     int refresh;
 } VideoState;
 
@@ -947,13 +943,7 @@ static int video_open(VideoState *is){
     if(screen && is->width == screen->w && screen->w == w
        && is->height== screen->h && screen->h == h)
         return 0;
-
-#ifndef __APPLE__
     screen = SDL_SetVideoMode(w, h, 0, flags);
-#else
-    /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
-    screen = SDL_SetVideoMode(w, h, 24, flags);
-#endif
     if (!screen) {
         fprintf(stderr, "SDL: could not set video mode - exiting\n");
         do_exit(is);
@@ -1071,19 +1061,9 @@ static void stream_toggle_pause(VideoState *is)
     is->paused = !is->paused;
 }
 
-static double compute_target_time(double frame_current_pts, VideoState *is)
+static double compute_target_delay(double delay, VideoState *is)
 {
-    double delay, sync_threshold, diff;
-
-    /* compute nominal delay */
-    delay = frame_current_pts - is->frame_last_pts;
-    if (delay <= 0 || delay >= 10.0) {
-        /* if incorrect delay, use previous one */
-        delay = is->frame_last_delay;
-    } else {
-        is->frame_last_delay = delay;
-    }
-    is->frame_last_pts = frame_current_pts;
+    double sync_threshold, diff;
 
     /* update delay to follow master synchronisation source */
     if (((is->av_sync_type == AV_SYNC_AUDIO_MASTER && is->audio_st) ||
@@ -1103,12 +1083,22 @@ static double compute_target_time(double frame_current_pts, VideoState *is)
                 delay = 2 * delay;
         }
     }
-    is->frame_timer += delay;
 
-    av_dlog(NULL, "video: delay=%0.3f pts=%0.3f A-V=%f\n",
-            delay, frame_current_pts, -diff);
+    av_dlog(NULL, "video: delay=%0.3f A-V=%f\n",
+            delay, -diff);
 
-    return is->frame_timer;
+    return delay;
+}
+
+static void pictq_next_picture(VideoState *is) {
+    /* update queue size and signal for next picture */
+    if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
+        is->pictq_rindex = 0;
+
+    SDL_LockMutex(is->pictq_mutex);
+    is->pictq_size--;
+    SDL_CondSignal(is->pictq_cond);
+    SDL_UnlockMutex(is->pictq_mutex);
 }
 
 /* called to display each frame */
@@ -1125,34 +1115,45 @@ retry:
             //nothing to do, no picture to display in the que
         } else {
             double time= av_gettime()/1000000.0;
-            double next_target;
+            double last_duration, duration, delay;
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
 
-            if(time < vp->target_clock)
+            if (vp->skip) {
+                pictq_next_picture(is);
+                goto retry;
+            }
+
+            /* compute nominal last_duration */
+            last_duration = vp->pts - is->frame_last_pts;
+            if (last_duration > 0 && last_duration < 10.0) {
+                /* if duration of the last frame was sane, update last_duration in video state */
+                is->frame_last_duration = last_duration;
+            }
+            delay = compute_target_delay(is->frame_last_duration, is);
+
+            if(time < is->frame_timer + delay)
                 return;
+
+            is->frame_last_pts = vp->pts;
+            if (delay > 0)
+                is->frame_timer += delay * FFMAX(1, floor((time-is->frame_timer) / delay));
+
             /* update current video pts */
             is->video_current_pts = vp->pts;
             is->video_current_pts_drift = is->video_current_pts - time;
             is->video_current_pos = vp->pos;
-            if(is->pictq_size > 1){
-                VideoPicture *nextvp= &is->pictq[(is->pictq_rindex+1)%VIDEO_PICTURE_QUEUE_SIZE];
-                assert(nextvp->target_clock >= vp->target_clock);
-                next_target= nextvp->target_clock;
-            }else{
-                next_target= vp->target_clock + vp->duration;
-            }
-            if((framedrop>0 || (framedrop && is->audio_st)) && time > next_target){
-                is->skip_frames *= 1.0 + FRAME_SKIP_FACTOR;
-                if(is->pictq_size > 1){
-                    /* update queue size and signal for next picture */
-                    if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
-                        is->pictq_rindex = 0;
 
-                    SDL_LockMutex(is->pictq_mutex);
-                    is->pictq_size--;
-                    SDL_CondSignal(is->pictq_cond);
-                    SDL_UnlockMutex(is->pictq_mutex);
+            if(is->pictq_size > 1) {
+                 VideoPicture *nextvp= &is->pictq[(is->pictq_rindex+1)%VIDEO_PICTURE_QUEUE_SIZE];
+                 duration = nextvp->pts - vp->pts; // More accurate this way, 1/time_base is often not reflecting FPS
+            } else {
+                 duration = vp->duration;
+            }
+
+            if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
+                if(is->pictq_size > 1){
+                    pictq_next_picture(is);
                     goto retry;
                 }
             }
@@ -1205,14 +1206,7 @@ retry:
             if (!display_disable)
                 video_display(is);
 
-            /* update queue size and signal for next picture */
-            if (++is->pictq_rindex == VIDEO_PICTURE_QUEUE_SIZE)
-                is->pictq_rindex = 0;
-
-            SDL_LockMutex(is->pictq_mutex);
-            is->pictq_size--;
-            SDL_CondSignal(is->pictq_cond);
-            SDL_UnlockMutex(is->pictq_mutex);
+            pictq_next_picture(is);
         }
     } else if (is->audio_st) {
         /* draw the next audio frame */
@@ -1244,10 +1238,9 @@ retry:
             av_diff = 0;
             if (is->audio_st && is->video_st)
                 av_diff = get_audio_clock(is) - get_video_clock(is);
-            printf("%7.2f A-V:%7.3f s:%3.1f aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
+            printf("%7.2f A-V:%7.3f aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
                    get_master_clock(is),
                    av_diff,
-                   FFMAX(is->skip_frames-1, 0),
                    aqsize / 1024,
                    vqsize / 1024,
                    sqsize,
@@ -1330,9 +1323,6 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
     /* wait until we have space to put a new picture */
     SDL_LockMutex(is->pictq_mutex);
-
-    if(is->pictq_size>=VIDEO_PICTURE_QUEUE_SIZE && !is->refresh)
-        is->skip_frames= FFMAX(1.0 - FRAME_SKIP_FACTOR, is->skip_frames * (1.0-FRAME_SKIP_FACTOR));
 
     while (is->pictq_size >= VIDEO_PICTURE_QUEUE_SIZE &&
            !is->videoq.abort_request) {
@@ -1425,13 +1415,12 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 
         vp->pts = pts;
         vp->pos = pos;
+        vp->skip = 0;
 
         /* now we can update the picture count */
         if (++is->pictq_windex == VIDEO_PICTURE_QUEUE_SIZE)
             is->pictq_windex = 0;
         SDL_LockMutex(is->pictq_mutex);
-        vp->target_clock= compute_target_time(vp->pts, is);
-
         is->pictq_size++;
         SDL_UnlockMutex(is->pictq_mutex);
     }
@@ -1451,7 +1440,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         SDL_LockMutex(is->pictq_mutex);
         //Make sure there are no long delay timers (ideally we should just flush the que but thats harder)
         for (i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
-            is->pictq[i].target_clock= 0;
+            is->pictq[i].skip = 1;
         }
         while (is->pictq_size && !is->videoq.abort_request) {
             SDL_CondWait(is->pictq_cond, is->pictq_mutex);
@@ -1460,10 +1449,8 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
         SDL_UnlockMutex(is->pictq_mutex);
 
         is->frame_last_pts = AV_NOPTS_VALUE;
-        is->frame_last_delay = 0;
+        is->frame_last_duration = 0;
         is->frame_timer = (double)av_gettime() / 1000000.0;
-        is->skip_frames = 1;
-        is->skip_frames_index = 0;
         return 0;
     }
 
@@ -1482,11 +1469,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             *pts = 0;
         }
 
-        is->skip_frames_index += 1;
-        if(is->skip_frames_index >= is->skip_frames){
-            is->skip_frames_index -= FFMAX(is->skip_frames, 1.0);
-            return 1;
-        }
+        return 1;
 
     }
     return 0;
