@@ -146,7 +146,7 @@ int av_tempfile(const char *prefix, char **filename) {
     /* -----common section-----*/
     if (*filename == NULL) {
         av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
-        return -1;
+        return AVERROR(ENOMEM);
     }
 #if !HAVE_MKSTEMP
 #   ifndef O_BINARY
@@ -166,8 +166,9 @@ int av_tempfile(const char *prefix, char **filename) {
 #endif
     /* -----common section-----*/
     if (fd < 0) {
+        int err = AVERROR(errno);
         av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot open temporary file %s\n", *filename);
-        return -1;
+        return err;
     }
     return fd; /* success */
 }
