@@ -104,5 +104,8 @@
 #ifndef FF_API_STREAM_COPY
 #define FF_API_STREAM_COPY             (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
+#ifndef FF_API_SEEK_PUBLIC
+#define FF_API_SEEK_PUBLIC             (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
 
 #endif /* AVFORMAT_VERSION_H */

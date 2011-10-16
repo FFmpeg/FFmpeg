@@ -1388,40 +1388,20 @@ int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
 int av_add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
                        int size, int distance, int flags);
 
-/**
- * Perform a binary search using av_index_search_timestamp() and
- * AVInputFormat.read_timestamp().
- * This is not supposed to be called directly by a user application,
- * but by demuxers.
- * @param target_ts target timestamp in the time base of the given stream
- * @param stream_index stream number
- */
+#if FF_API_SEEK_PUBLIC
+attribute_deprecated
 int av_seek_frame_binary(AVFormatContext *s, int stream_index,
                          int64_t target_ts, int flags);
-
-/**
- * Update cur_dts of all streams based on the given timestamp and AVStream.
- *
- * Stream ref_st unchanged, others set cur_dts in their native time base.
- * Only needed for timestamp wrapping or if (dts not set and pts!=dts).
- * @param timestamp new dts expressed in time_base of param ref_st
- * @param ref_st reference stream giving time_base of param timestamp
- */
+attribute_deprecated
 void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp);
-
-/**
- * Perform a binary search using read_timestamp().
- * This is not supposed to be called directly by a user application,
- * but by demuxers.
- * @param target_ts target timestamp in the time base of the given stream
- * @param stream_index stream number
- */
+attribute_deprecated
 int64_t av_gen_search(AVFormatContext *s, int stream_index,
                       int64_t target_ts, int64_t pos_min,
                       int64_t pos_max, int64_t pos_limit,
                       int64_t ts_min, int64_t ts_max,
                       int flags, int64_t *ts_ret,
                       int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
+#endif
 
 /**
  * media file output

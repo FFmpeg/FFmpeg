@@ -1768,7 +1768,7 @@ static int read_seek2(AVFormatContext *s,
             ts_adj = target_ts;
             stream_index_gen_search = stream_index;
         }
-        pos = av_gen_search(s, stream_index_gen_search, ts_adj,
+        pos = ff_gen_search(s, stream_index_gen_search, ts_adj,
                             0, INT64_MAX, -1,
                             AV_NOPTS_VALUE,
                             AV_NOPTS_VALUE,
@@ -1816,7 +1816,7 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
     uint8_t buf[TS_PACKET_SIZE];
     int64_t pos;
 
-    if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
+    if (ff_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
         return -1;
 
     pos= avio_tell(s->pb);

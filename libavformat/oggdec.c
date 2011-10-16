@@ -33,6 +33,7 @@
 #include <stdio.h>
 #include "oggdec.h"
 #include "avformat.h"
+#include "internal.h"
 #include "vorbiscomment.h"
 
 #define MAX_PAGE_SIZE 65307
@@ -637,7 +638,7 @@ static int ogg_read_seek(AVFormatContext *s, int stream_index,
         && !(flags & AVSEEK_FLAG_ANY))
         os->keyframe_seek = 1;
 
-    ret = av_seek_frame_binary(s, stream_index, timestamp, flags);
+    ret = ff_seek_frame_binary(s, stream_index, timestamp, flags);
     os = ogg->streams + stream_index;
     if (ret < 0)
         os->keyframe_seek = 0;
