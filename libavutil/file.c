@@ -156,7 +156,7 @@ int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_c
 #   ifndef O_EXCL
 #       define O_EXCL 0
 #   endif
-    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0444);
+    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0600);
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
     fd = mkstemp(*filename);
