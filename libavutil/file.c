@@ -147,6 +147,9 @@ int av_tempfile(const char *prefix, char **filename) {
         return -1;
     }
 #if !HAVE_MKSTEMP
+#   ifndef O_BINARY
+#       define O_BINARY 0
+#   endif
     fd = open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
