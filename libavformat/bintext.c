@@ -261,7 +261,9 @@ static const uint8_t idf_magic[] = {
 
 static int idf_probe(AVProbeData *p)
 {
-    if (!memcmp(p->buf, idf_magic, FFMIN(sizeof(idf_magic), p->buf_size)))
+    if (p->buf_size < sizeof(idf_magic))
+        return 0;
+    if (!memcmp(p->buf, idf_magic, sizeof(idf_magic)))
         return AVPROBE_SCORE_MAX;
     return 0;
 }
