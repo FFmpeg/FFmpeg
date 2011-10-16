@@ -637,8 +637,10 @@ static int asf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             if (!s->keylen) {
                 if (!ff_guidcmp(&g, &ff_asf_content_encryption)) {
                     av_log(s, AV_LOG_WARNING, "DRM protected stream detected, decoding will likely fail!\n");
+                    av_dict_set(&s->metadata, "encryption", "ASF Content Encryption", 0);
                 } else if (!ff_guidcmp(&g, &ff_asf_ext_content_encryption)) {
                     av_log(s, AV_LOG_WARNING, "Ext DRM protected stream detected, decoding will likely fail!\n");
+                    av_dict_set(&s->metadata, "encryption", "ASF Extended Content Encryption", 0);
                 } else if (!ff_guidcmp(&g, &ff_asf_digital_signature)) {
                     av_log(s, AV_LOG_WARNING, "Digital signature detected, decoding will likely fail!\n");
                 }
