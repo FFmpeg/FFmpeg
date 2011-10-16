@@ -197,6 +197,8 @@ typedef struct VideoState {
     double frame_timer;
     double frame_last_pts;
     double frame_last_duration;
+    double frame_last_dropped_pts;
+    int64_t frame_last_dropped_pos;
     double video_clock;                          ///<pts of last decoded frame / predicted pts of next decoded frame
     int video_stream;
     AVStream *video_st;
@@ -1102,20 +1104,35 @@ static void pictq_next_picture(VideoState *is) {
     SDL_UnlockMutex(is->pictq_mutex);
 }
 
+static void update_video_pts(VideoState *is, double pts, int64_t pos) {
+    double time = av_gettime() / 1000000.0;
+    /* update current video pts */
+    is->video_current_pts = pts;
+    is->video_current_pts_drift = is->video_current_pts - time;
+    is->video_current_pos = pos;
+    is->frame_last_pts = pts;
+}
+
 /* called to display each frame */
 static void video_refresh(void *opaque)
 {
     VideoState *is = opaque;
     VideoPicture *vp;
+    double time;
 
     SubPicture *sp, *sp2;
 
     if (is->video_st) {
 retry:
         if (is->pictq_size == 0) {
+            SDL_LockMutex(is->pictq_mutex);
+            if (is->frame_last_dropped_pts != AV_NOPTS_VALUE && is->frame_last_dropped_pts > is->frame_last_pts) {
+                update_video_pts(is, is->frame_last_dropped_pts, is->frame_last_dropped_pos);
+                is->frame_last_dropped_pts = AV_NOPTS_VALUE;
+            }
+            SDL_UnlockMutex(is->pictq_mutex);
             //nothing to do, no picture to display in the que
         } else {
-            double time= av_gettime()/1000000.0;
             double last_duration, duration, delay;
             /* dequeue the picture */
             vp = &is->pictq[is->pictq_rindex];
@@ -1133,17 +1150,16 @@ retry:
             }
             delay = compute_target_delay(is->frame_last_duration, is);
 
+            time= av_gettime()/1000000.0;
             if(time < is->frame_timer + delay)
                 return;
 
-            is->frame_last_pts = vp->pts;
             if (delay > 0)
                 is->frame_timer += delay * FFMAX(1, floor((time-is->frame_timer) / delay));
 
-            /* update current video pts */
-            is->video_current_pts = vp->pts;
-            is->video_current_pts_drift = is->video_current_pts - time;
-            is->video_current_pos = vp->pos;
+            SDL_LockMutex(is->pictq_mutex);
+            update_video_pts(is, vp->pts, vp->pos);
+            SDL_UnlockMutex(is->pictq_mutex);
 
             if(is->pictq_size > 1) {
                  VideoPicture *nextvp= &is->pictq[(is->pictq_rindex+1)%VIDEO_PICTURE_QUEUE_SIZE];
@@ -1448,17 +1464,20 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             SDL_CondWait(is->pictq_cond, is->pictq_mutex);
         }
         is->video_current_pos = -1;
-        SDL_UnlockMutex(is->pictq_mutex);
-
         is->frame_last_pts = AV_NOPTS_VALUE;
         is->frame_last_duration = 0;
         is->frame_timer = (double)av_gettime() / 1000000.0;
+        is->frame_last_dropped_pts = AV_NOPTS_VALUE;
+        SDL_UnlockMutex(is->pictq_mutex);
+
         return 0;
     }
 
     avcodec_decode_video2(is->video_st->codec, frame, &got_picture, pkt);
 
     if (got_picture) {
+        int ret = 1;
+
         if (decoder_reorder_pts == -1) {
             *pts = frame->best_effort_timestamp;
         } else if (decoder_reorder_pts) {
@@ -1471,8 +1490,25 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             *pts = 0;
         }
 
-        return 1;
+        if (((is->av_sync_type == AV_SYNC_AUDIO_MASTER && is->audio_st) || is->av_sync_type == AV_SYNC_EXTERNAL_CLOCK) &&
+             (framedrop>0 || (framedrop && is->audio_st))) {
+            SDL_LockMutex(is->pictq_mutex);
+            if (is->frame_last_pts != AV_NOPTS_VALUE && *pts) {
+                double clockdiff = get_video_clock(is) - get_master_clock(is);
+                double dpts = av_q2d(is->video_st->time_base) * *pts;
+                double ptsdiff = dpts - is->frame_last_pts;
+                if (fabs(clockdiff) < AV_NOSYNC_THRESHOLD &&
+                     ptsdiff > 0 && ptsdiff < AV_NOSYNC_THRESHOLD &&
+                     clockdiff + ptsdiff < 0) { //TODO: Substract approxiamte time of filter
+                    is->frame_last_dropped_pos = pkt->pos;
+                    is->frame_last_dropped_pts = dpts;
+                    ret = 0;
+                }
+            }
+            SDL_UnlockMutex(is->pictq_mutex);
+        }
 
+        return ret;
     }
     return 0;
 }
