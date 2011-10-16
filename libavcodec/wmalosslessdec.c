@@ -1155,7 +1155,7 @@ static void flush(AVCodecContext *avctx)
 /**
  *@brief wmall decoder
  */
-AVCodec wmalossless_decoder = {
+AVCodec ff_wmalossless_decoder = {
     "wmalossless",
     AVMEDIA_TYPE_AUDIO,
     CODEC_ID_WMALOSSLESS,
