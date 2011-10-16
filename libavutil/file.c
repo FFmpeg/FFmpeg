@@ -152,7 +152,10 @@ int av_tempfile(const char *prefix, char **filename) {
 #   ifndef O_BINARY
 #       define O_BINARY 0
 #   endif
-    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT, 0444);
+#   ifndef O_EXCL
+#       define O_EXCL 0
+#   endif
+    fd = open(*filename, O_RDWR | O_BINARY | O_CREAT | O_EXCL, 0444);
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
     fd = mkstemp(*filename);
