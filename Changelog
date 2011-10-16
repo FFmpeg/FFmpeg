@@ -52,6 +52,7 @@ easier to use. The changes are:
 - VC-1 interlaced decoding
 - lut, lutrgb, and lutyuv filters
 - boxblur filter
+- Ut Video decoder
 
 
 version 0.7:
