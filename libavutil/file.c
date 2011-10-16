@@ -133,7 +133,9 @@ void av_file_unmap(uint8_t *bufptr, size_t size)
 int av_tempfile(const char *prefix, char **filename) {
     int fd=-1;
 #if !HAVE_MKSTEMP
-    void *ptr= tempnam(".", prefix);
+    void *ptr= tempnam(NULL, prefix);
+    if(!ptr)
+        ptr= tempnam(".", prefix);
     *filename = av_strdup(ptr);
 #undef free
     free(ptr);
