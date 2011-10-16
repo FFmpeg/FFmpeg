@@ -21,6 +21,13 @@
  * Based on file.c by Fabrice Bellard
  */
 
+/**
+ * @TODO
+ *      support non continuous caching
+ *      support keeping files
+ *      support filling with a background thread
+ */
+
 #include "libavutil/avassert.h"
 #include "libavutil/avstring.h"
 #include "libavutil/file.h"
