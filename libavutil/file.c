@@ -160,10 +160,12 @@ int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_c
 #else
     snprintf(*filename, len, "/tmp/%sXXXXXX", prefix);
     fd = mkstemp(*filename);
+#ifdef _WIN32
     if (fd < 0) {
         snprintf(*filename, len, "./%sXXXXXX", prefix);
         fd = mkstemp(*filename);
     }
+#endif
 #endif
     /* -----common section-----*/
     if (fd < 0) {
