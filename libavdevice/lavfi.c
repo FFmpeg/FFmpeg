@@ -299,7 +299,9 @@ static int lavfi_read_packet(AVFormatContext *avctx, AVPacket *pkt)
         avpicture_layout(&pict, ref->format, ref->video->w,
                          ref->video->h, pkt->data, size);
     } else if (ref->audio) {
-        size = ref->linesize[0];
+        size = ref->audio->nb_samples *
+            av_get_bytes_per_sample(ref->format) *
+            av_get_channel_layout_nb_channels(ref->audio->channel_layout);
         if ((ret = av_new_packet(pkt, size)) < 0)
             return ret;
         memcpy(pkt->data, ref->data[0], size);
