@@ -12,6 +12,9 @@ static int probe(AVProbeData *p)
 {
     int i, j;
 
+    if(p->buf_size < 0x40)
+        return 0;
+
     for(i=0; i+3<p->buf_size && i< 10*0x50; ){
         if(AV_RL16(&p->buf[0]) != SYNC_WORD)
             return 0;
