@@ -56,6 +56,6 @@ void av_file_unmap(uint8_t *bufptr, size_t size);
  * @return file descriptor of opened file (or -1 on error)
  * and opened file name in **filename.
  */
-int av_tempfile(const char *prefix, char **filename);
+int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx);
 
 #endif /* AVUTIL_FILE_H */

@@ -130,7 +130,8 @@ void av_file_unmap(uint8_t *bufptr, size_t size)
 #endif
 }
 
-int av_tempfile(const char *prefix, char **filename) {
+int av_tempfile(const char *prefix, char **filename, int log_offset, void *log_ctx) {
+    FileLogContext file_log_ctx = { &file_log_ctx_class, log_offset, log_ctx };
     int fd=-1;
 #if !HAVE_MKSTEMP
     void *ptr= tempnam(NULL, prefix);
@@ -145,7 +146,7 @@ int av_tempfile(const char *prefix, char **filename) {
 #endif
     /* -----common section-----*/
     if (*filename == NULL) {
-        av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
+        av_log(&file_log_ctx, AV_LOG_ERROR, "ff_tempfile: Cannot allocate file name\n");
         return AVERROR(ENOMEM);
     }
 #if !HAVE_MKSTEMP
@@ -167,7 +168,7 @@ int av_tempfile(const char *prefix, char **filename) {
     /* -----common section-----*/
     if (fd < 0) {
         int err = AVERROR(errno);
-        av_log(NULL, AV_LOG_ERROR, "ff_tempfile: Cannot open temporary file %s\n", *filename);
+        av_log(&file_log_ctx, AV_LOG_ERROR, "ff_tempfile: Cannot open temporary file %s\n", *filename);
         return err;
     }
     return fd; /* success */

@@ -232,7 +232,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
         rc2pass2.version = XVID_VERSION;
         rc2pass2.bitrate = avctx->bit_rate;
 
-        fd = av_tempfile("xvidff.", &(x->twopassfile));
+        fd = av_tempfile("xvidff.", &(x->twopassfile), 0, avctx);
         if( fd == -1 ) {
             av_log(avctx, AV_LOG_ERROR,
                 "Xvid: Cannot write 2-pass pipe\n");

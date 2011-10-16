@@ -63,7 +63,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
 
     av_strstart(arg, "cache:", &arg);
 
-    c->fd = av_tempfile("ffcache", &buffername);
+    c->fd = av_tempfile("ffcache", &buffername, 0, h);
     if (c->fd < 0){
         av_log(h, AV_LOG_ERROR, "Failed to create tempfile\n");
         return c->fd;
