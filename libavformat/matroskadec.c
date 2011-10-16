@@ -1854,7 +1854,7 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
                         lace_size[n] = lace_size[n - 1] + snum;
                         total += lace_size[n];
                     }
-                    lace_size[n] = size - total;
+                    lace_size[laces - 1] = size - total;
                     break;
                 }
             }

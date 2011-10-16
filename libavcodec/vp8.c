@@ -33,6 +33,19 @@
 #   include "arm/vp8.h"
 #endif
 
+static void free_buffers(VP8Context *s)
+{
+    av_freep(&s->macroblocks_base);
+    av_freep(&s->filter_strength);
+    av_freep(&s->intra4x4_pred_mode_top);
+    av_freep(&s->top_nnz);
+    av_freep(&s->edge_emu_buffer);
+    av_freep(&s->top_border);
+    av_freep(&s->segmentation_map);
+
+    s->macroblocks = NULL;
+}
+
 static void vp8_decode_flush(AVCodecContext *avctx)
 {
     VP8Context *s = avctx->priv_data;
@@ -45,15 +58,7 @@ static void vp8_decode_flush(AVCodecContext *avctx)
     }
     memset(s->framep, 0, sizeof(s->framep));
 
-    av_freep(&s->macroblocks_base);
-    av_freep(&s->filter_strength);
-    av_freep(&s->intra4x4_pred_mode_top);
-    av_freep(&s->top_nnz);
-    av_freep(&s->edge_emu_buffer);
-    av_freep(&s->top_border);
-    av_freep(&s->segmentation_map);
-
-    s->macroblocks        = NULL;
+    free_buffers(s);
 }
 
 static int update_dimensions(VP8Context *s, int width, int height)
@@ -273,7 +278,7 @@ static int decode_frame_header(VP8Context *s, const uint8_t *buf, int buf_size)
 
     if (!s->macroblocks_base || /* first frame */
         width != s->avctx->width || height != s->avctx->height) {
-        if ((ret = update_dimensions(s, width, height) < 0))
+        if ((ret = update_dimensions(s, width, height)) < 0)
             return ret;
     }
 
@@ -487,6 +492,7 @@ void decode_mvs(VP8Context *s, VP8Macroblock *mb, int mb_x, int mb_y)
 
     AV_ZERO32(&near_mv[0]);
     AV_ZERO32(&near_mv[1]);
+    AV_ZERO32(&near_mv[2]);
 
     /* Process MB on top, left and top-left */
     #define MV_EDGE_CHECK(n)\
@@ -1749,6 +1755,11 @@ static av_cold int vp8_decode_init_thread_copy(AVCodecContext *avctx)
 static int vp8_decode_update_thread_context(AVCodecContext *dst, const AVCodecContext *src)
 {
     VP8Context *s = dst->priv_data, *s_src = src->priv_data;
+
+    if (s->macroblocks_base &&
+        (s_src->mb_width != s->mb_width || s_src->mb_height != s->mb_height)) {
+        free_buffers(s);
+    }
 
     s->prob[0] = s_src->prob[!s_src->update_probabilities];
     s->segmentation = s_src->segmentation;

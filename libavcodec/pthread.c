@@ -333,6 +333,9 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
         dst->height    = src->height;
         dst->pix_fmt   = src->pix_fmt;
 
+        dst->coded_width  = src->coded_width;
+        dst->coded_height = src->coded_height;
+
         dst->has_b_frames = src->has_b_frames;
         dst->idct_algo    = src->idct_algo;
         dst->slice_count  = src->slice_count;
@@ -635,7 +638,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
 
     park_frame_worker_threads(fctx, thread_count);
 
-    if (fctx->prev_thread)
+    if (fctx->prev_thread && fctx->prev_thread != fctx->threads)
         update_context_from_thread(fctx->threads->avctx, fctx->prev_thread->avctx, 0);
 
     fctx->die = 1;
