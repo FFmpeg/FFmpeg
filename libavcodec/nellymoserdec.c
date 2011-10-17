@@ -170,11 +170,6 @@ static int decode_tag(AVCodecContext * avctx,
     int16_t *samples_s16 = data;
     float   *samples_flt = data;
 
-    if (buf_size < avctx->block_align) {
-        *data_size = 0;
-        return buf_size;
-    }
-
     if (buf_size % NELLY_BLOCK_LEN) {
         av_log(avctx, AV_LOG_ERROR, "Tag size %d.\n", buf_size);
         *data_size = 0;
