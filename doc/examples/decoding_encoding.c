@@ -29,6 +29,7 @@
  * format handling
  */
 
+#include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
