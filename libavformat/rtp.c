@@ -98,7 +98,8 @@ int ff_rtp_get_payload_type(AVFormatContext *fmt, AVCodecContext *codec)
     /* Was the payload type already specified for the RTP muxer? */
     if (ofmt && ofmt->priv_class) {
         int64_t payload_type;
-        if (av_opt_get_int(fmt->priv_data, "payload_type", 0, &payload_type) >= 0)
+        if (av_opt_get_int(fmt->priv_data, "payload_type", 0, &payload_type) >= 0 &&
+            payload_type >= 0)
             return (int)payload_type;
     }
 
