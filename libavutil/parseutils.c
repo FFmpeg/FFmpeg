@@ -97,7 +97,7 @@ int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
 {
     int i;
     int n = FF_ARRAY_ELEMS(video_size_abbrs);
-    char *p;
+    const char *p;
     int width = 0, height = 0;
 
     for (i = 0; i < n; i++) {
@@ -109,10 +109,10 @@ int av_parse_video_size(int *width_ptr, int *height_ptr, const char *str)
     }
     if (i == n) {
         p = str;
-        width = strtol(p, &p, 10);
+        width = strtol(p, (void*)&p, 10);
         if (*p)
             p++;
-        height = strtol(p, &p, 10);
+        height = strtol(p, (void*)&p, 10);
     }
     if (width <= 0 || height <= 0)
         return AVERROR(EINVAL);
@@ -573,7 +573,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
         q = small_strptime(p, time_fmt[0], &dt);
         if (!q) {
             /* parse timestr as S+ */
-            dt.tm_sec = strtol(p, (char **)&q, 10);
+            dt.tm_sec = strtol(p, (void *)&q, 10);
             if (q == p) {
                 /* the parsing didn't succeed */
                 *timeval = INT64_MIN;
