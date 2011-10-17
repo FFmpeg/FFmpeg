@@ -126,7 +126,7 @@ void h263_encode_picture_header(MpegEncContext * s, int picture_number)
     coded_frame_rate= 1800000;
     coded_frame_rate_base= (1000+best_clock_code)*best_divisor;
 
-    align_put_bits(&s->pb);
+    avpriv_align_put_bits(&s->pb);
 
     /* Update the pointer to last GOB */
     s->ptr_lastgob = put_bits_ptr(&s->pb);

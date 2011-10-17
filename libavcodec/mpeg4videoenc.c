@@ -1258,8 +1258,8 @@ void ff_mpeg4_merge_partitions(MpegEncContext *s)
     flush_put_bits(&s->tex_pb);
 
     set_put_bits_buffer_size(&s->pb, s->pb2.buf_end - s->pb.buf);
-    ff_copy_bits(&s->pb, s->pb2.buf   , pb2_len);
-    ff_copy_bits(&s->pb, s->tex_pb.buf, tex_pb_len);
+    avpriv_copy_bits(&s->pb, s->pb2.buf   , pb2_len);
+    avpriv_copy_bits(&s->pb, s->tex_pb.buf, tex_pb_len);
     s->last_bits= put_bits_count(&s->pb);
 }
 

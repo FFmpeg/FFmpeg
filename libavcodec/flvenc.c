@@ -25,7 +25,7 @@ void ff_flv_encode_picture_header(MpegEncContext * s, int picture_number)
 {
       int format;
 
-      align_put_bits(&s->pb);
+      avpriv_align_put_bits(&s->pb);
 
       put_bits(&s->pb, 17, 1);
       put_bits(&s->pb, 5, (s->h263_flv-1)); /* 0: h263 escape codes 1: 11-bit escape codes */

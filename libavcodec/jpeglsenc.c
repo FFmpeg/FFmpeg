@@ -357,7 +357,7 @@ static int encode_picture_ls(AVCodecContext *avctx, unsigned char *buf, int buf_
             put_bits(&pb, 8, v);
         }
     }
-    align_put_bits(&pb);
+    avpriv_align_put_bits(&pb);
     av_free(buf2);
 
     /* End of image */

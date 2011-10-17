@@ -173,7 +173,7 @@ int avpriv_copy_pce_data(PutBitContext *pb, GetBitContext *gb)
         copy_bits(pb, gb, 16);
     if (bits)
         copy_bits(pb, gb, bits);
-    align_put_bits(pb);
+    avpriv_align_put_bits(pb);
     align_get_bits(gb);
     comment_size = copy_bits(pb, gb, 8);
     for (; comment_size > 0; comment_size--)

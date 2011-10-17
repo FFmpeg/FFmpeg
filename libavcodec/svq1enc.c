@@ -461,7 +461,7 @@ static int svq1_encode_plane(SVQ1Context *s, int plane, unsigned char *src_plane
             s->rd_total += score[best];
 
             for(i=5; i>=0; i--){
-                ff_copy_bits(&s->pb, reorder_buffer[best][i], count[best][i]);
+                avpriv_copy_bits(&s->pb, reorder_buffer[best][i], count[best][i]);
             }
             if(best==0){
                 s->dsp.put_pixels_tab[0][0](decoded, temp, stride, 16);
@@ -540,7 +540,7 @@ static int svq1_encode_frame(AVCodecContext *avctx, unsigned char *buf,
                 return -1;
     }
 
-//    align_put_bits(&s->pb);
+//    avpriv_align_put_bits(&s->pb);
     while(put_bits_count(&s->pb) & 31)
         put_bits(&s->pb, 1, 0);
 

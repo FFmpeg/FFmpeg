@@ -1446,14 +1446,14 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
 
     s->num_saved_bits += len;
     if (!append) {
-        ff_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3),
+        avpriv_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3),
                      s->num_saved_bits);
     } else {
         int align = 8 - (get_bits_count(gb) & 7);
         align = FFMIN(align, len);
         put_bits(&s->pb, align, get_bits(gb, align));
         len -= align;
-        ff_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3), len);
+        avpriv_copy_bits(&s->pb, gb->buffer + (get_bits_count(gb) >> 3), len);
     }
     skip_bits_long(gb, len);
 

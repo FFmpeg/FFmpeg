@@ -482,7 +482,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
         put_bits(&s->pb, 8, namelen - 16);
     put_bits(&s->pb, 4, 0); //extension type - filler
     padbits = 8 - (put_bits_count(&s->pb) & 7);
-    align_put_bits(&s->pb);
+    avpriv_align_put_bits(&s->pb);
     for (i = 0; i < namelen - 2; i++)
         put_bits(&s->pb, 8, name[i]);
     put_bits(&s->pb, 12 - padbits, 0);

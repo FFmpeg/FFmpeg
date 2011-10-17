@@ -106,9 +106,9 @@ static int latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
         /* AudioSpecificConfig */
         if (ctx->object_type == AOT_ALS) {
             header_size = avctx->extradata_size-(ctx->off + 7) >> 3;
-            ff_copy_bits(bs, &avctx->extradata[ctx->off], header_size);
+            avpriv_copy_bits(bs, &avctx->extradata[ctx->off], header_size);
         } else {
-            ff_copy_bits(bs, avctx->extradata, ctx->off + 3);
+            avpriv_copy_bits(bs, avctx->extradata, ctx->off + 3);
 
             if (!ctx->channel_conf) {
                 avpriv_copy_pce_data(bs, &gb);
@@ -161,7 +161,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     for (i = 0; i < pkt->size; i++)
         put_bits(&bs, 8, pkt->data[i]);
 
-    align_put_bits(&bs);
+    avpriv_align_put_bits(&bs);
     flush_put_bits(&bs);
 
     len = put_bits_count(&bs) >> 3;
