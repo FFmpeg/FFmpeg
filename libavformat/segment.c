@@ -98,7 +98,7 @@ static int seg_write_header(AVFormatContext *s)
 
     if (!seg->path) {
         char *t;
-        seg->path = strdup(s->filename);
+        seg->path = av_strdup(s->filename);
         t = rindex(seg->path, '.');
         if (t) t = '\0';
     }
