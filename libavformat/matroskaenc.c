@@ -443,7 +443,7 @@ static void get_aac_sample_rates(AVFormatContext *s, AVCodecContext *codec, int 
 {
     MPEG4AudioConfig mp4ac;
 
-    if (ff_mpeg4audio_get_config(&mp4ac, codec->extradata, codec->extradata_size) < 0) {
+    if (avpriv_mpeg4audio_get_config(&mp4ac, codec->extradata, codec->extradata_size) < 0) {
         av_log(s, AV_LOG_WARNING, "Error parsing AAC extradata, unable to determine samplerate.\n");
         return;
     }

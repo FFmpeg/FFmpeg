@@ -531,7 +531,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 return ret;
             if (st->codec->codec_id == CODEC_ID_AAC) {
                 MPEG4AudioConfig cfg;
-                ff_mpeg4audio_get_config(&cfg, st->codec->extradata,
+                avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
                                          st->codec->extradata_size);
                 st->codec->channels = cfg.channels;
                 if (cfg.ext_sample_rate)

@@ -470,7 +470,7 @@ static int decode_audio_specific_config(AACContext *ac,
 
     init_get_bits(&gb, data, data_size * 8);
 
-    if ((i = ff_mpeg4audio_get_config(m4ac, data, data_size)) < 0)
+    if ((i = avpriv_mpeg4audio_get_config(m4ac, data, data_size)) < 0)
         return -1;
     if (m4ac->sampling_index > 12) {
         av_log(avctx, AV_LOG_ERROR, "invalid sampling rate index %d\n", m4ac->sampling_index);

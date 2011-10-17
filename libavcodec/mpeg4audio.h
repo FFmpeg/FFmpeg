@@ -40,7 +40,7 @@ typedef struct {
     int ps;  ///< -1 implicit, 1 presence
 } MPEG4AudioConfig;
 
-extern const int ff_mpeg4audio_sample_rates[16];
+extern const int avpriv_mpeg4audio_sample_rates[16];
 extern const uint8_t ff_mpeg4audio_channels[8];
 /**
  * Parse MPEG-4 systems extradata to retrieve audio configuration.
@@ -49,7 +49,7 @@ extern const uint8_t ff_mpeg4audio_channels[8];
  * @param[in] buf_size Extradata size.
  * @return On error -1 is returned, on success AudioSpecificConfig bit index in extradata.
  */
-int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_size);
+int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_size);
 
 enum AudioObjectType {
     AOT_NULL,
@@ -101,6 +101,6 @@ enum AudioObjectType {
 #define MAX_PCE_SIZE 304 ///<Maximum size of a PCE including the 3-bit ID_PCE
                          ///<marker and the comment
 
-int ff_copy_pce_data(PutBitContext *pb, GetBitContext *gb);
+int avpriv_copy_pce_data(PutBitContext *pb, GetBitContext *gb);
 
 #endif /* AVCODEC_MPEG4AUDIO_H */

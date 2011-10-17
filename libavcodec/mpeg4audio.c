@@ -52,7 +52,7 @@ static int parse_config_ALS(GetBitContext *gb, MPEG4AudioConfig *c)
     return 0;
 }
 
-const int ff_mpeg4audio_sample_rates[16] = {
+const int avpriv_mpeg4audio_sample_rates[16] = {
     96000, 88200, 64000, 48000, 44100, 32000,
     24000, 22050, 16000, 12000, 11025, 8000, 7350
 };
@@ -73,10 +73,10 @@ static inline int get_sample_rate(GetBitContext *gb, int *index)
 {
     *index = get_bits(gb, 4);
     return *index == 0x0f ? get_bits(gb, 24) :
-        ff_mpeg4audio_sample_rates[*index];
+        avpriv_mpeg4audio_sample_rates[*index];
 }
 
-int ff_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_size)
+int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_size)
 {
     GetBitContext gb;
     int specific_config_bitindex;
@@ -151,7 +151,7 @@ static av_always_inline unsigned int copy_bits(PutBitContext *pb,
     return el;
 }
 
-int ff_copy_pce_data(PutBitContext *pb, GetBitContext *gb)
+int avpriv_copy_pce_data(PutBitContext *pb, GetBitContext *gb)
 {
     int five_bit_ch, four_bit_ch, comment_size, bits;
     int offset = put_bits_count(pb);

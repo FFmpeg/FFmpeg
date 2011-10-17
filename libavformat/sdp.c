@@ -342,7 +342,7 @@ static char *latm_context2config(AVCodecContext *c)
     char *config;
 
     for (rate_index = 0; rate_index < 16; rate_index++)
-        if (ff_mpeg4audio_sample_rates[rate_index] == c->sample_rate)
+        if (avpriv_mpeg4audio_sample_rates[rate_index] == c->sample_rate)
             break;
     if (rate_index == 16) {
         av_log(c, AV_LOG_ERROR, "Unsupported sample rate\n");

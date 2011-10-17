@@ -35,7 +35,7 @@ int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf
     int off;
 
     init_get_bits(&gb, buf, size * 8);
-    off = ff_mpeg4audio_get_config(&m4ac, buf, size);
+    off = avpriv_mpeg4audio_get_config(&m4ac, buf, size);
     if (off < 0)
         return off;
     skip_bits_long(&gb, off);
@@ -67,7 +67,7 @@ int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf
         init_put_bits(&pb, adts->pce_data, MAX_PCE_SIZE);
 
         put_bits(&pb, 3, 5); //ID_PCE
-        adts->pce_size = (ff_copy_pce_data(&pb, &gb) + 3) / 8;
+        adts->pce_size = (avpriv_copy_pce_data(&pb, &gb) + 3) / 8;
         flush_put_bits(&pb);
     }
 

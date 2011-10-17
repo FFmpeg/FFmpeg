@@ -171,7 +171,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     avctx->frame_size = 1024;
 
     for (i = 0; i < 16; i++)
-        if (avctx->sample_rate == ff_mpeg4audio_sample_rates[i])
+        if (avctx->sample_rate == avpriv_mpeg4audio_sample_rates[i])
             break;
     if (i == 16) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate %d\n", avctx->sample_rate);
