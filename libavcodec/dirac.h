@@ -51,7 +51,7 @@ typedef struct {
     uint8_t color_spec_index;       ///< index into dirac_color_spec_presets[]
 } dirac_source_params;
 
-int ff_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
-                                   dirac_source_params *source);
+int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
+                                       dirac_source_params *source);
 
 #endif /* AVCODEC_DIRAC_H */
