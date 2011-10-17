@@ -270,7 +270,7 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
  * The following 3 functions constitute our interface to the world
  */
 
-DVDemuxContext* dv_init_demux(AVFormatContext *s)
+DVDemuxContext* avpriv_dv_init_demux(AVFormatContext *s)
 {
     DVDemuxContext *c;
 
@@ -299,7 +299,7 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     return c;
 }
 
-int dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
+int avpriv_dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
 {
     int size = -1;
     int i;
@@ -316,7 +316,7 @@ int dv_get_packet(DVDemuxContext *c, AVPacket *pkt)
     return size;
 }
 
-int dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
+int avpriv_dv_produce_packet(DVDemuxContext *c, AVPacket *pkt,
                       uint8_t* buf, int buf_size)
 {
     int size, i;
@@ -407,7 +407,7 @@ static int dv_read_header(AVFormatContext *s,
     unsigned state, marker_pos = 0;
     RawDVContext *c = s->priv_data;
 
-    c->dv_demux = dv_init_demux(s);
+    c->dv_demux = avpriv_dv_init_demux(s);
     if (!c->dv_demux)
         return -1;
 
@@ -450,7 +450,7 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int size;
     RawDVContext *c = s->priv_data;
 
-    size = dv_get_packet(c->dv_demux, pkt);
+    size = avpriv_dv_get_packet(c->dv_demux, pkt);
 
     if (size < 0) {
         if (!c->dv_demux->sys)
@@ -459,7 +459,7 @@ static int dv_read_packet(AVFormatContext *s, AVPacket *pkt)
         if (avio_read(s->pb, c->buf, size) <= 0)
             return AVERROR(EIO);
 
-        size = dv_produce_packet(c->dv_demux, pkt, c->buf, size);
+        size = avpriv_dv_produce_packet(c->dv_demux, pkt, c->buf, size);
     }
 
     return size;

@@ -31,9 +31,9 @@
 #include "avformat.h"
 
 typedef struct DVDemuxContext DVDemuxContext;
-DVDemuxContext* dv_init_demux(AVFormatContext* s);
-int dv_get_packet(DVDemuxContext*, AVPacket *);
-int dv_produce_packet(DVDemuxContext*, AVPacket*, uint8_t*, int);
+DVDemuxContext* avpriv_dv_init_demux(AVFormatContext* s);
+int avpriv_dv_get_packet(DVDemuxContext*, AVPacket *);
+int avpriv_dv_produce_packet(DVDemuxContext*, AVPacket*, uint8_t*, int);
 void dv_offset_reset(DVDemuxContext *c, int64_t frame_offset);
 
 typedef struct DVMuxContext DVMuxContext;
