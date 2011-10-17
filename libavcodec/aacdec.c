@@ -2075,7 +2075,7 @@ static int parse_adts_frame_header(AACContext *ac, GetBitContext *gb)
     int size;
     AACADTSHeaderInfo hdr_info;
 
-    size = ff_aac_parse_header(gb, &hdr_info);
+    size = avpriv_aac_parse_header(gb, &hdr_info);
     if (size > 0) {
         if (ac->output_configured != OC_LOCKED && hdr_info.chan_config) {
             enum ChannelPosition new_che_pos[4][MAX_ELEM_ID];

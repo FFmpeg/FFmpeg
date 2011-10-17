@@ -349,7 +349,7 @@ static int spdif_header_aac(AVFormatContext *s, AVPacket *pkt)
     int ret;
 
     init_get_bits(&gbc, pkt->data, AAC_ADTS_HEADER_SIZE * 8);
-    ret = ff_aac_parse_header(&gbc, &hdr);
+    ret = avpriv_aac_parse_header(&gbc, &hdr);
     if (ret < 0) {
         av_log(s, AV_LOG_ERROR, "Wrong AAC file format\n");
         return AVERROR_INVALIDDATA;

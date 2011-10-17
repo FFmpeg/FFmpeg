@@ -55,7 +55,7 @@ static int aac_adtstoasc_filter(AVBitStreamFilterContext *bsfc,
         if (show_bits(&gb, 12) != 0xfff)
             return 0;
 
-    if (ff_aac_parse_header(&gb, &hdr) < 0) {
+    if (avpriv_aac_parse_header(&gb, &hdr) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Error parsing ADTS frame header!\n");
         return -1;
     }

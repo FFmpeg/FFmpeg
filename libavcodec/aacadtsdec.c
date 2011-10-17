@@ -26,7 +26,7 @@
 #include "get_bits.h"
 #include "mpeg4audio.h"
 
-int ff_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
+int avpriv_aac_parse_header(GetBitContext *gbc, AACADTSHeaderInfo *hdr)
 {
     int size, rdb, ch, sr;
     int aot, crc_abs;
