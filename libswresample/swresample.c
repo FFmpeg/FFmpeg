@@ -36,21 +36,21 @@
 //TODO split options array out?
 #define OFFSET(x) offsetof(SwrContext,x)
 static const AVOption options[]={
-{"ich",  "input channel count", OFFSET( in.ch_count   ), FF_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
-{"och", "output channel count", OFFSET(out.ch_count   ), FF_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
-{"isr",  "input sample rate"  , OFFSET( in_sample_rate), FF_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
-{"osr", "output sample rate"  , OFFSET(out_sample_rate), FF_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
-//{"ip" ,  "input planar"       , OFFSET( in.planar     ), FF_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
-//{"op" , "output planar"       , OFFSET(out.planar     ), FF_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
-{"isf",  "input sample format", OFFSET( in_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1+256, 0},
-{"osf", "output sample format", OFFSET(out_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1+256, 0},
-{"tsf", "internal sample format", OFFSET(int_sample_fmt ), FF_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_NONE}, -1, AV_SAMPLE_FMT_FLT, 0},
-{"icl",  "input channel layout" , OFFSET( in_ch_layout), FF_OPT_TYPE_INT64, {.dbl=0}, 0, INT64_MAX, 0, "channel_layout"},
-{"ocl",  "output channel layout", OFFSET(out_ch_layout), FF_OPT_TYPE_INT64, {.dbl=0}, 0, INT64_MAX, 0, "channel_layout"},
-{"clev", "center mix level"     , OFFSET(clev)         , FF_OPT_TYPE_FLOAT, {.dbl=C_30DB}, 0, 4, 0},
-{"slev", "sourround mix level"  , OFFSET(slev)         , FF_OPT_TYPE_FLOAT, {.dbl=C_30DB}, 0, 4, 0},
-{"flags", NULL                  , OFFSET(flags)        , FF_OPT_TYPE_FLAGS, {.dbl=0}, 0,  UINT_MAX, 0, "flags"},
-{"res", "force resampling", 0, FF_OPT_TYPE_CONST, {.dbl=SWR_FLAG_RESAMPLE}, INT_MIN, INT_MAX, 0, "flags"},
+{"ich",  "input channel count", OFFSET( in.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
+{"och", "output channel count", OFFSET(out.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
+{"isr",  "input sample rate"  , OFFSET( in_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
+{"osr", "output sample rate"  , OFFSET(out_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
+//{"ip" ,  "input planar"       , OFFSET( in.planar     ), AV_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
+//{"op" , "output planar"       , OFFSET(out.planar     ), AV_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
+{"isf",  "input sample format", OFFSET( in_sample_fmt ), AV_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1+256, 0},
+{"osf", "output sample format", OFFSET(out_sample_fmt ), AV_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_S16}, 0, AV_SAMPLE_FMT_NB-1+256, 0},
+{"tsf", "internal sample format", OFFSET(int_sample_fmt ), AV_OPT_TYPE_INT, {.dbl=AV_SAMPLE_FMT_NONE}, -1, AV_SAMPLE_FMT_FLT, 0},
+{"icl",  "input channel layout" , OFFSET( in_ch_layout), AV_OPT_TYPE_INT64, {.dbl=0}, 0, INT64_MAX, 0, "channel_layout"},
+{"ocl",  "output channel layout", OFFSET(out_ch_layout), AV_OPT_TYPE_INT64, {.dbl=0}, 0, INT64_MAX, 0, "channel_layout"},
+{"clev", "center mix level"     , OFFSET(clev)         , AV_OPT_TYPE_FLOAT, {.dbl=C_30DB}, 0, 4, 0},
+{"slev", "sourround mix level"  , OFFSET(slev)         , AV_OPT_TYPE_FLOAT, {.dbl=C_30DB}, 0, 4, 0},
+{"flags", NULL                  , OFFSET(flags)        , AV_OPT_TYPE_FLAGS, {.dbl=0}, 0,  UINT_MAX, 0, "flags"},
+{"res", "force resampling", 0, AV_OPT_TYPE_CONST, {.dbl=SWR_FLAG_RESAMPLE}, INT_MIN, INT_MAX, 0, "flags"},
 
 {0}
 };

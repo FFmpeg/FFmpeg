@@ -150,7 +150,7 @@ static const AVOption options[] = {
     { "crystalhd_downscale_width",
       "Turn on downscaling to the specified width",
       offsetof(CHDContext, sWidth),
-      FF_OPT_TYPE_INT, 0, 0, UINT32_MAX,
+      AV_OPT_TYPE_INT, 0, 0, UINT32_MAX,
       AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_DECODING_PARAM, },
     { NULL, },
 };

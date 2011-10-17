@@ -926,17 +926,17 @@ static int dshow_read_packet(AVFormatContext *s, AVPacket *pkt)
 #define OFFSET(x) offsetof(struct dshow_ctx, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
 static const AVOption options[] = {
-    { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(video_size), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "framerate", "set video frame rate", OFFSET(framerate), FF_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
-    { "sample_rate", "set audio sample rate", OFFSET(sample_rate), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
-    { "sample_size", "set audio sample size", OFFSET(sample_size), FF_OPT_TYPE_INT, {.dbl = 0}, 0, 16, DEC },
-    { "channels", "set number of audio channels, such as 1 or 2", OFFSET(channels), FF_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
-    { "list_devices", "list available devices", OFFSET(list_devices), FF_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_devices" },
-    { "true", "", 0, FF_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_devices" },
-    { "false", "", 0, FF_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_devices" },
-    { "list_options", "list available options for specified device", OFFSET(list_options), FF_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_options" },
-    { "true", "", 0, FF_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_options" },
-    { "false", "", 0, FF_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_options" },
+    { "video_size", "set video size given a string such as 640x480 or hd720.", OFFSET(video_size), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "framerate", "set video frame rate", OFFSET(framerate), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
+    { "sample_rate", "set audio sample rate", OFFSET(sample_rate), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
+    { "sample_size", "set audio sample size", OFFSET(sample_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 16, DEC },
+    { "channels", "set number of audio channels, such as 1 or 2", OFFSET(channels), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, DEC },
+    { "list_devices", "list available devices", OFFSET(list_devices), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_devices" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_devices" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_devices" },
+    { "list_options", "list available options for specified device", OFFSET(list_options), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1, DEC, "list_options" },
+    { "true", "", 0, AV_OPT_TYPE_CONST, {.dbl=1}, 0, 0, DEC, "list_options" },
+    { "false", "", 0, AV_OPT_TYPE_CONST, {.dbl=0}, 0, 0, DEC, "list_options" },
     { NULL },
 };
 

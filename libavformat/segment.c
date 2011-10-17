@@ -189,10 +189,10 @@ static int seg_write_trailer(struct AVFormatContext *s)
 #define OFFSET(x) offsetof(SegmentContext, x)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-    { "container_format", "container format used for the segments", OFFSET(format), FF_OPT_TYPE_STRING, {.str = "nut"},  0, 0, E },
-    { "segment_time",     "segment lenght in seconds",              OFFSET(time),   FF_OPT_TYPE_FLOAT,  {.dbl = 2},      0, FLT_MAX, E },
-    { "segment_pattern",  "pattern to use in segment files",        OFFSET(pattern),FF_OPT_TYPE_STRING, {.str = "%03d"}, 0, 0, E },
-    { "segment_basename", "basename to use in segment files",       OFFSET(path   ),FF_OPT_TYPE_STRING, {.str = NULL},   0, 0, E },
+    { "container_format", "container format used for the segments", OFFSET(format), AV_OPT_TYPE_STRING, {.str = "nut"},  0, 0, E },
+    { "segment_time",     "segment lenght in seconds",              OFFSET(time),   AV_OPT_TYPE_FLOAT,  {.dbl = 2},      0, FLT_MAX, E },
+    { "segment_pattern",  "pattern to use in segment files",        OFFSET(pattern),AV_OPT_TYPE_STRING, {.str = "%03d"}, 0, 0, E },
+    { "segment_basename", "basename to use in segment files",       OFFSET(path   ),AV_OPT_TYPE_STRING, {.str = NULL},   0, 0, E },
     { NULL },
 };
 

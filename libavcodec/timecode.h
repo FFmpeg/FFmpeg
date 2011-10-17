@@ -34,7 +34,7 @@
     "timecode", "set timecode value following hh:mm:ss[:;.]ff format, "  \
                 "use ';' or '.' before frame number for drop frame",     \
     offsetof(ctx, tc.str),                                               \
-    FF_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, flags
+    AV_OPT_TYPE_STRING, {.str=NULL}, CHAR_MIN, CHAR_MAX, flags
 
 struct ff_timecode {
     char *str;       ///< string following the hh:mm:ss[:;.]ff format

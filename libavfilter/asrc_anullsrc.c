@@ -40,12 +40,12 @@ typedef struct {
 #define OFFSET(x) offsetof(ANullContext, x)
 
 static const AVOption anullsrc_options[]= {
-    { "channel_layout", "set channel_layout", OFFSET(channel_layout_str), FF_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0 },
-    { "cl",             "set channel_layout", OFFSET(channel_layout_str), FF_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0 },
-    { "sample_rate",    "set sample rate",    OFFSET(sample_rate_str)   , FF_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
-    { "r",              "set sample rate",    OFFSET(sample_rate_str)   , FF_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
-    { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), FF_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
-    { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), FF_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
+    { "channel_layout", "set channel_layout", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0 },
+    { "cl",             "set channel_layout", OFFSET(channel_layout_str), AV_OPT_TYPE_STRING, {.str = "stereo"}, 0, 0 },
+    { "sample_rate",    "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
+    { "r",              "set sample rate",    OFFSET(sample_rate_str)   , AV_OPT_TYPE_STRING, {.str = "44100"}, 0, 0 },
+    { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
+    { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), AV_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
     { NULL },
 };
 

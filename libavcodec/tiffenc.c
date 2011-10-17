@@ -454,7 +454,7 @@ fail:
 }
 
 static const AVOption options[]={
-{"dpi", "set the image resolution (in dpi)", offsetof(TiffEncoderContext, dpi), FF_OPT_TYPE_INT, {.dbl = 72}, 1, 0x10000, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_ENCODING_PARAM},
+{"dpi", "set the image resolution (in dpi)", offsetof(TiffEncoderContext, dpi), AV_OPT_TYPE_INT, {.dbl = 72}, 1, 0x10000, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_ENCODING_PARAM},
 {NULL}
 };
 static const AVClass class = { "tiff", av_default_item_name, options, LIBAVUTIL_VERSION_INT };

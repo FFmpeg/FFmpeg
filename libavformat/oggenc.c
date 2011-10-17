@@ -72,7 +72,7 @@ typedef struct {
 
 static const AVOption options[] = {
     { "oggpagesize", "Set preferred Ogg page size.",
-      offsetof(OGGContext, pref_size), FF_OPT_TYPE_INT, {.dbl = 0}, 0, MAX_PAGE_SIZE, AV_OPT_FLAG_ENCODING_PARAM},
+      offsetof(OGGContext, pref_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, MAX_PAGE_SIZE, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
