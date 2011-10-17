@@ -325,7 +325,7 @@ static DVMuxContext* dv_init_mux(AVFormatContext* s)
                           c->ast[i]->codec->channels    != 2))
             goto bail_out;
     }
-    c->sys = ff_dv_codec_profile(vst->codec);
+    c->sys = avpriv_dv_codec_profile(vst->codec);
     if (!c->sys)
         goto bail_out;
 

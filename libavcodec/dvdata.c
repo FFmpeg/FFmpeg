@@ -245,7 +245,7 @@ static const DVprofile dv_profiles[] = {
     }
 };
 
-const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
+const DVprofile* avpriv_dv_frame_profile(const DVprofile *sys,
                                   const uint8_t* frame, unsigned buf_size)
 {
    int i;
@@ -270,7 +270,7 @@ const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
    return NULL;
 }
 
-const DVprofile* ff_dv_codec_profile(AVCodecContext* codec)
+const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec)
 {
     int i;
 

@@ -274,9 +274,9 @@ enum dv_pack_type {
  */
 #define DV_MAX_BPM 8
 
-const DVprofile* ff_dv_frame_profile(const DVprofile *sys,
-                                  const uint8_t* frame, unsigned buf_size);
-const DVprofile* ff_dv_codec_profile(AVCodecContext* codec);
+const DVprofile* avpriv_dv_frame_profile(const DVprofile *sys,
+                                         const uint8_t* frame, unsigned buf_size);
+const DVprofile* avpriv_dv_codec_profile(AVCodecContext* codec);
 
 static inline int dv_write_dif_id(enum dv_section_type t, uint8_t chan_num,
                                   uint8_t seq_num, uint8_t dif_num,
