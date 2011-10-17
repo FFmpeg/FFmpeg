@@ -77,6 +77,16 @@ const AVOption ff_rtsp_options[] = {
     { NULL },
 };
 
+static const AVOption sdp_options[] = {
+    RTSP_FLAG_OPTS("sdp_flags", "SDP flags"),
+    { NULL },
+};
+
+static const AVOption rtp_options[] = {
+    RTSP_FLAG_OPTS("rtp_flags", "RTP flags"),
+    { NULL },
+};
+
 static void get_word_until_chars(char *buf, int buf_size,
                                  const char *sep, const char **pp)
 {
@@ -1835,8 +1845,9 @@ static int sdp_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     namebuf, sizeof(namebuf), NULL, 0, NI_NUMERICHOST);
         ff_url_join(url, sizeof(url), "rtp", NULL,
                     namebuf, rtsp_st->sdp_port,
-                    "?localport=%d&ttl=%d", rtsp_st->sdp_port,
-                    rtsp_st->sdp_ttl);
+                    "?localport=%d&ttl=%d&connect=%d", rtsp_st->sdp_port,
+                    rtsp_st->sdp_ttl,
+                    rt->rtsp_flags & RTSP_FLAG_FILTER_SRC ? 1 : 0);
         if (ffurl_open(&rtsp_st->rtp_handle, url, AVIO_FLAG_READ_WRITE) < 0) {
             err = AVERROR_INVALIDDATA;
             goto fail;
@@ -1858,6 +1869,13 @@ static int sdp_read_close(AVFormatContext *s)
     return 0;
 }
 
+static const AVClass sdp_demuxer_class = {
+    .class_name     = "SDP demuxer",
+    .item_name      = av_default_item_name,
+    .option         = sdp_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_sdp_demuxer = {
     .name           = "sdp",
     .long_name      = NULL_IF_CONFIG_SMALL("SDP"),
@@ -1866,6 +1884,7 @@ AVInputFormat ff_sdp_demuxer = {
     .read_header    = sdp_read_header,
     .read_packet    = ff_rtsp_fetch_packet,
     .read_close     = sdp_read_close,
+    .priv_class     = &sdp_demuxer_class
 };
 #endif /* CONFIG_SDP_DEMUXER */
 
@@ -1962,6 +1981,13 @@ fail:
     return ret;
 }
 
+static const AVClass rtp_demuxer_class = {
+    .class_name     = "RTP demuxer",
+    .item_name      = av_default_item_name,
+    .option         = rtp_options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVInputFormat ff_rtp_demuxer = {
     .name           = "rtp",
     .long_name      = NULL_IF_CONFIG_SMALL("RTP input format"),
@@ -1971,6 +1997,7 @@ AVInputFormat ff_rtp_demuxer = {
     .read_packet    = ff_rtsp_fetch_packet,
     .read_close     = sdp_read_close,
     .flags = AVFMT_NOFILE,
+    .priv_class     = &rtp_demuxer_class
 };
 #endif /* CONFIG_RTP_DEMUXER */
 
