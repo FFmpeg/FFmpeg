@@ -29,6 +29,7 @@
 #include "httpauth.h"
 
 #include "libavutil/log.h"
+#include "libavutil/opt.h"
 
 /**
  * Network layer over which RTP/etc packet data will be transported.
@@ -37,7 +38,10 @@ enum RTSPLowerTransport {
     RTSP_LOWER_TRANSPORT_UDP = 0,           /**< UDP/unicast */
     RTSP_LOWER_TRANSPORT_TCP = 1,           /**< TCP; interleaved in RTSP */
     RTSP_LOWER_TRANSPORT_UDP_MULTICAST = 2, /**< UDP/multicast */
-    RTSP_LOWER_TRANSPORT_NB
+    RTSP_LOWER_TRANSPORT_NB,
+    RTSP_LOWER_TRANSPORT_HTTP = 8,          /**< HTTP tunneled - not a proper
+                                                 transport mode as such,
+                                                 only for use via AVOptions */
 };
 
 /**
@@ -313,10 +317,6 @@ typedef struct RTSPState {
     /** Reusable buffer for receiving packets */
     uint8_t* recvbuf;
 
-    /** Filter incoming UDP packets - receive packets only from the right
-     * source address and port. */
-    int filter_source;
-
     /**
      * A mask with all requested transport methods
      */
@@ -349,7 +349,16 @@ typedef struct RTSPState {
 
     /** Whether the server accepts the x-Dynamic-Rate header */
     int accept_dynamic_rate;
+
+    /**
+     * Various option flags for the RTSP muxer/demuxer.
+     */
+    int rtsp_flags;
 } RTSPState;
+
+#define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -
+                                          receive packets only from the right
+                                          source address and port. */
 
 /**
  * Describes a single stream, as identified by a single m= line block in the
@@ -536,5 +545,7 @@ int ff_rtsp_make_setup_request(AVFormatContext *s, const char *host, int port,
  * transport_priv and rtp_handle fields.
  */
 void ff_rtsp_undo_setup(AVFormatContext *s);
+
+extern const AVOption ff_rtsp_options[];
 
 #endif /* AVFORMAT_RTSP_H */

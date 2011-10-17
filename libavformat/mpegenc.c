@@ -20,7 +20,9 @@
  */
 
 #include "libavutil/fifo.h"
+#include "libavutil/log.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/opt.h"
 #include "libavcodec/put_bits.h"
 #include "avformat.h"
 #include "mpeg.h"
@@ -56,6 +58,7 @@ typedef struct {
 } StreamInfo;
 
 typedef struct {
+    const AVClass *class;
     int packet_size; /* required packet size */
     int packet_number;
     int pack_header_freq;     /* frequency (in packets^-1) at which we send pack headers */
@@ -416,9 +419,12 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             video_bitrate += codec_rate;
     }
 
+#if FF_API_MUXRATE
     if(ctx->mux_rate){
         s->mux_rate= (ctx->mux_rate + (8 * 50) - 1) / (8 * 50);
-    } else {
+    } else
+#endif
+    if (!s->mux_rate) {
         /* we increase slightly the bitrate to take into account the
            headers. XXX: compute it exactly */
         bitrate += bitrate*5/100;
@@ -1227,7 +1233,23 @@ static int mpeg_mux_end(AVFormatContext *ctx)
     return 0;
 }
 
+#define OFFSET(x) offsetof(MpegMuxContext, x)
+#define E AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "muxrate", NULL, OFFSET(mux_rate), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, E },
+    { NULL },
+};
+
+#define MPEGENC_CLASS(flavor)\
+static const AVClass flavor ## _class = {\
+    .class_name = #flavor " muxer",\
+    .item_name  = av_default_item_name,\
+    .version    = LIBAVUTIL_VERSION_INT,\
+    .option     = options,\
+};
+
 #if CONFIG_MPEG1SYSTEM_MUXER
+MPEGENC_CLASS(mpeg)
 AVOutputFormat ff_mpeg1system_muxer = {
     .name              = "mpeg",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 System format"),
@@ -1239,9 +1261,11 @@ AVOutputFormat ff_mpeg1system_muxer = {
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
+    .priv_class        = &mpeg_class,
 };
 #endif
 #if CONFIG_MPEG1VCD_MUXER
+MPEGENC_CLASS(vcd)
 AVOutputFormat ff_mpeg1vcd_muxer = {
     .name              = "vcd",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-1 System format (VCD)"),
@@ -1252,9 +1276,11 @@ AVOutputFormat ff_mpeg1vcd_muxer = {
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
+    .priv_class        = &vcd_class,
 };
 #endif
 #if CONFIG_MPEG2VOB_MUXER
+MPEGENC_CLASS(vob)
 AVOutputFormat ff_mpeg2vob_muxer = {
     .name              = "vob",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS format (VOB)"),
@@ -1266,11 +1292,13 @@ AVOutputFormat ff_mpeg2vob_muxer = {
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
+    .priv_class        = &vob_class,
 };
 #endif
 
 /* Same as mpeg2vob_mux except that the pack size is 2324 */
 #if CONFIG_MPEG2SVCD_MUXER
+MPEGENC_CLASS(svcd)
 AVOutputFormat ff_mpeg2svcd_muxer = {
     .name              = "svcd",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS format (VOB)"),
@@ -1282,11 +1310,13 @@ AVOutputFormat ff_mpeg2svcd_muxer = {
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
+    .priv_class        = &svcd_class,
 };
 #endif
 
 /*  Same as mpeg2vob_mux except the 'is_dvd' flag is set to produce NAV pkts */
 #if CONFIG_MPEG2DVD_MUXER
+MPEGENC_CLASS(dvd)
 AVOutputFormat ff_mpeg2dvd_muxer = {
     .name              = "dvd",
     .long_name         = NULL_IF_CONFIG_SMALL("MPEG-2 PS format (DVD VOB)"),
@@ -1298,5 +1328,6 @@ AVOutputFormat ff_mpeg2dvd_muxer = {
     .write_header      = mpeg_mux_init,
     .write_packet      = mpeg_mux_write_packet,
     .write_trailer     = mpeg_mux_end,
+    .priv_class        = &dvd_class,
 };
 #endif

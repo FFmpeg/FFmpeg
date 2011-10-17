@@ -503,7 +503,8 @@ int av_opt_get_q(void *obj, const char *name, int search_flags, AVRational *out_
 int av_opt_flag_is_set(void *obj, const char *field_name, const char *flag_name)
 {
     const AVOption *field = av_opt_find(obj, field_name, NULL, 0, 0);
-    const AVOption *flag  = av_opt_find(obj, flag_name,  NULL, 0, 0);
+    const AVOption *flag  = av_opt_find(obj, flag_name,
+                                        field ? field->unit : NULL, 0, 0);
     int64_t res;
 
     if (!field || !flag || flag->type != AV_OPT_TYPE_CONST ||
@@ -700,6 +701,7 @@ int av_set_options_string(void *ctx, const char *opts,
 
     if (!opts)
         return 0;
+
     while (*opts) {
         if ((ret = parse_key_value_pair(ctx, &opts, key_val_sep, pairs_sep)) < 0)
             return ret;

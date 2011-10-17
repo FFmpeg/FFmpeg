@@ -745,10 +745,12 @@ typedef struct AVFormatContext {
      */
     int64_t duration;
 
+#if FF_API_FILESIZE
     /**
      * decoding: total file size, 0 if unknown
      */
-    int64_t file_size;
+    attribute_deprecated int64_t file_size;
+#endif
 
     /**
      * Decoding: total stream bitrate in bit/s, 0 if not
@@ -763,7 +765,12 @@ typedef struct AVFormatContext {
     /* av_seek_frame() support */
     int64_t data_offset; /**< offset of the first packet */
 
-    int mux_rate;
+#if FF_API_MUXRATE
+    /**
+     * use mpeg muxer private options instead
+     */
+    attribute_deprecated int mux_rate;
+#endif
     unsigned int packet_size;
     int preload;
     int max_delay;

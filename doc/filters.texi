@@ -432,7 +432,7 @@ horizontal and vertical chroma subsample values. For example for the
 pixel format "yuv422p" @var{hsub} is 2 and @var{vsub} is 1.
 @end table
 
-The radius must be a non-negative number, and must be not greater than
+The radius must be a non-negative number, and must not be greater than
 the value of the expression @code{min(w,h)/2} for the luma and alpha planes,
 and of @code{min(cw,ch)/2} for the chroma planes.
 

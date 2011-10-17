@@ -154,9 +154,9 @@ static const char *delogo_get_name(void *ctx)
 }
 
 static const AVClass delogo_class = {
-    "DelogoContext",
-    delogo_get_name,
-    delogo_options
+    .class_name = "DelogoContext",
+    .item_name  = delogo_get_name,
+    .option     = delogo_options,
 };
 
 static int query_formats(AVFilterContext *ctx)

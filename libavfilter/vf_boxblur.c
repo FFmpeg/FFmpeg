@@ -81,7 +81,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     if (!args) {
         av_log(ctx, AV_LOG_ERROR,
-               "Filter expects 2 or 4 arguments, none provided\n");
+               "Filter expects 2 or 4 or 6 arguments, none provided\n");
         return AVERROR(EINVAL);
     }
 

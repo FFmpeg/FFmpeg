@@ -92,6 +92,7 @@ static const AVOption options[] = {
     {"mpegts_m2ts_mode", "Enable m2ts mode.",
         offsetof(MpegTSWrite, m2ts_mode), AV_OPT_TYPE_INT, {.dbl = -1 },
         -1,1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "muxrate", NULL, offsetof(MpegTSWrite, mux_rate), AV_OPT_TYPE_INT, {1}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -562,7 +563,10 @@ static int mpegts_write_header(AVFormatContext *s)
         service->pcr_pid = ts_st->pid;
     }
 
-    ts->mux_rate = s->mux_rate ? s->mux_rate : 1;
+#if FF_API_MUXRATE
+    if (s->mux_rate)
+        ts->mux_rate = s->mux_rate;
+#endif
 
     if (ts->mux_rate > 1) {
         service->pcr_packet_period = (ts->mux_rate * PCR_RETRANS_TIME) /

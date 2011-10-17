@@ -33,20 +33,13 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
 #include "url.h"
-#include "libavutil/opt.h"
-#include "rtpenc.h"
 
 #define SDP_MAX_SIZE 16384
-
-static const AVOption options[] = {
-    FF_RTP_FLAG_OPTS(RTSPState, rtp_muxer_flags),
-    { NULL },
-};
 
 static const AVClass rtsp_muxer_class = {
     .class_name = "RTSP muxer",
     .item_name  = av_default_item_name,
-    .option     = options,
+    .option     = ff_rtsp_options,
     .version    = LIBAVUTIL_VERSION_INT,
 };
 

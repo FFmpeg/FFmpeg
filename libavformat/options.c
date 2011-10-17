@@ -74,7 +74,9 @@ static const AVClass *format_child_class_next(const AVClass *prev)
 
 static const AVOption options[]={
 {"probesize", "set probing size", OFFSET(probesize), AV_OPT_TYPE_INT, {.dbl = 5000000 }, 32, INT_MAX, D},
+#if FF_API_MUXRATE
 {"muxrate", "set mux rate", OFFSET(mux_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
+#endif
 {"packetsize", "set packet size", OFFSET(packet_size), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, 0, INT_MAX, E},
 {"fflags", NULL, OFFSET(flags), AV_OPT_TYPE_FLAGS, {.dbl = DEFAULT }, INT_MIN, INT_MAX, D|E, "fflags"},
 {"ignidx", "ignore index", 0, AV_OPT_TYPE_CONST, {.dbl = AVFMT_FLAG_IGNIDX }, INT_MIN, INT_MAX, D, "fflags"},

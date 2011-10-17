@@ -355,6 +355,8 @@ typedef struct OptionsContext {
     int        nb_inter_matrices;
     SpecifierOpt *top_field_first;
     int        nb_top_field_first;
+    SpecifierOpt *presets;
+    int        nb_presets;
 #if CONFIG_AVFILTER
     SpecifierOpt *filters;
     int        nb_filters;
@@ -3202,15 +3204,62 @@ static void parse_forced_key_frames(char *kf, OutputStream *ost)
     }
 }
 
+static uint8_t *get_line(AVIOContext *s)
+{
+    AVIOContext *line;
+    uint8_t *buf;
+    char c;
+
+    if (avio_open_dyn_buf(&line) < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Could not alloc buffer for reading preset.\n");
+        exit_program(1);
+    }
+
+    while ((c = avio_r8(s)) && c != '\n')
+        avio_w8(line, c);
+    avio_w8(line, 0);
+    avio_close_dyn_buf(line, &buf);
+
+    return buf;
+}
+
+static int get_preset_file_2(const char *preset_name, const char *codec_name, AVIOContext **s)
+{
+    int i, ret = 1;
+    char filename[1000];
+    const char *base[3] = { getenv("AVCONV_DATADIR"),
+                            getenv("HOME"),
+                            AVCONV_DATADIR,
+                            };
+
+    for (i = 0; i < FF_ARRAY_ELEMS(base) && ret; i++) {
+        if (!base[i])
+            continue;
+        if (codec_name) {
+            snprintf(filename, sizeof(filename), "%s%s/%s-%s.avpreset", base[i],
+                     i != 1 ? "" : "/.avconv", codec_name, preset_name);
+            ret = avio_open(s, filename, AVIO_FLAG_READ);
+        }
+        if (ret) {
+            snprintf(filename, sizeof(filename), "%s%s/%s.avpreset", base[i],
+                     i != 1 ? "" : "/.avconv", preset_name);
+            ret = avio_open(s, filename, AVIO_FLAG_READ);
+        }
+    }
+    return ret;
+}
+
 static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, enum AVMediaType type)
 {
     OutputStream *ost;
     AVStream *st = av_new_stream(oc, oc->nb_streams < o->nb_streamid_map ? o->streamid_map[oc->nb_streams] : 0);
-    int idx      = oc->nb_streams - 1;
+    int idx      = oc->nb_streams - 1, ret = 0;
     int64_t max_frames = INT64_MAX;
     char *bsf = NULL, *next, *codec_tag = NULL;
     AVBitStreamFilterContext *bsfc, *bsfc_prev = NULL;
     double qscale = -1;
+    char *buf = NULL, *arg = NULL, *preset = NULL;
+    AVIOContext *s = NULL;
 
     if (!st) {
         av_log(NULL, AV_LOG_FATAL, "Could not alloc stream.\n");
@@ -3231,6 +3280,31 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
 
     avcodec_get_context_defaults3(st->codec, ost->enc);
     st->codec->codec_type = type; // XXX hack, avcodec_get_context_defaults2() sets type to unknown for stream copy
+
+    MATCH_PER_STREAM_OPT(presets, str, preset, oc, st);
+    if (preset && (!(ret = get_preset_file_2(preset, ost->enc->name, &s)))) {
+        do  {
+            buf = get_line(s);
+            if (!buf[0] || buf[0] == '#') {
+                av_free(buf);
+                continue;
+            }
+            if (!(arg = strchr(buf, '='))) {
+                av_log(NULL, AV_LOG_FATAL, "Invalid line found in the preset file.\n");
+                exit_program(1);
+            }
+            *arg++ = 0;
+            av_dict_set(&ost->opts, buf, arg, AV_DICT_DONT_OVERWRITE);
+            av_free(buf);
+        } while (!s->eof_reached);
+        avio_close(s);
+    }
+    if (ret) {
+        av_log(NULL, AV_LOG_FATAL,
+               "Preset %s specified for stream %d:%d, but could not be opened.\n",
+               preset, ost->file_index, ost->index);
+        exit_program(1);
+    }
 
     MATCH_PER_STREAM_OPT(max_frames, i64, max_frames, oc, st);
     ost->max_frames = max_frames;
@@ -4209,6 +4283,7 @@ static const OptionDef options[] = {
     { "y", OPT_BOOL, {(void*)&file_overwrite}, "overwrite output files" },
     { "c", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(codec_names)}, "codec name", "codec" },
     { "codec", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(codec_names)}, "codec name", "codec" },
+    { "pre", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(presets)}, "preset name", "preset" },
     { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
     { "map_meta_data", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_meta_data}, "DEPRECATED set meta data information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },

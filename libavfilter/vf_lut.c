@@ -350,21 +350,27 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
                                       { .name = NULL}},                 \
     }
 
+#if CONFIG_LUT_FILTER
 DEFINE_LUT_FILTER(lut,    "Compute and apply a lookup table to the RGB/YUV input video.", init);
+#endif
+#if CONFIG_LUTYUV_FILTER
 DEFINE_LUT_FILTER(lutyuv, "Compute and apply a lookup table to the YUV input video.",     init);
+#endif
+#if CONFIG_LUTRGB_FILTER
 DEFINE_LUT_FILTER(lutrgb, "Compute and apply a lookup table to the RGB input video.",     init);
+#endif
 
 #if CONFIG_NEGATE_FILTER
 
 static int negate_init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     LutContext *lut = ctx->priv;
-    char lut_params[1024];
+    char lut_params[64];
 
     if (args)
         sscanf(args, "%d", &lut->negate_alpha);
 
-    av_log(ctx, AV_LOG_INFO, "negate_alpha:%d\n", lut->negate_alpha);
+    av_log(ctx, AV_LOG_DEBUG, "negate_alpha:%d\n", lut->negate_alpha);
 
     snprintf(lut_params, sizeof(lut_params), "c0=negval:c1=negval:c2=negval:a=%s",
              lut->negate_alpha ? "negval" : "val");
