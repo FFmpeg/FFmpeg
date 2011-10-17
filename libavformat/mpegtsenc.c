@@ -950,7 +950,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
 
         do {
-            p = ff_find_start_code(p, buf_end, &state);
+            p = avpriv_mpv_find_start_code(p, buf_end, &state);
             //av_log(s, AV_LOG_INFO, "nal %d\n", state & 0x1f);
         } while (p < buf_end && (state & 0x1f) != 9 &&
                  (state & 0x1f) != 5 && (state & 0x1f) != 1);

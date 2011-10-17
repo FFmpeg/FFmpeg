@@ -1697,7 +1697,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
     if (avctx->hwaccel) {
         const uint8_t *buf_end, *buf_start = *buf - 4; /* include start_code */
         int start_code = -1;
-        buf_end = ff_find_start_code(buf_start + 2, *buf + buf_size, &start_code);
+        buf_end = avpriv_mpv_find_start_code(buf_start + 2, *buf + buf_size, &start_code);
         if (buf_end < *buf + buf_size)
             buf_end -= 4;
         s->mb_y = mb_y;
@@ -1888,7 +1888,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
             return 0;
 
         start_code = -1;
-        buf = ff_find_start_code(buf, s->gb.buffer_end, &start_code);
+        buf = avpriv_mpv_find_start_code(buf, s->gb.buffer_end, &start_code);
         mb_y= (start_code - SLICE_MIN_START_CODE) << field_pic;
         if (s->picture_structure == PICT_BOTTOM_FIELD)
             mb_y++;
@@ -2168,7 +2168,7 @@ int ff_mpeg1_find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size, 
             }
             state++;
         } else {
-            i = ff_find_start_code(buf + i, buf + buf_size, &state) - buf - 1;
+            i = avpriv_mpv_find_start_code(buf + i, buf + buf_size, &state) - buf - 1;
             if (pc->frame_start_found == 0 && state >= SLICE_MIN_START_CODE && state <= SLICE_MAX_START_CODE) {
                 i++;
                 pc->frame_start_found = 4;
@@ -2259,7 +2259,7 @@ static int decode_chunks(AVCodecContext *avctx,
     for (;;) {
         /* find next start code */
         uint32_t start_code = -1;
-        buf_ptr = ff_find_start_code(buf_ptr, buf_end, &start_code);
+        buf_ptr = avpriv_mpv_find_start_code(buf_ptr, buf_end, &start_code);
         if (start_code > 0x1ff) {
             if (s2->pict_type != AV_PICTURE_TYPE_B || avctx->skip_frame <= AVDISCARD_DEFAULT) {
                 if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_SLICE)) {

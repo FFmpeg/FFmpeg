@@ -663,7 +663,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     buf_ptr = buf;
     buf_end = buf + buf_size;
     for(;;) {
-        buf_ptr = ff_find_start_code(buf_ptr,buf_end, &stc);
+        buf_ptr = avpriv_mpv_find_start_code(buf_ptr,buf_end, &stc);
         if((stc & 0xFFFFFE00) || buf_ptr == buf_end)
             return FFMAX(0, buf_ptr - buf - s->parse_context.last_index);
         input_size = (buf_end - buf_ptr)*8;
