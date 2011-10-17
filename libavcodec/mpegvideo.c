@@ -646,9 +646,9 @@ av_cold int MPV_common_init(MpegEncContext *s)
         yc_size = y_size + 2 * c_size;
 
         /* convert fourcc to upper case */
-        s->codec_tag = ff_toupper4(s->avctx->codec_tag);
+        s->codec_tag = avpriv_toupper4(s->avctx->codec_tag);
 
-        s->stream_codec_tag = ff_toupper4(s->avctx->stream_codec_tag);
+        s->stream_codec_tag = avpriv_toupper4(s->avctx->stream_codec_tag);
 
         s->avctx->coded_frame= (AVFrame*)&s->current_picture;
 
