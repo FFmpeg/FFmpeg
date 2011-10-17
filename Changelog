@@ -63,7 +63,7 @@ easier to use. The changes are:
 - G.723.1 demuxer and decoder
 - libmodplug support (--enable-libmodplug)
 - VC-1 interlaced decoding
-
+- libutvideo wrapper (--enable-libutvideo)
 
 version 0.8:
 
