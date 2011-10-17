@@ -2910,10 +2910,10 @@ typedef struct AVCodecContext {
      * - decoding: Set by user.
      */
     int err_recognition;
-#define AV_ER_CRCCHECK   (1<<0)
-#define AV_ER_BITSTREAM  (1<<1)
-#define AV_ER_AGGRESSIVE (1<<2)
-#define AV_ER_EXPLODE    (1<<3)
+#define AV_EF_CRCCHECK  (1<<0)
+#define AV_EF_BITSTREAM (1<<1)
+#define AV_EF_BUFFER    (1<<2)
+#define AV_EF_EXPLODE   (1<<3)
 } AVCodecContext;
 
 /**
