@@ -904,11 +904,11 @@ static int video_open(VideoState *is){
        && is->height== screen->h && screen->h == h)
         return 0;
 
-#ifndef __APPLE__
-    screen = SDL_SetVideoMode(w, h, 0, flags);
-#else
-    /* setting bits_per_pixel = 0 or 32 causes blank video on OS X */
+#if defined(__APPLE__) && !SDL_VERSION_ATLEAST(1, 2, 14)
+    /* setting bits_per_pixel = 0 or 32 causes blank video on OS X and older SDL */
     screen = SDL_SetVideoMode(w, h, 24, flags);
+#else
+    screen = SDL_SetVideoMode(w, h, 0, flags);
 #endif
     if (!screen) {
         fprintf(stderr, "SDL: could not set video mode - exiting\n");
