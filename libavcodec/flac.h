@@ -95,8 +95,8 @@ typedef struct FLACFrameInfo {
  * @param[out] s       where parsed information is stored
  * @param[in]  buffer  pointer to start of 34-byte streaminfo data
  */
-void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
-                              const uint8_t *buffer);
+void avpriv_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
+                                  const uint8_t *buffer);
 
 /**
  * Validate the FLAC extradata.
@@ -105,9 +105,9 @@ void ff_flac_parse_streaminfo(AVCodecContext *avctx, struct FLACStreaminfo *s,
  * @param[out] streaminfo_start pointer to start of 34-byte STREAMINFO data.
  * @return 1 if valid, 0 if not valid.
  */
-int ff_flac_is_extradata_valid(AVCodecContext *avctx,
-                               enum FLACExtradataFormat *format,
-                               uint8_t **streaminfo_start);
+int avpriv_flac_is_extradata_valid(AVCodecContext *avctx,
+                                   enum FLACExtradataFormat *format,
+                                   uint8_t **streaminfo_start);
 
 /**
  * Parse the metadata block parameters from the header.
@@ -116,8 +116,8 @@ int ff_flac_is_extradata_valid(AVCodecContext *avctx,
  * @param[out] type metadata block type
  * @param[out] size metadata block size
  */
-void ff_flac_parse_block_header(const uint8_t *block_header,
-                                int *last, int *type, int *size);
+void avpriv_flac_parse_block_header(const uint8_t *block_header,
+                                    int *last, int *type, int *size);
 
 /**
  * Calculate an estimate for the maximum frame size based on verbatim mode.

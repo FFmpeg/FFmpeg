@@ -34,7 +34,7 @@ int ff_flac_write_header(AVIOContext *pb, AVCodecContext *codec,
     enum FLACExtradataFormat format;
 
     header[4] = last_block ? 0x80 : 0x00;
-    if (!ff_flac_is_extradata_valid(codec, &format, &streaminfo))
+    if (!avpriv_flac_is_extradata_valid(codec, &format, &streaminfo))
         return -1;
 
     /* write "fLaC" stream marker and first metadata block header if needed */

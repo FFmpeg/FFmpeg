@@ -254,7 +254,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     uint8_t *streaminfo;
     uint8_t *p;
 
-    if (!ff_flac_is_extradata_valid(avctx, &format, &streaminfo))
+    if (!avpriv_flac_is_extradata_valid(avctx, &format, &streaminfo))
         return -1;
 
     // first packet: STREAMINFO
