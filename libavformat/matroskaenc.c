@@ -423,7 +423,7 @@ static int put_xiph_codecpriv(AVFormatContext *s, AVIOContext *pb, AVCodecContex
     else
         first_header_size = 42;
 
-    if (ff_split_xiph_headers(codec->extradata, codec->extradata_size,
+    if (avpriv_split_xiph_headers(codec->extradata, codec->extradata_size,
                               first_header_size, header_start, header_len) < 0) {
         av_log(s, AV_LOG_ERROR, "Extradata corrupt.\n");
         return -1;

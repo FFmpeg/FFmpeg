@@ -252,7 +252,7 @@ static char *xiph_extradata2config(AVCodecContext *c)
         return NULL;
     }
 
-    if (ff_split_xiph_headers(c->extradata, c->extradata_size,
+    if (avpriv_split_xiph_headers(c->extradata, c->extradata_size,
                               first_header_size, header_start,
                               header_len) < 0) {
         av_log(c, AV_LOG_ERROR, "Extradata corrupt.\n");
