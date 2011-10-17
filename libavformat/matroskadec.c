@@ -1599,7 +1599,7 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (chapters[i].start != AV_NOPTS_VALUE && chapters[i].uid
             && (max_start==0 || chapters[i].start > max_start)) {
             chapters[i].chapter =
-            ff_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
+            avpriv_new_chapter(s, chapters[i].uid, (AVRational){1, 1000000000},
                            chapters[i].start, chapters[i].end,
                            chapters[i].title);
             av_dict_set(&chapters[i].chapter->metadata,

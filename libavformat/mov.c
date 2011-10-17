@@ -287,7 +287,7 @@ static int mov_read_chpl(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
         avio_read(pb, str, str_len);
         str[str_len] = 0;
-        ff_new_chapter(c->fc, i, (AVRational){1,10000000}, start, AV_NOPTS_VALUE, str);
+        avpriv_new_chapter(c->fc, i, (AVRational){1,10000000}, start, AV_NOPTS_VALUE, str);
     }
     return 0;
 }
@@ -2420,7 +2420,7 @@ static void mov_read_chapters(AVFormatContext *s)
             }
         }
 
-        ff_new_chapter(s, i, st->time_base, sample->timestamp, end, title);
+        avpriv_new_chapter(s, i, st->time_base, sample->timestamp, end, title);
         av_freep(&title);
     }
 finish:

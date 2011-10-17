@@ -2739,7 +2739,7 @@ AVProgram *av_new_program(AVFormatContext *ac, int id)
     return program;
 }
 
-AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base, int64_t start, int64_t end, const char *title)
+AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base, int64_t start, int64_t end, const char *title)
 {
     AVChapter *chapter = NULL;
     int i;

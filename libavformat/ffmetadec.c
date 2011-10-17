@@ -75,7 +75,7 @@ static AVChapter *read_chapter(AVFormatContext *s)
         end = AV_NOPTS_VALUE;
     }
 
-    return ff_new_chapter(s, s->nb_chapters, tb, start, end, NULL);
+    return avpriv_new_chapter(s, s->nb_chapters, tb, start, end, NULL);
 }
 
 static uint8_t *unescape(uint8_t *buf, int size)
