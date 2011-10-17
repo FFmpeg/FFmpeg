@@ -204,7 +204,7 @@ static void video_encode_example(const char *filename)
     printf("Video encoding\n");
 
     /* find the mpeg1 video encoder */
-    codec = avcodec_find_encoder(CODEC_ID_MPEG1VIDEO);
+    codec = avcodec_find_encoder(CODEC_ID_H264);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
         exit(1);
@@ -445,8 +445,8 @@ int main(int argc, char **argv)
         audio_encode_example("/tmp/test.mp2");
         audio_decode_example("/tmp/test.sw", "/tmp/test.mp2");
 
-        video_encode_example("/tmp/test.mpg");
-        filename = "/tmp/test.mpg";
+        video_encode_example("/tmp/test.h264");
+        filename = "/tmp/test.h264";
     } else {
         filename = argv[1];
     }
