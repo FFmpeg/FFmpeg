@@ -29,6 +29,7 @@
  * format handling
  */
 
+#include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
 
@@ -223,6 +224,8 @@ static void video_encode_example(const char *filename)
     c->gop_size = 10; /* emit one intra frame every ten frames */
     c->max_b_frames=1;
     c->pix_fmt = PIX_FMT_YUV420P;
+
+    av_opt_set(c->priv_data, "preset", "slow", 0);
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
