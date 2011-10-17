@@ -2909,11 +2909,7 @@ typedef struct AVCodecContext {
      * - encoding: unused
      * - decoding: Set by user.
      */
-#if FF_API_ER
-    int error_recognition2;
-#else
-    int error_recognition;
-#endif /* FF_API_ER */
+    int err_recognition;
 #define AV_ER_CRCCHECK   (1<<0)
 #define AV_ER_BITSTREAM  (1<<1)
 #define AV_ER_AGGRESSIVE (1<<2)
