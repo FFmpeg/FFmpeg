@@ -862,6 +862,7 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width,
     return 0;
 }
 
+#if FF_API_GET_ALPHA_INFO
 /* NOTE: we scan all the pixels to have an exact information */
 static int get_alpha_info_pal8(const AVPicture *src, int width, int height)
 {
@@ -908,6 +909,7 @@ int img_get_alpha_info(const AVPicture *src,
     }
     return ret;
 }
+#endif
 
 #if !(HAVE_MMX && HAVE_YASM)
 /* filter parameters: [-1 4 2 4 -1] // 8 */
