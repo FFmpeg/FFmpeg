@@ -3755,8 +3755,6 @@ AVCodecContext *avcodec_alloc_context2(enum AVMediaType);
  *
  * @return An AVCodecContext filled with default values or NULL on failure.
  * @see avcodec_get_context_defaults
- *
- * @deprecated use avcodec_alloc_context3()
  */
 AVCodecContext *avcodec_alloc_context3(AVCodec *codec);
 

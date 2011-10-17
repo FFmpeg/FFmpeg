@@ -2135,7 +2135,7 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
             /* decoding or more than one mb_type (MC was already done otherwise) */
             if(!s->encoding){
 
-                if(HAVE_PTHREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
+                if(HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
                     if (s->mv_dir & MV_DIR_FORWARD) {
                         ff_thread_await_progress((AVFrame*)s->last_picture_ptr, MPV_lowest_referenced_row(s, 0), 0);
                     }

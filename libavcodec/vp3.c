@@ -1316,7 +1316,7 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
     int h, cy;
     int offset[4];
 
-    if (HAVE_PTHREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
+    if (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
         int y_flipped = s->flipped_image ? s->avctx->height-y : y;
 
         // At the end of the frame, report INT_MAX instead of the height of the frame.
@@ -1400,7 +1400,7 @@ static void render_slice(Vp3DecodeContext *s, int slice)
         int fragment_width    = s->fragment_width[!!plane];
         int fragment_height   = s->fragment_height[!!plane];
         int fragment_start    = s->fragment_start[plane];
-        int do_await          = !plane && HAVE_PTHREADS && (s->avctx->active_thread_type&FF_THREAD_FRAME);
+        int do_await          = !plane && HAVE_THREADS && (s->avctx->active_thread_type&FF_THREAD_FRAME);
 
         if (!s->flipped_image) stride = -stride;
         if (CONFIG_GRAY && plane && (s->avctx->flags & CODEC_FLAG_GRAY))
@@ -1966,7 +1966,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
     *data_size=sizeof(AVFrame);
     *(AVFrame*)data= s->current_frame;
 
-    if (!HAVE_PTHREADS || !(s->avctx->active_thread_type&FF_THREAD_FRAME))
+    if (!HAVE_THREADS || !(s->avctx->active_thread_type&FF_THREAD_FRAME))
         update_frames(avctx);
 
     return buf_size;
@@ -1974,7 +1974,7 @@ static int vp3_decode_frame(AVCodecContext *avctx,
 error:
     ff_thread_report_progress(&s->current_frame, INT_MAX, 0);
 
-    if (!HAVE_PTHREADS || !(s->avctx->active_thread_type&FF_THREAD_FRAME))
+    if (!HAVE_THREADS || !(s->avctx->active_thread_type&FF_THREAD_FRAME))
         avctx->release_buffer(avctx, &s->current_frame);
 
     return -1;

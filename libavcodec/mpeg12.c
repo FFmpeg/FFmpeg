@@ -1634,7 +1634,7 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 
         *s->current_picture_ptr->f.pan_scan = s1->pan_scan;
 
-        if (HAVE_PTHREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
+        if (HAVE_THREADS && (avctx->active_thread_type & FF_THREAD_FRAME))
             ff_thread_finish_setup(avctx);
     } else { // second field
         int i;
