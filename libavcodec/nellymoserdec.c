@@ -170,11 +170,6 @@ static int decode_tag(AVCodecContext * avctx,
     int16_t *samples_s16 = data;
     float   *samples_flt = data;
 
-    if (buf_size % NELLY_BLOCK_LEN) {
-        av_log(avctx, AV_LOG_ERROR, "Tag size %d.\n", buf_size);
-        *data_size = 0;
-        return buf_size;
-    }
     block_size = NELLY_SAMPLES * av_get_bytes_per_sample(avctx->sample_fmt);
     blocks     = buf_size / NELLY_BLOCK_LEN;
     if (blocks <= 0) {
@@ -184,6 +179,10 @@ static int decode_tag(AVCodecContext * avctx,
     if (*data_size < blocks * block_size) {
         av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
         return AVERROR(EINVAL);
+    }
+    if (buf_size % NELLY_BLOCK_LEN) {
+        av_log(avctx, AV_LOG_WARNING, "Leftover bytes: %d.\n",
+               buf_size % NELLY_BLOCK_LEN);
     }
     /* Normal numbers of blocks for sample rates:
      *  8000 Hz - 1
