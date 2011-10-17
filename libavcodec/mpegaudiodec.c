@@ -1790,7 +1790,7 @@ static int decode_frame(AVCodecContext * avctx,
         return -1;
     }
 
-    if (ff_mpegaudio_decode_header((MPADecodeHeader *)s, header) == 1) {
+    if (avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header) == 1) {
         /* free format: prepare to compute frame size */
         s->frame_size = -1;
         return -1;
@@ -1863,7 +1863,7 @@ static int decode_frame_adu(AVCodecContext * avctx,
         return buf_size;
     }
 
-    ff_mpegaudio_decode_header((MPADecodeHeader *)s, header);
+    avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
     /* update codec info */
     avctx->sample_rate = s->sample_rate;
     avctx->channels = s->nb_channels;
@@ -2016,7 +2016,7 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         if (ff_mpa_check_header(header) < 0) // Bad header, discard block
             break;
 
-        ff_mpegaudio_decode_header((MPADecodeHeader *)m, header);
+        avpriv_mpegaudio_decode_header((MPADecodeHeader *)m, header);
         out_size += mp_decode_frame(m, outptr, buf, fsize);
         buf += fsize;
         len -= fsize;

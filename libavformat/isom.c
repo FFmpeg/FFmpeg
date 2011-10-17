@@ -437,7 +437,7 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
                                      st->codec->extradata_size);
             st->codec->channels = cfg.channels;
             if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
-                st->codec->sample_rate = ff_mpa_freq_tab[cfg.sampling_index];
+                st->codec->sample_rate = avpriv_mpa_freq_tab[cfg.sampling_index];
             else if (cfg.ext_sample_rate)
                 st->codec->sample_rate = cfg.ext_sample_rate;
             else
