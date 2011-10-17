@@ -194,7 +194,7 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 /*
  * Video encoding example
  */
-static void video_encode_example(const char *filename)
+static void video_encode_example(const char *filename, int codec_id)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
@@ -206,7 +206,7 @@ static void video_encode_example(const char *filename)
     printf("Video encoding\n");
 
     /* find the mpeg1 video encoder */
-    codec = avcodec_find_encoder(CODEC_ID_H264);
+    codec = avcodec_find_encoder(codec_id);
     if (!codec) {
         fprintf(stderr, "codec not found\n");
         exit(1);
@@ -226,7 +226,8 @@ static void video_encode_example(const char *filename)
     c->max_b_frames=1;
     c->pix_fmt = PIX_FMT_YUV420P;
 
-    av_opt_set(c->priv_data, "preset", "slow", 0);
+    if(codec_id == CODEC_ID_H264)
+        av_opt_set(c->priv_data, "preset", "slow", 0);
 
     /* open it */
     if (avcodec_open(c, codec) < 0) {
@@ -449,8 +450,9 @@ int main(int argc, char **argv)
         audio_encode_example("/tmp/test.mp2");
         audio_decode_example("/tmp/test.sw", "/tmp/test.mp2");
 
-        video_encode_example("/tmp/test.h264");
-        filename = "/tmp/test.h264";
+        video_encode_example("/tmp/test.h264", CODEC_ID_H264);
+        video_encode_example("/tmp/test.mpg", CODEC_ID_MPEG1VIDEO);
+        filename = "/tmp/test.mpg";
     } else {
         filename = argv[1];
     }
