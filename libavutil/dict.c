@@ -75,11 +75,11 @@ int av_dict_set(AVDictionary **pm, const char *key, const char *value, int flags
     }
     if (value) {
         if (flags & AV_DICT_DONT_STRDUP_KEY) {
-            m->elems[m->count].key  = key;
+            m->elems[m->count].key   = (char*)(intptr_t)key;
         } else
         m->elems[m->count].key  = av_strdup(key  );
         if (flags & AV_DICT_DONT_STRDUP_VAL) {
-            m->elems[m->count].value = value;
+            m->elems[m->count].value = (char*)(intptr_t)value;
         } else if (oldval && flags & AV_DICT_APPEND) {
             int len = strlen(oldval) + strlen(value) + 1;
             if (!(oldval = av_realloc(oldval, len)))
