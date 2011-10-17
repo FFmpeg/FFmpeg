@@ -120,7 +120,7 @@ static int find_frame_rate_index(MpegEncContext *s){
     int64_t d;
 
     for(i=1;i<14;i++) {
-        int64_t n0= 1001LL/ff_frame_rate_tab[i].den*ff_frame_rate_tab[i].num*s->avctx->time_base.num;
+        int64_t n0= 1001LL/avpriv_frame_rate_tab[i].den*avpriv_frame_rate_tab[i].num*s->avctx->time_base.num;
         int64_t n1= 1001LL*s->avctx->time_base.den;
         if(s->avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL && i>=9) break;
 
@@ -211,7 +211,7 @@ static void mpeg1_encode_sequence_header(MpegEncContext *s)
         if(aspect_ratio==0.0) aspect_ratio= 1.0; //pixel aspect 1:1 (VGA)
 
         if (s->current_picture.f.key_frame) {
-            AVRational framerate= ff_frame_rate_tab[s->frame_rate_index];
+            AVRational framerate= avpriv_frame_rate_tab[s->frame_rate_index];
 
             /* mpeg1 header repeated every gop */
             put_header(s, SEQ_START_CODE);
@@ -972,7 +972,7 @@ AVCodec ff_mpeg1video_encoder = {
     .init           = encode_init,
     .encode         = MPV_encode_picture,
     .close          = MPV_encode_end,
-    .supported_framerates= ff_frame_rate_tab+1,
+    .supported_framerates= avpriv_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-1 video"),
@@ -987,7 +987,7 @@ AVCodec ff_mpeg2video_encoder = {
     .init           = encode_init,
     .encode         = MPV_encode_picture,
     .close          = MPV_encode_end,
-    .supported_framerates= ff_frame_rate_tab+1,
+    .supported_framerates= avpriv_frame_rate_tab+1,
     .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_NONE},
     .capabilities= CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
     .long_name= NULL_IF_CONFIG_SMALL("MPEG-2 video"),
