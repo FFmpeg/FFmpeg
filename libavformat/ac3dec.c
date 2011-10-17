@@ -41,7 +41,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
 
         for(frames = 0; buf2 < end; frames++) {
             init_get_bits(&gbc, buf2, 54);
-            if(ff_ac3_parse_header(&gbc, &hdr) < 0)
+            if(avpriv_ac3_parse_header(&gbc, &hdr) < 0)
                 break;
             if(buf2 + hdr.frame_size > end ||
                av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, buf2 + 2, hdr.frame_size - 2))
