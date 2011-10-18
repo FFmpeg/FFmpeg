@@ -443,7 +443,7 @@ unsigned int vf_match_csp(vf_instance_t** vfp,const unsigned int* list,unsigned 
 }
 
 mp_image_t* vf_get_image(vf_instance_t* vf, unsigned int outfmt, int mp_imgtype, int mp_imgflag, int w, int h){
-    MPContext *m= ((uint8_t*)vf) - offsetof(MPContext, next_vf);
+    MPContext *m= (MPContext*)(((uint8_t*)vf) - offsetof(MPContext, next_vf));
   mp_image_t* mpi=NULL;
   int w2;
   int number = mp_imgtype >> 16;
@@ -615,7 +615,7 @@ int vf_next_put_image(struct vf_instance *vf,mp_image_t *mpi, double pts){
         goto fail;
 
     picref->buf = pic;
-    picref->buf->please_use_av_free= av_free;
+    picref->buf->please_use_av_free= (void*)av_free;
     if (!(picref->video = av_mallocz(sizeof(AVFilterBufferRefVideoProps))))
         goto fail;
 
