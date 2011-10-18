@@ -756,6 +756,7 @@ int av_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_log(s, AV_LOG_WARNING,
                    "Dropped corrupted packet (stream = %d)\n",
                    pkt->stream_index);
+            av_free_packet(pkt);
             continue;
         }
 
