@@ -570,6 +570,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
             break;
         case MKTAG('s', 't', 'r', 'f'):
             /* stream header */
+            if (!size)
+                break;
             if (stream_index >= (unsigned)s->nb_streams || avi->dv_demux) {
                 avio_skip(pb, size);
             } else {
