@@ -1033,7 +1033,6 @@ static av_cold void common_init(H264Context *h){
 
     h->dequant_coeff_pps= -1;
     s->unrestricted_mv=1;
-    s->decode=1; //FIXME
 
     dsputil_init(&s->dsp, s->avctx); // needed so that idct permutation is known early
 

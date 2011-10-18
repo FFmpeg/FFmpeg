@@ -1203,7 +1203,6 @@ static av_cold int encode_init(AVCodecContext *avctx)
     s->inter_ac_vlc_length     = uni_mpeg4_inter_rl_len;
     s->inter_ac_vlc_last_length= uni_mpeg4_inter_rl_len + 128*64;
     s->luma_dc_vlc_length= uni_DCtab_lum_len;
-    s->chroma_dc_vlc_length= uni_DCtab_chrom_len;
     s->ac_esc_length= 7+2+1+6+1+12+1;
     s->y_dc_scale_table= ff_mpeg4_y_dc_scale_table;
     s->c_dc_scale_table= ff_mpeg4_c_dc_scale_table;
