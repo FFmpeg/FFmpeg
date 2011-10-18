@@ -105,7 +105,7 @@ int av_vsrc_buffer_add_video_buffer_ref(AVFilterContext *buffer_filter,
     c->picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                           picref->video->w, picref->video->h);
     av_image_copy(c->picref->data, c->picref->linesize,
-                  picref->data, picref->linesize,
+                  (void*)picref->data, picref->linesize,
                   picref->format, picref->video->w, picref->video->h);
     avfilter_copy_buffer_ref_props(c->picref, picref);
 
