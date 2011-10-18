@@ -350,7 +350,7 @@ aevalsrc="sin(10*2*PI*t)*sin(880*2*PI*t)"
 @item
 Generate 2.5 Hz binaural beats on a 360 Hz carrier:
 @example
-aevalsrc=0.1*sin(2*PI*(360-2.5/2)*t) : 0.1*sin(2*PI*(360+2.5/2)*t)
+aevalsrc="0.1*sin(2*PI*(360-2.5/2)*t) : 0.1*sin(2*PI*(360+2.5/2)*t)"
 @end example
 
 @end itemize
