@@ -842,7 +842,7 @@ static int probe_file(const char *filename)
     writer_close(&wctx);
 
 end:
-    av_free(print_format);
+    av_freep(&print_format);
 
     return ret;
 }
