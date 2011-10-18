@@ -62,10 +62,10 @@ typedef struct {
 #define OFFSET(x) offsetof(EvalContext, x)
 
 static const AVOption eval_options[]= {
-    { "nb_samples",     "set the number of samples per requested frame", OFFSET(nb_samples), FF_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
-    { "n",              "set the number of samples per requested frame", OFFSET(nb_samples), FF_OPT_TYPE_INT, {.dbl = 1024}, 0, INT_MAX },
-    { "sample_rate", "set the sample rate", OFFSET(sample_rate_str), FF_OPT_TYPE_STRING, {.str = "44100"}, 0, INT_MAX },
-    { "s", "set the sample rate", OFFSET(sample_rate_str), FF_OPT_TYPE_STRING, {.str = "44100"}, 0, INT_MAX },
+    { "nb_samples",  "set the number of samples per requested frame", OFFSET(nb_samples),      AV_OPT_TYPE_INT,    {.dbl = 1024},    0,        INT_MAX },
+    { "n",           "set the number of samples per requested frame", OFFSET(nb_samples),      AV_OPT_TYPE_INT,    {.dbl = 1024},    0,        INT_MAX },
+    { "sample_rate", "set the sample rate",                           OFFSET(sample_rate_str), AV_OPT_TYPE_STRING, {.str = "44100"}, CHAR_MIN, CHAR_MAX },
+    { "s",           "set the sample rate",                           OFFSET(sample_rate_str), AV_OPT_TYPE_STRING, {.str = "44100"}, CHAR_MIN, CHAR_MAX },
 {NULL},
 };
 
