@@ -92,7 +92,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
 
         for (i = y1; i < y1 + h1; i++) {
             av_read_image_line(priv->line,
-                               inpic->data,
+                               (void*)inpic->data,
                                inpic->linesize,
                                priv->pix_desc,
                                0, i, c, w1, 0);
