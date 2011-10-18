@@ -198,6 +198,8 @@ typedef struct VideoState {
     double frame_last_pts;
     double frame_last_duration;
     double frame_last_dropped_pts;
+    double frame_last_returned_time;
+    double frame_last_filter_delay;
     int64_t frame_last_dropped_pos;
     double video_clock;                          ///<pts of last decoded frame / predicted pts of next decoded frame
     int video_stream;
@@ -1499,7 +1501,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
                 double ptsdiff = dpts - is->frame_last_pts;
                 if (fabs(clockdiff) < AV_NOSYNC_THRESHOLD &&
                      ptsdiff > 0 && ptsdiff < AV_NOSYNC_THRESHOLD &&
-                     clockdiff + ptsdiff < 0) { //TODO: Substract approxiamte time of filter
+                     clockdiff + ptsdiff - is->frame_last_filter_delay < 0) {
                     is->frame_last_dropped_pos = pkt->pos;
                     is->frame_last_dropped_pts = dpts;
                     ret = 0;
@@ -1507,6 +1509,9 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
             }
             SDL_UnlockMutex(is->pictq_mutex);
         }
+
+        if (ret)
+            is->frame_last_returned_time = av_gettime() / 1000000.0;
 
         return ret;
     }
@@ -1831,6 +1836,10 @@ static int video_thread(void *arg)
 #endif
 
         if (ret < 0) goto the_end;
+
+        is->frame_last_filter_delay = av_gettime() / 1000000.0 - is->frame_last_returned_time;
+        if (fabs(is->frame_last_filter_delay) > AV_NOSYNC_THRESHOLD / 10.0)
+            is->frame_last_filter_delay = 0;
 
 #if CONFIG_AVFILTER
         if (!picref)
