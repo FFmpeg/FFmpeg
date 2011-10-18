@@ -236,7 +236,7 @@ static int read_braindead_odml_indx(AVFormatContext *s, int frame_num){
 
         }
     }
-    avi->index_loaded=1;
+    avi->index_loaded=2;
     return 0;
 }
 
@@ -756,7 +756,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     if(!avi->index_loaded && pb->seekable)
         avi_load_index(s);
-    avi->index_loaded = 1;
+    avi->index_loaded |= 1;
     avi->non_interleaved |= guess_ni_flag(s) | (s->flags & AVFMT_FLAG_SORT_DTS);
     for(i=0; i<s->nb_streams; i++){
         AVStream *st = s->streams[i];
@@ -1181,7 +1181,7 @@ resync:
         }
         ast->seek_pos= 0;
 
-        if(!avi->non_interleaved && st->nb_index_entries>1){
+        if(!avi->non_interleaved && st->nb_index_entries>1 && avi->index_loaded>1){
             int64_t dts= av_rescale_q(pkt->dts, st->time_base, AV_TIME_BASE_Q);
 
             if(avi->dts_max - dts > 2*AV_TIME_BASE){
@@ -1317,6 +1317,7 @@ static int avi_load_index(AVFormatContext *s)
 
         if (tag == MKTAG('i', 'd', 'x', '1') &&
             avi_read_idx1(s, size) >= 0) {
+            avi->index_loaded=2;
             ret = 0;
             break;
         }
@@ -1351,7 +1352,7 @@ static int avi_read_seek(AVFormatContext *s, int stream_index, int64_t timestamp
     if (!avi->index_loaded) {
         /* we only load the index on demand */
         avi_load_index(s);
-        avi->index_loaded = 1;
+        avi->index_loaded |= 1;
     }
     assert(stream_index>= 0);
 
