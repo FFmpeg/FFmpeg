@@ -817,7 +817,7 @@ static int probe_file(const char *filename)
 
     if (!print_format)
         print_format = av_strdup("default");
-    w_name  = av_strtok(print_format, "=", &buf);
+    w_name = av_strtok(print_format, "=", &buf);
     w_args = buf;
 
     w = writer_get_by_name(w_name);
