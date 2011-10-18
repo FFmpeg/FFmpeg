@@ -94,10 +94,8 @@ typedef struct {
     Transform avg;
 } DeshakeContext;
 
-static int cmp(void const *ca, void const *cb)
+static int cmp(const double *a, const double *b)
 {
-    double *a = (double *) ca;
-    double *b = (double *) cb;
     return *a < *b ? -1 : ( *a > *b ? 1 : 0 );
 }
 
@@ -110,7 +108,7 @@ static double clean_mean(double *values, int count)
     int cut = count / 5;
     int x;
 
-    qsort(values, count, sizeof(double), cmp);
+    qsort(values, count, sizeof(double), (void*)cmp);
 
     for (x = cut; x < count - cut; x++) {
         mean += values[x];
