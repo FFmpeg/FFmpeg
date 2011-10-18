@@ -1848,27 +1848,22 @@ static void update_stream_timings(AVFormatContext *ic)
         st = ic->streams[i];
         if (st->start_time != AV_NOPTS_VALUE && st->time_base.den) {
             start_time1= av_rescale_q(st->start_time, st->time_base, AV_TIME_BASE_Q);
-            if (start_time1 < start_time)
-                start_time = start_time1;
+            start_time = FFMIN(start_time, start_time1);
             if (st->duration != AV_NOPTS_VALUE) {
                 end_time1 = start_time1
                           + av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
-                if (end_time1 > end_time)
-                    end_time = end_time1;
+                end_time = FFMAX(end_time, end_time1);
             }
         }
         if (st->duration != AV_NOPTS_VALUE) {
             duration1 = av_rescale_q(st->duration, st->time_base, AV_TIME_BASE_Q);
-            if (duration1 > duration)
-                duration = duration1;
+            duration = FFMAX(duration, duration1);
         }
     }
     if (start_time != INT64_MAX) {
         ic->start_time = start_time;
-        if (end_time != INT64_MIN) {
-            if (end_time - start_time > duration)
-                duration = end_time - start_time;
-        }
+        if (end_time != INT64_MIN)
+            duration = FFMAX(duration, end_time - start_time);
     }
     if (duration != INT64_MIN) {
         ic->duration = duration;
@@ -2022,8 +2017,7 @@ static void estimate_timings(AVFormatContext *ic, int64_t old_offset)
         file_size = 0;
     } else {
         file_size = avio_size(ic->pb);
-        if (file_size < 0)
-            file_size = 0;
+        file_size = FFMAX(0, file_size);
     }
 
     if ((!strcmp(ic->iformat->name, "mpeg") ||
