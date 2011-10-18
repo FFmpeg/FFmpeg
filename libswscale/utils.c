@@ -271,10 +271,12 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
                 floatd= d * (1.0/(1<<30));
 
                 if (flags & SWS_BICUBIC) {
+#define SQRT_INT64_MAX 0xb504f333
                     int64_t B= (param[0] != SWS_PARAM_DEFAULT ? param[0] :   0) * (1<<24);
                     int64_t C= (param[1] != SWS_PARAM_DEFAULT ? param[1] : 0.6) * (1<<24);
-                    int64_t dd = ( d*d)>>30;
-                    int64_t ddd= (dd*d)>>30;
+                    int64_t dd  = d > SQRT_INT64_MAX ? ((d  >> 1) * d) >> 29 : (d  * d) >> 30;
+                    int64_t ddd = d > SQRT_INT64_MAX || dd > SQRT_INT64_MAX ?
+                                                       ((dd >> 2) * d) >> 28 : (dd * d) >> 30;
 
                     if      (d < 1LL<<30)
                         coeff = (12*(1<<24)-9*B-6*C)*ddd + (-18*(1<<24)+12*B+6*C)*dd + (6*(1<<24)-2*B)*(1<<30);
