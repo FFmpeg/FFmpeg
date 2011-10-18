@@ -64,6 +64,8 @@ easier to use. The changes are:
 - libmodplug support (--enable-libmodplug)
 - VC-1 interlaced decoding
 - libutvideo wrapper (--enable-libutvideo)
+- aevalsrc audio source added
+
 
 version 0.8:
 
