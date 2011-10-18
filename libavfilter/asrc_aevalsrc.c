@@ -93,7 +93,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     /* parse expressions */
     buf = args1;
     i = 0;
-    while (expr = strtok_r(buf, ":", &bufptr)) {
+    while (expr = av_strtok(buf, ":", &bufptr)) {
         if (i >= 8) {
             av_log(ctx, AV_LOG_ERROR,
                    "More than 8 expressions provided, unsupported.\n");
