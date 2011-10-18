@@ -2964,15 +2964,11 @@ typedef struct AVCodecContext {
      * - encoding: unused
      * - decoding: Set by user.
      */
-#if FF_API_ER
-    int error_recognition2;
-#else
-    int error_recognition;
-#endif /* FF_API_ER */
-#define AV_ER_CRCCHECK   (1<<0)
-#define AV_ER_BITSTREAM  (1<<1)
-#define AV_ER_AGGRESSIVE (1<<2)
-#define AV_ER_EXPLODE    (1<<3)
+    int err_recognition;
+#define AV_EF_CRCCHECK  (1<<0)
+#define AV_EF_BITSTREAM (1<<1)
+#define AV_EF_BUFFER    (1<<2)
+#define AV_EF_EXPLODE   (1<<3)
 
     /**
      * Current statistics for PTS correction.
@@ -2983,7 +2979,6 @@ typedef struct AVCodecContext {
     int64_t pts_correction_num_faulty_dts; /// Number of incorrect DTS values so far
     int64_t pts_correction_last_pts;       /// PTS of the last frame
     int64_t pts_correction_last_dts;       /// DTS of the last frame
-
 
 } AVCodecContext;
 

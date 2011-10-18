@@ -26,7 +26,11 @@ tests/data/asynth1.sw: tests/audiogen$(HOSTEXESUF)
 	@mkdir -p tests/data
 	$(M)./$< $@
 
-tests/data/asynth1.sw tests/vsynth%/00.pgm: TAG = GEN
+tests/data/asynth-16000-1.sw: tests/audiogen$(HOSTEXESUF)
+	@mkdir -p tests/data
+	$(M)./$< $@ 16000 1
+
+tests/data/asynth%.sw tests/vsynth%/00.pgm: TAG = GEN
 
 include $(SRC_PATH)/tests/fate.mak
 include $(SRC_PATH)/tests/fate2.mak

@@ -37,7 +37,7 @@ thread count for the second stream to 4.
 'd' for data and 't' for attachments. If @var{stream_index} is given, then
 matches stream number @var{stream_index} of this type. Otherwise matches all
 streams of this type.
-@item @var{program_id}[:@var{stream_index}]
+@item p:@var{program_id}[:@var{stream_index}]
 If @var{stream_index} is given, then matches stream number @var{stream_index} in
 program with id @var{program_id}. Otherwise matches all streams in this program.
 @end table
