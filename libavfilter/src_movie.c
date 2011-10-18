@@ -258,7 +258,7 @@ static int movie_get_frame(AVFilterLink *outlink)
                 movie->picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE | AV_PERM_PRESERVE |
                                                           AV_PERM_REUSE2, outlink->w, outlink->h);
                 av_image_copy(movie->picref->data, movie->picref->linesize,
-                              movie->frame->data,  movie->frame->linesize,
+                              (void*)movie->frame->data,  movie->frame->linesize,
                               movie->picref->format, outlink->w, outlink->h);
                 avfilter_copy_frame_props(movie->picref, movie->frame);
 
