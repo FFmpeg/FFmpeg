@@ -164,10 +164,13 @@ static int mpegvideo_split(AVCodecContext *avctx,
 {
     int i;
     uint32_t state= -1;
+    int found=0;
 
     for(i=0; i<buf_size; i++){
         state= (state<<8) | buf[i];
-        if(state != 0x1B3 && state != 0x1B5 && state < 0x200 && state >= 0x100)
+        if(state == 0x1B3){
+            found=1;
+        }else if(found && state != 0x1B5 && state < 0x200 && state >= 0x100)
             return i-3;
     }
     return 0;
