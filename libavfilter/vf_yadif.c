@@ -211,7 +211,7 @@ static void return_frame(AVFilterContext *ctx, int is_second)
     if (!yadif->csp)
         yadif->csp = &av_pix_fmt_descriptors[link->format];
     if (yadif->csp->comp[0].depth_minus1 == 15)
-        yadif->filter_line = filter_line_c_16bit;
+        yadif->filter_line = (void*)filter_line_c_16bit;
 
     filter(ctx, yadif->out, tff ^ !is_second, tff);
 
