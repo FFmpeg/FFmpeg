@@ -53,6 +53,7 @@ easier to use. The changes are:
 - lut, lutrgb, and lutyuv filters
 - boxblur filter
 - Ut Video decoder
+- Speex encoding via libspeex
 
 
 version 0.7:
