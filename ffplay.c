@@ -172,6 +172,8 @@ typedef struct VideoState {
     struct SwrContext *swr_ctx;
     double audio_current_pts;
     double audio_current_pts_drift;
+    int frame_drops_early;
+    int frame_drops_late;
 
     enum ShowMode {
         SHOW_MODE_NONE = -1, SHOW_MODE_VIDEO = 0, SHOW_MODE_WAVES, SHOW_MODE_RDFT, SHOW_MODE_NB
@@ -1172,6 +1174,7 @@ retry:
 
             if((framedrop>0 || (framedrop && is->audio_st)) && time > is->frame_timer + duration){
                 if(is->pictq_size > 1){
+                    is->frame_drops_late++;
                     pictq_next_picture(is);
                     goto retry;
                 }
@@ -1257,9 +1260,10 @@ retry:
             av_diff = 0;
             if (is->audio_st && is->video_st)
                 av_diff = get_audio_clock(is) - get_video_clock(is);
-            printf("%7.2f A-V:%7.3f aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
+            printf("%7.2f A-V:%7.3f fd=%4d aq=%5dKB vq=%5dKB sq=%5dB f=%"PRId64"/%"PRId64"   \r",
                    get_master_clock(is),
                    av_diff,
+                   is->frame_drops_early + is->frame_drops_late,
                    aqsize / 1024,
                    vqsize / 1024,
                    sqsize,
@@ -1504,6 +1508,7 @@ static int get_video_frame(VideoState *is, AVFrame *frame, int64_t *pts, AVPacke
                      clockdiff + ptsdiff - is->frame_last_filter_delay < 0) {
                     is->frame_last_dropped_pos = pkt->pos;
                     is->frame_last_dropped_pts = dpts;
+                    is->frame_drops_early++;
                     ret = 0;
                 }
             }
