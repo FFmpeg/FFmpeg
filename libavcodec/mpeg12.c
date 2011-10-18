@@ -2346,7 +2346,8 @@ static int decode_chunks(AVCodecContext *avctx,
         case SEQ_START_CODE:
             if (last_code == 0) {
                 mpeg1_decode_sequence(avctx, buf_ptr, input_size);
-                s->sync=1;
+                if(buf != avctx->extradata)
+                    s->sync=1;
             } else {
                 av_log(avctx, AV_LOG_ERROR, "ignoring SEQ_START_CODE after %X\n", last_code);
                 if (avctx->error_recognition >= FF_ER_EXPLODE)
