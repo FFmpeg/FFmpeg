@@ -228,7 +228,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         case AMF_DATA_TYPE_OBJECT: {
             unsigned int keylen;
 
-            if (ioc->seekable && key && !strcmp(KEYFRAMES_TAG, key) && depth == 1)
+            if (vstream && ioc->seekable && key && !strcmp(KEYFRAMES_TAG, key) && depth == 1)
                 if (parse_keyframes_index(s, ioc, vstream, max_pos) < 0)
                     av_log(s, AV_LOG_ERROR, "Keyframe index parsing failed\n");
 
