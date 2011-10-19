@@ -961,6 +961,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
                         }
                     }
                 } else {
+                    av_assert0(!s->progressive_sequence);
                     mb_type |= MB_TYPE_16x16 | MB_TYPE_INTERLACED;
                     for (i = 0; i < 2; i++) {
                         if (USES_LIST(mb_type, i)) {
