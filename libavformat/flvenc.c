@@ -410,9 +410,9 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
             if (ff_avc_parse_nal_units_buf(pkt->data, &data, &size) < 0)
                 return -1;
         }
-        if (!flv->delay && pkt->dts < 0)
-            flv->delay = -pkt->dts;
     }
+    if (!flv->delay && pkt->dts < 0)
+        flv->delay = -pkt->dts;
 
     ts = pkt->dts + flv->delay; // add delay to force positive dts
     if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
