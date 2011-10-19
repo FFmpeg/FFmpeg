@@ -2178,7 +2178,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     broken_link = get_bits1(&s->gb);
 
     if (s->avctx->debug & FF_DEBUG_PICT_INFO)
-        av_log(s->avctx, AV_LOG_DEBUG, "GOP (%02d:%02d:%02d%c[%02d]) closed_gop=%d broken_link=%d\n",
+        av_log(s->avctx, AV_LOG_DEBUG, "GOP (%02d:%02d:%02d%c%02d) closed_gop=%d broken_link=%d\n",
                time_code_hours, time_code_minutes, time_code_seconds,
                drop_frame_flag ? ';' : ':',
                time_code_pictures, s->closed_gop, broken_link);
