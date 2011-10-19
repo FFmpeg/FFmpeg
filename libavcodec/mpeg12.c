@@ -734,8 +734,9 @@ static void exchange_uv(MpegEncContext *s)
 #define MT_16X8  2
 #define MT_DMV   3
 
-static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
+static int mpeg_decode_mb(Mpeg1Context *s1, DCTELEM block[12][64])
 {
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
     int i, j, k, cbp, val, mb_type, motion_type;
     const int mb_block_count = 4 + (1 << s->chroma_format);
 
@@ -909,7 +910,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
                             s->mv[i][0][1]= s->last_mv[i][0][1]= s->last_mv[i][1][1] =
                                 mpeg_decode_motion(s, s->mpeg_f_code[i][1], s->last_mv[i][0][1]);
                             /* full_pel: only for MPEG-1 */
-                            if (s->full_pel[i]) {
+                            if (s1->full_pel[i]) {
                                 s->mv[i][0][0] <<= 1;
                                 s->mv[i][0][1] <<= 1;
                             }
@@ -1327,7 +1328,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 
     vbv_delay = get_bits(&s->gb, 16);
     if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type == AV_PICTURE_TYPE_B) {
-        s->full_pel[0] = get_bits1(&s->gb);
+        s1->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
             return -1;
@@ -1335,7 +1336,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         s->mpeg_f_code[0][1] = f_code;
     }
     if (s->pict_type == AV_PICTURE_TYPE_B) {
-        s->full_pel[1] = get_bits1(&s->gb);
+        s1->full_pel[1] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
             return -1;
@@ -1483,7 +1484,7 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
 {
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
-    s->full_pel[0] = s->full_pel[1] = 0;
+    s1->full_pel[0] = s1->full_pel[1] = 0;
     s->mpeg_f_code[0][0] = get_bits(&s->gb, 4);
     s->mpeg_f_code[0][1] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][0] = get_bits(&s->gb, 4);
@@ -1715,7 +1716,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1)
             ff_xvmc_init_block(s); // set s->block
 
-        if (mpeg_decode_mb(s, s->block) < 0)
+        if (mpeg_decode_mb(s1, s->block) < 0)
             return -1;
 
         if (s->current_picture.f.motion_val[0] && !s->encoding) { // note motion_val is normally NULL unless we want to extract the MVs
@@ -2258,7 +2259,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 }
 
                 if (CONFIG_MPEG_VDPAU_DECODER && avctx->codec->capabilities & CODEC_CAP_HWACCEL_VDPAU)
-                    ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
+                    ff_vdpau_mpeg_picture_complete(s, buf, buf_size, s->slice_count);
 
                 if (slice_end(avctx, picture)) {
                     if (s2->last_picture_ptr || s2->low_delay) //FIXME merge with the stuff in mpeg_decode_slice
