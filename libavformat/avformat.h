@@ -695,6 +695,7 @@ typedef struct AVFormatContext {
 #endif
 
     int ctx_flags; /**< Format-specific flags, see AVFMTCTX_xx */
+#if FF_API_REORDER_PRIVATE
     /* private data for pts handling (do not modify directly). */
     /**
      * This buffer is only needed when packets were already buffered but
@@ -702,6 +703,7 @@ typedef struct AVFormatContext {
      * streams.
      */
     struct AVPacketList *packet_buffer;
+#endif
 
     /**
      * Decoding: position of the first frame of the component, in
@@ -732,11 +734,13 @@ typedef struct AVFormatContext {
      */
     int bit_rate;
 
+#if FF_API_REORDER_PRIVATE
     /* av_read_frame() support */
     AVStream *cur_st;
 
     /* av_seek_frame() support */
     int64_t data_offset; /**< offset of the first packet */
+#endif
 
 #if FF_API_MUXRATE
     /**
@@ -843,6 +847,7 @@ typedef struct AVFormatContext {
     int debug;
 #define FF_FDEBUG_TS        0x0001
 
+#if FF_API_REORDER_PRIVATE
     /**
      * Raw packets from the demuxer, prior to parsing and decoding.
      * This buffer is used for buffering packets until the codec can
@@ -853,15 +858,18 @@ typedef struct AVFormatContext {
     struct AVPacketList *raw_packet_buffer_end;
 
     struct AVPacketList *packet_buffer_end;
+#endif
 
     AVDictionary *metadata;
 
+#if FF_API_REORDER_PRIVATE
     /**
      * Remaining size available for raw_packet_buffer, in bytes.
      * NOT PART OF PUBLIC API
      */
 #define RAW_PACKET_BUFFER_SIZE 2500000
     int raw_packet_buffer_remaining_size;
+#endif
 
     /**
      * Start time of the stream in real world time, in microseconds
@@ -884,6 +892,43 @@ typedef struct AVFormatContext {
      * - decoding: Set by user.
      */
     int error_recognition;
+
+    /*****************************************************************
+     * All fields below this line are not part of the public API. They
+     * may not be used outside of libavformat and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
+#if !FF_API_REORDER_PRIVATE
+    /**
+     * Raw packets from the demuxer, prior to parsing and decoding.
+     * This buffer is used for buffering packets until the codec can
+     * be identified, as parsing cannot be done without knowing the
+     * codec.
+     */
+    struct AVPacketList *raw_packet_buffer;
+    struct AVPacketList *raw_packet_buffer_end;
+    /**
+     * Remaining size available for raw_packet_buffer, in bytes.
+     */
+#define RAW_PACKET_BUFFER_SIZE 2500000
+    int raw_packet_buffer_remaining_size;
+
+    /**
+     * This buffer is only needed when packets were already buffered but
+     * not decoded, for example to get the codec parameters in MPEG
+     * streams.
+     */
+    struct AVPacketList *packet_buffer;
+    struct AVPacketList *packet_buffer_end;
+
+    /* av_read_frame() support */
+    AVStream *cur_st;
+
+    /* av_seek_frame() support */
+    int64_t data_offset; /**< offset of the first packet */
+#endif
 } AVFormatContext;
 
 typedef struct AVPacketList {
