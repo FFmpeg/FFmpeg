@@ -92,6 +92,10 @@ typedef struct {
     int refcount;              ///< Number of reference frames (defines averaging window)
     FILE *fp;
     Transform avg;
+    int cw;                    ///< Crop motion search to this box
+    int ch;
+    int cx;
+    int cy;
 } DeshakeContext;
 
 static int cmp(const double *a, const double *b)
@@ -341,8 +345,15 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     deshake->search = EXHAUSTIVE;
     deshake->refcount = 20;
 
+    deshake->cw = -1;
+    deshake->ch = -1;
+    deshake->cx = -1;
+    deshake->cy = -1;
+
     if (args) {
-        sscanf(args, "%d:%d:%d:%d:%d:%d:%255s", &deshake->rx, &deshake->ry, (int *)&deshake->edge,
+        sscanf(args, "%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%255s",
+               &deshake->cx, &deshake->cy, &deshake->cw, &deshake->ch,
+               &deshake->rx, &deshake->ry, (int *)&deshake->edge,
                &deshake->blocksize, &deshake->contrast, (int *)&deshake->search, filename);
 
         deshake->blocksize /= 2;
@@ -353,13 +364,22 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         deshake->blocksize = av_clip(deshake->blocksize, 4, 128);
         deshake->contrast = av_clip(deshake->contrast, 1, 255);
         deshake->search = av_clip(deshake->search, EXHAUSTIVE, SEARCH_COUNT - 1);
+
     }
     if (*filename)
         deshake->fp = fopen(filename, "w");
     if (deshake->fp)
         fwrite("Ori x, Avg x, Fin x, Ori y, Avg y, Fin y, Ori angle, Avg angle, Fin angle, Ori zoom, Avg zoom, Fin zoom\n", sizeof(char), 104, deshake->fp);
 
-    av_log(ctx, AV_LOG_INFO, "rx: %d, ry: %d, edge: %d blocksize: %d contrast: %d search: %d\n",
+    // Quadword align left edge of box for MMX code, adjust width if necessary
+    // to keep right margin
+    if (deshake->cx > 0) {
+        deshake->cw += deshake->cx - (deshake->cx & ~15);
+        deshake->cx &= ~15;
+    }
+
+    av_log(ctx, AV_LOG_INFO, "cx: %d, cy: %d, cw: %d, ch: %d, rx: %d, ry: %d, edge: %d blocksize: %d contrast: %d search: %d\n",
+           deshake->cx, deshake->cy, deshake->cw, deshake->ch,
            deshake->rx, deshake->ry, deshake->edge, deshake->blocksize * 2, deshake->contrast, deshake->search);
 
     return 0;
@@ -414,8 +434,28 @@ static void end_frame(AVFilterLink *link)
     char tmp[256];
     Transform orig;
 
-    // Find the most likely global motion for the current frame
-    find_motion(deshake, (deshake->ref == NULL) ? in->data[0] : deshake->ref->data[0], in->data[0], link->w, link->h, in->linesize[0], &t);
+    if (deshake->cx < 0 || deshake->cy < 0 || deshake->cw < 0 || deshake->ch < 0) {
+        // Find the most likely global motion for the current frame
+        find_motion(deshake, (deshake->ref == NULL) ? in->data[0] : deshake->ref->data[0], in->data[0], link->w, link->h, in->linesize[0], &t);
+    } else {
+        uint8_t *src1 = (deshake->ref == NULL) ? in->data[0] : deshake->ref->data[0];
+        uint8_t *src2 = in->data[0];
+
+        deshake->cx = FFMIN(deshake->cx, link->w);
+        deshake->cy = FFMIN(deshake->cy, link->h);
+
+        if ((unsigned)deshake->cx + (unsigned)deshake->cw > link->w) deshake->cw = link->w - deshake->cx;
+        if ((unsigned)deshake->cy + (unsigned)deshake->ch > link->h) deshake->ch = link->h - deshake->cy;
+
+        // Quadword align right margin
+        deshake->cw &= ~15;
+
+        src1 += deshake->cy * in->linesize[0] + deshake->cx;
+        src2 += deshake->cy * in->linesize[0] + deshake->cx;
+
+        find_motion(deshake, src1, src2, deshake->cw, deshake->ch, in->linesize[0], &t);
+    }
+
 
     // Copy transform so we can output it later to compare to the smoothed value
     orig.vector.x = t.vector.x;
