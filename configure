@@ -940,6 +940,7 @@ CONFIG_LIST="
     libopencore_amrwb
     libopencv
     libopenjpeg
+    libpulse
     librtmp
     libschroedinger
     libspeex
@@ -1458,6 +1459,7 @@ libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
+pulse_indev_deps="libpulse"
 sndio_indev_deps="sndio_h"
 sndio_outdev_deps="sndio_h"
 v4l_indev_deps="linux_videodev_h"
@@ -2894,6 +2896,7 @@ enabled libopencore_amrnb  && require libopencore_amrnb opencore-amrnb/interf_de
 enabled libopencore_amrwb  && require libopencore_amrwb opencore-amrwb/dec_if.h D_IF_init -lopencore-amrwb
 enabled libopencv  && require_pkg_config opencv opencv/cv.h cvCreateImageHeader
 enabled libopenjpeg && require libopenjpeg openjpeg.h opj_version -lopenjpeg
+enabled libpulse && require_pkg_config libpulse-simple pulse/simple.h pa_simple_new
 enabled librtmp    && require_pkg_config librtmp librtmp/rtmp.h RTMP_Socket
 enabled libschroedinger && require_pkg_config schroedinger-1.0 schroedinger/schro.h schro_init
 enabled libspeex   && require  libspeex speex/speex.h speex_decoder_init -lspeex
@@ -3179,6 +3182,7 @@ echo "libopencore-amrnb support ${libopencore_amrnb-no}"
 echo "libopencore-amrwb support ${libopencore_amrwb-no}"
 echo "libopencv support         ${libopencv-no}"
 echo "libopenjpeg enabled       ${libopenjpeg-no}"
+echo "libpulse enabled          ${libpulse-no}"
 echo "librtmp enabled           ${librtmp-no}"
 echo "libschroedinger enabled   ${libschroedinger-no}"
 echo "libspeex enabled          ${libspeex-no}"
