@@ -239,8 +239,9 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
         case AMF_DATA_TYPE_OBJECT: {
             unsigned int keylen;
 
-            if (key && !strcmp(KEYFRAMES_TAG, key) && depth == 1)
-                if (parse_keyframes_index(s, ioc, vstream, max_pos) < 0)
+            if ((vstream || astream) && key && !strcmp(KEYFRAMES_TAG, key) && depth == 1)
+                if (parse_keyframes_index(s, ioc, vstream ? vstream : astream,
+                                          max_pos) < 0)
                     return -1;
 
             while(avio_tell(ioc) < max_pos - 2 && (keylen = avio_rb16(ioc))) {
