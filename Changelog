@@ -53,7 +53,7 @@ easier to use. The changes are:
 - lut, lutrgb, and lutyuv filters
 - boxblur filter
 - Ut Video decoder
-
+- Pulseaudio input device
 
 version 0.7:
 

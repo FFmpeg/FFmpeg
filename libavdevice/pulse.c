@@ -26,7 +26,6 @@
  *
  * This avdevice decoder allows to capture audio from a Pulseaudio device using
  * the simple api.
- *
  */
 
 #include <pulse/simple.h>
@@ -52,19 +51,19 @@ typedef struct PulseData {
 } PulseData;
 
 static pa_sample_format_t codec_id_to_pulse_format(int codec_id) {
-    switch(codec_id) {
-        case CODEC_ID_PCM_U8:    return    PA_SAMPLE_U8;
-        case CODEC_ID_PCM_ALAW:  return  PA_SAMPLE_ALAW;
-        case CODEC_ID_PCM_MULAW: return PA_SAMPLE_ULAW;
-        case CODEC_ID_PCM_S16LE: return PA_SAMPLE_S16LE;
-        case CODEC_ID_PCM_S16BE: return PA_SAMPLE_S16BE;
-        case CODEC_ID_PCM_F32LE: return PA_SAMPLE_FLOAT32LE;
-        case CODEC_ID_PCM_F32BE: return PA_SAMPLE_FLOAT32BE;
-        case CODEC_ID_PCM_S32LE: return PA_SAMPLE_S32LE;
-        case CODEC_ID_PCM_S32BE: return PA_SAMPLE_S32BE;
-        case CODEC_ID_PCM_S24LE: return PA_SAMPLE_S24LE;
-        case CODEC_ID_PCM_S24BE: return PA_SAMPLE_S24BE;
-        default:                 return PA_SAMPLE_INVALID;
+    switch (codec_id) {
+    case CODEC_ID_PCM_U8:    return PA_SAMPLE_U8;
+    case CODEC_ID_PCM_ALAW:  return PA_SAMPLE_ALAW;
+    case CODEC_ID_PCM_MULAW: return PA_SAMPLE_ULAW;
+    case CODEC_ID_PCM_S16LE: return PA_SAMPLE_S16LE;
+    case CODEC_ID_PCM_S16BE: return PA_SAMPLE_S16BE;
+    case CODEC_ID_PCM_F32LE: return PA_SAMPLE_FLOAT32LE;
+    case CODEC_ID_PCM_F32BE: return PA_SAMPLE_FLOAT32BE;
+    case CODEC_ID_PCM_S32LE: return PA_SAMPLE_S32LE;
+    case CODEC_ID_PCM_S32BE: return PA_SAMPLE_S32BE;
+    case CODEC_ID_PCM_S24LE: return PA_SAMPLE_S24LE;
+    case CODEC_ID_PCM_S24BE: return PA_SAMPLE_S24BE;
+    default:                 return PA_SAMPLE_INVALID;
     }
 }
 
