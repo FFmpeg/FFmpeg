@@ -936,10 +936,6 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
                 }
                 break;
             case MT_FIELD:
-                if(s->progressive_sequence){
-                    av_log(s->avctx, AV_LOG_ERROR, "MT_FIELD in progressive_sequence\n");
-                    return -1;
-                }
                 s->mv_type = MV_TYPE_FIELD;
                 if (s->picture_structure == PICT_FRAME) {
                     mb_type |= MB_TYPE_16x8 | MB_TYPE_INTERLACED;
