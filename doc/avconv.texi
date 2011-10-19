@@ -778,7 +778,7 @@ A preset file contains a sequence of @var{option=value} pairs, one for
 each line, specifying a sequence of options which can be specified also on
 the command line. Lines starting with the hash ('#') character are ignored and
 are used to provide comments. Empty lines are also ignored. Check the
-@file{ffpresets} directory in the Libav source tree for examples.
+@file{presets} directory in the Libav source tree for examples.
 
 Preset files are specified with the @code{pre} option, this option takes a
 preset name as input.  Avconv searches for a file named @var{preset_name}.avpreset in
