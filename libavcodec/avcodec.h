@@ -210,8 +210,10 @@ enum CodecID {
     CODEC_ID_DFA,
     CODEC_ID_WMV3IMAGE,
     CODEC_ID_VC1IMAGE,
+#if LIBAVCODEC_VERSION_MAJOR == 53
     CODEC_ID_G723_1,
     CODEC_ID_G729,
+#endif
     CODEC_ID_UTVIDEO,
 
     /* various PCM "codecs" */
@@ -345,6 +347,10 @@ enum CodecID {
     CODEC_ID_AAC_LATM,
     CODEC_ID_QDMC,
     CODEC_ID_CELT,
+#if LIBAVCODEC_VERSION_MAJOR > 53
+    CODEC_ID_G723_1,
+    CODEC_ID_G729,
+#endif
 
     /* subtitle codecs */
     CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
