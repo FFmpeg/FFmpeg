@@ -513,8 +513,10 @@ typedef struct AVStream {
     AVRational r_frame_rate;
     void *priv_data;
 
+#if FF_API_REORDER_PRIVATE
     /* internal data used in av_find_stream_info() */
     int64_t first_dts;
+#endif
 
     /**
      * encoding: pts generation when outputting stream
@@ -529,7 +531,9 @@ typedef struct AVStream {
      * encoding: set by libavformat in av_write_header
      */
     AVRational time_base;
+#if FF_API_REORDER_PRIVATE
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
+#endif
 #if FF_API_STREAM_COPY
     /* ffmpeg.c private use */
     attribute_deprecated int stream_copy; /**< If set, just copy stream. */
@@ -560,6 +564,7 @@ typedef struct AVStream {
      */
     int64_t duration;
 
+#if FF_API_REORDER_PRIVATE
     /* av_read_frame() support */
     enum AVStreamParseType need_parsing;
     struct AVCodecParserContext *parser;
@@ -572,14 +577,17 @@ typedef struct AVStream {
                                     support seeking natively. */
     int nb_index_entries;
     unsigned int index_entries_allocated_size;
+#endif
 
     int64_t nb_frames;                 ///< number of frames in this stream if known or 0
 
     int disposition; /**< AV_DISPOSITION_* bit field */
 
+#if FF_API_REORDER_PRIVATE
     AVProbeData probe_data;
 #define MAX_REORDER_DELAY 16
     int64_t pts_buffer[MAX_REORDER_DELAY+1];
+#endif
 
     /**
      * sample aspect ratio (0 if unknown)
@@ -590,6 +598,7 @@ typedef struct AVStream {
 
     AVDictionary *metadata;
 
+#if FF_API_REORDER_PRIVATE
     /* Intended mostly for av_read_frame() support. Not supposed to be used by */
     /* external applications; try to use something else if at all possible.    */
     const uint8_t *cur_ptr;
@@ -618,11 +627,20 @@ typedef struct AVStream {
      * used internally, NOT PART OF PUBLIC API, dont read or write from outside of libav*
      */
     struct AVPacketList *last_in_packet_buffer;
+#endif
 
     /**
      * Average framerate
      */
     AVRational avg_frame_rate;
+
+    /*****************************************************************
+     * All fields below this line are not part of the public API. They
+     * may not be used outside of libavformat and can be changed and
+     * removed at will.
+     * New public fields should be added right above.
+     *****************************************************************
+     */
 
     /**
      * Number of frames that have been demuxed during av_find_stream_info()
@@ -640,6 +658,49 @@ typedef struct AVStream {
         double duration_error[MAX_STD_TIMEBASES];
         int64_t codec_info_duration;
     } *info;
+#if !FF_API_REORDER_PRIVATE
+    const uint8_t *cur_ptr;
+    int cur_len;
+    AVPacket cur_pkt;
+
+    // Timestamp generation support:
+    /**
+     * Timestamp corresponding to the last dts sync point.
+     *
+     * Initialized when AVCodecParserContext.dts_sync_point >= 0 and
+     * a DTS is received from the underlying container. Otherwise set to
+     * AV_NOPTS_VALUE by default.
+     */
+    int64_t reference_dts;
+    int64_t first_dts;
+    int64_t cur_dts;
+    int last_IP_duration;
+    int64_t last_IP_pts;
+
+    /**
+     * Number of packets to buffer for codec probing
+     */
+#define MAX_PROBE_PACKETS 2500
+    int probe_packets;
+
+    /**
+     * last packet in packet_buffer for this stream when muxing.
+     */
+    struct AVPacketList *last_in_packet_buffer;
+    AVProbeData probe_data;
+#define MAX_REORDER_DELAY 16
+    int64_t pts_buffer[MAX_REORDER_DELAY+1];
+    /* av_read_frame() support */
+    enum AVStreamParseType need_parsing;
+    struct AVCodecParserContext *parser;
+
+    AVIndexEntry *index_entries; /**< Only used if the format does not
+                                    support seeking natively. */
+    int nb_index_entries;
+    unsigned int index_entries_allocated_size;
+
+    int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
+#endif
 } AVStream;
 
 #define AV_PROGRAM_RUNNING 1
