@@ -1106,19 +1106,6 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
     return 0;
 }
 
-typedef struct Mpeg1Context {
-    MpegEncContext mpeg_enc_ctx;
-    int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
-    int repeat_field; /* true if we must repeat the field */
-    AVPanScan pan_scan;              /**< some temporary storage for the panscan */
-    int slice_count;
-    int swap_uv;//indicate VCR2
-    int save_aspect_info;
-    int save_width, save_height, save_progressive_seq;
-    AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
-    int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
-} Mpeg1Context;
-
 static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 {
     Mpeg1Context *s = avctx->priv_data;
