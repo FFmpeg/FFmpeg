@@ -58,7 +58,7 @@ typedef struct FLVContext {
     int64_t filesize_offset;
     int64_t duration;
     int delay; ///< first dts delay for AVC
-    int64_t last_video_ts;
+    int64_t last_ts;
 } FLVContext;
 
 static int get_audio_flags(AVCodecContext *enc){
@@ -74,11 +74,6 @@ static int get_audio_flags(AVCodecContext *enc){
         if (enc->channels != 1) {
             av_log(enc, AV_LOG_ERROR, "flv only supports mono Speex audio\n");
             return -1;
-        }
-        if (enc->frame_size / 320 > 8) {
-            av_log(enc, AV_LOG_WARNING, "Warning: Speex stream has more than "
-                                        "8 frames per packet. Adobe Flash "
-                                        "Player cannot handle this!\n");
         }
         return FLV_CODECID_SPEEX | FLV_SAMPLERATE_11025HZ | FLV_SAMPLESSIZE_16BIT;
     } else {
@@ -220,7 +215,7 @@ static int flv_write_header(AVFormatContext *s)
         }
     }
 
-    flv->last_video_ts = -1;
+    flv->last_ts = -1;
 
     /* write meta_tag */
     avio_w8(pb, 18);         // tag type META
@@ -349,7 +344,7 @@ static int flv_write_trailer(AVFormatContext *s)
         AVCodecContext *enc = s->streams[i]->codec;
         if (enc->codec_type == AVMEDIA_TYPE_VIDEO &&
                 enc->codec_id == CODEC_ID_H264) {
-            put_avc_eos_tag(pb, flv->last_video_ts);
+            put_avc_eos_tag(pb, flv->last_ts);
         }
     }
 
@@ -415,10 +410,17 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         flv->delay = -pkt->dts;
 
     ts = pkt->dts + flv->delay; // add delay to force positive dts
-    if (enc->codec_type == AVMEDIA_TYPE_VIDEO) {
-        if (flv->last_video_ts < ts)
-            flv->last_video_ts = ts;
+
+    /* check Speex packet duration */
+    if (enc->codec_id == CODEC_ID_SPEEX && ts - flv->last_ts > 160) {
+        av_log(s, AV_LOG_WARNING, "Warning: Speex stream has more than "
+                                  "8 frames per packet. Adobe Flash "
+                                  "Player cannot handle this!\n");
     }
+
+    if (flv->last_ts < ts)
+        flv->last_ts = ts;
+
     avio_wb24(pb,size + flags_size);
     avio_wb24(pb,ts);
     avio_w8(pb,(ts >> 24) & 0x7F); // timestamps are 32bits _signed_
