@@ -744,6 +744,76 @@ delogo=x=0:y=0:w=100:h=77:band=10
 
 @end itemize
 
+@section deshake
+
+Attempt to fix small changes in horizontal and/or vertical shift. This
+filter helps remove camera shake from hand-holding a camera, bumping a
+tripod, moving on a vehicle, etc.
+
+The filter accepts parameters as a string of the form
+"@var{x}:@var{y}:@var{w}:@var{h}:@var{rx}:@var{ry}:@var{edge}:@var{blocksize}:@var{contrast}:@var{search}:@var{filename}"
+
+A description of the accepted parameters follows.
+
+@table @option
+
+@item x, y, w, h
+Specify a rectangular area where to limit the sarch for motion
+vectors.
+If desired the search for motion vectors can be limited to a
+rectangular area of the frame defined by its top left corner, width
+and height. These parameters have the same meaning as the drawbox
+filter which can be used to visualise the position of the bounding
+box.
+
+This is useful when simultaneous movement of subjects within the frame
+might be confused for camera motion by the motion vector search.
+
+If any or all of @var{x}, @var{y}, @var{w} and @var{h} are set to -1
+then the full frame is used. This allows later options to be set
+without specifying the bounding box for the motion vector search.
+
+Default - search the whole frame.
+
+@item rx, ry
+Specify the maximum extent of movement in x and y directions in the
+range 0-64 pixels. Default 16.
+
+@item edge
+Specify how to generate pixels to fill blanks at the edge of the
+frame. An integer from 0 to 3 as follows:
+@table @option
+@item 0
+Fill zeroes at blank locations
+@item 1
+Original image at blank locations
+@item 2
+Extruded edge value at blank locations
+@item 3
+Mirrored edge at blank locations
+@end table
+
+The default setting is mirror edge at blank locations.
+
+@item blocksize
+Specify the blocksize to use for motion search. Range 4-128 pixels,
+default 8.
+
+@item contrast
+Specify the contrast threshold for blocks. Only blocks with more than
+the specified contrast (difference between darkest and lightest
+pixels) will be considered. Range 1-255, default 125.
+
+@item search
+Specify the search strategy 0 = exhaustive search, 1 = less exhaustive
+search. Default - exhaustive search.
+
+@item filename
+If set then a detailed log of the motion search is written to the
+specified file.
+
+@end table
+
 @section drawbox
 
 Draw a colored box on the input image.
