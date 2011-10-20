@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2007 Marco Gerards <marco@gnu.org>
  * Copyright (C) 2009 David Conrad
+ * Copyright (C) 2011 Jordi Ortiz
  *
  * This file is part of FFmpeg.
  *
@@ -26,6 +27,8 @@
  * @file
  * Interface to Dirac Decoder/Encoder
  * @author Marco Gerards <marco@gnu.org>
+ * @author David Conrad
+ * @author Jordi Ortiz
  */
 
 #include "avcodec.h"

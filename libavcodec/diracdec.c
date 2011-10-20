@@ -1,6 +1,7 @@
 /*
  * Copyright (C) 2007 Marco Gerards <marco@gnu.org>
  * Copyright (C) 2009 David Conrad
+ * Copyright (C) 2011 Jordi Ortiz
  *
  * This file is part of FFmpeg.
  *
@@ -22,7 +23,7 @@
 /**
  * @file libavcodec/diracdec.c
  * Dirac Decoder
- * @author Marco Gerards <marco@gnu.org>
+ * @author Marco Gerards <marco@gnu.org>, David Conrad, Jordi Ortiz <nenjordi@gmail.com>
  */
 
 #include "avcodec.h"
@@ -53,10 +54,10 @@
  * The spec limits this to 3 for frame coding, but in practice can be as high as 6
  */
 #define MAX_REFERENCE_FRAMES 8
-#define MAX_DELAY 5         ///< limit for main profile for frame coding (TODO: field coding)
+#define MAX_DELAY 5         /* limit for main profile for frame coding (TODO: field coding) */
 #define MAX_FRAMES (MAX_REFERENCE_FRAMES + MAX_DELAY + 1)
-#define MAX_QUANT 68        ///< max quant for VC-2
-#define MAX_BLOCKSIZE 32    ///< maximum xblen/yblen we support
+#define MAX_QUANT 68        /* max quant for VC-2 */
+#define MAX_BLOCKSIZE 32    /* maximum xblen/yblen we support */
 
 /**
  * DiracBlock->ref flags, if set then the block does MC from the given ref
@@ -71,7 +72,7 @@
  */
 #define DELAYED_PIC_REF 4
 
-#define ff_emulated_edge_mc ff_emulated_edge_mc_8 //Fix: change the calls to this function regarding bit depth
+#define ff_emulated_edge_mc ff_emulated_edge_mc_8 /* Fix: change the calls to this function regarding bit depth */
 
 #define CALC_PADDING(size, depth) \
          (((size + (1 << depth) - 1) >> depth) << depth)
@@ -79,10 +80,9 @@
 #define DIVRNDUP(a, b) (((a) + (b) - 1) / (b))
 
 typedef struct {
-  //FF_COMMON_FRAME
   AVFrame avframe;
 
-  int interpolated[3];    ///< 1 if hpel[] is valid
+    int interpolated[3];    /* 1 if hpel[] is valid */
   uint8_t *hpel[3][4];
   uint8_t *hpel_base[3][4];
 } DiracFrame;
@@ -91,7 +91,7 @@ typedef struct {
     union {
         int16_t mv[2][2];
         int16_t dc[3];
-    } u; // anonymous unions aren't in C99 :(
+    } u; /* anonymous unions aren't in C99 :( */
     uint8_t ref;
 } DiracBlock;
 
@@ -105,7 +105,7 @@ typedef struct SubBand {
     IDWTELEM *ibuf;
     struct SubBand *parent;
 
-    // for low delay
+    /* for low delay */
     unsigned length;
     const uint8_t *coeff_data;
 } SubBand;
@@ -122,13 +122,13 @@ typedef struct Plane {
     IDWTELEM *idwt_buf_base;
     IDWTELEM *idwt_tmp;
 
-    // block length
+    /* block length */
     uint8_t xblen;
     uint8_t yblen;
-    // block separation (block n+1 starts after this many pixels in block n)
+    /* block separation (block n+1 starts after this many pixels in block n) */
     uint8_t xbsep;
     uint8_t ybsep;
-    // amount of overspill on each edge (half of the overlap between blocks)
+    /* amount of overspill on each edge (half of the overlap between blocks) */
     uint8_t xoffset;
     uint8_t yoffset;
 
@@ -142,19 +142,19 @@ typedef struct DiracContext {
     GetBitContext gb;
     dirac_source_params source;
     int seen_sequence_header;
-    int frame_number;           ///< number of the next frame to display
+    int frame_number;           /* number of the next frame to display       */
     Plane plane[3];
     int chroma_x_shift;
     int chroma_y_shift;
 
-    int zero_res;               ///< zero residue flag
-    int is_arith;               ///< whether coeffs use arith or golomb coding
-    int low_delay;              ///< use the low delay syntax
-    int globalmc_flag;          ///< use global motion compensation
-    int num_refs;               ///< number of reference pictures
+    int zero_res;               /* zero residue flag                         */
+    int is_arith;               /* whether coeffs use arith or golomb coding */
+    int low_delay;              /* use the low delay syntax                  */
+    int globalmc_flag;          /* use global motion compensation            */
+    int num_refs;               /* number of reference pictures              */
 
-    // wavelet decoding
-    unsigned wavelet_depth;     ///< depth of the IDWT
+    /* wavelet decoding */
+    unsigned wavelet_depth;     /* depth of the IDWT                         */
     unsigned wavelet_idx;
 
     /**
@@ -170,29 +170,29 @@ typedef struct DiracContext {
     } codeblock[MAX_DWT_LEVELS+1];
 
     struct {
-        unsigned num_x;         ///< number of horizontal slices
-        unsigned num_y;         ///< number of vertical slices
-        AVRational bytes;       ///< average bytes per slice
-      uint8_t quant[MAX_DWT_LEVELS][4]; //[DIRAC_STD] E.1
+        unsigned num_x;         /* number of horizontal slices               */
+        unsigned num_y;         /* number of vertical slices                 */
+        AVRational bytes;       /* average bytes per slice                   */
+        uint8_t quant[MAX_DWT_LEVELS][4]; /* [DIRAC_STD] E.1 */
     } lowdelay;
 
     struct {
-        int pan_tilt[2];        ///< pan/tilt vector
-        int zrs[2][2];          ///< zoom/rotate/shear matrix
-        int perspective[2];     ///< perspective vector
+        int pan_tilt[2];        /* pan/tilt vector                           */
+        int zrs[2][2];          /* zoom/rotate/shear matrix                  */
+        int perspective[2];     /* perspective vector                        */
         unsigned zrs_exp;
         unsigned perspective_exp;
     } globalmc[2];
 
-    // motion compensation
-  uint8_t mv_precision; //[DIRAC_STD] REFS_WT_PRECISION
-  int16_t weight[2]; ////[DIRAC_STD] REF1_WT and REF2_WT
-  unsigned weight_log2denom; ////[DIRAC_STD] REFS_WT_PRECISION
+    /* motion compensation */
+    uint8_t mv_precision;       /* [DIRAC_STD] REFS_WT_PRECISION             */
+    int16_t weight[2];          /* [DIRAC_STD] REF1_WT and REF2_WT           */
+    unsigned weight_log2denom;  /* [DIRAC_STD] REFS_WT_PRECISION             */
 
-    int blwidth;            ///< number of blocks (horizontally)
-    int blheight;           ///< number of blocks (vertically)
-    int sbwidth;            ///< number of superblocks (horizontally)
-    int sbheight;           ///< number of superblocks (vertically)
+    int blwidth;                /* number of blocks (horizontally)           */
+    int blheight;               /* number of blocks (vertically)             */
+    int sbwidth;                /* number of superblocks (horizontally)      */
+    int sbheight;               /* number of superblocks (vertically)        */
 
     uint8_t *sbsplit;
     DiracBlock *blmotion;
@@ -200,7 +200,7 @@ typedef struct DiracContext {
     uint8_t *edge_emu_buffer[4];
     uint8_t *edge_emu_buffer_base;
 
-    uint16_t *mctmp;        ///< buffer holding the MC data multipled by OBMC weights
+    uint16_t *mctmp;            /* buffer holding the MC data multipled by OBMC weights */
     uint8_t *mcscratch;
 
     DECLARE_ALIGNED(16, uint8_t, obmc_weight)[3][MAX_BLOCKSIZE*MAX_BLOCKSIZE];
@@ -219,7 +219,10 @@ typedef struct DiracContext {
     DiracFrame all_frames[MAX_FRAMES];
 } DiracContext;
 
-// [DIRAC_STD] Parse code values. 9.6.1 Table 9.1
+/**
+ * Dirac Specification ->
+ * Parse code values. 9.6.1 Table 9.1
+ */
 enum dirac_parse_code {
     pc_seq_header         = 0x00,
     pc_eos                = 0x10,
@@ -277,7 +280,7 @@ static const int qoffset_inter_tab[MAX_QUANT+1] = {
     24576, 29226
 };
 
-// magic number division by 3 from schroedinger
+/* magic number division by 3 from schroedinger */
 static inline int divide3(int x)
 {
     return ((x+1)*21845 + 10922) >> 16;
@@ -318,20 +321,20 @@ static int alloc_sequence_buffers(DiracContext *s)
     int sbheight = DIVRNDUP(s->source.height, 4);
     int i, w, h, top_padding;
 
-    // todo: think more about this / use or set Plane here
+    /* todo: think more about this / use or set Plane here */
     for (i = 0; i < 3; i++) {
         int max_xblen = MAX_BLOCKSIZE >> (i ? s->chroma_x_shift : 0);
         int max_yblen = MAX_BLOCKSIZE >> (i ? s->chroma_y_shift : 0);
         w = s->source.width  >> (i ? s->chroma_x_shift : 0);
         h = s->source.height >> (i ? s->chroma_y_shift : 0);
 
-        // we allocate the max we support here since num decompositions can
-        // change from frame to frame. Stride is aligned to 16 for SIMD, and
-        // 1<<MAX_DWT_LEVELS top padding to avoid if(y>0) in arith decoding
-        // MAX_BLOCKSIZE padding for MC: blocks can spill up to half of that
-        // on each side
+        /* we allocate the max we support here since num decompositions can
+         * change from frame to frame. Stride is aligned to 16 for SIMD, and
+         * 1<<MAX_DWT_LEVELS top padding to avoid if(y>0) in arith decoding
+         * MAX_BLOCKSIZE padding for MC: blocks can spill up to half of that
+         * on each side */
         top_padding = FFMAX(1<<MAX_DWT_LEVELS, max_yblen/2);
-        w = FFALIGN(CALC_PADDING(w, MAX_DWT_LEVELS), 8); //FIXME: Should this be 16 for SSE???
+        w = FFALIGN(CALC_PADDING(w, MAX_DWT_LEVELS), 8); /* FIXME: Should this be 16 for SSE??? */
         h = top_padding + CALC_PADDING(h, MAX_DWT_LEVELS) + max_yblen/2;
 
         s->plane[i].idwt_buf_base = av_mallocz((w+max_xblen)*h * sizeof(IDWTELEM));
@@ -344,7 +347,7 @@ static int alloc_sequence_buffers(DiracContext *s)
     w = s->source.width;
     h = s->source.height;
 
-    // fixme: allocate using real stride here
+    /* fixme: allocate using real stride here */
     s->sbsplit  = av_malloc(sbwidth * sbheight);
     s->blmotion = av_malloc(sbwidth * sbheight * 4 * sizeof(*s->blmotion));
     s->edge_emu_buffer_base = av_malloc((w+64)*MAX_BLOCKSIZE);
@@ -428,14 +431,14 @@ static inline void coeff_unpack_arith(DiracArith *c, int qfactor, int qoffset,
     int sign_pred = 0;
     int pred_ctx = CTX_ZPZN_F1;
 
-    // Check if the parent subband has a 0 in the corresponding position
+    /* Check if the parent subband has a 0 in the corresponding position */
     if (b->parent)
         pred_ctx += !!b->parent->ibuf[b->parent->stride * (y>>1) + (x>>1)] << 1;
 
     if (b->orientation == subband_hl)
         sign_pred = buf[-b->stride];
 
-    // Determine if the pixel has only zeros in its neighbourhood
+    /* Determine if the pixel has only zeros in its neighbourhood */
     if (x) {
         pred_ctx += !(buf[-1] | buf[-b->stride] | buf[-1-b->stride]);
         if (b->orientation == subband_lh)
@@ -479,7 +482,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     int qoffset, qfactor;
     IDWTELEM *buf;
 
-    // check for any coded coefficients in this codeblock
+    /* check for any coded coefficients in this codeblock */
     if (!blockcnt_one) {
         if (is_arith)
             zero_block = dirac_get_arith_bit(c, CTX_ZERO_BLOCK);
@@ -500,7 +503,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     b->quant = FFMIN(b->quant, MAX_QUANT);
 
     qfactor = qscale_tab[b->quant];
-    // TODO: context pointer?
+    /* TODO: context pointer? */
     if (!s->num_refs)
         qoffset = qoffset_intra_tab[b->quant];
     else
@@ -509,7 +512,7 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     buf = b->ibuf + top*b->stride;
     for (y = top; y < bottom; y++) {
         for (x = left; x < right; x++) {
-          //[DIRAC_STD] 13.4.4 Subband coefficients. coeff_unpack()
+            /* [DIRAC_STD] 13.4.4 Subband coefficients. coeff_unpack() */
             if (is_arith)
                 coeff_unpack_arith(c, qfactor, qoffset, b, buf+x, x, y);
             else
@@ -519,7 +522,10 @@ static inline void codeblock(DiracContext *s, SubBand *b,
     }
 }
 
-//[DIRAC_STD] 13.3 intra_dc_prediction(band)
+/**
+ * Dirac Specification ->
+ * 13.3 intra_dc_prediction(band)
+ */
 static inline void intra_dc_prediction(SubBand *b)
 {
     IDWTELEM *buf = b->ibuf;
@@ -540,7 +546,10 @@ static inline void intra_dc_prediction(SubBand *b)
     }
 }
 
-//[DIRAC_STD] 13.4.2 Non-skipped subbands.  subband_coeffs()
+/**
+ * Dirac Specification ->
+ * 13.4.2 Non-skipped subbands.  subband_coeffs()
+ */
 static av_always_inline
 void decode_subband_internal(DiracContext *s, SubBand *b, int is_arith)
 {
@@ -590,7 +599,10 @@ static int decode_subband_golomb(AVCodecContext *avctx, void *arg)
     return 0;
 }
 
-//[DIRAC_STD] 13.4.1 core_transform_data()
+/**
+ * Dirac Specification ->
+ * [DIRAC_STD] 13.4.1 core_transform_data()
+ */
 static void decode_component(DiracContext *s, int comp)
 {
     AVCodecContext *avctx = s->avctx;
@@ -598,14 +610,14 @@ static void decode_component(DiracContext *s, int comp)
     enum dirac_subband orientation;
     int level, num_bands = 0;
 
-    // Unpack all subbands at all levels.
+    /* Unpack all subbands at all levels. */
     for (level = 0; level < s->wavelet_depth; level++) {
         for (orientation = !!level; orientation < 4; orientation++) {
             SubBand *b = &s->plane[comp].band[level][orientation];
             bands[num_bands++] = b;
 
             align_get_bits(&s->gb);
-            //[DIRAC_STD] 13.4.2 subband()
+            /* [DIRAC_STD] 13.4.2 subband() */
             b->length = svq3_get_ue_golomb(&s->gb);
             if (b->length) {
                 b->quant = svq3_get_ue_golomb(&s->gb);
@@ -615,18 +627,18 @@ static void decode_component(DiracContext *s, int comp)
                 skip_bits_long(&s->gb, b->length*8);
             }
         }
-        // arithmetic coding has inter-level dependencies, so we can only execute one level at a time
+        /* arithmetic coding has inter-level dependencies, so we can only execute one level at a time */
         if (s->is_arith)
             avctx->execute(avctx, decode_subband_arith, &s->plane[comp].band[level][!!level],
                            NULL, 4-!!level, sizeof(SubBand));
     }
-    // golomb coding has no inter-level dependencies, so we can execute all subbands in parallel
+    /* golomb coding has no inter-level dependencies, so we can execute all subbands in parallel */
     if (!s->is_arith)
         avctx->execute(avctx, decode_subband_golomb, bands, NULL, num_bands, sizeof(SubBand*));
 }
 
-//[DIRAC_STD] 13.5.5.2 Luma slice subband data. luma_slice_band(level,orient,sx,sy) --> if b2 == NULL
-//[DIRAC_STD] 13.5.5.3 Chroma slice subband data. chroma_slice_band(level,orient,sx,sy) --> if b2 != NULL
+/* [DIRAC_STD] 13.5.5.2 Luma slice subband data. luma_slice_band(level,orient,sx,sy) --> if b2 == NULL */
+/* [DIRAC_STD] 13.5.5.3 Chroma slice subband data. chroma_slice_band(level,orient,sx,sy) --> if b2 != NULL */
 static void lowdelay_subband(DiracContext *s, GetBitContext *gb, int quant,
                              int slice_x, int slice_y, int bits_end,
                              SubBand *b1, SubBand *b2)
@@ -642,8 +654,8 @@ static void lowdelay_subband(DiracContext *s, GetBitContext *gb, int quant,
     IDWTELEM *buf1 =      b1->ibuf + top*b1->stride;
     IDWTELEM *buf2 = b2 ? b2->ibuf + top*b2->stride : NULL;
     int x, y;
-    // we have to constantly check for overread since the spec explictly
-    // requires this, with the meaning that all remaining coeffs are set to 0
+    /* we have to constantly check for overread since the spec explictly
+       requires this, with the meaning that all remaining coeffs are set to 0 */
     if (get_bits_count(gb) >= bits_end)
         return;
 
@@ -672,7 +684,10 @@ struct lowdelay_slice {
 };
 
 
-//[DIRAC_STD] 13.5.2 Slices. slice(sx,sy)
+/**
+ * Dirac Specification ->
+ * 13.5.2 Slices. slice(sx,sy)
+ */
 static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
 {
     DiracContext *s = avctx->priv_data;
@@ -681,12 +696,12 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
     enum dirac_subband orientation;
     int level, quant, chroma_bits, chroma_end;
 
-    int quant_base  = get_bits(gb, 7); //[DIRAC_STD] qindex
+    int quant_base  = get_bits(gb, 7); /*[DIRAC_STD] qindex */
     int length_bits = av_log2(8*slice->bytes)+1;
     int luma_bits   = get_bits_long(gb, length_bits);
     int luma_end    = get_bits_count(gb) + FFMIN(luma_bits, get_bits_left(gb));
 
-    //[DIRAC_STD] 13.5.5.2 luma_slice_band
+    /* [DIRAC_STD] 13.5.5.2 luma_slice_band */
     for (level = 0; level < s->wavelet_depth; level++)
         for (orientation = !!level; orientation < 4; orientation++) {
             quant = FFMAX(quant_base - s->lowdelay.quant[level][orientation], 0);
@@ -694,12 +709,12 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
                              &s->plane[0].band[level][orientation], NULL);
         }
 
-    // consume any unused bits from luma
+    /* consume any unused bits from luma */
     skip_bits_long(gb, get_bits_count(gb) - luma_end);
 
     chroma_bits = 8*slice->bytes - 7 - length_bits - luma_bits;
     chroma_end = get_bits_count(gb) + FFMIN(chroma_bits, get_bits_left(gb));
-    //[DIRAC_STD] 13.5.5.3 chroma_slice_band
+    /* [DIRAC_STD] 13.5.5.3 chroma_slice_band */
     for (level = 0; level < s->wavelet_depth; level++)
         for (orientation = !!level; orientation < 4; orientation++) {
             quant = FFMAX(quant_base - s->lowdelay.quant[level][orientation], 0);
@@ -711,7 +726,10 @@ static int decode_lowdelay_slice(AVCodecContext *avctx, void *arg)
     return 0;
 }
 
-//[DIRAC_STD] 13.5.1 low_delay_transform_data()
+/**
+ * Dirac Specification ->
+ * 13.5.1 low_delay_transform_data()
+ */
 static void decode_lowdelay(DiracContext *s)
 {
     AVCodecContext *avctx = s->avctx;
@@ -723,14 +741,14 @@ static void decode_lowdelay(DiracContext *s)
     slices = av_mallocz(s->lowdelay.num_x * s->lowdelay.num_y * sizeof(struct lowdelay_slice));
 
     align_get_bits(&s->gb);
-    //[DIRAC_STD] 13.5.2 Slices. slice(sx,sy)
+    /*[DIRAC_STD] 13.5.2 Slices. slice(sx,sy) */
     buf = s->gb.buffer + get_bits_count(&s->gb)/8;
     bufsize = get_bits_left(&s->gb);
 
     for (slice_y = 0; slice_y < s->lowdelay.num_y; slice_y++)
         for (slice_x = 0; slice_x < s->lowdelay.num_x; slice_x++) {
             bytes = (slice_num+1) * s->lowdelay.bytes.num / s->lowdelay.bytes.den
-                   - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
+                - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
 
             slices[slice_num].bytes   = bytes;
             slices[slice_num].slice_x = slice_x;
@@ -746,11 +764,10 @@ static void decode_lowdelay(DiracContext *s)
 end:
 
     avctx->execute(avctx, decode_lowdelay_slice, slices, NULL, slice_num,
-                   sizeof(struct lowdelay_slice)); //[DIRAC_STD] 13.5.2 Slices
-    intra_dc_prediction(&s->plane[0].band[0][0]); //[DIRAC_STD] 13.3 intra_dc_prediction()
-    intra_dc_prediction(&s->plane[1].band[0][0]); //[DIRAC_STD] 13.3 intra_dc_prediction()
-    intra_dc_prediction(&s->plane[2].band[0][0]); //[DIRAC_STD] 13.3 intra_dc_prediction()
-
+                   sizeof(struct lowdelay_slice)); /* [DIRAC_STD] 13.5.2 Slices */
+    intra_dc_prediction(&s->plane[0].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+    intra_dc_prediction(&s->plane[1].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
+    intra_dc_prediction(&s->plane[2].band[0][0]);  /* [DIRAC_STD] 13.3 intra_dc_prediction() */
     av_free(slices);
 }
 
@@ -804,7 +821,8 @@ static void init_planes(DiracContext *s)
 
 /**
  * Unpack the motion compensation parameters
- * [DIRAC_STD] 11.2 Picture prediction data. picture_prediction()
+ * Dirac Specification ->
+ * 11.2 Picture prediction data. picture_prediction()
  */
 static int dirac_unpack_prediction_parameters(DiracContext *s)
 {
@@ -815,15 +833,15 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     unsigned idx, ref;
 
     align_get_bits(gb);
-    //[DIRAC_STD] 11.2.2 Block parameters. block_parameters()
-    //Luma and Chroma are equal. 11.2.3
-    idx = svq3_get_ue_golomb(gb); ////[DIRAC_STD] index
+    /* [DIRAC_STD] 11.2.2 Block parameters. block_parameters() */
+    /* Luma and Chroma are equal. 11.2.3 */
+    idx = svq3_get_ue_golomb(gb); /* [DIRAC_STD] index */
 
     if (idx > 4)
-      {
-         av_log(s->avctx, AV_LOG_ERROR, "Block prediction index too high\n");
+    {
+        av_log(s->avctx, AV_LOG_ERROR, "Block prediction index too high\n");
         return -1;
-      }
+    }
 
     if (idx == 0) {
         s->plane[0].xblen = svq3_get_ue_golomb(gb);
@@ -831,13 +849,14 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
         s->plane[0].xbsep = svq3_get_ue_golomb(gb);
         s->plane[0].ybsep = svq3_get_ue_golomb(gb);
     } else {
-      //[DIRAC_STD] preset_block_params(index). Table 11.1
+        /*[DIRAC_STD] preset_block_params(index). Table 11.1 */
         s->plane[0].xblen = default_blen[idx-1];
         s->plane[0].yblen = default_blen[idx-1];
         s->plane[0].xbsep = default_bsep[idx-1];
         s->plane[0].ybsep = default_bsep[idx-1];
     }
-    //[DIRAC_STD] 11.2.4 motion_data_dimensions() --> Calculated in function dirac_unpack_block_motion_data
+    /*[DIRAC_STD] 11.2.4 motion_data_dimensions()
+      Calculated in function dirac_unpack_block_motion_data */
 
     if (s->plane[0].xbsep < s->plane[0].xblen/2 || s->plane[0].ybsep < s->plane[0].yblen/2) {
         av_log(s->avctx, AV_LOG_ERROR, "Block separation too small\n");
@@ -852,27 +871,27 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
         return -1;
     }
 
-    //[DIRAC_STD] 11.2.5 Motion vector precision. motion_vector_precision()
-    // Read motion vector precision
+    /*[DIRAC_STD] 11.2.5 Motion vector precision. motion_vector_precision()
+      Read motion vector precision */
     s->mv_precision = svq3_get_ue_golomb(gb);
     if (s->mv_precision > 3) {
         av_log(s->avctx, AV_LOG_ERROR, "MV precision finer than eighth-pel\n");
         return -1;
     }
 
-    //[DIRAC_STD] 11.2.6 Global motion. global_motion()
-    // Read the global motion compensation parameters
+    /*[DIRAC_STD] 11.2.6 Global motion. global_motion()
+      Read the global motion compensation parameters */
     s->globalmc_flag = get_bits1(gb);
     if (s->globalmc_flag) {
         memset(s->globalmc, 0, sizeof(s->globalmc));
-        //[DIRAC_STD] pan_tilt(gparams)
+        /* [DIRAC_STD] pan_tilt(gparams) */
         for (ref = 0; ref < s->num_refs; ref++) {
             if (get_bits1(gb)) {
                 s->globalmc[ref].pan_tilt[0] = dirac_get_se_golomb(gb);
                 s->globalmc[ref].pan_tilt[1] = dirac_get_se_golomb(gb);
             }
-            //[DIRAC_STD] zoom_rotate_shear(gparams)
-            // zoom/rotation/shear parameters
+            /* [DIRAC_STD] zoom_rotate_shear(gparams)
+               zoom/rotation/shear parameters */
             if (get_bits1(gb)) {
                 s->globalmc[ref].zrs_exp = svq3_get_ue_golomb(gb);
                 s->globalmc[ref].zrs[0][0] = dirac_get_se_golomb(gb);
@@ -883,7 +902,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
                 s->globalmc[ref].zrs[0][0] = 1;
                 s->globalmc[ref].zrs[1][1] = 1;
             }
-            //[DIRAC_STD] perspective(gparams)
+            /* [DIRAC_STD] perspective(gparams) */
             if (get_bits1(gb)) {
                 s->globalmc[ref].perspective_exp = svq3_get_ue_golomb(gb);
                 s->globalmc[ref].perspective[0] = dirac_get_se_golomb(gb);
@@ -892,15 +911,15 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
         }
     }
 
-    //[DIRAC_STD] 11.2.7 Picture prediction mode. prediction_mode()
-    // Picture prediction mode, not currently used.
+    /*[DIRAC_STD] 11.2.7 Picture prediction mode. prediction_mode()
+      Picture prediction mode, not currently used. */
     if (svq3_get_ue_golomb(gb)) {
         av_log(s->avctx, AV_LOG_ERROR, "Unknown picture prediction mode\n");
         return -1;
     }
 
-    //[DIRAC_STD] 11.2.8 Reference picture weight. reference_picture_weights()
-    //just data read, weight calculation will be done later on.
+    /* [DIRAC_STD] 11.2.8 Reference picture weight. reference_picture_weights()
+       just data read, weight calculation will be done later on. */
     s->weight_log2denom = 1;
     s->weight[0]        = 1;
     s->weight[1]        = 1;
@@ -914,7 +933,10 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     return 0;
 }
 
-//[DIRAC_STD] 11.3 Wavelet transform data. wavelet_transform()
+/**
+ * Dirac Specification ->
+ * 11.3 Wavelet transform data. wavelet_transform()
+ */
 static int dirac_unpack_idwt_params(DiracContext *s)
 {
     GetBitContext *gb = &s->gb;
@@ -926,7 +948,7 @@ static int dirac_unpack_idwt_params(DiracContext *s)
     if (s->zero_res)
         return 0;
 
-    //[DIRAC_STD] 11.3.1 Transform parameters. transform_parameters()
+    /*[DIRAC_STD] 11.3.1 Transform parameters. transform_parameters() */
     s->wavelet_idx = svq3_get_ue_golomb(gb);
     if (s->wavelet_idx > 6)
         return -1;
@@ -954,17 +976,17 @@ static int dirac_unpack_idwt_params(DiracContext *s)
             for (i = 0; i <= s->wavelet_depth; i++)
                 s->codeblock[i].width = s->codeblock[i].height = 1;
     } else {
-      /* Slice parameters + quantization matrix*/
-      //[DIRAC_STD] 11.3.4 Slice coding Parameters (low delay syntax only). slice_parameters()
+        /* Slice parameters + quantization matrix*/
+        /*[DIRAC_STD] 11.3.4 Slice coding Parameters (low delay syntax only). slice_parameters() */
         s->lowdelay.num_x     = svq3_get_ue_golomb(gb);
         s->lowdelay.num_y     = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.num = svq3_get_ue_golomb(gb);
         s->lowdelay.bytes.den = svq3_get_ue_golomb(gb);
 
-        //[DIRAC_STD] 11.3.5 Quantisation matrices (low-delay syntax). quant_matrix()
+        /* [DIRAC_STD] 11.3.5 Quantisation matrices (low-delay syntax). quant_matrix() */
         if (get_bits1(gb)) {
-          av_log(s->avctx,AV_LOG_DEBUG,"Low Delay: Has Custom Quantization Matrix!\n");
-            // custom quantization matrix
+            av_log(s->avctx,AV_LOG_DEBUG,"Low Delay: Has Custom Quantization Matrix!\n");
+            /* custom quantization matrix */
             s->lowdelay.quant[0][0] = svq3_get_ue_golomb(gb);
             for (level = 0; level < s->wavelet_depth; level++) {
                 s->lowdelay.quant[level][1] = svq3_get_ue_golomb(gb);
@@ -972,11 +994,11 @@ static int dirac_unpack_idwt_params(DiracContext *s)
                 s->lowdelay.quant[level][3] = svq3_get_ue_golomb(gb);
             }
         } else {
-            // default quantization matrix
+            /* default quantization matrix */
             for (level = 0; level < s->wavelet_depth; level++)
                 for (i = 0; i < 4; i++) {
                     s->lowdelay.quant[level][i] = default_qmat[s->wavelet_idx][level][i];
-                    // haar with no shift differs for different depths
+                    /* haar with no shift differs for different depths */
                     if (s->wavelet_idx == 3)
                         s->lowdelay.quant[level][i] += 4*(s->wavelet_depth-1 - level);
                 }
@@ -1010,7 +1032,7 @@ static inline int pred_block_mode(DiracBlock *block, int stride, int x, int y, i
     else if (!x)
         return block[-stride].ref & refmask;
 
-    // return the majority
+    /* return the majority */
     pred = (block[-1].ref & refmask) + (block[-stride].ref & refmask) + (block[-stride-1].ref & refmask);
     return (pred >> 1) & refmask;
 }
@@ -1052,7 +1074,7 @@ static inline void pred_mv(DiracBlock *block, int stride, int x, int y, int ref)
 {
     int16_t *pred[3];
     int refmask = ref+1;
-    int mask = refmask | DIRAC_REF_MASK_GLOBAL; // exclude gmc blocks
+    int mask = refmask | DIRAC_REF_MASK_GLOBAL; /*  exclude gmc blocks */
     int n = 0;
 
     if (x && (block[-1].ref & mask) == refmask)
@@ -1155,7 +1177,10 @@ static void propagate_block_data(DiracBlock *block, int stride, int size)
     }
 }
 
-//[DIRAC_STD] 12. Block motion data syntax
+/**
+ * Dirac Specification ->
+ * 12. Block motion data syntax
+ */
 static void dirac_unpack_block_motion_data(DiracContext *s)
 {
     GetBitContext *gb = &s->gb;
@@ -1165,15 +1190,15 @@ static void dirac_unpack_block_motion_data(DiracContext *s)
 
     align_get_bits(gb);
 
-    //[DIRAC_STD] 11.2.4 and 12.2.1 Number of blocks and superblocks
+    /* [DIRAC_STD] 11.2.4 and 12.2.1 Number of blocks and superblocks */
     s->sbwidth  = DIVRNDUP(s->source.width,  4*s->plane[0].xbsep);
     s->sbheight = DIVRNDUP(s->source.height, 4*s->plane[0].ybsep);
     s->blwidth  = 4*s->sbwidth;
     s->blheight = 4*s->sbheight;
 
-    //[DIRAC_STD] 12.3.1 Superblock splitting modes. superblock_split_modes()
-    // decode superblock split modes
-    ff_dirac_init_arith_decoder(arith, gb, svq3_get_ue_golomb(gb));     //svq3_get_ue_golomb(gb) is the length
+    /* [DIRAC_STD] 12.3.1 Superblock splitting modes. superblock_split_modes()
+       decode superblock split modes */
+    ff_dirac_init_arith_decoder(arith, gb, svq3_get_ue_golomb(gb));     /* svq3_get_ue_golomb(gb) is the length */
     for (y = 0; y < s->sbheight; y++) {
         for (x = 0; x < s->sbwidth; x++) {
             int split = dirac_get_arith_uint(arith, CTX_SB_F1, CTX_SB_DATA);
@@ -1182,7 +1207,7 @@ static void dirac_unpack_block_motion_data(DiracContext *s)
         sbsplit += s->sbwidth;
     }
 
-    // setup arith decoding
+    /* setup arith decoding */
     ff_dirac_init_arith_decoder(arith, gb, svq3_get_ue_golomb(gb));
     for (i = 0; i < s->num_refs; i++) {
         ff_dirac_init_arith_decoder(arith+4+2*i, gb, svq3_get_ue_golomb(gb));
@@ -1209,7 +1234,7 @@ static void dirac_unpack_block_motion_data(DiracContext *s)
 
 static int weight(int i, int blen, int offset)
 {
-#define ROLLOFF(i) offset == 1 ? ((i) ? 5 : 3) : \
+#define ROLLOFF(i) offset == 1 ? ((i) ? 5 : 3) :        \
     (1 + (6*(i) + offset - 1) / (2*offset - 1))
 
     if (i < 2*offset)
@@ -1257,7 +1282,7 @@ static void init_obmc_weights(DiracContext *s, Plane *p, int by)
     int top = !by;
     int bottom = by == s->blheight-1;
 
-    // don't bother re-initing for rows 2 to blheight-2, the weights don't change
+    /* don't bother re-initing for rows 2 to blheight-2, the weights don't change */
     if (top || bottom || by == 1) {
         init_obmc_weight(p, s->obmc_weight[0], MAX_BLOCKSIZE, 1, 0, top, bottom);
         init_obmc_weight(p, s->obmc_weight[1], MAX_BLOCKSIZE, 0, 0, top, bottom);
@@ -1310,8 +1335,8 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
     my = motion_y & ~(-1 << s->mv_precision);
     motion_x >>= s->mv_precision;
     motion_y >>= s->mv_precision;
-    // normalize subpel coordinates to epel
-    // TODO: template this function?
+    /* normalize subpel coordinates to epel */
+    /* TODO: template this function? */
     mx <<= 3-s->mv_precision;
     my <<= 3-s->mv_precision;
 
@@ -1319,18 +1344,18 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
     y += motion_y;
     epel = (mx|my)&1;
 
-    // hpel position
+    /* hpel position */
     if (!((mx|my)&3)) {
         nplanes = 1;
         src[0] = ref_hpel[(my>>1)+(mx>>2)] + y*p->stride + x;
     } else {
-        // qpel or epel
+        /* qpel or epel */
         nplanes = 4;
         for (i = 0; i < 4; i++)
             src[i] = ref_hpel[i] + y*p->stride + x;
 
-        // if we're interpolating in the right/bottom halves, adjust the planes as needed
-        // we increment x/y because the edge changes for half of the pixels
+        /* if we're interpolating in the right/bottom halves, adjust the planes as needed
+           we increment x/y because the edge changes for half of the pixels */
         if (mx > 4) {
             src[0] += 1;
             src[2] += 1;
@@ -1342,15 +1367,15 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
             y++;
         }
 
-        // hpel planes are:
-        // [0]: F  [1]: H
-        // [2]: V  [3]: C
+        /* hpel planes are:
+           [0]: F  [1]: H
+           [2]: V  [3]: C */
         if (!epel) {
-            // check if we really only need 2 planes since either mx or my is
-            // a hpel position. (epel weights of 0 handle this there)
+            /* check if we really only need 2 planes since either mx or my is
+               a hpel position. (epel weights of 0 handle this there) */
             if (!(mx&3)) {
-                // mx == 0: average [0] and [2]
-                // mx == 4: average [1] and [3]
+                /* mx == 0: average [0] and [2]
+                   mx == 4: average [1] and [3] */
                 src[!mx] = src[2 + !!mx];
                 nplanes = 2;
             } else if (!(my&3)) {
@@ -1359,7 +1384,7 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
                 nplanes = 2;
             }
         } else {
-            // adjust the ordering if needed so the weights work
+            /* adjust the ordering if needed so the weights work */
             if (mx > 4) {
                 FFSWAP(const uint8_t *, src[0], src[1]);
                 FFSWAP(const uint8_t *, src[2], src[3]);
@@ -1372,7 +1397,7 @@ static int mc_subpel(DiracContext *s, DiracBlock *block, const uint8_t *src[5],
         }
     }
 
-    // fixme: v/h _edge_pos
+    /* fixme: v/h _edge_pos */
     if ((unsigned)x > p->width +EDGE_WIDTH/2 - p->xblen ||
         (unsigned)y > p->height+EDGE_WIDTH/2 - p->yblen) {
         for (i = 0; i < nplanes; i++) {
@@ -1410,7 +1435,7 @@ static void block_mc(DiracContext *s, DiracBlock *block,
     int idx;
 
     switch (block->ref&3) {
-    case 0: // DC
+    case 0: /* DC */
         add_dc(mctmp, block->u.dc[plane], p->stride, obmc_weight, p->xblen, p->yblen);
         return;
     case 1:
@@ -1426,7 +1451,7 @@ static void block_mc(DiracContext *s, DiracBlock *block,
         s->put_pixels_tab[idx](s->mcscratch, src, p->stride, p->yblen);
         idx = mc_subpel(s, block, src, dstx, dsty, 1, plane);
         if (s->biweight_func) {
-            // fixme: +32 is a quick hack
+            /* fixme: +32 is a quick hack */
             s->put_pixels_tab[idx](s->mcscratch + 32, src, p->stride, p->yblen);
             s->biweight_func(s->mcscratch, s->mcscratch+32, p->stride, s->weight_log2denom,
                              s->weight[0], s->weight[1], p->yblen);
@@ -1475,22 +1500,22 @@ static void select_dsp_funcs(DiracContext *s, int width, int height, int xblen, 
 
 static void interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, int width, int height)
 {
-    // chroma allocates an edge of 8 when subsampled
-    // which for 4:2:2 means an h edge of 16 and v edge of 8
-    // just use 8 for everything for the moment
+    /* chroma allocates an edge of 8 when subsampled
+       which for 4:2:2 means an h edge of 16 and v edge of 8
+       just use 8 for everything for the moment */
     int i, edge = EDGE_WIDTH/2;
 
     ref->hpel[plane][0] = ref->avframe.data[plane];
-    s->dsp.draw_edges(ref->hpel[plane][0], ref->avframe.linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM); //EDGE_TOP | EDGE_BOTTOM values just copied to make it build, this needs to be ensured
+    s->dsp.draw_edges(ref->hpel[plane][0], ref->avframe.linesize[plane], width, height, edge, edge, EDGE_TOP | EDGE_BOTTOM); /* EDGE_TOP | EDGE_BOTTOM values just copied to make it build, this needs to be ensured */
 
-    // no need for hpel if we only have fpel vectors
+    /* no need for hpel if we only have fpel vectors */
     if (!s->mv_precision)
         return;
 
     for (i = 1; i < 4; i++) {
         if (!ref->hpel_base[plane][i])
             ref->hpel_base[plane][i] = av_malloc((height+2*edge) * ref->avframe.linesize[plane] + 32);
-        // we need to be 16-byte aligned even for chroma
+        /* we need to be 16-byte aligned even for chroma */
         ref->hpel[plane][i] = ref->hpel_base[plane][i] + edge*ref->avframe.linesize[plane] + 16;
     }
 
@@ -1505,102 +1530,108 @@ static void interpolate_refplane(DiracContext *s, DiracFrame *ref, int plane, in
     ref->interpolated[plane] = 1;
 }
 
-//[DIRAC_STD] 13.0 Transform data syntax. transform_data()
+/**
+ * Dirac Specification ->
+ * 13.0 Transform data syntax. transform_data()
+ */
 static int dirac_decode_frame_internal(DiracContext *s)
 {
-  DWTContext d;
-  int y, i, comp, dsty;
+    DWTContext d;
+    int y, i, comp, dsty;
 
-  if (s->low_delay) {
-    //[DIRAC_STD] 13.5.1 low_delay_transform_data()
+    if (s->low_delay) {
+        /* [DIRAC_STD] 13.5.1 low_delay_transform_data() */
+        for (comp = 0; comp < 3; comp++) {
+            Plane *p = &s->plane[comp];
+            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
+        }
+        if (!s->zero_res)
+            decode_lowdelay(s);
+    }
+
     for (comp = 0; comp < 3; comp++) {
-      Plane *p = &s->plane[comp];
-      memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
+        Plane *p = &s->plane[comp];
+        uint8_t *frame = s->current_picture->avframe.data[comp];
+
+        /* FIXME: small resolutions */
+        for (i = 0; i < 4; i++)
+            s->edge_emu_buffer[i] = s->edge_emu_buffer_base + i*FFALIGN(p->width, 16);
+
+        if (!s->zero_res && !s->low_delay)
+        {
+            memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
+            decode_component(s, comp); /* [DIRAC_STD] 13.4.1 core_transform_data() */
+        }
+        if (ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
+                                  s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp))
+            return -1;
+
+        if (!s->num_refs) { /* intra */
+            for (y = 0; y < p->height; y += 16) {
+                ff_spatial_idwt_slice2(&d, y+16); /* decode */
+                s->diracdsp.put_signed_rect_clamped(frame + y*p->stride, p->stride,
+                                                    p->idwt_buf + y*p->idwt_stride, p->idwt_stride, p->width, 16);
+            }
+        } else { /* inter */
+            int rowheight = p->ybsep*p->stride;
+
+            select_dsp_funcs(s, p->width, p->height, p->xblen, p->yblen);
+
+            for (i = 0; i < s->num_refs; i++)
+                interpolate_refplane(s, s->ref_pics[i], comp, p->width, p->height);
+
+            memset(s->mctmp, 0, 4*p->yoffset*p->stride);
+
+            dsty = -p->yoffset;
+            for (y = 0; y < s->blheight; y++) {
+                int h = 0, start = FFMAX(dsty, 0);
+                uint16_t *mctmp = s->mctmp + y*rowheight;
+                DiracBlock *blocks = s->blmotion + y*s->blwidth;
+
+                init_obmc_weights(s, p, y);
+
+                if (y == s->blheight-1 || start+p->ybsep > p->height)
+                    h = p->height - start;
+                else
+                    h = p->ybsep - (start - dsty);
+                if (h < 0)
+                    break;
+
+                memset(mctmp+2*p->yoffset*p->stride, 0, 2*rowheight);
+                mc_row(s, blocks, mctmp, comp, dsty);
+
+                mctmp += (start - dsty)*p->stride + p->xoffset;
+                ff_spatial_idwt_slice2(&d, start + h); /* decode */
+                s->diracdsp.add_rect_clamped(frame + start*p->stride, mctmp, p->stride,
+                                             p->idwt_buf + start*p->idwt_stride, p->idwt_stride, p->width, h);
+
+                dsty += p->ybsep;
+            }
+        }
     }
-    if (!s->zero_res)
-      decode_lowdelay(s);
-  }
-
-  for (comp = 0; comp < 3; comp++) {
-    Plane *p = &s->plane[comp];
-    uint8_t *frame = s->current_picture->avframe.data[comp];
-
-    // FIXME: small resolutions
-    for (i = 0; i < 4; i++)
-      s->edge_emu_buffer[i] = s->edge_emu_buffer_base + i*FFALIGN(p->width, 16);
-
-    if (!s->zero_res && !s->low_delay)
-      {
-        memset(p->idwt_buf, 0, p->idwt_stride * p->idwt_height * sizeof(IDWTELEM));
-          decode_component(s, comp); //[DIRAC_STD] 13.4.1 core_transform_data()
-      }
-    if (ff_spatial_idwt_init2(&d, p->idwt_buf, p->idwt_width, p->idwt_height, p->idwt_stride,
-                              s->wavelet_idx+2, s->wavelet_depth, p->idwt_tmp))
-        return -1;
-
-    if (!s->num_refs) { //intra
-      for (y = 0; y < p->height; y += 16) {
-        ff_spatial_idwt_slice2(&d, y+16); //decode
-        s->diracdsp.put_signed_rect_clamped(frame + y*p->stride, p->stride,
-                                            p->idwt_buf + y*p->idwt_stride, p->idwt_stride, p->width, 16);
-      }
-    } else { //inter
-      int rowheight = p->ybsep*p->stride;
-
-      select_dsp_funcs(s, p->width, p->height, p->xblen, p->yblen);
-
-      for (i = 0; i < s->num_refs; i++)
-        interpolate_refplane(s, s->ref_pics[i], comp, p->width, p->height);
-
-      memset(s->mctmp, 0, 4*p->yoffset*p->stride);
-
-      dsty = -p->yoffset;
-      for (y = 0; y < s->blheight; y++) {
-        int h = 0, start = FFMAX(dsty, 0);
-        uint16_t *mctmp = s->mctmp + y*rowheight;
-        DiracBlock *blocks = s->blmotion + y*s->blwidth;
-
-        init_obmc_weights(s, p, y);
-
-        if (y == s->blheight-1 || start+p->ybsep > p->height)
-          h = p->height - start;
-        else
-          h = p->ybsep - (start - dsty);
-        if (h < 0)
-          break;
-
-        memset(mctmp+2*p->yoffset*p->stride, 0, 2*rowheight);
-        mc_row(s, blocks, mctmp, comp, dsty);
-
-        mctmp += (start - dsty)*p->stride + p->xoffset;
-        ff_spatial_idwt_slice2(&d, start + h); //decode
-        s->diracdsp.add_rect_clamped(frame + start*p->stride, mctmp, p->stride,
-                                     p->idwt_buf + start*p->idwt_stride, p->idwt_stride, p->width, h);
-
-        dsty += p->ybsep;
-      }
-    }
-  }
 
 
-  return 0;
+    return 0;
 }
 
-//[DIRAC_STD] 11.1.1 Picture Header. picture_header()
+/**
+ * Dirac Specification ->
+ * 11.1.1 Picture Header. picture_header()
+ */
 static int dirac_decode_picture_header(DiracContext *s)
 {
     int retire, picnum;
     int i, j, refnum, refdist;
     GetBitContext *gb = &s->gb;
 
-    //[DIRAC_STD] 11.1.1 Picture Header. picture_header() PICTURE_NUM
+    /* [DIRAC_STD] 11.1.1 Picture Header. picture_header() PICTURE_NUM */
     picnum = s->current_picture->avframe.display_picture_number = get_bits_long(gb, 32);
 
 
     av_log(s->avctx,AV_LOG_DEBUG,"PICTURE_NUM: %d\n",picnum);
 
-    // if this is the first keyframe after a sequence header, start our
-    // reordering from here
+    /* if this is the first keyframe after a sequence header, start our
+       reordering from here */
     if (s->frame_number < 0)
         s->frame_number = picnum;
 
@@ -1609,8 +1640,8 @@ static int dirac_decode_picture_header(DiracContext *s)
         refnum = picnum + dirac_get_se_golomb(gb);
         refdist = INT_MAX;
 
-        // find the closest reference to the one we want
-        // Jordi: this is needed if the referenced picture hasn't yet arrived
+        /* find the closest reference to the one we want */
+        /* Jordi: this is needed if the referenced picture hasn't yet arrived */
         for (j = 0; j < MAX_REFERENCE_FRAMES && refdist; j++)
             if (s->ref_frames[j]
                 && FFABS(s->ref_frames[j]->avframe.display_picture_number - refnum) < refdist) {
@@ -1621,7 +1652,7 @@ static int dirac_decode_picture_header(DiracContext *s)
         if (!s->ref_pics[i] || refdist)
             av_log(s->avctx, AV_LOG_DEBUG, "Reference not found\n");
 
-        // if there were no references at all, allocate one
+        /* if there were no references at all, allocate one */
         if (!s->ref_pics[i])
             for (j = 0; j < MAX_FRAMES; j++)
                 if (!s->all_frames[j].avframe.data[0]) {
@@ -1630,7 +1661,7 @@ static int dirac_decode_picture_header(DiracContext *s)
                 }
     }
 
-    // retire the reference frames that are not used anymore
+    /* retire the reference frames that are not used anymore */
     if (s->current_picture->avframe.reference) {
         retire = picnum + dirac_get_se_golomb(gb);
         if (retire != picnum) {
@@ -1642,7 +1673,7 @@ static int dirac_decode_picture_header(DiracContext *s)
                 av_log(s->avctx, AV_LOG_DEBUG, "Frame to retire not found\n");
         }
 
-        // if reference array is full, remove the oldest as per the spec
+        /* if reference array is full, remove the oldest as per the spec */
         while (add_frame(s->ref_frames, MAX_REFERENCE_FRAMES, s->current_picture)) {
             av_log(s->avctx, AV_LOG_ERROR, "Reference frame overflow\n");
             remove_frame(s->ref_frames, s->ref_frames[0]->avframe.display_picture_number)->avframe.reference &= DELAYED_PIC_REF;
@@ -1650,14 +1681,14 @@ static int dirac_decode_picture_header(DiracContext *s)
     }
 
     if (s->num_refs) {
-      if (dirac_unpack_prediction_parameters(s))  //[DIRAC_STD] 11.2 Picture Prediction Data. picture_prediction()
+        if (dirac_unpack_prediction_parameters(s))  /* [DIRAC_STD] 11.2 Picture Prediction Data. picture_prediction() */
             return -1;
-      dirac_unpack_block_motion_data(s); //[DIRAC_STD] 12. Block motion data syntax
+        dirac_unpack_block_motion_data(s);          /* [DIRAC_STD] 12. Block motion data syntax                       */
     }
-    if (dirac_unpack_idwt_params(s)) //[DIRAC_STD] 11.3 Wavelet transform data
+    if (dirac_unpack_idwt_params(s))                /* [DIRAC_STD] 11.3 Wavelet transform data                        */
         return -1;
 
-    init_planes(s); //Jordi... ????
+    init_planes(s);
     return 0;
 }
 
@@ -1666,7 +1697,7 @@ static int get_delayed_pic(DiracContext *s, AVFrame *picture, int *data_size)
     DiracFrame *out = s->delay_frames[0];
     int i, out_idx = 0;
 
-    // find frame with lowest picture number
+    /* find frame with lowest picture number */
     for (i = 1; s->delay_frames[i]; i++)
         if (s->delay_frames[i]->avframe.display_picture_number < out->avframe.display_picture_number) {
             out = s->delay_frames[i];
@@ -1685,11 +1716,15 @@ static int get_delayed_pic(DiracContext *s, AVFrame *picture, int *data_size)
     return 0;
 }
 
-// [DIRAC_STD] 9.6 Parse Info Header Syntax. parse_info()
-// 4 byte start code + byte parse code + 4 byte size + 4 byte previous size
+/**
+ * Dirac Specification ->
+ * 9.6 Parse Info Header Syntax. parse_info()
+ * 4 byte start code + byte parse code + 4 byte size + 4 byte previous size
+ */
 #define DATA_UNIT_HEADER_SIZE 13
 
-//[DIRAC_STD] dirac_decode_data_unit makes reference to the while defined in 9.3 inside the function parse_sequence()
+/* [DIRAC_STD] dirac_decode_data_unit makes reference to the while defined in 9.3
+   inside the function parse_sequence() */
 static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int size)
 {
     DiracContext *s = avctx->priv_data;
@@ -1705,7 +1740,7 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         if (s->seen_sequence_header)
             return 0;
 
-        //[DIRAC_STD] 10. Sequence header
+        /* [DIRAC_STD] 10. Sequence header */
         if (avpriv_dirac_parse_sequence_header(avctx, &s->gb, &s->source))
             return -1;
 
@@ -1715,25 +1750,25 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
             return -1;
 
         s->seen_sequence_header = 1;
-    } else if (parse_code == pc_eos) { //[DIRAC_STD] End of Sequence
+    } else if (parse_code == pc_eos) { /* [DIRAC_STD] End of Sequence */
         free_sequence_buffers(s);
         s->seen_sequence_header = 0;
     } else if (parse_code == pc_aux_data) {
-        if (buf[13] == 1) {     // encoder implementation/version
+        if (buf[13] == 1) {     /* encoder implementation/version */
             int ver[3];
-            // versions older than 1.0.8 don't store quant delta for
-            // subbands with only one codeblock
+            /* versions older than 1.0.8 don't store quant delta for
+               subbands with only one codeblock */
             if (sscanf(buf+14, "Schroedinger %d.%d.%d", ver, ver+1, ver+2) == 3)
                 if (ver[0] == 1 && ver[1] == 0 && ver[2] <= 7)
                     s->old_delta_quant = 1;
         }
-    } else if (parse_code & 0x8) {  // picture data unit
+    } else if (parse_code & 0x8) {  /* picture data unit */
         if (!s->seen_sequence_header) {
             av_log(avctx, AV_LOG_DEBUG, "Dropping frame without sequence header\n");
             return -1;
         }
 
-        // find an unused frame
+        /* find an unused frame */
         for (i = 0; i < MAX_FRAMES; i++)
             if (s->all_frames[i].avframe.data[0] == NULL)
                 pic = &s->all_frames[i];
@@ -1744,13 +1779,13 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
 
         avcodec_get_frame_defaults(&pic->avframe);
 
-        //[DIRAC_STD] Defined in 9.6.1 ...
-        s->num_refs    =  parse_code & 0x03; //[DIRAC_STD] num_refs()
-        s->is_arith    = (parse_code & 0x48) == 0x08; //[DIRAC_STD] using_ac()
-        s->low_delay   = (parse_code & 0x88) == 0x88; //[DIRAC_STD] is_low_delay()
-        pic->avframe.reference = (parse_code & 0x0C) == 0x0C; //[DIRAC_STD]  is_reference()
-        pic->avframe.key_frame = s->num_refs == 0; //[DIRAC_STD] is_intra()
-        pic->avframe.pict_type = s->num_refs + 1; //Definition of AVPictureType in avutil.h
+        /* [DIRAC_STD] Defined in 9.6.1 ... */
+        s->num_refs    =  parse_code & 0x03;                   /* [DIRAC_STD] num_refs()      */
+        s->is_arith    = (parse_code & 0x48) == 0x08;          /* [DIRAC_STD] using_ac()      */
+        s->low_delay   = (parse_code & 0x88) == 0x88;          /* [DIRAC_STD] is_low_delay()  */
+        pic->avframe.reference = (parse_code & 0x0C) == 0x0C;  /* [DIRAC_STD]  is_reference() */
+        pic->avframe.key_frame = s->num_refs == 0;             /* [DIRAC_STD] is_intra()      */
+        pic->avframe.pict_type = s->num_refs + 1;              /* Definition of AVPictureType in avutil.h */
 
         if (avctx->get_buffer(avctx, &pic->avframe) < 0) {
             av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
@@ -1761,11 +1796,11 @@ static int dirac_decode_data_unit(AVCodecContext *avctx, const uint8_t *buf, int
         s->plane[1].stride = pic->avframe.linesize[1];
         s->plane[2].stride = pic->avframe.linesize[2];
 
-        //[DIRAC_STD] 11.1 Picture parse. picture_parse()
+        /* [DIRAC_STD] 11.1 Picture parse. picture_parse() */
         if (dirac_decode_picture_header(s))
             return -1;
 
-        //[DIRAC_STD] 13.0 Transform data syntax. transform_data()
+        /* [DIRAC_STD] 13.0 Transform data syntax. transform_data() */
         if (dirac_decode_frame_internal(s))
             return -1;
     }
@@ -1780,7 +1815,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int buf_size = pkt->size;
     int i, data_unit_size, buf_idx = 0;
 
-    // release unused frames
+    /* release unused frames */
     for (i = 0; i < MAX_FRAMES; i++)
         if (s->all_frames[i].avframe.data[0] && !s->all_frames[i].avframe.reference) {
             avctx->release_buffer(avctx, &s->all_frames[i].avframe);
@@ -1790,37 +1825,37 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     s->current_picture = NULL;
     *data_size = 0;
 
-    // end of stream, so flush delayed pics
+    /* end of stream, so flush delayed pics */
     if (buf_size == 0)
-      return get_delayed_pic(s, (AVFrame *)data, data_size);
+        return get_delayed_pic(s, (AVFrame *)data, data_size);
 
     for (;;) {
-      //[DIRAC_STD] Here starts the code from parse_info() defined in 9.6
-      //[DIRAC_STD] PARSE_INFO_PREFIX = "BBCD" as defined in ISO/IEC 646
-        // BBCD start code search
+        /*[DIRAC_STD] Here starts the code from parse_info() defined in 9.6
+          [DIRAC_STD] PARSE_INFO_PREFIX = "BBCD" as defined in ISO/IEC 646
+          BBCD start code search */
         for (; buf_idx + DATA_UNIT_HEADER_SIZE < buf_size; buf_idx++) {
             if (buf[buf_idx  ] == 'B' && buf[buf_idx+1] == 'B' &&
                 buf[buf_idx+2] == 'C' && buf[buf_idx+3] == 'D')
                 break;
         }
-        //BBCD found or end of data
+        /* BBCD found or end of data */
         if (buf_idx + DATA_UNIT_HEADER_SIZE >= buf_size)
             break;
 
         data_unit_size = AV_RB32(buf+buf_idx+5);
         if (buf_idx + data_unit_size > buf_size) {
             av_log(s->avctx, AV_LOG_ERROR,
-                "Data unit with size %d is larger than input buffer, discarding\n",
-                data_unit_size);
+                   "Data unit with size %d is larger than input buffer, discarding\n",
+                   data_unit_size);
             buf_idx += 4;
             continue;
         }
-        // [DIRAC_STD] dirac_decode_data_unit makes reference to the while defined in 9.3 inside the function parse_sequence()
+        /* [DIRAC_STD] dirac_decode_data_unit makes reference to the while defined in 9.3 inside the function parse_sequence() */
         if (dirac_decode_data_unit(avctx, buf+buf_idx, data_unit_size))
-          {
+        {
             av_log(s->avctx, AV_LOG_ERROR,"Error in dirac_decode_data_unit\n");
             return -1;
-          }
+        }
         buf_idx += data_unit_size;
     }
 
@@ -1834,7 +1869,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
         if (add_frame(s->delay_frames, MAX_DELAY, s->current_picture)) {
             int min_num = s->delay_frames[0]->avframe.display_picture_number;
-            // Too many delayed frames, so we display the frame with the lowest pts
+            /* Too many delayed frames, so we display the frame with the lowest pts */
             av_log(avctx, AV_LOG_ERROR, "Delay frame overflow\n");
             delayed_frame = s->delay_frames[0];
 
@@ -1852,9 +1887,9 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             *data_size = sizeof(AVFrame);
         }
     } else if (s->current_picture->avframe.display_picture_number == s->frame_number) {
-        // The right frame at the right time :-)
-      *(AVFrame*)data = s->current_picture->avframe;
-      *data_size = sizeof(AVFrame);
+        /* The right frame at the right time :-) */
+        *(AVFrame*)data = s->current_picture->avframe;
+        *data_size = sizeof(AVFrame);
     }
 
     if (*data_size)
@@ -1865,7 +1900,7 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
 AVCodec ff_dirac_decoder = {
     "dirac",
-    AVMEDIA_TYPE_VIDEO,  //CODEC_TYPE_VIDEO --> AVMEDIA_TYPE_VIDEO
+    AVMEDIA_TYPE_VIDEO,
     CODEC_ID_DIRAC,
     sizeof(DiracContext),
     dirac_decode_init,
