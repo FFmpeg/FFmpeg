@@ -145,7 +145,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     }
     if (source->frame_rate_index > 0) {
         if (source->frame_rate_index <= 8)
-            frame_rate = ff_frame_rate_tab[source->frame_rate_index];
+            frame_rate = avpriv_frame_rate_tab[source->frame_rate_index];
         else
             frame_rate = dirac_frame_rate[source->frame_rate_index-9];
     }
@@ -242,7 +242,7 @@ static int parse_source_parameters(AVCodecContext *avctx, GetBitContext *gb,
     return 0;
 }
 
-int ff_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
+int avpriv_dirac_parse_sequence_header(AVCodecContext *avctx, GetBitContext *gb,
                                    dirac_source_params *source)
 {
     unsigned version_major;

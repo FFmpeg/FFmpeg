@@ -223,8 +223,8 @@ int ff_add_index_entry(AVIndexEntry **index_entries,
  *
  * @return AVChapter or NULL on error
  */
-AVChapter *ff_new_chapter(AVFormatContext *s, int id, AVRational time_base,
-                          int64_t start, int64_t end, const char *title);
+AVChapter *avpriv_new_chapter(AVFormatContext *s, int id, AVRational time_base,
+                              int64_t start, int64_t end, const char *title);
 
 /**
  * Ensure the index uses less memory than the maximum specified in

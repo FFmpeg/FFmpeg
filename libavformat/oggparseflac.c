@@ -55,7 +55,7 @@ flac_header (AVFormatContext * s, int idx)
         if (get_bits_long(&gb, 32) != FLAC_STREAMINFO_SIZE)
             return -1;
 
-        ff_flac_parse_streaminfo(st->codec, &si, streaminfo_start);
+        avpriv_flac_parse_streaminfo(st->codec, &si, streaminfo_start);
 
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         st->codec->codec_id = CODEC_ID_FLAC;

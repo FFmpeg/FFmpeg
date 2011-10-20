@@ -153,7 +153,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
 
     for(;;) {
         int src_length, dst_length, consumed;
-        buf = ff_find_start_code(buf, buf_end, &state);
+        buf = avpriv_mpv_find_start_code(buf, buf_end, &state);
         if(buf >= buf_end)
             break;
         --buf;

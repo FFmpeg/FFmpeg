@@ -56,7 +56,7 @@ void ff_rtp_send_mpegvideo(AVFormatContext *s1, const uint8_t *buf1, int size)
             r1 = buf1;
             while (1) {
                 start_code = -1;
-                r = ff_find_start_code(r1, end, &start_code);
+                r = avpriv_mpv_find_start_code(r1, end, &start_code);
                 if((start_code & 0xFFFFFF00) == 0x100) {
                     /* New start code found */
                     if (start_code == 0x100) {

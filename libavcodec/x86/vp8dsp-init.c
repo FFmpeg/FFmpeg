@@ -283,9 +283,9 @@ DECLARE_LOOP_FILTER(sse4)
 
 av_cold void ff_vp8dsp_init_x86(VP8DSPContext* c)
 {
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->vp8_idct_dc_add    = ff_vp8_idct_dc_add_mmx;
         c->vp8_idct_dc_add4y  = ff_vp8_idct_dc_add4y_mmx;

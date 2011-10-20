@@ -416,7 +416,7 @@ static int decode_info_header(NUTContext *nut){
 
     if(chapter_id && !stream_id_plus1){
         int64_t start= chapter_start / nut->time_base_count;
-        chapter= ff_new_chapter(s, chapter_id,
+        chapter= avpriv_new_chapter(s, chapter_id,
                                 nut->time_base[chapter_start % nut->time_base_count],
                                 start, start + chapter_len, NULL);
         metadata = &chapter->metadata;

@@ -490,7 +490,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 av_freep(&s->streams[0]);
                 s->nb_streams = 0;
                 if (CONFIG_DV_DEMUXER) {
-                    avi->dv_demux = dv_init_demux(s);
+                    avi->dv_demux = avpriv_dv_init_demux(s);
                     if (!avi->dv_demux)
                         goto fail;
                 }
@@ -1012,7 +1012,7 @@ static int avi_read_packet(AVFormatContext *s, AVPacket *pkt)
     void* dstr;
 
     if (CONFIG_DV_DEMUXER && avi->dv_demux) {
-        int size = dv_get_packet(avi->dv_demux, pkt);
+        int size = avpriv_dv_get_packet(avi->dv_demux, pkt);
         if (size >= 0)
             return size;
     }
@@ -1115,7 +1115,7 @@ resync:
 
         if (CONFIG_DV_DEMUXER && avi->dv_demux) {
             dstr = pkt->destruct;
-            size = dv_produce_packet(avi->dv_demux, pkt,
+            size = avpriv_dv_produce_packet(avi->dv_demux, pkt,
                                     pkt->data, pkt->size, pkt->pos);
             pkt->destruct = dstr;
             pkt->flags |= AV_PKT_FLAG_KEY;

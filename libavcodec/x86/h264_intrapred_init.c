@@ -169,9 +169,9 @@ void ff_pred4x4_vertical_vp8_mmxext(uint8_t *src, const uint8_t *topright, int s
 
 void ff_h264_pred_init_x86(H264PredContext *h, int codec_id, const int bit_depth, const int chroma_format_idc)
 {
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_YASM
     if (bit_depth == 8) {
         if (mm_flags & AV_CPU_FLAG_MMX) {
             h->pred16x16[VERT_PRED8x8         ] = ff_pred16x16_vertical_mmx;

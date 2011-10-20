@@ -90,7 +90,7 @@ static int xsub_encode_rle(PutBitContext *pb, const uint8_t *bitmap,
         if (color != PADDING_COLOR && (PADDING + (w&1)))
             put_xsub_rle(pb, PADDING + (w&1), PADDING_COLOR);
 
-        align_put_bits(pb);
+        avpriv_align_put_bits(pb);
 
         bitmap += linesize;
     }
@@ -194,7 +194,7 @@ static int xsub_encode(AVCodecContext *avctx, unsigned char *buf,
     // Enforce total height to be be multiple of 2
     if (h->rects[0]->h & 1) {
         put_xsub_rle(&pb, h->rects[0]->w, PADDING_COLOR);
-        align_put_bits(&pb);
+        avpriv_align_put_bits(&pb);
     }
 
     flush_put_bits(&pb);

@@ -235,12 +235,12 @@ static int mp3_write_xing(AVFormatContext *s)
     int              srate_idx, i, channels;
     int              needed;
 
-    for (i = 0; i < FF_ARRAY_ELEMS(ff_mpa_freq_tab); i++)
-        if (ff_mpa_freq_tab[i] == codec->sample_rate) {
+    for (i = 0; i < FF_ARRAY_ELEMS(avpriv_mpa_freq_tab); i++)
+        if (avpriv_mpa_freq_tab[i] == codec->sample_rate) {
             srate_idx = i;
             break;
         }
-    if (i == FF_ARRAY_ELEMS(ff_mpa_freq_tab)) {
+    if (i == FF_ARRAY_ELEMS(avpriv_mpa_freq_tab)) {
         av_log(s, AV_LOG_ERROR, "Unsupported sample rate.\n");
         return -1;
     }
@@ -263,7 +263,7 @@ static int mp3_write_xing(AVFormatContext *s)
 
         mask = (bitrate_idx << 4) <<  8;
         header |= mask;
-        ff_mpegaudio_decode_header(&c, header);
+        avpriv_mpegaudio_decode_header(&c, header);
         xing_offset=xing_offtbl[c.lsf == 1][c.nb_channels == 1];
         needed = 4              // header
                + xing_offset

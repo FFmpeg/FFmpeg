@@ -86,7 +86,7 @@ static int dv1394_read_header(AVFormatContext * context, AVFormatParameters * ap
 {
     struct dv1394_data *dv = context->priv_data;
 
-    dv->dv_demux = dv_init_demux(context);
+    dv->dv_demux = avpriv_dv_init_demux(context);
     if (!dv->dv_demux)
         goto failed;
 
@@ -124,7 +124,7 @@ static int dv1394_read_packet(AVFormatContext *context, AVPacket *pkt)
     struct dv1394_data *dv = context->priv_data;
     int size;
 
-    size = dv_get_packet(dv->dv_demux, pkt);
+    size = avpriv_dv_get_packet(dv->dv_demux, pkt);
     if (size > 0)
         return size;
 
@@ -186,7 +186,7 @@ restart_poll:
     av_dlog(context, "index %d, avail %d, done %d\n", dv->index, dv->avail,
             dv->done);
 
-    size = dv_produce_packet(dv->dv_demux, pkt,
+    size = avpriv_dv_produce_packet(dv->dv_demux, pkt,
                              dv->ring + (dv->index * DV1394_PAL_FRAME_SIZE),
                              DV1394_PAL_FRAME_SIZE, -1);
     dv->index = (dv->index + 1) % DV1394_RING_FRAMES;

@@ -625,8 +625,8 @@ static int decode_seq_header(AVSContext *h) {
     s->low_delay =       get_bits1(&s->gb);
     h->mb_width  = (s->width  + 15) >> 4;
     h->mb_height = (s->height + 15) >> 4;
-    h->s.avctx->time_base.den = ff_frame_rate_tab[frame_rate_code].num;
-    h->s.avctx->time_base.num = ff_frame_rate_tab[frame_rate_code].den;
+    h->s.avctx->time_base.den = avpriv_frame_rate_tab[frame_rate_code].num;
+    h->s.avctx->time_base.num = avpriv_frame_rate_tab[frame_rate_code].den;
     h->s.avctx->width  = s->width;
     h->s.avctx->height = s->height;
     if(!h->top_qp)
@@ -664,7 +664,7 @@ static int cavs_decode_frame(AVCodecContext * avctx,void *data, int *data_size,
     buf_ptr = buf;
     buf_end = buf + buf_size;
     for(;;) {
-        buf_ptr = ff_find_start_code(buf_ptr,buf_end, &stc);
+        buf_ptr = avpriv_mpv_find_start_code(buf_ptr,buf_end, &stc);
         if((stc & 0xFFFFFE00) || buf_ptr == buf_end)
             return FFMAX(0, buf_ptr - buf - s->parse_context.last_index);
         input_size = (buf_end - buf_ptr)*8;

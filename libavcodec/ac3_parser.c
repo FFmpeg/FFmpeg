@@ -35,7 +35,7 @@ static const uint8_t eac3_blocks[4] = {
 };
 
 
-int ff_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
+int avpriv_ac3_parse_header(GetBitContext *gbc, AC3HeaderInfo *hdr)
 {
     int frame_size_code;
 
@@ -141,7 +141,7 @@ static int ac3_sync(uint64_t state, AACAC3ParseContext *hdr_info,
     GetBitContext gbc;
 
     init_get_bits(&gbc, tmp.u8+8-AC3_HEADER_SIZE, 54);
-    err = ff_ac3_parse_header(&gbc, &hdr);
+    err = avpriv_ac3_parse_header(&gbc, &hdr);
 
     if(err < 0)
         return 0;

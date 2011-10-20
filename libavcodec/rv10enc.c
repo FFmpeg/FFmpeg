@@ -32,7 +32,7 @@ void rv10_encode_picture_header(MpegEncContext *s, int picture_number)
 {
     int full_frame= 0;
 
-    align_put_bits(&s->pb);
+    avpriv_align_put_bits(&s->pb);
 
     put_bits(&s->pb, 1, 1);     /* marker */
 

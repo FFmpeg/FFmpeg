@@ -40,7 +40,7 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
 
     while (buf < buf_end) {
         start_code= -1;
-        buf= ff_find_start_code(buf, buf_end, &start_code);
+        buf= avpriv_mpv_find_start_code(buf, buf_end, &start_code);
         bytes_left = buf_end - buf;
         switch(start_code) {
         case PICTURE_START_CODE:
@@ -57,8 +57,8 @@ static void mpegvideo_extract_headers(AVCodecParserContext *s,
                     did_set_size=1;
                 }
                 frame_rate_index = buf[3] & 0xf;
-                pc->frame_rate.den = avctx->time_base.den = ff_frame_rate_tab[frame_rate_index].num;
-                pc->frame_rate.num = avctx->time_base.num = ff_frame_rate_tab[frame_rate_index].den;
+                pc->frame_rate.den = avctx->time_base.den = avpriv_frame_rate_tab[frame_rate_index].num;
+                pc->frame_rate.num = avctx->time_base.num = avpriv_frame_rate_tab[frame_rate_index].den;
                 avctx->bit_rate = ((buf[4]<<10) | (buf[5]<<2) | (buf[6]>>6))*400;
                 avctx->codec_id = CODEC_ID_MPEG1VIDEO;
                 avctx->sub_id = 1;

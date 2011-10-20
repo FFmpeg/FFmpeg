@@ -349,7 +349,7 @@ static av_cold int dvvideo_init(AVCodecContext *avctx)
 
 static av_cold int dvvideo_init_encoder(AVCodecContext *avctx)
 {
-    if (!ff_dv_codec_profile(avctx)) {
+    if (!avpriv_dv_codec_profile(avctx)) {
         av_log(avctx, AV_LOG_ERROR, "Found no DV profile for %ix%i %s video\n",
                avctx->width, avctx->height, av_get_pix_fmt_name(avctx->pix_fmt));
         return -1;
@@ -1072,7 +1072,7 @@ static int dvvideo_decode_frame(AVCodecContext *avctx,
     const uint8_t* vsc_pack;
     int apt, is16_9;
 
-    s->sys = ff_dv_frame_profile2(avctx, s->sys, buf, buf_size);
+    s->sys = avpriv_dv_frame_profile2(avctx, s->sys, buf, buf_size);
     if (!s->sys || buf_size < s->sys->frame_size || dv_init_dynamic_tables(s->sys)) {
         av_log(avctx, AV_LOG_ERROR, "could not find dv frame profile\n");
         return -1; /* NOTE: we only accept several full frames */
@@ -1246,7 +1246,7 @@ static int dvvideo_encode_frame(AVCodecContext *c, uint8_t *buf, int buf_size,
 {
     DVVideoContext *s = c->priv_data;
 
-    s->sys = ff_dv_codec_profile(c);
+    s->sys = avpriv_dv_codec_profile(c);
     if (!s->sys || buf_size < s->sys->frame_size || dv_init_dynamic_tables(s->sys))
         return -1;
 

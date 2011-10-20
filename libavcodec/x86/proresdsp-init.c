@@ -52,6 +52,6 @@ void ff_proresdsp_x86_init(ProresDSPContext *dsp, AVCodecContext *avctx)
         dsp->idct_permutation_type = FF_TRANSPOSE_IDCT_PERM;
         dsp->idct_put = ff_prores_idct_put_10_avx;
     }
-#endif
-#endif
+#endif /* HAVE_AVX */
+#endif /* ARCH_X86_64 && HAVE_YASM */
 }

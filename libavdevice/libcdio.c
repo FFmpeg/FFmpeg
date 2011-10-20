@@ -98,7 +98,7 @@ static av_cold int read_header(AVFormatContext *ctx, AVFormatParameters *ap)
     for (i = 0; i < s->drive->tracks; i++) {
         char title[16];
         snprintf(title, sizeof(title), "track %02d", s->drive->disc_toc[i].bTrack);
-        ff_new_chapter(ctx, i, st->time_base, s->drive->disc_toc[i].dwStartSector,
+        avpriv_new_chapter(ctx, i, st->time_base, s->drive->disc_toc[i].dwStartSector,
                        s->drive->disc_toc[i+1].dwStartSector, title);
     }
 

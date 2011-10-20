@@ -41,7 +41,7 @@ const uint8_t ff_log2_run[41]={
 24,
 };
 
-void align_put_bits(PutBitContext *s)
+void avpriv_align_put_bits(PutBitContext *s)
 {
     put_bits(s,s->bit_left & 7,0);
 }
@@ -56,7 +56,7 @@ void ff_put_string(PutBitContext *pb, const char *string, int terminate_string)
         put_bits(pb, 8, 0);
 }
 
-void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
+void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length)
 {
     int words= length>>4;
     int bits= length&15;

@@ -27,7 +27,7 @@
 #include "mpegaudiodata.h"
 
 
-const uint16_t ff_mpa_bitrate_tab[2][3][15] = {
+const uint16_t avpriv_mpa_bitrate_tab[2][3][15] = {
     { {0, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448 },
       {0, 32, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320, 384 },
       {0, 32, 40, 48, 56, 64, 80, 96, 112, 128, 160, 192, 224, 256, 320 } },
@@ -37,7 +37,7 @@ const uint16_t ff_mpa_bitrate_tab[2][3][15] = {
     }
 };
 
-const uint16_t ff_mpa_freq_tab[3] = { 44100, 48000, 32000 };
+const uint16_t avpriv_mpa_freq_tab[3] = { 44100, 48000, 32000 };
 
 /*******************************************************/
 /* half mpeg encoding window (full precision) */

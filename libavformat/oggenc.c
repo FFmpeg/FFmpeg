@@ -274,7 +274,7 @@ static int ogg_build_flac_headers(AVCodecContext *avctx,
     uint8_t *streaminfo;
     uint8_t *p;
 
-    if (!ff_flac_is_extradata_valid(avctx, &format, &streaminfo))
+    if (!avpriv_flac_is_extradata_valid(avctx, &format, &streaminfo))
         return -1;
 
     // first packet: STREAMINFO
@@ -397,7 +397,7 @@ static int ogg_write_header(AVFormatContext *s)
             int header_type = st->codec->codec_id == CODEC_ID_VORBIS ? 3 : 0x81;
             int framing_bit = st->codec->codec_id == CODEC_ID_VORBIS ? 1 : 0;
 
-            if (ff_split_xiph_headers(st->codec->extradata, st->codec->extradata_size,
+            if (avpriv_split_xiph_headers(st->codec->extradata, st->codec->extradata_size,
                                       st->codec->codec_id == CODEC_ID_VORBIS ? 30 : 42,
                                       oggstream->header, oggstream->header_len) < 0) {
                 av_log(s, AV_LOG_ERROR, "Extradata corrupted\n");

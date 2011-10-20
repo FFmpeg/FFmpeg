@@ -45,7 +45,7 @@ static int ogm_chapter(AVFormatContext *as, uint8_t *key, uint8_t *val)
         if (sscanf(val, "%02d:%02d:%02d.%03d", &h, &m, &s, &ms) < 4)
             return 0;
 
-        ff_new_chapter(as, cnum, (AVRational){1,1000},
+        avpriv_new_chapter(as, cnum, (AVRational){1,1000},
                        ms + 1000*(s + 60*(m + 60*h)),
                        AV_NOPTS_VALUE, NULL);
         av_free(val);

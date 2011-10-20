@@ -31,7 +31,7 @@
 #include "mpegaudiodecheader.h"
 
 
-int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
+int avpriv_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
 {
     int sample_rate, frame_size, mpeg25, padding;
     int sample_rate_index, bitrate_index;
@@ -46,7 +46,7 @@ int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     s->layer = 4 - ((header >> 17) & 3);
     /* extract frequency */
     sample_rate_index = (header >> 10) & 3;
-    sample_rate = ff_mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
+    sample_rate = avpriv_mpa_freq_tab[sample_rate_index] >> (s->lsf + mpeg25);
     sample_rate_index += 3 * (s->lsf + mpeg25);
     s->sample_rate_index = sample_rate_index;
     s->error_protection = ((header >> 16) & 1) ^ 1;
@@ -67,7 +67,7 @@ int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
         s->nb_channels = 2;
 
     if (bitrate_index != 0) {
-        frame_size = ff_mpa_bitrate_tab[s->lsf][s->layer - 1][bitrate_index];
+        frame_size = avpriv_mpa_bitrate_tab[s->lsf][s->layer - 1][bitrate_index];
         s->bit_rate = frame_size * 1000;
         switch(s->layer) {
         case 1:
@@ -109,14 +109,14 @@ int ff_mpegaudio_decode_header(MPADecodeHeader *s, uint32_t header)
     return 0;
 }
 
-int ff_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
+int avpriv_mpa_decode_header(AVCodecContext *avctx, uint32_t head, int *sample_rate, int *channels, int *frame_size, int *bit_rate)
 {
     MPADecodeHeader s1, *s = &s1;
 
     if (ff_mpa_check_header(head) != 0)
         return -1;
 
-    if (ff_mpegaudio_decode_header(s, head) != 0) {
+    if (avpriv_mpegaudio_decode_header(s, head) != 0) {
         return -1;
     }
 

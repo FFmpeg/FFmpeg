@@ -97,14 +97,14 @@ static inline void flush_put_bits(PutBitContext *s)
 }
 
 #ifdef BITSTREAM_WRITER_LE
-#define align_put_bits align_put_bits_unsupported_here
+#define avpriv_align_put_bits align_put_bits_unsupported_here
 #define ff_put_string ff_put_string_unsupported_here
-#define ff_copy_bits ff_copy_bits_unsupported_here
+#define avpriv_copy_bits avpriv_copy_bits_unsupported_here
 #else
 /**
  * Pad the bitstream with zeros up to the next byte boundary.
  */
-void align_put_bits(PutBitContext *s);
+void avpriv_align_put_bits(PutBitContext *s);
 
 /**
  * Put the string string in the bitstream.
@@ -118,7 +118,7 @@ void ff_put_string(PutBitContext *pb, const char *string, int terminate_string);
  *
  * @param length the number of bits of src to copy
  */
-void ff_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
+void avpriv_copy_bits(PutBitContext *pb, const uint8_t *src, int length);
 #endif
 
 /**

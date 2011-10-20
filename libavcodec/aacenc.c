@@ -180,7 +180,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     avctx->frame_size = 1024;
 
     for (i = 0; i < 16; i++)
-        if (avctx->sample_rate == ff_mpeg4audio_sample_rates[i])
+        if (avctx->sample_rate == avpriv_mpeg4audio_sample_rates[i])
             break;
     if (i == 16) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate %d\n", avctx->sample_rate);
@@ -491,7 +491,7 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
         put_bits(&s->pb, 8, namelen - 16);
     put_bits(&s->pb, 4, 0); //extension type - filler
     padbits = 8 - (put_bits_count(&s->pb) & 7);
-    align_put_bits(&s->pb);
+    avpriv_align_put_bits(&s->pb);
     for (i = 0; i < namelen - 2; i++)
         put_bits(&s->pb, 8, name[i]);
     put_bits(&s->pb, 12 - padbits, 0);

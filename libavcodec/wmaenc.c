@@ -311,7 +311,7 @@ static int encode_block(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
                 put_bits(&s->pb, s->coef_vlcs[tindex]->huffbits[1], s->coef_vlcs[tindex]->huffcodes[1]);
         }
         if (s->version == 1 && s->nb_channels >= 2) {
-            align_put_bits(&s->pb);
+            avpriv_align_put_bits(&s->pb);
         }
     }
     return 0;
@@ -327,7 +327,7 @@ static int encode_frame(WMACodecContext *s, float (*src_coefs)[BLOCK_MAX_SIZE], 
             return INT_MAX;
     }
 
-    align_put_bits(&s->pb);
+    avpriv_align_put_bits(&s->pb);
 
     return put_bits_count(&s->pb)/8 - s->block_align;
 }

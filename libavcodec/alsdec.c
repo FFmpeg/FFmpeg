@@ -289,7 +289,7 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
 
     init_get_bits(&gb, avctx->extradata, avctx->extradata_size * 8);
 
-    config_offset = ff_mpeg4audio_get_config(&m4ac, avctx->extradata,
+    config_offset = avpriv_mpeg4audio_get_config(&m4ac, avctx->extradata,
                                              avctx->extradata_size);
 
     if (config_offset < 0)

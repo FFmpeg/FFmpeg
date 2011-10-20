@@ -48,7 +48,7 @@ static int flac_read_header(AVFormatContext *s,
     /* process metadata blocks */
     while (!url_feof(s->pb) && !metadata_last) {
         avio_read(s->pb, header, 4);
-        ff_flac_parse_block_header(header, &metadata_last, &metadata_type,
+        avpriv_flac_parse_block_header(header, &metadata_last, &metadata_type,
                                    &metadata_size);
         switch (metadata_type) {
         /* allocate and read metadata block for supported types */
@@ -87,7 +87,7 @@ static int flac_read_header(AVFormatContext *s,
             buffer = NULL;
 
             /* get codec params from STREAMINFO header */
-            ff_flac_parse_streaminfo(st->codec, &si, st->codec->extradata);
+            avpriv_flac_parse_streaminfo(st->codec, &si, st->codec->extradata);
 
             /* set time base and duration */
             if (si.samplerate > 0) {

@@ -55,7 +55,7 @@ static int latm_decode_extradata(LATMContext *ctx, uint8_t *buf, int size)
     MPEG4AudioConfig m4ac;
 
     init_get_bits(&gb, buf, size * 8);
-    ctx->off = ff_mpeg4audio_get_config(&m4ac, buf, size);
+    ctx->off = avpriv_mpeg4audio_get_config(&m4ac, buf, size);
     if (ctx->off < 0)
         return ctx->off;
     skip_bits_long(&gb, ctx->off);
@@ -110,12 +110,12 @@ static int latm_write_frame_header(AVFormatContext *s, PutBitContext *bs)
         /* AudioSpecificConfig */
         if (ctx->object_type == AOT_ALS) {
             header_size = avctx->extradata_size-(ctx->off + 7) >> 3;
-            ff_copy_bits(bs, &avctx->extradata[ctx->off], header_size);
+            avpriv_copy_bits(bs, &avctx->extradata[ctx->off], header_size);
         } else {
-            ff_copy_bits(bs, avctx->extradata, ctx->off + 3);
+            avpriv_copy_bits(bs, avctx->extradata, ctx->off + 3);
 
             if (!ctx->channel_conf) {
-                ff_copy_pce_data(bs, &gb);
+                avpriv_copy_pce_data(bs, &gb);
             }
         }
 
@@ -168,7 +168,7 @@ static int latm_write_packet(AVFormatContext *s, AVPacket *pkt)
     for (i = 0; i < pkt->size; i++)
         put_bits(&bs, 8, pkt->data[i]);
 
-    align_put_bits(&bs);
+    avpriv_align_put_bits(&bs);
     flush_put_bits(&bs);
 
     len = put_bits_count(&bs) >> 3;

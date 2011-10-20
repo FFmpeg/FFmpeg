@@ -2276,7 +2276,7 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    if (ff_split_xiph_headers(avctx->extradata, avctx->extradata_size,
+    if (avpriv_split_xiph_headers(avctx->extradata, avctx->extradata_size,
                               42, header_start, header_len) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Corrupt extradata\n");
         return -1;
