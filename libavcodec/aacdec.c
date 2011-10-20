@@ -2137,6 +2137,15 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
         elem_id = get_bits(gb, 4);
 
         if (elem_type < TYPE_DSE) {
+            if (!ac->tags_mapped && elem_type == TYPE_CPE && ac->m4ac.chan_config==1) {
+                enum ChannelPosition new_che_pos[4][MAX_ELEM_ID]= {0};
+                ac->m4ac.chan_config=2;
+
+                if (set_default_channel_config(ac->avctx, new_che_pos, 2)<0)
+                    return -1;
+                if (output_configure(ac, ac->che_pos, new_che_pos, 2, OC_TRIAL_FRAME)<0)
+                    return -1;
+            }
             if (!(che=get_che(ac, elem_type, elem_id))) {
                 av_log(ac->avctx, AV_LOG_ERROR, "channel element %d.%d is not allocated\n",
                        elem_type, elem_id);
