@@ -290,7 +290,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         out_count = in_count;
     }
 
-    fill_audiodata(in ,  in_arg);
+    fill_audiodata(in ,  (void*)in_arg);
     fill_audiodata(out, out_arg);
 
     if(s->full_convert){
