@@ -19,6 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef AVFILTER_TRANSFORM_H
+#define AVFILTER_TRANSFORM_H
+
 /**
  * @file
  * transform input video
@@ -118,3 +121,4 @@ void avfilter_transform(const uint8_t *src, uint8_t *dst,
                         enum InterpolateMethod interpolate,
                         enum FillMethod fill);
 
+#endif /* AVFILTER_TRANSFORM_H */
