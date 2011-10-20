@@ -50,9 +50,9 @@ extern void ff_ac3_extract_exponents_ssse3(uint8_t *exp, int32_t *coef, int nb_c
 
 av_cold void ff_ac3dsp_init_x86(AC3DSPContext *c, int bit_exact)
 {
+#if HAVE_YASM
     int mm_flags = av_get_cpu_flags();
 
-#if HAVE_YASM
     if (mm_flags & AV_CPU_FLAG_MMX) {
         c->ac3_exponent_min = ff_ac3_exponent_min_mmx;
         c->ac3_max_msb_abs_int16 = ff_ac3_max_msb_abs_int16_mmx;
