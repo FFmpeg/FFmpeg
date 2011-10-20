@@ -60,44 +60,40 @@ enum FillMethod {
  *
  * [ zoom * cos(angle),           -sin(angle),     x_shift,
  *          sin(angle),     zoom * cos(angle),     y_shift,
-                     0,                     0,           1 ]
+ *                   0,                     0,           1 ]
  *
- * Paramters:
- *  x_shift: Horizontal translation
- *  y_shift: Vertical translation
- *    angle: Rotation in radians
- *     zoom: Scale percent (1.0 = 100%)
- *   matrix: 9-item affine transformation matrix
+ * @param x_shift horizontal translation
+ * @param y_shift vertical translation
+ * @param angle   rotation in radians
+ * @param zoom    scale percent (1.0 = 100%)
+ * @param matrix  9-item affine transformation matrix
  */
 void avfilter_get_matrix(float x_shift, float y_shift, float angle, float zoom, float *matrix);
 
 /**
  * Add two matrices together. result = m1 + m2.
  *
- * Parameters:
- *      m1: 9-item transformation matrix
- *      m2: 9-item transformation matrix
- *  result: 9-item transformation matrix
+ * @param m1     9-item transformation matrix
+ * @param m2     9-item transformation matrix
+ * @param result 9-item transformation matrix
  */
 void avfilter_add_matrix(const float *m1, const float *m2, float *result);
 
 /**
  * Subtract one matrix from another. result = m1 - m2.
  *
- * Parameters:
- *      m1: 9-item transformation matrix
- *      m2: 9-item transformation matrix
- *  result: 9-item transformation matrix
+ * @param m1     9-item transformation matrix
+ * @param m2     9-item transformation matrix
+ * @param result 9-item transformation matrix
  */
 void avfilter_sub_matrix(const float *m1, const float *m2, float *result);
 
 /**
  * Multiply a matrix by a scalar value. result = m1 * scalar.
  *
- * Parameters:
- *      m1: 9-item transformation matrix
- *  scalar: A number
- *  result: 9-item transformation matrix
+ * @param m1     9-item transformation matrix
+ * @param scalar a number
+ * @param result 9-item transformation matrix
  */
 void avfilter_mul_matrix(const float *m1, float scalar, float *result);
 
@@ -106,16 +102,15 @@ void avfilter_mul_matrix(const float *m1, float scalar, float *result);
  * multiplies each vector [x,y,1] by the matrix and then interpolates to
  * get the final value.
  *
- * Parameters:
- *          src: Source image
- *          dst: Destination image
- *   src_stride: Source image line size in bytes
- *   dst_stride: Destination image line size in bytes
- *        width: Image width in pixels
- *       height: Image height in pixels
- *       matrix: 9-item affine transformation matrix
- *  interpolate: Pixel interpolation method
- *         fill: Edge fill method
+ * @param src         source image
+ * @param dst         destination image
+ * @param src_stride  source image line size in bytes
+ * @param dst_stride  destination image line size in bytes
+ * @param width       image width in pixels
+ * @param height      image height in pixels
+ * @param matrix      9-item affine transformation matrix
+ * @param interpolate pixel interpolation method
+ * @param fill        edge fill method
  */
 void avfilter_transform(const uint8_t *src, uint8_t *dst,
                         int src_stride, int dst_stride,
