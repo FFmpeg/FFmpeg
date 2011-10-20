@@ -1,6 +1,6 @@
 g=120
 lag-in-frames=25
-deafline=good
+deadline=good
 cpu-used=0
 profile=1
 qmax=51
