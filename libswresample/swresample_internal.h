@@ -33,7 +33,7 @@ typedef struct AudioData{
 } AudioData;
 
 typedef struct SwrContext {          //FIXME find unused fields
-    AVClass *av_class;
+    const AVClass *av_class;
     int log_level_offset;
     void *log_ctx;
     enum AVSampleFormat  in_sample_fmt;
