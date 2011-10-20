@@ -344,7 +344,7 @@ int swr_multiple_resample(AVResampleContext *c, AudioData *dst, int dst_size, Au
     int i, ret= -1;
 
     for(i=0; i<dst->ch_count; i++){
-        ret= swr_resample(c, dst->ch[i], src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        ret= swr_resample(c, (short*)dst->ch[i], (const short*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
     }
 
     return ret;
