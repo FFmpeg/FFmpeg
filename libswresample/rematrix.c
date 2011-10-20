@@ -236,20 +236,20 @@ int swr_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int must
             in_i= s->matrix_ch[out_i][1];
             if(mustcopy || s->matrix[out_i][in_i]!=1.0){
                 if(s->int_sample_fmt == AV_SAMPLE_FMT_FLT){
-                    copy_float(out->ch[out_i], in->ch[in_i], s->matrix[out_i][in_i], len);
+                    copy_float((float  *)out->ch[out_i], (const float  *)in->ch[in_i], s->matrix  [out_i][in_i], len);
                 }else
-                    copy_s16  (out->ch[out_i], in->ch[in_i], s->matrix16[out_i][in_i], len);
+                    copy_s16  ((int16_t*)out->ch[out_i], (const int16_t*)in->ch[in_i], s->matrix16[out_i][in_i], len);
             }else{
                 out->ch[out_i]= in->ch[in_i];
             }
             break;
         case 2:
             if(s->int_sample_fmt == AV_SAMPLE_FMT_FLT){
-                sum2_float(out->ch[out_i], in->ch[ s->matrix_ch[out_i][1] ],           in->ch[ s->matrix_ch[out_i][2] ],
+                sum2_float((float  *)out->ch[out_i], (const float  *)in->ch[ s->matrix_ch[out_i][1] ],           (const float  *)in->ch[ s->matrix_ch[out_i][2] ],
                                  s->matrix[out_i][ s->matrix_ch[out_i][1] ], s->matrix[out_i][ s->matrix_ch[out_i][2] ],
                            len);
             }else{
-                sum2_s16  (out->ch[out_i], in->ch[ s->matrix_ch[out_i][1] ],           in->ch[ s->matrix_ch[out_i][2] ],
+                sum2_s16  ((int16_t*)out->ch[out_i], (const int16_t*)in->ch[ s->matrix_ch[out_i][1] ],           (const int16_t*)in->ch[ s->matrix_ch[out_i][2] ],
                                  s->matrix16[out_i][ s->matrix_ch[out_i][1] ], s->matrix16[out_i][ s->matrix_ch[out_i][2] ],
                            len);
             }
