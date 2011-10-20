@@ -280,7 +280,7 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
     int ret;
 
     /* parse fmt header */
-    *st = av_new_stream(s, 0);
+    *st = avformat_new_stream(s, NULL);
     if (!*st)
         return AVERROR(ENOMEM);
 
@@ -726,7 +726,7 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return -1;
     }
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

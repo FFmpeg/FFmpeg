@@ -408,7 +408,7 @@ static int ea_read_header(AVFormatContext *s,
 
     if (ea->video_codec) {
         /* initialize the video decoder stream */
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         ea->video_stream_index = st->index;
@@ -437,7 +437,7 @@ static int ea_read_header(AVFormatContext *s,
         }
 
         /* initialize the audio decoder stream */
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, ea->sample_rate);

@@ -206,7 +206,7 @@ static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
     seq->audio_buffer_full = 0;
 
     /* initialize the video decoder stream */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
@@ -219,7 +219,7 @@ static int seq_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->height = SEQ_FRAME_H;
 
     /* initialize the audio decoder stream */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

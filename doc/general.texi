@@ -527,6 +527,7 @@ following image formats are supported:
     @tab encoding supported through external library libtheora
 @item Tiertex Limited SEQ video  @tab     @tab  X
     @tab Codec used in DOS CD-ROM FlashBack game.
+@item Ut Video               @tab     @tab  X
 @item V210 Quicktime Uncompressed 4:2:2 10-bit     @tab  X  @tab  X
 @item VMware Screen Codec / VMware Video  @tab     @tab  X
     @tab Codec used in videos captured by VMware.

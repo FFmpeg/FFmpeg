@@ -144,7 +144,7 @@ static int wsaud_read_header(AVFormatContext *s,
     wsaud->audio_bits = (((header[10] & 0x2) >> 1) + 1) * 8;
 
     /* initialize the audio decoder stream */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
@@ -221,7 +221,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     unsigned int chunk_size;
 
     /* initialize the video decoder stream */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
@@ -247,7 +247,7 @@ static int wsvqa_read_header(AVFormatContext *s,
 
     /* initialize the audio decoder stream for VQA v1 or nonzero samplerate */
     if (AV_RL16(&header[24]) || (AV_RL16(&header[0]) == 1 && AV_RL16(&header[2]) == 1)) {
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         av_set_pts_info(st, 33, 1, VQA_FRAMERATE);

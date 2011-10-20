@@ -135,7 +135,7 @@ static int iff_read_header(AVFormatContext *s,
     unsigned transparency = 0;
     unsigned masking = 0; // no mask
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

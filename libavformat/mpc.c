@@ -84,7 +84,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     c->curbits = 8;
     c->frames_noted = 0;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;

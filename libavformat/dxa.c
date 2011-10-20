@@ -87,7 +87,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
     h = avio_rb16(pb);
     c->has_sound = 0;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
 
@@ -100,7 +100,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
         avio_skip(pb, 16);
         fsize = avio_rl32(pb);
 
-        ast = av_new_stream(s, 0);
+        ast = avformat_new_stream(s, NULL);
         if (!ast)
             return -1;
         ret = ff_get_wav_header(pb, ast->codec, fsize);

@@ -84,7 +84,7 @@ static int roq_read_header(AVFormatContext *s,
     roq->audio_frame_count = 0;
     roq->audio_stream_index = -1;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 63, 1, framerate);
@@ -166,7 +166,7 @@ static int roq_read_packet(AVFormatContext *s,
         case RoQ_SOUND_MONO:
         case RoQ_SOUND_STEREO:
             if (roq->audio_stream_index == -1) {
-                AVStream *st = av_new_stream(s, 1);
+                AVStream *st = avformat_new_stream(s, NULL);
                 if (!st)
                     return AVERROR(ENOMEM);
                 av_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);

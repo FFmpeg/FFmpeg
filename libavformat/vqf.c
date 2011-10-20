@@ -64,7 +64,7 @@ static void add_metadata(AVFormatContext *s, const char *tag,
 static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     VqfContext *c = s->priv_data;
-    AVStream *st  = av_new_stream(s, 0);
+    AVStream *st  = avformat_new_stream(s, NULL);
     int chunk_tag;
     int rate_flag = -1;
     int header_size;

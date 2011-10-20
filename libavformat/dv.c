@@ -211,7 +211,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
     /* Dynamic handling of the audio streams in DV */
     for (i = 0; i < ach; i++) {
        if (!c->ast[i]) {
-           c->ast[i] = av_new_stream(c->fctx, 0);
+           c->ast[i] = avformat_new_stream(c->fctx, NULL);
            if (!c->ast[i])
                break;
            av_set_pts_info(c->ast[i], 64, 1, 30000);
@@ -278,7 +278,7 @@ DVDemuxContext* dv_init_demux(AVFormatContext *s)
     if (!c)
         return NULL;
 
-    c->vst = av_new_stream(s, 0);
+    c->vst = avformat_new_stream(s, NULL);
     if (!c->vst) {
         av_free(c);
         return NULL;

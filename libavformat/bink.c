@@ -78,7 +78,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     uint16_t flags;
     int keyframe;
 
-    vst = av_new_stream(s, 0);
+    vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
 
@@ -130,7 +130,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         avio_skip(pb, 4 * bink->num_audio_tracks);
 
         for (i = 0; i < bink->num_audio_tracks; i++) {
-            ast = av_new_stream(s, 1);
+            ast = avformat_new_stream(s, NULL);
             if (!ast)
                 return AVERROR(ENOMEM);
             ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;

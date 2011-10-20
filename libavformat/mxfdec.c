@@ -852,11 +852,12 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         if (!source_track)
             continue;
 
-        st = av_new_stream(mxf->fc, source_track->track_id);
+        st = avformat_new_stream(mxf->fc, NULL);
         if (!st) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not allocate stream\n");
             return -1;
         }
+        st->id = source_track->track_id;
         st->priv_data = source_track;
         st->duration = component->duration;
         if (st->duration == -1)

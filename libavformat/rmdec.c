@@ -397,7 +397,7 @@ static int rm_read_header_old(AVFormatContext *s)
     AVStream *st;
 
     rm->old_format = 1;
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
     st->priv_data = ff_rm_alloc_rmstream();
@@ -463,7 +463,7 @@ static int rm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             rm_read_metadata(s, 1);
             break;
         case MKTAG('M', 'D', 'P', 'R'):
-            st = av_new_stream(s, 0);
+            st = avformat_new_stream(s, NULL);
             if (!st)
                 return AVERROR(ENOMEM);
             st->id = avio_rb16(pb);

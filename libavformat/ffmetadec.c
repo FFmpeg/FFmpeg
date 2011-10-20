@@ -132,7 +132,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         get_line(s->pb, line, sizeof(line));
 
         if (!memcmp(line, ID_STREAM, strlen(ID_STREAM))) {
-            AVStream *st = av_new_stream(s, 0);
+            AVStream *st = avformat_new_stream(s, NULL);
 
             if (!st)
                 return -1;

@@ -55,12 +55,12 @@ static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
     int fps, chunk_header;
 
     /* Initialize the video codec... */
-    vstream = av_new_stream(s, 0);
+    vstream = avformat_new_stream(s, NULL);
     if (!vstream)
         return AVERROR(ENOMEM);
 
     /* Initialize the audio codec... */
-    astream = av_new_stream(s, 0);
+    astream = avformat_new_stream(s, NULL);
     if (!astream)
         return AVERROR(ENOMEM);
 

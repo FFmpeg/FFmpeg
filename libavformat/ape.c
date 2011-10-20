@@ -313,7 +313,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
            ape->compressiontype);
 
     /* now we are ready: build format streams */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
 

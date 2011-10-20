@@ -1291,6 +1291,7 @@ static av_always_inline int scaleforsame_x(VC1Context *v, int n /* MV */, int di
     int scaledvalue, refdist;
     int scalesame1, scalesame2;
     int scalezone1_x, zone1offset_x;
+    int table_index = dir ^ v->second_field;
 
     if (v->s.pict_type != AV_PICTURE_TYPE_B)
         refdist = v->refdist;
@@ -1298,10 +1299,10 @@ static av_always_inline int scaleforsame_x(VC1Context *v, int n /* MV */, int di
         refdist = dir ? v->brfd : v->frfd;
     if (refdist > 3)
         refdist = 3;
-    scalesame1    = vc1_field_mvpred_scales[v->second_field][1][refdist];
-    scalesame2    = vc1_field_mvpred_scales[v->second_field][2][refdist];
-    scalezone1_x  = vc1_field_mvpred_scales[v->second_field][3][refdist];
-    zone1offset_x = vc1_field_mvpred_scales[v->second_field][5][refdist];
+    scalesame1    = vc1_field_mvpred_scales[table_index][1][refdist];
+    scalesame2    = vc1_field_mvpred_scales[table_index][2][refdist];
+    scalezone1_x  = vc1_field_mvpred_scales[table_index][3][refdist];
+    zone1offset_x = vc1_field_mvpred_scales[table_index][5][refdist];
 
     if (FFABS(n) > 255)
         scaledvalue = n;
@@ -1323,6 +1324,7 @@ static av_always_inline int scaleforsame_y(VC1Context *v, int i, int n /* MV */,
     int scaledvalue, refdist;
     int scalesame1, scalesame2;
     int scalezone1_y, zone1offset_y;
+    int table_index = dir ^ v->second_field;
 
     if (v->s.pict_type != AV_PICTURE_TYPE_B)
         refdist = v->refdist;
@@ -1330,10 +1332,10 @@ static av_always_inline int scaleforsame_y(VC1Context *v, int i, int n /* MV */,
         refdist = dir ? v->brfd : v->frfd;
     if (refdist > 3)
         refdist = 3;
-    scalesame1    = vc1_field_mvpred_scales[v->second_field][1][refdist];
-    scalesame2    = vc1_field_mvpred_scales[v->second_field][2][refdist];
-    scalezone1_y  = vc1_field_mvpred_scales[v->second_field][4][refdist];
-    zone1offset_y = vc1_field_mvpred_scales[v->second_field][6][refdist];
+    scalesame1    = vc1_field_mvpred_scales[table_index][1][refdist];
+    scalesame2    = vc1_field_mvpred_scales[table_index][2][refdist];
+    scalezone1_y  = vc1_field_mvpred_scales[table_index][4][refdist];
+    zone1offset_y = vc1_field_mvpred_scales[table_index][6][refdist];
 
     if (FFABS(n) > 63)
         scaledvalue = n;
@@ -1444,7 +1446,7 @@ static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
         refdist = FFMIN(v->refdist, 3);
     else
         refdist = dir ? v->brfd : v->frfd;
-    scaleopp = vc1_field_mvpred_scales[v->second_field][0][refdist];
+    scaleopp = vc1_field_mvpred_scales[dir ^ v->second_field][0][refdist];
 
     return n * scaleopp >> 8;
 }

@@ -56,7 +56,7 @@ static int pva_probe(AVProbeData * pd) {
 static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     AVStream *st;
 
-    if (!(st = av_new_stream(s, 0)))
+    if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_MPEG2VIDEO;
@@ -64,7 +64,7 @@ static int pva_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     av_set_pts_info(st, 32, 1, 90000);
     av_add_index_entry(st, 0, 0, 0, 0, AVINDEX_KEYFRAME);
 
-    if (!(st = av_new_stream(s, 1)))
+    if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id   = CODEC_ID_MP2;

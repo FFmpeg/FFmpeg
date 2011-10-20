@@ -560,7 +560,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     enum CodecID codec_id;
     enum PixelFormat pix_fmt = PIX_FMT_NONE;
 
-    st = av_new_stream(s1, 0);
+    st = avformat_new_stream(s1, NULL);
     if (!st) {
         res = AVERROR(ENOMEM);
         goto out;

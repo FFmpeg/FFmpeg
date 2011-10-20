@@ -253,7 +253,7 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     }
 
     /* create a video stream */
-    vst = av_new_stream(c, 0);
+    vst = avformat_new_stream(c, NULL);
     if (!vst)
         goto out_camera;
     av_set_pts_info(vst, 64, 1, 1000);

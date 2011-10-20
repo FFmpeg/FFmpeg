@@ -873,7 +873,7 @@ A preset file contains a sequence of @var{option}=@var{value} pairs,
 one for each line, specifying a sequence of options which would be
 awkward to specify on the command line. Lines starting with the hash
 ('#') character are ignored and are used to provide comments. Check
-the @file{ffpresets} directory in the FFmpeg source tree for examples.
+the @file{presets} directory in the FFmpeg source tree for examples.
 
 Preset files are specified with the @code{vpre}, @code{apre},
 @code{spre}, and @code{fpre} options. The @code{fpre} option takes the

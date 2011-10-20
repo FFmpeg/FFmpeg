@@ -65,6 +65,7 @@ easier to use. The changes are:
 - VC-1 interlaced decoding
 - libutvideo wrapper (--enable-libutvideo)
 - aevalsrc audio source added
+- Ut Video decoder
 
 
 version 0.8:

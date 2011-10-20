@@ -60,14 +60,14 @@ static int lmlm4_probe(AVProbeData * pd) {
 static int lmlm4_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     AVStream *st;
 
-    if (!(st = av_new_stream(s, 0)))
+    if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_MPEG4;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
     av_set_pts_info(st, 64, 1001, 30000);
 
-    if (!(st = av_new_stream(s, 1)))
+    if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id   = CODEC_ID_MP2;

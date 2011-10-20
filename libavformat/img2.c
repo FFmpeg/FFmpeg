@@ -220,7 +220,7 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
 
     s1->ctx_flags |= AVFMTCTX_NOHEADER;
 
-    st = av_new_stream(s1, 0);
+    st = avformat_new_stream(s1, NULL);
     if (!st) {
         return AVERROR(ENOMEM);
     }

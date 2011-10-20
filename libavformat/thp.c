@@ -94,7 +94,7 @@ static int thp_read_header(AVFormatContext *s,
                 break;
 
             /* Video component.  */
-            st = av_new_stream(s, 0);
+            st = avformat_new_stream(s, NULL);
             if (!st)
                 return AVERROR(ENOMEM);
 
@@ -117,7 +117,7 @@ static int thp_read_header(AVFormatContext *s,
                 break;
 
             /* Audio component.  */
-            st = av_new_stream(s, 0);
+            st = avformat_new_stream(s, NULL);
             if (!st)
                 return AVERROR(ENOMEM);
 

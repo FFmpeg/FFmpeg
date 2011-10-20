@@ -224,7 +224,7 @@ static int asf_read_stream_properties(AVFormatContext *s, int64_t size)
 
     pos1 = avio_tell(pb);
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */

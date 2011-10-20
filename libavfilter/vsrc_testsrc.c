@@ -103,7 +103,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     test->nb_frame = 0;
     test->pts = 0;
 
-    av_log(ctx, AV_LOG_INFO, "size:%dx%d rate:%d/%d duration:%f sar:%d/%d\n",
+    av_log(ctx, AV_LOG_DEBUG, "size:%dx%d rate:%d/%d duration:%f sar:%d/%d\n",
            test->w, test->h, frame_rate_q.num, frame_rate_q.den,
            duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base),
            test->sar.num, test->sar.den);
@@ -156,9 +156,9 @@ static const char *testsrc_get_name(void *ctx)
 }
 
 static const AVClass testsrc_class = {
-    "TestSourceContext",
-    testsrc_get_name,
-    testsrc_options
+    .class_name = "TestSourceContext",
+    .item_name  = testsrc_get_name,
+    .option     = testsrc_options,
 };
 
 /**
@@ -378,9 +378,9 @@ static const char *rgbtestsrc_get_name(void *ctx)
 }
 
 static const AVClass rgbtestsrc_class = {
-    "RGBTestSourceContext",
-    rgbtestsrc_get_name,
-    testsrc_options
+    .class_name = "RGBTestSourceContext",
+    .item_name  = rgbtestsrc_get_name,
+    .option     = testsrc_options,
 };
 
 #define R 0

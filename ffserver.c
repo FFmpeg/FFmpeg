@@ -4236,6 +4236,7 @@ static int parse_ffconfig(const char *filename)
                 stream->fmt = ffserver_guess_format(NULL, stream->filename, NULL);
                 avcodec_get_context_defaults2(&video_enc, AVMEDIA_TYPE_VIDEO);
                 avcodec_get_context_defaults2(&audio_enc, AVMEDIA_TYPE_AUDIO);
+
                 audio_id = CODEC_ID_NONE;
                 video_id = CODEC_ID_NONE;
                 if (stream->fmt) {

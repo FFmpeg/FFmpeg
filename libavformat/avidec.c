@@ -454,10 +454,11 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 break;
             }else{
                 stream_index++;
-                st = av_new_stream(s, stream_index);
+                st = avformat_new_stream(s, NULL);
                 if (!st)
                     goto fail;
 
+                st->id = stream_index;
                 ast = av_mallocz(sizeof(AVIStream));
                 if (!ast)
                     goto fail;

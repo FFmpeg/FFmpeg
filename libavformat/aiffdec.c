@@ -198,7 +198,7 @@ static int aiff_read_header(AVFormatContext *s,
 
     filesize -= 4;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

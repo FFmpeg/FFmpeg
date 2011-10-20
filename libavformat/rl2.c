@@ -110,7 +110,7 @@ static av_cold int rl2_read_header(AVFormatContext *s,
     def_sound_size = avio_rl16(pb);
 
     /** setup video stream */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if(!st)
          return AVERROR(ENOMEM);
 
@@ -140,7 +140,7 @@ static av_cold int rl2_read_header(AVFormatContext *s,
         pts_num = def_sound_size;
         pts_den = rate;
 
-        st = av_new_stream(s, 0);
+        st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;

@@ -139,7 +139,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     av_dict_set(&s->metadata, "author"   , line, 0);
 
     // video headers
-    vst = av_new_stream(s, 0);
+    vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
     vst->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
@@ -181,7 +181,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     // samples, though. This code will ignore additional tracks.
     audio_format = read_line_and_int(pb, &error);  // audio format ID
     if (audio_format) {
-        ast = av_new_stream(s, 0);
+        ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
         ast->codec->codec_type      = AVMEDIA_TYPE_AUDIO;

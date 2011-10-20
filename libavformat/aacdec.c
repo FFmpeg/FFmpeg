@@ -66,7 +66,7 @@ static int adts_aac_read_header(AVFormatContext *s,
 {
     AVStream *st;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

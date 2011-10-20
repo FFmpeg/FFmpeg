@@ -137,7 +137,7 @@ static int mp3_read_header(AVFormatContext *s,
     AVStream *st;
     int64_t off;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

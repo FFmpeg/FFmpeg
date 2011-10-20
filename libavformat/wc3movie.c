@@ -163,7 +163,7 @@ static int wc3_read_header(AVFormatContext *s,
     } while (fourcc_tag != BRCH_TAG);
 
     /* initialize the decoder streams */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, WC3_FRAME_FPS);
@@ -174,7 +174,7 @@ static int wc3_read_header(AVFormatContext *s,
     st->codec->width = wc3->width;
     st->codec->height = wc3->height;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 33, 1, WC3_FRAME_FPS);

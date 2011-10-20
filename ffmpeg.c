@@ -3252,7 +3252,7 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
 static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, enum AVMediaType type)
 {
     OutputStream *ost;
-    AVStream *st = av_new_stream(oc, oc->nb_streams < o->nb_streamid_map ? o->streamid_map[oc->nb_streams] : 0);
+    AVStream *st = avformat_new_stream(oc, NULL);
     int idx      = oc->nb_streams - 1, ret = 0;
     int64_t max_frames = INT64_MAX;
     char *bsf = NULL, *next, *codec_tag = NULL;
@@ -3265,6 +3265,9 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
         av_log(NULL, AV_LOG_FATAL, "Could not alloc stream.\n");
         exit_program(1);
     }
+
+    if (oc->nb_streams - 1 < o->nb_streamid_map)
+        st->id = o->streamid_map[oc->nb_streams - 1];
 
     output_streams = grow_array(output_streams, sizeof(*output_streams), &nb_output_streams,
                                 nb_output_streams + 1);

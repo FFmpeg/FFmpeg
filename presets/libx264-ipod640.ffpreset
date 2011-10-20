@@ -1,0 +1,4 @@
+profile=baseline
+level=30
+maxrate=10000000
+bufsize=10000000

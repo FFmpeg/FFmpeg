@@ -54,7 +54,7 @@ static int vc1t_read_header(AVFormatContext *s,
         return -1;
 
     /* init video codec */
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
 

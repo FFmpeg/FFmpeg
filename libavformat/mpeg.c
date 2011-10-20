@@ -537,9 +537,10 @@ static int mpegps_read_packet(AVFormatContext *s,
         goto redo;
     }
     /* no stream found: add a new stream */
-    st = av_new_stream(s, startcode);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         goto skip;
+    st->id = startcode;
     st->codec->codec_type = type;
     st->codec->codec_id = codec_id;
     st->request_probe     = request_probe;

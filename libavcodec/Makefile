@@ -401,6 +401,7 @@ OBJS-$(CONFIG_TTA_DECODER)             += tta.o
 OBJS-$(CONFIG_TWINVQ_DECODER)          += twinvq.o celp_math.o
 OBJS-$(CONFIG_TXD_DECODER)             += txd.o s3tc.o
 OBJS-$(CONFIG_ULTI_DECODER)            += ulti.o
+OBJS-$(CONFIG_UTVIDEO_DECODER)         += utvideo.o
 OBJS-$(CONFIG_V210_DECODER)            += v210dec.o
 OBJS-$(CONFIG_V210_ENCODER)            += v210enc.o
 OBJS-$(CONFIG_V210X_DECODER)           += v210x.o

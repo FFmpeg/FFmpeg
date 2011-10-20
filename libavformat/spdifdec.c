@@ -205,7 +205,7 @@ static int spdif_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!s->nb_streams) {
         /* first packet, create a stream */
-        AVStream *st = av_new_stream(s, 0);
+        AVStream *st = avformat_new_stream(s, NULL);
         if (!st) {
             av_free_packet(pkt);
             return AVERROR(ENOMEM);
