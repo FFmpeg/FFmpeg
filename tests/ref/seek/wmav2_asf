@@ -1,6 +1,6 @@
 ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:    444 size:   743
 ret: 0         st:-1 flags:0  ts:-1.000000
-ret: 0         st: 0 flags:1 dts: 0.186000 pts: 0.186000 pos:   3644 size:   743
+ret: 0         st: 0 flags:1 dts: 0.000000 pts: 0.000000 pos:    444 size:   743
 ret: 0         st:-1 flags:1  ts: 1.894167
 ret: 0         st: 0 flags:1 dts: 1.858000 pts: 1.858000 pos:  32444 size:   743
 ret: 0         st: 0 flags:0  ts: 0.788000

@@ -1621,6 +1621,11 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
             return -1;
     }
 
+    if(ts_min >= target_ts){
+        *ts_ret= ts_min;
+        return pos_min;
+    }
+
     if(ts_max == AV_NOPTS_VALUE){
         int step= 1024;
         filesize = avio_size(s->pb);
@@ -1644,6 +1649,11 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index, int64_t target_ts, i
                 break;
         }
         pos_limit= pos_max;
+    }
+
+    if(ts_max <= target_ts){
+        *ts_ret= ts_max;
+        return pos_max;
     }
 
     if(ts_min > ts_max){
