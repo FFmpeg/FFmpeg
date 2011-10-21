@@ -1966,7 +1966,8 @@ static int decode_init_mp3on4(AVCodecContext * avctx)
         return AVERROR_INVALIDDATA;
     }
 
-    avpriv_mpeg4audio_get_config(&cfg, avctx->extradata, avctx->extradata_size);
+    avpriv_mpeg4audio_get_config(&cfg, avctx->extradata,
+                                 avctx->extradata_size * 8, 1);
     if (!cfg.chan_config || cfg.chan_config > 7) {
         av_log(avctx, AV_LOG_ERROR, "Invalid channel config number.\n");
         return AVERROR_INVALIDDATA;

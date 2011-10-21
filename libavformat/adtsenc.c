@@ -37,7 +37,7 @@ int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf
     int off;
 
     init_get_bits(&gb, buf, size * 8);
-    off = avpriv_mpeg4audio_get_config(&m4ac, buf, size);
+    off = avpriv_mpeg4audio_get_config(&m4ac, buf, size * 8, 1);
     if (off < 0)
         return off;
     skip_bits_long(&gb, off);

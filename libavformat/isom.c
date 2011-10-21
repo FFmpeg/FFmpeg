@@ -436,7 +436,7 @@ int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext 
         if (st->codec->codec_id == CODEC_ID_AAC) {
             MPEG4AudioConfig cfg;
             avpriv_mpeg4audio_get_config(&cfg, st->codec->extradata,
-                                     st->codec->extradata_size);
+                                         st->codec->extradata_size * 8, 1);
             st->codec->channels = cfg.channels;
             if (cfg.object_type == 29 && cfg.sampling_index < 3) // old mp3on4
                 st->codec->sample_rate = avpriv_mpa_freq_tab[cfg.sampling_index];
