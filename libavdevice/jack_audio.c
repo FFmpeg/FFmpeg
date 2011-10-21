@@ -29,7 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
-#include "libavformat/timefilter.h"
+#include "timefilter.h"
 
 /**
  * Size of the internal FIFO buffers as a number of audio packets

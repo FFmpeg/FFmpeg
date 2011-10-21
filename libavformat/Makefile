@@ -334,11 +334,8 @@ OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
-# libavdevice dependencies
-OBJS-$(CONFIG_JACK_INDEV)                += timefilter.o
-
 EXAMPLES  = metadata output
-TESTPROGS = seek timefilter
+TESTPROGS = seek
 TOOLS     = pktdumper probetest
 
 include $(SRC_PATH)/subdir.mak

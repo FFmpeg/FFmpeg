@@ -22,8 +22,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef AVFORMAT_TIMEFILTER_H
-#define AVFORMAT_TIMEFILTER_H
+#ifndef AVDEVICE_TIMEFILTER_H
+#define AVDEVICE_TIMEFILTER_H
 
 /**
  * Opaque type representing a time filter state
@@ -94,4 +94,4 @@ void ff_timefilter_reset(TimeFilter *);
  */
 void ff_timefilter_destroy(TimeFilter *);
 
-#endif /* AVFORMAT_TIMEFILTER_H */
+#endif /* AVDEVICE_TIMEFILTER_H */
