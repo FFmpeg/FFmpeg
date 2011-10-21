@@ -100,20 +100,20 @@ static int mov_metadata_track_or_disc_number(MOVContext *c, AVIOContext *pb,
     return 0;
 }
 
-static int mov_metadata_int8(MOVContext *c, AVIOContext *pb,
-                             unsigned len, const char *key)
+static int mov_metadata_int8_bypass_padding(MOVContext *c, AVIOContext *pb,
+                                            unsigned len, const char *key)
 {
-  char buf[16];
+    char buf[16];
 
-  /* bypass padding bytes */
-  avio_r8(pb);
-  avio_r8(pb);
-  avio_r8(pb);
+    /* bypass padding bytes */
+    avio_r8(pb);
+    avio_r8(pb);
+    avio_r8(pb);
 
-  snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
-  av_dict_set(&c->fc->metadata, key, buf, 0);
+    snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
+    av_dict_set(&c->fc->metadata, key, buf, 0);
 
-  return 0;
+    return 0;
 }
 
 static int mov_metadata_stik(MOVContext *c, AVIOContext *pb,
@@ -220,9 +220,9 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 'd','i','s','k'): key = "disc";
         parse = mov_metadata_track_or_disc_number; break;
     case MKTAG( 't','v','e','s'): key = "episode_sort";
-        parse = mov_metadata_int8; break;
+        parse = mov_metadata_int8_bypass_padding; break;
     case MKTAG( 't','v','s','n'): key = "season_number";
-        parse = mov_metadata_int8; break;
+        parse = mov_metadata_int8_bypass_padding; break;
     case MKTAG( 's','t','i','k'): key = "media_type";
         parse = mov_metadata_stik; break;
     }
