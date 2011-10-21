@@ -415,6 +415,20 @@ static ChannelElement *get_che(AACContext *ac, int type, int elem_id)
     if (!ac->m4ac.chan_config) {
         return ac->tag_che_map[type][elem_id];
     }
+    // Allow single CPE stereo files to be signalled with mono configuration.
+    if (!ac->tags_mapped && type == TYPE_CPE && ac->m4ac.chan_config == 1) {
+        uint8_t layout_map[MAX_ELEM_ID*4][3];
+        int layout_map_tags;
+
+        if (set_default_channel_config(ac->avctx, layout_map, &layout_map_tags,
+                                       2) < 0)
+            return NULL;
+        if (output_configure(ac, layout_map, layout_map_tags,
+                             2, OC_TRIAL_FRAME) < 0)
+            return NULL;
+
+        ac->m4ac.chan_config = 2;
+    }
     // For indexed channel configurations map the channels solely based on position.
     switch (ac->m4ac.chan_config) {
     case 7:
