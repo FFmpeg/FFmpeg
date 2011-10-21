@@ -1876,32 +1876,6 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
     return ret;
 }
 
-#else
-
-static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, int flags){
-    MpegTSContext *ts = s->priv_data;
-    uint8_t buf[TS_PACKET_SIZE];
-    int64_t pos;
-
-    if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
-        return -1;
-    ff_read_frame_flush(s);
-    return 0;
-    pos= avio_tell(s->pb);
-
-    for(;;) {
-        avio_seek(s->pb, pos, SEEK_SET);
-        if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
-            return -1;
-//        pid = AV_RB16(buf + 1) & 0x1fff;
-        if(buf[1] & 0x40) break;
-        pos += ts->raw_packet_size;
-    }
-    avio_seek(s->pb, pos, SEEK_SET);
-
-    return 0;
-}
-
 #endif
 
 /**************************************************************/
@@ -1968,7 +1942,6 @@ AVInputFormat ff_mpegts_demuxer = {
     .read_header    = mpegts_read_header,
     .read_packet    = mpegts_read_packet,
     .read_close     = mpegts_read_close,
-    .read_seek      = read_seek,
     .read_timestamp = mpegts_get_dts,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
@@ -1983,7 +1956,6 @@ AVInputFormat ff_mpegtsraw_demuxer = {
     .read_header    = mpegts_read_header,
     .read_packet    = mpegts_raw_read_packet,
     .read_close     = mpegts_read_close,
-    .read_seek      = read_seek,
     .read_timestamp = mpegts_get_dts,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
