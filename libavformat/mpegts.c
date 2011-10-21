@@ -1744,7 +1744,7 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
         if (avio_read(s->pb, buf, TS_PACKET_SIZE) != TS_PACKET_SIZE)
             return AV_NOPTS_VALUE;
         if (buf[0] != 0x47) {
-            if (mpegts_resync(s->pb) < 0)
+            if (mpegts_resync(s) < 0)
                 return AV_NOPTS_VALUE;
             pos = url_ftell(s->pb);
             continue;
