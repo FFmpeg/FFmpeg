@@ -35,6 +35,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "libavcodec/get_bits.h"
+#include "id3v1.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -126,6 +127,23 @@ static int mov_metadata_stik(MOVContext *c, AVIOContext *pb,
   return 0;
 }
 
+static int mov_metadata_gnre(MOVContext *c, AVIOContext *pb,
+                             unsigned len, const char *key)
+{
+    short genre;
+    char buf[20];
+
+    avio_r8(pb); // unknown
+
+    genre = avio_r8(pb);
+    if (genre < 1 || genre > ID3v1_GENRE_MAX)
+        return 0;
+    snprintf(buf, sizeof(buf), "%s", ff_id3v1_genre_str[genre-1]);
+    av_dict_set(&c->fc->metadata, key, buf, 0);
+
+    return 0;
+}
+
 static const uint32_t mac_to_unicode[128] = {
     0x00C4,0x00C5,0x00C7,0x00C9,0x00D1,0x00D6,0x00DC,0x00E1,
     0x00E0,0x00E2,0x00E4,0x00E3,0x00E5,0x00E7,0x00E9,0x00E8,
@@ -187,6 +205,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
     case MKTAG(0xa9,'d','a','y'): key = "date";      break;
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
+    case MKTAG( 'g','n','r','e'): key = "genre";
+        parse = mov_metadata_gnre; break;
     case MKTAG(0xa9,'t','o','o'):
     case MKTAG(0xa9,'s','w','r'): key = "encoder";   break;
     case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
