@@ -31,16 +31,18 @@
 #include "dsputil.h"
 
 //typedef void (*h264_chroma_mc_func)(uint8_t *dst/*align 8*/, uint8_t *src/*align 1*/, int srcStride, int h, int x, int y);
-typedef void (*h264_weight_func)(uint8_t *block, int stride, int log2_denom, int weight, int offset);
-typedef void (*h264_biweight_func)(uint8_t *dst, uint8_t *src, int stride, int log2_denom, int weightd, int weights, int offset);
+typedef void (*h264_weight_func)(uint8_t *block, int stride, int height,
+                                 int log2_denom, int weight, int offset);
+typedef void (*h264_biweight_func)(uint8_t *dst, uint8_t *src, int stride, int height,
+                                   int log2_denom, int weightd, int weights, int offset);
 
 /**
  * Context for storing H.264 DSP functions
  */
 typedef struct H264DSPContext{
     /* weighted MC */
-    h264_weight_func weight_h264_pixels_tab[10];
-    h264_biweight_func biweight_h264_pixels_tab[10];
+    h264_weight_func weight_h264_pixels_tab[4];
+    h264_biweight_func biweight_h264_pixels_tab[4];
 
     /* loop filter */
     void (*h264_v_loop_filter_luma)(uint8_t *pix/*align 16*/, int stride, int alpha, int beta, int8_t *tc0);

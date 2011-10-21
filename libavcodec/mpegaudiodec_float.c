@@ -83,7 +83,7 @@ AVCodec ff_mp3on4float_decoder = {
     .init           = decode_init_mp3on4,
     .close          = decode_close_mp3on4,
     .decode         = decode_frame_mp3on4,
-    .flush          = flush,
+    .flush          = flush_mp3on4,
     .long_name      = NULL_IF_CONFIG_SMALL("MP3onMP4"),
 };
 #endif

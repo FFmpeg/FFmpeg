@@ -24,8 +24,8 @@
 
 
 #include "config.h"
-#include "avformat.h"
 #include "timefilter.h"
+#include "libavutil/mem.h"
 
 struct TimeFilter {
     /// Delay Locked Loop data. These variables refer to mathematical

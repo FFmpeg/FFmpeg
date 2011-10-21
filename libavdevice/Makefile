@@ -10,7 +10,7 @@ OBJS    = alldevices.o avdevice.o
 
 # input/output devices
 OBJS-$(CONFIG_ALSA_INDEV)                += alsa-audio-common.o \
-                                            alsa-audio-dec.o
+                                            alsa-audio-dec.o timefilter.o
 OBJS-$(CONFIG_ALSA_OUTDEV)               += alsa-audio-common.o \
                                             alsa-audio-enc.o
 OBJS-$(CONFIG_BKTR_INDEV)                += bktr.o
@@ -19,7 +19,7 @@ OBJS-$(CONFIG_DSHOW_INDEV)               += dshow.o dshow_enummediatypes.o \
                                             dshow_pin.o dshow_common.o
 OBJS-$(CONFIG_DV1394_INDEV)              += dv1394.o
 OBJS-$(CONFIG_FBDEV_INDEV)               += fbdev.o
-OBJS-$(CONFIG_JACK_INDEV)                += jack_audio.o
+OBJS-$(CONFIG_JACK_INDEV)                += jack_audio.o timefilter.o
 OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
 OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
 OBJS-$(CONFIG_OSS_INDEV)                 += oss_audio.o
@@ -38,5 +38,7 @@ OBJS-$(CONFIG_LIBDC1394_INDEV)           += libdc1394.o
 
 SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa-audio.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio_common.h
+
+TESTPROGS = timefilter
 
 include $(SRC_PATH)/subdir.mak

@@ -130,7 +130,6 @@ typedef struct {
 
     uint8_t *intra4x4_pred_mode_top;
     uint8_t intra4x4_pred_mode_left[4];
-    uint8_t *segmentation_map;
 
     /**
      * Macroblocks can have one of 4 different quants in a frame when
@@ -237,6 +236,16 @@ typedef struct {
     H264PredContext hpc;
     vp8_mc_func put_pixels_tab[3][3][3];
     AVFrame frames[5];
+
+    /**
+     * A list of segmentation_map buffers that are to be free()'ed in
+     * the next decoding iteration. We can't free() them right away
+     * because the map may still be used by subsequent decoding threads.
+     * Unused if frame threading is off.
+     */
+    uint8_t *segmentation_maps[5];
+    int num_maps_to_be_freed;
+    int maps_are_invalid;
 } VP8Context;
 
 #endif /* AVCODEC_VP8_H */

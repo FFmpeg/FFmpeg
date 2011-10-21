@@ -136,6 +136,8 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_YUV420P9LE]  = { 1 , 1 },
     [PIX_FMT_YUV420P10BE] = { 1 , 1 },
     [PIX_FMT_YUV420P10LE] = { 1 , 1 },
+    [PIX_FMT_YUV422P9BE]  = { 1 , 1 },
+    [PIX_FMT_YUV422P9LE]  = { 1 , 1 },
     [PIX_FMT_YUV422P10BE] = { 1 , 1 },
     [PIX_FMT_YUV422P10LE] = { 1 , 1 },
     [PIX_FMT_YUV444P9BE]  = { 1 , 1 },
@@ -280,15 +282,18 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
                 if (flags & SWS_BICUBIC) {
                     int64_t B= (param[0] != SWS_PARAM_DEFAULT ? param[0] :   0) * (1<<24);
                     int64_t C= (param[1] != SWS_PARAM_DEFAULT ? param[1] : 0.6) * (1<<24);
-                    int64_t dd = ( d*d)>>30;
-                    int64_t ddd= (dd*d)>>30;
 
-                    if      (d < 1LL<<30)
-                        coeff = (12*(1<<24)-9*B-6*C)*ddd + (-18*(1<<24)+12*B+6*C)*dd + (6*(1<<24)-2*B)*(1<<30);
-                    else if (d < 1LL<<31)
-                        coeff = (-B-6*C)*ddd + (6*B+30*C)*dd + (-12*B-48*C)*d + (8*B+24*C)*(1<<30);
-                    else
-                        coeff=0.0;
+                    if (d >= 1LL<<31) {
+                        coeff = 0.0;
+                    } else {
+                        int64_t dd  = (d  * d) >> 30;
+                        int64_t ddd = (dd * d) >> 30;
+
+                        if (d < 1LL<<30)
+                            coeff = (12*(1<<24)-9*B-6*C)*ddd + (-18*(1<<24)+12*B+6*C)*dd + (6*(1<<24)-2*B)*(1<<30);
+                        else
+                            coeff = (-B-6*C)*ddd + (6*B+30*C)*dd + (-12*B-48*C)*d + (8*B+24*C)*(1<<30);
+                    }
                     coeff *= fone>>(30+24);
                 }
 /*                else if (flags & SWS_X) {

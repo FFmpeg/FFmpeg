@@ -67,6 +67,7 @@ easier to use. The changes are:
 - aevalsrc audio source added
 - Ut Video decoder
 - Speex encoding via libspeex
+- 4:2:2 H.264 decoding support
 
 
 version 0.8:

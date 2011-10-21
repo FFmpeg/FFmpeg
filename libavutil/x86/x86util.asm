@@ -536,6 +536,18 @@
 %endif
 %endmacro
 
+%macro SPLATD_MMX 1
+    punpckldq  %1, %1
+%endmacro
+
+%macro SPLATD_SSE 1
+    shufps  %1, %1, 0
+%endmacro
+
+%macro SPLATD_SSE2 1
+    pshufd  %1, %1, 0
+%endmacro
+
 %macro CLIPW 3 ;(dst, min, max)
     pmaxsw %1, %2
     pminsw %1, %3

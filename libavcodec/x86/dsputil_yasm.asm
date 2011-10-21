@@ -1055,14 +1055,6 @@ emu_edge mmx
 ;                           int32_t max, unsigned int len)
 ;-----------------------------------------------------------------------------
 
-%macro SPLATD_MMX 1
-    punpckldq  %1, %1
-%endmacro
-
-%macro SPLATD_SSE2 1
-    pshufd  %1, %1, 0
-%endmacro
-
 %macro VECTOR_CLIP_INT32 4
 cglobal vector_clip_int32_%1, 5,5,%2, dst, src, min, max, len
 %ifidn %1, sse2

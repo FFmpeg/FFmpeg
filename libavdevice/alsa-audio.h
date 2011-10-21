@@ -33,7 +33,7 @@
 #include <alsa/asoundlib.h>
 #include "config.h"
 #include "libavutil/log.h"
-#include "libavformat/timefilter.h"
+#include "timefilter.h"
 #include "avdevice.h"
 
 /* XXX: we make the assumption that the soundcard accepts this format */

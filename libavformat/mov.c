@@ -35,6 +35,7 @@
 #include "riff.h"
 #include "isom.h"
 #include "libavcodec/get_bits.h"
+#include "id3v1.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -99,31 +100,48 @@ static int mov_metadata_track_or_disc_number(MOVContext *c, AVIOContext *pb,
     return 0;
 }
 
-static int mov_metadata_int8(MOVContext *c, AVIOContext *pb,
-                             unsigned len, const char *key)
+static int mov_metadata_int8_bypass_padding(MOVContext *c, AVIOContext *pb,
+                                            unsigned len, const char *key)
 {
-  char buf[16];
+    char buf[16];
 
-  /* bypass padding bytes */
-  avio_r8(pb);
-  avio_r8(pb);
-  avio_r8(pb);
+    /* bypass padding bytes */
+    avio_r8(pb);
+    avio_r8(pb);
+    avio_r8(pb);
 
-  snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
-  av_dict_set(&c->fc->metadata, key, buf, 0);
+    snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
+    av_dict_set(&c->fc->metadata, key, buf, 0);
 
-  return 0;
+    return 0;
 }
 
-static int mov_metadata_stik(MOVContext *c, AVIOContext *pb,
+static int mov_metadata_int8_no_padding(MOVContext *c, AVIOContext *pb,
+                                        unsigned len, const char *key)
+{
+    char buf[16];
+
+    snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
+    av_dict_set(&c->fc->metadata, key, buf, 0);
+
+    return 0;
+}
+
+static int mov_metadata_gnre(MOVContext *c, AVIOContext *pb,
                              unsigned len, const char *key)
 {
-  char buf[16];
+    short genre;
+    char buf[20];
 
-  snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
-  av_dict_set(&c->fc->metadata, key, buf, 0);
+    avio_r8(pb); // unknown
 
-  return 0;
+    genre = avio_r8(pb);
+    if (genre < 1 || genre > ID3v1_GENRE_MAX)
+        return 0;
+    snprintf(buf, sizeof(buf), "%s", ff_id3v1_genre_str[genre-1]);
+    av_dict_set(&c->fc->metadata, key, buf, 0);
+
+    return 0;
 }
 
 static const uint32_t mac_to_unicode[128] = {
@@ -189,6 +207,8 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG(0xa9,'a','l','b'): key = "album";     break;
     case MKTAG(0xa9,'d','a','y'): key = "date";      break;
     case MKTAG(0xa9,'g','e','n'): key = "genre";     break;
+    case MKTAG( 'g','n','r','e'): key = "genre";
+        parse = mov_metadata_gnre; break;
     case MKTAG(0xa9,'t','o','o'):
     case MKTAG(0xa9,'s','w','r'): key = "encoder";   break;
     case MKTAG(0xa9,'e','n','c'): key = "encoder";   break;
@@ -202,11 +222,15 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 'd','i','s','k'): key = "disc";
         parse = mov_metadata_track_or_disc_number; break;
     case MKTAG( 't','v','e','s'): key = "episode_sort";
-        parse = mov_metadata_int8; break;
+        parse = mov_metadata_int8_bypass_padding; break;
     case MKTAG( 't','v','s','n'): key = "season_number";
-        parse = mov_metadata_int8; break;
+        parse = mov_metadata_int8_bypass_padding; break;
     case MKTAG( 's','t','i','k'): key = "media_type";
-        parse = mov_metadata_stik; break;
+        parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'h','d','v','d'): key = "hd_video";
+        parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'p','g','a','p'): key = "gapless_playback";
+        parse = mov_metadata_int8_no_padding; break;
     }
 
     if (c->itunes_metadata && atom.size > 8) {

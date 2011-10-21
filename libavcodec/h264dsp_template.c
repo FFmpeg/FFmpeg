@@ -29,14 +29,16 @@
 
 #define op_scale1(x)  block[x] = av_clip_pixel( (block[x]*weight + offset) >> log2_denom )
 #define op_scale2(x)  dst[x] = av_clip_pixel( (src[x]*weights + dst[x]*weightd + offset) >> (log2_denom+1))
-#define H264_WEIGHT(W,H) \
-static void FUNCC(weight_h264_pixels ## W ## x ## H)(uint8_t *p_block, int stride, int log2_denom, int weight, int offset){ \
+#define H264_WEIGHT(W) \
+static void FUNCC(weight_h264_pixels ## W)(uint8_t *_block, int stride, int height, \
+                                           int log2_denom, int weight, int offset) \
+{ \
     int y; \
-    pixel *block = (pixel*)p_block; \
+    pixel *block = (pixel*)_block; \
     stride >>= sizeof(pixel)-1; \
     offset <<= (log2_denom + (BIT_DEPTH-8)); \
     if(log2_denom) offset += 1<<(log2_denom-1); \
-    for(y=0; y<H; y++, block += stride){ \
+    for (y = 0; y < height; y++, block += stride) { \
         op_scale1(0); \
         op_scale1(1); \
         if(W==2) continue; \
@@ -58,14 +60,16 @@ static void FUNCC(weight_h264_pixels ## W ## x ## H)(uint8_t *p_block, int strid
         op_scale1(15); \
     } \
 } \
-static void FUNCC(biweight_h264_pixels ## W ## x ## H)(uint8_t *_dst, uint8_t *_src, int stride, int log2_denom, int weightd, int weights, int offset){ \
+static void FUNCC(biweight_h264_pixels ## W)(uint8_t *_dst, uint8_t *_src, int stride, int height, \
+                                             int log2_denom, int weightd, int weights, int offset) \
+{ \
     int y; \
     pixel *dst = (pixel*)_dst; \
     pixel *src = (pixel*)_src; \
     stride >>= sizeof(pixel)-1; \
     offset <<= (BIT_DEPTH-8); \
     offset = ((offset + 1) | 1) << log2_denom; \
-    for(y=0; y<H; y++, dst += stride, src += stride){ \
+    for (y = 0; y < height; y++, dst += stride, src += stride) { \
         op_scale2(0); \
         op_scale2(1); \
         if(W==2) continue; \
@@ -88,16 +92,10 @@ static void FUNCC(biweight_h264_pixels ## W ## x ## H)(uint8_t *_dst, uint8_t *_
     } \
 }
 
-H264_WEIGHT(16,16)
-H264_WEIGHT(16,8)
-H264_WEIGHT(8,16)
-H264_WEIGHT(8,8)
-H264_WEIGHT(8,4)
-H264_WEIGHT(4,8)
-H264_WEIGHT(4,4)
-H264_WEIGHT(4,2)
-H264_WEIGHT(2,4)
-H264_WEIGHT(2,2)
+H264_WEIGHT(16)
+H264_WEIGHT(8)
+H264_WEIGHT(4)
+H264_WEIGHT(2)
 
 #undef op_scale1
 #undef op_scale2

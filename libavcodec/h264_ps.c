@@ -415,7 +415,7 @@ int ff_h264_decode_seq_parameter_set(H264Context *h){
 #endif
     sps->crop= get_bits1(&s->gb);
     if(sps->crop){
-        int crop_vertical_limit = sps->chroma_format_idc & 2 ? 16 : 8;
+        int crop_vertical_limit   = sps->chroma_format_idc  & 2 ? 16 : 8;
         int crop_horizontal_limit = sps->chroma_format_idc == 3 ? 16 : 8;
         sps->crop_left  = get_ue_golomb(&s->gb);
         sps->crop_right = get_ue_golomb(&s->gb);

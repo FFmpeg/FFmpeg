@@ -18,11 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "avcodec.h"
 #include <speex/speex.h>
 #include <speex/speex_header.h>
 #include <speex/speex_stereo.h>
 #include <speex/speex_callbacks.h>
+#include "avcodec.h"
 
 typedef struct {
     SpeexBits bits;
@@ -60,14 +60,14 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
         mode = speex_lib_get_mode(s->header->mode);
         if (!mode) {
             av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d", s->header->mode);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     } else
         av_log(avctx, AV_LOG_INFO, "Missing Speex header, assuming defaults.\n");
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Only stereo and mono are supported.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     speex_bits_init(&s->bits);
@@ -99,32 +99,42 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     LibSpeexContext *s = avctx->priv_data;
-    int16_t *output = data, *end;
-    int i, num_samples;
+    int16_t *output = data;
+    int out_size, ret, consumed = 0;
 
-    num_samples = s->frame_size * avctx->channels;
-    end = output + *data_size / sizeof(*output);
-
-    speex_bits_read_from(&s->bits, buf, buf_size);
-
-    for (i = 0; speex_bits_remaining(&s->bits) && output + num_samples < end; i++) {
-        int ret = speex_decode_int(s->dec_state, &s->bits, output);
-        if (ret <= -2) {
-            av_log(avctx, AV_LOG_ERROR, "Error decoding Speex frame.\n");
-            return -1;
-        } else if (ret == -1)
-            // end of stream
-            break;
-
-        if (avctx->channels == 2)
-            speex_decode_stereo_int(output, s->frame_size, &s->stereo);
-
-        output += num_samples;
+    /* check output buffer size */
+    out_size = s->frame_size * avctx->channels *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
     }
 
-    avctx->frame_size = s->frame_size * i;
-    *data_size = avctx->channels * avctx->frame_size * sizeof(*output);
-    return buf_size;
+    /* if there is not enough data left for the smallest possible frame,
+       reset the libspeex buffer using the current packet, otherwise ignore
+       the current packet and keep decoding frames from the libspeex buffer. */
+    if (speex_bits_remaining(&s->bits) < 43) {
+        /* check for flush packet */
+        if (!buf || !buf_size) {
+            *data_size = 0;
+            return buf_size;
+        }
+        /* set new buffer */
+        speex_bits_read_from(&s->bits, buf, buf_size);
+        consumed = buf_size;
+    }
+
+    /* decode a single frame */
+    ret = speex_decode_int(s->dec_state, &s->bits, output);
+    if (ret <= -2) {
+        av_log(avctx, AV_LOG_ERROR, "Error decoding Speex frame.\n");
+        return AVERROR_INVALIDDATA;
+    }
+    if (avctx->channels == 2)
+        speex_decode_stereo_int(output, s->frame_size, &s->stereo);
+
+    *data_size = out_size;
+    return consumed;
 }
 
 static av_cold int libspeex_decode_close(AVCodecContext *avctx)
@@ -138,6 +148,12 @@ static av_cold int libspeex_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
+static av_cold void libspeex_decode_flush(AVCodecContext *avctx)
+{
+    LibSpeexContext *s = avctx->priv_data;
+    speex_bits_reset(&s->bits);
+}
+
 AVCodec ff_libspeex_decoder = {
     .name           = "libspeex",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -146,5 +162,7 @@ AVCodec ff_libspeex_decoder = {
     .init           = libspeex_decode_init,
     .close          = libspeex_decode_close,
     .decode         = libspeex_decode_frame,
+    .flush          = libspeex_decode_flush,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY,
     .long_name = NULL_IF_CONFIG_SMALL("libspeex Speex"),
 };

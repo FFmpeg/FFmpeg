@@ -64,26 +64,14 @@ void ff_h264dsp_init(H264DSPContext *c, const int bit_depth, const int chroma_fo
     else\
         c->h264_chroma_dc_dequant_idct= FUNC(ff_h264_chroma422_dc_dequant_idct, depth);\
 \
-    c->weight_h264_pixels_tab[0]= FUNC(weight_h264_pixels16x16, depth);\
-    c->weight_h264_pixels_tab[1]= FUNC(weight_h264_pixels16x8, depth);\
-    c->weight_h264_pixels_tab[2]= FUNC(weight_h264_pixels8x16, depth);\
-    c->weight_h264_pixels_tab[3]= FUNC(weight_h264_pixels8x8, depth);\
-    c->weight_h264_pixels_tab[4]= FUNC(weight_h264_pixels8x4, depth);\
-    c->weight_h264_pixels_tab[5]= FUNC(weight_h264_pixels4x8, depth);\
-    c->weight_h264_pixels_tab[6]= FUNC(weight_h264_pixels4x4, depth);\
-    c->weight_h264_pixels_tab[7]= FUNC(weight_h264_pixels4x2, depth);\
-    c->weight_h264_pixels_tab[8]= FUNC(weight_h264_pixels2x4, depth);\
-    c->weight_h264_pixels_tab[9]= FUNC(weight_h264_pixels2x2, depth);\
-    c->biweight_h264_pixels_tab[0]= FUNC(biweight_h264_pixels16x16, depth);\
-    c->biweight_h264_pixels_tab[1]= FUNC(biweight_h264_pixels16x8, depth);\
-    c->biweight_h264_pixels_tab[2]= FUNC(biweight_h264_pixels8x16, depth);\
-    c->biweight_h264_pixels_tab[3]= FUNC(biweight_h264_pixels8x8, depth);\
-    c->biweight_h264_pixels_tab[4]= FUNC(biweight_h264_pixels8x4, depth);\
-    c->biweight_h264_pixels_tab[5]= FUNC(biweight_h264_pixels4x8, depth);\
-    c->biweight_h264_pixels_tab[6]= FUNC(biweight_h264_pixels4x4, depth);\
-    c->biweight_h264_pixels_tab[7]= FUNC(biweight_h264_pixels4x2, depth);\
-    c->biweight_h264_pixels_tab[8]= FUNC(biweight_h264_pixels2x4, depth);\
-    c->biweight_h264_pixels_tab[9]= FUNC(biweight_h264_pixels2x2, depth);\
+    c->weight_h264_pixels_tab[0]= FUNC(weight_h264_pixels16, depth);\
+    c->weight_h264_pixels_tab[1]= FUNC(weight_h264_pixels8, depth);\
+    c->weight_h264_pixels_tab[2]= FUNC(weight_h264_pixels4, depth);\
+    c->weight_h264_pixels_tab[3]= FUNC(weight_h264_pixels2, depth);\
+    c->biweight_h264_pixels_tab[0]= FUNC(biweight_h264_pixels16, depth);\
+    c->biweight_h264_pixels_tab[1]= FUNC(biweight_h264_pixels8, depth);\
+    c->biweight_h264_pixels_tab[2]= FUNC(biweight_h264_pixels4, depth);\
+    c->biweight_h264_pixels_tab[3]= FUNC(biweight_h264_pixels2, depth);\
 \
     c->h264_v_loop_filter_luma= FUNC(h264_v_loop_filter_luma, depth);\
     c->h264_h_loop_filter_luma= FUNC(h264_h_loop_filter_luma, depth);\
