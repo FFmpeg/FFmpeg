@@ -60,14 +60,14 @@ static av_cold int libspeex_decode_init(AVCodecContext *avctx)
         mode = speex_lib_get_mode(s->header->mode);
         if (!mode) {
             av_log(avctx, AV_LOG_ERROR, "Unknown Speex mode %d", s->header->mode);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     } else
         av_log(avctx, AV_LOG_INFO, "Missing Speex header, assuming defaults.\n");
 
     if (avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "Only stereo and mono are supported.\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     speex_bits_init(&s->bits);
@@ -128,7 +128,7 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
     ret = speex_decode_int(s->dec_state, &s->bits, output);
     if (ret <= -2) {
         av_log(avctx, AV_LOG_ERROR, "Error decoding Speex frame.\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     if (avctx->channels == 2)
         speex_decode_stereo_int(output, s->frame_size, &s->stereo);
