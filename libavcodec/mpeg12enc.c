@@ -190,7 +190,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
     }
 
     if (s->tc.str) {
-        s->tc.rate = ff_frame_rate_tab[s->frame_rate_index];
+        s->tc.rate = avpriv_frame_rate_tab[s->frame_rate_index];
         if (ff_init_smtpe_timecode(s, &s->tc) < 0)
             return -1;
         s->avctx->timecode_frame_start = s->tc.start;
