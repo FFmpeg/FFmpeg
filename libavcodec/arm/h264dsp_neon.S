@@ -1592,7 +1592,7 @@ endfunc
         vdup.8          d1,  r5
         vmov            q2,  q8
         vmov            q3,  q8
-1:      subs            ip,  ip,  #2
+1:      subs            r3,  r3,  #2
         vld1.8          {d20-d21},[r0,:128], r2
         \macd           q2,  d0,  d20
         pld             [r0]
@@ -1632,7 +1632,7 @@ endfunc
         vdup.8          d1,  r5
         vmov            q1,  q8
         vmov            q10, q8
-1:      subs            ip,  ip,  #2
+1:      subs            r3,  r3,  #2
         vld1.8          {d4},[r0,:64], r2
         \macd           q1,  d0,  d4
         pld             [r0]
@@ -1662,7 +1662,7 @@ endfunc
         vdup.8          d1,  r5
         vmov            q1,  q8
         vmov            q10, q8
-1:      subs            ip,  ip,  #4
+1:      subs            r3,  r3,  #4
         vld1.32         {d4[0]},[r0,:32], r2
         vld1.32         {d4[1]},[r0,:32], r2
         \macd           q1,  d0,  d4
@@ -1700,16 +1700,17 @@ endfunc
         .endm
 
         .macro  biweight_func w
-function biweight_h264_pixels_\w\()_neon
+function ff_biweight_h264_pixels_\w\()_neon, export=1
         push            {r4-r6, lr}
-        add             r4,  sp,  #16
+        ldr             r12, [sp, #16]
+        add             r4,  sp,  #20
         ldm             r4,  {r4-r6}
         lsr             lr,  r4,  #31
         add             r6,  r6,  #1
         eors            lr,  lr,  r5,  lsr #30
         orr             r6,  r6,  #1
-        vdup.16         q9,  r3
-        lsl             r6,  r6,  r3
+        vdup.16         q9,  r12
+        lsl             r6,  r6,  r12
         vmvn            q9,  q9
         vdup.16         q8,  r6
         mov             r6,  r0
@@ -1730,34 +1731,15 @@ function biweight_h264_pixels_\w\()_neon
 endfunc
         .endm
 
-        .macro  biweight_entry w, h, b=1
-function ff_biweight_h264_pixels_\w\()x\h\()_neon, export=1
-        mov             ip,  #\h
-.if \b
-        b               biweight_h264_pixels_\w\()_neon
-.endif
-endfunc
-        .endm
-
-        biweight_entry  16, 8
-        biweight_entry  16, 16, b=0
         biweight_func   16
-
-        biweight_entry  8,  16
-        biweight_entry  8,  4
-        biweight_entry  8,  8,  b=0
         biweight_func   8
-
-        biweight_entry  4,  8
-        biweight_entry  4,  2
-        biweight_entry  4,  4,  b=0
         biweight_func   4
 
 @ Weighted prediction
 
         .macro  weight_16 add
-        vdup.8          d0,  r3
-1:      subs            ip,  ip,  #2
+        vdup.8          d0,  r12
+1:      subs            r2,  r2,  #2
         vld1.8          {d20-d21},[r0,:128], r1
         vmull.u8        q2,  d0,  d20
         pld             [r0]
@@ -1785,8 +1767,8 @@ endfunc
         .endm
 
         .macro  weight_8 add
-        vdup.8          d0,  r3
-1:      subs            ip,  ip,  #2
+        vdup.8          d0,  r12
+1:      subs            r2,  r2,  #2
         vld1.8          {d4},[r0,:64], r1
         vmull.u8        q1,  d0,  d4
         pld             [r0]
@@ -1806,10 +1788,10 @@ endfunc
         .endm
 
         .macro  weight_4 add
-        vdup.8          d0,  r3
+        vdup.8          d0,  r12
         vmov            q1,  q8
         vmov            q10, q8
-1:      subs            ip,  ip,  #4
+1:      subs            r2,  r2,  #4
         vld1.32         {d4[0]},[r0,:32], r1
         vld1.32         {d4[1]},[r0,:32], r1
         vmull.u8        q1,  d0,  d4
@@ -1842,50 +1824,32 @@ endfunc
         .endm
 
         .macro  weight_func w
-function weight_h264_pixels_\w\()_neon
+function ff_weight_h264_pixels_\w\()_neon, export=1
         push            {r4, lr}
-        ldr             r4,  [sp, #8]
-        cmp             r2,  #1
-        lsl             r4,  r4,  r2
+        ldr             r12, [sp, #8]
+        ldr             r4,  [sp, #12]
+        cmp             r3,  #1
+        lsl             r4,  r4,  r3
         vdup.16         q8,  r4
         mov             r4,  r0
         ble             20f
-        rsb             lr,  r2,  #1
+        rsb             lr,  r3,  #1
         vdup.16         q9,  lr
-        cmp             r3,  #0
+        cmp             r12, #0
         blt             10f
         weight_\w       vhadd.s16
-10:     rsb             r3,  r3,  #0
+10:     rsb             r12, r12, #0
         weight_\w       vhsub.s16
-20:     rsb             lr,  r2,  #0
+20:     rsb             lr,  r3,  #0
         vdup.16         q9,  lr
-        cmp             r3,  #0
+        cmp             r12, #0
         blt             10f
         weight_\w       vadd.s16
-10:     rsb             r3,  r3,  #0
+10:     rsb             r12, r12, #0
         weight_\w       vsub.s16
 endfunc
         .endm
 
-        .macro  weight_entry w, h, b=1
-function ff_weight_h264_pixels_\w\()x\h\()_neon, export=1
-        mov             ip,  #\h
-.if \b
-        b               weight_h264_pixels_\w\()_neon
-.endif
-endfunc
-        .endm
-
-        weight_entry    16, 8
-        weight_entry    16, 16, b=0
         weight_func     16
-
-        weight_entry    8,  16
-        weight_entry    8,  4
-        weight_entry    8,  8,  b=0
         weight_func     8
-
-        weight_entry    4,  8
-        weight_entry    4,  2
-        weight_entry    4,  4,  b=0
         weight_func     4

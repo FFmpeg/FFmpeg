@@ -36,33 +36,26 @@ cextern pw_1
 SECTION .text
 
 ;-----------------------------------------------------------------------------
-; void h264_weight(uint8_t *dst, int stride, int log2_denom,
+; void h264_weight(uint8_t *dst, int stride, int height, int log2_denom,
 ;                  int weight, int offset);
 ;-----------------------------------------------------------------------------
-%ifdef ARCH_X86_32
-DECLARE_REG_TMP 2
-%else
-DECLARE_REG_TMP 10
-%endif
-
-%macro WEIGHT_PROLOGUE 1
-    mov t0, %1
+%macro WEIGHT_PROLOGUE 0
 .prologue
-    PROLOGUE 0,5,8
+    PROLOGUE 0,6,8
     movifnidn  r0, r0mp
     movifnidn r1d, r1m
-    movifnidn r3d, r3m
     movifnidn r4d, r4m
+    movifnidn r5d, r5m
 %endmacro
 
 %macro WEIGHT_SETUP 1
     mova       m0, [pw_1]
-    movd       m2, r2m
+    movd       m2, r3m
     pslld      m0, m2       ; 1<<log2_denom
     SPLATW     m0, m0
-    shl        r4, 19       ; *8, move to upper half of dword
-    lea        r4, [r4+r3*2+0x10000]
-    movd       m3, r4d      ; weight<<1 | 1+(offset<<(3))
+    shl        r5, 19       ; *8, move to upper half of dword
+    lea        r5, [r5+r4*2+0x10000]
+    movd       m3, r5d      ; weight<<1 | 1+(offset<<(3))
     pshufd     m3, m3, 0
     mova       m4, [pw_pixel_max]
     paddw      m2, [sq_1]   ; log2_denom+1
@@ -96,8 +89,8 @@ DECLARE_REG_TMP 10
 %endmacro
 
 %macro WEIGHT_FUNC_DBL 1
-cglobal h264_weight_16x16_10_%1
-    WEIGHT_PROLOGUE 16
+cglobal h264_weight_16_10_%1
+    WEIGHT_PROLOGUE
     WEIGHT_SETUP %1
 .nextrow
     WEIGHT_OP %1,  0
@@ -105,13 +98,9 @@ cglobal h264_weight_16x16_10_%1
     WEIGHT_OP %1, 16
     mova [r0+16], m5
     add       r0, r1
-    dec       t0
+    dec       r2d
     jnz .nextrow
     REP_RET
-
-cglobal h264_weight_16x8_10_%1
-    mov t0, 8
-    jmp mangle(ff_h264_weight_16x16_10_%1.prologue)
 %endmacro
 
 INIT_XMM
@@ -120,24 +109,16 @@ WEIGHT_FUNC_DBL sse4
 
 
 %macro WEIGHT_FUNC_MM 1
-cglobal h264_weight_8x16_10_%1
-    WEIGHT_PROLOGUE 16
+cglobal h264_weight_8_10_%1
+    WEIGHT_PROLOGUE
     WEIGHT_SETUP %1
 .nextrow
     WEIGHT_OP  %1, 0
     mova     [r0], m5
     add        r0, r1
-    dec        t0
+    dec        r2d
     jnz .nextrow
     REP_RET
-
-cglobal h264_weight_8x8_10_%1
-    mov t0, 8
-    jmp mangle(ff_h264_weight_8x16_10_%1.prologue)
-
-cglobal h264_weight_8x4_10_%1
-    mov t0, 4
-    jmp mangle(ff_h264_weight_8x16_10_%1.prologue)
 %endmacro
 
 INIT_XMM
@@ -146,8 +127,9 @@ WEIGHT_FUNC_MM sse4
 
 
 %macro WEIGHT_FUNC_HALF_MM 1
-cglobal h264_weight_4x8_10_%1
-    WEIGHT_PROLOGUE 4
+cglobal h264_weight_4_10_%1
+    WEIGHT_PROLOGUE
+    sar         r2d, 1
     WEIGHT_SETUP %1
     lea         r3, [r1*2]
 .nextrow
@@ -155,17 +137,9 @@ cglobal h264_weight_4x8_10_%1
     movh      [r0], m5
     movhps [r0+r1], m5
     add         r0, r3
-    dec         t0
+    dec         r2d
     jnz .nextrow
     REP_RET
-
-cglobal h264_weight_4x4_10_%1
-    mov t0, 2
-    jmp mangle(ff_h264_weight_4x8_10_%1.prologue)
-
-cglobal h264_weight_4x2_10_%1
-    mov t0, 1
-    jmp mangle(ff_h264_weight_4x8_10_%1.prologue)
 %endmacro
 
 INIT_XMM
@@ -174,40 +148,40 @@ WEIGHT_FUNC_HALF_MM sse4
 
 
 ;-----------------------------------------------------------------------------
-; void h264_biweight(uint8_t *dst, uint8_t *src, int stride, int log2_denom,
-;                    int weightd, int weights, int offset);
+; void h264_biweight(uint8_t *dst, uint8_t *src, int stride, int height,
+;                    int log2_denom, int weightd, int weights, int offset);
 ;-----------------------------------------------------------------------------
 %ifdef ARCH_X86_32
-DECLARE_REG_TMP 2,3
+DECLARE_REG_TMP 3
 %else
-DECLARE_REG_TMP 10,2
+DECLARE_REG_TMP 10
 %endif
 
-%macro BIWEIGHT_PROLOGUE 1
-    mov t0, %1
+%macro BIWEIGHT_PROLOGUE 0
 .prologue
     PROLOGUE 0,7,8
     movifnidn  r0, r0mp
     movifnidn  r1, r1mp
-    movifnidn t1d, r2m
-    movifnidn r4d, r4m
+    movifnidn r2d, r2m
     movifnidn r5d, r5m
     movifnidn r6d, r6m
+    movifnidn t0d, r7m
 %endmacro
 
 %macro BIWEIGHT_SETUP 1
-    lea        r6, [r6*4+1] ; (offset<<2)+1
-    or         r6, 1
-    shl        r5, 16
-    or         r4, r5
-    movd       m4, r4d      ; weightd | weights
-    movd       m5, r6d      ; (offset+1)|1
-    movd       m6, r3m      ; log2_denom
+    lea        t0, [t0*4+1] ; (offset<<2)+1
+    or         t0, 1
+    shl        r6, 16
+    or         r5, r6
+    movd       m4, r5d      ; weightd | weights
+    movd       m5, t0d      ; (offset+1)|1
+    movd       m6, r4m      ; log2_denom
     pslld      m5, m6       ; (((offset<<2)+1)|1)<<log2_denom
     paddd      m6, [sq_1]
     pshufd     m4, m4, 0
     pshufd     m5, m5, 0
     mova       m3, [pw_pixel_max]
+    movifnidn r3d, r3m
 %ifnidn %1, sse4
     pxor       m7, m7
 %endif
@@ -243,23 +217,19 @@ DECLARE_REG_TMP 10,2
 %endmacro
 
 %macro BIWEIGHT_FUNC_DBL 1
-cglobal h264_biweight_16x16_10_%1
-    BIWEIGHT_PROLOGUE 16
+cglobal h264_biweight_16_10_%1
+    BIWEIGHT_PROLOGUE
     BIWEIGHT_SETUP %1
 .nextrow
     BIWEIGHT  %1,  0
     mova [r0   ], m0
     BIWEIGHT  %1, 16
     mova [r0+16], m0
-    add       r0, t1
-    add       r1, t1
-    dec       t0
+    add       r0, r2
+    add       r1, r2
+    dec       r3d
     jnz .nextrow
     REP_RET
-
-cglobal h264_biweight_16x8_10_%1
-    mov t0, 8
-    jmp mangle(ff_h264_biweight_16x16_10_%1.prologue)
 %endmacro
 
 INIT_XMM
@@ -267,25 +237,17 @@ BIWEIGHT_FUNC_DBL sse2
 BIWEIGHT_FUNC_DBL sse4
 
 %macro BIWEIGHT_FUNC 1
-cglobal h264_biweight_8x16_10_%1
-    BIWEIGHT_PROLOGUE 16
+cglobal h264_biweight_8_10_%1
+    BIWEIGHT_PROLOGUE
     BIWEIGHT_SETUP %1
 .nextrow
     BIWEIGHT %1, 0
     mova   [r0], m0
-    add      r0, t1
-    add      r1, t1
-    dec      t0
+    add      r0, r2
+    add      r1, r2
+    dec      r3d
     jnz .nextrow
     REP_RET
-
-cglobal h264_biweight_8x8_10_%1
-    mov t0, 8
-    jmp mangle(ff_h264_biweight_8x16_10_%1.prologue)
-
-cglobal h264_biweight_8x4_10_%1
-    mov t0, 4
-    jmp mangle(ff_h264_biweight_8x16_10_%1.prologue)
 %endmacro
 
 INIT_XMM
@@ -293,27 +255,20 @@ BIWEIGHT_FUNC sse2
 BIWEIGHT_FUNC sse4
 
 %macro BIWEIGHT_FUNC_HALF 1
-cglobal h264_biweight_4x8_10_%1
-    BIWEIGHT_PROLOGUE 4
+cglobal h264_biweight_4_10_%1
+    BIWEIGHT_PROLOGUE
     BIWEIGHT_SETUP %1
-    lea        r4, [t1*2]
+    sar        r3d, 1
+    lea        r4, [r2*2]
 .nextrow
-    BIWEIGHT    %1, 0, t1
+    BIWEIGHT    %1, 0, r2
     movh   [r0   ], m0
-    movhps [r0+t1], m0
+    movhps [r0+r2], m0
     add         r0, r4
     add         r1, r4
-    dec         t0
+    dec         r3d
     jnz .nextrow
     REP_RET
-
-cglobal h264_biweight_4x4_10_%1
-    mov t0, 2
-    jmp mangle(ff_h264_biweight_4x8_10_%1.prologue)
-
-cglobal h264_biweight_4x2_10_%1
-    mov t0, 1
-    jmp mangle(ff_h264_biweight_4x8_10_%1.prologue)
 %endmacro
 
 INIT_XMM

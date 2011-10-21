@@ -438,7 +438,8 @@ static void chroma_dc_dct_c(DCTELEM *block){
 }
 #endif
 
-static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, int chroma_height, int delta, int list,
+static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square,
+                               int height, int delta, int list,
                            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                            int src_x_offset, int src_y_offset,
                            qpel_mc_func *qpix_op, h264_chroma_mc_func chroma_op,
@@ -518,16 +519,16 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square, 
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cb, h->mb_uvlinesize, 9, (16>>!(CHROMA422)) + 1, (mx>>3), (my>>ysh), pic_width>>1, pic_height>>!(CHROMA422));
             src_cb= s->edge_emu_buffer;
     }
-    chroma_op(dest_cb, src_cb, h->mb_uvlinesize, chroma_height << !!(CHROMA422), mx&7, (my << !!(CHROMA422)) &7);
+    chroma_op(dest_cb, src_cb, h->mb_uvlinesize, height >> !(CHROMA422), mx&7, (my << !!(CHROMA422)) &7);
 
     if(emu){
         s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cr, h->mb_uvlinesize, 9, (16>>!(CHROMA422)) + 1, (mx>>3), (my>>ysh), pic_width>>1, pic_height>>!(CHROMA422));
             src_cr= s->edge_emu_buffer;
     }
-    chroma_op(dest_cr, src_cr, h->mb_uvlinesize, chroma_height << !!(CHROMA422), mx&7, (my << !!(CHROMA422)) &7);
+    chroma_op(dest_cr, src_cr, h->mb_uvlinesize, height >> !(CHROMA422), mx&7, (my << !!(CHROMA422)) &7);
 }
 
-static inline void mc_part_std(H264Context *h, int n, int square, int chroma_height, int delta,
+static inline void mc_part_std(H264Context *h, int n, int square, int height, int delta,
                            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                            int x_offset, int y_offset,
                            qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
@@ -553,7 +554,7 @@ static inline void mc_part_std(H264Context *h, int n, int square, int chroma_hei
 
     if(list0){
         Picture *ref= &h->ref_list[0][ h->ref_cache[0][ scan8[n] ] ];
-        mc_dir_part(h, ref, n, square, chroma_height, delta, 0,
+        mc_dir_part(h, ref, n, square, height, delta, 0,
                            dest_y, dest_cb, dest_cr, x_offset, y_offset,
                            qpix_op, chroma_op, pixel_shift, chroma444);
 
@@ -563,13 +564,13 @@ static inline void mc_part_std(H264Context *h, int n, int square, int chroma_hei
 
     if(list1){
         Picture *ref= &h->ref_list[1][ h->ref_cache[1][ scan8[n] ] ];
-        mc_dir_part(h, ref, n, square, chroma_height, delta, 1,
+        mc_dir_part(h, ref, n, square, height, delta, 1,
                            dest_y, dest_cb, dest_cr, x_offset, y_offset,
                            qpix_op, chroma_op, pixel_shift, chroma444);
     }
 }
 
-static inline void mc_part_weighted(H264Context *h, int n, int square, int chroma_height, int delta,
+static inline void mc_part_weighted(H264Context *h, int n, int square, int height, int delta,
                            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                            int x_offset, int y_offset,
                            qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
@@ -577,17 +578,21 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int chrom
                            h264_biweight_func luma_weight_avg, h264_biweight_func chroma_weight_avg,
                            int list0, int list1, int pixel_shift, int chroma444){
     MpegEncContext * const s = &h->s;
+    int chroma_height;
 
     dest_y += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
     if(chroma444){
+        chroma_height = height;
         chroma_weight_avg = luma_weight_avg;
         chroma_weight_op = luma_weight_op;
         dest_cb += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
         dest_cr += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
     } else if (CHROMA422) {
+        chroma_height = height;
         dest_cb += (  x_offset << pixel_shift) + 2*y_offset*h->mb_uvlinesize;
         dest_cr += (  x_offset << pixel_shift) + 2*y_offset*h->mb_uvlinesize;
     }else{
+        chroma_height = height >> 1;
         dest_cb += (  x_offset << pixel_shift) +   y_offset*h->mb_uvlinesize;
         dest_cr += (  x_offset << pixel_shift) +   y_offset*h->mb_uvlinesize;
     }
@@ -603,78 +608,53 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int chrom
         int refn0 = h->ref_cache[0][ scan8[n] ];
         int refn1 = h->ref_cache[1][ scan8[n] ];
 
-        mc_dir_part(h, &h->ref_list[0][refn0], n, square, chroma_height, delta, 0,
+        mc_dir_part(h, &h->ref_list[0][refn0], n, square, height, delta, 0,
                     dest_y, dest_cb, dest_cr,
                     x_offset, y_offset, qpix_put, chroma_put, pixel_shift, chroma444);
-        mc_dir_part(h, &h->ref_list[1][refn1], n, square, chroma_height, delta, 1,
+        mc_dir_part(h, &h->ref_list[1][refn1], n, square, height, delta, 1,
                     tmp_y, tmp_cb, tmp_cr,
                     x_offset, y_offset, qpix_put, chroma_put, pixel_shift, chroma444);
 
         if(h->use_weight == 2){
             int weight0 = h->implicit_weight[refn0][refn1][s->mb_y&1];
             int weight1 = 64 - weight0;
-            luma_weight_avg(  dest_y,  tmp_y,  h->  mb_linesize, 5, weight0, weight1, 0);
-            chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize, 5, weight0, weight1, 0);
-            chroma_weight_avg(dest_cr, tmp_cr, h->mb_uvlinesize, 5, weight0, weight1, 0);
-            if (CHROMA422) {
-                chroma_weight_avg(dest_cb + chroma_height * h->mb_uvlinesize,
-                                  tmp_cb + chroma_height * h->mb_uvlinesize,
-                                  h->mb_uvlinesize, 5, weight0, weight1, 0);
-                chroma_weight_avg(dest_cr + chroma_height * h->mb_uvlinesize,
-                                  tmp_cr + chroma_height * h->mb_uvlinesize,
-                                  h->mb_uvlinesize, 5, weight0, weight1, 0);
-            }
+            luma_weight_avg(  dest_y,  tmp_y,  h->  mb_linesize,
+                              height,        5, weight0, weight1, 0);
+            chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize,
+                              chroma_height, 5, weight0, weight1, 0);
+            chroma_weight_avg(dest_cr, tmp_cr, h->mb_uvlinesize,
+                              chroma_height, 5, weight0, weight1, 0);
         }else{
-            luma_weight_avg(dest_y, tmp_y, h->mb_linesize, h->luma_log2_weight_denom,
+            luma_weight_avg(dest_y, tmp_y, h->mb_linesize, height, h->luma_log2_weight_denom,
                             h->luma_weight[refn0][0][0] , h->luma_weight[refn1][1][0],
                             h->luma_weight[refn0][0][1] + h->luma_weight[refn1][1][1]);
-            chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize, h->chroma_log2_weight_denom,
+            chroma_weight_avg(dest_cb, tmp_cb, h->mb_uvlinesize, chroma_height, h->chroma_log2_weight_denom,
                             h->chroma_weight[refn0][0][0][0] , h->chroma_weight[refn1][1][0][0],
                             h->chroma_weight[refn0][0][0][1] + h->chroma_weight[refn1][1][0][1]);
-            chroma_weight_avg(dest_cr, tmp_cr, h->mb_uvlinesize, h->chroma_log2_weight_denom,
+            chroma_weight_avg(dest_cr, tmp_cr, h->mb_uvlinesize, chroma_height, h->chroma_log2_weight_denom,
                             h->chroma_weight[refn0][0][1][0] , h->chroma_weight[refn1][1][1][0],
                             h->chroma_weight[refn0][0][1][1] + h->chroma_weight[refn1][1][1][1]);
-            if (CHROMA422) {
-                chroma_weight_avg(dest_cb + chroma_height * h->mb_uvlinesize,
-                                  tmp_cb + chroma_height * h->mb_uvlinesize,
-                                  h->mb_uvlinesize, h->chroma_log2_weight_denom,
-                                  h->chroma_weight[refn0][0][0][0] , h->chroma_weight[refn1][1][0][0],
-                                  h->chroma_weight[refn0][0][0][1] + h->chroma_weight[refn1][1][0][1]);
-                chroma_weight_avg(dest_cr + chroma_height * h->mb_uvlinesize,
-                                  tmp_cr + chroma_height * h->mb_uvlinesize,
-                                  h->mb_uvlinesize, h->chroma_log2_weight_denom,
-                                  h->chroma_weight[refn0][0][1][0] , h->chroma_weight[refn1][1][1][0],
-                                  h->chroma_weight[refn0][0][1][1] + h->chroma_weight[refn1][1][1][1]);
-            }
         }
     }else{
         int list = list1 ? 1 : 0;
         int refn = h->ref_cache[list][ scan8[n] ];
         Picture *ref= &h->ref_list[list][refn];
-        mc_dir_part(h, ref, n, square, chroma_height, delta, list,
+        mc_dir_part(h, ref, n, square, height, delta, list,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put, chroma_put, pixel_shift, chroma444);
 
-        luma_weight_op(dest_y, h->mb_linesize, h->luma_log2_weight_denom,
+        luma_weight_op(dest_y, h->mb_linesize, height, h->luma_log2_weight_denom,
                        h->luma_weight[refn][list][0], h->luma_weight[refn][list][1]);
         if(h->use_weight_chroma){
-            chroma_weight_op(dest_cb, h->mb_uvlinesize, h->chroma_log2_weight_denom,
+            chroma_weight_op(dest_cb, h->mb_uvlinesize, chroma_height, h->chroma_log2_weight_denom,
                              h->chroma_weight[refn][list][0][0], h->chroma_weight[refn][list][0][1]);
-            chroma_weight_op(dest_cr, h->mb_uvlinesize, h->chroma_log2_weight_denom,
+            chroma_weight_op(dest_cr, h->mb_uvlinesize, chroma_height, h->chroma_log2_weight_denom,
                              h->chroma_weight[refn][list][1][0], h->chroma_weight[refn][list][1][1]);
-            if (CHROMA422) {
-                chroma_weight_op(dest_cb + chroma_height * h->mb_uvlinesize,
-                                 h->mb_uvlinesize, h->chroma_log2_weight_denom,
-                                 h->chroma_weight[refn][list][0][0], h->chroma_weight[refn][list][0][1]);
-                chroma_weight_op(dest_cr + chroma_height * h->mb_uvlinesize,
-                                 h->mb_uvlinesize, h->chroma_log2_weight_denom,
-                                 h->chroma_weight[refn][list][1][0], h->chroma_weight[refn][list][1][1]);
-            }
         }
     }
 }
 
-static inline void mc_part(H264Context *h, int n, int square, int chroma_height, int delta,
+static inline void mc_part(H264Context *h, int n, int square, int height, int delta,
                            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
                            int x_offset, int y_offset,
                            qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
@@ -684,12 +664,12 @@ static inline void mc_part(H264Context *h, int n, int square, int chroma_height,
     if((h->use_weight==2 && list0 && list1
         && (h->implicit_weight[ h->ref_cache[0][scan8[n]] ][ h->ref_cache[1][scan8[n]] ][h->s.mb_y&1] != 32))
        || h->use_weight==1)
-        mc_part_weighted(h, n, square, chroma_height, delta, dest_y, dest_cb, dest_cr,
+        mc_part_weighted(h, n, square, height, delta, dest_y, dest_cb, dest_cr,
                          x_offset, y_offset, qpix_put, chroma_put,
-                         weight_op[0], weight_op[3], weight_avg[0],
-                         weight_avg[3], list0, list1, pixel_shift, chroma444);
+                         weight_op[0], weight_op[1], weight_avg[0],
+                         weight_avg[1], list0, list1, pixel_shift, chroma444);
     else
-        mc_part_std(h, n, square, chroma_height, delta, dest_y, dest_cb, dest_cr,
+        mc_part_std(h, n, square, height, delta, dest_y, dest_cb, dest_cr,
                     x_offset, y_offset, qpix_put, chroma_put, qpix_avg,
                     chroma_avg, list0, list1, pixel_shift, chroma444);
 }
@@ -731,31 +711,31 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
     prefetch_motion(h, 0, pixel_shift, chroma444);
 
     if(IS_16X16(mb_type)){
-        mc_part(h, 0, 1, 8, 0, dest_y, dest_cb, dest_cr, 0, 0,
+        mc_part(h, 0, 1, 16, 0, dest_y, dest_cb, dest_cr, 0, 0,
                 qpix_put[0], chroma_put[0], qpix_avg[0], chroma_avg[0],
                 weight_op, weight_avg,
                 IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1),
                 pixel_shift, chroma444);
     }else if(IS_16X8(mb_type)){
-        mc_part(h, 0, 0, 4, 8 << pixel_shift, dest_y, dest_cb, dest_cr, 0, 0,
+        mc_part(h, 0, 0, 8, 8 << pixel_shift, dest_y, dest_cb, dest_cr, 0, 0,
                 qpix_put[1], chroma_put[0], qpix_avg[1], chroma_avg[0],
-                &weight_op[1], &weight_avg[1],
+                weight_op, weight_avg,
                 IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1),
                 pixel_shift, chroma444);
-        mc_part(h, 8, 0, 4, 8 << pixel_shift, dest_y, dest_cb, dest_cr, 0, 4,
+        mc_part(h, 8, 0, 8, 8 << pixel_shift, dest_y, dest_cb, dest_cr, 0, 4,
                 qpix_put[1], chroma_put[0], qpix_avg[1], chroma_avg[0],
-                &weight_op[1], &weight_avg[1],
+                weight_op, weight_avg,
                 IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1),
                 pixel_shift, chroma444);
     }else if(IS_8X16(mb_type)){
-        mc_part(h, 0, 0, 8, 8*h->mb_linesize, dest_y, dest_cb, dest_cr, 0, 0,
+        mc_part(h, 0, 0, 16, 8*h->mb_linesize, dest_y, dest_cb, dest_cr, 0, 0,
                 qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
-                &weight_op[2], &weight_avg[2],
+                &weight_op[1], &weight_avg[1],
                 IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1),
                 pixel_shift, chroma444);
-        mc_part(h, 4, 0, 8, 8*h->mb_linesize, dest_y, dest_cb, dest_cr, 4, 0,
+        mc_part(h, 4, 0, 16, 8*h->mb_linesize, dest_y, dest_cb, dest_cr, 4, 0,
                 qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
-                &weight_op[2], &weight_avg[2],
+                &weight_op[1], &weight_avg[1],
                 IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1),
                 pixel_shift, chroma444);
     }else{
@@ -770,31 +750,31 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
             int y_offset= (i&2)<<1;
 
             if(IS_SUB_8X8(sub_mb_type)){
-                mc_part(h, n, 1, 4, 0, dest_y, dest_cb, dest_cr, x_offset, y_offset,
+                mc_part(h, n, 1, 8, 0, dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
-                    &weight_op[3], &weight_avg[3],
+                    &weight_op[1], &weight_avg[1],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
                     pixel_shift, chroma444);
             }else if(IS_SUB_8X4(sub_mb_type)){
-                mc_part(h, n  , 0, 2, 4 << pixel_shift, dest_y, dest_cb, dest_cr, x_offset, y_offset,
+                mc_part(h, n  , 0, 4, 4 << pixel_shift, dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put[2], chroma_put[1], qpix_avg[2], chroma_avg[1],
-                    &weight_op[4], &weight_avg[4],
+                    &weight_op[1], &weight_avg[1],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
                     pixel_shift, chroma444);
-                mc_part(h, n+2, 0, 2, 4 << pixel_shift, dest_y, dest_cb, dest_cr, x_offset, y_offset+2,
+                mc_part(h, n+2, 0, 4, 4 << pixel_shift, dest_y, dest_cb, dest_cr, x_offset, y_offset+2,
                     qpix_put[2], chroma_put[1], qpix_avg[2], chroma_avg[1],
-                    &weight_op[4], &weight_avg[4],
+                    &weight_op[1], &weight_avg[1],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
                     pixel_shift, chroma444);
             }else if(IS_SUB_4X8(sub_mb_type)){
-                mc_part(h, n  , 0, 4, 4*h->mb_linesize, dest_y, dest_cb, dest_cr, x_offset, y_offset,
+                mc_part(h, n  , 0, 8, 4*h->mb_linesize, dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
-                    &weight_op[5], &weight_avg[5],
+                    &weight_op[2], &weight_avg[2],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
                     pixel_shift, chroma444);
-                mc_part(h, n+1, 0, 4, 4*h->mb_linesize, dest_y, dest_cb, dest_cr, x_offset+2, y_offset,
+                mc_part(h, n+1, 0, 8, 4*h->mb_linesize, dest_y, dest_cb, dest_cr, x_offset+2, y_offset,
                     qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
-                    &weight_op[5], &weight_avg[5],
+                    &weight_op[2], &weight_avg[2],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
                     pixel_shift, chroma444);
             }else{
@@ -803,9 +783,9 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
                 for(j=0; j<4; j++){
                     int sub_x_offset= x_offset + 2*(j&1);
                     int sub_y_offset= y_offset +   (j&2);
-                    mc_part(h, n+j, 1, 2, 0, dest_y, dest_cb, dest_cr, sub_x_offset, sub_y_offset,
+                    mc_part(h, n+j, 1, 4, 0, dest_y, dest_cb, dest_cr, sub_x_offset, sub_y_offset,
                         qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
-                        &weight_op[6], &weight_avg[6],
+                        &weight_op[2], &weight_avg[2],
                         IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
                         pixel_shift, chroma444);
                 }
