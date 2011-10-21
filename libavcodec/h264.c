@@ -440,10 +440,11 @@ static void chroma_dc_dct_c(DCTELEM *block){
 
 static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square,
                                int height, int delta, int list,
-                           uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                           int src_x_offset, int src_y_offset,
-                           qpel_mc_func *qpix_op, h264_chroma_mc_func chroma_op,
-                           int pixel_shift, int chroma444){
+                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                               int src_x_offset, int src_y_offset,
+                               qpel_mc_func *qpix_op, h264_chroma_mc_func chroma_op,
+                               int pixel_shift, int chroma_idc)
+{
     MpegEncContext * const s = &h->s;
     const int mx= h->mv_cache[list][ scan8[n] ][0] + src_x_offset*8;
     int my=       h->mv_cache[list][ scan8[n] ][1] + src_y_offset*8;
@@ -480,7 +481,7 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square,
 
     if(CONFIG_GRAY && s->flags&CODEC_FLAG_GRAY) return;
 
-    if(chroma444){
+    if(chroma_idc == 3 /* yuv444 */){
         src_cb = pic->f.data[1] + offset;
         if(emu){
             s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cb - (2 << pixel_shift) - 2*h->mb_linesize, h->mb_linesize,
@@ -505,8 +506,8 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square,
         return;
     }
 
-    ysh = 3 - !!(CHROMA422);
-    if(!CHROMA422 && MB_FIELD){
+    ysh = 3 - (chroma_idc == 2 /* yuv422 */);
+    if(chroma_idc == 1 /* yuv420 */ && MB_FIELD){
         // chroma offset when predicting from a field of opposite parity
         my += 2 * ((s->mb_y & 1) - (pic->f.reference - 1));
         emu |= (my>>3) < 0 || (my>>3) + 8 >= (pic_height>>1);
@@ -516,16 +517,22 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square,
     src_cr = pic->f.data[2] + ((mx >> 3) << pixel_shift) + (my >> ysh) * h->mb_uvlinesize;
 
     if(emu){
-        s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cb, h->mb_uvlinesize, 9, (16>>!(CHROMA422)) + 1, (mx>>3), (my>>ysh), pic_width>>1, pic_height>>!(CHROMA422));
+        s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cb, h->mb_uvlinesize,
+                                9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
+                                pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
             src_cb= s->edge_emu_buffer;
     }
-    chroma_op(dest_cb, src_cb, h->mb_uvlinesize, height >> !(CHROMA422), mx&7, (my << !!(CHROMA422)) &7);
+    chroma_op(dest_cb, src_cb, h->mb_uvlinesize, height >> (chroma_idc == 1 /* yuv420 */),
+              mx&7, (my << (chroma_idc == 2 /* yuv422 */)) &7);
 
     if(emu){
-        s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cr, h->mb_uvlinesize, 9, (16>>!(CHROMA422)) + 1, (mx>>3), (my>>ysh), pic_width>>1, pic_height>>!(CHROMA422));
+        s->dsp.emulated_edge_mc(s->edge_emu_buffer, src_cr, h->mb_uvlinesize,
+                                9, 8 * chroma_idc + 1, (mx >> 3), (my >> ysh),
+                                pic_width >> 1, pic_height >> (chroma_idc == 1 /* yuv420 */));
             src_cr= s->edge_emu_buffer;
     }
-    chroma_op(dest_cr, src_cr, h->mb_uvlinesize, height >> !(CHROMA422), mx&7, (my << !!(CHROMA422)) &7);
+    chroma_op(dest_cr, src_cr, h->mb_uvlinesize, height >> (chroma_idc == 1 /* yuv420 */),
+              mx&7, (my << (chroma_idc == 2 /* yuv422 */)) &7);
 }
 
 static inline void mc_part_std(H264Context *h, int n, int square, int height, int delta,
@@ -533,19 +540,20 @@ static inline void mc_part_std(H264Context *h, int n, int square, int height, in
                            int x_offset, int y_offset,
                            qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
                            qpel_mc_func *qpix_avg, h264_chroma_mc_func chroma_avg,
-                           int list0, int list1, int pixel_shift, int chroma444){
+                           int list0, int list1, int pixel_shift, int chroma_idc)
+{
     MpegEncContext * const s = &h->s;
     qpel_mc_func *qpix_op=  qpix_put;
     h264_chroma_mc_func chroma_op= chroma_put;
 
     dest_y  += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
-    if(chroma444){
+    if (chroma_idc == 3 /* yuv444 */) {
         dest_cb += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
         dest_cr += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
-    } else if (CHROMA422) {
+    } else if (chroma_idc == 2 /* yuv422 */) {
         dest_cb += (  x_offset << pixel_shift) + 2*y_offset*h->mb_uvlinesize;
         dest_cr += (  x_offset << pixel_shift) + 2*y_offset*h->mb_uvlinesize;
-    }else{
+    } else /* yuv420 */ {
         dest_cb += (  x_offset << pixel_shift) +   y_offset*h->mb_uvlinesize;
         dest_cr += (  x_offset << pixel_shift) +   y_offset*h->mb_uvlinesize;
     }
@@ -556,7 +564,7 @@ static inline void mc_part_std(H264Context *h, int n, int square, int height, in
         Picture *ref= &h->ref_list[0][ h->ref_cache[0][ scan8[n] ] ];
         mc_dir_part(h, ref, n, square, height, delta, 0,
                            dest_y, dest_cb, dest_cr, x_offset, y_offset,
-                           qpix_op, chroma_op, pixel_shift, chroma444);
+                           qpix_op, chroma_op, pixel_shift, chroma_idc);
 
         qpix_op=  qpix_avg;
         chroma_op= chroma_avg;
@@ -566,7 +574,7 @@ static inline void mc_part_std(H264Context *h, int n, int square, int height, in
         Picture *ref= &h->ref_list[1][ h->ref_cache[1][ scan8[n] ] ];
         mc_dir_part(h, ref, n, square, height, delta, 1,
                            dest_y, dest_cb, dest_cr, x_offset, y_offset,
-                           qpix_op, chroma_op, pixel_shift, chroma444);
+                           qpix_op, chroma_op, pixel_shift, chroma_idc);
     }
 }
 
@@ -576,22 +584,22 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int heigh
                            qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
                            h264_weight_func luma_weight_op, h264_weight_func chroma_weight_op,
                            h264_biweight_func luma_weight_avg, h264_biweight_func chroma_weight_avg,
-                           int list0, int list1, int pixel_shift, int chroma444){
+                           int list0, int list1, int pixel_shift, int chroma_idc){
     MpegEncContext * const s = &h->s;
     int chroma_height;
 
     dest_y += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
-    if(chroma444){
+    if (chroma_idc == 3 /* yuv444 */) {
         chroma_height = height;
         chroma_weight_avg = luma_weight_avg;
         chroma_weight_op = luma_weight_op;
         dest_cb += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
         dest_cr += (2*x_offset << pixel_shift) + 2*y_offset*h->mb_linesize;
-    } else if (CHROMA422) {
+    } else if (chroma_idc == 2 /* yuv422 */) {
         chroma_height = height;
         dest_cb += (  x_offset << pixel_shift) + 2*y_offset*h->mb_uvlinesize;
         dest_cr += (  x_offset << pixel_shift) + 2*y_offset*h->mb_uvlinesize;
-    }else{
+    } else /* yuv420 */ {
         chroma_height = height >> 1;
         dest_cb += (  x_offset << pixel_shift) +   y_offset*h->mb_uvlinesize;
         dest_cr += (  x_offset << pixel_shift) +   y_offset*h->mb_uvlinesize;
@@ -610,10 +618,12 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int heigh
 
         mc_dir_part(h, &h->ref_list[0][refn0], n, square, height, delta, 0,
                     dest_y, dest_cb, dest_cr,
-                    x_offset, y_offset, qpix_put, chroma_put, pixel_shift, chroma444);
+                    x_offset, y_offset, qpix_put, chroma_put,
+                    pixel_shift, chroma_idc);
         mc_dir_part(h, &h->ref_list[1][refn1], n, square, height, delta, 1,
                     tmp_y, tmp_cb, tmp_cr,
-                    x_offset, y_offset, qpix_put, chroma_put, pixel_shift, chroma444);
+                    x_offset, y_offset, qpix_put, chroma_put,
+                    pixel_shift, chroma_idc);
 
         if(h->use_weight == 2){
             int weight0 = h->implicit_weight[refn0][refn1][s->mb_y&1];
@@ -641,7 +651,7 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int heigh
         Picture *ref= &h->ref_list[list][refn];
         mc_dir_part(h, ref, n, square, height, delta, list,
                     dest_y, dest_cb, dest_cr, x_offset, y_offset,
-                    qpix_put, chroma_put, pixel_shift, chroma444);
+                    qpix_put, chroma_put, pixel_shift, chroma_idc);
 
         luma_weight_op(dest_y, h->mb_linesize, height, h->luma_log2_weight_denom,
                        h->luma_weight[refn][list][0], h->luma_weight[refn][list][1]);
@@ -660,21 +670,22 @@ static inline void mc_part(H264Context *h, int n, int square, int height, int de
                            qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
                            qpel_mc_func *qpix_avg, h264_chroma_mc_func chroma_avg,
                            h264_weight_func *weight_op, h264_biweight_func *weight_avg,
-                           int list0, int list1, int pixel_shift, int chroma444){
+                           int list0, int list1, int pixel_shift, int chroma_idc)
+{
     if((h->use_weight==2 && list0 && list1
         && (h->implicit_weight[ h->ref_cache[0][scan8[n]] ][ h->ref_cache[1][scan8[n]] ][h->s.mb_y&1] != 32))
        || h->use_weight==1)
         mc_part_weighted(h, n, square, height, delta, dest_y, dest_cb, dest_cr,
                          x_offset, y_offset, qpix_put, chroma_put,
                          weight_op[0], weight_op[1], weight_avg[0],
-                         weight_avg[1], list0, list1, pixel_shift, chroma444);
+                         weight_avg[1], list0, list1, pixel_shift, chroma_idc);
     else
         mc_part_std(h, n, square, height, delta, dest_y, dest_cb, dest_cr,
                     x_offset, y_offset, qpix_put, chroma_put, qpix_avg,
-                    chroma_avg, list0, list1, pixel_shift, chroma444);
+                    chroma_avg, list0, list1, pixel_shift, chroma_idc);
 }
 
-static inline void prefetch_motion(H264Context *h, int list, int pixel_shift, int chroma444){
+static inline void prefetch_motion(H264Context *h, int list, int pixel_shift, int chroma_idc){
     /* fetch pixels for estimated mv 4 macroblocks ahead
      * optimized for 64byte cache lines */
     MpegEncContext * const s = &h->s;
@@ -685,7 +696,7 @@ static inline void prefetch_motion(H264Context *h, int list, int pixel_shift, in
         uint8_t **src = h->ref_list[list][refn].f.data;
         int off= (mx << pixel_shift) + (my + (s->mb_x&3)*4)*h->mb_linesize + (64 << pixel_shift);
         s->dsp.prefetch(src[0]+off, s->linesize, 4);
-        if(chroma444){
+        if (chroma_idc == 3 /* yuv444 */) {
             s->dsp.prefetch(src[1]+off, s->linesize, 4);
             s->dsp.prefetch(src[2]+off, s->linesize, 4);
         }else{
@@ -699,7 +710,8 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
                       qpel_mc_func (*qpix_put)[16], h264_chroma_mc_func (*chroma_put),
                       qpel_mc_func (*qpix_avg)[16], h264_chroma_mc_func (*chroma_avg),
                       h264_weight_func *weight_op, h264_biweight_func *weight_avg,
-                      int pixel_shift, int chroma444){
+                      int pixel_shift, int chroma_idc)
+{
     MpegEncContext * const s = &h->s;
     const int mb_xy= h->mb_xy;
     const int mb_type = s->current_picture.f.mb_type[mb_xy];
@@ -708,36 +720,36 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
 
     if(HAVE_THREADS && (s->avctx->active_thread_type & FF_THREAD_FRAME))
         await_references(h);
-    prefetch_motion(h, 0, pixel_shift, chroma444);
+    prefetch_motion(h, 0, pixel_shift, chroma_idc);
 
     if(IS_16X16(mb_type)){
         mc_part(h, 0, 1, 16, 0, dest_y, dest_cb, dest_cr, 0, 0,
                 qpix_put[0], chroma_put[0], qpix_avg[0], chroma_avg[0],
                 weight_op, weight_avg,
                 IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1),
-                pixel_shift, chroma444);
+                pixel_shift, chroma_idc);
     }else if(IS_16X8(mb_type)){
         mc_part(h, 0, 0, 8, 8 << pixel_shift, dest_y, dest_cb, dest_cr, 0, 0,
                 qpix_put[1], chroma_put[0], qpix_avg[1], chroma_avg[0],
                 weight_op, weight_avg,
                 IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1),
-                pixel_shift, chroma444);
+                pixel_shift, chroma_idc);
         mc_part(h, 8, 0, 8, 8 << pixel_shift, dest_y, dest_cb, dest_cr, 0, 4,
                 qpix_put[1], chroma_put[0], qpix_avg[1], chroma_avg[0],
                 weight_op, weight_avg,
                 IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1),
-                pixel_shift, chroma444);
+                pixel_shift, chroma_idc);
     }else if(IS_8X16(mb_type)){
         mc_part(h, 0, 0, 16, 8*h->mb_linesize, dest_y, dest_cb, dest_cr, 0, 0,
                 qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
                 &weight_op[1], &weight_avg[1],
                 IS_DIR(mb_type, 0, 0), IS_DIR(mb_type, 0, 1),
-                pixel_shift, chroma444);
+                pixel_shift, chroma_idc);
         mc_part(h, 4, 0, 16, 8*h->mb_linesize, dest_y, dest_cb, dest_cr, 4, 0,
                 qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
                 &weight_op[1], &weight_avg[1],
                 IS_DIR(mb_type, 1, 0), IS_DIR(mb_type, 1, 1),
-                pixel_shift, chroma444);
+                pixel_shift, chroma_idc);
     }else{
         int i;
 
@@ -754,29 +766,29 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
                     qpix_put[1], chroma_put[1], qpix_avg[1], chroma_avg[1],
                     &weight_op[1], &weight_avg[1],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
-                    pixel_shift, chroma444);
+                    pixel_shift, chroma_idc);
             }else if(IS_SUB_8X4(sub_mb_type)){
                 mc_part(h, n  , 0, 4, 4 << pixel_shift, dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put[2], chroma_put[1], qpix_avg[2], chroma_avg[1],
                     &weight_op[1], &weight_avg[1],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
-                    pixel_shift, chroma444);
+                    pixel_shift, chroma_idc);
                 mc_part(h, n+2, 0, 4, 4 << pixel_shift, dest_y, dest_cb, dest_cr, x_offset, y_offset+2,
                     qpix_put[2], chroma_put[1], qpix_avg[2], chroma_avg[1],
                     &weight_op[1], &weight_avg[1],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
-                    pixel_shift, chroma444);
+                    pixel_shift, chroma_idc);
             }else if(IS_SUB_4X8(sub_mb_type)){
                 mc_part(h, n  , 0, 8, 4*h->mb_linesize, dest_y, dest_cb, dest_cr, x_offset, y_offset,
                     qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
                     &weight_op[2], &weight_avg[2],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
-                    pixel_shift, chroma444);
+                    pixel_shift, chroma_idc);
                 mc_part(h, n+1, 0, 8, 4*h->mb_linesize, dest_y, dest_cb, dest_cr, x_offset+2, y_offset,
                     qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
                     &weight_op[2], &weight_avg[2],
                     IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
-                    pixel_shift, chroma444);
+                    pixel_shift, chroma_idc);
             }else{
                 int j;
                 assert(IS_SUB_4X4(sub_mb_type));
@@ -787,13 +799,35 @@ static av_always_inline void hl_motion(H264Context *h, uint8_t *dest_y, uint8_t 
                         qpix_put[2], chroma_put[2], qpix_avg[2], chroma_avg[2],
                         &weight_op[2], &weight_avg[2],
                         IS_DIR(sub_mb_type, 0, 0), IS_DIR(sub_mb_type, 0, 1),
-                        pixel_shift, chroma444);
+                        pixel_shift, chroma_idc);
                 }
             }
         }
     }
 
-    prefetch_motion(h, 1, pixel_shift, chroma444);
+    prefetch_motion(h, 1, pixel_shift, chroma_idc);
+}
+
+static av_always_inline void
+hl_motion_420(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+              qpel_mc_func (*qpix_put)[16], h264_chroma_mc_func (*chroma_put),
+              qpel_mc_func (*qpix_avg)[16], h264_chroma_mc_func (*chroma_avg),
+              h264_weight_func *weight_op, h264_biweight_func *weight_avg,
+              int pixel_shift)
+{
+    hl_motion(h, dest_y, dest_cb, dest_cr, qpix_put, chroma_put,
+              qpix_avg, chroma_avg, weight_op, weight_avg, pixel_shift, 1);
+}
+
+static av_always_inline void
+hl_motion_422(H264Context *h, uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+              qpel_mc_func (*qpix_put)[16], h264_chroma_mc_func (*chroma_put),
+              qpel_mc_func (*qpix_avg)[16], h264_chroma_mc_func (*chroma_avg),
+              h264_weight_func *weight_op, h264_biweight_func *weight_avg,
+              int pixel_shift)
+{
+    hl_motion(h, dest_y, dest_cb, dest_cr, qpix_put, chroma_put,
+              qpix_avg, chroma_avg, weight_op, weight_avg, pixel_shift, 2);
 }
 
 static void free_tables(H264Context *h, int free_rbsp){
@@ -1798,7 +1832,8 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
     }
 }
 
-static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, int pixel_shift){
+static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, int pixel_shift)
+{
     MpegEncContext * const s = &h->s;
     const int mb_x= s->mb_x;
     const int mb_y= s->mb_y;
@@ -1813,6 +1848,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
     const int is_h264 = !CONFIG_SVQ3_DECODER || simple || s->codec_id == CODEC_ID_H264;
     void (*idct_add)(uint8_t *dst, DCTELEM *block, int stride);
     const int block_h = 16 >> s->chroma_y_shift;
+    const int chroma422 = CHROMA422;
 
     dest_y  = s->current_picture.f.data[0] + ((mb_x << pixel_shift) + mb_y * s->linesize  ) * 16;
     dest_cb = s->current_picture.f.data[1] + (mb_x << pixel_shift)*8 + mb_y * s->uvlinesize * block_h;
@@ -1927,11 +1963,21 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
             if(h->deblocking_filter)
                 xchg_mb_border(h, dest_y, dest_cb, dest_cr, linesize, uvlinesize, 0, 0, simple, pixel_shift);
         }else if(is_h264){
-            hl_motion(h, dest_y, dest_cb, dest_cr,
-                      s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
-                      s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
-                      h->h264dsp.weight_h264_pixels_tab,
-                      h->h264dsp.biweight_h264_pixels_tab, pixel_shift, 0);
+            if (chroma422) {
+                hl_motion_422(h, dest_y, dest_cb, dest_cr,
+                              s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
+                              s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
+                              h->h264dsp.weight_h264_pixels_tab,
+                              h->h264dsp.biweight_h264_pixels_tab,
+                              pixel_shift);
+            } else {
+                hl_motion_420(h, dest_y, dest_cb, dest_cr,
+                              s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
+                              s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
+                              h->h264dsp.weight_h264_pixels_tab,
+                              h->h264dsp.biweight_h264_pixels_tab,
+                              pixel_shift);
+            }
         }
 
         hl_decode_mb_idct_luma(h, mb_type, is_h264, simple, transform_bypass, pixel_shift, block_offset, linesize, dest_y, 0);
@@ -1949,7 +1995,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                             if(h->non_zero_count_cache[ scan8[i] ] || dctcoef_get(h->mb, pixel_shift, i*16))
                                 idct_add   (dest[j-1] + block_offset[i], h->mb + (i*16 << pixel_shift), uvlinesize);
                         }
-                        if (CHROMA422) {
+                        if (chroma422) {
                             for(i=j*16+4; i<j*16+8; i++){
                                 if(h->non_zero_count_cache[ scan8[i] ] || dctcoef_get(h->mb, pixel_shift, i*16))
                                     idct_add   (dest[j-1] + block_offset[i+4], h->mb + (i*16 << pixel_shift), uvlinesize);
@@ -1960,7 +2006,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
             }else{
                 if(is_h264){
                     int qp[2];
-                    if (CHROMA422) {
+                    if (chroma422) {
                         qp[0] = h->chroma_qp[0] + 3;
                         qp[1] = h->chroma_qp[1] + 3;
                     } else {
@@ -2079,7 +2125,7 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
                       s->me.qpel_put, s->dsp.put_h264_chroma_pixels_tab,
                       s->me.qpel_avg, s->dsp.avg_h264_chroma_pixels_tab,
                       h->h264dsp.weight_h264_pixels_tab,
-                      h->h264dsp.biweight_h264_pixels_tab, pixel_shift, 1);
+                      h->h264dsp.biweight_h264_pixels_tab, pixel_shift, 3);
         }
 
         for (p = 0; p < plane_count; p++)
