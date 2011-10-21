@@ -27,6 +27,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
+#include "libavutil/avassert.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
 #include "mpegts.h"
@@ -1778,6 +1779,7 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
             return AV_NOPTS_VALUE;
         av_free_packet(&pkt);
         if(pkt.stream_index == stream_index && pkt.dts != AV_NOPTS_VALUE){
+            av_assert0(pkt.pos >= 0);
             *ppos= pkt.pos;
             return pkt.dts;
         }
