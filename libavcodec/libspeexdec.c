@@ -125,13 +125,13 @@ static int libspeex_decode_frame(AVCodecContext *avctx,
     }
 
     /* decode a single frame */
-        ret = speex_decode_int(s->dec_state, &s->bits, output);
-        if (ret <= -2) {
-            av_log(avctx, AV_LOG_ERROR, "Error decoding Speex frame.\n");
-            return -1;
-        }
-        if (avctx->channels == 2)
-            speex_decode_stereo_int(output, s->frame_size, &s->stereo);
+    ret = speex_decode_int(s->dec_state, &s->bits, output);
+    if (ret <= -2) {
+        av_log(avctx, AV_LOG_ERROR, "Error decoding Speex frame.\n");
+        return -1;
+    }
+    if (avctx->channels == 2)
+        speex_decode_stereo_int(output, s->frame_size, &s->stereo);
 
     *data_size = out_size;
     return consumed;
