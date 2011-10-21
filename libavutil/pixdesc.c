@@ -809,6 +809,29 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_BE,
     },
+    [PIX_FMT_YUV422P9LE] = {
+        .name = "yuv422p9le",
+        .nb_components= 3,
+        .log2_chroma_w= 1,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,8},        /* Y */
+            {1,1,1,0,8},        /* U */
+            {2,1,1,0,8},        /* V */
+        },
+    },
+    [PIX_FMT_YUV422P9BE] = {
+        .name = "yuv422p9be",
+        .nb_components= 3,
+        .log2_chroma_w= 1,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,8},        /* Y */
+            {1,1,1,0,8},        /* U */
+            {2,1,1,0,8},        /* V */
+        },
+        .flags = PIX_FMT_BE,
+    },
     [PIX_FMT_YUV422P10LE] = {
         .name = "yuv422p10le",
         .nb_components= 3,

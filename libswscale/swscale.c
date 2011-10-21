@@ -2662,6 +2662,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_RGB4_BYTE: c->chrToYV12 = palToUV_c; break;
 #if HAVE_BIGENDIAN
         case PIX_FMT_YUV444P9LE:
+        case PIX_FMT_YUV422P9LE:
         case PIX_FMT_YUV420P9LE:
         case PIX_FMT_YUV422P10LE:
         case PIX_FMT_YUV444P10LE:
@@ -2671,6 +2672,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
         case PIX_FMT_YUV444P16LE: c->chrToYV12 = bswap16UV_c; break;
 #else
         case PIX_FMT_YUV444P9BE:
+        case PIX_FMT_YUV422P9BE:
         case PIX_FMT_YUV420P9BE:
         case PIX_FMT_YUV444P10BE:
         case PIX_FMT_YUV422P10BE:
@@ -2729,6 +2731,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
     switch (srcFormat) {
 #if HAVE_BIGENDIAN
     case PIX_FMT_YUV444P9LE:
+    case PIX_FMT_YUV422P9LE:
     case PIX_FMT_YUV420P9LE:
     case PIX_FMT_YUV444P10LE:
     case PIX_FMT_YUV422P10LE:
@@ -2739,6 +2742,7 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
     case PIX_FMT_GRAY16LE: c->lumToYV12 = bswap16Y_c; break;
 #else
     case PIX_FMT_YUV444P9BE:
+    case PIX_FMT_YUV422P9BE:
     case PIX_FMT_YUV420P9BE:
     case PIX_FMT_YUV444P10BE:
     case PIX_FMT_YUV422P10BE:
