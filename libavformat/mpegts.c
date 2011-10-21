@@ -1760,6 +1760,33 @@ static int64_t mpegts_get_pcr(AVFormatContext *s, int stream_index,
     return AV_NOPTS_VALUE;
 }
 
+static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
+                              int64_t *ppos, int64_t pos_limit)
+{
+    MpegTSContext *ts = s->priv_data;
+    int64_t pos, timestamp;
+    pos = ((*ppos  + ts->raw_packet_size - 1 - ts->pos47) / ts->raw_packet_size) * ts->raw_packet_size + ts->pos47;
+    ff_read_frame_flush(s);
+    if (avio_seek(s->pb, pos, SEEK_SET) < 0)
+        return AV_NOPTS_VALUE;
+    while(pos < pos_limit) {
+        int ret;
+        AVPacket pkt;
+        av_init_packet(&pkt);
+        ret= av_read_frame(s, &pkt);
+        if(ret < 0)
+            return AV_NOPTS_VALUE;
+        av_free_packet(&pkt);
+        if(pkt.stream_index == stream_index && pkt.dts != AV_NOPTS_VALUE){
+            *ppos= pkt.pos;
+            return pkt.dts;
+        }
+        pos = pkt.pos;
+    }
+
+    return AV_NOPTS_VALUE;
+}
+
 #ifdef USE_SYNCPOINT_SEARCH
 
 static int read_seek2(AVFormatContext *s,
@@ -1853,7 +1880,8 @@ static int read_seek(AVFormatContext *s, int stream_index, int64_t target_ts, in
 
     if(av_seek_frame_binary(s, stream_index, target_ts, flags) < 0)
         return -1;
-
+    ff_read_frame_flush(s);
+    return 0;
     pos= avio_tell(s->pb);
 
     for(;;) {
@@ -1936,7 +1964,7 @@ AVInputFormat ff_mpegts_demuxer = {
     .read_packet    = mpegts_read_packet,
     .read_close     = mpegts_read_close,
     .read_seek      = read_seek,
-    .read_timestamp = mpegts_get_pcr,
+    .read_timestamp = mpegts_get_dts,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
     .read_seek2 = read_seek2,
@@ -1951,7 +1979,7 @@ AVInputFormat ff_mpegtsraw_demuxer = {
     .read_packet    = mpegts_raw_read_packet,
     .read_close     = mpegts_read_close,
     .read_seek      = read_seek,
-    .read_timestamp = mpegts_get_pcr,
+    .read_timestamp = mpegts_get_dts,
     .flags = AVFMT_SHOW_IDS|AVFMT_TS_DISCONT,
 #ifdef USE_SYNCPOINT_SEARCH
     .read_seek2 = read_seek2,
