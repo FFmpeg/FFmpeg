@@ -116,15 +116,15 @@ static int mov_metadata_int8_bypass_padding(MOVContext *c, AVIOContext *pb,
     return 0;
 }
 
-static int mov_metadata_stik(MOVContext *c, AVIOContext *pb,
-                             unsigned len, const char *key)
+static int mov_metadata_int8_no_padding(MOVContext *c, AVIOContext *pb,
+                                        unsigned len, const char *key)
 {
-  char buf[16];
+    char buf[16];
 
-  snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
-  av_dict_set(&c->fc->metadata, key, buf, 0);
+    snprintf(buf, sizeof(buf), "%hu", avio_r8(pb));
+    av_dict_set(&c->fc->metadata, key, buf, 0);
 
-  return 0;
+    return 0;
 }
 
 static int mov_metadata_gnre(MOVContext *c, AVIOContext *pb,
@@ -224,7 +224,7 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     case MKTAG( 't','v','s','n'): key = "season_number";
         parse = mov_metadata_int8_bypass_padding; break;
     case MKTAG( 's','t','i','k'): key = "media_type";
-        parse = mov_metadata_stik; break;
+        parse = mov_metadata_int8_no_padding; break;
     }
 
     if (c->itunes_metadata && atom.size > 8) {
