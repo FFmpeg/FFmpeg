@@ -1778,10 +1778,13 @@ static int64_t mpegts_get_dts(AVFormatContext *s, int stream_index,
         if(ret < 0)
             return AV_NOPTS_VALUE;
         av_free_packet(&pkt);
-        if(pkt.stream_index == stream_index && pkt.dts != AV_NOPTS_VALUE){
-            av_assert0(pkt.pos >= 0);
-            *ppos= pkt.pos;
-            return pkt.dts;
+        if(pkt.dts != AV_NOPTS_VALUE && pkt.pos >= 0){
+            ff_reduce_index(s, pkt.stream_index);
+            av_add_index_entry(s->streams[pkt.stream_index], pkt.pos, pkt.dts, 0, 0, AVINDEX_KEYFRAME /* FIXME keyframe? */);
+            if(pkt.stream_index == stream_index){
+                *ppos= pkt.pos;
+                return pkt.dts;
+            }
         }
         pos = pkt.pos;
     }
