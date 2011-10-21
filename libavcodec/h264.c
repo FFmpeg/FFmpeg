@@ -438,12 +438,13 @@ static void chroma_dc_dct_c(DCTELEM *block){
 }
 #endif
 
-static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square,
-                               int height, int delta, int list,
-                               uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                               int src_x_offset, int src_y_offset,
-                               qpel_mc_func *qpix_op, h264_chroma_mc_func chroma_op,
-                               int pixel_shift, int chroma_idc)
+static av_always_inline void
+mc_dir_part(H264Context *h, Picture *pic, int n, int square,
+            int height, int delta, int list,
+            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+            int src_x_offset, int src_y_offset,
+            qpel_mc_func *qpix_op, h264_chroma_mc_func chroma_op,
+            int pixel_shift, int chroma_idc)
 {
     MpegEncContext * const s = &h->s;
     const int mx= h->mv_cache[list][ scan8[n] ][0] + src_x_offset*8;
@@ -535,12 +536,13 @@ static inline void mc_dir_part(H264Context *h, Picture *pic, int n, int square,
               mx&7, (my << (chroma_idc == 2 /* yuv422 */)) &7);
 }
 
-static inline void mc_part_std(H264Context *h, int n, int square, int height, int delta,
-                           uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                           int x_offset, int y_offset,
-                           qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
-                           qpel_mc_func *qpix_avg, h264_chroma_mc_func chroma_avg,
-                           int list0, int list1, int pixel_shift, int chroma_idc)
+static av_always_inline void
+mc_part_std(H264Context *h, int n, int square, int height, int delta,
+            uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+            int x_offset, int y_offset,
+            qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
+            qpel_mc_func *qpix_avg, h264_chroma_mc_func chroma_avg,
+            int list0, int list1, int pixel_shift, int chroma_idc)
 {
     MpegEncContext * const s = &h->s;
     qpel_mc_func *qpix_op=  qpix_put;
@@ -578,13 +580,14 @@ static inline void mc_part_std(H264Context *h, int n, int square, int height, in
     }
 }
 
-static inline void mc_part_weighted(H264Context *h, int n, int square, int height, int delta,
-                           uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                           int x_offset, int y_offset,
-                           qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
-                           h264_weight_func luma_weight_op, h264_weight_func chroma_weight_op,
-                           h264_biweight_func luma_weight_avg, h264_biweight_func chroma_weight_avg,
-                           int list0, int list1, int pixel_shift, int chroma_idc){
+static av_always_inline void
+mc_part_weighted(H264Context *h, int n, int square, int height, int delta,
+                 uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+                 int x_offset, int y_offset,
+                 qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
+                 h264_weight_func luma_weight_op, h264_weight_func chroma_weight_op,
+                 h264_biweight_func luma_weight_avg, h264_biweight_func chroma_weight_avg,
+                 int list0, int list1, int pixel_shift, int chroma_idc){
     MpegEncContext * const s = &h->s;
     int chroma_height;
 
@@ -664,13 +667,14 @@ static inline void mc_part_weighted(H264Context *h, int n, int square, int heigh
     }
 }
 
-static inline void mc_part(H264Context *h, int n, int square, int height, int delta,
-                           uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
-                           int x_offset, int y_offset,
-                           qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
-                           qpel_mc_func *qpix_avg, h264_chroma_mc_func chroma_avg,
-                           h264_weight_func *weight_op, h264_biweight_func *weight_avg,
-                           int list0, int list1, int pixel_shift, int chroma_idc)
+static av_always_inline void
+mc_part(H264Context *h, int n, int square, int height, int delta,
+        uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr,
+        int x_offset, int y_offset,
+        qpel_mc_func *qpix_put, h264_chroma_mc_func chroma_put,
+        qpel_mc_func *qpix_avg, h264_chroma_mc_func chroma_avg,
+        h264_weight_func *weight_op, h264_biweight_func *weight_avg,
+        int list0, int list1, int pixel_shift, int chroma_idc)
 {
     if((h->use_weight==2 && list0 && list1
         && (h->implicit_weight[ h->ref_cache[0][scan8[n]] ][ h->ref_cache[1][scan8[n]] ][h->s.mb_y&1] != 32))
@@ -685,7 +689,9 @@ static inline void mc_part(H264Context *h, int n, int square, int height, int de
                     chroma_avg, list0, list1, pixel_shift, chroma_idc);
 }
 
-static inline void prefetch_motion(H264Context *h, int list, int pixel_shift, int chroma_idc){
+static av_always_inline void
+prefetch_motion(H264Context *h, int list, int pixel_shift, int chroma_idc)
+{
     /* fetch pixels for estimated mv 4 macroblocks ahead
      * optimized for 64byte cache lines */
     MpegEncContext * const s = &h->s;
