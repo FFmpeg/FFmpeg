@@ -1602,6 +1602,7 @@ int av_seek_frame_binary(AVFormatContext *s, int stream_index, int64_t target_ts
     if ((ret = avio_seek(s->pb, pos, SEEK_SET)) < 0)
         return ret;
 
+    ff_read_frame_flush(s);
     av_update_cur_dts(s, st, ts);
 
     return 0;
