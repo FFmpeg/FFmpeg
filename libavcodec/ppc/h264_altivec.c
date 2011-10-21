@@ -956,11 +956,11 @@ void biweight_h264_W_altivec(uint8_t *dst, uint8_t *src, int stride, int height,
 #define H264_WEIGHT(W) \
 static void ff_weight_h264_pixels ## W ## _altivec(uint8_t *block, int stride, int height, \
                                                    int log2_denom, int weight, int offset){ \
-    weight_h264_WxH_altivec(block, stride, height, log2_denom, weight, offset, W); \
+    weight_h264_W_altivec(block, stride, height, log2_denom, weight, offset, W); \
 }\
 static void ff_biweight_h264_pixels ## W ## _altivec(uint8_t *dst, uint8_t *src, int stride, int height, \
                                                      int log2_denom, int weightd, int weights, int offset){ \
-    biweight_h264_WxH_altivec(dst, src, stride, height, log2_denom, weightd, weights, offset, W); \
+    biweight_h264_W_altivec(dst, src, stride, height, log2_denom, weightd, weights, offset, W); \
 }
 
 H264_WEIGHT(16)
