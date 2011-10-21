@@ -788,8 +788,8 @@ av_cold int ff_yuv2rgb_c_init_tables(SwsContext *c, const int inv_table[4], int 
         y_table32 = c->yuvTable;
         yb = -(384<<16) - oy;
         for (i = 0; i < 1024; i++) {
-            uint8_t yval = av_clip_uint8((yb + 0x8000) >> 16);
-            y_table32[i     ] = (yval << rbase) + (needAlpha ? 0 : (255 << abase));
+            unsigned yval = av_clip_uint8((yb + 0x8000) >> 16);
+            y_table32[i     ] = (yval << rbase) + (needAlpha ? 0 : (255u << abase));
             y_table32[i+1024] = yval << gbase;
             y_table32[i+2048] = yval << bbase;
             yb += cy;
