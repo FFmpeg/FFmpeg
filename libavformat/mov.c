@@ -225,6 +225,10 @@ static int mov_read_udta_string(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         parse = mov_metadata_int8_bypass_padding; break;
     case MKTAG( 's','t','i','k'): key = "media_type";
         parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'h','d','v','d'): key = "hd_video";
+        parse = mov_metadata_int8_no_padding; break;
+    case MKTAG( 'p','g','a','p'): key = "gapless_playback";
+        parse = mov_metadata_int8_no_padding; break;
     }
 
     if (c->itunes_metadata && atom.size > 8) {
