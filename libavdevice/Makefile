@@ -24,6 +24,7 @@ OBJS-$(CONFIG_LAVFI_INDEV)               += lavfi.o
 OBJS-$(CONFIG_OPENAL_INDEV)              += openal-dec.o
 OBJS-$(CONFIG_OSS_INDEV)                 += oss_audio.o
 OBJS-$(CONFIG_OSS_OUTDEV)                += oss_audio.o
+OBJS-$(CONFIG_PULSE_INDEV)               += pulse.o
 OBJS-$(CONFIG_SDL_OUTDEV)                += sdl.o
 OBJS-$(CONFIG_SNDIO_INDEV)               += sndio_common.o sndio_dec.o
 OBJS-$(CONFIG_SNDIO_OUTDEV)              += sndio_common.o sndio_enc.o
