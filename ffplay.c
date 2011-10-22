@@ -102,6 +102,7 @@ typedef struct VideoPicture {
     SDL_Overlay *bmp;
     int width, height; /* source height & width */
     int allocated;
+    int reallocate;
     enum PixelFormat pix_fmt;
 
 #if CONFIG_AVFILTER
@@ -1338,7 +1339,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
     vp->duration = frame_delay;
 
     /* alloc or resize hardware picture buffer */
-    if (!vp->bmp ||
+    if (!vp->bmp || vp->reallocate ||
 #if CONFIG_AVFILTER
         vp->width  != is->out_video_filter->inputs[0]->w ||
         vp->height != is->out_video_filter->inputs[0]->h) {
@@ -1349,6 +1350,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
         SDL_Event event;
 
         vp->allocated = 0;
+        vp->reallocate = 0;
 
         /* the allocation must be done in the main thread to avoid
            locking problems */
@@ -2703,6 +2705,12 @@ static void stream_cycle_channel(VideoState *is, int codec_type)
 static void toggle_full_screen(VideoState *is)
 {
     is_full_screen = !is_full_screen;
+#if defined(__APPLE__) && SDL_VERSION_ATLEAST(1, 2, 14)
+    /* OSX needs to reallocate the SDL overlays */
+    for (int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
+        is->pictq[i].reallocate = 1;
+    }
+#endif
     video_open(is);
 }
 
