@@ -1563,8 +1563,8 @@ static int mov_read_stts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     av_dlog(c->fc, "track[%i].stts.entries = %i\n",
             c->fc->nb_streams-1, entries);
 
-    if (!entries || entries >= UINT_MAX / sizeof(*sc->stts_data))
-        return AVERROR(EINVAL);
+    if (entries >= UINT_MAX / sizeof(*sc->stts_data))
+        return -1;
 
     sc->stts_data = av_malloc(entries * sizeof(*sc->stts_data));
     if (!sc->stts_data)
