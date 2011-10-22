@@ -19,5 +19,10 @@ LIBAVFORMAT_$MAJOR {
                 parse_date;
                 dump_format;
                 url_*;
+                get_*;
+                put_*;
+                udp_set_remote_url;
+                udp_get_local_port;
+                init_checksum;
         local: *;
 };
