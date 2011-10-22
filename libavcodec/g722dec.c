@@ -66,9 +66,6 @@ static av_cold int g722_decode_init(AVCodecContext * avctx)
     c->band[1].scale_factor = 2;
     c->prev_samples_pos = 22;
 
-    if (avctx->lowres)
-        avctx->sample_rate /= 2;
-
     return 0;
 }
 
@@ -96,7 +93,8 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
     init_get_bits(&gb, avpkt->data, avpkt->size * 8);
 
     for (j = 0; j < avpkt->size; j++) {
-        int ilow, ihigh, rlow;
+        int ilow, ihigh, rlow, rhigh, dhigh;
+        int xout1, xout2;
 
         ihigh = get_bits(&gb, 2);
         ilow = get_bits(&gb, 6 - skip);
@@ -107,12 +105,9 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 
         ff_g722_update_low_predictor(&c->band[0], ilow >> (2 - skip));
 
-        if (!avctx->lowres) {
-            const int dhigh = c->band[1].scale_factor *
-                              ff_g722_high_inv_quant[ihigh] >> 10;
-            const int rhigh = av_clip(dhigh + c->band[1].s_predictor,
-                                      -16384, 16383);
-            int xout1, xout2;
+            dhigh = c->band[1].scale_factor *
+                    ff_g722_high_inv_quant[ihigh] >> 10;
+            rhigh = av_clip(dhigh + c->band[1].s_predictor, -16384, 16383);
 
             ff_g722_update_high_predictor(&c->band[1], dhigh, ihigh);
 
@@ -128,8 +123,6 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
                         22 * sizeof(c->prev_samples[0]));
                 c->prev_samples_pos = 22;
             }
-        } else
-            out_buf[out_len++] = rlow;
     }
     *data_size = out_len << 1;
     return avpkt->size;
@@ -143,5 +136,4 @@ AVCodec ff_adpcm_g722_decoder = {
     .init           = g722_decode_init,
     .decode         = g722_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
-    .max_lowres     = 1,
 };

@@ -2074,11 +2074,8 @@ static int transcode_init(OutputFile *output_files,
                     return AVERROR(ENOMEM);
                 }
                 ost->reformat_pair = MAKE_SFMT_PAIR(AV_SAMPLE_FMT_NONE,AV_SAMPLE_FMT_NONE);
-                if (!codec->sample_rate) {
+                if (!codec->sample_rate)
                     codec->sample_rate = icodec->sample_rate;
-                    if (icodec->lowres)
-                        codec->sample_rate >>= icodec->lowres;
-                }
                 choose_sample_rate(ost->st, ost->enc);
                 codec->time_base = (AVRational){1, codec->sample_rate};
                 if (codec->sample_fmt == AV_SAMPLE_FMT_NONE)
