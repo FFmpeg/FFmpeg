@@ -163,7 +163,7 @@ static av_cold int pulse_close(AVFormatContext *s)
 
 static const AVOption options[] = {
     { "server",      "pulse server name",   OFFSET(server),      AV_OPT_TYPE_STRING, {.str = NULL},    0, 0, D },
-    { "name",        "application name",    OFFSET(name),        AV_OPT_TYPE_STRING, {.str = "libav"}, 0, 0, D },
+    { "name",        "application name",    OFFSET(name),        AV_OPT_TYPE_STRING, {.str = "ffmpeg"}, 0, 0, D },
     { "dev",         "device to use",       OFFSET(dev),         AV_OPT_TYPE_STRING, {.str = NULL},    0, 0, D },
     { "stream_name", "stream description",  OFFSET(stream_name), AV_OPT_TYPE_STRING, {.str = "record"},    0, 0, D },
     { "sample_rate", "",                    OFFSET(sample_rate), AV_OPT_TYPE_INT,    {.dbl = 48000},   1, INT_MAX, D },
