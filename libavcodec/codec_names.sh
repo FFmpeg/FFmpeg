@@ -21,8 +21,7 @@
 set -e
 
 config="$1"
-codecs="$2"
-out="$3"
+out="$2"
 test -n "$out"
 
 outval=""
@@ -63,7 +62,7 @@ parse_enum_codecid () {
   while read line; do
     case "$line" in
       "};") break;;
-      *CODEC_ID_FIRST*///*dummy*) ;;
+      *CODEC_ID_FIRST*=*) ;;
       CODEC_ID_*) define_codecid ${line%%[=,]*};;
     esac
   done
@@ -78,7 +77,7 @@ parse_avcodec_h () {
 }
 
 parse_config_h  < "$config"
-parse_avcodec_h < "$codecs"
+parse_avcodec_h # use stdin
 sed -e '/case.*:/!y/ABCDEFGHIJKLMNOPQRSTUVWXYZ/abcdefghijklmnopqrstuvwxyz/' \
     -e 's/extern avcodec /extern AVCodec /' > "$out" <<EOF
 $outval

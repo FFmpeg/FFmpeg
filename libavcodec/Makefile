@@ -756,5 +756,6 @@ endif
 CODEC_NAMES_SH := $(SRC_PATH)/$(SUBDIR)codec_names.sh
 AVCODEC_H      := $(SRC_PATH)/$(SUBDIR)avcodec.h
 $(SUBDIR)codec_names.h: $(CODEC_NAMES_SH) config.h $(AVCODEC_H)
-	$(M)$(CODEC_NAMES_SH) config.h $(AVCODEC_H) $@
+	$(CC) $(CPPFLAGS) $(CFLAGS) -E $(AVCODEC_H) | \
+	$(CODEC_NAMES_SH) config.h $@
 $(SUBDIR)utils.o: $(SUBDIR)codec_names.h
