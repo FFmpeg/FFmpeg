@@ -275,11 +275,11 @@ static int mxpeg_decode_frame(AVCodecContext *avctx,
                     }
 
                     ret = ff_mjpeg_decode_sos(jpg, s->mxm_bitmask, reference_ptr);
-                    if (ret < 0 && avctx->error_recognition >= FF_ER_EXPLODE)
+                    if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
                         return ret;
                 } else {
                     ret = ff_mjpeg_decode_sos(jpg, NULL, NULL);
-                    if (ret < 0 && avctx->error_recognition >= FF_ER_EXPLODE)
+                    if (ret < 0 && (avctx->err_recognition & AV_EF_EXPLODE))
                         return ret;
                 }
 

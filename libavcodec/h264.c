@@ -2893,7 +2893,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             ff_thread_report_progress((AVFrame*)s->current_picture_ptr, INT_MAX, 1);
             ff_generate_sliding_window_mmcos(h);
             if (ff_h264_execute_ref_pic_marking(h, h->mmco, h->mmco_index) < 0 &&
-                s->avctx->error_recognition >= FF_ER_EXPLODE)
+                (s->avctx->err_recognition & AV_EF_EXPLODE))
                 return AVERROR_INVALIDDATA;
             /* Error concealment: if a ref is missing, copy the previous ref in its place.
              * FIXME: avoiding a memcpy would be nice, but ref handling makes many assumptions
@@ -3072,7 +3072,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
     }
 
     if(h->nal_ref_idc && ff_h264_decode_ref_pic_marking(h0, &s->gb) < 0 &&
-       s->avctx->error_recognition >= FF_ER_EXPLODE)
+       (s->avctx->err_recognition & AV_EF_EXPLODE))
         return AVERROR_INVALIDDATA;
 
     if(FRAME_MBAFF){

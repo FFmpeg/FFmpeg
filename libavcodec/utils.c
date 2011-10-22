@@ -610,6 +610,16 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
         goto free_and_end;
     }
     avctx->frame_number = 0;
+#if FF_API_ER
+
+    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition separate: %d; %d\n",
+           avctx->error_recognition, avctx->err_recognition);
+    /* FF_ER_CAREFUL (==1) implies AV_EF_CRCCHECK (== 1<<1 - 1),
+       FF_ER_COMPLIANT (==2) implies AV_EF_{CRCCHECK,BITSTREAM} (== 1<<2 - 1), et cetera} */
+    avctx->err_recognition |= (1<<(avctx->error_recognition-(avctx->error_recognition>=FF_ER_VERY_AGGRESSIVE))) - 1;
+    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition combined: %d; %d\n",
+           avctx->error_recognition, avctx->err_recognition);
+#endif
 
     if (!HAVE_THREADS)
         av_log(avctx, AV_LOG_WARNING, "Warning: not compiled with thread support, using thread emulation\n");

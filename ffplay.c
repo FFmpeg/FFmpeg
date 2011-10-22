@@ -1349,7 +1349,7 @@ static int queue_picture(VideoState *is, AVFrame *src_frame, double pts1, int64_
 #endif
         SDL_Event event;
 
-        vp->allocated = 0;
+        vp->allocated  = 0;
         vp->reallocate = 0;
 
         /* the allocation must be done in the main thread to avoid

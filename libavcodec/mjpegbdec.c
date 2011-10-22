@@ -82,7 +82,7 @@ read_header:
         init_get_bits(&s->gb, buf_ptr+dqt_offs, (buf_end - (buf_ptr+dqt_offs))*8);
         s->start_code = DQT;
         if (ff_mjpeg_decode_dqt(s) < 0 &&
-            avctx->error_recognition >= FF_ER_EXPLODE)
+            (avctx->err_recognition & AV_EF_EXPLODE))
           return AVERROR_INVALIDDATA;
     }
 
@@ -116,7 +116,7 @@ read_header:
         s->mjpb_skiptosod = (sod_offs - sos_offs - show_bits(&s->gb, 16));
         s->start_code = SOS;
         if (ff_mjpeg_decode_sos(s, NULL, NULL) < 0 &&
-            avctx->error_recognition >= FF_ER_EXPLODE)
+            (avctx->err_recognition & AV_EF_EXPLODE))
           return AVERROR_INVALIDDATA;
     }
 

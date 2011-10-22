@@ -62,7 +62,7 @@ typedef struct ID3v2ExtraMetaGEOB {
 /**
  * Detect ID3v2 Header.
  * @param buf   must be ID3v2_HEADER_SIZE byte long
- * @param magic magic bytes to identify the header, machine byte order.
+ * @param magic magic bytes to identify the header.
  * If in doubt, use ID3v2_DEFAULT_MAGIC.
  */
 int ff_id3v2_match(const uint8_t *buf, const char *magic);

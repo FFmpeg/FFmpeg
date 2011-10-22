@@ -1359,7 +1359,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
         if (s->frame_size > buf_size) {
             av_log(avctx, AV_LOG_ERROR, "incomplete frame\n");
             err = AAC_AC3_PARSE_ERROR_FRAME_SIZE;
-        } else if (avctx->error_recognition >= FF_ER_CAREFUL) {
+        } else if (avctx->err_recognition & AV_EF_CRCCHECK) {
             /* check for crc mismatch */
             if (av_crc(av_crc_get_table(AV_CRC_16_ANSI), 0, &buf[2], s->frame_size-2)) {
                 av_log(avctx, AV_LOG_ERROR, "frame CRC mismatch\n");

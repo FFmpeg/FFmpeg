@@ -290,80 +290,53 @@ const uint16_t dither_scale[15][16]={
 {    3,    5,    7,    9,   11,   12,   14,   15,   15,   15,   15,   15,   15,   15,   16,65535,},
 };
 
-static av_always_inline void
-yuv2yuvX16_c_template(const int16_t *lumFilter, const int32_t **lumSrc,
-                      int lumFilterSize, const int16_t *chrFilter,
-                      const int32_t **chrUSrc, const int32_t **chrVSrc,
-                      int chrFilterSize, const int32_t **alpSrc,
-                      uint16_t *dest[4], int dstW, int chrDstW,
-                      int big_endian, int output_bits)
-{
-    //FIXME Optimize (just quickly written not optimized..)
-    int i;
-    int dword= output_bits == 16;
-    uint16_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
-             *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
-    int shift = 11 + 4*dword + 16 - output_bits - 1;
-
-#define output_pixel(pos, val) \
+#define output_pixel(pos, val, bias, signedness) \
     if (big_endian) { \
-        AV_WB16(pos, av_clip_uint16(val >> shift)); \
+        AV_WB16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
     } else { \
-        AV_WL16(pos, av_clip_uint16(val >> shift)); \
+        AV_WL16(pos, bias + av_clip_ ## signedness ## 16(val >> shift)); \
     }
+
+static av_always_inline void
+yuv2plane1_16_c_template(const int32_t *src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 19 - output_bits;
+
     for (i = 0; i < dstW; i++) {
-        int val = 1 << (26-output_bits + 4*dword - 1);
-        int j;
-
-        for (j = 0; j < lumFilterSize; j++)
-            val += ((dword ? lumSrc[j][i] : ((int16_t**)lumSrc)[j][i]) * lumFilter[j])>>1;
-
-        output_pixel(&yDest[i], val);
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val, 0, uint);
     }
-
-    if (uDest) {
-        for (i = 0; i < chrDstW; i++) {
-            int u = 1 << (26-output_bits + 4*dword - 1);
-            int v = 1 << (26-output_bits + 4*dword - 1);
-            int j;
-
-            for (j = 0; j < chrFilterSize; j++) {
-                u += ((dword ? chrUSrc[j][i] : ((int16_t**)chrUSrc)[j][i]) * chrFilter[j]) >> 1;
-                v += ((dword ? chrVSrc[j][i] : ((int16_t**)chrVSrc)[j][i]) * chrFilter[j]) >> 1;
-            }
-
-            output_pixel(&uDest[i], u);
-            output_pixel(&vDest[i], v);
-        }
-    }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest) {
-        for (i = 0; i < dstW; i++) {
-            int val = 1 << (26-output_bits + 4*dword - 1);
-            int j;
-
-            for (j = 0; j < lumFilterSize; j++)
-                val += ((dword ? alpSrc[j][i] : ((int16_t**)alpSrc)[j][i]) * lumFilter[j]) >> 1;
-
-            output_pixel(&aDest[i], val);
-        }
-    }
-#undef output_pixel
 }
 
 static av_always_inline void
-yuv2yuvX10_c_template(const int16_t *lumFilter, const int16_t **lumSrc,
-                      int lumFilterSize, const int16_t *chrFilter,
-                      const int16_t **chrUSrc, const int16_t **chrVSrc,
-                      int chrFilterSize, const int16_t **alpSrc,
-                      uint16_t *dest[4], int dstW, int chrDstW,
-                      int big_endian, int output_bits)
+yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
+                         const int32_t **src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
 {
-    //FIXME Optimize (just quickly written not optimized..)
     int i;
-    uint16_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
-             *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
-    int shift = 11 + 16 - output_bits;
+    int dword= output_bits == 16;
+    int shift = 15 + 16 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = 1 << (26-output_bits + 4*dword);
+        int j;
+
+        /* range of val is [0,0x7FFFFFFF], so 31 bits, but with lanczos/spline
+         * filters (or anything with negative coeffs, the range can be slightly
+         * wider in both directions. To account for this overflow, we subtract
+         * a constant so it always fits in the signed range (assuming a
+         * reasonable filterSize), and re-add that at the end. */
+        val -= 0x40000000;
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * filter[j];
+
+        output_pixel(&dest[i], val, 0x8000, int);
+    }
+}
+
+#undef output_pixel
 
 #define output_pixel(pos, val) \
     if (big_endian) { \
@@ -371,171 +344,96 @@ yuv2yuvX10_c_template(const int16_t *lumFilter, const int16_t **lumSrc,
     } else { \
         AV_WL16(pos, av_clip_uintp2(val >> shift, output_bits)); \
     }
+
+static av_always_inline void
+yuv2plane1_10_c_template(const int16_t *src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 15 - output_bits;
+
+    for (i = 0; i < dstW; i++) {
+        int val = src[i] + (1 << (shift - 1));
+        output_pixel(&dest[i], val);
+    }
+}
+
+static av_always_inline void
+yuv2planeX_10_c_template(const int16_t *filter, int filterSize,
+                         const int16_t **src, uint16_t *dest, int dstW,
+                         int big_endian, int output_bits)
+{
+    int i;
+    int shift = 11 + 16 - output_bits;
+
     for (i = 0; i < dstW; i++) {
         int val = 1 << (26-output_bits);
         int j;
 
-        for (j = 0; j < lumFilterSize; j++)
-            val += lumSrc[j][i] * lumFilter[j];
+        for (j = 0; j < filterSize; j++)
+            val += src[j][i] * filter[j];
 
-        output_pixel(&yDest[i], val);
+        output_pixel(&dest[i], val);
     }
+}
 
-    if (uDest) {
-        for (i = 0; i < chrDstW; i++) {
-            int u = 1 << (26-output_bits);
-            int v = 1 << (26-output_bits);
-            int j;
-
-            for (j = 0; j < chrFilterSize; j++) {
-                u += chrUSrc[j][i] * chrFilter[j];
-                v += chrVSrc[j][i] * chrFilter[j];
-            }
-
-            output_pixel(&uDest[i], u);
-            output_pixel(&vDest[i], v);
-        }
-    }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest) {
-        for (i = 0; i < dstW; i++) {
-            int val = 1 << (26-output_bits);
-            int j;
-
-            for (j = 0; j < lumFilterSize; j++)
-                val += alpSrc[j][i] * lumFilter[j];
-
-            output_pixel(&aDest[i], val);
-        }
-    }
 #undef output_pixel
-}
 
-#define yuv2NBPS(bits, BE_LE, is_be, yuv2yuvX_template_fn, typeX_t) \
-static void yuv2yuvX ## bits ## BE_LE ## _c(SwsContext *c, const int16_t *lumFilter, \
-                              const int16_t **_lumSrc, int lumFilterSize, \
-                              const int16_t *chrFilter, const int16_t **_chrUSrc, \
-                              const int16_t **_chrVSrc, \
-                              int chrFilterSize, const int16_t **_alpSrc, \
-                              uint8_t *_dest[4], int dstW, int chrDstW) \
+#define yuv2NBPS(bits, BE_LE, is_be, template_size, typeX_t) \
+static void yuv2plane1_ ## bits ## BE_LE ## _c(const int16_t *src, \
+                              uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
 { \
-    const typeX_t **lumSrc  = (const typeX_t **) _lumSrc, \
-                  **chrUSrc = (const typeX_t **) _chrUSrc, \
-                  **chrVSrc = (const typeX_t **) _chrVSrc, \
-                  **alpSrc  = (const typeX_t **) _alpSrc; \
-    yuv2yuvX_template_fn(lumFilter, lumSrc, lumFilterSize, \
-                         chrFilter, chrUSrc, chrVSrc, chrFilterSize, \
-                         alpSrc, (uint16_t **) _dest, \
-                         dstW, chrDstW, is_be, bits); \
+    yuv2plane1_ ## template_size ## _c_template((const typeX_t *) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
+}\
+static void yuv2planeX_ ## bits ## BE_LE ## _c(const int16_t *filter, int filterSize, \
+                              const int16_t **src, uint8_t *dest, int dstW, \
+                              const uint8_t *dither, int offset)\
+{ \
+    yuv2planeX_## template_size ## _c_template(filter, \
+                         filterSize, (const typeX_t **) src, \
+                         (uint16_t *) dest, dstW, is_be, bits); \
 }
-yuv2NBPS( 9, BE, 1, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS( 9, LE, 0, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(10, BE, 1, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(10, LE, 0, yuv2yuvX10_c_template, int16_t);
-yuv2NBPS(16, BE, 1, yuv2yuvX16_c_template, int32_t);
-yuv2NBPS(16, LE, 0, yuv2yuvX16_c_template, int32_t);
+yuv2NBPS( 9, BE, 1, 10, int16_t);
+yuv2NBPS( 9, LE, 0, 10, int16_t);
+yuv2NBPS(10, BE, 1, 10, int16_t);
+yuv2NBPS(10, LE, 0, 10, int16_t);
+yuv2NBPS(16, BE, 1, 16, int32_t);
+yuv2NBPS(16, LE, 0, 16, int32_t);
 
-static void yuv2yuvX_c(SwsContext *c, const int16_t *lumFilter,
-                       const int16_t **lumSrc, int lumFilterSize,
-                       const int16_t *chrFilter, const int16_t **chrUSrc,
-                       const int16_t **chrVSrc,
-                       int chrFilterSize, const int16_t **alpSrc,
-                       uint8_t *dest[4], int dstW, int chrDstW)
+static void yuv2planeX_8_c(const int16_t *filter, int filterSize,
+                           const int16_t **src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
 {
-    uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
-            *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
     int i;
-    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
-
-    //FIXME Optimize (just quickly written not optimized..)
     for (i=0; i<dstW; i++) {
-        int val = lumDither[i & 7] << 12;
+        int val = dither[(i + offset) & 7] << 12;
         int j;
-        for (j=0; j<lumFilterSize; j++)
-            val += lumSrc[j][i] * lumFilter[j];
+        for (j=0; j<filterSize; j++)
+            val += src[j][i] * filter[j];
 
-        yDest[i]= av_clip_uint8(val>>19);
+        dest[i]= av_clip_uint8(val>>19);
     }
-
-    if (uDest)
-        for (i=0; i<chrDstW; i++) {
-            int u = chrDither[i & 7] << 12;
-            int v = chrDither[(i + 3) & 7] << 12;
-            int j;
-            for (j=0; j<chrFilterSize; j++) {
-                u += chrUSrc[j][i] * chrFilter[j];
-                v += chrVSrc[j][i] * chrFilter[j];
-            }
-
-            uDest[i]= av_clip_uint8(u>>19);
-            vDest[i]= av_clip_uint8(v>>19);
-        }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest)
-        for (i=0; i<dstW; i++) {
-            int val = lumDither[i & 7] << 12;
-            int j;
-            for (j=0; j<lumFilterSize; j++)
-                val += alpSrc[j][i] * lumFilter[j];
-
-            aDest[i]= av_clip_uint8(val>>19);
-        }
 }
 
-static void yuv2yuv1_c(SwsContext *c, const int16_t *lumSrc,
-                       const int16_t *chrUSrc, const int16_t *chrVSrc,
-                       const int16_t *alpSrc,
-                       uint8_t *dest[4], int dstW, int chrDstW)
+static void yuv2plane1_8_c(const int16_t *src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
 {
-    uint8_t *yDest = dest[0], *uDest = dest[1], *vDest = dest[2],
-            *aDest = CONFIG_SWSCALE_ALPHA ? dest[3] : NULL;
     int i;
-    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
-
     for (i=0; i<dstW; i++) {
-        int val = (lumSrc[i]+  lumDither[i & 7]) >> 7;
-        yDest[i]= av_clip_uint8(val);
+        int val = (src[i] + dither[(i + offset) & 7]) >> 7;
+        dest[i]= av_clip_uint8(val);
     }
-
-    if (uDest)
-        for (i=0; i<chrDstW; i++) {
-            int u = (chrUSrc[i] + chrDither[i & 7])       >> 7;
-            int v = (chrVSrc[i] + chrDither[(i + 3) & 7]) >> 7;
-            uDest[i]= av_clip_uint8(u);
-            vDest[i]= av_clip_uint8(v);
-        }
-
-    if (CONFIG_SWSCALE_ALPHA && aDest)
-        for (i=0; i<dstW; i++) {
-            int val = (alpSrc[i] + lumDither[i & 7]) >> 7;
-            aDest[i]= av_clip_uint8(val);
-        }
 }
 
-static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
-                        const int16_t **lumSrc, int lumFilterSize,
-                        const int16_t *chrFilter, const int16_t **chrUSrc,
-                        const int16_t **chrVSrc, int chrFilterSize,
-                        const int16_t **alpSrc, uint8_t *dest[4],
-                        int dstW, int chrDstW)
+static void yuv2nv12cX_c(SwsContext *c, const int16_t *chrFilter, int chrFilterSize,
+                        const int16_t **chrUSrc, const int16_t **chrVSrc,
+                        uint8_t *dest, int chrDstW)
 {
-    uint8_t *yDest = dest[0], *uDest = dest[1];
     enum PixelFormat dstFormat = c->dstFormat;
-    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
-
-    //FIXME Optimize (just quickly written not optimized..)
+    const uint8_t *chrDither = c->chrDither8;
     int i;
-    for (i=0; i<dstW; i++) {
-        int val = lumDither[i & 7] << 12;
-        int j;
-        for (j=0; j<lumFilterSize; j++)
-            val += lumSrc[j][i] * lumFilter[j];
-
-        yDest[i]= av_clip_uint8(val>>19);
-    }
-
-    if (!uDest)
-        return;
 
     if (dstFormat == PIX_FMT_NV12)
         for (i=0; i<chrDstW; i++) {
@@ -547,8 +445,8 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
                 v += chrVSrc[j][i] * chrFilter[j];
             }
 
-            uDest[2*i]= av_clip_uint8(u>>19);
-            uDest[2*i+1]= av_clip_uint8(v>>19);
+            dest[2*i]= av_clip_uint8(u>>19);
+            dest[2*i+1]= av_clip_uint8(v>>19);
         }
     else
         for (i=0; i<chrDstW; i++) {
@@ -560,8 +458,8 @@ static void yuv2nv12X_c(SwsContext *c, const int16_t *lumFilter,
                 v += chrVSrc[j][i] * chrFilter[j];
             }
 
-            uDest[2*i]= av_clip_uint8(v>>19);
-            uDest[2*i+1]= av_clip_uint8(u>>19);
+            dest[2*i]= av_clip_uint8(v>>19);
+            dest[2*i+1]= av_clip_uint8(u>>19);
         }
 }
 
@@ -2310,26 +2208,31 @@ static av_always_inline void hcscale(SwsContext *c, int16_t *dst1, int16_t *dst2
 
 static av_always_inline void
 find_c_packed_planar_out_funcs(SwsContext *c,
-                               yuv2planar1_fn *yuv2yuv1,    yuv2planarX_fn *yuv2yuvX,
+                               yuv2planar1_fn *yuv2plane1, yuv2planarX_fn *yuv2planeX,
+                               yuv2interleavedX_fn *yuv2nv12cX,
                                yuv2packed1_fn *yuv2packed1, yuv2packed2_fn *yuv2packed2,
                                yuv2packedX_fn *yuv2packedX)
 {
     enum PixelFormat dstFormat = c->dstFormat;
 
-    if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21) {
-        *yuv2yuvX     = yuv2nv12X_c;
-    } else if (is16BPS(dstFormat)) {
-        *yuv2yuvX     = isBE(dstFormat) ? yuv2yuvX16BE_c  : yuv2yuvX16LE_c;
+    if (is16BPS(dstFormat)) {
+        *yuv2planeX = isBE(dstFormat) ? yuv2planeX_16BE_c  : yuv2planeX_16LE_c;
+        *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_16BE_c  : yuv2plane1_16LE_c;
     } else if (is9_OR_10BPS(dstFormat)) {
         if (av_pix_fmt_descriptors[dstFormat].comp[0].depth_minus1 == 8) {
-            *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX9BE_c :  yuv2yuvX9LE_c;
+            *yuv2planeX = isBE(dstFormat) ? yuv2planeX_9BE_c  : yuv2planeX_9LE_c;
+            *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_9BE_c  : yuv2plane1_9LE_c;
         } else {
-            *yuv2yuvX = isBE(dstFormat) ? yuv2yuvX10BE_c : yuv2yuvX10LE_c;
+            *yuv2planeX = isBE(dstFormat) ? yuv2planeX_10BE_c  : yuv2planeX_10LE_c;
+            *yuv2plane1 = isBE(dstFormat) ? yuv2plane1_10BE_c  : yuv2plane1_10LE_c;
         }
     } else {
-        *yuv2yuv1     = yuv2yuv1_c;
-        *yuv2yuvX     = yuv2yuvX_c;
+        *yuv2plane1 = yuv2plane1_8_c;
+        *yuv2planeX = yuv2planeX_8_c;
+        if (dstFormat == PIX_FMT_NV12 || dstFormat == PIX_FMT_NV21)
+            *yuv2nv12cX = yuv2nv12cX_c;
     }
+
     if(c->flags & SWS_FULL_CHR_H_INT) {
         switch (dstFormat) {
             case PIX_FMT_RGBA:
@@ -2591,10 +2494,11 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     const int chrSrcSliceH= -((-srcSliceH) >> c->chrSrcVSubSample);
     int lastDstY;
     uint32_t *pal=c->pal_yuv;
-
     int should_dither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat);
-    yuv2planar1_fn yuv2yuv1 = c->yuv2yuv1;
-    yuv2planarX_fn yuv2yuvX = c->yuv2yuvX;
+
+    yuv2planar1_fn yuv2plane1 = c->yuv2plane1;
+    yuv2planarX_fn yuv2planeX = c->yuv2planeX;
+    yuv2interleavedX_fn yuv2nv12cX = c->yuv2nv12cX;
     yuv2packed1_fn yuv2packed1 = c->yuv2packed1;
     yuv2packed2_fn yuv2packed2 = c->yuv2packed2;
     yuv2packedX_fn yuv2packedX = c->yuv2packedX;
@@ -2748,9 +2652,8 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         }
         if (dstY >= dstH-2) {
             // hmm looks like we can't use MMX here without overwriting this array's tail
-            find_c_packed_planar_out_funcs(c, &yuv2yuv1, &yuv2yuvX,
-                                           &yuv2packed1, &yuv2packed2,
-                                           &yuv2packedX);
+            find_c_packed_planar_out_funcs(c, &yuv2plane1, &yuv2planeX,  &yuv2nv12cX,
+                                           &yuv2packed1, &yuv2packed2, &yuv2packedX);
         }
 
         {
@@ -2761,18 +2664,35 @@ static int swScale(SwsContext *c, const uint8_t* src[],
 
             if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
-                if ((dstY&chrSkipMask) || isGray(dstFormat))
-                    dest[1] = dest[2] = NULL; //FIXME split functions in lumi / chromi
-                if (c->yuv2yuv1 && vLumFilterSize == 1 && vChrFilterSize == 1) { // unscaled YV12
-                    const int16_t *alpBuf= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? alpSrcPtr[0] : NULL;
-                    yuv2yuv1(c, lumSrcPtr[0], chrUSrcPtr[0], chrVSrcPtr[0], alpBuf,
-                             dest, dstW, chrDstW);
-                } else { //General YV12
-                    yuv2yuvX(c, vLumFilter + dstY * vLumFilterSize,
-                             lumSrcPtr, vLumFilterSize,
-                             vChrFilter + chrDstY * vChrFilterSize,
-                             chrUSrcPtr, chrVSrcPtr, vChrFilterSize,
-                             alpSrcPtr, dest, dstW, chrDstW);
+
+                if (vLumFilterSize == 1) {
+                    yuv2plane1(lumSrcPtr[0], dest[0], dstW, c->lumDither8, 0);
+                } else {
+                    yuv2planeX(vLumFilter + dstY * vLumFilterSize, vLumFilterSize,
+                               lumSrcPtr, dest[0], dstW, c->lumDither8, 0);
+                }
+
+                if (!((dstY&chrSkipMask) || isGray(dstFormat))) {
+                    if (yuv2nv12cX) {
+                        yuv2nv12cX(c, vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize, chrUSrcPtr, chrVSrcPtr, dest[1], chrDstW);
+                    } else if (vChrFilterSize == 1) {
+                        yuv2plane1(chrUSrcPtr[0], dest[1], chrDstW, c->chrDither8, 0);
+                        yuv2plane1(chrVSrcPtr[0], dest[2], chrDstW, c->chrDither8, 3);
+                    } else {
+                        yuv2planeX(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize,
+                                   chrUSrcPtr, dest[1], chrDstW, c->chrDither8, 0);
+                        yuv2planeX(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize,
+                                   chrVSrcPtr, dest[2], chrDstW, c->chrDither8, 3);
+                    }
+                }
+
+                if (CONFIG_SWSCALE_ALPHA && alpPixBuf){
+                    if (vLumFilterSize == 1) {
+                        yuv2plane1(alpSrcPtr[0], dest[3], dstW, c->lumDither8, 0);
+                    } else {
+                        yuv2planeX(vLumFilter + dstY * vLumFilterSize, vLumFilterSize,
+                                   alpSrcPtr, dest[3], dstW, c->lumDither8, 0);
+                    }
                 }
             } else {
                 assert(lumSrcPtr  + vLumFilterSize - 1 < lumPixBuf  + vLumBufSize*2);
@@ -2826,8 +2746,8 @@ static av_cold void sws_init_swScale_c(SwsContext *c)
 {
     enum PixelFormat srcFormat = c->srcFormat;
 
-    find_c_packed_planar_out_funcs(c, &c->yuv2yuv1, &c->yuv2yuvX,
-                                   &c->yuv2packed1, &c->yuv2packed2,
+    find_c_packed_planar_out_funcs(c, &c->yuv2plane1, &c->yuv2planeX,
+                                   &c->yuv2nv12cX, &c->yuv2packed1, &c->yuv2packed2,
                                    &c->yuv2packedX);
 
     c->chrToYV12 = NULL;

@@ -23,5 +23,10 @@ LIBAVFORMAT_$MAJOR {
                 ff_timefilter_new;
                 ff_timefilter_update;
                 ff_timefilter_reset;
+                get_*;
+                put_*;
+                udp_set_remote_url;
+                udp_get_local_port;
+                init_checksum;
         local: *;
 };

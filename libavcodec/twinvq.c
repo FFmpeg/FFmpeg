@@ -822,7 +822,7 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
     const ModeTab *mtab = tctx->mtab;
     float *out = data;
     enum FrameType ftype;
-    int window_type;
+    int window_type, out_size;
     static const enum FrameType wtype_to_ftype_table[] = {
         FT_LONG,   FT_LONG, FT_SHORT, FT_LONG,
         FT_MEDIUM, FT_LONG, FT_LONG,  FT_MEDIUM, FT_MEDIUM
@@ -831,8 +831,14 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
     if (buf_size*8 < avctx->bit_rate*mtab->size/avctx->sample_rate + 8) {
         av_log(avctx, AV_LOG_ERROR,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        *data_size = 0;
-        return buf_size;
+        return AVERROR(EINVAL);
+    }
+
+    out_size = mtab->size * avctx->channels *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
     }
 
     init_get_bits(&gb, buf, buf_size * 8);
@@ -857,7 +863,7 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
         return buf_size;
     }
 
-    *data_size = mtab->size*avctx->channels*4;
+    *data_size = out_size;
 
     return buf_size;
 }

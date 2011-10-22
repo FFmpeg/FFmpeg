@@ -930,6 +930,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     if (!v->field_mode || (v->field_mode && !v->numref)) {
         valid_count = get_chroma_mv(mvx, mvy, intra, 0, &tx, &ty);
         if (!valid_count) {
+            s->current_picture.f.motion_val[1][s->block_index[0]][0] = 0;
+            s->current_picture.f.motion_val[1][s->block_index[0]][1] = 0;
             v->luma_mv[s->mb_x][0] = v->luma_mv[s->mb_x][1] = 0;
             return; //no need to do MC for intra blocks
         }
@@ -941,6 +943,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         if (dominant)
             chroma_ref_type = !v->cur_field_type;
     }
+    s->current_picture.f.motion_val[1][s->block_index[0]][0] = tx;
+    s->current_picture.f.motion_val[1][s->block_index[0]][1] = ty;
     uvmx = (tx + ((tx & 3) == 3)) >> 1;
     uvmy = (ty + ((ty & 3) == 3)) >> 1;
 

@@ -44,6 +44,7 @@ SECTION .text
     PROLOGUE 0,6,8
     movifnidn  r0, r0mp
     movifnidn r1d, r1m
+    movifnidn r2d, r2m
     movifnidn r4d, r4m
     movifnidn r5d, r5m
 %endmacro

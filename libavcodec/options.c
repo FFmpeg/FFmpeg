@@ -201,14 +201,19 @@ static const AVOption options[]={
 {"unofficial", "allow unofficial extensions", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_UNOFFICIAL }, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"experimental", "allow non standardized experimental things", 0, AV_OPT_TYPE_CONST, {.dbl = FF_COMPLIANCE_EXPERIMENTAL }, INT_MIN, INT_MAX, V|D|E, "strict"},
 {"b_qoffset", "qp offset between P and B frames", OFFSET(b_quant_offset), AV_OPT_TYPE_FLOAT, {.dbl = 1.25 }, -FLT_MAX, FLT_MAX, V|E},
+#if FF_API_ER
 {"er", "set error detection aggressivity", OFFSET(error_recognition), AV_OPT_TYPE_INT, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, A|V|D, "er"},
 {"careful", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_CAREFUL }, INT_MIN, INT_MAX, V|D, "er"},
 {"compliant", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_COMPLIANT }, INT_MIN, INT_MAX, V|D, "er"},
 {"aggressive", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "er"},
-#if FF_API_ER
 {"very_aggressive", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_VERY_AGGRESSIVE }, INT_MIN, INT_MAX, V|D, "er"},
-#endif /* FF_API_ER */
 {"explode", "abort decoding on error recognition", 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, V|D, "er"},
+#endif /* FF_API_ER */
+{"err_filter", "set error detection filter flags", OFFSET(err_recognition), AV_OPT_TYPE_FLAGS, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, A|V|D, "err_filter"},
+{"crccheck", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_CRCCHECK }, INT_MIN, INT_MAX, V|D, "err_filter"},
+{"bitstream", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BITSTREAM }, INT_MIN, INT_MAX, V|D, "err_filter"},
+{"buffer", NULL, 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_BUFFER }, INT_MIN, INT_MAX, V|D, "err_filter"},
+{"explode", "abort decoding on minor error recognition", 0, AV_OPT_TYPE_CONST, {.dbl = AV_EF_EXPLODE }, INT_MIN, INT_MAX, V|D, "err_filter"},
 {"has_b_frames", NULL, OFFSET(has_b_frames), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"block_align", NULL, OFFSET(block_align), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"parse_only", NULL, OFFSET(parse_only), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},

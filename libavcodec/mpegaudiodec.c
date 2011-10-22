@@ -79,7 +79,7 @@ typedef struct MPADecodeContext {
 #endif
     int adu_mode; ///< 0 for standard mp3, 1 for adu formatted mp3
     int dither_state;
-    int error_recognition;
+    int err_recognition;
     AVCodecContext* avctx;
     MPADSPContext mpadsp;
 } MPADecodeContext;
@@ -280,7 +280,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
     ff_mpadsp_init(&s->mpadsp);
 
     avctx->sample_fmt= OUT_FMT;
-    s->error_recognition= avctx->error_recognition;
+    s->err_recognition = avctx->err_recognition;
 
     if (!init && !avctx->parse_only) {
         int offset;
@@ -1104,7 +1104,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 s_index -= 4;
                 skip_bits_long(&s->gb, last_pos - pos);
                 av_log(s->avctx, AV_LOG_INFO, "overread, skip %d enddists: %d %d\n", last_pos - pos, end_pos-pos, end_pos2-pos);
-                if(s->error_recognition >= FF_ER_COMPLIANT)
+                if(s->err_recognition & AV_EF_BITSTREAM)
                     s_index=0;
                 break;
             }
@@ -1134,10 +1134,10 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     /* skip extension bits */
     bits_left = end_pos2 - get_bits_count(&s->gb);
 //av_log(NULL, AV_LOG_ERROR, "left:%d buf:%p\n", bits_left, s->in_gb.buffer);
-    if (bits_left < 0 && s->error_recognition >= FF_ER_COMPLIANT) {
+    if (bits_left < 0 && (s->err_recognition & AV_EF_BITSTREAM)) {
         av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
-    }else if(bits_left > 0 && s->error_recognition >= FF_ER_AGGRESSIVE){
+    }else if(bits_left > 0 && (s->err_recognition & AV_EF_BUFFER)){
         av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
     }

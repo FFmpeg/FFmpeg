@@ -393,7 +393,7 @@ static av_cold int read_specific_config(ALSDecContext *ctx)
         if (get_bits_left(&gb) < 32)
             return -1;
 
-        if (avctx->error_recognition >= FF_ER_CAREFUL) {
+        if (avctx->err_recognition & AV_EF_CRCCHECK) {
             ctx->crc_table = av_crc_get_table(AV_CRC_32_IEEE_LE);
             ctx->crc       = 0xFFFFFFFF;
             ctx->crc_org   = ~get_bits_long(&gb, 32);
@@ -1476,7 +1476,7 @@ static int decode_frame(AVCodecContext *avctx,
     }
 
     // update CRC
-    if (sconf->crc_enabled && avctx->error_recognition >= FF_ER_CAREFUL) {
+    if (sconf->crc_enabled && (avctx->err_recognition & AV_EF_CRCCHECK)) {
         int swap = HAVE_BIGENDIAN != sconf->msb_first;
 
         if (ctx->avctx->bits_per_raw_sample == 24) {
@@ -1710,7 +1710,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     // allocate crc buffer
     if (HAVE_BIGENDIAN != sconf->msb_first && sconf->crc_enabled &&
-        avctx->error_recognition >= FF_ER_CAREFUL) {
+        (avctx->err_recognition & AV_EF_CRCCHECK)) {
         ctx->crc_buffer = av_malloc(sizeof(*ctx->crc_buffer) *
                                     ctx->cur_frame_length *
                                     avctx->channels *
