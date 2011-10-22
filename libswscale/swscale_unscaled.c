@@ -798,7 +798,7 @@ int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
         int dstStride2[4]= {dstStride[0], dstStride[1], dstStride[2], dstStride[3]};
 
         reset_ptr(src2, c->srcFormat);
-        reset_ptr((const uint8_t**)dst2, c->dstFormat);
+        reset_ptr((void*)dst2, c->dstFormat);
 
         /* reset slice direction at end of frame */
         if (srcSliceY + srcSliceH == c->srcH)
