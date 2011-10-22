@@ -43,6 +43,9 @@ static void clip_coefficients(DSPContext *dsp, CoefType *coef, unsigned int len)
 
 static CoefType calc_cpl_coord(CoefSumType energy_ch, CoefSumType energy_cpl);
 
+static void sum_square_butterfly(AC3EncodeContext *s, CoefSumType sum[4],
+                                 const CoefType *coef0, const CoefType *coef1,
+                                 int len);
 
 int AC3_NAME(allocate_sample_buffers)(AC3EncodeContext *s)
 {
@@ -334,7 +337,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
 static void compute_rematrixing_strategy(AC3EncodeContext *s)
 {
     int nb_coefs;
-    int blk, bnd, i;
+    int blk, bnd;
     AC3Block *block, *av_uninit(block0);
 
     if (s->channel_mode != AC3_CHMODE_STEREO)
@@ -362,17 +365,9 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
             /* calculate calculate sum of squared coeffs for one band in one block */
             int start = ff_ac3_rematrix_band_tab[bnd];
             int end   = FFMIN(nb_coefs, ff_ac3_rematrix_band_tab[bnd+1]);
-            CoefSumType sum[4] = {0,};
-            for (i = start; i < end; i++) {
-                CoefType lt = block->mdct_coef[1][i];
-                CoefType rt = block->mdct_coef[2][i];
-                CoefType md = lt + rt;
-                CoefType sd = lt - rt;
-                MAC_COEF(sum[0], lt, lt);
-                MAC_COEF(sum[1], rt, rt);
-                MAC_COEF(sum[2], md, md);
-                MAC_COEF(sum[3], sd, sd);
-            }
+            CoefSumType sum[4];
+            sum_square_butterfly(s, sum, block->mdct_coef[1] + start,
+                                 block->mdct_coef[2] + start, end - start);
 
             /* compare sums to determine if rematrixing will be used for this band */
             if (FFMIN(sum[2], sum[3]) < FFMIN(sum[0], sum[1]))
