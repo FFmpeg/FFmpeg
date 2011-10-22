@@ -724,7 +724,7 @@ intrax8_decoded:
 av_log(avctx, AV_LOG_DEBUG, "%"PRId64"\n", rdtsc()-time);
 #endif
 
-    return (ret && avctx->error_recognition >= FF_ER_EXPLODE)?ret:get_consumed_bytes(s, buf_size);
+    return (ret && (avctx->err_recognition & AV_EF_EXPLODE))?ret:get_consumed_bytes(s, buf_size);
 }
 
 AVCodec ff_h263_decoder = {

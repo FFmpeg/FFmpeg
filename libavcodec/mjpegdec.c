@@ -1531,7 +1531,7 @@ eoi_parser:
                         break;
                     }
                     if (ff_mjpeg_decode_sos(s, NULL, NULL) < 0 &&
-                        avctx->error_recognition >= FF_ER_EXPLODE)
+                        (avctx->err_recognition & AV_EF_EXPLODE))
                       return AVERROR_INVALIDDATA;
                     /* buggy avid puts EOI every 10-20th frame */
                     /* if restart period is over process EOI */

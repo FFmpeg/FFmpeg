@@ -136,7 +136,7 @@ static int h261_decode_gob_header(H261Context *h){
 
     if(s->qscale==0) {
         av_log(s->avctx, AV_LOG_ERROR, "qscale has forbidden 0 value\n");
-        if (s->avctx->error_recognition >= FF_ER_COMPLIANT)
+        if (s->avctx->err_recognition & AV_EF_BITSTREAM)
             return -1;
     }
 

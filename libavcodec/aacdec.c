@@ -594,7 +594,7 @@ static av_cold int aac_decode_init(AVCodecContext *avctx)
             int ret = set_default_channel_config(avctx, new_che_pos, ac->m4ac.chan_config);
             if (!ret)
                 output_configure(ac, ac->che_pos, new_che_pos, ac->m4ac.chan_config, OC_GLOBAL_HDR);
-            else if (avctx->error_recognition >= FF_ER_EXPLODE)
+            else if (avctx->err_recognition & AV_EF_EXPLODE)
                 return AVERROR_INVALIDDATA;
         }
     }
