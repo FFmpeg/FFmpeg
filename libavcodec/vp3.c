@@ -1980,6 +1980,8 @@ error:
     return -1;
 }
 
+static void vp3_decode_flush(AVCodecContext *avctx);
+
 /*
  * This is the ffmpeg/libavcodec API module cleanup function.
  */
@@ -2017,12 +2019,7 @@ static av_cold int vp3_decode_end(AVCodecContext *avctx)
     free_vlc(&s->motion_vector_vlc);
 
     /* release all frames */
-    if (s->golden_frame.data[0])
-        ff_thread_release_buffer(avctx, &s->golden_frame);
-    if (s->last_frame.data[0] && s->last_frame.type != FF_BUFFER_TYPE_COPY)
-        ff_thread_release_buffer(avctx, &s->last_frame);
-    /* no need to release the current_frame since it will always be pointing
-     * to the same frame as either the golden or last frame */
+    vp3_decode_flush(avctx);
 
     return 0;
 }
