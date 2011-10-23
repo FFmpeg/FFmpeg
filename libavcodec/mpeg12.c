@@ -911,7 +911,7 @@ static int mpeg_decode_mb(Mpeg1Context *s1, DCTELEM block[12][64])
                             s->mv[i][0][1]= s->last_mv[i][0][1]= s->last_mv[i][1][1] =
                                 mpeg_decode_motion(s, s->mpeg_f_code[i][1], s->last_mv[i][0][1]);
                             /* full_pel: only for MPEG-1 */
-                            if (s1->full_pel[i]) {
+                            if (s->full_pel[i]) {
                                 s->mv[i][0][0] <<= 1;
                                 s->mv[i][0][1] <<= 1;
                             }
@@ -1363,7 +1363,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 
     vbv_delay = get_bits(&s->gb, 16);
     if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type == AV_PICTURE_TYPE_B) {
-        s1->full_pel[0] = get_bits1(&s->gb);
+        s->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
             return -1;
@@ -1371,7 +1371,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         s->mpeg_f_code[0][1] = f_code;
     }
     if (s->pict_type == AV_PICTURE_TYPE_B) {
-        s1->full_pel[1] = get_bits1(&s->gb);
+        s->full_pel[1] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
             return -1;
@@ -1519,7 +1519,7 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
 {
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
-    s1->full_pel[0] = s1->full_pel[1] = 0;
+    s->full_pel[0] = s->full_pel[1] = 0;
     s->mpeg_f_code[0][0] = get_bits(&s->gb, 4);
     s->mpeg_f_code[0][1] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][0] = get_bits(&s->gb, 4);
