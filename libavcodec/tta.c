@@ -225,14 +225,17 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         skip_bits(&s->gb, 32); // CRC32 of header
 
         switch(s->bps) {
-//            case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
-            case 2: avctx->sample_fmt = AV_SAMPLE_FMT_S16; break;
-//            case 3: avctx->sample_fmt = AV_SAMPLE_FMT_S24; break;
-            case 4: avctx->sample_fmt = AV_SAMPLE_FMT_S32; break;
-            default:
-                av_log_ask_for_sample(s->avctx,
-                                      "Invalid/unsupported sample format.\n");
-                return -1;
+        case 2:
+            avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+            avctx->bits_per_raw_sample = 16;
+            break;
+        case 3:
+            avctx->sample_fmt = AV_SAMPLE_FMT_S32;
+            avctx->bits_per_raw_sample = 24;
+            break;
+        default:
+            av_log(avctx, AV_LOG_ERROR, "Invalid/unsupported sample format.\n");
+            return AVERROR_INVALIDDATA;
         }
 
         // FIXME: horribly broken, but directly from reference source
@@ -259,7 +262,9 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return -1;
         }
 
-        s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
+        if (s->bps == 2) {
+            s->decode_buffer = av_mallocz(sizeof(int32_t)*s->frame_length*s->channels);
+        }
         s->ch_ctx = av_malloc(avctx->channels * sizeof(*s->ch_ctx));
         if (!s->ch_ctx)
             return AVERROR(ENOMEM);
@@ -278,7 +283,7 @@ static int tta_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TTAContext *s = avctx->priv_data;
-    int i;
+    int i, out_size;
     int cur_chan = 0, framelen = s->frame_length;
     int32_t *p;
 
@@ -289,10 +294,15 @@ static int tta_decode_frame(AVCodecContext *avctx,
     if (!s->total_frames && s->last_frame_length)
         framelen = s->last_frame_length;
 
-    if (*data_size < (framelen * s->channels * 2)) {
+    out_size = framelen * s->channels * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
         av_log(avctx, AV_LOG_ERROR, "Output buffer size is too small.\n");
         return -1;
     }
+
+    // decode directly to output buffer for 24-bit sample format
+    if (s->bps == 3)
+        s->decode_buffer = data;
 
     // init per channel states
     for (i = 0; i < s->channels; i++) {
@@ -382,18 +392,20 @@ static int tta_decode_frame(AVCodecContext *avctx,
     skip_bits(&s->gb, 32); // frame crc
 
     // convert to output buffer
-    switch(s->bps) {
-        case 2: {
-            uint16_t *samples = data;
-            for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++) {
-                *samples++ = *p;
-            }
-            *data_size = (uint8_t *)samples - (uint8_t *)data;
-            break;
-        }
-        default:
-            av_log(s->avctx, AV_LOG_ERROR, "Error, only 16bit samples supported!\n");
+    if (s->bps == 2) {
+        int16_t *samples = data;
+        for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+            *samples++ = *p;
+    } else {
+        // shift samples for 24-bit sample format
+        int32_t *samples = data;
+        for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
+            *samples++ <<= 8;
+        // reset decode buffer
+        s->decode_buffer = NULL;
     }
+
+    *data_size = out_size;
 
     return buf_size;
 }
