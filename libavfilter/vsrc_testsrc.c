@@ -283,7 +283,7 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
     }
 
     /* draw sliding color line */
-    p = data + picref->linesize[0] * height * 3/4;
+    p0 = p = data + picref->linesize[0] * height * 3/4;
     grad = (256 * test->nb_frame * test->time_base.num / test->time_base.den) %
         GRADIENT_SIZE;
     rgrad = 0;
@@ -311,8 +311,9 @@ static void test_fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
         if (grad >= GRADIENT_SIZE)
             grad -= GRADIENT_SIZE;
     }
+    p = p0;
     for (y = height / 8; y > 0; y--) {
-        memcpy(p, p - picref->linesize[0], 3 * width);
+        memcpy(p+picref->linesize[0], p, 3 * width);
         p += picref->linesize[0];
     }
 
