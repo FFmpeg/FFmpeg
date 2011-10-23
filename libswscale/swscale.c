@@ -2678,7 +2678,8 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                             || yuv2planeX == yuv2planeX_9LE_c
                             || yuv2planeX == yuv2planeX_16BE_c
                             || yuv2planeX == yuv2planeX_16LE_c
-                            || yuv2planeX == yuv2planeX_8_c));
+                            || yuv2planeX == yuv2planeX_8_c) || !ARCH_X86);
+
                 if(use_mmx_vfilter){
                     vLumFilter= c->lumMmxFilter;
                     vChrFilter= c->chrMmxFilter;
