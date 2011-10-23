@@ -1623,10 +1623,9 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
  * @return DECODE_SLICE_ERROR if the slice is damaged<br>
  *         DECODE_SLICE_OK if this slice is ok<br>
  */
-static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
+static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                              const uint8_t **buf, int buf_size)
 {
-    MpegEncContext *s     = &s1->mpeg_enc_ctx;
     AVCodecContext *avctx = s->avctx;
     const int lowres      = s->avctx->lowres;
     const int field_pic   = s->picture_structure != PICT_FRAME;
@@ -1858,7 +1857,7 @@ static int slice_decode_thread(AVCodecContext *c, void *arg)
         uint32_t start_code;
         int ret;
 
-        ret = mpeg_decode_slice((Mpeg1Context*)s, mb_y, &buf, s->gb.buffer_end - buf);
+        ret = mpeg_decode_slice(s, mb_y, &buf, s->gb.buffer_end - buf);
         emms_c();
 //av_log(c, AV_LOG_DEBUG, "ret:%d resync:%d/%d mb:%d/%d ts:%d/%d ec:%d\n",
 //ret, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, s->start_mb_y, s->end_mb_y, s->error_count);
@@ -2443,7 +2442,7 @@ static int decode_chunks(AVCodecContext *avctx,
                     }
                     buf_ptr += 2; // FIXME add minimum number of bytes per slice
                 } else {
-                    ret = mpeg_decode_slice(s, mb_y, &buf_ptr, input_size);
+                    ret = mpeg_decode_slice(s2, mb_y, &buf_ptr, input_size);
                     emms_c();
 
                     if (ret < 0) {
