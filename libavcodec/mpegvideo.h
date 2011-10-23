@@ -633,6 +633,7 @@ typedef struct MpegEncContext {
     int chroma_y_shift;
 
     int progressive_frame;
+    int full_pel[2];
     int interlaced_dct;
     int first_slice;
     int first_field;         ///< is 1 for the first field of a field picture 0 otherwise
