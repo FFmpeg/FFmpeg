@@ -2473,8 +2473,6 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     int16_t *vChrFilterPos= c->vChrFilterPos;
     int16_t *hLumFilterPos= c->hLumFilterPos;
     int16_t *hChrFilterPos= c->hChrFilterPos;
-    int16_t *vLumFilter= c->vLumFilter;
-    int16_t *vChrFilter= c->vChrFilter;
     int16_t *hLumFilter= c->hLumFilter;
     int16_t *hChrFilter= c->hChrFilter;
     int32_t *lumMmxFilter= c->lumMmxFilter;
@@ -2662,27 +2660,32 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **chrVSrcPtr= (const int16_t **) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
+            int16_t *vLumFilter= c->vLumFilter;
+            int16_t *vChrFilter= c->vChrFilter;
 
             if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
 
+                vLumFilter +=    dstY * vLumFilterSize;
+                vChrFilter += chrDstY * vChrFilterSize;
+
                 if (vLumFilterSize == 1) {
                     yuv2plane1(lumSrcPtr[0], dest[0], dstW, c->lumDither8, 0);
                 } else {
-                    yuv2planeX(vLumFilter + dstY * vLumFilterSize, vLumFilterSize,
+                    yuv2planeX(vLumFilter, vLumFilterSize,
                                lumSrcPtr, dest[0], dstW, c->lumDither8, 0);
                 }
 
                 if (!((dstY&chrSkipMask) || isGray(dstFormat))) {
                     if (yuv2nv12cX) {
-                        yuv2nv12cX(c, vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize, chrUSrcPtr, chrVSrcPtr, dest[1], chrDstW);
+                        yuv2nv12cX(c, vChrFilter, vChrFilterSize, chrUSrcPtr, chrVSrcPtr, dest[1], chrDstW);
                     } else if (vChrFilterSize == 1) {
                         yuv2plane1(chrUSrcPtr[0], dest[1], chrDstW, c->chrDither8, 0);
                         yuv2plane1(chrVSrcPtr[0], dest[2], chrDstW, c->chrDither8, 3);
                     } else {
-                        yuv2planeX(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize,
+                        yuv2planeX(vChrFilter, vChrFilterSize,
                                    chrUSrcPtr, dest[1], chrDstW, c->chrDither8, 0);
-                        yuv2planeX(vChrFilter + chrDstY * vChrFilterSize, vChrFilterSize,
+                        yuv2planeX(vChrFilter, vChrFilterSize,
                                    chrVSrcPtr, dest[2], chrDstW, c->chrDither8, 3);
                     }
                 }
@@ -2691,7 +2694,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                     if (vLumFilterSize == 1) {
                         yuv2plane1(alpSrcPtr[0], dest[3], dstW, c->lumDither8, 0);
                     } else {
-                        yuv2planeX(vLumFilter + dstY * vLumFilterSize, vLumFilterSize,
+                        yuv2planeX(vLumFilter, vLumFilterSize,
                                    alpSrcPtr, dest[3], dstW, c->lumDither8, 0);
                     }
                 }
