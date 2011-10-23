@@ -2724,13 +2724,11 @@ static int opt_map_metadata(OptionsContext *o, const char *opt, const char *arg)
     return 0;
 }
 
-static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
+static AVCodec *find_codec_or_die(const char *name, enum AVMediaType type, int encoder)
 {
     const char *codec_string = encoder ? "encoder" : "decoder";
     AVCodec *codec;
 
-    if(!name)
-        return CODEC_ID_NONE;
     codec = encoder ?
         avcodec_find_encoder_by_name(name) :
         avcodec_find_decoder_by_name(name);
@@ -2742,29 +2740,20 @@ static enum CodecID find_codec_or_die(const char *name, enum AVMediaType type, i
         av_log(NULL, AV_LOG_FATAL, "Invalid %s type '%s'\n", codec_string, name);
         exit_program(1);
     }
-    return codec->id;
+    return codec;
 }
 
-static AVCodec *choose_codec(OptionsContext *o, AVFormatContext *s, AVStream *st, enum AVMediaType type)
+static AVCodec *choose_decoder(OptionsContext *o, AVFormatContext *s, AVStream *st)
 {
     char *codec_name = NULL;
 
     MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, st);
-
-    if (!codec_name) {
-        if (s->oformat) {
-            st->codec->codec_id = av_guess_codec(s->oformat, NULL, s->filename, NULL, type);
-            return avcodec_find_encoder(st->codec->codec_id);
-        }
-    } else if (!strcmp(codec_name, "copy"))
-        st->stream_copy = 1;
-    else {
-        st->codec->codec_id = find_codec_or_die(codec_name, type, s->iformat == NULL);
-        return s->oformat ? avcodec_find_encoder_by_name(codec_name) :
-                            avcodec_find_decoder_by_name(codec_name);
-    }
-
-    return NULL;
+    if (codec_name) {
+        AVCodec *codec = find_codec_or_die(codec_name, st->codec->codec_type, 0);
+        st->codec->codec_id = codec->id;
+        return codec;
+    } else
+        return avcodec_find_decoder(st->codec->codec_id);
 }
 
 /**
@@ -2791,9 +2780,7 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
         MATCH_PER_STREAM_OPT(ts_scale, dbl, scale, ic, st);
         ist->ts_scale = scale;
 
-        ist->dec = choose_codec(o, ic, st, dec->codec_type);
-        if (!ist->dec)
-            ist->dec = avcodec_find_decoder(dec->codec_id);
+        ist->dec = choose_decoder(o, ic, st);
 
         switch (dec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -2894,7 +2881,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
 
     /* apply forced codec ids */
     for (i = 0; i < ic->nb_streams; i++)
-        choose_codec(o, ic, ic->streams[i], ic->streams[i]->codec->codec_type);
+        choose_decoder(o, ic, ic->streams[i]);
 
     /* Set AVCodecContext options for avformat_find_stream_info */
     opts = setup_find_stream_info_opts(ic, codec_opts);
@@ -3012,6 +2999,23 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
     return ret;
 }
 
+static void choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *ost)
+{
+    char *codec_name = NULL;
+
+    MATCH_PER_STREAM_OPT(codec_names, str, codec_name, s, ost->st);
+    if (!codec_name) {
+        ost->st->codec->codec_id = av_guess_codec(s->oformat, NULL, s->filename,
+                                                  NULL, ost->st->codec->codec_type);
+        ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
+    } else if (!strcmp(codec_name, "copy"))
+        ost->st->stream_copy = 1;
+    else {
+        ost->enc = find_codec_or_die(codec_name, ost->st->codec->codec_type, 1);
+        ost->st->codec->codec_id = ost->enc->id;
+    }
+}
+
 static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, enum AVMediaType type)
 {
     OutputStream *ost;
@@ -3039,7 +3043,7 @@ static OutputStream *new_output_stream(OptionsContext *o, AVFormatContext *oc, e
     ost->index = idx;
     ost->st    = st;
     st->codec->codec_type = type;
-    ost->enc = choose_codec(o, oc, st, type);
+    choose_encoder(o, oc, ost);
     if (ost->enc) {
         ost->opts  = filter_codec_opts(codec_opts, ost->enc->id, oc, st);
     }
