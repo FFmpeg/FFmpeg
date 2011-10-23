@@ -240,7 +240,7 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
         sps->num_reorder_frames= get_ue_golomb(&s->gb);
         get_ue_golomb(&s->gb); /*max_dec_frame_buffering*/
 
-        if(s->gb.size_in_bits < get_bits_count(&s->gb)){
+        if(get_bits_left(&s->gb) < 0){
             sps->num_reorder_frames=0;
             sps->bitstream_restriction_flag= 0;
         }
@@ -250,8 +250,8 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
             return -1;
         }
     }
-    if(s->gb.size_in_bits < get_bits_count(&s->gb)){
-        av_log(h->s.avctx, AV_LOG_ERROR, "Overread VUI by %d bits\n", get_bits_count(&s->gb) - s->gb.size_in_bits);
+    if(get_bits_left(&s->gb) < 0){
+        av_log(h->s.avctx, AV_LOG_ERROR, "Overread VUI by %d bits\n", -get_bits_left(&s->gb));
         return -1;
     }
 
@@ -568,7 +568,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     memcpy(pps->scaling_matrix8, h->sps_buffers[pps->sps_id]->scaling_matrix8, sizeof(pps->scaling_matrix8));
 
     bits_left = bit_length - get_bits_count(&s->gb);
-    if(get_bits_count(&s->gb) < bit_length){
+    if(bits_left > 0){
         pps->transform_8x8_mode= get_bits1(&s->gb);
         decode_scaling_matrices(h, h->sps_buffers[pps->sps_id], pps, 0, pps->scaling_matrix4, pps->scaling_matrix8);
         pps->chroma_qp_index_offset[1]= get_se_golomb(&s->gb); //second_chroma_qp_index_offset
