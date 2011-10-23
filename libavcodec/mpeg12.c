@@ -735,8 +735,9 @@ static void exchange_uv(MpegEncContext *s)
 #define MT_16X8  2
 #define MT_DMV   3
 
-static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
+static int mpeg_decode_mb(Mpeg1Context *s1, DCTELEM block[12][64])
 {
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
     int i, j, k, cbp, val, mb_type, motion_type;
     const int mb_block_count = 4 + (1 << s->chroma_format);
 
@@ -910,7 +911,7 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
                             s->mv[i][0][1]= s->last_mv[i][0][1]= s->last_mv[i][1][1] =
                                 mpeg_decode_motion(s, s->mpeg_f_code[i][1], s->last_mv[i][0][1]);
                             /* full_pel: only for MPEG-1 */
-                            if (s->full_pel[i]) {
+                            if (s1->full_pel[i]) {
                                 s->mv[i][0][0] <<= 1;
                                 s->mv[i][0][1] <<= 1;
                             }
@@ -1111,20 +1112,6 @@ static int mpeg_decode_mb(MpegEncContext *s, DCTELEM block[12][64])
 
     return 0;
 }
-
-typedef struct Mpeg1Context {
-    MpegEncContext mpeg_enc_ctx;
-    int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
-    int repeat_field; /* true if we must repeat the field */
-    AVPanScan pan_scan;              /**< some temporary storage for the panscan */
-    int slice_count;
-    int swap_uv;//indicate VCR2
-    int save_aspect_info;
-    int save_width, save_height, save_progressive_seq;
-    AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
-    int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
-    int tmpgexs;
-} Mpeg1Context;
 
 static av_cold int mpeg_decode_init(AVCodecContext *avctx)
 {
@@ -1376,7 +1363,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
 
     vbv_delay = get_bits(&s->gb, 16);
     if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type == AV_PICTURE_TYPE_B) {
-        s->full_pel[0] = get_bits1(&s->gb);
+        s1->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
             return -1;
@@ -1384,7 +1371,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
         s->mpeg_f_code[0][1] = f_code;
     }
     if (s->pict_type == AV_PICTURE_TYPE_B) {
-        s->full_pel[1] = get_bits1(&s->gb);
+        s1->full_pel[1] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
         if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
             return -1;
@@ -1532,7 +1519,7 @@ static void mpeg_decode_picture_coding_extension(Mpeg1Context *s1)
 {
     MpegEncContext *s = &s1->mpeg_enc_ctx;
 
-    s->full_pel[0] = s->full_pel[1] = 0;
+    s1->full_pel[0] = s1->full_pel[1] = 0;
     s->mpeg_f_code[0][0] = get_bits(&s->gb, 4);
     s->mpeg_f_code[0][1] = get_bits(&s->gb, 4);
     s->mpeg_f_code[1][0] = get_bits(&s->gb, 4);
@@ -1763,7 +1750,7 @@ static int mpeg_decode_slice(Mpeg1Context *s1, int mb_y,
         if (CONFIG_MPEG_XVMC_DECODER && s->avctx->xvmc_acceleration > 1)
             ff_xvmc_init_block(s); // set s->block
 
-        if (mpeg_decode_mb(s, s->block) < 0)
+        if (mpeg_decode_mb(s1, s->block) < 0)
             return -1;
 
         if (s->current_picture.f.motion_val[0] && !s->encoding) { // note motion_val is normally NULL unless we want to extract the MVs
@@ -2171,7 +2158,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     time_code_seconds  = get_bits(&s->gb, 6);
     time_code_pictures = get_bits(&s->gb, 6);
 
-    s->closed_gop = get_bits1(&s->gb);
+    s1->closed_gop = get_bits1(&s->gb);
     /*broken_link indicate that after editing the
       reference frames of the first B-Frames after GOP I-Frame
       are missing (open gop)*/
@@ -2321,7 +2308,8 @@ static int decode_chunks(AVCodecContext *avctx,
                 }
 
                 if (CONFIG_VDPAU && uses_vdpau(avctx))
-                    ff_vdpau_mpeg_picture_complete(s2, buf, buf_size, s->slice_count);
+                    ff_vdpau_mpeg_picture_complete(s, buf, buf_size, s->slice_count);
+
 
                 if (slice_end(avctx, picture)) {
                     if (s2->last_picture_ptr || s2->low_delay) //FIXME merge with the stuff in mpeg_decode_slice
@@ -2450,7 +2438,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 if (s2->last_picture_ptr == NULL) {
                 /* Skip B-frames if we do not have reference frames and gop is not closed */
                     if (s2->pict_type == AV_PICTURE_TYPE_B) {
-                        if (!s2->closed_gop)
+                        if (!s->closed_gop)
                             break;
                     }
                 }
@@ -2535,6 +2523,7 @@ static void flush(AVCodecContext *avctx)
     Mpeg1Context *s = avctx->priv_data;
 
     s->sync=0;
+    s->closed_gop = 0;
 
     ff_mpeg_flush(avctx);
 }

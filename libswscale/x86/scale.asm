@@ -520,7 +520,7 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
 
     xor             r5,  r5
 
-.pixelloop
+.pixelloop:
 %assign %%i 0
     ; the rep here is for the 8bit output mmx case, where dither covers
     ; 8 pixels but we can only handle 2 pixels per register, and thus 4
@@ -543,7 +543,7 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
     mova            m2,  m1
 %endif ; %2 == 8/9/10/16
     movsx     cntr_reg,  r1m
-.filterloop_ %+ %%i
+.filterloop_ %+ %%i:
     ; input pixels
     mov             r6, [r2+gprsize*cntr_reg-2*gprsize]
 %if %2 == 16

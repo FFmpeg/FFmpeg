@@ -190,9 +190,10 @@ void ff_vdpau_h264_picture_complete(MpegEncContext *s)
     render->bitstream_buffers_used = 0;
 }
 
-void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
+void ff_vdpau_mpeg_picture_complete(Mpeg1Context *s1, const uint8_t *buf,
                                     int buf_size, int slice_count)
 {
+    MpegEncContext *s = &s1->mpeg_enc_ctx;
     struct vdpau_render_state *render, *last, *next;
     int i;
 
@@ -211,8 +212,8 @@ void ff_vdpau_mpeg_picture_complete(MpegEncContext *s, const uint8_t *buf,
     render->info.mpeg.alternate_scan             = s->alternate_scan;
     render->info.mpeg.q_scale_type               = s->q_scale_type;
     render->info.mpeg.top_field_first            = s->top_field_first;
-    render->info.mpeg.full_pel_forward_vector    = s->full_pel[0]; // MPEG-1 only.  Set 0 for MPEG-2
-    render->info.mpeg.full_pel_backward_vector   = s->full_pel[1]; // MPEG-1 only.  Set 0 for MPEG-2
+    render->info.mpeg.full_pel_forward_vector    = s1->full_pel[0]; // MPEG-1 only.  Set 0 for MPEG-2
+    render->info.mpeg.full_pel_backward_vector   = s1->full_pel[1]; // MPEG-1 only.  Set 0 for MPEG-2
     render->info.mpeg.f_code[0][0]               = s->mpeg_f_code[0][0]; // For MPEG-1 fill both horiz. & vert.
     render->info.mpeg.f_code[0][1]               = s->mpeg_f_code[0][1];
     render->info.mpeg.f_code[1][0]               = s->mpeg_f_code[1][0];

@@ -966,7 +966,7 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
 
 static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
 {
-    vorbis_context *vc = avccontext->priv_data ;
+    vorbis_context *vc = avccontext->priv_data;
     uint8_t *headers   = avccontext->extradata;
     int headers_len    = avccontext->extradata_size;
     uint8_t *header_start[3];
@@ -1030,7 +1030,7 @@ static av_cold int vorbis_decode_init(AVCodecContext *avccontext)
     avccontext->sample_rate = vc->audio_samplerate;
     avccontext->frame_size  = FFMIN(vc->blocksize[0], vc->blocksize[1]) >> 2;
 
-    return 0 ;
+    return 0;
 }
 
 // Decode audiopackets -------------------------------------------------
@@ -1608,10 +1608,10 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    vorbis_context *vc = avccontext->priv_data ;
+    vorbis_context *vc = avccontext->priv_data;
     GetBitContext *gb = &(vc->gb);
     const float *channel_ptrs[255];
-    int i, len;
+    int i, len, out_size;
 
     if (!buf_size)
         return 0;
@@ -1630,11 +1630,18 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     if (!vc->first_frame) {
         vc->first_frame = 1;
         *data_size = 0;
-        return buf_size ;
+        return buf_size;
     }
 
     av_dlog(NULL, "parsed %d bytes %d bits, returned %d samples (*ch*bits) \n",
             get_bits_count(gb) / 8, get_bits_count(gb) % 8, len);
+
+    out_size = len * vc->audio_channels *
+               av_get_bytes_per_sample(avccontext->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avccontext, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     if (vc->audio_channels > 8) {
         for (i = 0; i < vc->audio_channels; i++)
@@ -1651,10 +1658,9 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
         vc->fmt_conv.float_to_int16_interleave(data, channel_ptrs, len,
                                                vc->audio_channels);
 
-    *data_size = len * vc->audio_channels *
-                 av_get_bytes_per_sample(avccontext->sample_fmt);
+    *data_size = out_size;
 
-    return buf_size ;
+    return buf_size;
 }
 
 // Close decoder
@@ -1665,7 +1671,7 @@ static av_cold int vorbis_decode_close(AVCodecContext *avccontext)
 
     vorbis_free(vc);
 
-    return 0 ;
+    return 0;
 }
 
 AVCodec ff_vorbis_decoder = {

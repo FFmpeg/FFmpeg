@@ -30,6 +30,22 @@
 extern VLC ff_dc_lum_vlc;
 extern VLC ff_dc_chroma_vlc;
 
+typedef struct Mpeg1Context {
+    MpegEncContext mpeg_enc_ctx;
+    int mpeg_enc_ctx_allocated; /* true if decoding context allocated */
+    int repeat_field; /* true if we must repeat the field */
+    AVPanScan pan_scan;              /**< some temporary storage for the panscan */
+    int slice_count;
+    int swap_uv;//indicate VCR2
+    int save_aspect_info;
+    int save_width, save_height, save_progressive_seq;
+    AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
+    int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
+    int full_pel[2];
+    int closed_gop;                  ///< GOP is closed
+    int tmpgexs;
+} Mpeg1Context;
+
 extern uint8_t ff_mpeg12_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 void ff_mpeg12_common_init(MpegEncContext *s);

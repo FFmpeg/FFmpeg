@@ -87,6 +87,14 @@ void ff_id3v2_read(AVFormatContext *s, const char *magic);
 void ff_id3v2_read_all(AVFormatContext *s, const char *magic, ID3v2ExtraMeta **extra_meta);
 
 /**
+ * Write an ID3v2 tag.
+ * @param id3v2_version Subversion of ID3v2; supported values are 3 and 4
+ * @param magic magic bytes to identify the header
+ * If in doubt, use ID3v2_DEFAULT_MAGIC.
+ */
+int ff_id3v2_write(struct AVFormatContext *s, int id3v2_version, const char *magic);
+
+/**
  * Free memory allocated parsing special (non-text) metadata.
  * @param extra_meta Pointer to a pointer to the head of a ID3v2ExtraMeta list, *extra_meta is set to NULL.
  */
