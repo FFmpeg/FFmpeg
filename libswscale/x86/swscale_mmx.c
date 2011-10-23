@@ -268,10 +268,10 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
     }
 #define ASSIGN_VSCALEX_FUNC(vscalefn, opt1, opt2, opt2chk, do_16_case) \
 switch(c->dstBpc){ \
-    case 16:                                     do_16_case;                           break; \
-    case 10: if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2planeX_10_ ## opt2; break; \
-    case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2planeX_9_  ## opt2; break; \
-    default:                                     vscalefn = ff_yuv2planeX_8_  ## opt1; break; \
+    case 16:                                     /*do_16_case;*/                           break; \
+    case 10: if (!isBE(c->dstFormat) && opt2chk) /*vscalefn = ff_yuv2planeX_10_ ## opt2;*/ break; \
+    case 9:  if (!isBE(c->dstFormat) && opt2chk) /*vscalefn = ff_yuv2planeX_9_  ## opt2;*/ break; \
+    default:                                     /*vscalefn = ff_yuv2planeX_8_  ## opt1;*/ break; \
     }
 #if ARCH_X86_32
     if (cpu_flags & AV_CPU_FLAG_MMX) {
