@@ -217,10 +217,6 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         avctx->bits_per_coded_sample = get_bits(&s->gb, 16);
         s->bps = (avctx->bits_per_coded_sample + 7) / 8;
         avctx->sample_rate = get_bits_long(&s->gb, 32);
-        if(avctx->sample_rate > 1000000){ //prevent FRAME_TIME * avctx->sample_rate from overflowing and sanity check
-            av_log(avctx, AV_LOG_ERROR, "sample_rate too large\n");
-            return -1;
-        }
         s->data_length = get_bits_long(&s->gb, 32);
         skip_bits(&s->gb, 32); // CRC32 of header
 
@@ -238,9 +234,12 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
             return AVERROR_INVALIDDATA;
         }
 
-        // FIXME: horribly broken, but directly from reference source
-#define FRAME_TIME 1.04489795918367346939
-        s->frame_length = (int)(FRAME_TIME * avctx->sample_rate);
+        // prevent overflow
+        if (avctx->sample_rate > 0x7FFFFF) {
+            av_log(avctx, AV_LOG_ERROR, "sample_rate too large\n");
+            return AVERROR(EINVAL);
+        }
+        s->frame_length = 256 * avctx->sample_rate / 245;
 
         s->last_frame_length = s->data_length % s->frame_length;
         s->total_frames = s->data_length / s->frame_length +
