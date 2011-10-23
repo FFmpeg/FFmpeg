@@ -76,7 +76,7 @@ static void RENAME(yuv2yuvX)(const int16_t *filter, int filterSize,
         "psraw        $4, %%mm4\n\t"
         "movq    %%mm3, %%mm6\n\t"
         "movq    %%mm4, %%mm7\n\t"
-        "movslq %3, %%"REG_c"\n\t"
+        "movl %3, %%ecx\n\t"
         "mov                                 %0, %%"REG_d"  \n\t"\
         "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
         ".p2align                             4             \n\t" /* FIXME Unroll? */\
