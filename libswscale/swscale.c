@@ -302,7 +302,8 @@ yuv2plane1_16_c_template(const int32_t *src, uint16_t *dest, int dstW,
                          int big_endian, int output_bits)
 {
     int i;
-    int shift = 19 - output_bits;
+    int shift = 3;
+    av_assert0(output_bits == 16);
 
     for (i = 0; i < dstW; i++) {
         int val = src[i] + (1 << (shift - 1));
@@ -316,10 +317,11 @@ yuv2planeX_16_c_template(const int16_t *filter, int filterSize,
                          int big_endian, int output_bits)
 {
     int i;
-    int shift = 15 + 16 - output_bits;
+    int shift = 15;
+    av_assert0(output_bits == 16);
 
     for (i = 0; i < dstW; i++) {
-        int val = 1 << (30-output_bits);
+        int val = 1 << (shift - 1);
         int j;
 
         /* range of val is [0,0x7FFFFFFF], so 31 bits, but with lanczos/spline
