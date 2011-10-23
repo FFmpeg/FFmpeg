@@ -20,6 +20,7 @@
 
 #undef REAL_MOVNTQ
 #undef MOVNTQ
+#undef MOVNTQ2
 #undef PREFETCH
 
 #if COMPILE_TEMPLATE_MMX2
@@ -30,8 +31,10 @@
 
 #if COMPILE_TEMPLATE_MMX2
 #define REAL_MOVNTQ(a,b) "movntq " #a ", " #b " \n\t"
+#define MOVNTQ2 "movntq "
 #else
 #define REAL_MOVNTQ(a,b) "movq " #a ", " #b " \n\t"
+#define MOVNTQ2 "movq "
 #endif
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
