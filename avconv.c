@@ -227,6 +227,7 @@ typedef struct OutputStream {
    int64_t sws_flags;
    AVDictionary *opts;
    int is_past_recording_time;
+   int stream_copy;
 } OutputStream;
 
 
@@ -1346,7 +1347,7 @@ static void print_report(OutputFile *output_files,
         float q = -1;
         ost = &ost_table[i];
         enc = ost->st->codec;
-        if (!ost->st->stream_copy && enc->coded_frame)
+        if (!ost->stream_copy && enc->coded_frame)
             q = enc->coded_frame->quality/(float)FF_QP2LAMBDA;
         if (vid && enc->codec_type == AVMEDIA_TYPE_VIDEO) {
             snprintf(buf + strlen(buf), sizeof(buf) - strlen(buf), "q=%2.1f ", q);
@@ -1987,7 +1988,7 @@ static int transcode_init(OutputFile *output_files,
         codec->bits_per_raw_sample= icodec->bits_per_raw_sample;
         codec->chroma_sample_location = icodec->chroma_sample_location;
 
-        if (ost->st->stream_copy) {
+        if (ost->stream_copy) {
             uint64_t extra_size = (uint64_t)icodec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE;
 
             if (extra_size > INT_MAX) {
@@ -2297,7 +2298,7 @@ static int transcode_init(OutputFile *output_files,
             av_log(NULL, AV_LOG_INFO, " [sync #%d.%d]",
                    ost->sync_ist->file_index,
                    ost->sync_ist->st->index);
-        if (ost->st->stream_copy)
+        if (ost->stream_copy)
             av_log(NULL, AV_LOG_INFO, " (copy)");
         else
             av_log(NULL, AV_LOG_INFO, " (%s -> %s)", input_streams[ost->source_index].dec ?
@@ -2525,7 +2526,7 @@ static int transcode(OutputFile *output_files,
         for (i = 0; i < nb_output_streams; i++) {
             ost = &output_streams[i];
             if (ost) {
-                if (ost->st->stream_copy)
+                if (ost->stream_copy)
                     av_freep(&ost->st->codec->extradata);
                 if (ost->logfile) {
                     fclose(ost->logfile);
@@ -3009,7 +3010,7 @@ static void choose_encoder(OptionsContext *o, AVFormatContext *s, OutputStream *
                                                   NULL, ost->st->codec->codec_type);
         ost->enc = avcodec_find_encoder(ost->st->codec->codec_id);
     } else if (!strcmp(codec_name, "copy"))
-        ost->st->stream_copy = 1;
+        ost->stream_copy = 1;
     else {
         ost->enc = find_codec_or_die(codec_name, ost->st->codec->codec_type, 1);
         ost->st->codec->codec_id = ost->enc->id;
@@ -3144,7 +3145,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
     st  = ost->st;
     video_enc = st->codec;
 
-    if (!st->stream_copy) {
+    if (!ost->stream_copy) {
         const char *p = NULL;
         char *forced_key_frames = NULL, *frame_rate = NULL, *frame_size = NULL;
         char *frame_aspect_ratio = NULL, *frame_pix_fmt = NULL;
@@ -3261,7 +3262,7 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
     audio_enc = st->codec;
     audio_enc->codec_type = AVMEDIA_TYPE_AUDIO;
 
-    if (!st->stream_copy) {
+    if (!ost->stream_copy) {
         char *sample_fmt = NULL;
 
         MATCH_PER_STREAM_OPT(audio_channels, i, audio_enc->channels, oc, st);
@@ -3281,12 +3282,10 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
 
 static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc)
 {
-    AVStream *st;
     OutputStream *ost;
 
     ost = new_output_stream(o, oc, AVMEDIA_TYPE_DATA);
-    st  = ost->st;
-    if (!st->stream_copy) {
+    if (!ost->stream_copy) {
         av_log(NULL, AV_LOG_FATAL, "Data stream encoding not supported yet (only streamcopy)\n");
         exit_program(1);
     }
@@ -3297,7 +3296,7 @@ static OutputStream *new_data_stream(OptionsContext *o, AVFormatContext *oc)
 static OutputStream *new_attachment_stream(OptionsContext *o, AVFormatContext *oc)
 {
     OutputStream *ost = new_output_stream(o, oc, AVMEDIA_TYPE_ATTACHMENT);
-    ost->st->stream_copy = 1;
+    ost->stream_copy = 1;
     return ost;
 }
 
@@ -3401,9 +3400,9 @@ static int read_avserver_streams(OptionsContext *o, AVFormatContext *s, const ch
         st->info = NULL;
         avcodec_copy_context(st->codec, ic->streams[i]->codec);
 
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && !st->stream_copy)
+        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && !ost->stream_copy)
             choose_sample_fmt(st, codec);
-        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !st->stream_copy)
+        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !ost->stream_copy)
             choose_pixel_fmt(st, codec);
     }
 
