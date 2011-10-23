@@ -2158,7 +2158,7 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
     time_code_seconds  = get_bits(&s->gb, 6);
     time_code_pictures = get_bits(&s->gb, 6);
 
-    s1->closed_gop = get_bits1(&s->gb);
+    s->closed_gop = get_bits1(&s->gb);
     /*broken_link indicate that after editing the
       reference frames of the first B-Frames after GOP I-Frame
       are missing (open gop)*/
@@ -2438,7 +2438,7 @@ static int decode_chunks(AVCodecContext *avctx,
                 if (s2->last_picture_ptr == NULL) {
                 /* Skip B-frames if we do not have reference frames and gop is not closed */
                     if (s2->pict_type == AV_PICTURE_TYPE_B) {
-                        if (!s->closed_gop)
+                        if (!s2->closed_gop)
                             break;
                     }
                 }
@@ -2523,7 +2523,6 @@ static void flush(AVCodecContext *avctx)
     Mpeg1Context *s = avctx->priv_data;
 
     s->sync=0;
-    s->closed_gop = 0;
 
     ff_mpeg_flush(avctx);
 }

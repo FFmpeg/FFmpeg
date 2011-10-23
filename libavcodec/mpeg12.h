@@ -42,7 +42,6 @@ typedef struct Mpeg1Context {
     AVRational frame_rate_ext;       ///< MPEG-2 specific framerate modificator
     int sync;                        ///< Did we reach a sync point like a GOP/SEQ/KEYFrame?
     int full_pel[2];
-    int closed_gop;                  ///< GOP is closed
     int tmpgexs;
 } Mpeg1Context;
 
