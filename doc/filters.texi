@@ -2586,22 +2586,6 @@ testsrc=t=dc_luma
 
 will generate a "dc_luma" test pattern.
 
-@section nullsrc
-
-Null video source, never return images. It is mainly useful as a
-template and to be employed in analysis / debugging tools.
-
-It accepts as optional parameter a string of the form
-@var{width}:@var{height}:@var{timebase}.
-
-@var{width} and @var{height} specify the size of the configured
-source. The default values of @var{width} and @var{height} are
-respectively 352 and 288 (corresponding to the CIF size format).
-
-@var{timebase} specifies an arithmetic expression representing a
-timebase. The expression can contain the constant
-"AVTB" (the default timebase), and defaults to the value "AVTB".
-
 @section frei0r_src
 
 Provide a frei0r source.
@@ -2629,7 +2613,11 @@ Some examples follow:
 frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
 @end example
 
-@section rgbtestsrc, testsrc
+@section nullsrc, rgbtestsrc, testsrc
+
+The @code{nullsrc} source returns unprocessed video frames. It is
+mainly useful to be employed in analysis / debugging tools, or as the
+source for filters which ignore the input data.
 
 The @code{rgbtestsrc} source generates an RGB test pattern useful for
 detecting RGB vs BGR issues. You should see a red, green and blue
@@ -2639,7 +2627,7 @@ The @code{testsrc} source generates a test video pattern, showing a
 color pattern, a scrolling gradient and a timestamp. This is mainly
 intended for testing purposes.
 
-Both sources accept an optional sequence of @var{key}=@var{value} pairs,
+These sources accept an optional sequence of @var{key}=@var{value} pairs,
 separated by ":". The description of the accepted options follows.
 
 @table @option
@@ -2678,6 +2666,13 @@ testsrc=duration=5.3:size=qcif:rate=10
 
 will generate a video with a duration of 5.3 seconds, with size
 176x144 and a framerate of 10 frames per second.
+
+If the input content is to be ignored, @code{nullsrc} can be used. The
+following command generates noise in the luminance plane by employing
+the @code{mp=geq} filter:
+@example
+nullsrc=s=256x256, mp=geq=random(1)*255:128:128
+@end example
 
 @c man end VIDEO SOURCES
 
