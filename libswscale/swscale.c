@@ -2563,6 +2563,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             dst[2] + dstStride[2] * chrDstY,
             (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? dst[3] + dstStride[3] * dstY : NULL,
         };
+        int use_mmx_vfilter= c->use_mmx_vfilter;
 
         const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
         const int firstLumSrcY2= vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)];
@@ -2653,6 +2654,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             // hmm looks like we can't use MMX here without overwriting this array's tail
             find_c_packed_planar_out_funcs(c, &yuv2plane1, &yuv2planeX,  &yuv2nv12cX,
                                            &yuv2packed1, &yuv2packed2, &yuv2packedX);
+            use_mmx_vfilter= 0;
         }
 
         {
@@ -2668,6 +2670,19 @@ static int swScale(SwsContext *c, const uint8_t* src[],
 
                 vLumFilter +=    dstY * vLumFilterSize;
                 vChrFilter += chrDstY * vChrFilterSize;
+
+                av_assert0(use_mmx_vfilter != (
+                               yuv2planeX == yuv2planeX_10BE_c
+                            || yuv2planeX == yuv2planeX_10LE_c
+                            || yuv2planeX == yuv2planeX_9BE_c
+                            || yuv2planeX == yuv2planeX_9LE_c
+                            || yuv2planeX == yuv2planeX_16BE_c
+                            || yuv2planeX == yuv2planeX_16LE_c
+                            || yuv2planeX == yuv2planeX_8_c));
+                if(use_mmx_vfilter){
+                    vLumFilter= c->lumMmxFilter;
+                    vChrFilter= c->chrMmxFilter;
+                }
 
                 if (vLumFilterSize == 1) {
                     yuv2plane1(lumSrcPtr[0], dest[0], dstW, c->lumDither8, 0);
@@ -2686,11 +2701,14 @@ static int swScale(SwsContext *c, const uint8_t* src[],
                         yuv2planeX(vChrFilter, vChrFilterSize,
                                    chrUSrcPtr, dest[1], chrDstW, c->chrDither8, 0);
                         yuv2planeX(vChrFilter, vChrFilterSize,
-                                   chrVSrcPtr, dest[2], chrDstW, c->chrDither8, 3);
+                                   chrVSrcPtr, dest[2], chrDstW, c->chrDither8, use_mmx_vfilter ? (c->uv_offx2 >> 1) : 3);
                     }
                 }
 
                 if (CONFIG_SWSCALE_ALPHA && alpPixBuf){
+                    if(use_mmx_vfilter){
+                        vLumFilter= c->alpMmxFilter;
+                    }
                     if (vLumFilterSize == 1) {
                         yuv2plane1(alpSrcPtr[0], dest[3], dstW, c->lumDither8, 0);
                     } else {

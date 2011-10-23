@@ -412,6 +412,7 @@ typedef struct SwsContext {
 #if HAVE_VIS
     DECLARE_ALIGNED(8, uint64_t, sparc_coeffs)[10];
 #endif
+    int use_mmx_vfilter;
 
     /* function pointers for swScale() */
     yuv2planar1_fn yuv2plane1;
