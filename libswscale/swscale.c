@@ -368,7 +368,7 @@ yuv2planeX_10_c_template(const int16_t *filter, int filterSize,
     int shift = 11 + 16 - output_bits;
 
     for (i = 0; i < dstW; i++) {
-        int val = 1 << (26-output_bits);
+        int val = 1 << (shift - 1);
         int j;
 
         for (j = 0; j < filterSize; j++)
