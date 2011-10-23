@@ -121,32 +121,11 @@ static char *value_string(char *buf, int buf_size, struct unit_value uv)
     return buf;
 }
 
-static char *time_value_string(char *buf, int buf_size, int64_t val, const AVRational *time_base)
-{
-    if (val == AV_NOPTS_VALUE) {
-        snprintf(buf, buf_size, "N/A");
-    } else {
-        double d = val * av_q2d(*time_base);
-        value_string(buf, buf_size, (struct unit_value){.val.d=d, .unit=unit_second_str});
-    }
-
-    return buf;
-}
-
-static char *ts_value_string (char *buf, int buf_size, int64_t ts)
-{
-    if (ts == AV_NOPTS_VALUE) {
-        snprintf(buf, buf_size, "N/A");
-    } else {
-        snprintf(buf, buf_size, "%"PRId64, ts);
-    }
-
-    return buf;
-}
-
 /* WRITERS API */
 
 typedef struct WriterContext WriterContext;
+
+#define WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS 1
 
 typedef struct Writer {
     int priv_size;                  ///< private size for the writer context
@@ -165,6 +144,7 @@ typedef struct Writer {
     void (*print_integer)       (WriterContext *wctx, const char *, int);
     void (*print_string)        (WriterContext *wctx, const char *, const char *);
     void (*show_tags)           (WriterContext *wctx, AVDictionary *dict);
+    int flags;                  ///< a combination or WRITER_FLAG_*
 } Writer;
 
 struct WriterContext {
@@ -281,10 +261,38 @@ static inline void writer_print_integer(WriterContext *wctx,
 }
 
 static inline void writer_print_string(WriterContext *wctx,
-                                       const char *key, const char *val)
+                                       const char *key, const char *val, int opt)
 {
+    if (opt && !(wctx->writer->flags & WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS))
+        return;
     wctx->writer->print_string(wctx, key, val);
     wctx->nb_item++;
+}
+
+static void writer_print_time(WriterContext *wctx, const char *key,
+                              int64_t ts, const AVRational *time_base)
+{
+    char buf[128];
+
+    if (ts == AV_NOPTS_VALUE) {
+        writer_print_string(wctx, key, "N/A", 1);
+    } else {
+        double d = ts * av_q2d(*time_base);
+        value_string(buf, sizeof(buf), (struct unit_value){.val.d=d, .unit=unit_second_str});
+        writer_print_string(wctx, key, buf, 0);
+    }
+}
+
+static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts)
+{
+    char buf[128];
+
+    if (ts == AV_NOPTS_VALUE) {
+        writer_print_string(wctx, key, "N/A", 1);
+    } else {
+        snprintf(buf, sizeof(buf), "%"PRId64, ts);
+        writer_print_string(wctx, key, buf, 0);
+    }
 }
 
 static inline void writer_show_tags(WriterContext *wctx, AVDictionary *dict)
@@ -438,7 +446,7 @@ static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
     AVDictionaryEntry *tag = NULL;
     while ((tag = av_dict_get(dict, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         printf("TAG:");
-        writer_print_string(wctx, tag->key, tag->value);
+        writer_print_string(wctx, tag->key, tag->value, 0);
     }
 }
 
@@ -450,7 +458,8 @@ static Writer default_writer = {
     .print_section_footer  = default_print_section_footer,
     .print_integer         = default_print_int,
     .print_string          = default_print_str,
-    .show_tags             = default_show_tags
+    .show_tags             = default_show_tags,
+    .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
 };
 
 /* JSON output */
@@ -626,15 +635,21 @@ static void writer_register_all(void)
 
 #define print_fmt(k, f, ...) do {              \
     if (fast_asprintf(&pbuf, f, __VA_ARGS__))  \
-        writer_print_string(w, k, pbuf.s);     \
+        writer_print_string(w, k, pbuf.s, 0);  \
+} while (0)
+
+#define print_fmt_opt(k, f, ...) do {          \
+    if (fast_asprintf(&pbuf, f, __VA_ARGS__))  \
+        writer_print_string(w, k, pbuf.s, 1);  \
 } while (0)
 
 #define print_int(k, v)         writer_print_integer(w, k, v)
-#define print_str(k, v)         writer_print_string(w, k, v)
-#define print_ts(k, v)          writer_print_string(w, k, ts_value_string  (val_str, sizeof(val_str), v))
-#define print_time(k, v, tb)    writer_print_string(w, k, time_value_string(val_str, sizeof(val_str), v, tb))
-#define print_val(k, v, u)      writer_print_string(w, k, value_string     (val_str, sizeof(val_str), \
-                                                    (struct unit_value){.val.i = v, .unit=u}))
+#define print_str(k, v)         writer_print_string(w, k, v, 0)
+#define print_str_opt(k, v)     writer_print_string(w, k, v, 1)
+#define print_time(k, v, tb)    writer_print_time(w, k, v, tb)
+#define print_ts(k, v)          writer_print_ts(w, k, v)
+#define print_val(k, v, u)      writer_print_string(w, k, \
+    value_string(val_str, sizeof(val_str), (struct unit_value){.val.i = v, .unit=u}), 1)
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 #define show_tags(metadata)     writer_show_tags(w, metadata)
@@ -644,9 +659,12 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     char val_str[128];
     AVStream *st = fmt_ctx->streams[pkt->stream_index];
     struct print_buf pbuf = {.s = NULL};
+    const char *s;
 
     print_section_header("packet");
-    print_str("codec_type",       av_x_if_null(av_get_media_type_string(st->codec->codec_type), "unknown"));
+    s = av_get_media_type_string(st->codec->codec_type);
+    if (s) print_str    ("codec_type", s);
+    else   print_str_opt("codec_type", "unknown");
     print_int("stream_index",     pkt->stream_index);
     print_ts  ("pts",             pkt->pts);
     print_time("pts_time",        pkt->pts, &st->time_base);
@@ -655,7 +673,8 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_ts  ("duration",        pkt->duration);
     print_time("duration_time",   pkt->duration, &st->time_base);
     print_val("size",             pkt->size, unit_byte_str);
-    print_fmt("pos",   "%"PRId64, pkt->pos);
+    if (pkt->pos != -1) print_fmt    ("pos", "%"PRId64, pkt->pos);
+    else                print_str_opt("pos", "N/A");
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     print_section_footer("packet");
 
@@ -680,6 +699,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     AVCodecContext *dec_ctx;
     AVCodec *dec;
     char val_str[128];
+    const char *s;
     AVRational display_aspect_ratio;
     struct print_buf pbuf = {.s = NULL};
 
@@ -692,10 +712,13 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
             print_str("codec_name",      dec->name);
             print_str("codec_long_name", dec->long_name);
         } else {
-            print_str("codec_name",      "unknown");
+            print_str_opt("codec_name",      "unknown");
+            print_str_opt("codec_long_name", "unknown");
         }
 
-        print_str("codec_type", av_x_if_null(av_get_media_type_string(dec_ctx->codec_type), "unknown"));
+        s = av_get_media_type_string(dec_ctx->codec_type);
+        if (s) print_str    ("codec_type", s);
+        else   print_str_opt("codec_type", "unknown");
         print_fmt("codec_time_base", "%d/%d", dec_ctx->time_base.num, dec_ctx->time_base.den);
 
         /* print AVI/FourCC tag */
@@ -719,21 +742,27 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
                 print_fmt("display_aspect_ratio", "%d:%d",
                           display_aspect_ratio.num,
                           display_aspect_ratio.den);
+            } else {
+                print_str_opt("sample_aspect_ratio", "N/A");
+                print_str_opt("display_aspect_ratio", "N/A");
             }
-            print_str("pix_fmt", av_x_if_null(av_get_pix_fmt_name(dec_ctx->pix_fmt), "unknown"));
+            s = av_get_pix_fmt_name(dec_ctx->pix_fmt);
+            if (s) print_str    ("pix_fmt", s);
+            else   print_str_opt("pix_fmt", "unknown");
             print_int("level",   dec_ctx->level);
             break;
 
         case AVMEDIA_TYPE_AUDIO:
-            print_str("sample_fmt",
-                      av_x_if_null(av_get_sample_fmt_name(dec_ctx->sample_fmt), "unknown"));
+            s = av_get_sample_fmt_name(dec_ctx->sample_fmt);
+            if (s) print_str    ("sample_fmt", s);
+            else   print_str_opt("sample_fmt", "unknown");
             print_val("sample_rate",     dec_ctx->sample_rate, unit_hertz_str);
             print_int("channels",        dec_ctx->channels);
             print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
             break;
         }
     } else {
-        print_str("codec_type", "unknown");
+        print_str_opt("codec_type", "unknown");
     }
     if (dec_ctx->codec && dec_ctx->codec->priv_class) {
         const AVOption *opt = NULL;
@@ -747,16 +776,15 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         }
     }
 
-    if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
-        print_fmt("id", "0x%x", stream->id);
+    if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS) print_fmt    ("id", "0x%x", stream->id);
+    else                                          print_str_opt("id", "N/A");
     print_fmt("r_frame_rate",   "%d/%d", stream->r_frame_rate.num,   stream->r_frame_rate.den);
     print_fmt("avg_frame_rate", "%d/%d", stream->avg_frame_rate.num, stream->avg_frame_rate.den);
     print_fmt("time_base",      "%d/%d", stream->time_base.num,      stream->time_base.den);
     print_time("start_time",    stream->start_time, &stream->time_base);
     print_time("duration",      stream->duration,   &stream->time_base);
-    if (stream->nb_frames)
-        print_fmt("nb_frames", "%"PRId64, stream->nb_frames);
-
+    if (stream->nb_frames) print_fmt    ("nb_frames", "%"PRId64, stream->nb_frames);
+    else                   print_str_opt("nb_frames", "N/A");
     show_tags(stream->metadata);
 
     print_section_footer("stream");
@@ -784,9 +812,10 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     print_str("format_long_name", fmt_ctx->iformat->long_name);
     print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
     print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
-    if (size >= 0)
-        print_val("size",         size, unit_byte_str);
-    print_val("bit_rate",         fmt_ctx->bit_rate, unit_bit_per_second_str);
+    if (size >= 0) print_val    ("size", size, unit_byte_str);
+    else           print_str_opt("size", "N/A");
+    if (fmt_ctx->bit_rate > 0) print_val    ("bit_rate", fmt_ctx->bit_rate, unit_bit_per_second_str);
+    else                       print_str_opt("bit_rate", "N/A");
     show_tags(fmt_ctx->metadata);
     print_section_footer("format");
     av_free(pbuf.s);
