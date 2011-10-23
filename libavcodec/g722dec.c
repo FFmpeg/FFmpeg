@@ -85,10 +85,16 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
 {
     G722Context *c = avctx->priv_data;
     int16_t *out_buf = data;
-    int j, out_len = 0;
+    int j, out_len;
     const int skip = 8 - avctx->bits_per_coded_sample;
     const int16_t *quantizer_table = low_inv_quants[skip];
     GetBitContext gb;
+
+    out_len = avpkt->size * 2 * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_len) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     init_get_bits(&gb, avpkt->data, avpkt->size * 8);
 
@@ -114,15 +120,15 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
         c->prev_samples[c->prev_samples_pos++] = rlow - rhigh;
         ff_g722_apply_qmf(c->prev_samples + c->prev_samples_pos - 24,
                           &xout1, &xout2);
-        out_buf[out_len++] = av_clip_int16(xout1 >> 12);
-        out_buf[out_len++] = av_clip_int16(xout2 >> 12);
+        *out_buf++ = av_clip_int16(xout1 >> 12);
+        *out_buf++ = av_clip_int16(xout2 >> 12);
         if (c->prev_samples_pos >= PREV_SAMPLES_BUF_SIZE) {
             memmove(c->prev_samples, c->prev_samples + c->prev_samples_pos - 22,
                     22 * sizeof(c->prev_samples[0]));
             c->prev_samples_pos = 22;
         }
     }
-    *data_size = out_len << 1;
+    *data_size = out_len;
     return avpkt->size;
 }
 
