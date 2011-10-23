@@ -104,6 +104,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
 
         av_image_fill_linesizes(srcStride, srcFormat, srcW);
         for (p = 0; p < 4; p++) {
+            srcStride[p] = FFALIGN(srcStride[p], 16);
             if (srcStride[p])
                 src[p] = av_mallocz(srcStride[p]*srcH+16);
             if (srcStride[p] && !src[p]) {
@@ -139,6 +140,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
          * allocated with av_malloc). */
         /* An extra 16 bytes is being allocated because some scalers may write
          * out of bounds. */
+        dstStride[i] = FFALIGN(dstStride[i], 16);
         if (dstStride[i])
             dst[i]= av_mallocz(dstStride[i]*dstH+16);
         if (dstStride[i] && !dst[i]) {
@@ -178,6 +180,7 @@ static int doTest(uint8_t *ref[4], int refStride[4], int w, int h,
         ssdA = r->ssdA;
     } else {
         for (i=0; i<4; i++) {
+            refStride[i] = FFALIGN(refStride[i], 16);
             if (refStride[i])
                 out[i]= av_mallocz(refStride[i]*h);
             if (refStride[i] && !out[i]) {
