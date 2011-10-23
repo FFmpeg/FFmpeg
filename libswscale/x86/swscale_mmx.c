@@ -176,6 +176,62 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     }
 }
 
+static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
+                           const int16_t **src, uint8_t *dest, int dstW,
+                           const uint8_t *dither, int offset)
+{
+    if (offset) {
+        __asm__ volatile("movq       (%0), %%xmm3\n\t"
+                         "movdqa    %%xmm3, %%xmm4\n\t"
+                         "psrlq       $24, %%xmm3\n\t"
+                         "psllq       $40, %%xmm4\n\t"
+                         "por       %%xmm4, %%xmm3\n\t"
+                         :: "r"(dither)
+                         );
+    } else {
+        __asm__ volatile("movq       (%0), %%xmm3\n\t"
+                         :: "r"(dither)
+                         );
+    }
+    __asm__ volatile(
+        "pxor      %%xmm0, %%xmm0\n\t"
+        "punpcklbw %%xmm0, %%xmm3\n\t"
+        "psraw        $4, %%xmm3\n\t"
+        "movdqa    %%xmm3, %%xmm4\n\t"
+        "movdqa    %%xmm3, %%xmm7\n\t"
+        "movl %3, %%ecx\n\t"
+        "mov                                 %0, %%"REG_d"  \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        ".p2align                             4             \n\t" /* FIXME Unroll? */\
+        "1:                                                 \n\t"\
+        "movddup                  8(%%"REG_d"), %%xmm0      \n\t" /* filterCoeff */\
+        "movdqa              (%%"REG_S", %%"REG_c", 2), %%xmm2      \n\t" /* srcData */\
+        "movdqa            16(%%"REG_S", %%"REG_c", 2), %%xmm5      \n\t" /* srcData */\
+        "add                                $16, %%"REG_d"  \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "test                         %%"REG_S", %%"REG_S"  \n\t"\
+        "pmulhw                           %%xmm0, %%xmm2      \n\t"\
+        "pmulhw                           %%xmm0, %%xmm5      \n\t"\
+        "paddw                            %%xmm2, %%xmm3      \n\t"\
+        "paddw                            %%xmm5, %%xmm4      \n\t"\
+        " jnz                                1b             \n\t"\
+        "psraw                               $3, %%xmm3      \n\t"\
+        "psraw                               $3, %%xmm4      \n\t"\
+        "packuswb                         %%xmm4, %%xmm3      \n\t"
+        "movntdq                          %%xmm3, (%1, %%"REG_c")\n\t"
+        "add                         $16, %%"REG_c"         \n\t"\
+        "cmp                          %2, %%"REG_c"         \n\t"\
+        "movdqa    %%xmm7, %%xmm3\n\t"
+        "movdqa    %%xmm7, %%xmm4\n\t"
+        "mov                                 %0, %%"REG_d"  \n\t"\
+        "mov                        (%%"REG_d"), %%"REG_S"  \n\t"\
+        "jb                                  1b             \n\t"\
+        :: "g" (filter),
+           "r" (dest-offset), "g" ((x86_reg)(dstW+offset)), "m" (offset)
+        : "%"REG_d, "%"REG_S, "%"REG_c
+    );
+}
+
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 extern void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
                                                 SwsContext *c, int16_t *data, \
@@ -239,6 +295,10 @@ void ff_sws_init_swScale_mmx(SwsContext *c)
 #if HAVE_MMX2
     if (cpu_flags & AV_CPU_FLAG_MMX2)
         sws_init_swScale_MMX2(c);
+    if (cpu_flags & AV_CPU_FLAG_SSE3){
+        if(c->use_mmx_vfilter && !(c->flags & SWS_ACCURATE_RND))
+            c->yuv2planeX = yuv2yuvX_sse3;
+    }
 #endif
 
 #if HAVE_YASM
