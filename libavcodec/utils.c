@@ -954,10 +954,21 @@ av_cold int avcodec_close(AVCodecContext *avctx)
     return 0;
 }
 
+static enum CodecID remap_deprecated_codec_id(enum CodecID id)
+{
+    switch(id){
+        case CODEC_ID_G723_1_DEPRECATED : return CODEC_ID_G723_1;
+        case CODEC_ID_G729_DEPRECATED   : return CODEC_ID_G729;
+        case CODEC_ID_UTVIDEO_DEPRECATED: return CODEC_ID_UTVIDEO;
+        default                         : return id;
+    }
+}
+
 AVCodec *avcodec_find_encoder(enum CodecID id)
 {
     AVCodec *p, *experimental=NULL;
     p = first_avcodec;
+    id= remap_deprecated_codec_id(id);
     while (p) {
         if (p->encode != NULL && p->id == id) {
             if (p->capabilities & CODEC_CAP_EXPERIMENTAL && !experimental) {
@@ -988,6 +999,7 @@ AVCodec *avcodec_find_decoder(enum CodecID id)
 {
     AVCodec *p, *experimental=NULL;
     p = first_avcodec;
+    id= remap_deprecated_codec_id(id);
     while (p) {
         if (p->decode != NULL && p->id == id) {
             if (p->capabilities & CODEC_CAP_EXPERIMENTAL && !experimental) {
