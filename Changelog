@@ -144,6 +144,7 @@ easier to use. The changes are:
 - Dxtory capture format decoder
 - cellauto source
 - Simple segmenting muxer
+- thumbnail video filter
 
 
 version 0.8:

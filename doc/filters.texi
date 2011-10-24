@@ -2400,6 +2400,26 @@ For example:
 will create two separate outputs from the same input, one cropped and
 one padded.
 
+@section thumbnail
+Select the most representative frame in a given sequence of consecutive frames.
+
+It accepts as argument the frames batch size to analyze (default @var{N}=100);
+in a set of @var{N} frames, the filter will pick one of them, and then handle
+the next batch of @var{N} frames until the end.
+
+Since the filter keeps track of the whole frames sequence, a bigger @var{N}
+value will result in a higher memory usage, so a high value is not recommended.
+
+The following example extract one picture each 50 frames:
+@example
+thumbnail=50
+@end example
+
+Complete example of a thumbnail creation with @command{ffmpeg}:
+@example
+ffmpeg -i in.avi -vf thumbnail,scale=300:200 -frames:v 1 out.png
+@end example
+
 @section transpose
 
 Transpose rows with columns in the input video and optionally flip it.
