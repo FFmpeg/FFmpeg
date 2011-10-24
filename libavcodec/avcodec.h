@@ -212,11 +212,13 @@ enum CodecID {
     CODEC_ID_WMV3IMAGE,
     CODEC_ID_VC1IMAGE,
 #if LIBAVCODEC_VERSION_MAJOR == 53
-    CODEC_ID_8SVX_RAW,
-    CODEC_ID_G2M,
+    CODEC_ID_G723_1_DEPRECATED,
+    CODEC_ID_G729_DEPRECATED,
 #endif
     CODEC_ID_UTVIDEO_DEPRECATED,
     CODEC_ID_UTVIDEO = 0x800,
+
+    CODEC_ID_G2M        = MKBETAG( 0 ,'G','2','M'),
 
     /* various PCM "codecs" */
     CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -350,11 +352,12 @@ enum CodecID {
     CODEC_ID_QDMC,
     CODEC_ID_CELT,
 #if LIBAVCODEC_VERSION_MAJOR > 53
-    CODEC_ID_G723_1,
-    CODEC_ID_G729,
+    CODEC_ID_G723_1_DEPRECATED,
+    CODEC_ID_G729_DEPRECATED,
 #endif
     CODEC_ID_G729 = 0x15800,
     CODEC_ID_G723_1= 0x15801,
+    CODEC_ID_8SVX_RAW   = MKBETAG('8','S','V','X'),
 
     /* subtitle codecs */
     CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.
@@ -367,14 +370,14 @@ enum CodecID {
     CODEC_ID_HDMV_PGS_SUBTITLE,
     CODEC_ID_DVB_TELETEXT,
     CODEC_ID_SRT,
-    CODEC_ID_MICRODVD,
+    CODEC_ID_MICRODVD   = MKBETAG('m','D','V','D'),
 
     /* other specific kind of codecs (generally used for attachments) */
     CODEC_ID_FIRST_UNKNOWN = 0x18000,           ///< A dummy ID pointing at the start of various fake codecs.
     CODEC_ID_TTF= 0x18000,
-    CODEC_ID_BINTEXT,
-    CODEC_ID_XBIN,
-    CODEC_ID_IDF,
+    CODEC_ID_BINTEXT    = MKBETAG('B','T','X','T'),
+    CODEC_ID_XBIN       = MKBETAG('X','B','I','N'),
+    CODEC_ID_IDF        = MKBETAG( 0 ,'I','D','F'),
 
     CODEC_ID_PROBE= 0x19000, ///< codec_id is not known (like CODEC_ID_NONE) but lavf should attempt to identify it
 
