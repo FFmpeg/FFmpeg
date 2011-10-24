@@ -91,6 +91,7 @@ static av_cold int libcelt_dec_init(AVCodecContext *c)
                    "improperly decoded by libcelt for version 0x%x.\n",
                    version, lib_version);
     }
+    c->sample_fmt = AV_SAMPLE_FMT_S16;
     return 0;
 }
 
