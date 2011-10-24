@@ -1802,7 +1802,7 @@ can be used to test the monowhite pixel format descriptor definition.
 
 @section scale
 
-Scale the input video to @var{width}:@var{height} and/or convert the image format.
+Scale the input video to @var{width}:@var{height}[:@var{interl}=@{1|-1@}] and/or convert the image format.
 
 The parameters @var{width} and @var{height} are expressions containing
 the following constants:
@@ -1849,6 +1849,17 @@ use, for the respective output size, a value that maintains the aspect
 ratio of the input image.
 
 The default value of @var{width} and @var{height} is 0.
+
+Valid values for the optional parameter @var{interl} are:
+
+@table @option
+@item 1
+force interlaced aware scaling
+
+@item -1
+select interlaced aware scaling depending on whether the source frames
+are flagged as interlaced or not
+@end table
 
 Some examples follow:
 @example
