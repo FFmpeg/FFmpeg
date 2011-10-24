@@ -127,7 +127,7 @@ static void RENAME(yuv2yuv1_ar)(const int16_t *src, uint8_t *dst, int dstW, cons
         "add                   $8, %%"REG_a"  \n\t"
         "jnc                   1b             \n\t"
         :: "r" (src + dstW), "r" (dst + dstW),
-           "g" ((long)-dstW)
+           "g" ((x86_reg)-dstW)
         : "%"REG_a
     );
 }
