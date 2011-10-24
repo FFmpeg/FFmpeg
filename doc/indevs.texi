@@ -226,9 +226,6 @@ corresponding stream which is mapped to the generated output. Currently
 only video data is supported. The filtergraph is specified through the
 option @option{graph}.
 
-To enable this input device, you need to configure your build with
-@code{--enable-libavfilter}.
-
 @subsection Options
 
 @table @option
