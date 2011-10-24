@@ -63,12 +63,27 @@ void exit_program(int ret)
     exit(ret);
 }
 
-static char *value_string(char *buf, int buf_size, double val, const char *unit)
+struct unit_value {
+    union { double d; int i; } val;
+    const char *unit;
+};
+
+static char *value_string(char *buf, int buf_size, struct unit_value uv)
 {
-    if (unit == unit_second_str && use_value_sexagesimal_format) {
+    double vald;
+    int show_float = 0;
+
+    if (uv.unit == unit_second_str) {
+        vald = uv.val.d;
+        show_float = 1;
+    } else {
+        vald = uv.val.i;
+    }
+
+    if (uv.unit == unit_second_str && use_value_sexagesimal_format) {
         double secs;
         int hours, mins;
-        secs  = val;
+        secs  = vald;
         mins  = (int)secs / 60;
         secs  = secs - mins * 60;
         hours = mins / 60;
@@ -76,25 +91,31 @@ static char *value_string(char *buf, int buf_size, double val, const char *unit)
         snprintf(buf, buf_size, "%d:%02d:%09.6f", hours, mins, secs);
     } else if (use_value_prefix) {
         const char *prefix_string;
-        int index;
+        int index, l;
 
-        if (unit == unit_byte_str && use_byte_value_binary_prefix) {
-            index = (int) (log(val)/log(2)) / 10;
+        if (uv.unit == unit_byte_str && use_byte_value_binary_prefix) {
+            index = (int) (log(vald)/log(2)) / 10;
             index = av_clip(index, 0, FF_ARRAY_ELEMS(binary_unit_prefixes) -1);
-            val /= pow(2, index*10);
+            vald /= pow(2, index*10);
             prefix_string = binary_unit_prefixes[index];
         } else {
-            index = (int) (log10(val)) / 3;
+            index = (int) (log10(vald)) / 3;
             index = av_clip(index, 0, FF_ARRAY_ELEMS(decimal_unit_prefixes) -1);
-            val /= pow(10, index*3);
+            vald /= pow(10, index*3);
             prefix_string = decimal_unit_prefixes[index];
         }
 
-        snprintf(buf, buf_size, "%.3f%s%s%s", val, prefix_string || show_value_unit ? " " : "",
-                 prefix_string, show_value_unit ? unit : "");
+        if (show_float || vald != (int)vald) l = snprintf(buf, buf_size, "%.3f", vald);
+        else                                 l = snprintf(buf, buf_size, "%d",   (int)vald);
+        snprintf(buf+l, buf_size-l, "%s%s%s", prefix_string || show_value_unit ? " " : "",
+                 prefix_string, show_value_unit ? uv.unit : "");
     } else {
-        snprintf(buf, buf_size, "%f%s%s", val, show_value_unit ? " " : "",
-                 show_value_unit ? unit : "");
+        int l;
+
+        if (show_float) l = snprintf(buf, buf_size, "%.3f", vald);
+        else            l = snprintf(buf, buf_size, "%d",   (int)vald);
+        snprintf(buf+l, buf_size-l, "%s%s", show_value_unit ? " " : "",
+                 show_value_unit ? uv.unit : "");
     }
 
     return buf;
@@ -105,7 +126,8 @@ static char *time_value_string(char *buf, int buf_size, int64_t val, const AVRat
     if (val == AV_NOPTS_VALUE) {
         snprintf(buf, buf_size, "N/A");
     } else {
-        value_string(buf, buf_size, val * av_q2d(*time_base), unit_second_str);
+        double d = val * av_q2d(*time_base);
+        value_string(buf, buf_size, (struct unit_value){.val.d=d, .unit=unit_second_str});
     }
 
     return buf;
@@ -611,7 +633,8 @@ static void writer_register_all(void)
 #define print_str(k, v)         writer_print_string(w, k, v)
 #define print_ts(k, v)          writer_print_string(w, k, ts_value_string  (val_str, sizeof(val_str), v))
 #define print_time(k, v, tb)    writer_print_string(w, k, time_value_string(val_str, sizeof(val_str), v, tb))
-#define print_val(k, v, unit)   writer_print_string(w, k, value_string     (val_str, sizeof(val_str), v, unit))
+#define print_val(k, v, u)      writer_print_string(w, k, value_string     (val_str, sizeof(val_str), \
+                                                    (struct unit_value){.val.i = v, .unit=u}))
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 #define show_tags(metadata)     writer_show_tags(w, metadata)
