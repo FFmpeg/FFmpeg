@@ -103,7 +103,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     test->nb_frame = 0;
     test->pts = 0;
 
-    av_log(ctx, AV_LOG_DEBUG, "size:%dx%d rate:%d/%d duration:%f sar:%d/%d\n",
+    av_log(ctx, AV_LOG_INFO, "size:%dx%d rate:%d/%d duration:%f sar:%d/%d\n",
            test->w, test->h, frame_rate_q.num, frame_rate_q.den,
            duration < 0 ? -1 : test->max_pts * av_q2d(test->time_base),
            test->sar.num, test->sar.den);
