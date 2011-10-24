@@ -824,13 +824,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             coeff2r = ea_adpcm_table[(*src & 0x0F) + 4];
             src++;
 
-            shift_left  = (*src >> 4  ) + 8;
-            shift_right = (*src & 0x0F) + 8;
+            shift_left  = 20 - (*src >> 4);
+            shift_right = 20 - (*src & 0x0F);
             src++;
 
             for (count2 = 0; count2 < 28; count2++) {
-                next_left_sample  = (int32_t)((*src & 0xF0) << 24) >> shift_left;
-                next_right_sample = (int32_t)((*src & 0x0F) << 28) >> shift_right;
+                next_left_sample  = sign_extend(*src >> 4, 4) << shift_left;
+                next_right_sample = sign_extend(*src,      4) << shift_right;
                 src++;
 
                 next_left_sample = (next_left_sample +
@@ -861,13 +861,13 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
         for(channel = 0; channel < avctx->channels; channel++) {
             for (i=0; i<2; i++)
                 coeff[channel][i] = ea_adpcm_table[(*src >> 4) + 4*i];
-            shift[channel] = (*src & 0x0F) + 8;
+            shift[channel] = 20 - (*src & 0x0F);
             src++;
         }
         for (count1 = 0; count1 < nb_samples / 2; count1++) {
             for(i = 4; i >= 0; i-=4) { /* Pairwise samples LL RR (st) or LL LL (mono) */
                 for(channel = 0; channel < avctx->channels; channel++) {
-                    int32_t sample = (int32_t)(((*(src+channel) >> i) & 0x0F) << 0x1C) >> shift[channel];
+                    int32_t sample = sign_extend(src[channel] >> i, 4) << shift[channel];
                     sample = (sample +
                              c->status[channel].sample1 * coeff[channel][0] +
                              c->status[channel].sample2 * coeff[channel][1] + 0x80) >> 8;
@@ -932,14 +932,14 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 } else {
                     coeff1 = ea_adpcm_table[ *srcC>>4     ];
                     coeff2 = ea_adpcm_table[(*srcC>>4) + 4];
-                    shift = (*srcC++ & 0x0F) + 8;
+                    shift = 20 - (*srcC++ & 0x0F);
 
                     if (srcC > src_end - 14) break;
                     for (count2=0; count2<28; count2++) {
                         if (count2 & 1)
-                            next_sample = (int32_t)((*srcC++ & 0x0F) << 28) >> shift;
+                            next_sample = sign_extend(*srcC++,    4) << shift;
                         else
-                            next_sample = (int32_t)((*srcC   & 0xF0) << 24) >> shift;
+                            next_sample = sign_extend(*srcC >> 4, 4) << shift;
 
                         next_sample += (current_sample  * coeff1) +
                                        (previous_sample * coeff2);
@@ -976,7 +976,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             for (n=0; n<4; n++, s+=32*avctx->channels) {
                 for (i=0; i<2; i++)
                     coeff[i][n] = ea_adpcm_table[(src[0]&0x0F)+4*i];
-                shift[n] = (src[2]&0x0F) + 8;
+                shift[n] = 20 - (src[2] & 0x0F);
                 for (s2=s, i=0; i<2; i++, src+=2, s2+=avctx->channels)
                     s2[0] = (src[0]&0xF0) + (src[1]<<8);
             }
@@ -985,7 +985,7 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
                 s = &samples[m*avctx->channels + channel];
                 for (n=0; n<4; n++, src++, s+=32*avctx->channels) {
                     for (s2=s, i=0; i<8; i+=4, s2+=avctx->channels) {
-                        int level = (int32_t)((*src & (0xF0>>i)) << (24+i)) >> shift[n];
+                        int level = sign_extend(*src >> (4 - i), 4) << shift[n];
                         int pred  = s2[-1*avctx->channels] * coeff[0][n]
                                   + s2[-2*avctx->channels] * coeff[1][n];
                         s2[0] = av_clip_int16((level + pred + 0x80) >> 8);
@@ -1149,18 +1149,18 @@ static int adpcm_decode_frame(AVCodecContext *avctx,
             /* Read in every sample for this channel.  */
             for (i = 0; i < nb_samples / 14; i++) {
                 int index = (*src >> 4) & 7;
-                unsigned int exp = 28 - (*src++ & 15);
+                unsigned int exp = *src++ & 15;
                 int factor1 = table[ch][index * 2];
                 int factor2 = table[ch][index * 2 + 1];
 
                 /* Decode 14 samples.  */
                 for (n = 0; n < 14; n++) {
                     int32_t sampledat;
-                    if(n&1) sampledat=  *src++    <<28;
-                    else    sampledat= (*src&0xF0)<<24;
+                    if(n&1) sampledat = sign_extend(*src++, 4);
+                    else    sampledat = sign_extend(*src >> 4, 4);
 
                     sampledat = ((prev[ch][0]*factor1
-                                + prev[ch][1]*factor2) >> 11) + (sampledat>>exp);
+                                + prev[ch][1]*factor2) >> 11) + (sampledat << exp);
                     *samples = av_clip_int16(sampledat);
                     prev[ch][1] = prev[ch][0];
                     prev[ch][0] = *samples++;
