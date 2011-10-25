@@ -44,7 +44,7 @@ typedef struct SwrContext {          //FIXME find unused fields
     int      in_sample_rate;
     int     out_sample_rate;
     int flags;
-    float slev, clev;
+    float slev, clev, rematrix_volume;
 
     //below are private
     int int_bps;

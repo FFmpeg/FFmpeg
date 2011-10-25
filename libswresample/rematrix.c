@@ -210,6 +210,9 @@ int swr_rematrix_init(SwrContext *s){
         if(s->out_ch_layout & (1ULL<<i))
             out_i++;
     }
+    if(s->rematrix_volume  < 0)
+        maxcoef = -s->rematrix_volume;
+
     if((   s->out_sample_fmt < AV_SAMPLE_FMT_FLT
         || s->int_sample_fmt < AV_SAMPLE_FMT_FLT) && maxcoef > 1.0){
         for(i=0; i<SWR_CH_MAX; i++)
@@ -218,6 +221,15 @@ int swr_rematrix_init(SwrContext *s){
                 s->matrix32[i][j]= lrintf(s->matrix[i][j] * 32768);
             }
     }
+
+    if(s->rematrix_volume > 0){
+        for(i=0; i<SWR_CH_MAX; i++)
+            for(j=0; j<SWR_CH_MAX; j++){
+                s->matrix[i][j] *= s->rematrix_volume;
+                s->matrix32[i][j]= lrintf(s->matrix[i][j] * 32768);
+            }
+    }
+
     for(i=0; i<av_get_channel_layout_nb_channels(s->out_ch_layout); i++){
         for(j=0; j<av_get_channel_layout_nb_channels(s->in_ch_layout); j++){
             av_log(NULL, AV_LOG_DEBUG, "%f ", s->matrix[i][j]);
