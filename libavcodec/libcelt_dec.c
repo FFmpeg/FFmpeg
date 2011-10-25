@@ -33,7 +33,7 @@ struct libcelt_context {
 
 static int ff_celt_error_to_averror(int err)
 {
-    switch(err) {
+    switch (err) {
         case CELT_BAD_ARG:          return AVERROR(EINVAL);
 #ifdef CELT_BUFFER_TOO_SMALL
         case CELT_BUFFER_TOO_SMALL: return AVERROR(ENOBUFS);
@@ -82,7 +82,7 @@ static av_cold int libcelt_dec_init(AVCodecContext *c)
         }
         celt->discard *= c->channels * sizeof(int16_t);
     }
-    if(c->extradata_size >= 8) {
+    if (c->extradata_size >= 8) {
         unsigned version = AV_RL32(c->extradata + 4);
         unsigned lib_version = ff_celt_bitstream_version_hack(celt->mode);
         if (version != lib_version)
