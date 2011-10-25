@@ -3864,7 +3864,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                break;
 
             if (   h->sei_recovery_frame_cnt >= 0
-                && (h->recovery_frame - h->frame_num) & ((1 << h->sps.log2_max_frame_num)-1) > h->sei_recovery_frame_cnt) {
+                && ((h->recovery_frame - h->frame_num) & ((1 << h->sps.log2_max_frame_num)-1)) > h->sei_recovery_frame_cnt) {
                 h->recovery_frame = (h->frame_num + h->sei_recovery_frame_cnt) %
                                     (1 << h->sps.log2_max_frame_num);
             }
