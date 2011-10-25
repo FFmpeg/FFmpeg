@@ -1847,8 +1847,8 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data, int *data_size,
 
     // Discard too short frames
     if (buf_size < HEADER_SIZE) {
-        *data_size = 0;
-        return buf_size;
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+        return AVERROR_INVALIDDATA;
     }
 
 
@@ -1859,8 +1859,8 @@ static int decode_frame_adu(AVCodecContext *avctx, void *data, int *data_size,
     header = AV_RB32(buf) | 0xffe00000;
 
     if (ff_mpa_check_header(header) < 0) { // Bad header, discard frame
-        *data_size = 0;
-        return buf_size;
+        av_log(avctx, AV_LOG_ERROR, "Invalid frame header\n");
+        return AVERROR_INVALIDDATA;
     }
 
     avpriv_mpegaudio_decode_header((MPADecodeHeader *)s, header);
