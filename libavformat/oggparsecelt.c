@@ -1,5 +1,5 @@
 /*
- * Xiph CELT / Opus parser for Ogg
+ * Xiph CELT parser for Ogg
  * Copyright (c) 2011 Nicolas George
  *
  * This file is part of FFmpeg.

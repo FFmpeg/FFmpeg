@@ -1,5 +1,5 @@
 /*
- * Xiph CELT / Opus decoder using libcelt
+ * Xiph CELT decoder using libcelt
  * Copyright (c) 2011 Nicolas George
  *
  * This file is part of FFmpeg.
@@ -133,5 +133,5 @@ AVCodec ff_libcelt_decoder = {
     .close          = libcelt_dec_close,
     .decode         = libcelt_dec_decode,
     .capabilities   = 0,
-    .long_name = NULL_IF_CONFIG_SMALL("Xiph CELT/Opus decoder using libcelt"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Xiph CELT decoder using libcelt"),
 };
