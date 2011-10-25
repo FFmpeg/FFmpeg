@@ -137,8 +137,8 @@ static int request_frame(AVFilterLink *outlink)
     picref->video->interlaced = 0;
     picref->video->pict_type = AV_PICTURE_TYPE_I;
     picref->video->sample_aspect_ratio = test->sar;
-    test->nb_frame++;
     test->fill_picture_fn(outlink->src, picref);
+    test->nb_frame++;
 
     avfilter_start_frame(outlink, avfilter_ref_buffer(picref, ~0));
     avfilter_draw_slice(outlink, 0, picref->video->h, 1);
