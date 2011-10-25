@@ -234,6 +234,7 @@ typedef struct OutputStream {
     int resample_sample_fmt;
     int resample_channels;
     int resample_sample_rate;
+    float rematrix_volume;
     AVFifoBuffer *fifo;     /* for compression: one audio fifo per codec */
     FILE *logfile;
 
@@ -289,6 +290,8 @@ typedef struct OptionsContext {
     int        nb_audio_channels;
     SpecifierOpt *audio_sample_rate;
     int        nb_audio_sample_rate;
+    SpecifierOpt *rematrix_volume;
+    int        nb_rematrix_volume;
     SpecifierOpt *frame_rates;
     int        nb_frame_rates;
     SpecifierOpt *frame_sizes;
@@ -872,6 +875,7 @@ need_realloc:
                                   enc->channel_layout, enc->sample_fmt, enc->sample_rate,
                                   dec->channel_layout, dec->sample_fmt, dec->sample_rate,
                                   0, NULL);
+            av_set_double(ost->swr, "rmvol", ost->rematrix_volume);
             av_set_int(ost->swr, "ich", dec->channels);
             av_set_int(ost->swr, "och", enc->channels);
             if(audio_sync_method>1) av_set_int(ost->swr, "flags", SWR_FLAG_RESAMPLE);
@@ -3511,6 +3515,9 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
         }
 
         MATCH_PER_STREAM_OPT(audio_sample_rate, i, audio_enc->sample_rate, oc, st);
+
+        ost->rematrix_volume=1.0;
+        MATCH_PER_STREAM_OPT(rematrix_volume, f, ost->rematrix_volume, oc, st);
     }
 
     return ost;
@@ -4384,6 +4391,7 @@ static const OptionDef options[] = {
     { "atag", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_FUNC2, {(void*)opt_old2new}, "force audio tag/fourcc", "fourcc/tag" },
     { "vol", OPT_INT | HAS_ARG | OPT_AUDIO, {(void*)&audio_volume}, "change audio volume (256=normal)" , "volume" }, //
     { "sample_fmt", HAS_ARG | OPT_EXPERT | OPT_AUDIO | OPT_SPEC | OPT_STRING, {.off = OFFSET(sample_fmts)}, "set sample format", "format" },
+    { "rmvol", HAS_ARG | OPT_AUDIO | OPT_FLOAT | OPT_SPEC, {.off = OFFSET(rematrix_volume)}, "rematrix volume (as factor)", "volume" },
 
     /* subtitle options */
     { "sn", OPT_BOOL | OPT_SUBTITLE | OPT_OFFSET, {.off = OFFSET(subtitle_disable)}, "disable subtitle" },
