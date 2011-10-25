@@ -28,6 +28,7 @@
 #include "avfilter.h"
 #include "libavutil/eval.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
@@ -53,6 +54,7 @@ enum var_name {
 #define OVERLAY 1
 
 typedef struct {
+    const AVClass *class;
     int x, y;                   ///< position of overlayed picture
 
     AVFilterBufferRef *overpicref;
@@ -60,25 +62,65 @@ typedef struct {
     int max_plane_step[4];      ///< steps per pixel for each plane
     int hsub, vsub;             ///< chroma subsampling values
 
-    char x_expr[256], y_expr[256];
+    char *x_expr, *y_expr;
 } OverlayContext;
+
+#define OFFSET(x) offsetof(OverlayContext, x)
+
+static const AVOption overlay_options[] = {
+    { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX },
+    { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX },
+    {NULL},
+};
+
+static const char *overlay_get_name(void *ctx)
+{
+    return "overlay";
+}
+
+static const AVClass overlay_class = {
+    "OverlayContext",
+    overlay_get_name,
+    overlay_options
+};
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     OverlayContext *over = ctx->priv;
+    char *args1 = av_strdup(args);
+    char *expr, *bufptr = NULL;
+    int ret = 0;
 
-    av_strlcpy(over->x_expr, "0", sizeof(over->x_expr));
-    av_strlcpy(over->y_expr, "0", sizeof(over->y_expr));
+    over->class = &overlay_class;
+    av_opt_set_defaults(over);
 
-    if (args)
-        sscanf(args, "%255[^:]:%255[^:]", over->x_expr, over->y_expr);
+    if (expr = av_strtok(args1, ":", &bufptr)) {
+        if (!(over->x_expr = av_strdup(expr))) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+    }
+    if (expr = av_strtok(NULL, ":", &bufptr)) {
+        if (!(over->y_expr = av_strdup(expr))) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+    }
 
-    return 0;
+    if (bufptr && (ret = av_set_options_string(over, bufptr, "=", ":")) < 0)
+        goto end;
+
+end:
+    av_free(args1);
+    return ret;
 }
 
 static av_cold void uninit(AVFilterContext *ctx)
 {
     OverlayContext *over = ctx->priv;
+
+    av_freep(&over->x_expr);
+    av_freep(&over->y_expr);
 
     if (over->overpicref)
         avfilter_unref_buffer(over->overpicref);
