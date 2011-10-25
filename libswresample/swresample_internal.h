@@ -62,7 +62,7 @@ typedef struct SwrContext {          //FIXME find unused fields
     struct AVResampleContext *resample;
 
     float matrix[SWR_CH_MAX][SWR_CH_MAX];
-    int16_t matrix16[SWR_CH_MAX][SWR_CH_MAX];
+    int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];
 
     //TODO callbacks for asm optims
