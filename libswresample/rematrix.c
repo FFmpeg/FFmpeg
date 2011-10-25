@@ -25,16 +25,19 @@
 #define ONE (1.0)
 #define R(x) x
 #define SAMPLE float
+#define COEFF float
 #define RENAME(x) x ## _float
 #include "rematrix_template.c"
 #undef SAMPLE
 #undef RENAME
 #undef R
 #undef ONE
+#undef COEFF
 
 #define ONE (-32768)
 #define R(x) (((x) + 16384)>>15)
 #define SAMPLE int16_t
+#define COEFF int
 #define RENAME(x) x ## _s16
 #include "rematrix_template.c"
 
