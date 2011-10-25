@@ -2522,21 +2522,6 @@ AVCodec ff_mpeg2video_decoder = {
     .profiles       = NULL_IF_CONFIG_SMALL(mpeg2_video_profiles),
 };
 
-//legacy decoder
-AVCodec ff_mpegvideo_decoder = {
-    .name           = "mpegvideo",
-    .type           = AVMEDIA_TYPE_VIDEO,
-    .id             = CODEC_ID_MPEG2VIDEO,
-    .priv_data_size = sizeof(Mpeg1Context),
-    .init           = mpeg_decode_init,
-    .close          = mpeg_decode_end,
-    .decode         = mpeg_decode_frame,
-    .capabilities   = CODEC_CAP_DRAW_HORIZ_BAND | CODEC_CAP_DR1 | CODEC_CAP_TRUNCATED | CODEC_CAP_DELAY | CODEC_CAP_SLICE_THREADS,
-    .flush          = flush,
-    .max_lowres     = 3,
-    .long_name      = NULL_IF_CONFIG_SMALL("MPEG-1 video"),
-};
-
 #if CONFIG_MPEG_XVMC_DECODER
 static av_cold int mpeg_mc_decode_init(AVCodecContext *avctx)
 {
