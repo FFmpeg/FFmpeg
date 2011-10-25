@@ -39,6 +39,8 @@
 
 extern const uint16_t ff_wma_critical_freqs[25];
 
+static float quant_table[95];
+
 #define MAX_CHANNELS 2
 #define BINK_BLOCK_MAX_SIZE (MAX_CHANNELS << 11)
 
@@ -107,6 +109,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->block_size    = (s->frame_len - s->overlap_len) * s->channels;
     sample_rate_half = (sample_rate + 1) / 2;
     s->root          = 2.0 / sqrt(s->frame_len);
+    for (i = 0; i < 95; i++) {
+        /* constant is result of 0.066399999/log10(M_E) */
+        quant_table[i] = expf(i * 0.15289164787221953823f) * s->root;
+    }
 
     /* calculate number of bands */
     for (s->num_bands = 1; s->num_bands < 25; s->num_bands++)
@@ -190,9 +196,8 @@ static int decode_block(BinkAudioContext *s, short *out, int use_dct)
         if (get_bits_left(gb) < s->num_bands * 8)
             return AVERROR_INVALIDDATA;
         for (i = 0; i < s->num_bands; i++) {
-            /* constant is result of 0.066399999/log10(M_E) */
             int value = get_bits(gb, 8);
-            quant[i] = expf(FFMIN(value, 95) * 0.15289164787221953823f) * s->root;
+            quant[i]  = quant_table[FFMIN(value, 95)];
         }
 
         k = 0;
