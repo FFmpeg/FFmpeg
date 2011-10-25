@@ -127,7 +127,7 @@ static int request_frame(AVFilterLink *outlink)
     TestSourceContext *test = outlink->src->priv;
     AVFilterBufferRef *picref;
 
-    if (test->max_pts >= 0 && test->pts > test->max_pts)
+    if (test->max_pts >= 0 && test->pts >= test->max_pts)
         return AVERROR_EOF;
     picref = avfilter_get_video_buffer(outlink, AV_PERM_WRITE,
                                        test->w, test->h);
