@@ -2047,7 +2047,6 @@ static int decode_frame_mp3on4(AVCodecContext * avctx,
         return AVERROR(EINVAL);
     }
 
-    *data_size = 0;
     // Discard too short frames
     if (buf_size < HEADER_SIZE)
         return AVERROR_INVALIDDATA;
