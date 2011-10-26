@@ -77,6 +77,7 @@ typedef struct {
     double vcd_padding_bitrate; //FIXME floats
     int64_t vcd_padding_bytes_written;
 
+    int preload;
 } MpegMuxContext;
 
 extern AVOutputFormat ff_mpeg1vcd_muxer;
@@ -1158,8 +1159,14 @@ static int mpeg_mux_write_packet(AVFormatContext *ctx, AVPacket *pkt)
     StreamInfo *stream = st->priv_data;
     int64_t pts, dts;
     PacketDesc *pkt_desc;
-    const int preload= av_rescale(ctx->preload, 90000, AV_TIME_BASE);
+    int preload;
     const int is_iframe = st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (pkt->flags & AV_PKT_FLAG_KEY);
+
+#if FF_API_PRELOAD
+    if (ctx->preload)
+        s->preload = ctx->preload;
+#endif
+    preload = av_rescale(s->preload, 90000, AV_TIME_BASE);
 
     pts= pkt->pts;
     dts= pkt->dts;
@@ -1237,6 +1244,7 @@ static int mpeg_mux_end(AVFormatContext *ctx)
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "muxrate", NULL, OFFSET(mux_rate), AV_OPT_TYPE_INT, {0}, 0, INT_MAX, E },
+    { "preload", "Initial demux-decode delay in microseconds.", OFFSET(preload),  AV_OPT_TYPE_INT, {500000}, 0, INT_MAX, E},
     { NULL },
 };
 

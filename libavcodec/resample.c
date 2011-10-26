@@ -265,7 +265,6 @@ ReSampleContext *av_audio_resample_init(int output_channels, int input_channels,
         }
     }
 
-#define TAPS 16
     s->resample_context = av_resample_init(output_rate, input_rate,
                                            filter_length, log2_phase_count,
                                            linear, cutoff);

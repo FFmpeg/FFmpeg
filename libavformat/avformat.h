@@ -540,8 +540,10 @@ typedef struct AVStream {
      */
     AVRational time_base;
     int pts_wrap_bits; /**< number of bits in pts (used for wrapping control) */
+#if FF_API_STREAM_COPY
     /* ffmpeg.c private use */
-    int stream_copy; /**< If set, just copy stream. */
+    attribute_deprecated int stream_copy; /**< If set, just copy stream. */
+#endif
     enum AVDiscard discard; ///< Selects which packets can be discarded at will and do not need to be demuxed.
 
 #if FF_API_AVSTREAM_QUALITY
@@ -772,7 +774,9 @@ typedef struct AVFormatContext {
     attribute_deprecated int mux_rate;
 #endif
     unsigned int packet_size;
-    int preload;
+#if FF_API_PRELOAD
+    attribute_deprecated int preload;
+#endif
     int max_delay;
 
 #if FF_API_LOOP_OUTPUT

@@ -101,5 +101,11 @@
 #ifndef FF_API_NEW_STREAM
 #define FF_API_NEW_STREAM              (LIBAVFORMAT_VERSION_MAJOR < 54)
 #endif
+#ifndef FF_API_PRELOAD
+#define FF_API_PRELOAD                 (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
+#ifndef FF_API_STREAM_COPY
+#define FF_API_STREAM_COPY             (LIBAVFORMAT_VERSION_MAJOR < 54)
+#endif
 
 #endif /* AVFORMAT_VERSION_H */
