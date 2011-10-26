@@ -339,7 +339,7 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
     }
 
     /* a hack for files with huge id3v2 tags -- try to guess by file extension. */
-    if (!fmt && id3 && *score_max < AVPROBE_SCORE_MAX/4) {
+    if (!fmt && is_opened && *score_max < AVPROBE_SCORE_MAX/4) {
         while ((fmt = av_iformat_next(fmt)))
             if (fmt->extensions && av_match_ext(lpd.filename, fmt->extensions)) {
                 *score_max = AVPROBE_SCORE_MAX/4;
