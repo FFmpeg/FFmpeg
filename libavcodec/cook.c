@@ -42,12 +42,7 @@
  * available.
  */
 
-#include <math.h>
-#include <stddef.h>
-#include <stdio.h>
-
 #include "libavutil/lfg.h"
-#include "libavutil/random_seed.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"
