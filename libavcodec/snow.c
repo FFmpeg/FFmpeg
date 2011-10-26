@@ -1609,8 +1609,6 @@ static void dwt_quantize(SnowContext *s, Plane *p, DWTELEM *buffer, int width, i
 static void halfpel_interpol(SnowContext *s, uint8_t *halfpel[4][4], AVFrame *frame){
     int p,x,y;
 
-    assert(!(s->avctx->flags & CODEC_FLAG_EMU_EDGE));
-
     for(p=0; p<3; p++){
         int is_chroma= !!p;
         int w= s->avctx->width  >>is_chroma;
@@ -1667,7 +1665,7 @@ static int frame_start(SnowContext *s){
    int w= s->avctx->width; //FIXME round up to x16 ?
    int h= s->avctx->height;
 
-    if(s->current_picture.data[0]){
+    if(s->current_picture.data[0] && !(s->avctx->flags&CODEC_FLAG_EMU_EDGE)){
         s->dsp.draw_edges(s->current_picture.data[0],
                           s->current_picture.linesize[0], w   , h   ,
                           EDGE_WIDTH  , EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);
