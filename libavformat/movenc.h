@@ -112,6 +112,8 @@ typedef struct MOVMuxContext {
 
     int flags;
     int rtp_flags;
+    int reserved_moov_size;
+    int64_t reserved_moov_pos;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1

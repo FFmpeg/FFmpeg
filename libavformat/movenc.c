@@ -44,6 +44,7 @@
 static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), AV_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "rtphint", "Add RTP hint tracks", 0, AV_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
+    { "moov_size", "maximum moov size so it can be placed at the begin", offsetof(MOVMuxContext, reserved_moov_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { NULL },
 };
@@ -2274,6 +2275,11 @@ static int mov_write_header(AVFormatContext *s)
         av_set_pts_info(st, 64, 1, track->timescale);
     }
 
+    if(mov->reserved_moov_size){
+        mov->reserved_moov_pos= avio_tell(pb);
+        avio_skip(pb, mov->reserved_moov_size);
+    }
+
     mov_write_mdat_tag(pb, mov);
 
 #if FF_API_TIMESTAMP
@@ -2328,9 +2334,21 @@ static int mov_write_trailer(AVFormatContext *s)
         ffio_wfourcc(pb, "mdat");
         avio_wb64(pb, mov->mdat_size+16);
     }
-    avio_seek(pb, moov_pos, SEEK_SET);
+    avio_seek(pb, mov->reserved_moov_size ? mov->reserved_moov_pos : moov_pos, SEEK_SET);
 
     mov_write_moov_tag(pb, mov, s);
+    if(mov->reserved_moov_size){
+        int64_t size=  mov->reserved_moov_size - (avio_tell(pb) - mov->reserved_moov_pos);
+        if(size < 8){
+            av_log(s, AV_LOG_ERROR, "reserved_moov_size is too small, needed %Ld additional\n", 8-size);
+            return -1;
+        }
+        avio_wb32(pb, size);
+        ffio_wfourcc(pb, "free");
+        for(i=0; i<size; i++)
+            avio_w8(pb, 0);
+        avio_seek(pb, moov_pos, SEEK_SET);
+    }
 
     if (mov->chapter_track)
         av_freep(&mov->tracks[mov->chapter_track].enc);
