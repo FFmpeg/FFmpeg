@@ -16,6 +16,7 @@ OBJS-$(CONFIG_FBDEV_INDEV)               += fbdev.o
 OBJS-$(CONFIG_JACK_INDEV)                += jack_audio.o timefilter.o
 OBJS-$(CONFIG_OSS_INDEV)                 += oss_audio.o
 OBJS-$(CONFIG_OSS_OUTDEV)                += oss_audio.o
+OBJS-$(CONFIG_PULSE_INDEV)               += pulse.o
 OBJS-$(CONFIG_SNDIO_INDEV)               += sndio_common.o sndio_dec.o
 OBJS-$(CONFIG_SNDIO_OUTDEV)              += sndio_common.o sndio_enc.o
 OBJS-$(CONFIG_V4L2_INDEV)                += v4l2.o
