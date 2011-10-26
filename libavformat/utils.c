@@ -347,6 +347,14 @@ AVInputFormat *av_probe_input_format2(AVProbeData *pd, int is_opened, int *score
             }
     }
 
+    if (!fmt && id3 && *score_max < AVPROBE_SCORE_MAX/4-1) {
+        while ((fmt = av_iformat_next(fmt)))
+            if (fmt->extensions && av_match_ext("mp3", fmt->extensions)) {
+                *score_max = AVPROBE_SCORE_MAX/4-1;
+                break;
+            }
+    }
+
     return fmt;
 }
 
