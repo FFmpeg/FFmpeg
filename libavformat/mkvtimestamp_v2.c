@@ -40,9 +40,9 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     return 0;
 }
 
-AVOutputFormat ff_timecode_v2_muxer = {
-    "timecode_v2",
-    NULL_IF_CONFIG_SMALL("timecode format v2"),
+AVOutputFormat ff_mkvtimestamp_v2_muxer = {
+    "mkvtimestamp_v2",
+    NULL_IF_CONFIG_SMALL("extract pts as timecode v2 format, as defined by mkvtoolnix"),
     NULL,
     "",
     0,
