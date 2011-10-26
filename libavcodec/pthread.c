@@ -681,6 +681,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
     av_freep(&avctx->thread_opaque);
+    avctx->has_b_frames -= avctx->thread_count - 1;
 }
 
 static int frame_thread_init(AVCodecContext *avctx)
