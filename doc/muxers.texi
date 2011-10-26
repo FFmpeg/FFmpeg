@@ -155,7 +155,7 @@ The muxer options are:
 
 @table @option
 @item -moov_size @var{bytes}
-Reserves space for the moov atom at the begin of the file instead of placing the
+Reserves space for the moov atom at the beginning of the file instead of placing the
 moov atom at the end. If the space reserved is insufficient, muxing will fail.
 @end table
 
