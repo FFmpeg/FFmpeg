@@ -79,7 +79,6 @@ static int get_bitrate_mode(int bitrate, void *log_ctx)
 
 typedef struct AMRContext {
     AVClass *av_class;
-    int   frame_count;
     void *dec_state;
     void *enc_state;
     int   enc_bitrate;
@@ -100,7 +99,6 @@ static av_cold int amr_nb_decode_init(AVCodecContext *avctx)
 {
     AMRContext *s  = avctx->priv_data;
 
-    s->frame_count = 0;
     s->dec_state   = Decoder_Interface_init();
     if (!s->dec_state) {
         av_log(avctx, AV_LOG_ERROR, "Decoder_Interface_init error\n");
@@ -133,10 +131,16 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
     AMRContext *s      = avctx->priv_data;
     static const uint8_t block_size[16] = { 12, 13, 15, 17, 19, 20, 26, 31, 5, 0, 0, 0, 0, 0, 0, 0 };
     enum Mode dec_mode;
-    int packet_size;
+    int packet_size, out_size;
 
     av_dlog(avctx, "amr_decode_frame buf=%p buf_size=%d frame_count=%d!!\n",
-            buf, buf_size, s->frame_count);
+            buf, buf_size, avctx->frame_number);
+
+    out_size = 160 * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     dec_mode    = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[dec_mode] + 1;
@@ -147,12 +151,11 @@ static int amr_nb_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR_INVALIDDATA;
     }
 
-    s->frame_count++;
     av_dlog(avctx, "packet_size=%d buf= 0x%X %X %X %X\n",
               packet_size, buf[0], buf[1], buf[2], buf[3]);
     /* call decoder */
     Decoder_Interface_Decode(s->dec_state, buf, data, 0);
-    *data_size = 160 * 2;
+    *data_size = out_size;
 
     return packet_size;
 }
@@ -171,8 +174,6 @@ AVCodec ff_libopencore_amrnb_decoder = {
 static av_cold int amr_nb_encode_init(AVCodecContext *avctx)
 {
     AMRContext *s = avctx->priv_data;
-
-    s->frame_count = 0;
 
     if (avctx->sample_rate != 8000) {
         av_log(avctx, AV_LOG_ERROR, "Only 8000Hz sample rate supported\n");
@@ -276,12 +277,14 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     int buf_size       = avpkt->size;
     AMRWBContext *s    = avctx->priv_data;
     int mode;
-    int packet_size;
+    int packet_size, out_size;
     static const uint8_t block_size[16] = {18, 24, 33, 37, 41, 47, 51, 59, 61, 6, 6, 0, 0, 0, 1, 1};
 
-    if (!buf_size)
-        /* nothing to do */
-        return 0;
+    out_size = 320 * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     mode        = (buf[0] >> 3) & 0x000F;
     packet_size = block_size[mode];
@@ -293,7 +296,7 @@ static int amr_wb_decode_frame(AVCodecContext *avctx, void *data,
     }
 
     D_IF_decode(s->state, buf, data, _good_frame);
-    *data_size = 320 * 2;
+    *data_size = out_size;
     return packet_size;
 }
 
