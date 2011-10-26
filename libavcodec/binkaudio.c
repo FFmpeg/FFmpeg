@@ -58,7 +58,7 @@ typedef struct {
     unsigned int *bands;
     float root;
     DECLARE_ALIGNED(32, FFTSample, coeffs)[BINK_BLOCK_MAX_SIZE];
-    DECLARE_ALIGNED(16, short, previous)[BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
+    DECLARE_ALIGNED(16, int16_t, previous)[BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
     DECLARE_ALIGNED(16, int16_t, current)[BINK_BLOCK_MAX_SIZE / 16];
     float *coeffs_ptr[MAX_CHANNELS]; ///< pointers to the coeffs arrays for float_to_int16_interleave
     float *prev_ptr[MAX_CHANNELS];   ///< pointers to the overlap points in the coeffs array
@@ -174,7 +174,7 @@ static const uint8_t rle_length_tab[16] = {
  * @param[out] out Output buffer (must contain s->block_size elements)
  * @return 0 on success, negative error code on failure
  */
-static int decode_block(BinkAudioContext *s, short *out, int use_dct)
+static int decode_block(BinkAudioContext *s, int16_t *out, int use_dct)
 {
     int ch, i, j, k;
     float q, quant[25];
@@ -307,7 +307,7 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     BinkAudioContext *s = avctx->priv_data;
-    short *samples      = data;
+    int16_t *samples      = data;
     GetBitContext *gb = &s->gb;
     int out_size, consumed = 0;
 
