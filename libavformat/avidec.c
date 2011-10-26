@@ -1001,6 +1001,8 @@ start_sync:
         }
     }
 
+    if(pb->error)
+        return pb->error;
     return AVERROR_EOF;
 }
 
