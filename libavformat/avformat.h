@@ -1078,6 +1078,13 @@ typedef struct AVFormatContext {
      */
     int ts_id;
 
+    /**
+     * Audio preload in microseconds.
+     * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+     * - encoding: Set by user via AVOptions (NO direct access)
+     * - decoding: unused
+     */
+    int audio_preload;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They
