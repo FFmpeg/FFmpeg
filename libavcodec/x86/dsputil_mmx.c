@@ -2764,18 +2764,18 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
         }
         if(mm_flags & AV_CPU_FLAG_SSE2){
             if (!high_bit_depth) {
-            H264_QPEL_FUNCS(0, 1, sse2);
-            H264_QPEL_FUNCS(0, 2, sse2);
-            H264_QPEL_FUNCS(0, 3, sse2);
-            H264_QPEL_FUNCS(1, 1, sse2);
-            H264_QPEL_FUNCS(1, 2, sse2);
-            H264_QPEL_FUNCS(1, 3, sse2);
-            H264_QPEL_FUNCS(2, 1, sse2);
-            H264_QPEL_FUNCS(2, 2, sse2);
-            H264_QPEL_FUNCS(2, 3, sse2);
-            H264_QPEL_FUNCS(3, 1, sse2);
-            H264_QPEL_FUNCS(3, 2, sse2);
-            H264_QPEL_FUNCS(3, 3, sse2);
+                H264_QPEL_FUNCS(0, 1, sse2);
+                H264_QPEL_FUNCS(0, 2, sse2);
+                H264_QPEL_FUNCS(0, 3, sse2);
+                H264_QPEL_FUNCS(1, 1, sse2);
+                H264_QPEL_FUNCS(1, 2, sse2);
+                H264_QPEL_FUNCS(1, 3, sse2);
+                H264_QPEL_FUNCS(2, 1, sse2);
+                H264_QPEL_FUNCS(2, 2, sse2);
+                H264_QPEL_FUNCS(2, 3, sse2);
+                H264_QPEL_FUNCS(3, 1, sse2);
+                H264_QPEL_FUNCS(3, 2, sse2);
+                H264_QPEL_FUNCS(3, 3, sse2);
             }
 #if HAVE_YASM
 #define H264_QPEL_FUNCS_10(x, y, CPU)\
