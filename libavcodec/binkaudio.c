@@ -59,7 +59,9 @@ typedef struct {
     float root;
     DECLARE_ALIGNED(32, FFTSample, coeffs)[BINK_BLOCK_MAX_SIZE];
     DECLARE_ALIGNED(16, short, previous)[BINK_BLOCK_MAX_SIZE / 16];  ///< coeffs from previous audio block
+    DECLARE_ALIGNED(16, int16_t, current)[BINK_BLOCK_MAX_SIZE / 16];
     float *coeffs_ptr[MAX_CHANNELS]; ///< pointers to the coeffs arrays for float_to_int16_interleave
+    float *prev_ptr[MAX_CHANNELS];   ///< pointers to the overlap points in the coeffs array
     union {
         RDFTContext rdft;
         DCTContext dct;
@@ -132,8 +134,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->first = 1;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
-    for (i = 0; i < s->channels; i++)
+    for (i = 0; i < s->channels; i++) {
         s->coeffs_ptr[i] = s->coeffs + i * s->frame_len;
+        s->prev_ptr[i]   = s->coeffs_ptr[i] + s->frame_len - s->overlap_len;
+    }
 
     if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
         ff_rdft_init(&s->trans.rdft, frame_len_bits, DFT_C2R);
@@ -256,8 +260,12 @@ static int decode_block(BinkAudioContext *s, short *out, int use_dct)
             s->trans.rdft.rdft_calc(&s->trans.rdft, coeffs);
     }
 
+    s->fmt_conv.float_to_int16_interleave(s->current,
+                                          (const float **)s->prev_ptr,
+                                          s->overlap_len, s->channels);
     s->fmt_conv.float_to_int16_interleave(out, (const float **)s->coeffs_ptr,
-                                          s->frame_len, s->channels);
+                                          s->frame_len - s->overlap_len,
+                                          s->channels);
 
     if (!s->first) {
         int count = s->overlap_len * s->channels;
@@ -267,8 +275,8 @@ static int decode_block(BinkAudioContext *s, short *out, int use_dct)
         }
     }
 
-    memcpy(s->previous, out + s->block_size,
-           s->overlap_len * s->channels * sizeof(*out));
+    memcpy(s->previous, s->current,
+           s->overlap_len * s->channels * sizeof(*s->previous));
 
     s->first = 0;
 
