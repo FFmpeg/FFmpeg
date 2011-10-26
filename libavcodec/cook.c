@@ -124,7 +124,7 @@ typedef struct cook {
     void (* interpolate) (struct cook *q, float* buffer,
                           int gain_index, int gain_index_next);
 
-    void (* saturate_output) (struct cook *q, int chan, int16_t *out);
+    void (* saturate_output) (struct cook *q, int chan, float *out);
 
     AVCodecContext*     avctx;
     GetBitContext       gb;
@@ -229,7 +229,7 @@ static av_cold int init_cook_mlt(COOKContext *q) {
         q->mlt_window[j] *= sqrt(2.0 / q->samples_per_channel);
 
     /* Initialize the MDCT. */
-    if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1, 1.0)) {
+    if (ff_mdct_init(&q->mdct_ctx, av_log2(mlt_size)+1, 1, 1.0/32768.0)) {
       av_free(q->mlt_window);
       return -1;
     }
@@ -867,22 +867,18 @@ decode_bytes_and_gain(COOKContext *q, COOKSubpacket *p, const uint8_t *inbuffer,
 }
 
  /**
- * Saturate the output signal to signed 16bit integers.
+ * Saturate the output signal and interleave.
  *
  * @param q                 pointer to the COOKContext
  * @param chan              channel to saturate
  * @param out               pointer to the output vector
  */
-static void
-saturate_output_float (COOKContext *q, int chan, int16_t *out)
+static void saturate_output_float(COOKContext *q, int chan, float *out)
 {
     int j;
     float *output = q->mono_mdct_output + q->samples_per_channel;
-    /* Clip and convert floats to 16 bits.
-     */
     for (j = 0; j < q->samples_per_channel; j++) {
-        out[chan + q->nb_channels * j] =
-          av_clip_int16(lrintf(output[j]));
+        out[chan + q->nb_channels * j] = av_clipf(output[j], -1.0, 1.0);
     }
 }
 
@@ -902,7 +898,7 @@ saturate_output_float (COOKContext *q, int chan, int16_t *out)
 static inline void
 mlt_compensate_output(COOKContext *q, float *decode_buffer,
                       cook_gains *gains_ptr, float *previous_buffer,
-                      int16_t *out, int chan)
+                      float *out, int chan)
 {
     imlt_gain(q, decode_buffer, gains_ptr, previous_buffer);
     q->saturate_output (q, chan, out);
@@ -917,7 +913,9 @@ mlt_compensate_output(COOKContext *q, float *decode_buffer,
  * @param inbuffer          pointer to the inbuffer
  * @param outbuffer         pointer to the outbuffer
  */
-static void decode_subpacket(COOKContext *q, COOKSubpacket* p, const uint8_t *inbuffer, int16_t *outbuffer) {
+static void decode_subpacket(COOKContext *q, COOKSubpacket *p,
+                             const uint8_t *inbuffer, float *outbuffer)
+{
     int sub_packet_size = p->size;
     /* packet dump */
 //    for (i=0 ; i<sub_packet_size ; i++) {
@@ -991,12 +989,13 @@ static int cook_decode_frame(AVCodecContext *avctx,
         q->subpacket[i].bits_per_subpacket = (q->subpacket[i].size*8)>>q->subpacket[i].bits_per_subpdiv;
         q->subpacket[i].ch_idx = chidx;
         av_log(avctx,AV_LOG_DEBUG,"subpacket[%i] size %i js %i %i block_align %i\n",i,q->subpacket[i].size,q->subpacket[i].joint_stereo,offset,avctx->block_align);
-        decode_subpacket(q, &q->subpacket[i], buf + offset, (int16_t*)data);
+        decode_subpacket(q, &q->subpacket[i], buf + offset, data);
         offset += q->subpacket[i].size;
         chidx += q->subpacket[i].num_channels;
         av_log(avctx,AV_LOG_DEBUG,"subpacket[%i] %i %i\n",i,q->subpacket[i].size * 8,get_bits_count(&q->gb));
     }
-    *data_size = sizeof(int16_t) * q->nb_channels * q->samples_per_channel;
+    *data_size = q->nb_channels * q->samples_per_channel *
+                 av_get_bytes_per_sample(avctx->sample_fmt);
 
     /* Discard the first two frames: no valid audio. */
     if (avctx->frame_number < 2) *data_size = 0;
@@ -1240,7 +1239,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
     if (channel_mask)
         avctx->channel_layout = channel_mask;
     else
