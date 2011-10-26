@@ -62,6 +62,7 @@ typedef struct {
     DECLARE_ALIGNED(16, int16_t, current)[BINK_BLOCK_MAX_SIZE / 16];
     float *coeffs_ptr[MAX_CHANNELS]; ///< pointers to the coeffs arrays for float_to_int16_interleave
     float *prev_ptr[MAX_CHANNELS];   ///< pointers to the overlap points in the coeffs array
+    uint8_t *packet_buffer;
     union {
         RDFTContext rdft;
         DCTContext dct;
@@ -287,6 +288,7 @@ static av_cold int decode_end(AVCodecContext *avctx)
 {
     BinkAudioContext * s = avctx->priv_data;
     av_freep(&s->bands);
+    av_freep(&s->packet_buffer);
     if (CONFIG_BINKAUDIO_RDFT_DECODER && avctx->codec->id == CODEC_ID_BINKAUDIO_RDFT)
         ff_rdft_end(&s->trans.rdft);
     else if (CONFIG_BINKAUDIO_DCT_DECODER)
@@ -305,30 +307,47 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     BinkAudioContext *s = avctx->priv_data;
-    const uint8_t *buf  = avpkt->data;
-    int buf_size        = avpkt->size;
     short *samples      = data;
-    short *samples_end  = (short*)((uint8_t*)data + *data_size);
-    int reported_size;
     GetBitContext *gb = &s->gb;
+    int out_size, consumed = 0;
 
-    if (buf_size < 4) {
-        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+    if (!get_bits_left(gb)) {
+        uint8_t *buf;
+        /* handle end-of-stream */
+        if (!avpkt->size) {
+            *data_size = 0;
+            return 0;
+        }
+        if (avpkt->size < 4) {
+            av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+            return AVERROR_INVALIDDATA;
+        }
+        buf = av_realloc(s->packet_buffer, avpkt->size + FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!buf)
+            return AVERROR(ENOMEM);
+        s->packet_buffer = buf;
+        memcpy(s->packet_buffer, avpkt->data, avpkt->size);
+        init_get_bits(gb, s->packet_buffer, avpkt->size * 8);
+        consumed = avpkt->size;
+
+        /* skip reported size */
+        skip_bits_long(gb, 32);
+    }
+
+    out_size = s->block_size * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (decode_block(s, samples, avctx->codec->id == CODEC_ID_BINKAUDIO_DCT)) {
+        av_log(avctx, AV_LOG_ERROR, "Incomplete packet\n");
         return AVERROR_INVALIDDATA;
     }
+    get_bits_align32(gb);
 
-    init_get_bits(gb, buf, buf_size * 8);
-
-    reported_size = get_bits_long(gb, 32);
-    while (samples + s->block_size <= samples_end) {
-        if (decode_block(s, samples, avctx->codec->id == CODEC_ID_BINKAUDIO_DCT))
-            break;
-        samples += s->block_size;
-        get_bits_align32(gb);
-    }
-
-    *data_size = FFMIN(reported_size, (uint8_t*)samples - (uint8_t*)data);
-    return buf_size;
+    *data_size = out_size;
+    return consumed;
 }
 
 AVCodec ff_binkaudio_rdft_decoder = {
@@ -339,6 +358,7 @@ AVCodec ff_binkaudio_rdft_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DELAY,
     .long_name = NULL_IF_CONFIG_SMALL("Bink Audio (RDFT)")
 };
 
@@ -350,5 +370,6 @@ AVCodec ff_binkaudio_dct_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_frame,
+    .capabilities   = CODEC_CAP_DELAY,
     .long_name = NULL_IF_CONFIG_SMALL("Bink Audio (DCT)")
 };
