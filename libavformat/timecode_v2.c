@@ -21,7 +21,7 @@
 
 #include "avformat.h"
 
-static int timecode_v2_write_header(AVFormatContext *s)
+static int write_header(AVFormatContext *s)
 {
     static const char *header = "# timecode format v2\n";
     put_buffer(s->pb, header, strlen(header));
@@ -29,7 +29,7 @@ static int timecode_v2_write_header(AVFormatContext *s)
     return 0;
 }
 
-static int timecode_v2_write_packet(AVFormatContext *s, AVPacket *pkt)
+static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
     char buf[256];
     if (pkt->stream_index)
@@ -48,6 +48,6 @@ AVOutputFormat ff_timecode_v2_muxer = {
     0,
     CODEC_ID_NONE,
     CODEC_ID_RAWVIDEO,
-    timecode_v2_write_header,
-    timecode_v2_write_packet,
+    write_header,
+    write_packet,
 };
