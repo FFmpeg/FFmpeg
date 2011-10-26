@@ -41,11 +41,11 @@ typedef struct PulseData {
     AVClass *class;
     char *server;
     char *name;
-    char *dev;
     char *stream_name;
     int  sample_rate;
     int  channels;
     int  frame_size;
+    int  fragment_size;
     pa_simple *s;
     int64_t pts;
 } PulseData;
@@ -72,6 +72,7 @@ static av_cold int pulse_read_header(AVFormatContext *s,
 {
     PulseData *pd = s->priv_data;
     AVStream *st;
+    char *device = NULL;
     int ret;
     enum CodecID codec_id =
         s->audio_codec_id == CODEC_ID_NONE ? DEFAULT_CODEC_ID : s->audio_codec_id;
@@ -88,12 +89,16 @@ static av_cold int pulse_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     }
 
-    attr.fragsize = pd->frame_size * 4;
+    attr.fragsize = pd->fragment_size;
+
+    if (strcmp(s->filename, "default"))
+        device = s->filename;
 
     pd->s = pa_simple_new(pd->server, pd->name,
                       PA_STREAM_RECORD,
-                      pd->dev, pd->stream_name, &ss,
+                      device, pd->stream_name, &ss,
                       NULL, &attr, &ret);
+
     if (!pd->s) {
         av_log(s, AV_LOG_ERROR, "pa_simple_new failed: %s\n",
                pa_strerror(ret));
@@ -106,6 +111,8 @@ static av_cold int pulse_read_header(AVFormatContext *s,
     st->codec->channels    = pd->channels;
     av_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
+    pd->pts = AV_NOPTS_VALUE;
+
     return 0;
 }
 
@@ -113,15 +120,13 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     PulseData *pd  = s->priv_data;
     int res;
-    pa_usec_t latency, cur;
+    pa_usec_t latency;
     uint64_t frame_duration =
         (pd->frame_size*1000000LL)/(pd->sample_rate * pd->channels);
 
     if (av_new_packet(pkt, pd->frame_size) < 0) {
         return AVERROR(ENOMEM);
     }
-
-    cur = pa_rtclock_now();
 
     if ((pa_simple_read(pd->s, pkt->data, pkt->size, &res)) < 0) {
         av_log(s, AV_LOG_ERROR, "pa_simple_read failed: %s\n",
@@ -136,15 +141,11 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
         return AVERROR(EIO);
     }
 
-    if (!pd->pts) {
-        pd->pts -= latency;
+    if (pd->pts == AV_NOPTS_VALUE) {
+        pd->pts = -latency;
     }
 
     pd->pts += frame_duration;
-
-    av_log(s, AV_LOG_DEBUG, "%"PRId64" time %"PRId64","
-                           " latency %"PRId64", %"PRId64"\n",
-           av_gettime(), cur, latency, pd->pts);
 
     pkt->pts = pd->pts;
 
@@ -162,13 +163,20 @@ static av_cold int pulse_close(AVFormatContext *s)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "server",      "pulse server name",   OFFSET(server),      AV_OPT_TYPE_STRING, {.str = NULL},    0, 0, D },
-    { "name",        "application name",    OFFSET(name),        AV_OPT_TYPE_STRING, {.str = "libav"}, 0, 0, D },
-    { "dev",         "device to use",       OFFSET(dev),         AV_OPT_TYPE_STRING, {.str = NULL},    0, 0, D },
-    { "stream_name", "stream description",  OFFSET(stream_name), AV_OPT_TYPE_STRING, {.str = "record"},    0, 0, D },
-    { "sample_rate", "",                    OFFSET(sample_rate), AV_OPT_TYPE_INT,    {.dbl = 48000},   1, INT_MAX, D },
-    { "channels",    "",                    OFFSET(channels),    AV_OPT_TYPE_INT,    {.dbl = 2},       1, INT_MAX, D },
-    { "frame_size",  "",                    OFFSET(frame_size),  AV_OPT_TYPE_INT,    {.dbl = 1024},    1, INT_MAX, D },
+    { "server",        "pulse server name",
+        OFFSET(server),        AV_OPT_TYPE_STRING, {.str = NULL},     0, 0, D },
+    { "name",          "application name",
+        OFFSET(name),          AV_OPT_TYPE_STRING, {.str = "libav"},  0, 0, D },
+    { "stream_name",   "stream description",
+        OFFSET(stream_name),   AV_OPT_TYPE_STRING, {.str = "record"}, 0, 0, D },
+    { "sample_rate",   "",
+        OFFSET(sample_rate),   AV_OPT_TYPE_INT,    {.dbl = 48000},    1, INT_MAX, D },
+    { "channels",      "",
+        OFFSET(channels),      AV_OPT_TYPE_INT,    {.dbl = 2},        1, INT_MAX, D },
+    { "frame_size",    "",
+        OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.dbl = 1024},     1, INT_MAX, D },
+    { "fragment_size", "buffering size, affects latency and cpu usage",
+        OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.dbl = -1},      -1, INT_MAX, D },
     { NULL },
 };
 
