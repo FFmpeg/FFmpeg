@@ -147,6 +147,18 @@ each of the YUV420P components. To read or write this image file format,
 specify the name of the '.Y' file. The muxer will automatically open the
 '.U' and '.V' files as required.
 
+@section mov
+
+MOV / MP4 muxer
+
+The muxer options are:
+
+@table @option
+@item -moov_size @var{bytes}
+Reserves space for the moov atom at the begin of the file instead of placing the
+moov atom at the end. If the space reserved is insufficient, muxing will fail.
+@end table
+
 @section mpegts
 
 MPEG transport stream muxer.
