@@ -102,6 +102,8 @@ typedef struct AVFilterBuffer {
 #define AV_PERM_NEG_LINESIZES 0x20  ///< the buffer requested can have negative linesizes
 #define AV_PERM_ALIGN    0x40   ///< the buffer must be aligned
 
+#define AVFILTER_ALIGN 16 //not part of ABI
+
 /**
  * Audio specific properties in a reference to an AVFilterBuffer. Since
  * AVFilterBufferRef is common to different media formats, audio specific
