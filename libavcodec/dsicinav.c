@@ -327,7 +327,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     CinAudioContext *cin = avctx->priv_data;
     const uint8_t *src = buf;
-    int16_t *samples = (int16_t *)data;
+    int16_t *samples = data;
 
     buf_size = FFMIN(buf_size, *data_size/2);
 
