@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "mathops.h"
 
 
 typedef enum CinVideoBitmapIndex {
@@ -339,7 +340,7 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
     delta = cin->delta;
     if (cin->initial_decode_frame) {
         cin->initial_decode_frame = 0;
-        delta = (int16_t)AV_RL16(buf);
+        delta = sign_extend(AV_RL16(buf), 16);
         buf += 2;
         *samples++ = delta;
     }
