@@ -216,11 +216,12 @@ sample rate for the audio frame
 if the packing format is planar, 0 if packed
 
 @item checksum
-Adler-32 checksum of all the planes of the input frame
+Adler-32 checksum (printed in hexadecimal) of all the planes of the input frame
 
 @item plane_checksum
-Adler-32 checksum for each input frame plane, expressed in the form
-"[@var{c0} @var{c1} @var{c2} @var{c3} @var{c4} @var{c5} @var{c6} @var{c7}]"
+Adler-32 checksum (printed in hexadecimal) for each input frame plane,
+expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3} @var{c4} @var{c5}
+@var{c6} @var{c7}]"
 @end table
 
 @c man end AUDIO FILTERS
@@ -2187,11 +2188,11 @@ the @code{av_get_picture_type_char} function defined in
 @file{libavutil/avutil.h}.
 
 @item checksum
-Adler-32 checksum of all the planes of the input frame
+Adler-32 checksum (printed in hexadecimal) of all the planes of the input frame
 
 @item plane_checksum
-Adler-32 checksum of each plane of the input frame, expressed in the form
-"[@var{c0} @var{c1} @var{c2} @var{c3}]"
+Adler-32 checksum (printed in hexadecimal) of each plane of the input frame,
+expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3}]"
 @end table
 
 @section slicify

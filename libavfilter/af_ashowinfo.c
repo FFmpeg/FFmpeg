@@ -65,7 +65,7 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *samplesref)
     av_log(ctx, AV_LOG_INFO,
            "n:%d pts:%"PRId64" pts_time:%f pos:%"PRId64" "
            "fmt:%s chlayout:%s nb_samples:%d rate:%d planar:%d "
-           "checksum:%u plane_checksum[%u %u %u %u %u %u %u %u]\n",
+           "checksum:%08X plane_checksum[%08X %08X %08X %08X %08X %08X %08X %08X]\n",
            showinfo->frame,
            samplesref->pts, samplesref->pts * av_q2d(inlink->time_base),
            samplesref->pos,
