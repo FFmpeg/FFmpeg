@@ -100,6 +100,7 @@ typedef struct AVFilterBuffer {
 #define AV_PERM_REUSE    0x08   ///< can output the buffer multiple times, with the same contents each time
 #define AV_PERM_REUSE2   0x10   ///< can output the buffer multiple times, modified each time
 #define AV_PERM_NEG_LINESIZES 0x20  ///< the buffer requested can have negative linesizes
+#define AV_PERM_ALIGN    0x40   ///< the buffer must be aligned
 
 /**
  * Audio specific properties in a reference to an AVFilterBuffer. Since
