@@ -295,11 +295,10 @@ static int16_t g726_encode(G726Context* c, int16_t sig)
     g726_decode(c, i);
     return i;
 }
-#endif
 
 /* Interfacing to the libavcodec */
 
-static av_cold int g726_init(AVCodecContext * avctx)
+static av_cold int g726_encode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
     unsigned int index;
@@ -311,7 +310,7 @@ static av_cold int g726_init(AVCodecContext * avctx)
 
     index = (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate - 2;
 
-    if (avctx->bit_rate % avctx->sample_rate && avctx->codec->encode) {
+    if (avctx->bit_rate % avctx->sample_rate) {
         av_log(avctx, AV_LOG_ERROR, "Bitrate - Samplerate combination is invalid\n");
         return -1;
     }
@@ -331,24 +330,19 @@ static av_cold int g726_init(AVCodecContext * avctx)
         return AVERROR(ENOMEM);
     avctx->coded_frame->key_frame = 1;
 
-    if (avctx->codec->decode)
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-
     /* select a frame size that will end on a byte boundary and have a size of
        approximately 1024 bytes */
-    if (avctx->codec->encode)
-        avctx->frame_size = ((int[]){ 4096, 2736, 2048, 1640 })[index];
+    avctx->frame_size = ((int[]){ 4096, 2736, 2048, 1640 })[index];
 
     return 0;
 }
 
-static av_cold int g726_close(AVCodecContext *avctx)
+static av_cold int g726_encode_close(AVCodecContext *avctx)
 {
     av_freep(&avctx->coded_frame);
     return 0;
 }
 
-#if CONFIG_ADPCM_G726_ENCODER
 static int g726_encode_frame(AVCodecContext *avctx,
                             uint8_t *dst, int buf_size, void *data)
 {
@@ -367,6 +361,34 @@ static int g726_encode_frame(AVCodecContext *avctx,
     return put_bits_count(&pb)>>3;
 }
 #endif
+
+static av_cold int g726_decode_init(AVCodecContext *avctx)
+{
+    G726Context* c = avctx->priv_data;
+    unsigned int index;
+
+    if (avctx->sample_rate <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Samplerate is invalid\n");
+        return -1;
+    }
+
+    index = (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate - 2;
+
+    if(avctx->channels != 1){
+        av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
+        return -1;
+    }
+    if(index>3){
+        av_log(avctx, AV_LOG_ERROR, "Unsupported number of bits %d\n", index+2);
+        return -1;
+    }
+    g726_reset(c, index);
+    c->code_size = index+2;
+
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
+    return 0;
+}
 
 static int g726_decode_frame(AVCodecContext *avctx,
                              void *data, int *data_size,
@@ -404,9 +426,9 @@ AVCodec ff_adpcm_g726_encoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_ADPCM_G726,
     .priv_data_size = sizeof(G726Context),
-    .init           = g726_init,
+    .init           = g726_encode_init,
     .encode         = g726_encode_frame,
-    .close          = g726_close,
+    .close          = g726_encode_close,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
@@ -418,8 +440,7 @@ AVCodec ff_adpcm_g726_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_ADPCM_G726,
     .priv_data_size = sizeof(G726Context),
-    .init           = g726_init,
-    .close          = g726_close,
+    .init           = g726_decode_init,
     .decode         = g726_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
