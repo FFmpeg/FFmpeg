@@ -529,15 +529,15 @@ static int dca_parse_frame_header(DCAContext * s)
     s->sample_blocks     = get_bits(&s->gb, 7) + 1;
     s->frame_size        = get_bits(&s->gb, 14) + 1;
     if (s->frame_size < 95)
-        return -1;
+        return AVERROR_INVALIDDATA;
     s->amode             = get_bits(&s->gb, 6);
     s->sample_rate       = dca_sample_rates[get_bits(&s->gb, 4)];
     if (!s->sample_rate)
-        return -1;
+        return AVERROR_INVALIDDATA;
     s->bit_rate_index    = get_bits(&s->gb, 5);
     s->bit_rate          = dca_bit_rates[s->bit_rate_index];
     if (!s->bit_rate)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     s->downmix           = get_bits(&s->gb, 1);
     s->dynrange          = get_bits(&s->gb, 1);
@@ -627,7 +627,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
     int j, k;
 
     if (get_bits_left(&s->gb) < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     if (!base_channel) {
         s->subsubframes[s->current_subframe] = get_bits(&s->gb, 2) + 1;
@@ -659,7 +659,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
             else if (s->bitalloc_huffman[j] == 7) {
                 av_log(s->avctx, AV_LOG_ERROR,
                        "Invalid bit allocation index\n");
-                return -1;
+                return AVERROR_INVALIDDATA;
             } else {
                 s->bitalloc[j][k] =
                     get_bitalloc(&s->gb, &dca_bitalloc_index, s->bitalloc_huffman[j]);
@@ -668,7 +668,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
             if (s->bitalloc[j][k] > 26) {
 //                 av_log(s->avctx,AV_LOG_DEBUG,"bitalloc index [%i][%i] too big (%i)\n",
 //                          j, k, s->bitalloc[j][k]);
-                return -1;
+                return AVERROR_INVALIDDATA;
             }
         }
     }
@@ -686,7 +686,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
     }
 
     if (get_bits_left(&s->gb) < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     for (j = base_channel; j < s->prim_channels; j++) {
         const uint32_t *scale_table;
@@ -724,7 +724,7 @@ static int dca_subframe_header(DCAContext * s, int base_channel, int block_index
     }
 
     if (get_bits_left(&s->gb) < 0)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     /* Scale factors for joint subband coding */
     for (j = base_channel; j < s->prim_channels; j++) {
@@ -1055,7 +1055,7 @@ static int decode_blockcode(int code, int levels, int *values)
         return 0;
     else {
         av_log(NULL, AV_LOG_ERROR, "ERROR: block code look-up failed\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 }
 
@@ -1095,7 +1095,7 @@ static int dca_subsubframe(DCAContext * s, int base_channel, int block_index)
 
     for (k = base_channel; k < s->prim_channels; k++) {
         if (get_bits_left(&s->gb) < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         for (l = 0; l < s->vq_start_subband[k]; l++) {
             int m;
@@ -1274,12 +1274,13 @@ static int dca_subframe_footer(DCAContext * s, int base_channel)
 
 static int dca_decode_block(DCAContext * s, int base_channel, int block_index)
 {
+    int ret;
 
     /* Sanity check */
     if (s->current_subframe >= s->subframes) {
         av_log(s->avctx, AV_LOG_DEBUG, "check failed: %i>%i",
                s->current_subframe, s->subframes);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (!s->current_subsubframe) {
@@ -1287,16 +1288,16 @@ static int dca_decode_block(DCAContext * s, int base_channel, int block_index)
         av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subframe_header\n");
 #endif
         /* Read subframe header */
-        if (dca_subframe_header(s, base_channel, block_index))
-            return -1;
+        if ((ret = dca_subframe_header(s, base_channel, block_index)))
+            return ret;
     }
 
     /* Read subsubframe */
 #ifdef TRACE
     av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subsubframe\n");
 #endif
-    if (dca_subsubframe(s, base_channel, block_index))
-        return -1;
+    if ((ret = dca_subsubframe(s, base_channel, block_index)))
+        return ret;
 
     /* Update state */
     s->current_subsubframe++;
@@ -1309,8 +1310,8 @@ static int dca_decode_block(DCAContext * s, int base_channel, int block_index)
         av_log(s->avctx, AV_LOG_DEBUG, "DSYNC dca_subframe_footer\n");
 #endif
         /* Read subframe footer */
-        if (dca_subframe_footer(s, base_channel))
-            return -1;
+        if ((ret = dca_subframe_footer(s, base_channel)))
+            return ret;
     }
 
     return 0;
@@ -1353,7 +1354,7 @@ static int dca_convert_bitstream(const uint8_t * src, int src_size, uint8_t * ds
         flush_put_bits(&pb);
         return (put_bits_count(&pb) + 7) >> 3;
     default:
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 }
 
@@ -1649,9 +1650,9 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
     s->dca_buffer_size = dca_convert_bitstream(buf, buf_size, s->dca_buffer,
                                                DCA_MAX_FRAME_SIZE + DCA_MAX_EXSS_HEADER_SIZE);
-    if (s->dca_buffer_size == -1) {
+    if (s->dca_buffer_size == AVERROR_INVALIDDATA) {
         av_log(avctx, AV_LOG_ERROR, "Not a valid DCA frame\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     init_get_bits(&s->gb, s->dca_buffer, s->dca_buffer_size * 8);
@@ -1798,7 +1799,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
         if (channels > !!s->lfe &&
             s->channel_order_tab[channels - 1 - !!s->lfe] < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         if (avctx->request_channels == 2 && s->prim_channels > 2) {
             channels = 2;
@@ -1807,7 +1808,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
         }
     } else {
         av_log(avctx, AV_LOG_ERROR, "Non standard configuration %d !\n",s->amode);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
 
@@ -1823,13 +1824,13 @@ static int dca_decode_frame(AVCodecContext * avctx,
     if (avctx->channels != channels) {
         av_log(avctx, AV_LOG_ERROR, "DCA decoder does not support number of "
                "channels changing in stream. Skipping frame.\n");
-        return -1;
+        return AVERROR_PATCHWELCOME;
     }
 
     out_size = 256 / 8 * s->sample_blocks * channels *
                av_get_bytes_per_sample(avctx->sample_fmt);
     if (*data_size < out_size)
-        return -1;
+        return AVERROR(EINVAL);
     *data_size = out_size;
 
     /* filter to get final output */
