@@ -377,16 +377,24 @@ static int g726_decode_frame(AVCodecContext *avctx,
     G726Context *c = avctx->priv_data;
     int16_t *samples = data;
     GetBitContext gb;
+    int out_samples, out_size;
+
+    out_samples = buf_size * 8 / c->code_size;
+    out_size    = out_samples * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     init_get_bits(&gb, buf, buf_size * 8);
 
-    while (get_bits_count(&gb) + c->code_size <= buf_size*8)
+    while (out_samples--)
         *samples++ = g726_decode(c, get_bits(&gb, c->code_size));
 
-    if(buf_size*8 != get_bits_count(&gb))
+    if (get_bits_left(&gb) > 0)
         av_log(avctx, AV_LOG_ERROR, "Frame invalidly split, missing parser?\n");
 
-    *data_size = (uint8_t*)samples - (uint8_t*)data;
+    *data_size = out_size;
     return buf_size;
 }
 
