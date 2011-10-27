@@ -215,7 +215,7 @@ static av_cold int init_cook_mlt(COOKContext *q) {
     int j;
     int mlt_size = q->samples_per_channel;
 
-    if ((q->mlt_window = av_malloc(sizeof(float)*mlt_size)) == 0)
+    if ((q->mlt_window = av_malloc(mlt_size * sizeof(*q->mlt_window))) == 0)
       return -1;
 
     /* Initialize the MLT window: simple sine window. */
@@ -405,9 +405,9 @@ static void categorize(COOKContext *q, COOKSubpacket *p, int* quant_index_table,
         //av_log(q->avctx, AV_LOG_ERROR, "bits_left = %d\n",bits_left);
     }
 
-    memset(&exp_index1,0,102*sizeof(int));
-    memset(&exp_index2,0,102*sizeof(int));
-    memset(&tmp_categorize_array,0,128*2*sizeof(int));
+    memset(&exp_index1,           0, sizeof(exp_index1));
+    memset(&exp_index2,           0, sizeof(exp_index2));
+    memset(&tmp_categorize_array, 0, sizeof(tmp_categorize_array));
 
     bias=-32;
 
@@ -628,8 +628,8 @@ static void mono_decode(COOKContext *q, COOKSubpacket *p, float* mlt_buffer) {
     int quant_index_table[102];
     int category[128];
 
-    memset(&category, 0, 128*sizeof(int));
-    memset(&category_index, 0, 128*sizeof(int));
+    memset(&category,       0, sizeof(category));
+    memset(&category_index, 0, sizeof(category_index));
 
     decode_envelope(q, p, quant_index_table);
     q->num_vectors = get_bits(&q->gb,p->log2_numvector_size);
@@ -728,7 +728,8 @@ static void imlt_gain(COOKContext *q, float *inbuffer,
     }
 
     /* Save away the current to be previous block. */
-    memcpy(previous_buffer, buffer0, sizeof(float)*q->samples_per_channel);
+    memcpy(previous_buffer, buffer0,
+           q->samples_per_channel * sizeof(*previous_buffer));
 }
 
 
@@ -806,11 +807,11 @@ static void joint_decode(COOKContext *q, COOKSubpacket *p, float* mlt_buffer1,
     const float* cplscale;
 
     memset(decouple_tab, 0, sizeof(decouple_tab));
-    memset(decode_buffer, 0, sizeof(decode_buffer));
+    memset(decode_buffer, 0, sizeof(q->decode_buffer_0));
 
     /* Make sure the buffers are zeroed out. */
-    memset(mlt_buffer1,0, 1024*sizeof(float));
-    memset(mlt_buffer2,0, 1024*sizeof(float));
+    memset(mlt_buffer1, 0, 1024 * sizeof(*mlt_buffer1));
+    memset(mlt_buffer2, 0, 1024 * sizeof(*mlt_buffer2));
     decouple_info(q, p, decouple_tab);
     mono_decode(q, p, decode_buffer);
 
