@@ -55,33 +55,56 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 
 static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    int ret, size, pts, type;
-retry:
-    type= avio_rb16(s->pb); // 257 or 258
-    size= avio_rb16(s->pb);
+    int ret, size, pts, type, flags;
+    int first_pkt      = 0;
+    int frame_complete = 0;
 
-    avio_rb16(s->pb); //some flags, 0x80 indicates end of frame
-    avio_rb16(s->pb); //packet number
-    pts=avio_rb32(s->pb);
-    avio_rb32(s->pb); //6A 13 E3 88
+    while (!frame_complete) {
 
-    size -= 12;
-    if(size<1)
-        return -1;
+        type  = avio_rb16(s->pb); // 257 or 258
+        size  = avio_rb16(s->pb);
+        flags = avio_rb16(s->pb); //some flags, 0x80 indicates end of frame
+                avio_rb16(s->pb); //packet number
+        pts   = avio_rb32(s->pb);
+                avio_rb32(s->pb); //6A 13 E3 88
 
-    if(type==258){
-        avio_skip(s->pb, size);
-        goto retry;
+        frame_complete = flags & 0x80;
+
+        size -= 12;
+        if (size < 1)
+            return -1;
+
+        if (type == 258) {
+            avio_skip(s->pb, size);
+            frame_complete = 0;
+            continue;
+        }
+
+        if (!first_pkt) {
+            ret = av_get_packet(s->pb, pkt, size);
+            if (ret < 0)
+                return ret;
+            first_pkt = 1;
+            pkt->pts  = pts;
+            pkt->pos -= 16;
+        } else {
+            ret = av_append_packet(s->pb, pkt, size);
+            if (ret < 0) {
+                av_log(s, AV_LOG_ERROR, "failed to grow packet\n");
+                av_free_packet(pkt);
+                return ret;
+            }
+        }
+        if (ret < size) {
+            av_log(s, AV_LOG_ERROR, "Truncated packet! Read %d of %d bytes\n",
+                   ret, size);
+            pkt->flags |= AV_PKT_FLAG_CORRUPT;
+            break;
+        }
     }
-
-    ret= av_get_packet(s->pb, pkt, size);
-
-    pkt->pts= pts;
-    pkt->pos-=16;
-
     pkt->stream_index = 0;
 
-    return ret;
+    return 0;
 }
 
 AVInputFormat ff_iv8_demuxer = {
