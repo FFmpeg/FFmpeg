@@ -658,14 +658,12 @@ static void interpolate_float(COOKContext *q, float* buffer,
         for(i=0 ; i<q->gain_size_factor ; i++){
             buffer[i]*=fc1;
         }
-        return;
     } else {                                        //smooth gain
         fc2 = q->gain_table[11 + (gain_index_next-gain_index)];
         for(i=0 ; i<q->gain_size_factor ; i++){
             buffer[i]*=fc1;
             fc1*=fc2;
         }
-        return;
     }
 }
 
