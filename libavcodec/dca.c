@@ -1668,7 +1668,10 @@ static int dca_decode_frame(AVCodecContext * avctx,
     s->profile = FF_PROFILE_DTS;
 
     for (i = 0; i < (s->sample_blocks / 8); i++) {
-        dca_decode_block(s, 0, i);
+        if ((ret = dca_decode_block(s, 0, i))) {
+            av_log(avctx, AV_LOG_ERROR, "error decoding block\n");
+            return ret;
+        }
     }
 
     /* record number of core channels incase less than max channels are requested */
@@ -1724,7 +1727,10 @@ static int dca_decode_frame(AVCodecContext * avctx,
             dca_parse_audio_coding_header(s, s->xch_base_channel);
 
             for (i = 0; i < (s->sample_blocks / 8); i++) {
-                dca_decode_block(s, s->xch_base_channel, i);
+                if ((ret = dca_decode_block(s, s->xch_base_channel, i))) {
+                    av_log(avctx, AV_LOG_ERROR, "error decoding XCh extension\n");
+                    continue;
+                }
             }
 
             s->xch_present = 1;
