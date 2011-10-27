@@ -324,32 +324,35 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     CinAudioContext *cin = avctx->priv_data;
-    const uint8_t *src = buf;
+    const uint8_t *buf_end = buf + avpkt->size;
     int16_t *samples = data;
-    int delta;
+    int delta, out_size;
 
-    buf_size = FFMIN(buf_size, *data_size/2);
+    out_size = (avpkt->size - cin->initial_decode_frame) *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     delta = cin->delta;
     if (cin->initial_decode_frame) {
         cin->initial_decode_frame = 0;
-        delta = (int16_t)AV_RL16(src); src += 2;
+        delta = (int16_t)AV_RL16(buf);
+        buf += 2;
         *samples++ = delta;
-        buf_size -= 2;
     }
-    while (buf_size > 0) {
-        delta += cinaudio_delta16_table[*src++];
+    while (buf < buf_end) {
+        delta += cinaudio_delta16_table[*buf++];
         delta = av_clip_int16(delta);
         *samples++ = delta;
-        --buf_size;
     }
     cin->delta = delta;
 
-    *data_size = (uint8_t *)samples - (uint8_t *)data;
+    *data_size = out_size;
 
-    return src - buf;
+    return avpkt->size;
 }
 
 
