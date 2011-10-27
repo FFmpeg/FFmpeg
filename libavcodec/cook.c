@@ -955,12 +955,19 @@ static int cook_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     COOKContext *q = avctx->priv_data;
-    int i;
+    int i, out_size;
     int offset = 0;
     int chidx = 0;
 
     if (buf_size < avctx->block_align)
         return buf_size;
+
+    out_size = q->nb_channels * q->samples_per_channel *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
     /* estimate subpacket sizes */
     q->subpacket[0].size = avctx->block_align;
@@ -984,8 +991,7 @@ static int cook_decode_frame(AVCodecContext *avctx,
         chidx += q->subpacket[i].num_channels;
         av_log(avctx,AV_LOG_DEBUG,"subpacket[%i] %i %i\n",i,q->subpacket[i].size * 8,get_bits_count(&q->gb));
     }
-    *data_size = q->nb_channels * q->samples_per_channel *
-                 av_get_bytes_per_sample(avctx->sample_fmt);
+    *data_size = out_size;
 
     /* Discard the first two frames: no valid audio. */
     if (avctx->frame_number < 2) *data_size = 0;
