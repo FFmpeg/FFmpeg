@@ -43,7 +43,6 @@ typedef struct CinVideoContext {
 } CinVideoContext;
 
 typedef struct CinAudioContext {
-    AVCodecContext *avctx;
     int initial_decode_frame;
     int delta;
 } CinAudioContext;
@@ -308,7 +307,6 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
 {
     CinAudioContext *cin = avctx->priv_data;
 
-    cin->avctx = avctx;
     cin->initial_decode_frame = 1;
     cin->delta = 0;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
