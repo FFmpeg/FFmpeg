@@ -20,12 +20,13 @@
  */
 
 /**
- * @file libavcodec/dirac_arith.c
+ * @file
  * Arithmetic decoder for Dirac
  * @author Marco Gerards <marco@gnu.org>
  */
 
 #include "dirac_arith.h"
+
 
 const uint16_t ff_dirac_prob[256] = {
     0,    2,    5,    8,    11,   15,   20,   24,

@@ -20,7 +20,7 @@
  */
 
 /**
- * @file libavcodec/dirac_arith.h
+ * @file
  * Arithmetic decoder for Dirac
  * @author Marco Gerards <marco@gnu.org>
  */
