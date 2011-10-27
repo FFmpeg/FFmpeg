@@ -20,7 +20,7 @@
 
 /**
  * @file
- * filter fow showing textual audio frame information
+ * filter for showing textual audio frame information
  */
 
 #include "libavutil/adler32.h"
