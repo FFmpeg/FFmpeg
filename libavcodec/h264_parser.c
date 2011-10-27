@@ -93,17 +93,28 @@ static int ff_h264_find_frame_end(H264Context *h, const uint8_t *buf, int buf_si
                     goto found;
                 }
             }else if(v==1 || v==2 || v==5){
-                if(pc->frame_start_found){
-                    state+=8;
-                    continue;
-                }else
-                    pc->frame_start_found = 1;
+                state+=8;
+                continue;
             }
             state= 7;
         }else{
-            if(buf[i] & 0x80)
-                goto found;
-            state= 7;
+            h->parse_history[h->parse_history_count++]= buf[i];
+            if(h->parse_history_count>3){
+                unsigned int mb, last_mb= h->parse_last_mb;
+                GetBitContext gb;
+
+                init_get_bits(&gb, h->parse_history, 8*h->parse_history_count);
+                h->parse_history_count=0;
+                mb= get_ue_golomb_long(&gb);
+                last_mb= h->parse_last_mb;
+                h->parse_last_mb= mb;
+                if(pc->frame_start_found){
+                    if(mb <= last_mb)
+                        goto found;
+                }else
+                    pc->frame_start_found = 1;
+                state= 7;
+            }
         }
     }
     pc->state= state;
@@ -116,7 +127,7 @@ found:
     pc->frame_start_found= 0;
     if(h->is_avc)
         return next_avc;
-    return i-(state&5);
+    return i-(state&5) - 3*(state>7);
 }
 
 /**

@@ -591,6 +591,10 @@ typedef struct H264Context{
     int16_t slice_row[MAX_SLICES]; ///< to detect when MAX_SLICES is too low
 
     int sync;                      ///< did we had a keyframe or recovery point
+
+    uint8_t parse_history[4];
+    int parse_history_count;
+    int parse_last_mb;
 }H264Context;
 
 
