@@ -224,8 +224,10 @@ AVResampleContext *swr_resample_init(AVResampleContext *c, int out_rate, int in_
     }
 
     c->compensation_distance= 0;
-    c->src_incr= out_rate;
-    c->ideal_dst_incr= c->dst_incr= in_rate * phase_count;
+    if(!av_reduce(&c->src_incr, &c->dst_incr, out_rate, in_rate * (int64_t)phase_count, INT32_MAX/2))
+        goto error;
+    c->ideal_dst_incr= c->dst_incr;
+
     c->index= -phase_count*((c->filter_length-1)/2);
     c->frac= 0;
 

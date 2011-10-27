@@ -207,8 +207,10 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
     memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
     c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
 
-    c->src_incr= out_rate;
-    c->ideal_dst_incr= c->dst_incr= in_rate * phase_count;
+    if(!av_reduce(&c->src_incr, &c->dst_incr, out_rate, in_rate * (int64_t)phase_count, INT32_MAX/2))
+        goto error;
+    c->ideal_dst_incr= c->dst_incr;
+
     c->index= -phase_count*((c->filter_length-1)/2);
 
     return c;
