@@ -587,7 +587,8 @@ static int flac_decode_frame(AVCodecContext *avctx,
     bytes_read = (get_bits_count(&s->gb)+7)/8;
 
     /* check if allocated data size is large enough for output */
-    output_size = s->blocksize * s->channels * (s->is32 ? 4 : 2);
+    output_size = s->blocksize * s->channels *
+                  av_get_bytes_per_sample(avctx->sample_fmt);
     if (output_size > alloc_data_size) {
         av_log(s->avctx, AV_LOG_ERROR, "output data size is larger than "
                                        "allocated data size\n");
