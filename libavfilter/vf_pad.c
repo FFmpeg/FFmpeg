@@ -251,9 +251,10 @@ static int config_output(AVFilterLink *outlink)
 static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int w, int h)
 {
     PadContext *pad = inlink->dst->priv;
+    int align = (perms&AV_PERM_ALIGN) ? AVFILTER_ALIGN : 1;
 
     AVFilterBufferRef *picref = avfilter_get_video_buffer(inlink->dst->outputs[0], perms,
-                                                       w + (pad->w - pad->in_w),
+                                                       w + (pad->w - pad->in_w) + 4*align,
                                                        h + (pad->h - pad->in_h));
     int plane;
 
@@ -264,7 +265,7 @@ static AVFilterBufferRef *get_video_buffer(AVFilterLink *inlink, int perms, int 
         int hsub = (plane == 1 || plane == 2) ? pad->hsub : 0;
         int vsub = (plane == 1 || plane == 2) ? pad->vsub : 0;
 
-        picref->data[plane] += (pad->x >> hsub) * pad->line_step[plane] +
+        picref->data[plane] += FFALIGN(pad->x >> hsub, align) * pad->line_step[plane] +
             (pad->y >> vsub) * picref->linesize[plane];
     }
 
