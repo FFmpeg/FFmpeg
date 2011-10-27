@@ -1637,7 +1637,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
 
     int lfe_samples;
     int num_core_channels = 0;
-    int i;
+    int i, ret;
     float   *samples_flt = data;
     int16_t *samples_s16 = data;
     int out_size;
@@ -1656,10 +1656,9 @@ static int dca_decode_frame(AVCodecContext * avctx,
     }
 
     init_get_bits(&s->gb, s->dca_buffer, s->dca_buffer_size * 8);
-    if (dca_parse_frame_header(s) < 0) {
+    if ((ret = dca_parse_frame_header(s)) < 0) {
         //seems like the frame is corrupt, try with the next one
-        *data_size=0;
-        return buf_size;
+        return ret;
     }
     //set AVCodec values with parsed data
     avctx->sample_rate = s->sample_rate;
