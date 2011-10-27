@@ -975,7 +975,6 @@ static int cook_decode_frame(AVCodecContext *avctx,
     }
 
     /* decode supbackets */
-    *data_size = 0;
     for(i=0;i<q->num_subpackets;i++){
         q->subpacket[i].bits_per_subpacket = (q->subpacket[i].size*8)>>q->subpacket[i].bits_per_subpdiv;
         q->subpacket[i].ch_idx = chidx;
