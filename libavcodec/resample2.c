@@ -248,10 +248,9 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             dst[dst_index] = src[index2>>32];
             index2 += incr;
         }
-        frac += dst_index * dst_incr_frac;
         index += dst_index * dst_incr;
-        index += frac / c->src_incr;
-        frac %= c->src_incr;
+        index += (frac + dst_index * (int64_t)dst_incr_frac) / c->src_incr;
+        frac   = (frac + dst_index * (int64_t)dst_incr_frac) % c->src_incr;
   }else{
     for(dst_index=0; dst_index < dst_size; dst_index++){
         FELEM *filter= c->filter_bank + c->filter_length*(index & c->phase_mask);
