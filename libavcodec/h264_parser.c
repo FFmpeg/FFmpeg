@@ -185,7 +185,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
             s->key_frame = 1;
             /* fall through */
         case NAL_SLICE:
-            get_ue_golomb(&h->s.gb);  // skip first_mb_in_slice
+            get_ue_golomb_long(&h->s.gb);  // skip first_mb_in_slice
             slice_type = get_ue_golomb_31(&h->s.gb);
             s->pict_type = golomb_to_pict_type[slice_type % 5];
             if (h->sei_recovery_frame_cnt >= 0) {

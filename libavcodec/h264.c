@@ -2632,7 +2632,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         s->me.qpel_avg= s->dsp.avg_h264_qpel_pixels_tab;
     }
 
-    first_mb_in_slice= get_ue_golomb(&s->gb);
+    first_mb_in_slice= get_ue_golomb_long(&s->gb);
 
     if(first_mb_in_slice == 0){ //FIXME better field boundary detection
         if(h0->current_slice && FIELD_PICTURE){
