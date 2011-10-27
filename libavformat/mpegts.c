@@ -961,15 +961,17 @@ int ff_parse_mpeg2_descriptor(AVFormatContext *fc, AVStream *st, int stream_type
     switch(desc_tag) {
     case 0x1F: /* FMC descriptor */
         get16(pp, desc_end);
-        if (st->codec->codec_id == CODEC_ID_AAC_LATM &&
+        if ((st->codec->codec_id == CODEC_ID_AAC_LATM || st->request_probe>0) &&
             mp4_dec_config_descr_len && mp4_es_id == pid) {
             AVIOContext pb;
             ffio_init_context(&pb, mp4_dec_config_descr,
                           mp4_dec_config_descr_len, 0, NULL, NULL, NULL, NULL);
             ff_mp4_read_dec_config_descr(fc, st, &pb);
             if (st->codec->codec_id == CODEC_ID_AAC &&
-                st->codec->extradata_size > 0)
-                st->need_parsing = 0;
+                st->codec->extradata_size > 0){
+                st->request_probe= st->need_parsing = 0;
+                st->codec->codec_type= AVMEDIA_TYPE_AUDIO;
+            }
         }
         break;
     case 0x56: /* DVB teletext descriptor */
