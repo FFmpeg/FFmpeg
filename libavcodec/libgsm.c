@@ -175,7 +175,6 @@ static int libgsm_decode_frame(AVCodecContext *avctx,
         return AVERROR(EINVAL);
     }
 
-    *data_size = 0; /* In case of error */
     if(buf_size < avctx->block_align) return -1;
     switch(avctx->codec_id) {
     case CODEC_ID_GSM:
