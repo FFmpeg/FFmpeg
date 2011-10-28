@@ -376,7 +376,7 @@ static int decodeTonalComponents (GetBitContext *gb, tonal_component *pComponent
 
     coding_mode_selector = get_bits(gb,2);
     if (coding_mode_selector == 2)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     coding_mode = coding_mode_selector & 1;
 
@@ -388,7 +388,7 @@ static int decodeTonalComponents (GetBitContext *gb, tonal_component *pComponent
 
         quant_step_index = get_bits(gb,3);
         if (quant_step_index <= 1)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         if (coding_mode_selector == 3)
             coding_mode = get_bits1(gb);
@@ -451,7 +451,7 @@ static int decodeGainControl (GetBitContext *gb, gain_block *pGb, int numBands)
             pLevel[cf]= get_bits(gb,4);
             pLoc  [cf]= get_bits(gb,5);
             if(cf && pLoc[cf] <= pLoc[cf-1])
-                return -1;
+                return AVERROR_INVALIDDATA;
         }
     }
 
@@ -668,12 +668,12 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
     if (codingMode == JOINT_STEREO && channelNum == 1) {
         if (get_bits(gb,2) != 3) {
             av_log(NULL,AV_LOG_ERROR,"JS mono Sound Unit id != 3.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     } else {
         if (get_bits(gb,6) != 0x28) {
             av_log(NULL,AV_LOG_ERROR,"Sound Unit id != 0x28.\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
     }
 
@@ -760,7 +760,7 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
         ptr1 = q->decoded_bytes_buffer;
         for (i = 4; *ptr1 == 0xF8; i++, ptr1++) {
             if (i >= q->bytes_per_frame)
-                return -1;
+                return AVERROR_INVALIDDATA;
         }
 
 
@@ -858,7 +858,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
 
     if (result != 0) {
         av_log(NULL,AV_LOG_ERROR,"Frame decoding error!\n");
-        return -1;
+        return result;
     }
 
     /* interleave */
@@ -917,7 +917,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         if ((q->bytes_per_frame == 96*q->channels*q->frame_factor) || (q->bytes_per_frame == 152*q->channels*q->frame_factor) || (q->bytes_per_frame == 192*q->channels*q->frame_factor)) {
         } else {
             av_log(avctx,AV_LOG_ERROR,"Unknown frame/channel/frame_factor configuration %d/%d/%d\n", q->bytes_per_frame, q->channels, q->frame_factor);
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
 
     } else if (avctx->extradata_size == 10) {
@@ -937,17 +937,17 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     if (q->atrac3version != 4) {
         av_log(avctx,AV_LOG_ERROR,"Version %d != 4.\n",q->atrac3version);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (q->samples_per_frame != SAMPLES_PER_FRAME && q->samples_per_frame != SAMPLES_PER_FRAME*2) {
         av_log(avctx,AV_LOG_ERROR,"Unknown amount of samples per frame %d.\n",q->samples_per_frame);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (q->delay != 0x88E) {
         av_log(avctx,AV_LOG_ERROR,"Unknown amount of delay %x != 0x88E.\n",q->delay);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (q->codingMode == STEREO) {
@@ -956,17 +956,17 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         av_log(avctx,AV_LOG_DEBUG,"Joint stereo detected.\n");
     } else {
         av_log(avctx,AV_LOG_ERROR,"Unknown channel coding mode %x!\n",q->codingMode);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     if (avctx->channels <= 0 || avctx->channels > 2 /*|| ((avctx->channels * 1024) != q->samples_per_frame)*/) {
         av_log(avctx,AV_LOG_ERROR,"Channel configuration error!\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
 
     if(avctx->block_align >= UINT_MAX/2)
-        return -1;
+        return AVERROR(EINVAL);
 
     /* Pad the data buffer with FF_INPUT_BUFFER_PADDING_SIZE,
      * this is for the bitstream reader. */
