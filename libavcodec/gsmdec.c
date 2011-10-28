@@ -87,6 +87,12 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->block_align;
 }
 
+static void gsm_flush(AVCodecContext *avctx)
+{
+    GSMContext *s = avctx->priv_data;
+    memset(s, 0, sizeof(*s));
+}
+
 AVCodec ff_gsm_decoder = {
     .name           = "gsm",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -94,6 +100,7 @@ AVCodec ff_gsm_decoder = {
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
+    .flush          = gsm_flush,
     .long_name = NULL_IF_CONFIG_SMALL("GSM"),
 };
 
@@ -104,5 +111,6 @@ AVCodec ff_gsm_ms_decoder = {
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
+    .flush          = gsm_flush,
     .long_name = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
 };
