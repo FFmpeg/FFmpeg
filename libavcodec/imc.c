@@ -104,7 +104,7 @@ static VLC_TYPE vlc_tables[VLC_TABLES_SIZE][2];
 
 static av_cold int imc_decode_init(AVCodecContext * avctx)
 {
-    int i, j;
+    int i, j, ret;
     IMCContext *q = avctx->priv_data;
     double r1, r2;
 
@@ -156,7 +156,10 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
     }
     q->one_div_log2 = 1/log(2);
 
-    ff_fft_init(&q->fft, 7, 1);
+    if ((ret = ff_fft_init(&q->fft, 7, 1))) {
+        av_log(avctx, AV_LOG_INFO, "FFT init failed\n");
+        return ret;
+    }
     dsputil_init(&q->dsp, avctx);
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
