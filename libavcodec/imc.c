@@ -167,7 +167,7 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
     }
     dsputil_init(&q->dsp, avctx);
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-    avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+    avctx->channel_layout = AV_CH_LAYOUT_MONO;
     return 0;
 }
 
