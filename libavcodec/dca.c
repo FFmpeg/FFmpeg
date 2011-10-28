@@ -293,7 +293,6 @@ typedef struct {
 
     /* Primary audio coding header */
     int subframes;              ///< number of subframes
-    int is_channels_set;        ///< check for if the channel number is already set
     int total_channels;         ///< number of channels including extensions
     int prim_channels;          ///< number of primary audio channels
     int subband_activity[DCA_PRIM_CHANNELS_MAX];    ///< subband activity count
