@@ -657,6 +657,7 @@ typedef struct AVStream {
         int duration_count;
         double duration_error[MAX_STD_TIMEBASES];
         int64_t codec_info_duration;
+        int nb_decoded_frames;
     } *info;
 #if !FF_API_REORDER_PRIVATE
     const uint8_t *cur_ptr;
