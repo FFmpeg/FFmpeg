@@ -49,8 +49,11 @@ static av_cold int MP3lame_encode_init(AVCodecContext *avctx)
 {
     Mp3AudioContext *s = avctx->priv_data;
 
-    if (avctx->channels > 2)
-        return -1;
+    if (avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Invalid number of channels %d, must be <= 2\n", avctx->channels);
+        return AVERROR(EINVAL);
+    }
 
     s->stereo = avctx->channels > 1 ? 1 : 0;
 
