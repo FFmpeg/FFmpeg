@@ -24,5 +24,6 @@ LIBAVFORMAT_$MAJOR {
                 udp_set_remote_url;
                 udp_get_local_port;
                 init_checksum;
+                init_put_byte;
         local: *;
 };
