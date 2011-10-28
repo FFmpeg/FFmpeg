@@ -22,6 +22,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include <limits.h>
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "get_bits.h"
 #include "put_bits.h"
@@ -309,10 +310,7 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
                "Resample or reduce the compliance level.\n");
         return AVERROR(EINVAL);
     }
-    if (avctx->sample_rate <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Samplerate is invalid\n");
-        return -1;
-    }
+    av_assert0(avctx->sample_rate > 0);
 
     if(avctx->channels != 1){
         av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
