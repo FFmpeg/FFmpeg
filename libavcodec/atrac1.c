@@ -131,7 +131,7 @@ static int at1_imdct_block(AT1SUCtx* su, AT1Ctx *q)
             nbits = mdct_long_nbits[band_num] - log2_block_count;
 
             if (nbits != 5 && nbits != 7 && nbits != 8)
-                return -1;
+                return AVERROR_INVALIDDATA;
         } else {
             block_size = 32;
             nbits = 5;
@@ -175,14 +175,14 @@ static int at1_parse_bsm(GetBitContext* gb, int log2_block_cnt[AT1_QMF_BANDS])
         /* low and mid band */
         log2_block_count_tmp = get_bits(gb, 2);
         if (log2_block_count_tmp & 1)
-            return -1;
+            return AVERROR_INVALIDDATA;
         log2_block_cnt[i] = 2 - log2_block_count_tmp;
     }
 
     /* high band */
     log2_block_count_tmp = get_bits(gb, 2);
     if (log2_block_count_tmp != 0 && log2_block_count_tmp != 3)
-        return -1;
+        return AVERROR_INVALIDDATA;
     log2_block_cnt[IDX_HIGH_BAND] = 3 - log2_block_count_tmp;
 
     skip_bits(gb, 2);
@@ -231,7 +231,7 @@ static int at1_unpack_dequant(GetBitContext* gb, AT1SUCtx* su,
 
             /* check for bitstream overflow */
             if (bits_used > AT1_SU_MAX_BITS)
-                return -1;
+                return AVERROR_INVALIDDATA;
 
             /* get the position of the 1st spec according to the block size mode */
             pos = su->log2_block_count[band_num] ? bfu_start_short[bfu_num] : bfu_start_long[bfu_num];
@@ -285,7 +285,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
 
     if (buf_size < 212 * q->channels) {
         av_log(q,AV_LOG_ERROR,"Not enough data to decode!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     out_size = q->channels * AT1_SU_SAMPLES *
