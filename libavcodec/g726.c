@@ -302,6 +302,13 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
 
+    if (avctx->strict_std_compliance > FF_COMPLIANCE_UNOFFICIAL &&
+        avctx->sample_rate != 8000) {
+        av_log(avctx, AV_LOG_ERROR, "Sample rates other than 8kHz are not "
+               "allowed when the compliance level is higher than unofficial. "
+               "Resample or reduce the compliance level.\n");
+        return AVERROR(EINVAL);
+    }
     if (avctx->sample_rate <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Samplerate is invalid\n");
         return -1;
@@ -365,6 +372,14 @@ static int g726_encode_frame(AVCodecContext *avctx,
 static av_cold int g726_decode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
+
+    if (avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT &&
+        avctx->sample_rate != 8000) {
+        av_log(avctx, AV_LOG_ERROR, "Only 8kHz sample rate is allowed when "
+               "the compliance level is strict. Reduce the compliance level "
+               "if you wish to decode the stream anyway.\n");
+        return AVERROR(EINVAL);
+    }
 
     if(avctx->channels != 1){
         av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
