@@ -196,7 +196,7 @@ static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
 }
 
 
-static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
+static av_cold int init_atrac3_transforms(ATRAC3Context *q) {
     float enc_window[256];
     int i;
 
@@ -212,7 +212,7 @@ static av_cold void init_atrac3_transforms(ATRAC3Context *q) {
         }
 
     /* Initialize the MDCT transform. */
-    ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0 / 32768);
+    return ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0 / 32768);
 }
 
 /**
@@ -880,7 +880,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
 
 static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 {
-    int i;
+    int i, ret;
     const uint8_t *edata_ptr = avctx->extradata;
     ATRAC3Context *q = avctx->priv_data;
     static VLC_TYPE atrac3_vlc_table[4096][2];
@@ -986,7 +986,11 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         vlcs_initialized = 1;
     }
 
-    init_atrac3_transforms(q);
+    if ((ret = init_atrac3_transforms(q))) {
+        av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
+        av_freep(&q->decoded_bytes_buffer);
+        return ret;
+    }
 
     atrac_generate_tables();
 
@@ -1016,7 +1020,7 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
 
     q->pUnits = av_mallocz(sizeof(channel_unit)*q->channels);
     if (!q->pUnits) {
-        av_free(q->decoded_bytes_buffer);
+        atrac3_decode_close(avctx);
         return AVERROR(ENOMEM);
     }
 
