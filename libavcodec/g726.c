@@ -270,11 +270,11 @@ static int16_t g726_decode(G726Context* c, int I)
     return av_clip(re_signal << 2, -0xffff, 0xffff);
 }
 
-static av_cold int g726_reset(G726Context* c, int index)
+static av_cold int g726_reset(G726Context *c)
 {
     int i;
 
-    c->tbls = G726Tables_pool[index];
+    c->tbls = G726Tables_pool[c->code_size - 2];
     for (i=0; i<2; i++) {
         c->sr[i].mant = 1<<5;
         c->pk[i] = 1;
@@ -327,7 +327,7 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
     avctx->bit_rate = c->code_size * avctx->sample_rate;
     avctx->bits_per_coded_sample = c->code_size;
 
-    g726_reset(c, c->code_size - 2);
+    g726_reset(c);
 
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame)
@@ -423,7 +423,7 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Invalid number of bits %d\n", c->code_size);
         return AVERROR(EINVAL);
     }
-    g726_reset(c, c->code_size - 2);
+    g726_reset(c);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
