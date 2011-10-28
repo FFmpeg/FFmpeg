@@ -314,7 +314,7 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
 
     if(avctx->channels != 1){
         av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     if (avctx->bit_rate % avctx->sample_rate) {
@@ -381,7 +381,7 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
 
     if(avctx->channels != 1){
         av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
-        return -1;
+        return AVERROR(EINVAL);
     }
 
     c->code_size = avctx->bits_per_coded_sample;
