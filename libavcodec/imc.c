@@ -108,6 +108,11 @@ static av_cold int imc_decode_init(AVCodecContext * avctx)
     IMCContext *q = avctx->priv_data;
     double r1, r2;
 
+    if (avctx->channels != 1) {
+        av_log_ask_for_sample(avctx, "Number of channels is not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     q->decoder_reset = 1;
 
     for(i = 0; i < BANDS; i++)
