@@ -655,14 +655,14 @@ static int imc_decode_frame(AVCodecContext * avctx,
     int flag;
     int bits, summer;
     int counter, bitscount;
-    uint16_t buf16[IMC_BLOCK_SIZE / 2];
+    LOCAL_ALIGNED_16(uint16_t, buf16, [IMC_BLOCK_SIZE / 2]);
 
     if (buf_size < IMC_BLOCK_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "imc frame too small!\n");
         return -1;
     }
-    for(i = 0; i < IMC_BLOCK_SIZE / 2; i++)
-        buf16[i] = av_bswap16(((const uint16_t*)buf)[i]);
+
+    q->dsp.bswap16_buf(buf16, (const uint16_t*)buf, IMC_BLOCK_SIZE / 2);
 
     q->out_samples = data;
     init_get_bits(&q->gb, (const uint8_t*)buf16, IMC_BLOCK_SIZE * 8);
