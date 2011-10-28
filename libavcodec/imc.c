@@ -651,7 +651,7 @@ static int imc_decode_frame(AVCodecContext * avctx,
     IMCContext *q = avctx->priv_data;
 
     int stream_format_code;
-    int imc_hdr, i, j;
+    int imc_hdr, i, j, out_size;
     int flag;
     int bits, summer;
     int counter, bitscount;
@@ -660,6 +660,12 @@ static int imc_decode_frame(AVCodecContext * avctx,
     if (buf_size < IMC_BLOCK_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "imc frame too small!\n");
         return -1;
+    }
+
+    out_size = COEFFS * av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
     }
 
     q->dsp.bswap16_buf(buf16, (const uint16_t*)buf, IMC_BLOCK_SIZE / 2);
@@ -808,7 +814,7 @@ static int imc_decode_frame(AVCodecContext * avctx,
 
     imc_imdct256(q);
 
-    *data_size = COEFFS * sizeof(float);
+    *data_size = out_size;
 
     return IMC_BLOCK_SIZE;
 }
