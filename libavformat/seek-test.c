@@ -81,6 +81,7 @@ int main(int argc, char **argv)
     filename = argv[1];
 
     ret = avformat_open_input(&ic, filename, NULL, &format_opts);
+    av_dict_free(&format_opts);
     if (ret < 0) {
         fprintf(stderr, "cannot open %s\n", filename);
         exit(1);
