@@ -194,6 +194,11 @@ static int libgsm_decode_frame(AVCodecContext *avctx,
     return avctx->block_align;
 }
 
+static void libgsm_flush(AVCodecContext *avctx) {
+    gsm_destroy(avctx->priv_data);
+    avctx->priv_data = gsm_create();
+}
+
 AVCodec ff_libgsm_decoder = {
     .name           = "libgsm",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -201,6 +206,7 @@ AVCodec ff_libgsm_decoder = {
     .init           = libgsm_decode_init,
     .close          = libgsm_decode_close,
     .decode         = libgsm_decode_frame,
+    .flush          = libgsm_flush,
     .long_name = NULL_IF_CONFIG_SMALL("libgsm GSM"),
 };
 
@@ -211,5 +217,6 @@ AVCodec ff_libgsm_ms_decoder = {
     .init           = libgsm_decode_init,
     .close          = libgsm_decode_close,
     .decode         = libgsm_decode_frame,
+    .flush          = libgsm_flush,
     .long_name = NULL_IF_CONFIG_SMALL("libgsm GSM Microsoft variant"),
 };
