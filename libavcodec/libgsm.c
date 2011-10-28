@@ -166,8 +166,11 @@ static av_cold int libgsm_decode_close(AVCodecContext *avctx) {
 static int libgsm_decode_frame(AVCodecContext *avctx,
                                void *data, int *data_size,
                                AVPacket *avpkt) {
+    int i, ret;
+    struct gsm_state *s = avctx->priv_data;
     uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
+    int16_t *samples = data;
     int out_size = avctx->frame_size * av_get_bytes_per_sample(avctx->sample_fmt);
 
     if (*data_size < out_size) {
@@ -180,13 +183,11 @@ static int libgsm_decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    switch(avctx->codec_id) {
-    case CODEC_ID_GSM:
-        if(gsm_decode(avctx->priv_data,buf,data)) return -1;
-        break;
-    case CODEC_ID_GSM_MS:
-        if(gsm_decode(avctx->priv_data,buf,data) ||
-           gsm_decode(avctx->priv_data,buf+33,((int16_t*)data)+GSM_FRAME_SIZE)) return -1;
+    for (i = 0; i < avctx->frame_size / GSM_FRAME_SIZE; i++) {
+        if ((ret = gsm_decode(s, buf, samples)) < 0)
+            return -1;
+        buf     += GSM_BLOCK_SIZE;
+        samples += GSM_FRAME_SIZE;
     }
 
     *data_size = out_size;
