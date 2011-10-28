@@ -1815,7 +1815,7 @@ static int dca_decode_frame(AVCodecContext * avctx,
         return -1;
     }
 
-    if (avctx->channels != channels) {
+    if (avctx->channels && avctx->channels != channels) {
         av_log(avctx, AV_LOG_INFO, "Number of channels changed in DCA decoder (%d -> %d)\n", avctx->channels, channels);
         avctx->channels = channels;
     }
