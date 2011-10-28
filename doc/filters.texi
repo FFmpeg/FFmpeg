@@ -1631,10 +1631,10 @@ Overlay one video on top of another.
 It takes two inputs and one output, the first input is the "main"
 video on which the second input is overlayed.
 
-It accepts the parameters: @var{x}:@var{y}.
+It accepts the parameters: @var{x}:@var{y}[:@var{options}].
 
 @var{x} is the x coordinate of the overlayed video on the main video,
-@var{y} is the y coordinate. The parameters are expressions containing
+@var{y} is the y coordinate. @var{x} and @var{y} are expressions containing
 the following parameters:
 
 @table @option
@@ -1649,6 +1649,17 @@ overlay input width and height
 
 @item w, h
 same as @var{overlay_w} and @var{overlay_h}
+@end table
+
+@var{options} is an optional list of @var{key}=@var{value} pairs,
+separated by ":".
+
+The description of the accepted options follows.
+
+@table @option
+@item rgb
+If set to 1, force the filter to accept inputs in the RGB
+colorspace. Default value is 0.
 @end table
 
 Be aware that frames are taken from each input video in timestamp

@@ -33,6 +33,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/mathematics.h"
 #include "internal.h"
+#include "drawutils.h"
 
 static const char *var_names[] = {
     "main_w",    "W", ///< width  of the main    video
@@ -53,13 +54,31 @@ enum var_name {
 #define MAIN    0
 #define OVERLAY 1
 
+#define R 0
+#define G 1
+#define B 2
+#define A 3
+
+#define Y 0
+#define U 1
+#define V 2
+
 typedef struct {
     const AVClass *class;
     int x, y;                   ///< position of overlayed picture
 
+    int allow_packed_rgb;
+    uint8_t main_is_packed_rgb;
+    uint8_t main_rgba_map[4];
+    uint8_t main_has_alpha;
+    uint8_t overlay_is_packed_rgb;
+    uint8_t overlay_rgba_map[4];
+    uint8_t overlay_has_alpha;
+
     AVFilterBufferRef *overpicref;
 
-    int max_plane_step[4];      ///< steps per pixel for each plane
+    int main_pix_step[4];       ///< steps per pixel for each plane of the main output
+    int overlay_pix_step[4];    ///< steps per pixel for each plane of the overlay
     int hsub, vsub;             ///< chroma subsampling values
 
     char *x_expr, *y_expr;
@@ -70,6 +89,7 @@ typedef struct {
 static const AVOption overlay_options[] = {
     { "x", "set the x expression", OFFSET(x_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX },
     { "y", "set the y expression", OFFSET(y_expr), AV_OPT_TYPE_STRING, {.str = "0"}, CHAR_MIN, CHAR_MAX },
+    {"rgb", "force packed RGB in input and output", OFFSET(allow_packed_rgb), AV_OPT_TYPE_INT, {.dbl=0}, 0, 1 },
     {NULL},
 };
 
@@ -128,27 +148,59 @@ static av_cold void uninit(AVFilterContext *ctx)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    const enum PixelFormat inout_pix_fmts[] = { PIX_FMT_YUV420P,  PIX_FMT_NONE };
-    const enum PixelFormat blend_pix_fmts[] = { PIX_FMT_YUVA420P, PIX_FMT_NONE };
-    AVFilterFormats *inout_formats = avfilter_make_format_list(inout_pix_fmts);
-    AVFilterFormats *blend_formats = avfilter_make_format_list(blend_pix_fmts);
+    OverlayContext *over = ctx->priv;
 
-    avfilter_formats_ref(inout_formats, &ctx->inputs [MAIN   ]->out_formats);
-    avfilter_formats_ref(blend_formats, &ctx->inputs [OVERLAY]->out_formats);
-    avfilter_formats_ref(inout_formats, &ctx->outputs[MAIN   ]->in_formats );
+    /* overlay formats contains alpha, for avoiding conversion with alpha information loss */
+    const enum PixelFormat main_pix_fmts_yuv[] = { PIX_FMT_YUV420P,  PIX_FMT_NONE };
+    const enum PixelFormat overlay_pix_fmts_yuv[] = { PIX_FMT_YUVA420P, PIX_FMT_NONE };
+    const enum PixelFormat main_pix_fmts_rgb[] = {
+        PIX_FMT_ARGB,  PIX_FMT_RGBA,
+        PIX_FMT_ABGR,  PIX_FMT_BGRA,
+        PIX_FMT_RGB24, PIX_FMT_BGR24,
+        PIX_FMT_NONE
+    };
+    const enum PixelFormat overlay_pix_fmts_rgb[] = {
+        PIX_FMT_ARGB,  PIX_FMT_RGBA,
+        PIX_FMT_ABGR,  PIX_FMT_BGRA,
+        PIX_FMT_NONE
+    };
+
+    AVFilterFormats *main_formats;
+    AVFilterFormats *overlay_formats;
+
+    if (over->allow_packed_rgb) {
+        main_formats    = avfilter_make_format_list(main_pix_fmts_rgb);
+        overlay_formats = avfilter_make_format_list(overlay_pix_fmts_rgb);
+    } else {
+        main_formats    = avfilter_make_format_list(main_pix_fmts_yuv);
+        overlay_formats = avfilter_make_format_list(overlay_pix_fmts_yuv);
+    }
+
+    avfilter_formats_ref(main_formats,    &ctx->inputs [MAIN   ]->out_formats);
+    avfilter_formats_ref(overlay_formats, &ctx->inputs [OVERLAY]->out_formats);
+    avfilter_formats_ref(main_formats,    &ctx->outputs[MAIN   ]->in_formats );
 
     return 0;
 }
+
+static enum PixelFormat alpha_pix_fmts[] = {
+    PIX_FMT_YUVA420P, PIX_FMT_ARGB, PIX_FMT_ABGR, PIX_FMT_RGBA,
+    PIX_FMT_BGRA, PIX_FMT_NONE
+};
 
 static int config_input_main(AVFilterLink *inlink)
 {
     OverlayContext *over = inlink->dst->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
 
-    av_image_fill_max_pixsteps(over->max_plane_step, NULL, pix_desc);
+    av_image_fill_max_pixsteps(over->main_pix_step,    NULL, pix_desc);
+
     over->hsub = pix_desc->log2_chroma_w;
     over->vsub = pix_desc->log2_chroma_h;
 
+    over->main_is_packed_rgb =
+        ff_fill_rgba_map(over->main_rgba_map, inlink->format) >= 0;
+    over->main_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
     return 0;
 }
 
@@ -159,6 +211,9 @@ static int config_input_overlay(AVFilterLink *inlink)
     char *expr;
     double var_values[VAR_VARS_NB], res;
     int ret;
+    const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
+
+    av_image_fill_max_pixsteps(over->overlay_pix_step, NULL, pix_desc);
 
     /* Finish the configuration by evaluating the expressions
        now when both inputs are configured. */
@@ -180,6 +235,10 @@ static int config_input_overlay(AVFilterLink *inlink)
                                       NULL, NULL, NULL, NULL, NULL, 0, ctx)) < 0)
         goto fail;
     over->x = res;
+
+    over->overlay_is_packed_rgb =
+        ff_fill_rgba_map(over->overlay_rgba_map, inlink->format) >= 0;
+    over->overlay_has_alpha = ff_fmt_is_in(inlink->format, alpha_pix_fmts);
 
     av_log(ctx, AV_LOG_INFO,
            "main w:%d h:%d fmt:%s overlay x:%d y:%d w:%d h:%d fmt:%s\n",
@@ -272,6 +331,10 @@ static void start_frame_overlay(AVFilterLink *inlink, AVFilterBufferRef *inpicre
                                          ctx->outputs[0]->time_base);
 }
 
+// divide by 255 and round to nearest
+// apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
+#define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
+
 static void blend_slice(AVFilterContext *ctx,
                         AVFilterBufferRef *dst, AVFilterBufferRef *src,
                         int x, int y, int w, int h,
@@ -289,21 +352,43 @@ static void blend_slice(AVFilterContext *ctx,
     start_y = FFMAX(y, slice_y);
     height = end_y - start_y;
 
-    if (dst->format == PIX_FMT_BGR24 || dst->format == PIX_FMT_RGB24) {
-        uint8_t *dp = dst->data[0] + x * 3 + start_y * dst->linesize[0];
+    if (over->main_is_packed_rgb) {
+        uint8_t *dp = dst->data[0] + x * over->main_pix_step[0] +
+                      start_y * dst->linesize[0];
         uint8_t *sp = src->data[0];
-        int b = dst->format == PIX_FMT_BGR24 ? 2 : 0;
-        int r = dst->format == PIX_FMT_BGR24 ? 0 : 2;
+        uint8_t alpha;          ///< the amount of overlay to blend on to main
+        const int dr = over->main_rgba_map[R];
+        const int dg = over->main_rgba_map[G];
+        const int db = over->main_rgba_map[B];
+        const int dstep = over->main_pix_step[0];
+        const int sr = over->overlay_rgba_map[R];
+        const int sg = over->overlay_rgba_map[G];
+        const int sb = over->overlay_rgba_map[B];
+        const int sa = over->overlay_rgba_map[A];
+        const int sstep = over->overlay_pix_step[0];
         if (slice_y > y)
             sp += (slice_y - y) * src->linesize[0];
         for (i = 0; i < height; i++) {
             uint8_t *d = dp, *s = sp;
             for (j = 0; j < width; j++) {
-                d[r] = (d[r] * (0xff - s[3]) + s[0] * s[3] + 128) >> 8;
-                d[1] = (d[1] * (0xff - s[3]) + s[1] * s[3] + 128) >> 8;
-                d[b] = (d[b] * (0xff - s[3]) + s[2] * s[3] + 128) >> 8;
-                d += 3;
-                s += 4;
+                alpha = s[sa];
+                switch (alpha) {
+                case 0:
+                    break;
+                case 255:
+                    d[dr] = s[sr];
+                    d[dg] = s[sg];
+                    d[db] = s[sb];
+                    break;
+                default:
+                    // main_value = main_value * (1 - alpha) + overlay_value * alpha
+                    // since alpha is in the range 0-255, the result must divided by 255
+                    d[dr] = FAST_DIV255(d[dr] * (255 - alpha) + s[sr] * alpha);
+                    d[dg] = FAST_DIV255(d[dg] * (255 - alpha) + s[sg] * alpha);
+                    d[db] = FAST_DIV255(d[db] * (255 - alpha) + s[sb] * alpha);
+                }
+                d += dstep;
+                s += sstep;
             }
             dp += dst->linesize[0];
             sp += src->linesize[0];
