@@ -23,7 +23,9 @@
  */
 #include <limits.h>
 #include "libavutil/avassert.h"
+#include "libavutil/opt.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 
@@ -72,6 +74,7 @@ typedef struct G726Tables {
 } G726Tables;
 
 typedef struct G726Context {
+    AVClass *class;
     G726Tables tbls;    /**< static tables needed for computation */
 
     Float11 sr[2];      /**< prev. reconstructed samples */
@@ -317,15 +320,11 @@ static av_cold int g726_encode_init(AVCodecContext *avctx)
         return AVERROR(EINVAL);
     }
 
-    if (avctx->bit_rate % avctx->sample_rate) {
-        av_log(avctx, AV_LOG_ERROR, "Bitrate - Samplerate combination is invalid\n");
-        return AVERROR(EINVAL);
-    }
-    c->code_size = (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate;
-    if (c->code_size < 2 || c->code_size > 5) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid number of bits %d\n", c->code_size);
-        return AVERROR(EINVAL);
-    }
+    if (avctx->bit_rate)
+        c->code_size = (avctx->bit_rate + avctx->sample_rate/2) / avctx->sample_rate;
+
+    c->code_size = av_clip(c->code_size, 2, 5);
+    avctx->bit_rate = c->code_size * avctx->sample_rate;
     avctx->bits_per_coded_sample = c->code_size;
 
     g726_reset(c, c->code_size - 2);
@@ -366,6 +365,25 @@ static int g726_encode_frame(AVCodecContext *avctx,
     return put_bits_count(&pb)>>3;
 }
 
+#define OFFSET(x) offsetof(G726Context, x)
+#define AE AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "code_size", "Bits per code", OFFSET(code_size), AV_OPT_TYPE_INT, { 4 }, 2, 5, AE },
+    { NULL },
+};
+
+static const AVClass class = {
+    .class_name = "g726",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
+static const AVCodecDefault defaults[] = {
+    { "b", "0" },
+    { NULL },
+};
+
 AVCodec ff_adpcm_g726_encoder = {
     .name           = "g726",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -377,6 +395,8 @@ AVCodec ff_adpcm_g726_encoder = {
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME,
     .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
+    .priv_class     = &class,
+    .defaults       = defaults,
 };
 #endif
 
