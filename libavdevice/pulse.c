@@ -21,11 +21,9 @@
 
 /**
  * @file
- * Pulseaudio input
+ * PulseAudio input using the simple API.
  * @author Luca Barbato <lu_zero@gentoo.org>
  *
- * This avdevice decoder allows to capture audio from a Pulseaudio device using
- * the simple api.
  */
 
 #include <pulse/simple.h>
@@ -95,9 +93,9 @@ static av_cold int pulse_read_header(AVFormatContext *s,
         device = s->filename;
 
     pd->s = pa_simple_new(pd->server, pd->name,
-                      PA_STREAM_RECORD,
-                      device, pd->stream_name, &ss,
-                      NULL, &attr, &ret);
+                          PA_STREAM_RECORD,
+                          device, pd->stream_name, &ss,
+                          NULL, &attr, &ret);
 
     if (!pd->s) {
         av_log(s, AV_LOG_ERROR, "pa_simple_new failed: %s\n",
@@ -122,7 +120,7 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
     int res;
     pa_usec_t latency;
     uint64_t frame_duration =
-        (pd->frame_size*1000000LL)/(pd->sample_rate * pd->channels);
+        (pd->frame_size*1000000LL) / (pd->sample_rate * pd->channels);
 
     if (av_new_packet(pkt, pd->frame_size) < 0) {
         return AVERROR(ENOMEM);
@@ -145,9 +143,9 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
         pd->pts = -latency;
     }
 
-    pd->pts += frame_duration;
-
     pkt->pts = pd->pts;
+
+    pd->pts += frame_duration;
 
     return 0;
 }
@@ -163,20 +161,13 @@ static av_cold int pulse_close(AVFormatContext *s)
 #define D AV_OPT_FLAG_DECODING_PARAM
 
 static const AVOption options[] = {
-    { "server",        "pulse server name",
-        OFFSET(server),        AV_OPT_TYPE_STRING, {.str = NULL},     0, 0, D },
-    { "name",          "application name",
-        OFFSET(name),          AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, D },
-    { "stream_name",   "stream description",
-        OFFSET(stream_name),   AV_OPT_TYPE_STRING, {.str = "record"}, 0, 0, D },
-    { "sample_rate",   "",
-        OFFSET(sample_rate),   AV_OPT_TYPE_INT,    {.dbl = 48000},    1, INT_MAX, D },
-    { "channels",      "",
-        OFFSET(channels),      AV_OPT_TYPE_INT,    {.dbl = 2},        1, INT_MAX, D },
-    { "frame_size",    "",
-        OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.dbl = 1024},     1, INT_MAX, D },
-    { "fragment_size", "buffering size, affects latency and cpu usage",
-        OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.dbl = -1},      -1, INT_MAX, D },
+    { "server",        "pulse server name",                              OFFSET(server),        AV_OPT_TYPE_STRING, {.str = NULL},     0, 0, D },
+    { "name",          "application name",                               OFFSET(name),          AV_OPT_TYPE_STRING, {.str = LIBAVFORMAT_IDENT},  0, 0, D },
+    { "stream_name",   "stream description",                             OFFSET(stream_name),   AV_OPT_TYPE_STRING, {.str = "record"}, 0, 0, D },
+    { "sample_rate",   "sample rate in Hz",                              OFFSET(sample_rate),   AV_OPT_TYPE_INT,    {.dbl = 48000},    1, INT_MAX, D },
+    { "channels",      "number of audio channels",                       OFFSET(channels),      AV_OPT_TYPE_INT,    {.dbl = 2},        1, INT_MAX, D },
+    { "frame_size",    "number of bytes per frame",                      OFFSET(frame_size),    AV_OPT_TYPE_INT,    {.dbl = 1024},     1, INT_MAX, D },
+    { "fragment_size", "buffering size, affects latency and cpu usage",  OFFSET(fragment_size), AV_OPT_TYPE_INT,    {.dbl = -1},      -1, INT_MAX, D },
     { NULL },
 };
 

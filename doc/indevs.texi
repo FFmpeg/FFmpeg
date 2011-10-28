@@ -390,6 +390,89 @@ ffmpeg -f oss -i /dev/dsp /tmp/oss.wav
 For more information about OSS see:
 @url{http://manuals.opensound.com/usersguide/dsp.html}
 
+@section pulse
+
+pulseaudio input device.
+
+To enable this input device during configuration you need libpulse-simple
+installed in your system.
+
+The filename to provide to the input device is a source device or the
+string "default"
+
+To list the pulse source devices and their properties you can invoke
+the command @file{pactl list sources}.
+
+@example
+avconv -f pulse -i default /tmp/pulse.wav
+@end example
+
+@subsection @var{server} AVOption
+
+The syntax is:
+@example
+-server @var{server name}
+@end example
+
+Connects to a specific server.
+
+@subsection @var{name} AVOption
+
+The syntax is:
+@example
+-name @var{application name}
+@end example
+
+Specify the application name pulse will use when showing active clients,
+by default it is "libav"
+
+@subsection @var{stream_name} AVOption
+
+The syntax is:
+@example
+-stream_name @var{stream name}
+@end example
+
+Specify the stream name pulse will use when showing active streams,
+by default it is "record"
+
+@subsection @var{sample_rate} AVOption
+
+The syntax is:
+@example
+-sample_rate @var{samplerate}
+@end example
+
+Specify the samplerate in Hz, by default 48kHz is used.
+
+@subsection @var{channels} AVOption
+
+The syntax is:
+@example
+-channels @var{N}
+@end example
+
+Specify the channels in use, by default 2 (stereo) is set.
+
+@subsection @var{frame_size} AVOption
+
+The syntax is:
+@example
+-frame_size @var{bytes}
+@end example
+
+Specify the number of byte per frame, by default it is set to 1024.
+
+@subsection @var{fragment_size} AVOption
+
+The syntax is:
+@example
+-fragment_size @var{bytes}
+@end example
+
+Specify the minimal buffering fragment in pulseaudio, it will affect the
+audio latency. By default it is unset.
+
 @section sndio
 
 sndio input device.
