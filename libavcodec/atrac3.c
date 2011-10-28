@@ -196,7 +196,7 @@ static int decode_bytes(const uint8_t* inbuffer, uint8_t* out, int bytes){
 }
 
 
-static av_cold int init_atrac3_transforms(ATRAC3Context *q) {
+static av_cold int init_atrac3_transforms(ATRAC3Context *q, int is_float) {
     float enc_window[256];
     int i;
 
@@ -212,7 +212,7 @@ static av_cold int init_atrac3_transforms(ATRAC3Context *q) {
         }
 
     /* Initialize the MDCT transform. */
-    return ff_mdct_init(&q->mdct_ctx, 9, 1, 1.0 / 32768);
+    return ff_mdct_init(&q->mdct_ctx, 9, 1, is_float ? 1.0 / 32768 : 1.0);
 }
 
 /**
@@ -831,7 +831,8 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     ATRAC3Context *q = avctx->priv_data;
     int result = 0, out_size;
     const uint8_t* databuf;
-    float *samples = data;
+    float   *samples_flt = data;
+    int16_t *samples_s16 = data;
 
     if (buf_size < avctx->block_align) {
         av_log(avctx, AV_LOG_ERROR,
@@ -854,7 +855,10 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
         databuf = buf;
     }
 
-    result = decodeFrame(q, databuf, q->channels == 2 ? q->outSamples : &samples);
+    if (q->channels == 1 && avctx->sample_fmt == AV_SAMPLE_FMT_FLT)
+        result = decodeFrame(q, databuf, &samples_flt);
+    else
+        result = decodeFrame(q, databuf, q->outSamples);
 
     if (result != 0) {
         av_log(NULL,AV_LOG_ERROR,"Frame decoding error!\n");
@@ -862,9 +866,14 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
     }
 
     /* interleave */
-    if (q->channels == 2) {
-        q->fmt_conv.float_interleave(samples, (const float **)q->outSamples,
+    if (q->channels == 2 && avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
+        q->fmt_conv.float_interleave(samples_flt,
+                                     (const float **)q->outSamples,
                                      SAMPLES_PER_FRAME, 2);
+    } else if (avctx->sample_fmt == AV_SAMPLE_FMT_S16) {
+        q->fmt_conv.float_to_int16_interleave(samples_s16,
+                                              (const float **)q->outSamples,
+                                              SAMPLES_PER_FRAME, q->channels);
     }
     *data_size = out_size;
 
@@ -986,7 +995,12 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         vlcs_initialized = 1;
     }
 
-    if ((ret = init_atrac3_transforms(q))) {
+    if (avctx->request_sample_fmt == AV_SAMPLE_FMT_FLT)
+        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    else
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
+    if ((ret = init_atrac3_transforms(q, avctx->sample_fmt == AV_SAMPLE_FMT_FLT))) {
         av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
         av_freep(&q->decoded_bytes_buffer);
         return ret;
@@ -1024,8 +1038,8 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         return AVERROR(ENOMEM);
     }
 
-    if (avctx->channels > 1) {
-        q->outSamples[0] = av_mallocz(SAMPLES_PER_FRAME * 2 * sizeof(*q->outSamples[0]));
+    if (avctx->channels > 1 || avctx->sample_fmt == AV_SAMPLE_FMT_S16) {
+        q->outSamples[0] = av_mallocz(SAMPLES_PER_FRAME * avctx->channels * sizeof(*q->outSamples[0]));
         q->outSamples[1] = q->outSamples[0] + SAMPLES_PER_FRAME;
         if (!q->outSamples[0]) {
             atrac3_decode_close(avctx);
@@ -1033,7 +1047,6 @@ static av_cold int atrac3_decode_init(AVCodecContext *avctx)
         }
     }
 
-    avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
     return 0;
 }
 
