@@ -2002,7 +2002,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                         }
                         if (chroma422) {
                             for(i=j*16+4; i<j*16+8; i++){
-                                if(h->non_zero_count_cache[ scan8[i] ] || dctcoef_get(h->mb, pixel_shift, i*16))
+                                if(h->non_zero_count_cache[ scan8[i+4] ] || dctcoef_get(h->mb, pixel_shift, i*16))
                                     idct_add   (dest[j-1] + block_offset[i+4], h->mb + (i*16 << pixel_shift), uvlinesize);
                             }
                         }
