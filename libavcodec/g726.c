@@ -380,6 +380,7 @@ AVCodec ff_adpcm_g726_encoder = {
 };
 #endif
 
+#if CONFIG_ADPCM_G726_DECODER
 static av_cold int g726_decode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
@@ -448,3 +449,4 @@ AVCodec ff_adpcm_g726_decoder = {
     .decode         = g726_decode_frame,
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
+#endif
