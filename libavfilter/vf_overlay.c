@@ -360,18 +360,35 @@ static void blend_slice(AVFilterContext *ctx,
         const int dr = over->main_rgba_map[R];
         const int dg = over->main_rgba_map[G];
         const int db = over->main_rgba_map[B];
+        const int da = over->main_rgba_map[A];
         const int dstep = over->main_pix_step[0];
         const int sr = over->overlay_rgba_map[R];
         const int sg = over->overlay_rgba_map[G];
         const int sb = over->overlay_rgba_map[B];
         const int sa = over->overlay_rgba_map[A];
         const int sstep = over->overlay_pix_step[0];
+        const int main_has_alpha = over->main_has_alpha;
         if (slice_y > y)
             sp += (slice_y - y) * src->linesize[0];
         for (i = 0; i < height; i++) {
             uint8_t *d = dp, *s = sp;
             for (j = 0; j < width; j++) {
                 alpha = s[sa];
+
+                // if the main channel has an alpha channel, alpha has to be calculated
+                // to create an un-premultiplied (straight) alpha value
+                if (main_has_alpha && alpha != 0 && alpha != 255) {
+                    // apply the general equation:
+                    // alpha = alpha_overlay / ( (alpha_main + alpha_overlay) - (alpha_main * alpha_overlay) )
+                    alpha =
+                        // the next line is a faster version of: 255 * 255 * alpha
+                        ( (alpha << 16) - (alpha << 9) + alpha )
+                        /
+                        // the next line is a faster version of: 255 * (alpha + d[da])
+                        ( ((alpha + d[da]) << 8 ) - (alpha + d[da])
+                          - d[da] * alpha );
+                }
+
                 switch (alpha) {
                 case 0:
                     break;
@@ -386,6 +403,18 @@ static void blend_slice(AVFilterContext *ctx,
                     d[dr] = FAST_DIV255(d[dr] * (255 - alpha) + s[sr] * alpha);
                     d[dg] = FAST_DIV255(d[dg] * (255 - alpha) + s[sg] * alpha);
                     d[db] = FAST_DIV255(d[db] * (255 - alpha) + s[sb] * alpha);
+                }
+                if (main_has_alpha) {
+                    switch (alpha) {
+                    case 0:
+                        break;
+                    case 255:
+                        d[da] = s[sa];
+                        break;
+                    default:
+                        // apply alpha compositing: main_alpha += (1-main_alpha) * overlay_alpha
+                        d[da] += FAST_DIV255((255 - d[da]) * s[sa]);
+                    }
                 }
                 d += dstep;
                 s += sstep;
