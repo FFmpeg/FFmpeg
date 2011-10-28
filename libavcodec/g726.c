@@ -366,11 +366,6 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
 {
     G726Context* c = avctx->priv_data;
 
-    if (avctx->sample_rate <= 0) {
-        av_log(avctx, AV_LOG_ERROR, "Samplerate is invalid\n");
-        return -1;
-    }
-
     if(avctx->channels != 1){
         av_log(avctx, AV_LOG_ERROR, "Only mono is supported\n");
         return -1;
