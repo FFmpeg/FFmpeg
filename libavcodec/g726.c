@@ -460,6 +460,12 @@ static int g726_decode_frame(AVCodecContext *avctx,
     return buf_size;
 }
 
+static void g726_decode_flush(AVCodecContext *avctx)
+{
+    G726Context *c = avctx->priv_data;
+    g726_reset(c);
+}
+
 AVCodec ff_adpcm_g726_decoder = {
     .name           = "g726",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -467,6 +473,7 @@ AVCodec ff_adpcm_g726_decoder = {
     .priv_data_size = sizeof(G726Context),
     .init           = g726_decode_init,
     .decode         = g726_decode_frame,
+    .flush          = g726_decode_flush,
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
 #endif
