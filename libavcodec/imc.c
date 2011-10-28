@@ -344,7 +344,7 @@ static int bit_allocation (IMCContext* q, int stream_format_code, int freebits, 
             indx = 2;
 
         if (indx == -1)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         q->flcoeffs4[i] = q->flcoeffs4[i] + xTab[(indx*2 + (q->flcoeffs1[i] < highest)) * 2 + flag];
     }
@@ -603,7 +603,7 @@ static int inverse_quant_coeff (IMCContext* q, int stream_format_code) {
             middle_value = max_size >> 1;
 
             if (q->codewords[j] >= max_size || q->codewords[j] < 0)
-                return -1;
+                return AVERROR_INVALIDDATA;
 
             if (cw_len >= 4){
                 quantizer = imc_quantizer2[(stream_format_code & 2) >> 1];
@@ -636,7 +636,7 @@ static int imc_get_coeffs (IMCContext* q) {
 
                 if (get_bits_count(&q->gb) + cw_len > 512){
 //av_log(NULL,0,"Band %i coeff %i cw_len %i\n",i,j,cw_len);
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
 
                 if(cw_len && (!q->bandFlagsBuf[i] || !q->skipFlags[j]))
@@ -659,7 +659,7 @@ static int imc_decode_frame(AVCodecContext * avctx,
     IMCContext *q = avctx->priv_data;
 
     int stream_format_code;
-    int imc_hdr, i, j, out_size;
+    int imc_hdr, i, j, out_size, ret;
     int flag;
     int bits, summer;
     int counter, bitscount;
@@ -667,7 +667,7 @@ static int imc_decode_frame(AVCodecContext * avctx,
 
     if (buf_size < IMC_BLOCK_SIZE) {
         av_log(avctx, AV_LOG_ERROR, "imc frame too small!\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     out_size = COEFFS * av_get_bytes_per_sample(avctx->sample_fmt);
@@ -686,13 +686,13 @@ static int imc_decode_frame(AVCodecContext * avctx,
     if (imc_hdr != IMC_FRAME_ID) {
         av_log(avctx, AV_LOG_ERROR, "imc frame header check failed!\n");
         av_log(avctx, AV_LOG_ERROR, "got %x instead of 0x21.\n", imc_hdr);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     stream_format_code = get_bits(&q->gb, 3);
 
     if(stream_format_code & 1){
         av_log(avctx, AV_LOG_ERROR, "Stream code format %X is not supported\n", stream_format_code);
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
 //    av_log(avctx, AV_LOG_DEBUG, "stream_format_code = %d\n", stream_format_code);
@@ -752,10 +752,11 @@ static int imc_decode_frame(AVCodecContext * avctx,
         }
     }
 
-    if(bit_allocation (q, stream_format_code, 512 - bitscount - get_bits_count(&q->gb), flag) < 0) {
+    if((ret = bit_allocation (q, stream_format_code,
+                              512 - bitscount - get_bits_count(&q->gb), flag)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Bit allocations failed\n");
         q->decoder_reset = 1;
-        return -1;
+        return ret;
     }
 
     for(i = 0; i < BANDS; i++) {
