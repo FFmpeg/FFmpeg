@@ -58,7 +58,8 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int16_t *samples = data;
-    int frame_bytes = 2 * avctx->frame_size;
+    int frame_bytes = avctx->frame_size *
+                      av_get_bytes_per_sample(avctx->sample_fmt);
 
     if (*data_size < frame_bytes)
         return -1;
