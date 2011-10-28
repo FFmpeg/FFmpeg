@@ -66,8 +66,10 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
         return AVERROR(EINVAL);
     }
 
-    if(buf_size < avctx->block_align)
+    if (buf_size < avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
         return AVERROR_INVALIDDATA;
+    }
 
     switch (avctx->codec_id) {
     case CODEC_ID_GSM:
