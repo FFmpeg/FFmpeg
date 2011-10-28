@@ -61,8 +61,10 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     int frame_bytes = avctx->frame_size *
                       av_get_bytes_per_sample(avctx->sample_fmt);
 
-    if (*data_size < frame_bytes)
-        return -1;
+    if (*data_size < frame_bytes) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
     *data_size = 0;
     if(buf_size < avctx->block_align)
         return AVERROR_INVALIDDATA;
