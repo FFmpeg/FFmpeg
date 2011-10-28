@@ -724,7 +724,7 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
  */
 
 static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
-                       float *out_samples)
+                       float **out_samples)
 {
     int   result, i;
     float   *p1, *p2, *p3, *p4;
@@ -736,7 +736,7 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
         /* decode Sound Unit 1 */
         init_get_bits(&q->gb,databuf,q->bits_per_frame);
 
-        result = decodeChannelSoundUnit(q,&q->gb, q->pUnits, out_samples, 0, JOINT_STEREO);
+        result = decodeChannelSoundUnit(q,&q->gb, q->pUnits, out_samples[0], 0, JOINT_STEREO);
         if (result != 0)
             return (result);
 
@@ -777,14 +777,14 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
         }
 
         /* Decode Sound Unit 2. */
-        result = decodeChannelSoundUnit(q,&q->gb, &q->pUnits[1], &out_samples[1024], 1, JOINT_STEREO);
+        result = decodeChannelSoundUnit(q,&q->gb, &q->pUnits[1], out_samples[1], 1, JOINT_STEREO);
         if (result != 0)
             return (result);
 
         /* Reconstruct the channel coefficients. */
-        reverseMatrixing(out_samples, &out_samples[1024], q->matrix_coeff_index_prev, q->matrix_coeff_index_now);
+        reverseMatrixing(out_samples[0], out_samples[1], q->matrix_coeff_index_prev, q->matrix_coeff_index_now);
 
-        channelWeighting(out_samples, &out_samples[1024], q->weighting_delay);
+        channelWeighting(out_samples[0], out_samples[1], q->weighting_delay);
 
     } else {
         /* normal stereo mode or mono */
@@ -794,22 +794,21 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
             /* Set the bitstream reader at the start of a channel sound unit. */
             init_get_bits(&q->gb, databuf+((i*q->bytes_per_frame)/q->channels), (q->bits_per_frame)/q->channels);
 
-            result = decodeChannelSoundUnit(q,&q->gb, &q->pUnits[i], &out_samples[i*1024], i, q->codingMode);
+            result = decodeChannelSoundUnit(q,&q->gb, &q->pUnits[i], out_samples[i], i, q->codingMode);
             if (result != 0)
                 return (result);
         }
     }
 
     /* Apply the iQMF synthesis filter. */
-    p1 = out_samples;
     for (i=0 ; i<q->channels ; i++) {
+        p1 = out_samples[i];
         p2= p1+256;
         p3= p2+256;
         p4= p3+256;
         atrac_iqmf (p1, p2, 256, p1, q->pUnits[i].delayBuf1, q->tempBuf);
         atrac_iqmf (p4, p3, 256, p3, q->pUnits[i].delayBuf2, q->tempBuf);
         atrac_iqmf (p1, p3, 512, p1, q->pUnits[i].delayBuf3, q->tempBuf);
-        p1 +=1024;
     }
 
     return 0;
@@ -847,7 +846,7 @@ static int atrac3_decode_frame(AVCodecContext *avctx,
         databuf = buf;
     }
 
-    result = decodeFrame(q, databuf, q->channels == 2 ? q->outSamples[0] : samples);
+    result = decodeFrame(q, databuf, q->channels == 2 ? q->outSamples : &samples);
 
     if (result != 0) {
         av_log(NULL,AV_LOG_ERROR,"Frame decoding error!\n");
