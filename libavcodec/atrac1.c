@@ -326,9 +326,24 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
 }
 
 
+static av_cold int atrac1_decode_end(AVCodecContext * avctx)
+{
+    AT1Ctx *q = avctx->priv_data;
+
+    av_freep(&q->out_samples[0]);
+
+    ff_mdct_end(&q->mdct_ctx[0]);
+    ff_mdct_end(&q->mdct_ctx[1]);
+    ff_mdct_end(&q->mdct_ctx[2]);
+
+    return 0;
+}
+
+
 static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 {
     AT1Ctx *q = avctx->priv_data;
+    int ret;
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
@@ -349,9 +364,13 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     }
 
     /* Init the mdct transforms */
-    ff_mdct_init(&q->mdct_ctx[0], 6, 1, -1.0/ (1 << 15));
-    ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1 << 15));
-    ff_mdct_init(&q->mdct_ctx[2], 9, 1, -1.0/ (1 << 15));
+    if ((ret = ff_mdct_init(&q->mdct_ctx[0], 6, 1, -1.0/ (1 << 15))) ||
+        (ret = ff_mdct_init(&q->mdct_ctx[1], 8, 1, -1.0/ (1 << 15))) ||
+        (ret = ff_mdct_init(&q->mdct_ctx[2], 9, 1, -1.0/ (1 << 15)))) {
+        av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
+        atrac1_decode_end(avctx);
+        return ret;
+    }
 
     ff_init_ff_sine_windows(5);
 
@@ -370,18 +389,6 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
     q->SUs[1].spectrum[0] = q->SUs[1].spec1;
     q->SUs[1].spectrum[1] = q->SUs[1].spec2;
 
-    return 0;
-}
-
-
-static av_cold int atrac1_decode_end(AVCodecContext * avctx) {
-    AT1Ctx *q = avctx->priv_data;
-
-    av_freep(&q->out_samples[0]);
-
-    ff_mdct_end(&q->mdct_ctx[0]);
-    ff_mdct_end(&q->mdct_ctx[1]);
-    ff_mdct_end(&q->mdct_ctx[2]);
     return 0;
 }
 
