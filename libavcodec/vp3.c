@@ -884,7 +884,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
             /* decode a VLC into a token */
             token = get_vlc2(gb, vlc_table, 11, 3);
             /* use the token to get a zero run, a coefficient, and an eob run */
-            if (token <= 6) {
+            if ((unsigned) token <= 6U) {
                 eob_run = eob_run_base[token];
                 if (eob_run_get_bits[token])
                     eob_run += get_bits(gb, eob_run_get_bits[token]);
@@ -902,7 +902,7 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                     coeff_i        += eob_run;
                     eob_run = 0;
                 }
-            } else {
+            } else if (token >= 0) {
                 bits_to_get = coeff_get_bits[token];
                 if (bits_to_get)
                     bits_to_get = get_bits(gb, bits_to_get);
@@ -936,6 +936,10 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                 for (i = coeff_index+1; i <= coeff_index+zero_run; i++)
                     s->num_coded_frags[plane][i]--;
                 coeff_i++;
+            } else {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Invalid token %d\n", token);
+                return -1;
             }
     }
 
@@ -985,6 +989,8 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     /* unpack the Y plane DC coefficients */
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_y_table], 0,
         0, residual_eob_run);
+    if (residual_eob_run < 0)
+        return residual_eob_run;
 
     /* reverse prediction of the Y-plane DC coefficients */
     reverse_dc_prediction(s, 0, s->fragment_width[0], s->fragment_height[0]);
@@ -992,8 +998,12 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     /* unpack the C plane DC coefficients */
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
         1, residual_eob_run);
+    if (residual_eob_run < 0)
+        return residual_eob_run;
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
         2, residual_eob_run);
+    if (residual_eob_run < 0)
+        return residual_eob_run;
 
     /* reverse prediction of the C-plane DC coefficients */
     if (!(s->avctx->flags & CODEC_FLAG_GRAY))
@@ -1030,11 +1040,17 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     for (i = 1; i <= 63; i++) {
             residual_eob_run = unpack_vlcs(s, gb, y_tables[i], i,
                 0, residual_eob_run);
+            if (residual_eob_run < 0)
+                return residual_eob_run;
 
             residual_eob_run = unpack_vlcs(s, gb, c_tables[i], i,
                 1, residual_eob_run);
+            if (residual_eob_run < 0)
+                return residual_eob_run;
             residual_eob_run = unpack_vlcs(s, gb, c_tables[i], i,
                 2, residual_eob_run);
+            if (residual_eob_run < 0)
+                return residual_eob_run;
     }
 
     return 0;
