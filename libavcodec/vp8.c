@@ -50,7 +50,8 @@ static int vp8_alloc_frame(VP8Context *s, AVFrame *f)
     int ret;
     if ((ret = ff_thread_get_buffer(s->avctx, f)) < 0)
         return ret;
-    if (!s->maps_are_invalid && s->num_maps_to_be_freed) {
+    if (s->num_maps_to_be_freed) {
+        assert(!s->maps_are_invalid);
         f->ref_index[0] = s->segmentation_maps[--s->num_maps_to_be_freed];
     } else if (!(f->ref_index[0] = av_mallocz(s->mb_width * s->mb_height))) {
         ff_thread_release_buffer(s->avctx, f);
@@ -59,39 +60,50 @@ static int vp8_alloc_frame(VP8Context *s, AVFrame *f)
     return 0;
 }
 
-static void vp8_release_frame(VP8Context *s, AVFrame *f, int is_close)
+static void vp8_release_frame(VP8Context *s, AVFrame *f, int prefer_delayed_free, int can_direct_free)
 {
-    if (!is_close) {
-        if (f->ref_index[0]) {
-            assert(s->num_maps_to_be_freed < FF_ARRAY_ELEMS(s->segmentation_maps));
-            s->segmentation_maps[s->num_maps_to_be_freed++] = f->ref_index[0];
+    if (f->ref_index[0]) {
+        if (prefer_delayed_free) {
+            /* Upon a size change, we want to free the maps but other threads may still
+             * be using them, so queue them. Upon a seek, all threads are inactive so
+             * we want to cache one to prevent re-allocation in the next decoding
+             * iteration, but the rest we can free directly. */
+            int max_queued_maps = can_direct_free ? 1 : FF_ARRAY_ELEMS(s->segmentation_maps);
+            if (s->num_maps_to_be_freed < max_queued_maps) {
+                s->segmentation_maps[s->num_maps_to_be_freed++] = f->ref_index[0];
+            } else if (can_direct_free) /* vp8_decode_flush(), but our queue is full */ {
+                av_free(f->ref_index[0]);
+            } /* else: MEMLEAK (should never happen, but better that than crash) */
             f->ref_index[0] = NULL;
+        } else /* vp8_decode_free() */ {
+            av_free(f->ref_index[0]);
         }
-    } else {
-        av_freep(&f->ref_index[0]);
     }
     ff_thread_release_buffer(s->avctx, f);
 }
 
-static void vp8_decode_flush_impl(AVCodecContext *avctx, int force, int is_close)
+static void vp8_decode_flush_impl(AVCodecContext *avctx,
+                                  int prefer_delayed_free, int can_direct_free, int free_mem)
 {
     VP8Context *s = avctx->priv_data;
     int i;
 
-    if (!avctx->is_copy || force) {
+    if (!avctx->is_copy) {
         for (i = 0; i < 5; i++)
             if (s->frames[i].data[0])
-                vp8_release_frame(s, &s->frames[i], is_close);
+                vp8_release_frame(s, &s->frames[i], prefer_delayed_free, can_direct_free);
     }
     memset(s->framep, 0, sizeof(s->framep));
 
-    free_buffers(s);
-    s->maps_are_invalid = 1;
+    if (free_mem) {
+        free_buffers(s);
+        s->maps_are_invalid = 1;
+    }
 }
 
 static void vp8_decode_flush(AVCodecContext *avctx)
 {
-    vp8_decode_flush_impl(avctx, 0, 0);
+    vp8_decode_flush_impl(avctx, 1, 1, 0);
 }
 
 static int update_dimensions(VP8Context *s, int width, int height)
@@ -101,7 +113,7 @@ static int update_dimensions(VP8Context *s, int width, int height)
         if (av_image_check_size(width, height, 0, s->avctx))
             return AVERROR_INVALIDDATA;
 
-        vp8_decode_flush_impl(s->avctx, 1, 0);
+        vp8_decode_flush_impl(s->avctx, 1, 0, 1);
 
         avcodec_set_dimensions(s->avctx, width, height);
     }
@@ -1581,7 +1593,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             &s->frames[i] != s->framep[VP56_FRAME_PREVIOUS] &&
             &s->frames[i] != s->framep[VP56_FRAME_GOLDEN] &&
             &s->frames[i] != s->framep[VP56_FRAME_GOLDEN2])
-            vp8_release_frame(s, &s->frames[i], 0);
+            vp8_release_frame(s, &s->frames[i], 1, 0);
 
     // find a free buffer
     for (i = 0; i < 5; i++)
@@ -1597,7 +1609,7 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         abort();
     }
     if (curframe->data[0])
-        ff_thread_release_buffer(avctx, curframe);
+        vp8_release_frame(s, curframe, 1, 0);
 
     curframe->key_frame = s->keyframe;
     curframe->pict_type = s->keyframe ? AV_PICTURE_TYPE_I : AV_PICTURE_TYPE_P;
@@ -1778,7 +1790,7 @@ static av_cold int vp8_decode_init(AVCodecContext *avctx)
 
 static av_cold int vp8_decode_free(AVCodecContext *avctx)
 {
-    vp8_decode_flush_impl(avctx, 0, 1);
+    vp8_decode_flush_impl(avctx, 0, 1, 1);
     release_queued_segmaps(avctx->priv_data, 1);
     return 0;
 }

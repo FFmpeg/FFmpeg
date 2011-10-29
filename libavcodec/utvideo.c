@@ -66,7 +66,7 @@ static int huff_cmp(const void *a, const void *b)
     return (aa->len - bb->len)*256 + aa->sym - bb->sym;
 }
 
-static int build_huff(const uint8_t *src, VLC *vlc)
+static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
 {
     int i;
     HuffEntry he[256];
@@ -76,13 +76,18 @@ static int build_huff(const uint8_t *src, VLC *vlc)
     uint8_t syms[256];
     uint32_t code;
 
+    *fsym = -1;
     for (i = 0; i < 256; i++) {
         he[i].sym = i;
         he[i].len = *src++;
     }
     qsort(he, 256, sizeof(*he), huff_cmp);
 
-    if (!he[0].len || he[0].len > 32)
+    if (!he[0].len) {
+        *fsym = he[0].sym;
+        return 0;
+    }
+    if (he[0].len > 32)
         return -1;
 
     last = 255;
@@ -112,11 +117,36 @@ static int decode_plane(UtvideoContext *c, int plane_no,
     int sstart, send;
     VLC vlc;
     GetBitContext gb;
-    int prev;
+    int prev, fsym;
+    const int cmask = ~(!plane_no && c->avctx->pix_fmt == PIX_FMT_YUV420P);
 
-    if (build_huff(src, &vlc)) {
+    if (build_huff(src, &vlc, &fsym)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
         return AVERROR_INVALIDDATA;
+    }
+    if (fsym >= 0) { // build_huff reported a symbol to fill slices with
+        send = 0;
+        for (slice = 0; slice < c->slices; slice++) {
+            uint8_t *dest;
+
+            sstart = send;
+            send   = (height * (slice + 1) / c->slices) & cmask;
+            dest   = dst + sstart * stride;
+
+            prev = 0x80;
+            for (j = sstart; j < send; j++) {
+                for (i = 0; i < width * step; i += step) {
+                    pix = fsym;
+                    if (use_pred) {
+                        prev += pix;
+                        pix   = prev;
+                    }
+                    dest[i] = pix;
+                }
+                dest += stride;
+            }
+        }
+        return 0;
     }
 
     src      += 256;
@@ -128,7 +158,7 @@ static int decode_plane(UtvideoContext *c, int plane_no,
         int slice_data_start, slice_data_end, slice_size;
 
         sstart = send;
-        send   = height * (slice + 1) / c->slices;
+        send   = (height * (slice + 1) / c->slices) & cmask;
         dest   = dst + sstart * stride;
 
         // slice offset and size validation was done earlier
@@ -204,16 +234,17 @@ static void restore_rgb_planes(uint8_t *src, int step, int stride, int width, in
 }
 
 static void restore_median(uint8_t *src, int step, int stride,
-                           int width, int height, int slices)
+                           int width, int height, int slices, int rmode)
 {
     int i, j, slice;
     int A, B, C;
     uint8_t *bsrc;
     int slice_start, slice_height;
+    const int cmask = ~rmode;
 
     for (slice = 0; slice < slices; slice++) {
-        slice_start = (slice * height) / slices;
-        slice_height = ((slice + 1) * height) / slices - slice_start;
+        slice_start = ((slice * height) / slices) & cmask;
+        slice_height = ((((slice + 1) * height) / slices) & cmask) - slice_start;
 
         bsrc = src + slice_start * stride;
 
@@ -337,7 +368,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             if (c->frame_pred == PRED_MEDIAN)
                 restore_median(c->pic.data[0] + rgb_order[i], c->planes,
                                c->pic.linesize[0], avctx->width, avctx->height,
-                               c->slices);
+                               c->slices, 0);
         }
         restore_rgb_planes(c->pic.data[0], c->planes, c->pic.linesize[0],
                            avctx->width, avctx->height);
@@ -353,7 +384,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             if (c->frame_pred == PRED_MEDIAN)
                 restore_median(c->pic.data[i], 1, c->pic.linesize[i],
                                avctx->width >> !!i, avctx->height >> !!i,
-                               c->slices);
+                               c->slices, !i);
         }
         break;
     case PIX_FMT_YUV422P:
@@ -366,7 +397,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
                 return ret;
             if (c->frame_pred == PRED_MEDIAN)
                 restore_median(c->pic.data[i], 1, c->pic.linesize[i],
-                               avctx->width >> !!i, avctx->height, c->slices);
+                               avctx->width >> !!i, avctx->height, c->slices, 0);
         }
         break;
     }

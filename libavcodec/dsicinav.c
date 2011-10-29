@@ -26,6 +26,7 @@
 
 #include "avcodec.h"
 #include "bytestream.h"
+#include "mathops.h"
 
 
 typedef enum CinVideoBitmapIndex {
@@ -43,7 +44,6 @@ typedef struct CinVideoContext {
 } CinVideoContext;
 
 typedef struct CinAudioContext {
-    AVCodecContext *avctx;
     int initial_decode_frame;
     int delta;
 } CinAudioContext;
@@ -309,7 +309,11 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
 {
     CinAudioContext *cin = avctx->priv_data;
 
-    cin->avctx = avctx;
+    if (avctx->channels != 1) {
+        av_log_ask_for_sample(avctx, "Number of channels is not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     cin->initial_decode_frame = 1;
     cin->delta = 0;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -322,29 +326,35 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
                                  AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
     CinAudioContext *cin = avctx->priv_data;
-    const uint8_t *src = buf;
-    int16_t *samples = (int16_t *)data;
+    const uint8_t *buf_end = buf + avpkt->size;
+    int16_t *samples = data;
+    int delta, out_size;
 
-    buf_size = FFMIN(buf_size, *data_size/2);
+    out_size = (avpkt->size - cin->initial_decode_frame) *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
 
+    delta = cin->delta;
     if (cin->initial_decode_frame) {
         cin->initial_decode_frame = 0;
-        cin->delta = (int16_t)AV_RL16(src); src += 2;
-        *samples++ = cin->delta;
-        buf_size -= 2;
+        delta = sign_extend(AV_RL16(buf), 16);
+        buf += 2;
+        *samples++ = delta;
     }
-    while (buf_size > 0) {
-        cin->delta += cinaudio_delta16_table[*src++];
-        cin->delta = av_clip_int16(cin->delta);
-        *samples++ = cin->delta;
-        --buf_size;
+    while (buf < buf_end) {
+        delta += cinaudio_delta16_table[*buf++];
+        delta = av_clip_int16(delta);
+        *samples++ = delta;
     }
+    cin->delta = delta;
 
-    *data_size = (uint8_t *)samples - (uint8_t *)data;
+    *data_size = out_size;
 
-    return src - buf;
+    return avpkt->size;
 }
 
 

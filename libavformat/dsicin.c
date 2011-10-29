@@ -131,9 +131,8 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_tag = 0;  /* no tag */
     st->codec->channels = 1;
     st->codec->sample_rate = 22050;
-    st->codec->bits_per_coded_sample = 16;
+    st->codec->bits_per_coded_sample = 8;
     st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_coded_sample * st->codec->channels;
-    st->codec->block_align = st->codec->channels * st->codec->bits_per_coded_sample;
 
     return 0;
 }
@@ -211,7 +210,8 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->stream_index = cin->audio_stream_index;
     pkt->pts = cin->audio_stream_pts;
-    cin->audio_stream_pts += cin->audio_buffer_size * 2 / cin->file_header.audio_frame_size;
+    pkt->duration = cin->audio_buffer_size - (pkt->pts == 0);
+    cin->audio_stream_pts += pkt->duration;
     cin->audio_buffer_size = 0;
     return 0;
 }

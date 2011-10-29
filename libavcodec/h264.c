@@ -1815,7 +1815,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h, int mb_ty
                     static const uint8_t dc_mapping[16] = { 0*16, 1*16, 4*16, 5*16, 2*16, 3*16, 6*16, 7*16,
                                                             8*16, 9*16,12*16,13*16,10*16,11*16,14*16,15*16};
                     for(i = 0; i < 16; i++)
-                        dctcoef_set(h->mb+p*256, pixel_shift, dc_mapping[i], dctcoef_get(h->mb_luma_dc[p], pixel_shift, i));
+                        dctcoef_set(h->mb+(p*256 << pixel_shift), pixel_shift, dc_mapping[i], dctcoef_get(h->mb_luma_dc[p], pixel_shift, i));
                 }
             }
         }else
@@ -2033,7 +2033,7 @@ static av_always_inline void hl_decode_mb_internal(H264Context *h, int simple, i
                         }
                         if (chroma422) {
                             for(i=j*16+4; i<j*16+8; i++){
-                                if(h->non_zero_count_cache[ scan8[i] ] || dctcoef_get(h->mb, pixel_shift, i*16))
+                                if(h->non_zero_count_cache[ scan8[i+4] ] || dctcoef_get(h->mb, pixel_shift, i*16))
                                     idct_add   (dest[j-1] + block_offset[i+4], h->mb + (i*16 << pixel_shift), uvlinesize);
                             }
                         }

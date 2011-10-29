@@ -2200,7 +2200,7 @@ static int has_codec_parameters(AVCodecContext *avctx)
 static int has_decode_delay_been_guessed(AVStream *st)
 {
     return st->codec->codec_id != CODEC_ID_H264 ||
-        st->codec_info_nb_frames >= 6 + st->codec->has_b_frames;
+        st->info->nb_decoded_frames >= 6;
 }
 
 static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
@@ -2226,6 +2226,8 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             avcodec_get_frame_defaults(&picture);
             ret = avcodec_decode_video2(st->codec, &picture,
                                         &got_picture, avpkt);
+            if (got_picture)
+                st->info->nb_decoded_frames++;
             break;
         case AVMEDIA_TYPE_AUDIO:
             data_size = FFMAX(avpkt->size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
