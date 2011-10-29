@@ -1011,12 +1011,12 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
             /* decode a VLC into a token */
             token = get_vlc2(gb, table->table, 5, 3);
             /* use the token to get a zero run, a coefficient, and an eob run */
-            if (token <= 6) {
+            if ((unsigned) token <= 6U) {
                 eob_run = eob_run_base[token];
                 if (eob_run_get_bits[token])
                     eob_run += get_bits(gb, eob_run_get_bits[token]);
                 coeff = zero_run = 0;
-            } else {
+            } else if (token >= 0) {
                 bits_to_get = coeff_get_bits[token];
                 if (!bits_to_get)
                     coeff = coeff_tables[token][0];
@@ -1026,6 +1026,10 @@ static int unpack_vlcs(Vp3DecodeContext *s, GetBitContext *gb,
                 zero_run = zero_run_base[token];
                 if (zero_run_get_bits[token])
                     zero_run += get_bits(gb, zero_run_get_bits[token]);
+            } else {
+                av_log(s->avctx, AV_LOG_ERROR,
+                       "Invalid token %d\n", token);
+                return -1;
             }
         }
 
@@ -1071,6 +1075,8 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     /* unpack the C plane DC coefficients */
     residual_eob_run = unpack_vlcs(s, gb, &s->dc_vlc[dc_c_table], 0,
         s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
+    if (residual_eob_run < 0)
+        return residual_eob_run;
 
     /* fetch the AC table indexes */
     ac_y_table = get_bits(gb, 4);
@@ -1080,36 +1086,52 @@ static int unpack_dct_coeffs(Vp3DecodeContext *s, GetBitContext *gb)
     for (i = 1; i <= 5; i++) {
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
 
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_1[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
     }
 
     /* unpack the group 2 AC coefficients (coeffs 6-14) */
     for (i = 6; i <= 14; i++) {
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
 
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_2[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
     }
 
     /* unpack the group 3 AC coefficients (coeffs 15-27) */
     for (i = 15; i <= 27; i++) {
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
 
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_3[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
     }
 
     /* unpack the group 4 AC coefficients (coeffs 28-63) */
     for (i = 28; i <= 63; i++) {
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_y_table], i,
             s->first_coded_y_fragment, s->last_coded_y_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
 
         residual_eob_run = unpack_vlcs(s, gb, &s->ac_vlc_4[ac_c_table], i,
             s->first_coded_c_fragment, s->last_coded_c_fragment, residual_eob_run);
+        if (residual_eob_run < 0)
+            return residual_eob_run;
     }
 
     return 0;
