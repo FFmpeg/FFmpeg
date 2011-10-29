@@ -1665,7 +1665,7 @@ static int frame_start(SnowContext *s){
    int w= s->avctx->width; //FIXME round up to x16 ?
    int h= s->avctx->height;
 
-    if(s->current_picture.data[0] && !(s->avctx->flags&CODEC_FLAG_EMU_EDGE)){
+    if (s->current_picture.data[0] && !(s->avctx->flags&CODEC_FLAG_EMU_EDGE)) {
         s->dsp.draw_edges(s->current_picture.data[0],
                           s->current_picture.linesize[0], w   , h   ,
                           EDGE_WIDTH  , EDGE_WIDTH  , EDGE_TOP | EDGE_BOTTOM);

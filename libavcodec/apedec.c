@@ -26,6 +26,7 @@
 #include "get_bits.h"
 #include "bytestream.h"
 #include "libavutil/audioconvert.h"
+#include "libavutil/avassert.h"
 
 /**
  * @file
@@ -163,48 +164,7 @@ typedef struct APEContext {
 
 // TODO: dsputilize
 
-static av_cold int ape_decode_init(AVCodecContext * avctx)
-{
-    APEContext *s = avctx->priv_data;
-    int i;
-
-    if (avctx->extradata_size != 6) {
-        av_log(avctx, AV_LOG_ERROR, "Incorrect extradata\n");
-        return -1;
-    }
-    if (avctx->bits_per_coded_sample != 16) {
-        av_log(avctx, AV_LOG_ERROR, "Only 16-bit samples are supported\n");
-        return -1;
-    }
-    if (avctx->channels > 2) {
-        av_log(avctx, AV_LOG_ERROR, "Only mono and stereo is supported\n");
-        return -1;
-    }
-    s->avctx             = avctx;
-    s->channels          = avctx->channels;
-    s->fileversion       = AV_RL16(avctx->extradata);
-    s->compression_level = AV_RL16(avctx->extradata + 2);
-    s->flags             = AV_RL16(avctx->extradata + 4);
-
-    av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n", s->compression_level, s->flags);
-    if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE) {
-        av_log(avctx, AV_LOG_ERROR, "Incorrect compression level %d\n", s->compression_level);
-        return -1;
-    }
-    s->fset = s->compression_level / 1000 - 1;
-    for (i = 0; i < APE_FILTER_LEVELS; i++) {
-        if (!ape_filter_orders[s->fset][i])
-            break;
-        s->filterbuf[i] = av_malloc((ape_filter_orders[s->fset][i] * 3 + HISTORY_SIZE) * 4);
-    }
-
-    dsputil_init(&s->dsp, avctx);
-    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
-    return 0;
-}
-
-static av_cold int ape_decode_close(AVCodecContext * avctx)
+static av_cold int ape_decode_close(AVCodecContext *avctx)
 {
     APEContext *s = avctx->priv_data;
     int i;
@@ -214,6 +174,54 @@ static av_cold int ape_decode_close(AVCodecContext * avctx)
 
     av_freep(&s->data);
     return 0;
+}
+
+static av_cold int ape_decode_init(AVCodecContext *avctx)
+{
+    APEContext *s = avctx->priv_data;
+    int i;
+
+    if (avctx->extradata_size != 6) {
+        av_log(avctx, AV_LOG_ERROR, "Incorrect extradata\n");
+        return AVERROR(EINVAL);
+    }
+    if (avctx->bits_per_coded_sample != 16) {
+        av_log(avctx, AV_LOG_ERROR, "Only 16-bit samples are supported\n");
+        return AVERROR(EINVAL);
+    }
+    if (avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "Only mono and stereo is supported\n");
+        return AVERROR(EINVAL);
+    }
+    s->avctx             = avctx;
+    s->channels          = avctx->channels;
+    s->fileversion       = AV_RL16(avctx->extradata);
+    s->compression_level = AV_RL16(avctx->extradata + 2);
+    s->flags             = AV_RL16(avctx->extradata + 4);
+
+    av_log(avctx, AV_LOG_DEBUG, "Compression Level: %d - Flags: %d\n",
+           s->compression_level, s->flags);
+    if (s->compression_level % 1000 || s->compression_level > COMPRESSION_LEVEL_INSANE) {
+        av_log(avctx, AV_LOG_ERROR, "Incorrect compression level %d\n",
+               s->compression_level);
+        return AVERROR_INVALIDDATA;
+    }
+    s->fset = s->compression_level / 1000 - 1;
+    for (i = 0; i < APE_FILTER_LEVELS; i++) {
+        if (!ape_filter_orders[s->fset][i])
+            break;
+        FF_ALLOC_OR_GOTO(avctx, s->filterbuf[i],
+                         (ape_filter_orders[s->fset][i] * 3 + HISTORY_SIZE) * 4,
+                         filter_alloc_fail);
+    }
+
+    dsputil_init(&s->dsp, avctx);
+    avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
+    return 0;
+filter_alloc_fail:
+    ape_decode_close(avctx);
+    return AVERROR(ENOMEM);
 }
 
 /**
@@ -228,7 +236,7 @@ static av_cold int ape_decode_close(AVCodecContext * avctx)
 #define BOTTOM_VALUE (TOP_VALUE >> 8)
 
 /** Start the decoder */
-static inline void range_start_decoding(APEContext * ctx)
+static inline void range_start_decoding(APEContext *ctx)
 {
     ctx->rc.buffer = bytestream_get_byte(&ctx->ptr);
     ctx->rc.low    = ctx->rc.buffer >> (8 - EXTRA_BITS);
@@ -236,13 +244,16 @@ static inline void range_start_decoding(APEContext * ctx)
 }
 
 /** Perform normalization */
-static inline void range_dec_normalize(APEContext * ctx)
+static inline void range_dec_normalize(APEContext *ctx)
 {
     while (ctx->rc.range <= BOTTOM_VALUE) {
         ctx->rc.buffer <<= 8;
-        if(ctx->ptr < ctx->data_end)
+        if(ctx->ptr < ctx->data_end) {
             ctx->rc.buffer += *ctx->ptr;
-        ctx->ptr++;
+            ctx->ptr++;
+        } else {
+            ctx->error = 1;
+        }
         ctx->rc.low    = (ctx->rc.low << 8)    | ((ctx->rc.buffer >> 1) & 0xFF);
         ctx->rc.range  <<= 8;
     }
@@ -254,7 +265,7 @@ static inline void range_dec_normalize(APEContext * ctx)
  * @param tot_f is the total frequency or (code_value)1<<shift
  * @return the culmulative frequency
  */
-static inline int range_decode_culfreq(APEContext * ctx, int tot_f)
+static inline int range_decode_culfreq(APEContext *ctx, int tot_f)
 {
     range_dec_normalize(ctx);
     ctx->rc.help = ctx->rc.range / tot_f;
@@ -266,7 +277,7 @@ static inline int range_decode_culfreq(APEContext * ctx, int tot_f)
  * @param ctx decoder context
  * @param shift number of bits to decode
  */
-static inline int range_decode_culshift(APEContext * ctx, int shift)
+static inline int range_decode_culshift(APEContext *ctx, int shift)
 {
     range_dec_normalize(ctx);
     ctx->rc.help = ctx->rc.range >> shift;
@@ -280,14 +291,14 @@ static inline int range_decode_culshift(APEContext * ctx, int shift)
  * @param sy_f the interval length (frequency of the symbol)
  * @param lt_f the lower end (frequency sum of < symbols)
  */
-static inline void range_decode_update(APEContext * ctx, int sy_f, int lt_f)
+static inline void range_decode_update(APEContext *ctx, int sy_f, int lt_f)
 {
     ctx->rc.low  -= ctx->rc.help * lt_f;
     ctx->rc.range = ctx->rc.help * sy_f;
 }
 
 /** Decode n bits (n <= 16) without modelling */
-static inline int range_decode_bits(APEContext * ctx, int n)
+static inline int range_decode_bits(APEContext *ctx, int n)
 {
     int sym = range_decode_culshift(ctx, n);
     range_decode_update(ctx, 1, sym);
@@ -339,7 +350,7 @@ static const uint16_t counts_diff_3980[21] = {
  * @param counts probability range start position
  * @param counts_diff probability range widths
  */
-static inline int range_get_symbol(APEContext * ctx,
+static inline int range_get_symbol(APEContext *ctx,
                                    const uint16_t counts[],
                                    const uint16_t counts_diff[])
 {
@@ -374,7 +385,7 @@ static inline void update_rice(APERice *rice, int x)
         rice->k++;
 }
 
-static inline int ape_decode_value(APEContext * ctx, APERice *rice)
+static inline int ape_decode_value(APEContext *ctx, APERice *rice)
 {
     int x, overflow;
 
@@ -441,7 +452,7 @@ static inline int ape_decode_value(APEContext * ctx, APERice *rice)
         return -(x >> 1);
 }
 
-static void entropy_decode(APEContext * ctx, int blockstodecode, int stereo)
+static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
 {
     int32_t *decoded0 = ctx->decoded0;
     int32_t *decoded1 = ctx->decoded1;
@@ -464,9 +475,11 @@ static void entropy_decode(APEContext * ctx, int blockstodecode, int stereo)
         range_dec_normalize(ctx);   /* normalize to use up all bytes */
 }
 
-static void init_entropy_decoder(APEContext * ctx)
+static int init_entropy_decoder(APEContext *ctx)
 {
     /* Read the CRC */
+    if (ctx->data_end - ctx->ptr < 6)
+        return AVERROR_INVALIDDATA;
     ctx->CRC = bytestream_get_be32(&ctx->ptr);
 
     /* Read the frame flags if they exist */
@@ -474,6 +487,8 @@ static void init_entropy_decoder(APEContext * ctx)
     if ((ctx->fileversion > 3820) && (ctx->CRC & 0x80000000)) {
         ctx->CRC &= ~0x80000000;
 
+        if (ctx->data_end - ctx->ptr < 6)
+            return AVERROR_INVALIDDATA;
         ctx->frameflags = bytestream_get_be32(&ctx->ptr);
     }
 
@@ -490,13 +505,15 @@ static void init_entropy_decoder(APEContext * ctx)
     ctx->ptr++;
 
     range_start_decoding(ctx);
+
+    return 0;
 }
 
 static const int32_t initial_coeffs[4] = {
     360, 317, -109, 98
 };
 
-static void init_predictor_decoder(APEContext * ctx)
+static void init_predictor_decoder(APEContext *ctx)
 {
     APEPredictor *p = &ctx->predictor;
 
@@ -519,7 +536,10 @@ static inline int APESIGN(int32_t x) {
     return (x < 0) - (x > 0);
 }
 
-static av_always_inline int predictor_update_filter(APEPredictor *p, const int decoded, const int filter, const int delayA, const int delayB, const int adaptA, const int adaptB)
+static av_always_inline int predictor_update_filter(APEPredictor *p,
+                                                    const int decoded, const int filter,
+                                                    const int delayA,  const int delayB,
+                                                    const int adaptA,  const int adaptB)
 {
     int32_t predictionA, predictionB, sign;
 
@@ -563,7 +583,7 @@ static av_always_inline int predictor_update_filter(APEPredictor *p, const int d
     return p->filterA[filter];
 }
 
-static void predictor_decode_stereo(APEContext * ctx, int count)
+static void predictor_decode_stereo(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded0;
@@ -571,9 +591,11 @@ static void predictor_decode_stereo(APEContext * ctx, int count)
 
     while (count--) {
         /* Predictor Y */
-        *decoded0 = predictor_update_filter(p, *decoded0, 0, YDELAYA, YDELAYB, YADAPTCOEFFSA, YADAPTCOEFFSB);
+        *decoded0 = predictor_update_filter(p, *decoded0, 0, YDELAYA, YDELAYB,
+                                            YADAPTCOEFFSA, YADAPTCOEFFSB);
         decoded0++;
-        *decoded1 = predictor_update_filter(p, *decoded1, 1, XDELAYA, XDELAYB, XADAPTCOEFFSA, XADAPTCOEFFSB);
+        *decoded1 = predictor_update_filter(p, *decoded1, 1, XDELAYA, XDELAYB,
+                                            XADAPTCOEFFSA, XADAPTCOEFFSB);
         decoded1++;
 
         /* Combined */
@@ -587,7 +609,7 @@ static void predictor_decode_stereo(APEContext * ctx, int count)
     }
 }
 
-static void predictor_decode_mono(APEContext * ctx, int count)
+static void predictor_decode_mono(APEContext *ctx, int count)
 {
     APEPredictor *p = &ctx->predictor;
     int32_t *decoded0 = ctx->decoded0;
@@ -632,7 +654,7 @@ static void predictor_decode_mono(APEContext * ctx, int count)
     p->lastA[0] = currentA;
 }
 
-static void do_init_filter(APEFilter *f, int16_t * buf, int order)
+static void do_init_filter(APEFilter *f, int16_t *buf, int order)
 {
     f->coeffs = buf;
     f->historybuffer = buf + order;
@@ -644,20 +666,23 @@ static void do_init_filter(APEFilter *f, int16_t * buf, int order)
     f->avg = 0;
 }
 
-static void init_filter(APEContext * ctx, APEFilter *f, int16_t * buf, int order)
+static void init_filter(APEContext *ctx, APEFilter *f, int16_t *buf, int order)
 {
     do_init_filter(&f[0], buf, order);
     do_init_filter(&f[1], buf + order * 3 + HISTORY_SIZE, order);
 }
 
-static void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t *data, int count, int order, int fracbits)
+static void do_apply_filter(APEContext *ctx, int version, APEFilter *f,
+                            int32_t *data, int count, int order, int fracbits)
 {
     int res;
     int absres;
 
     while (count--) {
         /* round fixedpoint scalar product */
-        res = ctx->dsp.scalarproduct_and_madd_int16(f->coeffs, f->delay - order, f->adaptcoeffs - order, order, APESIGN(*data));
+        res = ctx->dsp.scalarproduct_and_madd_int16(f->coeffs, f->delay - order,
+                                                    f->adaptcoeffs - order,
+                                                    order, APESIGN(*data));
         res = (res + (1 << (fracbits - 1))) >> fracbits;
         res += *data;
         *data++ = res;
@@ -676,7 +701,8 @@ static void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t
             /* Update the adaption coefficients */
             absres = FFABS(res);
             if (absres)
-                *f->adaptcoeffs = ((res & (1<<31)) - (1<<30)) >> (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
+                *f->adaptcoeffs = ((res & (1<<31)) - (1<<30)) >>
+                                  (25 + (absres <= f->avg*3) + (absres <= f->avg*4/3));
             else
                 *f->adaptcoeffs = 0;
 
@@ -699,8 +725,8 @@ static void do_apply_filter(APEContext * ctx, int version, APEFilter *f, int32_t
     }
 }
 
-static void apply_filter(APEContext * ctx, APEFilter *f,
-                         int32_t * data0, int32_t * data1,
+static void apply_filter(APEContext *ctx, APEFilter *f,
+                         int32_t *data0, int32_t *data1,
                          int count, int order, int fracbits)
 {
     do_apply_filter(ctx, ctx->fileversion, &f[0], data0, count, order, fracbits);
@@ -708,34 +734,38 @@ static void apply_filter(APEContext * ctx, APEFilter *f,
         do_apply_filter(ctx, ctx->fileversion, &f[1], data1, count, order, fracbits);
 }
 
-static void ape_apply_filters(APEContext * ctx, int32_t * decoded0,
-                              int32_t * decoded1, int count)
+static void ape_apply_filters(APEContext *ctx, int32_t *decoded0,
+                              int32_t *decoded1, int count)
 {
     int i;
 
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
         if (!ape_filter_orders[ctx->fset][i])
             break;
-        apply_filter(ctx, ctx->filters[i], decoded0, decoded1, count, ape_filter_orders[ctx->fset][i], ape_filter_fracbits[ctx->fset][i]);
+        apply_filter(ctx, ctx->filters[i], decoded0, decoded1, count,
+                     ape_filter_orders[ctx->fset][i],
+                     ape_filter_fracbits[ctx->fset][i]);
     }
 }
 
-static void init_frame_decoder(APEContext * ctx)
+static int init_frame_decoder(APEContext *ctx)
 {
-    int i;
-    init_entropy_decoder(ctx);
+    int i, ret;
+    if ((ret = init_entropy_decoder(ctx)) < 0)
+        return ret;
     init_predictor_decoder(ctx);
 
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
         if (!ape_filter_orders[ctx->fset][i])
             break;
-        init_filter(ctx, ctx->filters[i], ctx->filterbuf[i], ape_filter_orders[ctx->fset][i]);
+        init_filter(ctx, ctx->filters[i], ctx->filterbuf[i],
+                    ape_filter_orders[ctx->fset][i]);
     }
+    return 0;
 }
 
-static void ape_unpack_mono(APEContext * ctx, int count)
+static void ape_unpack_mono(APEContext *ctx, int count)
 {
-    int32_t left;
     int32_t *decoded0 = ctx->decoded0;
     int32_t *decoded1 = ctx->decoded1;
 
@@ -754,14 +784,11 @@ static void ape_unpack_mono(APEContext * ctx, int count)
 
     /* Pseudo-stereo - just copy left channel to right channel */
     if (ctx->channels == 2) {
-        while (count--) {
-            left = *decoded0;
-            *(decoded1++) = *(decoded0++) = left;
-        }
+        memcpy(decoded1, decoded0, count * sizeof(*decoded1));
     }
 }
 
-static void ape_unpack_stereo(APEContext * ctx, int count)
+static void ape_unpack_stereo(APEContext *ctx, int count)
 {
     int32_t left, right;
     int32_t *decoded0 = ctx->decoded0;
@@ -789,7 +816,7 @@ static void ape_unpack_stereo(APEContext * ctx, int count)
     }
 }
 
-static int ape_decode_frame(AVCodecContext * avctx,
+static int ape_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
 {
@@ -797,49 +824,65 @@ static int ape_decode_frame(AVCodecContext * avctx,
     int buf_size = avpkt->size;
     APEContext *s = avctx->priv_data;
     int16_t *samples = data;
-    int nblocks;
-    int i, n;
+    uint32_t nblocks;
+    int i;
     int blockstodecode;
     int bytes_used;
 
-    if (buf_size == 0 && !s->samples) {
-        *data_size = 0;
-        return 0;
-    }
-
     /* should not happen but who knows */
     if (BLOCKS_PER_LOOP * 2 * avctx->channels > *data_size) {
-        av_log (avctx, AV_LOG_ERROR, "Packet size is too big to be handled in lavc! (max is %d where you have %d)\n", *data_size, s->samples * 2 * avctx->channels);
-        return -1;
+        av_log (avctx, AV_LOG_ERROR, "Output buffer is too small.\n");
+        return AVERROR(EINVAL);
     }
 
+    /* this should never be negative, but bad things will happen if it is, so
+       check it just to make sure. */
+    av_assert0(s->samples >= 0);
+
     if(!s->samples){
-        s->data = av_realloc(s->data, (buf_size + 3) & ~3);
+        uint32_t offset;
+        void *tmp_data;
+
+        if (buf_size < 8) {
+            av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        tmp_data = av_realloc(s->data, FFALIGN(buf_size, 4));
+        if (!tmp_data)
+            return AVERROR(ENOMEM);
+        s->data = tmp_data;
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
         s->ptr = s->last_ptr = s->data;
         s->data_end = s->data + buf_size;
 
-        nblocks = s->samples = bytestream_get_be32(&s->ptr);
-        n =  bytestream_get_be32(&s->ptr);
-        if(n < 0 || n > 3){
+        nblocks = bytestream_get_be32(&s->ptr);
+        offset  = bytestream_get_be32(&s->ptr);
+        if (offset > 3) {
             av_log(avctx, AV_LOG_ERROR, "Incorrect offset passed\n");
             s->data = NULL;
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
-        s->ptr += n;
+        if (s->data_end - s->ptr < offset) {
+            av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+            return AVERROR_INVALIDDATA;
+        }
+        s->ptr += offset;
 
-        s->currentframeblocks = nblocks;
-        buf += 4;
-        if (s->samples <= 0) {
-            *data_size = 0;
-            return buf_size;
+        if (!nblocks || nblocks > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
+            return AVERROR_INVALIDDATA;
         }
+        s->currentframeblocks = s->samples = nblocks;
 
         memset(s->decoded0,  0, sizeof(s->decoded0));
         memset(s->decoded1,  0, sizeof(s->decoded1));
 
         /* Initialize the frame decoder */
-        init_frame_decoder(s);
+        if (init_frame_decoder(s) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "Error reading frame header\n");
+            return AVERROR_INVALIDDATA;
+        }
     }
 
     if (!s->data) {
@@ -858,10 +901,10 @@ static int ape_decode_frame(AVCodecContext * avctx,
         ape_unpack_stereo(s, blockstodecode);
     emms_c();
 
-    if(s->error || s->ptr > s->data_end){
+    if (s->error) {
         s->samples=0;
         av_log(avctx, AV_LOG_ERROR, "Error decoding frame\n");
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     for (i = 0; i < blockstodecode; i++) {

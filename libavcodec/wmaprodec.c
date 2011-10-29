@@ -86,12 +86,14 @@
  * subframe in order to reconstruct the output samples.
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
 #include "get_bits.h"
 #include "put_bits.h"
 #include "wmaprodata.h"
 #include "dsputil.h"
+#include "fmtconvert.h"
 #include "sinewin.h"
 #include "wma.h"
 
@@ -166,6 +168,7 @@ typedef struct WMAProDecodeCtx {
     /* generic decoder variables */
     AVCodecContext*  avctx;                         ///< codec context for av_log
     DSPContext       dsp;                           ///< accelerated DSP functions
+    FmtConvertContext fmt_conv;
     uint8_t          frame_data[MAX_FRAMESIZE +
                       FF_INPUT_BUFFER_PADDING_SIZE];///< compressed frame data
     PutBitContext    pb;                            ///< context for filling the frame_data buffer
@@ -279,6 +282,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
+    ff_fmt_convert_init(&s->fmt_conv, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
@@ -767,7 +771,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
     /* Integers 0..15 as single-precision floats.  The table saves a
        costly int to float conversion, and storing the values as
        integers allows fast sign-flipping. */
-    static const int fval_tab[16] = {
+    static const uint32_t fval_tab[16] = {
         0x00000000, 0x3f800000, 0x40000000, 0x40400000,
         0x40800000, 0x40a00000, 0x40c00000, 0x40e00000,
         0x41000000, 0x41100000, 0x41200000, 0x41300000,
@@ -799,7 +803,7 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
       4 vector coded large values) */
     while ((s->transmit_num_vec_coeffs || !rl_mode) &&
            (cur_coeff + 3 < ci->num_vec_coeffs)) {
-        int vals[4];
+        uint32_t vals[4];
         int i;
         unsigned int idx;
 
@@ -809,15 +813,15 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
             for (i = 0; i < 4; i += 2) {
                 idx = get_vlc2(&s->gb, vec2_vlc.table, VLCBITS, VEC2MAXDEPTH);
                 if (idx == HUFF_VEC2_SIZE - 1) {
-                    int v0, v1;
+                    uint32_t v0, v1;
                     v0 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v0 == HUFF_VEC1_SIZE - 1)
                         v0 += ff_wma_get_large_val(&s->gb);
                     v1 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v1 == HUFF_VEC1_SIZE - 1)
                         v1 += ff_wma_get_large_val(&s->gb);
-                    ((float*)vals)[i  ] = v0;
-                    ((float*)vals)[i+1] = v1;
+                    vals[i  ] = ((av_alias32){ .f32 = v0 }).u32;
+                    vals[i+1] = ((av_alias32){ .f32 = v1 }).u32;
                 } else {
                     vals[i]   = fval_tab[symbol_to_vec2[idx] >> 4 ];
                     vals[i+1] = fval_tab[symbol_to_vec2[idx] & 0xF];
@@ -833,8 +837,8 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
         /** decode sign */
         for (i = 0; i < 4; i++) {
             if (vals[i]) {
-                int sign = get_bits1(&s->gb) - 1;
-                *(uint32_t*)&ci->coeffs[cur_coeff] = vals[i] ^ sign<<31;
+                uint32_t sign = get_bits1(&s->gb) - 1;
+                AV_WN32A(&ci->coeffs[cur_coeff], vals[i] ^ sign << 31);
                 num_zeros = 0;
             } else {
                 ci->coeffs[cur_coeff] = 0;
@@ -1281,6 +1285,7 @@ static int decode_frame(WMAProDecodeCtx *s)
     int more_frames = 0;
     int len = 0;
     int i;
+    const float *out_ptr[WMAPRO_MAX_CHANNELS];
 
     /** check for potential output buffer overflow */
     if (s->num_channels * s->samples_per_frame > s->samples_end - s->samples) {
@@ -1356,18 +1361,12 @@ static int decode_frame(WMAProDecodeCtx *s)
     }
 
     /** interleave samples and write them to the output buffer */
+    for (i = 0; i < s->num_channels; i++)
+        out_ptr[i] = s->channel[i].out;
+    s->fmt_conv.float_interleave(s->samples, out_ptr, s->samples_per_frame,
+                                 s->num_channels);
+
     for (i = 0; i < s->num_channels; i++) {
-        float* ptr  = s->samples + i;
-        int incr = s->num_channels;
-        float* iptr = s->channel[i].out;
-        float* iend = iptr + s->samples_per_frame;
-
-        // FIXME should create/use a DSP function here
-        while (iptr < iend) {
-            *ptr = *iptr++;
-            ptr += incr;
-        }
-
         /** reuse second half of the IMDCT output for the next frame */
         memcpy(&s->channel[i].out[0],
                &s->channel[i].out[s->samples_per_frame],

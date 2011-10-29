@@ -150,10 +150,12 @@ int ff_mp4_read_descr(AVFormatContext *fc, AVIOContext *pb, int *tag);
 int ff_mp4_read_dec_config_descr(AVFormatContext *fc, AVStream *st, AVIOContext *pb);
 void ff_mp4_parse_es_descr(AVIOContext *pb, int *es_id);
 
+#define MP4ODescrTag                    0x01
 #define MP4IODescrTag                   0x02
 #define MP4ESDescrTag                   0x03
 #define MP4DecConfigDescrTag            0x04
 #define MP4DecSpecificDescrTag          0x05
+#define MP4SLDescrTag                   0x06
 
 int ff_mov_read_esds(AVFormatContext *fc, AVIOContext *pb, MOVAtom atom);
 enum CodecID ff_mov_get_lpcm_codec_id(int bps, int flags);

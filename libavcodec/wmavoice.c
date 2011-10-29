@@ -1730,7 +1730,7 @@ static int synth_superframe(AVCodecContext *ctx,
 {
     WMAVoiceContext *s = ctx->priv_data;
     GetBitContext *gb = &s->gb, s_gb;
-    int n, res, n_samples = 480;
+    int n, res, out_size, n_samples = 480;
     double lsps[MAX_FRAMES][MAX_LSPS];
     const double *mean_lsf = s->lsps == 16 ?
         wmavoice_mean_lsf16[s->lsp_def_mode] : wmavoice_mean_lsf10[s->lsp_def_mode];
@@ -1748,7 +1748,10 @@ static int synth_superframe(AVCodecContext *ctx,
         s->sframe_cache_size = 0;
     }
 
-    if ((res = check_bits_for_superframe(gb, s)) == 1) return 1;
+    if ((res = check_bits_for_superframe(gb, s)) == 1) {
+        *data_size = 0;
+        return 1;
+    }
 
     /* First bit is speech/music bit, it differentiates between WMAVoice
      * speech samples (the actual codec) and WMAVoice music samples, which
@@ -1789,6 +1792,14 @@ static int synth_superframe(AVCodecContext *ctx,
             stabilize_lsps(lsps[n], s->lsps);
     }
 
+    out_size = n_samples * av_get_bytes_per_sample(ctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(ctx, AV_LOG_ERROR,
+               "Output buffer too small (%d given - %zu needed)\n",
+               *data_size, out_size);
+        return -1;
+    }
+
     /* Parse frames, optionally preceeded by per-frame (independent) LSPs. */
     for (n = 0; n < 3; n++) {
         if (!s->has_residual_lsps) {
@@ -1808,8 +1819,10 @@ static int synth_superframe(AVCodecContext *ctx,
                                &samples[n * MAX_FRAMESIZE],
                                lsps[n], n == 0 ? s->prev_lsps : lsps[n - 1],
                                &excitation[s->history_nsamples + n * MAX_FRAMESIZE],
-                               &synth[s->lsps + n * MAX_FRAMESIZE])))
+                               &synth[s->lsps + n * MAX_FRAMESIZE]))) {
+            *data_size = 0;
             return res;
+        }
     }
 
     /* Statistics? FIXME - we don't check for length, a slight overrun
@@ -1821,7 +1834,7 @@ static int synth_superframe(AVCodecContext *ctx,
     }
 
     /* Specify nr. of output samples */
-    *data_size = n_samples * sizeof(float);
+    *data_size = out_size;
 
     /* Update history */
     memcpy(s->prev_lsps,           lsps[2],
@@ -1915,22 +1928,16 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
     GetBitContext *gb = &s->gb;
     int size, res, pos;
 
-    if (*data_size < 480 * sizeof(float)) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Output buffer too small (%d given - %zu needed)\n",
-               *data_size, 480 * sizeof(float));
-        return -1;
-    }
-    *data_size = 0;
-
     /* Packets are sometimes a multiple of ctx->block_align, with a packet
      * header at each ctx->block_align bytes. However, FFmpeg's ASF demuxer
      * feeds us ASF packets, which may concatenate multiple "codec" packets
      * in a single "muxer" packet, so we artificially emulate that by
      * capping the packet size at ctx->block_align. */
     for (size = avpkt->size; size > ctx->block_align; size -= ctx->block_align);
-    if (!size)
+    if (!size) {
+        *data_size = 0;
         return 0;
+    }
     init_get_bits(&s->gb, avpkt->data, size << 3);
 
     /* size == ctx->block_align is used to indicate whether we are dealing with

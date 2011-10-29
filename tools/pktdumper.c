@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 {
     char fntemplate[PATH_MAX];
     char pktfilename[PATH_MAX];
-    AVFormatContext *fctx;
+    AVFormatContext *fctx = NULL;
     AVPacket pkt;
     int64_t pktnum = 0;
     int64_t maxpkts = 0;
@@ -83,9 +83,9 @@ int main(int argc, char **argv)
     // register all file formats
     av_register_all();
 
-    err = av_open_input_file(&fctx, argv[1], NULL, 0, NULL);
+    err = avformat_open_input(&fctx, argv[1], NULL, NULL);
     if (err < 0) {
-        fprintf(stderr, "av_open_input_file: error %d\n", err);
+        fprintf(stderr, "cannot open input: error %d\n", err);
         return 1;
     }
 
