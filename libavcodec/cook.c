@@ -1099,7 +1099,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             case MONO:
                 if (q->nb_channels != 1) {
                     av_log_ask_for_sample(avctx, "Container channels != 1.\n");
-                    return AVERROR(ENOTSUP);
+                    return AVERROR_PATCHWELCOME;
                 }
                 av_log(avctx,AV_LOG_DEBUG,"MONO\n");
                 break;
@@ -1113,7 +1113,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             case JOINT_STEREO:
                 if (q->nb_channels != 2) {
                     av_log_ask_for_sample(avctx, "Container channels != 2.\n");
-                    return AVERROR(ENOTSUP);
+                    return AVERROR_PATCHWELCOME;
                 }
                 av_log(avctx,AV_LOG_DEBUG,"JOINT_STEREO\n");
                 if (avctx->extradata_size >= 16){
@@ -1151,7 +1151,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
                 break;
             default:
                 av_log_ask_for_sample(avctx, "Unknown Cook version.\n");
-                return AVERROR(ENOTSUP);
+                return AVERROR_PATCHWELCOME;
         }
 
         if(s > 1 && q->subpacket[s].samples_per_channel != q->samples_per_channel) {
@@ -1167,7 +1167,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         /* Try to catch some obviously faulty streams, othervise it might be exploitable */
         if (q->subpacket[s].total_subbands > 53) {
             av_log_ask_for_sample(avctx, "total_subbands > 53\n");
-            return AVERROR(ENOTSUP);
+            return AVERROR_PATCHWELCOME;
         }
 
         if ((q->subpacket[s].js_vlc_bits > 6) || (q->subpacket[s].js_vlc_bits < 2*q->subpacket[s].joint_stereo)) {
@@ -1178,7 +1178,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
 
         if (q->subpacket[s].subbands > 50) {
             av_log_ask_for_sample(avctx, "subbands > 50\n");
-            return AVERROR(ENOTSUP);
+            return AVERROR_PATCHWELCOME;
         }
         q->subpacket[s].gains1.now      = q->subpacket[s].gain_1;
         q->subpacket[s].gains1.previous = q->subpacket[s].gain_2;
@@ -1189,7 +1189,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         s++;
         if (s > MAX_SUBPACKETS) {
             av_log_ask_for_sample(avctx, "Too many subpackets > 5\n");
-            return AVERROR(ENOTSUP);
+            return AVERROR_PATCHWELCOME;
         }
     }
     /* Generate tables */
@@ -1233,7 +1233,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
         av_log_ask_for_sample(avctx,
                               "unknown amount of samples_per_channel = %d\n",
                               q->samples_per_channel);
-        return AVERROR(ENOTSUP);
+        return AVERROR_PATCHWELCOME;
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
