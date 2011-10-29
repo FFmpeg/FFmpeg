@@ -497,31 +497,25 @@ static int prores_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     int pic_size = prores_encode_picture(avctx, pic, buf + header_size + 8,
             buf_size - header_size - 8);
 
-    AV_WB32(buf, pic_size + 8 + header_size);
-    AV_WB8 (buf + 4, 'i');
-    AV_WB8 (buf + 5, 'c');
-    AV_WB8 (buf + 6, 'p');
-    AV_WB8 (buf + 7, 'f');
+    bytestream_put_be32(&buf, pic_size + 8 + header_size);
+    bytestream_put_buffer(&buf, "icpf", 4);
 
-    AV_WB16(buf + 8, header_size);
-    AV_WB16(buf + 10, 0);
-    AV_WB8 (buf + 12, 'f');
-    AV_WB8 (buf + 13, 'm');
-    AV_WB8 (buf + 14, 'p');
-    AV_WB8 (buf + 15, 'g');
-    AV_WB16(buf + 16, pic->width);
-    AV_WB16(buf + 18, pic->height);
-    buf[20] = 0x83; // {10}(422){00}{00}(frame){11}
-    buf[21] = 0;
-    buf[22] = 2;
-    buf[23] = 2;
-    buf[24] = 6;
-    buf[25] = 32;
-    buf[26] = 0;
-    buf[27] = 3;
+    bytestream_put_be16(&buf, header_size);
+    bytestream_put_be16(&buf, 0);
+    bytestream_put_buffer(&buf, "fmpg", 4);
+    bytestream_put_be16(&buf, pic->width);
+    bytestream_put_be16(&buf, pic->height);
+    *buf++ = 0x83; // {10}(422){00}{00}(frame){11}
+    *buf++ = 0;
+    *buf++ = 2;
+    *buf++ = 2;
+    *buf++ = 6;
+    *buf++ = 32;
+    *buf++ = 0;
+    *buf++ = 3;
 
-    memcpy(buf + 28, QMAT_LUMA[avctx->profile], 64);
-    memcpy(buf + 92, QMAT_CHROMA[avctx->profile], 64);
+    bytestream_put_buffer(&buf, QMAT_LUMA[avctx->profile],   64);
+    bytestream_put_buffer(&buf, QMAT_CHROMA[avctx->profile], 64);
 
     return pic_size + 8 + header_size;
 }
