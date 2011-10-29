@@ -549,9 +549,11 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
     }
 
     if ((avctx->height & 0xf) || (avctx->width & 0xf)) {
-        ctx->fill_y = av_malloc(DEFAULT_SLICE_MB_WIDTH << 9);
-        ctx->fill_u = av_malloc(DEFAULT_SLICE_MB_WIDTH << 8);
-        ctx->fill_v = av_malloc(DEFAULT_SLICE_MB_WIDTH << 8);
+        ctx->fill_y = av_malloc(4 * (DEFAULT_SLICE_MB_WIDTH << 8));
+        if (!ctx->fill_y)
+            return AVERROR(ENOMEM);
+        ctx->fill_u = ctx->fill_y + (DEFAULT_SLICE_MB_WIDTH << 9);
+        ctx->fill_v = ctx->fill_u + (DEFAULT_SLICE_MB_WIDTH << 8);
     }
 
     if (avctx->profile == FF_PROFILE_UNKNOWN) {
@@ -587,9 +589,7 @@ static av_cold int prores_encode_close(AVCodecContext *avctx)
 {
     ProresContext* ctx = avctx->priv_data;
     av_freep(&avctx->coded_frame);
-    av_free(ctx->fill_y);
-    av_free(ctx->fill_u);
-    av_free(ctx->fill_v);
+    av_freep(&ctx->fill_y);
 
     return 0;
 }
