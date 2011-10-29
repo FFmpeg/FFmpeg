@@ -3681,12 +3681,25 @@ static void opt_output_file(void *optctx, const char *filename)
 
     if (!strcmp(file_oformat->name, "ffm") &&
         av_strstart(filename, "http:", NULL)) {
+        int j;
         /* special case for files sent to ffserver: we get the stream
            parameters from ffserver */
         int err = read_ffserver_streams(o, oc, filename);
         if (err < 0) {
             print_error(filename, err);
             exit_program(1);
+        }
+        for(j = nb_output_streams - oc->nb_streams; j < nb_output_streams; j++) {
+            ost = &output_streams[j];
+            for (i = 0; i < nb_input_streams; i++) {
+                ist = &input_streams[i];
+                if(ist->st->codec->codec_type == ost->st->codec->codec_type){
+                    ost->sync_ist= ist;
+                    ost->source_index= i;
+                    ist->discard = 0;
+                    break;
+                }
+            }
         }
     } else if (!o->nb_stream_maps) {
         /* pick the "best" stream of each type */
