@@ -316,7 +316,7 @@ static av_always_inline unsigned encode_slice_data(AVCodecContext *avctx,
         unsigned* y_data_size, unsigned* u_data_size, unsigned* v_data_size,
         int qp)
 {
-    ProresContext* ctx = (ProresContext*) avctx->priv_data;
+    ProresContext* ctx = avctx->priv_data;
 
     *y_data_size = encode_slice_plane(avctx, mb_count, dest_y, luma_stride,
             buf, data_size, ctx->qmat_luma[qp - 1], 0);
@@ -373,7 +373,7 @@ static int encode_slice(AVCodecContext *avctx, AVFrame *pic, int mb_x,
     int hdr_size = 6, slice_size;
     uint8_t *dest_y, *dest_u, *dest_v;
     unsigned y_data_size = 0, u_data_size = 0, v_data_size = 0;
-    ProresContext* ctx = (ProresContext*)avctx->priv_data;
+    ProresContext* ctx = avctx->priv_data;
     int tgt_bits   = (mb_count * bitrate_table[avctx->profile]) >> 2;
     int low_bytes  = (tgt_bits - (tgt_bits >> 3)) >> 3; // 12% bitrate fluctuation
     int high_bytes = (tgt_bits + (tgt_bits >> 3)) >> 3;
@@ -536,7 +536,7 @@ static void scale_mat(const uint8_t* src, int* dst, int scale)
 static av_cold int prores_encode_init(AVCodecContext *avctx)
 {
     int i;
-    ProresContext* ctx = (ProresContext*)avctx->priv_data;
+    ProresContext* ctx = avctx->priv_data;
 
     if (avctx->pix_fmt != PIX_FMT_YUV422P10LE) {
         av_log(avctx, AV_LOG_ERROR, "need YUV422P10\n");
@@ -586,7 +586,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
 
 static av_cold int prores_encode_close(AVCodecContext *avctx)
 {
-    ProresContext* ctx = (ProresContext*)avctx->priv_data;
+    ProresContext* ctx = avctx->priv_data;
     av_freep(&avctx->coded_frame);
     av_free(ctx->fill_y);
     av_free(ctx->fill_u);
