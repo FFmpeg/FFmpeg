@@ -28,12 +28,16 @@
 
 #include "parser.h"
 
+typedef struct MJPEGParserContext{
+    ParseContext pc;
+}MJPEGParserContext;
 
 /**
  * finds the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
-static int find_frame_end(ParseContext *pc, const uint8_t *buf, int buf_size){
+static int find_frame_end(MJPEGParserContext *m, const uint8_t *buf, int buf_size){
+    ParseContext *pc= &m->pc;
     int vop_found, i;
     uint16_t state;
 
@@ -75,13 +79,14 @@ static int jpeg_parse(AVCodecParserContext *s,
                       const uint8_t **poutbuf, int *poutbuf_size,
                       const uint8_t *buf, int buf_size)
 {
-    ParseContext *pc = s->priv_data;
+    MJPEGParserContext *m = s->priv_data;
+    ParseContext *pc = &m->pc;
     int next;
 
     if(s->flags & PARSER_FLAG_COMPLETE_FRAMES){
         next= buf_size;
     }else{
-        next= find_frame_end(pc, buf, buf_size);
+        next= find_frame_end(m, buf, buf_size);
 
         if (ff_combine_frame(pc, next, &buf, &buf_size) < 0) {
             *poutbuf = NULL;
@@ -98,7 +103,7 @@ static int jpeg_parse(AVCodecParserContext *s,
 
 AVCodecParser ff_mjpeg_parser = {
     { CODEC_ID_MJPEG },
-    sizeof(ParseContext),
+    sizeof(MJPEGParserContext),
     NULL,
     jpeg_parse,
     ff_parse_close,
