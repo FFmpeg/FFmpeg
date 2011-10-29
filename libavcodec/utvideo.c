@@ -66,7 +66,7 @@ static int huff_cmp(const void *a, const void *b)
     return (aa->len - bb->len)*256 + aa->sym - bb->sym;
 }
 
-static int build_huff(const uint8_t *src, VLC *vlc)
+static int build_huff(const uint8_t *src, VLC *vlc, int *fsym)
 {
     int i;
     HuffEntry he[256];
@@ -76,13 +76,18 @@ static int build_huff(const uint8_t *src, VLC *vlc)
     uint8_t syms[256];
     uint32_t code;
 
+    *fsym = -1;
     for (i = 0; i < 256; i++) {
         he[i].sym = i;
         he[i].len = *src++;
     }
     qsort(he, 256, sizeof(*he), huff_cmp);
 
-    if (!he[0].len || he[0].len > 32)
+    if (!he[0].len) {
+        *fsym = he[0].sym;
+        return 0;
+    }
+    if (he[0].len > 32)
         return -1;
 
     last = 255;
@@ -112,12 +117,36 @@ static int decode_plane(UtvideoContext *c, int plane_no,
     int sstart, send;
     VLC vlc;
     GetBitContext gb;
-    int prev;
+    int prev, fsym;
     const int cmask = ~(!plane_no && c->avctx->pix_fmt == PIX_FMT_YUV420P);
 
-    if (build_huff(src, &vlc)) {
+    if (build_huff(src, &vlc, &fsym)) {
         av_log(c->avctx, AV_LOG_ERROR, "Cannot build Huffman codes\n");
         return AVERROR_INVALIDDATA;
+    }
+    if (fsym >= 0) { // build_huff reported a symbol to fill slices with
+        send = 0;
+        for (slice = 0; slice < c->slices; slice++) {
+            uint8_t *dest;
+
+            sstart = send;
+            send   = (height * (slice + 1) / c->slices) & cmask;
+            dest   = dst + sstart * stride;
+
+            prev = 0x80;
+            for (j = sstart; j < send; j++) {
+                for (i = 0; i < width * step; i += step) {
+                    pix = fsym;
+                    if (use_pred) {
+                        prev += pix;
+                        pix   = prev;
+                    }
+                    dest[i] = pix;
+                }
+                dest += stride;
+            }
+        }
+        return 0;
     }
 
     src      += 256;
