@@ -168,7 +168,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     float *out = data;
-    int i, j, out_size;
+    int i, out_size;
     RA288Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
@@ -194,8 +194,8 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
 
         decode(ractx, gain, cb_coef);
 
-        for (j=0; j < RA288_BLOCK_SIZE; j++)
-            *(out++) = ractx->sp_hist[70 + 36 + j];
+        memcpy(out, &ractx->sp_hist[70 + 36], RA288_BLOCK_SIZE * sizeof(*out));
+        out += RA288_BLOCK_SIZE;
 
         if ((i & 7) == 3) {
             backward_filter(ractx->sp_hist, ractx->sp_rec, syn_window,
