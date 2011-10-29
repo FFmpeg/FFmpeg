@@ -518,8 +518,6 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
         av_log(avctx, AV_LOG_ERROR,
                "Error processing packet: packet size (%d) too small\n",
                avpkt->size);
-
-        *data_size = 0;
         return -1;
     }
 
@@ -530,8 +528,6 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
         av_log(avctx, AV_LOG_ERROR,
                "Error processing packet: output buffer (%d) too small\n",
                *data_size);
-
-        *data_size = 0;
         return -1;
     }
 
