@@ -441,10 +441,10 @@ static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
 {
     int mb_width = (avctx->width + 15) >> 4;
     int mb_height = (avctx->height + 15) >> 4;
-    int hdr_size, sl_size, *slice_sizes;
-    int sl, mb_y, sl_data_size, qp;
+    int hdr_size, sl_size;
+    int mb_y, sl_data_size, qp;
     int unsafe_bot, unsafe_right;
-    uint8_t *sl_data;
+    uint8_t *sl_data, *sl_data_sizes;
     int slice_per_line = 0, rem = mb_width;
 
     for (int i = av_log2(DEFAULT_SLICE_MB_WIDTH); i >= 0; --i) {
@@ -453,9 +453,9 @@ static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
     }
 
     qp = qp_start_table[avctx->profile];
-    slice_sizes = av_malloc(slice_per_line * mb_height * sizeof(int));
-    sl = 0; hdr_size = 8; sl_data_size = buf_size - hdr_size;
-    sl_data = buf + hdr_size + (slice_per_line * mb_height * 2);
+    hdr_size = 8; sl_data_size = buf_size - hdr_size;
+    sl_data_sizes = buf + hdr_size;
+    sl_data = sl_data_sizes + (slice_per_line * mb_height * 2);
     for (mb_y = 0; mb_y < mb_height; mb_y++) {
         int mb_x = 0;
         int slice_mb_count = DEFAULT_SLICE_MB_WIDTH;
@@ -469,7 +469,7 @@ static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
             sl_size = encode_slice(avctx, pic, mb_x, mb_y, slice_mb_count,
                     sl_data, sl_data_size, unsafe_bot || unsafe_right, &qp);
 
-            slice_sizes[sl++]  = sl_size;
+            bytestream_put_be16(&sl_data_sizes, sl_size);
             sl_data           += sl_size;
             sl_data_size      -= sl_size;
             mb_x              += slice_mb_count;
@@ -480,11 +480,6 @@ static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
     AV_WB32(buf + 1, sl_data - buf);
     AV_WB16(buf + 5, slice_per_line * mb_height);
     buf[7] = av_log2(DEFAULT_SLICE_MB_WIDTH) << 4;
-
-    for (int i = 0; i < slice_per_line * mb_height; i++)
-        AV_WB16(buf + hdr_size + (i << 1), slice_sizes[i]);
-
-    av_free(slice_sizes);
 
     return sl_data - buf;
 }
