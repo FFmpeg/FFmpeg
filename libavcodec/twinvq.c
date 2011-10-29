@@ -871,9 +871,9 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
 /**
  * Init IMDCT and windowing tables
  */
-static av_cold void init_mdct_win(TwinContext *tctx)
+static av_cold int init_mdct_win(TwinContext *tctx)
 {
-    int i,j;
+    int i, j, ret;
     const ModeTab *mtab = tctx->mtab;
     int size_s = mtab->size / mtab->fmode[FT_SHORT].sub;
     int size_m = mtab->size / mtab->fmode[FT_MEDIUM].sub;
@@ -882,20 +882,29 @@ static av_cold void init_mdct_win(TwinContext *tctx)
 
     for (i = 0; i < 3; i++) {
         int bsize = tctx->mtab->size/tctx->mtab->fmode[i].sub;
-        ff_mdct_init(&tctx->mdct_ctx[i], av_log2(bsize) + 1, 1,
-                     -sqrt(norm/bsize) / (1<<15));
+        if ((ret = ff_mdct_init(&tctx->mdct_ctx[i], av_log2(bsize) + 1, 1,
+                                -sqrt(norm/bsize) / (1<<15))))
+            return ret;
     }
 
-    tctx->tmp_buf  = av_malloc(mtab->size            * sizeof(*tctx->tmp_buf));
+    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->tmp_buf,
+                     mtab->size * sizeof(*tctx->tmp_buf), alloc_fail);
 
-    tctx->spectrum  = av_malloc(2*mtab->size*channels*sizeof(float));
-    tctx->curr_frame = av_malloc(2*mtab->size*channels*sizeof(float));
-    tctx->prev_frame  = av_malloc(2*mtab->size*channels*sizeof(float));
+    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->spectrum,
+                     2 * mtab->size * channels * sizeof(*tctx->spectrum),
+                     alloc_fail);
+    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->curr_frame,
+                     2 * mtab->size * channels * sizeof(*tctx->curr_frame),
+                     alloc_fail);
+    FF_ALLOC_OR_GOTO(tctx->avctx, tctx->prev_frame,
+                     2 * mtab->size * channels * sizeof(*tctx->prev_frame),
+                     alloc_fail);
 
     for (i = 0; i < 3; i++) {
         int m = 4*mtab->size/mtab->fmode[i].sub;
         double freq = 2*M_PI/m;
-        tctx->cos_tabs[i] = av_malloc((m/4)*sizeof(*tctx->cos_tabs));
+        FF_ALLOC_OR_GOTO(tctx->avctx, tctx->cos_tabs[i],
+                         (m / 4) * sizeof(*tctx->cos_tabs[i]), alloc_fail);
 
         for (j = 0; j <= m/8; j++)
             tctx->cos_tabs[i][j] = cos((2*j + 1)*freq);
@@ -907,6 +916,10 @@ static av_cold void init_mdct_win(TwinContext *tctx)
     ff_init_ff_sine_windows(av_log2(size_m));
     ff_init_ff_sine_windows(av_log2(size_s/2));
     ff_init_ff_sine_windows(av_log2(mtab->size));
+
+    return 0;
+alloc_fail:
+    return AVERROR(ENOMEM);
 }
 
 /**
@@ -1068,8 +1081,28 @@ static av_cold void init_bitstream_params(TwinContext *tctx)
         construct_perm_table(tctx, frametype);
 }
 
+static av_cold int twin_decode_close(AVCodecContext *avctx)
+{
+    TwinContext *tctx = avctx->priv_data;
+    int i;
+
+    for (i = 0; i < 3; i++) {
+        ff_mdct_end(&tctx->mdct_ctx[i]);
+        av_free(tctx->cos_tabs[i]);
+    }
+
+
+    av_free(tctx->curr_frame);
+    av_free(tctx->spectrum);
+    av_free(tctx->prev_frame);
+    av_free(tctx->tmp_buf);
+
+    return 0;
+}
+
 static av_cold int twin_decode_init(AVCodecContext *avctx)
 {
+    int ret;
     TwinContext *tctx = avctx->priv_data;
     int isampf = avctx->sample_rate/1000;
     int ibps = avctx->bit_rate/(1000 * avctx->channels);
@@ -1099,29 +1132,14 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
     }
 
     dsputil_init(&tctx->dsp, avctx);
-    init_mdct_win(tctx);
+    if ((ret = init_mdct_win(tctx))) {
+        av_log(avctx, AV_LOG_ERROR, "Error initializing MDCT\n");
+        twin_decode_close(avctx);
+        return ret;
+    }
     init_bitstream_params(tctx);
 
     memset_float(tctx->bark_hist[0][0], 0.1, FF_ARRAY_ELEMS(tctx->bark_hist));
-
-    return 0;
-}
-
-static av_cold int twin_decode_close(AVCodecContext *avctx)
-{
-    TwinContext *tctx = avctx->priv_data;
-    int i;
-
-    for (i = 0; i < 3; i++) {
-        ff_mdct_end(&tctx->mdct_ctx[i]);
-        av_free(tctx->cos_tabs[i]);
-    }
-
-
-    av_free(tctx->curr_frame);
-    av_free(tctx->spectrum);
-    av_free(tctx->prev_frame);
-    av_free(tctx->tmp_buf);
 
     return 0;
 }
