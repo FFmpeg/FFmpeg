@@ -810,13 +810,13 @@ static int imc_decode_frame(AVCodecContext * avctx,
     if(imc_get_coeffs(q) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Read coefficients failed\n");
         q->decoder_reset = 1;
-        return 0;
+        return AVERROR_INVALIDDATA;
     }
 
     if(inverse_quant_coeff(q, stream_format_code) < 0) {
         av_log(avctx, AV_LOG_ERROR, "Inverse quantization of coefficients failed\n");
         q->decoder_reset = 1;
-        return 0;
+        return AVERROR_INVALIDDATA;
     }
 
     memset(q->skipFlags, 0, sizeof(q->skipFlags));
