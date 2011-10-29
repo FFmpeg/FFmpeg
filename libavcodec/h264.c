@@ -2741,7 +2741,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 s->dsp.dct_bits = h->sps.bit_depth_luma > 8 ? 32 : 16;
                 dsputil_init(&s->dsp, s->avctx);
             } else {
-                av_log(s->avctx, AV_LOG_DEBUG, "Unsupported bit depth: %d chroma_idc: %d\n",
+                av_log(s->avctx, AV_LOG_ERROR, "Unsupported bit depth: %d chroma_idc: %d\n",
                        h->sps.bit_depth_luma, h->sps.chroma_format_idc);
                 return -1;
             }
