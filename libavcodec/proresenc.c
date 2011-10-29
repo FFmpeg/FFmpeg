@@ -548,7 +548,6 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    memset(ctx, 0, sizeof(ProresContext));
     if ((avctx->height & 0xf) || (avctx->width & 0xf)) {
         ctx->fill_y = av_malloc(DEFAULT_SLICE_MB_WIDTH << 9);
         ctx->fill_u = av_malloc(DEFAULT_SLICE_MB_WIDTH << 8);
