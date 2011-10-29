@@ -106,7 +106,6 @@ static int vqf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             avio_skip(s->pb, len-12);
 
             st->codec->bit_rate              = read_bitrate*1000;
-            st->codec->bits_per_coded_sample = 16;
             break;
         case MKTAG('N','A','M','E'):
             add_metadata(s, "title"    , len, header_size);
