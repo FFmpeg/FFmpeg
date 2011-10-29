@@ -55,4 +55,7 @@ int ff_match_2uint16(const uint16_t (*tab)[2], int size, int a, int b);
 
 unsigned int avpriv_toupper4(unsigned int x);
 
+int avpriv_lock_avformat(void);
+int avpriv_unlock_avformat(void);
+
 #endif /* AVCODEC_INTERNAL_H */
