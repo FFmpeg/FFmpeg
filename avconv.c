@@ -2638,7 +2638,8 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
         /* disable some already defined maps */
         for (i = 0; i < o->nb_stream_maps; i++) {
             m = &o->stream_maps[i];
-            if (check_stream_specifier(input_files[m->file_index].ctx,
+            if (file_idx == m->file_index &&
+                check_stream_specifier(input_files[m->file_index].ctx,
                                        input_files[m->file_index].ctx->streams[m->stream_index],
                                        *p == ':' ? p + 1 : p) > 0)
                 m->disabled = 1;
