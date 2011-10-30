@@ -1622,9 +1622,6 @@ static int vorbis_decode_frame(AVCodecContext *avccontext,
     const float *channel_ptrs[255];
     int i, len, out_size;
 
-    if (!buf_size)
-        return 0;
-
     av_dlog(NULL, "packet length %d \n", buf_size);
 
     init_get_bits(gb, buf, buf_size*8);
