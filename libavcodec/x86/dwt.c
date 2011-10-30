@@ -188,7 +188,7 @@ void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
 
     switch (type) {
     case DWT_DIRAC_DD9_7:
-        d->horizontal_compose = ff_horizontal_compose_dd97i_ssse3;
+//MMXDISABLED        d->horizontal_compose = ff_horizontal_compose_dd97i_ssse3;
         break;
     }
 #endif // HAVE_YASM
