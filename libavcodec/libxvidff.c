@@ -137,7 +137,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
     xvid_enc_create_t xvid_enc_create;
     xvid_enc_plugin_t plugins[7];
 
-    /* Bring in VOP flags from ffmpeg command-line */
+    /* Bring in VOP flags from avconv command-line */
     x->vop_flags = XVID_VOP_HALFPEL; /* Bare minimum quality */
     if( xvid_flags & CODEC_FLAG_4MV )
         x->vop_flags |= XVID_VOP_INTER4V; /* Level 3 */
@@ -191,7 +191,7 @@ static av_cold int xvid_encode_init(AVCodecContext *avctx)  {
            break;
     }
 
-    /* Bring in VOL flags from ffmpeg command-line */
+    /* Bring in VOL flags from avconv command-line */
     x->vol_flags = 0;
     if( xvid_flags & CODEC_FLAG_GMC ) {
         x->vol_flags |= XVID_VOL_GMC;
@@ -669,7 +669,7 @@ static int xvid_ff_2pass_create(xvid_plg_create_t * param,
     /* This is because we can safely prevent a buffer overflow */
     log[0] = 0;
     snprintf(log, BUFFER_REMAINING(log),
-        "# ffmpeg 2-pass log file, using xvid codec\n");
+        "# avconv 2-pass log file, using xvid codec\n");
     snprintf(BUFFER_CAT(log), BUFFER_REMAINING(log),
         "# Do not modify. libxvidcore version: %d.%d.%d\n\n",
         XVID_VERSION_MAJOR(XVID_VERSION),

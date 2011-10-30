@@ -223,8 +223,8 @@ typedef struct FFStream {
     char title[512];
     char copyright[512];
     char comment[512];
-    pid_t pid;  /* Of ffmpeg process */
-    time_t pid_start;  /* Of ffmpeg process */
+    pid_t pid;  /* of avconv process */
+    time_t pid_start;  /* of avconv process */
     char **child_argv;
     struct FFStream *next;
     unsigned bandwidth; /* bandwidth, in kbits/s */
@@ -474,7 +474,7 @@ static void start_children(FFStream *feed)
                     slash = pathname;
                 else
                     slash++;
-                strcpy(slash, "ffmpeg");
+                strcpy(slash, "avconv");
 
                 http_log("Launch commandline: ");
                 http_log("%s ", pathname);

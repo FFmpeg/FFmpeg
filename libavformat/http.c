@@ -1,5 +1,5 @@
 /*
- * HTTP protocol for ffmpeg client
+ * HTTP protocol for avconv client
  * Copyright (c) 2000, 2001 Fabrice Bellard
  *
  * This file is part of Libav.
@@ -31,7 +31,7 @@
 #include "url.h"
 #include "libavutil/opt.h"
 
-/* XXX: POST protocol is not completely implemented because ffmpeg uses
+/* XXX: POST protocol is not completely implemented because avconv uses
    only a subset of it. */
 
 /* used for protocol handling */

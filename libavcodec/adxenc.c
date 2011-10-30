@@ -145,7 +145,7 @@ static int adx_encode_frame(AVCodecContext *avctx,
 
 /*
     input data size =
-    ffmpeg.c: do_audio_out()
+    avconv.c:do_audio_out()
     frame_bytes = enc->frame_size * 2 * enc->channels;
 */
 
