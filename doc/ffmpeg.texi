@@ -955,6 +955,11 @@ and audio directly.
 ffmpeg -f oss -i /dev/dsp -f video4linux2 -i /dev/video0 /tmp/out.mpg
 @end example
 
+Or with an ALSA audio source (mono input, card id 1) instead of OSS:
+@example
+ffmpeg -f alsa -ac 1 -i hw:1 -f video4linux2 -i /dev/video0 /tmp/out.mpg
+@end example
+
 Note that you must activate the right video source and channel before
 launching ffmpeg with any TV viewer such as
 @uref{http://linux.bytesex.org/xawtv/, xawtv} by Gerd Knorr. You also
