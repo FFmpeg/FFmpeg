@@ -20,7 +20,7 @@
 
 #include "dsputil.h"
 #include "diracdsp.h"
-/* MMX_DISABLE #include "libavcodec/x86/diracdsp_mmx.h" */
+#include "libavcodec/x86/diracdsp_mmx.h"
 
 #define FILTER(src, stride)                                     \
     ((21*((src)[ 0*stride] + (src)[1*stride])                   \
@@ -197,5 +197,5 @@ void ff_diracdsp_init(DiracDSPContext *c)
     PIXFUNC(avg, 16);
     PIXFUNC(avg, 32);
 
-    /* MMX_DISABLE    if (HAVE_MMX) ff_diracdsp_init_mmx(c); */
+    if (HAVE_MMX) ff_diracdsp_init_mmx(c);
 }

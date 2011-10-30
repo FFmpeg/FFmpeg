@@ -27,7 +27,7 @@ MMX-OBJS-$(CONFIG_RV40_DECODER)        += x86/rv40dsp.o                 \
 
 YASM-OBJS-$(CONFIG_VC1_DECODER)        += x86/vc1dsp_yasm.o
 
-#DISABLE_MMX YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o
+YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o
 
 MMX-OBJS-$(CONFIG_AC3DSP)              += x86/ac3dsp_mmx.o
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
