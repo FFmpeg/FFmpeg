@@ -1104,17 +1104,31 @@ static av_cold int twin_decode_init(AVCodecContext *avctx)
 {
     int ret;
     TwinContext *tctx = avctx->priv_data;
-    int isampf = avctx->sample_rate/1000;
-    int ibps = avctx->bit_rate/(1000 * avctx->channels);
+    int isampf, ibps;
 
     tctx->avctx       = avctx;
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+
+    if (!avctx->extradata || avctx->extradata_size < 12) {
+        av_log(avctx, AV_LOG_ERROR, "Missing or incomplete extradata\n");
+        return AVERROR_INVALIDDATA;
+    }
+    avctx->channels = AV_RB32(avctx->extradata    ) + 1;
+    avctx->bit_rate = AV_RB32(avctx->extradata + 4) * 1000;
+    isampf          = AV_RB32(avctx->extradata + 8);
+    switch (isampf) {
+    case 44: avctx->sample_rate = 44100;         break;
+    case 22: avctx->sample_rate = 22050;         break;
+    case 11: avctx->sample_rate = 11025;         break;
+    default: avctx->sample_rate = isampf * 1000; break;
+    }
 
     if (avctx->channels > CHANNELS_MAX) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %i\n",
                avctx->channels);
         return -1;
     }
+    ibps = avctx->bit_rate / (1000 * avctx->channels);
 
     switch ((isampf << 8) +  ibps) {
     case (8 <<8) +  8: tctx->mtab = &mode_08_08; break;
