@@ -1609,7 +1609,7 @@ static int output_packet(InputStream *ist, int ist_index,
 #if CONFIG_AVFILTER
     int frame_available;
 #endif
-    float quality;
+    float quality = 0;
 
     AVPacket avpkt;
     int bps = av_get_bytes_per_sample(ist->st->codec->sample_fmt);
@@ -3901,6 +3901,8 @@ static void opt_output_file(void *optctx, const char *filename)
                 METADATA_CHECK_INDEX(map->index, files[j]->nb_programs, "program")
                 meta[j] = &files[j]->programs[map->index]->metadata;
                 break;
+            default:
+                abort();
             }
         }
 
