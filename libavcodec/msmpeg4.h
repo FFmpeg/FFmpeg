@@ -1,5 +1,5 @@
 /*
- * MSMPEG4 backend for ffmpeg encoder and decoder
+ * MSMPEG4 backend for encoder and decoder
  * copyright (c) 2007 Aurelien Jacobs <aurel@gnuage.org>
  *
  * This file is part of Libav.

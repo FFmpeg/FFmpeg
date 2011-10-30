@@ -1,5 +1,5 @@
 /*
- * Unbuffered io for ffmpeg system
+ * unbuffered I/O
  * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of Libav.

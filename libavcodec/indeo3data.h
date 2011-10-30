@@ -1,5 +1,5 @@
 /*
- * Intel Indeo 3 (IV31, IV32, etc.) video decoder for ffmpeg
+ * Intel Indeo 3 (IV31, IV32, etc.) video decoder
  * written, produced, and directed by Alan Smithee
  *
  * This file is part of Libav.

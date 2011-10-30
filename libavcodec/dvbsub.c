@@ -1,5 +1,5 @@
 /*
- * DVB subtitle encoding for ffmpeg
+ * DVB subtitle encoding
  * Copyright (c) 2005 Fabrice Bellard
  *
  * This file is part of Libav.

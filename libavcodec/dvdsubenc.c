@@ -1,5 +1,5 @@
 /*
- * DVD subtitle encoding for ffmpeg
+ * DVD subtitle encoding
  * Copyright (c) 2005 Wolfram Gloger
  *
  * This file is part of Libav.

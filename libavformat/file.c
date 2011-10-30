@@ -1,5 +1,5 @@
 /*
- * Buffered file io for ffmpeg system
+ * buffered file I/O
  * Copyright (c) 2001 Fabrice Bellard
  *
  * This file is part of Libav.
