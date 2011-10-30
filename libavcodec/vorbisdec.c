@@ -936,12 +936,6 @@ static int vorbis_parse_id_hdr(vorbis_context *vc)
         av_log(vc->avccontext, AV_LOG_ERROR, " Vorbis id header packet corrupt (illegal blocksize). \n");
         return AVERROR_INVALIDDATA;
     }
-    // output format int16
-    if (vc->blocksize[1] / 2 * vc->audio_channels * 2 > AVCODEC_MAX_AUDIO_FRAME_SIZE) {
-        av_log(vc->avccontext, AV_LOG_ERROR, "Vorbis channel count makes "
-               "output packets too large.\n");
-        return AVERROR_PATCHWELCOME;
-    }
     vc->win[0] = ff_vorbis_vwin[bl0 - 6];
     vc->win[1] = ff_vorbis_vwin[bl1 - 6];
 
