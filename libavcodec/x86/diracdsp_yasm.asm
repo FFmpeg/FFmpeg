@@ -157,8 +157,8 @@ cglobal put_signed_rect_clamped_%1, 5,7,3, dst, dst_stride, src, src_stride, w, 
     packsswb m2, [src2q+2*wq+mmsize]
     paddb    m1, m0
     paddb    m2, m0
-    mova    [dstq +wq], m1
-    mova    [dst2q+wq], m2
+    movu    [dstq +wq], m1
+    movu    [dst2q+wq], m2
     jg      .loopx
 
     lea   srcq, [srcq+src_strideq*4]
