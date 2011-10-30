@@ -354,7 +354,7 @@ static const AVClass v4l_class = {
 };
 
 AVInputFormat ff_v4l_demuxer = {
-    .name           = "video4linux",
+    .name           = "video4linux,v4l",
     .long_name      = NULL_IF_CONFIG_SMALL("Video4Linux device grab"),
     .priv_data_size = sizeof(VideoData),
     .read_header    = grab_read_header,
