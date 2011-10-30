@@ -2424,6 +2424,11 @@ void ff_vector_clip_int32_int_sse2(int32_t *dst, const int32_t *src, int32_t min
 void ff_vector_clip_int32_sse4    (int32_t *dst, const int32_t *src, int32_t min,
                                    int32_t max, unsigned int len);
 
+extern void ff_butterflies_float_interleave_sse(float *dst, const float *src0,
+                                                const float *src1, int len);
+extern void ff_butterflies_float_interleave_avx(float *dst, const float *src0,
+                                                const float *src1, int len);
+
 void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 {
     int mm_flags = av_get_cpu_flags();
@@ -2868,6 +2873,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
             c->vector_clipf = vector_clipf_sse;
 #if HAVE_YASM
             c->scalarproduct_float = ff_scalarproduct_float_sse;
+            c->butterflies_float_interleave = ff_butterflies_float_interleave_sse;
 #endif
         }
         if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW))
@@ -2925,6 +2931,7 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                 c->put_h264_chroma_pixels_tab[0]= ff_put_h264_chroma_mc8_10_avx;
                 c->avg_h264_chroma_pixels_tab[0]= ff_avg_h264_chroma_mc8_10_avx;
             }
+            c->butterflies_float_interleave = ff_butterflies_float_interleave_avx;
         }
 #endif
     }

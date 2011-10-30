@@ -453,6 +453,23 @@ typedef struct DSPContext {
      */
     void (*butterflies_float)(float *restrict v1, float *restrict v2, int len);
 
+    /**
+     * Calculate the sum and difference of two vectors of floats and interleave
+     * results into a separate output vector of floats, with each sum
+     * positioned before the corresponding difference.
+     *
+     * @param dst  output vector
+     *             constraints: 16-byte aligned
+     * @param src0 first input vector
+     *             constraints: 32-byte aligned
+     * @param src1 second input vector
+     *             constraints: 32-byte aligned
+     * @param len  number of elements in the input
+     *             constraints: multiple of 8
+     */
+    void (*butterflies_float_interleave)(float *dst, const float *src0,
+                                         const float *src1, int len);
+
     /* (I)DCT */
     void (*fdct)(DCTELEM *block/* align 16*/);
     void (*fdct248)(DCTELEM *block/* align 16*/);

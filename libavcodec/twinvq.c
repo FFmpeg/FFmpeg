@@ -665,8 +665,9 @@ static void imdct_output(TwinContext *tctx, enum FrameType ftype, int wtype,
                          float *out)
 {
     const ModeTab *mtab = tctx->mtab;
+    int size1, size2;
     float *prev_buf = tctx->prev_frame + tctx->last_block_pos[0];
-    int i, j;
+    int i;
 
     for (i = 0; i < tctx->avctx->channels; i++) {
         imdct_and_window(tctx, ftype, wtype,
@@ -675,27 +676,24 @@ static void imdct_output(TwinContext *tctx, enum FrameType ftype, int wtype,
                          i);
     }
 
+    size2 = tctx->last_block_pos[0];
+    size1 = mtab->size - size2;
     if (tctx->avctx->channels == 2) {
-        for (i = 0; i < mtab->size - tctx->last_block_pos[0]; i++) {
-            float f1 = prev_buf[               i];
-            float f2 = prev_buf[2*mtab->size + i];
-            out[2*i    ] = f1 + f2;
-            out[2*i + 1] = f1 - f2;
-        }
-        for (j = 0; i < mtab->size; j++,i++) {
-            float f1 = tctx->curr_frame[               j];
-            float f2 = tctx->curr_frame[2*mtab->size + j];
-            out[2*i    ] = f1 + f2;
-            out[2*i + 1] = f1 - f2;
-        }
+        tctx->dsp.butterflies_float_interleave(out, prev_buf,
+                                               &prev_buf[2*mtab->size],
+                                               size1);
+
+        out += 2 * size1;
+
+        tctx->dsp.butterflies_float_interleave(out, tctx->curr_frame,
+                                               &tctx->curr_frame[2*mtab->size],
+                                               size2);
     } else {
-        memcpy(out, prev_buf,
-               (mtab->size - tctx->last_block_pos[0]) * sizeof(*out));
+        memcpy(out, prev_buf, size1 * sizeof(*out));
 
-        out +=  mtab->size - tctx->last_block_pos[0];
+        out += size1;
 
-        memcpy(out, tctx->curr_frame,
-               (tctx->last_block_pos[0]) * sizeof(*out));
+        memcpy(out, tctx->curr_frame, size2 * sizeof(*out));
     }
 
 }
