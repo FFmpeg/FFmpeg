@@ -1348,7 +1348,7 @@ int ff_spatial_idwt_init2(DWTContext *d, IDWTELEM *buffer, int width, int height
         return -1;
     }
 
-    /////MMX_DISABLE    if (HAVE_MMX) ff_spatial_idwt_init_mmx(d, type);
+    if (HAVE_MMX) ff_spatial_idwt_init_mmx(d, type);
 
     return 0;
 }
