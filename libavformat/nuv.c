@@ -47,7 +47,7 @@ static int nuv_probe(AVProbeData *p) {
     return 0;
 }
 
-//! little macro to sanitize packet size
+/// little macro to sanitize packet size
 #define PKTSIZE(s) (s &  0xffffff)
 
 /**
