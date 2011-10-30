@@ -96,7 +96,7 @@ static const uint8_t* dv_extract_pack(uint8_t* frame, enum dv_pack_type t)
 /*
  * There's a couple of assumptions being made here:
  * 1. By default we silence erroneous (0x8000/16bit 0x800/12bit) audio samples.
- *    We can pass them upwards when ffmpeg will be ready to deal with them.
+ *    We can pass them upwards when libavcodec will be ready to deal with them.
  * 2. We don't do software emphasis.
  * 3. Audio is always returned as 16bit linear samples: 12bit nonlinear samples
  *    are converted into 16bit linear ones.

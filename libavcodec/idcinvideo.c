@@ -36,7 +36,7 @@
  * a little more compression by exploiting the fact that adjacent pixels
  * tend to be similar.
  *
- * Note that this decoder could use ffmpeg's optimized VLC facilities
+ * Note that this decoder could use libavcodec's optimized VLC facilities
  * rather than naive, tree-based Huffman decoding. However, there are 256
  * Huffman tables. Plus, the VLC bit coding order is right -> left instead
  * or left -> right, so all of the bits would have to be reversed. Further,

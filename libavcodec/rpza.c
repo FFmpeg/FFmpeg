@@ -30,8 +30,8 @@
  * Note that this decoder reads big endian RGB555 pixel values from the
  * bytestream, arranges them in the host's endian order, and outputs
  * them to the final rendered map in the same host endian order. This is
- * intended behavior as the ffmpeg documentation states that RGB555 pixels
- * shall be stored in native CPU endianness.
+ * intended behavior as the libavcodec documentation states that RGB555
+ * pixels shall be stored in native CPU endianness.
  */
 
 #include <stdio.h>
