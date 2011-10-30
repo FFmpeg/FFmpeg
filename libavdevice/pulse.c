@@ -23,7 +23,6 @@
  * @file
  * PulseAudio input using the simple API.
  * @author Luca Barbato <lu_zero@gentoo.org>
- *
  */
 
 #include <pulse/simple.h>

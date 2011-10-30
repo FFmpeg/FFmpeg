@@ -31,8 +31,9 @@
 
 /**
  * @file
- * X11 frame device demuxer by Clemens Fruhwirth <clemens@endorphin.org>
- * and Edouard Gomez <ed.gomez@free.fr>.
+ * X11 frame device demuxer
+ * @author Clemens Fruhwirth <clemens@endorphin.org>
+ * @author Edouard Gomez <ed.gomez@free.fr>
  */
 
 #include "config.h"

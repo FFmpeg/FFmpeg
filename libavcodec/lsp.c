@@ -75,7 +75,7 @@ void ff_acelp_lsf2lspd(double *lsp, const float *lsf, int lp_order)
 
 /**
  * @brief decodes polynomial coefficients from LSP
- * @param f [out] decoded polynomial coefficients (-0x20000000 <= (3.22) <= 0x1fffffff)
+ * @param[out] f decoded polynomial coefficients (-0x20000000 <= (3.22) <= 0x1fffffff)
  * @param lsp LSP coefficients (-0x8000 <= (0.15) <= 0x7fff)
  */
 static void lsp2poly(int* f, const int16_t* lsp, int lp_half_order)
