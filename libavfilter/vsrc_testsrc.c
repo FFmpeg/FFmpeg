@@ -24,7 +24,7 @@
  * Misc test sources.
  *
  * testsrc is based on the test pattern generator demuxer by Nicolas George:
- * http://lists.mplayerhq.hu/pipermail/ffmpeg-devel/2007-October/037845.html
+ * http://lists.ffmpeg.org/pipermail/ffmpeg-devel/2007-October/037845.html
  *
  * rgbtestsrc is ported from MPlayer libmpcodecs/vf_rgbtest.c by
  * Michael Niedermayer.
