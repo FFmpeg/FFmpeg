@@ -533,7 +533,7 @@ static av_cold int prores_encode_init(AVCodecContext *avctx)
     int i;
     ProresContext* ctx = avctx->priv_data;
 
-    if (avctx->pix_fmt != PIX_FMT_YUV422P10LE) {
+    if (avctx->pix_fmt != PIX_FMT_YUV422P10) {
         av_log(avctx, AV_LOG_ERROR, "need YUV422P10\n");
         return -1;
     }
