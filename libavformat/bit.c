@@ -50,7 +50,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream* st;
 
-    st=av_new_stream(s, 0);
+    st=avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 
@@ -67,7 +67,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 static int read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     PutBitContext pbo;
     uint16_t buf[8 * MAX_FRAME_SIZE + 2];
     int packet_size;
@@ -78,12 +78,12 @@ static int read_packet(AVFormatContext *s,
     if(url_feof(pb))
         return AVERROR_EOF;
 
-    get_le16(pb); // sync word
-    packet_size = get_le16(pb) / 8;
+    avio_rl16(pb); // sync word
+    packet_size = avio_rl16(pb) / 8;
     if(packet_size > MAX_FRAME_SIZE)
         return AVERROR_INVALIDDATA;
 
-    ret = get_buffer(pb, (uint8_t*)buf, (8 * packet_size) * sizeof(uint16_t));
+    ret = avio_read(pb, (uint8_t*)buf, (8 * packet_size) * sizeof(uint16_t));
     if(ret<0)
         return ret;
     if(ret != 8 * packet_size * sizeof(uint16_t))
@@ -131,13 +131,13 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     GetBitContext gb;
     int i;
 
-    put_le16(pb, SYNC_WORD);
-    put_le16(pb, 8 * 10);
+    avio_wl16(pb, SYNC_WORD);
+    avio_wl16(pb, 8 * 10);
 
     init_get_bits(&gb, pkt->data, 8*10);
     for(i=0; i< 8 * 10; i++)
-        put_le16(pb, get_bits1(&gb) ? BIT_1 : BIT_0);
-    put_flush_packet(pb);
+        avio_wl16(pb, get_bits1(&gb) ? BIT_1 : BIT_0);
+    avio_flush(pb);
 
     return 0;
 }
