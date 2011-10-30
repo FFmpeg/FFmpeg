@@ -20,7 +20,7 @@
 
 /**
 * @file
-* data structures common to libdiracenc.c and libdiracdec.c
+* data structures common to libdirac encoder and decoder
 */
 
 #ifndef AVCODEC_LIBDIRAC_H

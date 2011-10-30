@@ -20,7 +20,7 @@
 
 /**
 * @file
-* function definitions common to libschroedingerdec.c and libschroedingerenc.c
+* function definitions common to libschroedinger decoder and encoder
 */
 
 #include "libdirac_libschro.h"

@@ -20,7 +20,7 @@
 
 /**
 * @file
-* data structures common to libschroedingerdec.c and libschroedingerenc.c
+* data structures common to libschroedinger decoder and encoder
 */
 
 #ifndef AVCODEC_LIBSCHROEDINGER_H
