@@ -228,6 +228,7 @@ typedef struct OutputStream {
    AVDictionary *opts;
    int is_past_recording_time;
    int stream_copy;
+   const char *attachment_filename;
 } OutputStream;
 
 
@@ -284,6 +285,8 @@ typedef struct OptionsContext {
     int metadata_global_manual;
     int metadata_streams_manual;
     int metadata_chapters_manual;
+    const char **attachments;
+    int       nb_attachments;
 
     int chapters_input_file;
 
@@ -1981,6 +1984,9 @@ static int transcode_init(OutputFile *output_files,
         os = output_files[ost->file_index].ctx;
         ist = &input_streams[ost->source_index];
 
+        if (ost->attachment_filename)
+            continue;
+
         codec = ost->st->codec;
         icodec = ist->st->codec;
 
@@ -2286,6 +2292,13 @@ static int transcode_init(OutputFile *output_files,
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
     for (i = 0; i < nb_output_streams; i++) {
         ost = &output_streams[i];
+
+        if (ost->attachment_filename) {
+            /* an attached file */
+            av_log(NULL, AV_LOG_INFO, "  File %s -> Stream #%d:%d\n",
+                   ost->attachment_filename, ost->file_index, ost->index);
+            continue;
+        }
         av_log(NULL, AV_LOG_INFO, "  Stream #%d.%d -> #%d.%d",
                input_streams[ost->source_index].file_index,
                input_streams[ost->source_index].st->index,
@@ -2671,6 +2684,14 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
     }
 
     av_freep(&map);
+    return 0;
+}
+
+static int opt_attach(OptionsContext *o, const char *opt, const char *arg)
+{
+    o->attachments = grow_array(o->attachments, sizeof(*o->attachments),
+                                &o->nb_attachments, o->nb_attachments + 1);
+    o->attachments[o->nb_attachments - 1] = arg;
     return 0;
 }
 
@@ -3527,6 +3548,42 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
 
+    /* handle attached files */
+    for (i = 0; i < o->nb_attachments; i++) {
+        AVIOContext *pb;
+        uint8_t *attachment;
+        const char *p;
+        int64_t len;
+
+        if ((err = avio_open(&pb, o->attachments[i], AVIO_FLAG_READ)) < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not open attachment file %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if ((len = avio_size(pb)) <= 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not get size of the attachment %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if (!(attachment = av_malloc(len))) {
+            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large to fit into memory.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        avio_read(pb, attachment, len);
+
+        ost = new_attachment_stream(o, oc);
+        ost->stream_copy               = 0;
+        ost->source_index              = -1;
+        ost->attachment_filename       = o->attachments[i];
+        ost->st->codec->extradata      = attachment;
+        ost->st->codec->extradata_size = len;
+
+        p = strrchr(o->attachments[i], '/');
+        av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
+        avio_close(pb);
+    }
+
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
@@ -3652,7 +3709,10 @@ static void opt_output_file(void *optctx, const char *filename)
                      AV_DICT_DONT_OVERWRITE);
     if (!o->metadata_streams_manual)
         for (i = output_files[nb_output_files - 1].ost_index; i < nb_output_streams; i++) {
-            InputStream *ist = &input_streams[output_streams[i].source_index];
+            InputStream *ist;
+            if (output_streams[i].source_index < 0)         /* this is true e.g. for attached files */
+                continue;
+            ist = &input_streams[output_streams[i].source_index];
             av_dict_copy(&output_streams[i].st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
         }
 
@@ -4025,6 +4085,7 @@ static const OptionDef options[] = {
     { "filter", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(filters)}, "set stream filterchain", "filter_list" },
 #endif
     { "stats", OPT_BOOL, {&print_stats}, "print progress report during encoding", },
+    { "attach", HAS_ARG | OPT_FUNC2, {(void*)opt_attach}, "add an attachment to the output file", "filename" },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
