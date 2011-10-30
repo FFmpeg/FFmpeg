@@ -187,6 +187,7 @@ External library support:
   --enable-libstagefright-h264  enable H.264 decoding via libstagefright [no]
   --enable-libtheora       enable Theora encoding via libtheora [no]
   --enable-libutvideo      enable Ut Video decoding via libutvideo [no]
+  --enable-libv4l2         enable libv4l2/v4l-utils [no]
   --enable-libvo-aacenc    enable AAC encoding via libvo-aacenc [no]
   --enable-libvo-amrwbenc  enable AMR-WB encoding via libvo-amrwbenc [no]
   --enable-libvorbis       enable Vorbis encoding via libvorbis,
@@ -1022,6 +1023,7 @@ CONFIG_LIST="
     libstagefright_h264
     libtheora
     libutvideo
+    libv4l2
     libvo_aacenc
     libvo_amrwbenc
     libvorbis
@@ -1568,6 +1570,7 @@ jack_indev_deps="jack_jack_h sem_timedwait"
 lavfi_indev_deps="avfilter"
 libcdio_indev_deps="libcdio"
 libdc1394_indev_deps="libdc1394"
+libv4l2_indev_deps="libv4l2"
 openal_indev_deps="openal"
 oss_indev_deps_any="soundcard_h sys_soundcard_h"
 oss_outdev_deps_any="soundcard_h sys_soundcard_h"
@@ -3055,6 +3058,7 @@ enabled libstagefright_h264  && require_cpp libstagefright_h264 "binder/ProcessS
     media/stagefright/OMXClient.h media/stagefright/OMXCodec.h" android::OMXClient -lstagefright -lmedia -lutils -lbinder
 enabled libtheora  && require  libtheora theora/theoraenc.h th_info_init -ltheoraenc -ltheoradec -logg
 enabled libutvideo    && require_cpp utvideo "stdint.h stdlib.h utvideo/utvideo.h utvideo/Codec.h" 'CCodec*' -lutvideo -lstdc++
+enabled libv4l2    && require_pkg_config libv4l2 libv4l2.h v4l2_ioctl
 enabled libvo_aacenc && require libvo_aacenc vo-aacenc/voAAC.h voGetAACEncAPI -lvo-aacenc
 enabled libvo_amrwbenc && require libvo_amrwbenc vo-amrwbenc/enc_if.h E_IF_init -lvo-amrwbenc
 enabled libvorbis  && require  libvorbis vorbis/vorbisenc.h vorbis_info_init -lvorbisenc -lvorbis -logg
@@ -3383,6 +3387,7 @@ echo "libspeex enabled          ${libspeex-no}"
 echo "libstagefright-h264 enabled    ${libstagefright_h264-no}"
 echo "libtheora enabled         ${libtheora-no}"
 echo "libutvideo enabled        ${libutvideo-no}"
+echo "libv4l2 enabled           ${libv4l2-no}"
 echo "libvo-aacenc support      ${libvo_aacenc-no}"
 echo "libvo-amrwbenc support    ${libvo_amrwbenc-no}"
 echo "libvorbis enabled         ${libvorbis-no}"

@@ -513,6 +513,9 @@ input device will use the frame rate value already set in the driver.
 Video4Linux support is deprecated since Linux 2.6.30, and will be
 dropped in later versions.
 
+Note that if FFmpeg is build with v4l-utils support ("--enable-libv4l2"
+option), it will always be used.
+
 Follow some usage examples of the video4linux devices with the ff*
 tools.
 @example

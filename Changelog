@@ -75,6 +75,7 @@ easier to use. The changes are:
 - new ffmpeg option: -map_channel
 - volume audio filter added
 - earwax audio filter added
+- libv4l2 support (--enable-libv4l2)
 
 
 version 0.8:
