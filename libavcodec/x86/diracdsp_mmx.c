@@ -52,7 +52,7 @@ HPEL_FILTER(8, mmx)
 HPEL_FILTER(16, sse2)
 
 #define PIXFUNC(PFX, IDX, EXT)                                                   \
-    c->PFX ## _dirac_pixels_tab[0][IDX] = ff_ ## PFX ## _dirac_pixels8_ ## EXT;  \
+    /*MMXDISABLEDc->PFX ## _dirac_pixels_tab[0][IDX] = ff_ ## PFX ## _dirac_pixels8_ ## EXT;*/  \
     c->PFX ## _dirac_pixels_tab[1][IDX] = ff_ ## PFX ## _dirac_pixels16_ ## EXT; \
     c->PFX ## _dirac_pixels_tab[2][IDX] = ff_ ## PFX ## _dirac_pixels32_ ## EXT
 
