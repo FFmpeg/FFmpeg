@@ -2247,15 +2247,7 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 snprintf(logfilename, sizeof(logfilename), "%s-%d.log",
                          pass_logfilename_prefix ? pass_logfilename_prefix : DEFAULT_PASS_LOGFILENAME_PREFIX,
                          i);
-                if (codec->flags & CODEC_FLAG_PASS1) {
-                    f = fopen(logfilename, "wb");
-                    if (!f) {
-                        av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
-                               logfilename, strerror(errno));
-                        exit_program(1);
-                    }
-                    ost->logfile = f;
-                } else {
+                if (codec->flags & CODEC_FLAG_PASS2) {
                     char  *logbuffer;
                     size_t logbuffer_size;
                     if (read_file(logfilename, &logbuffer, &logbuffer_size) < 0) {
@@ -2264,6 +2256,15 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                         exit_program(1);
                     }
                     codec->stats_in = logbuffer;
+                }
+                if (codec->flags & CODEC_FLAG_PASS1) {
+                    f = fopen(logfilename, "wb");
+                    if (!f) {
+                        av_log(NULL, AV_LOG_FATAL, "Cannot write log file '%s' for pass-1 encoding: %s\n",
+                               logfilename, strerror(errno));
+                        exit_program(1);
+                    }
+                    ost->logfile = f;
                 }
             }
         }
@@ -3466,9 +3467,10 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
         /* two pass mode */
         if (do_pass) {
-            if (do_pass == 1) {
+            if (do_pass & 1) {
                 video_enc->flags |= CODEC_FLAG_PASS1;
-            } else {
+            }
+            if (do_pass & 2) {
                 video_enc->flags |= CODEC_FLAG_PASS2;
             }
         }
@@ -3969,7 +3971,7 @@ static void opt_output_file(void *optctx, const char *filename)
 /* same option as mencoder */
 static int opt_pass(const char *opt, const char *arg)
 {
-    do_pass = parse_number_or_die(opt, arg, OPT_INT, 1, 2);
+    do_pass = parse_number_or_die(opt, arg, OPT_INT, 1, 3);
     return 0;
 }
 
