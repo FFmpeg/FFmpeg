@@ -104,14 +104,14 @@ short dct_coef[]
   S3,C3,
 
 -----------------------------------------------------------
-FFMPEG conformance testing results
+Libav conformance testing results
 -----------------------------------------------------------
 dct-test: modified with the following
             dct_error("BFINfdct", 0, ff_bfin_fdct, fdct, test);
 produces the following output:
 
-root:/u/ffmpeg/bhead/libavcodec> ./dct-test
-ffmpeg DCT/IDCT test
+libavcodec> ./dct-test
+Libav DCT/IDCT test
 
     2  -131    -6   -48   -36    33   -83    24
    34    52   -24   -15     5    92    57   143
@@ -123,8 +123,6 @@ ffmpeg DCT/IDCT test
   -17   -63   -15    73    50   -91   159   -14
 DCT BFINfdct: err_inf=2 err2=0.16425938 syserr=0.00795000 maxout=2098 blockSumErr=27
 DCT BFINfdct: 92.1 kdct/s
-root:/u/ffmpeg/bhead/libavcodec>
-
 */
 
 #include "config.h"

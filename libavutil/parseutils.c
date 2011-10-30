@@ -401,10 +401,7 @@ static int date_get_num(const char **pp,
     return val;
 }
 
-/* small strptime for ffmpeg */
-static
-const char *small_strptime(const char *p, const char *fmt,
-                           struct tm *dt)
+static const char *small_strptime(const char *p, const char *fmt, struct tm *dt)
 {
     int c, val;
 

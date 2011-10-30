@@ -142,7 +142,7 @@ int main(int argc, char **argv)
         }
     }
 
-    printf("ffmpeg motion test\n");
+    printf("Libav motion test\n");
 
     ctx = avcodec_alloc_context3(NULL);
     ctx->dsp_mask = AV_CPU_FLAG_FORCE;

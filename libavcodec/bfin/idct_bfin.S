@@ -32,15 +32,15 @@ Performance     :
 
 
 -----------------------------------------------------------
-FFMPEG conformance testing results
+Libav conformance testing results
 -----------------------------------------------------------
 
 dct-test: modified with the following
             dct_error("BFINidct", 1, ff_bfin_idct, idct, test);
 produces the following output
 
-root:/u/ffmpeg/bhead/libavcodec> ./dct-test -i
-ffmpeg DCT/IDCT test
+libavcodec> ./dct-test -i
+Libav DCT/IDCT test
 
     8    15    -2    21    24    17     0    10
     2   -10    -5    -5    -3     7   -14    -3

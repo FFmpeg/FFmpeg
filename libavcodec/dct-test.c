@@ -543,7 +543,7 @@ int main(int argc, char **argv)
     if (optind < argc)
         test = atoi(argv[optind]);
 
-    printf("ffmpeg DCT/IDCT test\n");
+    printf("Libav DCT/IDCT test\n");
 
     if (test_248_dct) {
         idct248_error("SIMPLE-C", ff_simple_idct248_put, speed);
