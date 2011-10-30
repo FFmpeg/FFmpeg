@@ -3588,7 +3588,7 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
 /*
         for(x=0; x<width; x+=32){
             volatile int i;
-            i+= + dstBlock[x + 7*dstStride] + dstBlock[x + 8*dstStride]
+            i+=   dstBlock[x + 7*dstStride] + dstBlock[x + 8*dstStride]
                 + dstBlock[x + 9*dstStride] + dstBlock[x +10*dstStride]
                 + dstBlock[x +11*dstStride] + dstBlock[x +12*dstStride];
                 + dstBlock[x +13*dstStride]
