@@ -392,7 +392,7 @@ following image formats are supported:
 @item Creative YUV (CYUV)    @tab     @tab  X
 @item DFA                    @tab     @tab  X
     @tab Codec used in Chronomaster game.
-@item Dirac                  @tab  E  @tab  E
+@item Dirac                  @tab  E  @tab  X
     @tab supported through external libdirac/libschroedinger libraries
 @item Deluxe Paint Animation @tab     @tab  X
 @item DNxHD                  @tab   X @tab  X
