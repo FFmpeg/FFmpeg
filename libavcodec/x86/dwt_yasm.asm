@@ -209,7 +209,7 @@ cglobal horizontal_compose_haar%2i_%1, 3,6,4, b, tmp, w, x, w2, b_w2
     jl      .end
 
 .highpass_loop:
-    mova    m1, [b_w2q + 2*xq]
+    movu    m1, [b_w2q + 2*xq]
     mova    m0, [tmpq  + 2*xq]
     paddw   m1, m0
 
