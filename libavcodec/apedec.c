@@ -155,7 +155,6 @@ typedef struct APEContext {
     uint8_t *data;                           ///< current frame data
     uint8_t *data_end;                       ///< frame data end
     const uint8_t *ptr;                      ///< current position in frame data
-    const uint8_t *last_ptr;                 ///< position where last 4608-sample block ended
 
     int error;
 } APEContext;
@@ -816,7 +815,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
     int16_t *samples = data;
     int i;
     int blockstodecode, out_size;
-    int bytes_used;
+    int bytes_used = 0;
 
     /* this should never be negative, but bad things will happen if it is, so
        check it just to make sure. */
@@ -826,6 +825,10 @@ static int ape_decode_frame(AVCodecContext *avctx,
         uint32_t nblocks, offset;
         void *tmp_data;
 
+        if (!buf_size) {
+            *data_size = 0;
+            return 0;
+        }
         if (buf_size < 8) {
             av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
             return AVERROR_INVALIDDATA;
@@ -836,7 +839,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
             return AVERROR(ENOMEM);
         s->data = tmp_data;
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
-        s->ptr = s->last_ptr = s->data;
+        s->ptr = s->data;
         s->data_end = s->data + buf_size;
 
         nblocks = bytestream_get_be32(&s->ptr);
@@ -866,6 +869,8 @@ static int ape_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Error reading frame header\n");
             return AVERROR_INVALIDDATA;
         }
+
+        bytes_used = buf_size;
     }
 
     if (!s->data) {
@@ -904,9 +909,6 @@ static int ape_decode_frame(AVCodecContext *avctx,
 
     s->samples -= blockstodecode;
 
-    bytes_used = s->samples ? s->ptr - s->last_ptr : buf_size;
-    s->last_ptr = s->ptr;
-
     *data_size = out_size;
     return bytes_used;
 }
@@ -925,7 +927,7 @@ AVCodec ff_ape_decoder = {
     .init           = ape_decode_init,
     .close          = ape_decode_close,
     .decode         = ape_decode_frame,
-    .capabilities = CODEC_CAP_SUBFRAMES,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY,
     .flush = ape_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
 };
