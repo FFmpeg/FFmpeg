@@ -140,8 +140,6 @@ typedef struct APEContext {
 
     uint32_t CRC;                            ///< frame CRC
     int frameflags;                          ///< frame flags
-    int currentframeblocks;                  ///< samples (per channel) in current frame
-    int blocksdecoded;                       ///< count of decoded samples in current frame
     APEPredictor predictor;                  ///< predictor used for final reconstruction
 
     int32_t decoded0[BLOCKS_PER_LOOP];       ///< decoded data for the first channel
@@ -457,8 +455,6 @@ static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
     int32_t *decoded0 = ctx->decoded0;
     int32_t *decoded1 = ctx->decoded1;
 
-    ctx->blocksdecoded = blockstodecode;
-
     if (ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) {
         /* We are pure silence, just memset the output buffer. */
         memset(decoded0, 0, blockstodecode * sizeof(int32_t));
@@ -470,9 +466,6 @@ static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
                 *decoded1++ = ape_decode_value(ctx, &ctx->riceX);
         }
     }
-
-    if (ctx->blocksdecoded == ctx->currentframeblocks)
-        range_dec_normalize(ctx);   /* normalize to use up all bytes */
 }
 
 static int init_entropy_decoder(APEContext *ctx)
@@ -491,9 +484,6 @@ static int init_entropy_decoder(APEContext *ctx)
             return AVERROR_INVALIDDATA;
         ctx->frameflags = bytestream_get_be32(&ctx->ptr);
     }
-
-    /* Keep a count of the blocks decoded in this frame */
-    ctx->blocksdecoded = 0;
 
     /* Initialize the rice structs */
     ctx->riceX.k = 10;
@@ -873,7 +863,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
             return AVERROR_INVALIDDATA;
         }
-        s->currentframeblocks = s->samples = nblocks;
+        s->samples = nblocks;
 
         memset(s->decoded0,  0, sizeof(s->decoded0));
         memset(s->decoded1,  0, sizeof(s->decoded1));
