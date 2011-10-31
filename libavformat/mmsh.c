@@ -373,7 +373,8 @@ static int64_t mmsh_read_seek(URLContext *h, int stream_index,
     MMSContext *mms   = &mmsh->mms;
     int ret;
 
-    ret= mmsh_open_internal(h, mmsh->location, 0, timestamp, 0);
+    ret= mmsh_open_internal(h, mmsh->location, 0, FFMAX(timestamp, 0), 0);
+
     if(ret>=0){
         if (mms->mms_hd)
             ffurl_close(mms->mms_hd);
