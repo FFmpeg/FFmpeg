@@ -175,7 +175,7 @@ void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
         break;
     case DWT_DIRAC_HAAR0:
         d->vertical_compose   = vertical_compose_haar_sse2;
-        d->horizontal_compose = ff_horizontal_compose_haar0i_sse2;
+//MMXDISABLED         d->horizontal_compose = ff_horizontal_compose_haar0i_sse2;
         break;
     case DWT_DIRAC_HAAR1:
         d->vertical_compose   = vertical_compose_haar_sse2;
