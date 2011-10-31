@@ -2530,7 +2530,7 @@ static int swScale(SwsContext *c, const uint8_t* src[],
     DEBUG_BUFFERS("vLumFilterSize: %d vLumBufSize: %d vChrFilterSize: %d vChrBufSize: %d\n",
                    vLumFilterSize,    vLumBufSize,    vChrFilterSize,    vChrBufSize);
 
-    if (dstStride[0]%8 !=0 || dstStride[1]%8 !=0 || dstStride[2]%8 !=0 || dstStride[3]%8 != 0) {
+    if (dstStride[0]%16 !=0 || dstStride[1]%16 !=0 || dstStride[2]%16 !=0 || dstStride[3]%16 != 0) {
         static int warnedAlready=0; //FIXME move this into the context perhaps
         if (flags & SWS_PRINT_INFO && !warnedAlready) {
             av_log(c, AV_LOG_WARNING, "Warning: dstStride is not aligned!\n"
