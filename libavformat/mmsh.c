@@ -385,12 +385,22 @@ static int64_t mmsh_read_seek(URLContext *h, int stream_index,
     return ret;
 }
 
+static int64_t mmsh_seek(URLContext *h, int64_t pos, int whence)
+{
+    MMSHContext *mmsh = h->priv_data;
+    MMSContext *mms   = &mmsh->mms;
+
+    if(pos == 0 && whence == SEEK_CUR)
+        return mms->asf_header_read_size + mms->remaining_in_len + mmsh->chunk_seq * mms->asf_packet_len;
+    return AVERROR(ENOSYS);
+}
+
 URLProtocol ff_mmsh_protocol = {
     .name      = "mmsh",
     .url_open  = mmsh_open,
     .url_read  = mmsh_read,
     .url_write = NULL,
-    .url_seek  = NULL,
+    .url_seek  = mmsh_seek,
     .url_close = mmsh_close,
     .url_read_seek  = mmsh_read_seek,
 };
