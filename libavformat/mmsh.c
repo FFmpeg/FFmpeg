@@ -211,7 +211,7 @@ static int get_http_header_data(MMSHContext *mmsh)
     }
 }
 
-static int mmsh_open(URLContext *h, const char *uri, int flags)
+static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int timestamp, int64_t pos)
 {
     int i, port, err;
     char httpname[256], path[256], host[128];
@@ -284,8 +284,9 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
                    CLIENTGUID
                    "Pragma: stream-switch-count=%d\r\n"
                    "Pragma: stream-switch-entry=%s\r\n"
+                   "Pragma: no-cache,rate=1.000000,stream-time=%u"
                    "Connection: Close\r\n",
-                   host, port, mmsh->request_seq++, mms->stream_num, stream_selection);
+                   host, port, mmsh->request_seq++, mms->stream_num, stream_selection, timestamp);
     av_freep(&stream_selection);
     if (err < 0) {
         av_log(NULL, AV_LOG_ERROR, "Build play request failed!\n");
@@ -312,6 +313,11 @@ fail:
     mmsh_close(h);
     av_dlog(NULL, "Connection failed with error %d\n", err);
     return err;
+}
+
+static int mmsh_open(URLContext *h, const char *uri, int flags)
+{
+    mmsh_open_internal(h, uri, flags, 0, 0);
 }
 
 static int handle_chunk_type(MMSHContext *mmsh)
