@@ -814,7 +814,6 @@ static int ape_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     APEContext *s = avctx->priv_data;
     int16_t *samples = data;
-    uint32_t nblocks;
     int i;
     int blockstodecode, out_size;
     int bytes_used;
@@ -824,7 +823,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
     av_assert0(s->samples >= 0);
 
     if(!s->samples){
-        uint32_t offset;
+        uint32_t nblocks, offset;
         void *tmp_data;
 
         if (buf_size < 8) {
@@ -874,8 +873,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
         return buf_size;
     }
 
-    nblocks = s->samples;
-    blockstodecode = FFMIN(BLOCKS_PER_LOOP, nblocks);
+    blockstodecode = FFMIN(BLOCKS_PER_LOOP, s->samples);
 
     out_size = blockstodecode * avctx->channels *
                av_get_bytes_per_sample(avctx->sample_fmt);
