@@ -195,7 +195,7 @@ cglobal add_rect_clamped_%1, 7,7,3, dst, src, stride, idwt, idwt_stride, w, h
     paddw   m1, [idwtq+2*wq]
     paddw   m2, [idwtq+2*wq+mmsize]
     packuswb m1, m2
-    movu    [dstq +wq], m1
+    mova    [dstq +wq], m1
     jg      .loop
 
     lea   srcq, [srcq + 2*strideq]
