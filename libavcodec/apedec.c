@@ -816,14 +816,8 @@ static int ape_decode_frame(AVCodecContext *avctx,
     int16_t *samples = data;
     uint32_t nblocks;
     int i;
-    int blockstodecode;
+    int blockstodecode, out_size;
     int bytes_used;
-
-    /* should not happen but who knows */
-    if (BLOCKS_PER_LOOP * 2 * avctx->channels > *data_size) {
-        av_log (avctx, AV_LOG_ERROR, "Output buffer is too small.\n");
-        return AVERROR(EINVAL);
-    }
 
     /* this should never be negative, but bad things will happen if it is, so
        check it just to make sure. */
@@ -883,6 +877,13 @@ static int ape_decode_frame(AVCodecContext *avctx,
     nblocks = s->samples;
     blockstodecode = FFMIN(BLOCKS_PER_LOOP, nblocks);
 
+    out_size = blockstodecode * avctx->channels *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small.\n");
+        return AVERROR(EINVAL);
+    }
+
     s->error=0;
 
     if ((s->channels == 1) || (s->frameflags & APE_FRAMECODE_PSEUDO_STEREO))
@@ -905,9 +906,10 @@ static int ape_decode_frame(AVCodecContext *avctx,
 
     s->samples -= blockstodecode;
 
-    *data_size = blockstodecode * 2 * s->channels;
     bytes_used = s->samples ? s->ptr - s->last_ptr : buf_size;
     s->last_ptr = s->ptr;
+
+    *data_size = out_size;
     return bytes_used;
 }
 
