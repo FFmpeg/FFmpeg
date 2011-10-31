@@ -224,7 +224,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
 #if HAVE_MMX
     if(s->codec_id == CODEC_ID_SVQ1 || s->codec_id == CODEC_ID_VP5 ||
        s->codec_id == CODEC_ID_VP6 || s->codec_id == CODEC_ID_VP6F ||
-       s->codec_id == CODEC_ID_VP6A) {
+       s->codec_id == CODEC_ID_VP6A || s->codec_id == CODEC_ID_DIRAC) {
         linesize_align[0] =
         linesize_align[1] =
         linesize_align[2] = 16;
