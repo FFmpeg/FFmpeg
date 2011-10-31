@@ -2539,6 +2539,18 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         }
     }
 
+    if ((int)dst[0]%16 || (int)dst[1]%16 || (int)dst[2]%16 || (int)src[0]%16 || (int)src[1]%16 || (int)src[2]%16
+        || dstStride[0]%16 || dstStride[1]%16 || dstStride[2]%16 || dstStride[3]%16
+        || srcStride[0]%16 || srcStride[1]%16 || srcStride[2]%16 || srcStride[3]%16
+    ) {
+        static int warnedAlready=0;
+        int cpu_flags = av_get_cpu_flags();
+        if (HAVE_MMX2 && (cpu_flags & AV_CPU_FLAG_SSE2) && !warnedAlready){
+            av_log(c, AV_LOG_WARNING, "Warning: data is not aligned! This can lead to a speedloss\n");
+            warnedAlready=1;
+        }
+    }
+
     /* Note the user might start scaling the picture in the middle so this
        will not get executed. This is not really intended but works
        currently, so people might do it. */
