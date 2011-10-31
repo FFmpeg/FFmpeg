@@ -38,7 +38,7 @@
 #include <libdirac_encoder/dirac_encoder.h>
 
 /** Dirac encoder private data */
-typedef struct FfmpegDiracEncoderParams {
+typedef struct DiracEncoderParams {
     /** Dirac encoder context */
     dirac_encoder_context_t enc_ctx;
 
@@ -61,27 +61,27 @@ typedef struct FfmpegDiracEncoderParams {
     int enc_buf_size;
 
     /** queue storing encoded frames */
-    FfmpegDiracSchroQueue enc_frame_queue;
+    DiracSchroQueue enc_frame_queue;
 
     /** end of sequence signalled by user, 0 - false, 1 - true */
     int eos_signalled;
 
     /** end of sequence returned by encoder, 0 - false, 1 - true */
     int eos_pulled;
-} FfmpegDiracEncoderParams;
+} DiracEncoderParams;
 
 /**
 * Works out Dirac-compatible chroma format.
 */
 static dirac_chroma_t GetDiracChromaFormat(enum PixelFormat ff_pix_fmt)
 {
-    int num_formats = sizeof(ffmpeg_dirac_pixel_format_map) /
-                      sizeof(ffmpeg_dirac_pixel_format_map[0]);
+    int num_formats = sizeof(dirac_pixel_format_map) /
+                      sizeof(dirac_pixel_format_map[0]);
     int idx;
 
     for (idx = 0; idx < num_formats; ++idx)
-        if (ffmpeg_dirac_pixel_format_map[idx].ff_pix_fmt == ff_pix_fmt)
-            return ffmpeg_dirac_pixel_format_map[idx].dirac_pix_fmt;
+        if (dirac_pixel_format_map[idx].ff_pix_fmt == ff_pix_fmt)
+            return dirac_pixel_format_map[idx].dirac_pix_fmt;
     return formatNK;
 }
 
@@ -127,7 +127,7 @@ static VideoFormat GetDiracVideoFormatPreset(AVCodecContext *avccontext)
 static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
 {
 
-    FfmpegDiracEncoderParams* p_dirac_params = avccontext->priv_data;
+    DiracEncoderParams* p_dirac_params = avccontext->priv_data;
     int no_local = 1;
     int verbose  = avccontext->debug;
     VideoFormat preset;
@@ -219,7 +219,7 @@ static av_cold int libdirac_encode_init(AVCodecContext *avccontext)
 
 static void DiracFreeFrame(void *data)
 {
-    FfmpegDiracSchroEncodedFrame *enc_frame = data;
+    DiracSchroEncodedFrame *enc_frame = data;
 
     av_freep(&(enc_frame->p_encbuf));
     av_free(enc_frame);
@@ -231,9 +231,9 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
 {
     int enc_size = 0;
     dirac_encoder_state_t state;
-    FfmpegDiracEncoderParams* p_dirac_params = avccontext->priv_data;
-    FfmpegDiracSchroEncodedFrame* p_frame_output      = NULL;
-    FfmpegDiracSchroEncodedFrame* p_next_output_frame = NULL;
+    DiracEncoderParams     *p_dirac_params      = avccontext->priv_data;
+    DiracSchroEncodedFrame *p_frame_output      = NULL;
+    DiracSchroEncodedFrame *p_next_output_frame = NULL;
     int go = 1;
     int last_frame_in_sequence = 0;
 
@@ -303,7 +303,7 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
                 break;
 
             /* create output frame */
-            p_frame_output = av_mallocz(sizeof(FfmpegDiracSchroEncodedFrame));
+            p_frame_output = av_mallocz(sizeof(DiracSchroEncodedFrame));
             /* set output data */
             p_frame_output->size      = p_dirac_params->enc_buf_size;
             p_frame_output->p_encbuf  = p_dirac_params->enc_buf;
@@ -371,7 +371,7 @@ static int libdirac_encode_frame(AVCodecContext *avccontext,
 
 static av_cold int libdirac_encode_close(AVCodecContext *avccontext)
 {
-    FfmpegDiracEncoderParams* p_dirac_params  = avccontext->priv_data;
+    DiracEncoderParams *p_dirac_params = avccontext->priv_data;
 
     /* close the encoder */
     dirac_encoder_close(p_dirac_params->p_encoder);
@@ -395,7 +395,7 @@ AVCodec ff_libdirac_encoder = {
     .name           = "libdirac",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_DIRAC,
-    .priv_data_size = sizeof(FfmpegDiracEncoderParams),
+    .priv_data_size = sizeof(DiracEncoderParams),
     .init           = libdirac_encode_init,
     .encode         = libdirac_encode_frame,
     .close          = libdirac_encode_close,

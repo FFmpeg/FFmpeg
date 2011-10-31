@@ -34,7 +34,7 @@ static const struct {
     enum PixelFormat  ff_pix_fmt;
     SchroChromaFormat schro_pix_fmt;
     SchroFrameFormat  schro_frame_fmt;
-} ffmpeg_schro_pixel_format_map[] = {
+} schro_pixel_format_map[] = {
     { PIX_FMT_YUV420P, SCHRO_CHROMA_420, SCHRO_FRAME_FORMAT_U8_420 },
     { PIX_FMT_YUV422P, SCHRO_CHROMA_422, SCHRO_FRAME_FORMAT_U8_422 },
     { PIX_FMT_YUV444P, SCHRO_CHROMA_444, SCHRO_FRAME_FORMAT_U8_444 },

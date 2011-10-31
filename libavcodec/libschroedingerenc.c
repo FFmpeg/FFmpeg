@@ -41,7 +41,7 @@
 
 
 /** libschroedinger encoder private data */
-typedef struct FfmpegSchroEncoderParams {
+typedef struct SchroEncoderParams {
     /** Schroedinger video format */
     SchroVideoFormat *format;
 
@@ -64,31 +64,31 @@ typedef struct FfmpegSchroEncoderParams {
     int enc_buf_size;
 
     /** queue storing encoded frames */
-    FfmpegDiracSchroQueue enc_frame_queue;
+    DiracSchroQueue enc_frame_queue;
 
     /** end of sequence signalled */
     int eos_signalled;
 
     /** end of sequence pulled */
     int eos_pulled;
-} FfmpegSchroEncoderParams;
+} SchroEncoderParams;
 
 /**
 * Works out Schro-compatible chroma format.
 */
 static int SetSchroChromaFormat(AVCodecContext *avccontext)
 {
-    int num_formats = sizeof(ffmpeg_schro_pixel_format_map) /
-                      sizeof(ffmpeg_schro_pixel_format_map[0]);
+    int num_formats = sizeof(schro_pixel_format_map) /
+                      sizeof(schro_pixel_format_map[0]);
     int idx;
 
-    FfmpegSchroEncoderParams* p_schro_params = avccontext->priv_data;
+    SchroEncoderParams *p_schro_params = avccontext->priv_data;
 
     for (idx = 0; idx < num_formats; ++idx) {
-        if (ffmpeg_schro_pixel_format_map[idx].ff_pix_fmt ==
+        if (schro_pixel_format_map[idx].ff_pix_fmt ==
             avccontext->pix_fmt) {
             p_schro_params->format->chroma_format =
-                            ffmpeg_schro_pixel_format_map[idx].schro_pix_fmt;
+                            schro_pixel_format_map[idx].schro_pix_fmt;
             return 0;
         }
     }
@@ -102,7 +102,7 @@ static int SetSchroChromaFormat(AVCodecContext *avccontext)
 
 static int libschroedinger_encode_init(AVCodecContext *avccontext)
 {
-    FfmpegSchroEncoderParams* p_schro_params = avccontext->priv_data;
+    SchroEncoderParams *p_schro_params = avccontext->priv_data;
     SchroVideoFormatEnum preset;
 
     /* Initialize the libraries that libschroedinger depends on. */
@@ -238,7 +238,7 @@ static int libschroedinger_encode_init(AVCodecContext *avccontext)
 static SchroFrame *libschroedinger_frame_from_data(AVCodecContext *avccontext,
                                                    void *in_data)
 {
-    FfmpegSchroEncoderParams* p_schro_params = avccontext->priv_data;
+    SchroEncoderParams *p_schro_params = avccontext->priv_data;
     SchroFrame *in_frame;
     /* Input line size may differ from what the codec supports. Especially
      * when transcoding from one format to another. So use avpicture_layout
@@ -256,7 +256,7 @@ static SchroFrame *libschroedinger_frame_from_data(AVCodecContext *avccontext,
 
 static void SchroedingerFreeFrame(void *data)
 {
-    FfmpegDiracSchroEncodedFrame *enc_frame = data;
+    DiracSchroEncodedFrame *enc_frame = data;
 
     av_freep(&(enc_frame->p_encbuf));
     av_free(enc_frame);
@@ -267,9 +267,9 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
                                         int buf_size, void *data)
 {
     int enc_size = 0;
-    FfmpegSchroEncoderParams* p_schro_params = avccontext->priv_data;
+    SchroEncoderParams *p_schro_params = avccontext->priv_data;
     SchroEncoder *encoder = p_schro_params->encoder;
-    struct FfmpegDiracSchroEncodedFrame* p_frame_output = NULL;
+    struct DiracSchroEncodedFrame *p_frame_output = NULL;
     int go = 1;
     SchroBuffer *enc_buf;
     int presentation_frame;
@@ -328,7 +328,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
             }
 
             /* Create output frame. */
-            p_frame_output = av_mallocz(sizeof(FfmpegDiracSchroEncodedFrame));
+            p_frame_output = av_mallocz(sizeof(DiracSchroEncodedFrame));
             /* Set output data. */
             p_frame_output->size     = p_schro_params->enc_buf_size;
             p_frame_output->p_encbuf = p_schro_params->enc_buf;
@@ -400,8 +400,7 @@ static int libschroedinger_encode_frame(AVCodecContext *avccontext,
 
 static int libschroedinger_encode_close(AVCodecContext *avccontext)
 {
-
-    FfmpegSchroEncoderParams* p_schro_params = avccontext->priv_data;
+    SchroEncoderParams *p_schro_params = avccontext->priv_data;
 
     /* Close the encoder. */
     schro_encoder_free(p_schro_params->encoder);
@@ -426,7 +425,7 @@ AVCodec ff_libschroedinger_encoder = {
     .name           = "libschroedinger",
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_DIRAC,
-    .priv_data_size = sizeof(FfmpegSchroEncoderParams),
+    .priv_data_size = sizeof(SchroEncoderParams),
     .init           = libschroedinger_encode_init,
     .encode         = libschroedinger_encode_frame,
     .close          = libschroedinger_encode_close,

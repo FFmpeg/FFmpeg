@@ -35,7 +35,7 @@
 static const struct {
     enum PixelFormat ff_pix_fmt;
     dirac_chroma_t dirac_pix_fmt;
-} ffmpeg_dirac_pixel_format_map[] = {
+} dirac_pixel_format_map[] = {
     { PIX_FMT_YUV420P, format420 },
     { PIX_FMT_YUV422P, format422 },
     { PIX_FMT_YUV444P, format444 },

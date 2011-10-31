@@ -809,6 +809,7 @@ int read_yesno(void)
 
 int read_file(const char *filename, char **bufptr, size_t *size)
 {
+    int ret;
     FILE *f = fopen(filename, "rb");
 
     if (!f) {
@@ -824,11 +825,22 @@ int read_file(const char *filename, char **bufptr, size_t *size)
         fclose(f);
         return AVERROR(ENOMEM);
     }
-    fread(*bufptr, 1, *size, f);
-    (*bufptr)[*size++] = '\0';
+    ret = fread(*bufptr, 1, *size, f);
+    if (ret < *size) {
+        av_free(*bufptr);
+        if (ferror(f)) {
+            av_log(NULL, AV_LOG_ERROR, "Error while reading file '%s': %s\n",
+                   filename, strerror(errno));
+            ret = AVERROR(errno);
+        } else
+            ret = AVERROR_EOF;
+    } else {
+        ret = 0;
+        (*bufptr)[*size++] = '\0';
+    }
 
     fclose(f);
-    return 0;
+    return ret;
 }
 
 FILE *get_preset_file(char *filename, size_t filename_size,
