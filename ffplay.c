@@ -133,6 +133,7 @@ typedef struct VideoState {
     AVInputFormat *iformat;
     int no_background;
     int abort_request;
+    int force_refresh;
     int paused;
     int last_paused;
     int seek_req;
@@ -993,7 +994,7 @@ static int refresh_thread(void *opaque)
         SDL_Event event;
         event.type = FF_REFRESH_EVENT;
         event.user.data1 = opaque;
-        if (!is->refresh) {
+        if (!is->refresh && (!is->paused || is->force_refresh)) {
             is->refresh = 1;
             SDL_PushEvent(&event);
         }
@@ -1156,6 +1157,9 @@ retry:
                 goto retry;
             }
 
+            if (is->paused)
+                goto display;
+
             /* compute nominal last_duration */
             last_duration = vp->pts - is->frame_last_pts;
             if (last_duration > 0 && last_duration < 10.0) {
@@ -1234,11 +1238,13 @@ retry:
                 }
             }
 
+display:
             /* display picture */
             if (!display_disable)
                 video_display(is);
 
-            pictq_next_picture(is);
+            if (!is->paused)
+                pictq_next_picture(is);
         }
     } else if (is->audio_st) {
         /* draw the next audio frame */
@@ -1250,6 +1256,7 @@ retry:
         if (!display_disable)
             video_display(is);
     }
+    is->force_refresh = 0;
     if (show_status) {
         static int64_t last_time;
         int64_t cur_time;
@@ -2829,6 +2836,7 @@ static void event_loop(VideoState *cur_stream)
                 break;
             case SDLK_f:
                 toggle_full_screen(cur_stream);
+                cur_stream->force_refresh = 1;
                 break;
             case SDLK_p:
             case SDLK_SPACE:
@@ -2848,6 +2856,7 @@ static void event_loop(VideoState *cur_stream)
                 break;
             case SDLK_w:
                 toggle_audio_display(cur_stream);
+                cur_stream->force_refresh = 1;
                 break;
             case SDLK_PAGEUP:
                 incr = 600.0;
@@ -2889,6 +2898,9 @@ static void event_loop(VideoState *cur_stream)
             default:
                 break;
             }
+            break;
+        case SDL_VIDEOEXPOSE:
+            cur_stream->force_refresh = 1;
             break;
         case SDL_MOUSEBUTTONDOWN:
             if (exit_on_mousedown) {
@@ -2932,6 +2944,7 @@ static void event_loop(VideoState *cur_stream)
                                           SDL_HWSURFACE|SDL_RESIZABLE|SDL_ASYNCBLIT|SDL_HWACCEL);
                 screen_width  = cur_stream->width  = event.resize.w;
                 screen_height = cur_stream->height = event.resize.h;
+                cur_stream->force_refresh = 1;
             break;
         case SDL_QUIT:
         case FF_QUIT_EVENT:
