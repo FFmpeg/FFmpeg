@@ -73,6 +73,15 @@ static void delta_decode(uint8_t *dst, const uint8_t *src, int src_size,
     *state = val;
 }
 
+static void raw_decode(uint8_t *dst, const int8_t *src, int src_size,
+                       int channels)
+{
+    while (src_size--) {
+        *dst = *src++ + 128;
+        dst += channels;
+    }
+}
+
 /** decode a frame */
 static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                                  AVPacket *avpkt)
@@ -81,12 +90,14 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     int buf_size;
     uint8_t *out_data = data;
     int out_data_size;
+    int is_compr = (avctx->codec_id != CODEC_ID_PCM_S8_PLANAR);
 
     /* for the first packet, copy data to buffer */
     if (avpkt->data) {
-        int chan_size = (avpkt->size / avctx->channels) - 2;
+        int hdr_size  = is_compr ? 2 : 0;
+        int chan_size = (avpkt->size - hdr_size * avctx->channels) / avctx->channels;
 
-        if (avpkt->size < 2) {
+        if (avpkt->size < hdr_size * avctx->channels) {
             av_log(avctx, AV_LOG_ERROR, "packet size is too small\n");
             return AVERROR(EINVAL);
         }
@@ -95,9 +106,11 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
             return AVERROR(EINVAL);
         }
 
+        if (is_compr) {
         esc->fib_acc[0] = avpkt->data[1] + 128;
         if (avctx->channels == 2)
             esc->fib_acc[1] = avpkt->data[2+chan_size+1] + 128;
+        }
 
         esc->data_idx  = 0;
         esc->data_size = chan_size;
@@ -109,9 +122,9 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
                 return AVERROR(ENOMEM);
             }
         }
-        memcpy(esc->data[0], &avpkt->data[2], chan_size);
+        memcpy(esc->data[0], &avpkt->data[hdr_size], chan_size);
         if (avctx->channels == 2)
-            memcpy(esc->data[1], &avpkt->data[2+chan_size+2], chan_size);
+            memcpy(esc->data[1], &avpkt->data[2*hdr_size+chan_size], chan_size);
     }
     if (!esc->data[0]) {
         av_log(avctx, AV_LOG_ERROR, "unexpected empty packet\n");
@@ -124,17 +137,25 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
         *data_size = 0;
         return avpkt->size;
     }
-    out_data_size = buf_size * 2 * avctx->channels;
+    out_data_size = buf_size * (is_compr + 1) * avctx->channels;
     if (*data_size < out_data_size) {
         av_log(avctx, AV_LOG_ERROR, "Provided buffer with size %d is too small.\n",
                *data_size);
         return AVERROR(EINVAL);
     }
+    if (is_compr) {
     delta_decode(out_data, &esc->data[0][esc->data_idx], buf_size,
                  &esc->fib_acc[0], esc->table, avctx->channels);
     if (avctx->channels == 2) {
         delta_decode(&out_data[1], &esc->data[1][esc->data_idx], buf_size,
                     &esc->fib_acc[1], esc->table, avctx->channels);
+    }
+    } else {
+        int ch;
+        for (ch = 0; ch < avctx->channels; ch++) {
+            raw_decode((int8_t *)&out_data[ch], &esc->data[ch][esc->data_idx],
+                       buf_size, avctx->channels);
+        }
     }
     esc->data_idx += buf_size;
     *data_size = out_data_size;
@@ -159,6 +180,8 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
         case CODEC_ID_8SVX_EXP:
           esc->table = exponential;
           break;
+        case CODEC_ID_PCM_S8_PLANAR:
+            break;
         default:
           return -1;
     }
@@ -198,4 +221,16 @@ AVCodec ff_eightsvx_exp_decoder = {
   .decode         = eightsvx_decode_frame,
   .capabilities   = CODEC_CAP_DELAY,
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
+};
+
+AVCodec ff_pcm_s8_planar_decoder = {
+    .name           = "pcm_s8_planar",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_PCM_S8_PLANAR,
+    .priv_data_size = sizeof(EightSvxContext),
+    .init           = eightsvx_decode_init,
+    .close          = eightsvx_decode_close,
+    .decode         = eightsvx_decode_frame,
+    .capabilities   = CODEC_CAP_DELAY,
+    .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
 };
