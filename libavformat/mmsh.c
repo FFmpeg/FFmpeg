@@ -55,6 +55,7 @@ typedef enum {
 
 typedef struct {
     MMSContext mms;
+    uint8_t location[1024];
     int request_seq;  ///< request packet sequence
     int chunk_seq;    ///< data packet sequence
 } MMSHContext;
@@ -213,7 +214,7 @@ static int get_http_header_data(MMSHContext *mmsh)
 static int mmsh_open(URLContext *h, const char *uri, int flags)
 {
     int i, port, err;
-    char httpname[256], path[256], host[128], location[1024];
+    char httpname[256], path[256], host[128];
     char *stream_selection = NULL;
     char headers[1024];
     MMSHContext *mmsh;
@@ -224,10 +225,10 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         return AVERROR(ENOMEM);
     mmsh->request_seq = h->is_streamed = 1;
     mms = &mmsh->mms;
-    av_strlcpy(location, uri, sizeof(location));
+    av_strlcpy(mmsh->location, uri, sizeof(mmsh->location));
 
     av_url_split(NULL, 0, NULL, 0,
-        host, sizeof(host), &port, path, sizeof(path), location);
+        host, sizeof(host), &port, path, sizeof(path), mmsh->location);
     if (port<0)
         port = 80; // default mmsh protocol port
     ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, "%s", path);
