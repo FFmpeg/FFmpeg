@@ -366,6 +366,25 @@ static int mmsh_read(URLContext *h, uint8_t *buf, int size)
     return res;
 }
 
+static int64_t mmsh_read_seek(URLContext *h, int stream_index,
+                        int64_t timestamp, int flags)
+{
+    MMSHContext *mmsh = h->priv_data;
+    MMSContext *mms   = &mmsh->mms;
+    int ret;
+
+    ret= mmsh_open_internal(h, mmsh->location, 0, timestamp, 0);
+    if(ret>=0){
+        if (mms->mms_hd)
+            ffurl_close(mms->mms_hd);
+        av_freep(&mms->streams);
+        av_freep(&mms->asf_header);
+        av_free(mmsh);
+    }else
+        h->priv_data= mmsh;
+    return ret;
+}
+
 URLProtocol ff_mmsh_protocol = {
     .name      = "mmsh",
     .url_open  = mmsh_open,
@@ -373,4 +392,5 @@ URLProtocol ff_mmsh_protocol = {
     .url_write = NULL,
     .url_seek  = NULL,
     .url_close = mmsh_close,
+    .url_read_seek  = mmsh_read_seek,
 };
