@@ -51,26 +51,26 @@ cglobal dirac_hpel_filter_v_%1, 4,6,8, dst, src, stride, width, src0, stridex3
     pxor    m7, m7
 .loop:
     ; 7*(src[0] + src[1])
-    UNPACK_ADD m0, m1, [srcq], [srcq + strideq], u,u
+    UNPACK_ADD m0, m1, [srcq], [srcq + strideq], a,a
     pmullw  m0, [pw_7]
     pmullw  m1, [pw_7]
 
     ; 3*( ... + src[-2] + src[3])
-    UNPACK_ADD m2, m3, [src0q + strideq], [srcq + stridex3q], u,u
+    UNPACK_ADD m2, m3, [src0q + strideq], [srcq + stridex3q], a,a
     paddw   m0, m2
     paddw   m1, m3
     pmullw  m0, [pw_3]
     pmullw  m1, [pw_3]
 
     ; ... - 7*(src[-1] + src[2])
-    UNPACK_ADD m2, m3, [src0q + strideq*2], [srcq + strideq*2], u,u
+    UNPACK_ADD m2, m3, [src0q + strideq*2], [srcq + strideq*2], a,a
     pmullw  m2, [pw_7]
     pmullw  m3, [pw_7]
     psubw   m0, m2
     psubw   m1, m3
 
     ; ... - (src[-3] + src[4])
-    UNPACK_ADD m2, m3, [src0q], [srcq + strideq*4], u,u
+    UNPACK_ADD m2, m3, [src0q], [srcq + strideq*4], a,a
     psubw   m0, m2
     psubw   m1, m3
 
