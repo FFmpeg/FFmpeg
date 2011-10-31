@@ -79,7 +79,7 @@ cglobal dirac_hpel_filter_v_%1, 4,6,8, dst, src, stride, width, src0, stridex3
     psraw   m0, 5
     psraw   m1, 5
     packuswb m0, m1
-    movu    [dstq], m0
+    mova    [dstq], m0
     add     dstq, mmsize
     add     srcq, mmsize
     add     src0q, mmsize
@@ -122,7 +122,7 @@ cglobal dirac_hpel_filter_h_%1, 3,3,8, dst, src, width
     psraw   m0, 5
     psraw   m1, 5
     packuswb m0, m1
-    movu    [dstq + widthq], m0
+    mova    [dstq + widthq], m0
     sub     widthd, mmsize
     jge     .loop
     RET
