@@ -197,5 +197,5 @@ void ff_diracdsp_init(DiracDSPContext *c)
     PIXFUNC(avg, 16);
     PIXFUNC(avg, 32);
 
-    if (HAVE_MMX) ff_diracdsp_init_mmx(c);
+    if (HAVE_MMX && HAVE_YASM) ff_diracdsp_init_mmx(c);
 }
