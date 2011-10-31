@@ -380,6 +380,9 @@ static int64_t mmsh_read_seek(URLContext *h, int stream_index,
         av_freep(&mms->streams);
         av_freep(&mms->asf_header);
         av_free(mmsh);
+        mmsh = h->priv_data;
+        mms   = &mmsh->mms;
+        mms->asf_header_read_size= mms->asf_header_size;
     }else
         h->priv_data= mmsh;
     return ret;
