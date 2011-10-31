@@ -452,7 +452,8 @@ static void blend_slice(AVFilterContext *ctx,
                         alpha = (alpha_v + alpha_h) >> 1;
                     } else
                         alpha = a[0];
-                    *d = (*d * (0xff - alpha) + *s++ * alpha + 128) >> 8;
+                    *d = FAST_DIV255(*d * (255 - alpha) + *s * alpha);
+                    s++;
                     d++;
                     a += 1 << hsub;
                 }
