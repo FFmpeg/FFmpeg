@@ -40,7 +40,7 @@ Miscellaneous Areas
 documentation                           Mike Melanson
 website                                 Robert Swain
 build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
-project server                          Diego Biurrun, Mans Rullgard
+project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Döffinger
 mailinglists                            Michael Niedermayer, Baptiste Coudurier
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
