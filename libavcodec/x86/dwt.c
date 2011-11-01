@@ -30,6 +30,8 @@ void ff_vertical_compose_dirac53iH0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b
 void ff_vertical_compose_dd137iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, int width); \
 void ff_vertical_compose_dd97iH0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, int width); \
 void ff_vertical_compose_haar##ext(IDWTELEM *b0, IDWTELEM *b1, int width); \
+void ff_horizontal_compose_haar0i##ext(IDWTELEM *b, IDWTELEM *tmp, int w);\
+void ff_horizontal_compose_haar1i##ext(IDWTELEM *b, IDWTELEM *tmp, int w);\
 \
 static void vertical_compose53iL0##ext(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, int width) \
 { \
@@ -83,6 +85,28 @@ static void vertical_compose_haar##ext(IDWTELEM *b0, IDWTELEM *b1, int width) \
 \
     ff_vertical_compose_haar##ext(b0, b1, width_align); \
 } \
+static void horizontal_compose_haar0i##ext(IDWTELEM *b, IDWTELEM *tmp, int w)\
+{\
+    int w2= w>>1;\
+    int x= w2 - (w2&(align-1));\
+    ff_horizontal_compose_haar0i##ext(b, tmp, w);\
+\
+    for (; x < w2; x++) {\
+        b[2*x  ] = tmp[x];\
+        b[2*x+1] = COMPOSE_HAARiH0(b[x+w2], tmp[x]);\
+    }\
+}\
+static void horizontal_compose_haar1i##ext(IDWTELEM *b, IDWTELEM *tmp, int w)\
+{\
+    int w2= w>>1;\
+    int x= w2 - (w2&(align-1));\
+    ff_horizontal_compose_haar1i##ext(b, tmp, w);\
+\
+    for (; x < w2; x++) {\
+        b[2*x  ] = (tmp[x] + 1)>>1;\
+        b[2*x+1] = (COMPOSE_HAARiH0(b[x+w2], tmp[x]) + 1)>>1;\
+    }\
+}\
 \
 
 #if HAVE_YASM
@@ -95,32 +119,11 @@ COMPOSE_VERTICAL(_sse2, 8)
 
 void ff_horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w);
 
-void ff_horizontal_compose_haar0i_mmx(IDWTELEM *b, IDWTELEM *tmp, int w);
-void ff_horizontal_compose_haar1i_mmx(IDWTELEM *b, IDWTELEM *tmp, int w);
-void ff_horizontal_compose_haar0i_sse2(IDWTELEM *b, IDWTELEM *tmp, int w);
-void ff_horizontal_compose_haar1i_sse2(IDWTELEM *b, IDWTELEM *tmp, int w);
-
 void ff_horizontal_compose_dd97i_end_c(IDWTELEM *b, IDWTELEM *tmp, int w2, int x)
 {
     for (; x < w2; x++) {
         b[2*x  ] = (tmp[x] + 1)>>1;
         b[2*x+1] = (COMPOSE_DD97iH0(tmp[x-1], tmp[x], b[x+w2], tmp[x+1], tmp[x+2]) + 1)>>1;
-    }
-}
-
-void ff_horizontal_compose_haar0i_end_c(IDWTELEM *b, IDWTELEM *tmp, int w2, int x)
-{
-    for (; x < w2; x++) {
-        b[2*x  ] = tmp[x];
-        b[2*x+1] = COMPOSE_HAARiH0(b[x+w2], tmp[x]);
-    }
-}
-
-void ff_horizontal_compose_haar1i_end_c(IDWTELEM *b, IDWTELEM *tmp, int w2, int x)
-{
-    for (; x < w2; x++) {
-        b[2*x  ] = (tmp[x] + 1)>>1;
-        b[2*x+1] = (COMPOSE_HAARiH0(b[x+w2], tmp[x]) + 1)>>1;
     }
 }
 
@@ -148,11 +151,11 @@ void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
         break;
     case DWT_DIRAC_HAAR0:
         d->vertical_compose   = vertical_compose_haar_mmx;
-        d->horizontal_compose = ff_horizontal_compose_haar0i_mmx;
+        d->horizontal_compose = horizontal_compose_haar0i_mmx;
         break;
     case DWT_DIRAC_HAAR1:
         d->vertical_compose   = vertical_compose_haar_mmx;
-        d->horizontal_compose = ff_horizontal_compose_haar1i_mmx;
+        d->horizontal_compose = horizontal_compose_haar1i_mmx;
         break;
     }
 #endif
@@ -175,11 +178,11 @@ void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
         break;
     case DWT_DIRAC_HAAR0:
         d->vertical_compose   = vertical_compose_haar_sse2;
-//MMXDISABLED         d->horizontal_compose = ff_horizontal_compose_haar0i_sse2;
+        d->horizontal_compose = horizontal_compose_haar0i_sse2;
         break;
     case DWT_DIRAC_HAAR1:
         d->vertical_compose   = vertical_compose_haar_sse2;
-        d->horizontal_compose = ff_horizontal_compose_haar1i_sse2;
+        d->horizontal_compose = horizontal_compose_haar1i_sse2;
         break;
     }
 

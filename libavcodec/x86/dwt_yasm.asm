@@ -22,8 +22,6 @@
 %include "x86inc.asm"
 
 cextern horizontal_compose_dd97i_end_c
-cextern horizontal_compose_haar0i_end_c
-cextern horizontal_compose_haar1i_end_c
 
 SECTION_RODATA
 pw_1: times 8 dw 1
@@ -188,7 +186,7 @@ cglobal vertical_compose_haar_%1, 3,4,3, b0, b1, width
 ; void horizontal_compose_haari(IDWTELEM *b, IDWTELEM *tmp, int width)
 cglobal horizontal_compose_haar%2i_%1, 3,6,4, b, tmp, w, x, w2, b_w2
     mov    w2d, wd
-    xor     xd, xd
+    xor     xq, xq
     shr    w2d, 1
     lea  b_w2q, [bq+wq]
     mova    m3, [pw_1]
@@ -199,13 +197,13 @@ cglobal horizontal_compose_haar%2i_%1, 3,6,4, b, tmp, w, x, w2, b_w2
     psraw   m1, 1
     psubw   m0, m1
     mova    [tmpq + 2*xq], m0
-    add     xd, mmsize/2
-    cmp     xd, w2d
+    add     xq, mmsize/2
+    cmp     xq, w2q
     jl      .lowpass_loop
 
-    xor     xd, xd
-    and    w2d, ~(mmsize/2 - 1)
-    cmp    w2d, mmsize/2
+    xor     xq, xq
+    and    w2q, ~(mmsize/2 - 1)
+    cmp    w2q, mmsize/2
     jl      .end
 
 .highpass_loop:
@@ -226,11 +224,11 @@ cglobal horizontal_compose_haar%2i_%1, 3,6,4, b, tmp, w, x, w2, b_w2
     mova    [bq+4*xq], m0
     mova    [bq+4*xq+mmsize], m2
 
-    add     xd, mmsize/2
-    cmp     xd, w2d
+    add     xq, mmsize/2
+    cmp     xq, w2q
     jl      .highpass_loop
 .end:
-    END_HORIZONTAL horizontal_compose_haar%2i_end_c
+    REP_RET
 %endmacro
 
 
