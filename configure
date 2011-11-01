@@ -94,6 +94,7 @@ Configuration options:
   --disable-avfilter       disable video filter support [no]
   --disable-pthreads       disable pthreads [auto]
   --disable-w32threads     disable Win32 threads [auto]
+  --disable-os2threads     disable OS/2 threads [auto]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
   --enable-gray            enable full grayscale support (slower color)
@@ -1069,6 +1070,7 @@ CONFIG_LIST="
 THREADS_LIST='
     pthreads
     w32threads
+    os2threads
 '
 
 ARCH_LIST='
@@ -2656,6 +2658,7 @@ case $target_os in
           emximp -o $(SUBDIR)$(LIBPREF)$(NAME)_dll.lib $(SUBDIR)$(NAME).def;'
         SLIB_INSTALL_EXTRA_LIB='$(LIBPREF)$(NAME)_dll.a $(LIBPREF)$(NAME)_dll.lib'
         enable dos_paths
+        enable_weak os2threads
         ;;
     gnu/kfreebsd)
         add_cppflags -D_POSIX_C_SOURCE=200112 -D_XOPEN_SOURCE=600 -D_BSD_SOURCE
@@ -2995,7 +2998,7 @@ fi
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads
-if ! disabled pthreads && ! enabled w32threads; then
+if ! disabled pthreads && ! enabled w32threads && ! enabled os2threads; then
     enable pthreads
     if check_func pthread_create; then
         :
