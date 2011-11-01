@@ -119,8 +119,12 @@ COMPOSE_VERTICAL(_sse2, 8)
 
 void ff_horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w);
 
-void ff_horizontal_compose_dd97i_end_c(IDWTELEM *b, IDWTELEM *tmp, int w2, int x)
+static void horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w)
 {
+    int w2= w>>1;
+    int x= w2 - (w2&7);
+    ff_horizontal_compose_dd97i_ssse3(b, tmp, w);
+
     for (; x < w2; x++) {
         b[2*x  ] = (tmp[x] + 1)>>1;
         b[2*x+1] = (COMPOSE_DD97iH0(tmp[x-1], tmp[x], b[x+w2], tmp[x+1], tmp[x+2]) + 1)>>1;
@@ -191,7 +195,7 @@ void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
 
     switch (type) {
     case DWT_DIRAC_DD9_7:
-//MMXDISABLED        d->horizontal_compose = ff_horizontal_compose_dd97i_ssse3;
+        d->horizontal_compose = horizontal_compose_dd97i_ssse3;
         break;
     }
 #endif // HAVE_YASM

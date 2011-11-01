@@ -21,8 +21,6 @@
 
 %include "x86inc.asm"
 
-cextern horizontal_compose_dd97i_end_c
-
 SECTION_RODATA
 pw_1: times 8 dw 1
 pw_2: times 8 dw 2
@@ -293,7 +291,7 @@ cglobal horizontal_compose_dd97i_ssse3, 3,6,8, b, tmp, w, x, w2, b_w2
     cmp     xd, w2d
     jl      .highpass_loop
 .end:
-    END_HORIZONTAL horizontal_compose_dd97i_end_c
+    REP_RET
 
 
 %ifndef ARCH_X86_64
