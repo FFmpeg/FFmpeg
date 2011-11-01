@@ -81,6 +81,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (BFI, bfi);
     REGISTER_DECODER (BINK, bink);
     REGISTER_ENCDEC  (BMP, bmp);
+    REGISTER_DECODER (BMV_VIDEO, bmv_video);
     REGISTER_DECODER (C93, c93);
     REGISTER_DECODER (CAVS, cavs);
     REGISTER_DECODER (CDGRAPHICS, cdgraphics);
@@ -242,6 +243,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (ATRAC3, atrac3);
     REGISTER_DECODER (BINKAUDIO_DCT, binkaudio_dct);
     REGISTER_DECODER (BINKAUDIO_RDFT, binkaudio_rdft);
+    REGISTER_DECODER (BMV_AUDIO, bmv_audio);
     REGISTER_DECODER (COOK, cook);
     REGISTER_DECODER (DCA, dca);
     REGISTER_DECODER (DSICINAUDIO, dsicinaudio);

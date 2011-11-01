@@ -219,6 +219,7 @@ enum CodecID {
     CODEC_ID_G729,
 #endif
     CODEC_ID_UTVIDEO,
+    CODEC_ID_BMV_VIDEO,
 
     /* various PCM "codecs" */
     CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
@@ -359,6 +360,7 @@ enum CodecID {
     CODEC_ID_8SVX_EXP,
     CODEC_ID_8SVX_FIB,
 #endif
+    CODEC_ID_BMV_AUDIO,
 
     /* subtitle codecs */
     CODEC_ID_FIRST_SUBTITLE = 0x17000,          ///< A dummy ID pointing at the start of subtitle codecs.

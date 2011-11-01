@@ -99,6 +99,7 @@ easier to use. The changes are:
   AVCodecContext deprecated. Codec private options should be used instead.
 - Properly working defaults in libx264 wrapper, support for native presets.
 - Encrypted OMA files support
+- Discworld II BMV decoding support
 
 
 version 0.7:
