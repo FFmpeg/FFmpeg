@@ -224,6 +224,56 @@ expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3} @var{c4} @var{c5}
 @var{c6} @var{c7}]"
 @end table
 
+@section volume
+
+Adjust the input audio volume.
+
+The filter accepts exactly one parameter @var{vol}, which expresses
+how the audio volume will be increased or decresed.
+
+Output values are clipped to the maximum value.
+
+If @var{vol} is expressed as a decimal number, and the output audio
+volume is given by the relation:
+@example
+@var{output_volume} = @var{vol} * @var{input_volume}
+@end example
+
+If @var{vol} is expressed as a decimal number followed by the string
+"dB", the value represents the requested change in decibels of the
+input audio power, and the output audio volume is given by the
+relation:
+@example
+@var{output_volume} = 10^(@var{vol}/20) * @var{input_volume}
+@end example
+
+Otherwise @var{vol} is considered an expression and its evaluated
+value is used for computing the output audio volume according to the
+first relation.
+
+Default value for @var{vol} is 1.0.
+
+@subsection Examples
+
+@itemize
+@item
+Half the input audio volume:
+@example
+volume=0.5
+@end example
+
+The above example is equivalent to:
+@example
+volume=1/2
+@end example
+
+@item
+Decrease input audio power by 12 decibels:
+@example
+volume=-12dB
+@end example
+@end itemize
+
 @c man end AUDIO FILTERS
 
 @chapter Audio Sources
