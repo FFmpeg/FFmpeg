@@ -76,7 +76,7 @@ void ff_acelp_interpolatef(float *out, const float *in,
  *
  * The filter has a cut-off frequency of 1/80 of the sampling freq
  *
- * @note Two items before the top of the out buffer must contain two items from the
+ * @note Two items before the top of the in buffer must contain two items from the
  *       tail of the previous subframe.
  *
  * @remark It is safe to pass the same array in in and out parameters.
