@@ -323,7 +323,7 @@ int read_yesno(void);
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR error code in case of failure.
  */
-int read_file(const char *filename, char **bufptr, size_t *size);
+int cmdutils_read_file(const char *filename, char **bufptr, size_t *size);
 
 /**
  * Get a file corresponding to a preset file.

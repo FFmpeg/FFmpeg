@@ -807,7 +807,7 @@ int read_yesno(void)
     return yesno;
 }
 
-int read_file(const char *filename, char **bufptr, size_t *size)
+int cmdutils_read_file(const char *filename, char **bufptr, size_t *size)
 {
     int ret;
     FILE *f = fopen(filename, "rb");
