@@ -111,6 +111,7 @@ Configuration options:
   --enable-vaapi           enable VAAPI code [autodetect]
   --enable-vdpau           enable VDPAU code [autodetect]
   --disable-dxva2          disable DXVA2 code
+  --disable-vda            disable VDA code
   --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
@@ -1052,6 +1053,7 @@ CONFIG_LIST="
     swscale_alpha
     thumb
     vaapi
+    vda
     vdpau
     version3
     x11grab
@@ -1377,6 +1379,8 @@ h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
 h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_select="vaapi"
+h264_vda_hwaccel_deps="VideoDecodeAcceleration_VDADecoder_h"
+h264_vda_hwaccel_select="vda"
 h264_vdpau_decoder_select="vdpau h264_decoder"
 imc_decoder_select="fft mdct sinewin"
 jpegls_decoder_select="golomb"
@@ -2955,6 +2959,7 @@ check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 
 check_header dlfcn.h
+check_header VideoDecodeAcceleration/VDADecoder.h
 check_header dxva2api.h -D_WIN32_WINNT=0x0600
 check_header libcrystalhd/libcrystalhd_if.h
 check_header malloc.h
@@ -2969,6 +2974,11 @@ check_header X11/extensions/XvMClib.h
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
+
+# adds ldflags for VDA module
+if enabled vda; then
+    add_ldflags -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
+fi
 
 # check for some common methods of building with pthread support
 # do this before the optional library checks as some of them require pthreads

@@ -70,6 +70,7 @@ easier to use. The changes are:
 - 4:2:2 H.264 decoding support
 - Pulseaudio input device
 - Prores encoder
+- Video Decoder Acceleration (VDA) HWAccel module.
 
 version 0.8:
 

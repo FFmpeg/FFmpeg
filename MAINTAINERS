@@ -237,6 +237,7 @@ Hardware acceleration:
   dxva2*                                Laurent Aimar
   libstagefright.cpp                    Mohamed Naufal
   vaapi*                                Gwenole Beauchesne
+  vda*                                  Sebastien Zwickert
   vdpau*                                Carl Eugen Hoyos
 
 
