@@ -91,10 +91,26 @@ static void pthread_join(pthread_t thread, void **value_ptr)
     CloseHandle(thread.handle);
 }
 
-#define pthread_mutex_init(m, a) InitializeCriticalSection(m)
-#define pthread_mutex_destroy(m) DeleteCriticalSection(m)
-#define pthread_mutex_lock(m)    EnterCriticalSection(m)
-#define pthread_mutex_unlock(m)  LeaveCriticalSection(m)
+static inline int pthread_mutex_init(pthread_mutex_t *m, void* attr)
+{
+    InitializeCriticalSection(m);
+    return 0;
+}
+static inline int pthread_mutex_destroy(pthread_mutex_t *m)
+{
+    DeleteCriticalSection(m);
+    return 0;
+}
+static inline int pthread_mutex_lock(pthread_mutex_t *m)
+{
+    EnterCriticalSection(m);
+    return 0;
+}
+static inline int pthread_mutex_unlock(pthread_mutex_t *m)
+{
+    LeaveCriticalSection(m);
+    return 0;
+}
 
 /* for pre-Windows 6.0 platforms we need to define and use our own condition
  * variable and api */
