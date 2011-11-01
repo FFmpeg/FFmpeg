@@ -92,7 +92,7 @@ Configuration options:
   --disable-postproc       disable libpostproc build
   --disable-avfilter       disable video filter support [no]
   --disable-pthreads       disable pthreads [auto]
-  --enable-w32threads      use Win32 threads [no]
+  --disable-w32threads     disable Win32 threads [auto]
   --enable-x11grab         enable X11 grabbing [no]
   --disable-network        disable network support [no]
   --enable-gray            enable full grayscale support (slower color)
@@ -2436,6 +2436,7 @@ case $target_os in
             disable network
         else
             target_os=mingw32
+            enable_weak w32threads
         fi
         LIBTARGET=i386
         if enabled x86_64; then
