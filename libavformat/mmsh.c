@@ -317,7 +317,7 @@ fail:
 
 static int mmsh_open(URLContext *h, const char *uri, int flags)
 {
-    mmsh_open_internal(h, uri, flags, 0, 0);
+    return mmsh_open_internal(h, uri, flags, 0, 0);
 }
 
 static int handle_chunk_type(MMSHContext *mmsh)
