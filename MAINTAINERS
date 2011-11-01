@@ -41,7 +41,7 @@ documentation                           Mike Melanson
 website                                 Robert Swain
 build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
 project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Döffinger
-mailinglists                            Michael Niedermayer, Baptiste Coudurier
+mailinglists                            Michael Niedermayer, Baptiste Coudurier, Lou Logan
 presets                                 Robert Swain
 metadata subsystem                      Aurelien Jacobs
 release management                      Diego Biurrun, Reinhard Tartler
