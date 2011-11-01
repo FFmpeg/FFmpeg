@@ -162,23 +162,6 @@ cglobal vertical_compose_haar_%1, 3,4,3, b0, b1, width
 %endrep
 %endmacro
 
-; On x86-64 this does a tail call to the C function to do the final bit
-; x86-32 doesn't because isn't enough stack space for the additional argument x
-%macro END_HORIZONTAL 1
-    shr     wd, 1
-%ifdef ARCH_X86_64
-    RET                                ;This RET was a CLEANUP call
-    jmp     %1
-%else
-    push    xd
-    push    wd
-    push    tmpd
-    push    bd
-    call    %1
-    add     esp, 16
-    RET
-%endif
-%endmacro
 
 %macro HAAR_HORIZONTAL 2
 ; void horizontal_compose_haari(IDWTELEM *b, IDWTELEM *tmp, int width)
