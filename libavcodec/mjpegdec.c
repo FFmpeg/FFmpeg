@@ -326,8 +326,12 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         if(s->rgb){
             s->avctx->pix_fmt = PIX_FMT_BGRA;
         }else{
+            if(s->component_id[0] == 'Q' && s->component_id[1] == 'F' && s->component_id[2] == 'A'){
+                s->avctx->pix_fmt = PIX_FMT_GBR24P;
+            }else{
             s->avctx->pix_fmt = s->cs_itu601 ? PIX_FMT_YUV444P : PIX_FMT_YUVJ444P;
             s->avctx->color_range = s->cs_itu601 ? AVCOL_RANGE_MPEG : AVCOL_RANGE_JPEG;
+            }
         }
         assert(s->nb_components==3);
         break;
@@ -991,6 +995,9 @@ int ff_mjpeg_decode_sos(MJpegDecodeContext *s,
         if (s->avctx->codec_tag == MKTAG('M', 'T', 'S', 'J')
             && nb_components == 3 && s->nb_components == 3 && i)
             index = 3 - i;
+
+        if(nb_components == 3 && s->nb_components == 3 && s->avctx->pix_fmt == PIX_FMT_GBR24P)
+            index = (i+2)%3;
 
         s->comp_index[i] = index;
 
