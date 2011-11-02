@@ -403,6 +403,7 @@ enum CodecID {
     CODEC_ID_BMV_AUDIO,
     CODEC_ID_G729 = 0x15800,
     CODEC_ID_G723_1= 0x15801,
+    CODEC_ID_FFWAVESYNTH = MKBETAG('F','F','W','S'),
     CODEC_ID_8SVX_RAW   = MKBETAG('8','S','V','X'),
 
     /* subtitle codecs */

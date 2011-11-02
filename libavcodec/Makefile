@@ -156,6 +156,7 @@ OBJS-$(CONFIG_FFV1_DECODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
 OBJS-$(CONFIG_FFVHUFF_ENCODER)         += huffyuv.o
+OBJS-$(CONFIG_FFWAVESYNTH_DECODER)     += ffwavesynth.o
 OBJS-$(CONFIG_FLAC_DECODER)            += flacdec.o flacdata.o flac.o vorbis_data.o
 OBJS-$(CONFIG_FLAC_ENCODER)            += flacenc.o flacdata.o flac.o vorbis_data.o
 OBJS-$(CONFIG_FLASHSV_DECODER)         += flashsv.o

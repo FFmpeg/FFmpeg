@@ -48,3 +48,16 @@ top-field-first is assumed
 @end table
 
 @c man end VIDEO DECODERS
+
+@chapter Audio Decoders
+@c man begin AUDIO DECODERS
+
+@section ffwavesynth
+
+Internal wave synthetizer.
+
+This decoder generates wave patterns according to predefined sequences. Its
+use is purely internal and the format of the data it accepts is not publicly
+documented.
+
+@c man end AUDIO DECODERS
