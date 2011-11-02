@@ -275,6 +275,8 @@ typedef struct OptionsContext {
 
     SpecifierOpt *ts_scale;
     int        nb_ts_scale;
+    SpecifierOpt *dump_attachment;
+    int        nb_dump_attachment;
 
     /* output options */
     StreamMap *stream_maps;
@@ -2843,6 +2845,60 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
     }
 }
 
+static void assert_file_overwrite(const char *filename)
+{
+    if (!file_overwrite &&
+        (strchr(filename, ':') == NULL || filename[1] == ':' ||
+         av_strstart(filename, "file:", NULL))) {
+        if (avio_check(filename, 0) == 0) {
+            if (!using_stdin) {
+                fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
+                fflush(stderr);
+                if (!read_yesno()) {
+                    fprintf(stderr, "Not overwriting - exiting\n");
+                    exit_program(1);
+                }
+            }
+            else {
+                fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
+                exit_program(1);
+            }
+        }
+    }
+}
+
+static void dump_attachment(AVStream *st, const char *filename)
+{
+    int ret;
+    AVIOContext *out = NULL;
+    AVDictionaryEntry *e;
+
+    if (!st->codec->extradata_size) {
+        av_log(NULL, AV_LOG_WARNING, "No extradata to dump in stream #%d:%d.\n",
+               nb_input_files - 1, st->index);
+        return;
+    }
+    if (!*filename && (e = av_dict_get(st->metadata, "filename", NULL, 0)))
+        filename = e->value;
+    if (!*filename) {
+        av_log(NULL, AV_LOG_FATAL, "No filename specified and no 'filename' tag"
+               "in stream #%d:%d.\n", nb_input_files - 1, st->index);
+        exit_program(1);
+    }
+
+    assert_file_overwrite(filename);
+
+    if ((ret = avio_open (&out, filename, AVIO_FLAG_WRITE)) < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Could not open file %s for writing.\n",
+               filename);
+        exit_program(1);
+    }
+
+    avio_write(out, st->codec->extradata, st->codec->extradata_size);
+    avio_flush(out);
+    avio_close(out);
+}
+
 static int opt_input_file(OptionsContext *o, const char *opt, const char *filename)
 {
     AVFormatContext *ic;
@@ -2942,6 +2998,17 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     input_files[nb_input_files - 1].ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
     input_files[nb_input_files - 1].rate_emu   = o->rate_emu;
+
+    for (i = 0; i < o->nb_dump_attachment; i++) {
+        int j;
+
+        for (j = 0; j < ic->nb_streams; j++) {
+            AVStream *st = ic->streams[j];
+
+            if (check_stream_specifier(ic, st, o->dump_attachment[i].specifier) == 1)
+                dump_attachment(st, o->dump_attachment[i].u.str);
+        }
+    }
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3602,25 +3669,7 @@ static void opt_output_file(void *optctx, const char *filename)
 
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
         /* test if it already exists to avoid loosing precious files */
-        if (!file_overwrite &&
-            (strchr(filename, ':') == NULL ||
-             filename[1] == ':' ||
-             av_strstart(filename, "file:", NULL))) {
-            if (avio_check(filename, 0) == 0) {
-                if (!using_stdin) {
-                    fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
-                    fflush(stderr);
-                    if (!read_yesno()) {
-                        fprintf(stderr, "Not overwriting - exiting\n");
-                        exit_program(1);
-                    }
-                }
-                else {
-                    fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
-                    exit_program(1);
-                }
-            }
-        }
+        assert_file_overwrite(filename);
 
         /* open the file */
         if ((err = avio_open(&oc->pb, filename, AVIO_FLAG_WRITE)) < 0) {
@@ -4086,6 +4135,7 @@ static const OptionDef options[] = {
 #endif
     { "stats", OPT_BOOL, {&print_stats}, "print progress report during encoding", },
     { "attach", HAS_ARG | OPT_FUNC2, {(void*)opt_attach}, "add an attachment to the output file", "filename" },
+    { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(dump_attachment)}, "extract an attachment into a file", "filename" },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
