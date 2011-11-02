@@ -20,6 +20,7 @@
 
 #include <stdint.h>
 
+#include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
@@ -97,6 +98,44 @@ static int id3v2_check_write_tag(AVFormatContext *s, AVDictionaryEntry *t, const
     return -1;
 }
 
+static void id3v2_3_metadata_split_date(AVDictionary **pm)
+{
+    AVDictionaryEntry *mtag = NULL;
+    AVDictionary *dst = NULL;
+    const char *key, *value;
+    char year[5] = {0}, day_month[5] = {0};
+    int i;
+
+    while ((mtag = av_dict_get(*pm, "", mtag, AV_DICT_IGNORE_SUFFIX))) {
+        key = mtag->key;
+        if (!strcasecmp(key, "date")) {
+            /* split date tag using "YYYY-MM-DD" format into year and month/day segments */
+            value = mtag->value;
+            i = 0;
+            while (value[i] >= '0' && value[i] <= '9') i++;
+            if (value[i] == '\0' || value[i] == '-') {
+                av_strlcpy(year, value, sizeof(year));
+                av_dict_set(&dst, "TYER", year, 0);
+
+                if (value[i] == '-' &&
+                    value[i+1] >= '0' && value[i+1] <= '1' &&
+                    value[i+2] >= '0' && value[i+2] <= '9' &&
+                    value[i+3] == '-' &&
+                    value[i+4] >= '0' && value[i+4] <= '3' &&
+                    value[i+5] >= '0' && value[i+5] <= '9' &&
+                    (value[i+6] == '\0' || value[i+6] == ' ')) {
+                    snprintf(day_month, sizeof(day_month), "%.2s%.2s", value + i + 4, value + i + 1);
+                    av_dict_set(&dst, "TDAT", day_month, 0);
+                }
+            } else
+                av_dict_set(&dst, key, value, 0);
+        } else
+            av_dict_set(&dst, key, mtag->value, 0);
+    }
+    av_dict_free(pm);
+    *pm = dst;
+}
+
 int ff_id3v2_write(struct AVFormatContext *s, int id3v2_version,
                    const char *magic)
 {
@@ -116,7 +155,9 @@ int ff_id3v2_write(struct AVFormatContext *s, int id3v2_version,
     avio_wb32(s->pb, 0);
 
     ff_metadata_conv(&s->metadata, ff_id3v2_34_metadata_conv, NULL);
-    if (id3v2_version == 4)
+    if (id3v2_version == 3)
+        id3v2_3_metadata_split_date(&s->metadata);
+    else if (id3v2_version == 4)
         ff_metadata_conv(&s->metadata, ff_id3v2_4_metadata_conv, NULL);
 
     while ((t = av_dict_get(s->metadata, "", t, AV_DICT_IGNORE_SUFFIX))) {
