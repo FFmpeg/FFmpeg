@@ -27,11 +27,13 @@
 
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "internal.h"
 
 typedef struct {
     int factor, fade_per_frame;
     unsigned int frame_index, start_frame, stop_frame;
     int hsub, vsub, bpp;
+    unsigned int black_level, black_level_scaled;
 } FadeContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -82,6 +84,13 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
+const static enum PixelFormat studio_level_pix_fmts[] = {
+    PIX_FMT_YUV444P,  PIX_FMT_YUV422P,  PIX_FMT_YUV420P,
+    PIX_FMT_YUV411P,  PIX_FMT_YUV410P,
+    PIX_FMT_YUV440P,
+    PIX_FMT_NONE
+};
+
 static int config_props(AVFilterLink *inlink)
 {
     FadeContext *fade = inlink->dst->priv;
@@ -91,6 +100,11 @@ static int config_props(AVFilterLink *inlink)
     fade->vsub = pixdesc->log2_chroma_h;
 
     fade->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
+
+    fade->black_level = ff_fmt_is_in(inlink->format, studio_level_pix_fmts) ? 16 : 0;
+    /* 32768 = 1 << 15, it is an integer representation
+     * of 0.5 and is for rounding. */
+    fade->black_level_scaled = (fade->black_level << 16) + 32768;
     return 0;
 }
 
@@ -106,10 +120,8 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         for (i = 0; i < h; i++) {
             p = outpic->data[0] + (y+i) * outpic->linesize[0];
             for (j = 0; j < inlink->w * fade->bpp; j++) {
-                /* fade->factor is using 16 lower-order bits for decimal
-                 * places. 32768 = 1 << 15, it is an integer representation
-                 * of 0.5 and is for rounding. */
-                *p = (*p * fade->factor + 32768) >> 16;
+                /* fade->factor is using 16 lower-order bits for decimal places. */
+                *p = ((*p - fade->black_level) * fade->factor + fade->black_level_scaled) >> 16;
                 p++;
             }
         }
