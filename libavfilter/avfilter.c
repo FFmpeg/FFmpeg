@@ -687,7 +687,7 @@ void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref)
     filter_samples(link, link->cur_buf);
 }
 
-#define MAX_REGISTERED_AVFILTERS_NB 64
+#define MAX_REGISTERED_AVFILTERS_NB 128
 
 static AVFilter *registered_avfilters[MAX_REGISTERED_AVFILTERS_NB + 1];
 
