@@ -31,7 +31,6 @@
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/get_bits.h"
-#include <strings.h>
 
 /** Structure listing useful vars to parse RTP packet payload*/
 struct PayloadContext
@@ -206,7 +205,7 @@ static int parse_fmtp(AVStream *stream, PayloadContext *data,
     if (codec->codec_id == CODEC_ID_AAC) {
         /* Looking for a known attribute */
         for (i = 0; attr_names[i].str; ++i) {
-            if (!strcasecmp(attr, attr_names[i].str)) {
+            if (!av_strcasecmp(attr, attr_names[i].str)) {
                 if (attr_names[i].type == ATTR_NAME_TYPE_INT) {
                     *(int *)((char *)data+
                         attr_names[i].offset) = atoi(value);

@@ -34,7 +34,6 @@
 #if HAVE_POLL_H
 #include <poll.h>
 #endif
-#include <strings.h>
 #include "internal.h"
 #include "network.h"
 #include "os_support.h"
@@ -661,7 +660,7 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
 
         get_word_sep(transport_protocol, sizeof(transport_protocol),
                      "/", &p);
-        if (!strcasecmp (transport_protocol, "rtp")) {
+        if (!av_strcasecmp (transport_protocol, "rtp")) {
             get_word_sep(profile, sizeof(profile), "/;,", &p);
             lower_transport[0] = '\0';
             /* rtp/avp/<protocol> */
@@ -670,14 +669,14 @@ static void rtsp_parse_transport(RTSPMessageHeader *reply, const char *p)
                              ";,", &p);
             }
             th->transport = RTSP_TRANSPORT_RTP;
-        } else if (!strcasecmp (transport_protocol, "x-pn-tng") ||
-                   !strcasecmp (transport_protocol, "x-real-rdt")) {
+        } else if (!av_strcasecmp (transport_protocol, "x-pn-tng") ||
+                   !av_strcasecmp (transport_protocol, "x-real-rdt")) {
             /* x-pn-tng/<protocol> */
             get_word_sep(lower_transport, sizeof(lower_transport), "/;,", &p);
             profile[0] = '\0';
             th->transport = RTSP_TRANSPORT_RDT;
         }
-        if (!strcasecmp(lower_transport, "TCP"))
+        if (!av_strcasecmp(lower_transport, "TCP"))
             th->lower_transport = RTSP_LOWER_TRANSPORT_TCP;
         else
             th->lower_transport = RTSP_LOWER_TRANSPORT_UDP;
@@ -1556,7 +1555,7 @@ redirect:
         if (rt->server_type != RTSP_SERVER_REAL && reply->real_challenge[0]) {
             rt->server_type = RTSP_SERVER_REAL;
             continue;
-        } else if (!strncasecmp(reply->server, "WMServer/", 9)) {
+        } else if (!av_strncasecmp(reply->server, "WMServer/", 9)) {
             rt->server_type = RTSP_SERVER_WMS;
         } else if (rt->server_type == RTSP_SERVER_REAL)
             strcpy(real_challenge, reply->real_challenge);

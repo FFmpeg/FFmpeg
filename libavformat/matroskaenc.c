@@ -33,9 +33,9 @@
 #include "libavutil/random_seed.h"
 #include "libavutil/lfg.h"
 #include "libavutil/dict.h"
+#include "libavutil/avstring.h"
 #include "libavcodec/xiph.h"
 #include "libavcodec/mpeg4audio.h"
-#include <strings.h>
 
 typedef struct ebml_master {
     int64_t         pos;                ///< absolute offset in the file where the master's elements start
@@ -760,7 +760,7 @@ static int mkv_write_tag(AVFormatContext *s, AVDictionary *m, unsigned int eleme
     end_ebml_master(s->pb, targets);
 
     while ((t = av_dict_get(m, "", t, AV_DICT_IGNORE_SUFFIX)))
-        if (strcasecmp(t->key, "title"))
+        if (av_strcasecmp(t->key, "title"))
             mkv_write_simpletag(s->pb, t);
 
     end_ebml_master(s->pb, tag);

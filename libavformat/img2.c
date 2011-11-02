@@ -29,7 +29,6 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
-#include <strings.h>
 
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
@@ -121,7 +120,7 @@ static enum CodecID av_str2id(const IdStrMap *tags, const char *str)
     str++;
 
     while (tags->id) {
-        if (!strcasecmp(str, tags->str))
+        if (!av_strcasecmp(str, tags->str))
             return tags->id;
 
         tags++;

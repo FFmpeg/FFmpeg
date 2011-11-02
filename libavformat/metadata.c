@@ -18,10 +18,10 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <strings.h>
 #include "avformat.h"
 #include "metadata.h"
 #include "libavutil/dict.h"
+#include "libavutil/avstring.h"
 
 #if FF_API_OLD_METADATA2
 AVDictionaryEntry *
@@ -69,13 +69,13 @@ void ff_metadata_conv(AVDictionary **pm, const AVMetadataConv *d_conv,
         key = mtag->key;
         if (s_conv)
             for (sc=s_conv; sc->native; sc++)
-                if (!strcasecmp(key, sc->native)) {
+                if (!av_strcasecmp(key, sc->native)) {
                     key = sc->generic;
                     break;
                 }
         if (d_conv)
             for (dc=d_conv; dc->native; dc++)
-                if (!strcasecmp(key, dc->generic)) {
+                if (!av_strcasecmp(key, dc->generic)) {
                     key = dc->native;
                     break;
                 }
