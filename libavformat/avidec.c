@@ -19,12 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <strings.h>
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/bswap.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
+#include "libavutil/avstring.h"
 #include "avformat.h"
 #include "avi.h"
 #include "dv.h"
@@ -307,7 +307,7 @@ static void avi_metadata_creation_time(AVDictionary **metadata, char *date)
     if (sscanf(date, "%*3s%*[ ]%3s%*[ ]%2d%*[ ]%8s%*[ ]%4d",
                month, &day, time, &year) == 4) {
         for (i=0; i<12; i++)
-            if (!strcasecmp(month, months[i])) {
+            if (!av_strcasecmp(month, months[i])) {
                 snprintf(buffer, sizeof(buffer), "%.4d-%.2d-%.2d %s",
                          year, i+1, day, time);
                 av_dict_set(metadata, "creation_time", buffer, 0);

@@ -22,7 +22,6 @@
 #include "libavutil/avstring.h"
 #include "avformat.h"
 #include <unistd.h>
-#include <strings.h>
 #include "internal.h"
 #include "network.h"
 #include "http.h"
@@ -250,12 +249,12 @@ static int process_line(URLContext *h, char *line, int line_count,
         p++;
         while (isspace(*p))
             p++;
-        if (!strcasecmp(tag, "Location")) {
+        if (!av_strcasecmp(tag, "Location")) {
             strcpy(s->location, p);
             *new_location = 1;
-        } else if (!strcasecmp (tag, "Content-Length") && s->filesize == -1) {
+        } else if (!av_strcasecmp (tag, "Content-Length") && s->filesize == -1) {
             s->filesize = atoll(p);
-        } else if (!strcasecmp (tag, "Content-Range")) {
+        } else if (!av_strcasecmp (tag, "Content-Range")) {
             /* "bytes $from-$to/$document_size" */
             const char *slash;
             if (!strncmp (p, "bytes ", 6)) {
@@ -265,16 +264,16 @@ static int process_line(URLContext *h, char *line, int line_count,
                     s->filesize = atoll(slash+1);
             }
             h->is_streamed = 0; /* we _can_ in fact seek */
-        } else if (!strcasecmp(tag, "Accept-Ranges") && !strncmp(p, "bytes", 5)) {
+        } else if (!av_strcasecmp(tag, "Accept-Ranges") && !strncmp(p, "bytes", 5)) {
             h->is_streamed = 0;
-        } else if (!strcasecmp (tag, "Transfer-Encoding") && !strncasecmp(p, "chunked", 7)) {
+        } else if (!av_strcasecmp (tag, "Transfer-Encoding") && !av_strncasecmp(p, "chunked", 7)) {
             s->filesize = -1;
             s->chunksize = 0;
-        } else if (!strcasecmp (tag, "WWW-Authenticate")) {
+        } else if (!av_strcasecmp (tag, "WWW-Authenticate")) {
             ff_http_auth_handle_header(&s->auth_state, tag, p);
-        } else if (!strcasecmp (tag, "Authentication-Info")) {
+        } else if (!av_strcasecmp (tag, "Authentication-Info")) {
             ff_http_auth_handle_header(&s->auth_state, tag, p);
-        } else if (!strcasecmp (tag, "Connection")) {
+        } else if (!av_strcasecmp (tag, "Connection")) {
             if (!strcmp(p, "close"))
                 s->willclose = 1;
         }

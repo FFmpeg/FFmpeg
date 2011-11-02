@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <strings.h>
 #include "avformat.h"
 #include "avio_internal.h"
 #include "id3v1.h"
@@ -69,7 +68,7 @@ static int id3v1_create_tag(AVFormatContext *s, uint8_t *buf)
     buf[127] = 0xFF; /* default to unknown genre */
     if ((tag = av_dict_get(s->metadata, "TCON", NULL, 0))) { //genre
         for(i = 0; i <= ID3v1_GENRE_MAX; i++) {
-            if (!strcasecmp(tag->value, ff_id3v1_genre_str[i])) {
+            if (!av_strcasecmp(tag->value, ff_id3v1_genre_str[i])) {
                 buf[127] = i;
                 count++;
                 break;

@@ -21,7 +21,6 @@
  * misc parsing utilities
  */
 
-#include <strings.h>
 #include <sys/time.h>
 #include <time.h>
 
@@ -294,7 +293,7 @@ static ColorEntry color_table[] = {
 
 static int color_table_compare(const void *lhs, const void *rhs)
 {
-    return strcasecmp(lhs, ((const ColorEntry *)rhs)->name);
+    return av_strcasecmp(lhs, ((const ColorEntry *)rhs)->name);
 }
 
 #define ALPHA_SEP '@'
@@ -320,7 +319,7 @@ int av_parse_color(uint8_t *rgba_color, const char *color_string, int slen,
     len = strlen(color_string2);
     rgba_color[3] = 255;
 
-    if (!strcasecmp(color_string2, "random") || !strcasecmp(color_string2, "bikeshed")) {
+    if (!av_strcasecmp(color_string2, "random") || !av_strcasecmp(color_string2, "bikeshed")) {
         int rgba = av_get_random_seed();
         rgba_color[0] = rgba >> 24;
         rgba_color[1] = rgba >> 16;
@@ -525,7 +524,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     p = timestr;
     q = NULL;
     if (!duration) {
-        if (!strncasecmp(timestr, "now", len)) {
+        if (!av_strncasecmp(timestr, "now", len)) {
             *timeval = (int64_t) now * 1000000;
             return 0;
         }

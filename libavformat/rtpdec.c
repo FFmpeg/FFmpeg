@@ -20,13 +20,13 @@
  */
 
 #include "libavutil/mathematics.h"
+#include "libavutil/avstring.h"
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
 #include "mpegts.h"
 #include "url.h"
 
 #include <unistd.h>
-#include <strings.h>
 #include "network.h"
 
 #include "rtpdec.h"
@@ -91,7 +91,7 @@ RTPDynamicProtocolHandler *ff_rtp_handler_find_by_name(const char *name,
     RTPDynamicProtocolHandler *handler;
     for (handler = RTPFirstDynamicPayloadHandler;
          handler; handler = handler->next)
-        if (!strcasecmp(name, handler->enc_name) &&
+        if (!av_strcasecmp(name, handler->enc_name) &&
             codec_type == handler->codec_type)
             return handler;
     return NULL;

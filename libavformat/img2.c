@@ -29,7 +29,6 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "internal.h"
-#include <strings.h>
 
 typedef struct {
     const AVClass *class;  /**< Class for private options. */
@@ -125,7 +124,7 @@ static enum CodecID av_str2id(const IdStrMap *tags, const char *str)
     str++;
 
     while (tags->id) {
-        if (!strcasecmp(str, tags->str))
+        if (!av_strcasecmp(str, tags->str))
             return tags->id;
 
         tags++;
@@ -281,7 +280,7 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->codec->codec_id = s1->audio_codec_id;
     }else{
         const char *str= strrchr(s->path, '.');
-        s->split_planes = str && !strcasecmp(str + 1, "y");
+        s->split_planes = str && !av_strcasecmp(str + 1, "y");
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = av_str2id(img_tags, s->path);
     }
@@ -377,7 +376,7 @@ static int write_header(AVFormatContext *s)
         img->is_pipe = 1;
 
     str = strrchr(img->path, '.');
-    img->split_planes = str && !strcasecmp(str + 1, "y");
+    img->split_planes = str && !av_strcasecmp(str + 1, "y");
     return 0;
 }
 

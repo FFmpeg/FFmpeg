@@ -44,13 +44,13 @@
 #include <linux/videodev2.h>
 #endif
 #include <time.h>
-#include <strings.h>
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "avdevice.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
+#include "libavutil/avstring.h"
 
 static const int desired_video_buffers = 256;
 
@@ -470,7 +470,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
         for (i = 0;; i++) {
             standard.index = i;
             ret = ioctl(s->fd, VIDIOC_ENUMSTD, &standard);
-            if (ret < 0 || !strcasecmp(standard.name, s->standard))
+            if (ret < 0 || !av_strcasecmp(standard.name, s->standard))
                 break;
         }
         if (ret < 0) {

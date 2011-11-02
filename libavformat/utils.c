@@ -38,7 +38,6 @@
 #include "url.h"
 #include <sys/time.h>
 #include <time.h>
-#include <strings.h>
 #include <stdarg.h>
 #if CONFIG_NETWORK
 #include "network.h"
@@ -170,7 +169,7 @@ int av_match_ext(const char *filename, const char *extensions)
             while (*p != '\0' && *p != ',' && q-ext1<sizeof(ext1)-1)
                 *q++ = *p++;
             *q = '\0';
-            if (!strcasecmp(ext1, ext))
+            if (!av_strcasecmp(ext1, ext))
                 return 1;
             if (*p == '\0')
                 break;
@@ -191,11 +190,11 @@ static int match_format(const char *name, const char *names)
     namelen = strlen(name);
     while ((p = strchr(names, ','))) {
         len = FFMAX(p - names, namelen);
-        if (!strncasecmp(name, names, len))
+        if (!av_strncasecmp(name, names, len))
             return 1;
         names = p+1;
     }
-    return !strcasecmp(name, names);
+    return !av_strcasecmp(name, names);
 }
 
 AVOutputFormat *av_guess_format(const char *short_name, const char *filename,

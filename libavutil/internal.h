@@ -156,6 +156,10 @@ struct AVDictionary {
 #define puts please_use_av_log_instead_of_puts
 #undef  perror
 #define perror please_use_av_log_instead_of_perror
+#undef strcasecmp
+#define strcasecmp please_use_av_strcasecmp
+#undef strncasecmp
+#define strncasecmp please_use_av_strncasecmp
 
 #define FF_ALLOC_OR_GOTO(ctx, p, size, label)\
 {\

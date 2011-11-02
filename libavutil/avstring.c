@@ -189,6 +189,33 @@ char *av_strtok(char *s, const char *delim, char **saveptr)
     return tok;
 }
 
+#define TOUPPER(c) do { if (c >= 'a' && c <= 'z') c -= 'a' - 'A'; } while (0)
+
+int av_strcasecmp(const char *a, const char *b)
+{
+    uint8_t c1, c2;
+    do {
+        c1 = *a++;
+        c2 = *b++;
+        TOUPPER(c1);
+        TOUPPER(c2);
+    } while (c1 && c1 == c2);
+    return c1 - c2;
+}
+
+int av_strncasecmp(const char *a, const char *b, size_t n)
+{
+    const char *end = a + n;
+    uint8_t c1, c2;
+    do {
+        c1 = *a++;
+        c2 = *b++;
+        TOUPPER(c1);
+        TOUPPER(c2);
+    } while (a < end && c1 && c1 == c2);
+    return c1 - c2;
+}
+
 #ifdef TEST
 
 #undef printf
