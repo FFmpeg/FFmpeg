@@ -136,6 +136,7 @@ easier to use. The changes are:
 - Dxtory capture format decoder
 - cellauto source
 - v410 Quicktime Uncompressed 4:4:4 10-bit encoder and decoder
+- SBaGen (SBG) binaural beats script demuxer
 
 
 version 0.8:

@@ -75,4 +75,34 @@ the caller can decide which variant streams to actually receive.
 The total bitrate of the variant that the stream belongs to is
 available in a metadata key named "variant_bitrate".
 
+@section sbg
+
+SBaGen script demuxer.
+
+This demuxer reads the script language used by SBaGen
+@url{http://uazu.net/sbagen/} to generate binaural beats sessions. A SBG
+script looks like that:
+@example
+-SE
+a: 300-2.5/3 440+4.5/0
+b: 300-2.5/0 440+4.5/3
+off: -
+NOW      == a
++0:07:00 == b
++0:14:00 == a
++0:21:00 == b
++0:30:00    off
+@end example
+
+A SBG script can mix absolute and relative timestamps. If the script uses
+either only absolute timestamps (including the script start time) or only
+relative ones, then its layout is fixed, and the conversion is
+straightforward. On the other hand, if the script mixes both kind of
+timestamps, then the @var{NOW} reference for relative timestamps will be
+taken from the current time of day at the time the script is read, and the
+script layout will be frozen according to that reference. That means that if
+the script is directly played, the actual times will match the absolute
+timestamps up to the sound controller's clock accuracy, but if the user
+somehow pauses the playback or seeks, all times will be shifted accordingly.
+
 @c man end INPUT DEVICES
