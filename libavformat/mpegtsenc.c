@@ -293,6 +293,12 @@ static void mpegts_write_pmt(AVFormatContext *s, MpegTSService *service)
         /* write optional descriptors here */
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
+            if(st->codec->codec_id==CODEC_ID_EAC3){
+                *q++=0x7a; // EAC3 descriptor see A038 DVB SI
+                *q++=1; // 1 byte, all flags sets to 0
+                *q++=0; // omit all fields...
+            }
+
             if (lang) {
                 char *p;
                 char *next = lang->value;
