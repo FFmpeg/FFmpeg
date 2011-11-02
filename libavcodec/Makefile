@@ -341,12 +341,12 @@ OBJS-$(CONFIG_SIPR_DECODER)            += sipr.o acelp_pitch_delay.o \
 OBJS-$(CONFIG_SMACKAUD_DECODER)        += smacker.o
 OBJS-$(CONFIG_SMACKER_DECODER)         += smacker.o
 OBJS-$(CONFIG_SMC_DECODER)             += smc.o
-OBJS-$(CONFIG_SNOW_DECODER)            += snow.o rangecoder.o
-OBJS-$(CONFIG_SNOW_ENCODER)            += snow.o rangecoder.o motion_est.o \
-                                          ratecontrol.o h263.o             \
-                                          mpegvideo.o error_resilience.o   \
-                                          ituh263enc.o mpegvideo_enc.o     \
-                                          mpeg12data.o
+OBJS-$(CONFIG_SNOW_DECODER)            += snowdec.o snow.o rangecoder.o
+OBJS-$(CONFIG_SNOW_ENCODER)            += snowenc.o snow.o rangecoder.o    \
+                                          motion_est.o ratecontrol.o       \
+                                          h263.o mpegvideo.o               \
+                                          error_resilience.o ituh263enc.o  \
+                                          mpegvideo_enc.o mpeg12data.o
 OBJS-$(CONFIG_SOL_DPCM_DECODER)        += dpcm.o
 OBJS-$(CONFIG_SP5X_DECODER)            += sp5xdec.o mjpegdec.o mjpeg.o
 OBJS-$(CONFIG_SRT_DECODER)             += srtdec.o ass.o
