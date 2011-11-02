@@ -122,8 +122,9 @@ static unsigned int get_size(AVIOContext *s, int len)
 /**
  * Free GEOB type extra metadata.
  */
-static void free_geobtag(ID3v2ExtraMetaGEOB *geob)
+static void free_geobtag(void *obj)
 {
+    ID3v2ExtraMetaGEOB *geob = obj;
     av_free(geob->mime_type);
     av_free(geob->file_name);
     av_free(geob->description);
@@ -384,7 +385,7 @@ typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
     void (*read)(AVFormatContext*, AVIOContext*, int, char*, ID3v2ExtraMeta **);
-    void (*free)();
+    void (*free)(void *obj);
 } ID3v2EMFunc;
 
 static const ID3v2EMFunc id3v2_extra_meta_funcs[] = {
