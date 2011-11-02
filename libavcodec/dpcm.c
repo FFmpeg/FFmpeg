@@ -198,7 +198,7 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         break;
     }
     out *= av_get_bytes_per_sample(avctx->sample_fmt);
-    if (out < 0) {
+    if (out <= 0) {
         av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
         return AVERROR(EINVAL);
     }
