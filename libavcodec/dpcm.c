@@ -179,9 +179,6 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int stereo = s->channels - 1;
     int16_t *output_samples = data;
 
-    if (!buf_size)
-        return 0;
-
     /* calculate output size */
     switch(avctx->codec->id) {
     case CODEC_ID_ROQ_DPCM:
