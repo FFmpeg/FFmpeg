@@ -38,9 +38,6 @@ static int gsm_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     size = GSM_BLOCK_SIZE * 32;
 
-    if (av_new_packet(pkt, size) < 0)
-        return AVERROR(ENOMEM);
-
     pkt->pos = avio_tell(s->pb);
     pkt->stream_index = 0;
 
