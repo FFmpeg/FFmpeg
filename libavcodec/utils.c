@@ -1436,6 +1436,12 @@ int avcodec_thread_init(AVCodecContext *s, int thread_count)
 
 enum AVMediaType avcodec_get_type(enum CodecID codec_id)
 {
+    AVCodec *c= avcodec_find_decoder(codec_id);
+    if(!c)
+        c= avcodec_find_encoder(codec_id);
+    if(c)
+        return c->type;
+
     if (codec_id <= CODEC_ID_NONE)
         return AVMEDIA_TYPE_UNKNOWN;
     else if (codec_id < CODEC_ID_FIRST_AUDIO)
