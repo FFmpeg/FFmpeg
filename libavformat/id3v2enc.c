@@ -19,7 +19,7 @@
  */
 
 #include <stdint.h>
-
+#include <strings.h>
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
