@@ -2124,10 +2124,10 @@ static int has_decode_delay_been_guessed(AVStream *st)
 
 static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **options)
 {
-    int16_t *samples;
     AVCodec *codec;
-    int got_picture, data_size, ret=0;
+    int got_picture, ret = 0;
     AVFrame picture;
+    AVPacket pkt = *avpkt;
 
     if(!st->codec->codec){
         codec = avcodec_find_decoder(st->codec->codec_id);
@@ -2138,27 +2138,28 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             return ret;
     }
 
-    if(!has_codec_parameters(st->codec) || !has_decode_delay_been_guessed(st) ||
-       (!st->codec_info_nb_frames && st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF)) {
+    while (pkt.size > 0 && ret >= 0 &&
+           (!has_codec_parameters(st->codec)  ||
+           !has_decode_delay_been_guessed(st) ||
+           (!st->codec_info_nb_frames && st->codec->codec->capabilities & CODEC_CAP_CHANNEL_CONF))) {
+        got_picture = 0;
+        avcodec_get_frame_defaults(&picture);
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
-            avcodec_get_frame_defaults(&picture);
             ret = avcodec_decode_video2(st->codec, &picture,
-                                        &got_picture, avpkt);
-            if (got_picture)
-                st->info->nb_decoded_frames++;
+                                        &got_picture, &pkt);
             break;
         case AVMEDIA_TYPE_AUDIO:
-            data_size = FFMAX(avpkt->size, AVCODEC_MAX_AUDIO_FRAME_SIZE);
-            samples = av_malloc(data_size);
-            if (!samples)
-                goto fail;
-            ret = avcodec_decode_audio3(st->codec, samples,
-                                        &data_size, avpkt);
-            av_free(samples);
+            ret = avcodec_decode_audio4(st->codec, &picture, &got_picture, &pkt);
             break;
         default:
             break;
+        }
+        if (ret >= 0) {
+            if (got_picture)
+                st->info->nb_decoded_frames++;
+            pkt.data += ret;
+            pkt.size -= ret;
         }
     }
  fail:
