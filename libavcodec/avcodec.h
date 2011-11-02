@@ -540,7 +540,7 @@ enum AVChromaLocation{
 /**
  * LPC analysis type
  */
-attribute_deprecated enum AVLPCType {
+enum AVLPCType {
     AV_LPC_TYPE_DEFAULT     = -1, ///< use the codec default LPC type
     AV_LPC_TYPE_NONE        =  0, ///< do not use LPC prediction or use all zero coefficients
     AV_LPC_TYPE_FIXED       =  1, ///< fixed LPC coefficients
