@@ -172,9 +172,9 @@ static av_cold void dvbsub_parse_close(AVCodecParserContext *s)
 }
 
 AVCodecParser ff_dvbsub_parser = {
-    { CODEC_ID_DVB_SUBTITLE },
-    sizeof(DVBSubParseContext),
-    dvbsub_parse_init,
-    dvbsub_parse,
-    dvbsub_parse_close,
+    .codec_ids      = { CODEC_ID_DVB_SUBTITLE },
+    .priv_data_size = sizeof(DVBSubParseContext),
+    .parser_init    = dvbsub_parse_init,
+    .parser_parse   = dvbsub_parse,
+    .parser_close   = dvbsub_parse_close,
 };

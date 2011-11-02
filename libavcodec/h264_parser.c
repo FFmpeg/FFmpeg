@@ -334,10 +334,10 @@ static int init(AVCodecParserContext *s)
 }
 
 AVCodecParser ff_h264_parser = {
-    { CODEC_ID_H264 },
-    sizeof(H264Context),
-    init,
-    h264_parse,
-    close,
-    h264_split,
+    .codec_ids      = { CODEC_ID_H264 },
+    .priv_data_size = sizeof(H264Context),
+    .parser_init    = init,
+    .parser_parse   = h264_parse,
+    .parser_close   = close,
+    .split          = h264_split,
 };

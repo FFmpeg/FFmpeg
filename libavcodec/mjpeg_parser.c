@@ -97,9 +97,8 @@ static int jpeg_parse(AVCodecParserContext *s,
 
 
 AVCodecParser ff_mjpeg_parser = {
-    { CODEC_ID_MJPEG },
-    sizeof(ParseContext),
-    NULL,
-    jpeg_parse,
-    ff_parse_close,
+    .codec_ids      = { CODEC_ID_MJPEG },
+    .priv_data_size = sizeof(ParseContext),
+    .parser_parse   = jpeg_parse,
+    .parser_close   = ff_parse_close,
 };

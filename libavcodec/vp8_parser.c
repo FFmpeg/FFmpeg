@@ -33,8 +33,6 @@ static int parse(AVCodecParserContext *s,
 }
 
 AVCodecParser ff_vp8_parser = {
-    { CODEC_ID_VP8 },
-    0,
-    NULL,
-    parse,
+    .codec_ids      = { CODEC_ID_VP8 },
+    .parser_parse   = parse,
 };

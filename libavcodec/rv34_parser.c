@@ -78,18 +78,16 @@ static int rv34_parse(AVCodecParserContext *s,
 
 #ifdef CONFIG_RV30_PARSER
 AVCodecParser ff_rv30_parser = {
-    { CODEC_ID_RV30 },
-    sizeof(RV34ParseContext),
-    NULL,
-    rv34_parse,
+    .codec_ids      = { CODEC_ID_RV30 },
+    .priv_data_size = sizeof(RV34ParseContext),
+    .parser_parse   = rv34_parse,
 };
 #endif
 
 #ifdef CONFIG_RV40_PARSER
 AVCodecParser ff_rv40_parser = {
-    { CODEC_ID_RV40 },
-    sizeof(RV34ParseContext),
-    NULL,
-    rv34_parse,
+    .codec_ids      = { CODEC_ID_RV40 },
+    .priv_data_size = sizeof(RV34ParseContext),
+    .parser_parse   = rv34_parse,
 };
 #endif
