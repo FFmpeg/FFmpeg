@@ -64,7 +64,7 @@ alloc_fail:
 }
 
 
-/**
+/*
  * Deinterleave input samples.
  * Channels are reordered from Libav's default order to AC-3 order.
  */
@@ -93,7 +93,7 @@ static void deinterleave_input_samples(AC3EncodeContext *s,
 }
 
 
-/**
+/*
  * Apply the MDCT to input samples to generate frequency coefficients.
  * This applies the KBD window and normalizes the input to reduce precision
  * loss due to fixed-point calculations.
@@ -120,7 +120,7 @@ static void apply_mdct(AC3EncodeContext *s)
 }
 
 
-/**
+/*
  * Calculate coupling channel and coupling coordinates.
  */
 static void apply_channel_coupling(AC3EncodeContext *s)
@@ -328,7 +328,7 @@ static void apply_channel_coupling(AC3EncodeContext *s)
 }
 
 
-/**
+/*
  * Determine rematrixing flags for each block and band.
  */
 static void compute_rematrixing_strategy(AC3EncodeContext *s)
@@ -391,9 +391,6 @@ static void compute_rematrixing_strategy(AC3EncodeContext *s)
 }
 
 
-/**
- * Encode a single AC-3 frame.
- */
 int AC3_NAME(encode_frame)(AVCodecContext *avctx, unsigned char *frame,
                            int buf_size, void *data)
 {
