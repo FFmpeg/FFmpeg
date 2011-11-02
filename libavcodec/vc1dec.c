@@ -5457,6 +5457,9 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
         int mby_start;
     } *slices = NULL;
 
+    if(s->flags & CODEC_FLAG_LOW_DELAY)
+        s->low_delay = 1;
+
     /* no supplementary picture */
     if (buf_size == 0 || (buf_size == 4 && AV_RB32(buf) == VC1_CODE_ENDOFSEQ)) {
         /* special case for last picture */
