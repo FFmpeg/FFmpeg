@@ -539,6 +539,7 @@ static const AVClass av_codec_context_class = {
 #if FF_API_ALLOC_CONTEXT
 void avcodec_get_context_defaults2(AVCodecContext *s, enum AVMediaType codec_type){
     avcodec_get_context_defaults3(s, NULL);
+    s->codec_type = codec_type;
 }
 #endif
 
