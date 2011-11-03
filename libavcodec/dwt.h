@@ -68,11 +68,11 @@ typedef struct DWTContext {
     int support;
 
     void (*spatial_compose)(struct DWTContext *cs, int level, int width, int height, int stride);
-    void (*vertical_compose_l0)();
-    void (*vertical_compose_h0)();
-    void (*vertical_compose_l1)();
-    void (*vertical_compose_h1)();
-    void (*vertical_compose)();     ///< one set of lowpass and highpass combined
+    void (*vertical_compose_l0)(void);
+    void (*vertical_compose_h0)(void);
+    void (*vertical_compose_l1)(void);
+    void (*vertical_compose_h1)(void);
+    void (*vertical_compose)(void);     ///< one set of lowpass and highpass combined
     void (*horizontal_compose)(IDWTELEM *b, IDWTELEM *tmp, int width);
 
     void (*vertical_compose97i)(IDWTELEM *b0, IDWTELEM *b1, IDWTELEM *b2, IDWTELEM *b3, IDWTELEM *b4, IDWTELEM *b5, int width);
