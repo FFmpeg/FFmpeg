@@ -1415,7 +1415,8 @@ void ff_read_frame_flush(AVFormatContext *s)
             av_free_packet(&st->cur_pkt);
         }
         st->last_IP_pts = AV_NOPTS_VALUE;
-        st->cur_dts = AV_NOPTS_VALUE; /* we set the current DTS to an unspecified origin */
+        if(st->first_dts == AV_NOPTS_VALUE) st->cur_dts = 0;
+        else                                st->cur_dts = AV_NOPTS_VALUE; /* we set the current DTS to an unspecified origin */
         st->reference_dts = AV_NOPTS_VALUE;
         /* fail safe */
         st->cur_ptr = NULL;
