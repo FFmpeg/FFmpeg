@@ -266,24 +266,9 @@ static inline int l3_unscale(int value, int exponent)
     return m;
 }
 
-static av_cold int decode_init(AVCodecContext * avctx)
+static void decode_init_static(AVCodec *codec)
 {
-    MPADecodeContext *s = avctx->priv_data;
-    static int init = 0;
     int i, j, k;
-
-    s->avctx = avctx;
-
-    ff_mpadsp_init(&s->mpadsp);
-
-    avctx->sample_fmt= OUT_FMT;
-    s->err_recognition = avctx->err_recognition;
-
-#if FF_API_PARSE_FRAME
-    if (!init && !avctx->parse_only) {
-#else
-    if (!init) {
-#endif
         int offset;
 
         /* scale factors table for layer 1/2 */
@@ -468,9 +453,18 @@ static av_cold int decode_init(AVCodecContext * avctx)
                 mdct_win[j + 4][i + 1] = -mdct_win[j][i + 1];
             }
         }
+}
 
-        init = 1;
-    }
+static av_cold int decode_init(AVCodecContext * avctx)
+{
+    MPADecodeContext *s = avctx->priv_data;
+
+    s->avctx = avctx;
+
+    ff_mpadsp_init(&s->mpadsp);
+
+    avctx->sample_fmt= OUT_FMT;
+    s->err_recognition = avctx->err_recognition;
 
     if (avctx->codec_id == CODEC_ID_MP3ADU)
         s->adu_mode = 1;
@@ -2116,6 +2110,7 @@ AVCodec ff_mp1_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP1,
     .priv_data_size = sizeof(MPADecodeContext),
+    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
@@ -2131,6 +2126,7 @@ AVCodec ff_mp2_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP2,
     .priv_data_size = sizeof(MPADecodeContext),
+    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
@@ -2146,6 +2142,7 @@ AVCodec ff_mp3_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP3,
     .priv_data_size = sizeof(MPADecodeContext),
+    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
@@ -2161,6 +2158,7 @@ AVCodec ff_mp3adu_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP3ADU,
     .priv_data_size = sizeof(MPADecodeContext),
+    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame_adu,
 #if FF_API_PARSE_FRAME
@@ -2176,6 +2174,7 @@ AVCodec ff_mp3on4_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP3ON4,
     .priv_data_size = sizeof(MP3On4DecodeContext),
+    .init_static_data = decode_init_static,
     .init           = decode_init_mp3on4,
     .close          = decode_close_mp3on4,
     .decode         = decode_frame_mp3on4,
