@@ -396,6 +396,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     pic->width               = s->width;
     pic->height              = s->height;
     pic->format              = s->pix_fmt;
+    pic->opaque              = s->opaque;
 
     if(s->debug&FF_DEBUG_BUFFERS)
         av_log(s, AV_LOG_DEBUG, "default_get_buffer called on pic %p, %d buffers used\n", pic, s->internal_buffer_count);
