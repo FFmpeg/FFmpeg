@@ -19,7 +19,6 @@
  */
 
 #include <stdint.h>
-#include <strings.h>
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
@@ -108,7 +107,7 @@ static void id3v2_3_metadata_split_date(AVDictionary **pm)
 
     while ((mtag = av_dict_get(*pm, "", mtag, AV_DICT_IGNORE_SUFFIX))) {
         key = mtag->key;
-        if (!strcasecmp(key, "date")) {
+        if (!av_strcasecmp(key, "date")) {
             /* split date tag using "YYYY-MM-DD" format into year and month/day segments */
             value = mtag->value;
             i = 0;
