@@ -125,7 +125,7 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             st->codec->extradata = av_mallocz(ALAC_HEADER + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!st->codec->extradata)
                 return AVERROR(ENOMEM);
-            strcpy(st->codec->extradata, "\0\0\0\24alac");
+            memcpy(st->codec->extradata, "\0\0\0\24alac", 8);
             avio_read(pb, st->codec->extradata + ALAC_HEADER - ALAC_NEW_KUKI, ALAC_NEW_KUKI);
             st->codec->extradata_size = ALAC_HEADER;
         } else {
