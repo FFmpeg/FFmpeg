@@ -709,6 +709,17 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     } else {
         print_str("codec_type", "unknown");
     }
+    if (dec_ctx->codec && dec_ctx->codec->priv_class) {
+        AVOption *opt = NULL;
+        while (opt = av_opt_next(dec_ctx->priv_data,opt)) {
+            uint8_t *str;
+            if (opt->flags) continue;
+            if (av_opt_get(dec_ctx->priv_data, opt->name, 0, &str) >= 0) {
+                print_str(opt->name, str);
+                av_free(str);
+            }
+        }
+    }
 
     if (fmt_ctx->iformat->flags & AVFMT_SHOW_IDS)
         print_fmt("id", "0x%x", stream->id);
