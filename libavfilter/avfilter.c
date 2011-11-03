@@ -332,8 +332,8 @@ avfilter_get_video_buffer_ref_from_arrays(uint8_t *data[4], int linesize[4], int
     picref->type = AVMEDIA_TYPE_VIDEO;
     pic->format = picref->format = format;
 
-    memcpy(pic->data,        data,          sizeof(pic->data));
-    memcpy(pic->linesize,    linesize,      sizeof(pic->linesize));
+    memcpy(pic->data,        data,          4*sizeof(data[0]));
+    memcpy(pic->linesize,    linesize,      4*sizeof(linesize[0]));
     memcpy(picref->data,     pic->data,     sizeof(picref->data));
     memcpy(picref->linesize, pic->linesize, sizeof(picref->linesize));
 
