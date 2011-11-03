@@ -1350,10 +1350,13 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         st->codec->frame_size= sc->samples_per_frame;
         st->codec->channels= 1; /* really needed */
         /* force sample rate for amr, stsd in 3gp does not store sample rate */
-        if (st->codec->codec_id == CODEC_ID_AMR_NB)
+        if (st->codec->codec_id == CODEC_ID_AMR_NB) {
             st->codec->sample_rate = 8000;
-        else if (st->codec->codec_id == CODEC_ID_AMR_WB)
+            st->codec->frame_size  = 160;
+        } else if (st->codec->codec_id == CODEC_ID_AMR_WB) {
             st->codec->sample_rate = 16000;
+            st->codec->frame_size  = 320;
+        }
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
