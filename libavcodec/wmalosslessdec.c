@@ -216,9 +216,9 @@ typedef struct WmallDecodeCtx {
     int8_t           esc_len;                       ///< length of escaped coefficients
 
     uint8_t          num_chgroups;                  ///< number of channel groups
-    WmallChannelGrp chgroup[WMALL_MAX_CHANNELS];  ///< channel group information
+    WmallChannelGrp chgroup[WMALL_MAX_CHANNELS];    ///< channel group information
 
-    WmallChannelCtx channel[WMALL_MAX_CHANNELS];  ///< per channel data
+    WmallChannelCtx channel[WMALL_MAX_CHANNELS];    ///< per channel data
 
     // WMA lossless
 
@@ -363,10 +363,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         s->channel[i].prev_block_len = s->samples_per_frame;
 
     /** subframe info */
-    log2_max_num_subframes       = ((s->decode_flags & 0x38) >> 3);
-    s->max_num_subframes         = 1 << log2_max_num_subframes;
+    log2_max_num_subframes  = ((s->decode_flags & 0x38) >> 3);
+    s->max_num_subframes    = 1 << log2_max_num_subframes;
     s->max_subframe_len_bit = 0;
-    s->subframe_len_bits = av_log2(log2_max_num_subframes) + 1;
+    s->subframe_len_bits    = av_log2(log2_max_num_subframes) + 1;
 
     num_possible_block_sizes     = log2_max_num_subframes + 1;
     s->min_samples_per_subframe  = s->samples_per_frame / s->max_num_subframes;
