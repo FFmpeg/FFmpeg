@@ -2707,7 +2707,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         s->height= 16*s->mb_height - (2<<s->chroma_y_shift)*FFMIN(h->sps.crop_bottom, (16>>s->chroma_y_shift)-1);
 
     if (s->context_initialized
-        && (   s->width != s->avctx->width || s->height != s->avctx->height
+        && (   s->width != s->avctx->coded_width || s->height != s->avctx->coded_height
             || s->avctx->bits_per_raw_sample != h->sps.bit_depth_luma
             || h->cur_chroma_format_idc != h->sps.chroma_format_idc
             || av_cmp_q(h->sps.sar, s->avctx->sample_aspect_ratio))) {
