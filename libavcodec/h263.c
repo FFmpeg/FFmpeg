@@ -1,5 +1,5 @@
 /*
- * H263/MPEG4 backend for ffmpeg encoder and decoder
+ * H263/MPEG4 backend for encoder and decoder
  * Copyright (c) 2000,2001 Fabrice Bellard
  * H263+ support.
  * Copyright (c) 2001 Juan J. Sierralta P

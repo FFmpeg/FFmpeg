@@ -60,10 +60,10 @@ typedef struct FLVContext {
     int64_t duration_offset;
     int64_t filesize_offset;
     int64_t duration;
+    int64_t delay;      ///< first dts delay (needed for AVC & Speex)
 } FLVContext;
 
 typedef struct FLVStreamContext {
-    int     delay;      ///< first dts delay for each stream (needed for AVC & Speex)
     int64_t last_ts;    ///< last timestamp for each stream
 } FLVStreamContext;
 
@@ -210,6 +210,8 @@ static int flv_write_header(AVFormatContext *s)
         s->streams[i]->priv_data = sc;
         sc->last_ts = -1;
     }
+    flv->delay = AV_NOPTS_VALUE;
+
     avio_write(pb, "FLV", 3);
     avio_w8(pb,1);
     avio_w8(pb,   FLV_HEADER_FLAG_HASAUDIO * !!audio_enc
@@ -444,10 +446,15 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
         return -1;
     }
-    if (!sc->delay && pkt->dts < 0)
-        sc->delay = -pkt->dts;
+    if (flv->delay == AV_NOPTS_VALUE)
+        flv->delay = -pkt->dts;
+    if (pkt->dts < -flv->delay) {
+        av_log(s, AV_LOG_WARNING, "Packets are not in the proper order with "
+                                  "respect to DTS\n");
+        return AVERROR(EINVAL);
+    }
 
-    ts = pkt->dts + sc->delay; // add delay to force positive dts
+    ts = pkt->dts + flv->delay; // add delay to force positive dts
 
     /* check Speex packet duration */
     if (enc->codec_id == CODEC_ID_SPEEX && ts - sc->last_ts > 160) {
@@ -481,7 +488,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_write(pb, data ? data : pkt->data, size);
 
     avio_wb32(pb,size+flags_size+11); // previous tag size
-    flv->duration = FFMAX(flv->duration, pkt->pts + sc->delay + pkt->duration);
+    flv->duration = FFMAX(flv->duration, pkt->pts + flv->delay + pkt->duration);
 
     avio_flush(pb);
 

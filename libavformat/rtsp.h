@@ -354,6 +354,11 @@ typedef struct RTSPState {
      * Various option flags for the RTSP muxer/demuxer.
      */
     int rtsp_flags;
+
+    /**
+     * Mask of all requested media types
+     */
+    int media_type_mask;
 } RTSPState;
 
 #define RTSP_FLAG_FILTER_SRC  0x1    /**< Filter incoming UDP packets -

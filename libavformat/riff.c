@@ -400,11 +400,13 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
     avio_wl32(pb, enc->sample_rate);
     if (enc->codec_id == CODEC_ID_MP2 || enc->codec_id == CODEC_ID_MP3 || enc->codec_id == CODEC_ID_GSM_MS) {
         bps = 0;
-    } else if (enc->codec_id == CODEC_ID_ADPCM_G726) {
-        bps = 4;
     } else {
-        if (!(bps = av_get_bits_per_sample(enc->codec_id)))
-            bps = 16; // default to 16
+        if (!(bps = av_get_bits_per_sample(enc->codec_id))) {
+            if (enc->bits_per_coded_sample)
+                bps = enc->bits_per_coded_sample;
+            else
+                bps = 16; // default to 16
+        }
     }
     if(bps != enc->bits_per_coded_sample && enc->bits_per_coded_sample){
         av_log(enc, AV_LOG_WARNING, "requested bits_per_coded_sample (%d) and actually stored (%d) differ\n", enc->bits_per_coded_sample, bps);
@@ -415,12 +417,10 @@ int ff_put_wav_header(AVIOContext *pb, AVCodecContext *enc)
         //blkalign = 144 * enc->bit_rate/enc->sample_rate;
     } else if (enc->codec_id == CODEC_ID_AC3) {
             blkalign = 3840; //maximum bytes per frame
-    } else if (enc->codec_id == CODEC_ID_ADPCM_G726) { //
-        blkalign = 1;
     } else if (enc->block_align != 0) { /* specified by the codec */
         blkalign = enc->block_align;
     } else
-        blkalign = enc->channels*bps >> 3;
+        blkalign = bps * enc->channels / av_gcd(8, bps);
     if (enc->codec_id == CODEC_ID_PCM_U8 ||
         enc->codec_id == CODEC_ID_PCM_S24LE ||
         enc->codec_id == CODEC_ID_PCM_S32LE ||
@@ -572,6 +572,9 @@ int ff_get_wav_header(AVIOContext *pb, AVCodecContext *codec, int size)
         codec->channels    = 0;
         codec->sample_rate = 0;
     }
+    /* override bits_per_coded_sample for G.726 */
+    if (codec->codec_id == CODEC_ID_ADPCM_G726)
+        codec->bits_per_coded_sample = codec->bit_rate / codec->sample_rate;
 
     return 0;
 }

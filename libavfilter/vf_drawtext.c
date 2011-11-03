@@ -22,7 +22,7 @@
 
 /**
  * @file
- * drawtext filter, based on the original FFmpeg vhook/drawtext.c
+ * drawtext filter, based on the original vhook/drawtext.c
  * filter by Gustavo Sverzut Barbieri
  */
 

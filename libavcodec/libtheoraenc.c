@@ -241,7 +241,7 @@ static av_cold int encode_init(AVCodecContext* avc_context)
         header, comment, and tables.
 
         Each one is prefixed with a 16bit size, then they
-        are concatenated together into ffmpeg's extradata.
+        are concatenated together into libavcodec's extradata.
     */
     offset = 0;
 

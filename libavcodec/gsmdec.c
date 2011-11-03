@@ -58,13 +58,18 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     int16_t *samples = data;
-    int frame_bytes = 2 * avctx->frame_size;
+    int frame_bytes = avctx->frame_size *
+                      av_get_bytes_per_sample(avctx->sample_fmt);
 
-    if (*data_size < frame_bytes)
-        return -1;
-    *data_size = 0;
-    if(buf_size < avctx->block_align)
+    if (*data_size < frame_bytes) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
+    }
+
+    if (buf_size < avctx->block_align) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
         return AVERROR_INVALIDDATA;
+    }
 
     switch (avctx->codec_id) {
     case CODEC_ID_GSM:
@@ -84,6 +89,12 @@ static int gsm_decode_frame(AVCodecContext *avctx, void *data,
     return avctx->block_align;
 }
 
+static void gsm_flush(AVCodecContext *avctx)
+{
+    GSMContext *s = avctx->priv_data;
+    memset(s, 0, sizeof(*s));
+}
+
 AVCodec ff_gsm_decoder = {
     .name           = "gsm",
     .type           = AVMEDIA_TYPE_AUDIO,
@@ -91,6 +102,7 @@ AVCodec ff_gsm_decoder = {
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
+    .flush          = gsm_flush,
     .long_name = NULL_IF_CONFIG_SMALL("GSM"),
 };
 
@@ -101,5 +113,6 @@ AVCodec ff_gsm_ms_decoder = {
     .priv_data_size = sizeof(GSMContext),
     .init           = gsm_init,
     .decode         = gsm_decode_frame,
+    .flush          = gsm_flush,
     .long_name = NULL_IF_CONFIG_SMALL("GSM Microsoft variant"),
 };

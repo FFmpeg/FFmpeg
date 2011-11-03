@@ -1,5 +1,5 @@
 /*
- * Various simple utilities for ffmpeg system
+ * various simple utilities for libavformat
  * Copyright (c) 2000, 2001, 2002 Fabrice Bellard
  *
  * This file is part of FFmpeg.

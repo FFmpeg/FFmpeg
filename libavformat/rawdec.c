@@ -193,18 +193,6 @@ AVInputFormat ff_g722_demuxer = {
 };
 #endif
 
-#if CONFIG_GSM_DEMUXER
-AVInputFormat ff_gsm_demuxer = {
-    .name           = "gsm",
-    .long_name      = NULL_IF_CONFIG_SMALL("raw GSM"),
-    .read_header    = ff_raw_audio_read_header,
-    .read_packet    = ff_raw_read_partial_packet,
-    .flags= AVFMT_GENERIC_INDEX,
-    .extensions = "gsm",
-    .value = CODEC_ID_GSM,
-};
-#endif
-
 #if CONFIG_LATM_DEMUXER
 AVInputFormat ff_latm_demuxer = {
     .name           = "latm",

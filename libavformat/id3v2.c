@@ -392,7 +392,7 @@ typedef struct ID3v2EMFunc {
     const char *tag3;
     const char *tag4;
     void (*read)(AVFormatContext*, AVIOContext*, int, char*, ID3v2ExtraMeta **);
-    void (*free)(void *);
+    void (*free)(void *obj);
 } ID3v2EMFunc;
 
 static const ID3v2EMFunc id3v2_extra_meta_funcs[] = {

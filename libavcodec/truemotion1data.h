@@ -2,9 +2,9 @@
  * Duck Truemotion v1 Decoding Tables
  *
  * Data in this file was originally part of VpVision from On2 which is
- * distributed under the GNU GPL. It is redistributed with ffmpeg under the
- * GNU LGPL using the common understanding that data tables necessary for
- * decoding algorithms are not necessarily licensable.
+ * distributed under the GNU GPL. It is redistributed with libavcodec under
+ * the GNU LGPL using the common understanding that data tables necessary
+ * for decoding algorithms are not necessarily copyrightable.
  *
  * This file is part of FFmpeg.
  *

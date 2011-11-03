@@ -1,4 +1,7 @@
 /*
+ * Indeo Video v3 compatible decoder
+ * Copyright (c) 2009 - 2011 Maxim Poliakovski
+ *
  * This file is part of FFmpeg.
  *
  * FFmpeg is free software; you can redistribute it and/or
@@ -18,1130 +21,1036 @@
 
 /**
  * @file
- * Intel Indeo 3 (IV31, IV32, etc.) video decoder for FFmpeg
- * written, produced, and directed by Alan Smithee
+ * This is a decoder for Intel Indeo Video v3.
+ * It is based on vector quantization, run-length coding and motion compensation.
+ * Known container formats: .avi and .mov
+ * Known FOURCCs: 'IV31', 'IV32'
  *
- * For some documentation see:
- * http://wiki.multimedia.cx/index.php?title=Indeo_3
+ * @see http://wiki.multimedia.cx/index.php?title=Indeo_3
  */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "bytestream.h"
+#include "get_bits.h"
 
 #include "indeo3data.h"
 
-typedef struct
-{
-    uint8_t *Ybuf;
-    uint8_t *Ubuf;
-    uint8_t *Vbuf;
-    unsigned short y_w, y_h;
-    unsigned short uv_w, uv_h;
-} YUVBufs;
+/* RLE opcodes. */
+enum {
+    RLE_ESC_F9    = 249, ///< same as RLE_ESC_FA + do the same with next block
+    RLE_ESC_FA    = 250, ///< INTRA: skip block, INTER: copy data from reference
+    RLE_ESC_FB    = 251, ///< apply null delta to N blocks / skip N blocks
+    RLE_ESC_FC    = 252, ///< same as RLE_ESC_FD + do the same with next block
+    RLE_ESC_FD    = 253, ///< apply null delta to all remaining lines of this block
+    RLE_ESC_FE    = 254, ///< apply null delta to all lines up to the 3rd line
+    RLE_ESC_FF    = 255  ///< apply null delta to all lines up to the 2nd line
+};
+
+
+/* Some constants for parsing frame bitstream flags. */
+#define BS_8BIT_PEL     (1 << 1) ///< 8bit pixel bitdepth indicator
+#define BS_KEYFRAME     (1 << 2) ///< intra frame indicator
+#define BS_MV_Y_HALF    (1 << 4) ///< vertical mv halfpel resolution indicator
+#define BS_MV_X_HALF    (1 << 5) ///< horizontal mv halfpel resolution indicator
+#define BS_NONREF       (1 << 8) ///< nonref (discardable) frame indicator
+#define BS_BUFFER        9       ///< indicates which of two frame buffers should be used
+
+
+typedef struct Plane {
+    uint8_t         *buffers[2];
+    uint8_t         *pixels[2]; ///< pointer to the actual pixel data of the buffers above
+    uint32_t        width;
+    uint32_t        height;
+    uint32_t        pitch;
+} Plane;
+
+#define CELL_STACK_MAX  20
+
+typedef struct Cell {
+    int16_t         xpos;       ///< cell coordinates in 4x4 blocks
+    int16_t         ypos;
+    int16_t         width;      ///< cell width  in 4x4 blocks
+    int16_t         height;     ///< cell height in 4x4 blocks
+    uint8_t         tree;       ///< tree id: 0- MC tree, 1 - VQ tree
+    const int8_t    *mv_ptr;    ///< ptr to the motion vector if any
+} Cell;
 
 typedef struct Indeo3DecodeContext {
     AVCodecContext *avctx;
-    int width, height;
-    AVFrame frame;
+    AVFrame         frame;
+    DSPContext      dsp;
 
-    uint8_t *buf;
-    YUVBufs iv_frame[2];
-    YUVBufs *cur_frame;
-    YUVBufs *ref_frame;
+    GetBitContext   gb;
+    int             need_resync;
+    int             skip_bits;
+    const uint8_t   *next_cell_data;
+    const uint8_t   *last_byte;
+    const int8_t    *mc_vectors;
 
-    uint8_t *ModPred;
-    uint8_t *corrector_type;
+    int16_t         width, height;
+    uint32_t        frame_num;      ///< current frame number (zero-based)
+    uint32_t        data_size;      ///< size of the frame data in bytes
+    uint16_t        frame_flags;    ///< frame properties
+    uint8_t         cb_offset;      ///< needed for selecting VQ tables
+    uint8_t         buf_sel;        ///< active frame buffer: 0 - primary, 1 -secondary
+    const uint8_t   *y_data_ptr;
+    const uint8_t   *v_data_ptr;
+    const uint8_t   *u_data_ptr;
+    int32_t         y_data_size;
+    int32_t         v_data_size;
+    int32_t         u_data_size;
+    const uint8_t   *alt_quant;     ///< secondary VQ table set for the modes 1 and 4
+    Plane           planes[3];
 } Indeo3DecodeContext;
 
-static const uint8_t corrector_type_0[24] = {
-    195, 159, 133, 115, 101,  93,  87,  77,
-    195, 159, 133, 115, 101,  93,  87,  77,
-    128,  79,  79,  79,  79,  79,  79,  79
-};
 
-static const uint8_t corrector_type_2[8] = { 9, 7, 6, 8, 5, 4, 3, 2 };
+static uint8_t requant_tab[8][128];
 
-static av_cold int build_modpred(Indeo3DecodeContext *s)
+/*
+ *  Build the static requantization table.
+ *  This table is used to remap pixel values according to a specific
+ *  quant index and thus avoid overflows while adding deltas.
+ */
+static av_cold void build_requant_tab(void)
 {
-    int i, j;
+    static int8_t offsets[8] = { 1, 1, 2, -3, -3, 3, 4, 4 };
+    static int8_t deltas [8] = { 0, 1, 0,  4,  4, 1, 0, 1 };
 
-    if (!(s->ModPred = av_malloc(8 * 128)))
-        return AVERROR(ENOMEM);
+    int i, j, step;
 
-    for (i=0; i < 128; ++i) {
-        s->ModPred[i+0*128] = i >  126 ? 254 : 2*(i + 1 - ((i + 1) % 2));
-        s->ModPred[i+1*128] = i ==   7 ?  20 :
-                              i == 119 ||
-                              i == 120 ? 236 : 2*(i + 2 - ((i + 1) % 3));
-        s->ModPred[i+2*128] = i >  125 ? 248 : 2*(i + 2 - ((i + 2) % 4));
-        s->ModPred[i+3*128] =                  2*(i + 1 - ((i - 3) % 5));
-        s->ModPred[i+4*128] = i ==   8 ?  20 : 2*(i + 1 - ((i - 3) % 6));
-        s->ModPred[i+5*128] =                  2*(i + 4 - ((i + 3) % 7));
-        s->ModPred[i+6*128] = i >  123 ? 240 : 2*(i + 4 - ((i + 4) % 8));
-        s->ModPred[i+7*128] =                  2*(i + 5 - ((i + 4) % 9));
+    for (i = 0; i < 8; i++) {
+        step = i + 2;
+        for (j = 0; j < 128; j++)
+                requant_tab[i][j] = (j + offsets[i]) / step * step + deltas[i];
     }
 
-    if (!(s->corrector_type = av_malloc(24 * 256)))
-        return AVERROR(ENOMEM);
+    /* some last elements calculated above will have values >= 128 */
+    /* pixel values shall never exceed 127 so set them to non-overflowing values */
+    /* according with the quantization step of the respective section */
+    requant_tab[0][127] = 126;
+    requant_tab[1][119] = 118;
+    requant_tab[1][120] = 118;
+    requant_tab[2][126] = 124;
+    requant_tab[2][127] = 124;
+    requant_tab[6][124] = 120;
+    requant_tab[6][125] = 120;
+    requant_tab[6][126] = 120;
+    requant_tab[6][127] = 120;
 
-    for (i=0; i < 24; ++i) {
-        for (j=0; j < 256; ++j) {
-            s->corrector_type[i*256+j] = j < corrector_type_0[i]          ? 1 :
-                                         j < 248 || (i == 16 && j == 248) ? 0 :
-                                         corrector_type_2[j - 248];
-        }
-    }
-
-  return 0;
+    /* Patch for compatibility with the Intel's binary decoders */
+    requant_tab[1][7] = 10;
+    requant_tab[4][8] = 10;
 }
 
-static av_cold int iv_alloc_frames(Indeo3DecodeContext *s)
+
+static av_cold int allocate_frame_buffers(Indeo3DecodeContext *ctx,
+                                          AVCodecContext *avctx)
 {
-    int luma_width    = (s->width           + 3) & ~3,
-        luma_height   = (s->height          + 3) & ~3,
-        chroma_width  = ((luma_width  >> 2) + 3) & ~3,
-        chroma_height = ((luma_height >> 2) + 3) & ~3,
-        luma_pixels   = luma_width   * luma_height,
-        chroma_pixels = chroma_width * chroma_height,
-        i;
-    unsigned int bufsize = luma_pixels * 2 + luma_width * 3 +
-                          (chroma_pixels   + chroma_width) * 4;
+    int p, luma_width, luma_height, chroma_width, chroma_height;
+    int luma_pitch, chroma_pitch, luma_size, chroma_size;
 
-    av_freep(&s->buf);
-    if(!(s->buf = av_malloc(bufsize)))
-        return AVERROR(ENOMEM);
-    s->iv_frame[0].y_w = s->iv_frame[1].y_w = luma_width;
-    s->iv_frame[0].y_h = s->iv_frame[1].y_h = luma_height;
-    s->iv_frame[0].uv_w = s->iv_frame[1].uv_w = chroma_width;
-    s->iv_frame[0].uv_h = s->iv_frame[1].uv_h = chroma_height;
+    luma_width  = ctx->width;
+    luma_height = ctx->height;
 
-    s->iv_frame[0].Ybuf = s->buf + luma_width;
-    i = luma_pixels + luma_width * 2;
-    s->iv_frame[1].Ybuf = s->buf + i;
-    i += (luma_pixels + luma_width);
-    s->iv_frame[0].Ubuf = s->buf + i;
-    i += (chroma_pixels + chroma_width);
-    s->iv_frame[1].Ubuf = s->buf + i;
-    i += (chroma_pixels + chroma_width);
-    s->iv_frame[0].Vbuf = s->buf + i;
-    i += (chroma_pixels + chroma_width);
-    s->iv_frame[1].Vbuf = s->buf + i;
+    if (luma_width  < 16 || luma_width  > 640 ||
+        luma_height < 16 || luma_height > 480 ||
+        luma_width  &  3 || luma_height &   3) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid picture dimensions: %d x %d!\n",
+               luma_width, luma_height);
+        return AVERROR_INVALIDDATA;
+    }
 
-    for(i = 1; i <= luma_width; i++)
-        s->iv_frame[0].Ybuf[-i] = s->iv_frame[1].Ybuf[-i] =
-            s->iv_frame[0].Ubuf[-i] = 0x80;
+    chroma_width  = FFALIGN(luma_width  >> 2, 4);
+    chroma_height = FFALIGN(luma_height >> 2, 4);
 
-    for(i = 1; i <= chroma_width; i++) {
-        s->iv_frame[1].Ubuf[-i] = 0x80;
-        s->iv_frame[0].Vbuf[-i] = 0x80;
-        s->iv_frame[1].Vbuf[-i] = 0x80;
-        s->iv_frame[1].Vbuf[chroma_pixels+i-1] = 0x80;
+    luma_pitch   = FFALIGN(luma_width,   16);
+    chroma_pitch = FFALIGN(chroma_width, 16);
+
+    /* Calculate size of the luminance plane.  */
+    /* Add one line more for INTRA prediction. */
+    luma_size = luma_pitch * (luma_height + 1);
+
+    /* Calculate size of a chrominance planes. */
+    /* Add one line more for INTRA prediction. */
+    chroma_size = chroma_pitch * (chroma_height + 1);
+
+    /* allocate frame buffers */
+    for (p = 0; p < 3; p++) {
+        ctx->planes[p].pitch  = !p ? luma_pitch  : chroma_pitch;
+        ctx->planes[p].width  = !p ? luma_width  : chroma_width;
+        ctx->planes[p].height = !p ? luma_height : chroma_height;
+
+        ctx->planes[p].buffers[0] = av_malloc(!p ? luma_size : chroma_size);
+        ctx->planes[p].buffers[1] = av_malloc(!p ? luma_size : chroma_size);
+
+        /* fill the INTRA prediction lines with the middle pixel value = 64 */
+        memset(ctx->planes[p].buffers[0], 0x40, ctx->planes[p].pitch);
+        memset(ctx->planes[p].buffers[1], 0x40, ctx->planes[p].pitch);
+
+        /* set buffer pointers = buf_ptr + pitch and thus skip the INTRA prediction line */
+        ctx->planes[p].pixels[0] = ctx->planes[p].buffers[0] + ctx->planes[p].pitch;
+        ctx->planes[p].pixels[1] = ctx->planes[p].buffers[1] + ctx->planes[p].pitch;
     }
 
     return 0;
 }
 
-static av_cold void iv_free_func(Indeo3DecodeContext *s)
+
+static av_cold void free_frame_buffers(Indeo3DecodeContext *ctx)
 {
-    av_freep(&s->buf);
-    av_freep(&s->ModPred);
-    av_freep(&s->corrector_type);
+    int p;
+
+    for (p = 0; p < 3; p++) {
+        av_freep(&ctx->planes[p].buffers[0]);
+        av_freep(&ctx->planes[p].buffers[1]);
+    }
 }
 
-struct ustr {
-    int xpos;
-    int ypos;
-    int width;
-    int height;
-    int split_flag;
-    int split_direction;
-    int usl7;
+
+/**
+ *  Copy pixels of the cell(x + mv_x, y + mv_y) from the previous frame into
+ *  the cell(x, y) in the current frame.
+ *
+ *  @param ctx      pointer to the decoder context
+ *  @param plane    pointer to the plane descriptor
+ *  @param cell     pointer to the cell  descriptor
+ */
+static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
+{
+    int     h, w, mv_x, mv_y, offset, offset_dst;
+    uint8_t *src, *dst;
+
+    /* setup output and reference pointers */
+    offset_dst  = (cell->ypos << 2) * plane->pitch + (cell->xpos << 2);
+    dst         = plane->pixels[ctx->buf_sel] + offset_dst;
+    mv_y        = cell->mv_ptr[0];
+    mv_x        = cell->mv_ptr[1];
+    offset      = offset_dst + mv_y * plane->pitch + mv_x;
+    src         = plane->pixels[ctx->buf_sel ^ 1] + offset;
+
+    h = cell->height << 2;
+
+    for (w = cell->width; w > 0;) {
+        /* copy using 16xH blocks */
+        if (!((cell->xpos << 2) & 15) && w >= 4) {
+            for (; w >= 4; src += 16, dst += 16, w -= 4)
+                ctx->dsp.put_no_rnd_pixels_tab[0][0](dst, src, plane->pitch, h);
+        }
+
+        /* copy using 8xH blocks */
+        if (!((cell->xpos << 2) & 7) && w >= 2) {
+            ctx->dsp.put_no_rnd_pixels_tab[1][0](dst, src, plane->pitch, h);
+            w -= 2;
+            src += 8;
+            dst += 8;
+        }
+
+        if (w >= 1) {
+            copy_block4(dst, src, plane->pitch, plane->pitch, h);
+            w--;
+            src += 4;
+            dst += 4;
+        }
+    }
+}
+
+
+/* Average 4/8 pixels at once without rounding using SWAR */
+#define AVG_32(dst, src, ref) \
+    AV_WN32A(dst, ((AV_RN32A(src) + AV_RN32A(ref)) >> 1) & 0x7F7F7F7FUL)
+
+#define AVG_64(dst, src, ref) \
+    AV_WN64A(dst, ((AV_RN64A(src) + AV_RN64A(ref)) >> 1) & 0x7F7F7F7F7F7F7F7FULL)
+
+
+/*
+ *  Replicate each even pixel as follows:
+ *  ABCDEFGH -> AACCEEGG
+ */
+static inline uint64_t replicate64(uint64_t a) {
+#if HAVE_BIGENDIAN
+    a &= 0xFF00FF00FF00FF00ULL;
+    a |= a >> 8;
+#else
+    a &= 0x00FF00FF00FF00FFULL;
+    a |= a << 8;
+#endif
+    return a;
+}
+
+static inline uint32_t replicate32(uint32_t a) {
+#if HAVE_BIGENDIAN
+    a &= 0xFF00FF00UL;
+    a |= a >> 8;
+#else
+    a &= 0x00FF00FFUL;
+    a |= a << 8;
+#endif
+    return a;
+}
+
+
+/* Fill n lines with 64bit pixel value pix */
+static inline void fill_64(uint8_t *dst, const uint64_t pix, int32_t n,
+                           int32_t row_offset)
+{
+    for (; n > 0; dst += row_offset, n--)
+        AV_WN64A(dst, pix);
+}
+
+
+/* Error codes for cell decoding. */
+enum {
+    IV3_NOERR       = 0,
+    IV3_BAD_RLE     = 1,
+    IV3_BAD_DATA    = 2,
+    IV3_BAD_COUNTER = 3,
+    IV3_UNSUPPORTED = 4,
+    IV3_OUT_OF_DATA = 5
 };
 
 
-#define LV1_CHECK(buf1,rle_v3,lv1,lp2)  \
-    if((lv1 & 0x80) != 0) {             \
-        if(rle_v3 != 0)                 \
-            rle_v3 = 0;                 \
-        else {                          \
-            rle_v3 = 1;                 \
-            buf1 -= 2;                  \
-        }                               \
-    }                                   \
-    lp2 = 4;
+#define BUFFER_PRECHECK \
+if (*data_ptr >= last_ptr) \
+    return IV3_OUT_OF_DATA; \
+
+#define RLE_BLOCK_COPY \
+    if (cell->mv_ptr || !skip_flag) \
+        copy_block4(dst, ref, row_offset, row_offset, 4 << v_zoom)
+
+#define RLE_BLOCK_COPY_8 \
+    pix64 = AV_RN64A(ref);\
+    if (is_first_row) {/* special prediction case: top line of a cell */\
+        pix64 = replicate64(pix64);\
+        fill_64(dst + row_offset, pix64, 7, row_offset);\
+        AVG_64(dst, ref, dst + row_offset);\
+    } else \
+        fill_64(dst, pix64, 8, row_offset)
+
+#define RLE_LINES_COPY \
+    copy_block4(dst, ref, row_offset, row_offset, num_lines << v_zoom)
+
+#define RLE_LINES_COPY_M10 \
+    pix64 = AV_RN64A(ref);\
+    if (is_top_of_cell) {\
+        pix64 = replicate64(pix64);\
+        fill_64(dst + row_offset, pix64, (num_lines << 1) - 1, row_offset);\
+        AVG_64(dst, ref, dst + row_offset);\
+    } else \
+        fill_64(dst, pix64, num_lines << 1, row_offset)
+
+#define APPLY_DELTA_4 \
+    AV_WN16A(dst + line_offset    , AV_RN16A(ref    ) + delta_tab->deltas[dyad1]);\
+    AV_WN16A(dst + line_offset + 2, AV_RN16A(ref + 2) + delta_tab->deltas[dyad2]);\
+    if (mode >= 3) {\
+        if (is_top_of_cell && !cell->ypos) {\
+            AV_COPY32(dst, dst + row_offset);\
+        } else {\
+            AVG_32(dst, ref, dst + row_offset);\
+        }\
+    }
+
+#define APPLY_DELTA_8 \
+    /* apply two 32-bit VQ deltas to next even line */\
+    if (is_top_of_cell) { \
+        AV_WN32A(dst + row_offset    , \
+                 replicate32(AV_RN32A(ref    )) + delta_tab->deltas_m10[dyad1]);\
+        AV_WN32A(dst + row_offset + 4, \
+                 replicate32(AV_RN32A(ref + 4)) + delta_tab->deltas_m10[dyad2]);\
+    } else { \
+        AV_WN32A(dst + row_offset    , \
+                 AV_RN32A(ref    ) + delta_tab->deltas_m10[dyad1]);\
+        AV_WN32A(dst + row_offset + 4, \
+                 AV_RN32A(ref + 4) + delta_tab->deltas_m10[dyad2]);\
+    } \
+    /* odd lines are not coded but rather interpolated/replicated */\
+    /* first line of the cell on the top of image? - replicate */\
+    /* otherwise - interpolate */\
+    if (is_top_of_cell && !cell->ypos) {\
+        AV_COPY64(dst, dst + row_offset);\
+    } else \
+        AVG_64(dst, ref, dst + row_offset);
 
 
-#define RLE_V3_CHECK(buf1,rle_v1,rle_v2,rle_v3)  \
-    if(rle_v3 == 0) {                            \
-        rle_v2 = *buf1;                          \
-        rle_v1 = 1;                              \
-        if(rle_v2 > 32) {                        \
-            rle_v2 -= 32;                        \
-            rle_v1 = 0;                          \
-        }                                        \
-        rle_v3 = 1;                              \
-    }                                            \
-    buf1--;
-
-
-#define LP2_CHECK(buf1,rle_v3,lp2)  \
-    if(lp2 == 0 && rle_v3 != 0)     \
-        rle_v3 = 0;                 \
-    else {                          \
-        buf1--;                     \
-        rle_v3 = 1;                 \
+#define APPLY_DELTA_1011_INTER \
+    if (mode == 10) { \
+        AV_WN32A(dst                 , \
+                 AV_RN32A(dst                 ) + delta_tab->deltas_m10[dyad1]);\
+        AV_WN32A(dst + 4             , \
+                 AV_RN32A(dst + 4             ) + delta_tab->deltas_m10[dyad2]);\
+        AV_WN32A(dst + row_offset    , \
+                 AV_RN32A(dst + row_offset    ) + delta_tab->deltas_m10[dyad1]);\
+        AV_WN32A(dst + row_offset + 4, \
+                 AV_RN32A(dst + row_offset + 4) + delta_tab->deltas_m10[dyad2]);\
+    } else { \
+        AV_WN16A(dst                 , \
+                 AV_RN16A(dst                 ) + delta_tab->deltas[dyad1]);\
+        AV_WN16A(dst + 2             , \
+                 AV_RN16A(dst + 2             ) + delta_tab->deltas[dyad2]);\
+        AV_WN16A(dst + row_offset    , \
+                 AV_RN16A(dst + row_offset    ) + delta_tab->deltas[dyad1]);\
+        AV_WN16A(dst + row_offset + 2, \
+                 AV_RN16A(dst + row_offset + 2) + delta_tab->deltas[dyad2]);\
     }
 
 
-#define RLE_V2_CHECK(buf1,rle_v2, rle_v3,lp2) \
-    rle_v2--;                                 \
-    if(rle_v2 == 0) {                         \
-        rle_v3 = 0;                           \
-        buf1 += 2;                            \
-    }                                         \
-    lp2 = 4;
-
-static void iv_Decode_Chunk(Indeo3DecodeContext *s,
-        uint8_t *cur, uint8_t *ref, int width, int height,
-        const uint8_t *buf1, int cb_offset, const uint8_t *hdr,
-        const uint8_t *buf2, int min_width_160)
+static int decode_cell_data(Cell *cell, uint8_t *block, uint8_t *ref_block,
+                            int pitch, int h_zoom, int v_zoom, int mode,
+                            const vqEntry *delta[2], int swap_quads[2],
+                            const uint8_t **data_ptr, const uint8_t *last_ptr)
 {
-    uint8_t bit_buf;
-    unsigned int bit_pos, lv, lv1, lv2;
-    int *width_tbl, width_tbl_arr[10];
-    const signed char *ref_vectors;
-    uint8_t *cur_frm_pos, *ref_frm_pos, *cp, *cp2;
-    uint8_t *cur_end = cur + width*height + width;
-    uint32_t *cur_lp, *ref_lp;
-    const uint32_t *correction_lp[2], *correctionloworder_lp[2], *correctionhighorder_lp[2];
-    uint8_t *correction_type_sp[2];
-    struct ustr strip_tbl[20], *strip;
-    int i, j, k, lp1, lp2, flag1, cmd, blks_width, blks_height, region_160_width,
-        rle_v1, rle_v2, rle_v3;
-    unsigned short res;
+    int           x, y, line, num_lines;
+    int           rle_blocks = 0;
+    uint8_t       code, *dst, *ref;
+    const vqEntry *delta_tab;
+    unsigned int  dyad1, dyad2;
+    uint64_t      pix64;
+    int           skip_flag = 0, is_top_of_cell, is_first_row = 1;
+    int           row_offset, blk_row_offset, line_offset;
 
-    bit_buf = 0;
-    ref_vectors = NULL;
+    row_offset     =  pitch;
+    blk_row_offset = (row_offset << (2 + v_zoom)) - (cell->width << 2);
+    line_offset    = v_zoom ? row_offset : 0;
 
-    width_tbl = width_tbl_arr + 1;
-    i = (width < 0 ? width + 3 : width)/4;
-    for(j = -1; j < 8; j++)
-        width_tbl[j] = i * j;
+    for (y = 0; y < cell->height; is_first_row = 0, y += 1 + v_zoom) {
+        for (x = 0; x < cell->width; x += 1 + h_zoom) {
+            ref = ref_block;
+            dst = block;
 
-    strip = strip_tbl;
-
-    for(region_160_width = 0; region_160_width < (width - min_width_160); region_160_width += min_width_160);
-
-    strip->ypos = strip->xpos = 0;
-    for(strip->width = min_width_160; width > strip->width; strip->width *= 2);
-    strip->height = height;
-    strip->split_direction = 0;
-    strip->split_flag = 0;
-    strip->usl7 = 0;
-
-    bit_pos = 0;
-
-    rle_v1 = rle_v2 = rle_v3 = 0;
-
-    while(strip >= strip_tbl) {
-        if(bit_pos <= 0) {
-            bit_pos = 8;
-            bit_buf = *buf1++;
-        }
-
-        bit_pos -= 2;
-        cmd = (bit_buf >> bit_pos) & 0x03;
-
-        if(cmd == 0) {
-            strip++;
-            if(strip >= strip_tbl + FF_ARRAY_ELEMS(strip_tbl)) {
-                av_log(s->avctx, AV_LOG_WARNING, "out of range strip\n");
-                break;
-            }
-            memcpy(strip, strip-1, sizeof(*strip));
-            strip->split_flag = 1;
-            strip->split_direction = 0;
-            strip->height = (strip->height > 8 ? ((strip->height+8)>>4)<<3 : 4);
-            continue;
-        } else if(cmd == 1) {
-            strip++;
-            if(strip >= strip_tbl + FF_ARRAY_ELEMS(strip_tbl)) {
-                av_log(s->avctx, AV_LOG_WARNING, "out of range strip\n");
-                break;
-            }
-            memcpy(strip, strip-1, sizeof(*strip));
-            strip->split_flag = 1;
-            strip->split_direction = 1;
-            strip->width = (strip->width > 8 ? ((strip->width+8)>>4)<<3 : 4);
-            continue;
-        } else if(cmd == 2) {
-            if(strip->usl7 == 0) {
-                strip->usl7 = 1;
-                ref_vectors = NULL;
-                continue;
-            }
-        } else if(cmd == 3) {
-            if(strip->usl7 == 0) {
-                strip->usl7 = 1;
-                ref_vectors = (const signed char*)buf2 + (*buf1 * 2);
-                buf1++;
-                continue;
-            }
-        }
-
-        cur_frm_pos = cur + width * strip->ypos + strip->xpos;
-
-        if((blks_width = strip->width) < 0)
-            blks_width += 3;
-        blks_width >>= 2;
-        blks_height = strip->height;
-
-        if(ref_vectors != NULL) {
-            ref_frm_pos = ref + (ref_vectors[0] + strip->ypos) * width +
-                ref_vectors[1] + strip->xpos;
-        } else
-            ref_frm_pos = cur_frm_pos - width_tbl[4];
-
-        if(cmd == 2) {
-            if(bit_pos <= 0) {
-                bit_pos = 8;
-                bit_buf = *buf1++;
-            }
-
-            bit_pos -= 2;
-            cmd = (bit_buf >> bit_pos) & 0x03;
-
-            if(cmd == 0 || ref_vectors != NULL) {
-                for(lp1 = 0; lp1 < blks_width; lp1++) {
-                    for(i = 0, j = 0; i < blks_height; i++, j += width_tbl[1])
-                        ((uint32_t *)cur_frm_pos)[j] = ((uint32_t *)ref_frm_pos)[j];
-                    cur_frm_pos += 4;
-                    ref_frm_pos += 4;
+            if (rle_blocks > 0) {
+                if (mode <= 4) {
+                    RLE_BLOCK_COPY;
+                } else if (mode == 10 && !cell->mv_ptr) {
+                    RLE_BLOCK_COPY_8;
                 }
-            } else if(cmd != 1)
-                return;
-        } else {
-            k = *buf1 >> 4;
-            j = *buf1 & 0x0f;
-            buf1++;
-            lv = j + cb_offset;
-
-            if((lv - 8) <= 7 && (k == 0 || k == 3 || k == 10)) {
-                cp2 = s->ModPred + ((lv - 8) << 7);
-                cp = ref_frm_pos;
-                for(i = 0; i < blks_width << 2; i++) {
-                    int v = *cp >> 1;
-                    *(cp++) = cp2[v];
-                }
-            }
-
-            if(k == 1 || k == 4) {
-                lv = (hdr[j] & 0xf) + cb_offset;
-                correction_type_sp[0] = s->corrector_type + (lv << 8);
-                correction_lp[0] = correction + (lv << 8);
-                lv = (hdr[j] >> 4) + cb_offset;
-                correction_lp[1] = correction + (lv << 8);
-                correction_type_sp[1] = s->corrector_type + (lv << 8);
+                rle_blocks--;
             } else {
-                correctionloworder_lp[0] = correctionloworder_lp[1] = correctionloworder + (lv << 8);
-                correctionhighorder_lp[0] = correctionhighorder_lp[1] = correctionhighorder + (lv << 8);
-                correction_type_sp[0] = correction_type_sp[1] = s->corrector_type + (lv << 8);
-                correction_lp[0] = correction_lp[1] = correction + (lv << 8);
+                for (line = 0; line < 4;) {
+                    num_lines = 1;
+                    is_top_of_cell = is_first_row && !line;
+
+                    /* select primary VQ table for odd, secondary for even lines */
+                    if (mode <= 4)
+                        delta_tab = delta[line & 1];
+                    else
+                        delta_tab = delta[1];
+                    BUFFER_PRECHECK;
+                    code = bytestream_get_byte(data_ptr);
+                    if (code < 248) {
+                        if (code < delta_tab->num_dyads) {
+                            BUFFER_PRECHECK;
+                            dyad1 = bytestream_get_byte(data_ptr);
+                            dyad2 = code;
+                            if (dyad1 > delta_tab->num_dyads || dyad1 >= 248)
+                                return IV3_BAD_DATA;
+                        } else {
+                            /* process QUADS */
+                            code -= delta_tab->num_dyads;
+                            dyad1 = code / delta_tab->quad_exp;
+                            dyad2 = code % delta_tab->quad_exp;
+                            if (swap_quads[line & 1])
+                                FFSWAP(unsigned int, dyad1, dyad2);
+                        }
+                        if (mode <= 4) {
+                            APPLY_DELTA_4;
+                        } else if (mode == 10 && !cell->mv_ptr) {
+                            APPLY_DELTA_8;
+                        } else {
+                            APPLY_DELTA_1011_INTER;
+                        }
+                    } else {
+                        /* process RLE codes */
+                        switch (code) {
+                        case RLE_ESC_FC:
+                            skip_flag  = 0;
+                            rle_blocks = 1;
+                            code       = 253;
+                            /* FALLTHROUGH */
+                        case RLE_ESC_FF:
+                        case RLE_ESC_FE:
+                        case RLE_ESC_FD:
+                            num_lines = 257 - code - line;
+                            if (num_lines <= 0)
+                                return IV3_BAD_RLE;
+                            if (mode <= 4) {
+                                RLE_LINES_COPY;
+                            } else if (mode == 10 && !cell->mv_ptr) {
+                                RLE_LINES_COPY_M10;
+                            }
+                            break;
+                        case RLE_ESC_FB:
+                            BUFFER_PRECHECK;
+                            code = bytestream_get_byte(data_ptr);
+                            rle_blocks = (code & 0x1F) - 1; /* set block counter */
+                            if (code >= 64 || rle_blocks < 0)
+                                return IV3_BAD_COUNTER;
+                            skip_flag = code & 0x20;
+                            num_lines = 4 - line; /* enforce next block processing */
+                            if (mode >= 10 || (cell->mv_ptr || !skip_flag)) {
+                                if (mode <= 4) {
+                                    RLE_LINES_COPY;
+                                } else if (mode == 10 && !cell->mv_ptr) {
+                                    RLE_LINES_COPY_M10;
+                                }
+                            }
+                            break;
+                        case RLE_ESC_F9:
+                            skip_flag  = 1;
+                            rle_blocks = 1;
+                            /* FALLTHROUGH */
+                        case RLE_ESC_FA:
+                            if (line)
+                                return IV3_BAD_RLE;
+                            num_lines = 4; /* enforce next block processing */
+                            if (cell->mv_ptr) {
+                                if (mode <= 4) {
+                                    RLE_LINES_COPY;
+                                } else if (mode == 10 && !cell->mv_ptr) {
+                                    RLE_LINES_COPY_M10;
+                                }
+                            }
+                            break;
+                        default:
+                            return IV3_UNSUPPORTED;
+                        }
+                    }
+
+                    line += num_lines;
+                    ref  += row_offset * (num_lines << v_zoom);
+                    dst  += row_offset * (num_lines << v_zoom);
+                }
             }
 
-            switch(k) {
-            case 1:
-            case 0:                    /********** CASE 0 **********/
-                for( ; blks_height > 0; blks_height -= 4) {
-                    for(lp1 = 0; lp1 < blks_width; lp1++) {
-                        for(lp2 = 0; lp2 < 4; ) {
-                            k = *buf1++;
-                            cur_lp = ((uint32_t *)cur_frm_pos) + width_tbl[lp2];
-                            ref_lp = ((uint32_t *)ref_frm_pos) + width_tbl[lp2];
-                            if ((uint8_t *)cur_lp >= cur_end-3)
-                                break;
-
-                            switch(correction_type_sp[0][k]) {
-                            case 0:
-                                *cur_lp = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
-                                lp2++;
-                                break;
-                            case 1:
-                                res = ((av_le2ne16(((unsigned short *)(ref_lp))[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
-                                ((unsigned short *)cur_lp)[0] = av_le2ne16(res);
-                                res = ((av_le2ne16(((unsigned short *)(ref_lp))[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
-                                ((unsigned short *)cur_lp)[1] = av_le2ne16(res);
-                                buf1++;
-                                lp2++;
-                                break;
-                            case 2:
-                                if(lp2 == 0) {
-                                    for(i = 0, j = 0; i < 2; i++, j += width_tbl[1])
-                                        cur_lp[j] = ref_lp[j];
-                                    lp2 += 2;
-                                }
-                                break;
-                            case 3:
-                                if(lp2 < 2) {
-                                    for(i = 0, j = 0; i < (3 - lp2); i++, j += width_tbl[1])
-                                        cur_lp[j] = ref_lp[j];
-                                    lp2 = 3;
-                                }
-                                break;
-                            case 8:
-                                if(lp2 == 0) {
-                                    RLE_V3_CHECK(buf1,rle_v1,rle_v2,rle_v3)
-
-                                    if(rle_v1 == 1 || ref_vectors != NULL) {
-                                        for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                            cur_lp[j] = ref_lp[j];
-                                    }
-
-                                    RLE_V2_CHECK(buf1,rle_v2, rle_v3,lp2)
-                                    break;
-                                } else {
-                                    rle_v1 = 1;
-                                    rle_v2 = *buf1 - 1;
-                                }
-                            case 5:
-                                LP2_CHECK(buf1,rle_v3,lp2)
-                            case 4:
-                                for(i = 0, j = 0; i < (4 - lp2); i++, j += width_tbl[1])
-                                    cur_lp[j] = ref_lp[j];
-                                lp2 = 4;
-                                break;
-
-                            case 7:
-                                if(rle_v3 != 0)
-                                    rle_v3 = 0;
-                                else {
-                                    buf1--;
-                                    rle_v3 = 1;
-                                }
-                            case 6:
-                                if(ref_vectors != NULL) {
-                                    for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                        cur_lp[j] = ref_lp[j];
-                                }
-                                lp2 = 4;
-                                break;
-
-                            case 9:
-                                lv1 = *buf1++;
-                                lv = (lv1 & 0x7F) << 1;
-                                lv += (lv << 8);
-                                lv += (lv << 16);
-                                for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                    cur_lp[j] = lv;
-
-                                LV1_CHECK(buf1,rle_v3,lv1,lp2)
-                                break;
-                            default:
-                                return;
-                            }
-                        }
-
-                        cur_frm_pos += 4;
-                        ref_frm_pos += 4;
-                    }
-
-                    cur_frm_pos += ((width - blks_width) * 4);
-                    ref_frm_pos += ((width - blks_width) * 4);
-                }
-                break;
-
-            case 4:
-            case 3:                    /********** CASE 3 **********/
-                if(ref_vectors != NULL)
-                    return;
-                flag1 = 1;
-
-                for( ; blks_height > 0; blks_height -= 8) {
-                    for(lp1 = 0; lp1 < blks_width; lp1++) {
-                        for(lp2 = 0; lp2 < 4; ) {
-                            k = *buf1++;
-
-                            cur_lp = ((uint32_t *)cur_frm_pos) + width_tbl[lp2 * 2];
-                            ref_lp = ((uint32_t *)cur_frm_pos) + width_tbl[(lp2 * 2) - 1];
-
-                            switch(correction_type_sp[lp2 & 0x01][k]) {
-                            case 0:
-                                cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
-                                if(lp2 > 0 || flag1 == 0 || strip->ypos != 0)
-                                    cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                else
-                                    cur_lp[0] = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
-                                lp2++;
-                                break;
-
-                            case 1:
-                                res = ((av_le2ne16(((unsigned short *)ref_lp)[0]) >> 1) + correction_lp[lp2 & 0x01][*buf1]) << 1;
-                                ((unsigned short *)cur_lp)[width_tbl[2]] = av_le2ne16(res);
-                                res = ((av_le2ne16(((unsigned short *)ref_lp)[1]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1;
-                                ((unsigned short *)cur_lp)[width_tbl[2]+1] = av_le2ne16(res);
-
-                                if(lp2 > 0 || flag1 == 0 || strip->ypos != 0)
-                                    cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                else
-                                    cur_lp[0] = cur_lp[width_tbl[1]];
-                                buf1++;
-                                lp2++;
-                                break;
-
-                            case 2:
-                                if(lp2 == 0) {
-                                    for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                        cur_lp[j] = *ref_lp;
-                                    lp2 += 2;
-                                }
-                                break;
-
-                            case 3:
-                                if(lp2 < 2) {
-                                    for(i = 0, j = 0; i < 6 - (lp2 * 2); i++, j += width_tbl[1])
-                                        cur_lp[j] = *ref_lp;
-                                    lp2 = 3;
-                                }
-                                break;
-
-                            case 6:
-                                lp2 = 4;
-                                break;
-
-                            case 7:
-                                if(rle_v3 != 0)
-                                    rle_v3 = 0;
-                                else {
-                                    buf1--;
-                                    rle_v3 = 1;
-                                }
-                                lp2 = 4;
-                                break;
-
-                            case 8:
-                                if(lp2 == 0) {
-                                    RLE_V3_CHECK(buf1,rle_v1,rle_v2,rle_v3)
-
-                                    if(rle_v1 == 1) {
-                                        for(i = 0, j = 0; i < 8; i++, j += width_tbl[1])
-                                            cur_lp[j] = ref_lp[j];
-                                    }
-
-                                    RLE_V2_CHECK(buf1,rle_v2, rle_v3,lp2)
-                                    break;
-                                } else {
-                                    rle_v2 = (*buf1) - 1;
-                                    rle_v1 = 1;
-                                }
-                            case 5:
-                                LP2_CHECK(buf1,rle_v3,lp2)
-                            case 4:
-                                for(i = 0, j = 0; i < 8 - (lp2 * 2); i++, j += width_tbl[1])
-                                    cur_lp[j] = *ref_lp;
-                                lp2 = 4;
-                                break;
-
-                            case 9:
-                                av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
-                                lv1 = *buf1++;
-                                lv = (lv1 & 0x7F) << 1;
-                                lv += (lv << 8);
-                                lv += (lv << 16);
-
-                                for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                    cur_lp[j] = lv;
-
-                                LV1_CHECK(buf1,rle_v3,lv1,lp2)
-                                break;
-
-                            default:
-                                return;
-                            }
-                        }
-
-                        cur_frm_pos += 4;
-                    }
-
-                    cur_frm_pos += (((width * 2) - blks_width) * 4);
-                    flag1 = 0;
-                }
-                break;
-
-            case 10:                    /********** CASE 10 **********/
-                if(ref_vectors == NULL) {
-                    flag1 = 1;
-
-                    for( ; blks_height > 0; blks_height -= 8) {
-                        for(lp1 = 0; lp1 < blks_width; lp1 += 2) {
-                            for(lp2 = 0; lp2 < 4; ) {
-                                k = *buf1++;
-                                cur_lp = ((uint32_t *)cur_frm_pos) + width_tbl[lp2 * 2];
-                                ref_lp = ((uint32_t *)cur_frm_pos) + width_tbl[(lp2 * 2) - 1];
-                                lv1 = ref_lp[0];
-                                lv2 = ref_lp[1];
-                                if(lp2 == 0 && flag1 != 0) {
-#if HAVE_BIGENDIAN
-                                    lv1 = lv1 & 0xFF00FF00;
-                                    lv1 = (lv1 >> 8) | lv1;
-                                    lv2 = lv2 & 0xFF00FF00;
-                                    lv2 = (lv2 >> 8) | lv2;
-#else
-                                    lv1 = lv1 & 0x00FF00FF;
-                                    lv1 = (lv1 << 8) | lv1;
-                                    lv2 = lv2 & 0x00FF00FF;
-                                    lv2 = (lv2 << 8) | lv2;
-#endif
-                                }
-
-                                switch(correction_type_sp[lp2 & 0x01][k]) {
-                                case 0:
-                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][k]) << 1);
-                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(lv2) >> 1) + correctionhighorder_lp[lp2 & 0x01][k]) << 1);
-                                    if(lp2 > 0 || strip->ypos != 0 || flag1 == 0) {
-                                        cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                        cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
-                                    } else {
-                                        cur_lp[0] = cur_lp[width_tbl[1]];
-                                        cur_lp[1] = cur_lp[width_tbl[1]+1];
-                                    }
-                                    lp2++;
-                                    break;
-
-                                case 1:
-                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(lv1) >> 1) + correctionloworder_lp[lp2 & 0x01][*buf1]) << 1);
-                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(lv2) >> 1) + correctionloworder_lp[lp2 & 0x01][k]) << 1);
-                                    if(lp2 > 0 || strip->ypos != 0 || flag1 == 0) {
-                                        cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                        cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
-                                    } else {
-                                        cur_lp[0] = cur_lp[width_tbl[1]];
-                                        cur_lp[1] = cur_lp[width_tbl[1]+1];
-                                    }
-                                    buf1++;
-                                    lp2++;
-                                    break;
-
-                                case 2:
-                                    if(lp2 == 0) {
-                                        if(flag1 != 0) {
-                                            for(i = 0, j = width_tbl[1]; i < 3; i++, j += width_tbl[1]) {
-                                                cur_lp[j] = lv1;
-                                                cur_lp[j+1] = lv2;
-                                            }
-                                            cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                            cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
-                                        } else {
-                                            for(i = 0, j = 0; i < 4; i++, j += width_tbl[1]) {
-                                                cur_lp[j] = lv1;
-                                                cur_lp[j+1] = lv2;
-                                            }
-                                        }
-                                        lp2 += 2;
-                                    }
-                                    break;
-
-                                case 3:
-                                    if(lp2 < 2) {
-                                        if(lp2 == 0 && flag1 != 0) {
-                                            for(i = 0, j = width_tbl[1]; i < 5; i++, j += width_tbl[1]) {
-                                                cur_lp[j] = lv1;
-                                                cur_lp[j+1] = lv2;
-                                            }
-                                            cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                            cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
-                                        } else {
-                                            for(i = 0, j = 0; i < 6 - (lp2 * 2); i++, j += width_tbl[1]) {
-                                                cur_lp[j] = lv1;
-                                                cur_lp[j+1] = lv2;
-                                            }
-                                        }
-                                        lp2 = 3;
-                                    }
-                                    break;
-
-                                case 8:
-                                    if(lp2 == 0) {
-                                        RLE_V3_CHECK(buf1,rle_v1,rle_v2,rle_v3)
-                                        if(rle_v1 == 1) {
-                                            if(flag1 != 0) {
-                                                for(i = 0, j = width_tbl[1]; i < 7; i++, j += width_tbl[1]) {
-                                                    cur_lp[j] = lv1;
-                                                    cur_lp[j+1] = lv2;
-                                                }
-                                                cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                                cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
-                                            } else {
-                                                for(i = 0, j = 0; i < 8; i++, j += width_tbl[1]) {
-                                                    cur_lp[j] = lv1;
-                                                    cur_lp[j+1] = lv2;
-                                                }
-                                            }
-                                        }
-                                        RLE_V2_CHECK(buf1,rle_v2, rle_v3,lp2)
-                                        break;
-                                    } else {
-                                        rle_v1 = 1;
-                                        rle_v2 = (*buf1) - 1;
-                                    }
-                                case 5:
-                                    LP2_CHECK(buf1,rle_v3,lp2)
-                                case 4:
-                                    if(lp2 == 0 && flag1 != 0) {
-                                        for(i = 0, j = width_tbl[1]; i < 7; i++, j += width_tbl[1]) {
-                                            cur_lp[j] = lv1;
-                                            cur_lp[j+1] = lv2;
-                                        }
-                                        cur_lp[0] = ((cur_lp[-width_tbl[1]] >> 1) + (cur_lp[width_tbl[1]] >> 1)) & 0xFEFEFEFE;
-                                        cur_lp[1] = ((cur_lp[-width_tbl[1]+1] >> 1) + (cur_lp[width_tbl[1]+1] >> 1)) & 0xFEFEFEFE;
-                                    } else {
-                                        for(i = 0, j = 0; i < 8 - (lp2 * 2); i++, j += width_tbl[1]) {
-                                            cur_lp[j] = lv1;
-                                            cur_lp[j+1] = lv2;
-                                        }
-                                    }
-                                    lp2 = 4;
-                                    break;
-
-                                case 6:
-                                    lp2 = 4;
-                                    break;
-
-                                case 7:
-                                    if(lp2 == 0) {
-                                        if(rle_v3 != 0)
-                                            rle_v3 = 0;
-                                        else {
-                                            buf1--;
-                                            rle_v3 = 1;
-                                        }
-                                        lp2 = 4;
-                                    }
-                                    break;
-
-                                case 9:
-                                    av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
-                                    lv1 = *buf1;
-                                    lv = (lv1 & 0x7F) << 1;
-                                    lv += (lv << 8);
-                                    lv += (lv << 16);
-                                    for(i = 0, j = 0; i < 8; i++, j += width_tbl[1])
-                                        cur_lp[j] = lv;
-                                    LV1_CHECK(buf1,rle_v3,lv1,lp2)
-                                    break;
-
-                                default:
-                                    return;
-                                }
-                            }
-
-                            cur_frm_pos += 8;
-                        }
-
-                        cur_frm_pos += (((width * 2) - blks_width) * 4);
-                        flag1 = 0;
-                    }
-                } else {
-                    for( ; blks_height > 0; blks_height -= 8) {
-                        for(lp1 = 0; lp1 < blks_width; lp1 += 2) {
-                            for(lp2 = 0; lp2 < 4; ) {
-                                k = *buf1++;
-                                cur_lp = ((uint32_t *)cur_frm_pos) + width_tbl[lp2 * 2];
-                                ref_lp = ((uint32_t *)ref_frm_pos) + width_tbl[lp2 * 2];
-
-                                switch(correction_type_sp[lp2 & 0x01][k]) {
-                                case 0:
-                                    lv1 = correctionloworder_lp[lp2 & 0x01][k];
-                                    lv2 = correctionhighorder_lp[lp2 & 0x01][k];
-                                    cur_lp[0] = av_le2ne32(((av_le2ne32(ref_lp[0]) >> 1) + lv1) << 1);
-                                    cur_lp[1] = av_le2ne32(((av_le2ne32(ref_lp[1]) >> 1) + lv2) << 1);
-                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]]) >> 1) + lv1) << 1);
-                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]+1]) >> 1) + lv2) << 1);
-                                    lp2++;
-                                    break;
-
-                                case 1:
-                                    lv1 = correctionloworder_lp[lp2 & 0x01][*buf1++];
-                                    lv2 = correctionloworder_lp[lp2 & 0x01][k];
-                                    cur_lp[0] = av_le2ne32(((av_le2ne32(ref_lp[0]) >> 1) + lv1) << 1);
-                                    cur_lp[1] = av_le2ne32(((av_le2ne32(ref_lp[1]) >> 1) + lv2) << 1);
-                                    cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]]) >> 1) + lv1) << 1);
-                                    cur_lp[width_tbl[1]+1] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]+1]) >> 1) + lv2) << 1);
-                                    lp2++;
-                                    break;
-
-                                case 2:
-                                    if(lp2 == 0) {
-                                        for(i = 0, j = 0; i < 4; i++, j += width_tbl[1]) {
-                                            cur_lp[j] = ref_lp[j];
-                                            cur_lp[j+1] = ref_lp[j+1];
-                                        }
-                                        lp2 += 2;
-                                    }
-                                    break;
-
-                                case 3:
-                                    if(lp2 < 2) {
-                                        for(i = 0, j = 0; i < 6 - (lp2 * 2); i++, j += width_tbl[1]) {
-                                            cur_lp[j] = ref_lp[j];
-                                            cur_lp[j+1] = ref_lp[j+1];
-                                        }
-                                        lp2 = 3;
-                                    }
-                                    break;
-
-                                case 8:
-                                    if(lp2 == 0) {
-                                        RLE_V3_CHECK(buf1,rle_v1,rle_v2,rle_v3)
-                                        for(i = 0, j = 0; i < 8; i++, j += width_tbl[1]) {
-                                            ((uint32_t *)cur_frm_pos)[j] = ((uint32_t *)ref_frm_pos)[j];
-                                            ((uint32_t *)cur_frm_pos)[j+1] = ((uint32_t *)ref_frm_pos)[j+1];
-                                        }
-                                        RLE_V2_CHECK(buf1,rle_v2, rle_v3,lp2)
-                                        break;
-                                    } else {
-                                        rle_v1 = 1;
-                                        rle_v2 = (*buf1) - 1;
-                                    }
-                                case 5:
-                                case 7:
-                                    LP2_CHECK(buf1,rle_v3,lp2)
-                                case 6:
-                                case 4:
-                                    for(i = 0, j = 0; i < 8 - (lp2 * 2); i++, j += width_tbl[1]) {
-                                        cur_lp[j] = ref_lp[j];
-                                        cur_lp[j+1] = ref_lp[j+1];
-                                    }
-                                    lp2 = 4;
-                                    break;
-
-                                case 9:
-                                    av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
-                                    lv1 = *buf1;
-                                    lv = (lv1 & 0x7F) << 1;
-                                    lv += (lv << 8);
-                                    lv += (lv << 16);
-                                    for(i = 0, j = 0; i < 8; i++, j += width_tbl[1])
-                                        ((uint32_t *)cur_frm_pos)[j] = ((uint32_t *)cur_frm_pos)[j+1] = lv;
-                                    LV1_CHECK(buf1,rle_v3,lv1,lp2)
-                                    break;
-
-                                default:
-                                    return;
-                                }
-                            }
-
-                            cur_frm_pos += 8;
-                            ref_frm_pos += 8;
-                        }
-
-                        cur_frm_pos += (((width * 2) - blks_width) * 4);
-                        ref_frm_pos += (((width * 2) - blks_width) * 4);
-                    }
-                }
-                break;
-
-            case 11:                    /********** CASE 11 **********/
-                if(ref_vectors == NULL)
-                    return;
-
-                for( ; blks_height > 0; blks_height -= 8) {
-                    for(lp1 = 0; lp1 < blks_width; lp1++) {
-                        for(lp2 = 0; lp2 < 4; ) {
-                            k = *buf1++;
-                            cur_lp = ((uint32_t *)cur_frm_pos) + width_tbl[lp2 * 2];
-                            ref_lp = ((uint32_t *)ref_frm_pos) + width_tbl[lp2 * 2];
-
-                            switch(correction_type_sp[lp2 & 0x01][k]) {
-                            case 0:
-                                cur_lp[0] = av_le2ne32(((av_le2ne32(*ref_lp) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
-                                cur_lp[width_tbl[1]] = av_le2ne32(((av_le2ne32(ref_lp[width_tbl[1]]) >> 1) + correction_lp[lp2 & 0x01][k]) << 1);
-                                lp2++;
-                                break;
-
-                            case 1:
-                                lv1 = (unsigned short)(correction_lp[lp2 & 0x01][*buf1++]);
-                                lv2 = (unsigned short)(correction_lp[lp2 & 0x01][k]);
-                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[0]) >> 1) + lv1) << 1);
-                                ((unsigned short *)cur_lp)[0] = av_le2ne16(res);
-                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[1]) >> 1) + lv2) << 1);
-                                ((unsigned short *)cur_lp)[1] = av_le2ne16(res);
-                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[width_tbl[2]]) >> 1) + lv1) << 1);
-                                ((unsigned short *)cur_lp)[width_tbl[2]] = av_le2ne16(res);
-                                res = (unsigned short)(((av_le2ne16(((unsigned short *)ref_lp)[width_tbl[2]+1]) >> 1) + lv2) << 1);
-                                ((unsigned short *)cur_lp)[width_tbl[2]+1] = av_le2ne16(res);
-                                lp2++;
-                                break;
-
-                            case 2:
-                                if(lp2 == 0) {
-                                    for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                        cur_lp[j] = ref_lp[j];
-                                    lp2 += 2;
-                                }
-                                break;
-
-                            case 3:
-                                if(lp2 < 2) {
-                                    for(i = 0, j = 0; i < 6 - (lp2 * 2); i++, j += width_tbl[1])
-                                        cur_lp[j] = ref_lp[j];
-                                    lp2 = 3;
-                                }
-                                break;
-
-                            case 8:
-                                if(lp2 == 0) {
-                                    RLE_V3_CHECK(buf1,rle_v1,rle_v2,rle_v3)
-
-                                    for(i = 0, j = 0; i < 8; i++, j += width_tbl[1])
-                                        cur_lp[j] = ref_lp[j];
-
-                                    RLE_V2_CHECK(buf1,rle_v2, rle_v3,lp2)
-                                    break;
-                                } else {
-                                    rle_v1 = 1;
-                                    rle_v2 = (*buf1) - 1;
-                                }
-                            case 5:
-                            case 7:
-                                LP2_CHECK(buf1,rle_v3,lp2)
-                            case 4:
-                            case 6:
-                                for(i = 0, j = 0; i < 8 - (lp2 * 2); i++, j += width_tbl[1])
-                                    cur_lp[j] = ref_lp[j];
-                                lp2 = 4;
-                                break;
-
-                            case 9:
-                                av_log(s->avctx, AV_LOG_ERROR, "UNTESTED.\n");
-                                lv1 = *buf1++;
-                                lv = (lv1 & 0x7F) << 1;
-                                lv += (lv << 8);
-                                lv += (lv << 16);
-                                for(i = 0, j = 0; i < 4; i++, j += width_tbl[1])
-                                    cur_lp[j] = lv;
-                                LV1_CHECK(buf1,rle_v3,lv1,lp2)
-                                break;
-
-                            default:
-                                return;
-                            }
-                        }
-
-                        cur_frm_pos += 4;
-                        ref_frm_pos += 4;
-                    }
-
-                    cur_frm_pos += (((width * 2) - blks_width) * 4);
-                    ref_frm_pos += (((width * 2) - blks_width) * 4);
-                }
-                break;
-
-            default:
-                return;
-            }
+            /* move to next horizontal block */
+            block     += 4 << h_zoom;
+            ref_block += 4 << h_zoom;
         }
 
-        for( ; strip >= strip_tbl; strip--) {
-            if(strip->split_flag != 0) {
-                strip->split_flag = 0;
-                strip->usl7 = (strip-1)->usl7;
-
-                if(strip->split_direction) {
-                    strip->xpos += strip->width;
-                    strip->width = (strip-1)->width - strip->width;
-                    if(region_160_width <= strip->xpos && width < strip->width + strip->xpos)
-                        strip->width = width - strip->xpos;
-                } else {
-                    strip->ypos += strip->height;
-                    strip->height = (strip-1)->height - strip->height;
-                }
-                break;
-            }
-        }
+        /* move to next line of blocks */
+        ref_block += blk_row_offset;
+        block     += blk_row_offset;
     }
+    return IV3_NOERR;
 }
 
-static av_cold int indeo3_decode_init(AVCodecContext *avctx)
+
+/**
+ *  Decode a vector-quantized cell.
+ *  It consists of several routines, each of which handles one or more "modes"
+ *  with which a cell can be encoded.
+ *
+ *  @param ctx      pointer to the decoder context
+ *  @param avctx    ptr to the AVCodecContext
+ *  @param plane    pointer to the plane descriptor
+ *  @param cell     pointer to the cell  descriptor
+ *  @param data_ptr pointer to the compressed data
+ *  @param last_ptr pointer to the last byte to catch reads past end of buffer
+ *  @return         number of consumed bytes or negative number in case of error
+ */
+static int decode_cell(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
+                       Plane *plane, Cell *cell, const uint8_t *data_ptr,
+                       const uint8_t *last_ptr)
 {
-    Indeo3DecodeContext *s = avctx->priv_data;
-    int ret = 0;
+    int           x, mv_x, mv_y, mode, vq_index, prim_indx, second_indx;
+    int           zoom_fac;
+    int           offset, error = 0, swap_quads[2];
+    uint8_t       code, *block, *ref_block = 0;
+    const vqEntry *delta[2];
+    const uint8_t *data_start = data_ptr;
 
-    s->avctx = avctx;
-    s->width = avctx->width;
-    s->height = avctx->height;
-    avctx->pix_fmt = PIX_FMT_YUV410P;
-    avcodec_get_frame_defaults(&s->frame);
+    /* get coding mode and VQ table index from the VQ descriptor byte */
+    code     = *data_ptr++;
+    mode     = code >> 4;
+    vq_index = code & 0xF;
 
-    if (!(ret = build_modpred(s)))
-        ret = iv_alloc_frames(s);
-    if (ret)
-        iv_free_func(s);
-
-    return ret;
-}
-
-static int iv_decode_frame(AVCodecContext *avctx,
-                           const uint8_t *buf, int buf_size)
-{
-    Indeo3DecodeContext *s = avctx->priv_data;
-    unsigned int image_width, image_height,
-                 chroma_width, chroma_height;
-    unsigned int flags, cb_offset, data_size,
-                  y_offset, v_offset, u_offset, mc_vector_count;
-    const uint8_t *hdr_pos, *buf_pos;
-
-    buf_pos = buf;
-    buf_pos += 18; /* skip OS header (16 bytes) and version number */
-
-    flags = bytestream_get_le16(&buf_pos);
-    data_size = bytestream_get_le32(&buf_pos);
-    cb_offset = *buf_pos++;
-    buf_pos += 3; /* skip reserved byte and checksum */
-    image_height = bytestream_get_le16(&buf_pos);
-    image_width  = bytestream_get_le16(&buf_pos);
-
-    if(av_image_check_size(image_width, image_height, 0, avctx))
-        return -1;
-    if (image_width != avctx->width || image_height != avctx->height) {
-        int ret;
-        avcodec_set_dimensions(avctx, image_width, image_height);
-        s->width  = avctx->width;
-        s->height = avctx->height;
-        ret = iv_alloc_frames(s);
-        if (ret < 0) {
-            s->width = s->height = 0;
-            return ret;
-        }
-    }
-
-    chroma_height = ((image_height >> 2) + 3) & 0x7ffc;
-    chroma_width = ((image_width >> 2) + 3) & 0x7ffc;
-    y_offset = bytestream_get_le32(&buf_pos);
-    v_offset = bytestream_get_le32(&buf_pos);
-    u_offset = bytestream_get_le32(&buf_pos);
-    buf_pos += 4; /* reserved */
-    hdr_pos = buf_pos;
-    if(data_size == 0x80) return 4;
-
-    if(FFMAX3(y_offset, v_offset, u_offset) >= buf_size-16) {
-        av_log(s->avctx, AV_LOG_ERROR, "y/u/v offset outside buffer\n");
-        return -1;
-    }
-
-    if(flags & 0x200) {
-        s->cur_frame = s->iv_frame + 1;
-        s->ref_frame = s->iv_frame;
+    /* setup output and reference pointers */
+    offset = (cell->ypos << 2) * plane->pitch + (cell->xpos << 2);
+    block  =  plane->pixels[ctx->buf_sel] + offset;
+    if (!cell->mv_ptr) {
+        /* use previous line as reference for INTRA cells */
+        ref_block = block - plane->pitch;
+    } else if (mode >= 10) {
+        /* for mode 10 and 11 INTER first copy the predicted cell into the current one */
+        /* so we don't need to do data copying for each RLE code later */
+        copy_cell(ctx, plane, cell);
     } else {
-        s->cur_frame = s->iv_frame;
-        s->ref_frame = s->iv_frame + 1;
+        /* set the pointer to the reference pixels for modes 0-4 INTER */
+        mv_y      = cell->mv_ptr[0];
+        mv_x      = cell->mv_ptr[1];
+        offset   += mv_y * plane->pitch + mv_x;
+        ref_block = plane->pixels[ctx->buf_sel ^ 1] + offset;
     }
 
-    buf_pos = buf + 16 + y_offset;
-    mc_vector_count = bytestream_get_le32(&buf_pos);
-    if(2LL*mc_vector_count >= buf_size-16-y_offset) {
-        av_log(s->avctx, AV_LOG_ERROR, "mc_vector_count too large\n");
-        return -1;
+    /* select VQ tables as follows: */
+    /* modes 0 and 3 use only the primary table for all lines in a block */
+    /* while modes 1 and 4 switch between primary and secondary tables on alternate lines */
+    if (mode == 1 || mode == 4) {
+        code        = ctx->alt_quant[vq_index];
+        prim_indx   = (code >> 4)  + ctx->cb_offset;
+        second_indx = (code & 0xF) + ctx->cb_offset;
+    } else {
+        vq_index += ctx->cb_offset;
+        prim_indx = second_indx = vq_index;
     }
 
-    iv_Decode_Chunk(s, s->cur_frame->Ybuf, s->ref_frame->Ybuf, image_width,
-                    image_height, buf_pos + mc_vector_count * 2, cb_offset, hdr_pos, buf_pos,
-                    FFMIN(image_width, 160));
+    if (prim_indx >= 24 || second_indx >= 24) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid VQ table indexes! Primary: %d, secondary: %d!\n",
+               prim_indx, second_indx);
+        return AVERROR_INVALIDDATA;
+    }
 
-    if (!(s->avctx->flags & CODEC_FLAG_GRAY))
-    {
+    delta[0] = &vq_tab[second_indx];
+    delta[1] = &vq_tab[prim_indx];
+    swap_quads[0] = second_indx >= 16;
+    swap_quads[1] = prim_indx   >= 16;
 
-        buf_pos = buf + 16 + v_offset;
-        mc_vector_count = bytestream_get_le32(&buf_pos);
-        if(2LL*mc_vector_count >= buf_size-16-v_offset) {
-            av_log(s->avctx, AV_LOG_ERROR, "mc_vector_count too large\n");
-            return -1;
+    /* requantize the prediction if VQ index of this cell differs from VQ index */
+    /* of the predicted cell in order to avoid overflows. */
+    if (vq_index >= 8 && ref_block) {
+        for (x = 0; x < cell->width << 2; x++)
+            ref_block[x] = requant_tab[vq_index & 7][ref_block[x]];
+    }
+
+    error = IV3_NOERR;
+
+    switch (mode) {
+    case 0: /*------------------ MODES 0 & 1 (4x4 block processing) --------------------*/
+    case 1:
+    case 3: /*------------------ MODES 3 & 4 (4x8 block processing) --------------------*/
+    case 4:
+        if (mode >= 3 && cell->mv_ptr) {
+            av_log(avctx, AV_LOG_ERROR, "Attempt to apply Mode 3/4 to an INTER cell!\n");
+            return AVERROR_INVALIDDATA;
         }
 
-        iv_Decode_Chunk(s, s->cur_frame->Vbuf, s->ref_frame->Vbuf, chroma_width,
-                chroma_height, buf_pos + mc_vector_count * 2, cb_offset, hdr_pos, buf_pos,
-                FFMIN(chroma_width, 40));
+        zoom_fac = mode >= 3;
+        error = decode_cell_data(cell, block, ref_block, plane->pitch, 0, zoom_fac,
+                                 mode, delta, swap_quads, &data_ptr, last_ptr);
+        break;
+    case 10: /*-------------------- MODE 10 (8x8 block processing) ---------------------*/
+    case 11: /*----------------- MODE 11 (4x8 INTER block processing) ------------------*/
+        if (mode == 10 && !cell->mv_ptr) { /* MODE 10 INTRA processing */
+            error = decode_cell_data(cell, block, ref_block, plane->pitch, 1, 1,
+                                     mode, delta, swap_quads, &data_ptr, last_ptr);
+        } else { /* mode 10 and 11 INTER processing */
+            if (mode == 11 && !cell->mv_ptr) {
+               av_log(avctx, AV_LOG_ERROR, "Attempt to use Mode 11 for an INTRA cell!\n");
+               return AVERROR_INVALIDDATA;
+            }
 
-        buf_pos = buf + 16 + u_offset;
-        mc_vector_count = bytestream_get_le32(&buf_pos);
-        if(2LL*mc_vector_count >= buf_size-16-u_offset) {
-            av_log(s->avctx, AV_LOG_ERROR, "mc_vector_count too large\n");
-            return -1;
+            zoom_fac = mode == 10;
+            error = decode_cell_data(cell, block, ref_block, plane->pitch,
+                                     zoom_fac, 1, mode, delta, swap_quads,
+                                     &data_ptr, last_ptr);
         }
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR, "Unsupported coding mode: %d\n", mode);
+        return AVERROR_INVALIDDATA;
+    }//switch mode
 
-        iv_Decode_Chunk(s, s->cur_frame->Ubuf, s->ref_frame->Ubuf, chroma_width,
-                chroma_height, buf_pos + mc_vector_count * 2, cb_offset, hdr_pos, buf_pos,
-                FFMIN(chroma_width, 40));
-
+    switch (error) {
+    case IV3_BAD_RLE:
+        av_log(avctx, AV_LOG_ERROR, "Mode %d: RLE code %X is not allowed at the current line\n",
+               mode, data_ptr[-1]);
+        return AVERROR_INVALIDDATA;
+    case IV3_BAD_DATA:
+        av_log(avctx, AV_LOG_ERROR, "Mode %d: invalid VQ data\n", mode);
+        return AVERROR_INVALIDDATA;
+    case IV3_BAD_COUNTER:
+        av_log(avctx, AV_LOG_ERROR, "Mode %d: RLE-FB invalid counter: %d\n", mode, code);
+        return AVERROR_INVALIDDATA;
+    case IV3_UNSUPPORTED:
+        av_log(avctx, AV_LOG_ERROR, "Mode %d: unsupported RLE code: %X\n", mode, data_ptr[-1]);
+        return AVERROR_INVALIDDATA;
+    case IV3_OUT_OF_DATA:
+        av_log(avctx, AV_LOG_ERROR, "Mode %d: attempt to read past end of buffer\n", mode);
+        return AVERROR_INVALIDDATA;
     }
 
-    return 8;
+    return data_ptr - data_start; /* report number of bytes consumed from the input buffer */
 }
 
-static int indeo3_decode_frame(AVCodecContext *avctx,
-                               void *data, int *data_size,
-                               AVPacket *avpkt)
+
+/* Binary tree codes. */
+enum {
+    H_SPLIT    = 0,
+    V_SPLIT    = 1,
+    INTRA_NULL = 2,
+    INTER_DATA = 3
+};
+
+
+#define SPLIT_CELL(size, new_size) (new_size) = ((size) > 2) ? ((((size) + 2) >> 2) << 1) : 1
+
+#define UPDATE_BITPOS(n) \
+    ctx->skip_bits  += (n); \
+    ctx->need_resync = 1
+
+#define RESYNC_BITSTREAM \
+    if (ctx->need_resync && !(get_bits_count(&ctx->gb) & 7)) { \
+        skip_bits_long(&ctx->gb, ctx->skip_bits);              \
+        ctx->skip_bits   = 0;                                  \
+        ctx->need_resync = 0;                                  \
+    }
+
+#define CHECK_CELL \
+    if (curr_cell.xpos + curr_cell.width > (plane->width >> 2) ||               \
+        curr_cell.ypos + curr_cell.height > (plane->height >> 2)) {             \
+        av_log(avctx, AV_LOG_ERROR, "Invalid cell: x=%d, y=%d, w=%d, h=%d\n",   \
+               curr_cell.xpos, curr_cell.ypos, curr_cell.width, curr_cell.height); \
+        return AVERROR_INVALIDDATA;                                                              \
+    }
+
+
+static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
+                         Plane *plane, int code, Cell *ref_cell,
+                         const int depth, const int strip_width)
 {
+    Cell    curr_cell;
+    int     bytes_used;
+
+    if (depth <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "Stack overflow (corrupted binary tree)!\n");
+        return AVERROR_INVALIDDATA; // unwind recursion
+    }
+
+    curr_cell = *ref_cell; // clone parent cell
+    if (code == H_SPLIT) {
+        SPLIT_CELL(ref_cell->height, curr_cell.height);
+        ref_cell->ypos   += curr_cell.height;
+        ref_cell->height -= curr_cell.height;
+    } else if (code == V_SPLIT) {
+        if (curr_cell.width > strip_width) {
+            /* split strip */
+            curr_cell.width = (curr_cell.width <= (strip_width << 1) ? 1 : 2) * strip_width;
+        } else
+            SPLIT_CELL(ref_cell->width, curr_cell.width);
+        ref_cell->xpos  += curr_cell.width;
+        ref_cell->width -= curr_cell.width;
+    }
+
+    while (1) { /* loop until return */
+        RESYNC_BITSTREAM;
+        switch (code = get_bits(&ctx->gb, 2)) {
+        case H_SPLIT:
+        case V_SPLIT:
+            if (parse_bintree(ctx, avctx, plane, code, &curr_cell, depth - 1, strip_width))
+                return AVERROR_INVALIDDATA;
+            break;
+        case INTRA_NULL:
+            if (!curr_cell.tree) { /* MC tree INTRA code */
+                curr_cell.mv_ptr = 0; /* mark the current strip as INTRA */
+                curr_cell.tree   = 1; /* enter the VQ tree */
+            } else { /* VQ tree NULL code */
+                RESYNC_BITSTREAM;
+                code = get_bits(&ctx->gb, 2);
+                if (code >= 2) {
+                    av_log(avctx, AV_LOG_ERROR, "Invalid VQ_NULL code: %d\n", code);
+                    return AVERROR_INVALIDDATA;
+                }
+                if (code == 1)
+                    av_log(avctx, AV_LOG_ERROR, "SkipCell procedure not implemented yet!\n");
+
+                CHECK_CELL
+                copy_cell(ctx, plane, &curr_cell);
+                return 0;
+            }
+            break;
+        case INTER_DATA:
+            if (!curr_cell.tree) { /* MC tree INTER code */
+                /* get motion vector index and setup the pointer to the mv set */
+                if (!ctx->need_resync)
+                    ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
+                curr_cell.mv_ptr = &ctx->mc_vectors[*(ctx->next_cell_data++) << 1];
+                curr_cell.tree   = 1; /* enter the VQ tree */
+                UPDATE_BITPOS(8);
+            } else { /* VQ tree DATA code */
+                if (!ctx->need_resync)
+                    ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
+
+                CHECK_CELL
+                bytes_used = decode_cell(ctx, avctx, plane, &curr_cell,
+                                         ctx->next_cell_data, ctx->last_byte);
+                if (bytes_used < 0)
+                    return AVERROR_INVALIDDATA;
+
+                UPDATE_BITPOS(bytes_used << 3);
+                ctx->next_cell_data += bytes_used;
+                return 0;
+            }
+            break;
+        }
+    }//while
+
+    return 0;
+}
+
+
+static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
+                        Plane *plane, const uint8_t *data, int32_t data_size,
+                        int32_t strip_width)
+{
+    Cell            curr_cell;
+    int             num_vectors;
+
+    /* each plane data starts with mc_vector_count field, */
+    /* an optional array of motion vectors followed by the vq data */
+    num_vectors = bytestream_get_le32(&data);
+    ctx->mc_vectors  = num_vectors ? data : 0;
+
+    /* init the bitreader */
+    init_get_bits(&ctx->gb, &data[num_vectors * 2], data_size << 3);
+    ctx->skip_bits   = 0;
+    ctx->need_resync = 0;
+
+    ctx->last_byte = data + data_size - 1;
+
+    /* initialize the 1st cell and set its dimensions to whole plane */
+    curr_cell.xpos   = curr_cell.ypos = 0;
+    curr_cell.width  = plane->width  >> 2;
+    curr_cell.height = plane->height >> 2;
+    curr_cell.tree   = 0; // we are in the MC tree now
+    curr_cell.mv_ptr = 0; // no motion vector = INTRA cell
+
+    return parse_bintree(ctx, avctx, plane, INTRA_NULL, &curr_cell, CELL_STACK_MAX, strip_width);
+}
+
+
+#define OS_HDR_ID   MKBETAG('F', 'R', 'M', 'H')
+
+static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
+                                const uint8_t *buf, int buf_size)
+{
+    const uint8_t   *buf_ptr = buf, *bs_hdr;
+    uint32_t        frame_num, word2, check_sum, data_size;
+    uint32_t        y_offset, u_offset, v_offset, starts[3], ends[3];
+    uint16_t        height, width;
+    int             i, j;
+
+    /* parse and check the OS header */
+    frame_num = bytestream_get_le32(&buf_ptr);
+    word2     = bytestream_get_le32(&buf_ptr);
+    check_sum = bytestream_get_le32(&buf_ptr);
+    data_size = bytestream_get_le32(&buf_ptr);
+
+    if ((frame_num ^ word2 ^ data_size ^ OS_HDR_ID) != check_sum) {
+        av_log(avctx, AV_LOG_ERROR, "OS header checksum mismatch!\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    /* parse the bitstream header */
+    bs_hdr = buf_ptr;
+
+    if (bytestream_get_le16(&buf_ptr) != 32) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported codec version!\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    ctx->frame_num   =  frame_num;
+    ctx->frame_flags =  bytestream_get_le16(&buf_ptr);
+    ctx->data_size   = (bytestream_get_le32(&buf_ptr) + 7) >> 3;
+    ctx->cb_offset   = *buf_ptr++;
+
+    if (ctx->data_size == 16)
+        return 4;
+    if (ctx->data_size > buf_size)
+        ctx->data_size = buf_size;
+
+    buf_ptr += 3; // skip reserved byte and checksum
+
+    /* check frame dimensions */
+    height = bytestream_get_le16(&buf_ptr);
+    width  = bytestream_get_le16(&buf_ptr);
+    if (av_image_check_size(width, height, 0, avctx))
+        return AVERROR_INVALIDDATA;
+
+    if (width != ctx->width || height != ctx->height) {
+        av_dlog(avctx, "Frame dimensions changed!\n");
+
+        ctx->width  = width;
+        ctx->height = height;
+
+        free_frame_buffers(ctx);
+        allocate_frame_buffers(ctx, avctx);
+        avcodec_set_dimensions(avctx, width, height);
+    }
+
+    y_offset = bytestream_get_le32(&buf_ptr);
+    v_offset = bytestream_get_le32(&buf_ptr);
+    u_offset = bytestream_get_le32(&buf_ptr);
+
+    /* unfortunately there is no common order of planes in the buffer */
+    /* so we use that sorting algo for determining planes data sizes  */
+    starts[0] = y_offset;
+    starts[1] = v_offset;
+    starts[2] = u_offset;
+
+    for (j = 0; j < 3; j++) {
+        ends[j] = ctx->data_size;
+        for (i = 2; i >= 0; i--)
+            if (starts[i] < ends[j] && starts[i] > starts[j])
+                ends[j] = starts[i];
+    }
+
+    ctx->y_data_size = ends[0] - starts[0];
+    ctx->v_data_size = ends[1] - starts[1];
+    ctx->u_data_size = ends[2] - starts[2];
+    if (FFMAX3(y_offset, v_offset, u_offset) >= ctx->data_size - 16 ||
+        FFMIN3(ctx->y_data_size, ctx->v_data_size, ctx->u_data_size) <= 0) {
+        av_log(avctx, AV_LOG_ERROR, "One of the y/u/v offsets is invalid\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    ctx->y_data_ptr = bs_hdr + y_offset;
+    ctx->v_data_ptr = bs_hdr + v_offset;
+    ctx->u_data_ptr = bs_hdr + u_offset;
+    ctx->alt_quant  = buf_ptr + sizeof(uint32_t);
+
+    if (ctx->data_size == 16) {
+        av_log(avctx, AV_LOG_DEBUG, "Sync frame encountered!\n");
+        return 16;
+    }
+
+    if (ctx->frame_flags & BS_8BIT_PEL) {
+        av_log_ask_for_sample(avctx, "8-bit pixel format\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    if (ctx->frame_flags & BS_MV_X_HALF || ctx->frame_flags & BS_MV_Y_HALF) {
+        av_log_ask_for_sample(avctx, "halfpel motion vectors\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    return 0;
+}
+
+
+/**
+ *  Convert and output the current plane.
+ *  All pixel values will be upsampled by shifting right by one bit.
+ *
+ *  @param[in]  plane        pointer to the descriptor of the plane being processed
+ *  @param[in]  buf_sel      indicates which frame buffer the input data stored in
+ *  @param[out] dst          pointer to the buffer receiving converted pixels
+ *  @param[in]  dst_pitch    pitch for moving to the next y line
+ */
+static void output_plane(const Plane *plane, int buf_sel, uint8_t *dst, int dst_pitch)
+{
+    int             x,y;
+    const uint8_t   *src  = plane->pixels[buf_sel];
+    uint32_t        pitch = plane->pitch;
+
+    for (y = 0; y < plane->height; y++) {
+        /* convert four pixels at once using SWAR */
+        for (x = 0; x < plane->width >> 2; x++) {
+            AV_WN32A(dst, (AV_RN32A(src) & 0x7F7F7F7F) << 1);
+            src += 4;
+            dst += 4;
+        }
+
+        for (x <<= 2; x < plane->width; x++)
+            *dst++ = *src++ << 1;
+
+        src += pitch     - plane->width;
+        dst += dst_pitch - plane->width;
+    }
+}
+
+
+static av_cold int decode_init(AVCodecContext *avctx)
+{
+    Indeo3DecodeContext *ctx = avctx->priv_data;
+
+    ctx->avctx     = avctx;
+    ctx->width     = avctx->width;
+    ctx->height    = avctx->height;
+    avctx->pix_fmt = PIX_FMT_YUV410P;
+    avcodec_get_frame_defaults(&ctx->frame);
+
+    build_requant_tab();
+
+    dsputil_init(&ctx->dsp, avctx);
+
+    allocate_frame_buffers(ctx, avctx);
+
+    return 0;
+}
+
+
+static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+                        AVPacket *avpkt)
+{
+    Indeo3DecodeContext *ctx = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
-    Indeo3DecodeContext *s=avctx->priv_data;
-    uint8_t *src, *dest;
-    int y;
+    int buf_size       = avpkt->size;
+    int res;
 
-    if (iv_decode_frame(avctx, buf, buf_size) < 0)
-        return -1;
+    res = decode_frame_headers(ctx, avctx, buf, buf_size);
+    if (res < 0)
+        return res;
 
-    if(s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
-
-    s->frame.reference = 0;
-    if(avctx->get_buffer(avctx, &s->frame) < 0) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
-        return -1;
+    /* skip sync(null) frames */
+    if (res) {
+        // we have processed 16 bytes but no data was decoded
+        *data_size = 0;
+        return buf_size;
     }
 
-    src = s->cur_frame->Ybuf;
-    dest = s->frame.data[0];
-    for (y = 0; y < s->height; y++) {
-        memcpy(dest, src, s->cur_frame->y_w);
-        src += s->cur_frame->y_w;
-        dest += s->frame.linesize[0];
+    /* skip droppable INTER frames if requested */
+    if (ctx->frame_flags & BS_NONREF &&
+       (avctx->skip_frame >= AVDISCARD_NONREF))
+        return 0;
+
+    /* skip INTER frames if requested */
+    if (!(ctx->frame_flags & BS_KEYFRAME) && avctx->skip_frame >= AVDISCARD_NONKEY)
+        return 0;
+
+    /* use BS_BUFFER flag for buffer switching */
+    ctx->buf_sel = (ctx->frame_flags >> BS_BUFFER) & 1;
+
+    /* decode luma plane */
+    if ((res = decode_plane(ctx, avctx, ctx->planes, ctx->y_data_ptr, ctx->y_data_size, 40)))
+        return res;
+
+    /* decode chroma planes */
+    if ((res = decode_plane(ctx, avctx, &ctx->planes[1], ctx->u_data_ptr, ctx->u_data_size, 10)))
+        return res;
+
+    if ((res = decode_plane(ctx, avctx, &ctx->planes[2], ctx->v_data_ptr, ctx->v_data_size, 10)))
+        return res;
+
+    if (ctx->frame.data[0])
+        avctx->release_buffer(avctx, &ctx->frame);
+
+    ctx->frame.reference = 0;
+    if ((res = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+        av_log(ctx->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return res;
     }
 
-    if (!(s->avctx->flags & CODEC_FLAG_GRAY))
-    {
-        src = s->cur_frame->Ubuf;
-        dest = s->frame.data[1];
-        for (y = 0; y < s->height / 4; y++) {
-            memcpy(dest, src, s->cur_frame->uv_w);
-            src += s->cur_frame->uv_w;
-            dest += s->frame.linesize[1];
-        }
+    output_plane(&ctx->planes[0], ctx->buf_sel, ctx->frame.data[0], ctx->frame.linesize[0]);
+    output_plane(&ctx->planes[1], ctx->buf_sel, ctx->frame.data[1], ctx->frame.linesize[1]);
+    output_plane(&ctx->planes[2], ctx->buf_sel, ctx->frame.data[2], ctx->frame.linesize[2]);
 
-        src = s->cur_frame->Vbuf;
-        dest = s->frame.data[2];
-        for (y = 0; y < s->height / 4; y++) {
-            memcpy(dest, src, s->cur_frame->uv_w);
-            src += s->cur_frame->uv_w;
-            dest += s->frame.linesize[2];
-        }
-    }
-
-    *data_size=sizeof(AVFrame);
-    *(AVFrame*)data= s->frame;
+    *data_size      = sizeof(AVFrame);
+    *(AVFrame*)data = ctx->frame;
 
     return buf_size;
 }
 
-static av_cold int indeo3_decode_end(AVCodecContext *avctx)
+
+static av_cold int decode_close(AVCodecContext *avctx)
 {
-    Indeo3DecodeContext *s = avctx->priv_data;
+    Indeo3DecodeContext *ctx = avctx->priv_data;
 
-    iv_free_func(s);
+    free_frame_buffers(avctx->priv_data);
 
-    if (s->frame.data[0])
-        avctx->release_buffer(avctx, &s->frame);
+    if (ctx->frame.data[0])
+        avctx->release_buffer(avctx, &ctx->frame);
 
     return 0;
 }
@@ -1151,9 +1060,8 @@ AVCodec ff_indeo3_decoder = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_INDEO3,
     .priv_data_size = sizeof(Indeo3DecodeContext),
-    .init           = indeo3_decode_init,
-    .close          = indeo3_decode_end,
-    .decode         = indeo3_decode_frame,
-    .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
+    .init           = decode_init,
+    .close          = decode_close,
+    .decode         = decode_frame,
+    .long_name      = NULL_IF_CONFIG_SMALL("Intel Indeo 3"),
 };

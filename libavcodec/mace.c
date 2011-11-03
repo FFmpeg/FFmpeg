@@ -27,7 +27,7 @@
 #include "avcodec.h"
 
 /*
- * Adapted to ffmpeg by Francois Revol <revol@free.fr>
+ * Adapted to libavcodec by Francois Revol <revol@free.fr>
  * (removed 68k REG stuff, changed types, added some statics and consts,
  * libavcodec api, context stuff, interlaced stereo out).
  */

@@ -345,9 +345,9 @@ lost_sync:
 }
 
 AVCodecParser ff_mlp_parser = {
-    { CODEC_ID_MLP, CODEC_ID_TRUEHD },
-    sizeof(MLPParseContext),
-    mlp_init,
-    mlp_parse,
-    ff_parse_close,
+    .codec_ids      = { CODEC_ID_MLP, CODEC_ID_TRUEHD },
+    .priv_data_size = sizeof(MLPParseContext),
+    .parser_init    = mlp_init,
+    .parser_parse   = mlp_parse,
+    .parser_close   = ff_parse_close,
 };

@@ -71,6 +71,7 @@ easier to use. The changes are:
 - Pulseaudio input device
 - Prores encoder
 - Video Decoder Acceleration (VDA) HWAccel module.
+- replacement Indeo 3 decoder
 
 version 0.8:
 

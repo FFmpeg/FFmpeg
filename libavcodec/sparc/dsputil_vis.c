@@ -19,7 +19,7 @@
  */
 
 /* The *no_round* functions have been added by James A. Morrison, 2003,2004.
-   The vis code from libmpeg2 was adapted for ffmpeg by James A. Morrison.
+   The vis code from libmpeg2 was adapted for libavcodec by James A. Morrison.
  */
 
 #include "config.h"

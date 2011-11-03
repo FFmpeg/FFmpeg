@@ -1588,9 +1588,6 @@ static av_cold int allocate_tables(AVCodecContext *avctx)
     return 0;
 }
 
-/*
- * This is the ffmpeg/libavcodec API init function.
- */
 static av_cold int vp3_decode_init(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -1842,9 +1839,6 @@ static int vp3_update_thread_context(AVCodecContext *dst, const AVCodecContext *
     return 0;
 }
 
-/*
- * This is the ffmpeg/libavcodec API frame decode function.
- */
 static int vp3_decode_frame(AVCodecContext *avctx,
                             void *data, int *data_size,
                             AVPacket *avpkt)
@@ -2002,9 +1996,6 @@ error:
 
 static void vp3_decode_flush(AVCodecContext *avctx);
 
-/*
- * This is the ffmpeg/libavcodec API module cleanup function.
- */
 static av_cold int vp3_decode_end(AVCodecContext *avctx)
 {
     Vp3DecodeContext *s = avctx->priv_data;

@@ -26,7 +26,7 @@
 
 #define RSO_HEADER_SIZE 8
 
-/* The ffmpeg codecs we support, and the IDs they have in the file */
+/* The libavcodec codecs we support, and the IDs they have in the file */
 extern const AVCodecTag ff_codec_rso_tags[];
 
 #endif /* AVFORMAT_RSO_H */

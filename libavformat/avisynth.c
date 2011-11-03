@@ -1,5 +1,5 @@
 /*
- * AVISynth support for ffmpeg system
+ * AVISynth support
  * Copyright (c) 2006 DivX, Inc.
  *
  * This file is part of FFmpeg.

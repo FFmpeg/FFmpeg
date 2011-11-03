@@ -61,9 +61,9 @@ static av_cold int aac_parse_init(AVCodecParserContext *s1)
 
 
 AVCodecParser ff_aac_parser = {
-    { CODEC_ID_AAC },
-    sizeof(AACAC3ParseContext),
-    aac_parse_init,
-    ff_aac_ac3_parse,
-    ff_parse_close,
+    .codec_ids      = { CODEC_ID_AAC },
+    .priv_data_size = sizeof(AACAC3ParseContext),
+    .parser_init    = aac_parse_init,
+    .parser_parse   = ff_aac_ac3_parse,
+    .parser_close   = ff_parse_close,
 };
