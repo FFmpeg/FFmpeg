@@ -744,7 +744,7 @@ static void decode_lowdelay(DiracContext *s)
     for (slice_y = 0; bufsize > 0 && slice_y < s->lowdelay.num_y; slice_y++)
         for (slice_x = 0; bufsize > 0 && slice_x < s->lowdelay.num_x; slice_x++) {
             bytes = (slice_num+1) * s->lowdelay.bytes.num / s->lowdelay.bytes.den
-                   - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
+                - slice_num    * s->lowdelay.bytes.num / s->lowdelay.bytes.den;
 
             slices[slice_num].bytes   = bytes;
             slices[slice_num].slice_x = slice_x;
@@ -830,8 +830,7 @@ static int dirac_unpack_prediction_parameters(DiracContext *s)
     /* Luma and Chroma are equal. 11.2.3 */
     idx = svq3_get_ue_golomb(gb); /* [DIRAC_STD] index */
 
-    if (idx > 4)
-    {
+    if (idx > 4) {
         av_log(s->avctx, AV_LOG_ERROR, "Block prediction index too high\n");
         return -1;
     }
@@ -1893,15 +1892,15 @@ static int dirac_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 }
 
 AVCodec ff_dirac_decoder = {
-    "dirac",
-    AVMEDIA_TYPE_VIDEO,
-    CODEC_ID_DIRAC,
-    sizeof(DiracContext),
-    dirac_decode_init,
-    NULL,
-    dirac_decode_end,
-    dirac_decode_frame,
-    CODEC_CAP_DELAY,
-    .flush = dirac_decode_flush,
-    .long_name = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
+    .name           = "dirac",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_DIRAC,
+    .priv_data_size = sizeof(DiracContext),
+    .init           = dirac_decode_init,
+    .encode         = NULL,
+    .close          = dirac_decode_end,
+    .decode         = dirac_decode_frame,
+    .capabilities   = CODEC_CAP_DELAY,
+    .flush          = dirac_decode_flush,
+    .long_name      = NULL_IF_CONFIG_SMALL("BBC Dirac VC-2"),
 };
