@@ -129,18 +129,18 @@ static int read_kuki_chunk(AVFormatContext *s, int64_t size)
             avio_read(pb, st->codec->extradata + ALAC_HEADER - ALAC_NEW_KUKI, ALAC_NEW_KUKI);
             st->codec->extradata_size = ALAC_HEADER;
         } else {
-        if (size < ALAC_PREAMBLE + ALAC_HEADER) {
-            av_log(s, AV_LOG_ERROR, "invalid ALAC magic cookie\n");
-            avio_skip(pb, size);
-            return AVERROR_INVALIDDATA;
-        }
-        avio_skip(pb, ALAC_PREAMBLE);
-        st->codec->extradata = av_mallocz(ALAC_HEADER + FF_INPUT_BUFFER_PADDING_SIZE);
-        if (!st->codec->extradata)
-            return AVERROR(ENOMEM);
-        avio_read(pb, st->codec->extradata, ALAC_HEADER);
-        st->codec->extradata_size = ALAC_HEADER;
-        avio_skip(pb, size - ALAC_PREAMBLE - ALAC_HEADER);
+            if (size < ALAC_PREAMBLE + ALAC_HEADER) {
+                av_log(s, AV_LOG_ERROR, "invalid ALAC magic cookie\n");
+                avio_skip(pb, size);
+                return AVERROR_INVALIDDATA;
+            }
+            avio_skip(pb, ALAC_PREAMBLE);
+            st->codec->extradata = av_mallocz(ALAC_HEADER + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!st->codec->extradata)
+                return AVERROR(ENOMEM);
+            avio_read(pb, st->codec->extradata, ALAC_HEADER);
+            st->codec->extradata_size = ALAC_HEADER;
+            avio_skip(pb, size - ALAC_PREAMBLE - ALAC_HEADER);
         }
     } else {
         st->codec->extradata = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
