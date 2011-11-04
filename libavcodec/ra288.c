@@ -178,7 +178,7 @@ static int ra288_decode_frame(AVCodecContext * avctx, void *data,
         av_log(avctx, AV_LOG_ERROR,
                "Error! Input buffer is too small [%d<%d]\n",
                buf_size, avctx->block_align);
-        return 0;
+        return AVERROR_INVALIDDATA;
     }
 
     out_size = RA288_BLOCK_SIZE * RA288_BLOCKS_PER_FRAME *
