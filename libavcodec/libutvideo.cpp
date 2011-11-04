@@ -213,7 +213,7 @@ static av_cold int utvideo_decode_close(AVCodecContext *avctx)
 }
 
 AVCodec ff_libutvideo_decoder = {
-    "utvideo",
+    "libutvideo",
     AVMEDIA_TYPE_VIDEO,
     CODEC_ID_UTVIDEO,
     sizeof(UtVideoContext),
