@@ -492,8 +492,12 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
 
     av_log(avctx, AV_LOG_DEBUG, "Mode: %s\n", modes[ctx->mode].mode_name);
 
-    if (ctx->mode == MODE_16k)
+    if (ctx->mode == MODE_16k) {
         ff_sipr_init_16k(ctx);
+        ctx->decode_frame = ff_sipr_decode_frame_16k;
+    } else {
+        ctx->decode_frame = decode_frame;
+    }
 
     for (i = 0; i < LP_FILTER_ORDER; i++)
         ctx->lsp_history[i] = cos((i+1) * M_PI / (LP_FILTER_ORDER + 1));
@@ -541,10 +545,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
     for (i = 0; i < mode_par->frames_per_packet; i++) {
         decode_parameters(&parm, &gb, mode_par);
 
-        if (ctx->mode == MODE_16k)
-            ff_sipr_decode_frame_16k(ctx, &parm, data);
-        else
-            decode_frame(ctx, &parm, data);
+        ctx->decode_frame(ctx, &parm, data);
 
         data += subframe_size * mode_par->subframe_count;
     }
