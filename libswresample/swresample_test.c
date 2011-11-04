@@ -99,7 +99,7 @@ static void setup_array(uint8_t *out[SWR_CH_MAX], uint8_t *in, enum AVSampleForm
 }
 
 int main(int argc, char **argv){
-    int in_sample_rate, out_sample_rate, ch ,i, in_ch_layout_index, out_ch_layout_index, osr;
+    int in_sample_rate, out_sample_rate, ch ,i, in_ch_layout_index, out_ch_layout_index, osr, flush_count;
     uint64_t in_ch_layout, out_ch_layout;
     enum AVSampleFormat in_sample_fmt, out_sample_fmt;
     int sample_rates[]={8000,11025,16000,22050,32000};
@@ -175,6 +175,34 @@ int main(int argc, char **argv){
 
                             fprintf(stderr, "[%f %f %f] len:%5d\n", sqrt(sse/out_count), x, maxdiff, out_count);
                         }
+
+                        flush_count=swr_convert(backw_ctx,aout, SAMPLES, 0, 0);
+                        if(flush_count){
+                            for(ch=0; ch<in_ch_count; ch++){
+                                double sse, x, maxdiff=0;
+                                double sum_a= 0;
+                                double sum_b= 0;
+                                double sum_aa= 0;
+                                double sum_bb= 0;
+                                double sum_ab= 0;
+                                for(i=0; i<flush_count; i++){
+                                    double a= get(ain , ch, i+out_count, in_ch_count, in_sample_fmt+planar_in);
+                                    double b= get(aout, ch, i, in_ch_count, in_sample_fmt);
+                                    sum_a += a;
+                                    sum_b += b;
+                                    sum_aa+= a*a;
+                                    sum_bb+= b*b;
+                                    sum_ab+= a*b;
+                                    maxdiff= FFMAX(maxdiff, FFABS(a-b));
+                                }
+                                x = sum_ab/sum_bb;
+                                sse= sum_aa + sum_bb*x*x - 2*x*sum_ab;
+
+                                fprintf(stderr, "[%f %f %f] len:%5d\n", sqrt(sse/flush_count), x, maxdiff, flush_count);
+                            }
+                        }
+
+
                         fprintf(stderr, "\n");
                     }
                 }
