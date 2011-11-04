@@ -71,7 +71,6 @@ int ff_win32_open(const char *filename_utf8, int oflag, int pmode)
 
 #if !HAVE_INET_ATON
 #include <stdlib.h>
-#include <strings.h>
 
 int ff_inet_aton (const char * str, struct in_addr * add)
 {

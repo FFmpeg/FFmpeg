@@ -47,7 +47,6 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <stdint.h>
-#include <strings.h>
 
 typedef struct {
     AVClass *class;

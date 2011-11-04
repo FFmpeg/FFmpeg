@@ -28,7 +28,6 @@
 #include <sys/mman.h>
 #include <sys/time.h>
 #include <time.h>
-#include <strings.h>
 
 #include "libavutil/log.h"
 #include "libavutil/opt.h"

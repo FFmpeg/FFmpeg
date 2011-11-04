@@ -33,7 +33,6 @@
 #include "riff.h"
 #include "asf.h"
 #include "mpegts.h"
-#include <strings.h>
 
 /* Macros for formating GUIDs */
 #define PRI_GUID \
