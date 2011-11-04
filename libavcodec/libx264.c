@@ -101,13 +101,14 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
 }
 
 static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
-                      int bufsize, void *data)
+                      int orig_bufsize, void *data)
 {
     X264Context *x4 = ctx->priv_data;
     AVFrame *frame = data;
     x264_nal_t *nal;
     int nnal, i;
     x264_picture_t pic_out;
+    int bufsize;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = X264_CSP_I420;
@@ -138,6 +139,7 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     }
 
     do {
+        bufsize = orig_bufsize;
     if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
         return -1;
 

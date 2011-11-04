@@ -129,7 +129,9 @@ static int xan_unpack(uint8_t *dest, const int dest_len,
                 if (size + size2 > dest_end - dest)
                     break;
             }
-            if (src + size > src_end || dest + size + size2 > dest_end)
+            if (src + size > src_end ||
+                dest + size + size2 > dest_end ||
+                dest + size - orig_dest < back )
                 return -1;
             bytestream_get_buffer(&src, dest, size);
             dest += size;
@@ -194,6 +196,8 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
     if (mode) {
         for (j = 0; j < avctx->height >> 1; j++) {
             for (i = 0; i < avctx->width >> 1; i++) {
+                if (src_end - src < 1)
+                    return 0;
                 val = *src++;
                 if (val) {
                     val  = AV_RL16(table + (val << 1));
@@ -202,8 +206,6 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
                     U[i] = uval | (uval >> 5);
                     V[i] = vval | (vval >> 5);
                 }
-                if (src == src_end)
-                    return 0;
             }
             U += s->pic.linesize[1];
             V += s->pic.linesize[2];
@@ -214,6 +216,8 @@ static int xan_decode_chroma(AVCodecContext *avctx, AVPacket *avpkt)
 
         for (j = 0; j < avctx->height >> 2; j++) {
             for (i = 0; i < avctx->width >> 1; i += 2) {
+                if (src_end - src < 1)
+                    return 0;
                 val = *src++;
                 if (val) {
                     val  = AV_RL16(table + (val << 1));
@@ -302,6 +306,9 @@ static int xan_decode_frame_type0(AVCodecContext *avctx, AVPacket *avpkt)
                               corr_end - corr_off);
         if (dec_size < 0)
             dec_size = 0;
+        else
+            dec_size = FFMIN(dec_size, s->buffer_size/2 - 1);
+
         for (i = 0; i < dec_size; i++)
             s->y_buffer[i*2+1] = (s->y_buffer[i*2+1] + (s->scratch_buffer[i] << 1)) & 0x3F;
     }

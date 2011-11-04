@@ -276,7 +276,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
     AT1Ctx *q          = avctx->priv_data;
-    int ch, ret, i;
+    int ch, ret, i, out_size;
     GetBitContext gb;
     float* samples = data;
 
@@ -284,6 +284,13 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
     if (buf_size < 212 * q->channels) {
         av_log(q,AV_LOG_ERROR,"Not enought data to decode!\n");
         return -1;
+    }
+
+    out_size = q->channels * AT1_SU_SAMPLES *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
+        return AVERROR(EINVAL);
     }
 
     for (ch = 0; ch < q->channels; ch++) {
@@ -318,7 +325,7 @@ static int atrac1_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *data_size = q->channels * AT1_SU_SAMPLES * sizeof(*samples);
+    *data_size = out_size;
     return avctx->block_align;
 }
 
@@ -329,6 +336,11 @@ static av_cold int atrac1_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
+    if (avctx->channels < 1 || avctx->channels > AT1_MAX_CHANNELS) {
+        av_log(avctx, AV_LOG_ERROR, "Unsupported number of channels: %d\n",
+               avctx->channels);
+        return AVERROR(EINVAL);
+    }
     q->channels = avctx->channels;
 
     /* Init the mdct transforms */

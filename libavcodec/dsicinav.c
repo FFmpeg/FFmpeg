@@ -310,6 +310,11 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     CinAudioContext *cin = avctx->priv_data;
 
     cin->avctx = avctx;
+    if (avctx->channels != 1) {
+        av_log_ask_for_sample(avctx, "Number of channels is not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     cin->initial_decode_frame = 1;
     cin->delta = 0;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;

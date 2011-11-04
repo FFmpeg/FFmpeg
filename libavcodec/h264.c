@@ -1019,8 +1019,12 @@ static av_cold void common_init(H264Context *h){
     s->height = s->avctx->height;
     s->codec_id= s->avctx->codec->id;
 
-    ff_h264dsp_init(&h->h264dsp, 8);
-    ff_h264_pred_init(&h->hpc, s->codec_id, 8);
+    s->avctx->bits_per_raw_sample = 8;
+
+    ff_h264dsp_init(&h->h264dsp,
+                    s->avctx->bits_per_raw_sample);
+    ff_h264_pred_init(&h->hpc, s->codec_id,
+                      s->avctx->bits_per_raw_sample);
 
     h->dequant_coeff_pps= -1;
     s->unrestricted_mv=1;
@@ -2633,6 +2637,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
         free_tables(h, 0);
         flush_dpb(s->avctx);
         MPV_common_end(s);
+        h->list_count = 0;
     }
     if (!s->context_initialized) {
         if (h != h0) {
@@ -3753,9 +3758,13 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
             switch (hx->nal_unit_type) {
                 case NAL_SPS:
                 case NAL_PPS:
+                    nals_needed = nal_index;
+                    break;
                 case NAL_IDR_SLICE:
                 case NAL_SLICE:
-                    nals_needed = nal_index;
+                    init_get_bits(&hx->s.gb, ptr, bit_length);
+                    if(!get_ue_golomb(&hx->s.gb))
+                        nals_needed = nal_index;
             }
             continue;
         }

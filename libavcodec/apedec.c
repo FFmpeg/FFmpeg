@@ -163,6 +163,18 @@ typedef struct APEContext {
 
 // TODO: dsputilize
 
+static av_cold int ape_decode_close(AVCodecContext * avctx)
+{
+    APEContext *s = avctx->priv_data;
+    int i;
+
+    for (i = 0; i < APE_FILTER_LEVELS; i++)
+        av_freep(&s->filterbuf[i]);
+
+    av_freep(&s->data);
+    return 0;
+}
+
 static av_cold int ape_decode_init(AVCodecContext * avctx)
 {
     APEContext *s = avctx->priv_data;
@@ -195,25 +207,18 @@ static av_cold int ape_decode_init(AVCodecContext * avctx)
     for (i = 0; i < APE_FILTER_LEVELS; i++) {
         if (!ape_filter_orders[s->fset][i])
             break;
-        s->filterbuf[i] = av_malloc((ape_filter_orders[s->fset][i] * 3 + HISTORY_SIZE) * 4);
+        FF_ALLOC_OR_GOTO(avctx, s->filterbuf[i],
+                         (ape_filter_orders[s->fset][i] * 3 + HISTORY_SIZE) * 4,
+                         filter_alloc_fail);
     }
 
     dsputil_init(&s->dsp, avctx);
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     return 0;
-}
-
-static av_cold int ape_decode_close(AVCodecContext * avctx)
-{
-    APEContext *s = avctx->priv_data;
-    int i;
-
-    for (i = 0; i < APE_FILTER_LEVELS; i++)
-        av_freep(&s->filterbuf[i]);
-
-    av_freep(&s->data);
-    return 0;
+filter_alloc_fail:
+    ape_decode_close(avctx);
+    return AVERROR(ENOMEM);
 }
 
 /**
@@ -797,7 +802,7 @@ static int ape_decode_frame(AVCodecContext * avctx,
     int buf_size = avpkt->size;
     APEContext *s = avctx->priv_data;
     int16_t *samples = data;
-    int nblocks;
+    uint32_t nblocks;
     int i, n;
     int blockstodecode;
     int bytes_used;
@@ -814,12 +819,15 @@ static int ape_decode_frame(AVCodecContext * avctx,
     }
 
     if(!s->samples){
-        s->data = av_realloc(s->data, (buf_size + 3) & ~3);
+        void *tmp_data = av_realloc(s->data, (buf_size + 3) & ~3);
+        if (!tmp_data)
+            return AVERROR(ENOMEM);
+        s->data = tmp_data;
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
         s->ptr = s->last_ptr = s->data;
         s->data_end = s->data + buf_size;
 
-        nblocks = s->samples = bytestream_get_be32(&s->ptr);
+        nblocks = bytestream_get_be32(&s->ptr);
         n =  bytestream_get_be32(&s->ptr);
         if(n < 0 || n > 3){
             av_log(avctx, AV_LOG_ERROR, "Incorrect offset passed\n");
@@ -828,12 +836,13 @@ static int ape_decode_frame(AVCodecContext * avctx,
         }
         s->ptr += n;
 
-        s->currentframeblocks = nblocks;
         buf += 4;
-        if (s->samples <= 0) {
+        if (!nblocks || nblocks > INT_MAX) {
+            av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
             *data_size = 0;
-            return buf_size;
+            return AVERROR_INVALIDDATA;
         }
+        s->currentframeblocks = s->samples = nblocks;
 
         memset(s->decoded0,  0, sizeof(s->decoded0));
         memset(s->decoded1,  0, sizeof(s->decoded1));

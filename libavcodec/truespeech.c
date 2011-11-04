@@ -56,6 +56,11 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
 {
 //    TSContext *c = avctx->priv_data;
 
+    if (avctx->channels != 1) {
+        av_log_ask_for_sample(avctx, "Unsupported channel count: %d\n", avctx->channels);
+        return AVERROR(EINVAL);
+    }
+
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     return 0;
 }
