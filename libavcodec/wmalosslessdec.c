@@ -253,14 +253,16 @@ typedef struct WmallDecodeCtx {
         int16_t coefs[256];
     int lms_prevvalues[512];    // FIXME: see above
     int16_t lms_updates[512];   // and here too
-    } cdlms[2][9];
+    } cdlms[2][9];              /* XXX: Here, 2 is the max. no. of channels allowed,
+                                        9 is the maximum no. of filters per channel.
+                                        Question is, why 2 if WMALL_MAX_CHANNELS == 8 */
 
 
     int cdlms_ttl[2];
 
     int bV3RTM;
 
-    int is_channel_coded[2];
+    int is_channel_coded[2];    // XXX: same question as above applies here too (and below)
 
     int transient[2];
     int transient_pos[2];
