@@ -192,6 +192,39 @@ Specify the preset for matching stream(s).
 @item -stats (@emph{global})
 Print encoding progress/statistics. On by default.
 
+@item -attach @var{filename} (@emph{output})
+Add an attachment to the output file. This is supported by a few formats
+like Matroska for e.g. fonts used in rendering subtitles. Attachments
+are implemented as a specific type of stream, so this option will add
+a new stream to the file. It is then possible to use per-stream options
+on this stream in the usual way. Attachment streams created with this
+option will be created after all the other streams (i.e. those created
+with @code{-map} or automatic mappings).
+
+Note that for Matroska you also have to set the mimetype metadata tag:
+@example
+avconv -i INPUT -attach DejaVuSans.ttf -metadata:s:2 mimetype=application/x-truetype-font out.mkv
+@end example
+(assuming that the attachment stream will be third in the output file).
+
+@item -dump_attachment[:@var{stream_specifier}] @var{filename} (@emph{input,per-stream})
+Extract the matching attachment stream into a file named @var{filename}. If
+@var{filename} is empty, then the value of the @code{filename} metadata tag
+will be used.
+
+E.g. to extract the first attachment to a file named 'out.ttf':
+@example
+avconv -dump_attachment:t:0 out.ttf INPUT
+@end example
+To extract all attachments to files determined by the @code{filename} tag:
+@example
+avconv -dump_attachment:t "" INPUT
+@end example
+
+Technical note -- attachments are implemented as codec extradata, so this
+option can actually be used to extract extradata from any stream, not just
+attachments.
+
 @end table
 
 @section Video Options

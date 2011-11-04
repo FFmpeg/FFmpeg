@@ -28,10 +28,14 @@ SECTION_TEXT
 ; void int32_to_float_fmul_scalar(float *dst, const int *src, float mul, int len);
 ;---------------------------------------------------------------------------------
 %macro INT32_TO_FLOAT_FMUL_SCALAR 2
-%ifdef ARCH_X86_64
+%ifdef UNIX64
 cglobal int32_to_float_fmul_scalar_%1, 3,3,%2, dst, src, len
 %else
 cglobal int32_to_float_fmul_scalar_%1, 4,4,%2, dst, src, mul, len
+%endif
+%ifdef WIN64
+    SWAP 0, 2
+%elifdef ARCH_X86_32
     movss   m0, mulm
 %endif
     SPLATD  m0

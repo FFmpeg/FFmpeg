@@ -244,6 +244,7 @@ typedef struct OutputStream {
    AVDictionary *opts;
    int is_past_recording_time;
    int stream_copy;
+   const char *attachment_filename;
 } OutputStream;
 
 #if HAVE_TERMIOS_H
@@ -295,6 +296,8 @@ typedef struct OptionsContext {
 
     SpecifierOpt *ts_scale;
     int        nb_ts_scale;
+    SpecifierOpt *dump_attachment;
+    int        nb_dump_attachment;
 
     /* output options */
     StreamMap *stream_maps;
@@ -305,6 +308,8 @@ typedef struct OptionsContext {
     int metadata_global_manual;
     int metadata_streams_manual;
     int metadata_chapters_manual;
+    const char **attachments;
+    int       nb_attachments;
 
     int chapters_input_file;
 
@@ -2047,6 +2052,9 @@ static int transcode_init(OutputFile *output_files,
         os = output_files[ost->file_index].ctx;
         ist = &input_streams[ost->source_index];
 
+        if (ost->attachment_filename)
+            continue;
+
         codec = ost->st->codec;
         icodec = ist->st->codec;
 
@@ -2350,6 +2358,13 @@ static int transcode_init(OutputFile *output_files,
     av_log(NULL, AV_LOG_INFO, "Stream mapping:\n");
     for (i = 0; i < nb_output_streams; i++) {
         ost = &output_streams[i];
+
+        if (ost->attachment_filename) {
+            /* an attached file */
+            av_log(NULL, AV_LOG_INFO, "  File %s -> Stream #%d:%d\n",
+                   ost->attachment_filename, ost->file_index, ost->index);
+            continue;
+        }
         av_log(NULL, AV_LOG_INFO, "  Stream #%d.%d -> #%d.%d",
                input_streams[ost->source_index].file_index,
                input_streams[ost->source_index].st->index,
@@ -2757,7 +2772,8 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
         /* disable some already defined maps */
         for (i = 0; i < o->nb_stream_maps; i++) {
             m = &o->stream_maps[i];
-            if (check_stream_specifier(input_files[m->file_index].ctx,
+            if (file_idx == m->file_index &&
+                check_stream_specifier(input_files[m->file_index].ctx,
                                        input_files[m->file_index].ctx->streams[m->stream_index],
                                        *p == ':' ? p + 1 : p) > 0)
                 m->disabled = 1;
@@ -2789,6 +2805,14 @@ static int opt_map(OptionsContext *o, const char *opt, const char *arg)
     }
 
     av_freep(&map);
+    return 0;
+}
+
+static int opt_attach(OptionsContext *o, const char *opt, const char *arg)
+{
+    o->attachments = grow_array(o->attachments, sizeof(*o->attachments),
+                                &o->nb_attachments, o->nb_attachments + 1);
+    o->attachments[o->nb_attachments - 1] = arg;
     return 0;
 }
 
@@ -2944,6 +2968,60 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
     }
 }
 
+static void assert_file_overwrite(const char *filename)
+{
+    if (!file_overwrite &&
+        (strchr(filename, ':') == NULL || filename[1] == ':' ||
+         av_strstart(filename, "file:", NULL))) {
+        if (avio_check(filename, 0) == 0) {
+            if (!using_stdin) {
+                fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
+                fflush(stderr);
+                if (!read_yesno()) {
+                    fprintf(stderr, "Not overwriting - exiting\n");
+                    exit_program(1);
+                }
+            }
+            else {
+                fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
+                exit_program(1);
+            }
+        }
+    }
+}
+
+static void dump_attachment(AVStream *st, const char *filename)
+{
+    int ret;
+    AVIOContext *out = NULL;
+    AVDictionaryEntry *e;
+
+    if (!st->codec->extradata_size) {
+        av_log(NULL, AV_LOG_WARNING, "No extradata to dump in stream #%d:%d.\n",
+               nb_input_files - 1, st->index);
+        return;
+    }
+    if (!*filename && (e = av_dict_get(st->metadata, "filename", NULL, 0)))
+        filename = e->value;
+    if (!*filename) {
+        av_log(NULL, AV_LOG_FATAL, "No filename specified and no 'filename' tag"
+               "in stream #%d:%d.\n", nb_input_files - 1, st->index);
+        exit_program(1);
+    }
+
+    assert_file_overwrite(filename);
+
+    if ((ret = avio_open (&out, filename, AVIO_FLAG_WRITE)) < 0) {
+        av_log(NULL, AV_LOG_FATAL, "Could not open file %s for writing.\n",
+               filename);
+        exit_program(1);
+    }
+
+    avio_write(out, st->codec->extradata, st->codec->extradata_size);
+    avio_flush(out);
+    avio_close(out);
+}
+
 static int opt_input_file(OptionsContext *o, const char *opt, const char *filename)
 {
     AVFormatContext *ic;
@@ -3043,6 +3121,17 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     input_files[nb_input_files - 1].ts_offset  = o->input_ts_offset - (copy_ts ? 0 : timestamp);
     input_files[nb_input_files - 1].nb_streams = ic->nb_streams;
     input_files[nb_input_files - 1].rate_emu   = o->rate_emu;
+
+    for (i = 0; i < o->nb_dump_attachment; i++) {
+        int j;
+
+        for (j = 0; j < ic->nb_streams; j++) {
+            AVStream *st = ic->streams[j];
+
+            if (check_stream_specifier(ic, st, o->dump_attachment[i].specifier) == 1)
+                dump_attachment(st, o->dump_attachment[i].u.str);
+        }
+    }
 
     for (i = 0; i < orig_nb_streams; i++)
         av_dict_free(&opts[i]);
@@ -3634,6 +3723,42 @@ static void opt_output_file(void *optctx, const char *filename)
         }
     }
 
+    /* handle attached files */
+    for (i = 0; i < o->nb_attachments; i++) {
+        AVIOContext *pb;
+        uint8_t *attachment;
+        const char *p;
+        int64_t len;
+
+        if ((err = avio_open(&pb, o->attachments[i], AVIO_FLAG_READ)) < 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not open attachment file %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if ((len = avio_size(pb)) <= 0) {
+            av_log(NULL, AV_LOG_FATAL, "Could not get size of the attachment %s.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        if (!(attachment = av_malloc(len))) {
+            av_log(NULL, AV_LOG_FATAL, "Attachment %s too large to fit into memory.\n",
+                   o->attachments[i]);
+            exit_program(1);
+        }
+        avio_read(pb, attachment, len);
+
+        ost = new_attachment_stream(o, oc);
+        ost->stream_copy               = 0;
+        ost->source_index              = -1;
+        ost->attachment_filename       = o->attachments[i];
+        ost->st->codec->extradata      = attachment;
+        ost->st->codec->extradata_size = len;
+
+        p = strrchr(o->attachments[i], '/');
+        av_dict_set(&ost->st->metadata, "filename", (p && *p) ? p + 1 : o->attachments[i], AV_DICT_DONT_OVERWRITE);
+        avio_close(pb);
+    }
+
     output_files = grow_array(output_files, sizeof(*output_files), &nb_output_files, nb_output_files + 1);
     output_files[nb_output_files - 1].ctx       = oc;
     output_files[nb_output_files - 1].ost_index = nb_output_streams - oc->nb_streams;
@@ -3652,25 +3777,7 @@ static void opt_output_file(void *optctx, const char *filename)
 
     if (!(oc->oformat->flags & AVFMT_NOFILE)) {
         /* test if it already exists to avoid loosing precious files */
-        if (!file_overwrite &&
-            (strchr(filename, ':') == NULL ||
-             filename[1] == ':' ||
-             av_strstart(filename, "file:", NULL))) {
-            if (avio_check(filename, 0) == 0) {
-                if (!using_stdin) {
-                    fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
-                    fflush(stderr);
-                    if (!read_yesno()) {
-                        fprintf(stderr, "Not overwriting - exiting\n");
-                        exit_program(1);
-                    }
-                }
-                else {
-                    fprintf(stderr,"File '%s' already exists. Exiting.\n", filename);
-                    exit_program(1);
-                }
-            }
-        }
+        assert_file_overwrite(filename);
 
         /* open the file */
         if ((err = avio_open(&oc->pb, filename, AVIO_FLAG_WRITE)) < 0) {
@@ -3758,7 +3865,10 @@ static void opt_output_file(void *optctx, const char *filename)
                      AV_DICT_DONT_OVERWRITE);
     if (!o->metadata_streams_manual)
         for (i = output_files[nb_output_files - 1].ost_index; i < nb_output_streams; i++) {
-            InputStream *ist = &input_streams[output_streams[i].source_index];
+            InputStream *ist;
+            if (output_streams[i].source_index < 0)         /* this is true e.g. for attached files */
+                continue;
+            ist = &input_streams[output_streams[i].source_index];
             av_dict_copy(&output_streams[i].st->metadata, ist->st->metadata, AV_DICT_DONT_OVERWRITE);
         }
 
@@ -4147,6 +4257,8 @@ static const OptionDef options[] = {
     { "filter", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(filters)}, "set stream filterchain", "filter_list" },
 #endif
     { "stats", OPT_BOOL, {&print_stats}, "print progress report during encoding", },
+    { "attach", HAS_ARG | OPT_FUNC2, {(void*)opt_attach}, "add an attachment to the output file", "filename" },
+    { "dump_attachment", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(dump_attachment)}, "extract an attachment into a file", "filename" },
 
     /* video options */
     { "vframes", HAS_ARG | OPT_VIDEO | OPT_FUNC2, {(void*)opt_video_frames}, "set the number of video frames to record", "number" },
