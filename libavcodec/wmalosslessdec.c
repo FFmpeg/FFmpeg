@@ -239,6 +239,8 @@ typedef struct WmallDecodeCtx {
     int8_t mclms_scaling;
     int16_t mclms_coeffs[128];
     int16_t mclms_coeffs_cur[4];
+    int mclms_prevvalues[64];   // FIXME: should be 32-bit / 16-bit depending on bit-depth
+    int16_t mclms_updates[64];
 
     int movave_scaling;
     int quant_stepsize;
@@ -249,6 +251,8 @@ typedef struct WmallDecodeCtx {
         int coefsend;
         int bitsend;
         int16_t coefs[256];
+    int lms_prevvalues[512];    // FIXME: see above
+    int16_t lms_updates[512];   // and here too
     } cdlms[2][9];
 
 
