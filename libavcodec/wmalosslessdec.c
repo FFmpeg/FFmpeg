@@ -141,6 +141,9 @@ typedef struct {
     DECLARE_ALIGNED(16, float, out)[WMALL_BLOCK_MAX_SIZE + WMALL_BLOCK_MAX_SIZE / 2]; ///< output buffer
 } WmallChannelCtx;
 
+                                                    /* XXX: probably we don't need subframe_config[],
+                                                    WmallChannelCtx holds all the necessary data. */
+
 /**
  * @brief channel group for channel transformations
  */
@@ -420,8 +423,8 @@ static int decode_subframe_length(WmallDecodeCtx *s, int offset)
     if (offset == s->samples_per_frame - s->min_samples_per_subframe)
         return s->min_samples_per_subframe;
 
-    len = av_log2(s->max_num_subframes - 1) + 1;
-    frame_len_ratio = get_bits(&s->gb, len);
+    len = av_log2(s->max_num_subframes - 1) + 1;    // XXX: 5.3.3
+    frame_len_ratio = get_bits(&s->gb, len);        // XXX: tile_size_ratio
 
     subframe_len = s->min_samples_per_subframe * (frame_len_ratio + 1);
 
@@ -455,7 +458,7 @@ static int decode_subframe_length(WmallDecodeCtx *s, int offset)
  *@param s context
  *@return 0 on success, < 0 in case of an error
  */
-static int decode_tilehdr(WmallDecodeCtx *s)
+static int decode_tilehdr(WmallDecodeCtx *s)        /* XXX: decode_tile_configuration() [Table 9] */
 {
     uint16_t num_samples[WMALL_MAX_CHANNELS];        /**< sum of samples for all currently known subframes of a channel */
     uint8_t  contains_subframe[WMALL_MAX_CHANNELS];  /**< flag indicating if a channel contains the current subframe */
@@ -476,8 +479,8 @@ static int decode_tilehdr(WmallDecodeCtx *s)
 
     memset(num_samples, 0, sizeof(num_samples));
 
-    if (s->max_num_subframes == 1 || get_bits1(&s->gb))
-        fixed_channel_layout = 1;
+    if (s->max_num_subframes == 1 || get_bits1(&s->gb))     // XXX: locate in the spec
+        fixed_channel_layout = 1;                           // XXX: tile_aligned ?
 
     /** loop until the frame data is split between the subframes */
     do {
@@ -491,14 +494,14 @@ static int decode_tilehdr(WmallDecodeCtx *s)
                     contains_subframe[c] = 1;
                 }
                 else {
-                    contains_subframe[c] = get_bits1(&s->gb);
+                    contains_subframe[c] = get_bits1(&s->gb);   // XXX: locate in the spec
                 }
             } else
                 contains_subframe[c] = 0;
         }
 
         /** get subframe length, subframe_len == 0 is not allowed */
-        if ((subframe_len = decode_subframe_length(s, min_channel_len)) <= 0)
+        if ((subframe_len = decode_subframe_length(s, min_channel_len)) <= 0)   //XXX: this reads tile_size_ratio
             return AVERROR_INVALIDDATA;
         /** add subframes to the individual channels and find new min_channel_len */
         min_channel_len += subframe_len;
@@ -768,6 +771,8 @@ static int decode_subframe(WmallDecodeCtx *s)
 
     s->seekable_tile = get_bits1(&s->gb);
     if(s->seekable_tile) {
+        // XXX: 6.2.2 clear_codec_buffers()
+
         s->do_arith_coding    = get_bits1(&s->gb);
         if(s->do_arith_coding) {
             dprintf(s->avctx, "do_arith_coding == 1");
@@ -786,6 +791,8 @@ static int decode_subframe(WmallDecodeCtx *s)
         decode_cdlms(s);
         s->movave_scaling = get_bits(&s->gb, 3);
         s->quant_stepsize = get_bits(&s->gb, 8) + 1;
+
+            // XXX: 6.2.2 reset_codec()
     }
 
     rawpcm_tile = get_bits1(&s->gb);
@@ -844,7 +851,7 @@ static int decode_subframe(WmallDecodeCtx *s)
             av_log(s->avctx, AV_LOG_ERROR, "broken subframe\n");
             return AVERROR_INVALIDDATA;
         }
-        ++s->channel[c].cur_subframe;
+        ++s->channel[c].cur_subframe;       // XXX: 6.4
     }
     return 0;
 }
@@ -873,17 +880,17 @@ static int decode_frame(WmallDecodeCtx *s)
 
     /** get frame length */
     if (s->len_prefix)
-        len = get_bits(gb, s->log2_frame_size);
+        len = get_bits(gb, s->log2_frame_size);     // XXX: compressed_frame_size_bits [Table 8]
 
     /** decode tile information */
-    if (decode_tilehdr(s)) {
+    if (decode_tilehdr(s)) {    // should include decode_tile_configuration() [Table 9]
         s->packet_loss = 1;
         return 0;
     }
 
     /** read drc info */
     if (s->dynamic_range_compression) {
-        s->drc_gain = get_bits(gb, 8);
+        s->drc_gain = get_bits(gb, 8);      // XXX: drc_frame_scale_factor [Table 8]
     }
 
     /** no idea what these are for, might be the number of samples
