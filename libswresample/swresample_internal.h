@@ -45,6 +45,8 @@ typedef struct SwrContext {          //FIXME find unused fields
     int     out_sample_rate;
     int flags;
     float slev, clev, rematrix_volume;
+    const int *channel_map;             ///< channel index (or -1 if muted channel) map
+    int used_ch_count;                  ///< number of used channels (mapped channel count if channel_map, otherwise in.ch_count)
 
     //below are private
     int int_bps;

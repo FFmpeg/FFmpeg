@@ -72,6 +72,7 @@ easier to use. The changes are:
 - Prores encoder
 - Video Decoder Acceleration (VDA) HWAccel module.
 - replacement Indeo 3 decoder
+- new ffmpeg option: -map_channel
 
 version 0.8:
 

@@ -42,11 +42,14 @@ typedef struct AVAudioConvert AVAudioConvert;
  * @param in_fmt Input sample format
  * @param channels Number of channels
  * @param flags See AV_CPU_FLAG_xx
+ * @param ch_map list of the channels id to pick from the source stream, NULL
+ *               if all channels must be selected
  * @return NULL on error
  */
 AVAudioConvert *swr_audio_convert_alloc(enum AVSampleFormat out_fmt,
                                         enum AVSampleFormat in_fmt,
-                                        int channels, int flags);
+                                        int channels, const int *ch_map,
+                                        int flags);
 
 /**
  * Free audio sample format converter context.

@@ -2077,7 +2077,7 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
                     swr_free(&is->swr_ctx);
                 is->swr_ctx = swr_alloc2(NULL, is->audio_tgt_channel_layout, is->audio_tgt_fmt, is->audio_tgt_freq,
                                                dec_channel_layout,          dec->sample_fmt,   dec->sample_rate,
-                                               0, NULL);
+                                               NULL, 0, NULL);
                 if (!is->swr_ctx || swr_init(is->swr_ctx) < 0) {
                     fprintf(stderr, "Cannot create sample rate converter for conversion of %d Hz %s %d channels to %d Hz %s %d channels!\n",
                         dec->sample_rate,

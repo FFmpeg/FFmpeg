@@ -721,6 +721,44 @@ ffmpeg -i INPUT -map 0 -map -0:a:1 OUTPUT
 
 Note that using this option disables the default mappings for this output file.
 
+@item -map_channel [@var{input_file_id}.@var{stream_specifier}.@var{channel_id}|-1][:@var{output_file_id}.@var{stream_specifier}]
+Map an audio channel from a given input to an output. If
+@var{output_file_id}.@var{stream_specifier} are not set, the audio channel will
+be mapped on all the audio streams.
+
+Using "-1" instead of
+@var{input_file_id}.@var{stream_specifier}.@var{channel_id} will map a muted
+channel.
+
+For example, assuming @var{INPUT} is a stereo audio file, you can switch the
+two audio channels with the following command:
+@example
+ffmpeg -i INPUT -map_channel 0.0.1 -map_channel 0.0.0 OUTPUT
+@end example
+
+If you want to mute the first channel and keep the second:
+@example
+ffmpeg -i INPUT -map_channel -1 -map_channel 0.0.1 OUTPUT
+@end example
+
+The order of the "-map_channel" option specifies the order of the channels in
+the output stream. The output channel layout is guessed from the number of
+channels mapped (mono if one "-map_channel", stereo if two, etc.). Using "-ac"
+in combination of "-map_channel" makes the channel gain levels to be updated if
+channel layouts don't match (for instance two "-map_channel" options and "-ac
+6").
+
+You can also extract each channel of an @var{INPUT} to specific outputs; the
+following command extract each channel of the audio stream (file 0, stream 0)
+to the respective @var{OUTPUT_CH0} and @var{OUTPUT_CH1}:
+@example
+ffmpeg -i INPUT -map_channel 0.0.0 OUTPUT_CH0 -map_channel 0.0.1 OUTPUT_CH1
+@end example
+
+Note that "-map_channel" is currently limited to the scope of one input for
+each output; you can't for example use it to pick multiple input audio files
+and mix them into one single output.
+
 @item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}] (@emph{output,per-metadata})
 Set metadata information of the next output file from @var{infile}. Note that
 those are file indices (zero-based), not filenames.

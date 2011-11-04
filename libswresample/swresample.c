@@ -38,6 +38,7 @@
 static const AVOption options[]={
 {"ich",  "input channel count", OFFSET( in.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
 {"och", "output channel count", OFFSET(out.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
+{"uch",   "used channel count", OFFSET(used_ch_count  ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
 {"isr",  "input sample rate"  , OFFSET( in_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
 {"osr", "output sample rate"  , OFFSET(out_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
 //{"ip" ,  "input planar"       , OFFSET( in.planar     ), AV_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
@@ -76,7 +77,7 @@ SwrContext *swr_alloc(void){
 
 SwrContext *swr_alloc2(struct SwrContext *s, int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
                        int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                       int log_offset, void *log_ctx){
+                       const int *channel_map, int log_offset, void *log_ctx){
     if(!s) s= swr_alloc();
     if(!s) return NULL;
 
@@ -90,9 +91,11 @@ SwrContext *swr_alloc2(struct SwrContext *s, int64_t out_ch_layout, enum AVSampl
     av_set_int(s, "isf", in_sample_fmt);
     av_set_int(s, "isr", in_sample_rate);
 
+    s->channel_map = channel_map;
     s-> in.ch_count= av_get_channel_layout_nb_channels(s-> in_ch_layout);
     s->out.ch_count= av_get_channel_layout_nb_channels(s->out_ch_layout);
     s->int_sample_fmt = AV_SAMPLE_FMT_S16;
+    s->used_ch_count= s-> in.ch_count;
 
     return s;
 }
@@ -167,13 +170,16 @@ int swr_init(SwrContext *s){
         return -1;
     }
 
-    if(s-> in.ch_count && s-> in_ch_layout && s->in.ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
-        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than there actually is, ignoring layout\n");
+    if(!s->used_ch_count)
+        s->used_ch_count= s->in.ch_count;
+
+    if(s->used_ch_count && s-> in_ch_layout && s->used_ch_count != av_get_channel_layout_nb_channels(s-> in_ch_layout)){
+        av_log(s, AV_LOG_WARNING, "Input channel layout has a different number of channels than the number of used channels, ignoring layout\n");
         s-> in_ch_layout= 0;
     }
 
     if(!s-> in_ch_layout)
-        s-> in_ch_layout= av_get_default_channel_layout(s->in.ch_count);
+        s-> in_ch_layout= av_get_default_channel_layout(s->used_ch_count);
     if(!s->out_ch_layout)
         s->out_ch_layout= av_get_default_channel_layout(s->out.ch_count);
 
@@ -182,10 +188,13 @@ int swr_init(SwrContext *s){
 #define RSC 1 //FIXME finetune
     if(!s-> in.ch_count)
         s-> in.ch_count= av_get_channel_layout_nb_channels(s-> in_ch_layout);
+    if(!s->used_ch_count)
+        s->used_ch_count= s->in.ch_count;
     if(!s->out.ch_count)
         s->out.ch_count= av_get_channel_layout_nb_channels(s->out_ch_layout);
 
 av_assert0(s-> in.ch_count);
+av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
@@ -193,22 +202,27 @@ av_assert0(s->out.ch_count);
     s->int_bps= av_get_bits_per_sample_fmt(s->int_sample_fmt)/8;
     s->out.bps= av_get_bits_per_sample_fmt(s->out_sample_fmt)/8;
 
-    if(!s->resample && !s->rematrix){
+    if(!s->resample && !s->rematrix && !s->channel_map){
         s->full_convert = swr_audio_convert_alloc(s->out_sample_fmt,
-                                                  s-> in_sample_fmt, s-> in.ch_count, 0);
+                                                  s-> in_sample_fmt, s-> in.ch_count, NULL, 0);
         return 0;
     }
 
     s->in_convert = swr_audio_convert_alloc(s->int_sample_fmt,
-                                            s-> in_sample_fmt, s-> in.ch_count, 0);
+                                            s-> in_sample_fmt, s->used_ch_count, s->channel_map, 0);
     s->out_convert= swr_audio_convert_alloc(s->out_sample_fmt,
-                                            s->int_sample_fmt, s->out.ch_count, 0);
+                                            s->int_sample_fmt, s->out.ch_count, NULL, 0);
 
 
     s->postin= s->in;
     s->preout= s->out;
     s->midbuf= s->in;
     s->in_buffer= s->in;
+    if(s->channel_map){
+        s->postin.ch_count=
+        s->midbuf.ch_count=
+        s->in_buffer.ch_count= s->used_ch_count;
+    }
     if(!s->resample_first){
         s->midbuf.ch_count= s->out.ch_count;
         s->in_buffer.ch_count = s->out.ch_count;
@@ -325,7 +339,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     if((ret=realloc_audio(&s->postin, in_count))<0)
         return ret;
     if(s->resample_first){
-        av_assert0(s->midbuf.ch_count ==  s-> in.ch_count);
+        av_assert0(s->midbuf.ch_count == s->used_ch_count);
         if((ret=realloc_audio(&s->midbuf, out_count))<0)
             return ret;
     }else{

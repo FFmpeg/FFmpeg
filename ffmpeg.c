@@ -99,6 +99,11 @@ typedef struct StreamMap {
     int sync_stream_index;
 } StreamMap;
 
+typedef struct {
+    int  file_idx,  stream_idx,  channel_idx; // input
+    int ofile_idx, ostream_idx;               // output
+} AudioChannelMap;
+
 /**
  * select an input file for an output file
  */
@@ -231,6 +236,8 @@ typedef struct OutputStream {
 
     /* audio only */
     int audio_resample;
+    int audio_channels_map[SWR_CH_MAX];  ///< list of the channels id to pick from the source stream
+    int audio_channels_mapped;           ///< number of channels in audio_channels_map
     int resample_sample_fmt;
     int resample_channels;
     int resample_sample_rate;
@@ -313,6 +320,8 @@ typedef struct OptionsContext {
     /* output options */
     StreamMap *stream_maps;
     int     nb_stream_maps;
+    AudioChannelMap *audio_channel_maps; ///< one info entry per -map_channel
+    int           nb_audio_channel_maps; ///< number of (valid) -map_channel settings
     /* first item specifies output metadata, second is input */
     MetadataMap (*meta_data_maps)[2];
     int nb_meta_data_maps;
@@ -409,6 +418,7 @@ static void reset_options(OptionsContext *o, int is_input)
     }
 
     av_freep(&o->stream_maps);
+    av_freep(&o->audio_channel_maps);
     av_freep(&o->meta_data_maps);
     av_freep(&o->streamid_map);
 
@@ -857,7 +867,7 @@ need_realloc:
                        ost->resample_channels    != dec->channels   ||
                        ost->resample_sample_rate != dec->sample_rate;
 
-    if ((ost->audio_resample && !ost->swr) || resample_changed) {
+    if ((ost->audio_resample && !ost->swr) || resample_changed || ost->audio_channels_mapped) {
         if (resample_changed) {
             av_log(NULL, AV_LOG_INFO, "Input stream #%d.%d frame changed from rate:%d fmt:%s ch:%d to rate:%d fmt:%s ch:%d\n",
                    ist->file_index, ist->st->index,
@@ -869,7 +879,7 @@ need_realloc:
             swr_free(&ost->swr);
         }
         /* if audio_sync_method is >1 the resampler is needed for audio drift compensation */
-        if (audio_sync_method <= 1 &&
+        if (audio_sync_method <= 1 && !ost->audio_channels_mapped &&
             ost->resample_sample_fmt  == enc->sample_fmt &&
             ost->resample_channels    == enc->channels   &&
             ost->resample_sample_rate == enc->sample_rate) {
@@ -879,8 +889,13 @@ need_realloc:
             ost->swr = swr_alloc2(ost->swr,
                                   enc->channel_layout, enc->sample_fmt, enc->sample_rate,
                                   dec->channel_layout, dec->sample_fmt, dec->sample_rate,
+                                  ost->audio_channels_mapped ? ost->audio_channels_map : NULL,
                                   0, NULL);
             av_set_double(ost->swr, "rmvol", ost->rematrix_volume);
+            if (ost->audio_channels_mapped) {
+                av_set_int(ost->swr, "icl", av_get_default_channel_layout(ost->audio_channels_mapped));
+                av_set_int(ost->swr, "uch", ost->audio_channels_mapped);
+            }
             av_set_int(ost->swr, "ich", dec->channels);
             av_set_int(ost->swr, "och", enc->channels);
             if(audio_sync_method>1) av_set_int(ost->swr, "flags", SWR_FLAG_RESAMPLE);
@@ -2176,7 +2191,23 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                 if (codec->sample_fmt == AV_SAMPLE_FMT_NONE)
                     codec->sample_fmt = icodec->sample_fmt;
                 choose_sample_fmt(ost->st, ost->enc);
-                if (!codec->channels) {
+                if (ost->audio_channels_mapped) {
+                    /* the requested output channel is set to the number of
+                     * -map_channel only if no -ac are specified */
+                    if (!codec->channels) {
+                        codec->channels       = ost->audio_channels_mapped;
+                        codec->channel_layout = av_get_default_channel_layout(codec->channels);
+                        if (!codec->channel_layout) {
+                            av_log(NULL, AV_LOG_FATAL, "Unable to find an appropriate channel layout for requested number of channel\n");
+                            exit_program(1);
+                        }
+                    }
+                    /* fill unused channel mapping with -1 (which means a muted
+                     * channel in case the number of output channels is bigger
+                     * than the number of mapped channel) */
+                    for (j = ost->audio_channels_mapped; j < FF_ARRAY_ELEMS(ost->audio_channels_map); j++)
+                        ost->audio_channels_map[j] = -1;
+                } else if (!codec->channels) {
                     codec->channels = icodec->channels;
                     codec->channel_layout = icodec->channel_layout;
                 }
@@ -2388,6 +2419,15 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                input_streams[ost->source_index].st->index,
                ost->file_index,
                ost->index);
+        if (ost->audio_channels_mapped) {
+            av_log(NULL, AV_LOG_INFO, " [ch:");
+            for (j = 0; j < ost->audio_channels_mapped; j++)
+                if (ost->audio_channels_map[j] == -1)
+                    av_log(NULL, AV_LOG_INFO, " M");
+                else
+                    av_log(NULL, AV_LOG_INFO, " %d", ost->audio_channels_map[j]);
+            av_log(NULL, AV_LOG_INFO, "]");
+        }
         if (ost->sync_ist != &input_streams[ost->source_index])
             av_log(NULL, AV_LOG_INFO, " [sync #%d.%d]",
                    ost->sync_ist->file_index,
@@ -2896,6 +2936,66 @@ static int opt_attach(OptionsContext *o, const char *opt, const char *arg)
     o->attachments = grow_array(o->attachments, sizeof(*o->attachments),
                                 &o->nb_attachments, o->nb_attachments + 1);
     o->attachments[o->nb_attachments - 1] = arg;
+    return 0;
+}
+
+static int opt_map_channel(OptionsContext *o, const char *opt, const char *arg)
+{
+    int n;
+    AVStream *st;
+    AudioChannelMap *m;
+
+    o->audio_channel_maps =
+        grow_array(o->audio_channel_maps, sizeof(*o->audio_channel_maps),
+                   &o->nb_audio_channel_maps, o->nb_audio_channel_maps + 1);
+    m = &o->audio_channel_maps[o->nb_audio_channel_maps - 1];
+
+    /* muted channel syntax */
+    n = sscanf(arg, "%d:%d.%d", &m->channel_idx, &m->ofile_idx, &m->ostream_idx);
+    if ((n == 1 || n == 3) && m->channel_idx == -1) {
+        m->file_idx = m->stream_idx = -1;
+        if (n == 1)
+            m->ofile_idx = m->ostream_idx = -1;
+        return 0;
+    }
+
+    /* normal syntax */
+    n = sscanf(arg, "%d.%d.%d:%d.%d",
+               &m->file_idx,  &m->stream_idx, &m->channel_idx,
+               &m->ofile_idx, &m->ostream_idx);
+
+    if (n != 3 && n != 5) {
+        av_log(NULL, AV_LOG_FATAL, "Syntax error, mapchan usage: "
+               "[file.stream.channel|-1][:syncfile:syncstream]\n");
+        exit_program(1);
+    }
+
+    if (n != 5) // only file.stream.channel specified
+        m->ofile_idx = m->ostream_idx = -1;
+
+    /* check input */
+    if (m->file_idx < 0 || m->file_idx >= nb_input_files) {
+        av_log(NULL, AV_LOG_FATAL, "mapchan: invalid input file index: %d\n",
+               m->file_idx);
+        exit_program(1);
+    }
+    if (m->stream_idx < 0 ||
+        m->stream_idx >= input_files[m->file_idx].nb_streams) {
+        av_log(NULL, AV_LOG_FATAL, "mapchan: invalid input file stream index #%d.%d\n",
+               m->file_idx, m->stream_idx);
+        exit_program(1);
+    }
+    st = input_files[m->file_idx].ctx->streams[m->stream_idx];
+    if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
+        av_log(NULL, AV_LOG_FATAL, "mapchan: stream #%d.%d is not an audio stream.\n",
+               m->file_idx, m->stream_idx);
+        exit_program(1);
+    }
+    if (m->channel_idx < 0 || m->channel_idx >= st->codec->channels) {
+        av_log(NULL, AV_LOG_FATAL, "mapchan: invalid audio channel #%d.%d.%d\n",
+               m->file_idx, m->stream_idx, m->channel_idx);
+        exit_program(1);
+    }
     return 0;
 }
 
@@ -3588,6 +3688,7 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
 
 static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
 {
+    int n;
     AVStream *st;
     OutputStream *ost;
     AVCodecContext *audio_enc;
@@ -3614,6 +3715,21 @@ static OutputStream *new_audio_stream(OptionsContext *o, AVFormatContext *oc)
 
         ost->rematrix_volume=1.0;
         MATCH_PER_STREAM_OPT(rematrix_volume, f, ost->rematrix_volume, oc, st);
+    }
+
+    /* check for channel mapping for this audio stream */
+    for (n = 0; n < o->nb_audio_channel_maps; n++) {
+        AudioChannelMap *map = &o->audio_channel_maps[n];
+        InputStream *ist = &input_streams[ost->source_index];
+        if ((map->channel_idx == -1 || (ist->file_index == map->file_idx && ist->st->index == map->stream_idx)) &&
+            (map->ofile_idx   == -1 || ost->file_index == map->ofile_idx) &&
+            (map->ostream_idx == -1 || ost->st->index  == map->ostream_idx)) {
+            if (ost->audio_channels_mapped < FF_ARRAY_ELEMS(ost->audio_channels_map))
+                ost->audio_channels_map[ost->audio_channels_mapped++] = map->channel_idx;
+            else
+                av_log(NULL, AV_LOG_FATAL, "Max channel mapping for output %d.%d reached\n",
+                       ost->file_index, ost->st->index);
+        }
     }
 
     return ost;
@@ -4430,6 +4546,7 @@ static const OptionDef options[] = {
     { "codec", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(codec_names)}, "codec name", "codec" },
     { "pre", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(presets)}, "preset name", "preset" },
     { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
+    { "map_channel", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_channel}, "map an audio channel from one stream to another", "file.stream.channel[:syncfile.syncstream]" },
     { "map_meta_data", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_meta_data}, "DEPRECATED set meta data information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_metadata", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",

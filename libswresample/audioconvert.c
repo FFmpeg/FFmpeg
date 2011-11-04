@@ -35,11 +35,13 @@
 struct AVAudioConvert {
     int channels;
     int fmt_pair;
+    const int *ch_map;
 };
 
 AVAudioConvert *swr_audio_convert_alloc(enum AVSampleFormat out_fmt,
                                         enum AVSampleFormat in_fmt,
-                                        int channels, int flags)
+                                        int channels, const int *ch_map,
+                                        int flags)
 {
     AVAudioConvert *ctx;
     ctx = av_malloc(sizeof(AVAudioConvert));
@@ -47,6 +49,7 @@ AVAudioConvert *swr_audio_convert_alloc(enum AVSampleFormat out_fmt,
         return NULL;
     ctx->channels = channels;
     ctx->fmt_pair = out_fmt + AV_SAMPLE_FMT_NB*in_fmt;
+    ctx->ch_map   = ch_map;
     return ctx;
 }
 
@@ -58,15 +61,17 @@ void swr_audio_convert_free(AVAudioConvert **ctx)
 int swr_audio_convert(AVAudioConvert *ctx, AudioData *out, AudioData*in, int len)
 {
     int ch;
+    const uint8_t null_input[8] = {0};
 
     av_assert0(ctx->channels == out->ch_count);
 
     //FIXME optimize common cases
 
     for(ch=0; ch<ctx->channels; ch++){
-        const int is= (in ->planar ? 1 : in->ch_count) * in->bps;
+        const int ich= ctx->ch_map ? ctx->ch_map[ch] : ch;
+        const int is= ich < 0 ? 0 : (in->planar ? 1 : in->ch_count) * in->bps;
         const int os= (out->planar ? 1 :out->ch_count) *out->bps;
-        const uint8_t *pi= in ->ch[ch];
+        const uint8_t *pi= ich < 0 ? null_input : in->ch[ich];
         uint8_t       *po= out->ch[ch];
         uint8_t *end= po + os*len;
         if(!po)
