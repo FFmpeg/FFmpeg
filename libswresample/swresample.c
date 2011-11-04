@@ -291,7 +291,26 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         out_count = in_count;
     }
 
-    fill_audiodata(in ,  (void*)in_arg);
+    if(!in_arg){
+        if(s->in_buffer_count){
+            AudioData *a= &s->in_buffer;
+            int i, j, ret;
+            if((ret=realloc_audio(a, s->in_buffer_index + 2*s->in_buffer_count)) < 0)
+                return ret;
+            av_assert0(a->planar);
+            for(i=0; i<a->ch_count; i++){
+                for(j=0; j<s->in_buffer_count; j++){
+                    memcpy(a->ch[i] + (s->in_buffer_index+s->in_buffer_count+j  )*a->bps,
+                           a->ch[i] + (s->in_buffer_index+s->in_buffer_count-j-1)*a->bps, a->bps);
+                }
+            }
+            s->in_buffer_count += (s->in_buffer_count+1)/2;
+            s->resample_in_constraint = 0;
+        }else{
+            return 0;
+        }
+    }else
+        fill_audiodata(in ,  (void*)in_arg);
     fill_audiodata(out, out_arg);
 
     if(s->full_convert){
@@ -365,6 +384,8 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 //FIXME packed doesnt need more than 1 chan here!
         swr_audio_convert(s->out_convert, out, preout, out_count);
     }
+    if(!in_arg)
+        s->in_buffer_count = 0;
     return out_count;
 }
 
