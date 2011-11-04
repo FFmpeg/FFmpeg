@@ -64,4 +64,4 @@ DECL_DIRAC_PIXOP(avg, l4_c);
 
 void ff_diracdsp_init(DiracDSPContext *c);
 
-#endif
+#endif /* AVCODEC_DIRACDSP_H */
