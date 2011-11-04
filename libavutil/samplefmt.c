@@ -23,7 +23,7 @@
 #include <string.h>
 
 typedef struct SampleFmtInfo {
-    const char *name;
+    char name[4];
     int bits;
 } SampleFmtInfo;
 
