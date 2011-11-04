@@ -716,6 +716,27 @@ decode_lpc(WmallDecodeCtx *s)
 }
 
 
+static void clear_codec_buffers(WmallDecodeCtx *s)
+{
+    int ich, ilms;
+
+    memset(s->acfilter_coeffs, 0,     16 * sizeof(int));
+    memset(s->lpc_coefs      , 0, 40 * 2 * sizeof(int));
+
+    memset(s->mclms_coeffs    , 0, 128 * sizeof(int16_t));
+    memset(s->mclms_coeffs_cur, 0,   4 * sizeof(int16_t));
+    memset(s->mclms_prevvalues, 0,  64 * sizeof(int));
+    memset(s->mclms_updates   , 0,  64 * sizeof(int16_t));
+
+    for (ich = 0; ich < s->num_channels; ich++) {
+        for (ilms = 0; ilms < s->cdlms_ttl[ich]; ilms++) {
+            memset(s->cdlms[ich][ilms].coefs         , 0, 256 * sizeof(int16_t));
+            memset(s->cdlms[ich][ilms].lms_prevvalues, 0, 512 * sizeof(int));
+            memset(s->cdlms[ich][ilms].lms_updates   , 0, 512 * sizeof(int16_t));
+        }
+        s->ave_sum[ich] = 0;
+    }
+}
 
 /**
  *@brief Decode a single subframe (block).
