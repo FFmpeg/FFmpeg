@@ -353,7 +353,8 @@ static int amovie_query_formats(AVFilterContext *ctx)
 
     enum AVSampleFormat sample_fmts[] = { c->sample_fmt, -1 };
     int packing_fmts[] = { AVFILTER_PACKED, -1 };
-    int64_t chlayouts[] = { c->channel_layout, -1 };
+    int64_t chlayouts[] = { c->channel_layout ? c->channel_layout :
+                            av_get_default_channel_layout(c->channels), -1 };
 
     avfilter_set_common_sample_formats (ctx, avfilter_make_format_list(sample_fmts));
     avfilter_set_common_packing_formats(ctx, avfilter_make_format_list(packing_fmts));
