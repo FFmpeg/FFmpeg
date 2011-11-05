@@ -97,7 +97,7 @@ typedef struct {
     const uint8_t *header;
     int header_size;
     WTVHeaderWriteFunc *write_header;
-}WTVRootEntryTable;
+} WTVRootEntryTable;
 
 static int write_pad(AVIOContext *pb, int size)
 {
@@ -218,7 +218,7 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
         g = get_codec_guid(st->codec->codec_id, ff_codec_wav_guids);
         media_type = &ff_mediatype_audio;
         format_type = &ff_format_waveformatex;
-    }  else {
+    } else {
         av_log(s, AV_LOG_ERROR, "unknown codec_type (0x%x)\n", st->codec->codec_type);
         return -1;
     }
@@ -579,7 +579,7 @@ static void write_table_entries_attrib(AVFormatContext *s)
 
     //FIXME: translate special tags (e.g. WM/Bitrate) to binary representation
     ff_metadata_conv(&s->metadata, ff_asf_metadata_conv, NULL);
-    while((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
+    while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX)))
         write_tag(s->pb, tag->key, tag->value);
 }
 
@@ -590,7 +590,7 @@ static void write_table_redirector_legacy_attrib(AVFormatContext *s)
     int64_t pos = 0;
 
     //FIXME: translate special tags to binary representation
-    while((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
+    while ((tag = av_dict_get(s->metadata, "", tag, AV_DICT_IGNORE_SUFFIX))) {
         avio_wl64(pb, pos);
         pos += 16 + 4 + 4 + strlen(tag->key)*2 + 2 + strlen(tag->value)*2 + 2;
     }
