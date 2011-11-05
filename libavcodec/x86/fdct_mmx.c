@@ -151,7 +151,7 @@ DECLARE_ALIGNED(8, static const int16_t, tab_frw_01234567)[] = {  // forward_dct
   29692,  -12299,   26722,  -31521,
 };
 
-static struct
+static const struct
 {
  DECLARE_ALIGNED(16, const int16_t, tab_frw_01234567_sse2)[256];
 } tab_frw_01234567_sse2 =
