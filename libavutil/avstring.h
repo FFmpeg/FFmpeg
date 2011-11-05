@@ -151,4 +151,16 @@ static inline int av_tolower(int c)
     return c;
 }
 
+/*
+ * Locale independent case-insensitive compare.
+ * Note: This means only ASCII-range characters are case-insensitive
+ */
+int av_strcasecmp(const char *a, const char *b);
+
+/**
+ * Locale independent case-insensitive compare.
+ * Note: This means only ASCII-range characters are case-insensitive
+ */
+int av_strncasecmp(const char *a, const char *b, size_t n);
+
 #endif /* AVUTIL_AVSTRING_H */

@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-11-xx - xxxxxxx - lavu 51.14.0
+  Add av_strcasecmp() and av_strncasecmp() to avstring.h.
+
 2011-11-xx - xxxxxxx - lavu 51.13.0
   Add av_toupper()/av_tolower()
 
