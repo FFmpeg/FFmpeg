@@ -45,7 +45,7 @@ static void openssl_lock(int mode, int type, const char *file, int line)
     else
         pthread_mutex_unlock(&openssl_mutexes[type]);
 }
-#ifndef WIN32
+#if !defined(WIN32) && OPENSSL_VERSION_NUMBER < 0x10000000
 static unsigned long openssl_thread_id(void)
 {
     return (intptr_t) pthread_self();
@@ -78,7 +78,7 @@ void ff_tls_init(void)
             for (i = 0; i < CRYPTO_num_locks(); i++)
                 pthread_mutex_init(&openssl_mutexes[i], NULL);
             CRYPTO_set_locking_callback(openssl_lock);
-#ifndef WIN32
+#if !defined(WIN32) && OPENSSL_VERSION_NUMBER < 0x10000000
             CRYPTO_set_id_callback(openssl_thread_id);
 #endif
         }
