@@ -124,6 +124,8 @@ static void filter_samples(AVFilterLink *inlink, AVFilterBufferRef *insamples)
     AVFilterBufferRef *outsamples =
         avfilter_get_audio_buffer(inlink, AV_PERM_WRITE,
                                   insamples->audio->nb_samples);
+    avfilter_copy_buffer_ref_props(outsamples, insamples);
+
     taps  = ((EarwaxContext *)inlink->dst->priv)->taps;
     out   = (int16_t *)outsamples->data[0];
     in    = (int16_t *)insamples ->data[0];
