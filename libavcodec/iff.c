@@ -302,7 +302,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if ((err = extract_header(avctx, NULL)) < 0)
         return err;
-    s->frame.reference = 1;
+    s->frame.reference = 3;
 
     return 0;
 }

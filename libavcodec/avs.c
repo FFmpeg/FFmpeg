@@ -63,7 +63,7 @@ avs_decode_frame(AVCodecContext * avctx,
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
     }
-    p->reference = 1;
+    p->reference = 3;
     p->pict_type = AV_PICTURE_TYPE_P;
     p->key_frame = 0;
 

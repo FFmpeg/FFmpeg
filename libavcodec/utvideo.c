@@ -297,7 +297,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     if (c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
 
-    c->pic.reference = 1;
+    c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID;
     if ((ret = avctx->get_buffer(avctx, &c->pic)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");

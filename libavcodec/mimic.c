@@ -351,7 +351,7 @@ static int mimic_decode_frame(AVCodecContext *avctx, void *data,
         return -1;
     }
 
-    ctx->buf_ptrs[ctx->cur_index].reference = 1;
+    ctx->buf_ptrs[ctx->cur_index].reference = 3;
     ctx->buf_ptrs[ctx->cur_index].pict_type = is_pframe ? AV_PICTURE_TYPE_P:AV_PICTURE_TYPE_I;
     if(ff_thread_get_buffer(avctx, &ctx->buf_ptrs[ctx->cur_index])) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");

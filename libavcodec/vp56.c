@@ -529,7 +529,7 @@ int ff_vp56_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         }
 
         if (!is_alpha) {
-            p->reference = 1;
+            p->reference = 3;
             if (avctx->get_buffer(avctx, p) < 0) {
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return -1;

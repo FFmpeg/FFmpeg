@@ -241,7 +241,7 @@ static int mp_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     int i, count1, count2, sz;
 
-    mp->frame.reference = 1;
+    mp->frame.reference = 3;
     mp->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if (avctx->reget_buffer(avctx, &mp->frame)) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");

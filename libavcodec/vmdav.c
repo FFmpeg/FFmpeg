@@ -421,7 +421,7 @@ static int vmdvideo_decode_frame(AVCodecContext *avctx,
     if (buf_size < 16)
         return buf_size;
 
-    s->frame.reference = 1;
+    s->frame.reference = 3;
     if (avctx->get_buffer(avctx, &s->frame)) {
         av_log(s->avctx, AV_LOG_ERROR, "VMD Video: get_buffer() failed\n");
         return -1;

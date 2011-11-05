@@ -289,7 +289,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
     /* shuffle */
     FFSWAP(AVFrame, s->frame, s->last_frame);
     if (!s->frame.data[0]) {
-        s->frame.reference = 1;
+        s->frame.reference = 3;
         s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
         s->frame.linesize[0] = s->width;
 

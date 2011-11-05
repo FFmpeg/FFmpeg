@@ -1701,7 +1701,7 @@ static int frame_start(SnowContext *s){
         }
     }
 
-    s->current_picture.reference= 1;
+    s->current_picture.reference= 3;
     if(s->avctx->get_buffer(s->avctx, &s->current_picture) < 0){
         av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;

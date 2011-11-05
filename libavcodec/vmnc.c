@@ -293,7 +293,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
     const uint8_t *src = buf;
     int dx, dy, w, h, depth, enc, chunks, res, size_left;
 
-    c->pic.reference = 1;
+    c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     if(avctx->reget_buffer(avctx, &c->pic) < 0){
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");

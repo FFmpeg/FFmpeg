@@ -40,7 +40,7 @@ static av_cold int bethsoftvid_decode_init(AVCodecContext *avctx)
 {
     BethsoftvidContext *vid = avctx->priv_data;
     avcodec_get_frame_defaults(&vid->frame);
-    vid->frame.reference = 1;
+    vid->frame.reference = 3;
     vid->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
         FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
     avctx->pix_fmt = PIX_FMT_PAL8;

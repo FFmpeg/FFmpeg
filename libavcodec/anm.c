@@ -45,7 +45,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
         return -1;
 
     avcodec_get_frame_defaults(&s->frame);
-    s->frame.reference = 1;
+    s->frame.reference = 3;
 
     buf = avctx->extradata + 16*8;
     for (i = 0; i < 256; i++)

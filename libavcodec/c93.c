@@ -130,7 +130,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
 
     c93->currentpic ^= 1;
 
-    newpic->reference = 1;
+    newpic->reference = 3;
     newpic->buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                          FF_BUFFER_HINTS_REUSABLE | FF_BUFFER_HINTS_READABLE;
     if (avctx->reget_buffer(avctx, newpic)) {

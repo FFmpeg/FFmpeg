@@ -821,7 +821,7 @@ static int decode_frame(AVCodecContext *avctx,
 
     avctx->flags |= CODEC_FLAG_EMU_EDGE; // alternatively we would have to use our own buffer management
 
-    p->reference= 1;
+    p->reference= 3;
     if (avctx->reget_buffer(avctx, p) < 0) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
         return -1;
@@ -841,7 +841,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }else if(frame_4cc == AV_RL32("pfrm") || frame_4cc == AV_RL32("pfr2")){
         if(!f->last_picture.data[0]){
-            f->last_picture.reference= 1;
+            f->last_picture.reference= 3;
             if(avctx->get_buffer(avctx, &f->last_picture) < 0){
                 av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
                 return -1;

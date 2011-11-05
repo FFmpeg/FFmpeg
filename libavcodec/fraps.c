@@ -172,7 +172,7 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-        f->reference = 1;
+        f->reference = 3;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
                           FF_BUFFER_HINTS_PRESERVE |
                           FF_BUFFER_HINTS_REUSABLE;
@@ -215,7 +215,7 @@ static int decode_frame(AVCodecContext *avctx,
             return -1;
         }
 
-        f->reference = 1;
+        f->reference = 3;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
                           FF_BUFFER_HINTS_PRESERVE |
                           FF_BUFFER_HINTS_REUSABLE;
@@ -243,7 +243,7 @@ static int decode_frame(AVCodecContext *avctx,
          */
         avctx->pix_fmt = PIX_FMT_YUVJ420P;
         planes = 3;
-        f->reference = 1;
+        f->reference = 3;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
                           FF_BUFFER_HINTS_PRESERVE |
                           FF_BUFFER_HINTS_REUSABLE;
@@ -288,7 +288,7 @@ static int decode_frame(AVCodecContext *avctx,
         /* Virtually the same as version 4, but is for RGB24 */
         avctx->pix_fmt = PIX_FMT_BGR24;
         planes = 3;
-        f->reference = 1;
+        f->reference = 3;
         f->buffer_hints = FF_BUFFER_HINTS_VALID |
                           FF_BUFFER_HINTS_PRESERVE |
                           FF_BUFFER_HINTS_REUSABLE;
