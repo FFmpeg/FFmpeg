@@ -91,7 +91,7 @@ static int do_tls_poll(URLContext *h, int ret)
         return AVERROR(EIO);
     }
 #endif
-    if (h->flags & URL_FLAG_NONBLOCK)
+    if (h->flags & AVIO_FLAG_NONBLOCK)
         return AVERROR(EAGAIN);
     while (1) {
         int n = poll(&p, 1, 100);
