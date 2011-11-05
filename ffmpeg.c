@@ -2162,6 +2162,7 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
                         ist->st->codec->sample_aspect_ratio.num ?
                         ist->st->codec->sample_aspect_ratio : (AVRational){0, 1};
                 }
+                ost->st->avg_frame_rate = ist->st->avg_frame_rate;
                 break;
             case AVMEDIA_TYPE_SUBTITLE:
                 codec->width = icodec->width;
