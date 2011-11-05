@@ -56,7 +56,7 @@ static inline int get_block(GetBitContext *gb, DCTELEM *block, const uint8_t *sc
 
     // number of non-zero coefficients
     coeff = get_bits(gb, 6);
-    if (get_bits_count(gb) + (coeff << 1) >= gb->size_in_bits)
+    if (get_bits_left(gb) < (coeff << 1))
         return -1;
 
     // normally we would only need to clear the (63 - coeff) last values,
@@ -73,7 +73,7 @@ static inline int get_block(GetBitContext *gb, DCTELEM *block, const uint8_t *sc
 
     // 4 bits per coefficient
     ALIGN(4);
-    if (get_bits_count(gb) + (coeff << 2) >= gb->size_in_bits)
+    if (get_bits_left(gb) < (coeff << 2))
         return -1;
     while (coeff) {
         ac = get_sbits(gb, 4);
@@ -84,7 +84,7 @@ static inline int get_block(GetBitContext *gb, DCTELEM *block, const uint8_t *sc
 
     // 8 bits per coefficient
     ALIGN(8);
-    if (get_bits_count(gb) + (coeff << 3) >= gb->size_in_bits)
+    if (get_bits_left(gb) < (coeff << 3))
         return -1;
     while (coeff) {
         ac = get_sbits(gb, 8);
