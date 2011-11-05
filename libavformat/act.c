@@ -69,7 +69,7 @@ static int read_header(AVFormatContext *s,
 
     int min,sec,msec;
 
-    st=av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

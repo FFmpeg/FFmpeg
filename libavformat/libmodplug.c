@@ -217,7 +217,7 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!modplug->f)
         return AVERROR_INVALIDDATA;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
     av_set_pts_info(st, 64, 1, 1000);
@@ -231,7 +231,7 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     modplug->ts_per_packet = 1000*AUDIO_PKT_SIZE / (4*44100.);
 
     if (modplug->video_stream) {
-        AVStream *vst = av_new_stream(s, 1);
+        AVStream *vst = avformat_new_stream(s, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
         av_set_pts_info(vst, 64, 1, 1000);

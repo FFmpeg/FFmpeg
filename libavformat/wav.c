@@ -485,10 +485,11 @@ static int wav_read_header(AVFormatContext *s,
                 goto break_loop;
             }
             av_log(s, AV_LOG_DEBUG, "Found SMV data\n");
-            vst = av_new_stream(s, 1);
+            vst = avformat_new_stream(s, NULL);
             if (!vst)
                 return AVERROR(ENOMEM);
             avio_r8(pb);
+            vst->id = 1;
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             vst->codec->codec_id = CODEC_ID_MJPEG;
             vst->codec->width  = avio_rl24(pb);

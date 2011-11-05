@@ -32,7 +32,7 @@ static int g723_1_init(AVFormatContext *s, AVFormatParameters *ap)
 {
     AVStream *st;
 
-    st = av_new_stream(s, 0);
+    st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
 

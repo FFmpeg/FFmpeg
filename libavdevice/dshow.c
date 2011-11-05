@@ -659,11 +659,12 @@ dshow_add_device(AVFormatContext *avctx, AVFormatParameters *ap,
     AVStream *st;
     int ret = AVERROR(EIO);
 
-    st = av_new_stream(avctx, devtype);
+    st = avformat_new_stream(avctx, NULL);
     if (!st) {
         ret = AVERROR(ENOMEM);
         goto error;
     }
+    st->id = devtype;
 
     ctx->capture_filter[devtype]->stream_index = st->index;
 

@@ -64,11 +64,12 @@ static AVStream *add_audio_stream(AVFormatContext *oc, enum CodecID codec_id)
     AVCodecContext *c;
     AVStream *st;
 
-    st = av_new_stream(oc, 1);
+    st = avformat_new_stream(oc, NULL);
     if (!st) {
         fprintf(stderr, "Could not alloc stream\n");
         exit(1);
     }
+    st->id = 1;
 
     c = st->codec;
     c->codec_id = codec_id;

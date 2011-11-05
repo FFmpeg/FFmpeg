@@ -145,7 +145,7 @@ static int read_header(AVFormatContext *ctx, AVFormatParameters *ap)
     if (error = al_get_error(ad->device, &error_msg)) goto fail;
 
     /* Create stream */
-    if (!(st = av_new_stream(ctx, 0))) {
+    if (!(st = avformat_new_stream(ctx, NULL))) {
         error = AVERROR(ENOMEM);
         goto fail;
     }

@@ -161,8 +161,9 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
     /* for each open output create a corresponding stream */
     for (i = 0, inout = output_links; inout; i++, inout = inout->next) {
         AVStream *st;
-        if (!(st = av_new_stream(avctx, i)))
+        if (!(st = avformat_new_stream(avctx, NULL)))
             FAIL(AVERROR(ENOMEM));
+        st->id = i;
     }
 
     /* create a sink for each output and connect them to the graph */

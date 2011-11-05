@@ -47,7 +47,7 @@ static int pmp_header(AVFormatContext *s, AVFormatParameters *ap) {
     int srate, channels;
     int i;
     uint64_t pos;
-    AVStream *vst = av_new_stream(s, 0);
+    AVStream *vst = avformat_new_stream(s, NULL);
     if (!vst)
         return AVERROR(ENOMEM);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
@@ -90,9 +90,10 @@ static int pmp_header(AVFormatContext *s, AVFormatParameters *ap) {
     srate = avio_rl32(pb);
     channels = avio_rl32(pb) + 1;
     for (i = 1; i < pmp->num_streams; i++) {
-        AVStream *ast = av_new_stream(s, i);
+        AVStream *ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
+        ast->id = i;
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id = audio_codec_id;
         ast->codec->channels = channels;

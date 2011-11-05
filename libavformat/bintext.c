@@ -102,7 +102,7 @@ static AVStream * init_stream(AVFormatContext *s,
                               AVFormatParameters *ap)
 {
     BinDemuxContext *bin = s->priv_data;
-    AVStream *st = av_new_stream(s, 0);
+    AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return NULL;
     st->codec->codec_tag   = 0;
