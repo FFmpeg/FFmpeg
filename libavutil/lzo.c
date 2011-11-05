@@ -175,11 +175,11 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen) {
     int state= 0;
     int x;
     LZOContext c;
-    if (!*outlen || !*inlen) {
+    if (*outlen <= 0 || *inlen <= 0) {
         int res = 0;
-        if (!*outlen)
+        if (*outlen <= 0)
             res |= AV_LZO_OUTPUT_FULL;
-        if (!*inlen)
+        if (*inlen <= 0)
             res |= AV_LZO_INPUT_DEPLETED;
         return res;
     }
