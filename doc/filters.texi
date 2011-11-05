@@ -198,7 +198,7 @@ seconds
 
 @item pos
 position of the frame in the input stream, -1 if this information in
-unavailable and/or meanigless (for example in case of synthetic audio)
+unavailable and/or meaningless (for example in case of synthetic audio)
 
 @item fmt
 sample format name
@@ -240,7 +240,7 @@ Ported from SoX.
 Adjust the input audio volume.
 
 The filter accepts exactly one parameter @var{vol}, which expresses
-how the audio volume will be increased or decresed.
+how the audio volume will be increased or decreased.
 
 Output values are clipped to the maximum value.
 
@@ -820,7 +820,7 @@ A description of the accepted parameters follows.
 @table @option
 
 @item x, y, w, h
-Specify a rectangular area where to limit the sarch for motion
+Specify a rectangular area where to limit the search for motion
 vectors.
 If desired the search for motion vectors can be limited to a
 rectangular area of the frame defined by its top left corner, width
@@ -1751,7 +1751,7 @@ movie=logo2.png [logo2];
 color=red@.3:WxH [over]; [in][over] overlay [out]
 @end example
 
-You can chain togheter more overlays but the efficiency of such
+You can chain together more overlays but the efficiency of such
 approach is yet to be tested.
 
 @section pad
@@ -2464,7 +2464,7 @@ through the interface defined in @file{libavfilter/vsrc_buffer.h}.
 It accepts the following parameters:
 @var{width}:@var{height}:@var{pix_fmt_string}:@var{timebase_num}:@var{timebase_den}:@var{sample_aspect_ratio_num}:@var{sample_aspect_ratio.den}:@var{scale_params}
 
-All the parameters but @var{scale_params} need to be explicitely
+All the parameters but @var{scale_params} need to be explicitly
 defined.
 
 Follows the list of the accepted parameters.
