@@ -878,7 +878,7 @@ static int decode_subframe(WmallDecodeCtx *s)
 
     s->seekable_tile = get_bits1(&s->gb);
     if(s->seekable_tile) {
-        // XXX: 6.2.2 clear_codec_buffers()
+        clear_codec_buffers(s);
 
         s->do_arith_coding    = get_bits1(&s->gb);
         if(s->do_arith_coding) {
@@ -899,7 +899,7 @@ static int decode_subframe(WmallDecodeCtx *s)
         s->movave_scaling = get_bits(&s->gb, 3);
         s->quant_stepsize = get_bits(&s->gb, 8) + 1;
 
-            // XXX: 6.2.2 reset_codec()
+            reset_codec(s);
     }
 
     rawpcm_tile = get_bits1(&s->gb);
