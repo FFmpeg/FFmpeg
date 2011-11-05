@@ -131,4 +131,24 @@ char *av_d2str(double d);
  */
 char *av_get_token(const char **buf, const char *term);
 
+/**
+ * Locale independent conversion of ASCII characters to upper case.
+ */
+static inline int av_toupper(int c)
+{
+    if (c >= 'a' && c <= 'z')
+        c ^= 0x20;
+    return c;
+}
+
+/**
+ * Locale independent conversion of ASCII characters to lower case.
+ */
+static inline int av_tolower(int c)
+{
+    if (c >= 'A' && c <= 'Z')
+        c ^= 0x20;
+    return c;
+}
+
 #endif /* AVUTIL_AVSTRING_H */
