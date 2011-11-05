@@ -257,6 +257,13 @@ BIWEIGHT_FUNC_HALF_MM 8, 8, sse2
     add  off_regd, 1
     or   off_regd, 1
     add        r4, 1
+    cmp        r5, 128
+     jne .normal
+    sar        r5, 1
+    sar        r6, 1
+    sar  off_regd, 1
+    sub        r4, 1
+.normal
     movd       m4, r5d
     movd       m0, r6d
     movd       m5, off_regd
