@@ -22,6 +22,7 @@
 #include <unistd.h>
 
 #include "libavutil/avstring.h"
+#include "libavutil/dict.h"
 #include "libavutil/opt.h"
 #include "os_support.h"
 #include "avformat.h"
@@ -45,12 +46,40 @@ static const char *urlcontext_to_name(void *ptr)
     if(h->prot) return h->prot->name;
     else        return "NULL";
 }
+
+static void *urlcontext_child_next(void *obj, void *prev)
+{
+    URLContext *h = obj;
+    if (!prev && h->priv_data && h->prot->priv_data_class)
+        return h->priv_data;
+    return NULL;
+}
+
+static const AVClass *urlcontext_child_class_next(const AVClass *prev)
+{
+    URLProtocol *p = NULL;
+
+    /* find the protocol that corresponds to prev */
+    while (prev && (p = ffurl_protocol_next(p)))
+        if (p->priv_data_class == prev)
+            break;
+
+    /* find next protocol with priv options */
+    while (p = ffurl_protocol_next(p))
+        if (p->priv_data_class)
+            return p->priv_data_class;
+    return NULL;
+
+}
+
 static const AVOption options[] = {{NULL}};
 static const AVClass urlcontext_class = {
     .class_name     = "URLContext",
     .item_name      = urlcontext_to_name,
     .option         = options,
     .version        = LIBAVUTIL_VERSION_INT,
+    .child_next     = urlcontext_child_next,
+    .child_class_next = urlcontext_child_class_next,
 };
 /*@}*/
 
@@ -133,9 +162,13 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     return err;
 }
 
-int ffurl_connect(URLContext* uc)
+int ffurl_connect(URLContext* uc, AVDictionary **options)
 {
-    int err = uc->prot->url_open(uc, uc->filename, uc->flags);
+    int err =
+#if !FF_API_OLD_AVIO
+        uc->prot->url_open2 ? uc->prot->url_open2(uc, uc->filename, uc->flags, options) :
+#endif
+        uc->prot->url_open(uc, uc->filename, uc->flags);
     if (err)
         return err;
     uc->is_connected = 1;
@@ -156,7 +189,7 @@ int url_open_protocol (URLContext **puc, struct URLProtocol *up,
     ret = url_alloc_for_protocol(puc, up, filename, flags, NULL);
     if (ret)
         goto fail;
-    ret = ffurl_connect(*puc);
+    ret = ffurl_connect(*puc, NULL);
     if (!ret)
         return 0;
  fail:
@@ -170,11 +203,11 @@ int url_alloc(URLContext **puc, const char *filename, int flags)
 }
 int url_connect(URLContext* uc)
 {
-    return ffurl_connect(uc);
+    return ffurl_connect(uc, NULL);
 }
 int url_open(URLContext **puc, const char *filename, int flags)
 {
-    return ffurl_open(puc, filename, flags, NULL);
+    return ffurl_open(puc, filename, flags, NULL, NULL);
 }
 int url_read(URLContext *h, unsigned char *buf, int size)
 {
@@ -255,14 +288,18 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
 }
 
 int ffurl_open(URLContext **puc, const char *filename, int flags,
-               const AVIOInterruptCB *int_cb)
+               const AVIOInterruptCB *int_cb, AVDictionary **options)
 {
     int ret = ffurl_alloc(puc, filename, flags, int_cb);
     if (ret)
         return ret;
-    ret = ffurl_connect(*puc);
+    if (options && (*puc)->prot->priv_data_class &&
+        (ret = av_opt_set_dict((*puc)->priv_data, options)) < 0)
+        goto fail;
+    ret = ffurl_connect(*puc, options);
     if (!ret)
         return 0;
+fail:
     ffurl_close(*puc);
     *puc = NULL;
     return ret;
@@ -356,7 +393,7 @@ int ffurl_close(URLContext *h)
 int url_exist(const char *filename)
 {
     URLContext *h;
-    if (ffurl_open(&h, filename, AVIO_FLAG_READ, NULL) < 0)
+    if (ffurl_open(&h, filename, AVIO_FLAG_READ, NULL, NULL) < 0)
         return 0;
     ffurl_close(h);
     return 1;
@@ -373,7 +410,7 @@ int avio_check(const char *url, int flags)
     if (h->prot->url_check) {
         ret = h->prot->url_check(h, flags);
     } else {
-        ret = ffurl_connect(h);
+        ret = ffurl_connect(h, NULL);
         if (ret >= 0)
             ret = flags;
     }

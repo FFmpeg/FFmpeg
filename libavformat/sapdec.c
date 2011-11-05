@@ -85,7 +85,8 @@ static int sap_read_header(AVFormatContext *s,
 
     ff_url_join(url, sizeof(url), "udp", NULL, host, port, "?localport=%d",
                 port);
-    ret = ffurl_open(&sap->ann_fd, url, AVIO_FLAG_READ, &s->interrupt_callback);
+    ret = ffurl_open(&sap->ann_fd, url, AVIO_FLAG_READ,
+                     &s->interrupt_callback, NULL);
     if (ret)
         goto fail;
 

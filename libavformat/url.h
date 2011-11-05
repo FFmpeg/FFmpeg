@@ -28,6 +28,8 @@
 #include "avio.h"
 #include "libavformat/version.h"
 
+#include "libavutil/dict.h"
+
 #if !FF_API_OLD_AVIO
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
 
@@ -48,6 +50,12 @@ typedef struct URLContext {
 typedef struct URLProtocol {
     const char *name;
     int     (*url_open)( URLContext *h, const char *url, int flags);
+    /**
+     * This callback is to be used by protocols which open further nested
+     * protocols. options are then to be passed to ffurl_open()/ffurl_connect()
+     * for those nested protocols.
+     */
+    int     (*url_open2)(URLContext *h, const char *url, int flags, AVDictionary **options);
     int     (*url_read)( URLContext *h, unsigned char *buf, int size);
     int     (*url_write)(URLContext *h, const unsigned char *buf, int size);
     int64_t (*url_seek)( URLContext *h, int64_t pos, int whence);
@@ -82,8 +90,13 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
 
 /**
  * Connect an URLContext that has been allocated by ffurl_alloc
+ *
+ * @param options  A dictionary filled with options for nested protocols,
+ * i.e. it will be passed to url_open2() for protocols implementing it.
+ * This parameter will be destroyed and replaced with a dict containing options
+ * that were not found. May be NULL.
  */
-int ffurl_connect(URLContext *uc);
+int ffurl_connect(URLContext *uc, AVDictionary **options);
 
 /**
  * Create an URLContext for accessing to the resource indicated by
@@ -95,11 +108,14 @@ int ffurl_connect(URLContext *uc);
  * is to be opened
  * @param int_cb interrupt callback to use for the URLContext, may be
  * NULL
+ * @param options  A dictionary filled with protocol-private options. On return
+ * this parameter will be destroyed and replaced with a dict containing options
+ * that were not found. May be NULL.
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
 int ffurl_open(URLContext **puc, const char *filename, int flags,
-               const AVIOInterruptCB *int_cb);
+               const AVIOInterruptCB *int_cb, AVDictionary **options);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store
