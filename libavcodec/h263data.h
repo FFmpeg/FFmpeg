@@ -264,11 +264,11 @@ const uint8_t ff_h263_chroma_qscale_table[32]={
     0, 1, 2, 3, 4, 5, 6, 6, 7, 8, 9, 9,10,10,11,11,12,12,12,13,13,13,14,14,14,14,14,15,15,15,15,15
 };
 
-uint16_t ff_mba_max[6]={
+const uint16_t ff_mba_max[6]={
      47,  98, 395,1583,6335,9215
 };
 
-uint8_t ff_mba_length[7]={
+const uint8_t ff_mba_length[7]={
       6,   7,   9,  11,  13,  14,  14
 };
 

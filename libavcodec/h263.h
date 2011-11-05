@@ -59,8 +59,8 @@ extern RLTable rl_intra_aic;
 
 extern const uint16_t h263_format[8][2];
 extern const uint8_t modified_quant_tab[2][32];
-extern uint16_t ff_mba_max[6];
-extern uint8_t ff_mba_length[7];
+extern const uint16_t ff_mba_max[6];
+extern const uint8_t ff_mba_length[7];
 
 extern uint8_t ff_h263_static_rl_table_store[2][2][2*MAX_RUN + MAX_LEVEL + 3];
 
