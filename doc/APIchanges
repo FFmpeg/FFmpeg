@@ -13,20 +13,20 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-11-03 - xxxxxxx - lavu 51.23.0
+2011-11-03 - 96949da - lavu 51.23.0
   Add av_strcasecmp() and av_strncasecmp() to avstring.h.
 
 2011-10-20 - b35e9e1 - lavu 51.22.0
   Add av_strtok() to avstring.h.
 
-2011-xx-xx - xxxxxxx - lavc 53.15.0
+2011-10-27 - 512557b - lavc 53.15.0
   Remove avcodec_parse_frame.
   Deprecate AVCodecContext.parse_only and CODEC_CAP_PARSE_ONLY.
 
-2011-10-xx - xxxxxxx - lavf 53.10.0
+2011-10-19 - 569129a - lavf 53.10.0
   Add avformat_new_stream(). Deprecate av_new_stream().
 
-2011-xx-xx - xxxxxxx - lavf 53.9.0
+2011-10-13 - b631fba - lavf 53.9.0
   Add AVFMT_NO_BYTE_SEEK AVInputFormat flag.
 
 2011-10-12 - lavu 51.12.0
@@ -48,16 +48,16 @@ API changes, most recent first:
   - 641c7af new functions - av_opt_child_next, av_opt_child_class_next
     and av_opt_find2()
 
-2011-09-22 - xxxxxxx - lavu 51.17.0
+2011-09-22 - a70e787 - lavu 51.17.0
   Add av_x_if_null().
 
-2011-09-18 - xxxxxxx - lavc 53.16.0
+2011-09-18 - 645cebb - lavc 53.16.0
   Add showall flag2
 
-2011-09-16 - xxxxxxx - lavfi 2.42.0
+2011-09-16 - ea8de10 - lavfi 2.42.0
   Add avfilter_all_channel_layouts.
 
-2011-09-16 - xxxxxxx - lavfi 2.41.0
+2011-09-16 - 9899037 - lavfi 2.41.0
   Rename avfilter_all_* function names to avfilter_make_all_*.
 
   In particular, apply the renames:
@@ -65,24 +65,24 @@ API changes, most recent first:
   avfilter_all_channel_layouts -> avfilter_make_all_channel_layouts
   avfilter_all_packing_formats -> avfilter_make_all_packing_formats
 
-2011-09-12 - xxxxxxx - lavfi 2.40.0
+2011-09-12 - 4381bdd - lavfi 2.40.0
   Change AVFilterBufferRefAudioProps.sample_rate type from uint32_t to int.
 
-2011-09-12 - xxxxxxx - lavfi 2.40.0
+2011-09-12 - 2c03174 - lavfi 2.40.0
   Simplify signature for avfilter_get_audio_buffer(), make it
   consistent with avfilter_get_video_buffer().
 
-2011-09-06 - xxxxxxx - lavfi 2.39.0
+2011-09-06 - 4f7dfe1 - lavfi 2.39.0
   Rename libavfilter/vsink_buffer.h to libavfilter/buffersink.h.
 
-2011-09-06 - xxxxxxx - lavfi 2.38.0
+2011-09-06 - c4415f6 - lavfi 2.38.0
   Unify video and audio sink API.
 
   In particular, add av_buffersink_get_buffer_ref(), deprecate
   av_vsink_buffer_get_video_buffer_ref() and change the value for the
   opaque field passed to the abuffersink init function.
 
-2011-09-xx - xxxxxxx - lavu 51.16.0
+2011-09-04 - 61e2e29 - lavu 51.16.0
   Add av_asprintf().
 
 2011-08-22 - dacd827 - lavf 53.10.0
@@ -192,7 +192,7 @@ API changes, most recent first:
   Add av_get_bytes_per_sample() in libavutil/samplefmt.h.
   Deprecate av_get_bits_per_sample_fmt().
 
-2011-06-xx - b39b062 - lavu 51.8.0 - opt.h
+2011-06-05 - b39b062 - lavu 51.8.0 - opt.h
   Add av_opt_free convenience function.
 
 2011-06-06 - 95a0242 - lavfi 2.14.0 - AVFilterBufferRefAudioProps
