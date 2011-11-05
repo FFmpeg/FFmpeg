@@ -743,6 +743,17 @@ static void clear_codec_buffers(WmallDecodeCtx *s)
     }
 }
 
+static void reset_codec(WmallDecodeCtx *s)
+{
+    int ich, ilms;
+    s->mclms_recent = s->mclms_order * s->num_channels;
+    for (ich = 0; ich < s->num_channels; ich++)
+        for (ilms = 0; ilms < s->cdlms_ttl[ich]; ilms++)
+            s->cdlms[ich][ilms].recent = s->cdlms[ich][ilms].order;
+}
+
+
+
 /**
  *@brief Decode a single subframe (block).
  *@param s codec context
