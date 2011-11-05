@@ -183,7 +183,7 @@ static int query_formats(AVFilterContext *ctx)
     return 0;
 }
 
-static enum PixelFormat alpha_pix_fmts[] = {
+static const enum PixelFormat alpha_pix_fmts[] = {
     PIX_FMT_YUVA420P, PIX_FMT_ARGB, PIX_FMT_ABGR, PIX_FMT_RGBA,
     PIX_FMT_BGRA, PIX_FMT_NONE
 };
