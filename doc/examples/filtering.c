@@ -31,7 +31,6 @@
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
 #include <libavfilter/avfiltergraph.h>
-#include <libavfilter/vsink_buffer.h>
 #include <libavfilter/vsrc_buffer.h>
 
 const char *filter_descr = "scale=78:24";
