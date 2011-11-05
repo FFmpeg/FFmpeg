@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * Windows Television (WTV) demuxer
+ * @author Zhentan Feng <spyfeng at gmail dot com>
+ */
+
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avassert.h"
 #include "avformat.h"
