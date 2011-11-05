@@ -710,7 +710,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         print_str("codec_type", "unknown");
     }
     if (dec_ctx->codec && dec_ctx->codec->priv_class) {
-        AVOption *opt = NULL;
+        const AVOption *opt = NULL;
         while (opt = av_opt_next(dec_ctx->priv_data,opt)) {
             uint8_t *str;
             if (opt->flags) continue;
