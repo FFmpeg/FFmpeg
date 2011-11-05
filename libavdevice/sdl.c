@@ -43,7 +43,7 @@ typedef struct {
     int sdl_was_already_inited;
 } SDLContext;
 
-struct sdl_overlay_pix_fmt_entry {
+static const struct sdl_overlay_pix_fmt_entry {
     enum PixelFormat pix_fmt; int overlay_fmt;
 } sdl_overlay_pix_fmt_map[] = {
     { PIX_FMT_YUV420P, SDL_IYUV_OVERLAY },
