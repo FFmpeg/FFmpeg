@@ -35,7 +35,7 @@
 #include "internal.h"
 #include "drawutils.h"
 
-static const char *var_names[] = {
+static const char * const var_names[] = {
     "main_w",    "W", ///< width  of the main    video
     "main_h",    "H", ///< height of the main    video
     "overlay_w", "w", ///< width  of the overlay video

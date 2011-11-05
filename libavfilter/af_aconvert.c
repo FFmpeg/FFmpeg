@@ -99,7 +99,7 @@ REMATRIX_FUNC_SIG(stereo_remix_planar)
     REGISTER_FUNC_PACKING(INCHLAYOUT, OUTCHLAYOUT, FUNC##_packed, AVFILTER_PACKED)  \
     REGISTER_FUNC_PACKING(INCHLAYOUT, OUTCHLAYOUT, FUNC##_planar, AVFILTER_PLANAR)
 
-static struct RematrixFunctionInfo {
+static const struct RematrixFunctionInfo {
     int64_t in_chlayout, out_chlayout;
     int planar, sfmt;
     void (*func)();

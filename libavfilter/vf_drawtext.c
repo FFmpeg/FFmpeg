@@ -46,7 +46,7 @@
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
 
-static const char *var_names[] = {
+static const char * const var_names[] = {
     "w",                      ///< width  of the input video
     "h",                      ///< height of the input video
     "tw", "text_w",           ///< width  of the rendered text
