@@ -107,8 +107,8 @@ static void get_quant_quality(NuvContext *c, int quality) {
 
 static int codec_reinit(AVCodecContext *avctx, int width, int height, int quality) {
     NuvContext *c = avctx->priv_data;
-    width = (width + 1) & ~1;
-    height = (height + 1) & ~1;
+    width  = FFALIGN(width,  2);
+    height = FFALIGN(height, 2);
     if (quality >= 0)
         get_quant_quality(c, quality);
     if (width != c->width || height != c->height) {
