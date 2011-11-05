@@ -50,13 +50,13 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     /* merge list of formats */
     m_count = FFMIN(a->format_count, b->format_count);
     if (m_count) {
-    ret->formats = av_malloc(sizeof(*ret->formats) * m_count);
-    for(i = 0; i < a->format_count; i ++)
-        for(j = 0; j < b->format_count; j ++)
-            if(a->formats[i] == b->formats[j])
-                ret->formats[k++] = a->formats[i];
+        ret->formats = av_malloc(sizeof(*ret->formats) * m_count);
+        for(i = 0; i < a->format_count; i ++)
+            for(j = 0; j < b->format_count; j ++)
+                if(a->formats[i] == b->formats[j])
+                    ret->formats[k++] = a->formats[i];
 
-    ret->format_count = k;
+        ret->format_count = k;
     }
     /* check that there was at least one common format */
     if(!ret->format_count) {
@@ -94,7 +94,7 @@ AVFilterFormats *avfilter_make_format_list(const int *fmts)
 
     formats               = av_mallocz(sizeof(AVFilterFormats));
     if (count)
-    formats->formats      = av_malloc(sizeof(*formats->formats) * count);
+        formats->formats  = av_malloc(sizeof(*formats->formats) * count);
     formats->format_count = count;
     memcpy(formats->formats, fmts, sizeof(*formats->formats) * count);
 
