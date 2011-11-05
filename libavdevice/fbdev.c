@@ -50,7 +50,7 @@ struct rgb_pixfmt_map_entry {
     enum PixelFormat pixfmt;
 };
 
-static struct rgb_pixfmt_map_entry rgb_pixfmt_map[] = {
+static const struct rgb_pixfmt_map_entry rgb_pixfmt_map[] = {
     // bpp, red_offset,  green_offset, blue_offset, alpha_offset, pixfmt
     {  32,       0,           8,          16,           24,   PIX_FMT_RGBA  },
     {  32,      16,           8,           0,           24,   PIX_FMT_BGRA  },
@@ -65,7 +65,7 @@ static enum PixelFormat get_pixfmt_from_fb_varinfo(struct fb_var_screeninfo *var
     int i;
 
     for (i = 0; i < FF_ARRAY_ELEMS(rgb_pixfmt_map); i++) {
-        struct rgb_pixfmt_map_entry *entry = &rgb_pixfmt_map[i];
+        const struct rgb_pixfmt_map_entry *entry = &rgb_pixfmt_map[i];
         if (entry->bits_per_pixel == varinfo->bits_per_pixel &&
             entry->red_offset     == varinfo->red.offset     &&
             entry->green_offset   == varinfo->green.offset   &&
