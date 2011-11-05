@@ -59,14 +59,8 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (s->codec_api.SetParam(s->handle, VO_PID_AAC_ENCPARAM, &params)
         != VO_ERR_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to set encoding parameters\n");
-        return AVERROR_UNKNOWN;
+        return AVERROR(EINVAL);
     }
-
-    avctx->extradata_size = 2;
-    avctx->extradata      = av_mallocz(avctx->extradata_size +
-                                       FF_INPUT_BUFFER_PADDING_SIZE);
-    if (!avctx->extradata)
-        return AVERROR(ENOMEM);
 
     for (index = 0; index < 16; index++)
         if (avctx->sample_rate == ff_mpeg4audio_sample_rates[index])
@@ -74,10 +68,18 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
     if (index == 16) {
         av_log(avctx, AV_LOG_ERROR, "Unsupported sample rate %d\n",
                                     avctx->sample_rate);
-        return AVERROR_NOTSUPP;
+        return AVERROR(ENOSYS);
     }
-    avctx->extradata[0] = 0x02 << 3 | index >> 1;
-    avctx->extradata[1] = (index & 0x01) << 7 | avctx->channels << 3;
+    if (avctx->flags & CODEC_FLAG_GLOBAL_HEADER) {
+        avctx->extradata_size = 2;
+        avctx->extradata      = av_mallocz(avctx->extradata_size +
+                                           FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!avctx->extradata)
+            return AVERROR(ENOMEM);
+
+        avctx->extradata[0] = 0x02 << 3 | index >> 1;
+        avctx->extradata[1] = (index & 0x01) << 7 | avctx->channels << 3;
+    }
     return 0;
 }
 
@@ -108,12 +110,12 @@ static int aac_encode_frame(AVCodecContext *avctx,
     if (s->codec_api.GetOutputData(s->handle, &output, &output_info)
         != VO_ERR_NONE) {
         av_log(avctx, AV_LOG_ERROR, "Unable to encode frame\n");
-        return AVERROR_UNKNOWN;
+        return AVERROR(EINVAL);
     }
     return output.Length;
 }
 
-AVCodec ff_libvo_aacenc_encoder = {
+AVCodec libvo_aacenc_encoder = {
     "libvo_aacenc",
     CODEC_TYPE_AUDIO,
     CODEC_ID_AAC,
@@ -122,7 +124,7 @@ AVCodec ff_libvo_aacenc_encoder = {
     aac_encode_frame,
     aac_encode_close,
     NULL,
-    .sample_fmts = (enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
-    .long_name = NULL_IF_CONFIG_SMALL("libvo-aacenc AAC"),
+    .sample_fmts = (const enum SampleFormat[]){SAMPLE_FMT_S16,SAMPLE_FMT_NONE},
+    .long_name = NULL_IF_CONFIG_SMALL("Android VisualOn AAC"),
 };
 
