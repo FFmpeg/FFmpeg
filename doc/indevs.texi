@@ -532,6 +532,9 @@ ffplay -f video4linux2 /dev/video0
 ffmpeg -f video4linux2 -i /dev/video0 out.mpeg
 @end example
 
+"v4l" and "v4l2" can be used as aliases for the respective "video2linux" and
+"video4linux2".
+
 @section vfwcap
 
 VfW (Video for Windows) capture input device.
