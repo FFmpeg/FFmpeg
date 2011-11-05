@@ -239,7 +239,8 @@ static av_cold int vp8_init(AVCodecContext *avctx)
     enccfg.g_timebase.den = avctx->time_base.den;
     enccfg.g_threads      = avctx->thread_count;
 #if FF_API_X264_GLOBAL_OPTS
-    enccfg.g_lag_in_frames= FFMIN(avctx->rc_lookahead, 25);  //0-25, avoids init failure
+    if(avctx->rc_lookahead >= 0)
+        enccfg.g_lag_in_frames= FFMIN(avctx->rc_lookahead, 25);  //0-25, avoids init failure
     if (ctx->lag_in_frames >= 0)
         enccfg.g_lag_in_frames = ctx->lag_in_frames;
 #else
