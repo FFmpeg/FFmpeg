@@ -64,9 +64,9 @@ typedef struct {
     J2kCodingStyle codsty[4];
     J2kQuantStyle  qntsty[4];
 
-    uint8_t *buf_start;
-    uint8_t *buf;
-    uint8_t *buf_end;
+    const uint8_t *buf_start;
+    const uint8_t *buf;
+    const uint8_t *buf_end;
     int bit_index;
 
     int16_t curtileno;
@@ -903,7 +903,7 @@ static int decode_codestream(J2kDecoderContext *s)
 
     for (;;){
         int marker, len, ret = 0;
-        uint8_t *oldbuf;
+        const uint8_t *oldbuf;
         if (s->buf_end - s->buf < 2){
             av_log(s->avctx, AV_LOG_ERROR, "Missing EOC\n");
             break;
