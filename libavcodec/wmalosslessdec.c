@@ -241,6 +241,7 @@ typedef struct WmallDecodeCtx {
     int16_t mclms_coeffs_cur[4];
     int mclms_prevvalues[64];   // FIXME: should be 32-bit / 16-bit depending on bit-depth
     int16_t mclms_updates[64];
+    int mclms_recent;
 
     int movave_scaling;
     int quant_stepsize;
@@ -264,6 +265,7 @@ typedef struct WmallDecodeCtx {
     int bV3RTM;
 
     int is_channel_coded[2];    // XXX: same question as above applies here too (and below)
+    int update_speed[2];
 
     int transient[2];
     int transient_pos[2];
