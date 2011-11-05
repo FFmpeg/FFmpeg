@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "avio_internal.h"
 #include "libavutil/opt.h"
 
 /**
@@ -40,6 +41,10 @@ static void *format_child_next(void *obj, void *prev)
         ((s->iformat && s->iformat->priv_class) ||
           s->oformat && s->oformat->priv_class))
         return s->priv_data;
+#if !FF_API_OLD_AVIO
+    if (s->pb && s->pb->av_class && prev != s->pb)
+        return s->pb;
+#endif
     return NULL;
 }
 
@@ -59,9 +64,15 @@ static const AVClass *format_child_class_next(const AVClass *prev)
     while (prev && (ofmt = av_oformat_next(ofmt)))
         if (ofmt->priv_class == prev)
             break;
-    while (ofmt = av_oformat_next(ofmt))
-        if (ofmt->priv_class)
-            return ofmt->priv_class;
+    if ((prev && ofmt) || (!prev))
+        while (ofmt = av_oformat_next(ofmt))
+            if (ofmt->priv_class)
+                return ofmt->priv_class;
+
+#if !FF_API_OLD_AVIO
+    if (prev != &ffio_url_class)
+        return &ffio_url_class;
+#endif
 
     return NULL;
 }
