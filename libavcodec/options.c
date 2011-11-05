@@ -352,7 +352,17 @@ static const AVOption options[]={
 {"nr", "noise reduction", OFFSET(noise_reduction), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"rc_init_occupancy", "number of bits which should be loaded into the rc buffer before decoding starts", OFFSET(rc_initial_buffer_occupancy), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 {"inter_threshold", NULL, OFFSET(inter_threshold), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
-{"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = CODEC_FLAG2_FASTPSKIP|CODEC_FLAG2_BIT_RESERVOIR|CODEC_FLAG2_PSY|CODEC_FLAG2_MBTREE }, 0, UINT_MAX, V|A|E|D, "flags2"},
+#if FF_API_X264_GLOBAL_OPTS
+#define X264_DEFAULTS CODEC_FLAG2_FASTPSKIP|CODEC_FLAG2_PSY|CODEC_FLAG2_MBTREE
+#else
+#define X264_DEFAULTS 0
+#endif
+#if FF_API_LAME_GLOBAL_OPTS
+#define LAME_DEFAULTS CODEC_FLAG2_BIT_RESERVOIR
+#else
+#define LAME_DEFAULTS 0
+#endif
+{"flags2", NULL, OFFSET(flags2), AV_OPT_TYPE_FLAGS, {.dbl = X264_DEFAULTS|LAME_DEFAULTS }, 0, UINT_MAX, V|A|E|D, "flags2"},
 {"error", NULL, OFFSET(error_rate), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E},
 #if FF_API_ANTIALIAS_ALGO
 {"antialias", "MP3 antialias algorithm", OFFSET(antialias_algo), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|D, "aa"},
@@ -483,7 +493,7 @@ static const AVOption options[]={
 {"psy_trellis", "specify psycho visual trellis", OFFSET(psy_trellis), AV_OPT_TYPE_FLOAT, {.dbl = -1 }, -1, FLT_MAX, V|E},
 {"aq_mode", "specify aq method", OFFSET(aq_mode), AV_OPT_TYPE_INT, {.dbl = -1 }, -1, INT_MAX, V|E},
 {"aq_strength", "specify aq strength", OFFSET(aq_strength), AV_OPT_TYPE_FLOAT, {.dbl = -1.0 }, -1, FLT_MAX, V|E},
-{"rc_lookahead", "specify number of frames to look ahead for frametype", OFFSET(rc_lookahead), AV_OPT_TYPE_INT, {.dbl = 40 }, -1, INT_MAX, V|E},
+{"rc_lookahead", "specify number of frames to look ahead for frametype", OFFSET(rc_lookahead), AV_OPT_TYPE_INT, {.dbl = -1 }, -1, INT_MAX, V|E},
 {"ssim", "ssim will be calculated during encoding", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_SSIM }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"intra_refresh", "use periodic insertion of intra blocks instead of keyframes", 0, AV_OPT_TYPE_CONST, {.dbl = CODEC_FLAG2_INTRA_REFRESH }, INT_MIN, INT_MAX, V|E, "flags2"},
 {"crf_max", "in crf mode, prevents vbv from lowering quality beyond this point", OFFSET(crf_max), AV_OPT_TYPE_FLOAT, {.dbl = DEFAULT }, 0, 51, V|E},
