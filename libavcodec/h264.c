@@ -1363,30 +1363,6 @@ fail:
 static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size,
                             int parse_extradata);
 
-static av_cold void common_init(H264Context *h)
-{
-
-    h->width    = h->avctx->width;
-    h->height   = h->avctx->height;
-
-    h->bit_depth_luma    = 8;
-    h->chroma_format_idc = 1;
-
-    ff_h264dsp_init(&h->h264dsp, 8, 1);
-    ff_h264chroma_init(&h->h264chroma, h->sps.bit_depth_chroma);
-    ff_h264qpel_init(&h->h264qpel, 8);
-    ff_h264_pred_init(&h->hpc, h->avctx->codec_id, 8, 1);
-
-    h->dequant_coeff_pps = -1;
-
-    /* needed so that IDCT permutation is known early */
-    ff_dsputil_init(&h->dsp, h->avctx);
-    ff_videodsp_init(&h->vdsp, 8);
-
-    memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
-    memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
-}
-
 int ff_h264_decode_extradata(H264Context *h)
 {
     AVCodecContext *avctx = h->avctx;
@@ -1447,7 +1423,26 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx)
     int i;
 
     h->avctx = avctx;
-    common_init(h);
+
+    h->width    = h->avctx->width;
+    h->height   = h->avctx->height;
+
+    h->bit_depth_luma    = 8;
+    h->chroma_format_idc = 1;
+
+    ff_h264dsp_init(&h->h264dsp, 8, 1);
+    ff_h264chroma_init(&h->h264chroma, h->sps.bit_depth_chroma);
+    ff_h264qpel_init(&h->h264qpel, 8);
+    ff_h264_pred_init(&h->hpc, h->avctx->codec_id, 8, 1);
+
+    h->dequant_coeff_pps = -1;
+
+    /* needed so that IDCT permutation is known early */
+    ff_dsputil_init(&h->dsp, h->avctx);
+    ff_videodsp_init(&h->vdsp, 8);
+
+    memset(h->pps.scaling_matrix4, 16, 6 * 16 * sizeof(uint8_t));
+    memset(h->pps.scaling_matrix8, 16, 2 * 64 * sizeof(uint8_t));
 
     h->picture_structure   = PICT_FRAME;
     h->slice_context_count = 1;
