@@ -187,7 +187,7 @@ retry:
         if (av_lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
             av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
         buf = c->decomp_buf;
-        buf_size = c->decomp_size - AV_LZO_OUTPUT_PADDING;
+        buf_size = c->decomp_size - AV_LZO_OUTPUT_PADDING - outlen;
     }
     if (c->codec_frameheader) {
         int w, h, q, res;
