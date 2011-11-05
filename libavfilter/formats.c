@@ -172,7 +172,7 @@ AVFilterFormats *avfilter_make_all_channel_layouts(void)
 
 AVFilterFormats *avfilter_make_all_packing_formats(void)
 {
-    static int packing[] = {
+    static const int packing[] = {
         AVFILTER_PACKED,
         AVFILTER_PLANAR,
         -1,
