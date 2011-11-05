@@ -57,12 +57,16 @@ static const AVOption options[] = {
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING },
 {NULL}
 };
-static const AVClass httpcontext_class = {
-    .class_name     = "HTTP",
-    .item_name      = av_default_item_name,
-    .option         = options,
-    .version        = LIBAVUTIL_VERSION_INT,
+#define HTTP_CLASS(flavor)\
+static const AVClass flavor ## _context_class = {\
+    .class_name     = #flavor,\
+    .item_name      = av_default_item_name,\
+    .option         = options,\
+    .version        = LIBAVUTIL_VERSION_INT,\
 };
+
+HTTP_CLASS(http);
+HTTP_CLASS(https);
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location);
@@ -518,7 +522,7 @@ URLProtocol ff_http_protocol = {
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
     .priv_data_size      = sizeof(HTTPContext),
-    .priv_data_class     = &httpcontext_class,
+    .priv_data_class     = &http_context_class,
 };
 #endif
 #if CONFIG_HTTPS_PROTOCOL
@@ -531,6 +535,6 @@ URLProtocol ff_https_protocol = {
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
     .priv_data_size      = sizeof(HTTPContext),
-    .priv_data_class     = &httpcontext_class,
+    .priv_data_class     = &https_context_class,
 };
 #endif
