@@ -98,11 +98,11 @@ AVFilter avfilter_af_aformat = {
     .query_formats = query_formats,
     .priv_size     = sizeof(AFormatContext),
 
-    .inputs        = (AVFilterPad[]) {{ .name            = "default",
+    .inputs        = (const AVFilterPad[]) {{ .name      = "default",
                                         .type            = AVMEDIA_TYPE_AUDIO,
                                         .filter_samples  = filter_samples},
                                       { .name = NULL}},
-    .outputs       = (AVFilterPad[]) {{ .name            = "default",
+    .outputs       = (const AVFilterPad[]) {{ .name      = "default",
                                         .type            = AVMEDIA_TYPE_AUDIO},
                                       { .name = NULL}},
 };

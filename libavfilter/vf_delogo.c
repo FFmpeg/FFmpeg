@@ -273,7 +273,7 @@ AVFilter avfilter_vf_delogo = {
     .init          = init,
     .query_formats = query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = start_frame,
@@ -282,7 +282,7 @@ AVFilter avfilter_vf_delogo = {
                                     .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
                                     .rej_perms        = AV_PERM_PRESERVE },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };

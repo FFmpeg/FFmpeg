@@ -884,7 +884,7 @@ AVFilter avfilter_vf_mp = {
     .priv_size = sizeof(MPContext),
     .query_formats = query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name            = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .start_frame     = start_frame,
                                     .draw_slice      = null_draw_slice,
@@ -892,7 +892,7 @@ AVFilter avfilter_vf_mp = {
                                     .config_props    = config_inprops,
                                     .min_perms       = AV_PERM_READ, },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .request_frame   = request_frame,
                                     .config_props    = config_outprops, },

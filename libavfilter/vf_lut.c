@@ -339,13 +339,13 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
         .uninit        = uninit,                                        \
         .query_formats = query_formats,                                 \
                                                                         \
-        .inputs    = (AVFilterPad[]) {{ .name            = "default",   \
+        .inputs    = (const AVFilterPad[]) {{ .name      = "default",   \
                                         .type            = AVMEDIA_TYPE_VIDEO, \
                                         .draw_slice      = draw_slice,  \
                                         .config_props    = config_props, \
                                         .min_perms       = AV_PERM_READ, }, \
                                       { .name = NULL}},                 \
-        .outputs   = (AVFilterPad[]) {{ .name            = "default",   \
+        .outputs   = (const AVFilterPad[]) {{ .name      = "default",   \
                                         .type            = AVMEDIA_TYPE_VIDEO, }, \
                                       { .name = NULL}},                 \
     }

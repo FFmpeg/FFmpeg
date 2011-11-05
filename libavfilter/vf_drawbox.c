@@ -127,7 +127,7 @@ AVFilter avfilter_vf_drawbox = {
     .init      = init,
 
     .query_formats   = query_formats,
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = config_input,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
@@ -137,7 +137,7 @@ AVFilter avfilter_vf_drawbox = {
                                     .min_perms        = AV_PERM_WRITE | AV_PERM_READ,
                                     .rej_perms        = AV_PERM_PRESERVE },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };

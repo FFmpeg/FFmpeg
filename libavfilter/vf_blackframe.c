@@ -122,7 +122,7 @@ AVFilter avfilter_vf_blackframe = {
 
     .query_formats = query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .draw_slice       = draw_slice,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
@@ -130,7 +130,7 @@ AVFilter avfilter_vf_blackframe = {
                                     .end_frame        = end_frame, },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO },
                                   { .name = NULL}},
 };

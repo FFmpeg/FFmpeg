@@ -400,7 +400,7 @@ AVFilter avfilter_vf_yadif = {
     .uninit        = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .start_frame      = start_frame,
                                     .get_video_buffer = get_video_buffer,
@@ -408,7 +408,7 @@ AVFilter avfilter_vf_yadif = {
                                     .end_frame        = end_frame, },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .poll_frame       = poll_frame,
                                     .request_frame    = request_frame, },

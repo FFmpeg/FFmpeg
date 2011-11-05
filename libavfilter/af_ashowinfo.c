@@ -90,14 +90,14 @@ AVFilter avfilter_af_ashowinfo = {
     .priv_size = sizeof(ShowInfoContext),
     .init      = init,
 
-    .inputs    = (AVFilterPad[]) {{ .name = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_AUDIO,
                                     .get_audio_buffer = avfilter_null_get_audio_buffer,
                                     .filter_samples   = filter_samples,
                                     .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_AUDIO },
                                   { .name = NULL}},
 };

@@ -503,7 +503,7 @@ AVFilter avfilter_vf_overlay = {
 
     .query_formats = query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name            = "main",
+    .inputs    = (const AVFilterPad[]) {{ .name      = "main",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .start_frame     = start_frame,
                                     .get_video_buffer= get_video_buffer,
@@ -521,7 +521,7 @@ AVFilter avfilter_vf_overlay = {
                                     .min_perms       = AV_PERM_READ,
                                     .rej_perms       = AV_PERM_REUSE2, },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .config_props    = config_output, },
                                   { .name = NULL}},

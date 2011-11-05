@@ -93,14 +93,14 @@ AVFilter avfilter_vf_vflip = {
 
     .priv_size = sizeof(FlipContext),
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer = get_video_buffer,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
                                     .config_props     = config_input, },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };

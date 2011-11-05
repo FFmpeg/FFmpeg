@@ -26,7 +26,7 @@ AVFilter avfilter_asink_anullsink = {
 
     .priv_size = 0,
 
-    .inputs    = (AVFilterPad[]) {
+    .inputs    = (const AVFilterPad[]) {
         {
             .name            = "default",
             .type            = AVMEDIA_TYPE_AUDIO,
@@ -34,5 +34,5 @@ AVFilter avfilter_asink_anullsink = {
         },
         { .name = NULL},
     },
-    .outputs   = (AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (const AVFilterPad[]) {{ .name = NULL }},
 };

@@ -103,7 +103,7 @@ AVFilter avfilter_vf_slicify = {
 
     .priv_size = sizeof(SliceContext),
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = start_frame,
@@ -111,7 +111,7 @@ AVFilter avfilter_vf_slicify = {
                                     .config_props     = config_props,
                                     .end_frame        = avfilter_null_end_frame, },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };

@@ -218,7 +218,7 @@ AVFilter avfilter_vf_fieldorder = {
     .init          = init,
     .priv_size     = sizeof(FieldOrderContext),
     .query_formats = query_formats,
-    .inputs        = (AVFilterPad[]) {{ .name             = "default",
+    .inputs        = (const AVFilterPad[]) {{ .name       = "default",
                                         .type             = AVMEDIA_TYPE_VIDEO,
                                         .config_props     = config_input,
                                         .start_frame      = start_frame,
@@ -228,7 +228,7 @@ AVFilter avfilter_vf_fieldorder = {
                                         .min_perms        = AV_PERM_READ,
                                         .rej_perms        = AV_PERM_REUSE2|AV_PERM_PRESERVE,},
                                       { .name = NULL}},
-    .outputs       = (AVFilterPad[]) {{ .name             = "default",
+    .outputs       = (const AVFilterPad[]) {{ .name       = "default",
                                         .type             = AVMEDIA_TYPE_VIDEO, },
                                       { .name = NULL}},
 };

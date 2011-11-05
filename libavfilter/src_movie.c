@@ -322,8 +322,8 @@ AVFilter avfilter_vsrc_movie = {
     .uninit        = movie_common_uninit,
     .query_formats = movie_query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL }},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .request_frame   = movie_request_frame,
                                     .config_props    = movie_config_output_props, },
@@ -463,8 +463,8 @@ AVFilter avfilter_asrc_amovie = {
     .uninit        = movie_common_uninit,
     .query_formats = amovie_query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL }},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_AUDIO,
                                     .request_frame   = amovie_request_frame,
                                     .config_props    = amovie_config_output_props, },

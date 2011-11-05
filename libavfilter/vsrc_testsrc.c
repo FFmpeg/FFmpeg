@@ -178,8 +178,8 @@ AVFilter avfilter_vsrc_nullsrc = {
     .init       = nullsrc_init,
     .priv_size  = sizeof(TestSourceContext),
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
+    .outputs   = (const AVFilterPad[]) {{ .name = "default",
                                     .type = AVMEDIA_TYPE_VIDEO,
                                     .request_frame = request_frame,
                                     .config_props  = config_props, },
@@ -400,9 +400,9 @@ AVFilter avfilter_vsrc_testsrc = {
 
     .query_formats   = test_query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL}},
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name = "default",
                                     .type = AVMEDIA_TYPE_VIDEO,
                                     .request_frame = request_frame,
                                     .config_props  = config_props, },
@@ -527,9 +527,9 @@ AVFilter avfilter_vsrc_rgbtestsrc = {
 
     .query_formats   = rgbtest_query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL}},
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name = "default",
                                     .type = AVMEDIA_TYPE_VIDEO,
                                     .request_frame = request_frame,
                                     .config_props  = rgbtest_config_props, },

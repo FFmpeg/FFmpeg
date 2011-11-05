@@ -546,7 +546,7 @@ AVFilter avfilter_vf_deshake = {
     .uninit = uninit,
     .query_formats = query_formats,
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .draw_slice       = draw_slice,
                                     .end_frame        = end_frame,
@@ -554,7 +554,7 @@ AVFilter avfilter_vf_deshake = {
                                     .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };

@@ -333,7 +333,7 @@ AVFilter avfilter_vf_crop = {
     .init          = init,
     .uninit        = uninit,
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .start_frame      = start_frame,
                                     .draw_slice       = draw_slice,
@@ -341,7 +341,7 @@ AVFilter avfilter_vf_crop = {
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .config_props     = config_input, },
                                   { .name = NULL}},
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = config_output, },
                                   { .name = NULL}},

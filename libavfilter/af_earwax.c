@@ -150,14 +150,14 @@ AVFilter avfilter_af_earwax = {
     .description    = NULL_IF_CONFIG_SMALL("Widen the stereo image."),
     .query_formats  = query_formats,
     .priv_size      = sizeof(EarwaxContext),
-    .inputs  = (AVFilterPad[])  {{  .name           = "default",
+    .inputs  = (const AVFilterPad[])  {{  .name     = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO,
                                     .filter_samples = filter_samples,
                                     .config_props   = config_input,
                                     .min_perms      = AV_PERM_READ, },
                                  {  .name = NULL}},
 
-    .outputs = (AVFilterPad[])  {{  .name           = "default",
+    .outputs = (const AVFilterPad[])  {{  .name     = "default",
                                     .type           = AVMEDIA_TYPE_AUDIO, },
                                  {  .name = NULL}},
 };

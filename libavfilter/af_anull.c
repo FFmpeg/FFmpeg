@@ -29,13 +29,13 @@ AVFilter avfilter_af_anull = {
 
     .priv_size = 0,
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_AUDIO,
                                     .get_audio_buffer = avfilter_null_get_audio_buffer,
                                     .filter_samples   = avfilter_null_filter_samples },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_AUDIO, },
                                   { .name = NULL}},
 };

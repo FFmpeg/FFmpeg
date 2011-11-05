@@ -210,8 +210,8 @@ AVFilter avfilter_vsrc_buffer = {
 
     .init      = init,
 
-    .inputs    = (AVFilterPad[]) {{ .name = NULL }},
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name = NULL }},
+    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .request_frame   = request_frame,
                                     .poll_frame      = poll_frame,

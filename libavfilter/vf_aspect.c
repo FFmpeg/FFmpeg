@@ -97,7 +97,7 @@ AVFilter avfilter_vf_setdar = {
 
     .priv_size = sizeof(AspectContext),
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = setdar_config_props,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
@@ -105,7 +105,7 @@ AVFilter avfilter_vf_setdar = {
                                     .end_frame        = avfilter_null_end_frame },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };
@@ -130,7 +130,7 @@ AVFilter avfilter_vf_setsar = {
 
     .priv_size = sizeof(AspectContext),
 
-    .inputs    = (AVFilterPad[]) {{ .name             = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .config_props     = setsar_config_props,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
@@ -138,7 +138,7 @@ AVFilter avfilter_vf_setsar = {
                                     .end_frame        = avfilter_null_end_frame },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };

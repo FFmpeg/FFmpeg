@@ -216,9 +216,9 @@ AVFilter avfilter_asrc_aevalsrc = {
     .uninit      = uninit,
     .priv_size   = sizeof(EvalContext),
 
-    .inputs      = (AVFilterPad[]) {{ .name = NULL}},
+    .inputs      = (const AVFilterPad[]) {{ .name = NULL}},
 
-    .outputs     = (AVFilterPad[]) {{ .name = "default",
+    .outputs     = (const AVFilterPad[]) {{ .name = "default",
                                       .type = AVMEDIA_TYPE_AUDIO,
                                       .config_props = config_props,
                                       .request_frame = request_frame, },

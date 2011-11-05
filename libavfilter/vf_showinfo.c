@@ -84,7 +84,7 @@ AVFilter avfilter_vf_showinfo = {
     .priv_size = sizeof(ShowInfoContext),
     .init      = init,
 
-    .inputs    = (AVFilterPad[]) {{ .name = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
                                     .start_frame      = avfilter_null_start_frame,
@@ -92,7 +92,7 @@ AVFilter avfilter_vf_showinfo = {
                                     .min_perms        = AV_PERM_READ, },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name             = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name       = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO },
                                   { .name = NULL}},
 };

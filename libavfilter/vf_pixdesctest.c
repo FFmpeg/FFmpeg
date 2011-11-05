@@ -115,7 +115,7 @@ AVFilter avfilter_vf_pixdesctest = {
     .priv_size = sizeof(PixdescTestContext),
     .uninit    = uninit,
 
-    .inputs    = (AVFilterPad[]) {{ .name            = "default",
+    .inputs    = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO,
                                     .start_frame     = start_frame,
                                     .draw_slice      = draw_slice,
@@ -123,7 +123,7 @@ AVFilter avfilter_vf_pixdesctest = {
                                     .min_perms       = AV_PERM_READ, },
                                   { .name = NULL}},
 
-    .outputs   = (AVFilterPad[]) {{ .name            = "default",
+    .outputs   = (const AVFilterPad[]) {{ .name      = "default",
                                     .type            = AVMEDIA_TYPE_VIDEO, },
                                   { .name = NULL}},
 };

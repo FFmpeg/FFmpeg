@@ -179,13 +179,13 @@ AVFilter avfilter_af_volume = {
     .priv_size      = sizeof(VolumeContext),
     .init           = init,
 
-    .inputs  = (AVFilterPad[])  {{ .name           = "default",
+    .inputs  = (const AVFilterPad[])  {{ .name     = "default",
                                    .type           = AVMEDIA_TYPE_AUDIO,
                                    .filter_samples = filter_samples,
                                    .min_perms      = AV_PERM_READ|AV_PERM_WRITE},
                                  { .name = NULL}},
 
-    .outputs = (AVFilterPad[])  {{ .name           = "default",
+    .outputs = (const AVFilterPad[])  {{ .name     = "default",
                                    .type           = AVMEDIA_TYPE_AUDIO, },
                                  { .name = NULL}},
 };
