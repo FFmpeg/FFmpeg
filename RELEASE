@@ -151,9 +151,10 @@ codecs and container formats:
 General notes
 -------------
 
-This is another maintenance-only release that addresses a small number
-of bugs such as security and compilation issues. Distributors and system
+This is a mostly maintenance-only release that addresses a small number
+of bugs such as security and compilation issues. Moreover, this release
+has been updated to work with gcc-4.6 and the VisualOn AAC encoder has
+been backported from the Libav 0.7.2 release. Distributors and system
 integrators are encouraged to update and share their patches against
 this branch.
-
 For a full list of changes please see the Changelog file.
