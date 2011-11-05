@@ -2700,11 +2700,8 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
     s->chroma_y_shift = h->sps.chroma_format_idc <= 1; // 400 uses yuv420p
 
-    s->width = 16*s->mb_width - (2>>CHROMA444)*FFMIN(h->sps.crop_right, (8<<CHROMA444)-1);
-    if(h->sps.frame_mbs_only_flag)
-        s->height= 16*s->mb_height - (1<<s->chroma_y_shift)*FFMIN(h->sps.crop_bottom, (16>>s->chroma_y_shift)-1);
-    else
-        s->height= 16*s->mb_height - (2<<s->chroma_y_shift)*FFMIN(h->sps.crop_bottom, (16>>s->chroma_y_shift)-1);
+    s->width = 16*s->mb_width;
+    s->height= 16*s->mb_height;
 
     if (s->context_initialized
         && (   s->width != s->avctx->coded_width || s->height != s->avctx->coded_height
@@ -2725,8 +2722,9 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
             av_log(h->s.avctx, AV_LOG_ERROR, "Cannot (re-)initialize context during parallel decoding.\n");
             return -1;
         }
-
         avcodec_set_dimensions(s->avctx, s->width, s->height);
+        s->avctx->width  -= (2>>CHROMA444)*FFMIN(h->sps.crop_right, (8<<CHROMA444)-1);
+        s->avctx->height -= (1<<s->chroma_y_shift)*FFMIN(h->sps.crop_bottom, (16>>s->chroma_y_shift)-1) * (2 - h->sps.frame_mbs_only_flag);
         s->avctx->sample_aspect_ratio= h->sps.sar;
         av_assert0(s->avctx->sample_aspect_ratio.den);
 
