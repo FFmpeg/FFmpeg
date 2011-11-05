@@ -30,6 +30,7 @@
 #include "avformat.h"
 #include "internal.h"
 #include "wtv.h"
+#include "asf.h"
 
 #define WTV_BIGSECTOR_SIZE (1 << WTV_BIGSECTOR_BITS)
 #define INDEX_BASE 0x2
@@ -112,12 +113,6 @@ static int write_pad(AVIOContext *pb, int size)
     return 0;
 }
 
-static void put_guid(AVIOContext *s, const ff_asf_guid *g)
-{
-    assert(sizeof(*g) == 16);
-    avio_write(s, *g, sizeof(*g));
- }
-
 static const ff_asf_guid *get_codec_guid(enum CodecID id, const AVCodecGuid *av_guid)
 {
     int i;
@@ -137,7 +132,7 @@ static void write_chunk_header(AVFormatContext *s, const ff_asf_guid *guid, int 
     AVIOContext *pb = s->pb;
 
     wctx->last_chunk_pos = avio_tell(pb) - wctx->timeline_start_pos;
-    put_guid(pb, guid);
+    ff_put_guid(pb, guid);
     avio_wl32(pb, 32 + length);
     avio_wl32(pb, stream_id);
     avio_wl64(pb, wctx->serial);
@@ -190,7 +185,7 @@ static void write_index(AVFormatContext *s)
 
     for (i = 0; i < wctx->nb_index; i++) {
         WtvChunkEntry *t = wctx->index + i;
-        put_guid(pb,  t->guid);
+        ff_put_guid(pb,  t->guid);
         avio_wl64(pb, t->pos);
         avio_wl32(pb, t->stream_id);
         avio_wl32(pb, 0); // checksum?
@@ -234,10 +229,10 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
         return -1;
     }
 
-    put_guid(pb, media_type); // mediatype
-    put_guid(pb, &ff_mediasubtype_cpfilters_processed); // subtype
+    ff_put_guid(pb, media_type); // mediatype
+    ff_put_guid(pb, &ff_mediasubtype_cpfilters_processed); // subtype
     write_pad(pb, 12);
-    put_guid(pb,&ff_format_cpfilters_processed); // format type
+    ff_put_guid(pb,&ff_format_cpfilters_processed); // format type
     avio_wl32(pb, 0); // size
 
     hdr_pos_start = avio_tell(pb);
@@ -258,8 +253,8 @@ static int write_stream_codec_info(AVFormatContext *s, AVStream *st)
     avio_seek(pb, -(hdr_size + 4), SEEK_CUR);
     avio_wl32(pb, hdr_size + 32);
     avio_seek(pb, hdr_size, SEEK_CUR);
-    put_guid(pb, g);           // actual_subtype
-    put_guid(pb, format_type); // actual_formattype
+    ff_put_guid(pb, g);           // actual_subtype
+    ff_put_guid(pb, format_type); // actual_formattype
 
     return 0;
 }
@@ -344,8 +339,8 @@ static int write_header(AVFormatContext *s)
     int i, pad, ret;
     AVStream *st;
 
-    put_guid(pb, &ff_wtv_guid);
-    put_guid(pb, &sub_wtv_guid);
+    ff_put_guid(pb, &ff_wtv_guid);
+    ff_put_guid(pb, &sub_wtv_guid);
 
     avio_wl32(pb, 0x01);
     avio_wl32(pb, 0x02);
@@ -498,7 +493,7 @@ static int write_root_table(AVFormatContext *s, int64_t sector_pos)
         int len = 0;
         int64_t len_pos;
 
-        put_guid(pb, &ff_dir_entry_guid);
+        ff_put_guid(pb, &ff_dir_entry_guid);
         len_pos = avio_tell(pb);
         avio_wl16(pb, 40 + h->header_size + filename_padding + 8); // maybe updated later
         write_pad(pb, 6);
@@ -572,7 +567,7 @@ static void write_table_entries_events(AVFormatContext *s)
 
 static void write_tag(AVIOContext *pb, const char *key, const char *value)
 {
-    put_guid(pb, &ff_metadata_guid);
+    ff_put_guid(pb, &ff_metadata_guid);
     avio_wl32(pb, 1);
     avio_wl32(pb, strlen(value)*2 + 2);
     avio_put_str16le(pb, key);
