@@ -30,6 +30,13 @@
 #endif
 #include "url.h"
 
+static URLProtocol *first_protocol = NULL;
+
+URLProtocol *ffurl_protocol_next(URLProtocol *prev)
+{
+    return prev ? prev->next : first_protocol;
+}
+
 /** @name Logging context. */
 /*@{*/
 static const char *urlcontext_to_name(void *ptr)
@@ -49,21 +56,19 @@ static const AVClass urlcontext_class = {
 
 static int default_interrupt_cb(void);
 
-URLProtocol *first_protocol = NULL;
 int (*url_interrupt_cb)(void) = default_interrupt_cb;
 
 #if FF_API_OLD_AVIO
 URLProtocol *av_protocol_next(URLProtocol *p)
 {
-    if(p) return p->next;
-    else  return first_protocol;
+    return ffurl_protocol_next(p);
 }
 #endif
 
 const char *avio_enum_protocols(void **opaque, int output)
 {
     URLProtocol **p = opaque;
-    *p = *p ? (*p)->next : first_protocol;
+    *p = ffurl_protocol_next(*p);
     if (!*p) return NULL;
     if ((output && (*p)->url_write) || (!output && (*p)->url_read))
         return (*p)->name;
@@ -225,7 +230,7 @@ int av_register_protocol2(URLProtocol *protocol, int size)
 int ffurl_alloc(URLContext **puc, const char *filename, int flags,
                 const AVIOInterruptCB *int_cb)
 {
-    URLProtocol *up;
+    URLProtocol *up = NULL;
     char proto_str[128], proto_nested[128], *ptr;
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
 
@@ -238,14 +243,12 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
     if ((ptr = strchr(proto_nested, '+')))
         *ptr = '\0';
 
-    up = first_protocol;
-    while (up != NULL) {
+    while (up = ffurl_protocol_next(up)) {
         if (!strcmp(proto_str, up->name))
             return url_alloc_for_protocol (puc, up, filename, flags, int_cb);
         if (up->flags & URL_PROTOCOL_FLAG_NESTED_SCHEME &&
             !strcmp(proto_nested, up->name))
             return url_alloc_for_protocol (puc, up, filename, flags, int_cb);
-        up = up->next;
     }
     *puc = NULL;
     return AVERROR(ENOENT);

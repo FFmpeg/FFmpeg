@@ -182,6 +182,13 @@ int ffurl_register_protocol(URLProtocol *protocol, int size);
  */
 int ff_check_interrupt(AVIOInterruptCB *cb);
 
+/**
+ * Iterate over all available protocols.
+ *
+ * @param prev result of the previous call to this functions or NULL.
+ */
+URLProtocol *ffurl_protocol_next(URLProtocol *prev);
+
 /* udp.c */
 int ff_udp_set_remote_url(URLContext *h, const char *uri);
 int ff_udp_get_local_port(URLContext *h);
