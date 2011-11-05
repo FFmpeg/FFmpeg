@@ -748,6 +748,7 @@ static void show_streams(WriterContext *w, AVFormatContext *fmt_ctx)
 static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
 {
     char val_str[128];
+    int64_t size = avio_size(fmt_ctx->pb);
     struct print_buf pbuf = {.s = NULL};
 
     print_section_header("format");
@@ -757,7 +758,8 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     print_str("format_long_name", fmt_ctx->iformat->long_name);
     print_str("start_time",       time_value_string(val_str, sizeof(val_str), fmt_ctx->start_time, &AV_TIME_BASE_Q));
     print_str("duration",         time_value_string(val_str, sizeof(val_str), fmt_ctx->duration,   &AV_TIME_BASE_Q));
-    print_str("size",             value_string(val_str, sizeof(val_str), fmt_ctx->file_size, unit_byte_str));
+    if (size >= 0)
+        print_str("size",         value_string(val_str, sizeof(val_str), size,               unit_byte_str));
     print_str("bit_rate",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,  unit_bit_per_second_str));
     show_tags(fmt_ctx->metadata);
     print_section_footer("format");
