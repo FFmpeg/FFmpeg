@@ -49,7 +49,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
             if (!strcmp(tail, "dB")) {
                 /* consider the argument an adjustement in decibels */
                 if (!strcmp(tail, "dB")) {
-                    d = exp10(d/20);
+                    d = pow(10,d/20);
                 }
             } else {
                 /* parse the argument as an expression */
