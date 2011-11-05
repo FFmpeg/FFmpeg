@@ -235,6 +235,54 @@ the listener (standard for speakers).
 
 Ported from SoX.
 
+@section pan
+
+Mix channels with specific gain levels. The filter accepts the output
+channel layout followed by a set of channels definitions.
+
+The filter accepts parameters of the form:
+"@var{l}:@var{outdef}:@var{outdef}:..."
+
+@table @option
+@item l
+output channel layout or number of channels
+
+@item outdef
+output channel specification, of the form:
+"@var{out_name}=[@var{gain}*]@var{in_name}[+[@var{gain}*]@var{in_name}...]"
+
+@item out_name
+output channel to define, either a channel name (FL, FR, etc.) or a channel
+number (c0, c1, etc.)
+
+@item gain
+multiplicative coefficient for the channel, 1 leaving the volume unchanged
+
+@item in_name
+input channel to use, see out_name for details; it is not possible to mix
+named and numbered input channels
+@end table
+
+If the `=' in a channel specification is replaced by `<', then the gains for
+that specification will be renormalized so that the total is 1, thus
+avoiding clipping noise.
+
+For example, if you want to down-mix from stereo to mono, but with a bigger
+factor for the left channel:
+@example
+pan=1:c0=0.9*c0+0.1*c1
+@end example
+
+A customized down-mix to stereo that works automatically for 3-, 4-, 5- and
+7-channels surround:
+@example
+pan=stereo: FL < FL + 0.5*FC + 0.6*BL + 0.6*SL : FR < FR + 0.5*FC + 0.6*BR + 0.6*SR
+@end example
+
+Note that @file{ffmpeg} integrates a default down-mix (and up-mix) system
+that should be preferred (see "-ac" option) unless you have very specific
+needs.
+
 @section volume
 
 Adjust the input audio volume.
