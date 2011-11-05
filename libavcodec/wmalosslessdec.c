@@ -757,6 +757,23 @@ static void reset_codec(WmallDecodeCtx *s)
 
 
 
+static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
+{
+    int32_t pred, icoef;
+    int recent = s->cdlms[ich][ilms].recent;
+
+    for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
+        pred += s->cdlms[ich][ilms].coefs[icoef] *
+                    s->cdlms[ich][ilms].lms_prevvalues[icoef + recent];
+
+    pred += (1 << (s->cdlms[ich][ilms].scaling - 1));
+    /* XXX: Table 29 has:
+            iPred >= cdlms[iCh][ilms].scaling;
+       seems to me like a missing > */
+    pred >>= s->cdlms[ich][ilms].scaling;
+    return pred;
+}
+
 /**
  *@brief Decode a single subframe (block).
  *@param s codec context
