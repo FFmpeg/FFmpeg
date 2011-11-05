@@ -172,8 +172,10 @@ enum CodecID {
     CODEC_ID_INDEO5,
     CODEC_ID_MIMIC,
     CODEC_ID_RL2,
+#if LIBAVCODEC_VERSION_MAJOR == 53
     CODEC_ID_8SVX_EXP,
     CODEC_ID_8SVX_FIB,
+#endif
     CODEC_ID_ESCAPE124,
     CODEC_ID_DIRAC,
     CODEC_ID_BFI,
@@ -354,6 +356,8 @@ enum CodecID {
 #if LIBAVCODEC_VERSION_MAJOR > 53
     CODEC_ID_G723_1,
     CODEC_ID_G729,
+    CODEC_ID_8SVX_EXP,
+    CODEC_ID_8SVX_FIB,
 #endif
 
     /* subtitle codecs */
