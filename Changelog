@@ -13,6 +13,7 @@ version next:
 - asplit audio filter
 - tinterlace video filter
 - astreamsync audio filter
+- amerge audio filter
 
 
 version 0.9:
