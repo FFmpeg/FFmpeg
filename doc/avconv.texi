@@ -546,6 +546,10 @@ frames after each specified time.
 This option can be useful to ensure that a seek point is present at a
 chapter mark or any other designated place in the output file.
 The timestamps must be specified in ascending order.
+
+@item -copyinkf[:@var{stream_specifier}] (@emph{output,per-stream})
+When doing stream copy, copy also non-key frames found at the
+beginning.
 @end table
 
 @section Audio Options

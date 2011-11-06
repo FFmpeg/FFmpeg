@@ -117,7 +117,6 @@ static int copy_tb;
 static int opt_shortest = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
-static int copy_initial_nonkeyframes = 0;
 
 static int audio_volume = 256;
 
@@ -229,6 +228,7 @@ typedef struct OutputStream {
    int is_past_recording_time;
    int stream_copy;
    const char *attachment_filename;
+   int copy_initial_nonkeyframes;
 } OutputStream;
 
 
@@ -334,6 +334,8 @@ typedef struct OptionsContext {
     int        nb_top_field_first;
     SpecifierOpt *presets;
     int        nb_presets;
+    SpecifierOpt *copy_initial_nonkeyframes;
+    int        nb_copy_initial_nonkeyframes;
 #if CONFIG_AVFILTER
     SpecifierOpt *filters;
     int        nb_filters;
@@ -1817,7 +1819,8 @@ static int output_packet(InputStream *ist, int ist_index,
 
                     av_init_packet(&opkt);
 
-                    if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) && !copy_initial_nonkeyframes)
+                    if ((!ost->frame_number && !(pkt->flags & AV_PKT_FLAG_KEY)) &&
+                        !ost->copy_initial_nonkeyframes)
 #if !CONFIG_AVFILTER
                         continue;
 #else
@@ -3327,6 +3330,8 @@ static OutputStream *new_video_stream(OptionsContext *o, AVFormatContext *oc)
         MATCH_PER_STREAM_OPT(top_field_first, i, top_field_first, oc, st);
         ost->top_field_first = top_field_first;
 
+        MATCH_PER_STREAM_OPT(copy_initial_nonkeyframes, i, ost->copy_initial_nonkeyframes, oc ,st);
+
 #if CONFIG_AVFILTER
         MATCH_PER_STREAM_OPT(filters, str, filters, oc, st);
         if (filters)
@@ -4126,7 +4131,7 @@ static const OptionDef options[] = {
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
-    { "copyinkf", OPT_BOOL | OPT_EXPERT, {(void*)&copy_initial_nonkeyframes}, "copy initial non-keyframes" },
+    { "copyinkf", OPT_BOOL | OPT_EXPERT | OPT_SPEC, {.off = OFFSET(copy_initial_nonkeyframes)}, "copy initial non-keyframes" },
     { "frames", OPT_INT64 | HAS_ARG | OPT_SPEC, {.off = OFFSET(max_frames)}, "set the number of frames to record", "number" },
     { "tag",   OPT_STRING | HAS_ARG | OPT_SPEC, {.off = OFFSET(codec_tags)}, "force codec tag/fourcc", "fourcc/tag" },
     { "q", HAS_ARG | OPT_EXPERT | OPT_DOUBLE | OPT_SPEC, {.off = OFFSET(qscale)}, "use fixed quality scale (VBR)", "q" },
