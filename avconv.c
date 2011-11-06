@@ -774,7 +774,7 @@ need_realloc:
 
     if ((ost->audio_resample && !ost->resample) || resample_changed) {
         if (resample_changed) {
-            av_log(NULL, AV_LOG_INFO, "Input stream #%d.%d frame changed from rate:%d fmt:%s ch:%d to rate:%d fmt:%s ch:%d\n",
+            av_log(NULL, AV_LOG_INFO, "Input stream #%d:%d frame changed from rate:%d fmt:%s ch:%d to rate:%d fmt:%s ch:%d\n",
                    ist->file_index, ist->st->index,
                    ost->resample_sample_rate, av_get_sample_fmt_name(ost->resample_sample_fmt), ost->resample_channels,
                    dec->sample_rate, av_get_sample_fmt_name(dec->sample_fmt), dec->channels);
@@ -1087,7 +1087,7 @@ static void do_video_resample(OutputStream *ost,
 
     if (resample_changed) {
         av_log(NULL, AV_LOG_INFO,
-               "Input stream #%d.%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
+               "Input stream #%d:%d frame changed from size:%dx%d fmt:%s to size:%dx%d fmt:%s\n",
                ist->file_index, ist->st->index,
                ost->resample_width, ost->resample_height, av_get_pix_fmt_name(ost->resample_pix_fmt),
                dec->width         , dec->height         , av_get_pix_fmt_name(dec->pix_fmt));
@@ -1918,7 +1918,7 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
     if (ist->decoding_needed) {
         AVCodec *codec = ist->dec;
         if (!codec) {
-            snprintf(error, error_len, "Decoder (codec id %d) not found for input stream #%d.%d",
+            snprintf(error, error_len, "Decoder (codec id %d) not found for input stream #%d:%d",
                     ist->st->codec->codec_id, ist->file_index, ist->st->index);
             return AVERROR(EINVAL);
         }
@@ -1934,7 +1934,7 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
         }
 
         if (avcodec_open2(ist->st->codec, codec, &ist->opts) < 0) {
-            snprintf(error, error_len, "Error while opening decoder for input stream #%d.%d",
+            snprintf(error, error_len, "Error while opening decoder for input stream #%d:%d",
                     ist->file_index, ist->st->index);
             return AVERROR(EINVAL);
         }
@@ -2217,7 +2217,7 @@ static int transcode_init(OutputFile *output_files,
             AVCodec *codec = ost->enc;
             AVCodecContext *dec = input_streams[ost->source_index].st->codec;
             if (!codec) {
-                snprintf(error, sizeof(error), "Encoder (codec id %d) not found for output stream #%d.%d",
+                snprintf(error, sizeof(error), "Encoder (codec id %d) not found for output stream #%d:%d",
                          ost->st->codec->codec_id, ost->file_index, ost->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
@@ -2232,7 +2232,7 @@ static int transcode_init(OutputFile *output_files,
                 ost->st->codec->subtitle_header_size = dec->subtitle_header_size;
             }
             if (avcodec_open2(ost->st->codec, codec, &ost->opts) < 0) {
-                snprintf(error, sizeof(error), "Error while opening encoder for output stream #%d.%d - maybe incorrect parameters such as bit_rate, rate, width or height",
+                snprintf(error, sizeof(error), "Error while opening encoder for output stream #%d:%d - maybe incorrect parameters such as bit_rate, rate, width or height",
                         ost->file_index, ost->index);
                 ret = AVERROR(EINVAL);
                 goto dump_format;
@@ -2302,13 +2302,13 @@ static int transcode_init(OutputFile *output_files,
                    ost->attachment_filename, ost->file_index, ost->index);
             continue;
         }
-        av_log(NULL, AV_LOG_INFO, "  Stream #%d.%d -> #%d.%d",
+        av_log(NULL, AV_LOG_INFO, "  Stream #%d:%d -> #%d:%d",
                input_streams[ost->source_index].file_index,
                input_streams[ost->source_index].st->index,
                ost->file_index,
                ost->index);
         if (ost->sync_ist != &input_streams[ost->source_index])
-            av_log(NULL, AV_LOG_INFO, " [sync #%d.%d]",
+            av_log(NULL, AV_LOG_INFO, " [sync #%d:%d]",
                    ost->sync_ist->file_index,
                    ost->sync_ist->st->index);
         if (ost->stream_copy)
@@ -2473,7 +2473,7 @@ static int transcode(OutputFile *output_files,
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
         if (output_packet(ist, ist_index, output_streams, nb_output_streams, &pkt) < 0) {
 
-            av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d.%d\n",
+            av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
                    ist->file_index, ist->st->index);
             if (exit_on_error)
                 exit_program(1);
@@ -3604,7 +3604,7 @@ static void opt_output_file(void *optctx, const char *filename)
             case AVMEDIA_TYPE_DATA:     ost = new_data_stream(o, oc);     break;
             case AVMEDIA_TYPE_ATTACHMENT: ost = new_attachment_stream(o, oc); break;
             default:
-                av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d.%d - unsupported type.\n",
+                av_log(NULL, AV_LOG_FATAL, "Cannot map stream #%d:%d - unsupported type.\n",
                        map->file_index, map->stream_index);
                 exit_program(1);
             }
