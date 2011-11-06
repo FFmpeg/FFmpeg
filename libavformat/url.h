@@ -170,6 +170,12 @@ int ffurl_get_file_handle(URLContext *h);
  */
 int ffurl_register_protocol(URLProtocol *protocol, int size);
 
+/**
+ * Check if the user has requested to interrup a blocking function
+ * associated with cb.
+ */
+int ff_check_interrupt(AVIOInterruptCB *cb);
+
 /* udp.c */
 int ff_udp_set_remote_url(URLContext *h, const char *uri);
 int ff_udp_get_local_port(URLContext *h);

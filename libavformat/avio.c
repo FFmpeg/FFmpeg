@@ -408,6 +408,14 @@ void avio_set_interrupt_cb(int (*interrupt_cb)(void))
     url_interrupt_cb = interrupt_cb;
 }
 
+int ff_check_interrupt(AVIOInterruptCB *cb)
+{
+    int ret;
+    if (cb && cb->callback && (ret = cb->callback(cb->opaque)))
+        return ret;
+    return url_interrupt_cb();
+}
+
 #if FF_API_OLD_AVIO
 int av_url_read_pause(URLContext *h, int pause)
 {
