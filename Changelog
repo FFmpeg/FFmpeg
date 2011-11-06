@@ -9,6 +9,7 @@ version 0.5.5:
   (CVE-2011-3362, CVE-2011-3973, CVE-2011-3974)
 - Compilation fixes for gcc-4.6, testsuite now passes again
 - Detect and handle overreads in the MJPEG decoder.
+- multiple other security fixes.
 
 
 
