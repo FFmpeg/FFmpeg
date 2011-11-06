@@ -503,10 +503,12 @@ static void term_init(void)
 #endif
 }
 
-static int decode_interrupt_cb(void)
+static int decode_interrupt_cb(void *ctx)
 {
     return received_nb_signals > 1;
 }
+
+static const AVIOInterruptCB int_cb = { decode_interrupt_cb, NULL };
 
 void exit_program(int ret)
 {
@@ -2272,6 +2274,7 @@ static int transcode_init(OutputFile *output_files,
     /* open files and write file headers */
     for (i = 0; i < nb_output_files; i++) {
         os = output_files[i].ctx;
+        os->interrupt_callback = int_cb;
         if (avformat_write_header(os, &output_files[i].opts) < 0) {
             snprintf(error, sizeof(error), "Could not write header for output file #%d (incorrect codec parameters ?)", i);
             ret = AVERROR(EINVAL);
@@ -2887,7 +2890,7 @@ static void dump_attachment(AVStream *st, const char *filename)
 
     assert_file_overwrite(filename);
 
-    if ((ret = avio_open (&out, filename, AVIO_FLAG_WRITE)) < 0) {
+    if ((ret = avio_open2(&out, filename, AVIO_FLAG_WRITE, &int_cb, NULL)) < 0) {
         av_log(NULL, AV_LOG_FATAL, "Could not open file %s for writing.\n",
                filename);
         exit_program(1);
@@ -2945,6 +2948,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
         av_dict_set(&format_opts, "pixel_format", o->frame_pix_fmts[o->nb_frame_pix_fmts - 1].u.str, 0);
 
     ic->flags |= AVFMT_FLAG_NONBLOCK;
+    ic->interrupt_callback = int_cb;
 
     /* open the input file with generic libav function */
     err = avformat_open_input(&ic, filename, file_iformat, &format_opts);
@@ -3074,12 +3078,12 @@ static int get_preset_file_2(const char *preset_name, const char *codec_name, AV
         if (codec_name) {
             snprintf(filename, sizeof(filename), "%s%s/%s-%s.avpreset", base[i],
                      i != 1 ? "" : "/.avconv", codec_name, preset_name);
-            ret = avio_open(s, filename, AVIO_FLAG_READ);
+            ret = avio_open2(s, filename, AVIO_FLAG_READ, &int_cb, NULL);
         }
         if (ret) {
             snprintf(filename, sizeof(filename), "%s%s/%s.avpreset", base[i],
                      i != 1 ? "" : "/.avconv", preset_name);
-            ret = avio_open(s, filename, AVIO_FLAG_READ);
+            ret = avio_open2(s, filename, AVIO_FLAG_READ, &int_cb, NULL);
         }
     }
     return ret;
@@ -3465,8 +3469,9 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
 static int read_avserver_streams(OptionsContext *o, AVFormatContext *s, const char *filename)
 {
     int i, err;
-    AVFormatContext *ic = NULL;
+    AVFormatContext *ic = avformat_alloc_context();
 
+    ic->interrupt_callback = int_cb;
     err = avformat_open_input(&ic, filename, NULL, NULL);
     if (err < 0)
         return err;
@@ -3529,6 +3534,7 @@ static void opt_output_file(void *optctx, const char *filename)
     }
 
     oc->oformat = file_oformat;
+    oc->interrupt_callback = int_cb;
     av_strlcpy(oc->filename, filename, sizeof(oc->filename));
 
     if (!strcmp(file_oformat->name, "ffm") &&
@@ -3621,7 +3627,7 @@ static void opt_output_file(void *optctx, const char *filename)
         const char *p;
         int64_t len;
 
-        if ((err = avio_open(&pb, o->attachments[i], AVIO_FLAG_READ)) < 0) {
+        if ((err = avio_open2(&pb, o->attachments[i], AVIO_FLAG_READ, &int_cb, NULL)) < 0) {
             av_log(NULL, AV_LOG_FATAL, "Could not open attachment file %s.\n",
                    o->attachments[i]);
             exit_program(1);
@@ -3671,7 +3677,9 @@ static void opt_output_file(void *optctx, const char *filename)
         assert_file_overwrite(filename);
 
         /* open the file */
-        if ((err = avio_open(&oc->pb, filename, AVIO_FLAG_WRITE)) < 0) {
+        if ((err = avio_open2(&oc->pb, filename, AVIO_FLAG_WRITE,
+                              &oc->interrupt_callback,
+                              &output_files[nb_output_files - 1].opts)) < 0) {
             print_error(filename, err);
             exit_program(1);
         }
@@ -4218,8 +4226,6 @@ int main(int argc, char **argv)
 #endif
     av_register_all();
     avformat_network_init();
-
-    avio_set_interrupt_cb(decode_interrupt_cb);
 
     show_banner();
 
