@@ -2,7 +2,8 @@ Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
 
-version <next>:
+version 0.8_beta1:
+
 - BWF muxer
 - Flash Screen Video 2 decoder
 - ffplay/ffprobe/ffserver renamed to avplay/avprobe/avserver
