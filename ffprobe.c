@@ -611,6 +611,7 @@ static void writer_register_all(void)
 #define print_str(k, v)         writer_print_string(w, k, v)
 #define print_ts(k, v)          writer_print_string(w, k, ts_value_string  (val_str, sizeof(val_str), v))
 #define print_time(k, v, tb)    writer_print_string(w, k, time_value_string(val_str, sizeof(val_str), v, tb))
+#define print_val(k, v, unit)   writer_print_string(w, k, value_string     (val_str, sizeof(val_str), v, unit))
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 #define show_tags(metadata)     writer_show_tags(w, metadata)
@@ -630,7 +631,7 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_time("dts_time",        pkt->dts, &st->time_base);
     print_ts  ("duration",        pkt->duration);
     print_time("duration_time",   pkt->duration, &st->time_base);
-    print_str("size",             value_string     (val_str, sizeof(val_str), pkt->size, unit_byte_str));
+    print_val("size",             pkt->size, unit_byte_str);
     print_fmt("pos",   "%"PRId64, pkt->pos);
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
     print_section_footer("packet");
@@ -703,7 +704,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
         case AVMEDIA_TYPE_AUDIO:
             print_str("sample_fmt",
                       av_x_if_null(av_get_sample_fmt_name(dec_ctx->sample_fmt), "unknown"));
-            print_str("sample_rate",     value_string(val_str, sizeof(val_str), dec_ctx->sample_rate, unit_hertz_str));
+            print_val("sample_rate",     dec_ctx->sample_rate, unit_hertz_str);
             print_int("channels",        dec_ctx->channels);
             print_int("bits_per_sample", av_get_bits_per_sample(dec_ctx->codec_id));
             break;
@@ -761,8 +762,8 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
     print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
     if (size >= 0)
-        print_str("size",         value_string(val_str, sizeof(val_str), size,               unit_byte_str));
-    print_str("bit_rate",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,  unit_bit_per_second_str));
+        print_val("size",         size, unit_byte_str);
+    print_val("bit_rate",         fmt_ctx->bit_rate, unit_bit_per_second_str);
     show_tags(fmt_ctx->metadata);
     print_section_footer("format");
     av_free(pbuf.s);
