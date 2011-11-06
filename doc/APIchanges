@@ -13,23 +13,23 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
-2011-11-xx - xxxxxxx - lavu 51.14.0
+2011-11-06 - ba04ecf - lavu 51.14.0
   Add av_strcasecmp() and av_strncasecmp() to avstring.h.
 
-2011-11-xx - xxxxxxx - lavu 51.13.0
+2011-11-06 - 07b172f - lavu 51.13.0
   Add av_toupper()/av_tolower()
 
-2011-11-xx - xxxxxxx - lavf 53.13.0
+2011-11-05 - b6d08f4 - lavf 53.13.0
   Add avformat_network_init()/avformat_network_uninit()
 
-2011-xx-xx - xxxxxxx - lavc 53.15.0
+2011-10-27 - 512557b - lavc 53.15.0
   Remove avcodec_parse_frame.
   Deprecate AVCodecContext.parse_only and CODEC_CAP_PARSE_ONLY.
 
-2011-10-xx - xxxxxxx - lavf 53.10.0
+2011-10-19 - 569129a - lavf 53.10.0
   Add avformat_new_stream(). Deprecate av_new_stream().
 
-2011-xx-xx - xxxxxxx - lavf 53.9.0
+2011-10-13 - b631fba - lavf 53.9.0
   Add AVFMT_NO_BYTE_SEEK AVInputFormat flag.
 
 2011-10-12 - lavu 51.12.0
