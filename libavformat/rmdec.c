@@ -972,4 +972,5 @@ AVInputFormat ff_rdt_demuxer = {
     .long_name      = NULL_IF_CONFIG_SMALL("RDT demuxer"),
     .priv_data_size = sizeof(RMDemuxContext),
     .read_close     = rm_read_close,
+    .flags          = AVFMT_NOFILE,
 };
