@@ -304,7 +304,8 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
                                   s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
-            if (avio_open(&f[i], filename, AVIO_FLAG_READ) < 0) {
+            if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
+                           &s1->interrupt_callback, NULL) < 0) {
                 if(i==1)
                     break;
                 av_log(s1, AV_LOG_ERROR, "Could not open file : %s\n",filename);
@@ -388,7 +389,8 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
             return AVERROR(EIO);
         }
         for(i=0; i<3; i++){
-            if (avio_open(&pb[i], filename, AVIO_FLAG_WRITE) < 0) {
+            if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
+                           &s->interrupt_callback, NULL) < 0) {
                 av_log(s, AV_LOG_ERROR, "Could not open file : %s\n",filename);
                 return AVERROR(EIO);
             }

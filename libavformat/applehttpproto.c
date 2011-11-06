@@ -114,7 +114,8 @@ static int parse_playlist(URLContext *h, const char *url)
     char line[1024];
     const char *ptr;
 
-    if ((ret = avio_open(&in, url, AVIO_FLAG_READ)) < 0)
+    if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
+                          &h->interrupt_callback, NULL)) < 0)
         return ret;
 
     read_chomp_line(in, line, sizeof(line));

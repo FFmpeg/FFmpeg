@@ -210,7 +210,8 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
 
     if (!in) {
         close_in = 1;
-        if ((ret = avio_open(&in, url, AVIO_FLAG_READ)) < 0)
+        if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
+                              c->interrupt_callback, NULL)) < 0)
             return ret;
     }
 
