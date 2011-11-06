@@ -237,10 +237,11 @@ int av_packet_split_side_data(AVPacket *pkt){
     if (!pkt->side_data_elems && pkt->size >12 && AV_RB64(pkt->data + pkt->size - 8) == FF_MERGE_MARKER){
         int i;
         unsigned int size;
-        uint8_t *p= pkt->data + pkt->size - 8 - 5;
+        uint8_t *p;
 
         av_dup_packet(pkt);
 
+        p = pkt->data + pkt->size - 8 - 5;
         for (i=1; ; i++){
             size = AV_RB32(p);
             if (size>INT_MAX || p - pkt->data <= size)
