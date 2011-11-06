@@ -532,7 +532,7 @@ static void write_fat(AVIOContext *pb, int start_sector, int nb_sectors, int shi
         avio_wl32(pb, start_sector + (i << shift));
     }
     // pad left sector pointer size
-    write_pad(pb, WTV_SECTOR_SIZE - (nb_sectors << 2));
+    write_pad(pb, WTV_SECTOR_SIZE - ((nb_sectors << 2) % WTV_SECTOR_SIZE));
 }
 
 static int write_fat_sector(AVFormatContext *s, int64_t start_pos, int nb_sectors, int sector_bits, int depth)
