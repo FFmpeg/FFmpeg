@@ -42,6 +42,7 @@ typedef struct URLContext {
     int max_packet_size;        /**< if non zero, the stream is packetized with this max packet size */
     int is_streamed;            /**< true if streamed (no seek possible), default = false */
     int is_connected;
+    AVIOInterruptCB interrupt_callback;
 } URLContext;
 
 typedef struct URLProtocol {
