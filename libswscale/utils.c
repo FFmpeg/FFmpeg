@@ -960,7 +960,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     /* precalculate vertical scaler filter coefficients */
     {
         const int filterAlign=
-            (HAVE_MMX     && cpu_flags & AV_CPU_FLAG_MMX) && (flags & SWS_ACCURATE_RND) ? 2 :
+            (HAVE_MMX     && cpu_flags & AV_CPU_FLAG_MMX) ? 2 :
             (HAVE_ALTIVEC && cpu_flags & AV_CPU_FLAG_ALTIVEC) ? 8 :
             1;
 

@@ -1750,11 +1750,12 @@ static int matroska_parse_block(MatroskaDemuxContext *matroska, uint8_t *data,
     size -= n;
 
     track = matroska_find_track_by_num(matroska, num);
-    if (size <= 3 || !track || !track->stream) {
+    if (!track || !track->stream) {
         av_log(matroska->ctx, AV_LOG_INFO,
                "Invalid stream %"PRIu64" or size %u\n", num, size);
         return res;
-    }
+    } else if (size <= 3)
+        return 0;
     st = track->stream;
     if (st->discard >= AVDISCARD_ALL)
         return res;

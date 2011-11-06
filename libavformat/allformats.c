@@ -258,6 +258,7 @@ void av_register_all(void)
     REGISTER_PROTOCOL (FILE, file);
     REGISTER_PROTOCOL (GOPHER, gopher);
     REGISTER_PROTOCOL (HTTP, http);
+    REGISTER_PROTOCOL (HTTPS, https);
     REGISTER_PROTOCOL (MMSH, mmsh);
     REGISTER_PROTOCOL (MMST, mmst);
     REGISTER_PROTOCOL (MD5,  md5);
@@ -271,5 +272,6 @@ void av_register_all(void)
 #endif
     REGISTER_PROTOCOL (RTP, rtp);
     REGISTER_PROTOCOL (TCP, tcp);
+    REGISTER_PROTOCOL (TLS, tls);
     REGISTER_PROTOCOL (UDP, udp);
 }

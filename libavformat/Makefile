@@ -16,6 +16,8 @@ OBJS = allformats.o         \
        seek.o               \
        utils.o              \
 
+OBJS-$(CONFIG_NETWORK)                   += network.o
+
 # muxers/demuxers
 OBJS-$(CONFIG_A64_MUXER)                 += a64.o
 OBJS-$(CONFIG_AAC_DEMUXER)               += aacdec.o rawdec.o
@@ -342,6 +344,7 @@ OBJS-$(CONFIG_CRYPTO_PROTOCOL)           += crypto.o
 OBJS-$(CONFIG_FILE_PROTOCOL)             += file.o
 OBJS-$(CONFIG_GOPHER_PROTOCOL)           += gopher.o
 OBJS-$(CONFIG_HTTP_PROTOCOL)             += http.o httpauth.o
+OBJS-$(CONFIG_HTTPS_PROTOCOL)            += http.o httpauth.o
 OBJS-$(CONFIG_MMSH_PROTOCOL)             += mmsh.o mms.o asf.o
 OBJS-$(CONFIG_MMST_PROTOCOL)             += mmst.o mms.o asf.o
 OBJS-$(CONFIG_MD5_PROTOCOL)              += md5proto.o
@@ -354,6 +357,7 @@ OBJS-$(CONFIG_RTMP_PROTOCOL)             += $(RTMP-OBJS-yes)
 
 OBJS-$(CONFIG_RTP_PROTOCOL)              += rtpproto.o
 OBJS-$(CONFIG_TCP_PROTOCOL)              += tcp.o
+OBJS-$(CONFIG_TLS_PROTOCOL)              += tls.o
 OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
 

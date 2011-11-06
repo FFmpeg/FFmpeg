@@ -1855,4 +1855,19 @@ int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_co
  */
 const AVClass *avformat_get_class(void);
 
+/**
+ * Do global initialization of network components. This is optional,
+ * but recommended, since it avoids the overhead of implicitly
+ * doing the setup for each session.
+ *
+ * Since the next major version bump, calling this function will become
+ * mandatory if using network protocols.
+ */
+int avformat_network_init(void);
+
+/**
+ * Undo the initialization done by avformat_network_init.
+ */
+int avformat_network_deinit(void);
+
 #endif /* AVFORMAT_AVFORMAT_H */

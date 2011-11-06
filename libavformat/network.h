@@ -36,17 +36,7 @@
 #define ECONNREFUSED    WSAECONNREFUSED
 #define EINPROGRESS     WSAEINPROGRESS
 
-static inline int ff_neterrno(void)
-{
-    int err = WSAGetLastError();
-    switch (err) {
-    case WSAEWOULDBLOCK:
-        return AVERROR(EAGAIN);
-    case WSAEINTR:
-        return AVERROR(EINTR);
-    }
-    return -err;
-}
+int ff_neterrno(void);
 #else
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -66,31 +56,13 @@ static inline int ff_neterrno(void)
 
 int ff_socket_nonblock(int socket, int enable);
 
-static inline int ff_network_init(void)
-{
-#if HAVE_WINSOCK2_H
-    WSADATA wsaData;
-    if (WSAStartup(MAKEWORD(1,1), &wsaData))
-        return 0;
-#endif
-    return 1;
-}
+int ff_network_init(void);
+void ff_network_close(void);
 
-static inline int ff_network_wait_fd(int fd, int write)
-{
-    int ev = write ? POLLOUT : POLLIN;
-    struct pollfd p = { .fd = fd, .events = ev, .revents = 0 };
-    int ret;
-    ret = poll(&p, 1, 100);
-    return ret < 0 ? ff_neterrno() : p.revents & (ev | POLLERR | POLLHUP) ? 0 : AVERROR(EAGAIN);
-}
+void ff_tls_init(void);
+void ff_tls_deinit(void);
 
-static inline void ff_network_close(void)
-{
-#if HAVE_WINSOCK2_H
-    WSACleanup();
-#endif
-}
+int ff_network_wait_fd(int fd, int write);
 
 int ff_inet_aton (const char * str, struct in_addr * add);
 
@@ -191,18 +163,6 @@ const char *ff_gai_strerror(int ecode);
 #define IN6_IS_ADDR_MULTICAST(a) (((uint8_t *) (a))[0] == 0xff)
 #endif
 
-static inline int ff_is_multicast_address(struct sockaddr *addr)
-{
-    if (addr->sa_family == AF_INET) {
-        return IN_MULTICAST(ntohl(((struct sockaddr_in *)addr)->sin_addr.s_addr));
-    }
-#if HAVE_STRUCT_SOCKADDR_IN6
-    if (addr->sa_family == AF_INET6) {
-        return IN6_IS_ADDR_MULTICAST(&((struct sockaddr_in6 *)addr)->sin6_addr);
-    }
-#endif
-
-    return 0;
-}
+int ff_is_multicast_address(struct sockaddr *addr);
 
 #endif /* AVFORMAT_NETWORK_H */

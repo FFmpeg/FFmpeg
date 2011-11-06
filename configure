@@ -166,6 +166,7 @@ External library support:
   --enable-libcelt         enable CELT decoding via libcelt [no]
   --enable-frei0r          enable frei0r video filtering
   --enable-libaacplus      enable AAC+ encoding via libaacplus [no]
+  --enable-gnutls          enable gnutls [no]
   --enable-libopencore-amrnb enable AMR-NB de/encoding via libopencore-amrnb [no]
   --enable-libopencore-amrwb enable AMR-WB decoding via libopencore-amrwb [no]
   --enable-libopencv       enable video filtering via libopencv [no]
@@ -199,6 +200,7 @@ External library support:
                            native MPEG-4/Xvid encoder exists [no]
   --enable-openal          enable OpenAL 1.1 capture support [no]
   --enable-mlib            enable Sun medialib [no]
+  --enable-openssl         enable openssl [no]
   --enable-zlib            enable zlib [autodetect]
 
 Advanced options (experts only):
@@ -994,6 +996,7 @@ CONFIG_LIST="
     ffserver
     fft
     frei0r
+    gnutls
     golomb
     gpl
     gray
@@ -1040,6 +1043,7 @@ CONFIG_LIST="
     network
     nonfree
     openal
+    openssl
     pic
     postproc
     rdft
@@ -1589,11 +1593,14 @@ x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
 gopher_protocol_deps="network"
 http_protocol_deps="network"
 http_protocol_select="tcp_protocol"
+https_protocol_select="tls_protocol"
 mmsh_protocol_select="http_protocol"
 mmst_protocol_deps="network"
 rtmp_protocol_select="tcp_protocol"
 rtp_protocol_select="udp_protocol"
 tcp_protocol_deps="network"
+tls_protocol_deps_any="openssl gnutls"
+tls_protocol_select="tcp_protocol"
 udp_protocol_deps="network"
 
 # filters
@@ -2708,6 +2715,7 @@ die_license_disabled gpl x11grab
 
 die_license_disabled nonfree libaacplus
 die_license_disabled nonfree libfaac
+die_license_disabled nonfree openssl
 
 die_license_disabled version3 libopencore_amrnb
 die_license_disabled version3 libopencore_amrwb
@@ -3036,6 +3044,7 @@ enabled libcelt    && require libcelt celt/celt.h celt_decode -lcelt0
 enabled frei0r     && { check_header frei0r.h || die "ERROR: frei0r.h header not found"; }
 enabled libaacplus && require  "libaacplus >= 2.0.0" aacplus.h aacplusEncOpen -laacplus
 enabled libdc1394  && require_pkg_config libdc1394-2 dc1394/dc1394.h dc1394_new
+enabled gnutls     && require_pkg_config gnutls gnutls/gnutls.h gnutls_global_init
 enabled libdirac   && require_pkg_config dirac                          \
     "libdirac_decoder/dirac_parser.h libdirac_encoder/dirac_encoder.h"  \
     "dirac_decoder_init dirac_encoder_init"
@@ -3078,6 +3087,10 @@ enabled openal     && { { for al_libs in "${OPENAL_LIBS}" "-lopenal" "-lOpenAL32
                       { check_cpp_condition "AL/al.h" "defined(AL_VERSION_1_1)" ||
                         die "ERROR: openal version must be 1.1 or compatible"; }
 enabled mlib       && require  mediaLib mlib_types.h mlib_VectorSub_S16_U8_Mod -lmlib
+enabled openssl    && { check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto ||
+                        check_lib openssl/ssl.h SSL_library_init -lssl32 -leay32 ||
+                        check_lib openssl/ssl.h SSL_library_init -lssl -lcrypto -lws2_32 -lgdi32 ||
+                        die "ERROR: openssl not found"; }
 
 SDL_CONFIG="${cross_prefix}sdl-config"
 if check_pkg_config sdl SDL_version.h SDL_Linked_Version; then
@@ -3367,6 +3380,7 @@ echo "libvdpau enabled          ${vdpau-no}"
 echo "AVISynth enabled          ${avisynth-no}"
 echo "libcelt enabled           ${libcelt-no}"
 echo "frei0r enabled            ${frei0r-no}"
+echo "gnutls enabled            ${gnutls-no}"
 echo "libcdio support           ${libcdio-no}"
 echo "libdc1394 support         ${libdc1394-no}"
 echo "libdirac enabled          ${libdirac-no}"
@@ -3396,6 +3410,7 @@ echo "libx264 enabled           ${libx264-no}"
 echo "libxavs enabled           ${libxavs-no}"
 echo "libxvid enabled           ${libxvid-no}"
 echo "openal enabled            ${openal-no}"
+echo "openssl enabled           ${openssl-no}"
 echo "zlib enabled              ${zlib-no}"
 echo "bzlib enabled             ${bzlib-no}"
 echo

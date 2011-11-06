@@ -76,6 +76,7 @@ easier to use. The changes are:
 - volume audio filter added
 - earwax audio filter added
 - libv4l2 support (--enable-libv4l2)
+- TLS/SSL and HTTPS protocol support
 
 
 version 0.8:

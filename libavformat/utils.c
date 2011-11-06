@@ -4186,3 +4186,23 @@ int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_co
     }
     return AVERROR_PATCHWELCOME;
 }
+
+int avformat_network_init(void)
+{
+#if CONFIG_NETWORK
+    int ret;
+    if ((ret = ff_network_init()) < 0)
+        return ret;
+    ff_tls_init();
+#endif
+    return 0;
+}
+
+int avformat_network_deinit(void)
+{
+#if CONFIG_NETWORK
+    ff_network_close();
+    ff_tls_deinit();
+#endif
+    return 0;
+}

@@ -60,4 +60,7 @@ unsigned int avpriv_toupper4(unsigned int x);
  */
 void ff_init_buffer_info(AVCodecContext *s, AVFrame *pic);
 
+int avpriv_lock_avformat(void);
+int avpriv_unlock_avformat(void);
+
 #endif /* AVCODEC_INTERNAL_H */

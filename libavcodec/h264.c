@@ -1128,6 +1128,7 @@ int ff_h264_decode_extradata(H264Context *h, const uint8_t *buf, int size)
 av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     H264Context *h= avctx->priv_data;
     MpegEncContext * const s = &h->s;
+    int i;
 
     MPV_decode_defaults(s);
 
@@ -1152,6 +1153,8 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
 
     h->thread_context[0] = h;
     h->outputed_poc = h->next_outputed_poc = INT_MIN;
+    for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
+        h->last_pocs[i] = INT_MIN;
     h->prev_poc_msb= 1<<16;
     h->x264_build = -1;
     ff_h264_reset_sei(h);
@@ -1493,11 +1496,23 @@ static void decode_postinit(H264Context *h, int setup_finished){
 
     if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
         { }
-    else if((out_of_order && pics-1 == s->avctx->has_b_frames && s->avctx->has_b_frames < MAX_DELAYED_PIC_COUNT)
-       || (s->low_delay &&
-        ((h->next_outputed_poc != INT_MIN && out->poc > h->next_outputed_poc + 2)
-         || cur->f.pict_type == AV_PICTURE_TYPE_B)))
-    {
+    else if (out_of_order && pics-1 == s->avctx->has_b_frames &&
+             s->avctx->has_b_frames < MAX_DELAYED_PIC_COUNT) {
+        int cnt = 0, invalid = 0;
+        for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++) {
+            cnt += out->poc < h->last_pocs[i];
+            invalid += h->last_pocs[i] == INT_MIN;
+        }
+        if (invalid + cnt < MAX_DELAYED_PIC_COUNT) {
+            s->avctx->has_b_frames = FFMAX(s->avctx->has_b_frames, cnt);
+        } else if (cnt) {
+            for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
+                h->last_pocs[i] = INT_MIN;
+        }
+        s->low_delay = 0;
+    } else if (s->low_delay &&
+               ((h->next_outputed_poc != INT_MIN && out->poc > h->next_outputed_poc + 2) ||
+                cur->f.pict_type == AV_PICTURE_TYPE_B)) {
         s->low_delay = 0;
         s->avctx->has_b_frames++;
     }
@@ -1509,6 +1524,8 @@ static void decode_postinit(H264Context *h, int setup_finished){
         for(i=out_idx; h->delayed_pic[i]; i++)
             h->delayed_pic[i] = h->delayed_pic[i+1];
     }
+    memmove(h->last_pocs, &h->last_pocs[1], sizeof(*h->last_pocs) * (MAX_DELAYED_PIC_COUNT - 1));
+    h->last_pocs[MAX_DELAYED_PIC_COUNT - 1] = out->poc;
     if(!out_of_order && pics > s->avctx->has_b_frames){
         h->next_output_pic = out;
         if (out_idx == 0 && h->delayed_pic[0] && (h->delayed_pic[0]->f.key_frame || h->delayed_pic[0]->mmco_reset)) {

@@ -19,6 +19,9 @@ API changes, most recent first:
 2011-10-20 - b35e9e1 - lavu 51.22.0
   Add av_strtok() to avstring.h.
 
+2011-11-xx - xxxxxxx - lavf 53.13.0
+  Add avformat_network_init()/avformat_network_uninit()
+
 2011-10-27 - 512557b - lavc 53.15.0
   Remove avcodec_parse_frame.
   Deprecate AVCodecContext.parse_only and CODEC_CAP_PARSE_ONLY.
