@@ -2339,7 +2339,7 @@ static void stream_component_close(VideoState *is, int stream_index)
    variable instead of a thread local variable */
 static VideoState *global_video_state;
 
-static int decode_interrupt_cb(void)
+static int decode_interrupt_cb(void *ctx)
 {
     return (global_video_state && global_video_state->abort_request);
 }
@@ -2364,8 +2364,9 @@ static int decode_thread(void *arg)
     is->subtitle_stream = -1;
 
     global_video_state = is;
-    avio_set_interrupt_cb(decode_interrupt_cb);
 
+    ic = avformat_alloc_context();
+    ic->interrupt_callback.callback = decode_interrupt_cb;
     err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
     if (err < 0) {
         print_error(is->filename, err);
