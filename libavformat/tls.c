@@ -123,7 +123,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         freeaddrinfo(ai);
     }
 
-    ret = ffurl_open(&c->tcp, buf, AVIO_FLAG_READ_WRITE);
+    ret = ffurl_open(&c->tcp, buf, AVIO_FLAG_READ_WRITE, &h->interrupt_callback);
     if (ret)
         goto fail;
     c->fd = ffurl_get_file_handle(c->tcp);

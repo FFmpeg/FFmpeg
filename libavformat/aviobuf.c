@@ -932,7 +932,7 @@ int avio_open(AVIOContext **s, const char *filename, int flags)
     URLContext *h;
     int err;
 
-    err = ffurl_open(&h, filename, flags);
+    err = ffurl_open(&h, filename, flags, NULL);
     if (err < 0)
         return err;
     err = ffio_fdopen(s, h);

@@ -133,7 +133,7 @@ static int http_open_cnx(URLContext *h)
         port = 80;
 
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
-    err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE);
+    err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE, &h->interrupt_callback);
     if (err < 0)
         goto fail;
 

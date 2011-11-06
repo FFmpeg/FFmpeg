@@ -72,10 +72,13 @@ typedef struct URLProtocol {
  * function puts the pointer to the created URLContext
  * @param flags flags which control how the resource indicated by url
  * is to be opened
+ * @param int_cb interrupt callback to use for the URLContext, may be
+ * NULL
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffurl_alloc(URLContext **puc, const char *filename, int flags);
+int ffurl_alloc(URLContext **puc, const char *filename, int flags,
+                const AVIOInterruptCB *int_cb);
 
 /**
  * Connect an URLContext that has been allocated by ffurl_alloc
@@ -90,10 +93,13 @@ int ffurl_connect(URLContext *uc);
  * function puts the pointer to the created URLContext
  * @param flags flags which control how the resource indicated by url
  * is to be opened
+ * @param int_cb interrupt callback to use for the URLContext, may be
+ * NULL
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffurl_open(URLContext **puc, const char *filename, int flags);
+int ffurl_open(URLContext **puc, const char *filename, int flags,
+               const AVIOInterruptCB *int_cb);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store
