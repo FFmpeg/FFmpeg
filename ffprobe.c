@@ -609,6 +609,8 @@ static void writer_register_all(void)
 
 #define print_int(k, v)         writer_print_integer(w, k, v)
 #define print_str(k, v)         writer_print_string(w, k, v)
+#define print_ts(k, v)          writer_print_string(w, k, ts_value_string  (val_str, sizeof(val_str), v))
+#define print_time(k, v, tb)    writer_print_string(w, k, time_value_string(val_str, sizeof(val_str), v, tb))
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 #define show_tags(metadata)     writer_show_tags(w, metadata)
@@ -622,12 +624,12 @@ static void show_packet(WriterContext *w, AVFormatContext *fmt_ctx, AVPacket *pk
     print_section_header("packet");
     print_str("codec_type",       av_x_if_null(av_get_media_type_string(st->codec->codec_type), "unknown"));
     print_int("stream_index",     pkt->stream_index);
-    print_str("pts",              ts_value_string  (val_str, sizeof(val_str), pkt->pts));
-    print_str("pts_time",         time_value_string(val_str, sizeof(val_str), pkt->pts, &st->time_base));
-    print_str("dts",              ts_value_string  (val_str, sizeof(val_str), pkt->dts));
-    print_str("dts_time",         time_value_string(val_str, sizeof(val_str), pkt->dts, &st->time_base));
-    print_str("duration",         ts_value_string  (val_str, sizeof(val_str), pkt->duration));
-    print_str("duration_time",    time_value_string(val_str, sizeof(val_str), pkt->duration, &st->time_base));
+    print_ts  ("pts",             pkt->pts);
+    print_time("pts_time",        pkt->pts, &st->time_base);
+    print_ts  ("dts",             pkt->dts);
+    print_time("dts_time",        pkt->dts, &st->time_base);
+    print_ts  ("duration",        pkt->duration);
+    print_time("duration_time",   pkt->duration, &st->time_base);
     print_str("size",             value_string     (val_str, sizeof(val_str), pkt->size, unit_byte_str));
     print_fmt("pos",   "%"PRId64, pkt->pos);
     print_fmt("flags", "%c",      pkt->flags & AV_PKT_FLAG_KEY ? 'K' : '_');
@@ -726,8 +728,8 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     print_fmt("r_frame_rate",   "%d/%d", stream->r_frame_rate.num,   stream->r_frame_rate.den);
     print_fmt("avg_frame_rate", "%d/%d", stream->avg_frame_rate.num, stream->avg_frame_rate.den);
     print_fmt("time_base",      "%d/%d", stream->time_base.num,      stream->time_base.den);
-    print_str("start_time", time_value_string(val_str, sizeof(val_str), stream->start_time, &stream->time_base));
-    print_str("duration",   time_value_string(val_str, sizeof(val_str), stream->duration,   &stream->time_base));
+    print_time("start_time",    stream->start_time, &stream->time_base);
+    print_time("duration",      stream->duration,   &stream->time_base);
     if (stream->nb_frames)
         print_fmt("nb_frames", "%"PRId64, stream->nb_frames);
 
@@ -756,8 +758,8 @@ static void show_format(WriterContext *w, AVFormatContext *fmt_ctx)
     print_int("nb_streams",       fmt_ctx->nb_streams);
     print_str("format_name",      fmt_ctx->iformat->name);
     print_str("format_long_name", fmt_ctx->iformat->long_name);
-    print_str("start_time",       time_value_string(val_str, sizeof(val_str), fmt_ctx->start_time, &AV_TIME_BASE_Q));
-    print_str("duration",         time_value_string(val_str, sizeof(val_str), fmt_ctx->duration,   &AV_TIME_BASE_Q));
+    print_time("start_time",      fmt_ctx->start_time, &AV_TIME_BASE_Q);
+    print_time("duration",        fmt_ctx->duration,   &AV_TIME_BASE_Q);
     if (size >= 0)
         print_str("size",         value_string(val_str, sizeof(val_str), size,               unit_byte_str));
     print_str("bit_rate",         value_string(val_str, sizeof(val_str), fmt_ctx->bit_rate,  unit_bit_per_second_str));
