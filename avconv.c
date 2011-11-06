@@ -223,12 +223,12 @@ typedef struct OutputStream {
     AVFilterGraph *graph;
 #endif
 
-   int64_t sws_flags;
-   AVDictionary *opts;
-   int is_past_recording_time;
-   int stream_copy;
-   const char *attachment_filename;
-   int copy_initial_nonkeyframes;
+    int64_t sws_flags;
+    AVDictionary *opts;
+    int is_past_recording_time;
+    int stream_copy;
+    const char *attachment_filename;
+    int copy_initial_nonkeyframes;
 } OutputStream;
 
 
