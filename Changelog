@@ -1,6 +1,17 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+
+version 0.5.5:
+
+- Fix memory (re)allocation in matroskadec.c (MSVR11-011/CVE-2011-3504)
+- Fix some crashes with invalid bitstreams in the CAVS decoder
+  (CVE-2011-3362, CVE-2011-3973, CVE-2011-3974)
+- Compilation fixes for gcc-4.6, testsuite now passes again
+- Detect and handle overreads in the MJPEG decoder.
+
+
+
 version 0.5.4:
 
 - Fix memory corruption in WMV parsing (addresses CVE-2010-3908)

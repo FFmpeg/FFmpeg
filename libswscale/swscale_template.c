@@ -1739,7 +1739,7 @@ static inline void RENAME(bgr24ToY_mmx)(uint8_t *dst, uint8_t *src, long width, 
 static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *src, long width, int srcFormat)
 {
     __asm__ volatile(
-        "movq                    24+%4, %%mm6       \n\t"
+        "movq                   24(%4), %%mm6       \n\t"
         "mov                        %3, %%"REG_a"   \n\t"
         "pxor                    %%mm7, %%mm7       \n\t"
         "1:                                         \n\t"
@@ -1750,9 +1750,9 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *
         "punpcklbw               %%mm7, %%mm1       \n\t"
         "movq                    %%mm0, %%mm2       \n\t"
         "movq                    %%mm1, %%mm3       \n\t"
-        "pmaddwd                    %4, %%mm0       \n\t"
-        "pmaddwd                  8+%4, %%mm1       \n\t"
-        "pmaddwd                 16+%4, %%mm2       \n\t"
+        "pmaddwd                  (%4), %%mm0       \n\t"
+        "pmaddwd                 8(%4), %%mm1       \n\t"
+        "pmaddwd                16(%4), %%mm2       \n\t"
         "pmaddwd                 %%mm6, %%mm3       \n\t"
         "paddd                   %%mm1, %%mm0       \n\t"
         "paddd                   %%mm3, %%mm2       \n\t"
@@ -1764,9 +1764,9 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *
         "punpcklbw               %%mm7, %%mm3       \n\t"
         "movq                    %%mm1, %%mm4       \n\t"
         "movq                    %%mm3, %%mm5       \n\t"
-        "pmaddwd                    %4, %%mm1       \n\t"
-        "pmaddwd                  8+%4, %%mm3       \n\t"
-        "pmaddwd                 16+%4, %%mm4       \n\t"
+        "pmaddwd                  (%4), %%mm1       \n\t"
+        "pmaddwd                 8(%4), %%mm3       \n\t"
+        "pmaddwd                16(%4), %%mm4       \n\t"
         "pmaddwd                 %%mm6, %%mm5       \n\t"
         "paddd                   %%mm3, %%mm1       \n\t"
         "paddd                   %%mm5, %%mm4       \n\t"
@@ -1789,7 +1789,7 @@ static inline void RENAME(bgr24ToUV_mmx)(uint8_t *dstU, uint8_t *dstV, uint8_t *
         "add                        $4, %%"REG_a"   \n\t"
         " js                        1b              \n\t"
     : "+r" (src)
-    : "r" (dstU+width), "r" (dstV+width), "g" (-width), "m"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24][0])
+    : "r" (dstU+width), "r" (dstV+width), "g" (-width), "r"(ff_bgr24toUV[srcFormat == PIX_FMT_RGB24])
     : "%"REG_a
     );
 }
