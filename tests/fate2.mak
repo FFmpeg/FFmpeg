@@ -139,15 +139,15 @@ fate-g722enc: CMD = md5 -ar 16000 -ac 1 -f s16le -i $(TARGET_PATH)/tests/data/as
 
 FATE_TESTS += fate-mapchan-6ch-extract-2
 fate-mapchan-6ch-extract-2: tests/data/mapchan-6ch.sw
-fate-mapchan-6ch-extract-2: CMD = avconv -ar 22050 -ac 6 -i $(TARGET_PATH)/tests/data/mapchan-6ch.sw -map_channel 0.0.0 -f wav md5: -map_channel 0.0.1 -f wav md5:
+fate-mapchan-6ch-extract-2: CMD = avconv -ar 22050 -ac 6 -f s16le -i $(TARGET_PATH)/tests/data/mapchan-6ch.sw -map_channel 0.0.0 -f wav md5: -map_channel 0.0.1 -f wav md5:
 
 FATE_TESTS += fate-mapchan-6ch-extract-2-downmix-mono
 fate-mapchan-6ch-extract-2-downmix-mono: tests/data/mapchan-6ch.sw
-fate-mapchan-6ch-extract-2-downmix-mono: CMD = md5 -ar 22050 -ac 6 -i $(TARGET_PATH)/tests/data/mapchan-6ch.sw -map_channel 0.0.1 -map_channel 0.0.0 -ac 1 -f wav
+fate-mapchan-6ch-extract-2-downmix-mono: CMD = md5 -ar 22050 -ac 6 -f s16le -i $(TARGET_PATH)/tests/data/mapchan-6ch.sw -map_channel 0.0.1 -map_channel 0.0.0 -ac 1 -f wav
 
 FATE_TESTS += fate-mapchan-silent-mono
 fate-mapchan-silent-mono: tests/data/mapchan-mono.sw
-fate-mapchan-silent-mono: CMD = md5 -ar 22050 -ac 1 -i $(TARGET_PATH)/tests/data/mapchan-mono.sw -map_channel -1 -map_channel 0.0.0 -f wav
+fate-mapchan-silent-mono: CMD = md5 -ar 22050 -ac 1 -f s16le -i $(TARGET_PATH)/tests/data/mapchan-mono.sw -map_channel -1 -map_channel 0.0.0 -f wav
 
 FATE_TESTS += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
