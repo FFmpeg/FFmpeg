@@ -97,7 +97,7 @@ static int do_tls_poll(URLContext *h, int ret)
         int n = poll(&p, 1, 100);
         if (n > 0)
             break;
-        if (url_interrupt_cb())
+        if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR(EINTR);
     }
     return 0;

@@ -1619,7 +1619,7 @@ static int udp_read_packet(AVFormatContext *s, RTSPStream **prtsp_st,
     struct pollfd *p = rt->p;
 
     for (;;) {
-        if (url_interrupt_cb())
+        if (ff_check_interrupt(&s->interrupt_callback))
             return AVERROR_EXIT;
         if (wait_end && wait_end - av_gettime() < 0)
             return AVERROR(EAGAIN);

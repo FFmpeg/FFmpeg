@@ -266,7 +266,7 @@ retry:
         if (s->finished)
             return AVERROR_EOF;
         while (av_gettime() - s->last_load_time < s->target_duration*1000000) {
-            if (url_interrupt_cb())
+            if (ff_check_interrupt(&h->interrupt_callback))
                 return AVERROR_EXIT;
             usleep(100*1000);
         }
@@ -276,7 +276,7 @@ retry:
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
     ret = ffurl_open(&s->seg_hd, url, AVIO_FLAG_READ);
     if (ret < 0) {
-        if (url_interrupt_cb())
+        if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
         av_log(h, AV_LOG_WARNING, "Unable to open %s\n", url);
         s->cur_seq_no++;

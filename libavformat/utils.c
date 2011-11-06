@@ -2310,7 +2310,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     count = 0;
     read_size = 0;
     for(;;) {
-        if(url_interrupt_cb()){
+        if (ff_check_interrupt(&ic->interrupt_callback)){
             ret= AVERROR_EXIT;
             av_log(ic, AV_LOG_DEBUG, "interrupted\n");
             break;

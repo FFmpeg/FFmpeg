@@ -99,6 +99,7 @@ typedef struct AppleHTTPContext {
     int cur_seq_no;
     int end_of_segment;
     int first_packet;
+    AVIOInterruptCB *interrupt_callback;
 } AppleHTTPContext;
 
 static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
@@ -388,7 +389,7 @@ reload:
                 return AVERROR_EOF;
             while (av_gettime() - v->last_load_time <
                    v->target_duration*1000000) {
-                if (url_interrupt_cb())
+                if (ff_check_interrupt(c->interrupt_callback))
                     return AVERROR_EXIT;
                 usleep(100*1000);
             }
@@ -432,6 +433,8 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AppleHTTPContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;
+
+    c->interrupt_callback = &s->interrupt_callback;
 
     if ((ret = parse_playlist(c, s->filename, NULL, s->pb)) < 0)
         goto fail;

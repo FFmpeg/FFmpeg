@@ -226,7 +226,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     struct pollfd p[2] = {{s->rtp_fd, POLLIN, 0}, {s->rtcp_fd, POLLIN, 0}};
 
     for(;;) {
-        if (url_interrupt_cb())
+        if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
         /* build fdset to listen to RTP and RTCP packets */
         n = poll(p, 2, 100);
