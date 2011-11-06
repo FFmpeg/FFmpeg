@@ -90,9 +90,15 @@ easier to use. The changes are:
 - Ut Video decoder
 - Speex encoding via libspeex
 - 4:2:2 H.264 decoding support
+- 4:2:2 and 4:4:4 H.264 encoding with libx264
 - Pulseaudio input device
 - replacement Indeo 3 decoder
 - TLS/SSL and HTTPS protocol support
+- AVOptions API rewritten and documented
+- most of CODEC_FLAG2_*, some CODEC_FLAG_* and many codec-specific fields in
+  AVCodecContext deprecated. Codec private options should be used instead.
+- Properly working defaults in libx264 wrapper, support for native presets.
+- Encrypted OMA files support
 
 
 version 0.7:
