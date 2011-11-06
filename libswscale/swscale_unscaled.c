@@ -694,7 +694,15 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
         c->swScale= rgbToRgbWrapper;
 
-    if (isAnyRGB(srcFormat) && isPlanar(srcFormat) && isAnyRGB(dstFormat) && !isPlanar(dstFormat))
+#define isByteRGB(f) (\
+        f == PIX_FMT_RGB32   ||\
+        f == PIX_FMT_RGB32_1 ||\
+        f == PIX_FMT_RGB24   ||\
+        f == PIX_FMT_BGR32   ||\
+        f == PIX_FMT_BGR32_1 ||\
+        f == PIX_FMT_BGR24)
+
+    if (isAnyRGB(srcFormat) && isPlanar(srcFormat) && isByteRGB(dstFormat))
         c->swScale= planarRgbToRgbWrapper;
 
     if ((usePal(srcFormat) && (
