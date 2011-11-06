@@ -967,6 +967,86 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,1,2,0,7},        /* A */
         },
     },
+    [PIX_FMT_GBRP] = {
+        .name = "gbrp",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,0,1,0,7},        /* G */
+            {1,0,1,0,7},        /* B */
+            {2,0,1,0,7},        /* R */
+        },
+    },
+    [PIX_FMT_GBRP9LE] = {
+        .name = "gbrp9le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,8},        /* G */
+            {1,1,1,0,8},        /* B */
+            {2,1,1,0,8},        /* R */
+        },
+    },
+    [PIX_FMT_GBRP9BE] = {
+        .name = "gbrp9be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,8},        /* G */
+            {1,1,1,0,8},        /* B */
+            {2,1,1,0,8},        /* R */
+        },
+        .flags = PIX_FMT_BE,
+    },
+    [PIX_FMT_GBRP10LE] = {
+        .name = "gbrp10le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,9},        /* G */
+            {1,1,1,0,9},        /* B */
+            {2,1,1,0,9},        /* R */
+        },
+    },
+    [PIX_FMT_GBRP10BE] = {
+        .name = "gbrp10be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,9},        /* G */
+            {1,1,1,0,9},        /* B */
+            {2,1,1,0,9},        /* R */
+        },
+        .flags = PIX_FMT_BE,
+    },
+    [PIX_FMT_GBRP16LE] = {
+        .name = "gbrp16le",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,15},       /* G */
+            {1,1,1,0,15},       /* B */
+            {2,1,1,0,15},       /* R */
+        },
+    },
+    [PIX_FMT_GBRP16BE] = {
+        .name = "gbrp16be",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,1,1,0,15},       /* G */
+            {1,1,1,0,15},       /* B */
+            {2,1,1,0,15},       /* R */
+        },
+        .flags = PIX_FMT_BE,
+    },
 };
 
 static enum PixelFormat get_pix_fmt_internal(const char *name)

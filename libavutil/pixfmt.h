@@ -150,6 +150,13 @@ enum PixelFormat {
     PIX_FMT_YUV422P9BE, ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), big-endian
     PIX_FMT_YUV422P9LE, ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
     PIX_FMT_VDA_VLD,    ///< hardware decoding through VDA
+    PIX_FMT_GBRP,      ///< planar GBR 4:4:4 24bpp
+    PIX_FMT_GBRP9BE,   ///< planar GBR 4:4:4 27bpp, big endian
+    PIX_FMT_GBRP9LE,   ///< planar GBR 4:4:4 27bpp, little endian
+    PIX_FMT_GBRP10BE,  ///< planar GBR 4:4:4 30bpp, big endian
+    PIX_FMT_GBRP10LE,  ///< planar GBR 4:4:4 30bpp, little endian
+    PIX_FMT_GBRP16BE,  ///< planar GBR 4:4:4 48bpp, big endian
+    PIX_FMT_GBRP16LE,  ///< planar GBR 4:4:4 48bpp, little endian
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
@@ -183,5 +190,9 @@ enum PixelFormat {
 #define PIX_FMT_YUV420P16 PIX_FMT_NE(YUV420P16BE, YUV420P16LE)
 #define PIX_FMT_YUV422P16 PIX_FMT_NE(YUV422P16BE, YUV422P16LE)
 #define PIX_FMT_YUV444P16 PIX_FMT_NE(YUV444P16BE, YUV444P16LE)
+
+#define PIX_FMT_GBRP9     PIX_FMT_NE(GBRP9BE ,    GBRP9LE)
+#define PIX_FMT_GBRP10    PIX_FMT_NE(GBRP10BE,    GBRP10LE)
+#define PIX_FMT_GBRP16    PIX_FMT_NE(GBRP16BE,    GBRP16LE)
 
 #endif /* AVUTIL_PIXFMT_H */
