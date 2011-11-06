@@ -4670,6 +4670,7 @@ int main(int argc, char **argv)
 
     parse_loglevel(argc, argv, options);
     av_register_all();
+    avformat_network_init();
 
     show_banner();
 
