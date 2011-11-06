@@ -73,7 +73,7 @@ static const AVClass *urlcontext_child_class_next(const AVClass *prev)
 }
 
 static const AVOption options[] = {{NULL}};
-static const AVClass urlcontext_class = {
+const AVClass ffurl_context_class = {
     .class_name     = "URLContext",
     .item_name      = urlcontext_to_name,
     .option         = options,
@@ -135,7 +135,7 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
         err = AVERROR(ENOMEM);
         goto fail;
     }
-    uc->av_class = &urlcontext_class;
+    uc->av_class = &ffurl_context_class;
     uc->filename = (char *) &uc[1];
     strcpy(uc->filename, filename);
     uc->prot = up;

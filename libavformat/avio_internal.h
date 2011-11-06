@@ -23,6 +23,10 @@
 #include "avio.h"
 #include "url.h"
 
+#include "libavutil/log.h"
+
+extern const AVClass ffio_url_class;
+
 int ffio_init_context(AVIOContext *s,
                   unsigned char *buffer,
                   int buffer_size,
