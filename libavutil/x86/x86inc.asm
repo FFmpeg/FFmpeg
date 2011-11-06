@@ -562,6 +562,11 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits
         %if cpuflag(avx)
             %assign avx_enabled 1
         %endif
+        %if mmsize == 16 && notcpuflag(sse2)
+            %define mova movaps
+            %define movu movups
+            %define movnta movntps
+        %endif
         %if cpuflag(aligned)
             %define movu mova
         %elifidn %1, sse3
