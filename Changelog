@@ -7,6 +7,14 @@ version 0.6.4:
 - mjpeg: Detect overreads in mjpeg_decode_scan() and error out.
 - aac: add headers needed for log2f()
 - lavf: inspect more frames for fps when container time base is coarse
+- AMV: disable DR1 and don't override EMU_EDGE
+  (addresses http://seclists.org/bugtraq/2011/Apr/257)
+- Fix memory (re)allocation in matroskadec.c (MSVR11-011/CVE-2011-3504)
+- Fix some crashes with invalid bitstreams in the CAVS decoder
+  (CVE-2011-3362, CVE-2011-3973, CVE-2011-3974)
+- Compilation fixes for gcc-4.6, testsuite now passes again
+- Fix a heap corruption issue in the OGG decoder
+- Backported the Android VisualOn AAC encoder wrapper from 0.7.2
 
 
 version 0.6.3:
