@@ -172,8 +172,11 @@ static void init_rtp_handler(RTPDynamicProtocolHandler *handler,
         return;
     codec->codec_id          = handler->codec_id;
     rtsp_st->dynamic_handler = handler;
-    if (handler->alloc)
+    if (handler->alloc) {
         rtsp_st->dynamic_protocol_context = handler->alloc();
+        if (!rtsp_st->dynamic_protocol_context)
+            rtsp_st->dynamic_handler = NULL;
+    }
 }
 
 /* parse the rtpmap description: <codec_name>/<clock_rate>[/<other params>] */
