@@ -9,37 +9,72 @@ version <next>:
 - ffmpeg deprecated, added avconv, which is almost the same for now, except
 for a few incompatible changes in the options, which will hopefully make them
 easier to use. The changes are:
-    * -newvideo/-newaudio/-newsubtitle are gone, because they were redundant and
-      worked in a nonstandard way. -map is sufficient to add streams to output
-      files.
-    * -map now has slightly different and more powerful syntax.
-        + it's possible to specify stream type. E.g. -map 0:a:2 means 'third
-          audio stream'.
-        + omitting the stream index now maps all the streams of the given
-          type, not just the first. E.g. -map 0:s maps all the subtitle streams.
-        + colons (':') are used to separate file index/stream type/stream
-          index. Comma (',') is used to separate the sync stream. This is done
-          for consistency with other options.
-        + since -map can now match multiple streams, negative mappings were
+    * The options placement is now strictly enforced! While in theory the
+      options for ffmpeg should be given in [input options] -i INPUT [output
+      options] OUTPUT order, in practice it was possible to give output options
+      before the -i and it mostly worked. Except when it didn't - the behavior was
+      a bit inconsistent. In avconv, it is not possible to mix input and output
+      options. All non-global options are reset after an input or output filename.
+    * All per-file options are now truly per-file - they apply only to the next
+      input or output file and specifying different values for different files
+      will now work properly (notably -ss and -t options).
+    * All per-stream options are now truly per-stream - it is possible to
+      specify which stream(s) should a given option apply to. See the Stream
+      specifiers section in the avconv manual for details.
+    * In ffmpeg some options (like -newvideo/-newaudio/...) are irregular in the
+      sense that they're specified after the output filename instead of before,
+      like all other options. In avconv this irregularity is removed, all options
+      apply to the next input or output file.
+    * -newvideo/-newaudio/-newsubtitle options were removed. Not only were they
+      irregular and highly confusing, they were also redundant. In avconv the -map
+      option will create new streams in the output file and map input streams to
+      them. E.g. avconv -i INPUT -map 0 OUTPUT will create an output stream for
+      each stream in the first input file.
+    * The -map option now has slightly different and more powerful syntax:
+        + Colons (':') are used to separate file index/stream type/stream index
+          instead of dots. Comma (',') is used to separate the sync stream instead
+          of colon.. This is done for consistency with other options.
+        + It's possible to specify stream type. E.g. -map 0:a:2 creates an
+          output stream from the third input audio stream.
+        + Omitting the stream index now maps all the streams of the given type,
+          not just the first. E.g. -map 0:s creates output streams for all the
+          subtitle streams in the first input file.
+        + Since -map can now match multiple streams, negative mappings were
           introduced. Negative mappings disable some streams from an already
-          defined map. E.g. '-map 0 -map -0:a:1' means 'map everything except
-          for the second audio stream'.
-    * -vcodec/-acodec/-scodec are replaced by -c (or -codec), which
-      allows to precisely specify target stream(s) consistently with other
-      options. E.g. '-c:v libx264' sets the codec for all video streams,
-      '-c:a:0 libvorbis' sets the codec for the first audio stream and '-c
-      copy' copies all the streams.
+          defined map. E.g. '-map 0 -map -0:a:1' means 'create output streams for
+          all the stream in the first input file, except for the second audio
+          stream'.
+    * There is a new option -c (or -codec) for choosing the decoder/encoder to
+      use, which allows to precisely specify target stream(s) consistently with
+      other options. E.g. -c:v lib264 sets the codec for all video streams, -c:a:0
+      libvorbis sets the codec for the first audio stream and -c copy copies all
+      the streams without reencoding. Old -vcodec/-acodec/-scodec options are now
+      aliases to -c:v/a/s
     * It is now possible to precisely specify which stream should an AVOption
-      apply to. See the manual for detailed explanation.
+      apply to. E.g. -b:v:0 2M sets the bitrate for the first video stream, while
+      -b:a 128k sets the bitrate for all audio streams. Note that the old -ab 128k
+      syntax is deprecated and will stop working soon.
     * -map_chapters now takes only an input file index and applies to the next
       output file. This is consistent with how all the other options work.
     * -map_metadata now takes only an input metadata specifier and applies to
       the next output file. Output metadata specifier is now part of the option
       name, similarly to the AVOptions/map/codec feature above.
-    * Presets in avconv are disabled, because only libx264 used them and
-      presets for libx264 can now be specified using a private option
-      '-preset <presetname>'.
-    * -intra option was removed, it's equivalent to -g 0.
+    * -metadata can now be used to set metadata on streams and chapters, e.g.
+      -metadata:s:1 language=eng sets the language of the first stream to 'eng'.
+      This made -vlang/-alang/-slang options redundant, so they were removed.
+    * -qscale option now uses stream specifiers and applies to all streams, not
+      just video. I.e. plain -qscale number would now apply to all streams. To get
+      the old behavior, use -qscale:v. Also there is now a shortcut -q for -qscale
+      and -aq is now an alias for -q:a.
+    * -vbsf/-absf/-sbsf options were removed and replaced by a -bsf option which
+      uses stream specifiers. Use -bsf:v/a/s instead of the old options.
+    * -itsscale option now uses stream specifiers, so its argument is only the
+      scale parameter.
+    * -intra option was removed, use -g 0 for the same effect.
+    * -psnr option was removed, use -flags +psnr for the same effect.
+    * -vf option is now an alias to the new -filter option, which uses stream specifiers.
+    * -vframes/-aframes/-dframes options are now aliases to the new -frames option.
+    * -vtag/-atag/-stag options are now aliases to the new -tag option.
 - XMV demuxer
 - Windows Media Image decoder
 - LATM muxer/demuxer
