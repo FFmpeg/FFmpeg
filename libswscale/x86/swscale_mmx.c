@@ -228,6 +228,22 @@ VSCALEX_FUNCS(sse4, sse4);
 VSCALEX_FUNC(16, sse4);
 VSCALEX_FUNCS(avx,  avx);
 
+#define VSCALE_FUNC(size, opt) \
+extern void ff_yuv2plane1_ ## size ## _ ## opt(const int16_t *src, uint8_t *dst, int dstW, \
+                                               const uint8_t *dither, int offset)
+#define VSCALE_FUNCS(opt1, opt2) \
+    VSCALE_FUNC(8,  opt1); \
+    VSCALE_FUNC(9,  opt2); \
+    VSCALE_FUNC(10, opt2); \
+    VSCALE_FUNC(16, opt1)
+
+#if ARCH_X86_32
+VSCALE_FUNCS(mmx, mmx2);
+#endif
+VSCALE_FUNCS(sse2, sse2);
+VSCALE_FUNC(16, sse4);
+VSCALE_FUNCS(avx, avx);
+
 void ff_sws_init_swScale_mmx(SwsContext *c)
 {
     int cpu_flags = av_get_cpu_flags();
@@ -268,11 +284,19 @@ switch(c->dstBpc){ \
     case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2planeX_9_  ## opt2; break; \
     default:                                     vscalefn = ff_yuv2planeX_8_  ## opt1; break; \
     }
+#define ASSIGN_VSCALE_FUNC(vscalefn, opt1, opt2, opt2chk) \
+    switch(c->dstBpc){ \
+    case 16: if (!isBE(c->dstFormat))            vscalefn = ff_yuv2plane1_16_ ## opt1; break; \
+    case 10: if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_10_ ## opt2; break; \
+    case 9:  if (!isBE(c->dstFormat) && opt2chk) vscalefn = ff_yuv2plane1_9_  ## opt2;  break; \
+    default:                                     vscalefn = ff_yuv2plane1_8_  ## opt1;  break; \
+    }
 #if ARCH_X86_32
     if (cpu_flags & AV_CPU_FLAG_MMX) {
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
         ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMX2,);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMX2);
     }
 #endif
 #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
@@ -287,6 +311,7 @@ switch(c->dstBpc){ \
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, sse2, sse2);
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse2, sse2);
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse2, sse2, 1,);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, sse2, sse2, 1);
     }
     if (cpu_flags & AV_CPU_FLAG_SSSE3) {
         ASSIGN_SSE_SCALE_FUNC(c->hyScale, c->hLumFilterSize, ssse3, ssse3);
@@ -298,10 +323,13 @@ switch(c->dstBpc){ \
         ASSIGN_SSE_SCALE_FUNC(c->hcScale, c->hChrFilterSize, sse4, ssse3);
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, sse4, sse4, 1,
                             if (!isBE(c->dstFormat)) c->yuv2planeX = ff_yuv2planeX_16_sse4);
+        if (c->dstBpc == 16 && !isBE(c->dstFormat))
+            c->yuv2plane1 = ff_yuv2plane1_16_sse4;
     }
 
     if (cpu_flags & AV_CPU_FLAG_AVX) {
         ASSIGN_VSCALEX_FUNC(c->yuv2planeX, avx, avx, 1,);
+        ASSIGN_VSCALE_FUNC(c->yuv2plane1, avx, avx, 1);
     }
 #endif
 }

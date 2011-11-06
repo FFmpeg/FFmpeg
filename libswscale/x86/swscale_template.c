@@ -35,116 +35,6 @@
 #endif
 #define MOVNTQ(a,b)  REAL_MOVNTQ(a,b)
 
-#if !COMPILE_TEMPLATE_MMX2
-static av_always_inline void
-dither_8to16(SwsContext *c, const uint8_t *srcDither, int rot)
-{
-    if (rot) {
-        __asm__ volatile("pxor      %%mm0, %%mm0\n\t"
-                         "movq       (%0), %%mm3\n\t"
-                         "movq      %%mm3, %%mm4\n\t"
-                         "psrlq       $24, %%mm3\n\t"
-                         "psllq       $40, %%mm4\n\t"
-                         "por       %%mm4, %%mm3\n\t"
-                         "movq      %%mm3, %%mm4\n\t"
-                         "punpcklbw %%mm0, %%mm3\n\t"
-                         "punpckhbw %%mm0, %%mm4\n\t"
-                         "psraw        $4, %%mm3\n\t"
-                         "psraw        $4, %%mm4\n\t"
-                         "movq      %%mm3, "DITHER16"+0(%1)\n\t"
-                         "movq      %%mm4, "DITHER16"+8(%1)\n\t"
-                         :: "r"(srcDither), "r"(&c->redDither)
-                         );
-    } else {
-        __asm__ volatile("pxor      %%mm0, %%mm0\n\t"
-                         "movq       (%0), %%mm3\n\t"
-                         "movq      %%mm3, %%mm4\n\t"
-                         "punpcklbw %%mm0, %%mm3\n\t"
-                         "punpckhbw %%mm0, %%mm4\n\t"
-                         "psraw        $4, %%mm3\n\t"
-                         "psraw        $4, %%mm4\n\t"
-                         "movq      %%mm3, "DITHER16"+0(%1)\n\t"
-                         "movq      %%mm4, "DITHER16"+8(%1)\n\t"
-                         :: "r"(srcDither), "r"(&c->redDither)
-                         );
-    }
-}
-#endif
-
-static void RENAME(yuv2yuv1)(SwsContext *c, const int16_t *lumSrc,
-                             const int16_t *chrUSrc, const int16_t *chrVSrc,
-                             const int16_t *alpSrc,
-                             uint8_t *dst[4], int dstW, int chrDstW)
-{
-    int p= 4;
-    const int16_t *src[4]= {
-        lumSrc + dstW,     chrUSrc + chrDstW,
-        chrVSrc + chrDstW, alpSrc + dstW
-    };
-    x86_reg counter[4]= { dstW, chrDstW, chrDstW, dstW };
-
-    while (p--) {
-        if (dst[p]) {
-            __asm__ volatile(
-                "mov %2, %%"REG_a"                    \n\t"
-                ".p2align               4             \n\t" /* FIXME Unroll? */
-                "1:                                   \n\t"
-                "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"
-                "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"
-                "psraw                 $7, %%mm0      \n\t"
-                "psraw                 $7, %%mm1      \n\t"
-                "packuswb           %%mm1, %%mm0      \n\t"
-                MOVNTQ(%%mm0, (%1, %%REGa))
-                "add                   $8, %%"REG_a"  \n\t"
-                "jnc                   1b             \n\t"
-                :: "r" (src[p]), "r" (dst[p] + counter[p]),
-                   "g" (-counter[p])
-                : "%"REG_a
-            );
-        }
-    }
-}
-
-static void RENAME(yuv2yuv1_ar)(SwsContext *c, const int16_t *lumSrc,
-                                const int16_t *chrUSrc, const int16_t *chrVSrc,
-                                const int16_t *alpSrc,
-                                uint8_t *dst[4], int dstW, int chrDstW)
-{
-    int p= 4;
-    const int16_t *src[4]= {
-        lumSrc + dstW,     chrUSrc + chrDstW,
-        chrVSrc + chrDstW, alpSrc + dstW
-    };
-    x86_reg counter[4]= { dstW, chrDstW, chrDstW, dstW };
-    const uint8_t *lumDither = c->lumDither8, *chrDither = c->chrDither8;
-
-    while (p--) {
-        if (dst[p]) {
-            dither_8to16(c, (p == 2 || p == 3) ? chrDither : lumDither, p == 2);
-            __asm__ volatile(
-                "mov %2, %%"REG_a"                    \n\t"
-                "movq    "DITHER16"+0(%3), %%mm6      \n\t"
-                "movq    "DITHER16"+8(%3), %%mm7      \n\t"
-                ".p2align                4            \n\t" /* FIXME Unroll? */
-                "1:                                   \n\t"
-                "movq  (%0, %%"REG_a", 2), %%mm0      \n\t"
-                "movq 8(%0, %%"REG_a", 2), %%mm1      \n\t"
-                "paddsw             %%mm6, %%mm0      \n\t"
-                "paddsw             %%mm7, %%mm1      \n\t"
-                "psraw                 $7, %%mm0      \n\t"
-                "psraw                 $7, %%mm1      \n\t"
-                "packuswb           %%mm1, %%mm0      \n\t"
-                MOVNTQ(%%mm0, (%1, %%REGa))
-                "add                   $8, %%"REG_a"  \n\t"
-                "jnc                   1b             \n\t"
-                :: "r" (src[p]), "r" (dst[p] + counter[p]),
-                   "g" (-counter[p]), "r"(&c->redDither)
-                : "%"REG_a
-            );
-        }
-    }
-}
-
 #define YSCALEYUV2PACKEDX_UV \
     __asm__ volatile(\
         "xor                   %%"REG_a", %%"REG_a"     \n\t"\
@@ -1899,7 +1789,6 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
         dstFormat != PIX_FMT_NV12 && dstFormat != PIX_FMT_NV21) {
         if (!(c->flags & SWS_BITEXACT)) {
             if (c->flags & SWS_ACCURATE_RND) {
-                //c->yuv2yuv1 = RENAME(yuv2yuv1_ar    );
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
                     case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X_ar);   break;
@@ -1911,7 +1800,6 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
                     }
                 }
             } else {
-                //c->yuv2yuv1 = RENAME(yuv2yuv1    );
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
                     switch (c->dstFormat) {
                     case PIX_FMT_RGB32:   c->yuv2packedX = RENAME(yuv2rgb32_X);   break;

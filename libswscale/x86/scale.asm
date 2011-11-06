@@ -34,6 +34,12 @@ yuv2yuvX_10_start:  times 4 dd 0x10000
 yuv2yuvX_9_start:   times 4 dd 0x20000
 yuv2yuvX_10_upper:  times 8 dw 0x3ff
 yuv2yuvX_9_upper:   times 8 dw 0x1ff
+pd_4:          times 4 dd 4
+pd_4min0x40000:times 4 dd 4 - (0x40000)
+pw_16:         times 8 dw 16
+pw_32:         times 8 dw 32
+pw_512:        times 8 dw 512
+pw_1024:       times 8 dw 1024
 
 SECTION .text
 
@@ -663,3 +669,139 @@ INIT_AVX
 yuv2planeX_fn avx,   8, 10, 7
 yuv2planeX_fn avx,   9,  7, 5
 yuv2planeX_fn avx,  10,  7, 5
+
+; %1=outout-bpc, %2=alignment (u/a)
+%macro yuv2plane1_mainloop 2
+.loop_%2:
+%if %1 == 8
+    paddsw          m0, m2, [r0+r2*2+mmsize*0]
+    paddsw          m1, m3, [r0+r2*2+mmsize*1]
+    psraw           m0, 7
+    psraw           m1, 7
+    packuswb        m0, m1
+    mov%2      [r1+r2], m0
+%elif %1 == 16
+    paddd           m0, m4, [r0+r2*4+mmsize*0]
+    paddd           m1, m4, [r0+r2*4+mmsize*1]
+    paddd           m2, m4, [r0+r2*4+mmsize*2]
+    paddd           m3, m4, [r0+r2*4+mmsize*3]
+    psrad           m0, 3
+    psrad           m1, 3
+    psrad           m2, 3
+    psrad           m3, 3
+%if cpuflag(sse4) ; avx/sse4
+    packusdw        m0, m1
+    packusdw        m2, m3
+%else ; mmx/sse2
+    packssdw        m0, m1
+    packssdw        m2, m3
+    paddw           m0, m5
+    paddw           m2, m5
+%endif ; mmx/sse2/sse4/avx
+    mov%2    [r1+r2*2], m0
+    mov%2    [r1+r2*2+mmsize], m2
+%else
+    paddsw          m0, m2, [r0+r2*2+mmsize*0]
+    paddsw          m1, m2, [r0+r2*2+mmsize*1]
+    psraw           m0, 15 - %1
+    psraw           m1, 15 - %1
+    pmaxsw          m0, m4
+    pmaxsw          m1, m4
+    pminsw          m0, m3
+    pminsw          m1, m3
+    mov%2    [r1+r2*2], m0
+    mov%2    [r1+r2*2+mmsize], m1
+%endif
+    add             r2, mmsize
+    jl .loop_%2
+%endmacro
+
+%macro yuv2plane1_fn 3
+cglobal yuv2plane1_%1, %3, %3, %2
+%if %1 == 8
+    add             r1, r2
+%else ; %1 != 8
+    lea             r1, [r1+r2*2]
+%endif ; %1 == 8
+%if %1 == 16
+    lea             r0, [r0+r2*4]
+%else ; %1 != 16
+    lea             r0, [r0+r2*2]
+%endif ; %1 == 16
+    neg             r2
+
+%if %1 == 8
+    pxor            m4, m4               ; zero
+
+    ; create registers holding dither
+    movq            m3, [r3]             ; dither
+    test           r4d, r4d
+    jz              .no_rot
+%if mmsize == 16
+    punpcklqdq      m3, m3
+%endif ; mmsize == 16
+    PALIGNR_MMX     m3, m3, 3, m2
+.no_rot:
+%if mmsize == 8
+    mova            m2, m3
+    punpckhbw       m3, m4               ; byte->word
+    punpcklbw       m2, m4               ; byte->word
+%else
+    punpcklbw       m3, m4
+    mova            m2, m3
+%endif
+%elif %1 == 9
+    pxor            m4, m4
+    mova            m3, [pw_512]
+    mova            m2, [pw_32]
+%elif %1 == 10
+    pxor            m4, m4
+    mova            m3, [pw_1024]
+    mova            m2, [pw_16]
+%else ; %1 == 16
+%if cpuflag(sse4) ; sse4/avx
+    mova            m4, [pd_4]
+%else ; mmx/sse2
+    mova            m4, [pd_4min0x40000]
+    mova            m5, [minshort]
+%endif ; mmx/sse2/sse4/avx
+%endif ; %1 == ..
+
+    ; actual pixel scaling
+%if mmsize == 8
+    yuv2plane1_mainloop %1, a
+%else ; mmsize == 16
+    test            r1, 15
+    jnz .unaligned
+    yuv2plane1_mainloop %1, a
+    REP_RET
+.unaligned:
+    yuv2plane1_mainloop %1, u
+%endif ; mmsize == 8/16
+    REP_RET
+%endmacro
+
+%ifdef ARCH_X86_32
+INIT_MMX mmx
+yuv2plane1_fn  8, 0, 5
+yuv2plane1_fn 16, 0, 3
+
+INIT_MMX mmx2
+yuv2plane1_fn  9, 0, 3
+yuv2plane1_fn 10, 0, 3
+%endif
+
+INIT_XMM sse2
+yuv2plane1_fn  8, 5, 5
+yuv2plane1_fn  9, 5, 3
+yuv2plane1_fn 10, 5, 3
+yuv2plane1_fn 16, 6, 3
+
+INIT_XMM sse4
+yuv2plane1_fn 16, 5, 3
+
+INIT_XMM avx
+yuv2plane1_fn  8, 5, 5
+yuv2plane1_fn  9, 5, 3
+yuv2plane1_fn 10, 5, 3
+yuv2plane1_fn 16, 5, 3
