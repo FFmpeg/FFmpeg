@@ -24,6 +24,12 @@
 #include "libavcodec/dsputil.h"
 #include "libavcodec/mpegaudiodsp.h"
 
+void ff_imdct36_float_sse(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_sse2(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_sse3(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_ssse3(float *out, float *buf, float *in, float *win);
+void ff_imdct36_float_avx(float *out, float *buf, float *in, float *win);
+
 #define MACS(rt, ra, rb) rt+=(ra)*(rb)
 #define MLSS(rt, ra, rb) rt-=(ra)*(rb)
 
@@ -153,5 +159,20 @@ void ff_mpadsp_init_mmx(MPADSPContext *s)
 
     if (mm_flags & AV_CPU_FLAG_SSE2) {
         s->apply_window_float = apply_window_mp3;
+    }
+    if (HAVE_YASM && mm_flags & AV_CPU_FLAG_AVX && HAVE_AVX) {
+        s->imdct36_float = ff_imdct36_float_avx;
+    }
+    else if (HAVE_YASM && mm_flags & AV_CPU_FLAG_SSSE3 && HAVE_SSE) {
+        s->imdct36_float = ff_imdct36_float_ssse3;
+    }
+    else if (HAVE_YASM && mm_flags & AV_CPU_FLAG_SSE3 && HAVE_SSE) {
+        s->imdct36_float = ff_imdct36_float_sse3;
+    }
+    else if (HAVE_YASM && mm_flags & AV_CPU_FLAG_SSE2 && HAVE_SSE) {
+        s->imdct36_float = ff_imdct36_float_sse2;
+    }
+    else if (HAVE_YASM && mm_flags & AV_CPU_FLAG_SSE && HAVE_SSE) {
+        s->imdct36_float = ff_imdct36_float_sse;
     }
 }
