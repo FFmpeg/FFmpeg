@@ -151,7 +151,6 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
             pic->data[1] = pic->data[2] + (w * h / 4);
             break;
         case PIX_FMT_YUYV422:
-        case PIX_FMT_UYVY422:
             pic->linesize[0] = w * 2;
             pic->data[0] = utv->output;
             break;
