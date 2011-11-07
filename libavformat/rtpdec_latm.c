@@ -23,7 +23,6 @@
 #include "internal.h"
 #include "libavutil/avstring.h"
 #include "libavcodec/get_bits.h"
-#include <strings.h>
 
 struct PayloadContext {
     AVIOContext *dyn_buf;

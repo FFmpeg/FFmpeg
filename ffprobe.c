@@ -936,6 +936,7 @@ int main(int argc, char **argv)
 
     parse_loglevel(argc, argv, options);
     av_register_all();
+    avformat_network_init();
     init_opts();
 #if CONFIG_AVDEVICE
     avdevice_register_all();
@@ -952,6 +953,8 @@ int main(int argc, char **argv)
     }
 
     ret = probe_file(input_filename);
+
+    avformat_network_deinit();
 
     return ret;
 }

@@ -914,6 +914,7 @@ static void do_exit(VideoState *is)
 #if CONFIG_AVFILTER
     avfilter_uninit();
 #endif
+    avformat_network_deinit();
     if (show_status)
         printf("\n");
     SDL_Quit();
@@ -3143,6 +3144,7 @@ int main(int argc, char **argv)
     avfilter_register_all();
 #endif
     av_register_all();
+    avformat_network_init();
 
     init_opts();
 

@@ -38,7 +38,6 @@
 #define _LINUX_TIME_H 1
 #include <linux/videodev.h>
 #include <time.h>
-#include <strings.h>
 #include "avdevice.h"
 
 typedef struct {

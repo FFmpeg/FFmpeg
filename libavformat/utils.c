@@ -1434,7 +1434,7 @@ void ff_read_frame_flush(AVFormatContext *s)
 #if FF_API_SEEK_PUBLIC
 void av_update_cur_dts(AVFormatContext *s, AVStream *ref_st, int64_t timestamp)
 {
-    return ff_update_cur_dts(s, ref_st, timestamp);
+    ff_update_cur_dts(s, ref_st, timestamp);
 }
 #endif
 

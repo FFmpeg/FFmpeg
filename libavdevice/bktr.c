@@ -46,7 +46,6 @@
 #include <sys/time.h>
 #include <signal.h>
 #include <stdint.h>
-#include <strings.h>
 #include "avdevice.h"
 
 typedef struct {

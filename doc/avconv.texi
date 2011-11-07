@@ -26,12 +26,33 @@ avconv is a very fast video and audio converter that can also grab from
 a live audio/video source. It can also convert between arbitrary sample
 rates and resize video on the fly with a high quality polyphase filter.
 
+avconv reads from an arbitrary number of input "files" (which can be regular
+files, pipes, network streams, grabbing devices, etc.), specified by the
+@code{-i} option, and writes to an arbitrary number of output "files", which are
+specified by a plain output filename. Anything found on the commandline which
+cannot be interpreted as an option is considered to be an output filename.
+
+Each input or output file can in principle contain any number of streams of
+different types (video/audio/subtitle/attachment/data). Allowed number and/or
+types of streams can be limited by the container format. Selecting, which
+streams from which inputs go into output, is done either automatically or with
+the @code{-map} option (see the Stream selection chapter).
+
+To refer to input files in options, you must use their indices (0-based). E.g.
+the first input file is @code{0}, the second is @code{1} etc. Similarly, streams
+within a file are referred to by their indices. E.g. @code{2:3} refers to the
+fourth stream in the third input file. See also the Stream specifiers chapter.
+
 As a general rule, options are applied to the next specified
 file. Therefore, order is important, and you can have the same
 option on the command line multiple times. Each occurrence is
 then applied to the next input or output file.
 Exceptions from this rule are the global options (e.g. verbosity level),
 which should be specified first.
+
+Do not mix input and output files -- first specify all input files, then all
+output files. Also do not mix options which belong to different files. All
+options apply ONLY to the next input or output file and are reset between files.
 
 @itemize
 @item
@@ -525,6 +546,10 @@ frames after each specified time.
 This option can be useful to ensure that a seek point is present at a
 chapter mark or any other designated place in the output file.
 The timestamps must be specified in ascending order.
+
+@item -copyinkf[:@var{stream_specifier}] (@emph{output,per-stream})
+When doing stream copy, copy also non-key frames found at the
+beginning.
 @end table
 
 @section Audio Options
@@ -549,7 +574,7 @@ Disable audio recording.
 @item -acodec @var{codec} (@emph{input/output})
 Set the audio codec. This is an alias for @code{-codec:a}.
 @item -sample_fmt[:@var{stream_specifier}] @var{sample_fmt} (@emph{output,per-stream})
-Set the audio sample format. Use @code{-help sample_fmts} to get a list
+Set the audio sample format. Use @code{-sample_fmts} to get a list
 of supported sample formats.
 @end table
 
