@@ -37,7 +37,7 @@ extern "C" {
 typedef struct {
     uint32_t version;
     uint32_t original_format;
-    uint32_t stripes;
+    uint32_t frameinfo_size;
     uint32_t flags;
 } UtVideoExtra;
 
@@ -62,7 +62,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     /* Read extradata */
     info.version = AV_RL32(avctx->extradata);
     info.original_format = AV_RL32(avctx->extradata + 4);
-    info.stripes = AV_RL32(avctx->extradata + 8);
+    info.frameinfo_size = AV_RL32(avctx->extradata + 8);
     info.flags = AV_RL32(avctx->extradata + 12);
 
     /* Pick format based on FOURCC */
