@@ -192,7 +192,7 @@ AVCodec ff_libutvideo_decoder = {
     NULL,
     utvideo_decode_close,
     utvideo_decode_frame,
-    CODEC_CAP_LOSSLESS,
+    NULL,
     NULL,
     NULL,
     NULL,
