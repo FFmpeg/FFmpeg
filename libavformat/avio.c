@@ -223,6 +223,11 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags)
     char proto_str[128], proto_nested[128], *ptr;
     size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
 
+    if (!first_protocol) {
+        av_log(NULL, AV_LOG_WARNING, "No URL Protocols are registered. "
+                                     "Missing call to av_register_all()?\n");
+    }
+
     if (filename[proto_len] != ':' || is_dos_path(filename))
         strcpy(proto_str, "file");
     else
