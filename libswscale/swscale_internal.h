@@ -30,6 +30,7 @@
 #include "libavutil/avutil.h"
 #include "libavutil/log.h"
 #include "libavutil/pixfmt.h"
+#include "libavutil/pixdesc.h"
 
 #define STR(s)         AV_TOSTRING(s) //AV_STRINGIFY is too long
 
@@ -520,83 +521,31 @@ void ff_bfin_get_unscaled_swscale(SwsContext *c);
 
 const char *sws_format_name(enum PixelFormat format);
 
-//FIXME replace this with something faster
-#define is16BPS(x)      (           \
-           (x)==PIX_FMT_GRAY16BE    \
-        || (x)==PIX_FMT_GRAY16LE    \
-        || (x)==PIX_FMT_BGR48BE     \
-        || (x)==PIX_FMT_BGR48LE     \
-        || (x)==PIX_FMT_RGB48BE     \
-        || (x)==PIX_FMT_RGB48LE     \
-        || (x)==PIX_FMT_YUV420P16LE \
-        || (x)==PIX_FMT_YUV422P16LE \
-        || (x)==PIX_FMT_YUV444P16LE \
-        || (x)==PIX_FMT_YUV420P16BE \
-        || (x)==PIX_FMT_YUV422P16BE \
-        || (x)==PIX_FMT_YUV444P16BE \
-    )
-#define is9_OR_10BPS(x) (           \
-           (x)==PIX_FMT_YUV420P9LE  \
-        || (x)==PIX_FMT_YUV420P9BE  \
-        || (x)==PIX_FMT_YUV422P9LE  \
-        || (x)==PIX_FMT_YUV422P9BE  \
-        || (x)==PIX_FMT_YUV444P9BE  \
-        || (x)==PIX_FMT_YUV444P9LE  \
-        || (x)==PIX_FMT_YUV422P10BE \
-        || (x)==PIX_FMT_YUV422P10LE \
-        || (x)==PIX_FMT_YUV444P10BE \
-        || (x)==PIX_FMT_YUV444P10LE \
-        || (x)==PIX_FMT_YUV420P10LE \
-        || (x)==PIX_FMT_YUV420P10BE \
-    )
-#define isBE(x) ((x)&1)
-#define isPlanar8YUV(x) (           \
-           (x)==PIX_FMT_YUV410P     \
-        || (x)==PIX_FMT_YUV420P     \
-        || (x)==PIX_FMT_YUVA420P    \
-        || (x)==PIX_FMT_YUV411P     \
-        || (x)==PIX_FMT_YUV422P     \
-        || (x)==PIX_FMT_YUV444P     \
-        || (x)==PIX_FMT_YUV440P     \
-        || (x)==PIX_FMT_NV12        \
-        || (x)==PIX_FMT_NV21        \
-    )
-#define isPlanarYUV(x)  (           \
-        isPlanar8YUV(x)             \
-        || (x)==PIX_FMT_YUV420P9LE  \
-        || (x)==PIX_FMT_YUV422P9LE  \
-        || (x)==PIX_FMT_YUV444P9LE  \
-        || (x)==PIX_FMT_YUV420P10LE \
-        || (x)==PIX_FMT_YUV422P10LE \
-        || (x)==PIX_FMT_YUV444P10LE \
-        || (x)==PIX_FMT_YUV420P16LE \
-        || (x)==PIX_FMT_YUV422P16LE \
-        || (x)==PIX_FMT_YUV444P16LE \
-        || (x)==PIX_FMT_YUV420P9BE  \
-        || (x)==PIX_FMT_YUV422P9BE  \
-        || (x)==PIX_FMT_YUV444P9BE  \
-        || (x)==PIX_FMT_YUV420P10BE \
-        || (x)==PIX_FMT_YUV422P10BE \
-        || (x)==PIX_FMT_YUV444P10BE \
-        || (x)==PIX_FMT_YUV420P16BE \
-        || (x)==PIX_FMT_YUV422P16BE \
-        || (x)==PIX_FMT_YUV444P16BE \
-    )
-#define isYUV(x)        (           \
-           (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_YUYV422     \
-        || isPlanarYUV(x)           \
-    )
-#define isGray(x)       (           \
-           (x)==PIX_FMT_GRAY8       \
-        || (x)==PIX_FMT_Y400A      \
-        || (x)==PIX_FMT_GRAY16BE    \
-        || (x)==PIX_FMT_GRAY16LE    \
-    )
-#define isGray16(x)     (           \
-           (x)==PIX_FMT_GRAY16BE    \
-        || (x)==PIX_FMT_GRAY16LE    \
-    )
+#define is16BPS(x) \
+    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 15)
+
+#define is9_OR_10BPS(x) \
+    (av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 8 || \
+     av_pix_fmt_descriptors[x].comp[0].depth_minus1 == 9)
+
+#define isBE(x) \
+    (av_pix_fmt_descriptors[x].flags & PIX_FMT_BE)
+
+#define isYUV(x) \
+    (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_RGB) && \
+     av_pix_fmt_descriptors[x].nb_components >= 2)
+
+#define isPlanarYUV(x) \
+    ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR) && \
+     isYUV(x))
+
+#define isRGB(x) \
+    (av_pix_fmt_descriptors[x].flags & PIX_FMT_RGB)
+
+#define isGray(x) \
+    (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) && \
+     av_pix_fmt_descriptors[x].nb_components <= 2)
+
 #define isRGBinInt(x)   (           \
            (x)==PIX_FMT_RGB48BE     \
         || (x)==PIX_FMT_RGB48LE     \
@@ -633,39 +582,18 @@ const char *sws_format_name(enum PixelFormat format);
         || (x)==PIX_FMT_MONOBLACK   \
         || (x)==PIX_FMT_MONOWHITE   \
     )
-#define isRGBinBytes(x) (           \
-           (x)==PIX_FMT_RGB48BE     \
-        || (x)==PIX_FMT_RGB48LE     \
-        || (x)==PIX_FMT_RGBA        \
-        || (x)==PIX_FMT_ARGB        \
-        || (x)==PIX_FMT_RGB24       \
-    )
-#define isBGRinBytes(x) (           \
-           (x)==PIX_FMT_BGR48BE     \
-        || (x)==PIX_FMT_BGR48LE     \
-        || (x)==PIX_FMT_BGRA        \
-        || (x)==PIX_FMT_ABGR        \
-        || (x)==PIX_FMT_BGR24       \
-    )
 #define isAnyRGB(x)     (           \
             isRGBinInt(x)           \
         ||  isBGRinInt(x)           \
     )
-#define isALPHA(x)      (           \
-           (x)==PIX_FMT_BGR32       \
-        || (x)==PIX_FMT_BGR32_1     \
-        || (x)==PIX_FMT_RGB32       \
-        || (x)==PIX_FMT_RGB32_1     \
-        || (x)==PIX_FMT_Y400A       \
-        || (x)==PIX_FMT_YUVA420P    \
-    )
-#define isPacked(x)         (       \
-           (x)==PIX_FMT_PAL8        \
-        || (x)==PIX_FMT_YUYV422     \
-        || (x)==PIX_FMT_UYVY422     \
-        || (x)==PIX_FMT_Y400A       \
-        || isAnyRGB(x)              \
-    )
+#define isALPHA(x) \
+    (av_pix_fmt_descriptors[x].nb_components == 2 || \
+     av_pix_fmt_descriptors[x].nb_components == 4)
+
+#define isPacked(x) \
+    (av_pix_fmt_descriptors[x].nb_components >= 2 && \
+     !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
+
 #define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) || (x) == PIX_FMT_Y400A)
 
 extern const uint64_t ff_dither4[2];
