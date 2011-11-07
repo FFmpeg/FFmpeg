@@ -43,7 +43,6 @@ typedef struct {
 
 typedef struct {
     CCodec *codec;
-    unsigned int buf_size;
     uint8_t *output;
 } UtVideoContext;
 
@@ -52,6 +51,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
     UtVideoExtra info;
     int format;
+    unsigned int buf_size;
 
     if(avctx->extradata_size != 4*4)
     {
@@ -91,8 +91,8 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     }
 
     /* Only allocate the buffer once */
-    utv->buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-    utv->output = (uint8_t *)av_malloc(utv->buf_size * sizeof(uint8_t));
+    buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    utv->output = (uint8_t *)av_malloc(buf_size * sizeof(uint8_t));
 
     if(utv->output == NULL)
     {
