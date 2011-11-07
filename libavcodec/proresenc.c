@@ -499,8 +499,8 @@ static int prores_encode_frame(AVCodecContext *avctx, unsigned char *buf,
     bytestream_put_be16(&buf, header_size);
     bytestream_put_be16(&buf, 0);
     bytestream_put_buffer(&buf, "fmpg", 4);
-    bytestream_put_be16(&buf, pic->width);
-    bytestream_put_be16(&buf, pic->height);
+    bytestream_put_be16(&buf, avctx->width);
+    bytestream_put_be16(&buf, avctx->height);
     *buf++ = 0x83; // {10}(422){00}{00}(frame){11}
     *buf++ = 0;
     *buf++ = 2;
