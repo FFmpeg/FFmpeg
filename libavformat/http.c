@@ -47,13 +47,14 @@ typedef struct {
     int64_t off, filesize;
     char location[MAX_URL_SIZE];
     HTTPAuthState auth_state;
-    unsigned char headers[BUFFER_SIZE];
+    char *headers;
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
 static const AVOption options[] = {
 {"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), AV_OPT_TYPE_INT64, {.dbl = 0}, -1, 0 }, /* Default to 0, for chunked POSTs */
+{"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING },
 {NULL}
 };
 static const AVClass httpcontext_class = {
@@ -69,12 +70,9 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
 void ff_http_set_headers(URLContext *h, const char *headers)
 {
     HTTPContext *s = h->priv_data;
-    int len = strlen(headers);
 
-    if (len && strcmp("\r\n", headers + len - 2))
-        av_log(h, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
-
-    av_strlcpy(s->headers, headers, sizeof(s->headers));
+    av_freep(&s->headers);
+    s->headers = av_strdup(headers);
 }
 
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
@@ -167,6 +165,12 @@ static int http_open(URLContext *h, const char *uri, int flags)
 
     s->filesize = -1;
     av_strlcpy(s->location, uri, sizeof(s->location));
+
+    if (s->headers) {
+        int len = strlen(s->headers);
+        if (len < 2 || strcmp("\r\n", s->headers + len - 2))
+            av_log(h, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
+    }
 
     return http_open_cnx(h);
 }
@@ -285,6 +289,8 @@ static int process_line(URLContext *h, char *line, int line_count,
 static inline int has_header(const char *str, const char *header)
 {
     /* header + 2 to skip over CRLF prefix. (make sure you have one!) */
+    if (!str)
+        return 0;
     return av_stristart(str, header + 2, NULL) || av_stristr(str, header);
 }
 
@@ -323,7 +329,8 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
                            "Host: %s\r\n", hoststr);
 
     /* now add in custom headers */
-    av_strlcpy(headers+len, s->headers, sizeof(headers)-len);
+    if (s->headers)
+        av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
 
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
