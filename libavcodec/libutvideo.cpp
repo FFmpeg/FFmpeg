@@ -51,6 +51,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
     UtVideoExtra info;
     int format;
+    int begin_ret;
     unsigned int buf_size;
 
     if(avctx->extradata_size != 4*4)
@@ -119,8 +120,16 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     utv->codec = CCodec::CreateInstance(UNFCC(avctx->codec_tag), "libavcodec");
 
     /* Initialize Decoding */
-    utv->codec->DecodeBegin(format, avctx->width, avctx->height,
+    begin_ret = utv->codec->DecodeBegin(format, avctx->width, avctx->height,
                             CBGROSSWIDTH_WINDOWS, &info, sizeof(UtVideoExtra));
+
+    /* Check to see if the decoder initlized properly */
+    if(begin_ret != 0)
+    {
+        av_log(avctx, AV_LOG_ERROR,
+               "Could not initialize decoder: %d\n", begin_ret);
+        return -1;
+    }
 
     return 0;
 }
