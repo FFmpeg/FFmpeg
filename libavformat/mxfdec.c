@@ -251,7 +251,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     MXFContext *mxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t end = avio_tell(pb) + klv->length;
-    uint64_t size;
+    int64_t size;
     uint64_t orig_size;
     uint64_t plaintext_size;
     uint8_t ivec[16];
