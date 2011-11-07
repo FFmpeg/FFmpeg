@@ -100,7 +100,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
         return -1;
     }
 
-    /* Allocate the output frame  */
+    /* Allocate the output frame */
     avctx->coded_frame = avcodec_alloc_frame();
 
     /* Ut Video only supports 8-bit */
