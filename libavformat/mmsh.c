@@ -28,6 +28,7 @@
 #include <string.h>
 #include "libavutil/intreadwrite.h"
 #include "libavutil/avstring.h"
+#include "libavutil/opt.h"
 #include "internal.h"
 #include "mms.h"
 #include "asf.h"
@@ -245,7 +246,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
              CLIENTGUID
              "Connection: Close\r\n\r\n",
              host, port, mmsh->request_seq++);
-    ff_http_set_headers(mms->mms_hd, headers);
+    av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
     err = ffurl_connect(mms->mms_hd);
     if (err) {
@@ -291,7 +292,7 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
         goto fail;
     }
     av_dlog(NULL, "out_buffer is %s", headers);
-    ff_http_set_headers(mms->mms_hd, headers);
+    av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
     err = ffurl_connect(mms->mms_hd);
     if (err) {
