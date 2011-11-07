@@ -141,7 +141,7 @@ typedef struct Writer {
     void (*print_chapter_footer)(WriterContext *wctx, const char *);
     void (*print_section_header)(WriterContext *wctx, const char *);
     void (*print_section_footer)(WriterContext *wctx, const char *);
-    void (*print_integer)       (WriterContext *wctx, const char *, int);
+    void (*print_integer)       (WriterContext *wctx, const char *, long long int);
     void (*print_string)        (WriterContext *wctx, const char *, const char *);
     void (*show_tags)           (WriterContext *wctx, AVDictionary *dict);
     int flags;                  ///< a combination or WRITER_FLAG_*
@@ -254,7 +254,7 @@ static inline void writer_print_section_footer(WriterContext *wctx,
 }
 
 static inline void writer_print_integer(WriterContext *wctx,
-                                        const char *key, int val)
+                                        const char *key, long long int val)
 {
     wctx->writer->print_integer(wctx, key, val);
     wctx->nb_item++;
@@ -285,13 +285,10 @@ static void writer_print_time(WriterContext *wctx, const char *key,
 
 static void writer_print_ts(WriterContext *wctx, const char *key, int64_t ts)
 {
-    char buf[128];
-
     if (ts == AV_NOPTS_VALUE) {
         writer_print_string(wctx, key, "N/A", 1);
     } else {
-        snprintf(buf, sizeof(buf), "%"PRId64, ts);
-        writer_print_string(wctx, key, buf, 0);
+        writer_print_integer(wctx, key, ts);
     }
 }
 
@@ -436,9 +433,9 @@ static void default_print_str(WriterContext *wctx, const char *key, const char *
     printf("%s=%s\n", key, value);
 }
 
-static void default_print_int(WriterContext *wctx, const char *key, int value)
+static void default_print_int(WriterContext *wctx, const char *key, long long int value)
 {
-    printf("%s=%d\n", key, value);
+    printf("%s=%lld\n", key, value);
 }
 
 static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
@@ -649,14 +646,14 @@ static void compact_print_str(WriterContext *wctx, const char *key, const char *
                                      value, compact->item_sep, wctx));
 }
 
-static void compact_print_int(WriterContext *wctx, const char *key, int value)
+static void compact_print_int(WriterContext *wctx, const char *key, long long int value)
 {
     CompactContext *compact = wctx->priv;
 
     if (wctx->nb_item) printf("%c", compact->item_sep);
     if (!compact->nokey)
         printf("%s=", key);
-    printf("%d", value);
+    printf("%lld", value);
 }
 
 static void compact_show_tags(WriterContext *wctx, AVDictionary *dict)
@@ -825,12 +822,12 @@ static void json_print_str(WriterContext *wctx, const char *key, const char *val
     json_print_item_str(wctx, key, value, INDENT);
 }
 
-static void json_print_int(WriterContext *wctx, const char *key, int value)
+static void json_print_int(WriterContext *wctx, const char *key, long long int value)
 {
     JSONContext *json = wctx->priv;
 
     if (wctx->nb_item) printf(",\n");
-    printf(INDENT "\"%s\": %d",
+    printf(INDENT "\"%s\": %lld",
            json_escape_str(&json->buf, &json->buf_size, key, wctx), value);
 }
 
