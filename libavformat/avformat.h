@@ -1748,8 +1748,8 @@ const AVClass *avformat_get_class(void);
  * but recommended, since it avoids the overhead of implicitly
  * doing the setup for each session.
  *
- * Since the next major version bump, calling this function will become
- * mandatory if using network protocols.
+ * Calling this function will become mandatory if using network
+ * protocols at some major version bump.
  */
 int avformat_network_init(void);
 
