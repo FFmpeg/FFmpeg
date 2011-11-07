@@ -33,6 +33,10 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p);
 
 extern RTPDynamicProtocolHandler ff_amr_nb_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_amr_wb_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_g726_16_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_g726_24_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_g726_32_dynamic_handler;
+extern RTPDynamicProtocolHandler ff_g726_40_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_h263_1998_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_h263_2000_dynamic_handler;
 extern RTPDynamicProtocolHandler ff_h264_dynamic_handler;
