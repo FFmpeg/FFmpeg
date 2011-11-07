@@ -67,14 +67,6 @@ static const AVClass httpcontext_class = {
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location);
 
-void ff_http_set_headers(URLContext *h, const char *headers)
-{
-    HTTPContext *s = h->priv_data;
-
-    av_freep(&s->headers);
-    s->headers = av_strdup(headers);
-}
-
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 {
     memcpy(&((HTTPContext*)dest->priv_data)->auth_state,
