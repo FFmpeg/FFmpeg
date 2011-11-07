@@ -130,7 +130,7 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
 {
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
     AVFrame *pic = avctx->coded_frame;
-    unsigned int w = avctx->width, h = avctx->height;
+    int w = avctx->width, h = avctx->height;
 
     /* Set flags */
     pic->reference = 0;
