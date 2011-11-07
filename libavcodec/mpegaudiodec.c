@@ -58,7 +58,7 @@ typedef struct GranuleDef {
     int preflag;
     int short_start, long_end; /* long/short band indexes */
     uint8_t scale_factors[40];
-    INTFLOAT sb_hybrid[SBLIMIT * 18]; /* 576 samples */
+    DECLARE_ALIGNED(16, INTFLOAT, sb_hybrid)[SBLIMIT * 18]; /* 576 samples */
 } GranuleDef;
 
 typedef struct MPADecodeContext {
@@ -129,7 +129,10 @@ static uint16_t band_index_long[9][23];
 static INTFLOAT is_table[2][16];
 static INTFLOAT is_table_lsf[2][2][16];
 static INTFLOAT csa_table[8][4];
-static INTFLOAT mdct_win[8][36];
+/** Window for MDCT. Note that only the component [0,17] and [20,37] are used,
+    the components 18 and 19 are there only to assure 128-bit alignment for asm
+ */
+DECLARE_ALIGNED(16, static INTFLOAT, mdct_win)[8][40];
 
 static int16_t division_tab3[1<<6 ];
 static int16_t division_tab5[1<<8 ];
@@ -455,15 +458,17 @@ static av_cold int decode_init(AVCodecContext * avctx)
 
                 if (j == 2)
                     mdct_win[j][i/3] = FIXHR((d / (1<<5)));
-                else
-                    mdct_win[j][i  ] = FIXHR((d / (1<<5)));
+                else {
+                    int idx = i < 18 ? i : i + 2;
+                    mdct_win[j][idx] = FIXHR((d / (1<<5)));
+                }
             }
         }
 
         /* NOTE: we do frequency inversion adter the MDCT by changing
            the sign of the right window coefs */
         for (j = 0; j < 4; j++) {
-            for (i = 0; i < 36; i += 2) {
+            for (i = 0; i < 40; i += 2) {
                 mdct_win[j + 4][i    ] =  mdct_win[j][i    ];
                 mdct_win[j + 4][i + 1] = -mdct_win[j][i + 1];
             }
@@ -478,32 +483,9 @@ static av_cold int decode_init(AVCodecContext * avctx)
 }
 
 #define C3 FIXHR(0.86602540378443864676/2)
-
-/* 0.5 / cos(pi*(2*i+1)/36) */
-static const INTFLOAT icos36[9] = {
-    FIXR(0.50190991877167369479),
-    FIXR(0.51763809020504152469), //0
-    FIXR(0.55168895948124587824),
-    FIXR(0.61038729438072803416),
-    FIXR(0.70710678118654752439), //1
-    FIXR(0.87172339781054900991),
-    FIXR(1.18310079157624925896),
-    FIXR(1.93185165257813657349), //2
-    FIXR(5.73685662283492756461),
-};
-
-/* 0.5 / cos(pi*(2*i+1)/36) */
-static const INTFLOAT icos36h[9] = {
-    FIXHR(0.50190991877167369479/2),
-    FIXHR(0.51763809020504152469/2), //0
-    FIXHR(0.55168895948124587824/2),
-    FIXHR(0.61038729438072803416/2),
-    FIXHR(0.70710678118654752439/2), //1
-    FIXHR(0.87172339781054900991/2),
-    FIXHR(1.18310079157624925896/4),
-    FIXHR(1.93185165257813657349/4), //2
-//    FIXHR(5.73685662283492756461),
-};
+#define C4 FIXHR(0.70710678118654752439/2) //0.5 / cos(pi*(9)/36)
+#define C5 FIXHR(0.51763809020504152469/2) //0.5 / cos(pi*(5)/36)
+#define C6 FIXHR(1.93185165257813657349/4) //0.5 / cos(pi*(15)/36)
 
 /* 12 points IMDCT. We compute it "by hand" by factorizing obvious
    cases. */
@@ -524,7 +506,7 @@ static void imdct12(INTFLOAT *out, INTFLOAT *in)
     in3  = MULH3(in3, C3, 4);
 
     t1   = in0 - in4;
-    t2   = MULH3(in1 - in5, icos36h[4], 2);
+    t2   = MULH3(in1 - in5, C4, 2);
 
     out[ 7] =
     out[10] = t1 + t2;
@@ -534,110 +516,18 @@ static void imdct12(INTFLOAT *out, INTFLOAT *in)
     in0    += SHR(in4, 1);
     in4     = in0 + in2;
     in5    += 2*in1;
-    in1     = MULH3(in5 + in3, icos36h[1], 1);
+    in1     = MULH3(in5 + in3, C5, 1);
     out[ 8] =
     out[ 9] = in4 + in1;
     out[ 2] =
     out[ 3] = in4 - in1;
 
     in0    -= in2;
-    in5     = MULH3(in5 - in3, icos36h[7], 2);
+    in5     = MULH3(in5 - in3, C6, 2);
     out[ 0] =
     out[ 5] = in0 - in5;
     out[ 6] =
     out[11] = in0 + in5;
-}
-
-/* cos(pi*i/18) */
-#define C1 FIXHR(0.98480775301220805936/2)
-#define C2 FIXHR(0.93969262078590838405/2)
-#define C3 FIXHR(0.86602540378443864676/2)
-#define C4 FIXHR(0.76604444311897803520/2)
-#define C5 FIXHR(0.64278760968653932632/2)
-#define C6 FIXHR(0.5/2)
-#define C7 FIXHR(0.34202014332566873304/2)
-#define C8 FIXHR(0.17364817766693034885/2)
-
-
-/* using Lee like decomposition followed by hand coded 9 points DCT */
-static void imdct36(INTFLOAT *out, INTFLOAT *buf, INTFLOAT *in, INTFLOAT *win)
-{
-    int i, j;
-    INTFLOAT t0, t1, t2, t3, s0, s1, s2, s3;
-    INTFLOAT tmp[18], *tmp1, *in1;
-
-    for (i = 17; i >= 1; i--)
-        in[i] += in[i-1];
-    for (i = 17; i >= 3; i -= 2)
-        in[i] += in[i-2];
-
-    for (j = 0; j < 2; j++) {
-        tmp1 = tmp + j;
-        in1 = in + j;
-
-        t2 = in1[2*4] + in1[2*8] - in1[2*2];
-
-        t3 = in1[2*0] + SHR(in1[2*6],1);
-        t1 = in1[2*0] - in1[2*6];
-        tmp1[ 6] = t1 - SHR(t2,1);
-        tmp1[16] = t1 + t2;
-
-        t0 = MULH3(in1[2*2] + in1[2*4] ,    C2, 2);
-        t1 = MULH3(in1[2*4] - in1[2*8] , -2*C8, 1);
-        t2 = MULH3(in1[2*2] + in1[2*8] ,   -C4, 2);
-
-        tmp1[10] = t3 - t0 - t2;
-        tmp1[ 2] = t3 + t0 + t1;
-        tmp1[14] = t3 + t2 - t1;
-
-        tmp1[ 4] = MULH3(in1[2*5] + in1[2*7] - in1[2*1], -C3, 2);
-        t2 = MULH3(in1[2*1] + in1[2*5],    C1, 2);
-        t3 = MULH3(in1[2*5] - in1[2*7], -2*C7, 1);
-        t0 = MULH3(in1[2*3], C3, 2);
-
-        t1 = MULH3(in1[2*1] + in1[2*7],   -C5, 2);
-
-        tmp1[ 0] = t2 + t3 + t0;
-        tmp1[12] = t2 + t1 - t0;
-        tmp1[ 8] = t3 - t1 - t0;
-    }
-
-    i = 0;
-    for (j = 0; j < 4; j++) {
-        t0 = tmp[i];
-        t1 = tmp[i + 2];
-        s0 = t1 + t0;
-        s2 = t1 - t0;
-
-        t2 = tmp[i + 1];
-        t3 = tmp[i + 3];
-        s1 = MULH3(t3 + t2, icos36h[    j], 2);
-        s3 = MULLx(t3 - t2, icos36 [8 - j], FRAC_BITS);
-
-        t0 = s0 + s1;
-        t1 = s0 - s1;
-        out[(9 + j) * SBLIMIT] = MULH3(t1, win[     9 + j], 1) + buf[9 + j];
-        out[(8 - j) * SBLIMIT] = MULH3(t1, win[     8 - j], 1) + buf[8 - j];
-        buf[ 9 + j           ] = MULH3(t0, win[18 + 9 + j], 1);
-        buf[ 8 - j           ] = MULH3(t0, win[18 + 8 - j], 1);
-
-        t0 = s2 + s3;
-        t1 = s2 - s3;
-        out[(9 + 8 - j) * SBLIMIT] = MULH3(t1, win[     9 + 8 - j], 1) + buf[9 + 8 - j];
-        out[         j  * SBLIMIT] = MULH3(t1, win[             j], 1) + buf[        j];
-        buf[ 9 + 8 - j           ] = MULH3(t0, win[18 + 9 + 8 - j], 1);
-        buf[         j           ] = MULH3(t0, win[18         + j], 1);
-        i += 4;
-    }
-
-    s0 = tmp[16];
-    s1 = MULH3(tmp[17], icos36h[4], 2);
-    t0 = s0 + s1;
-    t1 = s0 - s1;
-    out[(9 + 4) * SBLIMIT] = MULH3(t1, win[     9 + 4], 1) + buf[9 + 4];
-    out[(8 - 4) * SBLIMIT] = MULH3(t1, win[     8 - 4], 1) + buf[8 - 4];
-    buf[ 9 + 4           ] = MULH3(t0, win[18 + 9 + 4], 1);
-    buf[ 8 - 4           ] = MULH3(t0, win[18 + 8 - 4], 1);
 }
 
 /* return the number of decoded frames */
@@ -1361,7 +1251,7 @@ static void compute_antialias(MPADecodeContext *s, GranuleDef *g)
 static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
                           INTFLOAT *sb_samples, INTFLOAT *mdct_buf)
 {
-    INTFLOAT *win, *win1, *out_ptr, *ptr, *buf, *ptr1;
+    INTFLOAT *win, *out_ptr, *ptr, *buf, *ptr1;
     INTFLOAT out2[12];
     int i, j, mdct_long_end, sblimit;
 
@@ -1390,23 +1280,19 @@ static void compute_imdct(MPADecodeContext *s, GranuleDef *g,
     buf = mdct_buf;
     ptr = g->sb_hybrid;
     for (j = 0; j < mdct_long_end; j++) {
+        int win_idx = (g->switch_point && j < 2) ? 0 : g->block_type;
         /* apply window & overlap with previous buffer */
         out_ptr = sb_samples + j;
         /* select window */
-        if (g->switch_point && j < 2)
-            win1 = mdct_win[0];
-        else
-            win1 = mdct_win[g->block_type];
-        /* select frequency inversion */
-        win = win1 + ((4 * 36) & -(j & 1));
-        imdct36(out_ptr, buf, ptr, win);
+        win = mdct_win[win_idx + (4 & -(j & 1))];
+        s->mpadsp.RENAME(imdct36)(out_ptr, buf, ptr, win);
         out_ptr += 18 * SBLIMIT;
         ptr     += 18;
         buf     += 18;
     }
     for (j = mdct_long_end; j < sblimit; j++) {
         /* select frequency inversion */
-        win     = mdct_win[2] + ((4 * 36) & -(j & 1));
+        win     = mdct_win[2 + (4  & -(j & 1))];
         out_ptr = sb_samples + j;
 
         for (i = 0; i < 6; i++) {
