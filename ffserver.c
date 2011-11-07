@@ -2161,6 +2161,10 @@ static int open_input_stream(HTTPContext *c, const char *info)
         http_log("could not open %s: %d\n", input_filename, ret);
         return -1;
     }
+
+    /* set buffer size */
+    if (buf_size > 0) ffio_set_buf_size(s->pb, buf_size);
+
     s->flags |= AVFMT_FLAG_GENPTS;
     c->fmt_in = s;
     if (strcmp(s->iformat->name, "ffm") && avformat_find_stream_info(c->fmt_in, NULL) < 0) {
@@ -3664,6 +3668,8 @@ static void build_feed_streams(void)
             int matches = 0;
 
             if (avformat_open_input(&s, feed->feed_filename, NULL, NULL) >= 0) {
+                /* set buffer size */
+                ffio_set_buf_size(s->pb, FFM_PACKET_SIZE);
                 /* Now see if it matches */
                 if (s->nb_streams == feed->nb_streams) {
                     matches = 1;
