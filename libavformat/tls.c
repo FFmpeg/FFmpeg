@@ -87,7 +87,7 @@ static int do_tls_poll(URLContext *h, int ret)
     } else if (ret == SSL_ERROR_WANT_WRITE) {
         p.events = POLLOUT;
     } else {
-        av_log(NULL, AV_LOG_ERROR, "%s\n", ERR_error_string(ret, NULL));
+        av_log(NULL, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         return AVERROR(EIO);
     }
 #endif
