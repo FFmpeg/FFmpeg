@@ -32,6 +32,7 @@
 #include "id3v2.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/parseutils.h"
 #include "riff.h"
 #include "audiointerleave.h"
 #include "url.h"
@@ -3944,7 +3945,7 @@ int64_t ff_iso8601_to_unix_time(const char *datestr)
 #if HAVE_STRPTIME
     struct tm time = {0};
     strptime(datestr, "%Y - %m - %dT%T", &time);
-    return mktime(&time);
+    return av_timegm(&time);
 #else
     av_log(NULL, AV_LOG_WARNING, "strptime() unavailable on this system, cannot convert "
                                  "the date string.\n");
