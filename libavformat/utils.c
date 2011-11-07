@@ -3967,6 +3967,7 @@ int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_co
 int avformat_network_init(void)
 {
 #if CONFIG_NETWORK
+    ff_network_inited_globally = 1;
     int ret;
     if ((ret = ff_network_init()) < 0)
         return ret;
