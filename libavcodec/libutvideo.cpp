@@ -51,7 +51,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
 {
     UtVideoContext *utv = (UtVideoContext *)avctx->priv_data;
     UtVideoExtra info;
-    int defined_fourcc = 0;
+    int format;
 
     if(avctx->extradata_size != 4*4)
     {
@@ -65,55 +65,28 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     info.stripes = AV_RL32(avctx->extradata + 8);
     info.flags = AV_RL32(avctx->extradata + 12);
 
-    /* Try to output the original format */
-    switch(UNFCC(info.original_format))
+    /* Pick format based on FOURCC */
+    switch(avctx->codec_tag)
     {
-        case UTVF_YV12:
+        case MKTAG('U', 'L', 'Y', '0'):
             avctx->pix_fmt = PIX_FMT_YUV420P;
+            format = UTVF_YV12;
             break;
-        case UTVF_YUY2:
-        case UTVF_YUYV:
-        case UTVF_YUNV:
+        case MKTAG('U', 'L', 'Y', '2'):
             avctx->pix_fmt = PIX_FMT_YUYV422;
+            format = UTVF_YUY2;
             break;
-        case UTVF_UYVY:
-        case UTVF_UYNV:
-            avctx->pix_fmt = PIX_FMT_UYVY422;
-            break;
-        case UTVF_RGB24_WIN:
+        case MKTAG('U', 'L', 'R', 'G'):
             avctx->pix_fmt = PIX_FMT_BGR24;
+            format = UTVF_RGB24_WIN;
             break;
-        case UTVF_RGB32_WIN:
+        case MKTAG('U', 'L', 'R', 'A'):
             avctx->pix_fmt = PIX_FMT_RGB32;
-            break;
-        case UTVF_ARGB32_WIN:
-            avctx->pix_fmt = PIX_FMT_ARGB;
-            break;
-        case 0:
-            /* Fall back on FOURCC */
-            switch(UNFCC(avctx->codec_tag))
-            {
-                case UTVF_ULY0:
-                    avctx->pix_fmt = PIX_FMT_YUV420P;
-                    defined_fourcc = UTVF_YV12;
-                    break;
-                case UTVF_ULY2:
-                    avctx->pix_fmt = PIX_FMT_YUYV422;
-                    defined_fourcc = UTVF_YUY2;
-                    break;
-                case UTVF_ULRG:
-                    avctx->pix_fmt = PIX_FMT_BGR24;
-                    defined_fourcc = UTVF_RGB24_WIN;
-                    break;
-                case UTVF_ULRA:
-                    avctx->pix_fmt = PIX_FMT_RGB32;
-                    defined_fourcc = UTVF_RGB32_WIN;
-                    break;
-            }
+            format = UTVF_RGB32_WIN;
             break;
         default:
             av_log(avctx, AV_LOG_ERROR,
-                  "Codec ExtraData is Corrupt or Invalid: %X\n", info.original_format);
+                  "Not a Ut Video FOURCC: %X\n", avctx->codec_tag);
             return -1;
     }
 
@@ -146,9 +119,8 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     utv->codec = CCodec::CreateInstance(UNFCC(avctx->codec_tag), "libavcodec");
 
     /* Initialize Decoding */
-    utv->codec->DecodeBegin(defined_fourcc ? defined_fourcc : UNFCC(info.original_format),
-                            avctx->width, avctx->height, CBGROSSWIDTH_WINDOWS, &info,
-                            sizeof(UtVideoExtra));
+    utv->codec->DecodeBegin(format, avctx->width, avctx->height,
+                            CBGROSSWIDTH_WINDOWS, &info, sizeof(UtVideoExtra));
 
     return 0;
 }
