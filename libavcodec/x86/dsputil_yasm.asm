@@ -637,7 +637,7 @@ cglobal emu_edge_core_%1, 2, 7, 0
 
 %ifnidn %3, mmx
 %rep %2/16
-    movdqu xmm %+ %%sxidx, [r1+%%src_off]
+    movups xmm %+ %%sxidx, [r1+%%src_off]
 %assign %%src_off %%src_off+16
 %assign %%sxidx   %%sxidx+1
 %endrep ; %2/16
@@ -686,7 +686,7 @@ cglobal emu_edge_core_%1, 2, 7, 0
 
 %ifnidn %3, mmx
 %rep %2/16
-    movdqu [r0+%%dst_off], xmm %+ %%dxidx
+    movups [r0+%%dst_off], xmm %+ %%dxidx
 %assign %%dst_off %%dst_off+16
 %assign %%dxidx   %%dxidx+1
 %endrep ; %2/16
@@ -915,7 +915,7 @@ ALIGN 64
 %define linesize r2m
     V_COPY_NPX %1,  mm0, movq,    8, 0xFFFFFFF8
 %else ; !mmx
-    V_COPY_NPX %1, xmm0, movdqu, 16, 0xFFFFFFF0
+    V_COPY_NPX %1, xmm0, movups, 16, 0xFFFFFFF0
 %ifdef ARCH_X86_64
 %define linesize r2
     V_COPY_NPX %1, rax , mov,     8
