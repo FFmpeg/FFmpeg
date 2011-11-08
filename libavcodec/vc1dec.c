@@ -1422,29 +1422,36 @@ static av_always_inline int scaleforsame(VC1Context *v, int i, int n /* MV */,
                                          int dim, int dir)
 {
     int brfd, scalesame;
+    int hpel = 1 - v->s.quarter_sample;
 
+    n >>= hpel;
     if (v->s.pict_type != AV_PICTURE_TYPE_B || v->second_field || !dir) {
         if (dim)
-            return scaleforsame_y(v, i, n, dir);
+            n = scaleforsame_y(v, i, n, dir) << hpel;
         else
-            return scaleforsame_x(v, n, dir);
+            n = scaleforsame_x(v, n, dir) << hpel;
+        return n;
     }
     brfd      = FFMIN(v->brfd, 3);
     scalesame = vc1_b_field_mvpred_scales[0][brfd];
 
-    return n * scalesame >> 8;
+    n = (n * scalesame >> 8) << hpel;
+    return n;
 }
 
 static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
                                         int dim, int dir)
 {
     int refdist, scaleopp;
+    int hpel = 1 - v->s.quarter_sample;
 
+    n >>= hpel;
     if (v->s.pict_type == AV_PICTURE_TYPE_B && !v->second_field && dir == 1) {
         if (dim)
-            return scaleforopp_y(v, n, dir);
+            n = scaleforopp_y(v, n, dir) << hpel;
         else
-            return scaleforopp_x(v, n);
+            n = scaleforopp_x(v, n) << hpel;
+        return n;
     }
     if (v->s.pict_type != AV_PICTURE_TYPE_B)
         refdist = FFMIN(v->refdist, 3);
@@ -1452,7 +1459,8 @@ static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
         refdist = dir ? v->brfd : v->frfd;
     scaleopp = vc1_field_mvpred_scales[dir ^ v->second_field][0][refdist];
 
-    return n * scaleopp >> 8;
+    n = (n * scaleopp >> 8) << hpel;
+    return n;
 }
 
 /** Predict and set motion vector
