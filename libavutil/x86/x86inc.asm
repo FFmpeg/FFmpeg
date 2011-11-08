@@ -468,9 +468,19 @@ DECLARE_REG 6, ebp, ebp, bp, null, [esp + stack_offset + 28]
 ; Appends cpuflags to the function name if cpuflags has been specified.
 %macro cglobal 1-2+ ; name, [PROLOGUE args]
 %if %0 == 1
+    ; HACK: work around %+ broken with empty SUFFIX for nasm 2.09.10
+    %ifempty SUFFIX
+    cglobal_internal %1
+    %else
     cglobal_internal %1 %+ SUFFIX
+    %endif
 %else
+    ; HACK: work around %+ broken with empty SUFFIX for nasm 2.09.10
+    %ifempty SUFFIX
+    cglobal_internal %1, %2
+    %else
     cglobal_internal %1 %+ SUFFIX, %2
+    %endif
 %endif
 %endmacro
 %macro cglobal_internal 1-2+
@@ -747,7 +757,12 @@ INIT_XMM
 
 ; Append cpuflags to the callee's name iff the appended name is known and the plain name isn't
 %macro call 1
+    ; HACK: work around %+ broken with empty SUFFIX for nasm 2.09.10
+    %ifempty SUFFIX
+    call_internal %1, %1
+    %else
     call_internal %1, %1 %+ SUFFIX
+    %endif
 %endmacro
 %macro call_internal 2
     %xdefine %%i %1
