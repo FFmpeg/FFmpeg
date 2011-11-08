@@ -171,13 +171,13 @@ void rgb16tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
         bgr = *s++;
 #if HAVE_BIGENDIAN
         *d++ = 255;
-        *d++ = (bgr&0x1F)<<3;
-        *d++ = (bgr&0x7E0)>>3;
-        *d++ = (bgr&0xF800)>>8;
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
+        *d++ = ((bgr&0x7E0)>>3) | ((bgr&0x7E0)>>9);
+        *d++ = ((bgr&0xF800)>>8) | ((bgr&0xF800)>>13);
 #else
-        *d++ = (bgr&0xF800)>>8;
-        *d++ = (bgr&0x7E0)>>3;
-        *d++ = (bgr&0x1F)<<3;
+        *d++ = ((bgr&0xF800)>>8) | ((bgr&0xF800)>>13);
+        *d++ = ((bgr&0x7E0)>>3) | ((bgr&0x7E0)>>9);
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
         *d++ = 255;
 #endif
     }
@@ -192,9 +192,9 @@ void rgb16to24(const uint8_t *src, uint8_t *dst, int src_size)
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        *d++ = (bgr&0xF800)>>8;
-        *d++ = (bgr&0x7E0)>>3;
-        *d++ = (bgr&0x1F)<<3;
+        *d++ = ((bgr&0xF800)>>8) | ((bgr&0xF800)>>13);
+        *d++ = ((bgr&0x7E0)>>3) | ((bgr&0x7E0)>>9);
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
     }
 }
 
@@ -231,13 +231,13 @@ void rgb15tobgr32(const uint8_t *src, uint8_t *dst, int src_size)
         bgr = *s++;
 #if HAVE_BIGENDIAN
         *d++ = 255;
-        *d++ = (bgr&0x1F)<<3;
-        *d++ = (bgr&0x3E0)>>2;
-        *d++ = (bgr&0x7C00)>>7;
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
+        *d++ = ((bgr&0x3E0)>>2) | ((bgr&0x3E0)>>7);
+        *d++ = ((bgr&0x7C00)>>7) | ((bgr&0x7C00)>>12);
 #else
-        *d++ = (bgr&0x7C00)>>7;
-        *d++ = (bgr&0x3E0)>>2;
-        *d++ = (bgr&0x1F)<<3;
+        *d++ = ((bgr&0x7C00)>>7) | ((bgr&0x7C00)>>12);
+        *d++ = ((bgr&0x3E0)>>2) | ((bgr&0x3E0)>>7);
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
         *d++ = 255;
 #endif
     }
@@ -252,9 +252,9 @@ void rgb15to24(const uint8_t *src, uint8_t *dst, int src_size)
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        *d++ = (bgr&0x7C00)>>7;
-        *d++ = (bgr&0x3E0)>>2;
-        *d++ = (bgr&0x1F)<<3;
+        *d++ = ((bgr&0x7C00)>>7) | ((bgr&0x7C00)>>12);
+        *d++ = ((bgr&0x3E0)>>2) | ((bgr&0x3E0)>>7);
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
     }
 }
 

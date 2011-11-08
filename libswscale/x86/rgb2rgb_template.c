@@ -801,27 +801,6 @@ static inline void RENAME(rgb24to15)(const uint8_t *src, uint8_t *dst, int src_s
     }
 }
 
-/*
-  I use less accurate approximation here by simply left-shifting the input
-  value and filling the low order bits with zeroes. This method improves PNG
-  compression but this scheme cannot reproduce white exactly, since it does
-  not generate an all-ones maximum value; the net effect is to darken the
-  image slightly.
-
-  The better method should be "left bit replication":
-
-   4 3 2 1 0
-   ---------
-   1 1 0 1 1
-
-   7 6 5 4 3  2 1 0
-   ----------------
-   1 1 0 1 1  1 1 0
-   |=======|  |===|
-       |      leftmost bits repeated to fill open bits
-       |
-   original bits
-*/
 static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int src_size)
 {
     const uint16_t *end;
@@ -840,9 +819,10 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
-            "psllq         $3, %%mm0    \n\t"
-            "psrlq         $2, %%mm1    \n\t"
-            "psrlq         $7, %%mm2    \n\t"
+            "psllq         $5, %%mm0    \n\t"
+            "pmulhw        %6, %%mm0    \n\t"
+            "pmulhw        %6, %%mm1    \n\t"
+            "pmulhw        %7, %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -870,9 +850,10 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
-            "psllq         $3, %%mm0    \n\t"
-            "psrlq         $2, %%mm1    \n\t"
-            "psrlq         $7, %%mm2    \n\t"
+            "psllq         $5, %%mm0    \n\t"
+            "pmulhw        %6, %%mm0    \n\t"
+            "pmulhw        %6, %%mm1    \n\t"
+            "pmulhw        %7, %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -892,7 +873,7 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm5, %%mm3    \n\t"
 
             :"=m"(*d)
-            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r), "m"(mmx_null)
+            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mmx_null),"m"(mul15_mid),"m"(mul15_hi)
             :"memory");
         /* borrowed 32 to 24 */
         __asm__ volatile(
@@ -919,9 +900,9 @@ static inline void RENAME(rgb15tobgr24)(const uint8_t *src, uint8_t *dst, int sr
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        *d++ = (bgr&0x1F)<<3;
-        *d++ = (bgr&0x3E0)>>2;
-        *d++ = (bgr&0x7C00)>>7;
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
+        *d++ = ((bgr&0x3E0)>>2) | ((bgr&0x3E0)>>7);
+        *d++ = ((bgr&0x7C00)>>7) | ((bgr&0x7C00)>>12);
     }
 }
 
@@ -943,9 +924,11 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
-            "psllq         $3, %%mm0    \n\t"
-            "psrlq         $3, %%mm1    \n\t"
-            "psrlq         $8, %%mm2    \n\t"
+            "psllq         $5, %%mm0    \n\t"
+            "psrlq         $1, %%mm2    \n\t"
+            "pmulhw        %6, %%mm0    \n\t"
+            "pmulhw        %8, %%mm1    \n\t"
+            "pmulhw        %7, %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -973,9 +956,11 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
-            "psllq         $3, %%mm0    \n\t"
-            "psrlq         $3, %%mm1    \n\t"
-            "psrlq         $8, %%mm2    \n\t"
+            "psllq         $5, %%mm0    \n\t"
+            "psrlq         $1, %%mm2    \n\t"
+            "pmulhw        %6, %%mm0    \n\t"
+            "pmulhw        %8, %%mm1    \n\t"
+            "pmulhw        %7, %%mm2    \n\t"
             "movq       %%mm0, %%mm3    \n\t"
             "movq       %%mm1, %%mm4    \n\t"
             "movq       %%mm2, %%mm5    \n\t"
@@ -994,7 +979,7 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
             "por        %%mm4, %%mm3    \n\t"
             "por        %%mm5, %%mm3    \n\t"
             :"=m"(*d)
-            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null)
+            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mmx_null),"m"(mul15_mid),"m"(mul15_hi),"m"(mul16_mid)
             :"memory");
         /* borrowed 32 to 24 */
         __asm__ volatile(
@@ -1021,9 +1006,9 @@ static inline void RENAME(rgb16tobgr24)(const uint8_t *src, uint8_t *dst, int sr
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        *d++ = (bgr&0x1F)<<3;
-        *d++ = (bgr&0x7E0)>>3;
-        *d++ = (bgr&0xF800)>>8;
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
+        *d++ = ((bgr&0x7E0)>>3) | ((bgr&0x7E0)>>9);
+        *d++ = ((bgr&0xF800)>>8) | ((bgr&0xF800)>>13);
     }
 }
 
@@ -1066,12 +1051,13 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, int src_s
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
-            "psllq         $3, %%mm0    \n\t"
-            "psrlq         $2, %%mm1    \n\t"
-            "psrlq         $7, %%mm2    \n\t"
+            "psllq         $5, %%mm0    \n\t"
+            "pmulhw        %5, %%mm0    \n\t"
+            "pmulhw        %5, %%mm1    \n\t"
+            "pmulhw        %6, %%mm2    \n\t"
             PACK_RGB32
             :"=m"(*d)
-            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r)
+            :"m"(*s),"m"(mask15b),"m"(mask15g),"m"(mask15r),"m"(mul15_mid),"m"(mul15_hi)
             :"memory");
         d += 16;
         s += 4;
@@ -1081,9 +1067,9 @@ static inline void RENAME(rgb15to32)(const uint8_t *src, uint8_t *dst, int src_s
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        *d++ = (bgr&0x1F)<<3;
-        *d++ = (bgr&0x3E0)>>2;
-        *d++ = (bgr&0x7C00)>>7;
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
+        *d++ = ((bgr&0x3E0)>>2) | ((bgr&0x3E0)>>7);
+        *d++ = ((bgr&0x7C00)>>7) | ((bgr&0x7C00)>>12);
         *d++ = 255;
     }
 }
@@ -1108,12 +1094,14 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, int src_s
             "pand          %2, %%mm0    \n\t"
             "pand          %3, %%mm1    \n\t"
             "pand          %4, %%mm2    \n\t"
-            "psllq         $3, %%mm0    \n\t"
-            "psrlq         $3, %%mm1    \n\t"
-            "psrlq         $8, %%mm2    \n\t"
+            "psllq         $5, %%mm0    \n\t"
+            "psrlq         $1, %%mm2    \n\t"
+            "pmulhw        %5, %%mm0    \n\t"
+            "pmulhw        %7, %%mm1    \n\t"
+            "pmulhw        %6, %%mm2    \n\t"
             PACK_RGB32
             :"=m"(*d)
-            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r)
+            :"m"(*s),"m"(mask16b),"m"(mask16g),"m"(mask16r),"m"(mul15_mid),"m"(mul15_hi),"m"(mul16_mid)
             :"memory");
         d += 16;
         s += 4;
@@ -1123,9 +1111,9 @@ static inline void RENAME(rgb16to32)(const uint8_t *src, uint8_t *dst, int src_s
     while (s < end) {
         register uint16_t bgr;
         bgr = *s++;
-        *d++ = (bgr&0x1F)<<3;
-        *d++ = (bgr&0x7E0)>>3;
-        *d++ = (bgr&0xF800)>>8;
+        *d++ = ((bgr&0x1F)<<3) | ((bgr&0x1F)>>2);
+        *d++ = ((bgr&0x7E0)>>3) | ((bgr&0x7E0)>>9);
+        *d++ = ((bgr&0xF800)>>8) | ((bgr&0xF800)>>13);
         *d++ = 255;
     }
 }
