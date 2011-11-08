@@ -2279,6 +2279,8 @@ static void stream_component_close(VideoState *is, int stream_index)
         if (is->rdft) {
             av_rdft_end(is->rdft);
             av_freep(&is->rdft_data);
+            is->rdft = NULL;
+            is->rdft_bits = 0;
         }
         break;
     case AVMEDIA_TYPE_VIDEO:
