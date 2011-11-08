@@ -61,7 +61,7 @@ static const AVClass crypto_class = {
 static int crypto_open(URLContext *h, const char *uri, int flags)
 {
     const char *nested_url;
-    int ret;
+    int ret = 0;
     CryptoContext *c = h->priv_data;
 
     if (!av_strstart(uri, "crypto+", &nested_url) &&
@@ -95,10 +95,7 @@ static int crypto_open(URLContext *h, const char *uri, int flags)
 
     h->is_streamed = 1;
 
-    return 0;
 err:
-    av_freep(&c->key);
-    av_freep(&c->iv);
     return ret;
 }
 
@@ -157,8 +154,6 @@ static int crypto_close(URLContext *h)
     if (c->hd)
         ffurl_close(c->hd);
     av_freep(&c->aes);
-    av_freep(&c->key);
-    av_freep(&c->iv);
     return 0;
 }
 
