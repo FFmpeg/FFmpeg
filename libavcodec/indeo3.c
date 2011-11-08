@@ -444,7 +444,7 @@ static int decode_cell_data(Cell *cell, uint8_t *block, uint8_t *ref_block,
                             BUFFER_PRECHECK;
                             dyad1 = bytestream_get_byte(data_ptr);
                             dyad2 = code;
-                            if (dyad1 > delta_tab->num_dyads || dyad1 >= 248)
+                            if (dyad1 >= delta_tab->num_dyads || dyad1 >= 248)
                                 return IV3_BAD_DATA;
                         } else {
                             /* process QUADS */
