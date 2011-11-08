@@ -72,21 +72,50 @@ static const struct {
     { "5.1(side)",   6,  AV_CH_LAYOUT_5POINT1 },
     { "7.1",         8,  AV_CH_LAYOUT_7POINT1 },
     { "7.1(wide)",   8,  AV_CH_LAYOUT_7POINT1_WIDE },
-    { "5.1+downmix", 8,  AV_CH_LAYOUT_5POINT1|AV_CH_LAYOUT_STEREO_DOWNMIX, },
-    { "7.1+downmix", 10, AV_CH_LAYOUT_7POINT1|AV_CH_LAYOUT_STEREO_DOWNMIX, },
+    { "downmix",     2,  AV_CH_LAYOUT_STEREO_DOWNMIX, },
     { 0 }
 };
 
+static int64_t get_channel_layout_single(const char *name, int name_len)
+{
+    int i;
+    char *end;
+    int64_t layout;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(channel_layout_map) - 1; i++) {
+        if (strlen(channel_layout_map[i].name) == name_len &&
+            !memcmp(channel_layout_map[i].name, name, name_len))
+            return channel_layout_map[i].layout;
+    }
+    for (i = 0; i < FF_ARRAY_ELEMS(channel_names); i++)
+        if (channel_names[i] &&
+            strlen(channel_names[i]) == name_len &&
+            !memcmp(channel_names[i], name, name_len))
+            return (int64_t)1 << i;
+    i = strtol(name, &end, 10);
+    if (end - name == name_len ||
+        (end + 1 - name == name_len && *end  == 'c'))
+        return av_get_default_channel_layout(i);
+    layout = strtoll(name, &end, 0);
+    if (end - name == name_len)
+        return FFMAX(layout, 0);
+    return 0;
+}
+
 int64_t av_get_channel_layout(const char *name)
 {
-    int i = 0;
-    do {
-        if (!strcmp(channel_layout_map[i].name, name))
-            return channel_layout_map[i].layout;
-        i++;
-    } while (channel_layout_map[i].name);
+    const char *n, *e;
+    const char *name_end = name + strlen(name);
+    int64_t layout = 0, layout_single;
 
-    return 0;
+    for (n = name; n < name_end; n = e + 1) {
+        for (e = n; e < name_end && *e != '+' && *e != '|'; e++);
+        layout_single = get_channel_layout_single(n, e - n);
+        if (!layout_single)
+            return 0;
+        layout |= layout_single;
+    }
+    return layout;
 }
 
 void av_get_channel_layout_string(char *buf, int buf_size,
