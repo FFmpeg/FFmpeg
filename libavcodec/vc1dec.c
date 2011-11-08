@@ -1561,16 +1561,6 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
         field_predA[0] = field_predA[1] = 0;
         a_f = 0;
     }
-    if (c_valid) {
-        c_f = v->mv_f[dir][xy - 1 + v->blocks_off];
-        num_oppfield  += c_f;
-        num_samefield += 1 - c_f;
-        field_predC[0] = C[0];
-        field_predC[1] = C[1];
-    } else {
-        field_predC[0] = field_predC[1] = 0;
-        c_f = 0;
-    }
     if (b_valid) {
         b_f = v->mv_f[dir][xy - wrap + off + v->blocks_off];
         num_oppfield  += b_f;
@@ -1580,6 +1570,16 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     } else {
         field_predB[0] = field_predB[1] = 0;
         b_f = 0;
+    }
+    if (c_valid) {
+        c_f = v->mv_f[dir][xy - 1 + v->blocks_off];
+        num_oppfield  += c_f;
+        num_samefield += 1 - c_f;
+        field_predC[0] = C[0];
+        field_predC[1] = C[1];
+    } else {
+        field_predC[0] = field_predC[1] = 0;
+        c_f = 0;
     }
 
     if (v->field_mode) {
