@@ -370,6 +370,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (XSUB, xsub);
 
     /* external libraries */
+    REGISTER_ENCODER (LIBAACPLUS, libaacplus);
     REGISTER_DECODER (LIBCELT, libcelt);
     REGISTER_ENCDEC  (LIBDIRAC, libdirac);
     REGISTER_ENCODER (LIBFAAC, libfaac);

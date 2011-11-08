@@ -309,10 +309,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     s->samples_per_frame = 1 << ff_wma_get_frame_len_bits(avctx->sample_rate,
                                                           3, s->decode_flags);
 
-    /** init previous block len */
-    for (i = 0; i < avctx->channels; i++)
-        s->channel[i].prev_block_len = s->samples_per_frame;
-
     /** subframe info */
     log2_max_num_subframes       = ((s->decode_flags & 0x38) >> 3);
     s->max_num_subframes         = 1 << log2_max_num_subframes;
@@ -332,6 +328,18 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     s->num_channels = avctx->channels;
 
+    if (s->num_channels < 0) {
+        av_log(avctx, AV_LOG_ERROR, "invalid number of channels %d\n", s->num_channels);
+        return AVERROR_INVALIDDATA;
+    } else if (s->num_channels > WMAPRO_MAX_CHANNELS) {
+        av_log_ask_for_sample(avctx, "unsupported number of channels\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
+    /** init previous block len */
+    for (i = 0; i < s->num_channels; i++)
+        s->channel[i].prev_block_len = s->samples_per_frame;
+
     /** extract lfe channel position */
     s->lfe_channel = -1;
 
@@ -341,14 +349,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
             if (channel_mask & mask)
                 ++s->lfe_channel;
         }
-    }
-
-    if (s->num_channels < 0) {
-        av_log(avctx, AV_LOG_ERROR, "invalid number of channels %d\n", s->num_channels);
-        return AVERROR_INVALIDDATA;
-    } else if (s->num_channels > WMAPRO_MAX_CHANNELS) {
-        av_log_ask_for_sample(avctx, "unsupported number of channels\n");
-        return AVERROR_PATCHWELCOME;
     }
 
     INIT_VLC_STATIC(&sf_vlc, SCALEVLCBITS, HUFF_SCALE_SIZE,
@@ -1436,7 +1436,7 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
         init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
     }
 
-    buflen = (s->num_saved_bits + len + 8) >> 3;
+    buflen = (put_bits_count(&s->pb) + len + 8) >> 3;
 
     if (len <= 0 || buflen > MAX_FRAMESIZE) {
         av_log_ask_for_sample(s->avctx, "input buffer too small\n");

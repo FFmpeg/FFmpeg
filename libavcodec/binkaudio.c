@@ -152,11 +152,18 @@ static const uint8_t rle_length_tab[16] = {
     2, 3, 4, 5, 6, 8, 9, 10, 11, 12, 13, 14, 15, 16, 32, 64
 };
 
+#define GET_BITS_SAFE(out, nbits) do {  \
+    if (get_bits_left(gb) < nbits)      \
+        return AVERROR_INVALIDDATA;     \
+    out = get_bits(gb, nbits);          \
+} while (0)
+
 /**
  * Decode Bink Audio block
  * @param[out] out Output buffer (must contain s->block_size elements)
+ * @return 0 on success, negative error code on failure
  */
-static void decode_block(BinkAudioContext *s, short *out, int use_dct)
+static int decode_block(BinkAudioContext *s, short *out, int use_dct)
 {
     int ch, i, j, k;
     float q, quant[25];
@@ -169,13 +176,19 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
     for (ch = 0; ch < s->channels; ch++) {
         FFTSample *coeffs = s->coeffs_ptr[ch];
         if (s->version_b) {
+            if (get_bits_left(gb) < 64)
+                return AVERROR_INVALIDDATA;
             coeffs[0] = av_int2flt(get_bits(gb, 32)) * s->root;
             coeffs[1] = av_int2flt(get_bits(gb, 32)) * s->root;
         } else {
+            if (get_bits_left(gb) < 58)
+                return AVERROR_INVALIDDATA;
             coeffs[0] = get_float(gb) * s->root;
             coeffs[1] = get_float(gb) * s->root;
         }
 
+        if (get_bits_left(gb) < s->num_bands * 8)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < s->num_bands; i++) {
             /* constant is result of 0.066399999/log10(M_E) */
             int value = get_bits(gb, 8);
@@ -190,15 +203,20 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
         while (i < s->frame_len) {
             if (s->version_b) {
                 j = i + 16;
-            } else if (get_bits1(gb)) {
-                j = i + rle_length_tab[get_bits(gb, 4)] * 8;
             } else {
-                j = i + 8;
+                int v;
+                GET_BITS_SAFE(v, 1);
+                if (v) {
+                    GET_BITS_SAFE(v, 4);
+                    j = i + rle_length_tab[v] * 8;
+                } else {
+                    j = i + 8;
+                }
             }
 
             j = FFMIN(j, s->frame_len);
 
-            width = get_bits(gb, 4);
+            GET_BITS_SAFE(width, 4);
             if (width == 0) {
                 memset(coeffs + i, 0, (j - i) * sizeof(*coeffs));
                 i = j;
@@ -208,9 +226,11 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
                 while (i < j) {
                     if (s->bands[k] == i)
                         q = quant[k++];
-                    coeff = get_bits(gb, width);
+                    GET_BITS_SAFE(coeff, width);
                     if (coeff) {
-                        if (get_bits1(gb))
+                        int v;
+                        GET_BITS_SAFE(v, 1);
+                        if (v)
                             coeffs[i] = -q * coeff;
                         else
                             coeffs[i] =  q * coeff;
@@ -246,6 +266,8 @@ static void decode_block(BinkAudioContext *s, short *out, int use_dct)
            s->overlap_len * s->channels * sizeof(*out));
 
     s->first = 0;
+
+    return 0;
 }
 
 static av_cold int decode_end(AVCodecContext *avctx)
@@ -277,12 +299,17 @@ static int decode_frame(AVCodecContext *avctx,
     int reported_size;
     GetBitContext *gb = &s->gb;
 
+    if (buf_size < 4) {
+        av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     init_get_bits(gb, buf, buf_size * 8);
 
     reported_size = get_bits_long(gb, 32);
-    while (get_bits_count(gb) / 8 < buf_size &&
-           samples + s->block_size <= samples_end) {
-        decode_block(s, samples, avctx->codec->id == CODEC_ID_BINKAUDIO_DCT);
+    while (samples + s->block_size <= samples_end) {
+        if (decode_block(s, samples, avctx->codec->id == CODEC_ID_BINKAUDIO_DCT))
+            break;
         samples += s->block_size;
         get_bits_align32(gb);
     }

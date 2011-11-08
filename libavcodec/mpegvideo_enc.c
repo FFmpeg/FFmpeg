@@ -413,9 +413,10 @@ av_cold int MPV_encode_init(AVCodecContext *avctx)
     if ((s->codec_id == CODEC_ID_MPEG4 || s->codec_id == CODEC_ID_H263 ||
          s->codec_id == CODEC_ID_H263P) &&
         (avctx->sample_aspect_ratio.num > 255 || avctx->sample_aspect_ratio.den > 255)) {
-        av_log(avctx, AV_LOG_ERROR, "Invalid pixel aspect ratio %i/%i, limit is 255/255\n",
+        av_log(avctx, AV_LOG_WARNING, "Invalid pixel aspect ratio %i/%i, limit is 255/255 reducing\n",
                avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den);
-        return -1;
+        av_reduce(&avctx->sample_aspect_ratio.num, &avctx->sample_aspect_ratio.den,
+                   avctx->sample_aspect_ratio.num,  avctx->sample_aspect_ratio.den, 255);
     }
 
     if((s->flags & (CODEC_FLAG_INTERLACED_DCT|CODEC_FLAG_INTERLACED_ME|CODEC_FLAG_ALT_SCAN))
@@ -2008,7 +2009,7 @@ static int mb_var_thread(AVCodecContext *c, void *arg){
             int varc;
             int sum = s->dsp.pix_sum(pix, s->linesize);
 
-            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)(sum*sum))>>8) + 500 + 128)>>8;
+            varc = (s->dsp.pix_norm1(pix, s->linesize) - (((unsigned)sum*sum)>>8) + 500 + 128)>>8;
 
             s->current_picture.mb_var [s->mb_stride * mb_y + mb_x] = varc;
             s->current_picture.mb_mean[s->mb_stride * mb_y + mb_x] = (sum+128)>>8;

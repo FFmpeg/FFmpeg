@@ -121,28 +121,28 @@ static void FUNCC(pred4x4_129_dc)(uint8_t *_src, const uint8_t *topright, int _s
 
 
 #define LOAD_TOP_RIGHT_EDGE\
-    const int av_unused t4= topright[0];\
-    const int av_unused t5= topright[1];\
-    const int av_unused t6= topright[2];\
-    const int av_unused t7= topright[3];\
+    const unsigned av_unused t4 = topright[0];\
+    const unsigned av_unused t5 = topright[1];\
+    const unsigned av_unused t6 = topright[2];\
+    const unsigned av_unused t7 = topright[3];\
 
 #define LOAD_DOWN_LEFT_EDGE\
-    const int av_unused l4= src[-1+4*stride];\
-    const int av_unused l5= src[-1+5*stride];\
-    const int av_unused l6= src[-1+6*stride];\
-    const int av_unused l7= src[-1+7*stride];\
+    const unsigned av_unused l4 = src[-1+4*stride];\
+    const unsigned av_unused l5 = src[-1+5*stride];\
+    const unsigned av_unused l6 = src[-1+6*stride];\
+    const unsigned av_unused l7 = src[-1+7*stride];\
 
 #define LOAD_LEFT_EDGE\
-    const int av_unused l0= src[-1+0*stride];\
-    const int av_unused l1= src[-1+1*stride];\
-    const int av_unused l2= src[-1+2*stride];\
-    const int av_unused l3= src[-1+3*stride];\
+    const unsigned av_unused l0 = src[-1+0*stride];\
+    const unsigned av_unused l1 = src[-1+1*stride];\
+    const unsigned av_unused l2 = src[-1+2*stride];\
+    const unsigned av_unused l3 = src[-1+3*stride];\
 
 #define LOAD_TOP_EDGE\
-    const int av_unused t0= src[ 0-1*stride];\
-    const int av_unused t1= src[ 1-1*stride];\
-    const int av_unused t2= src[ 2-1*stride];\
-    const int av_unused t3= src[ 3-1*stride];\
+    const unsigned av_unused t0 = src[ 0-1*stride];\
+    const unsigned av_unused t1 = src[ 1-1*stride];\
+    const unsigned av_unused t2 = src[ 2-1*stride];\
+    const unsigned av_unused t3 = src[ 3-1*stride];\
 
 static void FUNCC(pred4x4_down_right)(uint8_t *_src, const uint8_t *topright, int _stride){
     pixel *src = (pixel*)_src;

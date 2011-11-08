@@ -6,7 +6,7 @@ f443a8eeb1647ec1eeb8370c939e52d4 *./tests/data/acodec/pcm_mulaw.wav
 529256 ./tests/data/acodec/pcm_mulaw.wav
 1c3eeaa8814ebd4916780dff80ed6dc5 *./tests/data/pcm.acodec.out.wav
 stddev:  103.38 PSNR: 56.04 MAXDIFF:  644 bytes:  1058400/  1058400
-b7936d7170e0efefb379349d81aed360 *./tests/data/acodec/pcm_s8.mov
+760f85fb9f4e8aba326fb44ae84c9507 *./tests/data/acodec/pcm_s8.mov
 530837 ./tests/data/acodec/pcm_s8.mov
 652edf30f35ad89bf27bcc9d2f9c7b53 *./tests/data/pcm.acodec.out.wav
 stddev:  147.89 PSNR: 52.93 MAXDIFF:  255 bytes:  1058400/  1058400
@@ -14,7 +14,7 @@ stddev:  147.89 PSNR: 52.93 MAXDIFF:  255 bytes:  1058400/  1058400
 529244 ./tests/data/acodec/pcm_u8.wav
 652edf30f35ad89bf27bcc9d2f9c7b53 *./tests/data/pcm.acodec.out.wav
 stddev:  147.89 PSNR: 52.93 MAXDIFF:  255 bytes:  1058400/  1058400
-c42b9c04305455250366c84e17c1023f *./tests/data/acodec/pcm_s16be.mov
+a4e18d1ca9ef5b8132a84d43625ddc47 *./tests/data/acodec/pcm_s16be.mov
 1060037 ./tests/data/acodec/pcm_s16be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
@@ -30,7 +30,7 @@ c4f51bf32fad2f7af8ea5beedb56168b *./tests/data/acodec/pcm_s16le.mkv
 1060638 ./tests/data/acodec/pcm_s16le.mkv
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
-07ffe7ffb78f3648b6524debdde5aec1 *./tests/data/acodec/pcm_s24be.mov
+971d2d2633e41a0326fe2d04a2d0350f *./tests/data/acodec/pcm_s24be.mov
 1589237 ./tests/data/acodec/pcm_s24be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
@@ -38,7 +38,7 @@ a85380fb79b0d4fff38e24ac1e34bb94 *./tests/data/acodec/pcm_s24le.wav
 1587668 ./tests/data/acodec/pcm_s24le.wav
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
-d7792f0343cd66fda8b50b569e2bcc48 *./tests/data/acodec/pcm_s32be.mov
+fc4f4e3e195bbde037ed31021d229f12 *./tests/data/acodec/pcm_s32be.mov
 2118437 ./tests/data/acodec/pcm_s32be.mov
 95e54b261530a1bcf6de6fe3b21dc5f6 *./tests/data/pcm.acodec.out.wav
 stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

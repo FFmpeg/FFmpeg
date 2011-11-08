@@ -194,14 +194,16 @@ static void decode_parameters(SiprParameters* parms, GetBitContext *pgb,
 {
     int i, j;
 
-    parms->ma_pred_switch           = get_bits(pgb, p->ma_predictor_bits);
+    if (p->ma_predictor_bits)
+        parms->ma_pred_switch       = get_bits(pgb, p->ma_predictor_bits);
 
     for (i = 0; i < 5; i++)
         parms->vq_indexes[i]        = get_bits(pgb, p->vq_indexes_bits[i]);
 
     for (i = 0; i < p->subframe_count; i++) {
         parms->pitch_delay[i]       = get_bits(pgb, p->pitch_delay_bits[i]);
-        parms->gp_index[i]          = get_bits(pgb, p->gp_index_bits);
+        if (p->gp_index_bits)
+            parms->gp_index[i]      = get_bits(pgb, p->gp_index_bits);
 
         for (j = 0; j < p->number_of_fc_indexes; j++)
             parms->fc_indexes[i][j] = get_bits(pgb, p->fc_index_bits[j]);
@@ -509,7 +511,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
     GetBitContext gb;
     float *data = datap;
     int subframe_size = ctx->mode == MODE_16k ? L_SUBFR_16k : SUBFR_SIZE;
-    int i;
+    int i, out_size;
 
     ctx->avctx = avctx;
     if (avpkt->size < (mode_par->bits_per_frame >> 3)) {
@@ -520,7 +522,11 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
         *data_size = 0;
         return -1;
     }
-    if (*data_size < subframe_size * mode_par->subframe_count * sizeof(float)) {
+
+    out_size = mode_par->frames_per_packet * subframe_size *
+               mode_par->subframe_count *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
         av_log(avctx, AV_LOG_ERROR,
                "Error processing packet: output buffer (%d) too small\n",
                *data_size);
@@ -542,8 +548,7 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
         data += subframe_size * mode_par->subframe_count;
     }
 
-    *data_size = mode_par->frames_per_packet * subframe_size *
-        mode_par->subframe_count * sizeof(float);
+    *data_size = out_size;
 
     return mode_par->bits_per_frame >> 3;
 }

@@ -85,15 +85,21 @@ static inline void comp_block(MadContext *t, int mb_x, int mb_y,
 {
     MpegEncContext *s = &t->s;
     if (j < 4) {
+        unsigned offset = (mb_y*16 + ((j&2)<<2) + mv_y)*t->last_frame.linesize[0] + mb_x*16 + ((j&1)<<3) + mv_x;
+        if (offset >= (s->height - 7) * t->last_frame.linesize[0] - 7)
+            return;
         comp(t->frame.data[0] + (mb_y*16 + ((j&2)<<2))*t->frame.linesize[0] + mb_x*16 + ((j&1)<<3),
              t->frame.linesize[0],
-             t->last_frame.data[0] + (mb_y*16 + ((j&2)<<2) + mv_y)*t->last_frame.linesize[0] + mb_x*16 + ((j&1)<<3) + mv_x,
+             t->last_frame.data[0] + offset,
              t->last_frame.linesize[0], add);
     } else if (!(s->avctx->flags & CODEC_FLAG_GRAY)) {
         int index = j - 3;
+        unsigned offset = (mb_y * 8 + (mv_y/2))*t->last_frame.linesize[index] + mb_x * 8 + (mv_x/2);
+        if (offset >= (s->height/2 - 7) * t->last_frame.linesize[index] - 7)
+            return;
         comp(t->frame.data[index] + (mb_y*8)*t->frame.linesize[index] + mb_x * 8,
              t->frame.linesize[index],
-             t->last_frame.data[index] + (mb_y * 8 + (mv_y/2))*t->last_frame.linesize[index] + mb_x * 8 + (mv_x/2),
+             t->last_frame.data[index] + offset,
              t->last_frame.linesize[index], add);
     }
 }
@@ -205,7 +211,8 @@ static void decode_mb(MadContext *t, int inter)
     for (j=0; j<6; j++) {
         if (mv_map & (1<<j)) {  // mv_x and mv_y are guarded by mv_map
             int add = 2*decode_motion(&s->gb);
-            comp_block(t, s->mb_x, s->mb_y, j, mv_x, mv_y, add);
+            if (t->last_frame.data[0])
+                comp_block(t, s->mb_x, s->mb_y, j, mv_x, mv_y, add);
         } else {
             s->dsp.clear_block(t->block);
             decode_block_intra(t, t->block);
@@ -266,6 +273,8 @@ static int decode_frame(AVCodecContext *avctx,
         avcodec_set_dimensions(avctx, s->width, s->height);
         if (t->frame.data[0])
             avctx->release_buffer(avctx, &t->frame);
+        if (t->last_frame.data[0])
+            avctx->release_buffer(avctx, &t->last_frame);
     }
 
     t->frame.reference = 1;
@@ -280,6 +289,7 @@ static int decode_frame(AVCodecContext *avctx,
     if (!t->bitstream_buf)
         return AVERROR(ENOMEM);
     bswap16_buf(t->bitstream_buf, (const uint16_t*)buf, (buf_end-buf)/2);
+    memset((uint8_t*)t->bitstream_buf + (buf_end-buf), 0, FF_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&s->gb, t->bitstream_buf, 8*(buf_end-buf));
 
     for (s->mb_y=0; s->mb_y < (avctx->height+15)/16; s->mb_y++)

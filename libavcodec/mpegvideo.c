@@ -369,8 +369,8 @@ static int init_duplicate_context(MpegEncContext *s, MpegEncContext *base){
     int i;
 
     // edge emu needs blocksize + filter length - 1 (=17x17 for halfpel / 21x21 for h264)
-    FF_ALLOCZ_OR_GOTO(s->avctx, s->allocated_edge_emu_buffer, (s->width+64)*2*21*2, fail); //(width + edge + align)*interlaced*MBsize*tolerance
-    s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*21;
+    FF_ALLOCZ_OR_GOTO(s->avctx, s->allocated_edge_emu_buffer, (s->width+64)*2*21*2*2, fail); //(width + edge + align)*interlaced*MBsize*tolerance
+    s->edge_emu_buffer= s->allocated_edge_emu_buffer + (s->width+64)*2*21*2;
 
      //FIXME should be linesize instead of s->width*2 but that is not known before get_buffer()
     FF_ALLOCZ_OR_GOTO(s->avctx, s->me.scratchpad,  (s->width+64)*4*16*2*sizeof(uint8_t), fail)
@@ -2321,12 +2321,16 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
 
         edge_h= FFMIN(h, s->v_edge_pos - y);
 
-        s->dsp.draw_edges(s->current_picture_ptr->f.data[0] +  y         *s->linesize  , s->linesize,
-                          s->h_edge_pos        , edge_h        , EDGE_WIDTH        , EDGE_WIDTH        , sides);
-        s->dsp.draw_edges(s->current_picture_ptr->f.data[1] + (y>>vshift)*s->uvlinesize, s->uvlinesize,
-                          s->h_edge_pos>>hshift, edge_h>>hshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
-        s->dsp.draw_edges(s->current_picture_ptr->f.data[2] + (y>>vshift)*s->uvlinesize, s->uvlinesize,
-                          s->h_edge_pos>>hshift, edge_h>>hshift, EDGE_WIDTH>>hshift, EDGE_WIDTH>>vshift, sides);
+
+        s->dsp.draw_edges(s->current_picture_ptr->f.data[0] +  y         *s->linesize,
+                          s->linesize,           s->h_edge_pos,         edge_h,
+                          EDGE_WIDTH,            EDGE_WIDTH,            sides);
+        s->dsp.draw_edges(s->current_picture_ptr->f.data[1] + (y>>vshift)*s->uvlinesize,
+                          s->uvlinesize,         s->h_edge_pos>>hshift, edge_h>>vshift,
+                          EDGE_WIDTH>>hshift,    EDGE_WIDTH>>vshift,    sides);
+        s->dsp.draw_edges(s->current_picture_ptr->f.data[2] + (y>>vshift)*s->uvlinesize,
+                          s->uvlinesize,         s->h_edge_pos>>hshift, edge_h>>vshift,
+                          EDGE_WIDTH>>hshift,    EDGE_WIDTH>>vshift,    sides);
     }
 
     h= FFMIN(h, s->avctx->height - y);

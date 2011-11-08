@@ -137,10 +137,27 @@ void *av_realloc(void *ptr, FF_INTERNAL_MEM_TYPE size)
     //FIXME this isn't aligned correctly, though it probably isn't needed
     if(!ptr) return av_malloc(size);
     diff= ((char*)ptr)[-1];
-    return (char*)realloc((char*)ptr - diff, size + diff) + diff;
+    ptr= realloc((char*)ptr - diff, size + diff);
+    if(ptr) ptr = (char*)ptr + diff;
+    return ptr;
 #else
     return realloc(ptr, size + !size);
 #endif
+}
+
+void *av_realloc_f(void *ptr, size_t nelem, size_t elsize)
+{
+    size_t size;
+    void *r;
+
+    if (av_size_mult(elsize, nelem, &size)) {
+        av_free(ptr);
+        return NULL;
+    }
+    r = av_realloc(ptr, size);
+    if (!r && size)
+        av_free(ptr);
+    return r;
 }
 
 void av_free(void *ptr)
@@ -166,6 +183,13 @@ void *av_mallocz(FF_INTERNAL_MEM_TYPE size)
     if (ptr)
         memset(ptr, 0, size);
     return ptr;
+}
+
+void *av_calloc(size_t nmemb, size_t size)
+{
+    if (size <= 0 || nmemb >= INT_MAX / size)
+        return NULL;
+    return av_mallocz(nmemb * size);
 }
 
 char *av_strdup(const char *s)

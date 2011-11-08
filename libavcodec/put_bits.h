@@ -78,7 +78,8 @@ static inline int put_bits_count(PutBitContext *s)
 static inline void flush_put_bits(PutBitContext *s)
 {
 #ifndef BITSTREAM_WRITER_LE
-    s->bit_buf<<= s->bit_left;
+    if (s->bit_left < 32)
+        s->bit_buf<<= s->bit_left;
 #endif
     while (s->bit_left < 32) {
         /* XXX: should test end of buffer */

@@ -217,7 +217,11 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
     bitmap_frame_size = buf_size - 4;
 
     /* handle palette */
+    if (bitmap_frame_size < palette_colors_count * (3 + (palette_type != 0)))
+        return AVERROR_INVALIDDATA;
     if (palette_type == 0) {
+        if (palette_colors_count > 256)
+            return AVERROR_INVALIDDATA;
         for (i = 0; i < palette_colors_count; ++i) {
             cin->palette[i] = bytestream_get_le24(&buf);
             bitmap_frame_size -= 3;
@@ -306,6 +310,11 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     CinAudioContext *cin = avctx->priv_data;
 
     cin->avctx = avctx;
+    if (avctx->channels != 1) {
+        av_log_ask_for_sample(avctx, "Number of channels is not supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     cin->initial_decode_frame = 1;
     cin->delta = 0;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;

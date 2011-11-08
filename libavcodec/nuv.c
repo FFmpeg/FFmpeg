@@ -20,6 +20,7 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+#include <limits.h>
 
 #include "libavutil/bswap.h"
 #include "libavutil/lzo.h"
@@ -112,19 +113,23 @@ static int codec_reinit(AVCodecContext *avctx, int width, int height, int qualit
     if (quality >= 0)
         get_quant_quality(c, quality);
     if (width != c->width || height != c->height) {
-        if (av_image_check_size(height, width, 0, avctx) < 0)
-            return 0;
+        // also reserve space for a possible additional header
+        int buf_size = 24 + height * width * 3 / 2 + AV_LZO_OUTPUT_PADDING;
+        if (av_image_check_size(height, width, 0, avctx) < 0 ||
+            buf_size > INT_MAX/8)
+            return -1;
         avctx->width = c->width = width;
         avctx->height = c->height = height;
-        av_fast_malloc(&c->decomp_buf, &c->decomp_size, c->height * c->width * 3 / 2);
+        av_fast_malloc(&c->decomp_buf, &c->decomp_size, buf_size);
         if (!c->decomp_buf) {
             av_log(avctx, AV_LOG_ERROR, "Can't allocate decompression buffer.\n");
-            return 0;
+            return AVERROR(ENOMEM);
         }
         rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
+        return 1;
     } else if (quality != c->quality)
         rtjpeg_decode_init(&c->rtj, &c->dsp, c->width, c->height, c->lq, c->cq);
-    return 1;
+    return 0;
 }
 
 static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
@@ -135,6 +140,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     AVFrame *picture = data;
     int orig_size = buf_size;
     int keyframe;
+    int size_change = 0;
     int result;
     enum {NUV_UNCOMPRESSED = '0', NUV_RTJPEG = '1',
           NUV_RTJPEG_IN_LZO = '2', NUV_LZO = '3',
@@ -172,18 +178,19 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         default:
             keyframe = 1; break;
     }
+retry:
     // skip rest of the frameheader.
     buf = &buf[12];
     buf_size -= 12;
     if (comptype == NUV_RTJPEG_IN_LZO || comptype == NUV_LZO) {
-        int outlen = c->decomp_size, inlen = buf_size;
+        int outlen = c->decomp_size - AV_LZO_OUTPUT_PADDING, inlen = buf_size;
         if (av_lzo1x_decode(c->decomp_buf, &outlen, buf, &inlen))
             av_log(avctx, AV_LOG_ERROR, "error during lzo decompression\n");
         buf = c->decomp_buf;
-        buf_size = c->decomp_size;
+        buf_size = c->decomp_size - AV_LZO_OUTPUT_PADDING;
     }
     if (c->codec_frameheader) {
-        int w, h, q;
+        int w, h, q, res;
         if (buf_size < 12) {
             av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame\n");
             return -1;
@@ -191,13 +198,20 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         w = AV_RL16(&buf[6]);
         h = AV_RL16(&buf[8]);
         q = buf[10];
-        if (!codec_reinit(avctx, w, h, q))
-            return -1;
+        res = codec_reinit(avctx, w, h, q);
+        if (res < 0)
+            return res;
+        if (res) {
+            buf = avpkt->data;
+            buf_size = avpkt->size;
+            size_change = 1;
+            goto retry;
+        }
         buf = &buf[12];
         buf_size -= 12;
     }
 
-    if (keyframe && c->pic.data[0])
+    if ((size_change || keyframe) && c->pic.data[0])
         avctx->release_buffer(avctx, &c->pic);
     c->pic.reference = 3;
     c->pic.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_READABLE |
@@ -259,7 +273,7 @@ static av_cold int decode_init(AVCodecContext *avctx) {
     if (avctx->extradata_size)
         get_quant(avctx, c, avctx->extradata, avctx->extradata_size);
     dsputil_init(&c->dsp, avctx);
-    if (!codec_reinit(avctx, avctx->width, avctx->height, -1))
+    if (codec_reinit(avctx, avctx->width, avctx->height, -1) < 0)
         return 1;
     return 0;
 }

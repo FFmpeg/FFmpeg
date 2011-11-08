@@ -560,6 +560,10 @@ static av_cold int decode_end(AVCodecContext *avctx)
 
 static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
+    if (avctx->channels < 1 || avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
+        return AVERROR(EINVAL);
+    }
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->sample_fmt = avctx->bits_per_coded_sample == 8 ? AV_SAMPLE_FMT_U8 : AV_SAMPLE_FMT_S16;
     return 0;
@@ -583,6 +587,11 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     int bits, stereo;
     int pred[2] = {0, 0};
 
+    if (buf_size <= 4) {
+        av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+        return AVERROR(EINVAL);
+    }
+
     unp_size = AV_RL32(buf);
 
     init_get_bits(&gb, buf + 4, (buf_size - 4) * 8);
@@ -597,6 +606,14 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     if (unp_size & 0xC0000000 || unp_size > *data_size) {
         av_log(avctx, AV_LOG_ERROR, "Frame is too large to fit in buffer\n");
         return -1;
+    }
+    if (stereo ^ (avctx->channels != 1)) {
+        av_log(avctx, AV_LOG_ERROR, "channels mismatch\n");
+        return AVERROR(EINVAL);
+    }
+    if (bits && avctx->sample_fmt == AV_SAMPLE_FMT_U8) {
+        av_log(avctx, AV_LOG_ERROR, "sample format mismatch\n");
+        return AVERROR(EINVAL);
     }
 
     memset(vlc, 0, sizeof(VLC) * 4);

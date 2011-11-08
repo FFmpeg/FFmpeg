@@ -19,7 +19,7 @@ ffmpeg:
   ffmpeg.c                              Michael Niedermayer
 
 ffplay:
-  ffplay.c                              Michael Niedermayer
+  ffplay.c                              Marton Balint
 
 ffprobe:
   ffprobe.c                             Stefano Sabatini

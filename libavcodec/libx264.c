@@ -70,9 +70,14 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
 
     /* Write the SEI as part of the first frame. */
     if (x4->sei_size > 0 && nnal > 0) {
+        if (x4->sei_size > size) {
+            av_log(ctx, AV_LOG_ERROR, "Error: nal buffer is too small\n");
+            return -1;
+        }
         memcpy(p, x4->sei, x4->sei_size);
         p += x4->sei_size;
         x4->sei_size = 0;
+        // why is x4->sei not freed?
     }
 
     for (i = 0; i < nnal; i++){
@@ -83,6 +88,11 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
             memcpy(x4->sei, nals[i].p_payload, nals[i].i_payload);
             continue;
         }
+        if (nals[i].i_payload > (size - (p - buf))) {
+            // return only complete nals which fit in buf
+            av_log(ctx, AV_LOG_ERROR, "Error: nal buffer is too small\n");
+            break;
+        }
         memcpy(p, nals[i].p_payload, nals[i].i_payload);
         p += nals[i].i_payload;
     }
@@ -91,13 +101,14 @@ static int encode_nals(AVCodecContext *ctx, uint8_t *buf, int size,
 }
 
 static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
-                      int bufsize, void *data)
+                      int orig_bufsize, void *data)
 {
     X264Context *x4 = ctx->priv_data;
     AVFrame *frame = data;
     x264_nal_t *nal;
     int nnal, i;
     x264_picture_t pic_out;
+    int bufsize;
 
     x264_picture_init( &x4->pic );
     x4->pic.img.i_csp   = X264_CSP_I420;
@@ -128,6 +139,7 @@ static int X264_frame(AVCodecContext *ctx, uint8_t *buf,
     }
 
     do {
+        bufsize = orig_bufsize;
     if (x264_encoder_encode(x4->enc, &nal, &nnal, frame? &x4->pic: NULL, &pic_out) < 0)
         return -1;
 

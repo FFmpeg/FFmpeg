@@ -207,8 +207,10 @@ AVResampleContext *av_resample_init(int out_rate, int in_rate, int filter_size, 
     memcpy(&c->filter_bank[c->filter_length*phase_count+1], c->filter_bank, (c->filter_length-1)*sizeof(FELEM));
     c->filter_bank[c->filter_length*phase_count]= c->filter_bank[c->filter_length - 1];
 
-    c->src_incr= out_rate;
-    c->ideal_dst_incr= c->dst_incr= in_rate * phase_count;
+    if(!av_reduce(&c->src_incr, &c->dst_incr, out_rate, in_rate * (int64_t)phase_count, INT32_MAX/2))
+        goto error;
+    c->ideal_dst_incr= c->dst_incr;
+
     c->index= -phase_count*((c->filter_length-1)/2);
 
     return c;
@@ -246,10 +248,9 @@ int av_resample(AVResampleContext *c, short *dst, short *src, int *consumed, int
             dst[dst_index] = src[index2>>32];
             index2 += incr;
         }
-        frac += dst_index * dst_incr_frac;
         index += dst_index * dst_incr;
-        index += frac / c->src_incr;
-        frac %= c->src_incr;
+        index += (frac + dst_index * (int64_t)dst_incr_frac) / c->src_incr;
+        frac   = (frac + dst_index * (int64_t)dst_incr_frac) % c->src_incr;
   }else{
     for(dst_index=0; dst_index < dst_size; dst_index++){
         FELEM *filter= c->filter_bank + c->filter_length*(index & c->phase_mask);
