@@ -1378,6 +1378,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
     case CODEC_ID_AC3:
         st->need_parsing = AVSTREAM_PARSE_FULL;
         break;
+    case CODEC_ID_MPEG1VIDEO:
+        st->need_parsing = AVSTREAM_PARSE_FULL;
+        break;
     default:
         break;
     }
