@@ -1660,10 +1660,7 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
 
     if (!v->field_mode || s->pict_type != AV_PICTURE_TYPE_B) {
         /* Calculate hybrid prediction as specified in 8.3.5.3.5 (also 10.3.5.4.3.5) */
-        if (v->field_mode && !s->quarter_sample)
-            hybridmv_thresh = 16;
-        else
-            hybridmv_thresh = 32;
+        hybridmv_thresh = 32;
         if (a_valid && c_valid) {
             if (is_intra[xy - wrap])
                 sum = FFABS(px) + FFABS(py);
