@@ -161,7 +161,7 @@ static int http_open(URLContext *h, const char *uri, int flags)
     if (s->headers) {
         int len = strlen(s->headers);
         if (len < 2 || strcmp("\r\n", s->headers + len - 2))
-            av_log(h, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
+            av_log(h, AV_LOG_WARNING, "No trailing CRLF found in HTTP header.\n");
     }
 
     return http_open_cnx(h);
