@@ -36,7 +36,7 @@
 
 //FIXME use some macros to avoid duplicating get_cabac (cannot be done yet
 //as that would make optimization work hard)
-#if ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
+#if HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
 static int decode_significance_x86(CABACContext *c, int max_coeff,
                                    uint8_t *significant_coeff_ctx_base,
                                    int *index, x86_reg last_off){
@@ -145,6 +145,6 @@ static int decode_significance_8x8_x86(CABACContext *c,
     );
     return coeff_count;
 }
-#endif /* ARCH_X86 && HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
+#endif /* HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
 
 #endif /* AVCODEC_X86_H264_I386_H */
