@@ -196,7 +196,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
         }
     }
 
-    if (timeslen == fileposlen) {
+    if (timeslen == fileposlen && fileposlen && max_pos <= filepositions[0]) {
          for(i = 0; i < timeslen; i++)
              av_add_index_entry(vstream, filepositions[i], times[i]*1000, 0, 0, AVINDEX_KEYFRAME);
     } else
