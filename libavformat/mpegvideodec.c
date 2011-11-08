@@ -43,7 +43,7 @@ static int mpegvideo_probe(AVProbeData *p)
             switch(code){
             case     SEQ_START_CODE:   seq++; break;
             case PICTURE_START_CODE:   pic++; break;
-            case   SLICE_START_CODE: slice++; break;
+            case   SLICE_START_CODE...0x1af: slice++; break;
             case    PACK_START_CODE: pspack++; break;
             }
             if     ((code & 0x1f0) == VIDEO_ID)   pes++;
