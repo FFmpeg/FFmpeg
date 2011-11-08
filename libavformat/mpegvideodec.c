@@ -51,7 +51,8 @@ static int mpegvideo_probe(AVProbeData *p)
         }
     }
     if(seq && seq*9<=pic*10 && pic*9<=slice*10 && !pspack && !apes)
-        return (pic>1 && !vpes) ? AVPROBE_SCORE_MAX/2+1 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
+        if(vpes) return AVPROBE_SCORE_MAX/8;
+        else     return pic>1 ? AVPROBE_SCORE_MAX/2+1 : AVPROBE_SCORE_MAX/4; // +1 for .mpg
     return 0;
 }
 
