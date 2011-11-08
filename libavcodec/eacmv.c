@@ -176,7 +176,9 @@ static int cmv_decode_frame(AVCodecContext *avctx,
     FFSWAP(AVFrame, s->frame, s->last_frame);
 
     s->frame.reference = 3;
-    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
+    s->frame.buffer_hints = FF_BUFFER_HINTS_VALID |
+                            FF_BUFFER_HINTS_READABLE |
+                            FF_BUFFER_HINTS_PRESERVE;
     if (avctx->get_buffer(avctx, &s->frame)<0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
