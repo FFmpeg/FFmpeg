@@ -317,9 +317,12 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, mkv_seekhead *seekhead)
 
     currentpos = avio_tell(pb);
 
-    if (seekhead->reserved_size > 0)
-        if (avio_seek(pb, seekhead->filepos, SEEK_SET) < 0)
-            return -1;
+    if (seekhead->reserved_size > 0) {
+        if (avio_seek(pb, seekhead->filepos, SEEK_SET) < 0) {
+            currentpos = -1;
+            goto fail;
+        }
+    }
 
     metaseek = start_ebml_master(pb, MATROSKA_ID_SEEKHEAD, seekhead->reserved_size);
     for (i = 0; i < seekhead->num_entries; i++) {
@@ -343,6 +346,7 @@ static int64_t mkv_write_seekhead(AVIOContext *pb, mkv_seekhead *seekhead)
 
         currentpos = seekhead->filepos;
     }
+fail:
     av_free(seekhead->entries);
     av_free(seekhead);
 

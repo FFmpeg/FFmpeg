@@ -266,7 +266,7 @@ av_cold void ff_msmpeg4_encode_init(MpegEncContext *s)
 
         for(i=0; i<NB_RL_TABLES; i++){
             int level;
-            for(level=0; level<=MAX_LEVEL; level++){
+            for (level = 1; level <= MAX_LEVEL; level++) {
                 int run;
                 for(run=0; run<=MAX_RUN; run++){
                     int last;

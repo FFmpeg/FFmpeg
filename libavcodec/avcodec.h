@@ -220,6 +220,7 @@ enum CodecID {
     CODEC_ID_G729_DEPRECATED,
 #endif
     CODEC_ID_UTVIDEO_DEPRECATED,
+    CODEC_ID_BMV_VIDEO,
     CODEC_ID_UTVIDEO = 0x800,
 
     CODEC_ID_G2M        = MKBETAG( 0 ,'G','2','M'),
@@ -363,6 +364,7 @@ enum CodecID {
     CODEC_ID_8SVX_EXP,
     CODEC_ID_8SVX_FIB,
 #endif
+    CODEC_ID_BMV_AUDIO,
     CODEC_ID_G729 = 0x15800,
     CODEC_ID_G723_1= 0x15801,
     CODEC_ID_8SVX_RAW   = MKBETAG('8','S','V','X'),

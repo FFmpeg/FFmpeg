@@ -1055,9 +1055,14 @@ emu_edge mmx
 ;                           int32_t max, unsigned int len)
 ;-----------------------------------------------------------------------------
 
-%macro VECTOR_CLIP_INT32 4
-cglobal vector_clip_int32_%1, 5,5,%2, dst, src, min, max, len
-%ifidn %1, sse2
+; %1 = number of xmm registers used
+; %2 = number of inline load/process/store loops per asm loop
+; %3 = process 4*mmsize (%3=0) or 8*mmsize (%3=1) bytes per loop
+; %4 = CLIPD function takes min/max as float instead of int (CLIPD_SSE2)
+; %5 = suffix
+%macro VECTOR_CLIP_INT32 4-5
+cglobal vector_clip_int32%5, 5,5,%2, dst, src, min, max, len
+%if %4
     cvtsi2ss  m4, minm
     cvtsi2ss  m5, maxm
 %else
@@ -1068,12 +1073,12 @@ cglobal vector_clip_int32_%1, 5,5,%2, dst, src, min, max, len
     SPLATD    m5
 .loop:
 %assign %%i 1
-%rep %3
+%rep %2
     mova      m0,  [srcq+mmsize*0*%%i]
     mova      m1,  [srcq+mmsize*1*%%i]
     mova      m2,  [srcq+mmsize*2*%%i]
     mova      m3,  [srcq+mmsize*3*%%i]
-%if %4
+%if %3
     mova      m7,  [srcq+mmsize*4*%%i]
     mova      m8,  [srcq+mmsize*5*%%i]
     mova      m9,  [srcq+mmsize*6*%%i]
@@ -1083,7 +1088,7 @@ cglobal vector_clip_int32_%1, 5,5,%2, dst, src, min, max, len
     CLIPD  m1,  m4, m5, m6
     CLIPD  m2,  m4, m5, m6
     CLIPD  m3,  m4, m5, m6
-%if %4
+%if %3
     CLIPD  m7,  m4, m5, m6
     CLIPD  m8,  m4, m5, m6
     CLIPD  m9,  m4, m5, m6
@@ -1093,7 +1098,7 @@ cglobal vector_clip_int32_%1, 5,5,%2, dst, src, min, max, len
     mova  [dstq+mmsize*1*%%i], m1
     mova  [dstq+mmsize*2*%%i], m2
     mova  [dstq+mmsize*3*%%i], m3
-%if %4
+%if %3
     mova  [dstq+mmsize*4*%%i], m7
     mova  [dstq+mmsize*5*%%i], m8
     mova  [dstq+mmsize*6*%%i], m9
@@ -1101,25 +1106,26 @@ cglobal vector_clip_int32_%1, 5,5,%2, dst, src, min, max, len
 %endif
 %assign %%i %%i+1
 %endrep
-    add     srcq, mmsize*4*(%3+%4)
-    add     dstq, mmsize*4*(%3+%4)
-    sub     lend, mmsize*(%3+%4)
+    add     srcq, mmsize*4*(%2+%3)
+    add     dstq, mmsize*4*(%2+%3)
+    sub     lend, mmsize*(%2+%3)
     jg .loop
     REP_RET
 %endmacro
 
-INIT_MMX
+INIT_MMX mmx
 %define SPLATD SPLATD_MMX
 %define CLIPD CLIPD_MMX
-VECTOR_CLIP_INT32 mmx, 0, 1, 0
-INIT_XMM
+VECTOR_CLIP_INT32 0, 1, 0, 0
+INIT_XMM sse2
 %define SPLATD SPLATD_SSE2
-VECTOR_CLIP_INT32 sse2_int, 6, 1, 0
+VECTOR_CLIP_INT32 6, 1, 0, 0, _int
 %define CLIPD CLIPD_SSE2
-VECTOR_CLIP_INT32 sse2, 6, 2, 0
+VECTOR_CLIP_INT32 6, 2, 0, 1
+INIT_XMM sse4
 %define CLIPD CLIPD_SSE41
 %ifdef m8
-VECTOR_CLIP_INT32 sse41, 11, 1, 1
+VECTOR_CLIP_INT32 11, 1, 1, 0
 %else
-VECTOR_CLIP_INT32 sse41, 6, 1, 0
+VECTOR_CLIP_INT32 6, 1, 0, 0
 %endif

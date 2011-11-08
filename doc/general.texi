@@ -71,6 +71,7 @@ library:
 @item Brute Force & Ignorance   @tab   @tab X
     @tab Used in the game Flash Traffic: City of Angels.
 @item BWF                       @tab X @tab X
+@item Discworld II BMV          @tab   @tab X
 @item Interplay C93             @tab   @tab X
     @tab Used in the game Cyberia from Interplay.
 @item Delphine Software International CIN @tab   @tab X
@@ -386,6 +387,7 @@ following image formats are supported:
     @tab AVS1-P2, JiZhun profile, encoding through external library libxavs
 @item Delphine Software International CIN video  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
+@item Discworld II BMV Video @tab     @tab  X
 @item Cinepak                @tab     @tab  X
 @item Cirrus Logic AccuPak   @tab     @tab  X
     @tab fourcc: CLJR
@@ -624,6 +626,7 @@ following image formats are supported:
     @tab decoding supported through external library libcelt
 @item Delphine Software International CIN audio  @tab     @tab  X
     @tab Codec used in Delphine Software International games.
+@item Discworld II BMV Audio @tab     @tab  X
 @item COOK                   @tab     @tab  X
     @tab All versions except 5.1 are supported.
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
