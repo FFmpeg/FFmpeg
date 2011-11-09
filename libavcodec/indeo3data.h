@@ -24,6 +24,8 @@
 
 #include <stdint.h>
 
+#include "config.h"
+
 /*
  * Define compressed VQ tables.
  */

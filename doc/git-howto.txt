@@ -205,8 +205,19 @@ I. BASICS:
 
     git format-patch <commit> [-o directory]
 
-  will generate a set of patches out of the current branch starting from
-  commit. By default the patches are created in the current directory.
+  will generate a set of patches for each commit between <commit> and
+  current HEAD. E.g.
+
+    git format-patch origin/master
+
+  will generate patches for all commits on current branch which are not
+  present in upstream.
+  A useful shortcut is also
+
+    git format-patch -n
+
+  which will generate patches from last n commits.
+  By default the patches are created in the current directory.
 
 11. Sending patches for review
 
@@ -215,6 +226,8 @@ I. BASICS:
   will send the patches created by git format-patch or directly generates
   them. All the email fields can be configured in the global/local
   configuration or overridden by command line.
+  Note that this tool must often be installed separately (e.g. git-email
+  package on Debian-based distros).
 
 12. Pushing changes to remote trees
 

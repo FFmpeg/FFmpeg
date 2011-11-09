@@ -1,6 +1,4 @@
 /*
- * jfdctfst.c
- *
  * This file is part of the Independent JPEG Group's software.
  *
  * The authors make NO WARRANTY or representation, either express or implied,
