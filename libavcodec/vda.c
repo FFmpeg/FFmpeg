@@ -114,7 +114,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
     if (NULL == image_buffer)
         return;
 
-    if (kCVPixelFormatType_422YpCbCr8 != CVPixelBufferGetPixelFormatType(image_buffer))
+    if (vda_ctx->cv_pix_fmt_type != CVPixelBufferGetPixelFormatType(image_buffer))
         return;
 
     new_frame = (vda_frame *)av_mallocz(sizeof(vda_frame));
@@ -164,6 +164,9 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFNumberRef format;
     CFDataRef avc_data;
     CFMutableDictionaryRef config_info;
+    CFMutableDictionaryRef buffer_attributes;
+    CFMutableDictionaryRef io_surface_properties;
+    CFNumberRef cv_pix_fmt;
 
     if (av_lockmgr_register(vda_lock_operation))
         return -1;
@@ -185,8 +188,26 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFDictionarySetValue(config_info, kVDADecoderConfiguration_SourceFormat, format);
     CFDictionarySetValue(config_info, kVDADecoderConfiguration_avcCData, avc_data);
 
+    buffer_attributes = (CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                                   2,
+                                                   &kCFTypeDictionaryKeyCallBacks,
+                                                   &kCFTypeDictionaryValueCallBacks));
+    io_surface_properties = (CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                                       0,
+                                                       &kCFTypeDictionaryKeyCallBacks,
+                                                       &kCFTypeDictionaryValueCallBacks));
+    cv_pix_fmt  = CFNumberCreate(kCFAllocatorDefault,
+                                 kCFNumberSInt32Type,
+                                 &vda_ctx->cv_pix_fmt_type);
+    CFDictionarySetValue(buffer_attributes,
+                         kCVPixelBufferPixelFormatTypeKey,
+                         cv_pix_fmt);
+    CFDictionarySetValue(buffer_attributes,
+                         kCVPixelBufferIOSurfacePropertiesKey,
+                         io_surface_properties);
+
     status = VDADecoderCreate( config_info,
-                               NULL,
+                               buffer_attributes,
                                (VDADecoderOutputCallback *)vda_decoder_callback,
                                (void *)vda_ctx,
                                &vda_ctx->decoder );
@@ -196,6 +217,9 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFRelease(format);
     CFRelease(avc_data);
     CFRelease(config_info);
+    CFRelease(io_surface_properties);
+    CFRelease(cv_pix_fmt);
+    CFRelease(buffer_attributes);
 
     if (kVDADecoderNoErr != status)
         return status;

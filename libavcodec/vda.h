@@ -121,6 +121,14 @@ struct vda_context {
     * - decoding: Set/Unset by user.
     */
     int                 format;
+
+    /**
+    * The pixel format for output image buffers.
+    *
+    * - encoding: unused
+    * - decoding: Set/Unset by user.
+    */
+    OSType              cv_pix_fmt_type;
 };
 
 /** Creates the video decoder. */
