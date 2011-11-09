@@ -1139,7 +1139,7 @@ For more information about libfreetype, check:
 Apply fade-in/out effect to input video.
 
 It accepts the parameters:
-@var{type}:@var{start_frame}:@var{nb_frames}
+@var{type}:@var{start_frame}:@var{nb_frames}[:@var{options}]
 
 @var{type} specifies if the effect type, can be either "in" for
 fade-in, or "out" for a fade-out effect.
@@ -1151,6 +1151,22 @@ to apply the fade effect.
 effect has to last. At the end of the fade-in effect the output video
 will have the same intensity as the input video, at the end of the
 fade-out transition the output video will be completely black.
+
+@var{options} is an optional sequence of @var{key}=@var{value} pairs,
+separated by ":". The description of the accepted options follows.
+
+@table @option
+
+@item type, t
+See @var{type}.
+
+@item start_frame, s
+See @var{start_frame}.
+
+@item nb_frames, n
+See @var{nb_frames}.
+
+@end table
 
 A few usage examples follow, usable too as test scenarios.
 @example

@@ -25,48 +25,113 @@
  * based heavily on vf_negate.c by Bobby Bingham
  */
 
+#include "libavutil/avstring.h"
+#include "libavutil/eval.h"
+#include "libavutil/opt.h"
 #include "libavutil/pixdesc.h"
 #include "avfilter.h"
+#include "drawutils.h"
 #include "internal.h"
 
 typedef struct {
+    const AVClass *class;
     int factor, fade_per_frame;
-    unsigned int frame_index, start_frame, stop_frame;
+    unsigned int frame_index, start_frame, stop_frame, nb_frames;
     int hsub, vsub, bpp;
     unsigned int black_level, black_level_scaled;
+
+    char *type;
 } FadeContext;
+
+#define OFFSET(x) offsetof(FadeContext, x)
+
+static const AVOption fade_options[] = {
+    { "type",        "set the fade direction",                     OFFSET(type),        AV_OPT_TYPE_STRING, {.str = "in" }, CHAR_MIN, CHAR_MAX },
+    { "t",           "set the fade direction",                     OFFSET(type),        AV_OPT_TYPE_STRING, {.str = "in" }, CHAR_MIN, CHAR_MAX },
+    { "start_frame", "set expression of frame to start fading",    OFFSET(start_frame), AV_OPT_TYPE_INT, {.dbl = 0    }, 0, INT_MAX },
+    { "s",           "set expression of frame to start fading",    OFFSET(start_frame), AV_OPT_TYPE_INT, {.dbl = 0    }, 0, INT_MAX },
+    { "nb_frames",   "set expression for fade duration in frames", OFFSET(nb_frames),   AV_OPT_TYPE_INT, {.dbl = 25   }, 0, INT_MAX },
+    { "n",           "set expression for fade duration in frames", OFFSET(nb_frames),   AV_OPT_TYPE_INT, {.dbl = 25   }, 0, INT_MAX },
+    {NULL},
+};
+
+static const char *fade_get_name(void *ctx)
+{
+    return "fade";
+}
+
+static const AVClass fade_class = {
+    "FadeContext",
+    fade_get_name,
+    fade_options
+};
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     FadeContext *fade = ctx->priv;
-    unsigned int nb_frames;
-    char in_out[4];
+    int ret = 0;
+    char *args1, *expr, *bufptr = NULL;
 
-    if (!args ||
-        sscanf(args, " %3[^:]:%u:%u", in_out, &fade->start_frame, &nb_frames) != 3) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Expected 3 arguments '(in|out):#:#':'%s'\n", args);
-        return AVERROR(EINVAL);
+    fade->class = &fade_class;
+    av_opt_set_defaults(fade);
+
+    if (!(args1 = av_strdup(args))) {
+        ret = AVERROR(ENOMEM);
+        goto end;
     }
 
-    nb_frames = nb_frames ? nb_frames : 1;
-    fade->fade_per_frame = (1 << 16) / nb_frames;
-    if (!strcmp(in_out, "in"))
+    if (expr = av_strtok(args1, ":", &bufptr)) {
+        if (!(fade->type = av_strdup(expr))) {
+            ret = AVERROR(ENOMEM);
+            goto end;
+        }
+    }
+    if (expr = av_strtok(NULL, ":", &bufptr)) {
+        if ((ret = av_opt_set(fade, "start_frame", expr, 0)) < 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Invalid value '%s' for start_frame option\n", expr);
+            return ret;
+        }
+    }
+    if (expr = av_strtok(NULL, ":", &bufptr)) {
+        if ((ret = av_opt_set(fade, "nb_frames", expr, 0)) < 0) {
+            av_log(ctx, AV_LOG_ERROR,
+                   "Invalid value '%s' for nb_frames option\n", expr);
+            return ret;
+        }
+    }
+
+    if (bufptr && (ret = av_set_options_string(fade, bufptr, "=", ":")) < 0)
+        goto end;
+
+    fade->fade_per_frame = (1 << 16) / fade->nb_frames;
+    if (!strcmp(fade->type, "in"))
         fade->factor = 0;
-    else if (!strcmp(in_out, "out")) {
+    else if (!strcmp(fade->type, "out")) {
         fade->fade_per_frame = -fade->fade_per_frame;
         fade->factor = (1 << 16);
     } else {
         av_log(ctx, AV_LOG_ERROR,
-               "first argument must be 'in' or 'out':'%s'\n", in_out);
-        return AVERROR(EINVAL);
+               "Type argument must be 'in' or 'out' but '%s' was specified\n", fade->type);
+        ret = AVERROR(EINVAL);
+        goto end;
     }
-    fade->stop_frame = fade->start_frame + nb_frames;
+    fade->stop_frame = fade->start_frame + fade->nb_frames;
 
     av_log(ctx, AV_LOG_INFO,
            "type:%s start_frame:%d nb_frames:%d\n",
-           in_out, fade->start_frame, nb_frames);
-    return 0;
+           fade->type, fade->start_frame, fade->nb_frames);
+
+end:
+    av_free(args1);
+    return ret;
+}
+
+static av_cold void uninit(AVFilterContext *ctx)
+{
+    FadeContext *fade = ctx->priv;
+
+    av_freep(&fade->type);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -163,6 +228,7 @@ AVFilter avfilter_vf_fade = {
     .name          = "fade",
     .description   = NULL_IF_CONFIG_SMALL("Fade in/out input video"),
     .init          = init,
+    .uninit        = uninit,
     .priv_size     = sizeof(FadeContext),
     .query_formats = query_formats,
 
