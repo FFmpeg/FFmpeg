@@ -112,12 +112,12 @@ static int fraps2_decode_plane(FrapsContext *s, uint8_t *dst, int stride, int w,
              */
             if(j) dst[i] += dst[i - stride];
             else if(Uoff) dst[i] += 0x80;
+            if(get_bits_left(&gb) < 0){
+                free_vlc(&vlc);
+                return -1;
+            }
         }
         dst += stride;
-        if(get_bits_left(&gb) < 0){
-            free_vlc(&vlc);
-            return -1;
-        }
     }
     free_vlc(&vlc);
     return 0;
