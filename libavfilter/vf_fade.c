@@ -33,12 +33,24 @@
 #include "drawutils.h"
 #include "internal.h"
 
+#define R 0
+#define G 1
+#define B 2
+#define A 3
+
+#define Y 0
+#define U 1
+#define V 2
+
 typedef struct {
     const AVClass *class;
     int factor, fade_per_frame;
     unsigned int frame_index, start_frame, stop_frame, nb_frames;
     int hsub, vsub, bpp;
     unsigned int black_level, black_level_scaled;
+    uint8_t is_packed_rgb;
+    uint8_t rgba_map[4];
+    int alpha;
 
     char *type;
 } FadeContext;
@@ -52,6 +64,7 @@ static const AVOption fade_options[] = {
     { "s",           "set expression of frame to start fading",    OFFSET(start_frame), AV_OPT_TYPE_INT, {.dbl = 0    }, 0, INT_MAX },
     { "nb_frames",   "set expression for fade duration in frames", OFFSET(nb_frames),   AV_OPT_TYPE_INT, {.dbl = 25   }, 0, INT_MAX },
     { "n",           "set expression for fade duration in frames", OFFSET(nb_frames),   AV_OPT_TYPE_INT, {.dbl = 25   }, 0, INT_MAX },
+    { "alpha",       "fade alpha if it is available on the input", OFFSET(alpha),       AV_OPT_TYPE_INT, {.dbl = 0    }, 0,       1 },
     {NULL},
 };
 
@@ -119,8 +132,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     fade->stop_frame = fade->start_frame + fade->nb_frames;
 
     av_log(ctx, AV_LOG_INFO,
-           "type:%s start_frame:%d nb_frames:%d\n",
-           fade->type, fade->start_frame, fade->nb_frames);
+           "type:%s start_frame:%d nb_frames:%d alpha:%d\n",
+           fade->type, fade->start_frame, fade->nb_frames, fade->alpha);
 
 end:
     av_free(args1);
@@ -141,7 +154,10 @@ static int query_formats(AVFilterContext *ctx)
         PIX_FMT_YUV411P,  PIX_FMT_YUV410P,
         PIX_FMT_YUVJ444P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ420P,
         PIX_FMT_YUV440P,  PIX_FMT_YUVJ440P,
+        PIX_FMT_YUVA420P,
         PIX_FMT_RGB24,    PIX_FMT_BGR24,
+        PIX_FMT_ARGB,     PIX_FMT_ABGR,
+        PIX_FMT_RGBA,     PIX_FMT_BGRA,
         PIX_FMT_NONE
     };
 
@@ -156,6 +172,13 @@ const static enum PixelFormat studio_level_pix_fmts[] = {
     PIX_FMT_NONE
 };
 
+static enum PixelFormat alpha_pix_fmts[] = {
+    PIX_FMT_YUVA420P,
+    PIX_FMT_ARGB, PIX_FMT_ABGR,
+    PIX_FMT_RGBA, PIX_FMT_BGRA,
+    PIX_FMT_NONE
+};
+
 static int config_props(AVFilterLink *inlink)
 {
     FadeContext *fade = inlink->dst->priv;
@@ -165,12 +188,35 @@ static int config_props(AVFilterLink *inlink)
     fade->vsub = pixdesc->log2_chroma_h;
 
     fade->bpp = av_get_bits_per_pixel(pixdesc) >> 3;
+    fade->alpha = fade->alpha ? ff_fmt_is_in(inlink->format, alpha_pix_fmts) : 0;
+    fade->is_packed_rgb = ff_fill_rgba_map(fade->rgba_map, inlink->format) >= 0;
 
-    fade->black_level = ff_fmt_is_in(inlink->format, studio_level_pix_fmts) ? 16 : 0;
+    /* CCIR601/709 black level unless input is RGB or has alpha */
+    fade->black_level =
+            ff_fmt_is_in(inlink->format, studio_level_pix_fmts) || fade->alpha ? 0 : 16;
     /* 32768 = 1 << 15, it is an integer representation
      * of 0.5 and is for rounding. */
     fade->black_level_scaled = (fade->black_level << 16) + 32768;
     return 0;
+}
+
+static void fade_plane(int y, int h, int w,
+                       int fade_factor, int black_level, int black_level_scaled,
+                       uint8_t offset, uint8_t step, int bytes_per_plane,
+                       uint8_t *data, int line_size)
+{
+    uint8_t *p;
+    int i, j;
+
+    /* luma, alpha or rgb plane */
+    for (i = 0; i < h; i++) {
+        p = data + offset + (y+i) * line_size;
+        for (j = 0; j < w * bytes_per_plane; j++) {
+            /* fade->factor is using 16 lower-order bits for decimal places. */
+            *p = ((*p - black_level) * fade_factor + black_level_scaled) >> 16;
+            p+=step;
+        }
+    }
 }
 
 static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
@@ -181,16 +227,21 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
     int i, j, plane;
 
     if (fade->factor < UINT16_MAX) {
+        if (fade->alpha) {
+            // alpha only
+            plane = fade->is_packed_rgb ? 0 : A; // alpha is on plane 0 for packed formats
+                                                 // or plane 3 for planar formats
+            fade_plane(y, h, inlink->w,
+                       fade->factor, fade->black_level, fade->black_level_scaled,
+                       fade->is_packed_rgb ? fade->rgba_map[A] : 0, // alpha offset for packed formats
+                       fade->is_packed_rgb ? 4 : 1,                 // pixstep for 8 bit packed formats
+                       1, outpic->data[plane], outpic->linesize[plane]);
+        } else {
         /* luma or rgb plane */
-        for (i = 0; i < h; i++) {
-            p = outpic->data[0] + (y+i) * outpic->linesize[0];
-            for (j = 0; j < inlink->w * fade->bpp; j++) {
-                /* fade->factor is using 16 lower-order bits for decimal places. */
-                *p = ((*p - fade->black_level) * fade->factor + fade->black_level_scaled) >> 16;
-                p++;
-            }
-        }
-
+        fade_plane(y, h, inlink->w,
+                   fade->factor, fade->black_level, fade->black_level_scaled,
+                   0, 1, // offset & pixstep for Y plane or RGB packed format
+                   fade->bpp, outpic->data[0], outpic->linesize[0]);
         if (outpic->data[1] && outpic->data[2]) {
             /* chroma planes */
             for (plane = 1; plane < 3; plane++) {
@@ -205,6 +256,7 @@ static void draw_slice(AVFilterLink *inlink, int y, int h, int slice_dir)
                     }
                 }
             }
+        }
         }
     }
 

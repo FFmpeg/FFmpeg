@@ -1166,6 +1166,9 @@ See @var{start_frame}.
 @item nb_frames, n
 See @var{nb_frames}.
 
+@item alpha
+If set to 1, fade only alpha channel, if one exists on the input.
+Default value is 0.
 @end table
 
 A few usage examples follow, usable too as test scenarios.
@@ -1181,6 +1184,9 @@ fade=in:0:25, fade=out:975:25
 
 # make first 5 frames black, then fade in from frame 5-24
 fade=in:5:20
+
+# fade in alpha over first 25 frames of video
+fade=in:0:25:alpha=1
 @end example
 
 @section fieldorder
