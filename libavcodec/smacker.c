@@ -580,7 +580,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
     HuffContext h[4];
     VLC vlc[4];
     int16_t *samples = data;
-    int8_t *samples8 = data;
+    uint8_t *samples8 = data;
     int val;
     int i, res;
     int unp_size;
