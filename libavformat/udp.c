@@ -546,19 +546,16 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             avail = av_fifo_size(s->fifo);
             if (avail) { // >=size) {
                 uint8_t tmp[4];
-                int skip = 0;
 
                 av_fifo_generic_read(s->fifo, tmp, 4, NULL);
                 avail= AV_RL32(tmp);
                 if(avail > size){
                     av_log(h, AV_LOG_WARNING, "Part of datagram lost due to insufficient buffer size\n");
-                    skip = avail - size;
                     avail= size;
                 }
 
                 av_fifo_generic_read(s->fifo, buf, avail, NULL);
-                if (skip)
-                    av_fifo_drain(s->fifo, skip);
+                av_fifo_drain(s->fifo, AV_RL32(tmp) - avail);
                 return avail;
             }
             else {
