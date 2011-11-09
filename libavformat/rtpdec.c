@@ -424,7 +424,7 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
     if (timestamp == RTP_NOTS_VALUE)
         return;
 
-    if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
+    if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE && s->ic->nb_streams > 1) {
         int64_t addend;
         int delta_timestamp;
 
