@@ -446,6 +446,11 @@ set the UDP buffer size in bytes
 @item localport=@var{port}
 override the local UDP port to bind with
 
+@item localaddr=@var{addr}
+Choose the local IP address. This is useful e.g. if sending multicast
+and the host has multiple interfaces, where the user can choose
+which interface to send on by specifying the IP address of that interface.
+
 @item pkt_size=@var{size}
 set the size in bytes of UDP packets
 

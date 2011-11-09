@@ -29,6 +29,7 @@
 #include "avformat.h"
 #include "avio_internal.h"
 #include "libavutil/parseutils.h"
+#include "libavutil/avstring.h"
 #include <unistd.h>
 #include "internal.h"
 #include "network.h"
@@ -178,8 +179,8 @@ static int udp_set_url(struct sockaddr_storage *addr,
     return addr_len;
 }
 
-static int udp_socket_create(UDPContext *s,
-                             struct sockaddr_storage *addr, int *addr_len)
+static int udp_socket_create(UDPContext *s, struct sockaddr_storage *addr,
+                             int *addr_len, const char *localaddr)
 {
     int udp_fd = -1;
     struct addrinfo *res0 = NULL, *res = NULL;
@@ -187,7 +188,8 @@ static int udp_socket_create(UDPContext *s,
 
     if (((struct sockaddr *) &s->dest_addr)->sa_family)
         family = ((struct sockaddr *) &s->dest_addr)->sa_family;
-    res0 = udp_resolve_host(0, s->local_port, SOCK_DGRAM, family, AI_PASSIVE);
+    res0 = udp_resolve_host(localaddr[0] ? localaddr : NULL, s->local_port,
+                            SOCK_DGRAM, family, AI_PASSIVE);
     if (res0 == 0)
         goto fail;
     for (res = res0; res; res=res->ai_next) {
@@ -302,7 +304,7 @@ static int udp_get_file_handle(URLContext *h)
 /* return non zero if error */
 static int udp_open(URLContext *h, const char *uri, int flags)
 {
-    char hostname[1024];
+    char hostname[1024], localaddr[1024] = "";
     int port, udp_fd = -1, tmp, bind_ret = -1;
     UDPContext *s = NULL;
     int is_output;
@@ -350,6 +352,9 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         if (av_find_info_tag(buf, sizeof(buf), "connect", p)) {
             s->is_connected = strtol(buf, NULL, 10);
         }
+        if (av_find_info_tag(buf, sizeof(buf), "localaddr", p)) {
+            av_strlcpy(localaddr, buf, sizeof(localaddr));
+        }
     }
 
     /* fill the dest addr */
@@ -367,7 +372,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     if ((s->is_multicast || !s->local_port) && (h->flags & AVIO_FLAG_READ))
         s->local_port = port;
-    udp_fd = udp_socket_create(s, &my_addr, &len);
+    udp_fd = udp_socket_create(s, &my_addr, &len, localaddr);
     if (udp_fd < 0)
         goto fail;
 
