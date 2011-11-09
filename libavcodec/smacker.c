@@ -33,6 +33,7 @@
 
 #include "avcodec.h"
 #include "libavutil/audioconvert.h"
+#include "mathops.h"
 
 #define ALT_BITSTREAM_READER_LE
 #include "get_bits.h"
@@ -655,7 +656,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
                 else
                     res = 0;
                 val |= h[3].values[res] << 8;
-                pred[1] += (int16_t)val;
+                pred[1] += sign_extend(val, 16);
                 *samples++ = pred[1];
             } else {
                 if(vlc[0].table)
@@ -668,7 +669,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
                 else
                     res = 0;
                 val |= h[1].values[res] << 8;
-                pred[0] += val;
+                pred[0] += sign_extend(val, 16);
                 *samples++ = pred[0];
             }
         }
@@ -683,14 +684,14 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
                     res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                pred[1] += (int8_t)h[1].values[res];
+                pred[1] += sign_extend(h[1].values[res], 8);
                 *samples8++ = pred[1];
             } else {
                 if(vlc[0].table)
                     res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
-                pred[0] += (int8_t)h[0].values[res];
+                pred[0] += sign_extend(h[0].values[res], 8);
                 *samples8++ = pred[0];
             }
         }
