@@ -657,7 +657,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
                     res = 0;
                 val |= h[3].values[res] << 8;
                 pred[1] += sign_extend(val, 16);
-                *samples++ = pred[1];
+                *samples++ = av_clip_int16(pred[1]);
             } else {
                 if(vlc[0].table)
                     res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
@@ -670,7 +670,7 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
                     res = 0;
                 val |= h[1].values[res] << 8;
                 pred[0] += sign_extend(val, 16);
-                *samples++ = pred[0];
+                *samples++ = av_clip_int16(pred[0]);
             }
         }
     } else { //8-bit data
@@ -685,14 +685,14 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
                 else
                     res = 0;
                 pred[1] += sign_extend(h[1].values[res], 8);
-                *samples8++ = pred[1];
+                *samples8++ = av_clip_uint8(pred[1]);
             } else {
                 if(vlc[0].table)
                     res = get_vlc2(&gb, vlc[0].table, SMKTREE_BITS, 3);
                 else
                     res = 0;
                 pred[0] += sign_extend(h[0].values[res], 8);
-                *samples8++ = pred[0];
+                *samples8++ = av_clip_uint8(pred[0]);
             }
         }
     }
