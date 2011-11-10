@@ -342,7 +342,7 @@ static int flv_read_metabody(AVFormatContext *s, int64_t next_pos) {
         stream = s->streams[i];
         if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) vstream = stream;
         else if(stream->codec->codec_type == AVMEDIA_TYPE_AUDIO) astream = stream;
-        else if(stream->codec->codec_type == AVMEDIA_TYPE_VIDEO) dstream = stream;
+        else if(stream->codec->codec_type == AVMEDIA_TYPE_DATA) dstream = stream;
     }
 
     //parse the second object (we want a mixed array)
