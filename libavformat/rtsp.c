@@ -1486,7 +1486,7 @@ redirect:
                  "Expires: Sun, 9 Jan 1972 00:00:00 GMT\r\n",
                  sessioncookie);
         av_opt_set(rt->rtsp_hd_out->priv_data, "headers", headers, 0);
-        av_opt_set(rt->rtsp_hd_out->priv_data, "chunksize", "-1", 0);
+        av_opt_set(rt->rtsp_hd_out->priv_data, "chunked_post", "0", 0);
 
         /* Initialize the authentication state for the POST session. The HTTP
          * protocol implementation doesn't properly handle multi-pass

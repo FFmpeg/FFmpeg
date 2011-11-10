@@ -49,13 +49,14 @@ typedef struct {
     HTTPAuthState auth_state;
     char *headers;
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
+    int chunked_post;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
 #define D AV_OPT_FLAG_DECODING_PARAM
 #define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-{"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), AV_OPT_TYPE_INT64, {.dbl = 0}, -1, 0, E }, /* Default to 0, for chunked POSTs */
+{"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, E },
 {"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {NULL}
 };
@@ -338,7 +339,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "\r\n",
              post ? "POST" : "GET",
              path,
-             post && s->chunksize >= 0 ? "Transfer-Encoding: chunked\r\n" : "",
+             post && s->chunked_post ? "Transfer-Encoding: chunked\r\n" : "",
              headers,
              authstr ? authstr : "");
 
@@ -435,7 +436,7 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
     char crlf[] = "\r\n";
     HTTPContext *s = h->priv_data;
 
-    if (s->chunksize == -1) {
+    if (!s->chunked_post) {
         /* non-chunked data is sent without any special encoding */
         return ffurl_write(s->hd, buf, size);
     }
@@ -461,7 +462,7 @@ static int http_close(URLContext *h)
     HTTPContext *s = h->priv_data;
 
     /* signal end of chunked encoding if used */
-    if ((h->flags & AVIO_FLAG_WRITE) && s->chunksize != -1) {
+    if ((h->flags & AVIO_FLAG_WRITE) && s->chunked_post) {
         ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
     }
