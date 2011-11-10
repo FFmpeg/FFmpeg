@@ -1367,10 +1367,12 @@ typedef struct AVCodecContext {
     int frame_number;   ///< audio or video frame number
 
     /**
-     * Number of frames the decoded output will be delayed relative to
-     * the encoded input.
+     * Encoding: Number of frames delay there will be from the encoder input to
+     *           the decoder output. (we assume the decoder matches the spec)
+     * Decoding: Number of frames delay in addition to what a standard decoder
+     *           as specified in the spec would produce.
      * - encoding: Set by libavcodec.
-     * - decoding: unused
+     * - decoding: Set by libavcodec.
      */
     int delay;
 
