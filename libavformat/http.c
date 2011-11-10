@@ -52,9 +52,11 @@ typedef struct {
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-{"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), AV_OPT_TYPE_INT64, {.dbl = 0}, -1, 0 }, /* Default to 0, for chunked POSTs */
-{"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING },
+{"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), AV_OPT_TYPE_INT64, {.dbl = 0}, -1, 0, E }, /* Default to 0, for chunked POSTs */
+{"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {NULL}
 };
 #define HTTP_CLASS(flavor)\
