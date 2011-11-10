@@ -1630,6 +1630,7 @@ static int output_packet(InputStream *ist, int ist_index,
     void *buffer_to_free = NULL;
     static unsigned int samples_size= 0;
     AVSubtitle subtitle, *subtitle_to_free;
+    int64_t pkt_dts = AV_NOPTS_VALUE;
     int64_t pkt_pts = AV_NOPTS_VALUE;
 #if CONFIG_AVFILTER
     int frame_available;
@@ -1652,8 +1653,11 @@ static int output_packet(InputStream *ist, int ist_index,
         avpkt = *pkt;
     }
 
-    if(pkt->dts != AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
+    if(pkt->dts != AV_NOPTS_VALUE){
+        if(ist->st->codec->codec_type != AVMEDIA_TYPE_VIDEO || !ist->decoding_needed)
+            ist->next_pts = ist->pts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
+        pkt_dts = av_rescale_q(pkt->dts, ist->st->time_base, AV_TIME_BASE_Q);
+    }
     if(pkt->pts != AV_NOPTS_VALUE)
         pkt_pts = av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
 
@@ -1710,8 +1714,15 @@ static int output_packet(InputStream *ist, int ist_index,
                     if (!(decoded_frame = avcodec_alloc_frame()))
                         return AVERROR(ENOMEM);
                     avpkt.pts = pkt_pts;
-                    avpkt.dts = ist->pts;
+                    avpkt.dts = pkt_dts;
                     pkt_pts = AV_NOPTS_VALUE;
+                    if(pkt_dts != AV_NOPTS_VALUE && ist->st->codec->time_base.num != 0) {
+                        int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
+                        pkt_dts += ((int64_t)AV_TIME_BASE *
+                                          ist->st->codec->time_base.num * ticks) /
+                            ist->st->codec->time_base.den;
+                    }else
+                        pkt_dts = AV_NOPTS_VALUE;
 
                     ret = avcodec_decode_video2(ist->st->codec,
                                                 decoded_frame, &got_output, &avpkt);
@@ -1723,7 +1734,10 @@ static int output_packet(InputStream *ist, int ist_index,
                         av_freep(&decoded_frame);
                         goto discard_packet;
                     }
-                    ist->next_pts = ist->pts = decoded_frame->best_effort_timestamp;
+
+                    if(decoded_frame->best_effort_timestamp != AV_NOPTS_VALUE)
+                        ist->next_pts = ist->pts = decoded_frame->best_effort_timestamp;
+
                     if (ist->st->codec->time_base.num != 0) {
                         int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
                         ist->next_pts += ((int64_t)AV_TIME_BASE *
