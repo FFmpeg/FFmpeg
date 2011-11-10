@@ -110,6 +110,14 @@ static int http_open_cnx(URLContext *h)
                  path1, sizeof(path1), s->location);
     ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
 
+    if (!strcmp(proto, "https")) {
+        lower_proto = "tls";
+        if (port < 0)
+            port = 443;
+    }
+    if (port < 0)
+        port = 80;
+
     if (path1[0] == '\0')
         path = "/";
     else
@@ -124,13 +132,6 @@ static int http_open_cnx(URLContext *h)
         av_url_split(NULL, 0, proxyauth, sizeof(proxyauth),
                      hostname, sizeof(hostname), &port, NULL, 0, proxy_path);
     }
-    if (!strcmp(proto, "https")) {
-        lower_proto = "tls";
-        if (port < 0)
-            port = 443;
-    }
-    if (port < 0)
-        port = 80;
 
     ff_url_join(buf, sizeof(buf), lower_proto, NULL, hostname, port, NULL);
     err = ffurl_open(&hd, buf, AVIO_FLAG_READ_WRITE,
