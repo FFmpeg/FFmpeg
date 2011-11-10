@@ -112,6 +112,7 @@ static int http_open_cnx(URLContext *h)
 
     if (!strcmp(proto, "https")) {
         lower_proto = "tls";
+        use_proxy = 0;
         if (port < 0)
             port = 443;
     }
