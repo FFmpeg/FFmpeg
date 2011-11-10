@@ -516,5 +516,7 @@ AVCodec ff_ra_144_encoder = {
     .init           = ra144_encode_init,
     .encode         = ra144_encode_frame,
     .close          = ra144_encode_close,
+    .sample_fmts    = (const enum AVSampleFormat[]){ AV_SAMPLE_FMT_S16,
+                                                     AV_SAMPLE_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K) encoder"),
 };

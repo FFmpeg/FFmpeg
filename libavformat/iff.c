@@ -239,7 +239,7 @@ static int iff_read_header(AVFormatContext *s,
 
         switch (iff->svx8_compression) {
         case COMP_NONE:
-            st->codec->codec_id = CODEC_ID_8SVX_RAW;
+            st->codec->codec_id = CODEC_ID_PCM_S8_PLANAR;
             break;
         case COMP_FIB:
             st->codec->codec_id = CODEC_ID_8SVX_FIB;

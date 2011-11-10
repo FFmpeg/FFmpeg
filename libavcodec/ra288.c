@@ -129,8 +129,8 @@ static void do_hybrid_window(RA288Context *ractx,
     float buffer1[MAX_BACKWARD_FILTER_ORDER + 1];
     float buffer2[MAX_BACKWARD_FILTER_ORDER + 1];
     LOCAL_ALIGNED_16(float, work, [FFALIGN(MAX_BACKWARD_FILTER_ORDER +
-                                          MAX_BACKWARD_FILTER_LEN   +
-                                          MAX_BACKWARD_FILTER_NONREC, 8)]);
+                                           MAX_BACKWARD_FILTER_LEN   +
+                                           MAX_BACKWARD_FILTER_NONREC, 8)]);
 
     ractx->dsp.vector_fmul(work, window, hist, FFALIGN(order + n + non_rec, 8));
 

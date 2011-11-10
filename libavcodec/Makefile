@@ -485,6 +485,7 @@ OBJS-$(CONFIG_PCM_MULAW_DECODER)          += pcm.o
 OBJS-$(CONFIG_PCM_MULAW_ENCODER)          += pcm.o
 OBJS-$(CONFIG_PCM_S8_DECODER)             += pcm.o
 OBJS-$(CONFIG_PCM_S8_ENCODER)             += pcm.o
+OBJS-$(CONFIG_PCM_S8_PLANAR_DECODER)      += 8svx.o
 OBJS-$(CONFIG_PCM_S16BE_DECODER)          += pcm.o
 OBJS-$(CONFIG_PCM_S16BE_ENCODER)          += pcm.o
 OBJS-$(CONFIG_PCM_S16LE_DECODER)          += pcm.o

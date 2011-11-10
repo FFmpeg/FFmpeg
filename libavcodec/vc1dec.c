@@ -930,8 +930,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     if (!v->field_mode || (v->field_mode && !v->numref)) {
         valid_count = get_chroma_mv(mvx, mvy, intra, 0, &tx, &ty);
         if (!valid_count) {
-            s->current_picture.f.motion_val[1][s->block_index[0]][0] = 0;
-            s->current_picture.f.motion_val[1][s->block_index[0]][1] = 0;
+            s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0] = 0;
+            s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1] = 0;
             v->luma_mv[s->mb_x][0] = v->luma_mv[s->mb_x][1] = 0;
             return; //no need to do MC for intra blocks
         }
@@ -943,8 +943,8 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
         if (dominant)
             chroma_ref_type = !v->cur_field_type;
     }
-    s->current_picture.f.motion_val[1][s->block_index[0]][0] = tx;
-    s->current_picture.f.motion_val[1][s->block_index[0]][1] = ty;
+    s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][0] = tx;
+    s->current_picture.f.motion_val[1][s->block_index[0] + v->blocks_off][1] = ty;
     uvmx = (tx + ((tx & 3) == 3)) >> 1;
     uvmy = (ty + ((ty & 3) == 3)) >> 1;
 
@@ -1422,29 +1422,36 @@ static av_always_inline int scaleforsame(VC1Context *v, int i, int n /* MV */,
                                          int dim, int dir)
 {
     int brfd, scalesame;
+    int hpel = 1 - v->s.quarter_sample;
 
+    n >>= hpel;
     if (v->s.pict_type != AV_PICTURE_TYPE_B || v->second_field || !dir) {
         if (dim)
-            return scaleforsame_y(v, i, n, dir);
+            n = scaleforsame_y(v, i, n, dir) << hpel;
         else
-            return scaleforsame_x(v, n, dir);
+            n = scaleforsame_x(v, n, dir) << hpel;
+        return n;
     }
     brfd      = FFMIN(v->brfd, 3);
     scalesame = vc1_b_field_mvpred_scales[0][brfd];
 
-    return n * scalesame >> 8;
+    n = (n * scalesame >> 8) << hpel;
+    return n;
 }
 
 static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
                                         int dim, int dir)
 {
     int refdist, scaleopp;
+    int hpel = 1 - v->s.quarter_sample;
 
+    n >>= hpel;
     if (v->s.pict_type == AV_PICTURE_TYPE_B && !v->second_field && dir == 1) {
         if (dim)
-            return scaleforopp_y(v, n, dir);
+            n = scaleforopp_y(v, n, dir) << hpel;
         else
-            return scaleforopp_x(v, n);
+            n = scaleforopp_x(v, n) << hpel;
+        return n;
     }
     if (v->s.pict_type != AV_PICTURE_TYPE_B)
         refdist = FFMIN(v->refdist, 3);
@@ -1452,7 +1459,8 @@ static av_always_inline int scaleforopp(VC1Context *v, int n /* MV */,
         refdist = dir ? v->brfd : v->frfd;
     scaleopp = vc1_field_mvpred_scales[dir ^ v->second_field][0][refdist];
 
-    return n * scaleopp >> 8;
+    n = (n * scaleopp >> 8) << hpel;
+    return n;
 }
 
 /** Predict and set motion vector
@@ -1467,12 +1475,10 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     int px, py;
     int sum;
     int mixedmv_pic, num_samefield = 0, num_oppfield = 0;
-    int opposit, f;
-    int16_t samefield_pred[2],  oppfield_pred[2];
-    int16_t samefield_predA[2], oppfield_predA[2];
-    int16_t samefield_predB[2], oppfield_predB[2];
-    int16_t samefield_predC[2], oppfield_predC[2];
-    int16_t *predA, *predC;
+    int opposit, a_f, b_f, c_f;
+    int16_t field_predA[2];
+    int16_t field_predB[2];
+    int16_t field_predC[2];
     int a_valid, b_valid, c_valid;
     int hybridmv_thresh, y_bias = 0;
 
@@ -1546,96 +1552,34 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     }
 
     if (a_valid) {
-        f = v->mv_f[dir][xy - wrap + v->blocks_off];
-        num_oppfield  += f;
-        num_samefield += 1 - f;
-        if (f) {
-            oppfield_predA[0]  = A[0];
-            oppfield_predA[1]  = A[1];
-            samefield_predA[0] = scaleforsame(v, 0, A[0], 0, dir);
-            samefield_predA[1] = scaleforsame(v, n, A[1], 1, dir);
-        } else {
-            samefield_predA[0] = A[0];
-            samefield_predA[1] = A[1];
-            if (v->numref)
-                oppfield_predA[0] = scaleforopp(v, A[0], 0, dir);
-            if (v->numref)
-                oppfield_predA[1] = scaleforopp(v, A[1], 1, dir);
-        }
+        a_f = v->mv_f[dir][xy - wrap + v->blocks_off];
+        num_oppfield  += a_f;
+        num_samefield += 1 - a_f;
+        field_predA[0] = A[0];
+        field_predA[1] = A[1];
     } else {
-        samefield_predA[0] = samefield_predA[1] = 0;
-        oppfield_predA[0]  = oppfield_predA[1]  = 0;
-    }
-    if (c_valid) {
-        f = v->mv_f[dir][xy - 1 + v->blocks_off];
-        num_oppfield  += f;
-        num_samefield += 1 - f;
-        if (f) {
-            oppfield_predC[0]  = C[0];
-            oppfield_predC[1]  = C[1];
-            samefield_predC[0] = scaleforsame(v, 0, C[0], 0, dir);
-            samefield_predC[1] = scaleforsame(v, n, C[1], 1, dir);
-        } else {
-            samefield_predC[0] = C[0];
-            samefield_predC[1] = C[1];
-            if (v->numref)
-                oppfield_predC[0] = scaleforopp(v, C[0], 0, dir);
-            if (v->numref)
-                oppfield_predC[1] = scaleforopp(v, C[1], 1, dir);
-        }
-    } else {
-        samefield_predC[0] = samefield_predC[1] = 0;
-        oppfield_predC[0]  = oppfield_predC[1]  = 0;
+        field_predA[0] = field_predA[1] = 0;
+        a_f = 0;
     }
     if (b_valid) {
-        f = v->mv_f[dir][xy - wrap + off + v->blocks_off];
-        num_oppfield  += f;
-        num_samefield += 1 - f;
-        if (f) {
-            oppfield_predB[0]  = B[0];
-            oppfield_predB[1]  = B[1];
-            samefield_predB[0] = scaleforsame(v, 0, B[0], 0, dir);
-            samefield_predB[1] = scaleforsame(v, n, B[1], 1, dir);
-        } else {
-            samefield_predB[0] = B[0];
-            samefield_predB[1] = B[1];
-            if (v->numref)
-                oppfield_predB[0] = scaleforopp(v, B[0], 0, dir);
-            if (v->numref)
-                oppfield_predB[1] = scaleforopp(v, B[1], 1, dir);
-        }
+        b_f = v->mv_f[dir][xy - wrap + off + v->blocks_off];
+        num_oppfield  += b_f;
+        num_samefield += 1 - b_f;
+        field_predB[0] = B[0];
+        field_predB[1] = B[1];
     } else {
-        samefield_predB[0] = samefield_predB[1] = 0;
-        oppfield_predB[0]  = oppfield_predB[1]  = 0;
+        field_predB[0] = field_predB[1] = 0;
+        b_f = 0;
     }
-
-    if (a_valid) {
-        samefield_pred[0] = samefield_predA[0];
-        samefield_pred[1] = samefield_predA[1];
-        oppfield_pred[0]  = oppfield_predA[0];
-        oppfield_pred[1]  = oppfield_predA[1];
-    } else if (c_valid) {
-        samefield_pred[0] = samefield_predC[0];
-        samefield_pred[1] = samefield_predC[1];
-        oppfield_pred[0]  = oppfield_predC[0];
-        oppfield_pred[1]  = oppfield_predC[1];
-    } else if (b_valid) {
-        samefield_pred[0] = samefield_predB[0];
-        samefield_pred[1] = samefield_predB[1];
-        oppfield_pred[0]  = oppfield_predB[0];
-        oppfield_pred[1]  = oppfield_predB[1];
+    if (c_valid) {
+        c_f = v->mv_f[dir][xy - 1 + v->blocks_off];
+        num_oppfield  += c_f;
+        num_samefield += 1 - c_f;
+        field_predC[0] = C[0];
+        field_predC[1] = C[1];
     } else {
-        samefield_pred[0] = samefield_pred[1] = 0;
-        oppfield_pred[0]  = oppfield_pred[1]  = 0;
-    }
-
-    if (num_samefield + num_oppfield > 1) {
-        samefield_pred[0] = mid_pred(samefield_predA[0], samefield_predB[0], samefield_predC[0]);
-        samefield_pred[1] = mid_pred(samefield_predA[1], samefield_predB[1], samefield_predC[1]);
-        if (v->numref)
-            oppfield_pred[0] = mid_pred(oppfield_predA[0], oppfield_predB[0], oppfield_predC[0]);
-        if (v->numref)
-            oppfield_pred[1] = mid_pred(oppfield_predA[1], oppfield_predB[1], oppfield_predC[1]);
+        field_predC[0] = field_predC[1] = 0;
+        c_f = 0;
     }
 
     if (v->field_mode) {
@@ -1646,19 +1590,54 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
     } else
         opposit = 0;
     if (opposit) {
-        px    = oppfield_pred[0];
-        py    = oppfield_pred[1];
-        predA = oppfield_predA;
-        predC = oppfield_predC;
-        v->mv_f[dir][xy + v->blocks_off] = f = 1;
+        if (a_valid && !a_f) {
+            field_predA[0] = scaleforopp(v, field_predA[0], 0, dir);
+            field_predA[1] = scaleforopp(v, field_predA[1], 1, dir);
+        }
+        if (b_valid && !b_f) {
+            field_predB[0] = scaleforopp(v, field_predB[0], 0, dir);
+            field_predB[1] = scaleforopp(v, field_predB[1], 1, dir);
+        }
+        if (c_valid && !c_f) {
+            field_predC[0] = scaleforopp(v, field_predC[0], 0, dir);
+            field_predC[1] = scaleforopp(v, field_predC[1], 1, dir);
+        }
+        v->mv_f[dir][xy + v->blocks_off] = 1;
         v->ref_field_type[dir] = !v->cur_field_type;
     } else {
-        px    = samefield_pred[0];
-        py    = samefield_pred[1];
-        predA = samefield_predA;
-        predC = samefield_predC;
-        v->mv_f[dir][xy + v->blocks_off] = f = 0;
+        if (a_valid && a_f) {
+            field_predA[0] = scaleforsame(v, n, field_predA[0], 0, dir);
+            field_predA[1] = scaleforsame(v, n, field_predA[1], 1, dir);
+        }
+        if (b_valid && b_f) {
+            field_predB[0] = scaleforsame(v, n, field_predB[0], 0, dir);
+            field_predB[1] = scaleforsame(v, n, field_predB[1], 1, dir);
+        }
+        if (c_valid && c_f) {
+            field_predC[0] = scaleforsame(v, n, field_predC[0], 0, dir);
+            field_predC[1] = scaleforsame(v, n, field_predC[1], 1, dir);
+        }
+        v->mv_f[dir][xy + v->blocks_off] = 0;
         v->ref_field_type[dir] = v->cur_field_type;
+    }
+
+    if (a_valid) {
+        px = field_predA[0];
+        py = field_predA[1];
+    } else if (c_valid) {
+        px = field_predC[0];
+        py = field_predC[1];
+    } else if (b_valid) {
+        px = field_predB[0];
+        py = field_predB[1];
+    } else {
+        px = 0;
+        py = 0;
+    }
+
+    if (num_samefield + num_oppfield > 1) {
+        px = mid_pred(field_predA[0], field_predB[0], field_predC[0]);
+        py = mid_pred(field_predA[1], field_predB[1], field_predC[1]);
     }
 
     /* Pullback MV as specified in 8.3.5.3.4 */
@@ -1681,35 +1660,32 @@ static inline void vc1_pred_mv(VC1Context *v, int n, int dmv_x, int dmv_y,
 
     if (!v->field_mode || s->pict_type != AV_PICTURE_TYPE_B) {
         /* Calculate hybrid prediction as specified in 8.3.5.3.5 (also 10.3.5.4.3.5) */
-        if (v->field_mode && !s->quarter_sample)
-            hybridmv_thresh = 16;
-        else
-            hybridmv_thresh = 32;
+        hybridmv_thresh = 32;
         if (a_valid && c_valid) {
             if (is_intra[xy - wrap])
                 sum = FFABS(px) + FFABS(py);
             else
-                sum = FFABS(px - predA[0]) + FFABS(py - predA[1]);
+                sum = FFABS(px - field_predA[0]) + FFABS(py - field_predA[1]);
             if (sum > hybridmv_thresh) {
                 if (get_bits1(&s->gb)) {     // read HYBRIDPRED bit
-                    px = predA[0];
-                    py = predA[1];
+                    px = field_predA[0];
+                    py = field_predA[1];
                 } else {
-                    px = predC[0];
-                    py = predC[1];
+                    px = field_predC[0];
+                    py = field_predC[1];
                 }
             } else {
                 if (is_intra[xy - 1])
                     sum = FFABS(px) + FFABS(py);
                 else
-                    sum = FFABS(px - predC[0]) + FFABS(py - predC[1]);
+                    sum = FFABS(px - field_predC[0]) + FFABS(py - field_predC[1]);
                 if (sum > hybridmv_thresh) {
                     if (get_bits1(&s->gb)) {
-                        px = predA[0];
-                        py = predA[1];
+                        px = field_predA[0];
+                        py = field_predA[1];
                     } else {
-                        px = predC[0];
-                        py = predC[1];
+                        px = field_predC[0];
+                        py = field_predC[1];
                     }
                 }
             }

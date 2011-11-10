@@ -53,8 +53,18 @@ typedef enum {
     MODE_COUNT
 } SiprMode;
 
-typedef struct {
+typedef struct SiprParameters {
+    int ma_pred_switch;        ///< switched moving average predictor
+    int vq_indexes[5];
+    int pitch_delay[5];        ///< pitch delay
+    int gp_index[5];           ///< adaptive-codebook gain indexes
+    int16_t fc_indexes[5][10]; ///< fixed-codebook indexes
+    int gc_index[5];           ///< fixed-codebook gain indexes
+} SiprParameters;
+
+typedef struct SiprContext {
     AVCodecContext *avctx;
+    AVFrame frame;
 
     SiprMode mode;
 
@@ -85,16 +95,10 @@ typedef struct {
     float mem_preemph[LP_FILTER_ORDER_16k];
     float synth[LP_FILTER_ORDER_16k];
     double lsp_history_16k[16];
-} SiprContext;
 
-typedef struct {
-    int ma_pred_switch;        ///< switched moving average predictor
-    int vq_indexes[5];
-    int pitch_delay[5];        ///< pitch delay
-    int gp_index[5];           ///< adaptive-codebook gain indexes
-    int16_t fc_indexes[5][10]; ///< fixed-codebook indexes
-    int gc_index[5];           ///< fixed-codebook gain indexes
-} SiprParameters;
+    void (*decode_frame)(struct SiprContext *ctx, SiprParameters *params,
+                         float *out_data);
+} SiprContext;
 
 extern const float ff_pow_0_5[16];
 

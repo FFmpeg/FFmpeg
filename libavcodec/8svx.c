@@ -110,7 +110,7 @@ static int eightsvx_decode_frame(AVCodecContext *avctx, void *data, int *data_si
     if (!esc->samples && avpkt) {
         uint8_t *deinterleaved_samples;
 
-        esc->samples_size = avctx->codec->id == CODEC_ID_8SVX_RAW ?
+        esc->samples_size = avctx->codec->id == CODEC_ID_8SVX_RAW || avctx->codec->id ==CODEC_ID_PCM_S8_PLANAR?
             avpkt->size : avctx->channels + (avpkt->size-avctx->channels) * 2;
         if (!(esc->samples = av_malloc(esc->samples_size)))
             return AVERROR(ENOMEM);
@@ -168,7 +168,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
 {
     EightSvxContext *esc = avctx->priv_data;
 
-    if (avctx->channels > 2) {
+    if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "8SVX does not support more than 2 channels\n");
         return AVERROR_INVALIDDATA;
     }
@@ -176,6 +176,7 @@ static av_cold int eightsvx_decode_init(AVCodecContext *avctx)
     switch (avctx->codec->id) {
     case CODEC_ID_8SVX_FIB: esc->table = fibonacci;    break;
     case CODEC_ID_8SVX_EXP: esc->table = exponential;  break;
+    case CODEC_ID_PCM_S8_PLANAR:
     case CODEC_ID_8SVX_RAW: esc->table = NULL;         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "Invalid codec id %d.\n", avctx->codec->id);
@@ -219,13 +220,13 @@ AVCodec ff_eightsvx_exp_decoder = {
   .long_name      = NULL_IF_CONFIG_SMALL("8SVX exponential"),
 };
 
-AVCodec ff_eightsvx_raw_decoder = {
-  .name           = "8svx_raw",
-  .type           = AVMEDIA_TYPE_AUDIO,
-  .id             = CODEC_ID_8SVX_RAW,
-  .priv_data_size = sizeof(EightSvxContext),
-  .init           = eightsvx_decode_init,
-  .decode         = eightsvx_decode_frame,
-  .close          = eightsvx_decode_close,
-  .long_name      = NULL_IF_CONFIG_SMALL("8SVX rawaudio"),
+AVCodec ff_pcm_s8_planar_decoder = {
+    .name           = "pcm_s8_planar",
+    .type           = AVMEDIA_TYPE_AUDIO,
+    .id             = CODEC_ID_PCM_S8_PLANAR,
+    .priv_data_size = sizeof(EightSvxContext),
+    .init           = eightsvx_decode_init,
+    .close          = eightsvx_decode_close,
+    .decode         = eightsvx_decode_frame,
+    .long_name      = NULL_IF_CONFIG_SMALL("PCM signed 8-bit planar"),
 };
