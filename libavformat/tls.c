@@ -156,7 +156,6 @@ typedef struct TLSContext {
     SSL_CTX *ctx;
     SSL *ssl;
 #endif
-    int fd;
     char *ca_file;
     int verify;
     char *cert_file;
@@ -183,10 +182,8 @@ static const AVClass tls_class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
-static int do_tls_poll(URLContext *h, int ret)
+static int print_tls_error(URLContext *h, int ret)
 {
-    TLSContext *c = h->priv_data;
-    struct pollfd p = { c->fd, 0, 0 };
 #if CONFIG_GNUTLS
     switch (ret) {
     case GNUTLS_E_AGAIN:
@@ -197,22 +194,10 @@ static int do_tls_poll(URLContext *h, int ret)
         break;
     default:
         av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
-        return AVERROR(EIO);
+        break;
     }
-    if (gnutls_record_get_direction(c->session))
-        p.events = POLLOUT;
-    else
-        p.events = POLLIN;
 #elif CONFIG_OPENSSL
-    ret = SSL_get_error(c->ssl, ret);
-    if (ret == SSL_ERROR_WANT_READ) {
-        p.events = POLLIN;
-    } else if (ret == SSL_ERROR_WANT_WRITE) {
-        p.events = POLLOUT;
-    } else {
-        av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
-        return AVERROR(EIO);
-    }
+    av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
 #endif
     return AVERROR(EIO);
 }
@@ -275,7 +260,6 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
                      &h->interrupt_callback, options);
     if (ret)
         goto fail;
-    c->fd = ffurl_get_file_handle(c->tcp);
 
 #if CONFIG_GNUTLS
     gnutls_init(&c->session, c->listen ? GNUTLS_SERVER : GNUTLS_CLIENT);
@@ -307,12 +291,10 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     gnutls_transport_set_push_function(c->session, gnutls_url_push);
     gnutls_transport_set_ptr(c->session, c->tcp);
     gnutls_priority_set_direct(c->session, "NORMAL", NULL);
-    while (1) {
-        ret = gnutls_handshake(c->session);
-        if (ret == 0)
-            break;
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            goto fail;
+    ret = gnutls_handshake(c->session);
+    if (ret) {
+        ret = print_tls_error(h, ret);
+        goto fail;
     }
     if (c->verify) {
         unsigned int status, cert_list_size;
@@ -382,17 +364,14 @@ static int tls_open(URLContext *h, const char *uri, int flags, AVDictionary **op
     SSL_set_bio(c->ssl, bio, bio);
     if (!c->listen && !numerichost)
         SSL_set_tlsext_host_name(c->ssl, host);
-    while (1) {
-        ret = c->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
-        if (ret > 0)
-            break;
-        if (ret == 0) {
-            av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
-            ret = AVERROR(EIO);
-            goto fail;
-        }
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            goto fail;
+    ret = c->listen ? SSL_accept(c->ssl) : SSL_connect(c->ssl);
+    if (ret == 0) {
+        av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
+        ret = AVERROR(EIO);
+        goto fail;
+    } else if (ret < 0) {
+        ret = print_tls_error(h, ret);
+        goto fail;
     }
 #endif
     return 0;
@@ -407,31 +386,23 @@ fail:
 static int tls_read(URLContext *h, uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    while (1) {
-        int ret = TLS_read(c, buf, size);
-        if (ret > 0)
-            return ret;
-        if (ret == 0)
-            return AVERROR_EOF;
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            return ret;
-    }
-    return 0;
+    int ret = TLS_read(c, buf, size);
+    if (ret > 0)
+        return ret;
+    if (ret == 0)
+        return AVERROR_EOF;
+    return print_tls_error(h, ret);
 }
 
 static int tls_write(URLContext *h, const uint8_t *buf, int size)
 {
     TLSContext *c = h->priv_data;
-    while (1) {
-        int ret = TLS_write(c, buf, size);
-        if (ret > 0)
-            return ret;
-        if (ret == 0)
-            return AVERROR_EOF;
-        if ((ret = do_tls_poll(h, ret)) < 0)
-            return ret;
-    }
-    return 0;
+    int ret = TLS_write(c, buf, size);
+    if (ret > 0)
+        return ret;
+    if (ret == 0)
+        return AVERROR_EOF;
+    return print_tls_error(h, ret);
 }
 
 static int tls_close(URLContext *h)
