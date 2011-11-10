@@ -290,7 +290,7 @@ typedef struct WmallDecodeCtx {
 #define dprintf(pctx, ...) av_log(pctx, AV_LOG_DEBUG, __VA_ARGS__)
 
 
-//static int num_logged_tiles;
+static int num_logged_tiles = 0;
 
 /**
  *@brief helper function to print the most important members of the context
@@ -340,7 +340,6 @@ static av_cold int decode_init(AVCodecContext *avctx)
     int log2_max_num_subframes;
     int num_possible_block_sizes;
 
-    //num_logged_tiles = 0;
     s->avctx = avctx;
     dsputil_init(&s->dsp, avctx);
     init_put_bits(&s->pb, s->frame_data, MAX_FRAMESIZE);
@@ -706,7 +705,6 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
 //        dprintf(s->avctx, "%5d: %5d %10d %12d %12d %5d %-16d %04x\n",i, quo, ave_mean, s->ave_sum[ch], rem, rem_bits, s->channel_residues[ch][i], show_bits(&s->gb, 16));
     }
     av_log(0, 0, "\n Tile size = %d\n", tile_size);
-    //num_logged_tiles++;
 
     return 0;
 
