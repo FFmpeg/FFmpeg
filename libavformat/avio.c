@@ -265,17 +265,17 @@ int ffurl_alloc(URLContext **puc, const char *filename, int flags,
 {
     URLProtocol *up = NULL;
     char proto_str[128], proto_nested[128], *ptr;
-    size_t proto_len = strspn(filename, URL_SCHEME_CHARS);
+    const char *proto_end = strchr(filename, ':');
 
     if (!first_protocol) {
         av_log(NULL, AV_LOG_WARNING, "No URL Protocols are registered. "
                                      "Missing call to av_register_all()?\n");
     }
 
-    if (filename[proto_len] != ':' || is_dos_path(filename))
+    if (!proto_end || is_dos_path(filename))
         strcpy(proto_str, "file");
     else
-        av_strlcpy(proto_str, filename, FFMIN(proto_len+1, sizeof(proto_str)));
+        av_strlcpy(proto_str, filename, FFMIN(proto_end-filename+1, sizeof(proto_str)));
 
     av_strlcpy(proto_nested, proto_str, sizeof(proto_nested));
     if ((ptr = strchr(proto_nested, '+')))
