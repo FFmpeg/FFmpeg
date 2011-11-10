@@ -413,10 +413,33 @@ static int http_connect(URLContext *h, const char *path, const char *local_path,
 }
 
 
-static int http_read(URLContext *h, uint8_t *buf, int size)
+static int http_buf_read(URLContext *h, uint8_t *buf, int size)
 {
     HTTPContext *s = h->priv_data;
     int len;
+    /* read bytes from input buffer first */
+    len = s->buf_end - s->buf_ptr;
+    if (len > 0) {
+        if (len > size)
+            len = size;
+        memcpy(buf, s->buf_ptr, len);
+        s->buf_ptr += len;
+    } else {
+        if (!s->willclose && s->filesize >= 0 && s->off >= s->filesize)
+            return AVERROR_EOF;
+        len = ffurl_read(s->hd, buf, size);
+    }
+    if (len > 0) {
+        s->off += len;
+        if (s->chunksize > 0)
+            s->chunksize -= len;
+    }
+    return len;
+}
+
+static int http_read(URLContext *h, uint8_t *buf, int size)
+{
+    HTTPContext *s = h->priv_data;
 
     if (s->chunksize >= 0) {
         if (!s->chunksize) {
@@ -439,24 +462,7 @@ static int http_read(URLContext *h, uint8_t *buf, int size)
         }
         size = FFMIN(size, s->chunksize);
     }
-    /* read bytes from input buffer first */
-    len = s->buf_end - s->buf_ptr;
-    if (len > 0) {
-        if (len > size)
-            len = size;
-        memcpy(buf, s->buf_ptr, len);
-        s->buf_ptr += len;
-    } else {
-        if (!s->willclose && s->filesize >= 0 && s->off >= s->filesize)
-            return AVERROR_EOF;
-        len = ffurl_read(s->hd, buf, size);
-    }
-    if (len > 0) {
-        s->off += len;
-        if (s->chunksize > 0)
-            s->chunksize -= len;
-    }
-    return len;
+    return http_buf_read(h, buf, size);
 }
 
 /* used only when posting data */
