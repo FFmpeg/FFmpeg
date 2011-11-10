@@ -511,6 +511,7 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst, const AVCodecContext *src
     //Error/bug resilience
     s->next_p_frame_damaged = s1->next_p_frame_damaged;
     s->workaround_bugs      = s1->workaround_bugs;
+    s->padding_bug_score    = s1->padding_bug_score;
 
     //MPEG4 timing info
     memcpy(&s->time_increment_bits, &s1->time_increment_bits, (char*)&s1->shape - (char*)&s1->time_increment_bits);
