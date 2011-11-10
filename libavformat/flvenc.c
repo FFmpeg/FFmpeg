@@ -432,7 +432,7 @@ static int flv_write_packet(AVFormatContext *s, AVPacket *pkt)
         assert(enc->codec_type == AVMEDIA_TYPE_DATA);
         avio_w8(pb, FLV_TAG_TYPE_META);
         flags_size = 0;
-        flags = NULL;
+        flags = 0;
     }
 
     if (enc->codec_id == CODEC_ID_H264 || enc->codec_id == CODEC_ID_MPEG4) {
