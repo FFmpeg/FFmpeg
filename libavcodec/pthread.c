@@ -363,8 +363,7 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
     }
 
     if (for_user) {
-        dst->coded_frame   = src->coded_frame;
-        dst->has_b_frames += src->thread_count - 1;
+        dst->coded_frame = src->coded_frame;
     } else {
         if (dst->codec->update_thread_context)
             err = dst->codec->update_thread_context(dst, src);
@@ -684,7 +683,6 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
     av_freep(&fctx->threads);
     pthread_mutex_destroy(&fctx->buffer_mutex);
     av_freep(&avctx->thread_opaque);
-    avctx->has_b_frames -= avctx->thread_count - 1;
 }
 
 static int frame_thread_init(AVCodecContext *avctx)
