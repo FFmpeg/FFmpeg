@@ -677,6 +677,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
 	    s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample);
 	i++;
     }
+    av_log(0, 0, "%8d: ", num_logged_tiles++);
     for(; i < tile_size; i++) {
 	int quo = 0, rem, rem_bits, residue;
 	while(get_bits1(&s->gb))
