@@ -171,16 +171,14 @@ static int bmp_decode_frame(AVCodecContext *avctx,
         else
             avctx->pix_fmt = PIX_FMT_GRAY8;
         break;
+    case 1:
     case 4:
         if(hsize - ihsize - 14 > 0){
             avctx->pix_fmt = PIX_FMT_PAL8;
         }else{
-            av_log(avctx, AV_LOG_ERROR, "Unknown palette for 16-colour BMP\n");
+            av_log(avctx, AV_LOG_ERROR, "Unknown palette for %d-colour BMP\n", 1<<depth);
             return -1;
         }
-        break;
-    case 1:
-        avctx->pix_fmt = PIX_FMT_MONOBLACK;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "depth %d not supported\n", depth);
@@ -265,6 +263,22 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }else{
         switch(depth){
         case 1:
+            for(i = 0; i < avctx->height; i++){
+                int j;
+                for(j = 0; j < n; j++){
+                    ptr[j*8+0] =  buf[j] >> 7;
+                    ptr[j*8+1] = (buf[j] >> 6) & 1;
+                    ptr[j*8+2] = (buf[j] >> 5) & 1;
+                    ptr[j*8+3] = (buf[j] >> 4) & 1;
+                    ptr[j*8+4] = (buf[j] >> 3) & 1;
+                    ptr[j*8+5] = (buf[j] >> 2) & 1;
+                    ptr[j*8+6] = (buf[j] >> 1) & 1;
+                    ptr[j*8+7] =  buf[j]       & 1;
+                }
+                buf += n;
+                ptr += linesize;
+            }
+            break;
         case 8:
         case 24:
             for(i = 0; i < avctx->height; i++){
