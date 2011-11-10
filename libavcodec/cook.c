@@ -1075,7 +1075,7 @@ static av_cold int cook_decode_init(AVCodecContext *avctx)
             q->subpacket[s].subbands = bytestream_get_be16(&edata_ptr);
             extradata_size -= 8;
         }
-        if (avctx->extradata_size >= 8){
+        if (extradata_size >= 8){
             bytestream_get_be32(&edata_ptr);    //Unknown unused
             q->subpacket[s].js_subband_start = bytestream_get_be16(&edata_ptr);
             q->subpacket[s].js_vlc_bits = bytestream_get_be16(&edata_ptr);
