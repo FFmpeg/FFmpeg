@@ -236,7 +236,8 @@ static int process_line(URLContext *h, char *line, int line_count,
 
         /* error codes are 4xx and 5xx, but regard 401 as a success, so we
          * don't abort until all headers have been parsed. */
-        if (s->http_code >= 400 && s->http_code < 600 && s->http_code != 401) {
+        if (s->http_code >= 400 && s->http_code < 600 && (s->http_code != 401
+            || s->auth_state.auth_type != HTTP_AUTH_NONE)) {
             end += strspn(end, SPACE_CHARS);
             av_log(h, AV_LOG_WARNING, "HTTP error %d %s\n",
                    s->http_code, end);
