@@ -43,6 +43,8 @@ typedef struct {
     double start_x;
     double start_y;
     double start_scale;
+    double end_scale;
+    double end_pts;
     double bailout;
     enum Outer outer;
 } MBContext;
@@ -57,8 +59,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     mb->maxiter=256;
     mb->start_x=0;
-    mb->start_y=0;
+    mb->start_y=1;
     mb->start_scale=3.0;
+    mb->end_scale=0.3;
+    mb->end_pts=200;
     mb->bailout=100;
     mb->outer= NORMALIZED_ITERATION_COUNT;
     if (args)
@@ -69,6 +73,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         return AVERROR(EINVAL);
     }
     mb->start_scale /=mb->h;
+    mb->end_scale /=mb->h;
 
     if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0 ||
         frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
@@ -119,10 +124,12 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
     MBContext *mb = ctx->priv;
     int x,y,i;
 
+    double scale= mb->start_scale*pow(mb->end_scale/mb->start_scale, pts/mb->end_pts);
+
     for(y=0; y<mb->h; y++){
         for(x=0; x<mb->w; x++){
-            const double cr=mb->start_x+mb->start_scale*(x-mb->w/2);
-            const double ci=mb->start_y+mb->start_scale*(y-mb->h/2);
+            const double cr=mb->start_x+scale*(x-mb->w/2);
+            const double ci=mb->start_y+scale*(y-mb->h/2);
             double zr=cr;
             double zi=ci;
             uint32_t c=0;
