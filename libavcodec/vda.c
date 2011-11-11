@@ -168,6 +168,9 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFMutableDictionaryRef io_surface_properties;
     CFNumberRef cv_pix_fmt;
 
+    vda_ctx->bitstream = NULL;
+    vda_ctx->ref_size = 0;
+
     if (av_lockmgr_register(vda_lock_operation))
         return -1;
 
@@ -238,6 +241,9 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
 
     if (vda_ctx->queue_mutex != NULL)
         vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_DESTROY);
+
+    if (vda_ctx->bitstream)
+        av_freep(&vda_ctx->bitstream);
 
     if (kVDADecoderNoErr != status)
         return status;
