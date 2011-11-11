@@ -58,7 +58,7 @@ static const char *unit_hertz_str           = "Hz"   ;
 static const char *unit_byte_str            = "byte" ;
 static const char *unit_bit_per_second_str  = "bit/s";
 
-void exit_program(int ret)
+void av_noreturn exit_program(int ret)
 {
     exit(ret);
 }
