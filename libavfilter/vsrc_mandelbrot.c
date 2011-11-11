@@ -56,8 +56,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int ret;
 
     mb->maxiter=256;
-    mb->start_x=-2.0;
-    mb->start_y=-1.5;
+    mb->start_x=0;
+    mb->start_y=0;
     mb->start_scale=3.0;
     mb->bailout=100;
     mb->outer= NORMALIZED_ITERATION_COUNT;
@@ -121,8 +121,8 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
 
     for(y=0; y<mb->h; y++){
         for(x=0; x<mb->w; x++){
-            const double cr=mb->start_x+mb->start_scale*x;
-            const double ci=mb->start_y+mb->start_scale*y;
+            const double cr=mb->start_x+mb->start_scale*(x-mb->w/2);
+            const double ci=mb->start_y+mb->start_scale*(y-mb->h/2);
             double zr=cr;
             double zi=ci;
             uint32_t c=0;
