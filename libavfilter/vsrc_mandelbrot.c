@@ -38,6 +38,7 @@ typedef struct {
     double start_x;
     double start_y;
     double start_scale;
+    double bailout;
 } MBContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -52,6 +53,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->start_x=-2.0;
     mb->start_y=-1.5;
     mb->start_scale=3.0;
+    mb->bailout=100;
     if (args)
         sscanf(args, "%127[^:]:%127[^:]:%d,%lf:%lf:%lf", frame_size, frame_rate, &mb->maxiter, &mb->start_x, &mb->start_y, &mb->start_scale);
 
@@ -116,13 +118,12 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             double ci=mb->start_y+mb->start_scale*y;
             double zr=cr;
             double zi=ci;
-            const double B=100;
             uint32_t c=0;
 
             for(i=0; i<256; i++){
                 double t;
-                if(zr*zr + zi*zi > B){
-                    zr= i + (log(log(B)) - log(log(sqrt(zr*zr + zi*zi))))/log(2);
+                if(zr*zr + zi*zi > mb->bailout){
+                    zr= i + (log(log(mb->bailout)) - log(log(sqrt(zr*zr + zi*zi))))/log(2); break;
                     c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
                     break;
                 }
