@@ -140,8 +140,6 @@ typedef struct APEContext {
 
     uint32_t CRC;                            ///< frame CRC
     int frameflags;                          ///< frame flags
-    int currentframeblocks;                  ///< samples (per channel) in current frame
-    int blocksdecoded;                       ///< count of decoded samples in current frame
     APEPredictor predictor;                  ///< predictor used for final reconstruction
 
     int32_t decoded0[BLOCKS_PER_LOOP];       ///< decoded data for the first channel
@@ -157,7 +155,6 @@ typedef struct APEContext {
     uint8_t *data;                           ///< current frame data
     uint8_t *data_end;                       ///< frame data end
     const uint8_t *ptr;                      ///< current position in frame data
-    const uint8_t *last_ptr;                 ///< position where last 4608-sample block ended
 
     int error;
 } APEContext;
@@ -457,8 +454,6 @@ static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
     int32_t *decoded0 = ctx->decoded0;
     int32_t *decoded1 = ctx->decoded1;
 
-    ctx->blocksdecoded = blockstodecode;
-
     if (ctx->frameflags & APE_FRAMECODE_STEREO_SILENCE) {
         /* We are pure silence, just memset the output buffer. */
         memset(decoded0, 0, blockstodecode * sizeof(int32_t));
@@ -470,9 +465,6 @@ static void entropy_decode(APEContext *ctx, int blockstodecode, int stereo)
                 *decoded1++ = ape_decode_value(ctx, &ctx->riceX);
         }
     }
-
-    if (ctx->blocksdecoded == ctx->currentframeblocks)
-        range_dec_normalize(ctx);   /* normalize to use up all bytes */
 }
 
 static int init_entropy_decoder(APEContext *ctx)
@@ -491,9 +483,6 @@ static int init_entropy_decoder(APEContext *ctx)
             return AVERROR_INVALIDDATA;
         ctx->frameflags = bytestream_get_be32(&ctx->ptr);
     }
-
-    /* Keep a count of the blocks decoded in this frame */
-    ctx->blocksdecoded = 0;
 
     /* Initialize the rice structs */
     ctx->riceX.k = 10;
@@ -824,25 +813,22 @@ static int ape_decode_frame(AVCodecContext *avctx,
     int buf_size = avpkt->size;
     APEContext *s = avctx->priv_data;
     int16_t *samples = data;
-    uint32_t nblocks;
     int i;
-    int blockstodecode;
-    int bytes_used;
-
-    /* should not happen but who knows */
-    if (BLOCKS_PER_LOOP * 2 * avctx->channels > *data_size) {
-        av_log (avctx, AV_LOG_ERROR, "Output buffer is too small.\n");
-        return AVERROR(EINVAL);
-    }
+    int blockstodecode, out_size;
+    int bytes_used = 0;
 
     /* this should never be negative, but bad things will happen if it is, so
        check it just to make sure. */
     av_assert0(s->samples >= 0);
 
     if(!s->samples){
-        uint32_t offset;
+        uint32_t nblocks, offset;
         void *tmp_data;
 
+        if (!buf_size) {
+            *data_size = 0;
+            return 0;
+        }
         if (buf_size < 8) {
             av_log(avctx, AV_LOG_ERROR, "Packet is too small\n");
             return AVERROR_INVALIDDATA;
@@ -853,7 +839,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
             return AVERROR(ENOMEM);
         s->data = tmp_data;
         s->dsp.bswap_buf((uint32_t*)s->data, (const uint32_t*)buf, buf_size >> 2);
-        s->ptr = s->last_ptr = s->data;
+        s->ptr = s->data;
         s->data_end = s->data + buf_size;
 
         nblocks = bytestream_get_be32(&s->ptr);
@@ -873,7 +859,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Invalid sample count: %u.\n", nblocks);
             return AVERROR_INVALIDDATA;
         }
-        s->currentframeblocks = s->samples = nblocks;
+        s->samples = nblocks;
 
         memset(s->decoded0,  0, sizeof(s->decoded0));
         memset(s->decoded1,  0, sizeof(s->decoded1));
@@ -883,6 +869,8 @@ static int ape_decode_frame(AVCodecContext *avctx,
             av_log(avctx, AV_LOG_ERROR, "Error reading frame header\n");
             return AVERROR_INVALIDDATA;
         }
+
+        bytes_used = buf_size;
     }
 
     if (!s->data) {
@@ -890,8 +878,14 @@ static int ape_decode_frame(AVCodecContext *avctx,
         return buf_size;
     }
 
-    nblocks = s->samples;
-    blockstodecode = FFMIN(BLOCKS_PER_LOOP, nblocks);
+    blockstodecode = FFMIN(BLOCKS_PER_LOOP, s->samples);
+
+    out_size = blockstodecode * avctx->channels *
+               av_get_bytes_per_sample(avctx->sample_fmt);
+    if (*data_size < out_size) {
+        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small.\n");
+        return AVERROR(EINVAL);
+    }
 
     s->error=0;
 
@@ -915,9 +909,7 @@ static int ape_decode_frame(AVCodecContext *avctx,
 
     s->samples -= blockstodecode;
 
-    *data_size = blockstodecode * 2 * s->channels;
-    bytes_used = s->samples ? s->ptr - s->last_ptr : buf_size;
-    s->last_ptr = s->ptr;
+    *data_size = out_size;
     return bytes_used;
 }
 
@@ -935,7 +927,7 @@ AVCodec ff_ape_decoder = {
     .init           = ape_decode_init,
     .close          = ape_decode_close,
     .decode         = ape_decode_frame,
-    .capabilities = CODEC_CAP_SUBFRAMES,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DELAY,
     .flush = ape_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Monkey's Audio"),
 };

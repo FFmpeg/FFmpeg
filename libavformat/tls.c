@@ -73,7 +73,7 @@ static int do_tls_poll(URLContext *h, int ret)
     struct pollfd p = { c->fd, 0, 0 };
 #if CONFIG_GNUTLS
     if (ret != GNUTLS_E_AGAIN && ret != GNUTLS_E_INTERRUPTED) {
-        av_log(NULL, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
+        av_log(h, AV_LOG_ERROR, "%s\n", gnutls_strerror(ret));
         return AVERROR(EIO);
     }
     if (gnutls_record_get_direction(c->session))
@@ -87,11 +87,11 @@ static int do_tls_poll(URLContext *h, int ret)
     } else if (ret == SSL_ERROR_WANT_WRITE) {
         p.events = POLLOUT;
     } else {
-        av_log(NULL, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
+        av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         return AVERROR(EIO);
     }
 #endif
-    if (h->flags & URL_FLAG_NONBLOCK)
+    if (h->flags & AVIO_FLAG_NONBLOCK)
         return AVERROR(EAGAIN);
     while (1) {
         int n = poll(&p, 1, 100);
@@ -148,13 +148,13 @@ static int tls_open(URLContext *h, const char *uri, int flags)
 #elif CONFIG_OPENSSL
     c->ctx = SSL_CTX_new(SSLv3_client_method());
     if (!c->ctx) {
-        av_log(NULL, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
+        av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         ret = AVERROR(EIO);
         goto fail;
     }
     c->ssl = SSL_new(c->ctx);
     if (!c->ssl) {
-        av_log(NULL, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
+        av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         ret = AVERROR(EIO);
         goto fail;
     }
@@ -166,7 +166,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         if (ret > 0)
             break;
         if (ret == 0) {
-            av_log(NULL, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
+            av_log(h, AV_LOG_ERROR, "Unable to negotiate TLS/SSL session\n");
             ret = AVERROR(EIO);
             goto fail;
         }

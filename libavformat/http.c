@@ -47,35 +47,32 @@ typedef struct {
     int64_t off, filesize;
     char location[MAX_URL_SIZE];
     HTTPAuthState auth_state;
-    unsigned char headers[BUFFER_SIZE];
+    char *headers;
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
+    int chunked_post;
 } HTTPContext;
 
 #define OFFSET(x) offsetof(HTTPContext, x)
+#define D AV_OPT_FLAG_DECODING_PARAM
+#define E AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
-{"chunksize", "use chunked transfer-encoding for posts, -1 disables it, 0 enables it", OFFSET(chunksize), AV_OPT_TYPE_INT64, {.dbl = 0}, -1, 0 }, /* Default to 0, for chunked POSTs */
+{"chunked_post", "use chunked transfer-encoding for posts", OFFSET(chunked_post), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, E },
+{"headers", "custom HTTP headers, can override built in default headers", OFFSET(headers), AV_OPT_TYPE_STRING, { 0 }, 0, 0, D|E },
 {NULL}
 };
-static const AVClass httpcontext_class = {
-    .class_name     = "HTTP",
-    .item_name      = av_default_item_name,
-    .option         = options,
-    .version        = LIBAVUTIL_VERSION_INT,
+#define HTTP_CLASS(flavor)\
+static const AVClass flavor ## _context_class = {\
+    .class_name     = #flavor,\
+    .item_name      = av_default_item_name,\
+    .option         = options,\
+    .version        = LIBAVUTIL_VERSION_INT,\
 };
+
+HTTP_CLASS(http);
+HTTP_CLASS(https);
 
 static int http_connect(URLContext *h, const char *path, const char *hoststr,
                         const char *auth, int *new_location);
-
-void ff_http_set_headers(URLContext *h, const char *headers)
-{
-    HTTPContext *s = h->priv_data;
-    int len = strlen(headers);
-
-    if (len && strcmp("\r\n", headers + len - 2))
-        av_log(h, AV_LOG_ERROR, "No trailing CRLF found in HTTP header.\n");
-
-    av_strlcpy(s->headers, headers, sizeof(s->headers));
-}
 
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 {
@@ -167,6 +164,12 @@ static int http_open(URLContext *h, const char *uri, int flags)
 
     s->filesize = -1;
     av_strlcpy(s->location, uri, sizeof(s->location));
+
+    if (s->headers) {
+        int len = strlen(s->headers);
+        if (len < 2 || strcmp("\r\n", s->headers + len - 2))
+            av_log(h, AV_LOG_WARNING, "No trailing CRLF found in HTTP header.\n");
+    }
 
     return http_open_cnx(h);
 }
@@ -285,6 +288,8 @@ static int process_line(URLContext *h, char *line, int line_count,
 static inline int has_header(const char *str, const char *header)
 {
     /* header + 2 to skip over CRLF prefix. (make sure you have one!) */
+    if (!str)
+        return 0;
     return av_stristart(str, header + 2, NULL) || av_stristr(str, header);
 }
 
@@ -312,7 +317,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
     if (!has_header(s->headers, "\r\nAccept: "))
         len += av_strlcpy(headers + len, "Accept: */*\r\n",
                           sizeof(headers) - len);
-    if (!has_header(s->headers, "\r\nRange: "))
+    if (!has_header(s->headers, "\r\nRange: ") && !post)
         len += av_strlcatf(headers + len, sizeof(headers) - len,
                            "Range: bytes=%"PRId64"-\r\n", s->off);
     if (!has_header(s->headers, "\r\nConnection: "))
@@ -323,7 +328,8 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
                            "Host: %s\r\n", hoststr);
 
     /* now add in custom headers */
-    av_strlcpy(headers+len, s->headers, sizeof(headers)-len);
+    if (s->headers)
+        av_strlcpy(headers + len, s->headers, sizeof(headers) - len);
 
     snprintf(s->buffer, sizeof(s->buffer),
              "%s %s HTTP/1.1\r\n"
@@ -333,7 +339,7 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "\r\n",
              post ? "POST" : "GET",
              path,
-             post && s->chunksize >= 0 ? "Transfer-Encoding: chunked\r\n" : "",
+             post && s->chunked_post ? "Transfer-Encoding: chunked\r\n" : "",
              headers,
              authstr ? authstr : "");
 
@@ -430,7 +436,7 @@ static int http_write(URLContext *h, const uint8_t *buf, int size)
     char crlf[] = "\r\n";
     HTTPContext *s = h->priv_data;
 
-    if (s->chunksize == -1) {
+    if (!s->chunked_post) {
         /* non-chunked data is sent without any special encoding */
         return ffurl_write(s->hd, buf, size);
     }
@@ -456,7 +462,7 @@ static int http_close(URLContext *h)
     HTTPContext *s = h->priv_data;
 
     /* signal end of chunked encoding if used */
-    if ((h->flags & AVIO_FLAG_WRITE) && s->chunksize != -1) {
+    if ((h->flags & AVIO_FLAG_WRITE) && s->chunked_post) {
         ret = ffurl_write(s->hd, footer, sizeof(footer) - 1);
         ret = ret > 0 ? 0 : ret;
     }
@@ -519,7 +525,7 @@ URLProtocol ff_http_protocol = {
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
     .priv_data_size      = sizeof(HTTPContext),
-    .priv_data_class     = &httpcontext_class,
+    .priv_data_class     = &http_context_class,
 };
 #endif
 #if CONFIG_HTTPS_PROTOCOL
@@ -532,6 +538,6 @@ URLProtocol ff_https_protocol = {
     .url_close           = http_close,
     .url_get_file_handle = http_get_file_handle,
     .priv_data_size      = sizeof(HTTPContext),
-    .priv_data_class     = &httpcontext_class,
+    .priv_data_class     = &https_context_class,
 };
 #endif

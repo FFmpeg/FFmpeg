@@ -1462,7 +1462,7 @@ redirect:
                  "Pragma: no-cache\r\n"
                  "Cache-Control: no-cache\r\n",
                  sessioncookie);
-        ff_http_set_headers(rt->rtsp_hd, headers);
+        av_opt_set(rt->rtsp_hd->priv_data, "headers", headers, 0);
 
         /* complete the connection */
         if (ffurl_connect(rt->rtsp_hd)) {
@@ -1485,8 +1485,8 @@ redirect:
                  "Content-Length: 32767\r\n"
                  "Expires: Sun, 9 Jan 1972 00:00:00 GMT\r\n",
                  sessioncookie);
-        ff_http_set_headers(rt->rtsp_hd_out, headers);
-        av_opt_set(rt->rtsp_hd_out->priv_data, "chunksize", "-1", 0);
+        av_opt_set(rt->rtsp_hd_out->priv_data, "headers", headers, 0);
+        av_opt_set(rt->rtsp_hd_out->priv_data, "chunked_post", "0", 0);
 
         /* Initialize the authentication state for the POST session. The HTTP
          * protocol implementation doesn't properly handle multi-pass

@@ -68,7 +68,7 @@ static int sunrast_decode_frame(AVCodecContext *avctx, void *data,
     type      = AV_RB32(buf+20);
     maptype   = AV_RB32(buf+24);
     maplength = AV_RB32(buf+28);
-    buf += 32;
+    buf      += 32;
 
     if (type < RT_OLD || type > RT_FORMAT_IFF) {
         av_log(avctx, AV_LOG_ERROR, "invalid (compression) type\n");
