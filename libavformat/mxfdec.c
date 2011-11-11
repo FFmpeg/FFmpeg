@@ -181,6 +181,7 @@ typedef struct {
     uint8_t *local_tags;
     int local_tags_count;
     uint64_t footer_partition;
+    int system_item;
     int64_t essence_offset;
     int first_essence_kl_length;
     int64_t first_essence_length;
@@ -205,6 +206,7 @@ typedef struct {
 /* partial keys to match */
 static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02 };
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
+static const uint8_t mxf_system_item_key[]                 = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x03,0x01,0x04 };
 static const uint8_t mxf_klv_key[]                         = { 0x06,0x0e,0x2b,0x34 };
 /* complete keys to match */
 static const uint8_t mxf_crypto_source_container_ul[]      = { 0x06,0x0e,0x2b,0x34,0x01,0x01,0x01,0x09,0x06,0x01,0x01,0x02,0x02,0x00,0x00,0x00 };
@@ -954,7 +956,7 @@ static int mxf_parse_index(MXFContext *mxf, int i, AVStream *st)
             accumulated_offset = 0;
 
         /* HACK: How to correctly link between streams and slices? */
-        if (i < st->index)
+        if (i < mxf->system_item + st->index)
             n_delta++;
         if (n_delta >= tableseg->nb_delta_entries && st->index != 0)
             continue;
@@ -1317,6 +1319,11 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             /* FIXME avoid seek */
             avio_seek(s->pb, klv.offset, SEEK_SET);
             break;
+        }
+        if (IS_KLV_KEY(klv.key, mxf_system_item_key)) {
+            mxf->system_item = 1;
+            avio_skip(s->pb, klv.length);
+            continue;
         }
 
         for (metadata = mxf_metadata_read_table; metadata->read; metadata++) {
