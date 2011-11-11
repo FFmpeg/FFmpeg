@@ -87,7 +87,7 @@ static void choose_qop(char *qop, int size)
 void ff_http_auth_handle_header(HTTPAuthState *state, const char *key,
                                 const char *value)
 {
-    if (!strcmp(key, "WWW-Authenticate")) {
+    if (!strcmp(key, "WWW-Authenticate") || !strcmp(key, "Proxy-Authenticate")) {
         const char *p;
         if (av_stristart(value, "Basic ", &p) &&
             state->auth_type <= HTTP_AUTH_BASIC) {

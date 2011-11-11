@@ -47,6 +47,7 @@ typedef struct {
     int64_t off, filesize;
     char location[MAX_URL_SIZE];
     HTTPAuthState auth_state;
+    HTTPAuthState proxy_auth_state;
     char *headers;
     int willclose;          /**< Set if the server correctly handles Connection: close and will close the connection after feeding us the content. */
     int chunked_post;
@@ -71,25 +72,29 @@ static const AVClass flavor ## _context_class = {\
 HTTP_CLASS(http);
 HTTP_CLASS(https);
 
-static int http_connect(URLContext *h, const char *path, const char *hoststr,
-                        const char *auth, int *new_location);
+static int http_connect(URLContext *h, const char *path, const char *local_path,
+                        const char *hoststr, const char *auth,
+                        const char *proxyauth, int *new_location);
 
 void ff_http_init_auth_state(URLContext *dest, const URLContext *src)
 {
     memcpy(&((HTTPContext*)dest->priv_data)->auth_state,
            &((HTTPContext*)src->priv_data)->auth_state, sizeof(HTTPAuthState));
+    memcpy(&((HTTPContext*)dest->priv_data)->proxy_auth_state,
+           &((HTTPContext*)src->priv_data)->proxy_auth_state,
+           sizeof(HTTPAuthState));
 }
 
 /* return non zero if error */
 static int http_open_cnx(URLContext *h)
 {
-    const char *path, *proxy_path, *lower_proto = "tcp";
+    const char *path, *proxy_path, *lower_proto = "tcp", *local_path;
     char hostname[1024], hoststr[1024], proto[10];
-    char auth[1024];
+    char auth[1024], proxyauth[1024];
     char path1[1024];
-    char buf[1024];
+    char buf[1024], urlbuf[1024];
     int port, use_proxy, err, location_changed = 0, redirects = 0;
-    HTTPAuthType cur_auth_type;
+    HTTPAuthType cur_auth_type, cur_proxy_auth_type;
     HTTPContext *s = h->priv_data;
     URLContext *hd = NULL;
 
@@ -105,15 +110,19 @@ static int http_open_cnx(URLContext *h)
                  path1, sizeof(path1), s->location);
     ff_url_join(hoststr, sizeof(hoststr), NULL, NULL, hostname, port, NULL);
 
+    if (path1[0] == '\0')
+        path = "/";
+    else
+        path = path1;
+    local_path = path;
     if (use_proxy) {
-        av_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
-                     NULL, 0, proxy_path);
-        path = s->location;
-    } else {
-        if (path1[0] == '\0')
-            path = "/";
-        else
-            path = path1;
+        /* Reassemble the request URL without auth string - we don't
+         * want to leak the auth to the proxy. */
+        ff_url_join(urlbuf, sizeof(urlbuf), proto, NULL, hostname, port, "%s",
+                    path1);
+        path = urlbuf;
+        av_url_split(NULL, 0, proxyauth, sizeof(proxyauth),
+                     hostname, sizeof(hostname), &port, NULL, 0, proxy_path);
     }
     if (!strcmp(proto, "https")) {
         lower_proto = "tls";
@@ -130,10 +139,19 @@ static int http_open_cnx(URLContext *h)
 
     s->hd = hd;
     cur_auth_type = s->auth_state.auth_type;
-    if (http_connect(h, path, hoststr, auth, &location_changed) < 0)
+    cur_proxy_auth_type = s->auth_state.auth_type;
+    if (http_connect(h, path, local_path, hoststr, auth, proxyauth, &location_changed) < 0)
         goto fail;
     if (s->http_code == 401) {
         if (cur_auth_type == HTTP_AUTH_NONE && s->auth_state.auth_type != HTTP_AUTH_NONE) {
+            ffurl_close(hd);
+            goto redo;
+        } else
+            goto fail;
+    }
+    if (s->http_code == 407) {
+        if (cur_proxy_auth_type == HTTP_AUTH_NONE &&
+            s->proxy_auth_state.auth_type != HTTP_AUTH_NONE) {
             ffurl_close(hd);
             goto redo;
         } else
@@ -237,7 +255,8 @@ static int process_line(URLContext *h, char *line, int line_count,
         /* error codes are 4xx and 5xx, but regard 401 as a success, so we
          * don't abort until all headers have been parsed. */
         if (s->http_code >= 400 && s->http_code < 600 && (s->http_code != 401
-            || s->auth_state.auth_type != HTTP_AUTH_NONE)) {
+            || s->auth_state.auth_type != HTTP_AUTH_NONE) &&
+            (s->http_code != 407 || s->proxy_auth_state.auth_type != HTTP_AUTH_NONE)) {
             end += strspn(end, SPACE_CHARS);
             av_log(h, AV_LOG_WARNING, "HTTP error %d %s\n",
                    s->http_code, end);
@@ -278,6 +297,8 @@ static int process_line(URLContext *h, char *line, int line_count,
             ff_http_auth_handle_header(&s->auth_state, tag, p);
         } else if (!av_strcasecmp (tag, "Authentication-Info")) {
             ff_http_auth_handle_header(&s->auth_state, tag, p);
+        } else if (!av_strcasecmp (tag, "Proxy-Authenticate")) {
+            ff_http_auth_handle_header(&s->proxy_auth_state, tag, p);
         } else if (!av_strcasecmp (tag, "Connection")) {
             if (!strcmp(p, "close"))
                 s->willclose = 1;
@@ -294,22 +315,27 @@ static inline int has_header(const char *str, const char *header)
     return av_stristart(str, header + 2, NULL) || av_stristr(str, header);
 }
 
-static int http_connect(URLContext *h, const char *path, const char *hoststr,
-                        const char *auth, int *new_location)
+static int http_connect(URLContext *h, const char *path, const char *local_path,
+                        const char *hoststr, const char *auth,
+                        const char *proxyauth, int *new_location)
 {
     HTTPContext *s = h->priv_data;
     int post, err;
     char line[1024];
     char headers[1024] = "";
-    char *authstr = NULL;
+    char *authstr = NULL, *proxyauthstr = NULL;
     int64_t off = s->off;
     int len = 0;
+    const char *method;
 
 
     /* send http header */
     post = h->flags & AVIO_FLAG_WRITE;
-    authstr = ff_http_auth_create_response(&s->auth_state, auth, path,
-                                        post ? "POST" : "GET");
+    method = post ? "POST" : "GET";
+    authstr = ff_http_auth_create_response(&s->auth_state, auth, local_path,
+                                           method);
+    proxyauthstr = ff_http_auth_create_response(&s->proxy_auth_state, proxyauth,
+                                                local_path, method);
 
     /* set default headers if needed */
     if (!has_header(s->headers, "\r\nUser-Agent: "))
@@ -337,14 +363,17 @@ static int http_connect(URLContext *h, const char *path, const char *hoststr,
              "%s"
              "%s"
              "%s"
+             "%s%s"
              "\r\n",
-             post ? "POST" : "GET",
+             method,
              path,
              post && s->chunked_post ? "Transfer-Encoding: chunked\r\n" : "",
              headers,
-             authstr ? authstr : "");
+             authstr ? authstr : "",
+             proxyauthstr ? "Proxy-" : "", proxyauthstr ? proxyauthstr : "");
 
     av_freep(&authstr);
+    av_freep(&proxyauthstr);
     if (ffurl_write(s->hd, s->buffer, strlen(s->buffer)) < 0)
         return AVERROR(EIO);
 
