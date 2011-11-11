@@ -30,6 +30,11 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
 
+enum Outer{
+    ITERATION_COUNT,
+    NORMALIZED_ITERATION_COUNT,
+};
+
 typedef struct {
     int w, h;
     AVRational time_base;
@@ -39,6 +44,7 @@ typedef struct {
     double start_y;
     double start_scale;
     double bailout;
+    enum Outer outer;
 } MBContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -54,6 +60,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->start_y=-1.5;
     mb->start_scale=3.0;
     mb->bailout=100;
+    mb->outer= NORMALIZED_ITERATION_COUNT;
     if (args)
         sscanf(args, "%127[^:]:%127[^:]:%d,%lf:%lf:%lf", frame_size, frame_rate, &mb->maxiter, &mb->start_x, &mb->start_y, &mb->start_scale);
 
@@ -123,7 +130,10 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             for(i=0; i<256; i++){
                 double t;
                 if(zr*zr + zi*zi > mb->bailout){
-                    zr= i + (log(log(mb->bailout)) - log(log(sqrt(zr*zr + zi*zi))))/log(2); break;
+                    switch(mb->outer){
+                    case            ITERATION_COUNT: zr= i; break;
+                    case NORMALIZED_ITERATION_COUNT: zr= i + (log(log(mb->bailout)) - log(log(sqrt(zr*zr + zi*zi))))/log(2); break;
+                    }
                     c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
                     break;
                 }
