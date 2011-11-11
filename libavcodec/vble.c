@@ -196,14 +196,6 @@ static av_cold int vble_decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-static av_always_inline int vble_error_close(AVCodecContext *avctx,
-                                             const char *message)
-{
-    av_log(avctx, AV_LOG_ERROR, message);
-    vble_decode_close(avctx);
-    return AVERROR(ENOMEM);
-}
-
 static av_cold int vble_decode_init(AVCodecContext *avctx)
 {
     VBLEContext *ctx = avctx->priv_data;
@@ -216,21 +208,29 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
     avctx->bits_per_raw_sample = 8;
     avctx->coded_frame = avcodec_alloc_frame();
 
-    if (!avctx->coded_frame)
-        return vble_error_close(avctx, "Could not allocate frame.\n");
+    if (!avctx->coded_frame) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate frame.\n");
+        return AVERROR(ENOMEM);
+    }
 
     ctx->size = avpicture_get_size(avctx->pix_fmt,
                                    avctx->width, avctx->height);
 
     ctx->len = av_malloc(ctx->size * sizeof(*ctx->len));
 
-    if (!ctx->len)
-        return vble_error_close(avctx, "Could not allocate lengths buffer.\n");
+    if (!ctx->len) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate lengths buffer.\n");
+        vble_decode_close(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     ctx->val = av_malloc(ctx->size * sizeof(*ctx->val));
 
-    if (!ctx->val)
-        return vble_error_close(avctx, "Could not allocate values buffer.\n");
+    if (!ctx->val) {
+        av_log(avctx, AV_LOG_ERROR, "Could not allocate values buffer.\n");
+        vble_decode_close(avctx);
+        return AVERROR(ENOMEM);
+    }
 
     return 0;
 }
