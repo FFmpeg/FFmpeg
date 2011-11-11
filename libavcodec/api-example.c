@@ -38,6 +38,7 @@
 
 #include "libavcodec/avcodec.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/samplefmt.h"
 
 #define INBUF_SIZE 4096
 #define AUDIO_INBUF_SIZE 20480
@@ -118,11 +119,11 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 {
     AVCodec *codec;
     AVCodecContext *c= NULL;
-    int out_size, len;
+    int len;
     FILE *f, *outfile;
-    uint8_t *outbuf;
     uint8_t inbuf[AUDIO_INBUF_SIZE + FF_INPUT_BUFFER_PADDING_SIZE];
     AVPacket avpkt;
+    AVFrame *decoded_frame = NULL;
 
     av_init_packet(&avpkt);
 
@@ -143,8 +144,6 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         exit(1);
     }
 
-    outbuf = malloc(AVCODEC_MAX_AUDIO_FRAME_SIZE);
-
     f = fopen(filename, "rb");
     if (!f) {
         fprintf(stderr, "could not open %s\n", filename);
@@ -161,15 +160,27 @@ static void audio_decode_example(const char *outfilename, const char *filename)
     avpkt.size = fread(inbuf, 1, AUDIO_INBUF_SIZE, f);
 
     while (avpkt.size > 0) {
-        out_size = AVCODEC_MAX_AUDIO_FRAME_SIZE;
-        len = avcodec_decode_audio3(c, (short *)outbuf, &out_size, &avpkt);
+        int got_frame = 0;
+
+        if (!decoded_frame) {
+            if (!(decoded_frame = avcodec_alloc_frame())) {
+                fprintf(stderr, "out of memory\n");
+                exit(1);
+            }
+        } else
+            avcodec_get_frame_defaults(decoded_frame);
+
+        len = avcodec_decode_audio4(c, decoded_frame, &got_frame, &avpkt);
         if (len < 0) {
             fprintf(stderr, "Error while decoding\n");
             exit(1);
         }
-        if (out_size > 0) {
+        if (got_frame) {
             /* if a frame has been decoded, output it */
-            fwrite(outbuf, 1, out_size, outfile);
+            int data_size = av_samples_get_buffer_size(NULL, c->channels,
+                                                       decoded_frame->nb_samples,
+                                                       c->sample_fmt, 1);
+            fwrite(decoded_frame->data[0], 1, data_size, outfile);
         }
         avpkt.size -= len;
         avpkt.data += len;
@@ -189,10 +200,10 @@ static void audio_decode_example(const char *outfilename, const char *filename)
 
     fclose(outfile);
     fclose(f);
-    free(outbuf);
 
     avcodec_close(c);
     av_free(c);
+    av_free(decoded_frame);
 }
 
 /*
