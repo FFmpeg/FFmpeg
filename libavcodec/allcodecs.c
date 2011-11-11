@@ -203,6 +203,7 @@ void avcodec_register_all(void)
     REGISTER_ENCDEC  (V210,  v210);
     REGISTER_DECODER (V210X, v210x);
     REGISTER_DECODER (VB, vb);
+    REGISTER_DECODER (VBLE, vble);
     REGISTER_DECODER (VC1, vc1);
     REGISTER_DECODER (VC1_VDPAU, vc1_vdpau);
     REGISTER_DECODER (VC1IMAGE, vc1image);
