@@ -56,6 +56,7 @@ static const uint8_t div6[QP_MAX_NUM+1]={
 static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
     PIX_FMT_DXVA2_VLD,
     PIX_FMT_VAAPI_VLD,
+    PIX_FMT_VDA_VLD,
     PIX_FMT_YUVJ420P,
     PIX_FMT_NONE
 };

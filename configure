@@ -108,6 +108,7 @@ Configuration options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --enable-vaapi           enable VAAPI code
+  --enable-vda             enable VDA code
   --enable-vdpau           enable VDPAU code
   --disable-dxva2          disable DXVA2 code
   --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
@@ -978,6 +979,7 @@ CONFIG_LIST="
     swscale_alpha
     thumb
     vaapi
+    vda
     vdpau
     version3
     x11grab
@@ -1294,6 +1296,7 @@ h264_decoder_select="golomb h264dsp h264pred"
 h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_select="vaapi h264_decoder"
+h264_vda_hwaccel_select="vda h264_decoder"
 h264_vdpau_decoder_select="vdpau h264_decoder"
 imc_decoder_select="fft mdct sinewin"
 jpegls_decoder_select="golomb"
@@ -1390,6 +1393,7 @@ zmbv_decoder_select="zlib"
 zmbv_encoder_select="zlib"
 
 vaapi_deps="va_va_h"
+vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # parsers
@@ -2987,6 +2991,11 @@ check_header X11/extensions/Xfixes.h    &&
 check_func XOpenDisplay -lX11           &&
 check_func XShmCreateImage -lX11 -lXext &&
 check_func XFixesGetCursorImage -lX11 -lXext -lXfixes
+
+# check for VDA header
+if ! disabled vda && check_header VideoDecodeAcceleration/VDADecoder.h; then
+    enable vda && add_ldflags -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
+fi
 
 if ! disabled vdpau && enabled vdpau_vdpau_h; then
 check_cpp_condition \
