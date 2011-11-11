@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2006-2010 Michael Niedermayer <michaelni@gmx.at>
+ * Copyright (C) 2006-2011 Michael Niedermayer <michaelni@gmx.at>
  *               2010      James Darnley <james.darnley@gmail.com>
  *
  * FFmpeg is free software; you can redistribute it and/or modify
