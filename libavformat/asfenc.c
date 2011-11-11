@@ -883,11 +883,7 @@ AVOutputFormat ff_asf_muxer = {
     .mime_type      = "video/x-ms-asf",
     .extensions     = "asf,wmv,wma",
     .priv_data_size = sizeof(ASFContext),
-#if CONFIG_LIBMP3LAME
-    .audio_codec    = CODEC_ID_MP3,
-#else
     .audio_codec    = CODEC_ID_WMAV2,
-#endif
     .video_codec    = CODEC_ID_MSMPEG4V3,
     .write_header   = asf_write_header,
     .write_packet   = asf_write_packet,
@@ -904,11 +900,7 @@ AVOutputFormat ff_asf_stream_muxer = {
     .mime_type      = "video/x-ms-asf",
     .extensions     = "asf,wmv,wma",
     .priv_data_size = sizeof(ASFContext),
-#if CONFIG_LIBMP3LAME
-    .audio_codec    = CODEC_ID_MP3,
-#else
     .audio_codec    = CODEC_ID_WMAV2,
-#endif
     .video_codec    = CODEC_ID_MSMPEG4V3,
     .write_header   = asf_write_stream_header,
     .write_packet   = asf_write_packet,
