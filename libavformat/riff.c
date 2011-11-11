@@ -285,6 +285,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'R', 'G') },
     { CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'Y', '0') },
     { CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'Y', '2') },
+    { CODEC_ID_VBLE,         MKTAG('V', 'B', 'L', 'E') },
     { CODEC_ID_NONE,         0 }
 };
 

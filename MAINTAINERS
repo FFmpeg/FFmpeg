@@ -212,6 +212,7 @@ Codecs:
   txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
   vb.c                                  Kostya Shishkov
+  vble.c                                Derek Buitenhuis
   vc1*                                  Kostya Shishkov
   vcr1.c                                Michael Niedermayer
   vmnc.c                                Kostya Shishkov

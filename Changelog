@@ -119,6 +119,7 @@ easier to use. The changes are:
 - Properly working defaults in libx264 wrapper, support for native presets.
 - Encrypted OMA files support
 - Discworld II BMV decoding support
+- VBLE Decoder
 
 
 version 0.8:

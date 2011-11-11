@@ -221,6 +221,7 @@ enum CodecID {
 #endif
     CODEC_ID_UTVIDEO_DEPRECATED,
     CODEC_ID_BMV_VIDEO,
+    CODEC_ID_VBLE,
     CODEC_ID_UTVIDEO = 0x800,
 
     CODEC_ID_G2M        = MKBETAG( 0 ,'G','2','M'),
