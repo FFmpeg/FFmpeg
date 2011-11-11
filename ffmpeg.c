@@ -640,7 +640,7 @@ static int decode_interrupt_cb(void)
     return received_nb_signals > 1;
 }
 
-void exit_program(int ret)
+void av_noreturn exit_program(int ret)
 {
     int i;
 
