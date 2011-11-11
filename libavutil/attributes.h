@@ -40,6 +40,14 @@
 #endif
 #endif
 
+#ifndef av_noreturn
+#if AV_GCC_VERSION_AT_LEAST(2,5)
+#    define av_noreturn __attribute__((noreturn))
+#else
+#    define av_noreturn
+#endif
+#endif
+
 #ifndef av_noinline
 #if AV_GCC_VERSION_AT_LEAST(3,1)
 #    define av_noinline __attribute__((noinline))
