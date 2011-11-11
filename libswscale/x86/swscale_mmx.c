@@ -176,6 +176,7 @@ void updateMMXDitherTables(SwsContext *c, int dstY, int lumBufIndex, int chrBufI
     }
 }
 
+#if HAVE_MMX2
 static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
                            const int16_t **src, uint8_t *dest, int dstW,
                            const uint8_t *dither, int offset)
@@ -234,6 +235,7 @@ static void yuv2yuvX_sse3(const int16_t *filter, int filterSize,
         : "%"REG_d, "%"REG_S, "%"REG_c
     );
 }
+#endif
 
 #define SCALE_FUNC(filter_n, from_bpc, to_bpc, opt) \
 extern void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( \
