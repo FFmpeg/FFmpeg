@@ -871,7 +871,7 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
     if (c->dstBpc == 16)
         dst_stride <<= 1;
     FF_ALLOC_OR_GOTO(c, c->formatConvBuffer,
-                     FFALIGN(srcW, 16) * 2 * FFALIGN(c->srcBpc, 8) >> 3,
+                     (FFALIGN(srcW, 16) * 2 * FFALIGN(c->srcBpc, 8) >> 3) + 16,
                      fail);
     if (HAVE_MMX2 && cpu_flags & AV_CPU_FLAG_MMX2 && c->srcBpc == 8 && c->dstBpc <= 10) {
         c->canMMX2BeUsed= (dstW >=srcW && (dstW&31)==0 && (srcW&15)==0) ? 1 : 0;
