@@ -320,7 +320,7 @@ static AVLFG random_state;
 static FILE *logfile = NULL;
 
 /* FIXME: make ffserver work with IPv6 */
-void exit_program(int ret)
+void av_noreturn exit_program(int ret)
 {
     exit(ret);
 }
