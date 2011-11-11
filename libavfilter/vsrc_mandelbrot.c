@@ -55,7 +55,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     AVRational frame_rate_q;
     int ret;
 
-    mb->maxiter=1024;
+    mb->maxiter=256;
     mb->start_x=-2.0;
     mb->start_y=-1.5;
     mb->start_scale=3.0;
@@ -127,7 +127,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             double zi=ci;
             uint32_t c=0;
 
-            for(i=0; i<256; i++){
+            for(i=0; i<mb->maxiter; i++){
                 double t;
                 if(zr*zr + zi*zi > mb->bailout){
                     switch(mb->outer){
