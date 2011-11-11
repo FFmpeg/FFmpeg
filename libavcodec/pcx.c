@@ -224,6 +224,9 @@ static int pcx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (nplanes == 1 && bits_per_pixel == 8) {
         pcx_palette(&buf, (uint32_t *) p->data[1], 256);
+    } else if (bits_per_pixel * nplanes == 1) {
+        AV_WN32A(p->data[1]  , 0xFF000000);
+        AV_WN32A(p->data[1]+4, 0xFFFFFFFF);
     } else if (bits_per_pixel < 8) {
         const uint8_t *palette = bufstart+16;
         pcx_palette(&palette, (uint32_t *) p->data[1], 16);
