@@ -290,7 +290,7 @@ static AVPacket flush_pkt;
 
 static SDL_Surface *screen;
 
-void exit_program(int ret)
+void av_noreturn exit_program(int ret)
 {
     exit(ret);
 }
