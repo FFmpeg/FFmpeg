@@ -896,14 +896,14 @@ need_realloc:
                                   dec->channel_layout, dec->sample_fmt, dec->sample_rate,
                                   ost->audio_channels_mapped ? ost->audio_channels_map : NULL,
                                   0, NULL);
-            av_set_double(ost->swr, "rmvol", ost->rematrix_volume);
+            av_opt_set_double(ost->swr, "rmvol", ost->rematrix_volume, 0);
             if (ost->audio_channels_mapped) {
-                av_set_int(ost->swr, "icl", av_get_default_channel_layout(ost->audio_channels_mapped));
-                av_set_int(ost->swr, "uch", ost->audio_channels_mapped);
+                av_opt_set_int(ost->swr, "icl", av_get_default_channel_layout(ost->audio_channels_mapped), 0);
+                av_opt_set_int(ost->swr, "uch", ost->audio_channels_mapped, 0);
             }
-            av_set_int(ost->swr, "ich", dec->channels);
-            av_set_int(ost->swr, "och", enc->channels);
-            if(audio_sync_method>1) av_set_int(ost->swr, "flags", SWR_FLAG_RESAMPLE);
+            av_opt_set_int(ost->swr, "ich", dec->channels, 0);
+            av_opt_set_int(ost->swr, "och", enc->channels, 0);
+            if(audio_sync_method>1) av_opt_set_int(ost->swr, "flags", SWR_FLAG_RESAMPLE, 0);
             if(ost->swr && swr_init(ost->swr) < 0){
                 av_log(NULL, AV_LOG_FATAL, "swr_init() failed\n");
                 swr_free(&ost->swr);
