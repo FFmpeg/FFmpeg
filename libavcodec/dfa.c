@@ -339,7 +339,7 @@ static int dfa_decode_frame(AVCodecContext *avctx,
             tmp_buf = buf;
             for (i = 0; i < pal_elems; i++) {
                 s->pal[i] = bytestream_get_be24(&tmp_buf) << 2;
-                s->pal[i] |= (s->pal[i] >> 6) & 0x333;
+                s->pal[i] |= (s->pal[i] >> 6) & 0x30303;
             }
             s->pic.palette_has_changed = 1;
         } else if (chunk_type <= 9) {
