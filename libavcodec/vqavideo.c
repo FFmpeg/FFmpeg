@@ -402,7 +402,7 @@ static void vqa_decode_chunk(VqaContext *s)
             r = s->buf[cpl0_chunk++] * 4;
             g = s->buf[cpl0_chunk++] * 4;
             b = s->buf[cpl0_chunk++] * 4;
-            s->palette[i] = (r << 16) | (g << 8) | (b);
+            s->palette[i] = 0xFF << 24 | r << 16 | g << 8 | b;
         }
     }
 
