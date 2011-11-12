@@ -94,7 +94,6 @@ static void vble_restore_plane(VBLEContext *ctx, int plane, int offset,
     AVFrame *pic = ctx->avctx->coded_frame;
     uint8_t *dst = pic->data[plane];
     uint8_t *val = ctx->val + offset;
-    uint8_t *len = ctx->len + offset;
     uint8_t a, b, c;
     int stride = pic->linesize[plane];
     int i, j;
@@ -119,7 +118,6 @@ static void vble_restore_plane(VBLEContext *ctx, int plane, int offset,
         }
         dst += stride;
         val += width;
-        len += width;
     }
 }
 
