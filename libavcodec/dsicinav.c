@@ -223,7 +223,7 @@ static int cinvideo_decode_frame(AVCodecContext *avctx,
         if (palette_colors_count > 256)
             return AVERROR_INVALIDDATA;
         for (i = 0; i < palette_colors_count; ++i) {
-            cin->palette[i] = bytestream_get_le24(&buf);
+            cin->palette[i] = 0xFF << 24 | bytestream_get_le24(&buf);
             bitmap_frame_size -= 3;
         }
     } else {
