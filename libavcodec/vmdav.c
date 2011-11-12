@@ -264,7 +264,7 @@ static void vmd_decode(VmdVideoContext *s)
             r = *p++ * 4;
             g = *p++ * 4;
             b = *p++ * 4;
-            palette32[i] = (r << 16) | (g << 8) | (b);
+            palette32[i] = 0xFF << 24 | r << 16 | g << 8 | b;
         }
     }
     if (p < p_end) {
