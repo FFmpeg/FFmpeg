@@ -34,8 +34,7 @@ typedef struct {
 
     int            size;
     int            flags;
-    uint8_t        *len;
-    uint8_t        *val;
+    uint8_t        *val; ///< This array first holds the lengths of vlc symbols and then their value.
 } VBLEContext;
 
 static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
@@ -62,27 +61,24 @@ static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
         if (val) {
             val = LUT[val];
             skip_bits(gb, val + 1);
-            ctx->len[i] = val;
+            ctx->val[i] = val;
         } else {
             skip_bits(gb, 8);
             if (!get_bits1(gb))
                 return -1;
-            ctx->len[i] = 8;
+            ctx->val[i] = 8;
         }
-        allbits += ctx->len[i];
+        allbits += ctx->val[i];
     }
 
     /* Check we have enough bits left */
     if (get_bits_left(gb) < allbits)
         return -1;
 
-    /* For any values that have length 0 */
-    memset(ctx->val, 0, ctx->size);
-
     for (i = 0; i < ctx->size; i++) {
         /* get_bits can't take a length of 0 */
-        if (ctx->len[i])
-            ctx->val[i] = (1 << ctx->len[i]) + get_bits(gb, ctx->len[i]) - 1;
+        if (ctx->val[i])
+            ctx->val[i] = (1 << ctx->val[i]) + get_bits(gb, ctx->val[i]) - 1;
     }
 
     return 0;
@@ -191,7 +187,6 @@ static av_cold int vble_decode_close(AVCodecContext *avctx)
         avctx->release_buffer(avctx, pic);
 
     av_freep(&avctx->coded_frame);
-    av_freep(&ctx->len);
     av_freep(&ctx->val);
 
     return 0;
@@ -216,14 +211,6 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 
     ctx->size = avpicture_get_size(avctx->pix_fmt,
                                    avctx->width, avctx->height);
-
-    ctx->len = av_malloc(ctx->size * sizeof(*ctx->len));
-
-    if (!ctx->len) {
-        av_log(avctx, AV_LOG_ERROR, "Could not allocate lengths buffer.\n");
-        vble_decode_close(avctx);
-        return AVERROR(ENOMEM);
-    }
 
     ctx->val = av_malloc(ctx->size * sizeof(*ctx->val));
 
