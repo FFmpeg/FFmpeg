@@ -55,9 +55,10 @@ const AVOption *av_next_option(void *obj, const AVOption *last)
 
 const AVOption *av_opt_next(void *obj, const AVOption *last)
 {
-    if (last && last[1].name) return ++last;
-    else if (last || !(*(AVClass**)obj)->option->name) return NULL;
-    else                      return (*(AVClass**)obj)->option;
+    AVClass *class = *(AVClass**)obj;
+    if (!last && class->option[0].name) return class->option;
+    if (last && last[1].name)           return ++last;
+    return NULL;
 }
 
 static int read_number(const AVOption *o, void *dst, double *num, int *den, int64_t *intnum)

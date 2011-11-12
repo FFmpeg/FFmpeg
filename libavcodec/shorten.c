@@ -252,12 +252,13 @@ static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
     return 0;
 }
 
-static int16_t * interleave_buffer(int16_t *samples, int nchan, int blocksize, int32_t **buffer) {
+static void interleave_buffer(int16_t *samples, int nchan, int blocksize,
+                              int32_t **buffer)
+{
     int i, chan;
     for (i=0; i<blocksize; i++)
         for (chan=0; chan < nchan; chan++)
             *samples++ = av_clip_int16(buffer[chan][i]);
-    return samples;
 }
 
 static const int fixed_coeffs[3][3] = {
@@ -576,7 +577,7 @@ static int shorten_decode_frame(AVCodecContext *avctx,
                     av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
                     return AVERROR(EINVAL);
                 }
-                samples = interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
+                interleave_buffer(samples, s->channels, s->blocksize, s->decoded);
                 *data_size = out_size;
             }
         }
