@@ -217,10 +217,12 @@ static int yop_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     firstcolor   = s->first_color[is_odd_frame];
     palette      = (uint32_t *)s->frame.data[1];
 
-    for (i = 0; i < s->num_pal_colors; i++, s->srcptr += 3)
+    for (i = 0; i < s->num_pal_colors; i++, s->srcptr += 3) {
         palette[i + firstcolor] = (s->srcptr[0] << 18) |
                                   (s->srcptr[1] << 10) |
                                   (s->srcptr[2] << 2);
+        palette[i + firstcolor] |= 0xFF << 24;
+    }
 
     s->frame.palette_has_changed = 1;
 
