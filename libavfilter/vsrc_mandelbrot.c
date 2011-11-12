@@ -35,6 +35,11 @@ enum Outer{
     NORMALIZED_ITERATION_COUNT,
 };
 
+typedef struct Point {
+    double p[2];
+    uint32_t val;
+} Point;
+
 typedef struct {
     int w, h;
     AVRational time_base;
@@ -47,6 +52,10 @@ typedef struct {
     double end_pts;
     double bailout;
     enum Outer outer;
+    int cache_allocated;
+    int cache_used;
+    Point *point_cache;
+    Point *next_cache;
 } MBContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -83,6 +92,11 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->time_base.num = frame_rate_q.den;
     mb->time_base.den = frame_rate_q.num;
 
+    mb->cache_allocated = mb->w * mb->h*2;
+    mb->cache_used = 0;
+    mb->point_cache= av_malloc(sizeof(*mb->point_cache)*mb->cache_allocated);
+    mb-> next_cache= av_malloc(sizeof(*mb-> next_cache)*mb->cache_allocated);
+
     return 0;
 }
 
@@ -91,6 +105,8 @@ static av_cold void uninit(AVFilterContext *ctx)
     MBContext *mb = ctx->priv;
     int i;
 
+    av_freep(&mb->point_cache);
+    av_freep(&mb-> next_cache);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -119,20 +135,44 @@ static int config_props(AVFilterLink *inlink)
     return 0;
 }
 
+static void fill_from_cache(AVFilterContext *ctx, uint32_t *color, int *in_cidx, int *out_cidx, double py, double scale){
+    MBContext *mb = ctx->priv;
+    for(; *in_cidx < mb->cache_used; (*in_cidx)++){
+        Point *p= &mb->point_cache[*in_cidx];
+        int x;
+        if(*in_cidx >= mb->cache_used || p->p[1] > py)
+            break;
+        x= round((p->p[0] - mb->start_x) / scale + mb->w/2);
+        if(x<0 || x >= mb->w)
+            continue;
+        if(color) color[x] = p->val;
+        if(out_cidx && *out_cidx < mb->cache_allocated)
+            mb->next_cache[(*out_cidx)++]= *p;
+    }
+}
+
 static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize, int64_t pts)
 {
     MBContext *mb = ctx->priv;
-    int x,y,i;
-
+    int x,y,i, in_cidx=0, next_cidx=0, tmp_cidx;
     double scale= mb->start_scale*pow(mb->end_scale/mb->start_scale, pts/mb->end_pts);
 
+    fill_from_cache(ctx, NULL, &in_cidx, NULL, mb->start_y+scale*(-mb->h/2-0.5), scale);
     for(y=0; y<mb->h; y++){
+        const double ci=mb->start_y+scale*(y-mb->h/2);
+        memset(color+linesize*y, 0, sizeof(*color)*mb->w);
+        fill_from_cache(ctx, color+linesize*y, &in_cidx, &next_cidx, ci, scale);
+        tmp_cidx= in_cidx;
+        fill_from_cache(ctx, color+linesize*y, &tmp_cidx, NULL, ci + scale/2, scale);
+
         for(x=0; x<mb->w; x++){
             const double cr=mb->start_x+scale*(x-mb->w/2);
-            const double ci=mb->start_y+scale*(y-mb->h/2);
             double zr=cr;
             double zi=ci;
             uint32_t c=0;
+
+            if(color[x + y*linesize] & 0xFF000000)
+                continue;
 
             for(i=0; i<mb->maxiter; i++){
                 double t;
@@ -148,9 +188,18 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 zi= 2*zr*zi + ci;
                 zr=       t + cr;
             }
+            c |= 0xFF000000;
             color[x + y*linesize]= c;
+            if(next_cidx < mb->cache_allocated){
+                mb->next_cache[next_cidx  ].p[0]= cr;
+                mb->next_cache[next_cidx  ].p[1]= ci;
+                mb->next_cache[next_cidx++].val = c;
+            }
         }
+        fill_from_cache(ctx, NULL, &in_cidx, &next_cidx, ci + scale/2, scale);
     }
+    FFSWAP(void*, mb->next_cache, mb->point_cache);
+    mb->cache_used = next_cidx;
 }
 
 static int request_frame(AVFilterLink *link)
