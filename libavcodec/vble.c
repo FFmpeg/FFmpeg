@@ -38,8 +38,9 @@ typedef struct {
     uint8_t        *val;
 } VBLEContext;
 
-static uint8_t vble_read_reverse_unary(GetBitContext *gb)
+static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
 {
+    int i;
     static const uint8_t LUT[256] = {
         8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,
         5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,
@@ -50,33 +51,23 @@ static uint8_t vble_read_reverse_unary(GetBitContext *gb)
         6,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,
         5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,
     };
-    /* At most we need to read 9 bits total to get indices up to 8 */
-    int val = show_bits(gb, 8);
-
-    if (val) {
-        val = LUT[val];
-        skip_bits(gb, val + 1);
-        return val;
-    } else {
-        skip_bits(gb, 8);
-        if (get_bits1(gb))
-            return 8;
-    }
-
-    /* Return something larger than 8 on error */
-    return UINT8_MAX;
-}
-
-static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
-{
-    int i;
 
     /* Read all the lengths in first */
     for (i = 0; i < ctx->size; i++) {
-        ctx->len[i] = vble_read_reverse_unary(gb);
+        /* At most we need to read 9 bits total to get indices up to 8 */
+        int val = show_bits(gb, 8);
 
-        if (ctx->len[i] == UINT8_MAX)
-            return -1;
+        // read reverse unary
+        if (val) {
+            val = LUT[val];
+            skip_bits(gb, val + 1);
+            ctx->len[i] = val;
+        } else {
+            skip_bits(gb, 8);
+            if (!get_bits1(gb))
+                return -1;
+            ctx->len[i] = 8;
+        }
     }
 
     /* For any values that have length 0 */
