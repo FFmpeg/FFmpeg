@@ -74,6 +74,7 @@ typedef struct RTMPContext {
     int           skip_bytes;                 ///< number of bytes to skip from the input FLV stream in the next write call
     uint8_t       flv_header[11];             ///< partial incoming flv packet header
     int           flv_header_bytes;           ///< number of initialized bytes in flv_header
+    int           nb_invokes;                 ///< keeps track of invoke messages
 } RTMPContext;
 
 #define PLAYER_KEY_OPEN_PART_LEN 30   ///< length of partial key used for first client digest signing
@@ -166,7 +167,7 @@ static void gen_release_stream(URLContext *s, RTMPContext *rt)
     av_log(s, AV_LOG_DEBUG, "Releasing stream...\n");
     p = pkt.data;
     ff_amf_write_string(&p, "releaseStream");
-    ff_amf_write_number(&p, 2.0);
+    ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
 
@@ -189,7 +190,7 @@ static void gen_fcpublish_stream(URLContext *s, RTMPContext *rt)
     av_log(s, AV_LOG_DEBUG, "FCPublish stream...\n");
     p = pkt.data;
     ff_amf_write_string(&p, "FCPublish");
-    ff_amf_write_number(&p, 3.0);
+    ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
 
@@ -212,7 +213,7 @@ static void gen_fcunpublish_stream(URLContext *s, RTMPContext *rt)
     av_log(s, AV_LOG_DEBUG, "UnPublishing stream...\n");
     p = pkt.data;
     ff_amf_write_string(&p, "FCUnpublish");
-    ff_amf_write_number(&p, 5.0);
+    ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_null(&p);
     ff_amf_write_string(&p, rt->playpath);
 
@@ -234,7 +235,7 @@ static void gen_create_stream(URLContext *s, RTMPContext *rt)
 
     p = pkt.data;
     ff_amf_write_string(&p, "createStream");
-    ff_amf_write_number(&p, rt->is_input ? 3.0 : 4.0);
+    ff_amf_write_number(&p, ++rt->nb_invokes);
     ff_amf_write_null(&p);
 
     ff_rtmp_packet_write(rt->stream, &pkt, rt->chunk_size, rt->prev_pkt[1]);
