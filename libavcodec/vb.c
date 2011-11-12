@@ -73,7 +73,7 @@ static void vb_decode_palette(VBDecContext *c, int data_size)
         return;
     }
     for(i = start; i <= start + size; i++)
-        c->pal[i] = bytestream_get_be24(&c->stream);
+        c->pal[i] = 0xFF << 24 | bytestream_get_be24(&c->stream);
 }
 
 static inline int check_pixel(uint8_t *buf, uint8_t *start, uint8_t *end)
