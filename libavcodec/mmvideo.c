@@ -69,7 +69,7 @@ static void mm_decode_pal(MmContext *s, const uint8_t *buf, const uint8_t *buf_e
     int i;
     buf += 4;
     for (i=0; i<128 && buf+2<buf_end; i++) {
-        s->palette[i] = AV_RB24(buf);
+        s->palette[i] = 0xFF << 24 | AV_RB24(buf);
         s->palette[i+128] = s->palette[i]<<2;
         buf += 3;
     }
