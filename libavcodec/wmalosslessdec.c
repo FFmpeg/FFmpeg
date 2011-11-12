@@ -308,6 +308,19 @@ static void av_cold dump_context(WmallDecodeCtx *s)
     PRINT("num channels",        s->num_channels);
 }
 
+static int dump_int_buffer(int *buffer, int length, int delimiter)
+{
+    int i;
+
+    for (i=0 ; i<length ; i++) {
+        if (!(i%delimiter))
+            av_log(0, 0, "\n[%d] ", i);
+        av_log(0, 0, "%d, ", buffer[i]);
+    }
+    av_log(0, 0, "\n");
+
+}
+
 /**
  *@brief Uninitialize the decoder and free all resources.
  *@param avctx codec context
@@ -708,6 +721,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
         av_log(0, 0, "%4d ", residue);
 //	dprintf(s->avctx, "%5d: %5d %10d %12d %12d %5d %-16d %04x\n",i, quo, ave_mean, s->ave_sum[ch], rem, rem_bits, s->channel_residues[ch][i], show_bits(&s->gb, 16));
     }
+    dump_int_buffer(s->channel_residues[ch], tile_size, 16);
     av_log(0, 0, "\n Tile size = %d\n", tile_size);
 
     return 0;
