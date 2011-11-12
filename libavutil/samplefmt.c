@@ -92,3 +92,68 @@ int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt)
          return 0;
      return sample_fmt_info[sample_fmt].planar;
 }
+
+int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
+                               enum AVSampleFormat sample_fmt, int align)
+{
+    int line_size;
+    int sample_size = av_get_bytes_per_sample(sample_fmt);
+    int planar      = av_sample_fmt_is_planar(sample_fmt);
+
+    /* validate parameter ranges */
+    if (!sample_size || nb_samples <= 0 || nb_channels <= 0)
+        return AVERROR(EINVAL);
+
+    /* check for integer overflow */
+    if (nb_channels > INT_MAX / align ||
+        (int64_t)nb_channels * nb_samples > (INT_MAX - (align * nb_channels)) / sample_size)
+        return AVERROR(EINVAL);
+
+    line_size = planar ? FFALIGN(nb_samples * sample_size,               align) :
+                         FFALIGN(nb_samples * sample_size * nb_channels, align);
+    if (linesize)
+        *linesize = line_size;
+
+    return planar ? line_size * nb_channels : line_size;
+}
+
+int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
+                           uint8_t *buf, int nb_channels, int nb_samples,
+                           enum AVSampleFormat sample_fmt, int align)
+{
+    int ch, planar, buf_size;
+
+    planar   = av_sample_fmt_is_planar(sample_fmt);
+    buf_size = av_samples_get_buffer_size(linesize, nb_channels, nb_samples,
+                                          sample_fmt, align);
+    if (buf_size < 0)
+        return buf_size;
+
+    audio_data[0] = buf;
+    for (ch = 1; planar && ch < nb_channels; ch++)
+        audio_data[ch] = audio_data[ch-1] + *linesize;
+
+    return 0;
+}
+
+int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
+                     int nb_samples, enum AVSampleFormat sample_fmt, int align)
+{
+    uint8_t *buf;
+    int size = av_samples_get_buffer_size(NULL, nb_channels, nb_samples,
+                                          sample_fmt, align);
+    if (size < 0)
+        return size;
+
+    buf = av_mallocz(size);
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    size = av_samples_fill_arrays(audio_data, linesize, buf, nb_channels,
+                                  nb_samples, sample_fmt, align);
+    if (size < 0) {
+        av_free(buf);
+        return size;
+    }
+    return 0;
+}

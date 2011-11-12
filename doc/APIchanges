@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-xx-xx - xxxxxxx - lavu 51.18.0
+  Add av_samples_get_buffer_size(), av_samples_fill_arrays(), and
+  av_samples_alloc(), to samplefmt.h.
+
 2011-xx-xx - xxxxxxx - lavu 51.17.0
   Add planar sample formats and av_sample_fmt_is_planar() to samplefmt.h.
 
