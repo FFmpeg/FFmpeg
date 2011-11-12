@@ -386,7 +386,7 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
 
     buf++;
     for(i = 0; i < 256; i++)
-        *pal++ = bytestream_get_be24(&buf);
+        *pal++ = 0xFF << 24 | bytestream_get_be24(&buf);
     buf_size -= 769;
 
     last_reset(smk->mmap_tbl, smk->mmap_last);
