@@ -41,6 +41,7 @@ typedef struct {
 static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
 {
     int i;
+    int allbits = 0;
     static const uint8_t LUT[256] = {
         8,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,
         5,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,4,0,1,0,2,0,1,0,3,0,1,0,2,0,1,0,
@@ -68,16 +69,17 @@ static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
                 return -1;
             ctx->len[i] = 8;
         }
+        allbits += ctx->len[i];
     }
+
+    /* Check we have enough bits left */
+    if (get_bits_left(gb) < allbits)
+        return -1;
 
     /* For any values that have length 0 */
     memset(ctx->val, 0, ctx->size);
 
     for (i = 0; i < ctx->size; i++) {
-        /* Check we have enough bits left */
-        if (get_bits_left(gb) < ctx->len[i])
-            return -1;
-
         /* get_bits can't take a length of 0 */
         if (ctx->len[i])
             ctx->val[i] = (1 << ctx->len[i]) + get_bits(gb, ctx->len[i]) - 1;
