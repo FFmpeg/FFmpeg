@@ -31,6 +31,13 @@ enum AVSampleFormat {
     AV_SAMPLE_FMT_S32,         ///< signed 32 bits
     AV_SAMPLE_FMT_FLT,         ///< float
     AV_SAMPLE_FMT_DBL,         ///< double
+
+    AV_SAMPLE_FMT_U8P,         ///< unsigned 8 bits, planar
+    AV_SAMPLE_FMT_S16P,        ///< signed 16 bits, planar
+    AV_SAMPLE_FMT_S32P,        ///< signed 32 bits, planar
+    AV_SAMPLE_FMT_FLTP,        ///< float, planar
+    AV_SAMPLE_FMT_DBLP,        ///< double, planar
+
     AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if linking dynamically
 };
 
@@ -76,5 +83,13 @@ int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
  * sample format
  */
 int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt);
+
+/**
+ * Check if the sample format is planar.
+ *
+ * @param sample_fmt the sample format to inspect
+ * @return 1 if the sample format is planar, 0 if it is interleaved
+ */
+int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt);
 
 #endif /* AVUTIL_SAMPLEFMT_H */

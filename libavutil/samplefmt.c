@@ -25,15 +25,21 @@
 typedef struct SampleFmtInfo {
     const char *name;
     int bits;
+    int planar;
 } SampleFmtInfo;
 
 /** this table gives more information about formats */
 static const SampleFmtInfo sample_fmt_info[AV_SAMPLE_FMT_NB] = {
-    [AV_SAMPLE_FMT_U8]  = { .name = "u8",  .bits = 8 },
-    [AV_SAMPLE_FMT_S16] = { .name = "s16", .bits = 16 },
-    [AV_SAMPLE_FMT_S32] = { .name = "s32", .bits = 32 },
-    [AV_SAMPLE_FMT_FLT] = { .name = "flt", .bits = 32 },
-    [AV_SAMPLE_FMT_DBL] = { .name = "dbl", .bits = 64 },
+    [AV_SAMPLE_FMT_U8]   = { .name =   "u8", .bits =  8, .planar = 0 },
+    [AV_SAMPLE_FMT_S16]  = { .name =  "s16", .bits = 16, .planar = 0 },
+    [AV_SAMPLE_FMT_S32]  = { .name =  "s32", .bits = 32, .planar = 0 },
+    [AV_SAMPLE_FMT_FLT]  = { .name =  "flt", .bits = 32, .planar = 0 },
+    [AV_SAMPLE_FMT_DBL]  = { .name =  "dbl", .bits = 64, .planar = 0 },
+    [AV_SAMPLE_FMT_U8P]  = { .name =  "u8p", .bits =  8, .planar = 1 },
+    [AV_SAMPLE_FMT_S16P] = { .name = "s16p", .bits = 16, .planar = 1 },
+    [AV_SAMPLE_FMT_S32P] = { .name = "s32p", .bits = 32, .planar = 1 },
+    [AV_SAMPLE_FMT_FLTP] = { .name = "fltp", .bits = 32, .planar = 1 },
+    [AV_SAMPLE_FMT_DBLP] = { .name = "dblp", .bits = 64, .planar = 1 },
 };
 
 const char *av_get_sample_fmt_name(enum AVSampleFormat sample_fmt)
@@ -79,3 +85,10 @@ int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt)
         0 : sample_fmt_info[sample_fmt].bits;
 }
 #endif
+
+int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt)
+{
+     if (sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB)
+         return 0;
+     return sample_fmt_info[sample_fmt].planar;
+}
