@@ -66,7 +66,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     AVRational frame_rate_q;
     int ret;
 
-    mb->maxiter=256;
+    mb->maxiter=1024;
     mb->start_x=-0.743643887037158704752191506114774;
     mb->start_y=-0.131825904205311970493132056385139;
     mb->start_scale=3.0;
