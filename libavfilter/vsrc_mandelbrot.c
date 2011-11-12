@@ -58,8 +58,8 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     int ret;
 
     mb->maxiter=256;
-    mb->start_x=0;
-    mb->start_y=1;
+    mb->start_x=-0.743643887037158704752191506114774;
+    mb->start_y=-0.131825904205311970493132056385139;
     mb->start_scale=3.0;
     mb->end_scale=0.3;
     mb->end_pts=200;
