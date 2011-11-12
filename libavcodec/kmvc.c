@@ -251,7 +251,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, AVPa
     if (buf[0] == 127) {
         buf += 3;
         for (i = 0; i < 127; i++) {
-            ctx->pal[i + (header & 0x81)] = AV_RB24(buf);
+            ctx->pal[i + (header & 0x81)] = 0xFF << 24 | AV_RB24(buf);
             buf += 4;
         }
         buf -= 127 * 4 + 3;
