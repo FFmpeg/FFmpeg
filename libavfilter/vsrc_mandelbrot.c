@@ -56,6 +56,7 @@ typedef struct {
     int cache_used;
     Point *point_cache;
     Point *next_cache;
+    double (*zyklus)[2];
 } MBContext;
 
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
@@ -96,6 +97,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->cache_used = 0;
     mb->point_cache= av_malloc(sizeof(*mb->point_cache)*mb->cache_allocated);
     mb-> next_cache= av_malloc(sizeof(*mb-> next_cache)*mb->cache_allocated);
+    mb-> zyklus    = av_malloc(sizeof(*mb->zyklus) * mb->maxiter);
 
     return 0;
 }
@@ -107,6 +109,7 @@ static av_cold void uninit(AVFilterContext *ctx)
 
     av_freep(&mb->point_cache);
     av_freep(&mb-> next_cache);
+    av_freep(&mb->zyklus);
 }
 
 static int query_formats(AVFilterContext *ctx)
@@ -187,6 +190,10 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 t= zr*zr - zi*zi;
                 zi= 2*zr*zi + ci;
                 zr=       t + cr;
+                if(i && mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
+                    break;
+                mb->zyklus[i][0]= zr;
+                mb->zyklus[i][1]= zi;
             }
             c |= 0xFF000000;
             color[x + y*linesize]= c;
