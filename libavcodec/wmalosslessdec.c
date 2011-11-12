@@ -139,6 +139,7 @@ typedef struct {
     float*   coeffs;                                  ///< pointer to the subframe decode buffer
     uint16_t num_vec_coeffs;                          ///< number of vector coded coefficients
     DECLARE_ALIGNED(16, float, out)[WMALL_BLOCK_MAX_SIZE + WMALL_BLOCK_MAX_SIZE / 2]; ///< output buffer
+    int      transient_counter;                       ///< number of transient samples from the beginning of transient zone
 } WmallChannelCtx;
 
 /**
@@ -660,9 +661,15 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
     int i = 0;
     unsigned int ave_mean;
     s->transient[ch] = get_bits1(&s->gb);
-    if(s->transient[ch])
-	s->transient_pos[ch] = get_bits(&s->gb, av_log2(tile_size));
-    
+    if(s->transient[ch]) {
+	    s->transient_pos[ch] = get_bits(&s->gb, av_log2(tile_size));
+        if (s->transient_pos[ch])
+	        s->transient[ch] = 0;
+	    s->channel[ch].transient_counter =
+	        FFMAX(s->channel[ch].transient_counter, s->samples_per_frame / 2);
+	} else if (s->channel[ch].transient_counter)
+	    s->transient[ch] = 1;
+
     if(s->seekable_tile) {
 	ave_mean = get_bits(&s->gb, s->bits_per_sample);
 	s->ave_sum[ch] = ave_mean << (s->movave_scaling + 1);
@@ -753,9 +760,14 @@ static void reset_codec(WmallDecodeCtx *s)
 {
     int ich, ilms;
     s->mclms_recent = s->mclms_order * s->num_channels;
-    for (ich = 0; ich < s->num_channels; ich++)
+    for (ich = 0; ich < s->num_channels; ich++) {
         for (ilms = 0; ilms < s->cdlms_ttl[ich]; ilms++)
             s->cdlms[ich][ilms].recent = s->cdlms[ich][ilms].order;
+        /* first sample of a seekable subframe is considered as the starting of
+           a transient area which is samples_per_frame samples long */
+        s->channel[ich].transient_counter = s->samples_per_frame;
+        s->transient[ich] = 1;
+    }
 }
 
 
