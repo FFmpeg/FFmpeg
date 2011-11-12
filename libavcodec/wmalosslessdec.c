@@ -696,7 +696,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
 	    s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample);
 	i++;
     }
-    av_log(0, 0, "%8d: ", num_logged_tiles++);
+    //av_log(0, 0, "%8d: ", num_logged_tiles++);
     for(; i < tile_size; i++) {
 	int quo = 0, rem, rem_bits, residue;
 	while(get_bits1(&s->gb))
@@ -717,12 +717,10 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
 	    residue = residue >> 1;
 	s->channel_residues[ch][i] = residue;
 
-    //if (num_logged_tiles < 1)
-        av_log(0, 0, "%4d ", residue);
-//	dprintf(s->avctx, "%5d: %5d %10d %12d %12d %5d %-16d %04x\n",i, quo, ave_mean, s->ave_sum[ch], rem, rem_bits, s->channel_residues[ch][i], show_bits(&s->gb, 16));
+    /*if (num_logged_tiles < 1)
+        av_log(0, 0, "%4d ", residue); */
     }
     dump_int_buffer(s->channel_residues[ch], tile_size, 16);
-    av_log(0, 0, "\n Tile size = %d\n", tile_size);
 
     return 0;
 
