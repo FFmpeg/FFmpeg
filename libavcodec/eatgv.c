@@ -278,7 +278,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         pal_count = AV_RL16(&buf[6]);
         buf += 12;
         for(i=0; i<pal_count && i<AVPALETTE_COUNT && buf_end - buf >= 3; i++) {
-            s->palette[i] = AV_RB24(buf);
+            s->palette[i] = 0xFF << 24 | AV_RB24(buf);
             buf += 3;
         }
     }
