@@ -73,10 +73,13 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->start_scale=3.0;
     mb->end_scale=0.3;
     mb->end_pts=800;
-    mb->bailout=100;
+    mb->bailout=10;
     mb->outer= NORMALIZED_ITERATION_COUNT;
     if (args)
-        sscanf(args, "%127[^:]:%127[^:]:%d:%lf:%lf:%lf", frame_size, frame_rate, &mb->maxiter, &mb->start_x, &mb->start_y, &mb->start_scale);
+        sscanf(args, "%127[^:]:%127[^:]:%d:%lf:%lf:%lf:%lf:%lf:%lf:%d", frame_size, frame_rate,
+               &mb->maxiter, &mb->start_x, &mb->start_y, &mb->start_scale, &mb->end_scale,
+               &mb->end_pts, &mb->bailout, &mb->outer);
+    mb->bailout *= mb->bailout;
 
     if (av_parse_video_size(&mb->w, &mb->h, frame_size) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", frame_size);
