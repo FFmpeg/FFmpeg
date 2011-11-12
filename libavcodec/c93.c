@@ -152,7 +152,7 @@ static int decode_frame(AVCodecContext *avctx, void *data,
         uint32_t *palette = (uint32_t *) newpic->data[1];
         const uint8_t *palbuf = buf + buf_size - 768 - 1;
         for (i = 0; i < 256; i++) {
-            palette[i] = bytestream_get_be24(&palbuf);
+            palette[i] = 0xFF << 24 | bytestream_get_be24(&palbuf);
         }
     } else {
         if (oldpic->data[1])
