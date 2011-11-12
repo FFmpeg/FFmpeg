@@ -313,7 +313,7 @@ static int init_image(TiffContext *s)
             /* make default grayscale pal */
             pal = (uint32_t *) s->picture.data[1];
             for (i = 0; i < 1<<s->bpp; i++)
-                pal[i] = i * 255 / ((1<<s->bpp) - 1) * 0x010101;
+                pal[i] = 0xFF << 24 | i * 255 / ((1<<s->bpp) - 1) * 0x010101;
         }
     }
     return 0;
