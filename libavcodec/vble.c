@@ -41,7 +41,7 @@ typedef struct {
 static uint8_t vble_read_reverse_unary(GetBitContext *gb)
 {
     /* At most we need to read 9 bits total to get indices up to 8 */
-    uint8_t val = show_bits(gb, 8);
+    int val = show_bits(gb, 8);
 
     if (val) {
         val = 7 - av_log2_16bit(av_reverse[val]);
