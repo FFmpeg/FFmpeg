@@ -93,7 +93,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->time_base.num = frame_rate_q.den;
     mb->time_base.den = frame_rate_q.num;
 
-    mb->cache_allocated = mb->w * mb->h*2;
+    mb->cache_allocated = mb->w * mb->h * 3;
     mb->cache_used = 0;
     mb->point_cache= av_malloc(sizeof(*mb->point_cache)*mb->cache_allocated);
     mb-> next_cache= av_malloc(sizeof(*mb-> next_cache)*mb->cache_allocated);
