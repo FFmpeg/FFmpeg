@@ -238,7 +238,7 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                     r = buf[stream_ptr++] << color_shift;
                     g = buf[stream_ptr++] << color_shift;
                     b = buf[stream_ptr++] << color_shift;
-                    entry = (r << 16) | (g << 8) | b;
+                    entry = 0xFF << 24 | r << 16 | g << 8 | b;
                     if (s->palette[palette_ptr] != entry)
                         s->new_palette = 1;
                     s->palette[palette_ptr++] = entry;
