@@ -159,7 +159,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
     MBContext *mb = ctx->priv;
     int x,y,i, in_cidx=0, next_cidx=0, tmp_cidx;
     double scale= mb->start_scale*pow(mb->end_scale/mb->start_scale, pts/mb->end_pts);
-
+    int use_zyklus=0;
     fill_from_cache(ctx, NULL, &in_cidx, NULL, mb->start_y+scale*(-mb->h/2-0.5), scale);
     for(y=0; y<mb->h; y++){
         const double ci=mb->start_y+scale*(y-mb->h/2);
@@ -190,11 +190,14 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 t= zr*zr - zi*zi;
                 zi= 2*zr*zi + ci;
                 zr=       t + cr;
-                if(i && mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
-                    break;
-                mb->zyklus[i][0]= zr;
-                mb->zyklus[i][1]= zi;
+                if(use_zyklus){
+                    if(i && mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
+                        break;
+                    mb->zyklus[i][0]= zr;
+                    mb->zyklus[i][1]= zi;
+                }
             }
+            use_zyklus = !c;
             c |= 0xFF000000;
             color[x + y*linesize]= c;
             if(next_cidx < mb->cache_allocated){
