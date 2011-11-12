@@ -756,6 +756,9 @@ static void clear_codec_buffers(WmallDecodeCtx *s)
     }
 }
 
+/**
+ *@brief Resets filter parameters and transient area at new seekable tile
+ */
 static void reset_codec(WmallDecodeCtx *s)
 {
     int ich, ilms;
