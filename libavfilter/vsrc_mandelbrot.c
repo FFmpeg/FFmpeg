@@ -62,7 +62,7 @@ typedef struct {
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     MBContext *mb = ctx->priv;
-    char frame_size  [128] = "320x240";
+    char frame_size  [128] = "640x480";
     char frame_rate  [128] = "25";
     AVRational frame_rate_q;
     int ret;
@@ -72,7 +72,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->start_y=-0.131825904205311970493132056385139;
     mb->start_scale=3.0;
     mb->end_scale=0.3;
-    mb->end_pts=200;
+    mb->end_pts=800;
     mb->bailout=100;
     mb->outer= NORMALIZED_ITERATION_COUNT;
     if (args)
