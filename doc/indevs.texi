@@ -418,7 +418,7 @@ To list the pulse source devices and their properties you can invoke
 the command @file{pactl list sources}.
 
 @example
-avconv -f pulse -i default /tmp/pulse.wav
+ffmpeg -f pulse -i default /tmp/pulse.wav
 @end example
 
 @subsection @var{server} AVOption
