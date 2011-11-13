@@ -595,7 +595,7 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
 {
     int coef_list[128];
     int mode_list[128];
-    int i, t, mask, bits, ccoef, mode, sign;
+    int i, t, bits, ccoef, mode, sign;
     int list_start = 64, list_end = 64, list_pos;
     int coef_count = 0;
     int coef_idx[64];
@@ -609,8 +609,7 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
     coef_list[list_end] = 2;  mode_list[list_end++] = 3;
     coef_list[list_end] = 3;  mode_list[list_end++] = 3;
 
-    bits = get_bits(gb, 4) - 1;
-    for (mask = 1 << bits; bits >= 0; mask >>= 1, bits--) {
+    for (bits = get_bits(gb, 4) - 1; bits >= 0; bits--) {
         list_pos = list_start;
         while (list_pos < list_end) {
             if (!(mode_list[list_pos] | coef_list[list_pos]) || !get_bits1(gb)) {
@@ -636,7 +635,7 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
                         if (!bits) {
                             t = 1 - (get_bits1(gb) << 1);
                         } else {
-                            t = get_bits(gb, bits) | mask;
+                            t = get_bits(gb, bits) | 1 << bits;
                             sign = -get_bits1(gb);
                             t = (t ^ sign) - sign;
                         }
@@ -657,7 +656,7 @@ static int read_dct_coeffs(GetBitContext *gb, int32_t block[64], const uint8_t *
                 if (!bits) {
                     t = 1 - (get_bits1(gb) << 1);
                 } else {
-                    t = get_bits(gb, bits) | mask;
+                    t = get_bits(gb, bits) | 1 << bits;
                     sign = -get_bits1(gb);
                     t = (t ^ sign) - sign;
                 }
