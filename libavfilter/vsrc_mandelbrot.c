@@ -30,6 +30,8 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/parseutils.h"
 
+#define SQR(a) ((a)*(a))
+
 enum Outer{
     ITERATION_COUNT,
     NORMALIZED_ITERATION_COUNT,
