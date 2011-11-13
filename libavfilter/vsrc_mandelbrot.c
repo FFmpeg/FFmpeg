@@ -194,7 +194,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 zi= 2*zr*zi + ci;
                 zr=       t + cr;
                 if(use_zyklus){
-                    if(i && mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
+                    if((i&1) && mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
                         break;
                     mb->zyklus[i][0]= zr;
                     mb->zyklus[i][1]= zi;
