@@ -37,6 +37,10 @@ enum Outer{
     NORMALIZED_ITERATION_COUNT,
 };
 
+enum Inner{
+    BLACK,
+};
+
 typedef struct Point {
     double p[2];
     uint32_t val;
@@ -54,6 +58,7 @@ typedef struct {
     double end_pts;
     double bailout;
     enum Outer outer;
+    enum Inner inner;
     int cache_allocated;
     int cache_used;
     Point *point_cache;
