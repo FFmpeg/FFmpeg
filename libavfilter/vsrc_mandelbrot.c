@@ -28,6 +28,7 @@
 
 #include "avfilter.h"
 #include "libavutil/imgutils.h"
+#include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 
 #define SQR(a) ((a)*(a))
@@ -48,9 +49,11 @@ typedef struct Point {
 } Point;
 
 typedef struct {
+    const AVClass *class;
     int w, h;
     AVRational time_base;
     uint64_t pts;
+    char *size, *rate;
     int maxiter;
     double start_x;
     double start_y;
@@ -67,41 +70,72 @@ typedef struct {
     double (*zyklus)[2];
 } MBContext;
 
+#define OFFSET(x) offsetof(MBContext, x)
+
+static const AVOption mandelbrot_options[] = {
+    {"size",        "set frame size",                OFFSET(size),    AV_OPT_TYPE_STRING,     {.str="640x480"},  CHAR_MIN, CHAR_MAX },
+    {"s",           "set frame size",                OFFSET(size),    AV_OPT_TYPE_STRING,     {.str="640x480"},  CHAR_MIN, CHAR_MAX },
+    {"rate",        "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX },
+    {"r",           "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX },
+    {"maxiter",     "set max iterations number",     OFFSET(maxiter), AV_OPT_TYPE_INT,        {.dbl=4096},  1,        INT_MAX  },
+    {"start_x",     "set the initial x position",    OFFSET(start_x), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.743643887037158704752191506114774}, -INFINITY, INFINITY  },
+    {"start_y",     "set the initial y position",    OFFSET(start_y), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.131825904205311970493132056385139}, -INFINITY, INFINITY  },
+    {"start_scale", "set the initial scale value",   OFFSET(start_scale), AV_OPT_TYPE_DOUBLE, {.dbl=3.0},  -INFINITY, INFINITY },
+    {"end_scale",   "set the terminal scale value",  OFFSET(end_scale), AV_OPT_TYPE_DOUBLE,   {.dbl=0.3},  -INFINITY, INFINITY },
+    {"end_pts",     "set the terminal pts value",    OFFSET(end_pts), AV_OPT_TYPE_DOUBLE,     {.dbl=800},  -INFINITY, INFINITY },
+    {"bailout",     "set the bailout value",         OFFSET(bailout), AV_OPT_TYPE_DOUBLE,     {.dbl=10},   -INFINITY, INFINITY },
+
+    {"outer",       "set outer coloring mode",       OFFSET(outer), AV_OPT_TYPE_INT, {.dbl=NORMALIZED_ITERATION_COUNT}, 0, INT_MAX, 0, "outer"},
+    {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.dbl=ITERATION_COUNT}, INT_MIN, INT_MAX, 0, "outer" },
+    {"normalized_iteration_count", "set normalized iteration count mode",   0, AV_OPT_TYPE_CONST, {.dbl=NORMALIZED_ITERATION_COUNT}, INT_MIN, INT_MAX, 0, "outer" },
+
+    {"inner",       "set inner coloring mode",       OFFSET(inner), AV_OPT_TYPE_INT, {.dbl=BLACK}, 0, INT_MAX, 0, "inner"},
+    {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.dbl=BLACK}, INT_MIN, INT_MAX, 0, "inner" },
+    {"period",      "set period mode",               0, AV_OPT_TYPE_CONST, {.dbl=PERIOD}, INT_MIN, INT_MAX, 0, "inner" },
+
+    {NULL},
+};
+
+static const char *mandelbrot_get_name(void *ctx)
+{
+    return "mandelbrot";
+}
+
+static const AVClass mandelbrot_class = {
+    "MBContext",
+    mandelbrot_get_name,
+    mandelbrot_options
+};
+
 static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 {
     MBContext *mb = ctx->priv;
-    char frame_size  [128] = "640x480";
-    char frame_rate  [128] = "25";
-    AVRational frame_rate_q;
+    AVRational rate_q;
+    int err;
 
-    mb->maxiter=4096;
-    mb->start_x=-0.743643887037158704752191506114774;
-    mb->start_y=-0.131825904205311970493132056385139;
-    mb->start_scale=3.0;
-    mb->end_scale=0.3;
-    mb->end_pts=800;
-    mb->bailout=10;
-    mb->outer= NORMALIZED_ITERATION_COUNT;
-    if (args)
-        sscanf(args, "%127[^:]:%127[^:]:%d:%lf:%lf:%lf:%lf:%lf:%lf:%d", frame_size, frame_rate,
-               &mb->maxiter, &mb->start_x, &mb->start_y, &mb->start_scale, &mb->end_scale,
-               &mb->end_pts, &mb->bailout, &mb->outer);
+    mb->class = &mandelbrot_class;
+    av_opt_set_defaults(mb);
+
+    if ((err = (av_set_options_string(mb, args, "=", ":"))) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Error parsing options string: '%s'\n", args);
+        return err;
+    }
     mb->bailout *= mb->bailout;
 
-    if (av_parse_video_size(&mb->w, &mb->h, frame_size) < 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", frame_size);
+    if (av_parse_video_size(&mb->w, &mb->h, mb->size) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame size: %s\n", mb->size);
         return AVERROR(EINVAL);
     }
     mb->start_scale /=mb->h;
     mb->end_scale /=mb->h;
 
-    if (av_parse_video_rate(&frame_rate_q, frame_rate) < 0 ||
-        frame_rate_q.den <= 0 || frame_rate_q.num <= 0) {
-        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", frame_rate);
+    if (av_parse_video_rate(&rate_q, mb->rate) < 0 ||
+        rate_q.den <= 0 || rate_q.num <= 0) {
+        av_log(ctx, AV_LOG_ERROR, "Invalid frame rate: %s\n", mb->rate);
         return AVERROR(EINVAL);
     }
-    mb->time_base.num = frame_rate_q.den;
-    mb->time_base.den = frame_rate_q.num;
+    mb->time_base.num = rate_q.den;
+    mb->time_base.den = rate_q.num;
 
     mb->cache_allocated = mb->w * mb->h * 3;
     mb->cache_used = 0;
@@ -116,6 +150,8 @@ static av_cold void uninit(AVFilterContext *ctx)
 {
     MBContext *mb = ctx->priv;
 
+    av_freep(&mb->size);
+    av_freep(&mb->rate);
     av_freep(&mb->point_cache);
     av_freep(&mb-> next_cache);
     av_freep(&mb->zyklus);
