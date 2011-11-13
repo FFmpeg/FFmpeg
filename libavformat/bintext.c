@@ -62,7 +62,7 @@ static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
     AVIOContext *pb = avctx->pb;
     char buf[36];
     int len;
-    uint64_t start_pos = url_fsize(pb) - 256;
+    uint64_t start_pos = avio_size(pb) - 256;
 
     avio_seek(pb, start_pos, SEEK_SET);
     if (avio_read(pb, buf, sizeof(next_magic)) != sizeof(next_magic))
@@ -142,7 +142,7 @@ static int bintext_read_header(AVFormatContext *s,
 
     if (!url_is_streamed(pb)) {
         int got_width = 0;
-        bin->fsize = url_fsize(pb);
+        bin->fsize = avio_size(pb);
         if (ff_sauce_read(s, &bin->fsize, &got_width, 0) < 0)
             next_tag_read(s, &bin->fsize);
         if (!ap->width)
@@ -201,7 +201,7 @@ static int xbin_read_header(AVFormatContext *s,
         return AVERROR(EIO);
 
     if (!url_is_streamed(pb)) {
-        bin->fsize = url_fsize(pb) - 9 - st->codec->extradata_size;
+        bin->fsize = avio_size(pb) - 9 - st->codec->extradata_size;
         ff_sauce_read(s, &bin->fsize, NULL, 0);
         avio_seek(pb, 9 + st->codec->extradata_size, SEEK_SET);
     }
@@ -243,7 +243,7 @@ static int adf_read_header(AVFormatContext *s,
 
     if (!url_is_streamed(pb)) {
         int got_width = 0;
-        bin->fsize = url_fsize(pb) - 1 - 192 - 4096;
+        bin->fsize = avio_size(pb) - 1 - 192 - 4096;
         st->codec->width = 80<<3;
         ff_sauce_read(s, &bin->fsize, &got_width, 0);
         if (!ap->height)
@@ -298,7 +298,7 @@ static int idf_read_header(AVFormatContext *s,
     if (avio_read(pb, st->codec->extradata + 2, 48) < 0)
         return AVERROR(EIO);
 
-    bin->fsize = url_fsize(pb) - 12 - 4096 - 48;
+    bin->fsize = avio_size(pb) - 12 - 4096 - 48;
     ff_sauce_read(s, &bin->fsize, &got_width, 0);
     if (!ap->height)
         calculate_height(st->codec, bin->fsize);
