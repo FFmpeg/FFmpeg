@@ -65,7 +65,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     char frame_size  [128] = "640x480";
     char frame_rate  [128] = "25";
     AVRational frame_rate_q;
-    int ret;
 
     mb->maxiter=4096;
     mb->start_x=-0.743643887037158704752191506114774;
@@ -108,7 +107,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
 static av_cold void uninit(AVFilterContext *ctx)
 {
     MBContext *mb = ctx->priv;
-    int i;
 
     av_freep(&mb->point_cache);
     av_freep(&mb-> next_cache);
