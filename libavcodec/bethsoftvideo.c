@@ -53,6 +53,7 @@ static void set_palette(AVFrame * frame, const uint8_t * palette_buffer)
     int a;
     for(a = 0; a < 256; a++){
         palette[a] = 0xFF << 24 | AV_RB24(&palette_buffer[a * 3]) * 4;
+        palette[a] |= palette[a] >> 6 & 0x30303;
     }
     frame->palette_has_changed = 1;
 }
