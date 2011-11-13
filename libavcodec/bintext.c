@@ -61,7 +61,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     if ((s->flags & BINTEXT_PALETTE)) {
         for (i = 0; i < 16; i++) {
-            s->palette[i] = 0xFF000000 | (AV_RB24(p) << 2);
+            s->palette[i] = 0xFF000000 | (AV_RB24(p) << 2) | ((AV_RB24(p) >> 4) & 0x30303);
             p += 3;
         }
     } else {
