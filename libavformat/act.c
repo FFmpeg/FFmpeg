@@ -63,7 +63,7 @@ static int read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     ACTContext* ctx = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int size;
     AVStream* st;
 
@@ -111,7 +111,7 @@ static int read_packet(AVFormatContext *s,
                           AVPacket *pkt)
 {
     ACTContext *ctx = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     int ret;
     int frame_size=s->streams[0]->codec->sample_rate==8000?10:22;
 

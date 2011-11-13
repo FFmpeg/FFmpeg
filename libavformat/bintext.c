@@ -59,7 +59,7 @@ static const uint8_t next_magic[]={
 
 static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
 {
-    ByteIOContext *pb = avctx->pb;
+    AVIOContext *pb = avctx->pb;
     char buf[36];
     int len;
     uint64_t start_pos = url_fsize(pb) - 256;
@@ -126,7 +126,7 @@ static int bintext_read_header(AVFormatContext *s,
                                AVFormatParameters *ap)
 {
     BinDemuxContext *bin = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
 
     AVStream *st = init_stream(s, ap);
     if (!st)
@@ -171,7 +171,7 @@ static int xbin_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     BinDemuxContext *bin = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     char fontheight, flags;
 
     AVStream *st = init_stream(s, ap);
@@ -215,7 +215,7 @@ static int adf_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     BinDemuxContext *bin = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
 
     if (get_byte(pb) != 1)
@@ -272,7 +272,7 @@ static int idf_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
     BinDemuxContext *bin = s->priv_data;
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     AVStream *st;
     int got_width = 0;
 

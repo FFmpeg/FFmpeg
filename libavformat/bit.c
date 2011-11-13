@@ -127,7 +127,7 @@ static int write_header(AVFormatContext *s)
 
 static int write_packet(AVFormatContext *s, AVPacket *pkt)
 {
-    ByteIOContext *pb = s->pb;
+    AVIOContext *pb = s->pb;
     GetBitContext gb;
     int i;
 

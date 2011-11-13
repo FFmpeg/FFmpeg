@@ -406,7 +406,7 @@ static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, U
     return 0;
 }
 
-static int mxf_read_partition_pack(void *arg, ByteIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid)
 {
     MXFContext *mxf = arg;
     MXFPartition *partition;
