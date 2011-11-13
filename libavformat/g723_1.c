@@ -62,7 +62,7 @@ static int g723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->duration     = 240;
     pkt->stream_index = 0;
 
-    ret = get_buffer(s->pb, pkt->data + 1, size - 1);
+    ret = avio_read(s->pb, pkt->data + 1, size - 1);
     if (ret < size - 1) {
         av_free_packet(pkt);
         return ret < 0 ? ret : AVERROR_EOF;

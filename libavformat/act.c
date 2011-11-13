@@ -126,7 +126,7 @@ static int read_packet(AVFormatContext *s,
 
     if(s->streams[0]->codec->sample_rate==4400 && !ctx->second_packet)
     {
-        ret = get_buffer(pb, ctx->audio_buffer, frame_size);
+        ret = avio_read(pb, ctx->audio_buffer, frame_size);
 
         if(ret<0)
             return ret;
@@ -165,7 +165,7 @@ static int read_packet(AVFormatContext *s,
     }
     else // 8000 Hz
     {
-        ret = get_buffer(pb, ctx->audio_buffer, frame_size);
+        ret = avio_read(pb, ctx->audio_buffer, frame_size);
 
         if(ret<0)
             return ret;

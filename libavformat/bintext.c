@@ -65,7 +65,7 @@ static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
     uint64_t start_pos = url_fsize(pb) - 256;
 
     avio_seek(pb, start_pos, SEEK_SET);
-    if (get_buffer(pb, buf, sizeof(next_magic)) != sizeof(next_magic))
+    if (avio_read(pb, buf, sizeof(next_magic)) != sizeof(next_magic))
         return -1;
     if (memcmp(buf, next_magic, sizeof(next_magic)))
         return -1;
@@ -78,7 +78,7 @@ static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
     len = get_byte(pb); \
     if (len < 1 || len > size) \
         return -1; \
-    if (get_buffer(pb, buf, size) == size && *buf) { \
+    if (avio_read(pb, buf, size) == size && *buf) { \
         buf[len] = 0; \
         av_metadata_set2(&avctx->metadata, name, buf, 0); \
     }
@@ -197,7 +197,7 @@ static int xbin_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
     st->codec->extradata[0] = fontheight;
     st->codec->extradata[1] = flags;
-    if (get_buffer(pb, st->codec->extradata + 2, st->codec->extradata_size - 2) < 0)
+    if (avio_read(pb, st->codec->extradata + 2, st->codec->extradata_size - 2) < 0)
         return AVERROR(EIO);
 
     if (!url_is_streamed(pb)) {
@@ -233,12 +233,12 @@ static int adf_read_header(AVFormatContext *s,
     st->codec->extradata[0] = 16;
     st->codec->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;
 
-    if (get_buffer(pb, st->codec->extradata + 2, 24) < 0)
+    if (avio_read(pb, st->codec->extradata + 2, 24) < 0)
         return AVERROR(EIO);
     url_fskip(pb, 144);
-    if (get_buffer(pb, st->codec->extradata + 2 + 24, 24) < 0)
+    if (avio_read(pb, st->codec->extradata + 2 + 24, 24) < 0)
         return AVERROR(EIO);
-    if (get_buffer(pb, st->codec->extradata + 2 + 48, 4096) < 0)
+    if (avio_read(pb, st->codec->extradata + 2 + 48, 4096) < 0)
         return AVERROR(EIO);
 
     if (!url_is_streamed(pb)) {
@@ -293,9 +293,9 @@ static int idf_read_header(AVFormatContext *s,
 
     avio_seek(pb, avio_size(pb) - 4096 - 48, SEEK_SET);
 
-    if (get_buffer(pb, st->codec->extradata + 2 + 48, 4096) < 0)
+    if (avio_read(pb, st->codec->extradata + 2 + 48, 4096) < 0)
         return AVERROR(EIO);
-    if (get_buffer(pb, st->codec->extradata + 2, 48) < 0)
+    if (avio_read(pb, st->codec->extradata + 2, 48) < 0)
         return AVERROR(EIO);
 
     bin->fsize = url_fsize(pb) - 12 - 4096 - 48;

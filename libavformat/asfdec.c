@@ -166,7 +166,7 @@ static void get_tag(AVFormatContext *s, const char *key, int type, int len)
     if (type == 0) {         // UTF16-LE
         avio_get_str16le(s->pb, len, value, 2*len + 1);
     } else if (type == -1) { // ASCII
-        get_buffer(s->pb, value, len);
+        avio_read(s->pb, value, len);
         value[len]=0;
     } else if (type > 1 && type <= 5) {  // boolean or DWORD or QWORD or WORD
         uint64_t num = get_value(s->pb, type);
