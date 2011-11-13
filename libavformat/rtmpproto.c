@@ -817,7 +817,8 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
         port = RTMP_DEFAULT_PORT;
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
-    if (ffurl_open(&rt->stream, buf, AVIO_FLAG_READ_WRITE) < 0) {
+    if (ffurl_open(&rt->stream, buf, AVIO_FLAG_READ_WRITE,
+                   &s->interrupt_callback, NULL) < 0) {
         av_log(s , AV_LOG_ERROR, "Cannot open connection %s\n", buf);
         goto fail;
     }

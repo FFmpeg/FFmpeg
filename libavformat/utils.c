@@ -602,7 +602,7 @@ int av_open_input_file(AVFormatContext **ic_ptr, const char *filename,
 #endif
 
 /* open input file and probe the format if necessary */
-static int init_input(AVFormatContext *s, const char *filename)
+static int init_input(AVFormatContext *s, const char *filename, AVDictionary **options)
 {
     int ret;
     AVProbeData pd = {filename, NULL, 0};
@@ -624,7 +624,8 @@ static int init_input(AVFormatContext *s, const char *filename)
         (!s->iformat && (s->iformat = av_probe_input_format(&pd, 0))))
         return 0;
 
-    if ((ret = avio_open(&s->pb, filename, AVIO_FLAG_READ)) < 0)
+    if ((ret = avio_open2(&s->pb, filename, AVIO_FLAG_READ,
+                          &s->interrupt_callback, options)) < 0)
         return ret;
     if (s->iformat)
         return 0;
@@ -649,7 +650,7 @@ int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputForma
     if ((ret = av_opt_set_dict(s, &tmp)) < 0)
         goto fail;
 
-    if ((ret = init_input(s, filename)) < 0)
+    if ((ret = init_input(s, filename, &tmp)) < 0)
         goto fail;
 
     /* check filename in case an image number is expected */
@@ -2396,7 +2397,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     count = 0;
     read_size = 0;
     for(;;) {
-        if(url_interrupt_cb()){
+        if (ff_check_interrupt(&ic->interrupt_callback)){
             ret= AVERROR_EXIT;
             av_log(ic, AV_LOG_DEBUG, "interrupted\n");
             break;

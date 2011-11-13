@@ -100,7 +100,8 @@ static int gopher_open(URLContext *h, const char *uri, int flags)
     ff_url_join(buf, sizeof(buf), "tcp", NULL, hostname, port, NULL);
 
     s->hd = NULL;
-    err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE);
+    err = ffurl_open(&s->hd, buf, AVIO_FLAG_READ_WRITE,
+                     &h->interrupt_callback, NULL);
     if (err < 0)
         goto fail;
 

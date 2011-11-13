@@ -189,7 +189,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     build_udp_url(buf, sizeof(buf),
                   hostname, rtp_port, local_rtp_port, ttl, max_packet_size,
                   connect);
-    if (ffurl_open(&s->rtp_hd, buf, flags) < 0)
+    if (ffurl_open(&s->rtp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
         goto fail;
     if (local_rtp_port>=0 && local_rtcp_port<0)
         local_rtcp_port = ff_udp_get_local_port(s->rtp_hd) + 1;
@@ -197,7 +197,7 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     build_udp_url(buf, sizeof(buf),
                   hostname, rtcp_port, local_rtcp_port, ttl, max_packet_size,
                   connect);
-    if (ffurl_open(&s->rtcp_hd, buf, flags) < 0)
+    if (ffurl_open(&s->rtcp_hd, buf, flags, &h->interrupt_callback, NULL) < 0)
         goto fail;
 
     /* just to ease handle access. XXX: need to suppress direct handle
@@ -227,7 +227,7 @@ static int rtp_read(URLContext *h, uint8_t *buf, int size)
     struct pollfd p[2] = {{s->rtp_fd, POLLIN, 0}, {s->rtcp_fd, POLLIN, 0}};
 
     for(;;) {
-        if (url_interrupt_cb())
+        if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
         /* build fdset to listen to RTP and RTCP packets */
         n = poll(p, 2, 100);

@@ -72,7 +72,7 @@ static int cache_open(URLContext *h, const char *arg, int flags)
     unlink(buffername);
     av_free(buffername);
 
-    return ffurl_open(&c->inner, arg, flags);
+    return ffurl_open(&c->inner, arg, flags, &h->interrupt_callback, NULL);
 }
 
 static int cache_read(URLContext *h, unsigned char *buf, int size)

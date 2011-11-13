@@ -100,7 +100,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
         struct pollfd p = {fd, POLLOUT, 0};
         ret = ff_neterrno();
         if (ret == AVERROR(EINTR)) {
-            if (url_interrupt_cb()) {
+            if (ff_check_interrupt(&h->interrupt_callback)) {
                 ret = AVERROR_EXIT;
                 goto fail1;
             }
@@ -112,7 +112,7 @@ static int tcp_open(URLContext *h, const char *uri, int flags)
 
         /* wait until we are connected or until abort */
         while(timeout--) {
-            if (url_interrupt_cb()) {
+            if (ff_check_interrupt(&h->interrupt_callback)) {
                 ret = AVERROR_EXIT;
                 goto fail1;
             }

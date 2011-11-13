@@ -234,7 +234,8 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
         port = 80; // default mmsh protocol port
     ff_url_join(httpname, sizeof(httpname), "http", NULL, host, port, "%s", path);
 
-    if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ) < 0) {
+    if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ,
+                    &h->interrupt_callback) < 0) {
         return AVERROR(EIO);
     }
 
@@ -249,7 +250,7 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
              host, port, mmsh->request_seq++);
     av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
-    err = ffurl_connect(mms->mms_hd);
+    err = ffurl_connect(mms->mms_hd, NULL);
     if (err) {
         goto fail;
     }
@@ -262,7 +263,8 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
     // close the socket and then reopen it for sending the second play request.
     ffurl_close(mms->mms_hd);
     memset(headers, 0, sizeof(headers));
-    if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ) < 0) {
+    if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ,
+                    &h->interrupt_callback) < 0) {
         return AVERROR(EIO);
     }
     stream_selection = av_mallocz(mms->stream_num * 19 + 1);
@@ -296,7 +298,7 @@ static int mmsh_open_internal(URLContext *h, const char *uri, int flags, int tim
     av_dlog(NULL, "out_buffer is %s", headers);
     av_opt_set(mms->mms_hd->priv_data, "headers", headers, 0);
 
-    err = ffurl_connect(mms->mms_hd);
+    err = ffurl_connect(mms->mms_hd, NULL);
     if (err) {
           goto fail;
     }

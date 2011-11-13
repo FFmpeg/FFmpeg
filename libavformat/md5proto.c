@@ -65,7 +65,8 @@ static int md5_close(URLContext *h)
     av_strstart(filename, "md5:", &filename);
 
     if (*filename) {
-        err = ffurl_open(&out, filename, AVIO_FLAG_WRITE);
+        err = ffurl_open(&out, filename, AVIO_FLAG_WRITE,
+                         &h->interrupt_callback, NULL);
         if (err)
             return err;
         err = ffurl_write(out, buf, i*2+1);

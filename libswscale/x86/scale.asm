@@ -720,6 +720,8 @@ yuv2planeX_fn avx,  10,  7, 5
 
 %macro yuv2plane1_fn 3
 cglobal yuv2plane1_%1, %3, %3, %2
+    add             r2, mmsize - 1
+    and             r2, ~(mmsize - 1)
 %if %1 == 8
     add             r1, r2
 %else ; %1 != 8

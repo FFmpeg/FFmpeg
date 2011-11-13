@@ -114,7 +114,8 @@ static int parse_playlist(URLContext *h, const char *url)
     char line[1024];
     const char *ptr;
 
-    if ((ret = avio_open(&in, url, AVIO_FLAG_READ)) < 0)
+    if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
+                          &h->interrupt_callback, NULL)) < 0)
         return ret;
 
     read_chomp_line(in, line, sizeof(line));
@@ -266,7 +267,7 @@ retry:
         if (s->finished)
             return AVERROR_EOF;
         while (av_gettime() - s->last_load_time < s->target_duration*1000000) {
-            if (url_interrupt_cb())
+            if (ff_check_interrupt(&h->interrupt_callback))
                 return AVERROR_EXIT;
             usleep(100*1000);
         }
@@ -274,9 +275,10 @@ retry:
     }
     url = s->segments[s->cur_seq_no - s->start_seq_no]->url,
     av_log(h, AV_LOG_DEBUG, "opening %s\n", url);
-    ret = ffurl_open(&s->seg_hd, url, AVIO_FLAG_READ);
+    ret = ffurl_open(&s->seg_hd, url, AVIO_FLAG_READ,
+                     &h->interrupt_callback, NULL);
     if (ret < 0) {
-        if (url_interrupt_cb())
+        if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR_EXIT;
         av_log(h, AV_LOG_WARNING, "Unable to open %s\n", url);
         s->cur_seq_no++;

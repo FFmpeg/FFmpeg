@@ -47,6 +47,8 @@ AVFormatContext *ff_rtp_chain_mux_open(AVFormatContext *s, AVStream *st,
         av_free(rtpctx);
         return NULL;
     }
+    /* Pass the interrupt callback on */
+    rtpctx->interrupt_callback = s->interrupt_callback;
     /* Copy the max delay setting; the rtp muxer reads this. */
     rtpctx->max_delay = s->max_delay;
     /* Copy other stream parameters. */

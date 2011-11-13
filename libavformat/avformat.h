@@ -1028,10 +1028,22 @@ typedef struct AVFormatContext {
     int error_recognition;
 
     /**
+     * Custom interrupt callbacks for the I/O layer.
+     *
+     * decoding: set by the user before avformat_open_input().
+     * encoding: set by the user before avformat_write_header()
+     * (mainly useful for AVFMT_NOFILE formats). The callback
+     * should also be passed to avio_open2() if it's used to
+     * open the file.
+     */
+    AVIOInterruptCB interrupt_callback;
+
+    /**
      * Transport stream id.
      * This will be moved into demuxer private options. Thus no API/ABI compatibility
      */
     int ts_id;
+
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They

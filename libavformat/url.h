@@ -28,10 +28,15 @@
 #include "avio.h"
 #include "libavformat/version.h"
 
+#include "libavutil/dict.h"
+#include "libavutil/log.h"
+
 #if !FF_API_OLD_AVIO
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
 
 extern int (*url_interrupt_cb)(void);
+
+extern const AVClass ffurl_context_class;
 
 typedef struct URLContext {
     const AVClass *av_class;    /**< information for av_log(). Set by url_open(). */
@@ -42,11 +47,18 @@ typedef struct URLContext {
     int max_packet_size;        /**< if non zero, the stream is packetized with this max packet size */
     int is_streamed;            /**< true if streamed (no seek possible), default = false */
     int is_connected;
+    AVIOInterruptCB interrupt_callback;
 } URLContext;
 
 typedef struct URLProtocol {
     const char *name;
     int     (*url_open)( URLContext *h, const char *url, int flags);
+    /**
+     * This callback is to be used by protocols which open further nested
+     * protocols. options are then to be passed to ffurl_open()/ffurl_connect()
+     * for those nested protocols.
+     */
+    int     (*url_open2)(URLContext *h, const char *url, int flags, AVDictionary **options);
     int     (*url_read)( URLContext *h, unsigned char *buf, int size);
     int     (*url_write)(URLContext *h, const unsigned char *buf, int size);
     int64_t (*url_seek)( URLContext *h, int64_t pos, int whence);
@@ -71,15 +83,23 @@ typedef struct URLProtocol {
  * function puts the pointer to the created URLContext
  * @param flags flags which control how the resource indicated by url
  * is to be opened
+ * @param int_cb interrupt callback to use for the URLContext, may be
+ * NULL
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffurl_alloc(URLContext **puc, const char *filename, int flags);
+int ffurl_alloc(URLContext **puc, const char *filename, int flags,
+                const AVIOInterruptCB *int_cb);
 
 /**
  * Connect an URLContext that has been allocated by ffurl_alloc
+ *
+ * @param options  A dictionary filled with options for nested protocols,
+ * i.e. it will be passed to url_open2() for protocols implementing it.
+ * This parameter will be destroyed and replaced with a dict containing options
+ * that were not found. May be NULL.
  */
-int ffurl_connect(URLContext *uc);
+int ffurl_connect(URLContext *uc, AVDictionary **options);
 
 /**
  * Create an URLContext for accessing to the resource indicated by
@@ -89,10 +109,16 @@ int ffurl_connect(URLContext *uc);
  * function puts the pointer to the created URLContext
  * @param flags flags which control how the resource indicated by url
  * is to be opened
+ * @param int_cb interrupt callback to use for the URLContext, may be
+ * NULL
+ * @param options  A dictionary filled with protocol-private options. On return
+ * this parameter will be destroyed and replaced with a dict containing options
+ * that were not found. May be NULL.
  * @return 0 in case of success, a negative value corresponding to an
  * AVERROR code in case of failure
  */
-int ffurl_open(URLContext **puc, const char *filename, int flags);
+int ffurl_open(URLContext **puc, const char *filename, int flags,
+               const AVIOInterruptCB *int_cb, AVDictionary **options);
 
 /**
  * Read up to size bytes from the resource accessed by h, and store
@@ -168,6 +194,19 @@ int ffurl_get_file_handle(URLContext *h);
  * @param size the size of the URLProtocol struct referenced
  */
 int ffurl_register_protocol(URLProtocol *protocol, int size);
+
+/**
+ * Check if the user has requested to interrup a blocking function
+ * associated with cb.
+ */
+int ff_check_interrupt(AVIOInterruptCB *cb);
+
+/**
+ * Iterate over all available protocols.
+ *
+ * @param prev result of the previous call to this functions or NULL.
+ */
+URLProtocol *ffurl_protocol_next(URLProtocol *prev);
 
 /* udp.c */
 int ff_udp_set_remote_url(URLContext *h, const char *uri);

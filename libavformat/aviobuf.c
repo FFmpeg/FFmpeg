@@ -20,7 +20,10 @@
  */
 
 #include "libavutil/crc.h"
+#include "libavutil/dict.h"
 #include "libavutil/intreadwrite.h"
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
 #include "avformat.h"
 #include "avio.h"
 #include "avio_internal.h"
@@ -37,6 +40,31 @@
  */
 #define SHORT_SEEK_THRESHOLD 4096
 
+#if !FF_API_OLD_AVIO
+static void *ffio_url_child_next(void *obj, void *prev)
+{
+    AVIOContext *s = obj;
+    return prev ? NULL : s->opaque;
+}
+
+static const AVClass *ffio_url_child_class_next(const AVClass *prev)
+{
+    return prev ? NULL : &ffurl_context_class;
+}
+
+static const AVOption ffio_url_options[] = {
+    { NULL },
+};
+
+const AVClass ffio_url_class = {
+    .class_name = "AVIOContext",
+    .item_name  = av_default_item_name,
+    .version    = LIBAVUTIL_VERSION_INT,
+    .option     = ffio_url_options,
+    .child_next = ffio_url_child_next,
+    .child_class_next = ffio_url_child_class_next,
+};
+#endif
 static void fill_buffer(AVIOContext *s);
 static int url_resetbuf(AVIOContext *s, int flags);
 
@@ -866,6 +894,9 @@ int ffio_fdopen(AVIOContext **s, URLContext *h)
         (*s)->read_pause = (int (*)(void *, int))h->prot->url_read_pause;
         (*s)->read_seek  = (int64_t (*)(void *, int, int64_t, int))h->prot->url_read_seek;
     }
+#if !FF_API_OLD_AVIO
+    (*s)->av_class = &ffio_url_class;
+#endif
     return 0;
 }
 
@@ -939,10 +970,16 @@ int ffio_rewind_with_probe_data(AVIOContext *s, unsigned char *buf, int buf_size
 
 int avio_open(AVIOContext **s, const char *filename, int flags)
 {
+    return avio_open2(s, filename, flags, NULL, NULL);
+}
+
+int avio_open2(AVIOContext **s, const char *filename, int flags,
+               const AVIOInterruptCB *int_cb, AVDictionary **options)
+{
     URLContext *h;
     int err;
 
-    err = ffurl_open(&h, filename, flags);
+    err = ffurl_open(&h, filename, flags, int_cb, options);
     if (err < 0)
         return err;
     err = ffio_fdopen(s, h);

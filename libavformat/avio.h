@@ -28,12 +28,29 @@
 #include <stdint.h>
 
 #include "libavutil/common.h"
+#include "libavutil/dict.h"
 #include "libavutil/log.h"
 
 #include "libavformat/version.h"
 
 
 #define AVIO_SEEKABLE_NORMAL 0x0001 /**< Seeking works like for a local file */
+
+/**
+ * Callback for checking whether to abort blocking functions.
+ * AVERROR_EXIT is returned in this case by the interrupted
+ * function. During blocking operations, callback is called with
+ * opaque as parameter. If the callback returns 1, the
+ * blocking operation will be aborted.
+ *
+ * No members can be added to this struct without a major bump, if
+ * new elements have been added after this struct in AVFormatContext
+ * or AVIOContext.
+ */
+typedef struct {
+    int (*callback)(void*);
+    void *opaque;
+} AVIOInterruptCB;
 
 /**
  * Bytestream IO Context.
@@ -48,6 +65,21 @@
  *       function pointers specified in avio_alloc_context()
  */
 typedef struct {
+#if !FF_API_OLD_AVIO
+    /**
+     * A class for private options.
+     *
+     * If this AVIOContext is created by avio_open2(), av_class is set and
+     * passes the options down to protocols.
+     *
+     * If this AVIOContext is manually allocated, then av_class may be set by
+     * the caller.
+     *
+     * warning -- this field can be NULL, be sure to not pass this AVIOContext
+     * to any av_opt_* functions in that case.
+     */
+    AVClass *av_class;
+#endif
     unsigned char *buffer;  /**< Start of the buffer. */
     int buffer_size;        /**< Maximum buffer size */
     unsigned char *buf_ptr; /**< Current position in the buffer */
@@ -109,6 +141,7 @@ typedef struct URLContext {
     void *priv_data;
     char *filename; /**< specified URL */
     int is_connected;
+    AVIOInterruptCB interrupt_callback;
 } URLContext;
 
 #define URL_PROTOCOL_FLAG_NESTED_SCHEME 1 /*< The protocol name can be the first part of a nested protocol scheme */
@@ -555,6 +588,26 @@ int avio_get_str16be(AVIOContext *pb, int maxlen, char *buf, int buflen);
  * AVERROR code in case of failure
  */
 int avio_open(AVIOContext **s, const char *url, int flags);
+
+/**
+ * Create and initialize a AVIOContext for accessing the
+ * resource indicated by url.
+ * @note When the resource indicated by url has been opened in
+ * read+write mode, the AVIOContext can be used only for writing.
+ *
+ * @param s Used to return the pointer to the created AVIOContext.
+ * In case of failure the pointed to value is set to NULL.
+ * @param flags flags which control how the resource indicated by url
+ * is to be opened
+ * @param int_cb an interrupt callback to be used at the protocols level
+ * @param options  A dictionary filled with protocol-private options. On return
+ * this parameter will be destroyed and replaced with a dict containing options
+ * that were not found. May be NULL.
+ * @return 0 in case of success, a negative value corresponding to an
+ * AVERROR code in case of failure
+ */
+int avio_open2(AVIOContext **s, const char *url, int flags,
+               const AVIOInterruptCB *int_cb, AVDictionary **options);
 
 /**
  * Close the resource accessed by the AVIOContext s and free it.

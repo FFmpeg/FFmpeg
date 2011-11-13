@@ -97,7 +97,7 @@ static int do_tls_poll(URLContext *h, int ret)
         int n = poll(&p, 1, 100);
         if (n > 0)
             break;
-        if (url_interrupt_cb())
+        if (ff_check_interrupt(&h->interrupt_callback))
             return AVERROR(EINTR);
     }
     return 0;
@@ -123,7 +123,8 @@ static int tls_open(URLContext *h, const char *uri, int flags)
         freeaddrinfo(ai);
     }
 
-    ret = ffurl_open(&c->tcp, buf, AVIO_FLAG_READ_WRITE);
+    ret = ffurl_open(&c->tcp, buf, AVIO_FLAG_READ_WRITE,
+                     &h->interrupt_callback, NULL);
     if (ret)
         goto fail;
     c->fd = ffurl_get_file_handle(c->tcp);

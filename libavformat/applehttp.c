@@ -99,6 +99,7 @@ typedef struct AppleHTTPContext {
     int cur_seq_no;
     int end_of_segment;
     int first_packet;
+    AVIOInterruptCB *interrupt_callback;
 } AppleHTTPContext;
 
 static int read_chomp_line(AVIOContext *s, char *buf, int maxlen)
@@ -209,7 +210,8 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
 
     if (!in) {
         close_in = 1;
-        if ((ret = avio_open(&in, url, AVIO_FLAG_READ)) < 0)
+        if ((ret = avio_open2(&in, url, AVIO_FLAG_READ,
+                              c->interrupt_callback, NULL)) < 0)
             return ret;
     }
 
@@ -322,13 +324,15 @@ static int open_input(struct variant *var)
 {
     struct segment *seg = var->segments[var->cur_seq_no - var->start_seq_no];
     if (seg->key_type == KEY_NONE) {
-        return ffurl_open(&var->input, seg->url, AVIO_FLAG_READ);
+        return ffurl_open(&var->input, seg->url, AVIO_FLAG_READ,
+                          &var->parent->interrupt_callback, NULL);
     } else if (seg->key_type == KEY_AES_128) {
         char iv[33], key[33], url[MAX_URL_SIZE];
         int ret;
         if (strcmp(seg->key, var->key_url)) {
             URLContext *uc;
-            if (ffurl_open(&uc, seg->key, AVIO_FLAG_READ) == 0) {
+            if (ffurl_open(&uc, seg->key, AVIO_FLAG_READ,
+                           &var->parent->interrupt_callback, NULL) == 0) {
                 if (ffurl_read_complete(uc, var->key, sizeof(var->key))
                     != sizeof(var->key)) {
                     av_log(NULL, AV_LOG_ERROR, "Unable to read key file %s\n",
@@ -348,11 +352,12 @@ static int open_input(struct variant *var)
             snprintf(url, sizeof(url), "crypto+%s", seg->url);
         else
             snprintf(url, sizeof(url), "crypto:%s", seg->url);
-        if ((ret = ffurl_alloc(&var->input, url, AVIO_FLAG_READ)) < 0)
+        if ((ret = ffurl_alloc(&var->input, url, AVIO_FLAG_READ,
+                               &var->parent->interrupt_callback)) < 0)
             return ret;
         av_opt_set(var->input->priv_data, "key", key, 0);
         av_opt_set(var->input->priv_data, "iv", iv, 0);
-        if ((ret = ffurl_connect(var->input)) < 0) {
+        if ((ret = ffurl_connect(var->input, NULL)) < 0) {
             ffurl_close(var->input);
             var->input = NULL;
             return ret;
@@ -388,7 +393,7 @@ reload:
                 return AVERROR_EOF;
             while (av_gettime() - v->last_load_time <
                    v->target_duration*1000000) {
-                if (url_interrupt_cb())
+                if (ff_check_interrupt(c->interrupt_callback))
                     return AVERROR_EXIT;
                 usleep(100*1000);
             }
@@ -432,6 +437,8 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     AppleHTTPContext *c = s->priv_data;
     int ret = 0, i, j, stream_offset = 0;
+
+    c->interrupt_callback = &s->interrupt_callback;
 
     if ((ret = parse_playlist(c, s->filename, NULL, s->pb)) < 0)
         goto fail;
