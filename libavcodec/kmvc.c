@@ -269,7 +269,7 @@ static int decode_frame(AVCodecContext * avctx, void *data, int *data_size, AVPa
         ctx->pic.palette_has_changed = 1;
         // palette starts from index 1 and has 127 entries
         for (i = 1; i <= ctx->palsize; i++) {
-            ctx->pal[i] = bytestream_get_be24(&buf);
+            ctx->pal[i] = 0xFF << 24 | bytestream_get_be24(&buf);
         }
     }
 
@@ -356,7 +356,7 @@ static av_cold int decode_init(AVCodecContext * avctx)
     c->prev = c->frm1;
 
     for (i = 0; i < 256; i++) {
-        c->pal[i] = i * 0x10101;
+        c->pal[i] = 0xFF << 24 | i * 0x10101;
     }
 
     if (avctx->extradata_size < 12) {
