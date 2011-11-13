@@ -110,8 +110,8 @@ As a simple test, just run the following two command lines where INPUTFILE
 is some file which you can decode with ffmpeg:
 
 @example
-./ffserver -f doc/ffserver.conf &
-./ffmpeg -i INPUTFILE http://localhost:8090/feed1.ffm
+ffserver -f doc/ffserver.conf &
+ffmpeg -i INPUTFILE http://localhost:8090/feed1.ffm
 @end example
 
 At this point you should be able to go to your Windows machine and fire up

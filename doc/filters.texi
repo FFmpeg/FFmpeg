@@ -1219,7 +1219,7 @@ which is bottom field first.
 
 For example:
 @example
-./ffmpeg -i in.vob -vf "fieldorder=bff" out.dv
+ffmpeg -i in.vob -vf "fieldorder=bff" out.dv
 @end example
 
 @section fifo
@@ -2295,7 +2295,7 @@ Pass the images of input video on to next video filter as multiple
 slices.
 
 @example
-./ffmpeg -i in.avi -vf "slicify=32" out.avi
+ffmpeg -i in.avi -vf "slicify=32" out.avi
 @end example
 
 The filter accepts the slice height as parameter. If the parameter is
@@ -2407,7 +2407,7 @@ unsharp=7:7:2.5
 unsharp=7:7:-2:7:7:-2
 
 # Use the default values with @command{ffmpeg}
-./ffmpeg -i in.avi -vf "unsharp" out.mp4
+ffmpeg -i in.avi -vf "unsharp" out.mp4
 @end example
 
 @section vflip
@@ -2415,7 +2415,7 @@ unsharp=7:7:-2:7:7:-2
 Flip the input video vertically.
 
 @example
-./ffmpeg -i in.avi -vf "vflip" out.avi
+ffmpeg -i in.avi -vf "vflip" out.avi
 @end example
 
 @section yadif
