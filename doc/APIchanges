@@ -13,6 +13,16 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-11-13 - lavf 53.15.0
+  New interrupt callback API, allowing per-AVFormatContext/AVIOContext
+  interrupt callbacks.
+  6aa0b98 Add AVIOInterruptCB struct and the interrupt_callback field to
+          AVFormatContext.
+  1dee0ac Add avio_open2() with additional parameters. Those are
+          an interrupt callback and an options AVDictionary.
+          This will allow passing AVOptions to protocols after lavf
+          54.0.
+
 2011-11-xx - xxxxxxx - lavu 51.16.0
   Add av_timegm()
 
