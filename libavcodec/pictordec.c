@@ -175,13 +175,15 @@ static int decode_frame(AVCodecContext *avctx,
             palette[i] = ff_ega_palette[ FFMIN(buf[i], 63)];
     } else if (etype == 4 || etype == 5) {
         npal = FFMIN(esize / 3, 256);
-        for (i = 0; i < npal; i++)
+        for (i = 0; i < npal; i++) {
             palette[i] = AV_RB24(buf + i*3) << 2;
+            palette[i] |= 0xFF << 24;
+        }
     } else {
         if (bpp == 1) {
             npal = 2;
-            palette[0] = 0x000000;
-            palette[1] = 0xFFFFFF;
+            palette[0] = 0xFF000000;
+            palette[1] = 0xFFFFFFFF;
         } else if (bpp == 2) {
             npal = 4;
             for (i = 0; i < npal; i++)
