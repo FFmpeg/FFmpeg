@@ -178,6 +178,8 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             if(color[x + y*linesize] & 0xFF000000)
                 continue;
 
+            use_zyklus= (x==0 || color[x-1 + y*linesize] == 0xFF000000);
+
             for(i=0; i<mb->maxiter; i++){
                 double t;
                 if(zr*zr + zi*zi > mb->bailout){
@@ -198,7 +200,6 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                     mb->zyklus[i][1]= zi;
                 }
             }
-            use_zyklus = !c;
             c |= 0xFF000000;
             color[x + y*linesize]= c;
             if(next_cidx < mb->cache_allocated){
