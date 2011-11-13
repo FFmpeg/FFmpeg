@@ -537,6 +537,8 @@ x11grab_read_packet(AVFormatContext *s1, AVPacket *pkt)
             av_log (s1, AV_LOG_INFO, "XGetZPixmap() failed\n");
         }
     }
+    if (image->bits_per_pixel == 32)
+        XAddPixel(image, 0xFF000000);
 
     if (s->draw_mouse) {
         paint_mouse_pointer(image, s);
