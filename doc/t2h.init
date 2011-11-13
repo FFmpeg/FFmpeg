@@ -9,9 +9,13 @@ $EXTRA_HEAD =
 <link rel="stylesheet" type="text/css" href="default.css" />
 ';
 
+
+my $LIBAV_NAVBAR = $ENV{"LIBAV_NAVBAR"} || '';
+
 $AFTER_BODY_OPEN =
-'<div id="container">
-<div id="body">';
+'<div id="container">' .
+"\n$LIBAV_NAVBAR\n" .
+'<div id="body">';
 
 $PRE_BODY_CLOSE = '</div></div>';
 
