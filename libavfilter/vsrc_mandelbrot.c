@@ -39,6 +39,7 @@ enum Outer{
 
 enum Inner{
     BLACK,
+    PERIOD,
 };
 
 typedef struct Point {
@@ -185,7 +186,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             if(color[x + y*linesize] & 0xFF000000)
                 continue;
 
-            use_zyklus= (x==0 || color[x-1 + y*linesize] == 0xFF000000);
+            use_zyklus= (x==0 || mb->inner!=BLACK ||color[x-1 + y*linesize] == 0xFF000000);
 
             for(i=0; i<mb->maxiter; i++){
                 double t;
@@ -211,6 +212,16 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                         break;
                     mb->zyklus[i][0]= zr;
                     mb->zyklus[i][1]= zi;
+                }
+            }
+            if(!c && mb->inner==PERIOD){
+                int j;
+                for(j=i-1; j; j--)
+                    if(SQR(mb->zyklus[j][0]-zr) + SQR(mb->zyklus[j][1]-zi) < 0.0000000000000001)
+                        break;
+                if(j){
+                    c= i-j;
+                    c= ((c<<5)&0xE0) + ((c<<16)&0xE000) + ((c<<27)&0xE00000);
                 }
             }
             c |= 0xFF000000;
