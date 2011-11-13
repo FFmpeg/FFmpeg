@@ -92,7 +92,7 @@ static int read_header(AVFormatContext *s,
 
     st->codec->codec_id=CODEC_ID_G729;
 
-    url_fseek(pb, 257, SEEK_SET);
+    avio_seek(pb, 257, SEEK_SET);
     msec=get_le16(pb);
     sec=get_byte(pb);
     min=get_le32(pb);
@@ -101,7 +101,7 @@ static int read_header(AVFormatContext *s,
 
     ctx->bytes_left_in_chunk=CHUNK_SIZE;
 
-    url_fseek(pb, 512, SEEK_SET);
+    avio_seek(pb, 512, SEEK_SET);
 
     return 0;
 }

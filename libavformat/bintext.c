@@ -64,7 +64,7 @@ static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
     int len;
     uint64_t start_pos = url_fsize(pb) - 256;
 
-    url_fseek(pb, start_pos, SEEK_SET);
+    avio_seek(pb, start_pos, SEEK_SET);
     if (get_buffer(pb, buf, sizeof(next_magic)) != sizeof(next_magic))
         return -1;
     if (memcmp(buf, next_magic, sizeof(next_magic)))
@@ -149,7 +149,7 @@ static int bintext_read_header(AVFormatContext *s,
             predict_width(st->codec, bin->fsize, got_width);
         if (!ap->height)
             calculate_height(st->codec, bin->fsize);
-        url_fseek(pb, 0, SEEK_SET);
+        avio_seek(pb, 0, SEEK_SET);
     }
     return 0;
 };
@@ -203,7 +203,7 @@ static int xbin_read_header(AVFormatContext *s,
     if (!url_is_streamed(pb)) {
         bin->fsize = url_fsize(pb) - 9 - st->codec->extradata_size;
         ff_sauce_read(s, &bin->fsize, NULL, 0);
-        url_fseek(pb, 9 + st->codec->extradata_size, SEEK_SET);
+        avio_seek(pb, 9 + st->codec->extradata_size, SEEK_SET);
     }
 
     return 0;
@@ -248,7 +248,7 @@ static int adf_read_header(AVFormatContext *s,
         ff_sauce_read(s, &bin->fsize, &got_width, 0);
         if (!ap->height)
             calculate_height(st->codec, bin->fsize);
-        url_fseek(pb, 1 + 192 + 4096, SEEK_SET);
+        avio_seek(pb, 1 + 192 + 4096, SEEK_SET);
     }
     return 0;
 }
@@ -291,7 +291,7 @@ static int idf_read_header(AVFormatContext *s,
     st->codec->extradata[0] = 16;
     st->codec->extradata[1] = BINTEXT_PALETTE|BINTEXT_FONT;
 
-    url_fseek(pb, url_fsize(pb) - 4096 - 48, SEEK_SET);
+    avio_seek(pb, avio_size(pb) - 4096 - 48, SEEK_SET);
 
     if (get_buffer(pb, st->codec->extradata + 2 + 48, 4096) < 0)
         return AVERROR(EIO);
@@ -302,7 +302,7 @@ static int idf_read_header(AVFormatContext *s,
     ff_sauce_read(s, &bin->fsize, &got_width, 0);
     if (!ap->height)
         calculate_height(st->codec, bin->fsize);
-    url_fseek(pb, 12, SEEK_SET);
+    avio_seek(pb, 12, SEEK_SET);
     return 0;
 }
 #endif /* CONFIG_IDF_DEMUXER */
