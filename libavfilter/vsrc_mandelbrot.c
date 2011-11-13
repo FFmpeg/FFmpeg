@@ -190,11 +190,25 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                     c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
                     break;
                 }
-                t= zr*zr - zi*zi;
+                t= zr*zr - zi*zi + cr;
                 zi= 2*zr*zi + ci;
-                zr=       t + cr;
                 if(use_zyklus){
-                    if((i&1) && mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
+                    mb->zyklus[i][0]= t;
+                    mb->zyklus[i][1]= zi;
+                }
+                i++;
+                if(t*t + zi*zi > mb->bailout){
+                    switch(mb->outer){
+                    case            ITERATION_COUNT: zr= i; break;
+                    case NORMALIZED_ITERATION_COUNT: zr= i + (log(log(mb->bailout)) - log(log(sqrt(t*t + zi*zi))))/log(2); break;
+                    }
+                    c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                    break;
+                }
+                zr= t*t - zi*zi+cr;
+                zi= 2*t*zi + ci;
+                if(use_zyklus){
+                    if(mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
                         break;
                     mb->zyklus[i][0]= zr;
                     mb->zyklus[i][1]= zi;
