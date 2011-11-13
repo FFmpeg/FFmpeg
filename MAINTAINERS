@@ -253,6 +253,14 @@ libavdevice
   vfwcap.c                              Ramiro Polla
 
 
+libavfilter
+===========
+
+Video filters:
+  vsrc_mandelbrot.c                     Michael Niedermayer
+  vf_yadif.c                            Michael Niedermayer
+
+
 libavformat
 ===========
 
