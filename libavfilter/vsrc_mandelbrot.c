@@ -152,7 +152,7 @@ static void fill_from_cache(AVFilterContext *ctx, uint32_t *color, int *in_cidx,
     for(; *in_cidx < mb->cache_used; (*in_cidx)++){
         Point *p= &mb->point_cache[*in_cidx];
         int x;
-        if(*in_cidx >= mb->cache_used || p->p[1] > py)
+        if(p->p[1] > py)
             break;
         x= round((p->p[0] - mb->start_x) / scale + mb->w/2);
         if(x<0 || x >= mb->w)
