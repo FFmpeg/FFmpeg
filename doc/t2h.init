@@ -5,11 +5,13 @@ sub Libav_end_section($$)
 }
 
 $EXTRA_HEAD =
-    '<link rel="icon" href="favicon.png" type="image/png" />\n' .
-    '<link rel="stylesheet" type="text/css" href="default.css" />\n';
+'<link rel="icon" href="favicon.png" type="image/png" />
+<link rel="stylesheet" type="text/css" href="default.css" />
+';
 
-$AFTER_BODY_OPEN = '<div id="container">'.
-                   '<div id="body">';
+$AFTER_BODY_OPEN =
+'<div id="container">
+<div id="body">';
 
 $PRE_BODY_CLOSE = '</div></div>';
 
@@ -20,9 +22,9 @@ $print_page_foot = \&Libav_print_page_foot;
 sub Libav_print_page_foot($$)
 {
     my $fh = shift;
-    print $fh '<div id="footer">\n';
+    print $fh '<div id="footer">' . "\n";
     T2H_DEFAULT_print_page_foot($fh);
-    print $fh '</div>\n';
+    print $fh "</div>\n";
 }
 
 $print_page_head = \&Libav_print_page_head;
