@@ -177,7 +177,7 @@ static int decode_frame(AVCodecContext *avctx,
         npal = FFMIN(esize / 3, 256);
         for (i = 0; i < npal; i++) {
             palette[i] = AV_RB24(buf + i*3) << 2;
-            palette[i] |= 0xFF << 24;
+            palette[i] |= 0xFF << 24 | palette[i] >> 6 & 0x30303;
         }
     } else {
         if (bpp == 1) {
