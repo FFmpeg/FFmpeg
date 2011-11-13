@@ -403,6 +403,7 @@ static void vqa_decode_chunk(VqaContext *s)
             g = s->buf[cpl0_chunk++] * 4;
             b = s->buf[cpl0_chunk++] * 4;
             s->palette[i] = 0xFF << 24 | r << 16 | g << 8 | b;
+            s->palette[i] |= s->palette[i] >> 6 & 0x30303;
         }
     }
 
