@@ -31,6 +31,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include <float.h>
+#include <math.h>
 
 #define SQR(a) ((a)*(a))
 
