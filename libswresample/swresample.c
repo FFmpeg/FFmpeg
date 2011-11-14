@@ -38,7 +38,7 @@
 static const AVOption options[]={
 {"ich",  "input channel count", OFFSET( in.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
 {"och", "output channel count", OFFSET(out.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
-{"uch",   "used channel count", OFFSET(used_ch_count  ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
+{"uch",   "used channel count", OFFSET(used_ch_count  ), AV_OPT_TYPE_INT, {.dbl=0}, 0, SWR_CH_MAX, 0},
 {"isr",  "input sample rate"  , OFFSET( in_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
 {"osr", "output sample rate"  , OFFSET(out_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
 //{"ip" ,  "input planar"       , OFFSET( in.planar     ), AV_OPT_TYPE_INT, {.dbl=0},    0,       1, 0},
@@ -95,7 +95,6 @@ SwrContext *swr_alloc2(struct SwrContext *s, int64_t out_ch_layout, enum AVSampl
     s-> in.ch_count= av_get_channel_layout_nb_channels(s-> in_ch_layout);
     s->out.ch_count= av_get_channel_layout_nb_channels(s->out_ch_layout);
     s->int_sample_fmt = AV_SAMPLE_FMT_S16;
-    s->used_ch_count= s-> in.ch_count;
 
     return s;
 }
