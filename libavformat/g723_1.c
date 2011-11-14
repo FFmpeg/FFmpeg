@@ -50,7 +50,7 @@ static int g723_1_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int size, byte, ret;
 
-    pkt->pos = url_ftell(s->pb);
+    pkt->pos = avio_tell(s->pb);
     byte     = avio_r8(s->pb);
     size     = frame_size[byte & 3];
 
