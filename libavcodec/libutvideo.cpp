@@ -54,8 +54,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     int begin_ret;
     unsigned int buf_size;
 
-    if(avctx->extradata_size != 4*4)
-    {
+    if (avctx->extradata_size != 4*4) {
         av_log(avctx, AV_LOG_ERROR, "Extradata size mismatch.\n");
         return -1;
     }
@@ -67,36 +66,34 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     info.flags = AV_RL32(avctx->extradata + 12);
 
     /* Pick format based on FOURCC */
-    switch(avctx->codec_tag)
-    {
-        case MKTAG('U', 'L', 'Y', '0'):
-            avctx->pix_fmt = PIX_FMT_YUV420P;
-            format = UTVF_YV12;
-            break;
-        case MKTAG('U', 'L', 'Y', '2'):
-            avctx->pix_fmt = PIX_FMT_YUYV422;
-            format = UTVF_YUY2;
-            break;
-        case MKTAG('U', 'L', 'R', 'G'):
-            avctx->pix_fmt = PIX_FMT_BGR24;
-            format = UTVF_RGB24_WIN;
-            break;
-        case MKTAG('U', 'L', 'R', 'A'):
-            avctx->pix_fmt = PIX_FMT_RGB32;
-            format = UTVF_RGB32_WIN;
-            break;
-        default:
-            av_log(avctx, AV_LOG_ERROR,
-                  "Not a Ut Video FOURCC: %X\n", avctx->codec_tag);
-            return -1;
+    switch (avctx->codec_tag) {
+    case MKTAG('U', 'L', 'Y', '0'):
+        avctx->pix_fmt = PIX_FMT_YUV420P;
+        format = UTVF_YV12;
+        break;
+    case MKTAG('U', 'L', 'Y', '2'):
+        avctx->pix_fmt = PIX_FMT_YUYV422;
+        format = UTVF_YUY2;
+        break;
+    case MKTAG('U', 'L', 'R', 'G'):
+        avctx->pix_fmt = PIX_FMT_BGR24;
+        format = UTVF_RGB24_WIN;
+        break;
+    case MKTAG('U', 'L', 'R', 'A'):
+        avctx->pix_fmt = PIX_FMT_RGB32;
+        format = UTVF_RGB32_WIN;
+        break;
+    default:
+        av_log(avctx, AV_LOG_ERROR,
+              "Not a Ut Video FOURCC: %X\n", avctx->codec_tag);
+        return -1;
     }
 
     /* Only allocate the buffer once */
     buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
     utv->output = (uint8_t *)av_malloc(buf_size * sizeof(uint8_t));
 
-    if(utv->output == NULL)
-    {
+    if (utv->output == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Unable to allocate output buffer.\n");
         return -1;
     }
@@ -124,8 +121,7 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
                             CBGROSSWIDTH_WINDOWS, &info, sizeof(UtVideoExtra));
 
     /* Check to see if the decoder initlized properly */
-    if(begin_ret != 0)
-    {
+    if (begin_ret != 0) {
         av_log(avctx, AV_LOG_ERROR,
                "Could not initialize decoder: %d\n", begin_ret);
         return -1;
@@ -150,26 +146,25 @@ static int utvideo_decode_frame(AVCodecContext *avctx, void *data,
     utv->codec->DecodeFrame(utv->output, avpkt->data, true);
 
     /* Set the output data depending on the colorspace */
-    switch(avctx->pix_fmt)
-    {
-        case PIX_FMT_YUV420P:
-            pic->linesize[0] = w;
-            pic->linesize[1] = pic->linesize[2] = w / 2;
-            pic->data[0] = utv->output;
-            pic->data[2] = utv->output + (w * h);
-            pic->data[1] = pic->data[2] + (w * h / 4);
-            break;
-        case PIX_FMT_YUYV422:
-            pic->linesize[0] = w * 2;
-            pic->data[0] = utv->output;
-            break;
-        case PIX_FMT_BGR24:
-        case PIX_FMT_RGB32:
-            /* Make the linesize negative, since Ut Video uses bottom-up BGR */
-            pic->linesize[0] = -1 * w * (avctx->pix_fmt == PIX_FMT_BGR24 ? 3 : 4);
-            pic->data[0] = utv->output + utv->buf_size + pic->linesize[0];
-            break;
-     }
+    switch (avctx->pix_fmt) {
+    case PIX_FMT_YUV420P:
+        pic->linesize[0] = w;
+        pic->linesize[1] = pic->linesize[2] = w / 2;
+        pic->data[0] = utv->output;
+        pic->data[2] = utv->output + (w * h);
+        pic->data[1] = pic->data[2] + (w * h / 4);
+        break;
+    case PIX_FMT_YUYV422:
+        pic->linesize[0] = w * 2;
+        pic->data[0] = utv->output;
+        break;
+    case PIX_FMT_BGR24:
+    case PIX_FMT_RGB32:
+        /* Make the linesize negative, since Ut Video uses bottom-up BGR */
+        pic->linesize[0] = -1 * w * (avctx->pix_fmt == PIX_FMT_BGR24 ? 3 : 4);
+        pic->data[0] = utv->output + utv->buf_size + pic->linesize[0];
+        break;
+    }
 
     *data_size = sizeof(AVFrame);
     *(AVFrame *)data = *pic;
