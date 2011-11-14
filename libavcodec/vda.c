@@ -78,7 +78,7 @@ static int64_t vda_pts_from_dictionary(CFDictionaryRef user_info)
     CFNumberRef pts;
     int64_t outValue = 0;
 
-    if (NULL == user_info)
+    if (!user_info)
         return 0;
 
     pts = CFDictionaryGetValue(user_info, CFSTR("FF_VDA_DECODER_PTS_KEY"));
@@ -96,7 +96,7 @@ static void vda_clear_queue(struct vda_context *vda_ctx)
 
     vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_OBTAIN);
 
-    while (vda_ctx->queue != NULL)
+    while (vda_ctx->queue)
     {
         top_frame = vda_ctx->queue;
         vda_ctx->queue = top_frame->next_frame;
@@ -118,7 +118,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
     vda_frame *new_frame;
     vda_frame *queue_walker;
 
-    if (NULL == image_buffer)
+    if (!image_buffer)
         return;
 
     if (vda_ctx->cv_pix_fmt_type != CVPixelBufferGetPixelFormatType(image_buffer))
@@ -183,10 +183,10 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
 
     vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_CREATE);
 
-    config_info = (CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                             4,
-                                             &kCFTypeDictionaryKeyCallBacks,
-                                             &kCFTypeDictionaryValueCallBacks));
+    config_info = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                            4,
+                                            &kCFTypeDictionaryKeyCallBacks,
+                                            &kCFTypeDictionaryValueCallBacks);
 
     height = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &vda_ctx->height);
     width = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt32Type, &vda_ctx->width);
@@ -198,14 +198,14 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     CFDictionarySetValue(config_info, kVDADecoderConfiguration_SourceFormat, format);
     CFDictionarySetValue(config_info, kVDADecoderConfiguration_avcCData, avc_data);
 
-    buffer_attributes = (CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                                   2,
-                                                   &kCFTypeDictionaryKeyCallBacks,
-                                                   &kCFTypeDictionaryValueCallBacks));
-    io_surface_properties = (CFDictionaryCreateMutable(kCFAllocatorDefault,
-                                                       0,
-                                                       &kCFTypeDictionaryKeyCallBacks,
-                                                       &kCFTypeDictionaryValueCallBacks));
+    buffer_attributes = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                                  2,
+                                                  &kCFTypeDictionaryKeyCallBacks,
+                                                  &kCFTypeDictionaryValueCallBacks);
+    io_surface_properties = CFDictionaryCreateMutable(kCFAllocatorDefault,
+                                                      0,
+                                                      &kCFTypeDictionaryKeyCallBacks,
+                                                      &kCFTypeDictionaryValueCallBacks);
     cv_pix_fmt  = CFNumberCreate(kCFAllocatorDefault,
                                  kCFNumberSInt32Type,
                                  &vda_ctx->cv_pix_fmt_type);
@@ -246,7 +246,7 @@ int ff_vda_destroy_decoder(struct vda_context *vda_ctx)
 
     vda_clear_queue(vda_ctx);
 
-    if (vda_ctx->queue_mutex != NULL)
+    if (vda_ctx->queue_mutex)
         vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_DESTROY);
 
     if (vda_ctx->bitstream)
@@ -275,7 +275,7 @@ vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx)
 
 void ff_vda_release_vda_frame(vda_frame *frame)
 {
-    if (frame != NULL)
+    if (frame)
     {
         CVPixelBufferRelease(frame->cv_buffer);
         av_freep(&frame);
