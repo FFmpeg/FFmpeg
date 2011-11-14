@@ -178,7 +178,7 @@ static int xbin_read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    url_fskip(pb, 5);
+    avio_skip(pb, 5);
     st->codec->width   = get_le16(pb)<<3;
     st->codec->height  = get_le16(pb);
     fontheight         = avio_r8(pb);
@@ -235,7 +235,7 @@ static int adf_read_header(AVFormatContext *s,
 
     if (avio_read(pb, st->codec->extradata + 2, 24) < 0)
         return AVERROR(EIO);
-    url_fskip(pb, 144);
+    avio_skip(pb, 144);
     if (avio_read(pb, st->codec->extradata + 2 + 24, 24) < 0)
         return AVERROR(EIO);
     if (avio_read(pb, st->codec->extradata + 2 + 48, 4096) < 0)

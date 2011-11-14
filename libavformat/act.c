@@ -73,7 +73,7 @@ static int read_header(AVFormatContext *s,
     if (!st)
         return AVERROR(ENOMEM);
 
-    url_fskip(pb, 16);
+    avio_skip(pb, 16);
     size=get_le32(pb);
     ff_get_wav_header(pb, st->codec, size);
 
@@ -188,7 +188,7 @@ static int read_packet(AVFormatContext *s,
 
     if(ctx->bytes_left_in_chunk < frame_size)
     {
-        url_fskip(pb, ctx->bytes_left_in_chunk);
+        avio_skip(pb, ctx->bytes_left_in_chunk);
         ctx->bytes_left_in_chunk=CHUNK_SIZE;
     }
 
