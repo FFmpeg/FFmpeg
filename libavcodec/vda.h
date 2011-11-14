@@ -29,11 +29,12 @@
 // http://openradar.appspot.com/8026390
 #undef __GNUC_STDC_INLINE__
 
-#define Picture QuickdrawPicture
-
 #include <pthread.h>
 #include "avcodec.h"
+
+#define Picture QuickdrawPicture
 #include <VideoDecodeAcceleration/VDADecoder.h>
+#undef Picture
 
 /**
  *  This structure is used to store a decoded frame information and data.
