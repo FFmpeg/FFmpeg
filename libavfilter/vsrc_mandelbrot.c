@@ -30,6 +30,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
+#include <float.h>
 
 #define SQR(a) ((a)*(a))
 
@@ -78,12 +79,12 @@ static const AVOption mandelbrot_options[] = {
     {"rate",        "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX },
     {"r",           "set frame rate",                OFFSET(rate),    AV_OPT_TYPE_STRING,     {.str="25"},  CHAR_MIN, CHAR_MAX },
     {"maxiter",     "set max iterations number",     OFFSET(maxiter), AV_OPT_TYPE_INT,        {.dbl=4096},  1,        INT_MAX  },
-    {"start_x",     "set the initial x position",    OFFSET(start_x), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.743643887037158704752191506114774}, -INFINITY, INFINITY  },
-    {"start_y",     "set the initial y position",    OFFSET(start_y), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.131825904205311970493132056385139}, -INFINITY, INFINITY  },
-    {"start_scale", "set the initial scale value",   OFFSET(start_scale), AV_OPT_TYPE_DOUBLE, {.dbl=3.0},  -INFINITY, INFINITY },
-    {"end_scale",   "set the terminal scale value",  OFFSET(end_scale), AV_OPT_TYPE_DOUBLE,   {.dbl=0.3},  -INFINITY, INFINITY },
-    {"end_pts",     "set the terminal pts value",    OFFSET(end_pts), AV_OPT_TYPE_DOUBLE,     {.dbl=800},  -INFINITY, INFINITY },
-    {"bailout",     "set the bailout value",         OFFSET(bailout), AV_OPT_TYPE_DOUBLE,     {.dbl=10},   -INFINITY, INFINITY },
+    {"start_x",     "set the initial x position",    OFFSET(start_x), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.743643887037158704752191506114774}, -100, 100  },
+    {"start_y",     "set the initial y position",    OFFSET(start_y), AV_OPT_TYPE_DOUBLE,     {.dbl=-0.131825904205311970493132056385139}, -100, 100  },
+    {"start_scale", "set the initial scale value",   OFFSET(start_scale), AV_OPT_TYPE_DOUBLE, {.dbl=3.0},  0, FLT_MAX },
+    {"end_scale",   "set the terminal scale value",  OFFSET(end_scale), AV_OPT_TYPE_DOUBLE,   {.dbl=0.3},  0, FLT_MAX },
+    {"end_pts",     "set the terminal pts value",    OFFSET(end_pts), AV_OPT_TYPE_DOUBLE,     {.dbl=800},  0, INT64_MAX },
+    {"bailout",     "set the bailout value",         OFFSET(bailout), AV_OPT_TYPE_DOUBLE,     {.dbl=10},   0, FLT_MAX },
 
     {"outer",       "set outer coloring mode",       OFFSET(outer), AV_OPT_TYPE_INT, {.dbl=NORMALIZED_ITERATION_COUNT}, 0, INT_MAX, 0, "outer"},
     {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.dbl=ITERATION_COUNT}, INT_MIN, INT_MAX, 0, "outer" },
