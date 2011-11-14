@@ -140,7 +140,7 @@ static int bintext_read_header(AVFormatContext *s,
     st->codec->extradata[0] = 16;
     st->codec->extradata[1] = 0;
 
-    if (!url_is_streamed(pb)) {
+    if (pb->seekable) {
         int got_width = 0;
         bin->fsize = avio_size(pb);
         if (ff_sauce_read(s, &bin->fsize, &got_width, 0) < 0)
@@ -200,7 +200,7 @@ static int xbin_read_header(AVFormatContext *s,
     if (avio_read(pb, st->codec->extradata + 2, st->codec->extradata_size - 2) < 0)
         return AVERROR(EIO);
 
-    if (!url_is_streamed(pb)) {
+    if (pb->seekable) {
         bin->fsize = avio_size(pb) - 9 - st->codec->extradata_size;
         ff_sauce_read(s, &bin->fsize, NULL, 0);
         avio_seek(pb, 9 + st->codec->extradata_size, SEEK_SET);
@@ -241,7 +241,7 @@ static int adf_read_header(AVFormatContext *s,
     if (avio_read(pb, st->codec->extradata + 2 + 48, 4096) < 0)
         return AVERROR(EIO);
 
-    if (!url_is_streamed(pb)) {
+    if (pb->seekable) {
         int got_width = 0;
         bin->fsize = avio_size(pb) - 1 - 192 - 4096;
         st->codec->width = 80<<3;
@@ -276,7 +276,7 @@ static int idf_read_header(AVFormatContext *s,
     AVStream *st;
     int got_width = 0;
 
-    if (url_is_streamed(pb))
+    if (!pb->seekable)
         return AVERROR(EIO);
 
     st = init_stream(s, ap);
