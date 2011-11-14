@@ -27,10 +27,12 @@
 #define ALT_BITSTREAM_READER_LE
 
 #include "avcodec.h"
+#include "dsputil.h"
 #include "get_bits.h"
 
 typedef struct {
     AVCodecContext *avctx;
+    DSPContext dsp;
 
     int            size;
     uint8_t        *val; ///< This array first holds the lengths of vlc symbols and then their value.
@@ -82,9 +84,8 @@ static void vble_restore_plane(VBLEContext *ctx, GetBitContext *gb, int plane,
     AVFrame *pic = ctx->avctx->coded_frame;
     uint8_t *dst = pic->data[plane];
     uint8_t *val = ctx->val + offset;
-    uint8_t a, b, c;
     int stride = pic->linesize[plane];
-    int i, j;
+    int i, j, left, left_top;
 
     for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
@@ -93,21 +94,15 @@ static void vble_restore_plane(VBLEContext *ctx, GetBitContext *gb, int plane,
                 int v = (1 << val[j]) + get_bits(gb, val[j]) - 1;
                 val[j] = (v >> 1) ^ -(v & 1);
             }
-            dst[j] = val[j];
-
-            /* Top line and left column are not predicted */
-            if (!j)
-                continue;
-
-            if (!i) {
-                dst[j] += dst[j - 1];
-                continue;
-            }
-
-            a = dst[j - 1];
-            b = dst[j - stride];
-            c = a + b - dst[j - 1 - stride];
-            dst[j] += mid_pred(a, b, c);
+        }
+        if (i) {
+            left = 0;
+            left_top = dst[-stride];
+            ctx->dsp.add_hfyu_median_prediction(dst, dst-stride, val, width, &left, &left_top);
+        } else {
+            dst[0] = val[0];
+            for (j = 1; j < width; j++)
+                dst[j] = val[j] + dst[j - 1];
         }
         dst += stride;
         val += width;
@@ -195,6 +190,7 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 
     /* Stash for later use */
     ctx->avctx = avctx;
+    dsputil_init(&ctx->dsp, avctx);
 
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->bits_per_raw_sample = 8;
