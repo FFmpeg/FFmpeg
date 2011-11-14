@@ -80,7 +80,7 @@ static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
         return -1; \
     if (avio_read(pb, buf, size) == size && *buf) { \
         buf[len] = 0; \
-        av_metadata_set2(&avctx->metadata, name, buf, 0); \
+        av_dict_set(&avctx->metadata, name, buf, 0); \
     }
 
     GET_EFI2_META("filename",  12)
