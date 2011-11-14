@@ -1305,7 +1305,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                     st->codec->flags2 |= CODEC_FLAG2_DROP_FRAME_TIMECODE;
                 avio_rb32(pb);
                 avio_rb32(pb);
-                st->codec->time_base.den = get_byte(pb);
+                st->codec->time_base.den = avio_r8(pb);
                 st->codec->time_base.num = 1;
             }
             /* other codec type, just skip (rtp, mp4s, ...) */

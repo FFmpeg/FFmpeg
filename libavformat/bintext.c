@@ -69,13 +69,13 @@ static int next_tag_read(AVFormatContext *avctx, uint64_t *fsize)
         return -1;
     if (memcmp(buf, next_magic, sizeof(next_magic)))
         return -1;
-    if (get_byte(pb) != 0x01)
+    if (avio_r8(pb) != 0x01)
         return -1;
 
     *fsize -= 256;
 
 #define GET_EFI2_META(name,size) \
-    len = get_byte(pb); \
+    len = avio_r8(pb); \
     if (len < 1 || len > size) \
         return -1; \
     if (avio_read(pb, buf, size) == size && *buf) { \
@@ -181,9 +181,9 @@ static int xbin_read_header(AVFormatContext *s,
     url_fskip(pb, 5);
     st->codec->width   = get_le16(pb)<<3;
     st->codec->height  = get_le16(pb);
-    fontheight         = get_byte(pb);
+    fontheight         = avio_r8(pb);
     st->codec->height *= fontheight;
-    flags              = get_byte(pb);
+    flags              = avio_r8(pb);
 
     st->codec->extradata_size = 2;
     if ((flags & BINTEXT_PALETTE))
@@ -218,7 +218,7 @@ static int adf_read_header(AVFormatContext *s,
     AVIOContext *pb = s->pb;
     AVStream *st;
 
-    if (get_byte(pb) != 1)
+    if (avio_r8(pb) != 1)
         return AVERROR_INVALIDDATA;
 
     st = init_stream(s, ap);

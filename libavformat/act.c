@@ -94,7 +94,7 @@ static int read_header(AVFormatContext *s,
 
     avio_seek(pb, 257, SEEK_SET);
     msec=get_le16(pb);
-    sec=get_byte(pb);
+    sec=avio_r8(pb);
     min=get_le32(pb);
 
     st->duration = av_rescale(1000*(min*60+sec)+msec, st->codec->sample_rate, 1000 * st->codec->frame_size);
