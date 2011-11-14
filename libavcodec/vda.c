@@ -38,21 +38,20 @@
 /* Mutex manager callback. */
 static int vda_lock_operation(void **mtx, enum AVLockOp op)
 {
-    switch(op)
-    {
-        case AV_LOCK_CREATE:
-            *mtx = av_malloc(sizeof(pthread_mutex_t));
-            if(!*mtx)
-                return 1;
-            return !!pthread_mutex_init(*mtx, NULL);
-        case AV_LOCK_OBTAIN:
-            return !!pthread_mutex_lock(*mtx);
-        case AV_LOCK_RELEASE:
-            return !!pthread_mutex_unlock(*mtx);
-        case AV_LOCK_DESTROY:
-            pthread_mutex_destroy(*mtx);
-            av_freep(mtx);
-            return 0;
+    switch (op) {
+    case AV_LOCK_CREATE:
+        *mtx = av_malloc(sizeof(pthread_mutex_t));
+        if (!*mtx)
+            return 1;
+        return !!pthread_mutex_init(*mtx, NULL);
+    case AV_LOCK_OBTAIN:
+        return !!pthread_mutex_lock(*mtx);
+    case AV_LOCK_RELEASE:
+        return !!pthread_mutex_unlock(*mtx);
+    case AV_LOCK_DESTROY:
+        pthread_mutex_destroy(*mtx);
+        av_freep(mtx);
+        return 0;
     }
     return 1;
 }
@@ -62,12 +61,12 @@ static CFDictionaryRef vda_dictionary_with_pts(int64_t i_pts)
 {
     CFStringRef key = CFSTR("FF_VDA_DECODER_PTS_KEY");
     CFNumberRef value = CFNumberCreate(kCFAllocatorDefault, kCFNumberSInt64Type, &i_pts);
-    CFDictionaryRef user_info = CFDictionaryCreate( kCFAllocatorDefault,
-                                                    (const void **)&key,
-                                                    (const void **)&value,
-                                                    1,
-                                                    &kCFTypeDictionaryKeyCallBacks,
-                                                    &kCFTypeDictionaryValueCallBacks);
+    CFDictionaryRef user_info = CFDictionaryCreate(kCFAllocatorDefault,
+                                                   (const void **)&key,
+                                                   (const void **)&value,
+                                                   1,
+                                                   &kCFTypeDictionaryKeyCallBacks,
+                                                   &kCFTypeDictionaryValueCallBacks);
     CFRelease(value);
     return user_info;
 }
@@ -96,8 +95,7 @@ static void vda_clear_queue(struct vda_context *vda_ctx)
 
     vda_lock_operation(&vda_ctx->queue_mutex, AV_LOCK_OBTAIN);
 
-    while (vda_ctx->queue)
-    {
+    while (vda_ctx->queue) {
         top_frame = vda_ctx->queue;
         vda_ctx->queue = top_frame->next_frame;
         ff_vda_release_vda_frame(top_frame);
@@ -136,23 +134,18 @@ static void vda_decoder_callback (void *vda_hw_ctx,
 
     queue_walker = vda_ctx->queue;
 
-    if (!queue_walker || (new_frame->pts < queue_walker->pts))
-    {
+    if (!queue_walker || (new_frame->pts < queue_walker->pts)) {
         /* we have an empty queue, or this frame earlier than the current queue head */
         new_frame->next_frame = queue_walker;
         vda_ctx->queue = new_frame;
-    }
-    else
-    {
+    } else {
         /* walk the queue and insert this frame where it belongs in display order */
         vda_frame *next_frame;
 
-        while (1)
-        {
+        while (1) {
             next_frame = queue_walker->next_frame;
 
-            if (!next_frame || (new_frame->pts < next_frame->pts))
-            {
+            if (!next_frame || (new_frame->pts < next_frame->pts)) {
                 new_frame->next_frame = next_frame;
                 queue_walker->next_frame = new_frame;
                 break;
@@ -219,11 +212,11 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
                          kCVPixelBufferIOSurfacePropertiesKey,
                          io_surface_properties);
 
-    status = VDADecoderCreate( config_info,
-                               buffer_attributes,
-                               (VDADecoderOutputCallback *)vda_decoder_callback,
-                               vda_ctx,
-                               &vda_ctx->decoder );
+    status = VDADecoderCreate(config_info,
+                              buffer_attributes,
+                              (VDADecoderOutputCallback *)vda_decoder_callback,
+                              vda_ctx,
+                              &vda_ctx->decoder);
 
     CFRelease(height);
     CFRelease(width);
@@ -278,8 +271,7 @@ vda_frame *ff_vda_queue_pop(struct vda_context *vda_ctx)
 
 void ff_vda_release_vda_frame(vda_frame *frame)
 {
-    if (frame)
-    {
+    if (frame) {
         CVPixelBufferRelease(frame->cv_buffer);
         av_freep(&frame);
     }
