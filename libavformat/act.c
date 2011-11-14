@@ -74,7 +74,7 @@ static int read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
 
     avio_skip(pb, 16);
-    size=get_le32(pb);
+    size=avio_rl32(pb);
     ff_get_wav_header(pb, st->codec, size);
 
     /*
@@ -95,7 +95,7 @@ static int read_header(AVFormatContext *s,
     avio_seek(pb, 257, SEEK_SET);
     msec=avio_rl16(pb);
     sec=avio_r8(pb);
-    min=get_le32(pb);
+    min=avio_rl32(pb);
 
     st->duration = av_rescale(1000*(min*60+sec)+msec, st->codec->sample_rate, 1000 * st->codec->frame_size);
 
