@@ -20,6 +20,13 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <pthread.h>
+#include <CoreFoundation/CFDictionary.h>
+#include <CoreFoundation/CFNumber.h>
+#include <CoreFoundation/CFData.h>
+#include <CoreFoundation/CFString.h>
+
+#include "avcodec.h"
 #include "vda_internal.h"
 
 /**

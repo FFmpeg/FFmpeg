@@ -23,15 +23,7 @@
 #ifndef AVCODEC_VDA_INTERNAL_H
 #define AVCODEC_VDA_INTERNAL_H
 
-#include "h264.h"
-#include "h264data.h"
-
 #include "vda.h"
-
-#include <CoreFoundation/CFDictionary.h>
-#include <CoreFoundation/CFNumber.h>
-#include <CoreFoundation/CFData.h>
-#include <CoreFoundation/CFString.h>
 
 /**
  * \addtogroup VDA_Decoding

@@ -29,9 +29,6 @@
 // http://openradar.appspot.com/8026390
 #undef __GNUC_STDC_INLINE__
 
-#include <pthread.h>
-#include "avcodec.h"
-
 #define Picture QuickdrawPicture
 #include <VideoDecodeAcceleration/VDADecoder.h>
 #undef Picture
