@@ -125,6 +125,9 @@ static void vda_decoder_callback (void *vda_hw_ctx,
         return;
 
     new_frame = av_mallocz(sizeof(vda_frame));
+    if (!new_frame)
+        return;
+
     new_frame->next_frame = NULL;
     new_frame->cv_buffer = CVPixelBufferRetain(image_buffer);
     new_frame->pts = vda_pts_from_dictionary(user_info);
