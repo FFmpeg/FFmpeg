@@ -124,7 +124,7 @@ static void vda_decoder_callback (void *vda_hw_ctx,
     if (vda_ctx->cv_pix_fmt_type != CVPixelBufferGetPixelFormatType(image_buffer))
         return;
 
-    new_frame = (vda_frame *)av_mallocz(sizeof(vda_frame));
+    new_frame = av_mallocz(sizeof(vda_frame));
     new_frame->next_frame = NULL;
     new_frame->cv_buffer = CVPixelBufferRetain(image_buffer);
     new_frame->pts = vda_pts_from_dictionary(user_info);
@@ -219,7 +219,7 @@ int ff_vda_create_decoder(struct vda_context *vda_ctx,
     status = VDADecoderCreate( config_info,
                                buffer_attributes,
                                (VDADecoderOutputCallback *)vda_decoder_callback,
-                               (void *)vda_ctx,
+                               vda_ctx,
                                &vda_ctx->decoder );
 
     CFRelease(height);
