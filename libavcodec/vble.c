@@ -73,18 +73,11 @@ static int vble_unpack(VBLEContext *ctx, GetBitContext *gb)
     /* Check we have enough bits left */
     if (get_bits_left(gb) < allbits)
         return -1;
-
-    for (i = 0; i < ctx->size; i++) {
-        /* get_bits can't take a length of 0 */
-        if (ctx->val[i])
-            ctx->val[i] = (1 << ctx->val[i]) + get_bits(gb, ctx->val[i]) - 1;
-    }
-
     return 0;
 }
 
-static void vble_restore_plane(VBLEContext *ctx, int plane, int offset,
-                              int width, int height)
+static void vble_restore_plane(VBLEContext *ctx, GetBitContext *gb, int plane,
+                               int offset, int width, int height)
 {
     AVFrame *pic = ctx->avctx->coded_frame;
     uint8_t *dst = pic->data[plane];
@@ -95,7 +88,12 @@ static void vble_restore_plane(VBLEContext *ctx, int plane, int offset,
 
     for (i = 0; i < height; i++) {
         for (j = 0; j < width; j++) {
-            dst[j] = (val[j] >> 1) ^ -(val[j] & 1);
+            /* get_bits can't take a length of 0 */
+            if (val[j]) {
+                int v = (1 << val[j]) + get_bits(gb, val[j]) - 1;
+                val[j] = (v >> 1) ^ -(v & 1);
+            }
+            dst[j] = val[j];
 
             /* Top line and left column are not predicted */
             if (!j)
@@ -160,15 +158,15 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     }
 
     /* Restore planes. Should be almost identical to Huffyuv's. */
-    vble_restore_plane(ctx, 0, offset, avctx->width, avctx->height);
+    vble_restore_plane(ctx, &gb, 0, offset, avctx->width, avctx->height);
 
     /* Chroma */
     if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
         offset += avctx->width * avctx->height;
-        vble_restore_plane(ctx, 1, offset, width_uv, height_uv);
+        vble_restore_plane(ctx, &gb, 1, offset, width_uv, height_uv);
 
         offset += width_uv * height_uv;
-        vble_restore_plane(ctx, 2, offset, width_uv, height_uv);
+        vble_restore_plane(ctx, &gb, 2, offset, width_uv, height_uv);
     }
 
     *data_size = sizeof(AVFrame);
