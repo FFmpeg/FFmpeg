@@ -927,21 +927,26 @@ typedef struct AVPacket {
  * sizeof(AVFrame) must not be used outside libav*.
  */
 typedef struct AVFrame {
+#if FF_API_DATA_POINTERS
+#define AV_NUM_DATA_POINTERS 4
+#else
+#define AV_NUM_DATA_POINTERS 8
+#endif
     /**
      * pointer to the picture planes.
      * This might be different from the first allocated byte
      * - encoding:
      * - decoding:
      */
-    uint8_t *data[4];
-    int linesize[4];
+    uint8_t *data[AV_NUM_DATA_POINTERS];
+    int linesize[AV_NUM_DATA_POINTERS];
     /**
      * pointer to the first allocated byte of the picture. Can be used in get_buffer/release_buffer.
      * This isn't used by libavcodec unless the default get/release_buffer() is used.
      * - encoding:
      * - decoding:
      */
-    uint8_t *base[4];
+    uint8_t *base[AV_NUM_DATA_POINTERS];
     /**
      * 1 -> keyframe, 0-> not
      * - encoding: Set by libavcodec.
@@ -1065,7 +1070,7 @@ typedef struct AVFrame {
      * - encoding: Set by libavcodec. if flags&CODEC_FLAG_PSNR.
      * - decoding: unused
      */
-    uint64_t error[4];
+    uint64_t error[AV_NUM_DATA_POINTERS];
 
     /**
      * type of the buffer (to keep track of who has to deallocate data[*])
@@ -1319,7 +1324,7 @@ typedef struct AVCodecContext {
      * @param offset offset into the AVFrame.data from which the slice should be read
      */
     void (*draw_horiz_band)(struct AVCodecContext *s,
-                            const AVFrame *src, int offset[4],
+                            const AVFrame *src, int offset[AV_NUM_DATA_POINTERS],
                             int y, int type, int height);
 
     /* audio only */
@@ -1867,7 +1872,7 @@ typedef struct AVCodecContext {
      * - encoding: Set by libavcodec if flags&CODEC_FLAG_PSNR.
      * - decoding: unused
      */
-    uint64_t error[4];
+    uint64_t error[AV_NUM_DATA_POINTERS];
 
     /**
      * motion estimation comparison function
@@ -3175,8 +3180,8 @@ typedef struct AVHWAccel {
  * the last component is alpha
  */
 typedef struct AVPicture {
-    uint8_t *data[4];
-    int linesize[4];       ///< number of bytes per line
+    uint8_t *data[AV_NUM_DATA_POINTERS];
+    int linesize[AV_NUM_DATA_POINTERS];     ///< number of bytes per line
 } AVPicture;
 
 #define AVPALETTE_SIZE 1024
@@ -3794,7 +3799,7 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height);
  * according to avcodec_get_edge_width() before.
  */
 void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
-                               int linesize_align[4]);
+                               int linesize_align[AV_NUM_DATA_POINTERS]);
 
 enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum PixelFormat * fmt);
 

@@ -13,6 +13,12 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-xx-xx - xxxxxxx - lavc 53.24.0
+  Change AVFrame.data[4]/base[4]/linesize[4]/error[4] to [8] at next major bump.
+  Change AVPicture.data[4]/linesize[4] to [8] at next major bump.
+  Change AVCodecContext.error[4] to [8] at next major bump.
+  Add AV_NUM_DATA_POINTERS to simplify the bump transition.
+
 2011-11-23 - bbb46f3 - lavu 51.18.0
   Add av_samples_get_buffer_size(), av_samples_fill_arrays(), and
   av_samples_alloc(), to samplefmt.h.

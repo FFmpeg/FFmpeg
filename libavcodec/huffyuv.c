@@ -921,8 +921,8 @@ static int encode_bgr_bitstream(HYuvContext *s, int count){
 
 #if CONFIG_HUFFYUV_DECODER || CONFIG_FFVHUFF_DECODER
 static void draw_slice(HYuvContext *s, int y){
-    int h, cy;
-    int offset[4];
+    int h, cy, i;
+    int offset[AV_NUM_DATA_POINTERS];
 
     if(s->avctx->draw_horiz_band==NULL)
         return;
@@ -939,7 +939,8 @@ static void draw_slice(HYuvContext *s, int y){
     offset[0] = s->picture.linesize[0]*y;
     offset[1] = s->picture.linesize[1]*cy;
     offset[2] = s->picture.linesize[2]*cy;
-    offset[3] = 0;
+    for (i = 3; i < AV_NUM_DATA_POINTERS; i++)
+        offset[i] = 0;
     emms_c();
 
     s->avctx->draw_horiz_band(s->avctx, &s->picture, offset, y, 3, h);

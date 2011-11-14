@@ -127,7 +127,10 @@ void avcodec_set_dimensions(AVCodecContext *s, int width, int height){
 
 #define INTERNAL_BUFFER_SIZE (32+1)
 
-void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int linesize_align[4]){
+void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height,
+                               int linesize_align[AV_NUM_DATA_POINTERS])
+{
+    int i;
     int w_align= 1;
     int h_align= 1;
 
@@ -209,10 +212,8 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
         *height+=2; // some of the optimized chroma MC reads one line too much
                     // which is also done in mpeg decoders with lowres > 0
 
-    linesize_align[0] =
-    linesize_align[1] =
-    linesize_align[2] =
-    linesize_align[3] = STRIDE_ALIGN;
+    for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
+        linesize_align[i] = STRIDE_ALIGN;
 //STRIDE_ALIGN is 8 for SSE* but this does not work for SVQ1 chroma planes
 //we could change STRIDE_ALIGN to 16 for x86/sse but it would increase the
 //picture size unneccessarily in some cases. The solution here is not
@@ -230,7 +231,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
 
 void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     int chroma_shift = av_pix_fmt_descriptors[s->pix_fmt].log2_chroma_w;
-    int linesize_align[4];
+    int linesize_align[AV_NUM_DATA_POINTERS];
     int align;
     avcodec_align_dimensions2(s, width, height, linesize_align);
     align = FFMAX(linesize_align[0], linesize_align[3]);
@@ -275,7 +276,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             return -1;
         }
 
-        for(i=0; i<4; i++){
+        for (i = 0; i < AV_NUM_DATA_POINTERS; i++) {
             av_freep(&buf->base[i]);
             buf->data[i]= NULL;
         }
@@ -290,7 +291,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
         int tmpsize;
         int unaligned;
         AVPicture picture;
-        int stride_align[4];
+        int stride_align[AV_NUM_DATA_POINTERS];
         const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
 
         avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
@@ -343,6 +344,10 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
             else
                 buf->data[i] = buf->base[i] + FFALIGN((buf->linesize[i]*EDGE_WIDTH>>v_shift) + (pixel_size*EDGE_WIDTH>>h_shift), stride_align[i]);
         }
+        for (; i < AV_NUM_DATA_POINTERS; i++) {
+            buf->base[i] = buf->data[i] = NULL;
+            buf->linesize[i] = 0;
+        }
         if(size[1] && !size[2])
             ff_set_systematic_pal2((uint32_t*)buf->data[1], s->pix_fmt);
         buf->width  = s->width;
@@ -352,7 +357,7 @@ int avcodec_default_get_buffer(AVCodecContext *s, AVFrame *pic){
     }
     pic->type= FF_BUFFER_TYPE_INTERNAL;
 
-    for(i=0; i<4; i++){
+    for (i = 0; i < AV_NUM_DATA_POINTERS; i++) {
         pic->base[i]= buf->base[i];
         pic->data[i]= buf->data[i];
         pic->linesize[i]= buf->linesize[i];
@@ -392,7 +397,7 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
         FFSWAP(InternalBuffer, *buf, *last);
     }
 
-    for(i=0; i<4; i++){
+    for (i = 0; i < AV_NUM_DATA_POINTERS; i++) {
         pic->data[i]=NULL;
 //        pic->base[i]=NULL;
     }
@@ -426,7 +431,7 @@ int avcodec_default_reget_buffer(AVCodecContext *s, AVFrame *pic){
      * Not internal type and reget_buffer not overridden, emulate cr buffer
      */
     temp_pic = *pic;
-    for(i = 0; i < 4; i++)
+    for(i = 0; i < AV_NUM_DATA_POINTERS; i++)
         pic->data[i] = pic->base[i] = NULL;
     pic->opaque = NULL;
     /* Allocate new frame */
