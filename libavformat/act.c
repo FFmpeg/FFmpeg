@@ -93,7 +93,7 @@ static int read_header(AVFormatContext *s,
     st->codec->codec_id=CODEC_ID_G729;
 
     avio_seek(pb, 257, SEEK_SET);
-    msec=get_le16(pb);
+    msec=avio_rl16(pb);
     sec=avio_r8(pb);
     min=get_le32(pb);
 

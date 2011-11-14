@@ -179,8 +179,8 @@ static int xbin_read_header(AVFormatContext *s,
         return AVERROR(ENOMEM);
 
     avio_skip(pb, 5);
-    st->codec->width   = get_le16(pb)<<3;
-    st->codec->height  = get_le16(pb);
+    st->codec->width   = avio_rl16(pb)<<3;
+    st->codec->height  = avio_rl16(pb);
     fontheight         = avio_r8(pb);
     st->codec->height *= fontheight;
     flags              = avio_r8(pb);
