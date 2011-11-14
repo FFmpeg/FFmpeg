@@ -114,7 +114,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     av_strlcpy(pad->y_expr, "0" , sizeof(pad->h_expr));
 
     if (args)
-        sscanf(args, "%255[^:]:%255[^:]:%255[^:]:%255[^:]:%255s",
+        sscanf(args, "%255[^:]:%255[^:]:%255[^:]:%255[^:]:%127s",
                pad->w_expr, pad->h_expr, pad->x_expr, pad->y_expr, color_string);
 
     if (av_parse_color(pad->color, color_string, -1, ctx) < 0)
