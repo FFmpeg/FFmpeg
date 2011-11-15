@@ -93,7 +93,7 @@ static const AVOption mandelbrot_options[] = {
     {"iteration_count", "set iteration count mode",  0, AV_OPT_TYPE_CONST, {.dbl=ITERATION_COUNT}, INT_MIN, INT_MAX, 0, "outer" },
     {"normalized_iteration_count", "set normalized iteration count mode",   0, AV_OPT_TYPE_CONST, {.dbl=NORMALIZED_ITERATION_COUNT}, INT_MIN, INT_MAX, 0, "outer" },
 
-    {"inner",       "set inner coloring mode",       OFFSET(inner), AV_OPT_TYPE_INT, {.dbl=BLACK}, 0, INT_MAX, 0, "inner"},
+    {"inner",       "set inner coloring mode",       OFFSET(inner), AV_OPT_TYPE_INT, {.dbl=MINCOL}, 0, INT_MAX, 0, "inner"},
     {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.dbl=BLACK}, INT_MIN, INT_MAX, 0, "inner" },
     {"period",      "set period mode",               0, AV_OPT_TYPE_CONST, {.dbl=PERIOD}, INT_MIN, INT_MAX, 0, "inner" },
     {"convergence", "show time until convergence",   0, AV_OPT_TYPE_CONST, {.dbl=CONVTIME}, INT_MIN, INT_MAX, 0, "inner" },
