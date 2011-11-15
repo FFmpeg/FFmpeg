@@ -304,7 +304,7 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b);
 
 /**
  * Add *ref as a new reference to formats.
- * That is the pointers will point like in the ascii art below:
+ * That is the pointers will point like in the ASCII art below:
  *   ________
  *  |formats |<--------.
  *  |  ____  |     ____|___________________
@@ -579,7 +579,7 @@ typedef struct AVFilter {
      * @param arg    the argument for the command
      * @param res    a buffer with size res_size where the filter(s) can return a response. This must not change when the command is not supported.
      * @param flags  if AVFILTER_CMD_FLAG_FAST is set and the command would be
-     *               timeconsuming then a filter should treat it like an unsupported command
+     *               time consuming then a filter should treat it like an unsupported command
      *
      * @returns >=0 on success otherwise an error code.
      *          AVERROR(ENOSYS) on unsupported commands
@@ -589,7 +589,7 @@ typedef struct AVFilter {
 
 /** An instance of a filter */
 struct AVFilterContext {
-    const AVClass *av_class;              ///< needed for av_log()
+    const AVClass *av_class;        ///< needed for av_log()
 
     AVFilter *filter;               ///< the AVFilter of which this is an instance
 
@@ -792,7 +792,7 @@ int avfilter_request_frame(AVFilterLink *link);
 int avfilter_poll_frame(AVFilterLink *link);
 
 /**
- * Notifie the next filter of the start of a frame.
+ * Notify the next filter of the start of a frame.
  *
  * @param link   the output link the frame will be sent over
  * @param picref A reference to the frame about to be sent. The data for this
@@ -803,7 +803,7 @@ int avfilter_poll_frame(AVFilterLink *link);
 void avfilter_start_frame(AVFilterLink *link, AVFilterBufferRef *picref);
 
 /**
- * Notifie the next filter that the current frame has finished.
+ * Notify the next filter that the current frame has finished.
  *
  * @param link the output link the frame was sent over
  */
@@ -831,7 +831,7 @@ void avfilter_draw_slice(AVFilterLink *link, int y, int h, int slice_dir);
 
 /**
  * Make the filter instance process a command.
- * It is recommanded to use avfilter_graph_send_command().
+ * It is recommended to use avfilter_graph_send_command().
  */
 int avfilter_process_command(AVFilterContext *filter, const char *cmd, const char *arg, char *res, int res_len, int flags);
 
@@ -845,7 +845,7 @@ int avfilter_process_command(AVFilterContext *filter, const char *cmd, const cha
  */
 void avfilter_filter_samples(AVFilterLink *link, AVFilterBufferRef *samplesref);
 
-/** Initialize the filter system. Register all builtin filters. */
+/** Initialize the filter system. Register all built-in filters. */
 void avfilter_register_all(void);
 
 /** Uninitialize the filter system. Unregister all filters. */
@@ -858,7 +858,7 @@ void avfilter_uninit(void);
  * registered.
  *
  * @param filter the filter to register
- * @return 0 if the registration was succesfull, a negative value
+ * @return 0 if the registration was successful, a negative value
  * otherwise
  */
 int avfilter_register(AVFilter *filter);
