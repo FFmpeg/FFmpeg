@@ -204,9 +204,9 @@ av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
 
-    s-> in.bps= av_get_bits_per_sample_fmt(s-> in_sample_fmt)/8;
-    s->int_bps= av_get_bits_per_sample_fmt(s->int_sample_fmt)/8;
-    s->out.bps= av_get_bits_per_sample_fmt(s->out_sample_fmt)/8;
+    s-> in.bps= av_get_bytes_per_sample(s-> in_sample_fmt);
+    s->int_bps= av_get_bytes_per_sample(s->int_sample_fmt);
+    s->out.bps= av_get_bytes_per_sample(s->out_sample_fmt);
 
     if(!s->resample && !s->rematrix && !s->channel_map){
         s->full_convert = swr_audio_convert_alloc(s->out_sample_fmt,
