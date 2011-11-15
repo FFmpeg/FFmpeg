@@ -858,7 +858,7 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->reordered_input_picture);
     av_freep(&s->dct_offset);
 
-    if(s->picture && !s->avctx->is_copy){
+    if(s->picture && !s->avctx->internal->is_copy){
         for(i=0; i<s->picture_count; i++){
             free_picture(s, &s->picture[i]);
         }

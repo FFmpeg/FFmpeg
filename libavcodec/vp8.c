@@ -24,6 +24,7 @@
 
 #include "libavutil/imgutils.h"
 #include "avcodec.h"
+#include "internal.h"
 #include "vp8.h"
 #include "vp8data.h"
 #include "rectangle.h"
@@ -88,7 +89,7 @@ static void vp8_decode_flush_impl(AVCodecContext *avctx,
     VP8Context *s = avctx->priv_data;
     int i;
 
-    if (!avctx->is_copy) {
+    if (!avctx->internal->is_copy) {
         for (i = 0; i < 5; i++)
             if (s->frames[i].data[0])
                 vp8_release_frame(s, &s->frames[i], prefer_delayed_free, can_direct_free);

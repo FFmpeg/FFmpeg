@@ -1156,6 +1156,8 @@ typedef struct AVFrame {
     void *thread_opaque;
 } AVFrame;
 
+struct AVCodecInternal;
+
 /**
  * main external API structure.
  * New fields can be added to the end with minor version bumps.
@@ -1979,17 +1981,21 @@ typedef struct AVCodecContext {
      */
     int color_table_id;
 
+#if FF_API_INTERNAL_CONTEXT
     /**
      * internal_buffer count
      * Don't touch, used by libavcodec default_get_buffer().
+     * @deprecated this field was moved to an internal context
      */
-    int internal_buffer_count;
+    attribute_deprecated int internal_buffer_count;
 
     /**
      * internal_buffers
      * Don't touch, used by libavcodec default_get_buffer().
+     * @deprecated this field was moved to an internal context
      */
-    void *internal_buffer;
+    attribute_deprecated void *internal_buffer;
+#endif
 
     /**
      * Global quality for codecs which cannot change it per frame.
@@ -2875,14 +2881,18 @@ typedef struct AVCodecContext {
      */
     AVPacket *pkt;
 
+#if FF_API_INTERNAL_CONTEXT
     /**
      * Whether this is a copy of the context which had init() called on it.
      * This is used by multithreading - shared tables and picture pointers
      * should be freed from the original context only.
      * - encoding: Set by libavcodec.
      * - decoding: Set by libavcodec.
+     *
+     * @deprecated this field has been moved to an internal context
      */
-    int is_copy;
+    attribute_deprecated int is_copy;
+#endif
 
     /**
      * Which multithreading methods to use.
@@ -2945,6 +2955,14 @@ typedef struct AVCodecContext {
 #define AV_EF_BITSTREAM (1<<1)
 #define AV_EF_BUFFER    (1<<2)
 #define AV_EF_EXPLODE   (1<<3)
+
+    /**
+     * Private context used for internal data.
+     *
+     * Unlike priv_data, this is not codec-specific. It is used in general
+     * libavcodec functions.
+     */
+    struct AVCodecInternal *internal;
 } AVCodecContext;
 
 /**

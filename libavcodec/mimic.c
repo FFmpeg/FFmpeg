@@ -24,6 +24,7 @@
 #include <stdint.h>
 
 #include "avcodec.h"
+#include "internal.h"
 #include "get_bits.h"
 #include "bytestream.h"
 #include "dsputil.h"
@@ -405,7 +406,8 @@ static av_cold int mimic_decode_end(AVCodecContext *avctx)
 
     av_free(ctx->swap_buf);
 
-    if(avctx->is_copy) return 0;
+    if (avctx->internal->is_copy)
+        return 0;
 
     for(i = 0; i < 16; i++)
         if(ctx->buf_ptrs[i].data[0])
