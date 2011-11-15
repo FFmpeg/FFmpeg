@@ -72,6 +72,7 @@ typedef struct {
     Point *point_cache;
     Point *next_cache;
     double (*zyklus)[2];
+    uint32_t dither;
 } MBContext;
 
 #define OFFSET(x) offsetof(MBContext, x)
@@ -224,6 +225,8 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             double zr=cr;
             double zi=ci;
             uint32_t c=0;
+            double dv= mb->dither / (double)(1LL<<32);
+            mb->dither= mb->dither*1664525+1013904223;
 
             if(color[x + y*linesize] & 0xFF000000)
                 continue;
@@ -267,7 +270,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                     c= ((c<<5)&0xE0) + ((c<<16)&0xE000) + ((c<<27)&0xE00000);
                 }
                 }else if(mb->inner==CONVTIME){
-                    c= (i*255/mb->maxiter)*0x010101;
+                    c= floor(i*255.0/mb->maxiter+dv)*0x010101;
                 } else if(mb->inner==MINCOL){
                     int j;
                     double closest=9999;
@@ -278,7 +281,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                             closest_index= j;
                         }
                     closest = sqrt(closest);
-                    c= lrintf((mb->zyklus[closest_index][0]/closest+1)*127) + lrintf((mb->zyklus[closest_index][1]/closest+1)*127)*256;
+                    c= lrintf((mb->zyklus[closest_index][0]/closest+1)*127+dv) + lrintf((mb->zyklus[closest_index][1]/closest+1)*127+dv)*256;
                 }
             }
             c |= 0xFF000000;
