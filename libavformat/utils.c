@@ -2409,7 +2409,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 for (i=1; i<FF_ARRAY_ELEMS(st->info->duration_error); i++) {
                     int framerate= get_std_framerate(i);
                     int ticks= lrintf(dur*framerate/(1001*12));
-                    double error= dur - ticks*1001*12/(double)framerate;
+                    double error = dur - (double)ticks*1001*12 / framerate;
                     st->info->duration_error[i] += error*error;
                 }
                 st->info->duration_count++;
