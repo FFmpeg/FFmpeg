@@ -199,6 +199,12 @@ Perform no escaping.
 
 @end table
 
+@section csv
+CSV format.
+
+This writer is equivalent to
+@code{compact=item_sep=,:nokey=1:escape=csv}.
+
 @section json
 JSON based format.
 
