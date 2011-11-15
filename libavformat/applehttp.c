@@ -99,6 +99,7 @@ typedef struct AppleHTTPContext {
     int cur_seq_no;
     int end_of_segment;
     int first_packet;
+    int64_t first_timestamp;
     AVIOInterruptCB *interrupt_callback;
 } AppleHTTPContext;
 
@@ -527,6 +528,7 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
 
     c->first_packet = 1;
+    c->first_timestamp = AV_NOPTS_VALUE;
 
     return 0;
 fail:
@@ -591,6 +593,9 @@ start:
                 if (!url_feof(&var->pb))
                     return ret;
                 reset_packet(&var->pkt);
+            } else {
+                if (c->first_timestamp == AV_NOPTS_VALUE)
+                    c->first_timestamp = var->pkt.dts;
             }
         }
         /* Check if this stream has the packet with the lowest dts */
@@ -639,8 +644,11 @@ static int applehttp_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_variants; i++) {
         /* Reset reading */
         struct variant *var = c->variants[i];
-        int64_t pos = 0;
-        if (var->input) {
+        int64_t pos = av_rescale_rnd(c->first_timestamp, 1, stream_index >= 0 ?
+                               s->streams[stream_index]->time_base.den :
+                               AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
+                               AV_ROUND_DOWN : AV_ROUND_UP);
+         if (var->input) {
             ffurl_close(var->input);
             var->input = NULL;
         }
