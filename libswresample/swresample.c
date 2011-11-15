@@ -61,7 +61,14 @@ static const char* context_to_name(void* ptr) {
     return "SWR";
 }
 
-static const AVClass av_class = { "SwrContext", context_to_name, options, LIBAVUTIL_VERSION_INT, OFFSET(log_level_offset), OFFSET(log_ctx) };
+static const AVClass av_class = {
+    .class_name                = "SwrContext",
+    .item_name                 = context_to_name,
+    .option                    = options,
+    .version                   = LIBAVUTIL_VERSION_INT,
+    .log_level_offset_offset   = OFFSET(log_level_offset),
+    .parent_log_context_offset = OFFSET(log_ctx),
+};
 
 static int resample(SwrContext *s, AudioData *out_param, int out_count,
                              const AudioData * in_param, int in_count);
