@@ -91,12 +91,12 @@ SwrContext *swr_alloc2(struct SwrContext *s, int64_t out_ch_layout, enum AVSampl
     s->log_level_offset= log_offset;
     s->log_ctx= log_ctx;
 
-    av_set_int(s, "ocl", out_ch_layout);
-    av_set_int(s, "osf", out_sample_fmt);
-    av_set_int(s, "osr", out_sample_rate);
-    av_set_int(s, "icl", in_ch_layout);
-    av_set_int(s, "isf", in_sample_fmt);
-    av_set_int(s, "isr", in_sample_rate);
+    av_opt_set_int(s, "ocl", out_ch_layout,   0);
+    av_opt_set_int(s, "osf", out_sample_fmt,  0);
+    av_opt_set_int(s, "osr", out_sample_rate, 0);
+    av_opt_set_int(s, "icl", in_ch_layout,    0);
+    av_opt_set_int(s, "isf", in_sample_fmt,   0);
+    av_opt_set_int(s, "isr", in_sample_rate,  0);
 
     s->channel_map = channel_map;
     s-> in.ch_count= av_get_channel_layout_nb_channels(s-> in_ch_layout);
