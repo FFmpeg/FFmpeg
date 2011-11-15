@@ -77,7 +77,7 @@ SwrContext *swr_alloc(void){
     SwrContext *s= av_mallocz(sizeof(SwrContext));
     if(s){
         s->av_class= &av_class;
-        av_opt_set_defaults2(s, 0, 0);
+        av_opt_set_defaults(s);
     }
     return s;
 }
