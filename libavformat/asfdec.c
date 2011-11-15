@@ -812,7 +812,7 @@ static int asf_read_frame_header(AVFormatContext *s, AVIOContext *pb){
     ASFContext *asf = s->priv_data;
     int rsize = 1;
     int num = avio_r8(pb);
-    av_unused int64_t ts0, ts1;
+    int64_t ts0, ts1 av_unused;
 
     asf->packet_segments--;
     asf->packet_key_frame = num >> 7;
