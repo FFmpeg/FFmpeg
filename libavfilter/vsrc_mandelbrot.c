@@ -297,7 +297,7 @@ static int request_frame(AVFilterLink *link)
 
 AVFilter avfilter_vsrc_mandelbrot = {
     .name        = "mandelbrot",
-    .description = NULL_IF_CONFIG_SMALL("Mandelbrot renderer"),
+    .description = NULL_IF_CONFIG_SMALL("Mandelbrot fractal renderer"),
 
     .priv_size = sizeof(MBContext),
     .init      = init,
