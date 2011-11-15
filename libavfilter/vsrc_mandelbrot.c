@@ -43,6 +43,7 @@ enum Outer{
 enum Inner{
     BLACK,
     PERIOD,
+    CONVTIME,
 };
 
 typedef struct Point {
@@ -94,6 +95,7 @@ static const AVOption mandelbrot_options[] = {
     {"inner",       "set inner coloring mode",       OFFSET(inner), AV_OPT_TYPE_INT, {.dbl=BLACK}, 0, INT_MAX, 0, "inner"},
     {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.dbl=BLACK}, INT_MIN, INT_MAX, 0, "inner" },
     {"period",      "set period mode",               0, AV_OPT_TYPE_CONST, {.dbl=PERIOD}, INT_MIN, INT_MAX, 0, "inner" },
+    {"convergence", "show time until convergence",   0, AV_OPT_TYPE_CONST, {.dbl=CONVTIME}, INT_MIN, INT_MAX, 0, "inner" },
 
     {NULL},
 };
@@ -252,7 +254,8 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                     mb->zyklus[i][1]= zi;
                 }
             }
-            if(!c && mb->inner==PERIOD){
+            if(!c){
+                if(mb->inner==PERIOD){
                 int j;
                 for(j=i-1; j; j--)
                     if(SQR(mb->zyklus[j][0]-zr) + SQR(mb->zyklus[j][1]-zi) < 0.0000000000000001)
@@ -260,6 +263,9 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 if(j){
                     c= i-j;
                     c= ((c<<5)&0xE0) + ((c<<16)&0xE000) + ((c<<27)&0xE00000);
+                }
+                }else if(mb->inner==CONVTIME){
+                    c= (i*255/mb->maxiter)*0x010101;
                 }
             }
             c |= 0xFF000000;
