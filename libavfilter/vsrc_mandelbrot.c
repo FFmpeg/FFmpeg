@@ -44,6 +44,7 @@ enum Inner{
     BLACK,
     PERIOD,
     CONVTIME,
+    MINCOL,
 };
 
 typedef struct Point {
@@ -96,6 +97,7 @@ static const AVOption mandelbrot_options[] = {
     {"black",       "set black mode",                0, AV_OPT_TYPE_CONST, {.dbl=BLACK}, INT_MIN, INT_MAX, 0, "inner" },
     {"period",      "set period mode",               0, AV_OPT_TYPE_CONST, {.dbl=PERIOD}, INT_MIN, INT_MAX, 0, "inner" },
     {"convergence", "show time until convergence",   0, AV_OPT_TYPE_CONST, {.dbl=CONVTIME}, INT_MIN, INT_MAX, 0, "inner" },
+    {"mincol",      "color based on point closest to the origin of the cycle",   0, AV_OPT_TYPE_CONST, {.dbl=MINCOL}, INT_MIN, INT_MAX, 0, "inner" },
 
     {NULL},
 };
@@ -266,6 +268,17 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 }
                 }else if(mb->inner==CONVTIME){
                     c= (i*255/mb->maxiter)*0x010101;
+                } else if(mb->inner==MINCOL){
+                    int j;
+                    double closest=9999;
+                    int closest_index=0;
+                    for(j=i-1; j; j--)
+                        if(SQR(mb->zyklus[j][0]) + SQR(mb->zyklus[j][1]) < closest){
+                            closest= SQR(mb->zyklus[j][0]) + SQR(mb->zyklus[j][1]);
+                            closest_index= j;
+                        }
+                    closest = sqrt(closest);
+                    c= lrintf((mb->zyklus[closest_index][0]/closest+1)*127) + lrintf((mb->zyklus[closest_index][1]/closest+1)*127)*256;
                 }
             }
             c |= 0xFF000000;
