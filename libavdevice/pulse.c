@@ -46,6 +46,7 @@ typedef struct PulseData {
     int  fragment_size;
     pa_simple *s;
     int64_t pts;
+    int64_t frame_duration;
 } PulseData;
 
 static pa_sample_format_t codec_id_to_pulse_format(int codec_id) {
@@ -110,6 +111,8 @@ static av_cold int pulse_read_header(AVFormatContext *s,
     av_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
     pd->pts = AV_NOPTS_VALUE;
+    pd->frame_duration = (pd->frame_size * 1000000LL * 8) /
+        (pd->sample_rate * pd->channels * av_get_bits_per_sample(codec_id));
 
     return 0;
 }
@@ -119,8 +122,6 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
     PulseData *pd  = s->priv_data;
     int res;
     pa_usec_t latency;
-    uint64_t frame_duration =
-        (pd->frame_size*1000000LL) / (pd->sample_rate * pd->channels);
 
     if (av_new_packet(pkt, pd->frame_size) < 0) {
         return AVERROR(ENOMEM);
@@ -145,7 +146,7 @@ static int pulse_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     pkt->pts = pd->pts;
 
-    pd->pts += frame_duration;
+    pd->pts += pd->frame_duration;
 
     return 0;
 }

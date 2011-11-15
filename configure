@@ -110,6 +110,7 @@ Configuration options:
   --disable-mdct           disable MDCT code
   --disable-rdft           disable RDFT code
   --enable-vaapi           enable VAAPI code [autodetect]
+  --enable-vda             enable VDA code [autodetect]
   --enable-vdpau           enable VDPAU code [autodetect]
   --disable-dxva2          disable DXVA2 code
   --disable-vda            disable VDA code
@@ -1496,6 +1497,7 @@ zmbv_encoder_select="zlib"
 
 crystalhd_deps="libcrystalhd_libcrystalhd_if_h"
 vaapi_deps="va_va_h"
+vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # parsers

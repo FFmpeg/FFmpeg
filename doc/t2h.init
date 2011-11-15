@@ -9,9 +9,13 @@ $EXTRA_HEAD =
 <link rel="stylesheet" type="text/css" href="default.css" />
 ';
 
+
+my $FFMPEG_NAVBAR = $ENV{"FFMPEG_NAVBAR"} || '';
+
 $AFTER_BODY_OPEN =
-'<div id="container">
-<div id="body">';
+'<div id="container">' .
+"\n$FFMPEG_NAVBAR\n" .
+'<div id="body">';
 
 $PRE_BODY_CLOSE = '</div></div>';
 

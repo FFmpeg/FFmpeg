@@ -120,6 +120,7 @@ easier to use. The changes are:
 - Encrypted OMA files support
 - Discworld II BMV decoding support
 - VBLE Decoder
+- OS X Video Decoder Acceleration (VDA) support
 
 
 version 0.8:
