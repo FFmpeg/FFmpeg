@@ -224,12 +224,12 @@ cglobal add_dirac_obmc%1_%2, 6,6,5, dst, src, stride, obmc, yblen
     punpckhbw   m3, m4
     pmullw      m0, m2
     pmullw      m1, m3
-    mova        m2, [dstq+2*i]
-    mova        m3, [dstq+2*i+mmsize]
+    movu        m2, [dstq+2*i]
+    movu        m3, [dstq+2*i+mmsize]
     paddw       m0, m2
     paddw       m1, m3
-    mova        [dstq+2*i], m0
-    mova        [dstq+2*i+mmsize], m1
+    movu        [dstq+2*i], m0
+    movu        [dstq+2*i+mmsize], m1
 %assign i i+mmsize
 %endrep
     lea         srcq, [srcq+strideq]
