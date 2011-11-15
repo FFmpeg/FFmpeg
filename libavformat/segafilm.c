@@ -34,6 +34,7 @@
 #define FDSC_TAG MKBETAG('F', 'D', 'S', 'C')
 #define STAB_TAG MKBETAG('S', 'T', 'A', 'B')
 #define CVID_TAG MKBETAG('c', 'v', 'i', 'd')
+#define RAW_TAG  MKBETAG('r', 'a', 'w', ' ')
 
 typedef struct {
   int stream;
@@ -129,8 +130,11 @@ static int film_read_header(AVFormatContext *s,
 
     if (AV_RB32(&scratch[8]) == CVID_TAG) {
         film->video_type = CODEC_ID_CINEPAK;
-    } else
+    } else if (AV_RB32(&scratch[8]) == RAW_TAG) {
+        film->video_type = CODEC_ID_RAWVIDEO;
+    } else {
         film->video_type = CODEC_ID_NONE;
+    }
 
     /* initialize the decoder streams */
     if (film->video_type) {
@@ -143,6 +147,15 @@ static int film_read_header(AVFormatContext *s,
         st->codec->codec_tag = 0;  /* no fourcc */
         st->codec->width = AV_RB32(&scratch[16]);
         st->codec->height = AV_RB32(&scratch[12]);
+
+        if (film->video_type == CODEC_ID_RAWVIDEO) {
+            if (scratch[20] == 24) {
+                st->codec->pix_fmt = PIX_FMT_RGB24;
+            } else {
+                av_log(s, AV_LOG_ERROR, "raw video is using unhandled %dbpp\n", scratch[20]);
+                return -1;
+            }
+        }
     }
 
     if (film->audio_type) {
