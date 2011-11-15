@@ -287,7 +287,7 @@ static int request_frame(AVFilterLink *link)
     picref->pos = -1;
 
     avfilter_start_frame(link, avfilter_ref_buffer(picref, ~0));
-    draw_mandelbrot(link->src, picref->data[0], picref->linesize[0]/4, picref->pts);
+    draw_mandelbrot(link->src, (uint32_t*)picref->data[0], picref->linesize[0]/4, picref->pts);
     avfilter_draw_slice(link, 0, mb->h, 1);
     avfilter_end_frame(link);
     avfilter_unref_buffer(picref);
