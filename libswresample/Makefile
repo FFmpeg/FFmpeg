@@ -5,7 +5,7 @@ FFLIBS = avutil
 
 HEADERS = swresample.h
 
-OBJS = swresample.o audioconvert.o resample2.o rematrix.o
+OBJS = swresample.o audioconvert.o resample.o rematrix.o
 
 TESTPROGS = swresample_test
 
