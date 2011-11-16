@@ -366,6 +366,8 @@ static int cinepak_decode (CinepakContext *s)
         s->strips[i].x2 = s->avctx->width;
 
         strip_size = AV_RB24 (&s->data[1]) - 12;
+        if(strip_size < 0)
+            return -1;
         s->data   += 12;
         strip_size = ((s->data + strip_size) > eod) ? (eod - s->data) : strip_size;
 
