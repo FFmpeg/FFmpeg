@@ -578,6 +578,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
     s->sample_aspect_ratio = (AVRational){0,1};
     s->pix_fmt             = PIX_FMT_NONE;
     s->sample_fmt          = AV_SAMPLE_FMT_NONE;
+    s->timecode_frame_start = -1;
 
     s->reget_buffer        = avcodec_default_reget_buffer;
     s->reordered_opaque    = AV_NOPTS_VALUE;

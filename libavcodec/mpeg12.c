@@ -2141,20 +2141,12 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
 {
     Mpeg1Context *s1  = avctx->priv_data;
     MpegEncContext *s = &s1->mpeg_enc_ctx;
-
-    int drop_frame_flag;
-    int time_code_hours, time_code_minutes;
-    int time_code_seconds, time_code_pictures;
     int broken_link;
+    int64_t tc;
 
     init_get_bits(&s->gb, buf, buf_size*8);
 
-    drop_frame_flag   = get_bits(&s->gb, 1);
-    time_code_hours   = get_bits(&s->gb, 5);
-    time_code_minutes = get_bits(&s->gb, 6);
-    skip_bits1(&s->gb); // marker bit
-    time_code_seconds  = get_bits(&s->gb, 6);
-    time_code_pictures = get_bits(&s->gb, 6);
+    tc = avctx->timecode_frame_start = get_bits(&s->gb, 25);
 
     s->closed_gop = get_bits1(&s->gb);
     /*broken_link indicate that after editing the
@@ -2162,11 +2154,17 @@ static void mpeg_decode_gop(AVCodecContext *avctx,
       are missing (open gop)*/
     broken_link = get_bits1(&s->gb);
 
-    if (s->avctx->debug & FF_DEBUG_PICT_INFO)
+    if (s->avctx->debug & FF_DEBUG_PICT_INFO) {
+        int time_code_hours    = tc>>19 & 0x1f;
+        int time_code_minutes  = tc>>13 & 0x3f;
+        int time_code_seconds  = tc>>6  & 0x3f;
+        int drop_frame_flag    = tc     & 1<<24;
+        int time_code_pictures = tc     & 0x3f;
         av_log(s->avctx, AV_LOG_DEBUG, "GOP (%02d:%02d:%02d%c%02d) closed_gop=%d broken_link=%d\n",
                time_code_hours, time_code_minutes, time_code_seconds,
                drop_frame_flag ? ';' : ':',
                time_code_pictures, s->closed_gop, broken_link);
+    }
 }
 /**
  * Find the end of the current frame in the bitstream.

@@ -2710,9 +2710,9 @@ typedef struct AVCodecContext {
 #endif
 
     /**
-     * GOP timecode frame start number, in non drop frame format
-     * - encoding: Set by user.
-     * - decoding: unused
+     * GOP timecode frame start number
+     * - encoding: Set by user, in non drop frame format
+     * - decoding: Set by libavcodec (timecode in the 25 bits format, -1 if unset)
      */
     int64_t timecode_frame_start;
 

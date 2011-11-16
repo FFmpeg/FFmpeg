@@ -185,6 +185,8 @@ static av_cold int encode_init(AVCodecContext *avctx)
         if (ff_init_smtpe_timecode(s, &s->tc) < 0)
             return -1;
         s->avctx->timecode_frame_start = s->tc.start;
+    } else {
+        s->avctx->timecode_frame_start = 0; // default is -1
     }
     return 0;
 }
