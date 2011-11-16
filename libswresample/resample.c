@@ -199,7 +199,7 @@ static int build_filter(FELEM *filter, double factor, int tap_count, int phase_c
     return 0;
 }
 
-ResampleContext *swr_resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff){
+ResampleContext *swri_resample_init(ResampleContext *c, int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff){
     double factor= FFMIN(out_rate * cutoff / in_rate, 1.0);
     int phase_count= 1<<phase_shift;
 
@@ -238,7 +238,7 @@ error:
     return NULL;
 }
 
-void swr_resample_free(ResampleContext **c){
+void swri_resample_free(ResampleContext **c){
     if(!*c)
         return;
     av_freep(&(*c)->filter_bank);
@@ -252,7 +252,7 @@ void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_dis
     c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
 }
 
-int swr_resample(ResampleContext *c, short *dst, const short *src, int *consumed, int src_size, int dst_size, int update_ctx){
+int swri_resample(ResampleContext *c, short *dst, const short *src, int *consumed, int src_size, int dst_size, int update_ctx){
     int dst_index, i;
     int index= c->index;
     int frac= c->frac;
@@ -341,11 +341,11 @@ av_log(NULL, AV_LOG_DEBUG, "%d %d %d\n", c->dst_incr, c->ideal_dst_incr, c->comp
     return dst_index;
 }
 
-int swr_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
+int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed){
     int i, ret= -1;
 
     for(i=0; i<dst->ch_count; i++){
-        ret= swr_resample(c, (short*)dst->ch[i], (const short*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        ret= swri_resample(c, (short*)dst->ch[i], (const short*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
     }
 
     return ret;

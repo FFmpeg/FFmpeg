@@ -122,7 +122,7 @@ void swr_free(SwrContext **ss){
         swri_audio_convert_free(&s-> in_convert);
         swri_audio_convert_free(&s->out_convert);
         swri_audio_convert_free(&s->full_convert);
-        swr_resample_free(&s->resample);
+        swri_resample_free(&s->resample);
     }
 
     av_freep(ss);
@@ -168,9 +168,9 @@ int swr_init(SwrContext *s){
 
 
     if (s->out_sample_rate!=s->in_sample_rate || (s->flags & SWR_FLAG_RESAMPLE)){
-        s->resample = swr_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, 16, 10, 0, 0.8);
+        s->resample = swri_resample_init(s->resample, s->out_sample_rate, s->in_sample_rate, 16, 10, 0, 0.8);
     }else
-        swr_resample_free(&s->resample);
+        swri_resample_free(&s->resample);
     if(s->int_sample_fmt != AV_SAMPLE_FMT_S16 && s->resample){
         av_log(s, AV_LOG_ERROR, "Resampling only supported with internal s16 currently\n"); //FIXME
         return -1;
@@ -238,7 +238,7 @@ av_assert0(s->out.ch_count);
     s->in_buffer.planar = s->postin.planar = s->midbuf.planar = s->preout.planar =  1;
 
 
-    if(s->rematrix && swr_rematrix_init(s)<0)
+    if(s->rematrix && swri_rematrix_init(s)<0)
         return -1;
 
     return 0;
@@ -392,10 +392,10 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
         if(postin != midbuf)
             out_count= resample(s, midbuf, out_count, postin, in_count);
         if(midbuf != preout)
-            swr_rematrix(s, preout, midbuf, out_count, preout==out);
+            swri_rematrix(s, preout, midbuf, out_count, preout==out);
     }else{
         if(postin != midbuf)
-            swr_rematrix(s, midbuf, postin, in_count, midbuf==out);
+            swri_rematrix(s, midbuf, postin, in_count, midbuf==out);
         if(midbuf != preout)
             out_count= resample(s, preout, out_count, midbuf, in_count);
     }
@@ -439,7 +439,7 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
         int ret, size, consumed;
         if(!s->resample_in_constraint && s->in_buffer_count){
             buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
-            ret= swr_multiple_resample(s->resample, &out, out_count, &tmp, s->in_buffer_count, &consumed);
+            ret= swri_multiple_resample(s->resample, &out, out_count, &tmp, s->in_buffer_count, &consumed);
             out_count -= ret;
             ret_sum += ret;
             buf_set(&out, &out, ret);
@@ -459,7 +459,7 @@ static int resample(SwrContext *s, AudioData *out_param, int out_count,
 
         if(in_count && !s->in_buffer_count){
             s->in_buffer_index=0;
-            ret= swr_multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
+            ret= swri_multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
             out_count -= ret;
             ret_sum += ret;
             buf_set(&out, &out, ret);

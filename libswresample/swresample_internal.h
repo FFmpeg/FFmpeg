@@ -70,12 +70,12 @@ typedef struct SwrContext {          //FIXME find unused fields
     //TODO callbacks for asm optims
 }SwrContext;
 
-struct ResampleContext *swr_resample_init(struct ResampleContext *, int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff);
-void swr_resample_free(struct ResampleContext **c);
-int swr_multiple_resample(struct ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed);
-void swr_resample_compensate(struct ResampleContext *c, int sample_delta, int compensation_distance);
-int swr_resample(struct ResampleContext *c, short *dst, const short *src, int *consumed, int src_size, int dst_size, int update_ctx);
+struct ResampleContext *swri_resample_init(struct ResampleContext *, int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff);
+void swri_resample_free(struct ResampleContext **c);
+int swri_multiple_resample(struct ResampleContext *c, AudioData *dst, int dst_size, AudioData *src, int src_size, int *consumed);
+void swri_resample_compensate(struct ResampleContext *c, int sample_delta, int compensation_distance);
+int swri_resample(struct ResampleContext *c, short *dst, const short *src, int *consumed, int src_size, int dst_size, int update_ctx);
 
-int swr_rematrix_init(SwrContext *s);
-int swr_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
+int swri_rematrix_init(SwrContext *s);
+int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
 #endif

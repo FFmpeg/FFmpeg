@@ -84,7 +84,7 @@ static int sane_layout(int64_t layout){
     return 1;
 }
 
-int swr_rematrix_init(SwrContext *s){
+int swri_rematrix_init(SwrContext *s){
     int i, j, out_i;
     double matrix[64][64]={{0}};
     int64_t unaccounted= s->in_ch_layout & ~s->out_ch_layout;
@@ -239,7 +239,7 @@ int swr_rematrix_init(SwrContext *s){
     return 0;
 }
 
-int swr_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){
+int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy){
     int out_i, in_i, i, j;
 
     av_assert0(out->ch_count == av_get_channel_layout_nb_channels(s->out_ch_layout));
