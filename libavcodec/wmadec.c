@@ -105,6 +105,11 @@ static int wma_decode_init(AVCodecContext * avctx)
     s->use_bit_reservoir = flags2 & 0x0002;
     s->use_variable_block_len = flags2 & 0x0004;
 
+    if(avctx->channels > MAX_CHANNELS){
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels (%d)\n", avctx->channels);
+        return -1;
+    }
+
     if(ff_wma_init(avctx, flags2)<0)
         return -1;
 
