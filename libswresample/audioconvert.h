@@ -65,4 +65,4 @@ void swr_audio_convert_free(AVAudioConvert **ctx);
  */
 int swr_audio_convert(AVAudioConvert *ctx, AudioData *out, AudioData *in, int len);
 
-#endif /* AVCODEC_AUDIOCONVERT_H */
+#endif /* AUDIOCONVERT_H */
