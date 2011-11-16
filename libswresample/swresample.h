@@ -55,9 +55,10 @@ int swr_init(struct SwrContext *s);
  * @see swr_init(),swr_free()
  * @return NULL on error
  */
-struct SwrContext *swr_alloc2(struct SwrContext *s, int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-                              int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                              const int *channel_map, int log_offset, void *log_ctx);
+struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
+                                      int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
+                                      int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
+                                      const int *channel_map, int log_offset, void *log_ctx);
 
 /**
  * Free the given SwrContext.

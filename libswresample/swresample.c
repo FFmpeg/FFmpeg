@@ -82,9 +82,10 @@ SwrContext *swr_alloc(void){
     return s;
 }
 
-SwrContext *swr_alloc2(struct SwrContext *s, int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-                       int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                       const int *channel_map, int log_offset, void *log_ctx){
+SwrContext *swr_alloc_set_opts(struct SwrContext *s,
+                               int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
+                               int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
+                               const int *channel_map, int log_offset, void *log_ctx){
     if(!s) s= swr_alloc();
     if(!s) return NULL;
 

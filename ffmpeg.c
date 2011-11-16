@@ -891,11 +891,11 @@ need_realloc:
             //ost->swr = NULL;
             ost->audio_resample = 0;
         } else {
-            ost->swr = swr_alloc2(ost->swr,
-                                  enc->channel_layout, enc->sample_fmt, enc->sample_rate,
-                                  dec->channel_layout, dec->sample_fmt, dec->sample_rate,
-                                  ost->audio_channels_mapped ? ost->audio_channels_map : NULL,
-                                  0, NULL);
+            ost->swr = swr_alloc_set_opts(ost->swr,
+                                          enc->channel_layout, enc->sample_fmt, enc->sample_rate,
+                                          dec->channel_layout, dec->sample_fmt, dec->sample_rate,
+                                          ost->audio_channels_mapped ? ost->audio_channels_map : NULL,
+                                          0, NULL);
             av_opt_set_double(ost->swr, "rmvol", ost->rematrix_volume, 0);
             if (ost->audio_channels_mapped) {
                 av_opt_set_int(ost->swr, "icl", av_get_default_channel_layout(ost->audio_channels_mapped), 0);
