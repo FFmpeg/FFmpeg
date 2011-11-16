@@ -675,17 +675,16 @@ static void compact_show_tags(WriterContext *wctx, AVDictionary *dict)
 }
 
 static Writer compact_writer = {
-    .name          = "compact",
-    .priv_size     = sizeof(CompactContext),
-
-    .init                  = compact_init,
-    .uninit                = compact_uninit,
-    .print_section_header  = compact_print_section_header,
-    .print_section_footer  = compact_print_section_footer,
-    .print_integer         = compact_print_int,
-    .print_string          = compact_print_str,
-    .show_tags             = compact_show_tags,
-    .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS
+    .name                 = "compact",
+    .priv_size            = sizeof(CompactContext),
+    .init                 = compact_init,
+    .uninit               = compact_uninit,
+    .print_section_header = compact_print_section_header,
+    .print_section_footer = compact_print_section_footer,
+    .print_integer        = compact_print_int,
+    .print_string         = compact_print_str,
+    .show_tags            = compact_show_tags,
+    .flags = WRITER_FLAG_DISPLAY_OPTIONAL_FIELDS,
 };
 
 /* CSV output */
