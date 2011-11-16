@@ -616,7 +616,7 @@ static void compute_pkt_fields(AVFormatContext *s, AVStream *st,
     if (delay == 1 && pkt->dts == pkt->pts &&
         pkt->dts != AV_NOPTS_VALUE && presentation_delayed) {
         av_log(s, AV_LOG_DEBUG, "invalid dts/pts combination\n");
-        pkt->dts = pkt->pts = AV_NOPTS_VALUE;
+        pkt->dts = AV_NOPTS_VALUE;
     }
 
     if (pkt->duration == 0 && st->codec->codec_type != AVMEDIA_TYPE_AUDIO) {
