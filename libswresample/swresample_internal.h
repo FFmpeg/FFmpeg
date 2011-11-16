@@ -24,50 +24,56 @@
 #include "swresample.h"
 
 typedef struct AudioData{
-    uint8_t *ch[SWR_CH_MAX];
-    uint8_t *data;
-    int ch_count;
-    int bps;
-    int count;
-    int planar;
+    uint8_t *ch[SWR_CH_MAX];    ///< samples buffer per channel
+    uint8_t *data;              ///< samples buffer
+    int ch_count;               ///< number of channels
+    int bps;                    ///< bytes per sample
+    int count;                  ///< number of samples
+    int planar;                 ///< 1 if planar audio, 0 otherwise
 } AudioData;
 
-typedef struct SwrContext {          //FIXME find unused fields
-    const AVClass *av_class;
-    int log_level_offset;
-    void *log_ctx;
-    enum AVSampleFormat  in_sample_fmt;
-    enum AVSampleFormat int_sample_fmt; ///<AV_SAMPLE_FMT_FLT OR AV_SAMPLE_FMT_S16
-    enum AVSampleFormat out_sample_fmt;
-    int64_t  in_ch_layout;
-    int64_t out_ch_layout;
-    int      in_sample_rate;
-    int     out_sample_rate;
-    int flags;
-    float slev, clev, rematrix_volume;
-    const int *channel_map;             ///< channel index (or -1 if muted channel) map
-    int used_ch_count;                  ///< number of used channels (mapped channel count if channel_map, otherwise in.ch_count)
+typedef struct SwrContext {
+    const AVClass *av_class;                        ///< AVClass used for AVOption and av_log()
+    int log_level_offset;                           ///< logging level offset
+    void *log_ctx;                                  ///< parent logging context
+    enum AVSampleFormat  in_sample_fmt;             ///< input sample format
+    enum AVSampleFormat int_sample_fmt;             ///< internal sample format (AV_SAMPLE_FMT_FLT or AV_SAMPLE_FMT_S16)
+    enum AVSampleFormat out_sample_fmt;             ///< output sample format
+    int64_t  in_ch_layout;                          ///< input channel layout
+    int64_t out_ch_layout;                          ///< output channel layout
+    int      in_sample_rate;                        ///< input sample rate
+    int     out_sample_rate;                        ///< output sample rate
+    int flags;                                      ///< miscellaneous flags such as SWR_FLAG_RESAMPLE
+    float slev;                                     ///< surround mixing level, XXX: unused
+    float clev;                                     ///< center mixing level
+    float rematrix_volume;                          ///< rematrixing volume coefficient
+    const int *channel_map;                         ///< channel index (or -1 if muted channel) map
+    int used_ch_count;                              ///< number of used input channels (mapped channel count if channel_map, otherwise in.ch_count)
 
-    //below are private
-    int int_bps;
-    int resample_first;
-    int rematrix;                   ///< flag to indicate if rematrixing is used
+    int int_bps;                                    ///< internal bytes per sample
+    int resample_first;                             ///< 1 if resampling must come first, 0 if rematrixing
+    int rematrix;                                   ///< flag to indicate if rematrixing is needed (basically if input and output layouts mismatch)
 
-    AudioData in, postin, midbuf, preout, out, in_buffer;
-    int in_buffer_index;
-    int in_buffer_count;
-    int resample_in_constraint;
+    AudioData in;                                   ///< input audio data
+    AudioData postin;                               ///< post-input audio data: used for rematrix/resample
+    AudioData midbuf;                               ///< intermediate audio data (postin/preout)
+    AudioData preout;                               ///< pre-output audio data: used for rematrix/resample
+    AudioData out;                                  ///< converted output audio data
+    AudioData in_buffer;                            ///< cached audio data (convert and resample purpose)
+    int in_buffer_index;                            ///< cached buffer position
+    int in_buffer_count;                            ///< cached buffer length
+    int resample_in_constraint;                     ///< 1 if the input end was reach before the output end, 0 otherwise
 
-    struct AudioConvert *in_convert;
-    struct AudioConvert *out_convert;
-    struct AudioConvert *full_convert;
-    struct ResampleContext *resample;
+    struct AudioConvert *in_convert;                ///< input conversion context
+    struct AudioConvert *out_convert;               ///< output conversion context
+    struct AudioConvert *full_convert;              ///< full conversion context (single conversion for input and output)
+    struct ResampleContext *resample;               ///< resampling context
 
     float matrix[SWR_CH_MAX][SWR_CH_MAX];
     int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];
     uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];
 
-    //TODO callbacks for asm optims
+    /* TODO: callbacks for ASM optimizations */
 }SwrContext;
 
 struct ResampleContext *swri_resample_init(struct ResampleContext *, int out_rate, int in_rate, int filter_size, int phase_shift, int linear, double cutoff);
@@ -78,4 +84,5 @@ int swri_resample(struct ResampleContext *c, short *dst, const short *src, int *
 
 int swri_rematrix_init(SwrContext *s);
 int swri_rematrix(SwrContext *s, AudioData *out, AudioData *in, int len, int mustcopy);
+
 #endif
