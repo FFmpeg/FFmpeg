@@ -330,12 +330,13 @@ static int cinepak_decode (CinepakContext *s)
 
     /* if this is the first frame, check for deviant Sega FILM data */
     if (s->sega_film_skip_bytes == -1) {
-        if (encoded_buf_size != s->size) {
+        if (encoded_buf_size != s->size && (s->size % encoded_buf_size) != 0) {
             /* If the encoded frame size differs from the frame size as indicated
              * by the container file, this data likely comes from a Sega FILM/CPK file.
              * If the frame header is followed by the bytes FE 00 00 06 00 00 then
              * this is probably one of the two known files that have 6 extra bytes
-             * after the frame header. Else, assume 2 extra bytes. */
+             * after the frame header. Else, assume 2 extra bytes. The container
+             * size also cannot be a multiple of the encoded size. */
             if (s->size >= 16 &&
                 (s->data[10] == 0xFE) &&
                 (s->data[11] == 0x00) &&
