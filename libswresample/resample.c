@@ -252,7 +252,7 @@ void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_dis
     c->dst_incr = c->ideal_dst_incr - c->ideal_dst_incr * (int64_t)sample_delta / compensation_distance;
 }
 
-int swri_resample(ResampleContext *c, short *dst, const short *src, int *consumed, int src_size, int dst_size, int update_ctx){
+int swri_resample(ResampleContext *c, int16_t *dst, const int16_t *src, int *consumed, int src_size, int dst_size, int update_ctx){
     int dst_index, i;
     int index= c->index;
     int frac= c->frac;
@@ -345,7 +345,7 @@ int swri_multiple_resample(ResampleContext *c, AudioData *dst, int dst_size, Aud
     int i, ret= -1;
 
     for(i=0; i<dst->ch_count; i++){
-        ret= swri_resample(c, (short*)dst->ch[i], (const short*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
+        ret= swri_resample(c, (int16_t*)dst->ch[i], (const int16_t*)src->ch[i], consumed, src_size, dst_size, i+1==dst->ch_count);
     }
 
     return ret;
