@@ -44,7 +44,7 @@ static double get(const uint8_t *a[], int ch, int index, int ch_count, enum AVSa
     case AV_SAMPLE_FMT_S32: return ((const int32_t*)p)[index]/2147483647.0;
     case AV_SAMPLE_FMT_FLT: return ((const float  *)p)[index];
     case AV_SAMPLE_FMT_DBL: return ((const double *)p)[index];
-    default: av_assert2(0);
+    default: av_assert0(0);
     }
 }
 
