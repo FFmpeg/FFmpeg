@@ -288,7 +288,7 @@ static void decode_init_static(AVCodec *codec)
         scale_factor_mult[i][0] = MULLx(norm, FIXR(1.0          * 2.0), FRAC_BITS);
         scale_factor_mult[i][1] = MULLx(norm, FIXR(0.7937005259 * 2.0), FRAC_BITS);
         scale_factor_mult[i][2] = MULLx(norm, FIXR(0.6299605249 * 2.0), FRAC_BITS);
-        av_dlog(avctx, "%d: norm=%x s=%x %x %x\n", i, norm,
+        av_dlog(NULL, "%d: norm=%x s=%x %x %x\n", i, norm,
                 scale_factor_mult[i][0],
                 scale_factor_mult[i][1],
                 scale_factor_mult[i][2]);
@@ -393,7 +393,7 @@ static void decode_init_static(AVCodec *codec)
             k = i & 1;
             is_table_lsf[j][k ^ 1][i] = FIXR(f);
             is_table_lsf[j][k    ][i] = FIXR(1.0);
-            av_dlog(avctx, "is_table_lsf %d %d: %f %f\n",
+            av_dlog(NULL, "is_table_lsf %d %d: %f %f\n",
                     i, j, (float) is_table_lsf[j][0][i],
                     (float) is_table_lsf[j][1][i]);
         }
