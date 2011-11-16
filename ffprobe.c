@@ -850,9 +850,8 @@ static void json_show_tags(WriterContext *wctx, AVDictionary *dict)
 }
 
 static const Writer json_writer = {
-    .name         = "json",
-    .priv_size    = sizeof(JSONContext),
-
+    .name                 = "json",
+    .priv_size            = sizeof(JSONContext),
     .init                 = json_init,
     .uninit               = json_uninit,
     .print_header         = json_print_header,
