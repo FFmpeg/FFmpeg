@@ -302,9 +302,9 @@ static inline void writer_show_tags(WriterContext *wctx, AVDictionary *dict)
 
 #define MAX_REGISTERED_WRITERS_NB 64
 
-static Writer *registered_writers[MAX_REGISTERED_WRITERS_NB + 1];
+static const Writer *registered_writers[MAX_REGISTERED_WRITERS_NB + 1];
 
-static int writer_register(Writer *writer)
+static int writer_register(const Writer *writer)
 {
     static int next_registered_writer_idx = 0;
 
@@ -315,7 +315,7 @@ static int writer_register(Writer *writer)
     return 0;
 }
 
-static Writer *writer_get_by_name(const char *name)
+static const Writer *writer_get_by_name(const char *name)
 {
     int i;
 
@@ -450,7 +450,7 @@ static void default_show_tags(WriterContext *wctx, AVDictionary *dict)
     }
 }
 
-static Writer default_writer = {
+static const Writer default_writer = {
     .name                  = "default",
     .print_footer          = default_print_footer,
     .print_chapter_header  = default_print_chapter_header,
@@ -674,7 +674,7 @@ static void compact_show_tags(WriterContext *wctx, AVDictionary *dict)
     }
 }
 
-static Writer compact_writer = {
+static const Writer compact_writer = {
     .name                 = "compact",
     .priv_size            = sizeof(CompactContext),
     .init                 = compact_init,
@@ -694,7 +694,7 @@ static av_cold int csv_init(WriterContext *wctx, const char *args, void *opaque)
     return compact_init(wctx, "item_sep=,:nokey=1:escape=csv", opaque);
 }
 
-static Writer csv_writer = {
+static const Writer csv_writer = {
     .name                 = "csv",
     .priv_size            = sizeof(CompactContext),
     .init                 = csv_init,
@@ -849,7 +849,7 @@ static void json_show_tags(WriterContext *wctx, AVDictionary *dict)
     printf("\n    }");
 }
 
-static Writer json_writer = {
+static const Writer json_writer = {
     .name         = "json",
     .priv_size    = sizeof(JSONContext),
 
@@ -1123,7 +1123,7 @@ static int probe_file(const char *filename)
 {
     AVFormatContext *fmt_ctx;
     int ret;
-    Writer *w;
+    const Writer *w;
     char *buf;
     char *w_name = NULL, *w_args = NULL;
     WriterContext *wctx;
