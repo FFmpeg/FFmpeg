@@ -119,9 +119,9 @@ void swr_free(SwrContext **ss){
         free_temp(&s->midbuf);
         free_temp(&s->preout);
         free_temp(&s->in_buffer);
-        swr_audio_convert_free(&s-> in_convert);
-        swr_audio_convert_free(&s->out_convert);
-        swr_audio_convert_free(&s->full_convert);
+        swri_audio_convert_free(&s-> in_convert);
+        swri_audio_convert_free(&s->out_convert);
+        swri_audio_convert_free(&s->full_convert);
         swr_resample_free(&s->resample);
     }
 
@@ -136,9 +136,9 @@ int swr_init(SwrContext *s){
     free_temp(&s->midbuf);
     free_temp(&s->preout);
     free_temp(&s->in_buffer);
-    swr_audio_convert_free(&s-> in_convert);
-    swr_audio_convert_free(&s->out_convert);
-    swr_audio_convert_free(&s->full_convert);
+    swri_audio_convert_free(&s-> in_convert);
+    swri_audio_convert_free(&s->out_convert);
+    swri_audio_convert_free(&s->full_convert);
 
     s-> in.planar= s-> in_sample_fmt >= 0x100;
     s->out.planar= s->out_sample_fmt >= 0x100;
@@ -209,15 +209,15 @@ av_assert0(s->out.ch_count);
     s->out.bps= av_get_bytes_per_sample(s->out_sample_fmt);
 
     if(!s->resample && !s->rematrix && !s->channel_map){
-        s->full_convert = swr_audio_convert_alloc(s->out_sample_fmt,
-                                                  s-> in_sample_fmt, s-> in.ch_count, NULL, 0);
+        s->full_convert = swri_audio_convert_alloc(s->out_sample_fmt,
+                                                   s-> in_sample_fmt, s-> in.ch_count, NULL, 0);
         return 0;
     }
 
-    s->in_convert = swr_audio_convert_alloc(s->int_sample_fmt,
-                                            s-> in_sample_fmt, s->used_ch_count, s->channel_map, 0);
-    s->out_convert= swr_audio_convert_alloc(s->out_sample_fmt,
-                                            s->int_sample_fmt, s->out.ch_count, NULL, 0);
+    s->in_convert = swri_audio_convert_alloc(s->int_sample_fmt,
+                                             s-> in_sample_fmt, s->used_ch_count, s->channel_map, 0);
+    s->out_convert= swri_audio_convert_alloc(s->out_sample_fmt,
+                                             s->int_sample_fmt, s->out.ch_count, NULL, 0);
 
 
     s->postin= s->in;
@@ -335,7 +335,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 
     if(s->full_convert){
         av_assert0(!s->resample);
-        swr_audio_convert(s->full_convert, out, in, in_count);
+        swri_audio_convert(s->full_convert, out, in, in_count);
         return out_count;
     }
 
@@ -385,7 +385,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     }
 
     if(in != postin){
-        swr_audio_convert(s->in_convert, postin, in, in_count);
+        swri_audio_convert(s->in_convert, postin, in, in_count);
     }
 
     if(s->resample_first){
@@ -402,7 +402,7 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
 
     if(preout != out){
 //FIXME packed doesnt need more than 1 chan here!
-        swr_audio_convert(s->out_convert, out, preout, out_count);
+        swri_audio_convert(s->out_convert, out, preout, out_count);
     }
     if(!in_arg)
         s->in_buffer_count = 0;

@@ -58,9 +58,9 @@ typedef struct SwrContext {          //FIXME find unused fields
     int in_buffer_count;
     int resample_in_constraint;
 
-    struct AVAudioConvert *in_convert;
-    struct AVAudioConvert *out_convert;
-    struct AVAudioConvert *full_convert;
+    struct AudioConvert *in_convert;
+    struct AudioConvert *out_convert;
+    struct AudioConvert *full_convert;
     struct AVResampleContext *resample;
 
     float matrix[SWR_CH_MAX][SWR_CH_MAX];

@@ -33,8 +33,8 @@
 #include "libavutil/cpu.h"
 #include "libavutil/audioconvert.h"
 
-struct AVAudioConvert;
-typedef struct AVAudioConvert AVAudioConvert;
+struct AudioConvert;
+typedef struct AudioConvert AudioConvert;
 
 /**
  * Create an audio sample format converter context
@@ -46,16 +46,16 @@ typedef struct AVAudioConvert AVAudioConvert;
  *               if all channels must be selected
  * @return NULL on error
  */
-AVAudioConvert *swr_audio_convert_alloc(enum AVSampleFormat out_fmt,
-                                        enum AVSampleFormat in_fmt,
-                                        int channels, const int *ch_map,
-                                        int flags);
+AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
+                                       enum AVSampleFormat in_fmt,
+                                       int channels, const int *ch_map,
+                                       int flags);
 
 /**
  * Free audio sample format converter context.
  * and set the pointer to NULL
  */
-void swr_audio_convert_free(AVAudioConvert **ctx);
+void swri_audio_convert_free(AudioConvert **ctx);
 
 /**
  * Convert between audio sample formats
@@ -63,6 +63,6 @@ void swr_audio_convert_free(AVAudioConvert **ctx);
  * @param[in] in array of input buffers for each channel
  * @param len length of audio frame size (measured in samples)
  */
-int swr_audio_convert(AVAudioConvert *ctx, AudioData *out, AudioData *in, int len);
+int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len);
 
 #endif /* AUDIOCONVERT_H */

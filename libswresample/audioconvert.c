@@ -34,7 +34,7 @@
 
 typedef void (conv_func_type)(uint8_t *po, const uint8_t *pi, int is, int os, uint8_t *end);
 
-struct AVAudioConvert {
+struct AudioConvert {
     int channels;
     conv_func_type *conv_f;
     const int *ch_map;
@@ -108,17 +108,17 @@ conv_func_type *fmt_pair_to_conv_functions[AV_SAMPLE_FMT_NB*AV_SAMPLE_FMT_NB] = 
     FMT_PAIR_FUNC(AV_SAMPLE_FMT_DBL, AV_SAMPLE_FMT_DBL),
 };
 
-AVAudioConvert *swr_audio_convert_alloc(enum AVSampleFormat out_fmt,
-                                        enum AVSampleFormat in_fmt,
-                                        int channels, const int *ch_map,
-                                        int flags)
+AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
+                                       enum AVSampleFormat in_fmt,
+                                       int channels, const int *ch_map,
+                                       int flags)
 {
-    AVAudioConvert *ctx;
+    AudioConvert *ctx;
     conv_func_type *f = fmt_pair_to_conv_functions[out_fmt + AV_SAMPLE_FMT_NB*in_fmt];
 
     if (!f)
         return NULL;
-    ctx = av_malloc(sizeof(AVAudioConvert));
+    ctx = av_malloc(sizeof(*ctx));
     if (!ctx)
         return NULL;
     ctx->channels = channels;
@@ -127,12 +127,12 @@ AVAudioConvert *swr_audio_convert_alloc(enum AVSampleFormat out_fmt,
     return ctx;
 }
 
-void swr_audio_convert_free(AVAudioConvert **ctx)
+void swri_audio_convert_free(AudioConvert **ctx)
 {
     av_freep(ctx);
 }
 
-int swr_audio_convert(AVAudioConvert *ctx, AudioData *out, AudioData*in, int len)
+int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len)
 {
     int ch;
     const uint8_t null_input[8] = {0};
