@@ -134,7 +134,7 @@ static void horizontal_compose_dd97i_ssse3(IDWTELEM *b, IDWTELEM *tmp, int w)
 void ff_spatial_idwt_init_mmx(DWTContext *d, enum dwt_type type)
 {
 #if HAVE_YASM
-  int mm_flags = av_get_cpu_flags();;
+  int mm_flags = av_get_cpu_flags();
 
 #if !ARCH_X86_64
     if (!(mm_flags & AV_CPU_FLAG_MMX))

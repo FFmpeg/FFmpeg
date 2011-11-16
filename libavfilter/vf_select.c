@@ -157,7 +157,7 @@ static int config_input(AVFilterLink *inlink)
 
     select->var_values[VAR_INTERLACE_TYPE_P] = INTERLACE_TYPE_P;
     select->var_values[VAR_INTERLACE_TYPE_T] = INTERLACE_TYPE_T;
-    select->var_values[VAR_INTERLACE_TYPE_B] = INTERLACE_TYPE_B;;
+    select->var_values[VAR_INTERLACE_TYPE_B] = INTERLACE_TYPE_B;
 
     return 0;
 }

@@ -58,7 +58,7 @@ HPEL_FILTER(16, sse2)
 
 void ff_diracdsp_init_mmx(DiracDSPContext* c)
 {
-    int mm_flags = av_get_cpu_flags();;
+    int mm_flags = av_get_cpu_flags();
 
 #if HAVE_YASM
     c->add_dirac_obmc[0] = ff_add_dirac_obmc8_mmx;

@@ -543,7 +543,7 @@ static int recheck_discard_flags(AVFormatContext *s, int first)
 
     /* Check if any new streams are needed */
     for (i = 0; i < c->n_variants; i++)
-        c->variants[i]->cur_needed = 0;;
+        c->variants[i]->cur_needed = 0;
 
     for (i = 0; i < s->nb_streams; i++) {
         AVStream *st = s->streams[i];

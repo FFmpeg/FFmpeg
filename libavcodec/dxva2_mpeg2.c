@@ -109,10 +109,10 @@ static void fill_quantization_matrices(AVCodecContext *avctx,
         qm->bNewQmatrix[i] = 1;
     for (i = 0; i < 64; i++) {
         int n = s->dsp.idct_permutation[ff_zigzag_direct[i]];
-        qm->Qmatrix[0][i] = s->intra_matrix[n];;
-        qm->Qmatrix[1][i] = s->inter_matrix[n];;
-        qm->Qmatrix[2][i] = s->chroma_intra_matrix[n];;
-        qm->Qmatrix[3][i] = s->chroma_inter_matrix[n];;
+        qm->Qmatrix[0][i] = s->intra_matrix[n];
+        qm->Qmatrix[1][i] = s->inter_matrix[n];
+        qm->Qmatrix[2][i] = s->chroma_intra_matrix[n];
+        qm->Qmatrix[3][i] = s->chroma_inter_matrix[n];
     }
 }
 
