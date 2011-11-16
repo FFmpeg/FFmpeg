@@ -73,7 +73,7 @@ static const AVClass av_class = {
 static int resample(SwrContext *s, AudioData *out_param, int out_count,
                              const AudioData * in_param, int in_count);
 
-SwrContext *swr_alloc(void){
+struct SwrContext *swr_alloc(void){
     SwrContext *s= av_mallocz(sizeof(SwrContext));
     if(s){
         s->av_class= &av_class;
@@ -82,10 +82,10 @@ SwrContext *swr_alloc(void){
     return s;
 }
 
-SwrContext *swr_alloc_set_opts(struct SwrContext *s,
-                               int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
-                               int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                               const int *channel_map, int log_offset, void *log_ctx){
+struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
+                                      int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
+                                      int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
+                                      const int *channel_map, int log_offset, void *log_ctx){
     if(!s) s= swr_alloc();
     if(!s) return NULL;
 
@@ -129,7 +129,7 @@ void swr_free(SwrContext **ss){
     av_freep(ss);
 }
 
-int swr_init(SwrContext *s){
+int swr_init(struct SwrContext *s){
     s->in_buffer_index= 0;
     s->in_buffer_count= 0;
     s->resample_in_constraint= 0;
