@@ -1484,7 +1484,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
         }
     }
     out_of_order = MAX_DELAYED_PIC_COUNT - i;
-    if(s->low_delay && cur->f.pict_type == AV_PICTURE_TYPE_B)
+    if(cur->f.pict_type == AV_PICTURE_TYPE_B)
         out_of_order = FFMAX(out_of_order, 1);
     if(s->avctx->has_b_frames < out_of_order && !h->sps.bitstream_restriction_flag){
         av_log(s->avctx, AV_LOG_WARNING, "Increasing reorder buffer to %d\n", out_of_order);
