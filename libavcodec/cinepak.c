@@ -357,8 +357,7 @@ static int cinepak_decode (CinepakContext *s)
 
     s->data += 10 + s->sega_film_skip_bytes;
 
-    if (num_strips > MAX_STRIPS)
-        num_strips = MAX_STRIPS;
+    num_strips = FFMIN(num_strips, MAX_STRIPS);
 
     for (i=0; i < num_strips; i++) {
         if ((s->data + 12) > eod)
