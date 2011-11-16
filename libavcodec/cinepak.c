@@ -269,8 +269,8 @@ static int cinepak_decode_strip (CinepakContext *s,
     int      chunk_id, chunk_size;
 
     /* coordinate sanity checks */
-    if (strip->x1 >= s->width  || strip->x2 > s->width  ||
-        strip->y1 >= s->height || strip->y2 > s->height ||
+    if (strip->x2 > s->width  ||
+        strip->y2 > s->height ||
         strip->x1 >= strip->x2 || strip->y1 >= strip->y2)
         return -1;
 
