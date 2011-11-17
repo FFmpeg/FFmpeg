@@ -239,8 +239,8 @@ av_assert0(s->out.ch_count);
     s->in_buffer.planar = s->postin.planar = s->midbuf.planar = s->preout.planar =  1;
 
 
-    if(s->rematrix && swri_rematrix_init(s)<0)
-        return -1;
+    if(s->rematrix)
+        return swri_rematrix_init(s);
 
     return 0;
 }
