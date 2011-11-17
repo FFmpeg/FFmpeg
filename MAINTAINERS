@@ -157,6 +157,7 @@ Codecs:
   libgsm.c                              Michel Bardiaux
   libdirac*                             David Conrad
   libopenjpeg.c                         Jaikrishnan Menon
+  libopenjpegenc.c                      Michael Bradshaw
   libschroedinger*                      David Conrad
   libspeexdec.c                         Justin Ruggles
   libtheoraenc.c                        David Conrad

@@ -391,7 +391,7 @@ void avcodec_register_all(void)
     REGISTER_ENCODER (LIBMP3LAME, libmp3lame);
     REGISTER_ENCDEC  (LIBOPENCORE_AMRNB, libopencore_amrnb);
     REGISTER_DECODER (LIBOPENCORE_AMRWB, libopencore_amrwb);
-    REGISTER_DECODER (LIBOPENJPEG, libopenjpeg);
+    REGISTER_ENCDEC (LIBOPENJPEG, libopenjpeg);
     REGISTER_ENCDEC  (LIBSCHROEDINGER, libschroedinger);
     REGISTER_ENCDEC  (LIBSPEEX, libspeex);
     REGISTER_DECODER (LIBSTAGEFRIGHT_H264, libstagefright_h264);

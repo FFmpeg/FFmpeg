@@ -15,6 +15,14 @@ FFmpeg can be hooked up with a number of external libraries to add support
 for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to @file{./configure}.
 
+@section OpenJPEG
+
+FFmpeg can use the OpenJPEG libraries for encoding/decoding J2K videos.  Go to
+@url{http://www.openjpeg.org/} to get the libraries and follow the installation
+instructions.  To enable using OpenJPEG in FFmpeg, pass @code{--enable-libopenjpeg} to
+@file{./configure}.
+
+
 @section OpenCORE AMR
 
 FFmpeg can make use of the OpenCORE libraries for AMR-NB
@@ -447,6 +455,7 @@ following image formats are supported:
     @tab Used in the game Cyberia from Interplay.
 @item Interplay MVE video    @tab     @tab  X
     @tab Used in Interplay .MVE files.
+@item J2K @tab  X  @tab  X
 @item Karl Morton's video codec  @tab     @tab  X
     @tab Codec used in Worms games.
 @item Kega Game Video (KGV1) @tab      @tab  X
