@@ -241,6 +241,7 @@ version 0.8:
 - lut, lutrgb, and lutyuv filters added
 - buffersink libavfilter sink added
 - Bump libswscale for recently reported ABI break
+- New J2K encoder (via OpenJPEG)
 
 
 version 0.7:
