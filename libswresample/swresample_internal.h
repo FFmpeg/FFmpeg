@@ -69,9 +69,9 @@ typedef struct SwrContext {
     struct AudioConvert *full_convert;              ///< full conversion context (single conversion for input and output)
     struct ResampleContext *resample;               ///< resampling context
 
-    float matrix[SWR_CH_MAX][SWR_CH_MAX];
-    int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];
-    uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];
+    float matrix[SWR_CH_MAX][SWR_CH_MAX];           ///< floating point rematrixing coefficients
+    int32_t matrix32[SWR_CH_MAX][SWR_CH_MAX];       ///< 17.15 fixed point rematrixing coefficients
+    uint8_t matrix_ch[SWR_CH_MAX][SWR_CH_MAX+1];    ///< Lists of input channels per output channel that have non zero rematrixing coefficients
 
     /* TODO: callbacks for ASM optimizations */
 }SwrContext;
