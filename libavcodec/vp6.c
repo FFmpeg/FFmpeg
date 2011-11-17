@@ -442,7 +442,8 @@ static void vp6_parse_coeff(VP56Context *s)
         model1 = model->coeff_dccv[pt];
         model2 = model->coeff_dcct[pt][ctx];
 
-        for (coeff_idx=0; coeff_idx<64; ) {
+        coeff_idx = 0;
+        for (;;) {
             if ((coeff_idx>1 && ct==0) || vp56_rac_get_prob(c, model2[0])) {
                 /* parse a coeff */
                 if (vp56_rac_get_prob(c, model2[2])) {
@@ -483,8 +484,10 @@ static void vp6_parse_coeff(VP56Context *s)
                             run += vp56_rac_get_prob(c, model3[i+8]) << i;
                 }
             }
-
-            cg = vp6_coeff_groups[coeff_idx+=run];
+            coeff_idx += run;
+            if (coeff_idx >= 64)
+                break;
+            cg = vp6_coeff_groups[coeff_idx];
             model1 = model2 = model->coeff_ract[pt][ct][cg];
         }
 
