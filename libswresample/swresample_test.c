@@ -132,10 +132,10 @@ int main(int argc, char **argv){
                                av_get_sample_fmt_name(in_sample_fmt), av_get_sample_fmt_name(out_sample_fmt));
                         forw_ctx  = swr_alloc_set_opts(forw_ctx, out_ch_layout, out_sample_fmt+planar_out, out_sample_rate,
                                                                   in_ch_layout,  in_sample_fmt+planar_in ,  in_sample_rate,
-                                                       NULL, 0, 0);
+                                                       0, 0);
                         backw_ctx = swr_alloc_set_opts(backw_ctx, in_ch_layout,  in_sample_fmt,             in_sample_rate,
                                                                  out_ch_layout, out_sample_fmt+planar_out, out_sample_rate,
-                                                       NULL, 0, 0);
+                                                       0, 0);
                         if(swr_init( forw_ctx) < 0)
                             fprintf(stderr, "swr_init(->) failed\n");
                         if(swr_init(backw_ctx) < 0)

@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 3
+#define LIBSWRESAMPLE_VERSION_MINOR 4
 #define LIBSWRESAMPLE_VERSION_MICRO 0
 
 #define SWR_CH_MAX 16   ///< Maximum number of channels
@@ -74,8 +74,6 @@ int swr_init(struct SwrContext *s);
  * @param in_ch_layout    input channel layout (AV_CH_LAYOUT_*)
  * @param in_sample_fmt   input sample format (AV_SAMPLE_FMT_*). Use +0x100 for planar audio
  * @param in_sample_rate  input sample rate (frequency in Hz)
- * @param channel_map     customized input channel mapping (array of channel
- *                        indexes, -1 for a muted channel), can be NULL
  * @param log_offset      logging level offset
  * @param log_ctx         parent logging context, can be NULL
  *
@@ -85,7 +83,7 @@ int swr_init(struct SwrContext *s);
 struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
                                       int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
                                       int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                                      const int *channel_map, int log_offset, void *log_ctx);
+                                      int log_offset, void *log_ctx);
 
 /**
  * Free the given SwrContext and set the pointer to NULL.
@@ -113,5 +111,15 @@ int swr_convert(struct SwrContext *s, uint8_t *out[SWR_CH_MAX], int out_count,
  * Activate resampling compensation.
  */
 void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_distance);
+
+/**
+ * Set a customized input channel mapping.
+ *
+ * @param s           allocated Swr context, not yet initialized
+ * @param channel_map customized input channel mapping (array of channel
+ *                    indexes, -1 for a muted channel)
+ * @return AVERROR error code in case of failure.
+ */
+int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
 
 #endif

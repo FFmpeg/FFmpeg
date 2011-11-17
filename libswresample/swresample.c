@@ -73,6 +73,13 @@ static const AVClass av_class = {
 static int resample(SwrContext *s, AudioData *out_param, int out_count,
                              const AudioData * in_param, int in_count);
 
+int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
+    if(!s || s->in_convert) // s needs to be allocated but not initialized
+        return AVERROR(EINVAL);
+    s->channel_map = channel_map;
+    return 0;
+}
+
 struct SwrContext *swr_alloc(void){
     SwrContext *s= av_mallocz(sizeof(SwrContext));
     if(s){
@@ -85,7 +92,7 @@ struct SwrContext *swr_alloc(void){
 struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
                                       int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
                                       int64_t  in_ch_layout, enum AVSampleFormat  in_sample_fmt, int  in_sample_rate,
-                                      const int *channel_map, int log_offset, void *log_ctx){
+                                      int log_offset, void *log_ctx){
     if(!s) s= swr_alloc();
     if(!s) return NULL;
 
@@ -101,8 +108,6 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_S16, 0);
     av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> in_ch_layout), 0);
     av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->out_ch_layout), 0);
-
-    s->channel_map = channel_map;
     return s;
 }
 
