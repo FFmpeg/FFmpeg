@@ -304,7 +304,7 @@ static void draw_slice(AVFilterLink *link, int y, int h, int slice_dir)
         scale->slice_y = link->dst->outputs[0]->h;
 
     if(scale->interlaced>0 || (scale->interlaced<0 && link->cur_buf->video->interlaced)){
-        av_assert0(y%4 == 0);
+        av_assert0(y%(2<<scale->vsub) == 0);
         out_h = scale_slice(link, scale->isws[0], y, (h+1)/2, 2, 0);
         out_h+= scale_slice(link, scale->isws[1], y,  h   /2, 2, 1);
     }else{
