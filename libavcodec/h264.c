@@ -2846,6 +2846,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
                 c->sps = h->sps;
                 c->pps = h->pps;
                 c->pixel_shift = h->pixel_shift;
+                c->cur_chroma_format_idc = h->cur_chroma_format_idc;
                 init_scan_tables(c);
                 clone_tables(c, h, i);
             }
