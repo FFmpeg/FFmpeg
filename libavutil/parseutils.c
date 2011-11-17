@@ -471,7 +471,7 @@ static const char *small_strptime(const char *p, const char *fmt, struct tm *dt)
     }
 }
 
-static time_t mktimegm(struct tm *tm)
+time_t av_timegm(struct tm *tm)
 {
     time_t t;
 
@@ -592,7 +592,7 @@ int av_parse_time(int64_t *timeval, const char *timestr, int duration)
     } else {
         dt.tm_isdst = -1;       /* unknown */
         if (is_utc) {
-            t = mktimegm(&dt);
+            t = av_timegm(&dt);
         } else {
             t = mktime(&dt);
         }

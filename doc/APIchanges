@@ -19,6 +19,9 @@ API changes, most recent first:
 2011-10-20 - b35e9e1 - lavu 51.22.0
   Add av_strtok() to avstring.h.
 
+2011-11-xx - xxxxxxx - lavu 51.16.0
+  Add av_timegm()
+
 2011-11-06 - ba04ecf - lavu 51.14.0
   Add av_strcasecmp() and av_strncasecmp() to avstring.h.
 
