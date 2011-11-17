@@ -18,6 +18,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+/**
+ * @file
+ * libswresample public header
+ */
+
 #ifndef SWR_H
 #define SWR_H
 
@@ -28,9 +33,9 @@
 #define LIBSWRESAMPLE_VERSION_MINOR 3
 #define LIBSWRESAMPLE_VERSION_MICRO 0
 
-#define SWR_CH_MAX 16
+#define SWR_CH_MAX 16   ///< Maximum number of channels
 
-#define SWR_FLAG_RESAMPLE 1///< Force resampling even if equal sample rate
+#define SWR_FLAG_RESAMPLE 1 ///< Force resampling even if equal sample rate
 //TODO use int resample ?
 //long term TODO can we enable this dynamically?
 
@@ -39,21 +44,43 @@ struct SwrContext;
 
 /**
  * Allocate SwrContext.
- * @see swr_init(),swr_free()
- * @return NULL on error
+ *
+ * If you use this function you will need to set the parameters (manually or
+ * with swr_alloc_set_opts()) before calling swr_init().
+ *
+ * @see swr_alloc_set_opts(), swr_init(), swr_free()
+ * @return NULL on error, allocated context otherwise
  */
 struct SwrContext *swr_alloc(void);
 
 /**
  * Initialize context after user parameters have been set.
- * @return negativo n error
+ *
+ * @return AVERROR error code in case of failure.
  */
 int swr_init(struct SwrContext *s);
 
 /**
- * Allocate SwrContext.
- * @see swr_init(),swr_free()
- * @return NULL on error
+ * Allocate SwrContext if needed and set/reset common parameters.
+ *
+ * This function does not require s to be allocated with swr_alloc(). On the
+ * other hand, swr_alloc() can use swr_alloc_set_opts() to set the parameters
+ * on the allocated context.
+ *
+ * @param s               Swr context, can be NULL
+ * @param out_ch_layout   output channel layout (AV_CH_LAYOUT_*)
+ * @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*). Use +0x100 for planar audio
+ * @param out_sample_rate output sample rate (frequency in Hz)
+ * @param in_ch_layout    input channel layout (AV_CH_LAYOUT_*)
+ * @param in_sample_fmt   input sample format (AV_SAMPLE_FMT_*). Use +0x100 for planar audio
+ * @param in_sample_rate  input sample rate (frequency in Hz)
+ * @param channel_map     customized input channel mapping (array of channel
+ *                        indexes, -1 for a muted channel), can be NULL
+ * @param log_offset      logging level offset
+ * @param log_ctx         parent logging context, can be NULL
+ *
+ * @see swr_init(), swr_free()
+ * @return NULL on error, allocated context otherwise
  */
 struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
                                       int64_t out_ch_layout, enum AVSampleFormat out_sample_fmt, int out_sample_rate,
@@ -61,22 +88,30 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
                                       const int *channel_map, int log_offset, void *log_ctx);
 
 /**
- * Free the given SwrContext.
- * And set the pointer to NULL
+ * Free the given SwrContext and set the pointer to NULL.
  */
 void swr_free(struct SwrContext **s);
 
 /**
  * Convert audio.
  *
- * in & in_count can be set to 0 to flush the last few samples out at the end.
- * @param  in_count Number of input samples available in one channel.
- * @param out_count Amount of space available for output in samples per channel.
+ * in and in_count can be set to 0 to flush the last few samples out at the
+ * end.
+ *
+ * @param s         allocated Swr context, with parameters set
+ * @param out       output buffers, only the first one need be set in case of packed audio
+ * @param out_count amount of space available for output in samples per channel
+ * @param in        input buffers, only the first one need to be set in case of packed audio
+ * @param in_count  number of input samples available in one channel
+ *
  * @return number of samples output per channel
  */
 int swr_convert(struct SwrContext *s, uint8_t *out[SWR_CH_MAX], int out_count,
                                 const uint8_t *in [SWR_CH_MAX], int in_count);
 
+/**
+ * Activate resampling compensation.
+ */
 void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_distance);
 
 #endif
