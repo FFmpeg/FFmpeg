@@ -1484,7 +1484,8 @@ static void decode_postinit(H264Context *h, int setup_finished){
         }
     }
     out_of_order = MAX_DELAYED_PIC_COUNT - i;
-    if(cur->f.pict_type == AV_PICTURE_TYPE_B)
+    if(   cur->f.pict_type == AV_PICTURE_TYPE_B
+       || (h->last_pocs[MAX_DELAYED_PIC_COUNT-2] > INT_MIN && h->last_pocs[MAX_DELAYED_PIC_COUNT-1] - h->last_pocs[MAX_DELAYED_PIC_COUNT-2] > 2))
         out_of_order = FFMAX(out_of_order, 1);
     if(s->avctx->has_b_frames < out_of_order && !h->sps.bitstream_restriction_flag){
         av_log(s->avctx, AV_LOG_WARNING, "Increasing reorder buffer to %d\n", out_of_order);
@@ -1511,15 +1512,6 @@ static void decode_postinit(H264Context *h, int setup_finished){
     if (s->avctx->has_b_frames == 0 && (h->delayed_pic[0]->f.key_frame || h->delayed_pic[0]->mmco_reset))
         h->next_outputed_poc= INT_MIN;
     out_of_order = out->poc < h->next_outputed_poc;
-
-    if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
-        { }
-    else if (s->low_delay &&
-               ((h->next_outputed_poc != INT_MIN && out->poc > h->next_outputed_poc + 2) ||
-                cur->f.pict_type == AV_PICTURE_TYPE_B)) {
-        s->low_delay = 0;
-        s->avctx->has_b_frames++;
-    }
 
     if(out_of_order || pics > s->avctx->has_b_frames){
         out->f.reference &= ~DELAYED_PIC_REF;
