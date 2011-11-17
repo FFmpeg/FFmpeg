@@ -44,7 +44,7 @@ typedef struct SwrContext {
     int      in_sample_rate;                        ///< input sample rate
     int     out_sample_rate;                        ///< output sample rate
     int flags;                                      ///< miscellaneous flags such as SWR_FLAG_RESAMPLE
-    float slev;                                     ///< surround mixing level, XXX: unused
+    float slev;                                     ///< surround mixing level
     float clev;                                     ///< center mixing level
     float rematrix_volume;                          ///< rematrixing volume coefficient
     const int *channel_map;                         ///< channel index (or -1 if muted channel) map
