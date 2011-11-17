@@ -37,6 +37,7 @@ version <next>:
 - Microsoft Expression Encoder Screen decoder
 - RTMPS protocol support
 - RTMPTS protocol support
+- JPEG 2000 encoding support through OpenJPEG
 
 
 version 0.8:
