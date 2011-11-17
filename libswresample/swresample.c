@@ -98,12 +98,11 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     av_opt_set_int(s, "icl", in_ch_layout,    0);
     av_opt_set_int(s, "isf", in_sample_fmt,   0);
     av_opt_set_int(s, "isr", in_sample_rate,  0);
+    av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_S16, 0);
+    av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> in_ch_layout), 0);
+    av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->out_ch_layout), 0);
 
     s->channel_map = channel_map;
-    s-> in.ch_count= av_get_channel_layout_nb_channels(s-> in_ch_layout);
-    s->out.ch_count= av_get_channel_layout_nb_channels(s->out_ch_layout);
-    s->int_sample_fmt = AV_SAMPLE_FMT_S16;
-
     return s;
 }
 
