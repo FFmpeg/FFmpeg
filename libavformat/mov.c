@@ -87,10 +87,11 @@ static int mov_metadata_track_or_disc_number(MOVContext *c, AVIOContext *pb,
 {
     char buf[16];
 
-    short current, total;
+    short current, total = 0;
     avio_rb16(pb); // unknown
     current = avio_rb16(pb);
-    total = avio_rb16(pb);
+    if (len >= 6)
+        total = avio_rb16(pb);
     if (!total)
         snprintf(buf, sizeof(buf), "%d", current);
     else
