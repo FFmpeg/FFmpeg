@@ -70,9 +70,6 @@ static const AVClass av_class = {
     .parent_log_context_offset = OFFSET(log_ctx),
 };
 
-static int resample(SwrContext *s, AudioData *out_param, int out_count,
-                             const AudioData * in_param, int in_count);
-
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     if(!s || s->in_convert) // s needs to be allocated but not initialized
         return AVERROR(EINVAL);
@@ -302,6 +299,97 @@ static void fill_audiodata(AudioData *out, uint8_t *in_arg [SWR_CH_MAX]){
     }
 }
 
+/**
+ *
+ * out may be equal in.
+ */
+static void buf_set(AudioData *out, AudioData *in, int count){
+    if(in->planar){
+        int ch;
+        for(ch=0; ch<out->ch_count; ch++)
+            out->ch[ch]= in->ch[ch] + count*out->bps;
+    }else
+        out->ch[0]= in->ch[0] + count*out->ch_count*out->bps;
+}
+
+/**
+ *
+ * @return number of samples output per channel
+ */
+static int resample(SwrContext *s, AudioData *out_param, int out_count,
+                             const AudioData * in_param, int in_count){
+    AudioData in, out, tmp;
+    int ret_sum=0;
+    int border=0;
+
+    tmp=out=*out_param;
+    in =  *in_param;
+
+    do{
+        int ret, size, consumed;
+        if(!s->resample_in_constraint && s->in_buffer_count){
+            buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
+            ret= swri_multiple_resample(s->resample, &out, out_count, &tmp, s->in_buffer_count, &consumed);
+            out_count -= ret;
+            ret_sum += ret;
+            buf_set(&out, &out, ret);
+            s->in_buffer_count -= consumed;
+            s->in_buffer_index += consumed;
+
+            if(!in_count)
+                break;
+            if(s->in_buffer_count <= border){
+                buf_set(&in, &in, -s->in_buffer_count);
+                in_count += s->in_buffer_count;
+                s->in_buffer_count=0;
+                s->in_buffer_index=0;
+                border = 0;
+            }
+        }
+
+        if(in_count && !s->in_buffer_count){
+            s->in_buffer_index=0;
+            ret= swri_multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
+            out_count -= ret;
+            ret_sum += ret;
+            buf_set(&out, &out, ret);
+            in_count -= consumed;
+            buf_set(&in, &in, consumed);
+        }
+
+        //TODO is this check sane considering the advanced copy avoidance below
+        size= s->in_buffer_index + s->in_buffer_count + in_count;
+        if(   size > s->in_buffer.count
+           && s->in_buffer_count + in_count <= s->in_buffer_index){
+            buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
+            copy(&s->in_buffer, &tmp, s->in_buffer_count);
+            s->in_buffer_index=0;
+        }else
+            if((ret=realloc_audio(&s->in_buffer, size)) < 0)
+                return ret;
+
+        if(in_count){
+            int count= in_count;
+            if(s->in_buffer_count && s->in_buffer_count+2 < count && out_count) count= s->in_buffer_count+2;
+
+            buf_set(&tmp, &s->in_buffer, s->in_buffer_index + s->in_buffer_count);
+            copy(&tmp, &in, /*in_*/count);
+            s->in_buffer_count += count;
+            in_count -= count;
+            border += count;
+            buf_set(&in, &in, count);
+            s->resample_in_constraint= 0;
+            if(s->in_buffer_count != count || in_count)
+                continue;
+        }
+        break;
+    }while(1);
+
+    s->resample_in_constraint= !!out_count;
+
+    return ret_sum;
+}
+
 int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_count,
                          const uint8_t *in_arg [SWR_CH_MAX], int  in_count){
     AudioData *postin, *midbuf, *preout;
@@ -414,93 +502,3 @@ int swr_convert(struct SwrContext *s, uint8_t *out_arg[SWR_CH_MAX], int out_coun
     return out_count;
 }
 
-/**
- *
- * out may be equal in.
- */
-static void buf_set(AudioData *out, AudioData *in, int count){
-    if(in->planar){
-        int ch;
-        for(ch=0; ch<out->ch_count; ch++)
-            out->ch[ch]= in->ch[ch] + count*out->bps;
-    }else
-        out->ch[0]= in->ch[0] + count*out->ch_count*out->bps;
-}
-
-/**
- *
- * @return number of samples output per channel
- */
-static int resample(SwrContext *s, AudioData *out_param, int out_count,
-                             const AudioData * in_param, int in_count){
-    AudioData in, out, tmp;
-    int ret_sum=0;
-    int border=0;
-
-    tmp=out=*out_param;
-    in =  *in_param;
-
-    do{
-        int ret, size, consumed;
-        if(!s->resample_in_constraint && s->in_buffer_count){
-            buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
-            ret= swri_multiple_resample(s->resample, &out, out_count, &tmp, s->in_buffer_count, &consumed);
-            out_count -= ret;
-            ret_sum += ret;
-            buf_set(&out, &out, ret);
-            s->in_buffer_count -= consumed;
-            s->in_buffer_index += consumed;
-
-            if(!in_count)
-                break;
-            if(s->in_buffer_count <= border){
-                buf_set(&in, &in, -s->in_buffer_count);
-                in_count += s->in_buffer_count;
-                s->in_buffer_count=0;
-                s->in_buffer_index=0;
-                border = 0;
-            }
-        }
-
-        if(in_count && !s->in_buffer_count){
-            s->in_buffer_index=0;
-            ret= swri_multiple_resample(s->resample, &out, out_count, &in, in_count, &consumed);
-            out_count -= ret;
-            ret_sum += ret;
-            buf_set(&out, &out, ret);
-            in_count -= consumed;
-            buf_set(&in, &in, consumed);
-        }
-
-        //TODO is this check sane considering the advanced copy avoidance below
-        size= s->in_buffer_index + s->in_buffer_count + in_count;
-        if(   size > s->in_buffer.count
-           && s->in_buffer_count + in_count <= s->in_buffer_index){
-            buf_set(&tmp, &s->in_buffer, s->in_buffer_index);
-            copy(&s->in_buffer, &tmp, s->in_buffer_count);
-            s->in_buffer_index=0;
-        }else
-            if((ret=realloc_audio(&s->in_buffer, size)) < 0)
-                return ret;
-
-        if(in_count){
-            int count= in_count;
-            if(s->in_buffer_count && s->in_buffer_count+2 < count && out_count) count= s->in_buffer_count+2;
-
-            buf_set(&tmp, &s->in_buffer, s->in_buffer_index + s->in_buffer_count);
-            copy(&tmp, &in, /*in_*/count);
-            s->in_buffer_count += count;
-            in_count -= count;
-            border += count;
-            buf_set(&in, &in, count);
-            s->resample_in_constraint= 0;
-            if(s->in_buffer_count != count || in_count)
-                continue;
-        }
-        break;
-    }while(1);
-
-    s->resample_in_constraint= !!out_count;
-
-    return ret_sum;
-}
