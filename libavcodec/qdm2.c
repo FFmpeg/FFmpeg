@@ -1327,7 +1327,7 @@ static void qdm2_fft_decode_tones (QDM2Context *q, int duration, GetBitContext *
     local_int_10 = 1 << (q->group_order - duration - 1);
     offset = 1;
 
-    while (1) {
+    while (get_bits_left(gb)>0) {
         if (q->superblocktype_2_3) {
             while ((n = qdm2_get_vlc(gb, &vlc_tab_fft_tone_offset[local_int_8], 1, 2)) < 2) {
                 offset = 1;
