@@ -147,7 +147,7 @@ static int tls_open(URLContext *h, const char *uri, int flags)
             goto fail;
     }
 #elif CONFIG_OPENSSL
-    c->ctx = SSL_CTX_new(SSLv3_client_method());
+    c->ctx = SSL_CTX_new(TLSv1_client_method());
     if (!c->ctx) {
         av_log(h, AV_LOG_ERROR, "%s\n", ERR_error_string(ERR_get_error(), NULL));
         ret = AVERROR(EIO);
