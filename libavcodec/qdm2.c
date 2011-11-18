@@ -170,7 +170,7 @@ typedef struct {
     /// I/O data
     const uint8_t *compressed_data;
     int compressed_size;
-    float output_buffer[QDM2_MAX_FRAME_SIZE * 2];
+    float output_buffer[QDM2_MAX_FRAME_SIZE * MPA_MAX_CHANNELS * 2];
 
     /// Synthesis filter
     MPADSPContext mpadsp;
@@ -1895,6 +1895,9 @@ static int qdm2_decode (QDM2Context *q, const uint8_t *in, int16_t *out)
 {
     int ch, i;
     const int frame_size = (q->frame_size * q->channels);
+
+    if((unsigned)frame_size > FF_ARRAY_ELEMS(q->output_buffer)/2)
+        return -1;
 
     /* select input buffer */
     q->compressed_data = in;
