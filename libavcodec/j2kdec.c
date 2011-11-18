@@ -227,7 +227,7 @@ static int get_siz(J2kDecoderContext *s)
         uint8_t x = bytestream_get_byte(&s->buf);
         s->cbps[i] = (x & 0x7f) + 1;
         s->precision = FFMAX(s->cbps[i], s->precision);
-        s->sgnd[i] = (x & 0x80) == 1;
+        s->sgnd[i] = !!(x & 0x80);
         s->cdx[i] = bytestream_get_byte(&s->buf);
         s->cdy[i] = bytestream_get_byte(&s->buf);
     }
