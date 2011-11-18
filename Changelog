@@ -122,6 +122,7 @@ easier to use. The changes are:
 - VBLE Decoder
 - OS X Video Decoder Acceleration (VDA) support
 - compact and csv output in ffprobe
+- pan audio filter
 
 
 version 0.8:
