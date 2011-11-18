@@ -771,7 +771,7 @@ static void reset_ptr(const uint8_t* src[], int format)
     }
 }
 
-static int check_image_pointers(uint8_t *data[4], enum PixelFormat pix_fmt,
+static int check_image_pointers(const uint8_t * const data[4], enum PixelFormat pix_fmt,
                                 const int linesizes[4])
 {
     const AVPixFmtDescriptor *desc = &av_pix_fmt_descriptors[pix_fmt];
@@ -806,7 +806,7 @@ int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
         av_log(c, AV_LOG_ERROR, "bad src image pointers\n");
         return 0;
     }
-    if (!check_image_pointers(dst, c->dstFormat, dstStride)) {
+    if (!check_image_pointers((const uint8_t* const*)dst, c->dstFormat, dstStride)) {
         av_log(c, AV_LOG_ERROR, "bad dst image pointers\n");
         return 0;
     }
