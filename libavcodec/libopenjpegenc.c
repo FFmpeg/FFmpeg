@@ -25,6 +25,7 @@
 */
 
 #include "libavutil/imgutils.h"
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "libavutil/intreadwrite.h"
 #define  OPJ_STATIC
@@ -58,71 +59,57 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     int numcomps = 0;
     OPJ_COLOR_SPACE color_space = CLRSPC_UNKNOWN;
 
+    sub_dx[0] = sub_dx[3] = 1;
+    sub_dy[0] = sub_dy[3] = 1;
+    sub_dx[1] = sub_dx[2] = 1<<av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_w;
+    sub_dy[1] = sub_dy[2] = 1<<av_pix_fmt_descriptors[avctx->pix_fmt].log2_chroma_h;
+
     switch (avctx->pix_fmt) {
     case PIX_FMT_GRAY8:
         color_space = CLRSPC_GRAY;
         numcomps = 1;
         bpp = 8;
-        sub_dx[0] = 1;
-        sub_dy[0] = 1;
         break;
     case PIX_FMT_RGB24:
         color_space = CLRSPC_SRGB;
         numcomps = 3;
         bpp = 24;
-        sub_dx[0] = sub_dx[1] = sub_dx[2] = 1;
-        sub_dy[0] = sub_dy[1] = sub_dy[2] = 1;
         break;
     case PIX_FMT_RGBA:
         color_space = CLRSPC_SRGB;
         numcomps = 4;
         bpp = 32;
-        sub_dx[0] = sub_dx[1] = sub_dx[2] = sub_dx[3] = 1;
-        sub_dy[0] = sub_dy[1] = sub_dy[2] = sub_dy[3] = 1;
         break;
     case PIX_FMT_YUV420P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
         bpp = 12;
-        sub_dx[0] = 1;
-        sub_dx[1] = sub_dx[2] = 2;
-        sub_dy[0] = 1;
-        sub_dy[1] = sub_dy[2] = 2;
         break;
     case PIX_FMT_YUV422P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
         bpp = 16;
-        sub_dx[0] = 1;
-        sub_dx[1] = sub_dx[2] = 2;
-        sub_dy[0] = sub_dy[1] = sub_dy[2] = 1;
         break;
     case PIX_FMT_YUV440P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
         bpp = 16;
-        sub_dx[0] = sub_dx[1] = sub_dx[2] = 1;
-        sub_dy[0] = 1;
-        sub_dy[1] = sub_dy[2] = 2;
-            break;
+        break;
     case PIX_FMT_YUV444P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
         bpp = 24;
-        sub_dx[0] = sub_dx[1] = sub_dx[2] = 1;
-        sub_dy[0] = sub_dy[1] = sub_dy[2] = 1;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "The requested pixel format '%s' is not supported\n", av_get_pix_fmt_name(avctx->pix_fmt));
         return NULL;
     }
 
-    cmptparm = av_malloc(numcomps * sizeof(opj_image_cmptparm_t));
+    cmptparm = av_mallocz(numcomps * sizeof(opj_image_cmptparm_t));
     if (!cmptparm) {
         av_log(avctx, AV_LOG_ERROR, "Not enough memory");
         return NULL;
     }
-    memset(cmptparm, 0, numcomps * sizeof(opj_image_cmptparm_t));
     for (i = 0; i < numcomps; i++) {
         cmptparm[i].prec = 8;
         cmptparm[i].bpp = bpp;
@@ -144,7 +131,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
 
     opj_set_default_encoder_parameters(&ctx->enc_params);
     ctx->enc_params.tcp_numlayers = 1;
-    ctx->enc_params.tcp_rates[0] = avctx->compression_level > 0 ? avctx->compression_level : 0;
+    ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0);
     ctx->enc_params.cp_disto_alloc = 1;
 
     ctx->compress = opj_create_compress(CODEC_J2K);
@@ -156,7 +143,6 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     avctx->coded_frame = avcodec_alloc_frame();
     if (!avctx->coded_frame) {
         av_freep(&ctx->compress);
-        ctx->compress = NULL;
         av_log(avctx, AV_LOG_ERROR, "Error allocating coded frame\n");
         return AVERROR(ENOMEM);
     }
@@ -164,9 +150,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
     ctx->image = mj2_create_image(avctx, &ctx->enc_params);
     if (!ctx->image) {
         av_freep(&ctx->compress);
-        ctx->compress = NULL;
         av_freep(&avctx->coded_frame);
-        avctx->coded_frame = NULL;
         av_log(avctx, AV_LOG_ERROR, "Error creating the mj2 image\n");
         return AVERROR(EINVAL);
     }
@@ -186,9 +170,7 @@ static int libopenjpeg_copy_rgba(AVCodecContext *avctx, AVFrame *frame, opj_imag
     int x;
     int y;
 
-    if (numcomps != 1 && numcomps != 3 && numcomps != 4) {
-        return 0;
-    }
+    av_assert0(numcomps == 1 || numcomps == 3 || numcomps == 4);
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[0] / numcomps) {
@@ -326,5 +308,5 @@ AVCodec ff_libopenjpeg_encoder = {
     .decode = NULL,
     .capabilities = 0,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_GRAY8,PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUV440P,PIX_FMT_YUV444P},
-    .long_name = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 encoder/decoder"),
+    .long_name = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 encoder"),
 } ;
