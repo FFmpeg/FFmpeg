@@ -47,14 +47,11 @@ static void adx_decode(int16_t *out,const unsigned char *in,
     int i;
     int s0,s1,s2,d;
 
-//    printf("%x ",scale);
-
     in+=2;
     s1 = prev->s1;
     s2 = prev->s2;
     for(i=0;i<16;i++) {
         d = in[i];
-        // d>>=4; if (d&8) d-=16;
         d = ((signed char)d >> 4);
         s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
         s2 = s1;
@@ -62,7 +59,6 @@ static void adx_decode(int16_t *out,const unsigned char *in,
         *out++=s1;
 
         d = in[i];
-        //d&=15; if (d&8) d-=16;
         d = ((signed char)(d<<4) >> 4);
         s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
         s2 = s1;
@@ -141,7 +137,7 @@ static int adx_decode_frame(AVCodecContext *avctx,
             samples += 32*2;
         }
     }
-    //
+
     if (avctx->channels==1) {
         while(rest>=18) {
             adx_decode(samples,buf,c->prev);
@@ -157,14 +153,13 @@ static int adx_decode_frame(AVCodecContext *avctx,
             samples+=32*2;
         }
     }
-    //
+
     c->in_temp = rest;
     if (rest) {
         memcpy(c->dec_temp,buf,rest);
         buf+=rest;
     }
     *data_size = (uint8_t*)samples - (uint8_t*)data;
-//    printf("%d:%d ",buf-buf0,*data_size); fflush(stdout);
     return buf-buf0;
 }
 
