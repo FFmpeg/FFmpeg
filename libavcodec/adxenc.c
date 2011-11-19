@@ -34,7 +34,8 @@
 
 /* 18 bytes <-> 32 samples */
 
-static void adx_encode(unsigned char *adx,const short *wav,PREV *prev)
+static void adx_encode(unsigned char *adx,const short *wav,
+                       ADXChannelState *prev)
 {
     int scale;
     int i;

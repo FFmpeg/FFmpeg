@@ -33,10 +33,10 @@
 
 typedef struct {
     int s1,s2;
-} PREV;
+} ADXChannelState;
 
 typedef struct {
-    PREV prev[2];
+    ADXChannelState prev[2];
     int header_parsed;
     unsigned char dec_temp[18*2];
     int in_temp;
