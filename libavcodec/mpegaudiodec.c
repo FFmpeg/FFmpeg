@@ -987,7 +987,7 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
                 s_index -= 4;
                 skip_bits_long(&s->gb, last_pos - pos);
                 av_log(s->avctx, AV_LOG_INFO, "overread, skip %d enddists: %d %d\n", last_pos - pos, end_pos-pos, end_pos2-pos);
-                if(s->err_recognition & AV_EF_BITSTREAM)
+                if(s->err_recognition & (AV_EF_BITSTREAM|AV_EF_COMPLIANT))
                     s_index=0;
                 break;
             }
@@ -1017,10 +1017,10 @@ static int huffman_decode(MPADecodeContext *s, GranuleDef *g,
     /* skip extension bits */
     bits_left = end_pos2 - get_bits_count(&s->gb);
 //av_log(NULL, AV_LOG_ERROR, "left:%d buf:%p\n", bits_left, s->in_gb.buffer);
-    if (bits_left < 0 && (s->err_recognition & AV_EF_BITSTREAM)) {
+    if (bits_left < 0 && (s->err_recognition & (AV_EF_BITSTREAM|AV_EF_COMPLIANT))) {
         av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index=0;
-    } else if (bits_left > 0 && (s->err_recognition & AV_EF_BUFFER)) {
+    } else if (bits_left > 0 && (s->err_recognition & (AV_EF_BITSTREAM|AV_EF_AGGRESSIVE))) {
         av_log(s->avctx, AV_LOG_ERROR, "bits_left=%d\n", bits_left);
         s_index = 0;
     }
