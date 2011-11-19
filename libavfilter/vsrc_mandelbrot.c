@@ -206,6 +206,58 @@ static void fill_from_cache(AVFilterContext *ctx, uint32_t *color, int *in_cidx,
     }
 }
 
+static int interpol(MBContext *mb, uint32_t *color, int x, int y, int linesize)
+{
+    uint32_t a,b,c,d, i;
+    uint32_t ipol=0;
+    int dist;
+
+    if(!x || !y || x+1==mb->w || y+1==mb->h)
+        return 0;
+
+    dist= FFMAX(FFABS(x-(mb->w>>1))*mb->h, FFABS(y-(mb->h>>1))*mb->w);
+
+    if(dist<(mb->w*mb->h>>3))
+        return 0;
+
+    a=color[(x+1) + (y+0)*linesize];
+    b=color[(x-1) + (y+1)*linesize];
+    c=color[(x+0) + (y+1)*linesize];
+    d=color[(x+1) + (y+1)*linesize];
+
+    if(a&&c){
+        b= color[(x-1) + (y+0)*linesize];
+        d= color[(x+0) + (y-1)*linesize];
+    }else if(b&&d){
+        a= color[(x+1) + (y-1)*linesize];
+        c= color[(x-1) + (y-1)*linesize];
+    }else if(c){
+        d= color[(x+0) + (y-1)*linesize];
+        a= color[(x-1) + (y+0)*linesize];
+        b= color[(x+1) + (y-1)*linesize];
+    }else if(d){
+        c= color[(x-1) + (y-1)*linesize];
+        a= color[(x-1) + (y+0)*linesize];
+        b= color[(x+1) + (y-1)*linesize];
+    }else
+        return 0;
+
+    for(i=0; i<3; i++){
+        int s= 8*i;
+        uint8_t ac= a>>s;
+        uint8_t bc= b>>s;
+        uint8_t cc= c>>s;
+        uint8_t dc= d>>s;
+        int ipolab= (ac + bc);
+        int ipolcd= (cc + dc);
+        if(FFABS(ipolab - ipolcd) > 5)
+            return 0;
+        ipol |= ((ipolab + ipolcd + 2)/4)<<s;
+    }
+    color[x + y*linesize]= ipol | 0xFF000000;
+    return 1;
+}
+
 static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize, int64_t pts)
 {
     MBContext *mb = ctx->priv;
@@ -213,12 +265,16 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
     double scale= mb->start_scale*pow(mb->end_scale/mb->start_scale, pts/mb->end_pts);
     int use_zyklus=0;
     fill_from_cache(ctx, NULL, &in_cidx, NULL, mb->start_y+scale*(-mb->h/2-0.5), scale);
+    tmp_cidx= in_cidx;
+    memset(color, 0, sizeof(*color)*mb->w);
     for(y=0; y<mb->h; y++){
+        int y1= y+1;
         const double ci=mb->start_y+scale*(y-mb->h/2);
-        memset(color+linesize*y, 0, sizeof(*color)*mb->w);
-        fill_from_cache(ctx, color+linesize*y, &in_cidx, &next_cidx, ci, scale);
-        tmp_cidx= in_cidx;
-        fill_from_cache(ctx, color+linesize*y, &tmp_cidx, NULL, ci + scale/2, scale);
+        fill_from_cache(ctx, NULL, &in_cidx, &next_cidx, ci, scale);
+        if(y1<mb->h){
+            memset(color+linesize*y1, 0, sizeof(*color)*mb->w);
+            fill_from_cache(ctx, color+linesize*y1, &tmp_cidx, NULL, ci + 3*scale/2, scale);
+        }
 
         for(x=0; x<mb->w; x++){
             const double cr=mb->start_x+scale*(x-mb->w/2);
@@ -230,6 +286,14 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
 
             if(color[x + y*linesize] & 0xFF000000)
                 continue;
+            if(interpol(mb, color, x, y, linesize)){
+                if(next_cidx < mb->cache_allocated){
+                    mb->next_cache[next_cidx  ].p[0]= cr;
+                    mb->next_cache[next_cidx  ].p[1]= ci;
+                    mb->next_cache[next_cidx++].val = color[x + y*linesize];
+                }
+                continue;
+            }
 
             use_zyklus= (x==0 || mb->inner!=BLACK ||color[x-1 + y*linesize] == 0xFF000000);
 
