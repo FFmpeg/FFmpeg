@@ -1364,7 +1364,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     if (s->pict_type == AV_PICTURE_TYPE_P || s->pict_type == AV_PICTURE_TYPE_B) {
         s->full_pel[0] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
-        if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
+        if (f_code == 0 && (avctx->err_recognition & (AV_EF_BITSTREAM|AV_EF_COMPLIANT)))
             return -1;
         s->mpeg_f_code[0][0] = f_code;
         s->mpeg_f_code[0][1] = f_code;
@@ -1372,7 +1372,7 @@ static int mpeg1_decode_picture(AVCodecContext *avctx,
     if (s->pict_type == AV_PICTURE_TYPE_B) {
         s->full_pel[1] = get_bits1(&s->gb);
         f_code = get_bits(&s->gb, 3);
-        if (f_code == 0 && (avctx->err_recognition & AV_EF_BITSTREAM))
+        if (f_code == 0 && (avctx->err_recognition & (AV_EF_BITSTREAM|AV_EF_COMPLIANT)))
             return -1;
         s->mpeg_f_code[1][0] = f_code;
         s->mpeg_f_code[1][1] = f_code;
@@ -1804,7 +1804,7 @@ static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                              && s->progressive_frame == 0 /* vbv_delay == 0xBBB || 0xE10*/;
 
                 if (left < 0 || (left && show_bits(&s->gb, FFMIN(left, 23)) && !is_d10)
-                    || ((avctx->err_recognition & AV_EF_BUFFER) && left > 8)) {
+                    || ((avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_AGGRESSIVE)) && left > 8)) {
                     av_log(avctx, AV_LOG_ERROR, "end mismatch left=%d %0X\n", left, show_bits(&s->gb, FFMIN(left, 23)));
                     return -1;
                 } else
@@ -1984,7 +1984,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->aspect_ratio_info = get_bits(&s->gb, 4);
     if (s->aspect_ratio_info == 0) {
         av_log(avctx, AV_LOG_ERROR, "aspect ratio has forbidden 0 value\n");
-        if (avctx->err_recognition & AV_EF_BITSTREAM)
+        if (avctx->err_recognition & (AV_EF_BITSTREAM | AV_EF_COMPLIANT))
             return -1;
     }
     s->frame_rate_index = get_bits(&s->gb, 4);
