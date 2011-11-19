@@ -148,7 +148,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     mb->cache_used = 0;
     mb->point_cache= av_malloc(sizeof(*mb->point_cache)*mb->cache_allocated);
     mb-> next_cache= av_malloc(sizeof(*mb-> next_cache)*mb->cache_allocated);
-    mb-> zyklus    = av_malloc(sizeof(*mb->zyklus) * mb->maxiter);
+    mb-> zyklus    = av_malloc(sizeof(*mb->zyklus) * (mb->maxiter+16));
 
     return 0;
 }
