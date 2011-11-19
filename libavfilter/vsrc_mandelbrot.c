@@ -264,25 +264,22 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
                 i++;
                 Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
-                if(zr*zr + zi*zi > mb->bailout)
-                    break;
-            }
-            i-= FFMIN(7, i);
-            zr= mb->zyklus[i][0];
-            zi= mb->zyklus[i][1];
-            for(; i<mb->maxiter; i++){
-                double t;
                 if(zr*zr + zi*zi > mb->bailout){
-                    switch(mb->outer){
-                    case            ITERATION_COUNT: zr = i - (SQR(zr-cr)+SQR(zi-ci) > SQR(mb->bailout)); break;
-                    case NORMALIZED_ITERATION_COUNT: zr= i + log2(log(mb->bailout) / log(zr*zr + zi*zi)); break;
+                    i-= FFMIN(7, i);
+                    for(; i<mb->maxiter; i++){
+                        zr= mb->zyklus[i][0];
+                        zi= mb->zyklus[i][1];
+                        if(zr*zr + zi*zi > mb->bailout){
+                            switch(mb->outer){
+                            case            ITERATION_COUNT: zr = i; break;
+                            case NORMALIZED_ITERATION_COUNT: zr= i + log2(log(mb->bailout) / log(zr*zr + zi*zi)); break;
+                            }
+                            c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
+                            break;
+                        }
                     }
-                    c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
                     break;
                 }
-                Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
-                i++;
-                Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
             }
             if(!c){
                 if(mb->inner==PERIOD){
