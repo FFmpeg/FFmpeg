@@ -111,8 +111,14 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     char buf[200], host[200];
     int numerichost = 0;
     struct addrinfo hints = { 0 }, *ai = NULL;
+    const char *proxy_path;
+    int use_proxy;
 
     ff_tls_init();
+
+    proxy_path = getenv("http_proxy");
+    use_proxy = (proxy_path != NULL) && !getenv("no_proxy") &&
+        av_strstart(proxy_path, "http://", NULL);
 
     av_url_split(NULL, 0, NULL, 0, host, sizeof(host), &port, NULL, 0, uri);
     ff_url_join(buf, sizeof(buf), "tcp", NULL, host, port, NULL);
@@ -121,6 +127,17 @@ static int tls_open(URLContext *h, const char *uri, int flags)
     if (!getaddrinfo(host, NULL, &hints, &ai)) {
         numerichost = 1;
         freeaddrinfo(ai);
+    }
+
+    if (use_proxy) {
+        char proxy_host[200], proxy_auth[200], dest[200];
+        int proxy_port;
+        av_url_split(NULL, 0, proxy_auth, sizeof(proxy_auth),
+                     proxy_host, sizeof(proxy_host), &proxy_port, NULL, 0,
+                     proxy_path);
+        ff_url_join(dest, sizeof(dest), NULL, NULL, host, port, NULL);
+        ff_url_join(buf, sizeof(buf), "httpproxy", proxy_auth, proxy_host,
+                    proxy_port, "/%s", dest);
     }
 
     ret = ffurl_open(&c->tcp, buf, AVIO_FLAG_READ_WRITE,

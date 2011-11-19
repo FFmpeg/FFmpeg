@@ -147,7 +147,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
         for (x=strip->x1; x < strip->x2; x+=4) {
             if ((chunk_id & 0x01) && !(mask >>= 1)) {
                 if ((data + 4) > eod)
-                    return -1;
+                    return AVERROR_INVALIDDATA;
 
                 flag  = AV_RB32 (data);
                 data += 4;
@@ -157,7 +157,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
             if (!(chunk_id & 0x01) || (flag & mask)) {
                 if (!(chunk_id & 0x02) && !(mask >>= 1)) {
                     if ((data + 4) > eod)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
 
                     flag  = AV_RB32 (data);
                     data += 4;
@@ -166,7 +166,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
 
                 if ((chunk_id & 0x02) || (~flag & mask)) {
                     if (data >= eod)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
 
                     codebook = &strip->v1_codebook[*data++];
                     s->frame.data[0][iy[0] + 0] = codebook->y0;
@@ -207,7 +207,7 @@ static int cinepak_decode_vectors (CinepakContext *s, cvid_strip *strip,
 
                 } else if (flag & mask) {
                     if ((data + 4) > eod)
-                        return -1;
+                        return AVERROR_INVALIDDATA;
 
                     codebook = &strip->v4_codebook[*data++];
                     s->frame.data[0][iy[0] + 0] = codebook->y0;
@@ -269,16 +269,16 @@ static int cinepak_decode_strip (CinepakContext *s,
     int      chunk_id, chunk_size;
 
     /* coordinate sanity checks */
-    if (strip->x2 > s->width  ||
-        strip->y2 > s->height ||
+    if (strip->x2 > s->width   ||
+        strip->y2 > s->height  ||
         strip->x1 >= strip->x2 || strip->y1 >= strip->y2)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     while ((data + 4) <= eod) {
         chunk_id   = data[0];
         chunk_size = AV_RB24 (&data[1]) - 4;
         if(chunk_size < 0)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         data      += 4;
         chunk_size = ((data + chunk_size) > eod) ? (eod - data) : chunk_size;
@@ -311,7 +311,7 @@ static int cinepak_decode_strip (CinepakContext *s,
         data += chunk_size;
     }
 
-    return -1;
+    return AVERROR_INVALIDDATA;
 }
 
 static int cinepak_decode (CinepakContext *s)
@@ -322,7 +322,7 @@ static int cinepak_decode (CinepakContext *s)
     int           encoded_buf_size;
 
     if (s->size < 10)
-        return -1;
+        return AVERROR_INVALIDDATA;
 
     frame_flags = s->data[0];
     num_strips  = AV_RB16 (&s->data[8]);
@@ -330,9 +330,9 @@ static int cinepak_decode (CinepakContext *s)
 
     /* if this is the first frame, check for deviant Sega FILM data */
     if (s->sega_film_skip_bytes == -1) {
-        if (!encoded_buf_size){
+        if (!encoded_buf_size) {
             av_log_ask_for_sample(s->avctx, "encoded_buf_size is 0");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         if (encoded_buf_size != s->size && (s->size % encoded_buf_size) != 0) {
             /* If the encoded frame size differs from the frame size as indicated
@@ -363,7 +363,7 @@ static int cinepak_decode (CinepakContext *s)
 
     for (i=0; i < num_strips; i++) {
         if ((s->data + 12) > eod)
-            return -1;
+            return AVERROR_INVALIDDATA;
 
         s->strips[i].id = s->data[0];
         s->strips[i].y1 = y0;
@@ -375,8 +375,8 @@ static int cinepak_decode (CinepakContext *s)
             s->frame.key_frame = 1;
 
         strip_size = AV_RB24 (&s->data[1]) - 12;
-        if(strip_size < 0)
-            return -1;
+        if (strip_size < 0)
+            return AVERROR_INVALIDDATA;
         s->data   += 12;
         strip_size = ((s->data + strip_size) > eod) ? (eod - s->data) : strip_size;
 
@@ -427,7 +427,7 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
                                 AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    int ret = 0, buf_size = avpkt->size;
     CinepakContext *s = avctx->priv_data;
 
     s->data = buf;
@@ -436,9 +436,9 @@ static int cinepak_decode_frame(AVCodecContext *avctx,
     s->frame.reference = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE |
                             FF_BUFFER_HINTS_REUSABLE;
-    if (avctx->reget_buffer(avctx, &s->frame)) {
+    if ((ret = avctx->reget_buffer(avctx, &s->frame))) {
         av_log(avctx, AV_LOG_ERROR, "reget_buffer() failed\n");
-        return -1;
+        return ret;
     }
 
     if (s->palette_video) {

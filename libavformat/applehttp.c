@@ -644,7 +644,8 @@ static int applehttp_read_seek(AVFormatContext *s, int stream_index,
     for (i = 0; i < c->n_variants; i++) {
         /* Reset reading */
         struct variant *var = c->variants[i];
-        int64_t pos = av_rescale_rnd(c->first_timestamp, 1, stream_index >= 0 ?
+        int64_t pos = c->first_timestamp == AV_NOPTS_VALUE ? 0 :
+                      av_rescale_rnd(c->first_timestamp, 1, stream_index >= 0 ?
                                s->streams[stream_index]->time_base.den :
                                AV_TIME_BASE, flags & AVSEEK_FLAG_BACKWARD ?
                                AV_ROUND_DOWN : AV_ROUND_UP);

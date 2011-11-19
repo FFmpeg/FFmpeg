@@ -83,9 +83,11 @@ const AVClass ffurl_context_class = {
 };
 /*@}*/
 
-static int default_interrupt_cb(void);
 
+#if FF_API_OLD_INTERRUPT_CB
+static int default_interrupt_cb(void);
 int (*url_interrupt_cb)(void) = default_interrupt_cb;
+#endif
 
 URLProtocol *av_protocol_next(URLProtocol *p)
 {
@@ -444,6 +446,7 @@ int ffurl_get_file_handle(URLContext *h)
     return h->prot->url_get_file_handle(h);
 }
 
+#if FF_API_OLD_INTERRUPT_CB
 static int default_interrupt_cb(void)
 {
     return 0;
@@ -455,13 +458,18 @@ void avio_set_interrupt_cb(int (*interrupt_cb)(void))
         interrupt_cb = default_interrupt_cb;
     url_interrupt_cb = interrupt_cb;
 }
+#endif
 
 int ff_check_interrupt(AVIOInterruptCB *cb)
 {
     int ret;
     if (cb && cb->callback && (ret = cb->callback(cb->opaque)))
         return ret;
+#if FF_API_OLD_INTERRUPT_CB
     return url_interrupt_cb();
+#else
+    return 0;
+#endif
 }
 
 #if FF_API_OLD_AVIO

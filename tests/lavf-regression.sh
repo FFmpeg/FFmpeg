@@ -71,7 +71,7 @@ do_lavf mxf_d10 "-ar 48000 -ac 2 -r 25 -s 720x576 -vf pad=720:608:0:32 -vcodec m
 fi
 
 if [ -n "$do_ts" ] ; then
-do_lavf ts "-ab 64k"
+do_lavf ts "-ab 64k -mpegts_transport_stream_id 42"
 fi
 
 if [ -n "$do_swf" ] ; then

@@ -429,7 +429,7 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
     if (timestamp == RTP_NOTS_VALUE)
         return;
 
-    if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE) {
+    if (s->last_rtcp_ntp_time != AV_NOPTS_VALUE && s->ic->nb_streams > 1) {
         int64_t addend;
         int delta_timestamp;
 
@@ -444,7 +444,13 @@ static void finalize_packet(RTPDemuxContext *s, AVPacket *pkt, uint32_t timestam
 
     if (!s->base_timestamp)
         s->base_timestamp = timestamp;
-    pkt->pts = s->range_start_offset + timestamp - s->base_timestamp;
+    /* assume that the difference is INT32_MIN < x < INT32_MAX, but allow the first timestamp to exceed INT32_MAX */
+    if (!s->timestamp)
+        s->unwrapped_timestamp += timestamp;
+    else
+        s->unwrapped_timestamp += (int32_t)(timestamp - s->timestamp);
+    s->timestamp = timestamp;
+    pkt->pts = s->unwrapped_timestamp + s->range_start_offset - s->base_timestamp;
 }
 
 static int rtp_parse_packet_internal(RTPDemuxContext *s, AVPacket *pkt,

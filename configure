@@ -2583,7 +2583,6 @@ case $target_os in
             disable network
         else
             target_os=mingw32
-            enable_weak w32threads
         fi
         LIBTARGET=i386
         if enabled x86_64; then
@@ -2997,6 +2996,10 @@ if ! disabled vda; then
         enable vda
         add_ldflags -framework CoreFoundation -framework VideoDecodeAcceleration -framework QuartzCore
     fi
+fi
+
+if ! disabled w32threads && ! enabled pthreads; then
+    check_func _beginthreadex && enable w32threads
 fi
 
 # check for some common methods of building with pthread support

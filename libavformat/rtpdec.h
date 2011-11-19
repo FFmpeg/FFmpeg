@@ -151,6 +151,7 @@ struct RTPDemuxContext {
     uint32_t timestamp;
     uint32_t base_timestamp;
     uint32_t cur_timestamp;
+    int64_t  unwrapped_timestamp;
     int64_t  range_start_offset;
     int max_payload_size;
     struct MpegTSContext *ts;   /* only used for MP2T payloads */
