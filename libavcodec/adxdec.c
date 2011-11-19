@@ -38,82 +38,95 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-/* 18 bytes <-> 32 samples */
-
-static void adx_decode(int16_t *out,const unsigned char *in,
-                       ADXChannelState *prev)
+/**
+ * Decode 32 samples from 18 bytes.
+ *
+ * A 16-bit scalar value is applied to 32 residuals, which then have a
+ * 2nd-order LPC filter applied to it to form the output signal for a single
+ * channel.
+ */
+static void adx_decode(int16_t *out, const uint8_t *in, ADXChannelState *prev)
 {
     int scale = AV_RB16(in);
     int i;
-    int s0,s1,s2,d;
+    int s0, s1, s2, d;
 
-    in+=2;
+    in += 2;
     s1 = prev->s1;
     s2 = prev->s2;
-    for(i=0;i<16;i++) {
-        d = in[i];
-        d = ((signed char)d >> 4);
-        s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
+    for (i = 0; i < 16; i++) {
+        d  = in[i];
+        d  = (signed char)d >> 4;
+        s0 = (BASEVOL * d * scale + SCALE1 * s1 - SCALE2 * s2) >> 14;
         s2 = s1;
         s1 = av_clip_int16(s0);
-        *out++=s1;
+        *out++ = s1;
 
-        d = in[i];
-        d = ((signed char)(d<<4) >> 4);
-        s0 = (BASEVOL*d*scale + SCALE1*s1 - SCALE2*s2)>>14;
+        d  = in[i];
+        d  = (signed char)(d << 4) >> 4;
+        s0 = (BASEVOL * d * scale + SCALE1 * s1 - SCALE2 * s2) >> 14;
         s2 = s1;
         s1 = av_clip_int16(s0);
-        *out++=s1;
+        *out++ = s1;
     }
     prev->s1 = s1;
     prev->s2 = s2;
-
 }
 
-static void adx_decode_stereo(int16_t *out,const unsigned char *in,
+static void adx_decode_stereo(int16_t *out,const uint8_t *in,
                               ADXChannelState *prev)
 {
     short tmp[32*2];
     int i;
 
-    adx_decode(tmp   ,in   ,prev);
-    adx_decode(tmp+32,in+18,prev+1);
-    for(i=0;i<32;i++) {
-        out[i*2]   = tmp[i];
+    adx_decode(tmp,    in,    prev);
+    adx_decode(tmp+32, in+18, prev+1);
+    for (i = 0; i < 32; i++) {
+        out[i*2  ] = tmp[i   ];
         out[i*2+1] = tmp[i+32];
     }
 }
 
-/* return data offset or 0 */
-static int adx_decode_header(AVCodecContext *avctx,const unsigned char *buf,size_t bufsize)
+/**
+ * Decode stream header.
+ *
+ * @param avctx   codec context
+ * @param buf     packet data
+ * @param bufsize packet size
+ * @return data offset or 0 if header is invalid
+ */
+static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
+                             int bufsize)
 {
     int offset;
 
-    if (buf[0]!=0x80) return 0;
-    offset = (AV_RB32(buf)^0x80000000)+4;
-    if (bufsize<offset || memcmp(buf+offset-6,"(c)CRI",6)) return 0;
+    if (buf[0] != 0x80)
+        return 0;
+    offset = (AV_RB32(buf) ^ 0x80000000) + 4;
+    if (bufsize < offset || memcmp(buf + offset - 6, "(c)CRI", 6))
+        return 0;
 
     avctx->channels    = buf[7];
-    avctx->sample_rate = AV_RB32(buf+8);
-    avctx->bit_rate    = avctx->sample_rate*avctx->channels*18*8/32;
+    avctx->sample_rate = AV_RB32(buf + 8);
+    avctx->bit_rate    = avctx->sample_rate * avctx->channels * 18 * 8 / 32;
 
     return offset;
 }
 
-static int adx_decode_frame(AVCodecContext *avctx,
-                void *data, int *data_size,
-                AVPacket *avpkt)
+static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+                            AVPacket *avpkt)
 {
     const uint8_t *buf0 = avpkt->data;
-    int buf_size = avpkt->size;
-    ADXContext *c = avctx->priv_data;
-    int16_t *samples = data;
-    const uint8_t *buf = buf0;
-    int rest = buf_size;
+    int buf_size        = avpkt->size;
+    ADXContext *c       = avctx->priv_data;
+    int16_t *samples    = data;
+    const uint8_t *buf  = buf0;
+    int rest            = buf_size;
 
     if (!c->header_parsed) {
-        int hdrsize = adx_decode_header(avctx,buf,rest);
-        if (hdrsize==0) return -1;
+        int hdrsize = adx_decode_header(avctx, buf, rest);
+        if (!hdrsize)
+            return -1;
         c->header_parsed = 1;
         buf  += hdrsize;
         rest -= hdrsize;
@@ -121,46 +134,46 @@ static int adx_decode_frame(AVCodecContext *avctx,
 
     /* 18 bytes of data are expanded into 32*2 bytes of audio,
        so guard against buffer overflows */
-    if(rest/18 > *data_size/64)
-        rest = (*data_size/64) * 18;
+    if (rest / 18 > *data_size / 64)
+        rest = (*data_size / 64) * 18;
 
     if (c->in_temp) {
-        int copysize = 18*avctx->channels - c->in_temp;
-        memcpy(c->dec_temp+c->in_temp,buf,copysize);
+        int copysize = 18 * avctx->channels - c->in_temp;
+        memcpy(c->dec_temp + c->in_temp, buf, copysize);
         rest -= copysize;
         buf  += copysize;
-        if (avctx->channels==1) {
-            adx_decode(samples,c->dec_temp,c->prev);
+        if (avctx->channels == 1) {
+            adx_decode(samples, c->dec_temp, c->prev);
             samples += 32;
         } else {
-            adx_decode_stereo(samples,c->dec_temp,c->prev);
+            adx_decode_stereo(samples, c->dec_temp, c->prev);
             samples += 32*2;
         }
     }
 
-    if (avctx->channels==1) {
-        while(rest>=18) {
-            adx_decode(samples,buf,c->prev);
-            rest-=18;
-            buf+=18;
-            samples+=32;
+    if (avctx->channels == 1) {
+        while (rest >= 18) {
+            adx_decode(samples, buf, c->prev);
+            rest    -= 18;
+            buf     += 18;
+            samples += 32;
         }
     } else {
-        while(rest>=18*2) {
-            adx_decode_stereo(samples,buf,c->prev);
-            rest-=18*2;
-            buf+=18*2;
-            samples+=32*2;
+        while (rest >= 18 * 2) {
+            adx_decode_stereo(samples, buf, c->prev);
+            rest    -= 18 * 2;
+            buf     += 18 * 2;
+            samples += 32 * 2;
         }
     }
 
     c->in_temp = rest;
     if (rest) {
-        memcpy(c->dec_temp,buf,rest);
-        buf+=rest;
+        memcpy(c->dec_temp, buf, rest);
+        buf += rest;
     }
     *data_size = (uint8_t*)samples - (uint8_t*)data;
-    return buf-buf0;
+    return buf - buf0;
 }
 
 AVCodec ff_adpcm_adx_decoder = {
@@ -170,6 +183,5 @@ AVCodec ff_adpcm_adx_decoder = {
     .priv_data_size = sizeof(ADXContext),
     .init           = adx_decode_init,
     .decode         = adx_decode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
+    .long_name      = NULL_IF_CONFIG_SMALL("SEGA CRI ADX ADPCM"),
 };
-
