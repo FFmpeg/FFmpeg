@@ -247,7 +247,30 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             }
 
 
-            for(i=0; i<mb->maxiter; i++){
+            for(i=0; i<mb->maxiter-8; i++){
+                double t;
+                Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
+                i++;
+                Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
+                i++;
+                Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
+                i++;
+                Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
+                i++;
+                Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
+                i++;
+                Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
+                i++;
+                Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
+                i++;
+                Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
+                if(zr*zr + zi*zi > mb->bailout)
+                    break;
+            }
+            i-= FFMIN(7, i);
+            zr= mb->zyklus[i][0];
+            zi= mb->zyklus[i][1];
+            for(; i<mb->maxiter; i++){
                 double t;
                 if(zr*zr + zi*zi > mb->bailout){
                     switch(mb->outer){
