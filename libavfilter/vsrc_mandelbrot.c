@@ -237,6 +237,16 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             outr= inr*inr - ini*ini + cr;\
             outi= 2*inr*ini + ci;
 
+#define Z_Z2_C_ZYKLUS(outr,outi,inr,ini, Z)\
+            Z_Z2_C(outr,outi,inr,ini)\
+            if(use_zyklus){\
+                if(Z && mb->zyklus[i>>1][0]==outr && mb->zyklus[i>>1][1]==outi)\
+                    break;\
+                mb->zyklus[i][0]= outr;\
+                mb->zyklus[i][1]= outi;\
+            }
+
+
             for(i=0; i<mb->maxiter; i++){
                 double t;
                 if(zr*zr + zi*zi > mb->bailout){
@@ -247,19 +257,9 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                     c= lrintf((sin(zr)+1)*127) + lrintf((sin(zr/1.234)+1)*127)*256*256 + lrintf((sin(zr/100)+1)*127)*256;
                     break;
                 }
-                Z_Z2_C(t, zi, zr, zi)
-                if(use_zyklus){
-                    mb->zyklus[i][0]= t;
-                    mb->zyklus[i][1]= zi;
-                }
+                Z_Z2_C_ZYKLUS(t, zi, zr, zi, 0)
                 i++;
-                Z_Z2_C(zr, zi, t, zi)
-                if(use_zyklus){
-                    if(mb->zyklus[i>>1][0]==zr && mb->zyklus[i>>1][1]==zi)
-                        break;
-                    mb->zyklus[i][0]= zr;
-                    mb->zyklus[i][1]= zi;
-                }
+                Z_Z2_C_ZYKLUS(zr, zi, t, zi, 1)
             }
             if(!c){
                 if(mb->inner==PERIOD){
