@@ -3009,6 +3009,10 @@ typedef struct AVCodecContext {
 #define AV_EF_BUFFER    (1<<2)
 #define AV_EF_EXPLODE   (1<<3)
 
+#define AV_EF_CAREFUL    (1<<16)
+#define AV_EF_COMPLIANT  (1<<17)
+#define AV_EF_AGGRESSIVE (1<<18)
+
     /**
      * Current statistics for PTS correction.
      * - decoding: maintained and used by libavcodec, not intended to be used by user apps
