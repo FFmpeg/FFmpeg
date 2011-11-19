@@ -279,6 +279,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
         }
 
         for(x=0; x<mb->w; x++){
+            float epsilon;
             const double cr=mb->start_x+scale*(x-mb->w/2);
             double zr=cr;
             double zi=ci;
@@ -298,6 +299,8 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
             }
 
             use_zyklus= (x==0 || mb->inner!=BLACK ||color[x-1 + y*linesize] == 0xFF000000);
+            if(use_zyklus)
+                epsilon= scale*1*sqrt(SQR(x-mb->w/2) + SQR(y-mb->h/2))/mb->w;
 
 #define Z_Z2_C(outr,outi,inr,ini)\
             outr= inr*inr - ini*ini + cr;\
@@ -306,7 +309,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
 #define Z_Z2_C_ZYKLUS(outr,outi,inr,ini, Z)\
             Z_Z2_C(outr,outi,inr,ini)\
             if(use_zyklus){\
-                if(Z && mb->zyklus[i>>1][0]==outr && mb->zyklus[i>>1][1]==outi)\
+                if(Z && fabs(mb->zyklus[i>>1][0]-outr)+fabs(mb->zyklus[i>>1][1]-outi) <= epsilon)\
                     break;\
             }\
             mb->zyklus[i][0]= outr;\
