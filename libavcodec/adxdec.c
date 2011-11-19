@@ -40,7 +40,7 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
 
 /* 18 bytes <-> 32 samples */
 
-static void adx_decode(short *out,const unsigned char *in,
+static void adx_decode(int16_t *out,const unsigned char *in,
                        ADXChannelState *prev)
 {
     int scale = AV_RB16(in);
@@ -74,7 +74,7 @@ static void adx_decode(short *out,const unsigned char *in,
 
 }
 
-static void adx_decode_stereo(short *out,const unsigned char *in,
+static void adx_decode_stereo(int16_t *out,const unsigned char *in,
                               ADXChannelState *prev)
 {
     short tmp[32*2];
@@ -111,7 +111,7 @@ static int adx_decode_frame(AVCodecContext *avctx,
     const uint8_t *buf0 = avpkt->data;
     int buf_size = avpkt->size;
     ADXContext *c = avctx->priv_data;
-    short *samples = data;
+    int16_t *samples = data;
     const uint8_t *buf = buf0;
     int rest = buf_size;
 
