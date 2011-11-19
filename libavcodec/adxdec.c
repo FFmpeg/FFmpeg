@@ -93,7 +93,7 @@ static void adx_decode_stereo(int16_t *out,const uint8_t *in,
  * @param avctx   codec context
  * @param buf     packet data
  * @param bufsize packet size
- * @return data offset or 0 if header is invalid
+ * @return data offset or negative error code if header is invalid
  */
 static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
                              int bufsize)
@@ -101,13 +101,18 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
     int offset;
 
     if (buf[0] != 0x80)
-        return 0;
+        return AVERROR_INVALIDDATA;
     offset = (AV_RB32(buf) ^ 0x80000000) + 4;
     if (bufsize < offset || memcmp(buf + offset - 6, "(c)CRI", 6))
-        return 0;
+        return AVERROR_INVALIDDATA;
 
     avctx->channels    = buf[7];
+    if (avctx->channels > 2)
+        return AVERROR_INVALIDDATA;
     avctx->sample_rate = AV_RB32(buf + 8);
+    if (avctx->sample_rate < 1 ||
+        avctx->sample_rate > INT_MAX / (avctx->channels * 18 * 8))
+        return AVERROR_INVALIDDATA;
     avctx->bit_rate    = avctx->sample_rate * avctx->channels * 18 * 8 / 32;
 
     return offset;
@@ -125,8 +130,10 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     if (!c->header_parsed) {
         int hdrsize = adx_decode_header(avctx, buf, rest);
-        if (!hdrsize)
-            return -1;
+        if (hdrsize < 0) {
+            av_log(avctx, AV_LOG_ERROR, "invalid stream header\n");
+            return hdrsize;
+        }
         c->header_parsed = 1;
         buf  += hdrsize;
         rest -= hdrsize;
