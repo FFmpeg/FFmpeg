@@ -588,7 +588,7 @@ int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
         int ret;
         const AVCodecDefault *d = codec->defaults;
         while (d->key) {
-            ret = av_set_string3(s, d->key, d->value, 0, NULL);
+            ret = av_opt_set(s, d->key, d->value, 0);
             av_assert0(ret >= 0);
             d++;
         }
