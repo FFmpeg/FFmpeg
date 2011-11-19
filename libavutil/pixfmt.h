@@ -25,21 +25,21 @@
  * @file
  * pixel format definitions
  *
- * @warning This file has to be considered an internal but installed
- * header, so it should not be directly included in your projects.
  */
 
 #include "libavutil/avconfig.h"
 
 /**
- * Pixel format. Notes:
+ * Pixel format.
  *
+ * @note
  * PIX_FMT_RGB32 is handled in an endian-specific manner. An RGBA
  * color is put together as:
  *  (A << 24) | (R << 16) | (G << 8) | B
  * This is stored as BGRA on little-endian CPU architectures and ARGB on
  * big-endian CPUs.
  *
+ * @par
  * When the pixel format is palettized RGB (PIX_FMT_PAL8), the palettized
  * image data is stored in AVFrame.data[0]. The palette is transported in
  * AVFrame.data[1], is 1024 bytes long (256 4-byte entries) and is
@@ -49,13 +49,15 @@
  * This is important as many custom PAL8 video codecs that were designed
  * to run on the IBM VGA graphics adapter use 6-bit palette components.
  *
+ * @par
  * For all the 8bit per pixel formats, an RGB32 palette is in data[1] like
  * for pal8. This palette is filled in automatically by the function
  * allocating the picture.
  *
- * Note, make sure that all newly added big endian formats have pix_fmt&1==1
- *       and that all newly added little endian formats have pix_fmt&1==0
- *       this allows simpler detection of big vs little endian.
+ * @note
+ * make sure that all newly added big endian formats have pix_fmt&1==1
+ * and that all newly added little endian formats have pix_fmt&1==0
+ * this allows simpler detection of big vs little endian.
  */
 enum PixelFormat {
     PIX_FMT_NONE= -1,
