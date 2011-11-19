@@ -252,6 +252,8 @@ static int interpol(MBContext *mb, uint32_t *color, int x, int y, int linesize)
         int ipolcd= (cc + dc);
         if(FFABS(ipolab - ipolcd) > 5)
             return 0;
+        if(FFABS(ac-bc)+FFABS(cc-dc) > 20)
+            return 0;
         ipol |= ((ipolab + ipolcd + 2)/4)<<s;
     }
     color[x + y*linesize]= ipol;
