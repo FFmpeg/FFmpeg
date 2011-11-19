@@ -617,6 +617,8 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition separate: %d; %d\n",
            avctx->error_recognition, avctx->err_recognition);
     switch(avctx->error_recognition){
+        case FF_ER_EXPLODE        : avctx->err_recognition |= AV_EF_EXPLODE | AV_EF_COMPLIANT | AV_EF_CAREFUL;
+            break;
         case FF_ER_VERY_AGGRESSIVE:
         case FF_ER_AGGRESSIVE     : avctx->err_recognition |= AV_EF_AGGRESSIVE;
         case FF_ER_COMPLIANT      : avctx->err_recognition |= AV_EF_COMPLIANT;
