@@ -209,7 +209,7 @@ static void fill_from_cache(AVFilterContext *ctx, uint32_t *color, int *in_cidx,
 static int interpol(MBContext *mb, uint32_t *color, int x, int y, int linesize)
 {
     uint32_t a,b,c,d, i;
-    uint32_t ipol=0;
+    uint32_t ipol=0xFF000000;
     int dist;
 
     if(!x || !y || x+1==mb->w || y+1==mb->h)
@@ -254,7 +254,7 @@ static int interpol(MBContext *mb, uint32_t *color, int x, int y, int linesize)
             return 0;
         ipol |= ((ipolab + ipolcd + 2)/4)<<s;
     }
-    color[x + y*linesize]= ipol | 0xFF000000;
+    color[x + y*linesize]= ipol;
     return 1;
 }
 
