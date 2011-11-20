@@ -33,6 +33,9 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
+#define BLOCK_SIZE      18
+#define BLOCK_SAMPLES   32
+
 static av_cold int adx_decode_init(AVCodecContext *avctx)
 {
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -54,10 +57,10 @@ static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
     int i;
     int s0, s1, s2, d;
 
-    init_get_bits(&gb, in + 2, (18 - 2) * 8);
+    init_get_bits(&gb, in + 2, (BLOCK_SIZE - 2) * 8);
     s1 = prev->s1;
     s2 = prev->s2;
-    for (i = 0; i < 32; i++) {
+    for (i = 0; i < BLOCK_SAMPLES; i++) {
         d  = get_sbits(&gb, 4);
         s0 = ((d << COEFF_BITS) * scale + c->coeff[0] * s1 + c->coeff[1] * s2) >> COEFF_BITS;
         s2 = s1;
@@ -100,9 +103,9 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
         return AVERROR_INVALIDDATA;
     avctx->sample_rate = AV_RB32(buf + 8);
     if (avctx->sample_rate < 1 ||
-        avctx->sample_rate > INT_MAX / (avctx->channels * 18 * 8))
+        avctx->sample_rate > INT_MAX / (avctx->channels * BLOCK_SIZE * 8))
         return AVERROR_INVALIDDATA;
-    avctx->bit_rate    = avctx->sample_rate * avctx->channels * 18 * 8 / 32;
+    avctx->bit_rate = avctx->sample_rate * avctx->channels * BLOCK_SIZE * 8 / BLOCK_SAMPLES;
 
     cutoff = AV_RB16(buf + 16);
     ff_adx_calculate_coeffs(cutoff, avctx->sample_rate, COEFF_BITS, c->coeff);
@@ -133,27 +136,27 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     /* 18 bytes of data are expanded into 32*2 bytes of audio,
        so guard against buffer overflows */
-    if (rest / 18 > *data_size / 64)
-        rest = (*data_size / 64) * 18;
+    if (rest / (BLOCK_SIZE * c->channels) > *data_size / (BLOCK_SAMPLES * c->channels))
+        rest = (*data_size / (BLOCK_SAMPLES * c->channels)) * BLOCK_SIZE;
 
     if (c->in_temp) {
-        int copysize = 18 * avctx->channels - c->in_temp;
+        int copysize = BLOCK_SIZE * avctx->channels - c->in_temp;
         memcpy(c->dec_temp + c->in_temp, buf, copysize);
         rest -= copysize;
         buf  += copysize;
         adx_decode(c, samples, c->dec_temp, 0);
         if (avctx->channels == 2)
-            adx_decode(c, samples + 1, c->dec_temp + 18, 1);
-        samples += 32 * c->channels;
+            adx_decode(c, samples + 1, c->dec_temp + BLOCK_SIZE, 1);
+        samples += BLOCK_SAMPLES * c->channels;
     }
 
-    while (rest >= 18 * c->channels) {
+    while (rest >= BLOCK_SIZE * c->channels) {
         adx_decode(c, samples, buf, 0);
         if (c->channels == 2)
-            adx_decode(c, samples + 1, buf + 18, 1);
-        rest    -= 18 * c->channels;
-        buf     += 18 * c->channels;
-        samples += 32 * c->channels;
+            adx_decode(c, samples + 1, buf + BLOCK_SIZE, 1);
+        rest    -= BLOCK_SIZE * c->channels;
+        buf     += BLOCK_SIZE * c->channels;
+        samples += BLOCK_SAMPLES * c->channels;
     }
 
     c->in_temp = rest;
