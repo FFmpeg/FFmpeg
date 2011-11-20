@@ -1104,7 +1104,7 @@ movie=logo2.png [logo2];
 color=red@.3:WxH [over]; [in][over] overlay [out]
 @end example
 
-You can chain togheter more overlays but the efficiency of such
+You can chain together more overlays but the efficiency of such
 approach is yet to be tested.
 
 @section pad
@@ -1770,7 +1770,7 @@ Default value is -1.
 If interlacing is unknown or decoder does not export this information,
 top field first will be assumed.
 
-@var{auto] specifies if deinterlacer should trust the interlaced flag
+@var{auto} specifies if deinterlacer should trust the interlaced flag
 and only deinterlace frames marked as interlaced
 
 @table @option
