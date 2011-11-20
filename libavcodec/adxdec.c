@@ -122,6 +122,7 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int16_t *samples    = data;
     const uint8_t *buf  = buf0;
     int rest            = buf_size;
+    int num_blocks;
 
     if (!c->header_parsed) {
         int hdrsize = adx_decode_header(avctx, buf, rest);
@@ -136,8 +137,15 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     /* 18 bytes of data are expanded into 32*2 bytes of audio,
        so guard against buffer overflows */
-    if (rest / (BLOCK_SIZE * c->channels) > *data_size / (BLOCK_SAMPLES * c->channels))
+    num_blocks = (rest + c->in_temp) / (BLOCK_SIZE * c->channels);
+    if (num_blocks > *data_size / (BLOCK_SAMPLES * c->channels)) {
         rest = (*data_size / (BLOCK_SAMPLES * c->channels)) * BLOCK_SIZE;
+        num_blocks = (rest + c->in_temp) / (BLOCK_SIZE * c->channels);
+    }
+    if (!num_blocks) {
+        av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     if (c->in_temp) {
         int copysize = BLOCK_SIZE * avctx->channels - c->in_temp;
@@ -148,9 +156,10 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         if (avctx->channels == 2)
             adx_decode(c, samples + 1, c->dec_temp + BLOCK_SIZE, 1);
         samples += BLOCK_SAMPLES * c->channels;
+        num_blocks--;
     }
 
-    while (rest >= BLOCK_SIZE * c->channels) {
+    while (num_blocks--) {
         adx_decode(c, samples, buf, 0);
         if (c->channels == 2)
             adx_decode(c, samples + 1, buf + BLOCK_SIZE, 1);
