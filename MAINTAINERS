@@ -38,7 +38,7 @@ Miscellaneous Areas
 ===================
 
 documentation                           Mike Melanson
-website                                 Robert Swain
+website                                 Robert Swain, Lou Logan
 build system (configure,Makefiles)      Diego Biurrun, Mans Rullgard
 project server                          Árpád Gereöffy, Michael Niedermayer, Reimar Döffinger
 mailinglists                            Michael Niedermayer, Baptiste Coudurier, Lou Logan
@@ -400,6 +400,7 @@ Gwenole Beauchesne            2E63 B3A6 3E44 37E2 017D 2704 53C7 6266 B153 99C4
 Jaikrishnan Menon             61A1 F09F 01C9 2D45 78E1 C862 25DC 8831 AF70 D368
 Justin Ruggles                3136 ECC0 C10D 6C04 5F43 CA29 FCBE CD2A 3787 1EBF
 Loren Merritt                 ABD9 08F4 C920 3F65 D8BE 35D7 1540 DAA7 060F 56DE
+Lou Logan                     7D68 DC73 CBEF EABB 671A B6CF 621C 2E28 82F8 DC3A
 Luca Barbato                  6677 4209 213C 8843 5B67 29E7 E84C 78C2 84E9 0E34
 Michael Niedermayer           9FF2 128B 147E F673 0BAD F133 611E C787 040B 0FAB
 Panagiotis Issaris            6571 13A3 33D9 3726 F728 AA98 F643 B12E ECF3 E029
