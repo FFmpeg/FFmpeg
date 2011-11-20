@@ -973,7 +973,7 @@ static int estimate_best_b_count(MpegEncContext *s){
     c->time_base= s->avctx->time_base;
     c->max_b_frames= s->max_b_frames;
 
-    if (avcodec_open(c, codec) < 0)
+    if (avcodec_open2(c, codec, NULL) < 0)
         return -1;
 
     for(i=0; i<s->max_b_frames+2; i++){
