@@ -48,7 +48,7 @@ static void adx_encode(unsigned char *adx,const short *wav,
     s2 = prev->s2;
     for(i=0;i<32;i++) {
         s0 = wav[i];
-        d = ((s0<<14) - SCALE1*s1 + SCALE2*s2)/BASEVOL;
+        d = ((s0 << COEFF_BITS) - COEFF1 * s1 + COEFF2 * s2) >> COEFF_BITS;
         data[i]=d;
         if (max<d) max=d;
         if (min>d) min=d;

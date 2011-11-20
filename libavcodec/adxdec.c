@@ -59,7 +59,7 @@ static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
     s2 = prev->s2;
     for (i = 0; i < 32; i++) {
         d  = get_sbits(&gb, 4);
-        s0 = (BASEVOL * d * scale + SCALE1 * s1 - SCALE2 * s2) >> 14;
+        s0 = ((d << COEFF_BITS) * scale + COEFF1 * s1 - COEFF2 * s2) >> COEFF_BITS;
         s2 = s1;
         s1 = av_clip_int16(s0);
         *out = s1;

@@ -43,8 +43,8 @@ typedef struct {
     int in_temp;
 } ADXContext;
 
-#define    BASEVOL   0x4000
-#define    SCALE1    0x7298
-#define    SCALE2    0x3350
+#define COEFF_BITS  12
+#define COEFF1      0x1CA6
+#define COEFF2      0x0CD4
 
 #endif /* AVCODEC_ADX_H */
