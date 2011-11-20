@@ -40,4 +40,5 @@ AVOutputFormat ff_framecrc_muxer = {
     .audio_codec       = CODEC_ID_PCM_S16LE,
     .video_codec       = CODEC_ID_RAWVIDEO,
     .write_packet      = framecrc_write_packet,
+    .flags             = AVFMT_VARIABLE_FPS,
 };
