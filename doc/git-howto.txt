@@ -44,11 +44,11 @@ I. BASICS:
 
 1. Cloning the source tree:
 
-    git clone git://git.videolan.org/ffmpeg <target>
+    git clone git://source.ffmpeg.org/ffmpeg <target>
 
   This will put the FFmpeg sources into the directory <target>.
 
-    git clone git@git.videolan.org:ffmpeg <target>
+    git clone git@source.ffmpeg.org:ffmpeg <target>
 
   This will put the FFmpeg sources into the directory <target> and let
   you push back your changes to the remote repository.
@@ -97,7 +97,7 @@ I. BASICS:
     git log <filename(s)>
 
   You may also use the graphical tools like gitview or gitk or the web
-  interface available at http://git.videolan.org
+  interface available at http://source.ffmpeg.org
 
 6. Checking source tree status:
 
