@@ -27,6 +27,13 @@
 #include <errno.h>
 #include "avutil.h"
 
+/**
+ * @addtogroup lavu_error
+ *
+ * @{
+ */
+
+
 /* error handling */
 #if EDOM > 0
 #define AVERROR(e) (-(e))   ///< Returns a negative error code from a POSIX error code, to return from library functions.
@@ -64,5 +71,9 @@
  * cannot be found
  */
 int av_strerror(int errnum, char *errbuf, size_t errbuf_size);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_ERROR_H */

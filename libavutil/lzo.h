@@ -22,6 +22,13 @@
 #ifndef AVUTIL_LZO_H
 #define AVUTIL_LZO_H
 
+/**
+ * @defgroup lavu_lzo LZO
+ * @ingroup lavu_crypto
+ *
+ * @{
+ */
+
 #include <stdint.h>
 
 /** @name Error flags returned by av_lzo1x_decode
@@ -62,5 +69,9 @@ int av_lzo1x_decode(void *out, int *outlen, const void *in, int *inlen);
  * thus creating a repeating pattern with a period length of back.
  */
 void av_memcpy_backptr(uint8_t *dst, int back, int cnt);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_LZO_H */

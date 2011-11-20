@@ -29,6 +29,12 @@
 #include "attributes.h"
 #include "avutil.h"
 
+/**
+ * @addtogroup lavu_mem
+ * @{
+ */
+
+
 #if defined(__ICC) && _ICC < 1200 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
@@ -122,5 +128,9 @@ char *av_strdup(const char *s) av_malloc_attrib;
  * @see av_free()
  */
 void av_freep(void *ptr);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_MEM_H */

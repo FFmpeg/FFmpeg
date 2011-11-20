@@ -22,6 +22,10 @@
 #define AVUTIL_RANDOM_SEED_H
 
 #include <stdint.h>
+/**
+ * @addtogroup lavu_crypto
+ * @{
+ */
 
 /**
  * Get random data.
@@ -32,5 +36,9 @@
  * returned random data depends on the platform.
  */
 uint32_t av_get_random_seed(void);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_RANDOM_SEED_H */

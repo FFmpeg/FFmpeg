@@ -29,7 +29,15 @@
  * audio conversion routines
  */
 
-/* Audio channel masks */
+/**
+ * @addtogroup lavu_audio
+ * @{
+ */
+
+/**
+ * @defgroup channel_masks Audio channel masks
+ * @{
+ */
 #define AV_CH_FRONT_LEFT             0x00000001
 #define AV_CH_FRONT_RIGHT            0x00000002
 #define AV_CH_FRONT_CENTER           0x00000004
@@ -56,7 +64,11 @@
     to be the native codec channel order. */
 #define AV_CH_LAYOUT_NATIVE          0x8000000000000000LL
 
-/* Audio channel convenience macros */
+/**
+ * @}
+ * @defgroup channel_mask_c Audio channel convenience macros
+ * @{
+ * */
 #define AV_CH_LAYOUT_MONO              (AV_CH_FRONT_CENTER)
 #define AV_CH_LAYOUT_STEREO            (AV_CH_FRONT_LEFT|AV_CH_FRONT_RIGHT)
 #define AV_CH_LAYOUT_2_1               (AV_CH_LAYOUT_STEREO|AV_CH_BACK_CENTER)
@@ -72,6 +84,10 @@
 #define AV_CH_LAYOUT_7POINT1           (AV_CH_LAYOUT_5POINT1|AV_CH_BACK_LEFT|AV_CH_BACK_RIGHT)
 #define AV_CH_LAYOUT_7POINT1_WIDE      (AV_CH_LAYOUT_5POINT1_BACK|AV_CH_FRONT_LEFT_OF_CENTER|AV_CH_FRONT_RIGHT_OF_CENTER)
 #define AV_CH_LAYOUT_STEREO_DOWNMIX    (AV_CH_STEREO_LEFT|AV_CH_STEREO_RIGHT)
+
+/**
+ * @}
+ */
 
 /**
  * Return a channel layout id that matches name, 0 if no match.
@@ -91,5 +107,9 @@ void av_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int6
  * Return the number of channels in the channel layout.
  */
 int av_get_channel_layout_nb_channels(int64_t channel_layout);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_AUDIOCONVERT_H */

@@ -22,6 +22,9 @@
 /**
  * @file
  * misc image utilities
+ *
+ * @addtogroup lavu_picture
+ * @{
  */
 
 #include "avutil.h"
@@ -126,5 +129,10 @@ void av_image_copy(uint8_t *dst_data[4], int dst_linesizes[4],
 int av_image_check_size(unsigned int w, unsigned int h, int log_offset, void *log_ctx);
 
 int ff_set_systematic_pal2(uint32_t pal[256], enum PixelFormat pix_fmt);
+
+/**
+ * @}
+ */
+
 
 #endif /* AVUTIL_IMGUTILS_H */

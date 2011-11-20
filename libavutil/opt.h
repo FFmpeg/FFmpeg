@@ -34,6 +34,7 @@
 
 /**
  * @defgroup avoptions AVOptions
+ * @ingroup lavu_data
  * @{
  * AVOptions provide a generic system to declare options on arbitrary structs
  * ("objects"). An option can have a help text, a type and a range of possible
@@ -212,7 +213,6 @@
  * filled with option as a parameter. This allows to set some options
  * that cannot be set otherwise, since e.g. the input file format is not known
  * before the file is actually opened.
- * @}
  */
 
 enum AVOptionType{
@@ -584,6 +584,7 @@ int av_opt_get_int   (void *obj, const char *name, int search_flags, int64_t    
 int av_opt_get_double(void *obj, const char *name, int search_flags, double     *out_val);
 int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
 /**
+ * @}
  * @}
  */
 
