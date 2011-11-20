@@ -126,7 +126,7 @@ int av_image_fill_pointers(uint8_t *data[4], enum PixelFormat pix_fmt, int heigh
         has_plane[desc->comp[i].plane] = 1;
 
     total_size = size[0];
-    for (i = 1; has_plane[i] && i < 4; i++) {
+    for (i = 1; i < 4 && has_plane[i]; i++) {
         int h, s = (i == 1 || i == 2) ? desc->log2_chroma_h : 0;
         data[i] = data[i-1] + size[i-1];
         h = (height + (1 << s) - 1) >> s;

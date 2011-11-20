@@ -330,7 +330,6 @@ static const AVOption options[]={
 {"ibias", "intra quant bias", OFFSET(intra_quant_bias), AV_OPT_TYPE_INT, {.dbl = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, V|E},
 {"pbias", "inter quant bias", OFFSET(inter_quant_bias), AV_OPT_TYPE_INT, {.dbl = FF_DEFAULT_QUANT_BIAS }, INT_MIN, INT_MAX, V|E},
 {"color_table_id", NULL, OFFSET(color_table_id), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
-{"internal_buffer_count", NULL, OFFSET(internal_buffer_count), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX},
 {"global_quality", NULL, OFFSET(global_quality), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|A|E},
 {"coder", NULL, OFFSET(coder_type), AV_OPT_TYPE_INT, {.dbl = DEFAULT }, INT_MIN, INT_MAX, V|E, "coder"},
 {"vlc", "variable length coder / huffman coder", 0, AV_OPT_TYPE_CONST, {.dbl = FF_CODER_TYPE_VLC }, INT_MIN, INT_MAX, V|E, "coder"},
@@ -590,15 +589,15 @@ int avcodec_get_context_defaults3(AVCodecContext *s, AVCodec *codec){
             }
         }
         if(codec->priv_class){
-            *(AVClass**)s->priv_data= codec->priv_class;
+            *(const AVClass**)s->priv_data = codec->priv_class;
             av_opt_set_defaults(s->priv_data);
         }
     }
     if (codec && codec->defaults) {
         int ret;
-        AVCodecDefault *d = codec->defaults;
+        const AVCodecDefault *d = codec->defaults;
         while (d->key) {
-            ret = av_set_string3(s, d->key, d->value, 0, NULL);
+            ret = av_opt_set(s, d->key, d->value, 0);
             av_assert0(ret >= 0);
             d++;
         }
@@ -653,9 +652,9 @@ int avcodec_copy_context(AVCodecContext *dest, const AVCodecContext *src)
     dest->priv_data       = NULL;
     dest->codec           = NULL;
     dest->slice_offset    = NULL;
-    dest->internal_buffer = NULL;
     dest->hwaccel         = NULL;
     dest->thread_opaque   = NULL;
+    dest->internal        = NULL;
 
     /* reallocate values that should be allocated separately */
     dest->rc_eq           = NULL;

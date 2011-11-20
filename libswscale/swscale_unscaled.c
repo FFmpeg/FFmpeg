@@ -790,7 +790,7 @@ static int check_image_pointers(const uint8_t * const data[4], enum PixelFormat 
  * swscale wrapper, so we don't need to export the SwsContext.
  * Assumes planar YUV to be in YUV order instead of YVU.
  */
-int sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
+int attribute_align_arg sws_scale(struct SwsContext *c, const uint8_t* const srcSlice[],
               const int srcStride[], int srcSliceY, int srcSliceH,
               uint8_t* const dst[], const int dstStride[])
 {

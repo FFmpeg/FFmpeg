@@ -19,6 +19,14 @@ API changes, most recent first:
 2011-10-20 - b35e9e1 - lavu 51.22.0
   Add av_strtok() to avstring.h.
 
+2011-xx-xx - xxxxxxx - lavc 53.21.0
+  Move some AVCodecContext fields to a new private struct, AVCodecInternal,
+  which is accessed from a new field, AVCodecContext.internal.
+  - fields moved:
+      AVCodecContext.internal_buffer       --> AVCodecInternal.buffer
+      AVCodecContext.internal_buffer_count --> AVCodecInternal.buffer_count
+      AVCodecContext.is_copy               --> AVCodecInternal.is_copy
+
 2011-11-13 - lavf 53.15.0
   New interrupt callback API, allowing per-AVFormatContext/AVIOContext
   interrupt callbacks.

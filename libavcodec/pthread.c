@@ -679,8 +679,10 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
         pthread_cond_destroy(&p->output_cond);
         av_freep(&p->avpkt.data);
 
-        if (i)
+        if (i) {
             av_freep(&p->avctx->priv_data);
+            av_freep(&p->avctx->internal);
+        }
 
         av_freep(&p->avctx);
     }
@@ -734,9 +736,15 @@ static int frame_thread_init(AVCodecContext *avctx)
 
             update_context_from_thread(avctx, copy, 1);
         } else {
-            copy->is_copy   = 1;
             copy->priv_data = av_malloc(codec->priv_data_size);
             memcpy(copy->priv_data, src->priv_data, codec->priv_data_size);
+            copy->internal = av_malloc(sizeof(AVCodecInternal));
+            if (!copy->internal) {
+                err = AVERROR(ENOMEM);
+                goto error;
+            }
+            *(copy->internal) = *(src->internal);
+            copy->internal->is_copy = 1;
 
             if (codec->init_thread_copy)
                 err = codec->init_thread_copy(copy);
@@ -870,8 +878,7 @@ void ff_thread_release_buffer(AVCodecContext *avctx, AVFrame *f)
     }
 
     if(avctx->debug & FF_DEBUG_BUFFERS)
-        av_log(avctx, AV_LOG_DEBUG, "thread_release_buffer called on pic %p, %d buffers used\n",
-                                    f, f->owner->internal_buffer_count);
+        av_log(avctx, AV_LOG_DEBUG, "thread_release_buffer called on pic %p\n", f);
 
     fctx = p->parent;
     pthread_mutex_lock(&fctx->buffer_mutex);
