@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "adx.h"
+#include "get_bits.h"
 
 /**
  * @file
@@ -48,24 +49,16 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
 static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
 {
     ADXChannelState *prev = &c->prev[ch];
+    GetBitContext gb;
     int scale = AV_RB16(in);
     int i;
     int s0, s1, s2, d;
 
-    in += 2;
+    init_get_bits(&gb, in + 2, (18 - 2) * 8);
     s1 = prev->s1;
     s2 = prev->s2;
-    for (i = 0; i < 16; i++) {
-        d  = in[i];
-        d  = (signed char)d >> 4;
-        s0 = (BASEVOL * d * scale + SCALE1 * s1 - SCALE2 * s2) >> 14;
-        s2 = s1;
-        s1 = av_clip_int16(s0);
-        *out = s1;
-        out += c->channels;
-
-        d  = in[i];
-        d  = (signed char)(d << 4) >> 4;
+    for (i = 0; i < 32; i++) {
+        d  = get_sbits(&gb, 4);
         s0 = (BASEVOL * d * scale + SCALE1 * s1 - SCALE2 * s2) >> 14;
         s2 = s1;
         s1 = av_clip_int16(s0);
