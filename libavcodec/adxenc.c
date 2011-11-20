@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "adx.h"
+#include "put_bits.h"
 
 /**
  * @file
@@ -37,6 +38,7 @@
 static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
                        ADXChannelState *prev)
 {
+    PutBitContext pb;
     int scale;
     int i;
     int s0,s1,s2,d;
@@ -72,9 +74,10 @@ static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
 
     AV_WB16(adx, scale);
 
-    for(i=0;i<16;i++) {
-        adx[i+2] = ((data[i*2]/scale)<<4) | ((data[i*2+1]/scale)&0xf);
-    }
+    init_put_bits(&pb, adx + 2, 16);
+    for (i = 0; i < 32; i++)
+        put_sbits(&pb, 4, av_clip(data[i]/scale, -8, 7));
+    flush_put_bits(&pb);
 }
 
 static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t bufsize)
