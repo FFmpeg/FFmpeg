@@ -1160,7 +1160,8 @@ static void do_video_out(AVFormatContext *s,
 
     format_video_sync = video_sync_method;
     if (format_video_sync < 0)
-        format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? 2 : 1;
+        format_video_sync = (s->oformat->flags & AVFMT_NOTIMESTAMPS) ? 0 :
+                            (s->oformat->flags & AVFMT_VARIABLE_FPS) ? 2 : 1;
 
     if (format_video_sync) {
         double vdelta = sync_ipts - ost->sync_opts;
