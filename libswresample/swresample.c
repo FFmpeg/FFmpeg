@@ -36,8 +36,8 @@
 //TODO split options array out?
 #define OFFSET(x) offsetof(SwrContext,x)
 static const AVOption options[]={
-{"ich",  "input channel count", OFFSET( in.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
-{"och", "output channel count", OFFSET(out.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 1, SWR_CH_MAX, 0},
+{"ich",  "input channel count", OFFSET( in.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 0, SWR_CH_MAX, 0},
+{"och", "output channel count", OFFSET(out.ch_count   ), AV_OPT_TYPE_INT, {.dbl=2}, 0, SWR_CH_MAX, 0},
 {"uch",   "used channel count", OFFSET(used_ch_count  ), AV_OPT_TYPE_INT, {.dbl=0}, 0, SWR_CH_MAX, 0},
 {"isr",  "input sample rate"  , OFFSET( in_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
 {"osr", "output sample rate"  , OFFSET(out_sample_rate), AV_OPT_TYPE_INT, {.dbl=48000}, 1, INT_MAX, 0},
