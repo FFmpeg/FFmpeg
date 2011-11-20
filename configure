@@ -1596,6 +1596,8 @@ x11_grab_device_indev_extralibs="-lX11 -lXext -lXfixes"
 
 # protocols
 gopher_protocol_deps="network"
+httpproxy_protocol_deps="network"
+httpproxy_protocol_select="tcp_protocol"
 http_protocol_deps="network"
 http_protocol_select="tcp_protocol"
 https_protocol_select="tls_protocol"
