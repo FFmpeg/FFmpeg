@@ -209,10 +209,10 @@ cglobal imdct36_float_%1, 4,4,9, out, buf, in, win
     mulps  m5, m6, [ps_val1]
     subps  m7, m7, m5
 
-%ifndef ARCH_X86_64
-    subps  m5, m0, m3
-%else
+%ifdef ARCH_X86_64
     SWAP   m5, m8
+%else
+    subps  m5, m0, m3
 %endif
 
     subps  m5, m5, m6
