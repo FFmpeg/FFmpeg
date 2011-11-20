@@ -45,8 +45,9 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
  * 2nd-order LPC filter applied to it to form the output signal for a single
  * channel.
  */
-static void adx_decode(int16_t *out, const uint8_t *in, ADXChannelState *prev)
+static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
 {
+    ADXChannelState *prev = &c->prev[ch];
     int scale = AV_RB16(in);
     int i;
     int s0, s1, s2, d;
@@ -60,31 +61,19 @@ static void adx_decode(int16_t *out, const uint8_t *in, ADXChannelState *prev)
         s0 = (BASEVOL * d * scale + SCALE1 * s1 - SCALE2 * s2) >> 14;
         s2 = s1;
         s1 = av_clip_int16(s0);
-        *out++ = s1;
+        *out = s1;
+        out += c->channels;
 
         d  = in[i];
         d  = (signed char)(d << 4) >> 4;
         s0 = (BASEVOL * d * scale + SCALE1 * s1 - SCALE2 * s2) >> 14;
         s2 = s1;
         s1 = av_clip_int16(s0);
-        *out++ = s1;
+        *out = s1;
+        out += c->channels;
     }
     prev->s1 = s1;
     prev->s2 = s2;
-}
-
-static void adx_decode_stereo(int16_t *out,const uint8_t *in,
-                              ADXChannelState *prev)
-{
-    short tmp[32*2];
-    int i;
-
-    adx_decode(tmp,    in,    prev);
-    adx_decode(tmp+32, in+18, prev+1);
-    for (i = 0; i < 32; i++) {
-        out[i*2  ] = tmp[i   ];
-        out[i*2+1] = tmp[i+32];
-    }
 }
 
 /**
@@ -98,6 +87,7 @@ static void adx_decode_stereo(int16_t *out,const uint8_t *in,
 static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
                              int bufsize)
 {
+    ADXContext *c = avctx->priv_data;
     int offset;
 
     if (buf[0] != 0x80)
@@ -106,7 +96,7 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
     if (bufsize < offset || memcmp(buf + offset - 6, "(c)CRI", 6))
         return AVERROR_INVALIDDATA;
 
-    avctx->channels    = buf[7];
+    c->channels = avctx->channels = buf[7];
     if (avctx->channels > 2)
         return AVERROR_INVALIDDATA;
     avctx->sample_rate = AV_RB32(buf + 8);
@@ -149,29 +139,19 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         memcpy(c->dec_temp + c->in_temp, buf, copysize);
         rest -= copysize;
         buf  += copysize;
-        if (avctx->channels == 1) {
-            adx_decode(samples, c->dec_temp, c->prev);
-            samples += 32;
-        } else {
-            adx_decode_stereo(samples, c->dec_temp, c->prev);
-            samples += 32*2;
-        }
+        adx_decode(c, samples, c->dec_temp, 0);
+        if (avctx->channels == 2)
+            adx_decode(c, samples + 1, c->dec_temp + 18, 1);
+        samples += 32 * c->channels;
     }
 
-    if (avctx->channels == 1) {
-        while (rest >= 18) {
-            adx_decode(samples, buf, c->prev);
-            rest    -= 18;
-            buf     += 18;
-            samples += 32;
-        }
-    } else {
-        while (rest >= 18 * 2) {
-            adx_decode_stereo(samples, buf, c->prev);
-            rest    -= 18 * 2;
-            buf     += 18 * 2;
-            samples += 32 * 2;
-        }
+    while (rest >= 18 * c->channels) {
+        adx_decode(c, samples, buf, 0);
+        if (c->channels == 2)
+            adx_decode(c, samples + 1, buf + 18, 1);
+        rest    -= 18 * c->channels;
+        buf     += 18 * c->channels;
+        samples += 32 * c->channels;
     }
 
     c->in_temp = rest;

@@ -36,6 +36,7 @@ typedef struct {
 } ADXChannelState;
 
 typedef struct {
+    int channels;
     ADXChannelState prev[2];
     int header_parsed;
     unsigned char dec_temp[18*2];
