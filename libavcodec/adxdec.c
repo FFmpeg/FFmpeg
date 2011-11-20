@@ -59,7 +59,7 @@ static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
     s2 = prev->s2;
     for (i = 0; i < 32; i++) {
         d  = get_sbits(&gb, 4);
-        s0 = ((d << COEFF_BITS) * scale + COEFF1 * s1 - COEFF2 * s2) >> COEFF_BITS;
+        s0 = ((d << COEFF_BITS) * scale + c->coeff[0] * s1 + c->coeff[1] * s2) >> COEFF_BITS;
         s2 = s1;
         s1 = av_clip_int16(s0);
         *out = s1;
@@ -81,7 +81,7 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
                              int bufsize)
 {
     ADXContext *c = avctx->priv_data;
-    int offset;
+    int offset, cutoff;
 
     if (AV_RB16(buf) != 0x8000)
         return AVERROR_INVALIDDATA;
@@ -97,6 +97,9 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
         avctx->sample_rate > INT_MAX / (avctx->channels * 18 * 8))
         return AVERROR_INVALIDDATA;
     avctx->bit_rate    = avctx->sample_rate * avctx->channels * 18 * 8 / 32;
+
+    cutoff = AV_RB16(buf + 16);
+    ff_adx_calculate_coeffs(cutoff, avctx->sample_rate, COEFF_BITS, c->coeff);
 
     return offset;
 }

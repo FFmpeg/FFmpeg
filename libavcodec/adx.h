@@ -41,10 +41,20 @@ typedef struct {
     int header_parsed;
     unsigned char dec_temp[18*2];
     int in_temp;
+    int cutoff;
+    int coeff[2];
 } ADXContext;
 
 #define COEFF_BITS  12
-#define COEFF1      0x1CA6
-#define COEFF2      0x0CD4
+
+/**
+ * Calculate LPC coefficients based on cutoff frequency and sample rate.
+ *
+ * @param cutoff       cutoff frequency
+ * @param sample_rate  sample rate
+ * @param bits         number of bits used to quantize coefficients
+ * @param[out] coeff   2 quantized LPC coefficients
+ */
+void ff_adx_calculate_coeffs(int cutoff, int sample_rate, int bits, int *coeff);
 
 #endif /* AVCODEC_ADX_H */

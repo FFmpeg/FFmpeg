@@ -34,7 +34,7 @@
 
 /* 18 bytes <-> 32 samples */
 
-static void adx_encode(unsigned char *adx,const short *wav,
+static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
                        ADXChannelState *prev)
 {
     int scale;
@@ -48,7 +48,7 @@ static void adx_encode(unsigned char *adx,const short *wav,
     s2 = prev->s2;
     for(i=0;i<32;i++) {
         s0 = wav[i];
-        d = ((s0 << COEFF_BITS) - COEFF1 * s1 + COEFF2 * s2) >> COEFF_BITS;
+        d = ((s0 << COEFF_BITS) - c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS;
         data[i]=d;
         if (max<d) max=d;
         if (min>d) min=d;
@@ -102,19 +102,24 @@ static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t buf
     } adxhdr; /* big endian */
     /* offset-6 "(c)CRI" */
 #endif
+    ADXContext *c = avctx->priv_data;
+
     AV_WB32(buf+0x00,0x80000000|0x20);
     AV_WB32(buf+0x04,0x03120400|avctx->channels);
     AV_WB32(buf+0x08,avctx->sample_rate);
     AV_WB32(buf+0x0c,0); /* FIXME: set after */
-    AV_WB32(buf+0x10,0x01040300);
-    AV_WB32(buf+0x14,0x00000000);
-    AV_WB32(buf+0x18,0x00000000);
-    memcpy(buf+0x1c,"\0\0(c)CRI",8);
+    AV_WB16(buf + 0x10, c->cutoff);
+    AV_WB32(buf + 0x12, 0x03000000);
+    AV_WB32(buf + 0x16, 0x00000000);
+    AV_WB32(buf + 0x1a, 0x00000000);
+    memcpy (buf + 0x1e, "(c)CRI", 6);
     return 0x20+4;
 }
 
 static av_cold int adx_encode_init(AVCodecContext *avctx)
 {
+    ADXContext *c = avctx->priv_data;
+
     if (avctx->channels > 2)
         return -1; /* only stereo or mono =) */
     avctx->frame_size = 32;
@@ -123,6 +128,10 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     avctx->coded_frame->key_frame= 1;
 
 //    avctx->bit_rate = avctx->sample_rate*avctx->channels*18*8/32;
+
+    /* the cutoff can be adjusted, but this seems to work pretty well */
+    c->cutoff = 500;
+    ff_adx_calculate_coeffs(c->cutoff, avctx->sample_rate, COEFF_BITS, c->coeff);
 
     av_log(avctx, AV_LOG_DEBUG, "adx encode init\n");
 
@@ -159,7 +168,7 @@ static int adx_encode_frame(AVCodecContext *avctx,
 
     if (avctx->channels==1) {
         while(rest>=32) {
-            adx_encode(dst,samples,c->prev);
+            adx_encode(c, dst, samples, c->prev);
             dst+=18;
             samples+=32;
             rest-=32;
@@ -174,8 +183,8 @@ static int adx_encode_frame(AVCodecContext *avctx,
                 tmpbuf[i+32] = samples[i*2+1];
             }
 
-            adx_encode(dst,tmpbuf,c->prev);
-            adx_encode(dst+18,tmpbuf+32,c->prev+1);
+            adx_encode(c, dst,      tmpbuf,      c->prev);
+            adx_encode(c, dst + 18, tmpbuf + 32, c->prev + 1);
             dst+=18*2;
             samples+=32*2;
             rest-=32*2;
