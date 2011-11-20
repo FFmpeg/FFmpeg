@@ -1961,7 +1961,7 @@ static int transcode_init(OutputFile *output_files,
                           int nb_input_files)
 {
     int ret = 0, i, j, k;
-    AVFormatContext *os;
+    AVFormatContext *oc;
     AVCodecContext *codec, *icodec;
     OutputStream *ost;
     InputStream *ist;
@@ -1978,9 +1978,9 @@ static int transcode_init(OutputFile *output_files,
 
     /* output stream init */
     for(i=0;i<nb_output_files;i++) {
-        os = output_files[i].ctx;
-        if (!os->nb_streams && !(os->oformat->flags & AVFMT_NOSTREAMS)) {
-            av_dump_format(os, i, os->filename, 1);
+        oc = output_files[i].ctx;
+        if (!oc->nb_streams && !(oc->oformat->flags & AVFMT_NOSTREAMS)) {
+            av_dump_format(oc, i, oc->filename, 1);
             av_log(NULL, AV_LOG_ERROR, "Output file #%d does not contain any stream\n", i);
             return AVERROR(EINVAL);
         }
@@ -1989,7 +1989,7 @@ static int transcode_init(OutputFile *output_files,
     /* for each output stream, we compute the right encoding parameters */
     for (i = 0; i < nb_output_streams; i++) {
         ost = &output_streams[i];
-        os = output_files[ost->file_index].ctx;
+        oc = output_files[ost->file_index].ctx;
         ist = &input_streams[ost->source_index];
 
         if (ost->attachment_filename)
@@ -2014,9 +2014,9 @@ static int transcode_init(OutputFile *output_files,
             codec->codec_type = icodec->codec_type;
 
             if(!codec->codec_tag){
-                if(   !os->oformat->codec_tag
-                   || av_codec_get_id (os->oformat->codec_tag, icodec->codec_tag) == codec->codec_id
-                   || av_codec_get_tag(os->oformat->codec_tag, icodec->codec_id) <= 0)
+                if(   !oc->oformat->codec_tag
+                   || av_codec_get_id (oc->oformat->codec_tag, icodec->codec_tag) == codec->codec_id
+                   || av_codec_get_tag(oc->oformat->codec_tag, icodec->codec_id) <= 0)
                     codec->codec_tag = icodec->codec_tag;
             }
 
@@ -2273,15 +2273,15 @@ static int transcode_init(OutputFile *output_files,
 
     /* open files and write file headers */
     for (i = 0; i < nb_output_files; i++) {
-        os = output_files[i].ctx;
-        os->interrupt_callback = int_cb;
-        if (avformat_write_header(os, &output_files[i].opts) < 0) {
+        oc = output_files[i].ctx;
+        oc->interrupt_callback = int_cb;
+        if (avformat_write_header(oc, &output_files[i].opts) < 0) {
             snprintf(error, sizeof(error), "Could not write header for output file #%d (incorrect codec parameters ?)", i);
             ret = AVERROR(EINVAL);
             goto dump_format;
         }
         assert_avoptions(output_files[i].opts);
-        if (strcmp(os->oformat->name, "rtp")) {
+        if (strcmp(oc->oformat->name, "rtp")) {
             want_sdp = 0;
         }
     }
