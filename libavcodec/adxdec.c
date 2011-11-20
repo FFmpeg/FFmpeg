@@ -89,6 +89,12 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
     if (bufsize < offset || memcmp(buf + offset - 6, "(c)CRI", 6))
         return AVERROR_INVALIDDATA;
 
+    /* check for encoding=3 block_size=18, sample_size=4 */
+    if (buf[4] != 3 || buf[5] != 18 || buf[6] != 4) {
+        av_log_ask_for_sample(avctx, "unsupported ADX format\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     c->channels = avctx->channels = buf[7];
     if (avctx->channels > 2)
         return AVERROR_INVALIDDATA;
