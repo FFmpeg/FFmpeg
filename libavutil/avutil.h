@@ -34,7 +34,7 @@
  * This document describe the usage of the different libraries
  * provided by Libav.
  *
- * @li @subpage libavcodec  encoding/decoding library
+ * @li @ref libavc "libavcodec" encoding/decoding library
  * @li @subpage libavfilter graph based frame editing library
  * @li @subpage libavformat I/O and muxing/demuxing library
  * @li @ref lavu "libavutil" common utility library
