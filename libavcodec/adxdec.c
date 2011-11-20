@@ -90,9 +90,9 @@ static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
     ADXContext *c = avctx->priv_data;
     int offset;
 
-    if (buf[0] != 0x80)
+    if (AV_RB16(buf) != 0x8000)
         return AVERROR_INVALIDDATA;
-    offset = (AV_RB32(buf) ^ 0x80000000) + 4;
+    offset = AV_RB16(buf + 2) + 4;
     if (bufsize < offset || memcmp(buf + offset - 6, "(c)CRI", 6))
         return AVERROR_INVALIDDATA;
 
