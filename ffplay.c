@@ -1562,7 +1562,10 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
     edge = codec->flags & CODEC_FLAG_EMU_EDGE ? 0 : avcodec_get_edge_width();
     w += edge << 1;
     h += edge << 1;
-
+    if (codec->pix_fmt != ctx->outputs[0]->format) {
+        av_log(codec, AV_LOG_ERROR, "Pixel format mismatches %d %d\n", codec->pix_fmt, ctx->outputs[0]->format);
+        return -1;
+    }
     if(!(ref = avfilter_get_video_buffer(ctx->outputs[0], perms, w, h)))
         return -1;
 
