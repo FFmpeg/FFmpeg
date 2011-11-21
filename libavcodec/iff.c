@@ -440,7 +440,18 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
     }
     s->init = 1;
 
-    if (avctx->codec_tag == MKTAG('I','L','B','M')) { // interleaved
+    if (avctx->codec_tag == MKTAG('A','C','B','M')) {
+        if (avctx->pix_fmt == PIX_FMT_PAL8 || avctx->pix_fmt == PIX_FMT_GRAY8) {
+            memset(s->frame.data[0], 0, avctx->height * s->frame.linesize[0]);
+            for (plane = 0; plane < s->bpp; plane++) {
+                for(y = 0; y < avctx->height && buf < buf_end; y++ ) {
+                    uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
+                    decodeplane8(row, buf, FFMIN(s->planesize, buf_end - buf), plane);
+                    buf += s->planesize;
+                }
+            }
+        }
+    } else if (avctx->codec_tag == MKTAG('I','L','B','M')) { // interleaved
         if (avctx->pix_fmt == PIX_FMT_PAL8 || avctx->pix_fmt == PIX_FMT_GRAY8) {
             for(y = 0; y < avctx->height; y++ ) {
                 uint8_t *row = &s->frame.data[0][ y*s->frame.linesize[0] ];
