@@ -1044,6 +1044,7 @@ static int decode_subframe(WmallDecodeCtx *s)
 	    if(s->is_channel_coded[i])
 		decode_channel_residues(s, i, subframe_len);
     }
+    revert_cdlms(s, subframe_len);
 
     /** handled one subframe */
 
