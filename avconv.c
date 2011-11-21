@@ -1811,16 +1811,41 @@ fail:
     return ret;
 }
 
+static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
+{
+    AVSubtitle subtitle;
+    int i, ret = avcodec_decode_subtitle2(ist->st->codec,
+                                          &subtitle, got_output, pkt);
+    if (ret < 0)
+        return ret;
+    if (!*got_output)
+        return 0;
+
+    pkt->size = 0;
+
+    rate_emu_sleep(ist);
+
+    for (i = 0; i < nb_output_streams; i++) {
+        OutputStream *ost = &output_streams[i];
+
+        if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
+            continue;
+
+        do_subtitle_out(output_files[ost->file_index].ctx, ost, ist, &subtitle, pkt->pts);
+    }
+
+    avsubtitle_free(&subtitle);
+    return 0;
+}
+
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int output_packet(InputStream *ist, int ist_index,
                          OutputStream *ost_table, int nb_ostreams,
                          const AVPacket *pkt)
 {
-    AVFormatContext *os;
     OutputStream *ost;
     int ret = 0, i;
     int got_output;
-    AVSubtitle subtitle, *subtitle_to_free;
     int64_t pkt_pts = AV_NOPTS_VALUE;
 
     AVPacket avpkt;
@@ -1867,22 +1892,17 @@ static int output_packet(InputStream *ist, int ist_index,
             if (!got_output)
                 goto discard_packet;
             continue;
+        } else if (ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
+            ret = transcode_subtitles(ist, &avpkt, &got_output);
+            if (ret < 0)
+                return ret;
+            if (!got_output)
+                goto discard_packet;
+            continue;
         }
 
         /* decode the packet if needed */
-        subtitle_to_free = NULL;
         switch(ist->st->codec->codec_type) {
-        case AVMEDIA_TYPE_SUBTITLE:
-            ret = avcodec_decode_subtitle2(ist->st->codec,
-                                           &subtitle, &got_output, &avpkt);
-            if (ret < 0)
-                return ret;
-            if (!got_output) {
-                goto discard_packet;
-            }
-            subtitle_to_free = &subtitle;
-            avpkt.size = 0;
-            break;
         default:
             return -1;
         }
@@ -1898,27 +1918,16 @@ static int output_packet(InputStream *ist, int ist_index,
             if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
                 continue;
 
-                os = output_files[ost->file_index].ctx;
-
                 /* set the input output pts pairs */
                 //ost->sync_ipts = (double)(ist->pts + input_files[ist->file_index].ts_offset - start_time)/ AV_TIME_BASE;
 
                 av_assert0(ist->decoding_needed);
                 switch(ost->st->codec->codec_type) {
-                case AVMEDIA_TYPE_SUBTITLE:
-                    do_subtitle_out(os, ost, ist, &subtitle,
-                                    pkt->pts);
-                    break;
                 default:
                     abort();
                 }
             }
 
-        /* XXX: allocate the subtitles in the codec ? */
-        if (subtitle_to_free) {
-            avsubtitle_free(subtitle_to_free);
-            subtitle_to_free = NULL;
-        }
         if (ret < 0)
             return ret;
     }
