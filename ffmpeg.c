@@ -3935,6 +3935,10 @@ static void opt_output_file(void *optctx, const char *filename)
                     break;
                 }
             }
+            if(!ost->sync_ist){
+                av_log(NULL, AV_LOG_FATAL, "Missing %s stream which is required by this ffm\n", av_get_media_type_string(ost->st->codec->codec_type));
+                exit_program(1);
+            }
         }
     } else if (!o->nb_stream_maps) {
         /* pick the "best" stream of each type */
