@@ -355,7 +355,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
                 if(mb->inner==PERIOD){
                 int j;
                 for(j=i-1; j; j--)
-                    if(SQR(mb->zyklus[j][0]-zr) + SQR(mb->zyklus[j][1]-zi) < 0.0000000000000001)
+                    if(SQR(mb->zyklus[j][0]-zr) + SQR(mb->zyklus[j][1]-zi) < epsilon*epsilon*10)
                         break;
                 if(j){
                     c= i-j;
