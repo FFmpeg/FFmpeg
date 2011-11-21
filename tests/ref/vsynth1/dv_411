@@ -1,0 +1,4 @@
+bd67f2431db160d4bb6dcd791cea6efd *./tests/data/vsynth1/dv411.dv
+7200000 ./tests/data/vsynth1/dv411.dv
+b6640a3a572353f51284acb746eb00c4 *./tests/data/dv_411.vsynth1.out.yuv
+stddev:   30.76 PSNR: 18.37 MAXDIFF:  205 bytes:  7603200/  7603200

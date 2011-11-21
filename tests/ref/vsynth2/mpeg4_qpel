@@ -1,0 +1,4 @@
+7680d2e7d34399dfdfb8a49cf1e10239 *./tests/data/vsynth2/mpeg4-Q.avi
+163688 ./tests/data/vsynth2/mpeg4-Q.avi
+26dc7c78955fa678fbf150e236eb5627 *./tests/data/mpeg4_qpel.vsynth2.out.yuv
+stddev:    3.97 PSNR: 36.14 MAXDIFF:   54 bytes:  7603200/  7603200

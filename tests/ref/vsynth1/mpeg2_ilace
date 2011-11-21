@@ -1,0 +1,4 @@
+ec3f6713c88a2b41f6c369fd64341077 *./tests/data/vsynth1/mpeg2i.mpg
+737473 ./tests/data/vsynth1/mpeg2i.mpg
+97615390fdd69abfcbc7e02df863a7d2 *./tests/data/mpeg2_ilace.vsynth1.out.yuv
+stddev:    7.67 PSNR: 30.43 MAXDIFF:   84 bytes:  7603200/  7603200

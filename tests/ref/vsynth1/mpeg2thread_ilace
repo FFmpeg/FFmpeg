@@ -1,0 +1,4 @@
+23d600b026222253c2340e23300a4c02 *./tests/data/vsynth1/mpeg2threadivlc.mpg
+791773 ./tests/data/vsynth1/mpeg2threadivlc.mpg
+d1658911ca83f5616c1d32abc40750de *./tests/data/mpeg2thread_ilace.vsynth1.out.yuv
+stddev:    7.63 PSNR: 30.48 MAXDIFF:  110 bytes:  7603200/  7603200

@@ -1556,7 +1556,7 @@ test_deps _encoder _decoder                                             \
     asv2                                                                \
     bmp                                                                 \
     dnxhd="dnxhd_1080i dnxhd_720p dnxhd_720p_rd"                        \
-    dvvideo="dv dv50"                                                   \
+    dvvideo="dv dv_411 dv50"                                            \
     ffv1                                                                \
     flac                                                                \
     flashsv                                                             \
@@ -1569,8 +1569,10 @@ test_deps _encoder _decoder                                             \
     mjpeg="jpg mjpeg ljpeg"                                             \
     mp2                                                                 \
     mpeg1video="mpeg mpeg1b"                                            \
-    mpeg2video="mpeg2 mpeg2thread"                                      \
-    mpeg4="mpeg4 mpeg4adv mpeg4nr mpeg4thread error rc"                 \
+    mpeg2video="mpeg2 mpeg2_422 mpeg2_idct_int mpeg2_ilace mpeg2_ivlc_qprd" \
+    mpeg2video="mpeg2thread mpeg2thread_ilace"                          \
+    mpeg4="mpeg4 mpeg4_adap mpeg4_qpel mpeg4_qprd mpeg4adv mpeg4nr"     \
+    mpeg4="mpeg4thread error rc"                                        \
     msmpeg4v3=msmpeg4                                                   \
     msmpeg4v2                                                           \
     pbm=pbmpipe                                                         \
