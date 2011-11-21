@@ -1605,6 +1605,16 @@ static void do_streamcopy(InputStream *ist, OutputStream *ost, const AVPacket *p
     av_free_packet(&opkt);
 }
 
+static void rate_emu_sleep(InputStream *ist)
+{
+    if (input_files[ist->file_index].rate_emu) {
+        int64_t pts = av_rescale(ist->pts, 1000000, AV_TIME_BASE);
+        int64_t now = av_gettime() - ist->start;
+        if (pts > now)
+            usleep(pts - now);
+    }
+}
+
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int output_packet(InputStream *ist, int ist_index,
                          OutputStream *ost_table, int nb_ostreams,
@@ -1645,7 +1655,7 @@ static int output_packet(InputStream *ist, int ist_index,
         pkt_pts = av_rescale_q(pkt->pts, ist->st->time_base, AV_TIME_BASE_Q);
 
     //while we have more to decode or while the decoder did output something on EOF
-    while (avpkt.size > 0 || (!pkt && got_output)) {
+    while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
         uint8_t *decoded_data_buf;
         int decoded_data_size;
         AVFrame *decoded_frame, *filtered_frame;
@@ -1662,7 +1672,6 @@ static int output_packet(InputStream *ist, int ist_index,
         decoded_data_buf = NULL; /* fail safe */
         decoded_data_size= 0;
         subtitle_to_free = NULL;
-        if (ist->decoding_needed) {
             switch(ist->st->codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:{
                 if(pkt && samples_size < FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
@@ -1733,23 +1742,6 @@ static int output_packet(InputStream *ist, int ist_index,
             default:
                 return -1;
             }
-        } else {
-            switch(ist->st->codec->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:
-                ist->next_pts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
-                    ist->st->codec->sample_rate;
-                break;
-            case AVMEDIA_TYPE_VIDEO:
-                if (ist->st->codec->time_base.num != 0) {
-                    int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
-                    ist->next_pts += ((int64_t)AV_TIME_BASE *
-                                      ist->st->codec->time_base.num * ticks) /
-                        ist->st->codec->time_base.den;
-                }
-                break;
-            }
-            avpkt.size = 0;
-        }
 
         // preprocess audio (volume)
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
@@ -1810,12 +1802,8 @@ static int output_packet(InputStream *ist, int ist_index,
         }
 
         /* frame rate emulation */
-        if (input_files[ist->file_index].rate_emu) {
-            int64_t pts = av_rescale(ist->pts, 1000000, AV_TIME_BASE);
-            int64_t now = av_gettime() - ist->start;
-            if (pts > now)
-                usleep(pts - now);
-        }
+        rate_emu_sleep(ist);
+
         /* if output time reached then transcode raw format,
            encode packets and output them */
         for (i = 0; i < nb_ostreams; i++) {
@@ -1902,6 +1890,23 @@ fail:
  discard_packet:
 
     /* handle stream copy */
+    if (!ist->decoding_needed) {
+        rate_emu_sleep(ist);
+        switch (ist->st->codec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            ist->next_pts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
+                             ist->st->codec->sample_rate;
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            if (ist->st->codec->time_base.num != 0) {
+                int ticks = ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
+                ist->next_pts += ((int64_t)AV_TIME_BASE *
+                                  ist->st->codec->time_base.num * ticks) /
+                                  ist->st->codec->time_base.den;
+            }
+            break;
+        }
+    }
     for (i = 0; pkt && i < nb_ostreams; i++) {
         ost = &ost_table[i];
 
