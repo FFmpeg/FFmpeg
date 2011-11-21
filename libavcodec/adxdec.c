@@ -35,6 +35,19 @@
 
 static av_cold int adx_decode_init(AVCodecContext *avctx)
 {
+    ADXContext *c = avctx->priv_data;
+    int ret, header_size;
+
+    if (avctx->extradata_size < 24)
+        return AVERROR_INVALIDDATA;
+
+    if ((ret = ff_adx_decode_header(avctx, avctx->extradata, avctx->extradata_size,
+                                    &header_size, c->coeff)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "error parsing ADX header\n");
+        return AVERROR_INVALIDDATA;
+    }
+    c->channels = avctx->channels;
+
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     return 0;
 }
@@ -46,13 +59,17 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
  * 2nd-order LPC filter applied to it to form the output signal for a single
  * channel.
  */
-static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
+static int adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
 {
     ADXChannelState *prev = &c->prev[ch];
     GetBitContext gb;
     int scale = AV_RB16(in);
     int i;
     int s0, s1, s2, d;
+
+    /* check if this is an EOF packet */
+    if (scale & 0x8000)
+        return -1;
 
     init_get_bits(&gb, in + 2, (BLOCK_SIZE - 2) * 8);
     s1 = prev->s1;
@@ -67,84 +84,55 @@ static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
     }
     prev->s1 = s1;
     prev->s2 = s2;
-}
 
-static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
-                             int bufsize)
-{
-    ADXContext *c = avctx->priv_data;
-    int ret, header_size;
-
-    if ((ret = ff_adx_decode_header(avctx, buf, bufsize, &header_size,
-                                    c->coeff)) < 0)
-        return ret;
-
-    c->channels = avctx->channels;
-    return header_size;
+    return 0;
 }
 
 static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
                             AVPacket *avpkt)
 {
-    const uint8_t *buf0 = avpkt->data;
     int buf_size        = avpkt->size;
     ADXContext *c       = avctx->priv_data;
     int16_t *samples    = data;
-    const uint8_t *buf  = buf0;
-    int rest            = buf_size;
-    int num_blocks;
+    const uint8_t *buf  = avpkt->data;
+    int num_blocks, ch;
 
-    if (!c->header_parsed) {
-        int hdrsize = adx_decode_header(avctx, buf, rest);
-        if (hdrsize < 0) {
-            av_log(avctx, AV_LOG_ERROR, "invalid stream header\n");
-            return hdrsize;
-        }
-        c->header_parsed = 1;
-        buf  += hdrsize;
-        rest -= hdrsize;
+    if (c->eof) {
+        *data_size = 0;
+        return buf_size;
     }
 
     /* 18 bytes of data are expanded into 32*2 bytes of audio,
        so guard against buffer overflows */
-    num_blocks = (rest + c->in_temp) / (BLOCK_SIZE * c->channels);
+    num_blocks = buf_size / (BLOCK_SIZE * c->channels);
     if (num_blocks > *data_size / (BLOCK_SAMPLES * c->channels)) {
-        rest = (*data_size / (BLOCK_SAMPLES * c->channels)) * BLOCK_SIZE;
-        num_blocks = (rest + c->in_temp) / (BLOCK_SIZE * c->channels);
+        buf_size   = (*data_size / (BLOCK_SAMPLES * c->channels)) * BLOCK_SIZE;
+        num_blocks = buf_size / (BLOCK_SIZE * c->channels);
     }
-    if (!num_blocks) {
-        av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
+    if (!buf_size || buf_size % (BLOCK_SIZE * avctx->channels)) {
+        if (buf_size >= 4 && (AV_RB16(buf) & 0x8000)) {
+            c->eof = 1;
+            *data_size = 0;
+            return avpkt->size;
+        }
         return AVERROR_INVALIDDATA;
     }
 
-    if (c->in_temp) {
-        int copysize = BLOCK_SIZE * avctx->channels - c->in_temp;
-        memcpy(c->dec_temp + c->in_temp, buf, copysize);
-        rest -= copysize;
-        buf  += copysize;
-        adx_decode(c, samples, c->dec_temp, 0);
-        if (avctx->channels == 2)
-            adx_decode(c, samples + 1, c->dec_temp + BLOCK_SIZE, 1);
-        samples += BLOCK_SAMPLES * c->channels;
-        num_blocks--;
-    }
-
     while (num_blocks--) {
-        adx_decode(c, samples, buf, 0);
-        if (c->channels == 2)
-            adx_decode(c, samples + 1, buf + BLOCK_SIZE, 1);
-        rest    -= BLOCK_SIZE * c->channels;
-        buf     += BLOCK_SIZE * c->channels;
+        for (ch = 0; ch < c->channels; ch++) {
+            if (adx_decode(c, samples + ch, buf, ch)) {
+                c->eof = 1;
+                buf = avpkt->data + avpkt->size;
+                break;
+            }
+            buf_size -= BLOCK_SIZE;
+            buf      += BLOCK_SIZE;
+        }
         samples += BLOCK_SAMPLES * c->channels;
     }
 
-    c->in_temp = rest;
-    if (rest) {
-        memcpy(c->dec_temp, buf, rest);
-        buf += rest;
-    }
     *data_size = (uint8_t*)samples - (uint8_t*)data;
-    return buf - buf0;
+    return buf - avpkt->data;
 }
 
 AVCodec ff_adpcm_adx_decoder = {

@@ -43,8 +43,7 @@ typedef struct {
     int channels;
     ADXChannelState prev[2];
     int header_parsed;
-    unsigned char dec_temp[18*2];
-    int in_temp;
+    int eof;
     int cutoff;
     int coeff[2];
 } ADXContext;
