@@ -33,9 +33,6 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
-#define BLOCK_SIZE      18
-#define BLOCK_SAMPLES   32
-
 static av_cold int adx_decode_init(AVCodecContext *avctx)
 {
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
@@ -72,45 +69,18 @@ static void adx_decode(ADXContext *c, int16_t *out, const uint8_t *in, int ch)
     prev->s2 = s2;
 }
 
-/**
- * Decode stream header.
- *
- * @param avctx   codec context
- * @param buf     packet data
- * @param bufsize packet size
- * @return data offset or negative error code if header is invalid
- */
 static int adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
                              int bufsize)
 {
     ADXContext *c = avctx->priv_data;
-    int offset, cutoff;
+    int ret, header_size;
 
-    if (AV_RB16(buf) != 0x8000)
-        return AVERROR_INVALIDDATA;
-    offset = AV_RB16(buf + 2) + 4;
-    if (bufsize < offset || memcmp(buf + offset - 6, "(c)CRI", 6))
-        return AVERROR_INVALIDDATA;
+    if ((ret = ff_adx_decode_header(avctx, buf, bufsize, &header_size,
+                                    c->coeff)) < 0)
+        return ret;
 
-    /* check for encoding=3 block_size=18, sample_size=4 */
-    if (buf[4] != 3 || buf[5] != 18 || buf[6] != 4) {
-        av_log_ask_for_sample(avctx, "unsupported ADX format\n");
-        return AVERROR_PATCHWELCOME;
-    }
-
-    c->channels = avctx->channels = buf[7];
-    if (avctx->channels > 2)
-        return AVERROR_INVALIDDATA;
-    avctx->sample_rate = AV_RB32(buf + 8);
-    if (avctx->sample_rate < 1 ||
-        avctx->sample_rate > INT_MAX / (avctx->channels * BLOCK_SIZE * 8))
-        return AVERROR_INVALIDDATA;
-    avctx->bit_rate = avctx->sample_rate * avctx->channels * BLOCK_SIZE * 8 / BLOCK_SAMPLES;
-
-    cutoff = AV_RB16(buf + 16);
-    ff_adx_calculate_coeffs(cutoff, avctx->sample_rate, COEFF_BITS, c->coeff);
-
-    return offset;
+    c->channels = avctx->channels;
+    return header_size;
 }
 
 static int adx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
