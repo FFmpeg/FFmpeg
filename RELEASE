@@ -153,3 +153,13 @@ corrected. Additional, this release contains fixes for compilation with
 gcc-4.6. Distributors and system integrators are encouraged to update
 and share their patches against this branch.
 
+
+
+* 0.5.6 Nov 21, 2011
+
+General notes
+-------------
+
+This maintenance-only release addresses several security issues that
+were brought to our attention.
+
