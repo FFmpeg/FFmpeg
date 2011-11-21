@@ -1878,58 +1878,27 @@ static int output_packet(InputStream *ist, int ist_index,
                    "Multiple frames in a packet from stream %d\n", pkt->stream_index);
             ist->showed_multi_packet_warning=1;
 
-        // XXX temporary hack, will be turned to a switch() once all codec
-        // types are split out
-        if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            ret = transcode_audio(ist, &avpkt, &got_output);
-            if (ret < 0)
-                return ret;
-            continue;
-        } else if (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
-            ret = transcode_video(ist, &avpkt, &got_output, &pkt_pts);
-            if (ret < 0)
-                return ret;
-            if (!got_output)
-                goto discard_packet;
-            continue;
-        } else if (ist->st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-            ret = transcode_subtitles(ist, &avpkt, &got_output);
-            if (ret < 0)
-                return ret;
-            if (!got_output)
-                goto discard_packet;
-            continue;
-        }
-
-        /* decode the packet if needed */
         switch(ist->st->codec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:
+            ret = transcode_audio    (ist, &avpkt, &got_output);
+            break;
+        case AVMEDIA_TYPE_VIDEO:
+            ret = transcode_video    (ist, &avpkt, &got_output, &pkt_pts);
+            break;
+        case AVMEDIA_TYPE_SUBTITLE:
+            ret = transcode_subtitles(ist, &avpkt, &got_output);
+            break;
         default:
             return -1;
         }
 
-        /* frame rate emulation */
-        rate_emu_sleep(ist);
-
-        /* if output time reached then transcode raw format,
-           encode packets and output them */
-        for (i = 0; i < nb_ostreams; i++) {
-            ost = &ost_table[i];
-
-            if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
-                continue;
-
-                /* set the input output pts pairs */
-                //ost->sync_ipts = (double)(ist->pts + input_files[ist->file_index].ts_offset - start_time)/ AV_TIME_BASE;
-
-                av_assert0(ist->decoding_needed);
-                switch(ost->st->codec->codec_type) {
-                default:
-                    abort();
-                }
-            }
-
         if (ret < 0)
             return ret;
+        if (!got_output) {
+            if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
+                continue;
+            goto discard_packet;
+        }
     }
  discard_packet:
 
