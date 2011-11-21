@@ -1635,15 +1635,13 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
                                 pkt);
     if (ret < 0)
         return ret;
-    pkt->data   += ret;
-    pkt->size   -= ret;
     *got_output  = decoded_data_size > 0;
 
     /* Some bug in mpeg audio decoder gives */
     /* decoded_data_size < 0, it seems they are overflows */
     if (!*got_output) {
         /* no audio frame */
-        return 0;
+        return ret;
     }
 
     decoded_data_buf = (uint8_t *)samples;
@@ -1716,7 +1714,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         do_audio_out(output_files[ost->file_index].ctx, ost, ist,
                      decoded_data_buf, decoded_data_size);
     }
-    return 0;
+    return ret;
 }
 
 static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *pkt_pts)
@@ -1744,7 +1742,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     if (!*got_output) {
         /* no picture yet */
         av_freep(&decoded_frame);
-        return 0;
+        return ret;
     }
     ist->next_pts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
                                                  decoded_frame->pkt_dts);
@@ -1820,9 +1818,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     if (ret < 0)
         return ret;
     if (!*got_output)
-        return 0;
-
-    pkt->size = 0;
+        return ret;
 
     rate_emu_sleep(ist);
 
@@ -1836,7 +1832,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     }
 
     avsubtitle_free(&subtitle);
-    return 0;
+    return ret;
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
@@ -1895,13 +1891,12 @@ static int output_packet(InputStream *ist, int ist_index,
 
         if (ret < 0)
             return ret;
+        avpkt.data += ret;
+        avpkt.size -= ret;
         if (!got_output) {
-            if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-                continue;
-            goto discard_packet;
+            continue;
         }
     }
- discard_packet:
 
     /* handle stream copy */
     if (!ist->decoding_needed) {
