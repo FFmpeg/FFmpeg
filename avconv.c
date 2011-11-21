@@ -1615,6 +1615,109 @@ static void rate_emu_sleep(InputStream *ist)
     }
 }
 
+static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
+{
+    static unsigned int samples_size = 0;
+    int bps = av_get_bytes_per_sample(ist->st->codec->sample_fmt);
+    uint8_t *decoded_data_buf  = NULL;
+    int      decoded_data_size = 0;
+    int i, ret;
+
+    if (pkt && samples_size < FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
+        av_free(samples);
+        samples_size = FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE);
+        samples      = av_malloc(samples_size);
+    }
+    decoded_data_size = samples_size;
+
+    ret = avcodec_decode_audio3(ist->st->codec, samples, &decoded_data_size,
+                                pkt);
+    if (ret < 0)
+        return ret;
+    pkt->data   += ret;
+    pkt->size   -= ret;
+    *got_output  = decoded_data_size > 0;
+
+    /* Some bug in mpeg audio decoder gives */
+    /* decoded_data_size < 0, it seems they are overflows */
+    if (!*got_output) {
+        /* no audio frame */
+        return 0;
+    }
+
+    decoded_data_buf = (uint8_t *)samples;
+    ist->next_pts   += ((int64_t)AV_TIME_BASE/bps * decoded_data_size) /
+                       (ist->st->codec->sample_rate * ist->st->codec->channels);
+
+    // preprocess audio (volume)
+    if (audio_volume != 256) {
+        switch (ist->st->codec->sample_fmt) {
+        case AV_SAMPLE_FMT_U8:
+        {
+            uint8_t *volp = samples;
+            for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                int v = (((*volp - 128) * audio_volume + 128) >> 8) + 128;
+                *volp++ = av_clip_uint8(v);
+            }
+            break;
+        }
+        case AV_SAMPLE_FMT_S16:
+        {
+            int16_t *volp = samples;
+            for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                int v = ((*volp) * audio_volume + 128) >> 8;
+                *volp++ = av_clip_int16(v);
+            }
+            break;
+        }
+        case AV_SAMPLE_FMT_S32:
+        {
+            int32_t *volp = samples;
+            for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                int64_t v = (((int64_t)*volp * audio_volume + 128) >> 8);
+                *volp++ = av_clipl_int32(v);
+            }
+            break;
+        }
+        case AV_SAMPLE_FMT_FLT:
+        {
+            float *volp = samples;
+            float scale = audio_volume / 256.f;
+            for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                *volp++ *= scale;
+            }
+            break;
+        }
+        case AV_SAMPLE_FMT_DBL:
+        {
+            double *volp = samples;
+            double scale = audio_volume / 256.;
+            for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
+                *volp++ *= scale;
+            }
+            break;
+        }
+        default:
+            av_log(NULL, AV_LOG_FATAL,
+                   "Audio volume adjustment on sample format %s is not supported.\n",
+                   av_get_sample_fmt_name(ist->st->codec->sample_fmt));
+            exit_program(1);
+        }
+    }
+
+    rate_emu_sleep(ist);
+
+    for (i = 0; i < nb_output_streams; i++) {
+        OutputStream *ost = &output_streams[i];
+
+        if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
+            continue;
+        do_audio_out(output_files[ost->file_index].ctx, ost, ist,
+                     decoded_data_buf, decoded_data_size);
+    }
+    return 0;
+}
+
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
 static int output_packet(InputStream *ist, int ist_index,
                          OutputStream *ost_table, int nb_ostreams,
@@ -1625,7 +1728,6 @@ static int output_packet(InputStream *ist, int ist_index,
     int ret = 0, i;
     int got_output;
     void *buffer_to_free = NULL;
-    static unsigned int samples_size= 0;
     AVSubtitle subtitle, *subtitle_to_free;
     int64_t pkt_pts = AV_NOPTS_VALUE;
 #if CONFIG_AVFILTER
@@ -1634,7 +1736,6 @@ static int output_packet(InputStream *ist, int ist_index,
     float quality;
 
     AVPacket avpkt;
-    int bps = av_get_bytes_per_sample(ist->st->codec->sample_fmt);
 
     if(ist->next_pts == AV_NOPTS_VALUE)
         ist->next_pts= ist->pts;
@@ -1656,8 +1757,6 @@ static int output_packet(InputStream *ist, int ist_index,
 
     //while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
-        uint8_t *decoded_data_buf;
-        int decoded_data_size;
         AVFrame *decoded_frame, *filtered_frame;
     handle_eof:
         ist->pts= ist->next_pts;
@@ -1667,38 +1766,19 @@ static int output_packet(InputStream *ist, int ist_index,
                    "Multiple frames in a packet from stream %d\n", pkt->stream_index);
             ist->showed_multi_packet_warning=1;
 
-        /* decode the packet if needed */
-        decoded_frame    = filtered_frame = NULL;
-        decoded_data_buf = NULL; /* fail safe */
-        decoded_data_size= 0;
-        subtitle_to_free = NULL;
-        switch(ist->st->codec->codec_type) {
-        case AVMEDIA_TYPE_AUDIO:{
-            if(pkt && samples_size < FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
-                samples_size = FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE);
-                av_free(samples);
-                samples= av_malloc(samples_size);
-            }
-            decoded_data_size= samples_size;
-                /* XXX: could avoid copy if PCM 16 bits with same
-                   endianness as CPU */
-            ret = avcodec_decode_audio3(ist->st->codec, samples, &decoded_data_size,
-                                        &avpkt);
+        // XXX temporary hack, will be turned to a switch() once all codec
+        // types are split out
+        if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
+            ret = transcode_audio(ist, &avpkt, &got_output);
             if (ret < 0)
                 return ret;
-            avpkt.data += ret;
-            avpkt.size -= ret;
-            got_output  = decoded_data_size > 0;
-            /* Some bug in mpeg audio decoder gives */
-            /* decoded_data_size < 0, it seems they are overflows */
-            if (!got_output) {
-                /* no audio frame */
-                continue;
-            }
-            decoded_data_buf = (uint8_t *)samples;
-            ist->next_pts += ((int64_t)AV_TIME_BASE/bps * decoded_data_size) /
-                (ist->st->codec->sample_rate * ist->st->codec->channels);
-            break;}
+            continue;
+        }
+
+        /* decode the packet if needed */
+        decoded_frame    = filtered_frame = NULL;
+        subtitle_to_free = NULL;
+        switch(ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_VIDEO:
                 if (!(decoded_frame = avcodec_alloc_frame()))
                     return AVERROR(ENOMEM);
@@ -1741,64 +1821,6 @@ static int output_packet(InputStream *ist, int ist_index,
             break;
         default:
             return -1;
-        }
-
-        // preprocess audio (volume)
-        if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            if (audio_volume != 256) {
-                switch (ist->st->codec->sample_fmt) {
-                case AV_SAMPLE_FMT_U8:
-                {
-                    uint8_t *volp = samples;
-                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
-                        int v = (((*volp - 128) * audio_volume + 128) >> 8) + 128;
-                        *volp++ = av_clip_uint8(v);
-                    }
-                    break;
-                }
-                case AV_SAMPLE_FMT_S16:
-                {
-                    int16_t *volp = samples;
-                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
-                        int v = ((*volp) * audio_volume + 128) >> 8;
-                        *volp++ = av_clip_int16(v);
-                    }
-                    break;
-                }
-                case AV_SAMPLE_FMT_S32:
-                {
-                    int32_t *volp = samples;
-                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
-                        int64_t v = (((int64_t)*volp * audio_volume + 128) >> 8);
-                        *volp++ = av_clipl_int32(v);
-                    }
-                    break;
-                }
-                case AV_SAMPLE_FMT_FLT:
-                {
-                    float *volp = samples;
-                    float scale = audio_volume / 256.f;
-                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
-                        *volp++ *= scale;
-                    }
-                    break;
-                }
-                case AV_SAMPLE_FMT_DBL:
-                {
-                    double *volp = samples;
-                    double scale = audio_volume / 256.;
-                    for (i = 0; i < (decoded_data_size / sizeof(*volp)); i++) {
-                        *volp++ *= scale;
-                    }
-                    break;
-                }
-                default:
-                    av_log(NULL, AV_LOG_FATAL,
-                           "Audio volume adjustment on sample format %s is not supported.\n",
-                           av_get_sample_fmt_name(ist->st->codec->sample_fmt));
-                    exit_program(1);
-                }
-            }
         }
 
         /* frame rate emulation */
@@ -1846,9 +1868,6 @@ static int output_packet(InputStream *ist, int ist_index,
 
                 av_assert0(ist->decoding_needed);
                 switch(ost->st->codec->codec_type) {
-                case AVMEDIA_TYPE_AUDIO:
-                    do_audio_out(os, ost, ist, decoded_data_buf, decoded_data_size);
-                    break;
                 case AVMEDIA_TYPE_VIDEO:
 #if CONFIG_AVFILTER
                     if (ost->picref->video && !ost->frame_aspect_ratio)
