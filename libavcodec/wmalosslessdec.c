@@ -857,7 +857,7 @@ static void use_high_update_speed(WmallDecodeCtx *s, int ich)
 {
     int ilms, recent, icoef;
     s->update_speed[ich] = 16;
-    for (ilms = s->cdlms_ttl[ich]; ilms >= 0; ilms--) {
+    for (ilms = s->cdlms_ttl[ich] - 1; ilms >= 0; ilms--) {
         recent = s->cdlms[ich][ilms].recent;
         if (s->bV3RTM) {
             for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
@@ -873,7 +873,7 @@ static void use_normal_update_speed(WmallDecodeCtx *s, int ich)
 {
     int ilms, recent, icoef;
     s->update_speed[ich] = 8;
-    for (ilms = s->cdlms_ttl[ich]; ilms >= 0; ilms--) {
+    for (ilms = s->cdlms_ttl[ich] - 1; ilms >= 0; ilms--) {
         recent = s->cdlms[ich][ilms].recent;
         if (s->bV3RTM) {
             for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
@@ -901,7 +901,7 @@ static void revert_cdlms(WmallDecodeCtx *s, int tile_size)
                 s->transient[ich] = 1;
                 use_high_update_speed(s, ich);
             }
-            for (ilms = num_lms; ilms >= 0; ilms--) {
+            for (ilms = num_lms - 1; ilms >= 0; ilms--) {
                 pred = lms_predict(s, ich, ilms);
                 channel_coeff += pred;
                 lms_update(s, ich, ilms, channel_coeff, pred);
