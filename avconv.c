@@ -1672,76 +1672,76 @@ static int output_packet(InputStream *ist, int ist_index,
         decoded_data_buf = NULL; /* fail safe */
         decoded_data_size= 0;
         subtitle_to_free = NULL;
-            switch(ist->st->codec->codec_type) {
-            case AVMEDIA_TYPE_AUDIO:{
-                if(pkt && samples_size < FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
-                    samples_size = FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE);
-                    av_free(samples);
-                    samples= av_malloc(samples_size);
-                }
-                decoded_data_size= samples_size;
-                    /* XXX: could avoid copy if PCM 16 bits with same
-                       endianness as CPU */
-                ret = avcodec_decode_audio3(ist->st->codec, samples, &decoded_data_size,
-                                            &avpkt);
-                if (ret < 0)
-                    return ret;
-                avpkt.data += ret;
-                avpkt.size -= ret;
-                got_output  = decoded_data_size > 0;
-                /* Some bug in mpeg audio decoder gives */
-                /* decoded_data_size < 0, it seems they are overflows */
-                if (!got_output) {
-                    /* no audio frame */
-                    continue;
-                }
-                decoded_data_buf = (uint8_t *)samples;
-                ist->next_pts += ((int64_t)AV_TIME_BASE/bps * decoded_data_size) /
-                    (ist->st->codec->sample_rate * ist->st->codec->channels);
-                break;}
-            case AVMEDIA_TYPE_VIDEO:
-                    if (!(decoded_frame = avcodec_alloc_frame()))
-                        return AVERROR(ENOMEM);
-                    avpkt.pts = pkt_pts;
-                    avpkt.dts = ist->pts;
-                    pkt_pts = AV_NOPTS_VALUE;
+        switch(ist->st->codec->codec_type) {
+        case AVMEDIA_TYPE_AUDIO:{
+            if(pkt && samples_size < FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
+                samples_size = FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE);
+                av_free(samples);
+                samples= av_malloc(samples_size);
+            }
+            decoded_data_size= samples_size;
+                /* XXX: could avoid copy if PCM 16 bits with same
+                   endianness as CPU */
+            ret = avcodec_decode_audio3(ist->st->codec, samples, &decoded_data_size,
+                                        &avpkt);
+            if (ret < 0)
+                return ret;
+            avpkt.data += ret;
+            avpkt.size -= ret;
+            got_output  = decoded_data_size > 0;
+            /* Some bug in mpeg audio decoder gives */
+            /* decoded_data_size < 0, it seems they are overflows */
+            if (!got_output) {
+                /* no audio frame */
+                continue;
+            }
+            decoded_data_buf = (uint8_t *)samples;
+            ist->next_pts += ((int64_t)AV_TIME_BASE/bps * decoded_data_size) /
+                (ist->st->codec->sample_rate * ist->st->codec->channels);
+            break;}
+        case AVMEDIA_TYPE_VIDEO:
+                if (!(decoded_frame = avcodec_alloc_frame()))
+                    return AVERROR(ENOMEM);
+                avpkt.pts = pkt_pts;
+                avpkt.dts = ist->pts;
+                pkt_pts = AV_NOPTS_VALUE;
 
-                    ret = avcodec_decode_video2(ist->st->codec,
-                                                decoded_frame, &got_output, &avpkt);
-                    quality = same_quant ? decoded_frame->quality : 0;
-                    if (ret < 0)
-                        goto fail;
-                    if (!got_output) {
-                        /* no picture yet */
-                        av_freep(&decoded_frame);
-                        goto discard_packet;
-                    }
-                    ist->next_pts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
-                                                                 decoded_frame->pkt_dts);
-                    if (ist->st->codec->time_base.num != 0) {
-                        int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
-                        ist->next_pts += ((int64_t)AV_TIME_BASE *
-                                          ist->st->codec->time_base.num * ticks) /
-                            ist->st->codec->time_base.den;
-                    }
-                    avpkt.size = 0;
-                    buffer_to_free = NULL;
-                    pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
-                    break;
-            case AVMEDIA_TYPE_SUBTITLE:
-                ret = avcodec_decode_subtitle2(ist->st->codec,
-                                               &subtitle, &got_output, &avpkt);
+                ret = avcodec_decode_video2(ist->st->codec,
+                                            decoded_frame, &got_output, &avpkt);
+                quality = same_quant ? decoded_frame->quality : 0;
                 if (ret < 0)
-                    return ret;
+                    goto fail;
                 if (!got_output) {
+                    /* no picture yet */
+                    av_freep(&decoded_frame);
                     goto discard_packet;
                 }
-                subtitle_to_free = &subtitle;
+                ist->next_pts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
+                                                             decoded_frame->pkt_dts);
+                if (ist->st->codec->time_base.num != 0) {
+                    int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
+                    ist->next_pts += ((int64_t)AV_TIME_BASE *
+                                      ist->st->codec->time_base.num * ticks) /
+                        ist->st->codec->time_base.den;
+                }
                 avpkt.size = 0;
+                buffer_to_free = NULL;
+                pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
                 break;
-            default:
-                return -1;
+        case AVMEDIA_TYPE_SUBTITLE:
+            ret = avcodec_decode_subtitle2(ist->st->codec,
+                                           &subtitle, &got_output, &avpkt);
+            if (ret < 0)
+                return ret;
+            if (!got_output) {
+                goto discard_packet;
             }
+            subtitle_to_free = &subtitle;
+            avpkt.size = 0;
+            break;
+        default:
+            return -1;
+        }
 
         // preprocess audio (volume)
         if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
