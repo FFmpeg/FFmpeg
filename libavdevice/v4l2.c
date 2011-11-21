@@ -634,11 +634,11 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         res = AVERROR(EIO);
         goto out;
     }
-    if ((res = av_image_check_size(s->width, s->height, 0, s1) < 0))
+    if ((res = av_image_check_size(s->width, s->height, 0, s1)) < 0)
         goto out;
     s->frame_format = desired_format;
 
-    if ((res = v4l2_set_parameters(s1, ap) < 0))
+    if ((res = v4l2_set_parameters(s1, ap)) < 0)
         goto out;
 
     st->codec->pix_fmt = fmt_v4l2ff(desired_format, codec_id);

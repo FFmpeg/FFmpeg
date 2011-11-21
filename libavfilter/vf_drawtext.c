@@ -359,7 +359,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     load_glyph(ctx, NULL, 0);
 
     /* set the tabsize in pixels */
-    if ((err = load_glyph(ctx, &glyph, ' ') < 0)) {
+    if ((err = load_glyph(ctx, &glyph, ' ')) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Could not set tabsize.\n");
         return err;
     }

@@ -173,7 +173,7 @@ int main(int argc, char **argv)
     av_register_all();
     avfilter_register_all();
 
-    if ((ret = open_input_file(argv[1]) < 0))
+    if ((ret = open_input_file(argv[1])) < 0)
         goto end;
     if ((ret = init_filters(filter_descr)) < 0)
         goto end;

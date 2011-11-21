@@ -76,7 +76,7 @@ static int request_frame(AVFilterLink *outlink)
     int ret;
 
     if (!fifo->root.next) {
-        if ((ret = avfilter_request_frame(outlink->src->inputs[0]) < 0))
+        if ((ret = avfilter_request_frame(outlink->src->inputs[0])) < 0)
             return ret;
     }
 
