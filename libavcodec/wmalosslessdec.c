@@ -789,7 +789,7 @@ static void reset_codec(WmallDecodeCtx *s)
 
 static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
 {
-    int32_t pred, icoef;
+    int32_t pred = 0, icoef;
     int recent = s->cdlms[ich][ilms].recent;
 
     for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
