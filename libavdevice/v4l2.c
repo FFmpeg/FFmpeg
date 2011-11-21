@@ -64,6 +64,7 @@ struct video_data {
     enum io_method io_method;
     int width, height;
     int frame_size;
+    int interlaced;
     int top_field_first;
 
     int buffers;
@@ -162,7 +163,7 @@ static int device_init(AVFormatContext *ctx, int *width, int *height, uint32_t p
     fmt.fmt.pix.width = *width;
     fmt.fmt.pix.height = *height;
     fmt.fmt.pix.pixelformat = pix_fmt;
-    fmt.fmt.pix.field = V4L2_FIELD_INTERLACED;
+    fmt.fmt.pix.field = V4L2_FIELD_ANY;
     res = ioctl(fd, VIDIOC_S_FMT, &fmt);
     if ((*width != fmt.fmt.pix.width) || (*height != fmt.fmt.pix.height)) {
         av_log(ctx, AV_LOG_INFO, "The V4L2 driver changed the video from %dx%d to %dx%d\n", *width, *height, fmt.fmt.pix.width, fmt.fmt.pix.height);
@@ -173,6 +174,11 @@ static int device_init(AVFormatContext *ctx, int *width, int *height, uint32_t p
     if (pix_fmt != fmt.fmt.pix.pixelformat) {
         av_log(ctx, AV_LOG_DEBUG, "The V4L2 driver changed the pixel format from 0x%08X to 0x%08X\n", pix_fmt, fmt.fmt.pix.pixelformat);
         res = -1;
+    }
+
+    if (fmt.fmt.pix.field == V4L2_FIELD_INTERLACED) {
+        av_log(ctx, AV_LOG_DEBUG, "The V4L2 driver using the interlaced mode");
+        s->interlaced = 1;
     }
 
     return res;
@@ -686,7 +692,7 @@ static int v4l2_read_packet(AVFormatContext *s1, AVPacket *pkt)
         return res;
     }
 
-    if (s1->streams[0]->codec->coded_frame) {
+    if (s1->streams[0]->codec->coded_frame && s->interlaced) {
         s1->streams[0]->codec->coded_frame->interlaced_frame = 1;
         s1->streams[0]->codec->coded_frame->top_field_first = s->top_field_first;
     }
