@@ -102,6 +102,7 @@ easier to use. The changes are:
 - Discworld II BMV decoding support
 - VBLE Decoder
 - OS X Video Decoder Acceleration (VDA) support
+- CRI ADX audio format demuxer
 
 
 version 0.7:
