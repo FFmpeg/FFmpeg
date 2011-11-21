@@ -1856,29 +1856,27 @@ static int output_packet(InputStream *ist, int ist_index,
                 /* set the input output pts pairs */
                 //ost->sync_ipts = (double)(ist->pts + input_files[ist->file_index].ts_offset - start_time)/ AV_TIME_BASE;
 
-                if (ost->encoding_needed) {
-                    av_assert0(ist->decoding_needed);
-                    switch(ost->st->codec->codec_type) {
-                    case AVMEDIA_TYPE_AUDIO:
-                        do_audio_out(os, ost, ist, decoded_data_buf, decoded_data_size);
-                        break;
-                    case AVMEDIA_TYPE_VIDEO:
+                av_assert0(ist->decoding_needed);
+                switch(ost->st->codec->codec_type) {
+                case AVMEDIA_TYPE_AUDIO:
+                    do_audio_out(os, ost, ist, decoded_data_buf, decoded_data_size);
+                    break;
+                case AVMEDIA_TYPE_VIDEO:
 #if CONFIG_AVFILTER
-                        if (ost->picref->video && !ost->frame_aspect_ratio)
-                            ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
+                    if (ost->picref->video && !ost->frame_aspect_ratio)
+                        ost->st->codec->sample_aspect_ratio = ost->picref->video->pixel_aspect;
 #endif
-                        do_video_out(os, ost, ist, filtered_frame, &frame_size,
-                                     same_quant ? quality : ost->st->codec->global_quality);
-                        if (vstats_filename && frame_size)
-                            do_video_stats(os, ost, frame_size);
-                        break;
-                    case AVMEDIA_TYPE_SUBTITLE:
-                        do_subtitle_out(os, ost, ist, &subtitle,
-                                        pkt->pts);
-                        break;
-                    default:
-                        abort();
-                    }
+                    do_video_out(os, ost, ist, filtered_frame, &frame_size,
+                                 same_quant ? quality : ost->st->codec->global_quality);
+                    if (vstats_filename && frame_size)
+                        do_video_stats(os, ost, frame_size);
+                    break;
+                case AVMEDIA_TYPE_SUBTITLE:
+                    do_subtitle_out(os, ost, ist, &subtitle,
+                                    pkt->pts);
+                    break;
+                default:
+                    abort();
                 }
 #if CONFIG_AVFILTER
                 frame_available = (ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO) &&
