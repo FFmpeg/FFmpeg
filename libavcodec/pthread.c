@@ -724,6 +724,11 @@ static int frame_thread_init(AVCodecContext *avctx)
         p->parent = fctx;
         p->avctx  = copy;
 
+        if (!copy) {
+            err = AVERROR(ENOMEM);
+            goto error;
+        }
+
         *copy = *src;
         copy->thread_opaque = p;
         copy->pkt = &p->avpkt;
@@ -737,6 +742,10 @@ static int frame_thread_init(AVCodecContext *avctx)
             update_context_from_thread(avctx, copy, 1);
         } else {
             copy->priv_data = av_malloc(codec->priv_data_size);
+            if (!copy->priv_data) {
+                err = AVERROR(ENOMEM);
+                goto error;
+            }
             memcpy(copy->priv_data, src->priv_data, codec->priv_data_size);
             copy->internal = av_malloc(sizeof(AVCodecInternal));
             if (!copy->internal) {
