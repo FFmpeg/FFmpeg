@@ -439,7 +439,7 @@ static int v4l2_set_parameters(AVFormatContext *s1, AVFormatParameters *ap)
     struct v4l2_streamparm streamparm = {0};
     struct v4l2_fract *tpf = &streamparm.parm.capture.timeperframe;
     int i, ret;
-    AVRational framerate_q;
+    AVRational framerate_q={0};
 
     streamparm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
 

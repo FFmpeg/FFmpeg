@@ -1308,6 +1308,10 @@ static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,
         case 1: // zero run
             s->dct_tokens[plane][i]++;
             i += (token >> 2) & 0x7f;
+            if(i>63){
+                av_log(s->avctx, AV_LOG_ERROR, "Coefficient index overflow\n");
+                return -1;
+            }
             block[perm[i]] = (token >> 9) * dequantizer[perm[i]];
             i++;
             break;
