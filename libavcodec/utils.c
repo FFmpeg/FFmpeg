@@ -138,6 +138,7 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV440P:
     case PIX_FMT_YUV444P:
+    case PIX_FMT_GBRP:
     case PIX_FMT_GRAY8:
     case PIX_FMT_GRAY16BE:
     case PIX_FMT_GRAY16LE:
@@ -158,6 +159,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
     case PIX_FMT_YUV444P9BE:
     case PIX_FMT_YUV444P10LE:
     case PIX_FMT_YUV444P10BE:
+    case PIX_FMT_GBRP9LE:
+    case PIX_FMT_GBRP9BE:
+    case PIX_FMT_GBRP10LE:
+    case PIX_FMT_GBRP10BE:
         w_align= 16; //FIXME check for non mpeg style codecs and use less alignment
         h_align= 16;
         if(s->codec_id == CODEC_ID_MPEG2VIDEO || s->codec_id == CODEC_ID_MJPEG || s->codec_id == CODEC_ID_AMV || s->codec_id == CODEC_ID_THP || s->codec_id == CODEC_ID_H264)
