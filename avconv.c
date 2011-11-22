@@ -1836,7 +1836,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int output_packet(InputStream *ist, int ist_index,
+static int output_packet(InputStream *ist,
                          OutputStream *ost_table, int nb_ostreams,
                          const AVPacket *pkt)
 {
@@ -2513,7 +2513,7 @@ static int transcode(OutputFile *output_files,
         }
 
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
-        if (output_packet(ist, ist_index, output_streams, nb_output_streams, &pkt) < 0) {
+        if (output_packet(ist, output_streams, nb_output_streams, &pkt) < 0) {
 
             av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
                    ist->file_index, ist->st->index);
@@ -2534,7 +2534,7 @@ static int transcode(OutputFile *output_files,
     for (i = 0; i < nb_input_streams; i++) {
         ist = &input_streams[i];
         if (ist->decoding_needed) {
-            output_packet(ist, i, output_streams, nb_output_streams, NULL);
+            output_packet(ist, output_streams, nb_output_streams, NULL);
         }
     }
     flush_encoders(output_streams, nb_output_streams);
