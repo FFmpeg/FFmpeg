@@ -130,7 +130,7 @@ void avfilter_inout_free(AVFilterInOut **inout);
  * @param outputs pointer to a linked list to the outputs of the graph, may be NULL.
  *                If non-NULL, *outputs is updated to contain the list of open outputs
  *                after the parsing, should be freed with avfilter_inout_free().
- * @return zero on success, a negative AVERROR code on error
+ * @return non negative on success, a negative AVERROR code on error
  */
 int avfilter_graph_parse(AVFilterGraph *graph, const char *filters,
                          AVFilterInOut **inputs, AVFilterInOut **outputs,
