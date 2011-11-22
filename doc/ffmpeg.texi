@@ -757,6 +757,12 @@ to the respective @var{OUTPUT_CH0} and @var{OUTPUT_CH1}:
 ffmpeg -i INPUT -map_channel 0.0.0 OUTPUT_CH0 -map_channel 0.0.1 OUTPUT_CH1
 @end example
 
+The following example split the channels of a stereo input into streams:
+
+@example
+ffmpeg -i stereo.wav -map 0:0 -map 0:0 -map_channel 0.0.0:0.0 -map_channel 0.0.1:0.1 -y out.ogg
+@end example
+
 Note that "-map_channel" is currently limited to the scope of one input for
 each output; you can't for example use it to pick multiple input audio files
 and mix them into one single output.
