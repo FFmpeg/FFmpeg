@@ -673,11 +673,11 @@ static void choose_pixel_fmt(AVStream *st, AVCodec *codec)
                 p= (const enum PixelFormat[]){PIX_FMT_YUVJ420P, PIX_FMT_YUVJ422P, PIX_FMT_YUVJ444P, PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_YUV444P, PIX_FMT_BGRA, PIX_FMT_NONE};
             }
         }
-        for(; *p!=-1; p++){
+        for (; *p != PIX_FMT_NONE; p++) {
             if(*p == st->codec->pix_fmt)
                 break;
         }
-        if (*p == -1) {
+        if (*p == PIX_FMT_NONE) {
             if(st->codec->pix_fmt != PIX_FMT_NONE)
                 av_log(NULL, AV_LOG_WARNING,
                         "Incompatible pixel format '%s' for codec '%s', auto-selecting format '%s'\n",
