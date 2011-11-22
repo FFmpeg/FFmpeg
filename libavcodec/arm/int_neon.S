@@ -23,7 +23,6 @@
 
         preserve8
         .fpu neon
-        .text
 
 function ff_scalarproduct_int16_neon, export=1
         vmov.i16        q0,  #0

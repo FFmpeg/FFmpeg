@@ -23,7 +23,6 @@
 #include "asm.S"
 
         preserve8
-        .text
 
 function ff_float_to_int16_neon, export=1
         subs            r2,  r2,  #8

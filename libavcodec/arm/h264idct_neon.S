@@ -21,7 +21,6 @@
 #include "asm.S"
 
         preserve8
-        .text
 
 function ff_h264_idct_add_neon, export=1
         vld1.64         {d0-d3},  [r1,:128]

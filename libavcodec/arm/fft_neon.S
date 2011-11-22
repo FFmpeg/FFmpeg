@@ -28,7 +28,6 @@
 
 #define M_SQRT1_2 0.70710678118654752440
 
-        .text
 
 function fft4_neon
         vld1.32         {d0-d3}, [r0,:128]
