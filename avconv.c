@@ -1843,11 +1843,10 @@ static int output_packet(InputStream *ist, int ist_index,
     int i;
     int got_output;
     int64_t pkt_pts = AV_NOPTS_VALUE;
-
     AVPacket avpkt;
 
-    if(ist->next_pts == AV_NOPTS_VALUE)
-        ist->next_pts= ist->pts;
+    if (ist->next_pts == AV_NOPTS_VALUE)
+        ist->next_pts = ist->pts;
 
     if (pkt == NULL) {
         /* EOF handling */
@@ -1868,12 +1867,14 @@ static int output_packet(InputStream *ist, int ist_index,
     while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
         int ret = 0;
     handle_eof:
-        ist->pts= ist->next_pts;
 
-        if(avpkt.size && avpkt.size != pkt->size)
+        ist->pts = ist->next_pts;
+
+        if (avpkt.size && avpkt.size != pkt->size) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
                    "Multiple frames in a packet from stream %d\n", pkt->stream_index);
-            ist->showed_multi_packet_warning=1;
+            ist->showed_multi_packet_warning = 1;
+        }
 
         switch(ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
