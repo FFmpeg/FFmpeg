@@ -44,21 +44,6 @@
 /*
  * First version by Francois Revol revol@free.fr
  * Seek function by Gael Chardon gael.dev@4now.net
- *
- * Features and limitations:
- * - reads most of the QT files I have (at least the structure),
- *   Sample QuickTime files with mp3 audio can be found at: http://www.3ivx.com/showcase.html
- * - the code is quite ugly... maybe I won't do it recursive next time :-)
- *
- * Funny I didn't know about http://sourceforge.net/projects/qt-ffmpeg/
- * when coding this :) (it's a writer anyway)
- *
- * Reference documents:
- * http://www.geocities.com/xhelmboyx/quicktime/formats/qtm-layout.txt
- * Apple:
- *  http://developer.apple.com/documentation/QuickTime/QTFF/
- *  http://developer.apple.com/documentation/QuickTime/QTFF/qtff.pdf
- * QuickTime is a trademark of Apple (AFAIK :))
  */
 
 #include "qtpalette.h"
@@ -67,13 +52,7 @@
 #undef NDEBUG
 #include <assert.h>
 
-/* XXX: it's the first time I make a recursive parser I think... sorry if it's ugly :P */
-
 /* those functions parse an atom */
-/* return code:
-  0: continue to parse next atom
- <0: error occurred, exit
-*/
 /* links atom IDs to parse functions */
 typedef struct MOVParseTableEntry {
     uint32_t type;
