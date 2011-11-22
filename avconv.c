@@ -1840,8 +1840,7 @@ static int output_packet(InputStream *ist, int ist_index,
                          OutputStream *ost_table, int nb_ostreams,
                          const AVPacket *pkt)
 {
-    OutputStream *ost;
-    int ret = 0, i;
+    int i;
     int got_output;
     int64_t pkt_pts = AV_NOPTS_VALUE;
 
@@ -1867,6 +1866,7 @@ static int output_packet(InputStream *ist, int ist_index,
 
     //while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
+        int ret = 0;
     handle_eof:
         ist->pts= ist->next_pts;
 
@@ -1917,7 +1917,7 @@ static int output_packet(InputStream *ist, int ist_index,
         }
     }
     for (i = 0; pkt && i < nb_ostreams; i++) {
-        ost = &ost_table[i];
+        OutputStream *ost = &ost_table[i];
 
         if (!check_output_constraints(ist, ost) || ost->encoding_needed)
             continue;
