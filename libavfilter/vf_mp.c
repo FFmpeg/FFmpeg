@@ -711,11 +711,6 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     char name[256];
     int i;
 
-    av_log(ctx, AV_LOG_WARNING,
-"This is a unholy filter, it will be purified by the ffmpeg exorcist team\n"
-"which will change its syntax from dark -vf mp to light -vf.\n"
-"Thou shalst not make spells or scripts that depend on it\n");
-
     m->avfctx= ctx;
 
     if(!args || 1!=sscanf(args, "%255[^:=]", name)){
@@ -733,6 +728,10 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         av_log(ctx, AV_LOG_ERROR, "Unknown filter %s\n", name);
         return AVERROR(EINVAL);
     }
+
+    av_log(ctx, AV_LOG_WARNING,
+           "'%s' is a wrapped MPlayer filter (libmpcodecs). This filter may be removed\n"
+           "once it has been ported to a native libavfilter.\n", name);
 
     memset(&m->vf,0,sizeof(m->vf));
     m->vf.info= filters[i];
