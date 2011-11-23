@@ -309,14 +309,15 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
 {
     AVProbeData lpd = *pd;
     AVInputFormat *fmt1 = NULL, *fmt;
-    int score, score_max=0;
+    int score, nodat = 0, score_max=0;
 
     if (lpd.buf_size > 10 && ff_id3v2_match(lpd.buf, ID3v2_DEFAULT_MAGIC)) {
         int id3len = ff_id3v2_tag_len(lpd.buf);
         if (lpd.buf_size > id3len + 16) {
             lpd.buf += id3len;
             lpd.buf_size -= id3len;
-        }
+        }else
+            nodat = 1;
     }
 
     fmt = NULL;
@@ -327,7 +328,7 @@ AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score
         if (fmt1->read_probe) {
             score = fmt1->read_probe(&lpd);
             if(fmt1->extensions && av_match_ext(lpd.filename, fmt1->extensions))
-                score = FFMAX(score, 1);
+                score = FFMAX(score, nodat ? AVPROBE_SCORE_MAX/4-1 : 1);
         } else if (fmt1->extensions) {
             if (av_match_ext(lpd.filename, fmt1->extensions)) {
                 score = 50;
