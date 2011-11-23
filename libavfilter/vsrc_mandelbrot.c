@@ -279,7 +279,7 @@ static void draw_mandelbrot(AVFilterContext *ctx, uint32_t *color, int linesize,
         }
 
         for(x=0; x<mb->w; x++){
-            float epsilon;
+            float av_uninit(epsilon);
             const double cr=mb->start_x+scale*(x-mb->w/2);
             double zr=cr;
             double zi=ci;
