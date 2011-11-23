@@ -38,6 +38,19 @@ FATE_AAC += fate-aac-ap05_48
 fate-aac-ap05_48: CMD = pcm -i $(SAMPLES)/aac/ap05_48.mp4
 fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
 
+fate-aac-ct%: CMD = pcm -i $(SAMPLES)/aac/CT_DecoderCheck/$(@:fate-aac-ct-%=%)
+fate-aac-ct%: REF = $(SAMPLES)/aac/CT_DecoderCheck/aacPlusv2.wav
+
+FATE_AAC_CT = sbr_bc-ps_i.3gp  \
+              sbr_bic-ps_i.3gp \
+              sbr_i-ps_i.aac   \
+              sbr_bc-ps_bc.mp4 \
+              sbr_bc-ps_i.mp4  \
+              sbr_i-ps_bic.mp4 \
+              sbr_i-ps_i.mp4
+
+FATE_AAC += $(FATE_AAC_CT:%=fate-aac-ct-%)
+
 FATE_TESTS += $(FATE_AAC)
 fate-aac: $(FATE_AAC)
 $(FATE_AAC): CMP = oneoff
