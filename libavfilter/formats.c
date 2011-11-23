@@ -57,8 +57,13 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
     for (i = 0; i < a->format_count; i++)
         for (j = 0; j < b->format_count; j++)
             if (a->formats[i] == b->formats[j]){
+                if(k >= FFMIN(a->format_count, b->format_count)){
+                    av_log(0, AV_LOG_ERROR, "Duplicate formats in avfilter_merge_formats() detected\n");
+                    av_free(ret->formats);
+                    av_free(ret);
+                    return NULL;
+                }
                 ret->formats[k++] = a->formats[i];
-                break;
             }
 
     ret->format_count = k;
