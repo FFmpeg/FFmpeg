@@ -382,7 +382,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
 #endif /* HAVE_BIGENDIAN */
     case CODEC_ID_PCM_U8:
         memcpy(samples, src, n*sample_size);
-        samples += n * sample_size;
         break;
     case CODEC_ID_PCM_ZORK:
         for (; n > 0; n--) {
@@ -428,7 +427,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
             }
             break;
         }
-        samples = (uint8_t *) dst_int32_t;
         break;
     }
     case CODEC_ID_PCM_LXF:
@@ -451,7 +449,6 @@ static int pcm_decode_frame(AVCodecContext *avctx,
                                  ((src8[2] & 0xF0) << 8) | (src8[4] << 4) | (src8[3] >> 4);
             }
         }
-        samples = (uint8_t *) dst_int32_t;
         break;
     }
     default:
