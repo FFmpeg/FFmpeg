@@ -39,6 +39,7 @@ I. BASICS:
 
 0. Get GIT:
 
+  Most distributions have a git package, if not
   You can get git from http://git-scm.com/
 
 
