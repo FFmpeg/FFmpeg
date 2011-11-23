@@ -1871,7 +1871,6 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
 #if CONFIG_AVFILTER
     for(i=0;i<nb_output_streams;i++) {
-        OutputFile *of = &output_files[output_streams[i].file_index];
             OutputStream *ost = ost = &output_streams[i];
             if(check_output_constraints(ist, ost)){
                 if (!decoded_frame->sample_aspect_ratio.num)
