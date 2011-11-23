@@ -1,0 +1,25 @@
+slot=                                    # some unique identifier
+repo=git://source.ffmpeg.org/ffmpeg.git  # the source repository
+samples=                                 # path to samples directory
+workdir=                                 # directory in which to do all the work
+#fate_recv="ssh -T fate@fate.ffmpeg.org" # command to submit report
+comment=                                 # optional description
+
+# the following are optional and map to configure options
+arch=
+cpu=
+cross_prefix=
+cc=
+target_os=
+sysroot=
+target_exec=
+target_path=
+extra_cflags=
+extra_ldflags=
+extra_libs=
+extra_conf=     # extra configure options not covered above
+
+#make=          # name of GNU make if not 'make'
+makeopts=       # extra options passed to 'make'
+#tar=           # command to create a tar archive from its arguments on stdout,
+                # defaults to 'tar c'
