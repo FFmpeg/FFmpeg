@@ -1892,8 +1892,11 @@ static int output_packet(InputStream *ist,
 
         if (ret < 0)
             return ret;
-        avpkt.data += ret;
-        avpkt.size -= ret;
+        // touch data and size only if not EOF
+        if (pkt) {
+            avpkt.data += ret;
+            avpkt.size -= ret;
+        }
         if (!got_output) {
             continue;
         }
