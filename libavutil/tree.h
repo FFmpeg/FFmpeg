@@ -21,13 +21,23 @@
 /**
  * @file
  * A tree container.
- * Insertion, removal, finding equal, largest which is smaller than and
- * smallest which is larger than, all have O(log n) worst case complexity.
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
 #ifndef AVUTIL_TREE_H
 #define AVUTIL_TREE_H
+
+/**
+ * @addtogroup lavu_tree AVTree
+ * @ingroup lavu_data
+ *
+ * Low complexity tree container
+ *
+ * Insertion, removal, finding equal, largest which is smaller than and
+ * smallest which is larger than, all have O(log n) worst case complexity.
+ * @{
+ */
+
 
 struct AVTreeNode;
 extern const int av_tree_node_size;
@@ -91,5 +101,8 @@ void av_tree_destroy(struct AVTreeNode *t);
  */
 void av_tree_enumerate(struct AVTreeNode *t, void *opaque, int (*cmp)(void *opaque, void *elem), int (*enu)(void *opaque, void *elem));
 
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_TREE_H */

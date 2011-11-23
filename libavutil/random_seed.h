@@ -22,6 +22,10 @@
 #define AVUTIL_RANDOM_SEED_H
 
 #include <stdint.h>
+/**
+ * @addtogroup lavu_crypto
+ * @{
+ */
 
 /**
  * Get a seed to use in conjunction with random functions.
@@ -31,5 +35,9 @@
  * PRNG. The quality of the seed depends on the platform.
  */
 uint32_t av_get_random_seed(void);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_RANDOM_SEED_H */

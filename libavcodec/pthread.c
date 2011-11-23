@@ -365,8 +365,8 @@ static int update_context_from_thread(AVCodecContext *dst, AVCodecContext *src, 
     }
 
     if (for_user) {
-        dst->delay         = src->thread_count - 1;
-        dst->coded_frame   = src->coded_frame;
+        dst->delay       = src->thread_count - 1;
+        dst->coded_frame = src->coded_frame;
     } else {
         if (dst->codec->update_thread_context)
             err = dst->codec->update_thread_context(dst, src);

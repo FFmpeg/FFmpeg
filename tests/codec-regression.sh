@@ -29,19 +29,27 @@ if [ -n "$do_mpeg2" ] ; then
 # mpeg2
 do_video_encoding mpeg2.mpg "-qscale 10 -vcodec mpeg2video -f mpeg1video"
 do_video_decoding
+fi
 
+if [ -n "$do_mpeg2_ivlc_qprd" ]; then
 # mpeg2 encoding intra vlc qprd
 do_video_encoding mpeg2ivlc-qprd.mpg "-vb 500k -bf 2 -trellis 1 -flags +qprd+mv0 -flags2 +ivlc -cmp 2 -subcmp 2 -mbd rd -vcodec mpeg2video -f mpeg2video"
 do_video_decoding
+fi
 
+if [ -n "$do_mpeg2_422" ]; then
 #mpeg2 4:2:2 encoding
 do_video_encoding mpeg2_422.mpg "-vb 1000k -bf 2 -trellis 1 -flags +qprd+mv0+ildct+ilme -flags2 +ivlc -mbd rd -vcodec mpeg2video -pix_fmt yuv422p -f mpeg2video"
 do_video_decoding
+fi
 
+if [ -n "$do_mpeg2_idct_int" ]; then
 # mpeg2
-do_video_encoding mpeg2.mpg "-qscale 10 -vcodec mpeg2video -idct int -dct int -f mpeg1video"
+do_video_encoding mpeg2_idct_int.mpg "-qscale 10 -vcodec mpeg2video -idct int -dct int -f mpeg1video"
 do_video_decoding "-idct int"
+fi
 
+if [ -n "$do_mpeg2_ilace" ]; then
 # mpeg2 encoding interlaced
 do_video_encoding mpeg2i.mpg "-qscale 10 -vcodec mpeg2video -f mpeg1video -flags +ildct+ilme"
 do_video_decoding
@@ -51,7 +59,9 @@ if [ -n "$do_mpeg2thread" ] ; then
 # mpeg2 encoding interlaced
 do_video_encoding mpeg2thread.mpg "-qscale 10 -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -threads 2"
 do_video_decoding
+fi
 
+if [ -n "$do_mpeg2thread_ilace" ]; then
 # mpeg2 encoding interlaced using intra vlc
 do_video_encoding mpeg2threadivlc.mpg "-qscale 10 -vcodec mpeg2video -f mpeg1video -bf 2 -flags +ildct+ilme -flags2 +ivlc -threads 2"
 do_video_decoding
@@ -125,13 +135,19 @@ fi
 if [ -n "$do_mpeg4adv" ] ; then
 do_video_encoding mpeg4-adv.avi "-qscale 9 -flags +mv4+part+aic -trellis 1 -mbd bits -ps 200 -an -vcodec mpeg4"
 do_video_decoding
+fi
 
+if [ -n "$do_mpeg4_qprd" ]; then
 do_video_encoding mpeg4-qprd.avi "-b 450k -bf 2 -trellis 1 -flags +mv4+qprd+mv0 -cmp 2 -subcmp 2 -mbd rd -an -vcodec mpeg4"
 do_video_decoding
+fi
 
+if [ -n "$do_mpeg4_adap" ]; then
 do_video_encoding mpeg4-adap.avi "-b 550k -bf 2 -flags +mv4+mv0 -trellis 1 -cmp 1 -subcmp 2 -mbd rd -scplx_mask 0.3 -an -vcodec mpeg4"
 do_video_decoding
+fi
 
+if [ -n "$do_mpeg4_qpel" ]; then
 do_video_encoding mpeg4-Q.avi "-qscale 7 -flags +mv4+qpel -mbd 2 -bf 2 -cmp 1 -subcmp 2 -an -vcodec mpeg4"
 do_video_decoding
 fi
@@ -219,7 +235,9 @@ fi
 if [ -n "$do_dv" ] ; then
 do_video_encoding dv.dv "-dct int -s pal -an"
 do_video_decoding "" "-s cif"
+fi
 
+if [ -n "$do_dv_411" ]; then
 do_video_encoding dv411.dv "-dct int -s pal -an -pix_fmt yuv411p -sws_flags area+accurate_rnd+bitexact"
 do_video_decoding "" "-s cif -sws_flags area+accurate_rnd+bitexact"
 fi

@@ -1,0 +1,4 @@
+fd5ab0f55dbc959316e32923e86290df *./tests/data/vsynth2/mpeg4-qprd.avi
+231458 ./tests/data/vsynth2/mpeg4-qprd.avi
+de8a883865e2dff7a51f66da6c48df48 *./tests/data/mpeg4_qprd.vsynth2.out.yuv
+stddev:    3.71 PSNR: 36.72 MAXDIFF:   61 bytes:  7603200/  7603200

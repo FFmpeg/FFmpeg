@@ -1,0 +1,4 @@
+f979bcca866e6e4cad5dc6cb06e56cfb *./tests/data/vsynth2/mpeg2_idct_int.mpg
+198041 ./tests/data/vsynth2/mpeg2_idct_int.mpg
+f6d9bf24ff8676a7f6076c05cd2c81a3 *./tests/data/mpeg2_idct_int.vsynth2.out.yuv
+stddev:    4.97 PSNR: 34.19 MAXDIFF:   58 bytes:  7603200/  7603200

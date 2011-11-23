@@ -21,6 +21,40 @@
 #ifndef AVFORMAT_AVFORMAT_H
 #define AVFORMAT_AVFORMAT_H
 
+/**
+ * @defgroup libavf I/O and Muxing/Demuxing Library
+ * @{
+ *
+ * @defgroup lavf_decoding Demuxing
+ * @{
+ * @}
+ *
+ * @defgroup lavf_encoding Muxing
+ * @{
+ * @}
+ *
+ * @defgroup lavf_proto I/O Read/Write
+ * @{
+ * @}
+ *
+ * @defgroup lavf_codec Demuxers
+ * @{
+ * @defgroup lavf_codec_native Native Demuxers
+ * @{
+ * @}
+ * @defgroup lavf_codec_wrappers External library wrappers
+ * @{
+ * @}
+ * @}
+ * @defgroup lavf_protos I/O Protocols
+ * @{
+ * @}
+ * @defgroup lavf_internal Internal
+ * @{
+ * @}
+ * @}
+ *
+ */
 
 /**
  * Return the LIBAVFORMAT_VERSION_INT constant.

@@ -25,6 +25,11 @@
 #include "config.h"
 #include "attributes.h"
 
+/**
+ * @addtogroup lavu_internal
+ * @{
+ */
+
 extern const uint32_t ff_inverse[257];
 
 #if   ARCH_ARM
@@ -76,4 +81,7 @@ static inline av_const unsigned int ff_sqrt(unsigned int a)
     return b - (a < b * b);
 }
 
+/**
+ * @}
+ */
 #endif /* AVUTIL_INTMATH_H */

@@ -1,0 +1,4 @@
+1ba5efeb53fab7b4b71edc96d86f6c91 *./tests/data/vsynth2/mpeg2ivlc-qprd.mpg
+244694 ./tests/data/vsynth2/mpeg2ivlc-qprd.mpg
+b26e21599dee48a174bdbc40b2817e55 *./tests/data/mpeg2_ivlc_qprd.vsynth2.out.yuv
+stddev:    4.15 PSNR: 35.76 MAXDIFF:   74 bytes:  7603200/  7603200

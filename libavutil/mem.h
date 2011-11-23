@@ -30,6 +30,12 @@
 #include "error.h"
 #include "avutil.h"
 
+/**
+ * @addtogroup lavu_mem
+ * @{
+ */
+
+
 #if defined(__INTEL_COMPILER) && __INTEL_COMPILER < 1110 || defined(__SUNPRO_C)
     #define DECLARE_ALIGNED(n,t,v)      t __attribute__ ((aligned (n))) v
     #define DECLARE_ASM_CONST(n,t,v)    const t __attribute__ ((aligned (n))) v
@@ -169,5 +175,9 @@ static inline int av_size_mult(size_t a, size_t b, size_t *r)
     *r = t;
     return 0;
 }
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_MEM_H */

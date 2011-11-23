@@ -2855,6 +2855,10 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
 #if HAVE_YASM
             c->scalarproduct_float = ff_scalarproduct_float_sse;
             c->butterflies_float_interleave = ff_butterflies_float_interleave_sse;
+
+            if (!high_bit_depth)
+                c->emulated_edge_mc = emulated_edge_mc_sse;
+            c->gmc = gmc_sse;
 #endif
         }
         if (HAVE_AMD3DNOW && (mm_flags & AV_CPU_FLAG_3DNOW))
@@ -2875,10 +2879,6 @@ void dsputil_init_mmx(DSPContext* c, AVCodecContext *avctx)
                     c->apply_window_int16 = ff_apply_window_int16_sse2;
                 }
             }
-
-            if (!high_bit_depth)
-            c->emulated_edge_mc = emulated_edge_mc_sse;
-            c->gmc= gmc_sse;
 #endif
         }
         if (mm_flags & AV_CPU_FLAG_SSSE3) {

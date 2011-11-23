@@ -25,6 +25,11 @@
 #include "attributes.h"
 
 /**
+ * @addtogroup lavu_string
+ * @{
+ */
+
+/**
  * Return non-zero if pfx is a prefix of str. If it is, *ptr is set to
  * the address of the first character in str after the prefix.
  *
@@ -72,7 +77,7 @@ char *av_stristr(const char *haystack, const char *needle);
  * @param size size of destination buffer
  * @return the length of src
  *
- * WARNING: since the return value is the length of src, src absolutely
+ * @warning since the return value is the length of src, src absolutely
  * _must_ be a properly 0-terminated string, otherwise this will read beyond
  * the end of the buffer and possibly crash.
  */
@@ -90,9 +95,9 @@ size_t av_strlcpy(char *dst, const char *src, size_t size);
  * @param size size of destination buffer
  * @return the total length of src and dst
  *
- * WARNING: since the return value use the length of src and dst, these absolutely
- * _must_ be a properly 0-terminated strings, otherwise this will read beyond
- * the end of the buffer and possibly crash.
+ * @warning since the return value use the length of src and dst, these
+ * absolutely _must_ be a properly 0-terminated strings, otherwise this
+ * will read beyond the end of the buffer and possibly crash.
  */
 size_t av_strlcat(char *dst, const char *src, size_t size);
 
@@ -187,14 +192,18 @@ static inline int av_tolower(int c)
 
 /**
  * Locale independent case-insensitive compare.
- * Note: This means only ASCII-range characters are case-insensitive
+ * @note This means only ASCII-range characters are case-insensitive
  */
 int av_strcasecmp(const char *a, const char *b);
 
 /**
  * Locale independent case-insensitive compare.
- * Note: This means only ASCII-range characters are case-insensitive
+ * @note This means only ASCII-range characters are case-insensitive
  */
 int av_strncasecmp(const char *a, const char *b, size_t n);
+
+/**
+ * @}
+ */
 
 #endif /* AVUTIL_AVSTRING_H */

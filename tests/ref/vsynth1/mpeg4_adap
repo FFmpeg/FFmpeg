@@ -1,0 +1,4 @@
+2d870c0da9ab2231ab5fc06981e70399 *./tests/data/vsynth1/mpeg4-adap.avi
+403456 ./tests/data/vsynth1/mpeg4-adap.avi
+fa2049396479b5f170aa764fed5b2a31 *./tests/data/mpeg4_adap.vsynth1.out.yuv
+stddev:   14.05 PSNR: 25.17 MAXDIFF:  184 bytes:  7603200/  7603200

@@ -33,7 +33,7 @@
 #include "libavutil/libm.h" // brought forward to work around cygwin header breakage
 
 #include <float.h>
-#include <math.h>
+#include "libavutil/mathematics.h"
 #include "avcodec.h"
 #include "put_bits.h"
 #include "aac.h"
