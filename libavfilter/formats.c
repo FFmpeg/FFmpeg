@@ -56,8 +56,10 @@ AVFilterFormats *avfilter_merge_formats(AVFilterFormats *a, AVFilterFormats *b)
                                                            b->format_count));
     for (i = 0; i < a->format_count; i++)
         for (j = 0; j < b->format_count; j++)
-            if (a->formats[i] == b->formats[j])
+            if (a->formats[i] == b->formats[j]){
                 ret->formats[k++] = a->formats[i];
+                break;
+            }
 
     ret->format_count = k;
     /* check that there was at least one common format */
