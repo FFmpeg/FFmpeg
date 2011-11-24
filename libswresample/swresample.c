@@ -149,11 +149,11 @@ int swr_init(struct SwrContext *s){
     s->out_sample_fmt= av_get_alt_sample_fmt(s->out_sample_fmt, 0);
 
     if(s-> in_sample_fmt >= AV_SAMPLE_FMT_NB){
-        av_log(s, AV_LOG_ERROR, "Requested sample format %s is invalid\n", av_get_sample_fmt_name(s->in_sample_fmt));
+        av_log(s, AV_LOG_ERROR, "Requested input sample format %d is invalid\n", s->in_sample_fmt);
         return AVERROR(EINVAL);
     }
     if(s->out_sample_fmt >= AV_SAMPLE_FMT_NB){
-        av_log(s, AV_LOG_ERROR, "Requested sample format %s is invalid\n", av_get_sample_fmt_name(s->out_sample_fmt));
+        av_log(s, AV_LOG_ERROR, "Requested output sample format %d is invalid\n", s->out_sample_fmt);
         return AVERROR(EINVAL);
     }
 
