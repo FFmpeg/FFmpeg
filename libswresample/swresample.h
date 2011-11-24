@@ -30,7 +30,7 @@
 #include "libavutil/samplefmt.h"
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
-#define LIBSWRESAMPLE_VERSION_MINOR 4
+#define LIBSWRESAMPLE_VERSION_MINOR 5
 #define LIBSWRESAMPLE_VERSION_MICRO 0
 
 #define SWR_CH_MAX 16   ///< Maximum number of channels
@@ -69,10 +69,10 @@ int swr_init(struct SwrContext *s);
  *
  * @param s               Swr context, can be NULL
  * @param out_ch_layout   output channel layout (AV_CH_LAYOUT_*)
- * @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*). Use +0x100 for planar audio
+ * @param out_sample_fmt  output sample format (AV_SAMPLE_FMT_*).
  * @param out_sample_rate output sample rate (frequency in Hz)
  * @param in_ch_layout    input channel layout (AV_CH_LAYOUT_*)
- * @param in_sample_fmt   input sample format (AV_SAMPLE_FMT_*). Use +0x100 for planar audio
+ * @param in_sample_fmt   input sample format (AV_SAMPLE_FMT_*).
  * @param in_sample_rate  input sample rate (frequency in Hz)
  * @param log_offset      logging level offset
  * @param log_ctx         parent logging context, can be NULL

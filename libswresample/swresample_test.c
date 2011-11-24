@@ -30,8 +30,8 @@
 
 static double get(const uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFormat f){
     const uint8_t *p;
-    if(f>=0x100){
-        f&=0xFF;
+    if(av_sample_fmt_is_planar(f)){
+        f= av_get_alt_sample_fmt(f, 0);
         p= a[ch];
     }else{
         p= a[0];
@@ -50,8 +50,8 @@ static double get(const uint8_t *a[], int ch, int index, int ch_count, enum AVSa
 
 static void  set(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFormat f, double v){
     uint8_t *p;
-    if(f>=0x100){
-        f&=0xFF;
+    if(av_sample_fmt_is_planar(f)){
+        f= av_get_alt_sample_fmt(f, 0);
         p= a[ch];
     }else{
         p= a[0];
@@ -86,7 +86,7 @@ AV_CH_LAYOUT_7POINT1_WIDE            ,
 };
 
 static void setup_array(uint8_t *out[SWR_CH_MAX], uint8_t *in, enum AVSampleFormat format, int samples){
-    if(format >= 0x100){
+    if(av_sample_fmt_is_planar(format)){
         int i;
         int plane_size= av_get_bytes_per_sample(format&0xFF)*samples;
         format&=0xFF;
@@ -109,7 +109,6 @@ int main(int argc, char **argv){
     uint8_t *ain[SWR_CH_MAX];
     uint8_t *aout[SWR_CH_MAX];
     uint8_t *amid[SWR_CH_MAX];
-    int planar_in=256, planar_out=256;
 
     struct SwrContext * forw_ctx= NULL;
     struct SwrContext *backw_ctx= NULL;
@@ -130,11 +129,11 @@ int main(int argc, char **argv){
                                in_ch_count, out_ch_count,
                                in_sample_rate, out_sample_rate,
                                av_get_sample_fmt_name(in_sample_fmt), av_get_sample_fmt_name(out_sample_fmt));
-                        forw_ctx  = swr_alloc_set_opts(forw_ctx, out_ch_layout, out_sample_fmt+planar_out, out_sample_rate,
-                                                                  in_ch_layout,  in_sample_fmt+planar_in ,  in_sample_rate,
+                        forw_ctx  = swr_alloc_set_opts(forw_ctx, out_ch_layout, av_get_alt_sample_fmt(out_sample_fmt, 1), out_sample_rate,
+                                                                  in_ch_layout, av_get_alt_sample_fmt( in_sample_fmt, 1),  in_sample_rate,
                                                        0, 0);
                         backw_ctx = swr_alloc_set_opts(backw_ctx, in_ch_layout,  in_sample_fmt,             in_sample_rate,
-                                                                 out_ch_layout, out_sample_fmt+planar_out, out_sample_rate,
+                                                                 out_ch_layout, av_get_alt_sample_fmt(out_sample_fmt, 1), out_sample_rate,
                                                        0, 0);
                         if(swr_init( forw_ctx) < 0)
                             fprintf(stderr, "swr_init(->) failed\n");
@@ -145,12 +144,12 @@ int main(int argc, char **argv){
                         if(!backw_ctx)
                             fprintf(stderr, "Failed to init backw_ctx\n");
                                //FIXME test planar
-                        setup_array(ain , array_in ,  in_sample_fmt+planar_in ,   SAMPLES);
-                        setup_array(amid, array_mid, out_sample_fmt+planar_out, 3*SAMPLES);
+                        setup_array(ain , array_in , av_get_alt_sample_fmt( in_sample_fmt, 1),   SAMPLES);
+                        setup_array(amid, array_mid, av_get_alt_sample_fmt(out_sample_fmt, 1), 3*SAMPLES);
                         setup_array(aout, array_out,  in_sample_fmt           ,   SAMPLES);
                         for(ch=0; ch<in_ch_count; ch++){
                             for(i=0; i<SAMPLES; i++)
-                                set(ain, ch, i, in_ch_count, in_sample_fmt+planar_in, sin(i*i*3/SAMPLES));
+                                set(ain, ch, i, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1), sin(i*i*3/SAMPLES));
                         }
                         mid_count= swr_convert(forw_ctx, amid, 3*SAMPLES, ain, SAMPLES);
                         out_count= swr_convert(backw_ctx,aout, SAMPLES, amid, mid_count);
@@ -163,7 +162,7 @@ int main(int argc, char **argv){
                             double sum_bb= 0;
                             double sum_ab= 0;
                             for(i=0; i<out_count; i++){
-                                double a= get(ain , ch, i, in_ch_count, in_sample_fmt+planar_in);
+                                double a= get(ain , ch, i, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
                                 double b= get(aout, ch, i, in_ch_count, in_sample_fmt);
                                 sum_a += a;
                                 sum_b += b;
@@ -188,7 +187,7 @@ int main(int argc, char **argv){
                                 double sum_bb= 0;
                                 double sum_ab= 0;
                                 for(i=0; i<flush_count; i++){
-                                    double a= get(ain , ch, i+out_count, in_ch_count, in_sample_fmt+planar_in);
+                                    double a= get(ain , ch, i+out_count, in_ch_count, av_get_alt_sample_fmt(in_sample_fmt, 1));
                                     double b= get(aout, ch, i, in_ch_count, in_sample_fmt);
                                     sum_a += a;
                                     sum_b += b;
