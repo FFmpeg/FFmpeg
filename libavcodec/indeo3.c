@@ -226,8 +226,11 @@ static void copy_cell(Indeo3DecodeContext *ctx, Plane *plane, Cell *cell)
     /* setup output and reference pointers */
     offset_dst  = (cell->ypos << 2) * plane->pitch + (cell->xpos << 2);
     dst         = plane->pixels[ctx->buf_sel] + offset_dst;
+    if(cell->mv_ptr){
     mv_y        = cell->mv_ptr[0];
     mv_x        = cell->mv_ptr[1];
+    }else
+        mv_x= mv_y= 0;
     offset      = offset_dst + mv_y * plane->pitch + mv_x;
     src         = plane->pixels[ctx->buf_sel ^ 1] + offset;
 
