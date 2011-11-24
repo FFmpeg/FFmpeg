@@ -105,6 +105,7 @@ struct SwrContext *swr_alloc_set_opts(struct SwrContext *s,
     av_opt_set_int(s, "tsf", AV_SAMPLE_FMT_S16, 0);
     av_opt_set_int(s, "ich", av_get_channel_layout_nb_channels(s-> in_ch_layout), 0);
     av_opt_set_int(s, "och", av_get_channel_layout_nb_channels(s->out_ch_layout), 0);
+    av_opt_set_int(s, "uch", 0, 0);
     return s;
 }
 
