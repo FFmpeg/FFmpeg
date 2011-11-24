@@ -552,9 +552,18 @@ const char *sws_format_name(enum PixelFormat format);
 #define isRGB(x) \
     (av_pix_fmt_descriptors[x].flags & PIX_FMT_RGB)
 
+#if 0 // FIXME
 #define isGray(x) \
     (!(av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) && \
      av_pix_fmt_descriptors[x].nb_components <= 2)
+#else
+#define isGray(x)       (           \
+           (x)==PIX_FMT_GRAY8       \
+        || (x)==PIX_FMT_Y400A      \
+        || (x)==PIX_FMT_GRAY16BE    \
+        || (x)==PIX_FMT_GRAY16LE    \
+    )
+#endif
 
 #define isRGBinInt(x)   (           \
            (x)==PIX_FMT_RGB48BE     \

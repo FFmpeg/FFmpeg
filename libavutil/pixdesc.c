@@ -219,7 +219,6 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         .comp = {
             {0,0,1,0,7},        /* Y */
         },
-        .flags = PIX_FMT_PAL,
     },
     [PIX_FMT_MONOWHITE] = {
         .name = "monow",
@@ -567,7 +566,7 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
             {0,5,3,0,15},       /* G */
             {0,5,5,0,15},       /* B */
         },
-        .flags = PIX_FMT_BE,
+        .flags = PIX_FMT_RGB | PIX_FMT_BE,
     },
     [PIX_FMT_RGB48LE] = {
         .name = "rgb48le",
