@@ -123,6 +123,9 @@ static int loco_decode_plane(LOCOContext *l, uint8_t *data, int width, int heigh
     int val;
     int i, j;
 
+    if(buf_size<=0)
+        return -1;
+
     init_get_bits(&rc.gb, buf, buf_size*8);
     rc.save = 0;
     rc.run = 0;
@@ -225,7 +228,7 @@ static int decode_frame(AVCodecContext *avctx,
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = l->pic;
 
-    return buf_size;
+    return buf_size < 0 ? -1 : buf_size;
 }
 
 static av_cold int decode_init(AVCodecContext *avctx){
