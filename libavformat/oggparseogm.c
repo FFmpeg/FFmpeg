@@ -80,9 +80,7 @@ ogm_header(AVFormatContext *s, int idx)
         if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO){
             st->codec->width = bytestream_get_le32(&p);
             st->codec->height = bytestream_get_le32(&p);
-            st->codec->time_base.den = spu * 10000000;
-            st->codec->time_base.num = time_unit;
-            avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
+            avpriv_set_pts_info(st, 64, spu * 10000000, time_unit);
         } else {
             st->codec->channels = bytestream_get_le16(&p);
             p += 2;                 /* block_align */
@@ -117,8 +115,7 @@ ogm_dshow_header(AVFormatContext *s, int idx)
     if(t == 0x05589f80){
         st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         st->codec->codec_id = ff_codec_get_id(ff_codec_bmp_tags, AV_RL32(p + 68));
-        st->codec->time_base.den = 10000000;
-        st->codec->time_base.num = AV_RL64(p + 164);
+        avpriv_set_pts_info(st, 64, AV_RL64(p + 164), 10000000);
         st->codec->width = AV_RL32(p + 176);
         st->codec->height = AV_RL32(p + 180);
     } else if(t == 0x05589f81){
