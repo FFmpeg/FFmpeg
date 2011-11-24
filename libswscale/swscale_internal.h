@@ -427,6 +427,16 @@ typedef struct SwsContext {
     void (*chrToYV12)(uint8_t *dstU, uint8_t *dstV,
                       const uint8_t *src1, const uint8_t *src2,
                       int width, uint32_t *pal); ///< Unscaled conversion of chroma planes to YV12 for horizontal scaler.
+
+    /**
+      * Functions to read planar input, such as planar RGB, and convert
+      * internally to Y/UV.
+      */
+    /** @{ */
+    void (*readLumPlanar)(uint8_t *dst, const uint8_t *src[4], int width);
+    void (*readChrPlanar)(uint8_t *dstU, uint8_t *dstV, const uint8_t *src[4], int width);
+    /** @} */
+
     /**
      * Scale one horizontal line of input data using a bilinear filter
      * to produce one line of output data. Compared to SwsContext->hScale(),
@@ -593,6 +603,10 @@ const char *sws_format_name(enum PixelFormat format);
 #define isPacked(x) \
     (av_pix_fmt_descriptors[x].nb_components >= 2 && \
      !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
+
+#define isPlanar(x) \
+    (av_pix_fmt_descriptors[x].nb_components >= 2 && \
+     (av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
 
 #define usePal(x) ((av_pix_fmt_descriptors[x].flags & PIX_FMT_PAL) || (x) == PIX_FMT_Y400A)
 
