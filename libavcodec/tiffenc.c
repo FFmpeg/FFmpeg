@@ -25,6 +25,9 @@
  * @author Bartlomiej Wolowiec
  */
 
+#include "libavutil/log.h"
+#include "libavutil/opt.h"
+
 #include "avcodec.h"
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -44,7 +47,7 @@ static const uint8_t type_sizes2[6] = {
 };
 
 typedef struct TiffEncoderContext {
-    AVClass *avclass;
+    AVClass *class;                     ///< for private options
     AVCodecContext *avctx;
     AVFrame picture;
 
@@ -230,7 +233,6 @@ static int encode_frame(AVCodecContext * avctx, unsigned char *buf,
     p->key_frame = 1;
     avctx->coded_frame= &s->picture;
 
-    s->compr = TIFF_PACKBITS;
     if (avctx->compression_level == 0) {
         s->compr = TIFF_RAW;
     } else if(avctx->compression_level == 2) {
@@ -453,11 +455,26 @@ fail:
     return ret;
 }
 
-static const AVOption options[]={
-{"dpi", "set the image resolution (in dpi)", offsetof(TiffEncoderContext, dpi), AV_OPT_TYPE_INT, {.dbl = 72}, 1, 0x10000, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_ENCODING_PARAM},
-{NULL}
+#define OFFSET(x) offsetof(TiffEncoderContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    {"dpi", "set the image resolution (in dpi)", OFFSET(dpi), AV_OPT_TYPE_INT, {.dbl = 72}, 1, 0x10000, AV_OPT_FLAG_VIDEO_PARAM|AV_OPT_FLAG_ENCODING_PARAM},
+    { "compression_algo", NULL, OFFSET(compr), AV_OPT_TYPE_INT, {TIFF_PACKBITS}, TIFF_RAW, TIFF_DEFLATE, VE, "compression_algo" },
+    { "packbits", NULL, 0, AV_OPT_TYPE_CONST, {TIFF_PACKBITS}, 0, 0, VE, "compression_algo" },
+    { "raw",      NULL, 0, AV_OPT_TYPE_CONST, {TIFF_RAW},      0, 0, VE, "compression_algo" },
+    { "lzw",      NULL, 0, AV_OPT_TYPE_CONST, {TIFF_LZW},      0, 0, VE, "compression_algo" },
+#if CONFIG_ZLIB
+    { "deflate",  NULL, 0, AV_OPT_TYPE_CONST, {TIFF_DEFLATE},  0, 0, VE, "compression_algo" },
+#endif
+    { NULL },
 };
-static const AVClass class = { "tiff", av_default_item_name, options, LIBAVUTIL_VERSION_INT };
+
+static const AVClass tiffenc_class = {
+    .class_name = "TIFF encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_tiff_encoder = {
     .name           = "tiff",
@@ -473,5 +490,5 @@ AVCodec ff_tiff_encoder = {
                               PIX_FMT_YUV411P, PIX_FMT_RGB48LE,
                               PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("TIFF image"),
-    .priv_class= &class,
+    .priv_class     = &tiffenc_class,
 };

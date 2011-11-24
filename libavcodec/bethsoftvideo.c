@@ -47,15 +47,20 @@ static av_cold int bethsoftvid_decode_init(AVCodecContext *avctx)
     return 0;
 }
 
-static void set_palette(AVFrame * frame, const uint8_t * palette_buffer)
+static int set_palette(AVFrame * frame, const uint8_t * palette_buffer, int buf_size)
 {
     uint32_t * palette = (uint32_t *)frame->data[1];
     int a;
+
+    if (buf_size < 256*3)
+        return AVERROR_INVALIDDATA;
+
     for(a = 0; a < 256; a++){
         palette[a] = 0xFF << 24 | AV_RB24(&palette_buffer[a * 3]) * 4;
         palette[a] |= palette[a] >> 6 & 0x30303;
     }
     frame->palette_has_changed = 1;
+    return 256*3;
 }
 
 static int bethsoftvid_decode_frame(AVCodecContext *avctx,
@@ -82,8 +87,7 @@ static int bethsoftvid_decode_frame(AVCodecContext *avctx,
 
     switch(block_type = *buf++){
         case PALETTE_BLOCK:
-            set_palette(&vid->frame, buf);
-            return 0;
+            return set_palette(&vid->frame, buf, buf_size);
         case VIDEO_YOFF_P_FRAME:
             yoffset = bytestream_get_le16(&buf);
             if(yoffset >= avctx->height)

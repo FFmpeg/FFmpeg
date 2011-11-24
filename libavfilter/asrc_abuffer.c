@@ -241,7 +241,7 @@ int av_asrc_buffer_add_buffer(AVFilterContext *ctx,
 
     av_samples_fill_arrays(data, linesize,
                            buf, nb_channels, nb_samples,
-                           sample_fmt, planar, 16);
+                           sample_fmt, 16);
 
     return av_asrc_buffer_add_samples(ctx,
                                       data, linesize, nb_samples,

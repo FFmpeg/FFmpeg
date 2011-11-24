@@ -392,9 +392,6 @@ function ff_\type\()_h264_chroma_mc2_neon, export=1
 endfunc
 .endm
 
-        .text
-        .align
-
         h264_chroma_mc8 put
         h264_chroma_mc8 avg
         h264_chroma_mc4 put

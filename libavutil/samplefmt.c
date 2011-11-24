@@ -25,15 +25,21 @@
 typedef struct SampleFmtInfo {
     char name[4];
     int bits;
+    int planar;
 } SampleFmtInfo;
 
 /** this table gives more information about formats */
 static const SampleFmtInfo sample_fmt_info[AV_SAMPLE_FMT_NB] = {
-    [AV_SAMPLE_FMT_U8]  = { .name = "u8",  .bits = 8 },
-    [AV_SAMPLE_FMT_S16] = { .name = "s16", .bits = 16 },
-    [AV_SAMPLE_FMT_S32] = { .name = "s32", .bits = 32 },
-    [AV_SAMPLE_FMT_FLT] = { .name = "flt", .bits = 32 },
-    [AV_SAMPLE_FMT_DBL] = { .name = "dbl", .bits = 64 },
+    [AV_SAMPLE_FMT_U8]   = { .name =   "u8", .bits =  8, .planar = 0 },
+    [AV_SAMPLE_FMT_S16]  = { .name =  "s16", .bits = 16, .planar = 0 },
+    [AV_SAMPLE_FMT_S32]  = { .name =  "s32", .bits = 32, .planar = 0 },
+    [AV_SAMPLE_FMT_FLT]  = { .name =  "flt", .bits = 32, .planar = 0 },
+    [AV_SAMPLE_FMT_DBL]  = { .name =  "dbl", .bits = 64, .planar = 0 },
+    [AV_SAMPLE_FMT_U8P]  = { .name =  "u8p", .bits =  8, .planar = 1 },
+    [AV_SAMPLE_FMT_S16P] = { .name = "s16p", .bits = 16, .planar = 1 },
+    [AV_SAMPLE_FMT_S32P] = { .name = "s32p", .bits = 32, .planar = 1 },
+    [AV_SAMPLE_FMT_FLTP] = { .name = "fltp", .bits = 32, .planar = 1 },
+    [AV_SAMPLE_FMT_DBLP] = { .name = "dblp", .bits = 64, .planar = 1 },
 };
 
 const char *av_get_sample_fmt_name(enum AVSampleFormat sample_fmt)
@@ -80,51 +86,74 @@ int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt)
 }
 #endif
 
-int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
-                           uint8_t *buf, int nb_channels, int nb_samples,
-                           enum AVSampleFormat sample_fmt, int planar, int align)
+int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt)
 {
-    int i, linesize;
-    int sample_size = av_get_bytes_per_sample(sample_fmt);
-
-    if (nb_channels * (uint64_t)nb_samples * sample_size >= INT_MAX - align*(uint64_t)nb_channels)
-        return AVERROR(EINVAL);
-    linesize = planar ? FFALIGN(nb_samples*sample_size,             align) :
-                        FFALIGN(nb_samples*sample_size*nb_channels, align);
-
-    if (pointers) {
-        pointers[0] = buf;
-        for (i = 1; planar && i < nb_channels; i++) {
-            pointers[i] = pointers[i-1] + linesize;
-        }
-        memset(&pointers[i], 0, (8-i) * sizeof(pointers[0]));
-    }
-
-    if (linesizes) {
-        linesizes[0] = linesize;
-        for (i = 1; planar && i < nb_channels; i++)
-            linesizes[i] = linesizes[0];
-        memset(&linesizes[i], 0, (8-i) * sizeof(linesizes[0]));
-    }
-
-    return planar ? linesize * nb_channels : linesize;
+     if (sample_fmt < 0 || sample_fmt >= AV_SAMPLE_FMT_NB)
+         return 0;
+     return sample_fmt_info[sample_fmt].planar;
 }
 
-int av_samples_alloc(uint8_t *pointers[8], int linesizes[8],
-                     int nb_channels, int nb_samples,
-                     enum AVSampleFormat sample_fmt, int planar,
-                     int align)
+int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
+                               enum AVSampleFormat sample_fmt, int align)
+{
+    int line_size;
+    int sample_size = av_get_bytes_per_sample(sample_fmt);
+    int planar      = av_sample_fmt_is_planar(sample_fmt);
+
+    /* validate parameter ranges */
+    if (!sample_size || nb_samples <= 0 || nb_channels <= 0)
+        return AVERROR(EINVAL);
+
+    /* check for integer overflow */
+    if (nb_channels > INT_MAX / align ||
+        (int64_t)nb_channels * nb_samples > (INT_MAX - (align * nb_channels)) / sample_size)
+        return AVERROR(EINVAL);
+
+    line_size = planar ? FFALIGN(nb_samples * sample_size,               align) :
+                         FFALIGN(nb_samples * sample_size * nb_channels, align);
+    if (linesize)
+        *linesize = line_size;
+
+    return planar ? line_size * nb_channels : line_size;
+}
+
+int av_samples_fill_arrays(uint8_t **audio_data, int *linesize,
+                           uint8_t *buf, int nb_channels, int nb_samples,
+                           enum AVSampleFormat sample_fmt, int align)
+{
+    int ch, planar, buf_size;
+
+    planar   = av_sample_fmt_is_planar(sample_fmt);
+    buf_size = av_samples_get_buffer_size(linesize, nb_channels, nb_samples,
+                                          sample_fmt, align);
+    if (buf_size < 0)
+        return buf_size;
+
+    audio_data[0] = buf;
+    for (ch = 1; planar && ch < nb_channels; ch++)
+        audio_data[ch] = audio_data[ch-1] + *linesize;
+
+    return 0;
+}
+
+int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
+                     int nb_samples, enum AVSampleFormat sample_fmt, int align)
 {
     uint8_t *buf;
-    int size = av_samples_fill_arrays(NULL, NULL,
-                                      NULL, nb_channels, nb_samples,
-                                      sample_fmt, planar, align);
+    int size = av_samples_get_buffer_size(NULL, nb_channels, nb_samples,
+                                          sample_fmt, align);
+    if (size < 0)
+        return size;
 
     buf = av_mallocz(size);
     if (!buf)
         return AVERROR(ENOMEM);
 
-    return av_samples_fill_arrays(pointers, linesizes,
-                                  buf, nb_channels, nb_samples,
-                                  sample_fmt, planar, align);
+    size = av_samples_fill_arrays(audio_data, linesize, buf, nb_channels,
+                                  nb_samples, sample_fmt, align);
+    if (size < 0) {
+        av_free(buf);
+        return size;
+    }
+    return 0;
 }

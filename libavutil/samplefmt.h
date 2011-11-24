@@ -31,6 +31,13 @@ enum AVSampleFormat {
     AV_SAMPLE_FMT_S32,         ///< signed 32 bits
     AV_SAMPLE_FMT_FLT,         ///< float
     AV_SAMPLE_FMT_DBL,         ///< double
+
+    AV_SAMPLE_FMT_U8P,         ///< unsigned 8 bits, planar
+    AV_SAMPLE_FMT_S16P,        ///< signed 16 bits, planar
+    AV_SAMPLE_FMT_S32P,        ///< signed 32 bits, planar
+    AV_SAMPLE_FMT_FLTP,        ///< float, planar
+    AV_SAMPLE_FMT_DBLP,        ///< double, planar
+
     AV_SAMPLE_FMT_NB           ///< Number of sample formats. DO NOT USE if linking dynamically
 };
 
@@ -78,48 +85,64 @@ int av_get_bits_per_sample_fmt(enum AVSampleFormat sample_fmt);
 int av_get_bytes_per_sample(enum AVSampleFormat sample_fmt);
 
 /**
- * Fill channel data pointers and linesizes for samples with sample
+ * Check if the sample format is planar.
+ *
+ * @param sample_fmt the sample format to inspect
+ * @return 1 if the sample format is planar, 0 if it is interleaved
+ */
+int av_sample_fmt_is_planar(enum AVSampleFormat sample_fmt);
+
+/**
+ * Get the required buffer size for the given audio parameters.
+ *
+ * @param[out] linesize calculated linesize, may be NULL
+ * @param nb_channels   the number of channels
+ * @param nb_samples    the number of samples in a single channel
+ * @param sample_fmt    the sample format
+ * @return              required buffer size, or negative error code on failure
+ */
+int av_samples_get_buffer_size(int *linesize, int nb_channels, int nb_samples,
+                               enum AVSampleFormat sample_fmt, int align);
+
+/**
+ * Fill channel data pointers and linesize for samples with sample
  * format sample_fmt.
  *
  * The pointers array is filled with the pointers to the samples data:
- * for planar, set the start point of each plane's data within the buffer,
+ * for planar, set the start point of each channel's data within the buffer,
  * for packed, set the start point of the entire buffer only.
  *
- * The linesize array is filled with the aligned size of each samples
- * plane, that is linesize[i] will contain the linesize of the plane i,
- * and will be zero for all the unused planes. All linesize values are
- * equal.
+ * The linesize array is filled with the aligned size of each channel's data
+ * buffer for planar layout, or the aligned size of the buffer for all channels
+ * for packed layout.
  *
- * @param pointers array to be filled with the pointer for each plane, may be NULL
- * @param linesizes array to be filled with the linesize, may be NULL
- * @param buf the pointer to a buffer containing the samples
- * @param nb_samples the number of samples in a single channel
- * @param planar 1 if the samples layout is planar, 0 if it is packed
- * @param nb_channels the number of channels
- * @return the total size of the buffer, a negative
- * error code in case of failure
+ * @param[out] audio_data  array to be filled with the pointer for each channel
+ * @param[out] linesize    calculated linesize
+ * @param buf              the pointer to a buffer containing the samples
+ * @param nb_channels      the number of channels
+ * @param nb_samples       the number of samples in a single channel
+ * @param sample_fmt       the sample format
+ * @param align            buffer size alignment (1 = no alignment required)
+ * @return                 0 on success or a negative error code on failure
  */
-int av_samples_fill_arrays(uint8_t *pointers[8], int linesizes[8],
-                           uint8_t *buf, int nb_channels, int nb_samples,
-                           enum AVSampleFormat sample_fmt, int planar, int align);
+int av_samples_fill_arrays(uint8_t **audio_data, int *linesize, uint8_t *buf,
+                           int nb_channels, int nb_samples,
+                           enum AVSampleFormat sample_fmt, int align);
 
 /**
- * Allocate a samples buffer for nb_samples samples, and
- * fill pointers and linesizes accordingly.
- * The allocated samples buffer has to be freed by using
- * av_freep(&pointers[0]).
+ * Allocate a samples buffer for nb_samples samples, and fill data pointers and
+ * linesize accordingly.
+ * The allocated samples buffer can be freed by using av_freep(&audio_data[0])
  *
- * @param nb_channels number of audio channels
- * @param nb_samples number of samples per channel
- * @param planar 1 if the samples layout is planar, 0 if packed,
- * @param align the value to use for buffer size alignment
- * @return the size in bytes required for the samples buffer, a negative
- * error code in case of failure
+ * @param[out] audio_data  array to be filled with the pointer for each channel
+ * @param[out] linesize    aligned size for audio buffer(s)
+ * @param nb_channels      number of audio channels
+ * @param nb_samples       number of samples per channel
+ * @param align            buffer size alignment (1 = no alignment required)
+ * @return                 0 on success or a negative error code on failure
  * @see av_samples_fill_arrays()
  */
-int av_samples_alloc(uint8_t *pointers[8], int linesizes[8],
-                     int nb_channels, int nb_samples,
-                     enum AVSampleFormat sample_fmt, int planar,
-                     int align);
+int av_samples_alloc(uint8_t **audio_data, int *linesize, int nb_channels,
+                     int nb_samples, enum AVSampleFormat sample_fmt, int align);
 
-#endif /* AVCORE_SAMPLEFMT_H */
+#endif /* AVUTIL_SAMPLEFMT_H */

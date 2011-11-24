@@ -75,6 +75,7 @@ AVOutputFormat ff_md5_muxer = {
     .write_header      = write_header,
     .write_packet      = write_packet,
     .write_trailer     = write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };
 #endif
 
@@ -102,5 +103,6 @@ AVOutputFormat ff_framemd5_muxer = {
     .audio_codec       = CODEC_ID_PCM_S16LE,
     .video_codec       = CODEC_ID_RAWVIDEO,
     .write_packet      = framemd5_write_packet,
+    .flags             = AVFMT_VARIABLE_FPS,
 };
 #endif

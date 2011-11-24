@@ -64,4 +64,5 @@ AVOutputFormat ff_crc_muxer = {
     .write_header      = crc_write_header,
     .write_packet      = crc_write_packet,
     .write_trailer     = crc_write_trailer,
+    .flags             = AVFMT_NOTIMESTAMPS,
 };

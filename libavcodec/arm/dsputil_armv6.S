@@ -22,8 +22,6 @@
 
         preserve8
 
-        .text
-
 .macro  call_2x_pixels  type, subp
 function ff_\type\()_pixels16\subp\()_armv6, export=1
         push            {r0-r3, lr}

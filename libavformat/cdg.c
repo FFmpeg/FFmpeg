@@ -22,6 +22,8 @@
 #include "avformat.h"
 
 #define CDG_PACKET_SIZE    24
+#define CDG_COMMAND        0x09
+#define CDG_MASK           0x3F
 
 static int read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
@@ -49,7 +51,12 @@ static int read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     int ret;
 
-    ret = av_get_packet(s->pb, pkt, CDG_PACKET_SIZE);
+    while (1) {
+        ret = av_get_packet(s->pb, pkt, CDG_PACKET_SIZE);
+        if (ret < 1 || (pkt->data[0] & CDG_MASK) == CDG_COMMAND)
+            break;
+        av_free_packet(pkt);
+    }
 
     pkt->stream_index = 0;
     pkt->dts=pkt->pts= s->streams[0]->cur_dts;

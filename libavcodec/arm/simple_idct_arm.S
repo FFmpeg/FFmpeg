@@ -53,8 +53,6 @@
 #define COL_SHIFTED_1 524288 /* 1<< (COL_SHIFT-1) */
 
 
-        .text
-
 function ff_simple_idct_arm, export=1
         @@ void simple_idct_arm(int16_t *block)
         @@ save stack for reg needed (take all of them),

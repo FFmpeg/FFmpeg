@@ -1219,7 +1219,8 @@ static void do_video_out(AVFormatContext *s,
 
     format_video_sync = video_sync_method;
     if (format_video_sync < 0)
-        format_video_sync = (s->oformat->flags & AVFMT_VARIABLE_FPS) ? 2 : 1;
+        format_video_sync = (s->oformat->flags & AVFMT_NOTIMESTAMPS) ? 0 :
+                            (s->oformat->flags & AVFMT_VARIABLE_FPS) ? 2 : 1;
 
     if (format_video_sync) {
         double vdelta = sync_ipts - ost->sync_opts;
@@ -1710,15 +1711,13 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
                                 pkt);
     if (ret < 0)
         return ret;
-    pkt->data   += ret;
-    pkt->size   -= ret;
     *got_output  = decoded_data_size > 0;
 
     /* Some bug in mpeg audio decoder gives */
     /* decoded_data_size < 0, it seems they are overflows */
     if (!*got_output) {
         /* no audio frame */
-        return 0;
+        return ret;
     }
 
     decoded_data_buf = (uint8_t *)samples;
@@ -1791,7 +1790,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         do_audio_out(output_files[ost->file_index].ctx, ost, ist,
                      decoded_data_buf, decoded_data_size);
     }
-    return 0;
+    return ret;
 }
 
 static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int64_t *pkt_pts)
@@ -1819,7 +1818,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     if (!*got_output) {
         /* no picture yet */
         av_freep(&decoded_frame);
-        return 0;
+        return ret;
     }
     ist->next_pts = ist->pts = decoded_frame->best_effort_timestamp;
     if (ist->st->codec->time_base.num != 0) {
@@ -1898,9 +1897,7 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     if (ret < 0)
         return ret;
     if (!*got_output)
-        return 0;
-
-    pkt->size = 0;
+        return ret;
 
     rate_emu_sleep(ist);
 
@@ -1914,23 +1911,21 @@ static int transcode_subtitles(InputStream *ist, AVPacket *pkt, int *got_output)
     }
 
     avsubtitle_free(&subtitle);
-    return 0;
+    return ret;
 }
 
 /* pkt = NULL means EOF (needed to flush decoder buffers) */
-static int output_packet(InputStream *ist, int ist_index,
+static int output_packet(InputStream *ist,
                          OutputStream *ost_table, int nb_ostreams,
                          const AVPacket *pkt)
 {
-    OutputStream *ost;
-    int ret = 0, i;
+    int i;
     int got_output;
     int64_t pkt_pts = AV_NOPTS_VALUE;
-
     AVPacket avpkt;
 
-    if(ist->next_pts == AV_NOPTS_VALUE)
-        ist->next_pts= ist->pts;
+    if (ist->next_pts == AV_NOPTS_VALUE)
+        ist->next_pts = ist->pts;
 
     if (pkt == NULL) {
         /* EOF handling */
@@ -1949,13 +1944,16 @@ static int output_packet(InputStream *ist, int ist_index,
 
     //while we have more to decode or while the decoder did output something on EOF
     while (ist->decoding_needed && (avpkt.size > 0 || (!pkt && got_output))) {
+        int ret = 0;
     handle_eof:
-        ist->pts= ist->next_pts;
 
-        if(avpkt.size && avpkt.size != pkt->size)
+        ist->pts = ist->next_pts;
+
+        if (avpkt.size && avpkt.size != pkt->size) {
             av_log(NULL, ist->showed_multi_packet_warning ? AV_LOG_VERBOSE : AV_LOG_WARNING,
                    "Multiple frames in a packet from stream %d\n", pkt->stream_index);
-            ist->showed_multi_packet_warning=1;
+            ist->showed_multi_packet_warning = 1;
+        }
 
         switch(ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
@@ -1973,13 +1971,15 @@ static int output_packet(InputStream *ist, int ist_index,
 
         if (ret < 0)
             return ret;
+        // touch data and size only if not EOF
+        if (pkt) {
+            avpkt.data += ret;
+            avpkt.size -= ret;
+        }
         if (!got_output) {
-            if (ist->st->codec->codec_type == AVMEDIA_TYPE_AUDIO)
-                continue;
-            goto discard_packet;
+            continue;
         }
     }
- discard_packet:
 
     /* handle stream copy */
     if (!ist->decoding_needed) {
@@ -2000,7 +2000,7 @@ static int output_packet(InputStream *ist, int ist_index,
         }
     }
     for (i = 0; pkt && i < nb_ostreams; i++) {
-        ost = &ost_table[i];
+        OutputStream *ost = &ost_table[i];
 
         if (!check_output_constraints(ist, ost) || ost->encoding_needed)
             continue;
@@ -2636,7 +2636,7 @@ static int transcode(OutputFile *output_files,
         }
 
         //fprintf(stderr,"read #%d.%d size=%d\n", ist->file_index, ist->st->index, pkt.size);
-        if (output_packet(ist, ist_index, output_streams, nb_output_streams, &pkt) < 0) {
+        if (output_packet(ist, output_streams, nb_output_streams, &pkt) < 0) {
 
             av_log(NULL, AV_LOG_ERROR, "Error while decoding stream #%d:%d\n",
                    ist->file_index, ist->st->index);
@@ -2657,7 +2657,7 @@ static int transcode(OutputFile *output_files,
     for (i = 0; i < nb_input_streams; i++) {
         ist = &input_streams[i];
         if (ist->decoding_needed) {
-            output_packet(ist, i, output_streams, nb_output_streams, NULL);
+            output_packet(ist, output_streams, nb_output_streams, NULL);
         }
     }
     flush_encoders(output_streams, nb_output_streams);

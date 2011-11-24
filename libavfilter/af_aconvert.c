@@ -270,7 +270,7 @@ static int init_buffers(AVFilterLink *inlink, int nb_samples)
         int nb_channels = av_get_channel_layout_nb_channels(outlink->channel_layout);
 
         if (av_samples_alloc(data, linesize, nb_channels, nb_samples,
-                             inlink->format, inlink->planar, 16) < 0)
+                             inlink->format, 16) < 0)
             goto fail_no_mem;
         aconvert->mix_samplesref =
             avfilter_get_audio_buffer_ref_from_arrays(data, linesize, AV_PERM_WRITE,
