@@ -33,7 +33,6 @@
 #include "pcm.h"
 #include "riff.h"
 #include "avio.h"
-#include "avio_internal.h"
 #include "metadata.h"
 
 typedef struct {
@@ -224,7 +223,7 @@ AVOutputFormat ff_wav_muxer = {
 
 #if CONFIG_WAV_DEMUXER
 
-static int64_t next_tag(AVIOContext *pb, unsigned int *tag)
+static int64_t next_tag(AVIOContext *pb, uint32_t *tag)
 {
     *tag = avio_rl32(pb);
     return avio_rl32(pb);
@@ -385,7 +384,7 @@ static int wav_read_header(AVFormatContext *s,
     int64_t size, av_uninit(data_size);
     int64_t sample_count=0;
     int rf64;
-    unsigned int tag;
+    uint32_t tag, list_type;
     AVIOContext *pb = s->pb;
     AVStream *st;
     WAVContext *wav = s->priv_data;
@@ -467,6 +466,18 @@ static int wav_read_header(AVFormatContext *s,
             if ((ret = wav_parse_bext_tag(s, size)) < 0)
                 return ret;
             break;
+        case MKTAG('L', 'I', 'S', 'T'):
+            list_type = avio_rl32(pb);
+            if (size <= 4) {
+                av_log(s, AV_LOG_ERROR, "too short LIST");
+                return AVERROR_INVALIDDATA;
+            }
+            switch (list_type) {
+            case MKTAG('I', 'N', 'F', 'O'):
+                if ((ret = ff_read_riff_info(s, size - 4)) < 0)
+                    return ret;
+            }
+            break;
         }
 
         /* seek to next tag unless we know that we'll run into EOF */
@@ -489,6 +500,7 @@ break_loop:
         st->duration = sample_count;
 
     ff_metadata_conv_ctx(s, NULL, wav_metadata_conv);
+    ff_metadata_conv_ctx(s, NULL, ff_riff_info_conv);
 
     return 0;
 }

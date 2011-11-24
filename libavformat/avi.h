@@ -21,8 +21,6 @@
 #ifndef AVFORMAT_AVI_H
 #define AVFORMAT_AVI_H
 
-#include "metadata.h"
-
 #define AVIF_HASINDEX           0x00000010        // Index at end of file?
 #define AVIF_MUSTUSEINDEX       0x00000020
 #define AVIF_ISINTERLEAVED      0x00000100
@@ -36,12 +34,5 @@
 
 /* index flags */
 #define AVIIF_INDEX             0x10
-
-extern const AVMetadataConv ff_avi_metadata_conv[];
-
-/**
- * A list of AVI info tags.
- */
-extern const char ff_avi_tags[][5];
 
 #endif /* AVFORMAT_AVI_H */

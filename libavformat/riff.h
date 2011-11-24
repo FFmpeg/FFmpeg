@@ -31,6 +31,10 @@
 #include "libavcodec/avcodec.h"
 #include "avio.h"
 #include "internal.h"
+#include "metadata.h"
+
+extern const AVMetadataConv ff_riff_info_conv[];
+extern const char ff_riff_tags[][5];
 
 int64_t ff_start_tag(AVIOContext *pb, const char *tag);
 void ff_end_tag(AVIOContext *pb, int64_t start);
@@ -53,5 +57,7 @@ extern const AVCodecTag ff_codec_wav_tags[];
 unsigned int ff_codec_get_tag(const AVCodecTag *tags, enum CodecID id);
 enum CodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
+
+int ff_read_riff_info(AVFormatContext *s, int64_t size);
 
 #endif /* AVFORMAT_RIFF_H */
