@@ -18,6 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#define _SVID_SOURCE //needed for MAP_ANONYMOUS
 #include <inttypes.h>
 #include <string.h>
 #include <math.h>
