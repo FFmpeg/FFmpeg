@@ -2781,17 +2781,23 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
 
         switch (h->sps.bit_depth_luma) {
             case 9 :
-                if (CHROMA444)
-                    s->avctx->pix_fmt = PIX_FMT_YUV444P9;
-                else if (CHROMA422)
+                if (CHROMA444) {
+                    if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                        s->avctx->pix_fmt = PIX_FMT_GBRP9;
+                    } else
+                        s->avctx->pix_fmt = PIX_FMT_YUV444P9;
+                } else if (CHROMA422)
                     s->avctx->pix_fmt = PIX_FMT_YUV422P9;
                 else
                     s->avctx->pix_fmt = PIX_FMT_YUV420P9;
                 break;
             case 10 :
-                if (CHROMA444)
-                    s->avctx->pix_fmt = PIX_FMT_YUV444P10;
-                else if (CHROMA422)
+                if (CHROMA444) {
+                    if (s->avctx->colorspace == AVCOL_SPC_RGB) {
+                        s->avctx->pix_fmt = PIX_FMT_GBRP10;
+                    } else
+                        s->avctx->pix_fmt = PIX_FMT_YUV444P10;
+                } else if (CHROMA422)
                     s->avctx->pix_fmt = PIX_FMT_YUV422P10;
                 else
                     s->avctx->pix_fmt = PIX_FMT_YUV420P10;

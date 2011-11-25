@@ -155,16 +155,31 @@ enum PixelFormat {
     PIX_FMT_YUV422P9LE, ///< planar YUV 4:2:2, 18bpp, (1 Cr & Cb sample per 2x1 Y samples), little-endian
     PIX_FMT_VDA_VLD,    ///< hardware decoding through VDA
 
+#ifdef AV_PIX_FMT_ABI_GIT_MASTER
     PIX_FMT_RGBA64BE,  ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
     PIX_FMT_RGBA64LE,  ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
     PIX_FMT_BGRA64BE,  ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
     PIX_FMT_BGRA64LE,  ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
-    PIX_FMT_GBR24P,    ///< planar GBR, 24bpp, 8G, 8B, 8R.
+#endif
+    PIX_FMT_GBRP,      ///< planar GBR 4:4:4 24bpp
+    PIX_FMT_GBRP9BE,   ///< planar GBR 4:4:4 27bpp, big endian
+    PIX_FMT_GBRP9LE,   ///< planar GBR 4:4:4 27bpp, little endian
+    PIX_FMT_GBRP10BE,  ///< planar GBR 4:4:4 30bpp, big endian
+    PIX_FMT_GBRP10LE,  ///< planar GBR 4:4:4 30bpp, little endian
+    PIX_FMT_GBRP16BE,  ///< planar GBR 4:4:4 48bpp, big endian
+    PIX_FMT_GBRP16LE,  ///< planar GBR 4:4:4 48bpp, little endian
 
+#ifndef AV_PIX_FMT_ABI_GIT_MASTER
+    PIX_FMT_RGBA64BE=0x123,  ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
+    PIX_FMT_RGBA64LE,  ///< packed RGBA 16:16:16:16, 64bpp, 16R, 16G, 16B, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
+    PIX_FMT_BGRA64BE,  ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as big-endian
+    PIX_FMT_BGRA64LE,  ///< packed RGBA 16:16:16:16, 64bpp, 16B, 16G, 16R, 16A, the 2-byte value for each R/G/B/A component is stored as little-endian
+#endif
     PIX_FMT_NB,        ///< number of pixel formats, DO NOT USE THIS if you want to link with shared libav* because the number of formats might differ between versions
 };
 
 #define PIX_FMT_Y400A PIX_FMT_GRAY8A
+#define PIX_FMT_GBR24P PIX_FMT_GBRP
 
 #if AV_HAVE_BIGENDIAN
 #   define PIX_FMT_NE(be, le) PIX_FMT_##be
@@ -199,4 +214,8 @@ enum PixelFormat {
 
 #define PIX_FMT_RGBA64 PIX_FMT_NE(RGBA64BE, RGBA64LE)
 #define PIX_FMT_BGRA64 PIX_FMT_NE(BGRA64BE, BGRA64LE)
+#define PIX_FMT_GBRP9     PIX_FMT_NE(GBRP9BE ,    GBRP9LE)
+#define PIX_FMT_GBRP10    PIX_FMT_NE(GBRP10BE,    GBRP10LE)
+#define PIX_FMT_GBRP16    PIX_FMT_NE(GBRP16BE,    GBRP16LE)
+
 #endif /* AVUTIL_PIXFMT_H */

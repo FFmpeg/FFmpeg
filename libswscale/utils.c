@@ -145,6 +145,13 @@ const static FormatEntry format_entries[PIX_FMT_NB] = {
     [PIX_FMT_YUV444P10BE] = { 1 , 1 },
     [PIX_FMT_YUV444P10LE] = { 1 , 1 },
     [PIX_FMT_GBR24P]      = { 1 , 0 },
+    [PIX_FMT_GBRP]        = { 1 , 0 },
+    [PIX_FMT_GBRP9LE]     = { 1 , 0 },
+    [PIX_FMT_GBRP9BE]     = { 1 , 0 },
+    [PIX_FMT_GBRP10LE]    = { 1 , 0 },
+    [PIX_FMT_GBRP10BE]    = { 1 , 0 },
+    [PIX_FMT_GBRP16LE]    = { 1 , 0 },
+    [PIX_FMT_GBRP16BE]    = { 1 , 0 },
 };
 
 int sws_isSupportedInput(enum PixelFormat pix_fmt)
