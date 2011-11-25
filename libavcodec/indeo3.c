@@ -736,7 +736,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         ref_cell->width -= curr_cell.width;
     }
 
-    while (1) { /* loop until return */
+    while (get_bits_left(&ctx->gb) >= 2) { /* loop until return */
         RESYNC_BITSTREAM;
         switch (code = get_bits(&ctx->gb, 2)) {
         case H_SPLIT:
@@ -789,7 +789,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         }
     }//while
 
-    return 0;
+    return AVERROR_INVALIDDATA;
 }
 
 
