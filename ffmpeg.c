@@ -1526,6 +1526,9 @@ static void print_report(OutputFile *output_files,
                extra_size/1024.0,
                100.0*(total_size - raw)/raw
         );
+        if(video_size + audio_size + extra_size == 0){
+            av_log(NULL, AV_LOG_WARNING, "Output file is empty, nothing was encoded (check -ss / -t / -frames parameters if used)\n");
+        }
     }
 }
 
