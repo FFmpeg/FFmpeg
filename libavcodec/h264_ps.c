@@ -485,6 +485,18 @@ build_qp_table(PPS *pps, int t, int index, const int depth)
         pps->chroma_qp_table[t][i] = ff_h264_chroma_qp[depth-8][av_clip(i + index, 0, max_qp)];
 }
 
+static int more_rbsp_data_in_pps(H264Context *h, PPS *pps)
+{
+    const SPS *sps = h->sps_buffers[pps->sps_id];
+    if (sps->constraint_set_flags & 7) {
+        av_log(h->s.avctx, AV_LOG_WARNING,
+               "Current profile doesn't provide more RBSP data in PPS, skipping\n");
+        return 0;
+    }
+
+    return 1;
+}
+
 int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     MpegEncContext * const s = &h->s;
     unsigned int pps_id= get_ue_golomb(&s->gb);
@@ -568,7 +580,7 @@ int ff_h264_decode_picture_parameter_set(H264Context *h, int bit_length){
     memcpy(pps->scaling_matrix8, h->sps_buffers[pps->sps_id]->scaling_matrix8, sizeof(pps->scaling_matrix8));
 
     bits_left = bit_length - get_bits_count(&s->gb);
-    if(bits_left > 0){
+    if(bits_left > 0 && more_rbsp_data_in_pps(h, pps)){
         pps->transform_8x8_mode= get_bits1(&s->gb);
         decode_scaling_matrices(h, h->sps_buffers[pps->sps_id], pps, 0, pps->scaling_matrix4, pps->scaling_matrix8);
         pps->chroma_qp_index_offset[1]= get_se_golomb(&s->gb); //second_chroma_qp_index_offset
