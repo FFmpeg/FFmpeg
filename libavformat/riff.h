@@ -1,5 +1,5 @@
 /*
- * RIFF codec tags
+ * RIFF common functions and data
  * copyright (c) 2000 Fabrice Bellard
  *
  * This file is part of Libav.
@@ -59,5 +59,15 @@ enum AVCodecID ff_codec_get_id(const AVCodecTag *tags, unsigned int tag);
 void ff_parse_specific_params(AVCodecContext *stream, int *au_rate, int *au_ssize, int *au_scale);
 
 int ff_read_riff_info(AVFormatContext *s, int64_t size);
+
+/**
+ * Write all recognized RIFF tags from s->metadata
+ */
+void ff_riff_write_info(AVFormatContext *s);
+
+/**
+ * Write a single RIFF info tag
+ */
+void ff_riff_write_info_tag(AVIOContext *pb, const char *tag, const char *str);
 
 #endif /* AVFORMAT_RIFF_H */
