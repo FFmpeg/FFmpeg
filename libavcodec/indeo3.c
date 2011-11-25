@@ -798,15 +798,19 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                         int32_t strip_width)
 {
     Cell            curr_cell;
-    int             num_vectors;
+    uint32_t        num_vectors;
 
     /* each plane data starts with mc_vector_count field, */
     /* an optional array of motion vectors followed by the vq data */
     num_vectors = bytestream_get_le32(&data);
+    if(num_vectors >= data_size/2)
+        return AVERROR_INVALIDDATA;
     ctx->mc_vectors  = num_vectors ? data : 0;
+    data     += num_vectors * 2;
+    data_size-= num_vectors * 2;
 
     /* init the bitreader */
-    init_get_bits(&ctx->gb, &data[num_vectors * 2], data_size << 3);
+    init_get_bits(&ctx->gb, data, data_size << 3);
     ctx->skip_bits   = 0;
     ctx->need_resync = 0;
 
