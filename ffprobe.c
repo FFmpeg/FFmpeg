@@ -892,7 +892,7 @@ static void writer_register_all(void)
 #define print_time(k, v, tb)    writer_print_time(w, k, v, tb)
 #define print_ts(k, v)          writer_print_ts(w, k, v)
 #define print_val(k, v, u)      writer_print_string(w, k, \
-    value_string(val_str, sizeof(val_str), (struct unit_value){.val.i = v, .unit=u}), 1)
+    value_string(val_str, sizeof(val_str), (struct unit_value){.val.i = v, .unit=u}), 0)
 #define print_section_header(s) writer_print_section_header(w, s)
 #define print_section_footer(s) writer_print_section_footer(w, s)
 #define show_tags(metadata)     writer_show_tags(w, metadata)
