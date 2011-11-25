@@ -5719,7 +5719,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
 //av_log(s->avctx, AV_LOG_INFO, "Consumed %i/%i bits\n", get_bits_count(&s->gb), s->gb.size_in_bits);
 //  if (get_bits_count(&s->gb) > buf_size * 8)
 //      return -1;
-        if(s->error_occurred & s->pict_type == AV_PICTURE_TYPE_B)
+        if(s->error_occurred && s->pict_type == AV_PICTURE_TYPE_B)
             goto err;
         ff_er_frame_end(s);
     }
