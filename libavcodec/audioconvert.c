@@ -48,7 +48,7 @@ void avcodec_sample_fmt_string (char *buf, int buf_size, int sample_fmt)
 }
 #endif
 
-int64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name)
+uint64_t avcodec_guess_channel_layout(int nb_channels, enum CodecID codec_id, const char *fmt_name)
 {
     switch(nb_channels) {
     case 1: return AV_CH_LAYOUT_MONO;

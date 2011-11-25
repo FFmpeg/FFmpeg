@@ -128,7 +128,7 @@ static const int dca_ext_audio_descr_mask[] = {
  * All 2 channel configurations -> AV_CH_LAYOUT_STEREO
  */
 
-static const int64_t dca_core_channel_layout[] = {
+static const uint64_t dca_core_channel_layout[] = {
     AV_CH_FRONT_CENTER,                                                      ///< 1, A
     AV_CH_LAYOUT_STEREO,                                                     ///< 2, A + B (dual mono)
     AV_CH_LAYOUT_STEREO,                                                     ///< 2, L + R (stereo)

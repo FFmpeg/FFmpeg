@@ -349,7 +349,7 @@ fail:
 
 AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link, int perms,
                                              enum AVSampleFormat sample_fmt, int size,
-                                             int64_t channel_layout, int planar)
+                                             uint64_t channel_layout, int planar)
 {
     AVFilterBufferRef *ret = NULL;
 

@@ -25,7 +25,7 @@
 #include "libavutil/audioconvert.h"
 
 typedef struct {
-    int64_t channel_layout;
+    uint64_t channel_layout;
     int64_t sample_rate;
 } ANullContext;
 

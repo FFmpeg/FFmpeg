@@ -62,7 +62,7 @@
 /** Channel mask value used for AVCodecContext.request_channel_layout
     to indicate that the user requests the channel order of the decoder output
     to be the native codec channel order. */
-#define AV_CH_LAYOUT_NATIVE          0x8000000000000000LL
+#define AV_CH_LAYOUT_NATIVE          0x8000000000000000ULL
 
 /**
  * @}
@@ -92,7 +92,7 @@
 /**
  * Return a channel layout id that matches name, 0 if no match.
  */
-int64_t av_get_channel_layout(const char *name);
+uint64_t av_get_channel_layout(const char *name);
 
 /**
  * Return a description of a channel layout.
@@ -101,12 +101,12 @@ int64_t av_get_channel_layout(const char *name);
  * @param buf put here the string containing the channel layout
  * @param buf_size size in bytes of the buffer
  */
-void av_get_channel_layout_string(char *buf, int buf_size, int nb_channels, int64_t channel_layout);
+void av_get_channel_layout_string(char *buf, int buf_size, int nb_channels, uint64_t channel_layout);
 
 /**
  * Return the number of channels in the channel layout.
  */
-int av_get_channel_layout_nb_channels(int64_t channel_layout);
+int av_get_channel_layout_nb_channels(uint64_t channel_layout);
 
 /**
  * @}
