@@ -109,7 +109,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
         int i, ch;
         av_strlcat(buf, " (", buf_size);
         for (i = 0, ch = 0; i < 64; i++) {
-            if ((channel_layout & (1L << i))) {
+            if ((channel_layout & (UINT64_C(1) << i))) {
                 const char *name = get_channel_name(i);
                 if (name) {
                     if (ch > 0)
