@@ -17,8 +17,8 @@ output pads is called a "sink".
 @section Filtergraph syntax
 
 A filtergraph can be represented using a textual representation, which
-is recognized by the @code{-vf} and @code{-af} options of the ff*
-tools, and by the @code{av_parse_graph()} function defined in
+is recognized by the @code{-vf} and @code{-af} options in @command{avconv}
+and @command{avplay}, and by the @code{av_parse_graph()} function defined in
 @file{libavfilter/avfiltergraph}.
 
 A filterchain consists of a sequence of connected filters, each one
@@ -662,7 +662,7 @@ which is bottom field first.
 
 For example:
 @example
-./ffmpeg -i in.vob -vf "fieldorder=bff" out.dv
+./avconv -i in.vob -vf "fieldorder=bff" out.dv
 @end example
 
 @section fifo
@@ -780,10 +780,9 @@ gradfun=1.2
 
 Flip the input video horizontally.
 
-For example to horizontally flip the video in input with
-@file{ffmpeg}:
+For example to horizontally flip the input video with @command{avconv}:
 @example
-ffmpeg -i in.avi -vf "hflip" out.avi
+avconv -i in.avi -vf "hflip" out.avi
 @end example
 
 @section hqdn3d
@@ -1623,7 +1622,7 @@ Pass the images of input video on to next video filter as multiple
 slices.
 
 @example
-./ffmpeg -i in.avi -vf "slicify=32" out.avi
+./avconv -i in.avi -vf "slicify=32" out.avi
 @end example
 
 The filter accepts the slice height as parameter. If the parameter is
@@ -1719,8 +1718,8 @@ unsharp=7:7:2.5
 # Strong blur of both luma and chroma parameters
 unsharp=7:7:-2:7:7:-2
 
-# Use the default values with @command{ffmpeg}
-./ffmpeg -i in.avi -vf "unsharp" out.mp4
+# Use the default values with @command{avconv}
+./avconv -i in.avi -vf "unsharp" out.mp4
 @end example
 
 @section vflip
@@ -1728,7 +1727,7 @@ unsharp=7:7:-2:7:7:-2
 Flip the input video vertically.
 
 @example
-./ffmpeg -i in.avi -vf "vflip" out.avi
+./avconv -i in.avi -vf "vflip" out.avi
 @end example
 
 @section yadif
