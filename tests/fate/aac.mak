@@ -49,7 +49,7 @@ FATE_AAC_CT = sbr_bc-ps_i.3gp  \
               sbr_i-ps_bic.mp4 \
               sbr_i-ps_i.mp4
 
-#FATE_AAC += $(FATE_AAC_CT:%=fate-aac-ct-%)
+FATE_AAC += $(FATE_AAC_CT:%=fate-aac-ct-%)
 
 FATE_TESTS += $(FATE_AAC)
 fate-aac: $(FATE_AAC)
