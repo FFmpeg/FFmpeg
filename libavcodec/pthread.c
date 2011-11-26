@@ -651,7 +651,8 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
         pthread_cond_signal(&p->input_cond);
         pthread_mutex_unlock(&p->mutex);
 
-        pthread_join(p->thread, NULL);
+        if (p->thread)
+            pthread_join(p->thread, NULL);
 
         if (codec->close)
             codec->close(p->avctx);
