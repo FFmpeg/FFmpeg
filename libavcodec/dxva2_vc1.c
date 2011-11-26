@@ -68,7 +68,7 @@ static void fill_picture_parameters(AVCodecContext *avctx,
         pp->bPicStructure      |= 0x01;
     if (s->picture_structure & PICT_BOTTOM_FIELD)
         pp->bPicStructure      |= 0x02;
-    pp->bSecondField            = v->interlace && v->fcm != 0x03 && !s->first_field;
+    pp->bSecondField            = v->interlace && v->fcm != ILACE_FIELD && !s->first_field;
     pp->bPicIntra               = s->pict_type == AV_PICTURE_TYPE_I;
     pp->bPicBackwardPrediction  = s->pict_type == AV_PICTURE_TYPE_B;
     pp->bBidirectionalAveragingMode = (1                                           << 7) |
@@ -100,7 +100,7 @@ static void fill_picture_parameters(AVCodecContext *avctx,
                                   (s->resync_marker  << 4) |
                                   (v->rangered       << 3) |
                                   (s->max_b_frames       );
-    pp->bPicExtrapolation       = (!v->interlace || v->fcm == 0x00) ? 1 : 2;
+    pp->bPicExtrapolation       = (!v->interlace || v->fcm == PROGRESSIVE) ? 1 : 2;
     pp->bPicDeblocked           = ((v->profile != PROFILE_ADVANCED && v->rangeredfrm) << 5) |
                                   (s->loop_filter                                     << 1);
     pp->bPicDeblockConfined     = (v->postprocflag             << 7) |
