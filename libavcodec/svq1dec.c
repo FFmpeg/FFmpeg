@@ -317,9 +317,9 @@ static int svq1_decode_motion_vector (GetBitContext *bitbuf, svq1_pmv *mv, svq1_
 
     /* add median of motion vector predictors and clip result */
     if (i == 1)
-      mv->y = ((diff + mid_pred(pmv[0]->y, pmv[1]->y, pmv[2]->y)) << 26) >> 26;
+      mv->y = sign_extend(diff + mid_pred(pmv[0]->y, pmv[1]->y, pmv[2]->y), 6);
     else
-      mv->x = ((diff + mid_pred(pmv[0]->x, pmv[1]->x, pmv[2]->x)) << 26) >> 26;
+      mv->x = sign_extend(diff + mid_pred(pmv[0]->x, pmv[1]->x, pmv[2]->x), 6);
   }
 
   return 0;

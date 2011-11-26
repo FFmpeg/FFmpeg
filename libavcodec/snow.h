@@ -154,8 +154,8 @@ typedef struct SnowContext{
     Plane plane[MAX_PLANES];
     BlockNode *block;
 #define ME_CACHE_SIZE 1024
-    int me_cache[ME_CACHE_SIZE];
-    int me_cache_generation;
+    unsigned me_cache[ME_CACHE_SIZE];
+    unsigned me_cache_generation;
     slice_buffer sb;
     int memc_only;
 

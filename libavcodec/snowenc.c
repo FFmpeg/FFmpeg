@@ -958,7 +958,8 @@ static av_always_inline int check_block(SnowContext *s, int mb_x, int mb_y, int 
     const int b_stride= s->b_width << s->block_max_depth;
     BlockNode *block= &s->block[mb_x + mb_y * b_stride];
     BlockNode backup= *block;
-    int rd, index, value;
+    unsigned value;
+    int rd, index;
 
     assert(mb_x>=0 && mb_y>=0);
     assert(mb_x<b_stride);
@@ -1003,7 +1004,8 @@ static av_always_inline int check_4block_inter(SnowContext *s, int mb_x, int mb_
     const int b_stride= s->b_width << s->block_max_depth;
     BlockNode *block= &s->block[mb_x + mb_y * b_stride];
     BlockNode backup[4]= {block[0], block[1], block[b_stride], block[b_stride+1]};
-    int rd, index, value;
+    unsigned value;
+    int rd, index;
 
     assert(mb_x>=0 && mb_y>=0);
     assert(mb_x<b_stride);

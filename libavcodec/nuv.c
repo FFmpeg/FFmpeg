@@ -193,7 +193,7 @@ retry:
         int w, h, q, res;
         if (buf[0] != 'V' || buf_size < 12) {
             av_log(avctx, AV_LOG_ERROR, "invalid nuv video frame (wrong codec_tag?)\n");
-            return -1;
+            return AVERROR_INVALIDDATA;
         }
         w = AV_RL16(&buf[6]);
         h = AV_RL16(&buf[8]);

@@ -607,7 +607,7 @@ yuv2mono_X_c_template(SwsContext *c, const int16_t *lumFilter,
     const uint8_t * const d128=dither_8x8_220[y&7];
     uint8_t *g = c->table_gU[128] + c->table_gV[128];
     int i;
-    int acc = 0;
+    unsigned acc = 0;
 
     for (i = 0; i < dstW - 1; i += 2) {
         int j;

@@ -519,7 +519,7 @@ OBJS-$(CONFIG_PCM_U32LE_ENCODER)          += pcm.o
 OBJS-$(CONFIG_PCM_ZORK_DECODER)           += pcm.o
 
 OBJS-$(CONFIG_ADPCM_4XM_DECODER)          += adpcm.o adpcm_data.o
-OBJS-$(CONFIG_ADPCM_ADX_DECODER)          += adxdec.o
+OBJS-$(CONFIG_ADPCM_ADX_DECODER)          += adxdec.o adx.o
 OBJS-$(CONFIG_ADPCM_ADX_ENCODER)          += adxenc.o
 OBJS-$(CONFIG_ADPCM_CT_DECODER)           += adpcm.o adpcm_data.o
 OBJS-$(CONFIG_ADPCM_EA_DECODER)           += adpcm.o
@@ -558,6 +558,7 @@ OBJS-$(CONFIG_ADPCM_YAMAHA_ENCODER)       += adpcmenc.o adpcm_data.o
 
 # libavformat dependencies
 OBJS-$(CONFIG_ADTS_MUXER)              += mpeg4audio.o
+OBJS-$(CONFIG_ADX_DEMUXER)             += adx.o
 OBJS-$(CONFIG_CAF_DEMUXER)             += mpeg4audio.o mpegaudiodata.o
 OBJS-$(CONFIG_DV_DEMUXER)              += dvdata.o
 OBJS-$(CONFIG_DV_MUXER)                += dvdata.o timecode.o
@@ -632,6 +633,7 @@ OBJS-$(CONFIG_AAC_PARSER)              += aac_parser.o aac_ac3_parser.o \
                                           aacadtsdec.o mpeg4audio.o
 OBJS-$(CONFIG_AC3_PARSER)              += ac3_parser.o ac3tab.o \
                                           aac_ac3_parser.o
+OBJS-$(CONFIG_ADX_PARSER)              += adx_parser.o adx.o
 OBJS-$(CONFIG_CAVSVIDEO_PARSER)        += cavs_parser.o
 OBJS-$(CONFIG_DCA_PARSER)              += dca_parser.o
 OBJS-$(CONFIG_DIRAC_PARSER)            += dirac_parser.o

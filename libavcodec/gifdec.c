@@ -96,11 +96,11 @@ static int gif_read_image(GifState *s)
     n = (1 << bits_per_pixel);
     spal = palette;
     for(i = 0; i < n; i++) {
-        s->image_palette[i] = (0xff << 24) | AV_RB24(spal);
+        s->image_palette[i] = (0xffu << 24) | AV_RB24(spal);
         spal += 3;
     }
     for(; i < 256; i++)
-        s->image_palette[i] = (0xff << 24);
+        s->image_palette[i] = (0xffu << 24);
     /* handle transparency */
     if (s->transparent_color_index >= 0)
         s->image_palette[s->transparent_color_index] = 0;

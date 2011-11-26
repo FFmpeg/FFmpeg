@@ -113,10 +113,6 @@ static void svq1_write_header(SVQ1Context *s, int frame_type)
 #define QUALITY_THRESHOLD 100
 #define THRESHOLD_MULTIPLIER 0.6
 
-#if HAVE_ALTIVEC
-#undef vector
-#endif
-
 static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref, uint8_t *decoded, int stride, int level, int threshold, int lambda, int intra){
     int count, y, x, i, j, split, best_mean, best_score, best_count;
     int best_vector[6];
@@ -160,7 +156,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref, uint8_t *dec
     }
 
     best_count=0;
-    best_score -= ((block_sum[0]*block_sum[0])>>(level+3));
+    best_score -= (int)(((unsigned)block_sum[0]*block_sum[0])>>(level+3));
     best_mean= (block_sum[0] + (size>>1)) >> (level+3);
 
     if(level<4){
