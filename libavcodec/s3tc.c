@@ -28,7 +28,7 @@
 static inline void dxt1_decode_pixels(const uint8_t *s, uint32_t *d,
                                       unsigned int qstride, unsigned int flag,
                                       uint64_t alpha) {
-    unsigned int x, y, c0, c1, a = (!flag * 255) << 24;
+    unsigned int x, y, c0, c1, a = (!flag * 255u) << 24;
     unsigned int rb0, rb1, rb2, rb3, g0, g1, g2, g3;
     uint32_t colors[4], pixels;
 
