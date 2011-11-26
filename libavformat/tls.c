@@ -246,7 +246,6 @@ URLProtocol ff_tls_protocol = {
     .url_open       = tls_open,
     .url_read       = tls_read,
     .url_write      = tls_write,
-    .url_seek       = NULL,
     .url_close      = tls_close,
     .priv_data_size = sizeof(TLSContext),
 };

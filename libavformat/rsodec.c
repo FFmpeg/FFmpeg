@@ -92,11 +92,8 @@ AVInputFormat ff_rso_demuxer = {
     .name           =   "rso",
     .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO format"),
     .extensions     =   "rso",
-    .priv_data_size =   0,
-    .read_probe     =   NULL, /* no magic value in this format */
     .read_header    =   rso_read_header,
     .read_packet    =   rso_read_packet,
-    .read_close     =   NULL,
     .read_seek      =   pcm_read_seek,
     .codec_tag      =   (const AVCodecTag* const []){ff_codec_rso_tags, 0},
 };

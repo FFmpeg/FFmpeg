@@ -108,6 +108,5 @@ static int mjpeg2jpeg_filter(AVBitStreamFilterContext *bsfc,
 
 AVBitStreamFilter ff_mjpeg2jpeg_bsf = {
     .name           = "mjpeg2jpeg",
-    .priv_data_size = 0,
     .filter         = mjpeg2jpeg_filter,
 };

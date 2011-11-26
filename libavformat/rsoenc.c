@@ -104,7 +104,6 @@ AVOutputFormat ff_rso_muxer = {
     .name           =   "rso",
     .long_name      =   NULL_IF_CONFIG_SMALL("Lego Mindstorms RSO format"),
     .extensions     =   "rso",
-    .priv_data_size =   0,
     .audio_codec    =   CODEC_ID_PCM_U8,
     .video_codec    =   CODEC_ID_NONE,
     .write_header   =   rso_write_header,
