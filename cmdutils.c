@@ -775,6 +775,8 @@ int opt_pix_fmts(const char *opt, const char *arg)
 
     for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++) {
         const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[pix_fmt];
+        if(!pix_desc->name)
+            continue;
         printf("%c%c%c%c%c %-16s       %d            %2d\n",
                sws_isSupportedInput (pix_fmt)      ? 'I' : '.',
                sws_isSupportedOutput(pix_fmt)      ? 'O' : '.',
