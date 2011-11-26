@@ -3293,7 +3293,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n,
             i += skip;
             if (i > 63)
                 break;
-            if (v->fcm != 1)
+            if (!v->fcm)
                 idx = v->zz_8x8[0][i++];
             else
                 idx = v->zzi_8x8[i++];
@@ -3321,7 +3321,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n,
                 i += skip;
                 if (i > 15)
                     break;
-                if (v->fcm != 1)
+                if (!v->fcm)
                     idx = ff_vc1_simple_progressive_4x4_zz[i++];
                 else
                     idx = ff_vc1_adv_interlaced_4x4_zz[i++];
@@ -3348,7 +3348,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n,
                 i += skip;
                 if (i > 31)
                     break;
-                if (v->fcm != 1)
+                if (!v->fcm)
                     idx = v->zz_8x4[i++] + off;
                 else
                     idx = ff_vc1_adv_interlaced_8x4_zz[i++] + off;
@@ -3375,7 +3375,7 @@ static int vc1_decode_p_block(VC1Context *v, DCTELEM block[64], int n,
                 i += skip;
                 if (i > 31)
                     break;
-                if (v->fcm != 1)
+                if (!v->fcm)
                     idx = v->zz_4x8[i++] + off;
                 else
                     idx = ff_vc1_adv_interlaced_4x8_zz[i++] + off;
