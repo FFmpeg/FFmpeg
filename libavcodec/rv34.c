@@ -933,7 +933,7 @@ static void rv34_pred_4x4_block(RV34DecContext *r, uint8_t *dst, int stride, int
         if(itype == VERT_LEFT_PRED) itype = VERT_LEFT_PRED_RV40_NODOWN;
     }
     if(!right && up){
-        topleft = dst[-stride + 3] * 0x01010101;
+        topleft = dst[-stride + 3] * 0x01010101u;
         prev = (uint8_t*)&topleft;
     }
     r->h.pred4x4[itype](dst, prev, stride);
