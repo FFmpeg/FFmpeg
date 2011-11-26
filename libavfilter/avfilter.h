@@ -361,8 +361,7 @@ struct AVFilterPad {
     const char *name;
 
     /**
-     * AVFilterPad type. Only video supported now, hopefully someone will
-     * add audio in the future.
+     * AVFilterPad type. Can be AVMEDIA_TYPE_VIDEO or AVMEDIA_TYPE_AUDIO.
      */
     enum AVMediaType type;
 
