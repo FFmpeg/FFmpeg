@@ -160,7 +160,7 @@ static int encode_block(SVQ1Context *s, uint8_t *src, uint8_t *ref, uint8_t *dec
     }
 
     best_count=0;
-    best_score -= ((block_sum[0]*block_sum[0])>>(level+3));
+    best_score -= (int)(((unsigned)block_sum[0]*block_sum[0])>>(level+3));
     best_mean= (block_sum[0] + (size>>1)) >> (level+3);
 
     if(level<4){
