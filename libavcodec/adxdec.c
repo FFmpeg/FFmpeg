@@ -41,8 +41,9 @@ static av_cold int adx_decode_init(AVCodecContext *avctx)
     if (avctx->extradata_size < 24)
         return AVERROR_INVALIDDATA;
 
-    if ((ret = ff_adx_decode_header(avctx, avctx->extradata, avctx->extradata_size,
-                                    &header_size, c->coeff)) < 0) {
+    if ((ret = avpriv_adx_decode_header(avctx, avctx->extradata,
+                                        avctx->extradata_size, &header_size,
+                                        c->coeff)) < 0) {
         av_log(avctx, AV_LOG_ERROR, "error parsing ADX header\n");
         return AVERROR_INVALIDDATA;
     }

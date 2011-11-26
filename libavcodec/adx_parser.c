@@ -53,8 +53,8 @@ static int adx_parse(AVCodecParserContext *s1,
         ff_combine_frame(pc, END_NOT_FOUND, &buf, &buf_size);
 
         if (!s->header_size && pc->index >= MIN_HEADER_SIZE) {
-            if (ret = ff_adx_decode_header(avctx, pc->buffer, pc->index,
-                                           &s->header_size, NULL))
+            if (ret = avpriv_adx_decode_header(avctx, pc->buffer, pc->index,
+                                               &s->header_size, NULL))
                 return AVERROR_INVALIDDATA;
             s->block_size = BLOCK_SIZE * avctx->channels;
         }

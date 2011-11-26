@@ -86,8 +86,9 @@ static int adx_read_header(AVFormatContext *s, AVFormatParameters *ap)
     }
     avctx->extradata_size = c->header_size;
 
-    ret = ff_adx_decode_header(avctx, avctx->extradata, avctx->extradata_size,
-                               &c->header_size, NULL);
+    ret = avpriv_adx_decode_header(avctx, avctx->extradata,
+                                   avctx->extradata_size, &c->header_size,
+                                   NULL);
     if (ret)
         return ret;
 
