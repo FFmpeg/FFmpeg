@@ -33,6 +33,7 @@ static void print_formats(AVFilterContext *filter_ctx)
             AVFilterFormats *fmts =                                     \
                 filter_ctx->inout##puts[i]->outin##_formats;            \
             for (j = 0; j < fmts->format_count; j++)                    \
+                if(av_get_pix_fmt_name(fmts->formats[j]))               \
                 printf(#INOUT "PUT[%d] %s: fmt:%s\n",                   \
                        i, filter_ctx->filter->inout##puts[i].name,      \
                        av_get_pix_fmt_name(fmts->formats[j]));          \
