@@ -525,7 +525,7 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
         if (fctx->next_decoding >= (avctx->thread_count-1)) fctx->delaying = 0;
 
         *got_picture_ptr=0;
-        return 0;
+        return avpkt->size;
     }
 
     /*
@@ -566,7 +566,8 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
 
     fctx->next_finished = finished;
 
-    return p->result;
+    /* return the size of the consumed packet if no error occurred */
+    return (p->result >= 0) ? avpkt->size : p->result;
 }
 
 void ff_thread_report_progress(AVFrame *f, int n, int field)

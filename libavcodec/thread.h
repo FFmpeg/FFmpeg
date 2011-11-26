@@ -42,6 +42,9 @@ void ff_thread_flush(AVCodecContext *avctx);
  * Submits a new frame to a decoding thread.
  * Returns the next available frame in picture. *got_picture_ptr
  * will be 0 if none is available.
+ * The return value on success is the size of the consumed packet for
+ * compatiblity with avcodec_decode_video2(). This means the decoder
+ * has to consume the full packet.
  *
  * Parameters are the same as avcodec_decode_video2().
  */

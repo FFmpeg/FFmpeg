@@ -90,7 +90,7 @@ static const uint8_t aac_channel_layout_map[7][5][2] = {
     { { TYPE_CPE, 0 }, { TYPE_SCE, 0 }, { TYPE_LFE, 0 }, { TYPE_CPE, 2 }, { TYPE_CPE, 1 }, },
 };
 
-static const int64_t aac_channel_layout[8] = {
+static const uint64_t aac_channel_layout[8] = {
     AV_CH_LAYOUT_MONO,
     AV_CH_LAYOUT_STEREO,
     AV_CH_LAYOUT_SURROUND,

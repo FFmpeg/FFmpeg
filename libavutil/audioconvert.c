@@ -60,7 +60,7 @@ static const char *get_channel_name(int channel_id)
 static const struct {
     const char *name;
     int         nb_channels;
-    int64_t     layout;
+    uint64_t     layout;
 } channel_layout_map[] = {
     { "mono",        1,  AV_CH_LAYOUT_MONO },
     { "stereo",      2,  AV_CH_LAYOUT_STEREO },
@@ -76,7 +76,7 @@ static const struct {
     { 0 }
 };
 
-static int64_t get_channel_layout_single(const char *name, int name_len)
+static uint64_t get_channel_layout_single(const char *name, int name_len)
 {
     int i;
     char *end;
@@ -102,7 +102,7 @@ static int64_t get_channel_layout_single(const char *name, int name_len)
     return 0;
 }
 
-int64_t av_get_channel_layout(const char *name)
+uint64_t av_get_channel_layout(const char *name)
 {
     const char *n, *e;
     const char *name_end = name + strlen(name);
@@ -119,7 +119,7 @@ int64_t av_get_channel_layout(const char *name)
 }
 
 void av_get_channel_layout_string(char *buf, int buf_size,
-                                  int nb_channels, int64_t channel_layout)
+                                  int nb_channels, uint64_t channel_layout)
 {
     int i;
 
@@ -138,7 +138,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
         int i, ch;
         av_strlcat(buf, " (", buf_size);
         for (i = 0, ch = 0; i < 64; i++) {
-            if ((channel_layout & (1L << i))) {
+            if ((channel_layout & (UINT64_C(1) << i))) {
                 const char *name = get_channel_name(i);
                 if (name) {
                     if (ch > 0)
@@ -152,7 +152,7 @@ void av_get_channel_layout_string(char *buf, int buf_size,
     }
 }
 
-int av_get_channel_layout_nb_channels(int64_t channel_layout)
+int av_get_channel_layout_nb_channels(uint64_t channel_layout)
 {
     int count;
     uint64_t x = channel_layout;

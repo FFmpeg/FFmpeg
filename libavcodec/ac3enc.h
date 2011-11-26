@@ -258,7 +258,7 @@ typedef struct AC3EncodeContext {
 } AC3EncodeContext;
 
 
-extern const int64_t ff_ac3_channel_layouts[19];
+extern const uint64_t ff_ac3_channel_layouts[19];
 
 int ff_ac3_encode_init(AVCodecContext *avctx);
 

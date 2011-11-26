@@ -107,7 +107,7 @@ static int truehd_channels(int chanmap)
     return channels;
 }
 
-int64_t ff_truehd_layout(int chanmap)
+uint64_t ff_truehd_layout(int chanmap)
 {
     int layout = 0, i;
 

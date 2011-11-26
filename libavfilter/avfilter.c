@@ -473,7 +473,7 @@ AVFilterBufferRef *avfilter_get_audio_buffer(AVFilterLink *link,
 AVFilterBufferRef *
 avfilter_get_audio_buffer_ref_from_arrays(uint8_t *data[8], int linesize[8], int perms,
                                           int nb_samples, enum AVSampleFormat sample_fmt,
-                                          int64_t channel_layout, int planar)
+                                          uint64_t channel_layout, int planar)
 {
     AVFilterBuffer *samples = av_mallocz(sizeof(AVFilterBuffer));
     AVFilterBufferRef *samplesref = av_mallocz(sizeof(AVFilterBufferRef));

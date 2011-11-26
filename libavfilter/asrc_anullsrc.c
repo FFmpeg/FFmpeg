@@ -30,7 +30,7 @@
 typedef struct {
     const AVClass *class;
     char   *channel_layout_str;
-    int64_t channel_layout;
+    uint64_t channel_layout;
     char   *sample_rate_str;
     int     sample_rate;
     int nb_samples;             ///< number of samples per requested frame

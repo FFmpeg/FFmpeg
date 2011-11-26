@@ -77,7 +77,7 @@ static uint8_t exponent_group_tab[2][3][256];
 /**
  * List of supported channel layouts.
  */
-const int64_t ff_ac3_channel_layouts[19] = {
+const uint64_t ff_ac3_channel_layouts[19] = {
      AV_CH_LAYOUT_MONO,
      AV_CH_LAYOUT_STEREO,
      AV_CH_LAYOUT_2_1,
@@ -2060,13 +2060,13 @@ av_cold int ff_ac3_encode_close(AVCodecContext *avctx)
  * Set channel information during initialization.
  */
 static av_cold int set_channel_info(AC3EncodeContext *s, int channels,
-                                    int64_t *channel_layout)
+                                    uint64_t *channel_layout)
 {
     int ch_layout;
 
     if (channels < 1 || channels > AC3_MAX_CHANNELS)
         return AVERROR(EINVAL);
-    if ((uint64_t)*channel_layout > 0x7FF)
+    if (*channel_layout > 0x7FF)
         return AVERROR(EINVAL);
     ch_layout = *channel_layout;
     if (!ch_layout)

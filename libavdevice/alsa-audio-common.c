@@ -143,7 +143,7 @@ switch(format) {\
     case FORMAT_F32: s->reorder_func = alsa_reorder_f32_out_ ##layout;   break;\
 }
 
-static av_cold int find_reorder_func(AlsaData *s, int codec_id, int64_t layout, int out)
+static av_cold int find_reorder_func(AlsaData *s, int codec_id, uint64_t layout, int out)
 {
     int format;
 
@@ -194,7 +194,7 @@ av_cold int ff_alsa_open(AVFormatContext *ctx, snd_pcm_stream_t mode,
     snd_pcm_t *h;
     snd_pcm_hw_params_t *hw_params;
     snd_pcm_uframes_t buffer_size, period_size;
-    int64_t layout = ctx->streams[0]->codec->channel_layout;
+    uint64_t layout = ctx->streams[0]->codec->channel_layout;
 
     if (ctx->filename[0] == 0) audio_device = "default";
     else                       audio_device = ctx->filename;

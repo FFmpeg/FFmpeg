@@ -220,8 +220,8 @@ static av_always_inline av_const int av_popcount_c(uint32_t x)
     return (x + (x >> 16)) & 0x3F;
 }
 
-#define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((d) << 24))
-#define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((a) << 24))
+#define MKTAG(a,b,c,d) ((a) | ((b) << 8) | ((c) << 16) | ((unsigned)(d) << 24))
+#define MKBETAG(a,b,c,d) ((d) | ((c) << 8) | ((b) << 16) | ((unsigned)(a) << 24))
 
 /**
  * Convert a UTF-8 character (up to 4 bytes) to its 32-bit UCS-4 encoded form.
