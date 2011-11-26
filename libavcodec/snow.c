@@ -290,8 +290,8 @@ static void mc_block(Plane *p, uint8_t *dst, const uint8_t *src, int stride, int
 void ff_snow_pred_block(SnowContext *s, uint8_t *dst, uint8_t *tmp, int stride, int sx, int sy, int b_w, int b_h, BlockNode *block, int plane_index, int w, int h){
     if(block->type & BLOCK_INTRA){
         int x, y;
-        const int color = block->color[plane_index];
-        const int color4= color*0x01010101;
+        const unsigned color  = block->color[plane_index];
+        const unsigned color4 = color*0x01010101;
         if(b_w==32){
             for(y=0; y < b_h; y++){
                 *(uint32_t*)&dst[0 + y*stride]= color4;
