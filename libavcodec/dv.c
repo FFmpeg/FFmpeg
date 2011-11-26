@@ -364,7 +364,7 @@ typedef struct BlockInfo {
     uint8_t pos; /* position in block */
     void (*idct_put)(uint8_t *dest, int line_size, DCTELEM *block);
     uint8_t partial_bit_count;
-    uint16_t partial_bit_buffer;
+    uint32_t partial_bit_buffer;
     int shift_offset;
 } BlockInfo;
 
@@ -392,8 +392,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
 
     /* if we must parse a partial VLC, we do it here */
     if (partial_bit_count > 0) {
-        re_cache = ((unsigned)re_cache >> partial_bit_count) |
-                   (mb->partial_bit_buffer << (sizeof(re_cache) * 8 - partial_bit_count));
+        re_cache = re_cache >> partial_bit_count | mb->partial_bit_buffer;
         re_index -= partial_bit_count;
         mb->partial_bit_count = 0;
     }
@@ -416,7 +415,7 @@ static void dv_decode_ac(GetBitContext *gb, BlockInfo *mb, DCTELEM *block)
         if (re_index + vlc_len > last_index) {
             /* should be < 16 bits otherwise a codeword could have been parsed */
             mb->partial_bit_count = last_index - re_index;
-            mb->partial_bit_buffer = NEG_USR32(re_cache, mb->partial_bit_count);
+            mb->partial_bit_buffer = re_cache & ~(-1u >> mb->partial_bit_count);
             re_index = last_index;
             break;
         }
