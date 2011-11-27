@@ -1112,7 +1112,7 @@ static void search_for_ms(AACEncContext *s, ChannelElement *cpe,
     }
 }
 
-AACCoefficientsEncoder ff_aac_coders[] = {
+AACCoefficientsEncoder ff_aac_coders[AAC_CODER_NB] = {
     {
         search_for_quantizers_faac,
         encode_window_bands_info,
