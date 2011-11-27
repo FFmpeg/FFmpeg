@@ -34,6 +34,7 @@
 
 typedef struct AACEncOptions {
     int stereo_mode;
+    int aac_coder;
 } AACEncOptions;
 
 struct AACEncContext;

@@ -224,7 +224,7 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         grouping[i] = s->chan_map[i + 1] == TYPE_CPE;
     ff_psy_init(&s->psy, avctx, 2, sizes, lengths, s->chan_map[0], grouping);
     s->psypp = ff_psy_preprocess_init(avctx);
-    s->coder = &ff_aac_coders[2];
+    s->coder = &ff_aac_coders[s->options.aac_coder];
 
     s->lambda = avctx->global_quality ? avctx->global_quality : 120;
 
@@ -690,6 +690,7 @@ static const AVOption aacenc_options[] = {
         {"auto",     "Selected by the Encoder", 0, AV_OPT_TYPE_CONST, {.dbl = -1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
         {"ms_off",   "Disable Mid/Side coding", 0, AV_OPT_TYPE_CONST, {.dbl =  0 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
         {"ms_force", "Force Mid/Side for the whole frame if possible", 0, AV_OPT_TYPE_CONST, {.dbl =  1 }, INT_MIN, INT_MAX, AACENC_FLAGS, "stereo_mode"},
+    {"aac_coder", "", offsetof(AACEncContext, options.aac_coder), AV_OPT_TYPE_INT, {.dbl = 2}, 0, AAC_CODER_NB-1, AACENC_FLAGS},
     {NULL}
 };
 
