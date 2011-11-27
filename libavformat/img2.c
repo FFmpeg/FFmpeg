@@ -391,11 +391,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!img->is_pipe) {
         if (av_get_frame_filename(filename, sizeof(filename),
-                                  img->path, img->img_number) < 0 && img->img_number>1) {
-            av_log(s, AV_LOG_ERROR,
-                   "Could not get frame filename number %d from pattern '%s'\n",
-                   img->img_number, img->path);
-            return AVERROR(EINVAL);
+                                  img->path, img->img_number) < 0 && img->img_number==2) {
+            av_log(s, AV_LOG_WARNING,
+                   "Writing multiple frames to the same file, check the pattern '%s' if this is not what you want\n",
+                   img->path);
         }
         for(i=0; i<3; i++){
             if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
