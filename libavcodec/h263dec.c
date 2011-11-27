@@ -184,7 +184,7 @@ static int decode_slice(MpegEncContext *s){
         /* per-row end of slice checks */
         if(s->msmpeg4_version){
             if(s->resync_mb_y + s->slice_height == s->mb_y){
-                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_AC_END|ER_DC_END|ER_MV_END);
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
                 return 0;
             }
@@ -225,7 +225,7 @@ static int decode_slice(MpegEncContext *s){
                         ff_h263_loop_filter(s);
 
 //printf("%d %d %d %06X\n", s->mb_x, s->mb_y, s->gb.size*8 - get_bits_count(&s->gb), show_bits(&s->gb, 24));
-                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (ER_AC_END|ER_DC_END|ER_MV_END)&part_mask);
+                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_END&part_mask);
 
                     s->padding_bug_score--;
 
@@ -238,11 +238,11 @@ static int decode_slice(MpegEncContext *s){
                     return 0;
                 }else if(ret==SLICE_NOEND){
                     av_log(s->avctx, AV_LOG_ERROR, "Slice mismatch at MB: %d\n", xy);
-                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x+1, s->mb_y, (ER_AC_END|ER_DC_END|ER_MV_END)&part_mask);
+                    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x+1, s->mb_y, ER_MB_END&part_mask);
                     return -1;
                 }
                 av_log(s->avctx, AV_LOG_ERROR, "Error at MB: %d\n", xy);
-                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR)&part_mask);
+                ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_ERROR&part_mask);
 
                 return -1;
             }
@@ -321,7 +321,7 @@ static int decode_slice(MpegEncContext *s){
         else if(left<0){
             av_log(s->avctx, AV_LOG_ERROR, "overreading %d bits\n", -left);
         }else
-            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_AC_END|ER_DC_END|ER_MV_END);
+            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_MB_END);
 
         return 0;
     }
@@ -330,7 +330,7 @@ static int decode_slice(MpegEncContext *s){
             get_bits_left(&s->gb),
             show_bits(&s->gb, 24), s->padding_bug_score);
 
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, (ER_AC_END|ER_DC_END|ER_MV_END)&part_mask);
+    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x, s->mb_y, ER_MB_END&part_mask);
 
     return -1;
 }
@@ -661,7 +661,7 @@ retry:
 
     if (s->msmpeg4_version && s->msmpeg4_version<4 && s->pict_type==AV_PICTURE_TYPE_I)
         if(!CONFIG_MSMPEG4_DECODER || msmpeg4_decode_ext_header(s, buf_size) < 0){
-            s->error_status_table[s->mb_num-1]= ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR;
+            s->error_status_table[s->mb_num-1]= ER_MB_ERROR;
         }
 
     assert(s->bitstream_buffer_size==0);

@@ -250,8 +250,8 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int right_status= s->error_status_table[((b_x+1)>>is_luma) + (b_y>>is_luma)*s->mb_stride];
             int left_intra  = IS_INTRA(s->current_picture.f.mb_type[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
             int right_intra = IS_INTRA(s->current_picture.f.mb_type[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
-            int left_damage =  left_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
-            int right_damage= right_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
+            int left_damage =  left_status&ER_MB_ERROR;
+            int right_damage= right_status&ER_MB_ERROR;
             int offset= b_x*8 + b_y*stride*8;
             int16_t *left_mv=  s->current_picture.f.motion_val[0][mvy_stride*b_y + mvx_stride* b_x   ];
             int16_t *right_mv= s->current_picture.f.motion_val[0][mvy_stride*b_y + mvx_stride*(b_x+1)];
@@ -313,8 +313,8 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int bottom_status= s->error_status_table[(b_x>>is_luma) + ((b_y+1)>>is_luma)*s->mb_stride];
             int top_intra    = IS_INTRA(s->current_picture.f.mb_type[(b_x >> is_luma) + ( b_y      >> is_luma) * s->mb_stride]);
             int bottom_intra = IS_INTRA(s->current_picture.f.mb_type[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride]);
-            int top_damage =      top_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
-            int bottom_damage= bottom_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
+            int top_damage =      top_status&ER_MB_ERROR;
+            int bottom_damage= bottom_status&ER_MB_ERROR;
             int offset= b_x*8 + b_y*stride*8;
             int16_t *top_mv    = s->current_picture.f.motion_val[0][mvy_stride *  b_y      + mvx_stride * b_x];
             int16_t *bottom_mv = s->current_picture.f.motion_val[0][mvy_stride * (b_y + 1) + mvx_stride * b_x];
@@ -705,7 +705,7 @@ static int is_intra_more_likely(MpegEncContext *s){
 void ff_er_frame_start(MpegEncContext *s){
     if(!s->err_recognition) return;
 
-    memset(s->error_status_table, ER_MV_ERROR|ER_AC_ERROR|ER_DC_ERROR|VP_START|ER_AC_END|ER_DC_END|ER_MV_END, s->mb_stride*s->mb_height*sizeof(uint8_t));
+    memset(s->error_status_table, ER_MB_ERROR|VP_START|ER_MB_END, s->mb_stride*s->mb_height*sizeof(uint8_t));
     s->error_count= 3*s->mb_num;
     s->error_occurred = 0;
 }
@@ -747,7 +747,7 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
         s->error_count -= end_i - start_i + 1;
     }
 
-    if(status & (ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR)) {
+    if(status & ER_MB_ERROR) {
         s->error_occurred = 1;
         s->error_count= INT_MAX;
     }
@@ -870,14 +870,14 @@ void ff_er_frame_end(MpegEncContext *s){
             if(error1&VP_START)
                 end_ok=1;
 
-            if(   error2==(VP_START|ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR|ER_AC_END|ER_DC_END|ER_MV_END)
-               && error1!=(VP_START|ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR|ER_AC_END|ER_DC_END|ER_MV_END)
+            if(   error2==(VP_START|ER_MB_ERROR|ER_MB_END)
+               && error1!=(VP_START|ER_MB_ERROR|ER_MB_END)
                && ((error1&ER_AC_END) || (error1&ER_DC_END) || (error1&ER_MV_END))){ //end & uninit
                 end_ok=0;
             }
 
             if(!end_ok)
-                s->error_status_table[mb_xy]|= ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR;
+                s->error_status_table[mb_xy]|= ER_MB_ERROR;
         }
     }
 
@@ -913,9 +913,9 @@ void ff_er_frame_end(MpegEncContext *s){
         int old_error= s->error_status_table[mb_xy];
 
         if(old_error&VP_START)
-            error= old_error& (ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
+            error= old_error& ER_MB_ERROR;
         else{
-            error|= old_error& (ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
+            error|= old_error& ER_MB_ERROR;
             s->error_status_table[mb_xy]|= error;
         }
     }
@@ -925,8 +925,8 @@ void ff_er_frame_end(MpegEncContext *s){
         for(i=0; i<s->mb_num; i++){
             const int mb_xy= s->mb_index2xy[i];
             error= s->error_status_table[mb_xy];
-            if(error&(ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR))
-                error|= ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR;
+            if(error&ER_MB_ERROR)
+                error|= ER_MB_ERROR;
             s->error_status_table[mb_xy]= error;
         }
     }

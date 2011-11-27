@@ -481,6 +481,9 @@ typedef struct MpegEncContext {
 #define ER_DC_END              32
 #define ER_MV_END              64
 
+#define ER_MB_ERROR (ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR)
+#define ER_MB_END   (ER_AC_END|ER_DC_END|ER_MV_END)
+
     int resync_mb_x;                 ///< x position of last resync marker
     int resync_mb_y;                 ///< y position of last resync marker
     GetBitContext last_resync_gb;    ///< used to search for the next resync marker
