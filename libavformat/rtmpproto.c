@@ -26,7 +26,7 @@
 
 #include "libavcodec/bytestream.h"
 #include "libavutil/avstring.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/lfg.h"
 #include "libavutil/sha.h"
 #include "avformat.h"
@@ -615,7 +615,7 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                 /* hack for Wowza Media Server, it does not send result for
                  * releaseStream and FCPublish calls */
                 if (!pkt->data[10]) {
-                    int pkt_id = (int) av_int2dbl(AV_RB64(pkt->data + 11));
+                    int pkt_id = av_int2double(AV_RB64(pkt->data + 11));
                     if (pkt_id == rt->create_stream_invoke)
                         rt->state = STATE_CONNECTING;
                 }
@@ -626,7 +626,7 @@ static int rtmp_parse_result(URLContext *s, RTMPContext *rt, RTMPPacket *pkt)
                 if (pkt->data[10] || pkt->data[19] != 5 || pkt->data[20]) {
                     av_log(s, AV_LOG_WARNING, "Unexpected reply on connect()\n");
                 } else {
-                    rt->main_channel_id = (int) av_int2dbl(AV_RB64(pkt->data + 21));
+                    rt->main_channel_id = av_int2double(AV_RB64(pkt->data + 21));
                 }
                 if (rt->is_input) {
                     gen_play(s, rt);

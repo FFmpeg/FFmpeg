@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -325,10 +325,10 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->rc_max_rate = avio_rb32(pb);
             codec->rc_min_rate = avio_rb32(pb);
             codec->rc_buffer_size = avio_rb32(pb);
-            codec->i_quant_factor = av_int2dbl(avio_rb64(pb));
-            codec->b_quant_factor = av_int2dbl(avio_rb64(pb));
-            codec->i_quant_offset = av_int2dbl(avio_rb64(pb));
-            codec->b_quant_offset = av_int2dbl(avio_rb64(pb));
+            codec->i_quant_factor = av_int2double(avio_rb64(pb));
+            codec->b_quant_factor = av_int2double(avio_rb64(pb));
+            codec->i_quant_offset = av_int2double(avio_rb64(pb));
+            codec->b_quant_offset = av_int2double(avio_rb64(pb));
             codec->dct_algo = avio_rb32(pb);
             codec->strict_std_compliance = avio_rb32(pb);
             codec->max_b_frames = avio_rb32(pb);
@@ -340,7 +340,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->mb_decision = avio_rb32(pb);
             codec->nsse_weight = avio_rb32(pb);
             codec->frame_skip_cmp = avio_rb32(pb);
-            codec->rc_buffer_aggressivity = av_int2dbl(avio_rb64(pb));
+            codec->rc_buffer_aggressivity = av_int2double(avio_rb64(pb));
             codec->codec_tag = avio_rb32(pb);
             codec->thread_count = avio_r8(pb);
             codec->coder_type = avio_rb32(pb);
@@ -350,8 +350,8 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
             codec->keyint_min = avio_rb32(pb);
             codec->scenechange_threshold = avio_rb32(pb);
             codec->b_frame_strategy = avio_rb32(pb);
-            codec->qcompress = av_int2dbl(avio_rb64(pb));
-            codec->qblur = av_int2dbl(avio_rb64(pb));
+            codec->qcompress = av_int2double(avio_rb64(pb));
+            codec->qblur = av_int2double(avio_rb64(pb));
             codec->max_qdiff = avio_rb32(pb);
             codec->refs = avio_rb32(pb);
             break;

@@ -26,7 +26,7 @@
 
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
@@ -189,7 +189,7 @@ static int parse_keyframes_index(AVFormatContext *s, AVIOContext *ioc, AVStream 
         for (i = 0; i < arraylen && avio_tell(ioc) < max_pos - 1; i++) {
             if (avio_r8(ioc) != AMF_DATA_TYPE_NUMBER)
                 goto finish;
-            num_val = av_int2dbl(avio_rb64(ioc));
+            num_val = av_int2double(avio_rb64(ioc));
             current_array[i] = num_val;
         }
         if (times && filepositions) {
@@ -230,7 +230,7 @@ static int amf_parse_object(AVFormatContext *s, AVStream *astream, AVStream *vst
 
     switch(amf_type) {
         case AMF_DATA_TYPE_NUMBER:
-            num_val = av_int2dbl(avio_rb64(ioc)); break;
+            num_val = av_int2double(avio_rb64(ioc)); break;
         case AMF_DATA_TYPE_BOOL:
             num_val = avio_r8(ioc); break;
         case AMF_DATA_TYPE_STRING:

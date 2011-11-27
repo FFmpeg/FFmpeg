@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
 #include "internal.h"
@@ -520,8 +520,8 @@ static int gxf_write_umf_media_dv(AVIOContext *pb, GXFStreamContext *sc)
 
 static int gxf_write_umf_media_audio(AVIOContext *pb, GXFStreamContext *sc)
 {
-    avio_wl64(pb, av_dbl2int(1)); /* sound level to begin to */
-    avio_wl64(pb, av_dbl2int(1)); /* sound level to begin to */
+    avio_wl64(pb, av_double2int(1)); /* sound level to begin to */
+    avio_wl64(pb, av_double2int(1)); /* sound level to begin to */
     avio_wl32(pb, 0); /* number of fields over which to ramp up sound level */
     avio_wl32(pb, 0); /* number of fields over which to ramp down sound level */
     avio_wl32(pb, 0); /* reserved */

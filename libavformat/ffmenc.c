@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "internal.h"
 #include "ffm.h"
@@ -137,10 +137,10 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb32(pb, codec->rc_max_rate);
             avio_wb32(pb, codec->rc_min_rate);
             avio_wb32(pb, codec->rc_buffer_size);
-            avio_wb64(pb, av_dbl2int(codec->i_quant_factor));
-            avio_wb64(pb, av_dbl2int(codec->b_quant_factor));
-            avio_wb64(pb, av_dbl2int(codec->i_quant_offset));
-            avio_wb64(pb, av_dbl2int(codec->b_quant_offset));
+            avio_wb64(pb, av_double2int(codec->i_quant_factor));
+            avio_wb64(pb, av_double2int(codec->b_quant_factor));
+            avio_wb64(pb, av_double2int(codec->i_quant_offset));
+            avio_wb64(pb, av_double2int(codec->b_quant_offset));
             avio_wb32(pb, codec->dct_algo);
             avio_wb32(pb, codec->strict_std_compliance);
             avio_wb32(pb, codec->max_b_frames);
@@ -152,7 +152,7 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb32(pb, codec->mb_decision);
             avio_wb32(pb, codec->nsse_weight);
             avio_wb32(pb, codec->frame_skip_cmp);
-            avio_wb64(pb, av_dbl2int(codec->rc_buffer_aggressivity));
+            avio_wb64(pb, av_double2int(codec->rc_buffer_aggressivity));
             avio_wb32(pb, codec->codec_tag);
             avio_w8(pb, codec->thread_count);
             avio_wb32(pb, codec->coder_type);
@@ -162,8 +162,8 @@ static int ffm_write_header(AVFormatContext *s)
             avio_wb32(pb, codec->keyint_min);
             avio_wb32(pb, codec->scenechange_threshold);
             avio_wb32(pb, codec->b_frame_strategy);
-            avio_wb64(pb, av_dbl2int(codec->qcompress));
-            avio_wb64(pb, av_dbl2int(codec->qblur));
+            avio_wb64(pb, av_double2int(codec->qcompress));
+            avio_wb64(pb, av_double2int(codec->qblur));
             avio_wb32(pb, codec->max_qdiff);
             avio_wb32(pb, codec->refs);
             break;

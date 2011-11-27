@@ -19,7 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "flv.h"
 #include "internal.h"
@@ -162,7 +162,7 @@ static void put_avc_eos_tag(AVIOContext *pb, unsigned ts) {
 static void put_amf_double(AVIOContext *pb, double d)
 {
     avio_w8(pb, AMF_DATA_TYPE_NUMBER);
-    avio_wb64(pb, av_dbl2int(d));
+    avio_wb64(pb, av_double2int(d));
 }
 
 static void put_amf_bool(AVIOContext *pb, int b) {
