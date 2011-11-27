@@ -668,13 +668,13 @@ av_cold void ff_h264_decode_init_vlc(void);
 
 /**
  * Decode a macroblock
- * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
+ * @return 0 if OK, ER_AC_ERROR / ER_DC_ERROR / ER_MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cavlc(H264Context *h);
 
 /**
  * Decode a CABAC coded macroblock
- * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
+ * @return 0 if OK, ER_AC_ERROR / ER_DC_ERROR / ER_MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cabac(H264Context *h);
 

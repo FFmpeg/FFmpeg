@@ -1278,7 +1278,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
         s->dsp.clear_blocks(s->block[0]);
 
         if(rv34_decode_macroblock(r, r->intra_types + s->mb_x * 4 + 4) < 0){
-            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_ERROR|DC_ERROR|MV_ERROR);
+            ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR);
             return -1;
         }
         if (++s->mb_x == s->mb_width) {
@@ -1296,7 +1296,7 @@ static int rv34_decode_slice(RV34DecContext *r, int end, const uint8_t* buf, int
             s->first_slice_line=0;
         s->mb_num_left--;
     }
-    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, AC_END|DC_END|MV_END);
+    ff_er_add_slice(s, s->resync_mb_x, s->resync_mb_y, s->mb_x-1, s->mb_y, ER_AC_END|ER_DC_END|ER_MV_END);
 
     return s->mb_y == s->mb_height;
 }

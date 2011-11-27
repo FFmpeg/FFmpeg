@@ -167,14 +167,14 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w, int h, int stride, i
             error= s->error_status_table[mb_index];
 
             if(IS_INTER(s->current_picture.f.mb_type[mb_index])) continue; //inter
-            if(!(error&DC_ERROR)) continue;           //dc-ok
+            if(!(error&ER_DC_ERROR)) continue;           //dc-ok
 
             /* right block */
             for(j=b_x+1; j<w; j++){
                 int mb_index_j= (j>>is_luma) + (b_y>>is_luma)*s->mb_stride;
                 int error_j= s->error_status_table[mb_index_j];
                 int intra_j = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
-                if(intra_j==0 || !(error_j&DC_ERROR)){
+                if(intra_j==0 || !(error_j&ER_DC_ERROR)){
                     color[0]= dc[j + b_y*stride];
                     distance[0]= j-b_x;
                     break;
@@ -186,7 +186,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w, int h, int stride, i
                 int mb_index_j= (j>>is_luma) + (b_y>>is_luma)*s->mb_stride;
                 int error_j= s->error_status_table[mb_index_j];
                 int intra_j = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
-                if(intra_j==0 || !(error_j&DC_ERROR)){
+                if(intra_j==0 || !(error_j&ER_DC_ERROR)){
                     color[1]= dc[j + b_y*stride];
                     distance[1]= b_x-j;
                     break;
@@ -198,7 +198,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w, int h, int stride, i
                 int mb_index_j= (b_x>>is_luma) + (j>>is_luma)*s->mb_stride;
                 int error_j= s->error_status_table[mb_index_j];
                 int intra_j = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
-                if(intra_j==0 || !(error_j&DC_ERROR)){
+                if(intra_j==0 || !(error_j&ER_DC_ERROR)){
                     color[2]= dc[b_x + j*stride];
                     distance[2]= j-b_y;
                     break;
@@ -210,7 +210,7 @@ static void guess_dc(MpegEncContext *s, int16_t *dc, int w, int h, int stride, i
                 int mb_index_j= (b_x>>is_luma) + (j>>is_luma)*s->mb_stride;
                 int error_j= s->error_status_table[mb_index_j];
                 int intra_j = IS_INTRA(s->current_picture.f.mb_type[mb_index_j]);
-                if(intra_j==0 || !(error_j&DC_ERROR)){
+                if(intra_j==0 || !(error_j&ER_DC_ERROR)){
                     color[3]= dc[b_x + j*stride];
                     distance[3]= b_y-j;
                     break;
@@ -250,8 +250,8 @@ static void h_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int right_status= s->error_status_table[((b_x+1)>>is_luma) + (b_y>>is_luma)*s->mb_stride];
             int left_intra  = IS_INTRA(s->current_picture.f.mb_type[( b_x      >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
             int right_intra = IS_INTRA(s->current_picture.f.mb_type[((b_x + 1) >> is_luma) + (b_y >> is_luma) * s->mb_stride]);
-            int left_damage =  left_status&(DC_ERROR|AC_ERROR|MV_ERROR);
-            int right_damage= right_status&(DC_ERROR|AC_ERROR|MV_ERROR);
+            int left_damage =  left_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
+            int right_damage= right_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
             int offset= b_x*8 + b_y*stride*8;
             int16_t *left_mv=  s->current_picture.f.motion_val[0][mvy_stride*b_y + mvx_stride* b_x   ];
             int16_t *right_mv= s->current_picture.f.motion_val[0][mvy_stride*b_y + mvx_stride*(b_x+1)];
@@ -313,8 +313,8 @@ static void v_block_filter(MpegEncContext *s, uint8_t *dst, int w, int h, int st
             int bottom_status= s->error_status_table[(b_x>>is_luma) + ((b_y+1)>>is_luma)*s->mb_stride];
             int top_intra    = IS_INTRA(s->current_picture.f.mb_type[(b_x >> is_luma) + ( b_y      >> is_luma) * s->mb_stride]);
             int bottom_intra = IS_INTRA(s->current_picture.f.mb_type[(b_x >> is_luma) + ((b_y + 1) >> is_luma) * s->mb_stride]);
-            int top_damage =      top_status&(DC_ERROR|AC_ERROR|MV_ERROR);
-            int bottom_damage= bottom_status&(DC_ERROR|AC_ERROR|MV_ERROR);
+            int top_damage =      top_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
+            int bottom_damage= bottom_status&(ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
             int offset= b_x*8 + b_y*stride*8;
             int16_t *top_mv    = s->current_picture.f.motion_val[0][mvy_stride *  b_y      + mvx_stride * b_x];
             int16_t *bottom_mv = s->current_picture.f.motion_val[0][mvy_stride * (b_y + 1) + mvx_stride * b_x];
@@ -377,7 +377,7 @@ static void guess_mv(MpegEncContext *s){
         int error= s->error_status_table[mb_xy];
 
         if(IS_INTRA(s->current_picture.f.mb_type[mb_xy])) f=MV_FROZEN; //intra //FIXME check
-        if(!(error&MV_ERROR)) f=MV_FROZEN;           //inter with undamaged MV
+        if(!(error&ER_MV_ERROR)) f=MV_FROZEN;           //inter with undamaged MV
 
         fixed[mb_xy]= f;
         if(f==MV_FROZEN)
@@ -390,7 +390,7 @@ static void guess_mv(MpegEncContext *s){
                 const int mb_xy= mb_x + mb_y*s->mb_stride;
 
                 if(IS_INTRA(s->current_picture.f.mb_type[mb_xy]))  continue;
-                if(!(s->error_status_table[mb_xy]&MV_ERROR)) continue;
+                if(!(s->error_status_table[mb_xy]&ER_MV_ERROR)) continue;
 
                 s->mv_dir = s->last_picture.f.data[0] ? MV_DIR_FORWARD : MV_DIR_BACKWARD;
                 s->mb_intra=0;
@@ -646,7 +646,7 @@ static int is_intra_more_likely(MpegEncContext *s){
     for(i=0; i<s->mb_num; i++){
         const int mb_xy= s->mb_index2xy[i];
         const int error= s->error_status_table[mb_xy];
-        if(!((error&DC_ERROR) && (error&MV_ERROR)))
+        if(!((error&ER_DC_ERROR) && (error&ER_MV_ERROR)))
             undamaged_count++;
     }
 
@@ -672,7 +672,7 @@ static int is_intra_more_likely(MpegEncContext *s){
             const int mb_xy= mb_x + mb_y*s->mb_stride;
 
             error= s->error_status_table[mb_xy];
-            if((error&DC_ERROR) && (error&MV_ERROR))
+            if((error&ER_DC_ERROR) && (error&ER_MV_ERROR))
                 continue; //skip damaged
 
             j++;
@@ -705,7 +705,7 @@ static int is_intra_more_likely(MpegEncContext *s){
 void ff_er_frame_start(MpegEncContext *s){
     if(!s->err_recognition) return;
 
-    memset(s->error_status_table, MV_ERROR|AC_ERROR|DC_ERROR|VP_START|AC_END|DC_END|MV_END, s->mb_stride*s->mb_height*sizeof(uint8_t));
+    memset(s->error_status_table, ER_MV_ERROR|ER_AC_ERROR|ER_DC_ERROR|VP_START|ER_AC_END|ER_DC_END|ER_MV_END, s->mb_stride*s->mb_height*sizeof(uint8_t));
     s->error_count= 3*s->mb_num;
     s->error_occurred = 0;
 }
@@ -713,7 +713,7 @@ void ff_er_frame_start(MpegEncContext *s){
 /**
  * Add a slice.
  * @param endx x component of the last macroblock, can be -1 for the last of the previous line
- * @param status the status at the end (MV_END, AC_ERROR, ...), it is assumed that no earlier end or
+ * @param status the status at the end (ER_MV_END, ER_AC_ERROR, ...), it is assumed that no earlier end or
  *               error of the same type occurred
  */
 void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int endy, int status){
@@ -734,20 +734,20 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
     if(!s->err_recognition) return;
 
     mask &= ~VP_START;
-    if(status & (AC_ERROR|AC_END)){
-        mask &= ~(AC_ERROR|AC_END);
+    if(status & (ER_AC_ERROR|ER_AC_END)){
+        mask &= ~(ER_AC_ERROR|ER_AC_END);
         s->error_count -= end_i - start_i + 1;
     }
-    if(status & (DC_ERROR|DC_END)){
-        mask &= ~(DC_ERROR|DC_END);
+    if(status & (ER_DC_ERROR|ER_DC_END)){
+        mask &= ~(ER_DC_ERROR|ER_DC_END);
         s->error_count -= end_i - start_i + 1;
     }
-    if(status & (MV_ERROR|MV_END)){
-        mask &= ~(MV_ERROR|MV_END);
+    if(status & (ER_MV_ERROR|ER_MV_END)){
+        mask &= ~(ER_MV_ERROR|ER_MV_END);
         s->error_count -= end_i - start_i + 1;
     }
 
-    if(status & (AC_ERROR|DC_ERROR|MV_ERROR)) {
+    if(status & (ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR)) {
         s->error_occurred = 1;
         s->error_count= INT_MAX;
     }
@@ -774,7 +774,7 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
         int prev_status= s->error_status_table[ s->mb_index2xy[start_i - 1] ];
 
         prev_status &= ~ VP_START;
-        if(prev_status != (MV_END|DC_END|AC_END)) s->error_count= INT_MAX;
+        if(prev_status != (ER_MV_END|ER_DC_END|ER_AC_END)) s->error_count= INT_MAX;
     }
 }
 
@@ -845,13 +845,13 @@ void ff_er_frame_end(MpegEncContext *s){
             const int mb_xy= s->mb_index2xy[i];
             int error= s->error_status_table[mb_xy];
 
-            if(error&AC_END)
+            if(error&ER_AC_END)
                 end_ok=0;
-            if((error&MV_END) || (error&DC_END) || (error&AC_ERROR))
+            if((error&ER_MV_END) || (error&ER_DC_END) || (error&ER_AC_ERROR))
                 end_ok=1;
 
             if(!end_ok)
-                s->error_status_table[mb_xy]|= AC_ERROR;
+                s->error_status_table[mb_xy]|= ER_AC_ERROR;
 
             if(error&VP_START)
                 end_ok=0;
@@ -870,14 +870,14 @@ void ff_er_frame_end(MpegEncContext *s){
             if(error1&VP_START)
                 end_ok=1;
 
-            if(   error2==(VP_START|DC_ERROR|AC_ERROR|MV_ERROR|AC_END|DC_END|MV_END)
-               && error1!=(VP_START|DC_ERROR|AC_ERROR|MV_ERROR|AC_END|DC_END|MV_END)
-               && ((error1&AC_END) || (error1&DC_END) || (error1&MV_END))){ //end & uninit
+            if(   error2==(VP_START|ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR|ER_AC_END|ER_DC_END|ER_MV_END)
+               && error1!=(VP_START|ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR|ER_AC_END|ER_DC_END|ER_MV_END)
+               && ((error1&ER_AC_END) || (error1&ER_DC_END) || (error1&ER_MV_END))){ //end & uninit
                 end_ok=0;
             }
 
             if(!end_ok)
-                s->error_status_table[mb_xy]|= DC_ERROR|AC_ERROR|MV_ERROR;
+                s->error_status_table[mb_xy]|= ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR;
         }
     }
 
@@ -913,9 +913,9 @@ void ff_er_frame_end(MpegEncContext *s){
         int old_error= s->error_status_table[mb_xy];
 
         if(old_error&VP_START)
-            error= old_error& (DC_ERROR|AC_ERROR|MV_ERROR);
+            error= old_error& (ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
         else{
-            error|= old_error& (DC_ERROR|AC_ERROR|MV_ERROR);
+            error|= old_error& (ER_DC_ERROR|ER_AC_ERROR|ER_MV_ERROR);
             s->error_status_table[mb_xy]|= error;
         }
     }
@@ -925,8 +925,8 @@ void ff_er_frame_end(MpegEncContext *s){
         for(i=0; i<s->mb_num; i++){
             const int mb_xy= s->mb_index2xy[i];
             error= s->error_status_table[mb_xy];
-            if(error&(AC_ERROR|DC_ERROR|MV_ERROR))
-                error|= AC_ERROR|DC_ERROR|MV_ERROR;
+            if(error&(ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR))
+                error|= ER_AC_ERROR|ER_DC_ERROR|ER_MV_ERROR;
             s->error_status_table[mb_xy]= error;
         }
     }
@@ -935,9 +935,9 @@ void ff_er_frame_end(MpegEncContext *s){
     for(i=0; i<s->mb_num; i++){
         const int mb_xy= s->mb_index2xy[i];
         error= s->error_status_table[mb_xy];
-        if(error&DC_ERROR) dc_error ++;
-        if(error&AC_ERROR) ac_error ++;
-        if(error&MV_ERROR) mv_error ++;
+        if(error&ER_DC_ERROR) dc_error ++;
+        if(error&ER_AC_ERROR) ac_error ++;
+        if(error&ER_MV_ERROR) mv_error ++;
     }
     av_log(s->avctx, AV_LOG_INFO, "concealing %d DC, %d AC, %d MV errors\n", dc_error, ac_error, mv_error);
 
@@ -947,7 +947,7 @@ void ff_er_frame_end(MpegEncContext *s){
     for(i=0; i<s->mb_num; i++){
         const int mb_xy= s->mb_index2xy[i];
         error= s->error_status_table[mb_xy];
-        if(!((error&DC_ERROR) && (error&MV_ERROR)))
+        if(!((error&ER_DC_ERROR) && (error&ER_MV_ERROR)))
             continue;
 
         if(is_intra_likely)
@@ -973,8 +973,8 @@ void ff_er_frame_end(MpegEncContext *s){
             error= s->error_status_table[mb_xy];
 
             if(IS_INTRA(mb_type)) continue; //intra
-            if(error&MV_ERROR) continue;              //inter with damaged MV
-            if(!(error&AC_ERROR)) continue;           //undamaged inter
+            if(error&ER_MV_ERROR) continue;              //inter with damaged MV
+            if(!(error&ER_AC_ERROR)) continue;           //undamaged inter
 
             s->mv_dir = dir ? MV_DIR_BACKWARD : MV_DIR_FORWARD;
             s->mb_intra=0;
@@ -1011,8 +1011,8 @@ void ff_er_frame_end(MpegEncContext *s){
                 error= s->error_status_table[mb_xy];
 
                 if(IS_INTRA(mb_type)) continue;
-                if(!(error&MV_ERROR)) continue;           //inter with undamaged MV
-                if(!(error&AC_ERROR)) continue;           //undamaged inter
+                if(!(error&ER_MV_ERROR)) continue;           //inter with undamaged MV
+                if(!(error&ER_AC_ERROR)) continue;           //undamaged inter
 
                 s->mv_dir = MV_DIR_FORWARD|MV_DIR_BACKWARD;
                 if(!s->last_picture.f.data[0]) s->mv_dir &= ~MV_DIR_FORWARD;
@@ -1066,7 +1066,7 @@ void ff_er_frame_end(MpegEncContext *s){
             error= s->error_status_table[mb_xy];
 
             if(IS_INTRA(mb_type) && s->partitioned_frame) continue;
-//            if(error&MV_ERROR) continue; //inter data damaged FIXME is this good?
+//            if(error&ER_MV_ERROR) continue; //inter data damaged FIXME is this good?
 
             dest_y  = s->current_picture.f.data[0] + mb_x * 16 + mb_y * 16 * s->linesize;
             dest_cb = s->current_picture.f.data[1] + mb_x *  8 + mb_y *  8 * s->uvlinesize;
@@ -1115,7 +1115,7 @@ void ff_er_frame_end(MpegEncContext *s){
             error= s->error_status_table[mb_xy];
 
             if(IS_INTER(mb_type)) continue;
-            if(!(error&AC_ERROR)) continue;              //undamaged
+            if(!(error&ER_AC_ERROR)) continue;              //undamaged
 
             dest_y  = s->current_picture.f.data[0] + mb_x * 16 + mb_y * 16 * s->linesize;
             dest_cb = s->current_picture.f.data[1] + mb_x *  8 + mb_y *  8 * s->uvlinesize;
@@ -1143,7 +1143,7 @@ ec_clean:
         const int mb_xy= s->mb_index2xy[i];
         int error= s->error_status_table[mb_xy];
 
-        if(s->pict_type!=AV_PICTURE_TYPE_B && (error&(DC_ERROR|MV_ERROR|AC_ERROR))){
+        if(s->pict_type!=AV_PICTURE_TYPE_B && (error&(ER_DC_ERROR|ER_MV_ERROR|ER_AC_ERROR))){
             s->mbskip_table[mb_xy]=0;
         }
         s->mbintra_table[mb_xy]=1;

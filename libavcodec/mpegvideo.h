@@ -474,13 +474,12 @@ typedef struct MpegEncContext {
     int error_count, error_occurred;
     uint8_t *error_status_table;       ///< table of the error status of each MB
 #define VP_START            1          ///< current MB is the first after a resync marker
-#define AC_ERROR            2
-#define DC_ERROR            4
-#define MV_ERROR            8
-#define AC_END              16
-#define DC_END              32
-#define MV_END              64
-//FIXME some prefix?
+#define ER_AC_ERROR            2
+#define ER_DC_ERROR            4
+#define ER_MV_ERROR            8
+#define ER_AC_END              16
+#define ER_DC_END              32
+#define ER_MV_END              64
 
     int resync_mb_x;                 ///< x position of last resync marker
     int resync_mb_y;                 ///< y position of last resync marker
