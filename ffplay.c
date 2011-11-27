@@ -2217,9 +2217,9 @@ static int stream_component_open(VideoState *is, int stream_index)
         return -1;
     avctx = ic->streams[stream_index]->codec;
 
-    opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index]);
-
     codec = avcodec_find_decoder(avctx->codec_id);
+    opts = filter_codec_opts(codec_opts, codec, ic, ic->streams[stream_index]);
+
     switch(avctx->codec_type){
         case AVMEDIA_TYPE_AUDIO   : if(audio_codec_name   ) codec= avcodec_find_decoder_by_name(   audio_codec_name); break;
         case AVMEDIA_TYPE_SUBTITLE: if(subtitle_codec_name) codec= avcodec_find_decoder_by_name(subtitle_codec_name); break;
