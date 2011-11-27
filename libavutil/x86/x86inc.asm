@@ -1033,7 +1033,7 @@ AVX_INSTR punpcklwd, 0, 0, 0
 AVX_INSTR punpckldq, 0, 0, 0
 AVX_INSTR punpcklqdq, 0, 0, 0
 AVX_INSTR pxor, 0, 0, 1
-AVX_INSTR shufps, 0, 1, 0
+AVX_INSTR shufps, 1, 1, 0
 AVX_INSTR subpd, 1, 0, 0
 AVX_INSTR subps, 1, 0, 0
 AVX_INSTR subsd, 1, 0, 0
