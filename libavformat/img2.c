@@ -43,6 +43,7 @@ typedef struct {
     char *video_size;       /**< Set by a private option. */
     char *framerate;        /**< Set by a private option. */
     int loop;
+    int updatefirst;
 } VideoData;
 
 typedef struct {
@@ -391,10 +392,11 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
     if (!img->is_pipe) {
         if (av_get_frame_filename(filename, sizeof(filename),
-                                  img->path, img->img_number) < 0 && img->img_number==2) {
-            av_log(s, AV_LOG_WARNING,
-                   "Writing multiple frames to the same file, check the pattern '%s' if this is not what you want\n",
-                   img->path);
+                                  img->path, img->img_number) < 0 && img->img_number>1 && !img->updatefirst) {
+            av_log(s, AV_LOG_ERROR,
+                   "Could not get frame filename number %d from pattern '%s'\n",
+                   img->img_number, img->path);
+            return AVERROR(EINVAL);
         }
         for(i=0; i<3; i++){
             if (avio_open2(&pb[i], filename, AVIO_FLAG_WRITE,
@@ -461,11 +463,17 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
 
 #define OFFSET(x) offsetof(VideoData, x)
 #define DEC AV_OPT_FLAG_DECODING_PARAM
+#define ENC AV_OPT_FLAG_ENCODING_PARAM
 static const AVOption options[] = {
     { "pixel_format", "", OFFSET(pixel_format), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "video_size",   "", OFFSET(video_size),   AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0, DEC },
     { "framerate",    "", OFFSET(framerate),    AV_OPT_TYPE_STRING, {.str = "25"}, 0, 0, DEC },
     { "loop",         "", OFFSET(loop),         AV_OPT_TYPE_INT,    {.dbl = 0},    0, 1, DEC },
+    { NULL },
+};
+
+static const AVOption muxoptions[] = {
+    { "updatefirst",  "", OFFSET(updatefirst),  AV_OPT_TYPE_INT,    {.dbl = 0},    0, 1, ENC },
     { NULL },
 };
 
@@ -507,6 +515,12 @@ AVInputFormat ff_image2pipe_demuxer = {
 
 /* output */
 #if CONFIG_IMAGE2_MUXER
+static const AVClass img2mux_class = {
+    .class_name = "image2 muxer",
+    .item_name  = av_default_item_name,
+    .option     = muxoptions,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 AVOutputFormat ff_image2_muxer = {
     .name           = "image2",
     .long_name      = NULL_IF_CONFIG_SMALL("image2 sequence"),
@@ -516,7 +530,8 @@ AVOutputFormat ff_image2_muxer = {
     .video_codec    = CODEC_ID_MJPEG,
     .write_header   = write_header,
     .write_packet   = write_packet,
-    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE
+    .flags          = AVFMT_NOTIMESTAMPS | AVFMT_NODIMENSIONS | AVFMT_NOFILE,
+    .priv_class     = &img2mux_class,
 };
 #endif
 #if CONFIG_IMAGE2PIPE_MUXER
