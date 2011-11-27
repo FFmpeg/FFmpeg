@@ -70,6 +70,7 @@ typedef struct PerThreadContext {
     struct FrameThreadContext *parent;
 
     pthread_t      thread;
+    int            thread_init;
     pthread_cond_t input_cond;      ///< Used to wait for a new packet from the main thread.
     pthread_cond_t progress_cond;   ///< Used by child threads to wait for progress to change.
     pthread_cond_t output_cond;     ///< Used by the main thread to wait for frames to finish.
@@ -651,7 +652,7 @@ static void frame_thread_free(AVCodecContext *avctx, int thread_count)
         pthread_cond_signal(&p->input_cond);
         pthread_mutex_unlock(&p->mutex);
 
-        if (p->thread)
+        if (p->thread_init)
             pthread_join(p->thread, NULL);
 
         if (codec->close)
@@ -756,7 +757,8 @@ static int frame_thread_init(AVCodecContext *avctx)
 
         if (err) goto error;
 
-        pthread_create(&p->thread, NULL, frame_worker_thread, p);
+        if (!pthread_create(&p->thread, NULL, frame_worker_thread, p))
+            p->thread_init = 1;
     }
 
     return 0;
