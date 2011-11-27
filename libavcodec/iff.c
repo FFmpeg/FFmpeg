@@ -450,6 +450,19 @@ static int decode_frame_ilbm(AVCodecContext *avctx,
                     buf += s->planesize;
                 }
             }
+        } else if (s->ham) { // HAM to PIX_FMT_BGR32
+            memset(s->frame.data[0], 0, avctx->height * s->frame.linesize[0]);
+            for(y = 0; y < avctx->height; y++) {
+                uint8_t *row = &s->frame.data[0][y * s->frame.linesize[0]];
+                memset(s->ham_buf, 0, s->planesize * 8);
+                for (plane = 0; plane < s->bpp; plane++) {
+                    const uint8_t * start = buf + (plane * avctx->height + y) * s->planesize;
+                    if (start >= buf_end)
+                        break;
+                    decodeplane8(s->ham_buf, start, FFMIN(s->planesize, buf_end - start), plane);
+                }
+                decode_ham_plane32((uint32_t *) row, s->ham_buf, s->ham_palbuf, s->planesize);
+            }
         }
     } else if (avctx->codec_tag == MKTAG('I','L','B','M')) { // interleaved
         if (avctx->pix_fmt == PIX_FMT_PAL8 || avctx->pix_fmt == PIX_FMT_GRAY8) {
