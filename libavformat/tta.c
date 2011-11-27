@@ -72,8 +72,8 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     c->totalframes = datalen / framelen + ((datalen % framelen) ? 1 : 0);
     c->currentframe = 0;
 
-    if(c->totalframes >= UINT_MAX/sizeof(uint32_t)){
-        av_log(s, AV_LOG_ERROR, "totalframes too large\n");
+    if(c->totalframes >= UINT_MAX/sizeof(uint32_t) || c->totalframes <= 0){
+        av_log(s, AV_LOG_ERROR, "totalframes %d invalid\n", c->totalframes);
         return -1;
     }
 
