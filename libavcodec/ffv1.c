@@ -1368,18 +1368,18 @@ static void decode_plane(FFV1Context *s, uint8_t *src, int w, int h, int stride,
 
 static void decode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int stride){
     int x, y, p;
-    int16_t *sample[3][2];
-    for(x=0; x<3; x++){
+    int16_t *sample[4][2];
+    for(x=0; x<4; x++){
         sample[x][0] = s->sample_buffer +  x*2   *(w+6) + 3;
         sample[x][1] = s->sample_buffer + (x*2+1)*(w+6) + 3;
     }
 
     s->run_index=0;
 
-    memset(s->sample_buffer, 0, 6*(w+6)*sizeof(*s->sample_buffer));
+    memset(s->sample_buffer, 0, 8*(w+6)*sizeof(*s->sample_buffer));
 
     for(y=0; y<h; y++){
-        for(p=0; p<3; p++){
+        for(p=0; p<3 + s->transparency; p++){
             int16_t *temp = sample[p][0]; //FIXME try a normal buffer
 
             sample[p][0]= sample[p][1];
@@ -1387,12 +1387,13 @@ static void decode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int st
 
             sample[p][1][-1]= sample[p][0][0  ];
             sample[p][0][ w]= sample[p][0][w-1];
-            decode_line(s, w, sample[p], FFMIN(p, 1), 9);
+            decode_line(s, w, sample[p], (p+1)/2, 9);
         }
         for(x=0; x<w; x++){
             int g= sample[0][1][x];
             int b= sample[1][1][x];
             int r= sample[2][1][x];
+            int a= sample[3][1][x];
 
 //            assert(g>=0 && b>=0 && r>=0);
 //            assert(g<256 && b<512 && r<512);
@@ -1403,7 +1404,7 @@ static void decode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int st
             b += g;
             r += g;
 
-            src[x + stride*y]= b + (g<<8) + (r<<16) + (0xFF<<24);
+            src[x + stride*y]= b + (g<<8) + (r<<16) + (a<<24);
         }
     }
 }
@@ -1502,8 +1503,8 @@ static int read_extra_header(FFV1Context *f){
     get_rac(c, state); //no chroma = false
     f->chroma_h_shift= get_symbol(c, state, 0);
     f->chroma_v_shift= get_symbol(c, state, 0);
-    get_rac(c, state); //transparency plane
-    f->plane_count= 2;
+    f->transparency= get_rac(c, state);
+    f->plane_count= 2 + f->transparency;
     f->num_h_slices= 1 + get_symbol(c, state, 0);
     f->num_v_slices= 1 + get_symbol(c, state, 0);
     if(f->num_h_slices > (unsigned)f->width || f->num_v_slices > (unsigned)f->height){
@@ -1559,8 +1560,8 @@ static int read_header(FFV1Context *f){
         get_rac(c, state); //no chroma = false
         f->chroma_h_shift= get_symbol(c, state, 0);
         f->chroma_v_shift= get_symbol(c, state, 0);
-        get_rac(c, state); //transparency plane
-        f->plane_count= 2;
+        f->transparency= get_rac(c, state);
+        f->plane_count= 2 + f->transparency;
     }
 
     if(f->colorspace==0){
