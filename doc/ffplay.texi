@@ -168,6 +168,9 @@ Seek backward/forward 10 seconds.
 @item down/up
 Seek backward/forward 1 minute.
 
+@item page down/page up
+Seek backward/forward 10 minutes.
+
 @item mouse click
 Seek to percentage in file corresponding to fraction of width.
 
