@@ -464,6 +464,56 @@ const AVPixFmtDescriptor av_pix_fmt_descriptors[PIX_FMT_NB] = {
         },
         .flags = PIX_FMT_RGB,
     },
+    [PIX_FMT_0RGB] = {
+        .name = "0rgb",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,3,2,0,7},        /* R */
+            {0,3,3,0,7},        /* G */
+            {0,3,4,0,7},        /* B */
+        },
+        .flags = PIX_FMT_RGB,
+    },
+    [PIX_FMT_RGB0] = {
+        .name = "rgb0",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,3,1,0,7},        /* R */
+            {0,3,2,0,7},        /* G */
+            {0,3,3,0,7},        /* B */
+            {0,3,4,0,7},        /* A */
+        },
+        .flags = PIX_FMT_RGB,
+    },
+    [PIX_FMT_0BGR] = {
+        .name = "0bgr",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,3,2,0,7},        /* B */
+            {0,3,3,0,7},        /* G */
+            {0,3,4,0,7},        /* R */
+        },
+        .flags = PIX_FMT_RGB,
+    },
+    [PIX_FMT_BGR0] = {
+        .name = "bgr0",
+        .nb_components= 3,
+        .log2_chroma_w= 0,
+        .log2_chroma_h= 0,
+        .comp = {
+            {0,3,1,0,7},        /* B */
+            {0,3,2,0,7},        /* G */
+            {0,3,3,0,7},        /* R */
+            {0,3,4,0,7},        /* A */
+        },
+        .flags = PIX_FMT_RGB,
+    },
     [PIX_FMT_GRAY16BE] = {
         .name = "gray16be",
         .nb_components= 1,
