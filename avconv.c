@@ -1906,6 +1906,7 @@ static int output_packet(InputStream *ist,
     /* handle stream copy */
     if (!ist->decoding_needed) {
         rate_emu_sleep(ist);
+        ist->pts = ist->next_pts;
         switch (ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ist->next_pts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
