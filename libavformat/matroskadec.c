@@ -1519,10 +1519,6 @@ static int matroska_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (track->flag_forced)
             st->disposition |= AV_DISPOSITION_FORCED;
 
-        if (track->default_duration)
-            av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
-                      track->default_duration, 1000000000, 30000);
-
         if (!st->codec->extradata) {
             if(extradata){
                 st->codec->extradata = extradata;
