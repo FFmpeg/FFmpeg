@@ -600,6 +600,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case PIX_FMT_RGB32:
         s->bitstream_bpp= 32;
         break;
+    case PIX_FMT_0RGB32:
+        s->bitstream_bpp= 24;
+        break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
         return -1;
@@ -1369,7 +1372,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
                 encode_422_bitstream(s, 0, width);
             }
         }
-    }else if(avctx->pix_fmt == PIX_FMT_RGB32){
+    }else if(avctx->pix_fmt == PIX_FMT_RGB32 || avctx->pix_fmt == PIX_FMT_0RGB32){
         uint8_t *data = p->data[0] + (height-1)*p->linesize[0];
         const int stride = -p->linesize[0];
         const int fake_stride = -fake_ystride;
@@ -1482,7 +1485,7 @@ AVCodec ff_huffyuv_encoder = {
     .init           = encode_init,
     .encode         = encode_frame,
     .close          = encode_end,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_RGB32, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV422P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Huffyuv / HuffYUV"),
 };
 #endif
@@ -1496,7 +1499,7 @@ AVCodec ff_ffvhuff_encoder = {
     .init           = encode_init,
     .encode         = encode_frame,
     .close          = encode_end,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_RGB32, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV422P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Huffyuv FFmpeg variant"),
 };
 #endif
