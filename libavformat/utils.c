@@ -2163,13 +2163,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         AVDictionary *thread_opt = NULL;
         st = ic->streams[i];
 
-        if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO ||
-            st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE) {
-/*            if(!st->time_base.num)
-                st->time_base= */
-            if(!st->codec->time_base.num)
-                st->codec->time_base= st->time_base;
-        }
         //only for the split stuff
         if (!st->parser && !(ic->flags & AVFMT_FLAG_NOPARSE)) {
             st->parser = av_parser_init(st->codec->codec_id);
