@@ -2853,6 +2853,12 @@ static void event_loop(VideoState *cur_stream)
             case SDLK_w:
                 toggle_audio_display(cur_stream);
                 break;
+            case SDLK_PAGEUP:
+                incr = 600.0;
+                goto do_seek;
+            case SDLK_PAGEDOWN:
+                incr = -600.0;
+                goto do_seek;
             case SDLK_LEFT:
                 incr = -10.0;
                 goto do_seek;
@@ -3122,6 +3128,7 @@ static int opt_help(const char *opt, const char *arg)
            "s                   activate frame-step mode\n"
            "left/right          seek backward/forward 10 seconds\n"
            "down/up             seek backward/forward 1 minute\n"
+           "page down/page up   seek backward/forward 10 minutes\n"
            "mouse click         seek to percentage in file corresponding to fraction of width\n"
            );
     return 0;
