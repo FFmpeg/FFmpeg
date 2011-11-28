@@ -1153,6 +1153,18 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         if (!source_track)
             continue;
 
+        if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
+            av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        /* 0001GL00.MXF.A1.mxf_opatom.mxf has the same SourcePackageID as 0001GL.MXF.V1.mxf_opatom.mxf
+         * This would result in both files appearing to have two streams. Work around this by sanity checking DataDefinition */
+        if (memcmp(material_track->sequence->data_definition_ul, source_track->sequence->data_definition_ul, 16)) {
+            av_log(mxf->fc, AV_LOG_ERROR, "material track %d: DataDefinition mismatch\n", material_track->track_id);
+            continue;
+        }
+
         st = avformat_new_stream(mxf->fc, NULL);
         if (!st) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not allocate stream\n");
@@ -1165,11 +1177,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->duration = AV_NOPTS_VALUE;
         st->start_time = component->start_position;
         avpriv_set_pts_info(st, 64, material_track->edit_rate.num, material_track->edit_rate.den);
-
-        if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
-            av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");
-            return AVERROR_INVALIDDATA;
-        }
 
         PRINT_KEY(mxf->fc, "data definition   ul", source_track->sequence->data_definition_ul);
         codec_ul = mxf_get_codec_ul(ff_mxf_data_definition_uls, &source_track->sequence->data_definition_ul);
