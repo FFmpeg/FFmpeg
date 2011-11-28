@@ -593,7 +593,7 @@ static void encode_rgb_frame(FFV1Context *s, uint32_t *src, int w, int h, int st
             sample[2][0][x]= r;
             sample[3][0][x]= a;
         }
-        for(p=0; p<4; p++){
+        for(p=0; p<3 + s->transparency; p++){
             sample[p][0][-1]= sample[p][1][0  ];
             sample[p][1][ w]= sample[p][1][w-1];
             encode_line(s, w, sample[p], (p+1)/2, 9);
@@ -938,6 +938,9 @@ static av_cold int encode_init(AVCodecContext *avctx)
     case PIX_FMT_RGB32:
         s->colorspace= 1;
         s->transparency= 1;
+        break;
+    case PIX_FMT_0RGB32:
+        s->colorspace= 1;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "format not supported\n");
@@ -1793,7 +1796,7 @@ AVCodec ff_ffv1_encoder = {
     .encode         = encode_frame,
     .close          = common_end,
     .capabilities = CODEC_CAP_SLICE_THREADS,
-    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV420P9, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_NONE},
+    .pix_fmts= (const enum PixelFormat[]){PIX_FMT_YUV420P, PIX_FMT_YUV444P, PIX_FMT_YUV422P, PIX_FMT_YUV411P, PIX_FMT_YUV410P, PIX_FMT_0RGB32, PIX_FMT_RGB32, PIX_FMT_YUV420P16, PIX_FMT_YUV422P16, PIX_FMT_YUV444P16, PIX_FMT_YUV420P9, PIX_FMT_YUV420P10, PIX_FMT_YUV422P10, PIX_FMT_NONE},
     .long_name= NULL_IF_CONFIG_SMALL("FFmpeg video codec #1"),
 };
 #endif
