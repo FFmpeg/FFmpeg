@@ -2390,17 +2390,6 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 if (num && (!st->r_frame_rate.num || (double)num/(12*1001) < 1.01 * av_q2d(st->r_frame_rate)))
                     av_reduce(&st->r_frame_rate.num, &st->r_frame_rate.den, num, 12*1001, INT_MAX);
             }
-
-            if (!st->r_frame_rate.num){
-                if(    st->codec->time_base.den * (int64_t)st->time_base.num
-                    <= st->codec->time_base.num * st->codec->ticks_per_frame * (int64_t)st->time_base.den){
-                    st->r_frame_rate.num = st->codec->time_base.den;
-                    st->r_frame_rate.den = st->codec->time_base.num * st->codec->ticks_per_frame;
-                }else{
-                    st->r_frame_rate.num = st->time_base.den;
-                    st->r_frame_rate.den = st->time_base.num;
-                }
-            }
         }else if(st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
             if(!st->codec->bits_per_coded_sample)
                 st->codec->bits_per_coded_sample= av_get_bits_per_sample(st->codec->codec_id);
