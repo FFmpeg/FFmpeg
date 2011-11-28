@@ -166,7 +166,6 @@ static int a64_write_trailer(struct AVFormatContext *s)
 AVOutputFormat ff_a64_muxer = {
     .name = "a64",
     .long_name = NULL_IF_CONFIG_SMALL("a64 - video for Commodore 64"),
-    .mime_type = NULL,
     .extensions = "a64, A64",
     .priv_data_size = sizeof (A64Context),
     .video_codec = CODEC_ID_A64_MULTI,

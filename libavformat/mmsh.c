@@ -406,7 +406,6 @@ URLProtocol ff_mmsh_protocol = {
     .name      = "mmsh",
     .url_open  = mmsh_open,
     .url_read  = mmsh_read,
-    .url_write = NULL,
     .url_seek  = mmsh_seek,
     .url_close = mmsh_close,
     .url_read_seek  = mmsh_read_seek,

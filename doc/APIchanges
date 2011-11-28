@@ -22,20 +22,23 @@ API changes, most recent first:
 2011-10-20 - b35e9e1 - lavu 51.22.0
   Add av_strtok() to avstring.h.
 
-2011-xx-xx - xxxxxxx - lavu 51.18.0
+2011-11-23 - bbb46f3 - lavu 51.18.0
   Add av_samples_get_buffer_size(), av_samples_fill_arrays(), and
   av_samples_alloc(), to samplefmt.h.
 
-2011-xx-xx - xxxxxxx - lavu 51.17.0
+2011-11-23 - 8889cc4 - lavu 51.17.0
   Add planar sample formats and av_sample_fmt_is_planar() to samplefmt.h.
 
-2011-xx-xx - xxxxxxx - lavc 53.21.0
+2011-11-19 - f3a29b7 - lavc 53.21.0
   Move some AVCodecContext fields to a new private struct, AVCodecInternal,
   which is accessed from a new field, AVCodecContext.internal.
   - fields moved:
       AVCodecContext.internal_buffer       --> AVCodecInternal.buffer
       AVCodecContext.internal_buffer_count --> AVCodecInternal.buffer_count
       AVCodecContext.is_copy               --> AVCodecInternal.is_copy
+
+2011-11-16 - 6270671 - lavu 51.16.0
+  Add av_timegm()
 
 2011-11-13 - lavf 53.15.0
   New interrupt callback API, allowing per-AVFormatContext/AVIOContext
@@ -46,9 +49,6 @@ API changes, most recent first:
           an interrupt callback and an options AVDictionary.
           This will allow passing AVOptions to protocols after lavf
           54.0.
-
-2011-11-xx - xxxxxxx - lavu 51.16.0
-  Add av_timegm()
 
 2011-11-06 - ba04ecf - lavu 51.14.0
   Add av_strcasecmp() and av_strncasecmp() to avstring.h.

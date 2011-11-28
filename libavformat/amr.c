@@ -176,7 +176,6 @@ static int amr_read_packet(AVFormatContext *s,
 AVInputFormat ff_amr_demuxer = {
     .name           = "amr",
     .long_name      = NULL_IF_CONFIG_SMALL("3GPP AMR file format"),
-    .priv_data_size = 0, /*priv_data_size*/
     .read_probe     = amr_probe,
     .read_header    = amr_read_header,
     .read_packet    = amr_read_packet,

@@ -144,7 +144,6 @@ AVCodec ff_s302m_decoder = {
     .name           = "s302m",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_S302M,
-    .priv_data_size = 0,
     .decode         = s302m_decode_frame,
     .long_name      = NULL_IF_CONFIG_SMALL("SMPTE 302M"),
 };

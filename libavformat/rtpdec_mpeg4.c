@@ -234,9 +234,6 @@ RTPDynamicProtocolHandler ff_mp4v_es_dynamic_handler = {
     .codec_type         = AVMEDIA_TYPE_VIDEO,
     .codec_id           = CODEC_ID_MPEG4,
     .parse_sdp_a_line   = parse_sdp_line,
-    .alloc              = NULL,
-    .free               = NULL,
-    .parse_packet       = NULL
 };
 
 RTPDynamicProtocolHandler ff_mpeg4_generic_dynamic_handler = {

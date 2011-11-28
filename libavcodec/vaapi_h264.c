@@ -342,9 +342,7 @@ AVHWAccel ff_h264_vaapi_hwaccel = {
     .type           = AVMEDIA_TYPE_VIDEO,
     .id             = CODEC_ID_H264,
     .pix_fmt        = PIX_FMT_VAAPI_VLD,
-    .capabilities   = 0,
     .start_frame    = start_frame,
     .end_frame      = end_frame,
     .decode_slice   = decode_slice,
-    .priv_data_size = 0,
 };

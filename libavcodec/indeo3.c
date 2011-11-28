@@ -759,7 +759,7 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                     av_log(avctx, AV_LOG_ERROR, "SkipCell procedure not implemented yet!\n");
 
                 CHECK_CELL
-                if(!curr_cell.mv_ptr)
+                if (!curr_cell.mv_ptr)
                     return AVERROR_INVALIDDATA;
                 copy_cell(ctx, plane, &curr_cell);
                 return 0;

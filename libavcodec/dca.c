@@ -519,7 +519,7 @@ static int dca_parse_frame_header(DCAContext * s)
     init_get_bits(&s->gb, s->dca_buffer, s->dca_buffer_size * 8);
 
     /* Sync code */
-    get_bits(&s->gb, 32);
+    skip_bits_long(&s->gb, 32);
 
     /* Frame header */
     s->frame_type        = get_bits(&s->gb, 1);
@@ -1257,7 +1257,7 @@ static int dca_subframe_footer(DCAContext * s, int base_channel)
     /* presumably optional information only appears in the core? */
     if (!base_channel) {
         if (s->timestamp)
-            get_bits(&s->gb, 32);
+            skip_bits_long(&s->gb, 32);
 
         if (s->aux_data)
             aux_data_count = get_bits(&s->gb, 6);

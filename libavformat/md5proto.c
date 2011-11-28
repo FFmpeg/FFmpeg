@@ -36,7 +36,7 @@ static int md5_open(URLContext *h, const char *filename, int flags)
         return -1;
     }
 
-    if (!flags & AVIO_FLAG_WRITE)
+    if (!(flags & AVIO_FLAG_WRITE))
         return AVERROR(EINVAL);
 
     av_md5_init(h->priv_data);

@@ -116,7 +116,8 @@ static int txd_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     } else if (depth == 16) {
         switch (d3d_format) {
         case 0:
-            if (!flags&1) goto unsupported;
+            if (!(flags & 1))
+                goto unsupported;
         case FF_S3TC_DXT1:
             if (buf_end - cur < (w/4) * (h/4) * 8)
                 return AVERROR_INVALIDDATA;
