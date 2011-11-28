@@ -971,7 +971,7 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             return -1;
         if ((AV_RB16(pkt->data) & 0xfff0) != 0xfff0) {
             ADTSContext *adts = ts_st->adts;
-            int new_size;
+            int new_size, err;
             if (!adts) {
                 av_log(s, AV_LOG_ERROR, "aac bitstream not in adts format "
                        "and extradata missing\n");
@@ -983,7 +983,12 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
             data = av_malloc(new_size);
             if (!data)
                 return AVERROR(ENOMEM);
-            ff_adts_write_frame_header(adts, data, pkt->size, adts->pce_size);
+            err = ff_adts_write_frame_header(adts, data, pkt->size,
+                                             adts->pce_size);
+            if (err < 0) {
+                av_free(data);
+                return err;
+            }
             if (adts->pce_size) {
                 memcpy(data+ADTS_HEADER_SIZE, adts->pce_data, adts->pce_size);
                 adts->pce_size = 0;

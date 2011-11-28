@@ -27,6 +27,8 @@
 #include "avformat.h"
 #include "adts.h"
 
+#define ADTS_MAX_FRAME_BYTES ((1 << 13) - 1)
+
 int ff_adts_decode_extradata(AVFormatContext *s, ADTSContext *adts, uint8_t *buf, int size)
 {
     GetBitContext gb;
@@ -93,6 +95,13 @@ int ff_adts_write_frame_header(ADTSContext *ctx,
 {
     PutBitContext pb;
 
+    unsigned full_frame_size = (unsigned)ADTS_HEADER_SIZE + size + pce_size;
+    if (full_frame_size > ADTS_MAX_FRAME_BYTES) {
+        av_log(NULL, AV_LOG_ERROR, "ADTS frame size too large: %u (max %d)\n",
+               full_frame_size, ADTS_MAX_FRAME_BYTES);
+        return AVERROR_INVALIDDATA;
+    }
+
     init_put_bits(&pb, buf, ADTS_HEADER_SIZE);
 
     /* adts_fixed_header */
@@ -110,7 +119,7 @@ int ff_adts_write_frame_header(ADTSContext *ctx,
     /* adts_variable_header */
     put_bits(&pb, 1, 0);        /* copyright_identification_bit */
     put_bits(&pb, 1, 0);        /* copyright_identification_start */
-    put_bits(&pb, 13, ADTS_HEADER_SIZE + size + pce_size); /* aac_frame_length */
+    put_bits(&pb, 13, full_frame_size); /* aac_frame_length */
     put_bits(&pb, 11, 0x7ff);   /* adts_buffer_fullness */
     put_bits(&pb, 2, 0);        /* number_of_raw_data_blocks_in_frame */
 
@@ -128,7 +137,10 @@ static int adts_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!pkt->size)
         return 0;
     if (adts->write_adts) {
-        ff_adts_write_frame_header(adts, buf, pkt->size, adts->pce_size);
+        int err = ff_adts_write_frame_header(adts, buf, pkt->size,
+                                             adts->pce_size);
+        if (err < 0)
+            return err;
         avio_write(pb, buf, ADTS_HEADER_SIZE);
         if (adts->pce_size) {
             avio_write(pb, adts->pce_data, adts->pce_size);
