@@ -357,6 +357,28 @@ const AVCodecGuid ff_codec_wav_guids[] = {
     {CODEC_ID_NONE}
 };
 
+const AVMetadataConv ff_riff_info_conv[] = {
+    { "IART", "artist"    },
+    { "ICMT", "comment"   },
+    { "ICOP", "copyright" },
+    { "ICRD", "date"      },
+    { "IGNR", "genre"     },
+    { "ILNG", "language"  },
+    { "INAM", "title"     },
+    { "IPRD", "album"     },
+    { "IPRT", "track"     },
+    { "ISFT", "encoder"   },
+    { "ITCH", "encoded_by"},
+    { 0 },
+};
+
+const char ff_riff_tags[][5] = {
+    "IARL", "IART", "ICMS", "ICMT", "ICOP", "ICRD", "ICRP", "IDIM", "IDPI",
+    "IENG", "IGNR", "IKEY", "ILGT", "ILNG", "IMED", "INAM", "IPLT", "IPRD",
+    "IPRT", "ISBJ", "ISFT", "ISHP", "ISRC", "ISRF", "ITCH",
+    {0}
+};
+
 #if CONFIG_MUXERS
 int64_t ff_start_tag(AVIOContext *pb, const char *tag)
 {
@@ -655,4 +677,50 @@ enum CodecID ff_codec_guid_get_id(const AVCodecGuid *guids, ff_asf_guid guid)
             return guids[i].id;
     }
     return CODEC_ID_NONE;
+}
+
+int ff_read_riff_info(AVFormatContext *s, int64_t size)
+{
+    int64_t start, end, cur;
+    AVIOContext *pb = s->pb;
+
+    start = avio_tell(pb);
+    end = start + size;
+
+    while ((cur = avio_tell(pb)) >= 0 && cur <= end - 8 /* = tag + size */) {
+        uint32_t chunk_code;
+        int64_t chunk_size;
+        char key[5] = {0};
+        char *value;
+
+        chunk_code = avio_rl32(pb);
+        chunk_size = avio_rl32(pb);
+        if (chunk_size > end || end - chunk_size < cur || chunk_size == UINT_MAX) {
+            av_log(s, AV_LOG_ERROR, "too big INFO subchunk\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        chunk_size += (chunk_size & 1);
+
+        value = av_malloc(chunk_size + 1);
+        if (!value) {
+            av_log(s, AV_LOG_ERROR, "out of memory, unable to read INFO tag\n");
+            return AVERROR(ENOMEM);
+        }
+
+        AV_WL32(key, chunk_code);
+
+        if (avio_read(pb, value, chunk_size) != chunk_size) {
+            av_freep(key);
+            av_freep(value);
+            av_log(s, AV_LOG_ERROR, "premature end of file while reading INFO tag\n");
+            return AVERROR_INVALIDDATA;
+        }
+
+        value[chunk_size] = 0;
+
+        av_dict_set(&s->metadata, key, value, AV_DICT_DONT_STRDUP_VAL);
+    }
+
+    return 0;
 }

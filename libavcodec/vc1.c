@@ -841,14 +841,14 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     if (v->interlace) {
         v->fcm = decode012(gb);
         if (v->fcm) {
-            if (v->fcm == 2)
+            if (v->fcm == ILACE_FIELD)
                 v->field_mode = 1;
             if (!v->warn_interlaced++)
                 av_log(v->s.avctx, AV_LOG_ERROR,
                        "Interlaced frames/fields support is incomplete\n");
         }
     } else {
-        v->fcm = 0;
+        v->fcm = PROGRESSIVE;
     }
 
     if (v->field_mode) {
@@ -962,7 +962,7 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
     switch (v->s.pict_type) {
     case AV_PICTURE_TYPE_I:
     case AV_PICTURE_TYPE_BI:
-        if (v->fcm == 1) { //interlace frame picture
+        if (v->fcm == ILACE_FRAME) { //interlace frame picture
             status = bitplane_decoding(v->fieldtx_plane, &v->fieldtx_is_raw, v);
             if (status < 0)
                 return -1;
@@ -1003,7 +1003,7 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                 v->dmvrange = get_unary(gb, 0, 3);
             else
                 v->dmvrange = 0;
-            if (v->fcm == 1) { // interlaced frame picture
+            if (v->fcm == ILACE_FRAME) { // interlaced frame picture
                 v->fourmvswitch = get_bits1(gb);
                 v->intcomp      = get_bits1(gb);
                 if (v->intcomp) {
@@ -1043,7 +1043,7 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             v->tt_index = 1;
         else
             v->tt_index = 2;
-        if (v->fcm != 1) {
+        if (v->fcm != ILACE_FRAME) {
             int mvmode;
             mvmode     = get_unary(gb, 1, 4);
             lowquant   = (v->pq > 12) ? 0 : 1;
@@ -1078,7 +1078,7 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
                            || (v->mv_mode == MV_PMODE_INTENSITY_COMP
                                && v->mv_mode2 == MV_PMODE_1MV_HPEL_BILIN));
         }
-        if (v->fcm == 0) { // progressive
+        if (v->fcm == PROGRESSIVE) { // progressive
             if ((v->mv_mode == MV_PMODE_INTENSITY_COMP &&
                  v->mv_mode2 == MV_PMODE_MIXED_MV)
                 || v->mv_mode == MV_PMODE_MIXED_MV) {
@@ -1100,7 +1100,7 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
             /* Hopefully this is correct for P frames */
             v->s.mv_table_index = get_bits(gb, 2); //but using ff_vc1_ tables
             v->cbpcy_vlc        = &ff_vc1_cbpcy_p_vlc[get_bits(gb, 2)];
-        } else if (v->fcm == 1) { // frame interlaced
+        } else if (v->fcm == ILACE_FRAME) { // frame interlaced
             v->qs_last          = v->s.quarter_sample;
             v->s.quarter_sample = 1;
             v->s.mspel          = 1;
@@ -1140,7 +1140,7 @@ int vc1_parse_frame_header_adv(VC1Context *v, GetBitContext* gb)
         break;
     case AV_PICTURE_TYPE_B:
         // TODO: implement interlaced frame B picture decoding
-        if (v->fcm == 1)
+        if (v->fcm == ILACE_FRAME)
             return -1;
         if (v->extended_mv)
             v->mvrange = get_unary(gb, 0, 3);

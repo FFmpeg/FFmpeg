@@ -99,6 +99,11 @@ static const char avi_headers[][8] = {
     { 0 }
 };
 
+static const AVMetadataConv avi_metadata_conv[] = {
+    { "strn", "title" },
+    { 0 },
+};
+
 static int avi_load_index(AVFormatContext *s);
 static int guess_ni_flag(AVFormatContext *s);
 
@@ -287,15 +292,6 @@ static int avi_read_tag(AVFormatContext *s, AVStream *st, uint32_t tag, uint32_t
                             AV_DICT_DONT_STRDUP_VAL);
 }
 
-static void avi_read_info(AVFormatContext *s, uint64_t end)
-{
-    while (avio_tell(s->pb) < end) {
-        uint32_t tag  = avio_rl32(s->pb);
-        uint32_t size = avio_rl32(s->pb);
-        avi_read_tag(s, NULL, tag, size);
-    }
-}
-
 static const char months[12][4] = { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
                                     "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" };
 
@@ -408,7 +404,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 goto end_of_header;
             }
             else if (tag1 == MKTAG('I', 'N', 'F', 'O'))
-                avi_read_info(s, list_end);
+                ff_read_riff_info(s, size - 4);
             else if (tag1 == MKTAG('n', 'c', 'd', 't'))
                 avi_read_nikon(s, list_end);
 
@@ -778,7 +774,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
         clean_index(s);
     }
 
-    ff_metadata_conv_ctx(s, NULL, ff_avi_metadata_conv);
+    ff_metadata_conv_ctx(s, NULL, avi_metadata_conv);
+    ff_metadata_conv_ctx(s, NULL, ff_riff_info_conv);
 
     return 0;
 }

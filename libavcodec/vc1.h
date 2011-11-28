@@ -161,6 +161,16 @@ enum COTypes {
 };
 //@}
 
+/**
+ * FCM Frame Coding Mode
+ * @note some content might be marked interlaced
+ * but have fcm set to 0 as well (e.g. HD-DVD)
+ */
+enum FrameCodingMode {
+    PROGRESSIVE = 0,    ///<  in the bitstream is reported as 00b
+    ILACE_FRAME,        ///<  in the bitstream is reported as 10b
+    ILACE_FIELD         ///<  in the bitstream is reported as 11b
+};
 
 /** The VC1 Context
  * @todo Change size wherever another size is more efficient
@@ -296,7 +306,7 @@ typedef struct VC1Context{
 
     /** Frame decoding info for Advanced profile */
     //@{
-    uint8_t fcm; ///< 0->Progressive, 2->Frame-Interlace, 3->Field-Interlace
+    enum FrameCodingMode fcm;
     uint8_t numpanscanwin;
     uint8_t tfcntr;
     uint8_t rptfrm, tff, rff;

@@ -269,7 +269,7 @@ static inline int l3_unscale(int value, int exponent)
     return m;
 }
 
-static void decode_init_static(AVCodec *codec)
+static av_cold void decode_init_static(void)
 {
     int i, j, k;
     int offset;
@@ -462,7 +462,13 @@ static void decode_init_static(AVCodec *codec)
 
 static av_cold int decode_init(AVCodecContext * avctx)
 {
+    static int initialized_tables = 0;
     MPADecodeContext *s = avctx->priv_data;
+
+    if (!initialized_tables) {
+        decode_init_static();
+        initialized_tables = 1;
+    }
 
     s->avctx = avctx;
 
@@ -1996,7 +2002,6 @@ AVCodec ff_mp1_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP1,
     .priv_data_size = sizeof(MPADecodeContext),
-    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
@@ -2012,7 +2017,6 @@ AVCodec ff_mp2_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP2,
     .priv_data_size = sizeof(MPADecodeContext),
-    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
@@ -2028,7 +2032,6 @@ AVCodec ff_mp3_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP3,
     .priv_data_size = sizeof(MPADecodeContext),
-    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame,
 #if FF_API_PARSE_FRAME
@@ -2044,7 +2047,6 @@ AVCodec ff_mp3adu_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP3ADU,
     .priv_data_size = sizeof(MPADecodeContext),
-    .init_static_data = decode_init_static,
     .init           = decode_init,
     .decode         = decode_frame_adu,
 #if FF_API_PARSE_FRAME
@@ -2060,7 +2062,6 @@ AVCodec ff_mp3on4_decoder = {
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_MP3ON4,
     .priv_data_size = sizeof(MP3On4DecodeContext),
-    .init_static_data = decode_init_static,
     .init           = decode_init_mp3on4,
     .close          = decode_close_mp3on4,
     .decode         = decode_frame_mp3on4,

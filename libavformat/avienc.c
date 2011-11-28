@@ -378,9 +378,9 @@ static int avi_write_header(AVFormatContext *s)
 
     list2 = ff_start_tag(pb, "LIST");
     ffio_wfourcc(pb, "INFO");
-    ff_metadata_conv(&s->metadata, ff_avi_metadata_conv, NULL);
-    for (i = 0; *ff_avi_tags[i]; i++) {
-        if ((t = av_dict_get(s->metadata, ff_avi_tags[i], NULL, AV_DICT_MATCH_CASE)))
+    ff_metadata_conv(&s->metadata, ff_riff_info_conv, NULL);
+    for (i = 0; *ff_riff_tags[i]; i++) {
+        if ((t = av_dict_get(s->metadata, ff_riff_tags[i], NULL, AV_DICT_MATCH_CASE)))
             avi_write_info_tag(s->pb, t->key, t->value);
     }
     ff_end_tag(pb, list2);

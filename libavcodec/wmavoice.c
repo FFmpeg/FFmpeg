@@ -1795,7 +1795,7 @@ static int synth_superframe(AVCodecContext *ctx,
     out_size = n_samples * av_get_bytes_per_sample(ctx->sample_fmt);
     if (*data_size < out_size) {
         av_log(ctx, AV_LOG_ERROR,
-               "Output buffer too small (%d given - %zu needed)\n",
+               "Output buffer too small (%d given - %d needed)\n",
                *data_size, out_size);
         return -1;
     }
