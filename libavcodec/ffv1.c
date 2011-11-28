@@ -1609,7 +1609,8 @@ static int read_header(FFV1Context *f){
             av_log(f->avctx, AV_LOG_ERROR, "chroma subsampling not supported in this colorspace\n");
             return -1;
         }
-        f->avctx->pix_fmt= PIX_FMT_RGB32;
+        if(f->transparency) f->avctx->pix_fmt= PIX_FMT_RGB32;
+        else                f->avctx->pix_fmt= PIX_FMT_0RGB32;
     }else{
         av_log(f->avctx, AV_LOG_ERROR, "colorspace not supported\n");
         return -1;
