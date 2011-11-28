@@ -71,6 +71,8 @@ static int nut_write_header(AVFormatContext * avf) {
     int i;
 
     priv->s = s = av_mallocz((avf->nb_streams + 1) * sizeof*s);
+    if(!s)
+        return AVERROR(ENOMEM);
 
     for (i = 0; i < avf->nb_streams; i++) {
         AVCodecContext * codec = avf->streams[i]->codec;
@@ -224,6 +226,10 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
         st->codec->extradata_size = s[i].codec_specific_len;
         if (st->codec->extradata_size) {
             st->codec->extradata = av_mallocz(st->codec->extradata_size);
+            if(!st->codec->extradata){
+                nut_demuxer_uninit(nut);
+                return AVERROR(ENOMEM);
+            }
             memcpy(st->codec->extradata, s[i].codec_specific, st->codec->extradata_size);
         }
 
