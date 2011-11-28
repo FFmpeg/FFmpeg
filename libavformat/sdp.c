@@ -402,7 +402,7 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                      payload_type, config ? config : "");
             break;
         case CODEC_ID_AAC:
-            if (fmt && fmt->oformat->priv_class &&
+            if (fmt && fmt->oformat && fmt->oformat->priv_class &&
                 av_opt_flag_is_set(fmt->priv_data, "rtpflags", "latm")) {
                 config = latm_context2config(c);
                 if (!config)
