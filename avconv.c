@@ -113,7 +113,7 @@ static int video_sync_method= -1;
 static int audio_sync_method= 0;
 static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
-static int copy_tb;
+static int copy_tb = 1;
 static int opt_shortest = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
@@ -2067,9 +2067,7 @@ static int transcode_init(OutputFile *output_files,
             }
             memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
             codec->extradata_size = icodec->extradata_size;
-            if (!copy_tb &&
-                av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) &&
-                av_q2d(ist->st->time_base) < 1.0/500) {
+            if (!copy_tb) {
                 codec->time_base      = icodec->time_base;
                 codec->time_base.num *= icodec->ticks_per_frame;
                 av_reduce(&codec->time_base.num, &codec->time_base.den,
