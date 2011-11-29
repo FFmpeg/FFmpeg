@@ -1207,7 +1207,8 @@ static void do_video_out(AVFormatContext *s,
         av_init_packet(&pkt);
         pkt.stream_index= ost->index;
 
-        if (s->oformat->flags & AVFMT_RAWPICTURE) {
+        if (s->oformat->flags & AVFMT_RAWPICTURE &&
+            enc->codec->id == CODEC_ID_RAWVIDEO) {
             /* raw pictures are written as AVPicture structure to
                avoid any copies. We support temporarily the older
                method. */
@@ -1459,7 +1460,7 @@ static void flush_encoders(OutputStream *ost_table, int nb_ostreams)
 
         if (ost->st->codec->codec_type == AVMEDIA_TYPE_AUDIO && enc->frame_size <=1)
             continue;
-        if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE))
+        if (ost->st->codec->codec_type == AVMEDIA_TYPE_VIDEO && (os->oformat->flags & AVFMT_RAWPICTURE) && enc->codec->id == CODEC_ID_RAWVIDEO)
             continue;
 
         for(;;) {
