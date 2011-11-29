@@ -260,6 +260,7 @@ Advanced options (experts only):
   --optflags               override optimization-related compiler flags
 
 Developer options (useful when working on FFmpeg itself):
+  --enable-coverage        build with test coverage instrumentation
   --disable-debug          disable debugging symbols
   --enable-debug=LEVEL     set the debug level [$debuglevel]
   --disable-optimizations  disable compiler optimizations
@@ -1242,6 +1243,7 @@ CMDLINE_SELECT="
     $CONFIG_LIST
     $THREADS_LIST
     asm
+    coverage
     cross_compile
     debug
     extra_warnings
@@ -3194,6 +3196,7 @@ check_cpp_condition \
 fi
 
 enabled debug && add_cflags -g"$debuglevel" && add_asflags -g"$debuglevel"
+enabled coverage && add_cflags "-fprofile-arcs -ftest-coverage" && add_ldflags "-fprofile-arcs -ftest-coverage"
 
 # add some useful compiler flags if supported
 check_cflags -Wdeclaration-after-statement
