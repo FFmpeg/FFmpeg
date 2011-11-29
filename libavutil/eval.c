@@ -579,6 +579,7 @@ int av_expr_parse_and_eval(double *d, const char *s,
 }
 
 #if FF_API_OLD_EVAL_NAMES
+// LCOV_EXCL_START
 int av_parse_expr(AVExpr **expr, const char *s,
                   const char * const *const_names,
                   const char * const *func1_names, double (* const *funcs1)(void *, double),
@@ -608,9 +609,11 @@ void av_free_expr(AVExpr *e)
 {
     av_expr_free(e);
 }
+// LCOV_EXCL_STOP
 #endif /* FF_API_OLD_EVAL_NAMES */
 
 #ifdef TEST
+// LCOV_EXCL_START
 #undef printf
 #include <string.h>
 
@@ -723,4 +726,5 @@ int main(int argc, char **argv)
 
     return 0;
 }
+// LCOV_EXCL_STOP
 #endif

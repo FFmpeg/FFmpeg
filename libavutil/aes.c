@@ -259,6 +259,7 @@ int av_aes_init(AVAES *a, const uint8_t *key, int key_bits, int decrypt)
 }
 
 #ifdef TEST
+// LCOV_EXCL_START
 #include <string.h>
 #include "lfg.h"
 #include "log.h"
@@ -331,4 +332,5 @@ int main(int argc, char **argv)
     }
     return err;
 }
+// LCOV_EXCL_STOP
 #endif

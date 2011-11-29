@@ -56,6 +56,7 @@ unsigned long av_adler32_update(unsigned long adler, const uint8_t * buf,
 }
 
 #ifdef TEST
+// LCOV_EXCL_START
 #include <string.h>
 #include "log.h"
 #include "timer.h"
@@ -84,4 +85,5 @@ int main(int argc, char **argv)
     av_log(NULL, AV_LOG_DEBUG, "%X (expected 50E6E508)\n", checksum);
     return checksum == 0x50e6e508 ? 0 : 1;
 }
+// LCOV_EXCL_STOP
 #endif

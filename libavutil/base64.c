@@ -100,6 +100,7 @@ char *av_base64_encode(char *out, int out_size, const uint8_t *in, int in_size)
 }
 
 #ifdef TEST
+// LCOV_EXCL_START
 
 #undef printf
 
@@ -161,4 +162,5 @@ int main(void)
     return error_count;
 }
 
+// LCOV_EXCL_STOP
 #endif
