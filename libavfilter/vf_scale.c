@@ -128,7 +128,7 @@ static int query_formats(AVFilterContext *ctx)
     if (ctx->outputs[0]) {
         formats = NULL;
         for (pix_fmt = 0; pix_fmt < PIX_FMT_NB; pix_fmt++)
-            if (    sws_isSupportedOutput(pix_fmt)
+            if (   (sws_isSupportedOutput(pix_fmt) || pix_fmt == PIX_FMT_PAL8)
                 && (ret = avfilter_add_format(&formats, pix_fmt)) < 0) {
                 avfilter_formats_unref(&formats);
                 return ret;
@@ -143,6 +143,7 @@ static int config_props(AVFilterLink *outlink)
 {
     AVFilterContext *ctx = outlink->src;
     AVFilterLink *inlink = outlink->src->inputs[0];
+    enum PixelFormat outfmt = outlink->format;
     ScaleContext *scale = ctx->priv;
     int64_t w, h;
     double var_values[VARS_NB], res;
@@ -212,21 +213,22 @@ static int config_props(AVFilterLink *outlink)
            scale->flags);
 
     scale->input_is_pal = av_pix_fmt_descriptors[inlink->format].flags & PIX_FMT_PAL;
+    if (outfmt == PIX_FMT_PAL8) outfmt = PIX_FMT_BGR8;
 
     if (scale->sws)
         sws_freeContext(scale->sws);
     scale->sws = sws_getContext(inlink ->w, inlink ->h, inlink ->format,
-                                outlink->w, outlink->h, outlink->format,
+                                outlink->w, outlink->h, outfmt,
                                 scale->flags, NULL, NULL, NULL);
     if (scale->isws[0])
         sws_freeContext(scale->isws[0]);
     scale->isws[0] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
-                                    outlink->w, outlink->h/2, outlink->format,
+                                    outlink->w, outlink->h/2, outfmt,
                                     scale->flags, NULL, NULL, NULL);
     if (scale->isws[1])
         sws_freeContext(scale->isws[1]);
     scale->isws[1] = sws_getContext(inlink ->w, inlink ->h/2, inlink ->format,
-                                    outlink->w, outlink->h/2, outlink->format,
+                                    outlink->w, outlink->h/2, outfmt,
                                     scale->flags, NULL, NULL, NULL);
     if (!scale->sws || !scale->isws[0] || !scale->isws[1])
         return AVERROR(EINVAL);
