@@ -250,7 +250,7 @@ typedef struct WmallDecodeCtx {
 	int coefsend;
 	int bitsend;
 	int16_t coefs[256];
-    int lms_prevvalues[512];    // FIXME: see above
+    int16_t lms_prevvalues[512];    // FIXME: see above
     int16_t lms_updates[512];   // and here too
     int recent;
     } cdlms[2][9];              /* XXX: Here, 2 is the max. no. of channels allowed,
@@ -279,7 +279,7 @@ typedef struct WmallDecodeCtx {
     int lpc_scaling;
     int lpc_intbits;
 
-    int channel_coeffs[2][2048];
+    int16_t channel_coeffs[2][2048]; // FIXME: should be 32-bit / 16-bit depending on bit-depth
 
 } WmallDecodeCtx;
 
@@ -761,7 +761,7 @@ static void clear_codec_buffers(WmallDecodeCtx *s)
     for (ich = 0; ich < s->num_channels; ich++) {
         for (ilms = 0; ilms < s->cdlms_ttl[ich]; ilms++) {
             memset(s->cdlms[ich][ilms].coefs         , 0, 256 * sizeof(int16_t));
-            memset(s->cdlms[ich][ilms].lms_prevvalues, 0, 512 * sizeof(int));
+            memset(s->cdlms[ich][ilms].lms_prevvalues, 0, 512 * sizeof(int16_t));
             memset(s->cdlms[ich][ilms].lms_updates   , 0, 512 * sizeof(int16_t));
         }
         s->ave_sum[ich] = 0;
@@ -789,7 +789,7 @@ static void reset_codec(WmallDecodeCtx *s)
 
 static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
 {
-    int32_t pred = 0, icoef;
+    int16_t pred = 0, icoef;
     int recent = s->cdlms[ich][ilms].recent;
 
     for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
@@ -806,7 +806,7 @@ static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
 
 static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int32_t input, int32_t pred)
 {
-    int icoef;
+    int16_t icoef;
     int recent = s->cdlms[ich][ilms].recent;
     int range = 1 << (s->bits_per_sample - 1);
     int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
@@ -888,7 +888,7 @@ static void use_normal_update_speed(WmallDecodeCtx *s, int ich)
 static void revert_cdlms(WmallDecodeCtx *s, int tile_size)
 {
     int icoef, ich;
-    int32_t pred, channel_coeff;
+    int16_t pred, channel_coeff;
     int ilms, num_lms;
 
     for (ich = 0; ich < s->num_channels; ich++) {
