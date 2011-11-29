@@ -81,8 +81,10 @@ static int mov_write_stco_tag(AVIOContext *pb, MOVTrack *track)
     } else
         ffio_wfourcc(pb, "stco");
     avio_wb32(pb, 0); /* version & flags */
-    avio_wb32(pb, track->entry); /* entry count */
+    avio_wb32(pb, track->chunkCount); /* entry count */
     for (i=0; i<track->entry; i++) {
+        if(!track->cluster[i].chunkNum)
+            continue;
         if(mode64 == 1)
             avio_wb64(pb, track->cluster[i].pos);
         else
@@ -140,11 +142,11 @@ static int mov_write_stsc_tag(AVIOContext *pb, MOVTrack *track)
     ffio_wfourcc(pb, "stsc");
     avio_wb32(pb, 0); // version & flags
     entryPos = avio_tell(pb);
-    avio_wb32(pb, track->entry); // entry count
+    avio_wb32(pb, track->chunkCount); // entry count
     for (i=0; i<track->entry; i++) {
-        if(oldval != track->cluster[i].samplesInChunk)
+        if(oldval != track->cluster[i].samplesInChunk && track->cluster[i].chunkNum)
         {
-            avio_wb32(pb, i+1); // first chunk
+            avio_wb32(pb, track->cluster[i].chunkNum); // first chunk
             avio_wb32(pb, track->cluster[i].samplesInChunk); // samples per chunk
             avio_wb32(pb, 0x1); // sample description index
             oldval = track->cluster[i].samplesInChunk;
@@ -1805,6 +1807,24 @@ static int mov_write_uuidusmt_tag(AVIOContext *pb, AVFormatContext *s)
     return 0;
 }
 
+static void build_chunks(MOVTrack *trk)
+{
+    int i;
+    MOVIentry *chunk= &trk->cluster[0];
+    chunk->chunkNum= 1;
+    trk->chunkCount= 1;
+    for(i=1; i<trk->entry; i++){
+        if(chunk->pos + chunk->chunkSize == trk->cluster[i].pos){
+            chunk->chunkSize      += trk->cluster[i].size;
+            chunk->samplesInChunk += trk->cluster[i].entries;
+        }else{
+            trk->cluster[i].chunkNum = chunk->chunkNum+1;
+            chunk=&trk->cluster[i];
+            trk->chunkCount++;
+        }
+    }
+}
+
 static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
                               AVFormatContext *s)
 {
@@ -1818,6 +1838,8 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
 
         mov->tracks[i].time = mov->time;
         mov->tracks[i].trackID = i+1;
+
+        build_chunks(&mov->tracks[i]);
     }
 
     if (mov->chapter_track)
@@ -2070,6 +2092,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
 
     trk->cluster[trk->entry].pos = avio_tell(pb) - size;
     trk->cluster[trk->entry].samplesInChunk = samplesInChunk;
+    trk->cluster[trk->entry].chunkSize =
     trk->cluster[trk->entry].size = size;
     trk->cluster[trk->entry].entries = samplesInChunk;
     trk->cluster[trk->entry].dts = pkt->dts;

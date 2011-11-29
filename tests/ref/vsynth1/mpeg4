@@ -1,4 +1,4 @@
-d2405fd9e350854a161f48bc63f49253 *./tests/data/vsynth1/odivx.mp4
-540156 ./tests/data/vsynth1/odivx.mp4
+859c8b545c1c702343d201836833ce23 *./tests/data/vsynth1/odivx.mp4
+539960 ./tests/data/vsynth1/odivx.mp4
 8828a375448dc5c2215163ba70656f89 *./tests/data/mpeg4.vsynth1.out.yuv
 stddev:    7.97 PSNR: 30.10 MAXDIFF:  105 bytes:  7603200/  7603200

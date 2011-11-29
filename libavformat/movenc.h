@@ -43,6 +43,8 @@ typedef struct MOVIentry {
     unsigned int size;
     uint64_t     pos;
     unsigned int samplesInChunk;
+    unsigned int chunkNum;              ///< Chunk number if the current entry is a chunk start otherwise 0
+    uint64_t     chunkSize;
     unsigned int entries;
     int          cts;
     int64_t      dts;
@@ -73,6 +75,7 @@ typedef struct MOVIndex {
     int64_t     trackDuration;
     long        sampleCount;
     long        sampleSize;
+    long        chunkCount;
     int         hasKeyframes;
 #define MOV_TRACK_CTTS         0x0001
 #define MOV_TRACK_STPS         0x0002
