@@ -127,7 +127,7 @@ library:
 @item iCEDraw File              @tab   @tab X
 @item id Quake II CIN video     @tab   @tab X
 @item id RoQ                    @tab X @tab X
-    @tab Used in Quake III, Jedi Knight 2, other computer games.
+    @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item IEC61937 encapsulation @tab X @tab X
 @item IFF                       @tab   @tab X
     @tab Interchange File Format
@@ -446,7 +446,7 @@ following image formats are supported:
 @item id RoQ video           @tab  X  @tab  X
     @tab Used in Quake III, Jedi Knight 2, other computer games.
 @item IFF ILBM               @tab     @tab  X
-    @tab IFF interlaved bitmap
+    @tab IFF interleaved bitmap
 @item IFF ByteRun1           @tab     @tab  X
     @tab IFF run length encoded bitmap
 @item Intel H.263            @tab     @tab  X
@@ -643,7 +643,7 @@ following image formats are supported:
     @tab All versions except 5.1 are supported.
 @item DCA (DTS Coherent Acoustics)  @tab  X  @tab  X
 @item DPCM id RoQ            @tab  X  @tab  X
-    @tab Used in Quake III, Jedi Knight 2, other computer games.
+    @tab Used in Quake III, Jedi Knight 2 and other computer games.
 @item DPCM Interplay         @tab     @tab  X
     @tab Used in various Interplay computer games.
 @item DPCM Sierra Online     @tab     @tab  X
@@ -1136,7 +1136,7 @@ yourself, as they evolve too quickly for Cygwin Ports to be up to date.
 Cygwin 1.7.x has IPv6 support. You can add IPv6 to Cygwin 1.5.x by means
 of the @code{libgetaddrinfo-devel} package, available at Cygwin Ports.
 
-@subsection Crosscompilation for Windows under Cygwin
+@subsection Cross compilation for Windows under Cygwin
 
 With Cygwin you can create Windows binaries that do not need the cygwin1.dll.
 
