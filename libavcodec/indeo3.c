@@ -804,8 +804,10 @@ static int decode_plane(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
     num_vectors = bytestream_get_le32(&data);
     ctx->mc_vectors  = num_vectors ? data : 0;
 
+    if (num_vectors * 2 >= data_size)
+        return AVERROR_INVALIDDATA;
     /* init the bitreader */
-    init_get_bits(&ctx->gb, &data[num_vectors * 2], data_size << 3);
+    init_get_bits(&ctx->gb, &data[num_vectors * 2], (data_size - num_vectors * 2) << 3);
     ctx->skip_bits   = 0;
     ctx->need_resync = 0;
 
