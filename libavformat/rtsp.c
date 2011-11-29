@@ -251,6 +251,9 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     default:
         break;
     }
+    if (rtsp_st->dynamic_handler && rtsp_st->dynamic_handler->init)
+        rtsp_st->dynamic_handler->init(s, st->index,
+                                       rtsp_st->dynamic_protocol_context);
     return 0;
 }
 
@@ -387,6 +390,9 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, st->codec->codec_type);
                 init_rtp_handler(handler, rtsp_st, st->codec);
+                if (handler && handler->init)
+                    handler->init(s, st->index,
+                                  rtsp_st->dynamic_protocol_context);
             }
         }
         /* put a default control url */

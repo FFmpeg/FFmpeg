@@ -122,6 +122,7 @@ struct RTPDynamicProtocolHandler_s {
                             * require any custom depacketization code. */
 
     // may be null
+    int (*init)(AVFormatContext *s, int st_index, PayloadContext *priv_data); ///< Initialize dynamic protocol handler, called after the full rtpmap line is parsed
     int (*parse_sdp_a_line) (AVFormatContext *s,
                              int st_index,
                              PayloadContext *priv_data,
