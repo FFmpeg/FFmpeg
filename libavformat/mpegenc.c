@@ -25,6 +25,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/put_bits.h"
 #include "avformat.h"
+#include "internal.h"
 #include "mpeg.h"
 
 #define MAX_PAYLOAD_SIZE 4096
@@ -336,7 +337,7 @@ static int mpeg_mux_init(AVFormatContext *ctx)
             goto fail;
         st->priv_data = stream;
 
-        av_set_pts_info(st, 64, 1, 90000);
+        avpriv_set_pts_info(st, 64, 1, 90000);
 
         switch(st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:

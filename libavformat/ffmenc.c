@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "ffm.h"
 
 static void flush_packet(AVFormatContext *s)
@@ -107,7 +108,7 @@ static int ffm_write_header(AVFormatContext *s)
     /* list of streams */
     for(i=0;i<s->nb_streams;i++) {
         st = s->streams[i];
-        av_set_pts_info(st, 64, 1, 1000000);
+        avpriv_set_pts_info(st, 64, 1, 1000000);
 
         codec = st->codec;
         /* generic info */

@@ -22,6 +22,7 @@
 #include "libavutil/intfloat_readwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "internal.h"
 #include "pcm.h"
 #include "aiff.h"
 
@@ -268,7 +269,7 @@ static int aiff_read_header(AVFormatContext *s,
 
 got_sound:
     /* Now positioned, get the sound data start and end */
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     st->start_time = 0;
     st->duration = st->codec->frame_size ?
         st->nb_frames * st->codec->frame_size : st->nb_frames;

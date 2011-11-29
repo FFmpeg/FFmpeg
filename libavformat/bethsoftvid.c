@@ -29,6 +29,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "libavcodec/bethsoftvideo.h"
 
 typedef struct BVID_DemuxContext
@@ -73,7 +74,7 @@ static int vid_read_header(AVFormatContext *s,
     stream = avformat_new_stream(s, NULL);
     if (!stream)
         return AVERROR(ENOMEM);
-    av_set_pts_info(stream, 32, 1, 60);     // 16 ms increments, i.e. 60 fps
+    avpriv_set_pts_info(stream, 32, 1, 60);     // 16 ms increments, i.e. 60 fps
     stream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     stream->codec->codec_id = CODEC_ID_BETHSOFTVID;
     stream->codec->width = avio_rl16(pb);

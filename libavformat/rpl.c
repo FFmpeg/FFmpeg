@@ -22,6 +22,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "internal.h"
 #include <stdlib.h>
 
 #define RPL_SIGNATURE "ARMovie\x0A"
@@ -149,7 +150,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->bits_per_coded_sample = read_line_and_int(pb, &error);  // video bits per sample
     error |= read_line(pb, line, sizeof(line));                   // video frames per second
     fps = read_fps(line, &error);
-    av_set_pts_info(vst, 32, fps.den, fps.num);
+    avpriv_set_pts_info(vst, 32, fps.den, fps.num);
 
     // Figure out the video codec
     switch (vst->codec->codec_tag) {
@@ -226,7 +227,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
                    "RPL audio format %i not supported yet!\n",
                    audio_format);
         }
-        av_set_pts_info(ast, 32, 1, ast->codec->bit_rate);
+        avpriv_set_pts_info(ast, 32, 1, ast->codec->bit_rate);
     } else {
         for (i = 0; i < 3; i++)
             error |= read_line(pb, line, sizeof(line));

@@ -29,6 +29,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct {
   unsigned int channels;
@@ -72,7 +73,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_id = CODEC_ID_ADPCM_EA_XAS;
     st->codec->channels = cdata->channels;
     st->codec->sample_rate = sample_rate;
-    av_set_pts_info(st, 64, 1, sample_rate);
+    avpriv_set_pts_info(st, 64, 1, sample_rate);
 
     cdata->audio_pts = 0;
     return 0;

@@ -23,6 +23,7 @@
 #include <sndio.h>
 
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavutil/opt.h"
 
 #include "sndio_common.h"
@@ -48,7 +49,7 @@ static av_cold int audio_read_header(AVFormatContext *s1,
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels    = s->channels;
 
-    av_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
 
     return 0;
 }

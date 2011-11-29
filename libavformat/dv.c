@@ -30,6 +30,7 @@
  */
 #include <time.h>
 #include "avformat.h"
+#include "internal.h"
 #include "libavcodec/dvdata.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/mathematics.h"
@@ -214,7 +215,7 @@ static int dv_extract_audio_info(DVDemuxContext* c, uint8_t* frame)
            c->ast[i] = avformat_new_stream(c->fctx, NULL);
            if (!c->ast[i])
                break;
-           av_set_pts_info(c->ast[i], 64, 1, 30000);
+           avpriv_set_pts_info(c->ast[i], 64, 1, 30000);
            c->ast[i]->codec->codec_type = AVMEDIA_TYPE_AUDIO;
            c->ast[i]->codec->codec_id   = CODEC_ID_PCM_S16LE;
 
@@ -244,7 +245,7 @@ static int dv_extract_video_info(DVDemuxContext *c, uint8_t* frame)
     if (c->sys) {
         avctx = c->vst->codec;
 
-        av_set_pts_info(c->vst, 64, c->sys->time_base.num,
+        avpriv_set_pts_info(c->vst, 64, c->sys->time_base.num,
                         c->sys->time_base.den);
         avctx->time_base= c->sys->time_base;
         if (!avctx->width){

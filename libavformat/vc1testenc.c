@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct RCVContext {
     int frames;
@@ -47,7 +48,7 @@ static int vc1test_write_header(AVFormatContext *s)
         avio_wl32(pb, s->streams[0]->r_frame_rate.den);
     else
         avio_wl32(pb, 0xFFFFFFFF); //variable framerate
-    av_set_pts_info(s->streams[0], 32, 1, 1000);
+    avpriv_set_pts_info(s->streams[0], 32, 1, 1000);
 
     return 0;
 }

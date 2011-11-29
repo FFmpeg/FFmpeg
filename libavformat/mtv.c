@@ -27,6 +27,7 @@
 #include "libavutil/bswap.h"
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define MTV_ASUBCHUNK_DATA_SIZE 500
 #define MTV_HEADER_SIZE 512
@@ -120,7 +121,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!st)
         return AVERROR(ENOMEM);
 
-    av_set_pts_info(st, 64, 1, mtv->video_fps);
+    avpriv_set_pts_info(st, 64, 1, mtv->video_fps);
     st->codec->codec_type      = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id        = CODEC_ID_RAWVIDEO;
     st->codec->pix_fmt         = PIX_FMT_RGB565;
@@ -136,7 +137,7 @@ static int mtv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if(!st)
         return AVERROR(ENOMEM);
 
-    av_set_pts_info(st, 64, 1, AUDIO_SAMPLING_RATE);
+    avpriv_set_pts_info(st, 64, 1, AUDIO_SAMPLING_RATE);
     st->codec->codec_type      = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id        = CODEC_ID_MP3;
     st->codec->bit_rate        = mtv->audio_br;

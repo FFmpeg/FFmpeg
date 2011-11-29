@@ -29,6 +29,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "internal.h"
 #include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
@@ -130,7 +131,7 @@ static int wav_write_header(AVFormatContext *s)
     if (wav->write_bext)
         bwf_write_bext_chunk(s);
 
-    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
+    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
     wav->maxpts = wav->last_duration = 0;
     wav->minpts = INT64_MAX;
 
@@ -281,7 +282,7 @@ static int wav_parse_fmt_tag(AVFormatContext *s, int64_t size, AVStream **st)
         return ret;
     (*st)->need_parsing = AVSTREAM_PARSE_FULL;
 
-    av_set_pts_info(*st, 64, 1, (*st)->codec->sample_rate);
+    avpriv_set_pts_info(*st, 64, 1, (*st)->codec->sample_rate);
 
     return 0;
 }
@@ -660,7 +661,7 @@ static int w64_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     size = find_guid(pb, guid_data);
     if (size < 0) {

@@ -19,6 +19,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 
 static int probe(AVProbeData *p)
@@ -47,7 +48,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_MPEG4;
     st->need_parsing = AVSTREAM_PARSE_FULL;
-    av_set_pts_info(st, 64, 1, 90000);
+    avpriv_set_pts_info(st, 64, 1, 90000);
 
     return 0;
 

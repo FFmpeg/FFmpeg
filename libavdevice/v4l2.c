@@ -30,6 +30,7 @@
 #undef __STRICT_ANSI__ //workaround due to broken kernel headers
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/ioctl.h>
@@ -585,7 +586,7 @@ static int v4l2_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         res = AVERROR(ENOMEM);
         goto out;
     }
-    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     if (s->video_size && (res = av_parse_video_size(&s->width, &s->height, s->video_size)) < 0) {
         av_log(s1, AV_LOG_ERROR, "Could not parse video size '%s'.\n", s->video_size);

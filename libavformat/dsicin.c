@@ -26,6 +26,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 
 typedef struct CinFileHeader {
@@ -111,7 +112,7 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!st)
         return AVERROR(ENOMEM);
 
-    av_set_pts_info(st, 32, 1, 12);
+    avpriv_set_pts_info(st, 32, 1, 12);
     cin->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_DSICINVIDEO;
@@ -124,7 +125,7 @@ static int cin_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!st)
         return AVERROR(ENOMEM);
 
-    av_set_pts_info(st, 32, 1, 22050);
+    avpriv_set_pts_info(st, 32, 1, 22050);
     cin->audio_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = CODEC_ID_DSICINAUDIO;

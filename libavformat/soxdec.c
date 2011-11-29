@@ -33,6 +33,7 @@
 #include "libavutil/intfloat_readwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "internal.h"
 #include "pcm.h"
 #include "sox.h"
 
@@ -117,7 +118,7 @@ static int sox_read_header(AVFormatContext *s,
     st->codec->block_align           = st->codec->bits_per_coded_sample *
                                        st->codec->channels / 8;
 
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;
 }

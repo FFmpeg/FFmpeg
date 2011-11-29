@@ -199,7 +199,7 @@ static int flv_write_header(AVFormatContext *s)
             if(get_audio_flags(enc)<0)
                 return -1;
         }
-        av_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
+        avpriv_set_pts_info(s->streams[i], 32, 1, 1000); /* 32 bit pts in ms */
 
         sc = av_mallocz(sizeof(FLVStreamContext));
         if (!sc)

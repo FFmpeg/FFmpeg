@@ -22,6 +22,7 @@
 
 #include "config.h"
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -165,7 +166,7 @@ static inline int dc1394_read_common(AVFormatContext *c, AVFormatParameters *ap,
         ret = AVERROR(ENOMEM);
         goto out;
     }
-    av_set_pts_info(vst, 64, 1, 1000);
+    avpriv_set_pts_info(vst, 64, 1, 1000);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_RAWVIDEO;
     vst->codec->time_base.den = framerate.num;

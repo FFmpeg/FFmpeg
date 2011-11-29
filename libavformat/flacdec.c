@@ -21,6 +21,7 @@
 
 #include "libavcodec/flac.h"
 #include "avformat.h"
+#include "internal.h"
 #include "rawdec.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
@@ -91,7 +92,7 @@ static int flac_read_header(AVFormatContext *s,
 
             /* set time base and duration */
             if (si.samplerate > 0) {
-                av_set_pts_info(st, 64, 1, si.samplerate);
+                avpriv_set_pts_info(st, 64, 1, si.samplerate);
                 if (si.samples > 0)
                     st->duration = si.samples;
             }

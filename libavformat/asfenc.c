@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include "asf.h"
 #include "avio_internal.h"
@@ -321,7 +322,7 @@ static int asf_write_header1(AVFormatContext *s, int64_t file_size, int64_t data
     for(n=0;n<s->nb_streams;n++) {
         enc = s->streams[n]->codec;
 
-        av_set_pts_info(s->streams[n], 32, 1, 1000); /* 32 bit pts in ms */
+        avpriv_set_pts_info(s->streams[n], 32, 1, 1000); /* 32 bit pts in ms */
 
         bit_rate += enc->bit_rate;
     }

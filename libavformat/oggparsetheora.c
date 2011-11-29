@@ -26,6 +26,7 @@
 #include "libavutil/bswap.h"
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
+#include "internal.h"
 #include "oggdec.h"
 
 struct theora_params {
@@ -91,7 +92,7 @@ theora_header (AVFormatContext * s, int idx)
             st->codec->time_base.num = 1;
             st->codec->time_base.den = 25;
         }
-        av_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
+        avpriv_set_pts_info(st, 64, st->codec->time_base.num, st->codec->time_base.den);
 
         st->sample_aspect_ratio.num = get_bits_long(&gb, 24);
         st->sample_aspect_ratio.den = get_bits_long(&gb, 24);

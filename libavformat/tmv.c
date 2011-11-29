@@ -28,6 +28,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 enum {
     TMV_PADDING = 0x01,
@@ -115,7 +116,7 @@ static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ast->codec->bits_per_coded_sample = 8;
     ast->codec->bit_rate              = ast->codec->sample_rate *
                                         ast->codec->bits_per_coded_sample;
-    av_set_pts_info(ast, 32, 1, ast->codec->sample_rate);
+    avpriv_set_pts_info(ast, 32, 1, ast->codec->sample_rate);
 
     fps.num = ast->codec->sample_rate * ast->codec->channels;
     fps.den = tmv->audio_chunk_size;
@@ -126,7 +127,7 @@ static int tmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->pix_fmt    = PIX_FMT_PAL8;
     vst->codec->width      = char_cols * 8;
     vst->codec->height     = char_rows * 8;
-    av_set_pts_info(vst, 32, fps.den, fps.num);
+    avpriv_set_pts_info(vst, 32, fps.den, fps.num);
 
     if (features & TMV_PADDING)
         tmv->padding =

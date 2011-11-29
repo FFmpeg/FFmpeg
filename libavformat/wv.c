@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "internal.h"
 #include "apetag.h"
 #include "id3v1.h"
 
@@ -229,7 +230,7 @@ static int wv_read_header(AVFormatContext *s,
     st->codec->channel_layout = wc->chmask;
     st->codec->sample_rate = wc->rate;
     st->codec->bits_per_coded_sample = wc->bpp;
-    av_set_pts_info(st, 64, 1, wc->rate);
+    avpriv_set_pts_info(st, 64, 1, wc->rate);
     st->start_time = 0;
     st->duration = wc->samples;
 

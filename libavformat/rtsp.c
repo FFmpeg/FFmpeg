@@ -228,7 +228,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
         codec->channels = RTSP_DEFAULT_NB_AUDIO_CHANNELS;
         if (i > 0) {
             codec->sample_rate = i;
-            av_set_pts_info(st, 32, 1, codec->sample_rate);
+            avpriv_set_pts_info(st, 32, 1, codec->sample_rate);
             get_word_sep(buf, sizeof(buf), "/", &p);
             i = atoi(buf);
             if (i > 0)
@@ -246,7 +246,7 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
     case AVMEDIA_TYPE_VIDEO:
         av_log(s, AV_LOG_DEBUG, "video codec set to: %s\n", c_name);
         if (i > 0)
-            av_set_pts_info(st, 32, 1, i);
+            avpriv_set_pts_info(st, 32, 1, i);
         break;
     default:
         break;
@@ -385,7 +385,7 @@ static void sdp_parse_line(AVFormatContext *s, SDPParseState *s1,
                 ff_rtp_get_codec_info(st->codec, rtsp_st->sdp_payload_type);
                 if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO &&
                     st->codec->sample_rate > 0)
-                    av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+                    avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
                 /* Even static payload types may need a custom depacketizer */
                 handler = ff_rtp_handler_find_by_id(
                               rtsp_st->sdp_payload_type, st->codec->codec_type);

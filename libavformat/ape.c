@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "apetag.h"
 
 /* The earliest and latest file formats supported by this library */
@@ -330,7 +331,7 @@ static int ape_read_header(AVFormatContext * s, AVFormatParameters * ap)
     st->nb_frames = ape->totalframes;
     st->start_time = 0;
     st->duration  = total_blocks / MAC_SUBFRAME_SIZE;
-    av_set_pts_info(st, 64, MAC_SUBFRAME_SIZE, ape->samplerate);
+    avpriv_set_pts_info(st, 64, MAC_SUBFRAME_SIZE, ape->samplerate);
 
     st->codec->extradata = av_malloc(APE_EXTRADATA_SIZE);
     st->codec->extradata_size = APE_EXTRADATA_SIZE;

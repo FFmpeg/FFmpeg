@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct yop_dec_context {
     AVPacket video_packet;
@@ -105,7 +106,7 @@ static int yop_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     avio_seek(pb, 2048, SEEK_SET);
 
-    av_set_pts_info(video_stream, 32, 1, frame_rate);
+    avpriv_set_pts_info(video_stream, 32, 1, frame_rate);
 
     return 0;
 }

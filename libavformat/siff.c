@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 enum SIFFTags{
     TAG_SIFF = MKTAG('S', 'I', 'F', 'F'),
@@ -80,7 +81,7 @@ static int create_audio_stream(AVFormatContext *s, SIFFContext *c)
     ast->codec->bits_per_coded_sample = c->bits;
     ast->codec->sample_rate     = c->rate;
     ast->codec->frame_size      = c->block_align;
-    av_set_pts_info(ast, 16, 1, c->rate);
+    avpriv_set_pts_info(ast, 16, 1, c->rate);
     return 0;
 }
 
@@ -124,7 +125,7 @@ static int siff_parse_vbv1(AVFormatContext *s, SIFFContext *c, AVIOContext *pb)
     st->codec->width      = width;
     st->codec->height     = height;
     st->codec->pix_fmt    = PIX_FMT_PAL8;
-    av_set_pts_info(st, 16, 1, 12);
+    avpriv_set_pts_info(st, 16, 1, 12);
 
     c->cur_frame = 0;
     c->has_video = 1;

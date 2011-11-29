@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/mjpeg.h"
 #include "avformat.h"
+#include "internal.h"
 #include "avio.h"
 
 #define DEFAULT_PACKET_SIZE 1024
@@ -47,7 +48,7 @@ static int mxg_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR(ENOMEM);
     video_st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     video_st->codec->codec_id = CODEC_ID_MXPEG;
-    av_set_pts_info(video_st, 64, 1, 1000000);
+    avpriv_set_pts_info(video_st, 64, 1, 1000000);
 
     audio_st = avformat_new_stream(s, NULL);
     if (!audio_st)
@@ -58,7 +59,7 @@ static int mxg_read_header(AVFormatContext *s, AVFormatParameters *ap)
     audio_st->codec->sample_rate = 8000;
     audio_st->codec->bits_per_coded_sample = 8;
     audio_st->codec->block_align = 1;
-    av_set_pts_info(audio_st, 64, 1, 1000000);
+    avpriv_set_pts_info(audio_st, 64, 1, 1000000);
 
     mxg->soi_ptr = mxg->buffer_ptr = mxg->buffer = 0;
     mxg->buffer_size = 0;

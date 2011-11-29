@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 
 #define DXA_EXTRA_SIZE  9
@@ -127,7 +128,7 @@ static int dxa_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->width      = w;
     st->codec->height     = h;
     av_reduce(&den, &num, den, num, (1UL<<31)-1);
-    av_set_pts_info(st, 33, num, den);
+    avpriv_set_pts_info(st, 33, num, den);
     /* flags & 0x80 means that image is interlaced,
      * flags & 0x40 means that image has double height
      * either way set true height

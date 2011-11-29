@@ -25,6 +25,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct {
     unsigned video_offsets_count;
@@ -70,7 +71,7 @@ static int r3d_read_red1(AVFormatContext *s)
     av_dlog(s, "unknown1 %d\n", tmp);
 
     tmp = avio_rb32(s->pb);
-    av_set_pts_info(st, 32, 1, tmp);
+    avpriv_set_pts_info(st, 32, 1, tmp);
 
     tmp = avio_rb32(s->pb); // filenum
     av_dlog(s, "filenum %d\n", tmp);
@@ -95,7 +96,7 @@ static int r3d_read_red1(AVFormatContext *s)
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id = CODEC_ID_PCM_S32BE;
         ast->codec->channels = tmp;
-        av_set_pts_info(ast, 32, 1, st->time_base.den);
+        avpriv_set_pts_info(ast, 32, 1, st->time_base.den);
     }
 
     avio_read(s->pb, filename, 257);

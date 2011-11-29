@@ -30,6 +30,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 enum BinkAudFlags {
     BINK_AUD_16BITS = 0x4000, ///< prefer 16-bit output
@@ -109,7 +110,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_log(s, AV_LOG_ERROR, "invalid header: invalid fps (%d/%d)\n", fps_num, fps_den);
         return AVERROR(EIO);
     }
-    av_set_pts_info(vst, 64, fps_den, fps_num);
+    avpriv_set_pts_info(vst, 64, fps_den, fps_num);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = CODEC_ID_BINKVIDEO;
@@ -136,7 +137,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
             ast->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
             ast->codec->codec_tag   = 0;
             ast->codec->sample_rate = avio_rl16(pb);
-            av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
+            avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             flags = avio_rl16(pb);
             ast->codec->codec_id = flags & BINK_AUD_USEDCT ?
                                    CODEC_ID_BINKAUDIO_DCT : CODEC_ID_BINKAUDIO_RDFT;

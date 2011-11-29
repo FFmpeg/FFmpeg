@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 #define CDG_PACKET_SIZE    24
 #define CDG_COMMAND        0x09
@@ -38,7 +39,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     vst->codec->codec_id   = CODEC_ID_CDGRAPHICS;
 
     /// 75 sectors/sec * 4 packets/sector = 300 packets/sec
-    av_set_pts_info(vst, 32, 1, 300);
+    avpriv_set_pts_info(vst, 32, 1, 300);
 
     ret = avio_size(s->pb);
     if (ret > 0)

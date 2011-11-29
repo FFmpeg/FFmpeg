@@ -254,7 +254,7 @@ vorbis_header (AVFormatContext * s, int idx)
 
         if (srate > 0) {
             st->codec->sample_rate = srate;
-            av_set_pts_info(st, 64, 1, srate);
+            avpriv_set_pts_info(st, 64, 1, srate);
         }
     } else if (os->buf[os->pstart] == 3) {
         if (os->psize > 8 &&

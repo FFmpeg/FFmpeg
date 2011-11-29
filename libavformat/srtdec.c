@@ -45,7 +45,7 @@ static int srt_read_header(AVFormatContext *s, AVFormatParameters *ap)
     AVStream *st = avformat_new_stream(s, NULL);
     if (!st)
         return -1;
-    av_set_pts_info(st, 64, 1, 1000);
+    avpriv_set_pts_info(st, 64, 1, 1000);
     st->codec->codec_type = AVMEDIA_TYPE_SUBTITLE;
     st->codec->codec_id   = CODEC_ID_SRT;
     return 0;

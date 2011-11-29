@@ -27,6 +27,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define JV_PREAMBLE_SIZE 5
 
@@ -81,7 +82,7 @@ static int read_header(AVFormatContext *s,
     vst->codec->height      = avio_rl16(pb);
     vst->nb_frames          =
     ast->nb_index_entries   = avio_rl16(pb);
-    av_set_pts_info(vst, 64, avio_rl16(pb), 1000);
+    avpriv_set_pts_info(vst, 64, avio_rl16(pb), 1000);
 
     avio_skip(pb, 4);
 
@@ -90,7 +91,7 @@ static int read_header(AVFormatContext *s,
     ast->codec->codec_tag   = 0; /* no fourcc */
     ast->codec->sample_rate = avio_rl16(pb);
     ast->codec->channels    = 1;
-    av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
+    avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
 
     avio_skip(pb, 10);
 
