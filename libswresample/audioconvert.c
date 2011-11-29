@@ -38,6 +38,7 @@ struct AudioConvert {
     int channels;
     conv_func_type *conv_f;
     const int *ch_map;
+    uint8_t silence[8]; ///< silence input sample
 };
 
 #define CONV_FUNC_NAME(dst_fmt, src_fmt) conv_ ## src_fmt ## _to_ ## dst_fmt
@@ -118,12 +119,14 @@ AudioConvert *swri_audio_convert_alloc(enum AVSampleFormat out_fmt,
 
     if (!f)
         return NULL;
-    ctx = av_malloc(sizeof(*ctx));
+    ctx = av_mallocz(sizeof(*ctx));
     if (!ctx)
         return NULL;
     ctx->channels = channels;
     ctx->conv_f   = f;
     ctx->ch_map   = ch_map;
+    if (in_fmt == AV_SAMPLE_FMT_U8)
+        memset(ctx->silence, 0x80, sizeof(ctx->silence));
     return ctx;
 }
 
@@ -135,7 +138,6 @@ void swri_audio_convert_free(AudioConvert **ctx)
 int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len)
 {
     int ch;
-    const uint8_t null_input[8] = {0};
 
     av_assert0(ctx->channels == out->ch_count);
 
@@ -145,7 +147,7 @@ int swri_audio_convert(AudioConvert *ctx, AudioData *out, AudioData *in, int len
         const int ich= ctx->ch_map ? ctx->ch_map[ch] : ch;
         const int is= ich < 0 ? 0 : (in->planar ? 1 : in->ch_count) * in->bps;
         const int os= (out->planar ? 1 :out->ch_count) *out->bps;
-        const uint8_t *pi= ich < 0 ? null_input : in->ch[ich];
+        const uint8_t *pi= ich < 0 ? ctx->silence : in->ch[ich];
         uint8_t       *po= out->ch[ch];
         uint8_t *end= po + os*len;
         if(!po)
