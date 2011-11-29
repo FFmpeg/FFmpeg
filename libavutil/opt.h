@@ -176,7 +176,7 @@
  *
  * @section avoptions_use Using AVOptions
  * This section deals with accessing options in an AVOptions-enabled struct.
- * Such structs in Libav are e.g. AVCodecContext in libavcodec or
+ * Such structs in FFmpeg are e.g. AVCodecContext in libavcodec or
  * AVFormatContext in libavformat.
  *
  * @subsection avoptions_use_examine Examining AVOptions

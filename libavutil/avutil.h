@@ -32,7 +32,7 @@
  * @section libav_intro Introduction
  *
  * This document describe the usage of the different libraries
- * provided by Libav.
+ * provided by FFmpeg.
  *
  * @li @ref libavc "libavcodec" encoding/decoding library
  * @li @subpage libavfilter graph based frame editing library
@@ -47,7 +47,7 @@
  * @defgroup lavu Common utility functions
  *
  * @brief
- * libavutil contains the code shared across all the other Libav
+ * libavutil contains the code shared across all the other FFmpeg
  * libraries
  *
  * @note In order to use the functions provided by avutil you must include
@@ -264,7 +264,7 @@ const char *av_get_media_type_string(enum AVMediaType media_type);
  * @}
  * @defgroup lavu_time Timestamp specific
  *
- * Libav internal timebase and timestamp definitions
+ * FFmpeg internal timebase and timestamp definitions
  *
  * @{
  */
