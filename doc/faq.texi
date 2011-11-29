@@ -202,9 +202,9 @@ Use @file{-} as file name.
 
 Try '-f image2 test%d.jpg'.
 
-@section Why can I not change the framerate?
+@section Why can I not change the frame rate?
 
-Some codecs, like MPEG-1/2, only allow a small number of fixed framerates.
+Some codecs, like MPEG-1/2, only allow a small number of fixed frame rates.
 Choose a different codec with the -vcodec command line option.
 
 @section How do I encode Xvid or DivX video with ffmpeg?
@@ -430,7 +430,7 @@ you need the debug information, use the *_g versions.
 @section I do not like the LGPL, can I contribute code under the GPL instead?
 
 Yes, as long as the code is optional and can easily and cleanly be placed
-under #if CONFIG_GPL without breaking anything. So for example a new codec
+under #if CONFIG_GPL without breaking anything. So, for example, a new codec
 or filter would be OK under GPL while a bug fix to LGPL code would not.
 
 @section I want to compile xyz.c alone but my compiler produced many errors.
@@ -481,9 +481,9 @@ Even if peculiar since it is network oriented, RTP is a container like any
 other. You have to @emph{demux} RTP before feeding the payload to libavcodec.
 In this specific case please look at RFC 4629 to see how it should be done.
 
-@section AVStream.r_frame_rate is wrong, it is much larger than the framerate.
+@section AVStream.r_frame_rate is wrong, it is much larger than the frame rate.
 
-r_frame_rate is NOT the average framerate, it is the smallest framerate
+r_frame_rate is NOT the average frame rate, it is the smallest frame rate
 that can accurately represent all timestamps. So no, it is not
 wrong if it is larger than the average!
 For example, if you have mixed 25 and 30 fps content, then r_frame_rate
