@@ -4425,7 +4425,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         parse_option(o, "r", frame_rates[norm], options);
         opt_default("g", norm == PAL ? "15" : "18");
 
-        opt_default("b", "1150000");
+        opt_default("b:v", "1150000");
         opt_default("maxrate", "1150000");
         opt_default("minrate", "1150000");
         opt_default("bufsize", "327680"); // 40*1024*8;
@@ -4454,7 +4454,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         parse_option(o, "pix_fmt", "yuv420p", options);
         opt_default("g", norm == PAL ? "15" : "18");
 
-        opt_default("b", "2040000");
+        opt_default("b:v", "2040000");
         opt_default("maxrate", "2516000");
         opt_default("minrate", "0"); //1145000;
         opt_default("bufsize", "1835008"); //224*1024*8;
@@ -4477,7 +4477,7 @@ static int opt_target(OptionsContext *o, const char *opt, const char *arg)
         parse_option(o, "pix_fmt", "yuv420p", options);
         opt_default("g", norm == PAL ? "15" : "18");
 
-        opt_default("b", "6000000");
+        opt_default("b:v", "6000000");
         opt_default("maxrate", "9000000");
         opt_default("minrate", "0"); //1500000;
         opt_default("bufsize", "1835008"); //224*1024*8;
