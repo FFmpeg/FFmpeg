@@ -1,0 +1,4 @@
+db0579bd46e1ba133ff86c0f7cdd761f *./tests/data/vsynth2/v210.avi
+14752460 ./tests/data/vsynth2/v210.avi
+a627fb50c8276200fd71383977d87ca3 *./tests/data/v210.vsynth2.out.yuv
+stddev:    0.34 PSNR: 57.43 MAXDIFF:    6 bytes:  7603200/  7603200

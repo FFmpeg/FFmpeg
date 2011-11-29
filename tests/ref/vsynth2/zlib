@@ -1,0 +1,4 @@
+f4bfa774c853abe8f06a29596c1f16cb *./tests/data/vsynth2/zlib.avi
+12517188 ./tests/data/vsynth2/zlib.avi
+98d0e2854731472c5bf13d8638502d0a *./tests/data/zlib.vsynth2.out.yuv
+stddev:    1.26 PSNR: 46.10 MAXDIFF:   13 bytes:  7603200/  7603200

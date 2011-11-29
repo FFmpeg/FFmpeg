@@ -1,0 +1,4 @@
+a8e7393fa534289eee9319ded7807f99 *./tests/data/vsynth1/mpng.avi
+12157242 ./tests/data/vsynth1/mpng.avi
+93695a27c24a61105076ca7b1f010bbd *./tests/data/mpng.vsynth1.out.yuv
+stddev:    3.42 PSNR: 37.44 MAXDIFF:   48 bytes:  7603200/  7603200
