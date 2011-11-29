@@ -84,7 +84,7 @@ described.
 @table @option
 
 @item -f @var{fmt} (@emph{input/output})
-Force input or output file format. The format is normally autodetected for input
+Force input or output file format. The format is normally auto detected for input
 files and guessed from file extension for output files, so this option is not
 needed in most cases.
 
@@ -102,7 +102,7 @@ Do not overwrite output files but exit if file exists.
 Select an encoder (when used before an output file) or a decoder (when used
 before an input file) for one or more streams. @var{codec} is the name of a
 decoder/encoder or a special value @code{copy} (output only) to indicate that
-the stream is not to be reencoded.
+the stream is not to be re-encoded.
 
 For example
 @example
@@ -449,7 +449,7 @@ and the following constants are available:
 @end table
 
 @item -rc_override[:@var{stream_specifier}] @var{override} (@emph{output,per-stream})
-Rate control override for specific intervals, formated as "int,int,int"
+Rate control override for specific intervals, formatted as "int,int,int"
 list separated with slashes. Two first values are the beginning and
 end frame numbers, last one is quantizer to use if positive, or quality
 factor if negative.

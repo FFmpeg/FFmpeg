@@ -27,7 +27,7 @@ follows.
 
 @section rawvideo
 
-Rawvideo decoder.
+Raw video decoder.
 
 This decoder decodes rawvideo streams.
 

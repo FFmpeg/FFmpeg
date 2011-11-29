@@ -51,7 +51,7 @@ same for all the files in the sequence.
 
 The following example shows how to use @file{ffmpeg} for creating a
 video from the images in the file sequence @file{img-001.jpeg},
-@file{img-002.jpeg}, ..., assuming an input framerate of 10 frames per
+@file{img-002.jpeg}, ..., assuming an input frame rate of 10 frames per
 second:
 @example
 ffmpeg -r 10 -f image2 -i 'img-%03d.jpeg' out.avi

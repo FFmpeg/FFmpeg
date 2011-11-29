@@ -439,7 +439,7 @@ aevalsrc=0
 
 @item
 
-Generate a sin signal with frequence of 440 Hz, set sample rate to
+Generate a sin signal with frequency of 440 Hz, set sample rate to
 8000 Hz:
 @example
 aevalsrc="sin(440*2*PI*t)::s=8000"
@@ -628,7 +628,7 @@ input plane. They are expressions, and can contain the following
 constants:
 @table @option
 @item w, h
-the input width and heigth in pixels
+the input width and height in pixels
 
 @item cw, ch
 the input chroma image width and height in pixels
@@ -1089,7 +1089,7 @@ following constants:
 
 @table @option
 @item w, h
-the input width and heigth
+the input width and height
 
 @item tw, text_w
 the width of the rendered text
@@ -1367,7 +1367,7 @@ For more information see:
 @section gradfun
 
 Fix the banding artifacts that are sometimes introduced into nearly flat
-regions by truncation to 8bit colordepth.
+regions by truncation to 8bit color depth.
 Interpolate the gradients that should go where the bands are, and
 dither them.
 
@@ -1491,7 +1491,7 @@ The expressions can contain the following constants and functions:
 
 @table @option
 @item w, h
-the input width and heigth
+the input width and height
 
 @item val
 input value for the pixel component
@@ -1688,7 +1688,7 @@ The filter takes the parameters: @var{filter_name}@{:=@}@var{filter_params}.
 filter. If not specified the default values are assumed.
 
 Refer to the official libopencv documentation for more precise
-informations:
+information:
 @url{http://opencv.willowgarage.com/documentation/c/image_filtering.html}
 
 Follows the list of supported libopencv filters.
@@ -1704,7 +1704,7 @@ It accepts the parameters: @var{struct_el}:@var{nb_iterations}.
 @var{struct_el} represents a structuring element, and has the syntax:
 @var{cols}x@var{rows}+@var{anchor_x}x@var{anchor_y}/@var{shape}
 
-@var{cols} and @var{rows} represent the number of colums and rows of
+@var{cols} and @var{rows} represent the number of columns and rows of
 the structuring element, @var{anchor_x} and @var{anchor_y} the anchor
 point, and @var{shape} the shape for the structuring element, and
 can be one of the values "rect", "cross", "ellipse", "custom".
@@ -1805,7 +1805,7 @@ The description of the accepted options follows.
 @table @option
 @item rgb
 If set to 1, force the filter to accept inputs in the RGB
-colorspace. Default value is 0.
+color space. Default value is 0.
 @end table
 
 Be aware that frames are taken from each input video in timestamp
@@ -1892,7 +1892,7 @@ value for @var{width} or @var{height} is 0, the corresponding input size
 is used for the output.
 
 The @var{width} expression can reference the value set by the
-@var{height} expression, and viceversa.
+@var{height} expression, and vice versa.
 
 The default value of @var{width} and @var{height} is 0.
 
@@ -1902,7 +1902,7 @@ Specify the offsets where to place the input image in the padded area
 with respect to the top/left border of the output image.
 
 The @var{x} expression can reference the value set by the @var{y}
-expression, and viceversa.
+expression, and vice versa.
 
 The default value of @var{x} and @var{y} is 0.
 
@@ -2317,7 +2317,7 @@ seconds
 
 @item pos
 position of the frame in the input stream, -1 if this information in
-unavailable and/or meanigless (for example in case of synthetic video)
+unavailable and/or meaningless (for example in case of synthetic video)
 
 @item fmt
 pixel format name
@@ -2766,7 +2766,7 @@ section @ref{frei0r} in the description of the video filters.
 
 Some examples follow:
 @example
-# generate a frei0r partik0l source with size 200x200 and framerate 10
+# generate a frei0r partik0l source with size 200x200 and frame rate 10
 # which is overlayed on the overlay filter main input
 frei0r_src=200x200:10:partik0l=1234 [overlay]; [in][overlay] overlay
 @end example
@@ -2792,7 +2792,7 @@ separated by ":". The description of the accepted options follows.
 
 @item size, s
 Specify the size of the sourced video, it may be a string of the form
-@var{width}x@var{heigth}, or the name of a size abbreviation. The
+@var{width}x@var{height}, or the name of a size abbreviation. The
 default value is "320x240".
 
 @item rate, r
@@ -2823,7 +2823,7 @@ testsrc=duration=5.3:size=qcif:rate=10
 @end example
 
 will generate a video with a duration of 5.3 seconds, with size
-176x144 and a framerate of 10 frames per second.
+176x144 and a frame rate of 10 frames per second.
 
 If the input content is to be ignored, @code{nullsrc} can be used. The
 following command generates noise in the luminance plane by employing

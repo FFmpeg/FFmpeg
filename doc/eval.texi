@@ -1,7 +1,7 @@
 @chapter Expression Evaluation
 @c man begin EXPRESSION EVALUATION
 
-When evaluating an arithemetic expression, FFmpeg uses an internal
+When evaluating an arithmetic expression, FFmpeg uses an internal
 formula evaluator, implemented through the @file{libavutil/eval.h}
 interface.
 
@@ -53,7 +53,7 @@ returns the value stored in the internal variable.
 
 @item ld(var)
 Allow to load the value of the internal variable with number
-@var{var}, which was previosly stored with st(@var{var}, @var{expr}).
+@var{var}, which was previously stored with st(@var{var}, @var{expr}).
 The function returns the loaded value.
 
 @item while(cond, expr)
@@ -102,11 +102,11 @@ Return the greatest common divisor of @var{x} and @var{y}. If both @var{x} and
 The following constants are available:
 @table @option
 @item PI
-area of the unit disc, approximatively 3.14
+area of the unit disc, approximately 3.14
 @item E
-exp(1) (Euler's number), approximatively 2.718
+exp(1) (Euler's number), approximately 2.718
 @item PHI
-golden ratio (1+sqrt(5))/2, approximatively 1.618
+golden ratio (1+sqrt(5))/2, approximately 1.618
 @end table
 
 Note that:

@@ -28,7 +28,7 @@ OSS (Open Sound System) output device.
 
 @section sdl
 
-SDL (Simple Directmedia Layer) output device.
+SDL (Simple DirectMedia Layer) output device.
 
 This output devices allows to show a video stream in an SDL
 window. Only one SDL window is allowed per application, so you can

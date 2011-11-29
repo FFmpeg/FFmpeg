@@ -155,8 +155,8 @@ be seekable, so they will fail with the pipe output protocol.
 
 Real-Time Messaging Protocol.
 
-The Real-Time Messaging Protocol (RTMP) is used for streaming multime‐
-dia content across a TCP/IP network.
+The Real-Time Messaging Protocol (RTMP) is used for streaming
+multimedia content across a TCP/IP network.
 
 The required syntax is:
 @example
@@ -195,7 +195,7 @@ Real-Time Messaging Protocol and its variants supported through
 librtmp.
 
 Requires the presence of the librtmp headers and library during
-configuration. You need to explicitely configure the build with
+configuration. You need to explicitly configure the build with
 "--enable-librtmp". If enabled this will replace the native RTMP
 protocol.
 
