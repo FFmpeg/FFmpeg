@@ -289,6 +289,8 @@ typedef struct WmallDecodeCtx {
 
 
 static int num_logged_tiles = 0;
+static int num_logged_subframes = 0;
+static int num_lms_update_call = 0;
 
 /**
  *@brief helper function to print the most important members of the context
@@ -692,7 +694,7 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
     if(s->seekable_tile) {
 	if(s->do_inter_ch_decorr)
 	    s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample + 1);
-	else
+    else
 	    s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample);
 	i++;
     }
@@ -716,9 +718,6 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
 	else
 	    residue = residue >> 1;
 	s->channel_residues[ch][i] = residue;
-
-    /*if (num_logged_tiles < 1)
-        av_log(0, 0, "%4d ", residue); */
     }
     dump_int_buffer(s->channel_residues[ch], tile_size, 16);
 
@@ -1056,6 +1055,7 @@ static int decode_subframe(WmallDecodeCtx *s)
         }
         ++s->channel[c].cur_subframe;
     }
+    num_logged_subframes++;
     return 0;
 }
 
