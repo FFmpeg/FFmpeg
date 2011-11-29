@@ -1434,8 +1434,11 @@ static void print_report(OutputFile *output_files,
     oc = output_files[0].ctx;
 
     total_size = avio_size(oc->pb);
-    if(total_size<0) // FIXME improve avio_size() so it works with non seekable output too
+    if (total_size < 0) { // FIXME improve avio_size() so it works with non seekable output too
         total_size= avio_tell(oc->pb);
+        if (total_size < 0)
+            total_size = 0;
+    }
 
     buf[0] = '\0';
     vid = 0;
