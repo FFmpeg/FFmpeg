@@ -69,7 +69,7 @@ alloc_fail:
 
 /*
  * Deinterleave input samples.
- * Channels are reordered from Libav's default order to AC-3 order.
+ * Channels are reordered from FFmpeg's default order to AC-3 order.
  */
 static void deinterleave_input_samples(AC3EncodeContext *s,
                                        const SampleType *samples)
