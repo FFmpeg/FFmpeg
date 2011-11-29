@@ -700,6 +700,9 @@ typedef struct AVStream {
      */
     int stream_identifier;
 
+    int64_t interleaver_chunk_size;
+    int64_t interleaver_chunk_duration;
+
     /**
      * Stream informations used internally by av_find_stream_info()
      */
@@ -1085,6 +1088,22 @@ typedef struct AVFormatContext {
      * - decoding: unused
      */
     int audio_preload;
+
+    /**
+     * Max chunk time in microseconds.
+     * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+     * - encoding: Set by user via AVOptions (NO direct access)
+     * - decoding: unused
+     */
+    int max_chunk_duration;
+
+    /**
+     * Max chunk size in bytes
+     * Note, not all formats support this and unpredictable things may happen if it is used when not supported.
+     * - encoding: Set by user via AVOptions (NO direct access)
+     * - decoding: unused
+     */
+    int max_chunk_size;
 
     /*****************************************************************
      * All fields below this line are not part of the public API. They

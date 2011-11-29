@@ -3263,10 +3263,14 @@ int av_write_frame(AVFormatContext *s, AVPacket *pkt)
     return ret;
 }
 
+#define CHUNK_START 0x1000
+
 int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
                               int (*compare)(AVFormatContext *, AVPacket *, AVPacket *))
 {
     AVPacketList **next_point, *this_pktl;
+    AVStream *st= s->streams[pkt->stream_index];
+    int chunked= s->max_chunk_size || s->max_chunk_duration;
 
     this_pktl = av_mallocz(sizeof(AVPacketList));
     if (!this_pktl)
@@ -3276,16 +3280,34 @@ int ff_interleave_add_packet(AVFormatContext *s, AVPacket *pkt,
     av_dup_packet(&this_pktl->pkt);  // duplicate the packet if it uses non-alloced memory
 
     if(s->streams[pkt->stream_index]->last_in_packet_buffer){
-        next_point = &(s->streams[pkt->stream_index]->last_in_packet_buffer->next);
-    }else
+        next_point = &(st->last_in_packet_buffer->next);
+    }else{
         next_point = &s->packet_buffer;
+    }
 
     if(*next_point){
+        if(chunked){
+            uint64_t max= av_rescale_q(s->max_chunk_duration, AV_TIME_BASE_Q, st->time_base);
+            if(   st->interleaver_chunk_size     + pkt->size     <= s->max_chunk_size-1U
+               && st->interleaver_chunk_duration + pkt->duration <= max-1U){
+                st->interleaver_chunk_size     += pkt->size;
+                st->interleaver_chunk_duration += pkt->duration;
+                goto next_non_null;
+            }else{
+                st->interleaver_chunk_size     =
+                st->interleaver_chunk_duration = 0;
+                this_pktl->pkt.flags |= CHUNK_START;
+            }
+        }
+
         if(compare(s, &s->packet_buffer_end->pkt, pkt)){
-            while(!compare(s, &(*next_point)->pkt, pkt)){
+            while(   *next_point
+                  && ((chunked && !((*next_point)->pkt.flags&CHUNK_START))
+                      || !compare(s, &(*next_point)->pkt, pkt))){
                 next_point= &(*next_point)->next;
             }
-            goto next_non_null;
+            if(*next_point)
+                goto next_non_null;
         }else{
             next_point = &(s->packet_buffer_end->next);
         }

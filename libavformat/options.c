@@ -117,6 +117,8 @@ static const AVOption options[]={
 {"explode", "abort decoding on error recognition", 0, AV_OPT_TYPE_CONST, {.dbl = FF_ER_EXPLODE }, INT_MIN, INT_MAX, D, "fer"},
 {"fpsprobesize", "number of frames used to probe fps", OFFSET(fps_probe_size), AV_OPT_TYPE_INT, {.dbl = -1}, -1, INT_MAX-1, D},
 {"audio_preload", "microseconds by which audio packets should be interleaved earlier", OFFSET(audio_preload), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX-1, E},
+{"chunk_duration", "microseconds for each chunk", OFFSET(max_chunk_duration), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX-1, E},
+{"chunk_size", "size in bytes for each chunk", OFFSET(max_chunk_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX-1, E},
 {NULL},
 };
 
