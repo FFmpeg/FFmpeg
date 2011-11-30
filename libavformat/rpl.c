@@ -164,11 +164,9 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
             // The header is wrong here, at least sometimes
             vst->codec->bits_per_coded_sample = 16;
             break;
-#if 0
         case 130:
             vst->codec->codec_id = CODEC_ID_ESCAPE130;
             break;
-#endif
         default:
             av_log(s, AV_LOG_WARNING,
                    "RPL video format %i not supported yet!\n",
