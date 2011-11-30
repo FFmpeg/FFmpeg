@@ -2090,11 +2090,11 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         trk->cluster = av_realloc_f(trk->cluster, sizeof(*trk->cluster), (trk->entry + MOV_INDEX_CLUSTER_SIZE));
         if (!trk->cluster)
             return -1;
-        memset(trk->cluster + trk->entry, 0, sizeof(*trk->cluster)*MOV_INDEX_CLUSTER_SIZE);
     }
 
     trk->cluster[trk->entry].pos = avio_tell(pb) - size;
     trk->cluster[trk->entry].samplesInChunk = samplesInChunk;
+    trk->cluster[trk->entry].chunkNum = 0;
     trk->cluster[trk->entry].size = size;
     trk->cluster[trk->entry].entries = samplesInChunk;
     trk->cluster[trk->entry].dts = pkt->dts;
