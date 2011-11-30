@@ -237,7 +237,7 @@ typedef struct WmallDecodeCtx {
     int8_t mclms_scaling;
     int16_t mclms_coeffs[128];
     int16_t mclms_coeffs_cur[4];
-    int mclms_prevvalues[64];   // FIXME: should be 32-bit / 16-bit depending on bit-depth
+    int16_t mclms_prevvalues[64];   // FIXME: should be 32-bit / 16-bit depending on bit-depth
     int16_t mclms_updates[64];
     int mclms_recent;
 
@@ -807,7 +807,7 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int32_t input, int3
 {
     int16_t icoef;
     int recent = s->cdlms[ich][ilms].recent;
-    int range = 1 << (s->bits_per_sample - 1);
+    int16_t range = 1 << (s->bits_per_sample - 1);
     int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
 
     if (input > pred) {
