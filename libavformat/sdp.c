@@ -517,6 +517,14 @@ static char *sdp_write_media_attributes(char *buff, int size, AVCodecContext *c,
                                          payload_type,
                                          8000, c->channels);
             break;
+        case CODEC_ID_ADPCM_G726: {
+            if (payload_type >= RTP_PT_PRIVATE)
+                av_strlcatf(buff, size, "a=rtpmap:%d G726-%d/%d\r\n",
+                                         payload_type,
+                                         c->bits_per_coded_sample*8,
+                                         c->sample_rate);
+            break;
+        }
         default:
             /* Nothing special to do here... */
             break;

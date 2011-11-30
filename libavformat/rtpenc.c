@@ -72,6 +72,7 @@ static int is_supported(enum CodecID id)
     case CODEC_ID_THEORA:
     case CODEC_ID_VP8:
     case CODEC_ID_ADPCM_G722:
+    case CODEC_ID_ADPCM_G726:
         return 1;
     default:
         return 0;
@@ -410,6 +411,10 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
          * the correct parameter for send_samples_bits is 8 bits per stream
          * clock. */
         rtp_send_samples(s1, pkt->data, size, 8 * st->codec->channels);
+        break;
+    case CODEC_ID_ADPCM_G726:
+        rtp_send_samples(s1, pkt->data, size,
+                         st->codec->bits_per_coded_sample * st->codec->channels);
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
