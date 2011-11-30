@@ -249,7 +249,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
                     unsigned adjust_index = get_bits(&gb, 3);
                     static const int8_t adjust[2][8] =
                         {  { 1, 1, 0, -1, -1, -1,  0,  1 },
-                           { 0, 1, 1,  0, -1, -2, -1, -1 } };
+                           { 0, 1, 1,  1,  0, -1, -1, -1 } };
                     cb = (cb + adjust[0][adjust_index]) & 31;
                     cr = (cr + adjust[1][adjust_index]) & 31;
                 }
