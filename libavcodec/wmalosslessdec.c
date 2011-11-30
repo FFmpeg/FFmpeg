@@ -308,7 +308,7 @@ static void av_cold dump_context(WmallDecodeCtx *s)
     PRINT("num channels",        s->num_channels);
 }
 
-static int dump_int_buffer(int *buffer, int length, int delimiter)
+static void dump_int_buffer(int *buffer, int length, int delimiter)
 {
     int i;
 
