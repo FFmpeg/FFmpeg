@@ -60,7 +60,7 @@ static int ac3_eac3_probe(AVProbeData *p, enum CodecID expected_codec_id)
     // keep this in sync with mp3 probe, both need to avoid
     // issues with MPEG-files!
     if   (first_frames>=4) return AVPROBE_SCORE_MAX/2+1;
-    else if(max_frames>500)return AVPROBE_SCORE_MAX/2;
+    else if(max_frames>200)return AVPROBE_SCORE_MAX/2;
     else if(max_frames>=4) return AVPROBE_SCORE_MAX/4;
     else if(max_frames>=1) return 1;
     else                   return 0;
