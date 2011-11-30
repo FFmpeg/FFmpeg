@@ -121,7 +121,7 @@ static int rtp_write_header(AVFormatContext *s1)
             if (st->codec->frame_size == 0) {
                 av_log(s1, AV_LOG_ERROR, "Cannot respect max delay: frame size = 0\n");
             } else {
-                s->max_frames_per_packet = av_rescale_rnd(s1->max_delay, st->codec->sample_rate, AV_TIME_BASE * st->codec->frame_size, AV_ROUND_DOWN);
+                s->max_frames_per_packet = av_rescale_rnd(s1->max_delay, st->codec->sample_rate, AV_TIME_BASE * (int64_t)st->codec->frame_size, AV_ROUND_DOWN);
             }
         }
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
