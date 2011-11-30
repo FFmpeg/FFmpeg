@@ -1,0 +1,4 @@
+a85380fb79b0d4fff38e24ac1e34bb94 *./tests/data/acodec/pcm_s24le.wav
+1587668 ./tests/data/acodec/pcm_s24le.wav
+64151e4bcc2b717aa5a8454d424d6a1f *./tests/data/pcm_s24le.acodec.out.wav
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400
