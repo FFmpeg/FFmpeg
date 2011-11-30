@@ -245,11 +245,11 @@ typedef struct WmallDecodeCtx {
     int quant_stepsize;
 
     struct {
-	int order;
-	int scaling;
-	int coefsend;
-	int bitsend;
-	int16_t coefs[256];
+        int order;
+        int scaling;
+        int coefsend;
+        int bitsend;
+        int16_t coefs[256];
     int lms_prevvalues[512];    // FIXME: see above
     int16_t lms_updates[512];   // and here too
     int recent;
@@ -512,12 +512,12 @@ static int decode_tilehdr(WmallDecodeCtx *s)
         for (c = 0; c < s->num_channels; c++) {
             if (num_samples[c] == min_channel_len) {
                 if (fixed_channel_layout || channels_for_cur_subframe == 1 ||
-		    (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
+                    (min_channel_len == s->samples_per_frame - s->min_samples_per_subframe)) {
                     contains_subframe[c] = 1;
-		}
+                }
                 else {
                     contains_subframe[c] = get_bits1(&s->gb);
-		}
+                }
             } else
                 contains_subframe[c] = 0;
         }
@@ -542,7 +542,7 @@ static int decode_tilehdr(WmallDecodeCtx *s)
                 if (num_samples[c] > s->samples_per_frame) {
                     av_log(s->avctx, AV_LOG_ERROR, "broken frame: "
                            "channel len(%d) > samples_per_frame(%d)\n",
-			   num_samples[c], s->samples_per_frame);
+                           num_samples[c], s->samples_per_frame);
                     return AVERROR_INVALIDDATA;
                 }
             } else if (num_samples[c] <= min_channel_len) {
@@ -572,7 +572,7 @@ static int my_log2(unsigned int i)
 {
     unsigned int iLog2 = 0;
     while ((i >> iLog2) > 1)
-	iLog2++;
+        iLog2++;
     return iLog2;
 }
 
@@ -587,7 +587,7 @@ static void decode_ac_filter(WmallDecodeCtx *s)
     s->acfilter_scaling = get_bits(&s->gb, 4);
 
     for(i = 0; i < s->acfilter_order; i++) {
-	s->acfilter_coeffs[i] = get_bits(&s->gb, s->acfilter_scaling) + 1;
+        s->acfilter_coeffs[i] = get_bits(&s->gb, s->acfilter_scaling) + 1;
     }
 }
 
@@ -600,26 +600,26 @@ static void decode_mclms(WmallDecodeCtx *s)
     s->mclms_order = (get_bits(&s->gb, 4) + 1) * 2;
     s->mclms_scaling = get_bits(&s->gb, 4);
     if(get_bits1(&s->gb)) {
-	// mclms_send_coef
-	int i;
-	int send_coef_bits;
-	int cbits = av_log2(s->mclms_scaling + 1);
-	assert(cbits == my_log2(s->mclms_scaling + 1));
-	if(1 << cbits < s->mclms_scaling + 1)
-	    cbits++;
+        // mclms_send_coef
+        int i;
+        int send_coef_bits;
+        int cbits = av_log2(s->mclms_scaling + 1);
+        assert(cbits == my_log2(s->mclms_scaling + 1));
+        if(1 << cbits < s->mclms_scaling + 1)
+            cbits++;
 
-	send_coef_bits = (cbits ? get_bits(&s->gb, cbits) : 0) + 2;
+        send_coef_bits = (cbits ? get_bits(&s->gb, cbits) : 0) + 2;
 
-	for(i = 0; i < s->mclms_order * s->num_channels * s->num_channels; i++) {
-	    s->mclms_coeffs[i] = get_bits(&s->gb, send_coef_bits);
-	}
+        for(i = 0; i < s->mclms_order * s->num_channels * s->num_channels; i++) {
+            s->mclms_coeffs[i] = get_bits(&s->gb, send_coef_bits);
+        }
 
-	for(i = 0; i < s->num_channels; i++) {
-	    int c;
-	    for(c = 0; c < i; c++) {
-		s->mclms_coeffs_cur[i * s->num_channels + c] = get_bits(&s->gb, send_coef_bits);
-	    }
-	}
+        for(i = 0; i < s->num_channels; i++) {
+            int c;
+            for(c = 0; c < i; c++) {
+                s->mclms_coeffs_cur[i * s->num_channels + c] = get_bits(&s->gb, send_coef_bits);
+            }
+        }
     }
 }
 
@@ -633,36 +633,36 @@ static void decode_cdlms(WmallDecodeCtx *s)
     int cdlms_send_coef = get_bits1(&s->gb);
 
     for(c = 0; c < s->num_channels; c++) {
-	s->cdlms_ttl[c] = get_bits(&s->gb, 3) + 1;
-	for(i = 0; i < s->cdlms_ttl[c]; i++) {
-	    s->cdlms[c][i].order = (get_bits(&s->gb, 7) + 1) * 8;
-	}
+        s->cdlms_ttl[c] = get_bits(&s->gb, 3) + 1;
+        for(i = 0; i < s->cdlms_ttl[c]; i++) {
+            s->cdlms[c][i].order = (get_bits(&s->gb, 7) + 1) * 8;
+        }
 
-	for(i = 0; i < s->cdlms_ttl[c]; i++) {
-	    s->cdlms[c][i].scaling = get_bits(&s->gb, 4);
-	}
+        for(i = 0; i < s->cdlms_ttl[c]; i++) {
+            s->cdlms[c][i].scaling = get_bits(&s->gb, 4);
+        }
 
-	if(cdlms_send_coef) {
-	    for(i = 0; i < s->cdlms_ttl[c]; i++) {
-		int cbits, shift_l, shift_r, j;
-		cbits = av_log2(s->cdlms[c][i].order);
-		if(1 << cbits < s->cdlms[c][i].order)
-		    cbits++;
-		s->cdlms[c][i].coefsend = get_bits(&s->gb, cbits) + 1;
+        if(cdlms_send_coef) {
+            for(i = 0; i < s->cdlms_ttl[c]; i++) {
+                int cbits, shift_l, shift_r, j;
+                cbits = av_log2(s->cdlms[c][i].order);
+                if(1 << cbits < s->cdlms[c][i].order)
+                    cbits++;
+                s->cdlms[c][i].coefsend = get_bits(&s->gb, cbits) + 1;
 
-		cbits = av_log2(s->cdlms[c][i].scaling + 1);
-		if(1 << cbits < s->cdlms[c][i].scaling + 1)
-		    cbits++;
+                cbits = av_log2(s->cdlms[c][i].scaling + 1);
+                if(1 << cbits < s->cdlms[c][i].scaling + 1)
+                    cbits++;
 
-		s->cdlms[c][i].bitsend = get_bits(&s->gb, cbits) + 2;
-		shift_l = 32 - s->cdlms[c][i].bitsend;
-		shift_r = 32 - 2 - s->cdlms[c][i].scaling;
-		for(j = 0; j < s->cdlms[c][i].coefsend; j++) {
-		    s->cdlms[c][i].coefs[j] =
-			(get_bits(&s->gb, s->cdlms[c][i].bitsend) << shift_l) >> shift_r;
-		}
-	    }
-	}
+                s->cdlms[c][i].bitsend = get_bits(&s->gb, cbits) + 2;
+                shift_l = 32 - s->cdlms[c][i].bitsend;
+                shift_r = 32 - 2 - s->cdlms[c][i].scaling;
+                for(j = 0; j < s->cdlms[c][i].coefsend; j++) {
+                    s->cdlms[c][i].coefs[j] =
+                        (get_bits(&s->gb, s->cdlms[c][i].bitsend) << shift_l) >> shift_r;
+                }
+            }
+        }
     }
 }
 
@@ -675,47 +675,47 @@ static int decode_channel_residues(WmallDecodeCtx *s, int ch, int tile_size)
     unsigned int ave_mean;
     s->transient[ch] = get_bits1(&s->gb);
     if(s->transient[ch]) {
-	    s->transient_pos[ch] = get_bits(&s->gb, av_log2(tile_size));
+            s->transient_pos[ch] = get_bits(&s->gb, av_log2(tile_size));
         if (s->transient_pos[ch])
-	        s->transient[ch] = 0;
-	    s->channel[ch].transient_counter =
-	        FFMAX(s->channel[ch].transient_counter, s->samples_per_frame / 2);
-	} else if (s->channel[ch].transient_counter)
-	    s->transient[ch] = 1;
+                s->transient[ch] = 0;
+            s->channel[ch].transient_counter =
+                FFMAX(s->channel[ch].transient_counter, s->samples_per_frame / 2);
+        } else if (s->channel[ch].transient_counter)
+            s->transient[ch] = 1;
 
     if(s->seekable_tile) {
-	ave_mean = get_bits(&s->gb, s->bits_per_sample);
-	s->ave_sum[ch] = ave_mean << (s->movave_scaling + 1);
-//	s->ave_sum[ch] *= 2;
+        ave_mean = get_bits(&s->gb, s->bits_per_sample);
+        s->ave_sum[ch] = ave_mean << (s->movave_scaling + 1);
+//        s->ave_sum[ch] *= 2;
     }
 
     if(s->seekable_tile) {
-	if(s->do_inter_ch_decorr)
-	    s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample + 1);
-	else
-	    s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample);
-	i++;
+        if(s->do_inter_ch_decorr)
+            s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample + 1);
+        else
+            s->channel_residues[ch][0] = get_sbits(&s->gb, s->bits_per_sample);
+        i++;
     }
     //av_log(0, 0, "%8d: ", num_logged_tiles++);
     for(; i < tile_size; i++) {
-	int quo = 0, rem, rem_bits, residue;
-	while(get_bits1(&s->gb))
-	    quo++;
-	if(quo >= 32)
-	    quo += get_bits_long(&s->gb, get_bits(&s->gb, 5) + 1);
+        int quo = 0, rem, rem_bits, residue;
+        while(get_bits1(&s->gb))
+            quo++;
+        if(quo >= 32)
+            quo += get_bits_long(&s->gb, get_bits(&s->gb, 5) + 1);
 
-       	ave_mean = (s->ave_sum[ch] + (1 << s->movave_scaling)) >> (s->movave_scaling + 1);
-	rem_bits = av_ceil_log2(ave_mean);
-	rem = rem_bits ? get_bits(&s->gb, rem_bits) : 0;
-	residue = (quo << rem_bits) + rem;
+               ave_mean = (s->ave_sum[ch] + (1 << s->movave_scaling)) >> (s->movave_scaling + 1);
+        rem_bits = av_ceil_log2(ave_mean);
+        rem = rem_bits ? get_bits(&s->gb, rem_bits) : 0;
+        residue = (quo << rem_bits) + rem;
 
-	s->ave_sum[ch] = residue + s->ave_sum[ch] - (s->ave_sum[ch] >> s->movave_scaling);
+        s->ave_sum[ch] = residue + s->ave_sum[ch] - (s->ave_sum[ch] >> s->movave_scaling);
 
-	if(residue & 1)
-	    residue = -(residue >> 1) - 1;
-	else
-	    residue = residue >> 1;
-	s->channel_residues[ch][i] = residue;
+        if(residue & 1)
+            residue = -(residue >> 1) - 1;
+        else
+            residue = residue >> 1;
+        s->channel_residues[ch][i] = residue;
 
     /*if (num_logged_tiles < 1)
         av_log(0, 0, "%4d ", residue); */
@@ -739,9 +739,9 @@ decode_lpc(WmallDecodeCtx *s)
     s->lpc_intbits = get_bits(&s->gb, 3) + 1;
     cbits = s->lpc_scaling + s->lpc_intbits;
     for(ch = 0; ch < s->num_channels; ch++) {
-	for(i = 0; i < s->lpc_order; i++) {
-	    s->lpc_coefs[ch][i] = get_sbits(&s->gb, cbits);
-	}
+        for(i = 0; i < s->lpc_order; i++) {
+            s->lpc_coefs[ch][i] = get_sbits(&s->gb, cbits);
+        }
     }
 }
 
@@ -975,74 +975,74 @@ static int decode_subframe(WmallDecodeCtx *s)
     if(s->seekable_tile) {
         clear_codec_buffers(s);
 
-	s->do_arith_coding    = get_bits1(&s->gb);
-	if(s->do_arith_coding) {
-	    dprintf(s->avctx, "do_arith_coding == 1");
-	    abort();
-	}
-	s->do_ac_filter       = get_bits1(&s->gb);
-	s->do_inter_ch_decorr = get_bits1(&s->gb);
-	s->do_mclms           = get_bits1(&s->gb);
+        s->do_arith_coding    = get_bits1(&s->gb);
+        if(s->do_arith_coding) {
+            dprintf(s->avctx, "do_arith_coding == 1");
+            abort();
+        }
+        s->do_ac_filter       = get_bits1(&s->gb);
+        s->do_inter_ch_decorr = get_bits1(&s->gb);
+        s->do_mclms           = get_bits1(&s->gb);
 
-	if(s->do_ac_filter)
-	    decode_ac_filter(s);
+        if(s->do_ac_filter)
+            decode_ac_filter(s);
 
-	if(s->do_mclms)
-	    decode_mclms(s);
+        if(s->do_mclms)
+            decode_mclms(s);
 
-	decode_cdlms(s);
-	s->movave_scaling = get_bits(&s->gb, 3);
-	s->quant_stepsize = get_bits(&s->gb, 8) + 1;
+        decode_cdlms(s);
+        s->movave_scaling = get_bits(&s->gb, 3);
+        s->quant_stepsize = get_bits(&s->gb, 8) + 1;
 
-	    reset_codec(s);
+            reset_codec(s);
     }
 
     rawpcm_tile = get_bits1(&s->gb);
 
     for(i = 0; i < s->num_channels; i++) {
-	s->is_channel_coded[i] = 1;
+        s->is_channel_coded[i] = 1;
     }
 
     if(!rawpcm_tile) {
 
-	for(i = 0; i < s->num_channels; i++) {
-	    s->is_channel_coded[i] = get_bits1(&s->gb);
-	}
+        for(i = 0; i < s->num_channels; i++) {
+            s->is_channel_coded[i] = get_bits1(&s->gb);
+        }
 
-	if(s->bV3RTM) {
-	    // LPC
-	    s->do_lpc = get_bits1(&s->gb);
-	    if(s->do_lpc) {
-		decode_lpc(s);
-	    }
-	} else {
-	    s->do_lpc = 0;
-	}
+        if(s->bV3RTM) {
+            // LPC
+            s->do_lpc = get_bits1(&s->gb);
+            if(s->do_lpc) {
+                decode_lpc(s);
+            }
+        } else {
+            s->do_lpc = 0;
+        }
     }
 
 
     if(get_bits1(&s->gb)) {
-	padding_zeroes = get_bits(&s->gb, 5);
+        padding_zeroes = get_bits(&s->gb, 5);
     } else {
-	padding_zeroes = 0;
+        padding_zeroes = 0;
     }
 
     if(rawpcm_tile) {
 
-	int bits = s->bits_per_sample - padding_zeroes;
-	int j;
-	dprintf(s->avctx, "RAWPCM %d bits per sample. total %d bits, remain=%d\n", bits,
-		bits * s->num_channels * subframe_len, get_bits_count(&s->gb));
-	for(i = 0; i < s->num_channels; i++) {
-	    for(j = 0; j < subframe_len; j++) {
-		s->channel_coeffs[i][j] = get_sbits(&s->gb, bits);
-//		dprintf(s->avctx, "PCM[%d][%d] = 0x%04x\n", i, j, s->channel_coeffs[i][j]);
-	    }
-	}
+        int bits = s->bits_per_sample - padding_zeroes;
+        int j;
+        dprintf(s->avctx, "RAWPCM %d bits per sample. total %d bits, remain=%d\n", bits,
+                bits * s->num_channels * subframe_len, get_bits_count(&s->gb));
+        for(i = 0; i < s->num_channels; i++) {
+            for(j = 0; j < subframe_len; j++) {
+                s->channel_coeffs[i][j] = get_sbits(&s->gb, bits);
+//                dprintf(s->avctx, "PCM[%d][%d] = 0x%04x\n", i, j, s->channel_coeffs[i][j]);
+            }
+        }
     } else {
-	for(i = 0; i < s->num_channels; i++)
-	    if(s->is_channel_coded[i])
-		decode_channel_residues(s, i, subframe_len);
+        for(i = 0; i < s->num_channels; i++)
+            if(s->is_channel_coded[i])
+                decode_channel_residues(s, i, subframe_len);
     }
     revert_cdlms(s, subframe_len);
 
@@ -1153,7 +1153,7 @@ static int decode_frame(WmallDecodeCtx *s)
     } else {
 /*
         while (get_bits_count(gb) < s->num_saved_bits && get_bits1(gb) == 0) {
-	    dprintf(s->avctx, "skip1\n");
+            dprintf(s->avctx, "skip1\n");
         }
 */
     }
@@ -1263,8 +1263,8 @@ static int decode_packet(AVCodecContext *avctx,
         /** parse packet header */
         init_get_bits(gb, buf, s->buf_bit_size);
         packet_sequence_number = get_bits(gb, 4);
-	int seekable_frame_in_packet = get_bits1(gb);
-	int spliced_packet = get_bits1(gb);
+        int seekable_frame_in_packet = get_bits1(gb);
+        int spliced_packet = get_bits1(gb);
 
         /** get number of bits that need to be added to the previous frame */
         num_bits_prev_frame = get_bits(gb, s->log2_frame_size);
@@ -1291,7 +1291,7 @@ static int decode_packet(AVCodecContext *avctx,
 
             /** decode the cross packet frame if it is valid */
             if (!s->packet_loss)
-		decode_frame(s);
+                decode_frame(s);
         } else if (s->num_saved_bits - s->frame_offset) {
             dprintf(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);
@@ -1329,7 +1329,7 @@ static int decode_packet(AVCodecContext *avctx,
             s->packet_done = !decode_frame(s);
         } else {
             s->packet_done = 1;
-	}
+        }
     }
 
     if (s->packet_done && !s->packet_loss &&
