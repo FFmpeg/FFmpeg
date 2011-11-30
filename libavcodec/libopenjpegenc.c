@@ -53,7 +53,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     opj_image_cmptparm_t *cmptparm;
     opj_image_t *img;
     int i;
-    int bpp;
+    int bpp = 8;
     int sub_dx[4];
     int sub_dy[4];
     int numcomps = 0;
@@ -68,37 +68,51 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
     case PIX_FMT_GRAY8:
         color_space = CLRSPC_GRAY;
         numcomps = 1;
-        bpp = 8;
         break;
     case PIX_FMT_RGB24:
         color_space = CLRSPC_SRGB;
         numcomps = 3;
-        bpp = 24;
         break;
     case PIX_FMT_RGBA:
         color_space = CLRSPC_SRGB;
         numcomps = 4;
-        bpp = 32;
         break;
     case PIX_FMT_YUV420P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
-        bpp = 12;
         break;
     case PIX_FMT_YUV422P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
-        bpp = 16;
         break;
     case PIX_FMT_YUV440P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
-        bpp = 16;
         break;
     case PIX_FMT_YUV444P:
         color_space = CLRSPC_SYCC;
         numcomps = 3;
-        bpp = 24;
+        break;
+    case PIX_FMT_YUV420P9:
+    case PIX_FMT_YUV422P9:
+    case PIX_FMT_YUV444P9:
+        color_space = CLRSPC_SYCC;
+        numcomps = 3;
+        bpp = 9;
+        break;
+    case PIX_FMT_YUV420P10:
+    case PIX_FMT_YUV422P10:
+    case PIX_FMT_YUV444P10:
+        color_space = CLRSPC_SYCC;
+        numcomps = 3;
+        bpp = 10;
+        break;
+    case PIX_FMT_YUV420P16:
+    case PIX_FMT_YUV422P16:
+    case PIX_FMT_YUV444P16:
+        color_space = CLRSPC_SYCC;
+        numcomps = 3;
+        bpp = 16;
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "The requested pixel format '%s' is not supported\n", av_get_pix_fmt_name(avctx->pix_fmt));
@@ -111,7 +125,7 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         return NULL;
     }
     for (i = 0; i < numcomps; i++) {
-        cmptparm[i].prec = 8;
+        cmptparm[i].prec = bpp;
         cmptparm[i].bpp = bpp;
         cmptparm[i].sgnd = 0;
         cmptparm[i].dx = sub_dx[i];
@@ -131,7 +145,7 @@ static av_cold int libopenjpeg_encode_init(AVCodecContext *avctx)
 
     opj_set_default_encoder_parameters(&ctx->enc_params);
     ctx->enc_params.tcp_numlayers = 1;
-    ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0);
+    ctx->enc_params.tcp_rates[0] = FFMAX(avctx->compression_level, 0) * 2;
     ctx->enc_params.cp_disto_alloc = 1;
 
     ctx->compress = opj_create_compress(CODEC_J2K);
@@ -189,7 +203,7 @@ static int libopenjpeg_copy_rgba(AVCodecContext *avctx, AVFrame *frame, opj_imag
     return 1;
 }
 
-static int libopenjpeg_copy_yuv(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+static int libopenjpeg_copy_yuv8(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
 {
     int compno;
     int x;
@@ -210,6 +224,36 @@ static int libopenjpeg_copy_yuv(AVCodecContext *avctx, AVFrame *frame, opj_image
         for (y = 0; y < height; ++y) {
             for (x = 0; x < width; ++x) {
                 image->comps[compno].data[y * width + x] = frame->data[compno][y * frame->linesize[compno] + x];
+            }
+        }
+    }
+
+    return 1;
+}
+
+static int libopenjpeg_copy_yuv16(AVCodecContext *avctx, AVFrame *frame, opj_image_t *image)
+{
+    int compno;
+    int x;
+    int y;
+    int width;
+    int height;
+    const int numcomps = 3;
+    uint16_t *frame_ptr;
+
+    for (compno = 0; compno < numcomps; ++compno) {
+        if (image->comps[compno].w > frame->linesize[compno]) {
+            return 0;
+        }
+    }
+
+    for (compno = 0; compno < numcomps; ++compno) {
+        width = avctx->width / image->comps[compno].dx;
+        height = avctx->height / image->comps[compno].dy;
+        frame_ptr = (uint16_t*)frame->data[compno];
+        for (y = 0; y < height; ++y) {
+            for (x = 0; x < width; ++x) {
+                image->comps[compno].data[y * width + x] = frame_ptr[y * (frame->linesize[compno] / 2) + x];
             }
         }
     }
@@ -248,7 +292,18 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV440P:
     case PIX_FMT_YUV444P:
-        cpyresult = libopenjpeg_copy_yuv(avctx, frame, image);
+        cpyresult = libopenjpeg_copy_yuv8(avctx, frame, image);
+        break;
+    case PIX_FMT_YUV420P9:
+    case PIX_FMT_YUV420P10:
+    case PIX_FMT_YUV420P16:
+    case PIX_FMT_YUV422P9:
+    case PIX_FMT_YUV422P10:
+    case PIX_FMT_YUV422P16:
+    case PIX_FMT_YUV444P9:
+    case PIX_FMT_YUV444P10:
+    case PIX_FMT_YUV444P16:
+        cpyresult = libopenjpeg_copy_yuv16(avctx, frame, image);
         break;
     default:
         av_log(avctx, AV_LOG_ERROR, "The frame's pixel format '%s' is not supported\n", av_get_pix_fmt_name(avctx->pix_fmt));
@@ -298,15 +353,20 @@ static av_cold int libopenjpeg_encode_close(AVCodecContext *avctx)
 
 
 AVCodec ff_libopenjpeg_encoder = {
-    .name = "libopenjpeg",
-    .type = AVMEDIA_TYPE_VIDEO,
-    .id = CODEC_ID_JPEG2000,
+    .name           = "libopenjpeg",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_JPEG2000,
     .priv_data_size = sizeof(LibOpenJPEGContext),
-    .init = libopenjpeg_encode_init,
-    .encode = libopenjpeg_encode_frame,
-    .close = libopenjpeg_encode_close,
-    .decode = NULL,
-    .capabilities = 0,
-    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_GRAY8,PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUV440P,PIX_FMT_YUV444P},
+    .init           = libopenjpeg_encode_init,
+    .encode         = libopenjpeg_encode_frame,
+    .close          = libopenjpeg_encode_close,
+    .decode         = NULL,
+    .capabilities   = 0,
+    .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_GRAY8,
+                                           PIX_FMT_YUV420P,PIX_FMT_YUV422P,
+                                           PIX_FMT_YUV440P,PIX_FMT_YUV444P,
+                                           PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9,
+                                           PIX_FMT_YUV420P10,PIX_FMT_YUV422P10,PIX_FMT_YUV444P10,
+                                           PIX_FMT_YUV420P16,PIX_FMT_YUV422P16,PIX_FMT_YUV444P16},
     .long_name = NULL_IF_CONFIG_SMALL("OpenJPEG based JPEG 2000 encoder"),
 } ;
