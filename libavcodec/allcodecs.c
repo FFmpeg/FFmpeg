@@ -108,6 +108,7 @@ void avcodec_register_all(void)
     REGISTER_DECODER (EIGHTSVX_EXP, eightsvx_exp);
     REGISTER_DECODER (EIGHTSVX_FIB, eightsvx_fib);
     REGISTER_DECODER (ESCAPE124, escape124);
+    REGISTER_DECODER (ESCAPE130, escape130);
     REGISTER_ENCDEC  (FFV1, ffv1);
     REGISTER_ENCDEC  (FFVHUFF, ffvhuff);
     REGISTER_ENCDEC  (FLASHSV, flashsv);
