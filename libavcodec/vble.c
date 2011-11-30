@@ -33,7 +33,6 @@ typedef struct {
     AVCodecContext *avctx;
 
     int            size;
-    int            flags;
     uint8_t        *val; /* First holds the lengths of vlc symbols and then their values */
 } VBLEContext;
 
@@ -161,7 +160,7 @@ static int vble_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     vble_restore_plane(ctx, 0, offset, avctx->width, avctx->height);
 
     /* Chroma */
-    if (!(ctx->flags & CODEC_FLAG_GRAY)) {
+    if (!(ctx->avctx->flags & CODEC_FLAG_GRAY)) {
         offset += avctx->width * avctx->height;
         vble_restore_plane(ctx, 1, offset, width_uv, height_uv);
 
@@ -195,7 +194,6 @@ static av_cold int vble_decode_init(AVCodecContext *avctx)
 
     /* Stash for later use */
     ctx->avctx = avctx;
-    ctx->flags = avctx->flags;
 
     avctx->pix_fmt = PIX_FMT_YUV420P;
     avctx->bits_per_raw_sample = 8;
