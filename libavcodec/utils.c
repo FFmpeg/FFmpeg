@@ -203,6 +203,10 @@ void avcodec_align_dimensions2(AVCodecContext *s, int *width, int *height, int l
         break;
     }
 
+    if(s->codec_id == CODEC_ID_IFF_ILBM || s->codec_id == CODEC_ID_IFF_BYTERUN1){
+        w_align= FFMAX(w_align, 8);
+    }
+
     *width = FFALIGN(*width , w_align);
     *height= FFALIGN(*height, h_align);
     if(s->codec_id == CODEC_ID_H264 || s->lowres)
