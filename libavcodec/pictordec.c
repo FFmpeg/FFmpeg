@@ -230,7 +230,7 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
     } else {
-        av_log_ask_for_sample(s, "uncompressed image\n");
+        av_log_ask_for_sample(avctx, "uncompressed image\n");
         return buf_size;
     }
 
