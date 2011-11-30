@@ -494,6 +494,7 @@ static int submit_packet(PerThreadContext *p, AVPacket *avpkt)
     }
 
     fctx->prev_thread = p;
+    fctx->next_decoding++;
 
     return 0;
 }
@@ -515,8 +516,6 @@ int ff_thread_decode_frame(AVCodecContext *avctx,
     update_context_from_user(p->avctx, avctx);
     err = submit_packet(p, avpkt);
     if (err) return err;
-
-    fctx->next_decoding++;
 
     /*
      * If we're still receiving the initial packets, don't return a frame.
