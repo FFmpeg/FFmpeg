@@ -100,7 +100,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
     GetBitContext gb;
     unsigned i;
 
-    uint8_t *old_y, *old_cb, *old_cr, 
+    uint8_t *old_y, *old_cb, *old_cr,
             *new_y, *new_cb, *new_cr;
     unsigned old_y_stride, old_cb_stride, old_cr_stride,
              new_y_stride, new_cb_stride, new_cr_stride;
@@ -124,7 +124,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    
+
     new_y = new_frame.data[0];
     new_cb = new_frame.data[1];
     new_cr = new_frame.data[2];
