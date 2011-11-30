@@ -149,6 +149,7 @@ static int decode_tag(AVCodecContext * avctx,
                       void *data, int *data_size,
                       AVPacket *avpkt) {
     const uint8_t *buf = avpkt->data;
+    const uint8_t *side=av_packet_get_side_data(avpkt, 'F', NULL);
     int buf_size = avpkt->size;
     NellyMoserDecodeContext *s = avctx->priv_data;
     int data_max = *data_size;
@@ -179,6 +180,8 @@ static int decode_tag(AVCodecContext * avctx,
      * 22050 Hz - 4
      * 44100 Hz - 8
      */
+    if(side && blocks>1 && avctx->sample_rate%11025==0 && (1<<((side[0]>>2)&3)) == blocks)
+        avctx->sample_rate= 11025*(blocks/2);
 
     for (i=0 ; i<blocks ; i++) {
         if (avctx->sample_fmt == SAMPLE_FMT_FLT) {
