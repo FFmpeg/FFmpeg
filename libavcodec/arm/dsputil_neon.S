@@ -81,6 +81,13 @@ endfunc
         avg             q0,  q0,  q1
         vext.8          q3,  q2,  q3,  #1
         avg             q2,  q2,  q3
+  .if \avg
+        vld1.8          {q1},     [r0,:128], r2
+        vld1.8          {q3},     [r0,:128]
+        vrhadd.u8       q0,  q0,  q1
+        vrhadd.u8       q2,  q2,  q3
+        sub             r0,  r0,  r2
+  .endif
         vst1.64         {d0, d1},  [r0,:128], r2
         vst1.64         {d4, d5},  [r0,:128], r2
         bne             1b
@@ -97,6 +104,13 @@ endfunc
         vld1.64         {d2, d3},  [r1], r2
         pld             [r1]
         pld             [r1, r2]
+  .if \avg
+        vld1.8          {q8},     [r0,:128], r2
+        vld1.8          {q9},     [r0,:128]
+        vrhadd.u8       q2,  q2,  q8
+        vrhadd.u8       q3,  q3,  q9
+        sub             r0,  r0,  r2
+  .endif
         vst1.64         {d4, d5},  [r0,:128], r2
         vst1.64         {d6, d7},  [r0,:128], r2
         bne             1b
@@ -131,6 +145,10 @@ endfunc
         vadd.u16        q1,  q1,  q13
   .endif
         shrn            d29, q1,  #2
+  .if \avg
+        vld1.8          {q8},     [r0,:128]
+        vrhadd.u8       q14, q14, q8
+  .endif
         vaddl.u8        q8,  d0,  d30
         vld1.64         {d2-d4},   [r1], r2
         vaddl.u8        q10, d1,  d31
@@ -147,6 +165,10 @@ endfunc
         vadd.u16        q0,  q0,  q13
   .endif
         shrn            d31, q0,  #2
+  .if \avg
+        vld1.8          {q9},     [r0,:128]
+        vrhadd.u8       q15, q15, q9
+  .endif
         vaddl.u8        q9,  d2,  d4
         vaddl.u8        q11, d3,  d5
         vst1.64         {d30,d31}, [r0,:128], r2
@@ -193,6 +215,12 @@ endfunc
         subs            r3,  r3,  #2
         vswp            d1,  d2
         avg             q0,  q0,  q1
+  .if \avg
+        vld1.8          {d4},     [r0,:64], r2
+        vld1.8          {d5},     [r0,:64]
+        vrhadd.u8       q0,  q0,  q2
+        sub             r0,  r0,  r2
+  .endif
         vst1.64         {d0},      [r0,:64], r2
         vst1.64         {d1},      [r0,:64], r2
         bne             1b
@@ -209,6 +237,12 @@ endfunc
         vld1.64         {d1},      [r1], r2
         pld             [r1]
         pld             [r1, r2]
+  .if \avg
+        vld1.8          {d2},     [r0,:64], r2
+        vld1.8          {d3},     [r0,:64]
+        vrhadd.u8       q2,  q2,  q1
+        sub             r0,  r0,  r2
+  .endif
         vst1.64         {d4},      [r0,:64], r2
         vst1.64         {d5},      [r0,:64], r2
         bne             1b
@@ -240,11 +274,19 @@ endfunc
         vld1.64         {d2, d3},  [r1], r2
         vadd.u16        q10, q8,  q9
         pld             [r1, r2]
+  .if \avg
+        vld1.8          {d7},     [r0,:64]
+        vrhadd.u8       d5,  d5,  d7
+  .endif
   .ifeq \rnd
         vadd.u16        q10, q10, q11
   .endif
         vst1.64         {d5},      [r0,:64], r2
         shrn            d7,  q10, #2
+  .if \avg
+        vld1.8          {d5},     [r0,:64]
+        vrhadd.u8       d7,  d7,  d5
+  .endif
         vext.8          d6,  d2,  d3,  #1
         vaddl.u8        q9,  d2,  d6
         vst1.64         {d7},      [r0,:64], r2
@@ -294,6 +336,9 @@ function ff_avg_h264_qpel16_mc00_neon, export=1
 endfunc
 
         pixfunc         avg_, pixels16,     avg=1
+        pixfunc2        avg_, pixels16_x2,  avg=1
+        pixfunc2        avg_, pixels16_y2,  avg=1
+        pixfunc2        avg_, pixels16_xy2, avg=1
 
 function ff_put_h264_qpel8_mc00_neon, export=1
         mov             r3,  #8
@@ -309,6 +354,9 @@ function ff_avg_h264_qpel8_mc00_neon, export=1
 endfunc
 
         pixfunc         avg_, pixels8,     avg=1
+        pixfunc2        avg_, pixels8_x2,  avg=1
+        pixfunc2        avg_, pixels8_y2,  avg=1
+        pixfunc2        avg_, pixels8_xy2, avg=1
 
 function ff_put_pixels_clamped_neon, export=1
         vld1.64         {d16-d19}, [r0,:128]!
