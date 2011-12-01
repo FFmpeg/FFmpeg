@@ -52,6 +52,7 @@ static enum PixelFormat check_image_attributes(AVCodecContext *avctx, opj_image_
 
     switch (compRatio) {
     case 0111111: goto libopenjpeg_yuv444_rgb;
+    case 0111212: return PIX_FMT_YUV440P;
     case 0112121: goto libopenjpeg_yuv422;
     case 0112222: goto libopenjpeg_yuv420;
     default: goto libopenjpeg_rgb;
@@ -296,6 +297,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         libopenjpeg_copyto16(picture, image);
         break;
     case 3:
+    case 4:
         if (ispacked) {
             libopenjpeg_copy_to_packed8(picture, image);
         }
