@@ -174,6 +174,17 @@ fail:
     return ret;
 }
 
+static int applehttp_close(URLContext *h)
+{
+    AppleHTTPContext *s = h->priv_data;
+
+    free_segment_list(s);
+    free_variant_list(s);
+    ffurl_close(s->seg_hd);
+    av_free(s);
+    return 0;
+}
+
 static int applehttp_open(URLContext *h, const char *uri, int flags)
 {
     AppleHTTPContext *s;
@@ -229,7 +240,7 @@ static int applehttp_open(URLContext *h, const char *uri, int flags)
     return 0;
 
 fail:
-    av_free(s);
+    applehttp_close(h);
     return ret;
 }
 
@@ -285,17 +296,6 @@ retry:
         goto retry;
     }
     goto start;
-}
-
-static int applehttp_close(URLContext *h)
-{
-    AppleHTTPContext *s = h->priv_data;
-
-    free_segment_list(s);
-    free_variant_list(s);
-    ffurl_close(s->seg_hd);
-    av_free(s);
-    return 0;
 }
 
 URLProtocol ff_applehttp_protocol = {
