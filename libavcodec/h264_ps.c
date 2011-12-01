@@ -488,7 +488,10 @@ build_qp_table(PPS *pps, int t, int index, const int depth)
 static int more_rbsp_data_in_pps(H264Context *h, PPS *pps)
 {
     const SPS *sps = h->sps_buffers[pps->sps_id];
-    if (sps->constraint_set_flags & 7) {
+    int profile_idc = sps->profile_idc;
+
+    if ((profile_idc == 66 || profile_idc == 77 ||
+         profile_idc == 88) && (sps->constraint_set_flags & 7)) {
         av_log(h->s.avctx, AV_LOG_WARNING,
                "Current profile doesn't provide more RBSP data in PPS, skipping\n");
         return 0;
