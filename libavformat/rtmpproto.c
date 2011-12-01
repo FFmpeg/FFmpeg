@@ -826,7 +826,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
     rt->state = STATE_START;
     if (rtmp_handshake(s, rt))
-        return -1;
+        goto fail;
 
     rt->chunk_size = 128;
     rt->state = STATE_HANDSHAKED;
