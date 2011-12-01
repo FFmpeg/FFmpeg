@@ -202,13 +202,13 @@ static int decode_frame(AVCodecContext *avctx,
     y = s->height - 1;
     plane = 0;
     if (bytestream_get_le16(&buf)) {
-        while (buf_end - buf >= 6) {
+        while (y >= 0 && buf_end - buf >= 6) {
             const uint8_t *buf_pend = buf + FFMIN(AV_RL16(buf), buf_end - buf);
             //ignore uncompressed block size reported at buf[2]
             int marker = buf[4];
             buf += 5;
 
-            while (plane < s->nb_planes && buf_pend - buf >= 1) {
+            while (plane < s->nb_planes && y >= 0 && buf_pend - buf >= 1) {
                 int run = 1;
                 int val = *buf++;
                 if (val == marker) {
@@ -222,8 +222,6 @@ static int decode_frame(AVCodecContext *avctx,
 
                 if (bits_per_plane == 8) {
                     picmemset_8bpp(s, val, run, &x, &y);
-                    if (y < 0)
-                        break;
                 } else {
                     picmemset(s, val, run, &x, &y, &plane, bits_per_plane);
                 }
