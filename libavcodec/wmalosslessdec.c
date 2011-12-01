@@ -875,7 +875,8 @@ static void revert_mclms(WmallDecodeCtx *s, int tile_size)
 
 static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
 {
-    int16_t pred = 0, icoef;
+    int16_t pred = 0;
+    int icoef;
     int recent = s->cdlms[ich][ilms].recent;
 
     for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
@@ -890,7 +891,7 @@ static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
     return pred;
 }
 
-static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int32_t input, int32_t pred)
+static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int16_t input, int16_t pred)
 {
     int16_t icoef;
     int recent = s->cdlms[ich][ilms].recent;
