@@ -72,23 +72,16 @@ static int gopher_close(URLContext *h)
         ffurl_close(s->hd);
         s->hd = NULL;
     }
-    av_freep(&h->priv_data);
     return 0;
 }
 
 static int gopher_open(URLContext *h, const char *uri, int flags)
 {
-    GopherContext *s;
+    GopherContext *s = h->priv_data;
     char hostname[1024], auth[1024], path[1024], buf[1024];
     int port, err;
 
     h->is_streamed = 1;
-
-    s = av_malloc(sizeof(GopherContext));
-    if (!s) {
-        return AVERROR(ENOMEM);
-    }
-    h->priv_data = s;
 
     /* needed in any case to build the host string */
     av_url_split(NULL, 0, auth, sizeof(auth), hostname, sizeof(hostname), &port,
@@ -127,4 +120,5 @@ URLProtocol ff_gopher_protocol = {
     .url_read  = gopher_read,
     .url_write = gopher_write,
     .url_close = gopher_close,
+    .priv_data_size = sizeof(GopherContext),
 };

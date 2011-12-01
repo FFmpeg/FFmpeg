@@ -68,7 +68,6 @@ static int mmsh_close(URLContext *h)
         ffurl_close(mms->mms_hd);
     av_free(mms->streams);
     av_free(mms->asf_header);
-    av_freep(&h->priv_data);
     return 0;
 }
 
@@ -217,12 +216,9 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     char httpname[256], path[256], host[128], location[1024];
     char *stream_selection = NULL;
     char headers[1024];
-    MMSHContext *mmsh;
+    MMSHContext *mmsh = h->priv_data;
     MMSContext *mms;
 
-    mmsh = h->priv_data = av_mallocz(sizeof(MMSHContext));
-    if (!h->priv_data)
-        return AVERROR(ENOMEM);
     mmsh->request_seq = h->is_streamed = 1;
     mms = &mmsh->mms;
     av_strlcpy(location, uri, sizeof(location));
@@ -367,4 +363,5 @@ URLProtocol ff_mmsh_protocol = {
     .url_open  = mmsh_open,
     .url_read  = mmsh_read,
     .url_close = mmsh_close,
+    .priv_data_size = sizeof(MMSHContext),
 };

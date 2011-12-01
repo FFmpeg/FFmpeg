@@ -181,23 +181,18 @@ static int applehttp_close(URLContext *h)
     free_segment_list(s);
     free_variant_list(s);
     ffurl_close(s->seg_hd);
-    av_free(s);
     return 0;
 }
 
 static int applehttp_open(URLContext *h, const char *uri, int flags)
 {
-    AppleHTTPContext *s;
+    AppleHTTPContext *s = h->priv_data;
     int ret, i;
     const char *nested_url;
 
     if (flags & AVIO_FLAG_WRITE)
         return AVERROR(ENOSYS);
 
-    s = av_mallocz(sizeof(AppleHTTPContext));
-    if (!s)
-        return AVERROR(ENOMEM);
-    h->priv_data = s;
     h->is_streamed = 1;
 
     if (av_strstart(uri, "applehttp+", &nested_url)) {
@@ -304,4 +299,5 @@ URLProtocol ff_applehttp_protocol = {
     .url_read  = applehttp_read,
     .url_close = applehttp_close,
     .flags     = URL_PROTOCOL_FLAG_NESTED_SCHEME,
+    .priv_data_size = sizeof(AppleHTTPContext),
 };
