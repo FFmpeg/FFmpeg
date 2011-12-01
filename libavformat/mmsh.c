@@ -359,9 +359,9 @@ static int mmsh_read(URLContext *h, uint8_t *buf, int size)
 }
 
 URLProtocol ff_mmsh_protocol = {
-    .name      = "mmsh",
-    .url_open  = mmsh_open,
-    .url_read  = mmsh_read,
-    .url_close = mmsh_close,
+    .name           = "mmsh",
+    .url_open       = mmsh_open,
+    .url_read       = mmsh_read,
+    .url_close      = mmsh_close,
     .priv_data_size = sizeof(MMSHContext),
 };

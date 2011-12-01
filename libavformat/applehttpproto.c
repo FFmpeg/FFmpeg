@@ -294,10 +294,10 @@ retry:
 }
 
 URLProtocol ff_applehttp_protocol = {
-    .name      = "applehttp",
-    .url_open  = applehttp_open,
-    .url_read  = applehttp_read,
-    .url_close = applehttp_close,
-    .flags     = URL_PROTOCOL_FLAG_NESTED_SCHEME,
+    .name           = "applehttp",
+    .url_open       = applehttp_open,
+    .url_read       = applehttp_read,
+    .url_close      = applehttp_close,
+    .flags          = URL_PROTOCOL_FLAG_NESTED_SCHEME,
     .priv_data_size = sizeof(AppleHTTPContext),
 };

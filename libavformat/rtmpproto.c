@@ -992,10 +992,10 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 }
 
 URLProtocol ff_rtmp_protocol = {
-    .name      = "rtmp",
-    .url_open  = rtmp_open,
-    .url_read  = rtmp_read,
-    .url_write = rtmp_write,
-    .url_close = rtmp_close,
+    .name           = "rtmp",
+    .url_open       = rtmp_open,
+    .url_read       = rtmp_read,
+    .url_write      = rtmp_write,
+    .url_close      = rtmp_close,
     .priv_data_size = sizeof(RTMPContext),
 };
