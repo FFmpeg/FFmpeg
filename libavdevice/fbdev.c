@@ -43,6 +43,7 @@
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "avdevice.h"
+#include "libavformat/internal.h"
 
 struct rgb_pixfmt_map_entry {
     int bits_per_pixel;
@@ -110,7 +111,7 @@ av_cold static int fbdev_read_header(AVFormatContext *avctx,
 
     if (!(st = avformat_new_stream(avctx, NULL)))
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in microseconds */
+    avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in microseconds */
 
     /* NONBLOCK is ignored by the fbdev driver, only set for consistency */
     if (avctx->flags & AVFMT_FLAG_NONBLOCK)

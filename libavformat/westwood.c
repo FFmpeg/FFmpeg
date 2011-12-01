@@ -35,6 +35,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define AUD_HEADER_SIZE 12
 #define AUD_CHUNK_PREAMBLE_SIZE 8
@@ -147,7 +148,7 @@ static int wsaud_read_header(AVFormatContext *s,
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
+    avpriv_set_pts_info(st, 33, 1, wsaud->audio_samplerate);
     st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id = wsaud->audio_type;
     st->codec->codec_tag = 0;  /* no tag */
@@ -224,7 +225,7 @@ static int wsvqa_read_header(AVFormatContext *s,
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
+    avpriv_set_pts_info(st, 33, 1, VQA_FRAMERATE);
     wsvqa->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_WS_VQA;
@@ -250,7 +251,7 @@ static int wsvqa_read_header(AVFormatContext *s,
         st = avformat_new_stream(s, NULL);
         if (!st)
             return AVERROR(ENOMEM);
-        av_set_pts_info(st, 33, 1, VQA_FRAMERATE);
+        avpriv_set_pts_info(st, 33, 1, VQA_FRAMERATE);
         st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         if (AV_RL16(&header[0]) == 1)
             st->codec->codec_id = CODEC_ID_WESTWOOD_SND1;

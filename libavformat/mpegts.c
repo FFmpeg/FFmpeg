@@ -602,7 +602,7 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
 {
     int old_codec_type= st->codec->codec_type;
     int old_codec_id  = st->codec->codec_id;
-    av_set_pts_info(st, 33, 1, 90000);
+    avpriv_set_pts_info(st, 33, 1, 90000);
     st->priv_data = pes;
     st->codec->codec_type = AVMEDIA_TYPE_DATA;
     st->codec->codec_id   = CODEC_ID_NONE;
@@ -638,7 +638,7 @@ static int mpegts_set_stream_info(AVStream *st, PESContext *pes,
             }
 
             sub_st->id = pes->pid;
-            av_set_pts_info(sub_st, 33, 1, 90000);
+            avpriv_set_pts_info(sub_st, 33, 1, 90000);
             sub_st->priv_data = sub_pes;
             sub_st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
             sub_st->codec->codec_id   = CODEC_ID_AC3;
@@ -762,7 +762,7 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf
     if (cts != AV_NOPTS_VALUE)
         pes->pts = cts;
 
-    av_set_pts_info(pes->st, sl->timestamp_len, 1, sl->timestamp_res);
+    avpriv_set_pts_info(pes->st, sl->timestamp_len, 1, sl->timestamp_res);
 
     return (get_bits_count(&gb) + 7) >> 3;
 }
@@ -1970,7 +1970,7 @@ static int mpegts_read_header(AVFormatContext *s,
         st = avformat_new_stream(s, NULL);
         if (!st)
             goto fail;
-        av_set_pts_info(st, 60, 1, 27000000);
+        avpriv_set_pts_info(st, 60, 1, 27000000);
         st->codec->codec_type = AVMEDIA_TYPE_DATA;
         st->codec->codec_id = CODEC_ID_MPEG2TS;
 

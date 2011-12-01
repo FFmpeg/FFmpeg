@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 static int dfa_probe(AVProbeData *p)
 {
@@ -58,7 +59,7 @@ static int dfa_read_header(AVFormatContext *s,
         av_log(s, AV_LOG_WARNING, "Zero FPS reported, defaulting to 10\n");
         mspf = 100;
     }
-    av_set_pts_info(st, 24, mspf, 1000);
+    avpriv_set_pts_info(st, 24, mspf, 1000);
     avio_skip(pb, 128 - 16); // padding
     st->duration = frames;
 

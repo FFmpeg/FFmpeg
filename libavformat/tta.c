@@ -21,6 +21,7 @@
 
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
+#include "internal.h"
 #include "id3v1.h"
 #include "libavutil/dict.h"
 
@@ -81,7 +82,7 @@ static int tta_read_header(AVFormatContext *s, AVFormatParameters *ap)
     if (!st)
         return AVERROR(ENOMEM);
 
-    av_set_pts_info(st, 64, 1, samplerate);
+    avpriv_set_pts_info(st, 64, 1, samplerate);
     st->start_time = 0;
     st->duration = datalen;
 

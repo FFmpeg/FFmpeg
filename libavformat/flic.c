@@ -34,6 +34,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/audioconvert.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define FLIC_FILE_MAGIC_1 0xAF11
 #define FLIC_FILE_MAGIC_2 0xAF12
@@ -167,10 +168,10 @@ static int flic_read_header(AVFormatContext *s,
         /* Since the header information is incorrect we have to figure out the
          * framerate using block_align and the fact that the audio is 22050 Hz.
          * We usually have two cases: 2205 -> 10 fps and 1470 -> 15 fps */
-        av_set_pts_info(st, 64, ast->codec->block_align, FLIC_TFTD_SAMPLE_RATE);
-        av_set_pts_info(ast, 64, 1, FLIC_TFTD_SAMPLE_RATE);
+        avpriv_set_pts_info(st, 64, ast->codec->block_align, FLIC_TFTD_SAMPLE_RATE);
+        avpriv_set_pts_info(ast, 64, 1, FLIC_TFTD_SAMPLE_RATE);
     } else if (AV_RL16(&header[0x10]) == FLIC_CHUNK_MAGIC_1) {
-        av_set_pts_info(st, 64, FLIC_MC_SPEED, 70);
+        avpriv_set_pts_info(st, 64, FLIC_MC_SPEED, 70);
 
         /* rewind the stream since the first chunk is at offset 12 */
         avio_seek(pb, 12, SEEK_SET);
@@ -182,10 +183,10 @@ static int flic_read_header(AVFormatContext *s,
         memcpy(st->codec->extradata, header, 12);
 
     } else if (magic_number == FLIC_FILE_MAGIC_1) {
-        av_set_pts_info(st, 64, speed, 70);
+        avpriv_set_pts_info(st, 64, speed, 70);
     } else if ((magic_number == FLIC_FILE_MAGIC_2) ||
                (magic_number == FLIC_FILE_MAGIC_3)) {
-        av_set_pts_info(st, 64, speed, 1000);
+        avpriv_set_pts_info(st, 64, speed, 1000);
     } else {
         av_log(s, AV_LOG_INFO, "Invalid or unsupported magic chunk in file\n");
         return AVERROR_INVALIDDATA;

@@ -24,6 +24,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define LMLM4_I_FRAME   0x00
 #define LMLM4_P_FRAME   0x01
@@ -65,7 +66,7 @@ static int lmlm4_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id   = CODEC_ID_MPEG4;
     st->need_parsing      = AVSTREAM_PARSE_HEADERS;
-    av_set_pts_info(st, 64, 1001, 30000);
+    avpriv_set_pts_info(st, 64, 1001, 30000);
 
     if (!(st = avformat_new_stream(s, NULL)))
         return AVERROR(ENOMEM);

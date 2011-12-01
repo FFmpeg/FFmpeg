@@ -29,6 +29,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define RoQ_MAGIC_NUMBER 0x1084
 #define RoQ_CHUNK_PREAMBLE_SIZE 8
@@ -87,7 +88,7 @@ static int roq_read_header(AVFormatContext *s,
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 63, 1, framerate);
+    avpriv_set_pts_info(st, 63, 1, framerate);
     roq->video_stream_index = st->index;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_ROQ;
@@ -169,7 +170,7 @@ static int roq_read_packet(AVFormatContext *s,
                 AVStream *st = avformat_new_stream(s, NULL);
                 if (!st)
                     return AVERROR(ENOMEM);
-                av_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);
+                avpriv_set_pts_info(st, 32, 1, RoQ_AUDIO_SAMPLE_RATE);
                 roq->audio_stream_index = st->index;
                 st->codec->codec_type = AVMEDIA_TYPE_AUDIO;
                 st->codec->codec_id = CODEC_ID_ROQ_DPCM;

@@ -25,6 +25,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "pcm.h"
 
 /* if we don't know the size in advance */
@@ -117,7 +118,7 @@ static int sol_read_header(AVFormatContext *s,
     st->codec->codec_id = codec;
     st->codec->channels = channels;
     st->codec->sample_rate = rate;
-    av_set_pts_info(st, 64, 1, rate);
+    avpriv_set_pts_info(st, 64, 1, rate);
     return 0;
 }
 

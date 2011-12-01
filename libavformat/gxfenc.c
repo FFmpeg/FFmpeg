@@ -22,6 +22,7 @@
 #include "libavutil/intfloat_readwrite.h"
 #include "libavutil/mathematics.h"
 #include "avformat.h"
+#include "internal.h"
 #include "gxf.h"
 #include "riff.h"
 #include "audiointerleave.h"
@@ -677,7 +678,7 @@ static int gxf_write_header(AVFormatContext *s)
             }
             sc->track_type = 2;
             sc->sample_rate = st->codec->sample_rate;
-            av_set_pts_info(st, 64, 1, sc->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, sc->sample_rate);
             sc->sample_size = 16;
             sc->frame_rate_index = -2;
             sc->lines_index = -2;
@@ -707,7 +708,7 @@ static int gxf_write_header(AVFormatContext *s)
                        "gxf muxer only accepts PAL or NTSC resolutions currently\n");
                 return -1;
             }
-            av_set_pts_info(st, 64, gxf->time_base.num, gxf->time_base.den);
+            avpriv_set_pts_info(st, 64, gxf->time_base.num, gxf->time_base.den);
             if (gxf_find_lines_index(st) < 0)
                 sc->lines_index = -1;
             sc->sample_size = st->codec->bit_rate;

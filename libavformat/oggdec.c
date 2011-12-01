@@ -177,7 +177,7 @@ static int ogg_new_stream(AVFormatContext *s, uint32_t serial, int new_avstream)
             return AVERROR(ENOMEM);
 
         st->id = idx;
-        av_set_pts_info(st, 64, 1, 1000000);
+        avpriv_set_pts_info(st, 64, 1, 1000000);
     }
 
     return idx;

@@ -31,6 +31,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define RIFF_TAG MKTAG('R', 'I', 'F', 'F')
 #define CDXA_TAG MKTAG('C', 'D', 'X', 'A')
@@ -199,7 +200,7 @@ static int str_read_packet(AVFormatContext *s,
                     st = avformat_new_stream(s, NULL);
                     if (!st)
                         return AVERROR(ENOMEM);
-                    av_set_pts_info(st, 64, 1, 15);
+                    avpriv_set_pts_info(st, 64, 1, 15);
 
                     str->channels[channel].video_stream_index = st->index;
 
@@ -258,7 +259,7 @@ static int str_read_packet(AVFormatContext *s,
             //    st->codec->bit_rate = 0; //FIXME;
                 st->codec->block_align = 128;
 
-                av_set_pts_info(st, 64, 128, st->codec->sample_rate);
+                avpriv_set_pts_info(st, 64, 128, st->codec->sample_rate);
             }
             pkt = ret_pkt;
             if (av_new_packet(pkt, 2304))

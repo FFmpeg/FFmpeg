@@ -22,6 +22,7 @@
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define GSM_BLOCK_SIZE    33
 #define GSM_BLOCK_SAMPLES 160
@@ -67,7 +68,7 @@ static int gsm_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->block_align = GSM_BLOCK_SIZE;
     st->codec->bit_rate    = GSM_BLOCK_SIZE * 8 * c->sample_rate / GSM_BLOCK_SAMPLES;
 
-    av_set_pts_info(st, 64, GSM_BLOCK_SAMPLES, GSM_SAMPLE_RATE);
+    avpriv_set_pts_info(st, 64, GSM_BLOCK_SAMPLES, GSM_SAMPLE_RATE);
 
     return 0;
 }

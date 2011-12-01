@@ -29,6 +29,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
+#include "libavformat/internal.h"
 #include "libavcodec/dsputil.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -100,7 +101,7 @@ static int grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st = avformat_new_stream(s1, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     video_fd = open(s1->filename, O_RDWR);
     if (video_fd < 0) {

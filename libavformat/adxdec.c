@@ -26,6 +26,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavcodec/adx.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define BLOCK_SIZE    18
 #define BLOCK_SAMPLES 32
@@ -95,7 +96,7 @@ static int adx_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id    = s->iformat->value;
 
-    av_set_pts_info(st, 64, BLOCK_SAMPLES, avctx->sample_rate);
+    avpriv_set_pts_info(st, 64, BLOCK_SAMPLES, avctx->sample_rate);
 
     return 0;
 }

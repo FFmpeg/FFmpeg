@@ -68,20 +68,6 @@ static const uint8_t rv40_luma_dc_quant[2][32] = {
  * @name Coefficients used by the RV40 loop filter
  * @{
  */
-/**
- * dither values for deblocking filter - left/top values
- */
-static const uint8_t rv40_dither_l[16] = {
-    0x40, 0x50, 0x20, 0x60, 0x30, 0x50, 0x40, 0x30,
-    0x50, 0x40, 0x50, 0x30, 0x60, 0x20, 0x50, 0x40
-};
-/**
- * dither values for deblocking filter - right/bottom values
- */
-static const uint8_t rv40_dither_r[16] = {
-    0x40, 0x30, 0x60, 0x20, 0x50, 0x30, 0x30, 0x40,
-    0x40, 0x40, 0x50, 0x30, 0x20, 0x60, 0x30, 0x40
-};
 
 /** alpha parameter for RV40 loop filter - almost the same as in JVT-A003r1 */
 static const uint8_t rv40_alpha_tab[32] = {

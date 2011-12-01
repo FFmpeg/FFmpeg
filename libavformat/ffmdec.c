@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "ffm.h"
 #if CONFIG_FFSERVER
 #include <unistd.h>
@@ -299,7 +300,7 @@ static int ffm_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (!st)
             goto fail;
 
-        av_set_pts_info(st, 64, 1, 1000000);
+        avpriv_set_pts_info(st, 64, 1, 1000000);
 
         codec = st->codec;
         /* generic info */

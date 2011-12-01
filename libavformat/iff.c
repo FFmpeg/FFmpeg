@@ -32,6 +32,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define ID_8SVX       MKTAG('8','S','V','X')
 #define ID_VHDR       MKTAG('V','H','D','R')
@@ -238,7 +239,7 @@ static int iff_read_header(AVFormatContext *s,
 
     switch(st->codec->codec_type) {
     case AVMEDIA_TYPE_AUDIO:
-        av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+        avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
 
         switch (iff->svx8_compression) {
         case COMP_NONE:

@@ -130,7 +130,7 @@ static int rtp_write_header(AVFormatContext *s1)
         }
     }
 
-    av_set_pts_info(st, 32, 1, 90000);
+    avpriv_set_pts_info(st, 32, 1, 90000);
     switch(st->codec->codec_id) {
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:
@@ -166,7 +166,7 @@ static int rtp_write_header(AVFormatContext *s1)
     case CODEC_ID_ADPCM_G722:
         /* Due to a historical error, the clock rate for G722 in RTP is
          * 8000, even if the sample rate is 16000. See RFC 3551. */
-        av_set_pts_info(st, 32, 1, 8000);
+        avpriv_set_pts_info(st, 32, 1, 8000);
         break;
     case CODEC_ID_AMR_NB:
     case CODEC_ID_AMR_WB:
@@ -190,7 +190,7 @@ static int rtp_write_header(AVFormatContext *s1)
     default:
 defaultcase:
         if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO) {
-            av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+            avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
         }
         s->buf_ptr = s->buf;
         break;

@@ -1428,7 +1428,7 @@ static int mxf_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "unsupported video frame rate\n");
                 return -1;
             }
-            av_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
+            avpriv_set_pts_info(st, 64, mxf->time_base.num, mxf->time_base.den);
             if (mxf->tc.str) {
                 mxf->tc.rate.num = mxf->time_base.den;
                 mxf->tc.rate.den = mxf->time_base.num;
@@ -1462,7 +1462,7 @@ static int mxf_write_header(AVFormatContext *s)
                 av_log(s, AV_LOG_ERROR, "only 48khz is implemented\n");
                 return -1;
             }
-            av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
             if (s->oformat == &ff_mxf_d10_muxer) {
                 if (st->index != 1) {
                     av_log(s, AV_LOG_ERROR, "MXF D-10 only support one audio track\n");

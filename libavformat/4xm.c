@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 #define     RIFF_TAG MKTAG('R', 'I', 'F', 'F')
 #define  FOURXMV_TAG MKTAG('4', 'X', 'M', 'V')
@@ -146,7 +147,7 @@ static int fourxm_read_header(AVFormatContext *s,
                 ret= AVERROR(ENOMEM);
                 goto fail;
             }
-            av_set_pts_info(st, 60, 1, fourxm->fps);
+            avpriv_set_pts_info(st, 60, 1, fourxm->fps);
 
             fourxm->video_stream_index = st->index;
 
@@ -206,7 +207,7 @@ static int fourxm_read_header(AVFormatContext *s,
             }
 
             st->id = current_track;
-            av_set_pts_info(st, 60, 1, fourxm->tracks[current_track].sample_rate);
+            avpriv_set_pts_info(st, 60, 1, fourxm->tracks[current_track].sample_rate);
 
             fourxm->tracks[current_track].stream_index = st->index;
 

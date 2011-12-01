@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 enum BMVFlags {
     BMV_NOP = 0,
@@ -50,7 +51,7 @@ static int bmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->width      = 640;
     st->codec->height     = 429;
     st->codec->pix_fmt    = PIX_FMT_PAL8;
-    av_set_pts_info(st, 16, 1, 12);
+    avpriv_set_pts_info(st, 16, 1, 12);
     ast = avformat_new_stream(s, 0);
     if (!ast)
         return AVERROR(ENOMEM);
@@ -58,7 +59,7 @@ static int bmv_read_header(AVFormatContext *s, AVFormatParameters *ap)
     ast->codec->codec_id        = CODEC_ID_BMV_AUDIO;
     ast->codec->channels        = 2;
     ast->codec->sample_rate     = 22050;
-    av_set_pts_info(ast, 16, 1, 22050);
+    avpriv_set_pts_info(ast, 16, 1, 22050);
 
     c->get_next  = 1;
     c->audio_pos = 0;

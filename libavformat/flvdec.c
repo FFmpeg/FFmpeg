@@ -31,6 +31,7 @@
 #include "libavcodec/bytestream.h"
 #include "libavcodec/mpeg4audio.h"
 #include "avformat.h"
+#include "internal.h"
 #include "avio_internal.h"
 #include "flv.h"
 
@@ -365,7 +366,7 @@ static AVStream *create_stream(AVFormatContext *s, int stream_type){
             st->codec->codec_id = CODEC_ID_NONE; // Going to rely on copy for now
             av_log(s, AV_LOG_DEBUG, "Data stream created\n");
     }
-    av_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
+    avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;
 }
 

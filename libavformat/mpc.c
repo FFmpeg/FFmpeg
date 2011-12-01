@@ -21,6 +21,7 @@
 
 #include "libavcodec/get_bits.h"
 #include "avformat.h"
+#include "internal.h"
 #include "apetag.h"
 #include "id3v1.h"
 #include "libavutil/dict.h"
@@ -96,7 +97,7 @@ static int mpc_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->extradata = av_mallocz(st->codec->extradata_size+FF_INPUT_BUFFER_PADDING_SIZE);
     avio_read(s->pb, st->codec->extradata, 16);
     st->codec->sample_rate = mpc_rate[st->codec->extradata[2] & 3];
-    av_set_pts_info(st, 32, MPC_FRAMESIZE, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 32, MPC_FRAMESIZE, st->codec->sample_rate);
     /* scan for seekpoints */
     st->start_time = 0;
     st->duration = c->fcount;

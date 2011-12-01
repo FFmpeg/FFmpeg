@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include "isom.h"
 #include "libavutil/intreadwrite.h"
@@ -303,7 +304,7 @@ static int read_header(AVFormatContext *s,
         return AVERROR_INVALIDDATA;
     }
 
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     st->start_time = 0;
 
     /* position the stream at the start of data */

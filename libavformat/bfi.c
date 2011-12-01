@@ -28,6 +28,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct BFIContext {
     int nframes;
@@ -86,7 +87,7 @@ static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
     astream->codec->sample_rate = avio_rl32(pb);
 
     /* Set up the video codec... */
-    av_set_pts_info(vstream, 32, 1, fps);
+    avpriv_set_pts_info(vstream, 32, 1, fps);
     vstream->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vstream->codec->codec_id   = CODEC_ID_BFI;
     vstream->codec->pix_fmt    = PIX_FMT_PAL8;
@@ -99,7 +100,7 @@ static int bfi_read_header(AVFormatContext * s, AVFormatParameters * ap)
     astream->codec->bit_rate        =
         astream->codec->sample_rate * astream->codec->bits_per_coded_sample;
     avio_seek(pb, chunk_header - 3, SEEK_SET);
-    av_set_pts_info(astream, 64, 1, astream->codec->sample_rate);
+    avpriv_set_pts_info(astream, 64, 1, astream->codec->sample_rate);
     return 0;
 }
 

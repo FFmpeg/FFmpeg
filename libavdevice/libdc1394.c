@@ -22,6 +22,7 @@
  */
 
 #include "config.h"
+#include "libavformat/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
@@ -256,7 +257,7 @@ static int dc1394_read_header(AVFormatContext *c, AVFormatParameters * ap)
     vst = avformat_new_stream(c, NULL);
     if (!vst)
         goto out_camera;
-    av_set_pts_info(vst, 64, 1, 1000);
+    avpriv_set_pts_info(vst, 64, 1, 1000);
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id = CODEC_ID_RAWVIDEO;
     vst->codec->time_base.den = final_frame_rate;

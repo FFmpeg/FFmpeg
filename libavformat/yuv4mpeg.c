@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 
 #define Y4M_MAGIC "YUV4MPEG2"
 #define Y4M_FRAME_MAGIC "FRAME"
@@ -339,7 +340,7 @@ static int yuv4_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->width = width;
     st->codec->height = height;
     av_reduce(&raten, &rated, raten, rated, (1UL<<31)-1);
-    av_set_pts_info(st, 64, rated, raten);
+    avpriv_set_pts_info(st, 64, rated, raten);
     st->codec->pix_fmt = pix_fmt;
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_RAWVIDEO;

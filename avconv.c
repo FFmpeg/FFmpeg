@@ -129,7 +129,7 @@ static int video_sync_method= -1;
 static int audio_sync_method= 0;
 static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
-static int copy_tb= 0;
+static int copy_tb = 1;
 static int opt_shortest = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
@@ -1823,7 +1823,9 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         return ret;
     }
     ist->next_pts = ist->pts = decoded_frame->best_effort_timestamp;
-    if (ist->st->codec->time_base.num != 0) {
+    if (pkt->duration)
+        ist->next_pts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
+    else if (ist->st->codec->time_base.num != 0) {
         int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
                                            ist->st->codec->ticks_per_frame;
         ist->next_pts += ((int64_t)AV_TIME_BASE *
@@ -1986,6 +1988,7 @@ static int output_packet(InputStream *ist,
     /* handle stream copy */
     if (!ist->decoding_needed) {
         rate_emu_sleep(ist);
+        ist->pts = ist->next_pts;
         switch (ist->st->codec->codec_type) {
         case AVMEDIA_TYPE_AUDIO:
             ist->next_pts += ((int64_t)AV_TIME_BASE * ist->st->codec->frame_size) /
@@ -2132,25 +2135,15 @@ static int transcode_init(OutputFile *output_files,
                 return AVERROR(ENOMEM);
             }
             memcpy(codec->extradata, icodec->extradata, icodec->extradata_size);
-            codec->extradata_size= icodec->extradata_size;
 
-            codec->time_base = ist->st->time_base;
-            if(!strcmp(oc->oformat->name, "avi")) {
-                if (!copy_tb &&
-                    av_q2d(icodec->time_base)*icodec->ticks_per_frame > 2*av_q2d(ist->st->time_base) &&
-                    av_q2d(ist->st->time_base) < 1.0/500){
-                    codec->time_base = icodec->time_base;
-                    codec->time_base.num *= icodec->ticks_per_frame;
-                    codec->time_base.den *= 2;
-                }
-            } else if(!(oc->oformat->flags & AVFMT_VARIABLE_FPS)) {
-                if(!copy_tb && av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/500){
-                    codec->time_base = icodec->time_base;
-                    codec->time_base.num *= icodec->ticks_per_frame;
-                }
-            }
-            av_reduce(&codec->time_base.num, &codec->time_base.den,
-                        codec->time_base.num, codec->time_base.den, INT_MAX);
+            codec->extradata_size = icodec->extradata_size;
+            if (!copy_tb) {
+                codec->time_base      = icodec->time_base;
+                codec->time_base.num *= icodec->ticks_per_frame;
+                av_reduce(&codec->time_base.num, &codec->time_base.den,
+                          codec->time_base.num, codec->time_base.den, INT_MAX);
+            } else
+                codec->time_base = ist->st->time_base;
 
             switch(codec->codec_type) {
             case AVMEDIA_TYPE_AUDIO:

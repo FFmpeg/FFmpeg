@@ -23,6 +23,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include "rm.h"
 
@@ -302,7 +303,7 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
     int64_t codec_pos;
     int ret;
 
-    av_set_pts_info(st, 64, 1, 1000);
+    avpriv_set_pts_info(st, 64, 1, 1000);
     codec_pos = avio_tell(pb);
     v = avio_rb32(pb);
     if (v == MKTAG(0xfd, 'a', 'r', '.')) {
@@ -333,10 +334,9 @@ ff_rm_read_mdpr_codecdata (AVFormatContext *s, AVIOContext *pb,
         if ((ret = rm_read_extradata(pb, st->codec, codec_data_size - (avio_tell(pb) - codec_pos))) < 0)
             return ret;
 
-        av_reduce(&st->codec->time_base.num, &st->codec->time_base.den,
+        av_reduce(&st->r_frame_rate.den, &st->r_frame_rate.num,
                   0x10000, fps, (1 << 30) - 1);
-        st->avg_frame_rate.num = st->codec->time_base.den;
-        st->avg_frame_rate.den = st->codec->time_base.num;
+        st->avg_frame_rate = st->r_frame_rate;
     }
 
 skip:

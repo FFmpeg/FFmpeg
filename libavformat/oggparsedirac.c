@@ -21,6 +21,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/dirac.h"
 #include "avformat.h"
+#include "internal.h"
 #include "oggdec.h"
 
 static int dirac_header(AVFormatContext *s, int idx)
@@ -42,7 +43,7 @@ static int dirac_header(AVFormatContext *s, int idx)
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_DIRAC;
     // dirac in ogg always stores timestamps as though the video were interlaced
-    av_set_pts_info(st, 64, st->codec->time_base.num, 2*st->codec->time_base.den);
+    avpriv_set_pts_info(st, 64, st->codec->time_base.num, 2*st->codec->time_base.den);
     return 1;
 }
 
@@ -79,7 +80,7 @@ static int old_dirac_header(AVFormatContext *s, int idx)
 
     st->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     st->codec->codec_id = CODEC_ID_DIRAC;
-    av_set_pts_info(st, 64, AV_RB32(buf+12), AV_RB32(buf+8));
+    avpriv_set_pts_info(st, 64, AV_RB32(buf+12), AV_RB32(buf+8));
     return 1;
 }
 

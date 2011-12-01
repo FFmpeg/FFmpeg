@@ -1127,7 +1127,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
         if (st->duration == -1)
             st->duration = AV_NOPTS_VALUE;
         st->start_time = component->start_position;
-        av_set_pts_info(st, 64, material_track->edit_rate.num, material_track->edit_rate.den);
+        avpriv_set_pts_info(st, 64, material_track->edit_rate.num, material_track->edit_rate.den);
 
         if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
             av_log(mxf->fc, AV_LOG_ERROR, "could not resolve source track sequence strong ref\n");

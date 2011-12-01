@@ -255,7 +255,7 @@ static int read_header(AVFormatContext *s1, AVFormatParameters *ap)
         st->need_parsing = AVSTREAM_PARSE_FULL;
     }
 
-    av_set_pts_info(st, 60, framerate.den, framerate.num);
+    avpriv_set_pts_info(st, 60, framerate.den, framerate.num);
 
     if (width && height) {
         st->codec->width  = width;

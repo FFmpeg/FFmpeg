@@ -26,6 +26,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include <libnut.h>
 
@@ -92,7 +93,7 @@ static int nut_write_header(AVFormatContext * avf) {
         for (j = 0; j < s[i].fourcc_len; j++) s[i].fourcc[j] = (fourcc >> (j*8)) & 0xFF;
 
         ff_parse_specific_params(codec, &num, &ssize, &denom);
-        av_set_pts_info(avf->streams[i], 60, denom, num);
+        avpriv_set_pts_info(avf->streams[i], 60, denom, num);
 
         s[i].time_base.num = denom;
         s[i].time_base.den = num;
@@ -226,7 +227,7 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
             memcpy(st->codec->extradata, s[i].codec_specific, st->codec->extradata_size);
         }
 
-        av_set_pts_info(avf->streams[i], 60, s[i].time_base.num, s[i].time_base.den);
+        avpriv_set_pts_info(avf->streams[i], 60, s[i].time_base.num, s[i].time_base.den);
         st->start_time = 0;
         st->duration = s[i].max_pts;
 

@@ -2297,7 +2297,7 @@ static int mov_write_header(AVFormatContext *s)
         if (!track->height)
             track->height = st->codec->height;
 
-        av_set_pts_info(st, 64, 1, track->timescale);
+        avpriv_set_pts_info(st, 64, 1, track->timescale);
     }
 
     if(mov->reserved_moov_size){

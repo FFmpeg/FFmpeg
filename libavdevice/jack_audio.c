@@ -29,6 +29,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "libavformat/avformat.h"
+#include "libavformat/internal.h"
 #include "timefilter.h"
 #include "avdevice.h"
 
@@ -245,7 +246,7 @@ static int audio_read_header(AVFormatContext *context, AVFormatParameters *param
     stream->codec->sample_rate  = self->sample_rate;
     stream->codec->channels     = self->nports;
 
-    av_set_pts_info(stream, 64, 1, 1000000);  /* 64 bits pts in us */
+    avpriv_set_pts_info(stream, 64, 1, 1000000);  /* 64 bits pts in us */
     return 0;
 }
 

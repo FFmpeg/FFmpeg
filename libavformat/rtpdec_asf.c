@@ -33,6 +33,7 @@
 #include "rtsp.h"
 #include "asf.h"
 #include "avio_internal.h"
+#include "internal.h"
 
 /**
  * From MSDN 2.2.1.4, we learn that ASF data packets over RTP should not
@@ -141,7 +142,7 @@ static int asfrtp_parse_sdp_line(AVFormatContext *s, int stream_index,
                         *rt->asf_ctx->streams[i]->codec;
                     rt->asf_ctx->streams[i]->codec->extradata_size = 0;
                     rt->asf_ctx->streams[i]->codec->extradata = NULL;
-                    av_set_pts_info(s->streams[stream_index], 32, 1, 1000);
+                    avpriv_set_pts_info(s->streams[stream_index], 32, 1, 1000);
                 }
            }
         }

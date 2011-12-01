@@ -40,6 +40,7 @@
 #include "libavutil/opt.h"
 #include "libavcodec/avcodec.h"
 #include "avdevice.h"
+#include "libavformat/internal.h"
 
 #define AUDIO_BLOCK_SIZE 4096
 
@@ -225,7 +226,7 @@ static int audio_read_header(AVFormatContext *s1, AVFormatParameters *ap)
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels = s->channels;
 
-    av_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
     return 0;
 }
 

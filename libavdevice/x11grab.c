@@ -36,6 +36,7 @@
  */
 
 #include "config.h"
+#include "libavformat/internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -199,7 +200,7 @@ x11grab_read_header(AVFormatContext *s1, AVFormatParameters *ap)
         ret = AVERROR(ENOMEM);
         goto out;
     }
-    av_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, 1000000); /* 64 bits pts in us */
 
     screen = DefaultScreen(dpy);
 

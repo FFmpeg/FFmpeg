@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 
 /** The min size of an XMV header. */
@@ -151,7 +152,7 @@ static int xmv_read_header(AVFormatContext *s,
     if (!vst)
         return AVERROR(ENOMEM);
 
-    av_set_pts_info(vst, 32, 1, 1000);
+    avpriv_set_pts_info(vst, 32, 1, 1000);
 
     vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
     vst->codec->codec_id   = CODEC_ID_WMV2;
@@ -215,7 +216,7 @@ static int xmv_read_header(AVFormatContext *s,
         ast->codec->bit_rate              = packet->bit_rate;
         ast->codec->block_align           = 36 * packet->channels;
 
-        av_set_pts_info(ast, 32, packet->block_samples, packet->sample_rate);
+        avpriv_set_pts_info(ast, 32, packet->block_samples, packet->sample_rate);
 
         packet->stream_index = ast->index;
 

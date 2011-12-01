@@ -28,6 +28,7 @@
 #include "libavcodec/get_bits.h"
 #include "libavcodec/bytestream.h"
 #include "avformat.h"
+#include "internal.h"
 #include "oggdec.h"
 
 struct speex_params {
@@ -69,7 +70,7 @@ static int speex_header(AVFormatContext *s, int idx) {
                                          + FF_INPUT_BUFFER_PADDING_SIZE);
         memcpy(st->codec->extradata, p, st->codec->extradata_size);
 
-        av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+        avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
     } else
         ff_vorbis_comment(s, &st->metadata, p, os->psize);
 

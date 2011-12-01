@@ -112,7 +112,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
             vst->id = ch_id;
             vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
             vst->codec->codec_id = ff_codec_get_id(swf_codec_tags, avio_r8(pb));
-            av_set_pts_info(vst, 16, 256, swf->frame_rate);
+            avpriv_set_pts_info(vst, 16, 256, swf->frame_rate);
             vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
             len -= 8;
         } else if (tag == TAG_STREAMHEAD || tag == TAG_STREAMHEAD2) {
@@ -141,7 +141,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 ast->codec->sample_rate = 5512;
             else
                 ast->codec->sample_rate = 11025 << (sample_rate_code-1);
-            av_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
+            avpriv_set_pts_info(ast, 64, 1, ast->codec->sample_rate);
             len -= 4;
         } else if (tag == TAG_VIDEOFRAME) {
             int ch_id = avio_rl16(pb);
@@ -185,7 +185,7 @@ static int swf_read_packet(AVFormatContext *s, AVPacket *pkt)
                 vst->id = -2; /* -2 to avoid clash with video stream and audio stream */
                 vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
                 vst->codec->codec_id = CODEC_ID_MJPEG;
-                av_set_pts_info(vst, 64, 256, swf->frame_rate);
+                avpriv_set_pts_info(vst, 64, 256, swf->frame_rate);
                 vst->codec->time_base = (AVRational){ 256, swf->frame_rate };
                 st = vst;
             }

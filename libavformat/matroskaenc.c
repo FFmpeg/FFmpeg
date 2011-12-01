@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include "isom.h"
 #include "matroska.h"
@@ -672,7 +673,7 @@ static int mkv_write_tracks(AVFormatContext *s)
         end_ebml_master(pb, track);
 
         // ms precision is the de-facto standard timescale for mkv files
-        av_set_pts_info(st, 64, 1, 1000);
+        avpriv_set_pts_info(st, 64, 1, 1000);
     }
     end_ebml_master(pb, tracks);
     return 0;

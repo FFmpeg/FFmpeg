@@ -46,6 +46,7 @@
  */
 
 #include <alsa/asoundlib.h>
+#include "libavformat/internal.h"
 #include "libavutil/opt.h"
 #include "libavutil/mathematics.h"
 
@@ -80,7 +81,7 @@ static av_cold int audio_read_header(AVFormatContext *s1,
     st->codec->codec_id    = codec_id;
     st->codec->sample_rate = s->sample_rate;
     st->codec->channels    = s->channels;
-    av_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
+    avpriv_set_pts_info(st, 64, 1, 1000000);  /* 64 bits pts in us */
     o = 2 * M_PI * s->period_size / s->sample_rate * 1.5; // bandwidth: 1.5Hz
     s->timefilter = ff_timefilter_new(1000000.0 / s->sample_rate,
                                       sqrt(2 * o), o * o);

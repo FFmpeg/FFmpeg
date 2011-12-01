@@ -27,6 +27,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "libavutil/avstring.h"
 
 #define ISS_SIG "IMA_ADPCM_Sound"
@@ -101,7 +102,7 @@ static av_cold int iss_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->bit_rate = st->codec->channels * st->codec->sample_rate
                                       * st->codec->bits_per_coded_sample;
     st->codec->block_align = iss->packet_size;
-    av_set_pts_info(st, 32, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 32, 1, st->codec->sample_rate);
 
     return 0;
 }

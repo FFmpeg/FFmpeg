@@ -26,6 +26,7 @@
 #include "libavutil/dict.h"
 #include "libavutil/avstring.h"
 #include "avformat.h"
+#include "internal.h"
 #include "avi.h"
 #include "dv.h"
 #include "riff.h"
@@ -530,7 +531,7 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     ast->scale = 1;
                 }
             }
-            av_set_pts_info(st, 64, ast->scale, ast->rate);
+            avpriv_set_pts_info(st, 64, ast->scale, ast->rate);
 
             ast->cum_len=avio_rl32(pb); /* start */
             st->nb_frames = avio_rl32(pb);
@@ -817,7 +818,7 @@ static int read_gab2_sub(AVStream *st, AVPacket *pkt) {
             *st->codec = *ast->sub_ctx->streams[0]->codec;
             ast->sub_ctx->streams[0]->codec->extradata = NULL;
             time_base = ast->sub_ctx->streams[0]->time_base;
-            av_set_pts_info(st, 64, time_base.num, time_base.den);
+            avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
         }
         ast->sub_buffer = pkt->data;
         memset(pkt, 0, sizeof(*pkt));

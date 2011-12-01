@@ -21,6 +21,7 @@
 
 #include "libavutil/intfloat_readwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "aiff.h"
 #include "avio_internal.h"
 #include "isom.h"
@@ -103,7 +104,7 @@ static int aiff_write_header(AVFormatContext *s)
     avio_wb32(pb, 0);                    /* Data offset */
     avio_wb32(pb, 0);                    /* Block-size (block align) */
 
-    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
+    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
 
     /* Data is starting here */
     avio_flush(pb);

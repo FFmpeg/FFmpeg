@@ -29,6 +29,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct {
   unsigned int channels;
@@ -76,7 +77,7 @@ static int cdata_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->channel_layout = channel_layout;
     st->codec->sample_rate = sample_rate;
     st->codec->sample_fmt = AV_SAMPLE_FMT_S16;
-    av_set_pts_info(st, 64, 1, sample_rate);
+    avpriv_set_pts_info(st, 64, 1, sample_rate);
 
     cdata->audio_pts = 0;
     return 0;

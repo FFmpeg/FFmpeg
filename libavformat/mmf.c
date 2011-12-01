@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 #include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
@@ -100,7 +101,7 @@ static int mmf_write_header(AVFormatContext *s)
 
     mmf->awapos = ff_start_tag(pb, "Awa\x01");
 
-    av_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
+    avpriv_set_pts_info(s->streams[0], 64, 1, s->streams[0]->codec->sample_rate);
 
     avio_flush(pb);
 
@@ -252,7 +253,7 @@ static int mmf_read_header(AVFormatContext *s,
     st->codec->bits_per_coded_sample = 4;
     st->codec->bit_rate = st->codec->sample_rate * st->codec->bits_per_coded_sample;
 
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;
 }

@@ -28,6 +28,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "avio_internal.h"
 #include "pcm.h"
 #include "riff.h"
@@ -166,7 +167,7 @@ static int au_read_header(AVFormatContext *s,
     st->codec->sample_rate = rate;
     if (data_size != AU_UNKNOWN_SIZE)
     st->duration = (((int64_t)data_size)<<3) / (st->codec->channels * bps);
-    av_set_pts_info(st, 64, 1, rate);
+    avpriv_set_pts_info(st, 64, 1, rate);
     return 0;
 }
 

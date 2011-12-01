@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 #include "avi.h"
 #include "avio_internal.h"
 #include "riff.h"
@@ -256,7 +257,7 @@ static int avi_write_header(AVFormatContext *s)
 
         avio_wl32(pb, au_scale); /* scale */
         avio_wl32(pb, au_byterate); /* rate */
-        av_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
+        avpriv_set_pts_info(s->streams[i], 64, au_scale, au_byterate);
 
         avio_wl32(pb, 0); /* start */
         avist->frames_hdr_strm = avio_tell(pb); /* remember this offset to fill later */

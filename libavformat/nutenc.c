@@ -604,7 +604,7 @@ static int nut_write_header(AVFormatContext *s){
         AVRational time_base;
         ff_parse_specific_params(st->codec, &time_base.den, &ssize, &time_base.num);
 
-        av_set_pts_info(st, 64, time_base.num, time_base.den);
+        avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
 
         for(j=0; j<nut->time_base_count; j++){
             if(!memcmp(&time_base, &nut->time_base[j], sizeof(AVRational))){

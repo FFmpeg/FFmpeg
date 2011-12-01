@@ -19,6 +19,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "riff.h"
 #include "libavutil/intreadwrite.h"
 
@@ -61,7 +62,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
 
-    av_set_pts_info(st, 64, time_base.num, time_base.den);
+    avpriv_set_pts_info(st, 64, time_base.num, time_base.den);
 
     return 0;
 }

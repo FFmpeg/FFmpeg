@@ -22,6 +22,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "rawdec.h"
 #include "id3v1.h"
 
@@ -77,7 +78,7 @@ static int adts_aac_read_header(AVFormatContext *s,
     ff_id3v1_read(s);
 
     //LCM of all possible ADTS sample rates
-    av_set_pts_info(st, 64, 1, 28224000);
+    avpriv_set_pts_info(st, 64, 1, 28224000);
 
     return 0;
 }
