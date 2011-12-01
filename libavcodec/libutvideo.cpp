@@ -43,6 +43,7 @@ typedef struct {
 
 typedef struct {
     CCodec *codec;
+    unsigned int buf_size;
     uint8_t *output;
 } UtVideoContext;
 
@@ -52,7 +53,6 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     UtVideoExtra info;
     int format;
     int begin_ret;
-    unsigned int buf_size;
 
     if (avctx->extradata_size != 4*4) {
         av_log(avctx, AV_LOG_ERROR, "Extradata size mismatch.\n");
@@ -90,8 +90,8 @@ static av_cold int utvideo_decode_init(AVCodecContext *avctx)
     }
 
     /* Only allocate the buffer once */
-    buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
-    utv->output = (uint8_t *)av_malloc(buf_size * sizeof(uint8_t));
+    utv->buf_size = avpicture_get_size(avctx->pix_fmt, avctx->width, avctx->height);
+    utv->output = (uint8_t *)av_malloc(utv->buf_size * sizeof(uint8_t));
 
     if (utv->output == NULL) {
         av_log(avctx, AV_LOG_ERROR, "Unable to allocate output buffer.\n");
