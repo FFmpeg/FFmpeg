@@ -1,0 +1,4 @@
+118ff3dc83c62ce9ce669eef57e55bb2 *./tests/data/acodec/pcm_f32be.au
+2116824 ./tests/data/acodec/pcm_f32be.au
+64151e4bcc2b717aa5a8454d424d6a1f *./tests/data/pcm_f32be.acodec.out.wav
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

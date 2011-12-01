@@ -1,0 +1,4 @@
+ede2da07839a00c255a43129922f2c7b *./tests/data/acodec/pcm_alaw.wav
+529258 ./tests/data/acodec/pcm_alaw.wav
+f323f7551ffad91de8613f44dcb198b6 *./tests/data/pcm_alaw.acodec.out.wav
+stddev:  101.67 PSNR: 56.19 MAXDIFF:  515 bytes:  1058400/  1058400

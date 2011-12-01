@@ -1,0 +1,4 @@
+9686b93d1439fc2df991a004ab0298f4 *./tests/data/acodec/pcm_s16be.mov
+1058993 ./tests/data/acodec/pcm_s16be.mov
+64151e4bcc2b717aa5a8454d424d6a1f *./tests/data/pcm_s16be.acodec.out.wav
+stddev:    0.00 PSNR:999.99 MAXDIFF:    0 bytes:  1058400/  1058400

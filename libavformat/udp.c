@@ -381,7 +381,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 {
     char hostname[1024], localaddr[1024] = "";
     int port, udp_fd = -1, tmp, bind_ret = -1;
-    UDPContext *s = NULL;
+    UDPContext *s = h->priv_data;
     int is_output;
     const char *p;
     char buf[256];
@@ -394,11 +394,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
 
     is_output = !(flags & AVIO_FLAG_READ);
 
-    s = av_mallocz(sizeof(UDPContext));
-    if (!s)
-        return AVERROR(ENOMEM);
-
-    h->priv_data = s;
     s->ttl = 16;
     s->buffer_size = is_output ? UDP_TX_BUF_SIZE : UDP_MAX_PKT_SIZE;
 
@@ -533,7 +528,6 @@ static int udp_open(URLContext *h, const char *uri, int flags)
     if (udp_fd >= 0)
         closesocket(udp_fd);
     av_fifo_free(s->fifo);
-    av_free(s);
     return AVERROR(EIO);
 }
 
@@ -614,7 +608,6 @@ static int udp_close(URLContext *h)
         udp_leave_multicast_group(s->udp_fd, (struct sockaddr *)&s->dest_addr);
     closesocket(s->udp_fd);
     av_fifo_free(s->fifo);
-    av_free(s);
     return 0;
 }
 
@@ -625,4 +618,5 @@ URLProtocol ff_udp_protocol = {
     .url_write           = udp_write,
     .url_close           = udp_close,
     .url_get_file_handle = udp_get_file_handle,
+    .priv_data_size      = sizeof(UDPContext),
 };

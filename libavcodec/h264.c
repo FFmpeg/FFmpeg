@@ -1471,7 +1471,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
 
     if(   s->avctx->strict_std_compliance >= FF_COMPLIANCE_STRICT
        && !h->sps.bitstream_restriction_flag){
-        s->avctx->has_b_frames= MAX_DELAYED_PIC_COUNT;
+        s->avctx->has_b_frames = MAX_DELAYED_PIC_COUNT - 1;
         s->low_delay= 0;
     }
 

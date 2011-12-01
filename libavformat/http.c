@@ -93,7 +93,7 @@ static int http_open_cnx(URLContext *h)
 {
     const char *path, *proxy_path, *lower_proto = "tcp", *local_path;
     char hostname[1024], hoststr[1024], proto[10];
-    char auth[1024], proxyauth[1024];
+    char auth[1024], proxyauth[1024] = "";
     char path1[1024];
     char buf[1024], urlbuf[1024];
     int port, use_proxy, err, location_changed = 0, redirects = 0;

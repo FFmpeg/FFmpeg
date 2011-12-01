@@ -72,6 +72,7 @@ static int is_supported(enum CodecID id)
     case CODEC_ID_THEORA:
     case CODEC_ID_VP8:
     case CODEC_ID_ADPCM_G722:
+    case CODEC_ID_ADPCM_G726:
         return 1;
     default:
         return 0;
@@ -121,7 +122,7 @@ static int rtp_write_header(AVFormatContext *s1)
             if (st->codec->frame_size == 0) {
                 av_log(s1, AV_LOG_ERROR, "Cannot respect max delay: frame size = 0\n");
             } else {
-                s->max_frames_per_packet = av_rescale_rnd(s1->max_delay, st->codec->sample_rate, AV_TIME_BASE * st->codec->frame_size, AV_ROUND_DOWN);
+                s->max_frames_per_packet = av_rescale_rnd(s1->max_delay, st->codec->sample_rate, AV_TIME_BASE * (int64_t)st->codec->frame_size, AV_ROUND_DOWN);
             }
         }
         if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO) {
@@ -248,14 +249,16 @@ void ff_rtp_send_data(AVFormatContext *s1, const uint8_t *buf1, int len, int m)
 /* send an integer number of samples and compute time stamp and fill
    the rtp send buffer before sending. */
 static void rtp_send_samples(AVFormatContext *s1,
-                             const uint8_t *buf1, int size, int sample_size)
+                             const uint8_t *buf1, int size, int sample_size_bits)
 {
     RTPMuxContext *s = s1->priv_data;
     int len, max_packet_size, n;
+    /* Calculate the number of bytes to get samples aligned on a byte border */
+    int aligned_samples_size = sample_size_bits/av_gcd(sample_size_bits, 8);
 
-    max_packet_size = (s->max_payload_size / sample_size) * sample_size;
-    /* not needed, but who nows */
-    if ((size % sample_size) != 0)
+    max_packet_size = (s->max_payload_size / aligned_samples_size) * aligned_samples_size;
+    /* Not needed, but who knows. Don't check if samples aren't an even number of bytes. */
+    if ((sample_size_bits % 8) == 0 && ((8 * size) % sample_size_bits) != 0)
         av_abort();
     n = 0;
     while (size > 0) {
@@ -267,7 +270,7 @@ static void rtp_send_samples(AVFormatContext *s1,
         s->buf_ptr += len;
         buf1 += len;
         size -= len;
-        s->timestamp = s->cur_timestamp + n / sample_size;
+        s->timestamp = s->cur_timestamp + n * 8 / sample_size_bits;
         ff_rtp_send_data(s1, s->buf, s->buf_ptr - s->buf, 0);
         n += (s->buf_ptr - s->buf);
     }
@@ -394,19 +397,24 @@ static int rtp_write_packet(AVFormatContext *s1, AVPacket *pkt)
     case CODEC_ID_PCM_ALAW:
     case CODEC_ID_PCM_U8:
     case CODEC_ID_PCM_S8:
-        rtp_send_samples(s1, pkt->data, size, 1 * st->codec->channels);
+        rtp_send_samples(s1, pkt->data, size, 8 * st->codec->channels);
         break;
     case CODEC_ID_PCM_U16BE:
     case CODEC_ID_PCM_U16LE:
     case CODEC_ID_PCM_S16BE:
     case CODEC_ID_PCM_S16LE:
-        rtp_send_samples(s1, pkt->data, size, 2 * st->codec->channels);
+        rtp_send_samples(s1, pkt->data, size, 16 * st->codec->channels);
         break;
     case CODEC_ID_ADPCM_G722:
         /* The actual sample size is half a byte per sample, but since the
          * stream clock rate is 8000 Hz while the sample rate is 16000 Hz,
-         * the correct parameter for send_samples is 1 byte per stream clock. */
-        rtp_send_samples(s1, pkt->data, size, 1 * st->codec->channels);
+         * the correct parameter for send_samples_bits is 8 bits per stream
+         * clock. */
+        rtp_send_samples(s1, pkt->data, size, 8 * st->codec->channels);
+        break;
+    case CODEC_ID_ADPCM_G726:
+        rtp_send_samples(s1, pkt->data, size,
+                         st->codec->bits_per_coded_sample * st->codec->channels);
         break;
     case CODEC_ID_MP2:
     case CODEC_ID_MP3:

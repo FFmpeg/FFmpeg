@@ -137,7 +137,7 @@ static void build_udp_url(char *buf, int buf_size,
 
 static int rtp_open(URLContext *h, const char *uri, int flags)
 {
-    RTPContext *s;
+    RTPContext *s = h->priv_data;
     int rtp_port, rtcp_port,
         ttl, connect,
         local_rtp_port, local_rtcp_port, max_packet_size;
@@ -145,11 +145,6 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
     char buf[1024];
     char path[1024];
     const char *p;
-
-    s = av_mallocz(sizeof(RTPContext));
-    if (!s)
-        return AVERROR(ENOMEM);
-    h->priv_data = s;
 
     av_url_split(NULL, 0, NULL, 0, hostname, sizeof(hostname), &rtp_port,
                  path, sizeof(path), uri);
@@ -214,7 +209,6 @@ static int rtp_open(URLContext *h, const char *uri, int flags)
         ffurl_close(s->rtp_hd);
     if (s->rtcp_hd)
         ffurl_close(s->rtcp_hd);
-    av_free(s);
     return AVERROR(EIO);
 }
 
@@ -291,7 +285,6 @@ static int rtp_close(URLContext *h)
 
     ffurl_close(s->rtp_hd);
     ffurl_close(s->rtcp_hd);
-    av_free(s);
     return 0;
 }
 
@@ -337,4 +330,5 @@ URLProtocol ff_rtp_protocol = {
     .url_write           = rtp_write,
     .url_close           = rtp_close,
     .url_get_file_handle = rtp_get_file_handle,
+    .priv_data_size      = sizeof(RTPContext),
 };

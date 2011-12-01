@@ -38,7 +38,8 @@ static int pmp_probe(AVProbeData *p) {
     return 0;
 }
 
-static int pmp_header(AVFormatContext *s, AVFormatParameters *ap) {
+static int pmp_header(AVFormatContext *s, AVFormatParameters *ap)
+{
     PMPContext *pmp = s->priv_data;
     AVIOContext *pb = s->pb;
     int tb_num, tb_den;
@@ -93,7 +94,6 @@ static int pmp_header(AVFormatContext *s, AVFormatParameters *ap) {
         AVStream *ast = avformat_new_stream(s, NULL);
         if (!ast)
             return AVERROR(ENOMEM);
-        ast->id = i;
         ast->codec->codec_type = AVMEDIA_TYPE_AUDIO;
         ast->codec->codec_id = audio_codec_id;
         ast->codec->channels = channels;
@@ -111,7 +111,8 @@ static int pmp_header(AVFormatContext *s, AVFormatParameters *ap) {
     return 0;
 }
 
-static int pmp_packet(AVFormatContext *s, AVPacket *pkt) {
+static int pmp_packet(AVFormatContext *s, AVPacket *pkt)
+{
     PMPContext *pmp = s->priv_data;
     AVIOContext *pb = s->pb;
     int ret = 0;
@@ -128,14 +129,18 @@ static int pmp_packet(AVFormatContext *s, AVPacket *pkt) {
         av_fast_malloc(&pmp->packet_sizes,
                        &pmp->packet_sizes_alloc,
                        num_packets * sizeof(*pmp->packet_sizes));
+        if (!pmp->packet_sizes_alloc) {
+            av_log(s, AV_LOG_ERROR, "Cannot (re)allocate packet buffer\n");
+            return AVERROR(ENOMEM);
+        }
         for (i = 0; i < num_packets; i++)
             pmp->packet_sizes[i] = avio_rl32(pb);
     }
     ret = av_get_packet(pb, pkt, pmp->packet_sizes[pmp->current_packet]);
     if (ret >= 0) {
         ret = 0;
-        // FIXME: this is a hack that should be remove once
-        // compute_pkt_fields can handle
+        // FIXME: this is a hack that should be removed once
+        // compute_pkt_fields() can handle timestamps properly
         if (pmp->cur_stream == 0)
             pkt->dts = s->streams[0]->cur_dts++;
         pkt->stream_index = pmp->cur_stream;
@@ -146,8 +151,8 @@ static int pmp_packet(AVFormatContext *s, AVPacket *pkt) {
     return ret;
 }
 
-static int pmp_seek(AVFormatContext *s, int stream_index,
-                     int64_t ts, int flags) {
+static int pmp_seek(AVFormatContext *s, int stream_index, int64_t ts, int flags)
+{
     PMPContext *pmp = s->priv_data;
     pmp->cur_stream = 0;
     // fallback to default seek now

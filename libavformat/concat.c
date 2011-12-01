@@ -50,7 +50,6 @@ static av_cold int concat_close(URLContext *h)
         err |= ffurl_close(nodes[i].uc);
 
     av_freep(&data->nodes);
-    av_freep(&h->priv_data);
 
     return err < 0 ? -1 : 0;
 }
@@ -62,15 +61,10 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
     int64_t size;
     size_t  len, i;
     URLContext *uc;
-    struct concat_data  *data;
+    struct concat_data  *data = h->priv_data;
     struct concat_nodes *nodes;
 
     av_strstart(uri, "concat:", &uri);
-
-    /* creating data */
-    if (!(data = av_mallocz(sizeof(*data))))
-        return AVERROR(ENOMEM);
-    h->priv_data = data;
 
     for (i = 0, len = 1; uri[i]; i++)
         if (uri[i] == *AV_CAT_SEPARATOR)
@@ -81,7 +75,6 @@ static av_cold int concat_open(URLContext *h, const char *uri, int flags)
             }
 
     if (!(nodes = av_malloc(sizeof(*nodes) * len))) {
-        av_freep(&h->priv_data);
         return AVERROR(ENOMEM);
     } else
         data->nodes = nodes;
@@ -191,9 +184,10 @@ static int64_t concat_seek(URLContext *h, int64_t pos, int whence)
 }
 
 URLProtocol ff_concat_protocol = {
-    .name      = "concat",
-    .url_open  = concat_open,
-    .url_read  = concat_read,
-    .url_seek  = concat_seek,
-    .url_close = concat_close,
+    .name           = "concat",
+    .url_open       = concat_open,
+    .url_read       = concat_read,
+    .url_seek       = concat_seek,
+    .url_close      = concat_close,
+    .priv_data_size = sizeof(struct concat_data),
 };

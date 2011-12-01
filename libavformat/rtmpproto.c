@@ -784,7 +784,6 @@ static int rtmp_close(URLContext *h)
 
     av_freep(&rt->flv_data);
     ffurl_close(rt->stream);
-    av_free(rt);
     return 0;
 }
 
@@ -799,16 +798,12 @@ static int rtmp_close(URLContext *h)
  */
 static int rtmp_open(URLContext *s, const char *uri, int flags)
 {
-    RTMPContext *rt;
+    RTMPContext *rt = s->priv_data;
     char proto[8], hostname[256], path[1024], *fname;
     uint8_t buf[2048];
     int port;
     int ret;
 
-    rt = av_mallocz(sizeof(RTMPContext));
-    if (!rt)
-        return AVERROR(ENOMEM);
-    s->priv_data = rt;
     rt->is_input = !(flags & AVIO_FLAG_WRITE);
 
     av_url_split(proto, sizeof(proto), NULL, 0, hostname, sizeof(hostname), &port,
@@ -826,7 +821,7 @@ static int rtmp_open(URLContext *s, const char *uri, int flags)
 
     rt->state = STATE_START;
     if (rtmp_handshake(s, rt))
-        return -1;
+        goto fail;
 
     rt->chunk_size = 128;
     rt->state = STATE_HANDSHAKED;
@@ -997,9 +992,10 @@ static int rtmp_write(URLContext *s, const uint8_t *buf, int size)
 }
 
 URLProtocol ff_rtmp_protocol = {
-    .name      = "rtmp",
-    .url_open  = rtmp_open,
-    .url_read  = rtmp_read,
-    .url_write = rtmp_write,
-    .url_close = rtmp_close,
+    .name           = "rtmp",
+    .url_open       = rtmp_open,
+    .url_read       = rtmp_read,
+    .url_write      = rtmp_write,
+    .url_close      = rtmp_close,
+    .priv_data_size = sizeof(RTMPContext),
 };
