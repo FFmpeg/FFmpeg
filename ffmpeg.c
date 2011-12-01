@@ -3243,6 +3243,8 @@ static void add_input_streams(OptionsContext *o, AVFormatContext *ic)
                 st->discard= video_discard;
             break;
         case AVMEDIA_TYPE_DATA:
+            if (o->data_disable)
+                st->discard= AVDISCARD_ALL;
             break;
         case AVMEDIA_TYPE_SUBTITLE:
             if(!ist->dec)
@@ -4060,6 +4062,8 @@ static void opt_output_file(void *optctx, const char *filename)
                 continue;
             if(o->   video_disable && ist->st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
                 continue;
+            if(o->    data_disable && ist->st->codec->codec_type == AVMEDIA_TYPE_DATA)
+                continue;
 
             switch (ist->st->codec->codec_type) {
             case AVMEDIA_TYPE_VIDEO:    ost = new_video_stream(o, oc);    break;
@@ -4764,6 +4768,7 @@ static const OptionDef options[] = {
     { "fpre", HAS_ARG | OPT_EXPERT| OPT_FUNC2, {(void*)opt_preset}, "set options from indicated preset file", "filename" },
     /* data codec support */
     { "dcodec", HAS_ARG | OPT_DATA | OPT_FUNC2, {(void*)opt_data_codec}, "force data codec ('copy' to copy stream)", "codec" },
+    { "dn", OPT_BOOL | OPT_VIDEO | OPT_OFFSET, {.off = OFFSET(data_disable)}, "disable data" },
 
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { NULL, },
