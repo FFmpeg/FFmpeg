@@ -895,7 +895,7 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int16_t input, int1
 {
     int16_t icoef;
     int recent = s->cdlms[ich][ilms].recent;
-    int16_t range = 1 << (s->bits_per_sample - 1);
+    int16_t range = (1 << s->bits_per_sample - 1) - 1;
     int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
 
     if (input > pred) {
