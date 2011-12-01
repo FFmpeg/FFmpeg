@@ -981,8 +981,8 @@ static void revert_cdlms(WmallDecodeCtx *s, int tile_size)
     for (ich = 0; ich < s->num_channels; ich++) {
         if (!s->is_channel_coded[ich])
             continue;
+        num_lms = s->cdlms_ttl[ich];
         for (icoef = 0; icoef < tile_size; icoef++) {
-            num_lms = s->cdlms_ttl[ich];
             channel_coeff = s->channel_residues[ich][icoef];
             if (icoef == s->transient_pos[ich]) {
                 s->transient[ich] = 1;
