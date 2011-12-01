@@ -563,10 +563,6 @@ static const enum PixelFormat pix_fmts_8bit[] = {
     PIX_FMT_YUVJ420P,
     PIX_FMT_YUV422P,
     PIX_FMT_YUV444P,
-#ifdef X264_CSP_BGR
-    PIX_FMT_BGR24,
-    PIX_FMT_RGB24,
-#endif
     PIX_FMT_NONE
 };
 static const enum PixelFormat pix_fmts_9bit[] = {
@@ -578,6 +574,13 @@ static const enum PixelFormat pix_fmts_10bit[] = {
     PIX_FMT_YUV420P10,
     PIX_FMT_YUV422P10,
     PIX_FMT_YUV444P10,
+    PIX_FMT_NONE
+};
+static const enum PixelFormat pix_fmts_8bit_rgb[] = {
+#ifdef X264_CSP_BGR
+    PIX_FMT_BGR24,
+    PIX_FMT_RGB24,
+#endif
     PIX_FMT_NONE
 };
 
@@ -650,6 +653,13 @@ static const AVClass class = {
     .version    = LIBAVUTIL_VERSION_INT,
 };
 
+static const AVClass rgbclass = {
+    .class_name = "libx264rgb",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
+
 static const AVCodecDefault x264_defaults[] = {
     { "b",                "0" },
     { "bf",               "-1" },
@@ -689,4 +699,19 @@ AVCodec ff_libx264_encoder = {
     .priv_class     = &class,
     .defaults       = x264_defaults,
     .init_static_data = X264_init_static,
+};
+
+AVCodec ff_libx264rgb_encoder = {
+    .name           = "libx264rgb",
+    .type           = AVMEDIA_TYPE_VIDEO,
+    .id             = CODEC_ID_H264,
+    .priv_data_size = sizeof(X264Context),
+    .init           = X264_init,
+    .encode         = X264_frame,
+    .close          = X264_close,
+    .capabilities   = CODEC_CAP_DELAY,
+    .long_name      = NULL_IF_CONFIG_SMALL("libx264 H.264 / AVC / MPEG-4 AVC / MPEG-4 part 10 RGB"),
+    .priv_class     = &rgbclass,
+    .defaults       = x264_defaults,
+    .pix_fmts       = pix_fmts_8bit_rgb,
 };
