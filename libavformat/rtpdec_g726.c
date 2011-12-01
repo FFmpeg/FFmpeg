@@ -27,10 +27,8 @@ static int g726_ ## bitrate ##_init(AVFormatContext *s, int st_index, PayloadCon
     AVStream *stream = s->streams[st_index]; \
     AVCodecContext *codec = stream->codec; \
 \
-    codec->bit_rate = bitrate*1000; \
-    if (codec->sample_rate) \
-        codec->bits_per_coded_sample = \
-            av_clip((codec->bit_rate + codec->sample_rate/2) / codec->sample_rate, 2, 5); \
+    codec->bits_per_coded_sample = bitrate/8; \
+    codec->bit_rate = codec->bits_per_coded_sample * codec->sample_rate; \
 \
     return 0; \
 } \
