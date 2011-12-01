@@ -42,38 +42,38 @@ endfunc
 
 .macro  pixels16        rnd=1, avg=0
   .if \avg
-        mov             ip,  r0
+        mov             r12, r0
   .endif
-1:      vld1.64         {d0, d1},  [r1], r2
-        vld1.64         {d2, d3},  [r1], r2
-        vld1.64         {d4, d5},  [r1], r2
+1:      vld1.64         {q0},     [r1], r2
+        vld1.64         {q1},     [r1], r2
+        vld1.64         {q2},     [r1], r2
         pld             [r1, r2, lsl #2]
-        vld1.64         {d6, d7},  [r1], r2
+        vld1.64         {q3},     [r1], r2
         pld             [r1]
         pld             [r1, r2]
         pld             [r1, r2, lsl #1]
   .if \avg
-        vld1.64         {d16,d17}, [ip,:128], r2
+        vld1.64         {q8},     [r12,:128], r2
         vrhadd.u8       q0,  q0,  q8
-        vld1.64         {d18,d19}, [ip,:128], r2
+        vld1.64         {q9},     [r12,:128], r2
         vrhadd.u8       q1,  q1,  q9
-        vld1.64         {d20,d21}, [ip,:128], r2
+        vld1.64         {q10},    [r12,:128], r2
         vrhadd.u8       q2,  q2,  q10
-        vld1.64         {d22,d23}, [ip,:128], r2
+        vld1.64         {q11},    [r12,:128], r2
         vrhadd.u8       q3,  q3,  q11
   .endif
         subs            r3,  r3,  #4
-        vst1.64         {d0, d1},  [r0,:128], r2
-        vst1.64         {d2, d3},  [r0,:128], r2
-        vst1.64         {d4, d5},  [r0,:128], r2
-        vst1.64         {d6, d7},  [r0,:128], r2
+        vst1.64         {q0},     [r0,:128], r2
+        vst1.64         {q1},     [r0,:128], r2
+        vst1.64         {q2},     [r0,:128], r2
+        vst1.64         {q3},     [r0,:128], r2
         bne             1b
         bx              lr
 .endm
 
 .macro  pixels16_x2     rnd=1, avg=0
-1:      vld1.64         {d0-d2},   [r1], r2
-        vld1.64         {d4-d6},   [r1], r2
+1:      vld1.64         {d0-d2},  [r1], r2
+        vld1.64         {d4-d6},  [r1], r2
         pld             [r1]
         pld             [r1, r2]
         subs            r3,  r3,  #2
@@ -88,20 +88,20 @@ endfunc
         vrhadd.u8       q2,  q2,  q3
         sub             r0,  r0,  r2
   .endif
-        vst1.64         {d0, d1},  [r0,:128], r2
-        vst1.64         {d4, d5},  [r0,:128], r2
+        vst1.64         {q0},     [r0,:128], r2
+        vst1.64         {q2},     [r0,:128], r2
         bne             1b
         bx              lr
 .endm
 
 .macro  pixels16_y2     rnd=1, avg=0
-        vld1.64         {d0, d1},  [r1], r2
-        vld1.64         {d2, d3},  [r1], r2
+        vld1.64         {q0},     [r1], r2
+        vld1.64         {q1},     [r1], r2
 1:      subs            r3,  r3,  #2
         avg             q2,  q0,  q1
-        vld1.64         {d0, d1},  [r1], r2
+        vld1.64         {q0},     [r1], r2
         avg             q3,  q0,  q1
-        vld1.64         {d2, d3},  [r1], r2
+        vld1.64         {q1},     [r1], r2
         pld             [r1]
         pld             [r1, r2]
   .if \avg
@@ -111,15 +111,15 @@ endfunc
         vrhadd.u8       q3,  q3,  q9
         sub             r0,  r0,  r2
   .endif
-        vst1.64         {d4, d5},  [r0,:128], r2
-        vst1.64         {d6, d7},  [r0,:128], r2
+        vst1.64         {q2},     [r0,:128], r2
+        vst1.64         {q3},     [r0,:128], r2
         bne             1b
         bx              lr
 .endm
 
 .macro  pixels16_xy2    rnd=1, avg=0
-        vld1.64         {d0-d2},   [r1], r2
-        vld1.64         {d4-d6},   [r1], r2
+        vld1.64         {d0-d2},  [r1], r2
+        vld1.64         {d4-d6},  [r1], r2
   .ifeq \rnd
         vmov.i16        q13, #1
   .endif
@@ -132,7 +132,7 @@ endfunc
         vaddl.u8        q9,  d4,  d6
         vaddl.u8        q11, d5,  d7
 1:      subs            r3,  r3,  #2
-        vld1.64         {d0-d2},   [r1], r2
+        vld1.64         {d0-d2},  [r1], r2
         vadd.u16        q12, q8,  q9
         pld             [r1]
   .ifeq \rnd
@@ -150,9 +150,9 @@ endfunc
         vrhadd.u8       q14, q14, q8
   .endif
         vaddl.u8        q8,  d0,  d30
-        vld1.64         {d2-d4},   [r1], r2
+        vld1.64         {d2-d4},  [r1], r2
         vaddl.u8        q10, d1,  d31
-        vst1.64         {d28,d29}, [r0,:128], r2
+        vst1.64         {q14},    [r0,:128], r2
         vadd.u16        q12, q8,  q9
         pld             [r1, r2]
   .ifeq \rnd
@@ -171,44 +171,44 @@ endfunc
   .endif
         vaddl.u8        q9,  d2,  d4
         vaddl.u8        q11, d3,  d5
-        vst1.64         {d30,d31}, [r0,:128], r2
+        vst1.64         {q15},    [r0,:128], r2
         bgt             1b
         bx              lr
 .endm
 
 .macro  pixels8         rnd=1, avg=0
-1:      vld1.64         {d0}, [r1], r2
-        vld1.64         {d1}, [r1], r2
-        vld1.64         {d2}, [r1], r2
+1:      vld1.64         {d0},     [r1], r2
+        vld1.64         {d1},     [r1], r2
+        vld1.64         {d2},     [r1], r2
         pld             [r1, r2, lsl #2]
-        vld1.64         {d3}, [r1], r2
+        vld1.64         {d3},     [r1], r2
         pld             [r1]
         pld             [r1, r2]
         pld             [r1, r2, lsl #1]
   .if \avg
-        vld1.64         {d4}, [r0,:64], r2
+        vld1.64         {d4},     [r0,:64], r2
         vrhadd.u8       d0,  d0,  d4
-        vld1.64         {d5}, [r0,:64], r2
+        vld1.64         {d5},     [r0,:64], r2
         vrhadd.u8       d1,  d1,  d5
-        vld1.64         {d6}, [r0,:64], r2
+        vld1.64         {d6},     [r0,:64], r2
         vrhadd.u8       d2,  d2,  d6
-        vld1.64         {d7}, [r0,:64], r2
+        vld1.64         {d7},     [r0,:64], r2
         vrhadd.u8       d3,  d3,  d7
         sub             r0,  r0,  r2,  lsl #2
   .endif
         subs            r3,  r3,  #4
-        vst1.64         {d0}, [r0,:64], r2
-        vst1.64         {d1}, [r0,:64], r2
-        vst1.64         {d2}, [r0,:64], r2
-        vst1.64         {d3}, [r0,:64], r2
+        vst1.64         {d0},     [r0,:64], r2
+        vst1.64         {d1},     [r0,:64], r2
+        vst1.64         {d2},     [r0,:64], r2
+        vst1.64         {d3},     [r0,:64], r2
         bne             1b
         bx              lr
 .endm
 
 .macro  pixels8_x2      rnd=1, avg=0
-1:      vld1.64         {d0, d1},  [r1], r2
+1:      vld1.64         {q0},     [r1], r2
         vext.8          d1,  d0,  d1,  #1
-        vld1.64         {d2, d3},  [r1], r2
+        vld1.64         {q1},     [r1], r2
         vext.8          d3,  d2,  d3,  #1
         pld             [r1]
         pld             [r1, r2]
@@ -221,20 +221,20 @@ endfunc
         vrhadd.u8       q0,  q0,  q2
         sub             r0,  r0,  r2
   .endif
-        vst1.64         {d0},      [r0,:64], r2
-        vst1.64         {d1},      [r0,:64], r2
+        vst1.64         {d0},     [r0,:64], r2
+        vst1.64         {d1},     [r0,:64], r2
         bne             1b
         bx              lr
 .endm
 
 .macro  pixels8_y2      rnd=1, avg=0
-        vld1.64         {d0},      [r1], r2
-        vld1.64         {d1},      [r1], r2
+        vld1.64         {d0},     [r1], r2
+        vld1.64         {d1},     [r1], r2
 1:      subs            r3,  r3,  #2
         avg             d4,  d0,  d1
-        vld1.64         {d0},      [r1], r2
+        vld1.64         {d0},     [r1], r2
         avg             d5,  d0,  d1
-        vld1.64         {d1},      [r1], r2
+        vld1.64         {d1},     [r1], r2
         pld             [r1]
         pld             [r1, r2]
   .if \avg
@@ -243,15 +243,15 @@ endfunc
         vrhadd.u8       q2,  q2,  q1
         sub             r0,  r0,  r2
   .endif
-        vst1.64         {d4},      [r0,:64], r2
-        vst1.64         {d5},      [r0,:64], r2
+        vst1.64         {d4},     [r0,:64], r2
+        vst1.64         {d5},     [r0,:64], r2
         bne             1b
         bx              lr
 .endm
 
 .macro  pixels8_xy2     rnd=1, avg=0
-        vld1.64         {d0, d1},  [r1], r2
-        vld1.64         {d2, d3},  [r1], r2
+        vld1.64         {q0},     [r1], r2
+        vld1.64         {q1},     [r1], r2
   .ifeq \rnd
         vmov.i16        q11, #1
   .endif
@@ -262,7 +262,7 @@ endfunc
         vaddl.u8        q8,  d0,  d4
         vaddl.u8        q9,  d2,  d6
 1:      subs            r3,  r3,  #2
-        vld1.64         {d0, d1},  [r1], r2
+        vld1.64         {q0},     [r1], r2
         pld             [r1]
         vadd.u16        q10, q8,  q9
         vext.8          d4,  d0,  d1,  #1
@@ -271,7 +271,7 @@ endfunc
   .endif
         vaddl.u8        q8,  d0,  d4
         shrn            d5,  q10, #2
-        vld1.64         {d2, d3},  [r1], r2
+        vld1.64         {q1},     [r1], r2
         vadd.u16        q10, q8,  q9
         pld             [r1, r2]
   .if \avg
@@ -281,7 +281,7 @@ endfunc
   .ifeq \rnd
         vadd.u16        q10, q10, q11
   .endif
-        vst1.64         {d5},      [r0,:64], r2
+        vst1.64         {d5},     [r0,:64], r2
         shrn            d7,  q10, #2
   .if \avg
         vld1.8          {d5},     [r0,:64]
@@ -289,7 +289,7 @@ endfunc
   .endif
         vext.8          d6,  d2,  d3,  #1
         vaddl.u8        q9,  d2,  d6
-        vst1.64         {d7},      [r0,:64], r2
+        vst1.64         {d7},     [r0,:64], r2
         bgt             1b
         bx              lr
 .endm
