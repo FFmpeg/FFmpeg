@@ -876,7 +876,9 @@ need_realloc:
     }
 
     if (enc->channels != dec->channels
-     || enc->sample_fmt != dec->sample_fmt)
+     || enc->sample_fmt != dec->sample_fmt
+     || enc->sample_rate!= dec->sample_rate
+    )
         ost->audio_resample = 1;
 
     resample_changed = ost->resample_sample_fmt  != dec->sample_fmt ||
