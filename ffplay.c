@@ -2152,6 +2152,9 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
 
         pkt_temp->data = pkt->data;
         pkt_temp->size = pkt->size;
+        pkt_temp->flags           = pkt->flags;
+        pkt_temp->side_data       = pkt->side_data;
+        pkt_temp->side_data_elems = pkt->side_data_elems;
 
         /* if update the audio clock with the pts */
         if (pkt->pts != AV_NOPTS_VALUE) {
