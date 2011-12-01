@@ -1112,7 +1112,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
     GetBitContext *gb = &s->gb;
     int cbp, cbp2;
     int i, blknum, blkoff;
-    DCTELEM block16[64];
+    LOCAL_ALIGNED_16(DCTELEM, block16, [64]);
     int luma_dc_quant;
     int dist;
     int mb_pos = s->mb_x + s->mb_y * s->mb_stride;
@@ -1147,7 +1147,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
 
     luma_dc_quant = r->block_type == RV34_MB_P_MIX16x16 ? r->luma_dc_quant_p[s->qscale] : r->luma_dc_quant_i[s->qscale];
     if(r->is16){
-        memset(block16, 0, sizeof(block16));
+        memset(block16, 0, 64 * sizeof(*block16));
         rv34_decode_block(block16, gb, r->cur_vlcs, 3, 0);
         rv34_dequant4x4_16x16(block16, rv34_qscale_tab[luma_dc_quant],rv34_qscale_tab[s->qscale]);
         r->rdsp.rv34_inv_transform_tab[1](block16);
