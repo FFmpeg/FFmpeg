@@ -142,7 +142,7 @@ static int video_sync_method= -1;
 static int audio_sync_method= 0;
 static float audio_drift_threshold= 0.1;
 static int copy_ts= 0;
-static int copy_tb= 0;
+static int copy_tb= -1;
 static int opt_shortest = 0;
 static char *vstats_filename;
 static FILE *vstats_file;
@@ -2193,15 +2193,17 @@ static int transcode_init(OutputFile *output_files, int nb_output_files,
 
             codec->time_base = ist->st->time_base;
             if(!strcmp(oc->oformat->name, "avi")) {
-                if (!copy_tb &&
-                    av_q2d(icodec->time_base)*icodec->ticks_per_frame > 2*av_q2d(ist->st->time_base) &&
-                    av_q2d(ist->st->time_base) < 1.0/500){
+                if (   copy_tb<0 && av_q2d(icodec->time_base)*icodec->ticks_per_frame > 2*av_q2d(ist->st->time_base)
+                                 && av_q2d(ist->st->time_base) < 1.0/500
+                    || copy_tb==0){
                     codec->time_base = icodec->time_base;
                     codec->time_base.num *= icodec->ticks_per_frame;
                     codec->time_base.den *= 2;
                 }
             } else if(!(oc->oformat->flags & AVFMT_VARIABLE_FPS)) {
-                if(!copy_tb && av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base) && av_q2d(ist->st->time_base) < 1.0/500){
+                if(   copy_tb<0 && av_q2d(icodec->time_base)*icodec->ticks_per_frame > av_q2d(ist->st->time_base)
+                                && av_q2d(ist->st->time_base) < 1.0/500
+                   || copy_tb==0){
                     codec->time_base = icodec->time_base;
                     codec->time_base.num *= icodec->ticks_per_frame;
                 }
@@ -4666,7 +4668,7 @@ static const OptionDef options[] = {
     { "async", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&audio_sync_method}, "audio sync method", "" },
     { "adrift_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&audio_drift_threshold}, "audio drift threshold", "threshold" },
     { "copyts", OPT_BOOL | OPT_EXPERT, {(void*)&copy_ts}, "copy timestamps" },
-    { "copytb", OPT_BOOL | OPT_EXPERT, {(void*)&copy_tb}, "copy input stream time base when stream copying" },
+    { "copytb", HAS_ARG | OPT_INT | OPT_EXPERT, {(void*)&copy_tb}, "copy input stream time base when stream copying" },
     { "shortest", OPT_BOOL | OPT_EXPERT, {(void*)&opt_shortest}, "finish encoding within shortest input" }, //
     { "dts_delta_threshold", HAS_ARG | OPT_FLOAT | OPT_EXPERT, {(void*)&dts_delta_threshold}, "timestamp discontinuity delta threshold", "threshold" },
     { "xerror", OPT_BOOL, {(void*)&exit_on_error}, "exit on error", "error" },
