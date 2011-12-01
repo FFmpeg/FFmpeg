@@ -350,8 +350,10 @@ static av_cold int X264_init(AVCodecContext *avctx)
         const char *p= x4->x264opts;
         while(p){
             char param[256]={0}, val[256]={0};
-            sscanf(p, "%255[^:=]=%255[^:]", param, val);
-            OPT_STR(param, val);
+            if(sscanf(p, "%255[^:=]=%255[^:]", param, val) == 1){
+                OPT_STR(param, "1");
+            }else
+                OPT_STR(param, val);
             p= strchr(p, ':');
             p+=!!p;
         }
