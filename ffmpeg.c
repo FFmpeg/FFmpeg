@@ -1834,6 +1834,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 #if CONFIG_AVFILTER
     int frame_available = 1;
 #endif
+    int duration=0;
 
     if (!(decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
@@ -1841,13 +1842,17 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     pkt->dts  = *pkt_dts;
     *pkt_pts  = AV_NOPTS_VALUE;
 
-    if (*pkt_dts != AV_NOPTS_VALUE && pkt->duration) {
-         *pkt_dts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
-    } else if(*pkt_dts != AV_NOPTS_VALUE && ist->st->codec->time_base.num != 0) {
+    if (pkt->duration) {
+        duration = av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
+    } else if(ist->st->codec->time_base.num != 0) {
         int ticks= ist->st->parser ? ist->st->parser->repeat_pict+1 : ist->st->codec->ticks_per_frame;
-        *pkt_dts += ((int64_t)AV_TIME_BASE *
+        duration = ((int64_t)AV_TIME_BASE *
                           ist->st->codec->time_base.num * ticks) /
-            ist->st->codec->time_base.den;
+                          ist->st->codec->time_base.den;
+    }
+
+    if(*pkt_dts != AV_NOPTS_VALUE && duration) {
+        *pkt_dts += duration;
     }else
         *pkt_dts = AV_NOPTS_VALUE;
 
@@ -1866,15 +1871,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     if(decoded_frame->best_effort_timestamp != AV_NOPTS_VALUE)
         ist->next_pts = ist->pts = decoded_frame->best_effort_timestamp;
 
-    if (pkt->duration)
-        ist->next_pts += av_rescale_q(pkt->duration, ist->st->time_base, AV_TIME_BASE_Q);
-    else if (ist->st->codec->time_base.num != 0) {
-        int ticks      = ist->st->parser ? ist->st->parser->repeat_pict + 1 :
-                                           ist->st->codec->ticks_per_frame;
-        ist->next_pts += ((int64_t)AV_TIME_BASE *
-                          ist->st->codec->time_base.num * ticks) /
-                          ist->st->codec->time_base.den;
-    }
+    ist->next_pts += duration;
     pkt->size = 0;
 
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
