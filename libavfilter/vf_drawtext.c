@@ -55,8 +55,8 @@ typedef struct {
     FT_Vector *positions;           ///< positions for each element in the text
     size_t nb_positions;            ///< number of elements of positions array
     char *textfile;                 ///< file with text to be drawn
-    unsigned int x;                 ///< x position to start drawing text
-    unsigned int y;                 ///< y position to start drawing text
+    int x, y;                       ///< position to start drawing text
+    int w, h;                       ///< dimension of the text block
     int shadowx, shadowy;
     unsigned int fontsize;          ///< font size to use
     char *fontcolor_string;         ///< font color as string
@@ -542,8 +542,7 @@ static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
     return 0;
 }
 
-static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
-                     int width, int height)
+static int dtext_prepare_text(AVFilterContext *ctx, int width, int height)
 {
     DrawTextContext *dtext = ctx->priv;
     uint32_t code = 0, prev_code = 0;
@@ -582,15 +581,19 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     text = dtext->expanded_text = buf;
     dtext->expanded_text_size = buf_size;
 #endif
-    if ((len = strlen(text)) > dtext->nb_positions) {
-        if (!(dtext->positions =
-              av_realloc(dtext->positions, len*sizeof(*dtext->positions))))
-            return AVERROR(ENOMEM);
-        dtext->nb_positions = len;
-    }
 
-    x = dtext->x;
-    y = dtext->y;
+    if ((len = strlen(text)) > dtext->nb_positions) {
+        FT_Vector *p = av_realloc(dtext->positions,
+                                  len * sizeof(*dtext->positions));
+        if (!p) {
+            av_freep(dtext->positions);
+            dtext->nb_positions = 0;
+            return AVERROR(ENOMEM);
+        } else {
+            dtext->positions = p;
+            dtext->nb_positions = len;
+        }
+    }
 
     /* load and cache glyphs */
     for (i = 0, p = text; *p; i++) {
@@ -600,7 +603,8 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         dummy.code = code;
         glyph = av_tree_find(dtext->glyphs, &dummy, glyph_cmp, NULL);
         if (!glyph)
-            load_glyph(ctx, &glyph, code);
+            ret = load_glyph(ctx, &glyph, code);
+        if (ret) return ret;
 
         y_min = FFMIN(glyph->bbox.yMin, y_min);
         y_max = FFMAX(glyph->bbox.yMax, y_max);
@@ -621,7 +625,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         if (is_newline(code)) {
             str_w = FFMAX(str_w, x - dtext->x);
             y += text_height;
-            x = dtext->x;
+            x = 0;
             continue;
         }
 
@@ -638,9 +642,9 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         }
 
         if (x + glyph->bbox.xMax >= width) {
-            str_w = FFMAX(str_w, x - dtext->x);
+            str_w = FFMAX(str_w, x);
             y += text_height;
-            x = dtext->x;
+            x = 0;
         }
 
         /* save position */
@@ -650,23 +654,43 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
         else              x += glyph->advance;
     }
 
-    str_w = FFMIN(width - dtext->x - 1, FFMAX(str_w, x - dtext->x));
+    str_w = FFMIN(width - 1, FFMAX(str_w, x));
     y     = FFMIN(y + text_height, height - 1);
+
+    dtext->w = str_w;
+    dtext->h = y;
+
+    return 0;
+}
+
+
+static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
+                     int width, int height)
+{
+    DrawTextContext *dtext = ctx->priv;
+    int ret;
 
     /* draw box */
     if (dtext->draw_box)
-        drawbox(picref, dtext->x, dtext->y, str_w, y-dtext->y,
+        drawbox(picref, dtext->x, dtext->y, dtext->w, dtext->h,
                 dtext->box_line, dtext->pixel_step, dtext->boxcolor,
-                dtext->hsub, dtext->vsub, dtext->is_packed_rgb, dtext->rgba_map);
+                dtext->hsub, dtext->vsub, dtext->is_packed_rgb,
+                dtext->rgba_map);
 
     if (dtext->shadowx || dtext->shadowy) {
-        if ((ret = draw_glyphs(dtext, picref, width, height, dtext->shadowcolor_rgba,
-                               dtext->shadowcolor, dtext->shadowx, dtext->shadowy)) < 0)
+        if ((ret = draw_glyphs(dtext, picref, width, height,
+                               dtext->shadowcolor_rgba,
+                               dtext->shadowcolor,
+                               dtext->x + dtext->shadowx,
+                               dtext->y + dtext->shadowy)) < 0)
             return ret;
     }
 
-    if ((ret = draw_glyphs(dtext, picref, width, height, dtext->fontcolor_rgba,
-                           dtext->fontcolor, 0, 0)) < 0)
+    if ((ret = draw_glyphs(dtext, picref, width, height,
+                           dtext->fontcolor_rgba,
+                           dtext->fontcolor,
+                           dtext->x,
+                           dtext->y)) < 0)
         return ret;
 
     return 0;
@@ -679,6 +703,7 @@ static void end_frame(AVFilterLink *inlink)
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *picref = inlink->cur_buf;
 
+    dtext_prepare_text(inlink->dst, picref->video->w, picref->video->h);
     draw_text(inlink->dst, picref, picref->video->w, picref->video->h);
 
     avfilter_draw_slice(outlink, 0, picref->video->h, 1);
