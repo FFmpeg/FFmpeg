@@ -79,16 +79,11 @@ static int md5_close(URLContext *h)
     return err;
 }
 
-static int md5_get_handle(URLContext *h)
-{
-    return (intptr_t)h->priv_data;
-}
 
 URLProtocol ff_md5_protocol = {
     .name                = "md5",
     .url_open            = md5_open,
     .url_write           = md5_write,
     .url_close           = md5_close,
-    .url_get_file_handle = md5_get_handle,
     .priv_data_size      = PRIV_SIZE,
 };
