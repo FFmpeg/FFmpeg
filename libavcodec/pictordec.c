@@ -126,7 +126,7 @@ static int decode_frame(AVCodecContext *avctx,
     s->nb_planes      = (*buf++ >> 4) + 1;
     bpp               = s->nb_planes ? bits_per_plane*s->nb_planes : bits_per_plane;
     if (bits_per_plane > 8 || bpp < 1 || bpp > 32) {
-        av_log_ask_for_sample(s, "unsupported bit depth\n");
+        av_log_ask_for_sample(avctx, "unsupported bit depth\n");
         return AVERROR_INVALIDDATA;
     }
 
