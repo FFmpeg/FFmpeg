@@ -505,6 +505,32 @@ If both text and textfile are specified, an error is thrown.
 @item x, y
 The offsets where text will be drawn within the video frame.
 Relative to the top/left border of the output image.
+They accept expressions similar to the @ref{overlay} filter:
+@table @option
+
+@item x, y
+the computed values for @var{x} and @var{y}. They are evaluated for
+each new frame.
+
+@item main_w, main_h
+main input width and height
+
+@item W, H
+same as @var{main_w} and @var{main_h}
+
+@item text_w, text_h
+rendered text width and height
+
+@item w, h
+same as @var{text_w} and @var{text_h}
+
+@item n
+the number of frames processed, starting from 0
+
+@item t
+timestamp expressed in seconds, NAN if the input timestamp is unknown
+
+@end table
 
 The default value of @var{x} and @var{y} is 0.
 
@@ -1048,6 +1074,7 @@ other parameters is 0.
 These parameters correspond to the parameters assigned to the
 libopencv function @code{cvSmooth}.
 
+@anchor{overlay}
 @section overlay
 
 Overlay one video on top of another.

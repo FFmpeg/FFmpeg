@@ -31,7 +31,9 @@
 
 #include "libavutil/colorspace.h"
 #include "libavutil/file.h"
+#include "libavutil/eval.h"
 #include "libavutil/opt.h"
+#include "libavutil/mathematics.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/tree.h"
@@ -44,6 +46,36 @@
 #include <freetype/config/ftheader.h>
 #include FT_FREETYPE_H
 #include FT_GLYPH_H
+
+static const char *var_names[] = {
+    "E",
+    "PHI",
+    "PI",
+    "main_w",    "W", ///< width  of the main    video
+    "main_h",    "H", ///< height of the main    video
+    "text_w",    "w", ///< width  of the overlay text
+    "text_h",    "h", ///< height of the overlay text
+    "x",
+    "y",
+    "n",              ///< number of processed frames
+    "t",              ///< timestamp expressed in seconds
+    NULL
+};
+
+enum var_name {
+    VAR_E,
+    VAR_PHI,
+    VAR_PI,
+    VAR_MAIN_W, VAR_MW,
+    VAR_MAIN_H, VAR_MH,
+    VAR_TEXT_W, VAR_TW,
+    VAR_TEXT_H, VAR_TH,
+    VAR_X,
+    VAR_Y,
+    VAR_N,
+    VAR_T,
+    VAR_VARS_NB
+};
 
 typedef struct {
     const AVClass *class;
@@ -81,6 +113,10 @@ typedef struct {
     int pixel_step[4];              ///< distance in bytes between the component of each pixel
     uint8_t rgba_map[4];            ///< map RGBA offsets to the positions in the packed RGBA format
     uint8_t *box_line[4];           ///< line used for filling the box background
+    char   *x_expr, *y_expr;
+    AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
+    double var_values[VAR_VARS_NB];
+    int draw;                       ///< set to zero to prevent drawing
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -94,8 +130,8 @@ static const AVOption drawtext_options[]= {
 {"shadowcolor", "set shadow color",  OFFSET(shadowcolor_string), AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
 {"box",      "set box",              OFFSET(draw_box),           AV_OPT_TYPE_INT,    {.dbl=0},     0,        1        },
 {"fontsize", "set font size",        OFFSET(fontsize),           AV_OPT_TYPE_INT,    {.dbl=16},    1,        72       },
-{"x",        "set x",                OFFSET(x),                  AV_OPT_TYPE_INT,    {.dbl=0},     0,        INT_MAX  },
-{"y",        "set y",                OFFSET(y),                  AV_OPT_TYPE_INT,    {.dbl=0},     0,        INT_MAX  },
+{"x",        "set x",                OFFSET(x_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX },
+{"y",        "set y",                OFFSET(y_expr),             AV_OPT_TYPE_STRING, {.str="0"},   CHAR_MIN, CHAR_MAX },
 {"shadowx",  "set x",                OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"shadowy",  "set y",                OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"tabsize",  "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.dbl=4},     0,        INT_MAX  },
@@ -374,7 +410,7 @@ static inline int is_newline(uint32_t c)
     return (c == '\n' || c == '\r' || c == '\f' || c == '\v');
 }
 
-static int dtext_prepare_text(AVFilterContext *ctx, int width, int height)
+static int dtext_prepare_text(AVFilterContext *ctx)
 {
     DrawTextContext *dtext = ctx->priv;
     uint32_t code = 0, prev_code = 0;
@@ -387,6 +423,8 @@ static int dtext_prepare_text(AVFilterContext *ctx, int width, int height)
     FT_Vector delta;
     Glyph *glyph = NULL, *prev_glyph = NULL;
     Glyph dummy = { 0 };
+    int width  = ctx->inputs[0]->w;
+    int height = ctx->inputs[0]->h;
 
 #if HAVE_LOCALTIME_R
     time_t now = time(0);
@@ -504,6 +542,27 @@ static int config_input(AVFilterLink *inlink)
     dtext->hsub = pix_desc->log2_chroma_w;
     dtext->vsub = pix_desc->log2_chroma_h;
 
+    dtext->var_values[VAR_E  ] = M_E;
+    dtext->var_values[VAR_PHI] = M_PHI;
+    dtext->var_values[VAR_PI ] = M_PI;
+
+    dtext->var_values[VAR_MAIN_W] =
+        dtext->var_values[VAR_MW] = ctx->inputs[0]->w;
+    dtext->var_values[VAR_MAIN_H] =
+        dtext->var_values[VAR_MH] = ctx->inputs[0]->h;
+
+    dtext->var_values[VAR_X] = 0;
+    dtext->var_values[VAR_Y] = 0;
+    dtext->var_values[VAR_N] = 0;
+    dtext->var_values[VAR_T] = NAN;
+
+
+    if ((ret = av_expr_parse(&dtext->x_pexpr, dtext->x_expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&dtext->y_pexpr, dtext->y_expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+        return AVERROR(EINVAL);
+
     if ((ret =
          ff_fill_line_with_color(dtext->box_line, dtext->pixel_step,
                                  inlink->w, dtext->boxcolor,
@@ -524,7 +583,9 @@ static int config_input(AVFilterLink *inlink)
         dtext->shadowcolor[3] = rgba[3];
     }
 
-    return dtext_prepare_text(ctx, ctx->inputs[0]->w, ctx->inputs[0]->h);
+    dtext->draw = 1;
+
+    return dtext_prepare_text(ctx);
 }
 
 #define GET_BITMAP_VAL(r, c)                                            \
@@ -697,14 +758,70 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
 static void null_draw_slice(AVFilterLink *link, int y, int h, int slice_dir) { }
 
+static inline int normalize_double(int *n, double d)
+{
+    int ret = 0;
+
+    if (isnan(d)) {
+        ret = AVERROR(EINVAL);
+    } else if (d > INT_MAX || d < INT_MIN) {
+        *n = d > INT_MAX ? INT_MAX : INT_MIN;
+        ret = AVERROR(EINVAL);
+    } else
+        *n = round(d);
+
+    return ret;
+}
+
+static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
+{
+    AVFilterContext *ctx = inlink->dst;
+    DrawTextContext *dtext = ctx->priv;
+
+    if (dtext_prepare_text(ctx) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "Can't draw text\n");
+        dtext->draw = 0;
+    }
+
+    dtext->var_values[VAR_T] = inpicref->pts == AV_NOPTS_VALUE ?
+        NAN : inpicref->pts * av_q2d(inlink->time_base);
+    dtext->var_values[VAR_X] =
+        av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+    dtext->var_values[VAR_Y] =
+        av_expr_eval(dtext->y_pexpr, dtext->var_values, NULL);
+    dtext->var_values[VAR_X] =
+        av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+
+    normalize_double(&dtext->x, dtext->var_values[VAR_X]);
+    normalize_double(&dtext->y, dtext->var_values[VAR_Y]);
+
+    if (dtext->x < 0) dtext->x = 0;
+    if (dtext->y < 0) dtext->y = 0;
+    if ((unsigned)dtext->x + (unsigned)dtext->w > inlink->w)
+        dtext->x = inlink->w - dtext->w;
+    if ((unsigned)dtext->y + (unsigned)dtext->h > inlink->h)
+        dtext->y = inlink->h - dtext->h;
+
+    dtext->x &= ~((1 << dtext->hsub) - 1);
+    dtext->y &= ~((1 << dtext->vsub) - 1);
+
+    av_dlog(ctx, "n:%d t:%f x:%d y:%d x+w:%d y+h:%d\n",
+            (int)dtext->var_values[VAR_N], dtext->var_values[VAR_T],
+            dtext->x, dtext->y, dtext->x+dtext->w, dtext->y+dtext->h);
+
+    avfilter_start_frame(inlink->dst->outputs[0], inpicref);
+}
+
 static void end_frame(AVFilterLink *inlink)
 {
     AVFilterLink *outlink = inlink->dst->outputs[0];
     AVFilterBufferRef *picref = inlink->cur_buf;
-    int err = dtext_prepare_text(inlink->dst,
-                                 picref->video->w, picref->video->h);
-    if (!err)
+    DrawTextContext *dtext = inlink->dst->priv;
+
+    if (dtext->draw)
         draw_text(inlink->dst, picref, picref->video->w, picref->video->h);
+
+    dtext->var_values[VAR_N] += 1.0;
 
     avfilter_draw_slice(outlink, 0, picref->video->h, 1);
     avfilter_end_frame(outlink);
@@ -721,7 +838,7 @@ AVFilter avfilter_vf_drawtext = {
     .inputs    = (AVFilterPad[]) {{ .name             = "default",
                                     .type             = AVMEDIA_TYPE_VIDEO,
                                     .get_video_buffer = avfilter_null_get_video_buffer,
-                                    .start_frame      = avfilter_null_start_frame,
+                                    .start_frame      = start_frame,
                                     .draw_slice       = null_draw_slice,
                                     .end_frame        = end_frame,
                                     .config_props     = config_input,
