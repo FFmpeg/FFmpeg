@@ -262,9 +262,9 @@ static int mmsh_open(URLContext *h, const char *uri, int flags)
     // close the socket and then reopen it for sending the second play request.
     ffurl_close(mms->mms_hd);
     memset(headers, 0, sizeof(headers));
-    if (ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ,
-                    &h->interrupt_callback) < 0) {
-        return AVERROR(EIO);
+    if ((err = ffurl_alloc(&mms->mms_hd, httpname, AVIO_FLAG_READ,
+                           &h->interrupt_callback)) < 0) {
+        goto fail;
     }
     stream_selection = av_mallocz(mms->stream_num * 19 + 1);
     if (!stream_selection)
