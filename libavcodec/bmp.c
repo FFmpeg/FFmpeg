@@ -154,7 +154,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
             rgb[2] = 0;
         }
 
-        avctx->pix_fmt = PIX_FMT_BGR24;
+        avctx->pix_fmt = PIX_FMT_BGRA;
         break;
     case 24:
         avctx->pix_fmt = PIX_FMT_BGR24;
@@ -319,7 +319,13 @@ static int bmp_decode_frame(AVCodecContext *avctx,
                     dst[0] = src[rgb[2]];
                     dst[1] = src[rgb[1]];
                     dst[2] = src[rgb[0]];
-                    dst += 3;
+/* The Microsoft documentation states:
+ * "The high byte in each DWORD is not used."
+ * Both GIMP and ImageMagick store the alpha transparency value
+ * in the high byte for 32bit bmp files.
+ */
+                    dst[3] = src[3];
+                    dst += 4;
                     src += 4;
                 }
 
