@@ -198,10 +198,10 @@ static int decode_frame(AVCodecContext *avctx,
     buf += esize;
 
 
-    x = 0;
     y = s->height - 1;
-    plane = 0;
     if (bytestream_get_le16(&buf)) {
+        x = 0;
+        plane = 0;
         while (y >= 0 && buf_end - buf >= 6) {
             const uint8_t *buf_pend = buf + FFMIN(AV_RL16(buf), buf_end - buf);
             //ignore uncompressed block size reported at buf[2]
@@ -228,8 +228,11 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
     } else {
-        av_log_ask_for_sample(avctx, "uncompressed image\n");
-        return buf_size;
+        while (y >= 0 && buf < buf_end) {
+            memcpy(s->frame.data[0] + y * s->frame.linesize[0], buf, FFMIN(avctx->width, buf_end - buf));
+            buf += avctx->width;
+            y--;
+        }
     }
 
     *data_size = sizeof(AVFrame);
