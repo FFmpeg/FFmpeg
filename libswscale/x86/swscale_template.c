@@ -1870,7 +1870,6 @@ static av_cold void RENAME(sws_init_swScale)(SwsContext *c)
                     }
                 }
             } else {
-                int should_dither= isNBPS(c->srcFormat) || is16BPS(c->srcFormat);
                 c->use_mmx_vfilter= 1;
                 c->yuv2planeX = RENAME(yuv2yuvX    );
                 if (!(c->flags & SWS_FULL_CHR_H_INT)) {
