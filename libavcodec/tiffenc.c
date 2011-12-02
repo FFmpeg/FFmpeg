@@ -230,6 +230,7 @@ static int encode_frame(AVCodecContext *avctx, AVPacket *pkt,
     switch (avctx->pix_fmt) {
     case AV_PIX_FMT_RGB48LE:
     case AV_PIX_FMT_GRAY16LE:
+    case AV_PIX_FMT_RGBA:
     case AV_PIX_FMT_RGB24:
     case AV_PIX_FMT_GRAY8:
     case AV_PIX_FMT_PAL8:
@@ -513,6 +514,7 @@ AVCodec ff_tiff_encoder = {
     .encode2        = encode_frame,
     .pix_fmts       = (const enum AVPixelFormat[]) {
         AV_PIX_FMT_RGB24, AV_PIX_FMT_RGB48LE, AV_PIX_FMT_PAL8,
+        AV_PIX_FMT_RGBA,
         AV_PIX_FMT_GRAY8, AV_PIX_FMT_GRAY16LE,
         AV_PIX_FMT_MONOBLACK, AV_PIX_FMT_MONOWHITE,
         AV_PIX_FMT_YUV420P, AV_PIX_FMT_YUV422P, AV_PIX_FMT_YUV444P,
