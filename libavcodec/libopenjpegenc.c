@@ -93,6 +93,10 @@ static opj_image_t *mj2_create_image(AVCodecContext *avctx, opj_cparameters_t *p
         color_space = CLRSPC_SYCC;
         numcomps = 3;
         break;
+    case PIX_FMT_YUVA420P:
+        color_space = CLRSPC_SYCC;
+        numcomps = 4;
+        break;
     case PIX_FMT_YUV420P9:
     case PIX_FMT_YUV422P9:
     case PIX_FMT_YUV444P9:
@@ -210,7 +214,7 @@ static int libopenjpeg_copy_yuv8(AVCodecContext *avctx, AVFrame *frame, opj_imag
     int y;
     int width;
     int height;
-    const int numcomps = 3;
+    const int numcomps = avctx->pix_fmt == PIX_FMT_YUVA420P ? 4 : 3;
 
     for (compno = 0; compno < numcomps; ++compno) {
         if (image->comps[compno].w > frame->linesize[compno]) {
@@ -292,6 +296,7 @@ static int libopenjpeg_encode_frame(AVCodecContext *avctx, uint8_t *buf, int buf
     case PIX_FMT_YUV422P:
     case PIX_FMT_YUV440P:
     case PIX_FMT_YUV444P:
+    case PIX_FMT_YUVA420P:
         cpyresult = libopenjpeg_copy_yuv8(avctx, frame, image);
         break;
     case PIX_FMT_YUV420P9:
@@ -363,7 +368,7 @@ AVCodec ff_libopenjpeg_encoder = {
     .decode         = NULL,
     .capabilities   = 0,
     .pix_fmts = (const enum PixelFormat[]){PIX_FMT_RGB24,PIX_FMT_RGBA,PIX_FMT_GRAY8,
-                                           PIX_FMT_YUV420P,PIX_FMT_YUV422P,
+                                           PIX_FMT_YUV420P,PIX_FMT_YUV422P,PIX_FMT_YUVA420P,
                                            PIX_FMT_YUV440P,PIX_FMT_YUV444P,
                                            PIX_FMT_YUV420P9,PIX_FMT_YUV422P9,PIX_FMT_YUV444P9,
                                            PIX_FMT_YUV420P10,PIX_FMT_YUV422P10,PIX_FMT_YUV444P10,
