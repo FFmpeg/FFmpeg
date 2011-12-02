@@ -28,6 +28,7 @@
 #include "libavutil/avstring.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
+#include "libavutil/parseutils.h"
 #include "avfilter.h"
 #include "internal.h"
 
@@ -55,6 +56,8 @@ typedef struct {
     AVExpr *expr[8];
     char *expr_str[8];
     int nb_samples;             ///< number of samples per requested frame
+    char *duration_str;         ///< total duration of the generated audio
+    double duration;
     uint64_t n;
     double var_values[VAR_VARS_NB];
 } EvalContext;
@@ -66,6 +69,8 @@ static const AVOption eval_options[]= {
     { "n",           "set the number of samples per requested frame", OFFSET(nb_samples),      AV_OPT_TYPE_INT,    {.dbl = 1024},    0,        INT_MAX },
     { "sample_rate", "set the sample rate",                           OFFSET(sample_rate_str), AV_OPT_TYPE_STRING, {.str = "44100"}, CHAR_MIN, CHAR_MAX },
     { "s",           "set the sample rate",                           OFFSET(sample_rate_str), AV_OPT_TYPE_STRING, {.str = "44100"}, CHAR_MIN, CHAR_MAX },
+    { "duration",    "set audio duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
+    { "d",           "set audio duration", OFFSET(duration_str), AV_OPT_TYPE_STRING, {.str = NULL}, 0, 0 },
 {NULL},
 };
 
@@ -127,6 +132,16 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
 
     if ((ret = ff_parse_sample_rate(&eval->sample_rate, eval->sample_rate_str, ctx)))
         goto end;
+
+    eval->duration = -1;
+    if (eval->duration_str) {
+        int64_t us = -1;
+        if ((ret = av_parse_time(&us, eval->duration_str, 1)) < 0) {
+            av_log(ctx, AV_LOG_ERROR, "Invalid duration: '%s'\n", eval->duration_str);
+            goto end;
+        }
+        eval->duration = (double)us / 1000000;
+    }
     eval->n = 0;
 
 end:
@@ -143,6 +158,7 @@ static void uninit(AVFilterContext *ctx)
         av_expr_free(eval->expr[i]);
         eval->expr[i] = NULL;
     }
+    av_freep(&eval->duration_str);
     av_freep(&eval->sample_rate_str);
 }
 
@@ -159,7 +175,8 @@ static int config_props(AVFilterLink *outlink)
     av_get_channel_layout_string(buf, sizeof(buf), 0, eval->chlayout);
 
     av_log(outlink->src, AV_LOG_INFO,
-           "sample_rate:%d chlayout:%s\n", eval->sample_rate, buf);
+           "sample_rate:%d chlayout:%s duration:%f\n",
+           eval->sample_rate, buf, eval->duration);
 
     return 0;
 }
@@ -183,6 +200,10 @@ static int request_frame(AVFilterLink *outlink)
     EvalContext *eval = outlink->src->priv;
     AVFilterBufferRef *samplesref;
     int i, j;
+    double t = eval->var_values[VAR_N] * (double)1/eval->sample_rate;
+
+    if (eval->duration >= 0 && t > eval->duration)
+        return AVERROR_EOF;
 
     samplesref = avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, eval->nb_samples);
 

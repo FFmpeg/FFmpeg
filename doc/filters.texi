@@ -405,6 +405,16 @@ The description of the accepted options follows.
 
 @table @option
 
+@item duration, d
+Set the minimum duration of the sourced audio. See the function
+@code{av_parse_time()} for the accepted format.
+Note that the resulting duration may be greater than the specified
+duration, as the generated audio is always cut at the end of a
+complete frame.
+
+If not specified, or the expressed duration is negative, the audio is
+supposed to be generated forever.
+
 @item nb_samples, n
 Set the number of samples per channel per each output frame,
 default to 1024.
