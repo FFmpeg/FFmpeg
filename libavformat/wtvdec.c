@@ -570,7 +570,7 @@ static AVStream * new_stream(AVFormatContext *s, AVStream *st, int sid, int code
     }
     st->codec->codec_type = codec_type;
     st->need_parsing      = AVSTREAM_PARSE_FULL;
-    av_set_pts_info(st, 64, 1, 10000000);
+    avpriv_set_pts_info(st, 64, 1, 10000000);
     return st;
 }
 

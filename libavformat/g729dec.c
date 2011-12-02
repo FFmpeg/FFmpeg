@@ -20,6 +20,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 #include "libavutil/log.h"
 #include "libavutil/opt.h"
 
@@ -60,7 +61,7 @@ static int g729_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
 
-    av_set_pts_info(st, st->codec->block_align << 3, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, st->codec->block_align << 3, 1, st->codec->sample_rate);
     return 0;
 }
 static int g729_read_packet(AVFormatContext *s, AVPacket *pkt)

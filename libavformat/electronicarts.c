@@ -420,7 +420,7 @@ static int ea_read_header(AVFormatContext *s,
             st->need_parsing = AVSTREAM_PARSE_HEADERS;
         st->codec->codec_tag = 0;  /* no fourcc */
         if (ea->time_base.num)
-            av_set_pts_info(st, 64, ea->time_base.num, ea->time_base.den);
+            avpriv_set_pts_info(st, 64, ea->time_base.num, ea->time_base.den);
         st->codec->width = ea->width;
         st->codec->height = ea->height;
     }

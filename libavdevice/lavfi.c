@@ -35,6 +35,7 @@
 #include "libavfilter/avfilter.h"
 #include "libavfilter/avfiltergraph.h"
 #include "libavfilter/buffersink.h"
+#include "libavformat/internal.h"
 #include "avdevice.h"
 
 typedef struct {
@@ -231,7 +232,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
         AVFilterLink *link = lavfi->sinks[lavfi->stream_sink_map[i]]->inputs[0];
         AVStream *st = avctx->streams[i];
         st->codec->codec_type = link->type;
-        av_set_pts_info(st, 64, link->time_base.num, link->time_base.den);
+        avpriv_set_pts_info(st, 64, link->time_base.num, link->time_base.den);
         if (link->type == AVMEDIA_TYPE_VIDEO) {
             st->codec->codec_id   = CODEC_ID_RAWVIDEO;
             st->codec->pix_fmt    = link->format;

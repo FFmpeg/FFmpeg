@@ -25,6 +25,7 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 static const uint8_t frame_size[4] = {24, 20, 4, 1};
 
@@ -41,7 +42,7 @@ static int g723_1_init(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->channels    = 1;
     st->codec->sample_rate = 8000;
 
-    av_set_pts_info(st, 64, 1, st->codec->sample_rate);
+    avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
 
     return 0;
 }

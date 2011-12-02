@@ -25,6 +25,7 @@
 #include <AL/alc.h>
 
 #include "libavutil/opt.h"
+#include "libavformat/internal.h"
 #include "avdevice.h"
 
 typedef struct {
@@ -151,7 +152,7 @@ static int read_header(AVFormatContext *ctx, AVFormatParameters *ap)
     }
 
     /* We work in microseconds */
-    av_set_pts_info(st, 64, 1, 1000000);
+    avpriv_set_pts_info(st, 64, 1, 1000000);
 
     /* Set codec parameters */
     codec = st->codec;

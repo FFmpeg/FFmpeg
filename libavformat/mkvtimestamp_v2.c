@@ -20,12 +20,13 @@
  */
 
 #include "avformat.h"
+#include "internal.h"
 
 static int write_header(AVFormatContext *s)
 {
     static const char *header = "# timecode format v2\n";
     put_buffer(s->pb, header, strlen(header));
-    av_set_pts_info(s->streams[0], 64, 1, 1000);
+    avpriv_set_pts_info(s->streams[0], 64, 1, 1000);
     return 0;
 }
 

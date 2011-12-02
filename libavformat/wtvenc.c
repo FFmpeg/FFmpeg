@@ -327,7 +327,7 @@ static int write_stream_data(AVFormatContext *s, AVStream *st, int flag)
     }
     finish_chunk(s);
 
-    av_set_pts_info(st, 64, 1, 10000000);
+    avpriv_set_pts_info(st, 64, 1, 10000000);
 
     return 0;
 }

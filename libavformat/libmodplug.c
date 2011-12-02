@@ -27,6 +27,7 @@
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct ModPlugContext {
     const AVClass *class;
@@ -220,7 +221,7 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
     st = avformat_new_stream(s, NULL);
     if (!st)
         return AVERROR(ENOMEM);
-    av_set_pts_info(st, 64, 1, 1000);
+    avpriv_set_pts_info(st, 64, 1, 1000);
     st->duration = ModPlug_GetLength(modplug->f);
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_id    = CODEC_ID_PCM_S16LE;
@@ -234,7 +235,7 @@ static int modplug_read_header(AVFormatContext *s, AVFormatParameters *ap)
         AVStream *vst = avformat_new_stream(s, NULL);
         if (!vst)
             return AVERROR(ENOMEM);
-        av_set_pts_info(vst, 64, 1, 1000);
+        avpriv_set_pts_info(vst, 64, 1, 1000);
         vst->duration = st->duration;
         vst->codec->codec_type = AVMEDIA_TYPE_VIDEO;
         vst->codec->codec_id   = CODEC_ID_XBIN;

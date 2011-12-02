@@ -498,7 +498,7 @@ static int wav_read_header(AVFormatContext *s,
             wav->smv_data_ofs = avio_tell(pb) + (size - 5) * 3;
             avio_rl24(pb);
             wav->smv_block_size = avio_rl24(pb);
-            av_set_pts_info(vst, 32, 1, avio_rl24(pb));
+            avpriv_set_pts_info(vst, 32, 1, avio_rl24(pb));
             vst->duration = avio_rl24(pb);
             avio_rl24(pb);
             avio_rl24(pb);

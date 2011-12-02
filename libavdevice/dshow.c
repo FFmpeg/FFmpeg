@@ -21,7 +21,7 @@
 
 #include "libavutil/parseutils.h"
 #include "libavutil/opt.h"
-
+#include "libavformat/internal.h"
 #include "avdevice.h"
 #include "dshow.h"
 
@@ -739,7 +739,7 @@ dshow_add_device(AVFormatContext *avctx, AVFormatParameters *ap,
         codec->channels    = fx->nChannels;
     }
 
-    av_set_pts_info(st, 64, 1, 10000000);
+    avpriv_set_pts_info(st, 64, 1, 10000000);
 
     ret = 0;
 

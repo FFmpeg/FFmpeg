@@ -21,6 +21,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 
 typedef struct {
     int cur_stream;
@@ -70,7 +71,7 @@ static int pmp_header(AVFormatContext *s, AVFormatParameters *ap)
 
     tb_num = avio_rl32(pb);
     tb_den = avio_rl32(pb);
-    av_set_pts_info(vst, 32, tb_num, tb_den);
+    avpriv_set_pts_info(vst, 32, tb_num, tb_den);
     vst->nb_frames = index_cnt;
     vst->duration = index_cnt;
 
@@ -98,7 +99,7 @@ static int pmp_header(AVFormatContext *s, AVFormatParameters *ap)
         ast->codec->codec_id = audio_codec_id;
         ast->codec->channels = channels;
         ast->codec->sample_rate = srate;
-        av_set_pts_info(ast, 32, 1, srate);
+        avpriv_set_pts_info(ast, 32, 1, srate);
     }
     pos = avio_tell(pb) + 4*index_cnt;
     for (i = 0; i < index_cnt; i++) {

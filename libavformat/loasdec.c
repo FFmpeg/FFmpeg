@@ -22,6 +22,7 @@
 #include "libavutil/intreadwrite.h"
 #include "libavutil/internal.h"
 #include "avformat.h"
+#include "internal.h"
 #include "rawdec.h"
 
 static int loas_probe(AVProbeData *p)
@@ -72,7 +73,7 @@ static int loas_read_header(AVFormatContext *s,
     st->need_parsing = AVSTREAM_PARSE_FULL;
 
     //LCM of all possible AAC sample rates
-    av_set_pts_info(st, 64, 1, 28224000);
+    avpriv_set_pts_info(st, 64, 1, 28224000);
 
     return 0;
 }

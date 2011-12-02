@@ -32,6 +32,7 @@
 
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
+#include "internal.h"
 #include "sauce.h"
 #include "libavcodec/bintext.h"
 
@@ -109,9 +110,9 @@ static AVStream * init_stream(AVFormatContext *s,
     st->codec->codec_type  = AVMEDIA_TYPE_VIDEO;
 
     if (!ap->time_base.num) {
-        av_set_pts_info(st, 60, 1, 25);
+        avpriv_set_pts_info(st, 60, 1, 25);
     } else {
-        av_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
+        avpriv_set_pts_info(st, 60, ap->time_base.num, ap->time_base.den);
     }
 
     /* simulate tty display speed */

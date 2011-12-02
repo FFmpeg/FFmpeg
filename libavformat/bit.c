@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "avformat.h"
+#include "internal.h"
 #include "libavcodec/get_bits.h"
 #include "libavcodec/put_bits.h"
 
@@ -60,7 +61,7 @@ static int read_header(AVFormatContext *s, AVFormatParameters *ap)
     st->codec->block_align = 16;
     st->codec->channels=1;
 
-    av_set_pts_info(st, 64, 1, 100);
+    avpriv_set_pts_info(st, 64, 1, 100);
     return 0;
 }
 
