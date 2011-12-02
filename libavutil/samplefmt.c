@@ -23,7 +23,7 @@
 #include <string.h>
 
 typedef struct SampleFmtInfo {
-    char name[4];
+    char name[8];
     int bits;
     int planar;
     enum AVSampleFormat altform; ///< planar<->packed alternative form
