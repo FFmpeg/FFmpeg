@@ -492,7 +492,7 @@ static int more_rbsp_data_in_pps(H264Context *h, PPS *pps)
 
     if ((profile_idc == 66 || profile_idc == 77 ||
          profile_idc == 88) && (sps->constraint_set_flags & 7)) {
-        av_log(h->s.avctx, AV_LOG_WARNING,
+        av_log(h->s.avctx, AV_LOG_VERBOSE,
                "Current profile doesn't provide more RBSP data in PPS, skipping\n");
         return 0;
     }
