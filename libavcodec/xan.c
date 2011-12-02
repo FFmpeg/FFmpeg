@@ -111,13 +111,13 @@ static int xan_huffman_decode(unsigned char *dest, int dest_len,
 
     init_get_bits(&gb, ptr, ptr_len * 8);
 
-    while ( val != 0x16 ) {
+    while (val != 0x16) {
         unsigned idx = val - 0x17 + get_bits1(&gb) * byte;
         if (idx >= 2 * byte)
             return -1;
         val = src[idx];
 
-        if ( val < 0x16 ) {
+        if (val < 0x16) {
             if (dest >= dest_end)
                 return 0;
             *dest++ = val;
@@ -147,27 +147,23 @@ static void xan_unpack(unsigned char *dest, int dest_len,
 
         if (opcode < 0xe0) {
             int size2, back;
-            if ( (opcode & 0x80) == 0 ) {
-
+            if ((opcode & 0x80) == 0) {
                 size = opcode & 3;
 
                 back  = ((opcode & 0x60) << 3) + *src++ + 1;
                 size2 = ((opcode & 0x1c) >> 2) + 3;
-
-            } else if ( (opcode & 0x40) == 0 ) {
-
+            } else if ((opcode & 0x40) == 0) {
                 size = *src >> 6;
 
                 back  = (bytestream_get_be16(&src) & 0x3fff) + 1;
                 size2 = (opcode & 0x3f) + 4;
-
             } else {
-
                 size = opcode & 3;
 
                 back  = ((opcode & 0x10) << 12) + bytestream_get_be16(&src) + 1;
                 size2 = ((opcode & 0x0c) <<  6) + *src++ + 5;
             }
+
             if (dest_end - dest < size + size2 ||
                 dest + size - dest_org < back ||
                 src_end - src < size)
@@ -203,7 +199,7 @@ static inline void xan_wc3_output_pixel_run(XanContext *s,
     line_inc = stride - width;
     index = y * stride + x;
     current_x = x;
-    while(pixel_count && (index < s->frame_size)) {
+    while (pixel_count && index < s->frame_size) {
         int count = FFMIN(pixel_count, width - current_x);
         memcpy(palette_plane + index, pixel_buffer, count);
         pixel_count  -= count;
@@ -218,8 +214,9 @@ static inline void xan_wc3_output_pixel_run(XanContext *s,
     }
 }
 
-static inline void xan_wc3_copy_pixel_run(XanContext *s,
-    int x, int y, int pixel_count, int motion_x, int motion_y)
+static inline void xan_wc3_copy_pixel_run(XanContext *s, int x, int y,
+                                          int pixel_count, int motion_x,
+                                          int motion_y)
 {
     int stride;
     int line_inc;
@@ -228,8 +225,8 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s,
     int width = s->avctx->width;
     unsigned char *palette_plane, *prev_palette_plane;
 
-    if ( y + motion_y < 0 || y + motion_y >= s->avctx->height ||
-         x + motion_x < 0 || x + motion_x >= s->avctx->width)
+    if (y + motion_y < 0 || y + motion_y >= s->avctx->height ||
+        x + motion_x < 0 || x + motion_x >= s->avctx->width)
         return;
 
     palette_plane = s->current_frame.data[0];
@@ -242,12 +239,14 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s,
     curframe_x = x;
     prevframe_index = (y + motion_y) * stride + x + motion_x;
     prevframe_x = x + motion_x;
-    while(pixel_count &&
-          curframe_index  < s->frame_size &&
-          prevframe_index < s->frame_size) {
-        int count = FFMIN3(pixel_count, width - curframe_x, width - prevframe_x);
+    while (pixel_count &&
+           curframe_index  < s->frame_size &&
+           prevframe_index < s->frame_size) {
+        int count = FFMIN3(pixel_count, width - curframe_x,
+                           width - prevframe_x);
 
-        memcpy(palette_plane + curframe_index, prev_palette_plane + prevframe_index, count);
+        memcpy(palette_plane + curframe_index,
+               prev_palette_plane + prevframe_index, count);
         pixel_count     -= count;
         curframe_index  += count;
         prevframe_index += count;
@@ -268,7 +267,7 @@ static inline void xan_wc3_copy_pixel_run(XanContext *s,
 
 static int xan_wc3_decode_frame(XanContext *s) {
 
-    int width = s->avctx->width;
+    int width  = s->avctx->width;
     int height = s->avctx->height;
     int total_pixels = width * height;
     unsigned char opcode;
@@ -287,7 +286,8 @@ static int xan_wc3_decode_frame(XanContext *s) {
     const unsigned char *size_segment;
     const unsigned char *vector_segment;
     const unsigned char *imagedata_segment;
-    int huffman_offset, size_offset, vector_offset, imagedata_offset, imagedata_size;
+    int huffman_offset, size_offset, vector_offset, imagedata_offset,
+        imagedata_size;
 
     if (s->size < 8)
         return AVERROR_INVALIDDATA;
@@ -372,6 +372,7 @@ static int xan_wc3_decode_frame(XanContext *s) {
             size_segment += 3;
             break;
         }
+
         if (size > total_pixels)
             break;
 
@@ -516,7 +517,8 @@ static int xan_decode_frame(AVCodecContext *avctx,
                     return AVERROR_INVALIDDATA;
                 if (s->palettes_count >= PALETTES_MAX)
                     return AVERROR_INVALIDDATA;
-                tmpptr = av_realloc(s->palettes, (s->palettes_count + 1) * AVPALETTE_SIZE);
+                tmpptr = av_realloc(s->palettes,
+                                    (s->palettes_count + 1) * AVPALETTE_SIZE);
                 if (!tmpptr)
                     return AVERROR(ENOMEM);
                 s->palettes = tmpptr;
@@ -567,7 +569,8 @@ static int xan_decode_frame(AVCodecContext *avctx,
     if (!s->frame_size)
         s->frame_size = s->current_frame.linesize[0] * s->avctx->height;
 
-    memcpy(s->current_frame.data[1], s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
+    memcpy(s->current_frame.data[1],
+           s->palettes + s->cur_palette * AVPALETTE_COUNT, AVPALETTE_SIZE);
 
     s->buf = buf;
     s->size = buf_size;
@@ -615,5 +618,5 @@ AVCodec ff_xan_wc3_decoder = {
     .close          = xan_decode_end,
     .decode         = xan_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
-    .long_name = NULL_IF_CONFIG_SMALL("Wing Commander III / Xan"),
+    .long_name      = NULL_IF_CONFIG_SMALL("Wing Commander III / Xan"),
 };
