@@ -119,12 +119,13 @@ int main(int argc, char **argv){
         for(in_sample_fmt= AV_SAMPLE_FMT_U8; in_sample_fmt<=AV_SAMPLE_FMT_DBL; in_sample_fmt++){
             for(out_sample_fmt= AV_SAMPLE_FMT_U8; out_sample_fmt<=AV_SAMPLE_FMT_DBL; out_sample_fmt++){
                 for(in_ch_layout_index=0; layouts[in_ch_layout_index]; in_ch_layout_index++){
+                    int in_ch_count;
                     in_ch_layout= layouts[in_ch_layout_index];
-                    int in_ch_count= av_get_channel_layout_nb_channels(in_ch_layout);
+                    in_ch_count= av_get_channel_layout_nb_channels(in_ch_layout);
                     for(out_ch_layout_index=0; layouts[out_ch_layout_index]; out_ch_layout_index++){
-                        int out_count, mid_count;
+                        int out_count, mid_count, out_ch_count;
                         out_ch_layout= layouts[out_ch_layout_index];
-                        int out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
+                        out_ch_count= av_get_channel_layout_nb_channels(out_ch_layout);
                         fprintf(stderr, "ch %d->%d, rate:%5d->%5d, fmt:%s->%s",
                                in_ch_count, out_ch_count,
                                in_sample_rate, out_sample_rate,
