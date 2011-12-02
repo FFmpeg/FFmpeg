@@ -28,7 +28,7 @@
 
 #define ASSERT_LEVEL 2
 
-static double get(const uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFormat f){
+static double get(uint8_t *a[], int ch, int index, int ch_count, enum AVSampleFormat f){
     const uint8_t *p;
     if(av_sample_fmt_is_planar(f)){
         f= av_get_alt_sample_fmt(f, 0);
