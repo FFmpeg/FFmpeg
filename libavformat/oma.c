@@ -202,8 +202,8 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
     while (em) {
         if (!strcmp(em->tag, "GEOB") &&
             (geob = em->data) &&
-            !strcmp(geob->description, "OMG_LSI") ||
-            !strcmp(geob->description, "OMG_BKLSI")) {
+            (!strcmp(geob->description, "OMG_LSI") ||
+             !strcmp(geob->description, "OMG_BKLSI"))) {
             break;
         }
         em = em->next;
