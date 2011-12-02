@@ -91,6 +91,15 @@ libopenjpeg_rgb:
     return PIX_FMT_RGB24;
 }
 
+static int is_yuva420(opj_image_t *image)
+{
+    return image->numcomps == 4 &&
+           image->comps[0].dx == 1 && image->comps[0].dy == 1 &&
+           image->comps[1].dx == 2 && image->comps[1].dy == 2 &&
+           image->comps[2].dx == 2 && image->comps[2].dy == 2 &&
+           image->comps[3].dx == 1 && image->comps[3].dy == 1;
+}
+
 static inline int libopenjpeg_ispacked(enum PixelFormat pix_fmt) {
     int i, component_plane;
     component_plane = av_pix_fmt_descriptors[pix_fmt].comp[0].plane;
@@ -253,7 +262,7 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
              break;
     case 3:  avctx->pix_fmt = check_image_attributes(avctx, image);
              break;
-    case 4:  avctx->pix_fmt = PIX_FMT_RGBA;
+    case 4:  avctx->pix_fmt = is_yuva420(image) ? PIX_FMT_YUVA420P : PIX_FMT_RGBA;
              break;
     default: av_log(avctx, AV_LOG_ERROR, "%d components unsupported.\n", image->numcomps);
              goto done;
