@@ -500,7 +500,7 @@ int main(int argc, char **argv)
 
     /* write the stream header, if any */
     av_write_header(oc);
-
+    picture->pts = 0;
     for(;;) {
         /* compute current audio and video time */
         if (audio_st)
@@ -522,6 +522,7 @@ int main(int argc, char **argv)
             write_audio_frame(oc, audio_st);
         } else {
             write_video_frame(oc, video_st);
+            picture->pts++;
         }
     }
 
