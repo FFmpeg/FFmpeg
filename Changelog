@@ -104,6 +104,7 @@ easier to use. The changes are:
 - OS X Video Decoder Acceleration (VDA) support
 - CRI ADX audio format demuxer
 - Playstation Portable PMP format demuxer
+- PCM format support in OMA demuxer
 
 
 version 0.7:

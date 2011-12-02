@@ -61,9 +61,10 @@ enum {
 };
 
 static const AVCodecTag codec_oma_tags[] = {
-    { CODEC_ID_ATRAC3,  OMA_CODECID_ATRAC3 },
-    { CODEC_ID_ATRAC3P, OMA_CODECID_ATRAC3P },
-    { CODEC_ID_MP3,     OMA_CODECID_MP3 },
+    { CODEC_ID_ATRAC3,      OMA_CODECID_ATRAC3 },
+    { CODEC_ID_ATRAC3P,     OMA_CODECID_ATRAC3P },
+    { CODEC_ID_MP3,         OMA_CODECID_MP3 },
+    { CODEC_ID_PCM_S16BE,   OMA_CODECID_LPCM },
 };
 
 static const uint64_t leaf_table[] = {
@@ -357,6 +358,16 @@ static int oma_read_header(AVFormatContext *s,
         case OMA_CODECID_MP3:
             st->need_parsing = AVSTREAM_PARSE_FULL;
             framesize = 1024;
+            break;
+        case OMA_CODECID_LPCM:
+            /* PCM 44.1 kHz 16 bit stereo big-endian */
+            st->codec->channels = 2;
+            st->codec->sample_rate = 44100;
+            framesize = 1024;
+            /* bit rate = sample rate x PCM block align (= 4) x 8 */
+            st->codec->bit_rate = st->codec->sample_rate * 32;
+            st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
+            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
             break;
         default:
             av_log(s, AV_LOG_ERROR, "Unsupported codec %d!\n",buf[32]);
