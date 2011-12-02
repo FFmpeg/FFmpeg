@@ -891,21 +891,23 @@ static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
     return pred;
 }
 
-static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int16_t input, int16_t pred)
+static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int16_t residue, int16_t pred)
 {
     int16_t icoef;
     int recent = s->cdlms[ich][ilms].recent;
     int16_t range = (1 << s->bits_per_sample - 1) - 1;
     int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
+    int16_t input = residue + pred;
 
-    if (input > pred) {
+    if (residue > 0) {
         for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
             s->cdlms[ich][ilms].coefs[icoef] +=
                 s->cdlms[ich][ilms].lms_updates[icoef + recent];
     } else {
         for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
             s->cdlms[ich][ilms].coefs[icoef] -=
-                s->cdlms[ich][ilms].lms_updates[icoef];     // XXX: [icoef + recent] ?
+                s->cdlms[ich][ilms].lms_updates[icoef + recent];    /* spec mistakenly
+                                                                    dropped the recent */
     }
     s->cdlms[ich][ilms].recent--;
     s->cdlms[ich][ilms].lms_prevvalues[recent] = av_clip(input, -range, range - 1);
@@ -990,8 +992,8 @@ static void revert_cdlms(WmallDecodeCtx *s, int tile_size)
             }
             for (ilms = num_lms - 1; ilms >= 0; ilms--) {
                 pred = lms_predict(s, ich, ilms);
-                channel_coeff += pred;
                 lms_update(s, ich, ilms, channel_coeff, pred);
+                channel_coeff += pred;
             }
             if (s->transient[ich]) {
                 --s->channel[ich].transient_counter;
