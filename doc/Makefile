@@ -3,6 +3,7 @@ PODPAGES    = $(PROGS-yes:%=doc/%.pod)
 HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
               doc/developer.html                                        \
               doc/faq.html                                              \
+              doc/fate.html                                             \
               doc/general.html                                          \
               doc/libavfilter.html                                      \
 

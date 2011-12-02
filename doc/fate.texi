@@ -1,0 +1,135 @@
+\input texinfo @c -*- texinfo -*-
+
+@settitle FATE Automated Testing Environment
+@titlepage
+@center @titlefont{FATE Automated Testing Environment}
+@end titlepage
+
+@top
+
+@contents
+
+@chapter Introduction
+
+FATE provides a regression testsuite embedded within the Libav build system.
+It can be run locally and optionally configured to send reports to a web
+aggregator and viewer @url{http://fate.libav.org}.
+
+It is advised to run FATE before submitting patches to the current codebase
+and provide new tests when submitting patches to add additional features.
+
+@chapter Running FATE
+
+@section Samples and References
+In order to run, FATE needs a large amount of data (samples and references)
+that is provided separately from the actual source distribution.
+
+To inform the build system about the testsuite location, pass
+@option{--samples=<path to the samples>} to @command{configure} or set the
+@var{SAMPLES} Make variable or the @var{FATE_SAMPLES} environment variable
+to a suitable value.
+
+The dataset is available through @command{rsync}, is possible to fetch
+the current sample using the straight rsync command or through a specific
+@ref{Makefile target}.
+
+@example
+# rsync -aL rsync://fate-suite.libav.org/fate-suite/ fate-suite
+@end example
+
+@example
+# make fate-rsync SAMPLES=fate-suite
+@end example
+
+
+@chapter Manual Run
+FATE regression test can be run through @command{make}.
+Specific Makefile targets and Makefile variables are available:
+
+@anchor{Makefile target}
+@section FATE Makefile targets
+@table @option
+@item fate-list
+List all fate/regression test targets.
+@item fate-rsync
+Shortcut to download the fate test samples to the specified testsuite location.
+@item fate
+Run the FATE test suite (requires the fate-suite dataset).
+@end table
+
+@section Fate Makefile variables
+@table @option
+@item V
+Verbosity level, can be set to 0, 1 or 2.
+@table @option
+    @item 0
+    show just the test arguments
+    @item 1
+    show just the command used in the test
+    @item 2
+    show everything
+@end table
+@item SAMPLES
+Specify or override the path to the FATE samples at make time, it has a
+meaning only while running the regression tests.
+@item THREADS
+Specify how many threads to use while running regression tests, it is
+quite useful to detect thread-related regressions.
+@end table
+
+@example
+    make V=1 SAMPLES=/var/fate/samples THREADS=2 fate
+@end example
+
+@chapter Automated Tests
+In order to automatically testing specific configurations, e.g. multiple
+compilers, @command{tests/fate.sh} is provided.
+
+This shell script builds Libav, runs the regression tests and prepares a
+report that can be sent to @url{fate.libav.org} or directly examined locally.
+
+@section Testing Profiles
+The configuration file passed to @command{fate.sh} is shell scripts as well.
+
+It must provide at least a @var{slot} identifier, the @var{repo} from
+which fetch the sources, the @var{samples} directory, a @var{workdir} with
+enough space to build and run all the tests.
+Optional submit command @var{fate_recv} and a @var{comment} to describe
+the testing profile are available.
+
+Additional optional parameter to tune the Libav building and reporting process
+can be passed.
+
+@example
+slot=                                   # some unique identifier
+repo=git://git.libav.org/libav.git      # the source repository
+samples=/path/to/fate/samples
+workdir=                                # directory in which to do all the work
+fate_recv="ssh -T fate@@fate.libav.org"  # command to submit report
+comment=                                # optional description
+
+# the following are optional and map to configure options
+arch=
+cpu=
+cross_prefix=
+cc=
+target_os=
+sysroot=
+target_exec=
+target_path=
+extra_cflags=
+extra_ldflags=
+extra_libs=
+extra_conf=     # extra configure options not covered above
+
+#make=          # name of GNU make if not 'make'
+makeopts=       # extra options passed to 'make'
+#tar=           # command to create a tar archive from its arguments on
+                # stdout, defaults to 'tar c'
+@end example
+
+@section Submitting Reports
+In order to send reports you need to create an @command{ssh} key and send it
+to @email{root@@libav.org}.
+The current server fingerprint is @var{a4:99:d7:d3:1c:92:0d:56:d6:d5:61:be:01:ae:7d:e6}
+
