@@ -141,8 +141,8 @@ GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
 
 @subsection Naming conventions
 All names are using underscores (_), not CamelCase. For example, @samp{avfilter_get_video_buffer} is
-a valid function name and @samp{AVFilterGetVideo} is not. The only exception from this are structure names;
-they should always be in the CamelCase
+a valid function name and @samp{AVFilterGetVideo} is not. The exception from this are type names, like
+for example structs and enums; they should always be in the CamelCase
 
 There are following conventions for naming variables and functions:
 @itemize @bullet
