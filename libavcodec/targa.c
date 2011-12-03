@@ -231,6 +231,29 @@ static int decode_frame(AVCodecContext *avctx,
             }
         }
     }
+    if(flags & 0x10){ // right-to-left, needs horizontal flip
+        int x;
+        for(y = 0; y < s->height; y++){
+            void *line = &p->data[0][y * p->linesize[0]];
+            for(x = 0; x < s->width >> 1; x++){
+                switch(s->bpp){
+                case 32:
+                    FFSWAP(uint32_t, ((uint32_t *)line)[x], ((uint32_t *)line)[s->width - x]);
+                    break;
+                case 24:
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x    ], ((uint8_t *)line)[3 * s->width - 3 * x    ]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 1], ((uint8_t *)line)[3 * s->width - 3 * x + 1]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 2], ((uint8_t *)line)[3 * s->width - 3 * x + 2]);
+                    break;
+                case 16:
+                    FFSWAP(uint16_t, ((uint16_t *)line)[x], ((uint16_t *)line)[s->width - x]);
+                    break;
+                case 8:
+                    FFSWAP(uint8_t, ((uint8_t *)line)[x], ((uint8_t *)line)[s->width - x]);
+                }
+            }
+        }
+    }
 
     *picture= *(AVFrame*)&s->picture;
     *data_size = sizeof(AVPicture);
