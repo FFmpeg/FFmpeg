@@ -9,6 +9,63 @@ $EXTRA_HEAD =
 <link rel="stylesheet" type="text/css" href="default.css" />
 ';
 
+$CSS_LINES = <<EOT;
+<style type="text/css">
+<!--
+a.summary-letter { text-decoration: none }
+a { color: #2D6198; }
+a:visited { color: #884488; }
+h1 a, h2 a, h3 a { text-decoration: inherit; color: inherit; }
+p { margin-left: 1em; margin-right: 1em; }
+table { margin-left: 2em; }
+pre { margin-left: 2em; }
+#footer { text-align: center; }
+#body { margin-left: 1em; margin-right: 1em; }
+body { background-color: #313131; margin: 0; }
+
+#container {
+    background-color: white;
+    color: #202020;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+h1 {
+    background-color: #7BB37B;
+    border: 1px solid #6A996A;
+    color: #151515;
+    font-size: 1.2em;
+    padding-bottom: 0.2em;
+    padding-left: 0.4em;
+    padding-top: 0.2em;
+}
+
+h2 {
+    color: #313131;
+    font-size: 1.2em;
+}
+
+h3 {
+    color: #313131;
+    font-size: 0.8em;
+    margin-bottom: -8px;
+}
+
+.note {
+    margin: 1em;
+    border: 1px solid #bbc9d8;
+    background-color: #dde1e1;
+}
+
+.important {
+    margin: 1em;
+    border: 1px solid #d26767;
+    background-color: #f8e1e1;
+}
+
+-->
+</style>
+EOT
 
 my $LIBAV_NAVBAR = $ENV{"LIBAV_NAVBAR"} || '';
 
@@ -29,6 +86,35 @@ sub Libav_print_page_foot($$)
     print $fh '<div id="footer">' . "\n";
     T2H_DEFAULT_print_page_foot($fh);
     print $fh "</div>\n";
+}
+
+$float = \&Libav_float;
+
+sub Libav_float($$$$)
+{
+    my $text = shift;
+    my $float = shift;
+    my $caption = shift;
+    my $shortcaption = shift;
+
+    my $label = '';
+    if (exists($float->{'id'}))
+    {
+        $label = &$anchor($float->{'id'});
+    }
+    my $class = '';
+    my $subject = '';
+
+    if ($caption =~ /NOTE/)
+    {
+        $class = "note";
+    }
+    elsif ($caption =~ /IMPORTANT/)
+    {
+        $class = "important";
+    }
+
+    return '<div class="float ' . $class . '">' . "$label\n" . $text . '</div>';
 }
 
 $print_page_head = \&Libav_print_page_head;
