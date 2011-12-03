@@ -49,8 +49,8 @@ mailing list.
 The code is written in K&R C style. That means the following:
 @itemize @bullet
 @item
-The control statements are formatted by putting space betwen the statement and parenthesis
-in the following way:
+The control statements are formatted by putting space betwen the statement
+and parenthesis in the following way:
 @example
 for (i = 0; i < filter->input_count; i++) @{
 @end example
@@ -79,7 +79,8 @@ if (!pic || !picref)
     goto fail;
 @end example
 @item
-Do not put spaces immediately inside parenthesis. @samp{if (ret)} is a valid style; @samp{if ( ret )} is not.
+Do not put spaces immediately inside parenthesis. @samp{if (ret)} is
+a valid style; @samp{if ( ret )} is not.
 @end itemize
 
 There are the following guidelines regarding the indentation in files:
@@ -91,7 +92,8 @@ The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
 rejected by the git repository.
 @item
-You should try to limit your code lines to 80 characters; however, do so if and only if this improves readability.
+You should try to limit your code lines to 80 characters; however, do so if
+and only if this improves readability.
 @end itemize
 The presentation is one inspired by 'indent -i4 -kr -nut'.
 
@@ -167,9 +169,10 @@ GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
 @end itemize
 
 @subsection Naming conventions
-All names are using underscores (_), not CamelCase. For example, @samp{avfilter_get_video_buffer} is
-a valid function name and @samp{AVFilterGetVideo} is not. The only exception from this are structure names;
-they should always be in the CamelCase
+All names are using underscores (_), not CamelCase. For example,
+@samp{avfilter_get_video_buffer} is a valid function name and
+@samp{AVFilterGetVideo} is not. The only exception from this are structure
+names; they should always be in the CamelCase
 
 There are following conventions for naming variables and functions:
 @itemize @bullet
@@ -178,13 +181,15 @@ For local variables no prefix is required.
 @item
 For variables and functions declared as @code{static} no prefixes are required.
 @item
-For variables and functions used internally by the library, @code{ff_} prefix should be used.
+For variables and functions used internally by the library, @code{ff_} prefix
+should be used.
 For example, @samp{ff_w64_demuxer}.
 @item
-For variables and functions used internally across multiple libraries, use @code{avpriv_}. For example,
-@samp{avpriv_aac_parse_header}.
+For variables and functions used internally across multiple libraries, use
+@code{avpriv_}. For example, @samp{avpriv_aac_parse_header}.
 @item
-For exported names, each library has its own prefixes. Just check the existing code and name accordingly.
+For exported names, each library has its own prefixes. Just check the existing
+code and name accordingly.
 @end itemize
 
 @subsection Miscellanous conventions
