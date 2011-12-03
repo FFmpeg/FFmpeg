@@ -52,7 +52,7 @@ The code is written in K&R C style. That means the following:
 The control statements are formatted by putting space betwen the statement and parenthesis
 in the following way:
 @example
-for (i = 0; i < filter->input_count; i ++) @{
+for (i = 0; i < filter->input_count; i++) @{
 @end example
 @item
 The case statement is always located at the same level as the switch itself:
