@@ -1841,6 +1841,8 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     int frame_available = 1;
 #endif
     int duration=0;
+    int64_t *best_effort_timestamp;
+    AVRational *frame_sample_aspect;
 
     if (!(decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
@@ -1874,8 +1876,9 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         return ret;
     }
 
-    if(decoded_frame->best_effort_timestamp != AV_NOPTS_VALUE)
-        ist->next_pts = ist->pts = decoded_frame->best_effort_timestamp;
+    best_effort_timestamp= av_opt_ptr(avcodec_get_frame_class(), decoded_frame, "best_effort_timestamp");
+    if(*best_effort_timestamp != AV_NOPTS_VALUE)
+        ist->next_pts = ist->pts = *best_effort_timestamp;
 
     ist->next_pts += duration;
     pkt->size = 0;
@@ -1883,11 +1886,12 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     pre_process_video_frame(ist, (AVPicture *)decoded_frame, &buffer_to_free);
 
 #if CONFIG_AVFILTER
+    frame_sample_aspect= av_opt_ptr(avcodec_get_frame_class(), decoded_frame, "sample_aspect_ratio");
     for(i=0;i<nb_output_streams;i++) {
         OutputStream *ost = ost = &output_streams[i];
         if(check_output_constraints(ist, ost)){
-            if (!decoded_frame->sample_aspect_ratio.num)
-                decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+            if (!frame_sample_aspect->num)
+                *frame_sample_aspect = ist->st->sample_aspect_ratio;
             decoded_frame->pts = ist->pts;
 
             av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, AV_VSRC_BUF_FLAG_OVERWRITE);
