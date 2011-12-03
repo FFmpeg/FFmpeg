@@ -366,6 +366,11 @@ static AVStream *create_stream(AVFormatContext *s, int stream_type){
             st->codec->codec_id = CODEC_ID_NONE; // Going to rely on copy for now
             av_log(s, AV_LOG_DEBUG, "Data stream created\n");
     }
+    if(s->nb_streams>=3 ||(   s->nb_streams==2
+                           && s->streams[0]->codec->codec_type != AVMEDIA_TYPE_DATA
+                           && s->streams[1]->codec->codec_type != AVMEDIA_TYPE_DATA))
+        s->ctx_flags &= ~AVFMTCTX_NOHEADER;
+
     avpriv_set_pts_info(st, 32, 1, 1000); /* 32 bit pts in ms */
     return st;
 }
@@ -383,9 +388,6 @@ static int flv_read_header(AVFormatContext *s,
         flags = FLV_HEADER_FLAG_HASVIDEO | FLV_HEADER_FLAG_HASAUDIO;
         av_log(s, AV_LOG_WARNING, "Broken FLV file, which says no streams present, this might fail\n");
     }
-
-    if((flags & (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
-             != (FLV_HEADER_FLAG_HASVIDEO|FLV_HEADER_FLAG_HASAUDIO))
         s->ctx_flags |= AVFMTCTX_NOHEADER;
 
     if(flags & FLV_HEADER_FLAG_HASVIDEO){
@@ -484,7 +486,6 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     if(i == s->nb_streams){
         av_log(s, AV_LOG_WARNING, "Stream discovered after head already parsed\n");
         st= create_stream(s, stream_type);
-        s->ctx_flags &= ~AVFMTCTX_NOHEADER;
     }
     av_dlog(s, "%d %X %d \n", stream_type, flags, st->discard);
     if(  (st->discard >= AVDISCARD_NONKEY && !((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY || (stream_type == FLV_STREAM_TYPE_AUDIO)))
