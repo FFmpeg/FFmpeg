@@ -139,8 +139,8 @@ static inline void libopenjpeg_copyto8(AVFrame *picture, opj_image_t *image) {
 
     for(index = 0; index < image->numcomps; index++) {
         comp_data = image->comps[index].data;
-        img_ptr = picture->data[index];
         for(y = 0; y < image->comps[index].h; y++) {
+            img_ptr = picture->data[index] + y * picture->linesize[index];
             for(x = 0; x < image->comps[index].w; x++) {
                 *img_ptr = (uint8_t) *comp_data;
                 img_ptr++;
@@ -156,8 +156,8 @@ static inline void libopenjpeg_copyto16(AVFrame *picture, opj_image_t *image) {
     int index, x, y;
     for(index = 0; index < image->numcomps; index++) {
         comp_data = image->comps[index].data;
-        img_ptr = (uint16_t*) picture->data[index];
         for(y = 0; y < image->comps[index].h; y++) {
+            img_ptr = (uint16_t*) (picture->data[index] + y * picture->linesize[index]);
             for(x = 0; x < image->comps[index].w; x++) {
                 *img_ptr = *comp_data;
                 img_ptr++;
