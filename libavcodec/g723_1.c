@@ -36,6 +36,7 @@
 #include "g723_1_data.h"
 
 typedef struct g723_1_context {
+    AVFrame frame;
     G723_1_Subframe subframe[4];
     FrameType cur_frame_type;
     FrameType past_frame_type;
@@ -79,6 +80,9 @@ static av_cold int g723_1_decode_init(AVCodecContext *avctx)
     avctx->sample_fmt  = SAMPLE_FMT_S16;
     p->pf_gain         = 1 << 12;
     memcpy(p->prev_lsp, dc_lsp, LPC_ORDER * sizeof(int16_t));
+
+    avcodec_get_frame_defaults(&p->frame);
+    avctx->coded_frame = &p->frame;
 
     return 0;
 }
@@ -950,12 +954,12 @@ static void formant_postfilter(G723_1_Context *p, int16_t *lpc, int16_t *buf)
 }
 
 static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
-                               int *data_size, AVPacket *avpkt)
+                               int *got_frame_ptr, AVPacket *avpkt)
 {
     G723_1_Context *p  = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    int16_t *out       = data;
+    int16_t *out;
     int dec_mode       = buf[0] & 3;
 
     PPFParam ppf[SUBFRAMES];
@@ -963,10 +967,10 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
     int16_t lpc[SUBFRAMES * LPC_ORDER];
     int16_t acb_vector[SUBFRAME_LEN];
     int16_t *vector_ptr;
-    int bad_frame = 0, i, j;
+    int bad_frame = 0, i, j, ret;
 
     if (!buf_size || buf_size < frame_size[dec_mode]) {
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return buf_size;
     }
 
@@ -976,7 +980,14 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
                             ActiveFrame : UntransmittedFrame;
     }
 
-    *data_size = FRAME_LEN * sizeof(int16_t);
+    p->frame.nb_samples = FRAME_LEN + LPC_ORDER;
+    if ((ret = avctx->get_buffer(avctx, &p->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    out= p->frame.data[0];
+
+
     if(p->cur_frame_type == ActiveFrame) {
         if (!bad_frame) {
             p->erased_frames = 0;
@@ -1051,7 +1062,7 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
         memcpy(p->prev_excitation, p->excitation + FRAME_LEN,
                PITCH_MAX * sizeof(int16_t));
     } else {
-        memset(out, 0, *data_size);
+        memset(out, 0, sizeof(int16_t)*FRAME_LEN);
         av_log(avctx, AV_LOG_WARNING,
                "G.723.1: Comfort noise generation not supported yet\n");
         return frame_size[dec_mode];
@@ -1068,7 +1079,10 @@ static int g723_1_decode_frame(AVCodecContext *avctx, void *data,
 
     formant_postfilter(p, lpc, out);
 
-    memmove(out, out + LPC_ORDER, *data_size);
+    memmove(out, out + LPC_ORDER, sizeof(int16_t)*FRAME_LEN);
+    p->frame.nb_samples = FRAME_LEN;
+    *(AVFrame*)data = p->frame;
+    *got_frame_ptr = 1;
 
     return frame_size[dec_mode];
 }
