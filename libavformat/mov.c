@@ -1741,7 +1741,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
             unsigned count, chunk_count;
 
             chunk_samples = sc->stsc_data[i].count;
-            if (sc->samples_per_frame && chunk_samples % sc->samples_per_frame) {
+            if (i != sc->stsc_count - 1 &&
+                sc->samples_per_frame && chunk_samples % sc->samples_per_frame) {
                 av_log(mov->fc, AV_LOG_ERROR, "error unaligned chunk\n");
                 return;
             }
