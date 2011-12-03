@@ -27,6 +27,7 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
 
     switch (errnum) {
     case AVERROR_BSF_NOT_FOUND:     errstr = "Bitstream filter not found"                   ; break;
+    case AVERROR_BUG:               errstr = "Internal bug, should not have happened"       ; break;
     case AVERROR_DECODER_NOT_FOUND: errstr = "Decoder not found"                            ; break;
     case AVERROR_DEMUXER_NOT_FOUND: errstr = "Demuxer not found"                            ; break;
     case AVERROR_ENCODER_NOT_FOUND: errstr = "Encoder not found"                            ; break;
