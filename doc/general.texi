@@ -9,26 +9,81 @@
 
 @contents
 
-@chapter external libraries
+@chapter External libraries
 
 Libav can be hooked up with a number of external libraries to add support
 for more formats. None of them are used by default, their use has to be
 explicitly requested by passing the appropriate flags to @file{./configure}.
 
-@section OpenCORE AMR
+@section OpenCORE and VisualOn libraries
+
+Spun off Google Android sources, OpenCore and VisualOn libraries provide
+encoders for a number of audio codecs.
+
+@float NOTE
+OpenCORE and VisualOn libraries are under the Apache License 2.0
+(see @url{http://www.apache.org/licenses/LICENSE-2.0} for details), which is
+incompatible with the LGPL version 2.1 and GPL version 2. You have to
+upgrade Libav's license to LGPL version 3 (or if you have enabled
+GPL components, GPL version 3) to use it.
+@end float
+
+@subsection OpenCORE AMR
 
 Libav can make use of the OpenCORE libraries for AMR-NB
 decoding/encoding and AMR-WB decoding.
 
-Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the instructions for
-installing the libraries. Then pass @code{--enable-libopencore-amrnb} and/or
-@code{--enable-libopencore-amrwb} to configure to enable the libraries.
+Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
+instructions for installing the libraries.
+Then pass @code{--enable-libopencore-amrnb} and/or
+@code{--enable-libopencore-amrwb} to configure to enable them.
 
-Note that OpenCORE is under the Apache License 2.0 (see
-@url{http://www.apache.org/licenses/LICENSE-2.0} for details), which is
-incompatible with the LGPL version 2.1 and GPL version 2. You have to
-upgrade Libav's license to LGPL version 3 (or if you have enabled
-GPL components, GPL version 3) to use it.
+@subsection VisualOn AAC encoder library
+
+Libav can make use of the VisualOn AACenc library for AAC encoding.
+
+Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libvo-aacenc} to configure to enable it.
+
+@subsection VisualOn AMR-WB encoder library
+
+Libav can make use of the VisualOn AMR-WBenc library for AMR-WB encoding.
+
+Go to @url{http://sourceforge.net/projects/opencore-amr/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libvo-amrwbenc} to configure to enable it.
+
+@section LAME
+
+Libav can make use of the LAME library for MP3 encoding.
+
+Go to @url{http://lame.sourceforge.net/} and follow the
+instructions for installing the library.
+Then pass @code{--enable-libmp3lame} to configure to enable it.
+
+@section libvpx
+
+Libav can make use of the libvpx library for VP8 encoding.
+
+Go to @url{http://www.webmproject.org/} and follow the instructions for
+installing the library. Then pass @code{--enable-libvpx} to configure to
+enable it.
+
+@section x264
+
+Libav can make use of the x264 library for H.264 encoding.
+
+Go to @url{http://www.videolan.org/developers/x264.html} and follow the
+instructions for installing the library. Then pass @code{--enable-libx264} to
+configure to enable it.
+
+@float NOTE
+x264 is under the GNU Public License Version 2 or later
+(see @url{http://www.gnu.org/licenses/old-licenses/gpl-2.0.html} for
+details), you must upgrade Libav's license to GPL in order to use it.
+@end float
+
 
 
 @chapter Supported File Formats and Codecs
