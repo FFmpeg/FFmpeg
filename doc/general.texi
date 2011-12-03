@@ -754,6 +754,7 @@ performance on systems without hardware floating point support).
 @item JACK              @tab X      @tab
 @item LIBDC1394         @tab X      @tab
 @item OSS               @tab X      @tab X
+@item Pulseaudio        @tab X      @tab
 @item Video4Linux       @tab X      @tab
 @item Video4Linux2      @tab X      @tab
 @item VfW capture       @tab X      @tab
