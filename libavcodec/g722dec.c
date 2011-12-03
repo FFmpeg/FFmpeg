@@ -37,6 +37,21 @@
 #include "avcodec.h"
 #include "get_bits.h"
 #include "g722.h"
+#include "libavutil/opt.h"
+
+#define OFFSET(x) offsetof(G722Context, x)
+#define AD AV_OPT_FLAG_AUDIO_PARAM | AV_OPT_FLAG_DECODING_PARAM
+static const AVOption options[] = {
+    { "bits_per_codeword", "Bits per G722 codeword", OFFSET(bits_per_codeword), AV_OPT_TYPE_FLAGS, { 8 }, 6, 8, AD },
+    { NULL }
+};
+
+static const AVClass g722_decoder_class = {
+    .class_name = "g722 decoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 static av_cold int g722_decode_init(AVCodecContext * avctx)
 {
@@ -47,20 +62,6 @@ static av_cold int g722_decode_init(AVCodecContext * avctx)
         return AVERROR_INVALIDDATA;
     }
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-
-    switch (avctx->bits_per_coded_sample) {
-    case 8:
-    case 7:
-    case 6:
-        break;
-    default:
-        av_log(avctx, AV_LOG_WARNING, "Unsupported bits_per_coded_sample [%d], "
-                                      "assuming 8\n",
-                                      avctx->bits_per_coded_sample);
-    case 0:
-        avctx->bits_per_coded_sample = 8;
-        break;
-    }
 
     c->band[0].scale_factor = 8;
     c->band[1].scale_factor = 2;
@@ -89,7 +90,7 @@ static int g722_decode_frame(AVCodecContext *avctx, void *data,
     G722Context *c = avctx->priv_data;
     int16_t *out_buf;
     int j, ret;
-    const int skip = 8 - avctx->bits_per_coded_sample;
+    const int skip = 8 - c->bits_per_codeword;
     const int16_t *quantizer_table = low_inv_quants[skip];
     GetBitContext gb;
 
@@ -149,4 +150,5 @@ AVCodec ff_adpcm_g722_decoder = {
     .decode         = g722_decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("G.722 ADPCM"),
+    .priv_class     = &g722_decoder_class,
 };
