@@ -130,7 +130,7 @@ static int decode_frame(AVCodecContext *avctx,
         return AVERROR_INVALIDDATA;
     }
 
-    if (*buf == 0xFF) {
+    if (*buf == 0xFF || bpp == 8) {
         buf += 2;
         etype  = bytestream_get_le16(&buf);
         esize  = bytestream_get_le16(&buf);
