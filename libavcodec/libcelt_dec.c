@@ -27,7 +27,7 @@
 struct libcelt_context {
     CELTMode *mode;
     CELTDecoder *dec;
-    int frame_bytes;
+    AVFrame frame;
     int discard;
 };
 
@@ -64,7 +64,6 @@ static av_cold int libcelt_dec_init(AVCodecContext *c)
     if (!c->channels || !c->frame_size ||
         c->frame_size > INT_MAX / sizeof(int16_t) / c->channels)
         return AVERROR(EINVAL);
-    celt->frame_bytes = c->frame_size * c->channels * sizeof(int16_t);
     celt->mode = celt_mode_create(c->sample_rate, c->frame_size, &err);
     if (!celt->mode)
         return ff_celt_error_to_averror(err);
@@ -80,7 +79,6 @@ static av_cold int libcelt_dec_init(AVCodecContext *c)
                    "Invalid overlap (%d), ignored.\n", celt->discard);
             celt->discard = 0;
         }
-        celt->discard *= c->channels * sizeof(int16_t);
     }
     if (c->extradata_size >= 8) {
         unsigned version = AV_RL32(c->extradata + 4);
@@ -92,6 +90,8 @@ static av_cold int libcelt_dec_init(AVCodecContext *c)
                    version, lib_version);
     }
     c->sample_fmt = AV_SAMPLE_FMT_S16;
+    avcodec_get_frame_defaults(&celt->frame);
+    c->coded_frame = &celt->frame;
     return 0;
 }
 
@@ -104,23 +104,31 @@ static av_cold int libcelt_dec_close(AVCodecContext *c)
     return 0;
 }
 
-static int libcelt_dec_decode(AVCodecContext *c, void *pcm, int *pcm_size,
-                              AVPacket *pkt)
+static int libcelt_dec_decode(AVCodecContext *c, void *frame,
+                              int *got_frame_ptr, AVPacket *pkt)
 {
     struct libcelt_context *celt = c->priv_data;
     int err;
+    int16_t *pcm;
 
-    if (*pcm_size < celt->frame_bytes)
-        return AVERROR(ENOBUFS);
+    celt->frame.nb_samples = c->frame_size;
+    err = c->get_buffer(c, &celt->frame);
+    if (err < 0) {
+        av_log(c, AV_LOG_ERROR, "get_buffer() failed\n");
+        return err;
+    }
+    pcm = (int16_t *)celt->frame.data[0];
     err = celt_decode(celt->dec, pkt->data, pkt->size, pcm, c->frame_size);
     if (err < 0)
         return ff_celt_error_to_averror(err);
-    *pcm_size = celt->frame_bytes;
     if (celt->discard) {
-        *pcm_size = celt->frame_bytes - celt->discard;
-        memmove(pcm, (char *)pcm + celt->discard, *pcm_size);
+        celt->frame.nb_samples -= celt->discard;
+        memmove(pcm, pcm + celt->discard * c->channels,
+                celt->frame.nb_samples * c->channels * sizeof(int16_t));
         celt->discard = 0;
     }
+    *got_frame_ptr = 1;
+    *(AVFrame *)frame = celt->frame;
     return pkt->size;
 }
 
@@ -132,6 +140,6 @@ AVCodec ff_libcelt_decoder = {
     .init           = libcelt_dec_init,
     .close          = libcelt_dec_close,
     .decode         = libcelt_dec_decode,
-    .capabilities   = 0,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Xiph CELT decoder using libcelt"),
 };
