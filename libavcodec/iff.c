@@ -137,6 +137,7 @@ static av_always_inline uint32_t gray2rgb(const uint32_t x) {
  */
 static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
 {
+    IffContext *s = avctx->priv_data;
     int count, i;
     const uint8_t *const palette = avctx->extradata + AV_RB16(avctx->extradata);
     int palette_size = avctx->extradata_size - AV_RB16(avctx->extradata);
@@ -152,6 +153,10 @@ static int ff_cmap_read_palette(AVCodecContext *avctx, uint32_t *pal)
     if (count) {
         for (i=0; i < count; i++) {
             pal[i] = 0xFF000000 | AV_RB24(palette + i*3);
+        }
+        if (s->flags && count >= 32) { // EHB
+            for (i = 0; i < 32; i++)
+                pal[i + 32] = 0xFF000000 | (AV_RB24(palette + i*3) & 0xFEFEFE) >> 1;
         }
     } else { // Create gray-scale color palette for bps < 8
         count = 1 << avctx->bits_per_coded_sample;
@@ -266,9 +271,6 @@ static int extract_header(AVCodecContext *const avctx,
                 s->ham_palbuf[(i+count*2)*2+1] = tmp;
                 s->ham_palbuf[(i+count*3)*2+1] = tmp << 8;
             }
-        } else if (s->flags & 1) { // EHB (ExtraHalfBrite) color palette
-            av_log(avctx, AV_LOG_ERROR, "ExtraHalfBrite (EHB) mode not supported\n");
-            return AVERROR_PATCHWELCOME;
         }
     }
 
