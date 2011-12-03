@@ -167,6 +167,7 @@ typedef struct {
 typedef struct WMAProDecodeCtx {
     /* generic decoder variables */
     AVCodecContext*  avctx;                         ///< codec context for av_log
+    AVFrame          frame;                         ///< AVFrame for decoded output
     DSPContext       dsp;                           ///< accelerated DSP functions
     FmtConvertContext fmt_conv;
     uint8_t          frame_data[MAX_FRAMESIZE +
@@ -209,8 +210,6 @@ typedef struct WMAProDecodeCtx {
     uint32_t         frame_num;                     ///< current frame number (not used for decoding)
     GetBitContext    gb;                            ///< bitstream reader context
     int              buf_bit_size;                  ///< buffer size in bits
-    float*           samples;                       ///< current samplebuffer pointer
-    float*           samples_end;                   ///< maximum samplebuffer pointer
     uint8_t          drc_gain;                      ///< gain for the DRC tool
     int8_t           skip_frame;                    ///< skip output step
     int8_t           parsed_all_subframes;          ///< all subframes decoded?
@@ -453,6 +452,10 @@ static av_cold int decode_init(AVCodecContext *avctx)
         dump_context(s);
 
     avctx->channel_layout = channel_mask;
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
@@ -1279,22 +1282,15 @@ static int decode_subframe(WMAProDecodeCtx *s)
  *@return 0 if the trailer bit indicates that this is the last frame,
  *        1 if there are additional frames
  */
-static int decode_frame(WMAProDecodeCtx *s)
+static int decode_frame(WMAProDecodeCtx *s, int *got_frame_ptr)
 {
+    AVCodecContext *avctx = s->avctx;
     GetBitContext* gb = &s->gb;
     int more_frames = 0;
     int len = 0;
-    int i;
+    int i, ret;
     const float *out_ptr[WMAPRO_MAX_CHANNELS];
-
-    /** check for potential output buffer overflow */
-    if (s->num_channels * s->samples_per_frame > s->samples_end - s->samples) {
-        /** return an error if no frame could be decoded at all */
-        av_log(s->avctx, AV_LOG_ERROR,
-               "not enough space for the output samples\n");
-        s->packet_loss = 1;
-        return 0;
-    }
+    float *samples;
 
     /** get frame length */
     if (s->len_prefix)
@@ -1360,10 +1356,19 @@ static int decode_frame(WMAProDecodeCtx *s)
         }
     }
 
+    /* get output buffer */
+    s->frame.nb_samples = s->samples_per_frame;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        s->packet_loss = 1;
+        return 0;
+    }
+    samples = (float *)s->frame.data[0];
+
     /** interleave samples and write them to the output buffer */
     for (i = 0; i < s->num_channels; i++)
         out_ptr[i] = s->channel[i].out;
-    s->fmt_conv.float_interleave(s->samples, out_ptr, s->samples_per_frame,
+    s->fmt_conv.float_interleave(samples, out_ptr, s->samples_per_frame,
                                  s->num_channels);
 
     for (i = 0; i < s->num_channels; i++) {
@@ -1375,8 +1380,10 @@ static int decode_frame(WMAProDecodeCtx *s)
 
     if (s->skip_frame) {
         s->skip_frame = 0;
-    } else
-        s->samples += s->num_channels * s->samples_per_frame;
+        *got_frame_ptr = 0;
+    } else {
+        *got_frame_ptr = 1;
+    }
 
     if (s->len_prefix) {
         if (len != (get_bits_count(gb) - s->frame_offset) + 2) {
@@ -1473,8 +1480,8 @@ static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
  *@param avpkt input packet
  *@return number of bytes that were read from the input buffer
  */
-static int decode_packet(AVCodecContext *avctx,
-                         void *data, int *data_size, AVPacket* avpkt)
+static int decode_packet(AVCodecContext *avctx, void *data,
+                         int *got_frame_ptr, AVPacket* avpkt)
 {
     WMAProDecodeCtx *s = avctx->priv_data;
     GetBitContext* gb  = &s->pgb;
@@ -1483,9 +1490,7 @@ static int decode_packet(AVCodecContext *avctx,
     int num_bits_prev_frame;
     int packet_sequence_number;
 
-    s->samples       = data;
-    s->samples_end   = (float*)((int8_t*)data + *data_size);
-    *data_size = 0;
+    *got_frame_ptr = 0;
 
     if (s->packet_done || s->packet_loss) {
         s->packet_done = 0;
@@ -1532,7 +1537,7 @@ static int decode_packet(AVCodecContext *avctx,
 
             /** decode the cross packet frame if it is valid */
             if (!s->packet_loss)
-                decode_frame(s);
+                decode_frame(s, got_frame_ptr);
         } else if (s->num_saved_bits - s->frame_offset) {
             av_dlog(avctx, "ignoring %x previously saved bits\n",
                     s->num_saved_bits - s->frame_offset);
@@ -1555,7 +1560,7 @@ static int decode_packet(AVCodecContext *avctx,
             (frame_size = show_bits(gb, s->log2_frame_size)) &&
             frame_size <= remaining_bits(s, gb)) {
             save_bits(s, gb, frame_size, 0);
-            s->packet_done = !decode_frame(s);
+            s->packet_done = !decode_frame(s, got_frame_ptr);
         } else if (!s->len_prefix
                    && s->num_saved_bits > get_bits_count(&s->gb)) {
             /** when the frames do not have a length prefix, we don't know
@@ -1565,7 +1570,7 @@ static int decode_packet(AVCodecContext *avctx,
                 therefore we save the incoming packet first, then we append
                 the "previous frame" data from the next packet so that
                 we get a buffer that only contains full frames */
-            s->packet_done = !decode_frame(s);
+            s->packet_done = !decode_frame(s, got_frame_ptr);
         } else
             s->packet_done = 1;
     }
@@ -1577,10 +1582,14 @@ static int decode_packet(AVCodecContext *avctx,
         save_bits(s, gb, remaining_bits(s, gb), 0);
     }
 
-    *data_size = (int8_t *)s->samples - (int8_t *)data;
     s->packet_offset = get_bits_count(gb) & 7;
+    if (s->packet_loss)
+        return AVERROR_INVALIDDATA;
 
-    return (s->packet_loss) ? AVERROR_INVALIDDATA : get_bits_count(gb) >> 3;
+    if (*got_frame_ptr)
+        *(AVFrame *)data = s->frame;
+
+    return get_bits_count(gb) >> 3;
 }
 
 /**
@@ -1611,7 +1620,7 @@ AVCodec ff_wmapro_decoder = {
     .init           = decode_init,
     .close          = decode_end,
     .decode         = decode_packet,
-    .capabilities = CODEC_CAP_SUBFRAMES,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
     .flush= flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio 9 Professional"),
 };

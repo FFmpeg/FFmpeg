@@ -195,7 +195,8 @@ static const uint8_t string_table[256] = {
 
 #define SVQ1_CALC_CODEBOOK_ENTRIES(cbook)\
       codebook = (const uint32_t *) cbook[level];\
-      bit_cache = get_bits (bitbuf, 4*stages);\
+      if (stages > 0)\
+        bit_cache = get_bits (bitbuf, 4*stages);\
       /* calculate codebook entries for this vector */\
       for (j=0; j < stages; j++) {\
         entries[j] = (((bit_cache >> (4*(stages - j - 1))) & 0xF) + 16*j) << (level + 1);\

@@ -34,6 +34,7 @@
  * TrueSpeech decoder context
  */
 typedef struct {
+    AVFrame frame;
     DSPContext dsp;
     /* input data */
     uint8_t buffer[32];
@@ -68,6 +69,9 @@ static av_cold int truespeech_decode_init(AVCodecContext * avctx)
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
     dsputil_init(&c->dsp, avctx);
+
+    avcodec_get_frame_defaults(&c->frame);
+    avctx->coded_frame = &c->frame;
 
     return 0;
 }
@@ -299,17 +303,16 @@ static void truespeech_save_prevvec(TSContext *c)
         c->prevfilt[i] = c->cvector[i];
 }
 
-static int truespeech_decode_frame(AVCodecContext *avctx,
-                void *data, int *data_size,
-                AVPacket *avpkt)
+static int truespeech_decode_frame(AVCodecContext *avctx, void *data,
+                                   int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     TSContext *c = avctx->priv_data;
 
     int i, j;
-    short *samples = data;
-    int iterations, out_size;
+    int16_t *samples;
+    int iterations, ret;
 
     iterations = buf_size / 32;
 
@@ -319,13 +322,15 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    out_size = iterations * 240 * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    c->frame.nb_samples = iterations * 240;
+    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (int16_t *)c->frame.data[0];
 
-    memset(samples, 0, out_size);
+    memset(samples, 0, iterations * 240 * sizeof(*samples));
 
     for(j = 0; j < iterations; j++) {
         truespeech_read_frame(c, buf);
@@ -345,7 +350,8 @@ static int truespeech_decode_frame(AVCodecContext *avctx,
         truespeech_save_prevvec(c);
     }
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = c->frame;
 
     return buf_size;
 }
@@ -357,5 +363,6 @@ AVCodec ff_truespeech_decoder = {
     .priv_data_size = sizeof(TSContext),
     .init           = truespeech_decode_init,
     .decode         = truespeech_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("DSP Group TrueSpeech"),
 };

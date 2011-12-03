@@ -131,6 +131,7 @@ typedef struct {
      * @name Global values specified in the stream header / extradata or used all over.
      * @{
      */
+    AVFrame frame;
     GetBitContext gb;             ///< packet bitreader. During decoder init,
                                   ///< it contains the extradata from the
                                   ///< demuxer. During decoding, it contains
@@ -437,6 +438,9 @@ static av_cold int wmavoice_decode_init(AVCodecContext *ctx)
     s->block_pitch_nbits        = av_ceil_log2(s->block_pitch_range);
 
     ctx->sample_fmt             = AV_SAMPLE_FMT_FLT;
+
+    avcodec_get_frame_defaults(&s->frame);
+    ctx->coded_frame = &s->frame;
 
     return 0;
 }
@@ -1725,17 +1729,17 @@ static int check_bits_for_superframe(GetBitContext *orig_gb,
  * @return 0 on success, <0 on error or 1 if there was not enough data to
  *         fully parse the superframe
  */
-static int synth_superframe(AVCodecContext *ctx,
-                            float *samples, int *data_size)
+static int synth_superframe(AVCodecContext *ctx, int *got_frame_ptr)
 {
     WMAVoiceContext *s = ctx->priv_data;
     GetBitContext *gb = &s->gb, s_gb;
-    int n, res, out_size, n_samples = 480;
+    int n, res, n_samples = 480;
     double lsps[MAX_FRAMES][MAX_LSPS];
     const double *mean_lsf = s->lsps == 16 ?
         wmavoice_mean_lsf16[s->lsp_def_mode] : wmavoice_mean_lsf10[s->lsp_def_mode];
     float excitation[MAX_SIGNAL_HISTORY + MAX_SFRAMESIZE + 12];
     float synth[MAX_LSPS + MAX_SFRAMESIZE];
+    float *samples;
 
     memcpy(synth,      s->synth_history,
            s->lsps             * sizeof(*synth));
@@ -1749,7 +1753,7 @@ static int synth_superframe(AVCodecContext *ctx,
     }
 
     if ((res = check_bits_for_superframe(gb, s)) == 1) {
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return 1;
     }
 
@@ -1792,13 +1796,14 @@ static int synth_superframe(AVCodecContext *ctx,
             stabilize_lsps(lsps[n], s->lsps);
     }
 
-    out_size = n_samples * av_get_bytes_per_sample(ctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(ctx, AV_LOG_ERROR,
-               "Output buffer too small (%d given - %d needed)\n",
-               *data_size, out_size);
-        return -1;
+    /* get output buffer */
+    s->frame.nb_samples = 480;
+    if ((res = ctx->get_buffer(ctx, &s->frame)) < 0) {
+        av_log(ctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return res;
     }
+    s->frame.nb_samples = n_samples;
+    samples = (float *)s->frame.data[0];
 
     /* Parse frames, optionally preceeded by per-frame (independent) LSPs. */
     for (n = 0; n < 3; n++) {
@@ -1820,7 +1825,7 @@ static int synth_superframe(AVCodecContext *ctx,
                                lsps[n], n == 0 ? s->prev_lsps : lsps[n - 1],
                                &excitation[s->history_nsamples + n * MAX_FRAMESIZE],
                                &synth[s->lsps + n * MAX_FRAMESIZE]))) {
-            *data_size = 0;
+            *got_frame_ptr = 0;
             return res;
         }
     }
@@ -1833,8 +1838,7 @@ static int synth_superframe(AVCodecContext *ctx,
         skip_bits(gb, 10 * (res + 1));
     }
 
-    /* Specify nr. of output samples */
-    *data_size = out_size;
+    *got_frame_ptr = 1;
 
     /* Update history */
     memcpy(s->prev_lsps,           lsps[2],
@@ -1922,7 +1926,7 @@ static void copy_bits(PutBitContext *pb,
  * For more information about frames, see #synth_superframe().
  */
 static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
-                                  int *data_size, AVPacket *avpkt)
+                                  int *got_frame_ptr, AVPacket *avpkt)
 {
     WMAVoiceContext *s = ctx->priv_data;
     GetBitContext *gb = &s->gb;
@@ -1935,7 +1939,7 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
      * capping the packet size at ctx->block_align. */
     for (size = avpkt->size; size > ctx->block_align; size -= ctx->block_align);
     if (!size) {
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return 0;
     }
     init_get_bits(&s->gb, avpkt->data, size << 3);
@@ -1956,10 +1960,11 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
                 copy_bits(&s->pb, avpkt->data, size, gb, s->spillover_nbits);
                 flush_put_bits(&s->pb);
                 s->sframe_cache_size += s->spillover_nbits;
-                if ((res = synth_superframe(ctx, data, data_size)) == 0 &&
-                    *data_size > 0) {
+                if ((res = synth_superframe(ctx, got_frame_ptr)) == 0 &&
+                    *got_frame_ptr) {
                     cnt += s->spillover_nbits;
                     s->skip_bits_next = cnt & 7;
+                    *(AVFrame *)data = s->frame;
                     return cnt >> 3;
                 } else
                     skip_bits_long (gb, s->spillover_nbits - cnt +
@@ -1974,11 +1979,12 @@ static int wmavoice_decode_packet(AVCodecContext *ctx, void *data,
     s->sframe_cache_size = 0;
     s->skip_bits_next = 0;
     pos = get_bits_left(gb);
-    if ((res = synth_superframe(ctx, data, data_size)) < 0) {
+    if ((res = synth_superframe(ctx, got_frame_ptr)) < 0) {
         return res;
-    } else if (*data_size > 0) {
+    } else if (*got_frame_ptr) {
         int cnt = get_bits_count(gb);
         s->skip_bits_next = cnt & 7;
+        *(AVFrame *)data = s->frame;
         return cnt >> 3;
     } else if ((s->sframe_cache_size = pos) > 0) {
         /* rewind bit reader to start of last (incomplete) superframe... */
@@ -2046,7 +2052,7 @@ AVCodec ff_wmavoice_decoder = {
     .init           = wmavoice_decode_init,
     .close          = wmavoice_decode_end,
     .decode         = wmavoice_decode_packet,
-    .capabilities   = CODEC_CAP_SUBFRAMES,
+    .capabilities   = CODEC_CAP_SUBFRAMES | CODEC_CAP_DR1,
     .flush     = wmavoice_flush,
     .long_name = NULL_IF_CONFIG_SMALL("Windows Media Audio Voice"),
 };

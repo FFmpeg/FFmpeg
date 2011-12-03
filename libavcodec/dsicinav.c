@@ -44,6 +44,7 @@ typedef struct CinVideoContext {
 } CinVideoContext;
 
 typedef struct CinAudioContext {
+    AVFrame frame;
     int initial_decode_frame;
     int delta;
 } CinAudioContext;
@@ -318,25 +319,28 @@ static av_cold int cinaudio_decode_init(AVCodecContext *avctx)
     cin->delta = 0;
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
+    avcodec_get_frame_defaults(&cin->frame);
+    avctx->coded_frame = &cin->frame;
+
     return 0;
 }
 
-static int cinaudio_decode_frame(AVCodecContext *avctx,
-                                 void *data, int *data_size,
-                                 AVPacket *avpkt)
+static int cinaudio_decode_frame(AVCodecContext *avctx, void *data,
+                                 int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     CinAudioContext *cin = avctx->priv_data;
     const uint8_t *buf_end = buf + avpkt->size;
-    int16_t *samples = data;
-    int delta, out_size;
+    int16_t *samples;
+    int delta, ret;
 
-    out_size = (avpkt->size - cin->initial_decode_frame) *
-               av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    cin->frame.nb_samples = avpkt->size - cin->initial_decode_frame;
+    if ((ret = avctx->get_buffer(avctx, &cin->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (int16_t *)cin->frame.data[0];
 
     delta = cin->delta;
     if (cin->initial_decode_frame) {
@@ -352,7 +356,8 @@ static int cinaudio_decode_frame(AVCodecContext *avctx,
     }
     cin->delta = delta;
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = cin->frame;
 
     return avpkt->size;
 }
@@ -377,5 +382,6 @@ AVCodec ff_dsicinaudio_decoder = {
     .priv_data_size = sizeof(CinAudioContext),
     .init           = cinaudio_decode_init,
     .decode         = cinaudio_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Delphine Software International CIN audio"),
 };

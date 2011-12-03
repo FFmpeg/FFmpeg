@@ -507,20 +507,23 @@ static av_cold int sipr_decoder_init(AVCodecContext * avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
 
+    avcodec_get_frame_defaults(&ctx->frame);
+    avctx->coded_frame = &ctx->frame;
+
     return 0;
 }
 
-static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
-                             int *data_size, AVPacket *avpkt)
+static int sipr_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
     SiprContext *ctx = avctx->priv_data;
     const uint8_t *buf=avpkt->data;
     SiprParameters parm;
     const SiprModeParam *mode_par = &modes[ctx->mode];
     GetBitContext gb;
-    float *data = datap;
+    float *samples;
     int subframe_size = ctx->mode == MODE_16k ? L_SUBFR_16k : SUBFR_SIZE;
-    int i, out_size;
+    int i, ret;
 
     ctx->avctx = avctx;
     if (avpkt->size < (mode_par->bits_per_frame >> 3)) {
@@ -530,27 +533,27 @@ static int sipr_decode_frame(AVCodecContext *avctx, void *datap,
         return -1;
     }
 
-    out_size = mode_par->frames_per_packet * subframe_size *
-               mode_par->subframe_count *
-               av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR,
-               "Error processing packet: output buffer (%d) too small\n",
-               *data_size);
-        return -1;
+    /* get output buffer */
+    ctx->frame.nb_samples = mode_par->frames_per_packet * subframe_size *
+                            mode_par->subframe_count;
+    if ((ret = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (float *)ctx->frame.data[0];
 
     init_get_bits(&gb, buf, mode_par->bits_per_frame);
 
     for (i = 0; i < mode_par->frames_per_packet; i++) {
         decode_parameters(&parm, &gb, mode_par);
 
-        ctx->decode_frame(ctx, &parm, data);
+        ctx->decode_frame(ctx, &parm, samples);
 
-        data += subframe_size * mode_par->subframe_count;
+        samples += subframe_size * mode_par->subframe_count;
     }
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = ctx->frame;
 
     return mode_par->bits_per_frame >> 3;
 }
@@ -562,5 +565,6 @@ AVCodec ff_sipr_decoder = {
     .priv_data_size = sizeof(SiprContext),
     .init           = sipr_decoder_init,
     .decode         = sipr_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("RealAudio SIPR / ACELP.NET"),
 };

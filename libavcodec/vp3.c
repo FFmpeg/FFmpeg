@@ -1335,8 +1335,8 @@ end:
  */
 static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
 {
-    int h, cy;
-    int offset[4];
+    int h, cy, i;
+    int offset[AV_NUM_DATA_POINTERS];
 
     if (HAVE_THREADS && s->avctx->active_thread_type&FF_THREAD_FRAME) {
         int y_flipped = s->flipped_image ? s->avctx->height-y : y;
@@ -1362,7 +1362,8 @@ static void vp3_draw_horiz_band(Vp3DecodeContext *s, int y)
     offset[0] = s->current_frame.linesize[0]*y;
     offset[1] = s->current_frame.linesize[1]*cy;
     offset[2] = s->current_frame.linesize[2]*cy;
-    offset[3] = 0;
+    for (i = 3; i < AV_NUM_DATA_POINTERS; i++)
+        offset[i] = 0;
 
     emms_c();
     s->avctx->draw_horiz_band(s->avctx, &s->current_frame, offset, y, 3, h);

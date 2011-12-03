@@ -559,31 +559,43 @@ static av_cold int decode_end(AVCodecContext *avctx)
 }
 
 
+typedef struct SmackerAudioContext {
+    AVFrame frame;
+} SmackerAudioContext;
+
 static av_cold int smka_decode_init(AVCodecContext *avctx)
 {
+    SmackerAudioContext *s = avctx->priv_data;
+
     if (avctx->channels < 1 || avctx->channels > 2) {
         av_log(avctx, AV_LOG_ERROR, "invalid number of channels\n");
         return AVERROR(EINVAL);
     }
     avctx->channel_layout = (avctx->channels==2) ? AV_CH_LAYOUT_STEREO : AV_CH_LAYOUT_MONO;
     avctx->sample_fmt = avctx->bits_per_coded_sample == 8 ? AV_SAMPLE_FMT_U8 : AV_SAMPLE_FMT_S16;
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
 /**
  * Decode Smacker audio data
  */
-static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPacket *avpkt)
+static int smka_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
+    SmackerAudioContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     GetBitContext gb;
     HuffContext h[4];
     VLC vlc[4];
-    int16_t *samples = data;
-    uint8_t *samples8 = data;
+    int16_t *samples;
+    uint8_t *samples8;
     int val;
-    int i, res;
+    int i, res, ret;
     int unp_size;
     int bits, stereo;
     int pred[2] = {0, 0};
@@ -599,15 +611,11 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
 
     if(!get_bits1(&gb)){
         av_log(avctx, AV_LOG_INFO, "Sound: no data\n");
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return 1;
     }
     stereo = get_bits1(&gb);
     bits = get_bits1(&gb);
-    if (unp_size & 0xC0000000 || unp_size > *data_size) {
-        av_log(avctx, AV_LOG_ERROR, "Frame is too large to fit in buffer\n");
-        return -1;
-    }
     if (stereo ^ (avctx->channels != 1)) {
         av_log(avctx, AV_LOG_ERROR, "channels mismatch\n");
         return AVERROR(EINVAL);
@@ -616,6 +624,15 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
         av_log(avctx, AV_LOG_ERROR, "sample format mismatch\n");
         return AVERROR(EINVAL);
     }
+
+    /* get output buffer */
+    s->frame.nb_samples = unp_size / (avctx->channels * (bits + 1));
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    samples  = (int16_t *)s->frame.data[0];
+    samples8 =            s->frame.data[0];
 
     memset(vlc, 0, sizeof(VLC) * 4);
     memset(h, 0, sizeof(HuffContext) * 4);
@@ -706,7 +723,9 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data, int *data_size, 
         av_free(h[i].values);
     }
 
-    *data_size = unp_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
+
     return buf_size;
 }
 
@@ -726,8 +745,10 @@ AVCodec ff_smackaud_decoder = {
     .name           = "smackaud",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_SMACKAUDIO,
+    .priv_data_size = sizeof(SmackerAudioContext),
     .init           = smka_decode_init,
     .decode         = smka_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Smacker audio"),
 };
 

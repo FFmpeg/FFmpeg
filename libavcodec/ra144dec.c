@@ -38,6 +38,10 @@ static av_cold int ra144_decode_init(AVCodecContext * avctx)
     ractx->lpc_coef[1] = ractx->lpc_tables[1];
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
+    avcodec_get_frame_defaults(&ractx->frame);
+    avctx->coded_frame = &ractx->frame;
+
     return 0;
 }
 
@@ -54,8 +58,8 @@ static void do_output_subblock(RA144Context *ractx, const uint16_t  *lpc_coefs,
 }
 
 /** Uncompress one block (20 bytes -> 160*2 bytes). */
-static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
-                              int *data_size, AVPacket *avpkt)
+static int ra144_decode_frame(AVCodecContext * avctx, void *data,
+                              int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -64,23 +68,25 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
     uint16_t block_coefs[NBLOCKS][LPC_ORDER]; // LPC coefficients of each sub-block
     unsigned int lpc_refl[LPC_ORDER];         // LPC reflection coefficients of the frame
     int i, j;
-    int out_size;
-    int16_t *data = vdata;
+    int ret;
+    int16_t *samples;
     unsigned int energy;
 
     RA144Context *ractx = avctx->priv_data;
     GetBitContext gb;
 
-    out_size = NBLOCKS * BLOCKSIZE * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    ractx->frame.nb_samples = NBLOCKS * BLOCKSIZE;
+    if ((ret = avctx->get_buffer(avctx, &ractx->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (int16_t *)ractx->frame.data[0];
 
     if(buf_size < FRAMESIZE) {
         av_log(avctx, AV_LOG_ERROR,
                "Frame too small (%d bytes). Truncated file?\n", buf_size);
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return buf_size;
     }
     init_get_bits(&gb, buf, FRAMESIZE * 8);
@@ -106,7 +112,7 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
         do_output_subblock(ractx, block_coefs[i], refl_rms[i], &gb);
 
         for (j=0; j < BLOCKSIZE; j++)
-            *data++ = av_clip_int16(ractx->curr_sblock[j + 10] << 2);
+            *samples++ = av_clip_int16(ractx->curr_sblock[j + 10] << 2);
     }
 
     ractx->old_energy = energy;
@@ -114,7 +120,9 @@ static int ra144_decode_frame(AVCodecContext * avctx, void *vdata,
 
     FFSWAP(unsigned int *, ractx->lpc_coef[0], ractx->lpc_coef[1]);
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = ractx->frame;
+
     return FRAMESIZE;
 }
 
@@ -125,5 +133,6 @@ AVCodec ff_ra_144_decoder = {
     .priv_data_size = sizeof(RA144Context),
     .init           = ra144_decode_init,
     .decode         = ra144_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("RealAudio 1.0 (14.4K)"),
 };

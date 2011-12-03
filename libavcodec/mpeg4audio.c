@@ -76,12 +76,13 @@ static inline int get_sample_rate(GetBitContext *gb, int *index)
         avpriv_mpeg4audio_sample_rates[*index];
 }
 
-int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int buf_size)
+int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
+                                 int bit_size, int sync_extension)
 {
     GetBitContext gb;
     int specific_config_bitindex;
 
-    init_get_bits(&gb, buf, buf_size*8);
+    init_get_bits(&gb, buf, bit_size);
     c->object_type = get_object_type(&gb);
     c->sample_rate = get_sample_rate(&gb, &c->sampling_index);
     c->chan_config = get_bits(&gb, 4);
@@ -117,7 +118,7 @@ int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf, int bu
             return -1;
     }
 
-    if (c->ext_object_type != AOT_SBR) {
+    if (c->ext_object_type != AOT_SBR && sync_extension) {
         while (get_bits_left(&gb) > 15) {
             if (show_bits(&gb, 11) == 0x2b7) { // sync extension
                 get_bits(&gb, 11);

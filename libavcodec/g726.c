@@ -75,6 +75,7 @@ typedef struct G726Tables {
 
 typedef struct G726Context {
     AVClass *class;
+    AVFrame frame;
     G726Tables tbls;    /**< static tables needed for computation */
 
     Float11 sr[2];      /**< prev. reconstructed samples */
@@ -427,26 +428,31 @@ static av_cold int g726_decode_init(AVCodecContext *avctx)
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
+    avcodec_get_frame_defaults(&c->frame);
+    avctx->coded_frame = &c->frame;
+
     return 0;
 }
 
-static int g726_decode_frame(AVCodecContext *avctx,
-                             void *data, int *data_size,
-                             AVPacket *avpkt)
+static int g726_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     G726Context *c = avctx->priv_data;
-    int16_t *samples = data;
+    int16_t *samples;
     GetBitContext gb;
-    int out_samples, out_size;
+    int out_samples, ret;
 
     out_samples = buf_size * 8 / c->code_size;
-    out_size    = out_samples * av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(avctx, AV_LOG_ERROR, "Output buffer is too small\n");
-        return AVERROR(EINVAL);
+
+    /* get output buffer */
+    c->frame.nb_samples = out_samples;
+    if ((ret = avctx->get_buffer(avctx, &c->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (int16_t *)c->frame.data[0];
 
     init_get_bits(&gb, buf, buf_size * 8);
 
@@ -456,7 +462,9 @@ static int g726_decode_frame(AVCodecContext *avctx,
     if (get_bits_left(&gb) > 0)
         av_log(avctx, AV_LOG_ERROR, "Frame invalidly split, missing parser?\n");
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = c->frame;
+
     return buf_size;
 }
 
@@ -474,6 +482,7 @@ AVCodec ff_adpcm_g726_decoder = {
     .init           = g726_decode_init,
     .decode         = g726_decode_frame,
     .flush          = g726_decode_flush,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("G.726 ADPCM"),
 };
 #endif

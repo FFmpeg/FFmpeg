@@ -50,6 +50,7 @@ typedef struct {
 }Band;
 
 typedef struct {
+    AVFrame frame;
     DSPContext dsp;
     MPADSPContext mpadsp;
     GetBitContext gb;

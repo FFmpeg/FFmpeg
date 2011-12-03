@@ -42,6 +42,7 @@
 #include "bytestream.h"
 
 typedef struct DPCMContext {
+    AVFrame frame;
     int channels;
     int16_t roq_square_array[256];
     int sample[2];                  ///< previous sample (for SOL_DPCM)
@@ -162,22 +163,25 @@ static av_cold int dpcm_decode_init(AVCodecContext *avctx)
     else
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
 
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
 
-static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
-                             AVPacket *avpkt)
+static int dpcm_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     const uint8_t *buf_end = buf + buf_size;
     DPCMContext *s = avctx->priv_data;
-    int out = 0;
+    int out = 0, ret;
     int predictor[2];
     int ch = 0;
     int stereo = s->channels - 1;
-    int16_t *output_samples = data;
+    int16_t *output_samples;
 
     /* calculate output size */
     switch(avctx->codec->id) {
@@ -197,15 +201,18 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
             out = buf_size;
         break;
     }
-    out *= av_get_bytes_per_sample(avctx->sample_fmt);
     if (out <= 0) {
         av_log(avctx, AV_LOG_ERROR, "packet is too small\n");
         return AVERROR(EINVAL);
     }
-    if (*data_size < out) {
-        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
-        return AVERROR(EINVAL);
+
+    /* get output buffer */
+    s->frame.nb_samples = out / s->channels;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    output_samples = (int16_t *)s->frame.data[0];
 
     switch(avctx->codec->id) {
 
@@ -307,7 +314,9 @@ static int dpcm_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
         break;
     }
 
-    *data_size = out;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
+
     return buf_size;
 }
 
@@ -319,6 +328,7 @@ AVCodec ff_ ## name_ ## _decoder = {                        \
     .priv_data_size = sizeof(DPCMContext),                  \
     .init           = dpcm_decode_init,                     \
     .decode         = dpcm_decode_frame,                    \
+    .capabilities   = CODEC_CAP_DR1,                        \
     .long_name      = NULL_IF_CONFIG_SMALL(long_name_),     \
 }
 

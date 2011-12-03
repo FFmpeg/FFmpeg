@@ -1934,6 +1934,7 @@ static int rtp_read_header(AVFormatContext *s,
     struct sockaddr_storage addr;
     AVIOContext pb;
     socklen_t addrlen = sizeof(addr);
+    RTSPState *rt = s->priv_data;
 
     if (!ff_network_init())
         return AVERROR(EIO);
@@ -1996,6 +1997,8 @@ static int rtp_read_header(AVFormatContext *s,
 
     /* sdp_read_header initializes this again */
     ff_network_close();
+
+    rt->media_type_mask = (1 << (AVMEDIA_TYPE_DATA+1)) - 1;
 
     ret = sdp_read_header(s, ap);
     s->pb = NULL;

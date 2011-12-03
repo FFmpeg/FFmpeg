@@ -208,6 +208,9 @@ static av_cold int ac3_decode_init(AVCodecContext *avctx)
     }
     s->downmixed = 1;
 
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
@@ -1296,16 +1299,15 @@ static int decode_audio_block(AC3DecodeContext *s, int blk)
 /**
  * Decode a single AC-3 frame.
  */
-static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
-                            AVPacket *avpkt)
+static int ac3_decode_frame(AVCodecContext * avctx, void *data,
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     AC3DecodeContext *s = avctx->priv_data;
-    float   *out_samples_flt = data;
-    int16_t *out_samples_s16 = data;
-    int blk, ch, err;
-    int data_size_orig, data_size_tmp;
+    float   *out_samples_flt;
+    int16_t *out_samples_s16;
+    int blk, ch, err, ret;
     const uint8_t *channel_map;
     const float *output[AC3_MAX_CHANNELS];
 
@@ -1322,8 +1324,6 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     init_get_bits(&s->gbc, buf, buf_size * 8);
 
     /* parse the syncinfo */
-    data_size_orig = *data_size;
-    *data_size = 0;
     err = parse_frame_header(s);
 
     if (err) {
@@ -1345,6 +1345,7 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
                 /* TODO: add support for substreams and dependent frames */
                 if(s->frame_type == EAC3_FRAME_TYPE_DEPENDENT || s->substreamid) {
                     av_log(avctx, AV_LOG_ERROR, "unsupported frame type : skipping frame\n");
+                    *got_frame_ptr = 0;
                     return s->frame_size;
                 } else {
                     av_log(avctx, AV_LOG_ERROR, "invalid frame type\n");
@@ -1406,21 +1407,24 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
     if (s->bitstream_mode == 0x7 && s->channels > 1)
         avctx->audio_service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;
 
+    /* get output buffer */
+    s->frame.nb_samples = s->num_blocks * 256;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    out_samples_flt = (float   *)s->frame.data[0];
+    out_samples_s16 = (int16_t *)s->frame.data[0];
+
     /* decode the audio blocks */
     channel_map = ff_ac3_dec_channel_map[s->output_mode & ~AC3_OUTPUT_LFEON][s->lfe_on];
     for (ch = 0; ch < s->out_channels; ch++)
         output[ch] = s->output[channel_map[ch]];
-    data_size_tmp = s->num_blocks * 256 * avctx->channels;
-    data_size_tmp *= avctx->sample_fmt == AV_SAMPLE_FMT_FLT ? sizeof(*out_samples_flt) : sizeof(*out_samples_s16);
-    if (data_size_orig < data_size_tmp)
-        return -1;
-    *data_size = data_size_tmp;
     for (blk = 0; blk < s->num_blocks; blk++) {
         if (!err && decode_audio_block(s, blk)) {
             av_log(avctx, AV_LOG_ERROR, "error decoding the audio block\n");
             err = 1;
         }
-
         if (avctx->sample_fmt == AV_SAMPLE_FMT_FLT) {
             s->fmt_conv.float_interleave(out_samples_flt, output, 256,
                                          s->out_channels);
@@ -1431,8 +1435,10 @@ static int ac3_decode_frame(AVCodecContext * avctx, void *data, int *data_size,
             out_samples_s16 += 256 * s->out_channels;
         }
     }
-    *data_size = s->num_blocks * 256 * avctx->channels *
-                 av_get_bytes_per_sample(avctx->sample_fmt);
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
+
     return FFMIN(buf_size, s->frame_size);
 }
 
@@ -1477,6 +1483,7 @@ AVCodec ff_ac3_decoder = {
     .init = ac3_decode_init,
     .close = ac3_decode_end,
     .decode = ac3_decode_frame,
+    .capabilities = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52A (AC-3)"),
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE
@@ -1499,6 +1506,7 @@ AVCodec ff_eac3_decoder = {
     .init = ac3_decode_init,
     .close = ac3_decode_end,
     .decode = ac3_decode_frame,
+    .capabilities = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("ATSC A/52B (AC-3, E-AC-3)"),
     .sample_fmts = (const enum AVSampleFormat[]) {
         AV_SAMPLE_FMT_FLT, AV_SAMPLE_FMT_S16, AV_SAMPLE_FMT_NONE

@@ -136,6 +136,10 @@ static int wma_decode_init(AVCodecContext * avctx)
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
@@ -814,14 +818,13 @@ static int wma_decode_frame(WMACodecContext *s, int16_t *samples)
     return 0;
 }
 
-static int wma_decode_superframe(AVCodecContext *avctx,
-                                 void *data, int *data_size,
-                                 AVPacket *avpkt)
+static int wma_decode_superframe(AVCodecContext *avctx, void *data,
+                                 int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     WMACodecContext *s = avctx->priv_data;
-    int nb_frames, bit_offset, i, pos, len, out_size;
+    int nb_frames, bit_offset, i, pos, len, ret;
     uint8_t *q;
     int16_t *samples;
 
@@ -836,8 +839,6 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     if(s->block_align)
         buf_size = s->block_align;
 
-    samples = data;
-
     init_get_bits(&s->gb, buf, buf_size*8);
 
     if (s->use_bit_reservoir) {
@@ -848,12 +849,13 @@ static int wma_decode_superframe(AVCodecContext *avctx,
         nb_frames = 1;
     }
 
-    out_size = nb_frames * s->frame_len * s->nb_channels *
-               av_get_bytes_per_sample(avctx->sample_fmt);
-    if (*data_size < out_size) {
-        av_log(s->avctx, AV_LOG_ERROR, "Insufficient output space\n");
-        goto fail;
+    /* get output buffer */
+    s->frame.nb_samples = nb_frames * s->frame_len;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    samples = (int16_t *)s->frame.data[0];
 
     if (s->use_bit_reservoir) {
         bit_offset = get_bits(&s->gb, s->byte_offset_bits + 3);
@@ -920,7 +922,10 @@ static int wma_decode_superframe(AVCodecContext *avctx,
     }
 
 //av_log(NULL, AV_LOG_ERROR, "%d %d %d %d outbytes:%d eaten:%d\n", s->frame_len_bits, s->block_len_bits, s->frame_len, s->block_len,        (int8_t *)samples - (int8_t *)data, s->block_align);
-    *data_size = out_size;
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
+
     return buf_size;
  fail:
     /* when error, we reset the bit reservoir */
@@ -945,6 +950,7 @@ AVCodec ff_wmav1_decoder = {
     .close          = ff_wma_end,
     .decode         = wma_decode_superframe,
     .flush          = flush,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 1"),
 };
 
@@ -957,5 +963,6 @@ AVCodec ff_wmav2_decoder = {
     .close          = ff_wma_end,
     .decode         = wma_decode_superframe,
     .flush          = flush,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name      = NULL_IF_CONFIG_SMALL("Windows Media Audio 2"),
 };

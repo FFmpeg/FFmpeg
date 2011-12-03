@@ -840,12 +840,21 @@ bash directly to work around this:
 bash ./configure
 @end example
 
-@subsection Darwin (MacOS X, iPhone)
+@anchor{Darwin}
+@subsection Darwin (OSX, iPhone)
 
-MacOS X on PowerPC or ARM (iPhone) requires a preprocessor from
+The toolchain provided with Xcode is sufficient to build the basic
+unacelerated code.
+
+OSX on PowerPC or ARM (iPhone) requires a preprocessor from
 @url{http://github.com/yuvi/gas-preprocessor} to build the optimized
 assembler functions. Just download the Perl script and put it somewhere
 in your PATH, FFmpeg's configure will pick it up automatically.
+
+OSX on amd64 and x86 requires @command{yasm} to build most of the
+optimized assembler functions @url{http://mxcl.github.com/homebrew/, Homebrew},
+@url{http://www.gentoo.org/proj/en/gentoo-alt/prefix/bootstrap-macos.xml, Gentoo Prefix}
+or @url{http://www.macports.org, MacPorts} can easily provide it.
 
 @section Windows
 

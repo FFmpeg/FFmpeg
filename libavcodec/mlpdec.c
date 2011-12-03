@@ -120,6 +120,7 @@ typedef struct SubStream {
 
 typedef struct MLPDecodeContext {
     AVCodecContext *avctx;
+    AVFrame     frame;
 
     //! Current access unit being read has a major sync.
     int         is_major_sync_unit;
@@ -241,6 +242,9 @@ static av_cold int mlp_decode_init(AVCodecContext *avctx)
     for (substr = 0; substr < MAX_SUBSTREAMS; substr++)
         m->substream[substr].lossless_check_data = 0xffffffff;
     dsputil_init(&m->dsp, avctx);
+
+    avcodec_get_frame_defaults(&m->frame);
+    avctx->coded_frame = &m->frame;
 
     return 0;
 }
@@ -946,13 +950,14 @@ static void rematrix_channels(MLPDecodeContext *m, unsigned int substr)
 /** Write the audio data into the output buffer. */
 
 static int output_data(MLPDecodeContext *m, unsigned int substr,
-                       uint8_t *data, unsigned int *data_size)
+                       void *data, int *got_frame_ptr)
 {
+    AVCodecContext *avctx = m->avctx;
     SubStream *s = &m->substream[substr];
     unsigned int i, out_ch = 0;
-    int out_size;
-    int32_t *data_32 = (int32_t*) data;
-    int16_t *data_16 = (int16_t*) data;
+    int32_t *data_32;
+    int16_t *data_16;
+    int ret;
     int is32 = (m->avctx->sample_fmt == AV_SAMPLE_FMT_S32);
 
     if (m->avctx->channels != s->max_matrix_channel + 1) {
@@ -960,11 +965,14 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
         return AVERROR_INVALIDDATA;
     }
 
-    out_size = s->blockpos * m->avctx->channels *
-               av_get_bytes_per_sample(m->avctx->sample_fmt);
-
-    if (*data_size < out_size)
-        return AVERROR(EINVAL);
+    /* get output buffer */
+    m->frame.nb_samples = s->blockpos;
+    if ((ret = avctx->get_buffer(avctx, &m->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    data_32 = (int32_t *)m->frame.data[0];
+    data_16 = (int16_t *)m->frame.data[0];
 
     for (i = 0; i < s->blockpos; i++) {
         for (out_ch = 0; out_ch <= s->max_matrix_channel; out_ch++) {
@@ -977,7 +985,8 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
         }
     }
 
-    *data_size = out_size;
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = m->frame;
 
     return 0;
 }
@@ -986,8 +995,8 @@ static int output_data(MLPDecodeContext *m, unsigned int substr,
  *  @return negative on error, 0 if not enough data is present in the input stream,
  *  otherwise the number of bytes consumed. */
 
-static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
-                            AVPacket *avpkt)
+static int read_access_unit(AVCodecContext *avctx, void* data,
+                            int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
@@ -1023,7 +1032,7 @@ static int read_access_unit(AVCodecContext *avctx, void* data, int *data_size,
     if (!m->params_valid) {
         av_log(m->avctx, AV_LOG_WARNING,
                "Stream parameters not seen; skipping frame.\n");
-        *data_size = 0;
+        *got_frame_ptr = 0;
         return length;
     }
 
@@ -1168,7 +1177,7 @@ next_substr:
 
     rematrix_channels(m, m->max_decoded_substream);
 
-    if ((ret = output_data(m, m->max_decoded_substream, data, data_size)) < 0)
+    if ((ret = output_data(m, m->max_decoded_substream, data, got_frame_ptr)) < 0)
         return ret;
 
     return length;
@@ -1189,6 +1198,7 @@ AVCodec ff_mlp_decoder = {
     .priv_data_size = sizeof(MLPDecodeContext),
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("MLP (Meridian Lossless Packing)"),
 };
 
@@ -1200,6 +1210,7 @@ AVCodec ff_truehd_decoder = {
     .priv_data_size = sizeof(MLPDecodeContext),
     .init           = mlp_decode_init,
     .decode         = read_access_unit,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("TrueHD"),
 };
 #endif /* CONFIG_TRUEHD_DECODER */

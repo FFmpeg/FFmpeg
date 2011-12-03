@@ -62,10 +62,10 @@
 typedef struct {
 
     AVCodecContext *avctx;
+    AVFrame frame;
     GetBitContext gb;
 
     int numchannels;
-    int bytespersample;
 
     /* buffers */
     int32_t *predicterror_buffer[MAX_CHANNELS];
@@ -351,9 +351,8 @@ static void interleave_stereo_24(int32_t *buffer[MAX_CHANNELS],
     }
 }
 
-static int alac_decode_frame(AVCodecContext *avctx,
-                             void *outbuffer, int *outputsize,
-                             AVPacket *avpkt)
+static int alac_decode_frame(AVCodecContext *avctx, void *data,
+                             int *got_frame_ptr, AVPacket *avpkt)
 {
     const uint8_t *inbuffer = avpkt->data;
     int input_buffer_size = avpkt->size;
@@ -366,7 +365,7 @@ static int alac_decode_frame(AVCodecContext *avctx,
     int isnotcompressed;
     uint8_t interlacing_shift;
     uint8_t interlacing_leftweight;
-    int i, ch;
+    int i, ch, ret;
 
     init_get_bits(&alac->gb, inbuffer, input_buffer_size * 8);
 
@@ -401,14 +400,17 @@ static int alac_decode_frame(AVCodecContext *avctx,
     } else
         outputsamples = alac->setinfo_max_samples_per_frame;
 
-    alac->bytespersample = channels * av_get_bytes_per_sample(avctx->sample_fmt);
-
-    if(outputsamples > *outputsize / alac->bytespersample){
-        av_log(avctx, AV_LOG_ERROR, "sample buffer too small\n");
-        return -1;
+    /* get output buffer */
+    if (outputsamples > INT32_MAX) {
+        av_log(avctx, AV_LOG_ERROR, "unsupported block size: %u\n", outputsamples);
+        return AVERROR_INVALIDDATA;
+    }
+    alac->frame.nb_samples = outputsamples;
+    if ((ret = avctx->get_buffer(avctx, &alac->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
 
-    *outputsize = outputsamples * alac->bytespersample;
     readsamplesize = alac->setinfo_sample_size - alac->extra_bits + channels - 1;
     if (readsamplesize > MIN_CACHE_BITS) {
         av_log(avctx, AV_LOG_ERROR, "readsamplesize too big (%d)\n", readsamplesize);
@@ -501,27 +503,32 @@ static int alac_decode_frame(AVCodecContext *avctx,
     switch(alac->setinfo_sample_size) {
     case 16:
         if (channels == 2) {
-            interleave_stereo_16(alac->outputsamples_buffer, outbuffer,
-                                 outputsamples);
+            interleave_stereo_16(alac->outputsamples_buffer,
+                                 (int16_t *)alac->frame.data[0], outputsamples);
         } else {
+            int16_t *outbuffer = (int16_t *)alac->frame.data[0];
             for (i = 0; i < outputsamples; i++) {
-                ((int16_t*)outbuffer)[i] = alac->outputsamples_buffer[0][i];
+                outbuffer[i] = alac->outputsamples_buffer[0][i];
             }
         }
         break;
     case 24:
         if (channels == 2) {
-            interleave_stereo_24(alac->outputsamples_buffer, outbuffer,
-                                 outputsamples);
+            interleave_stereo_24(alac->outputsamples_buffer,
+                                 (int32_t *)alac->frame.data[0], outputsamples);
         } else {
+            int32_t *outbuffer = (int32_t *)alac->frame.data[0];
             for (i = 0; i < outputsamples; i++)
-                ((int32_t *)outbuffer)[i] = alac->outputsamples_buffer[0][i] << 8;
+                outbuffer[i] = alac->outputsamples_buffer[0][i] << 8;
         }
         break;
     }
 
     if (input_buffer_size * 8 - get_bits_count(&alac->gb) > 8)
         av_log(avctx, AV_LOG_ERROR, "Error : %d bits left\n", input_buffer_size * 8 - get_bits_count(&alac->gb));
+
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = alac->frame;
 
     return input_buffer_size;
 }
@@ -637,6 +644,9 @@ static av_cold int alac_decode_init(AVCodecContext * avctx)
         return ret;
     }
 
+    avcodec_get_frame_defaults(&alac->frame);
+    avctx->coded_frame = &alac->frame;
+
     return 0;
 }
 
@@ -648,5 +658,6 @@ AVCodec ff_alac_decoder = {
     .init           = alac_decode_init,
     .close          = alac_decode_close,
     .decode         = alac_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("ALAC (Apple Lossless Audio Codec)"),
 };

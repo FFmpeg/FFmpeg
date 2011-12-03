@@ -2351,7 +2351,8 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
 
     if (s->avctx->draw_horiz_band) {
         AVFrame *src;
-        int offset[4];
+        int offset[AV_NUM_DATA_POINTERS];
+        int i;
 
         if(s->pict_type==AV_PICTURE_TYPE_B || s->low_delay || (s->avctx->slice_flags&SLICE_FLAG_CODED_ORDER))
             src= (AVFrame*)s->current_picture_ptr;
@@ -2361,15 +2362,14 @@ void ff_draw_horiz_band(MpegEncContext *s, int y, int h){
             return;
 
         if(s->pict_type==AV_PICTURE_TYPE_B && s->picture_structure == PICT_FRAME && s->out_format != FMT_H264){
-            offset[0]=
-            offset[1]=
-            offset[2]=
-            offset[3]= 0;
+            for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
+                offset[i] = 0;
         }else{
             offset[0]= y * s->linesize;
             offset[1]=
             offset[2]= (y >> s->chroma_y_shift) * s->uvlinesize;
-            offset[3]= 0;
+            for (i = 3; i < AV_NUM_DATA_POINTERS; i++)
+                offset[i] = 0;
         }
 
         emms_c();

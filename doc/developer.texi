@@ -53,48 +53,26 @@ and should try to fix issues their commit causes.
 @anchor{Coding Rules}
 @section Coding Rules
 
-FFmpeg is programmed in the ISO C90 language with a few additional
-features from ISO C99, namely:
+@subsection Code formatting conventions
+
+There are the following guidelines regarding the indentation in files:
 @itemize @bullet
 @item
-the @samp{inline} keyword;
-@item
-@samp{//} comments;
-@item
-designated struct initializers (@samp{struct s x = @{ .i = 17 @};})
-@item
-compound literals (@samp{x = (struct s) @{ 17, 23 @};})
-@end itemize
-
-These features are supported by all compilers we care about, so we will not
-accept patches to remove their use unless they absolutely do not impair
-clarity and performance.
-
-All code must compile with recent versions of GCC and a number of other
-currently supported compilers. To ensure compatibility, please do not use
-additional C99 features or GCC extensions. Especially watch out for:
-@itemize @bullet
-@item
-mixing statements and declarations;
-@item
-@samp{long long} (use @samp{int64_t} instead);
-@item
-@samp{__attribute__} not protected by @samp{#ifdef __GNUC__} or similar;
-@item
-GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
-@end itemize
-
 Indent size is 4.
-The presentation is one inspired by 'indent -i4 -kr -nut'.
+@item
 The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
 rejected by the git repository.
+@item
+You should try to limit your code lines to 80 characters; however, do so if and only if this improves readability.
+@end itemize
+The presentation is one inspired by 'indent -i4 -kr -nut'.
 
 The main priority in FFmpeg is simplicity and small code size in order to
 minimize the bug count.
 
-Comments: Use the JavaDoc/Doxygen
-format (see examples below) so that code documentation
+@subsection Comments
+Use the JavaDoc/Doxygen  format (see examples below) so that code documentation
 can be generated automatically. All nontrivial functions should have a comment
 above them explaining what the function does, even if it is just one sentence.
 All structures and their member variables should be documented, too.
@@ -128,11 +106,69 @@ int myfunc(int my_parameter)
 ...
 @end example
 
+@subsection C language features
+
+FFmpeg is programmed in the ISO C90 language with a few additional
+features from ISO C99, namely:
+@itemize @bullet
+@item
+the @samp{inline} keyword;
+@item
+@samp{//} comments;
+@item
+designated struct initializers (@samp{struct s x = @{ .i = 17 @};})
+@item
+compound literals (@samp{x = (struct s) @{ 17, 23 @};})
+@end itemize
+
+These features are supported by all compilers we care about, so we will not
+accept patches to remove their use unless they absolutely do not impair
+clarity and performance.
+
+All code must compile with recent versions of GCC and a number of other
+currently supported compilers. To ensure compatibility, please do not use
+additional C99 features or GCC extensions. Especially watch out for:
+@itemize @bullet
+@item
+mixing statements and declarations;
+@item
+@samp{long long} (use @samp{int64_t} instead);
+@item
+@samp{__attribute__} not protected by @samp{#ifdef __GNUC__} or similar;
+@item
+GCC statement expressions (@samp{(x = (@{ int y = 4; y; @})}).
+@end itemize
+
+@subsection Naming conventions
+All names are using underscores (_), not CamelCase. For example, @samp{avfilter_get_video_buffer} is
+a valid function name and @samp{AVFilterGetVideo} is not. The only exception from this are structure names;
+they should always be in the CamelCase
+
+There are following conventions for naming variables and functions:
+@itemize @bullet
+@item
+For local variables no prefix is required.
+@item
+For variables and functions declared as @code{static} no prefixes are required.
+@item
+For variables and functions used internally by the library, @code{ff_} prefix should be used.
+For example, @samp{ff_w64_demuxer}.
+@item
+For variables and functions used internally across multiple libraries, use @code{avpriv_}. For example,
+@samp{avpriv_aac_parse_header}.
+@item
+For exported names, each library has its own prefixes. Just check the existing code and name accordingly.
+@end itemize
+
+@subsection Miscellanous conventions
+@itemize @bullet
+@item
 fprintf and printf are forbidden in libavformat and libavcodec,
 please use av_log() instead.
-
+@item
 Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
+@end itemize
 
 @section Development Policy
 

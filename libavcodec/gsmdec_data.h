@@ -23,6 +23,7 @@
 #define AVCODEC_GSMDEC_DATA
 
 #include <stdint.h>
+#include "avcodec.h"
 
 // input and output sizes in byte
 #define GSM_BLOCK_SIZE    33
@@ -30,6 +31,7 @@
 #define GSM_FRAME_SIZE   160
 
 typedef struct {
+    AVFrame frame;
     // Contains first 120 elements from the previous frame
     // (used by long_term_synth according to the "lag"),
     // then in the following 160 elements the current

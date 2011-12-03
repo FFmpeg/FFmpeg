@@ -51,8 +51,7 @@ static int vp8_alloc_frame(VP8Context *s, AVFrame *f)
     int ret;
     if ((ret = ff_thread_get_buffer(s->avctx, f)) < 0)
         return ret;
-    if (s->num_maps_to_be_freed) {
-        assert(!s->maps_are_invalid);
+    if (s->num_maps_to_be_freed && !s->maps_are_invalid) {
         f->ref_index[0] = s->segmentation_maps[--s->num_maps_to_be_freed];
     } else if (!(f->ref_index[0] = av_mallocz(s->mb_width * s->mb_height))) {
         ff_thread_release_buffer(s->avctx, f);
@@ -1568,12 +1567,14 @@ static int vp8_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     VP8Context *s = avctx->priv_data;
     int ret, mb_x, mb_y, i, y, referenced;
     enum AVDiscard skip_thresh;
-    AVFrame *av_uninit(curframe), *prev_frame = s->framep[VP56_FRAME_CURRENT];
+    AVFrame *av_uninit(curframe), *prev_frame;
 
     release_queued_segmaps(s, 0);
 
     if ((ret = decode_frame_header(s, avpkt->data, avpkt->size)) < 0)
         return ret;
+
+    prev_frame = s->framep[VP56_FRAME_CURRENT];
 
     referenced = s->update_last || s->update_golden == VP56_FRAME_CURRENT
                                 || s->update_altref == VP56_FRAME_CURRENT;
@@ -1815,6 +1816,7 @@ static int vp8_decode_update_thread_context(AVCodecContext *dst, const AVCodecCo
     if (s->macroblocks_base &&
         (s_src->mb_width != s->mb_width || s_src->mb_height != s->mb_height)) {
         free_buffers(s);
+        s->maps_are_invalid = 1;
     }
 
     s->prob[0] = s_src->prob[!s_src->update_probabilities];

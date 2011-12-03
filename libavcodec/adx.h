@@ -40,6 +40,7 @@ typedef struct {
 } ADXChannelState;
 
 typedef struct {
+    AVFrame frame;
     int channels;
     ADXChannelState prev[2];
     int header_parsed;

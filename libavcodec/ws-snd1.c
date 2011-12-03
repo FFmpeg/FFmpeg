@@ -37,26 +37,37 @@ static const int8_t ws_adpcm_4bit[] = {
      0,  1,  2,  3,  4,  5,  6,  8
 };
 
+typedef struct WSSndContext {
+    AVFrame frame;
+} WSSndContext;
+
 static av_cold int ws_snd_decode_init(AVCodecContext *avctx)
 {
+    WSSndContext *s = avctx->priv_data;
+
     if (avctx->channels != 1) {
         av_log_ask_for_sample(avctx, "unsupported number of channels\n");
         return AVERROR(EINVAL);
     }
 
     avctx->sample_fmt = AV_SAMPLE_FMT_U8;
+
+    avcodec_get_frame_defaults(&s->frame);
+    avctx->coded_frame = &s->frame;
+
     return 0;
 }
 
 static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
-                               int *data_size, AVPacket *avpkt)
+                               int *got_frame_ptr, AVPacket *avpkt)
 {
+    WSSndContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
 
-    int in_size, out_size;
+    int in_size, out_size, ret;
     int sample = 128;
-    uint8_t *samples = data;
+    uint8_t *samples;
     uint8_t *samples_end;
 
     if (!buf_size)
@@ -71,19 +82,24 @@ static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
     in_size  = AV_RL16(&buf[2]);
     buf += 4;
 
-    if (out_size > *data_size) {
-        av_log(avctx, AV_LOG_ERROR, "Frame is too large to fit in buffer\n");
-        return -1;
-    }
     if (in_size > buf_size) {
         av_log(avctx, AV_LOG_ERROR, "Frame data is larger than input buffer\n");
         return -1;
     }
+
+    /* get output buffer */
+    s->frame.nb_samples = out_size;
+    if ((ret = avctx->get_buffer(avctx, &s->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
+    }
+    samples     = s->frame.data[0];
     samples_end = samples + out_size;
 
     if (in_size == out_size) {
         memcpy(samples, buf, out_size);
-        *data_size = out_size;
+        *got_frame_ptr   = 1;
+        *(AVFrame *)data = s->frame;
         return buf_size;
     }
 
@@ -159,7 +175,9 @@ static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
         }
     }
 
-    *data_size = samples - (uint8_t *)data;
+    s->frame.nb_samples = samples - s->frame.data[0];
+    *got_frame_ptr   = 1;
+    *(AVFrame *)data = s->frame;
 
     return buf_size;
 }
@@ -168,7 +186,9 @@ AVCodec ff_ws_snd1_decoder = {
     .name           = "ws_snd1",
     .type           = AVMEDIA_TYPE_AUDIO,
     .id             = CODEC_ID_WESTWOOD_SND1,
+    .priv_data_size = sizeof(WSSndContext),
     .init           = ws_snd_decode_init,
     .decode         = ws_snd_decode_frame,
+    .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Westwood Audio (SND1)"),
 };
