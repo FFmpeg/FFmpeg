@@ -324,14 +324,6 @@ char av_get_picture_type_char(enum AVPictureType pict_type);
  * @}
  */
 
-/**
- * Return x default pointer in case p is NULL.
- */
-static inline const void *av_x_if_null(const void *p, const void *x)
-{
-    return p ? p : x;
-}
-
 #include "common.h"
 #include "error.h"
 #include "mathematics.h"
@@ -339,6 +331,14 @@ static inline const void *av_x_if_null(const void *p, const void *x)
 #include "intfloat_readwrite.h"
 #include "log.h"
 #include "pixfmt.h"
+
+/**
+ * Return x default pointer in case p is NULL.
+ */
+static inline void *av_x_if_null(const void *p, const void *x)
+{
+    return (void *)(intptr_t)(p ? p : x);
+}
 
 /**
  * @}
