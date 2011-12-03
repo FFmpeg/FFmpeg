@@ -586,6 +586,17 @@ int av_opt_get_double(void *obj, const char *name, int search_flags, double     
 int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational *out_val);
 /**
  * @}
+ */
+/**
+ * Gets a pointer to the requested field in a struct.
+ * This function allows accessing a struct even when its fields are moved or
+ * renamed since the application making the access has been compiled,
+ *
+ * @returns a pointer to the field, it can be cast to the correct type and read
+ *          or written to.
+ */
+void *av_opt_ptr(const AVClass *class, void *obj, const char *name);
+/**
  * @}
  */
 

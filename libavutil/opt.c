@@ -806,6 +806,14 @@ const AVClass *av_opt_child_class_next(const AVClass *parent, const AVClass *pre
     return NULL;
 }
 
+void *av_opt_ptr(const AVClass *class, void *obj, const char *name)
+{
+    AVOption *opt= av_opt_find2(&class, name, NULL, 0, AV_OPT_SEARCH_FAKE_OBJ, NULL);
+    if(!opt)
+        return NULL;
+    return (uint8_t*)obj + opt->offset;
+}
+
 #ifdef TEST
 
 #undef printf
