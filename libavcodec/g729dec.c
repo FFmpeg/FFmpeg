@@ -99,6 +99,7 @@ typedef struct {
 
 typedef struct {
     DSPContext dsp;
+    AVFrame frame;
 
     /// past excitation signal buffer
     int16_t exc_base[2*SUBFRAME_SIZE+PITCH_DELAY_MAX+INTERPOL_LEN];
@@ -380,15 +381,18 @@ static av_cold int decoder_init(AVCodecContext * avctx)
     dsputil_init(&ctx->dsp, avctx);
     ctx->dsp.scalarproduct_int16 = scalarproduct_int16_c;
 
+    avcodec_get_frame_defaults(&ctx->frame);
+    avctx->coded_frame = &ctx->frame;
+
     return 0;
 }
 
-static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
+static int decode_frame(AVCodecContext *avctx, void *data, int *got_frame_ptr,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
     int buf_size       = avpkt->size;
-    int16_t *out_frame = data;
+    int16_t *out_frame;
     GetBitContext gb;
     const G729FormatDescription *format;
     int frame_erasure = 0;    ///< frame erasure detected during decoding
@@ -407,14 +411,16 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     int pitch_delay_3x;          // pitch delay, multiplied by 3
     int16_t fc[SUBFRAME_SIZE];   // fixed-codebook vector
     int16_t synth[SUBFRAME_SIZE+10]; // fixed-codebook vector
-    int j;
+    int j, ret;
     int gain_before, gain_after;
     int is_periodic = 0;         // whether one of the subframes is declared as periodic or not
 
-    if (*data_size < SUBFRAME_SIZE << 2) {
-        av_log(avctx, AV_LOG_ERROR, "Error processing packet: output buffer too small\n");
-        return AVERROR(EIO);
+    ctx->frame.nb_samples = SUBFRAME_SIZE<<1;
+    if ((ret = avctx->get_buffer(avctx, &ctx->frame)) < 0) {
+        av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+        return ret;
     }
+    out_frame= ctx->frame.data[0];
 
     if (buf_size == 10) {
         packet_type = FORMAT_G729_8K;
@@ -701,7 +707,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     /* Save signal for use in next frame. */
     memmove(ctx->exc_base, ctx->exc_base + 2 * SUBFRAME_SIZE, (PITCH_DELAY_MAX+INTERPOL_LEN)*sizeof(int16_t));
 
-    *data_size = SUBFRAME_SIZE << 2;
+    *got_frame_ptr = 1;
+    *(AVFrame*)data = ctx->frame;
     return buf_size;
 }
 
@@ -715,5 +722,6 @@ AVCodec ff_g729_decoder =
     NULL,
     NULL,
     decode_frame,
+    .capabilities = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("G.729"),
 };
