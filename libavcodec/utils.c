@@ -349,8 +349,14 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     frame->linesize[0]   = buf->linesize[0];
     memcpy(frame->data, buf->data, sizeof(frame->data));
 
-    if (avctx->pkt) frame->pkt_pts = avctx->pkt->pts;
-    else            frame->pkt_pts = AV_NOPTS_VALUE;
+    if (avctx->pkt) {
+        frame->pkt_pts = avctx->pkt->pts;
+        frame->pkt_pos = avctx->pkt->pos;
+    } else {
+        frame->pkt_pts = AV_NOPTS_VALUE;
+        frame->pkt_pos = -1;
+    }
+
     frame->reordered_opaque = avctx->reordered_opaque;
 
     if (avctx->debug & FF_DEBUG_BUFFERS)
