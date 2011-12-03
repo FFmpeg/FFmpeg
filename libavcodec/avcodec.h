@@ -4687,4 +4687,12 @@ enum AVMediaType avcodec_get_type(enum CodecID codec_id);
  */
 const AVClass *avcodec_get_class(void);
 
+/**
+ * Get the AVClass for AVFrame. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avcodec_get_frame_class(void);
+
 #endif /* AVCODEC_AVCODEC_H */
