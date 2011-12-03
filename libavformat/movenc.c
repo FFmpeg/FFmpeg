@@ -37,6 +37,7 @@
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
 #include "rtpenc.h"
+#include "mov_chan.h"
 
 #undef NDEBUG
 #include <assert.h>
@@ -335,6 +336,31 @@ static int mov_write_ms_tag(AVIOContext *pb, MOVTrack *track)
     avio_wl32(pb, track->tag); // store it byteswapped
     track->enc->codec_tag = av_bswap16(track->tag >> 16);
     ff_put_wav_header(pb, track->enc);
+    return updateSize(pb, pos);
+}
+
+static int mov_write_chan_tag(AVIOContext *pb, MOVTrack *track)
+{
+    uint32_t layout_tag, bitmap;
+    int64_t pos = avio_tell(pb);
+
+    layout_tag = ff_mov_get_channel_layout_tag(track->enc->codec_id,
+                                               track->enc->channel_layout,
+                                               &bitmap);
+    if (!layout_tag) {
+        av_log(track->enc, AV_LOG_WARNING, "not writing 'chan' tag due to "
+               "lack of channel information\n");
+        return 0;
+    }
+
+    avio_wb32(pb, 0);           // Size
+    ffio_wfourcc(pb, "chan");   // Type
+    avio_w8(pb, 0);             // Version
+    avio_wb24(pb, 0);           // Flags
+    avio_wb32(pb, layout_tag);  // mChannelLayoutTag
+    avio_wb32(pb, bitmap);      // mChannelBitmap
+    avio_wb32(pb, 0);           // mNumberChannelDescriptions
+
     return updateSize(pb, pos);
 }
 
