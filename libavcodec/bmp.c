@@ -115,7 +115,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
 
     depth = bytestream_get_le16(&buf);
 
-    if(ihsize == 40)
+    if(ihsize == 40 || ihsize == 64)
         comp = bytestream_get_le32(&buf);
     else
         comp = BMP_RGB;
