@@ -409,14 +409,14 @@ static const ID3v2EMFunc *get_extra_meta_func(const char *tag, int isv34)
 {
     int i = 0;
     while (id3v2_extra_meta_funcs[i].tag3) {
-        if (!memcmp(tag,
+        if (tag && !memcmp(tag,
                     (isv34 ? id3v2_extra_meta_funcs[i].tag4 :
                              id3v2_extra_meta_funcs[i].tag3),
                     (isv34 ? 4 : 3)))
             return &id3v2_extra_meta_funcs[i];
         i++;
     }
-    return &id3v2_extra_meta_funcs[i];
+    return NULL;
 }
 
 static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t flags, ID3v2ExtraMeta **extra_meta)
