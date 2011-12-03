@@ -476,8 +476,8 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
             return -1;
         }
 
-        c->cur = av_realloc(c->cur, avctx->width * avctx->height * (c->bpp / 8));
-        c->prev = av_realloc(c->prev, avctx->width * avctx->height * (c->bpp / 8));
+        c->cur = av_realloc_f(c->cur, avctx->width * avctx->height,  (c->bpp / 8));
+        c->prev = av_realloc_f(c->prev, avctx->width * avctx->height,  (c->bpp / 8));
         c->bx = (c->width + c->bw - 1) / c->bw;
         c->by = (c->height+ c->bh - 1) / c->bh;
         if(!c->cur || !c->prev)
