@@ -242,7 +242,9 @@ static int config_props(AVFilterLink *outlink)
 
 fail:
     av_log(NULL, AV_LOG_ERROR,
-           "Error when evaluating the expression '%s'\n", expr);
+           "Error when evaluating the expression '%s'.\n"
+           "Maybe the expression for out_w:'%s' or for out_h:'%s' is self-referencing.\n",
+           expr, scale->w_expr, scale->h_expr);
     return ret;
 }
 
