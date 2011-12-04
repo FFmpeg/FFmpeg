@@ -1532,8 +1532,9 @@ static void decode_postinit(H264Context *h, int setup_finished){
     else if (out_of_order && pics-1 == s->avctx->has_b_frames &&
              s->avctx->has_b_frames < MAX_DELAYED_PIC_COUNT) {
         if (invalid + cnt < MAX_DELAYED_PIC_COUNT) {
+            if(cnt > s->avctx->has_b_frames)
+                av_log(s->avctx, AV_LOG_WARNING, "Increasing reorder buffer to %d\n", cnt);
             s->avctx->has_b_frames = FFMAX(s->avctx->has_b_frames, cnt);
-            av_log(0,0, "hbf: %d\n", s->avctx->has_b_frames );
         }
         s->low_delay = 0;
     } else if (s->low_delay &&
