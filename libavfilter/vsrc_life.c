@@ -108,8 +108,8 @@ static int parse_rule(uint16_t *born_rule, uint16_t *stay_rule,
         if (*p)
             goto error;
     } else {
-        /* parse the rule as a number, expressed in the form STAY|(BORN<<9),
-         * where STAY and DEATH encode the corresponding 9-bits rule */
+        /* parse rule as a number, expressed in the form STAY|(BORN<<9),
+         * where STAY and BORN encode the corresponding 9-bits rule */
         long int rule = strtol(rule_str, &tail, 10);
         if (*tail)
             goto error;
