@@ -116,6 +116,8 @@ typedef struct {
     char   *x_expr, *y_expr;
     AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
     double var_values[VAR_VARS_NB];
+    char   *d_expr;
+    AVExpr *d_pexpr;
     int draw;                       ///< set to zero to prevent drawing
 } DrawTextContext;
 
@@ -135,6 +137,7 @@ static const AVOption drawtext_options[]= {
 {"shadowx",  "set x",                OFFSET(shadowx),            AV_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"shadowy",  "set y",                OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"tabsize",  "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.dbl=4},     0,        INT_MAX  },
+{"draw",     "if false do not draw", OFFSET(d_expr),             AV_OPT_TYPE_STRING, {.str="1"},   CHAR_MIN, CHAR_MAX },
 
 /* FT_LOAD_* flags */
 {"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.dbl=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
@@ -560,6 +563,8 @@ static int config_input(AVFilterLink *inlink)
     if ((ret = av_expr_parse(&dtext->x_pexpr, dtext->x_expr, var_names,
                              NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&dtext->y_pexpr, dtext->y_expr, var_names,
+                             NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&dtext->d_pexpr, dtext->d_expr, var_names,
                              NULL, NULL, NULL, NULL, 0, ctx)) < 0)
         return AVERROR(EINVAL);
 
@@ -777,10 +782,11 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
 {
     AVFilterContext *ctx = inlink->dst;
     DrawTextContext *dtext = ctx->priv;
+    int fail = 0;
 
     if (dtext_prepare_text(ctx) < 0) {
         av_log(ctx, AV_LOG_ERROR, "Can't draw text\n");
-        dtext->draw = 0;
+        fail = 1;
     }
 
     dtext->var_values[VAR_T] = inpicref->pts == AV_NOPTS_VALUE ?
@@ -791,6 +797,9 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
         av_expr_eval(dtext->y_pexpr, dtext->var_values, NULL);
     dtext->var_values[VAR_X] =
         av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+
+    dtext->draw = fail ? 0 :
+        av_expr_eval(dtext->d_pexpr, dtext->var_values, NULL);
 
     normalize_double(&dtext->x, dtext->var_values[VAR_X]);
     normalize_double(&dtext->y, dtext->var_values[VAR_Y]);
