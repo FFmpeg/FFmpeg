@@ -1088,7 +1088,7 @@ The parameters for @var{x} and @var{y} are expressions containing the
 following constants:
 
 @table @option
-@item w, h
+@item W, H
 the input width and height
 
 @item tw, text_w
