@@ -500,6 +500,7 @@ typedef struct H264Context{
      */
     MMCO mmco[MAX_MMCO_COUNT];
     int mmco_index;
+    int mmco_reset;
 
     int long_ref_count;  ///< number of actual long term references
     int short_ref_count; ///< number of actual short term references

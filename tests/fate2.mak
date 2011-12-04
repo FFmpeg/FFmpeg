@@ -238,3 +238,6 @@ fate-musepack7: FUZZ = 1
 FATE_TESTS += fate-iirfilter
 fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/iirfilter-test
+
+FATE_TESTS += fate-vble
+fate-vble: CMD = framecrc -i $(SAMPLES)/vble/flowers-partial-2MB.avi

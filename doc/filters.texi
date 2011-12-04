@@ -1770,6 +1770,7 @@ other parameters is 0.
 These parameters correspond to the parameters assigned to the
 libopencv function @code{cvSmooth}.
 
+@anchor{overlay}
 @section overlay
 
 Overlay one video on top of another.

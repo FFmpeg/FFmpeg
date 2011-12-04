@@ -64,7 +64,8 @@ The TAB character is forbidden outside of Makefiles as is any
 form of trailing whitespace. Commits containing either will be
 rejected by the git repository.
 @item
-You should try to limit your code lines to 80 characters; however, do so if and only if this improves readability.
+You should try to limit your code lines to 80 characters; however, do so if
+and only if this improves readability.
 @end itemize
 The presentation is one inspired by 'indent -i4 -kr -nut'.
 
@@ -144,6 +145,7 @@ All names are using underscores (_), not CamelCase. For example, @samp{avfilter_
 a valid function name and @samp{AVFilterGetVideo} is not. The exception from this are type names, like
 for example structs and enums; they should always be in the CamelCase
 
+
 There are following conventions for naming variables and functions:
 @itemize @bullet
 @item
@@ -151,13 +153,15 @@ For local variables no prefix is required.
 @item
 For variables and functions declared as @code{static} no prefixes are required.
 @item
-For variables and functions used internally by the library, @code{ff_} prefix should be used.
+For variables and functions used internally by the library, @code{ff_} prefix
+should be used.
 For example, @samp{ff_w64_demuxer}.
 @item
-For variables and functions used internally across multiple libraries, use @code{avpriv_}. For example,
-@samp{avpriv_aac_parse_header}.
+For variables and functions used internally across multiple libraries, use
+@code{avpriv_}. For example, @samp{avpriv_aac_parse_header}.
 @item
-For exported names, each library has its own prefixes. Just check the existing code and name accordingly.
+For exported names, each library has its own prefixes. Just check the existing
+code and name accordingly.
 @end itemize
 
 @subsection Miscellanous conventions

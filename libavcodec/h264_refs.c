@@ -582,13 +582,9 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             for(j = 0; j < 16; j++) {
                 remove_long(h, j, 0);
             }
-            s->current_picture_ptr->poc=
-            s->current_picture_ptr->field_poc[0]=
-            s->current_picture_ptr->field_poc[1]=
-            h->poc_lsb=
-            h->poc_msb=
             h->frame_num=
             s->current_picture_ptr->frame_num= 0;
+            h->mmco_reset = 1;
             s->current_picture_ptr->mmco_reset=1;
             break;
         default: assert(0);

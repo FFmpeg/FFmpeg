@@ -1381,6 +1381,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
     Picture *out = s->current_picture_ptr;
     Picture *cur = s->current_picture_ptr;
     int i, pics, out_of_order, out_idx;
+    int invalid = 0, cnt = 0;
 
     s->current_picture_ptr->f.qscale_type = FF_QSCALE_TYPE_H264;
     s->current_picture_ptr->f.pict_type   = s->pict_type;
@@ -1475,25 +1476,6 @@ static void decode_postinit(H264Context *h, int setup_finished){
         s->low_delay= 0;
     }
 
-    for (i = 0; 1; i++) {
-        if(i == MAX_DELAYED_PIC_COUNT || cur->poc < h->last_pocs[i]){
-            if(i)
-                h->last_pocs[i-1] = cur->poc;
-            break;
-        } else if(i) {
-            h->last_pocs[i-1]= h->last_pocs[i];
-        }
-    }
-    out_of_order = MAX_DELAYED_PIC_COUNT - i;
-    if(   cur->f.pict_type == AV_PICTURE_TYPE_B
-       || (h->last_pocs[MAX_DELAYED_PIC_COUNT-2] > INT_MIN && h->last_pocs[MAX_DELAYED_PIC_COUNT-1] - h->last_pocs[MAX_DELAYED_PIC_COUNT-2] > 2))
-        out_of_order = FFMAX(out_of_order, 1);
-    if(s->avctx->has_b_frames < out_of_order && !h->sps.bitstream_restriction_flag){
-        av_log(s->avctx, AV_LOG_WARNING, "Increasing reorder buffer to %d\n", out_of_order);
-        s->avctx->has_b_frames = out_of_order;
-        s->low_delay = 0;
-    }
-
     pics = 0;
     while(h->delayed_pic[pics]) pics++;
 
@@ -1503,30 +1485,86 @@ static void decode_postinit(H264Context *h, int setup_finished){
     if (cur->f.reference == 0)
         cur->f.reference = DELAYED_PIC_REF;
 
+    /* Frame reordering. This code takes pictures from coding order and sorts
+     * them by their incremental POC value into display order. It supports POC
+     * gaps, MMCO reset codes and random resets.
+     * A "display group" can start either with a IDR frame (f.key_frame = 1),
+     * and/or can be closed down with a MMCO reset code. In sequences where
+     * there is no delay, we can't detect that (since the frame was already
+     * output to the user), so we also set h->mmco_reset to detect the MMCO
+     * reset code.
+     * FIXME: if we detect insufficient delays (as per s->avctx->has_b_frames),
+     * we increase the delay between input and output. All frames affected by
+     * the lag (e.g. those that should have been output before another frame
+     * that we already returned to the user) will be dropped. This is a bug
+     * that we will fix later. */
+    for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++) {
+        cnt     += out->poc < h->last_pocs[i];
+        invalid += out->poc == INT_MIN;
+    }
+    if (!h->mmco_reset && !cur->f.key_frame && cnt + invalid == MAX_DELAYED_PIC_COUNT && cnt > 0) {
+        h->mmco_reset = 2;
+        if (pics > 1)
+            h->delayed_pic[pics - 2]->mmco_reset = 2;
+    }
+    if (h->mmco_reset || cur->f.key_frame) {
+        for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
+            h->last_pocs[i] = INT_MIN;
+        cnt     = 0;
+        invalid = MAX_DELAYED_PIC_COUNT;
+    }
     out = h->delayed_pic[0];
     out_idx = 0;
-    for (i = 1; h->delayed_pic[i] && !h->delayed_pic[i]->f.key_frame && !h->delayed_pic[i]->mmco_reset; i++)
+    for (i = 1; i < MAX_DELAYED_PIC_COUNT && h->delayed_pic[i] &&
+         !h->delayed_pic[i-1]->mmco_reset && !h->delayed_pic[i]->f.key_frame; i++)
+    {
         if(h->delayed_pic[i]->poc < out->poc){
             out = h->delayed_pic[i];
             out_idx = i;
         }
-    if (s->avctx->has_b_frames == 0 && (h->delayed_pic[0]->f.key_frame || h->delayed_pic[0]->mmco_reset))
-        h->next_outputed_poc= INT_MIN;
-    out_of_order = out->poc < h->next_outputed_poc;
+    }
+    if (s->avctx->has_b_frames == 0 && (h->delayed_pic[0]->f.key_frame || h->mmco_reset))
+        h->next_outputed_poc = INT_MIN;
+    out_of_order = !out->f.key_frame && !h->mmco_reset && (out->poc < h->next_outputed_poc);
 
-    if(out_of_order || pics > s->avctx->has_b_frames){
+    if(h->sps.bitstream_restriction_flag && s->avctx->has_b_frames >= h->sps.num_reorder_frames)
+        { }
+    else if (out_of_order && pics-1 == s->avctx->has_b_frames &&
+             s->avctx->has_b_frames < MAX_DELAYED_PIC_COUNT) {
+        if (invalid + cnt < MAX_DELAYED_PIC_COUNT) {
+            s->avctx->has_b_frames = FFMAX(s->avctx->has_b_frames, cnt);
+            av_log(0,0, "hbf: %d\n", s->avctx->has_b_frames );
+        }
+        s->low_delay = 0;
+    } else if (s->low_delay &&
+               ((h->next_outputed_poc != INT_MIN && out->poc > h->next_outputed_poc + 2) ||
+                cur->f.pict_type == AV_PICTURE_TYPE_B)) {
+        s->low_delay = 0;
+        s->avctx->has_b_frames++;
+    }
+
+    if(pics > s->avctx->has_b_frames){
         out->f.reference &= ~DELAYED_PIC_REF;
         out->owner2 = s; // for frame threading, the owner must be the second field's thread
                          // or else the first thread can release the picture and reuse it unsafely
         for(i=out_idx; h->delayed_pic[i]; i++)
             h->delayed_pic[i] = h->delayed_pic[i+1];
     }
+    memmove(h->last_pocs, &h->last_pocs[1], sizeof(*h->last_pocs) * (MAX_DELAYED_PIC_COUNT - 1));
+    h->last_pocs[MAX_DELAYED_PIC_COUNT - 1] = cur->poc;
     if(!out_of_order && pics > s->avctx->has_b_frames){
         h->next_output_pic = out;
-        if (out_idx == 0 && h->delayed_pic[0] && (h->delayed_pic[0]->f.key_frame || h->delayed_pic[0]->mmco_reset)) {
-            h->next_outputed_poc = INT_MIN;
-        } else
+        if (out->mmco_reset) {
+            if (out_idx > 0) {
+                h->next_outputed_poc = out->poc;
+                h->delayed_pic[out_idx - 1]->mmco_reset = out->mmco_reset;
+            } else {
+                h->next_outputed_poc = INT_MIN;
+            }
+        } else {
             h->next_outputed_poc = out->poc;
+        }
+        h->mmco_reset = 0;
     }else{
         av_log(s->avctx, AV_LOG_DEBUG, "no picture\n");
     }
@@ -2385,6 +2423,8 @@ static void flush_dpb(AVCodecContext *avctx){
             h->delayed_pic[i]->f.reference = 0;
         h->delayed_pic[i]= NULL;
     }
+    for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
+        h->last_pocs[i] = INT_MIN;
     h->outputed_poc=h->next_outputed_poc= INT_MIN;
     h->prev_interlaced_frame = 1;
     idr(h);
