@@ -127,6 +127,7 @@ easier to use. The changes are:
 - ass filter
 - CRI ADX audio format demuxer
 - Playstation Portable PMP format demuxer
+- Microsoft Windows ICO demuxer
 
 
 version 0.8:
