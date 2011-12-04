@@ -34,9 +34,11 @@
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/mathematics.h"
+#include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/tree.h"
+#include "libavutil/lfg.h"
 #include "avfilter.h"
 #include "drawutils.h"
 
@@ -59,6 +61,22 @@ static const char *var_names[] = {
     "y",
     "n",              ///< number of processed frames
     "t",              ///< timestamp expressed in seconds
+    NULL
+};
+
+static const char *fun2_names[] = {
+    "rand",
+};
+
+static double drand(void *opaque, double min, double max)
+{
+    return val = min + (max-min) / UINT_MAX * av_lfg_get(opaque);
+}
+
+typedef double (*eval_func2)(void *, double a, double b);
+
+static const eval_func2 fun2[] = {
+    drand,
     NULL
 };
 
@@ -119,6 +137,7 @@ typedef struct {
     char   *d_expr;
     AVExpr *d_pexpr;
     int draw;                       ///< set to zero to prevent drawing
+    AVLFG  prng;                    ///< random
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -559,13 +578,14 @@ static int config_input(AVFilterLink *inlink)
     dtext->var_values[VAR_N] = 0;
     dtext->var_values[VAR_T] = NAN;
 
+    av_lfg_init(&dtext->prng, av_get_random_seed());
 
     if ((ret = av_expr_parse(&dtext->x_pexpr, dtext->x_expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&dtext->y_pexpr, dtext->y_expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&dtext->d_pexpr, dtext->d_expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0)
         return AVERROR(EINVAL);
 
     if ((ret =
@@ -792,14 +812,14 @@ static void start_frame(AVFilterLink *inlink, AVFilterBufferRef *inpicref)
     dtext->var_values[VAR_T] = inpicref->pts == AV_NOPTS_VALUE ?
         NAN : inpicref->pts * av_q2d(inlink->time_base);
     dtext->var_values[VAR_X] =
-        av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+        av_expr_eval(dtext->x_pexpr, dtext->var_values, &dtext->prng);
     dtext->var_values[VAR_Y] =
-        av_expr_eval(dtext->y_pexpr, dtext->var_values, NULL);
+        av_expr_eval(dtext->y_pexpr, dtext->var_values, &dtext->prng);
     dtext->var_values[VAR_X] =
-        av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+        av_expr_eval(dtext->x_pexpr, dtext->var_values, &dtext->prng);
 
     dtext->draw = fail ? 0 :
-        av_expr_eval(dtext->d_pexpr, dtext->var_values, NULL);
+        av_expr_eval(dtext->d_pexpr, dtext->var_values, &dtext->prng);
 
     normalize_double(&dtext->x, dtext->var_values[VAR_X]);
     normalize_double(&dtext->y, dtext->var_values[VAR_Y]);
