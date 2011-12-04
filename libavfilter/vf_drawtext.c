@@ -30,8 +30,8 @@
 #include <time.h>
 
 #include "libavutil/colorspace.h"
-#include "libavutil/eval.h"
 #include "libavutil/file.h"
+#include "libavutil/eval.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
@@ -101,9 +101,6 @@ typedef struct {
     char *textfile;                 ///< file with text to be drawn
     int x;                          ///< x position to start drawing text
     int y;                          ///< y position to start drawing text
-    char *x_expr;                   ///< expression for x position
-    char *y_expr;                   ///< expression for y position
-    AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
     int max_glyph_w;                ///< max glyph width
     int max_glyph_h;                ///< max glyph heigth
     int shadowx, shadowy;
@@ -130,6 +127,9 @@ typedef struct {
     int pixel_step[4];              ///< distance in bytes between the component of each pixel
     uint8_t rgba_map[4];            ///< map RGBA offsets to the positions in the packed RGBA format
     uint8_t *box_line[4];           ///< line used for filling the box background
+    char *x_expr;                   ///< expression for x position
+    char *y_expr;                   ///< expression for y position
+    AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
     int64_t basetime;               ///< base pts time in the real world for display
     double var_values[VAR_VARS_NB];
 } DrawTextContext;
@@ -423,10 +423,15 @@ static av_cold void uninit(AVFilterContext *ctx)
     }
 }
 
+static inline int is_newline(uint32_t c)
+{
+    return (c == '\n' || c == '\r' || c == '\f' || c == '\v');
+}
+
 static int config_input(AVFilterLink *inlink)
 {
     AVFilterContext *ctx = inlink->dst;
-    DrawTextContext *dtext = inlink->dst->priv;
+    DrawTextContext *dtext = ctx->priv;
     const AVPixFmtDescriptor *pix_desc = &av_pix_fmt_descriptors[inlink->format];
     int ret;
 
@@ -590,11 +595,6 @@ static inline void drawbox(AVFilterBufferRef *picref, int x, int y,
                           line, pixel_step, hsub, vsub,
                           x, y, width, height);
     }
-}
-
-static inline int is_newline(uint32_t c)
-{
-    return (c == '\n' || c == '\r' || c == '\f' || c == '\v');
 }
 
 static int draw_glyphs(DrawTextContext *dtext, AVFilterBufferRef *picref,
