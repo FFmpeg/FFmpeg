@@ -47,8 +47,8 @@
 #include FT_GLYPH_H
 
 static const char * const var_names[] = {
-    "w",                      ///< width  of the input video
-    "h",                      ///< height of the input video
+    "main_w", "w",            ///< width  of the input video
+    "main_h", "h",            ///< height of the input video
     "tw", "text_w",           ///< width  of the rendered text
     "th", "text_h",           ///< height of the rendered text
     "max_glyph_w",            ///< max glyph width
@@ -68,8 +68,8 @@ static const char * const var_names[] = {
 };
 
 enum var_name {
-    VAR_W,
-    VAR_H,
+    VAR_MAIN_W, VAR_W,
+    VAR_MAIN_H, VAR_H,
     VAR_TW, VAR_TEXT_W,
     VAR_TH, VAR_TEXT_H,
     VAR_MAX_GLYPH_W,
@@ -453,8 +453,8 @@ static int config_input(AVFilterLink *inlink)
         dtext->shadowcolor[3] = rgba[3];
     }
 
-    dtext->var_values[VAR_W]     = inlink->w;
-    dtext->var_values[VAR_H]     = inlink->h;
+    dtext->var_values[VAR_W]     = dtext->var_values[VAR_MAIN_W] = inlink->w;
+    dtext->var_values[VAR_H]     = dtext->var_values[VAR_MAIN_H] = inlink->h;
     dtext->var_values[VAR_SAR]   = inlink->sample_aspect_ratio.num ? av_q2d(inlink->sample_aspect_ratio) : 1;
     dtext->var_values[VAR_DAR]   = (double)inlink->w / inlink->h * dtext->var_values[VAR_SAR];
     dtext->var_values[VAR_HSUB]  = 1<<pix_desc->log2_chroma_w;
