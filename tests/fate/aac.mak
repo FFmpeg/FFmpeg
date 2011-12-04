@@ -38,6 +38,10 @@ FATE_AAC += fate-aac-ap05_48
 fate-aac-ap05_48: CMD = pcm -i $(SAMPLES)/aac/ap05_48.mp4
 fate-aac-ap05_48: REF = $(SAMPLES)/aac/ap05_48.s16
 
+FATE_AAC += fate-aac-latm_stereo_to_51
+fate-aac-latm_stereo_to_51: CMD = pcm -i $(SAMPLES)/aac/latm_stereo_to_51.ts -ac 6
+fate-aac-latm_stereo_to_51: REF = $(SAMPLES)/aac/latm_stereo_to_51.s16
+
 fate-aac-ct%: CMD = pcm -i $(SAMPLES)/aac/CT_DecoderCheck/$(@:fate-aac-ct-%=%)
 fate-aac-ct%: REF = $(SAMPLES)/aac/CT_DecoderCheck/aacPlusv2.wav
 

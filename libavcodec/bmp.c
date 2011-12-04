@@ -263,9 +263,9 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }else{
         switch(depth){
         case 1:
-            for(i = 0; i < avctx->height; i++){
+            for (i = 0; i < avctx->height; i++) {
                 int j;
-                for(j = 0; j < n; j++){
+                for (j = 0; j < n; j++) {
                     ptr[j*8+0] =  buf[j] >> 7;
                     ptr[j*8+1] = (buf[j] >> 6) & 1;
                     ptr[j*8+2] = (buf[j] >> 5) & 1;

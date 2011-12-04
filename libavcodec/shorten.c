@@ -331,7 +331,6 @@ static int read_header(ShortenContext *s)
 
     s->lpcqoffset = 0;
     s->blocksize = DEFAULT_BLOCK_SIZE;
-    s->channels = 1;
     s->nmean = -1;
     s->version = get_bits(&s->gb, 8);
     s->internal_ftype = get_uint(s, TYPESIZE);
