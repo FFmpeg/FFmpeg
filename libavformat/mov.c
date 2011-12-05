@@ -915,6 +915,8 @@ static int mov_read_stco(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     entries = avio_rb32(pb);
 
+    if (!entries)
+        return 0;
     if (entries >= UINT_MAX/sizeof(int64_t))
         return -1;
 
@@ -1336,6 +1338,8 @@ static int mov_read_stsc(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     av_dlog(c->fc, "track[%i].stsc.entries = %i\n", c->fc->nb_streams-1, entries);
 
+    if (!entries)
+        return 0;
     if (entries >= UINT_MAX / sizeof(*sc->stsc_data))
         return -1;
     sc->stsc_data = av_malloc(entries * sizeof(*sc->stsc_data));
@@ -1451,6 +1455,8 @@ static int mov_read_stsz(MOVContext *c, AVIOContext *pb, MOVAtom atom)
         return -1;
     }
 
+    if (!entries)
+        return 0;
     if (entries >= UINT_MAX / sizeof(int) || entries >= (UINT_MAX - 4) / field_size)
         return -1;
     sc->sample_sizes = av_malloc(entries * sizeof(int));
@@ -1550,6 +1556,8 @@ static int mov_read_ctts(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 
     av_dlog(c->fc, "track[%i].ctts.entries = %i\n", c->fc->nb_streams-1, entries);
 
+    if (!entries)
+        return 0;
     if (entries >= UINT_MAX / sizeof(*sc->ctts_data))
         return -1;
     sc->ctts_data = av_malloc(entries * sizeof(*sc->ctts_data));
@@ -1609,6 +1617,8 @@ static void mov_build_index(MOVContext *mov, AVStream *st)
 
         current_dts -= sc->dts_shift;
 
+        if (!sc->sample_count)
+            return;
         if (sc->sample_count >= UINT_MAX / sizeof(*st->index_entries))
             return;
         st->index_entries = av_malloc(sc->sample_count*sizeof(*st->index_entries));
