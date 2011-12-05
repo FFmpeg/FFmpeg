@@ -949,7 +949,7 @@ typedef struct AVPacket {
  * without breaking compatibility with each other.
  * Removal, reordering and changes in the remaining cases require
  * a major version bump.
- * sizeof(AVFrame) must not be used outside libav*.
+ * sizeof(AVFrame) must not be used outside libavcodec.
  */
 typedef struct AVFrame {
 #if FF_API_DATA_POINTERS
