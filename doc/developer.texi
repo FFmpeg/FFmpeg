@@ -207,6 +207,31 @@ Casts should be used only when necessary. Unneeded parentheses
 should also be avoided if they don't make the code easier to understand.
 @end itemize
 
+@subsection Editor configuration
+In order to configure Vim to follow Libav formatting conventions, paste
+the following snippet into your @file{.vimrc}:
+@example
+" indentation rules for libav: 4 spaces, no tabs
+set expandtab
+set shiftwidth=4
+set softtabstop=4
+" allow tabs in Makefiles
+autocmd FileType make set noexpandtab shiftwidth=8 softtabstop=8
+" Trailing whitespace and tabs are forbidden, so highlight them.
+highlight ForbiddenWhitespace ctermbg=red guibg=red
+match ForbiddenWhitespace /\s\+$\|\t/
+" Do not highlight spaces at the end of line while typing on that line.
+autocmd InsertEnter * match ForbiddenWhitespace /\t\|\s\+\%#\@@<!$/
+@end example
+
+For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
+@example
+(setq c-default-style "k&r")
+(setq-default c-basic-offset 4)
+(setq-default indent-tabs-mode nil)
+(setq-default show-trailing-whitespace t)
+@end example
+
 @section Development Policy
 
 @enumerate
