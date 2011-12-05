@@ -145,6 +145,8 @@ typedef struct InputStream {
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     AVCodec *dec;
+    AVFrame *decoded_frame;
+    AVFrame *filtered_frame;
 
     int64_t       start;     /* time when read started */
     int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
@@ -523,8 +525,11 @@ void exit_program(int ret)
     for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i].ctx);
     }
-    for (i = 0; i < nb_input_streams; i++)
+    for (i = 0; i < nb_input_streams; i++) {
+        av_freep(&input_streams[i].decoded_frame);
+        av_freep(&input_streams[i].filtered_frame);
         av_dict_free(&input_streams[i].opts);
+    }
 
     if (vstats_file)
         fclose(vstats_file);
@@ -1622,18 +1627,19 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
     int bps = av_get_bytes_per_sample(ist->st->codec->sample_fmt);
     int i, ret;
 
-    if (!(decoded_frame = avcodec_alloc_frame()))
+    if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
+    else
+        avcodec_get_frame_defaults(ist->decoded_frame);
+    decoded_frame = ist->decoded_frame;
 
     ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
     if (ret < 0) {
-        av_freep(&decoded_frame);
         return ret;
     }
 
     if (!*got_output) {
         /* no audio frame */
-        av_freep(&decoded_frame);
         return ret;
     }
 
@@ -1701,7 +1707,6 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             av_log(NULL, AV_LOG_FATAL,
                    "Audio volume adjustment on sample format %s is not supported.\n",
                    av_get_sample_fmt_name(ist->st->codec->sample_fmt));
-            av_freep(&decoded_frame);
             exit_program(1);
         }
     }
@@ -1716,7 +1721,6 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
         do_audio_out(output_files[ost->file_index].ctx, ost, ist, decoded_frame);
     }
 
-    av_freep(&decoded_frame);
     return ret;
 }
 
@@ -1730,8 +1734,11 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     int frame_available = 1;
 #endif
 
-    if (!(decoded_frame = avcodec_alloc_frame()))
+    if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
+    else
+        avcodec_get_frame_defaults(ist->decoded_frame);
+    decoded_frame = ist->decoded_frame;
     pkt->pts  = *pkt_pts;
     pkt->dts  = ist->pts;
     *pkt_pts  = AV_NOPTS_VALUE;
@@ -1739,12 +1746,11 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     quality = same_quant ? decoded_frame->quality : 0;
     if (!*got_output) {
         /* no picture yet */
-        av_freep(&decoded_frame);
         return ret;
     }
     ist->next_pts = ist->pts = guess_correct_pts(&ist->pts_ctx, decoded_frame->pkt_pts,
@@ -1778,10 +1784,12 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             else
                 sar = ist->st->codec->sample_aspect_ratio;
             av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, ist->pts, sar);
-            if (!(filtered_frame = avcodec_alloc_frame())) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+            if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
+                av_free(buffer_to_free);
+                return AVERROR(ENOMEM);
+            } else
+                avcodec_get_frame_defaults(ist->filtered_frame);
+            filtered_frame = ist->filtered_frame;
             frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
         }
         while (frame_available) {
@@ -1805,13 +1813,10 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             if (ost->picref)
                 avfilter_unref_buffer(ost->picref);
         }
-        av_freep(&filtered_frame);
 #endif
     }
 
-fail:
     av_free(buffer_to_free);
-    av_freep(&decoded_frame);
     return ret;
 }
 
