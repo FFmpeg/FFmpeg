@@ -595,7 +595,7 @@ int av_opt_get_q     (void *obj, const char *name, int search_flags, AVRational 
  * @returns a pointer to the field, it can be cast to the correct type and read
  *          or written to.
  */
-void *av_opt_ptr(const AVClass *class, void *obj, const char *name);
+void *av_opt_ptr(const AVClass *avclass, void *obj, const char *name);
 /**
  * @}
  */
