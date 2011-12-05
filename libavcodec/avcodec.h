@@ -1256,6 +1256,8 @@ typedef struct AVFrame {
 
     /**
      * frame timestamp estimated using various heuristics, in stream time base
+     * Code outside libavcodec should access this field using:
+     *  av_opt_ptr(avcodec_get_frame_class(), frame, "best_effort_timestamp");
      * - encoding: unused
      * - decoding: set by libavcodec, read by user.
      */
@@ -1263,6 +1265,8 @@ typedef struct AVFrame {
 
     /**
      * reordered pos from the last AVPacket that has been input into the decoder
+     * Code outside libavcodec should access this field using:
+     *  av_opt_ptr(avcodec_get_frame_class(), frame, "pkt_pos");
      * - encoding: unused
      * - decoding: Read by user.
      */
@@ -1270,6 +1274,8 @@ typedef struct AVFrame {
 
     /**
      * reordered sample aspect ratio for the video frame, 0/1 if unknown\unspecified
+     * Code outside libavcodec should access this field using:
+     *  av_opt_ptr(avcodec_get_frame_class(), frame, "sample_aspect_ratio");
      * - encoding: unused
      * - decoding: Read by user.
      */
@@ -1277,6 +1283,8 @@ typedef struct AVFrame {
 
     /**
      * width and height of the video frame
+     * Code outside libavcodec should access this field using:
+     *  av_opt_ptr(avcodec_get_frame_class(), frame, "width");
      * - encoding: unused
      * - decoding: Read by user.
      */
@@ -1286,6 +1294,8 @@ typedef struct AVFrame {
      * format of the frame, -1 if unknown or unset
      * It should be cast to the corresponding enum (enum PixelFormat
      * for video, enum AVSampleFormat for audio)
+     * Code outside libavcodec should access this field using:
+     *  av_opt_ptr(avcodec_get_frame_class(), frame, "format");
      * - encoding: unused
      * - decoding: Read by user.
      */
