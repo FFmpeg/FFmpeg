@@ -1633,6 +1633,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 
     if (!*got_output) {
         /* no audio frame */
+        av_freep(&decoded_frame);
         return ret;
     }
 
@@ -1700,6 +1701,7 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             av_log(NULL, AV_LOG_FATAL,
                    "Audio volume adjustment on sample format %s is not supported.\n",
                    av_get_sample_fmt_name(ist->st->codec->sample_fmt));
+            av_freep(&decoded_frame);
             exit_program(1);
         }
     }
@@ -1713,6 +1715,8 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
             continue;
         do_audio_out(output_files[ost->file_index].ctx, ost, ist, decoded_frame);
     }
+
+    av_freep(&decoded_frame);
     return ret;
 }
 
