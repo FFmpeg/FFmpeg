@@ -21,8 +21,8 @@
 #include "asm.S"
 
 /* chroma_mc8(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
-.macro  h264_chroma_mc8 type
-function ff_\type\()_h264_chroma_mc8_neon, export=1
+.macro  h264_chroma_mc8 type, codec=h264
+function ff_\type\()_\codec\()_chroma_mc8_neon, export=1
         push            {r4-r7, lr}
         ldrd            r4,  [sp, #20]
   .ifc \type,avg
@@ -30,6 +30,15 @@ function ff_\type\()_h264_chroma_mc8_neon, export=1
   .endif
         pld             [r1]
         pld             [r1, r2]
+
+  .ifc \codec,rv40
+        movrel          r6,  rv40bias
+        lsr             r7,  r5,  #1
+        add             r6,  r6,  r7,  lsl #3
+        lsr             r7,  r4,  #1
+        add             r6,  r6,  r7,  lsl #1
+        vld1.16         {d22[],d23[]}, [r6,:16]
+  .endif
 
 A       muls            r7,  r4,  r5
 T       mul             r7,  r4,  r5
@@ -67,10 +76,17 @@ T       cmp             r7,  #0
         vmlal.u8        q9,  d7,  d1
         vmlal.u8        q9,  d4,  d2
         vmlal.u8        q9,  d5,  d3
-        vrshrn.u16      d16, q8,  #6
         vld1.8          {d6, d7}, [r5], r4
         pld             [r1]
+  .ifc \codec,h264
+        vrshrn.u16      d16, q8,  #6
         vrshrn.u16      d17, q9,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vadd.u16        q9,  q9,  q11
+        vshrn.u16       d16, q8,  #6
+        vshrn.u16       d17, q9,  #6
+  .endif
   .ifc \type,avg
         vld1.8          {d20}, [lr,:64], r2
         vld1.8          {d21}, [lr,:64], r2
@@ -102,8 +118,15 @@ T       cmp             r7,  #0
         vmull.u8        q9,  d6,  d0
         vmlal.u8        q9,  d4,  d1
         vld1.8          {d6}, [r5], r4
+  .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
         vrshrn.u16      d17, q9,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vadd.u16        q9,  q9,  q11
+        vshrn.u16       d16, q8,  #6
+        vshrn.u16       d17, q9,  #6
+  .endif
   .ifc \type,avg
         vld1.8          {d20}, [lr,:64], r2
         vld1.8          {d21}, [lr,:64], r2
@@ -131,8 +154,15 @@ T       cmp             r7,  #0
         vmlal.u8        q9,  d7,  d1
         pld             [r1]
         vext.8          d5,  d4,  d5,  #1
+  .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
         vrshrn.u16      d17, q9,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vadd.u16        q9,  q9,  q11
+        vshrn.u16       d16, q8,  #6
+        vshrn.u16       d17, q9,  #6
+  .endif
   .ifc \type,avg
         vld1.8          {d20}, [lr,:64], r2
         vld1.8          {d21}, [lr,:64], r2
@@ -149,8 +179,8 @@ endfunc
 .endm
 
 /* chroma_mc4(uint8_t *dst, uint8_t *src, int stride, int h, int x, int y) */
-.macro  h264_chroma_mc4 type
-function ff_\type\()_h264_chroma_mc4_neon, export=1
+.macro  h264_chroma_mc4 type, codec=h264
+function ff_\type\()_\codec\()_chroma_mc4_neon, export=1
         push            {r4-r7, lr}
         ldrd            r4,  [sp, #20]
   .ifc \type,avg
@@ -158,6 +188,15 @@ function ff_\type\()_h264_chroma_mc4_neon, export=1
   .endif
         pld             [r1]
         pld             [r1, r2]
+
+  .ifc \codec,rv40
+        movrel          r6,  rv40bias
+        lsr             r7,  r5,  #1
+        add             r6,  r6,  r7,  lsl #3
+        lsr             r7,  r4,  #1
+        add             r6,  r6,  r7,  lsl #1
+        vld1.16         {d22[],d23[]}, [r6,:16]
+  .endif
 
 A       muls            r7,  r4,  r5
 T       mul             r7,  r4,  r5
@@ -199,7 +238,12 @@ T       cmp             r7,  #0
         vld1.8          {d6},     [r5], r4
         vadd.i16        d16, d16, d17
         vadd.i16        d17, d18, d19
+  .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vshrn.u16       d16, q8,  #6
+  .endif
         subs            r3,  r3,  #2
         pld             [r1]
   .ifc \type,avg
@@ -236,7 +280,12 @@ T       cmp             r7,  #0
         vld1.32         {d4[1]},  [r5], r4
         vadd.i16        d16, d16, d17
         vadd.i16        d17, d18, d19
+  .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vshrn.u16       d16, q8,  #6
+  .endif
   .ifc \type,avg
         vld1.32         {d20[0]}, [lr,:32], r2
         vld1.32         {d20[1]}, [lr,:32], r2
@@ -266,7 +315,12 @@ T       cmp             r7,  #0
         vadd.i16        d16, d16, d17
         vadd.i16        d17, d18, d19
         pld             [r1]
+  .ifc \codec,h264
         vrshrn.u16      d16, q8,  #6
+  .else
+        vadd.u16        q8,  q8,  q11
+        vshrn.u16       d16, q8,  #6
+  .endif
   .ifc \type,avg
         vld1.32         {d20[0]}, [lr,:32], r2
         vld1.32         {d20[1]}, [lr,:32], r2
@@ -352,9 +406,25 @@ function ff_\type\()_h264_chroma_mc2_neon, export=1
 endfunc
 .endm
 
+#if CONFIG_H264_DECODER
         h264_chroma_mc8 put
         h264_chroma_mc8 avg
         h264_chroma_mc4 put
         h264_chroma_mc4 avg
         h264_chroma_mc2 put
         h264_chroma_mc2 avg
+#endif
+
+#if CONFIG_RV40_DECODER
+const   rv40bias
+        .short           0, 16, 32, 16
+        .short          32, 28, 32, 28
+        .short           0, 32, 16, 32
+        .short          32, 28, 32, 28
+endconst
+
+        h264_chroma_mc8 put, rv40
+        h264_chroma_mc8 avg, rv40
+        h264_chroma_mc4 put, rv40
+        h264_chroma_mc4 avg, rv40
+#endif
