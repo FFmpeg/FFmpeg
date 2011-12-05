@@ -509,7 +509,8 @@ void avcodec_default_release_buffer(AVCodecContext *s, AVFrame *pic){
         avci->buffer_count--;
         last = &avci->buffer[avci->buffer_count];
 
-        FFSWAP(InternalBuffer, *buf, *last);
+        if (buf != last)
+            FFSWAP(InternalBuffer, *buf, *last);
     }
 
     for (i = 0; i < AV_NUM_DATA_POINTERS; i++) {
