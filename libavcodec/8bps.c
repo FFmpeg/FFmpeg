@@ -27,7 +27,7 @@
  *
  * Supports: PAL8 (RGB 8bpp, paletted)
  *         : BGR24 (RGB 24bpp) (can also output it as RGB32)
- *         : RGB32 (RGB 32bpp, 4th plane is probably alpha and it's ignored)
+ *         : RGB32 (RGB 32bpp, 4th plane is alpha)
  *
  */
 
@@ -71,7 +71,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         unsigned int dlen, p, row;
         const unsigned char *lp, *dp;
         unsigned char count;
-        unsigned int px_inc;
         unsigned int planes = c->planes;
         unsigned char *planemap = c->planemap;
 
@@ -88,12 +87,6 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         /* Set data pointer after line lengths */
         dp = encoded + planes * (height << 1);
 
-        /* Ignore alpha plane, don't know what to do with it */
-        if (planes == 4)
-                planes--;
-
-        px_inc = planes + (avctx->pix_fmt == PIX_FMT_RGB32);
-
         for (p = 0; p < planes; p++) {
                 /* Lines length pointer for this plane */
                 lp = encoded + p * (height << 1);
@@ -109,20 +102,20 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
                                 if ((count = *dp++) <= 127) {
                                         count++;
                                         dlen -= count + 1;
-                                        if (pixptr + count * px_inc > pixptr_end)
+                                        if (pixptr + count * planes > pixptr_end)
                                             break;
                                         if(dp + count > buf+buf_size) return -1;
                                         while(count--) {
                                                 *pixptr = *dp++;
-                                                pixptr += px_inc;
+                                                pixptr += planes;
                                         }
                                 } else {
                                         count = 257 - count;
-                                        if (pixptr + count * px_inc > pixptr_end)
+                                        if (pixptr + count * planes > pixptr_end)
                                             break;
                                         while(count--) {
                                                 *pixptr = *dp;
-                                                pixptr += px_inc;
+                                                pixptr += planes;
                                         }
                                         dp++;
                                         dlen -= 2;
@@ -185,12 +178,12 @@ static av_cold int decode_init(AVCodecContext *avctx)
                         c->planemap[0] = 1; // 1st plane is red
                         c->planemap[1] = 2; // 2nd plane is green
                         c->planemap[2] = 3; // 3rd plane is blue
-                        c->planemap[3] = 0; // 4th plane is alpha???
+                        c->planemap[3] = 0; // 4th plane is alpha
 #else
                         c->planemap[0] = 2; // 1st plane is red
                         c->planemap[1] = 1; // 2nd plane is green
                         c->planemap[2] = 0; // 3rd plane is blue
-                        c->planemap[3] = 3; // 4th plane is alpha???
+                        c->planemap[3] = 3; // 4th plane is alpha
 #endif
                         break;
                 default:
