@@ -27,7 +27,7 @@
     i = scan[coeff--]; \
     block[i] = (c) * quant[i];
 
-//! aligns the bitstream to the give power of two
+/// aligns the bitstream to the given power of two
 #define ALIGN(a) \
     n = (-get_bits_count(gb)) & (a - 1); \
     if (n) {skip_bits(gb, n);}

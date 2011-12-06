@@ -196,7 +196,7 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options);
  *
  * @param s  Corresponding format context.
  * @param st Stream from s to be checked.
- * @param spec A stream specifier of the [v|a|s|d]:[<stream index>] form.
+ * @param spec A stream specifier of the [v|a|s|d]:[\<stream index\>] form.
  *
  * @return 1 if the stream matches, 0 if it doesn't, <0 on error
  */

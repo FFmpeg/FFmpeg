@@ -45,35 +45,35 @@ static const char* sample_message =
     "a sample of this file.";
 
 typedef struct SubStream {
-    //! Set if a valid restart header has been read. Otherwise the substream cannot be decoded.
+    /// Set if a valid restart header has been read. Otherwise the substream cannot be decoded.
     uint8_t     restart_seen;
 
     //@{
     /** restart header data */
-    //! The type of noise to be used in the rematrix stage.
+    /// The type of noise to be used in the rematrix stage.
     uint16_t    noise_type;
 
-    //! The index of the first channel coded in this substream.
+    /// The index of the first channel coded in this substream.
     uint8_t     min_channel;
-    //! The index of the last channel coded in this substream.
+    /// The index of the last channel coded in this substream.
     uint8_t     max_channel;
-    //! The number of channels input into the rematrix stage.
+    /// The number of channels input into the rematrix stage.
     uint8_t     max_matrix_channel;
-    //! For each channel output by the matrix, the output channel to map it to
+    /// For each channel output by the matrix, the output channel to map it to
     uint8_t     ch_assign[MAX_CHANNELS];
 
-    //! Channel coding parameters for channels in the substream
+    /// Channel coding parameters for channels in the substream
     ChannelParams channel_params[MAX_CHANNELS];
 
-    //! The left shift applied to random noise in 0x31ea substreams.
+    /// The left shift applied to random noise in 0x31ea substreams.
     uint8_t     noise_shift;
-    //! The current seed value for the pseudorandom noise generator(s).
+    /// The current seed value for the pseudorandom noise generator(s).
     uint32_t    noisegen_seed;
 
-    //! Set if the substream contains extra info to check the size of VLC blocks.
+    /// Set if the substream contains extra info to check the size of VLC blocks.
     uint8_t     data_check_present;
 
-    //! Bitmask of which parameter sets are conveyed in a decoding parameter block.
+    /// Bitmask of which parameter sets are conveyed in a decoding parameter block.
     uint8_t     param_presence_flags;
 #define PARAM_BLOCKSIZE     (1 << 7)
 #define PARAM_MATRIX        (1 << 6)
@@ -88,32 +88,32 @@ typedef struct SubStream {
     //@{
     /** matrix data */
 
-    //! Number of matrices to be applied.
+    /// Number of matrices to be applied.
     uint8_t     num_primitive_matrices;
 
-    //! matrix output channel
+    /// matrix output channel
     uint8_t     matrix_out_ch[MAX_MATRICES];
 
-    //! Whether the LSBs of the matrix output are encoded in the bitstream.
+    /// Whether the LSBs of the matrix output are encoded in the bitstream.
     uint8_t     lsb_bypass[MAX_MATRICES];
-    //! Matrix coefficients, stored as 2.14 fixed point.
+    /// Matrix coefficients, stored as 2.14 fixed point.
     int32_t     matrix_coeff[MAX_MATRICES][MAX_CHANNELS];
-    //! Left shift to apply to noise values in 0x31eb substreams.
+    /// Left shift to apply to noise values in 0x31eb substreams.
     uint8_t     matrix_noise_shift[MAX_MATRICES];
     //@}
 
-    //! Left shift to apply to Huffman-decoded residuals.
+    /// Left shift to apply to Huffman-decoded residuals.
     uint8_t     quant_step_size[MAX_CHANNELS];
 
-    //! number of PCM samples in current audio block
+    /// number of PCM samples in current audio block
     uint16_t    blocksize;
-    //! Number of PCM samples decoded so far in this frame.
+    /// Number of PCM samples decoded so far in this frame.
     uint16_t    blockpos;
 
-    //! Left shift to apply to decoded PCM values to get final 24-bit output.
+    /// Left shift to apply to decoded PCM values to get final 24-bit output.
     int8_t      output_shift[MAX_CHANNELS];
 
-    //! Running XOR of all output samples.
+    /// Running XOR of all output samples.
     int32_t     lossless_check_data;
 
 } SubStream;
@@ -122,24 +122,24 @@ typedef struct MLPDecodeContext {
     AVCodecContext *avctx;
     AVFrame     frame;
 
-    //! Current access unit being read has a major sync.
+    /// Current access unit being read has a major sync.
     int         is_major_sync_unit;
 
-    //! Set if a valid major sync block has been read. Otherwise no decoding is possible.
+    /// Set if a valid major sync block has been read. Otherwise no decoding is possible.
     uint8_t     params_valid;
 
-    //! Number of substreams contained within this stream.
+    /// Number of substreams contained within this stream.
     uint8_t     num_substreams;
 
-    //! Index of the last substream to decode - further substreams are skipped.
+    /// Index of the last substream to decode - further substreams are skipped.
     uint8_t     max_decoded_substream;
 
-    //! Stream needs channel reordering to comply with FFmpeg's channel order
+    /// Stream needs channel reordering to comply with FFmpeg's channel order
     uint8_t     needs_reordering;
 
-    //! number of PCM samples contained in each frame
+    /// number of PCM samples contained in each frame
     int         access_unit_size;
-    //! next power of two above the number of samples in each frame
+    /// next power of two above the number of samples in each frame
     int         access_unit_size_pow2;
 
     SubStream   substream[MAX_SUBSTREAMS];

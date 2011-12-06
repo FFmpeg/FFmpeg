@@ -22,9 +22,9 @@
 /**
  * @file
  * Electronic Arts Madcow Video Decoder
- * by Peter Ross <pross@xvid.org>
+ * @author Peter Ross <pross@xvid.org>
  *
- * Technical details here:
+ * @see technical details at
  * http://wiki.multimedia.cx/index.php?title=Electronic_Arts_MAD
  */
 

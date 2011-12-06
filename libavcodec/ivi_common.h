@@ -51,7 +51,7 @@ typedef struct {
                             /// or "7" for custom one
     VLC         *tab;       /// pointer to the table associated with tab_sel
 
-    //! the following are used only when tab_sel == 7
+    /// the following are used only when tab_sel == 7
     IVIHuffDesc cust_desc;  /// custom Huffman codebook descriptor
     VLC         cust_tab;   /// vlc table for custom codebook
 } IVIHuffTab;

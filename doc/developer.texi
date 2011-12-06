@@ -77,6 +77,11 @@ Use the JavaDoc/Doxygen  format (see examples below) so that code documentation
 can be generated automatically. All nontrivial functions should have a comment
 above them explaining what the function does, even if it is just one sentence.
 All structures and their member variables should be documented, too.
+
+Avoid Qt-style and similar Doxygen syntax with @code{!} in it, i.e. replace
+@code{//!} with @code{///} and similar.  Also @@ syntax should be employed
+for markup commands, i.e. use @code{@@param} and not @code{\param}.
+
 @example
 /**
  * @@file

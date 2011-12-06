@@ -40,16 +40,16 @@
 typedef struct {
 /// @name QCELP excitation codebook parameters
 /// @{
-    uint8_t cbsign[16]; ///!< sign of the codebook gain for each codebook subframe
-    uint8_t cbgain[16]; ///!< unsigned codebook gain for each codebook subframe
-    uint8_t cindex[16]; ///!< codebook index for each codebook subframe
+    uint8_t cbsign[16]; ///< sign of the codebook gain for each codebook subframe
+    uint8_t cbgain[16]; ///< unsigned codebook gain for each codebook subframe
+    uint8_t cindex[16]; ///< codebook index for each codebook subframe
 /// @}
 
 /// @name QCELP pitch prediction parameters
 /// @{
-    uint8_t plag[4];    ///!< pitch lag for each pitch subframe
-    uint8_t pfrac[4];   ///!< fractional pitch lag for each pitch subframe
-    uint8_t pgain[4];   ///!< pitch gain for each pitch subframe
+    uint8_t plag[4];    ///< pitch lag for each pitch subframe
+    uint8_t pfrac[4];   ///< fractional pitch lag for each pitch subframe
+    uint8_t pgain[4];   ///< pitch gain for each pitch subframe
 /// @}
 
     /**
@@ -266,7 +266,7 @@ static const QCELPBitmap qcelp_rate_octave_bitmap[] = {
  * the QCELPContext
  */
 static const QCELPBitmap * const qcelp_unpacking_bitmaps_per_rate[5] = {
-    NULL,                     ///!< for SILENCE rate
+    NULL,                     ///< for SILENCE rate
     qcelp_rate_octave_bitmap,
     qcelp_rate_quarter_bitmap,
     qcelp_rate_half_bitmap,
@@ -274,7 +274,7 @@ static const QCELPBitmap * const qcelp_unpacking_bitmaps_per_rate[5] = {
 };
 
 static const uint16_t qcelp_unpacking_bitmaps_lengths[5] = {
-    0, ///!< for SILENCE rate
+    0, ///< for SILENCE rate
     FF_ARRAY_ELEMS(qcelp_rate_octave_bitmap),
     FF_ARRAY_ELEMS(qcelp_rate_quarter_bitmap),
     FF_ARRAY_ELEMS(qcelp_rate_half_bitmap),

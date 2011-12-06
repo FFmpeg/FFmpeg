@@ -352,6 +352,11 @@ do_audio_encoding g723_1.tco "-b:a 6.3k -ac 1 -ar 8000 -acodec g723_1"
 do_audio_decoding
 fi
 
+if [ -n "$do_g722" ] ; then
+do_audio_encoding g722.wav "-b 64k -ac 1 -ar 16000 -acodec g722"
+do_audio_decoding
+fi
+
 if [ -n "$do_g726" ] ; then
 do_audio_encoding g726.wav "-b:a 32k -ac 1 -ar 8000 -acodec g726"
 do_audio_decoding

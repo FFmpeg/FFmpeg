@@ -22,10 +22,11 @@
 /**
  * @file
  * Cinepak video decoder
- * by Ewald Snel <ewald@rambo.its.tudelft.nl>
- * For more information on the Cinepak algorithm, visit:
+ * @author Ewald Snel <ewald@rambo.its.tudelft.nl>
+ *
+ * @see For more information on the Cinepak algorithm, visit:
  *   http://www.csse.monash.edu.au/~timf/
- * For more information on the quirky data inside Sega FILM/CPK files, visit:
+ * @see For more information on the quirky data inside Sega FILM/CPK files, visit:
  *   http://wiki.multimedia.cx/index.php?title=Sega_FILM
  */
 

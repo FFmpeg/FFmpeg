@@ -653,7 +653,7 @@ static void decode_gains(AMRContext *p, const AMRNBSubframe *amr_subframe,
 static void apply_ir_filter(float *out, const AMRFixed *in,
                             const float *filter)
 {
-    float filter1[AMR_SUBFRAME_SIZE],     //!< filters at pitch lag*1 and *2
+    float filter1[AMR_SUBFRAME_SIZE],     ///< filters at pitch lag*1 and *2
           filter2[AMR_SUBFRAME_SIZE];
     int   lag = in->pitch_lag;
     float fac = in->pitch_fac;

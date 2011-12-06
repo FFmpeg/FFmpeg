@@ -155,8 +155,6 @@ static uint8_t *audio_buf;
 static uint8_t *audio_out;
 static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
 
-static void *samples;
-
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "av2pass"
 
 typedef struct InputStream {
@@ -165,6 +163,8 @@ typedef struct InputStream {
     int discard;             /* true if stream data should be discarded */
     int decoding_needed;     /* true if the packets must be decoded in 'raw_fifo' */
     AVCodec *dec;
+    AVFrame *decoded_frame;
+    AVFrame *filtered_frame;
 
     int64_t       start;     /* time when read started */
     int64_t       next_pts;  /* synthetic pts for cases where pkt.pts
@@ -612,8 +612,11 @@ void exit_program(int ret)
     for(i=0;i<nb_input_files;i++) {
         av_close_input_file(input_files[i].ctx);
     }
-    for (i = 0; i < nb_input_streams; i++)
+    for (i = 0; i < nb_input_streams; i++) {
+        av_freep(&input_streams[i].decoded_frame);
+        av_freep(&input_streams[i].filtered_frame);
         av_dict_free(&input_streams[i].opts);
+    }
 
     if (vstats_file)
         fclose(vstats_file);
@@ -628,7 +631,6 @@ void exit_program(int ret)
     av_free(audio_buf);
     av_free(audio_out);
     allocated_audio_buf_size= allocated_audio_out_size= 0;
-    av_free(samples);
 
 #if CONFIG_AVFILTER
     avfilter_uninit();
@@ -787,14 +789,11 @@ static void generate_silence(uint8_t* buf, enum AVSampleFormat sample_fmt, size_
     memset(buf, fill_char, size);
 }
 
-static void do_audio_out(AVFormatContext *s,
-                         OutputStream *ost,
-                         InputStream *ist,
-                         unsigned char *buf, int size)
+static void do_audio_out(AVFormatContext *s, OutputStream *ost,
+                         InputStream *ist, AVFrame *decoded_frame)
 {
     uint8_t *buftmp;
     int64_t audio_out_size, audio_buf_size;
-    int64_t allocated_for_size= size;
 
     int size_out, frame_bytes, ret, resample_changed;
     AVCodecContext *enc= ost->st->codec;
@@ -802,6 +801,9 @@ static void do_audio_out(AVFormatContext *s,
     int osize = av_get_bytes_per_sample(enc->sample_fmt);
     int isize = av_get_bytes_per_sample(dec->sample_fmt);
     const int coded_bps = av_get_bits_per_sample(enc->codec->id);
+    uint8_t *buf = decoded_frame->data[0];
+    int size     = decoded_frame->nb_samples * dec->channels * isize;
+    int64_t allocated_for_size = size;
 
 need_realloc:
     audio_buf_size= (allocated_for_size + isize*dec->channels - 1) / (isize*dec->channels);
@@ -1697,39 +1699,42 @@ static void rate_emu_sleep(InputStream *ist)
 
 static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 {
-    static unsigned int samples_size = 0;
+    AVFrame *decoded_frame;
+    AVCodecContext *avctx = ist->st->codec;
     int bps = av_get_bytes_per_sample(ist->st->codec->sample_fmt);
-    uint8_t *decoded_data_buf  = NULL;
-    int      decoded_data_size = 0;
     int i, ret;
 
-    if (pkt && samples_size < FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE)) {
-        av_free(samples);
-        samples_size = FFMAX(pkt->size * bps, AVCODEC_MAX_AUDIO_FRAME_SIZE);
-        samples      = av_malloc(samples_size);
-    }
-    decoded_data_size = samples_size;
+    if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
+        return AVERROR(ENOMEM);
+    else
+        avcodec_get_frame_defaults(ist->decoded_frame);
+    decoded_frame = ist->decoded_frame;
 
-    ret = avcodec_decode_audio3(ist->st->codec, samples, &decoded_data_size,
-                                pkt);
-    if (ret < 0)
+    ret = avcodec_decode_audio4(avctx, decoded_frame, got_output, pkt);
+    if (ret < 0) {
         return ret;
-    *got_output  = decoded_data_size > 0;
+    }
 
-    /* Some bug in mpeg audio decoder gives */
-    /* decoded_data_size < 0, it seems they are overflows */
     if (!*got_output) {
         /* no audio frame */
         return ret;
     }
 
-    decoded_data_buf = (uint8_t *)samples;
-    ist->next_pts   += ((int64_t)AV_TIME_BASE/bps * decoded_data_size) /
-                       (ist->st->codec->sample_rate * ist->st->codec->channels);
+    /* if the decoder provides a pts, use it instead of the last packet pts.
+       the decoder could be delaying output by a packet or more. */
+    if (decoded_frame->pts != AV_NOPTS_VALUE)
+        ist->next_pts = decoded_frame->pts;
+
+    /* increment next_pts to use for the case where the input stream does not
+       have timestamps or there are multiple frames in the packet */
+    ist->next_pts += ((int64_t)AV_TIME_BASE * decoded_frame->nb_samples) /
+                     avctx->sample_rate;
 
     // preprocess audio (volume)
     if (audio_volume != 256) {
-        switch (ist->st->codec->sample_fmt) {
+        int decoded_data_size = decoded_frame->nb_samples * avctx->channels * bps;
+        void *samples = decoded_frame->data[0];
+        switch (avctx->sample_fmt) {
         case AV_SAMPLE_FMT_U8:
         {
             uint8_t *volp = samples;
@@ -1790,9 +1795,9 @@ static int transcode_audio(InputStream *ist, AVPacket *pkt, int *got_output)
 
         if (!check_output_constraints(ist, ost) || !ost->encoding_needed)
             continue;
-        do_audio_out(output_files[ost->file_index].ctx, ost, ist,
-                     decoded_data_buf, decoded_data_size);
+        do_audio_out(output_files[ost->file_index].ctx, ost, ist, decoded_frame);
     }
+
     return ret;
 }
 
@@ -1806,8 +1811,11 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     int frame_available = 1;
 #endif
 
-    if (!(decoded_frame = avcodec_alloc_frame()))
+    if (!ist->decoded_frame && !(ist->decoded_frame = avcodec_alloc_frame()))
         return AVERROR(ENOMEM);
+    else
+        avcodec_get_frame_defaults(ist->decoded_frame);
+    decoded_frame = ist->decoded_frame;
     pkt->pts  = *pkt_pts;
     pkt->dts  = ist->pts;
     *pkt_pts  = AV_NOPTS_VALUE;
@@ -1815,12 +1823,11 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
     ret = avcodec_decode_video2(ist->st->codec,
                                 decoded_frame, got_output, pkt);
     if (ret < 0)
-        goto fail;
+        return ret;
 
     quality = same_quant ? decoded_frame->quality : 0;
     if (!*got_output) {
         /* no picture yet */
-        av_freep(&decoded_frame);
         return ret;
     }
     ist->next_pts = ist->pts = decoded_frame->best_effort_timestamp;
@@ -1852,10 +1859,12 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             decoded_frame->pts = ist->pts;
 
             av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, AV_VSRC_BUF_FLAG_OVERWRITE);
-            if (!(filtered_frame = avcodec_alloc_frame())) {
-                ret = AVERROR(ENOMEM);
-                goto fail;
-            }
+            if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
+                av_free(buffer_to_free);
+                return AVERROR(ENOMEM);
+            } else
+                avcodec_get_frame_defaults(ist->filtered_frame);
+            filtered_frame = ist->filtered_frame;
             frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
         }
         while (frame_available) {
@@ -1884,13 +1893,10 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             if (ost->picref)
                 avfilter_unref_buffer(ost->picref);
         }
-        av_freep(&filtered_frame);
 #endif
     }
 
-fail:
     av_free(buffer_to_free);
-    av_freep(&decoded_frame);
     return ret;
 }
 
