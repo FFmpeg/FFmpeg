@@ -1156,6 +1156,7 @@ av_cold int ff_h264_decode_init(AVCodecContext *avctx){
     for (i = 0; i < MAX_DELAYED_PIC_COUNT; i++)
         h->last_pocs[i] = INT_MIN;
     h->prev_poc_msb= 1<<16;
+    h->prev_frame_num= -1;
     h->x264_build = -1;
     ff_h264_reset_sei(h);
     if(avctx->codec_id == CODEC_ID_H264){
