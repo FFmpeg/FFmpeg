@@ -1923,8 +1923,10 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
         while (frame_available) {
             if (ost->output_video_filter) {
                 AVRational ist_pts_tb = ost->output_video_filter->inputs[0]->time_base;
-                if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0)
+                if (av_buffersink_get_buffer_ref(ost->output_video_filter, &ost->picref, 0) < 0){
+                    av_log(0, AV_LOG_WARNING, "AV Filter told us it has a frame available but failed to output one\n");
                     goto cont;
+                }
                 if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
                     av_free(buffer_to_free);
                     return AVERROR(ENOMEM);
