@@ -4266,6 +4266,7 @@ av_cold int ff_h264_decode_end(AVCodecContext *avctx)
     H264Context *h = avctx->priv_data;
     MpegEncContext *s = &h->s;
 
+    ff_h264_remove_all_refs(h);
     ff_h264_free_context(h);
 
     MPV_common_end(s);
