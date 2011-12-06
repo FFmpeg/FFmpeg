@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version 0.9:
 
+- Indeo 4 decoder
 - SMJPEG demuxer
 - openal input device added
 - boxblur filter added
