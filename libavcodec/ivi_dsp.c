@@ -1,7 +1,7 @@
 /*
  * DSP functions for Indeo Video Interactive codecs (Indeo4 and Indeo5)
  *
- * Copyright (c) 2009 Maxim Poliakovski
+ * Copyright (c) 2009-2011 Maxim Poliakovski
  *
  * This file is part of Libav.
  *
@@ -175,6 +175,153 @@ void ff_ivi_recompose53(const IVIPlaneDesc *plane, uint8_t *dst,
         b1_ptr += pitch;
         b2_ptr += pitch;
         b3_ptr += pitch;
+    }
+}
+
+void ff_ivi_recompose_haar(const IVIPlaneDesc *plane, uint8_t *dst,
+                           const int dst_pitch, const int num_bands)
+{
+    int             x, y, indx, b0, b1, b2, b3, p0, p1, p2, p3;
+    const IDWTELEM *b0_ptr, *b1_ptr, *b2_ptr, *b3_ptr;
+    int32_t         pitch;
+
+    /* all bands should have the same pitch */
+    pitch = plane->bands[0].pitch;
+
+    /* get pointers to the wavelet bands */
+    b0_ptr = plane->bands[0].buf;
+    b1_ptr = plane->bands[1].buf;
+    b2_ptr = plane->bands[2].buf;
+    b3_ptr = plane->bands[3].buf;
+
+    for (y = 0; y < plane->height; y += 2) {
+        for (x = 0, indx = 0; x < plane->width; x += 2, indx++) {
+            /* load coefficients */
+            b0 = b0_ptr[indx]; //should be: b0 = (num_bands > 0) ? b0_ptr[indx] : 0;
+            b1 = b1_ptr[indx]; //should be: b1 = (num_bands > 1) ? b1_ptr[indx] : 0;
+            b2 = b2_ptr[indx]; //should be: b2 = (num_bands > 2) ? b2_ptr[indx] : 0;
+            b3 = b3_ptr[indx]; //should be: b3 = (num_bands > 3) ? b3_ptr[indx] : 0;
+
+            /* haar wavelet recomposition */
+            p0 = (b0 + b1 + b2 + b3 + 2) >> 2;
+            p1 = (b0 + b1 - b2 - b3 + 2) >> 2;
+            p2 = (b0 - b1 + b2 - b3 + 2) >> 2;
+            p3 = (b0 - b1 - b2 + b3 + 2) >> 2;
+
+            /* bias, convert and output four pixels */
+            dst[x]                 = av_clip_uint8(p0 + 128);
+            dst[x + 1]             = av_clip_uint8(p1 + 128);
+            dst[dst_pitch + x]     = av_clip_uint8(p2 + 128);
+            dst[dst_pitch + x + 1] = av_clip_uint8(p3 + 128);
+        }// for x
+
+        dst += dst_pitch << 1;
+
+        b0_ptr += pitch;
+        b1_ptr += pitch;
+        b2_ptr += pitch;
+        b3_ptr += pitch;
+    }// for y
+}
+
+/** butterfly operation for the inverse Haar transform */
+#define IVI_HAAR_BFLY(s1, s2, o1, o2, t) \
+    t  = (s1 - s2) >> 1;\
+    o1 = (s1 + s2) >> 1;\
+    o2 = t;\
+
+/** inverse 8-point Haar transform */
+#define INV_HAAR8(s1, s5, s3, s7, s2, s4, s6, s8,\
+                  d1, d2, d3, d4, d5, d6, d7, d8,\
+                  t0, t1, t2, t3, t4, t5, t6, t7, t8) {\
+    t1 = s1 << 1; t5 = s5 << 1;\
+    IVI_HAAR_BFLY(t1, t5, t1, t5, t0); IVI_HAAR_BFLY(t1, s3, t1, t3, t0);\
+    IVI_HAAR_BFLY(t5, s7, t5, t7, t0); IVI_HAAR_BFLY(t1, s2, t1, t2, t0);\
+    IVI_HAAR_BFLY(t3, s4, t3, t4, t0); IVI_HAAR_BFLY(t5, s6, t5, t6, t0);\
+    IVI_HAAR_BFLY(t7, s8, t7, t8, t0);\
+    d1 = COMPENSATE(t1);\
+    d2 = COMPENSATE(t2);\
+    d3 = COMPENSATE(t3);\
+    d4 = COMPENSATE(t4);\
+    d5 = COMPENSATE(t5);\
+    d6 = COMPENSATE(t6);\
+    d7 = COMPENSATE(t7);\
+    d8 = COMPENSATE(t8); }
+
+/** inverse 4-point Haar transform */
+#define INV_HAAR4(s1, s3, s5, s7) {\
+    HAAR_BFLY(s1, s5);  HAAR_BFLY(s1, s3);  HAAR_BFLY(s5, s7);\
+    s1 = COMPENSATE(s1);\
+    s3 = COMPENSATE(s3);\
+    s5 = COMPENSATE(s5);\
+    s7 = COMPENSATE(s7); }
+
+void ff_ivi_inverse_haar_8x8(const int32_t *in, int16_t *out, uint32_t pitch,
+                             const uint8_t *flags)
+{
+    int     i, shift, sp1, sp2, sp3, sp4;
+    const int32_t *src;
+    int32_t *dst;
+    int     tmp[64];
+    int     t0, t1, t2, t3, t4, t5, t6, t7, t8;
+
+    /* apply the InvHaar8 to all columns */
+#define COMPENSATE(x) (x)
+    src = in;
+    dst = tmp;
+    for (i = 0; i < 8; i++) {
+        if (flags[i]) {
+            /* pre-scaling */
+            shift = !(i & 4);
+            sp1 = src[ 0] << shift;
+            sp2 = src[ 8] << shift;
+            sp3 = src[16] << shift;
+            sp4 = src[24] << shift;
+            INV_HAAR8(    sp1,     sp2,     sp3,     sp4,
+                      src[32], src[40], src[48], src[56],
+                      dst[ 0], dst[ 8], dst[16], dst[24],
+                      dst[32], dst[40], dst[48], dst[56],
+                      t0, t1, t2, t3, t4, t5, t6, t7, t8);
+        } else
+            dst[ 0] = dst[ 8] = dst[16] = dst[24] =
+            dst[32] = dst[40] = dst[48] = dst[56] = 0;
+
+        src++;
+        dst++;
+    }
+#undef  COMPENSATE
+
+    /* apply the InvHaar8 to all rows */
+#define COMPENSATE(x) (x)
+    src = tmp;
+    for (i = 0; i < 8; i++) {
+        if (   !src[0] && !src[1] && !src[2] && !src[3]
+            && !src[4] && !src[5] && !src[6] && !src[7]) {
+            memset(out, 0, 8 * sizeof(out[0]));
+        } else {
+            INV_HAAR8(src[0], src[1], src[2], src[3],
+                      src[4], src[5], src[6], src[7],
+                      out[0], out[1], out[2], out[3],
+                      out[4], out[5], out[6], out[7],
+                      t0, t1, t2, t3, t4, t5, t6, t7, t8);
+        }
+        src += 8;
+        out += pitch;
+    }
+#undef  COMPENSATE
+}
+
+void ff_ivi_dc_haar_2d(const int32_t *in, int16_t *out, uint32_t pitch,
+                       int blk_size)
+{
+    int     x, y;
+    int16_t dc_coeff;
+
+    dc_coeff = (*in + 0) >> 3;
+
+    for (y = 0; y < blk_size; out += pitch, y++) {
+        for (x = 0; x < blk_size; x++)
+            out[x] = dc_coeff;
     }
 }
 
