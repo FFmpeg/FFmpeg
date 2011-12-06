@@ -1,4 +1,4 @@
-5874bd5764a92be48b63d90446b1b386 *./tests/data/vsynth1/zmbv.avi
-2284022 ./tests/data/vsynth1/zmbv.avi
+ed417ff88cc5d8fe204b3dcc0ba71a57 *./tests/data/vsynth1/zmbv.avi
+2325956 ./tests/data/vsynth1/zmbv.avi
 cfbec364e41d70c9b177435b5655d8af *./tests/data/zmbv.vsynth1.out.yuv
 stddev:   46.47 PSNR: 14.79 MAXDIFF:  129 bytes:  7603200/  7603200

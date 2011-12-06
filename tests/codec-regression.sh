@@ -330,7 +330,9 @@ do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
 if [ -n "$do_zmbv" ] ; then
-do_video_encoding zmbv.avi "-an -vcodec zmbv"
+# default level of 9 leads to different results with
+# different zlib versions
+do_video_encoding zmbv.avi "-an -vcodec zmbv -compression_level 6"
 do_video_decoding "" "-pix_fmt yuv420p"
 fi
 
