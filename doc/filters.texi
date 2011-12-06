@@ -1148,6 +1148,13 @@ the number of input frame, starting from 0
 
 @item t
 timestamp expressed in seconds, NAN if the input timestamp is unknown
+
+@item timecode
+initial timecode representation in "hh:mm:ss[:;.]ff" format. It can be used
+with or without text parameter. @var{rate} option must be specified
+
+@item r, rate
+frame rate (timecode only)
 @end table
 
 Some examples follow.

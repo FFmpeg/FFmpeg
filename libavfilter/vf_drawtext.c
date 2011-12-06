@@ -29,6 +29,8 @@
 #include <sys/time.h>
 #include <time.h>
 
+#include "libavcodec/timecode.h"
+#include "libavutil/avstring.h"
 #include "libavutil/colorspace.h"
 #include "libavutil/file.h"
 #include "libavutil/eval.h"
@@ -154,6 +156,8 @@ typedef struct {
     AVExpr *d_pexpr;
     int draw;                       ///< set to zero to prevent drawing
     AVLFG  prng;                    ///< random
+    struct ff_timecode tc;
+    int frame_id;
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -174,6 +178,9 @@ static const AVOption drawtext_options[]= {
 {"tabsize",  "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.dbl=4},     0,        INT_MAX  },
 {"basetime", "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.dbl=AV_NOPTS_VALUE},     INT64_MIN,        INT64_MAX  },
 {"draw",     "if false do not draw", OFFSET(d_expr),             AV_OPT_TYPE_STRING, {.str="1"},   CHAR_MIN, CHAR_MAX },
+{"timecode", "set initial timecode", OFFSET(tc.str),             AV_OPT_TYPE_STRING, {.str=NULL},  CHAR_MIN, CHAR_MAX },
+{"r",        "set rate (timecode only)", OFFSET(tc.rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX },
+{"rate",     "set rate (timecode only)", OFFSET(tc.rate),        AV_OPT_TYPE_RATIONAL, {.dbl=0},          0,  INT_MAX },
 
 /* FT_LOAD_* flags */
 {"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.dbl=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
@@ -333,9 +340,16 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
         av_file_unmap(textbuf, textbuf_size);
     }
 
+    if (dtext->tc.str) {
+        if (ff_init_smtpe_timecode(ctx, &dtext->tc) < 0)
+            return AVERROR(EINVAL);
+        if (!dtext->text)
+            dtext->text = av_strdup("");
+    }
+
     if (!dtext->text) {
         av_log(ctx, AV_LOG_ERROR,
-               "Either text or a valid file must be provided\n");
+               "Either text, a valid file or a timecode must be provided\n");
         return AVERROR(EINVAL);
     }
 
@@ -707,6 +721,12 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
             break;
         buf_size *= 2;
     } while ((buf = av_realloc(buf, buf_size)));
+
+    if (dtext->tc.str) {
+        char tcbuf[sizeof("hh:mm:ss.ff")];
+        avpriv_timecode_to_string(tcbuf, &dtext->tc, dtext->frame_id++);
+        buf = av_asprintf("%s%s", dtext->text, tcbuf);
+    }
 
     if (!buf)
         return AVERROR(ENOMEM);
