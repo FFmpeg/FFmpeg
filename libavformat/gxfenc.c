@@ -20,7 +20,9 @@
  */
 
 #include "libavutil/intfloat_readwrite.h"
+#include "libavutil/opt.h"
 #include "libavutil/mathematics.h"
+#include "libavcodec/timecode.h"
 #include "avformat.h"
 #include "internal.h"
 #include "gxf.h"
@@ -28,6 +30,19 @@
 #include "audiointerleave.h"
 
 #define GXF_AUDIO_PACKET_SIZE 65536
+
+#define GXF_TIMECODE(c, d, h, m, s, f) \
+    ((c) << 30 | (d) << 29 | (h) << 24 | (m) << 16 | (s) << 8 | (f))
+
+typedef struct GXFTimecode{
+    int hh;
+    int mm;
+    int ss;
+    int ff;
+    int color;
+    int drop;
+    char *str;
+} GXFTimecode;
 
 typedef struct GXFStreamContext {
     AudioInterleaveContext aic;
@@ -49,6 +64,7 @@ typedef struct GXFStreamContext {
 } GXFStreamContext;
 
 typedef struct GXFContext {
+    AVClass *av_class;
     uint32_t nb_fields;
     uint16_t audio_tracks;
     uint16_t mpeg_tracks;
@@ -67,6 +83,7 @@ typedef struct GXFContext {
     uint64_t *map_offsets;    ///< offset of map packets
     unsigned map_offsets_nb;
     unsigned packet_count;
+    GXFTimecode tc;
 } GXFContext;
 
 static const struct {
@@ -200,19 +217,21 @@ static int gxf_write_mpeg_auxiliary(AVIOContext *pb, AVStream *st)
     return size + 3;
 }
 
-static int gxf_write_timecode_auxiliary(AVIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_timecode_auxiliary(AVIOContext *pb, GXFContext *gxf)
 {
-    avio_w8(pb, 0); /* fields */
-    avio_w8(pb, 0); /* seconds */
-    avio_w8(pb, 0); /* minutes */
-    avio_w8(pb, 0); /* flags + hours */
+    uint32_t timecode = GXF_TIMECODE(gxf->tc.color, gxf->tc.drop,
+                                     gxf->tc.hh, gxf->tc.mm,
+                                     gxf->tc.ss, gxf->tc.ff);
+
+    avio_wl32(pb, timecode);
     /* reserved */
-    avio_wb32(pb, 0);
+    avio_wl32(pb, 0);
     return 8;
 }
 
 static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc, int index)
 {
+    GXFContext *gxf = s->priv_data;
     AVIOContext *pb = s->pb;
     int64_t pos;
     int mpeg = sc->track_type == 4 || sc->track_type == 9;
@@ -236,7 +255,7 @@ static int gxf_write_track_description(AVFormatContext *s, GXFStreamContext *sc,
         avio_w8(pb, TRACK_AUX);
         avio_w8(pb, 8);
         if (sc->track_type == 3)
-            gxf_write_timecode_auxiliary(pb, sc);
+            gxf_write_timecode_auxiliary(pb, gxf);
         else
             avio_wl64(pb, 0);
     }
@@ -398,7 +417,9 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     int timecode_base = gxf->time_base.den == 60000 ? 60 : 50;
     int64_t timestamp = 0;
     AVDictionaryEntry *t;
-    uint32_t timecode;
+    uint64_t nb_fields;
+    uint32_t timecode_in; // timecode at mark in
+    uint32_t timecode_out; // timecode at mark out
 
 #if FF_API_TIMESTAMP
     if (s->timestamp)
@@ -408,20 +429,29 @@ static int gxf_write_umf_material_description(AVFormatContext *s)
     if (t = av_dict_get(s->metadata, "creation_time", NULL, 0))
         timestamp = ff_iso8601_to_unix_time(t->value);
 
-    // XXX drop frame
-    timecode =
-        gxf->nb_fields / (timecode_base * 3600) % 24 << 24 | // hours
-        gxf->nb_fields / (timecode_base * 60) % 60   << 16 | // minutes
-        gxf->nb_fields /  timecode_base % 60         <<  8 | // seconds
-        gxf->nb_fields %  timecode_base;                     // fields
+    timecode_in = GXF_TIMECODE(gxf->tc.color, gxf->tc.drop,
+                               gxf->tc.hh, gxf->tc.mm,
+                               gxf->tc.ss, gxf->tc.ff);
+
+    nb_fields = gxf->nb_fields +
+                gxf->tc.hh * (timecode_base * 3600) +
+                gxf->tc.mm * (timecode_base * 60)   +
+                gxf->tc.ss * timecode_base          +
+                gxf->tc.ff;
+
+    timecode_out = GXF_TIMECODE(gxf->tc.color, gxf->tc.drop,
+                                nb_fields / (timecode_base * 3600) % 24,
+                                nb_fields / (timecode_base * 60)   % 60,
+                                nb_fields /  timecode_base % 60,
+                                nb_fields %  timecode_base);
 
     avio_wl32(pb, gxf->flags);
     avio_wl32(pb, gxf->nb_fields); /* length of the longest track */
     avio_wl32(pb, gxf->nb_fields); /* length of the shortest track */
     avio_wl32(pb, 0); /* mark in */
     avio_wl32(pb, gxf->nb_fields); /* mark out */
-    avio_wl32(pb, 0); /* timecode mark in */
-    avio_wl32(pb, timecode); /* timecode mark out */
+    avio_wl32(pb, timecode_in); /* timecode mark in */
+    avio_wl32(pb, timecode_out); /* timecode mark out */
     avio_wl64(pb, timestamp); /* modification time */
     avio_wl64(pb, timestamp); /* creation time */
     avio_wl16(pb, 0); /* reserved */
@@ -496,9 +526,9 @@ static int gxf_write_umf_media_mpeg(AVIOContext *pb, AVStream *st)
     return 32;
 }
 
-static int gxf_write_umf_media_timecode(AVIOContext *pb, GXFStreamContext *sc)
+static int gxf_write_umf_media_timecode(AVIOContext *pb, int drop)
 {
-    avio_wl32(pb, 1); /* non drop frame */
+    avio_wl32(pb, drop); /* drop frame */
     avio_wl32(pb, 0); /* reserved */
     avio_wl32(pb, 0); /* reserved */
     avio_wl32(pb, 0); /* reserved */
@@ -578,7 +608,7 @@ static int gxf_write_umf_media_description(AVFormatContext *s)
         avio_wl32(pb, 0); /* reserved */
 
         if (sc == &gxf->timecode_track)
-            gxf_write_umf_media_timecode(pb, sc); /* 8 0bytes */
+            gxf_write_umf_media_timecode(pb, gxf->tc.drop);
         else {
             AVStream *st = s->streams[i];
             switch (st->codec->codec_id) {
@@ -639,6 +669,25 @@ static void gxf_init_timecode_track(GXFStreamContext *sc, GXFStreamContext *vsc)
     sc->lines_index = vsc->lines_index;
     sc->sample_size = 16;
     sc->fields = vsc->fields;
+}
+
+static int gxf_init_timecode(AVFormatContext *s, GXFTimecode *tc, int fields)
+{
+    char c;
+
+    if (sscanf(tc->str, "%d:%d:%d%c%d", &tc->hh, &tc->mm, &tc->ss, &c, &tc->ff) != 5) {
+        av_log(s, AV_LOG_ERROR, "unable to parse timecode, "
+                                "syntax: hh:mm:ss[:;.]ff\n");
+        return -1;
+    }
+
+    tc->color = 0;
+    tc->drop = c != ':';
+
+    if (fields == 2)
+        tc->ff = tc->ff * 2;
+
+    return 0;
 }
 
 static int gxf_write_header(AVFormatContext *s)
@@ -758,6 +807,10 @@ static int gxf_write_header(AVFormatContext *s)
 
     if (ff_audio_interleave_init(s, GXF_samples_per_frame, (AVRational){ 1, 48000 }) < 0)
         return -1;
+
+    if (gxf->tc.str) {
+        gxf_init_timecode(s, &gxf->tc, vsc->fields);
+    }
 
     gxf_init_timecode_track(&gxf->timecode_track, vsc);
     gxf->flags |= 0x200000; // time code track is non-drop frame
@@ -946,6 +999,18 @@ static int gxf_interleave_packet(AVFormatContext *s, AVPacket *out, AVPacket *pk
                                av_interleave_packet_per_dts, gxf_compare_field_nb);
 }
 
+static const AVOption options[] = {
+    { TIMECODE_OPT(GXFContext, AV_OPT_FLAG_ENCODING_PARAM) },
+    { NULL }
+};
+
+static const AVClass gxf_muxer_class = {
+    .class_name     = "GXF muxer",
+    .item_name      = av_default_item_name,
+    .option         = options,
+    .version        = LIBAVUTIL_VERSION_INT,
+};
+
 AVOutputFormat ff_gxf_muxer = {
     .name              = "gxf",
     .long_name         = NULL_IF_CONFIG_SMALL("GXF format"),
@@ -957,4 +1022,5 @@ AVOutputFormat ff_gxf_muxer = {
     .write_packet      = gxf_write_packet,
     .write_trailer     = gxf_write_trailer,
     .interleave_packet = gxf_interleave_packet,
+    .priv_class        = &gxf_muxer_class,
 };
