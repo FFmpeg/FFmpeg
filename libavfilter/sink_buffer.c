@@ -140,6 +140,14 @@ int av_buffersink_get_buffer_ref(AVFilterContext *ctx,
     return 0;
 }
 
+int av_buffersink_poll_frame(AVFilterContext *ctx)
+{
+    BufferSinkContext *buf = ctx->priv;
+    AVFilterLink *inlink = ctx->inputs[0];
+
+    return av_fifo_size(buf->fifo)/sizeof(AVFilterBufferRef *) + avfilter_poll_frame(inlink);
+}
+
 #if FF_API_OLD_VSINK_API
 int av_vsink_buffer_get_video_buffer_ref(AVFilterContext *ctx,
                                          AVFilterBufferRef **picref, int flags)
