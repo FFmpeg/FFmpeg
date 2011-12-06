@@ -79,6 +79,22 @@ static int check_timecode_rate(void *avcl, AVRational rate, int drop)
     }
 }
 
+char *avpriv_timecode_to_string(char *buf, const struct ff_timecode *tc, unsigned frame)
+{
+    int frame_num = tc->start + frame;
+    int fps = (tc->rate.num + tc->rate.den/2) / tc->rate.den;
+    int ff  = frame_num % fps;
+    int ss  = frame_num / fps        % 60;
+    int mm  = frame_num / (fps*60)   % 60;
+    int hh  = frame_num / (fps*3600) % 24;
+
+    if (tc->drop)
+        frame_num = ff_framenum_to_drop_timecode(frame_num);
+    snprintf(buf, sizeof("hh:mm:ss.ff"), "%02d:%02d:%02d%c%02d",
+             hh, mm, ss, tc->drop ? ';' : ':', ff);
+    return buf;
+}
+
 int ff_init_smtpe_timecode(void *avcl, struct ff_timecode *tc)
 {
     int hh, mm, ss, ff, fps, ret;
