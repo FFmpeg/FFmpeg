@@ -1918,7 +1918,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
 
 #if CONFIG_AVFILTER
         if (ost->input_video_filter) {
-            frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
+            frame_available = av_buffersink_poll_frame(ost->output_video_filter);
         }
         while (frame_available) {
             if (ost->output_video_filter) {
@@ -1951,7 +1951,7 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                 do_video_stats(output_files[ost->file_index].ctx, ost, frame_size);
 #if CONFIG_AVFILTER
             cont:
-            frame_available = ost->output_video_filter && avfilter_poll_frame(ost->output_video_filter->inputs[0]);
+            frame_available = ost->output_video_filter && av_buffersink_poll_frame(ost->output_video_filter);
             avfilter_unref_buffer(ost->picref);
         }
 #endif
