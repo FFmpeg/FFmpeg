@@ -45,6 +45,7 @@ static const AVOption options[] = {
     { "movflags", "MOV muxer flags", offsetof(MOVMuxContext, flags), AV_OPT_TYPE_FLAGS, {.dbl = 0}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "rtphint", "Add RTP hint tracks", 0, AV_OPT_TYPE_CONST, {.dbl = FF_MOV_FLAG_RTP_HINT}, INT_MIN, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, "movflags" },
     { "moov_size", "maximum moov size so it can be placed at the begin", offsetof(MOVMuxContext, reserved_moov_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
+    { "frag_size", "maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     { "frag_duration", "maximum fragment duration", offsetof(MOVMuxContext, max_fragment_duration), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
     { NULL },
@@ -2182,6 +2183,7 @@ static int flush_cluster_buffer(AVFormatContext *s){
         }
         updateSize(s->pb, mov->mdat_pos);
     }
+    mov->mdat_size = 0;
     for (i=0; i<mov->nb_streams; i++) {
         MOVTrack *track= &mov->tracks[i];
         track->cluster_write_index= track->entry;
@@ -2205,7 +2207,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (!size) return 0; /* Discard 0 sized packets */
 
     if (mov->fragments && trk->entry > trk->cluster_write_index &&
-        av_rescale_q(pkt->dts - trk->cluster[ trk->cluster_write_index ].dts, st->time_base, AV_TIME_BASE_Q) >= mov->max_fragment_duration){
+        (   mov->max_fragment_duration && av_rescale_q(pkt->dts - trk->cluster[ trk->cluster_write_index ].dts, st->time_base, AV_TIME_BASE_Q) >= mov->max_fragment_duration
+         || mov->max_fragment_size     && mov->mdat_size + size >= mov->max_fragment_size)
+        ){
         flush_cluster_buffer(s);
     }
 
@@ -2369,7 +2373,7 @@ static int mov_write_header(AVFormatContext *s)
     /* Default mode == MP4 */
     mov->mode = MODE_MP4;
 
-    if(mov->max_fragment_duration){
+    if(mov->max_fragment_duration || mov->max_fragment_size){
         mov->fragments= 1;
     }
 
