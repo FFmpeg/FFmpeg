@@ -129,6 +129,13 @@ static av_cold int decode_init(AVCodecContext *avctx){
     return 0;
 }
 
+static av_cold int decode_end(AVCodecContext *avctx) {
+    CLJRContext *a = avctx->priv_data;
+
+    if (a->picture.data[0]);
+        avctx->release_buffer(avctx, &a->picture);
+}
+
 #if CONFIG_CLJR_ENCODER
 static av_cold int encode_init(AVCodecContext *avctx){
 
@@ -144,6 +151,7 @@ AVCodec ff_cljr_decoder = {
     .id             = CODEC_ID_CLJR,
     .priv_data_size = sizeof(CLJRContext),
     .init           = decode_init,
+    .close          = decode_end,
     .decode         = decode_frame,
     .capabilities   = CODEC_CAP_DR1,
     .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
