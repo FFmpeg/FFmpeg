@@ -315,13 +315,13 @@ static int mov_read_default(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             a.size = avio_rb32(pb);
             a.type = avio_rl32(pb);
             total_size += 8;
+            if (a.size == 1) { /* 64 bit extended size */
+                a.size = avio_rb64(pb) - 8;
+                total_size += 8;
+            }
         }
         av_dlog(c->fc, "type: %08x '%.4s' parent:'%.4s' sz: %"PRId64" %"PRId64" %"PRId64"\n",
                 a.type, (char*)&a.type, (char*)&atom.type, a.size, total_size, atom.size);
-        if (a.size == 1) { /* 64 bit extended size */
-            a.size = avio_rb64(pb) - 8;
-            total_size += 8;
-        }
         if (a.size == 0) {
             a.size = atom.size - total_size + 8;
             if (a.size <= 8)
