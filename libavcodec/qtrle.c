@@ -72,6 +72,15 @@ static void qtrle_decode_1bpp(QtrleContext *s, int stream_ptr, int row_ptr, int 
     unsigned char *rgb = s->frame.data[0];
     int pixel_limit = s->frame.linesize[0] * s->avctx->height;
     int skip;
+    /* skip & 0x80 appears to mean 'start a new line', which can be interpreted
+     * as 'go to next line' during the decoding of a frame but is 'go to first
+     * line' at the beginning. Since we always interpret it as 'go to next line'
+     * in the decoding loop (which makes code simpler/faster), the first line
+     * would not be counted, so we count one more.
+     * See: https://ffmpeg.org/trac/ffmpeg/ticket/226
+     * In the following decoding loop, row_ptr will be the position of the
+     * _next_ row. */
+    lines_to_change++;
 
     while (lines_to_change) {
         CHECK_STREAM_PTR(2);
@@ -81,8 +90,8 @@ static void qtrle_decode_1bpp(QtrleContext *s, int stream_ptr, int row_ptr, int 
             break;
         if(skip & 0x80) {
             lines_to_change--;
-            row_ptr += row_inc;
             pixel_ptr = row_ptr + 2 * (skip & 0x7f);
+            row_ptr += row_inc;
         } else
             pixel_ptr += 2 * skip;
         CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
