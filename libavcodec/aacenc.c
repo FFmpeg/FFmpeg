@@ -155,7 +155,7 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     init_put_bits(&pb, avctx->extradata, avctx->extradata_size*8);
     put_bits(&pb, 5, 2); //object type - AAC-LC
     put_bits(&pb, 4, s->samplerate_index); //sample rate index
-    put_bits(&pb, 4, avctx->channels);
+    put_bits(&pb, 4, s->channels);
     //GASpecificConfig
     put_bits(&pb, 1, 0); //frame length - 1024 samples
     put_bits(&pb, 1, 0); //does not depend on core coder
@@ -168,11 +168,11 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     flush_put_bits(&pb);
 }
 
-static void apply_window_and_mdct(AVCodecContext *avctx, AACEncContext *s,
-                                  SingleChannelElement *sce, float *audio)
+static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
+                                  float *audio)
 {
     int i, k;
-    const int chans = avctx->channels;
+    const int chans = s->channels;
     const float * lwindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float * swindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
     const float * pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
@@ -446,11 +446,11 @@ static int aac_encode_frame(AVCodecContext *avctx,
         return 0;
     if (data) {
         if (!s->psypp) {
-            memcpy(s->samples + 1024 * avctx->channels, data,
-                   1024 * avctx->channels * sizeof(s->samples[0]));
+            memcpy(s->samples + 1024 * s->channels, data,
+                   1024 * s->channels * sizeof(s->samples[0]));
         } else {
             start_ch = 0;
-            samples2 = s->samples + 1024 * avctx->channels;
+            samples2 = s->samples + 1024 * s->channels;
             for (i = 0; i < s->chan_map[0]; i++) {
                 tag = s->chan_map[i+1];
                 chans = tag == TYPE_CPE ? 2 : 1;
@@ -461,8 +461,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
         }
     }
     if (!avctx->frame_number) {
-        memcpy(s->samples, s->samples + 1024 * avctx->channels,
-               1024 * avctx->channels * sizeof(s->samples[0]));
+        memcpy(s->samples, s->samples + 1024 * s->channels,
+               1024 * s->channels * sizeof(s->samples[0]));
         return 0;
     }
 
@@ -476,7 +476,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             IndividualChannelStream *ics = &cpe->ch[ch].ics;
             int cur_channel = start_ch + ch;
             samples2 = samples + cur_channel;
-            la       = samples2 + (448+64) * avctx->channels;
+            la       = samples2 + (448+64) * s->channels;
             if (!data)
                 la = NULL;
             if (tag == TYPE_LFE) {
@@ -504,7 +504,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
 
-            apply_window_and_mdct(avctx, s, &cpe->ch[ch], samples2);
+            apply_window_and_mdct(s, &cpe->ch[ch], samples2);
         }
         start_ch += chans;
     }
@@ -570,8 +570,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
         }
 
         frame_bits = put_bits_count(&s->pb);
-        if (frame_bits <= 6144 * avctx->channels - 3) {
-            s->psy.bitres.bits = frame_bits / avctx->channels;
+        if (frame_bits <= 6144 * s->channels - 3) {
+            s->psy.bitres.bits = frame_bits / s->channels;
             break;
         }
 
@@ -592,8 +592,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
 
     if (!data)
         s->last_frame = 1;
-    memcpy(s->samples, s->samples + 1024 * avctx->channels,
-           1024 * avctx->channels * sizeof(s->samples[0]));
+    memcpy(s->samples, s->samples + 1024 * s->channels,
+           1024 * s->channels * sizeof(s->samples[0]));
     return put_bits_count(&s->pb)>>3;
 }
 
@@ -633,7 +633,7 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 
 static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 {
-    FF_ALLOC_OR_GOTO (avctx, s->samples, 2 * 1024 * avctx->channels * sizeof(s->samples[0]), alloc_fail);
+    FF_ALLOC_OR_GOTO (avctx, s->samples, 2 * 1024 * s->channels * sizeof(s->samples[0]), alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, s->cpe, sizeof(ChannelElement) * s->chan_map[0], alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + FF_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
 
@@ -656,18 +656,20 @@ static av_cold int aac_encode_init(AVCodecContext *avctx)
         if (avctx->sample_rate == avpriv_mpeg4audio_sample_rates[i])
             break;
 
+    s->channels = avctx->channels;
+
     ERROR_IF(i == 16,
              "Unsupported sample rate %d\n", avctx->sample_rate);
-    ERROR_IF(avctx->channels > AAC_MAX_CHANNELS,
-             "Unsupported number of channels: %d\n", avctx->channels);
+    ERROR_IF(s->channels > AAC_MAX_CHANNELS,
+             "Unsupported number of channels: %d\n", s->channels);
     ERROR_IF(avctx->profile != FF_PROFILE_UNKNOWN && avctx->profile != FF_PROFILE_AAC_LOW,
              "Unsupported profile %d\n", avctx->profile);
-    ERROR_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * avctx->channels,
+    ERROR_IF(1024.0 * avctx->bit_rate / avctx->sample_rate > 6144 * s->channels,
              "Too many bits per frame requested\n");
 
     s->samplerate_index = i;
 
-    s->chan_map = aac_chan_configs[avctx->channels-1];
+    s->chan_map = aac_chan_configs[s->channels-1];
 
     if (ret = dsp_init(avctx, s))
         goto fail;

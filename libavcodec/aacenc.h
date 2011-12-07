@@ -61,6 +61,7 @@ typedef struct AACEncContext {
     float *samples;                              ///< saved preprocessed input
 
     int samplerate_index;                        ///< MPEG-4 samplerate index
+    int channels;                                ///< channel count
     const uint8_t *chan_map;                     ///< channel configuration map
 
     ChannelElement *cpe;                         ///< channel elements
