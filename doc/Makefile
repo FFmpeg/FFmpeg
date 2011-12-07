@@ -1,8 +1,12 @@
 MANPAGES    = $(PROGS-yes:%=doc/%.1)
 PODPAGES    = $(PROGS-yes:%=doc/%.pod)
-HTMLPAGES   = $(PROGS-yes:%=doc/%.html)
+HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
+              doc/developer.html                                        \
+              doc/faq.html                                              \
+              doc/general.html                                          \
+              doc/libavfilter.html                                      \
 
-DOCS = $(addprefix doc/, developer.html faq.html general.html libavfilter.html) $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
+DOCS = $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
 
 all-$(CONFIG_DOC): documentation
 
