@@ -55,6 +55,7 @@ NEON-OBJS-$(CONFIG_RDFT)               += arm/rdft_neon.o               \
 
 NEON-OBJS-$(CONFIG_H264DSP)            += arm/h264dsp_neon.o            \
                                           arm/h264idct_neon.o           \
+                                          arm/h264cmc_neon.o            \
 
 NEON-OBJS-$(CONFIG_H264PRED)           += arm/h264pred_neon.o           \
 
@@ -62,6 +63,15 @@ NEON-OBJS-$(CONFIG_AC3DSP)             += arm/ac3dsp_neon.o
 
 NEON-OBJS-$(CONFIG_DCA_DECODER)        += arm/dcadsp_neon.o             \
                                           arm/synth_filter_neon.o       \
+
+NEON-OBJS-$(CONFIG_RV30_DECODER)       += arm/rv34dsp_init_neon.o       \
+                                          arm/rv34dsp_neon.o            \
+
+NEON-OBJS-$(CONFIG_RV40_DECODER)       += arm/rv34dsp_init_neon.o       \
+                                          arm/rv34dsp_neon.o            \
+                                          arm/rv40dsp_init_neon.o       \
+                                          arm/rv40dsp_neon.o            \
+                                          arm/h264cmc_neon.o            \
 
 NEON-OBJS-$(CONFIG_VP3_DECODER)        += arm/vp3dsp_neon.o
 

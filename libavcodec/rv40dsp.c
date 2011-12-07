@@ -534,4 +534,6 @@ av_cold void ff_rv40dsp_init(RV34DSPContext *c, DSPContext* dsp) {
 
     if (HAVE_MMX)
         ff_rv40dsp_init_x86(c, dsp);
+    if (HAVE_NEON)
+        ff_rv40dsp_init_neon(c, dsp);
 }

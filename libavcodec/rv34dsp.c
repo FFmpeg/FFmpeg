@@ -103,4 +103,7 @@ static void rv34_inv_transform_noround_c(DCTELEM *block){
 av_cold void ff_rv34dsp_init(RV34DSPContext *c, DSPContext* dsp) {
     c->rv34_inv_transform_tab[0] = rv34_inv_transform_c;
     c->rv34_inv_transform_tab[1] = rv34_inv_transform_noround_c;
+
+    if (HAVE_NEON)
+        ff_rv34dsp_init_neon(c, dsp);
 }
