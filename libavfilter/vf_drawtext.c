@@ -70,7 +70,7 @@ static const char *fun2_names[] = {
 
 static double drand(void *opaque, double min, double max)
 {
-    return val = min + (max-min) / UINT_MAX * av_lfg_get(opaque);
+    return min + (max-min) / UINT_MAX * av_lfg_get(opaque);
 }
 
 typedef double (*eval_func2)(void *, double a, double b);
