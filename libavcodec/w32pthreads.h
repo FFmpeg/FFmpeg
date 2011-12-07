@@ -115,9 +115,12 @@ static inline int pthread_mutex_unlock(pthread_mutex_t *m)
 /* for pre-Windows 6.0 platforms we need to define and use our own condition
  * variable and api */
 typedef struct {
+    pthread_mutex_t mtx_broadcast;
     pthread_mutex_t mtx_waiter_count;
     volatile int waiter_count;
     HANDLE semaphore;
+    HANDLE waiters_done;
+    int is_broadcast;
 } win32_cond_t;
 
 static void pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
@@ -136,8 +139,12 @@ static void pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
     win32_cond->semaphore = CreateSemaphore(NULL, 0, 0x7fffffff, NULL);
     if (!win32_cond->semaphore)
         return;
+    win32_cond->waiters_done = CreateEvent(NULL, FALSE, FALSE, NULL);
+    if (!win32_cond->waiters_done)
+        return;
 
     pthread_mutex_init(&win32_cond->mtx_waiter_count, NULL);
+    pthread_mutex_init(&win32_cond->mtx_broadcast, NULL);
 }
 
 static void pthread_cond_destroy(pthread_cond_t *cond)
@@ -149,7 +156,9 @@ static void pthread_cond_destroy(pthread_cond_t *cond)
 
     /* non native condition variables */
     CloseHandle(win32_cond->semaphore);
+    CloseHandle(win32_cond->waiters_done);
     pthread_mutex_destroy(&win32_cond->mtx_waiter_count);
+    pthread_mutex_destroy(&win32_cond->mtx_broadcast);
     av_freep(&win32_cond);
     cond->ptr = NULL;
 }
@@ -157,41 +166,70 @@ static void pthread_cond_destroy(pthread_cond_t *cond)
 static void pthread_cond_broadcast(pthread_cond_t *cond)
 {
     win32_cond_t *win32_cond = cond->ptr;
+    int have_waiter;
+
     if (cond_broadcast) {
         cond_broadcast(cond);
         return;
     }
 
     /* non native condition variables */
+    pthread_mutex_lock(&win32_cond->mtx_broadcast);
     pthread_mutex_lock(&win32_cond->mtx_waiter_count);
+    have_waiter = 0;
+
     if (win32_cond->waiter_count) {
-        ReleaseSemaphore(win32_cond->semaphore, win32_cond->waiter_count, NULL);
-        win32_cond->waiter_count = 0;
+        win32_cond->is_broadcast = 1;
+        have_waiter = 1;
     }
-    pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
+
+    if (have_waiter) {
+        ReleaseSemaphore(win32_cond->semaphore, win32_cond->waiter_count, NULL);
+        pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
+        WaitForSingleObject(win32_cond->waiters_done, INFINITE);
+        win32_cond->is_broadcast = 0;
+    } else
+        pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
+    pthread_mutex_unlock(&win32_cond->mtx_broadcast);
 }
 
 static void pthread_cond_wait(pthread_cond_t *cond, pthread_mutex_t *mutex)
 {
     win32_cond_t *win32_cond = cond->ptr;
+    int last_waiter;
     if (cond_wait) {
         cond_wait(cond, mutex, INFINITE);
         return;
     }
 
     /* non native condition variables */
+    pthread_mutex_lock(&win32_cond->mtx_broadcast);
+    pthread_mutex_unlock(&win32_cond->mtx_broadcast);
+
     pthread_mutex_lock(&win32_cond->mtx_waiter_count);
     win32_cond->waiter_count++;
     pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
 
+    // unlock the external mutex
     pthread_mutex_unlock(mutex);
     WaitForSingleObject(win32_cond->semaphore, INFINITE);
-    pthread_mutex_lock(mutex);
+
+    pthread_mutex_lock(&win32_cond->mtx_waiter_count);
+    win32_cond->waiter_count--;
+    last_waiter = !win32_cond->waiter_count && win32_cond->is_broadcast;
+    pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
+
+    if (last_waiter)
+        SetEvent(win32_cond->waiters_done);
+
+    // lock the external mutex
+    return pthread_mutex_lock(mutex);
 }
 
 static void pthread_cond_signal(pthread_cond_t *cond)
 {
     win32_cond_t *win32_cond = cond->ptr;
+    int have_waiter;
     if (cond_signal) {
         cond_signal(cond);
         return;
@@ -199,11 +237,11 @@ static void pthread_cond_signal(pthread_cond_t *cond)
 
     /* non-native condition variables */
     pthread_mutex_lock(&win32_cond->mtx_waiter_count);
-    if (win32_cond->waiter_count) {
-        ReleaseSemaphore(win32_cond->semaphore, 1, NULL);
-        win32_cond->waiter_count--;
-    }
+    have_waiter = win32_cond->waiter_count;
     pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
+
+    if (have_waiter)
+        ReleaseSemaphore(win32_cond->semaphore, 1, NULL);
 }
 
 static void w32thread_init(void)
