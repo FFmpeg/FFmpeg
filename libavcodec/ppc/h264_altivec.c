@@ -616,8 +616,8 @@ static inline void write16x4(uint8_t *dst, int dst_stride,
     *(dst_int+15*int_dst_stride) = *(src_int + 15);
 }
 
-/** \brief performs a 6x16 transpose of data in src, and stores it to dst
-    \todo FIXME: see if we can't spare some vec_lvsl() by them factorizing
+/** @brief performs a 6x16 transpose of data in src, and stores it to dst
+    @todo FIXME: see if we can't spare some vec_lvsl() by them factorizing
     out of unaligned_load() */
 #define readAndTranspose16x6(src, src_stride, r8, r9, r10, r11, r12, r13) {\
     register vec_u8 r0  = unaligned_load(0,             src);            \
