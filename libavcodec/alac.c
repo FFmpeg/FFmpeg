@@ -25,27 +25,23 @@
  * @author 2005 David Hammerton
  * @see http://crazney.net/programs/itunes/alac.html
  *
- * Note: This decoder expects a 36- (0x24-)byte QuickTime atom to be
+ * Note: This decoder expects a 36-byte QuickTime atom to be
  * passed through the extradata[_size] fields. This atom is tacked onto
  * the end of an 'alac' stsd atom and has the following format:
- *  bytes 0-3   atom size (0x24), big-endian
- *  bytes 4-7   atom type ('alac', not the 'alac' tag from start of stsd)
- *  bytes 8-35  data bytes needed by decoder
  *
- * Extradata:
- * 32bit  size
- * 32bit  tag (=alac)
- * 32bit  zero?
- * 32bit  max sample per frame
- *  8bit  ?? (zero?)
+ * 32bit  atom size
+ * 32bit  tag                  ("alac")
+ * 32bit  tag version          (0)
+ * 32bit  samples per frame    (used when not set explicitly in the frames)
+ *  8bit  compatible version   (0)
  *  8bit  sample size
- *  8bit  history mult
- *  8bit  initial history
- *  8bit  kmodifier
- *  8bit  channels?
- * 16bit  ??
- * 32bit  max coded frame size
- * 32bit  bitrate?
+ *  8bit  history mult         (40)
+ *  8bit  initial history      (14)
+ *  8bit  kmodifier            (10)
+ *  8bit  channels
+ * 16bit  maxRun               (255)
+ * 32bit  max coded frame size (0 means unknown)
+ * 32bit  average bitrate      (0 means unknown)
  * 32bit  samplerate
  */
 
@@ -574,7 +570,7 @@ static int alac_set_info(ALACContext *alac)
 
     ptr += 4; /* size */
     ptr += 4; /* alac */
-    ptr += 4; /* 0 ? */
+    ptr += 4; /* version */
 
     if(AV_RB32(ptr) >= UINT_MAX/4){
         av_log(alac->avctx, AV_LOG_ERROR, "setinfo_max_samples_per_frame too large\n");
@@ -583,15 +579,15 @@ static int alac_set_info(ALACContext *alac)
 
     /* buffer size / 2 ? */
     alac->setinfo_max_samples_per_frame = bytestream_get_be32(&ptr);
-    ptr++;                          /* ??? */
+    ptr++;                          /* compatible version */
     alac->setinfo_sample_size           = *ptr++;
     alac->setinfo_rice_historymult      = *ptr++;
     alac->setinfo_rice_initialhistory   = *ptr++;
     alac->setinfo_rice_kmodifier        = *ptr++;
     alac->numchannels                   = *ptr++;
-    bytestream_get_be16(&ptr);      /* ??? */
+    bytestream_get_be16(&ptr);      /* maxRun */
     bytestream_get_be32(&ptr);      /* max coded frame size */
-    bytestream_get_be32(&ptr);      /* bitrate ? */
+    bytestream_get_be32(&ptr);      /* average bitrate */
     bytestream_get_be32(&ptr);      /* samplerate */
 
     return 0;
