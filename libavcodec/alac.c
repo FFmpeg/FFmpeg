@@ -452,24 +452,29 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                                         ricemodifier[ch] * alac->setinfo_rice_historymult / 4,
                                         (1 << alac->setinfo_rice_kmodifier) - 1);
 
-            if (prediction_type[ch] == 0) {
-                /* adaptive fir */
-                predictor_decompress_fir_adapt(alac->predicterror_buffer[ch],
-                                               alac->outputsamples_buffer[ch],
-                                               outputsamples,
-                                               readsamplesize,
-                                               predictor_coef_table[ch],
-                                               predictor_coef_num[ch],
-                                               prediction_quantitization[ch]);
-            } else {
-                av_log(avctx, AV_LOG_ERROR, "FIXME: unhandled prediction type: %i\n", prediction_type[ch]);
-                /* I think the only other prediction type (or perhaps this is
-                 * just a boolean?) runs adaptive fir twice.. like:
-                 * predictor_decompress_fir_adapt(predictor_error, tempout, ...)
-                 * predictor_decompress_fir_adapt(predictor_error, outputsamples ...)
-                 * little strange..
+            /* adaptive FIR filter */
+            if (prediction_type[ch] == 15) {
+                /* Prediction type 15 runs the adaptive FIR twice.
+                 * The first pass uses the special-case coef_num = 31, while
+                 * the second pass uses the coefs from the bitstream.
+                 *
+                 * However, this prediction type is not currently used by the
+                 * reference encoder.
                  */
+                predictor_decompress_fir_adapt(alac->predicterror_buffer[ch],
+                                               alac->predicterror_buffer[ch],
+                                               outputsamples, readsamplesize,
+                                               NULL, 31, 0);
+            } else if (prediction_type[ch] > 0) {
+                av_log(avctx, AV_LOG_WARNING, "unknown prediction type: %i\n",
+                       prediction_type[ch]);
             }
+            predictor_decompress_fir_adapt(alac->predicterror_buffer[ch],
+                                           alac->outputsamples_buffer[ch],
+                                           outputsamples, readsamplesize,
+                                           predictor_coef_table[ch],
+                                           predictor_coef_num[ch],
+                                           prediction_quantitization[ch]);
         }
     } else {
         /* not compressed, easy case */
