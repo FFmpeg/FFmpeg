@@ -241,8 +241,6 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
         return -1;
     }
 
-    ff_thread_finish_setup(avctx);
-
     ctx->dec_params.cp_limit_decoding = NO_LIMITATION;
     ctx->dec_params.cp_reduce = avctx->lowres;
     // Tie decoder with decoding parameters
