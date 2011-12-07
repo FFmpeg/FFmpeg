@@ -238,7 +238,7 @@ void ff_clean_mpeg4_qscales(MpegEncContext *s){
 
 
 /**
- * encodes the dc value.
+ * Encode the dc value.
  * @param n block index (0-3 are luma, 4-5 are chroma)
  */
 static inline void mpeg4_encode_dc(PutBitContext * s, int level, int n)
@@ -291,7 +291,7 @@ static inline int mpeg4_get_dc_length(int level, int n){
 }
 
 /**
- * encodes a 8x8 block
+ * Encode an 8x8 block.
  * @param n block index (0-3 are luma, 4-5 are chroma)
  */
 static inline void mpeg4_encode_block(MpegEncContext * s, DCTELEM * block, int n, int intra_dc,

@@ -39,7 +39,7 @@ typedef struct DCAParseContext {
  || state == DCA_MARKER_RAW_LE || state == DCA_MARKER_RAW_BE)
 
 /**
- * finds the end of the current frame in the bitstream.
+ * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
 static int dca_find_frame_end(DCAParseContext * pc1, const uint8_t * buf,

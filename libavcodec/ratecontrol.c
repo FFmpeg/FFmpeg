@@ -300,7 +300,7 @@ int ff_vbv_update(MpegEncContext *s, int frame_size){
 }
 
 /**
- * modifies the bitrate curve from pass1 for one frame
+ * Modify the bitrate curve from pass1 for one frame.
  */
 static double get_qscale(MpegEncContext *s, RateControlEntry *rce, double rate_factor, int frame_num){
     RateControlContext *rcc= &s->rc_context;
@@ -404,7 +404,7 @@ static double get_diff_limited_q(MpegEncContext *s, RateControlEntry *rce, doubl
 }
 
 /**
- * gets the qmin & qmax for pict_type
+ * Get the qmin & qmax for pict_type.
  */
 static void get_qminmax(int *qmin_ret, int *qmax_ret, MpegEncContext *s, int pict_type){
     int qmin= s->avctx->lmin;

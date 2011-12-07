@@ -119,7 +119,7 @@ extern uint8_t ff_mpeg4_static_rl_table_store[3][2][2*MAX_RUN + MAX_LEVEL + 3];
 
 
 /**
- * predicts the dc.
+ * Predict the dc.
  * encoding quantized level -> quantized diff
  * decoding quantized diff -> quantized level
  * @param n block index (0-3 are luma, 4-5 are chroma)

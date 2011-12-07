@@ -1,6 +1,6 @@
 /*
- * Generates a synthetic stereo sound
- * NOTE: No floats are used to guarantee a bit exact output.
+ * Generate a synthetic stereo sound.
+ * NOTE: No floats are used to guarantee bitexact output.
  *
  * Copyright (c) 2002 Fabrice Bellard
  *

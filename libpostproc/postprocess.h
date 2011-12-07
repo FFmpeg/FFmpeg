@@ -77,9 +77,10 @@ void  pp_postprocess(const uint8_t * src[3], const int srcStride[3],
 
 
 /**
- * returns a pp_mode or NULL if an error occurred
- * name is the string after "-pp" on the command line
- * quality is a number from 0 to PP_QUALITY_MAX
+ * Return a pp_mode or NULL if an error occurred.
+ *
+ * @param name    the string after "-pp" on the command line
+ * @param quality a number from 0 to PP_QUALITY_MAX
  */
 pp_mode *pp_get_mode_by_name_and_quality(const char *name, int quality);
 void pp_free_mode(pp_mode *mode);

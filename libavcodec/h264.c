@@ -62,7 +62,8 @@ static const enum PixelFormat hwaccel_pixfmt_list_h264_jpeg_420[] = {
 };
 
 /**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
+ * Check if the top & left blocks are available if needed and
+ * change the dc mode so it only uses the available blocks.
  */
 int ff_h264_check_intra4x4_pred_mode(H264Context *h){
     MpegEncContext * const s = &h->s;
@@ -101,7 +102,8 @@ int ff_h264_check_intra4x4_pred_mode(H264Context *h){
 } //FIXME cleanup like ff_h264_check_intra_pred_mode
 
 /**
- * checks if the top & left blocks are available if needed & changes the dc mode so it only uses the available blocks.
+ * Check if the top & left blocks are available if needed and
+ * change the dc mode so it only uses the available blocks.
  */
 int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
     MpegEncContext * const s = &h->s;
@@ -2592,7 +2594,7 @@ static void clone_slice(H264Context *dst, H264Context *src)
 }
 
 /**
- * computes profile from profile_idc and constraint_set?_flags
+ * Compute profile from profile_idc and constraint_set?_flags.
  *
  * @param sps SPS
  *
@@ -2619,7 +2621,7 @@ int ff_h264_get_profile(SPS *sps)
 }
 
 /**
- * decodes a slice header.
+ * Decode a slice header.
  * This will also call MPV_common_init() and frame_start() as needed.
  *
  * @param h h264context
@@ -3982,7 +3984,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 }
 
 /**
- * returns the number of bytes consumed for building the current frame
+ * Return the number of bytes consumed for building the current frame.
  */
 static int get_consumed_bytes(MpegEncContext *s, int pos, int buf_size){
         if(pos==0) pos=1; //avoid infinite loops (i doubt that is needed but ...)

@@ -221,7 +221,7 @@ struct AVDictionary {
 #endif
 
 /**
- * Returns NULL if a threading library has not been enabled.
+ * Return NULL if a threading library has not been enabled.
  * Used to disable threading functions in AVCodec definitions
  * when not needed.
  */

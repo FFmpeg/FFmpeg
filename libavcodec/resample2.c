@@ -90,7 +90,7 @@ static double bessel(double x){
 }
 
 /**
- * builds a polyphase filterbank.
+ * Build a polyphase filterbank.
  * @param factor resampling factor
  * @param scale wanted sum of coefficients for each filter
  * @param type 0->cubic, 1->blackman nuttall windowed sinc, 2..16->kaiser windowed sinc beta=2..16

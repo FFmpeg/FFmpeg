@@ -96,7 +96,7 @@ static void vc1_extract_headers(AVCodecParserContext *s, AVCodecContext *avctx,
 }
 
 /**
- * finds the end of the current frame in the bitstream.
+ * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
 static int vc1_find_frame_end(ParseContext *pc, const uint8_t *buf,

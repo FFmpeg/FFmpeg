@@ -281,7 +281,7 @@ static int8_t cavlc_level_tab[7][1<<LEVEL_TAB_BITS][2];
 #define RUN7_VLC_BITS                  6
 
 /**
- * gets the predicted number of non-zero coefficients.
+ * Get the predicted number of non-zero coefficients.
  * @param n block index
  */
 static inline int pred_non_zero_count(H264Context *h, int n){
@@ -436,7 +436,7 @@ static inline int get_level_prefix(GetBitContext *gb){
 }
 
 /**
- * decodes a residual block.
+ * Decode a residual block.
  * @param n block index
  * @param scantable scantable
  * @param max_coeff number of coefficients in the block

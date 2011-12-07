@@ -52,8 +52,8 @@ struct PayloadContext {
 };
 
 /**
- * Parses configuration (basically the codec-specific extradata) from
- * a RTP config subpacket (starts with 0xff).
+ * Parse configuration (basically the codec-specific extradata) from
+ * an RTP config subpacket (starts with 0xff).
  *
  * Layout of the config subpacket (in bytes):
  * 1: 0xFF          <- config ID
@@ -128,7 +128,7 @@ static int qdm2_parse_config(PayloadContext *qdm, AVStream *st,
 }
 
 /**
- * Parses a single subpacket. We store this subpacket in an intermediate
+ * Parse a single subpacket. We store this subpacket in an intermediate
  * buffer (position depends on the ID (byte[0]). When called, at least
  * 4 bytes are available for reading (see qdm2_parse_packet()).
  *
@@ -179,7 +179,7 @@ static int qdm2_parse_subpacket(PayloadContext *qdm, AVStream *st,
 }
 
 /**
- * Adds a superblock header around a set of subpackets.
+ * Add a superblock header around a set of subpackets.
  *
  * @return <0 on error, else 0.
  */

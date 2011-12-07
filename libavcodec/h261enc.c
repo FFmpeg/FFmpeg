@@ -251,7 +251,7 @@ void ff_h261_encode_init(MpegEncContext *s){
 
 
 /**
- * encodes a 8x8 block.
+ * Encode an 8x8 block.
  * @param block the 8x8 block
  * @param n block index (0-3 are luma, 4-5 are chroma)
  */

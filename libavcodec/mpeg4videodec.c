@@ -46,7 +46,7 @@ static const int mb_type_b_map[4]= {
 };
 
 /**
- * predicts the ac.
+ * Predict the ac.
  * @param n block index (0-3 are luma, 4-5 are chroma)
  * @param dir the ac prediction direction
  */
@@ -343,7 +343,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
 }
 
 /**
- * decodes the next video packet.
+ * Decode the next video packet.
  * @return <0 if something went wrong
  */
 int mpeg4_decode_video_packet_header(MpegEncContext *s)
@@ -439,7 +439,7 @@ int mpeg4_decode_video_packet_header(MpegEncContext *s)
 }
 
 /**
- * gets the average motion vector for a GMC MB.
+ * Get the average motion vector for a GMC MB.
  * @param n either 0 for the x component or 1 for y
  * @return the average MV for a GMC MB
  */
@@ -485,7 +485,7 @@ static inline int get_amv(MpegEncContext *s, int n){
 }
 
 /**
- * decodes the dc value.
+ * Decode the dc value.
  * @param n block index (0-3 are luma, 4-5 are chroma)
  * @param dir_ptr the prediction direction will be stored here
  * @return the quantized dc
@@ -532,7 +532,7 @@ static inline int mpeg4_decode_dc(MpegEncContext * s, int n, int *dir_ptr)
 }
 
 /**
- * decodes first partition.
+ * Decode first partition.
  * @return number of MBs decoded or <0 if an error occurred
  */
 static int mpeg4_decode_partition_a(MpegEncContext *s){
@@ -784,7 +784,7 @@ static int mpeg4_decode_partition_b(MpegEncContext *s, int mb_count){
 }
 
 /**
- * decodes the first & second partition
+ * Decode the first and second partition.
  * @return <0 if error (and sets error type in the error_status_table)
  */
 int ff_mpeg4_decode_partitions(MpegEncContext *s)
@@ -837,7 +837,7 @@ int ff_mpeg4_decode_partitions(MpegEncContext *s)
 }
 
 /**
- * decodes a block.
+ * Decode a block.
  * @return <0 if an error occurred
  */
 static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
@@ -1824,7 +1824,7 @@ no_cplx_est:
 }
 
 /**
- * decodes the user data stuff in the header.
+ * Decode the user data stuff in the header.
  * Also initializes divx/xvid/lavc_version/build.
  */
 static int decode_user_data(MpegEncContext *s, GetBitContext *gb){
@@ -2094,7 +2094,7 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
 }
 
 /**
- * decode mpeg4 headers
+ * Decode mpeg4 headers.
  * @return <0 if no VOP found (or a damaged one)
  *         FRAME_SKIPPED if a not coded VOP is found
  *         0 if a VOP is found

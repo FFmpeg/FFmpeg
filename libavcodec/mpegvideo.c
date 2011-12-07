@@ -289,7 +289,7 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
 }
 
 /**
- * allocates a Picture
+ * Allocate a Picture.
  * The pixels are allocated/set by calling get_buffer() if shared = 0
  */
 int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
@@ -388,7 +388,7 @@ fail: // for  the FF_ALLOCZ_OR_GOTO macro
 }
 
 /**
- * deallocates a picture
+ * Deallocate a picture.
  */
 static void free_picture(MpegEncContext *s, Picture *pic)
 {
@@ -624,9 +624,9 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
 }
 
 /**
- * sets the given MpegEncContext to common defaults
+ * Set the given MpegEncContext to common defaults
  * (same for encoding and decoding).
- * the changed fields will not depend upon the
+ * The changed fields will not depend upon the
  * prior state of the MpegEncContext.
  */
 void MPV_common_defaults(MpegEncContext *s)
@@ -652,7 +652,7 @@ void MPV_common_defaults(MpegEncContext *s)
 }
 
 /**
- * sets the given MpegEncContext to defaults for decoding.
+ * Set the given MpegEncContext to defaults for decoding.
  * the changed fields will not depend upon
  * the prior state of the MpegEncContext.
  */
@@ -1400,7 +1400,7 @@ void MPV_frame_end(MpegEncContext *s)
 }
 
 /**
- * draws an line from (ex, ey) -> (sx, sy).
+ * Draw a line from (ex, ey) -> (sx, sy).
  * @param w width of the image
  * @param h height of the image
  * @param stride stride/linesize of the image
@@ -1449,7 +1449,7 @@ static void draw_line(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int h
 }
 
 /**
- * draws an arrow from (ex, ey) -> (sx, sy).
+ * Draw an arrow from (ex, ey) -> (sx, sy).
  * @param w width of the image
  * @param h height of the image
  * @param stride stride/linesize of the image
@@ -1482,7 +1482,7 @@ static void draw_arrow(uint8_t *buf, int sx, int sy, int ex, int ey, int w, int 
 }
 
 /**
- * prints debuging info for the given picture.
+ * Print debuging info for the given picture.
  */
 void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
 
@@ -2127,7 +2127,7 @@ static inline void add_dequant_dct(MpegEncContext *s,
 }
 
 /**
- * cleans dc, ac, coded_block for the current non intra MB
+ * Clean dc, ac, coded_block for the current non-intra MB.
  */
 void ff_clean_intra_table_entries(MpegEncContext *s)
 {
@@ -2432,7 +2432,6 @@ void MPV_decode_mb(MpegEncContext *s, DCTELEM block[12][64]){
 }
 
 /**
- *
  * @param h is the normal height, this will be reduced automatically if needed for the last row
  */
 void ff_draw_horiz_band(MpegEncContext *s, int y, int h){

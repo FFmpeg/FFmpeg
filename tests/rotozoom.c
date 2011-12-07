@@ -1,5 +1,5 @@
 /*
- * Generates a synthetic YUV video sequence suitable for codec testing.
+ * Generate a synthetic YUV video sequence suitable for codec testing.
  *
  * copyright (c) Sebastien Bechet <s.bechet@av7.net>
  *

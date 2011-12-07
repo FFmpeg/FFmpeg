@@ -302,7 +302,7 @@ void ff_clean_h263_qscales(MpegEncContext *s){
 static const int dquant_code[5]= {1,0,9,2,3};
 
 /**
- * encodes a 8x8 block.
+ * Encode an 8x8 block.
  * @param block the 8x8 block
  * @param n block index (0-3 are luma, 4-5 are chroma)
  */

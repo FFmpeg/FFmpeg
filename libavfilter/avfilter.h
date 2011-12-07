@@ -708,7 +708,7 @@ int avfilter_request_frame(AVFilterLink *link);
 int avfilter_poll_frame(AVFilterLink *link);
 
 /**
- * Notifie the next filter of the start of a frame.
+ * Notify the next filter of the start of a frame.
  *
  * @param link   the output link the frame will be sent over
  * @param picref A reference to the frame about to be sent. The data for this

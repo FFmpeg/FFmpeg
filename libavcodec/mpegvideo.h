@@ -728,8 +728,8 @@ void ff_init_block_index(MpegEncContext *s);
 void ff_copy_picture(Picture *dst, Picture *src);
 
 /**
- * allocates a Picture
- * The pixels are allocated/set by calling get_buffer() if shared=0
+ * Allocate a Picture.
+ * The pixels are allocated/set by calling get_buffer() if shared = 0.
  */
 int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared);
 

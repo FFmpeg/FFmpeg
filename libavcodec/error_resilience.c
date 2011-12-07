@@ -80,7 +80,7 @@ static void set_mv_strides(MpegEncContext *s, int *mv_step, int *stride){
 }
 
 /**
- * replaces the current MB with a flat dc only version.
+ * Replace the current MB with a flat dc-only version.
  */
 static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr, int mb_x, int mb_y)
 {
@@ -711,7 +711,7 @@ void ff_er_frame_start(MpegEncContext *s){
 }
 
 /**
- * adds a slice.
+ * Add a slice.
  * @param endx x component of the last macroblock, can be -1 for the last of the previous line
  * @param status the status at the end (MV_END, AC_ERROR, ...), it is assumed that no earlier end or
  *               error of the same type occurred

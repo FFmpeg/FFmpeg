@@ -97,7 +97,7 @@ static av_cold int h261_decode_init(AVCodecContext *avctx){
 }
 
 /**
- * decodes the group of blocks header or slice header.
+ * Decode the group of blocks header or slice header.
  * @return <0 if an error occurred
  */
 static int h261_decode_gob_header(H261Context *h){
@@ -150,7 +150,7 @@ static int h261_decode_gob_header(H261Context *h){
 }
 
 /**
- * decodes the group of blocks / video packet header.
+ * Decode the group of blocks / video packet header.
  * @return <0 if no resync found
  */
 static int ff_h261_resync(H261Context *h){
@@ -191,7 +191,7 @@ static int ff_h261_resync(H261Context *h){
 }
 
 /**
- * decodes skipped macroblocks
+ * Decode skipped macroblocks.
  * @return 0
  */
 static int h261_decode_mb_skipped(H261Context *h, int mba1, int mba2 )
@@ -355,7 +355,7 @@ intra:
 }
 
 /**
- * decodes a macroblock
+ * Decode a macroblock.
  * @return <0 if an error occurred
  */
 static int h261_decode_block(H261Context * h, DCTELEM * block,
@@ -437,7 +437,7 @@ static int h261_decode_block(H261Context * h, DCTELEM * block,
 }
 
 /**
- * decodes the H261 picture header.
+ * Decode the H.261 picture header.
  * @return <0 if no startcode found
  */
 static int h261_decode_picture_header(H261Context *h){

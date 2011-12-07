@@ -516,7 +516,7 @@ typedef struct AVInputFormat {
                                           int stream_index, int64_t timestamp, int flags);
 #endif
     /**
-     * Gets the next timestamp in stream[stream_index].time_base units.
+     * Get the next timestamp in stream[stream_index].time_base units.
      * @return the timestamp or AV_NOPTS_VALUE if an error occurred
      */
     int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
