@@ -348,6 +348,7 @@ static void alac_entropy_coder(AlacEncodeContext *s)
 static void write_compressed_frame(AlacEncodeContext *s)
 {
     int i, j;
+    int prediction_type = 0;
 
     if (s->avctx->channels == 2)
         alac_stereo_decorrelation(s);
@@ -358,7 +359,7 @@ static void write_compressed_frame(AlacEncodeContext *s)
 
         calc_predictor_params(s, i);
 
-        put_bits(&s->pbctx, 4, 0);  // prediction type : currently only type 0 has been RE'd
+        put_bits(&s->pbctx, 4, prediction_type);
         put_bits(&s->pbctx, 4, s->lpc[i].lpc_quant);
 
         put_bits(&s->pbctx, 3, s->rc.rice_modifier);
@@ -373,6 +374,14 @@ static void write_compressed_frame(AlacEncodeContext *s)
 
     for (i = 0; i < s->avctx->channels; i++) {
         alac_linear_predictor(s, i);
+
+        // TODO: determine when this will actually help. for now it's not used.
+        if (prediction_type == 15) {
+            // 2nd pass 1st order filter
+            for (j = s->avctx->frame_size - 1; j > 0; j--)
+                s->predictor_buf[j] -= s->predictor_buf[j - 1];
+        }
+
         alac_entropy_coder(s);
     }
 }
