@@ -336,7 +336,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
         for(i = 0; i < 256; i++) {
             v = palette[i];
             alpha = v >> 24;
-            if (alpha && alpha != 0xff)
+            if (alpha != 0xff)
                 has_alpha = 1;
             *alpha_ptr++ = alpha;
             bytestream_put_be24(&ptr, v);
