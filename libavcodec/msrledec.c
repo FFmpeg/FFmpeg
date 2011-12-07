@@ -138,8 +138,8 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
     uint32_t av_uninit(pix32);
     unsigned int width= FFABS(pic->linesize[0]) / (depth >> 3);
 
-    output = pic->data[0] + (avctx->height - 1) * pic->linesize[0];
-    output_end = pic->data[0] + (avctx->height) * pic->linesize[0];
+    output     = pic->data[0] + (avctx->height - 1) * pic->linesize[0];
+    output_end = pic->data[0] +  avctx->height      * pic->linesize[0];
     while(src < data + srcsize) {
         p1 = *src++;
         if(p1 == 0) { //Escape code

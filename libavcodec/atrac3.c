@@ -708,9 +708,10 @@ static int decodeChannelSoundUnit (ATRAC3Context *q, GetBitContext *gb, channel_
             memset(pSnd->IMDCT_buf, 0, 512 * sizeof(float));
 
         /* gain compensation and overlapping */
-        gainCompensateAndOverlap (pSnd->IMDCT_buf, &(pSnd->prevFrame[band*256]), &(pOut[band*256]),
-                                    &((pSnd->gainBlock[1 - (pSnd->gcBlkSwitch)]).gBlock[band]),
-                                    &((pSnd->gainBlock[pSnd->gcBlkSwitch]).gBlock[band]));
+        gainCompensateAndOverlap(pSnd->IMDCT_buf, &pSnd->prevFrame[band * 256],
+                                 &pOut[band * 256],
+                                 &pSnd->gainBlock[1 - pSnd->gcBlkSwitch].gBlock[band],
+                                 &pSnd->gainBlock[    pSnd->gcBlkSwitch].gBlock[band]);
     }
 
     /* Swap the gain control buffers for the next frame. */
@@ -795,7 +796,9 @@ static int decodeFrame(ATRAC3Context *q, const uint8_t* databuf,
         for (i=0 ; i<q->channels ; i++) {
 
             /* Set the bitstream reader at the start of a channel sound unit. */
-            init_get_bits(&q->gb, databuf+((i*q->bytes_per_frame)/q->channels), (q->bits_per_frame)/q->channels);
+            init_get_bits(&q->gb,
+                          databuf + i * q->bytes_per_frame / q->channels,
+                          q->bits_per_frame / q->channels);
 
             result = decodeChannelSoundUnit(q,&q->gb, &q->pUnits[i], out_samples[i], i, q->codingMode);
             if (result != 0)

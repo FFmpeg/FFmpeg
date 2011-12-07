@@ -236,7 +236,7 @@ static void vc1_put_signed_blocks_clamped(VC1Context *v)
         if (s->mb_x) {
             topleft_mb_pos = (s->mb_y - 1) * s->mb_stride + s->mb_x - 1;
             fieldtx        = v->fieldtx_plane[topleft_mb_pos];
-            stride_y       = (s->linesize) << fieldtx;
+            stride_y       = s->linesize << fieldtx;
             v_dist         = (16 - fieldtx) >> (fieldtx == 0);
             s->dsp.put_signed_pixels_clamped(v->block[v->topleft_blk_idx][0],
                                              s->dest[0] - 16 * s->linesize - 16,
