@@ -391,6 +391,14 @@ static av_cold int alac_encode_init(AVCodecContext *avctx)
         return -1;
     }
 
+    /* TODO: Correctly implement multi-channel ALAC.
+             It is similar to multi-channel AAC, in that it has a series of
+             single-channel (SCE), channel-pair (CPE), and LFE elements. */
+    if (avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "only mono or stereo input is currently supported\n");
+        return AVERROR_PATCHWELCOME;
+    }
+
     // Set default compression level
     if (avctx->compression_level == FF_COMPRESSION_DEFAULT)
         s->compression_level = 2;
