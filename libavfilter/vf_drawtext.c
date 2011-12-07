@@ -341,7 +341,7 @@ static av_cold int init(AVFilterContext *ctx, const char *args, void *opaque)
     }
 
     if (dtext->tc.str) {
-        if (ff_init_smtpe_timecode(ctx, &dtext->tc) < 0)
+        if (avpriv_init_smpte_timecode(ctx, &dtext->tc) < 0)
             return AVERROR(EINVAL);
         if (!dtext->text)
             dtext->text = av_strdup("");

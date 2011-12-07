@@ -28,7 +28,7 @@
 #include "timecode.h"
 #include "libavutil/log.h"
 
-int ff_framenum_to_drop_timecode(int frame_num)
+int avpriv_framenum_to_drop_timecode(int frame_num)
 {
     /* only works for NTSC 29.97 */
     int d = frame_num / 17982;
@@ -37,7 +37,7 @@ int ff_framenum_to_drop_timecode(int frame_num)
     return frame_num + 18 * d + 2 * ((m - 2) / 1798);
 }
 
-uint32_t ff_framenum_to_smtpe_timecode(unsigned frame, int fps, int drop)
+uint32_t avpriv_framenum_to_smpte_timecode(unsigned frame, int fps, int drop)
 {
     return (0                                    << 31) | // color frame flag
            (drop                                 << 30) | // drop  frame flag
@@ -89,13 +89,13 @@ char *avpriv_timecode_to_string(char *buf, const struct ff_timecode *tc, unsigne
     int hh  = frame_num / (fps*3600) % 24;
 
     if (tc->drop)
-        frame_num = ff_framenum_to_drop_timecode(frame_num);
+        frame_num = avpriv_framenum_to_drop_timecode(frame_num);
     snprintf(buf, sizeof("hh:mm:ss.ff"), "%02d:%02d:%02d%c%02d",
              hh, mm, ss, tc->drop ? ';' : ':', ff);
     return buf;
 }
 
-int ff_init_smtpe_timecode(void *avcl, struct ff_timecode *tc)
+int avpriv_init_smpte_timecode(void *avcl, struct ff_timecode *tc)
 {
     int hh, mm, ss, ff, fps, ret;
     char c;
@@ -121,3 +121,20 @@ int ff_init_smtpe_timecode(void *avcl, struct ff_timecode *tc)
     }
     return 0;
 }
+
+#if FF_API_OLD_TIMECODE
+int ff_framenum_to_drop_timecode(int frame_num)
+{
+    return avpriv_framenum_to_drop_timecode(frame_num);
+}
+
+uint32_t ff_framenum_to_smtpe_timecode(unsigned frame, int fps, int drop)
+{
+    return avpriv_framenum_to_smpte_timecode(frame, fps, drop);
+}
+
+int ff_init_smtpe_timecode(void *avcl, struct ff_timecode *tc)
+{
+    return avpriv_init_smpte_timecode(avcl, tc);
+}
+#endif

@@ -92,9 +92,9 @@ static int dv_write_pack(enum dv_pack_type pack_id, DVMuxContext *c, uint8_t* bu
          */
         ltc_frame = c->tc.start + c->frames;
         if (c->tc.drop)
-            ltc_frame = ff_framenum_to_drop_timecode(ltc_frame);
-        timecode = ff_framenum_to_smtpe_timecode(ltc_frame, c->sys->ltc_divisor,
-                                                 c->tc.drop);
+            ltc_frame = avpriv_framenum_to_drop_timecode(ltc_frame);
+        timecode = avpriv_framenum_to_smpte_timecode(ltc_frame, c->sys->ltc_divisor,
+                                                     c->tc.drop);
         timecode |= 1<<23 | 1<<15 | 1<<7 | 1<<6; // biphase and binary group flags
         AV_WB32(buf + 1, timecode);
         break;
@@ -378,7 +378,7 @@ static int dv_write_header(AVFormatContext *s)
     if (dvc->tc.str) {
         dvc->tc.rate.num = dvc->sys->time_base.den;
         dvc->tc.rate.den = dvc->sys->time_base.num;
-        if (ff_init_smtpe_timecode(s, &dvc->tc) < 0)
+        if (avpriv_init_smpte_timecode(s, &dvc->tc) < 0)
             return -1;
     }
     return 0;
