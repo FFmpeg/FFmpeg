@@ -33,9 +33,11 @@
 #include "libavutil/file.h"
 #include "libavutil/eval.h"
 #include "libavutil/opt.h"
+#include "libavutil/random_seed.h"
 #include "libavutil/parseutils.h"
 #include "libavutil/pixdesc.h"
 #include "libavutil/tree.h"
+#include "libavutil/lfg.h"
 #include "avfilter.h"
 #include "drawutils.h"
 
@@ -64,6 +66,22 @@ static const char * const var_names[] = {
     "y",
     "n",                      ///< number of frame
     "t",                      ///< timestamp expressed in seconds
+    NULL
+};
+
+static const char *fun2_names[] = {
+    "rand",
+};
+
+static double drand(void *opaque, double min, double max)
+{
+    return min + (max-min) / UINT_MAX * av_lfg_get(opaque);
+}
+
+typedef double (*eval_func2)(void *, double a, double b);
+
+static const eval_func2 fun2[] = {
+    drand,
     NULL
 };
 
@@ -132,6 +150,10 @@ typedef struct {
     AVExpr *x_pexpr, *y_pexpr;      ///< parsed expressions for x and y
     int64_t basetime;               ///< base pts time in the real world for display
     double var_values[VAR_VARS_NB];
+    char   *d_expr;
+    AVExpr *d_pexpr;
+    int draw;                       ///< set to zero to prevent drawing
+    AVLFG  prng;                    ///< random
 } DrawTextContext;
 
 #define OFFSET(x) offsetof(DrawTextContext, x)
@@ -151,7 +173,7 @@ static const AVOption drawtext_options[]= {
 {"shadowy",  "set y",                OFFSET(shadowy),            AV_OPT_TYPE_INT,    {.dbl=0},     INT_MIN,  INT_MAX  },
 {"tabsize",  "set tab size",         OFFSET(tabsize),            AV_OPT_TYPE_INT,    {.dbl=4},     0,        INT_MAX  },
 {"basetime", "set base time",        OFFSET(basetime),           AV_OPT_TYPE_INT64,  {.dbl=AV_NOPTS_VALUE},     INT64_MIN,        INT64_MAX  },
-
+{"draw",     "if false do not draw", OFFSET(d_expr),             AV_OPT_TYPE_STRING, {.str="1"},   CHAR_MIN, CHAR_MAX },
 
 /* FT_LOAD_* flags */
 {"ft_load_flags", "set font loading flags for libfreetype",   OFFSET(ft_load_flags),  AV_OPT_TYPE_FLAGS,  {.dbl=FT_LOAD_DEFAULT|FT_LOAD_RENDER}, 0, INT_MAX, 0, "ft_load_flags" },
@@ -470,10 +492,15 @@ static int config_input(AVFilterLink *inlink)
         dtext->var_values[VAR_N] = 0;
     dtext->var_values[VAR_T]     = NAN;
 
+    av_lfg_init(&dtext->prng, av_get_random_seed());
+
     if ((ret = av_expr_parse(&dtext->x_pexpr, dtext->x_expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0 ||
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
         (ret = av_expr_parse(&dtext->y_pexpr, dtext->y_expr, var_names,
-                             NULL, NULL, NULL, NULL, 0, ctx)) < 0)
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0 ||
+        (ret = av_expr_parse(&dtext->d_pexpr, dtext->d_expr, var_names,
+                             NULL, NULL, fun2_names, fun2, 0, ctx)) < 0)
+
         return AVERROR(EINVAL);
 
     return 0;
@@ -761,9 +788,13 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
 
     dtext->var_values[VAR_LINE_H] = dtext->var_values[VAR_LH] = dtext->max_glyph_h;
 
-    dtext->x = dtext->var_values[VAR_X] = av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
-    dtext->y = dtext->var_values[VAR_Y] = av_expr_eval(dtext->y_pexpr, dtext->var_values, NULL);
-    dtext->x = dtext->var_values[VAR_X] = av_expr_eval(dtext->x_pexpr, dtext->var_values, NULL);
+    dtext->x = dtext->var_values[VAR_X] = av_expr_eval(dtext->x_pexpr, dtext->var_values, &dtext->prng);
+    dtext->y = dtext->var_values[VAR_Y] = av_expr_eval(dtext->y_pexpr, dtext->var_values, &dtext->prng);
+    dtext->x = dtext->var_values[VAR_X] = av_expr_eval(dtext->x_pexpr, dtext->var_values, &dtext->prng);
+    dtext->draw = av_expr_eval(dtext->d_pexpr, dtext->var_values, &dtext->prng);
+
+    if(!dtext->draw)
+        return 0;
 
     dtext->x &= ~((1 << dtext->hsub) - 1);
     dtext->y &= ~((1 << dtext->vsub) - 1);

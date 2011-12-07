@@ -2247,7 +2247,6 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
             pkt.size -= ret;
         }
     }
- fail:
     return ret;
 }
 

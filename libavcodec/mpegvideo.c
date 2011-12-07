@@ -840,10 +840,14 @@ av_cold int MPV_common_init(MpegEncContext *s)
         FF_ALLOCZ_OR_GOTO(s->avctx, s->prev_pict_types, PREV_PICT_TYPES_BUFFER_SIZE, fail);
 
         s->parse_context.state = -1;
-        if ((s->avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) || (s->avctx->debug_mv)) {
-            s->visualization_buffer[0] = av_malloc((s->mb_width * 16 + 2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
-            s->visualization_buffer[1] = av_malloc((s->mb_width * 16 + 2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
-            s->visualization_buffer[2] = av_malloc((s->mb_width * 16 + 2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
+        if ((s->avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
+            s->avctx->debug_mv) {
+            s->visualization_buffer[0] = av_malloc((s->mb_width * 16 +
+                        2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
+            s->visualization_buffer[1] = av_malloc((s->mb_width * 16 +
+                        2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
+            s->visualization_buffer[2] = av_malloc((s->mb_width * 16 +
+                        2 * EDGE_WIDTH) * s->mb_height * 16 + 2 * EDGE_WIDTH);
         }
 
         s->context_initialized = 1;
@@ -1512,7 +1516,8 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
         }
     }
 
-    if((s->avctx->debug&(FF_DEBUG_VIS_QP|FF_DEBUG_VIS_MB_TYPE)) || (s->avctx->debug_mv)){
+    if ((s->avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
+        s->avctx->debug_mv) {
         const int shift= 1 + s->quarter_sample;
         int mb_y;
         uint8_t *ptr;
@@ -1538,7 +1543,7 @@ void ff_print_debug_info(MpegEncContext *s, AVFrame *pict){
             int mb_x;
             for(mb_x=0; mb_x<s->mb_width; mb_x++){
                 const int mb_index= mb_x + mb_y*s->mb_stride;
-                if((s->avctx->debug_mv) && pict->motion_val){
+                if (s->avctx->debug_mv && pict->motion_val) {
                   int type;
                   for(type=0; type<3; type++){
                     int direction = 0;

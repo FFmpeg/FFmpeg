@@ -585,7 +585,7 @@ static inline void chroma_4mv_motion(MpegEncContext *s,
     if (src_y == (s->height >> 1))
         dxy &= ~2;
 
-    offset = (src_y * (s->uvlinesize)) + src_x;
+    offset = src_y * s->uvlinesize + src_x;
     ptr = ref_picture[1] + offset;
     if(s->flags&CODEC_FLAG_EMU_EDGE){
         if(   (unsigned)src_x > (s->h_edge_pos>>1) - (dxy &1) - 8

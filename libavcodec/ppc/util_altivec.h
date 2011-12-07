@@ -94,7 +94,7 @@ do { \
 } while (0)
 
 
-/** \brief loads unaligned vector \a *src with offset \a offset
+/** @brief loads unaligned vector @a *src with offset @a offset
     and returns it */
 static inline vector unsigned char unaligned_load(int offset, uint8_t *src)
 {
