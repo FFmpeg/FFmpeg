@@ -1401,9 +1401,8 @@ static int mov_write_trak_tag(AVIOContext *pb, MOVMuxContext *mov, MOVTrack *tra
     avio_wb32(pb, 0); /* size */
     ffio_wfourcc(pb, "trak");
     mov_write_tkhd_tag(pb, track, st);
-    if (track->mode == MODE_PSP || track->flags & MOV_TRACK_CTTS || track->cluster[0].dts)
-        if(!mov->fragments) // EDTS with fragments is tricky as we dont know the duration when its written
-        mov_write_edts_tag(pb, track);  // PSP Movies require edts box
+    if(!mov->fragments) // EDTS with fragments is tricky as we dont know the duration when its written
+        mov_write_edts_tag(pb, track);  // PSP Movies and several other cases require edts box
     if (track->tref_tag)
         mov_write_tref_tag(pb, track);
     mov_write_mdia_tag(pb, track);
