@@ -78,6 +78,7 @@ typedef struct {
     uint64_t previous_partition;
     int index_sid;
     int body_sid;
+    int64_t this_partition;
 } MXFPartition;
 
 typedef struct {
@@ -467,7 +468,8 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     /* consider both footers to be closed (there is only Footer and CompleteFooter) */
     partition->closed = partition->type == Footer || !(uid[14] & 1);
     partition->complete = uid[14] > 2;
-    avio_skip(pb, 16);
+    avio_skip(pb, 8);
+    partition->this_partition = avio_rb64(pb);
     partition->previous_partition = avio_rb64(pb);
     footer_partition = avio_rb64(pb);
     avio_skip(pb, 16);
@@ -486,8 +488,9 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
         }
     }
 
-    av_dlog(mxf->fc, "PartitionPack: PreviousPartition = 0x%lx, "
+    av_dlog(mxf->fc, "PartitionPack: ThisPartition = 0x%lx, PreviousPartition = 0x%lx, "
             "FooterPartition = 0x%lx, IndexSID = %i, BodySID = %i\n",
+            partition->this_partition,
             partition->previous_partition, footer_partition,
             partition->index_sid, partition->body_sid);
 
