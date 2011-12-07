@@ -776,11 +776,12 @@ static void reset_codec(WmallDecodeCtx *s)
     s->mclms_recent = s->mclms_order * s->num_channels;
     for (ich = 0; ich < s->num_channels; ich++) {
         for (ilms = 0; ilms < s->cdlms_ttl[ich]; ilms++)
-            s->cdlms[ich][ilms].recent = s->cdlms[ich][ilms].order - 1;
+            s->cdlms[ich][ilms].recent = s->cdlms[ich][ilms].order;
         /* first sample of a seekable subframe is considered as the starting of
            a transient area which is samples_per_frame samples long */
         s->channel[ich].transient_counter = s->samples_per_frame;
         s->transient[ich] = 1;
+        s->transient_pos[ich] = 0;
     }
 }
 
@@ -875,7 +876,7 @@ static void revert_mclms(WmallDecodeCtx *s, int tile_size)
 
 static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
 {
-    int16_t pred = 0;
+    int pred = 0;
     int icoef;
     int recent = s->cdlms[ich][ilms].recent;
 
@@ -883,39 +884,53 @@ static int lms_predict(WmallDecodeCtx *s, int ich, int ilms)
         pred += s->cdlms[ich][ilms].coefs[icoef] *
                     s->cdlms[ich][ilms].lms_prevvalues[icoef + recent];
 
-    pred += (1 << (s->cdlms[ich][ilms].scaling - 1));
+    //pred += (1 << (s->cdlms[ich][ilms].scaling - 1));
     /* XXX: Table 29 has:
             iPred >= cdlms[iCh][ilms].scaling;
        seems to me like a missing > */
-    pred >>= s->cdlms[ich][ilms].scaling;
+    //pred >>= s->cdlms[ich][ilms].scaling;
     return pred;
 }
 
-static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int16_t residue, int16_t pred)
+static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input, int residue)
 {
-    int16_t icoef;
+    int icoef;
     int recent = s->cdlms[ich][ilms].recent;
-    int16_t range = (1 << s->bits_per_sample - 1) - 1;
+    int range = 1 << s->bits_per_sample - 1;
     int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
-    int16_t input = residue + pred;
 
-    if (residue > 0) {
-        for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
-            s->cdlms[ich][ilms].coefs[icoef] +=
-                s->cdlms[ich][ilms].lms_updates[icoef + recent];
-    } else {
+    if (residue < 0) {
         for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
             s->cdlms[ich][ilms].coefs[icoef] -=
+                s->cdlms[ich][ilms].lms_updates[icoef + recent];
+    } else if (residue > 0) {
+        for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
+            s->cdlms[ich][ilms].coefs[icoef] +=
                 s->cdlms[ich][ilms].lms_updates[icoef + recent];    /* spec mistakenly
                                                                     dropped the recent */
     }
-    s->cdlms[ich][ilms].recent--;
-    s->cdlms[ich][ilms].lms_prevvalues[recent] = av_clip(input, -range, range - 1);
 
-    if (input > pred)
-        s->cdlms[ich][ilms].lms_updates[recent] = s->update_speed[ich];
-    else if (input < pred)
+    if (recent)
+        recent--;
+    else {
+        /* XXX: This memcpy()s will probably fail if a fixed 32-bit buffer is used.
+                follow kshishkov's suggestion of using a union. */
+        memcpy(&s->cdlms[ich][ilms].lms_prevvalues[s->cdlms[ich][ilms].order],
+               s->cdlms[ich][ilms].lms_prevvalues,
+               bps * s->cdlms[ich][ilms].order);
+        memcpy(&s->cdlms[ich][ilms].lms_updates[s->cdlms[ich][ilms].order],
+               s->cdlms[ich][ilms].lms_updates,
+               bps * s->cdlms[ich][ilms].order);
+        recent = s->cdlms[ich][ilms].order - 1;
+    }
+
+    s->cdlms[ich][ilms].lms_prevvalues[recent] = av_clip(input, -range, range - 1);
+    if (!input)
+        s->cdlms[ich][ilms].lms_updates[recent] = 0;
+    else if (input < 0)
         s->cdlms[ich][ilms].lms_updates[recent] = -s->update_speed[ich];
+    else
+        s->cdlms[ich][ilms].lms_updates[recent] = s->update_speed[ich];
 
     /* XXX: spec says:
     cdlms[iCh][ilms].updates[iRecent + cdlms[iCh][ilms].order >> 4] >>= 2;
@@ -925,21 +940,9 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int16_t residue, in
         seperate buffers? Here I've assumed that the two are same which makes
         more sense to me.
     */
-    s->cdlms[ich][ilms].lms_updates[recent + s->cdlms[ich][ilms].order >> 4] >>= 2;
-    s->cdlms[ich][ilms].lms_updates[recent + s->cdlms[ich][ilms].order >> 3] >>= 1;
-    /* XXX: recent + (s->cdlms[ich][ilms].order >> 4) ? */
-
-    if (s->cdlms[ich][ilms].recent == 0) {
-        /* XXX: This memcpy()s will probably fail if a fixed 32-bit buffer is used.
-                follow kshishkov's suggestion of using a union. */
-        memcpy(s->cdlms[ich][ilms].lms_prevvalues + s->cdlms[ich][ilms].order,
-               s->cdlms[ich][ilms].lms_prevvalues,
-               bps * s->cdlms[ich][ilms].order);
-        memcpy(s->cdlms[ich][ilms].lms_updates + s->cdlms[ich][ilms].order,
-               s->cdlms[ich][ilms].lms_updates,
-               bps * s->cdlms[ich][ilms].order);
-        s->cdlms[ich][ilms].recent = s->cdlms[ich][ilms].order;
-    }
+    s->cdlms[ich][ilms].lms_updates[recent + (s->cdlms[ich][ilms].order >> 4)] >>= 2;
+    s->cdlms[ich][ilms].lms_updates[recent + (s->cdlms[ich][ilms].order >> 3)] >>= 1;
+    s->cdlms[ich][ilms].recent = recent;
 }
 
 static void use_high_update_speed(WmallDecodeCtx *s, int ich)
@@ -974,33 +977,23 @@ static void use_normal_update_speed(WmallDecodeCtx *s, int ich)
     }
 }
 
-static void revert_cdlms(WmallDecodeCtx *s, int tile_size)
+static void revert_cdlms(WmallDecodeCtx *s, int ch, int coef_begin, int coef_end)
 {
-    int icoef, ich;
-    int16_t pred, channel_coeff;
+    int icoef;
+    int pred;
     int ilms, num_lms;
+    int residue, input;
 
-    for (ich = 0; ich < s->num_channels; ich++) {
-        if (!s->is_channel_coded[ich])
-            continue;
-        num_lms = s->cdlms_ttl[ich];
-        for (icoef = 0; icoef < tile_size; icoef++) {
-            channel_coeff = s->channel_residues[ich][icoef];
-            if (icoef == s->transient_pos[ich]) {
-                s->transient[ich] = 1;
-                use_high_update_speed(s, ich);
-            }
-            for (ilms = num_lms - 1; ilms >= 0; ilms--) {
-                pred = lms_predict(s, ich, ilms);
-                lms_update(s, ich, ilms, channel_coeff, pred);
-                channel_coeff += pred;
-            }
-            if (s->transient[ich]) {
-                --s->channel[ich].transient_counter;
-                if(!s->channel[ich].transient_counter)
-                    use_normal_update_speed(s, ich);
-            }
-            s->channel_coeffs[ich][icoef] = channel_coeff;
+    num_lms = s->cdlms_ttl[ch];
+    for (ilms = num_lms - 1; ilms >= 0; ilms--) {
+        //s->cdlms[ch][ilms].recent = s->cdlms[ch][ilms].order;
+        for (icoef = coef_begin; icoef < coef_end; icoef++) {
+            pred = 1 << (s->cdlms[ch][ilms].scaling - 1);
+            residue = s->channel_residues[ch][icoef];
+            pred += lms_predict(s, ch, ilms);
+            input = residue + (pred >> s->cdlms[ch][ilms].scaling);
+            lms_update(s, ch, ilms, input, residue);
+            s->channel_residues[ch][icoef] = input;
         }
     }
 }
@@ -1130,10 +1123,15 @@ static int decode_subframe(WmallDecodeCtx *s)
         }
     } else {
         for(i = 0; i < s->num_channels; i++)
-            if(s->is_channel_coded[i])
-                decode_channel_residues(s, i, subframe_len);
+            if(s->is_channel_coded[i]) {
+            decode_channel_residues(s, i, subframe_len);
+            if (s->seekable_tile)
+                use_high_update_speed(s, i);
+            else
+                use_normal_update_speed(s, i);
+            revert_cdlms(s, i, 0, subframe_len);
+        }
     }
-    revert_cdlms(s, subframe_len);
 
     /** handled one subframe */
 
