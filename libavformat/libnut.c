@@ -207,6 +207,9 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
     nut_stream_header_tt * s;
     int ret, i;
 
+    if(!nut)
+        return -1;
+
     if ((ret = nut_read_headers(nut, &s, NULL))) {
         av_log(avf, AV_LOG_ERROR, " NUT error: %s\n", nut_error(ret));
         nut_demuxer_uninit(nut);
