@@ -6,6 +6,10 @@ FFmpeg code.
 
 Please try to keep entries where you are the maintainer upto date!
 
+Names in () mean that the maintainer currently has no time to maintain the code.
+A CC after the name means that the maintainer prefers to be CC-ed on patches
+and related discussions.
+
 
 Project Leader
 ==============
