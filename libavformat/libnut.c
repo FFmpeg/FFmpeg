@@ -213,6 +213,7 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
     if ((ret = nut_read_headers(nut, &s, NULL))) {
         av_log(avf, AV_LOG_ERROR, " NUT error: %s\n", nut_error(ret));
         nut_demuxer_uninit(nut);
+        priv->nut = NULL;
         return -1;
     }
 
@@ -231,6 +232,7 @@ static int nut_read_header(AVFormatContext * avf, AVFormatParameters * ap) {
             st->codec->extradata = av_mallocz(st->codec->extradata_size);
             if(!st->codec->extradata){
                 nut_demuxer_uninit(nut);
+                priv->nut = NULL;
                 return AVERROR(ENOMEM);
             }
             memcpy(st->codec->extradata, s[i].codec_specific, st->codec->extradata_size);
