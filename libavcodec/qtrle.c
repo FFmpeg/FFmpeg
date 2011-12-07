@@ -96,6 +96,9 @@ static void qtrle_decode_1bpp(QtrleContext *s, int stream_ptr, int row_ptr, int 
             pixel_ptr += 2 * skip;
         CHECK_PIXEL_PTR(0);  /* make sure pixel_ptr is positive */
 
+        if(rle_code == -1)
+            continue;
+
         if (rle_code < 0) {
             /* decode the run length code */
             rle_code = -rle_code;
