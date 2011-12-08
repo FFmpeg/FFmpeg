@@ -345,7 +345,7 @@ static int wav_parse_bext_tag(AVFormatContext *s, int64_t size)
             } else {
                 /* extended UMID */
                 snprintf(temp, sizeof(temp), "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64
-                                             "0x%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
+                                               "%016"PRIX64"%016"PRIX64"%016"PRIX64"%016"PRIX64,
                          umid_parts[0], umid_parts[1], umid_parts[2], umid_parts[3],
                          umid_parts[4], umid_parts[5], umid_parts[6], umid_parts[7]);
             }
