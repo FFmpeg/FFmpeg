@@ -13,6 +13,9 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-12-08 - a502939 - lavfi 2.52.0
+  Add av_buffersink_poll_frame() to buffersink.h.
+
 2011-12-08 - xxxxxxx - lavu 51.31.0
   Add av_log_format_line.
 
