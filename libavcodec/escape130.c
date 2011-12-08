@@ -114,7 +114,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
              block_index, row_index = 0;
     unsigned y[4] = {0}, cb = 16, cr = 16;
     unsigned skip = -1;
-    unsigned y_base;
+    unsigned y_base = 0;
     uint8_t *yb= s->bases;
 
     AVFrame new_frame = { { 0 } };
