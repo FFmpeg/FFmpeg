@@ -170,7 +170,7 @@ static const struct algo idct_tab[] = {
 
 #define AANSCALE_BITS 12
 
-uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
+static uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
 
 static int64_t gettime(void)
 {

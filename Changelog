@@ -130,6 +130,7 @@ easier to use. The changes are:
 - Microsoft Windows ICO demuxer
 - life source
 - PCM format support in OMA demuxer
+- CLJR encoder
 
 
 version 0.8:

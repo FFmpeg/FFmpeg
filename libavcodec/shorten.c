@@ -176,7 +176,7 @@ static void fix_bitshift(ShortenContext *s, int32_t *buffer)
 }
 
 
-static void init_offset(ShortenContext *s)
+static int init_offset(ShortenContext *s)
 {
     int32_t mean = 0;
     int  chan, i;
@@ -190,12 +190,13 @@ static void init_offset(ShortenContext *s)
             break;
         default:
             av_log(s->avctx, AV_LOG_ERROR, "unknown audio type");
-            abort();
+            return AVERROR_INVALIDDATA;
     }
 
     for (chan = 0; chan < s->channels; chan++)
         for (i = 0; i < nblock; i++)
             s->offset[chan][i] = mean;
+    return 0;
 }
 
 static int decode_wave_header(AVCodecContext *avctx, const uint8_t *header,
@@ -367,7 +368,8 @@ static int read_header(ShortenContext *s)
     if ((ret = allocate_buffers(s)) < 0)
         return ret;
 
-    init_offset(s);
+    if ((ret = init_offset(s)) < 0)
+        return ret;
 
     if (s->version > 1)
         s->lpcqoffset = V2LPCQOFFSET;

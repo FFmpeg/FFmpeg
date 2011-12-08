@@ -50,11 +50,11 @@ static int sws_flags = SWS_BICUBIC;
 /**************************************************************/
 /* audio output */
 
-float t, tincr, tincr2;
-int16_t *samples;
-uint8_t *audio_outbuf;
-int audio_outbuf_size;
-int audio_input_frame_size;
+static float t, tincr, tincr2;
+static int16_t *samples;
+static uint8_t *audio_outbuf;
+static int audio_outbuf_size;
+static int audio_input_frame_size;
 
 /*
  * add an audio output stream
@@ -190,9 +190,9 @@ static void close_audio(AVFormatContext *oc, AVStream *st)
 /**************************************************************/
 /* video output */
 
-AVFrame *picture, *tmp_picture;
-uint8_t *video_outbuf;
-int frame_count, video_outbuf_size;
+static AVFrame *picture, *tmp_picture;
+static uint8_t *video_outbuf;
+static int frame_count, video_outbuf_size;
 
 /* add a video output stream */
 static AVStream *add_video_stream(AVFormatContext *oc, enum CodecID codec_id)
@@ -454,7 +454,7 @@ int main(int argc, char **argv)
                "The output format is automatically guessed according to the file extension.\n"
                "Raw images can also be output by using '%%d' in the filename\n"
                "\n", argv[0]);
-        exit(1);
+        return 1;
     }
 
     filename = argv[1];
@@ -466,7 +466,7 @@ int main(int argc, char **argv)
         avformat_alloc_output_context2(&oc, NULL, "mpeg", filename);
     }
     if (!oc) {
-        exit(1);
+        return 1;
     }
     fmt = oc->oformat;
 
@@ -494,7 +494,7 @@ int main(int argc, char **argv)
     if (!(fmt->flags & AVFMT_NOFILE)) {
         if (avio_open(&oc->pb, filename, AVIO_FLAG_WRITE) < 0) {
             fprintf(stderr, "Could not open '%s'\n", filename);
-            exit(1);
+            return 1;
         }
     }
 

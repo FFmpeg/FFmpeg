@@ -33,14 +33,13 @@
 #include "dsputil.h"
 #include "libavutil/lfg.h"
 
-#undef exit
 #undef printf
 
 #define WIDTH 64
 #define HEIGHT 64
 
-uint8_t img1[WIDTH * HEIGHT];
-uint8_t img2[WIDTH * HEIGHT];
+static uint8_t img1[WIDTH * HEIGHT];
+static uint8_t img2[WIDTH * HEIGHT];
 
 static void fill_random(uint8_t *tab, int size)
 {
@@ -61,7 +60,6 @@ static void help(void)
 {
     printf("motion-test [-h]\n"
            "test motion implementations\n");
-    exit(1);
 }
 
 static int64_t gettime(void)
@@ -138,7 +136,7 @@ int main(int argc, char **argv)
         switch(c) {
         case 'h':
             help();
-            break;
+            return 1;
         }
     }
 

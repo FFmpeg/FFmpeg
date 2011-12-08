@@ -643,7 +643,7 @@ void exit_program(int ret)
         exit (255);
     }
 
-    exit(ret); /* not all OS-es handle main() return value */
+    exit(ret);
 }
 
 static void assert_avoptions(AVDictionary *m)

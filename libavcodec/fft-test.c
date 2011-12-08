@@ -37,8 +37,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#undef exit
-
 /* reference fft */
 
 #define MUL16(a,b) ((a) * (b))
@@ -228,7 +226,6 @@ static void help(void)
            "-n b   set the transform size to 2^b\n"
            "-f x   set scale factor for output data of (I)MDCT to x\n"
            );
-    exit(1);
 }
 
 enum tf_transform {
@@ -267,7 +264,7 @@ int main(int argc, char **argv)
         switch(c) {
         case 'h':
             help();
-            break;
+            return 1;
         case 's':
             do_speed = 1;
             break;

@@ -401,7 +401,7 @@ following image formats are supported:
     @tab Codec used in Delphine Software International games.
 @item Discworld II BMV Video @tab     @tab  X
 @item Cinepak                @tab     @tab  X
-@item Cirrus Logic AccuPak   @tab     @tab  X
+@item Cirrus Logic AccuPak   @tab  X  @tab  X
     @tab fourcc: CLJR
 @item Creative YUV (CYUV)    @tab     @tab  X
 @item DFA                    @tab     @tab  X
@@ -788,6 +788,7 @@ performance on systems without hardware floating point support).
 @item JACK              @tab X      @tab
 @item LIBDC1394         @tab X      @tab
 @item OSS               @tab X      @tab X
+@item Pulseaudio        @tab X      @tab
 @item Video4Linux       @tab X      @tab
 @item Video4Linux2      @tab X      @tab
 @item VfW capture       @tab X      @tab
