@@ -29,10 +29,6 @@ typedef struct Escape130Context {
     uint8_t *bases;
 } Escape130Context;
 
-static int can_safely_read(GetBitContext* gb, int bits) {
-    return get_bits_count(gb) + bits <= gb->size_in_bits;
-}
-
 /**
  * Initialize the decoder
  * @param avctx decoder context
@@ -69,7 +65,7 @@ static unsigned decode_skip_count(GetBitContext* gb) {
     unsigned value;
     // This function reads a maximum of 27 bits,
     // which is within the padding space
-    if (!can_safely_read(gb, 1+3))
+    if (get_bits_left(gb) < 1+3)
         return -1;
 
     value = get_bits1(gb);
@@ -126,7 +122,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
 
     init_get_bits(&gb, buf, buf_size * 8);
 
-    if (!can_safely_read(&gb, 128))
+    if (get_bits_left(&gb) < 128)
         return -1;
 
     // Header; no useful information in here
