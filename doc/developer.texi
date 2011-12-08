@@ -180,10 +180,10 @@ should also be avoided if they don't make the code easier to understand.
 @end itemize
 
 @subsection Editor configuration
-In order to configure Vim to follow Libav formatting conventions, paste
+In order to configure Vim to follow FFmpeg formatting conventions, paste
 the following snippet into your @file{.vimrc}:
 @example
-" indentation rules for libav: 4 spaces, no tabs
+" indentation rules for FFmpeg: 4 spaces, no tabs
 set expandtab
 set shiftwidth=4
 set softtabstop=4
@@ -299,7 +299,7 @@ For Emacs, add these roughly equivalent lines to your @file{.emacs.d/init.el}:
     always check values read from some untrusted source before using them
     as array index or other risky things.
 @item
-    Remember to check if you need to bump versions for the specific libav
+    Remember to check if you need to bump versions for the specific libav*
     parts (libavutil, libavcodec, libavformat) you are changing. You need
     to change the version integer.
     Incrementing the first component means no backward compatibility to
