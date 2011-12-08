@@ -55,6 +55,8 @@ AVDictionary *format_opts, *codec_opts;
 
 static const int this_year = 2011;
 
+static FILE *report_file;
+
 void init_opts(void)
 {
 #if CONFIG_SWSCALE
@@ -75,6 +77,20 @@ void uninit_opts(void)
 void log_callback_help(void* ptr, int level, const char* fmt, va_list vl)
 {
     vfprintf(stdout, fmt, vl);
+}
+
+static void log_callback_report(void *ptr, int level, const char *fmt, va_list vl)
+{
+    va_list vl2;
+    char line[1024];
+    static int print_prefix = 1;
+
+    va_copy(vl2, vl);
+    av_log_default_callback(ptr, level, fmt, vl);
+    av_log_format_line(ptr, level, fmt, vl2, line, sizeof(line), &print_prefix);
+    va_end(vl2);
+    fputs(line, report_file);
+    fflush(report_file);
 }
 
 double parse_number_or_die(const char *context, const char *numstr, int type, double min, double max)
@@ -344,6 +360,30 @@ static int locate_option(int argc, char **argv, const OptionDef *options, const 
     return 0;
 }
 
+static void dump_argument(const char *a)
+{
+    const unsigned char *p;
+
+    for (p = a; *p; p++)
+        if (!((*p >= '+' && *p <= ':') || (*p >= '@' && *p <= 'Z') ||
+              *p == '_' || (*p >= 'a' && *p <= 'z')))
+            break;
+    if (!*p) {
+        fputs(a, report_file);
+        return;
+    }
+    fputc('"', report_file);
+    for (p = a; *p; p++) {
+        if (*p == '\\' || *p == '"' || *p == '$' || *p == '`')
+            fprintf(report_file, "\\%c", *p);
+        else if (*p < ' ' || *p > '~')
+            fprintf(report_file, "\\x%02x", *p);
+        else
+            fputc(*p, report_file);
+    }
+    fputc('"', report_file);
+}
+
 void parse_loglevel(int argc, char **argv, const OptionDef *options)
 {
     int idx = locate_option(argc, argv, options, "loglevel");
@@ -351,6 +391,19 @@ void parse_loglevel(int argc, char **argv, const OptionDef *options)
         idx = locate_option(argc, argv, options, "v");
     if (idx && argv[idx + 1])
         opt_loglevel("loglevel", argv[idx + 1]);
+    idx = locate_option(argc, argv, options, "report");
+    if (idx || getenv("FFREPORT")) {
+        opt_report("report");
+        if (report_file) {
+            int i;
+            fprintf(report_file, "Command line:\n");
+            for (i = 0; i < argc; i++) {
+                dump_argument(argv[i]);
+                fputc(i < argc - 1 ? ' ' : '\n', report_file);
+            }
+            fflush(report_file);
+        }
+    }
 }
 
 #define FLAGS(o) ((o)->type == AV_OPT_TYPE_FLAGS) ? AV_DICT_APPEND : 0
@@ -421,6 +474,38 @@ int opt_loglevel(const char *opt, const char *arg)
         exit_program(1);
     }
     av_log_set_level(level);
+    return 0;
+}
+
+int opt_report(const char *opt)
+{
+    char filename[64];
+    time_t now;
+    struct tm *tm;
+
+    if (report_file) /* already opened */
+        return 0;
+    time(&now);
+    tm = localtime(&now);
+    snprintf(filename, sizeof(filename), "%s-%04d%02d%02d-%02d%02d%02d.log",
+             program_name,
+             tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+             tm->tm_hour, tm->tm_min, tm->tm_sec);
+    report_file = fopen(filename, "w");
+    if (!report_file) {
+        av_log(NULL, AV_LOG_ERROR, "Failed to open report \"%s\": %s\n",
+               filename, strerror(errno));
+        return AVERROR(errno);
+    }
+    av_log_set_callback(log_callback_report);
+    av_log(NULL, AV_LOG_INFO,
+           "%s started on %04d-%02d-%02d at %02d:%02d:%02d\n"
+           "Report written to \"%s\"\n",
+           program_name,
+           tm->tm_year + 1900, tm->tm_mon + 1, tm->tm_mday,
+           tm->tm_hour, tm->tm_min, tm->tm_sec,
+           filename);
+    av_log_set_level(FFMAX(av_log_get_level(), AV_LOG_VERBOSE));
     return 0;
 }
 

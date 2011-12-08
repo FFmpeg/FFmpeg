@@ -131,6 +131,7 @@ easier to use. The changes are:
 - life source
 - PCM format support in OMA demuxer
 - CLJR encoder
+- new option: -report
 
 
 version 0.8:
