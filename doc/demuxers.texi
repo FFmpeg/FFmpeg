@@ -49,19 +49,19 @@ sequence of filenames of the form @file{i%m%g-1.jpg},
 The size, the pixel format, and the format of each image must be the
 same for all the files in the sequence.
 
-The following example shows how to use @file{ffmpeg} for creating a
+The following example shows how to use @command{avconv} for creating a
 video from the images in the file sequence @file{img-001.jpeg},
 @file{img-002.jpeg}, ..., assuming an input framerate of 10 frames per
 second:
 @example
-ffmpeg -r 10 -f image2 -i 'img-%03d.jpeg' out.avi
+avconv -i 'img-%03d.jpeg' -r 10 out.mkv
 @end example
 
 Note that the pattern must not necessarily contain "%d" or
 "%0@var{N}d", for example to convert a single image file
 @file{img.jpeg} you can employ the command:
 @example
-ffmpeg -f image2 -i img.jpeg img.png
+avconv -i img.jpeg img.png
 @end example
 
 @section applehttp
