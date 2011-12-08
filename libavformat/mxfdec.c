@@ -79,6 +79,8 @@ typedef struct {
     int index_sid;
     int body_sid;
     int64_t this_partition;
+    int64_t essence_offset;         /* absolute offset of essence */
+    int64_t essence_length;
 } MXFPartition;
 
 typedef struct {
@@ -1401,6 +1403,46 @@ static int mxf_parse_handle_partition_or_eof(MXFContext *mxf)
     return mxf->parsing_backward ? mxf_seek_to_previous_partition(mxf) : 1;
 }
 
+/**
+ * Figures out the proper offset and length of the essence container in each partition
+ */
+static void mxf_compute_essence_containers(MXFContext *mxf)
+{
+    int x;
+
+    /* everything is already correct */
+    if (mxf->op == OPAtom)
+        return;
+
+    for (x = 0; x < mxf->partitions_count; x++) {
+        MXFPartition *p = &mxf->partitions[x];
+
+        if (!p->body_sid)
+            continue;       /* BodySID == 0 -> no essence */
+
+        if (x >= mxf->partitions_count - 1)
+            break;          /* last partition - can't compute length (and we don't need to) */
+
+        /* essence container spans to the next partition */
+        p->essence_length = mxf->partitions[x+1].this_partition - p->essence_offset;
+
+        if (p->essence_length < 0) {
+            /* next ThisPartition < essence_offset */
+            p->essence_length = 0;
+            av_log(mxf->fc, AV_LOG_ERROR, "partition %i: bad ThisPartition = %lx\n",
+                   x+1, mxf->partitions[x+1].this_partition);
+        }
+    }
+}
+
+static int64_t round_to_kag(int64_t position, int kag_size)
+{
+    /* TODO: account for run-in? the spec isn't clear whether KAG should account for it */
+    /* NOTE: kag_size may be any integer between 1 - 2^10 */
+    int64_t ret = (position / kag_size) * kag_size;
+    return ret == position ? ret : ret + kag_size;
+}
+
 static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MXFContext *mxf = s->priv_data;
@@ -1432,6 +1474,30 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_system_item_key)) {
+            if (!mxf->current_partition->essence_offset) {
+                /* for OP1a we compute essence_offset
+                 * for OPAtom we point essence_offset after the KL (usually op1a_essence_offset + 20 or 25)
+                 * TODO: for OP1a we could eliminate this entire if statement, always stopping parsing at op1a_essence_offset
+                 *       for OPAtom we still need the actual essence_offset though (the KL's length can vary)
+                 */
+                int64_t op1a_essence_offset =
+                    round_to_kag(mxf->current_partition->this_partition +
+                                 mxf->current_partition->pack_length,       mxf->current_partition->kag_size) +
+                    round_to_kag(mxf->current_partition->header_byte_count, mxf->current_partition->kag_size) +
+                    round_to_kag(mxf->current_partition->index_byte_count,  mxf->current_partition->kag_size);
+
+                if (mxf->op == OPAtom) {
+                    /* point essence_offset to the actual data
+                    * OPAtom has all the essence in one big KLV
+                    */
+                    mxf->current_partition->essence_offset = avio_tell(s->pb);
+                    mxf->current_partition->essence_length = klv.length;
+                } else {
+                    /* NOTE: op1a_essence_offset may be less than to klv.offset (C0023S01.mxf)  */
+                    mxf->current_partition->essence_offset = op1a_essence_offset;
+                }
+            }
+
         if (IS_KLV_KEY(klv.key, mxf_system_item_key)) {
             mxf->system_item = 1;
         }
@@ -1481,6 +1547,9 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
     avio_seek(s->pb, mxf->essence_offset, SEEK_SET);
+
+    mxf_compute_essence_containers(mxf);
+
     return mxf_parse_structural_metadata(mxf);
 }
 
