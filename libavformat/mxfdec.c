@@ -69,6 +69,7 @@ typedef enum {
     OP3b,
     OP3c,
     OPAtom,
+    OPSONYOpt,  /* FATE sample, violates the spec in places */
 } MXFOP;
 
 typedef struct {
@@ -81,6 +82,10 @@ typedef struct {
     int64_t this_partition;
     int64_t essence_offset;         /* absolute offset of essence */
     int64_t essence_length;
+    int32_t kag_size;
+    int64_t header_byte_count;
+    int64_t index_byte_count;
+    int pack_length;
 } MXFPartition;
 
 typedef struct {
@@ -203,7 +208,8 @@ enum MXFWrappingScheme {
     Clip,
 };
 
-typedef int MXFMetadataReadFunc(void *arg, AVIOContext *pb, int tag, int size, UID uid);
+/* NOTE: klv_offset is not set (-1) for local keys */
+typedef int MXFMetadataReadFunc(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset);
 
 typedef struct {
     const UID key;
@@ -416,7 +422,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
     return AVERROR_EOF;
 }
 
-static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
     int item_num = avio_rb32(pb);
@@ -436,7 +442,7 @@ static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, U
     return 0;
 }
 
-static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
     MXFPartition *partition;
@@ -464,6 +470,7 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
 
     memset(partition, 0, sizeof(*partition));
     mxf->partitions_count++;
+    partition->pack_length = avio_tell(pb) - klv_offset + size;
 
     switch(uid[13]) {
     case 2:
@@ -483,11 +490,13 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     /* consider both footers to be closed (there is only Footer and CompleteFooter) */
     partition->closed = partition->type == Footer || !(uid[14] & 1);
     partition->complete = uid[14] > 2;
-    avio_skip(pb, 8);
+    avio_skip(pb, 4);
+    partition->kag_size = avio_rb32(pb);
     partition->this_partition = avio_rb64(pb);
     partition->previous_partition = avio_rb64(pb);
     footer_partition = avio_rb64(pb);
-    avio_skip(pb, 16);
+    partition->header_byte_count = avio_rb64(pb);
+    partition->index_byte_count = avio_rb64(pb);
     partition->index_sid = avio_rb32(pb);
     avio_skip(pb, 8);
     partition->body_sid = avio_rb32(pb);
@@ -519,8 +528,22 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     else if (op[12] == 3 && op[13] == 2) mxf->op = OP3b;
     else if (op[12] == 3 && op[13] == 3) mxf->op = OP3c;
     else if (op[12] == 0x10)             mxf->op = OPAtom;
-    else
-        av_log(mxf->fc, AV_LOG_ERROR, "unknown operational pattern: %02xh %02xh\n", op[12], op[13]);
+    else if (op[12] == 64&& op[13] == 1) mxf->op = OPSONYOpt;
+    else {
+        av_log(mxf->fc, AV_LOG_ERROR, "unknown operational pattern: %02xh %02xh - guessing OP1a\n", op[12], op[13]);
+        mxf->op = OP1a;
+    }
+
+    if (partition->kag_size <= 0 || partition->kag_size > (1 << 20)) {
+        av_log(mxf->fc, AV_LOG_WARNING, "invalid KAGSize %i - guessing ", partition->kag_size);
+
+        if (mxf->op == OPSONYOpt)
+            partition->kag_size = 512;
+        else
+            partition->kag_size = 1;
+
+        av_log(mxf->fc, AV_LOG_WARNING, "%i\n", partition->kag_size);
+    }
 
     return 0;
 }
@@ -537,7 +560,7 @@ static int mxf_add_metadata_set(MXFContext *mxf, void *metadata_set)
     return 0;
 }
 
-static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFCryptoContext *cryptocontext = arg;
     if (size != 16)
@@ -547,7 +570,7 @@ static int mxf_read_cryptographic_context(void *arg, AVIOContext *pb, int tag, i
     return 0;
 }
 
-static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
     switch (tag) {
@@ -565,7 +588,7 @@ static int mxf_read_content_storage(void *arg, AVIOContext *pb, int tag, int siz
     return 0;
 }
 
-static int mxf_read_source_clip(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_source_clip(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFStructuralComponent *source_clip = arg;
     switch(tag) {
@@ -587,7 +610,7 @@ static int mxf_read_source_clip(void *arg, AVIOContext *pb, int tag, int size, U
     return 0;
 }
 
-static int mxf_read_material_package(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_material_package(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFPackage *package = arg;
     switch(tag) {
@@ -605,7 +628,7 @@ static int mxf_read_material_package(void *arg, AVIOContext *pb, int tag, int si
     return 0;
 }
 
-static int mxf_read_track(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_track(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFTrack *track = arg;
     switch(tag) {
@@ -626,7 +649,7 @@ static int mxf_read_track(void *arg, AVIOContext *pb, int tag, int size, UID uid
     return 0;
 }
 
-static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFSequence *sequence = arg;
     switch(tag) {
@@ -650,7 +673,7 @@ static int mxf_read_sequence(void *arg, AVIOContext *pb, int tag, int size, UID 
     return 0;
 }
 
-static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFPackage *package = arg;
     switch(tag) {
@@ -729,7 +752,7 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
     return 0;
 }
 
-static int mxf_read_index_table_segment(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_index_table_segment(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFIndexTableSegment *segment = arg;
     switch(tag) {
@@ -792,7 +815,7 @@ static void mxf_read_pixel_layout(AVIOContext *pb, MXFDescriptor *descriptor)
     ff_mxf_decode_pixel_layout(layout, &descriptor->pix_fmt);
 }
 
-static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int size, UID uid)
+static int mxf_read_generic_descriptor(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFDescriptor *descriptor = arg;
     switch(tag) {
@@ -1321,7 +1344,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         }
         if (ctx_size && tag == 0x3C0A)
             avio_read(pb, ctx->uid, 16);
-        else if (read_child(ctx, pb, tag, size, uid) < 0)
+        else if (read_child(ctx, pb, tag, size, uid, -1) < 0)
             return -1;
 
         avio_seek(pb, next, SEEK_SET);
@@ -1531,7 +1554,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                     res = mxf_read_local_tags(mxf, &klv, metadata->read, metadata->ctx_size, metadata->type);
                 } else {
                     uint64_t next = avio_tell(s->pb) + klv.length;
-                    res = metadata->read(mxf, s->pb, 0, 0, klv.key);
+                    res = metadata->read(mxf, s->pb, 0, klv.length, klv.key, klv.offset);
                     avio_seek(s->pb, next, SEEK_SET);
                 }
                 if (res < 0) {
