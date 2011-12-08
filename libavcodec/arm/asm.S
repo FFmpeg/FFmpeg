@@ -113,6 +113,12 @@ T       add             \rn, \rn, \rm
 T       ldr             \rt, [\rn]
 .endm
 
+.macro  ldr_dpre        rt,  rn,  rm:vararg
+A       ldr             \rt, [\rn, -\rm]!
+T       sub             \rn, \rn, \rm
+T       ldr             \rt, [\rn]
+.endm
+
 .macro  ldr_post        rt,  rn,  rm:vararg
 A       ldr             \rt, [\rn], \rm
 T       ldr             \rt, [\rn]

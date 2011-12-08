@@ -54,6 +54,13 @@ void ff_avg_rv40_chroma_mc4_neon(uint8_t *, uint8_t *, int, int, int, int);
 void ff_rv40_weight_func_16_neon(uint8_t *, uint8_t *, uint8_t *, int, int, int);
 void ff_rv40_weight_func_8_neon(uint8_t *, uint8_t *, uint8_t *, int, int, int);
 
+int ff_rv40_h_loop_filter_strength_neon(uint8_t *src, int stride,
+                                        int beta, int beta2, int edge,
+                                        int *p1, int *q1);
+int ff_rv40_v_loop_filter_strength_neon(uint8_t *src, int stride,
+                                        int beta, int beta2, int edge,
+                                        int *p1, int *q1);
+
 void ff_rv40dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
 {
     c->put_pixels_tab[0][ 1] = ff_put_rv40_qpel16_mc10_neon;
@@ -116,4 +123,7 @@ void ff_rv40dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
 
     c->rv40_weight_pixels_tab[0] = ff_rv40_weight_func_16_neon;
     c->rv40_weight_pixels_tab[1] = ff_rv40_weight_func_8_neon;
+
+    c->rv40_loop_filter_strength[0] = ff_rv40_h_loop_filter_strength_neon;
+    c->rv40_loop_filter_strength[1] = ff_rv40_v_loop_filter_strength_neon;
 }
