@@ -92,8 +92,6 @@ static int decode_frame(AVCodecContext *avctx,
     *picture = a->picture;
     *data_size = sizeof(AVPicture);
 
-    emms_c();
-
     return buf_size;
 }
 
@@ -152,8 +150,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size,
     }
 
     flush_put_bits(&pb);
-
-    emms_c();
 
     return put_bits_count(&pb) / 8;
 }
