@@ -192,6 +192,7 @@ typedef struct {
     MXFPartition *current_partition;
     int parsing_backward;
     int64_t last_forward_tell;
+    int last_forward_partition;
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -448,7 +449,20 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
     if (!mxf->partitions)
         return AVERROR(ENOMEM);
 
-    partition = mxf->current_partition = &mxf->partitions[mxf->partitions_count++];
+    if (mxf->parsing_backward) {
+        /* insert the new partition pack in the middle
+         * this makes the entries in mxf->partitions sorted by offset */
+        memmove(&mxf->partitions[mxf->last_forward_partition+1],
+                &mxf->partitions[mxf->last_forward_partition],
+                (mxf->partitions_count - mxf->last_forward_partition)*sizeof(*mxf->partitions));
+        partition = mxf->current_partition = &mxf->partitions[mxf->last_forward_partition];
+    } else {
+        mxf->last_forward_partition++;
+        partition = mxf->current_partition = &mxf->partitions[mxf->partitions_count];
+    }
+
+    memset(partition, 0, sizeof(*partition));
+    mxf->partitions_count++;
 
     switch(uid[13]) {
     case 2:
