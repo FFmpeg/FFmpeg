@@ -150,6 +150,7 @@ OBJS-$(CONFIG_EIGHTSVX_EXP_DECODER)    += 8svx.o
 OBJS-$(CONFIG_EIGHTSVX_FIB_DECODER)    += 8svx.o
 OBJS-$(CONFIG_EIGHTSVX_RAW_DECODER)    += 8svx.o
 OBJS-$(CONFIG_ESCAPE124_DECODER)       += escape124.o
+OBJS-$(CONFIG_ESCAPE130_DECODER)       += escape130.o
 OBJS-$(CONFIG_FFV1_DECODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFV1_ENCODER)            += ffv1.o rangecoder.o
 OBJS-$(CONFIG_FFVHUFF_DECODER)         += huffyuv.o
