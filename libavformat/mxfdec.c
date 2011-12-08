@@ -190,9 +190,6 @@ typedef struct {
     uint8_t *local_tags;
     int local_tags_count;
     uint64_t footer_partition;
-    int64_t essence_offset;
-    int first_essence_kl_length;
-    int64_t first_essence_length;
     KLVPacket current_klv_data;
     int current_klv_index;
     int run_in;
@@ -1023,6 +1020,34 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
     return 0;
 }
 
+/**
+ * Computes the absolute file offset of the given essence container offset
+ */
+static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t offset, int64_t *offset_out)
+{
+    int x;
+    int64_t offset_in = offset;     /* for logging */
+
+    for (x = 0; x < mxf->partitions_count; x++) {
+        MXFPartition *p = &mxf->partitions[x];
+
+        if (p->body_sid != body_sid)
+            continue;
+
+        if (offset < p->essence_length || !p->essence_length) {
+            *offset_out = p->essence_offset + offset;
+            return 0;
+        }
+
+        offset -= p->essence_length;
+    }
+
+    av_log(mxf->fc, AV_LOG_ERROR, "failed to find absolute offset of %lx in BodySID %i - partial file?\n",
+           offset_in, body_sid);
+
+    return AVERROR_INVALIDDATA;
+}
+
 static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
 {
     int64_t accumulated_offset = 0;
@@ -1109,10 +1134,10 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
                 flags = AVINDEX_KEYFRAME;
             }
 
-            if (k > 0 && pos < mxf->first_essence_length && accumulated_offset == 0)
-                pos += mxf->first_essence_kl_length;
-
-            pos += mxf->essence_offset;
+            if (mxf_absolute_bodysid_offset(mxf, tableseg->body_sid, pos, &pos) < 0) {
+                /* probably partial file - no point going further for this stream */
+                break;
+            }
 
             av_dlog(mxf->fc, "Stream %d IndexEntry %d TrackID %d Offset %"PRIx64" Timestamp %"PRId64"\n",
                     st->index, st->nb_index_entries, track_id, pos, sample_duration * st->nb_index_entries);
@@ -1546,6 +1571,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 {
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;
+    int64_t essence_offset = 0;
 
     mxf->last_forward_tell = INT64_MAX;
 
@@ -1577,13 +1603,8 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 compute_partition_essence_offset(s, mxf, &klv);
             }
 
-            if (!mxf->essence_offset)
-                mxf->essence_offset = klv.offset;
-
-            if (!mxf->first_essence_kl_length && IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
-                mxf->first_essence_kl_length = avio_tell(s->pb) - klv.offset;
-                mxf->first_essence_length = klv.length;
-            }
+            if (!essence_offset)
+                essence_offset = klv.offset;
 
             /* seek to footer, previous partition or stop */
             if (mxf_parse_handle_essence(mxf) <= 0)
@@ -1617,11 +1638,11 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             avio_skip(s->pb, klv.length);
     }
     /* FIXME avoid seek */
-    if (!mxf->essence_offset)  {
+    if (!essence_offset)  {
         av_log(s, AV_LOG_ERROR, "no essence\n");
         return AVERROR_INVALIDDATA;
     }
-    avio_seek(s->pb, mxf->essence_offset, SEEK_SET);
+    avio_seek(s->pb, essence_offset, SEEK_SET);
 
     mxf_compute_essence_containers(mxf);
 
