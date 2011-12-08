@@ -425,6 +425,7 @@ following image formats are supported:
 @item Electronic Arts TGQ video  @tab     @tab  X
 @item Electronic Arts TQI video  @tab     @tab  X
 @item Escape 124             @tab     @tab  X
+@item Escape 130             @tab     @tab  X
 @item FFmpeg video codec #1  @tab  X  @tab  X
     @tab experimental lossless codec (fourcc: FFV1)
 @item Flash Screen Video v1  @tab  X  @tab  X
