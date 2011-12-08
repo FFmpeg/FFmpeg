@@ -197,6 +197,9 @@ typedef struct {
     int parsing_backward;
     int64_t last_forward_tell;
     int last_forward_partition;
+    int current_edit_unit;
+    int current_stream;
+    int d10;
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -372,7 +375,7 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     return 0;
 }
 
-static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
+static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
 
@@ -416,6 +419,65 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             avio_skip(s->pb, klv.length);
     }
     return AVERROR_EOF;
+}
+
+static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MXFContext *mxf = s->priv_data;
+    AVIndexEntry *e;
+    int ret;
+    int64_t ret64;
+    KLVPacket klv;
+    AVStream *st;
+
+    /* TODO: better logic for this?
+     * only files that lack all index segments prior to the essence need this */
+    if (!s->pb->seekable && mxf->op != OPAtom || mxf->d10)
+        return mxf_read_packet_old(s, pkt);
+
+    if (mxf->current_stream >= s->nb_streams) {
+        mxf->current_edit_unit++;
+        mxf->current_stream = 0;
+    }
+
+    st = s->streams[mxf->current_stream];
+
+    if (mxf->current_edit_unit >= st->nb_index_entries)
+        return AVERROR_EOF;
+
+    e = &st->index_entries[mxf->current_edit_unit];
+
+    if ((ret64 = avio_seek(s->pb, e->pos, SEEK_SET)) < 0)
+        return ret64;
+
+    if (mxf->op == OPAtom) {
+        /* OPAtom - no KL, just essence */
+        if ((ret = av_get_packet(s->pb, pkt, e->size)) != e->size)
+            return ret < 0 ? ret : AVERROR_EOF;
+    } else {
+        /* read KL, read L bytes of essence */
+        if ((ret = klv_read_packet(&klv, s->pb)) < 0)
+            return ret;
+
+        /* untested, but looks OK */
+        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
+            int res = mxf_decrypt_triplet(s, pkt, &klv);
+            if (res < 0) {
+                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
+                return -1;
+            }
+            return 0;
+        }
+
+        if ((ret = av_get_packet(s->pb, pkt, klv.length)) != klv.length)
+            return ret < 0 ? ret : AVERROR_EOF;
+
+        pkt->pos = e->pos;
+    }
+
+    pkt->stream_index = mxf->current_stream++;
+
+    return 0;
 }
 
 static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
@@ -925,6 +987,8 @@ static const MXFCodecUL mxf_essence_container_uls[] = {
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,      CODEC_ID_NONE },
 };
 
+static UID mxf_d10_ul = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x01,0x01 };
+
 static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segments, MXFIndexTableSegment ***sorted_segments)
 {
     int i, j, nb_segments = 0;
@@ -1252,6 +1316,11 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 }
             }
         }
+
+        /* HACK: revert to the old demuxing/seeking scode for D-10 for now */
+        if (mxf_match_uid(essence_container_ul, mxf_d10_ul, 14))
+            mxf->d10 = 1;
+
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = codec_ul->id;
@@ -1291,8 +1360,8 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
         }
         if (st->codec->codec_type != AVMEDIA_TYPE_DATA && (*essence_container_ul)[15] > 0x01) {
-            av_log(mxf->fc, AV_LOG_WARNING, "only frame wrapped mappings are correctly supported\n");
-            st->need_parsing = AVSTREAM_PARSE_FULL;
+            /* TODO: decode timestamps */
+            st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
         }
 
         if ((ret = mxf_parse_index(mxf, material_track->track_id, st)))
@@ -1659,7 +1728,11 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
 {
     AVStream *st = s->streams[stream_index];
     int64_t seconds;
+    MXFContext* mxf = s->priv_data;
+    int64_t seekpos;
+    int index;
 
+    if (mxf->d10) {
     if (!s->bit_rate)
         return -1;
     if (sample_time < 0)
@@ -1668,6 +1741,27 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     if (avio_seek(s->pb, (s->bit_rate * seconds) >> 3, SEEK_SET) < 0)
         return -1;
     ff_update_cur_dts(s, st, sample_time);
+    } else {
+        if (st->nb_index_entries <= 0)
+            return -1;
+
+        index = av_index_search_timestamp(st, sample_time, flags);
+
+        av_dlog(s, "stream %d, timestamp %"PRId64", sample %d\n", st->index, sample_time, index);
+
+        if (index < 0) {
+            if (sample_time < st->index_entries[0].timestamp)
+                index = 0;
+            else
+                return -1;
+        }
+
+        seekpos = st->index_entries[index].pos;
+        av_update_cur_dts(s, st, st->index_entries[index].timestamp);
+        mxf->current_edit_unit = st->index_entries[index].timestamp;
+        mxf->current_stream = 0;
+        avio_seek(s->pb, seekpos, SEEK_SET);
+    }
     return 0;
 }
 
