@@ -198,7 +198,14 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
      * particular servers ("RealServer Version 6.1.3.970", see issue 1658)
      * have a trailing space. */
     get_word_sep(buf, sizeof(buf), "/ ", &p);
-    if (payload_type >= RTP_PT_PRIVATE) {
+    if (payload_type < RTP_PT_PRIVATE) {
+        /* We are in a standard case
+         * (from http://www.iana.org/assignments/rtp-parameters). */
+        /* search into AVRtpPayloadTypes[] */
+        codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
+    }
+
+    if (codec->codec_id == CODEC_ID_NONE) {
         RTPDynamicProtocolHandler *handler =
             ff_rtp_handler_find_by_name(buf, codec->codec_type);
         init_rtp_handler(handler, rtsp_st, codec);
@@ -208,11 +215,6 @@ static int sdp_parse_rtpmap(AVFormatContext *s,
          * the format name from the rtpmap line never is passed into rtpdec. */
         if (!rtsp_st->dynamic_handler)
             codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
-    } else {
-        /* We are in a standard case
-         * (from http://www.iana.org/assignments/rtp-parameters). */
-        /* search into AVRtpPayloadTypes[] */
-        codec->codec_id = ff_rtp_codec_id(buf, codec->codec_type);
     }
 
     c = avcodec_find_decoder(codec->codec_id);
