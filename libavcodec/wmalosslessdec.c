@@ -834,10 +834,10 @@ static void mclms_update(WmallDecodeCtx *s, int icoef)
     }
 
     if (s->mclms_recent == 0) {
-        memcpy(s->mclms_prevvalues[order * num_channels],
+        memcpy(&s->mclms_prevvalues[order * num_channels],
                s->mclms_prevvalues,
                bps * order * num_channels);
-        memcpy(s->mclms_updates[order * num_channels],
+        memcpy(&s->mclms_updates[order * num_channels],
                s->mclms_updates,
                bps * order * num_channels);
         s->mclms_recent = num_channels * order;
