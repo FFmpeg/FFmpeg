@@ -141,6 +141,7 @@ static av_cold int decode_end(AVCodecContext *avctx) {
 
     if (a->picture.data[0]);
         avctx->release_buffer(avctx, &a->picture);
+    return 0;
 }
 
 #if CONFIG_CLJR_ENCODER
