@@ -1119,7 +1119,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 }
             }
             if (!source_package) {
-                av_log(mxf->fc, AV_LOG_ERROR, "material track %d: no corresponding source package found\n", material_track->track_id);
+                av_dlog(mxf->fc, "material track %d: no corresponding source package found\n", material_track->track_id);
                 break;
             }
             for (k = 0; k < source_package->tracks_count; k++) {
