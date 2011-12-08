@@ -1271,7 +1271,7 @@ static int read_frame_internal(AVFormatContext *s, AVPacket *pkt)
             if (st->need_parsing && !st->parser && !(s->flags & AVFMT_FLAG_NOPARSE)) {
                 st->parser = av_parser_init(st->codec->codec_id);
                 if (!st->parser) {
-                    av_log(s, AV_LOG_WARNING, "parser not found for codec "
+                    av_log(s, AV_LOG_VERBOSE, "parser not found for codec "
                            "%s, packets or times may be invalid.\n",
                            avcodec_get_name(st->codec->codec_id));
                     /* no parser available: just output the raw packets */
