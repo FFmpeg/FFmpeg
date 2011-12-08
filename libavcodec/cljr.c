@@ -37,7 +37,7 @@ static av_cold int common_init(AVCodecContext *avctx)
 {
     CLJRContext * const a = avctx->priv_data;
 
-    avctx->coded_frame = (AVFrame*)&a->picture;
+    avctx->coded_frame = &a->picture;
     a->avctx = avctx;
 
     return 0;
@@ -53,7 +53,7 @@ static int decode_frame(AVCodecContext *avctx,
     CLJRContext * const a = avctx->priv_data;
     GetBitContext gb;
     AVFrame *picture = data;
-    AVFrame * const p= (AVFrame*)&a->picture;
+    AVFrame * const p = &a->picture;
     int x, y;
 
     if(p->data[0])
@@ -89,7 +89,7 @@ static int decode_frame(AVCodecContext *avctx,
         }
     }
 
-    *picture= *(AVFrame*)&a->picture;
+    *picture = a->picture;
     *data_size = sizeof(AVPicture);
 
     emms_c();
