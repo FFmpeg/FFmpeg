@@ -92,7 +92,8 @@ static int bmp_decode_frame(AVCodecContext *avctx,
     }
 
     switch(ihsize){
-    case  40: // windib v3
+    case  40: // windib
+    case  56: // windib v3
     case  64: // OS/2 v2
     case 108: // windib v4
     case 124: // windib v5
@@ -115,7 +116,7 @@ static int bmp_decode_frame(AVCodecContext *avctx,
 
     depth = bytestream_get_le16(&buf);
 
-    if(ihsize == 40 || ihsize == 64)
+    if(ihsize == 40 || ihsize == 64 || ihsize == 56)
         comp = bytestream_get_le32(&buf);
     else
         comp = BMP_RGB;
