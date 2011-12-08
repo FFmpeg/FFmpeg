@@ -438,7 +438,7 @@ The syntax is:
 @end example
 
 Specify the application name pulse will use when showing active clients,
-by default it is "libav"
+by default it is the LIBAVFORMAT_IDENT string
 
 @subsection @var{stream_name} AVOption
 
