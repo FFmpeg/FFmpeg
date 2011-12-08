@@ -5579,6 +5579,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
      * otherwise we cannot store anything in there. */
     if (s->current_picture_ptr == NULL || s->current_picture_ptr->f.data[0]) {
         int i = ff_find_unused_picture(s, 0);
+        if (i < 0)
+            goto err;
         s->current_picture_ptr = &s->picture[i];
     }
 

@@ -1144,21 +1144,7 @@ int ff_find_unused_picture(MpegEncContext *s, int shared)
         }
     }
 
-    av_log(s->avctx, AV_LOG_FATAL,
-           "Internal error, picture buffer overflow\n");
-    /* We could return -1, but the codec would crash trying to draw into a
-     * non-existing frame anyway. This is safer than waiting for a random crash.
-     * Also the return of this is never useful, an encoder must only allocate
-     * as much as allowed in the specification. This has no relationship to how
-     * much libavcodec could allocate (and MAX_PICTURE_COUNT is always large
-     * enough for such valid streams).
-     * Plus, a decoder has to check stream validity and remove frames if too
-     * many reference frames are around. Waiting for "OOM" is not correct at
-     * all. Similarly, missing reference frames have to be replaced by
-     * interpolated/MC frames, anything else is a bug in the codec ...
-     */
-    abort();
-    return -1;
+    return AVERROR_INVALIDDATA;
 }
 
 static void update_noise_reduction(MpegEncContext *s){
@@ -1216,6 +1202,8 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
             pic= s->current_picture_ptr; //we already have a unused image (maybe it was set before reading the header)
         else{
             i= ff_find_unused_picture(s, 0);
+            if (i < 0)
+                return i;
             pic= &s->picture[i];
         }
 
@@ -1271,6 +1259,8 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
 
             /* Allocate a dummy frame */
             i= ff_find_unused_picture(s, 0);
+            if (i < 0)
+                return i;
             s->last_picture_ptr= &s->picture[i];
             if(ff_alloc_picture(s, s->last_picture_ptr, 0) < 0)
                 return -1;
@@ -1280,6 +1270,8 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
         if ((s->next_picture_ptr == NULL || s->next_picture_ptr->f.data[0] == NULL) && s->pict_type == AV_PICTURE_TYPE_B) {
             /* Allocate a dummy frame */
             i= ff_find_unused_picture(s, 0);
+            if (i < 0)
+                return i;
             s->next_picture_ptr= &s->picture[i];
             if(ff_alloc_picture(s, s->next_picture_ptr, 0) < 0)
                 return -1;
