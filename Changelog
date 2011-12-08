@@ -133,6 +133,7 @@ easier to use. The changes are:
 - CLJR encoder
 - new option: -report
 - Dxtory capture format decoder
+- cellauto source
 
 
 version 0.8:
