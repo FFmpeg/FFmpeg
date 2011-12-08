@@ -171,9 +171,6 @@ static int escape130_decode_frame(AVCodecContext *avctx,
             }
         } else {
             if (get_bits1(&gb)) {
-                unsigned sign_selector = get_bits(&gb, 6);
-                unsigned difference_selector = get_bits(&gb, 2);
-                y_base = 2 * get_bits(&gb, 5);
                 static const uint8_t offset_table[] = {2, 4, 10, 20};
                 static const int8_t sign_table[64][4] =
                     { {0, 0, 0, 0},
@@ -233,6 +230,9 @@ static int escape130_decode_frame(AVCodecContext *avctx,
                       {1, 1, -1, -1},
                       {-1, 1, -1, -1},
                       {1, -1, -1, -1} };
+                unsigned sign_selector = get_bits(&gb, 6);
+                unsigned difference_selector = get_bits(&gb, 2);
+                y_base = 2 * get_bits(&gb, 5);
                 for (i = 0; i < 4; i++) {
                     y[i] = av_clip((int)y_base + offset_table[difference_selector] *
                                             sign_table[sign_selector][i], 0, 63);
