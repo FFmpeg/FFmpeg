@@ -279,7 +279,7 @@ typedef struct WmallDecodeCtx {
     int lpc_scaling;
     int lpc_intbits;
 
-    int16_t channel_coeffs[2][2048]; // FIXME: should be 32-bit / 16-bit depending on bit-depth
+    int channel_coeffs[2][2048]; // FIXME: should be 32-bit / 16-bit depending on bit-depth
 
 } WmallDecodeCtx;
 
