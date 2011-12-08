@@ -92,6 +92,29 @@ static void sanitize(uint8_t *line){
     }
 }
 
+void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
+                        char *line, int line_size, int *print_prefix)
+{
+    AVClass* avc = ptr ? *(AVClass **) ptr : NULL;
+    line[0] = 0;
+    if (*print_prefix && avc) {
+        if (avc->parent_log_context_offset) {
+            AVClass** parent = *(AVClass ***) (((uint8_t *) ptr) +
+                                   avc->parent_log_context_offset);
+            if (parent && *parent) {
+                snprintf(line, line_size, "[%s @ %p] ",
+                         (*parent)->item_name(parent), parent);
+            }
+        }
+        snprintf(line + strlen(line), line_size - strlen(line), "[%s @ %p] ",
+                 avc->item_name(ptr), ptr);
+    }
+
+    vsnprintf(line + strlen(line), line_size - strlen(line), fmt, vl);
+
+    *print_prefix = strlen(line) && line[strlen(line) - 1] == '\n';
+}
+
 void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
 {
     static int print_prefix = 1;
@@ -99,33 +122,17 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl)
     static char prev[1024];
     char line[1024];
     static int is_atty;
-    AVClass* avc = ptr ? *(AVClass **) ptr : NULL;
+
     if (level > av_log_level)
         return;
-    line[0] = 0;
-#undef fprintf
-    if (print_prefix && avc) {
-        if (avc->parent_log_context_offset) {
-            AVClass** parent = *(AVClass ***) (((uint8_t *) ptr) +
-                                   avc->parent_log_context_offset);
-            if (parent && *parent) {
-                snprintf(line, sizeof(line), "[%s @ %p] ",
-                         (*parent)->item_name(parent), parent);
-            }
-        }
-        snprintf(line + strlen(line), sizeof(line) - strlen(line), "[%s @ %p] ",
-                 avc->item_name(ptr), ptr);
-    }
-
-    vsnprintf(line + strlen(line), sizeof(line) - strlen(line), fmt, vl);
-
-    print_prefix = strlen(line) && line[strlen(line) - 1] == '\n';
+    av_log_format_line(ptr, level, fmt, vl, line, sizeof(line), &print_prefix);
 
 #if HAVE_ISATTY
     if (!is_atty)
         is_atty = isatty(2) ? 1 : -1;
 #endif
 
+#undef fprintf
     if (print_prefix && (flags & AV_LOG_SKIP_REPEATED) && !strcmp(line, prev)){
         count++;
         if (is_atty == 1)

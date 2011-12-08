@@ -148,6 +148,16 @@ void av_log_default_callback(void* ptr, int level, const char* fmt, va_list vl);
 const char* av_default_item_name(void* ctx);
 
 /**
+ * Format a line of log the same way as the default callback.
+ * @param line          buffer to receive the formated line
+ * @param line_size     size of the buffer
+ * @param print_prefix  used to store whether the prefix must be printed;
+ *                      must point to a persistent integer initially set to 1
+ */
+void av_log_format_line(void *ptr, int level, const char *fmt, va_list vl,
+                        char *line, int line_size, int *print_prefix);
+
+/**
  * av_dlog macros
  * Useful to print debug messages that shouldn't get compiled in normally.
  */
