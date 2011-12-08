@@ -948,9 +948,10 @@ static void lms_update(WmallDecodeCtx *s, int ich, int ilms, int input, int resi
 static void use_high_update_speed(WmallDecodeCtx *s, int ich)
 {
     int ilms, recent, icoef;
-    s->update_speed[ich] = 16;
     for (ilms = s->cdlms_ttl[ich] - 1; ilms >= 0; ilms--) {
         recent = s->cdlms[ich][ilms].recent;
+        if (s->update_speed[ich] == 16)
+            continue;
         if (s->bV3RTM) {
             for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
                 s->cdlms[ich][ilms].lms_updates[icoef + recent] *= 2;
@@ -959,14 +960,16 @@ static void use_high_update_speed(WmallDecodeCtx *s, int ich)
                 s->cdlms[ich][ilms].lms_updates[icoef] *= 2;
         }
     }
+    s->update_speed[ich] = 16;
 }
 
 static void use_normal_update_speed(WmallDecodeCtx *s, int ich)
 {
     int ilms, recent, icoef;
-    s->update_speed[ich] = 8;
     for (ilms = s->cdlms_ttl[ich] - 1; ilms >= 0; ilms--) {
         recent = s->cdlms[ich][ilms].recent;
+        if (s->update_speed[ich] == 8)
+            continue;
         if (s->bV3RTM) {
             for (icoef = 0; icoef < s->cdlms[ich][ilms].order; icoef++)
                 s->cdlms[ich][ilms].lms_updates[icoef + recent] /= 2;
@@ -975,6 +978,7 @@ static void use_normal_update_speed(WmallDecodeCtx *s, int ich)
                 s->cdlms[ich][ilms].lms_updates[icoef] /= 2;
         }
     }
+    s->update_speed[ich] = 8;
 }
 
 static void revert_cdlms(WmallDecodeCtx *s, int ch, int coef_begin, int coef_end)
