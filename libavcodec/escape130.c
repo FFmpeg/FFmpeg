@@ -69,7 +69,7 @@ static unsigned decode_skip_count(GetBitContext* gb) {
     unsigned value;
     // This function reads a maximum of 27 bits,
     // which is within the padding space
-    if (!can_safely_read(gb, 1))
+    if (!can_safely_read(gb, 1+3))
         return -1;
 
     value = get_bits1(gb);
