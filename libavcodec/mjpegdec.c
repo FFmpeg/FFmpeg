@@ -324,7 +324,7 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
     switch(pix_fmt_id){
     case 0x11111100:
         if(s->rgb){
-            s->avctx->pix_fmt = PIX_FMT_BGRA;
+            s->avctx->pix_fmt = PIX_FMT_BGR24;
         }else{
             if(s->component_id[0] == 'Q' && s->component_id[1] == 'F' && s->component_id[2] == 'A'){
                 s->avctx->pix_fmt = PIX_FMT_GBR24P;
@@ -687,21 +687,21 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
 
         if(s->rct){
             for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                ptr[4*mb_x+1] = buffer[mb_x][0] - ((buffer[mb_x][1] + buffer[mb_x][2] - 0x200)>>2);
-                ptr[4*mb_x+0] = buffer[mb_x][1] + ptr[4*mb_x+1];
-                ptr[4*mb_x+2] = buffer[mb_x][2] + ptr[4*mb_x+1];
+                ptr[3*mb_x+1] = buffer[mb_x][0] - ((buffer[mb_x][1] + buffer[mb_x][2] - 0x200)>>2);
+                ptr[3*mb_x+0] = buffer[mb_x][1] + ptr[3*mb_x+1];
+                ptr[3*mb_x+2] = buffer[mb_x][2] + ptr[3*mb_x+1];
             }
         }else if(s->pegasus_rct){
             for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                ptr[4*mb_x+1] = buffer[mb_x][0] - ((buffer[mb_x][1] + buffer[mb_x][2])>>2);
-                ptr[4*mb_x+0] = buffer[mb_x][1] + ptr[4*mb_x+1];
-                ptr[4*mb_x+2] = buffer[mb_x][2] + ptr[4*mb_x+1];
+                ptr[3*mb_x+1] = buffer[mb_x][0] - ((buffer[mb_x][1] + buffer[mb_x][2])>>2);
+                ptr[3*mb_x+0] = buffer[mb_x][1] + ptr[3*mb_x+1];
+                ptr[3*mb_x+2] = buffer[mb_x][2] + ptr[3*mb_x+1];
             }
         }else{
             for(mb_x = 0; mb_x < s->mb_width; mb_x++) {
-                ptr[4*mb_x+0] = buffer[mb_x][2];
-                ptr[4*mb_x+1] = buffer[mb_x][1];
-                ptr[4*mb_x+2] = buffer[mb_x][0];
+                ptr[3*mb_x+0] = buffer[mb_x][2];
+                ptr[3*mb_x+1] = buffer[mb_x][1];
+                ptr[3*mb_x+2] = buffer[mb_x][0];
             }
         }
     }
