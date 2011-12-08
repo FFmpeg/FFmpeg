@@ -26,6 +26,7 @@
 
 typedef struct Escape130Context {
     AVFrame frame;
+    uint8_t *bases;
 } Escape130Context;
 
 static int can_safely_read(GetBitContext* gb, int bits) {
@@ -39,7 +40,10 @@ static int can_safely_read(GetBitContext* gb, int bits) {
  */
 static av_cold int escape130_decode_init(AVCodecContext *avctx)
 {
+    Escape130Context *s = avctx->priv_data;
     avctx->pix_fmt = PIX_FMT_YUV420P;
+
+    s->bases= av_malloc(avctx->width * avctx->height /4);
 
     return 0;
 }
@@ -50,6 +54,8 @@ static av_cold int escape130_decode_close(AVCodecContext *avctx)
 
     if (s->frame.data[0])
         avctx->release_buffer(avctx, &s->frame);
+
+    av_freep(&s->bases);
 
     return 0;
 }
@@ -108,6 +114,8 @@ static int escape130_decode_frame(AVCodecContext *avctx,
              block_index, row_index = 0;
     unsigned y[4] = {0}, cb = 16, cr = 16;
     unsigned skip = -1;
+    unsigned y_base;
+    uint8_t *yb= s->bases;
 
     AVFrame new_frame = { { 0 } };
 
@@ -154,17 +162,18 @@ static int escape130_decode_frame(AVCodecContext *avctx,
                 y[1] = old_y[1] / 4;
                 y[2] = old_y[old_y_stride] / 4;
                 y[3] = old_y[old_y_stride+1] / 4;
+                y_base= yb[0];
                 cb = old_cb[0] / 8;
                 cr = old_cr[0] / 8;
             } else {
-                y[0] = y[1] = y[2] = y[3] = 0;
+                y_base=y[0] = y[1] = y[2] = y[3] = 0;
                 cb = cr = 16;
             }
         } else {
             if (get_bits1(&gb)) {
                 unsigned sign_selector = get_bits(&gb, 6);
                 unsigned difference_selector = get_bits(&gb, 2);
-                unsigned y_base = 2 * get_bits(&gb, 5);
+                y_base = 2 * get_bits(&gb, 5);
                 static const uint8_t offset_table[] = {2, 4, 10, 20};
                 static const int8_t sign_table[64][4] =
                     { {0, 0, 0, 0},
@@ -230,15 +239,14 @@ static int escape130_decode_frame(AVCodecContext *avctx,
                 }
             } else if (get_bits1(&gb)) {
                 if (get_bits1(&gb)) {
-                    unsigned y_base = get_bits(&gb, 6);
-                    for (i = 0; i < 4; i++)
-                        y[i] = y_base;
+                    y_base = get_bits(&gb, 6);
                 } else {
                     unsigned adjust_index = get_bits(&gb, 3);
                     static const int8_t adjust[] = {-4, -3, -2, -1, 1, 2, 3, 4};
-                    for (i = 0; i < 4; i++)
-                        y[i] = av_clip(y[i] + adjust[adjust_index], 0, 63);
+                    y_base = (y_base + adjust[adjust_index]) & 63;
                 }
+                for (i = 0; i < 4; i++)
+                    y[i] = y_base;
             }
 
             if (get_bits1(&gb)) {
@@ -255,6 +263,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
                 }
             }
         }
+        *yb++= y_base;
 
         new_y[0] = y[0] * 4;
         new_y[1] = y[1] * 4;
