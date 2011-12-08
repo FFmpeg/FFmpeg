@@ -151,7 +151,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
     old_cb_stride = s->frame.linesize[1];
     old_cr_stride = s->frame.linesize[2];
 
-    av_log(NULL, AV_LOG_DEBUG,
+    av_log(avctx, AV_LOG_DEBUG,
            "Strides: %i, %i\n",
            new_y_stride, new_cb_stride);
 
@@ -296,7 +296,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
         skip--;
     }
 
-    av_log(NULL, AV_LOG_DEBUG,
+    av_log(avctx, AV_LOG_DEBUG,
            "Escape sizes: %i, %i\n",
            buf_size, get_bits_count(&gb) / 8);
 
