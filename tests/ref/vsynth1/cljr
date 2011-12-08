@@ -1,0 +1,4 @@
+d149cadc43100d8e98ff04e57fdaa31f *./tests/data/vsynth1/cljr.avi
+ 5075660 ./tests/data/vsynth1/cljr.avi
+4debaab994c2c7273bebaa0c5733017b *./tests/data/cljr.vsynth1.out.yuv
+stddev:   30.75 PSNR: 18.37 MAXDIFF:  225 bytes:  7603200/  7603200

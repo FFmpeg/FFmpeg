@@ -19,6 +19,11 @@ if [ -n "$do_aref" ]; then
 do_avconv $pcm_ref -b 128k -ac 2 -ar 44100 -f s16le -i $pcm_src -f wav
 fi
 
+if [ -n "$do_cljr" ] ; then
+do_video_encoding cljr.avi "-an -vcodec cljr"
+do_video_decoding
+fi
+
 if [ -n "$do_mpeg" ] ; then
 # mpeg1
 do_video_encoding mpeg1.mpg "-qscale 10 -f mpeg1video"
