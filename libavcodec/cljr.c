@@ -139,7 +139,7 @@ static av_cold int decode_init(AVCodecContext *avctx){
 static av_cold int decode_end(AVCodecContext *avctx) {
     CLJRContext *a = avctx->priv_data;
 
-    if (a->picture.data[0]);
+    if (a->picture.data[0])
         avctx->release_buffer(avctx, &a->picture);
     return 0;
 }
