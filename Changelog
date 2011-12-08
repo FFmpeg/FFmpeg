@@ -105,6 +105,7 @@ easier to use. The changes are:
 - CRI ADX audio format demuxer
 - Playstation Portable PMP format demuxer
 - PCM format support in OMA demuxer
+- CLJR encoder
 
 
 version 0.7:

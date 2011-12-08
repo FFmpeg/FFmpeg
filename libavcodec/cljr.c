@@ -25,12 +25,8 @@
  */
 
 #include "avcodec.h"
-#include "dsputil.h"
 #include "get_bits.h"
-
-/* Disable the encoder. */
-#undef CONFIG_CLJR_ENCODER
-#define CONFIG_CLJR_ENCODER 0
+#include "put_bits.h"
 
 typedef struct CLJRContext{
     AVCodecContext *avctx;
@@ -92,24 +88,35 @@ static int decode_frame(AVCodecContext *avctx,
 
 #if CONFIG_CLJR_ENCODER
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
-    CLJRContext * const a = avctx->priv_data;
-    AVFrame *pict = data;
-    AVFrame * const p= (AVFrame*)&a->picture;
-    int size;
+    PutBitContext pb;
+    AVFrame *p = data;
+    int x, y;
 
-    *p = *pict;
     p->pict_type= AV_PICTURE_TYPE_I;
     p->key_frame= 1;
 
+    init_put_bits(&pb, buf, buf_size / 8);
+
+    for (y = 0; y < avctx->height; y++) {
+        uint8_t *luma = &p->data[0][y * p->linesize[0]];
+        uint8_t *cb   = &p->data[1][y * p->linesize[1]];
+        uint8_t *cr   = &p->data[2][y * p->linesize[2]];
+        for (x = 0; x < avctx->width; x += 4) {
+            put_bits(&pb, 5, luma[3] >> 3);
+            put_bits(&pb, 5, luma[2] >> 3);
+            put_bits(&pb, 5, luma[1] >> 3);
+            put_bits(&pb, 5, luma[0] >> 3);
+            luma += 4;
+            put_bits(&pb, 6, *(cb++) >> 2);
+            put_bits(&pb, 6, *(cr++) >> 2);
+        }
+    }
+
+    flush_put_bits(&pb);
+
     emms_c();
 
-    avpriv_align_put_bits(&a->pb);
-    while(get_bit_count(&a->pb)&31)
-        put_bits(&a->pb, 8, 0);
-
-    size= get_bit_count(&a->pb)/32;
-
-    return size*4;
+    return put_bits_count(&pb) / 8;
 }
 #endif
 
@@ -165,6 +172,8 @@ AVCodec ff_cljr_encoder = {
     .priv_data_size = sizeof(CLJRContext),
     .init           = encode_init,
     .encode         = encode_frame,
-    .long_name = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
+    .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV411P,
+                                                   PIX_FMT_NONE },
+    .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
 };
 #endif

@@ -264,7 +264,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_TARGA,        MKTAG('t', 'g', 'a', ' ') },
     { CODEC_ID_PNG,          MKTAG('M', 'P', 'N', 'G') },
     { CODEC_ID_PNG,          MKTAG('P', 'N', 'G', '1') },
-    { CODEC_ID_CLJR,         MKTAG('c', 'l', 'j', 'r') },
+    { CODEC_ID_CLJR,         MKTAG('C', 'L', 'J', 'R') },
     { CODEC_ID_DIRAC,        MKTAG('d', 'r', 'a', 'c') },
     { CODEC_ID_RPZA,         MKTAG('a', 'z', 'p', 'r') },
     { CODEC_ID_RPZA,         MKTAG('R', 'P', 'Z', 'A') },
