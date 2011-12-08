@@ -34,7 +34,7 @@ JPEG image. The individual frames can be extracted without loss,
 e.g. by
 
 @example
-ffmpeg -i ../some_mjpeg.avi -vcodec copy frames_%d.jpg
+avconv -i ../some_mjpeg.avi -c:v copy frames_%d.jpg
 @end example
 
 Unfortunately, these chunks are incomplete JPEG images, because
@@ -57,9 +57,9 @@ stream (carrying the AVI1 header ID and lacking a DHT segment) to
 produce fully qualified JPEG images.
 
 @example
-ffmpeg -i mjpeg-movie.avi -vcodec copy -vbsf mjpeg2jpeg frame_%d.jpg
+avconv -i mjpeg-movie.avi -c:v copy -vbsf mjpeg2jpeg frame_%d.jpg
 exiftran -i -9 frame*.jpg
-ffmpeg -i frame_%d.jpg -vcodec copy rotated.avi
+avconv -i frame_%d.jpg -c:v copy rotated.avi
 @end example
 
 @section mjpega_dump_header

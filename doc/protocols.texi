@@ -67,10 +67,10 @@ File access protocol.
 
 Allow to read from or read to a file.
 
-For example to read from a file @file{input.mpeg} with @file{ffmpeg}
+For example to read from a file @file{input.mpeg} with @command{avconv}
 use the command:
 @example
-ffmpeg -i file:input.mpeg output.mpeg
+avconv -i file:input.mpeg output.mpeg
 @end example
 
 The ff* tools default to the file protocol, that is a resource
@@ -109,10 +109,10 @@ be used to test muxers without writing an actual file.
 Some examples follow.
 @example
 # Write the MD5 hash of the encoded AVI file to the file output.avi.md5.
-ffmpeg -i input.flv -f avi -y md5:output.avi.md5
+avconv -i input.flv -f avi -y md5:output.avi.md5
 
 # Write the MD5 hash of the encoded AVI file to stdout.
-ffmpeg -i input.flv -f avi -y md5:
+avconv -i input.flv -f avi -y md5:
 @end example
 
 Note that some formats (typically MOV) require the output protocol to
@@ -134,18 +134,18 @@ pipe (e.g. 0 for stdin, 1 for stdout, 2 for stderr).  If @var{number}
 is not specified, by default the stdout file descriptor will be used
 for writing, stdin for reading.
 
-For example to read from stdin with @file{ffmpeg}:
+For example to read from stdin with @command{avconv}:
 @example
-cat test.wav | ffmpeg -i pipe:0
+cat test.wav | avconv -i pipe:0
 # ...this is the same as...
-cat test.wav | ffmpeg -i pipe:
+cat test.wav | avconv -i pipe:
 @end example
 
-For writing to stdout with @file{ffmpeg}:
+For writing to stdout with @command{avconv}:
 @example
-ffmpeg -i test.wav -f avi pipe:1 | cat > test.avi
+avconv -i test.wav -f avi pipe:1 | cat > test.avi
 # ...this is the same as...
-ffmpeg -i test.wav -f avi pipe: | cat > test.avi
+avconv -i test.wav -f avi pipe: | cat > test.avi
 @end example
 
 Note that some formats (typically MOV), require the output protocol to
@@ -219,9 +219,9 @@ meaning as specified for the RTMP native protocol.
 See the librtmp manual page (man 3 librtmp) for more information.
 
 For example, to stream a file in real-time to an RTMP server using
-@file{ffmpeg}:
+@command{avconv}:
 @example
-ffmpeg -re -i myfile -f flv rtmp://myserver/live/mystream
+avconv -re -i myfile -f flv rtmp://myserver/live/mystream
 @end example
 
 To play the same stream using @file{avplay}:
@@ -249,7 +249,7 @@ The required syntax for a RTSP url is:
 rtsp://@var{hostname}[:@var{port}]/@var{path}
 @end example
 
-The following options (set on the @file{avconv}/@file{avplay} command
+The following options (set on the @command{avconv}/@file{avplay} command
 line, or set in code via @code{AVOption}s or in @code{avformat_open_input}),
 are supported:
 
@@ -310,7 +310,7 @@ avplay -rtsp_transport http rtsp://server/video.mp4
 To send a stream in realtime to a RTSP server, for others to watch:
 
 @example
-ffmpeg -re -i @var{input} -f rtsp -muxdelay 0.1 rtsp://server/live.sdp
+avconv -re -i @var{input} -f rtsp -muxdelay 0.1 rtsp://server/live.sdp
 @end example
 
 @section sap
@@ -362,19 +362,19 @@ Example command lines follow.
 To broadcast a stream on the local subnet, for watching in VLC:
 
 @example
-ffmpeg -re -i @var{input} -f sap sap://224.0.0.255?same_port=1
+avconv -re -i @var{input} -f sap sap://224.0.0.255?same_port=1
 @end example
 
 Similarly, for watching in avplay:
 
 @example
-ffmpeg -re -i @var{input} -f sap sap://224.0.0.255
+avconv -re -i @var{input} -f sap sap://224.0.0.255
 @end example
 
 And for watching in avplay, over IPv6:
 
 @example
-ffmpeg -re -i @var{input} -f sap sap://[ff0e::1:2:3:4]
+avconv -re -i @var{input} -f sap sap://[ff0e::1:2:3:4]
 @end example
 
 @subsection Demuxer
@@ -420,7 +420,7 @@ tcp://@var{hostname}:@var{port}[?@var{options}]
 Listen for an incoming connection
 
 @example
-ffmpeg -i @var{input} -f @var{format} tcp://@var{hostname}:@var{port}?listen
+avconv -i @var{input} -f @var{format} tcp://@var{hostname}:@var{port}?listen
 avplay tcp://@var{hostname}:@var{port}
 @end example
 
@@ -472,21 +472,21 @@ For receiving, this gives the benefit of only receiving packets from
 the specified peer address/port.
 @end table
 
-Some usage examples of the udp protocol with @file{ffmpeg} follow.
+Some usage examples of the udp protocol with @command{avconv} follow.
 
 To stream over UDP to a remote endpoint:
 @example
-ffmpeg -i @var{input} -f @var{format} udp://@var{hostname}:@var{port}
+avconv -i @var{input} -f @var{format} udp://@var{hostname}:@var{port}
 @end example
 
 To stream in mpegts format over UDP using 188 sized UDP packets, using a large input buffer:
 @example
-ffmpeg -i @var{input} -f mpegts udp://@var{hostname}:@var{port}?pkt_size=188&buffer_size=65535
+avconv -i @var{input} -f mpegts udp://@var{hostname}:@var{port}?pkt_size=188&buffer_size=65535
 @end example
 
 To receive over UDP from a remote endpoint:
 @example
-ffmpeg -i udp://[@var{multicast-address}]:@var{port}
+avconv -i udp://[@var{multicast-address}]:@var{port}
 @end example
 
 @c man end PROTOCOLS

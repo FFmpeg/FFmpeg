@@ -33,19 +33,19 @@ debug mode or a NoDaemon option is specified in the configuration
 file.
 
 This documentation covers only the streaming aspects of avserver /
-ffmpeg. All questions about parameters for ffmpeg, codec questions,
-etc. are not covered here. Read @file{ffmpeg-doc.html} for more
+avconv. All questions about parameters for avconv, codec questions,
+etc. are not covered here. Read @file{avconv.html} for more
 information.
 
 @section How does it work?
 
-avserver receives prerecorded files or FFM streams from some ffmpeg
+avserver receives prerecorded files or FFM streams from some avconv
 instance as input, then streams them over RTP/RTSP/HTTP.
 
 An avserver instance will listen on some port as specified in the
-configuration file. You can launch one or more instances of ffmpeg and
+configuration file. You can launch one or more instances of avconv and
 send one or more FFM streams to the port where avserver is expecting
-to receive them. Alternately, you can make avserver launch such ffmpeg
+to receive them. Alternately, you can make avserver launch such avconv
 instances at startup.
 
 Input streams are called feeds, and each one is specified by a <Feed>
@@ -107,11 +107,11 @@ LAME is important as it allows for streaming audio to Windows Media Player.
 Don't ask why the other audio types do not work.
 
 As a simple test, just run the following two command lines where INPUTFILE
-is some file which you can decode with ffmpeg:
+is some file which you can decode with avconv:
 
 @example
 ./avserver -f doc/avserver.conf &
-./ffmpeg -i INPUTFILE http://localhost:8090/feed1.ffm
+./avconv -i INPUTFILE http://localhost:8090/feed1.ffm
 @end example
 
 At this point you should be able to go to your Windows machine and fire up
@@ -130,7 +130,7 @@ The same is true of AVI files.
 @section What happens next?
 
 You should edit the avserver.conf file to suit your needs (in terms of
-frame rates etc). Then install avserver and ffmpeg, write a script to start
+frame rates etc). Then install avserver and avconv, write a script to start
 them up, and off you go.
 
 @section Troubleshooting
@@ -138,13 +138,13 @@ them up, and off you go.
 @subsection I don't hear any audio, but video is fine.
 
 Maybe you didn't install LAME, or got your ./configure statement wrong. Check
-the ffmpeg output to see if a line referring to MP3 is present. If not, then
+the avconv output to see if a line referring to MP3 is present. If not, then
 your configuration was incorrect. If it is, then maybe your wiring is not
 set up correctly. Maybe the sound card is not getting data from the right
 input source. Maybe you have a really awful audio interface (like I do)
 that only captures in stereo and also requires that one channel be flipped.
 If you are one of these people, then export 'AUDIO_FLIP_LEFT=1' before
-starting ffmpeg.
+starting avconv.
 
 @subsection The audio and video loose sync after a while.
 
@@ -250,7 +250,7 @@ Use @file{configfile} instead of @file{/etc/avserver.conf}.
 @item -n
 Enable no-launch mode. This option disables all the Launch directives
 within the various <Stream> sections. Since avserver will not launch
-any ffmpeg instances, you will have to launch them manually.
+any avconv instances, you will have to launch them manually.
 @item -d
 Enable debug mode. This option increases log verbosity, directs log
 messages to stdout and causes avserver to run in the foreground
@@ -265,7 +265,7 @@ rather than as a daemon.
 
 @c man begin SEEALSO
 
-avconv(1), avplay(1), avprobe(1), the @file{ffmpeg/doc/avserver.conf}
+avconv(1), avplay(1), avprobe(1), the @file{avserver.conf}
 example and the Libav HTML documentation
 @c man end
 

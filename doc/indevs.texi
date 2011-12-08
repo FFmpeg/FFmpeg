@@ -42,10 +42,10 @@ specify card number or identifier, device number and subdevice number
 To see the list of cards currently recognized by your system check the
 files @file{/proc/asound/cards} and @file{/proc/asound/devices}.
 
-For example to capture with @file{ffmpeg} from an ALSA device with
+For example to capture with @command{avconv} from an ALSA device with
 card id 0, you may run the command:
 @example
-ffmpeg -f alsa -i hw:0 alsaout.wav
+avconv -f alsa -i hw:0 alsaout.wav
 @end example
 
 For more information see:
@@ -72,14 +72,14 @@ For more detailed information read the file
 Documentation/fb/framebuffer.txt included in the Linux source tree.
 
 To record from the framebuffer device @file{/dev/fb0} with
-@file{ffmpeg}:
+@command{avconv}:
 @example
-ffmpeg -f fbdev -r 10 -i /dev/fb0 out.avi
+avconv -f fbdev -r 10 -i /dev/fb0 out.avi
 @end example
 
 You can take a single screenshot image with the command:
 @example
-ffmpeg -f fbdev -vframes 1 -r 1 -i /dev/fb0 screenshot.jpeg
+avconv -f fbdev -frames:v 1 -r 1 -i /dev/fb0 screenshot.jpeg
 @end example
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
@@ -109,10 +109,10 @@ To list the JACK clients and their properties you can invoke the command
 @file{jack_lsp}.
 
 Follows an example which shows how to capture a JACK readable client
-with @file{ffmpeg}.
+with @command{avconv}.
 @example
-# Create a JACK writable client with name "ffmpeg".
-$ ffmpeg -f jack -i ffmpeg -y out.wav
+# Create a JACK writable client with name "libav".
+$ avconv -f jack -i libav -y out.wav
 
 # Start the sample jack_metro readable client.
 $ jack_metro -b 120 -d 0.2 -f 4000
@@ -123,11 +123,11 @@ system:capture_1
 system:capture_2
 system:playback_1
 system:playback_2
-ffmpeg:input_1
+libav:input_1
 metro:120_bpm
 
-# Connect metro to the ffmpeg writable client.
-$ jack_connect metro:120_bpm ffmpeg:input_1
+# Connect metro to the avconv writable client.
+$ jack_connect metro:120_bpm libav:input_1
 @end example
 
 For more information read:
@@ -145,10 +145,10 @@ The filename to provide to the input device is the device node
 representing the OSS input device, and is usually set to
 @file{/dev/dsp}.
 
-For example to grab from @file{/dev/dsp} using @file{ffmpeg} use the
+For example to grab from @file{/dev/dsp} using @command{avconv} use the
 command:
 @example
-ffmpeg -f oss -i /dev/dsp /tmp/oss.wav
+avconv -f oss -i /dev/dsp /tmp/oss.wav
 @end example
 
 For more information about OSS see:
@@ -248,10 +248,10 @@ The filename to provide to the input device is the device node
 representing the sndio input device, and is usually set to
 @file{/dev/audio0}.
 
-For example to grab from @file{/dev/audio0} using @file{ffmpeg} use the
+For example to grab from @file{/dev/audio0} using @command{avconv} use the
 command:
 @example
-ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
+avconv -f sndio -i /dev/audio0 /tmp/oss.wav
 @end example
 
 @section video4linux and video4linux2
@@ -290,7 +290,7 @@ avplay -f video4linux2 /dev/video0
 # Grab and record the input of a video4linux2 device, autoadjust size,
 # frame rate value defaults to 0/0 so it is read from the video4linux2
 # driver.
-ffmpeg -f video4linux2 -i /dev/video0 out.mpeg
+avconv -f video4linux2 -i /dev/video0 out.mpeg
 @end example
 
 @section vfwcap
@@ -326,12 +326,12 @@ Check the X11 documentation (e.g. man X) for more detailed information.
 Use the @file{dpyinfo} program for getting basic information about the
 properties of your X11 display (e.g. grep for "name" or "dimensions").
 
-For example to grab from @file{:0.0} using @file{ffmpeg}:
+For example to grab from @file{:0.0} using @command{avconv}:
 @example
-ffmpeg -f x11grab -r 25 -s cif -i :0.0 out.mpg
+avconv -f x11grab -r 25 -s cif -i :0.0 out.mpg
 
 # Grab at position 10,20.
-ffmpeg -f x11grab -r 25 -s cif -i :0.0+10,20 out.mpg
+avconv -f x11grab -r 25 -s cif -i :0.0+10,20 out.mpg
 @end example
 
 @subsection @var{follow_mouse} AVOption
@@ -348,10 +348,10 @@ zero) to the edge of region.
 
 For example:
 @example
-ffmpeg -f x11grab -follow_mouse centered -r 25 -s cif -i :0.0 out.mpg
+avconv -f x11grab -follow_mouse centered -r 25 -s cif -i :0.0 out.mpg
 
 # Follows only when the mouse pointer reaches within 100 pixels to edge
-ffmpeg -f x11grab -follow_mouse 100 -r 25 -s cif -i :0.0 out.mpg
+avconv -f x11grab -follow_mouse 100 -r 25 -s cif -i :0.0 out.mpg
 @end example
 
 @subsection @var{show_region} AVOption
@@ -367,10 +367,10 @@ being grabbed if only a portion of the screen is grabbed.
 
 For example:
 @example
-ffmpeg -f x11grab -show_region 1 -r 25 -s cif -i :0.0+10,20 out.mpg
+avconv -f x11grab -show_region 1 -r 25 -s cif -i :0.0+10,20 out.mpg
 
 # With follow_mouse
-ffmpeg -f x11grab -follow_mouse centered -show_region 1  -r 25 -s cif -i :0.0 out.mpg
+avconv -f x11grab -follow_mouse centered -show_region 1  -r 25 -s cif -i :0.0 out.mpg
 @end example
 
 @c man end INPUT DEVICES

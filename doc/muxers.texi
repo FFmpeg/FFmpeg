@@ -35,20 +35,20 @@ CRC=0x@var{CRC}, where @var{CRC} is a hexadecimal number 0-padded to
 For example to compute the CRC of the input, and store it in the file
 @file{out.crc}:
 @example
-ffmpeg -i INPUT -f crc out.crc
+avconv -i INPUT -f crc out.crc
 @end example
 
 You can print the CRC to stdout with the command:
 @example
-ffmpeg -i INPUT -f crc -
+avconv -i INPUT -f crc -
 @end example
 
-You can select the output format of each frame with @file{ffmpeg} by
+You can select the output format of each frame with @command{avconv} by
 specifying the audio and video codec and format. For example to
 compute the CRC of the input audio converted to PCM unsigned 8-bit
 and the input video converted to MPEG-2 video, use the command:
 @example
-ffmpeg -i INPUT -acodec pcm_u8 -vcodec mpeg2video -f crc -
+avconv -i INPUT -c:a pcm_u8 -c:v mpeg2video -f crc -
 @end example
 
 See also the @ref{framecrc} muxer.
@@ -71,21 +71,21 @@ number 0-padded to 8 digits containing the CRC of the decoded frame.
 For example to compute the CRC of each decoded frame in the input, and
 store it in the file @file{out.crc}:
 @example
-ffmpeg -i INPUT -f framecrc out.crc
+avconv -i INPUT -f framecrc out.crc
 @end example
 
 You can print the CRC of each decoded frame to stdout with the command:
 @example
-ffmpeg -i INPUT -f framecrc -
+avconv -i INPUT -f framecrc -
 @end example
 
-You can select the output format of each frame with @file{ffmpeg} by
+You can select the output format of each frame with @command{avconv} by
 specifying the audio and video codec and format. For example, to
 compute the CRC of each decoded input audio frame converted to PCM
 unsigned 8-bit and of each decoded input video frame converted to
 MPEG-2 video, use the command:
 @example
-ffmpeg -i INPUT -acodec pcm_u8 -vcodec mpeg2video -f framecrc -
+avconv -i INPUT -c:a pcm_u8 -c:v mpeg2video -f framecrc -
 @end example
 
 See also the @ref{crc} muxer.
@@ -119,26 +119,26 @@ The pattern "img%%-%d.jpg" will specify a sequence of filenames of the
 form @file{img%-1.jpg}, @file{img%-2.jpg}, ..., @file{img%-10.jpg},
 etc.
 
-The following example shows how to use @file{ffmpeg} for creating a
+The following example shows how to use @command{avconv} for creating a
 sequence of files @file{img-001.jpeg}, @file{img-002.jpeg}, ...,
 taking one image every second from the input video:
 @example
-ffmpeg -i in.avi -r 1 -f image2 'img-%03d.jpeg'
+avconv -i in.avi -vsync 1 -r 1 -f image2 'img-%03d.jpeg'
 @end example
 
-Note that with @file{ffmpeg}, if the format is not specified with the
+Note that with @command{avconv}, if the format is not specified with the
 @code{-f} option and the output filename specifies an image file
 format, the image2 muxer is automatically selected, so the previous
 command can be written as:
 @example
-ffmpeg -i in.avi -r 1 'img-%03d.jpeg'
+avconv -i in.avi -vsync 1 -r 1 'img-%03d.jpeg'
 @end example
 
 Note also that the pattern must not necessarily contain "%d" or
 "%0@var{N}d", for example to create a single image file
 @file{img.jpeg} from the input video you can employ the command:
 @example
-ffmpeg -i in.avi -f image2 -vframes 1 img.jpeg
+avconv -i in.avi -f image2 -frames:v 1 img.jpeg
 @end example
 
 @section mpegts
@@ -171,7 +171,7 @@ and @code{service_name}. If they are not set the default for
 @code{service_name} is "Service01".
 
 @example
-ffmpeg -i file.mpg -acodec copy -vcodec copy \
+avconv -i file.mpg -c copy \
      -mpegts_original_network_id 0x1122 \
      -mpegts_transport_stream_id 0x3344 \
      -mpegts_service_id 0x5566 \
@@ -189,19 +189,19 @@ Null muxer.
 This muxer does not generate any output file, it is mainly useful for
 testing or benchmarking purposes.
 
-For example to benchmark decoding with @file{ffmpeg} you can use the
+For example to benchmark decoding with @command{avconv} you can use the
 command:
 @example
-ffmpeg -benchmark -i INPUT -f null out.null
+avconv -benchmark -i INPUT -f null out.null
 @end example
 
 Note that the above command does not read or write the @file{out.null}
-file, but specifying the output file is required by the @file{ffmpeg}
+file, but specifying the output file is required by the @command{avconv}
 syntax.
 
 Alternatively you can write the command as:
 @example
-ffmpeg -benchmark -i INPUT -f null -
+avconv -benchmark -i INPUT -f null -
 @end example
 
 @section matroska
@@ -264,7 +264,7 @@ Both eyes laced in one Block, Right-eye view is first
 
 For example a 3D WebM clip can be created using the following command line:
 @example
-ffmpeg -i sample_left_right_clip.mpg -an -vcodec libvpx -metadata STEREO_MODE=left_right -y stereo_clip.webm
+avconv -i sample_left_right_clip.mpg -an -c:v libvpx -metadata STEREO_MODE=left_right -y stereo_clip.webm
 @end example
 
 @c man end MUXERS
