@@ -62,7 +62,7 @@ static int gif_image_write_header(AVCodecContext *avctx,
                                   uint8_t **bytestream, uint32_t *palette)
 {
     int i;
-    unsigned int v;
+    unsigned int v, smallest_alpha = 0xFF, alpha_component = 0;
 
     bytestream_put_buffer(bytestream, "GIF", 3);
     bytestream_put_buffer(bytestream, "89a", 3);
@@ -77,6 +77,20 @@ static int gif_image_write_header(AVCodecContext *avctx,
     for(i=0;i<256;i++) {
         v = palette[i];
         bytestream_put_be24(bytestream, v);
+        if (v >> 24 < smallest_alpha) {
+            smallest_alpha = v >> 24;
+            alpha_component = i;
+        }
+    }
+
+    if (smallest_alpha < 128) {
+        bytestream_put_byte(bytestream, 0x21); /* Extension Introducer */
+        bytestream_put_byte(bytestream, 0xf9); /* Graphic Control Label */
+        bytestream_put_byte(bytestream, 0x04); /* block length */
+        bytestream_put_byte(bytestream, 0x01); /* Transparent Color Flag */
+        bytestream_put_le16(bytestream, 0x00); /* no delay */
+        bytestream_put_byte(bytestream, alpha_component);
+        bytestream_put_byte(bytestream, 0x00);
     }
 
     return 0;
