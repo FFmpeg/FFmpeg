@@ -225,7 +225,7 @@ static int escape130_decode_frame(AVCodecContext *avctx,
                       {-1, 1, -1, -1},
                       {1, -1, -1, -1} };
                 for (i = 0; i < 4; i++) {
-                    y[i] = av_clip(y_base + offset_table[difference_selector] *
+                    y[i] = av_clip((int)y_base + offset_table[difference_selector] *
                                             sign_table[sign_selector][i], 0, 63);
                 }
             } else if (get_bits1(&gb)) {
