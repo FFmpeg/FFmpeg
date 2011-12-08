@@ -190,7 +190,6 @@ typedef struct {
     uint8_t *local_tags;
     int local_tags_count;
     uint64_t footer_partition;
-    int system_item;
     int64_t essence_offset;
     int first_essence_kl_length;
     int64_t first_essence_length;
@@ -1024,17 +1023,22 @@ static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segment
     return 0;
 }
 
-static int mxf_parse_index(MXFContext *mxf, int i, AVStream *st)
+static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
 {
     int64_t accumulated_offset = 0;
     int j, k, ret, nb_sorted_segments;
     MXFIndexTableSegment **sorted_segments;
+    int n_delta = track_id - 1;  /* TrackID = 1-based stream index */
+
+    if (track_id < 1) {
+        av_log(mxf->fc, AV_LOG_ERROR, "TrackID not positive: %i\n", track_id);
+        return AVERROR_INVALIDDATA;
+    }
 
     if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)))
         return ret;
 
     for (j = 0; j < nb_sorted_segments; j++) {
-        int n_delta = i;
         int duration, sample_duration = 1, last_sample_size = 0;
         int64_t segment_size;
         MXFIndexTableSegment *tableseg = sorted_segments[j];
@@ -1043,9 +1047,6 @@ static int mxf_parse_index(MXFContext *mxf, int i, AVStream *st)
         if (j > 0 && tableseg->body_sid != sorted_segments[j-1]->body_sid)
             accumulated_offset = 0;
 
-        /* HACK: How to correctly link between streams and slices? */
-        if (i < mxf->system_item + st->index)
-            n_delta++;
         if (n_delta >= tableseg->nb_delta_entries && st->index != 0)
             continue;
         duration = tableseg->index_duration > 0 ? tableseg->index_duration :
@@ -1113,8 +1114,8 @@ static int mxf_parse_index(MXFContext *mxf, int i, AVStream *st)
 
             pos += mxf->essence_offset;
 
-            av_dlog(mxf->fc, "Stream %d IndexEntry %d n_Delta %d Offset %"PRIx64" Timestamp %"PRId64"\n",
-                    st->index, st->nb_index_entries, n_delta, pos, sample_duration * st->nb_index_entries);
+            av_dlog(mxf->fc, "Stream %d IndexEntry %d TrackID %d Offset %"PRIx64" Timestamp %"PRId64"\n",
+                    st->index, st->nb_index_entries, track_id, pos, sample_duration * st->nb_index_entries);
 
             if ((ret = av_add_index_entry(st, pos, sample_duration * st->nb_index_entries, size, 0, flags)) < 0)
                 return ret;
@@ -1313,7 +1314,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             st->need_parsing = AVSTREAM_PARSE_FULL;
         }
 
-        if ((ret = mxf_parse_index(mxf, i, st)))
+        if ((ret = mxf_parse_index(mxf, material_track->track_id, st)))
             return ret;
     }
     return 0;
@@ -1574,10 +1575,6 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             IS_KLV_KEY(klv.key, mxf_system_item_key)) {
             if (!mxf->current_partition->essence_offset) {
                 compute_partition_essence_offset(s, mxf, &klv);
-            }
-
-            if (IS_KLV_KEY(klv.key, mxf_system_item_key)) {
-                mxf->system_item = 1;
             }
 
             if (!mxf->essence_offset)
