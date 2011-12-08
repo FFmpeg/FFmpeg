@@ -150,6 +150,7 @@ typedef struct {
     int *slice;
     int *element_delta;
     int nb_delta_entries;
+    int8_t *temporal_offset_entries;
     int *flag_entries;
     uint64_t *stream_offset_entries;
     uint32_t **slice_offset_entries;
@@ -701,7 +702,8 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
     segment->nb_index_entries = avio_rb32(pb);
     length = avio_rb32(pb);
 
-    if (!(segment->flag_entries          = av_calloc(segment->nb_index_entries, sizeof(*segment->flag_entries))) ||
+    if (!(segment->temporal_offset_entries=av_calloc(segment->nb_index_entries, sizeof(*segment->temporal_offset_entries))) ||
+        !(segment->flag_entries          = av_calloc(segment->nb_index_entries, sizeof(*segment->flag_entries))) ||
         !(segment->stream_offset_entries = av_calloc(segment->nb_index_entries, sizeof(*segment->stream_offset_entries))))
         return AVERROR(ENOMEM);
 
@@ -710,7 +712,8 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
         return AVERROR(ENOMEM);
 
     for (i = 0; i < segment->nb_index_entries; i++) {
-        avio_rb16(pb);  /* TemporalOffset and KeyFrameOffset */
+        segment->temporal_offset_entries[i] = avio_r8(pb);
+        avio_r8(pb);                                        /* KeyFrameOffset */
         segment->flag_entries[i] = avio_r8(pb);
         segment->stream_offset_entries[i] = avio_rb64(pb);
         if (segment->slice_count) {
@@ -1582,6 +1585,7 @@ static int mxf_read_close(AVFormatContext *s)
                 av_freep(&seg->slice_offset_entries[j]);
             av_freep(&seg->slice);
             av_freep(&seg->element_delta);
+            av_freep(&seg->temporal_offset_entries);
             av_freep(&seg->flag_entries);
             av_freep(&seg->stream_offset_entries);
             av_freep(&seg->slice_offset_entries);
