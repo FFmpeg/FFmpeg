@@ -3119,7 +3119,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     ic->flags |= AVFMT_FLAG_NONBLOCK;
     ic->interrupt_callback = int_cb;
 
-    /* open the input file with generic libav function */
+    /* open the input file with generic avformat function */
     err = avformat_open_input(&ic, filename, file_iformat, &format_opts);
     if (err < 0) {
         print_error(filename, err);
