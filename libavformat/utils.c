@@ -2137,7 +2137,7 @@ static int try_decode_frame(AVStream *st, AVPacket *avpkt, AVDictionary **option
     AVFrame picture;
     AVPacket pkt = *avpkt;
 
-    if(!st->codec->codec){
+    if (!avcodec_is_open(st->codec)) {
         AVDictionary *thread_opt = NULL;
 
         codec = avcodec_find_decoder(st->codec->codec_id);
@@ -2487,8 +2487,7 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
     // close codecs which were opened in try_decode_frame()
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];
-        if(st->codec->codec)
-            avcodec_close(st->codec);
+        avcodec_close(st->codec);
     }
     for(i=0;i<ic->nb_streams;i++) {
         st = ic->streams[i];

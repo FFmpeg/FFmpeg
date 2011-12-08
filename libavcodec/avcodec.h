@@ -4737,4 +4737,10 @@ enum AVMediaType avcodec_get_type(enum CodecID codec_id);
  */
 const AVClass *avcodec_get_class(void);
 
+/**
+ * @return a positive value if s is open (i.e. avcodec_open2() was called on it
+ * with no corresponding avcodec_close()), 0 otherwise.
+ */
+int avcodec_is_open(AVCodecContext *s);
+
 #endif /* AVCODEC_AVCODEC_H */

@@ -637,6 +637,9 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     int ret = 0;
     AVDictionary *tmp = NULL;
 
+    if (avcodec_is_open(avctx))
+        return 0;
+
     if (avctx->extradata_size < 0 || avctx->extradata_size >= FF_MAX_EXTRADATA_SIZE)
         return AVERROR(EINVAL);
 
@@ -1835,4 +1838,9 @@ enum AVMediaType avcodec_get_type(enum CodecID codec_id)
         return AVMEDIA_TYPE_SUBTITLE;
 
     return AVMEDIA_TYPE_UNKNOWN;
+}
+
+int avcodec_is_open(AVCodecContext *s)
+{
+    return !!s->internal;
 }
