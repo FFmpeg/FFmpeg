@@ -28,9 +28,9 @@
 #include "get_bits.h"
 #include "put_bits.h"
 
-typedef struct CLJRContext{
+typedef struct CLJRContext {
     AVCodecContext *avctx;
-    AVFrame picture;
+    AVFrame         picture;
 } CLJRContext;
 
 static av_cold int common_init(AVCodecContext *avctx)
@@ -49,47 +49,48 @@ static int decode_frame(AVCodecContext *avctx,
                         AVPacket *avpkt)
 {
     const uint8_t *buf = avpkt->data;
-    int buf_size = avpkt->size;
+    int buf_size       = avpkt->size;
     CLJRContext * const a = avctx->priv_data;
     GetBitContext gb;
     AVFrame *picture = data;
     AVFrame * const p = &a->picture;
     int x, y;
 
-    if(p->data[0])
+    if (p->data[0])
         avctx->release_buffer(avctx, p);
 
-    if(buf_size/avctx->height < avctx->width) {
-        av_log(avctx, AV_LOG_ERROR, "Resolution larger than buffer size. Invalid header?\n");
+    if (buf_size / avctx->height < avctx->width) {
+        av_log(avctx, AV_LOG_ERROR,
+               "Resolution larger than buffer size. Invalid header?\n");
         return AVERROR_INVALIDDATA;
     }
 
-    p->reference= 0;
-    if(avctx->get_buffer(avctx, p) < 0){
+    p->reference = 0;
+    if (avctx->get_buffer(avctx, p) < 0) {
         av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
         return -1;
     }
-    p->pict_type= AV_PICTURE_TYPE_I;
-    p->key_frame= 1;
+    p->pict_type = AV_PICTURE_TYPE_I;
+    p->key_frame = 1;
 
     init_get_bits(&gb, buf, buf_size * 8);
 
-    for(y=0; y<avctx->height; y++){
-        uint8_t *luma= &a->picture.data[0][ y*a->picture.linesize[0] ];
-        uint8_t *cb= &a->picture.data[1][ y*a->picture.linesize[1] ];
-        uint8_t *cr= &a->picture.data[2][ y*a->picture.linesize[2] ];
-        for(x=0; x<avctx->width; x+=4){
+    for (y = 0; y < avctx->height; y++) {
+        uint8_t *luma = &a->picture.data[0][y * a->picture.linesize[0]];
+        uint8_t *cb   = &a->picture.data[1][y * a->picture.linesize[1]];
+        uint8_t *cr   = &a->picture.data[2][y * a->picture.linesize[2]];
+        for (x = 0; x < avctx->width; x += 4) {
             luma[3] = get_bits(&gb, 5) << 3;
             luma[2] = get_bits(&gb, 5) << 3;
             luma[1] = get_bits(&gb, 5) << 3;
             luma[0] = get_bits(&gb, 5) << 3;
-            luma+= 4;
+            luma += 4;
             *(cb++) = get_bits(&gb, 6) << 2;
             *(cr++) = get_bits(&gb, 6) << 2;
         }
     }
 
-    *picture = a->picture;
+    *picture   = a->picture;
     *data_size = sizeof(AVPicture);
 
     return buf_size;
@@ -124,13 +125,15 @@ AVCodec ff_cljr_decoder = {
 #endif
 
 #if CONFIG_CLJR_ENCODER
-static int encode_frame(AVCodecContext *avctx, unsigned char *buf, int buf_size, void *data){
+static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
+                        int buf_size, void *data)
+{
     PutBitContext pb;
     AVFrame *p = data;
     int x, y;
 
-    p->pict_type= AV_PICTURE_TYPE_I;
-    p->key_frame= 1;
+    p->pict_type = AV_PICTURE_TYPE_I;
+    p->key_frame = 1;
 
     init_put_bits(&pb, buf, buf_size / 8);
 
