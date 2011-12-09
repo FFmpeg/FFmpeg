@@ -29,7 +29,6 @@
 #include "put_bits.h"
 
 typedef struct CLJRContext {
-    AVCodecContext *avctx;
     AVFrame         picture;
 } CLJRContext;
 
@@ -38,7 +37,6 @@ static av_cold int common_init(AVCodecContext *avctx)
     CLJRContext * const a = avctx->priv_data;
 
     avctx->coded_frame = &a->picture;
-    a->avctx = avctx;
 
     return 0;
 }
