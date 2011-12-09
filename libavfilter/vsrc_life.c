@@ -26,6 +26,7 @@
 /* #define DEBUG */
 
 #include "libavutil/file.h"
+#include "libavutil/intreadwrite.h"
 #include "libavutil/lfg.h"
 #include "libavutil/opt.h"
 #include "libavutil/parseutils.h"
@@ -39,7 +40,18 @@ typedef struct {
     char *rule_str;
     uint8_t *file_buf;
     size_t file_bufsize;
-    char *buf[2];
+
+    /**
+     * The two grid state buffers.
+     *
+     * A 0xFF (ALIVE_CELL) value means the cell is alive (or new born), while
+     * the decreasing values from 0xFE to 0 means the cell is dead; the range
+     * of values is used for the slow death effect, or mold (0xFE means dead,
+     * 0xFD means very dead, 0xFC means very very dead... and 0x00 means
+     * definitely dead/mold).
+     */
+    uint8_t *buf[2];
+
     uint8_t  buf_idx;
     uint16_t stay_rule;         ///< encode the behavior for filled cells
     uint16_t born_rule;         ///< encode the behavior for empty cells
@@ -50,9 +62,18 @@ typedef struct {
     double   random_fill_ratio;
     uint32_t random_seed;
     int stitch;
+    int mold;
+    char  *life_color_str;
+    char *death_color_str;
+    char  *mold_color_str;
+    uint8_t  life_color[4];
+    uint8_t death_color[4];
+    uint8_t  mold_color[4];
     AVLFG lfg;
+    void (*draw)(AVFilterContext*, AVFilterBufferRef*);
 } LifeContext;
 
+#define ALIVE_CELL 0xFF
 #define OFFSET(x) offsetof(LifeContext, x)
 
 static const AVOption life_options[] = {
@@ -68,6 +89,10 @@ static const AVOption life_options[] = {
     { "random_seed", "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.dbl=-1}, -1, UINT32_MAX },
     { "seed",        "set the seed for filling the initial grid randomly", OFFSET(random_seed), AV_OPT_TYPE_INT, {.dbl=-1}, -1, UINT32_MAX },
     { "stitch",      "stitch boundaries", OFFSET(stitch), AV_OPT_TYPE_INT, {.dbl=1}, 0, 1 },
+    { "mold",        "set mold speed for dead cells", OFFSET(mold), AV_OPT_TYPE_INT, {.dbl=0}, 0, 0xFF },
+    { "life_color",  "set life color",  OFFSET( life_color_str), AV_OPT_TYPE_STRING, {.str="white"}, CHAR_MIN, CHAR_MAX },
+    { "death_color", "set death color", OFFSET(death_color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX },
+    { "mold_color",  "set mold color",  OFFSET( mold_color_str), AV_OPT_TYPE_STRING, {.str="black"}, CHAR_MIN, CHAR_MAX },
     { NULL },
 };
 
@@ -135,7 +160,7 @@ static void show_life_grid(AVFilterContext *ctx)
         return;
     for (i = 0; i < life->h; i++) {
         for (j = 0; j < life->w; j++)
-            line[j] = life->buf[life->buf_idx][i*life->w + j] ? '@' : ' ';
+            line[j] = life->buf[life->buf_idx][i*life->w + j] == ALIVE_CELL ? '@' : ' ';
         line[j] = 0;
         av_log(ctx, AV_LOG_DEBUG, "%3d: %s\n", i, line);
     }
@@ -192,7 +217,7 @@ static int init_pattern_from_file(AVFilterContext *ctx)
             if (*p == '\n') {
                 p++; break;
             } else
-                life->buf[0][i*life->w + j] = !!isgraph(*(p++));
+                life->buf[0][i*life->w + j] = isgraph(*(p++)) ? ALIVE_CELL : 0;
         }
     }
     life->buf_idx = 0;
@@ -231,6 +256,22 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
     if ((ret = parse_rule(&life->born_rule, &life->stay_rule, life->rule_str, ctx)) < 0)
         return ret;
 
+#define PARSE_COLOR(name) do { \
+    if ((ret = av_parse_color(life->name ## _color, life->name ## _color_str, -1, ctx))) { \
+        av_log(ctx, AV_LOG_ERROR, "Invalid " #name " color '%s'\n", \
+               life->name ## _color_str); \
+        return ret; \
+    } \
+} while (0)
+
+    PARSE_COLOR(life);
+    PARSE_COLOR(death);
+    PARSE_COLOR(mold);
+
+    if (!life->mold && memcmp(life->mold_color, "\x00\x00\x00", 3))
+        av_log(ctx, AV_LOG_WARNING,
+               "Mold color is set while mold isn't, ignoring the color.\n");
+
     life->time_base.num = frame_rate.den;
     life->time_base.den = frame_rate.num;
 
@@ -252,7 +293,7 @@ static int init(AVFilterContext *ctx, const char *args, void *opaque)
         for (i = 0; i < life->w * life->h; i++) {
             double r = (double)av_lfg_get(&life->lfg) / UINT32_MAX;
             if (r <= life->random_fill_ratio)
-                life->buf[0][i] = 1;
+                life->buf[0][i] = ALIVE_CELL;
         }
         life->buf_idx = 0;
     } else {
@@ -292,7 +333,7 @@ static int config_props(AVFilterLink *outlink)
 static void evolve(AVFilterContext *ctx)
 {
     LifeContext *life = ctx->priv;
-    int i, j, v;
+    int i, j;
     uint8_t *oldbuf = life->buf[ life->buf_idx];
     uint8_t *newbuf = life->buf[!life->buf_idx];
 
@@ -301,7 +342,7 @@ static void evolve(AVFilterContext *ctx)
     /* evolve the grid */
     for (i = 0; i < life->h; i++) {
         for (j = 0; j < life->w; j++) {
-            int pos[8][2], n;
+            int pos[8][2], n, alive, cell;
             if (life->stitch) {
                 pos[NW][0] = (i-1) < 0 ? life->h-1 : i-1; pos[NW][1] = (j-1) < 0 ? life->w-1 : j-1;
                 pos[N ][0] = (i-1) < 0 ? life->h-1 : i-1; pos[N ][1] =                         j  ;
@@ -323,24 +364,28 @@ static void evolve(AVFilterContext *ctx)
             }
 
             /* compute the number of live neighbor cells */
-            n = (pos[NW][0] == -1 || pos[NW][1] == -1 ? 0 : oldbuf[pos[NW][0]*life->w + pos[NW][1]]) +
-                (pos[N ][0] == -1 || pos[N ][1] == -1 ? 0 : oldbuf[pos[N ][0]*life->w + pos[N ][1]]) +
-                (pos[NE][0] == -1 || pos[NE][1] == -1 ? 0 : oldbuf[pos[NE][0]*life->w + pos[NE][1]]) +
-                (pos[W ][0] == -1 || pos[W ][1] == -1 ? 0 : oldbuf[pos[W ][0]*life->w + pos[W ][1]]) +
-                (pos[E ][0] == -1 || pos[E ][1] == -1 ? 0 : oldbuf[pos[E ][0]*life->w + pos[E ][1]]) +
-                (pos[SW][0] == -1 || pos[SW][1] == -1 ? 0 : oldbuf[pos[SW][0]*life->w + pos[SW][1]]) +
-                (pos[S ][0] == -1 || pos[S ][1] == -1 ? 0 : oldbuf[pos[S ][0]*life->w + pos[S ][1]]) +
-                (pos[SE][0] == -1 || pos[SE][1] == -1 ? 0 : oldbuf[pos[SE][0]*life->w + pos[SE][1]]);
-            v = !!(1<<n & (oldbuf[i*life->w + j] ? life->stay_rule : life->born_rule));
-            av_dlog(ctx, "i:%d j:%d live_neighbors:%d cell:%d -> cell:%d\n", i, j, n, oldbuf[i*life->w + j], v);
-            newbuf[i*life->w+j] = v;
+            n = (pos[NW][0] == -1 || pos[NW][1] == -1 ? 0 : oldbuf[pos[NW][0]*life->w + pos[NW][1]] == ALIVE_CELL) +
+                (pos[N ][0] == -1 || pos[N ][1] == -1 ? 0 : oldbuf[pos[N ][0]*life->w + pos[N ][1]] == ALIVE_CELL) +
+                (pos[NE][0] == -1 || pos[NE][1] == -1 ? 0 : oldbuf[pos[NE][0]*life->w + pos[NE][1]] == ALIVE_CELL) +
+                (pos[W ][0] == -1 || pos[W ][1] == -1 ? 0 : oldbuf[pos[W ][0]*life->w + pos[W ][1]] == ALIVE_CELL) +
+                (pos[E ][0] == -1 || pos[E ][1] == -1 ? 0 : oldbuf[pos[E ][0]*life->w + pos[E ][1]] == ALIVE_CELL) +
+                (pos[SW][0] == -1 || pos[SW][1] == -1 ? 0 : oldbuf[pos[SW][0]*life->w + pos[SW][1]] == ALIVE_CELL) +
+                (pos[S ][0] == -1 || pos[S ][1] == -1 ? 0 : oldbuf[pos[S ][0]*life->w + pos[S ][1]] == ALIVE_CELL) +
+                (pos[SE][0] == -1 || pos[SE][1] == -1 ? 0 : oldbuf[pos[SE][0]*life->w + pos[SE][1]] == ALIVE_CELL);
+            cell  = oldbuf[i*life->w + j];
+            alive = 1<<n & (cell == ALIVE_CELL ? life->stay_rule : life->born_rule);
+            if (alive)     *newbuf = ALIVE_CELL; // new cell is alive
+            else if (cell) *newbuf = cell - 1;   // new cell is dead and in the process of mold
+            else           *newbuf = 0;          // new cell is definitely dead
+            av_dlog(ctx, "i:%d j:%d live_neighbors:%d cell:%d -> cell:%d\n", i, j, n, cell, *newbuf);
+            newbuf++;
         }
     }
 
     life->buf_idx = !life->buf_idx;
 }
 
-static void fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
+static void fill_picture_monoblack(AVFilterContext *ctx, AVFilterBufferRef *picref)
 {
     LifeContext *life = ctx->priv;
     uint8_t *buf = life->buf[life->buf_idx];
@@ -351,11 +396,42 @@ static void fill_picture(AVFilterContext *ctx, AVFilterBufferRef *picref)
         uint8_t byte = 0;
         uint8_t *p = picref->data[0] + i * picref->linesize[0];
         for (k = 0, j = 0; j < life->w; j++) {
-            byte |= buf[i*life->w+j]<<(7-k++);
+            byte |= (buf[i*life->w+j] == ALIVE_CELL)<<(7-k++);
             if (k==8 || j == life->w-1) {
                 k = 0;
                 *p++ = byte;
                 byte = 0;
+            }
+        }
+    }
+}
+
+// divide by 255 and round to nearest
+// apply a fast variant: (X+127)/255 = ((X+127)*257+257)>>16 = ((X+128)*257)>>16
+#define FAST_DIV255(x) ((((x) + 128) * 257) >> 16)
+
+static void fill_picture_rgb(AVFilterContext *ctx, AVFilterBufferRef *picref)
+{
+    LifeContext *life = ctx->priv;
+    uint8_t *buf = life->buf[life->buf_idx];
+    int i, j;
+
+    /* fill the output picture with the old grid buffer */
+    for (i = 0; i < life->h; i++) {
+        uint8_t *p = picref->data[0] + i * picref->linesize[0];
+        for (j = 0; j < life->w; j++) {
+            uint8_t v = buf[i*life->w + j];
+            if (life->mold && v != ALIVE_CELL) {
+                const uint8_t *c1 = life-> mold_color;
+                const uint8_t *c2 = life->death_color;
+                int death_age = FFMIN((0xff - v) * life->mold, 0xff);
+                *p++ = FAST_DIV255((c2[0] << 8) + ((int)c1[0] - (int)c2[0]) * death_age);
+                *p++ = FAST_DIV255((c2[1] << 8) + ((int)c1[1] - (int)c2[1]) * death_age);
+                *p++ = FAST_DIV255((c2[2] << 8) + ((int)c1[2] - (int)c2[2]) * death_age);
+            } else {
+                const uint8_t *c = v == ALIVE_CELL ? life->life_color : life->death_color;
+                AV_WB24(p, c[0]<<16 | c[1]<<8 | c[2]);
+                p += 3;
             }
         }
     }
@@ -369,7 +445,7 @@ static int request_frame(AVFilterLink *outlink)
     picref->pts = life->pts++;
     picref->pos = -1;
 
-    fill_picture(outlink->src, picref);
+    life->draw(outlink->src, picref);
     evolve(outlink->src);
 #ifdef DEBUG
     show_life_grid(outlink->src);
@@ -385,7 +461,16 @@ static int request_frame(AVFilterLink *outlink)
 
 static int query_formats(AVFilterContext *ctx)
 {
-    static const enum PixelFormat pix_fmts[] = { PIX_FMT_MONOBLACK, PIX_FMT_NONE };
+    LifeContext *life = ctx->priv;
+    enum PixelFormat pix_fmts[] = { PIX_FMT_NONE, PIX_FMT_NONE };
+    if (life->mold || memcmp(life-> life_color, "\xff\xff\xff", 3)
+                   || memcmp(life->death_color, "\x00\x00\x00", 3)) {
+        pix_fmts[0] = PIX_FMT_RGB24;
+        life->draw = fill_picture_rgb;
+    } else {
+        pix_fmts[0] = PIX_FMT_MONOBLACK;
+        life->draw = fill_picture_monoblack;
+    }
     avfilter_set_common_pixel_formats(ctx, avfilter_make_format_list(pix_fmts));
     return 0;
 }

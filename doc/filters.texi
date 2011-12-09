@@ -2978,6 +2978,21 @@ If a filename is not specified, the size value defaults to "320x240"
 @item stitch
 If set to 1, stitch the left and right grid edges together, and the
 top and bottom edges also. Defaults to 1.
+
+@item mold
+Set cell mold speed. If set, a dead cell will go from @option{death_color} to
+@option{mold_color} with a step of @option{mold}. @option{mold} can have a
+value from 0 to 255.
+
+@item life_color
+Set the color of living (or new born) cells.
+
+@item death_color
+Set the color of dead cells. If @option{mold} is set, this is the first color
+used to represent a dead cell.
+
+@item mold_color
+Set mold color, for definitely dead and moldy cells.
 @end table
 
 @subsection Examples
@@ -3002,6 +3017,11 @@ Specify a custom rule for evolving a randomly generated grid:
 life=rule=S14/B34
 @end example
 
+@item
+Full example with slow death effect (mold) using @command{ffplay}:
+@example
+ffplay -f lavfi life=s=300x200:mold=10:r=60:ratio=0.1:death_color=#C83232:life_color=#00ff00,scale=1200:800:flags=16
+@end example
 @end itemize
 
 @section nullsrc, rgbtestsrc, testsrc
