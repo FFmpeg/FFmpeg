@@ -1713,6 +1713,7 @@ static int mxf_read_close(AVFormatContext *s)
             break;
         case IndexTableSegment:
             seg = (MXFIndexTableSegment *)mxf->metadata_sets[i];
+            if (seg->slice_count)
             for (j = 0; j < seg->nb_index_entries; j++)
                 av_freep(&seg->slice_offset_entries[j]);
             av_freep(&seg->slice);
