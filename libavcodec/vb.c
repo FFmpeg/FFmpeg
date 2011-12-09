@@ -221,10 +221,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size, AVPac
         offset = i + j * avctx->width;
         rest -= 4;
     }
+    if(rest < 0){
+        av_log(avctx, AV_LOG_ERROR, "not enough data\n");
+        return -1;
+    }
     if(flags & VB_HAS_VIDEO){
         size = bytestream_get_le32(&c->stream);
-        if(size > rest){
-            av_log(avctx, AV_LOG_ERROR, "Frame size is too big\n");
+        if(size > rest || size<4){
+            av_log(avctx, AV_LOG_ERROR, "Frame size invalid\n");
             return -1;
         }
         vb_decode_framedata(c, c->stream, size, offset);
