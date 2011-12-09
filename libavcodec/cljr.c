@@ -25,12 +25,15 @@
  */
 
 #include "avcodec.h"
+#include "libavutil/opt.h"
 #include "get_bits.h"
 #include "put_bits.h"
 
 typedef struct CLJRContext {
+    AVClass        *avclass;
     AVCodecContext *avctx;
     AVFrame         picture;
+    int             dither_type;
 } CLJRContext;
 
 static av_cold int common_init(AVCodecContext *avctx)
@@ -129,6 +132,7 @@ AVCodec ff_cljr_decoder = {
 static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
                         int buf_size, void *data)
 {
+    CLJRContext *a = avctx->priv_data;
     PutBitContext pb;
     AVFrame *p = data;
     int x, y;
@@ -144,6 +148,10 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         uint8_t *cb   = &p->data[1][y * p->linesize[1]];
         uint8_t *cr   = &p->data[2][y * p->linesize[2]];
         for (x = 0; x < avctx->width; x += 4) {
+            switch (a->dither_type) {
+            case 0: dither = 0x492A0000;                       break;
+            case 1: dither = dither * 1664525 + 1013904223;    break;
+            }
             put_bits(&pb, 5, (luma[3] +  (dither>>29)   ) >> 3);
             put_bits(&pb, 5, (luma[2] + ((dither>>26)&7)) >> 3);
             put_bits(&pb, 5, (luma[1] + ((dither>>23)&7)) >> 3);
@@ -151,7 +159,6 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
             luma += 4;
             put_bits(&pb, 6, (*(cb++) + ((dither>>18)&3)) >> 2);
             put_bits(&pb, 6, (*(cr++) + ((dither>>16)&3)) >> 2);
-            dither = dither*1664525+1013904223;
         }
     }
 
@@ -159,6 +166,20 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
 
     return put_bits_count(&pb) / 8;
 }
+
+#define OFFSET(x) offsetof(CLJRContext, x)
+#define VE AV_OPT_FLAG_VIDEO_PARAM | AV_OPT_FLAG_ENCODING_PARAM
+static const AVOption options[] = {
+    { "dither_type",   "Dither type",   OFFSET(dither_type),        AV_OPT_TYPE_INT, { .dbl=1 }, 0, 2, VE},
+    { NULL },
+};
+
+static const AVClass class = {
+    .class_name = "cljr encoder",
+    .item_name  = av_default_item_name,
+    .option     = options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 
 AVCodec ff_cljr_encoder = {
     .name           = "cljr",
@@ -170,5 +191,6 @@ AVCodec ff_cljr_encoder = {
     .pix_fmts       = (const enum PixelFormat[]) { PIX_FMT_YUV411P,
                                                    PIX_FMT_NONE },
     .long_name      = NULL_IF_CONFIG_SMALL("Cirrus Logic AccuPak"),
+    .priv_class     = &class,
 };
 #endif
