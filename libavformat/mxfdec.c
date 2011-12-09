@@ -1078,10 +1078,33 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
     return AVERROR_INVALIDDATA;
 }
 
+/**
+ * Returns the length of the essence container with given BodySID, or zero if unknown
+ */
+static int64_t mxf_essence_container_length(MXFContext *mxf, int body_sid)
+{
+    int x;
+    int64_t ret = 0;
+
+    for (x = 0; x < mxf->partitions_count; x++) {
+        MXFPartition *p = &mxf->partitions[x];
+
+        if (p->body_sid != body_sid)
+            continue;
+
+        if (!p->essence_length)
+            return 0;
+
+        ret += p->essence_length;
+    }
+
+    return ret;
+}
+
 static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
 {
     int64_t accumulated_offset = 0;
-    int j, k, ret, nb_sorted_segments;
+    int j, k, l, ret, nb_sorted_segments;
     MXFIndexTableSegment **sorted_segments = NULL;
     int n_delta = track_id - 1;  /* TrackID = 1-based stream index */
 
@@ -1104,10 +1127,17 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
         int duration, sample_duration = 1, last_sample_size = 0;
         int64_t segment_size;
         MXFIndexTableSegment *tableseg = sorted_segments[j];
+        int index_delta = 1, last_size_unknown = 0;
+        int64_t last_pos = 0;
 
         /* reset accumulated_offset on BodySID change */
         if (j > 0 && tableseg->body_sid != sorted_segments[j-1]->body_sid)
             accumulated_offset = 0;
+
+        if (tableseg->nb_index_entries == 2 * tableseg->index_duration + 1) {
+            /* Avid index - duplicate entries and total size as last entry */
+            index_delta = 2;
+        }
 
         if (n_delta >= tableseg->nb_delta_entries && st->index != 0)
             continue;
@@ -1132,33 +1162,33 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
             goto err_out;
         }
 
-        for (k = 0; k < duration; k++) {
+        for (k = l = 0; k < duration; k++, l += index_delta) {
             int64_t pos;
             int size, flags = 0;
 
-            if (k < tableseg->nb_index_entries) {
-                pos = tableseg->stream_offset_entries[k];
+            if (l < tableseg->nb_index_entries) {
+                pos = tableseg->stream_offset_entries[l];
                 if (n_delta < tableseg->nb_delta_entries) {
                     if (n_delta < tableseg->nb_delta_entries - 1) {
                         size =
-                            tableseg->slice_offset_entries[k][tableseg->slice[n_delta+1]-1] +
+                            tableseg->slice_offset_entries[l][tableseg->slice[n_delta+1]-1] +
                             tableseg->element_delta[n_delta+1] -
                             tableseg->element_delta[n_delta];
                         if (tableseg->slice[n_delta] > 0)
-                            size -= tableseg->slice_offset_entries[k][tableseg->slice[n_delta]-1];
-                    } else if (k < duration - 1) {
-                        size = tableseg->stream_offset_entries[k+1] -
-                            tableseg->stream_offset_entries[k] -
-                            tableseg->slice_offset_entries[k][tableseg->slice[tableseg->nb_delta_entries-1]-1] -
+                            size -= tableseg->slice_offset_entries[l][tableseg->slice[n_delta]-1];
+                    } else if (l < tableseg->nb_index_entries - 1) {
+                        size = tableseg->stream_offset_entries[l+1] -
+                            tableseg->stream_offset_entries[l] -
+                            tableseg->slice_offset_entries[l][tableseg->slice[tableseg->nb_delta_entries-1]-1] -
                             tableseg->element_delta[tableseg->nb_delta_entries-1];
                     } else
                         size = 0;
                     if (tableseg->slice[n_delta] > 0)
-                        pos += tableseg->slice_offset_entries[k][tableseg->slice[n_delta]-1];
+                        pos += tableseg->slice_offset_entries[l][tableseg->slice[n_delta]-1];
                     pos += tableseg->element_delta[n_delta];
                 } else
                     size = 0;
-                flags = !(tableseg->flag_entries[k] & 0x30) ? AVINDEX_KEYFRAME : 0;
+                flags = !(tableseg->flag_entries[l] & 0x30) ? AVINDEX_KEYFRAME : 0;
             } else {
                 pos = (int64_t)k * tableseg->edit_unit_byte_count + accumulated_offset;
                 if (n_delta < tableseg->nb_delta_entries - 1)
@@ -1177,6 +1207,12 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
                 flags = AVINDEX_KEYFRAME;
             }
 
+            if (last_size_unknown)
+                st->index_entries[st->nb_index_entries-1].size = pos - last_pos;
+
+            last_size_unknown = size == 0;
+            last_pos = pos;
+
             if (mxf_absolute_bodysid_offset(mxf, tableseg->body_sid, pos, &pos) < 0) {
                 /* probably partial file - no point going further for this stream */
                 break;
@@ -1188,6 +1224,14 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
             if ((ret = av_add_index_entry(st, pos, sample_duration * st->nb_index_entries, size, 0, flags)) < 0)
                 return ret;
         }
+
+        if (last_size_unknown) {
+            int64_t ecl = mxf_essence_container_length(mxf, tableseg->body_sid);
+
+            if (ecl > 0)
+                st->index_entries[st->nb_index_entries-1].size = ecl - last_pos;
+        }
+
         accumulated_offset += segment_size;
     }
 
