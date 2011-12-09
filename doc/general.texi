@@ -452,6 +452,7 @@ following image formats are supported:
 @item Duck TrueMotion 2.0    @tab     @tab  X
     @tab fourcc: TM20
 @item DV (Digital Video)     @tab  X  @tab  X
+@item Dxtory capture format  @tab     @tab  X
 @item Feeble Files/ScummVM DXA  @tab     @tab  X
     @tab Codec originally used in Feeble Files game.
 @item Electronic Arts CMV video  @tab     @tab  X

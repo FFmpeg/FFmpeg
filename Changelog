@@ -106,6 +106,7 @@ easier to use. The changes are:
 - Playstation Portable PMP format demuxer
 - PCM format support in OMA demuxer
 - CLJR encoder
+- Dxtory capture format decoder
 
 
 version 0.7:

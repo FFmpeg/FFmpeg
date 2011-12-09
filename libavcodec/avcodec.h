@@ -252,6 +252,7 @@ enum CodecID {
     CODEC_ID_UTVIDEO,
     CODEC_ID_BMV_VIDEO,
     CODEC_ID_VBLE,
+    CODEC_ID_DXTORY,
 
     /* various PCM "codecs" */
     CODEC_ID_FIRST_AUDIO = 0x10000,     ///< A dummy id pointing at the start of audio codecs
