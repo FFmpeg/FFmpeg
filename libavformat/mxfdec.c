@@ -1080,6 +1080,7 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
 
 static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
 {
+    int64_t accumulated_offset = 0;
     int j, k, ret, nb_sorted_segments;
     MXFIndexTableSegment **sorted_segments = NULL;
     int n_delta = track_id - 1;  /* TrackID = 1-based stream index */
@@ -1103,6 +1104,10 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
         int duration, sample_duration = 1, last_sample_size = 0;
         int64_t segment_size;
         MXFIndexTableSegment *tableseg = sorted_segments[j];
+
+        /* reset accumulated_offset on BodySID change */
+        if (j > 0 && tableseg->body_sid != sorted_segments[j-1]->body_sid)
+            accumulated_offset = 0;
 
         if (n_delta >= tableseg->nb_delta_entries && st->index != 0)
             continue;
@@ -1155,7 +1160,7 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
                     size = 0;
                 flags = !(tableseg->flag_entries[k] & 0x30) ? AVINDEX_KEYFRAME : 0;
             } else {
-                pos = (int64_t)(tableseg->index_start_position + k) * tableseg->edit_unit_byte_count;
+                pos = (int64_t)k * tableseg->edit_unit_byte_count + accumulated_offset;
                 if (n_delta < tableseg->nb_delta_entries - 1)
                     size = tableseg->element_delta[n_delta+1] - tableseg->element_delta[n_delta];
                 else {
@@ -1183,6 +1188,7 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
             if ((ret = av_add_index_entry(st, pos, sample_duration * st->nb_index_entries, size, 0, flags)) < 0)
                 return ret;
         }
+        accumulated_offset += segment_size;
     }
 
     av_free(sorted_segments);
