@@ -17,7 +17,7 @@ output pads is called a "sink".
 @section Filtergraph syntax
 
 A filtergraph can be represented using a textual representation, which
-is recognized by the @code{-vf} and @code{-af} options of the ff*
+is recognized by the @code{-vf} option of the ff*
 tools, and by the @code{avfilter_graph_parse()} function defined in
 @file{libavfilter/avfiltergraph.h}.
 
