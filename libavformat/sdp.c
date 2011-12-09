@@ -156,6 +156,8 @@ static char *extradata2psets(AVCodecContext *c)
     char *psets, *p;
     const uint8_t *r;
     const char *pset_string = "; sprop-parameter-sets=";
+    uint8_t *orig_extradata = NULL;
+    int orig_extradata_size = 0;
 
     if (c->extradata_size > MAX_EXTRADATA_SIZE) {
         av_log(c, AV_LOG_ERROR, "Too much extradata!\n");
@@ -172,6 +174,15 @@ static char *extradata2psets(AVCodecContext *c)
 
             return NULL;
         }
+
+        orig_extradata_size = c->extradata_size;
+        orig_extradata = av_mallocz(orig_extradata_size +
+                                    FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!orig_extradata) {
+            av_bitstream_filter_close(bsfc);
+            return NULL;
+        }
+        memcpy(orig_extradata, c->extradata, orig_extradata_size);
         av_bitstream_filter_filter(bsfc, c, NULL, &dummy_p, &dummy_int, NULL, 0, 0);
         av_bitstream_filter_close(bsfc);
     }
@@ -179,6 +190,7 @@ static char *extradata2psets(AVCodecContext *c)
     psets = av_mallocz(MAX_PSET_SIZE);
     if (psets == NULL) {
         av_log(c, AV_LOG_ERROR, "Cannot allocate memory for the parameter sets.\n");
+        av_free(orig_extradata);
         return NULL;
     }
     memcpy(psets, pset_string, strlen(pset_string));
@@ -207,6 +219,11 @@ static char *extradata2psets(AVCodecContext *c)
         }
         p += strlen(p);
         r = r1;
+    }
+    if (orig_extradata) {
+        av_free(c->extradata);
+        c->extradata      = orig_extradata;
+        c->extradata_size = orig_extradata_size;
     }
 
     return psets;
