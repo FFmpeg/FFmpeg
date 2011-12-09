@@ -61,6 +61,13 @@ int ff_rv40_v_loop_filter_strength_neon(uint8_t *src, int stride,
                                         int beta, int beta2, int edge,
                                         int *p1, int *q1);
 
+void ff_rv40_h_weak_loop_filter_neon(uint8_t *src, int stride, int filter_p1,
+                                     int filter_q1, int alpha, int beta,
+                                     int lim_p0q0, int lim_q1, int lim_p1);
+void ff_rv40_v_weak_loop_filter_neon(uint8_t *src, int stride, int filter_p1,
+                                     int filter_q1, int alpha, int beta,
+                                     int lim_p0q0, int lim_q1, int lim_p1);
+
 void ff_rv40dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
 {
     c->put_pixels_tab[0][ 1] = ff_put_rv40_qpel16_mc10_neon;
@@ -126,4 +133,6 @@ void ff_rv40dsp_init_neon(RV34DSPContext *c, DSPContext* dsp)
 
     c->rv40_loop_filter_strength[0] = ff_rv40_h_loop_filter_strength_neon;
     c->rv40_loop_filter_strength[1] = ff_rv40_v_loop_filter_strength_neon;
+    c->rv40_weak_loop_filter[0]     = ff_rv40_h_weak_loop_filter_neon;
+    c->rv40_weak_loop_filter[1]     = ff_rv40_v_weak_loop_filter_neon;
 }
