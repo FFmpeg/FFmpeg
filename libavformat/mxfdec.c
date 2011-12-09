@@ -201,6 +201,9 @@ typedef struct {
     int current_stream;
     int d10;
     int broken_index;
+    int64_t first_dts;          /* DTS = EditUnit + first_dts */
+    int64_t *ptses;             /* maps EditUnit -> PTS */
+    int nb_ptses;
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -476,6 +479,11 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             return ret < 0 ? ret : AVERROR_EOF;
 
         pkt->pos = e->pos;
+    }
+
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && mxf->ptses && mxf->current_edit_unit < mxf->nb_ptses) {
+        pkt->dts = mxf->current_edit_unit + mxf->first_dts;
+        pkt->pts = mxf->ptses[mxf->current_edit_unit];
     }
 
     pkt->stream_index = mxf->current_stream++;
@@ -1229,6 +1237,91 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st, MXFIndex
     return 0;
 }
 
+static int mxf_compute_ptses(MXFContext *mxf, MXFIndexTableSegment **sorted_segments, int nb_sorted_segments)
+{
+    int ret, i, j, x;
+    int8_t max_temporal_offset = -128;
+
+    /* first compute how many entries we have */
+    for (i = 0; i < nb_sorted_segments; i++) {
+        MXFIndexTableSegment *s = sorted_segments[i];
+
+        if (!s->nb_index_entries)
+            return 0;                               /* no TemporalOffsets */
+
+        if (s->nb_index_entries == 2 * s->index_duration + 1)
+            mxf->nb_ptses += s->index_duration;     /* Avid index */
+        else
+            mxf->nb_ptses += s->nb_index_entries;
+    }
+
+    /* paranoid check */
+    if (mxf->nb_ptses <= 0)
+        return 0;
+
+    if (!(mxf->ptses = av_calloc(mxf->nb_ptses, sizeof(int64_t))))
+        return AVERROR(ENOMEM);
+
+    /* we may have a few bad TemporalOffsets
+     * make sure the corresponding PTSes don't have the bogus value 0 */
+    for (x = 0; x < mxf->nb_ptses; x++)
+        mxf->ptses[x] = AV_NOPTS_VALUE;
+
+    /**
+     * We have this:
+     *
+     * x  TemporalOffset
+     * 0:  0
+     * 1:  1
+     * 2:  1
+     * 3: -2
+     * 4:  1
+     * 5:  1
+     * 6: -2
+     *
+     * We want to transform it into this:
+     *
+     * x  DTS PTS
+     * 0: -1   0
+     * 1:  0   3
+     * 2:  1   1
+     * 3:  2   2
+     * 4:  3   6
+     * 5:  4   4
+     * 6:  5   5
+     *
+     * We do this by bucket sorting x by x+TemporalOffset[x] into mxf->ptses,
+     * then settings mxf->first_dts = -max(TemporalOffset[x]).
+     * The latter makes DTS <= PTS.
+     */
+    for (i = x = 0; i < nb_sorted_segments; i++) {
+        MXFIndexTableSegment *s = sorted_segments[i];
+        int index_delta = 1;
+
+        if (s->nb_index_entries == 2 * s->index_duration + 1)
+            index_delta = 2;    /* Avid index */
+
+        for (j = 0; j < s->nb_index_entries; j += index_delta, x++) {
+            int offset = s->temporal_offset_entries[j] / index_delta;
+            int index  = x + offset;
+
+            if (index < 0 || index >= mxf->nb_ptses) {
+                av_log(mxf->fc, AV_LOG_ERROR,
+                       "index entry %i + TemporalOffset %i = %i, which is out of bounds\n",
+                       x, offset, index);
+                continue;
+            }
+
+            mxf->ptses[index] = x;
+            max_temporal_offset = FFMAX(max_temporal_offset, offset);
+        }
+    }
+
+    mxf->first_dts = -max_temporal_offset;
+
+    return 0;
+}
+
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
@@ -1435,7 +1528,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             goto fail_and_free;
     }
 
-    ret = 0;
+    ret = mxf_compute_ptses(mxf, sorted_segments, nb_sorted_segments);
 
 fail_and_free:
     av_free(sorted_segments);
@@ -1777,6 +1870,7 @@ static int mxf_read_close(AVFormatContext *s)
     av_freep(&mxf->metadata_sets);
     av_freep(&mxf->aesc);
     av_freep(&mxf->local_tags);
+    av_freep(&mxf->ptses);
     return 0;
 }
 
