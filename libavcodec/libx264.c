@@ -279,6 +279,7 @@ static int convert_pix_fmt(enum PixelFormat pix_fmt)
 static av_cold int X264_init(AVCodecContext *avctx)
 {
     X264Context *x4 = avctx->priv_data;
+    int sw,sh;
 
     x264_param_default(&x4->params);
 
@@ -507,8 +508,9 @@ static av_cold int X264_init(AVCodecContext *avctx)
 
     x4->params.i_width          = avctx->width;
     x4->params.i_height         = avctx->height;
-    x4->params.vui.i_sar_width  = avctx->sample_aspect_ratio.num;
-    x4->params.vui.i_sar_height = avctx->sample_aspect_ratio.den;
+    av_reduce(&sw, &sh, avctx->sample_aspect_ratio.num, avctx->sample_aspect_ratio.den, 4096);
+    x4->params.vui.i_sar_width  = sw;
+    x4->params.vui.i_sar_height = sh;
     x4->params.i_fps_num = x4->params.i_timebase_den = avctx->time_base.den;
     x4->params.i_fps_den = x4->params.i_timebase_num = avctx->time_base.num;
 
