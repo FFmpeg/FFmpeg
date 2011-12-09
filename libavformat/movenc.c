@@ -2002,6 +2002,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *enc = trk->enc;
     unsigned int samplesInChunk = 0;
     int size= pkt->size;
+    uint8_t *reformatted_data = NULL;
 
     if (!s->pb->seekable) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
@@ -2035,7 +2036,13 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     if (enc->codec_id == CODEC_ID_H264 && trk->vosLen > 0 && *(uint8_t *)trk->vosData != 1) {
         /* from x264 or from bytestream h264 */
         /* nal reformating needed */
-        size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+        if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
+            ff_avc_parse_nal_units_buf(pkt->data, &reformatted_data,
+                                       &size);
+            avio_write(pb, reformatted_data, size);
+        } else {
+            size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+        }
     } else {
         avio_write(pb, pkt->data, size);
     }
@@ -2090,7 +2097,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_flush(pb);
 
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
-        ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry);
+        ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
+                                 reformatted_data, size);
+    av_free(reformatted_data);
     return 0;
 }
 
