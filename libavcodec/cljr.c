@@ -137,6 +137,11 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     AVFrame *p = data;
     int x, y;
     uint32_t dither= avctx->frame_number;
+    static const uint32_t ordered_dither[2][2] =
+    {
+        { 0x10400000, 0x104F0000 },
+        { 0xCB2A0000, 0xCB250000 },
+    };
 
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
@@ -151,6 +156,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
             switch (a->dither_type) {
             case 0: dither = 0x492A0000;                       break;
             case 1: dither = dither * 1664525 + 1013904223;    break;
+            case 2: dither = ordered_dither[ y&1 ][ (x>>2)&1 ];break;
             }
             put_bits(&pb, 5, (luma[3] +  (dither>>29)   ) >> 3);
             put_bits(&pb, 5, (luma[2] + ((dither>>26)&7)) >> 3);
