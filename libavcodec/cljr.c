@@ -132,6 +132,7 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
     PutBitContext pb;
     AVFrame *p = data;
     int x, y;
+    uint32_t dither= avctx->frame_number;
 
     p->pict_type = AV_PICTURE_TYPE_I;
     p->key_frame = 1;
@@ -143,13 +144,14 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
         uint8_t *cb   = &p->data[1][y * p->linesize[1]];
         uint8_t *cr   = &p->data[2][y * p->linesize[2]];
         for (x = 0; x < avctx->width; x += 4) {
-            put_bits(&pb, 5, luma[3] >> 3);
-            put_bits(&pb, 5, luma[2] >> 3);
-            put_bits(&pb, 5, luma[1] >> 3);
-            put_bits(&pb, 5, luma[0] >> 3);
+            put_bits(&pb, 5, (luma[3] +  (dither>>29)   ) >> 3);
+            put_bits(&pb, 5, (luma[2] + ((dither>>26)&7)) >> 3);
+            put_bits(&pb, 5, (luma[1] + ((dither>>23)&7)) >> 3);
+            put_bits(&pb, 5, (luma[0] + ((dither>>20)&7)) >> 3);
             luma += 4;
-            put_bits(&pb, 6, *(cb++) >> 2);
-            put_bits(&pb, 6, *(cr++) >> 2);
+            put_bits(&pb, 6, (*(cb++) + ((dither>>18)&3)) >> 2);
+            put_bits(&pb, 6, (*(cr++) + ((dither>>16)&3)) >> 2);
+            dither = dither*1664525+1013904223;
         }
     }
 
