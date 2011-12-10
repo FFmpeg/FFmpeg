@@ -583,4 +583,5 @@ AVCodec ff_dca_encoder = {
     .encode         = encode_frame,
     .capabilities   = CODEC_CAP_EXPERIMENTAL,
     .sample_fmts    = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
+    .long_name      = NULL_IF_CONFIG_SMALL("DCA (DTS Coherent Acoustics)"),
 };
