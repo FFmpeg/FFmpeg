@@ -42,7 +42,7 @@ specify card number or identifier, device number and subdevice number
 To see the list of cards currently recognized by your system check the
 files @file{/proc/asound/cards} and @file{/proc/asound/devices}.
 
-For example to capture with @file{ffmpeg} from an ALSA device with
+For example to capture with @command{ffmpeg} from an ALSA device with
 card id 0, you may run the command:
 @example
 ffmpeg -f alsa -i hw:0 alsaout.wav
@@ -167,14 +167,14 @@ For more detailed information read the file
 Documentation/fb/framebuffer.txt included in the Linux source tree.
 
 To record from the framebuffer device @file{/dev/fb0} with
-@file{ffmpeg}:
+@command{ffmpeg}:
 @example
 ffmpeg -f fbdev -r 10 -i /dev/fb0 out.avi
 @end example
 
 You can take a single screenshot image with the command:
 @example
-ffmpeg -f fbdev -vframes 1 -r 1 -i /dev/fb0 screenshot.jpeg
+ffmpeg -f fbdev -frames:v 1 -r 1 -i /dev/fb0 screenshot.jpeg
 @end example
 
 See also @url{http://linux-fbdev.sourceforge.net/}, and fbset(1).
@@ -204,7 +204,7 @@ To list the JACK clients and their properties you can invoke the command
 @file{jack_lsp}.
 
 Follows an example which shows how to capture a JACK readable client
-with @file{ffmpeg}.
+with @command{ffmpeg}.
 @example
 # Create a JACK writable client with name "ffmpeg".
 $ ffmpeg -f jack -i ffmpeg -y out.wav
@@ -395,7 +395,7 @@ The filename to provide to the input device is the device node
 representing the OSS input device, and is usually set to
 @file{/dev/dsp}.
 
-For example to grab from @file{/dev/dsp} using @file{ffmpeg} use the
+For example to grab from @file{/dev/dsp} using @command{ffmpeg} use the
 command:
 @example
 ffmpeg -f oss -i /dev/dsp /tmp/oss.wav
@@ -418,7 +418,7 @@ To list the pulse source devices and their properties you can invoke
 the command @file{pactl list sources}.
 
 @example
-avconv -f pulse -i default /tmp/pulse.wav
+ffmpeg -f pulse -i default /tmp/pulse.wav
 @end example
 
 @subsection @var{server} AVOption
@@ -498,7 +498,7 @@ The filename to provide to the input device is the device node
 representing the sndio input device, and is usually set to
 @file{/dev/audio0}.
 
-For example to grab from @file{/dev/audio0} using @file{ffmpeg} use the
+For example to grab from @file{/dev/audio0} using @command{ffmpeg} use the
 command:
 @example
 ffmpeg -f sndio -i /dev/audio0 /tmp/oss.wav
@@ -582,7 +582,7 @@ Check the X11 documentation (e.g. man X) for more detailed information.
 Use the @file{dpyinfo} program for getting basic information about the
 properties of your X11 display (e.g. grep for "name" or "dimensions").
 
-For example to grab from @file{:0.0} using @file{ffmpeg}:
+For example to grab from @file{:0.0} using @command{ffmpeg}:
 @example
 ffmpeg -f x11grab -r 25 -s cif -i :0.0 out.mpg
 

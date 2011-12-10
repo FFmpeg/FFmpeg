@@ -132,8 +132,8 @@ libavcodec libraries. To see the list of available AVOptions, use the
 @option{-help} option. They are separated into two categories:
 @table @option
 @item generic
-These options can be set for any container, codec or device. Generic options are
-listed under AVFormatContext options for containers/devices and under
+These options can be set for any container, codec or device. Generic options
+are listed under AVFormatContext options for containers/devices and under
 AVCodecContext options for codecs.
 @item private
 These options are specific to the given container, device or codec. Private
@@ -150,8 +150,8 @@ ffmpeg -i input.flac -id3v2_version 3 out.mp3
 All codec AVOptions are obviously per-stream, so the chapter on stream
 specifiers applies to them
 
-Note -nooption syntax cannot be used for boolean AVOptions, use -option
-0/-option 1.
+Note @option{-nooption} syntax cannot be used for boolean AVOptions,
+use @option{-option 0}/@option{-option 1}.
 
 Note2 old undocumented way of specifying per-stream AVOptions by prepending
 v/a/s to the options name is now obsolete and will be removed soon.

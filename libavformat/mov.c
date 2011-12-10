@@ -37,6 +37,7 @@
 #include "isom.h"
 #include "libavcodec/get_bits.h"
 #include "id3v1.h"
+#include "mov_chan.h"
 
 #if CONFIG_ZLIB
 #include <zlib.h>
@@ -564,6 +565,51 @@ static int mov_read_dac3(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     st->codec->audio_service_type = bsmod;
     if (st->codec->channels > 1 && bsmod == 0x7)
         st->codec->audio_service_type = AV_AUDIO_SERVICE_TYPE_KARAOKE;
+
+    return 0;
+}
+
+static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+{
+    AVStream *st;
+    uint8_t version;
+    uint32_t flags, layout_tag, bitmap, num_descr;
+
+    if (c->fc->nb_streams < 1)
+        return 0;
+    st = c->fc->streams[c->fc->nb_streams-1];
+
+    if (atom.size < 16)
+        return 0;
+
+    version = avio_r8(pb);
+    flags   = avio_rb24(pb);
+
+    layout_tag = avio_rb32(pb);
+    bitmap     = avio_rb32(pb);
+    num_descr  = avio_rb32(pb);
+
+    if (atom.size < 16ULL + num_descr * 20ULL)
+        return 0;
+
+    av_dlog(c->fc, "chan: size=%ld version=%u flags=%u layout=%u bitmap=%u num_descr=%u\n",
+            atom.size, version, flags, layout_tag, bitmap, num_descr);
+
+#if 0
+    /* TODO: use the channel descriptions if the layout tag is 0 */
+    int i;
+    for (i = 0; i < num_descr; i++) {
+        uint32_t label, cflags;
+        float coords[3];
+        label     = avio_rb32(pb);          // mChannelLabel
+        cflags    = avio_rb32(pb);          // mChannelFlags
+        AV_WN32(&coords[0], avio_rl32(pb)); // mCoordinates[0]
+        AV_WN32(&coords[1], avio_rl32(pb)); // mCoordinates[1]
+        AV_WN32(&coords[2], avio_rl32(pb)); // mCoordinates[2]
+    }
+#endif
+
+    st->codec->channel_layout = ff_mov_get_channel_layout(layout_tag, bitmap);
 
     return 0;
 }
@@ -2346,7 +2392,7 @@ static int mov_read_elst(MOVContext *c, AVIOContext *pb, MOVAtom atom)
     return 0;
 }
 
-static int mov_read_chan(MOVContext *c, AVIOContext *pb, MOVAtom atom)
+static int mov_read_chan2(MOVContext *c, AVIOContext *pb, MOVAtom atom)
 {
     if (atom.size < 16)
         return 0;
@@ -2409,7 +2455,7 @@ static const MOVParseTableEntry mov_default_parse_table[] = {
 { MKTAG('w','i','d','e'), mov_read_wide }, /* place holder */
 { MKTAG('w','f','e','x'), mov_read_wfex },
 { MKTAG('c','m','o','v'), mov_read_cmov },
-{ MKTAG('c','h','a','n'), mov_read_chan },
+{ MKTAG('c','h','a','n'), mov_read_chan }, /* channel layout */
 { 0, NULL }
 };
 

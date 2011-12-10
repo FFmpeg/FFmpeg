@@ -148,9 +148,10 @@ OBJS-$(CONFIG_MLP_MUXER)                 += rawenc.o
 OBJS-$(CONFIG_MM_DEMUXER)                += mm.o
 OBJS-$(CONFIG_MMF_DEMUXER)               += mmf.o pcm.o
 OBJS-$(CONFIG_MMF_MUXER)                 += mmf.o riff.o
-OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o riff.o isom.o
+OBJS-$(CONFIG_MOV_DEMUXER)               += mov.o riff.o isom.o mov_chan.o
 OBJS-$(CONFIG_MOV_MUXER)                 += movenc.o riff.o isom.o avc.o \
-                                            movenchint.o rtpenc_chain.o
+                                            movenchint.o rtpenc_chain.o \
+                                            mov_chan.o
 OBJS-$(CONFIG_MP2_MUXER)                 += mp3enc.o rawenc.o
 OBJS-$(CONFIG_MP3_DEMUXER)               += mp3dec.o
 OBJS-$(CONFIG_MP3_MUXER)                 += mp3enc.o rawenc.o id3v2enc.o

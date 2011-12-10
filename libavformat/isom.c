@@ -224,64 +224,49 @@ const AVCodecTag codec_movvideo_tags[] = {
 };
 
 const AVCodecTag codec_movaudio_tags[] = {
-    { CODEC_ID_PCM_S32BE, MKTAG('i', 'n', '3', '2') },
-    { CODEC_ID_PCM_S32LE, MKTAG('i', 'n', '3', '2') },
-    { CODEC_ID_PCM_S24BE, MKTAG('i', 'n', '2', '4') },
-    { CODEC_ID_PCM_S24LE, MKTAG('i', 'n', '2', '4') },
-    { CODEC_ID_PCM_S16BE, MKTAG('t', 'w', 'o', 's') }, /* 16 bits */
-    { CODEC_ID_PCM_S16LE, MKTAG('s', 'o', 'w', 't') }, /*  */
-    { CODEC_ID_PCM_S16LE, MKTAG('l', 'p', 'c', 'm') },
-    { CODEC_ID_PCM_F32BE, MKTAG('f', 'l', '3', '2') },
-    { CODEC_ID_PCM_F32LE, MKTAG('f', 'l', '3', '2') },
-    { CODEC_ID_PCM_F64BE, MKTAG('f', 'l', '6', '4') },
-    { CODEC_ID_PCM_F64LE, MKTAG('f', 'l', '6', '4') },
-    { CODEC_ID_PCM_S8,    MKTAG('s', 'o', 'w', 't') },
-    { CODEC_ID_PCM_U8,    MKTAG('r', 'a', 'w', ' ') }, /* 8 bits unsigned */
-    { CODEC_ID_PCM_U8,    MKTAG('N', 'O', 'N', 'E') }, /* uncompressed */
-    { CODEC_ID_PCM_MULAW, MKTAG('u', 'l', 'a', 'w') }, /*  */
-    { CODEC_ID_PCM_ALAW,  MKTAG('a', 'l', 'a', 'w') }, /*  */
-
-    { CODEC_ID_ADPCM_IMA_QT, MKTAG('i', 'm', 'a', '4') }, /* IMA-4 ADPCM */
-
-    { CODEC_ID_MACE3, MKTAG('M', 'A', 'C', '3') }, /* Macintosh Audio Compression and Expansion 3:1 */
-    { CODEC_ID_MACE6, MKTAG('M', 'A', 'C', '6') }, /* Macintosh Audio Compression and Expansion 6:1 */
-
-    { CODEC_ID_MP1, MKTAG('.', 'm', 'p', '1') }, /* MPEG layer 1 */
-    { CODEC_ID_MP2, MKTAG('.', 'm', 'p', '2') }, /* MPEG layer 2 */
-
-    { CODEC_ID_MP3, MKTAG('.', 'm', 'p', '3') }, /* MPEG layer 3 */ /* sample files at http://www.3ivx.com/showcase.html use this tag */
-    { CODEC_ID_MP3, 0x6D730055 }, /* MPEG layer 3 */
-
-/*  { CODEC_ID_OGG_VORBIS, MKTAG('O', 'g', 'g', 'S') }, *//* sample files at http://heroinewarrior.com/xmovie.php3 use this tag */
-
-    { CODEC_ID_AAC, MKTAG('m', 'p', '4', 'a') }, /* MPEG-4 AAC */
-    { CODEC_ID_AC3, MKTAG('a', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
-    { CODEC_ID_AC3, MKTAG('s', 'a', 'c', '3') }, /* Nero Recode */
-    { CODEC_ID_DTS, MKTAG('d', 't', 's', 'c') }, /* mp4ra.org */
-    { CODEC_ID_DTS, MKTAG('D', 'T', 'S', ' ') }, /* non-standard */
-    { CODEC_ID_EAC3, MKTAG('e', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
-
-    { CODEC_ID_AMR_NB, MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
-    { CODEC_ID_AMR_WB, MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
-
-    { CODEC_ID_GSM,  MKTAG('a', 'g', 's', 'm') },
-    { CODEC_ID_NELLYMOSER, MKTAG('n', 'm', 'o', 's') }, /* Flash Media Server */
-    { CODEC_ID_ALAC, MKTAG('a', 'l', 'a', 'c') }, /* Apple Lossless */
-
-    { CODEC_ID_QCELP, MKTAG('Q','c','l','p') },
-    { CODEC_ID_QCELP, MKTAG('Q','c','l','q') },
-    { CODEC_ID_QCELP, MKTAG('s','q','c','p') }, /* ISO Media fourcc */
-
-    { CODEC_ID_QDMC, MKTAG('Q', 'D', 'M', 'C') }, /* QDMC */
-    { CODEC_ID_QDM2, MKTAG('Q', 'D', 'M', '2') }, /* QDM2 */
-
-    { CODEC_ID_DVAUDIO, MKTAG('v', 'd', 'v', 'a') },
-    { CODEC_ID_DVAUDIO, MKTAG('d', 'v', 'c', 'a') },
-
-    { CODEC_ID_SPEEX, MKTAG('s','p','e','x') }, /* Flash Media Server */
-
-    { CODEC_ID_WMAV2, MKTAG('W', 'M', 'A', '2') },
-
+    { CODEC_ID_AAC,             MKTAG('m', 'p', '4', 'a') },
+    { CODEC_ID_AC3,             MKTAG('a', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
+    { CODEC_ID_AC3,             MKTAG('s', 'a', 'c', '3') }, /* Nero Recode */
+    { CODEC_ID_ADPCM_IMA_QT,    MKTAG('i', 'm', 'a', '4') },
+    { CODEC_ID_ALAC,            MKTAG('a', 'l', 'a', 'c') },
+    { CODEC_ID_AMR_NB,          MKTAG('s', 'a', 'm', 'r') }, /* AMR-NB 3gp */
+    { CODEC_ID_AMR_WB,          MKTAG('s', 'a', 'w', 'b') }, /* AMR-WB 3gp */
+    { CODEC_ID_DTS,             MKTAG('d', 't', 's', 'c') }, /* mp4ra.org */
+    { CODEC_ID_DTS,             MKTAG('D', 'T', 'S', ' ') }, /* non-standard */
+    { CODEC_ID_DVAUDIO,         MKTAG('v', 'd', 'v', 'a') },
+    { CODEC_ID_DVAUDIO,         MKTAG('d', 'v', 'c', 'a') },
+    { CODEC_ID_EAC3,            MKTAG('e', 'c', '-', '3') }, /* ETSI TS 102 366 Annex F */
+    { CODEC_ID_GSM,             MKTAG('a', 'g', 's', 'm') },
+    { CODEC_ID_MACE3,           MKTAG('M', 'A', 'C', '3') },
+    { CODEC_ID_MACE6,           MKTAG('M', 'A', 'C', '6') },
+    { CODEC_ID_MP1,             MKTAG('.', 'm', 'p', '1') },
+    { CODEC_ID_MP2,             MKTAG('.', 'm', 'p', '2') },
+    { CODEC_ID_MP3,             MKTAG('.', 'm', 'p', '3') },
+    { CODEC_ID_MP3,             0x6D730055                },
+    { CODEC_ID_NELLYMOSER,      MKTAG('n', 'm', 'o', 's') }, /* Flash Media Server */
+    { CODEC_ID_PCM_ALAW,        MKTAG('a', 'l', 'a', 'w') },
+    { CODEC_ID_PCM_F32BE,       MKTAG('f', 'l', '3', '2') },
+    { CODEC_ID_PCM_F32LE,       MKTAG('f', 'l', '3', '2') },
+    { CODEC_ID_PCM_F64BE,       MKTAG('f', 'l', '6', '4') },
+    { CODEC_ID_PCM_F64LE,       MKTAG('f', 'l', '6', '4') },
+    { CODEC_ID_PCM_MULAW,       MKTAG('u', 'l', 'a', 'w') },
+    { CODEC_ID_PCM_S16BE,       MKTAG('t', 'w', 'o', 's') },
+    { CODEC_ID_PCM_S16LE,       MKTAG('s', 'o', 'w', 't') },
+    { CODEC_ID_PCM_S16LE,       MKTAG('l', 'p', 'c', 'm') },
+    { CODEC_ID_PCM_S24BE,       MKTAG('i', 'n', '2', '4') },
+    { CODEC_ID_PCM_S24LE,       MKTAG('i', 'n', '2', '4') },
+    { CODEC_ID_PCM_S32BE,       MKTAG('i', 'n', '3', '2') },
+    { CODEC_ID_PCM_S32LE,       MKTAG('i', 'n', '3', '2') },
+    { CODEC_ID_PCM_S8,          MKTAG('s', 'o', 'w', 't') },
+    { CODEC_ID_PCM_U8,          MKTAG('r', 'a', 'w', ' ') },
+    { CODEC_ID_PCM_U8,          MKTAG('N', 'O', 'N', 'E') },
+    { CODEC_ID_QCELP,           MKTAG('Q', 'c', 'l', 'p') },
+    { CODEC_ID_QCELP,           MKTAG('Q', 'c', 'l', 'q') },
+    { CODEC_ID_QCELP,           MKTAG('s', 'q', 'c', 'p') }, /* ISO Media fourcc */
+    { CODEC_ID_QDM2,            MKTAG('Q', 'D', 'M', '2') },
+    { CODEC_ID_QDMC,            MKTAG('Q', 'D', 'M', 'C') },
+    { CODEC_ID_SPEEX,           MKTAG('s', 'p', 'e', 'x') }, /* Flash Media Server */
+    { CODEC_ID_WMAV2,           MKTAG('W', 'M', 'A', '2') },
     { CODEC_ID_NONE, 0 },
 };
 

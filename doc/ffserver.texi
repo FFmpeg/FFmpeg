@@ -34,7 +34,7 @@ file.
 
 This documentation covers only the streaming aspects of ffserver /
 ffmpeg. All questions about parameters for ffmpeg, codec questions,
-etc. are not covered here. Read @file{ffmpeg-doc.html} for more
+etc. are not covered here. Read @file{ffmpeg.html} for more
 information.
 
 @section How does it work?
@@ -265,7 +265,7 @@ rather than as a daemon.
 
 @c man begin SEEALSO
 
-ffmpeg(1), ffplay(1), ffprobe(1), the @file{ffmpeg/doc/ffserver.conf}
+ffmpeg(1), ffplay(1), ffprobe(1), the @file{ffserver.conf}
 example and the FFmpeg HTML documentation
 @c man end
 
