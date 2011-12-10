@@ -106,6 +106,10 @@ if [ -n "$do_mkv" ] ; then
 do_lavf mkv "-acodec mp2 -ab 64k -vcodec mpeg4"
 fi
 
+if [ -n "$do_wtv" ] ; then
+do_lavf wtv
+fi
+
 
 # streamed images
 # mjpeg
