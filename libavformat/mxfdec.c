@@ -200,6 +200,7 @@ typedef struct {
     int current_edit_unit;
     int current_stream;
     int d10;
+    int broken_index;
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -432,7 +433,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* TODO: better logic for this?
      * only files that lack all index segments prior to the essence need this */
-    if (!s->pb->seekable && mxf->op != OPAtom || mxf->d10)
+    if (!s->pb->seekable && mxf->op != OPAtom || mxf->d10 || mxf->broken_index)
         return mxf_read_packet_old(s, pkt);
 
     if (mxf->current_stream >= s->nb_streams) {
@@ -1077,16 +1078,23 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
 static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
 {
     int j, k, ret, nb_sorted_segments;
-    MXFIndexTableSegment **sorted_segments;
+    MXFIndexTableSegment **sorted_segments = NULL;
     int n_delta = track_id - 1;  /* TrackID = 1-based stream index */
 
     if (track_id < 1) {
         av_log(mxf->fc, AV_LOG_ERROR, "TrackID not positive: %i\n", track_id);
-        return AVERROR_INVALIDDATA;
+        ret = AVERROR_INVALIDDATA;
+        goto err_out;
     }
 
     if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)))
-        return ret;
+        goto err_out;
+
+    if (nb_sorted_segments <= 0) {
+        av_log(mxf->fc, AV_LOG_WARNING, "Empty index for stream %i\n", st->index);
+        ret = 0;
+        goto err_out;
+    }
 
     for (j = 0; j < nb_sorted_segments; j++) {
         int duration, sample_duration = 1, last_sample_size = 0;
@@ -1108,6 +1116,12 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
             tableseg->edit_unit_byte_count *= sample_duration;
             duration /= sample_duration;
             if (last_sample_size) duration++;
+        }
+
+        if (duration <= 0) {
+            av_log(mxf->fc, AV_LOG_WARNING, "0 duration in index for stream %i\n", st->index);
+            ret = 0;
+            goto err_out;
         }
 
         for (k = 0; k < duration; k++) {
@@ -1171,6 +1185,11 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st)
     av_free(sorted_segments);
 
     return 0;
+
+err_out:
+    av_free(sorted_segments);
+    mxf->broken_index = 1;
+    return ret;
 }
 
 static int mxf_parse_structural_metadata(MXFContext *mxf)
