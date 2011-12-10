@@ -3395,7 +3395,10 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     ic->interrupt_callback = int_cb;
 
     if (loop_input) {
-        av_log(NULL, AV_LOG_WARNING, "-loop_input is deprecated, use -loop 1\n");
+        av_log(NULL, AV_LOG_WARNING,
+            "-loop_input is deprecated, use -loop 1\n"
+            "Note, both loop options only work with -f image2\n"
+        );
         ic->loop_input = loop_input;
     }
 
