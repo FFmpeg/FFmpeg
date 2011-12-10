@@ -217,6 +217,7 @@ typedef struct {
 /* partial keys to match */
 static const uint8_t mxf_header_partition_pack_key[]       = { 0x06,0x0e,0x2b,0x34,0x02,0x05,0x01,0x01,0x0d,0x01,0x02,0x01,0x01,0x02 };
 static const uint8_t mxf_essence_element_key[]             = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0d,0x01,0x03,0x01 };
+static const uint8_t mxf_avid_essence_element_key[]        = { 0x06,0x0e,0x2b,0x34,0x01,0x02,0x01,0x01,0x0e,0x04,0x03,0x01 };
 static const uint8_t mxf_system_item_key[]                 = { 0x06,0x0E,0x2B,0x34,0x02,0x05,0x01,0x01,0x0D,0x01,0x03,0x01,0x04 };
 static const uint8_t mxf_klv_key[]                         = { 0x06,0x0e,0x2b,0x34 };
 /* complete keys to match */
@@ -390,7 +391,8 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
             }
             return 0;
         }
-        if (IS_KLV_KEY(klv.key, mxf_essence_element_key)) {
+        if (IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
+            IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
             int index = mxf_get_stream_index(s, &klv);
             if (index < 0) {
                 av_log(s, AV_LOG_ERROR, "error getting stream index %d\n", AV_RB32(klv.key+12));
@@ -1601,6 +1603,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
+            IS_KLV_KEY(klv.key, mxf_avid_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_system_item_key)) {
             if (!mxf->current_partition->essence_offset) {
                 compute_partition_essence_offset(s, mxf, &klv);
