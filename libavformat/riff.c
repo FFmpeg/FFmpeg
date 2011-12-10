@@ -287,6 +287,7 @@ const AVCodecTag ff_codec_bmp_tags[] = {
     { CODEC_ID_UTVIDEO,      MKTAG('U', 'L', 'Y', '2') },
     { CODEC_ID_VBLE,         MKTAG('V', 'B', 'L', 'E') },
     { CODEC_ID_ESCAPE130,    MKTAG('E', '1', '3', '0') },
+    { CODEC_ID_DXTORY,       MKTAG('x', 't', 'o', 'r') },
     { CODEC_ID_NONE,         0 }
 };
 

@@ -84,9 +84,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     ptr    = p->data[0];
     stride = p->linesize[0];
 
-    for (y=0; y<h; y++) {
-        if (buf_end - buf < w * bytes_per_pixel)
-            break;
+    for (y = 0; y < h && buf_end - buf >= w * bytes_per_pixel; y++) {
 #if HAVE_BIGENDIAN
         unsigned int x;
         for (x=0; x<w*bytes_per_pixel; x+=bytes_per_pixel)
@@ -100,6 +98,11 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
     *picture = s->picture;
     *data_size = sizeof(AVPicture);
+
+    if (y < h) {
+        av_log(avctx, AV_LOG_WARNING, "incomplete packet\n");
+        return avpkt->size;
+    }
 
     return offset + w*h*bytes_per_pixel;
 }

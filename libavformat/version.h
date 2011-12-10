@@ -21,6 +21,12 @@
 #ifndef AVFORMAT_VERSION_H
 #define AVFORMAT_VERSION_H
 
+/**
+ * @file
+ * @ingroup libavf
+ * Libavformat version macros
+ */
+
 #include "libavutil/avutil.h"
 
 #define LIBAVFORMAT_VERSION_MAJOR 53

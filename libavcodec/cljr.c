@@ -31,7 +31,6 @@
 
 typedef struct CLJRContext {
     AVClass        *avclass;
-    AVCodecContext *avctx;
     AVFrame         picture;
     int             dither_type;
 } CLJRContext;
@@ -42,7 +41,6 @@ static av_cold int common_init(AVCodecContext *avctx)
 
     avcodec_get_frame_defaults(&a->picture);
     avctx->coded_frame = &a->picture;
-    a->avctx = avctx;
 
     return 0;
 }

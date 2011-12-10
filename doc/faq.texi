@@ -11,22 +11,6 @@
 
 @chapter General Questions
 
-@section When will the next FFmpeg version be released? / Why are FFmpeg releases so few and far between?
-
-Like most open source projects FFmpeg suffers from a certain lack of
-manpower. For this reason the developers have to prioritize the work
-they do and putting out releases is not at the top of the list, fixing
-bugs and reviewing patches takes precedence. Please don't complain or
-request more timely and/or frequent releases unless you are willing to
-help out creating them.
-
-@section I have a problem with an old version of FFmpeg; where should I report it?
-Nowhere. We do not support old FFmpeg versions in any way, we simply lack
-the time, motivation and manpower to do so. If you have a problem with an
-old version of FFmpeg, upgrade to the latest git snapshot. If you
-still experience the problem, then you can report it according to the
-guidelines in @url{http://ffmpeg.org/bugreports.html}.
-
 @section Why doesn't FFmpeg support feature [xyz]?
 
 Because no one has taken on that task yet. FFmpeg development is
@@ -39,30 +23,6 @@ it implemented is to undertake the task yourself or sponsor a developer.
 No. Windows DLLs are not portable, bloated and often slow.
 Moreover FFmpeg strives to support all codecs natively.
 A DLL loader is not conducive to that goal.
-
-@section My bug report/mail to ffmpeg-devel/user has not received any replies.
-
-Likely reasons
-@itemize
-@item We are busy and haven't had time yet to read your report or
-investigate the issue.
-@item You didn't follow @url{http://ffmpeg.org/bugreports.html}.
-@item You didn't use git master.
-@item You reported a segmentation fault without gdb output.
-@item You describe a problem but not how to reproduce it.
-@item It's unclear if you use ffmpeg as command line tool or use
-libav* from another application.
-@item You speak about a video having problems on playback but
-not what you use to play it.
-@item We have no faint clue what you are talking about besides
-that it is related to FFmpeg.
-@end itemize
-
-@section Is there a forum for FFmpeg? I do not like mailing lists.
-
-You may view our mailing lists with a more forum-alike look here:
-@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user},
-but, if you post, please remember that our mailing list rules still apply there.
 
 @section I cannot read this file although this format seems to be supported by ffmpeg.
 
@@ -175,15 +135,15 @@ The @file{movie.mpg} used as input will be converted to
 
 Instead of relying on file format self-recognition, you may also use
 @table @option
-@item -vcodec ppm
-@item -vcodec png
-@item -vcodec mjpeg
+@item -c:v ppm
+@item -c:v png
+@item -c:v mjpeg
 @end table
 to force the encoding.
 
 Applying that to the previous example:
 @example
-  ffmpeg -i movie.mpg -f image2 -vcodec mjpeg menu%d.jpg
+  ffmpeg -i movie.mpg -f image2 -c:v mjpeg menu%d.jpg
 @end example
 
 Beware that there is no "jpeg" codec. Use "mjpeg" instead.
@@ -205,55 +165,17 @@ Try '-f image2 test%d.jpg'.
 @section Why can I not change the frame rate?
 
 Some codecs, like MPEG-1/2, only allow a small number of fixed frame rates.
-Choose a different codec with the -vcodec command line option.
+Choose a different codec with the -c:v command line option.
 
 @section How do I encode Xvid or DivX video with ffmpeg?
 
 Both Xvid and DivX (version 4+) are implementations of the ISO MPEG-4
 standard (note that there are many other coding formats that use this
-same standard). Thus, use '-vcodec mpeg4' to encode in these formats. The
+same standard). Thus, use '-c:v mpeg4' to encode in these formats. The
 default fourcc stored in an MPEG-4-coded file will be 'FMP4'. If you want
 a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will
 force the fourcc 'xvid' to be stored as the video fourcc rather than the
 default.
-
-@section How do I encode videos which play on the iPod?
-
-@table @option
-@item needed stuff
--acodec libfaac -vcodec mpeg4 width<=320 height<=240
-@item working stuff
-mv4, title
-@item non-working stuff
-B-frames
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -vcodec mpeg4 -b 1200k -mbd 2 -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -s 320x180 -metadata title=X output.mp4
-@end table
-
-@section How do I encode videos which play on the PSP?
-
-@table @option
-@item needed stuff
--acodec libfaac -vcodec mpeg4 width*height<=76800 width%16=0 height%16=0 -ar 24000 -r 30000/1001 or 15000/1001 -f psp
-@item working stuff
-mv4, title
-@item non-working stuff
-B-frames
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -vcodec mpeg4 -b 1200k -ar 24000 -mbd 2 -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -metadata title=X -f psp output.mp4
-@item needed stuff for H.264
--acodec libfaac -vcodec libx264 width*height<=76800 width%16=0? height%16=0? -ar 48000 -coder 1 -r 30000/1001 or 15000/1001 -f psp
-@item working stuff for H.264
-title, loop filter
-@item non-working stuff for H.264
-CAVLC
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -vcodec libx264 -b 1200k -ar 48000 -mbd 2 -coder 1 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -metadata title=X -f psp -flags loop -trellis 2 -partitions parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 output.mp4
-@item higher resolution for newer PSP firmwares, width<=480, height<=272
--vcodec libx264 -level 21 -coder 1 -f psp
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -level 21 -b 640k -coder 1 -f psp -flags +loop -trellis 2 -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -g 250 -s 480x272 output.mp4
-@end table
 
 @section Which are good parameters for encoding high quality MPEG-4?
 
@@ -300,13 +222,13 @@ equally humble @code{copy} under Windows), and finally transcoding back to your
 format of choice.
 
 @example
-ffmpeg -i input1.avi -sameq intermediate1.mpg
-ffmpeg -i input2.avi -sameq intermediate2.mpg
+ffmpeg -i input1.avi -same_quant intermediate1.mpg
+ffmpeg -i input2.avi -same_quant intermediate2.mpg
 cat intermediate1.mpg intermediate2.mpg > intermediate_all.mpg
-ffmpeg -i intermediate_all.mpg -sameq output.avi
+ffmpeg -i intermediate_all.mpg -same_quant output.avi
 @end example
 
-Notice that you should either use @code{-sameq} or set a reasonably high
+Notice that you should either use @code{-same_quant} or set a reasonably high
 bitrate for your intermediate and output files, if you want to preserve
 video quality.
 
@@ -316,10 +238,10 @@ of named pipes, should your platform support it:
 @example
 mkfifo intermediate1.mpg
 mkfifo intermediate2.mpg
-ffmpeg -i input1.avi -sameq -y intermediate1.mpg < /dev/null &
-ffmpeg -i input2.avi -sameq -y intermediate2.mpg < /dev/null &
+ffmpeg -i input1.avi -same_quant -y intermediate1.mpg < /dev/null &
+ffmpeg -i input2.avi -same_quant -y intermediate2.mpg < /dev/null &
 cat intermediate1.mpg intermediate2.mpg |\
-ffmpeg -f mpeg -i - -sameq -vcodec mpeg4 -acodec libmp3lame output.avi
+ffmpeg -f mpeg -i - -same_quant -c:v mpeg4 -acodec libmp3lame output.avi
 @end example
 
 Similarly, the yuv4mpegpipe format, and the raw video, raw audio codecs also
@@ -346,27 +268,9 @@ cat temp1.a temp2.a > all.a &
 cat temp1.v temp2.v > all.v &
 ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
        -f yuv4mpegpipe -i all.v \
-       -sameq -y output.flv
+       -same_quant -y output.flv
 rm temp[12].[av] all.[av]
 @end example
-
-@section The ffmpeg program does not respect the -maxrate setting, some frames are bigger than maxrate/fps.
-
-Read the MPEG spec about video buffer verifier.
-
-@section I want CBR, but no matter what I do frame sizes differ.
-
-You do not understand what CBR is, please read the MPEG spec.
-Read about video buffer verifier and constant bitrate.
-The one sentence summary is that there is a buffer and the input rate is
-constant, the output can vary as needed.
-
-@section How do I check if a stream is CBR?
-
-To quote the MPEG-2 spec:
-"There is no way to tell that a bitstream is constant bitrate without
-examining all of the vbv_delay values and making complicated computations."
-
 
 @chapter Development
 
@@ -414,7 +318,7 @@ the FFmpeg Windows Help Forum at
 
 No. These tools are too bloated and they complicate the build.
 
-@section Why not rewrite ffmpeg in object-oriented C++?
+@section Why not rewrite FFmpeg in object-oriented C++?
 
 FFmpeg is already organized in a highly modular manner and does not need to
 be rewritten in a formal object language. Further, many of the developers
@@ -433,15 +337,7 @@ Yes, as long as the code is optional and can easily and cleanly be placed
 under #if CONFIG_GPL without breaking anything. So, for example, a new codec
 or filter would be OK under GPL while a bug fix to LGPL code would not.
 
-@section I want to compile xyz.c alone but my compiler produced many errors.
-
-Common code is in its own files in libav* and is used by the individual
-codecs. They will not work without the common parts, you have to compile
-the whole libav*. If you wish, disable some parts with configure switches.
-You can also try to hack it and remove more, but if you had problems fixing
-the compilation failure then you are probably not qualified for this.
-
-@section I'm using libavcodec from within my C++ application but the linker complains about missing symbols which seem to be available.
+@section I'm using FFmpeg from within my C++ application but the linker complains about missing symbols which seem to be available.
 
 FFmpeg is a pure C project, so to use the libraries within your C++ application
 you need to explicitly state that you are using a C library. You can do this by
@@ -458,14 +354,6 @@ to use them you have to append -D__STDC_CONSTANT_MACROS to your CXXFLAGS
 
 You have to implement a URLProtocol, see @file{libavformat/file.c} in
 FFmpeg and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
-
-@section I get "No compatible shell script interpreter found." in MSys.
-
-The standard MSys bash (2.04) is broken. You need to install 2.05 or later.
-
-@section I get "./configure: line <xxx>: pr: command not found" in MSys.
-
-The standard MSys install doesn't come with pr. You need to get it from the coreutils package.
 
 @section Where can I find libav* headers for Pascal/Delphi?
 

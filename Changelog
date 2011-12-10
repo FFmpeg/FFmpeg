@@ -132,6 +132,7 @@ easier to use. The changes are:
 - PCM format support in OMA demuxer
 - CLJR encoder
 - new option: -report
+- Dxtory capture format decoder
 
 
 version 0.8:

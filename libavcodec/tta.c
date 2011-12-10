@@ -233,6 +233,11 @@ static av_cold int tta_decode_init(AVCodecContext * avctx)
         s->data_length = get_bits_long(&s->gb, 32);
         skip_bits(&s->gb, 32); // CRC32 of header
 
+        if (s->channels == 0) {
+            av_log(s->avctx, AV_LOG_ERROR, "Invalid number of channels\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         switch(s->bps) {
         case 1: avctx->sample_fmt = AV_SAMPLE_FMT_U8; break;
         case 2:
