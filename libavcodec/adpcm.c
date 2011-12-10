@@ -340,6 +340,9 @@ static int get_nb_samples(AVCodecContext *avctx, const uint8_t *buf,
 
     *coded_samples = 0;
 
+    if(ch <= 0)
+        return 0;
+
     switch (avctx->codec->id) {
     /* constant, only check buf_size */
     case CODEC_ID_ADPCM_EA_XAS:
