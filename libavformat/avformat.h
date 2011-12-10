@@ -22,6 +22,12 @@
 #define AVFORMAT_AVFORMAT_H
 
 /**
+ * @file
+ * @ingroup libavf
+ * Main libavformat public API header
+ */
+
+/**
  * @defgroup libavf I/O and Muxing/Demuxing Library
  * @{
  *

@@ -22,6 +22,7 @@
 
 /**
  * @file
+ * @ingroup lavf_io
  * Buffered I/O operations
  */
 
