@@ -52,6 +52,7 @@ typedef struct {
     int smv_last_stream;
     int smv_eof;
     int audio_eof;
+    int ignore_length;
 } WAVContext;
 
 #if CONFIG_WAV_MUXER
@@ -618,6 +619,8 @@ smv_out:
     st = s->streams[0];
 
     left = wav->data_end - avio_tell(s->pb);
+    if (wav->ignore_length)
+        left= INT_MAX;
     if (left <= 0){
         if (CONFIG_W64_DEMUXER && wav->w64)
             left = find_guid(s->pb, guid_data) - 24;
@@ -677,6 +680,19 @@ static int wav_read_seek(AVFormatContext *s,
     return pcm_read_seek(s, stream_index, timestamp, flags);
 }
 
+#define OFFSET(x) offsetof(WAVContext, x)
+#define DEC AV_OPT_FLAG_DECODING_PARAM
+static const AVOption demux_options[] = {
+    { "ignore_length", "Ignore length", OFFSET(ignore_length), AV_OPT_TYPE_INT, { 0 }, 0, 1, DEC },
+    { NULL },
+};
+
+static const AVClass wav_demuxer_class = {
+    .class_name = "WAV demuxer",
+    .item_name  = av_default_item_name,
+    .option     = demux_options,
+    .version    = LIBAVUTIL_VERSION_INT,
+};
 AVInputFormat ff_wav_demuxer = {
     .name           = "wav",
     .long_name      = NULL_IF_CONFIG_SMALL("WAV format"),
@@ -687,6 +703,7 @@ AVInputFormat ff_wav_demuxer = {
     .read_seek      = wav_read_seek,
     .flags= AVFMT_GENERIC_INDEX,
     .codec_tag= (const AVCodecTag* const []){ff_codec_wav_tags, 0},
+    .priv_class     = &wav_demuxer_class,
 };
 #endif /* CONFIG_WAV_DEMUXER */
 
