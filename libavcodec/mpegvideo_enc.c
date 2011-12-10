@@ -903,6 +903,10 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
                 uint8_t *src= pic_arg->data[i];
                 uint8_t *dst= pic->data[i];
 
+                if(s->codec_id == CODEC_ID_AMV && !(s->avctx->flags & CODEC_FLAG_EMU_EDGE)){
+                    h= ((s->height+15)/16*16)>>v_shift;
+                }
+
                 if(!s->avctx->rc_buffer_size)
                     dst +=INPLACE_OFFSET;
 
@@ -1558,7 +1562,7 @@ static av_always_inline void encode_mb_internal(MpegEncContext *s, int motion_x,
     ptr_cb = s->new_picture.f.data[1] + (mb_y * mb_block_height * wrap_c) + mb_x * 8;
     ptr_cr = s->new_picture.f.data[2] + (mb_y * mb_block_height * wrap_c) + mb_x * 8;
 
-    if(mb_x*16+16 > s->width || mb_y*16+16 > s->height){
+    if((mb_x*16+16 > s->width || mb_y*16+16 > s->height) && s->codec_id != CODEC_ID_AMV){
         uint8_t *ebuf= s->edge_emu_buffer + 32;
         s->dsp.emulated_edge_mc(ebuf            , ptr_y , wrap_y,16,16,mb_x*16,mb_y*16, s->width   , s->height);
         ptr_y= ebuf;
