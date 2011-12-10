@@ -2175,15 +2175,6 @@ static int stream_component_open(VideoState *is, int stream_index)
 
     opts = filter_codec_opts(codec_opts, avctx->codec_id, ic, ic->streams[stream_index]);
 
-    /* prepare audio output */
-    if (avctx->codec_type == AVMEDIA_TYPE_AUDIO) {
-        if (avctx->channels > 0) {
-            avctx->request_channels = FFMIN(2, avctx->channels);
-        } else {
-            avctx->request_channels = 2;
-        }
-    }
-
     codec = avcodec_find_decoder(avctx->codec_id);
     avctx->debug_mv = debug_mv;
     avctx->debug = debug;
