@@ -11,22 +11,6 @@
 
 @chapter General Questions
 
-@section When will the next Libav version be released? / Why are Libav releases so few and far between?
-
-Like most open source projects Libav suffers from a certain lack of
-manpower. For this reason the developers have to prioritize the work
-they do and putting out releases is not at the top of the list, fixing
-bugs and reviewing patches takes precedence. Please don't complain or
-request more timely and/or frequent releases unless you are willing to
-help out creating them.
-
-@section I have a problem with an old version of Libav; where should I report it?
-Nowhere. We do not support old Libav versions in any way, we simply lack
-the time, motivation and manpower to do so. If you have a problem with an
-old version of Libav, upgrade to the latest git snapshot. If you
-still experience the problem, then you can report it according to our
-@uref{http://libav.org/bugreports.html, bug reporting guidelines}.
-
 @section Why doesn't Libav support feature [xyz]?
 
 Because no one has taken on that task yet. Libav development is
@@ -39,31 +23,6 @@ it implemented is to undertake the task yourself or sponsor a developer.
 No. Windows DLLs are not portable, bloated and often slow.
 Moreover Libav strives to support all codecs natively.
 A DLL loader is not conducive to that goal.
-
-@section My bug report/mail to libav-devel/user has not received any replies.
-
-Likely reasons
-@itemize
-@item We are busy and haven't had time yet to read your report or
-investigate the issue.
-@item You did not follow our
-      @uref{http://libav.org/bugreports.html, bug reporting guidelines}.
-@item You didn't use git master.
-@item You reported a segmentation fault without gdb output.
-@item You describe a problem but not how to reproduce it.
-@item It's unclear if you use ffmpeg as command line tool or use
-libav* from another application.
-@item You speak about a video having problems on playback but
-not what you use to play it.
-@item We have no faint clue what you are talking about besides
-that it is related to Libav.
-@end itemize
-
-@section Is there a forum for Libav? I do not like mailing lists.
-
-You may view our mailing lists with a more forum-alike look here:
-@url{http://dir.gmane.org/gmane.comp.video.ffmpeg.user},
-but, if you post, please remember that our mailing list rules still apply there.
 
 @section I cannot read this file although this format seems to be supported by ffmpeg.
 
@@ -218,44 +177,6 @@ a different fourcc, use the '-vtag' option. E.g., '-vtag xvid' will
 force the fourcc 'xvid' to be stored as the video fourcc rather than the
 default.
 
-@section How do I encode videos which play on the iPod?
-
-@table @option
-@item needed stuff
--acodec libfaac -vcodec mpeg4 width<=320 height<=240
-@item working stuff
-mv4, title
-@item non-working stuff
-B-frames
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -vcodec mpeg4 -b 1200k -mbd 2 -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -s 320x180 -metadata title=X output.mp4
-@end table
-
-@section How do I encode videos which play on the PSP?
-
-@table @option
-@item needed stuff
--acodec libfaac -vcodec mpeg4 width*height<=76800 width%16=0 height%16=0 -ar 24000 -r 30000/1001 or 15000/1001 -f psp
-@item working stuff
-mv4, title
-@item non-working stuff
-B-frames
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -vcodec mpeg4 -b 1200k -ar 24000 -mbd 2 -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -metadata title=X -f psp output.mp4
-@item needed stuff for H.264
--acodec libfaac -vcodec libx264 width*height<=76800 width%16=0? height%16=0? -ar 48000 -coder 1 -r 30000/1001 or 15000/1001 -f psp
-@item working stuff for H.264
-title, loop filter
-@item non-working stuff for H.264
-CAVLC
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -vcodec libx264 -b 1200k -ar 48000 -mbd 2 -coder 1 -cmp 2 -subcmp 2 -s 368x192 -r 30000/1001 -metadata title=X -f psp -flags loop -trellis 2 -partitions parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 output.mp4
-@item higher resolution for newer PSP firmwares, width<=480, height<=272
--vcodec libx264 -level 21 -coder 1 -f psp
-@item example command line
-ffmpeg -i input -acodec libfaac -ab 128k -ac 2 -ar 48000 -vcodec libx264 -level 21 -b 640k -coder 1 -f psp -flags +loop -trellis 2 -partitions +parti4x4+parti8x8+partp4x4+partp8x8+partb8x8 -g 250 -s 480x272 output.mp4
-@end table
-
 @section Which are good parameters for encoding high quality MPEG-4?
 
 '-mbd rd -flags +mv4+aic -trellis 2 -cmp 2 -subcmp 2 -g 300 -pass 1/2',
@@ -351,24 +272,6 @@ ffmpeg -f u16le -acodec pcm_s16le -ac 2 -ar 44100 -i all.a \
 rm temp[12].[av] all.[av]
 @end example
 
-@section The ffmpeg program does not respect the -maxrate setting, some frames are bigger than maxrate/fps.
-
-Read the MPEG spec about video buffer verifier.
-
-@section I want CBR, but no matter what I do frame sizes differ.
-
-You do not understand what CBR is, please read the MPEG spec.
-Read about video buffer verifier and constant bitrate.
-The one sentence summary is that there is a buffer and the input rate is
-constant, the output can vary as needed.
-
-@section How do I check if a stream is CBR?
-
-To quote the MPEG-2 spec:
-"There is no way to tell that a bitstream is constant bitrate without
-examining all of the vbv_delay values and making complicated computations."
-
-
 @chapter Development
 
 @section Are there examples illustrating how to use the Libav libraries, particularly libavcodec and libavformat?
@@ -424,14 +327,6 @@ Yes, as long as the code is optional and can easily and cleanly be placed
 under #if CONFIG_GPL without breaking anything. So for example a new codec
 or filter would be OK under GPL while a bug fix to LGPL code would not.
 
-@section I want to compile xyz.c alone but my compiler produced many errors.
-
-Common code is in its own files in libav* and is used by the individual
-codecs. They will not work without the common parts, you have to compile
-the whole libav*. If you wish, disable some parts with configure switches.
-You can also try to hack it and remove more, but if you had problems fixing
-the compilation failure then you are probably not qualified for this.
-
 @section I'm using libavcodec from within my C++ application but the linker complains about missing symbols which seem to be available.
 
 Libav is a pure C project, so to use the libraries within your C++ application
@@ -449,35 +344,5 @@ to use them you have to append -D__STDC_CONSTANT_MACROS to your CXXFLAGS
 
 You have to implement a URLProtocol, see @file{libavformat/file.c} in
 Libav and @file{libmpdemux/demux_lavf.c} in MPlayer sources.
-
-@section I get "No compatible shell script interpreter found." in MSys.
-
-The standard MSys bash (2.04) is broken. You need to install 2.05 or later.
-
-@section I get "./configure: line <xxx>: pr: command not found" in MSys.
-
-The standard MSys install doesn't come with pr. You need to get it from the coreutils package.
-
-@section Where can I find libav* headers for Pascal/Delphi?
-
-see @url{http://www.iversenit.dk/dev/ffmpeg-headers/}
-
-@section Where is the documentation about ffv1, msmpeg4, asv1, 4xm?
-
-see @url{http://www.ffmpeg.org/~michael/}
-
-@section How do I feed H.263-RTP (and other codecs in RTP) to libavcodec?
-
-Even if peculiar since it is network oriented, RTP is a container like any
-other. You have to @emph{demux} RTP before feeding the payload to libavcodec.
-In this specific case please look at RFC 4629 to see how it should be done.
-
-@section AVStream.r_frame_rate is wrong, it is much larger than the framerate.
-
-r_frame_rate is NOT the average framerate, it is the smallest framerate
-that can accurately represent all timestamps. So no, it is not
-wrong if it is larger than the average!
-For example, if you have mixed 25 and 30 fps content, then r_frame_rate
-will be 150.
 
 @bye
