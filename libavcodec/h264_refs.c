@@ -586,6 +586,8 @@ int ff_h264_execute_ref_pic_marking(H264Context *h, MMCO *mmco, int mmco_count){
             s->current_picture_ptr->frame_num= 0;
             h->mmco_reset = 1;
             s->current_picture_ptr->mmco_reset=1;
+            for (j = 0; j < MAX_DELAYED_PIC_COUNT; j++)
+                h->last_pocs[j] = INT_MIN;
             break;
         default: assert(0);
         }
