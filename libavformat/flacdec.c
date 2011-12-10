@@ -102,7 +102,7 @@ static int flac_read_header(AVFormatContext *s,
             uint8_t isrc[13];
             uint64_t start;
             const uint8_t *offset;
-            int i, j, chapters, track, ti;
+            int i, chapters, track, ti;
             if (metadata_size < 431)
                 return AVERROR_INVALIDDATA;
             offset = buffer + 395;
@@ -119,8 +119,7 @@ static int flac_read_header(AVFormatContext *s,
                 offset += 14;
                 ti = bytestream_get_byte(&offset);
                 if (ti <= 0) return AVERROR_INVALIDDATA;
-                for (j = 0; j < ti; j++)
-                    offset += 12;
+                offset += ti * 12;
                 avpriv_new_chapter(s, track, st->time_base, start, AV_NOPTS_VALUE, isrc);
             }
         } else {
