@@ -3518,40 +3518,6 @@ static int copy_chapters(InputFile *ifile, OutputFile *ofile, int copy_metadata)
     return 0;
 }
 
-static int read_avserver_streams(OptionsContext *o, AVFormatContext *s, const char *filename)
-{
-    int i, err;
-    AVFormatContext *ic = avformat_alloc_context();
-
-    ic->interrupt_callback = int_cb;
-    err = avformat_open_input(&ic, filename, NULL, NULL);
-    if (err < 0)
-        return err;
-    /* copy stream format */
-    for(i=0;i<ic->nb_streams;i++) {
-        AVStream *st;
-        OutputStream *ost;
-        AVCodec *codec;
-
-        codec = avcodec_find_encoder(ic->streams[i]->codec->codec_id);
-        ost   = new_output_stream(o, s, codec->type);
-        st    = ost->st;
-
-        // FIXME: a more elegant solution is needed
-        memcpy(st, ic->streams[i], sizeof(AVStream));
-        st->info = NULL;
-        avcodec_copy_context(st->codec, ic->streams[i]->codec);
-
-        if (st->codec->codec_type == AVMEDIA_TYPE_AUDIO && !ost->stream_copy)
-            choose_sample_fmt(st, codec);
-        else if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && !ost->stream_copy)
-            choose_pixel_fmt(st, codec);
-    }
-
-    av_close_input_file(ic);
-    return 0;
-}
-
 static void opt_output_file(void *optctx, const char *filename)
 {
     OptionsContext *o = optctx;
@@ -3589,16 +3555,7 @@ static void opt_output_file(void *optctx, const char *filename)
     oc->interrupt_callback = int_cb;
     av_strlcpy(oc->filename, filename, sizeof(oc->filename));
 
-    if (!strcmp(file_oformat->name, "ffm") &&
-        av_strstart(filename, "http:", NULL)) {
-        /* special case for files sent to avserver: we get the stream
-           parameters from avserver */
-        int err = read_avserver_streams(o, oc, filename);
-        if (err < 0) {
-            print_error(filename, err);
-            exit_program(1);
-        }
-    } else if (!o->nb_stream_maps) {
+    if (!o->nb_stream_maps) {
         /* pick the "best" stream of each type */
 #define NEW_STREAM(type, index)\
         if (index >= 0) {\
