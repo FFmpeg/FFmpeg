@@ -50,6 +50,7 @@ Allow to store the value of the expression @var{expr} in an internal
 variable. @var{var} specifies the number of the variable where to
 store the value, and it is a value ranging from 0 to 9. The function
 returns the value stored in the internal variable.
+Note, Variables are currently not shared between expressions.
 
 @item ld(var)
 Allow to load the value of the internal variable with number
