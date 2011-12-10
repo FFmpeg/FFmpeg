@@ -2371,7 +2371,7 @@ static void implicit_weight_table(H264Context *h, int field){
 static void idr(H264Context *h){
     int i;
     ff_h264_remove_all_refs(h);
-    h->prev_frame_num= -1;
+    h->prev_frame_num= 0;
     h->prev_frame_num_offset= 0;
     h->prev_poc_msb= 1<<16;
     h->prev_poc_lsb= 0;
@@ -2391,6 +2391,7 @@ static void flush_dpb(AVCodecContext *avctx){
     h->outputed_poc=h->next_outputed_poc= INT_MIN;
     h->prev_interlaced_frame = 1;
     idr(h);
+    h->prev_frame_num= -1;
     if(h->s.current_picture_ptr)
         h->s.current_picture_ptr->f.reference = 0;
     h->s.first_field= 0;
