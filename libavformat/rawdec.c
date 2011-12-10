@@ -159,7 +159,7 @@ int ff_raw_video_read_header(AVFormatContext *s,
         goto fail;
     }
 
-    st->codec->time_base = (AVRational){framerate.den, framerate.num};
+    st->r_frame_rate = st->avg_frame_rate = framerate;
     avpriv_set_pts_info(st, 64, 1, 1200000);
 
 fail:
