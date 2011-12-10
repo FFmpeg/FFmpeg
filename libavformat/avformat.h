@@ -33,7 +33,7 @@
  * @{
  * @}
  *
- * @defgroup lavf_proto I/O Read/Write
+ * @defgroup lavf_io I/O Read/Write
  * @{
  * @}
  *
