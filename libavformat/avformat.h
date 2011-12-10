@@ -94,9 +94,15 @@ struct AVFormatContext;
  * @{
  * @ingroup libavf
  * The metadata API allows libavformat to export metadata tags to a client
- * application using a sequence of key/value pairs. Like all strings in Libav,
- * metadata must be stored as UTF-8 encoded Unicode. Note that metadata
+ * application when demuxing. Conversely it allows a client application to
+ * set metadata when muxing.
+ *
+ * Metadata is exported or set as pairs of key/value strings in the 'metadata'
+ * fields of the AVFormatContext, AVStream, AVChapter and AVProgram structs
+ * using the @ref lavu_dict "AVDictionary" API. Like all strings in Libav,
+ * metadata is assumed to be UTF-8 encoded Unicode. Note that metadata
  * exported by demuxers isn't checked to be valid UTF-8 in most cases.
+ *
  * Important concepts to keep in mind:
  * -  Keys are unique; there can never be 2 tags with the same key. This is
  *    also meant semantically, i.e., a demuxer should not knowingly produce
