@@ -47,7 +47,7 @@ include $(SRC_PATH)/common.mak
 FF_EXTRALIBS := $(FFEXTRALIBS)
 FF_DEP_LIBS  := $(DEP_LIBS)
 
-all: $(PROGS)
+all: $(filter-out avconv, $(PROGS))
 
 $(PROGS): %$(EXESUF): %$(PROGSSUF)_g$(EXESUF)
 	$(CP) $< $@$(PROGSSUF)
