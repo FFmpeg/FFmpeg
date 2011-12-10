@@ -323,6 +323,10 @@ typedef struct AVFormatParameters {
 #define AVFMT_NOGENSEARCH   0x4000 /**< Format does not allow to fallback to generic search */
 #define AVFMT_NO_BYTE_SEEK  0x8000 /**< Format does not allow seeking by bytes */
 
+/**
+ * @addtogroup lavf_encoding
+ * @{
+ */
 typedef struct AVOutputFormat {
     const char *name;
     /**
@@ -381,6 +385,9 @@ typedef struct AVOutputFormat {
     /* private fields */
     struct AVOutputFormat *next;
 } AVOutputFormat;
+/**
+ * @}
+ */
 
 /**
  * @addtogroup lavf_decoding
@@ -1616,9 +1623,6 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
                       int64_t (*read_timestamp)(struct AVFormatContext *, int , int64_t *, int64_t ));
 #endif
 
-/**
- * media file output
- */
 #if FF_API_FORMAT_PARAMETERS
 /**
  * @deprecated pass the options to avformat_write_header directly.
@@ -1651,7 +1655,10 @@ void av_url_split(char *proto,         int proto_size,
                   int *port_ptr,
                   char *path,          int path_size,
                   const char *url);
-
+/**
+ * @addtogroup lavf_encoding
+ * @{
+ */
 /**
  * Allocate the stream private data and write the stream header to
  * an output media file.
@@ -1743,6 +1750,9 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
  * @return 0 if OK, AVERROR_xxx on error
  */
 int av_write_trailer(AVFormatContext *s);
+/**
+ * @}
+ */
 
 #if FF_API_DUMP_FORMAT
 attribute_deprecated void dump_format(AVFormatContext *ic,
