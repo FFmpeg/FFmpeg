@@ -84,7 +84,7 @@ static int ptx_decode_frame(AVCodecContext *avctx, void *data, int *data_size,
     ptr    = p->data[0];
     stride = p->linesize[0];
 
-    for (y = 0; y < h && buf_end - buf < w * bytes_per_pixel; y++) {
+    for (y = 0; y < h && buf_end - buf >= w * bytes_per_pixel; y++) {
 #if HAVE_BIGENDIAN
         unsigned int x;
         for (x=0; x<w*bytes_per_pixel; x+=bytes_per_pixel)
