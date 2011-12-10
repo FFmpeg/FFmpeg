@@ -382,6 +382,10 @@ typedef struct AVOutputFormat {
     struct AVOutputFormat *next;
 } AVOutputFormat;
 
+/**
+ * @addtogroup lavf_decoding
+ * @{
+ */
 typedef struct AVInputFormat {
     /**
      * A comma separated list of short names for the format. New names
@@ -503,6 +507,9 @@ typedef struct AVInputFormat {
     /* private fields */
     struct AVInputFormat *next;
 } AVInputFormat;
+/**
+ * @}
+ */
 
 enum AVStreamParseType {
     AVSTREAM_PARSE_NONE,
@@ -1228,7 +1235,17 @@ enum CodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int
  */
 unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum CodecID id);
 
-/* media file input */
+/**
+ * Allocate an AVFormatContext.
+ * avformat_free_context() can be used to free the context and everything
+ * allocated by the framework within it.
+ */
+AVFormatContext *avformat_alloc_context(void);
+
+/**
+ * @addtogroup lavf_decoding
+ * @{
+ */
 
 /**
  * Find AVInputFormat based on the short name of the input format.
@@ -1325,13 +1342,6 @@ attribute_deprecated int av_open_input_file(AVFormatContext **ic_ptr, const char
  * @note If you want to use custom IO, preallocate the format context and set its pb field.
  */
 int avformat_open_input(AVFormatContext **ps, const char *filename, AVInputFormat *fmt, AVDictionary **options);
-
-/**
- * Allocate an AVFormatContext.
- * avformat_free_context() can be used to free the context and everything
- * allocated by the framework within it.
- */
-AVFormatContext *avformat_alloc_context(void);
 
 #if FF_API_FORMAT_PARAMETERS
 /**
@@ -1512,6 +1522,9 @@ void av_close_input_stream(AVFormatContext *s);
  * @param s media file handle
  */
 void av_close_input_file(AVFormatContext *s);
+/**
+ * @}
+ */
 
 /**
  * Free an AVFormatContext and all its streams.
