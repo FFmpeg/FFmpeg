@@ -22,6 +22,10 @@ avserver [options]
 @chapter Description
 @c man begin DESCRIPTION
 
+WARNING: avserver is unmaintained, largely broken and in need of a
+complete rewrite. It probably won't work for you. Use at your own
+risk.
+
 avserver is a streaming server for both audio and video. It supports
 several live feeds, streaming from files and time shifting on live feeds
 (you can seek to positions in the past on each live feed, provided you
