@@ -105,6 +105,12 @@ do_video_encoding()
     do_avconv $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS $2
 }
 
+do_video_encoding_nomd5()
+{
+    file=${outfile}$1
+    do_avconv_nomd5 $file $DEC_OPTS -f image2 -vcodec pgmyuv -i $raw_src $ENC_OPTS $2
+}
+
 do_audio_encoding()
 {
     file=${outfile}$1
