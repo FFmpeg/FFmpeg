@@ -1531,7 +1531,7 @@ static void decode_postinit(H264Context *h, int setup_finished){
         } else
             h->next_outputed_poc = out->poc;
     }else{
-        av_log(s->avctx, AV_LOG_DEBUG, "no picture\n");
+        av_log(s->avctx, AV_LOG_DEBUG, "no picture %s\n", out_of_order ? "ooo" : "");
     }
 
     if (h->next_output_pic && h->next_output_pic->sync) {
