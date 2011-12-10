@@ -86,6 +86,7 @@ struct AVFormatContext;
 /**
  * @defgroup metadata_api Public Metadata API
  * @{
+ * @ingroup libavf
  * The metadata API allows libavformat to export metadata tags to a client
  * application using a sequence of key/value pairs. Like all strings in Libav,
  * metadata must be stored as UTF-8 encoded Unicode. Note that metadata
