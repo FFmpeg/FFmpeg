@@ -209,7 +209,6 @@ enum CodecID {
     CODEC_ID_8SVX_FIB,
 #endif
     CODEC_ID_ESCAPE124,
-    CODEC_ID_ESCAPE130,
     CODEC_ID_DIRAC,
     CODEC_ID_BFI,
     CODEC_ID_CMV,
@@ -255,6 +254,7 @@ enum CodecID {
     CODEC_ID_BMV_VIDEO,
     CODEC_ID_VBLE,
     CODEC_ID_UTVIDEO = 0x800,
+    CODEC_ID_ESCAPE130  = MKBETAG('E','1','3','0'),
 
     CODEC_ID_G2M        = MKBETAG( 0 ,'G','2','M'),
 
