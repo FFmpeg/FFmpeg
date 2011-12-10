@@ -211,6 +211,7 @@ extern URLInterruptCB *url_interrupt_cb;
  * @defgroup old_url_funcs Old url_* functions
  * The following functions are deprecated. Use the buffered API based on #AVIOContext instead.
  * @{
+ * @ingroup lavf_io
  */
 attribute_deprecated int url_open_protocol (URLContext **puc, struct URLProtocol *up,
                                             const char *url, int flags);
@@ -270,6 +271,7 @@ attribute_deprecated AVIOContext *av_alloc_put_byte(
  * @defgroup old_avio_funcs Old put_/get_*() functions
  * The following functions are deprecated. Use the "avio_"-prefixed functions instead.
  * @{
+ * @ingroup lavf_io
  */
 attribute_deprecated int          get_buffer(AVIOContext *s, unsigned char *buf, int size);
 attribute_deprecated int          get_partial_buffer(AVIOContext *s, unsigned char *buf, int size);
@@ -307,6 +309,7 @@ attribute_deprecated int64_t av_url_read_fseek (AVIOContext *h,    int stream_in
  * @defgroup old_url_f_funcs Old url_f* functions
  * The following functions are deprecated, use the "avio_"-prefixed functions instead.
  * @{
+ * @ingroup lavf_io
  */
 attribute_deprecated int url_fopen( AVIOContext **s, const char *url, int flags);
 attribute_deprecated int url_fclose(AVIOContext *s);
