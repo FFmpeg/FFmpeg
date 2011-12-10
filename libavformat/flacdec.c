@@ -25,6 +25,7 @@
 #include "rawdec.h"
 #include "oggdec.h"
 #include "vorbiscomment.h"
+#include "libavcodec/bytestream.h"
 
 static int flac_read_header(AVFormatContext *s,
                              AVFormatParameters *ap)
@@ -54,6 +55,7 @@ static int flac_read_header(AVFormatContext *s,
         switch (metadata_type) {
         /* allocate and read metadata block for supported types */
         case FLAC_METADATA_TYPE_STREAMINFO:
+        case FLAC_METADATA_TYPE_CUESHEET:
         case FLAC_METADATA_TYPE_VORBIS_COMMENT:
             buffer = av_mallocz(metadata_size + FF_INPUT_BUFFER_PADDING_SIZE);
             if (!buffer) {
@@ -95,6 +97,31 @@ static int flac_read_header(AVFormatContext *s,
                 avpriv_set_pts_info(st, 64, 1, si.samplerate);
                 if (si.samples > 0)
                     st->duration = si.samples;
+            }
+        } else if (metadata_type == FLAC_METADATA_TYPE_CUESHEET) {
+            uint8_t isrc[13];
+            uint64_t start;
+            const uint8_t *offset;
+            int i, j, chapters, track, ti;
+            if (metadata_size < 431)
+                return AVERROR_INVALIDDATA;
+            offset = buffer + 395;
+            chapters = bytestream_get_byte(&offset) - 1;
+            if (chapters <= 0)
+                return AVERROR_INVALIDDATA;
+            for (i = 0; i < chapters; i++) {
+                if (offset + 36 - buffer > metadata_size)
+                    return AVERROR_INVALIDDATA;
+                start = bytestream_get_be64(&offset);
+                track = bytestream_get_byte(&offset);
+                bytestream_get_buffer(&offset, isrc, 12);
+                isrc[12] = 0;
+                offset += 14;
+                ti = bytestream_get_byte(&offset);
+                if (ti <= 0) return AVERROR_INVALIDDATA;
+                for (j = 0; j < ti; j++)
+                    offset += 12;
+                avpriv_new_chapter(s, track, st->time_base, start, AV_NOPTS_VALUE, isrc);
             }
         } else {
             /* STREAMINFO must be the first block */
