@@ -1212,79 +1212,12 @@ AVProgram *av_new_program(AVFormatContext *s, int id);
 attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
 #endif
 
-/**
- * Send a nice hexadecimal dump of a buffer to the specified file stream.
- *
- * @param f The file stream pointer where the dump should be sent to.
- * @param buf buffer
- * @param size buffer size
- *
- * @see av_hex_dump_log, av_pkt_dump2, av_pkt_dump_log2
- */
-void av_hex_dump(FILE *f, uint8_t *buf, int size);
-
-/**
- * Send a nice hexadecimal dump of a buffer to the log.
- *
- * @param avcl A pointer to an arbitrary struct of which the first field is a
- * pointer to an AVClass struct.
- * @param level The importance level of the message, lower values signifying
- * higher importance.
- * @param buf buffer
- * @param size buffer size
- *
- * @see av_hex_dump, av_pkt_dump2, av_pkt_dump_log2
- */
-void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
-
-/**
- * Send a nice dump of a packet to the specified file stream.
- *
- * @param f The file stream pointer where the dump should be sent to.
- * @param pkt packet to dump
- * @param dump_payload True if the payload must be displayed, too.
- * @param st AVStream that the packet belongs to
- */
-void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st);
-
-
-/**
- * Send a nice dump of a packet to the log.
- *
- * @param avcl A pointer to an arbitrary struct of which the first field is a
- * pointer to an AVClass struct.
- * @param level The importance level of the message, lower values signifying
- * higher importance.
- * @param pkt packet to dump
- * @param dump_payload True if the payload must be displayed, too.
- * @param st AVStream that the packet belongs to
- */
-void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
-                      AVStream *st);
-
 #if FF_API_PKT_DUMP
 attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
 attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
                                           int dump_payload);
 #endif
 
-/**
- * Get the CodecID for the given codec tag tag.
- * If no codec id is found returns CODEC_ID_NONE.
- *
- * @param tags list of supported codec_id-codec_tag pairs, as stored
- * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
- */
-enum CodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int tag);
-
-/**
- * Get the codec tag for the given codec id id.
- * If no codec tag is found returns 0.
- *
- * @param tags list of supported codec_id-codec_tag pairs, as stored
- * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
- */
-unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum CodecID id);
 
 /**
  * @addtogroup lavf_decoding
@@ -1599,27 +1532,6 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
 #define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
 
-int av_find_default_stream_index(AVFormatContext *s);
-
-/**
- * Get the index for a specific timestamp.
- * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond
- *                 to the timestamp which is <= the requested one, if backward
- *                 is 0, then it will be >=
- *              if AVSEEK_FLAG_ANY seek to any frame, only keyframes otherwise
- * @return < 0 if no such timestamp could be found
- */
-int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
-
-/**
- * Add an index entry into a sorted list. Update the entry if the list
- * already contains it.
- *
- * @param timestamp timestamp in the time base of the given stream
- */
-int av_add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
-                       int size, int distance, int flags);
-
 #if FF_API_SEEK_PUBLIC
 attribute_deprecated
 int av_seek_frame_binary(AVFormatContext *s, int stream_index,
@@ -1642,31 +1554,6 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
 attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 #endif
 
-/**
- * Split a URL string into components.
- *
- * The pointers to buffers for storing individual components may be null,
- * in order to ignore that component. Buffers for components not found are
- * set to empty strings. If the port is not found, it is set to a negative
- * value.
- *
- * @param proto the buffer for the protocol
- * @param proto_size the size of the proto buffer
- * @param authorization the buffer for the authorization
- * @param authorization_size the size of the authorization buffer
- * @param hostname the buffer for the host name
- * @param hostname_size the size of the hostname buffer
- * @param port_ptr a pointer to store the port number in
- * @param path the buffer for the path
- * @param path_size the size of the path buffer
- * @param url the URL to split
- */
-void av_url_split(char *proto,         int proto_size,
-                  char *authorization, int authorization_size,
-                  char *hostname,      int hostname_size,
-                  int *port_ptr,
-                  char *path,          int path_size,
-                  const char *url);
 /**
  * @addtogroup lavf_encoding
  * @{
@@ -1790,6 +1677,132 @@ enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
  * @}
  */
 
+
+/**
+ * @defgroup lavf_misc Utility functions
+ * @ingroup libavf
+ * @{
+ *
+ * Miscelaneous utility functions related to both muxing and demuxing
+ * (or neither).
+ */
+
+/**
+ * Send a nice hexadecimal dump of a buffer to the specified file stream.
+ *
+ * @param f The file stream pointer where the dump should be sent to.
+ * @param buf buffer
+ * @param size buffer size
+ *
+ * @see av_hex_dump_log, av_pkt_dump2, av_pkt_dump_log2
+ */
+void av_hex_dump(FILE *f, uint8_t *buf, int size);
+
+/**
+ * Send a nice hexadecimal dump of a buffer to the log.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param buf buffer
+ * @param size buffer size
+ *
+ * @see av_hex_dump, av_pkt_dump2, av_pkt_dump_log2
+ */
+void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
+
+/**
+ * Send a nice dump of a packet to the specified file stream.
+ *
+ * @param f The file stream pointer where the dump should be sent to.
+ * @param pkt packet to dump
+ * @param dump_payload True if the payload must be displayed, too.
+ * @param st AVStream that the packet belongs to
+ */
+void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st);
+
+
+/**
+ * Send a nice dump of a packet to the log.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param pkt packet to dump
+ * @param dump_payload True if the payload must be displayed, too.
+ * @param st AVStream that the packet belongs to
+ */
+void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
+                      AVStream *st);
+
+/**
+ * Get the CodecID for the given codec tag tag.
+ * If no codec id is found returns CODEC_ID_NONE.
+ *
+ * @param tags list of supported codec_id-codec_tag pairs, as stored
+ * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ */
+enum CodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int tag);
+
+/**
+ * Get the codec tag for the given codec id id.
+ * If no codec tag is found returns 0.
+ *
+ * @param tags list of supported codec_id-codec_tag pairs, as stored
+ * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ */
+unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum CodecID id);
+
+int av_find_default_stream_index(AVFormatContext *s);
+
+/**
+ * Get the index for a specific timestamp.
+ * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond
+ *                 to the timestamp which is <= the requested one, if backward
+ *                 is 0, then it will be >=
+ *              if AVSEEK_FLAG_ANY seek to any frame, only keyframes otherwise
+ * @return < 0 if no such timestamp could be found
+ */
+int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
+
+/**
+ * Add an index entry into a sorted list. Update the entry if the list
+ * already contains it.
+ *
+ * @param timestamp timestamp in the time base of the given stream
+ */
+int av_add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
+                       int size, int distance, int flags);
+
+
+/**
+ * Split a URL string into components.
+ *
+ * The pointers to buffers for storing individual components may be null,
+ * in order to ignore that component. Buffers for components not found are
+ * set to empty strings. If the port is not found, it is set to a negative
+ * value.
+ *
+ * @param proto the buffer for the protocol
+ * @param proto_size the size of the proto buffer
+ * @param authorization the buffer for the authorization
+ * @param authorization_size the size of the authorization buffer
+ * @param hostname the buffer for the host name
+ * @param hostname_size the size of the hostname buffer
+ * @param port_ptr a pointer to store the port number in
+ * @param path the buffer for the path
+ * @param path_size the size of the path buffer
+ * @param url the URL to split
+ */
+void av_url_split(char *proto,         int proto_size,
+                  char *authorization, int authorization_size,
+                  char *hostname,      int hostname_size,
+                  int *port_ptr,
+                  char *path,          int path_size,
+                  const char *url);
+
 #if FF_API_DUMP_FORMAT
 attribute_deprecated void dump_format(AVFormatContext *ic,
                                       int index,
@@ -1886,5 +1899,9 @@ int av_match_ext(const char *filename, const char *extensions);
  *         A negative number if this information is not available.
  */
 int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance);
+
+/**
+ * @}
+ */
 
 #endif /* AVFORMAT_AVFORMAT_H */
