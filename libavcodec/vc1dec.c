@@ -568,6 +568,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     }
 
     if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+        || s->h_edge_pos < 22 || v_edge_pos < 22
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx&3) - 16 - s->mspel * 3
         || (unsigned)(src_y - s->mspel) > v_edge_pos    - (my&3) - 16 - s->mspel * 3) {
         uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
@@ -799,6 +800,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
     if (fieldmv && (src_y & 1) && src_y < 4)
         src_y--;
     if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+        || s->h_edge_pos < 13 || v_edge_pos < 23
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx & 3) - 8 - s->mspel * 2
         || (unsigned)(src_y - (s->mspel << fieldmv)) > v_edge_pos - (my & 3) - ((8 + s->mspel * 2) << fieldmv)) {
         srcY -= s->mspel * (1 + (s->linesize << fieldmv));
@@ -998,6 +1000,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
     }
 
     if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
+        || s->h_edge_pos < 18 || v_edge_pos < 18
         || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 9
         || (unsigned)uvsrc_y > (v_edge_pos    >> 1) - 9) {
         s->dsp.emulated_edge_mc(s->edge_emu_buffer     , srcU, s->uvlinesize,
@@ -1102,6 +1105,7 @@ static void vc1_mc_4mv_chroma4(VC1Context *v)
         if (fieldmv && (uvsrc_y & 1) && uvsrc_y < 2)
             uvsrc_y--;
         if ((v->mv_mode == MV_PMODE_INTENSITY_COMP)
+            || s->h_edge_pos < 10 || v_edge_pos < (5 << fieldmv)
             || (unsigned)uvsrc_x > (s->h_edge_pos >> 1) - 5
             || (unsigned)uvsrc_y > v_edge_pos - (5 << fieldmv)) {
             s->dsp.emulated_edge_mc(s->edge_emu_buffer, srcU, s->uvlinesize,
@@ -2006,7 +2010,7 @@ static void vc1_interp_mc(VC1Context *v)
         srcV = s->edge_emu_buffer + 18 * s->linesize;
     }
 
-    if (v->rangeredfrm
+    if (v->rangeredfrm || s->h_edge_pos < 22 || v_edge_pos < 22
         || (unsigned)(src_x - s->mspel) > s->h_edge_pos - (mx & 3) - 16 - s->mspel * 3
         || (unsigned)(src_y - s->mspel) > v_edge_pos    - (my & 3) - 16 - s->mspel * 3) {
         uint8_t *uvbuf = s->edge_emu_buffer + 19 * s->linesize;
