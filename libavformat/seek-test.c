@@ -48,13 +48,12 @@ static const char *ret_str(int v)
 
 static void ts_str(char buffer[60], int64_t ts, AVRational base)
 {
-    double tsval;
     if (ts == AV_NOPTS_VALUE) {
         strcpy(buffer, " NOPTS   ");
         return;
     }
-    tsval = ts * av_q2d(base);
-    snprintf(buffer, 60, "%9f", tsval);
+    ts= av_rescale_q(ts, base, (AVRational){1, 1000000});
+    snprintf(buffer, 60, "%c%Ld.%06Ld", ts<0 ? '-' : ' ', FFABS(ts)/1000000, FFABS(ts)%1000000);
 }
 
 int main(int argc, char **argv)
