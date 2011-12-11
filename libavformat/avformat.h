@@ -31,6 +31,41 @@
  * @defgroup libavf I/O and Muxing/Demuxing Library
  * @{
  *
+ * Libavformat (lavf) is a library for dealing with various media container
+ * formats. Its main two purposes are demuxing - i.e. splitting a media file
+ * into component streams, and the reverse process of muxing - writing supplied
+ * data in a specified container format. It also has an @ref lavf_io
+ * "I/O module" which supports a number of protocols for accessing the data (e.g.
+ * file, tcp, http and others). Before using lavf, you need to call
+ * av_register_all() to register all compiled muxers, demuxers and protocols.
+ * Unless you are absolutely sure you won't use libavformat's network
+ * capabilities, you should also call avformat_network_init().
+ *
+ * A supported input format is described by an AVInputFormat struct, conversely
+ * an output format is described by AVOutputFormat. You can iterate over all
+ * registered input/output formats using the av_iformat_next() /
+ * av_oformat_next() functions. The protocols layer is not part of the public
+ * API, so you can only get the names of supported protocols with the
+ * avio_enum_protocols() function.
+ *
+ * Main lavf structure used for both muxing and demuxing is AVFormatContext,
+ * which exports all information about the file being read or written. As with
+ * most Libav structures, its size is not part of public ABI, so it cannot be
+ * allocated on stack or directly with av_malloc(). To create an
+ * AVFormatContext, use avformat_alloc_context() (some functions, like
+ * avformat_open_input() might do that for you).
+ *
+ * Most importantly an AVFormatContext contains:
+ * @li the @ref AVFormatContext.iformat "input" or @ref AVFormatContext.oformat
+ * "output" format. It is either autodetected or set by user for input;
+ * always set by user for output.
+ * @li an @ref AVFormatContext.streams "array" of AVStreams, which describe all
+ * elementary streams stored in the file. AVStreams are typically referred to
+ * using their index in this array.
+ * @li an @ref AVFormatContext.pb "I/O context". It is either opened by lavf or
+ * set by user for input, always set by user for output (unless you are dealing
+ * with an AVFMT_NOFILE format).
+ *
  * @defgroup lavf_decoding Demuxing
  * @{
  * @}
