@@ -1570,12 +1570,22 @@ attribute_deprecated
 void av_close_input_stream(AVFormatContext *s);
 #endif
 
+#if FF_API_CLOSE_INPUT_FILE
 /**
+ * @deprecated use avformat_close_input()
  * Close a media file (but not its codecs).
  *
  * @param s media file handle
  */
+attribute_deprecated
 void av_close_input_file(AVFormatContext *s);
+#endif
+
+/**
+ * Close an opened input AVFormatContext. Free it and all its contents
+ * and set *s to NULL.
+ */
+void avformat_close_input(AVFormatContext **s);
 /**
  * @}
  */

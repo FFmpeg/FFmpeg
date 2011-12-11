@@ -13,6 +13,10 @@ libavutil:   2011-04-18
 
 API changes, most recent first:
 
+2011-xx-xx - xxxxxxx - lavf 53.17.0
+  Add avformat_open_input().
+  Deprecate av_close_input_file() and av_close_input_stream().
+
 2011-xx-xx - xxxxxxx - lavc 53.25.0
   Add nb_samples and extended_data fields to AVFrame.
   Deprecate AVCODEC_MAX_AUDIO_FRAME_SIZE.
