@@ -19,6 +19,28 @@
 #ifndef AVDEVICE_AVDEVICE_H
 #define AVDEVICE_AVDEVICE_H
 
+/**
+ * @file
+ * @ingroup lavd
+ * Main libavdevice API header
+ */
+
+/**
+ * @defgroup lavd Special devices muxing/demuxing library
+ * @{
+ * Libavdevice is a complementary library to @ref libavf "libavformat". It
+ * provides various "special" platform-specific muxers and demuxers, e.g. for
+ * grabbing devices, audio capture and playback etc. As a consequence, the
+ * (de)muxers in libavdevice are of the AVFMT_NOFILE type (they use their own
+ * I/O functions). The filename passed to avformat_open_input() often does not
+ * refer to an actually existing file, but has some special device-specific
+ * meaning - e.g. for the x11grab device it is the display name.
+ *
+ * To use libavdevice, simply call avdevice_register_all() to register all
+ * compiled muxers and demuxers. They all use standard libavformat API.
+ * @}
+ */
+
 #include "libavutil/avutil.h"
 
 #define LIBAVDEVICE_VERSION_MAJOR 53
