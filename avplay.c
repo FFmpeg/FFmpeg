@@ -2593,8 +2593,7 @@ static int decode_thread(void *arg)
     if (is->subtitle_stream >= 0)
         stream_component_close(is, is->subtitle_stream);
     if (is->ic) {
-        av_close_input_file(is->ic);
-        is->ic = NULL; /* safety */
+        avformat_close_input(&is->ic);
     }
     avio_set_interrupt_cb(NULL);
 

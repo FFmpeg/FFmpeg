@@ -127,7 +127,7 @@ int main(int argc, char **argv)
         printf("ret:%-10s st:%2d flags:%d  ts:%s\n", ret_str(ret), stream_id, i&1, ts_buf);
     }
 
-    av_close_input_file(ic);
+    avformat_close_input(&ic);
 
     return 0;
 }

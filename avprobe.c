@@ -325,7 +325,7 @@ static int probe_file(const char *filename)
     if (do_show_format)
         show_format(fmt_ctx);
 
-    av_close_input_file(fmt_ctx);
+    avformat_close_input(&fmt_ctx);
     return 0;
 }
 

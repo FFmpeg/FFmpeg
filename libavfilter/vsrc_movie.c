@@ -192,7 +192,7 @@ static av_cold void uninit(AVFilterContext *ctx)
     if (movie->codec_ctx)
         avcodec_close(movie->codec_ctx);
     if (movie->format_ctx)
-        av_close_input_file(movie->format_ctx);
+        avformat_close_input(&movie->format_ctx);
     avfilter_unref_buffer(movie->picref);
     av_freep(&movie->frame);
 }

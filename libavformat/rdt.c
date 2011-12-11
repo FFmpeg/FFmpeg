@@ -544,7 +544,7 @@ rdt_free_context (PayloadContext *rdt)
             av_freep(&rdt->rmst[i]);
         }
     if (rdt->rmctx)
-        av_close_input_file(rdt->rmctx);
+        avformat_close_input(&rdt->rmctx);
     av_freep(&rdt->mlti_data);
     av_freep(&rdt->rmst);
     av_free(rdt);
