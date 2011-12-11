@@ -1560,11 +1560,15 @@ int av_read_play(AVFormatContext *s);
  */
 int av_read_pause(AVFormatContext *s);
 
+#if FF_API_FORMAT_PARAMETERS
 /**
  * Free a AVFormatContext allocated by av_open_input_stream.
  * @param s context to free
+ * @deprecated use av_close_input_file()
  */
+attribute_deprecated
 void av_close_input_stream(AVFormatContext *s);
+#endif
 
 /**
  * Close a media file (but not its codecs).

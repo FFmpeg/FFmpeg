@@ -2736,7 +2736,7 @@ static int http_receive_data(HTTPContext *c)
 
             /* Now we have the actual streams */
             if (s->nb_streams != feed->nb_streams) {
-                av_close_input_stream(s);
+                av_close_input_file(s);
                 av_free(pb);
                 http_log("Feed '%s' stream number does not match registered feed\n",
                          c->stream->feed_filename);
@@ -2749,7 +2749,7 @@ static int http_receive_data(HTTPContext *c)
                 avcodec_copy_context(fst->codec, st->codec);
             }
 
-            av_close_input_stream(s);
+            av_close_input_file(s);
             av_free(pb);
         }
         c->buffer_ptr = c->buffer;

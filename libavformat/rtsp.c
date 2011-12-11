@@ -580,7 +580,7 @@ void ff_rtsp_close_streams(AVFormatContext *s)
     }
     av_free(rt->rtsp_streams);
     if (rt->asf_ctx) {
-        av_close_input_stream (rt->asf_ctx);
+        av_close_input_file(rt->asf_ctx);
         rt->asf_ctx = NULL;
     }
     av_free(rt->p);

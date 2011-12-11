@@ -137,16 +137,16 @@ static int read_header(AVFormatContext *s,
     st->codec->extradata      = av_mallocz(st->codec->extradata_size + FF_INPUT_BUFFER_PADDING_SIZE);
     if (!st->codec->extradata) {
         ret = AVERROR(ENOMEM);
-        goto close_and_return;
+        goto fail;
     }
     ret = avio_read(pb, st->codec->extradata, st->codec->extradata_size);
     if (ret < 0)
-        goto close_and_return;
+        goto fail;
 
     /* read page table */
     ret = avio_seek(pb, anm->page_table_offset, SEEK_SET);
     if (ret < 0)
-        goto close_and_return;
+        goto fail;
 
     for (i = 0; i < MAX_PAGES; i++) {
         Page *p = &anm->pt[i];
@@ -159,7 +159,7 @@ static int read_header(AVFormatContext *s,
     anm->page = find_record(anm, 0);
     if (anm->page < 0) {
         ret = anm->page;
-        goto close_and_return;
+        goto fail;
     }
 
     anm->record = -1;
@@ -169,8 +169,7 @@ invalid:
     av_log_ask_for_sample(s, NULL);
     ret = AVERROR_INVALIDDATA;
 
-close_and_return:
-    av_close_input_stream(s);
+fail:
     return ret;
 }
 
