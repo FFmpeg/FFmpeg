@@ -1,65 +1,17 @@
 Release Notes
 =============
 
-* 0.8 "Love"  June, 2011
-* 0.7 "Peace" June, 2011 (identical to 0.8 but using 0.6 ABI/API)
+* 0.9 "Harmony"  December, 2011
 
 
 General notes
 -------------
 
-This release enables frame-based multithreaded decoding for a number of codecs,
-including theora, huffyuv, VP8, H.263, mpeg4 and H.264. Additionally, there has
-been a major cleanup of
-both internal and external APIs. For this reason, the major versions of all
-libraries except libpostproc have been bumped. This means that 0.8 can be installed
-side-by-side with previous releases, on the other hand applications need to be
-recompiled to use 0.8.
-
-Other important changes are more than 200 bugfixes, known regressions were fixed
-w.r.t 0.5 and 0.6, additions of decoders including, but not limited to,
-AMR-WB, single stream LATM/LOAS, G.722 ADPCM, a native VP8 decoder
-and HE-AACv2. Additionally, many new de/muxers such as WebM in Matroska, Apple
-HTTP Live Streaming, SAP, IEC 61937 (S/PDIF) have been added.
-
-See the Changelog file for a list of significant changes.
+See the Changelog file for a list of significant changes. Note, there
+are many more new features and bugfixes than whats listed there.
 
 Bugreports against FFmpeg git master or the most recent FFmpeg release are
 accepted. If you are experiencing issues with any formally released version of
 FFmpeg, please try git master to check if the issue still exists. If it does,
 make your report against the development code following the usual bug reporting
 guidelines.
-
-Note, if you have difficulty building for mingw, try --disable-outdev=sdl
-
-
-API changes
------------
-
-Please see git log of the public headers or the file doc/APIchanges for
-programmer-centric information. Note that some long-time deprecated APIs have
-been removed. Also, a number of additional APIs have been deprecated and might
-be removed in the next release.
-
-
-Other notable changes
----------------------
-
-- high quality dithering in swscale to fix banding issues
-- ffmpeg is now interactive and various information can be turned on/off while its running
-- resolution changing support in ffmpeg
-- sdl output device
-- optimizations in libavfilter that make it much faster
-- split, buffer, select, lut, negate filters amongth others
-- more than 50 new video filters from mplayers libmpcodecs
-- many ARM NEON optimizations
-- nonfree libfaad support for AAC decoding removed
-- 4:4:4 H.264 decoding
-- 9/10bit H.264 decoding
-- Win64 Assembler support
-- native MMSH/MMST support
-- Windows TV demuxing
-- native AMR-WB decoding
-- native GSM-MS decoding
-- SMPTE 302M decoding
-- AVS encoding
