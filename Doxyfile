@@ -859,7 +859,7 @@ HTML_DYNAMIC_SECTIONS  = NO
 
 # If the GENERATE_DOCSET tag is set to YES, additional index files
 # will be generated that can be used as input for Apple's Xcode 3
-# integrated development environment, introduced with OSX 10.5 (Leopard).
+# integrated development environment, introduced with OS X 10.5 (Leopard).
 # To create a documentation set, doxygen will generate a Makefile in the
 # HTML output directory. Running make will produce the docset in that
 # directory and running "make install" will install the docset in

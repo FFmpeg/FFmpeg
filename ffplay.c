@@ -2778,7 +2778,7 @@ static void toggle_full_screen(VideoState *is)
 {
     is_full_screen = !is_full_screen;
 #if defined(__APPLE__) && SDL_VERSION_ATLEAST(1, 2, 14)
-    /* OSX needs to reallocate the SDL overlays */
+    /* OS X needs to reallocate the SDL overlays */
     for (int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
         is->pictq[i].reallocate = 1;
     }
