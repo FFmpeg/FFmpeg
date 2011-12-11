@@ -1213,29 +1213,6 @@ attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
 #endif
 
 /**
- * Return the output format in the list of registered output formats
- * which best matches the provided parameters, or return NULL if
- * there is no match.
- *
- * @param short_name if non-NULL checks if short_name matches with the
- * names of the registered formats
- * @param filename if non-NULL checks if filename terminates with the
- * extensions of the registered formats
- * @param mime_type if non-NULL checks if mime_type matches with the
- * MIME type of the registered formats
- */
-AVOutputFormat *av_guess_format(const char *short_name,
-                                const char *filename,
-                                const char *mime_type);
-
-/**
- * Guess the codec ID based upon muxer and filename.
- */
-enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
-                            const char *filename, const char *mime_type,
-                            enum AVMediaType type);
-
-/**
  * Send a nice hexadecimal dump of a buffer to the specified file stream.
  *
  * @param f The file stream pointer where the dump should be sent to.
@@ -1785,6 +1762,30 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
  * @return 0 if OK, AVERROR_xxx on error
  */
 int av_write_trailer(AVFormatContext *s);
+
+/**
+ * Return the output format in the list of registered output formats
+ * which best matches the provided parameters, or return NULL if
+ * there is no match.
+ *
+ * @param short_name if non-NULL checks if short_name matches with the
+ * names of the registered formats
+ * @param filename if non-NULL checks if filename terminates with the
+ * extensions of the registered formats
+ * @param mime_type if non-NULL checks if mime_type matches with the
+ * MIME type of the registered formats
+ */
+AVOutputFormat *av_guess_format(const char *short_name,
+                                const char *filename,
+                                const char *mime_type);
+
+/**
+ * Guess the codec ID based upon muxer and filename.
+ */
+enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
+                            const char *filename, const char *mime_type,
+                            enum AVMediaType type);
+
 /**
  * @}
  */
