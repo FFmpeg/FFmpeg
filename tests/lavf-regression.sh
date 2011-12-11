@@ -11,6 +11,8 @@ set -e
 
 eval do_$test=y
 
+ENC_OPTS="$ENC_OPTS -metadata title=lavftest"
+
 do_lavf()
 {
     file=${outfile}lavf.$1
