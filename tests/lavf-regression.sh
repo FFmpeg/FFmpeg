@@ -107,7 +107,7 @@ do_lavf mkv "-acodec mp2 -ab 64k -vcodec mpeg4"
 fi
 
 if [ -n "$do_wtv" ] ; then
-do_lavf wtv "-acodec ac3_fixed"
+do_lavf wtv "-acodec mp2"
 fi
 
 
