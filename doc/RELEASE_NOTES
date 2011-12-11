@@ -8,11 +8,9 @@ Release Notes
 General notes
 -------------
 
-This release is binary compatible with 0.8.
-
-Our work on the 'ffmpeg' command-line tool has resulted in
-extensions to its command line interface, its also compatible with
-both our 0.8 ffmpeg and a tool called avconv
+This release is binary compatible with 0.8. The 'ffmpeg' command-line tool has
+been extended to also support the command line syntax and features of a tool
+called avconv.
 
 Additionally, this release introduces a number of new interesting codecs
 such as the Apple Prores, Flash Screen Video 2 and Windows Media Image,
