@@ -3708,7 +3708,7 @@ static int execute_decode_slices(H264Context *h, int context_count){
             hx->s.error_count = 0;
         }
 
-        avctx->execute(avctx, (void *)decode_slice,
+        avctx->execute(avctx, decode_slice,
                        h->thread_context, NULL, context_count, sizeof(void*));
 
         /* pull back stuff from slices to master context */
