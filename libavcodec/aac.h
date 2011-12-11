@@ -300,6 +300,7 @@ typedef struct {
     DECLARE_ALIGNED(32, float, temp)[128];
 
     enum OCStatus output_configured;
+    int warned_num_aac_frames;
 } AACContext;
 
 #endif /* AVCODEC_AAC_H */

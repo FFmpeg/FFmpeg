@@ -206,6 +206,7 @@ static const AVCodecTag nsv_codec_audio_tags[] = {
     { CODEC_ID_MP3,       MKTAG('M', 'P', '3', ' ') },
     { CODEC_ID_AAC,       MKTAG('A', 'A', 'C', ' ') },
     { CODEC_ID_AAC,       MKTAG('A', 'A', 'C', 'P') },
+    { CODEC_ID_AAC,       MKTAG('V', 'L', 'B', ' ') },
     { CODEC_ID_SPEEX,     MKTAG('S', 'P', 'X', ' ') },
     { CODEC_ID_PCM_U16LE, MKTAG('P', 'C', 'M', ' ') },
     { CODEC_ID_NONE,      0 },
