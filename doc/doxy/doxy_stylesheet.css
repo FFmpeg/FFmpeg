@@ -1,0 +1,1130 @@
+/* The standard CSS for doxygen */
+
+/* @group Heading Levels */
+
+
+h1 {
+    font-size: 150%;
+}
+
+.title {
+    font-weight: bold;
+    margin: 10px 2px;
+    background-color: #7BB37B;
+    border: 1px solid #6A996A;
+    color: #151515;
+    font-size: 1.2em;
+    padding-bottom: 0.2em;
+    padding-left: 0.4em;
+    padding-top: 0.2em;
+}
+
+h2 {
+    font-size: 120%;
+}
+
+h3 {
+    font-size: 100%;
+}
+
+dt {
+    font-weight: bold;
+}
+
+div.multicol {
+    -moz-column-gap: 1em;
+    -webkit-column-gap: 1em;
+    -moz-column-count: 3;
+    -webkit-column-count: 3;
+}
+
+p.startli, p.startdd, p.starttd {
+    margin-top: 2px;
+}
+
+p.endli {
+    margin-bottom: 0px;
+}
+
+p.enddd {
+    margin-bottom: 4px;
+}
+
+p.endtd {
+    margin-bottom: 2px;
+}
+
+/* @end */
+
+caption {
+    font-weight: bold;
+}
+
+span.legend {
+        font-size: 70%;
+        text-align: center;
+}
+
+h3.version {
+        font-size: 90%;
+        text-align: center;
+}
+
+div.qindex, div.navtab{
+    background-color: #EBF6EB;
+    border: 1px solid #A3D7A3;
+    text-align: center;
+}
+
+div.qindex, div.navpath {
+    width: 100%;
+    line-height: 140%;
+}
+
+div.navtab {
+    margin-right: 15px;
+}
+
+/* @group Link Styling */
+
+a {
+    color: #3D8C3D;
+    font-weight: normal;
+    text-decoration: none;
+}
+
+.contents a:visited {
+    color: #46A246;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+a.qindex {
+    font-weight: bold;
+}
+
+a.qindexHL {
+    font-weight: bold;
+    background-color: #9CD49C;
+    color: #ffffff;
+    border: 1px double #86CA86;
+}
+
+.contents a.qindexHL:visited {
+        color: #ffffff;
+}
+
+a.el {
+    font-weight: bold;
+}
+
+a.elRef {
+}
+
+a.code {
+    color: #4665A2;
+}
+
+a.codeRef {
+    color: #4665A2;
+}
+
+/* @end */
+
+dl.el {
+    margin-left: -1cm;
+}
+
+.fragment {
+    font-family: monospace, fixed;
+    font-size: 105%;
+}
+
+pre.fragment {
+    border: 1px solid #C4E5C4;
+    background-color: #FBFDFB;
+    padding: 4px 6px;
+    margin: 4px 8px 4px 2px;
+    overflow: auto;
+    word-wrap: break-word;
+    font-size:  9pt;
+    line-height: 125%;
+}
+
+div.ah {
+    background-color: black;
+    font-weight: bold;
+    color: #ffffff;
+    margin-bottom: 3px;
+    margin-top: 3px;
+    padding: 0.2em;
+    border: solid thin #333;
+    border-radius: 0.5em;
+    -webkit-border-radius: .5em;
+    -moz-border-radius: .5em;
+    box-shadow: 2px 2px 3px #999;
+    -webkit-box-shadow: 2px 2px 3px #999;
+    -moz-box-shadow: rgba(0, 0, 0, 0.15) 2px 2px 2px;
+    background-image: -webkit-gradient(linear, left top, left bottom, from(#eee), to(#000),color-stop(0.3, #444));
+    background-image: -moz-linear-gradient(center top, #eee 0%, #444 40%, #000);
+}
+
+div.groupHeader {
+    margin-left: 16px;
+    margin-top: 12px;
+    font-weight: bold;
+}
+
+div.groupText {
+    margin-left: 16px;
+    font-style: italic;
+}
+
+div.contents {
+    margin-top: 10px;
+    margin-left: 8px;
+    margin-right: 8px;
+}
+
+td.indexkey {
+    background-color: #EBF6EB;
+    font-weight: bold;
+    border: 1px solid #C4E5C4;
+    margin: 2px 0px 2px 0;
+    padding: 2px 10px;
+        white-space: nowrap;
+        vertical-align: top;
+}
+
+td.indexvalue {
+    background-color: #EBF6EB;
+    border: 1px solid #C4E5C4;
+    padding: 2px 10px;
+    margin: 2px 0px;
+}
+
+tr.memlist {
+    background-color: #EEF7EE;
+}
+
+p.formulaDsp {
+    text-align: center;
+}
+
+img.formulaDsp {
+
+}
+
+img.formulaInl {
+    vertical-align: middle;
+}
+
+div.center {
+    text-align: center;
+        margin-top: 0px;
+        margin-bottom: 0px;
+        padding: 0px;
+}
+
+div.center img {
+    border: 0px;
+}
+
+#footer {
+    margin: -10px 1em 0;
+    padding-top: 20px;
+}
+
+address.footer {
+    background-color: #ffffff;
+    text-align: center;
+}
+
+img.footer {
+    border: 0px;
+    vertical-align: middle;
+}
+
+/* @group Code Colorization */
+
+span.keyword {
+    color: #008000
+}
+
+span.keywordtype {
+    color: #604020
+}
+
+span.keywordflow {
+    color: #e08000
+}
+
+span.comment {
+    color: #800000
+}
+
+span.preprocessor {
+    color: #806020
+}
+
+span.stringliteral {
+    color: #002080
+}
+
+span.charliteral {
+    color: #008080
+}
+
+span.vhdldigit {
+    color: #ff00ff
+}
+
+span.vhdlchar {
+    color: #000000
+}
+
+span.vhdlkeyword {
+    color: #700070
+}
+
+span.vhdllogic {
+    color: #ff0000
+}
+
+/* @end */
+
+/*
+.search {
+    color: #003399;
+    font-weight: bold;
+}
+
+form.search {
+    margin-bottom: 0px;
+    margin-top: 0px;
+}
+
+input.search {
+    font-size: 75%;
+    color: #000080;
+    font-weight: normal;
+    background-color: #e8eef2;
+}
+*/
+
+td.tiny {
+    font-size: 75%;
+}
+
+.dirtab {
+    padding: 4px;
+    border-collapse: collapse;
+    border: 1px solid #A3D7A3;
+}
+
+th.dirtab {
+    background: #EBF6EB;
+    font-weight: bold;
+}
+
+hr {
+    height: 0px;
+    border: none;
+    border-top: 1px solid #4AAA4A;
+}
+
+hr.footer {
+    height: 1px;
+}
+
+/* @group Member Descriptions */
+
+table.memberdecls {
+    border-spacing: 0px;
+    padding: 0px;
+}
+
+.mdescLeft, .mdescRight,
+.memItemLeft, .memItemRight,
+.memTemplItemLeft, .memTemplItemRight, .memTemplParams {
+    background-color: #F9FCF9;
+    border: none;
+    margin: 4px;
+    padding: 1px 0 0 8px;
+}
+
+.mdescLeft, .mdescRight {
+    padding: 0px 8px 4px 8px;
+    color: #555;
+}
+
+.memItemLeft, .memItemRight, .memTemplParams {
+    border-top: 1px solid #C4E5C4;
+}
+
+.memItemLeft, .memTemplItemLeft {
+        white-space: nowrap;
+}
+
+.memItemRight {
+    width: 100%;
+}
+
+.memTemplParams {
+    color: #46A246;
+        white-space: nowrap;
+}
+
+/* @end */
+
+/* @group Member Details */
+
+/* Styles for detailed member documentation */
+
+.memtemplate {
+    font-size: 80%;
+    color: #46A246;
+    font-weight: normal;
+    margin-left: 9px;
+}
+
+.memnav {
+    background-color: #EBF6EB;
+    border: 1px solid #A3D7A3;
+    text-align: center;
+    margin: 2px;
+    margin-right: 15px;
+    padding: 2px;
+}
+
+.mempage {
+    width: 100%;
+}
+
+.memitem {
+    padding: 0;
+    margin-bottom: 10px;
+    margin-right: 5px;
+}
+
+.memname {
+        white-space: nowrap;
+        font-weight: bold;
+        margin-left: 6px;
+}
+
+.memproto, dl.reflist dt {
+        border-top: 1px solid #A8D9A8;
+        border-left: 1px solid #A8D9A8;
+        border-right: 1px solid #A8D9A8;
+        padding: 6px 0px 6px 0px;
+        color: #255525;
+        font-weight: bold;
+        text-shadow: 0px 1px 1px rgba(255, 255, 255, 0.9);
+        /* opera specific markup */
+        box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+        border-top-right-radius: 8px;
+        border-top-left-radius: 8px;
+        /* firefox specific markup */
+        -moz-box-shadow: rgba(0, 0, 0, 0.15) 5px 5px 5px;
+        -moz-border-radius-topright: 8px;
+        -moz-border-radius-topleft: 8px;
+        /* webkit specific markup */
+        -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+        -webkit-border-top-right-radius: 8px;
+        -webkit-border-top-left-radius: 8px;
+        background-image:url('nav_f.png');
+        background-repeat:repeat-x;
+        background-color: #E2F2E2;
+
+}
+
+.memdoc, dl.reflist dd {
+        border-bottom: 1px solid #A8D9A8;
+        border-left: 1px solid #A8D9A8;
+        border-right: 1px solid #A8D9A8;
+        padding: 2px 5px;
+        background-color: #FBFDFB;
+        border-top-width: 0;
+        /* opera specific markup */
+        border-bottom-left-radius: 8px;
+        border-bottom-right-radius: 8px;
+        box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+        /* firefox specific markup */
+        -moz-border-radius-bottomleft: 8px;
+        -moz-border-radius-bottomright: 8px;
+        -moz-box-shadow: rgba(0, 0, 0, 0.15) 5px 5px 5px;
+        background-image: -moz-linear-gradient(center top, #FFFFFF 0%, #FFFFFF 60%, #F7FBF7 95%, #EEF7EE);
+        /* webkit specific markup */
+        -webkit-border-bottom-left-radius: 8px;
+        -webkit-border-bottom-right-radius: 8px;
+        -webkit-box-shadow: 5px 5px 5px rgba(0, 0, 0, 0.15);
+        background-image: -webkit-gradient(linear,center top,center bottom,from(#FFFFFF), color-stop(0.6,#FFFFFF), color-stop(0.60,#FFFFFF), color-stop(0.95,#F7FBF7), to(#EEF7EE));
+}
+
+dl.reflist dt {
+        padding: 5px;
+}
+
+dl.reflist dd {
+        margin: 0px 0px 10px 0px;
+        padding: 5px;
+}
+
+.paramkey {
+    text-align: right;
+}
+
+.paramtype {
+    white-space: nowrap;
+}
+
+.paramname {
+    color: #602020;
+    white-space: nowrap;
+}
+.paramname em {
+    font-style: normal;
+}
+
+.params, .retval, .exception, .tparams {
+        border-spacing: 6px 2px;
+}
+
+.params .paramname, .retval .paramname {
+        font-weight: bold;
+        vertical-align: top;
+}
+
+.params .paramtype {
+        font-style: italic;
+        vertical-align: top;
+}
+
+.params .paramdir {
+        font-family: "courier new",courier,monospace;
+        vertical-align: top;
+}
+
+
+
+
+/* @end */
+
+/* @group Directory (tree) */
+
+/* for the tree view */
+
+.ftvtree {
+    font-family: sans-serif;
+    margin: 0px;
+}
+
+/* these are for tree view when used as main index */
+
+.directory {
+    font-size: 9pt;
+    font-weight: bold;
+    margin: 5px;
+}
+
+.directory h3 {
+    margin: 0px;
+    margin-top: 1em;
+    font-size: 11pt;
+}
+
+/*
+The following two styles can be used to replace the root node title
+with an image of your choice.  Simply uncomment the next two styles,
+specify the name of your image and be sure to set 'height' to the
+proper pixel height of your image.
+*/
+
+/*
+.directory h3.swap {
+    height: 61px;
+    background-repeat: no-repeat;
+    background-image: url("yourimage.gif");
+}
+.directory h3.swap span {
+    display: none;
+}
+*/
+
+.directory > h3 {
+    margin-top: 0;
+}
+
+.directory p {
+    margin: 0px;
+    white-space: nowrap;
+}
+
+.directory div {
+    display: none;
+    margin: 0px;
+}
+
+.directory img {
+    vertical-align: -30%;
+}
+
+/* these are for tree view when not used as main index */
+
+.directory-alt {
+    font-size: 100%;
+    font-weight: bold;
+}
+
+.directory-alt h3 {
+    margin: 0px;
+    margin-top: 1em;
+    font-size: 11pt;
+}
+
+.directory-alt > h3 {
+    margin-top: 0;
+}
+
+.directory-alt p {
+    margin: 0px;
+    white-space: nowrap;
+}
+
+.directory-alt div {
+    display: none;
+    margin: 0px;
+}
+
+.directory-alt img {
+    vertical-align: -30%;
+}
+
+/* @end */
+
+div.dynheader {
+        margin-top: 8px;
+}
+
+address {
+    font-style: normal;
+    color: #2A612A;
+}
+
+table.doxtable {
+    border-collapse:collapse;
+}
+
+table.doxtable td, table.doxtable th {
+    border: 1px solid #2D682D;
+    padding: 3px 7px 2px;
+}
+
+table.doxtable th {
+    background-color: #377F37;
+    color: #FFFFFF;
+    font-size: 110%;
+    padding-bottom: 4px;
+    padding-top: 5px;
+    text-align:left;
+}
+
+table.fieldtable {
+        width: 100%;
+        margin-bottom: 10px;
+        border: 1px solid #A8D9A8;
+        border-spacing: 0px;
+        -moz-border-radius: 4px;
+        -webkit-border-radius: 4px;
+        border-radius: 4px;
+        -moz-box-shadow: rgba(0, 0, 0, 0.15) 2px 2px 2px;
+        -webkit-box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.15);
+        box-shadow: 2px 2px 2px rgba(0, 0, 0, 0.15);
+}
+
+.fieldtable td, .fieldtable th {
+        padding: 3px 7px 2px;
+}
+
+.fieldtable td.fieldtype, .fieldtable td.fieldname {
+        white-space: nowrap;
+        border-right: 1px solid #A8D9A8;
+        border-bottom: 1px solid #A8D9A8;
+        vertical-align: top;
+}
+
+.fieldtable td.fielddoc {
+        border-bottom: 1px solid #A8D9A8;
+        width: 100%;
+}
+
+.fieldtable tr:last-child td {
+        border-bottom: none;
+}
+
+.fieldtable th {
+        background-image:url('nav_f.png');
+        background-repeat:repeat-x;
+        background-color: #E2F2E2;
+        font-size: 90%;
+        color: #255525;
+        padding-bottom: 4px;
+        padding-top: 5px;
+        text-align:left;
+        -moz-border-radius-topleft: 4px;
+        -moz-border-radius-topright: 4px;
+        -webkit-border-top-left-radius: 4px;
+        -webkit-border-top-right-radius: 4px;
+        border-top-left-radius: 4px;
+        border-top-right-radius: 4px;
+        border-bottom: 1px solid #A8D9A8;
+}
+
+
+.tabsearch {
+    top: 0px;
+    left: 10px;
+    height: 36px;
+    background-image: url('tab_b.png');
+    z-index: 101;
+    overflow: hidden;
+    font-size: 13px;
+}
+
+.navpath ul
+{
+    font-size: 11px;
+    background-image:url('tab_b.png');
+    background-repeat:repeat-x;
+    height:30px;
+    line-height:30px;
+    color:#8ACC8A;
+    border:solid 1px #C2E4C2;
+    overflow:hidden;
+    margin:0px;
+    padding:0px;
+}
+
+.navpath li
+{
+    list-style-type:none;
+    float:left;
+    padding-left:10px;
+    padding-right:15px;
+    background-image:url('bc_s.png');
+    background-repeat:no-repeat;
+    background-position:right;
+    color:#367C36;
+}
+
+.navpath li.navelem a
+{
+    height:32px;
+    display:block;
+    text-decoration: none;
+    outline: none;
+}
+
+.navpath li.navelem a:hover
+{
+    color:#68BD68;
+}
+
+.navpath li.footer
+{
+        list-style-type:none;
+        float:right;
+        padding-left:10px;
+        padding-right:15px;
+        background-image:none;
+        background-repeat:no-repeat;
+        background-position:right;
+        color:#367C36;
+        font-size: 8pt;
+}
+
+
+div.summary
+{
+    margin-top: 12px;
+    text-align: center;
+}
+
+div.summary a
+{
+    white-space: nowrap;
+}
+
+div.ingroups
+{
+    margin-left: 5px;
+    font-size: 8pt;
+    padding-left: 5px;
+    width: 50%;
+    text-align: left;
+}
+
+div.ingroups a
+{
+    white-space: nowrap;
+}
+
+div.headertitle
+{
+    padding: 5px 5px 5px 7px;
+}
+
+dl
+{
+        padding: 0 0 0 10px;
+}
+
+dl.note, dl.warning, dl.attention, dl.pre, dl.post, dl.invariant, dl.deprecated, dl.todo, dl.test, dl.bug
+{
+        border-left:4px solid;
+        padding: 0 0 0 6px;
+}
+
+dl.note
+{
+        border-color: #D0C000;
+}
+
+dl.warning, dl.attention
+{
+        border-color: #FF0000;
+}
+
+dl.pre, dl.post, dl.invariant
+{
+        border-color: #00D000;
+}
+
+dl.deprecated
+{
+        border-color: #505050;
+}
+
+dl.todo
+{
+        border-color: #00C0E0;
+}
+
+dl.test
+{
+        border-color: #3030E0;
+}
+
+dl.bug
+{
+        border-color: #C08050;
+}
+
+#projectlogo
+{
+    text-align: center;
+    vertical-align: bottom;
+    border-collapse: separate;
+}
+
+#projectlogo img
+{
+    border: 0px none;
+}
+
+#projectname
+{
+    font: 300% Tahoma, Arial,sans-serif;
+    margin: 0px;
+    padding: 2px 0px;
+}
+
+#projectbrief
+{
+    font: 120% Tahoma, Arial,sans-serif;
+    margin: 0px;
+    padding: 0px;
+}
+
+#projectnumber
+{
+    font: 50% Tahoma, Arial,sans-serif;
+    margin: 0px;
+    padding: 0px;
+}
+
+#titlearea
+{
+    padding: 0px;
+    margin: 0px;
+    width: 100%;
+    border-bottom: 1px solid #53B453;
+}
+
+.image
+{
+        text-align: center;
+}
+
+.dotgraph
+{
+        text-align: center;
+}
+
+.mscgraph
+{
+        text-align: center;
+}
+
+.caption
+{
+    font-weight: bold;
+}
+
+div.zoom
+{
+    border: 1px solid #90CE90;
+}
+
+dl.citelist {
+        margin-bottom:50px;
+}
+
+dl.citelist dt {
+        color:#337533;
+        float:left;
+        font-weight:bold;
+        margin-right:10px;
+        padding:5px;
+}
+
+dl.citelist dd {
+        margin:2px 0;
+        padding:5px 0;
+}
+
+@media print
+{
+  #top { display: none; }
+  #side-nav { display: none; }
+  #nav-path { display: none; }
+  body { overflow:visible; }
+  h1, h2, h3, h4, h5, h6 { page-break-after: avoid; }
+  .summary { display: none; }
+  .memitem { page-break-inside: avoid; }
+  #doc-content
+  {
+    margin-left:0 !important;
+    height:auto !important;
+    width:auto !important;
+    overflow:inherit;
+    display:inline;
+  }
+  pre.fragment
+  {
+    overflow: visible;
+    text-wrap: unrestricted;
+    white-space: -moz-pre-wrap; /* Moz */
+    white-space: -pre-wrap; /* Opera 4-6 */
+    white-space: -o-pre-wrap; /* Opera 7 */
+    white-space: pre-wrap; /* CSS3  */
+    word-wrap: break-word; /* IE 5.5+ */
+  }
+}
+
+/* tabs */
+
+.tabs, .tabs2, .tabs3 {
+    z-index: 101;
+}
+
+.tablist {
+    margin: auto;
+    display: table;
+}
+
+.tablist li {
+    float: left;
+    display: table-cell;
+    list-style: none;
+    margin:0 4px;
+}
+
+.tablist a {
+    display: block;
+    padding: 0 0.3em;
+    color: #285D28;
+    text-decoration: none;
+    outline: none;
+}
+
+.tabs3 .tablist a {
+    padding: 0 10px;
+}
+
+
+/* libav.org stylesheet */
+
+a {
+    color: #2D6198;
+}
+
+a:visited {
+    color: #884488;
+}
+
+h1 a, h2 a, h3 a {
+    text-decoration: inherit;
+    color: inherit;
+}
+
+#banner, #top {
+    background-color: #BBC9D8;
+    border-bottom: 1px solid #7A96B3;
+    border-top: 1px solid #7A96B3;
+    position: relative;
+    text-align: center;
+}
+
+#banner img, #top img {
+    padding-bottom: 1px;
+    padding-top: 5px;
+}
+
+#body {
+    margin: 0 1em;
+}
+
+body {
+    background-color: #313131;
+    margin: 0;
+}
+
+.center {
+    margin-left: auto;
+    margin-right: auto;
+    text-align: center;
+}
+
+#container {
+    background-color: white;
+    color: #202020;
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+h1 {
+    background-color: #7BB37B;
+    border: 1px solid #6A996A;
+    color: #151515;
+    font-size: 1.2em;
+    padding-bottom: 0.2em;
+    padding-left: 0.4em;
+    padding-top: 0.2em;
+}
+
+h2 {
+    color: #313131;
+    font-size: 1.2em;
+}
+
+h3 {
+    color: #313131;
+    font-size: 0.8em;
+    margin-bottom: -8px;
+}
+
+img {
+    border: 0;
+}
+
+#navrow1 {
+    margin-top: 12px;
+    border-top: 1px solid #5C665C;
+}
+
+#navrow1, #navrow2, #navrow3, #navrow4 {
+    background-color: #738073;
+    border-bottom: 1px solid #5C665C;
+    border-left: 1px solid #5C665C;
+    border-right: 1px solid #5C665C;
+    position: relative;
+    text-align: center;
+}
+
+#navrow1 a, #navrow2 a, #navrow3 a, #navrow4 a {
+    color: white;
+    padding: 0.3em;
+    text-decoration: none;
+}
+
+
+#navrow1 ul, #navrow2 ul, #navrow3 ul, #navrow4 ul {
+    padding: 0;
+}
+
+#navrow1 li.current a, #navrow2 li.current a, #navrow3 li.current a, #navrow4 li.current a {
+    background-color: #414141;
+    color: white;
+    text-decoration: none;
+}
+
+#navrow1 a:hover, #navrow2 a:hover, #navrow3 a:hover, #navrow4 a:hover {
+    background-color: #313131 !important;
+    color: white;
+    text-decoration: none;
+}
+
+p {
+    margin-left: 1em;
+    margin-right: 1em;
+}
+
+table {
+    margin-left: 2em;
+}
+
+pre {
+    margin-left: 2em;
+}
+
+#proj_desc {
+    font-size: 1.2em;
+}
+
+#repos {
+    margin-left: 1em;
+    margin-right: 1em;
+    border-collapse: collapse;
+    border: solid 1px #6A996A;
+}
+
+#repos th {
+    background-color: #7BB37B;
+    border: solid 1px #6A996A;
+}
+
+#repos td {
+    padding: 0.2em;
+    border: solid 1px #6A996A;
+}
+
+#distro_status {
+    margin-left: 1em;
+    margin-right: 1em;
+    border-collapse: collapse;
+    border: solid 1px #6A996A;
+}
+
+#distro_status th {
+    background-color: #7BB37B;
+    border: solid 1px #6A996A;
+}
+
+#distro_status td {
+    padding: 0.2em;
+    border: solid 1px #6A996A;
+}
