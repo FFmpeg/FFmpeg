@@ -62,21 +62,6 @@
  *
  */
 
-/**
- * Return the LIBAVFORMAT_VERSION_INT constant.
- */
-unsigned avformat_version(void);
-
-/**
- * Return the libavformat build-time configuration.
- */
-const char *avformat_configuration(void);
-
-/**
- * Return the libavformat license.
- */
-const char *avformat_license(void);
-
 #include <time.h>
 #include <stdio.h>  /* FILE */
 #include "libavcodec/avcodec.h"
@@ -1110,6 +1095,60 @@ typedef struct AVPacketList {
     struct AVPacketList *next;
 } AVPacketList;
 
+
+/**
+ * @defgroup lavf_core Core functions
+ * @ingroup libavf
+ *
+ * Functions for querying libavformat capabilities, allocating core structures,
+ * etc.
+ * @{
+ */
+
+/**
+ * Return the LIBAVFORMAT_VERSION_INT constant.
+ */
+unsigned avformat_version(void);
+
+/**
+ * Return the libavformat build-time configuration.
+ */
+const char *avformat_configuration(void);
+
+/**
+ * Return the libavformat license.
+ */
+const char *avformat_license(void);
+
+/**
+ * Initialize libavformat and register all the muxers, demuxers and
+ * protocols. If you do not call this function, then you can select
+ * exactly which formats you want to support.
+ *
+ * @see av_register_input_format()
+ * @see av_register_output_format()
+ * @see av_register_protocol()
+ */
+void av_register_all(void);
+
+void av_register_input_format(AVInputFormat *format);
+void av_register_output_format(AVOutputFormat *format);
+
+/**
+ * Do global initialization of network components. This is optional,
+ * but recommended, since it avoids the overhead of implicitly
+ * doing the setup for each session.
+ *
+ * Calling this function will become mandatory if using network
+ * protocols at some major version bump.
+ */
+int avformat_network_init(void);
+
+/**
+ * Undo the initialization done by avformat_network_init.
+ */
+int avformat_network_deinit(void);
+
 /**
  * If f is NULL, returns the first registered input format,
  * if f is non-NULL, returns the next registered input format after f
@@ -1124,16 +1163,54 @@ AVInputFormat  *av_iformat_next(AVInputFormat  *f);
  */
 AVOutputFormat *av_oformat_next(AVOutputFormat *f);
 
+/**
+ * Allocate an AVFormatContext.
+ * avformat_free_context() can be used to free the context and everything
+ * allocated by the framework within it.
+ */
+AVFormatContext *avformat_alloc_context(void);
+
+/**
+ * Free an AVFormatContext and all its streams.
+ * @param s context to free
+ */
+void avformat_free_context(AVFormatContext *s);
+
+/**
+ * Get the AVClass for AVFormatContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avformat_get_class(void);
+
+/**
+ * Add a new stream to a media file.
+ *
+ * When demuxing, it is called by the demuxer in read_header(). If the
+ * flag AVFMTCTX_NOHEADER is set in s.ctx_flags, then it may also
+ * be called in read_packet().
+ *
+ * When muxing, should be called by the user before avformat_write_header().
+ *
+ * @param c If non-NULL, the AVCodecContext corresponding to the new stream
+ * will be initialized to use this codec. This is needed for e.g. codec-specific
+ * defaults to be set, so codec should be provided if it is known.
+ *
+ * @return newly created stream or NULL on error.
+ */
+AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c);
+
+AVProgram *av_new_program(AVFormatContext *s, int id);
+
+/**
+ * @}
+ */
+
+
 #if FF_API_GUESS_IMG2_CODEC
 attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
 #endif
-
-/* XXX: Use automatic init with either ELF sections or C file parser */
-/* modules. */
-
-/* utils.c */
-void av_register_input_format(AVInputFormat *format);
-void av_register_output_format(AVOutputFormat *format);
 
 /**
  * Return the output format in the list of registered output formats
@@ -1215,17 +1292,6 @@ attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
 #endif
 
 /**
- * Initialize libavformat and register all the muxers, demuxers and
- * protocols. If you do not call this function, then you can select
- * exactly which formats you want to support.
- *
- * @see av_register_input_format()
- * @see av_register_output_format()
- * @see av_register_protocol()
- */
-void av_register_all(void);
-
-/**
  * Get the CodecID for the given codec tag tag.
  * If no codec id is found returns CODEC_ID_NONE.
  *
@@ -1242,13 +1308,6 @@ enum CodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int
  * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
  */
 unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum CodecID id);
-
-/**
- * Allocate an AVFormatContext.
- * avformat_free_context() can be used to free the context and everything
- * allocated by the framework within it.
- */
-AVFormatContext *avformat_alloc_context(void);
 
 /**
  * @addtogroup lavf_decoding
@@ -1534,12 +1593,6 @@ void av_close_input_file(AVFormatContext *s);
  * @}
  */
 
-/**
- * Free an AVFormatContext and all its streams.
- * @param s context to free
- */
-void avformat_free_context(AVFormatContext *s);
-
 #if FF_API_NEW_STREAM
 /**
  * Add a new stream to a media file.
@@ -1554,25 +1607,6 @@ void avformat_free_context(AVFormatContext *s);
 attribute_deprecated
 AVStream *av_new_stream(AVFormatContext *s, int id);
 #endif
-
-/**
- * Add a new stream to a media file.
- *
- * When demuxing, it is called by the demuxer in read_header(). If the
- * flag AVFMTCTX_NOHEADER is set in s.ctx_flags, then it may also
- * be called in read_packet().
- *
- * When muxing, should be called by the user before avformat_write_header().
- *
- * @param c If non-NULL, the AVCodecContext corresponding to the new stream
- * will be initialized to use this codec. This is needed for e.g. codec-specific
- * defaults to be set, so codec should be provided if it is known.
- *
- * @return newly created stream or NULL on error.
- */
-AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c);
-
-AVProgram *av_new_program(AVFormatContext *s, int id);
 
 #if FF_API_SET_PTS_INFO
 /**
@@ -1851,28 +1885,5 @@ int av_match_ext(const char *filename, const char *extensions);
  *         A negative number if this information is not available.
  */
 int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance);
-
-/**
- * Get the AVClass for AVFormatContext. It can be used in combination with
- * AV_OPT_SEARCH_FAKE_OBJ for examining options.
- *
- * @see av_opt_find().
- */
-const AVClass *avformat_get_class(void);
-
-/**
- * Do global initialization of network components. This is optional,
- * but recommended, since it avoids the overhead of implicitly
- * doing the setup for each session.
- *
- * Calling this function will become mandatory if using network
- * protocols at some major version bump.
- */
-int avformat_network_init(void);
-
-/**
- * Undo the initialization done by avformat_network_init.
- */
-int avformat_network_deinit(void);
 
 #endif /* AVFORMAT_AVFORMAT_H */
