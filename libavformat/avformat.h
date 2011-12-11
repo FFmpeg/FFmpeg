@@ -68,6 +68,44 @@
  *
  * @defgroup lavf_decoding Demuxing
  * @{
+ * Demuxers read a media file and split it into chunks of data (@em packets). A
+ * @ref AVPacket "packet" contains one or more frames which belong a single
+ * elementary stream. In lavf API this process is represented by the
+ * avformat_open_input() function for opening a file, av_read_frame() for
+ * reading a single packet and finally avformat_close_input(), which does the
+ * cleanup.
+ *
+ * @section lavf_decoding_open Opening a media file
+ * The minimum information required to open a file is its URL or filename, which
+ * is passed to avformat_open_input(), as in the following code:
+ * @code
+ * const char    *url = "in.mp3";
+ * AVFormatContext *s = NULL;
+ * int ret = avformat_open_input(&s, url, NULL, NULL);
+ * if (ret < 0)
+ *     abort();
+ * @endcode
+ * The above code attempts to allocate an AVFormatContext, open the
+ * specified file (autodetecting the format) and read the header, exporting the
+ * information stored there into s. Some formats do not have a header or do not
+ * store enough information there, so it is recommended that you call the
+ * avformat_find_stream_info() function which tries to read and decode a few
+ * frames to find missing information.
+ *
+ * In some cases you might want to preallocate an AVFormatContext yourself with
+ * avformat_alloc_context() and do some tweaking on it before passing it to
+ * avformat_open_input(). One such case is when you want to use custom functions
+ * for reading input data instead of lavf internal I/O layer.
+ * To do that, create your own AVIOContext with avio_alloc_context(), passing
+ * your reading callbacks to it. Then set the @em pb field of your
+ * AVFormatContext to newly created AVIOContext.
+ *
+ * After you have finished reading the file, you must close it with
+ * avformat_close_input(). It will free everything associated with the file.
+ *
+ * @section lavf_decoding_read Reading from an opened file
+ *
+ * @section lavf_decoding_seek Seeking
  * @}
  *
  * @defgroup lavf_encoding Muxing
