@@ -310,8 +310,8 @@ void shuffle_bytes_##a##b##c##d(const uint8_t *src, uint8_t *dst, int src_size) 
     }                                                                   \
 }
 
-DEFINE_SHUFFLE_BYTES(0, 3, 2, 1);
-DEFINE_SHUFFLE_BYTES(1, 2, 3, 0);
-DEFINE_SHUFFLE_BYTES(3, 0, 1, 2);
-DEFINE_SHUFFLE_BYTES(3, 2, 1, 0);
+DEFINE_SHUFFLE_BYTES(0, 3, 2, 1)
+DEFINE_SHUFFLE_BYTES(1, 2, 3, 0)
+DEFINE_SHUFFLE_BYTES(3, 0, 1, 2)
+DEFINE_SHUFFLE_BYTES(3, 2, 1, 0)
 

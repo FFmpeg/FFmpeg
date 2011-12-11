@@ -550,8 +550,8 @@ static av_always_inline int vc1_mspel_ ## DIR ## _filter_16bits(const TYPE *src,
     return 0; /* should not occur */                                    \
 }
 
-VC1_MSPEL_FILTER_16B(ver, uint8_t);
-VC1_MSPEL_FILTER_16B(hor, int16_t);
+VC1_MSPEL_FILTER_16B(ver, uint8_t)
+VC1_MSPEL_FILTER_16B(hor, int16_t)
 
 
 /** Filter used to interpolate fractional pel values

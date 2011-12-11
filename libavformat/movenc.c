@@ -1286,7 +1286,7 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, track->enc->height << 16);
 
     return updateSize(pb, pos);
-};
+}
 
 // This box seems important for the psp playback ... without it the movie seems to hang
 static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)

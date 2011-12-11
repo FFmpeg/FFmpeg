@@ -2200,8 +2200,8 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
 static void hl_decode_mb_simple_ ## bits(H264Context *h){ \
     hl_decode_mb_internal(h, 1, sh); \
 }
-hl_decode_mb_simple(0, 8);
-hl_decode_mb_simple(1, 16);
+hl_decode_mb_simple(0, 8)
+hl_decode_mb_simple(1, 16)
 
 /**
  * Process a macroblock; this handles edge cases, such as interlacing.

@@ -67,7 +67,7 @@ static const AVClass flavor ## _context_class = {\
     .item_name      = av_default_item_name,\
     .option         = options,\
     .version        = LIBAVUTIL_VERSION_INT,\
-};
+}
 
 HTTP_CLASS(http);
 HTTP_CLASS(https);

@@ -388,9 +388,9 @@ static void FUNCC(pred16x16_##n##_dc)(uint8_t *_src, int stride){\
     PREDICT_16x16_DC(PIXEL_SPLAT_X4(v));\
 }
 
-PRED16x16_X(127, (1<<(BIT_DEPTH-1))-1);
-PRED16x16_X(128, (1<<(BIT_DEPTH-1))+0);
-PRED16x16_X(129, (1<<(BIT_DEPTH-1))+1);
+PRED16x16_X(127, (1<<(BIT_DEPTH-1))-1)
+PRED16x16_X(128, (1<<(BIT_DEPTH-1))+0)
+PRED16x16_X(129, (1<<(BIT_DEPTH-1))+1)
 
 static inline void FUNCC(pred16x16_plane_compat)(uint8_t *_src, int _stride, const int svq3, const int rv40){
   int i, j, k;
@@ -502,9 +502,9 @@ static void FUNCC(pred8x8_##n##_dc)(uint8_t *_src, int stride){\
     }\
 }
 
-PRED8x8_X(127, (1<<(BIT_DEPTH-1))-1);
-PRED8x8_X(128, (1<<(BIT_DEPTH-1))+0);
-PRED8x8_X(129, (1<<(BIT_DEPTH-1))+1);
+PRED8x8_X(127, (1<<(BIT_DEPTH-1))-1)
+PRED8x8_X(128, (1<<(BIT_DEPTH-1))+0)
+PRED8x8_X(129, (1<<(BIT_DEPTH-1))+1)
 
 static void FUNCC(pred8x16_128_dc)(uint8_t *_src, int stride){
     FUNCC(pred8x8_128_dc)(_src, stride);

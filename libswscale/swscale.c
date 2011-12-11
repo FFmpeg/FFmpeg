@@ -299,12 +299,12 @@ static void yuv2planeX_ ## bits ## BE_LE ## _c(const int16_t *filter, int filter
                          filterSize, (const typeX_t **) src, \
                          (uint16_t *) dest, dstW, is_be, bits); \
 }
-yuv2NBPS( 9, BE, 1, 10, int16_t);
-yuv2NBPS( 9, LE, 0, 10, int16_t);
-yuv2NBPS(10, BE, 1, 10, int16_t);
-yuv2NBPS(10, LE, 0, 10, int16_t);
-yuv2NBPS(16, BE, 1, 16, int32_t);
-yuv2NBPS(16, LE, 0, 16, int32_t);
+yuv2NBPS( 9, BE, 1, 10, int16_t)
+yuv2NBPS( 9, LE, 0, 10, int16_t)
+yuv2NBPS(10, BE, 1, 10, int16_t)
+yuv2NBPS(10, LE, 0, 10, int16_t)
+yuv2NBPS(16, BE, 1, 16, int32_t)
+yuv2NBPS(16, LE, 0, 16, int32_t)
 
 static void yuv2planeX_8_c(const int16_t *filter, int filterSize,
                            const int16_t **src, uint8_t *dest, int dstW,
@@ -489,8 +489,8 @@ static void name ## ext ## _1_c(SwsContext *c, const int16_t *_buf0, \
                                   dstW, uvalpha, y, fmt); \
 }
 
-YUV2PACKED16WRAPPER(yuv2gray16,, LE, PIX_FMT_GRAY16LE);
-YUV2PACKED16WRAPPER(yuv2gray16,, BE, PIX_FMT_GRAY16BE);
+YUV2PACKED16WRAPPER(yuv2gray16,, LE, PIX_FMT_GRAY16LE)
+YUV2PACKED16WRAPPER(yuv2gray16,, BE, PIX_FMT_GRAY16BE)
 
 #define output_pixel(pos, acc) \
     if (target == PIX_FMT_MONOBLACK) { \
@@ -618,8 +618,8 @@ static void name ## ext ## _1_c(SwsContext *c, const int16_t *buf0, \
                                   y, fmt); \
 }
 
-YUV2PACKEDWRAPPER(yuv2mono,, white, PIX_FMT_MONOWHITE);
-YUV2PACKEDWRAPPER(yuv2mono,, black, PIX_FMT_MONOBLACK);
+YUV2PACKEDWRAPPER(yuv2mono,, white, PIX_FMT_MONOWHITE)
+YUV2PACKEDWRAPPER(yuv2mono,, black, PIX_FMT_MONOBLACK)
 
 #define output_pixels(pos, Y1, U, Y2, V) \
     if (target == PIX_FMT_YUYV422) { \
@@ -730,8 +730,8 @@ yuv2422_1_c_template(SwsContext *c, const int16_t *buf0,
 
 #undef output_pixels
 
-YUV2PACKEDWRAPPER(yuv2, 422, yuyv422, PIX_FMT_YUYV422);
-YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, PIX_FMT_UYVY422);
+YUV2PACKEDWRAPPER(yuv2, 422, yuyv422, PIX_FMT_YUYV422)
+YUV2PACKEDWRAPPER(yuv2, 422, uyvy422, PIX_FMT_UYVY422)
 
 #define R_B ((target == PIX_FMT_RGB48LE || target == PIX_FMT_RGB48BE) ? R : B)
 #define B_R ((target == PIX_FMT_RGB48LE || target == PIX_FMT_RGB48BE) ? B : R)
@@ -912,10 +912,10 @@ yuv2rgb48_1_c_template(SwsContext *c, const int32_t *buf0,
 #undef r_b
 #undef b_r
 
-YUV2PACKED16WRAPPER(yuv2, rgb48, rgb48be, PIX_FMT_RGB48BE);
-YUV2PACKED16WRAPPER(yuv2, rgb48, rgb48le, PIX_FMT_RGB48LE);
-YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48be, PIX_FMT_BGR48BE);
-YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48le, PIX_FMT_BGR48LE);
+YUV2PACKED16WRAPPER(yuv2, rgb48, rgb48be, PIX_FMT_RGB48BE)
+YUV2PACKED16WRAPPER(yuv2, rgb48, rgb48le, PIX_FMT_RGB48LE)
+YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48be, PIX_FMT_BGR48BE)
+YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48le, PIX_FMT_BGR48LE)
 
 static av_always_inline void
 yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
@@ -1212,24 +1212,24 @@ static void name ## ext ## _1_c(SwsContext *c, const int16_t *buf0, \
 }
 
 #if CONFIG_SMALL
-YUV2RGBWRAPPER(yuv2rgb,,  32_1,  PIX_FMT_RGB32_1,   CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
-YUV2RGBWRAPPER(yuv2rgb,,  32,    PIX_FMT_RGB32,     CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
+YUV2RGBWRAPPER(yuv2rgb,,  32_1,  PIX_FMT_RGB32_1,   CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
+YUV2RGBWRAPPER(yuv2rgb,,  32,    PIX_FMT_RGB32,     CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
 #else
 #if CONFIG_SWSCALE_ALPHA
-YUV2RGBWRAPPER(yuv2rgb,, a32_1,  PIX_FMT_RGB32_1,   1);
-YUV2RGBWRAPPER(yuv2rgb,, a32,    PIX_FMT_RGB32,     1);
+YUV2RGBWRAPPER(yuv2rgb,, a32_1,  PIX_FMT_RGB32_1,   1)
+YUV2RGBWRAPPER(yuv2rgb,, a32,    PIX_FMT_RGB32,     1)
 #endif
-YUV2RGBWRAPPER(yuv2rgb,, x32_1,  PIX_FMT_RGB32_1,   0);
-YUV2RGBWRAPPER(yuv2rgb,, x32,    PIX_FMT_RGB32,     0);
+YUV2RGBWRAPPER(yuv2rgb,, x32_1,  PIX_FMT_RGB32_1,   0)
+YUV2RGBWRAPPER(yuv2rgb,, x32,    PIX_FMT_RGB32,     0)
 #endif
-YUV2RGBWRAPPER(yuv2, rgb, rgb24, PIX_FMT_RGB24,   0);
-YUV2RGBWRAPPER(yuv2, rgb, bgr24, PIX_FMT_BGR24,   0);
-YUV2RGBWRAPPER(yuv2rgb,,  16,    PIX_FMT_RGB565,    0);
-YUV2RGBWRAPPER(yuv2rgb,,  15,    PIX_FMT_RGB555,    0);
-YUV2RGBWRAPPER(yuv2rgb,,  12,    PIX_FMT_RGB444,    0);
-YUV2RGBWRAPPER(yuv2rgb,,   8,    PIX_FMT_RGB8,      0);
-YUV2RGBWRAPPER(yuv2rgb,,   4,    PIX_FMT_RGB4,      0);
-YUV2RGBWRAPPER(yuv2rgb,,   4b,   PIX_FMT_RGB4_BYTE, 0);
+YUV2RGBWRAPPER(yuv2, rgb, rgb24, PIX_FMT_RGB24,   0)
+YUV2RGBWRAPPER(yuv2, rgb, bgr24, PIX_FMT_BGR24,   0)
+YUV2RGBWRAPPER(yuv2rgb,,  16,    PIX_FMT_RGB565,    0)
+YUV2RGBWRAPPER(yuv2rgb,,  15,    PIX_FMT_RGB555,    0)
+YUV2RGBWRAPPER(yuv2rgb,,  12,    PIX_FMT_RGB444,    0)
+YUV2RGBWRAPPER(yuv2rgb,,   8,    PIX_FMT_RGB8,      0)
+YUV2RGBWRAPPER(yuv2rgb,,   4,    PIX_FMT_RGB4,      0)
+YUV2RGBWRAPPER(yuv2rgb,,   4b,   PIX_FMT_RGB4_BYTE, 0)
 
 static av_always_inline void
 yuv2rgb_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
@@ -1323,24 +1323,24 @@ yuv2rgb_full_X_c_template(SwsContext *c, const int16_t *lumFilter,
 }
 
 #if CONFIG_SMALL
-YUV2RGBWRAPPERX(yuv2, rgb_full, bgra32_full, PIX_FMT_BGRA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
-YUV2RGBWRAPPERX(yuv2, rgb_full, abgr32_full, PIX_FMT_ABGR,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
-YUV2RGBWRAPPERX(yuv2, rgb_full, rgba32_full, PIX_FMT_RGBA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
-YUV2RGBWRAPPERX(yuv2, rgb_full, argb32_full, PIX_FMT_ARGB,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf);
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgra32_full, PIX_FMT_BGRA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
+YUV2RGBWRAPPERX(yuv2, rgb_full, abgr32_full, PIX_FMT_ABGR,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgba32_full, PIX_FMT_RGBA,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
+YUV2RGBWRAPPERX(yuv2, rgb_full, argb32_full, PIX_FMT_ARGB,  CONFIG_SWSCALE_ALPHA && c->alpPixBuf)
 #else
 #if CONFIG_SWSCALE_ALPHA
-YUV2RGBWRAPPERX(yuv2, rgb_full, bgra32_full, PIX_FMT_BGRA,  1);
-YUV2RGBWRAPPERX(yuv2, rgb_full, abgr32_full, PIX_FMT_ABGR,  1);
-YUV2RGBWRAPPERX(yuv2, rgb_full, rgba32_full, PIX_FMT_RGBA,  1);
-YUV2RGBWRAPPERX(yuv2, rgb_full, argb32_full, PIX_FMT_ARGB,  1);
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgra32_full, PIX_FMT_BGRA,  1)
+YUV2RGBWRAPPERX(yuv2, rgb_full, abgr32_full, PIX_FMT_ABGR,  1)
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgba32_full, PIX_FMT_RGBA,  1)
+YUV2RGBWRAPPERX(yuv2, rgb_full, argb32_full, PIX_FMT_ARGB,  1)
 #endif
-YUV2RGBWRAPPERX(yuv2, rgb_full, bgrx32_full, PIX_FMT_BGRA,  0);
-YUV2RGBWRAPPERX(yuv2, rgb_full, xbgr32_full, PIX_FMT_ABGR,  0);
-YUV2RGBWRAPPERX(yuv2, rgb_full, rgbx32_full, PIX_FMT_RGBA,  0);
-YUV2RGBWRAPPERX(yuv2, rgb_full, xrgb32_full, PIX_FMT_ARGB,  0);
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgrx32_full, PIX_FMT_BGRA,  0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, xbgr32_full, PIX_FMT_ABGR,  0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgbx32_full, PIX_FMT_RGBA,  0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, xrgb32_full, PIX_FMT_ARGB,  0)
 #endif
-YUV2RGBWRAPPERX(yuv2, rgb_full, bgr24_full,  PIX_FMT_BGR24, 0);
-YUV2RGBWRAPPERX(yuv2, rgb_full, rgb24_full,  PIX_FMT_RGB24, 0);
+YUV2RGBWRAPPERX(yuv2, rgb_full, bgr24_full,  PIX_FMT_BGR24, 0)
+YUV2RGBWRAPPERX(yuv2, rgb_full, rgb24_full,  PIX_FMT_RGB24, 0)
 
 static av_always_inline void fillPlane(uint8_t* plane, int stride,
                                        int width, int height,
@@ -1440,10 +1440,10 @@ static void pattern ## 48 ## BE_LE ## ToUV_half_c(uint8_t *_dstU, uint8_t *_dstV
     rgb48ToUV_half_c_template(dstU, dstV, src1, src2, width, origin); \
 }
 
-rgb48funcs(rgb, LE, PIX_FMT_RGB48LE);
-rgb48funcs(rgb, BE, PIX_FMT_RGB48BE);
-rgb48funcs(bgr, LE, PIX_FMT_BGR48LE);
-rgb48funcs(bgr, BE, PIX_FMT_BGR48BE);
+rgb48funcs(rgb, LE, PIX_FMT_RGB48LE)
+rgb48funcs(rgb, BE, PIX_FMT_RGB48BE)
+rgb48funcs(bgr, LE, PIX_FMT_BGR48LE)
+rgb48funcs(bgr, BE, PIX_FMT_BGR48BE)
 
 #define input_pixel(i) ((origin == PIX_FMT_RGBA || origin == PIX_FMT_BGRA || \
                          origin == PIX_FMT_ARGB || origin == PIX_FMT_ABGR) ? AV_RN32A(&src[(i)*4]) : \
@@ -1555,18 +1555,18 @@ static void name ## ToUV_half_c(uint8_t *dstU, uint8_t *dstV, \
                                  maskr, maskg, maskb, rsh, gsh, bsh, S); \
 }
 
-rgb16_32_wrapper(PIX_FMT_BGR32,    bgr32,  16, 0,  0, 0, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_BGR32_1,  bgr321, 16, 0,  0, 8, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_RGB32,    rgb32,   0, 0, 16, 0,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_RGB32_1,  rgb321,  0, 0, 16, 8,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_BGR565LE, bgr16le, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_BGR555LE, bgr15le, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT+7);
-rgb16_32_wrapper(PIX_FMT_RGB565LE, rgb16le, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_RGB555LE, rgb15le, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT+7);
-rgb16_32_wrapper(PIX_FMT_BGR565BE, bgr16be, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_BGR555BE, bgr15be, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT+7);
-rgb16_32_wrapper(PIX_FMT_RGB565BE, rgb16be, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT+8);
-rgb16_32_wrapper(PIX_FMT_RGB555BE, rgb15be, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT+7);
+rgb16_32_wrapper(PIX_FMT_BGR32,    bgr32,  16, 0,  0, 0, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_BGR32_1,  bgr321, 16, 0,  0, 8, 0xFF0000, 0xFF00,   0x00FF,  8, 0,  8, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_RGB32,    rgb32,   0, 0, 16, 0,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_RGB32_1,  rgb321,  0, 0, 16, 8,   0x00FF, 0xFF00, 0xFF0000,  8, 0,  8, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_BGR565LE, bgr16le, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_BGR555LE, bgr15le, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT+7)
+rgb16_32_wrapper(PIX_FMT_RGB565LE, rgb16le, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_RGB555LE, rgb15le, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT+7)
+rgb16_32_wrapper(PIX_FMT_BGR565BE, bgr16be, 0, 0,  0, 0,   0x001F, 0x07E0,   0xF800, 11, 5,  0, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_BGR555BE, bgr15be, 0, 0,  0, 0,   0x001F, 0x03E0,   0x7C00, 10, 5,  0, RGB2YUV_SHIFT+7)
+rgb16_32_wrapper(PIX_FMT_RGB565BE, rgb16be, 0, 0,  0, 0,   0xF800, 0x07E0,   0x001F,  0, 5, 11, RGB2YUV_SHIFT+8)
+rgb16_32_wrapper(PIX_FMT_RGB555BE, rgb15be, 0, 0,  0, 0,   0x7C00, 0x03E0,   0x001F,  0, 5, 10, RGB2YUV_SHIFT+7)
 
 static void abgrToA_c(uint8_t *dst, const uint8_t *src, int width, uint32_t *unused)
 {
