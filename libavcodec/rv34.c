@@ -289,20 +289,6 @@ static inline void rv34_decode_block(DCTELEM *dst, GetBitContext *gb, RV34VLC *r
 }
 
 /**
- * Dequantize ordinary 4x4 block.
- * @todo optimize
- */
-static inline void rv34_dequant4x4(DCTELEM *block, int Qdc, int Q)
-{
-    int i, j;
-
-    block[0] = (block[0] * Qdc + 8) >> 4;
-    for(i = 0; i < 4; i++)
-        for(j = !i; j < 4; j++)
-            block[j + i*8] = (block[j + i*8] * Q + 8) >> 4;
-}
-
-/**
  * Dequantize 4x4 block of DC values for 16x16 macroblock.
  * @todo optimize
  */
@@ -1159,7 +1145,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
         blkoff = ((i & 1) << 2) + ((i & 4) << 3);
         if(cbp & 1)
             rv34_decode_block(s->block[blknum] + blkoff, gb, r->cur_vlcs, r->luma_vlc, 0);
-        rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[s->qscale],rv34_qscale_tab[s->qscale]);
+        r->rdsp.rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[s->qscale],rv34_qscale_tab[s->qscale]);
         if(r->is16) //FIXME: optimize
             s->block[blknum][blkoff] = block16[(i & 3) | ((i & 0xC) << 1)];
         r->rdsp.rv34_inv_transform_tab[0](s->block[blknum] + blkoff);
@@ -1171,7 +1157,7 @@ static int rv34_decode_macroblock(RV34DecContext *r, int8_t *intra_types)
         blknum = ((i & 4) >> 2) + 4;
         blkoff = ((i & 1) << 2) + ((i & 2) << 4);
         rv34_decode_block(s->block[blknum] + blkoff, gb, r->cur_vlcs, r->chroma_vlc, 1);
-        rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]],rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]]);
+        r->rdsp.rv34_dequant4x4(s->block[blknum] + blkoff, rv34_qscale_tab[rv34_chroma_quant[1][s->qscale]],rv34_qscale_tab[rv34_chroma_quant[0][s->qscale]]);
         r->rdsp.rv34_inv_transform_tab[0](s->block[blknum] + blkoff);
     }
     if (IS_INTRA(s->current_picture_ptr->f.mb_type[mb_pos]))

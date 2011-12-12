@@ -48,6 +48,7 @@ typedef struct RV34DSPContext {
     h264_chroma_mc_func avg_chroma_pixels_tab[3];
     rv40_weight_func rv40_weight_pixels_tab[2];
     rv34_inv_transform_func rv34_inv_transform_tab[2];
+    void (*rv34_dequant4x4)(DCTELEM *block, int Qdc, int Q);
     rv40_loop_filter_func rv40_h_loop_filter;
     rv40_loop_filter_func rv40_v_loop_filter;
 } RV34DSPContext;
