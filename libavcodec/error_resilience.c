@@ -80,7 +80,7 @@ static void set_mv_strides(MpegEncContext *s, int *mv_step, int *stride){
 }
 
 /**
- * replaces the current MB with a flat dc only version.
+ * Replace the current MB with a flat dc-only version.
  */
 static void put_dc(MpegEncContext *s, uint8_t *dest_y, uint8_t *dest_cb, uint8_t *dest_cr, int mb_x, int mb_y)
 {
@@ -714,7 +714,7 @@ static int is_intra_more_likely(MpegEncContext *s){
 }
 
 void ff_er_frame_start(MpegEncContext *s){
-    if(!s->error_recognition) return;
+    if(!s->err_recognition) return;
 
     memset(s->error_status_table, MV_ERROR|AC_ERROR|DC_ERROR|VP_START|AC_END|DC_END|MV_END, s->mb_stride*s->mb_height*sizeof(uint8_t));
     s->error_count= 3*s->mb_num;
@@ -722,7 +722,7 @@ void ff_er_frame_start(MpegEncContext *s){
 }
 
 /**
- * adds a slice.
+ * Add a slice.
  * @param endx x component of the last macroblock, can be -1 for the last of the previous line
  * @param status the status at the end (MV_END, AC_ERROR, ...), it is assumed that no earlier end or
  *               error of the same type occurred
@@ -742,7 +742,7 @@ void ff_er_add_slice(MpegEncContext *s, int startx, int starty, int endx, int en
         return;
     }
 
-    if(!s->error_recognition) return;
+    if(!s->err_recognition) return;
 
     mask &= ~VP_START;
     if(status & (AC_ERROR|AC_END)){
@@ -798,7 +798,7 @@ void ff_er_frame_end(MpegEncContext *s){
     int size = s->b8_stride * 2 * s->mb_height;
     Picture *pic= s->current_picture_ptr;
 
-    if(!s->error_recognition || s->error_count==0 || s->avctx->lowres ||
+    if(!s->err_recognition || s->error_count==0 || s->avctx->lowres ||
        s->avctx->hwaccel ||
        s->avctx->codec->capabilities&CODEC_CAP_HWACCEL_VDPAU ||
        s->picture_structure != PICT_FRAME || // we do not support ER of field pictures yet, though it should not crash if enabled
@@ -872,7 +872,7 @@ void ff_er_frame_end(MpegEncContext *s){
     }
 #endif
     /* handle missing slices */
-    if(s->error_recognition>=4){
+    if(s->err_recognition&AV_EF_EXPLODE){
         int end_ok=1;
 
         for(i=s->mb_num-2; i>=s->mb_width+100; i--){ //FIXME +100 hack

@@ -85,13 +85,13 @@ gb
     getbitcontext
 
 OPEN_READER(name, gb)
-    loads gb into local variables
+    load gb into local variables
 
 CLOSE_READER(name, gb)
-    stores local vars in gb
+    store local vars in gb
 
 UPDATE_CACHE(name, gb)
-    refills the internal cache from the bitstream
+    refill the internal cache from the bitstream
     after this call at least MIN_CACHE_BITS will be available,
 
 GET_CACHE(name, gb)
@@ -290,7 +290,7 @@ static inline unsigned int get_bits(GetBitContext *s, int n){
 }
 
 /**
- * Shows 1-25 bits.
+ * Show 1-25 bits.
  */
 static inline unsigned int show_bits(GetBitContext *s, int n){
     register int tmp;
@@ -337,7 +337,7 @@ static inline void skip_bits1(GetBitContext *s){
 }
 
 /**
- * reads 0-32 bits.
+ * Read 0-32 bits.
  */
 static inline unsigned int get_bits_long(GetBitContext *s, int n){
     if (n <= MIN_CACHE_BITS) return get_bits(s, n);
@@ -353,14 +353,14 @@ static inline unsigned int get_bits_long(GetBitContext *s, int n){
 }
 
 /**
- * reads 0-32 bits as a signed integer.
+ * Read 0-32 bits as a signed integer.
  */
 static inline int get_sbits_long(GetBitContext *s, int n) {
     return sign_extend(get_bits_long(s, n), n);
 }
 
 /**
- * shows 0-32 bits.
+ * Show 0-32 bits.
  */
 static inline unsigned int show_bits_long(GetBitContext *s, int n){
     if (n <= MIN_CACHE_BITS) return show_bits(s, n);
@@ -380,7 +380,7 @@ static inline int check_marker(GetBitContext *s, const char *msg)
 }
 
 /**
- * init GetBitContext.
+ * Inititalize GetBitContext.
  * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger than the actual read bits
  * because some optimized bitstream readers read 32 or 64 bit at once and could read over the end
  * @param bit_size the size of the buffer in bits
@@ -442,7 +442,6 @@ void free_vlc(VLC *vlc);
 
 
 /**
- *
  * If the vlc code is invalid and max_depth=1, then no bits will be removed.
  * If the vlc code is invalid and max_depth>1, then the number of bits removed
  * is undefined.
@@ -504,7 +503,7 @@ void free_vlc(VLC *vlc);
 
 
 /**
- * parses a vlc code, faster than get_vlc()
+ * Parse a vlc code, faster than get_vlc().
  * @param bits is the number of bits which will be read at once, must be
  *             identical to nb_bits in init_vlc()
  * @param max_depth is the number of times bits bits must be read to completely

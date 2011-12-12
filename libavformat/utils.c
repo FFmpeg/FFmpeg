@@ -2747,6 +2747,7 @@ int av_read_pause(AVFormatContext *s)
     return AVERROR(ENOSYS);
 }
 
+#if FF_API_FORMAT_PARAMETERS
 void av_close_input_stream(AVFormatContext *s)
 {
     flush_packet_queue(s);
@@ -2754,6 +2755,7 @@ void av_close_input_stream(AVFormatContext *s)
         s->iformat->read_close(s);
     avformat_free_context(s);
 }
+#endif
 
 void avformat_free_context(AVFormatContext *s)
 {
@@ -2797,11 +2799,23 @@ void avformat_free_context(AVFormatContext *s)
     av_free(s);
 }
 
+#if FF_API_CLOSE_INPUT_FILE
 void av_close_input_file(AVFormatContext *s)
 {
+    avformat_close_input(&s);
+}
+#endif
+
+void avformat_close_input(AVFormatContext **ps)
+{
+    AVFormatContext *s = *ps;
     AVIOContext *pb = (s->iformat->flags & AVFMT_NOFILE) || (s->flags & AVFMT_FLAG_CUSTOM_IO) ?
                        NULL : s->pb;
-    av_close_input_stream(s);
+    flush_packet_queue(s);
+    if (s->iformat->read_close)
+        s->iformat->read_close(s);
+    avformat_free_context(s);
+    *ps = NULL;
     if (pb)
         avio_close(pb);
 }

@@ -42,14 +42,14 @@
 int dct_quantize_c(MpegEncContext *s, DCTELEM *block, int n, int qscale, int *overflow);
 
 /**
- * allocates a Picture
- * The pixels are allocated/set by calling get_buffer() if shared=0
+ * Allocate a Picture.
+ * The pixels are allocated/set by calling get_buffer() if shared = 0.
  */
 int alloc_picture(MpegEncContext *s, Picture *pic, int shared);
 
 /**
- * sets the given MpegEncContext to common defaults (same for encoding and decoding).
- * the changed fields will not depend upon the prior state of the MpegEncContext.
+ * Set the given MpegEncContext to common defaults (same for encoding and decoding).
+ * The changed fields will not depend upon the prior state of the MpegEncContext.
  */
 void MPV_common_defaults(MpegEncContext *s);
 

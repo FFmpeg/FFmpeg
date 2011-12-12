@@ -108,8 +108,7 @@ int ff_wms_parse_sdp_a_line(AVFormatContext *s, const char *p)
                    "Failed to fix invalid RTSP-MS/ASF min_pktsize\n");
         init_packetizer(&pb, buf, len);
         if (rt->asf_ctx) {
-            av_close_input_file(rt->asf_ctx);
-            rt->asf_ctx = NULL;
+            avformat_close_input(&rt->asf_ctx);
         }
         if (!(rt->asf_ctx = avformat_alloc_context()))
             return AVERROR(ENOMEM);

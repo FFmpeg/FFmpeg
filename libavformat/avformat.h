@@ -31,8 +31,81 @@
  * @defgroup libavf I/O and Muxing/Demuxing Library
  * @{
  *
+ * Libavformat (lavf) is a library for dealing with various media container
+ * formats. Its main two purposes are demuxing - i.e. splitting a media file
+ * into component streams, and the reverse process of muxing - writing supplied
+ * data in a specified container format. It also has an @ref lavf_io
+ * "I/O module" which supports a number of protocols for accessing the data (e.g.
+ * file, tcp, http and others). Before using lavf, you need to call
+ * av_register_all() to register all compiled muxers, demuxers and protocols.
+ * Unless you are absolutely sure you won't use libavformat's network
+ * capabilities, you should also call avformat_network_init().
+ *
+ * A supported input format is described by an AVInputFormat struct, conversely
+ * an output format is described by AVOutputFormat. You can iterate over all
+ * registered input/output formats using the av_iformat_next() /
+ * av_oformat_next() functions. The protocols layer is not part of the public
+ * API, so you can only get the names of supported protocols with the
+ * avio_enum_protocols() function.
+ *
+ * Main lavf structure used for both muxing and demuxing is AVFormatContext,
+ * which exports all information about the file being read or written. As with
+ * most Libav structures, its size is not part of public ABI, so it cannot be
+ * allocated on stack or directly with av_malloc(). To create an
+ * AVFormatContext, use avformat_alloc_context() (some functions, like
+ * avformat_open_input() might do that for you).
+ *
+ * Most importantly an AVFormatContext contains:
+ * @li the @ref AVFormatContext.iformat "input" or @ref AVFormatContext.oformat
+ * "output" format. It is either autodetected or set by user for input;
+ * always set by user for output.
+ * @li an @ref AVFormatContext.streams "array" of AVStreams, which describe all
+ * elementary streams stored in the file. AVStreams are typically referred to
+ * using their index in this array.
+ * @li an @ref AVFormatContext.pb "I/O context". It is either opened by lavf or
+ * set by user for input, always set by user for output (unless you are dealing
+ * with an AVFMT_NOFILE format).
+ *
  * @defgroup lavf_decoding Demuxing
  * @{
+ * Demuxers read a media file and split it into chunks of data (@em packets). A
+ * @ref AVPacket "packet" contains one or more frames which belong a single
+ * elementary stream. In lavf API this process is represented by the
+ * avformat_open_input() function for opening a file, av_read_frame() for
+ * reading a single packet and finally avformat_close_input(), which does the
+ * cleanup.
+ *
+ * @section lavf_decoding_open Opening a media file
+ * The minimum information required to open a file is its URL or filename, which
+ * is passed to avformat_open_input(), as in the following code:
+ * @code
+ * const char    *url = "in.mp3";
+ * AVFormatContext *s = NULL;
+ * int ret = avformat_open_input(&s, url, NULL, NULL);
+ * if (ret < 0)
+ *     abort();
+ * @endcode
+ * The above code attempts to allocate an AVFormatContext, open the
+ * specified file (autodetecting the format) and read the header, exporting the
+ * information stored there into s. Some formats do not have a header or do not
+ * store enough information there, so it is recommended that you call the
+ * avformat_find_stream_info() function which tries to read and decode a few
+ * frames to find missing information.
+ *
+ * In some cases you might want to preallocate an AVFormatContext yourself with
+ * avformat_alloc_context() and do some tweaking on it before passing it to
+ * avformat_open_input(). One such case is when you want to use custom functions
+ * for reading input data instead of lavf internal I/O layer.
+ * To do that, create your own AVIOContext with avio_alloc_context(), passing
+ * your reading callbacks to it. Then set the @em pb field of your
+ * AVFormatContext to newly created AVIOContext.
+ *
+ * After you have finished reading the file, you must close it with
+ * avformat_close_input(). It will free everything associated with the file.
+ *
+ * @section lavf_decoding_read Reading from an opened file
+ *
+ * @section lavf_decoding_seek Seeking
  * @}
  *
  * @defgroup lavf_encoding Muxing
@@ -61,21 +134,6 @@
  * @}
  *
  */
-
-/**
- * Return the LIBAVFORMAT_VERSION_INT constant.
- */
-unsigned avformat_version(void);
-
-/**
- * Return the libavformat build-time configuration.
- */
-const char *avformat_configuration(void);
-
-/**
- * Return the libavformat license.
- */
-const char *avformat_license(void);
 
 #include <time.h>
 #include <stdio.h>  /* FILE */
@@ -463,7 +521,7 @@ typedef struct AVInputFormat {
                                           int stream_index, int64_t timestamp, int flags);
 #endif
     /**
-     * Gets the next timestamp in stream[stream_index].time_base units.
+     * Get the next timestamp in stream[stream_index].time_base units.
      * @return the timestamp or AV_NOPTS_VALUE if an error occurred
      */
     int64_t (*read_timestamp)(struct AVFormatContext *s, int stream_index,
@@ -1176,6 +1234,60 @@ typedef struct AVPacketList {
     struct AVPacketList *next;
 } AVPacketList;
 
+
+/**
+ * @defgroup lavf_core Core functions
+ * @ingroup libavf
+ *
+ * Functions for querying libavformat capabilities, allocating core structures,
+ * etc.
+ * @{
+ */
+
+/**
+ * Return the LIBAVFORMAT_VERSION_INT constant.
+ */
+unsigned avformat_version(void);
+
+/**
+ * Return the libavformat build-time configuration.
+ */
+const char *avformat_configuration(void);
+
+/**
+ * Return the libavformat license.
+ */
+const char *avformat_license(void);
+
+/**
+ * Initialize libavformat and register all the muxers, demuxers and
+ * protocols. If you do not call this function, then you can select
+ * exactly which formats you want to support.
+ *
+ * @see av_register_input_format()
+ * @see av_register_output_format()
+ * @see av_register_protocol()
+ */
+void av_register_all(void);
+
+void av_register_input_format(AVInputFormat *format);
+void av_register_output_format(AVOutputFormat *format);
+
+/**
+ * Do global initialization of network components. This is optional,
+ * but recommended, since it avoids the overhead of implicitly
+ * doing the setup for each session.
+ *
+ * Calling this function will become mandatory if using network
+ * protocols at some major version bump.
+ */
+int avformat_network_init(void);
+
+/**
+ * Undo the initialization done by avformat_network_init.
+ */
+int avformat_network_deinit(void);
+
 /**
  * If f is NULL, returns the first registered input format,
  * if f is non-NULL, returns the next registered input format after f
@@ -1190,89 +1302,54 @@ AVInputFormat  *av_iformat_next(AVInputFormat  *f);
  */
 AVOutputFormat *av_oformat_next(AVOutputFormat *f);
 
+/**
+ * Allocate an AVFormatContext.
+ * avformat_free_context() can be used to free the context and everything
+ * allocated by the framework within it.
+ */
+AVFormatContext *avformat_alloc_context(void);
+
+/**
+ * Free an AVFormatContext and all its streams.
+ * @param s context to free
+ */
+void avformat_free_context(AVFormatContext *s);
+
+/**
+ * Get the AVClass for AVFormatContext. It can be used in combination with
+ * AV_OPT_SEARCH_FAKE_OBJ for examining options.
+ *
+ * @see av_opt_find().
+ */
+const AVClass *avformat_get_class(void);
+
+/**
+ * Add a new stream to a media file.
+ *
+ * When demuxing, it is called by the demuxer in read_header(). If the
+ * flag AVFMTCTX_NOHEADER is set in s.ctx_flags, then it may also
+ * be called in read_packet().
+ *
+ * When muxing, should be called by the user before avformat_write_header().
+ *
+ * @param c If non-NULL, the AVCodecContext corresponding to the new stream
+ * will be initialized to use this codec. This is needed for e.g. codec-specific
+ * defaults to be set, so codec should be provided if it is known.
+ *
+ * @return newly created stream or NULL on error.
+ */
+AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c);
+
+AVProgram *av_new_program(AVFormatContext *s, int id);
+
+/**
+ * @}
+ */
+
+
 #if FF_API_GUESS_IMG2_CODEC
 attribute_deprecated enum CodecID av_guess_image2_codec(const char *filename);
 #endif
-
-/* XXX: Use automatic init with either ELF sections or C file parser */
-/* modules. */
-
-/* utils.c */
-void av_register_input_format(AVInputFormat *format);
-void av_register_output_format(AVOutputFormat *format);
-
-/**
- * Return the output format in the list of registered output formats
- * which best matches the provided parameters, or return NULL if
- * there is no match.
- *
- * @param short_name if non-NULL checks if short_name matches with the
- * names of the registered formats
- * @param filename if non-NULL checks if filename terminates with the
- * extensions of the registered formats
- * @param mime_type if non-NULL checks if mime_type matches with the
- * MIME type of the registered formats
- */
-AVOutputFormat *av_guess_format(const char *short_name,
-                                const char *filename,
-                                const char *mime_type);
-
-/**
- * Guess the codec ID based upon muxer and filename.
- */
-enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
-                            const char *filename, const char *mime_type,
-                            enum AVMediaType type);
-
-/**
- * Send a nice hexadecimal dump of a buffer to the specified file stream.
- *
- * @param f The file stream pointer where the dump should be sent to.
- * @param buf buffer
- * @param size buffer size
- *
- * @see av_hex_dump_log, av_pkt_dump2, av_pkt_dump_log2
- */
-void av_hex_dump(FILE *f, uint8_t *buf, int size);
-
-/**
- * Send a nice hexadecimal dump of a buffer to the log.
- *
- * @param avcl A pointer to an arbitrary struct of which the first field is a
- * pointer to an AVClass struct.
- * @param level The importance level of the message, lower values signifying
- * higher importance.
- * @param buf buffer
- * @param size buffer size
- *
- * @see av_hex_dump, av_pkt_dump2, av_pkt_dump_log2
- */
-void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
-
-/**
- * Send a nice dump of a packet to the specified file stream.
- *
- * @param f The file stream pointer where the dump should be sent to.
- * @param pkt packet to dump
- * @param dump_payload True if the payload must be displayed, too.
- * @param st AVStream that the packet belongs to
- */
-void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st);
-
-
-/**
- * Send a nice dump of a packet to the log.
- *
- * @param avcl A pointer to an arbitrary struct of which the first field is a
- * pointer to an AVClass struct.
- * @param level The importance level of the message, lower values signifying
- * higher importance.
- * @param pkt packet to dump
- * @param dump_payload True if the payload must be displayed, too.
- * @param st AVStream that the packet belongs to
- */
-void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
-                      AVStream *st);
 
 #if FF_API_PKT_DUMP
 attribute_deprecated void av_pkt_dump(FILE *f, AVPacket *pkt, int dump_payload);
@@ -1280,41 +1357,6 @@ attribute_deprecated void av_pkt_dump_log(void *avcl, int level, AVPacket *pkt,
                                           int dump_payload);
 #endif
 
-/**
- * Initialize libavformat and register all the muxers, demuxers and
- * protocols. If you do not call this function, then you can select
- * exactly which formats you want to support.
- *
- * @see av_register_input_format()
- * @see av_register_output_format()
- * @see av_register_protocol()
- */
-void av_register_all(void);
-
-/**
- * Get the CodecID for the given codec tag tag.
- * If no codec id is found returns CODEC_ID_NONE.
- *
- * @param tags list of supported codec_id-codec_tag pairs, as stored
- * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
- */
-enum CodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int tag);
-
-/**
- * Get the codec tag for the given codec id id.
- * If no codec tag is found returns 0.
- *
- * @param tags list of supported codec_id-codec_tag pairs, as stored
- * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
- */
-unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum CodecID id);
-
-/**
- * Allocate an AVFormatContext.
- * avformat_free_context() can be used to free the context and everything
- * allocated by the framework within it.
- */
-AVFormatContext *avformat_alloc_context(void);
 
 #if FF_API_ALLOC_OUTPUT_CONTEXT
 /**
@@ -1636,27 +1678,35 @@ int av_read_play(AVFormatContext *s);
  */
 int av_read_pause(AVFormatContext *s);
 
+#if FF_API_FORMAT_PARAMETERS
 /**
  * Free a AVFormatContext allocated by av_open_input_stream.
  * @param s context to free
+ * @deprecated use av_close_input_file()
  */
+attribute_deprecated
 void av_close_input_stream(AVFormatContext *s);
+#endif
 
+#if FF_API_CLOSE_INPUT_FILE
 /**
+ * @deprecated use avformat_close_input()
  * Close a media file (but not its codecs).
  *
  * @param s media file handle
  */
+attribute_deprecated
 void av_close_input_file(AVFormatContext *s);
+#endif
+
+/**
+ * Close an opened input AVFormatContext. Free it and all its contents
+ * and set *s to NULL.
+ */
+void avformat_close_input(AVFormatContext **s);
 /**
  * @}
  */
-
-/**
- * Free an AVFormatContext and all its streams.
- * @param s context to free
- */
-void avformat_free_context(AVFormatContext *s);
 
 #if FF_API_NEW_STREAM
 /**
@@ -1673,25 +1723,6 @@ attribute_deprecated
 AVStream *av_new_stream(AVFormatContext *s, int id);
 #endif
 
-/**
- * Add a new stream to a media file.
- *
- * When demuxing, it is called by the demuxer in read_header(). If the
- * flag AVFMTCTX_NOHEADER is set in s.ctx_flags, then it may also
- * be called in read_packet().
- *
- * When muxing, should be called by the user before avformat_write_header().
- *
- * @param c If non-NULL, the AVCodecContext corresponding to the new stream
- * will be initialized to use this codec. This is needed for e.g. codec-specific
- * defaults to be set, so codec should be provided if it is known.
- *
- * @return newly created stream or NULL on error.
- */
-AVStream *avformat_new_stream(AVFormatContext *s, AVCodec *c);
-
-AVProgram *av_new_program(AVFormatContext *s, int id);
-
 #if FF_API_SET_PTS_INFO
 /**
  * @deprecated this function is not supposed to be called outside of lavf
@@ -1705,27 +1736,6 @@ void av_set_pts_info(AVStream *s, int pts_wrap_bits,
 #define AVSEEK_FLAG_BYTE     2 ///< seeking based on position in bytes
 #define AVSEEK_FLAG_ANY      4 ///< seek to any frame, even non-keyframes
 #define AVSEEK_FLAG_FRAME    8 ///< seeking based on frame number
-
-int av_find_default_stream_index(AVFormatContext *s);
-
-/**
- * Get the index for a specific timestamp.
- * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond
- *                 to the timestamp which is <= the requested one, if backward
- *                 is 0, then it will be >=
- *              if AVSEEK_FLAG_ANY seek to any frame, only keyframes otherwise
- * @return < 0 if no such timestamp could be found
- */
-int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
-
-/**
- * Add an index entry into a sorted list. Update the entry if the list
- * already contains it.
- *
- * @param timestamp timestamp in the time base of the given stream
- */
-int av_add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
-                       int size, int distance, int flags);
 
 #if FF_API_SEEK_PUBLIC
 attribute_deprecated
@@ -1749,31 +1759,6 @@ int64_t av_gen_search(AVFormatContext *s, int stream_index,
 attribute_deprecated int av_set_parameters(AVFormatContext *s, AVFormatParameters *ap);
 #endif
 
-/**
- * Split a URL string into components.
- *
- * The pointers to buffers for storing individual components may be null,
- * in order to ignore that component. Buffers for components not found are
- * set to empty strings. If the port is not found, it is set to a negative
- * value.
- *
- * @param proto the buffer for the protocol
- * @param proto_size the size of the proto buffer
- * @param authorization the buffer for the authorization
- * @param authorization_size the size of the authorization buffer
- * @param hostname the buffer for the host name
- * @param hostname_size the size of the hostname buffer
- * @param port_ptr a pointer to store the port number in
- * @param path the buffer for the path
- * @param path_size the size of the path buffer
- * @param url the URL to split
- */
-void av_url_split(char *proto,         int proto_size,
-                  char *authorization, int authorization_size,
-                  char *hostname,      int hostname_size,
-                  int *port_ptr,
-                  char *path,          int path_size,
-                  const char *url);
 /**
  * @addtogroup lavf_encoding
  * @{
@@ -1869,9 +1854,29 @@ int av_interleave_packet_per_dts(AVFormatContext *s, AVPacket *out,
  * @return 0 if OK, AVERROR_xxx on error
  */
 int av_write_trailer(AVFormatContext *s);
+
 /**
- * @}
+ * Return the output format in the list of registered output formats
+ * which best matches the provided parameters, or return NULL if
+ * there is no match.
+ *
+ * @param short_name if non-NULL checks if short_name matches with the
+ * names of the registered formats
+ * @param filename if non-NULL checks if filename terminates with the
+ * extensions of the registered formats
+ * @param mime_type if non-NULL checks if mime_type matches with the
+ * MIME type of the registered formats
  */
+AVOutputFormat *av_guess_format(const char *short_name,
+                                const char *filename,
+                                const char *mime_type);
+
+/**
+ * Guess the codec ID based upon muxer and filename.
+ */
+enum CodecID av_guess_codec(AVOutputFormat *fmt, const char *short_name,
+                            const char *filename, const char *mime_type,
+                            enum AVMediaType type);
 
 /**
  * Get timing information for the data currently output.
@@ -1890,6 +1895,137 @@ int av_write_trailer(AVFormatContext *s);
  */
 int av_get_output_timestamp(struct AVFormatContext *s, int stream,
                             int64_t *dts, int64_t *wall);
+
+
+/**
+ * @}
+ */
+
+
+/**
+ * @defgroup lavf_misc Utility functions
+ * @ingroup libavf
+ * @{
+ *
+ * Miscelaneous utility functions related to both muxing and demuxing
+ * (or neither).
+ */
+
+/**
+ * Send a nice hexadecimal dump of a buffer to the specified file stream.
+ *
+ * @param f The file stream pointer where the dump should be sent to.
+ * @param buf buffer
+ * @param size buffer size
+ *
+ * @see av_hex_dump_log, av_pkt_dump2, av_pkt_dump_log2
+ */
+void av_hex_dump(FILE *f, uint8_t *buf, int size);
+
+/**
+ * Send a nice hexadecimal dump of a buffer to the log.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param buf buffer
+ * @param size buffer size
+ *
+ * @see av_hex_dump, av_pkt_dump2, av_pkt_dump_log2
+ */
+void av_hex_dump_log(void *avcl, int level, uint8_t *buf, int size);
+
+/**
+ * Send a nice dump of a packet to the specified file stream.
+ *
+ * @param f The file stream pointer where the dump should be sent to.
+ * @param pkt packet to dump
+ * @param dump_payload True if the payload must be displayed, too.
+ * @param st AVStream that the packet belongs to
+ */
+void av_pkt_dump2(FILE *f, AVPacket *pkt, int dump_payload, AVStream *st);
+
+
+/**
+ * Send a nice dump of a packet to the log.
+ *
+ * @param avcl A pointer to an arbitrary struct of which the first field is a
+ * pointer to an AVClass struct.
+ * @param level The importance level of the message, lower values signifying
+ * higher importance.
+ * @param pkt packet to dump
+ * @param dump_payload True if the payload must be displayed, too.
+ * @param st AVStream that the packet belongs to
+ */
+void av_pkt_dump_log2(void *avcl, int level, AVPacket *pkt, int dump_payload,
+                      AVStream *st);
+
+/**
+ * Get the CodecID for the given codec tag tag.
+ * If no codec id is found returns CODEC_ID_NONE.
+ *
+ * @param tags list of supported codec_id-codec_tag pairs, as stored
+ * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ */
+enum CodecID av_codec_get_id(const struct AVCodecTag * const *tags, unsigned int tag);
+
+/**
+ * Get the codec tag for the given codec id id.
+ * If no codec tag is found returns 0.
+ *
+ * @param tags list of supported codec_id-codec_tag pairs, as stored
+ * in AVInputFormat.codec_tag and AVOutputFormat.codec_tag
+ */
+unsigned int av_codec_get_tag(const struct AVCodecTag * const *tags, enum CodecID id);
+
+int av_find_default_stream_index(AVFormatContext *s);
+
+/**
+ * Get the index for a specific timestamp.
+ * @param flags if AVSEEK_FLAG_BACKWARD then the returned index will correspond
+ *                 to the timestamp which is <= the requested one, if backward
+ *                 is 0, then it will be >=
+ *              if AVSEEK_FLAG_ANY seek to any frame, only keyframes otherwise
+ * @return < 0 if no such timestamp could be found
+ */
+int av_index_search_timestamp(AVStream *st, int64_t timestamp, int flags);
+
+/**
+ * Add an index entry into a sorted list. Update the entry if the list
+ * already contains it.
+ *
+ * @param timestamp timestamp in the time base of the given stream
+ */
+int av_add_index_entry(AVStream *st, int64_t pos, int64_t timestamp,
+                       int size, int distance, int flags);
+
+
+/**
+ * Split a URL string into components.
+ *
+ * The pointers to buffers for storing individual components may be null,
+ * in order to ignore that component. Buffers for components not found are
+ * set to empty strings. If the port is not found, it is set to a negative
+ * value.
+ *
+ * @param proto the buffer for the protocol
+ * @param proto_size the size of the proto buffer
+ * @param authorization the buffer for the authorization
+ * @param authorization_size the size of the authorization buffer
+ * @param hostname the buffer for the host name
+ * @param hostname_size the size of the hostname buffer
+ * @param port_ptr a pointer to store the port number in
+ * @param path the buffer for the path
+ * @param path_size the size of the path buffer
+ * @param url the URL to split
+ */
+void av_url_split(char *proto,         int proto_size,
+                  char *authorization, int authorization_size,
+                  char *hostname,      int hostname_size,
+                  int *port_ptr,
+                  char *path,          int path_size,
+                  const char *url);
 
 #if FF_API_DUMP_FORMAT
 /**
@@ -1992,26 +2128,7 @@ int av_match_ext(const char *filename, const char *extensions);
 int avformat_query_codec(AVOutputFormat *ofmt, enum CodecID codec_id, int std_compliance);
 
 /**
- * Get the AVClass for AVFormatContext. It can be used in combination with
- * AV_OPT_SEARCH_FAKE_OBJ for examining options.
- *
- * @see av_opt_find().
+ * @}
  */
-const AVClass *avformat_get_class(void);
-
-/**
- * Do global initialization of network components. This is optional,
- * but recommended, since it avoids the overhead of implicitly
- * doing the setup for each session.
- *
- * Calling this function will become mandatory if using network
- * protocols at some major version bump.
- */
-int avformat_network_init(void);
-
-/**
- * Undo the initialization done by avformat_network_init.
- */
-int avformat_network_deinit(void);
 
 #endif /* AVFORMAT_AVFORMAT_H */

@@ -34,7 +34,7 @@ typedef struct MJPEGParserContext{
 }MJPEGParserContext;
 
 /**
- * finds the end of the current frame in the bitstream.
+ * Find the end of the current frame in the bitstream.
  * @return the position of the first byte of the next frame, or -1
  */
 static int find_frame_end(MJPEGParserContext *m, const uint8_t *buf, int buf_size){

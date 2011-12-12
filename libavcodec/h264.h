@@ -784,14 +784,14 @@ static av_always_inline uint16_t pack8to16(int a, int b){
 }
 
 /**
- * gets the chroma qp.
+ * Get the chroma qp.
  */
 static av_always_inline int get_chroma_qp(H264Context *h, int t, int qscale){
     return h->pps.chroma_qp_table[t][qscale];
 }
 
 /**
- * gets the predicted intra4x4 prediction mode.
+ * Get the predicted intra4x4 prediction mode.
  */
 static av_always_inline int pred_intra_mode(H264Context *h, int n){
     const int index8= scan8[n];

@@ -1653,9 +1653,10 @@ static int mpeg_field_start(MpegEncContext *s, const uint8_t *buf, int buf_size)
 #define DECODE_SLICE_OK     0
 
 /**
- * decodes a slice. MpegEncContext.mb_y must be set to the MB row from the startcode
- * @return DECODE_SLICE_ERROR if the slice is damaged<br>
- *         DECODE_SLICE_OK if this slice is ok<br>
+ * Decode a slice.
+ * MpegEncContext.mb_y must be set to the MB row from the startcode.
+ * @return DECODE_SLICE_ERROR if the slice is damaged,
+ *         DECODE_SLICE_OK if this slice is OK
  */
 static int mpeg_decode_slice(MpegEncContext *s, int mb_y,
                              const uint8_t **buf, int buf_size)

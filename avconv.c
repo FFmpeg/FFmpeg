@@ -610,7 +610,7 @@ void exit_program(int ret)
         av_dict_free(&output_files[i].opts);
     }
     for(i=0;i<nb_input_files;i++) {
-        av_close_input_file(input_files[i].ctx);
+        avformat_close_input(&input_files[i].ctx);
     }
     for (i = 0; i < nb_input_streams; i++) {
         av_freep(&input_streams[i].decoded_frame);
@@ -3140,7 +3140,7 @@ static int opt_input_file(OptionsContext *o, const char *opt, const char *filena
     ret = avformat_find_stream_info(ic, opts);
     if (ret < 0) {
         av_log(NULL, AV_LOG_FATAL, "%s: could not find codec parameters\n", filename);
-        av_close_input_file(ic);
+        avformat_close_input(&ic);
         exit_program(1);
     }
 
@@ -4230,7 +4230,7 @@ static const OptionDef options[] = {
     { "c", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(codec_names)}, "codec name", "codec" },
     { "codec", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(codec_names)}, "codec name", "codec" },
     { "pre", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(presets)}, "preset name", "preset" },
-    { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "file.stream[:syncfile.syncstream]" },
+    { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "[-]input_file_id[:stream_specifier][,sync_file_id[:stream_specifier]]" },
     { "map_metadata", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(chapters_input_file)},  "set chapters mapping", "input_file_index" },

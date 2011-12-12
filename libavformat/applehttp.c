@@ -132,7 +132,7 @@ static void free_variant_list(AppleHTTPContext *c)
             ffurl_close(var->input);
         if (var->ctx) {
             var->ctx->pb = NULL;
-            av_close_input_file(var->ctx);
+            avformat_close_input(&var->ctx);
         }
         av_free(var);
     }

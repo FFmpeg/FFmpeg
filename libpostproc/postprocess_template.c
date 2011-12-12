@@ -1910,7 +1910,7 @@ MEDIAN((%%REGd, %1), (%%REGd, %1, 2), (%0, %1, 8))
 
 #if HAVE_MMX
 /**
- * transposes and shift the given 8x8 Block into dst1 and dst2
+ * Transpose and shift the given 8x8 Block into dst1 and dst2.
  */
 static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src, int srcStride)
 {
@@ -1995,7 +1995,7 @@ static inline void RENAME(transpose1)(uint8_t *dst1, uint8_t *dst2, uint8_t *src
 }
 
 /**
- * transposes the given 8x8 block
+ * Transpose the given 8x8 block.
  */
 static inline void RENAME(transpose2)(uint8_t *dst, int dstStride, uint8_t *src)
 {

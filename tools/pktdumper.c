@@ -117,7 +117,7 @@ int main(int argc, char **argv)
             break;
     }
 
-    av_close_input_file(fctx);
+    avformat_close_input(&fctx);
 
     while (donotquit)
         sleep(60);

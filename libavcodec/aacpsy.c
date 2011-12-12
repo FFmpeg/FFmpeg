@@ -216,7 +216,7 @@ static const float psy_fir_coeffs[] = {
 };
 
 /**
- * calculates the attack threshold for ABR from the above table for the LAME psy model
+ * Calculate the ABR attack threshold from the above LAME psymodel table.
  */
 static float lame_calc_attack_threshold(int bitrate)
 {

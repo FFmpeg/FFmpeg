@@ -324,7 +324,7 @@ static attribute_align_arg void *frame_worker_thread(void *arg)
 }
 
 /**
- * Updates the next thread's AVCodecContext with values from the reference thread's context.
+ * Update the next thread's AVCodecContext with values from the reference thread's context.
  *
  * @param dst The destination context.
  * @param src The source context.

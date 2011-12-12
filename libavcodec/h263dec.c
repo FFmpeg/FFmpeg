@@ -127,7 +127,7 @@ av_cold int ff_h263_decode_end(AVCodecContext *avctx)
 }
 
 /**
- * returns the number of bytes consumed for building the current frame
+ * Return the number of bytes consumed for building the current frame.
  */
 static int get_consumed_bytes(MpegEncContext *s, int buf_size){
     int pos= (get_bits_count(&s->gb)+7)>>3;
@@ -310,7 +310,7 @@ static int decode_slice(MpegEncContext *s){
             max_extra+= 17;
 
         /* buggy padding but the frame should still end approximately at the bitstream end */
-        if((s->workaround_bugs&FF_BUG_NO_PADDING) && s->error_recognition>=3)
+        if((s->workaround_bugs&FF_BUG_NO_PADDING) && (s->err_recognition&AV_EF_BUFFER))
             max_extra+= 48;
         else if((s->workaround_bugs&FF_BUG_NO_PADDING))
             max_extra+= 256*256*256*64;

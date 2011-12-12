@@ -74,7 +74,7 @@ static inline int bidir_sal(int value, int offset)
 int64_t ff_dot_product(const int16_t *a, const int16_t *b, int length);
 
 /**
- * returns the dot product.
+ * Return the dot product.
  * @param a input data array
  * @param b input data array
  * @param length number of elements

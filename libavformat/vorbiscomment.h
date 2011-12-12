@@ -39,7 +39,7 @@ int ff_vorbiscomment_length(AVDictionary *m, const char *vendor_string,
                             unsigned *count);
 
 /**
- * Writes a VorbisComment into a buffer. The buffer, p, must have enough
+ * Write a VorbisComment into a buffer. The buffer, p, must have enough
  * data to hold the whole VorbisComment. The minimum size required can be
  * obtained by passing the same AVDictionary and vendor_string to
  * ff_vorbiscomment_length()

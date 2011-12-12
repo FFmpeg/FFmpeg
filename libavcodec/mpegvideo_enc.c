@@ -228,7 +228,7 @@ static void update_duplicate_context_after_me(MpegEncContext *dst, MpegEncContex
 }
 
 /**
- * sets the given MpegEncContext to defaults for encoding.
+ * Set the given MpegEncContext to defaults for encoding.
  * the changed fields will not depend upon the prior state of the MpegEncContext.
  */
 static void MPV_encode_defaults(MpegEncContext *s){

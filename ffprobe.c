@@ -1160,7 +1160,7 @@ static int probe_file(const char *filename)
     PRINT_CHAPTER(format);
     writer_print_footer(wctx);
 
-    av_close_input_file(fmt_ctx);
+    avformat_close_input(&fmt_ctx);
     writer_close(&wctx);
 
 end:

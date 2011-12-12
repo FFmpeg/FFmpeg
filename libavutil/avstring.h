@@ -171,7 +171,7 @@ char *av_get_token(const char **buf, const char *term);
 char *av_strtok(char *s, const char *delim, char **saveptr);
 
 /**
- * Locale independent conversion of ASCII characters to upper case.
+ * Locale-independent conversion of ASCII characters to uppercase.
  */
 static inline int av_toupper(int c)
 {
@@ -181,7 +181,7 @@ static inline int av_toupper(int c)
 }
 
 /**
- * Locale independent conversion of ASCII characters to lower case.
+ * Locale-independent conversion of ASCII characters to lowercase.
  */
 static inline int av_tolower(int c)
 {
@@ -191,13 +191,13 @@ static inline int av_tolower(int c)
 }
 
 /**
- * Locale independent case-insensitive compare.
+ * Locale-independent case-insensitive compare.
  * @note This means only ASCII-range characters are case-insensitive
  */
 int av_strcasecmp(const char *a, const char *b);
 
 /**
- * Locale independent case-insensitive compare.
+ * Locale-independent case-insensitive compare.
  * @note This means only ASCII-range characters are case-insensitive
  */
 int av_strncasecmp(const char *a, const char *b, size_t n);

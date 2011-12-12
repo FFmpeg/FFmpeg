@@ -37,6 +37,7 @@
  * @li @ref libavc "libavcodec" encoding/decoding library
  * @li @subpage libavfilter graph based frame editing library
  * @li @ref libavf "libavformat" I/O and muxing/demuxing library
+ * @li @ref lavd "libavdevice" special devices muxing/demuxing library
  * @li @ref lavu "libavutil" common utility library
  * @li @subpage libpostproc post processing library
  * @li @subpage libswscale  color conversion and scaling library

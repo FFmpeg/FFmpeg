@@ -1824,7 +1824,7 @@ static void add_8x8basis_c(int16_t rem[64], int16_t basis[64], int scale){
 }
 
 /**
- * permutes an 8x8 block.
+ * Permute an 8x8 block.
  * @param block the block which will be permuted according to the given permutation vector
  * @param permutation the permutation vector
  * @param last the last non zero coefficient in scantable order, used to speed the permutation up

@@ -186,7 +186,7 @@ enum RTSPClientState {
 };
 
 /**
- * Identifies particular servers that require special handling, such as
+ * Identify particular servers that require special handling, such as
  * standards-incompliant "Transport:" lines in the SETUP request.
  */
 enum RTSPServerType {
@@ -366,7 +366,7 @@ typedef struct RTSPState {
                                           source address and port. */
 
 /**
- * Describes a single stream, as identified by a single m= line block in the
+ * Describe a single stream, as identified by a single m= line block in the
  * SDP content. In the case of RDT, one RTSPStream can represent multiple
  * AVStreams. In this case, each AVStream in this set has similar content
  * (but different codec/bitrate).
