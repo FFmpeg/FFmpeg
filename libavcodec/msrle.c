@@ -1,5 +1,5 @@
 /*
- * Micrsoft RLE Video Decoder
+ * Microsoft RLE video decoder
  * Copyright (C) 2003 the ffmpeg project
  *
  * This file is part of Libav.
@@ -21,7 +21,7 @@
 
 /**
  * @file
- * MS RLE Video Decoder by Mike Melanson (melanson@pcisys.net)
+ * MS RLE video decoder by Mike Melanson (melanson@pcisys.net)
  * For more information about the MS RLE format, visit:
  *   http://www.pcisys.net/~melanson/codecs/
  *

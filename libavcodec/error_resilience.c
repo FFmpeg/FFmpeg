@@ -50,7 +50,7 @@ static void decode_mb(MpegEncContext *s, int ref){
         h->mb_xy= s->mb_x + s->mb_y*s->mb_stride;
         memset(h->non_zero_count_cache, 0, sizeof(h->non_zero_count_cache));
         assert(ref>=0);
-        /* FIXME: It is posible albeit uncommon that slice references
+        /* FIXME: It is possible albeit uncommon that slice references
          * differ between slices. We take the easy approach and ignore
          * it for now. If this turns out to have any relevance in
          * practice then correct remapping should be added. */

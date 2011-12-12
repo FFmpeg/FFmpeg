@@ -2692,7 +2692,7 @@ static void toggle_full_screen(void)
 {
     is_full_screen = !is_full_screen;
 #if defined(__APPLE__) && SDL_VERSION_ATLEAST(1, 2, 14)
-    /* OSX needs to empty the picture_queue */
+    /* OS X needs to empty the picture_queue */
     for (int i = 0; i < VIDEO_PICTURE_QUEUE_SIZE; i++) {
         cur_stream->pictq[i].reallocate = 1;
     }

@@ -239,7 +239,7 @@ Advanced options (experts only):
   --disable-armvfp         disable ARM VFP optimizations
   --disable-iwmmxt         disable iwmmxt optimizations
   --disable-mmi            disable MMI optimizations
-  --disable-neon           disable neon optimizations
+  --disable-neon           disable NEON optimizations
   --disable-vis            disable VIS optimizations
   --disable-yasm           disable use of yasm assembler
   --enable-pic             build position-independent code
