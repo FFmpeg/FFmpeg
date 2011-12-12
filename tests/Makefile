@@ -4,8 +4,8 @@ AREF = fate-acodec-aref
 VREF = fate-vsynth1-vref fate-vsynth2-vref
 REFS = $(AREF) $(VREF)
 
-$(VREF): avconv$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
-$(AREF): avconv$(EXESUF) tests/data/asynth1.sw
+$(VREF): ffmpeg$(EXESUF) tests/vsynth1/00.pgm tests/vsynth2/00.pgm
+$(AREF): ffmpeg$(EXESUF) tests/data/asynth1.sw
 
 ffservertest: ffserver$(EXESUF) tests/vsynth1/00.pgm tests/data/asynth1.sw
 	@echo
