@@ -81,7 +81,7 @@
         "add    "tmp"       , "low"                                     \n\t"\
         "1:                                                             \n\t"
 
-#if HAVE_6REGS && !defined(BROKEN_RELOCATIONS)
+#if HAVE_7REGS && !defined(BROKEN_RELOCATIONS)
 #define get_cabac_inline get_cabac_inline_x86
 static av_always_inline int get_cabac_inline_x86(CABACContext *c,
                                                  uint8_t *const state)
@@ -98,7 +98,7 @@ static av_always_inline int get_cabac_inline_x86(CABACContext *c,
     );
     return bit & 1;
 }
-#endif /* HAVE_6REGS && !defined(BROKEN_RELOCATIONS) */
+#endif /* HAVE_7REGS && !defined(BROKEN_RELOCATIONS) */
 
 #define get_cabac_bypass_sign get_cabac_bypass_sign_x86
 static av_always_inline int get_cabac_bypass_sign_x86(CABACContext *c, int val)
