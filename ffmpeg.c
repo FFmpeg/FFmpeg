@@ -3962,6 +3962,7 @@ static int read_ffserver_streams(OptionsContext *o, AVFormatContext *s, const ch
         ost   = new_output_stream(o, s, codec->type);
         st    = ost->st;
         avctx = st->codec;
+        ost->enc = codec;
 
         // FIXME: a more elegant solution is needed
         memcpy(st, ic->streams[i], sizeof(AVStream));
