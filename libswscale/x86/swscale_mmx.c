@@ -242,7 +242,7 @@ extern void ff_hscale ## from_bpc ## to ## to_bpc ## _ ## filter_n ## _ ## opt( 
                                                 SwsContext *c, int16_t *data, \
                                                 int dstW, const uint8_t *src, \
                                                 const int16_t *filter, \
-                                                const int16_t *filterPos, int filterSize);
+                                                const int16_t *filterPos, int filterSize)
 
 #define SCALE_FUNCS(filter_n, opt) \
     SCALE_FUNC(filter_n,  8, 15, opt); \

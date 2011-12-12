@@ -30,7 +30,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "internal.h"
@@ -62,14 +62,14 @@ static int sox_read_header(AVFormatContext *s,
         st->codec->codec_id = CODEC_ID_PCM_S32LE;
         header_size         = avio_rl32(pb);
         avio_skip(pb, 8); /* sample count */
-        sample_rate         = av_int2dbl(avio_rl64(pb));
+        sample_rate         = av_int2double(avio_rl64(pb));
         st->codec->channels = avio_rl32(pb);
         comment_size        = avio_rl32(pb);
     } else {
         st->codec->codec_id = CODEC_ID_PCM_S32BE;
         header_size         = avio_rb32(pb);
         avio_skip(pb, 8); /* sample count */
-        sample_rate         = av_int2dbl(avio_rb64(pb));
+        sample_rate         = av_int2double(avio_rb64(pb));
         st->codec->channels = avio_rb32(pb);
         comment_size        = avio_rb32(pb);
     }

@@ -26,7 +26,7 @@
 //#define MOV_EXPORT_ALL_METADATA
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/avstring.h"
 #include "libavutil/dict.h"
@@ -1261,7 +1261,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                     avio_rb32(pb); /* bytes per sample */
                 } else if (version==2) {
                     avio_rb32(pb); /* sizeof struct only */
-                    st->codec->sample_rate = av_int2dbl(avio_rb64(pb)); /* float 64 */
+                    st->codec->sample_rate = av_int2double(avio_rb64(pb)); /* float 64 */
                     st->codec->channels = avio_rb32(pb);
                     avio_rb32(pb); /* always 0x7F000000 */
                     st->codec->bits_per_coded_sample = avio_rb32(pb); /* bits per channel if sound is uncompressed */

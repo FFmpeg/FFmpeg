@@ -189,7 +189,7 @@ typedef struct {
      * @{
      */
     int spillover_nbits;          ///< number of bits of the previous packet's
-                                  ///< last superframe preceeding this
+                                  ///< last superframe preceding this
                                   ///< packet's first full superframe (useful
                                   ///< for re-synchronization also)
     int has_residual_lsps;        ///< if set, superframes contain one set of
@@ -1805,7 +1805,7 @@ static int synth_superframe(AVCodecContext *ctx, int *got_frame_ptr)
     s->frame.nb_samples = n_samples;
     samples = (float *)s->frame.data[0];
 
-    /* Parse frames, optionally preceeded by per-frame (independent) LSPs. */
+    /* Parse frames, optionally preceded by per-frame (independent) LSPs. */
     for (n = 0; n < 3; n++) {
         if (!s->has_residual_lsps) {
             int m;

@@ -1939,7 +1939,7 @@ static int mpegts_read_header(AVFormatContext *s,
     if (s->iformat == &ff_mpegts_demuxer) {
         /* normal demux */
 
-        /* first do a scanning to get all the services */
+        /* first do a scan to get all the services */
         /* NOTE: We attempt to seek on non-seekable files as well, as the
          * probe buffer usually is big enough. Only warn if the seek failed
          * on files where the seek should work. */

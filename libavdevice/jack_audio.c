@@ -272,7 +272,7 @@ static int audio_read_packet(AVFormatContext *context, AVPacket *pkt)
         }
     }
 
-    /* Wait for a packet comming back from process_callback(), if one isn't available yet */
+    /* Wait for a packet coming back from process_callback(), if one isn't available yet */
     timeout.tv_sec = av_gettime() / 1000000 + 2;
     if (sem_timedwait(&self->packet_count, &timeout)) {
         if (errno == ETIMEDOUT) {

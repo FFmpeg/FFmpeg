@@ -156,7 +156,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
              return -1;
     }
     c->bpp = avctx->bits_per_coded_sample;
-    // buffer size for RLE 'best' case when 2-byte code preceeds each pixel and there may be padding after it too
+    // buffer size for RLE 'best' case when 2-byte code precedes each pixel and there may be padding after it too
     c->decomp_size = (((avctx->width * c->bpp + 7) >> 3) + 3 * avctx->width + 2) * avctx->height + 2;
 
     /* Allocate decompression buffer */

@@ -3536,7 +3536,7 @@ static void vc1_apply_p_loop_filter(VC1Context *v)
         vc1_apply_p_v_loop_filter(v, i);
     }
 
-    /* V always preceedes H, therefore we run H one MB before V;
+    /* V always precedes H, therefore we run H one MB before V;
      * at the end of a row, we catch up to complete the row */
     if (s->mb_x) {
         for (i = 0; i < 6; i++) {
@@ -3573,7 +3573,7 @@ static int vc1_decode_p_mb(VC1Context *v)
     int skipped, fourmv;
     int block_cbp = 0, pat, block_tt = 0, block_intra = 0;
 
-    mquant = v->pq; /* Loosy initialization */
+    mquant = v->pq; /* lossy initialization */
 
     if (v->mv_type_is_raw)
         fourmv = get_bits1(gb);
@@ -4141,7 +4141,7 @@ static void vc1_decode_b_mb(VC1Context *v)
     int dmv_x[2], dmv_y[2];
     int bmvtype = BMV_TYPE_BACKWARD;
 
-    mquant      = v->pq; /* Loosy initialization */
+    mquant      = v->pq; /* lossy initialization */
     s->mb_intra = 0;
 
     if (v->dmb_is_raw)

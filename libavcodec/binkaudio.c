@@ -35,7 +35,7 @@
 #include "dct.h"
 #include "rdft.h"
 #include "fmtconvert.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 
 extern const uint16_t ff_wma_critical_freqs[25];
 
@@ -193,8 +193,8 @@ static int decode_block(BinkAudioContext *s, int16_t *out, int use_dct)
         if (s->version_b) {
             if (get_bits_left(gb) < 64)
                 return AVERROR_INVALIDDATA;
-            coeffs[0] = av_int2flt(get_bits(gb, 32)) * s->root;
-            coeffs[1] = av_int2flt(get_bits(gb, 32)) * s->root;
+            coeffs[0] = av_int2float(get_bits_long(gb, 32)) * s->root;
+            coeffs[1] = av_int2float(get_bits_long(gb, 32)) * s->root;
         } else {
             if (get_bits_left(gb) < 58)
                 return AVERROR_INVALIDDATA;

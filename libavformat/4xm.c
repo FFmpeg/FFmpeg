@@ -28,7 +28,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -131,7 +131,7 @@ static int fourxm_read_header(AVFormatContext *s,
         size = AV_RL32(&header[i + 4]);
 
         if (fourcc_tag == std__TAG) {
-            fourxm->fps = av_int2flt(AV_RL32(&header[i + 12]));
+            fourxm->fps = av_int2float(AV_RL32(&header[i + 12]));
         } else if (fourcc_tag == vtrk_TAG) {
             /* check that there is enough data */
             if (size != vtrk_SIZE) {

@@ -452,7 +452,7 @@ static int udp_open(URLContext *h, const char *uri, int flags)
         goto fail;
 
     /* Follow the requested reuse option, unless it's multicast in which
-     * case enable reuse unless explicitely disabled.
+     * case enable reuse unless explicitly disabled.
      */
     if (s->reuse_socket || (s->is_multicast && !reuse_specified)) {
         s->reuse_socket = 1;

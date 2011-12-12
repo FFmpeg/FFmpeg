@@ -155,8 +155,8 @@ be seekable, so they will fail with the pipe output protocol.
 
 Real-Time Messaging Protocol.
 
-The Real-Time Messaging Protocol (RTMP) is used for streaming
-multimedia content across a TCP/IP network.
+The Real-Time Messaging Protocol (RTMP) is used for streaming multimedia
+content across a TCP/IP network.
 
 The required syntax is:
 @example

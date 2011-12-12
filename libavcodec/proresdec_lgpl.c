@@ -559,7 +559,7 @@ static int decode_slice(AVCodecContext *avctx, ProresThreadData *td)
     sf = sf > 128 ? (sf - 96) << 2 : sf;
 
     /* scale quantization matrixes according with slice's scale factor */
-    /* TODO: this can be SIMD-optimized alot */
+    /* TODO: this can be SIMD-optimized a lot */
     if (ctx->qmat_changed || sf != ctx->prev_slice_sf) {
         ctx->prev_slice_sf = sf;
         for (i = 0; i < 64; i++) {

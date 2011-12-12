@@ -70,7 +70,7 @@ typedef struct {
     int index;               ///< index in mxf_essence_container_uls table
     const UID *codec_ul;
     int order;               ///< interleaving order if dts are equal
-    int interlaced;          ///< wether picture is interlaced
+    int interlaced;          ///< whether picture is interlaced
     int temporal_reordering;
     AVRational aspect_ratio; ///< display aspect ratio
     int closed_gop;          ///< gop is closed, used in mpeg-2 frame parsing

@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "internal.h"
 
@@ -69,7 +69,7 @@ static int thp_read_header(AVFormatContext *s,
                            avio_rb32(pb); /* Max buf size.  */
                            avio_rb32(pb); /* Max samples.  */
 
-    thp->fps             = av_d2q(av_int2flt(avio_rb32(pb)), INT_MAX);
+    thp->fps             = av_d2q(av_int2float(avio_rb32(pb)), INT_MAX);
     thp->framecnt        = avio_rb32(pb);
     thp->first_framesz   = avio_rb32(pb);
                            avio_rb32(pb); /* Data size.  */

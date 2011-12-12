@@ -30,7 +30,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/dict.h"
 #include "avformat.h"
 #include "avio_internal.h"
@@ -59,14 +59,14 @@ static int sox_write_header(AVFormatContext *s)
         ffio_wfourcc(pb, ".SoX");
         avio_wl32(pb, sox->header_size);
         avio_wl64(pb, 0); /* number of samples */
-        avio_wl64(pb, av_dbl2int(enc->sample_rate));
+        avio_wl64(pb, av_double2int(enc->sample_rate));
         avio_wl32(pb, enc->channels);
         avio_wl32(pb, comment_size);
     } else if (enc->codec_id == CODEC_ID_PCM_S32BE) {
         ffio_wfourcc(pb, "XoS.");
         avio_wb32(pb, sox->header_size);
         avio_wb64(pb, 0); /* number of samples */
-        avio_wb64(pb, av_dbl2int(enc->sample_rate));
+        avio_wb64(pb, av_double2int(enc->sample_rate));
         avio_wb32(pb, enc->channels);
         avio_wb32(pb, comment_size);
     } else {

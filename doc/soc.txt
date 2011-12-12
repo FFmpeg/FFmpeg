@@ -18,7 +18,7 @@ essential that changes to their codebase are publicly visible, clean and
 easy reviewable that again leads us to:
 * use of a revision control system like git
 * separation of cosmetic from non-cosmetic changes (this is almost entirely
-  ignored by mentors and students in soc 2006 which might lead to a suprise
+  ignored by mentors and students in soc 2006 which might lead to a surprise
   when the code will be reviewed at the end before a possible inclusion in
   FFmpeg, individual changes were generally not reviewable due to cosmetics).
 * frequent commits, so that comments can be provided early

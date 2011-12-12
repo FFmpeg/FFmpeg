@@ -697,7 +697,8 @@ typedef struct AVStream {
 
     /**
      * last packet in packet_buffer for this stream when muxing.
-     * used internally, NOT PART OF PUBLIC API, dont read or write from outside of libav*
+     * Used internally, NOT PART OF PUBLIC API, do not read or
+     * write from outside of libav*
      */
     struct AVPacketList *last_in_packet_buffer;
 #endif
@@ -731,7 +732,7 @@ typedef struct AVStream {
     int64_t interleaver_chunk_duration;
 
     /**
-     * Stream informations used internally by av_find_stream_info()
+     * Stream information used internally by av_find_stream_info()
      */
 #define MAX_STD_TIMEBASES (60*12+5)
     struct {
@@ -909,7 +910,7 @@ typedef struct AVFormatContext {
     /**
      * Decoding: duration of the stream, in AV_TIME_BASE fractional
      * seconds. Only set this value if you know none of the individual stream
-     * durations and also dont set any of them. This is deduced from the
+     * durations and also do not set any of them. This is deduced from the
      * AVStream values if not set.
      */
     int64_t duration;

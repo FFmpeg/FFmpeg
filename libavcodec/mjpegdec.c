@@ -1114,9 +1114,9 @@ static int mjpeg_decode_app(MJpegDecodeContext *s)
         av_log(s->avctx, AV_LOG_DEBUG, "APPx %8X\n", id);
     }
 
-    /* buggy AVID, it puts EOI only at every 10th frame */
-    /* also this fourcc is used by non-avid files too, it holds some
-       informations, but it's always present in AVID creates files */
+    /* Buggy AVID, it puts EOI only at every 10th frame. */
+    /* Also, this fourcc is used by non-avid files too, it holds some
+       information, but it's always present in AVID-created files. */
     if (id == AV_RL32("AVI1"))
     {
         /* structure:

@@ -32,7 +32,7 @@
 #include "libavcodec/put_bits.h"
 #include "internal.h"
 #include "libavutil/avstring.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "libavutil/mathematics.h"
 #include "libavutil/opt.h"
 #include "libavutil/dict.h"
@@ -250,7 +250,7 @@ static int mov_write_ac3_tag(AVIOContext *pb, MOVTrack *track)
 
 /**
  * This function writes extradata "as is".
- * Extradata must be formated like a valid atom (with size and tag)
+ * Extradata must be formatted like a valid atom (with size and tag).
  */
 static int mov_write_extradata_tag(AVIOContext *pb, MOVTrack *track)
 {
@@ -484,7 +484,7 @@ static int mov_write_audio_tag(AVIOContext *pb, MOVTrack *track)
         avio_wb16(pb, 0);
         avio_wb32(pb, 0x00010000);
         avio_wb32(pb, 72);
-        avio_wb64(pb, av_dbl2int(track->timescale));
+        avio_wb64(pb, av_double2int(track->timescale));
         avio_wb32(pb, track->enc->channels);
         avio_wb32(pb, 0x7F000000);
         avio_wb32(pb, av_get_bits_per_sample(track->enc->codec_id));
@@ -1302,7 +1302,7 @@ static int mov_write_tapt_tag(AVIOContext *pb, MOVTrack *track)
     avio_wb32(pb, track->enc->height << 16);
 
     return updateSize(pb, pos);
-};
+}
 
 // This box seems important for the psp playback ... without it the movie seems to hang
 static int mov_write_edts_tag(AVIOContext *pb, MOVTrack *track)
@@ -2206,6 +2206,7 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *enc = trk->enc;
     unsigned int samplesInChunk = 0;
     int size= pkt->size;
+    uint8_t *reformatted_data = NULL;
 
     if (!s->pb->seekable) return 0; /* Can't handle that */
     if (!size) return 0; /* Discard 0 sized packets */
@@ -2255,13 +2256,23 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
         if(mov->frag_seq_num>0){
             uint8_t *buf=NULL;
             size= pkt->size;
+
             if(ff_avc_parse_nal_units_buf(pkt->data, &buf, &size) < 0){
                 av_log(s, AV_LOG_ERROR, "malformated H264 bitstream\n");
                 return -1;
             }
             trk->cluster[trk->entry].data= buf;
-        }else
+            if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
+                reformatted_data= av_malloc(size);
+                memcpy(reformatted_data, buf, size);
+            }
+        }else if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams) {
+            ff_avc_parse_nal_units_buf(pkt->data, &reformatted_data,
+                                       &size);
+            avio_write(pb, reformatted_data, size);
+        } else {
             size = ff_avc_parse_nal_units(pb, pkt->data, pkt->size);
+        }
     } else if (enc->codec_id == CODEC_ID_AAC && pkt->size > 2 &&
                (AV_RB16(pkt->data) & 0xfff0) == 0xfff0) {
         av_log(s, AV_LOG_ERROR, "malformated aac bitstream, use -absf aac_adtstoasc\n");
@@ -2320,7 +2331,9 @@ int ff_mov_write_packet(AVFormatContext *s, AVPacket *pkt)
     avio_flush(pb);
 
     if (trk->hint_track >= 0 && trk->hint_track < mov->nb_streams)
-        ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry);
+        ff_mov_add_hinted_packet(s, pkt, trk->hint_track, trk->entry,
+                                 reformatted_data, size);
+    av_free(reformatted_data);
     return 0;
 }
 

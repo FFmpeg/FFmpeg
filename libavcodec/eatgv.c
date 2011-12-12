@@ -157,7 +157,7 @@ static int tgv_decode_inter(TgvContext * s, const uint8_t *buf, const uint8_t *b
     vector_bits       = AV_RL16(&buf[6]);
     buf += 12;
 
-    /* allocate codebook buffers as neccessary */
+    /* allocate codebook buffers as necessary */
     if (num_mvs > s->num_mvs) {
         s->mv_codebook = av_realloc(s->mv_codebook, num_mvs*2*sizeof(int));
         s->num_mvs = num_mvs;
@@ -293,7 +293,7 @@ static int tgv_decode_frame(AVCodecContext *avctx,
         s->frame.buffer_hints = FF_BUFFER_HINTS_VALID;
         s->frame.linesize[0] = s->width;
 
-        /* allocate additional 12 bytes to accomodate av_memcpy_backptr() OUTBUF_PADDED optimisation */
+        /* allocate additional 12 bytes to accommodate av_memcpy_backptr() OUTBUF_PADDED optimisation */
         s->frame.data[0] = av_malloc(s->width*s->height + 12);
         if (!s->frame.data[0])
             return AVERROR(ENOMEM);

@@ -153,7 +153,7 @@ static int g722_encode_trellis(AVCodecContext *avctx,
 
         for (j = 0; j < frontier && nodes[0][j]; j++) {
             /* Only k >> 2 affects the future adaptive state, therefore testing
-             * small steps that don't change k >> 2 is useless, the orignal
+             * small steps that don't change k >> 2 is useless, the original
              * value from encode_low is better than them. Since we step k
              * in steps of 4, make sure range is a multiple of 4, so that
              * we don't miss the original value from encode_low. */

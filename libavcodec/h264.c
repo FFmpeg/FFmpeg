@@ -2201,8 +2201,8 @@ static av_always_inline void hl_decode_mb_444_internal(H264Context *h, int simpl
 static void hl_decode_mb_simple_ ## bits(H264Context *h){ \
     hl_decode_mb_internal(h, 1, sh); \
 }
-hl_decode_mb_simple(0, 8);
-hl_decode_mb_simple(1, 16);
+hl_decode_mb_simple(0, 8)
+hl_decode_mb_simple(1, 16)
 
 /**
  * Process a macroblock; this handles edge cases, such as interlacing.
@@ -2926,7 +2926,7 @@ static int decode_slice_header(H264Context *h, H264Context *h0){
              * FIXME: avoiding a memcpy would be nice, but ref handling makes many assumptions
              * about there being no actual duplicates.
              * FIXME: this doesn't copy padding for out-of-frame motion vectors.  Given we're
-             * concealing a lost frame, this probably isn't noticable by comparison, but it should
+             * concealing a lost frame, this probably isn't noticeable by comparison, but it should
              * be fixed. */
             if (h->short_ref_count) {
                 if (prev) {
@@ -3354,7 +3354,7 @@ static av_always_inline void fill_filter_caches_inter(H264Context *h, MpegEncCon
 
 /**
  *
- * @return non zero if the loop filter can be skiped
+ * @return non zero if the loop filter can be skipped
  */
 static int fill_filter_caches(H264Context *h, int mb_type){
     MpegEncContext * const s = &h->s;
@@ -3879,7 +3879,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
                 av_log(h->s.avctx, AV_LOG_ERROR, "Invalid mix of idr and non-idr slices");
                 return -1;
             }
-            idr(h); //FIXME ensure we don't loose some frames if there is reordering
+            idr(h); // FIXME ensure we don't lose some frames if there is reordering
         case NAL_SLICE:
             init_get_bits(&hx->s.gb, ptr, bit_length);
             hx->intra_gb_ptr=

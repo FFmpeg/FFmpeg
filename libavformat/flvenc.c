@@ -20,7 +20,7 @@
  */
 
 #include "libavutil/intreadwrite.h"
-#include "libavutil/intfloat_readwrite.h"
+#include "libavutil/intfloat.h"
 #include "avformat.h"
 #include "flv.h"
 #include "internal.h"
@@ -165,7 +165,7 @@ static void put_avc_eos_tag(AVIOContext *pb, unsigned ts) {
 static void put_amf_double(AVIOContext *pb, double d)
 {
     avio_w8(pb, AMF_DATA_TYPE_NUMBER);
-    avio_wb64(pb, av_dbl2int(d));
+    avio_wb64(pb, av_double2int(d));
 }
 
 static void put_amf_bool(AVIOContext *pb, int b) {
@@ -380,7 +380,7 @@ static int flv_write_trailer(AVFormatContext *s)
 
     file_size = avio_tell(pb);
 
-    /* update informations */
+    /* update information */
     avio_seek(pb, flv->duration_offset, SEEK_SET);
     put_amf_double(pb, flv->duration / (double)1000);
     avio_seek(pb, flv->filesize_offset, SEEK_SET);

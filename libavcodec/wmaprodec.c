@@ -86,6 +86,7 @@
  * subframe in order to reconstruct the output samples.
  */
 
+#include "libavutil/intfloat.h"
 #include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "internal.h"
@@ -823,8 +824,8 @@ static int decode_coeffs(WMAProDecodeCtx *s, int c)
                     v1 = get_vlc2(&s->gb, vec1_vlc.table, VLCBITS, VEC1MAXDEPTH);
                     if (v1 == HUFF_VEC1_SIZE - 1)
                         v1 += ff_wma_get_large_val(&s->gb);
-                    vals[i  ] = ((av_alias32){ .f32 = v0 }).u32;
-                    vals[i+1] = ((av_alias32){ .f32 = v1 }).u32;
+                    vals[i  ] = av_float2int(v0);
+                    vals[i+1] = av_float2int(v1);
                 } else {
                     vals[i]   = fval_tab[symbol_to_vec2[idx] >> 4 ];
                     vals[i+1] = fval_tab[symbol_to_vec2[idx] & 0xF];
@@ -1425,7 +1426,7 @@ static int remaining_bits(WMAProDecodeCtx *s, GetBitContext *gb)
  *@param s codec context
  *@param gb bitstream reader context
  *@param len length of the partial frame
- *@param append decides wether to reset the buffer or not
+ *@param append decides whether to reset the buffer or not
  */
 static void save_bits(WMAProDecodeCtx *s, GetBitContext* gb, int len,
                       int append)

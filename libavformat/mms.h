@@ -33,7 +33,7 @@ typedef struct {
 
     /** Buffer for outgoing packets. */
     /*@{*/
-    uint8_t *write_out_ptr;              ///< Pointer for writting the buffer.
+    uint8_t *write_out_ptr;              ///< Pointer for writing the buffer.
     uint8_t out_buffer[512];            ///< Buffer for outgoing packet.
     /*@}*/
 
