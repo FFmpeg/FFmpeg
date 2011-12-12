@@ -1530,7 +1530,11 @@ static void decode_postinit(H264Context *h, int setup_finished){
                 h->next_outputed_poc = INT_MIN;
             }
         } else {
-            h->next_outputed_poc = out->poc;
+            if (out_idx == 0 && pics > 1 && h->delayed_pic[0]->f.key_frame) {
+                h->next_outputed_poc = INT_MIN;
+            } else {
+                h->next_outputed_poc = out->poc;
+            }
         }
         h->mmco_reset = 0;
     }else{
