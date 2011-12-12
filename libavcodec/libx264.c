@@ -245,7 +245,7 @@ static av_cold int X264_close(AVCodecContext *avctx)
                         "bad value for '%s': '%s'\n", opt, param);            \
             return -1;                                                        \
         }                                                                     \
-    } while (0);
+    } while (0)
 
 static int convert_pix_fmt(enum PixelFormat pix_fmt)
 {

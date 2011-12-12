@@ -277,7 +277,7 @@ static int decode_picture_header(AVCodecContext *avctx, const uint8_t *buf, cons
             val = q;                                                    \
             SKIP_BITS(re, gb, q+1);                                     \
         }                                                               \
-    } while (0);                                                        \
+    } while (0)
 
 #define TOSIGNED(x) (((x) >> 1) ^ (-((x) & 1)))
 
