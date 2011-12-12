@@ -514,6 +514,6 @@ Improvements to codec or demuxer might change the FATE results. Make sure
 to commit the update reference with the change and to explain in the comment
 why the expected result changed.
 
-Please refer to @file{doc/fate.txt}.
+Please refer to @url{fate.html}.
 
 @bye
