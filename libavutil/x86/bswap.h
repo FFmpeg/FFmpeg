@@ -41,14 +41,7 @@ static av_always_inline av_const unsigned av_bswap16(unsigned x)
 #define av_bswap32 av_bswap32
 static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 {
-#if HAVE_BSWAP
     __asm__("bswap   %0" : "+r" (x));
-#else
-    __asm__("rorw    $8,  %w0 \n\t"
-            "rorl    $16, %0  \n\t"
-            "rorw    $8,  %w0"
-            : "+r"(x));
-#endif
     return x;
 }
 
