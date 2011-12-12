@@ -81,7 +81,7 @@ Configuration options:
                            and binaries will be unredistributable [no]
   --disable-doc            do not build documentation
   --disable-ffmpeg         disable ffmpeg build
-  --disable-avconv         disable avconv build
+  --enable-avconv          enable  avconv build
   --disable-ffplay         disable ffplay build
   --disable-ffprobe        disable ffprobe build
   --disable-ffserver       disable ffserver build
@@ -1799,7 +1799,6 @@ enable debug
 enable doc
 enable fastdiv
 enable ffmpeg
-enable avconv
 enable ffplay
 enable ffprobe
 enable ffserver
