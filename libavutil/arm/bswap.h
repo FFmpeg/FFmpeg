@@ -51,6 +51,7 @@ static av_always_inline av_const unsigned av_bswap16(unsigned x)
 }
 #endif
 
+#if !AV_GCC_VERSION_AT_LEAST(4,5)
 #define av_bswap32 av_bswap32
 static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 {
@@ -66,6 +67,7 @@ static av_always_inline av_const uint32_t av_bswap32(uint32_t x)
 #endif /* HAVE_ARMV6 */
     return x;
 }
+#endif /* !AV_GCC_VERSION_AT_LEAST(4,5) */
 
 #endif /* __ARMCC_VERSION */
 
