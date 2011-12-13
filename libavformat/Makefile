@@ -348,6 +348,4 @@ EXAMPLES  = metadata output
 TESTPROGS = seek
 TOOLS     = pktdumper probetest
 
-include $(SRC_PATH)/subdir.mak
-
 $(SUBDIR)output-example$(EXESUF): ELIBS = -lswscale

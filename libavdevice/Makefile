@@ -32,5 +32,3 @@ SKIPHEADERS-$(HAVE_ALSA_ASOUNDLIB_H)     += alsa-audio.h
 SKIPHEADERS-$(HAVE_SNDIO_H)              += sndio_common.h
 
 TESTPROGS = timefilter
-
-include $(SRC_PATH)/subdir.mak

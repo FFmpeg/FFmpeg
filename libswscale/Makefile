@@ -22,5 +22,3 @@ OBJS-$(HAVE_YASM)          +=  x86/scale.o
 TESTPROGS = colorspace swscale
 
 DIRS = bfin mlib ppc sparc x86
-
-include $(SRC_PATH)/subdir.mak
