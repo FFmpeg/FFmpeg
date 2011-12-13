@@ -922,7 +922,7 @@ static void do_exit(VideoState *is)
     exit(0);
 }
 
-static int video_open(VideoState *is){
+static int video_open(VideoState *is, int force_set_video_mode){
     int flags = SDL_HWSURFACE|SDL_ASYNCBLIT|SDL_HWACCEL;
     int w,h;
 
@@ -949,7 +949,7 @@ static int video_open(VideoState *is){
         h = 480;
     }
     if(screen && is->width == screen->w && screen->w == w
-       && is->height== screen->h && screen->h == h)
+       && is->height== screen->h && screen->h == h && !force_set_video_mode)
         return 0;
     screen = SDL_SetVideoMode(w, h, 0, flags);
     if (!screen) {
@@ -970,7 +970,7 @@ static int video_open(VideoState *is){
 static void video_display(VideoState *is)
 {
     if(!screen)
-        video_open(is);
+        video_open(is, 0);
     if (is->audio_st && is->show_mode != SHOW_MODE_VIDEO)
         video_audio_display(is);
     else if (is->video_st)
@@ -2781,7 +2781,7 @@ static void toggle_full_screen(VideoState *is)
         is->pictq[i].reallocate = 1;
     }
 #endif
-    video_open(is);
+    video_open(is, 1);
 }
 
 static void toggle_pause(VideoState *is)
@@ -2933,7 +2933,7 @@ static void event_loop(VideoState *cur_stream)
             do_exit(cur_stream);
             break;
         case FF_ALLOC_EVENT:
-            video_open(event.user.data1);
+            video_open(event.user.data1, 0);
             alloc_picture(event.user.data1);
             break;
         case FF_REFRESH_EVENT:
