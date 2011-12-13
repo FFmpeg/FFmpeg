@@ -218,6 +218,7 @@ Codecs:
   tta.c                                 Alex Beregszaszi, Jaikrishnan Menon
   txd.c                                 Ivo van Poorten
   ulti*                                 Kostya Shishkov
+  v410*.c                               Derek Buitenhuis
   vb.c                                  Kostya Shishkov
   vble.c                                Derek Buitenhuis
   vc1*                                  Kostya Shishkov
