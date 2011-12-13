@@ -1447,8 +1447,12 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
     int tr_flags=0;
     int i;
 
-    tr_flags |= 0x700; //FIXME
+    tr_flags |= 0x600; //FIXME
     for(i=track->cluster_write_index; i<track->entry; i++){
+        int64_t duration = i + 1 == track->entry ?
+                track->trackDuration - track->cluster[i].dts + track->cluster[0].dts : /* readjusting */
+                track->cluster[i+1].dts - track->cluster[i].dts;
+        if(duration         != 1) tr_flags |= 0x100;
         if(track->cluster[i].cts) tr_flags |= 0x800;
     }
 
