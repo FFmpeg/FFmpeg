@@ -310,7 +310,7 @@ static int decode_slice(MpegEncContext *s){
             max_extra+= 17;
 
         /* buggy padding but the frame should still end approximately at the bitstream end */
-        if((s->workaround_bugs&FF_BUG_NO_PADDING) && (s->err_recognition&AV_EF_BUFFER))
+        if((s->workaround_bugs&FF_BUG_NO_PADDING) && (s->err_recognition&(AV_EF_BUFFER|AV_EF_AGGRESSIVE)))
             max_extra+= 48;
         else if((s->workaround_bugs&FF_BUG_NO_PADDING))
             max_extra+= 256*256*256*64;
