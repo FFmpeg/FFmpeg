@@ -11,6 +11,7 @@ corresponding value to true. They can be set to false by prefixing
 with "no" the option name, for example using "-nofoo" in the
 command line will set to false the boolean option with name "foo".
 
+@anchor{Stream specifiers}
 @section Stream specifiers
 Some options are applied per-stream, e.g. bitrate or codec. Stream specifiers
 are used to precisely specify which stream(s) does a given option belong to.
