@@ -708,7 +708,7 @@ float ff_rate_estimate_qscale(MpegEncContext *s, int dry_run)
             dts_pic= s->last_picture_ptr;
 
 //if(dts_pic)
-//            av_log(NULL, AV_LOG_ERROR, "%Ld %Ld %Ld %d\n", s->current_picture_ptr->pts, s->user_specified_pts, dts_pic->pts, picture_number);
+//            av_log(NULL, AV_LOG_ERROR, "%"PRId64" %"PRId64" %"PRId64" %d\n", s->current_picture_ptr->pts, s->user_specified_pts, dts_pic->pts, picture_number);
 
         if (!dts_pic || dts_pic->f.pts == AV_NOPTS_VALUE)
             wanted_bits= (uint64_t)(s->bit_rate*(double)picture_number/fps);
