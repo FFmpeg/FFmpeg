@@ -749,7 +749,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
     avctx->frame_number = 0;
 #if FF_API_ER
 
-    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition separate: %d; %d\n",
+    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition separate: %d; %X\n",
            avctx->error_recognition, avctx->err_recognition);
     switch(avctx->error_recognition){
         case FF_ER_EXPLODE        : avctx->err_recognition |= AV_EF_EXPLODE | AV_EF_COMPLIANT | AV_EF_CAREFUL;
@@ -760,7 +760,7 @@ int attribute_align_arg avcodec_open2(AVCodecContext *avctx, AVCodec *codec, AVD
         case FF_ER_CAREFUL        : avctx->err_recognition |= AV_EF_CAREFUL;
     }
 
-    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition combined: %d; %d\n",
+    av_log(avctx, AV_LOG_DEBUG, "err{or,}_recognition combined: %d; %X\n",
            avctx->error_recognition, avctx->err_recognition);
 #endif
 
