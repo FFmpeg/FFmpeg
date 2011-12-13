@@ -626,7 +626,7 @@ enum PixelFormat avcodec_default_get_format(struct AVCodecContext *s, const enum
 void avcodec_get_frame_defaults(AVFrame *pic){
     memset(pic, 0, sizeof(AVFrame));
 
-    pic->pts = pic->best_effort_timestamp = AV_NOPTS_VALUE;
+    pic->pts = pic->pkt_dts = pic->pkt_pts = pic->best_effort_timestamp = AV_NOPTS_VALUE;
     pic->pkt_pos = -1;
     pic->key_frame= 1;
     pic->sample_aspect_ratio = (AVRational){0, 1};
