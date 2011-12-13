@@ -113,7 +113,7 @@ AVInputFormat ff_bit_demuxer = {
     .extensions  = "bit",
 };
 
-#ifdef CONFIG_MUXERS
+#if CONFIG_MUXERS
 static int write_header(AVFormatContext *s)
 {
     AVCodecContext *enc = s->streams[0]->codec;
