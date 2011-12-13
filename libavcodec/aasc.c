@@ -79,8 +79,13 @@ static int aasc_decode_frame(AVCodecContext *avctx,
     case 0:
         stride = (avctx->width * 3 + 3) & ~3;
         for(i = avctx->height - 1; i >= 0; i--){
+            if(avctx->width*3 > buf_size){
+                av_log(avctx, AV_LOG_ERROR, "Next line is beyond buffer bounds\n");
+                break;
+            }
             memcpy(s->frame.data[0] + i*s->frame.linesize[0], buf, avctx->width*3);
             buf += stride;
+            buf_size -= stride;
         }
         break;
     case 1:
