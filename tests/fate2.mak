@@ -265,3 +265,10 @@ fate-utvideo_yuv422_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv422_le
 
 FATE_TESTS += fate-utvideo_yuv422_median
 fate-utvideo_yuv422_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv422_median.avi
+
+FATE_TESTS += fate-v410dec
+fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov
+
+FATE_TESTS += fate-v410enc
+fate-v410enc: tests/vsynth1/00.pgm
+fate-v410enc: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -flags +bitexact -vcodec v410 -f avi
