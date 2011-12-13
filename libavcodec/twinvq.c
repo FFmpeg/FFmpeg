@@ -871,7 +871,7 @@ static int twin_decode_frame(AVCodecContext * avctx, void *data,
     }
 
     *got_frame_ptr   = 1;
-    *(AVFrame *)data = tctx->frame;;
+    *(AVFrame *)data = tctx->frame;
 
     return buf_size;
 }
