@@ -1447,7 +1447,10 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
     int tr_flags=0;
     int i;
 
-    tr_flags |= 0xF00; //FIXME
+    tr_flags |= 0x700; //FIXME
+    for(i=track->cluster_write_index; i<track->entry; i++){
+        if(track->cluster[i].cts) tr_flags |= 0x800;
+    }
 
     avio_wb32(pb, 0);
     ffio_wfourcc(pb, "trun");
