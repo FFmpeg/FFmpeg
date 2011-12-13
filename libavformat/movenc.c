@@ -1447,12 +1447,14 @@ static int mov_write_trun_tag(AVIOContext *pb, MOVTrack *track)
     int tr_flags=0;
     int i;
 
-    tr_flags |= 0x600; //FIXME
+    tr_flags |= 0x200; //FIXME
     for(i=track->cluster_write_index; i<track->entry; i++){
         int64_t duration = i + 1 == track->entry ?
                 track->trackDuration - track->cluster[i].dts + track->cluster[0].dts : /* readjusting */
                 track->cluster[i+1].dts - track->cluster[i].dts;
         if(duration         != 1) tr_flags |= 0x100;
+        if(track->trex_flags != ((track->cluster[i].flags&MOV_SYNC_SAMPLE) ? 0x02000000 : 0x01010000))
+                                  tr_flags |= 0x400;
         if(track->cluster[i].cts) tr_flags |= 0x800;
     }
 
@@ -1912,7 +1914,8 @@ static int mov_write_trex_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     avio_wb32(pb, 1); // stsd_id
     avio_wb32(pb, 1); // duration
     avio_wb32(pb, 1/*Size*/);
-    avio_wb32(pb, 1<<16);
+    track->trex_flags= st->codec->codec_type != AVMEDIA_TYPE_VIDEO ?  0x02000000 : 0x01010000;
+    avio_wb32(pb, track->trex_flags);
     return updateSize(pb, pos);
 }
 
