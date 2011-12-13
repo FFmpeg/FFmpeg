@@ -416,8 +416,10 @@ static int amovie_get_samples(AVFilterLink *outlink)
     /* decode and update the movie pkt */
     ret = avcodec_decode_audio3(movie->codec_ctx, movie->samples_buf,
                                 &decoded_data_size, &movie->pkt);
-    if (ret < 0)
+    if (ret < 0) {
+        movie->pkt.size = 0;
         return ret;
+    }
     movie->pkt.data += ret;
     movie->pkt.size -= ret;
 
