@@ -175,7 +175,8 @@
          if(status.dropped_frames > 0) {
               reset_dv1394();
          } else {
-              for(int i = 0; i < status.n_clear_frames; i++) {
+              int i;
+              for(i = 0; i < status.n_clear_frames; i++) {
                   copy_DV_frame();
               }
          }

@@ -234,10 +234,10 @@ static void encode_ac_coeffs(AVCodecContext *avctx, PutBitContext *pb,
     int prev_run = 4;
     int prev_level = 2;
 
-    int run = 0, level, code;
-    for (int i = 1; i < 64; i++) {
+    int run = 0, level, code, i, j;
+    for (i = 1; i < 64; i++) {
         int indp = progressive_scan[i];
-        for (int j = 0; j < blocks_per_slice; j++) {
+        for (j = 0; j < blocks_per_slice; j++) {
             int val = QSCALE(qmat, indp, in[(j << 6) + indp]);
             if (val) {
                 encode_codeword(pb, run, run_to_cb[FFMIN(prev_run, 15)]);
@@ -441,13 +441,13 @@ static int prores_encode_picture(AVCodecContext *avctx, AVFrame *pic,
 {
     int mb_width = (avctx->width + 15) >> 4;
     int mb_height = (avctx->height + 15) >> 4;
-    int hdr_size, sl_size;
+    int hdr_size, sl_size, i;
     int mb_y, sl_data_size, qp;
     int unsafe_bot, unsafe_right;
     uint8_t *sl_data, *sl_data_sizes;
     int slice_per_line = 0, rem = mb_width;
 
-    for (int i = av_log2(DEFAULT_SLICE_MB_WIDTH); i >= 0; --i) {
+    for (i = av_log2(DEFAULT_SLICE_MB_WIDTH); i >= 0; --i) {
         slice_per_line += rem >> i;
         rem &= (1 << i) - 1;
     }

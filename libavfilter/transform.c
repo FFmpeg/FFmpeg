@@ -116,19 +116,22 @@ void avfilter_get_matrix(float x_shift, float y_shift, float angle, float zoom, 
 
 void avfilter_add_matrix(const float *m1, const float *m2, float *result)
 {
-    for (int i = 0; i < 9; i++)
+    int i;
+    for (i = 0; i < 9; i++)
         result[i] = m1[i] + m2[i];
 }
 
 void avfilter_sub_matrix(const float *m1, const float *m2, float *result)
 {
-    for (int i = 0; i < 9; i++)
+    int i;
+    for (i = 0; i < 9; i++)
         result[i] = m1[i] - m2[i];
 }
 
 void avfilter_mul_matrix(const float *m1, float scalar, float *result)
 {
-    for (int i = 0; i < 9; i++)
+    int i;
+    for (i = 0; i < 9; i++)
         result[i] = m1[i] * scalar;
 }
 
