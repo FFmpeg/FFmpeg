@@ -2043,7 +2043,8 @@ static int audio_decode_frame(VideoState *is, double *pts_ptr)
     AVPacket *pkt = &is->audio_pkt;
     AVCodecContext *dec= is->audio_st->codec;
     int len1, len2, data_size, resampled_data_size;
-    int64_t dec_channel_layout, got_frame;
+    int64_t dec_channel_layout;
+    int got_frame;
     double pts;
     int new_packet = 0;
     int flush_complete = 0;
