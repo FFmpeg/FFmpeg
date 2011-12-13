@@ -7,6 +7,7 @@ HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
               doc/general.html                                          \
               doc/git-howto.html                                        \
               doc/libavfilter.html                                      \
+              doc/nut.html                                              \
               doc/platform.html                                         \
 
 DOCS = $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
