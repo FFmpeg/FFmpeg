@@ -180,6 +180,8 @@ static void audio_decode_example(const char *outfilename, const char *filename)
         }
         avpkt.size -= len;
         avpkt.data += len;
+        avpkt.dts =
+        avpkt.pts = AV_NOPTS_VALUE;
         if (avpkt.size < AUDIO_REFILL_THRESH) {
             /* Refill the input buffer, to avoid trying to decode
              * incomplete frames. Instead of this, one could also use
