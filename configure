@@ -929,6 +929,7 @@ CONFIG_LIST="
     golomb
     gpl
     gray
+    h264chroma
     h264dsp
     h264pred
     hardcoded_tables
@@ -1292,7 +1293,7 @@ h263_encoder_select="aandct"
 h263_vaapi_hwaccel_select="vaapi h263_decoder"
 h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="golomb h264dsp h264pred"
+h264_decoder_select="golomb h264chroma h264dsp h264pred"
 h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_select="vaapi h264_decoder"
@@ -1345,14 +1346,14 @@ rv10_decoder_select="h263_decoder"
 rv10_encoder_select="h263_encoder"
 rv20_decoder_select="h263_decoder"
 rv20_encoder_select="h263_encoder"
-rv30_decoder_select="golomb h264pred"
-rv40_decoder_select="golomb h264pred"
+rv30_decoder_select="golomb h264chroma h264pred"
+rv40_decoder_select="golomb h264chroma h264pred"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt"
 snow_encoder_select="aandct dwt"
 svq1_encoder_select="aandct"
-svq3_decoder_select="golomb h264dsp h264pred"
+svq3_decoder_select="golomb h264chroma h264dsp h264pred"
 svq3_decoder_suggest="zlib"
 theora_decoder_select="vp3_decoder"
 tiff_decoder_suggest="zlib"
@@ -1360,7 +1361,7 @@ tiff_encoder_suggest="zlib"
 truehd_decoder_select="mlp_decoder"
 tscc_decoder_select="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
-vc1_decoder_select="h263_decoder"
+vc1_decoder_select="h263_decoder h264chroma"
 vc1_dxva2_hwaccel_deps="dxva2api_h DXVA_PictureParameters_wDecodedPictureIndex"
 vc1_dxva2_hwaccel_select="dxva2 vc1_decoder"
 vc1_vaapi_hwaccel_select="vaapi vc1_decoder"
@@ -1397,7 +1398,7 @@ vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # parsers
-h264_parser_select="golomb h264dsp h264pred"
+h264_parser_select="golomb h264chroma h264dsp h264pred"
 
 # external libraries
 libdirac_decoder_deps="libdirac !libschroedinger"

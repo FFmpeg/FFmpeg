@@ -9,6 +9,9 @@ YASM-OBJS-FFT-$(HAVE_SSE)              += x86/fft_sse.o
 YASM-OBJS-$(CONFIG_FFT)                += x86/fft_mmx.o                 \
                                           $(YASM-OBJS-FFT-yes)
 
+YASM-OBJS-$(CONFIG_H264CHROMA)         += x86/h264_chromamc.o           \
+                                          x86/h264_chromamc_10bit.o
+
 MMX-OBJS-$(CONFIG_H264DSP)             += x86/h264dsp_mmx.o
 YASM-OBJS-$(CONFIG_H264DSP)            += x86/h264_deblock.o            \
                                           x86/h264_deblock_10bit.o      \
@@ -48,8 +51,6 @@ MMX-OBJS-$(CONFIG_VP8_DECODER)         += x86/vp8dsp-init.o
 MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
                                           x86/deinterlace.o             \
                                           x86/fmtconvert.o              \
-                                          x86/h264_chromamc.o           \
-                                          x86/h264_chromamc_10bit.o     \
                                           x86/h264_qpel_10bit.o         \
                                           $(YASM-OBJS-yes)
 
