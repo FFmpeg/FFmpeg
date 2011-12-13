@@ -143,7 +143,7 @@ static void filter(AVFilterContext *ctx, AVFilterBufferRef *dstpic,
         int w = dstpic->video->w;
         int h = dstpic->video->h;
         int refs = yadif->cur->linesize[i];
-        int df = (yadif->csp->comp[i].depth_minus1+1) / 8;
+        int df = (yadif->csp->comp[i].depth_minus1 + 8) / 8;
 
         if (i == 1 || i == 2) {
         /* Why is this not part of the per-plane description thing? */
@@ -210,7 +210,7 @@ static void return_frame(AVFilterContext *ctx, int is_second)
 
     if (!yadif->csp)
         yadif->csp = &av_pix_fmt_descriptors[link->format];
-    if (yadif->csp->comp[0].depth_minus1 == 15)
+    if (yadif->csp->comp[0].depth_minus1 / 8 == 1)
         yadif->filter_line = (void*)filter_line_c_16bit;
 
     filter(ctx, yadif->out, tff ^ !is_second, tff);
@@ -352,6 +352,9 @@ static int query_formats(AVFilterContext *ctx)
         AV_NE( PIX_FMT_GRAY16BE, PIX_FMT_GRAY16LE ),
         PIX_FMT_YUV440P,
         PIX_FMT_YUVJ440P,
+        AV_NE( PIX_FMT_YUV420P10BE, PIX_FMT_YUV420P10LE ),
+        AV_NE( PIX_FMT_YUV422P10BE, PIX_FMT_YUV422P10LE ),
+        AV_NE( PIX_FMT_YUV444P10BE, PIX_FMT_YUV444P10LE ),
         AV_NE( PIX_FMT_YUV420P16BE, PIX_FMT_YUV420P16LE ),
         AV_NE( PIX_FMT_YUV422P16BE, PIX_FMT_YUV422P16LE ),
         AV_NE( PIX_FMT_YUV444P16BE, PIX_FMT_YUV444P16LE ),

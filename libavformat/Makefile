@@ -369,5 +369,3 @@ OBJS-$(CONFIG_UDP_PROTOCOL)              += udp.o
 
 TESTPROGS = seek
 TOOLS     = pktdumper probetest
-
-include $(SRC_PATH)/subdir.mak

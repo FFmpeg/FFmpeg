@@ -1864,7 +1864,7 @@ static av_always_inline void decode_cabac_luma_residual( H264Context *h, const u
 
 /**
  * Decode a macroblock.
- * @return 0 if OK, AC_ERROR / DC_ERROR / MV_ERROR if an error is noticed
+ * @return 0 if OK, ER_AC_ERROR / ER_DC_ERROR / ER_MV_ERROR if an error is noticed
  */
 int ff_h264_decode_mb_cabac(H264Context *h) {
     MpegEncContext * const s = &h->s;

@@ -26,5 +26,3 @@ $(SUBDIR)x86/swscale_mmx.o: CFLAGS += $(NOREDZONE_FLAGS)
 TESTPROGS = colorspace swscale
 
 DIRS = bfin mlib ppc sparc x86
-
-include $(SRC_PATH)/subdir.mak

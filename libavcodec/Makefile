@@ -732,8 +732,6 @@ DIRS = alpha arm bfin mlib ppc ps2 sh4 sparc x86
 
 CLEANFILES = *_tables.c *_tables.h *_tablegen$(HOSTEXESUF)
 
-include $(SRC_PATH)/subdir.mak
-
 $(SUBDIR)dct-test$(EXESUF): $(SUBDIR)dctref.o
 
 TRIG_TABLES  = cos cos_fixed sin

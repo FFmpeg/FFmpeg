@@ -98,6 +98,7 @@
 #include "aacsbr.h"
 #include "mpeg4audio.h"
 #include "aacadtsdec.h"
+#include "libavutil/intfloat.h"
 
 #include <assert.h>
 #include <errno.h>
@@ -107,11 +108,6 @@
 #if ARCH_ARM
 #   include "arm/aac.h"
 #endif
-
-union float754 {
-    float f;
-    uint32_t i;
-};
 
 static VLC vlc_scalefactors;
 static VLC vlc_spectral[11];
@@ -1023,7 +1019,7 @@ static inline float *VMUL4(float *dst, const float *v, unsigned idx,
 static inline float *VMUL2S(float *dst, const float *v, unsigned idx,
                             unsigned sign, const float *scale)
 {
-    union float754 s0, s1;
+    union av_intfloat32 s0, s1;
 
     s0.f = s1.f = *scale;
     s0.i ^= sign >> 1 << 31;
@@ -1041,8 +1037,8 @@ static inline float *VMUL4S(float *dst, const float *v, unsigned idx,
                             unsigned sign, const float *scale)
 {
     unsigned nz = idx >> 12;
-    union float754 s = { .f = *scale };
-    union float754 t;
+    union av_intfloat32 s = { .f = *scale };
+    union av_intfloat32 t;
 
     t.i = s.i ^ (sign & 1U<<31);
     *dst++ = v[idx    & 3] * t.f;
@@ -1291,7 +1287,7 @@ static int decode_spectrum_and_dequant(AACContext *ac, float coef[1024],
 
 static av_always_inline float flt16_round(float pf)
 {
-    union float754 tmp;
+    union av_intfloat32 tmp;
     tmp.f = pf;
     tmp.i = (tmp.i + 0x00008000U) & 0xFFFF0000U;
     return tmp.f;
@@ -1299,7 +1295,7 @@ static av_always_inline float flt16_round(float pf)
 
 static av_always_inline float flt16_even(float pf)
 {
-    union float754 tmp;
+    union av_intfloat32 tmp;
     tmp.f = pf;
     tmp.i = (tmp.i + 0x00007FFFU + (tmp.i & 0x00010000U >> 16)) & 0xFFFF0000U;
     return tmp.f;
@@ -1307,7 +1303,7 @@ static av_always_inline float flt16_even(float pf)
 
 static av_always_inline float flt16_trunc(float pf)
 {
-    union float754 pun;
+    union av_intfloat32 pun;
     pun.f = pf;
     pun.i &= 0xFFFF0000U;
     return pun.f;

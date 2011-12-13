@@ -86,6 +86,4 @@ DIRS = arm bfin sh4 x86
 
 ARCH_HEADERS = bswap.h intmath.h intreadwrite.h timer.h
 
-include $(SRC_PATH)/subdir.mak
-
 $(SUBDIR)lzo-test$(EXESUF): ELIBS = -llzo2

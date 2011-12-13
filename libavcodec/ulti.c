@@ -40,6 +40,14 @@ typedef struct UltimotionDecodeContext {
     const uint8_t *ulti_codebook;
 } UltimotionDecodeContext;
 
+#define CHECK_OVERREAD_SIZE(size) \
+    do { \
+        if (buf_end - buf < (size)) { \
+            av_log(avctx, AV_LOG_ERROR, "Insufficient data\n"); \
+            return AVERROR_INVALIDDATA; \
+        } \
+    } while(0)
+
 static av_cold int ulti_decode_init(AVCodecContext *avctx)
 {
     UltimotionDecodeContext *s = avctx->priv_data;
@@ -224,6 +232,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
     int i;
     int skip;
     int tmp;
+    const uint8_t *buf_end = buf + buf_size;
 
     s->frame.reference = 3;
     s->frame.buffer_hints = FF_BUFFER_HINTS_VALID | FF_BUFFER_HINTS_PRESERVE | FF_BUFFER_HINTS_REUSABLE;
@@ -237,10 +246,12 @@ static int ulti_decode_frame(AVCodecContext *avctx,
         if(blocks >= s->blocks || y >= s->height)
             break;//all blocks decoded
 
+        CHECK_OVERREAD_SIZE(1);
         idx = *buf++;
         if((idx & 0xF8) == 0x70) {
             switch(idx) {
             case 0x70: //change modifier
+                CHECK_OVERREAD_SIZE(1);
                 modifier = *buf++;
                 if(modifier>1)
                     av_log(avctx, AV_LOG_INFO, "warning: modifier must be 0 or 1, got %i\n", modifier);
@@ -255,6 +266,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
                 done = 1;
                 break;
             case 0x74: //skip some blocks
+                CHECK_OVERREAD_SIZE(1);
                 skip = *buf++;
                 if ((blocks + skip) >= s->blocks)
                     break;
@@ -281,19 +293,24 @@ static int ulti_decode_frame(AVCodecContext *avctx,
                 chroma = 0;
             } else {
                 cf = 0;
-                if (idx)
+                if (idx) {
+                    CHECK_OVERREAD_SIZE(1);
                     chroma = *buf++;
+                }
             }
             for (i = 0; i < 4; i++) { // for every subblock
                 code = (idx >> (6 - i*2)) & 3; //extract 2 bits
                 if(!code) //skip subblock
                     continue;
-                if(cf)
+                if(cf) {
+                    CHECK_OVERREAD_SIZE(1);
                     chroma = *buf++;
+                }
                 tx = x + block_coords[i * 2];
                 ty = y + block_coords[(i * 2) + 1];
                 switch(code) {
                 case 1:
+                    CHECK_OVERREAD_SIZE(1);
                     tmp = *buf++;
 
                     angle = angle_by_index[(tmp >> 6) & 0x3];
@@ -314,6 +331,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
 
                 case 2:
                     if (modifier) { // unpack four luma samples
+                        CHECK_OVERREAD_SIZE(3);
                         tmp = bytestream_get_be24(&buf);
 
                         Y[0] = (tmp >> 18) & 0x3F;
@@ -322,6 +340,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
                         Y[3] = tmp & 0x3F;
                         angle = 16;
                     } else { // retrieve luma samples from codebook
+                        CHECK_OVERREAD_SIZE(2);
                         tmp = bytestream_get_be16(&buf);
 
                         angle = (tmp >> 12) & 0xF;
@@ -337,6 +356,8 @@ static int ulti_decode_frame(AVCodecContext *avctx,
                 case 3:
                     if (modifier) { // all 16 luma samples
                         uint8_t Luma[16];
+
+                        CHECK_OVERREAD_SIZE(12);
 
                         tmp = bytestream_get_be24(&buf);
                         Luma[0] = (tmp >> 18) & 0x3F;
@@ -364,6 +385,7 @@ static int ulti_decode_frame(AVCodecContext *avctx,
 
                         ulti_convert_yuv(&s->frame, tx, ty, Luma, chroma);
                     } else {
+                        CHECK_OVERREAD_SIZE(4);
                         tmp = *buf++;
                         if(tmp & 0x80) {
                             angle = (tmp >> 4) & 0x7;
