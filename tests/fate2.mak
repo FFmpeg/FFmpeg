@@ -125,3 +125,10 @@ fate-musepack7: FUZZ = 1
 FATE_TESTS += fate-iirfilter
 fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/iirfilter-test
+
+FATE_TESTS += fate-v410dec
+fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le
+
+FATE_TESTS += fate-v410enc
+fate-v410enc: tests/vsynth1/00.pgm
+fate-v410enc: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -flags +bitexact -vcodec v410 -f avi
