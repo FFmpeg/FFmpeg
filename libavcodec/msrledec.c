@@ -140,7 +140,7 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
 
     output     = pic->data[0] + (avctx->height - 1) * pic->linesize[0];
     output_end = pic->data[0] +  avctx->height      * pic->linesize[0];
-    while(src < data + srcsize) {
+    while(src + 1 < data + srcsize) {
         p1 = *src++;
         if(p1 == 0) { //Escape code
             p2 = *src++;
@@ -171,6 +171,10 @@ static int msrle_decode_8_16_24_32(AVCodecContext *avctx, AVPicture *pic, int de
               ||(pic->linesize[0] < 0 && output + p2 * (depth >> 3) < output_end)) {
                 src += p2 * (depth >> 3);
                 continue;
+            }
+            if(data + srcsize - src < p2 * (depth >> 3)){
+                av_log(avctx, AV_LOG_ERROR, "Copy beyond input buffer\n");
+                return -1;
             }
             if ((depth == 8) || (depth == 24)) {
                 for(i = 0; i < p2 * (depth >> 3); i++) {
