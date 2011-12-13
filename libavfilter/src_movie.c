@@ -57,8 +57,6 @@ typedef struct {
     AVFilterBufferRef *picref;
 
     /* audio-only fields */
-    void *samples_buf;
-    int samples_buf_size;
     int bps;            ///< bytes per sample
     AVPacket pkt, pkt0;
     AVFilterBufferRef *samplesref;
@@ -176,6 +174,11 @@ static av_cold int movie_common_init(AVFilterContext *ctx, const char *args, voi
            movie->seek_point, movie->format_name, movie->file_name,
            movie->stream_index);
 
+    if (!(movie->frame = avcodec_alloc_frame()) ) {
+        av_log(ctx, AV_LOG_ERROR, "Failed to alloc frame\n");
+        return AVERROR(ENOMEM);
+    }
+
     return 0;
 }
 
@@ -194,7 +197,6 @@ static av_cold void movie_common_uninit(AVFilterContext *ctx)
     av_freep(&movie->frame);
 
     avfilter_unref_buffer(movie->samplesref);
-    av_freep(&movie->samples_buf);
 }
 
 #if CONFIG_MOVIE_FILTER
@@ -206,11 +208,6 @@ static av_cold int movie_init(AVFilterContext *ctx, const char *args, void *opaq
 
     if ((ret = movie_common_init(ctx, args, opaque, AVMEDIA_TYPE_VIDEO)) < 0)
         return ret;
-
-    if (!(movie->frame = avcodec_alloc_frame()) ) {
-        av_log(ctx, AV_LOG_ERROR, "Failed to alloc frame\n");
-        return AVERROR(ENOMEM);
-    }
 
     movie->w = movie->codec_ctx->width;
     movie->h = movie->codec_ctx->height;
@@ -378,7 +375,7 @@ static int amovie_get_samples(AVFilterLink *outlink)
 {
     MovieContext *movie = outlink->src->priv;
     AVPacket pkt;
-    int ret, samples_size, decoded_data_size;
+    int ret, got_frame = 0;
 
     if (!movie->pkt.size && movie->is_done == 1)
         return AVERROR_EOF;
@@ -402,20 +399,9 @@ static int amovie_get_samples(AVFilterLink *outlink)
         }
     }
 
-    /* reallocate the buffer for the decoded samples, if necessary */
-    samples_size =
-        FFMAX(movie->pkt.size*sizeof(movie->bps), AVCODEC_MAX_AUDIO_FRAME_SIZE);
-    if (samples_size > movie->samples_buf_size) {
-        movie->samples_buf = av_fast_realloc(movie->samples_buf,
-                                             &movie->samples_buf_size, samples_size);
-        if (!movie->samples_buf)
-            return AVERROR(ENOMEM);
-    }
-    decoded_data_size = movie->samples_buf_size;
-
     /* decode and update the movie pkt */
-    ret = avcodec_decode_audio3(movie->codec_ctx, movie->samples_buf,
-                                &decoded_data_size, &movie->pkt);
+    avcodec_get_frame_defaults(movie->frame);
+    ret = avcodec_decode_audio4(movie->codec_ctx, movie->frame, &got_frame, &movie->pkt);
     if (ret < 0) {
         movie->pkt.size = 0;
         return ret;
@@ -424,11 +410,16 @@ static int amovie_get_samples(AVFilterLink *outlink)
     movie->pkt.size -= ret;
 
     /* wrap the decoded data in a samplesref */
-    if (decoded_data_size > 0) {
-        int nb_samples = decoded_data_size / movie->bps / movie->codec_ctx->channels;
+    if (got_frame) {
+        int nb_samples = movie->frame->nb_samples;
+        int data_size =
+            av_samples_get_buffer_size(NULL, movie->codec_ctx->channels,
+                                       nb_samples, movie->codec_ctx->sample_fmt, 1);
+        if (data_size < 0)
+            return data_size;
         movie->samplesref =
             avfilter_get_audio_buffer(outlink, AV_PERM_WRITE, nb_samples);
-        memcpy(movie->samplesref->data[0], movie->samples_buf, decoded_data_size);
+        memcpy(movie->samplesref->data[0], movie->frame->data[0], data_size);
         movie->samplesref->pts = movie->pkt.pts;
         movie->samplesref->pos = movie->pkt.pos;
         movie->samplesref->audio->sample_rate = movie->codec_ctx->sample_rate;
