@@ -2047,6 +2047,10 @@ static int output_packet(InputStream *ist,
 
         if (ret < 0)
             return ret;
+
+        avpkt.dts=
+        avpkt.pts= AV_NOPTS_VALUE;
+
         // touch data and size only if not EOF
         if (pkt) {
             if(ist->st->codec->codec_type != AVMEDIA_TYPE_AUDIO)
