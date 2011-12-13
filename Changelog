@@ -107,6 +107,7 @@ easier to use. The changes are:
 - PCM format support in OMA demuxer
 - CLJR encoder
 - Dxtory capture format decoder
+- v410 QuickTime uncompressed 4:4:4 10-bit encoder and decoder
 
 
 version 0.7:
