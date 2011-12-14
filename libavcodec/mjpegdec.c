@@ -233,6 +233,11 @@ int ff_mjpeg_decode_sof(MJpegDecodeContext *s)
         return -1;
     }
 
+    if(s->lossless && s->avctx->lowres){
+        av_log(s->avctx, AV_LOG_ERROR, "lowres is not possible with lossless jpeg\n");
+        return -1;
+    }
+
     height = get_bits(&s->gb, 16);
     width = get_bits(&s->gb, 16);
 
