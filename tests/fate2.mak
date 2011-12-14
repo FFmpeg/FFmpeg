@@ -1,8 +1,3 @@
-FATE_TESTS += fate-twinvq
-fate-twinvq: CMD = pcm -i $(SAMPLES)/vqf/achterba.vqf
-fate-twinvq: CMP = oneoff
-fate-twinvq: REF = $(SAMPLES)/vqf/achterba.pcm
-
 FATE_TESTS += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
