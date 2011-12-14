@@ -1005,6 +1005,7 @@ CONFIG_LIST="
     golomb
     gpl
     gray
+    h264chroma
     h264dsp
     h264pred
     hardcoded_tables
@@ -1146,8 +1147,8 @@ HAVE_LIST="
     dev_bktr_ioctl_bt848_h
     dev_bktr_ioctl_meteor_h
     dev_ic_bt8xx_h
-    dev_video_meteor_ioctl_meteor_h
     dev_video_bktr_ioctl_bt848_h
+    dev_video_meteor_ioctl_meteor_h
     dlfcn_h
     dlopen
     dos_paths
@@ -1166,7 +1167,6 @@ HAVE_LIST="
     GetProcessTimes
     getrusage
     gnu_as
-    struct_rusage_ru_maxrss
     ibm_asm
     inet_aton
     inline_asm
@@ -1192,27 +1192,28 @@ HAVE_LIST="
     mkstemp
     mmap
     PeekNamedPipe
+    poll_h
     posix_memalign
     round
     roundf
     sdl
     sdl_video_size
     setmode
+    setrlimit
     sndio_h
     socklen_t
     soundcard_h
-    poll_h
-    setrlimit
     strerror_r
     strptime
     struct_addrinfo
     struct_ipv6_mreq
+    struct_rusage_ru_maxrss
     struct_sockaddr_in6
     struct_sockaddr_sa_len
     struct_sockaddr_storage
     symver
-    symver_gnu_asm
     symver_asm_label
+    symver_gnu_asm
     sys_mman_h
     sys_resource_h
     sys_select_h
@@ -1335,8 +1336,8 @@ fast_64bit_if_any="alpha ia64 mips64 parisc64 ppc64 sparc64 x86_64"
 fast_clz_if_any="alpha armv5te avr32 mips ppc x86"
 fast_unaligned_if_any="armv6 ppc x86"
 
-need_memalign="altivec neon sse"
 inline_asm_deps="!tms470"
+need_memalign="altivec neon sse"
 
 symver_if_any="symver_asm_label symver_gnu_asm"
 
@@ -1387,8 +1388,8 @@ h263_encoder_select="aandct"
 h263_vaapi_hwaccel_select="vaapi h263_decoder"
 h263i_decoder_select="h263_decoder"
 h263p_encoder_select="h263_encoder"
-h264_decoder_select="golomb h264dsp h264pred"
 h264_crystalhd_decoder_select="crystalhd h264_mp4toannexb_bsf h264_parser"
+h264_decoder_select="golomb h264chroma h264dsp h264pred"
 h264_dxva2_hwaccel_deps="dxva2api_h"
 h264_dxva2_hwaccel_select="dxva2 h264_decoder"
 h264_vaapi_hwaccel_select="vaapi h264_decoder"
@@ -1403,32 +1404,32 @@ loco_decoder_select="golomb"
 mjpeg_encoder_select="aandct"
 mlp_decoder_select="mlp_parser"
 mp1_decoder_select="mpegaudiodsp"
-mp2_decoder_select="mpegaudiodsp"
-mp3adu_decoder_select="mpegaudiodsp"
-mp3_decoder_select="mpegaudiodsp"
-mp3on4_decoder_select="mpegaudiodsp"
 mp1float_decoder_select="mpegaudiodsp"
+mp2_decoder_select="mpegaudiodsp"
 mp2float_decoder_select="mpegaudiodsp"
+mp3_decoder_select="mpegaudiodsp"
+mp3adu_decoder_select="mpegaudiodsp"
 mp3adufloat_decoder_select="mpegaudiodsp"
 mp3float_decoder_select="mpegaudiodsp"
+mp3on4_decoder_select="mpegaudiodsp"
 mp3on4float_decoder_select="mpegaudiodsp"
-mpeg1video_encoder_select="aandct"
-mpeg2video_encoder_select="aandct"
-mpeg4_decoder_select="h263_decoder mpeg4video_parser"
-mpeg4_encoder_select="h263_encoder"
 mpeg_vdpau_decoder_select="vdpau mpegvideo_decoder"
+mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
+mpeg_xvmc_decoder_select="mpegvideo_decoder"
 mpeg1_vdpau_decoder_select="vdpau mpeg1video_decoder"
 mpeg1_vdpau_hwaccel_select="vdpau mpeg1video_decoder"
+mpeg1video_encoder_select="aandct"
 mpeg2_crystalhd_decoder_select="crystalhd"
 mpeg2_dxva2_hwaccel_deps="dxva2api_h"
 mpeg2_dxva2_hwaccel_select="dxva2 mpeg2video_decoder"
 mpeg2_vdpau_hwaccel_select="vdpau mpeg2video_decoder"
 mpeg2_vaapi_hwaccel_select="vaapi mpeg2video_decoder"
+mpeg2video_encoder_select="aandct"
 mpeg4_crystalhd_decoder_select="crystalhd"
+mpeg4_decoder_select="h263_decoder mpeg4video_parser"
+mpeg4_encoder_select="h263_encoder"
 mpeg4_vaapi_hwaccel_select="vaapi mpeg4_decoder"
 mpeg4_vdpau_decoder_select="vdpau mpeg4_decoder"
-mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
-mpeg_xvmc_decoder_select="mpegvideo_decoder"
 msmpeg4_crystalhd_decoder_select="crystalhd"
 msmpeg4v1_decoder_select="h263_decoder"
 msmpeg4v1_encoder_select="h263_encoder"
@@ -1447,8 +1448,8 @@ rv10_decoder_select="h263_decoder"
 rv10_encoder_select="h263_encoder"
 rv20_decoder_select="h263_decoder"
 rv20_encoder_select="h263_encoder"
-rv30_decoder_select="golomb h264pred"
-rv40_decoder_select="golomb h264pred"
+rv30_decoder_select="golomb h264chroma h264pred"
+rv40_decoder_select="golomb h264chroma h264pred"
 shorten_decoder_select="golomb"
 sipr_decoder_select="lsp"
 snow_decoder_select="dwt"
@@ -1457,7 +1458,7 @@ sonic_decoder_select="golomb"
 sonic_encoder_select="golomb"
 sonic_ls_encoder_select="golomb"
 svq1_encoder_select="aandct"
-svq3_decoder_select="golomb h264dsp h264pred"
+svq3_decoder_select="golomb h264chroma h264dsp h264pred"
 svq3_decoder_suggest="zlib"
 theora_decoder_select="vp3_decoder"
 tiff_decoder_suggest="zlib"
@@ -1465,8 +1466,8 @@ tiff_encoder_suggest="zlib"
 truehd_decoder_select="mlp_decoder"
 tscc_decoder_select="zlib"
 twinvq_decoder_select="mdct lsp sinewin"
-vc1_decoder_select="h263_decoder"
 vc1_crystalhd_decoder_select="crystalhd"
+vc1_decoder_select="h263_decoder h264chroma"
 vc1_dxva2_hwaccel_deps="dxva2api_h"
 vc1_dxva2_hwaccel_select="dxva2 vc1_decoder"
 vc1_vaapi_hwaccel_select="vaapi vc1_decoder"
@@ -1505,7 +1506,7 @@ vda_deps="VideoDecodeAcceleration_VDADecoder_h pthreads"
 vdpau_deps="vdpau_vdpau_h vdpau_vdpau_x11_h"
 
 # parsers
-h264_parser_select="golomb h264dsp h264pred"
+h264_parser_select="golomb h264chroma h264dsp h264pred"
 
 # external libraries
 libaacplus_encoder_deps="libaacplus"
@@ -1640,8 +1641,6 @@ avformat_deps="avcodec"
 postproc_deps="gpl"
 
 # programs
-ffmpeg_deps="avcodec avformat swscale swresample"
-ffmpeg_select="buffer_filter buffersink_filter"
 avconv_deps="avcodec avformat swscale"
 avconv_select="buffer_filter"
 ffplay_deps="avcodec avformat swscale sdl"
@@ -1649,6 +1648,8 @@ ffplay_select="buffersink_filter rdft"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
+ffmpeg_deps="avcodec avformat swscale swresample"
+ffmpeg_select="buffer_filter buffersink_filter"
 
 doc_deps="texi2html"
 
@@ -1671,7 +1672,6 @@ mxf_d10_test_deps="avfilter"
 seek_lavf_mxf_d10_test_deps="mxf_d10_test"
 
 test_deps _encoder _decoder                                             \
-    adpcm_g726=g726                                                     \
     adpcm_ima_qt                                                        \
     adpcm_ima_wav                                                       \
     adpcm_ms                                                            \
@@ -1687,6 +1687,7 @@ test_deps _encoder _decoder                                             \
     flac                                                                \
     flashsv                                                             \
     flv                                                                 \
+    adpcm_g726=g726                                                     \
     gif                                                                 \
     h261                                                                \
     h263="h263 h263p"                                                   \
@@ -1775,9 +1776,9 @@ pkg_config_default=pkg-config
 ranlib="ranlib"
 strip_default="strip"
 yasmexe="yasm"
-nogas=":"
 
 nm_opts='-g'
+nogas=":"
 
 # machine
 arch_default=$(uname -m)
@@ -1793,22 +1794,23 @@ enable avdevice
 enable avfilter
 enable avformat
 enable avutil
-enable asm
-enable debug
-enable doc
-enable fastdiv
+enable postproc
+enable stripping
+enable swresample
+enable swscale
+
 enable ffmpeg
 enable ffplay
 enable ffprobe
 enable ffserver
+
+enable asm
+enable debug
+enable doc
+enable fastdiv
 enable network
 enable optimizations
-enable postproc
-enable protocols
 enable static
-enable stripping
-enable swresample
-enable swscale
 enable swscale_alpha
 
 # build settings
@@ -2031,15 +2033,15 @@ tmpfile(){
 
 trap 'rm -f -- $TMPFILES' EXIT
 
-tmpfile TMPC  .c
-tmpfile TMPCPP .cpp
-tmpfile TMPE  $EXESUF
-tmpfile TMPH  .h
-tmpfile TMPO  .o
-tmpfile TMPS  .S
-tmpfile TMPV  .ver
-tmpfile TMPSH .sh
 tmpfile TMPASM .asm
+tmpfile TMPC   .c
+tmpfile TMPCPP .cpp
+tmpfile TMPE   $EXESUF
+tmpfile TMPH   .h
+tmpfile TMPO   .o
+tmpfile TMPS   .S
+tmpfile TMPSH  .sh
+tmpfile TMPV   .ver
 
 unset -f mktemp
 
@@ -2058,9 +2060,9 @@ EOF
     die "Sanity test failed."
 fi
 
+filter_asflags=echo
 filter_cflags=echo
 filter_cppflags=echo
-filter_asflags=echo
 
 if   $cc -v 2>&1 | grep -q '^gcc.*LLVM'; then
     cc_type=llvm_gcc
@@ -3555,14 +3557,14 @@ get_version(){
     eval echo "${lcname}_VERSION_MAJOR=\$${name}_VERSION_MAJOR" >> config.mak
 }
 
-get_version LIBSWSCALE  libswscale/swscale.h
-get_version LIBSWRESAMPLE libswresample/swresample.h
-get_version LIBPOSTPROC libpostproc/postprocess.h
 get_version LIBAVCODEC  libavcodec/version.h
 get_version LIBAVDEVICE libavdevice/avdevice.h
+get_version LIBAVFILTER libavfilter/avfilter.h
 get_version LIBAVFORMAT libavformat/version.h
 get_version LIBAVUTIL   libavutil/avutil.h
-get_version LIBAVFILTER libavfilter/avfilter.h
+get_version LIBPOSTPROC libpostproc/postprocess.h
+get_version LIBSWRESAMPLE libswresample/swresample.h
+get_version LIBSWSCALE  libswscale/swscale.h
 
 cat > $TMPH <<EOF
 /* Automatically generated by configure - do not modify! */

@@ -722,3 +722,89 @@ function ff_rv40_weight_func_8_neon, export=1
         bne             1b
         bx              lr
 endfunc
+
+function ff_rv40_h_loop_filter_strength_neon, export=1
+        pkhbt           r2,  r3,  r2,  lsl #18
+
+        ldr             r3,  [r0]
+        ldr_dpre        r12, r0,  r1
+        teq             r3,  r12
+        beq             1f
+
+        sub             r0,  r0,  r1,  lsl #1
+
+        vld1.32         {d4[]},   [r0,:32], r1  @ -3
+        vld1.32         {d0[]},   [r0,:32], r1  @ -2
+        vld1.32         {d4[1]},  [r0,:32], r1  @ -1
+        vld1.32         {d5[]},   [r0,:32], r1  @  0
+        vld1.32         {d1[]},   [r0,:32], r1  @  1
+        vld1.32         {d5[0]},  [r0,:32], r1  @  2
+
+        vpaddl.u8       q8,  q0                 @ -2, -2, -2, -2,  1,  1,  1,  1
+        vpaddl.u8       q9,  q2                 @ -3, -3, -1, -1,  2,  2,  0,  0
+        vdup.32         d30, r2                 @ beta2, beta << 2
+        vpadd.u16       d16, d16, d17           @ -2, -2,  1,  1
+        vpadd.u16       d18, d18, d19           @ -3, -1,  2,  0
+        vabd.u16        d16, d18, d16
+        vclt.u16        d16, d16, d30
+
+        ldrd            r2,  r3,  [sp, #4]
+        vmovl.u16       q12, d16
+        vtrn.16         d16, d17
+        vshr.u32        q12, q12, #15
+        ldr             r0,  [sp]
+        vst1.32         {d24[1]}, [r2,:32]
+        vst1.32         {d25[1]}, [r3,:32]
+
+        cmp             r0,  #0
+        it              eq
+        bxeq            lr
+
+        vand            d18, d16, d17
+        vtrn.32         d18, d19
+        vand            d18, d18, d19
+        vmov.u16        r0,  d18[0]
+        bx              lr
+1:
+        ldrd            r2,  r3,  [sp, #4]
+        mov             r0,  #0
+        str             r0,  [r2]
+        str             r0,  [r3]
+        bx              lr
+endfunc
+
+function ff_rv40_v_loop_filter_strength_neon, export=1
+        sub             r0,  r0,  #3
+        pkhbt           r2,  r3,  r2,  lsl #18
+
+        vld1.8          {d0},     [r0], r1
+        vld1.8          {d1},     [r0], r1
+        vld1.8          {d2},     [r0], r1
+        vld1.8          {d3},     [r0], r1
+
+        vaddl.u8        q0,  d0,  d1
+        vaddl.u8        q1,  d2,  d3
+        vdup.32         q15, r2
+        vadd.u16        q0,  q0,  q1            @ -3, -2, -1,  0,  1,  2
+        vext.16         q1,  q0,  q0,  #1       @ -2, -1,  0,  1,  2
+        vabd.u16        q0,  q1,  q0
+        vclt.u16        q0,  q0,  q15
+
+        ldrd            r2,  r3,  [sp, #4]
+        vmovl.u16       q1,  d0
+        vext.16         d1,  d0,  d1,  #3
+        vshr.u32        q1,  q1,  #15
+        ldr             r0,  [sp]
+        vst1.32         {d2[1]},  [r2,:32]
+        vst1.32         {d3[1]},  [r3,:32]
+
+        cmp             r0,  #0
+        it              eq
+        bxeq            lr
+
+        vand            d0,  d0,  d1
+        vtrn.16         d0,  d1
+        vand            d0,  d0,  d1
+        vmov.u16        r0,  d0[0]
+        bx              lr
+endfunc

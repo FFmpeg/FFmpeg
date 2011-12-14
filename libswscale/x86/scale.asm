@@ -651,7 +651,7 @@ cglobal yuv2planeX_%2_%1, %4, 7, %3
 %define PALIGNR PALIGNR_MMX
 %ifdef ARCH_X86_32
 INIT_MMX
-yuv2planeX_fn mmx,   8,  0, 7
+yuv2planeX_fn mmx2,  8,  0, 7
 yuv2planeX_fn mmx2,  9,  0, 5
 yuv2planeX_fn mmx2, 10,  0, 5
 %endif

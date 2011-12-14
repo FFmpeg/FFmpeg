@@ -4629,16 +4629,8 @@ int av_picture_pad(AVPicture *dst, const AVPicture *src, int height, int width, 
 unsigned int av_xiphlacing(unsigned char *s, unsigned int v);
 
 /**
-<<<<<<< HEAD
- * Logs a generic warning message about a missing feature. This function is
- * intended to be used internally by FFmpeg (libavcodec, libavformat, etc.)
-||||||| merged common ancestors
- * Logs a generic warning message about a missing feature. This function is
- * intended to be used internally by Libav (libavcodec, libavformat, etc.)
-=======
  * Log a generic warning message about a missing feature. This function is
- * intended to be used internally by Libav (libavcodec, libavformat, etc.)
->>>>>>> qatar/master
+ * intended to be used internally by FFmpeg (libavcodec, libavformat, etc.)
  * only, and would normally not be used by applications.
  * @param[in] avc a pointer to an arbitrary struct of which the first field is
  * a pointer to an AVClass struct

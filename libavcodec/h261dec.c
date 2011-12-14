@@ -572,6 +572,8 @@ retry:
     //we need to set current_picture_ptr before reading the header, otherwise we cannot store anyting im there
     if (s->current_picture_ptr == NULL || s->current_picture_ptr->f.data[0]) {
         int i= ff_find_unused_picture(s, 0);
+        if (i < 0)
+            return i;
         s->current_picture_ptr= &s->picture[i];
     }
 

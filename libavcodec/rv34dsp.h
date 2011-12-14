@@ -36,10 +36,18 @@ typedef void (*rv40_weight_func)(uint8_t *dst/*align width (8 or 16)*/,
 
 typedef void (*rv34_inv_transform_func)(DCTELEM *block);
 
-typedef void (*rv40_loop_filter_func)(uint8_t *src, int stride, int dmode,
-                                      int lim_q1, int lim_p1, int alpha,
-                                      int beta, int beta2, int chroma,
-                                      int edge);
+typedef void (*rv40_weak_loop_filter_func)(uint8_t *src, int stride,
+                                           int filter_p1, int filter_q1,
+                                           int alpha, int beta,
+                                           int lims, int lim_q1, int lim_p1);
+
+typedef void (*rv40_strong_loop_filter_func)(uint8_t *src, int stride,
+                                             int alpha, int lims,
+                                             int dmode, int chroma);
+
+typedef int (*rv40_loop_filter_strength_func)(uint8_t *src, int stride,
+                                              int beta, int beta2, int edge,
+                                              int *p1, int *q1);
 
 typedef struct RV34DSPContext {
     qpel_mc_func put_pixels_tab[4][16];
@@ -49,8 +57,9 @@ typedef struct RV34DSPContext {
     rv40_weight_func rv40_weight_pixels_tab[2];
     rv34_inv_transform_func rv34_inv_transform_tab[2];
     void (*rv34_dequant4x4)(DCTELEM *block, int Qdc, int Q);
-    rv40_loop_filter_func rv40_h_loop_filter;
-    rv40_loop_filter_func rv40_v_loop_filter;
+    rv40_weak_loop_filter_func rv40_weak_loop_filter[2];
+    rv40_strong_loop_filter_func rv40_strong_loop_filter[2];
+    rv40_loop_filter_strength_func rv40_loop_filter_strength[2];
 } RV34DSPContext;
 
 void ff_rv30dsp_init(RV34DSPContext *c, DSPContext* dsp);

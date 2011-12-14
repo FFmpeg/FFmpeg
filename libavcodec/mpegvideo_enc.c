@@ -864,6 +864,8 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
 
     if(direct){
         i= ff_find_unused_picture(s, 1);
+        if (i < 0)
+            return i;
 
         pic= (AVFrame*)&s->picture[i];
         pic->reference= 3;
@@ -877,6 +879,8 @@ static int load_input_picture(MpegEncContext *s, AVFrame *pic_arg){
         }
     }else{
         i= ff_find_unused_picture(s, 0);
+        if (i < 0)
+            return i;
 
         pic= (AVFrame*)&s->picture[i];
         pic->reference= 3;
@@ -1210,6 +1214,8 @@ no_output_pic:
             // input is a shared pix, so we can't modifiy it -> alloc a new one & ensure that the shared one is reuseable
 
             int i= ff_find_unused_picture(s, 0);
+            if (i < 0)
+                return i;
             Picture *pic= &s->picture[i];
 
             pic->f.reference = s->reordered_input_picture[0]->f.reference;

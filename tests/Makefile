@@ -44,18 +44,27 @@ include $(SRC_PATH)/tests/fate.mak
 include $(SRC_PATH)/tests/fate2.mak
 
 include $(SRC_PATH)/tests/fate/aac.mak
+include $(SRC_PATH)/tests/fate/ac3.mak
 include $(SRC_PATH)/tests/fate/als.mak
 include $(SRC_PATH)/tests/fate/amrnb.mak
 include $(SRC_PATH)/tests/fate/amrwb.mak
 include $(SRC_PATH)/tests/fate/dct.mak
 include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/h264.mak
+include $(SRC_PATH)/tests/fate/image.mak
 include $(SRC_PATH)/tests/fate/libavutil.mak
 include $(SRC_PATH)/tests/fate/mapchan.mak
+include $(SRC_PATH)/tests/fate/lossless-audio.mak
+include $(SRC_PATH)/tests/fate/lossless-video.mak
 include $(SRC_PATH)/tests/fate/mp3.mak
 include $(SRC_PATH)/tests/fate/prores.mak
+include $(SRC_PATH)/tests/fate/qtrle.mak
+include $(SRC_PATH)/tests/fate/real.mak
+include $(SRC_PATH)/tests/fate/screen.mak
+include $(SRC_PATH)/tests/fate/utvideo.mak
 include $(SRC_PATH)/tests/fate/vorbis.mak
 include $(SRC_PATH)/tests/fate/vp8.mak
+include $(SRC_PATH)/tests/fate/wma.mak
 
 FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
 FATE_VSYNTH1 = $(VCODEC_TESTS:%=fate-vsynth1-%)

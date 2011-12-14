@@ -3,37 +3,6 @@ fate-twinvq: CMD = pcm -i $(SAMPLES)/vqf/achterba.vqf
 fate-twinvq: CMP = oneoff
 fate-twinvq: REF = $(SAMPLES)/vqf/achterba.pcm
 
-FATE_TESTS += fate-sipr-16k
-fate-sipr-16k: CMD = pcm -i $(SAMPLES)/sipr/sipr_16k.rm
-fate-sipr-16k: CMP = oneoff
-fate-sipr-16k: REF = $(SAMPLES)/sipr/sipr_16k.pcm
-
-FATE_TESTS += fate-sipr-8k5
-fate-sipr-8k5: CMD = pcm -i $(SAMPLES)/sipr/sipr_8k5.rm
-fate-sipr-8k5: CMP = oneoff
-fate-sipr-8k5: REF = $(SAMPLES)/sipr/sipr_8k5.pcm
-
-FATE_TESTS += fate-sipr-6k5
-fate-sipr-6k5: CMD = pcm -i $(SAMPLES)/sipr/sipr_6k5.rm
-fate-sipr-6k5: CMP = oneoff
-fate-sipr-6k5: REF = $(SAMPLES)/sipr/sipr_6k5.pcm
-
-FATE_TESTS += fate-sipr-5k0
-fate-sipr-5k0: CMD = pcm -i $(SAMPLES)/sipr/sipr_5k0.rm
-fate-sipr-5k0: CMP = oneoff
-fate-sipr-5k0: REF = $(SAMPLES)/sipr/sipr_5k0.pcm
-
-FATE_TESTS += fate-ra-288
-fate-ra-288: CMD = pcm -i $(SAMPLES)/real/ra_288.rm
-fate-ra-288: CMP = oneoff
-fate-ra-288: REF = $(SAMPLES)/real/ra_288.pcm
-fate-ra-288: FUZZ = 2
-
-FATE_TESTS += fate-ra-cook
-fate-ra-cook: CMD = pcm -i $(SAMPLES)/real/ra_cook.rm
-fate-ra-cook: CMP = oneoff
-fate-ra-cook: REF = $(SAMPLES)/real/ra_cook.pcm
-
 FATE_TESTS += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
@@ -56,9 +25,6 @@ fate-imc: REF = $(SAMPLES)/imc/imc.pcm
 FATE_TESTS += fate-yop
 fate-yop: CMD = framecrc -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an
 
-FATE_TESTS += fate-pictor
-fate-pictor: CMD = framecrc -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24 -an
-
 FATE_TESTS += fate-dts
 fate-dts: CMD = pcm -i $(SAMPLES)/dts/dts.ts
 fate-dts: CMP = oneoff
@@ -73,36 +39,6 @@ FATE_TESTS += fate-truespeech
 fate-truespeech: CMD = pcm -i $(SAMPLES)/truespeech/a6.wav
 fate-truespeech: CMP = oneoff
 fate-truespeech: REF = $(SAMPLES)/truespeech/a6.pcm
-
-FATE_TESTS += fate-ac3-2.0
-fate-ac3-2.0: CMD = pcm -i $(SAMPLES)/ac3/monsters_inc_2.0_192_small.ac3
-fate-ac3-2.0: CMP = oneoff
-fate-ac3-2.0: REF = $(SAMPLES)/ac3/monsters_inc_2.0_192_small.pcm
-
-FATE_TESTS += fate-ac3-5.1
-fate-ac3-5.1: CMD = pcm -i $(SAMPLES)/ac3/monsters_inc_5.1_448_small.ac3
-fate-ac3-5.1: CMP = oneoff
-fate-ac3-5.1: REF = $(SAMPLES)/ac3/monsters_inc_5.1_448_small.pcm
-
-FATE_TESTS += fate-eac3-1
-fate-eac3-1: CMD = pcm -i $(SAMPLES)/eac3/csi_miami_5.1_256_spx_small.eac3
-fate-eac3-1: CMP = oneoff
-fate-eac3-1: REF = $(SAMPLES)/eac3/csi_miami_5.1_256_spx_small.pcm
-
-FATE_TESTS += fate-eac3-2
-fate-eac3-2: CMD = pcm -i $(SAMPLES)/eac3/csi_miami_stereo_128_spx_small.eac3
-fate-eac3-2: CMP = oneoff
-fate-eac3-2: REF = $(SAMPLES)/eac3/csi_miami_stereo_128_spx_small.pcm
-
-FATE_TESTS += fate-eac3-3
-fate-eac3-3: CMD = pcm -i $(SAMPLES)/eac3/matrix2_commentary1_stereo_192_small.eac3
-fate-eac3-3: CMP = oneoff
-fate-eac3-3: REF = $(SAMPLES)/eac3/matrix2_commentary1_stereo_192_small.pcm
-
-FATE_TESTS += fate-eac3-4
-fate-eac3-4: CMD = pcm -i $(SAMPLES)/eac3/serenity_english_5.1_1536_small.eac3
-fate-eac3-4: CMP = oneoff
-fate-eac3-4: REF = $(SAMPLES)/eac3/serenity_english_5.1_1536_small.pcm
 
 FATE_TESTS += fate-atrac1
 fate-atrac1: CMD = pcm -i $(SAMPLES)/atrac1/test_tones_small.aea
@@ -140,34 +76,6 @@ fate-g722enc: CMD = md5 -ar 16000 -ac 1 -f s16le -i $(TARGET_PATH)/tests/data/as
 FATE_TESTS += fate-msmpeg4v1
 fate-msmpeg4v1: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/msmpeg4v1/mpg4.avi -an
 
-FATE_TESTS += fate-wmavoice-7k
-fate-wmavoice-7k: CMD = pcm -i $(SAMPLES)/wmavoice/streaming_CBR-7K.wma
-fate-wmavoice-7k: CMP = stddev
-fate-wmavoice-7k: REF = $(SAMPLES)/wmavoice/streaming_CBR-7K.pcm
-fate-wmavoice-7k: FUZZ = 3
-
-FATE_TESTS += fate-wmavoice-11k
-fate-wmavoice-11k: CMD = pcm -i $(SAMPLES)/wmavoice/streaming_CBR-11K.wma
-fate-wmavoice-11k: CMP = stddev
-fate-wmavoice-11k: REF = $(SAMPLES)/wmavoice/streaming_CBR-11K.pcm
-fate-wmavoice-11k: FUZZ = 3
-
-FATE_TESTS += fate-wmavoice-19k
-fate-wmavoice-19k: CMD = pcm -i $(SAMPLES)/wmavoice/streaming_CBR-19K.wma
-fate-wmavoice-19k: CMP = stddev
-fate-wmavoice-19k: REF = $(SAMPLES)/wmavoice/streaming_CBR-19K.pcm
-fate-wmavoice-19k: FUZZ = 3
-
-FATE_TESTS += fate-wmapro-5.1
-fate-wmapro-5.1: CMD = pcm -i $(SAMPLES)/wmapro/latin_192_mulitchannel_cut.wma
-fate-wmapro-5.1: CMP = oneoff
-fate-wmapro-5.1: REF = $(SAMPLES)/wmapro/latin_192_mulitchannel_cut.pcm
-
-FATE_TESTS += fate-wmapro-2ch
-fate-wmapro-2ch: CMD = pcm -i $(SAMPLES)/wmapro/Beethovens_9th-1_small.wma
-fate-wmapro-2ch: CMP = oneoff
-fate-wmapro-2ch: REF = $(SAMPLES)/wmapro/Beethovens_9th-1_small.pcm
-
 FATE_TESTS += fate-ansi
 fate-ansi: CMD = framecrc -chars_per_frame 44100 -i $(SAMPLES)/ansi/TRE-IOM5.ANS -pix_fmt rgb24
 
@@ -199,12 +107,6 @@ fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
 FATE_TESTS += fate-vp3
 fate-vp3: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
 
-FATE_TESTS += fate-fax-g3
-fate-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
-
-FATE_TESTS += fate-fax-g3s
-fate-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
-
 FATE_TESTS += fate-ws_snd
 fate-ws_snd: CMD = md5  -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
 
@@ -213,9 +115,6 @@ fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
 
 FATE_TESTS += fate-mjpegb
 fate-mjpegb: CMD = framecrc -idct simple -flags +bitexact -i $(SAMPLES)/mjpegb/mjpegb_part.mov -an
-
-FATE_TESTS += fate-rv30
-fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/real/rv30.rm -an
 
 FATE_TESTS += fate-musepack7
 fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
@@ -226,33 +125,6 @@ fate-musepack7: FUZZ = 1
 FATE_TESTS += fate-iirfilter
 fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
 fate-iirfilter: CMD = run libavcodec/iirfilter-test
-
-FATE_TESTS += fate-vble
-fate-vble: CMD = framecrc -i $(SAMPLES)/vble/flowers-partial-2MB.avi
-
-FATE_TESTS += fate-utvideo_rgba_left
-fate-utvideo_rgba_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgba_left.avi
-
-FATE_TESTS += fate-utvideo_rgba_median
-fate-utvideo_rgba_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgba_median.avi
-
-FATE_TESTS += fate-utvideo_rgb_left
-fate-utvideo_rgb_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgb_left.avi
-
-FATE_TESTS += fate-utvideo_rgb_median
-fate-utvideo_rgb_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_rgb_median.avi
-
-FATE_TESTS += fate-utvideo_yuv420_left
-fate-utvideo_yuv420_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv420_left.avi
-
-FATE_TESTS += fate-utvideo_yuv420_median
-fate-utvideo_yuv420_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv420_median.avi
-
-FATE_TESTS += fate-utvideo_yuv422_left
-fate-utvideo_yuv422_left: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv422_left.avi
-
-FATE_TESTS += fate-utvideo_yuv422_median
-fate-utvideo_yuv422_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv422_median.avi
 
 FATE_TESTS += fate-v410dec
 fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le
