@@ -713,8 +713,7 @@ int ff_read_riff_info(AVFormatContext *s, int64_t size)
         AV_WL32(key, chunk_code);
 
         if (avio_read(pb, value, chunk_size) != chunk_size) {
-            av_freep(key);
-            av_freep(value);
+            av_freep(&value);
             av_log(s, AV_LOG_ERROR, "premature end of file while reading INFO tag\n");
             return AVERROR_INVALIDDATA;
         }
