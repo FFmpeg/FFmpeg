@@ -221,7 +221,7 @@ extern void ff_yuv2planeX_ ## size ## _ ## opt(const int16_t *filter, int filter
     VSCALEX_FUNC(10, opt2)
 
 #if ARCH_X86_32
-VSCALEX_FUNCS(mmx,  mmx2);
+VSCALEX_FUNCS(mmx2, mmx2);
 #endif
 VSCALEX_FUNCS(sse2, sse2);
 VSCALEX_FUNCS(sse4, sse4);
@@ -295,8 +295,10 @@ switch(c->dstBpc){ \
     if (cpu_flags & AV_CPU_FLAG_MMX) {
         ASSIGN_MMX_SCALE_FUNC(c->hyScale, c->hLumFilterSize, mmx, mmx);
         ASSIGN_MMX_SCALE_FUNC(c->hcScale, c->hChrFilterSize, mmx, mmx);
-        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMX2,);
         ASSIGN_VSCALE_FUNC(c->yuv2plane1, mmx, mmx2, cpu_flags & AV_CPU_FLAG_MMX2);
+    }
+    if (cpu_flags & AV_CPU_FLAG_MMX2) {
+        ASSIGN_VSCALEX_FUNC(c->yuv2planeX, mmx2, mmx2, cpu_flags & AV_CPU_FLAG_MMX2,);
     }
 #endif
 #define ASSIGN_SSE_SCALE_FUNC(hscalefn, filtersize, opt1, opt2) \
