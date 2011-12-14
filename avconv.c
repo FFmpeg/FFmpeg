@@ -2070,6 +2070,7 @@ static int transcode_init(OutputFile *output_files,
             codec->bit_rate       = icodec->bit_rate;
             codec->rc_max_rate    = icodec->rc_max_rate;
             codec->rc_buffer_size = icodec->rc_buffer_size;
+            codec->field_order    = icodec->field_order;
             codec->extradata      = av_mallocz(extra_size);
             if (!codec->extradata) {
                 return AVERROR(ENOMEM);

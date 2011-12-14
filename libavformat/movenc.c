@@ -783,6 +783,23 @@ static int mov_write_uuid_tag_ipod(AVIOContext *pb)
     return 28;
 }
 
+static const uint16_t fiel_data[] = {
+    0x0000, 0x0100, 0x0201, 0x0206, 0x0209, 0x020e
+};
+
+static int mov_write_fiel_tag(AVIOContext *pb, MOVTrack *track)
+{
+    unsigned mov_field_order = 0;
+    if (track->enc->field_order < FF_ARRAY_ELEMS(fiel_data))
+        mov_field_order = fiel_data[track->enc->field_order];
+    else
+        return 0;
+    avio_wb32(pb, 10);
+    ffio_wfourcc(pb, "fiel");
+    avio_wb16(pb, mov_field_order);
+    return 10;
+}
+
 static int mov_write_subtitle_tag(AVIOContext *pb, MOVTrack *track)
 {
     int64_t pos = avio_tell(pb);
@@ -869,7 +886,9 @@ static int mov_write_video_tag(AVIOContext *pb, MOVTrack *track)
         mov_write_avcc_tag(pb, track);
         if(track->mode == MODE_IPOD)
             mov_write_uuid_tag_ipod(pb);
-    } else if(track->vosLen > 0)
+    } else if (track->enc->field_order != AV_FIELD_UNKNOWN)
+        mov_write_fiel_tag(pb, track);
+    else if(track->vosLen > 0)
         mov_write_glbl_tag(pb, track);
 
     if (track->enc->sample_aspect_ratio.den && track->enc->sample_aspect_ratio.num &&
