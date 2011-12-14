@@ -8,7 +8,7 @@ FATE_TESTS += fate-fax-g3s
 fate-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
 
 FATE_TESTS += fate-pictor
-fate-pictor: CMD = framecrc -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24 -an
+fate-pictor: CMD = framecrc -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24
 
 FATE_TESTS += fate-ptx
 fate-ptx: CMD = framecrc  -i $(SAMPLES)/ptx/_113kw_pic.ptx -pix_fmt rgb24
