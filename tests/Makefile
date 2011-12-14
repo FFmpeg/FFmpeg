@@ -31,6 +31,7 @@ include $(SRC_PATH)/tests/fate/ac3.mak
 include $(SRC_PATH)/tests/fate/als.mak
 include $(SRC_PATH)/tests/fate/amrnb.mak
 include $(SRC_PATH)/tests/fate/amrwb.mak
+include $(SRC_PATH)/tests/fate/atrac.mak
 include $(SRC_PATH)/tests/fate/dct.mak
 include $(SRC_PATH)/tests/fate/fft.mak
 include $(SRC_PATH)/tests/fate/h264.mak
