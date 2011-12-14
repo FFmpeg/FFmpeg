@@ -1,12 +1,6 @@
 FATE_TESTS += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
-FATE_TESTS += fate-qdm2
-fate-qdm2: CMD = pcm -i $(SAMPLES)/qt-surge-suite/surge-2-16-B-QDM2.mov
-fate-qdm2: CMP = oneoff
-fate-qdm2: REF = $(SAMPLES)/qt-surge-suite/surge-2-16-B-QDM2.pcm
-fate-qdm2: FUZZ = 2
-
 FATE_TESTS += fate-imc
 fate-imc: CMD = pcm -i $(SAMPLES)/imc/imc.avi
 fate-imc: CMP = oneoff
