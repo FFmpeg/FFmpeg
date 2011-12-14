@@ -38,6 +38,7 @@ int av_strerror(int errnum, char *errbuf, size_t errbuf_size)
     case AVERROR_PATCHWELCOME:      errstr = "Not yet implemented in Libav, patches welcome"; break;
     case AVERROR_PROTOCOL_NOT_FOUND:errstr = "Protocol not found"                           ; break;
     case AVERROR_STREAM_NOT_FOUND:  errstr = "Stream not found"                             ; break;
+    case AVERROR_BUG:               errstr = "Bug detected, please report the issue"        ; break;
     }
 
     if (errstr) {
