@@ -12,6 +12,7 @@ version next:
 - XML output in ffprobe
 - asplit audio filter
 - tinterlace video filter
+- astreamsync audio filter
 
 
 version 0.9:

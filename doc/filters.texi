@@ -237,6 +237,35 @@ For example:
 will create two separate outputs from the same input, one cropped and
 one padded.
 
+@section astreamsync
+
+Forward two audio streams and control the order the buffers are forwarded.
+
+The argument to the filter is an expression deciding which stream should be
+forwarded next: if the result is negative, the first stream is forwarded; if
+the result is positive or zero, the second stream is forwarded. It can use
+the following variables:
+
+@table @var
+@item b1 b2
+number of buffers forwarded so far on each stream
+@item s1 s2
+number of samples forwarded so far on each stream
+@item t1 t2
+current timestamp of each stream
+@end table
+
+The default value is @code{t1-t2}, which means to always forward the stream
+that has a smaller timestamp.
+
+Example: stress-test @code{amerge} by randomly sending buffers on the wrong
+input, while avoiding too much of a desynchronization:
+@example
+amovie=file.ogg [a] ; amovie=file.mp3 [b] ;
+[a] [b] astreamsync=(2*random(1))-1+tanh(5*(t1-t2)) [a2] [b2] ;
+[a2] [b2] amerge
+@end example
+
 @section earwax
 
 Make audio easier to listen to on headphones.
