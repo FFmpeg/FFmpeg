@@ -267,7 +267,7 @@ FATE_TESTS += fate-utvideo_yuv422_median
 fate-utvideo_yuv422_median: CMD = framecrc -i $(SAMPLES)/utvideo/utvideo_yuv422_median.avi
 
 FATE_TESTS += fate-v410dec
-fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov
+fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le
 
 FATE_TESTS += fate-v410enc
 fate-v410enc: tests/vsynth1/00.pgm
