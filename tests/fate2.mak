@@ -89,10 +89,6 @@ fate-musepack7: CMP = oneoff
 fate-musepack7: REF = $(SAMPLES)/musepack/inside-mp7.pcm
 fate-musepack7: FUZZ = 1
 
-FATE_TESTS += fate-iirfilter
-fate-iirfilter: libavcodec/iirfilter-test$(EXESUF)
-fate-iirfilter: CMD = run libavcodec/iirfilter-test
-
 FATE_TESTS += fate-v410dec
 fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le
 
