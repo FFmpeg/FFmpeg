@@ -84,8 +84,6 @@ typedef struct DNXHDEncContext {
     unsigned qscale;
     unsigned lambda;
 
-    unsigned thread_size;
-
     uint16_t *mb_bits;
     uint8_t  *mb_qscale;
 
