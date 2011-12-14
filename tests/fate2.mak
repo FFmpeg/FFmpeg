@@ -83,12 +83,6 @@ fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
 FATE_TESTS += fate-mjpegb
 fate-mjpegb: CMD = framecrc -idct simple -flags +bitexact -i $(SAMPLES)/mjpegb/mjpegb_part.mov -an
 
-FATE_TESTS += fate-musepack7
-fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
-fate-musepack7: CMP = oneoff
-fate-musepack7: REF = $(SAMPLES)/musepack/inside-mp7.pcm
-fate-musepack7: FUZZ = 1
-
 FATE_TESTS += fate-v410dec
 fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10le
 
