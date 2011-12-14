@@ -503,8 +503,15 @@ static int applehttp_read_header(AVFormatContext *s, AVFormatParameters *ap)
         v->pb.seekable = 0;
         ret = av_probe_input_buffer(&v->pb, &in_fmt, v->segments[0]->url,
                                     NULL, 0, 0);
-        if (ret < 0)
+        if (ret < 0) {
+            /* Free the ctx - it isn't initialized properly at this point,
+             * so avformat_close_input shouldn't be called. If
+             * avformat_open_input fails below, it frees and zeros the
+             * context, so it doesn't need any special treatment like this. */
+            avformat_free_context(v->ctx);
+            v->ctx = NULL;
             goto fail;
+        }
         v->ctx->pb       = &v->pb;
         ret = avformat_open_input(&v->ctx, v->segments[0]->url, in_fmt, NULL);
         if (ret < 0)
