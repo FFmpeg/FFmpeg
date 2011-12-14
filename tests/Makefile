@@ -47,7 +47,7 @@ include $(SRC_PATH)/tests/fate/real.mak
 include $(SRC_PATH)/tests/fate/screen.mak
 include $(SRC_PATH)/tests/fate/utvideo.mak
 include $(SRC_PATH)/tests/fate/vorbis.mak
-include $(SRC_PATH)/tests/fate/vp8.mak
+include $(SRC_PATH)/tests/fate/vpx.mak
 include $(SRC_PATH)/tests/fate/wma.mak
 
 FATE_ACODEC  = $(ACODEC_TESTS:%=fate-acodec-%)
