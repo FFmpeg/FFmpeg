@@ -3,37 +3,6 @@ fate-twinvq: CMD = pcm -i $(SAMPLES)/vqf/achterba.vqf
 fate-twinvq: CMP = oneoff
 fate-twinvq: REF = $(SAMPLES)/vqf/achterba.pcm
 
-FATE_TESTS += fate-sipr-16k
-fate-sipr-16k: CMD = pcm -i $(SAMPLES)/sipr/sipr_16k.rm
-fate-sipr-16k: CMP = oneoff
-fate-sipr-16k: REF = $(SAMPLES)/sipr/sipr_16k.pcm
-
-FATE_TESTS += fate-sipr-8k5
-fate-sipr-8k5: CMD = pcm -i $(SAMPLES)/sipr/sipr_8k5.rm
-fate-sipr-8k5: CMP = oneoff
-fate-sipr-8k5: REF = $(SAMPLES)/sipr/sipr_8k5.pcm
-
-FATE_TESTS += fate-sipr-6k5
-fate-sipr-6k5: CMD = pcm -i $(SAMPLES)/sipr/sipr_6k5.rm
-fate-sipr-6k5: CMP = oneoff
-fate-sipr-6k5: REF = $(SAMPLES)/sipr/sipr_6k5.pcm
-
-FATE_TESTS += fate-sipr-5k0
-fate-sipr-5k0: CMD = pcm -i $(SAMPLES)/sipr/sipr_5k0.rm
-fate-sipr-5k0: CMP = oneoff
-fate-sipr-5k0: REF = $(SAMPLES)/sipr/sipr_5k0.pcm
-
-FATE_TESTS += fate-ra-288
-fate-ra-288: CMD = pcm -i $(SAMPLES)/real/ra_288.rm
-fate-ra-288: CMP = oneoff
-fate-ra-288: REF = $(SAMPLES)/real/ra_288.pcm
-fate-ra-288: FUZZ = 2
-
-FATE_TESTS += fate-ra-cook
-fate-ra-cook: CMD = pcm -i $(SAMPLES)/real/ra_cook.rm
-fate-ra-cook: CMP = oneoff
-fate-ra-cook: REF = $(SAMPLES)/real/ra_cook.pcm
-
 FATE_TESTS += fate-mpeg2-field-enc
 fate-mpeg2-field-enc: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/mpeg2/mpeg2_field_encoding.ts -an
 
@@ -183,9 +152,6 @@ fate-dxa-scummvm: CMD = framecrc -i $(SAMPLES)/dxa/scummvm.dxa -pix_fmt rgb24
 
 FATE_TESTS += fate-mjpegb
 fate-mjpegb: CMD = framecrc -idct simple -flags +bitexact -i $(SAMPLES)/mjpegb/mjpegb_part.mov -an
-
-FATE_TESTS += fate-rv30
-fate-rv30: CMD = framecrc -flags +bitexact -dct fastint -idct simple -i $(SAMPLES)/real/rv30.rm -an
 
 FATE_TESTS += fate-musepack7
 fate-musepack7: CMD = pcm -i $(SAMPLES)/musepack/inside-mp7.mpc
