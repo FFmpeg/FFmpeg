@@ -204,7 +204,7 @@ static int parse_playlist(AppleHTTPContext *c, const char *url,
     enum KeyType key_type = KEY_NONE;
     uint8_t iv[16] = "";
     int has_iv = 0;
-    char key[MAX_URL_SIZE];
+    char key[MAX_URL_SIZE] = "";
     char line[1024];
     const char *ptr;
     int close_in = 0;
