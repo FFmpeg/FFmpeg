@@ -184,6 +184,7 @@ static av_cold int encode_init(AVCodecContext *avctx)
         s->tc.rate = avpriv_frame_rate_tab[s->frame_rate_index];
         if (avpriv_init_smpte_timecode(s, &s->tc) < 0)
             return -1;
+        s->drop_frame_timecode = s->tc.drop;
         s->avctx->timecode_frame_start = s->tc.start;
     } else {
         s->avctx->timecode_frame_start = 0; // default is -1
