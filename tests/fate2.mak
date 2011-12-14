@@ -25,9 +25,6 @@ fate-imc: REF = $(SAMPLES)/imc/imc.pcm
 FATE_TESTS += fate-yop
 fate-yop: CMD = framecrc -i $(SAMPLES)/yop/test1.yop -pix_fmt rgb24 -an
 
-FATE_TESTS += fate-pictor
-fate-pictor: CMD = framecrc -i $(SAMPLES)/pictor/MFISH.PIC -pix_fmt rgb24 -an
-
 FATE_TESTS += fate-dts
 fate-dts: CMD = pcm -i $(SAMPLES)/dts/dts.ts
 fate-dts: CMP = oneoff
@@ -109,12 +106,6 @@ fate-txd-16bpp: CMD = framecrc -i $(SAMPLES)/txd/misc.txd -pix_fmt bgra -an
 
 FATE_TESTS += fate-vp3
 fate-vp3: CMD = framecrc -i $(SAMPLES)/vp3/vp31.avi
-
-FATE_TESTS += fate-fax-g3
-fate-fax-g3: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31D.TIF
-
-FATE_TESTS += fate-fax-g3s
-fate-fax-g3s: CMD = framecrc -i $(SAMPLES)/CCITT_fax/G31DS.TIF
 
 FATE_TESTS += fate-ws_snd
 fate-ws_snd: CMD = md5  -i $(SAMPLES)/vqa/ws_snd.vqa -f s16le
