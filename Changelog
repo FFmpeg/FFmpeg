@@ -1,6 +1,7 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+
 version next:
 
 - openal input device added
@@ -136,8 +137,8 @@ easier to use. The changes are:
 - cellauto source
 - v410 Quicktime Uncompressed 4:4:4 10-bit encoder and decoder
 
-version 0.8:
 
+version 0.8:
 
 - many many things we forgot because we rather write code than changelogs
 - WebM support in Matroska de/muxer
