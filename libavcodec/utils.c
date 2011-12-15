@@ -239,20 +239,53 @@ void avcodec_align_dimensions(AVCodecContext *s, int *width, int *height){
     *width=FFALIGN(*width, align);
 }
 
+int avcodec_fill_audio_frame(AVFrame *frame, int nb_channels,
+                             enum AVSampleFormat sample_fmt, const uint8_t *buf,
+                             int buf_size, int align)
+{
+    int ch, planar, needed_size, ret = 0;
+
+    needed_size = av_samples_get_buffer_size(NULL, nb_channels,
+                                             frame->nb_samples, sample_fmt,
+                                             align);
+    if (buf_size < needed_size)
+        return AVERROR(EINVAL);
+
+    planar = av_sample_fmt_is_planar(sample_fmt);
+    if (planar && nb_channels > AV_NUM_DATA_POINTERS) {
+        if (!(frame->extended_data = av_mallocz(nb_channels *
+                                                sizeof(*frame->extended_data))))
+            return AVERROR(ENOMEM);
+    } else {
+        frame->extended_data = frame->data;
+    }
+
+    if ((ret = av_samples_fill_arrays(frame->extended_data, &frame->linesize[0],
+                                      buf, nb_channels, frame->nb_samples,
+                                      sample_fmt, align)) < 0) {
+        if (frame->extended_data != frame->data)
+            av_free(frame->extended_data);
+        return ret;
+    }
+    if (frame->extended_data != frame->data) {
+        for (ch = 0; ch < AV_NUM_DATA_POINTERS; ch++)
+            frame->data[ch] = frame->extended_data[ch];
+    }
+
+    return ret;
+}
+
 static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
 {
     AVCodecInternal *avci = avctx->internal;
     InternalBuffer *buf;
-    int buf_size, ret, i, needs_extended_data;
+    int buf_size, ret;
 
     buf_size = av_samples_get_buffer_size(NULL, avctx->channels,
                                           frame->nb_samples, avctx->sample_fmt,
                                           32);
     if (buf_size < 0)
         return AVERROR(EINVAL);
-
-    needs_extended_data = av_sample_fmt_is_planar(avctx->sample_fmt) &&
-                          avctx->channels > AV_NUM_DATA_POINTERS;
 
     /* allocate InternalBuffer if needed */
     if (!avci->buffer) {
@@ -285,48 +318,31 @@ static int audio_get_buffer(AVCodecContext *avctx, AVFrame *frame)
     /* if there is no previous buffer or the previous buffer cannot be used
        as-is, allocate a new buffer and/or rearrange the channel pointers */
     if (!buf->extended_data) {
-        /* if the channel pointers will fit, just set extended_data to data,
-           otherwise allocate the extended_data channel pointers */
-        if (needs_extended_data) {
-            buf->extended_data = av_mallocz(avctx->channels *
-                                            sizeof(*buf->extended_data));
-            if (!buf->extended_data)
+        if (!buf->data[0]) {
+            if (!(buf->data[0] = av_mallocz(buf_size)))
                 return AVERROR(ENOMEM);
-        } else {
-            buf->extended_data = buf->data;
+            buf->audio_data_size = buf_size;
         }
-
-        /* if there is a previous buffer and it is large enough, reuse it and
-           just fill-in new channel pointers and linesize, otherwise allocate
-           a new buffer */
-        if (buf->extended_data[0]) {
-            ret = av_samples_fill_arrays(buf->extended_data, &buf->linesize[0],
-                                         buf->extended_data[0], avctx->channels,
-                                         frame->nb_samples, avctx->sample_fmt,
-                                         32);
-        } else {
-            ret = av_samples_alloc(buf->extended_data, &buf->linesize[0],
-                                   avctx->channels, frame->nb_samples,
-                                   avctx->sample_fmt, 32);
-        }
-        if (ret)
+        if ((ret = avcodec_fill_audio_frame(frame, avctx->channels,
+                                            avctx->sample_fmt, buf->data[0],
+                                            buf->audio_data_size, 32)))
             return ret;
 
-        /* if data was not used for extended_data, we need to copy as many of
-           the extended_data channel pointers as will fit */
-        if (needs_extended_data) {
-            for (i = 0; i < AV_NUM_DATA_POINTERS; i++)
-                buf->data[i] = buf->extended_data[i];
-        }
-        buf->audio_data_size = buf_size;
-        buf->nb_channels     = avctx->channels;
+        if (frame->extended_data == frame->data)
+            buf->extended_data = buf->data;
+        else
+            buf->extended_data = frame->extended_data;
+        memcpy(buf->data, frame->data, sizeof(frame->data));
+        buf->linesize[0] = frame->linesize[0];
+        buf->nb_channels = avctx->channels;
+    } else {
+        /* copy InternalBuffer info to the AVFrame */
+        frame->extended_data = buf->extended_data;
+        frame->linesize[0]   = buf->linesize[0];
+        memcpy(frame->data, buf->data, sizeof(frame->data));
     }
 
-    /* copy InternalBuffer info to the AVFrame */
     frame->type          = FF_BUFFER_TYPE_INTERNAL;
-    frame->extended_data = buf->extended_data;
-    frame->linesize[0]   = buf->linesize[0];
-    memcpy(frame->data, buf->data, sizeof(frame->data));
 
     if (avctx->pkt) frame->pkt_pts = avctx->pkt->pts;
     else            frame->pkt_pts = AV_NOPTS_VALUE;
