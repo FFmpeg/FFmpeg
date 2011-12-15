@@ -1902,7 +1902,10 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
                 *frame_sample_aspect = ist->st->sample_aspect_ratio;
             decoded_frame->pts = ist->pts;
 
-            av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, AV_VSRC_BUF_FLAG_OVERWRITE);
+            if((av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, AV_VSRC_BUF_FLAG_OVERWRITE)) < 0){
+                av_log(0, AV_LOG_FATAL, "Failed to inject frame into filter network\n");
+                exit_program(1);
+            }
         }
     }
 #endif
