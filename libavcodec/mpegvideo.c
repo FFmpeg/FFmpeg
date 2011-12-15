@@ -1228,8 +1228,8 @@ int MPV_frame_start(MpegEncContext *s, AVCodecContext *avctx)
                 return -1;
 
             if(s->codec_id == CODEC_ID_FLV1 || s->codec_id == CODEC_ID_H263){
-                for(i=0; i<s->height; i++)
-                    memset(s->last_picture_ptr->f.data[0] + s->last_picture_ptr->f.linesize[0]*i, 16, s->width);
+                for(i=0; i<avctx->height; i++)
+                    memset(s->last_picture_ptr->f.data[0] + s->last_picture_ptr->f.linesize[0]*i, 16, avctx->width);
             }
 
             ff_thread_report_progress((AVFrame*)s->last_picture_ptr, INT_MAX, 0);
