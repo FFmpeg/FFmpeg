@@ -339,7 +339,7 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
         gxf_track_tags(pb, &track_len, si);
         // check for timecode tracks
         if (track_type == 7 || track_type == 8 || track_type == 24) {
-            add_timecode_metadata(&s->metadata, "gxf_timecode",
+            add_timecode_metadata(&s->metadata, "timecode",
                                   si->track_aux_data & 0xffffffff,
                                   si->fields_per_frame);
 
@@ -390,9 +390,9 @@ static int gxf_header(AVFormatContext *s, AVFormatParameters *ap) {
             if (len >= 0x18) {
                 len -= 0x18;
                 avio_skip(pb, 0x10);
-                add_timecode_metadata(&s->metadata, "gxf_timecode_at_mark_in",
+                add_timecode_metadata(&s->metadata, "timecode_at_mark_in",
                                       avio_rl32(pb), si->fields_per_frame);
-                add_timecode_metadata(&s->metadata, "gxf_timecode_at_mark_out",
+                add_timecode_metadata(&s->metadata, "timecode_at_mark_out",
                                       avio_rl32(pb), si->fields_per_frame);
             }
         } else
