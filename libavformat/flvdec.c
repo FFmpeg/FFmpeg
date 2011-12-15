@@ -41,6 +41,8 @@
 
 typedef struct {
     int wrong_dts; ///< wrong dts due to negative cts
+    uint8_t *new_extradata[2];
+    int      new_extradata_size[2];
 } FLVContext;
 
 static int flv_probe(AVProbeData *p)
@@ -401,6 +403,14 @@ static int flv_read_header(AVFormatContext *s,
     return 0;
 }
 
+static int flv_read_close(AVFormatContext *s)
+{
+    FLVContext *flv = s->priv_data;
+    av_freep(&flv->new_extradata[0]);
+    av_freep(&flv->new_extradata[1]);
+    return 0;
+}
+
 static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
 {
     av_free(st->codec->extradata);
@@ -409,6 +419,18 @@ static int flv_get_extradata(AVFormatContext *s, AVStream *st, int size)
         return AVERROR(ENOMEM);
     st->codec->extradata_size = size;
     avio_read(s->pb, st->codec->extradata, st->codec->extradata_size);
+    return 0;
+}
+
+static int flv_queue_extradata(FLVContext *flv, AVIOContext *pb, int stream,
+                               int size)
+{
+    av_free(flv->new_extradata[stream]);
+    flv->new_extradata[stream] = av_mallocz(size + FF_INPUT_BUFFER_PADDING_SIZE);
+    if (!flv->new_extradata[stream])
+        return AVERROR(ENOMEM);
+    flv->new_extradata_size[stream] = size;
+    avio_read(pb, flv->new_extradata[stream], size);
     return 0;
 }
 
@@ -529,6 +551,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
                 dts = AV_NOPTS_VALUE;
         }
         if (type == 0) {
+            if (st->codec->extradata) {
+                if ((ret = flv_queue_extradata(flv, s->pb, is_audio, size)) < 0)
+                    return ret;
+                ret = AVERROR(EAGAIN);
+                goto leave;
+            }
             if ((ret = flv_get_extradata(s, st, size)) < 0)
                 return ret;
             if (st->codec->codec_id == CODEC_ID_AAC) {
@@ -565,6 +593,16 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     pkt->dts = dts;
     pkt->pts = pts == AV_NOPTS_VALUE ? dts : pts;
     pkt->stream_index = st->index;
+    if (flv->new_extradata[is_audio]) {
+        uint8_t *side = av_packet_new_side_data(pkt, AV_PKT_DATA_NEW_EXTRADATA,
+                                                flv->new_extradata_size[is_audio]);
+        if (side) {
+            memcpy(side, flv->new_extradata[is_audio],
+                   flv->new_extradata_size[is_audio]);
+            av_freep(&flv->new_extradata[is_audio]);
+            flv->new_extradata_size[is_audio] = 0;
+        }
+    }
 
     if (is_audio || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
         pkt->flags |= AV_PKT_FLAG_KEY;
@@ -618,6 +656,7 @@ AVInputFormat ff_flv_demuxer = {
 #if 0
     .read_seek2 = flv_read_seek2,
 #endif
+    .read_close = flv_read_close,
     .extensions = "flv",
     .value = CODEC_ID_FLV1,
 };
