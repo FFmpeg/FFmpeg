@@ -855,6 +855,7 @@ typedef struct AVPanScan{
 
 enum AVPacketSideDataType {
     AV_PKT_DATA_PALETTE,
+    AV_PKT_DATA_NEW_EXTRADATA,
 };
 
 typedef struct AVPacket {
