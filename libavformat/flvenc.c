@@ -90,6 +90,7 @@ static int get_audio_flags(AVCodecContext *enc){
         case    11025:
             flags |= FLV_SAMPLERATE_11025HZ;
             break;
+        case    16000: //nellymoser only
         case     8000: //nellymoser only
         case     5512: //not mp3
             if(enc->codec_id != CODEC_ID_MP3){
@@ -125,6 +126,8 @@ static int get_audio_flags(AVCodecContext *enc){
     case CODEC_ID_NELLYMOSER:
         if (enc->sample_rate == 8000) {
             flags |= FLV_CODECID_NELLYMOSER_8KHZ_MONO | FLV_SAMPLESSIZE_16BIT;
+        } else if (enc->sample_rate == 16000) {
+            flags |= FLV_CODECID_NELLYMOSER_16KHZ_MONO | FLV_SAMPLESSIZE_16BIT;
         } else {
             flags |= FLV_CODECID_NELLYMOSER | FLV_SAMPLESSIZE_16BIT;
         }
