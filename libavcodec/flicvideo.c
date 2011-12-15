@@ -499,15 +499,26 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
     stream_ptr += 6;  /* skip the magic number */
     num_chunks = AV_RL16(&buf[stream_ptr]);
     stream_ptr += 10;  /* skip padding */
+    if (frame_size > buf_size)
+        frame_size = buf_size;
 
     frame_size -= 16;
 
     /* iterate through the chunks */
     while ((frame_size > 0) && (num_chunks > 0)) {
+        int stream_ptr_after_chunk;
         chunk_size = AV_RL32(&buf[stream_ptr]);
+        if (chunk_size > frame_size) {
+            av_log(avctx, AV_LOG_WARNING,
+                   "Invalid chunk_size = %u > frame_size = %u\n", chunk_size, frame_size);
+            chunk_size = frame_size;
+        }
+        stream_ptr_after_chunk = stream_ptr + chunk_size;
+
         stream_ptr += 4;
         chunk_type = AV_RL16(&buf[stream_ptr]);
         stream_ptr += 2;
+
 
         switch (chunk_type) {
         case FLI_256_COLOR:
@@ -525,6 +536,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
             compressed_lines = AV_RL16(&buf[stream_ptr]);
             stream_ptr += 2;
             while (compressed_lines > 0) {
+                if (stream_ptr + 2 > stream_ptr_after_chunk)
+                    break;
                 line_packets = AV_RL16(&buf[stream_ptr]);
                 stream_ptr += 2;
                 if (line_packets < 0) {
@@ -537,6 +550,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                     pixel_countdown = s->avctx->width;
                     for (i = 0; i < line_packets; i++) {
                         /* account for the skip bytes */
+                        if (stream_ptr + 2 > stream_ptr_after_chunk)
+                            break;
                         pixel_skip = buf[stream_ptr++];
                         pixel_ptr += (pixel_skip*2); /* Pixel is 2 bytes wide */
                         pixel_countdown -= pixel_skip;
@@ -551,6 +566,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                                 pixel_ptr += 2;
                             }
                         } else {
+                            if (stream_ptr + 2*byte_run > stream_ptr_after_chunk)
+                                break;
                             CHECK_PIXEL_PTR(2 * byte_run);
                             for (j = 0; j < byte_run; j++, pixel_countdown--) {
                                 *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&buf[stream_ptr]);
@@ -586,6 +603,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 pixel_countdown = (s->avctx->width * 2);
 
                 while (pixel_countdown > 0) {
+                    if (stream_ptr + 1 > stream_ptr_after_chunk)
+                        break;
                     byte_run = (signed char)(buf[stream_ptr++]);
                     if (byte_run > 0) {
                         palette_idx1 = buf[stream_ptr++];
@@ -599,6 +618,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         }
                     } else {  /* copy bytes if byte_run < 0 */
                         byte_run = -byte_run;
+                        if (stream_ptr + byte_run > stream_ptr_after_chunk)
+                            break;
                         CHECK_PIXEL_PTR(byte_run);
                         for (j = 0; j < byte_run; j++) {
                             palette_idx1 = buf[stream_ptr++];
@@ -638,6 +659,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                 pixel_countdown = s->avctx->width; /* Width is in pixels, not bytes */
 
                 while (pixel_countdown > 0) {
+                    if (stream_ptr + 1 > stream_ptr_after_chunk)
+                        break;
                     byte_run = (signed char)(buf[stream_ptr++]);
                     if (byte_run > 0) {
                         pixel    = AV_RL16(&buf[stream_ptr]);
@@ -653,6 +676,8 @@ static int flic_decode_frame_15_16BPP(AVCodecContext *avctx,
                         }
                     } else {  /* copy pixels if byte_run < 0 */
                         byte_run = -byte_run;
+                        if (stream_ptr + 2 * byte_run > stream_ptr_after_chunk)
+                            break;
                         CHECK_PIXEL_PTR(2 * byte_run);
                         for (j = 0; j < byte_run; j++) {
                             *((signed short*)(&pixels[pixel_ptr])) = AV_RL16(&buf[stream_ptr]);
