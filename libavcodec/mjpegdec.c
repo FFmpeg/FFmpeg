@@ -673,15 +673,19 @@ static int ljpeg_decode_rgb_scan(MJpegDecodeContext *s, int predictor, int point
                 s->restart_count = s->restart_interval;
 
             for(i=0;i<3;i++) {
-                int pred;
+                int pred, dc;
 
                 topleft[i]= top[i];
                 top[i]= buffer[mb_x][i];
 
                 PREDICT(pred, topleft[i], top[i], left[i], modified_predictor);
 
+                dc = mjpeg_decode_dc(s, s->dc_index[i]);
+                if(dc == 0xFFFF)
+                    return -1;
+
                 left[i]=
-                buffer[mb_x][i]= mask & (pred + (mjpeg_decode_dc(s, s->dc_index[i]) << point_transform));
+                buffer[mb_x][i]= mask & (pred + (dc << point_transform));
             }
 
             if (s->restart_interval && !--s->restart_count) {
@@ -735,7 +739,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
                     linesize= s->linesize[c];
 
                     for(j=0; j<n; j++) {
-                        int pred;
+                        int pred, dc;
 
                         ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                         if(y==0 && mb_y==0){
@@ -754,7 +758,10 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
 
                         if (s->interlaced && s->bottom_field)
                             ptr += linesize >> 1;
-                        *ptr= pred + (mjpeg_decode_dc(s, s->dc_index[i]) << point_transform);
+                        dc = mjpeg_decode_dc(s, s->dc_index[i]);
+                        if(dc == 0xFFFF)
+                            return -1;
+                        *ptr= pred + (dc << point_transform);
 
                         if (++x == h) {
                             x = 0;
@@ -765,7 +772,7 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
             }else{
                 for(i=0;i<nb_components;i++) {
                     uint8_t *ptr;
-                    int n, h, v, x, y, c, j, linesize;
+                    int n, h, v, x, y, c, j, linesize, dc;
                     n = s->nb_blocks[i];
                     c = s->comp_index[i];
                     h = s->h_scount[i];
@@ -779,7 +786,11 @@ static int ljpeg_decode_yuv_scan(MJpegDecodeContext *s, int predictor, int point
 
                         ptr = s->picture.data[c] + (linesize * (v * mb_y + y)) + (h * mb_x + x); //FIXME optimize this crap
                         PREDICT(pred, ptr[-linesize-1], ptr[-linesize], ptr[-1], predictor);
-                        *ptr= pred + (mjpeg_decode_dc(s, s->dc_index[i]) << point_transform);
+
+                        dc = mjpeg_decode_dc(s, s->dc_index[i]);
+                        if(dc == 0xFFFF)
+                            return -1;
+                        *ptr= pred + (dc << point_transform);
                         if (++x == h) {
                             x = 0;
                             y++;
