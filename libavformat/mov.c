@@ -1082,6 +1082,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
             avio_rb32(pb); /* reserved */
             avio_rb16(pb); /* reserved */
             dref_id = avio_rb16(pb);
+        }else if (size <= 0){
+            av_log(c->fc, AV_LOG_ERROR, "invalid size %d in stsd\n", size);
+            return -1;
         }
 
         if (st->codec->codec_tag &&
