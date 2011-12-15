@@ -1137,6 +1137,7 @@ HAVE_LIST="
     altivec_h
     arpa_inet_h
     asm_mod_y
+    asm_types_h
     attribute_may_alias
     attribute_packed
     bswap
@@ -2996,6 +2997,7 @@ check_header termios.h
 check_header vdpau/vdpau.h
 check_header vdpau/vdpau_x11.h
 check_header X11/extensions/XvMClib.h
+check_header asm/types.h
 
 disabled  zlib || check_lib   zlib.h      zlibVersion -lz   || disable  zlib
 disabled bzlib || check_lib2 bzlib.h BZ2_bzlibVersion -lbz2 || disable bzlib
