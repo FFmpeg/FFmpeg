@@ -319,12 +319,14 @@ static int flic_decode_frame_8BPP(AVCodecContext *avctx,
                 pixel_ptr = y_ptr;
                 CHECK_PIXEL_PTR(0);
                 pixel_countdown = s->avctx->width;
-                line_packets = buf[stream_ptr++];
-                if (stream_ptr + 2 * line_packets > stream_ptr_after_chunk)
+                if (stream_ptr + 1 > stream_ptr_after_chunk)
                     break;
+                line_packets = buf[stream_ptr++];
                 if (line_packets > 0) {
                     for (i = 0; i < line_packets; i++) {
                         /* account for the skip bytes */
+                        if (stream_ptr + 2 > stream_ptr_after_chunk)
+                            break;
                         pixel_skip = buf[stream_ptr++];
                         pixel_ptr += pixel_skip;
                         pixel_countdown -= pixel_skip;
