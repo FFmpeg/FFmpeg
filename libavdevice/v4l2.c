@@ -41,7 +41,9 @@
 #if HAVE_SYS_VIDEOIO_H
 #include <sys/videoio.h>
 #else
+#if HAVE_ASM_TYPES_H
 #include <asm/types.h>
+#endif
 #include <linux/videodev2.h>
 #endif
 #include <time.h>
