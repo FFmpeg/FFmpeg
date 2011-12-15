@@ -144,6 +144,18 @@ static const uint8_t aac_chan_configs[6][5] = {
 };
 
 /**
+ * Table to remap channels from Libav's default order to AAC order.
+ */
+static const uint8_t aac_chan_maps[AAC_MAX_CHANNELS][AAC_MAX_CHANNELS] = {
+    { 0 },
+    { 0, 1 },
+    { 2, 0, 1 },
+    { 2, 0, 1, 3 },
+    { 2, 0, 1, 3, 4 },
+    { 2, 0, 1, 4, 5, 3 },
+};
+
+/**
  * Make AAC audio config object.
  * @see 1.6.2.1 "Syntax - AudioSpecificConfig"
  */
@@ -172,34 +184,29 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
                                   float *audio)
 {
     int i, k;
-    const int chans = s->channels;
     const float * lwindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
     const float * swindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
     const float * pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
     float *output = sce->ret;
 
     if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
-        memcpy(output, sce->saved, sizeof(float)*1024);
+        memcpy(output, sce->saved, sizeof(output[0])*1024);
         if (sce->ics.window_sequence[0] == LONG_STOP_SEQUENCE) {
             memset(output, 0, sizeof(output[0]) * 448);
             for (i = 448; i < 576; i++)
                 output[i] = sce->saved[i] * pwindow[i - 448];
-            for (i = 576; i < 704; i++)
-                output[i] = sce->saved[i];
         }
         if (sce->ics.window_sequence[0] != LONG_START_SEQUENCE) {
             for (i = 0; i < 1024; i++) {
-                output[i+1024]         = audio[i * chans] * lwindow[1024 - i - 1];
-                sce->saved[i] = audio[i * chans] * lwindow[i];
+                output[i+1024] = audio[i] * lwindow[1024 - i - 1];
+                sce->saved[i]  = audio[i] * lwindow[i];
             }
         } else {
-            for (i = 0; i < 448; i++)
-                output[i+1024]         = audio[i * chans];
+            memcpy(output + 1024, audio, sizeof(output[0]) * 448);
             for (; i < 576; i++)
-                output[i+1024]         = audio[i * chans] * swindow[576 - i - 1];
+                output[i+1024] = audio[i] * swindow[576 - i - 1];
             memset(output+1024+576, 0, sizeof(output[0]) * 448);
-            for (i = 0; i < 1024; i++)
-                sce->saved[i] = audio[i * chans];
+            memcpy(sce->saved, audio, sizeof(sce->saved[0]) * 1024);
         }
         s->mdct1024.mdct_calc(&s->mdct1024, sce->coeffs, output);
     } else {
@@ -207,13 +214,12 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
             for (i = 448 + k; i < 448 + k + 256; i++)
                 output[i - 448 - k] = (i < 1024)
                                          ? sce->saved[i]
-                                         : audio[(i-1024)*chans];
+                                         : audio[i-1024];
             s->dsp.vector_fmul        (output,     output, k ?  swindow : pwindow, 128);
             s->dsp.vector_fmul_reverse(output+128, output+128, swindow, 128);
             s->mdct128.mdct_calc(&s->mdct128, sce->coeffs + k, output);
         }
-        for (i = 0; i < 1024; i++)
-            sce->saved[i] = audio[i * chans];
+        memcpy(sce->saved, audio, sizeof(sce->saved[0]) * 1024);
     }
 }
 
@@ -432,11 +438,37 @@ static void put_bitstream_info(AVCodecContext *avctx, AACEncContext *s,
     put_bits(&s->pb, 12 - padbits, 0);
 }
 
+/*
+ * Deinterleave input samples.
+ * Channels are reordered from Libav's default order to AAC order.
+ */
+static void deinterleave_input_samples(AACEncContext *s,
+                                       const float *samples)
+{
+    int ch, i;
+    const int sinc = s->channels;
+    const uint8_t *channel_map = aac_chan_maps[sinc - 1];
+
+    /* deinterleave and remap input samples */
+    for (ch = 0; ch < sinc; ch++) {
+        const float *sptr = samples + channel_map[ch];
+
+        /* copy last 1024 samples of previous frame to the start of the current frame */
+        memcpy(&s->planar_samples[ch][0], &s->planar_samples[ch][1024], 1024 * sizeof(s->planar_samples[0][0]));
+
+        /* deinterleave */
+        for (i = 1024; i < 1024 * 2; i++) {
+            s->planar_samples[ch][i] = *sptr;
+            sptr += sinc;
+        }
+    }
+}
+
 static int aac_encode_frame(AVCodecContext *avctx,
                             uint8_t *frame, int buf_size, void *data)
 {
     AACEncContext *s = avctx->priv_data;
-    float *samples   = s->samples, *samples2, *la;
+    float **samples = s->planar_samples, *samples2, *la;
     ChannelElement *cpe;
     int i, ch, w, g, chans, tag, start_ch;
     int chan_el_counter[4];
@@ -444,27 +476,15 @@ static int aac_encode_frame(AVCodecContext *avctx,
 
     if (s->last_frame)
         return 0;
+
     if (data) {
-        if (!s->psypp) {
-            memcpy(s->samples + 1024 * s->channels, data,
-                   1024 * s->channels * sizeof(s->samples[0]));
-        } else {
-            start_ch = 0;
-            samples2 = s->samples + 1024 * s->channels;
-            for (i = 0; i < s->chan_map[0]; i++) {
-                tag = s->chan_map[i+1];
-                chans = tag == TYPE_CPE ? 2 : 1;
-                ff_psy_preprocess(s->psypp, (float*)data + start_ch,
-                                  samples2 + start_ch, start_ch, chans);
-                start_ch += chans;
-            }
-        }
+        deinterleave_input_samples(s, data);
+        if (s->psypp)
+            ff_psy_preprocess(s->psypp, s->planar_samples, s->channels);
     }
-    if (!avctx->frame_number) {
-        memcpy(s->samples, s->samples + 1024 * s->channels,
-               1024 * s->channels * sizeof(s->samples[0]));
+
+    if (!avctx->frame_number)
         return 0;
-    }
 
     start_ch = 0;
     for (i = 0; i < s->chan_map[0]; i++) {
@@ -475,8 +495,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
         for (ch = 0; ch < chans; ch++) {
             IndividualChannelStream *ics = &cpe->ch[ch].ics;
             int cur_channel = start_ch + ch;
-            samples2 = samples + cur_channel;
-            la       = samples2 + (448+64) * s->channels;
+            samples2 = &samples[cur_channel][0];
+            la       = samples2 + (448+64);
             if (!data)
                 la = NULL;
             if (tag == TYPE_LFE) {
@@ -592,8 +612,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
 
     if (!data)
         s->last_frame = 1;
-    memcpy(s->samples, s->samples + 1024 * s->channels,
-           1024 * s->channels * sizeof(s->samples[0]));
+
     return put_bits_count(&s->pb)>>3;
 }
 
@@ -606,7 +625,7 @@ static av_cold int aac_encode_end(AVCodecContext *avctx)
     ff_psy_end(&s->psy);
     if (s->psypp)
         ff_psy_preprocess_end(s->psypp);
-    av_freep(&s->samples);
+    av_freep(&s->buffer.samples);
     av_freep(&s->cpe);
     return 0;
 }
@@ -633,9 +652,12 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 
 static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 {
-    FF_ALLOC_OR_GOTO (avctx, s->samples, 2 * 1024 * s->channels * sizeof(s->samples[0]), alloc_fail);
+    FF_ALLOCZ_OR_GOTO(avctx, s->buffer.samples, 2 * 1024 * s->channels * sizeof(s->buffer.samples[0]), alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, s->cpe, sizeof(ChannelElement) * s->chan_map[0], alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + FF_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
+
+    for(int ch = 0; ch < s->channels; ch++)
+        s->planar_samples[ch] = s->buffer.samples + 2 * 1024 * ch;
 
     return 0;
 alloc_fail:

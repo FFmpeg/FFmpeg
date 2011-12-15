@@ -400,7 +400,7 @@ static av_unused FFPsyWindowInfo psy_3gpp_window(FFPsyContext *ctx,
         int stay_short = 0;
         for (i = 0; i < 8; i++) {
             for (j = 0; j < 128; j++) {
-                v = iir_filter(la[(i*128+j)*ctx->avctx->channels], pch->iir_state);
+                v = iir_filter(la[i*128+j], pch->iir_state);
                 sum += v*v;
             }
             s[i]  = sum;
@@ -794,18 +794,17 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
         float attack_intensity[(AAC_NUM_BLOCKS_SHORT + 1) * PSY_LAME_NUM_SUBBLOCKS];
         float energy_subshort[(AAC_NUM_BLOCKS_SHORT + 1) * PSY_LAME_NUM_SUBBLOCKS];
         float energy_short[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
-        int chans = ctx->avctx->channels;
-        const float *firbuf = la + (AAC_BLOCK_SIZE_SHORT/4 - PSY_LAME_FIR_LEN) * chans;
+        const float *firbuf = la + (AAC_BLOCK_SIZE_SHORT/4 - PSY_LAME_FIR_LEN);
         int j, att_sum = 0;
 
         /* LAME comment: apply high pass filter of fs/4 */
         for (i = 0; i < AAC_BLOCK_SIZE_LONG; i++) {
             float sum1, sum2;
-            sum1 = firbuf[(i + ((PSY_LAME_FIR_LEN - 1) / 2)) * chans];
+            sum1 = firbuf[i + (PSY_LAME_FIR_LEN - 1) / 2];
             sum2 = 0.0;
             for (j = 0; j < ((PSY_LAME_FIR_LEN - 1) / 2) - 1; j += 2) {
-                sum1 += psy_fir_coeffs[j] * (firbuf[(i + j) * chans] + firbuf[(i + PSY_LAME_FIR_LEN - j) * chans]);
-                sum2 += psy_fir_coeffs[j + 1] * (firbuf[(i + j + 1) * chans] + firbuf[(i + PSY_LAME_FIR_LEN - j - 1) * chans]);
+                sum1 += psy_fir_coeffs[j] * (firbuf[i + j] + firbuf[i + PSY_LAME_FIR_LEN - j]);
+                sum2 += psy_fir_coeffs[j + 1] * (firbuf[i + j + 1] + firbuf[i + PSY_LAME_FIR_LEN - j - 1]);
             }
             /* NOTE: The LAME psymodel expects it's input in the range -32768 to 32768. Tuning this for normalized floats would be difficult. */
             hpfsmpl[i] = (sum1 + sum2) * 32768.0f;

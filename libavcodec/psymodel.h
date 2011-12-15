@@ -174,13 +174,10 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
  * Preprocess several channel in audio frame in order to compress it better.
  *
  * @param ctx      preprocessing context
- * @param audio    samples to preprocess
- * @param dest     place to put filtered samples
- * @param tag      channel number
- * @param channels number of channel to preprocess (some additional work may be done on stereo pair)
+ * @param audio    samples to be filtered (in place)
+ * @param channels number of channel to preprocess
  */
-void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, const float *audio,
-                       float *dest, int tag, int channels);
+void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, float **audio, int channels);
 
 /**
  * Cleanup audio preprocessing module.
