@@ -2494,8 +2494,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
                 double dts= pkt->dts * av_q2d(st->time_base);
                 int64_t duration= pkt->dts - last;
 
-//                if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
-//                    av_log(NULL, AV_LOG_ERROR, "%f\n", dur);
+//                 if(st->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+//                     av_log(NULL, AV_LOG_ERROR, "%f\n", dts);
                 for (i=1; i<FF_ARRAY_ELEMS(st->info->duration_error[0][0]); i++) {
                     int framerate= get_std_framerate(i);
                     double sdts= dts*framerate/(1001*12);
