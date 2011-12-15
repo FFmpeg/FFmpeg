@@ -177,6 +177,17 @@ typedef struct {
     enum MXFMetadataSetType type;
 } MXFMetadataSet;
 
+/* decoded index table */
+typedef struct {
+    int index_sid;
+    int body_sid;
+    int nb_ptses;               /* number of PTSes or total duration of index */
+    int64_t first_dts;          /* DTS = EditUnit + first_dts */
+    int64_t *ptses;             /* maps EditUnit -> PTS */
+    int nb_segments;
+    MXFIndexTableSegment **segments;    /* sorted by IndexStartPosition */
+} MXFIndexTable;
+
 typedef struct {
     MXFPartition *partitions;
     unsigned partitions_count;
@@ -204,6 +215,8 @@ typedef struct {
     int64_t first_dts;          /* DTS = EditUnit + first_dts */
     int64_t *ptses;             /* maps EditUnit -> PTS */
     int nb_ptses;
+    int nb_index_tables;
+    MXFIndexTable *index_tables;
 } MXFContext;
 
 enum MXFWrappingScheme {
@@ -1211,6 +1224,72 @@ static int mxf_compute_ptses(MXFContext *mxf, MXFIndexTableSegment **sorted_segm
     return 0;
 }
 
+/**
+ * Sorts and collects index table segments into index tables.
+ * Also computes PTSes if possible.
+ */
+static int mxf_compute_index_tables(MXFContext *mxf)
+{
+    int i, j, ret, nb_sorted_segments;
+    MXFIndexTableSegment **sorted_segments = NULL;
+
+    if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)) ||
+        nb_sorted_segments <= 0) {
+        av_log(mxf->fc, AV_LOG_WARNING, "broken or empty index\n");
+        return 0;
+    }
+
+    /* sanity check and count unique BodySIDs/IndexSIDs */
+    for (i = 0; i < nb_sorted_segments; i++) {
+        if (i == 0 || sorted_segments[i-1]->index_sid != sorted_segments[i]->index_sid)
+            mxf->nb_index_tables++;
+        else if (sorted_segments[i-1]->body_sid != sorted_segments[i]->body_sid) {
+            av_log(mxf->fc, AV_LOG_ERROR, "found inconsistent BodySID\n");
+            ret = AVERROR_INVALIDDATA;
+            goto finish_decoding_index;
+        }
+    }
+
+    if (!(mxf->index_tables = av_calloc(mxf->nb_index_tables, sizeof(MXFIndexTable)))) {
+        av_log(mxf->fc, AV_LOG_ERROR, "failed to allocate index tables\n");
+        ret = AVERROR(ENOMEM);
+        goto finish_decoding_index;
+    }
+
+    /* distribute sorted segments to index tables */
+    for (i = j = 0; i < nb_sorted_segments; i++) {
+        if (i != 0 && sorted_segments[i-1]->index_sid != sorted_segments[i]->index_sid) {
+            /* next IndexSID */
+            j++;
+        }
+
+        mxf->index_tables[j].nb_segments++;
+    }
+
+    for (i = j = 0; j < mxf->nb_index_tables; i += mxf->index_tables[j++].nb_segments) {
+        MXFIndexTable *t = &mxf->index_tables[j];
+
+        if (!(t->segments = av_calloc(t->nb_segments, sizeof(MXFIndexTableSegment*)))) {
+            av_log(mxf->fc, AV_LOG_ERROR, "failed to allocate IndexTableSegment pointer array\n");
+            ret = AVERROR(ENOMEM);
+            goto finish_decoding_index;
+        }
+
+        if (sorted_segments[i]->index_start_position)
+            av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i starts at EditUnit %"PRId64" - seeking may not work as expected\n",
+                   sorted_segments[i]->index_sid, sorted_segments[i]->index_start_position);
+
+        memcpy(t->segments, &sorted_segments[i], t->nb_segments * sizeof(MXFIndexTableSegment*));
+        t->index_sid = sorted_segments[i]->index_sid;
+        t->body_sid = sorted_segments[i]->body_sid;
+    }
+
+    ret = 0;
+finish_decoding_index:
+    av_free(sorted_segments);
+    return ret;
+}
+
 static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
@@ -1617,6 +1696,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     MXFContext *mxf = s->priv_data;
     KLVPacket klv;
     int64_t essence_offset = 0;
+    int ret;
 
     mxf->last_forward_tell = INT64_MAX;
 
@@ -1711,6 +1791,18 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     avio_seek(s->pb, essence_offset, SEEK_SET);
 
     mxf_compute_essence_containers(mxf);
+
+    if ((ret = mxf_compute_index_tables(mxf)) < 0)
+        return ret;
+
+    if (mxf->nb_index_tables > 1) {
+        /* TODO: look up which IndexSID to use via EssenceContainerData */
+        av_log(mxf->fc, AV_LOG_INFO, "got %i index tables - only the first one (IndexSID %i) will be used\n",
+               mxf->nb_index_tables, mxf->index_tables[0].index_sid);
+    } else if (mxf->nb_index_tables == 0 && mxf->op == OPAtom) {
+        av_log(mxf->fc, AV_LOG_ERROR, "cannot demux OPAtom without an index\n");
+        return AVERROR_INVALIDDATA;
+    }
 
     return mxf_parse_structural_metadata(mxf);
 }
@@ -1871,6 +1963,11 @@ static int mxf_read_close(AVFormatContext *s)
     av_freep(&mxf->aesc);
     av_freep(&mxf->local_tags);
     av_freep(&mxf->ptses);
+
+    for (i = 0; i < mxf->nb_index_tables; i++)
+        av_freep(&mxf->index_tables[i].segments);
+    av_freep(&mxf->index_tables);
+
     return 0;
 }
 
