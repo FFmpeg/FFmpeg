@@ -4075,8 +4075,28 @@ static int decode_frame(AVCodecContext *avctx,
 
         return 0;
     }
-    if(h->is_avc && buf_size >= 9 && AV_RB32(buf)==0x0164001F && buf[5] && buf[8]==0x67)
+    if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
+        int cnt= buf[5]&0x1f;
+        uint8_t *p= buf+6;
+        while(cnt--){
+            int nalsize= AV_RB16(p) + 2;
+            if(nalsize > buf_size - (p-buf) || p[2]!=0x67)
+                goto not_extra;
+            p += nalsize;
+        }
+        cnt = *(p++);
+        if(!cnt)
+            goto not_extra;
+        while(cnt--){
+            int nalsize= AV_RB16(p) + 2;
+            if(nalsize > buf_size - (p-buf) || p[2]!=0x68)
+                goto not_extra;
+            p += nalsize;
+        }
+
         return ff_h264_decode_extradata(h, buf, buf_size);
+    }
+not_extra:
 
     buf_index=decode_nal_units(h, buf, buf_size);
     if(buf_index < 0)
