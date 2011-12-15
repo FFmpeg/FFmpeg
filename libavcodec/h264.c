@@ -1816,7 +1816,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h, int mb_ty
                                     idct_dc_add(ptr, h->mb + (i*16+p*256 << pixel_shift), linesize);
                                 else
                                     idct_add   (ptr, h->mb + (i*16+p*256 << pixel_shift), linesize);
-                            }else
+                            }else if(CONFIG_SVQ3_DECODER)
                                 ff_svq3_add_idct_c(ptr, h->mb + i*16+p*256, linesize, qscale, 0);
                         }
                     }
@@ -1836,7 +1836,7 @@ static av_always_inline void hl_decode_mb_predict_luma(H264Context *h, int mb_ty
                         dctcoef_set(h->mb+(p*256 << pixel_shift), pixel_shift, dc_mapping[i], dctcoef_get(h->mb_luma_dc[p], pixel_shift, i));
                 }
             }
-        }else
+        }else if(CONFIG_SVQ3_DECODER)
             ff_svq3_luma_dc_dequant_idct_c(h->mb+p*256, h->mb_luma_dc[p], qscale);
     }
 }
@@ -1880,7 +1880,7 @@ static av_always_inline void hl_decode_mb_idct_luma(H264Context *h, int mb_type,
                     }
                 }
             }
-        }else{
+        }else if(CONFIG_SVQ3_DECODER) {
             for(i=0; i<16; i++){
                 if(h->non_zero_count_cache[ scan8[i+p*16] ] || h->mb[i*16+p*256]){ //FIXME benchmark weird rule, & below
                     uint8_t * const ptr= dest_y + block_offset[i];
