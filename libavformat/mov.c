@@ -1098,13 +1098,16 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
         int dref_id = 1;
         MOVAtom a = { AV_RL32("stsd") };
         int64_t start_pos = avio_tell(pb);
-        int size = avio_rb32(pb); /* size */
+        uint32_t size = avio_rb32(pb); /* size */
         uint32_t format = avio_rl32(pb); /* data format */
 
         if (size >= 16) {
             avio_rb32(pb); /* reserved */
             avio_rb16(pb); /* reserved */
             dref_id = avio_rb16(pb);
+        } else {
+            av_log(c->fc, AV_LOG_ERROR, "invalid size %d in stsd\n", size);
+            return AVERROR_INVALIDDATA;
         }
 
         if (st->codec->codec_tag &&
