@@ -663,6 +663,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         for(i = 0; i <= stereo; i++)
             *samples++ = pred[i];
         for(; i < unp_size / 2; i++) {
+            if(get_bits_left(&gb)<0)
+                return -1;
             if(i & stereo) {
                 if(vlc[2].table)
                     res = get_vlc2(&gb, vlc[2].table, SMKTREE_BITS, 3);
@@ -697,6 +699,8 @@ static int smka_decode_frame(AVCodecContext *avctx, void *data,
         for(i = 0; i <= stereo; i++)
             *samples8++ = pred[i];
         for(; i < unp_size; i++) {
+            if(get_bits_left(&gb)<0)
+                return -1;
             if(i & stereo){
                 if(vlc[1].table)
                     res = get_vlc2(&gb, vlc[1].table, SMKTREE_BITS, 3);
