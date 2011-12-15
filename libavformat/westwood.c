@@ -338,13 +338,9 @@ static int wsvqa_read_packet(AVFormatContext *s,
 
         if ((chunk_type == SND1_TAG) || (chunk_type == SND2_TAG) || (chunk_type == VQFR_TAG)) {
 
-            if (av_new_packet(pkt, chunk_size))
+            ret= av_get_packet(pb, pkt, chunk_size);
+            if (ret<0)
                 return AVERROR(EIO);
-            ret = avio_read(pb, pkt->data, chunk_size);
-            if (ret != chunk_size) {
-                av_free_packet(pkt);
-                return AVERROR(EIO);
-            }
 
             if (chunk_type == SND2_TAG) {
                 pkt->stream_index = wsvqa->audio_stream_index;
