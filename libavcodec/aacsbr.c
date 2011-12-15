@@ -1187,7 +1187,7 @@ static void sbr_qmf_synthesis(DSPContext *dsp, FFTContext *mdct,
     const float *sbr_qmf_window = div ? sbr_qmf_window_ds : sbr_qmf_window_us;
     float *v;
     for (i = 0; i < 32; i++) {
-        if (*v_off == 0) {
+        if (*v_off < 128 >> div) {
             int saved_samples = (1280 - 128) >> div;
             memcpy(&v0[SBR_SYNTHESIS_BUF_SIZE - saved_samples], v0, saved_samples * sizeof(float));
             *v_off = SBR_SYNTHESIS_BUF_SIZE - saved_samples - (128 >> div);
