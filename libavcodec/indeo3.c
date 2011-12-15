@@ -884,7 +884,8 @@ static int decode_frame_headers(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
         ctx->height = height;
 
         free_frame_buffers(ctx);
-        allocate_frame_buffers(ctx, avctx);
+        if(allocate_frame_buffers(ctx, avctx) < 0)
+            return AVERROR_INVALIDDATA;
         avcodec_set_dimensions(avctx, width, height);
     }
 
@@ -984,9 +985,7 @@ static av_cold int decode_init(AVCodecContext *avctx)
 
     dsputil_init(&ctx->dsp, avctx);
 
-    allocate_frame_buffers(ctx, avctx);
-
-    return 0;
+    return allocate_frame_buffers(ctx, avctx);
 }
 
 
