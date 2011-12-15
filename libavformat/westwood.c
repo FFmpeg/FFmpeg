@@ -326,6 +326,11 @@ static int wsvqa_read_packet(AVFormatContext *s,
         chunk_size = AV_RB32(&preamble[4]);
         skip_byte = chunk_size & 0x01;
 
+        if ((chunk_type == SND2_TAG || chunk_type == SND1_TAG) && wsvqa->audio_channels == 0) {
+            av_log(s, AV_LOG_ERROR, "audio chunk without any audio header information found\n");
+            return AVERROR_INVALIDDATA;
+        }
+
         if ((chunk_type == SND1_TAG) || (chunk_type == SND2_TAG) || (chunk_type == VQFR_TAG)) {
 
             if (av_new_packet(pkt, chunk_size))
