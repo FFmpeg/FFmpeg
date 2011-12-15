@@ -2247,12 +2247,31 @@ static int aac_decode_frame_int(AVCodecContext *avctx, void *data,
 static int aac_decode_frame(AVCodecContext *avctx, void *data,
                             int *got_frame_ptr, AVPacket *avpkt)
 {
+    AACContext *ac = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
     GetBitContext gb;
     int buf_consumed;
     int buf_offset;
     int err;
+    int new_extradata_size;
+    const uint8_t *new_extradata = av_packet_get_side_data(avpkt,
+                                       AV_PKT_DATA_NEW_EXTRADATA,
+                                       &new_extradata_size);
+
+    if (new_extradata) {
+        av_free(avctx->extradata);
+        avctx->extradata = av_mallocz(new_extradata_size +
+                                      FF_INPUT_BUFFER_PADDING_SIZE);
+        if (!avctx->extradata)
+            return AVERROR(ENOMEM);
+        avctx->extradata_size = new_extradata_size;
+        memcpy(avctx->extradata, new_extradata, new_extradata_size);
+        if (decode_audio_specific_config(ac, ac->avctx, &ac->m4ac,
+                                         avctx->extradata,
+                                         avctx->extradata_size*8, 1) < 0)
+            return AVERROR_INVALIDDATA;
+    }
 
     init_get_bits(&gb, buf, buf_size * 8);
 
