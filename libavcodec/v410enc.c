@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "put_bits.h"
 
 static av_cold int v410_encode_init(AVCodecContext *avctx)
 {
