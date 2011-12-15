@@ -185,7 +185,6 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
 
         if (type == AVMEDIA_TYPE_VIDEO) {
         AVBufferSinkParams *buffersink_params = av_buffersink_params_alloc();
-        buffersink_params->pixel_fmts = pix_fmts;
 
 #if FF_API_OLD_VSINK_API
         ret = avfilter_graph_create_filter(&sink, buffersink,
