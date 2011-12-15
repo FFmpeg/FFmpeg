@@ -433,7 +433,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 
     /* TODO: better logic for this?
      * only files that lack all index segments prior to the essence need this */
-    if (!s->pb->seekable && mxf->op != OPAtom || mxf->d10 || mxf->broken_index)
+    if (mxf->op != OPAtom)
         return mxf_read_packet_old(s, pkt);
 
     if (mxf->current_stream >= s->nb_streams) {
@@ -1761,7 +1761,7 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int64_t seekpos;
     int index;
 
-    if (mxf->d10) {
+    if (mxf->op != OPAtom) {
     if (!s->bit_rate)
         return -1;
     if (sample_time < 0)
