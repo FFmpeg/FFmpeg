@@ -2575,6 +2575,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
                     if(st->info->codec_info_duration && st->info->codec_info_duration*av_q2d(st->time_base) < (1001*12.0)/get_std_framerate(j))
                         continue;
+                    if(!st->info->codec_info_duration && 1.0 < (1001*12.0)/get_std_framerate(j))
+                        continue;
                     for(k=0; k<2; k++){
                         int n= st->info->duration_count;
                         double a= st->info->duration_error[k][0][j] / n;
