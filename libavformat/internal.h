@@ -299,4 +299,12 @@ int64_t ff_gen_search(AVFormatContext *s, int stream_index,
 void avpriv_set_pts_info(AVStream *s, int pts_wrap_bits,
                          unsigned int pts_num, unsigned int pts_den);
 
+/**
+ * Add side data to a packet for changing parameters to the given values.
+ * Parameters set to 0 aren't included in the change.
+ */
+int ff_add_param_change(AVPacket *pkt, int32_t channels,
+                        uint64_t channel_layout, int32_t sample_rate,
+                        int32_t width, int32_t height);
+
 #endif /* AVFORMAT_INTERNAL_H */
