@@ -979,7 +979,6 @@ COMPONENT_LIST="
 "
 
 PROGRAM_LIST="
-    avconv
     ffplay
     ffprobe
     ffserver
@@ -989,6 +988,7 @@ PROGRAM_LIST="
 CONFIG_LIST="
     $COMPONENT_LIST
     $PROGRAM_LIST
+    avconv
     aandct
     ac3dsp
     avcodec
