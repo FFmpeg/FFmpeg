@@ -49,7 +49,7 @@ static const AVOption options[] = {
     { "frag_size", "maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     { "frag_duration", "maximum fragment duration", offsetof(MOVMuxContext, max_fragment_duration), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
-    { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.dbl = 1}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
     { "iods_video_profile", "iods video profile atom.", offsetof(MOVMuxContext, iods_video_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
