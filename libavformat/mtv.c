@@ -196,7 +196,7 @@ static int mtv_read_packet(AVFormatContext *s, AVPacket *pkt)
          * just swap bytes as they come
          */
 
-        for(i=0;i<mtv->img_segment_size/2;i++)
+        for(i=0;i<ret/2;i++)
             *((uint16_t *)pkt->data+i) = av_bswap16(*((uint16_t *)pkt->data+i));
 #endif
         pkt->stream_index = 0;
