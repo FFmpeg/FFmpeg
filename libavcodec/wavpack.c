@@ -1202,6 +1202,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
         avctx->sample_fmt = AV_SAMPLE_FMT_S16;
     } else {
         avctx->sample_fmt = AV_SAMPLE_FMT_S32;
+        avctx->bits_per_raw_sample = ((frame_flags & 0x03) + 1) << 3;
     }
 
     /* get output buffer */
