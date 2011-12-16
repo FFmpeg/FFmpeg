@@ -688,6 +688,12 @@ static int planarCopyWrapper(SwsContext *c, const uint8_t* src[], int srcStride[
     return srcSliceH;
 }
 
+
+#define IS_DIFFERENT_ENDIANESS(src_fmt, dst_fmt, pix_fmt)          \
+    ((src_fmt == pix_fmt ## BE && dst_fmt == pix_fmt ## LE) ||     \
+     (src_fmt == pix_fmt ## LE && dst_fmt == pix_fmt ## BE))
+
+
 void ff_get_unscaled_swscale(SwsContext *c)
 {
     const enum PixelFormat srcFormat = c->srcFormat;
@@ -737,16 +743,15 @@ void ff_get_unscaled_swscale(SwsContext *c)
         c->swScale= rgbToRgbWrapper;
 
     /* bswap 16 bits per pixel/component packed formats */
-    if ((srcFormat == PIX_FMT_RGB48LE  && dstFormat == PIX_FMT_RGB48BE)  ||
-        (srcFormat == PIX_FMT_RGB48BE  && dstFormat == PIX_FMT_RGB48LE)  ||
-        (srcFormat == PIX_FMT_BGR48LE  && dstFormat == PIX_FMT_BGR48BE)  ||
-        (srcFormat == PIX_FMT_BGR48BE  && dstFormat == PIX_FMT_BGR48LE)  ||
-        (srcFormat == PIX_FMT_GRAY16LE && dstFormat == PIX_FMT_GRAY16BE) ||
-        (srcFormat == PIX_FMT_GRAY16BE && dstFormat == PIX_FMT_GRAY16LE) ||
-        (srcFormat == PIX_FMT_RGB565LE && dstFormat == PIX_FMT_RGB565BE) ||
-        (srcFormat == PIX_FMT_RGB565BE && dstFormat == PIX_FMT_RGB565LE) ||
-        (srcFormat == PIX_FMT_BGR565BE && dstFormat == PIX_FMT_BGR565LE) ||
-        (srcFormat == PIX_FMT_BGR565LE && dstFormat == PIX_FMT_BGR565BE))
+    if (IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR444) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR48)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR555) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_BGR565) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_GRAY16) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB444) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB48)  ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB555) ||
+        IS_DIFFERENT_ENDIANESS(srcFormat, dstFormat, PIX_FMT_RGB565))
         c->swScale = packed_16bpc_bswap;
 
     if ((usePal(srcFormat) && (
