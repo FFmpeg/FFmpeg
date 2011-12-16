@@ -320,14 +320,8 @@ static int wsvqa_read_packet(AVFormatContext *s,
     int skip_byte;
 
     while (avio_read(pb, preamble, VQA_PREAMBLE_SIZE) == VQA_PREAMBLE_SIZE) {
-        int64_t filesize= avio_size(s->pb);
         chunk_type = AV_RB32(&preamble[0]);
         chunk_size = AV_RB32(&preamble[4]);
-
-        if(filesize>=0 && chunk_size > filesize){
-            av_log(s, AV_LOG_ERROR, "Chunk with size %d truncated\n", chunk_size);
-            chunk_size= filesize;
-        }
 
         skip_byte = chunk_size & 0x01;
 
