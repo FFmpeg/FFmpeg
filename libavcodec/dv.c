@@ -37,7 +37,7 @@
  * @file
  * DV codec.
  */
-#define ALT_BITSTREAM_READER
+
 #include "libavutil/pixdesc.h"
 #include "avcodec.h"
 #include "dsputil.h"

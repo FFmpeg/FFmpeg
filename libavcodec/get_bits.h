@@ -35,31 +35,11 @@
 #include "libavutil/log.h"
 #include "mathops.h"
 
-#if defined(ALT_BITSTREAM_READER_LE) && !defined(ALT_BITSTREAM_READER)
-#   define ALT_BITSTREAM_READER
-#endif
-
-#if !defined(A32_BITSTREAM_READER) && !defined(ALT_BITSTREAM_READER)
-#   if ARCH_ARM && !HAVE_FAST_UNALIGNED
-#       define A32_BITSTREAM_READER
-#   else
-#       define ALT_BITSTREAM_READER
-//#define A32_BITSTREAM_READER
-#   endif
-#endif
-
 /* bit input */
 /* buffer, buffer_end and size_in_bits must be present and used by every reader */
 typedef struct GetBitContext {
     const uint8_t *buffer, *buffer_end;
-#ifdef ALT_BITSTREAM_READER
     int index;
-#elif defined A32_BITSTREAM_READER
-    uint32_t *buffer_ptr;
-    uint32_t cache0;
-    uint32_t cache1;
-    int bit_count;
-#endif
     int size_in_bits;
 } GetBitContext;
 
@@ -122,8 +102,11 @@ LAST_SKIP_BITS(name, gb, num)
 for examples see get_bits, show_bits, skip_bits, get_vlc
 */
 
-#ifdef ALT_BITSTREAM_READER
+#ifdef LONG_BITSTREAM_READER
+#   define MIN_CACHE_BITS 32
+#else
 #   define MIN_CACHE_BITS 25
+#endif
 
 #   define OPEN_READER(name, gb)                \
     unsigned int name##_index = (gb)->index;    \
@@ -132,13 +115,23 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 #   define CLOSE_READER(name, gb) (gb)->index = name##_index
 
 # ifdef ALT_BITSTREAM_READER_LE
+# ifdef LONG_BITSTREAM_READER
+#   define UPDATE_CACHE(name, gb) \
+    name##_cache = AV_RL64((gb)->buffer+(name##_index>>3)) >> (name##_index&0x07)
+# else
 #   define UPDATE_CACHE(name, gb) \
     name##_cache = AV_RL32(((const uint8_t *)(gb)->buffer)+(name##_index>>3)) >> (name##_index&0x07)
+# endif
 
 #   define SKIP_CACHE(name, gb, num) name##_cache >>= (num)
 # else
+# ifdef LONG_BITSTREAM_READER
+#   define UPDATE_CACHE(name, gb) \
+    name##_cache = AV_RB64((gb)->buffer+(name##_index >> 3)) >> (32 - (name##_index & 0x07))
+# else
 #   define UPDATE_CACHE(name, gb) \
     name##_cache = AV_RB32(((const uint8_t *)(gb)->buffer)+(name##_index>>3)) << (name##_index&0x07)
+# endif
 
 #   define SKIP_CACHE(name, gb, num) name##_cache <<= (num)
 # endif
@@ -173,80 +166,6 @@ static inline int get_bits_count(const GetBitContext *s){
 static inline void skip_bits_long(GetBitContext *s, int n){
     s->index += n;
 }
-
-#elif defined A32_BITSTREAM_READER
-
-#   define MIN_CACHE_BITS 32
-
-#   define OPEN_READER(name, gb)                        \
-    int name##_bit_count        = (gb)->bit_count;      \
-    uint32_t name##_cache0      = (gb)->cache0;         \
-    uint32_t name##_cache1      = (gb)->cache1;         \
-    uint32_t *name##_buffer_ptr = (gb)->buffer_ptr
-
-#   define CLOSE_READER(name, gb) do {          \
-        (gb)->bit_count  = name##_bit_count;    \
-        (gb)->cache0     = name##_cache0;       \
-        (gb)->cache1     = name##_cache1;       \
-        (gb)->buffer_ptr = name##_buffer_ptr;   \
-    } while (0)
-
-#   define UPDATE_CACHE(name, gb) do {                                  \
-        if(name##_bit_count > 0){                                       \
-            const uint32_t next = av_be2ne32(*name##_buffer_ptr);       \
-            name##_cache0 |= NEG_USR32(next, name##_bit_count);         \
-            name##_cache1 |= next << name##_bit_count;                  \
-            name##_buffer_ptr++;                                        \
-            name##_bit_count -= 32;                                     \
-        }                                                               \
-    } while (0)
-
-#if ARCH_X86
-#   define SKIP_CACHE(name, gb, num)                            \
-    __asm__("shldl %2, %1, %0          \n\t"                    \
-            "shll  %2, %1              \n\t"                    \
-            : "+r" (name##_cache0), "+r" (name##_cache1)        \
-            : "Ic" ((uint8_t)(num)))
-#else
-#   define SKIP_CACHE(name, gb, num) do {               \
-        name##_cache0 <<= (num);                        \
-        name##_cache0 |= NEG_USR32(name##_cache1,num);  \
-        name##_cache1 <<= (num);                        \
-    } while (0)
-#endif
-
-#   define SKIP_COUNTER(name, gb, num) name##_bit_count += (num)
-
-#   define SKIP_BITS(name, gb, num) do {        \
-        SKIP_CACHE(name, gb, num);              \
-        SKIP_COUNTER(name, gb, num);            \
-    } while (0)
-
-#   define LAST_SKIP_BITS(name, gb, num)  SKIP_BITS(name, gb, num)
-#   define LAST_SKIP_CACHE(name, gb, num) SKIP_CACHE(name, gb, num)
-
-#   define SHOW_UBITS(name, gb, num) NEG_USR32(name##_cache0, num)
-
-#   define SHOW_SBITS(name, gb, num) NEG_SSR32(name##_cache0, num)
-
-#   define GET_CACHE(name, gb) name##_cache0
-
-static inline int get_bits_count(const GetBitContext *s) {
-    return ((uint8_t*)s->buffer_ptr - s->buffer)*8 - 32 + s->bit_count;
-}
-
-static inline void skip_bits_long(GetBitContext *s, int n){
-    OPEN_READER(re, s);
-    re_bit_count += n;
-    re_buffer_ptr += re_bit_count>>5;
-    re_bit_count &= 31;
-    re_cache0 = av_be2ne32(re_buffer_ptr[-1]) << re_bit_count;
-    re_cache1 = 0;
-    UPDATE_CACHE(re, s);
-    CLOSE_READER(re, s);
-}
-
-#endif
 
 /**
  * read mpeg1 dc style vlc (sign bit + mantisse with no MSB).
@@ -309,7 +228,6 @@ static inline void skip_bits(GetBitContext *s, int n){
 }
 
 static inline unsigned int get_bits1(GetBitContext *s){
-#ifdef ALT_BITSTREAM_READER
     unsigned int index = s->index;
     uint8_t result = s->buffer[index>>3];
 #ifdef ALT_BITSTREAM_READER_LE
@@ -323,9 +241,6 @@ static inline unsigned int get_bits1(GetBitContext *s){
     s->index = index;
 
     return result;
-#else
-    return get_bits(s, 1);
-#endif
 }
 
 static inline unsigned int show_bits1(GetBitContext *s){
@@ -400,13 +315,7 @@ static inline void init_get_bits(GetBitContext *s,
     s->buffer       = buffer;
     s->size_in_bits = bit_size;
     s->buffer_end   = buffer + buffer_size;
-#ifdef ALT_BITSTREAM_READER
     s->index        = 0;
-#elif defined A32_BITSTREAM_READER
-    s->buffer_ptr   = (uint32_t*)((intptr_t)buffer & ~3);
-    s->bit_count    = 32 +     8*((intptr_t)buffer &  3);
-    skip_bits_long(s, 0);
-#endif
 }
 
 static inline void align_get_bits(GetBitContext *s)

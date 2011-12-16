@@ -28,7 +28,7 @@
  * @see http://wiki.multimedia.cx/index.php?title=Apple_ProRes
  */
 
-#define A32_BITSTREAM_READER // some ProRes vlc codes require up to 28 bits to be read at once
+#define LONG_BITSTREAM_READER // some ProRes vlc codes require up to 28 bits to be read at once
 
 #include <stdint.h>
 
