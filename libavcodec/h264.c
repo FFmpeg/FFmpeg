@@ -4047,15 +4047,15 @@ static int decode_frame(AVCodecContext *avctx,
     MpegEncContext *s = &h->s;
     AVFrame *pict = data;
     int buf_index;
+    Picture *out;
+    int i, out_idx;
 
     s->flags= avctx->flags;
     s->flags2= avctx->flags2;
 
    /* end of stream, output what is still in the buffers */
- out:
     if (buf_size == 0) {
-        Picture *out;
-        int i, out_idx;
+ out:
 
         s->current_picture_ptr = NULL;
 
@@ -4076,7 +4076,7 @@ static int decode_frame(AVCodecContext *avctx,
             *pict= *(AVFrame*)out;
         }
 
-        return 0;
+        return buf_size;
     }
     if(h->is_avc && buf_size >= 9 && buf[0]==1 && buf[2]==0 && (buf[4]&0xFC)==0xFC && (buf[5]&0x1F) && buf[8]==0x67){
         int cnt= buf[5]&0x1f;
@@ -4106,7 +4106,8 @@ not_extra:
         return -1;
 
     if (!s->current_picture_ptr && h->nal_unit_type == NAL_END_SEQUENCE) {
-        buf_size = 0;
+        av_assert0(buf_index <= buf_size);
+        buf_size = buf_index;
         goto out;
     }
 
