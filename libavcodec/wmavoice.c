@@ -25,6 +25,8 @@
  * @author Ronald S. Bultje <rsbultje@gmail.com>
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
+
 #include <math.h>
 #include "avcodec.h"
 #include "get_bits.h"

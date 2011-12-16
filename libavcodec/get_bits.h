@@ -35,12 +35,32 @@
 #include "libavutil/log.h"
 #include "mathops.h"
 
+/*
+ * Safe bitstream reading:
+ * optionally, the get_bits API can check to ensure that we
+ * don't read past input buffer boundaries. This is protected
+ * with CONFIG_SAFE_BITSTREAM_READER at the global level, and
+ * then below that with UNCHECKED_BITSTREAM_READER at the per-
+ * decoder level. This means that decoders that check internally
+ * can "#define UNCHECKED_BITSTREAM_READER 1" to disable
+ * overread checks.
+ * Boundary checking causes a minor performance penalty so for
+ * applications that won't want/need this, it can be disabled
+ * globally using "#define CONFIG_SAFE_BITSTREAM_READER 0".
+ */
+#ifndef UNCHECKED_BITSTREAM_READER
+#define UNCHECKED_BITSTREAM_READER !CONFIG_SAFE_BITSTREAM_READER
+#endif
+
 /* bit input */
 /* buffer, buffer_end and size_in_bits must be present and used by every reader */
 typedef struct GetBitContext {
     const uint8_t *buffer, *buffer_end;
     int index;
     int size_in_bits;
+#if !UNCHECKED_BITSTREAM_READER
+    int size_in_bits_plus8;
+#endif
 } GetBitContext;
 
 #define VLC_TYPE int16_t
@@ -137,7 +157,12 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 # endif
 
 // FIXME name?
+#if UNCHECKED_BITSTREAM_READER
 #   define SKIP_COUNTER(name, gb, num) name##_index += (num)
+#else
+#   define SKIP_COUNTER(name, gb, num) \
+    name##_index = FFMIN((gb)->size_in_bits_plus8, name##_index + (num))
+#endif
 
 #   define SKIP_BITS(name, gb, num) do {        \
         SKIP_CACHE(name, gb, num);              \
@@ -164,7 +189,11 @@ static inline int get_bits_count(const GetBitContext *s){
 }
 
 static inline void skip_bits_long(GetBitContext *s, int n){
+#if UNCHECKED_BITSTREAM_READER
     s->index += n;
+#else
+    s->index += av_clip(n, -s->index, s->size_in_bits_plus8 - s->index);
+#endif
 }
 
 /**
@@ -237,7 +266,10 @@ static inline unsigned int get_bits1(GetBitContext *s){
     result <<= index & 7;
     result >>= 8 - 1;
 #endif
-    index++;
+#if !UNCHECKED_BITSTREAM_READER
+    if (s->index < s->size_in_bits_plus8)
+#endif
+        index++;
     s->index = index;
 
     return result;
@@ -314,6 +346,9 @@ static inline void init_get_bits(GetBitContext *s,
 
     s->buffer       = buffer;
     s->size_in_bits = bit_size;
+#if !UNCHECKED_BITSTREAM_READER
+    s->size_in_bits_plus8 = bit_size + 8;
+#endif
     s->buffer_end   = buffer + buffer_size;
     s->index        = 0;
 }
