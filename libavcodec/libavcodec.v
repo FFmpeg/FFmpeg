@@ -25,5 +25,7 @@ LIBAVCODEC_$MAJOR {
                 ff_mmxext_idct;
                 ff_idct_xvid*;
                 ff_jpeg_fdct*;
+                #XBMC's configure checks for ff_vdpau_vc1_decode_picture()
+                ff_vdpau_vc1_decode_picture;
         local:  *;
 };
