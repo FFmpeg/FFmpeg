@@ -40,26 +40,6 @@ fate-truespeech: CMD = pcm -i $(SAMPLES)/truespeech/a6.wav
 fate-truespeech: CMP = oneoff
 fate-truespeech: REF = $(SAMPLES)/truespeech/a6.pcm
 
-FATE_TESTS += fate-atrac1
-fate-atrac1: CMD = pcm -i $(SAMPLES)/atrac1/test_tones_small.aea
-fate-atrac1: CMP = oneoff
-fate-atrac1: REF = $(SAMPLES)/atrac1/test_tones_small.pcm
-
-FATE_TESTS += fate-atrac3-1
-fate-atrac3-1: CMD = pcm -i $(SAMPLES)/atrac3/mc_sich_at3_066_small.wav
-fate-atrac3-1: CMP = oneoff
-fate-atrac3-1: REF = $(SAMPLES)/atrac3/mc_sich_at3_066_small.pcm
-
-FATE_TESTS += fate-atrac3-2
-fate-atrac3-2: CMD = pcm -i $(SAMPLES)/atrac3/mc_sich_at3_105_small.wav
-fate-atrac3-2: CMP = oneoff
-fate-atrac3-2: REF = $(SAMPLES)/atrac3/mc_sich_at3_105_small.pcm
-
-FATE_TESTS += fate-atrac3-3
-fate-atrac3-3: CMD = pcm -i $(SAMPLES)/atrac3/mc_sich_at3_132_small.wav
-fate-atrac3-3: CMP = oneoff
-fate-atrac3-3: REF = $(SAMPLES)/atrac3/mc_sich_at3_132_small.pcm
-
 FATE_TESTS += fate-gsm
 fate-gsm: CMD = framecrc -i $(SAMPLES)/gsm/sample-gsm-8000.mov -t 10
 
@@ -132,3 +112,6 @@ fate-v410dec: CMD = framecrc -i $(SAMPLES)/v410/lenav410.mov -pix_fmt yuv444p10l
 FATE_TESTS += fate-v410enc
 fate-v410enc: tests/vsynth1/00.pgm
 fate-v410enc: CMD = md5 -f image2 -vcodec pgmyuv -i $(TARGET_PATH)/tests/vsynth1/%02d.pgm -flags +bitexact -vcodec v410 -f avi
+
+FATE_TESTS += fate-r210
+fate-r210: CMD = framecrc -i $(SAMPLES)/r210/r210.avi -pix_fmt rgb48le

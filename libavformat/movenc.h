@@ -125,6 +125,10 @@ typedef struct MOVMuxContext {
     int64_t reserved_moov_pos;
     int max_fragment_duration;
     int max_fragment_size;
+
+    int iods_skip;
+    int iods_video_profile;
+    int iods_audio_profile;
 } MOVMuxContext;
 
 #define FF_MOV_FLAG_RTP_HINT 1

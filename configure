@@ -978,8 +978,17 @@ COMPONENT_LIST="
     protocols
 "
 
+PROGRAM_LIST="
+    avconv
+    ffplay
+    ffprobe
+    ffserver
+    ffmpeg
+"
+
 CONFIG_LIST="
     $COMPONENT_LIST
+    $PROGRAM_LIST
     aandct
     ac3dsp
     avcodec
@@ -994,11 +1003,6 @@ CONFIG_LIST="
     dwt
     dxva2
     fastdiv
-    ffmpeg
-    avconv
-    ffplay
-    ffprobe
-    ffserver
     fft
     frei0r
     gnutls
@@ -1790,6 +1794,8 @@ target_os_default=$(tolower $(uname -s))
 host_os=$target_os_default
 
 # configurable options
+enable $PROGRAM_LIST
+
 enable avcodec
 enable avdevice
 enable avfilter
@@ -1799,11 +1805,6 @@ enable postproc
 enable stripping
 enable swresample
 enable swscale
-
-enable ffmpeg
-enable ffplay
-enable ffprobe
-enable ffserver
 
 enable asm
 enable debug

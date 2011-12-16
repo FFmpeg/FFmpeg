@@ -20,8 +20,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
-#include "put_bits.h"
 
 static av_cold int v410_encode_init(AVCodecContext *avctx)
 {
@@ -50,7 +50,7 @@ static int v410_encode_frame(AVCodecContext *avctx, uint8_t *buf,
     int i, j;
     int output_size = 0;
 
-    if (buf_size < avctx->width * avctx->height * 3) {
+    if (buf_size < avctx->width * avctx->height * 4) {
         av_log(avctx, AV_LOG_ERROR, "Out buffer is too small.\n");
         return AVERROR(ENOMEM);
     }

@@ -372,7 +372,7 @@ endfunc
 
 function ff_\type\()_rv40_qpel8_mc33_neon, export=1
         mov             r3,  #8
-        b               ff_\type\()_pixels8_xy2_neon
+        b               X(ff_\type\()_pixels8_xy2_neon)
 endfunc
 
 function ff_\type\()_rv40_qpel8_mc13_neon, export=1
@@ -652,7 +652,7 @@ endfunc
 
 function ff_\type\()_rv40_qpel16_mc33_neon, export=1
         mov             r3,  #16
-        b               ff_\type\()_pixels16_xy2_neon
+        b               X(ff_\type\()_pixels16_xy2_neon)
 endfunc
 .endm
 

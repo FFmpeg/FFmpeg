@@ -49,6 +49,9 @@ static const AVOption options[] = {
     { "frag_size", "maximum fragment size", offsetof(MOVMuxContext, max_fragment_size), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     { "frag_duration", "maximum fragment duration", offsetof(MOVMuxContext, max_fragment_duration), AV_OPT_TYPE_INT, {.dbl = 0}, 0, INT_MAX, AV_OPT_FLAG_ENCODING_PARAM, 0 },
     FF_RTP_FLAG_OPTS(MOVMuxContext, rtp_flags),
+    { "skip_iods", "Skip writing iods atom.", offsetof(MOVMuxContext, iods_skip), AV_OPT_TYPE_INT, {.dbl = 0}, 0, 1, AV_OPT_FLAG_ENCODING_PARAM},
+    { "iods_audio_profile", "iods audio profile atom.", offsetof(MOVMuxContext, iods_audio_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
+    { "iods_video_profile", "iods video profile atom.", offsetof(MOVMuxContext, iods_video_profile), AV_OPT_TYPE_INT, {.dbl = -1}, -1, 255, AV_OPT_FLAG_ENCODING_PARAM},
     { NULL },
 };
 
@@ -1489,21 +1492,34 @@ static int mov_write_traf_tag(AVIOContext *pb, MOVTrack *track, AVStream *st)
     return updateSize(pb, pos);
 }
 
-#if 0
-/* TODO: Not sorted out, but not necessary either */
 static int mov_write_iods_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
-    avio_wb32(pb, 0x15); /* size */
+    int i, has_audio = 0, has_video = 0;
+    int64_t pos = avio_tell(pb);
+    int audio_profile = mov->iods_audio_profile;
+    int video_profile = mov->iods_video_profile;
+    for (i = 0; i < mov->nb_streams; i++) {
+        if(mov->tracks[i].entry > 0) {
+            has_audio |= mov->tracks[i].enc->codec_type == AVMEDIA_TYPE_AUDIO;
+            has_video |= mov->tracks[i].enc->codec_type == AVMEDIA_TYPE_VIDEO;
+        }
+    }
+    if (audio_profile < 0)
+        audio_profile = 0xFF - has_audio;
+    if (video_profile < 0)
+        video_profile = 0xFF - has_video;
+    avio_wb32(pb, 0x0); /* size */
     ffio_wfourcc(pb, "iods");
     avio_wb32(pb, 0);    /* version & flags */
-    avio_wb16(pb, 0x1007);
-    avio_w8(pb, 0);
-    avio_wb16(pb, 0x4fff);
-    avio_wb16(pb, 0xfffe);
-    avio_wb16(pb, 0x01ff);
-    return 0x15;
+    putDescr(pb, 0x10, 7);
+    avio_wb16(pb, 0x004f);
+    avio_w8(pb, 0xff);
+    avio_w8(pb, 0xff);
+    avio_w8(pb, audio_profile);
+    avio_w8(pb, video_profile);
+    avio_w8(pb, 0xff);
+    return updateSize(pb, pos);
 }
-#endif
 
 static int mov_write_mvhd_tag(AVIOContext *pb, MOVMuxContext *mov)
 {
@@ -1968,7 +1984,8 @@ static int mov_write_moov_tag(AVIOContext *pb, MOVMuxContext *mov,
     }
 
     mov_write_mvhd_tag(pb, mov);
-    //mov_write_iods_tag(pb, mov);
+    if (mov->mode != MODE_MOV && !mov->iods_skip)
+        mov_write_iods_tag(pb, mov);
     for (i=0; i<mov->nb_streams; i++) {
         if(mov->tracks[i].entry > 0) {
             mov_write_trak_tag(pb, mov, &(mov->tracks[i]), i < s->nb_streams ? s->streams[i] : NULL);
