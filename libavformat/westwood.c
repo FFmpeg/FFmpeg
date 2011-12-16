@@ -324,7 +324,7 @@ static int wsvqa_read_packet(AVFormatContext *s,
         chunk_type = AV_RB32(&preamble[0]);
         chunk_size = AV_RB32(&preamble[4]);
 
-        if(chunk_size > filesize){
+        if(filesize>=0 && chunk_size > filesize){
             av_log(s, AV_LOG_ERROR, "Chunk with size %d truncated\n", chunk_size);
             chunk_size= filesize;
         }
