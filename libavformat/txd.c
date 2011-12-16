@@ -49,8 +49,6 @@ static int txd_read_header(AVFormatContext *s, AVFormatParameters *ap) {
     st->codec->time_base.num = 1;
     /* the parameters will be extracted from the compressed bitstream */
 
-    s->pb->maxsize= avio_size(s->pb);
-
     return 0;
 }
 
