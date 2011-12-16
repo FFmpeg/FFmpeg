@@ -1456,8 +1456,8 @@ rgb16_32ToY_c_template(uint8_t *dst, const uint8_t *src,
                        int maskr, int maskg, int maskb,
                        int rsh,   int gsh,   int bsh, int S)
 {
-    const int ry = RY << rsh, gy = GY << gsh, by = BY << bsh,
-              rnd = 33 << (S - 1);
+    const int ry = RY << rsh, gy = GY << gsh, by = BY << bsh;
+    const unsigned rnd = 33u << (S - 1);
     int i;
 
     for (i = 0; i < width; i++) {
@@ -1479,8 +1479,8 @@ rgb16_32ToUV_c_template(uint8_t *dstU, uint8_t *dstV,
                         int rsh,   int gsh,   int bsh, int S)
 {
     const int ru = RU << rsh, gu = GU << gsh, bu = BU << bsh,
-              rv = RV << rsh, gv = GV << gsh, bv = BV << bsh,
-              rnd = 257 << (S - 1);
+              rv = RV << rsh, gv = GV << gsh, bv = BV << bsh;
+    const unsigned rnd = 257u << (S - 1);
     int i;
 
     for (i = 0; i < width; i++) {
@@ -1504,7 +1504,8 @@ rgb16_32ToUV_half_c_template(uint8_t *dstU, uint8_t *dstV,
 {
     const int ru = RU << rsh, gu = GU << gsh, bu = BU << bsh,
               rv = RV << rsh, gv = GV << gsh, bv = BV << bsh,
-              rnd = 257 << S, maskgx = ~(maskr | maskb);
+              maskgx = ~(maskr | maskb);
+    const unsigned rnd = 257u << S;
     int i;
 
     maskr |= maskr << 1; maskb |= maskb << 1; maskg |= maskg << 1;
