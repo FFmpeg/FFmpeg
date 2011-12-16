@@ -186,6 +186,7 @@ typedef struct {
     int64_t *ptses;             /* maps EditUnit -> PTS */
     int nb_segments;
     MXFIndexTableSegment **segments;    /* sorted by IndexStartPosition */
+    AVIndexEntry *fake_index;   /* used for calling ff_index_search_timestamp() */
 } MXFIndexTable;
 
 typedef struct {
@@ -1139,35 +1140,35 @@ static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st, MXFIndex
     return 0;
 }
 
-static int mxf_compute_ptses(MXFContext *mxf, MXFIndexTableSegment **sorted_segments, int nb_sorted_segments)
+static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_table)
 {
-    int ret, i, j, x;
+    int i, j, x;
     int8_t max_temporal_offset = -128;
 
     /* first compute how many entries we have */
-    for (i = 0; i < nb_sorted_segments; i++) {
-        MXFIndexTableSegment *s = sorted_segments[i];
+    for (i = 0; i < index_table->nb_segments; i++) {
+        MXFIndexTableSegment *s = index_table->segments[i];
 
         if (!s->nb_index_entries)
             return 0;                               /* no TemporalOffsets */
 
-        if (s->nb_index_entries == 2 * s->index_duration + 1)
-            mxf->nb_ptses += s->index_duration;     /* Avid index */
-        else
-            mxf->nb_ptses += s->nb_index_entries;
+        index_table->nb_ptses += s->index_duration;
     }
 
     /* paranoid check */
-    if (mxf->nb_ptses <= 0)
+    if (index_table->nb_ptses <= 0)
         return 0;
 
-    if (!(mxf->ptses = av_calloc(mxf->nb_ptses, sizeof(int64_t))))
+    if (!(index_table->ptses      = av_calloc(index_table->nb_ptses, sizeof(int64_t))) ||
+        !(index_table->fake_index = av_calloc(index_table->nb_ptses, sizeof(AVIndexEntry)))) {
+        av_freep(&index_table->ptses);
         return AVERROR(ENOMEM);
+    }
 
     /* we may have a few bad TemporalOffsets
      * make sure the corresponding PTSes don't have the bogus value 0 */
-    for (x = 0; x < mxf->nb_ptses; x++)
-        mxf->ptses[x] = AV_NOPTS_VALUE;
+    for (x = 0; x < index_table->nb_ptses; x++)
+        index_table->ptses[x] = AV_NOPTS_VALUE;
 
     /**
      * We have this:
@@ -1196,8 +1197,8 @@ static int mxf_compute_ptses(MXFContext *mxf, MXFIndexTableSegment **sorted_segm
      * then settings mxf->first_dts = -max(TemporalOffset[x]).
      * The latter makes DTS <= PTS.
      */
-    for (i = x = 0; i < nb_sorted_segments; i++) {
-        MXFIndexTableSegment *s = sorted_segments[i];
+    for (i = x = 0; i < index_table->nb_segments; i++) {
+        MXFIndexTableSegment *s = index_table->segments[i];
         int index_delta = 1;
 
         if (s->nb_index_entries == 2 * s->index_duration + 1)
@@ -1207,19 +1208,22 @@ static int mxf_compute_ptses(MXFContext *mxf, MXFIndexTableSegment **sorted_segm
             int offset = s->temporal_offset_entries[j] / index_delta;
             int index  = x + offset;
 
-            if (index < 0 || index >= mxf->nb_ptses) {
+            index_table->fake_index[x].timestamp = x;
+            index_table->fake_index[x].flags = !(s->flag_entries[j] & 0x30) ? AVINDEX_KEYFRAME : 0;
+
+            if (index < 0 || index >= index_table->nb_ptses) {
                 av_log(mxf->fc, AV_LOG_ERROR,
                        "index entry %i + TemporalOffset %i = %i, which is out of bounds\n",
                        x, offset, index);
                 continue;
             }
 
-            mxf->ptses[index] = x;
+            index_table->ptses[index] = x;
             max_temporal_offset = FFMAX(max_temporal_offset, offset);
         }
     }
 
-    mxf->first_dts = -max_temporal_offset;
+    index_table->first_dts = -max_temporal_offset;
 
     return 0;
 }
@@ -1282,6 +1286,9 @@ static int mxf_compute_index_tables(MXFContext *mxf)
         memcpy(t->segments, &sorted_segments[i], t->nb_segments * sizeof(MXFIndexTableSegment*));
         t->index_sid = sorted_segments[i]->index_sid;
         t->body_sid = sorted_segments[i]->body_sid;
+
+        if ((ret = mxf_compute_ptses_fake_index(mxf, t)) < 0)
+            goto finish_decoding_index;
     }
 
     ret = 0;
@@ -1496,8 +1503,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             goto fail_and_free;
     }
 
-    ret = mxf_compute_ptses(mxf, sorted_segments, nb_sorted_segments);
-
+    ret = 0;
 fail_and_free:
     av_free(sorted_segments);
     return ret;
@@ -1964,8 +1970,10 @@ static int mxf_read_close(AVFormatContext *s)
     av_freep(&mxf->local_tags);
     av_freep(&mxf->ptses);
 
-    for (i = 0; i < mxf->nb_index_tables; i++)
+    for (i = 0; i < mxf->nb_index_tables; i++) {
         av_freep(&mxf->index_tables[i].segments);
+        av_freep(&mxf->index_tables[i].fake_index);
+    }
     av_freep(&mxf->index_tables);
 
     return 0;
