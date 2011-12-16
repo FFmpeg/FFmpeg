@@ -26,7 +26,6 @@
 
 typedef struct ThpDemuxContext {
     int              version;
-    unsigned         data_size;
     int              first_frame;
     int              first_framesz;
     int              last_frame;
@@ -74,9 +73,9 @@ static int thp_read_header(AVFormatContext *s,
     thp->fps             = av_d2q(av_int2float(avio_rb32(pb)), INT_MAX);
     thp->framecnt        = avio_rb32(pb);
     thp->first_framesz   = avio_rb32(pb);
-    thp->data_size       = avio_rb32(pb);
-    if(fsize>0 && (!thp->data_size || fsize < thp->data_size))
-        thp->data_size= fsize;
+    pb->maxsize          = avio_rb32(pb);
+    if(fsize>0 && (!pb->maxsize || fsize < pb->maxsize))
+        pb->maxsize= fsize;
 
     thp->compoff         = avio_rb32(pb);
                            avio_rb32(pb); /* offsetDataOffset.  */
@@ -163,10 +162,6 @@ static int thp_read_packet(AVFormatContext *s,
 
                         avio_rb32(pb); /* Previous total size.  */
         size          = avio_rb32(pb); /* Total size of this frame.  */
-        if(thp->data_size && avio_tell(pb) + size > thp->data_size) {
-            av_log(s, AV_LOG_ERROR, "Video packet truncated\n");
-            size= thp->data_size - avio_tell(pb);
-        }
 
         /* Store the audiosize so the next time this function is called,
            the audio can be read.  */
@@ -183,11 +178,6 @@ static int thp_read_packet(AVFormatContext *s,
 
         pkt->stream_index = thp->video_stream_index;
     } else {
-        if(thp->data_size && avio_tell(pb) + thp->audiosize > thp->data_size){
-            av_log(s, AV_LOG_ERROR, "Audio packet truncated\n");
-            thp->audiosize= thp->data_size - avio_tell(pb);
-        }
-
         ret = av_get_packet(pb, pkt, thp->audiosize);
         if (ret != thp->audiosize) {
             av_free_packet(pkt);
