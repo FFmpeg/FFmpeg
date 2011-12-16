@@ -1214,6 +1214,13 @@ static const AVCodecDescriptor codec_descriptors[] = {
         .long_name = NULL_IF_CONFIG_SMALL("Apple Intermediate Codec"),
         .props     = AV_CODEC_PROP_INTRA_ONLY | AV_CODEC_PROP_LOSSY,
     },
+    {
+        .id        = AV_CODEC_ID_ESCAPE130,
+        .type      = AVMEDIA_TYPE_VIDEO,
+        .name      = "escape130",
+        .long_name = NULL_IF_CONFIG_SMALL("Escape 130"),
+        .props     = AV_CODEC_PROP_LOSSY,
+    },
 
     /* various PCM "codecs" */
     {

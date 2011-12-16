@@ -19,6 +19,7 @@ version 10:
 - Matroska muxer can now put the index at the beginning of the file.
 - avconv -deinterlace option removed, the yadif filter should be used instead
 - Apple Intermediate Codec decoder
+- Escape 130 video decoder
 
 
 version 9:
