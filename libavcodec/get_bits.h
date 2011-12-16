@@ -133,12 +133,12 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 # ifdef ALT_BITSTREAM_READER_LE
 #   define UPDATE_CACHE(name, gb) \
-    name##_cache = AV_RL32(((const uint8_t *)(gb)->buffer)+(name##_index>>3)) >> (name##_index&0x07)
+    name##_cache = AV_RL32((gb)->buffer+(name##_index>>3)) >> (name##_index&0x07)
 
 #   define SKIP_CACHE(name, gb, num) name##_cache >>= (num)
 # else
 #   define UPDATE_CACHE(name, gb) \
-    name##_cache = AV_RB32(((const uint8_t *)(gb)->buffer)+(name##_index>>3)) << (name##_index&0x07)
+    name##_cache = AV_RB32((gb)->buffer+(name##_index>>3)) << (name##_index&0x07)
 
 #   define SKIP_CACHE(name, gb, num) name##_cache <<= (num)
 # endif
