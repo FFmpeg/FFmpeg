@@ -278,8 +278,10 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
             remaining= s->maxsize - avio_tell(s);
         }
 
-        if(s->maxsize>=0 && remaining>=0)
-            size= FFMIN(size, remaining+1);
+        if(s->maxsize>=0 && remaining>=0 && remaining+1 < size){
+            av_log(0, AV_LOG_ERROR, "Truncating packet of size %d to %"PRId64"\n", size, remaining+1);
+            size= remaining+1;
+        }
     }
 
     ret= av_new_packet(pkt, size);
