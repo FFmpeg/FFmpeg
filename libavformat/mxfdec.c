@@ -1234,7 +1234,7 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
  */
 static int mxf_compute_index_tables(MXFContext *mxf)
 {
-    int i, j, ret, nb_sorted_segments;
+    int i, j, k, ret, nb_sorted_segments;
     MXFIndexTableSegment **sorted_segments = NULL;
 
     if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)) ||
@@ -1289,6 +1289,27 @@ static int mxf_compute_index_tables(MXFContext *mxf)
 
         if ((ret = mxf_compute_ptses_fake_index(mxf, t)) < 0)
             goto finish_decoding_index;
+
+        /* fix zero IndexDurations */
+        for (k = 0; k < t->nb_segments; k++) {
+            if (t->segments[k]->index_duration)
+                continue;
+
+            if (t->nb_segments > 1)
+                av_log(mxf->fc, AV_LOG_WARNING, "IndexSID %i segment %i has zero IndexDuration and there's more than one segment\n",
+                       t->index_sid, k);
+
+            if (mxf->fc->nb_streams <= 0) {
+                av_log(mxf->fc, AV_LOG_WARNING, "no streams?\n");
+                break;
+            }
+
+            /* assume the first stream's duration is reasonable
+             * leave index_duration = 0 on further segments in case we have any (unlikely)
+             */
+            t->segments[k]->index_duration = mxf->fc->streams[0]->duration;
+            break;
+        }
     }
 
     ret = 0;
@@ -1798,6 +1819,11 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
     mxf_compute_essence_containers(mxf);
 
+    /* we need to do this before computing the index tables
+     * to be able to fill in zero IndexDurations with st->duration */
+    if ((ret = mxf_parse_structural_metadata(mxf)) < 0)
+        return ret;
+
     if ((ret = mxf_compute_index_tables(mxf)) < 0)
         return ret;
 
@@ -1810,7 +1836,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         return AVERROR_INVALIDDATA;
     }
 
-    return mxf_parse_structural_metadata(mxf);
+    return 0;
 }
 
 static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
