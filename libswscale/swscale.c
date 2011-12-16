@@ -754,8 +754,8 @@ yuv2rgb48_X_c_template(SwsContext *c, const int16_t *lumFilter,
 
     for (i = 0; i < (dstW >> 1); i++) {
         int j;
-        int Y1 = 0;
-        int Y2 = 0;
+        int Y1 = -0x40000000;
+        int Y2 = -0x40000000;
         int U  = -128 << 23; // 19
         int V  = -128 << 23;
         int R, G, B;
@@ -771,7 +771,9 @@ yuv2rgb48_X_c_template(SwsContext *c, const int16_t *lumFilter,
 
         // 8bit: 12+15=27; 16-bit: 12+19=31
         Y1 >>= 14; // 10
+        Y1 += 0x10000;
         Y2 >>= 14;
+        Y2 += 0x10000;
         U  >>= 14;
         V  >>= 14;
 
