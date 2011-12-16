@@ -158,7 +158,7 @@ static av_cold int decode_close(AVCodecContext *avctx)
     return 0;
 }
 
-#define V210DEC_FLAGS AV_OPT_FLAG_ENCODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
+#define V210DEC_FLAGS AV_OPT_FLAG_DECODING_PARAM | AV_OPT_FLAG_VIDEO_PARAM
 static const AVOption v210dec_options[] = {
     {"custom_stride", "Custom V210 stride", offsetof(V210DecContext, custom_stride), FF_OPT_TYPE_INT,
      {.dbl = 0}, INT_MIN, INT_MAX, V210DEC_FLAGS},
