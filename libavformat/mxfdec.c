@@ -1014,6 +1014,29 @@ static int64_t mxf_essence_container_length(MXFContext *mxf, int body_sid)
     return ret;
 }
 
+/**
+ * Returns the end position of the essence container with given BodySID, or zero if unknown
+ */
+static int64_t mxf_essence_container_end(MXFContext *mxf, int body_sid)
+{
+    int x;
+    int64_t ret = 0;
+
+    for (x = 0; x < mxf->partitions_count; x++) {
+        MXFPartition *p = &mxf->partitions[x];
+
+        if (p->body_sid != body_sid)
+            continue;
+
+        if (!p->essence_length)
+            return 0;
+
+        ret = p->essence_offset + p->essence_length;
+    }
+
+    return ret;
+}
+
 /* EditUnit -> absolute offset */
 static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_table, int64_t edit_unit, int64_t *edit_unit_out, int64_t *offset_out, int nag)
 {
@@ -1888,6 +1911,32 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     return 0;
 }
 
+/**
+ * Computes DTS and PTS for the given video packet based on its offset.
+ */
+static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
+{
+    int64_t next_ofs;
+    MXFIndexTable *t = &mxf->index_tables[0];
+
+    /* find mxf->current_edit_unit so that the next edit unit starts ahead of pkt->pos */
+    for (;;) {
+        if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
+            break;
+
+        if (next_ofs > pkt->pos)
+            break;
+
+        mxf->current_edit_unit++;
+    }
+
+    if (mxf->current_edit_unit >= t->nb_ptses)
+        return;
+
+    pkt->dts = mxf->current_edit_unit + t->first_dts;
+    pkt->pts = t->ptses[mxf->current_edit_unit];
+}
+
 static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 {
     KLVPacket klv;
@@ -1927,6 +1976,10 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
             }
             pkt->stream_index = index;
             pkt->pos = klv.offset;
+
+            if (s->streams[index]->codec->codec_type == AVMEDIA_TYPE_VIDEO)
+                mxf_packet_timestamps(s->priv_data, pkt);   /* offset -> EditUnit -> DTS/PTS */
+
             return 0;
         } else
         skip:
@@ -1938,63 +1991,51 @@ static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
 static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
 {
     MXFContext *mxf = s->priv_data;
-    AVIndexEntry *e;
-    int ret;
-    int64_t ret64;
-    KLVPacket klv;
+    int ret, size;
+    int64_t ret64, pos, next_pos;
     AVStream *st;
+    MXFIndexTable *t;
 
-    /* TODO: better logic for this?
-     * only files that lack all index segments prior to the essence need this */
-    if (!s->pb->seekable && mxf->op != OPAtom || mxf->d10 || mxf->broken_index)
+    if (mxf->op != OPAtom)
         return mxf_read_packet_old(s, pkt);
 
-    if (mxf->current_stream >= s->nb_streams) {
-        mxf->current_edit_unit++;
-        mxf->current_stream = 0;
-    }
+    /* OPAtom - clip wrapped demuxing */
+    st = s->streams[0];
+    t = &mxf->index_tables[0];
 
-    st = s->streams[mxf->current_stream];
-
-    if (mxf->current_edit_unit >= st->nb_index_entries)
+    if (mxf->current_edit_unit >= st->duration)
         return AVERROR_EOF;
 
-    e = &st->index_entries[mxf->current_edit_unit];
+    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit, NULL, &pos, 1)) < 0)
+        return ret;
 
-    if ((ret64 = avio_seek(s->pb, e->pos, SEEK_SET)) < 0)
+    /* compute size by finding the next edit unit or the end of the essence container
+     * not pretty, but it works */
+    if ((ret = mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_pos, 0)) < 0 &&
+        (next_pos = mxf_essence_container_end(mxf, t->body_sid)) <= 0) {
+        av_log(s, AV_LOG_ERROR, "unable to compute the size of the last packet\n");
+        return AVERROR_INVALIDDATA;
+    }
+
+    if ((size = next_pos - pos) <= 0) {
+        av_log(s, AV_LOG_ERROR, "bad size: %i\n", size);
+        return AVERROR_INVALIDDATA;
+    }
+
+    if ((ret64 = avio_seek(s->pb, pos, SEEK_SET)) < 0)
         return ret64;
 
-    if (mxf->op == OPAtom) {
-        /* OPAtom - no KL, just essence */
-        if ((ret = av_get_packet(s->pb, pkt, e->size)) != e->size)
-            return ret < 0 ? ret : AVERROR_EOF;
-    } else {
-        /* read KL, read L bytes of essence */
-        if ((ret = klv_read_packet(&klv, s->pb)) < 0)
-            return ret;
-
-        /* untested, but looks OK */
-        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
-            int res = mxf_decrypt_triplet(s, pkt, &klv);
-            if (res < 0) {
-                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
-                return -1;
-            }
-            return 0;
-        }
-
-        if ((ret = av_get_packet(s->pb, pkt, klv.length)) != klv.length)
+        if ((ret = av_get_packet(s->pb, pkt, size)) != size)
             return ret < 0 ? ret : AVERROR_EOF;
 
-        pkt->pos = e->pos;
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && t->ptses &&
+        mxf->current_edit_unit >= 0 && mxf->current_edit_unit < t->nb_ptses) {
+        pkt->dts = mxf->current_edit_unit + t->first_dts;
+        pkt->pts = t->ptses[mxf->current_edit_unit];
     }
 
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && mxf->ptses && mxf->current_edit_unit < mxf->nb_ptses) {
-        pkt->dts = mxf->current_edit_unit + mxf->first_dts;
-        pkt->pts = mxf->ptses[mxf->current_edit_unit];
-    }
-
-    pkt->stream_index = mxf->current_stream++;
+    pkt->stream_index = 0;
+    mxf->current_edit_unit++;
 
     return 0;
 }
@@ -2078,9 +2119,10 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
     int64_t seconds;
     MXFContext* mxf = s->priv_data;
     int64_t seekpos;
-    int index;
+    int ret;
+    MXFIndexTable *t;
 
-    if (mxf->d10) {
+    if (mxf->index_tables <= 0) {
     if (!s->bit_rate)
         return -1;
     if (sample_time < 0)
@@ -2090,24 +2132,27 @@ static int mxf_read_seek(AVFormatContext *s, int stream_index, int64_t sample_ti
         return -1;
     ff_update_cur_dts(s, st, sample_time);
     } else {
-        if (st->nb_index_entries <= 0)
-            return -1;
+        t = &mxf->index_tables[0];
 
-        index = av_index_search_timestamp(st, sample_time, flags);
+        /* clamp above zero, else ff_index_search_timestamp() returns negative
+         * this also means we allow seeking before the start */
+        sample_time = FFMAX(sample_time, 0);
 
-        av_dlog(s, "stream %d, timestamp %"PRId64", sample %d\n", st->index, sample_time, index);
-
-        if (index < 0) {
-            if (sample_time < st->index_entries[0].timestamp)
-                index = 0;
-            else
-                return -1;
+        if (t->fake_index) {
+            /* behave as if we have a proper index */
+            if ((sample_time = ff_index_search_timestamp(t->fake_index, t->nb_ptses, sample_time, flags)) < 0)
+                return sample_time;
+        } else {
+            /* no IndexEntryArray (one or more CBR segments)
+             * make sure we don't seek past the end */
+            sample_time = FFMIN(sample_time, st->duration - 1);
         }
 
-        seekpos = st->index_entries[index].pos;
-        av_update_cur_dts(s, st, st->index_entries[index].timestamp);
-        mxf->current_edit_unit = st->index_entries[index].timestamp;
-        mxf->current_stream = 0;
+        if ((ret = mxf_edit_unit_absolute_offset(mxf, t, sample_time, &sample_time, &seekpos, 1)) << 0)
+            return ret;
+
+        av_update_cur_dts(s, st, sample_time);
+        mxf->current_edit_unit = sample_time;
         avio_seek(s->pb, seekpos, SEEK_SET);
     }
     return 0;
