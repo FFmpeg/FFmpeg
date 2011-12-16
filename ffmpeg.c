@@ -549,6 +549,8 @@ static void sigterm_handler(int sig)
     received_sigterm = sig;
     received_nb_signals++;
     term_exit();
+    if(received_nb_signals > 3)
+        exit(123);
 }
 
 static void term_init(void)
