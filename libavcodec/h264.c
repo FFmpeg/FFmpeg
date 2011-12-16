@@ -3777,6 +3777,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
     int nals_needed=0; ///< number of NALs that need decoding before the next frame thread starts
     int nal_index;
 
+    h->nal_unit_type= 0;
+
     h->max_contexts = (HAVE_THREADS && (s->avctx->active_thread_type&FF_THREAD_SLICE)) ? avctx->thread_count : 1;
     if(!(s->flags2 & CODEC_FLAG2_CHUNKS)){
         h->current_slice = 0;
