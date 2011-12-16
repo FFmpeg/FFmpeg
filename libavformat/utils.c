@@ -269,10 +269,17 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
 {
     int ret;
 
-    if(s->maxsize>0){
+    if(s->maxsize>=0){
         int64_t remaining= s->maxsize - avio_tell(s);
-        if(remaining>=0)
-            size= FFMIN(size, remaining);
+        if(remaining < size){
+            int64_t newsize= avio_size(s);
+            if(!s->maxsize || s->maxsize<newsize)
+                s->maxsize= newsize;
+            remaining= s->maxsize - avio_tell(s);
+        }
+
+        if(s->maxsize>=0 && remaining>=0)
+            size= FFMIN(size, remaining+1);
     }
 
     ret= av_new_packet(pkt, size);
