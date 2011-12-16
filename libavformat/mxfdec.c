@@ -148,17 +148,12 @@ typedef struct {
     int edit_unit_byte_count;
     int index_sid;
     int body_sid;
-    int slice_count;
     AVRational index_edit_rate;
     uint64_t index_start_position;
     uint64_t index_duration;
-    int *slice;
-    int *element_delta;
-    int nb_delta_entries;
     int8_t *temporal_offset_entries;
     int *flag_entries;
     uint64_t *stream_offset_entries;
-    uint32_t **slice_offset_entries;
     int nb_index_entries;
 } MXFIndexTableSegment;
 
@@ -665,25 +660,6 @@ static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size
     return 0;
 }
 
-static int mxf_read_delta_entry_array(AVIOContext *pb, MXFIndexTableSegment *segment)
-{
-    int i, length;
-
-    segment->nb_delta_entries = avio_rb32(pb);
-    length = avio_rb32(pb);
-
-    if (!(segment->slice         = av_calloc(segment->nb_delta_entries, sizeof(*segment->slice))) ||
-        !(segment->element_delta = av_calloc(segment->nb_delta_entries, sizeof(*segment->element_delta))))
-        return AVERROR(ENOMEM);
-
-    for (i = 0; i < segment->nb_delta_entries; i++) {
-        avio_r8(pb);    /* PosTableIndex */
-        segment->slice[i] = avio_r8(pb);
-        segment->element_delta[i] = avio_rb32(pb);
-    }
-    return 0;
-}
-
 static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *segment)
 {
     int i, j, length;
@@ -696,24 +672,12 @@ static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *seg
         !(segment->stream_offset_entries = av_calloc(segment->nb_index_entries, sizeof(*segment->stream_offset_entries))))
         return AVERROR(ENOMEM);
 
-    if (segment->slice_count &&
-        !(segment->slice_offset_entries  = av_calloc(segment->nb_index_entries, sizeof(*segment->slice_offset_entries))))
-        return AVERROR(ENOMEM);
-
     for (i = 0; i < segment->nb_index_entries; i++) {
         segment->temporal_offset_entries[i] = avio_r8(pb);
         avio_r8(pb);                                        /* KeyFrameOffset */
         segment->flag_entries[i] = avio_r8(pb);
         segment->stream_offset_entries[i] = avio_rb64(pb);
-        if (segment->slice_count) {
-            if (!(segment->slice_offset_entries[i] = av_calloc(segment->slice_count, sizeof(**segment->slice_offset_entries))))
-                return AVERROR(ENOMEM);
-
-            for (j = 0; j < segment->slice_count; j++)
-                segment->slice_offset_entries[i][j] = avio_rb32(pb);
-        }
-
-        avio_skip(pb, length - 11 - 4 * segment->slice_count);
+        avio_skip(pb, length - 11);
     }
     return 0;
 }
@@ -734,13 +698,6 @@ static int mxf_read_index_table_segment(void *arg, AVIOContext *pb, int tag, int
         segment->body_sid = avio_rb32(pb);
         av_dlog(NULL, "BodySID %d\n", segment->body_sid);
         break;
-    case 0x3F08:
-        segment->slice_count = avio_r8(pb);
-        av_dlog(NULL, "SliceCount %d\n", segment->slice_count);
-        break;
-    case 0x3F09:
-        av_dlog(NULL, "DeltaEntryArray found\n");
-        return mxf_read_delta_entry_array(pb, segment);
     case 0x3F0A:
         av_dlog(NULL, "IndexEntryArray found\n");
         return mxf_read_index_entry_array(pb, segment);
@@ -1892,15 +1849,9 @@ static int mxf_read_close(AVFormatContext *s)
             break;
         case IndexTableSegment:
             seg = (MXFIndexTableSegment *)mxf->metadata_sets[i];
-            if (seg->slice_count)
-            for (j = 0; j < seg->nb_index_entries; j++)
-                av_freep(&seg->slice_offset_entries[j]);
-            av_freep(&seg->slice);
-            av_freep(&seg->element_delta);
             av_freep(&seg->temporal_offset_entries);
             av_freep(&seg->flag_entries);
             av_freep(&seg->stream_offset_entries);
-            av_freep(&seg->slice_offset_entries);
             break;
         default:
             break;
