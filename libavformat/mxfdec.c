@@ -380,117 +380,6 @@ static int mxf_decrypt_triplet(AVFormatContext *s, AVPacket *pkt, KLVPacket *klv
     return 0;
 }
 
-static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
-{
-    KLVPacket klv;
-
-    while (!url_feof(s->pb)) {
-        if (klv_read_packet(&klv, s->pb) < 0)
-            return -1;
-        PRINT_KEY(s, "read packet", klv.key);
-        av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
-        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
-            int res = mxf_decrypt_triplet(s, pkt, &klv);
-            if (res < 0) {
-                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
-                return -1;
-            }
-            return 0;
-        }
-        if (IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
-            IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
-            int index = mxf_get_stream_index(s, &klv);
-            if (index < 0) {
-                av_log(s, AV_LOG_ERROR, "error getting stream index %d\n", AV_RB32(klv.key+12));
-                goto skip;
-            }
-            if (s->streams[index]->discard == AVDISCARD_ALL)
-                goto skip;
-            /* check for 8 channels AES3 element */
-            if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
-                if (mxf_get_d10_aes3_packet(s->pb, s->streams[index], pkt, klv.length) < 0) {
-                    av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
-                    return -1;
-                }
-            } else {
-                int ret = av_get_packet(s->pb, pkt, klv.length);
-                if (ret < 0)
-                    return ret;
-            }
-            pkt->stream_index = index;
-            pkt->pos = klv.offset;
-            return 0;
-        } else
-        skip:
-            avio_skip(s->pb, klv.length);
-    }
-    return AVERROR_EOF;
-}
-
-static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
-{
-    MXFContext *mxf = s->priv_data;
-    AVIndexEntry *e;
-    int ret;
-    int64_t ret64;
-    KLVPacket klv;
-    AVStream *st;
-
-    /* TODO: better logic for this?
-     * only files that lack all index segments prior to the essence need this */
-    if (!s->pb->seekable && mxf->op != OPAtom || mxf->d10 || mxf->broken_index)
-        return mxf_read_packet_old(s, pkt);
-
-    if (mxf->current_stream >= s->nb_streams) {
-        mxf->current_edit_unit++;
-        mxf->current_stream = 0;
-    }
-
-    st = s->streams[mxf->current_stream];
-
-    if (mxf->current_edit_unit >= st->nb_index_entries)
-        return AVERROR_EOF;
-
-    e = &st->index_entries[mxf->current_edit_unit];
-
-    if ((ret64 = avio_seek(s->pb, e->pos, SEEK_SET)) < 0)
-        return ret64;
-
-    if (mxf->op == OPAtom) {
-        /* OPAtom - no KL, just essence */
-        if ((ret = av_get_packet(s->pb, pkt, e->size)) != e->size)
-            return ret < 0 ? ret : AVERROR_EOF;
-    } else {
-        /* read KL, read L bytes of essence */
-        if ((ret = klv_read_packet(&klv, s->pb)) < 0)
-            return ret;
-
-        /* untested, but looks OK */
-        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
-            int res = mxf_decrypt_triplet(s, pkt, &klv);
-            if (res < 0) {
-                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
-                return -1;
-            }
-            return 0;
-        }
-
-        if ((ret = av_get_packet(s->pb, pkt, klv.length)) != klv.length)
-            return ret < 0 ? ret : AVERROR_EOF;
-
-        pkt->pos = e->pos;
-    }
-
-    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && mxf->ptses && mxf->current_edit_unit < mxf->nb_ptses) {
-        pkt->dts = mxf->current_edit_unit + mxf->first_dts;
-        pkt->pts = mxf->ptses[mxf->current_edit_unit];
-    }
-
-    pkt->stream_index = mxf->current_stream++;
-
-    return 0;
-}
-
 static int mxf_read_primer_pack(void *arg, AVIOContext *pb, int tag, int size, UID uid, int64_t klv_offset)
 {
     MXFContext *mxf = arg;
@@ -1824,6 +1713,117 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
     mxf_compute_essence_containers(mxf);
 
     return mxf_parse_structural_metadata(mxf);
+}
+
+static int mxf_read_packet_old(AVFormatContext *s, AVPacket *pkt)
+{
+    KLVPacket klv;
+
+    while (!url_feof(s->pb)) {
+        if (klv_read_packet(&klv, s->pb) < 0)
+            return -1;
+        PRINT_KEY(s, "read packet", klv.key);
+        av_dlog(s, "size %"PRIu64" offset %#"PRIx64"\n", klv.length, klv.offset);
+        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
+            int res = mxf_decrypt_triplet(s, pkt, &klv);
+            if (res < 0) {
+                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
+                return -1;
+            }
+            return 0;
+        }
+        if (IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
+            IS_KLV_KEY(klv.key, mxf_avid_essence_element_key)) {
+            int index = mxf_get_stream_index(s, &klv);
+            if (index < 0) {
+                av_log(s, AV_LOG_ERROR, "error getting stream index %d\n", AV_RB32(klv.key+12));
+                goto skip;
+            }
+            if (s->streams[index]->discard == AVDISCARD_ALL)
+                goto skip;
+            /* check for 8 channels AES3 element */
+            if (klv.key[12] == 0x06 && klv.key[13] == 0x01 && klv.key[14] == 0x10) {
+                if (mxf_get_d10_aes3_packet(s->pb, s->streams[index], pkt, klv.length) < 0) {
+                    av_log(s, AV_LOG_ERROR, "error reading D-10 aes3 frame\n");
+                    return -1;
+                }
+            } else {
+                int ret = av_get_packet(s->pb, pkt, klv.length);
+                if (ret < 0)
+                    return ret;
+            }
+            pkt->stream_index = index;
+            pkt->pos = klv.offset;
+            return 0;
+        } else
+        skip:
+            avio_skip(s->pb, klv.length);
+    }
+    return AVERROR_EOF;
+}
+
+static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    MXFContext *mxf = s->priv_data;
+    AVIndexEntry *e;
+    int ret;
+    int64_t ret64;
+    KLVPacket klv;
+    AVStream *st;
+
+    /* TODO: better logic for this?
+     * only files that lack all index segments prior to the essence need this */
+    if (!s->pb->seekable && mxf->op != OPAtom || mxf->d10 || mxf->broken_index)
+        return mxf_read_packet_old(s, pkt);
+
+    if (mxf->current_stream >= s->nb_streams) {
+        mxf->current_edit_unit++;
+        mxf->current_stream = 0;
+    }
+
+    st = s->streams[mxf->current_stream];
+
+    if (mxf->current_edit_unit >= st->nb_index_entries)
+        return AVERROR_EOF;
+
+    e = &st->index_entries[mxf->current_edit_unit];
+
+    if ((ret64 = avio_seek(s->pb, e->pos, SEEK_SET)) < 0)
+        return ret64;
+
+    if (mxf->op == OPAtom) {
+        /* OPAtom - no KL, just essence */
+        if ((ret = av_get_packet(s->pb, pkt, e->size)) != e->size)
+            return ret < 0 ? ret : AVERROR_EOF;
+    } else {
+        /* read KL, read L bytes of essence */
+        if ((ret = klv_read_packet(&klv, s->pb)) < 0)
+            return ret;
+
+        /* untested, but looks OK */
+        if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key)) {
+            int res = mxf_decrypt_triplet(s, pkt, &klv);
+            if (res < 0) {
+                av_log(s, AV_LOG_ERROR, "invalid encoded triplet\n");
+                return -1;
+            }
+            return 0;
+        }
+
+        if ((ret = av_get_packet(s->pb, pkt, klv.length)) != klv.length)
+            return ret < 0 ? ret : AVERROR_EOF;
+
+        pkt->pos = e->pos;
+    }
+
+    if (st->codec->codec_type == AVMEDIA_TYPE_VIDEO && mxf->ptses && mxf->current_edit_unit < mxf->nb_ptses) {
+        pkt->dts = mxf->current_edit_unit + mxf->first_dts;
+        pkt->pts = mxf->ptses[mxf->current_edit_unit];
+    }
+
+    pkt->stream_index = mxf->current_stream++;
+
+    return 0;
 }
 
 static int mxf_read_close(AVFormatContext *s)
