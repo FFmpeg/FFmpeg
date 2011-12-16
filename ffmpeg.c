@@ -3302,6 +3302,7 @@ static void assert_file_overwrite(const char *filename)
                 fprintf(stderr,"File '%s' already exists. Overwrite ? [y/N] ", filename);
                 fflush(stderr);
                 term_exit();
+                signal(SIGINT, SIG_DFL);
                 if (!read_yesno()) {
                     av_log(0, AV_LOG_FATAL, "Not overwriting - exiting\n");
                     exit_program(1);
