@@ -783,13 +783,6 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
         s->samples = wc->samples;
     }
     s->frame_flags = AV_RL32(buf); buf += 4;
-    if(s->frame_flags&0x80){
-        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
-    } else if((s->frame_flags&0x03) <= 1){
-        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
-    } else {
-        avctx->sample_fmt = AV_SAMPLE_FMT_S32;
-    }
     bpp = av_get_bytes_per_sample(avctx->sample_fmt);
     samples = (uint8_t*)samples + bpp * wc->ch_offset;
 
@@ -1147,7 +1140,7 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
     WavpackContext *s = avctx->priv_data;
     const uint8_t *buf = avpkt->data;
     int buf_size = avpkt->size;
-    int frame_size, ret;
+    int frame_size, ret, frame_flags;
     int samplecount = 0;
 
     s->block = 0;
@@ -1155,17 +1148,29 @@ static int wavpack_decode_frame(AVCodecContext *avctx, void *data,
 
     /* determine number of samples */
     if(s->mkv_mode){
-        s->samples = AV_RL32(buf); buf += 4;
+        s->samples  = AV_RL32(buf); buf += 4;
+        frame_flags = AV_RL32(buf);
     } else {
-        if (s->multichannel)
-            s->samples = AV_RL32(buf + 4);
-        else
-            s->samples = AV_RL32(buf);
+        if (s->multichannel) {
+            s->samples  = AV_RL32(buf + 4);
+            frame_flags = AV_RL32(buf + 8);
+        } else {
+            s->samples  = AV_RL32(buf);
+            frame_flags = AV_RL32(buf + 4);
+        }
     }
     if (s->samples <= 0) {
         av_log(avctx, AV_LOG_ERROR, "Invalid number of samples: %d\n",
                s->samples);
         return AVERROR(EINVAL);
+    }
+
+    if (frame_flags & 0x80) {
+        avctx->sample_fmt = AV_SAMPLE_FMT_FLT;
+    } else if ((frame_flags & 0x03) <= 1) {
+        avctx->sample_fmt = AV_SAMPLE_FMT_S16;
+    } else {
+        avctx->sample_fmt = AV_SAMPLE_FMT_S32;
     }
 
     /* get output buffer */
