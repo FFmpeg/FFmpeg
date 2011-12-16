@@ -43,6 +43,8 @@ typedef struct {
     int wrong_dts; ///< wrong dts due to negative cts
     uint8_t *new_extradata[2];
     int      new_extradata_size[2];
+    int      last_sample_rate;
+    int      last_channels;
 } FLVContext;
 
 static int flv_probe(AVProbeData *p)
@@ -56,8 +58,7 @@ static int flv_probe(AVProbeData *p)
     return 0;
 }
 
-static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, int flv_codecid) {
-    AVCodecContext *acodec = astream->codec;
+static void flv_set_audio_codec(AVFormatContext *s, AVStream *astream, AVCodecContext *acodec, int flv_codecid) {
     switch(flv_codecid) {
         //no distinction between S16 and S8 PCM codec flags
         case FLV_CODECID_PCM:
@@ -440,6 +441,7 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     int ret, i, type, size, flags, is_audio;
     int64_t next, pos;
     int64_t dts, pts = AV_NOPTS_VALUE;
+    int sample_rate, channels;
     AVStream *st = NULL;
 
  for(;;avio_skip(s->pb, 4)){ /* pkt size is repeated at end. skip it */
@@ -524,13 +526,24 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if(is_audio){
+        int bits_per_coded_sample;
+        channels    = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
+        sample_rate = (44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >> FLV_AUDIO_SAMPLERATE_OFFSET) >> 3);
+        bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
         if(!st->codec->channels || !st->codec->sample_rate || !st->codec->bits_per_coded_sample) {
-            st->codec->channels = (flags & FLV_AUDIO_CHANNEL_MASK) == FLV_STEREO ? 2 : 1;
-            st->codec->sample_rate = (44100 << ((flags & FLV_AUDIO_SAMPLERATE_MASK) >> FLV_AUDIO_SAMPLERATE_OFFSET) >> 3);
-            st->codec->bits_per_coded_sample = (flags & FLV_AUDIO_SAMPLESIZE_MASK) ? 16 : 8;
+            st->codec->channels              = channels;
+            st->codec->sample_rate           = sample_rate;
+            st->codec->bits_per_coded_sample = bits_per_coded_sample;
         }
         if(!st->codec->codec_id){
-            flv_set_audio_codec(s, st, flags & FLV_AUDIO_CODECID_MASK);
+            flv_set_audio_codec(s, st, st->codec, flags & FLV_AUDIO_CODECID_MASK);
+            flv->last_sample_rate = st->codec->sample_rate;
+            flv->last_channels    = st->codec->channels;
+        } else {
+            AVCodecContext ctx;
+            ctx.sample_rate = sample_rate;
+            flv_set_audio_codec(s, st, &ctx, flags & FLV_AUDIO_CODECID_MASK);
+            sample_rate = ctx.sample_rate;
         }
     }else{
         size -= flv_set_video_codec(s, st, flags & FLV_VIDEO_CODECID_MASK);
@@ -602,6 +615,12 @@ static int flv_read_packet(AVFormatContext *s, AVPacket *pkt)
             av_freep(&flv->new_extradata[is_audio]);
             flv->new_extradata_size[is_audio] = 0;
         }
+    }
+    if (is_audio && (sample_rate != flv->last_sample_rate ||
+                     channels != flv->last_channels)) {
+        flv->last_sample_rate = sample_rate;
+        flv->last_channels    = channels;
+        ff_add_param_change(pkt, channels, 0, sample_rate, 0, 0);
     }
 
     if (is_audio || ((flags & FLV_VIDEO_FRAMETYPE_MASK) == FLV_FRAME_KEY))
