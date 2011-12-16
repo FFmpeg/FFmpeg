@@ -718,15 +718,6 @@ void ff_get_unscaled_swscale(SwsContext *c)
     if (srcFormat==PIX_FMT_BGR24 && (dstFormat==PIX_FMT_YUV420P || dstFormat==PIX_FMT_YUVA420P) && !(flags & SWS_ACCURATE_RND))
         c->swScale= bgr24ToYv12Wrapper;
 
-    /* bswap 16 bits per component packed formats */
-    if ((srcFormat == PIX_FMT_RGB48LE  && dstFormat == PIX_FMT_RGB48BE)  ||
-        (srcFormat == PIX_FMT_RGB48BE  && dstFormat == PIX_FMT_RGB48LE)  ||
-        (srcFormat == PIX_FMT_BGR48LE  && dstFormat == PIX_FMT_BGR48BE)  ||
-        (srcFormat == PIX_FMT_BGR48BE  && dstFormat == PIX_FMT_BGR48LE)  ||
-        (srcFormat == PIX_FMT_GRAY16LE && dstFormat == PIX_FMT_GRAY16BE) ||
-        (srcFormat == PIX_FMT_GRAY16BE && dstFormat == PIX_FMT_GRAY16LE))
-        c->swScale = packed_16bpc_bswap;
-
     /* RGB/BGR -> RGB/BGR (no dither needed forms) */
     if (   isAnyRGB(srcFormat)
         && isAnyRGB(dstFormat)
@@ -744,6 +735,19 @@ void ff_get_unscaled_swscale(SwsContext *c)
         && srcFormat != PIX_FMT_BGR48BE   && dstFormat != PIX_FMT_BGR48BE
         && (!needsDither || (c->flags&(SWS_FAST_BILINEAR|SWS_POINT))))
         c->swScale= rgbToRgbWrapper;
+
+    /* bswap 16 bits per pixel/component packed formats */
+    if ((srcFormat == PIX_FMT_RGB48LE  && dstFormat == PIX_FMT_RGB48BE)  ||
+        (srcFormat == PIX_FMT_RGB48BE  && dstFormat == PIX_FMT_RGB48LE)  ||
+        (srcFormat == PIX_FMT_BGR48LE  && dstFormat == PIX_FMT_BGR48BE)  ||
+        (srcFormat == PIX_FMT_BGR48BE  && dstFormat == PIX_FMT_BGR48LE)  ||
+        (srcFormat == PIX_FMT_GRAY16LE && dstFormat == PIX_FMT_GRAY16BE) ||
+        (srcFormat == PIX_FMT_GRAY16BE && dstFormat == PIX_FMT_GRAY16LE) ||
+        (srcFormat == PIX_FMT_RGB565LE && dstFormat == PIX_FMT_RGB565BE) ||
+        (srcFormat == PIX_FMT_RGB565BE && dstFormat == PIX_FMT_RGB565LE) ||
+        (srcFormat == PIX_FMT_BGR565BE && dstFormat == PIX_FMT_BGR565LE) ||
+        (srcFormat == PIX_FMT_BGR565LE && dstFormat == PIX_FMT_BGR565BE))
+        c->swScale = packed_16bpc_bswap;
 
     if ((usePal(srcFormat) && (
         dstFormat == PIX_FMT_RGB32   ||
