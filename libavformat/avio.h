@@ -120,6 +120,12 @@ typedef struct {
      * A combination of AVIO_SEEKABLE_ flags or 0 when the stream is not seekable.
      */
     int seekable;
+
+    /**
+     * max filesize, used to limit allocations
+     * This field is internal to libavformat and access from outside is not allowed.
+     */
+     int64_t maxsize;
 } AVIOContext;
 
 /* unbuffered I/O */

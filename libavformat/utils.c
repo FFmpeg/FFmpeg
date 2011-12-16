@@ -267,7 +267,15 @@ AVInputFormat *av_find_input_format(const char *short_name)
 
 int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
 {
-    int ret= av_new_packet(pkt, size);
+    int ret;
+
+    if(s->maxsize>0){
+        int64_t remaining= s->maxsize - avio_tell(s);
+        if(remaining>=0)
+            size= FFMIN(size, remaining);
+    }
+
+    ret= av_new_packet(pkt, size);
 
     if(ret<0)
         return ret;
