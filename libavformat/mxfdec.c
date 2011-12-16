@@ -210,12 +210,6 @@ typedef struct {
     int64_t last_forward_tell;
     int last_forward_partition;
     int current_edit_unit;
-    int current_stream;
-    int d10;
-    int broken_index;
-    int64_t first_dts;          /* DTS = EditUnit + first_dts */
-    int64_t *ptses;             /* maps EditUnit -> PTS */
-    int nb_ptses;
     int nb_index_tables;
     MXFIndexTable *index_tables;
 } MXFContext;
@@ -904,8 +898,6 @@ static const MXFCodecUL mxf_sound_essence_container_uls[] = {
     { { 0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00 },  0,      CODEC_ID_NONE },
 };
 
-static UID mxf_d10_ul = { 0x06,0x0E,0x2B,0x34,0x04,0x01,0x01,0x01,0x0D,0x01,0x03,0x01,0x02,0x01,0x01,0x01 };
-
 static int mxf_get_sorted_table_segments(MXFContext *mxf, int *nb_sorted_segments, MXFIndexTableSegment ***sorted_segments)
 {
     int i, j, nb_segments = 0;
@@ -992,29 +984,6 @@ static int mxf_absolute_bodysid_offset(MXFContext *mxf, int body_sid, int64_t of
 }
 
 /**
- * Returns the length of the essence container with given BodySID, or zero if unknown
- */
-static int64_t mxf_essence_container_length(MXFContext *mxf, int body_sid)
-{
-    int x;
-    int64_t ret = 0;
-
-    for (x = 0; x < mxf->partitions_count; x++) {
-        MXFPartition *p = &mxf->partitions[x];
-
-        if (p->body_sid != body_sid)
-            continue;
-
-        if (!p->essence_length)
-            return 0;
-
-        ret += p->essence_length;
-    }
-
-    return ret;
-}
-
-/**
  * Returns the end position of the essence container with given BodySID, or zero if unknown
  */
 static int64_t mxf_essence_container_end(MXFContext *mxf, int body_sid)
@@ -1084,132 +1053,6 @@ static int mxf_edit_unit_absolute_offset(MXFContext *mxf, MXFIndexTable *index_t
         av_log(mxf->fc, AV_LOG_ERROR, "failed to map EditUnit %"PRId64" in IndexSID %i to an offset\n", edit_unit, index_table->index_sid);
 
     return AVERROR_INVALIDDATA;
-}
-
-static int mxf_parse_index(MXFContext *mxf, int track_id, AVStream *st, MXFIndexTableSegment **sorted_segments, int nb_sorted_segments)
-{
-    int64_t accumulated_offset = 0;
-    int j, k, l, ret;
-    int n_delta = track_id - 1;  /* TrackID = 1-based stream index */
-
-    if (track_id < 1) {
-        av_log(mxf->fc, AV_LOG_ERROR, "TrackID not positive: %i\n", track_id);
-        return AVERROR_INVALIDDATA;
-    }
-
-    for (j = 0; j < nb_sorted_segments; j++) {
-        int duration, sample_duration = 1, last_sample_size = 0;
-        int64_t segment_size;
-        MXFIndexTableSegment *tableseg = sorted_segments[j];
-        int index_delta = 1, last_size_unknown = 0;
-        int64_t last_pos = 0;
-
-        /* reset accumulated_offset on BodySID change */
-        if (j > 0 && tableseg->body_sid != sorted_segments[j-1]->body_sid)
-            accumulated_offset = 0;
-
-        if (tableseg->nb_index_entries == 2 * tableseg->index_duration + 1) {
-            /* Avid index - duplicate entries and total size as last entry */
-            index_delta = 2;
-        }
-
-        if (n_delta >= tableseg->nb_delta_entries && st->index != 0)
-            continue;
-        duration = tableseg->index_duration > 0 ? tableseg->index_duration :
-            st->duration - st->nb_index_entries;
-        segment_size = tableseg->edit_unit_byte_count * duration;
-        /* check small EditUnitByteCount for audio */
-        if (tableseg->edit_unit_byte_count && tableseg->edit_unit_byte_count < 32
-            && !tableseg->index_duration) {
-            /* duration might be prime relative to the new sample_duration,
-             * which means we need to handle the last frame differently */
-            sample_duration = 8192;
-            last_sample_size = (duration % sample_duration) * tableseg->edit_unit_byte_count;
-            tableseg->edit_unit_byte_count *= sample_duration;
-            duration /= sample_duration;
-            if (last_sample_size) duration++;
-        }
-
-        if (duration <= 0) {
-            av_log(mxf->fc, AV_LOG_WARNING, "0 duration in index for stream %i\n", st->index);
-            mxf->broken_index = 1;
-            return 0;
-        }
-
-        for (k = l = 0; k < duration; k++, l += index_delta) {
-            int64_t pos;
-            int size, flags = 0;
-
-            if (l < tableseg->nb_index_entries) {
-                pos = tableseg->stream_offset_entries[l];
-                if (n_delta < tableseg->nb_delta_entries) {
-                    if (n_delta < tableseg->nb_delta_entries - 1) {
-                        size =
-                            tableseg->slice_offset_entries[l][tableseg->slice[n_delta+1]-1] +
-                            tableseg->element_delta[n_delta+1] -
-                            tableseg->element_delta[n_delta];
-                        if (tableseg->slice[n_delta] > 0)
-                            size -= tableseg->slice_offset_entries[l][tableseg->slice[n_delta]-1];
-                    } else if (l < tableseg->nb_index_entries - 1) {
-                        size = tableseg->stream_offset_entries[l+1] -
-                            tableseg->stream_offset_entries[l] -
-                            tableseg->slice_offset_entries[l][tableseg->slice[tableseg->nb_delta_entries-1]-1] -
-                            tableseg->element_delta[tableseg->nb_delta_entries-1];
-                    } else
-                        size = 0;
-                    if (tableseg->slice[n_delta] > 0)
-                        pos += tableseg->slice_offset_entries[l][tableseg->slice[n_delta]-1];
-                    pos += tableseg->element_delta[n_delta];
-                } else
-                    size = 0;
-                flags = !(tableseg->flag_entries[l] & 0x30) ? AVINDEX_KEYFRAME : 0;
-            } else {
-                pos = (int64_t)k * tableseg->edit_unit_byte_count + accumulated_offset;
-                if (n_delta < tableseg->nb_delta_entries - 1)
-                    size = tableseg->element_delta[n_delta+1] - tableseg->element_delta[n_delta];
-                else {
-                    /* use smaller size for last sample if we should */
-                    if (last_sample_size && k == duration - 1)
-                        size = last_sample_size;
-                    else
-                        size = tableseg->edit_unit_byte_count;
-                    if (tableseg->nb_delta_entries)
-                        size -= tableseg->element_delta[tableseg->nb_delta_entries-1];
-                }
-                if (n_delta < tableseg->nb_delta_entries)
-                    pos += tableseg->element_delta[n_delta];
-                flags = AVINDEX_KEYFRAME;
-            }
-
-            if (last_size_unknown)
-                st->index_entries[st->nb_index_entries-1].size = pos - last_pos;
-
-            last_size_unknown = size == 0;
-            last_pos = pos;
-
-            if (mxf_absolute_bodysid_offset(mxf, tableseg->body_sid, pos, &pos) < 0) {
-                /* probably partial file - no point going further for this stream */
-                break;
-            }
-
-            av_dlog(mxf->fc, "Stream %d IndexEntry %d TrackID %d Offset %"PRIx64" Timestamp %"PRId64"\n",
-                    st->index, st->nb_index_entries, track_id, pos, sample_duration * st->nb_index_entries);
-
-            if ((ret = av_add_index_entry(st, pos, sample_duration * st->nb_index_entries, size, 0, flags)) < 0)
-                return ret;
-        }
-
-        if (last_size_unknown) {
-            int64_t ecl = mxf_essence_container_length(mxf, tableseg->body_sid);
-
-            if (ecl > 0)
-                st->index_entries[st->nb_index_entries-1].size = ecl - last_pos;
-        }
-
-        accumulated_offset += segment_size;
-    }
-
-    return 0;
 }
 
 static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_table)
@@ -1394,8 +1237,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
 {
     MXFPackage *material_package = NULL;
     MXFPackage *temp_package = NULL;
-    int i, j, k, ret, nb_sorted_segments;
-    MXFIndexTableSegment **sorted_segments = NULL;
+    int i, j, k, ret;
 
     av_dlog(mxf->fc, "metadata sets count %d\n", mxf->metadata_sets_count);
     /* TODO: handle multiple material packages (OP3x) */
@@ -1406,12 +1248,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
     if (!material_package) {
         av_log(mxf->fc, AV_LOG_ERROR, "no material package found\n");
         return -1;
-    }
-
-    if ((ret = mxf_get_sorted_table_segments(mxf, &nb_sorted_segments, &sorted_segments)) ||
-        nb_sorted_segments <= 0) {
-        av_log(mxf->fc, AV_LOG_WARNING, "broken or empty index\n");
-        mxf->broken_index = 1;
     }
 
     for (i = 0; i < material_package->tracks_count; i++) {
@@ -1544,10 +1380,6 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             }
         }
 
-        /* HACK: revert to the old demuxing/seeking scode for D-10 for now */
-        if (mxf_match_uid(essence_container_ul, mxf_d10_ul, 14))
-            mxf->d10 = 1;
-
         /* TODO: drop PictureEssenceCoding and SoundEssenceCompression, only check EssenceContainer */
         codec_ul = mxf_get_codec_ul(ff_mxf_codec_uls, &descriptor->essence_codec_ul);
         st->codec->codec_id = codec_ul->id;
@@ -1590,15 +1422,10 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
             /* TODO: decode timestamps */
             st->need_parsing = AVSTREAM_PARSE_TIMESTAMPS;
         }
-
-        if (!mxf->broken_index &&
-            (ret = mxf_parse_index(mxf, material_track->track_id, st, sorted_segments, nb_sorted_segments)))
-            goto fail_and_free;
     }
 
     ret = 0;
 fail_and_free:
-    av_free(sorted_segments);
     return ret;
 }
 
@@ -2084,7 +1911,6 @@ static int mxf_read_close(AVFormatContext *s)
     av_freep(&mxf->metadata_sets);
     av_freep(&mxf->aesc);
     av_freep(&mxf->local_tags);
-    av_freep(&mxf->ptses);
 
     for (i = 0; i < mxf->nb_index_tables; i++) {
         av_freep(&mxf->index_tables[i].segments);
