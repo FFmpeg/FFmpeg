@@ -261,6 +261,10 @@ static av_cold int encode_init(AVCodecContext *avctx)
     if (av_image_check_size(avctx->width, avctx->height, 0, avctx) < 0) {
         return -1;
     }
+    if((avctx->width&3) || (avctx->height&3)){
+        av_log(avctx, AV_LOG_ERROR, "width and height must be multiplies of 4\n");
+        return -1;
+    }
 
     avcodec_get_frame_defaults(&c->pic);
     avctx->coded_frame = (AVFrame*)&c->pic;
