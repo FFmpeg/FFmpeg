@@ -393,6 +393,8 @@ static int decodeTonalComponents (GetBitContext *gb, tonal_component *pComponent
 
             for (k=0; k<coded_components; k++) {
                 sfIndx = get_bits(gb,6);
+                if (component_count >= 64)
+                    return AVERROR_INVALIDDATA;
                 pComponent[component_count].pos = j * 64 + (get_bits(gb,6));
                 max_coded_values = 1024 - pComponent[component_count].pos;
                 coded_values = coded_values_per_component + 1;
