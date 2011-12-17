@@ -18,6 +18,7 @@
 
 #include "config.h"
 #include "avutil.h"
+#include "avassert.h"
 
 /**
  * @file
@@ -26,6 +27,8 @@
 
 unsigned avutil_version(void)
 {
+    av_assert0(PIX_FMT_VDA_VLD == 81); //check if the pix fmt enum has not had anything inserted or removed by mistake
+
     return LIBAVUTIL_VERSION_INT;
 }
 
