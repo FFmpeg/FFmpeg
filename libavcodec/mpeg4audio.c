@@ -82,6 +82,9 @@ int avpriv_mpeg4audio_get_config(MPEG4AudioConfig *c, const uint8_t *buf,
     GetBitContext gb;
     int specific_config_bitindex;
 
+    if(bit_size<=0)
+        return AVERROR_INVALIDDATA;
+
     init_get_bits(&gb, buf, bit_size);
     c->object_type = get_object_type(&gb);
     c->sample_rate = get_sample_rate(&gb, &c->sampling_index);
