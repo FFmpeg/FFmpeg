@@ -934,7 +934,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 }; SKIP_CACHE(re, &s->gb, 1);
 
                 last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
-                run=   SHOW_UBITS(re, &s->gb, 6); LAST_SKIP_CACHE(re, &s->gb, 6);
+                run=   SHOW_UBITS(re, &s->gb, 6);
                 SKIP_COUNTER(re, &s->gb, 1+1+6);
                 UPDATE_CACHE(re, &s->gb);
 
@@ -951,7 +951,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                 }; SKIP_CACHE(re, &s->gb, 5);
 
                 level=  level * qmul + qadd;
-                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1); LAST_SKIP_CACHE(re, &s->gb, 1);
+                level = (level ^ SHOW_SBITS(re, &s->gb, 1)) - SHOW_SBITS(re, &s->gb, 1);
                 SKIP_COUNTER(re, &s->gb, 1+11+5+1);
 
                 i+= run + 1;
@@ -968,7 +968,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     /* third escape */
                     SKIP_CACHE(re, &s->gb, 2);
                     last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
-                    run=   SHOW_UBITS(re, &s->gb, 6); LAST_SKIP_CACHE(re, &s->gb, 6);
+                    run=   SHOW_UBITS(re, &s->gb, 6);
                     SKIP_COUNTER(re, &s->gb, 2+1+6);
                     UPDATE_CACHE(re, &s->gb);
 
@@ -985,7 +985,7 @@ static inline int mpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                         if(SHOW_UBITS(re, &s->gb, 1)==0){
                             av_log(s->avctx, AV_LOG_ERROR, "2. marker bit missing in 3. esc\n");
                             return -1;
-                        }; LAST_SKIP_CACHE(re, &s->gb, 1);
+                        }
 
                         SKIP_COUNTER(re, &s->gb, 1+12+1);
                     }

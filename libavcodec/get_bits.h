@@ -108,11 +108,8 @@ SKIP_CACHE(name, gb, num)
 SKIP_COUNTER(name, gb, num)
     will increment the internal bit counter (see SKIP_CACHE & SKIP_BITS)
 
-LAST_SKIP_CACHE(name, gb, num)
-    will remove the next num bits from the cache if it is needed for UPDATE_CACHE otherwise it will do nothing
-
 LAST_SKIP_BITS(name, gb, num)
-    is equivalent to LAST_SKIP_CACHE; SKIP_COUNTER
+    like SKIP_BITS, to be used if next call is UPDATE_CACHE or CLOSE_READER
 
 for examples see get_bits, show_bits, skip_bits, get_vlc
 */
@@ -168,7 +165,6 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
     } while (0)
 
 #define LAST_SKIP_BITS(name, gb, num) SKIP_COUNTER(name, gb, num)
-#define LAST_SKIP_CACHE(name, gb, num)
 
 #ifdef ALT_BITSTREAM_READER_LE
 #   define SHOW_UBITS(name, gb, num) zero_extend(name##_cache, num)
