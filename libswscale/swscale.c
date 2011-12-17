@@ -920,8 +920,8 @@ YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48be, PIX_FMT_BGR48BE)
 YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48le, PIX_FMT_BGR48LE)
 
 static av_always_inline void
-yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
-              int U, int V, int A1, int A2,
+yuv2rgb_write(uint8_t *_dest, int i, unsigned Y1, unsigned Y2,
+              unsigned U, unsigned V, unsigned A1, unsigned A2,
               const void *_r, const void *_g, const void *_b, int y,
               enum PixelFormat target, int hasAlpha)
 {
