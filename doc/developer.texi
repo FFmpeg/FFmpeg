@@ -345,7 +345,7 @@ for us and greatly increases your chances of getting your patch applied.
 Use the patcheck tool of FFmpeg to check your patch.
 The tool is located in the tools directory.
 
-Run the @ref{Regression Tests} before submitting a patch in order to verify
+Run the @ref{Regression tests} before submitting a patch in order to verify
 it does not cause unexpected problems.
 
 Patches should be posted as base64 encoded attachments (or any other
@@ -508,6 +508,7 @@ not related to the comments received during review. Such patches will
 be rejected. Instead, submit significant changes or new features as
 separate patches.
 
+@anchor{Regression tests}
 @section Regression tests
 
 Before submitting a patch (or committing to the repository), you should at least
