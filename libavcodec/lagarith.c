@@ -524,6 +524,50 @@ static int lag_decode_frame(AVCodecContext *avctx,
                 srcs[i] += l->rgb_stride;
         }
         break;
+    case FRAME_ARITH_RGB24:
+        avctx->pix_fmt = PIX_FMT_RGB24;
+
+        if (avctx->get_buffer(avctx, p) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "get_buffer() failed\n");
+            return -1;
+        }
+        offs[0] = offset_bv;
+        offs[1] = offset_gu;
+        offs[2] = 9;
+
+        if (!l->rgb_planes) {
+            l->rgb_stride = FFALIGN(avctx->width, 16);
+            l->rgb_planes = av_malloc(l->rgb_stride * avctx->height * 3);
+            if (!l->rgb_planes) {
+                av_log(avctx, AV_LOG_ERROR, "cannot allocate temporary buffer\n");
+                return AVERROR(ENOMEM);
+            }
+        }
+        for (i = 0; i < 3; i++)
+            srcs[i] = l->rgb_planes + (i + 1) * l->rgb_stride * avctx->height - l->rgb_stride;
+        for (i = 0; i < 3; i++)
+            lag_decode_arith_plane(l, srcs[i],
+                                   avctx->width, avctx->height,
+                                   -l->rgb_stride, buf + offs[i],
+                                   buf_size);
+        dst = p->data[0];
+        for (i = 0; i < 3; i++)
+            srcs[i] = l->rgb_planes + i * l->rgb_stride * avctx->height;
+        for (j = 0; j < avctx->height; j++) {
+            for (i = 0; i < avctx->width; i++) {
+                uint8_t r, g, b;
+                r = srcs[0][i];
+                g = srcs[1][i];
+                b = srcs[2][i];
+                dst[3*i+0] = r+g;
+                dst[3*i+1] = g;
+                dst[3*i+2] = b+g;
+            }
+            dst += p->linesize[0];
+            for (i = 0; i < 3; i++)
+                srcs[i] += l->rgb_stride;
+        }
+        break;
     case FRAME_ARITH_YV12:
         avctx->pix_fmt = PIX_FMT_YUV420P;
 
