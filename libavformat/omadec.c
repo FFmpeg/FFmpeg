@@ -44,28 +44,11 @@
 #include "internal.h"
 #include "libavutil/intreadwrite.h"
 #include "libavutil/des.h"
+#include "oma.h"
 #include "pcm.h"
 #include "riff.h"
 #include "id3v2.h"
 
-#define EA3_HEADER_SIZE 96
-#define ID3v2_EA3_MAGIC "ea3"
-#define OMA_ENC_HEADER_SIZE 16
-
-enum {
-    OMA_CODECID_ATRAC3  = 0,
-    OMA_CODECID_ATRAC3P = 1,
-    OMA_CODECID_MP3     = 3,
-    OMA_CODECID_LPCM    = 4,
-    OMA_CODECID_WMA     = 5,
-};
-
-static const AVCodecTag codec_oma_tags[] = {
-    { CODEC_ID_ATRAC3,      OMA_CODECID_ATRAC3 },
-    { CODEC_ID_ATRAC3P,     OMA_CODECID_ATRAC3P },
-    { CODEC_ID_MP3,         OMA_CODECID_MP3 },
-    { CODEC_ID_PCM_S16BE,   OMA_CODECID_LPCM },
-};
 
 static const uint64_t leaf_table[] = {
     0xd79e8283acea4620, 0x7a9762f445afd0d8,
@@ -276,7 +259,6 @@ static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
 static int oma_read_header(AVFormatContext *s,
                            AVFormatParameters *ap)
 {
-    static const uint16_t srate_tab[6] = {320,441,480,882,960,0};
     int     ret, framesize, jsflag, samplerate;
     uint32_t codec_params;
     int16_t eid;
@@ -316,11 +298,11 @@ static int oma_read_header(AVFormatContext *s,
     st->start_time = 0;
     st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
     st->codec->codec_tag   = buf[32];
-    st->codec->codec_id    = ff_codec_get_id(codec_oma_tags, st->codec->codec_tag);
+    st->codec->codec_id    = ff_codec_get_id(ff_oma_codec_tags, st->codec->codec_tag);
 
     switch (buf[32]) {
         case OMA_CODECID_ATRAC3:
-            samplerate = srate_tab[(codec_params >> 13) & 7]*100;
+            samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7]*100;
             if (samplerate != 44100)
                 av_log_ask_for_sample(s, "Unsupported sample rate: %d\n",
                                       samplerate);
@@ -350,7 +332,7 @@ static int oma_read_header(AVFormatContext *s,
         case OMA_CODECID_ATRAC3P:
             st->codec->channels = (codec_params >> 10) & 7;
             framesize = ((codec_params & 0x3FF) * 8) + 8;
-            st->codec->sample_rate = srate_tab[(codec_params >> 13) & 7]*100;
+            st->codec->sample_rate = ff_oma_srate_tab[(codec_params >> 13) & 7]*100;
             st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
             avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
             av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
@@ -459,6 +441,6 @@ AVInputFormat ff_oma_demuxer = {
     .read_seek      = oma_read_seek,
     .flags          = AVFMT_GENERIC_INDEX,
     .extensions     = "oma,omg,aa3",
-    .codec_tag      = (const AVCodecTag* const []){codec_oma_tags, 0},
+    .codec_tag      = (const AVCodecTag* const []){ff_oma_codec_tags, 0},
 };
 
