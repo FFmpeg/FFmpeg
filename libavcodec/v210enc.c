@@ -90,13 +90,13 @@ static int encode_frame(AVCodecContext *avctx, unsigned char *buf,
             val = CLIP(*y++);
             if (w == avctx->width - 2)
                 bytestream_put_le32(&p, val);
-        }
-        if (w < avctx->width - 3) {
-            val |= (CLIP(*u++) << 10) | (CLIP(*y++) << 20);
-            bytestream_put_le32(&p, val);
+            if (w < avctx->width - 3) {
+                val |= (CLIP(*u++) << 10) | (CLIP(*y++) << 20);
+                bytestream_put_le32(&p, val);
 
-            val = CLIP(*v++) | (CLIP(*y++) << 10);
-            bytestream_put_le32(&p, val);
+                val = CLIP(*v++) | (CLIP(*y++) << 10);
+                bytestream_put_le32(&p, val);
+            }
         }
 
         pdst += stride;
