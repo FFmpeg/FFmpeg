@@ -1331,7 +1331,7 @@ static int encode_intervals(struct sbg_script *s, AVCodecContext *avc,
         edata_size += inter->inter[i].type == WS_SINE  ? 44 :
                       inter->inter[i].type == WS_NOISE ? 32 : 0;
         if (edata_size < 0)
-            return AVERROR(EOVERFLOW);
+            return AVERROR(ENOMEM);
     }
     edata = av_malloc(edata_size);
     if (!edata)
