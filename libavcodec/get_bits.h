@@ -49,8 +49,6 @@
 #define UNCHECKED_BITSTREAM_READER !CONFIG_SAFE_BITSTREAM_READER
 #endif
 
-/* bit input */
-/* buffer, buffer_end and size_in_bits must be present and used by every reader */
 typedef struct GetBitContext {
     const uint8_t *buffer, *buffer_end;
     int index;
@@ -157,7 +155,6 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 #endif
 
-// FIXME name?
 #if UNCHECKED_BITSTREAM_READER
 #   define SKIP_COUNTER(name, gb, num) name##_index += (num)
 #else
@@ -200,7 +197,6 @@ static inline void skip_bits_long(GetBitContext *s, int n){
  * read mpeg1 dc style vlc (sign bit + mantisse with no MSB).
  * if MSB not set it is negative
  * @param n length in bits
- * @author BERO
  */
 static inline int get_xbits(GetBitContext *s, int n)
 {
@@ -254,7 +250,6 @@ static inline unsigned int show_bits(GetBitContext *s, int n)
 
 static inline void skip_bits(GetBitContext *s, int n)
 {
- //Note gcc seems to optimize this to s->index+=n for the ALT_READER :))
     OPEN_READER(re, s);
     UPDATE_CACHE(re, s);
     LAST_SKIP_BITS(re, s, n);
@@ -344,9 +339,6 @@ static inline int check_marker(GetBitContext *s, const char *msg)
  * @param buffer bitstream buffer, must be FF_INPUT_BUFFER_PADDING_SIZE bytes larger than the actual read bits
  * because some optimized bitstream readers read 32 or 64 bit at once and could read over the end
  * @param bit_size the size of the buffer in bits
- *
- * While GetBitContext stores the buffer size, for performance reasons you are
- * responsible for checking for the buffer end yourself (take advantage of the padding)!
  */
 static inline void init_get_bits(GetBitContext *s, const uint8_t *buffer,
                                  int bit_size)
@@ -462,7 +454,7 @@ void free_vlc(VLC *vlc);
 
 
 /**
- * Parse a vlc code, faster than get_vlc().
+ * Parse a vlc code.
  * @param bits is the number of bits which will be read at once, must be
  *             identical to nb_bits in init_vlc()
  * @param max_depth is the number of times bits bits must be read to completely
