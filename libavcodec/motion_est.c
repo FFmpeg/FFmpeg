@@ -536,8 +536,8 @@ static inline void get_limits(MpegEncContext *s, int x, int y)
     if (s->unrestricted_mv) {
         c->xmin = - x - 16;
         c->ymin = - y - 16;
-        c->xmax = - x + s->mb_width *16;
-        c->ymax = - y + s->mb_height*16;
+        c->xmax = - x + s->width;
+        c->ymax = - y + s->height;
     } else if (s->out_format == FMT_H261){
         // Search range of H261 is different from other codec standards
         c->xmin = (x > 15) ? - 15 : 0;
@@ -576,10 +576,11 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
     const int h=8;
     int block;
     int P[10][2];
-    int dmin_sum=0, mx4_sum=0, my4_sum=0;
+    int dmin_sum=0, mx4_sum=0, my4_sum=0, i;
     int same=1;
     const int stride= c->stride;
     uint8_t *mv_penalty= c->current_mv_penalty;
+    int saftey_cliping= s->unrestricted_mv && (s->width&15) && (s->height&15);
 
     init_mv4_ref(c);
 
@@ -590,6 +591,11 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
         static const int off[4]= {2, 1, 1, -1};
         const int mot_stride = s->b8_stride;
         const int mot_xy = s->block_index[block];
+
+        if(saftey_cliping){
+            c->xmax = - 16*s->mb_x + s->width  - 8*(block &1);
+            c->ymax = - 16*s->mb_y + s->height - 8*(block>>1);
+        }
 
         P_LEFT[0] = s->current_picture.f.motion_val[0][mot_xy - 1][0];
         P_LEFT[1] = s->current_picture.f.motion_val[0][mot_xy - 1][1];
@@ -618,6 +624,11 @@ static inline int h263_mv4_search(MpegEncContext *s, int mx, int my, int shift)
         }
         P_MV1[0]= mx;
         P_MV1[1]= my;
+        if(saftey_cliping)
+            for(i=0; i<10; i++){
+                if(P[i][0] > (c->xmax<<shift)) P[i][0]= (c->xmax<<shift);
+                if(P[i][1] > (c->ymax<<shift)) P[i][1]= (c->ymax<<shift);
+            }
 
         dmin4 = epzs_motion_search4(s, &mx4, &my4, P, block, block, s->p_mv_table, (1<<16)>>shift);
 
