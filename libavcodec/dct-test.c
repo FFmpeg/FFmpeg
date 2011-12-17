@@ -151,8 +151,6 @@ static const struct algo idct_tab[] = {
 
 #define AANSCALE_BITS 12
 
-static uint8_t cropTbl[256 + 2 * MAX_NEG_CROP];
-
 static int64_t gettime(void)
 {
     struct timeval tv;
@@ -511,13 +509,6 @@ int main(int argc, char **argv)
 
     ff_ref_dct_init();
     idct_mmx_init();
-
-    for (i = 0; i < 256; i++)
-        cropTbl[i + MAX_NEG_CROP] = i;
-    for (i = 0; i < MAX_NEG_CROP; i++) {
-        cropTbl[i] = 0;
-        cropTbl[i + MAX_NEG_CROP + 256] = 255;
-    }
 
     for (;;) {
         c = getopt(argc, argv, "ih4t");
