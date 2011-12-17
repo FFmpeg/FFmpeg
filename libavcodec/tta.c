@@ -418,7 +418,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
         // convert to output buffer
         switch(s->bps) {
             case 1: {
-                uint8_t *samples = (int16_t *)s->frame.data[0];
+                uint8_t *samples = (uint8_t *)s->frame.data[0];
                 for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
                     *samples++ = *p + 0x80;
                 break;
@@ -431,7 +431,7 @@ static int tta_decode_frame(AVCodecContext *avctx, void *data,
             }
             case 3: {
                 // shift samples for 24-bit sample format
-                int32_t *samples = (int16_t *)s->frame.data[0];
+                int32_t *samples = (int32_t *)s->frame.data[0];
                 for (p = s->decode_buffer; p < s->decode_buffer + (framelen * s->channels); p++)
                     *samples++ <<= 8;
                 // reset decode buffer
