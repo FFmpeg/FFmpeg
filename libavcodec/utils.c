@@ -33,6 +33,7 @@
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
 #include "libavutil/dict.h"
+#include "libavutil/avassert.h"
 #include "avcodec.h"
 #include "dsputil.h"
 #include "libavutil/opt.h"
@@ -1374,6 +1375,12 @@ const char *av_get_profile_name(const AVCodec *codec, int profile)
 
 unsigned avcodec_version( void )
 {
+    av_assert0(CODEC_ID_V410==164);
+    av_assert0(CODEC_ID_PCM_S8_PLANAR==65563);
+    av_assert0(CODEC_ID_ADPCM_G722==69660);
+    av_assert0(CODEC_ID_BMV_AUDIO==86071);
+    av_assert0(CODEC_ID_SRT==94216);
+
   return LIBAVCODEC_VERSION_INT;
 }
 
