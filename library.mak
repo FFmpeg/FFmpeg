@@ -92,6 +92,7 @@ endef
 $(eval $(RULES))
 
 $(EXAMPLES) $(TESTPROGS) $(TOOLS): $(THIS_LIB) $(DEP_LIBS)
+$(TESTPROGS): $(SUBDIR)$(LIBNAME)
 
 examples: $(EXAMPLES)
 testprogs: $(TESTPROGS)
