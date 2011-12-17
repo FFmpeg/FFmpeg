@@ -1882,6 +1882,20 @@ INDEV_LIST=$(find_things    indev    _IN      libavdevice/alldevices.c)
 PROTOCOL_LIST=$(find_things protocol PROTOCOL libavformat/allformats.c)
 FILTER_LIST=$(find_things   filter   FILTER   libavfilter/allfilters.c)
 
+ALL_COMPONENTS="
+    $BSF_LIST
+    $DECODER_LIST
+    $DEMUXER_LIST
+    $ENCODER_LIST
+    $FILTER_LIST
+    $HWACCEL_LIST
+    $INDEV_LIST
+    $MUXER_LIST
+    $OUTDEV_LIST
+    $PARSER_LIST
+    $PROTOCOL_LIST
+"
+
 find_tests(){
     map "echo ${2}\${v}_test" $(ls "$source_path"/tests/ref/$1 | grep -v '[^-a-z0-9_]')
 }
@@ -1892,6 +1906,8 @@ LAVF_TESTS=$(find_tests lavf)
 LAVFI_TESTS=$(find_tests lavfi)
 SEEK_TESTS=$(find_tests seek seek_)
 
+ALL_TESTS="$ACODEC_TESTS $VCODEC_TESTS $LAVF_TESTS $LAVFI_TESTS $SEEK_TESTS"
+
 pcm_test_deps=$(map 'echo ${v%_*}_decoder $v' $(filter pcm_* $ENCODER_LIST))
 
 for n in $COMPONENT_LIST; do
@@ -1900,7 +1916,7 @@ for n in $COMPONENT_LIST; do
     eval ${n}_if_any="\$$v"
 done
 
-enable $ARCH_EXT_LIST $ACODEC_TESTS $VCODEC_TESTS $LAVF_TESTS $LAVFI_TESTS $SEEK_TESTS
+enable $ARCH_EXT_LIST $ALL_TESTS
 
 die_unknown(){
     echo "Unknown option \"$1\"."
@@ -3310,22 +3326,8 @@ enabled_any $THREADS_LIST      && enable threads
 check_deps $CONFIG_LIST       \
            $CONFIG_EXTRA      \
            $HAVE_LIST         \
-           $DECODER_LIST      \
-           $ENCODER_LIST      \
-           $HWACCEL_LIST      \
-           $PARSER_LIST       \
-           $BSF_LIST          \
-           $DEMUXER_LIST      \
-           $MUXER_LIST        \
-           $FILTER_LIST       \
-           $INDEV_LIST        \
-           $OUTDEV_LIST       \
-           $PROTOCOL_LIST     \
-           $ACODEC_TESTS      \
-           $VCODEC_TESTS      \
-           $LAVF_TESTS        \
-           $LAVFI_TESTS       \
-           $SEEK_TESTS        \
+           $ALL_COMPONENTS    \
+           $ALL_TESTS         \
 
 enabled asm || { arch=c; disable $ARCH_LIST $ARCH_EXT_LIST; }
 
@@ -3606,17 +3608,7 @@ print_config ARCH_   "$config_files" $ARCH_LIST
 print_config HAVE_   "$config_files" $HAVE_LIST
 print_config CONFIG_ "$config_files" $CONFIG_LIST       \
                                      $CONFIG_EXTRA      \
-                                     $DECODER_LIST      \
-                                     $ENCODER_LIST      \
-                                     $HWACCEL_LIST      \
-                                     $PARSER_LIST       \
-                                     $BSF_LIST          \
-                                     $DEMUXER_LIST      \
-                                     $MUXER_LIST        \
-                                     $FILTER_LIST       \
-                                     $PROTOCOL_LIST     \
-                                     $INDEV_LIST        \
-                                     $OUTDEV_LIST       \
+                                     $ALL_COMPONENTS    \
 
 cat >>config.mak <<EOF
 ACODEC_TESTS=$(print_enabled -n _test $ACODEC_TESTS)

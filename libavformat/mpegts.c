@@ -665,7 +665,7 @@ static void new_pes_packet(PESContext *pes, AVPacket *pkt)
     pkt->size = pes->data_index;
 
     if(pes->total_size != MAX_PES_PAYLOAD &&
-       pes->pes_header_size + pes->data_index != pes->total_size + 6) {
+       pes->pes_header_size + pes->data_index != pes->total_size + PES_START_SIZE) {
         av_log(pes->stream, AV_LOG_WARNING, "PES packet size mismatch\n");
         pes->flags |= AV_PKT_FLAG_CORRUPT;
     }
@@ -948,9 +948,9 @@ static int mpegts_push_data(MpegTSFilter *filter,
              * decreases demuxer delay for infrequent packets like subtitles from
              * a couple of seconds to milliseconds for properly muxed files.
              * total_size is the number of bytes following pes_packet_length
-             * in the pes header, i.e. not counting the first 6 bytes */
+             * in the pes header, i.e. not counting the first PES_START_SIZE bytes */
             if (!ts->stop_parse && pes->total_size < MAX_PES_PAYLOAD &&
-                pes->pes_header_size + pes->data_index == pes->total_size + 6) {
+                pes->pes_header_size + pes->data_index == pes->total_size + PES_START_SIZE) {
                 ts->stop_parse = 1;
                 new_pes_packet(pes, ts->pkt);
             }

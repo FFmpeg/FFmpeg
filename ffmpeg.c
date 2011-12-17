@@ -376,6 +376,8 @@ typedef struct OptionsContext {
     int        nb_inter_matrices;
     SpecifierOpt *top_field_first;
     int        nb_top_field_first;
+    SpecifierOpt *metadata_map;
+    int        nb_metadata_map;
     SpecifierOpt *presets;
     int        nb_presets;
     SpecifierOpt *copy_initial_nonkeyframes;
@@ -3110,7 +3112,13 @@ static int opt_map_channel(OptionsContext *o, const char *opt, const char *arg)
     return 0;
 }
 
-static void parse_meta_type(char *arg, char *type, int *index)
+/**
+ * Parse a metadata specifier in arg.
+ * @param type metadata type is written here -- g(lobal)/s(tream)/c(hapter)/p(rogram)
+ * @param index for type c/p, chapter/program index is written here
+ * @param stream_spec for type s, the stream specifier is written here
+ */
+static void parse_meta_type(char *arg, char *type, int *index, const char **stream_spec)
 {
     if (*arg) {
         *type = *arg;
@@ -3118,6 +3126,12 @@ static void parse_meta_type(char *arg, char *type, int *index)
         case 'g':
             break;
         case 's':
+            if (*(++arg) && *arg != ':') {
+                av_log(NULL, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", arg);
+                exit_program(1);
+            }
+            *stream_spec = *arg == ':' ? arg + 1 : "";
+            break;
         case 'c':
         case 'p':
             if (*(++arg) == ':')
@@ -3131,39 +3145,77 @@ static void parse_meta_type(char *arg, char *type, int *index)
         *type = 'g';
 }
 
-static int opt_map_metadata(OptionsContext *o, const char *opt, const char *arg)
+static int copy_metadata(char *outspec, char *inspec, AVFormatContext *oc, AVFormatContext *ic, OptionsContext *o)
 {
-    MetadataMap *m, *m1;
-    char *p;
+    AVDictionary **meta_in = NULL;
+    AVDictionary **meta_out;
+    int i, ret = 0;
+    char type_in, type_out;
+    const char *istream_spec = NULL, *ostream_spec = NULL;
+    int idx_in = 0, idx_out = 0;
 
-    o->meta_data_maps = grow_array(o->meta_data_maps, sizeof(*o->meta_data_maps),
-                                   &o->nb_meta_data_maps, o->nb_meta_data_maps + 1);
+    parse_meta_type(inspec,  &type_in,  &idx_in,  &istream_spec);
+    parse_meta_type(outspec, &type_out, &idx_out, &ostream_spec);
 
-    m = &o->meta_data_maps[o->nb_meta_data_maps - 1][1];
-    m->file = strtol(arg, &p, 0);
-    parse_meta_type(*p ? p + 1 : p, &m->type, &m->index);
-
-    m1 = &o->meta_data_maps[o->nb_meta_data_maps - 1][0];
-    if (p = strchr(opt, ':'))
-        parse_meta_type(p + 1, &m1->type, &m1->index);
-    else
-        m1->type = 'g';
-
-    if (m->type == 'g' || m1->type == 'g')
+    if (type_in == 'g' || type_out == 'g')
         o->metadata_global_manual = 1;
-    if (m->type == 's' || m1->type == 's')
+    if (type_in == 's' || type_out == 's')
         o->metadata_streams_manual = 1;
-    if (m->type == 'c' || m1->type == 'c')
+    if (type_in == 'c' || type_out == 'c')
         o->metadata_chapters_manual = 1;
 
-    return 0;
-}
+#define METADATA_CHECK_INDEX(index, nb_elems, desc)\
+    if ((index) < 0 || (index) >= (nb_elems)) {\
+        av_log(NULL, AV_LOG_FATAL, "Invalid %s index %d while processing metadata maps.\n",\
+                (desc), (index));\
+        exit_program(1);\
+    }
 
-static int opt_map_meta_data(OptionsContext *o, const char *opt, const char *arg)
-{
-    av_log(NULL, AV_LOG_WARNING, "-map_meta_data is deprecated and will be removed soon. "
-                    "Use -map_metadata instead.\n");
-    return opt_map_metadata(o, opt, arg);
+#define SET_DICT(type, meta, context, index)\
+        switch (type) {\
+        case 'g':\
+            meta = &context->metadata;\
+            break;\
+        case 'c':\
+            METADATA_CHECK_INDEX(index, context->nb_chapters, "chapter")\
+            meta = &context->chapters[index]->metadata;\
+            break;\
+        case 'p':\
+            METADATA_CHECK_INDEX(index, context->nb_programs, "program")\
+            meta = &context->programs[index]->metadata;\
+            break;\
+        }\
+
+    SET_DICT(type_in, meta_in, ic, idx_in);
+    SET_DICT(type_out, meta_out, oc, idx_out);
+
+    /* for input streams choose first matching stream */
+    if (type_in == 's') {
+        for (i = 0; i < ic->nb_streams; i++) {
+            if ((ret = check_stream_specifier(ic, ic->streams[i], istream_spec)) > 0) {
+                meta_in = &ic->streams[i]->metadata;
+                break;
+            } else if (ret < 0)
+                exit_program(1);
+        }
+        if (!meta_in) {
+            av_log(NULL, AV_LOG_FATAL, "Stream specifier %s does not match  any streams.\n", istream_spec);
+            exit_program(1);
+        }
+    }
+
+    if (type_out == 's') {
+        for (i = 0; i < oc->nb_streams; i++) {
+            if ((ret = check_stream_specifier(oc, oc->streams[i], ostream_spec)) > 0) {
+                meta_out = &oc->streams[i]->metadata;
+                av_dict_copy(meta_out, *meta_in, AV_DICT_DONT_OVERWRITE);
+            } else if (ret < 0)
+                exit_program(1);
+        }
+    } else
+        av_dict_copy(meta_out, *meta_in, AV_DICT_DONT_OVERWRITE);
+
+    return 0;
 }
 
 static int opt_recording_timestamp(OptionsContext *o, const char *opt, const char *arg)
@@ -4197,6 +4249,20 @@ static void opt_output_file(void *optctx, const char *filename)
         oc->loop_output = loop_output;
     }
 
+    /* copy metadata */
+    for (i = 0; i < o->nb_metadata_map; i++) {
+        char *p;
+        int in_file_index = strtol(o->metadata_map[i].u.str, &p, 0);
+
+        if (in_file_index < 0)
+            continue;
+        if (in_file_index >= nb_input_files) {
+            av_log(NULL, AV_LOG_FATAL, "Invalid input file index %d while processing metadata maps\n", in_file_index);
+            exit_program(1);
+        }
+        copy_metadata(o->metadata_map[i].specifier, *p ? p + 1 : p, oc, input_files[in_file_index].ctx, o);
+    }
+
     /* copy chapters */
     if (o->chapters_input_file >= nb_input_files) {
         if (o->chapters_input_file == INT_MAX) {
@@ -4216,54 +4282,6 @@ static void opt_output_file(void *optctx, const char *filename)
     if (o->chapters_input_file >= 0)
         copy_chapters(&input_files[o->chapters_input_file], &output_files[nb_output_files - 1],
                       !o->metadata_chapters_manual);
-
-    /* copy metadata */
-    for (i = 0; i < o->nb_meta_data_maps; i++) {
-        AVFormatContext *files[2];
-        AVDictionary    **meta[2];
-        int j;
-
-#define METADATA_CHECK_INDEX(index, nb_elems, desc)\
-        if ((index) < 0 || (index) >= (nb_elems)) {\
-            av_log(NULL, AV_LOG_FATAL, "Invalid %s index %d while processing metadata maps\n",\
-                     (desc), (index));\
-            exit_program(1);\
-        }
-
-        int in_file_index = o->meta_data_maps[i][1].file;
-        if (in_file_index < 0)
-            continue;
-        METADATA_CHECK_INDEX(in_file_index, nb_input_files, "input file")
-
-        files[0] = oc;
-        files[1] = input_files[in_file_index].ctx;
-
-        for (j = 0; j < 2; j++) {
-            MetadataMap *map = &o->meta_data_maps[i][j];
-
-            switch (map->type) {
-            case 'g':
-                meta[j] = &files[j]->metadata;
-                break;
-            case 's':
-                METADATA_CHECK_INDEX(map->index, files[j]->nb_streams, "stream")
-                meta[j] = &files[j]->streams[map->index]->metadata;
-                break;
-            case 'c':
-                METADATA_CHECK_INDEX(map->index, files[j]->nb_chapters, "chapter")
-                meta[j] = &files[j]->chapters[map->index]->metadata;
-                break;
-            case 'p':
-                METADATA_CHECK_INDEX(map->index, files[j]->nb_programs, "program")
-                meta[j] = &files[j]->programs[map->index]->metadata;
-                break;
-            default:
-                abort();
-            }
-        }
-
-        av_dict_copy(meta[0], *meta[1], AV_DICT_DONT_OVERWRITE);
-    }
 
     /* copy global metadata by default */
     if (!o->metadata_global_manual && nb_input_files){
@@ -4285,7 +4303,8 @@ static void opt_output_file(void *optctx, const char *filename)
     for (i = 0; i < o->nb_metadata; i++) {
         AVDictionary **m;
         char type, *val;
-        int index = 0;
+        const char *stream_spec;
+        int index = 0, j, ret;
 
         val = strchr(o->metadata[i].u.str, '=');
         if (!val) {
@@ -4295,31 +4314,34 @@ static void opt_output_file(void *optctx, const char *filename)
         }
         *val++ = 0;
 
-        parse_meta_type(o->metadata[i].specifier, &type, &index);
-        switch (type) {
-        case 'g':
-            m = &oc->metadata;
-            break;
-        case 's':
-            if (index < 0 || index >= oc->nb_streams) {
-                av_log(NULL, AV_LOG_FATAL, "Invalid stream index %d in metadata specifier.\n", index);
-                exit_program(1);
+        parse_meta_type(o->metadata[i].specifier, &type, &index, &stream_spec);
+        if (type == 's') {
+            for (j = 0; j < oc->nb_streams; j++) {
+                if ((ret = check_stream_specifier(oc, oc->streams[j], stream_spec)) > 0) {
+                    av_dict_set(&oc->streams[j]->metadata, o->metadata[i].u.str, *val ? val : NULL, 0);
+                } else if (ret < 0)
+                    exit_program(1);
             }
-            m = &oc->streams[index]->metadata;
-            break;
-        case 'c':
-            if (index < 0 || index >= oc->nb_chapters) {
-                av_log(NULL, AV_LOG_FATAL, "Invalid chapter index %d in metadata specifier.\n", index);
-                exit_program(1);
-            }
-            m = &oc->chapters[index]->metadata;
-            break;
-        default:
-            av_log(NULL, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
-            exit_program(1);
+            printf("ret %d, stream_spec %s\n", ret, stream_spec);
         }
-
-        av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
+        else {
+            switch (type) {
+            case 'g':
+                m = &oc->metadata;
+                break;
+            case 'c':
+                if (index < 0 || index >= oc->nb_chapters) {
+                    av_log(NULL, AV_LOG_FATAL, "Invalid chapter index %d in metadata specifier.\n", index);
+                    exit_program(1);
+                }
+                m = &oc->chapters[index]->metadata;
+                break;
+            default:
+                av_log(NULL, AV_LOG_FATAL, "Invalid metadata specifier %s.\n", o->metadata[i].specifier);
+                exit_program(1);
+            }
+            av_dict_set(m, o->metadata[i].u.str, *val ? val : NULL, 0);
+        }
     }
 
     reset_options(o, 0);
@@ -4679,9 +4701,7 @@ static const OptionDef options[] = {
     { "pre", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(presets)}, "preset name", "preset" },
     { "map", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map}, "set input stream mapping", "[-]input_file_id[:stream_specifier][,sync_file_id[:stream_specifier]]" },
     { "map_channel", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_channel}, "map an audio channel from one stream to another", "file.stream.channel[:syncfile.syncstream]" },
-    { "map_meta_data", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_meta_data}, "DEPRECATED set meta data information of outfile from infile",
-      "outfile[,metadata]:infile[,metadata]" },
-    { "map_metadata", HAS_ARG | OPT_EXPERT | OPT_FUNC2, {(void*)opt_map_metadata}, "set metadata information of outfile from infile",
+    { "map_metadata", HAS_ARG | OPT_STRING | OPT_SPEC, {.off = OFFSET(metadata_map)}, "set metadata information of outfile from infile",
       "outfile[,metadata]:infile[,metadata]" },
     { "map_chapters",  OPT_INT | HAS_ARG | OPT_EXPERT | OPT_OFFSET, {.off = OFFSET(chapters_input_file)},  "set chapters mapping", "input_file_index" },
     { "t", HAS_ARG | OPT_TIME | OPT_OFFSET, {.off = OFFSET(recording_time)}, "record or transcode \"duration\" seconds of audio/video", "duration" },

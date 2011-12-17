@@ -405,12 +405,12 @@ static inline int wv_get_value_integer(WavpackFrameContext *s, uint32_t *crc, in
     }
 
     bit = (S & s->and) | s->or;
-    bit = (((S + bit) << s->shift) - bit);
+    bit = (((S + bit) << s->shift) - bit) << s->post_shift;
 
     if(s->hybrid)
-        bit = av_clip(bit, -s->hybrid_maxclip, s->hybrid_maxclip - 1);
+        bit = av_clip(bit, -s->hybrid_maxclip - 1, s->hybrid_maxclip);
 
-    return bit << s->post_shift;
+    return bit;
 }
 
 static float wv_get_value_float(WavpackFrameContext *s, uint32_t *crc, int S)
@@ -798,7 +798,7 @@ static int wavpack_decode_block(AVCodecContext *avctx, int block_no,
     s->joint = s->frame_flags & WV_JOINT_STEREO;
     s->hybrid = s->frame_flags & WV_HYBRID_MODE;
     s->hybrid_bitrate = s->frame_flags & WV_HYBRID_BITRATE;
-    s->hybrid_maxclip = 1 << ((((s->frame_flags & 0x03) + 1) << 3) - 1);
+    s->hybrid_maxclip = (1LL << ((((s->frame_flags & 0x03) + 1) << 3) - 1)) - 1;
     s->post_shift = 8 * (bpp-1-(s->frame_flags&0x03)) + ((s->frame_flags >> 13) & 0x1f);
     s->CRC = AV_RL32(buf); buf += 4;
     if(wc->mkv_mode)
