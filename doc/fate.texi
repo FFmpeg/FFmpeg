@@ -105,7 +105,7 @@ slot=                                   # some unique identifier
 repo=git://source.ffmpeg.org/ffmpeg.git # the source repository
 samples=/path/to/fate/samples
 workdir=                                # directory in which to do all the work
-fate_recv="ssh -T fate@fate.ffmpeg.org" # command to submit report
+fate_recv="ssh -T fate@@fate.ffmpeg.org" # command to submit report
 comment=                                # optional description
 
 # the following are optional and map to configure options
