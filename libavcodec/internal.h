@@ -61,6 +61,14 @@ typedef struct AVCodecInternal {
      * should be freed from the original context only.
      */
     int is_copy;
+
+#if FF_API_OLD_DECODE_AUDIO
+    /**
+     * Internal sample count used by avcodec_encode_audio() to fabricate pts.
+     * Can be removed along with avcodec_encode_audio().
+     */
+    int sample_count;
+#endif
 } AVCodecInternal;
 
 struct AVCodecDefault {
@@ -100,5 +108,22 @@ int avpriv_unlock_avformat(void);
  * addressable by a 32-bit signed integer as used by get_bits.
  */
 #define FF_MAX_EXTRADATA_SIZE ((1 << 28) - FF_INPUT_BUFFER_PADDING_SIZE)
+
+/**
+ * Check AVPacket size and/or allocate data.
+ *
+ * Encoders supporting AVCodec.encode2() can use this as a convenience to
+ * ensure the output packet data is large enough, whether provided by the user
+ * or allocated in this function.
+ *
+ * @param avpkt   the AVPacket
+ *                If avpkt->data is already set, avpkt->size is checked
+ *                to ensure it is large enough.
+ *                If avpkt->data is NULL, a new buffer is allocated.
+ *                All other AVPacket fields will be reset with av_init_packet().
+ * @param size    the minimum required packet size
+ * @return        0 on success, negative error code on failure
+ */
+int ff_alloc_packet(AVPacket *avpkt, int size);
 
 #endif /* AVCODEC_INTERNAL_H */
