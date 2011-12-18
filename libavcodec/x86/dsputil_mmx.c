@@ -2479,6 +2479,7 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
         c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_mmx2;
     }
 
+    if (CONFIG_H264QPEL) {
     SET_QPEL_FUNCS(put_qpel, 0, 16, mmx2, );
     SET_QPEL_FUNCS(put_qpel, 1, 8, mmx2, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, mmx2, );
@@ -2510,6 +2511,7 @@ static void dsputil_init_mmx2(DSPContext *c, AVCodecContext *avctx,
     SET_QPEL_FUNCS(put_2tap_qpel, 1, 8, mmx2, );
     SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, mmx2, );
     SET_QPEL_FUNCS(avg_2tap_qpel, 1, 8, mmx2, );
+    }
 
 #if HAVE_YASM
     if (!high_bit_depth && CONFIG_H264CHROMA) {
@@ -2577,6 +2579,7 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
         c->put_no_rnd_pixels_tab[1][2] = put_no_rnd_pixels8_y2_exact_3dnow;
     }
 
+    if (CONFIG_H264QPEL) {
     SET_QPEL_FUNCS(put_qpel, 0, 16, 3dnow, );
     SET_QPEL_FUNCS(put_qpel, 1, 8, 3dnow, );
     SET_QPEL_FUNCS(put_no_rnd_qpel, 0, 16, 3dnow, );
@@ -2597,6 +2600,7 @@ static void dsputil_init_3dnow(DSPContext *c, AVCodecContext *avctx,
     SET_QPEL_FUNCS(put_2tap_qpel, 1, 8, 3dnow, );
     SET_QPEL_FUNCS(avg_2tap_qpel, 0, 16, 3dnow, );
     SET_QPEL_FUNCS(avg_2tap_qpel, 1, 8, 3dnow, );
+    }
 
 #if HAVE_YASM
     if (!high_bit_depth && CONFIG_H264CHROMA) {
@@ -2671,11 +2675,12 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
             c->put_pixels_tab[0][0]        = put_pixels16_sse2;
             c->put_no_rnd_pixels_tab[0][0] = put_pixels16_sse2;
             c->avg_pixels_tab[0][0]        = avg_pixels16_sse2;
-            H264_QPEL_FUNCS(0, 0, sse2);
+            if (CONFIG_H264QPEL)
+                H264_QPEL_FUNCS(0, 0, sse2);
         }
     }
 
-    if (!high_bit_depth) {
+    if (!high_bit_depth && CONFIG_H264QPEL) {
         H264_QPEL_FUNCS(0, 1, sse2);
         H264_QPEL_FUNCS(0, 2, sse2);
         H264_QPEL_FUNCS(0, 3, sse2);
@@ -2692,6 +2697,7 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
 
 #if HAVE_YASM
     if (bit_depth == 10) {
+        if (CONFIG_H264QPEL) {
         SET_QPEL_FUNCS(put_h264_qpel, 0, 16, 10_sse2, ff_);
         SET_QPEL_FUNCS(put_h264_qpel, 1, 8,  10_sse2, ff_);
         SET_QPEL_FUNCS(avg_h264_qpel, 0, 16, 10_sse2, ff_);
@@ -2699,7 +2705,7 @@ static void dsputil_init_sse2(DSPContext *c, AVCodecContext *avctx,
         H264_QPEL_FUNCS_10(1, 0, sse2_cache64);
         H264_QPEL_FUNCS_10(2, 0, sse2_cache64);
         H264_QPEL_FUNCS_10(3, 0, sse2_cache64);
-
+        }
         if (CONFIG_H264CHROMA) {
             c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_10_sse2;
             c->avg_h264_chroma_pixels_tab[0] = ff_avg_h264_chroma_mc8_10_sse2;
@@ -2729,7 +2735,7 @@ static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
     const int high_bit_depth = avctx->bits_per_raw_sample > 8;
     const int bit_depth      = avctx->bits_per_raw_sample;
 
-    if (!high_bit_depth) {
+    if (!high_bit_depth && CONFIG_H264QPEL) {
         H264_QPEL_FUNCS(1, 0, ssse3);
         H264_QPEL_FUNCS(1, 1, ssse3);
         H264_QPEL_FUNCS(1, 2, ssse3);
@@ -2744,7 +2750,7 @@ static void dsputil_init_ssse3(DSPContext *c, AVCodecContext *avctx,
         H264_QPEL_FUNCS(3, 3, ssse3);
     }
 #if HAVE_YASM
-    else if (bit_depth == 10) {
+    else if (bit_depth == 10 && CONFIG_H264QPEL) {
         H264_QPEL_FUNCS_10(1, 0, ssse3_cache64);
         H264_QPEL_FUNCS_10(2, 0, ssse3_cache64);
         H264_QPEL_FUNCS_10(3, 0, ssse3_cache64);
@@ -2788,9 +2794,11 @@ static void dsputil_init_avx(DSPContext *c, AVCodecContext *avctx, int mm_flags)
     if (bit_depth == 10) {
         // AVX implies !cache64.
         // TODO: Port cache(32|64) detection from x264.
+        if (CONFIG_H264QPEL) {
         H264_QPEL_FUNCS_10(1, 0, sse2);
         H264_QPEL_FUNCS_10(2, 0, sse2);
         H264_QPEL_FUNCS_10(3, 0, sse2);
+        }
 
         if (CONFIG_H264CHROMA) {
             c->put_h264_chroma_pixels_tab[0] = ff_put_h264_chroma_mc8_10_avx;
