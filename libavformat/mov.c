@@ -416,6 +416,8 @@ static int mov_read_dref(MOVContext *c, AVIOContext *pb, MOVAtom atom)
             avio_skip(pb, 16);
 
             for (type = 0; type != -1 && avio_tell(pb) < next; ) {
+                if (pb->eof_reached)
+                    return AVERROR_EOF;
                 type = avio_rb16(pb);
                 len = avio_rb16(pb);
                 av_log(c->fc, AV_LOG_DEBUG, "type %d, len %d\n", type, len);
