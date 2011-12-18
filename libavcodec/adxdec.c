@@ -120,6 +120,8 @@ static int adx_decode_frame(AVCodecContext *avctx, void *data,
         buf += header_size;
         buf_size -= header_size;
     }
+    if(c->channels <= 0)
+        return AVERROR_INVALIDDATA;
 
     /* calculate number of blocks in the packet */
     num_blocks = buf_size / (BLOCK_SIZE * c->channels);
