@@ -480,6 +480,14 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         m->avctx->channel_layout == AV_CH_LAYOUT_7POINT1_WIDE)) {
         FFSWAP(int, s->ch_assign[4], s->ch_assign[6]);
         FFSWAP(int, s->ch_assign[5], s->ch_assign[7]);
+    } else if (m->avctx->codec_id == CODEC_ID_TRUEHD &&
+        (m->avctx->channel_layout == AV_CH_LAYOUT_6POINT1 ||
+        m->avctx->channel_layout == (AV_CH_LAYOUT_6POINT1 | AV_CH_TOP_CENTER) ||
+        m->avctx->channel_layout == (AV_CH_LAYOUT_6POINT1 | AV_CH_TOP_FRONT_CENTER))) {
+        int i = s->ch_assign[6];
+        s->ch_assign[6] = s->ch_assign[5];
+        s->ch_assign[5] = s->ch_assign[4];
+        s->ch_assign[4] = i;
     }
 
     checksum = ff_mlp_restart_checksum(buf, get_bits_count(gbp) - start_count);
