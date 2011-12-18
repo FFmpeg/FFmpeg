@@ -137,7 +137,10 @@ int ff_h264_check_intra_pred_mode(H264Context *h, int mode){
     return mode;
 }
 
-const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_length, int *consumed, int length){
+const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src,
+                                  int *dst_length, int *consumed, int length,
+                                  int nalsize_known)
+{
     int i, si, di;
     uint8_t *dst;
     int bufidx;
@@ -148,6 +151,9 @@ const uint8_t *ff_h264_decode_nal(H264Context *h, const uint8_t *src, int *dst_l
 
     src++; length--;
 
+    if (nalsize_known) {
+        i = length;
+    } else
 #if HAVE_FAST_UNALIGNED
 # if HAVE_FAST_64BIT
 #   define RS 7
@@ -3789,7 +3795,8 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
 
         hx = h->thread_context[context_count];
 
-        ptr= ff_h264_decode_nal(hx, buf + buf_index, &dst_length, &consumed, next_avc - buf_index);
+        ptr= ff_h264_decode_nal(hx, buf + buf_index, &dst_length, &consumed,
+                                next_avc - buf_index, !!nalsize);
         if (ptr==NULL || dst_length < 0){
             return -1;
         }

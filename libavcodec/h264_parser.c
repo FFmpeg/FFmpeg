@@ -144,7 +144,7 @@ static inline int parse_nal_units(AVCodecParserContext *s,
                 src_length = 20;
             break;
         }
-        ptr= ff_h264_decode_nal(h, buf, &dst_length, &consumed, src_length);
+        ptr= ff_h264_decode_nal(h, buf, &dst_length, &consumed, src_length, 0);
         if (ptr==NULL || dst_length < 0)
             break;
 
