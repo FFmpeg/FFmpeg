@@ -2317,7 +2317,7 @@ fi
 
 # Deal with common $arch aliases
 case "$arch" in
-    arm*)
+    arm*|iPad*)
         arch="arm"
     ;;
     mips|mipsel|IP*)
