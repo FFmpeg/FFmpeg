@@ -112,14 +112,13 @@ av_cold struct FFPsyPreprocessContext* ff_psy_preprocess_init(AVCodecContext *av
     return ctx;
 }
 
-void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx,
-                       const int16_t *audio, int16_t *dest,
-                       int tag, int channels)
+void ff_psy_preprocess(struct FFPsyPreprocessContext *ctx, const float *audio,
+                       float *dest, int tag, int channels)
 {
     int ch, i;
     if (ctx->fstate) {
         for (ch = 0; ch < channels; ch++)
-            ff_iir_filter(ctx->fcoeffs, ctx->fstate[tag+ch], ctx->avctx->frame_size,
+            ff_iir_filter_flt(ctx->fcoeffs, ctx->fstate[tag+ch], ctx->avctx->frame_size,
                           audio + ch, ctx->avctx->channels,
                           dest  + ch, ctx->avctx->channels);
     } else {

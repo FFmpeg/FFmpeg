@@ -167,7 +167,7 @@ static void put_audio_specific_config(AVCodecContext *avctx)
 }
 
 static void apply_window_and_mdct(AVCodecContext *avctx, AACEncContext *s,
-                                  SingleChannelElement *sce, short *audio)
+                                  SingleChannelElement *sce, float *audio)
 {
     int i, k;
     const int chans = avctx->channels;
@@ -434,7 +434,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
                             uint8_t *frame, int buf_size, void *data)
 {
     AACEncContext *s = avctx->priv_data;
-    int16_t *samples = s->samples, *samples2, *la;
+    float *samples   = s->samples, *samples2, *la;
     ChannelElement *cpe;
     int i, ch, w, g, chans, tag, start_ch;
     int chan_el_counter[4];
@@ -452,7 +452,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             for (i = 0; i < s->chan_map[0]; i++) {
                 tag = s->chan_map[i+1];
                 chans = tag == TYPE_CPE ? 2 : 1;
-                ff_psy_preprocess(s->psypp, (uint16_t*)data + start_ch,
+                ff_psy_preprocess(s->psypp, (float*)data + start_ch,
                                   samples2 + start_ch, start_ch, chans);
                 start_ch += chans;
             }
@@ -621,9 +621,9 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
     ff_init_ff_sine_windows(10);
     ff_init_ff_sine_windows(7);
 
-    if (ret = ff_mdct_init(&s->mdct1024, 11, 0, 1.0))
+    if (ret = ff_mdct_init(&s->mdct1024, 11, 0, 32768.0))
         return ret;
-    if (ret = ff_mdct_init(&s->mdct128,   8, 0, 1.0))
+    if (ret = ff_mdct_init(&s->mdct128,   8, 0, 32768.0))
         return ret;
 
     return 0;
@@ -722,7 +722,7 @@ AVCodec ff_aac_encoder = {
     .encode         = aac_encode_frame,
     .close          = aac_encode_end,
     .capabilities = CODEC_CAP_SMALL_LAST_FRAME | CODEC_CAP_DELAY | CODEC_CAP_EXPERIMENTAL,
-    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_S16,AV_SAMPLE_FMT_NONE},
+    .sample_fmts = (const enum AVSampleFormat[]){AV_SAMPLE_FMT_FLT,AV_SAMPLE_FMT_NONE},
     .long_name = NULL_IF_CONFIG_SMALL("Advanced Audio Coding"),
     .priv_class = &aacenc_class,
 };

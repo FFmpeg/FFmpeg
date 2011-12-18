@@ -776,9 +776,8 @@ static void lame_apply_block_type(AacPsyChannel *ctx, FFPsyWindowInfo *wi, int u
     ctx->next_window_seq = blocktype;
 }
 
-static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx,
-                                       const int16_t *audio, const int16_t *la,
-                                       int channel, int prev_type)
+static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx, const float *audio,
+                                       const float *la, int channel, int prev_type)
 {
     AacPsyContext *pctx = (AacPsyContext*) ctx->model_priv_data;
     AacPsyChannel *pch  = &pctx->ch[channel];
@@ -796,7 +795,7 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx,
         float energy_subshort[(AAC_NUM_BLOCKS_SHORT + 1) * PSY_LAME_NUM_SUBBLOCKS];
         float energy_short[AAC_NUM_BLOCKS_SHORT + 1] = { 0 };
         int chans = ctx->avctx->channels;
-        const int16_t *firbuf = la + (AAC_BLOCK_SIZE_SHORT/4 - PSY_LAME_FIR_LEN) * chans;
+        const float *firbuf = la + (AAC_BLOCK_SIZE_SHORT/4 - PSY_LAME_FIR_LEN) * chans;
         int j, att_sum = 0;
 
         /* LAME comment: apply high pass filter of fs/4 */
@@ -808,7 +807,8 @@ static FFPsyWindowInfo psy_lame_window(FFPsyContext *ctx,
                 sum1 += psy_fir_coeffs[j] * (firbuf[(i + j) * chans] + firbuf[(i + PSY_LAME_FIR_LEN - j) * chans]);
                 sum2 += psy_fir_coeffs[j + 1] * (firbuf[(i + j + 1) * chans] + firbuf[(i + PSY_LAME_FIR_LEN - j - 1) * chans]);
             }
-            hpfsmpl[i] = sum1 + sum2;
+            /* NOTE: The LAME psymodel expects it's input in the range -32768 to 32768. Tuning this for normalized floats would be difficult. */
+            hpfsmpl[i] = (sum1 + sum2) * 32768.0f;
         }
 
         /* Calculate the energies of each sub-shortblock */

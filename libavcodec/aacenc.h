@@ -58,7 +58,7 @@ typedef struct AACEncContext {
     FFTContext mdct1024;                         ///< long (1024 samples) frame transform context
     FFTContext mdct128;                          ///< short (128 samples) frame transform context
     DSPContext  dsp;
-    int16_t *samples;                            ///< saved preprocessed input
+    float *samples;                              ///< saved preprocessed input
 
     int samplerate_index;                        ///< MPEG-4 samplerate index
     const uint8_t *chan_map;                     ///< channel configuration map
