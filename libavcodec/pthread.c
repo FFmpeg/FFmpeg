@@ -855,13 +855,6 @@ int ff_thread_get_buffer(AVCodecContext *avctx, AVFrame *f)
 
     pthread_mutex_unlock(&p->parent->buffer_mutex);
 
-    /*
-     * Buffer age is difficult to keep track of between
-     * multiple threads, and the optimizations it allows
-     * are not worth the effort. It is disabled for now.
-     */
-    f->age = INT_MAX;
-
     return err;
 }
 

@@ -346,7 +346,6 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     int w= s->width;
     int h= s->height;
     InternalBuffer *buf;
-    int *picture_number;
     AVCodecInternal *avci = s->internal;
 
     if(pic->data[0]!=NULL) {
@@ -367,8 +366,6 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
     }
 
     buf = &avci->buffer[avci->buffer_count];
-    picture_number = &(avci->buffer[INTERNAL_BUFFER_SIZE]).last_pic_num; //FIXME ugly hack
-    (*picture_number)++;
 
     if(buf->base[0] && (buf->width != w || buf->height != h || buf->pix_fmt != s->pix_fmt)){
         if(s->active_thread_type&FF_THREAD_FRAME) {
@@ -382,10 +379,7 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         }
     }
 
-    if(buf->base[0]){
-        pic->age= *picture_number - buf->last_pic_num;
-        buf->last_pic_num= *picture_number;
-    }else{
+    if (!buf->base[0]) {
         int h_chroma_shift, v_chroma_shift;
         int size[4] = {0};
         int tmpsize;
@@ -424,7 +418,6 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
             size[i] = picture.data[i+1] - picture.data[i];
         size[i] = tmpsize - (picture.data[i] - picture.data[0]);
 
-        buf->last_pic_num= -256*256*256*64;
         memset(buf->base, 0, sizeof(buf->base));
         memset(buf->data, 0, sizeof(buf->data));
 
@@ -453,7 +446,6 @@ static int video_get_buffer(AVCodecContext *s, AVFrame *pic)
         buf->width  = s->width;
         buf->height = s->height;
         buf->pix_fmt= s->pix_fmt;
-        pic->age= 256*256*256*64;
     }
     pic->type= FF_BUFFER_TYPE_INTERNAL;
 

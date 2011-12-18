@@ -263,9 +263,9 @@ static int alloc_frame_buffer(MpegEncContext *s, Picture *pic)
     else
         r = avcodec_default_get_buffer(s->avctx, (AVFrame *) pic);
 
-    if (r < 0 || !pic->f.age || !pic->f.type || !pic->f.data[0]) {
-        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (%d %d %d %p)\n",
-               r, pic->f.age, pic->f.type, pic->f.data[0]);
+    if (r < 0 || !pic->f.type || !pic->f.data[0]) {
+        av_log(s->avctx, AV_LOG_ERROR, "get_buffer() failed (%d %d %p)\n",
+               r, pic->f.type, pic->f.data[0]);
         av_freep(&pic->f.hwaccel_picture_private);
         return -1;
     }
@@ -369,15 +369,6 @@ int ff_alloc_picture(MpegEncContext *s, Picture *pic, int shared)
                           1 * sizeof(AVPanScan), fail)
     }
 
-    /* It might be nicer if the application would keep track of these
-     * but it would require an API change. */
-    memmove(s->prev_pict_types + 1, s->prev_pict_types,
-            PREV_PICT_TYPES_BUFFER_SIZE-1);
-    s->prev_pict_types[0] =  s->dropable ? AV_PICTURE_TYPE_B : s->pict_type;
-    if (pic->f.age < PREV_PICT_TYPES_BUFFER_SIZE &&
-        s->prev_pict_types[pic->f.age] == AV_PICTURE_TYPE_B)
-        pic->f.age = INT_MAX; // Skipped MBs in B-frames are quite rare in MPEG-1/2
-                              // and it is a bit tricky to skip them anyway.
     pic->owner2 = s;
 
     return 0;
@@ -573,9 +564,6 @@ int ff_mpeg_update_thread_context(AVCodecContext *dst,
     s->last_picture_ptr    = REBASE_PICTURE(s1->last_picture_ptr,    s, s1);
     s->current_picture_ptr = REBASE_PICTURE(s1->current_picture_ptr, s, s1);
     s->next_picture_ptr    = REBASE_PICTURE(s1->next_picture_ptr,    s, s1);
-
-    memcpy(s->prev_pict_types, s1->prev_pict_types,
-           PREV_PICT_TYPES_BUFFER_SIZE);
 
     // Error/bug resilience
     s->next_p_frame_damaged = s1->next_p_frame_damaged;
@@ -880,8 +868,6 @@ av_cold int MPV_common_init(MpegEncContext *s)
         /* init macroblock skip table */
         FF_ALLOCZ_OR_GOTO(s->avctx, s->mbskip_table, mb_array_size + 2, fail);
         // Note the + 1 is for  a quicker mpeg4 slice_end detection
-        FF_ALLOCZ_OR_GOTO(s->avctx, s->prev_pict_types,
-                          PREV_PICT_TYPES_BUFFER_SIZE, fail);
 
         s->parse_context.state = -1;
         if ((s->avctx->debug & (FF_DEBUG_VIS_QP | FF_DEBUG_VIS_MB_TYPE)) ||
@@ -981,7 +967,6 @@ void MPV_common_end(MpegEncContext *s)
     av_freep(&s->pred_dir_table);
 
     av_freep(&s->mbskip_table);
-    av_freep(&s->prev_pict_types);
     av_freep(&s->bitstream_buffer);
     s->allocated_bitstream_buffer_size = 0;
 
@@ -2215,24 +2200,13 @@ void MPV_decode_mb_internal(MpegEncContext *s, DCTELEM block[12][64],
         /* skip only during decoding as we might trash the buffers during encoding a bit */
         if(!s->encoding){
             uint8_t *mbskip_ptr = &s->mbskip_table[mb_xy];
-            const int age = s->current_picture.f.age;
-
-            assert(age);
 
             if (s->mb_skipped) {
                 s->mb_skipped= 0;
                 assert(s->pict_type!=AV_PICTURE_TYPE_I);
-
-                (*mbskip_ptr) ++; /* indicate that this time we skipped it */
-                if(*mbskip_ptr >99) *mbskip_ptr= 99;
-
-                /* if previous was skipped too, then nothing to do !  */
-                if (*mbskip_ptr >= age && s->current_picture.f.reference){
-                    return;
-                }
+                *mbskip_ptr = 1;
             } else if(!s->current_picture.f.reference) {
-                (*mbskip_ptr) ++; /* increase counter so the age can be compared cleanly */
-                if(*mbskip_ptr >99) *mbskip_ptr= 99;
+                *mbskip_ptr = 1;
             } else{
                 *mbskip_ptr = 0; /* not skipped */
             }

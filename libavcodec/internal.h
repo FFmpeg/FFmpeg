@@ -30,7 +30,6 @@
 #include "avcodec.h"
 
 typedef struct InternalBuffer {
-    int last_pic_num;
     uint8_t *base[AV_NUM_DATA_POINTERS];
     uint8_t *data[AV_NUM_DATA_POINTERS];
     int linesize[AV_NUM_DATA_POINTERS];
