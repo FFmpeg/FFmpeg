@@ -141,7 +141,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
             FAIL(AVERROR(EINVAL));
         }
 
-        /* is a video output? */
+        /* is an audio or video output? */
         type = inout->filter_ctx->output_pads[inout->pad_idx].type;
         if (type != AVMEDIA_TYPE_VIDEO && type != AVMEDIA_TYPE_AUDIO) {
             av_log(avctx,  AV_LOG_ERROR,
