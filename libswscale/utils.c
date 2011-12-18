@@ -182,7 +182,7 @@ static double getSplineCoeff(double a, double b, double c, double d, double dist
 
 static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSize, int xInc,
                       int srcW, int dstW, int filterAlign, int one, int flags, int cpu_flags,
-                      SwsVector *srcFilter, SwsVector *dstFilter, double param[2])
+                      SwsVector *srcFilter, SwsVector *dstFilter, double param[2], int is_horizontal)
 {
     int i;
     int filterSize;
@@ -459,27 +459,29 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
     //FIXME try to align filterPos if possible
 
     //fix borders
-    for (i=0; i<dstW; i++) {
-        int j;
-        if ((*filterPos)[i] < 0) {
-            // move filter coefficients left to compensate for filterPos
-            for (j=1; j<filterSize; j++) {
-                int left= FFMAX(j + (*filterPos)[i], 0);
-                filter[i*filterSize + left] += filter[i*filterSize + j];
-                filter[i*filterSize + j]=0;
+    if (is_horizontal) {
+        for (i = 0; i < dstW; i++) {
+            int j;
+            if ((*filterPos)[i] < 0) {
+                // move filter coefficients left to compensate for filterPos
+                for (j = 1; j < filterSize; j++) {
+                    int left = FFMAX(j + (*filterPos)[i], 0);
+                    filter[i * filterSize + left] += filter[i * filterSize + j];
+                    filter[i * filterSize + j   ]  = 0;
+                }
+                (*filterPos)[i] = 0;
             }
-            (*filterPos)[i]= 0;
-        }
 
-        if ((*filterPos)[i] + filterSize > srcW) {
-            int shift= (*filterPos)[i] + filterSize - srcW;
-            // move filter coefficients right to compensate for filterPos
-            for (j=filterSize-2; j>=0; j--) {
-                int right= FFMIN(j + shift, filterSize-1);
-                filter[i*filterSize +right] += filter[i*filterSize +j];
-                filter[i*filterSize +j]=0;
+            if ((*filterPos)[i] + filterSize > srcW) {
+                int shift = (*filterPos)[i] + filterSize - srcW;
+                // move filter coefficients right to compensate for filterPos
+                for (j = filterSize - 2; j >= 0; j--) {
+                    int right = FFMIN(j + shift, filterSize - 1);
+                    filter[i * filterSize + right] += filter[i * filterSize + j];
+                    filter[i * filterSize + j    ]  = 0;
+                }
+                (*filterPos)[i] = srcW - filterSize;
             }
-            (*filterPos)[i]= srcW - filterSize;
         }
     }
 
@@ -958,12 +960,12 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
             if (initFilter(&c->hLumFilter, &c->hLumFilterPos, &c->hLumFilterSize, c->lumXInc,
                            srcW      ,       dstW, filterAlign, 1<<14,
                            (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags, cpu_flags,
-                           srcFilter->lumH, dstFilter->lumH, c->param) < 0)
+                           srcFilter->lumH, dstFilter->lumH, c->param, 1) < 0)
                 goto fail;
             if (initFilter(&c->hChrFilter, &c->hChrFilterPos, &c->hChrFilterSize, c->chrXInc,
                            c->chrSrcW, c->chrDstW, filterAlign, 1<<14,
                            (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags, cpu_flags,
-                           srcFilter->chrH, dstFilter->chrH, c->param) < 0)
+                           srcFilter->chrH, dstFilter->chrH, c->param, 1) < 0)
                 goto fail;
         }
     } // initialize horizontal stuff
@@ -978,12 +980,12 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
         if (initFilter(&c->vLumFilter, &c->vLumFilterPos, &c->vLumFilterSize, c->lumYInc,
                        srcH      ,        dstH, filterAlign, (1<<12),
                        (flags&SWS_BICUBLIN) ? (flags|SWS_BICUBIC)  : flags, cpu_flags,
-                       srcFilter->lumV, dstFilter->lumV, c->param) < 0)
+                       srcFilter->lumV, dstFilter->lumV, c->param, 0) < 0)
             goto fail;
         if (initFilter(&c->vChrFilter, &c->vChrFilterPos, &c->vChrFilterSize, c->chrYInc,
                        c->chrSrcH, c->chrDstH, filterAlign, (1<<12),
                        (flags&SWS_BICUBLIN) ? (flags|SWS_BILINEAR) : flags, cpu_flags,
-                       srcFilter->chrV, dstFilter->chrV, c->param) < 0)
+                       srcFilter->chrV, dstFilter->chrV, c->param, 0) < 0)
             goto fail;
 
 #if HAVE_ALTIVEC
@@ -1024,11 +1026,11 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 
     // allocate pixbufs (we use dynamic allocation because otherwise we would need to
     // allocate several megabytes to handle all possible cases)
-    FF_ALLOC_OR_GOTO(c, c->lumPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
-    FF_ALLOC_OR_GOTO(c, c->chrUPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
-    FF_ALLOC_OR_GOTO(c, c->chrVPixBuf, c->vChrBufSize*2*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->lumPixBuf, c->vLumBufSize*3*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->chrUPixBuf, c->vChrBufSize*3*sizeof(int16_t*), fail);
+    FF_ALLOC_OR_GOTO(c, c->chrVPixBuf, c->vChrBufSize*3*sizeof(int16_t*), fail);
     if (CONFIG_SWSCALE_ALPHA && isALPHA(c->srcFormat) && isALPHA(c->dstFormat))
-        FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf, c->vLumBufSize*2*sizeof(int16_t*), fail);
+        FF_ALLOCZ_OR_GOTO(c, c->alpPixBuf, c->vLumBufSize*3*sizeof(int16_t*), fail);
     //Note we need at least one pixel more at the end because of the MMX code (just in case someone wanna replace the 4000/8000)
     /* align at 16 bytes for AltiVec */
     for (i=0; i<c->vLumBufSize; i++) {

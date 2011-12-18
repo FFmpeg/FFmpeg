@@ -2487,9 +2487,11 @@ static int swScale(SwsContext *c, const uint8_t* src[],
         const int firstLumSrcY= vLumFilterPos[dstY]; //First line needed as input
         const int firstLumSrcY2= vLumFilterPos[FFMIN(dstY | ((1<<c->chrDstVSubSample) - 1), dstH-1)];
         const int firstChrSrcY= vChrFilterPos[chrDstY]; //First line needed as input
-        int lastLumSrcY= firstLumSrcY + vLumFilterSize -1; // Last line needed as input
-        int lastLumSrcY2=firstLumSrcY2+ vLumFilterSize -1; // Last line needed as input
-        int lastChrSrcY= firstChrSrcY + vChrFilterSize -1; // Last line needed as input
+
+        // Last line needed as input
+        int lastLumSrcY  = FFMIN(c->srcH,    firstLumSrcY  + vLumFilterSize) - 1;
+        int lastLumSrcY2 = FFMIN(c->srcH,    firstLumSrcY2 + vLumFilterSize) - 1;
+        int lastChrSrcY  = FFMIN(c->chrSrcH, firstChrSrcY  + vChrFilterSize) - 1;
         int enough_lines;
 
         //handle holes (FAST_BILINEAR & weird filters)
@@ -2585,6 +2587,49 @@ static int swScale(SwsContext *c, const uint8_t* src[],
             const int16_t **chrUSrcPtr= (const int16_t **) chrUPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **chrVSrcPtr= (const int16_t **) chrVPixBuf + chrBufIndex + firstChrSrcY - lastInChrBuf + vChrBufSize;
             const int16_t **alpSrcPtr= (CONFIG_SWSCALE_ALPHA && alpPixBuf) ? (const int16_t **) alpPixBuf + lumBufIndex + firstLumSrcY - lastInLumBuf + vLumBufSize : NULL;
+
+            if (firstLumSrcY < 0 || firstLumSrcY + vLumFilterSize > c->srcH) {
+                const int16_t **tmpY = (const int16_t **) lumPixBuf + 2 * vLumBufSize;
+                int neg = -firstLumSrcY, i, end = FFMIN(c->srcH - firstLumSrcY, vLumFilterSize);
+                for (i = 0; i < neg;            i++)
+                    tmpY[i] = lumSrcPtr[neg];
+                for (     ; i < end;            i++)
+                    tmpY[i] = lumSrcPtr[i];
+                for (     ; i < vLumFilterSize; i++)
+                    tmpY[i] = tmpY[i-1];
+                lumSrcPtr = tmpY;
+
+                if (alpSrcPtr) {
+                    const int16_t **tmpA = (const int16_t **) alpPixBuf + 2 * vLumBufSize;
+                    for (i = 0; i < neg;            i++)
+                        tmpA[i] = alpSrcPtr[neg];
+                    for (     ; i < end;            i++)
+                        tmpA[i] = alpSrcPtr[i];
+                    for (     ; i < vLumFilterSize; i++)
+                        tmpA[i] = tmpA[i - 1];
+                    alpSrcPtr = tmpA;
+                }
+            }
+            if (firstChrSrcY < 0 || firstChrSrcY + vChrFilterSize > c->chrSrcH) {
+                const int16_t **tmpU = (const int16_t **) chrUPixBuf + 2 * vChrBufSize,
+                              **tmpV = (const int16_t **) chrVPixBuf + 2 * vChrBufSize;
+                int neg = -firstChrSrcY, i, end = FFMIN(c->chrSrcH - firstChrSrcY, vChrFilterSize);
+                for (i = 0; i < neg;            i++) {
+                    tmpU[i] = chrUSrcPtr[neg];
+                    tmpV[i] = chrVSrcPtr[neg];
+                }
+                for (     ; i < end;            i++) {
+                    tmpU[i] = chrUSrcPtr[i];
+                    tmpV[i] = chrVSrcPtr[i];
+                }
+                for (     ; i < vChrFilterSize; i++) {
+                    tmpU[i] = tmpU[i - 1];
+                    tmpV[i] = tmpV[i - 1];
+                }
+                chrUSrcPtr = tmpU;
+                chrVSrcPtr = tmpV;
+            }
+
             if (isPlanarYUV(dstFormat) || dstFormat==PIX_FMT_GRAY8) { //YV12 like
                 const int chrSkipMask= (1<<c->chrDstVSubSample)-1;
 
