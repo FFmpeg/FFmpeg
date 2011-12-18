@@ -238,11 +238,11 @@ void ff_set_fixed_vector(float *out, const AMRFixed *in, float scale, int size)
         float y = in->y[i] * scale;
 
         if (in->pitch_lag > 0)
-        do {
-            out[x] += y;
-            y *= in->pitch_fac;
-            x += in->pitch_lag;
-        } while (x < size && repeats);
+            do {
+                out[x] += y;
+                y *= in->pitch_fac;
+                x += in->pitch_lag;
+            } while (x < size && repeats);
     }
 }
 
@@ -254,9 +254,9 @@ void ff_clear_fixed_vector(float *out, const AMRFixed *in, int size)
         int x  = in->x[i], repeats = !((in->no_repeat_mask >> i) & 1);
 
         if (in->pitch_lag > 0)
-        do {
-            out[x] = 0.0;
-            x += in->pitch_lag;
-        } while (x < size && repeats);
+            do {
+                out[x] = 0.0;
+                x += in->pitch_lag;
+            } while (x < size && repeats);
     }
 }
