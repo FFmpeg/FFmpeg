@@ -138,6 +138,9 @@ static av_cold int rl2_read_header(AVFormatContext *s,
 
     /** setup audio stream if present */
     if(sound_rate){
+        if(channels <= 0)
+            return AVERROR_INVALIDDATA;
+
         pts_num = def_sound_size;
         pts_den = rate;
 
