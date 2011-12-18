@@ -948,7 +948,7 @@ static int expand_tseq(void *log, struct sbg_script *s, int *nb_ev_max,
     if (tseq->lock++) {
         av_log(log, 16, "Recursion loop on \"%.*s\"\n",
                tseq->name_len, tseq->name);
-        return -1;
+        return AVERROR(EINVAL);
     }
     t0 += tseq->ts.t;
     for (i = 0; i < s->nb_def; i++) {
