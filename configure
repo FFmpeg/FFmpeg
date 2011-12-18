@@ -116,6 +116,9 @@ Configuration options:
   --disable-vda            disable VDA code
   --enable-runtime-cpudetect detect cpu capabilities at runtime (bigger binary)
   --enable-hardcoded-tables use hardcoded tables instead of runtime generation
+  --disable-safe-bitstream-reader
+                           disable buffer boundary checking in bitreaders
+                           (faster, but may crash)
   --enable-memalign-hack   emulate memalign, interferes with memory debuggers
   --disable-everything     disable all components listed below
   --disable-encoder=NAME   disable encoder NAME
@@ -1060,6 +1063,7 @@ CONFIG_LIST="
     rdft
     rtpdec
     runtime_cpudetect
+    safe_bitstream_reader
     shared
     sinewin
     small
@@ -1812,6 +1816,7 @@ enable doc
 enable fastdiv
 enable network
 enable optimizations
+enable safe_bitstream_reader
 enable static
 enable swscale_alpha
 

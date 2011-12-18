@@ -1691,7 +1691,7 @@ int ff_msmpeg4_decode_block(MpegEncContext * s, DCTELEM * block,
                     if(s->msmpeg4_version<=3){
                         last=  SHOW_UBITS(re, &s->gb, 1); SKIP_CACHE(re, &s->gb, 1);
                         run=   SHOW_UBITS(re, &s->gb, 6); SKIP_CACHE(re, &s->gb, 6);
-                        level= SHOW_SBITS(re, &s->gb, 8); LAST_SKIP_CACHE(re, &s->gb, 8);
+                        level= SHOW_SBITS(re, &s->gb, 8);
                         SKIP_COUNTER(re, &s->gb, 1+6+8);
                     }else{
                         int sign;

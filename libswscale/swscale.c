@@ -483,8 +483,8 @@ yuv2gray16_X_c_template(SwsContext *c, const int16_t *lumFilter,
 
     for (i = 0; i < (dstW >> 1); i++) {
         int j;
-        int Y1 = 1 << 14;
-        int Y2 = 1 << 14;
+        int Y1 = (1 << 14) - 0x40000000;
+        int Y2 = (1 << 14) - 0x40000000;
 
         for (j = 0; j < lumFilterSize; j++) {
             Y1 += lumSrc[j][i * 2]     * lumFilter[j];
@@ -492,12 +492,10 @@ yuv2gray16_X_c_template(SwsContext *c, const int16_t *lumFilter,
         }
         Y1 >>= 15;
         Y2 >>= 15;
-        if ((Y1 | Y2) & 0x10000) {
-            Y1 = av_clip_uint16(Y1);
-            Y2 = av_clip_uint16(Y2);
-        }
-        output_pixel(&dest[i * 2 + 0], Y1);
-        output_pixel(&dest[i * 2 + 1], Y2);
+        Y1 = av_clip_int16(Y1);
+        Y2 = av_clip_int16(Y2);
+        output_pixel(&dest[i * 2 + 0], 0x8000 + Y1);
+        output_pixel(&dest[i * 2 + 1], 0x8000 + Y2);
     }
 }
 
@@ -851,8 +849,8 @@ yuv2rgb48_X_c_template(SwsContext *c, const int16_t *lumFilter,
 
     for (i = 0; i < (dstW >> 1); i++) {
         int j;
-        int Y1 = 0;
-        int Y2 = 0;
+        int Y1 = -0x40000000;
+        int Y2 = -0x40000000;
         int U  = -128 << 23; // 19
         int V  = -128 << 23;
         int R, G, B;
@@ -868,7 +866,9 @@ yuv2rgb48_X_c_template(SwsContext *c, const int16_t *lumFilter,
 
         // 8bit: 12+15=27; 16-bit: 12+19=31
         Y1 >>= 14; // 10
+        Y1 += 0x10000;
         Y2 >>= 14;
+        Y2 += 0x10000;
         U  >>= 14;
         V  >>= 14;
 
@@ -1015,8 +1015,8 @@ YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48be, PIX_FMT_BGR48BE)
 YUV2PACKED16WRAPPER(yuv2, rgb48, bgr48le, PIX_FMT_BGR48LE)
 
 static av_always_inline void
-yuv2rgb_write(uint8_t *_dest, int i, int Y1, int Y2,
-              int U, int V, int A1, int A2,
+yuv2rgb_write(uint8_t *_dest, int i, unsigned Y1, unsigned Y2,
+              unsigned U, unsigned V, unsigned A1, unsigned A2,
               const void *_r, const void *_g, const void *_b, int y,
               enum PixelFormat target, int hasAlpha)
 {
@@ -1553,8 +1553,8 @@ rgb16_32ToY_c_template(int16_t *dst, const uint8_t *src,
                        int maskr, int maskg, int maskb,
                        int rsh,   int gsh,   int bsh, int S)
 {
-    const int ry = RY << rsh, gy = GY << gsh, by = BY << bsh,
-              rnd = (32<<((S)-1)) + (1<<(S-7));
+    const int ry = RY << rsh, gy = GY << gsh, by = BY << bsh;
+    const unsigned rnd = (32<<((S)-1)) + (1<<(S-7));
     int i;
 
     for (i = 0; i < width; i++) {
@@ -1576,8 +1576,8 @@ rgb16_32ToUV_c_template(int16_t *dstU, int16_t *dstV,
                         int rsh,   int gsh,   int bsh, int S)
 {
     const int ru = RU << rsh, gu = GU << gsh, bu = BU << bsh,
-              rv = RV << rsh, gv = GV << gsh, bv = BV << bsh,
-              rnd = (256<<((S)-1)) + (1<<(S-7));
+              rv = RV << rsh, gv = GV << gsh, bv = BV << bsh;
+    const unsigned rnd = (256u<<((S)-1)) + (1<<(S-7));
     int i;
 
     for (i = 0; i < width; i++) {
@@ -1601,7 +1601,8 @@ rgb16_32ToUV_half_c_template(int16_t *dstU, int16_t *dstV,
 {
     const int ru = RU << rsh, gu = GU << gsh, bu = BU << bsh,
               rv = RV << rsh, gv = GV << gsh, bv = BV << bsh,
-              rnd = (256U<<(S)) + (1<<(S-6)), maskgx = ~(maskr | maskb);
+              maskgx = ~(maskr | maskb);
+    const unsigned rnd = (256U<<(S)) + (1<<(S-6));
     int i;
 
     maskr |= maskr << 1; maskb |= maskb << 1; maskg |= maskg << 1;
