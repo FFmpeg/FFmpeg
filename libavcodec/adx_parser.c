@@ -56,7 +56,6 @@ static int adx_parse(AVCodecParserContext *s1,
             if (ret = avpriv_adx_decode_header(avctx, pc->buffer, pc->index,
                                                &s->header_size, NULL))
                 return AVERROR_INVALIDDATA;
-            s->block_size = BLOCK_SIZE * avctx->channels;
         }
         if (s->header_size && s->header_size <= pc->index) {
             avctx->extradata = av_mallocz(s->header_size + FF_INPUT_BUFFER_PADDING_SIZE);
@@ -71,6 +70,7 @@ static int adx_parse(AVCodecParserContext *s1,
         *poutbuf_size = 0;
         return buf_size;
     }
+    s->block_size = BLOCK_SIZE * avctx->channels;
 
     if (pc->index - s->buf_pos >= s->block_size) {
         *poutbuf      = &pc->buffer[s->buf_pos];
