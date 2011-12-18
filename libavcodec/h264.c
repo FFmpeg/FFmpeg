@@ -25,6 +25,8 @@
  * @author Michael Niedermayer <michaelni@gmx.at>
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
+
 #include "libavutil/imgutils.h"
 #include "libavutil/opt.h"
 #include "internal.h"

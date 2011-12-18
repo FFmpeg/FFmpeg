@@ -26,6 +26,7 @@
  */
 
 #define CABAC 0
+#define UNCHECKED_BITSTREAM_READER 1
 
 #include "internal.h"
 #include "avcodec.h"
