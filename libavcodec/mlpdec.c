@@ -476,7 +476,8 @@ static int read_restart_header(MLPDecodeContext *m, GetBitContext *gbp,
         }
     }
     if (m->avctx->codec_id == CODEC_ID_TRUEHD &&
-        m->avctx->channel_layout == AV_CH_LAYOUT_7POINT1) {
+        (m->avctx->channel_layout == AV_CH_LAYOUT_7POINT1 ||
+        m->avctx->channel_layout == AV_CH_LAYOUT_7POINT1_WIDE)) {
         FFSWAP(int, s->ch_assign[4], s->ch_assign[6]);
         FFSWAP(int, s->ch_assign[5], s->ch_assign[7]);
     }
