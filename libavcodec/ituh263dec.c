@@ -27,6 +27,8 @@
  * h263 decoder.
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
+
 //#define DEBUG
 #include <limits.h>
 

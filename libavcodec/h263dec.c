@@ -25,6 +25,8 @@
  * H.263 decoder.
  */
 
+#define UNCHECKED_BITSTREAM_READER 1
+
 #include "libavutil/cpu.h"
 #include "internal.h"
 #include "avcodec.h"
