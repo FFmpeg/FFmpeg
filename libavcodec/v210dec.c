@@ -126,14 +126,14 @@ static int decode_frame(AVCodecContext *avctx, void *data, int *data_size,
 
             val  = av_le2ne32(*src++);
             *y++ =  val & 0x3FF;
-        }
-        if (w < avctx->width - 3) {
-            *u++ = (val >> 10) & 0x3FF;
-            *y++ = (val >> 20) & 0x3FF;
+            if (w < avctx->width - 3) {
+                *u++ = (val >> 10) & 0x3FF;
+                *y++ = (val >> 20) & 0x3FF;
 
-            val  = av_le2ne32(*src++);
-            *v++ =  val & 0x3FF;
-            *y++ = (val >> 10) & 0x3FF;
+                val  = av_le2ne32(*src++);
+                *v++ =  val & 0x3FF;
+                *y++ = (val >> 10) & 0x3FF;
+            }
         }
 
         psrc += stride;
