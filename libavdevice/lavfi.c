@@ -151,7 +151,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
 
         if (lavfi->stream_sink_map[stream_idx] != -1) {
             av_log(avctx,  AV_LOG_ERROR,
-                   "An with stream index %d was already specified\n",
+                   "An output with stream index %d was already specified\n",
                    stream_idx);
             FAIL(AVERROR(EINVAL));
         }
