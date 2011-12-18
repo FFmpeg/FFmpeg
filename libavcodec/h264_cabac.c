@@ -26,6 +26,7 @@
  */
 
 #define CABAC 1
+#define UNCHECKED_BITSTREAM_READER 1
 
 #include "internal.h"
 #include "dsputil.h"

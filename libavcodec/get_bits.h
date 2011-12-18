@@ -58,9 +58,7 @@ typedef struct GetBitContext {
     const uint8_t *buffer, *buffer_end;
     int index;
     int size_in_bits;
-#if !UNCHECKED_BITSTREAM_READER
     int size_in_bits_plus8;
-#endif
 } GetBitContext;
 
 #define VLC_TYPE int16_t
@@ -346,9 +344,7 @@ static inline void init_get_bits(GetBitContext *s,
 
     s->buffer       = buffer;
     s->size_in_bits = bit_size;
-#if !UNCHECKED_BITSTREAM_READER
     s->size_in_bits_plus8 = bit_size + 8;
-#endif
     s->buffer_end   = buffer + buffer_size;
     s->index        = 0;
 }
