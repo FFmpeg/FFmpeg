@@ -87,6 +87,9 @@ static int adx_encode_header(AVCodecContext *avctx, uint8_t *buf, int bufsize)
 {
     ADXContext *c = avctx->priv_data;
 
+    if (bufsize < HEADER_SIZE)
+        return AVERROR(EINVAL);
+
     bytestream_put_be16(&buf, 0x8000);              /* header signature */
     bytestream_put_be16(&buf, HEADER_SIZE - 4);     /* copyright offset */
     bytestream_put_byte(&buf, 3);                   /* encoding */
@@ -140,9 +143,18 @@ static int adx_encode_frame(AVCodecContext *avctx, uint8_t *frame,
     int ch;
 
     if (!c->header_parsed) {
-        int hdrsize = adx_encode_header(avctx, dst, buf_size);
-        dst += hdrsize;
+        int hdrsize;
+        if ((hdrsize = adx_encode_header(avctx, dst, buf_size)) < 0) {
+            av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+            return AVERROR(EINVAL);
+        }
+        dst      += hdrsize;
+        buf_size -= hdrsize;
         c->header_parsed = 1;
+    }
+    if (buf_size < BLOCK_SIZE * avctx->channels) {
+        av_log(avctx, AV_LOG_ERROR, "output buffer is too small\n");
+        return AVERROR(EINVAL);
     }
 
     for (ch = 0; ch < avctx->channels; ch++) {
