@@ -818,6 +818,9 @@ static int adpcm_decode_frame(AVCodecContext *avctx, void *data,
         /* Each EA ADPCM frame has a 12-byte header followed by 30-byte pieces,
            each coding 28 stereo samples. */
 
+        if(avctx->channels != 2)
+            return AVERROR_INVALIDDATA;
+
         src += 4; // skip sample count (already read)
 
         current_left_sample   = (int16_t)bytestream_get_le16(&src);
