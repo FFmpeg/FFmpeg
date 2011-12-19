@@ -42,7 +42,7 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     int s0, s1, s2, d;
     int max = 0;
     int min = 0;
-    int data[32];
+    int data[BLOCK_SAMPLES];
 
     s1 = prev->s1;
     s2 = prev->s2;
@@ -61,7 +61,7 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     prev->s2 = s2;
 
     if (max == 0 && min == 0) {
-        memset(adx, 0, 18);
+        memset(adx, 0, BLOCK_SIZE);
         return;
     }
 
@@ -76,7 +76,7 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     AV_WB16(adx, scale);
 
     init_put_bits(&pb, adx + 2, 16);
-    for (i = 0; i < 32; i++)
+    for (i = 0; i < BLOCK_SAMPLES; i++)
         put_sbits(&pb, 4, av_clip(data[i] / scale, -8, 7));
     flush_put_bits(&pb);
 }
@@ -105,7 +105,7 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
         av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
         return AVERROR(EINVAL);
     }
-    avctx->frame_size = 32;
+    avctx->frame_size = BLOCK_SAMPLES;
 
     avctx->coded_frame = avcodec_alloc_frame();
 
@@ -138,7 +138,7 @@ static int adx_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     for (ch = 0; ch < avctx->channels; ch++) {
         adx_encode(c, dst, samples + ch, &c->prev[ch], avctx->channels);
-        dst += 18;
+        dst += BLOCK_SIZE;
     }
     return dst - frame;
 }
