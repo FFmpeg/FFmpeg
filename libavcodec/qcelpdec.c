@@ -122,9 +122,9 @@ static int decode_lspf(QCELPContext *q, float *lspf)
     const float *predictors;
 
     if (q->bitrate == RATE_OCTAVE || q->bitrate == I_F_Q) {
-        predictors = (q->prev_bitrate != RATE_OCTAVE &&
-                       q->prev_bitrate != I_F_Q ?
-                       q->prev_lspf : q->predictor_lspf);
+        predictors = q->prev_bitrate != RATE_OCTAVE &&
+                     q->prev_bitrate != I_F_Q ? q->prev_lspf
+                                              : q->predictor_lspf;
 
         if (q->bitrate == RATE_OCTAVE) {
             q->octave_count++;
@@ -136,14 +136,14 @@ static int decode_lspf(QCELPContext *q, float *lspf)
                                      + predictors[i] * QCELP_LSP_OCTAVE_PREDICTOR
                                      + (i + 1) * ((1 - QCELP_LSP_OCTAVE_PREDICTOR)/11);
             }
-            smooth = (q->octave_count < 10 ? .875 : 0.1);
+            smooth = q->octave_count < 10 ? .875 : 0.1;
         } else {
             erasure_coeff = QCELP_LSP_OCTAVE_PREDICTOR;
 
             assert(q->bitrate == I_F_Q);
 
             if(q->erasure_count > 1)
-                erasure_coeff *= (q->erasure_count < 4 ? 0.9 : 0.7);
+                erasure_coeff *= q->erasure_count < 4 ? 0.9 : 0.7;
 
             for(i = 0; i < 10; i++) {
                 q->predictor_lspf[i] =
@@ -156,11 +156,11 @@ static int decode_lspf(QCELPContext *q, float *lspf)
         // Check the stability of the LSP frequencies.
         lspf[0] = FFMAX(lspf[0], QCELP_LSP_SPREAD_FACTOR);
         for(i=1; i<10; i++)
-            lspf[i] = FFMAX(lspf[i], (lspf[i-1] + QCELP_LSP_SPREAD_FACTOR));
+            lspf[i] = FFMAX(lspf[i], lspf[i - 1] + QCELP_LSP_SPREAD_FACTOR);
 
-        lspf[9] = FFMIN(lspf[9], (1.0 - QCELP_LSP_SPREAD_FACTOR));
+        lspf[9] = FFMIN(lspf[9], 1.0 - QCELP_LSP_SPREAD_FACTOR);
         for(i=9; i>0; i--)
-            lspf[i-1] = FFMIN(lspf[i-1], (lspf[i] - QCELP_LSP_SPREAD_FACTOR));
+            lspf[i - 1] = FFMIN(lspf[i - 1], lspf[i] - QCELP_LSP_SPREAD_FACTOR);
 
         // Low-pass filter the LSP frequencies.
         ff_weighted_vector_sumf(lspf, lspf, q->prev_lspf, smooth, 1.0-smooth, 10);
