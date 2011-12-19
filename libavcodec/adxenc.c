@@ -107,8 +107,6 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     c->cutoff = 500;
     ff_adx_calculate_coeffs(c->cutoff, avctx->sample_rate, COEFF_BITS, c->coeff);
 
-    av_log(avctx, AV_LOG_DEBUG, "adx encode init\n");
-
     return 0;
 }
 
