@@ -1072,11 +1072,16 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
     for (i = x = 0; i < index_table->nb_segments; i++) {
         MXFIndexTableSegment *s = index_table->segments[i];
         int index_delta = 1;
+        int n = s->nb_index_entries;
 
-        if (s->nb_index_entries == 2 * s->index_duration + 1)
+        if (s->nb_index_entries == 2 * s->index_duration + 1) {
             index_delta = 2;    /* Avid index */
 
-        for (j = 0; j < s->nb_index_entries; j += index_delta, x++) {
+            /* ignore the last entry - it's the size of the essence container */
+            n--;
+        }
+
+        for (j = 0; j < n; j += index_delta, x++) {
             int offset = s->temporal_offset_entries[j] / index_delta;
             int index  = x + offset;
 
