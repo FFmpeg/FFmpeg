@@ -33,8 +33,6 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
-/* 18 bytes <-> 32 samples */
-
 static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
                        ADXChannelState *prev)
 {
@@ -60,8 +58,6 @@ static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
     prev->s1 = s1;
     prev->s2 = s2;
 
-    /* -8..+7 */
-
     if (max==0 && min==0) {
         memset(adx,0,18);
         return;
@@ -82,35 +78,12 @@ static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
 
 static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t bufsize)
 {
-#if 0
-    struct {
-        uint32_t offset; /* 0x80000000 + sample start - 4 */
-        unsigned char unknown1[3]; /* 03 12 04 */
-        unsigned char channel; /* 1 or 2 */
-        uint32_t freq;
-        uint32_t size;
-        uint32_t unknown2; /* 01 f4 03 00 */
-        uint32_t unknown3; /* 00 00 00 00 */
-        uint32_t unknown4; /* 00 00 00 00 */
-
-    /* if loop
-        unknown3 00 15 00 01
-        unknown4 00 00 00 01
-        long loop_start_sample;
-        long loop_start_byte;
-        long loop_end_sample;
-        long loop_end_byte;
-        long
-    */
-    } adxhdr; /* big endian */
-    /* offset-6 "(c)CRI" */
-#endif
     ADXContext *c = avctx->priv_data;
 
     AV_WB32(buf+0x00,0x80000000|0x20);
     AV_WB32(buf+0x04,0x03120400|avctx->channels);
     AV_WB32(buf+0x08,avctx->sample_rate);
-    AV_WB32(buf+0x0c,0); /* FIXME: set after */
+    AV_WB32(buf+0x0c,0);
     AV_WB16(buf + 0x10, c->cutoff);
     AV_WB32(buf + 0x12, 0x03000000);
     AV_WB32(buf + 0x16, 0x00000000);
@@ -124,13 +97,11 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     ADXContext *c = avctx->priv_data;
 
     if (avctx->channels > 2)
-        return -1; /* only stereo or mono =) */
+        return -1;
     avctx->frame_size = 32;
 
     avctx->coded_frame= avcodec_alloc_frame();
     avctx->coded_frame->key_frame= 1;
-
-//    avctx->bit_rate = avctx->sample_rate*avctx->channels*18*8/32;
 
     /* the cutoff can be adjusted, but this seems to work pretty well */
     c->cutoff = 500;
@@ -156,13 +127,6 @@ static int adx_encode_frame(AVCodecContext *avctx,
     unsigned char *dst = frame;
     int rest = avctx->frame_size;
 
-/*
-    input data size =
-    avconv.c:do_audio_out()
-    frame_bytes = enc->frame_size * 2 * enc->channels;
-*/
-
-//    printf("sz=%d ",buf_size); fflush(stdout);
     if (!c->header_parsed) {
         int hdrsize = adx_encode_header(avctx,dst,buf_size);
         dst+=hdrsize;
