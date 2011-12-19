@@ -58,7 +58,7 @@ int avpriv_adx_decode_header(AVCodecContext *avctx, const uint8_t *buf,
 
     /* channels */
     avctx->channels = buf[7];
-    if (avctx->channels > 2)
+    if (avctx->channels <= 0 || avctx->channels > 2)
         return AVERROR_INVALIDDATA;
 
     /* sample rate */
