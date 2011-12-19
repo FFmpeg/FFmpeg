@@ -33,7 +33,7 @@
  * adx2wav & wav2adx http://www.geocities.co.jp/Playtown/2004/
  */
 
-static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
+static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
                        ADXChannelState *prev)
 {
     PutBitContext pb;
@@ -76,7 +76,7 @@ static void adx_encode(ADXContext *c, unsigned char *adx, const short *wav,
     flush_put_bits(&pb);
 }
 
-static int adx_encode_header(AVCodecContext *avctx,unsigned char *buf,size_t bufsize)
+static int adx_encode_header(AVCodecContext *avctx, uint8_t *buf, int bufsize)
 {
     ADXContext *c = avctx->priv_data;
 
@@ -121,9 +121,9 @@ static int adx_encode_frame(AVCodecContext *avctx,
                 uint8_t *frame, int buf_size, void *data)
 {
     ADXContext *c = avctx->priv_data;
-    const short *samples = data;
-    unsigned char *dst = frame;
-    int rest = avctx->frame_size;
+    const int16_t *samples = data;
+    uint8_t *dst           = frame;
+    int rest               = avctx->frame_size;
 
     if (!c->header_parsed) {
         int hdrsize = adx_encode_header(avctx,dst,buf_size);
@@ -140,7 +140,7 @@ static int adx_encode_frame(AVCodecContext *avctx,
         }
     } else {
         while(rest>=32*2) {
-            short tmpbuf[32*2];
+            int16_t tmpbuf[32*2];
             int i;
 
             for(i=0;i<32;i++) {
