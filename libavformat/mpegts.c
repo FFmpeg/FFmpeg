@@ -732,7 +732,8 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf
     if (cts != AV_NOPTS_VALUE)
         pes->pts = cts;
 
-    avpriv_set_pts_info(pes->st, sl->timestamp_len, 1, sl->timestamp_res);
+    if (sl->timestamp_len && sl->timestamp_res)
+        avpriv_set_pts_info(pes->st, sl->timestamp_len, 1, sl->timestamp_res);
 
     return (get_bits_count(&gb) + 7) >> 3;
 }
