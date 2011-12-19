@@ -44,6 +44,7 @@
 #include "libavutil/pixdesc.h"
 #include "libavutil/avstring.h"
 #include "libavutil/libm.h"
+#include "libavutil/imgutils.h"
 #include "libavformat/os_support.h"
 
 #if CONFIG_AVFILTER
@@ -139,6 +140,19 @@ static unsigned int allocated_audio_out_size, allocated_audio_buf_size;
 
 #define DEFAULT_PASS_LOGFILENAME_PREFIX "av2pass"
 
+typedef struct FrameBuffer {
+    uint8_t *base[4];
+    uint8_t *data[4];
+    int  linesize[4];
+
+    int h, w;
+    enum PixelFormat pix_fmt;
+
+    int refcount;
+    struct InputStream *ist;
+    struct FrameBuffer *next;
+} FrameBuffer;
+
 typedef struct InputStream {
     int file_index;
     AVStream *st;
@@ -157,6 +171,9 @@ typedef struct InputStream {
     int is_start;            /* is 1 at the start and after a discontinuity */
     int showed_multi_packet_warning;
     AVDictionary *opts;
+
+    /* a pool of free buffers for decoded data */
+    FrameBuffer *buffer_pool;
 } InputStream;
 
 typedef struct InputFile {
@@ -394,6 +411,124 @@ static void reset_options(OptionsContext *o)
     init_opts();
 }
 
+static int alloc_buffer(InputStream *ist, FrameBuffer **pbuf)
+{
+    AVCodecContext *s = ist->st->codec;
+    FrameBuffer  *buf = av_mallocz(sizeof(*buf));
+    int ret;
+    const int pixel_size = av_pix_fmt_descriptors[s->pix_fmt].comp[0].step_minus1+1;
+    int h_chroma_shift, v_chroma_shift;
+    int edge = 32; // XXX should be avcodec_get_edge_width(), but that fails on svq1
+    int w = s->width, h = s->height;
+
+    if (!buf)
+        return AVERROR(ENOMEM);
+
+    if (!(s->flags & CODEC_FLAG_EMU_EDGE)) {
+        w += 2*edge;
+        h += 2*edge;
+    }
+
+    avcodec_align_dimensions(s, &w, &h);
+    if ((ret = av_image_alloc(buf->base, buf->linesize, w, h,
+                              s->pix_fmt, 32)) < 0) {
+        av_freep(&buf);
+        return ret;
+    }
+    /* XXX this shouldn't be needed, but some tests break without this line
+     * those decoders are buggy and need to be fixed.
+     * the following tests fail:
+     * bethsoft-vid, cdgraphics, ansi, aasc, fraps-v1, qtrle-1bit
+     */
+    memset(buf->base[0], 128, ret);
+
+    avcodec_get_chroma_sub_sample(s->pix_fmt, &h_chroma_shift, &v_chroma_shift);
+    for (int i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
+        const int h_shift = i==0 ? 0 : h_chroma_shift;
+        const int v_shift = i==0 ? 0 : v_chroma_shift;
+        if (s->flags & CODEC_FLAG_EMU_EDGE)
+            buf->data[i] = buf->base[i];
+        else
+            buf->data[i] = buf->base[i] +
+                           FFALIGN((buf->linesize[i]*edge >> v_shift) +
+                                   (pixel_size*edge >> h_shift), 32);
+    }
+    buf->w       = s->width;
+    buf->h       = s->height;
+    buf->pix_fmt = s->pix_fmt;
+    buf->ist     = ist;
+
+    *pbuf = buf;
+    return 0;
+}
+
+static void free_buffer_pool(InputStream *ist)
+{
+    FrameBuffer *buf = ist->buffer_pool;
+    while (buf) {
+        ist->buffer_pool = buf->next;
+        av_freep(&buf->base[0]);
+        av_free(buf);
+        buf = ist->buffer_pool;
+    }
+}
+
+static void unref_buffer(InputStream *ist, FrameBuffer *buf)
+{
+    av_assert0(buf->refcount);
+    buf->refcount--;
+    if (!buf->refcount) {
+        buf->next = ist->buffer_pool;
+        ist->buffer_pool = buf;
+    }
+}
+
+static int codec_get_buffer(AVCodecContext *s, AVFrame *frame)
+{
+    InputStream *ist = s->opaque;
+    FrameBuffer *buf;
+    int ret, i;
+
+    if (!ist->buffer_pool && (ret = alloc_buffer(ist, &ist->buffer_pool)) < 0)
+        return ret;
+
+    buf              = ist->buffer_pool;
+    ist->buffer_pool = buf->next;
+    buf->next        = NULL;
+    if (buf->w != s->width || buf->h != s->height || buf->pix_fmt != s->pix_fmt) {
+        av_freep(&buf->base[0]);
+        av_free(buf);
+        if ((ret = alloc_buffer(ist, &buf)) < 0)
+            return ret;
+    }
+    buf->refcount++;
+
+    frame->opaque        = buf;
+    frame->type          = FF_BUFFER_TYPE_USER;
+    frame->extended_data = frame->data;
+    frame->pkt_pts       = s->pkt ? s->pkt->pts : AV_NOPTS_VALUE;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(buf->data); i++) {
+        frame->base[i]     = buf->base[i];  // XXX h264.c uses base though it shouldn't
+        frame->data[i]     = buf->data[i];
+        frame->linesize[i] = buf->linesize[i];
+    }
+
+    return 0;
+}
+
+static void codec_release_buffer(AVCodecContext *s, AVFrame *frame)
+{
+    InputStream *ist = s->opaque;
+    FrameBuffer *buf = frame->opaque;
+    int i;
+
+    for (i = 0; i < FF_ARRAY_ELEMS(frame->data); i++)
+        frame->data[i] = NULL;
+
+    unref_buffer(ist, buf);
+}
+
 #if CONFIG_AVFILTER
 
 static int configure_video_filters(InputStream *ist, OutputStream *ost)
@@ -531,6 +666,7 @@ void exit_program(int ret)
         av_freep(&input_streams[i].decoded_frame);
         av_freep(&input_streams[i].filtered_frame);
         av_dict_free(&input_streams[i].opts);
+        free_buffer_pool(&input_streams[i]);
     }
 
     if (vstats_file)
@@ -1983,6 +2119,12 @@ static int init_input_stream(int ist_index, OutputStream *output_streams, int nb
                 update_sample_fmt(ist->st->codec, codec, ost->st->codec);
                 break;
             }
+        }
+
+        if (codec->type == AVMEDIA_TYPE_VIDEO && codec->capabilities & CODEC_CAP_DR1) {
+            ist->st->codec->get_buffer     = codec_get_buffer;
+            ist->st->codec->release_buffer = codec_release_buffer;
+            ist->st->codec->opaque         = ist;
         }
 
         if (avcodec_open2(ist->st->codec, codec, &ist->opts) < 0) {
