@@ -108,7 +108,6 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
     avctx->frame_size = 32;
 
     avctx->coded_frame = avcodec_alloc_frame();
-    avctx->coded_frame->key_frame = 1;
 
     /* the cutoff can be adjusted, but this seems to work pretty well */
     c->cutoff = 500;
