@@ -34,11 +34,11 @@
  */
 
 static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
-                       ADXChannelState *prev)
+                       ADXChannelState *prev, int channels)
 {
     PutBitContext pb;
     int scale;
-    int i;
+    int i, j;
     int s0, s1, s2, d;
     int max = 0;
     int min = 0;
@@ -46,10 +46,10 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
 
     s1 = prev->s1;
     s2 = prev->s2;
-    for (i = 0; i < 32; i++) {
+    for (i = 0, j = 0; j < 32; i += channels, j++) {
         s0 = wav[i];
         d = ((s0 << COEFF_BITS) - c->coeff[0] * s1 - c->coeff[1] * s2) >> COEFF_BITS;
-        data[i] = d;
+        data[j] = d;
         if (max < d)
             max = d;
         if (min > d)
@@ -138,23 +138,15 @@ static int adx_encode_frame(AVCodecContext *avctx, uint8_t *frame,
 
     if (avctx->channels == 1) {
         while (rest >= 32) {
-            adx_encode(c, dst, samples, c->prev);
+            adx_encode(c, dst, samples, c->prev, avctx->channels);
             dst     += 18;
             samples += 32;
             rest    -= 32;
         }
     } else {
         while (rest >= 32*2) {
-            int16_t tmpbuf[32*2];
-            int i;
-
-            for (i = 0; i < 32; i++) {
-                tmpbuf[i   ] = samples[i*2  ];
-                tmpbuf[i+32] = samples[i*2+1];
-            }
-
-            adx_encode(c, dst,      tmpbuf,      c->prev    );
-            adx_encode(c, dst + 18, tmpbuf + 32, c->prev + 1);
+            adx_encode(c, dst,      samples,     c->prev,     avctx->channels);
+            adx_encode(c, dst + 18, samples + 1, c->prev + 1, avctx->channels);
             dst     += 18*2;
             samples += 32*2;
             rest    -= 32*2;
