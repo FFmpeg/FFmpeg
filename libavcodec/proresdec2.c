@@ -325,7 +325,7 @@ static av_always_inline void decode_ac_coeffs(AVCodecContext *avctx, GetBitConte
     int log2_block_count = av_log2(blocks_per_slice);
 
     OPEN_READER(re, gb);
-
+    UPDATE_CACHE(re, gb);                                           \
     run   = 4;
     level = 2;
 
