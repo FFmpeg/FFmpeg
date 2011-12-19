@@ -98,6 +98,8 @@ static int sox_read_header(AVFormatContext *s,
 
     if (comment_size && comment_size < UINT_MAX) {
         char *comment = av_malloc(comment_size+1);
+        if(!comment)
+            return AVERROR(ENOMEM);
         if (avio_read(pb, comment, comment_size) != comment_size) {
             av_freep(&comment);
             return AVERROR(EIO);
