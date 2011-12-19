@@ -21,7 +21,7 @@ all-$(CONFIG_DOC): documentation
 
 documentation: $(DOCS)
 
-TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
+TEXIDEP = awk '/^@(verbatim)?include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
 doc/%.txt: TAG = TXT
 doc/%.txt: doc/%.texi
