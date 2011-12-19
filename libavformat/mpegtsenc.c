@@ -1007,10 +1007,18 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
     }
 
     if (ts_st->payload_size + size > DEFAULT_PES_PAYLOAD_SIZE) {
-        mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
-                         ts_st->payload_pts, ts_st->payload_dts,
-                         ts_st->payload_flags & AV_PKT_FLAG_KEY);
-        ts_st->payload_size = 0;
+        if (ts_st->payload_size) {
+            mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
+                             ts_st->payload_pts, ts_st->payload_dts,
+                             ts_st->payload_flags & AV_PKT_FLAG_KEY);
+            ts_st->payload_size = 0;
+        }
+        if (size > DEFAULT_PES_PAYLOAD_SIZE) {
+            mpegts_write_pes(s, st, buf, size, pts, dts,
+                             pkt->flags & AV_PKT_FLAG_KEY);
+            av_free(data);
+            return 0;
+        }
     }
 
     if (!ts_st->payload_size) {
