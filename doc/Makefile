@@ -15,7 +15,7 @@ all-$(CONFIG_DOC): documentation
 
 documentation: $(DOCS)
 
-TEXIDEP = awk '/^@include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
+TEXIDEP = awk '/^@(verbatim)?include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
 
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init
