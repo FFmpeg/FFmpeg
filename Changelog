@@ -3,6 +3,7 @@ releases are sorted from youngest to oldest.
 
 version 0.9:
 
+- SMJPEG demuxer
 - openal input device added
 - boxblur filter added
 - BWF muxer
