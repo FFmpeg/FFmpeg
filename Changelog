@@ -6,6 +6,7 @@ version next:
 - v410 Quicktime Uncompressed 4:4:4 10-bit encoder and decoder
 - SBaGen (SBG) binaural beats script demuxer
 - OpenMG Audio muxer
+- SMJPEG demuxer
 
 
 version 0.9:
