@@ -264,11 +264,8 @@ AVInputFormat *av_find_input_format(const char *short_name)
     return NULL;
 }
 
-
-int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
+int ffio_limit(AVIOContext *s, int size)
 {
-    int ret;
-
     if(s->maxsize>=0){
         int64_t remaining= s->maxsize - avio_tell(s);
         if(remaining < size){
@@ -283,6 +280,13 @@ int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
             size= remaining+1;
         }
     }
+    return size;
+}
+
+int av_get_packet(AVIOContext *s, AVPacket *pkt, int size)
+{
+    int ret;
+    size= ffio_limit(s, size);
 
     ret= av_new_packet(pkt, size);
 

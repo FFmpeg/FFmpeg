@@ -71,6 +71,8 @@ uint64_t ffio_read_varlen(AVIOContext *bc);
 /** @warning must be called before any I/O */
 int ffio_set_buf_size(AVIOContext *s, int buf_size);
 
+int ffio_limit(AVIOContext *s, int size);
+
 void ffio_init_checksum(AVIOContext *s,
                         unsigned long (*update_checksum)(unsigned long c, const uint8_t *p, unsigned int len),
                         unsigned long checksum);
