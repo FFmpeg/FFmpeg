@@ -9,13 +9,24 @@ HTMLPAGES   = $(PROGS-yes:%=doc/%.html)                                 \
               doc/libavfilter.html                                      \
               doc/platform.html                                         \
 
+TXTPAGES    = doc/fate.txt                                              \
+
+
 DOCS = $(HTMLPAGES) $(MANPAGES) $(PODPAGES)
+ifdef HAVE_MAKEINFO
+DOCS += $(TXTPAGES)
+endif
 
 all-$(CONFIG_DOC): documentation
 
 documentation: $(DOCS)
 
 TEXIDEP = awk '/^@(verbatim)?include/ { printf "$@: $(@D)/%s\n", $$2 }' <$< >$(@:%=%.d)
+
+doc/%.txt: TAG = TXT
+doc/%.txt: doc/%.texi
+	$(Q)$(TEXIDEP)
+	$(M)makeinfo --force --no-headers -o $@ $< 2>/dev/null
 
 doc/%.html: TAG = HTML
 doc/%.html: doc/%.texi $(SRC_PATH)/doc/t2h.init
@@ -46,7 +57,7 @@ uninstall-man:
 	$(RM) $(addprefix "$(MANDIR)/man1/",$(ALLMANPAGES))
 
 clean::
-	$(RM) doc/*.html doc/*.pod doc/*.1 $(CLEANSUFFIXES:%=doc/%)
+	$(RM) $(TXTPAGES) doc/*.html doc/*.pod doc/*.1 $(CLEANSUFFIXES:%=doc/%)
 
 -include $(wildcard $(DOCS:%=%.d))
 

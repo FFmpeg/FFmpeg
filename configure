@@ -1195,6 +1195,7 @@ HAVE_LIST="
     lzo1x_999_compress
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
+    makeinfo
     malloc_h
     MapViewOfFile
     memalign
@@ -3153,6 +3154,7 @@ fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
+makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 
 check_header linux/fb.h
 check_header linux/videodev.h
