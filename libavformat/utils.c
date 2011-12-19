@@ -319,7 +319,7 @@ int av_append_packet(AVIOContext *s, AVPacket *pkt, int size)
 int av_filename_number_test(const char *filename)
 {
     char buf[1024];
-    return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1)>=0);
+    return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1, 0)>=0);
 }
 
 AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score_ret)
@@ -3774,15 +3774,16 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
 #endif
 
 int av_get_frame_filename(char *buf, int buf_size,
-                          const char *path, int number)
+                          const char *path, int number, int ts)
 {
     const char *p;
     char *q, buf1[20], c;
-    int nd, len, percentd_found;
+    int nd, len, percent_found;
+    int hours, mins, secs;
 
     q = buf;
     p = path;
-    percentd_found = 0;
+    percent_found = 0;
     for(;;) {
         c = *p++;
         if (c == '\0')
@@ -3800,10 +3801,27 @@ int av_get_frame_filename(char *buf, int buf_size,
             case '%':
                 goto addchar;
             case 'd':
-                if (percentd_found)
+                if (percent_found)
                     goto fail;
-                percentd_found = 1;
+                percent_found = 1;
                 snprintf(buf1, sizeof(buf1), "%0*d", nd, number);
+                len = strlen(buf1);
+                if ((q - buf + len) > buf_size - 1)
+                    goto fail;
+                memcpy(q, buf1, len);
+                q += len;
+                break;
+            case 't':
+                if (percent_found)
+                    goto fail;
+                percent_found = 1;
+                secs = ts % 60;
+                ts /= 60;
+                mins = ts % 60;
+                ts /= 60;
+                hours = ts;
+                snprintf(buf1, sizeof(buf1),
+                         "%02d:%02d:%02d", hours, mins, secs);
                 len = strlen(buf1);
                 if ((q - buf + len) > buf_size - 1)
                     goto fail;
@@ -3819,7 +3837,7 @@ int av_get_frame_filename(char *buf, int buf_size,
                 *q++ = c;
         }
     }
-    if (!percentd_found)
+    if (!percent_found)
         goto fail;
     *q = '\0';
     return 0;
