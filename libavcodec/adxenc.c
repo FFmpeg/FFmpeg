@@ -19,9 +19,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "libavutil/intreadwrite.h"
 #include "avcodec.h"
 #include "adx.h"
+#include "bytestream.h"
 #include "put_bits.h"
 
 /**
@@ -81,20 +81,29 @@ static void adx_encode(ADXContext *c, uint8_t *adx, const int16_t *wav,
     flush_put_bits(&pb);
 }
 
+#define HEADER_SIZE 36
+
 static int adx_encode_header(AVCodecContext *avctx, uint8_t *buf, int bufsize)
 {
     ADXContext *c = avctx->priv_data;
 
-    AV_WB32(buf + 0x00, 0x80000000 | 0x20);
-    AV_WB32(buf + 0x04, 0x03120400 | avctx->channels);
-    AV_WB32(buf + 0x08, avctx->sample_rate);
-    AV_WB32(buf + 0x0c, 0);
-    AV_WB16(buf + 0x10, c->cutoff);
-    AV_WB32(buf + 0x12, 0x03000000);
-    AV_WB32(buf + 0x16, 0x00000000);
-    AV_WB32(buf + 0x1a, 0x00000000);
-    memcpy (buf + 0x1e, "(c)CRI", 6);
-    return 0x20 + 4;
+    bytestream_put_be16(&buf, 0x8000);              /* header signature */
+    bytestream_put_be16(&buf, HEADER_SIZE - 4);     /* copyright offset */
+    bytestream_put_byte(&buf, 3);                   /* encoding */
+    bytestream_put_byte(&buf, BLOCK_SIZE);          /* block size */
+    bytestream_put_byte(&buf, 4);                   /* sample size */
+    bytestream_put_byte(&buf, avctx->channels);     /* channels */
+    bytestream_put_be32(&buf, avctx->sample_rate);  /* sample rate */
+    bytestream_put_be32(&buf, 0);                   /* total sample count */
+    bytestream_put_be16(&buf, c->cutoff);           /* cutoff frequency */
+    bytestream_put_byte(&buf, 3);                   /* version */
+    bytestream_put_byte(&buf, 0);                   /* flags */
+    bytestream_put_be32(&buf, 0);                   /* unknown */
+    bytestream_put_be32(&buf, 0);                   /* loop enabled */
+    bytestream_put_be16(&buf, 0);                   /* padding */
+    bytestream_put_buffer(&buf, "(c)CRI", 6);       /* copyright signature */
+
+    return HEADER_SIZE;
 }
 
 static av_cold int adx_encode_init(AVCodecContext *avctx)
