@@ -220,7 +220,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
 
     } else if (flags&SWS_POINT) { // lame looking point sampling mode
         int i;
-        int xDstInSrc;
+        int64_t xDstInSrc;
         filterSize= 1;
         FF_ALLOC_OR_GOTO(NULL, filter, dstW*sizeof(*filter)*filterSize, fail);
 
@@ -234,7 +234,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
         }
     } else if ((xInc <= (1<<16) && (flags&SWS_AREA)) || (flags&SWS_FAST_BILINEAR)) { // bilinear upscale
         int i;
-        int xDstInSrc;
+        int64_t xDstInSrc;
         filterSize= 2;
         FF_ALLOC_OR_GOTO(NULL, filter, dstW*sizeof(*filter)*filterSize, fail);
 
@@ -246,7 +246,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
             (*filterPos)[i]= xx;
             //bilinear upscale / linear interpolate / area averaging
             for (j=0; j<filterSize; j++) {
-                int64_t coeff= fone - FFABS((xx<<16) - xDstInSrc)*(fone>>16);
+                int64_t coeff= fone - FFABS(((int64_t)xx<<16) - xDstInSrc)*(fone>>16);
                 if (coeff<0) coeff=0;
                 filter[i*filterSize + j]= coeff;
                 xx++;
@@ -254,7 +254,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
             xDstInSrc+= xInc;
         }
     } else {
-        int xDstInSrc;
+        int64_t xDstInSrc;
         int sizeFactor;
 
         if      (flags&SWS_BICUBIC)      sizeFactor=  4;
@@ -283,7 +283,7 @@ static int initFilter(int16_t **outFilter, int16_t **filterPos, int *outFilterSi
             int j;
             (*filterPos)[i]= xx;
             for (j=0; j<filterSize; j++) {
-                int64_t d= ((int64_t)FFABS((xx<<17) - xDstInSrc))<<13;
+                int64_t d= (FFABS(((int64_t)xx<<17) - xDstInSrc))<<13;
                 double floatd;
                 int64_t coeff;
 
