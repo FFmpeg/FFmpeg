@@ -948,7 +948,10 @@ int sws_init_context(SwsContext *c, SwsFilter *srcFilter, SwsFilter *dstFilter)
 #else
             if (!c->lumMmx2FilterCode || !c->chrMmx2FilterCode)
 #endif
+            {
+                av_log(c, AV_LOG_ERROR, "Failed to allocate MMX2FilterCode\n");
                 return AVERROR(ENOMEM);
+            }
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilter   , (dstW        /8+8)*sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hChrFilter   , (c->chrDstW  /4+8)*sizeof(int16_t), fail);
             FF_ALLOCZ_OR_GOTO(c, c->hLumFilterPos, (dstW      /2/8+8)*sizeof(int32_t), fail);
