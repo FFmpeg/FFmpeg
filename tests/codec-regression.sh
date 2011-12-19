@@ -311,6 +311,11 @@ do_audio_encoding g726.wav "-b 32k -ac 1 -ar 8000 -acodec g726"
 do_audio_decoding
 fi
 
+if [ -n "$do_adpcm_adx" ] ; then
+do_audio_encoding adpcm_adx.adx "-acodec adpcm_adx"
+do_audio_decoding
+fi
+
 if [ -n "$do_adpcm_ima_wav" ] ; then
 do_audio_encoding adpcm_ima.wav "-acodec adpcm_ima_wav"
 do_audio_decoding
