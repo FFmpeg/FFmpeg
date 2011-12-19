@@ -1,0 +1,449 @@
+/*
+ * Sony OpenMG (OMA) demuxer
+ *
+ * Copyright (c) 2008 Maxim Poliakovski
+ *               2008 Benjamin Larsson
+ *               2011 David Goldwich
+ *
+ * This file is part of FFmpeg.
+ *
+ * FFmpeg is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * FFmpeg is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with FFmpeg; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+/**
+ * @file
+ * This is a demuxer for Sony OpenMG Music files
+ *
+ * Known file extensions: ".oma", "aa3"
+ * The format of such files consists of three parts:
+ * - "ea3" header carrying overall info and metadata. Except for starting with
+ *   "ea" instead of "ID", it's an ID3v2 header.
+ * - "EA3" header is a Sony-specific header containing information about
+ *   the OpenMG file: codec type (usually ATRAC, can also be MP3 or WMA),
+ *   codec specific info (packet size, sample rate, channels and so on)
+ *   and DRM related info (file encryption, content id).
+ * - Sound data organized in packets follow the EA3 header
+ *   (can be encrypted using the Sony DRM!).
+ *
+ * CODEC SUPPORT: Only ATRAC3 codec is currently supported!
+ */
+
+#include "avformat.h"
+#include "internal.h"
+#include "libavutil/intreadwrite.h"
+#include "libavutil/des.h"
+#include "oma.h"
+#include "pcm.h"
+#include "riff.h"
+#include "id3v2.h"
+
+
+static const uint64_t leaf_table[] = {
+    0xd79e8283acea4620, 0x7a9762f445afd0d8,
+    0x354d60a60b8c79f1, 0x584e1cde00b07aee,
+    0x1573cd93da7df623, 0x47f98d79620dd535
+};
+
+typedef struct OMAContext {
+    uint64_t content_start;
+    int encrypted;
+    uint16_t k_size;
+    uint16_t e_size;
+    uint16_t i_size;
+    uint16_t s_size;
+    uint32_t rid;
+    uint8_t r_val[24];
+    uint8_t n_val[24];
+    uint8_t m_val[8];
+    uint8_t s_val[8];
+    uint8_t sm_val[8];
+    uint8_t e_val[8];
+    uint8_t iv[8];
+    struct AVDES av_des;
+} OMAContext;
+
+static void hex_log(AVFormatContext *s, int level, const char *name, const uint8_t *value, int len)
+{
+    char buf[33];
+    len = FFMIN(len, 16);
+    if (av_log_get_level() < level)
+        return;
+    ff_data_to_hex(buf, value, len, 1);
+    buf[len<<1] = '\0';
+    av_log(s, level, "%s: %s\n", name, buf);
+}
+
+static int kset(AVFormatContext *s, const uint8_t *r_val, const uint8_t *n_val, int len)
+{
+    OMAContext *oc = s->priv_data;
+
+    if (!r_val && !n_val)
+        return -1;
+
+    len = FFMIN(len, 16);
+
+    /* use first 64 bits in the third round again */
+    if (r_val) {
+        if (r_val != oc->r_val) {
+            memset(oc->r_val, 0, 24);
+            memcpy(oc->r_val, r_val, len);
+        }
+        memcpy(&oc->r_val[16], r_val, 8);
+    }
+    if (n_val) {
+        if (n_val != oc->n_val) {
+            memset(oc->n_val, 0, 24);
+            memcpy(oc->n_val, n_val, len);
+        }
+        memcpy(&oc->n_val[16], n_val, 8);
+    }
+
+    return 0;
+}
+
+static int rprobe(AVFormatContext *s, uint8_t *enc_header, const uint8_t *r_val)
+{
+    OMAContext *oc = s->priv_data;
+    unsigned int pos;
+    struct AVDES av_des;
+
+    if (!enc_header || !r_val)
+        return -1;
+
+    /* m_val */
+    av_des_init(&av_des, r_val, 192, 1);
+    av_des_crypt(&av_des, oc->m_val, &enc_header[48], 1, NULL, 1);
+
+    /* s_val */
+    av_des_init(&av_des, oc->m_val, 64, 0);
+    av_des_crypt(&av_des, oc->s_val, NULL, 1, NULL, 0);
+
+    /* sm_val */
+    pos = OMA_ENC_HEADER_SIZE + oc->k_size + oc->e_size;
+    av_des_init(&av_des, oc->s_val, 64, 0);
+    av_des_mac(&av_des, oc->sm_val, &enc_header[pos], (oc->i_size >> 3));
+
+    pos += oc->i_size;
+
+    return memcmp(&enc_header[pos], oc->sm_val, 8) ? -1 : 0;
+}
+
+static int nprobe(AVFormatContext *s, uint8_t *enc_header, int size, const uint8_t *n_val)
+{
+    OMAContext *oc = s->priv_data;
+    uint32_t pos, taglen, datalen;
+    struct AVDES av_des;
+
+    if (!enc_header || !n_val)
+        return -1;
+
+    pos = OMA_ENC_HEADER_SIZE + oc->k_size;
+    if (!memcmp(&enc_header[pos], "EKB ", 4))
+        pos += 32;
+
+    if (AV_RB32(&enc_header[pos]) != oc->rid)
+        av_log(s, AV_LOG_DEBUG, "Mismatching RID\n");
+
+    taglen = AV_RB32(&enc_header[pos+32]);
+    datalen = AV_RB32(&enc_header[pos+36]) >> 4;
+
+    if(taglen + (((uint64_t)datalen)<<4) + 44 > size)
+        return -1;
+
+    pos += 44 + taglen;
+
+    av_des_init(&av_des, n_val, 192, 1);
+    while (datalen-- > 0) {
+        av_des_crypt(&av_des, oc->r_val, &enc_header[pos], 2, NULL, 1);
+        kset(s, oc->r_val, NULL, 16);
+        if (!rprobe(s, enc_header, oc->r_val))
+            return 0;
+        pos += 16;
+    }
+
+    return -1;
+}
+
+static int decrypt_init(AVFormatContext *s, ID3v2ExtraMeta *em, uint8_t *header)
+{
+    OMAContext *oc = s->priv_data;
+    ID3v2ExtraMetaGEOB *geob = NULL;
+    uint8_t *gdata;
+
+    oc->encrypted = 1;
+    av_log(s, AV_LOG_INFO, "File is encrypted\n");
+
+    /* find GEOB metadata */
+    while (em) {
+        if (!strcmp(em->tag, "GEOB") &&
+            (geob = em->data) &&
+            (!strcmp(geob->description, "OMG_LSI") ||
+             !strcmp(geob->description, "OMG_BKLSI"))) {
+            break;
+        }
+        em = em->next;
+    }
+    if (!em) {
+        av_log(s, AV_LOG_ERROR, "No encryption header found\n");
+        return -1;
+    }
+
+    if (geob->datasize < 64) {
+        av_log(s, AV_LOG_ERROR, "Invalid GEOB data size: %u\n", geob->datasize);
+        return -1;
+    }
+
+    gdata = geob->data;
+
+    if (AV_RB16(gdata) != 1)
+        av_log(s, AV_LOG_WARNING, "Unknown version in encryption header\n");
+
+    oc->k_size = AV_RB16(&gdata[2]);
+    oc->e_size = AV_RB16(&gdata[4]);
+    oc->i_size = AV_RB16(&gdata[6]);
+    oc->s_size = AV_RB16(&gdata[8]);
+
+    if (memcmp(&gdata[OMA_ENC_HEADER_SIZE], "KEYRING     ", 12)) {
+        av_log(s, AV_LOG_ERROR, "Invalid encryption header\n");
+        return -1;
+    }
+    oc->rid = AV_RB32(&gdata[OMA_ENC_HEADER_SIZE + 28]);
+    av_log(s, AV_LOG_DEBUG, "RID: %.8x\n", oc->rid);
+
+    memcpy(oc->iv, &header[0x58], 8);
+    hex_log(s, AV_LOG_DEBUG, "IV", oc->iv, 8);
+
+    hex_log(s, AV_LOG_DEBUG, "CBC-MAC", &gdata[OMA_ENC_HEADER_SIZE+oc->k_size+oc->e_size+oc->i_size], 8);
+
+    if (s->keylen > 0) {
+        kset(s, s->key, s->key, s->keylen);
+    }
+    if (!memcmp(oc->r_val, (const uint8_t[8]){0}, 8) ||
+        rprobe(s, gdata, oc->r_val) < 0 &&
+        nprobe(s, gdata, geob->datasize, oc->n_val) < 0) {
+        int i;
+        for (i = 0; i < sizeof(leaf_table); i += 2) {
+            uint8_t buf[16];
+            AV_WL64(buf, leaf_table[i]);
+            AV_WL64(&buf[8], leaf_table[i+1]);
+            kset(s, buf, buf, 16);
+            if (!rprobe(s, gdata, oc->r_val) || !nprobe(s, gdata, geob->datasize, oc->n_val))
+                break;
+        }
+        if (i >= sizeof(leaf_table)) {
+            av_log(s, AV_LOG_ERROR, "Invalid key\n");
+            return -1;
+        }
+    }
+
+    /* e_val */
+    av_des_init(&oc->av_des, oc->m_val, 64, 0);
+    av_des_crypt(&oc->av_des, oc->e_val, &gdata[OMA_ENC_HEADER_SIZE + 40], 1, NULL, 0);
+    hex_log(s, AV_LOG_DEBUG, "EK", oc->e_val, 8);
+
+    /* init e_val */
+    av_des_init(&oc->av_des, oc->e_val, 64, 1);
+
+    return 0;
+}
+
+static int oma_read_header(AVFormatContext *s,
+                           AVFormatParameters *ap)
+{
+    int     ret, framesize, jsflag, samplerate;
+    uint32_t codec_params;
+    int16_t eid;
+    uint8_t buf[EA3_HEADER_SIZE];
+    uint8_t *edata;
+    AVStream *st;
+    ID3v2ExtraMeta *extra_meta = NULL;
+    OMAContext *oc = s->priv_data;
+
+    ff_id3v2_read_all(s, ID3v2_EA3_MAGIC, &extra_meta);
+    ret = avio_read(s->pb, buf, EA3_HEADER_SIZE);
+    if (ret < EA3_HEADER_SIZE)
+        return -1;
+
+    if (memcmp(buf, ((const uint8_t[]){'E', 'A', '3'}),3) || buf[4] != 0 || buf[5] != EA3_HEADER_SIZE) {
+        av_log(s, AV_LOG_ERROR, "Couldn't find the EA3 header !\n");
+        return -1;
+    }
+
+    oc->content_start = avio_tell(s->pb);
+
+    /* encrypted file */
+    eid = AV_RB16(&buf[6]);
+    if (eid != -1 && eid != -128 && decrypt_init(s, extra_meta, buf) < 0) {
+        ff_id3v2_free_extra_meta(&extra_meta);
+        return -1;
+    }
+
+    ff_id3v2_free_extra_meta(&extra_meta);
+
+    codec_params = AV_RB24(&buf[33]);
+
+    st = avformat_new_stream(s, NULL);
+    if (!st)
+        return AVERROR(ENOMEM);
+
+    st->start_time = 0;
+    st->codec->codec_type  = AVMEDIA_TYPE_AUDIO;
+    st->codec->codec_tag   = buf[32];
+    st->codec->codec_id    = ff_codec_get_id(ff_oma_codec_tags, st->codec->codec_tag);
+
+    switch (buf[32]) {
+        case OMA_CODECID_ATRAC3:
+            samplerate = ff_oma_srate_tab[(codec_params >> 13) & 7]*100;
+            if (samplerate != 44100)
+                av_log_ask_for_sample(s, "Unsupported sample rate: %d\n",
+                                      samplerate);
+
+            framesize = (codec_params & 0x3FF) * 8;
+            jsflag = (codec_params >> 17) & 1; /* get stereo coding mode, 1 for joint-stereo */
+            st->codec->channels    = 2;
+            st->codec->sample_rate = samplerate;
+            st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
+
+            /* fake the atrac3 extradata (wav format, makes stream copy to wav work) */
+            st->codec->extradata_size = 14;
+            edata = av_mallocz(14 + FF_INPUT_BUFFER_PADDING_SIZE);
+            if (!edata)
+                return AVERROR(ENOMEM);
+
+            st->codec->extradata = edata;
+            AV_WL16(&edata[0],  1);             // always 1
+            AV_WL32(&edata[2],  samplerate);    // samples rate
+            AV_WL16(&edata[6],  jsflag);        // coding mode
+            AV_WL16(&edata[8],  jsflag);        // coding mode
+            AV_WL16(&edata[10], 1);             // always 1
+            // AV_WL16(&edata[12], 0);          // always 0
+
+            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            break;
+        case OMA_CODECID_ATRAC3P:
+            st->codec->channels = (codec_params >> 10) & 7;
+            framesize = ((codec_params & 0x3FF) * 8) + 8;
+            st->codec->sample_rate = ff_oma_srate_tab[(codec_params >> 13) & 7]*100;
+            st->codec->bit_rate    = st->codec->sample_rate * framesize * 8 / 1024;
+            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            av_log(s, AV_LOG_ERROR, "Unsupported codec ATRAC3+!\n");
+            break;
+        case OMA_CODECID_MP3:
+            st->need_parsing = AVSTREAM_PARSE_FULL;
+            framesize = 1024;
+            break;
+        case OMA_CODECID_LPCM:
+            /* PCM 44.1 kHz 16 bit stereo big-endian */
+            st->codec->channels = 2;
+            st->codec->sample_rate = 44100;
+            framesize = 1024;
+            /* bit rate = sample rate x PCM block align (= 4) x 8 */
+            st->codec->bit_rate = st->codec->sample_rate * 32;
+            st->codec->bits_per_coded_sample = av_get_bits_per_sample(st->codec->codec_id);
+            avpriv_set_pts_info(st, 64, 1, st->codec->sample_rate);
+            break;
+        default:
+            av_log(s, AV_LOG_ERROR, "Unsupported codec %d!\n",buf[32]);
+            return -1;
+    }
+
+    st->codec->block_align = framesize;
+
+    return 0;
+}
+
+
+static int oma_read_packet(AVFormatContext *s, AVPacket *pkt)
+{
+    OMAContext *oc = s->priv_data;
+    int packet_size = s->streams[0]->codec->block_align;
+    int ret = av_get_packet(s->pb, pkt, packet_size);
+
+    if (ret <= 0)
+        return AVERROR(EIO);
+
+    pkt->stream_index = 0;
+
+    if (oc->encrypted) {
+        /* previous unencrypted block saved in IV for the next packet (CBC mode) */
+        av_des_crypt(&oc->av_des, pkt->data, pkt->data, (packet_size >> 3), oc->iv, 1);
+    }
+
+    return ret;
+}
+
+static int oma_read_probe(AVProbeData *p)
+{
+    const uint8_t *buf;
+    unsigned tag_len = 0;
+
+    buf = p->buf;
+
+    if (p->buf_size < ID3v2_HEADER_SIZE ||
+        !ff_id3v2_match(buf, ID3v2_EA3_MAGIC) ||
+        buf[3] != 3 || // version must be 3
+        buf[4]) // flags byte zero
+        return 0;
+
+    tag_len = ff_id3v2_tag_len(buf);
+
+    /* This check cannot overflow as tag_len has at most 28 bits */
+    if (p->buf_size < tag_len + 5)
+        /* EA3 header comes late, might be outside of the probe buffer */
+        return AVPROBE_SCORE_MAX / 2;
+
+    buf += tag_len;
+
+    if (!memcmp(buf, "EA3", 3) && !buf[4] && buf[5] == EA3_HEADER_SIZE)
+        return AVPROBE_SCORE_MAX;
+    else
+        return 0;
+}
+
+static int oma_read_seek(struct AVFormatContext *s, int stream_index, int64_t timestamp, int flags)
+{
+    OMAContext *oc = s->priv_data;
+
+    pcm_read_seek(s, stream_index, timestamp, flags);
+
+    if (oc->encrypted) {
+        /* readjust IV for CBC */
+        int64_t pos = avio_tell(s->pb);
+        if (pos < oc->content_start)
+            memset(oc->iv, 0, 8);
+        else {
+            if (avio_seek(s->pb, -8, SEEK_CUR) < 0 || avio_read(s->pb, oc->iv, 8) < 8) {
+                memset(oc->iv, 0, 8);
+                return -1;
+            }
+        }
+    }
+
+    return 0;
+}
+
+AVInputFormat ff_oma_demuxer = {
+    .name           = "oma",
+    .long_name      = NULL_IF_CONFIG_SMALL("Sony OpenMG audio"),
+    .priv_data_size = sizeof(OMAContext),
+    .read_probe     = oma_read_probe,
+    .read_header    = oma_read_header,
+    .read_packet    = oma_read_packet,
+    .read_seek      = oma_read_seek,
+    .flags          = AVFMT_GENERIC_INDEX,
+    .extensions     = "oma,omg,aa3",
+    .codec_tag      = (const AVCodecTag* const []){ff_oma_codec_tags, 0},
+};
+

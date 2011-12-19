@@ -2393,6 +2393,11 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
         assert(!st->codec->codec);
         codec = avcodec_find_decoder(st->codec->codec_id);
 
+        /* this function doesn't flush the decoders, so force thread count
+         * to 1 to fix behavior when thread count > number of frames in the file */
+        if (options)
+            av_dict_set(&options[i], "threads", 0, 0);
+
         /* Ensure that subtitle_header is properly set. */
         if (st->codec->codec_type == AVMEDIA_TYPE_SUBTITLE
             && codec && !st->codec->codec)
@@ -2400,15 +2405,8 @@ int avformat_find_stream_info(AVFormatContext *ic, AVDictionary **options)
 
         //try to just open decoders, in case this is enough to get parameters
         if(!has_codec_parameters(st->codec)){
-            if (codec && !st->codec->codec){
-                AVDictionary *tmp = NULL;
-                if (options){
-                    av_dict_copy(&tmp, options[i], 0);
-                    av_dict_set(&tmp, "threads", 0, 0);
-                }
-                avcodec_open2(st->codec, codec, options ? &tmp : NULL);
-                av_dict_free(&tmp);
-            }
+            if (codec && !st->codec->codec)
+                avcodec_open2(st->codec, codec, options ? &options[i] : NULL);
         }
     }
 

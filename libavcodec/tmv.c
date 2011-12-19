@@ -34,14 +34,6 @@ typedef struct TMVContext {
     AVFrame pic;
 } TMVContext;
 
-static av_cold int tmv_decode_init(AVCodecContext *avctx)
-{
-    TMVContext *tmv = avctx->priv_data;
-
-    avcodec_get_frame_defaults(&tmv->pic);
-    return 0;
-}
-
 static int tmv_decode_frame(AVCodecContext *avctx, void *data,
                             int *data_size, AVPacket *avpkt)
 {
@@ -88,6 +80,14 @@ static int tmv_decode_frame(AVCodecContext *avctx, void *data,
     *data_size = sizeof(AVFrame);
     *(AVFrame *)data = tmv->pic;
     return avpkt->size;
+}
+
+static av_cold int tmv_decode_init(AVCodecContext *avctx)
+{
+    TMVContext *tmv = avctx->priv_data;
+    avctx->pix_fmt = PIX_FMT_PAL8;
+    avcodec_get_frame_defaults(&tmv->pic);
+    return 0;
 }
 
 static av_cold int tmv_decode_close(AVCodecContext *avctx)

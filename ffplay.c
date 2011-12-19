@@ -1583,7 +1583,6 @@ static int input_get_buffer(AVCodecContext *codec, AVFrame *pic)
         pic->linesize[i] = ref->linesize[i];
     }
     pic->opaque = ref;
-    pic->age    = INT_MAX;
     pic->type   = FF_BUFFER_TYPE_USER;
     pic->reordered_opaque = codec->reordered_opaque;
     if(codec->pkt) pic->pkt_pts = codec->pkt->pts;

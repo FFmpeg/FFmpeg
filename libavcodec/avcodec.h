@@ -1029,13 +1029,12 @@ typedef struct AVFrame {
      */
     int quality;
 
+#if FF_API_AVFRAME_AGE
     /**
-     * buffer age (1->was last buffer and dint change, 2->..., ...).
-     * Set to INT_MAX if the buffer has not been used yet.
-     * - encoding: unused
-     * - decoding: MUST be set by get_buffer() for video.
+     * @deprecated unused
      */
-    int age;
+    attribute_deprecated int age;
+#endif
 
     /**
      * is this picture used as reference

@@ -31,6 +31,9 @@ API changes, most recent first:
 2011-10-20 - b35e9e1 - lavu 51.22.0
   Add av_strtok() to avstring.h.
 
+2011-12-18 - 8400b12 - lavc 53.28.1
+  Deprecate AVFrame.age. The field is unused.
+
 2011-xx-xx - xxxxxxx - lavf 53.17.0
   Add avformat_open_input().
   Deprecate av_close_input_file() and av_close_input_stream().
