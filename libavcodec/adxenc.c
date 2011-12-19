@@ -101,8 +101,10 @@ static av_cold int adx_encode_init(AVCodecContext *avctx)
 {
     ADXContext *c = avctx->priv_data;
 
-    if (avctx->channels > 2)
-        return -1;
+    if (avctx->channels > 2) {
+        av_log(avctx, AV_LOG_ERROR, "Invalid number of channels\n");
+        return AVERROR(EINVAL);
+    }
     avctx->frame_size = 32;
 
     avctx->coded_frame = avcodec_alloc_frame();
