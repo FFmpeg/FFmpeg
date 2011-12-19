@@ -5425,8 +5425,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     MpegEncContext *s = &v->s;
     AVFrame *pict = data;
     uint8_t *buf2 = NULL;
-    uint8_t *buf_field2 = NULL;
     const uint8_t *buf_start = buf;
+    uint8_t *tmp;
     int mb_height, n_slices1;
     struct {
         uint8_t *buf;
@@ -5492,9 +5492,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     slices[n_slices].mby_start = s->mb_height >> 1;
                     n_slices1 = n_slices - 1; // index of the last slice of the first field
                     n_slices++;
-                    // not necessary, ad hoc until I find a way to handle WVC1i
-                    buf_field2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                    vc1_unescape_buffer(start + 4, size, buf_field2);
                     break;
                 }
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
@@ -5522,14 +5519,26 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             }
         } else if (v->interlace && ((buf[0] & 0xC0) == 0xC0)) { /* WVC1 interlaced stores both fields divided by marker */
             const uint8_t *divider;
+            int buf_size3;
 
             divider = find_next_marker(buf, buf + buf_size);
             if ((divider == (buf + buf_size)) || AV_RB32(divider) != VC1_CODE_FIELD) {
                 av_log(avctx, AV_LOG_ERROR, "Error in WVC1 interlaced frame\n");
                 goto err;
             } else { // found field marker, unescape second field
-                buf_field2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, buf_field2);
+                tmp = av_realloc(slices, sizeof(*slices) * (n_slices+1));
+                if (!tmp)
+                    goto err;
+                slices = tmp;
+                slices[n_slices].buf = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                if (!slices[n_slices].buf)
+                    goto err;
+                buf_size3 = vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, slices[n_slices].buf);
+                init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
+                              buf_size3 << 3);
+                slices[n_slices].mby_start = s->mb_height >> 1;
+                n_slices1 = n_slices - 1;
+                n_slices++;
             }
             buf_size2 = vc1_unescape_buffer(buf, divider - buf, buf2);
         } else {
@@ -5702,10 +5711,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 s->gb = slices[i].gb;
         }
         if (v->field_mode) {
-            av_free(buf_field2);
             v->second_field = 0;
-        }
-        if (v->field_mode) {
             if (s->pict_type == AV_PICTURE_TYPE_B) {
                 memcpy(v->mv_f_base, v->mv_f_next_base,
                        2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
@@ -5760,7 +5766,6 @@ err:
     for (i = 0; i < n_slices; i++)
         av_free(slices[i].buf);
     av_free(slices);
-    av_free(buf_field2);
     return -1;
 }
 
