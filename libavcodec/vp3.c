@@ -45,9 +45,6 @@
 
 #define FRAGMENT_PIXELS 8
 
-static av_cold int vp3_decode_end(AVCodecContext *avctx);
-static void vp3_decode_flush(AVCodecContext *avctx);
-
 //FIXME split things out into their own arrays
 typedef struct Vp3Fragment {
     int16_t dc;
@@ -255,6 +252,63 @@ typedef struct Vp3DecodeContext {
 /************************************************************************
  * VP3 specific functions
  ************************************************************************/
+
+static void vp3_decode_flush(AVCodecContext *avctx)
+{
+    Vp3DecodeContext *s = avctx->priv_data;
+
+    if (s->golden_frame.data[0]) {
+        if (s->golden_frame.data[0] == s->last_frame.data[0])
+            memset(&s->last_frame, 0, sizeof(AVFrame));
+        if (s->current_frame.data[0] == s->golden_frame.data[0])
+            memset(&s->current_frame, 0, sizeof(AVFrame));
+        ff_thread_release_buffer(avctx, &s->golden_frame);
+    }
+    if (s->last_frame.data[0]) {
+        if (s->current_frame.data[0] == s->last_frame.data[0])
+            memset(&s->current_frame, 0, sizeof(AVFrame));
+        ff_thread_release_buffer(avctx, &s->last_frame);
+    }
+    if (s->current_frame.data[0])
+        ff_thread_release_buffer(avctx, &s->current_frame);
+}
+
+static av_cold int vp3_decode_end(AVCodecContext *avctx)
+{
+    Vp3DecodeContext *s = avctx->priv_data;
+    int i;
+
+    av_free(s->superblock_coding);
+    av_free(s->all_fragments);
+    av_free(s->coded_fragment_list[0]);
+    av_free(s->dct_tokens_base);
+    av_free(s->superblock_fragments);
+    av_free(s->macroblock_coding);
+    av_free(s->motion_val[0]);
+    av_free(s->motion_val[1]);
+    av_free(s->edge_emu_buffer);
+
+    if (avctx->internal->is_copy)
+        return 0;
+
+    for (i = 0; i < 16; i++) {
+        free_vlc(&s->dc_vlc[i]);
+        free_vlc(&s->ac_vlc_1[i]);
+        free_vlc(&s->ac_vlc_2[i]);
+        free_vlc(&s->ac_vlc_3[i]);
+        free_vlc(&s->ac_vlc_4[i]);
+    }
+
+    free_vlc(&s->superblock_run_length_vlc);
+    free_vlc(&s->fragment_run_length_vlc);
+    free_vlc(&s->mode_code_vlc);
+    free_vlc(&s->motion_vector_vlc);
+
+    /* release all frames */
+    vp3_decode_flush(avctx);
+
+    return 0;
+}
 
 /*
  * This function sets up all of the various blocks mappings:
@@ -1995,43 +2049,6 @@ error:
     return -1;
 }
 
-static av_cold int vp3_decode_end(AVCodecContext *avctx)
-{
-    Vp3DecodeContext *s = avctx->priv_data;
-    int i;
-
-    av_free(s->superblock_coding);
-    av_free(s->all_fragments);
-    av_free(s->coded_fragment_list[0]);
-    av_free(s->dct_tokens_base);
-    av_free(s->superblock_fragments);
-    av_free(s->macroblock_coding);
-    av_free(s->motion_val[0]);
-    av_free(s->motion_val[1]);
-    av_free(s->edge_emu_buffer);
-
-    if (avctx->internal->is_copy)
-        return 0;
-
-    for (i = 0; i < 16; i++) {
-        free_vlc(&s->dc_vlc[i]);
-        free_vlc(&s->ac_vlc_1[i]);
-        free_vlc(&s->ac_vlc_2[i]);
-        free_vlc(&s->ac_vlc_3[i]);
-        free_vlc(&s->ac_vlc_4[i]);
-    }
-
-    free_vlc(&s->superblock_run_length_vlc);
-    free_vlc(&s->fragment_run_length_vlc);
-    free_vlc(&s->mode_code_vlc);
-    free_vlc(&s->motion_vector_vlc);
-
-    /* release all frames */
-    vp3_decode_flush(avctx);
-
-    return 0;
-}
-
 static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
 {
     Vp3DecodeContext *s = avctx->priv_data;
@@ -2063,6 +2080,23 @@ static int read_huffman_tree(AVCodecContext *avctx, GetBitContext *gb)
         s->hbits >>= 1;
         s->huff_code_size--;
     }
+    return 0;
+}
+
+static int vp3_init_thread_copy(AVCodecContext *avctx)
+{
+    Vp3DecodeContext *s = avctx->priv_data;
+
+    s->superblock_coding      = NULL;
+    s->all_fragments          = NULL;
+    s->coded_fragment_list[0] = NULL;
+    s->dct_tokens_base        = NULL;
+    s->superblock_fragments   = NULL;
+    s->macroblock_coding      = NULL;
+    s->motion_val[0]          = NULL;
+    s->motion_val[1]          = NULL;
+    s->edge_emu_buffer        = NULL;
+
     return 0;
 }
 
@@ -2325,43 +2359,6 @@ static av_cold int theora_decode_init(AVCodecContext *avctx)
   }
 
     return vp3_decode_init(avctx);
-}
-
-static void vp3_decode_flush(AVCodecContext *avctx)
-{
-    Vp3DecodeContext *s = avctx->priv_data;
-
-    if (s->golden_frame.data[0]) {
-        if (s->golden_frame.data[0] == s->last_frame.data[0])
-            memset(&s->last_frame, 0, sizeof(AVFrame));
-        if (s->current_frame.data[0] == s->golden_frame.data[0])
-            memset(&s->current_frame, 0, sizeof(AVFrame));
-        ff_thread_release_buffer(avctx, &s->golden_frame);
-    }
-    if (s->last_frame.data[0]) {
-        if (s->current_frame.data[0] == s->last_frame.data[0])
-            memset(&s->current_frame, 0, sizeof(AVFrame));
-        ff_thread_release_buffer(avctx, &s->last_frame);
-    }
-    if (s->current_frame.data[0])
-        ff_thread_release_buffer(avctx, &s->current_frame);
-}
-
-static int vp3_init_thread_copy(AVCodecContext *avctx)
-{
-    Vp3DecodeContext *s = avctx->priv_data;
-
-    s->superblock_coding      = NULL;
-    s->all_fragments          = NULL;
-    s->coded_fragment_list[0] = NULL;
-    s->dct_tokens_base        = NULL;
-    s->superblock_fragments   = NULL;
-    s->macroblock_coding      = NULL;
-    s->motion_val[0]          = NULL;
-    s->motion_val[1]          = NULL;
-    s->edge_emu_buffer        = NULL;
-
-    return 0;
 }
 
 AVCodec ff_theora_decoder = {
