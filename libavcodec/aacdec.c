@@ -703,16 +703,13 @@ static void decode_ltp(AACContext *ac, LongTermPrediction *ltp,
 
 /**
  * Decode Individual Channel Stream info; reference: table 4.6.
- *
- * @param   common_window   Channels have independent [0], or shared [1], Individual Channel Stream information.
  */
 static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
-                           GetBitContext *gb, int common_window)
+                           GetBitContext *gb)
 {
     if (get_bits1(gb)) {
         av_log(ac->avctx, AV_LOG_ERROR, "Reserved bit set.\n");
-        memset(ics, 0, sizeof(IndividualChannelStream));
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
     ics->window_sequence[1] = ics->window_sequence[0];
     ics->window_sequence[0] = get_bits(gb, 2);
@@ -747,13 +744,11 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
         if (ics->predictor_present) {
             if (ac->m4ac.object_type == AOT_AAC_MAIN) {
                 if (decode_prediction(ac, ics, gb)) {
-                    memset(ics, 0, sizeof(IndividualChannelStream));
-                    return -1;
+                    return AVERROR_INVALIDDATA;
                 }
             } else if (ac->m4ac.object_type == AOT_AAC_LC) {
                 av_log(ac->avctx, AV_LOG_ERROR, "Prediction is not allowed in AAC-LC.\n");
-                memset(ics, 0, sizeof(IndividualChannelStream));
-                return -1;
+                return AVERROR_INVALIDDATA;
             } else {
                 if ((ics->ltp.present = get_bits(gb, 1)))
                     decode_ltp(ac, &ics->ltp, gb, ics->max_sfb);
@@ -765,8 +760,7 @@ static int decode_ics_info(AACContext *ac, IndividualChannelStream *ics,
         av_log(ac->avctx, AV_LOG_ERROR,
                "Number of scalefactor bands in group (%d) exceeds limit (%d).\n",
                ics->max_sfb, ics->num_swb);
-        memset(ics, 0, sizeof(IndividualChannelStream));
-        return -1;
+        return AVERROR_INVALIDDATA;
     }
 
     return 0;
@@ -1371,8 +1365,8 @@ static int decode_ics(AACContext *ac, SingleChannelElement *sce,
     global_gain = get_bits(gb, 8);
 
     if (!common_window && !scale_flag) {
-        if (decode_ics_info(ac, ics, gb, 0) < 0)
-            return -1;
+        if (decode_ics_info(ac, ics, gb) < 0)
+            return AVERROR_INVALIDDATA;
     }
 
     if (decode_band_types(ac, sce->band_type, sce->band_type_run_end, gb, ics) < 0)
@@ -1488,8 +1482,8 @@ static int decode_cpe(AACContext *ac, GetBitContext *gb, ChannelElement *cpe)
 
     common_window = get_bits1(gb);
     if (common_window) {
-        if (decode_ics_info(ac, &cpe->ch[0].ics, gb, 1))
-            return -1;
+        if (decode_ics_info(ac, &cpe->ch[0].ics, gb))
+            return AVERROR_INVALIDDATA;
         i = cpe->ch[1].ics.use_kb_window[0];
         cpe->ch[1].ics = cpe->ch[0].ics;
         cpe->ch[1].ics.use_kb_window[1] = i;
