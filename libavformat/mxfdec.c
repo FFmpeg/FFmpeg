@@ -1370,6 +1370,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codec->codec_id = container_ul->id;
             st->codec->channels = descriptor->channels;
             st->codec->bits_per_coded_sample = descriptor->bits_per_sample;
+            if (descriptor->sample_rate.den > 0)
             st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
             /* TODO: implement CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {
