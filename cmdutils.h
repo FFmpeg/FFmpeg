@@ -245,7 +245,7 @@ void print_error(const char *filename, int err);
  * current version of the repository and of the libav* libraries used by
  * the program.
  */
-void show_banner(void);
+void show_banner(int argc, char **argv, const OptionDef *options);
 
 /**
  * Print the version of the program to stdout. The version message

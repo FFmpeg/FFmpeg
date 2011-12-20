@@ -4392,7 +4392,7 @@ int main(int argc, char **argv)
     av_register_all();
     avformat_network_init();
 
-    show_banner();
+    show_banner(argc, argv, options);
 
     /* parse options */
     parse_options(&o, argc, argv, options, opt_output_file);
