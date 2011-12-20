@@ -40,7 +40,7 @@ static int ff_celt_error_to_averror(int err)
 #endif
         case CELT_INTERNAL_ERROR:   return AVERROR(EFAULT);
         case CELT_CORRUPTED_DATA:   return AVERROR_INVALIDDATA;
-        case CELT_UNIMPLEMENTED:    return AVERROR(ENOTSUP);
+        case CELT_UNIMPLEMENTED:    return AVERROR_PATCHWELCOME;
 #ifdef ENOTRECOVERABLE
         case CELT_INVALID_STATE:    return AVERROR(ENOTRECOVERABLE);
 #endif
