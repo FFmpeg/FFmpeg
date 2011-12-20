@@ -1203,10 +1203,11 @@ no_output_pic:
         if (s->reordered_input_picture[0]->f.type == FF_BUFFER_TYPE_SHARED || s->avctx->rc_buffer_size) {
             // input is a shared pix, so we can't modifiy it -> alloc a new one & ensure that the shared one is reuseable
 
+            Picture *pic;
             int i= ff_find_unused_picture(s, 0);
             if (i < 0)
                 return i;
-            Picture *pic= &s->picture[i];
+            pic = &s->picture[i];
 
             pic->f.reference = s->reordered_input_picture[0]->f.reference;
             if(ff_alloc_picture(s, pic, 0) < 0){
