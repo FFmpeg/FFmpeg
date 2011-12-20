@@ -1703,6 +1703,10 @@ static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
     int64_t next_ofs;
     MXFIndexTable *t = &mxf->index_tables[0];
 
+    /* this is called from the OP1a demuxing logic, which means there may be no index tables */
+    if (mxf->nb_index_tables <= 0)
+        return;
+
     /* find mxf->current_edit_unit so that the next edit unit starts ahead of pkt->pos */
     for (;;) {
         if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
@@ -1784,6 +1788,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return mxf_read_packet_old(s, pkt);
 
     /* OPAtom - clip wrapped demuxing */
+    /* NOTE: mxf_read_header() makes sure nb_index_tables > 0 for OPAtom */
     st = s->streams[0];
     t = &mxf->index_tables[0];
 
