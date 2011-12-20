@@ -572,11 +572,9 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     src & stride :-(
     */
     uint8_t *srcCopy = src;
-    DECLARE_ALIGNED(16, uint8_t, dt)[16];
+    DECLARE_ALIGNED(16, uint8_t, dt)[16] = { deringThreshold };
     const vector signed int zero = vec_splat_s32(0);
-    vector unsigned char v_dt;
-    dt[0] = deringThreshold;
-    v_dt = vec_splat(vec_ld(0, dt), 0);
+    vector unsigned char v_dt = vec_splat(vec_ld(0, dt), 0);
 
 #define LOAD_LINE(i)                                                  \
     const vector unsigned char perm##i =                              \
@@ -599,6 +597,10 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 
     vector unsigned char v_avg;
     DECLARE_ALIGNED(16, signed int, S)[8];
+    DECLARE_ALIGNED(16, int, tQP2)[4] = { c->QP/2 + 1 };
+    vector signed int vQP2 = vec_ld(0, tQP2);
+    vQP2 = vec_splat(vQP2, 0);
+
     {
     const vector unsigned char trunc_perm = (vector unsigned char)
         {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -736,10 +738,6 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     /* I'm not sure the following is actually faster
        than straight, unvectorized C code :-( */
 
-    DECLARE_ALIGNED(16, int, tQP2)[4];
-    tQP2[0]= c->QP/2 + 1;
-    vector signed int vQP2 = vec_ld(0, tQP2);
-    vQP2 = vec_splat(vQP2, 0);
 #define F_INIT()                                       \
     vector unsigned char tenRightM = tenRight;         \
     vector unsigned char permA1M = permA1;             \
@@ -753,21 +751,21 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
         const vector signed int a_sump =                                \
             (vector signed int)vec_msum(a_B, magic, (vector unsigned int)zero);\
         vector signed int F = vec_sr(vec_sums(a_sump, vsint32_8), vuint32_4); \
-        F = vec_splat(F, 3);                                            \
         const vector signed int p =                                     \
             (vector signed int)vec_perm(src##j, (vector unsigned char)zero, \
                                         extractPermM);                  \
         const vector signed int sum  = vec_add(p, vQP2);                \
         const vector signed int diff = vec_sub(p, vQP2);                \
         vector signed int newpm;                                        \
+        vector unsigned char newpm2, mask;                              \
+        F = vec_splat(F, 3);                                            \
         if (vec_all_lt(sum, F))                                         \
             newpm = sum;                                                \
         else if (vec_all_gt(diff, F))                                   \
             newpm = diff;                                               \
         else newpm = F;                                                 \
-        const vector unsigned char newpm2 =                             \
-            vec_splat((vector unsigned char)newpm, 15);                 \
-        const vector unsigned char mask = vec_add(identity, tenRightM); \
+        newpm2 = vec_splat((vector unsigned char)newpm, 15);            \
+        mask = vec_add(identity, tenRightM);                            \
         src##j = vec_perm(src##j, newpm2, mask);                        \
     }                                                                   \
     permA1M = vec_add(permA1M, permA1inc);                              \
@@ -840,10 +838,6 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     vector signed int v_sysdp = zero;
     int d, sysd, i;
 
-    tempBlurredPast[127]= maxNoise[0];
-    tempBlurredPast[128]= maxNoise[1];
-    tempBlurredPast[129]= maxNoise[2];
-
 #define LOAD_LINE(src, i)                                               \
     register int j##src##i = i * stride;                                \
     vector unsigned char perm##src##i = vec_lvsl(j##src##i, src);       \
@@ -890,6 +884,10 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     ACCUMULATE_DIFFS(6);
     ACCUMULATE_DIFFS(7);
 #undef ACCUMULATE_DIFFS
+
+    tempBlurredPast[127]= maxNoise[0];
+    tempBlurredPast[128]= maxNoise[1];
+    tempBlurredPast[129]= maxNoise[2];
 
     v_dp = vec_sums(v_dp, zero);
     v_sysdp = vec_sums(v_sysdp, zero);
