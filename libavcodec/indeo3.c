@@ -770,7 +770,8 @@ static int parse_bintree(Indeo3DecodeContext *ctx, AVCodecContext *avctx,
                 /* get motion vector index and setup the pointer to the mv set */
                 if (!ctx->need_resync)
                     ctx->next_cell_data = &ctx->gb.buffer[(get_bits_count(&ctx->gb) + 7) >> 3];
-                curr_cell.mv_ptr = &ctx->mc_vectors[*(ctx->next_cell_data++) << 1];
+                if(ctx->mc_vectors)
+                    curr_cell.mv_ptr = &ctx->mc_vectors[*(ctx->next_cell_data++) << 1];
                 curr_cell.tree   = 1; /* enter the VQ tree */
                 UPDATE_BITPOS(8);
             } else { /* VQ tree DATA code */
