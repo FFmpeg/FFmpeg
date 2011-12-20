@@ -530,6 +530,39 @@ static inline void doVertDefFilter_altivec(uint8_t src[], int stride, PPContext 
 }
 
 static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
+    const vector signed int vsint32_8 = vec_splat_s32(8);
+    const vector unsigned int vuint32_4 = vec_splat_u32(4);
+    const vector signed char neg1 = vec_splat_s8(-1);
+
+    const vector unsigned char permA1 = (vector unsigned char)
+        {0x00, 0x01, 0x02, 0x10, 0x11, 0x12, 0x1F, 0x1F,
+         0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
+    const vector unsigned char permA2 = (vector unsigned char)
+        {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x11,
+         0x12, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
+    const vector unsigned char permA1inc = (vector unsigned char)
+        {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const vector unsigned char permA2inc = (vector unsigned char)
+        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
+         0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const vector unsigned char magic = (vector unsigned char)
+        {0x01, 0x02, 0x01, 0x02, 0x04, 0x02, 0x01, 0x02,
+         0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const vector unsigned char extractPerm = (vector unsigned char)
+        {0x10, 0x10, 0x10, 0x01, 0x10, 0x10, 0x10, 0x01,
+         0x10, 0x10, 0x10, 0x01, 0x10, 0x10, 0x10, 0x01};
+    const vector unsigned char extractPermInc = (vector unsigned char)
+        {0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
+         0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01};
+    const vector unsigned char identity = vec_lvsl(0,(unsigned char *)0);
+    const vector unsigned char tenRight = (vector unsigned char)
+        {0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const vector unsigned char eightLeft = (vector unsigned char)
+        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08};
+
     /*
     this code makes no assumption on src or stride.
     One could remove the recomputation of the perm
@@ -565,6 +598,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 #undef LOAD_LINE
 
     vector unsigned char v_avg;
+    DECLARE_ALIGNED(16, signed int, S)[8];
     {
     const vector unsigned char trunc_perm = (vector unsigned char)
         {0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08,
@@ -603,7 +637,6 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     v_avg = vec_avg(v_min, v_max);
     }
 
-    DECLARE_ALIGNED(16, signed int, S)[8];
     {
     const vector unsigned short mask1 = (vector unsigned short)
                                         {0x0001, 0x0002, 0x0004, 0x0008,
@@ -615,8 +648,12 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     const vector unsigned int vuint32_16 = vec_sl(vec_splat_u32(1), vec_splat_u32(4));
     const vector unsigned int vuint32_1 = vec_splat_u32(1);
 
+    vector signed int sumA2;
+    vector signed int sumB2;
+    vector signed int sum0, sum1, sum2, sum3, sum4;
+    vector signed int sum5, sum6, sum7, sum8, sum9;
+
 #define COMPARE(i)                                                      \
-    vector signed int sum##i;                                           \
     do {                                                                \
         const vector unsigned char cmp##i =                             \
             (vector unsigned char)vec_cmpgt(src##i, v_avg);             \
@@ -644,8 +681,6 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     COMPARE(9);
 #undef COMPARE
 
-    vector signed int sumA2;
-    vector signed int sumB2;
     {
     const vector signed int sump02 = vec_mergel(sum0, sum2);
     const vector signed int sump13 = vec_mergel(sum1, sum3);
@@ -703,39 +738,6 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     tQP2[0]= c->QP/2 + 1;
     vector signed int vQP2 = vec_ld(0, tQP2);
     vQP2 = vec_splat(vQP2, 0);
-    const vector signed int vsint32_8 = vec_splat_s32(8);
-    const vector unsigned int vuint32_4 = vec_splat_u32(4);
-
-    const vector unsigned char permA1 = (vector unsigned char)
-        {0x00, 0x01, 0x02, 0x10, 0x11, 0x12, 0x1F, 0x1F,
-         0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
-    const vector unsigned char permA2 = (vector unsigned char)
-        {0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x10, 0x11,
-         0x12, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F, 0x1F};
-    const vector unsigned char permA1inc = (vector unsigned char)
-        {0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x00, 0x00,
-         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    const vector unsigned char permA2inc = (vector unsigned char)
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x01,
-         0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    const vector unsigned char magic = (vector unsigned char)
-        {0x01, 0x02, 0x01, 0x02, 0x04, 0x02, 0x01, 0x02,
-         0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    const vector unsigned char extractPerm = (vector unsigned char)
-        {0x10, 0x10, 0x10, 0x01, 0x10, 0x10, 0x10, 0x01,
-         0x10, 0x10, 0x10, 0x01, 0x10, 0x10, 0x10, 0x01};
-    const vector unsigned char extractPermInc = (vector unsigned char)
-        {0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01,
-         0x00, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x01};
-    const vector unsigned char identity = vec_lvsl(0,(unsigned char *)0);
-    const vector unsigned char tenRight = (vector unsigned char)
-        {0x00, 0x10, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    const vector unsigned char eightLeft = (vector unsigned char)
-        {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x08};
-
-
 #define F_INIT(i)                                       \
     vector unsigned char tenRightM##i = tenRight;       \
     vector unsigned char permA1M##i = permA1;           \
@@ -777,7 +779,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     tenRightM##i = vec_sro(tenRightM##i, eightLeft);                    \
     extractPermM##i = vec_add(extractPermM##i, extractPermInc)
 
-#define ITER(i, j, k)                           \
+#define ITER(i, j, k) do {                      \
     F_INIT(i);                                  \
     F2(i, j, k, 0);                             \
     F2(i, j, k, 1);                             \
@@ -786,7 +788,8 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     F2(i, j, k, 4);                             \
     F2(i, j, k, 5);                             \
     F2(i, j, k, 6);                             \
-    F2(i, j, k, 7)
+    F2(i, j, k, 7);                             \
+} while (0)
 
     ITER(0, 1, 2);
     ITER(1, 2, 3);
@@ -797,9 +800,7 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     ITER(6, 7, 8);
     ITER(7, 8, 9);
 
-    const vector signed char neg1 = vec_splat_s8(-1);
-
-#define STORE_LINE(i)                                   \
+#define STORE_LINE(i) do {                              \
     const vector unsigned char permST##i =              \
         vec_lvsr(i * stride, srcCopy);                  \
     const vector unsigned char maskST##i =              \
@@ -809,7 +810,8 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
     sA##i= vec_sel(sA##i, src##i, maskST##i);           \
     sB##i= vec_sel(src##i, sB##i, maskST##i);           \
     vec_st(sA##i, i * stride, srcCopy);                 \
-    vec_st(sB##i, i * stride + 16, srcCopy)
+    vec_st(sB##i, i * stride + 16, srcCopy);            \
+} while (0)
 
     STORE_LINE(1);
     STORE_LINE(2);
@@ -832,6 +834,10 @@ static inline void dering_altivec(uint8_t src[], int stride, PPContext *c) {
 static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
                                             uint8_t *tempBlurred, uint32_t *tempBlurredPast, int *maxNoise)
 {
+    const vector signed char neg1 = vec_splat_s8(-1);
+    const vector unsigned char permHH = (const vector unsigned char){0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
+                                                                     0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
+
     const vector signed int zero = vec_splat_s32(0);
     const vector signed short vsint16_1 = vec_splat_s16(1);
     vector signed int v_dp = zero;
@@ -872,11 +878,12 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     LOAD_LINE(tempBlurred, 7);
 #undef LOAD_LINE
 
-#define ACCUMULATE_DIFFS(i)                                     \
+#define ACCUMULATE_DIFFS(i) do {                                \
     vector signed short v_d##i = vec_sub(v_tempBlurredAss##i,   \
                                          v_srcAss##i);          \
     v_dp = vec_msums(v_d##i, v_d##i, v_dp);                     \
-    v_sysdp = vec_msums(v_d##i, vsint16_1, v_sysdp)
+    v_sysdp = vec_msums(v_d##i, vsint16_1, v_sysdp);            \
+} while (0)
 
     ACCUMULATE_DIFFS(0);
     ACCUMULATE_DIFFS(1);
@@ -938,13 +945,14 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
             const vector signed short vsint16_4 = vec_splat_s16(4);
             const vector unsigned short vuint16_3 = vec_splat_u16(3);
 
-#define OP(i)                                                   \
+#define OP(i) do {                                              \
             const vector signed short v_temp##i =               \
                 vec_mladd(v_tempBlurredAss##i,                  \
                           vsint16_7, v_srcAss##i);              \
             const vector signed short v_temp2##i =              \
                 vec_add(v_temp##i, vsint16_4);                  \
-            v_tempBlurredAss##i = vec_sr(v_temp2##i, vuint16_3)
+            v_tempBlurredAss##i = vec_sr(v_temp2##i, vuint16_3);\
+        } while (0)
 
             OP(0);
             OP(1);
@@ -959,13 +967,14 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
             const vector signed short vsint16_3 = vec_splat_s16(3);
             const vector signed short vsint16_2 = vec_splat_s16(2);
 
-#define OP(i)                                                   \
+#define OP(i) do {                                              \
             const vector signed short v_temp##i =               \
                 vec_mladd(v_tempBlurredAss##i,                  \
                           vsint16_3, v_srcAss##i);              \
             const vector signed short v_temp2##i =              \
                 vec_add(v_temp##i, vsint16_2);                  \
-            v_tempBlurredAss##i = vec_sr(v_temp2##i, (vector unsigned short)vsint16_2)
+            v_tempBlurredAss##i = vec_sr(v_temp2##i, (vector unsigned short)vsint16_2); \
+        } while (0)
 
             OP(0);
             OP(1);
@@ -979,11 +988,7 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
         }
     }
 
-    const vector signed char neg1 = vec_splat_s8(-1);
-    const vector unsigned char permHH = (const vector unsigned char){0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07,
-                                                                     0x18, 0x19, 0x1A, 0x1B, 0x1C, 0x1D, 0x1E, 0x1F};
-
-#define PACK_AND_STORE(src, i)                                  \
+#define PACK_AND_STORE(src, i) do {                             \
     const vector unsigned char perms##src##i =                  \
         vec_lvsr(i * stride, src);                              \
     const vector unsigned char vf##src##i =                     \
@@ -999,7 +1004,8 @@ static inline void RENAME(tempNoiseReducer)(uint8_t *src, int stride,
     const vector unsigned char svB##src##i =                    \
         vec_sel(vg2##src##i, v_##src##A2##i, mask##src##i);     \
     vec_st(svA##src##i, i * stride, src);                       \
-    vec_st(svB##src##i, i * stride + 16, src)
+    vec_st(svB##src##i, i * stride + 16, src);                  \
+} while (0)
 
     PACK_AND_STORE(src, 0);
     PACK_AND_STORE(src, 1);
@@ -1127,6 +1133,7 @@ static inline void transpose_16x8_char_toPackedAlign_altivec(unsigned char* dst,
 
 static inline void transpose_8x16_char_fromPackedAlign_altivec(unsigned char* dst, unsigned char* src, int stride) {
     const vector unsigned char zero = vec_splat_u8(0);
+    const vector signed   char neg1 = vec_splat_s8(-1);
 
 #define LOAD_DOUBLE_LINE(i, j)                                  \
     vector unsigned char src##i = vec_ld(i * 16, src);            \
@@ -1187,8 +1194,7 @@ static inline void transpose_8x16_char_fromPackedAlign_altivec(unsigned char* ds
     temp7 = vec_mergel(tempD, tempL);
 
 
-    const vector signed char neg1 = vec_splat_s8(-1);
-#define STORE_DOUBLE_LINE(i, j)                                         \
+#define STORE_DOUBLE_LINE(i, j) do {                                    \
     vector unsigned char dstA##i = vec_ld(i * stride, dst);             \
     vector unsigned char dstB##i = vec_ld(i * stride + 16, dst);        \
     vector unsigned char dstA##j = vec_ld(j * stride, dst);             \
@@ -1206,7 +1212,8 @@ static inline void transpose_8x16_char_fromPackedAlign_altivec(unsigned char* ds
     vec_st(dstAF##i, i * stride, dst);                                  \
     vec_st(dstBF##i, i * stride + 16, dst);                             \
     vec_st(dstAF##j, j * stride, dst);                                  \
-    vec_st(dstBF##j, j * stride + 16, dst)
+    vec_st(dstBF##j, j * stride + 16, dst);                             \
+} while (0)
 
     STORE_DOUBLE_LINE(0,1);
     STORE_DOUBLE_LINE(2,3);

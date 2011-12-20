@@ -3518,9 +3518,10 @@ static void RENAME(postProcess)(const uint8_t src[], int srcStride, uint8_t dst[
                 else if(mode & H_DEBLOCK){
 #if HAVE_ALTIVEC
                     DECLARE_ALIGNED(16, unsigned char, tempBlock)[272];
+                    int t;
                     transpose_16x8_char_toPackedAlign_altivec(tempBlock, dstBlock - (4 + 1), stride);
 
-                    const int t=vertClassify_altivec(tempBlock-48, 16, &c);
+                    t = vertClassify_altivec(tempBlock-48, 16, &c);
                     if(t==1) {
                         doVertLowPass_altivec(tempBlock-48, 16, &c);
                         transpose_8x16_char_fromPackedAlign_altivec(dstBlock - (4 + 1), tempBlock, stride);
