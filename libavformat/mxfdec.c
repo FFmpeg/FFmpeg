@@ -1085,6 +1085,12 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
             int offset = s->temporal_offset_entries[j] / index_delta;
             int index  = x + offset;
 
+            if (x >= index_table->nb_ptses) {
+                av_log(mxf->fc, AV_LOG_ERROR, "x >= nb_ptses - IndexEntryCount %i < IndexDuration %"PRId64"?\n",
+                       s->nb_index_entries, s->index_duration);
+                break;
+            }
+
             index_table->fake_index[x].timestamp = x;
             index_table->fake_index[x].flags = !(s->flag_entries[j] & 0x30) ? AVINDEX_KEYFRAME : 0;
 
