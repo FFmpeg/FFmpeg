@@ -1232,6 +1232,9 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 
     /* Read the entries and sort them in each stream component. */
     for(i = 0; i < nb_index_entries; i++) {
+        if(url_feof(pb))
+            return -1;
+
         tag = avio_rl32(pb);
         flags = avio_rl32(pb);
         pos = avio_rl32(pb);
@@ -1254,8 +1257,6 @@ static int avi_read_idx1(AVFormatContext *s, int size)
 
         av_dlog(s, "%d cum_len=%"PRId64"\n", len, ast->cum_len);
 
-        if(url_feof(pb))
-            return -1;
 
         if(last_pos == pos)
             avi->non_interleaved= 1;
