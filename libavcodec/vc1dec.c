@@ -508,7 +508,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
     }
     if (v->field_mode) { // interlaced field picture
         if (!dir) {
-            if ((v->cur_field_type != v->ref_field_type[dir]) && v->cur_field_type) {
+            if ((v->cur_field_type != v->ref_field_type[dir]) && v->second_field) {
                 srcY = s->current_picture.f.data[0];
                 srcU = s->current_picture.f.data[1];
                 srcV = s->current_picture.f.data[2];
@@ -631,7 +631,7 @@ static void vc1_mc_1mv(VC1Context *v, int dir)
         srcY += s->mspel * (1 + s->linesize);
     }
 
-    if (v->field_mode && v->cur_field_type) {
+    if (v->field_mode && v->second_field) {
         off    = s->current_picture_ptr->f.linesize[0];
         off_uv = s->current_picture_ptr->f.linesize[1];
     } else {
@@ -697,7 +697,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
 
     if (!dir) {
         if (v->field_mode) {
-            if ((v->cur_field_type != v->ref_field_type[dir]) && v->cur_field_type)
+            if ((v->cur_field_type != v->ref_field_type[dir]) && v->second_field)
                 srcY = s->current_picture.f.data[0];
             else
                 srcY = s->last_picture.f.data[0];
@@ -766,7 +766,7 @@ static void vc1_mc_4mv_luma(VC1Context *v, int n, int dir)
         off = ((n > 1) ? s->linesize : 0) + (n & 1) * 8;
     else
         off = s->linesize * 4 * (n & 2) + (n & 1) * 8;
-    if (v->field_mode && v->cur_field_type)
+    if (v->field_mode && v->second_field)
         off += s->current_picture_ptr->f.linesize[0];
 
     src_x = s->mb_x * 16 + (n & 1) * 8 + (mx >> 2);
@@ -994,7 +994,7 @@ static void vc1_mc_4mv_chroma(VC1Context *v, int dir)
             srcU += s->current_picture_ptr->f.linesize[1];
             srcV += s->current_picture_ptr->f.linesize[2];
         }
-        off = v->cur_field_type ? s->current_picture_ptr->f.linesize[1] : 0;
+        off = v->second_field ? s->current_picture_ptr->f.linesize[1] : 0;
     }
 
     if (v->rangeredfrm || (v->mv_mode == MV_PMODE_INTENSITY_COMP)
@@ -2048,7 +2048,7 @@ static void vc1_interp_mc(VC1Context *v)
         srcY += s->mspel * (1 + s->linesize);
     }
 
-    if (v->field_mode && v->cur_field_type) {
+    if (v->field_mode && v->second_field) {
         off    = s->current_picture_ptr->f.linesize[0];
         off_uv = s->current_picture_ptr->f.linesize[1];
     } else {
@@ -4055,7 +4055,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
                 continue;
             v->vc1dsp.vc1_inv_trans_8x8(s->block[i]);
             off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
-            off += v->cur_field_type ? ((i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0]) : 0;
+            off += v->second_field ? ((i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0]) : 0;
             s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i & 4) ? s->uvlinesize : s->linesize);
             // TODO: loop filter
         }
@@ -4102,7 +4102,7 @@ static int vc1_decode_p_mb_intfi(VC1Context *v)
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
-            if (v->cur_field_type)
+            if (v->second_field)
                 off += (i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0];
             if (val) {
                 pat = vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
@@ -4332,7 +4332,7 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
                 for (j = 0; j < 64; j++)
                     s->block[i][j] <<= 1;
             off  = (i & 4) ? 0 : ((i & 1) * 8 + (i & 2) * 4 * s->linesize);
-            off += v->cur_field_type ? ((i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0]) : 0;
+            off += v->second_field ? ((i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0]) : 0;
             s->dsp.put_signed_pixels_clamped(s->block[i], s->dest[dst_idx] + off, (i & 4) ? s->uvlinesize : s->linesize);
             // TODO: yet to perform loop filter
         }
@@ -4414,7 +4414,7 @@ static void vc1_decode_b_mb_intfi(VC1Context *v)
             dst_idx += i >> 2;
             val = ((cbp >> (5 - i)) & 1);
             off = (i & 4) ? 0 : (i & 1) * 8 + (i & 2) * 4 * s->linesize;
-            if (v->cur_field_type)
+            if (v->second_field)
                 off += (i & 4) ? s->current_picture_ptr->f.linesize[1] : s->current_picture_ptr->f.linesize[0];
             if (val) {
                 vc1_decode_p_block(v, s->block[i], i, mquant, ttmb,
@@ -5425,8 +5425,8 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     MpegEncContext *s = &v->s;
     AVFrame *pict = data;
     uint8_t *buf2 = NULL;
-    uint8_t *buf_field2 = NULL;
     const uint8_t *buf_start = buf;
+    uint8_t *tmp;
     int mb_height, n_slices1=-1;
     struct {
         uint8_t *buf;
@@ -5495,9 +5495,6 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                     slices[n_slices].mby_start = s->mb_height >> 1;
                     n_slices1 = n_slices - 1; // index of the last slice of the first field
                     n_slices++;
-                    // not necessary, ad hoc until I find a way to handle WVC1i
-                    buf_field2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                    vc1_unescape_buffer(start + 4, size, buf_field2);
                     break;
                 }
                 case VC1_CODE_ENTRYPOINT: /* it should be before frame data */
@@ -5525,14 +5522,26 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
             }
         } else if (v->interlace && ((buf[0] & 0xC0) == 0xC0)) { /* WVC1 interlaced stores both fields divided by marker */
             const uint8_t *divider;
+            int buf_size3;
 
             divider = find_next_marker(buf, buf + buf_size);
             if ((divider == (buf + buf_size)) || AV_RB32(divider) != VC1_CODE_FIELD) {
                 av_log(avctx, AV_LOG_ERROR, "Error in WVC1 interlaced frame\n");
                 goto err;
             } else { // found field marker, unescape second field
-                buf_field2 = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
-                vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, buf_field2);
+                tmp = av_realloc(slices, sizeof(*slices) * (n_slices+1));
+                if (!tmp)
+                    goto err;
+                slices = tmp;
+                slices[n_slices].buf = av_mallocz(buf_size + FF_INPUT_BUFFER_PADDING_SIZE);
+                if (!slices[n_slices].buf)
+                    goto err;
+                buf_size3 = vc1_unescape_buffer(divider + 4, buf + buf_size - divider - 4, slices[n_slices].buf);
+                init_get_bits(&slices[n_slices].gb, slices[n_slices].buf,
+                              buf_size3 << 3);
+                slices[n_slices].mby_start = s->mb_height >> 1;
+                n_slices1 = n_slices - 1;
+                n_slices++;
             }
             buf_size2 = vc1_unescape_buffer(buf, divider - buf, buf2);
         } else {
@@ -5705,10 +5714,7 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
                 s->gb = slices[i].gb;
         }
         if (v->field_mode) {
-            av_free(buf_field2);
             v->second_field = 0;
-        }
-        if (v->field_mode) {
             if (s->pict_type == AV_PICTURE_TYPE_B) {
                 memcpy(v->mv_f_base, v->mv_f_next_base,
                        2 * (s->b8_stride * (s->mb_height * 2 + 1) + s->mb_stride * (s->mb_height + 1) * 2));
@@ -5765,7 +5771,6 @@ err:
     for (i = 0; i < n_slices; i++)
         av_free(slices[i].buf);
     av_free(slices);
-    av_free(buf_field2);
     return -1;
 }
 

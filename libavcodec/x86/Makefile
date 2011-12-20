@@ -35,6 +35,7 @@ YASM-OBJS-$(CONFIG_DIRAC_DECODER)      += x86/diracdsp_mmx.o x86/diracdsp_yasm.o
 MMX-OBJS-$(CONFIG_AC3DSP)              += x86/ac3dsp_mmx.o
 YASM-OBJS-$(CONFIG_AC3DSP)             += x86/ac3dsp.o
 MMX-OBJS-$(CONFIG_CAVS_DECODER)        += x86/cavsdsp_mmx.o
+MMX-OBJS-$(CONFIG_DNXHD_ENCODER)       += x86/dnxhd_mmx.o
 MMX-OBJS-$(CONFIG_MPEGAUDIODSP)        += x86/mpegaudiodec_mmx.o
 YASM-OBJS-$(CONFIG_MPEGAUDIODSP)       += x86/imdct36_sse.o
 MMX-OBJS-$(CONFIG_PNG_DECODER)         += x86/png_mmx.o
@@ -67,8 +68,7 @@ MMX-OBJS-$(HAVE_YASM)                  += x86/dsputil_yasm.o            \
 
 MMX-OBJS-$(CONFIG_FFT)                 += x86/fft.o
 
-OBJS-$(HAVE_MMX)                       += x86/dnxhd_mmx.o               \
-                                          x86/dsputil_mmx.o             \
+OBJS-$(HAVE_MMX)                       += x86/dsputil_mmx.o             \
                                           x86/fdct_mmx.o                \
                                           x86/fmtconvert_mmx.o          \
                                           x86/idct_mmx_xvid.o           \
