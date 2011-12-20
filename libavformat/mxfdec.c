@@ -1500,11 +1500,6 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
     AVIOContext *pb = mxf->fc->pb;
     int64_t ret;
 
-    if (!mxf->current_partition) {
-        av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to PartitionPack\n");
-        return AVERROR_INVALIDDATA;
-    }
-
     if (mxf->parsing_backward) {
         return mxf_seek_to_previous_partition(mxf);
     } else {
@@ -1618,6 +1613,12 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
         if (IS_KLV_KEY(klv.key, mxf_encrypted_triplet_key) ||
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_system_item_key)) {
+
+            if (!mxf->current_partition) {
+                av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to first PartitionPack\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             if (!mxf->current_partition->essence_offset) {
                 /* for OP1a we compute essence_offset
                  * for OPAtom we point essence_offset after the KL (usually op1a_essence_offset + 20 or 25)
