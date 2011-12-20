@@ -4674,7 +4674,7 @@ int main(int argc, char **argv)
     av_register_all();
     avformat_network_init();
 
-    show_banner();
+    show_banner(argc, argv, options);
 
     my_program_name = argv[0];
     my_program_dir = getcwd(0, 0);

@@ -3177,7 +3177,7 @@ int main(int argc, char **argv)
 
     init_opts();
 
-    show_banner();
+    show_banner(argc, argv, options);
 
     parse_options(NULL, argc, argv, options, opt_input_file);
 
