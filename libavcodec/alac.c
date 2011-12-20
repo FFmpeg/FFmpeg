@@ -112,7 +112,7 @@ static inline int decode_scalar(GetBitContext *gb, int k, int limit, int readsam
     return x;
 }
 
-static void bastardized_rice_decompress(ALACContext *alac,
+static int bastardized_rice_decompress(ALACContext *alac,
                                  int32_t *output_buffer,
                                  int output_size,
                                  int readsamplesize, /* arg_10 */
@@ -133,6 +133,9 @@ static void bastardized_rice_decompress(ALACContext *alac,
 
         /* standard rice encoding */
         int k; /* size of extra bits */
+
+        if(get_bits_left(&alac->gb) <= 0)
+            return -1;
 
         /* read k, that is bits as is */
         k = av_log2((history >> 9) + 3);
@@ -179,6 +182,7 @@ static void bastardized_rice_decompress(ALACContext *alac,
             history = 0;
         }
     }
+    return 0;
 }
 
 static inline int sign_only(int v)
@@ -442,12 +446,14 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
 
         if (alac->extra_bits) {
             for (i = 0; i < outputsamples; i++) {
+                if(get_bits_left(&alac->gb) <= 0)
+                    return -1;
                 for (ch = 0; ch < channels; ch++)
                     alac->extra_bits_buffer[ch][i] = get_bits(&alac->gb, alac->extra_bits);
             }
         }
         for (ch = 0; ch < channels; ch++) {
-            bastardized_rice_decompress(alac,
+            int ret = bastardized_rice_decompress(alac,
                                         alac->predicterror_buffer[ch],
                                         outputsamples,
                                         readsamplesize,
@@ -455,6 +461,8 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
                                         alac->setinfo_rice_kmodifier,
                                         ricemodifier[ch] * alac->setinfo_rice_historymult / 4,
                                         (1 << alac->setinfo_rice_kmodifier) - 1);
+            if(ret<0)
+                return ret;
 
             if (prediction_type[ch] == 0) {
                 /* adaptive fir */
@@ -478,6 +486,8 @@ static int alac_decode_frame(AVCodecContext *avctx, void *data,
     } else {
         /* not compressed, easy case */
         for (i = 0; i < outputsamples; i++) {
+            if(get_bits_left(&alac->gb) <= 0)
+                return -1;
             for (ch = 0; ch < channels; ch++) {
                 alac->outputsamples_buffer[ch][i] = get_sbits_long(&alac->gb,
                                                                    alac->setinfo_sample_size);
