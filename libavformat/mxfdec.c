@@ -1437,7 +1437,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
 
     if (!ctx)
         return -1;
-    while (avio_tell(pb) + 4 < klv_end) {
+    while (avio_tell(pb) + 4 < klv_end && !url_feof(pb)) {
         int tag = avio_rb16(pb);
         int size = avio_rb16(pb); /* KLV specified by 0x53 */
         uint64_t next = avio_tell(pb) + size;
