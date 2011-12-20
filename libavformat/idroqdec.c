@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
+#include "avio_internal.h"
 
 #define RoQ_MAGIC_NUMBER 0x1084
 #define RoQ_CHUNK_PREAMBLE_SIZE 8
@@ -124,6 +125,8 @@ static int roq_read_packet(AVFormatContext *s,
         chunk_size = AV_RL32(&preamble[2]);
         if(chunk_size > INT_MAX)
             return AVERROR_INVALIDDATA;
+
+        chunk_size = ffio_limit(pb, chunk_size);
 
         switch (chunk_type) {
 
