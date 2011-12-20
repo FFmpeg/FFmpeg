@@ -202,7 +202,12 @@ int swr_init(struct SwrContext *s){
     if(!s->out.ch_count)
         s->out.ch_count= av_get_channel_layout_nb_channels(s->out_ch_layout);
 
-av_assert0(s-> in.ch_count);
+    if(!s-> in.ch_count){
+        av_assert0(!s->in_ch_layout);
+        av_log(s, AV_LOG_ERROR, "Input channel count and layout are unset\n");
+        return -1;
+    }
+
 av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;
