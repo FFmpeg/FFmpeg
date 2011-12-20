@@ -662,7 +662,7 @@ static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size
 
 static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *segment)
 {
-    int i, j, length;
+    int i, length;
 
     segment->nb_index_entries = avio_rb32(pb);
     length = avio_rb32(pb);
@@ -1839,7 +1839,7 @@ static int mxf_read_close(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     MXFIndexTableSegment *seg;
-    int i, j;
+    int i;
 
     av_freep(&mxf->packages_refs);
 
