@@ -1028,8 +1028,10 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
     for (i = 0; i < index_table->nb_segments; i++) {
         MXFIndexTableSegment *s = index_table->segments[i];
 
-        if (!s->nb_index_entries)
+        if (!s->nb_index_entries) {
+            index_table->nb_ptses = 0;
             return 0;                               /* no TemporalOffsets */
+        }
 
         index_table->nb_ptses += s->index_duration;
     }
