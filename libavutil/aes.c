@@ -33,7 +33,7 @@ typedef union {
 
 typedef struct AVAES {
     // Note: round_key[16] is accessed in the init code, but this only
-    // overwrites state, which does not matter (see also r7471).
+    // overwrites state, which does not matter (see also commit ba554c0).
     av_aes_block round_key[15];
     av_aes_block state[2];
     int rounds;

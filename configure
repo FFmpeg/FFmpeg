@@ -3311,6 +3311,7 @@ elif enabled gcc; then
     check_cflags -fno-tree-vectorize
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
+    check_cflags -Werror=declaration-after-statement
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
@@ -3406,6 +3407,7 @@ echo "postprocessing support    ${postproc-no}"
 echo "new filter support        ${avfilter-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
+echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
 echo "Sun medialib support      ${mlib-no}"
 echo "libdxva2 enabled          ${dxva2-no}"
