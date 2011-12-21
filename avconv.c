@@ -50,6 +50,7 @@
 #if CONFIG_AVFILTER
 # include "libavfilter/avfilter.h"
 # include "libavfilter/avfiltergraph.h"
+# include "libavfilter/buffersrc.h"
 # include "libavfilter/vsrc_buffer.h"
 #endif
 
@@ -527,6 +528,13 @@ static void codec_release_buffer(AVCodecContext *s, AVFrame *frame)
         frame->data[i] = NULL;
 
     unref_buffer(ist, buf);
+}
+
+static void filter_release_buffer(AVFilterBuffer *fb)
+{
+    FrameBuffer *buf = fb->priv;
+    av_free(fb);
+    unref_buffer(buf->ist, buf);
 }
 
 #if CONFIG_AVFILTER
@@ -1915,21 +1923,35 @@ static int transcode_video(InputStream *ist, AVPacket *pkt, int *got_output, int
             continue;
 
 #if CONFIG_AVFILTER
-        if (ost->input_video_filter) {
-            AVRational sar;
-            if (ist->st->sample_aspect_ratio.num)
-                sar = ist->st->sample_aspect_ratio;
-            else
-                sar = ist->st->codec->sample_aspect_ratio;
-            av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame, ist->pts, sar);
-            if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
-                av_free(buffer_to_free);
-                return AVERROR(ENOMEM);
-            } else
-                avcodec_get_frame_defaults(ist->filtered_frame);
-            filtered_frame = ist->filtered_frame;
-            frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
-        }
+        if (ist->st->sample_aspect_ratio.num)
+            decoded_frame->sample_aspect_ratio = ist->st->sample_aspect_ratio;
+        if (ist->st->codec->codec->capabilities & CODEC_CAP_DR1) {
+            FrameBuffer      *buf = decoded_frame->opaque;
+            AVFilterBufferRef *fb = avfilter_get_video_buffer_ref_from_arrays(
+                                        decoded_frame->data, decoded_frame->linesize,
+                                        AV_PERM_READ | AV_PERM_PRESERVE,
+                                        ist->st->codec->width, ist->st->codec->height,
+                                        ist->st->codec->pix_fmt);
+
+            avfilter_copy_frame_props(fb, decoded_frame);
+            fb->pts                 = ist->pts;
+            fb->buf->priv           = buf;
+            fb->buf->free           = filter_release_buffer;
+
+            buf->refcount++;
+            av_buffersrc_buffer(ost->input_video_filter, fb);
+        } else
+            av_vsrc_buffer_add_frame(ost->input_video_filter, decoded_frame,
+                                     ist->pts, decoded_frame->sample_aspect_ratio);
+
+        if (!ist->filtered_frame && !(ist->filtered_frame = avcodec_alloc_frame())) {
+            av_free(buffer_to_free);
+            return AVERROR(ENOMEM);
+        } else
+            avcodec_get_frame_defaults(ist->filtered_frame);
+        filtered_frame = ist->filtered_frame;
+
+        frame_available = avfilter_poll_frame(ost->output_video_filter->inputs[0]);
         while (frame_available) {
             AVRational ist_pts_tb;
             if (ost->output_video_filter)
