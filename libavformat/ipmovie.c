@@ -115,7 +115,7 @@ static int load_ipmovie_packet(IPMVEContext *s, AVIOContext *pb,
 
     int chunk_type;
 
-    if (s->audio_chunk_offset) {
+    if (s->audio_chunk_offset && s->audio_channels && s->audio_bits) {
 
         /* adjust for PCM audio by skipping chunk header */
         if (s->audio_type != CODEC_ID_INTERPLAY_DPCM) {
