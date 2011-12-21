@@ -479,6 +479,13 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
             partition->previous_partition, footer_partition,
             partition->index_sid, partition->body_sid);
 
+    /* sanity check PreviousPartition if set */
+    if (partition->previous_partition &&
+        mxf->run_in + partition->previous_partition >= klv_offset) {
+        av_log(mxf->fc, AV_LOG_ERROR, "PreviousPartition points to this partition or forward\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if      (op[12] == 1 && op[13] == 1) mxf->op = OP1a;
     else if (op[12] == 1 && op[13] == 2) mxf->op = OP1b;
     else if (op[12] == 1 && op[13] == 3) mxf->op = OP1c;
