@@ -1117,6 +1117,7 @@ HAVE_LIST="
     posix_memalign
     round
     roundf
+    sched_getaffinity
     sdl
     sdl_video_size
     setmode
@@ -2853,6 +2854,7 @@ check_func  setrlimit
 check_func  strerror_r
 check_func  strptime
 check_func  strtok_r
+check_func  sched_getaffinity
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
