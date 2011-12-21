@@ -251,6 +251,7 @@ void av_register_all(void)
     REGISTER_DEMUXER  (TTY, tty);
     REGISTER_DEMUXER  (VC1, vc1);
     REGISTER_MUXDEMUX (VC1T, vc1t);
+    REGISTER_DEMUXER  (VIVO, vivo);
     REGISTER_DEMUXER  (VMD, vmd);
     REGISTER_MUXDEMUX (VOC, voc);
     REGISTER_DEMUXER  (VQF, vqf);
