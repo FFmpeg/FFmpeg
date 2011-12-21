@@ -12,6 +12,7 @@ OBJS = allfilters.o                                                     \
        drawutils.o                                                      \
        formats.o                                                        \
        graphparser.o                                                    \
+       vsrc_buffer.o
 
 OBJS-$(CONFIG_ANULL_FILTER)                  += af_anull.o
 
@@ -59,7 +60,6 @@ OBJS-$(CONFIG_UNSHARP_FILTER)                += vf_unsharp.o
 OBJS-$(CONFIG_VFLIP_FILTER)                  += vf_vflip.o
 OBJS-$(CONFIG_YADIF_FILTER)                  += vf_yadif.o
 
-OBJS-$(CONFIG_BUFFER_FILTER)                 += vsrc_buffer.o
 OBJS-$(CONFIG_COLOR_FILTER)                  += vsrc_color.o
 OBJS-$(CONFIG_FREI0R_SRC_FILTER)             += vf_frei0r.o
 OBJS-$(CONFIG_MOVIE_FILTER)                  += vsrc_movie.o
