@@ -609,9 +609,11 @@ const char *sws_format_name(enum PixelFormat format);
     (av_pix_fmt_descriptors[x].nb_components == 2 || \
      av_pix_fmt_descriptors[x].nb_components == 4)
 
-#define isPacked(x) \
+#define isPacked(x) (\
     (av_pix_fmt_descriptors[x].nb_components >= 2 && \
-     !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
+     !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR)) || \
+    (x) == PIX_FMT_PAL8\
+    )
 
 #define isPlanar(x) \
     (av_pix_fmt_descriptors[x].nb_components >= 2 && \
