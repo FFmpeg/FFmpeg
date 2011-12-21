@@ -443,7 +443,8 @@ static int decode_slice_thread(AVCodecContext *avctx, void *arg, int jobnr, int 
     v_data_size = slice->data_size - y_data_size - u_data_size - hdr_size;
     if (hdr_size > 7) v_data_size = AV_RB16(buf + 6);
 
-    if (y_data_size < 0 || u_data_size < 0 || v_data_size < 0) {
+    if (y_data_size < 0 || u_data_size < 0 || v_data_size < 0
+        || hdr_size+y_data_size+u_data_size+v_data_size > slice->data_size){
         av_log(avctx, AV_LOG_ERROR, "invalid plane data size\n");
         return -1;
     }
