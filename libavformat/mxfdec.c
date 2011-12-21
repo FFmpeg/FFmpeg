@@ -1745,7 +1745,7 @@ static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
         return;
 
     /* find mxf->current_edit_unit so that the next edit unit starts ahead of pkt->pos */
-    for (;;) {
+    while (mxf->current_edit_unit >= 0) {
         if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
             break;
 
@@ -1763,7 +1763,7 @@ static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
         mxf->current_edit_unit++;
     }
 
-    if (mxf->current_edit_unit >= t->nb_ptses)
+    if (mxf->current_edit_unit < 0 || mxf->current_edit_unit >= t->nb_ptses)
         return;
 
     pkt->dts = mxf->current_edit_unit + t->first_dts;
