@@ -2033,6 +2033,7 @@ static int mpeg1_decode_sequence(AVCodecContext *avctx,
     s->progressive_sequence = 1;
     s->progressive_frame    = 1;
     s->picture_structure    = PICT_FRAME;
+    s->first_field          = 0;
     s->frame_pred_frame_dct = 1;
     s->chroma_format        = 1;
     s->codec_id             = s->avctx->codec_id = CODEC_ID_MPEG1VIDEO;
@@ -2092,6 +2093,7 @@ static int vcr2_init_sequence(AVCodecContext *avctx)
     s->progressive_sequence  = 1;
     s->progressive_frame     = 1;
     s->picture_structure     = PICT_FRAME;
+    s->first_field           = 0;
     s->frame_pred_frame_dct  = 1;
     s->chroma_format         = 1;
     s->codec_id              = s->avctx->codec_id = CODEC_ID_MPEG2VIDEO;
