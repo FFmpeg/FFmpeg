@@ -34,6 +34,8 @@
 #if HAVE_SCHED_GETAFFINITY
 #define _GNU_SOURCE
 #include <sched.h>
+#elif HAVE_GETSYSTEMINFO
+#include <windows.h>
 #endif
 
 #include "avcodec.h"
@@ -156,6 +158,10 @@ static int get_logical_cpus(AVCodecContext *avctx)
     if (!ret) {
         nb_cpus = CPU_COUNT(&cpuset);
     }
+#elif HAVE_GETSYSTEMINFO
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    nb_cpus = sysinfo.dwNumberOfProcessors;
 #endif
     av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
     return FFMIN(nb_cpus, MAX_AUTO_THREADS);
