@@ -662,7 +662,7 @@ static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size
 
 static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *segment)
 {
-    int i, j, length;
+    int i, length;
 
     segment->nb_index_entries = avio_rb32(pb);
     length = avio_rb32(pb);
@@ -1072,13 +1072,24 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
     for (i = x = 0; i < index_table->nb_segments; i++) {
         MXFIndexTableSegment *s = index_table->segments[i];
         int index_delta = 1;
+        int n = s->nb_index_entries;
 
-        if (s->nb_index_entries == 2 * s->index_duration + 1)
+        if (s->nb_index_entries == 2 * s->index_duration + 1) {
             index_delta = 2;    /* Avid index */
 
-        for (j = 0; j < s->nb_index_entries; j += index_delta, x++) {
+            /* ignore the last entry - it's the size of the essence container */
+            n--;
+        }
+
+        for (j = 0; j < n; j += index_delta, x++) {
             int offset = s->temporal_offset_entries[j] / index_delta;
             int index  = x + offset;
+
+            if (x >= index_table->nb_ptses) {
+                av_log(mxf->fc, AV_LOG_ERROR, "x >= nb_ptses - IndexEntryCount %i < IndexDuration %"PRId64"?\n",
+                       s->nb_index_entries, s->index_duration);
+                break;
+            }
 
             index_table->fake_index[x].timestamp = x;
             index_table->fake_index[x].flags = !(s->flag_entries[j] & 0x30) ? AVINDEX_KEYFRAME : 0;
@@ -1359,6 +1370,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codec->codec_id = container_ul->id;
             st->codec->channels = descriptor->channels;
             st->codec->bits_per_coded_sample = descriptor->bits_per_sample;
+            if (descriptor->sample_rate.den > 0)
             st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
             /* TODO: implement CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {
@@ -1833,7 +1845,7 @@ static int mxf_read_close(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     MXFIndexTableSegment *seg;
-    int i, j;
+    int i;
 
     av_freep(&mxf->packages_refs);
 
