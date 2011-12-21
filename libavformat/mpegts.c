@@ -762,7 +762,8 @@ static int read_sl_header(PESContext *pes, SLConfigDescr *sl, const uint8_t *buf
     if (cts != AV_NOPTS_VALUE)
         pes->pts = cts;
 
-    avpriv_set_pts_info(pes->st, sl->timestamp_len, 1, sl->timestamp_res);
+    if (sl->timestamp_len && sl->timestamp_res)
+        avpriv_set_pts_info(pes->st, sl->timestamp_len, 1, sl->timestamp_res);
 
     return (get_bits_count(&gb) + 7) >> 3;
 }
@@ -1496,7 +1497,7 @@ static void pmt_cb(MpegTSFilter *filter, const uint8_t *section, int section_len
             if (idx >= 0) {
                 st = ts->stream->streams[idx];
             } else {
-                st = avformat_new_stream(pes->stream, NULL);
+                st = avformat_new_stream(ts->stream, NULL);
                 st->id = pid;
                 st->codec->codec_type = AVMEDIA_TYPE_DATA;
             }

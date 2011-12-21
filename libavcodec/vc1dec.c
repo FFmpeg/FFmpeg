@@ -5426,13 +5426,12 @@ static int vc1_decode_frame(AVCodecContext *avctx, void *data,
     AVFrame *pict = data;
     uint8_t *buf2 = NULL;
     const uint8_t *buf_start = buf;
-    uint8_t *tmp;
     int mb_height, n_slices1=-1;
     struct {
         uint8_t *buf;
         GetBitContext gb;
         int mby_start;
-    } *slices = NULL;
+    } *slices = NULL, *tmp;
 
     if(s->flags & CODEC_FLAG_LOW_DELAY)
         s->low_delay = 1;

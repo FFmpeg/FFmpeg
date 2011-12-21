@@ -132,10 +132,8 @@ typedef struct FourXContext{
     AVFrame current_picture, last_picture;
     GetBitContext pre_gb;          ///< ac/dc prefix
     GetBitContext gb;
-    const uint8_t *bytestream;
-    const uint8_t *bytestream_end;
-    const uint16_t *wordstream;
-    const uint16_t *wordstream_end;
+    GetByteContext g;
+    GetByteContext g2;
     int mv[256];
     VLC pre_vlc;
     int last_dc;
@@ -330,11 +328,11 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
     assert(code>=0 && code<=6);
 
     if(code == 0){
-        if (f->bytestream_end - f->bytestream < 1){
+        if (f->g.buffer_end - f->g.buffer < 1){
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
         }
-        src += f->mv[ *f->bytestream++ ];
+        src += f->mv[ *f->g.buffer++ ];
         if(start > src || src > end){
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
@@ -351,37 +349,37 @@ static void decode_p_block(FourXContext *f, uint16_t *dst, uint16_t *src, int lo
     }else if(code == 3 && f->version<2){
         mcdc(dst, src, log2w, h, stride, 1, 0);
     }else if(code == 4){
-        if (f->bytestream_end - f->bytestream < 1){
+        if (f->g.buffer_end - f->g.buffer < 1){
             av_log(f->avctx, AV_LOG_ERROR, "bytestream overread\n");
             return;
         }
-        src += f->mv[ *f->bytestream++ ];
+        src += f->mv[ *f->g.buffer++ ];
         if(start > src || src > end){
             av_log(f->avctx, AV_LOG_ERROR, "mv out of pic\n");
             return;
         }
-        if (f->wordstream_end - f->wordstream < 1){
+        if (f->g2.buffer_end - f->g2.buffer < 1){
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
-        mcdc(dst, src, log2w, h, stride, 1, av_le2ne16(*f->wordstream++));
+        mcdc(dst, src, log2w, h, stride, 1, bytestream2_get_le16(&f->g2));
     }else if(code == 5){
-        if (f->wordstream_end - f->wordstream < 1){
+        if (f->g2.buffer_end - f->g2.buffer < 1){
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
-        mcdc(dst, src, log2w, h, stride, 0, av_le2ne16(*f->wordstream++));
+        mcdc(dst, src, log2w, h, stride, 0, bytestream2_get_le16(&f->g2));
     }else if(code == 6){
-        if (f->wordstream_end - f->wordstream < 2){
+        if (f->g2.buffer_end - f->g2.buffer < 2){
             av_log(f->avctx, AV_LOG_ERROR, "wordstream overread\n");
             return;
         }
         if(log2w){
-            dst[0] = av_le2ne16(*f->wordstream++);
-            dst[1] = av_le2ne16(*f->wordstream++);
+            dst[0] = bytestream2_get_le16(&f->g2);
+            dst[1] = bytestream2_get_le16(&f->g2);
         }else{
-            dst[0     ] = av_le2ne16(*f->wordstream++);
-            dst[stride] = av_le2ne16(*f->wordstream++);
+            dst[0     ] = bytestream2_get_le16(&f->g2);
+            dst[stride] = bytestream2_get_le16(&f->g2);
         }
     }
 }
@@ -393,7 +391,7 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
     uint16_t *src= (uint16_t*)f->last_picture.data[0];
     uint16_t *dst= (uint16_t*)f->current_picture.data[0];
     const int stride= f->current_picture.linesize[0]>>1;
-    unsigned int bitstream_size, bytestream_size, wordstream_size, extra;
+    unsigned int bitstream_size, bytestream_size, wordstream_size, extra, bytestream_offset, wordstream_offset;
 
     if(f->version>1){
         extra=20;
@@ -425,10 +423,10 @@ static int decode_p_frame(FourXContext *f, const uint8_t *buf, int length){
     memset((uint8_t*)f->bitstream_buffer + bitstream_size, 0, FF_INPUT_BUFFER_PADDING_SIZE);
     init_get_bits(&f->gb, f->bitstream_buffer, 8*bitstream_size);
 
-    f->wordstream= (const uint16_t*)(buf + extra + bitstream_size);
-    f->wordstream_end= f->wordstream + wordstream_size/2;
-    f->bytestream= buf + extra + bitstream_size + wordstream_size;
-    f->bytestream_end = f->bytestream + bytestream_size;
+    wordstream_offset = extra + bitstream_size;
+    bytestream_offset = extra + bitstream_size + wordstream_size;
+    bytestream2_init(&f->g2, buf + wordstream_offset, length - wordstream_offset);
+    bytestream2_init(&f->g,  buf + bytestream_offset, length - bytestream_offset);
 
     init_mv(f);
 

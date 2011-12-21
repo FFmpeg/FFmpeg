@@ -21,6 +21,10 @@
 #ifndef AVFORMAT_OMA_H
 #define AVFORMAT_OMA_H
 
+#include <stdint.h>
+
+#include "internal.h"
+
 #define EA3_HEADER_SIZE 96
 #define ID3v2_EA3_MAGIC "ea3"
 #define OMA_ENC_HEADER_SIZE 16
@@ -36,4 +40,5 @@ enum {
 extern const uint16_t ff_oma_srate_tab[6];
 
 extern const AVCodecTag ff_oma_codec_tags[];
-#endif
+
+#endif /* AVFORMAT_OMA_H */
