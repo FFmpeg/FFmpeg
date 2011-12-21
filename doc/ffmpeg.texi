@@ -825,9 +825,13 @@ The following example split the channels of a stereo input into streams:
 ffmpeg -i stereo.wav -map 0:0 -map 0:0 -map_channel 0.0.0:0.0 -map_channel 0.0.1:0.1 -y out.ogg
 @end example
 
-Note that "-map_channel" is currently limited to the scope of one input for
-each output; you can't for example use it to pick multiple input audio files
-and mix them into one single output.
+Note that currently each output stream can only contain channels from a single
+input stream; you can't for example use "-map_channel" to pick multiple input
+audio channels contained in different streams (from the same or different files)
+and merge them into a single output stream. It is therefore not currently
+possible, for example, to turn two separate mono streams into a single stereo
+stream. However spliting a stereo stream into two single channel mono streams
+is possible.
 
 @item -map_metadata[:@var{metadata_type}][:@var{index}] @var{infile}[:@var{metadata_type}][:@var{index}] (@emph{output,per-metadata})
 Set metadata information of the next output file from @var{infile}. Note that
