@@ -179,6 +179,7 @@ static void truespeech_apply_twopoint_filter(TSContext *dec, int quart)
     for(i = 0; i < 146; i++)
         tmp[i] = dec->filtbuf[i];
     off = (t / 25) + dec->offset1[quart >> 1] + 18;
+    off = av_clip(off, 0, 145);
     ptr0 = tmp + 145 - off;
     ptr1 = tmp + 146;
     filter = (const int16_t*)ts_order2_coeffs + (t % 25) * 2;
