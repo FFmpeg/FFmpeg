@@ -136,5 +136,9 @@ fi
 
 echo "${test}:${sig:-$err}:$($base64 <$cmpfile):$($base64 <$errfile)" >$repfile
 
-test $err = 0 && rm -f $outfile $errfile $cmpfile $cleanfiles
+if test $err = 0; then
+    rm -f $outfile $errfile $cmpfile $cleanfiles
+else
+    echo "Test $test failed. Look at $errfile for details."
+fi
 exit $err
