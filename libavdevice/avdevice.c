@@ -16,10 +16,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "avdevice.h"
 
 unsigned avdevice_version(void)
 {
+    av_assert0(LIBAVDEVICE_VERSION_MICRO >= 100);
     return LIBAVDEVICE_VERSION_INT;
 }
 
