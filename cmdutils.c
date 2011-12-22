@@ -550,7 +550,7 @@ static int warned_cfg = 0;
         const char *indent = flags & INDENT? "  " : "";                 \
         if (flags & SHOW_VERSION) {                                     \
             unsigned int version = libname##_version();                 \
-            av_log(NULL, level, "%slib%-9s %2d.%3d.%2d / %2d.%3d.%2d\n",\
+            av_log(NULL, level, "%slib%-11s %2d.%3d.%3d / %2d.%3d.%3d\n",\
                    indent, #libname,                                    \
                    LIB##LIBNAME##_VERSION_MAJOR,                        \
                    LIB##LIBNAME##_VERSION_MINOR,                        \
