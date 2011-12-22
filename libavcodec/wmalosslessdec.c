@@ -1140,6 +1140,8 @@ static int decode_subframe(WmallDecodeCtx *s)
             revert_cdlms(s, i, 0, subframe_len);
         }
     }
+    if (s->do_mclms)
+        revert_mclms(s, subframe_len);
 
     /** handled one subframe */
 
