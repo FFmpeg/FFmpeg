@@ -45,6 +45,7 @@ static int show_value_unit              = 0;
 static int use_value_prefix             = 0;
 static int use_byte_value_binary_prefix = 0;
 static int use_value_sexagesimal_format = 0;
+static int show_private_data            = 1;
 
 static char *print_format;
 
@@ -1022,7 +1023,7 @@ static void show_stream(WriterContext *w, AVFormatContext *fmt_ctx, int stream_i
     } else {
         print_str_opt("codec_type", "unknown");
     }
-    if (dec_ctx->codec && dec_ctx->codec->priv_class) {
+    if (dec_ctx->codec && dec_ctx->codec->priv_class && show_private_data) {
         const AVOption *opt = NULL;
         while (opt = av_opt_next(dec_ctx->priv_data,opt)) {
             uint8_t *str;
@@ -1239,6 +1240,8 @@ static const OptionDef options[] = {
     { "show_format",  OPT_BOOL, {(void*)&do_show_format} , "show format/container info" },
     { "show_packets", OPT_BOOL, {(void*)&do_show_packets}, "show packets info" },
     { "show_streams", OPT_BOOL, {(void*)&do_show_streams}, "show streams info" },
+    { "show_private_data", OPT_BOOL, {(void*)&show_private_data}, "show private data" },
+    { "private",           OPT_BOOL, {(void*)&show_private_data}, "same as show_private_data" },
     { "default", HAS_ARG | OPT_AUDIO | OPT_VIDEO | OPT_EXPERT, {(void*)opt_default}, "generic catch all option", "" },
     { "i", HAS_ARG, {(void *)opt_input_file}, "read specified file", "input_file"},
     { NULL, },

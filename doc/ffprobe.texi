@@ -115,6 +115,12 @@ multimedia stream.
 Each media stream information is printed within a dedicated section
 with name "STREAM".
 
+@item -show_private_data, -private
+Show private data, that is data depending on the format of the
+particular shown element.
+This option is enabled by default, but you may need to disable it
+for specific uses, for example when creating XSD-compliant XML output.
+
 @item -i @var{input_file}
 Read @var{input_file}.
 
