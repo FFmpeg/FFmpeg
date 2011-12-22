@@ -29,7 +29,7 @@
  */
 
 #include "avcodec.h"
-#define ALT_BITSTREAM_READER_LE
+#define BITSTREAM_READER_LE
 #include "get_bits.h"
 #include "libavutil/lzo.h"
 #include "libavutil/imgutils.h"
