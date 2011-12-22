@@ -36,6 +36,9 @@
 #include <sched.h>
 #elif HAVE_GETSYSTEMINFO
 #include <windows.h>
+#elif HAVE_SYSCTL
+#include <sys/sysctl.h>
+#include <sys/types.h>
 #endif
 
 #include "avcodec.h"
@@ -162,6 +165,13 @@ static int get_logical_cpus(AVCodecContext *avctx)
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
     nb_cpus = sysinfo.dwNumberOfProcessors;
+#elif HAVE_SYSCTL
+    int mib[2] = { CTL_HW, HW_NCPU };
+    size_t len = sizeof(nb_cpus);
+
+    ret = sysctl(mib, 2, &nb_cpus, &len, NULL, 0);
+    if (ret == -1)
+        nb_cpus = 0;
 #endif
     av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
     return FFMIN(nb_cpus, MAX_AUTO_THREADS);
