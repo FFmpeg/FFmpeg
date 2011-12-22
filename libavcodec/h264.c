@@ -3798,7 +3798,7 @@ static int decode_nal_units(H264Context *h, const uint8_t *buf, int buf_size){
         int consumed;
         int dst_length;
         int bit_length;
-        const uint8_t *ptr;
+        uint8_t *ptr;
         int i, nalsize = 0;
         int err;
 
@@ -4195,13 +4195,13 @@ int main(void){
 
         s= show_bits(&gb, 24);
 
-        START_TIMER
+        {START_TIMER
         j= get_ue_golomb(&gb);
         if(j != i){
             printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
 //            return -1;
         }
-        STOP_TIMER("get_ue_golomb");
+        STOP_TIMER("get_ue_golomb");}
     }
 
 
@@ -4220,13 +4220,13 @@ int main(void){
 
         s= show_bits(&gb, 24);
 
-        START_TIMER
+        {START_TIMER
         j= get_se_golomb(&gb);
         if(j != i - COUNT/2){
             printf("mismatch! at %d (%d should be %d) bits:%6X\n", i, j, i, s);
 //            return -1;
         }
-        STOP_TIMER("get_se_golomb");
+        STOP_TIMER("get_se_golomb");}
     }
 
     printf("Testing RBSP\n");

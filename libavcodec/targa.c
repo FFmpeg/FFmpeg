@@ -238,18 +238,18 @@ static int decode_frame(AVCodecContext *avctx,
             for(x = 0; x < s->width >> 1; x++){
                 switch(s->bpp){
                 case 32:
-                    FFSWAP(uint32_t, ((uint32_t *)line)[x], ((uint32_t *)line)[s->width - x]);
+                    FFSWAP(uint32_t, ((uint32_t *)line)[x], ((uint32_t *)line)[s->width - x - 1]);
                     break;
                 case 24:
-                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x    ], ((uint8_t *)line)[3 * s->width - 3 * x    ]);
-                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 1], ((uint8_t *)line)[3 * s->width - 3 * x + 1]);
-                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 2], ((uint8_t *)line)[3 * s->width - 3 * x + 2]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x    ], ((uint8_t *)line)[3 * s->width - 3 * x - 3]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 1], ((uint8_t *)line)[3 * s->width - 3 * x - 2]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[3 * x + 2], ((uint8_t *)line)[3 * s->width - 3 * x - 1]);
                     break;
                 case 16:
-                    FFSWAP(uint16_t, ((uint16_t *)line)[x], ((uint16_t *)line)[s->width - x]);
+                    FFSWAP(uint16_t, ((uint16_t *)line)[x], ((uint16_t *)line)[s->width - x - 1]);
                     break;
                 case 8:
-                    FFSWAP(uint8_t, ((uint8_t *)line)[x], ((uint8_t *)line)[s->width - x]);
+                    FFSWAP(uint8_t, ((uint8_t *)line)[x], ((uint8_t *)line)[s->width - x - 1]);
                 }
             }
         }

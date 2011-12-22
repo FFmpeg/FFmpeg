@@ -514,7 +514,7 @@ separate patches.
 Before submitting a patch (or committing to the repository), you should at least
 test that you did not break anything.
 
-Running 'make fate' accomplishes this, please see @file{doc/fate.txt} for details.
+Running 'make fate' accomplishes this, please see @url{fate.html} for details.
 
 [Of course, some patches may change the results of the regression tests. In
 this case, the reference results of the regression tests shall be modified

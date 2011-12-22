@@ -2421,13 +2421,10 @@ static void stream_component_close(VideoState *is, int stream_index)
     }
 }
 
-/* since we have only one decoding thread, we can use a global
-   variable instead of a thread local variable */
-static VideoState *global_video_state;
-
 static int decode_interrupt_cb(void *ctx)
 {
-    return (global_video_state && global_video_state->abort_request);
+    VideoState *is = ctx;
+    return is->abort_request;
 }
 
 /* this thread gets the stream from the disk or the network */
@@ -2449,10 +2446,9 @@ static int read_thread(void *arg)
     is->audio_stream = -1;
     is->subtitle_stream = -1;
 
-    global_video_state = is;
-
     ic = avformat_alloc_context();
     ic->interrupt_callback.callback = decode_interrupt_cb;
+    ic->interrupt_callback.opaque = is;
     err = avformat_open_input(&ic, is->filename, is->iformat, &format_opts);
     if (err < 0) {
         print_error(is->filename, err);
@@ -2669,9 +2665,6 @@ static int read_thread(void *arg)
 
     ret = 0;
  fail:
-    /* disable interrupting */
-    global_video_state = NULL;
-
     /* close each stream */
     if (is->audio_stream >= 0)
         stream_component_close(is, is->audio_stream);
@@ -2682,7 +2675,6 @@ static int read_thread(void *arg)
     if (is->ic) {
         avformat_close_input(&is->ic);
     }
-    avio_set_interrupt_cb(NULL);
 
     if (ret != 0) {
         SDL_Event event;
@@ -3173,7 +3165,7 @@ int main(int argc, char **argv)
 
     init_opts();
 
-    show_banner();
+    show_banner(argc, argv, options);
 
     parse_options(NULL, argc, argv, options, opt_input_file);
 

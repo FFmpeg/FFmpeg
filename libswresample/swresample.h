@@ -31,7 +31,7 @@
 
 #define LIBSWRESAMPLE_VERSION_MAJOR 0
 #define LIBSWRESAMPLE_VERSION_MINOR 5
-#define LIBSWRESAMPLE_VERSION_MICRO 0
+#define LIBSWRESAMPLE_VERSION_MICRO 100
 
 #define SWR_CH_MAX 16   ///< Maximum number of channels
 
@@ -121,5 +121,20 @@ void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_dis
  * @return AVERROR error code in case of failure.
  */
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
+
+/**
+ * Return the LIBSWRESAMPLE_VERSION_INT constant.
+ */
+unsigned swresample_version(void);
+
+/**
+ * Return the swr build-time configuration.
+ */
+const char *swresample_configuration(void);
+
+/**
+ * Return the swr license.
+ */
+const char *swresample_license(void);
 
 #endif

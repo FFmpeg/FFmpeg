@@ -33,6 +33,7 @@
 #include "libavfilter/avfilter.h"
 #include "libavdevice/avdevice.h"
 #include "libswscale/swscale.h"
+#include "libswresample/swresample.h"
 #include "libpostproc/postprocess.h"
 #include "libavutil/avstring.h"
 #include "libavutil/mathematics.h"
@@ -549,7 +550,7 @@ static int warned_cfg = 0;
         const char *indent = flags & INDENT? "  " : "";                 \
         if (flags & SHOW_VERSION) {                                     \
             unsigned int version = libname##_version();                 \
-            av_log(NULL, level, "%slib%-9s %2d.%3d.%2d / %2d.%3d.%2d\n",\
+            av_log(NULL, level, "%slib%-11s %2d.%3d.%3d / %2d.%3d.%3d\n",\
                    indent, #libname,                                    \
                    LIB##LIBNAME##_VERSION_MAJOR,                        \
                    LIB##LIBNAME##_VERSION_MINOR,                        \
@@ -579,11 +580,16 @@ static void print_all_libs_info(int flags, int level)
     PRINT_LIB_INFO(avdevice, AVDEVICE, flags, level);
     PRINT_LIB_INFO(avfilter, AVFILTER, flags, level);
     PRINT_LIB_INFO(swscale,  SWSCALE,  flags, level);
+    PRINT_LIB_INFO(swresample,SWRESAMPLE,  flags, level);
     PRINT_LIB_INFO(postproc, POSTPROC, flags, level);
 }
 
-void show_banner(void)
+void show_banner(int argc, char **argv, const OptionDef *options)
 {
+    int idx = locate_option(argc, argv, options, "version");
+    if (idx)
+        return;
+
     av_log(NULL, AV_LOG_INFO, "%s version " FFMPEG_VERSION ", Copyright (c) %d-%d the FFmpeg developers\n",
            program_name, program_birth_year, this_year);
     av_log(NULL, AV_LOG_INFO, "  built on %s %s with %s %s\n",

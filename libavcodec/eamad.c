@@ -119,7 +119,7 @@ static inline void idct_put(MadContext *t, DCTELEM *block, int mb_x, int mb_y, i
     }
 }
 
-static inline void decode_block_intra(MadContext * t, DCTELEM * block)
+static inline int decode_block_intra(MadContext * t, DCTELEM * block)
 {
     MpegEncContext *s = &t->s;
     int level, i, j, run;
@@ -170,13 +170,14 @@ static inline void decode_block_intra(MadContext * t, DCTELEM * block)
             }
             if (i > 63) {
                 av_log(s->avctx, AV_LOG_ERROR, "ac-tex damaged at %d %d\n", s->mb_x, s->mb_y);
-                return;
+                return -1;
             }
 
             block[j] = level;
         }
         CLOSE_READER(re, &s->gb);
     }
+    return 0;
 }
 
 static int decode_motion(GetBitContext *gb)
@@ -190,7 +191,7 @@ static int decode_motion(GetBitContext *gb)
     return value;
 }
 
-static void decode_mb(MadContext *t, int inter)
+static int decode_mb(MadContext *t, int inter)
 {
     MpegEncContext *s = &t->s;
     int mv_map = 0;
@@ -215,10 +216,12 @@ static void decode_mb(MadContext *t, int inter)
                 comp_block(t, s->mb_x, s->mb_y, j, mv_x, mv_y, add);
         } else {
             s->dsp.clear_block(t->block);
-            decode_block_intra(t, t->block);
+            if(decode_block_intra(t, t->block) < 0)
+                return -1;
             idct_put(t, t->block, s->mb_x, s->mb_y, j);
         }
     }
+    return 0;
 }
 
 static void calc_intra_matrix(MadContext *t, int qscale)
@@ -268,6 +271,8 @@ static int decode_frame(AVCodecContext *avctx,
     buf += 16;
 
     if (avctx->width != s->width || avctx->height != s->height) {
+        if((s->width * s->height)/2048*7 > buf_end-buf)
+            return -1;
         if (av_image_check_size(s->width, s->height, 0, avctx) < 0)
             return -1;
         avcodec_set_dimensions(avctx, s->width, s->height);
@@ -294,7 +299,8 @@ static int decode_frame(AVCodecContext *avctx,
 
     for (s->mb_y=0; s->mb_y < (avctx->height+15)/16; s->mb_y++)
         for (s->mb_x=0; s->mb_x < (avctx->width +15)/16; s->mb_x++)
-            decode_mb(t, inter);
+            if(decode_mb(t, inter) < 0)
+                return -1;
 
     *data_size = sizeof(AVFrame);
     *(AVFrame*)data = t->frame;

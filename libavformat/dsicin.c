@@ -27,6 +27,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
+#include "avio_internal.h"
 
 
 typedef struct CinFileHeader {
@@ -178,6 +179,8 @@ static int cin_read_packet(AVFormatContext *s, AVPacket *pkt)
 
         /* palette and video packet */
         pkt_size = (palette_type + 3) * hdr->pal_colors_count + hdr->video_frame_size;
+
+        pkt_size = ffio_limit(pb, pkt_size);
 
         ret = av_new_packet(pkt, 4 + pkt_size);
         if (ret < 0)

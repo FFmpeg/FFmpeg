@@ -678,13 +678,13 @@ int     avio_pause(AVIOContext *h, int pause);
  *        If stream_index is (-1) the timestamp should be in AV_TIME_BASE
  *        units from the beginning of the presentation.
  *        If a stream_index >= 0 is used and the protocol does not support
- *        seeking based on component streams, the call will fail with ENOTSUP.
+ *        seeking based on component streams, the call will fail.
  * @param timestamp timestamp in AVStream.time_base units
  *        or if there is no stream specified then in AV_TIME_BASE units.
  * @param flags Optional combination of AVSEEK_FLAG_BACKWARD, AVSEEK_FLAG_BYTE
  *        and AVSEEK_FLAG_ANY. The protocol may silently ignore
  *        AVSEEK_FLAG_BACKWARD and AVSEEK_FLAG_ANY, but AVSEEK_FLAG_BYTE will
- *        fail with ENOTSUP if used and not supported.
+ *        fail if used and not supported.
  * @return >= 0 on success
  * @see AVInputFormat::read_seek
  */

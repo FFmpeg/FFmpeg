@@ -1195,6 +1195,7 @@ HAVE_LIST="
     lzo1x_999_compress
     machine_ioctl_bt848_h
     machine_ioctl_meteor_h
+    makeinfo
     malloc_h
     MapViewOfFile
     memalign
@@ -1422,6 +1423,8 @@ mp3adufloat_decoder_select="mpegaudiodsp"
 mp3float_decoder_select="mpegaudiodsp"
 mp3on4_decoder_select="mpegaudiodsp"
 mp3on4float_decoder_select="mpegaudiodsp"
+mpc7_decoder_select="mpegaudiodsp"
+mpc8_decoder_select="mpegaudiodsp"
 mpeg_vdpau_decoder_select="vdpau mpegvideo_decoder"
 mpeg_xvmc_decoder_deps="X11_extensions_XvMClib_h"
 mpeg_xvmc_decoder_select="mpegvideo_decoder"
@@ -3153,6 +3156,7 @@ fi
 enabled sdl && add_cflags $sdl_cflags && add_extralibs $sdl_libs
 
 texi2html -version > /dev/null 2>&1 && enable texi2html || disable texi2html
+makeinfo --version > /dev/null 2>&1 && enable makeinfo  || disable makeinfo
 
 check_header linux/fb.h
 check_header linux/videodev.h
@@ -3307,6 +3311,7 @@ elif enabled gcc; then
     check_cflags -fno-tree-vectorize
     check_cflags -Werror=implicit-function-declaration
     check_cflags -Werror=missing-prototypes
+    check_cflags -Werror=declaration-after-statement
 elif enabled llvm_gcc; then
     check_cflags -mllvm -stack-alignment=16
 elif enabled clang; then
@@ -3402,6 +3407,7 @@ echo "postprocessing support    ${postproc-no}"
 echo "new filter support        ${avfilter-no}"
 echo "network support           ${network-no}"
 echo "threading support         ${thread_type-no}"
+echo "safe bitstream reader     ${safe_bitstream_reader-no}"
 echo "SDL support               ${sdl-no}"
 echo "Sun medialib support      ${mlib-no}"
 echo "libdxva2 enabled          ${dxva2-no}"

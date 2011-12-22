@@ -662,7 +662,7 @@ static int mxf_read_source_package(void *arg, AVIOContext *pb, int tag, int size
 
 static int mxf_read_index_entry_array(AVIOContext *pb, MXFIndexTableSegment *segment)
 {
-    int i, j, length;
+    int i, length;
 
     segment->nb_index_entries = avio_rb32(pb);
     length = avio_rb32(pb);
@@ -1072,13 +1072,24 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
     for (i = x = 0; i < index_table->nb_segments; i++) {
         MXFIndexTableSegment *s = index_table->segments[i];
         int index_delta = 1;
+        int n = s->nb_index_entries;
 
-        if (s->nb_index_entries == 2 * s->index_duration + 1)
+        if (s->nb_index_entries == 2 * s->index_duration + 1) {
             index_delta = 2;    /* Avid index */
 
-        for (j = 0; j < s->nb_index_entries; j += index_delta, x++) {
+            /* ignore the last entry - it's the size of the essence container */
+            n--;
+        }
+
+        for (j = 0; j < n; j += index_delta, x++) {
             int offset = s->temporal_offset_entries[j] / index_delta;
             int index  = x + offset;
+
+            if (x >= index_table->nb_ptses) {
+                av_log(mxf->fc, AV_LOG_ERROR, "x >= nb_ptses - IndexEntryCount %i < IndexDuration %"PRId64"?\n",
+                       s->nb_index_entries, s->index_duration);
+                break;
+            }
 
             index_table->fake_index[x].timestamp = x;
             index_table->fake_index[x].flags = !(s->flag_entries[j] & 0x30) ? AVINDEX_KEYFRAME : 0;
@@ -1359,6 +1370,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 st->codec->codec_id = container_ul->id;
             st->codec->channels = descriptor->channels;
             st->codec->bits_per_coded_sample = descriptor->bits_per_sample;
+            if (descriptor->sample_rate.den > 0)
             st->codec->sample_rate = descriptor->sample_rate.num / descriptor->sample_rate.den;
             /* TODO: implement CODEC_ID_RAWAUDIO */
             if (st->codec->codec_id == CODEC_ID_PCM_S16LE) {
@@ -1703,6 +1715,10 @@ static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
     int64_t next_ofs;
     MXFIndexTable *t = &mxf->index_tables[0];
 
+    /* this is called from the OP1a demuxing logic, which means there may be no index tables */
+    if (mxf->nb_index_tables <= 0)
+        return;
+
     /* find mxf->current_edit_unit so that the next edit unit starts ahead of pkt->pos */
     for (;;) {
         if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
@@ -1784,6 +1800,7 @@ static int mxf_read_packet(AVFormatContext *s, AVPacket *pkt)
         return mxf_read_packet_old(s, pkt);
 
     /* OPAtom - clip wrapped demuxing */
+    /* NOTE: mxf_read_header() makes sure nb_index_tables > 0 for OPAtom */
     st = s->streams[0];
     t = &mxf->index_tables[0];
 
@@ -1828,7 +1845,7 @@ static int mxf_read_close(AVFormatContext *s)
 {
     MXFContext *mxf = s->priv_data;
     MXFIndexTableSegment *seg;
-    int i, j;
+    int i;
 
     av_freep(&mxf->packages_refs);
 

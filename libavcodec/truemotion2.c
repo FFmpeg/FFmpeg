@@ -286,6 +286,8 @@ static int tm2_read_stream(TM2Context *ctx, const uint8_t *buf, int stream_id, i
     buf += 4; cur += 4;
     buf += 4; cur += 4; /* unused by decoder */
 
+    if(skip < cur)
+        return -1;
     init_get_bits(&ctx->gb, buf, (skip - cur) * 8);
     if(tm2_build_huff_table(ctx, &codes) == -1)
         return -1;

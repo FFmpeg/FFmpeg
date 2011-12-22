@@ -1,0 +1,174 @@
+The following table lists most error codes found in various operating
+systems supported by FFmpeg.
+
+                             OS
+Code             Std    F  LBMWwb Text (YMMV)
+
+E2BIG            POSIX     ++++++  Argument list too long
+EACCES           POSIX     ++++++  Permission denied
+EADDRINUSE       POSIX     +++..+  Address in use
+EADDRNOTAVAIL    POSIX     +++..+  Cannot assign requested address
+EADV                       +.....  Advertise error
+EAFNOSUPPORT     POSIX     +++..+  Address family not supported
+EAGAIN           POSIX  +  ++++++  Resource temporarily unavailable
+EALREADY         POSIX     +++..+  Operation already in progress
+EAUTH                      .++...  Authentication error
+EBADARCH                   ..+...  Bad CPU type in executable
+EBADE                      +.....  Invalid exchange
+EBADEXEC                   ..+...  Bad executable
+EBADF            POSIX     ++++++  Bad file descriptor
+EBADFD                     +.....  File descriptor in bad state
+EBADMACHO                  ..+...  Malformed Macho file
+EBADMSG          POSIX     ++4...  Bad message
+EBADR                      +.....  Invalid request descriptor
+EBADRPC                    .++...  RPC struct is bad
+EBADRQC                    +.....  Invalid request code
+EBADSLT                    +.....  Invalid slot
+EBFONT                     +.....  Bad font file format
+EBUSY            POSIX  -  ++++++  Device or resource busy
+ECANCELED        POSIX     +++...  Operation canceled
+ECHILD           POSIX     ++++++  No child processes
+ECHRNG                     +.....  Channel number out of range
+ECOMM                      +.....  Communication error on send
+ECONNABORTED     POSIX     +++..+  Software caused connection abort
+ECONNREFUSED     POSIX  -  +++ss+  Connection refused
+ECONNRESET       POSIX     +++..+  Connection reset
+EDEADLK          POSIX     ++++++  Resource deadlock avoided
+EDEADLOCK                  +..++.  File locking deadlock error
+EDESTADDRREQ     POSIX     +++...  Destination address required
+EDEVERR                    ..+...  Device error
+EDOM             C89    -  ++++++  Numerical argument out of domain
+EDOOFUS                    .F....  Programming error
+EDOTDOT                    +.....  RFS specific error
+EDQUOT           POSIX     +++...  Disc quota exceeded
+EEXIST           POSIX     ++++++  File exists
+EFAULT           POSIX  -  ++++++  Bad address
+EFBIG            POSIX  -  ++++++  File too large
+EFTYPE                     .++...  Inappropriate file type or format
+EHOSTDOWN                  +++...  Host is down
+EHOSTUNREACH     POSIX     +++..+  No route to host
+EHWPOISON                  +.....  Memory page has hardware error
+EIDRM            POSIX     +++...  Identifier removed
+EILSEQ           C99       ++++++  Illegal byte sequence
+EINPROGRESS      POSIX  -  +++ss+  Operation in progress
+EINTR            POSIX  -  ++++++  Interrupted system call
+EINVAL           POSIX  +  ++++++  Invalid argument
+EIO              POSIX  +  ++++++  I/O error
+EISCONN          POSIX     +++..+  Socket is already connected
+EISDIR           POSIX     ++++++  Is a directory
+EISNAM                     +.....  Is a named type file
+EKEYEXPIRED                +.....  Key has expired
+EKEYREJECTED               +.....  Key was rejected by service
+EKEYREVOKED                +.....  Key has been revoked
+EL2HLT                     +.....  Level 2 halted
+EL2NSYNC                   +.....  Level 2 not synchronized
+EL3HLT                     +.....  Level 3 halted
+EL3RST                     +.....  Level 3 reset
+ELIBACC                    +.....  Can not access a needed shared library
+ELIBBAD                    +.....  Accessing a corrupted shared library
+ELIBEXEC                   +.....  Cannot exec a shared library directly
+ELIBMAX                    +.....  Too many shared libraries
+ELIBSCN                    +.....  .lib section in a.out corrupted
+ELNRNG                     +.....  Link number out of range
+ELOOP            POSIX     +++..+  Too many levels of symbolic links
+EMEDIUMTYPE                +.....  Wrong medium type
+EMFILE           POSIX     ++++++  Too many open files
+EMLINK           POSIX     ++++++  Too many links
+EMSGSIZE         POSIX     +++..+  Message too long
+EMULTIHOP        POSIX     ++4...  Multihop attempted
+ENAMETOOLONG     POSIX  -  ++++++  Filen ame too long
+ENAVAIL                    +.....  No XENIX semaphores available
+ENEEDAUTH                  .++...  Need authenticator
+ENETDOWN         POSIX     +++..+  Network is down
+ENETRESET        SUSv3     +++..+  Network dropped connection on reset
+ENETUNREACH      POSIX     +++..+  Network unreachable
+ENFILE           POSIX     ++++++  Too many open files in system
+ENOANO                     +.....  No anode
+ENOATTR                    .++...  Attribute not found
+ENOBUFS          POSIX  -  +++..+  No buffer space available
+ENOCSI                     +.....  No CSI structure available
+ENODATA          XSR       +N4...  No message available
+ENODEV           POSIX  -  ++++++  No such device
+ENOENT           POSIX  -  ++++++  No such file or directory
+ENOEXEC          POSIX     ++++++  Exec format error
+ENOFILE                    ...++.  No such file or directory
+ENOKEY                     +.....  Required key not available
+ENOLCK           POSIX     ++++++  No locks available
+ENOLINK          POSIX     ++4...  Link has been severed
+ENOMEDIUM                  +.....  No medium found
+ENOMEM           POSIX     ++++++  Not enough space
+ENOMSG           POSIX     +++..+  No message of desired type
+ENONET                     +.....  Machine is not on the network
+ENOPKG                     +.....  Package not installed
+ENOPROTOOPT      POSIX     +++..+  Protocol not available
+ENOSPC           POSIX     ++++++  No space left on device
+ENOSR            XSR       +N4...  No STREAM resources
+ENOSTR           XSR       +N4...  Not a STREAM
+ENOSYS           POSIX  +  ++++++  Function not implemented
+ENOTBLK                    +++...  Block device required
+ENOTCONN         POSIX     +++..+  Socket is not connected
+ENOTDIR          POSIX     ++++++  Not a directory
+ENOTEMPTY        POSIX     ++++++  Directory not empty
+ENOTNAM                    +.....  Not a XENIX named type file
+ENOTRECOVERABLE  SUSv4  -  +.....  State not recoverable
+ENOTSOCK         POSIX     +++..+  Socket operation on non-socket
+ENOTSUP          POSIX     +++...  Operation not supported
+ENOTTY           POSIX     ++++++  Inappropriate I/O control operation
+ENOTUNIQ                   +.....  Name not unique on network
+ENXIO            POSIX     ++++++  No such device or address
+EOPNOTSUPP       POSIX     +++..+  Operation not supported (on socket)
+EOVERFLOW        POSIX     +++..+  Value too large to be stored in data type
+EOWNERDEAD       SUSv4     +.....  Owner died
+EPERM            POSIX  -  ++++++  Operation not permitted
+EPFNOSUPPORT               +++..+  Protocol family not supported
+EPIPE            POSIX  -  ++++++  Broken pipe
+EPROCLIM                   .++...  Too many processes
+EPROCUNAVAIL               .++...  Bad procedure for program
+EPROGMISMATCH              .++...  Program version wrong
+EPROGUNAVAIL               .++...  RPC prog. not avail
+EPROTO           POSIX     ++4...  Protocol error
+EPROTONOSUPPORT  POSIX  -  +++ss+  Protocol not supported
+EPROTOTYPE       POSIX     +++..+  Protocol wrong type for socket
+EPWROFF                    ..+...  Device power is off
+ERANGE           C89    -  ++++++  Result too large
+EREMCHG                    +.....  Remote address changed
+EREMOTE                    +++...  Object is remote
+EREMOTEIO                  +.....  Remote I/O error
+ERESTART                   +.....  Interrupted system call should be restarted
+ERFKILL                    +.....  Operation not possible due to RF-kill
+EROFS            POSIX     ++++++  Read-only file system
+ERPCMISMATCH               .++...  RPC version wrong
+ESHLIBVERS                 ..+...  Shared library version mismatch
+ESHUTDOWN                  +++..+  Cannot send after socket shutdown
+ESOCKTNOSUPPORT            +++...  Socket type not supported
+ESPIPE           POSIX     ++++++  Illegal seek
+ESRCH            POSIX     ++++++  No such process
+ESRMNT                     +.....  Srmount error
+ESTALE           POSIX     +++..+  Stale NFS file handle
+ESTRPIPE                   +.....  Streams pipe error
+ETIME            XSR       +N4...  Stream ioctl timeout
+ETIMEDOUT        POSIX  -  +++ss+  Connection timed out
+ETOOMANYREFS               +++...  Too many references: cannot splice
+ETXTBSY          POSIX     +++...  Text file busy
+EUCLEAN                    +.....  Structure needs cleaning
+EUNATCH                    +.....  Protocol driver not attached
+EUSERS                     +++...  Too many users
+EWOULDBLOCK      POSIX     +++..+  Operation would block
+EXDEV            POSIX     ++++++  Cross-device link
+EXFULL                     +.....  Exchange full
+
+Notations:
+
+F: used in FFmpeg (-: a few times, +: a lot)
+
+SUSv3: Single Unix Specification, version 3
+SUSv4: Single Unix Specification, version 4
+XSR: XSI STREAMS (obsolete)
+
+OS: availability on some supported operating systems
+L: GNU/Linux
+B: BSD (F: FreeBSD, N: NetBSD)
+M: MacOS X
+W: Microsoft Windows (s: emulated with winsock, see libavformat/network.h)
+w: Mingw32 (3.17) and Mingw64 (2.0.1)
+b: BeOS

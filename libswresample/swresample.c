@@ -70,6 +70,23 @@ static const AVClass av_class = {
     .parent_log_context_offset = OFFSET(log_ctx),
 };
 
+unsigned swresample_version(void)
+{
+    av_assert0(LIBSWRESAMPLE_VERSION_MICRO >= 100);
+    return LIBSWRESAMPLE_VERSION_MICRO;
+}
+
+const char *swresample_configuration(void)
+{
+    return FFMPEG_CONFIGURATION;
+}
+
+const char *swresample_license(void)
+{
+#define LICENSE_PREFIX "libswresample license: "
+    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+}
+
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     if(!s || s->in_convert) // s needs to be allocated but not initialized
         return AVERROR(EINVAL);
@@ -202,7 +219,12 @@ int swr_init(struct SwrContext *s){
     if(!s->out.ch_count)
         s->out.ch_count= av_get_channel_layout_nb_channels(s->out_ch_layout);
 
-av_assert0(s-> in.ch_count);
+    if(!s-> in.ch_count){
+        av_assert0(!s->in_ch_layout);
+        av_log(s, AV_LOG_ERROR, "Input channel count and layout are unset\n");
+        return -1;
+    }
+
 av_assert0(s->used_ch_count);
 av_assert0(s->out.ch_count);
     s->resample_first= RSC*s->out.ch_count/s->in.ch_count - RSC < s->out_sample_rate/(float)s-> in_sample_rate - 1.0;

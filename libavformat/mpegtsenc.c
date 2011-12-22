@@ -206,7 +206,7 @@ typedef struct MpegTSWriteStream {
     struct MpegTSService *service;
     int pid; /* stream associated pid */
     int cc;
-    int payload_index;
+    int payload_size;
     int first_pts_check; ///< first pts check needed
     int64_t payload_pts;
     int64_t payload_dts;
@@ -1034,29 +1034,29 @@ static int mpegts_write_packet(AVFormatContext *s, AVPacket *pkt)
         }
     }
 
-    if (ts_st->payload_index && ts_st->payload_index + size > DEFAULT_PES_PAYLOAD_SIZE) {
-        mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
+    if (ts_st->payload_size && ts_st->payload_size + size > DEFAULT_PES_PAYLOAD_SIZE) {
+        mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
                          ts_st->payload_pts, ts_st->payload_dts,
                          ts_st->payload_flags & AV_PKT_FLAG_KEY);
-        ts_st->payload_index = 0;
+        ts_st->payload_size = 0;
     }
 
     if (st->codec->codec_type != AVMEDIA_TYPE_AUDIO || size > DEFAULT_PES_PAYLOAD_SIZE) {
-        av_assert0(!ts_st->payload_index);
+        av_assert0(!ts_st->payload_size);
         // for video and subtitle, write a single pes packet
         mpegts_write_pes(s, st, buf, size, pts, dts, pkt->flags & AV_PKT_FLAG_KEY);
         av_free(data);
         return 0;
     }
 
-    if (!ts_st->payload_index) {
+    if (!ts_st->payload_size) {
         ts_st->payload_pts = pts;
         ts_st->payload_dts = dts;
         ts_st->payload_flags = pkt->flags;
     }
 
-    memcpy(ts_st->payload + ts_st->payload_index, buf, size);
-    ts_st->payload_index += size;
+    memcpy(ts_st->payload + ts_st->payload_size, buf, size);
+    ts_st->payload_size += size;
 
     av_free(data);
 
@@ -1075,8 +1075,8 @@ static int mpegts_write_end(AVFormatContext *s)
     for(i = 0; i < s->nb_streams; i++) {
         st = s->streams[i];
         ts_st = st->priv_data;
-        if (ts_st->payload_index > 0) {
-            mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_index,
+        if (ts_st->payload_size > 0) {
+            mpegts_write_pes(s, st, ts_st->payload, ts_st->payload_size,
                              ts_st->payload_pts, ts_st->payload_dts,
                              ts_st->payload_flags & AV_PKT_FLAG_KEY);
         }

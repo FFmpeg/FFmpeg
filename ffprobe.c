@@ -1252,7 +1252,7 @@ int main(int argc, char **argv)
     avdevice_register_all();
 #endif
 
-    show_banner();
+    show_banner(argc, argv, options);
     parse_options(NULL, argc, argv, options, opt_input_file);
 
     if (!input_filename) {
