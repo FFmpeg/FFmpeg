@@ -54,7 +54,7 @@ static enum PixelFormat check_image_attributes(AVCodecContext *avctx, opj_image_
     case 0111111: goto libopenjpeg_yuv444_rgb;
     case 0112121: goto libopenjpeg_yuv422;
     case 0112222: goto libopenjpeg_yuv420;
-    default: return PIX_FMT_RGB24;
+    default: goto libopenjpeg_rgb;
     }
 
 libopenjpeg_yuv420:
@@ -80,6 +80,13 @@ libopenjpeg_yuv444_rgb:
     case 10: return PIX_FMT_YUV444P10;
     case 16: return PIX_FMT_YUV444P16;
     }
+
+libopenjpeg_rgb:
+    switch (c0.prec) {
+    case 8: return PIX_FMT_RGB24;
+    default: return PIX_FMT_RGB48;
+    }
+
     return PIX_FMT_RGB24;
 }
 
@@ -102,6 +109,24 @@ static inline void libopenjpeg_copy_to_packed8(AVFrame *picture, opj_image_t *im
         for(x = 0; x < picture->width; x++, index++) {
             for(c = 0; c < image->numcomps; c++) {
                 *img_ptr++ = image->comps[c].data[index];
+            }
+        }
+    }
+}
+
+static inline void libopenjpeg_copy_to_packed16(AVFrame *picture, opj_image_t *image) {
+    uint16_t *img_ptr;
+    int index, x, y, c;
+    int adjust[4];
+    for (x = 0; x < image->numcomps; x++) {
+        adjust[x] = FFMAX(FFMIN(16 - image->comps[x].prec, 8), 0);
+    }
+    for (y = 0; y < picture->height; y++) {
+        index = y*picture->width;
+        img_ptr = (uint16_t*) (picture->data[0] + y*picture->linesize[0]);
+        for (x = 0; x < picture->width; x++, index++) {
+            for (c = 0; c < image->numcomps; c++) {
+                *img_ptr++ = image->comps[c].data[index] << adjust[c];
             }
         }
     }
@@ -273,6 +298,11 @@ static int libopenjpeg_decode_frame(AVCodecContext *avctx,
     case 3:
         if (ispacked) {
             libopenjpeg_copy_to_packed8(picture, image);
+        }
+        break;
+    case 6:
+        if (ispacked) {
+            libopenjpeg_copy_to_packed16(picture, image);
         }
         break;
     default:
