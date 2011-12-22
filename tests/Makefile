@@ -111,6 +111,8 @@ FATE += $(FATE_TESTS) $(FATE_TESTS-yes)
 fate-rsync:
 	rsync -vaLW --timeout=60 --contimeout=60 rsync://fate.ffmpeg.org/fate-suite/ $(SAMPLES)
 else
+fate::
+	@echo "warning: only a subset of the fate tests will be run because SAMPLES is not specified"
 fate-rsync:
 	@echo "use 'make fate-rsync SAMPLES=/path/to/samples' to sync the fate suite"
 $(FATE_TESTS):
@@ -121,7 +123,7 @@ FATE_UTILS = base64 tiny_psnr
 
 TOOL = ffmpeg
 
-fate: $(FATE)
+fate:: $(FATE)
 
 $(FATE): $(TOOL)$(EXESUF) $(FATE_UTILS:%=tests/%$(HOSTEXESUF))
 	@echo "TEST    $(@:fate-%=%)"
