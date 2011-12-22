@@ -51,6 +51,7 @@
 
 unsigned swscale_version(void)
 {
+    av_assert0(LIBSWSCALE_VERSION_MICRO >= 100);
     return LIBSWSCALE_VERSION_INT;
 }
 
