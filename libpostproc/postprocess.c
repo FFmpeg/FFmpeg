@@ -75,6 +75,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 #include "config.h"
 #include "libavutil/avutil.h"
+#include "libavutil/avassert.h"
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -90,6 +91,7 @@ try to unroll inner for(x=0 ... loop to avoid these damn if(x ... checks
 
 unsigned postproc_version(void)
 {
+    av_assert0(LIBPOSTPROC_VERSION_MICRO >= 100);
     return LIBPOSTPROC_VERSION_INT;
 }
 
