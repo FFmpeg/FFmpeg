@@ -70,6 +70,22 @@ static const AVClass av_class = {
     .parent_log_context_offset = OFFSET(log_ctx),
 };
 
+unsigned swresample_version(void)
+{
+    return LIBSWRESAMPLE_VERSION_MICRO;
+}
+
+const char *swresample_configuration(void)
+{
+    return FFMPEG_CONFIGURATION;
+}
+
+const char *swresample_license(void)
+{
+#define LICENSE_PREFIX "libswresample license: "
+    return LICENSE_PREFIX FFMPEG_LICENSE + sizeof(LICENSE_PREFIX) - 1;
+}
+
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map){
     if(!s || s->in_convert) // s needs to be allocated but not initialized
         return AVERROR(EINVAL);

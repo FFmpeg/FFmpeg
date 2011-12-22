@@ -122,4 +122,19 @@ void swr_compensate(struct SwrContext *s, int sample_delta, int compensation_dis
  */
 int swr_set_channel_mapping(struct SwrContext *s, const int *channel_map);
 
+/**
+ * Return the LIBSWRESAMPLE_VERSION_INT constant.
+ */
+unsigned swresample_version(void);
+
+/**
+ * Return the swr build-time configuration.
+ */
+const char *swresample_configuration(void);
+
+/**
+ * Return the swr license.
+ */
+const char *swresample_license(void);
+
 #endif
