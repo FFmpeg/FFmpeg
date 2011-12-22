@@ -787,36 +787,35 @@ static void reset_codec(WmallDecodeCtx *s)
 
 
 
-static void mclms_update(WmallDecodeCtx *s, int icoef)
+static void mclms_update(WmallDecodeCtx *s, int icoef, int *pred)
 {
     int i, j, ich;
-    int16_t pred_error;
+    int pred_error;
     int order = s->mclms_order;
     int num_channels = s->num_channels;
-    int16_t range = 1 << (s->bits_per_sample - 1);
+    int range = 1 << (s->bits_per_sample - 1);
     int bps = s->bits_per_sample > 16 ? 4 : 2; // bytes per sample
 
     for (ich = 0; ich < num_channels; ich++) {
-        pred_error = s->channel_coeffs[ich][icoef] -
-                     s->channel_residues[ich][icoef];
+        pred_error = s->channel_residues[ich][icoef] - pred[ich];
         if (pred_error > 0) {
             for (i = 0; i < order * num_channels; i++)
                 s->mclms_coeffs[i + ich * order * num_channels] +=
                     s->mclms_updates[s->mclms_recent + i];
-            for (j = 0; j < i; j++) {
-                if (s->channel_coeffs[ich][icoef] > 0)
+            for (j = 0; j < ich; j++) {
+                if (s->channel_residues[j][icoef] > 0)
                     s->mclms_coeffs_cur[ich * num_channels + j] += 1;
-                else if (s->channel_coeffs[ich][icoef] < 0)
+                else if (s->channel_residues[j][icoef] < 0)
                     s->mclms_coeffs_cur[ich * num_channels + j] -= 1;
             }
         } else if (pred_error < 0) {
             for (i = 0; i < order * num_channels; i++)
                 s->mclms_coeffs[i + ich * order * num_channels] -=
                     s->mclms_updates[s->mclms_recent + i];
-            for (j = 0; j < i; j++) {
-                if (s->channel_coeffs[ich][icoef] > 0)
+            for (j = 0; j < ich; j++) {
+                if (s->channel_residues[j][icoef] > 0)
                     s->mclms_coeffs_cur[ich * num_channels + j] -= 1;
-                else if (s->channel_coeffs[ich][icoef] < 0)
+                else if (s->channel_residues[j][icoef] < 0)
                     s->mclms_coeffs_cur[ich * num_channels + j] += 1;
             }
         }
@@ -824,13 +823,17 @@ static void mclms_update(WmallDecodeCtx *s, int icoef)
 
     for (ich = num_channels - 1; ich >= 0; ich--) {
         s->mclms_recent--;
-        if (s->channel_coeffs[ich][icoef] > range - 1)
+        s->mclms_prevvalues[s->mclms_recent] = s->channel_residues[ich][icoef];
+        if (s->channel_residues[ich][icoef] > range - 1)
             s->mclms_prevvalues[s->mclms_recent] = range - 1;
-        else if (s->channel_coeffs[ich][icoef] <= -range)
+        else if (s->channel_residues[ich][icoef] < -range)
             s->mclms_prevvalues[s->mclms_recent] = -range;
 
-        s->mclms_updates[s->mclms_recent] =
-            av_clip(-1, s->channel_coeffs[ich][icoef], 1);
+        s->mclms_updates[s->mclms_recent] = 0;
+        if (s->channel_residues[ich][icoef] > 0)
+            s->mclms_updates[s->mclms_recent] = 1;
+        else if (s->channel_residues[ich][icoef] < 0)
+            s->mclms_updates[s->mclms_recent] = -1;
     }
 
     if (s->mclms_recent == 0) {
@@ -843,34 +846,35 @@ static void mclms_update(WmallDecodeCtx *s, int icoef)
         s->mclms_recent = num_channels * order;
     }
 }
-static void mclms_predict(WmallDecodeCtx *s, int icoef)
+
+static void mclms_predict(WmallDecodeCtx *s, int icoef, int *pred)
 {
     int ich, i;
-    int16_t pred;
     int order = s->mclms_order;
     int num_channels = s->num_channels;
 
     for (ich = 0; ich < num_channels; ich++) {
         if (!s->is_channel_coded[ich])
             continue;
-        pred = 0;
+        pred[ich] = 0;
         for (i = 0; i < order * num_channels; i++)
-            pred += s->mclms_prevvalues[i] *
-                    s->mclms_coeffs[i + order * num_channels * ich];
+            pred[ich] += s->mclms_prevvalues[i + s->mclms_recent] *
+                         s->mclms_coeffs[i + order * num_channels * ich];
         for (i = 0; i < ich; i++)
-            pred += s->channel_coeffs[ich][icoef] *
-                    s->mclms_coeffs_cur[i + order * num_channels * ich];
-        s->channel_coeffs[ich][icoef] =
-                    s->channel_residues[ich][icoef] + pred;
+            pred[ich] += s->channel_residues[i][icoef] *
+                         s->mclms_coeffs_cur[i + num_channels * ich];
+        pred[ich] += 1 << s->mclms_scaling - 1;
+        pred[ich] >>= s->mclms_scaling;
+        s->channel_residues[ich][icoef] += pred[ich];
     }
 }
 
 static void revert_mclms(WmallDecodeCtx *s, int tile_size)
 {
-    int icoef;
+    int icoef, pred[s->num_channels];
     for (icoef = 0; icoef < tile_size; icoef++) {
-        mclms_predict(s, icoef);
-        mclms_update(s, icoef);
+        mclms_predict(s, icoef, pred);
+        mclms_update(s, icoef, pred);
     }
 }
 
