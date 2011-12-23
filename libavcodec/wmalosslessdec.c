@@ -1177,6 +1177,10 @@ static int decode_subframe(WmallDecodeCtx *s)
     }
     if (s->do_mclms)
         revert_mclms(s, subframe_len);
+    if (s->do_inter_ch_decorr)
+        revert_inter_ch_decorr(s, subframe_len);
+    if(s->do_ac_filter)
+        revert_acfilter(s, subframe_len);
 
     /** handled one subframe */
 
