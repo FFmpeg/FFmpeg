@@ -229,7 +229,8 @@ static inline int decode_vui_parameters(H264Context *h, SPS *sps){
     if(sps->nal_hrd_parameters_present_flag || sps->vcl_hrd_parameters_present_flag)
         get_bits1(&s->gb);     /* low_delay_hrd_flag */
     sps->pic_struct_present_flag = get_bits1(&s->gb);
-
+    if(!get_bits_left(&s->gb))
+        return 0;
     sps->bitstream_restriction_flag = get_bits1(&s->gb);
     if(sps->bitstream_restriction_flag){
         get_bits1(&s->gb);     /* motion_vectors_over_pic_boundaries_flag */
