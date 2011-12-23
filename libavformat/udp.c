@@ -556,6 +556,8 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
                 av_fifo_generic_read(s->fifo, buf, avail, NULL);
                 av_fifo_drain(s->fifo, AV_RL32(tmp) - avail);
                 return avail;
+            } else if(s->circular_buffer_error){
+                return s->circular_buffer_error;
             }
             else {
                 FD_ZERO(&rfds);
