@@ -1052,10 +1052,11 @@ static int decode_subframe(WmallDecodeCtx *s)
 {
     int offset = s->samples_per_frame;
     int subframe_len = s->samples_per_frame;
-    int i;
+    int i, j;
     int total_samples   = s->samples_per_frame * s->num_channels;
     int rawpcm_tile;
     int padding_zeroes;
+    int quant_stepsize = s->quant_stepsize;
 
     s->subframe_offset = get_bits_count(&s->gb);
 
@@ -1155,7 +1156,6 @@ static int decode_subframe(WmallDecodeCtx *s)
     if(rawpcm_tile) {
 	
 	int bits = s->bits_per_sample - padding_zeroes;
-	int j;
 	dprintf(s->avctx, "RAWPCM %d bits per sample. total %d bits, remain=%d\n", bits,
 		bits * s->num_channels * subframe_len, get_bits_count(&s->gb));
 	for(i = 0; i < s->num_channels; i++) {
@@ -1181,6 +1181,11 @@ static int decode_subframe(WmallDecodeCtx *s)
         revert_inter_ch_decorr(s, subframe_len);
     if(s->do_ac_filter)
         revert_acfilter(s, subframe_len);
+
+    /* Dequantize */
+    for (i = 0; i < s->num_channels; i++)
+        for (j = 0; j < subframe_len; j++)
+            s->channel_residues[i][j] *= quant_stepsize;
 
     /** handled one subframe */
 
