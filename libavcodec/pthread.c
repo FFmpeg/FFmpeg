@@ -37,8 +37,8 @@
 #elif HAVE_GETSYSTEMINFO
 #include <windows.h>
 #elif HAVE_SYSCTL
-#include <sys/sysctl.h>
 #include <sys/types.h>
+#include <sys/sysctl.h>
 #endif
 
 #include "avcodec.h"
