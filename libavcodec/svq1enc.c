@@ -563,6 +563,10 @@ static av_cold int svq1_encode_end(AVCodecContext *avctx)
         av_freep(&s->motion_val8[i]);
         av_freep(&s->motion_val16[i]);
     }
+    if(s->current_picture.data[0])
+        avctx->release_buffer(avctx, &s->current_picture);
+    if(s->last_picture.data[0])
+        avctx->release_buffer(avctx, &s->last_picture);
 
     return 0;
 }
