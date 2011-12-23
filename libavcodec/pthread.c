@@ -34,9 +34,11 @@
 #if HAVE_SCHED_GETAFFINITY
 #define _GNU_SOURCE
 #include <sched.h>
-#elif HAVE_GETSYSTEMINFO
+#endif
+#if HAVE_GETSYSTEMINFO
 #include <windows.h>
-#elif HAVE_SYSCTL
+#endif
+#if HAVE_SYSCTL
 #if HAVE_SYS_PARAM_H
 #include <sys/param.h>
 #endif
