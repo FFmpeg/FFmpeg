@@ -572,6 +572,9 @@ static int udp_read(URLContext *h, uint8_t *buf, int size)
             } else if(s->circular_buffer_error){
                 pthread_mutex_unlock(&s->mutex);
                 return s->circular_buffer_error;
+            } else if(h->flags & AVIO_FLAG_NONBLOCK) {
+                pthread_mutex_unlock(&s->mutex);
+                return AVERROR(EAGAIN);
             }
             else {
                 pthread_cond_wait(&s->cond, &s->mutex);
