@@ -152,7 +152,7 @@ typedef struct FrameThreadContext {
 static int get_logical_cpus(AVCodecContext *avctx)
 {
     int ret, nb_cpus = 1;
-#if HAVE_SCHED_GETAFFINITY
+#if HAVE_SCHED_GETAFFINITY && defined(CPU_COUNT)
     cpu_set_t cpuset;
 
     CPU_ZERO(&cpuset);
@@ -165,7 +165,7 @@ static int get_logical_cpus(AVCodecContext *avctx)
     SYSTEM_INFO sysinfo;
     GetSystemInfo(&sysinfo);
     nb_cpus = sysinfo.dwNumberOfProcessors;
-#elif HAVE_SYSCTL
+#elif HAVE_SYSCTL && defined(HW_NCPU)
     int mib[2] = { CTL_HW, HW_NCPU };
     size_t len = sizeof(nb_cpus);
 
