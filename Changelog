@@ -1,6 +1,15 @@
 Entries are sorted chronologically from oldest to youngest within each release,
 releases are sorted from youngest to oldest.
 
+version 0.7.3:
+
+- check buffer and input values in various parts of the code:
+  vmd (CVE-2011-4364), qdm2 (CVE-2011-4351), imgutils (several codecs),
+  vp6 (CVE-2011-4353), svq1 (CVE-2011-4579), vp3 (CVE-2011-4352), wma, 4xm
+- backport avcodec_open2() as a replacement for avcodec_open()
+- backport avformat_find_stream_info()
+
+
 version 0.7.2:
 
 - check buffer and input values in various parts of the code:
