@@ -1174,6 +1174,7 @@ HAVE_LIST="
     gethrtime
     GetProcessMemoryInfo
     GetProcessTimes
+    GetSystemInfo
     getrusage
     gnu_as
     ibm_asm
@@ -1206,6 +1207,7 @@ HAVE_LIST="
     posix_memalign
     round
     roundf
+    sched_getaffinity
     sdl
     sdl_video_size
     setmode
@@ -1224,6 +1226,7 @@ HAVE_LIST="
     symver
     symver_asm_label
     symver_gnu_asm
+    sysctl
     sys_mman_h
     sys_resource_h
     sys_select_h
@@ -1654,14 +1657,13 @@ postproc_deps="gpl"
 
 # programs
 avconv_deps="avcodec avformat swscale"
-avconv_select="buffer_filter"
 ffplay_deps="avcodec avformat swscale sdl"
 ffplay_select="buffersink_filter rdft"
 ffprobe_deps="avcodec avformat"
 ffserver_deps="avformat ffm_muxer fork rtp_protocol rtsp_demuxer"
 ffserver_extralibs='$ldl'
 ffmpeg_deps="avcodec avformat swscale swresample"
-ffmpeg_select="buffer_filter buffersink_filter"
+ffmpeg_select="buffersink_filter"
 
 doc_deps="texi2html"
 
@@ -3000,12 +3002,15 @@ check_func  ${malloc_prefix}posix_memalign      && enable posix_memalign
 check_func  setrlimit
 check_func  strerror_r
 check_func  strptime
+check_func  sched_getaffinity
+check_func  sysctl
 check_func_headers conio.h kbhit
 check_func_headers windows.h PeekNamedPipe
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
 check_lib2 "windows.h psapi.h" GetProcessMemoryInfo -lpsapi
 check_func_headers windows.h GetProcessTimes
+check_func_headers windows.h GetSystemInfo
 check_func_headers windows.h MapViewOfFile
 check_func_headers windows.h VirtualAlloc
 

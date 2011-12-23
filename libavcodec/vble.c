@@ -24,7 +24,7 @@
  * VBLE Decoder
  */
 
-#define ALT_BITSTREAM_READER_LE
+#define BITSTREAM_READER_LE
 
 #include "avcodec.h"
 #include "dsputil.h"

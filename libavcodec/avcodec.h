@@ -1335,6 +1335,15 @@ typedef struct AVFrame {
 
 struct AVCodecInternal;
 
+enum AVFieldOrder {
+    AV_FIELD_UNKNOWN,
+    AV_FIELD_PROGRESSIVE,
+    AV_FIELD_TT,          //< Top coded_first, top displayed first
+    AV_FIELD_BB,          //< Bottom coded first, bottom displayed first
+    AV_FIELD_TB,          //< Top coded first, bottom displayed first
+    AV_FIELD_BT,          //< Bottom coded first, top displayed first
+};
+
 /**
  * main external API structure.
  * New fields can be added to the end with minor version bumps.
@@ -3190,6 +3199,12 @@ typedef struct AVCodecContext {
      * libavcodec functions.
      */
     struct AVCodecInternal *internal;
+
+    /** Field order
+     * - encoding: set by libavcodec
+     * - decoding: Set by libavcodec
+     */
+    enum AVFieldOrder field_order;
 
     /**
      * Current statistics for PTS correction.

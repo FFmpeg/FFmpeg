@@ -112,12 +112,9 @@ av_cold int ff_mjpeg_decode_init(AVCodecContext *avctx)
             build_basic_mjpeg_vlc(s);
         }
     }
-    if (avctx->extradata_size > 9 &&
-        AV_RL32(avctx->extradata + 4) == MKTAG('f','i','e','l')) {
-        if (avctx->extradata[9] == 6) { /* quicktime icefloe 019 */
-            s->interlace_polarity = 1; /* bottom field first */
-            av_log(avctx, AV_LOG_DEBUG, "mjpeg bottom field first\n");
-        }
+    if (avctx->field_order == AV_FIELD_BB) { /* quicktime icefloe 019 */
+        s->interlace_polarity = 1; /* bottom field first */
+        av_log(avctx, AV_LOG_DEBUG, "mjpeg bottom field first\n");
     }
     if (avctx->codec->id == CODEC_ID_AMV)
         s->flipped = 1;
