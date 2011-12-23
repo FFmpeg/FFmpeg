@@ -27,7 +27,7 @@
  * @author Alex Beregszaszi
  */
 
-#define ALT_BITSTREAM_READER_LE
+#define BITSTREAM_READER_LE
 //#define DEBUG
 #include <limits.h>
 #include "avcodec.h"

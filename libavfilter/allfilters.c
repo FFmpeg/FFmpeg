@@ -94,7 +94,6 @@ void avfilter_register_all(void)
     REGISTER_FILTER (VFLIP,       vflip,       vf);
     REGISTER_FILTER (YADIF,       yadif,       vf);
 
-    REGISTER_FILTER (BUFFER,      buffer,      vsrc);
     REGISTER_FILTER (CELLAUTO,    cellauto,    vsrc);
     REGISTER_FILTER (COLOR,       color,       vsrc);
     REGISTER_FILTER (FREI0R,      frei0r_src,  vsrc);
@@ -108,4 +107,10 @@ void avfilter_register_all(void)
 
     REGISTER_FILTER (BUFFERSINK,  buffersink,  vsink);
     REGISTER_FILTER (NULLSINK,    nullsink,    vsink);
+
+    /* vsrc_buffer is a part of public API => registered unconditionally */
+    {
+        extern avfilter_vsrc_buffer;
+        avfilter_register(&avfilter_vsrc_buffer);
+    }
 }

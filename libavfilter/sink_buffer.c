@@ -26,6 +26,7 @@
 #include "libavutil/fifo.h"
 #include "avfilter.h"
 #include "buffersink.h"
+#include "internal.h"
 
 AVBufferSinkParams *av_buffersink_params_alloc(void)
 {
@@ -58,12 +59,12 @@ typedef struct {
     AVFifoBuffer *fifo;                      ///< FIFO buffer of video frame references
 
     /* only used for video */
-    const enum PixelFormat *pixel_fmts;     ///< list of accepted pixel formats, must be terminated with -1
+    enum PixelFormat *pixel_fmts;           ///< list of accepted pixel formats, must be terminated with -1
 
     /* only used for audio */
-    const enum AVSampleFormat *sample_fmts; ///< list of accepted sample formats, terminated by AV_SAMPLE_FMT_NONE
-    const int64_t *channel_layouts;         ///< list of accepted channel layouts, terminated by -1
-    const int *packing_fmts;                ///< list of accepted packing formats, terminated by -1
+    enum AVSampleFormat *sample_fmts;       ///< list of accepted sample formats, terminated by AV_SAMPLE_FMT_NONE
+    int64_t *channel_layouts;               ///< list of accepted channel layouts, terminated by -1
+    int *packing_fmts;                      ///< list of accepted packing formats, terminated by -1
 } BufferSinkContext;
 
 #define FIFO_INIT_SIZE 8
@@ -169,14 +170,24 @@ static av_cold int vsink_init(AVFilterContext *ctx, const char *args, void *opaq
         return AVERROR(EINVAL);
     } else {
 #if FF_API_OLD_VSINK_API
-        buf->pixel_fmts = (const enum PixelFormat *)opaque;
+        const int *pixel_fmts = (const enum PixelFormat *)opaque;
 #else
         params = (AVBufferSinkParams *)opaque;
-        buf->pixel_fmts = params->pixel_fmts;
+        const int *pixel_fmts = params->pixel_fmts;
 #endif
+        buf->pixel_fmts = ff_copy_int_list(pixel_fmts);
+        if (!buf->pixel_fmts)
+            return AVERROR(ENOMEM);
     }
 
     return common_init(ctx);
+}
+
+static av_cold void vsink_uninit(AVFilterContext *ctx)
+{
+    BufferSinkContext *buf = ctx->priv;
+    av_freep(&buf->pixel_fmts);
+    return common_uninit(ctx);
 }
 
 static int vsink_query_formats(AVFilterContext *ctx)
@@ -192,7 +203,7 @@ AVFilter avfilter_vsink_buffersink = {
     .description = NULL_IF_CONFIG_SMALL("Buffer video frames, and make them available to the end of the filter graph."),
     .priv_size = sizeof(BufferSinkContext),
     .init      = vsink_init,
-    .uninit    = common_uninit,
+    .uninit    = vsink_uninit,
 
     .query_formats = vsink_query_formats,
 
@@ -225,11 +236,27 @@ static av_cold int asink_init(AVFilterContext *ctx, const char *args, void *opaq
     } else
         params = (AVABufferSinkParams *)opaque;
 
-    buf->sample_fmts     = params->sample_fmts;
-    buf->channel_layouts = params->channel_layouts;
-    buf->packing_fmts    = params->packing_fmts;
+    buf->sample_fmts     = ff_copy_int_list  (params->sample_fmts);
+    buf->channel_layouts = ff_copy_int64_list(params->channel_layouts);
+    buf->packing_fmts    = ff_copy_int_list  (params->packing_fmts);
+    if (!buf->sample_fmts || !buf->channel_layouts || !buf->sample_fmts) {
+        av_freep(&buf->sample_fmts);
+        av_freep(&buf->channel_layouts);
+        av_freep(&buf->packing_fmts);
+        return AVERROR(ENOMEM);
+    }
 
     return common_init(ctx);
+}
+
+static av_cold void asink_uninit(AVFilterContext *ctx)
+{
+    BufferSinkContext *buf = ctx->priv;
+
+    av_freep(&buf->sample_fmts);
+    av_freep(&buf->channel_layouts);
+    av_freep(&buf->packing_fmts);
+    return common_uninit(ctx);
 }
 
 static int asink_query_formats(AVFilterContext *ctx)
@@ -256,7 +283,7 @@ AVFilter avfilter_asink_abuffersink = {
     .name      = "abuffersink",
     .description = NULL_IF_CONFIG_SMALL("Buffer audio frames, and make them available to the end of the filter graph."),
     .init      = asink_init,
-    .uninit    = common_uninit,
+    .uninit    = asink_uninit,
     .priv_size = sizeof(BufferSinkContext),
     .query_formats = asink_query_formats,
 

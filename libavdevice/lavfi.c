@@ -71,6 +71,7 @@ av_cold static int lavfi_read_close(AVFormatContext *avctx)
 
     av_freep(&lavfi->sink_stream_map);
     av_freep(&lavfi->stream_sink_map);
+    av_freep(&lavfi->sinks);
     avfilter_graph_free(&lavfi->graph);
 
     return 0;
@@ -254,6 +255,7 @@ av_cold static int lavfi_read_header(AVFormatContext *avctx,
     }
 
 end:
+    av_free(pix_fmts);
     avfilter_inout_free(&input_links);
     avfilter_inout_free(&output_links);
     if (ret < 0)

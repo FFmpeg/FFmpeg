@@ -30,6 +30,17 @@
  */
 
 #include "config.h"
+
+#if HAVE_SCHED_GETAFFINITY
+#define _GNU_SOURCE
+#include <sched.h>
+#elif HAVE_GETSYSTEMINFO
+#include <windows.h>
+#elif HAVE_SYSCTL
+#include <sys/sysctl.h>
+#include <sys/types.h>
+#endif
+
 #include "avcodec.h"
 #include "internal.h"
 #include "thread.h"
@@ -135,6 +146,40 @@ typedef struct FrameThreadContext {
     int die;                       ///< Set when threads should exit.
 } FrameThreadContext;
 
+
+/* H264 slice threading seems to be buggy with more than 16 threads,
+ * limit the number of threads to 16 for automatic detection */
+#define MAX_AUTO_THREADS 16
+
+static int get_logical_cpus(AVCodecContext *avctx)
+{
+    int ret, nb_cpus = 1;
+#if HAVE_SCHED_GETAFFINITY
+    cpu_set_t cpuset;
+
+    CPU_ZERO(&cpuset);
+
+    ret = sched_getaffinity(0, sizeof(cpuset), &cpuset);
+    if (!ret) {
+        nb_cpus = CPU_COUNT(&cpuset);
+    }
+#elif HAVE_GETSYSTEMINFO
+    SYSTEM_INFO sysinfo;
+    GetSystemInfo(&sysinfo);
+    nb_cpus = sysinfo.dwNumberOfProcessors;
+#elif HAVE_SYSCTL
+    int mib[2] = { CTL_HW, HW_NCPU };
+    size_t len = sizeof(nb_cpus);
+
+    ret = sysctl(mib, 2, &nb_cpus, &len, NULL, 0);
+    if (ret == -1)
+        nb_cpus = 0;
+#endif
+    av_log(avctx, AV_LOG_DEBUG, "detected %d logical cores\n", nb_cpus);
+    return FFMIN(nb_cpus, MAX_AUTO_THREADS);
+}
+
+
 static void* attribute_align_arg worker(void *v)
 {
     AVCodecContext *avctx = v;
@@ -239,8 +284,17 @@ static int thread_init(AVCodecContext *avctx)
     ThreadContext *c;
     int thread_count = avctx->thread_count;
 
-    if (thread_count <= 1)
+    if (!thread_count) {
+        int nb_cpus = get_logical_cpus(avctx);
+        // use number of cores + 1 as thread count if there is motre than one
+        if (nb_cpus > 1)
+            thread_count = avctx->thread_count = nb_cpus + 1;
+    }
+
+    if (thread_count <= 1) {
+        avctx->active_thread_type = 0;
         return 0;
+    }
 
     c = av_mallocz(sizeof(ThreadContext));
     if (!c)
@@ -703,6 +757,13 @@ static int frame_thread_init(AVCodecContext *avctx)
     AVCodecContext *src = avctx;
     FrameThreadContext *fctx;
     int i, err = 0;
+
+    if (!thread_count) {
+        int nb_cpus = get_logical_cpus(avctx);
+        // use number of cores + 1 as thread count if there is motre than one
+        if (nb_cpus > 1)
+            thread_count = avctx->thread_count = nb_cpus + 1;
+    }
 
     if (thread_count <= 1) {
         avctx->active_thread_type = 0;

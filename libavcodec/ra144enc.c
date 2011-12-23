@@ -477,7 +477,10 @@ static int ra144_encode_frame(AVCodecContext *avctx, uint8_t *frame,
          * The filter is unstable: use the coefficients of the previous frame.
          */
         ff_int_to_int16(block_coefs[NBLOCKS - 1], ractx->lpc_coef[1]);
-        ff_eval_refl(lpc_refl, block_coefs[NBLOCKS - 1], avctx);
+        if (ff_eval_refl(lpc_refl, block_coefs[NBLOCKS - 1], avctx)) {
+            /* the filter is still unstable. set reflection coeffs to zero. */
+            memset(lpc_refl, 0, sizeof(lpc_refl));
+        }
     }
     init_put_bits(&pb, frame, buf_size);
     for (i = 0; i < LPC_ORDER; i++) {

@@ -29,7 +29,7 @@
 #include <inttypes.h>
 #include <math.h>
 
-#define ALT_BITSTREAM_READER_LE
+#define BITSTREAM_READER_LE
 #include "avcodec.h"
 #include "get_bits.h"
 #include "dsputil.h"

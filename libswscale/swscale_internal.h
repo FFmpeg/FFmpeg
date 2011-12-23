@@ -655,9 +655,11 @@ const char *sws_format_name(enum PixelFormat format);
         ||  isBGRinInt(x)           \
     )
 #else
-#define isPacked(x) \
+#define isPacked(x) (\
     (av_pix_fmt_descriptors[x].nb_components >= 2 && \
-     !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR))
+     !(av_pix_fmt_descriptors[x].flags & PIX_FMT_PLANAR)) || \
+    (x) == PIX_FMT_PAL8\
+    )
 
 #endif
 #define isPlanar(x) \

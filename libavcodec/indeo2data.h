@@ -26,7 +26,7 @@
 
 #define IR2_CODES 143
 static const uint16_t ir2_codes[IR2_CODES][2] = {
-#ifdef ALT_BITSTREAM_READER_LE
+#ifdef BITSTREAM_READER_LE
 {0x0000,  3}, {0x0004,  3}, {0x0006,  3}, {0x0001,  5},
 {0x0009,  5}, {0x0019,  5}, {0x000D,  5}, {0x001D,  5},
 {0x0023,  6}, {0x0013,  6}, {0x0033,  6}, {0x000B,  6},

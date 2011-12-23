@@ -27,7 +27,7 @@
 #include "binkdsp.h"
 #include "mathops.h"
 
-#define ALT_BITSTREAM_READER_LE
+#define BITSTREAM_READER_LE
 #include "get_bits.h"
 
 #define BINK_FLAG_ALPHA 0x00100000

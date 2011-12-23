@@ -235,6 +235,8 @@ make install
 Your install path (@file{/usr/local/} by default) should now have the
 necessary DLL and LIB files under the @file{bin} directory.
 
+@end enumerate
+
 Alternatively, build the libraries with a cross compiler, according to
 the instructions below in @ref{Cross compilation for Windows with Linux}.
 

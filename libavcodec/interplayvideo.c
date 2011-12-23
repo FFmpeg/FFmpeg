@@ -41,7 +41,7 @@
 #include "avcodec.h"
 #include "bytestream.h"
 #include "dsputil.h"
-#define ALT_BITSTREAM_READER_LE
+#define BITSTREAM_READER_LE
 #include "get_bits.h"
 
 #define PALETTE_COUNT 256

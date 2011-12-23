@@ -35,7 +35,7 @@
 #include "avcodec.h"
 #include "dsputil.h"
 
-#define ALT_BITSTREAM_READER_LE
+#define BITSTREAM_READER_LE
 #include "get_bits.h"
 
 const float ff_nelly_dequantization_table[127] = {

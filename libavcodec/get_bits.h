@@ -124,7 +124,7 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 #define CLOSE_READER(name, gb) (gb)->index = name##_index
 
-#ifdef ALT_BITSTREAM_READER_LE
+#ifdef BITSTREAM_READER_LE
 
 # ifdef LONG_BITSTREAM_READER
 #   define UPDATE_CACHE(name, gb) name##_cache = \
@@ -164,7 +164,7 @@ for examples see get_bits, show_bits, skip_bits, get_vlc
 
 #define LAST_SKIP_BITS(name, gb, num) SKIP_COUNTER(name, gb, num)
 
-#ifdef ALT_BITSTREAM_READER_LE
+#ifdef BITSTREAM_READER_LE
 #   define SHOW_UBITS(name, gb, num) zero_extend(name##_cache, num)
 #   define SHOW_SBITS(name, gb, num) sign_extend(name##_cache, num)
 #else
@@ -254,7 +254,7 @@ static inline unsigned int get_bits1(GetBitContext *s)
 {
     unsigned int index = s->index;
     uint8_t result = s->buffer[index>>3];
-#ifdef ALT_BITSTREAM_READER_LE
+#ifdef BITSTREAM_READER_LE
     result >>= index & 7;
     result &= 1;
 #else
@@ -288,7 +288,7 @@ static inline unsigned int get_bits_long(GetBitContext *s, int n)
     if (n <= MIN_CACHE_BITS)
         return get_bits(s, n);
     else {
-#ifdef ALT_BITSTREAM_READER_LE
+#ifdef BITSTREAM_READER_LE
         int ret = get_bits(s, 16);
         return ret | (get_bits(s, n-16) << 16);
 #else

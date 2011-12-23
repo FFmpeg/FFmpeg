@@ -479,6 +479,13 @@ static int mxf_read_partition_pack(void *arg, AVIOContext *pb, int tag, int size
             partition->previous_partition, footer_partition,
             partition->index_sid, partition->body_sid);
 
+    /* sanity check PreviousPartition if set */
+    if (partition->previous_partition &&
+        mxf->run_in + partition->previous_partition >= klv_offset) {
+        av_log(mxf->fc, AV_LOG_ERROR, "PreviousPartition points to this partition or forward\n");
+        return AVERROR_INVALIDDATA;
+    }
+
     if      (op[12] == 1 && op[13] == 1) mxf->op = OP1a;
     else if (op[12] == 1 && op[13] == 2) mxf->op = OP1b;
     else if (op[12] == 1 && op[13] == 3) mxf->op = OP1c;
@@ -1021,8 +1028,10 @@ static int mxf_compute_ptses_fake_index(MXFContext *mxf, MXFIndexTable *index_ta
     for (i = 0; i < index_table->nb_segments; i++) {
         MXFIndexTableSegment *s = index_table->segments[i];
 
-        if (!s->nb_index_entries)
+        if (!s->nb_index_entries) {
+            index_table->nb_ptses = 0;
             return 0;                               /* no TemporalOffsets */
+        }
 
         index_table->nb_ptses += s->index_duration;
     }
@@ -1276,7 +1285,7 @@ static int mxf_parse_structural_metadata(MXFContext *mxf)
                 break;
             }
         }
-        if (!source_track)
+        if (!source_track || !component)
             continue;
 
         if (!(source_track->sequence = mxf_resolve_strong_ref(mxf, &source_track->sequence_ref, Sequence))) {
@@ -1437,7 +1446,7 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
 
     if (!ctx)
         return -1;
-    while (avio_tell(pb) + 4 < klv_end) {
+    while (avio_tell(pb) + 4 < klv_end && !url_feof(pb)) {
         int tag = avio_rb16(pb);
         int size = avio_rb16(pb); /* KLV specified by 0x53 */
         uint64_t next = avio_tell(pb) + size;
@@ -1464,6 +1473,13 @@ static int mxf_read_local_tags(MXFContext *mxf, KLVPacket *klv, MXFMetadataReadF
         else if (read_child(ctx, pb, tag, size, uid, -1) < 0)
             return -1;
 
+        /* accept the 64k local set limit being exceeded (Avid)
+         * don't accept it extending past the end of the KLV though (zzuf5.mxf) */
+        if (avio_tell(pb) > klv_end) {
+            av_log(mxf->fc, AV_LOG_ERROR, "local tag %#04x extends past end of local set @ %#"PRIx64"\n",
+                   tag, klv->offset);
+            return AVERROR_INVALIDDATA;
+        } else if (avio_tell(pb) <= next)   /* only seek forward, else this can loop for a long time */
         avio_seek(pb, next, SEEK_SET);
     }
     if (ctx_size) ctx->type = type;
@@ -1499,11 +1515,6 @@ static int mxf_parse_handle_essence(MXFContext *mxf)
 {
     AVIOContext *pb = mxf->fc->pb;
     int64_t ret;
-
-    if (!mxf->current_partition) {
-        av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to PartitionPack\n");
-        return AVERROR_INVALIDDATA;
-    }
 
     if (mxf->parsing_backward) {
         return mxf_seek_to_previous_partition(mxf);
@@ -1620,6 +1631,12 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
             IS_KLV_KEY(klv.key, mxf_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_avid_essence_element_key) ||
             IS_KLV_KEY(klv.key, mxf_system_item_key)) {
+
+            if (!mxf->current_partition) {
+                av_log(mxf->fc, AV_LOG_ERROR, "found essence prior to first PartitionPack\n");
+                return AVERROR_INVALIDDATA;
+            }
+
             if (!mxf->current_partition->essence_offset) {
                 /* for OP1a we compute essence_offset
                  * for OPAtom we point essence_offset after the KL (usually op1a_essence_offset + 20 or 25)
@@ -1666,6 +1683,14 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
                 } else {
                     uint64_t next = avio_tell(s->pb) + klv.length;
                     res = metadata->read(mxf, s->pb, 0, klv.length, klv.key, klv.offset);
+
+                    /* only seek forward, else this can loop for a long time */
+                    if (avio_tell(s->pb) > next) {
+                        av_log(s, AV_LOG_ERROR, "read past end of KLV @ %#"PRIx64"\n",
+                               klv.offset);
+                        return AVERROR_INVALIDDATA;
+                    }
+
                     avio_seek(s->pb, next, SEEK_SET);
                 }
                 if (res < 0) {
@@ -1712,7 +1737,7 @@ static int mxf_read_header(AVFormatContext *s, AVFormatParameters *ap)
  */
 static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
 {
-    int64_t next_ofs;
+    int64_t last_ofs = -1, next_ofs;
     MXFIndexTable *t = &mxf->index_tables[0];
 
     /* this is called from the OP1a demuxing logic, which means there may be no index tables */
@@ -1720,17 +1745,25 @@ static void mxf_packet_timestamps(MXFContext *mxf, AVPacket *pkt)
         return;
 
     /* find mxf->current_edit_unit so that the next edit unit starts ahead of pkt->pos */
-    for (;;) {
+    while (mxf->current_edit_unit >= 0) {
         if (mxf_edit_unit_absolute_offset(mxf, t, mxf->current_edit_unit + 1, NULL, &next_ofs, 0) < 0)
             break;
+
+        if (next_ofs <= last_ofs) {
+            /* large next_ofs didn't change or current_edit_unit wrapped around
+             * this fixes the infinite loop on zzuf3.mxf */
+            av_log(mxf->fc, AV_LOG_ERROR, "next_ofs didn't change. not deriving packet timestamps\n");
+            return;
+        }
 
         if (next_ofs > pkt->pos)
             break;
 
+        last_ofs = next_ofs;
         mxf->current_edit_unit++;
     }
 
-    if (mxf->current_edit_unit >= t->nb_ptses)
+    if (mxf->current_edit_unit < 0 || mxf->current_edit_unit >= t->nb_ptses)
         return;
 
     pkt->dts = mxf->current_edit_unit + t->first_dts;
