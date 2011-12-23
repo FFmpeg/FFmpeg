@@ -1363,9 +1363,9 @@ static inline int vp3_dequant(Vp3DecodeContext *s, Vp3Fragment *frag,
         case 1: // zero run
             s->dct_tokens[plane][i]++;
             i += (token >> 2) & 0x7f;
-            if(i>63){
+            if (i > 63) {
                 av_log(s->avctx, AV_LOG_ERROR, "Coefficient index overflow\n");
-                return -1;
+                return i;
             }
             block[perm[i]] = (token >> 9) * dequantizer[perm[i]];
             i++;
@@ -1570,7 +1570,10 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                     /* invert DCT and place (or add) in final output */
 
                     if (s->all_fragments[i].coding_method == MODE_INTRA) {
-                        vp3_dequant(s, s->all_fragments + i, plane, 0, block);
+                        int index;
+                        index = vp3_dequant(s, s->all_fragments + i, plane, 0, block);
+                        if (index > 63)
+                            continue;
                         if(s->avctx->idct_algo!=FF_IDCT_VP3)
                             block[0] += 128<<3;
                         s->dsp.idct_put(
@@ -1578,7 +1581,10 @@ static void render_slice(Vp3DecodeContext *s, int slice)
                             stride,
                             block);
                     } else {
-                        if (vp3_dequant(s, s->all_fragments + i, plane, 1, block)) {
+                        int index = vp3_dequant(s, s->all_fragments + i, plane, 1, block);
+                        if (index > 63)
+                            continue;
+                        if (index > 0) {
                         s->dsp.idct_add(
                             output_plane + first_pixel,
                             stride,

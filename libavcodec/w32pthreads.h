@@ -120,7 +120,7 @@ typedef struct {
     volatile int waiter_count;
     HANDLE semaphore;
     HANDLE waiters_done;
-    int is_broadcast;
+    volatile int is_broadcast;
 } win32_cond_t;
 
 static void pthread_cond_init(pthread_cond_t *cond, const void *unused_attr)
@@ -187,6 +187,7 @@ static void pthread_cond_broadcast(pthread_cond_t *cond)
         ReleaseSemaphore(win32_cond->semaphore, win32_cond->waiter_count, NULL);
         pthread_mutex_unlock(&win32_cond->mtx_waiter_count);
         WaitForSingleObject(win32_cond->waiters_done, INFINITE);
+        ResetEvent(win32_cond->waiters_done);
         win32_cond->is_broadcast = 0;
     } else
         pthread_mutex_unlock(&win32_cond->mtx_waiter_count);

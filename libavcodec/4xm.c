@@ -682,8 +682,6 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length){
     int x, y;
     const int width= f->avctx->width;
     const int height= f->avctx->height;
-    uint16_t *dst= (uint16_t*)f->current_picture.data[0];
-    const int stride= f->current_picture.linesize[0]>>1;
     const unsigned int bitstream_size= AV_RL32(buf);
     unsigned int prestream_size;
     const uint8_t *prestream;
@@ -726,7 +724,6 @@ static int decode_i_frame(FourXContext *f, const uint8_t *buf, int length){
 
             idct_put(f, x, y);
         }
-        dst += 16*stride;
     }
 
     if(get_vlc2(&f->pre_gb, f->pre_vlc.table, ACDC_VLC_BITS, 3) != 256)

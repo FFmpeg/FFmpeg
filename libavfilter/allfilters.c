@@ -110,7 +110,7 @@ void avfilter_register_all(void)
 
     /* vsrc_buffer is a part of public API => registered unconditionally */
     {
-        extern avfilter_vsrc_buffer;
+        extern AVFilter avfilter_vsrc_buffer;
         avfilter_register(&avfilter_vsrc_buffer);
     }
 }
