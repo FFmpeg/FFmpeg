@@ -1138,6 +1138,7 @@ HAVE_LIST="
     symver
     symver_asm_label
     symver_gnu_asm
+    sysconf
     sysctl
     sys_mman_h
     sys_param_h
@@ -2858,6 +2859,7 @@ check_func  strerror_r
 check_func  strptime
 check_func  strtok_r
 check_func  sched_getaffinity
+check_func  sysconf
 check_func  sysctl
 check_func_headers io.h setmode
 check_func_headers lzo/lzo1x.h lzo1x_999_compress
