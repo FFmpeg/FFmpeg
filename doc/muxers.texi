@@ -110,6 +110,11 @@ If the pattern contains "%d" or "%0@var{N}d", the first filename of
 the file list specified will contain the number 1, all the following
 numbers will be sequential.
 
+The pattern may also contain "%t", this string specifies the timestamp
+of the frame in hours, minutes and seconds. Note that if two frames are written at the
+same second, they will be overwritten, yielding a maximum output of 1 fps.
+The "%t" and "%d" patterns may not be used simultaneously.
+
 The pattern may contain a suffix which is used to automatically
 determine the format of the image files to write.
 

@@ -389,12 +389,15 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     VideoData *img = s->priv_data;
     AVIOContext *pb[3];
     char filename[1024];
-    AVCodecContext *codec= s->streams[ pkt->stream_index ]->codec;
+    AVStream *stream = s->streams[ pkt->stream_index ];
+    AVCodecContext *codec = stream->codec;
     int i;
 
+    int ts = av_rescale_q(pkt->pts, stream->time_base, AV_TIME_BASE_Q);
+
     if (!img->is_pipe) {
-        if (av_get_frame_filename(filename, sizeof(filename),
-                                  img->path, img->img_number) < 0 && img->img_number>1 && !img->updatefirst) {
+        if (av_get_frame_filename2(filename, sizeof(filename),
+                                  img->path, img->img_number, ts) < 0 && img->img_number>1 && !img->updatefirst) {
             av_log(s, AV_LOG_ERROR,
                    "Could not get frame filename number %d from pattern '%s'\n",
                    img->img_number, img->path);
