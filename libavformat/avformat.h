@@ -2066,6 +2066,14 @@ int64_t av_gettime(void);
 attribute_deprecated int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info);
 #endif
 
+#if FF_API_GET_FRAME_FILENAME
+/**
+ * Deprecated. Use av_get_frame_filename2 which supports %t.
+ */
+attribute_deprecated int av_get_frame_filename(char *buf, int buf_size,
+                                               const char *path, int number);
+#endif
+
 /**
  * Return in 'buf' the path with '%d' replaced by the frame number,
  * and '%t' replaced by the frame timestamp.
@@ -2080,8 +2088,8 @@ attribute_deprecated int find_info_tag(char *arg, int arg_size, const char *tag1
  * @param ts frame timestamp in seconds
  * @return 0 if OK, -1 on format error
  */
-int av_get_frame_filename(char *buf, int buf_size,
-                          const char *path, int number, int ts);
+int av_get_frame_filename2(char *buf, int buf_size,
+                           const char *path, int number, int ts);
 
 /**
  * Check whether filename actually is a numbered sequence generator.

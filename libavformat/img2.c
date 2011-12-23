@@ -142,7 +142,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
 
     /* find the first image */
     for(first_index = 0; first_index < 5; first_index++) {
-        if (av_get_frame_filename(buf, sizeof(buf), path, first_index, 0) < 0){
+        if (av_get_frame_filename(buf, sizeof(buf), path, first_index) < 0){
             *pfirst_index =
             *plast_index = 1;
             if (avio_check(buf, AVIO_FLAG_READ) > 0)
@@ -165,7 +165,7 @@ static int find_image_range(int *pfirst_index, int *plast_index,
             else
                 range1 = 2 * range;
             if (av_get_frame_filename(buf, sizeof(buf), path,
-                                      last_index + range1, 0) < 0)
+                                      last_index + range1) < 0)
                 goto fail;
             if (avio_check(buf, AVIO_FLAG_READ) <= 0)
                 break;
@@ -310,7 +310,7 @@ static int read_packet(AVFormatContext *s1, AVPacket *pkt)
         if (s->img_number > s->img_last)
             return AVERROR_EOF;
         if (av_get_frame_filename(filename, sizeof(filename),
-                                  s->path, s->img_number, 0)<0 && s->img_number > 1)
+                                  s->path, s->img_number)<0 && s->img_number > 1)
             return AVERROR(EIO);
         for(i=0; i<3; i++){
             if (avio_open2(&f[i], filename, AVIO_FLAG_READ,
@@ -393,10 +393,10 @@ static int write_packet(AVFormatContext *s, AVPacket *pkt)
     AVCodecContext *codec = stream->codec;
     int i;
 
-    int ts = av_rescale_q(pkt->pts, stream->time_base, AV_TIME_BASE_Q) / AV_TIME_BASE;
+    int ts = av_rescale_q(pkt->pts, stream->time_base, AV_TIME_BASE_Q);
 
     if (!img->is_pipe) {
-        if (av_get_frame_filename(filename, sizeof(filename),
+        if (av_get_frame_filename2(filename, sizeof(filename),
                                   img->path, img->img_number, ts) < 0 && img->img_number>1 && !img->updatefirst) {
             av_log(s, AV_LOG_ERROR,
                    "Could not get frame filename number %d from pattern '%s'\n",

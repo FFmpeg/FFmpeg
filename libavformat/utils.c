@@ -326,7 +326,7 @@ int av_append_packet(AVIOContext *s, AVPacket *pkt, int size)
 int av_filename_number_test(const char *filename)
 {
     char buf[1024];
-    return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1, 0)>=0);
+    return filename && (av_get_frame_filename(buf, sizeof(buf), filename, 1)>=0);
 }
 
 AVInputFormat *av_probe_input_format3(AVProbeData *pd, int is_opened, int *score_ret)
@@ -3780,13 +3780,13 @@ int find_info_tag(char *arg, int arg_size, const char *tag1, const char *info)
 }
 #endif
 
-int av_get_frame_filename(char *buf, int buf_size,
+int av_get_frame_filename2(char *buf, int buf_size,
                           const char *path, int number, int ts)
 {
     const char *p;
     char *q, buf1[20], c;
     int nd, len, percent_found;
-    int hours, mins, secs;
+    int hours, mins, secs, ms;
 
     q = buf;
     p = path;
@@ -3821,14 +3821,18 @@ int av_get_frame_filename(char *buf, int buf_size,
             case 't':
                 if (percent_found)
                     goto fail;
+                if (ts < 1)
+                    goto fail;
                 percent_found = 1;
+                ms = ts % (AV_TIME_BASE / 1000);
+                ts /= AV_TIME_BASE;
                 secs = ts % 60;
                 ts /= 60;
                 mins = ts % 60;
                 ts /= 60;
                 hours = ts;
                 snprintf(buf1, sizeof(buf1),
-                         "%02d:%02d:%02d", hours, mins, secs);
+                         "%02d.%02d.%02d.%03d", hours, mins, secs, ms);
                 len = strlen(buf1);
                 if ((q - buf + len) > buf_size - 1)
                     goto fail;
@@ -3852,6 +3856,18 @@ int av_get_frame_filename(char *buf, int buf_size,
     *q = '\0';
     return -1;
 }
+
+#if FF_API_GET_FRAME_FILENAME
+int av_get_frame_filename(char *buf, int buf_size,
+                          const char *path, int number)
+{
+    /* 
+     * old versions don't support timestamps in filename (%t)
+     * so just pass 0 as the frame timestamp
+     */
+    return av_get_frame_filename2(buf, buf_size, path, number, 0);
+}
+#endif
 
 static void hex_dump_internal(void *avcl, FILE *f, int level, uint8_t *buf, int size)
 {
