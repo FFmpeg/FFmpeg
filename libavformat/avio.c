@@ -145,10 +145,11 @@ static int url_alloc_for_protocol (URLContext **puc, struct URLProtocol *up,
     if (up->priv_data_size) {
         uc->priv_data = av_mallocz(up->priv_data_size);
         if (up->priv_data_class) {
+            int proto_len= strlen(up->name);
             char *start = strchr(uc->filename, ',');
             *(const AVClass**)uc->priv_data = up->priv_data_class;
             av_opt_set_defaults(uc->priv_data);
-            if(start){
+            if(!strncmp(up->name, uc->filename, proto_len) && uc->filename + proto_len == start){
                 int ret= 0;
                 char *p= start;
                 char sep= *++p;
