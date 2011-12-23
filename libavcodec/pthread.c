@@ -38,6 +38,7 @@
 #include <windows.h>
 #elif HAVE_SYSCTL
 #include <sys/types.h>
+#include <sys/param.h>
 #include <sys/sysctl.h>
 #endif
 
