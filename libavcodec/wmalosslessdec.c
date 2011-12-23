@@ -232,6 +232,7 @@ typedef struct WmallDecodeCtx {
     int8_t acfilter_order;
     int8_t acfilter_scaling;
     int acfilter_coeffs[16];
+    int acfilter_prevvalues[16];
 
     int8_t mclms_order;
     int8_t mclms_scaling;
@@ -1006,7 +1007,41 @@ static void revert_cdlms(WmallDecodeCtx *s, int ch, int coef_begin, int coef_end
     }
 }
 
+static void revert_inter_ch_decorr(WmallDecodeCtx *s, int tile_size)
+{
+    int icoef;
+    if (s->num_channels != 2)
+        return;
+    else {
+        for (icoef = 0; icoef < tile_size; icoef++) {
+            s->channel_residues[0][icoef] -= s->channel_residues[1][icoef] >> 1;
+            s->channel_residues[1][icoef] += s->channel_residues[0][icoef];
+        }
+    }
+}
 
+static void revert_acfilter(WmallDecodeCtx *s, int tile_size)
+{
+    int ich, icoef;
+    int pred = 0, itap;
+    int **ch_coeffs = s->channel_residues;
+    int *filter_coeffs = s->acfilter_coeffs;
+    int *prevvalues = s->acfilter_prevvalues;
+    int scaling = s->acfilter_scaling;
+    int order = s->acfilter_order;
+
+    for (ich = 0; ich < s->num_channels; ich++) {
+        for (icoef = 0; icoef < tile_size; icoef++) {
+            for (itap = 0; itap < order; itap++)
+                pred += filter_coeffs[itap] * prevvalues[itap];
+            pred >>= scaling;
+            ch_coeffs[ich][icoef] += pred;
+            for (itap = 1; itap < order; itap++)
+                prevvalues[itap] = prevvalues[itap - 1];
+            prevvalues[0] = ch_coeffs[ich][icoef];
+        }
+    }
+}
 
 /**
  *@brief Decode a single subframe (block).
