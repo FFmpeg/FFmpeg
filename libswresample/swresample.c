@@ -73,7 +73,7 @@ static const AVClass av_class = {
 unsigned swresample_version(void)
 {
     av_assert0(LIBSWRESAMPLE_VERSION_MICRO >= 100);
-    return LIBSWRESAMPLE_VERSION_MICRO;
+    return LIBSWRESAMPLE_VERSION_INT;
 }
 
 const char *swresample_configuration(void)
