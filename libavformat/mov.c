@@ -1213,7 +1213,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                 (color_depth == 8)) {
                 /* for palette traversal */
                 unsigned int color_start, color_count, color_end;
-                unsigned char r, g, b;
+                unsigned char a, r, g, b;
 
                 if (color_greyscale) {
                     int color_index, color_dec;
@@ -1228,7 +1228,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                         }else
                         r = g = b = color_index;
                         sc->palette[j] =
-                            (r << 16) | (g << 8) | (b);
+                            (0xFFU << 24) | (r << 16) | (g << 8) | (b);
                         color_index -= color_dec;
                         if (color_index < 0)
                             color_index = 0;
@@ -1249,7 +1249,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                         g = color_table[j * 3 + 1];
                         b = color_table[j * 3 + 2];
                         sc->palette[j] =
-                            (r << 16) | (g << 8) | (b);
+                            (0xFFU << 24) | (r << 16) | (g << 8) | (b);
                     }
                 } else {
                     /* load the palette from the file */
@@ -1259,10 +1259,9 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                     if ((color_start <= 255) &&
                         (color_end <= 255)) {
                         for (j = color_start; j <= color_end; j++) {
-                            /* each R, G, or B component is 16 bits;
-                             * only use the top 8 bits; skip alpha bytes
-                             * up front */
-                            avio_r8(pb);
+                            /* each A, R, G, or B component is 16 bits;
+                             * only use the top 8 bits */
+                            a = avio_r8(pb);
                             avio_r8(pb);
                             r = avio_r8(pb);
                             avio_r8(pb);
@@ -1271,7 +1270,7 @@ int ff_mov_read_stsd_entries(MOVContext *c, AVIOContext *pb, int entries)
                             b = avio_r8(pb);
                             avio_r8(pb);
                             sc->palette[j] =
-                                (r << 16) | (g << 8) | (b);
+                                (a << 24 ) | (r << 16) | (g << 8) | (b);
                         }
                     }
                 }
