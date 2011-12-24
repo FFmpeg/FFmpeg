@@ -248,7 +248,9 @@ static int idcin_read_packet(AVFormatContext *s,
                 r = palette_buffer[i * 3    ] << palette_scale;
                 g = palette_buffer[i * 3 + 1] << palette_scale;
                 b = palette_buffer[i * 3 + 2] << palette_scale;
-                palette[i] = (r << 16) | (g << 8) | (b);
+                palette[i] = (0xFFU << 24) | (r << 16) | (g << 8) | (b);
+                if (palette_scale == 2)
+                    palette[i] |= palette[i] >> 6 & 0x30303;
             }
         }
 
