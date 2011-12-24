@@ -137,6 +137,9 @@ int ff_wma_init(AVCodecContext *avctx, int flags2)
 
     /* compute MDCT block size */
     s->frame_len_bits = ff_wma_get_frame_len_bits(s->sample_rate, s->version, 0);
+    s->next_block_len_bits = s->frame_len_bits;
+    s->prev_block_len_bits = s->frame_len_bits;
+    s->block_len_bits      = s->frame_len_bits;
 
     s->frame_len = 1 << s->frame_len_bits;
     if (s->use_variable_block_len) {
