@@ -238,6 +238,9 @@ static int get_siz(J2kDecoderContext *s)
     s->numXtiles = ff_j2k_ceildiv(s->width - s->tile_offset_x, s->tile_width);
     s->numYtiles = ff_j2k_ceildiv(s->height - s->tile_offset_y, s->tile_height);
 
+    if(s->numXtiles * (uint64_t)s->numYtiles > INT_MAX/sizeof(J2kTile))
+        return AVERROR(EINVAL);
+
     s->tile = av_mallocz(s->numXtiles * s->numYtiles * sizeof(J2kTile));
     if (!s->tile)
         return AVERROR(ENOMEM);
