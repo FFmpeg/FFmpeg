@@ -180,45 +180,80 @@ static void put_audio_specific_config(AVCodecContext *avctx)
     flush_put_bits(&pb);
 }
 
+#define WINDOW_FUNC(type) \
+static void apply_ ##type ##_window(DSPContext *dsp, SingleChannelElement *sce, const float *audio)
+
+WINDOW_FUNC(only_long)
+{
+    const float *lwindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float *pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    float *out = sce->ret;
+
+    dsp->vector_fmul        (out,        audio,        lwindow, 1024);
+    dsp->vector_fmul_reverse(out + 1024, audio + 1024, pwindow, 1024);
+}
+
+WINDOW_FUNC(long_start)
+{
+    const float *lwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float *swindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+    float *out = sce->ret;
+
+    dsp->vector_fmul(out, audio, lwindow, 1024);
+    memcpy(out + 1024, audio, sizeof(out[0]) * 448);
+    dsp->vector_fmul_reverse(out + 1024 + 448, audio, swindow, 128);
+    memset(out + 1024 + 576, 0, sizeof(out[0]) * 448);
+}
+
+WINDOW_FUNC(long_stop)
+{
+    const float *lwindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
+    const float *swindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
+    float *out = sce->ret;
+
+    memset(out, 0, sizeof(out[0]) * 448);
+    dsp->vector_fmul(out + 448, audio + 448, swindow, 128);
+    memcpy(out + 576, audio + 576, sizeof(out[0]) * 448);
+    dsp->vector_fmul_reverse(out + 1024, audio + 1024, lwindow, 1024);
+}
+
+WINDOW_FUNC(eight_short)
+{
+    const float *swindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
+    const float *pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
+    const float *in = audio + 448;
+    float *out = sce->ret;
+
+    for (int w = 0; w < 8; w++) {
+        dsp->vector_fmul        (out, in, w ? pwindow : swindow, 128);
+        out += 128;
+        in  += 128;
+        dsp->vector_fmul_reverse(out, in, swindow, 128);
+        out += 128;
+    }
+}
+
+static void (*const apply_window[4])(DSPContext *dsp, SingleChannelElement *sce, const float *audio) = {
+    [ONLY_LONG_SEQUENCE]   = apply_only_long_window,
+    [LONG_START_SEQUENCE]  = apply_long_start_window,
+    [EIGHT_SHORT_SEQUENCE] = apply_eight_short_window,
+    [LONG_STOP_SEQUENCE]   = apply_long_stop_window
+};
+
 static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
                                   float *audio)
 {
-    int i, k;
-    const float * lwindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_long_1024 : ff_sine_1024;
-    const float * swindow = sce->ics.use_kb_window[0] ? ff_aac_kbd_short_128 : ff_sine_128;
-    const float * pwindow = sce->ics.use_kb_window[1] ? ff_aac_kbd_short_128 : ff_sine_128;
+    int i;
     float *output = sce->ret;
 
-    if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
-        memcpy(output, audio, sizeof(output[0])*1024);
-        if (sce->ics.window_sequence[0] == LONG_STOP_SEQUENCE) {
-            memset(output, 0, sizeof(output[0]) * 448);
-            for (i = 448; i < 576; i++)
-                output[i] = audio[i] * pwindow[i - 448];
-        }
-        if (sce->ics.window_sequence[0] != LONG_START_SEQUENCE) {
-            for (i = 0; i < 1024; i++) {
-                output[i+1024] = audio[i + 1024] * lwindow[1024 - i - 1];
-                audio[i]  = audio[i + 1024] * lwindow[i];
-            }
-        } else {
-            memcpy(output + 1024, audio + 1024, sizeof(output[0]) * 448);
-            for (; i < 576; i++)
-                output[i+1024] = audio[i+1024] * swindow[576 - i - 1];
-            memset(output+1024+576, 0, sizeof(output[0]) * 448);
-            memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
-        }
+    apply_window[sce->ics.window_sequence[0]](&s->dsp, sce, audio);
+
+    if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE)
         s->mdct1024.mdct_calc(&s->mdct1024, sce->coeffs, output);
-    } else {
-        for (k = 0; k < 1024; k += 128) {
-            for (i = 448 + k; i < 448 + k + 256; i++)
-                output[i - 448 - k] = audio[i];
-            s->dsp.vector_fmul        (output,     output, k ?  swindow : pwindow, 128);
-            s->dsp.vector_fmul_reverse(output+128, output+128, swindow, 128);
-            s->mdct128.mdct_calc(&s->mdct128, sce->coeffs + k, output);
-        }
-        memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
-    }
+    else
+        for (i = 0; i < 1024; i += 128)
+            s->mdct128.mdct_calc(&s->mdct128, sce->coeffs + i, output + i*2);
+    memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
 }
 
 /**
