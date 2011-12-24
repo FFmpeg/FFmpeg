@@ -623,12 +623,8 @@ static int avi_read_header(AVFormatContext *s, AVFormatParameters *ap)
 
                         pal_size = FFMIN(pal_size, st->codec->extradata_size);
                         pal_src = st->codec->extradata + st->codec->extradata_size - pal_size;
-#if HAVE_BIGENDIAN
                         for (i = 0; i < pal_size/4; i++)
-                            ast->pal[i] = AV_RL32(pal_src+4*i);
-#else
-                        memcpy(ast->pal, pal_src, pal_size);
-#endif
+                            ast->pal[i] = 0xFF<<24 | AV_RL32(pal_src+4*i);
                         ast->has_pal = 1;
                     }
 
@@ -971,7 +967,7 @@ start_sync:
                 avio_rl16(pb); //flags
 
                 for (; k <= last; k++)
-                    ast->pal[k] = avio_rb32(pb)>>8;// b + (g << 8) + (r << 16);
+                    ast->pal[k] = 0xFF<<24 | avio_rb32(pb)>>8;// b + (g << 8) + (r << 16);
                 ast->has_pal= 1;
                 goto start_sync;
             } else if(   ((ast->prefix_count<5 || sync+9 > i) && d[2]<128 && d[3]<128) ||
