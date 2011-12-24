@@ -535,7 +535,7 @@ static int xan_decode_frame(AVCodecContext *avctx,
                     int g = gamma_lookup[*buf++];
                     int b = gamma_lookup[*buf++];
 #endif
-                    *tmpptr++ = (r << 16) | (g << 8) | b;
+                    *tmpptr++ = (0xFFU << 24) | (r << 16) | (g << 8) | b;
                 }
                 s->palettes_count++;
                 break;
