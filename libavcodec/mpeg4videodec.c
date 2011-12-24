@@ -160,7 +160,7 @@ static inline int mpeg4_is_resync(MpegEncContext *s){
     return 0;
 }
 
-static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb)
+static int mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb)
 {
     int i;
     int a= 2<<s->sprite_warping_accuracy;
@@ -175,6 +175,9 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
     int w= s->width;
     int h= s->height;
     int min_ab;
+
+    if(w<=0 || h<=0)
+        return -1;
 
     for(i=0; i<s->num_sprite_warping_points; i++){
         int length;
@@ -348,6 +351,7 @@ static void mpeg4_decode_sprite_trajectory(MpegEncContext * s, GetBitContext *gb
         }
         s->real_sprite_warping_points= s->num_sprite_warping_points;
     }
+    return 0;
 }
 
 /**
@@ -411,7 +415,8 @@ int mpeg4_decode_video_packet_header(MpegEncContext *s)
             skip_bits(&s->gb, 3); /* intra dc vlc threshold */
 //FIXME don't just ignore everything
             if(s->pict_type == AV_PICTURE_TYPE_S && s->vol_sprite_usage==GMC_SPRITE){
-                mpeg4_decode_sprite_trajectory(s, &s->gb);
+                if(mpeg4_decode_sprite_trajectory(s, &s->gb) < 0)
+                    return -1;
                 av_log(s->avctx, AV_LOG_ERROR, "untested\n");
             }
 
@@ -2051,7 +2056,8 @@ static int decode_vop_header(MpegEncContext *s, GetBitContext *gb){
      }
 
      if(s->pict_type == AV_PICTURE_TYPE_S && (s->vol_sprite_usage==STATIC_SPRITE || s->vol_sprite_usage==GMC_SPRITE)){
-         mpeg4_decode_sprite_trajectory(s, gb);
+         if(mpeg4_decode_sprite_trajectory(s, gb) < 0)
+             return -1;
          if(s->sprite_brightness_change) av_log(s->avctx, AV_LOG_ERROR, "sprite_brightness_change not supported\n");
          if(s->vol_sprite_usage==STATIC_SPRITE) av_log(s->avctx, AV_LOG_ERROR, "static sprite not supported\n");
      }
