@@ -825,7 +825,7 @@ static int draw_text(AVFilterContext *ctx, AVFilterBufferRef *picref,
     /* draw box */
     if (dtext->draw_box)
         drawbox(picref, dtext->x, dtext->y, box_w, box_h,
-                dtext->box_line, dtext->pixel_step, dtext->boxcolor_rgba,
+                dtext->box_line, dtext->pixel_step, dtext->is_packed_rgb ? dtext->boxcolor_rgba : dtext->boxcolor,
                 dtext->hsub, dtext->vsub, dtext->is_packed_rgb, dtext->rgba_map);
 
     if (dtext->shadowx || dtext->shadowy) {
