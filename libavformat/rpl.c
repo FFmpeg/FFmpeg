@@ -58,7 +58,7 @@ static int read_line(AVIOContext * pb, char* line, int bufsize)
             break;
         if (b == '\n') {
             line[i] = '\0';
-            return 0;
+            return url_feof(pb) ? -1 : 0;
         }
         line[i] = b;
     }
@@ -252,7 +252,7 @@ static int rpl_read_header(AVFormatContext *s, AVFormatParameters *ap)
     // Read the index
     avio_seek(pb, chunk_catalog_offset, SEEK_SET);
     total_audio_size = 0;
-    for (i = 0; i < number_of_chunks; i++) {
+    for (i = 0; !error && i < number_of_chunks; i++) {
         int64_t offset, video_size, audio_size;
         error |= read_line(pb, line, sizeof(line));
         if (3 != sscanf(line, "%"PRId64" , %"PRId64" ; %"PRId64,
