@@ -1,8 +1,7 @@
 Release Notes
 =============
 
-* 0.8 "Love"  June, 2011
-* 0.7 "Peace" June, 2011 (identical to 0.8 but using 0.6 ABI/API)
+* 0.9 "Harmony"  December, 2011
 
 
 General notes
@@ -18,7 +17,8 @@ and muxers such as LATM or CELT in Ogg, among many others. Moreover, our
 H.264 decoder has been improved to decode 4:2:2 material and our libx264
 wrapper now allows to produce 4:2:2 and 4:4:4 video.
 
-See the Changelog file for a list of significant changes.
+See the Changelog file for a list of significant changes. Note, there
+are many more new features and bugfixes than whats listed there.
 
 Bugreports against FFmpeg git master or the most recent FFmpeg release are
 accepted. If you are experiencing issues with any formally released version of
