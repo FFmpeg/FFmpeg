@@ -190,36 +190,34 @@ static void apply_window_and_mdct(AACEncContext *s, SingleChannelElement *sce,
     float *output = sce->ret;
 
     if (sce->ics.window_sequence[0] != EIGHT_SHORT_SEQUENCE) {
-        memcpy(output, sce->saved, sizeof(output[0])*1024);
+        memcpy(output, audio, sizeof(output[0])*1024);
         if (sce->ics.window_sequence[0] == LONG_STOP_SEQUENCE) {
             memset(output, 0, sizeof(output[0]) * 448);
             for (i = 448; i < 576; i++)
-                output[i] = sce->saved[i] * pwindow[i - 448];
+                output[i] = audio[i] * pwindow[i - 448];
         }
         if (sce->ics.window_sequence[0] != LONG_START_SEQUENCE) {
             for (i = 0; i < 1024; i++) {
-                output[i+1024] = audio[i] * lwindow[1024 - i - 1];
-                sce->saved[i]  = audio[i] * lwindow[i];
+                output[i+1024] = audio[i + 1024] * lwindow[1024 - i - 1];
+                audio[i]  = audio[i + 1024] * lwindow[i];
             }
         } else {
-            memcpy(output + 1024, audio, sizeof(output[0]) * 448);
+            memcpy(output + 1024, audio + 1024, sizeof(output[0]) * 448);
             for (; i < 576; i++)
-                output[i+1024] = audio[i] * swindow[576 - i - 1];
+                output[i+1024] = audio[i+1024] * swindow[576 - i - 1];
             memset(output+1024+576, 0, sizeof(output[0]) * 448);
-            memcpy(sce->saved, audio, sizeof(sce->saved[0]) * 1024);
+            memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
         }
         s->mdct1024.mdct_calc(&s->mdct1024, sce->coeffs, output);
     } else {
         for (k = 0; k < 1024; k += 128) {
             for (i = 448 + k; i < 448 + k + 256; i++)
-                output[i - 448 - k] = (i < 1024)
-                                         ? sce->saved[i]
-                                         : audio[i-1024];
+                output[i - 448 - k] = audio[i];
             s->dsp.vector_fmul        (output,     output, k ?  swindow : pwindow, 128);
             s->dsp.vector_fmul_reverse(output+128, output+128, swindow, 128);
             s->mdct128.mdct_calc(&s->mdct128, sce->coeffs + k, output);
         }
-        memcpy(sce->saved, audio, sizeof(sce->saved[0]) * 1024);
+        memcpy(audio, audio + 1024, sizeof(audio[0]) * 1024);
     }
 }
 
@@ -468,7 +466,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
                             uint8_t *frame, int buf_size, void *data)
 {
     AACEncContext *s = avctx->priv_data;
-    float **samples = s->planar_samples, *samples2, *la;
+    float **samples = s->planar_samples, *samples2, *la, *overlap;
     ChannelElement *cpe;
     int i, ch, w, g, chans, tag, start_ch;
     int chan_el_counter[4];
@@ -495,7 +493,8 @@ static int aac_encode_frame(AVCodecContext *avctx,
         for (ch = 0; ch < chans; ch++) {
             IndividualChannelStream *ics = &cpe->ch[ch].ics;
             int cur_channel = start_ch + ch;
-            samples2 = &samples[cur_channel][0];
+            overlap  = &samples[cur_channel][0];
+            samples2 = overlap + 1024;
             la       = samples2 + (448+64);
             if (!data)
                 la = NULL;
@@ -524,7 +523,7 @@ static int aac_encode_frame(AVCodecContext *avctx,
             for (w = 0; w < ics->num_windows; w++)
                 ics->group_len[w] = wi[ch].grouping[w];
 
-            apply_window_and_mdct(s, &cpe->ch[ch], samples2);
+            apply_window_and_mdct(s, &cpe->ch[ch], overlap);
         }
         start_ch += chans;
     }
@@ -652,12 +651,12 @@ static av_cold int dsp_init(AVCodecContext *avctx, AACEncContext *s)
 
 static av_cold int alloc_buffers(AVCodecContext *avctx, AACEncContext *s)
 {
-    FF_ALLOCZ_OR_GOTO(avctx, s->buffer.samples, 2 * 1024 * s->channels * sizeof(s->buffer.samples[0]), alloc_fail);
+    FF_ALLOCZ_OR_GOTO(avctx, s->buffer.samples, 3 * 1024 * s->channels * sizeof(s->buffer.samples[0]), alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, s->cpe, sizeof(ChannelElement) * s->chan_map[0], alloc_fail);
     FF_ALLOCZ_OR_GOTO(avctx, avctx->extradata, 5 + FF_INPUT_BUFFER_PADDING_SIZE, alloc_fail);
 
     for(int ch = 0; ch < s->channels; ch++)
-        s->planar_samples[ch] = s->buffer.samples + 2 * 1024 * ch;
+        s->planar_samples[ch] = s->buffer.samples + 3 * 1024 * ch;
 
     return 0;
 alloc_fail:
