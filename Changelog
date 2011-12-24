@@ -112,6 +112,7 @@ easier to use. The changes are:
 - OpenMG Audio muxer
 - Simple segmenting muxer
 - Indeo 4 decoder
+- SMJPEG demuxer
 
 
 version 0.7:
