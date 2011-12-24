@@ -427,6 +427,10 @@ static uint8_t get_sot(J2kDecoderContext *s)
         return AVERROR(EINVAL);
 
     s->curtileno = bytestream_get_be16(&s->buf); ///< Isot
+    if((unsigned)s->curtileno >= s->numXtiles * s->numYtiles){
+        s->curtileno=0;
+        return AVERROR(EINVAL);
+    }
 
     s->buf += 4; ///< Psot (ignored)
 
