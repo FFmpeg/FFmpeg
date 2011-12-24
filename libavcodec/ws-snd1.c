@@ -112,8 +112,8 @@ static int ws_snd_decode_frame(AVCodecContext *avctx, void *data,
 
         /* make sure we don't write past the output buffer */
         switch (code) {
-        case 0:  smp = 4;                              break;
-        case 1:  smp = 2;                              break;
+        case 0:  smp = 4 * (count + 1);                break;
+        case 1:  smp = 2 * (count + 1);                break;
         case 2:  smp = (count & 0x20) ? 1 : count + 1; break;
         default: smp = count + 1;                      break;
         }
