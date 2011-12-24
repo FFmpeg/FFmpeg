@@ -137,7 +137,7 @@ static inline void memcpy_backptr(uint8_t *dst, int back, int cnt) {
     const uint8_t *src = &dst[-back];
     if (back == 1) {
         memset(dst, *src, cnt);
-    } else {
+    } else if(back>0) {
 #ifdef OUTBUF_PADDED
         COPY2(dst, src);
         COPY2(dst + 2, src + 2);
