@@ -220,6 +220,9 @@ static int get_siz(J2kDecoderContext *s)
      s->tile_offset_y = bytestream_get_be32(&s->buf); // YT0Siz
        s->ncomponents = bytestream_get_be16(&s->buf); // CSiz
 
+    if(s->tile_width<=0 || s->tile_height<=0)
+        return AVERROR(EINVAL);
+
     if (s->buf_end - s->buf < 2 * s->ncomponents)
         return AVERROR(EINVAL);
 
