@@ -26,6 +26,12 @@
  * http://id3.org/Developer_Information
  */
 
+#include "config.h"
+
+#if CONFIG_ZLIB
+#include <zlib.h>
+#endif
+
 #include "id3v2.h"
 #include "id3v1.h"
 #include "libavutil/avstring.h"
@@ -432,6 +438,8 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     unsigned char *buffer = NULL;
     int buffer_size = 0;
     const ID3v2EMFunc *extra_func;
+    unsigned char *compressed_buffer = NULL;
+    int compressed_buffer_size = 0;
 
     switch (version) {
     case 2:
@@ -476,6 +484,9 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
     while (len >= taghdrlen) {
         unsigned int tflags = 0;
         int tunsync = 0;
+        int tcomp = 0;
+        int tencr = 0;
+        int dlen;
 
         if (isv34) {
             avio_read(s->pb, tag, 4);
@@ -509,24 +520,65 @@ static void ff_id3v2_parse(AVFormatContext *s, int len, uint8_t version, uint8_t
         if (tflags & ID3v2_FLAG_DATALEN) {
             if (tlen < 4)
                 break;
-            avio_rb32(s->pb);
+            dlen = avio_rb32(s->pb);
             tlen -= 4;
-        }
+        } else
+            dlen = tlen;
 
-        if (tflags & (ID3v2_FLAG_ENCRYPTION | ID3v2_FLAG_COMPRESSION)) {
-            av_log(s, AV_LOG_WARNING, "Skipping encrypted/compressed ID3v2 frame %s.\n", tag);
+        tcomp = tflags & ID3v2_FLAG_COMPRESSION;
+        tencr = tflags & ID3v2_FLAG_ENCRYPTION;
+
+        /* skip encrypted tags and, if no zlib, compressed tags */
+        if (tencr || (!CONFIG_ZLIB && tcomp)) {
+            const char *type;
+            if (!tcomp)
+                type = "encrypted";
+            else if (!tencr)
+                type = "compressed";
+            else
+                type = "encrypted and compressed";
+
+            av_log(s, AV_LOG_WARNING, "Skipping %s ID3v2 frame %s.\n", type, tag);
             avio_skip(s->pb, tlen);
         /* check for text tag or supported special meta tag */
         } else if (tag[0] == 'T' || (extra_meta && (extra_func = get_extra_meta_func(tag, isv34)))) {
-            if (unsync || tunsync) {
+            if (unsync || tunsync || tcomp) {
                 int i, j;
-                av_fast_malloc(&buffer, &buffer_size, tlen);
+
+                av_fast_malloc(&buffer, &buffer_size, dlen);
                 if (!buffer) {
-                    av_log(s, AV_LOG_ERROR, "Failed to alloc %d bytes\n", tlen);
+                    av_log(s, AV_LOG_ERROR, "Failed to alloc %d bytes\n", dlen);
                     goto seek;
                 }
-                for (i = 0, j = 0; i < tlen; i++, j++) {
-                    buffer[j] = avio_r8(s->pb);
+#if CONFIG_ZLIB
+                if (tcomp) {
+                    int n, err;
+
+                    av_log(s, AV_LOG_DEBUG, "Compresssed frame %s tlen=%d dlen=%d\n", tag, tlen, dlen);
+
+                    av_fast_malloc(&compressed_buffer, &compressed_buffer_size, tlen);
+                    if (!compressed_buffer) {
+                        av_log(s, AV_LOG_ERROR, "Failed to alloc %d bytes\n", tlen);
+                        goto seek;
+                    }
+
+                    n = avio_read(s->pb, compressed_buffer, tlen);
+                    if (n < 0) {
+                        av_log(s, AV_LOG_ERROR, "Failed to read compressed tag\n");
+                        goto seek;
+                    }
+
+                    err = uncompress(buffer, &dlen, compressed_buffer, n);
+                    if (err != Z_OK) {
+                        av_log(s, AV_LOG_ERROR, "Failed to uncompress tag: %d\n", err);
+                        goto seek;
+                    }
+                }
+#endif
+
+                for (i = 0, j = 0; i < dlen; i++, j++) {
+                    if (!tcomp)
+                        buffer[j] = avio_r8(s->pb);
                     if (j > 0 && !buffer[j] && buffer[j - 1] == 0xff) {
                         /* Unsynchronised byte, skip it */
                         j--;
@@ -564,6 +616,7 @@ seek:
         av_log(s, AV_LOG_INFO, "ID3v2.%d tag skipped, cannot handle %s\n", version, reason);
     avio_seek(s->pb, end, SEEK_SET);
     av_free(buffer);
+    av_free(compressed_buffer);
     return;
 }
 
