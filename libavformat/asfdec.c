@@ -765,7 +765,7 @@ static int ff_asf_get_packet(AVFormatContext *s, AVIOContext *pb)
         c= avio_r8(pb);
         d= avio_r8(pb);
         rsize+=3;
-    }else{
+    }else if(!url_feof(pb)){
         avio_seek(pb, -1, SEEK_CUR); //FIXME
     }
 
