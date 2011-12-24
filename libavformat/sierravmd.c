@@ -30,6 +30,7 @@
 #include "libavutil/intreadwrite.h"
 #include "avformat.h"
 #include "internal.h"
+#include "avio_internal.h"
 
 #define VMD_HEADER_SIZE 0x0330
 #define BYTES_PER_FRAME_RECORD 16
@@ -246,6 +247,8 @@ static int vmd_read_packet(AVFormatContext *s,
     /* position the stream (will probably be there already) */
     avio_seek(pb, frame->frame_offset, SEEK_SET);
 
+    if(ffio_limit(pb, frame->frame_size) != frame->frame_size)
+        return AVERROR(EIO);
     if (av_new_packet(pkt, frame->frame_size + BYTES_PER_FRAME_RECORD))
         return AVERROR(ENOMEM);
     pkt->pos= avio_tell(pb);
