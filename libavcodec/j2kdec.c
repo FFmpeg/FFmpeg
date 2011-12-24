@@ -359,7 +359,7 @@ static int get_qcx(J2kDecoderContext *s, int n, J2kQuantStyle *q)
 
     if (q->quantsty == J2K_QSTY_NONE){
         n -= 3;
-        if (s->buf_end - s->buf < n)
+        if (s->buf_end - s->buf < n || 32*3 < n)
             return AVERROR(EINVAL);
         for (i = 0; i < n; i++)
             q->expn[i] = bytestream_get_byte(&s->buf) >> 3;
@@ -376,7 +376,7 @@ static int get_qcx(J2kDecoderContext *s, int n, J2kQuantStyle *q)
         }
     } else{
         n = (n - 3) >> 1;
-        if (s->buf_end - s->buf < n)
+        if (s->buf_end - s->buf < n || 32*3 < n)
             return AVERROR(EINVAL);
         for (i = 0; i < n; i++){
             x = bytestream_get_be16(&s->buf);
