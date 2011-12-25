@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "libavutil/avassert.h"
 #include "libavutil/audioconvert.h"
 #include "libavutil/imgutils.h"
 #include "libavutil/samplefmt.h"
@@ -84,16 +85,22 @@ AVFilterBufferRef *avfilter_default_get_audio_buffer(AVFilterLink *link, int per
                                                      int nb_samples)
 {
     AVFilterBufferRef *samplesref = NULL;
-    int linesize[8];
-    uint8_t *data[8];
-    int nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
+    int linesize[8] = {0};
+    uint8_t *data[8] = {0};
+    int ch, nb_channels = av_get_channel_layout_nb_channels(link->channel_layout);
+
+    /* right now we don't support more than 8 channels */
+    av_assert0(nb_channels <= 8);
 
     /* Calculate total buffer size, round to multiple of 16 to be SIMD friendly */
     if (av_samples_alloc(data, linesize,
-                         nb_channels, nb_samples, link->format,
+                         nb_channels, nb_samples,
+                         av_get_alt_sample_fmt(link->format, link->planar),
                          16) < 0)
         return NULL;
 
+    for (ch = 1; link->planar && ch < nb_channels; ch++)
+        linesize[ch] = linesize[0];
     samplesref =
         avfilter_get_audio_buffer_ref_from_arrays(data, linesize, perms,
                                                   nb_samples, link->format,
