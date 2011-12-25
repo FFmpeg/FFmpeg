@@ -10,6 +10,7 @@ version next:
 - dv: add timecode to metadata
 - thumbnail video filter
 - XML output in ffprobe
+- asplit audio filter
 
 
 version 0.9:

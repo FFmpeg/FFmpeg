@@ -39,6 +39,7 @@ void avfilter_register_all(void)
     REGISTER_FILTER (ANULL,       anull,       af);
     REGISTER_FILTER (ARESAMPLE,   aresample,   af);
     REGISTER_FILTER (ASHOWINFO,   ashowinfo,   af);
+    REGISTER_FILTER (ASPLIT,      asplit,      af);
     REGISTER_FILTER (EARWAX,      earwax,      af);
     REGISTER_FILTER (PAN,         pan,         af);
     REGISTER_FILTER (VOLUME,      volume,      af);

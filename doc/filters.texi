@@ -224,6 +224,19 @@ expressed in the form "[@var{c0} @var{c1} @var{c2} @var{c3} @var{c4} @var{c5}
 @var{c6} @var{c7}]"
 @end table
 
+@section asplit
+
+Pass on the input audio to two outputs. Both outputs are identical to
+the input audio.
+
+For example:
+@example
+[in] asplit[out0], showaudio[out1]
+@end example
+
+will create two separate outputs from the same input, one cropped and
+one padded.
+
 @section earwax
 
 Make audio easier to listen to on headphones.
